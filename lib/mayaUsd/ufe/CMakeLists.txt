@@ -124,6 +124,7 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
             PRIVATE
                 UsdConnections.cpp
                 UsdConnectionHandler.cpp
+                UsdUndoCreateMaterialNodeCommand.cpp
         )
     endif()
 endif()
@@ -215,15 +216,6 @@ if (UFE_LIGHTS_SUPPORT)
 endif()
 
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
-        list(APPEND HEADERS
-            UsdConnections.h
-            UsdConnectionHandler.h
-        )
-    endif()
-endif()
-
-if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4001)
         list(APPEND HEADERS
             UsdShaderNodeDef.h
@@ -242,6 +234,14 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         list(APPEND HEADERS
             ProxyShapeCameraHandler.h
             ProxyShapeSceneSegmentHandler.h
+        )
+    endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
+        list(APPEND HEADERS
+            UsdConnections.h
+            UsdConnectionHandler.h
+            UsdUndoCreateMaterialNodeCommand.h
         )
     endif()
 endif()

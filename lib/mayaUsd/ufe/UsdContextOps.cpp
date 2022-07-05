@@ -25,6 +25,7 @@
 #include <mayaUsd/ufe/UsdObject3d.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
+#include <mayaUsd/ufe/UsdUndoCreateMaterialNodeCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
 
@@ -125,8 +126,22 @@ static constexpr char    kAddMayaReferenceItem[] = "Add Maya Reference";
 static constexpr char    kAddMayaReferenceLabel[] = "Add Maya Reference...";
 #endif
 #if PXR_VERSION >= 2108
-static constexpr char kBindMaterialToSelectionItem[] = "Assign Material to Selection";
-static constexpr char kBindMaterialToSelectionLabel[] = "Assign Material to Selection";
+static constexpr char    kBindMaterialToSelectionItem[] = "Assign Material to Selection";
+static constexpr char    kBindMaterialToSelectionLabel[] = "Assign Material to Selection";
+static constexpr char    kAssignNewMaterialItem[] = "Assign New Material";
+static constexpr char    kAssignNewMaterialLabel[] = "Assign New Material";
+static constexpr char    kAssignNewUsdMaterialItem[] = "USD Material";
+static constexpr char    kAssignNewUsdMaterialLabel[] = "USD";
+static constexpr char    kAssignNewMaterialXMaterialItem[] = "MaterialX Material";
+static constexpr char    kAssignNewMaterialXMaterialLabel[] = "MaterialX";
+static constexpr char    kAssignNewArnoldMaterialItem[] = "Arnold Material";
+static constexpr char    kAssignNewArnoldMaterialLabel[] = "Arnold";
+static constexpr char    kAssignNewUsdPreviewSurfaceMaterialItem[] = "Usd Preview Surface";
+static constexpr char    kAssignNewUsdPreviewSurfaceMaterialLabel[] = "Usd Preview Surface";
+static constexpr char    kAssignNewStandardSurfaceMaterialItem[] = "Standard Surface";
+static constexpr char    kAssignNewStandardSurfaceMaterialLabel[] = "Standard Surface";
+static constexpr char    kAssignNewAIStandardSurfaceMaterialItem[] = "AI Standard Surface";
+static constexpr char    kAssignNewAIStandardSurfaceMaterialLabel[] = "AI Standard Surface";
 #endif
 
 #if PXR_VERSION >= 2008
@@ -963,6 +978,8 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                 ClearAllReferencesUndoableCommand::commandName);
         }
 
+        items.emplace_back(Ufe::ContextItem::kSeparator);
+        items.emplace_back(kAssignNewMaterialItem, kAssignNewMaterialLabel, Ufe::ContextItem::kHasChildren);
     } else {
         if (itemPath[0] == kUSDVariantSetsItem) {
             UsdVariantSets           varSets = prim().GetVariantSets();
@@ -1079,6 +1096,16 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                     }
                 }
             }
+        } else if (itemPath.size() == 1u && itemPath[0] == kAssignNewMaterialItem) {
+            items.emplace_back(kAssignNewUsdMaterialItem, kAssignNewUsdMaterialLabel, Ufe::ContextItem::kHasChildren);
+            items.emplace_back(kAssignNewMaterialXMaterialItem, kAssignNewMaterialXMaterialLabel, Ufe::ContextItem::kHasChildren);
+            items.emplace_back(kAssignNewArnoldMaterialItem, kAssignNewArnoldMaterialLabel, Ufe::ContextItem::kHasChildren);
+        } else if(itemPath.size() == 2u && itemPath[1] == kAssignNewUsdMaterialItem) {
+            items.emplace_back(kAssignNewUsdPreviewSurfaceMaterialItem, kAssignNewUsdPreviewSurfaceMaterialLabel);
+        } else if(itemPath.size() == 2u && itemPath[1] == kAssignNewMaterialXMaterialItem) {
+            items.emplace_back(kAssignNewStandardSurfaceMaterialItem, kAssignNewStandardSurfaceMaterialLabel);
+        } else if(itemPath.size() == 2u && itemPath[1] == kAssignNewArnoldMaterialItem) {
+            items.emplace_back(kAssignNewAIStandardSurfaceMaterialItem, kAssignNewAIStandardSurfaceMaterialLabel);
         }
 #endif
     } // Top-level items
@@ -1205,6 +1232,36 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         return compositeCmd;
     } else if (itemPath[0] == UnbindMaterialUndoableCommand::commandName) {
         return std::make_shared<UnbindMaterialUndoableCommand>(fItem->prim());
+    } else if(itemPath.size() == 3u && itemPath[2] == kAssignNewUsdPreviewSurfaceMaterialItem) {
+        if (fItem)
+        {
+            return UsdUndoCreateMaterialNodeCommand::create(
+                fItem,
+                "material",
+                "ND_standard_surface_surfaceshader",
+                Ufe::PathComponent("standardSurface")
+            );
+        }
+    } else if(itemPath.size() == 3u && itemPath[2] == kAssignNewStandardSurfaceMaterialItem) {
+        if (fItem)
+        {
+            return UsdUndoCreateMaterialNodeCommand::create(
+                fItem,
+                "material",
+                "ND_standard_surface_surfaceshader",
+                Ufe::PathComponent("standardSurface")
+            );
+        }
+    } else if(itemPath.size() == 3u && itemPath[2] == kAssignNewAIStandardSurfaceMaterialItem) {
+        if (fItem)
+        {
+            return UsdUndoCreateMaterialNodeCommand::create(
+                fItem,
+                "material",
+                "ND_standard_surface_surfaceshader",
+                Ufe::PathComponent("standardSurface")
+            );
+        }
     }
 #endif
     return nullptr;
