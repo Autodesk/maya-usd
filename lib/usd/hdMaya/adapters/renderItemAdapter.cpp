@@ -420,8 +420,10 @@ void HdMayaRenderItemAdapter::UpdateTopology(MRenderItem& ri)
 
 void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flags)
 { 
-    if (_primitive != MHWRender::MGeometry::Primitive::kTriangles)
+    if (_primitive != MHWRender::MGeometry::Primitive::kTriangles
+        && _primitive != MHWRender::MGeometry::Primitive::kLines) {
         return;
+    }
 
     const bool isNew = flags & 1;         // MViewPortScene::MVS_new;  //not used yet
     const bool matrixChanged = flags & 2; // MViewPortScene::MVS_matrix;
@@ -446,8 +448,8 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
     if (geomChanged | topoChanged) {
         geom = ri.geometry();
     }
-    VtIntArray faceVertexIndices;
-    VtIntArray faceVertexCounts;
+    VtIntArray vertexIndices;
+    VtIntArray vertexCounts;
     // TODO : Multiple streams
     // for now assume first is position
 
@@ -484,7 +486,7 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
     if (topoChanged && geom && geom->vertexBufferCount() > 0) {
         if (indices = geom->indexBuffer(0)) {
             int indexCount = indices->size();
-            faceVertexIndices.resize(indexCount);
+            vertexIndices.resize(indexCount);
             int* indicesData = (int*)indices->map();
             // USD spamming the "topology references only upto element" message is super
             // slow.  Scanning the index array to look for an incompletely used vertex
@@ -499,8 +501,8 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
             }
 
             // VtArray operator[] is oddly expensive, ~10ms per frame here. Replace with assign().
-            // for (int i = 0; i < indexCount; i++) faceVertexIndices[i] = indicesData[i];
-            faceVertexIndices.assign(indicesData, indicesData + indexCount);
+            // for (int i = 0; i < indexCount; i++) vertexIndices[i] = indicesData[i];
+            vertexIndices.assign(indicesData, indicesData + indexCount);
 
             if (maxIndex < _positions.size() - 1) {
                 _positions.resize(maxIndex + 1);
@@ -508,14 +510,14 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
 
             switch (_primitive) {
             case MHWRender::MGeometry::Primitive::kTriangles:
-                faceVertexCounts.resize(indexCount / 3);
-                // for (int i = 0; i < indexCount / 3; i++) faceVertexCounts[i] = 3;
-                faceVertexCounts.assign(indexCount / 3, 3);
+                vertexCounts.resize(indexCount / 3);
+                // for (int i = 0; i < indexCount / 3; i++) vertexCounts[i] = 3;
+                vertexCounts.assign(indexCount / 3, 3);
                 break;
             case MHWRender::MGeometry::Primitive::kLines:
-                faceVertexCounts.resize(indexCount);
-                // for (int i = 0; i < indexCount; i++) faceVertexCounts[i] = 1;
-                faceVertexCounts.assign(indexCount / 2, 2);
+                vertexCounts.resize(indexCount);
+                // for (int i = 0; i < indexCount; i++) vertexCounts[i] = 1;
+                vertexCounts.assign(indexCount / 2, 2);
                 break;
             }
             indices->unmap();
@@ -534,20 +536,32 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
 
     if (indices && verts) {
         if (topoChanged) {
-            // TODO: Maybe we could use the flat shading of the display style?
-            _topology.reset(new HdMeshTopology(
+            if (_primitive == MHWRender::MGeometry::Primitive::kTriangles) {
+
+                // TODO: Maybe we could use the flat shading of the display style?
+                _topology.reset(new HdMeshTopology(
 #if MAYA_APP_VERSION >= 2019
-                (GetDelegate()->GetParams().displaySmoothMeshes
-                 || GetDisplayStyle().refineLevel > 0)
-                    ? PxOsdOpenSubdivTokens->catmullClark
-                    : PxOsdOpenSubdivTokens->none,
+                    (GetDelegate()->GetParams().displaySmoothMeshes
+                     || GetDisplayStyle().refineLevel > 0)
+                        ? PxOsdOpenSubdivTokens->catmullClark
+                        : PxOsdOpenSubdivTokens->none,
 #else
-                GetDelegate()->GetParams().displaySmoothMeshes ? PxOsdOpenSubdivTokens->catmullClark
-                                                               : PxOsdOpenSubdivTokens->none,
+                    GetDelegate()->GetParams().displaySmoothMeshes
+                        ? PxOsdOpenSubdivTokens->catmullClark
+                        : PxOsdOpenSubdivTokens->none,
 #endif
-                UsdGeomTokens->rightHanded,
-                faceVertexCounts,
-                faceVertexIndices));
+                    UsdGeomTokens->rightHanded,
+                    vertexCounts,
+                    vertexIndices));
+            } else if (_primitive == MHWRender::MGeometry::Primitive::kLines) {
+                _topology.reset(new HdBasisCurvesTopology(
+                    HdTokens->linear,
+                    // basis type is ignored, due to linear curve type
+                    {},
+                    HdTokens->segmented,
+                    vertexCounts,
+                    vertexIndices));
+            }
         }
     }
 
