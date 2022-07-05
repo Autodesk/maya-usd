@@ -146,7 +146,7 @@ class MetaDataCustomControl(object):
             for k in allMetadata:
                 # All extra metadata is for display purposes only - it is not editable, but we
                 # allow keyboard focus so you copy the value.
-                mdLabel = mayaUsdLib.Util.PrettifyName(k) if self.useNiceName else k
+                mdLabel = mayaUsdLib.Util.prettifyName(k) if self.useNiceName else k
                 self.extraMetadata[k] = cmds.textFieldGrp(label=mdLabel, editable=False, enableKeyboardFocus=True)
 
         # Update all metadata values.
@@ -243,7 +243,7 @@ class ArrayCustomControl(object):
             typeNameStr = str(typeName.scalarType)
             typeNameStr += ("[" + str(len(values)) + "]") if hasValue else "[]"
 
-            attrLabel = mayaUsdLib.Util.PrettifyName(self.attrName) if self.useNiceName else self.attrName
+            attrLabel = mayaUsdLib.Util.prettifyName(self.attrName) if self.useNiceName else self.attrName
             singleWidgetWidth = mel.eval('global int $gAttributeEditorTemplateSingleWidgetWidth; $gAttributeEditorTemplateSingleWidgetWidth += 0')
             with AEUITemplate():
                 # See comment in ConnectionsCustomControl below for why nc=5.
@@ -313,7 +313,7 @@ class ConnectionsCustomControl(object):
             attrLabel = str(ufeAttr.getMetadata("uiname"))
 
             if not attrLabel:
-                attrLabel = mayaUsdLib.Util.PrettifyName(self.attrName)
+                attrLabel = mayaUsdLib.Util.prettifyName(self.attrName)
         attrType = attr.GetMetadata('typeName')
 
         singleWidgetWidth = mel.eval('global int $gAttributeEditorTemplateSingleWidgetWidth; $gAttributeEditorTemplateSingleWidgetWidth += 0')
@@ -486,7 +486,7 @@ class AETemplate(object):
                 schemaTypeName = schemaTypeName.replace(p, r, 1)
                 break
 
-        schemaTypeName = mayaUsdLib.Util.PrettifyName(schemaTypeName)
+        schemaTypeName = mayaUsdLib.Util.prettifyName(schemaTypeName)
 
         # if the schema name ends with "api", replace it with
         # "API" and make sure to only replace the last occurence.
@@ -511,7 +511,7 @@ class AETemplate(object):
         # Hide all outputs:
         for name in nodeDef.GetOutputNames():
             self.suppress(UsdShade.Utils.GetFullName(name, UsdShade.AttributeType.Output))
-        with ufeAeTemplate.Layout(self, "Shader: " + mayaUsdLib.Util.PrettifyName(label)):
+        with ufeAeTemplate.Layout(self, "Shader: " + mayaUsdLib.Util.prettifyName(label)):
             pages = nodeDef.GetPages()
             if len(pages) == 1 and not pages[0]:
                 pages = []
@@ -528,7 +528,7 @@ class AETemplate(object):
                             name = UsdShade.Utils.GetFullName(name, UsdShade.AttributeType.Input)
                             attrsToAdd.append(name)
                     if attrsToAdd:
-                        with ufeAeTemplate.Layout(self, mayaUsdLib.Util.PrettifyName(pageLabel), collapse):
+                        with ufeAeTemplate.Layout(self, mayaUsdLib.Util.prettifyName(pageLabel), collapse):
                             self.addControls(attrsToAdd)
             else:
                 attrsToAdd = []

@@ -1677,15 +1677,15 @@ class AttributeTestCase(unittest.TestCase):
 
     def testNamePrettification(self):
         '''Test the name prettification routine.'''
-        self.assertEqual(mayaUsdLib.Util.PrettifyName("standard_surface"), "Standard Surface")
-        self.assertEqual(mayaUsdLib.Util.PrettifyName("standardSurface"), "Standard Surface")
-        self.assertEqual(mayaUsdLib.Util.PrettifyName("UsdPreviewSurface"), "Usd Preview Surface")
-        self.assertEqual(mayaUsdLib.Util.PrettifyName("USDPreviewSurface"), "USD Preview Surface")
-        self.assertEqual(mayaUsdLib.Util.PrettifyName("ior"), "Ior")
-        self.assertEqual(mayaUsdLib.Util.PrettifyName("IOR"), "IOR")
-        self.assertEqual(mayaUsdLib.Util.PrettifyName("specular_IOR"), "Specular IOR")
+        self.assertEqual(mayaUsdLib.Util.prettifyName("standard_surface"), "Standard Surface")
+        self.assertEqual(mayaUsdLib.Util.prettifyName("standardSurface"), "Standard Surface")
+        self.assertEqual(mayaUsdLib.Util.prettifyName("UsdPreviewSurface"), "Usd Preview Surface")
+        self.assertEqual(mayaUsdLib.Util.prettifyName("USDPreviewSurface"), "USD Preview Surface")
+        self.assertEqual(mayaUsdLib.Util.prettifyName("ior"), "Ior")
+        self.assertEqual(mayaUsdLib.Util.prettifyName("IOR"), "IOR")
+        self.assertEqual(mayaUsdLib.Util.prettifyName("specular_IOR"), "Specular IOR")
         # This is as expected as we do not insert space on digit<->alpha transitions:
-        self.assertEqual(mayaUsdLib.Util.PrettifyName("Dx11Shader"), "Dx11Shader")
+        self.assertEqual(mayaUsdLib.Util.prettifyName("Dx11Shader"), "Dx11Shader")
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

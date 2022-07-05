@@ -79,7 +79,7 @@ static const MetadataMap _metaMap = {
     { "uiname",
       [](const PXR_NS::SdrShaderProperty& p) {
           return !p.GetLabel().IsEmpty() ? p.GetLabel().GetString()
-                                         : UsdMayaUtil::PrettifyName(p.GetName().GetString());
+                                         : UsdMayaUtil::prettifyName(p.GetName().GetString());
       } },
     { "doc",
       [](const PXR_NS::SdrShaderProperty& p) {

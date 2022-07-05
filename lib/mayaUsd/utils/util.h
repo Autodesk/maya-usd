@@ -295,7 +295,7 @@ std::string SanitizeName(const std::string& name);
 /// Replace underscore by space and capitalize next letter
 /// Always capitalize first letter
 MAYAUSD_CORE_PUBLIC
-std::string PrettifyName(const std::string& name);
+std::string prettifyName(const std::string& name);
 
 // This to allow various pipeline to sanitize the colorset name for output
 MAYAUSD_CORE_PUBLIC
