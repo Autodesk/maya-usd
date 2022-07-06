@@ -103,6 +103,13 @@ else()
     )
 endif()
 
+if (MAYA_HAS_DISPLAY_LAYER_API)
+    list(APPEND TEST_SCRIPT_FILES
+        testDisplayLayer.py
+        )
+endif()
+
+
 foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})
     mayaUsd_add_test(${target}
