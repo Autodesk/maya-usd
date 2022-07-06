@@ -36,11 +36,11 @@
 #include <maya/MObject.h>
 #include <maya/MObjectArray.h>
 #include <maya/MPxSubSceneOverride.h>
-#include <ufe/path.h>
 
 #include <memory>
 #if defined(WANT_UFE_BUILD)
 #include <ufe/observer.h>
+#include <ufe/path.h>
 #endif
 
 // Conditional compilation due to Maya API gap.
