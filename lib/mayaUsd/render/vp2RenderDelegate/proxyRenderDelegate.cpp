@@ -1173,7 +1173,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         topLevelInstanceIndex = instancerContext.front().second;
     }
 #else
-    SdfPath usdPath = GetScenePrimPath(rprimId, instanceIndex);
+    SdfPath                         usdPath = GetScenePrimPath(rprimId, instanceIndex);
 #endif
 
     // If update for selection is enabled, we can query the Maya selection list
@@ -1185,9 +1185,9 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     const UsdPointInstancesPickMode& pointInstancesPickMode = _pointInstancesPickMode;
     const MGlobal::ListAdjustment&   listAdjustment = _globalListAdjustment;
 #else
-    const TfToken selectionKind = GetSelectionKind();
+    const TfToken                   selectionKind = GetSelectionKind();
     const UsdPointInstancesPickMode pointInstancesPickMode = GetPointInstancesPickMode();
-    const MGlobal::ListAdjustment listAdjustment = GetListAdjustment();
+    const MGlobal::ListAdjustment   listAdjustment = GetListAdjustment();
 #endif
 
     UsdPrim       prim = _proxyShapeData->UsdStage()->GetPrimAtPath(usdPath);
@@ -1273,7 +1273,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     auto ufeSel = Ufe::NamedSelection::get("MayaSelectTool");
     ufeSel->append(si);
 #else
-    auto globalSelection = Ufe::GlobalSelection::get();
+    auto                            globalSelection = Ufe::GlobalSelection::get();
 
     switch (listAdjustment) {
     case MGlobal::kReplaceList:
