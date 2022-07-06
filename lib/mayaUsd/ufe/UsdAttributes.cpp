@@ -127,12 +127,11 @@ Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4008)
     Ufe::NodeDef::Ptr nodeDef = UsdAttributes::nodeDef();
-    if (!nodeDef) {
-        return Ufe::Attribute::kInvalid;
-    }
-    Ufe::AttributeDef::ConstPtr attrDef = nameToAttrDef(tok, nodeDef);
-    if (attrDef) {
-        return attrDef->type();
+    if (nodeDef) {
+        Ufe::AttributeDef::ConstPtr attrDef = nameToAttrDef(tok, nodeDef);
+        if (attrDef) {
+            return attrDef->type();
+        }
     }
 #endif
 #endif
@@ -167,16 +166,20 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
     }
 #endif
 #endif
+    bool canCreateAttribute = usdAttr.IsValid();
     if (usdAttr.IsValid()) {
         newAttrType = attributeType(name);
     }
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4008)
-    else if (!nodeDef) {
-        return nullptr;
+    if (nodeDef) {
+        canCreateAttribute = true;
     }
 #endif
 #endif
+    if (!canCreateAttribute) {
+        return nullptr;
+    }
 
     // Use a map of constructors to reduce the number of string comparisons. Since the naming
     // convention is extremely uniform, let's use a macro to simplify definition (and prevent
@@ -189,10 +192,10 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
                const PXR_NS::UsdPrim&             prim,                   \
                const Ufe::AttributeDef::ConstPtr& attrDef,                \
                const PXR_NS::UsdAttribute&        usdAttr) {                     \
-                if (usdAttr) {                                            \
-                    return UsdAttribute##TYPE::create(si, usdAttr);       \
-                } else {                                                  \
+                if (attrDef) {                                            \
                     return UsdAttribute##TYPE::create(si, prim, attrDef); \
+                } else {                                                  \
+                    return UsdAttribute##TYPE::create(si, usdAttr);       \
                 }                                                         \
             }                                                             \
     }

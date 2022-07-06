@@ -62,12 +62,6 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         )
     endif()
 
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4007)
-        list(APPEND TEST_SCRIPT_FILES
-            testLight.py
-        )
-    endif()
-
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4013)
         list(APPEND TEST_SCRIPT_FILES
             testSceneSegment.py
@@ -79,6 +73,12 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
             testShaderNodeDef.py
         )
     endif()
+endif()
+
+if (UFE_LIGHTS_SUPPORT)
+    list(APPEND TEST_SCRIPT_FILES
+        testLight.py
+    )
 endif()
 
 if (MAYA_API_VERSION VERSION_GREATER_EQUAL 20220100)
@@ -112,6 +112,8 @@ foreach(script ${TEST_SCRIPT_FILES})
             "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_SOURCE_DIR}/ufeTestPlugins"
             "UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}"
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+            "USD_HAS_COLOR4_SDR_SUPPORT=${USD_HAS_COLOR4_SDR_SUPPORT}"
+            "USD_HAS_MX_METADATA_SUPPORT=${USD_HAS_MX_METADATA_SUPPORT}"
     )
 
     # Add a ctest label to these tests for easy filtering.

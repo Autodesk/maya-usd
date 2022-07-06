@@ -287,6 +287,16 @@ std::string stripNamespaces(const std::string& nodeName, const int nsDepth = -1)
 MAYAUSD_CORE_PUBLIC
 std::string SanitizeName(const std::string& name);
 
+/// Return a prettified name from camelCase or snake_case source.
+///
+/// Put a space in the name when preceded by a capital letter.
+/// Exceptions: Number followed by capital
+///            Multiple capital letters together
+/// Replace underscore by space and capitalize next letter
+/// Always capitalize first letter
+MAYAUSD_CORE_PUBLIC
+std::string prettifyName(const std::string& name);
+
 // This to allow various pipeline to sanitize the colorset name for output
 MAYAUSD_CORE_PUBLIC
 std::string SanitizeColorSetName(const std::string& name);
