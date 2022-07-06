@@ -228,8 +228,7 @@ UsdMayaPrimUpdater::PushCopySpecs PxrUsdTranslators_MayaReferenceUpdater::pushCo
             MayaUsdUtils::MergePrimsOptions options;
             options.ignoreUpperLayerOpinions = true;
             MayaUsdUtils::mergePrims(
-               srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath, options);
-            
+                srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath, options);
         }
     }
 
