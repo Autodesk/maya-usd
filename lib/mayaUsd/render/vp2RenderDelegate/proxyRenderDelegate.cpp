@@ -349,6 +349,7 @@ void SelectionChangedCB(void* data)
 #endif
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
+#ifdef MAYA_HAS_NEW_DISPLAY_LAYER_MESSAGING_API
 void displayLayerMembershipChangedCB(void* data, const MString& memberPath)
 {
     ProxyRenderDelegate* prd = static_cast<ProxyRenderDelegate*>(data);
@@ -356,6 +357,18 @@ void displayLayerMembershipChangedCB(void* data, const MString& memberPath)
         prd->DisplayLayerMembershipChanged(memberPath);
     }
 }
+#else
+void displayLayerMembershipChangedCB(void* data)
+{
+    ProxyRenderDelegate* prd = static_cast<ProxyRenderDelegate*>(data);
+    if (prd) {
+        for (const auto& stage : MayaUsd::ufe::getAllStages()) {
+            auto stagePath = Ufe::PathString::string(MayaUsd::ufe::stagePath(stage));
+            prd->DisplayLayerMembershipChanged(MString(stagePath.c_str()));
+        }
+    }
+}
+#endif
 
 void displayLayerDirtyCB(MObject& node, void* clientData)
 {
@@ -670,7 +683,11 @@ void ProxyRenderDelegate::_InitRenderDelegate()
         }
         if (!_mayaDisplayLayerMembersCallbackId) {
             _mayaDisplayLayerMembersCallbackId
+#ifdef MAYA_HAS_NEW_DISPLAY_LAYER_MESSAGING_API
                 = MDisplayLayerMessage::addDisplayLayerMemberChangedCallback(
+#else
+                = MDisplayLayerMessage::addDisplayLayerMembersChangedCallback(
+#endif
                     displayLayerMembershipChangedCB, this);
         }
 #endif
