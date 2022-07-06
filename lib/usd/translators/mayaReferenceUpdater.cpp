@@ -182,8 +182,8 @@ UsdMayaPrimUpdater::PushCopySpecs PxrUsdTranslators_MayaReferenceUpdater::pushCo
     UsdStageRefPtr srcStage,
     SdfLayerRefPtr srcLayer,
     const SdfPath& srcSdfPath,
-    UsdStageRefPtr /* dstStage */,
-    SdfLayerRefPtr /* dstLayer */,
+    UsdStageRefPtr dstStage,
+    SdfLayerRefPtr dstLayer,
     const SdfPath& dstSdfPath)
 {
     // We need context to access user arguments
@@ -205,30 +205,48 @@ UsdMayaPrimUpdater::PushCopySpecs PxrUsdTranslators_MayaReferenceUpdater::pushCo
     (*dstEditRouter)(routerContext, routingData);
 
     // Retrieve the destination layer and prim path from the routing data.
-    auto dstLayerStr = findValue(routingData, TfToken("layer"));
-    if (!TF_VERIFY(!dstLayerStr.empty())) {
+    auto cacheDstLayerStr = findValue(routingData, TfToken("layer"));
+    if (!TF_VERIFY(!cacheDstLayerStr.empty())) {
         return PushCopySpecs::Failed;
     }
-    auto dstPathStr = findValue(routingData, TfToken("path"));
-    if (!TF_VERIFY(!dstPathStr.empty())) {
+    auto cacheDstPathStr = findValue(routingData, TfToken("path"));
+    if (!TF_VERIFY(!cacheDstPathStr.empty())) {
         return PushCopySpecs::Failed;
     }
 
-    auto dstLayer = SdfLayer::FindOrOpen(dstLayerStr);
-    if (!TF_VERIFY(dstLayer)) {
+    // Copy transform changes that came from the Maya transform node into the
+    // Maya reference prim.  The Maya transform node changes have already been
+    // exported into the temporary layer as a transform prim, which is our
+    // source.  The destination prim in the stage is the Maya reference prim.
+    auto srcPrim = srcStage->GetPrimAtPath(srcSdfPath);
+    if (TF_VERIFY(UsdGeomXformable(srcPrim))) {
+        auto dstPrim = dstStage->GetPrimAtPath(dstSdfPath);
+        if (TF_VERIFY(UsdGeomXformable(dstPrim))) {
+            // The Maya transform that corresponds to the Maya reference prim
+            // only has its transform attributes unlocked.  Bring any transform
+            // attribute edits over to the Maya reference prim.
+            MayaUsdUtils::MergePrimsOptions options;
+            options.ignoreUpperLayerOpinions = true;
+            MayaUsdUtils::mergePrims(
+               srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath, options);
+            
+        }
+    }
+
+    auto cacheDstLayer = SdfLayer::FindOrOpen(cacheDstLayerStr);
+    if (!TF_VERIFY(cacheDstLayer)) {
         return PushCopySpecs::Failed;
     }
-    SdfPath dstPath(dstPathStr);
 
     // The Maya reference is meant as a cache, and therefore fully
     // overwritten, so we don't call MayaUsdUtils::mergePrims().
-    if (SdfCopySpec(srcLayer, srcSdfPath, dstLayer, dstPath)) {
+    if (SdfCopySpec(srcLayer, srcSdfPath, cacheDstLayer, SdfPath(cacheDstPathStr))) {
         const MObject& parentNode = getMayaObject();
         UsdMayaTranslatorMayaReference::UnloadMayaReference(parentNode);
 
-        auto dstLayerStr = findValue(routingData, TfToken("save_layer"));
-        if (dstLayerStr == "yes")
-            dstLayer->Save();
+        auto saveLayer = findValue(routingData, TfToken("save_layer"));
+        if (saveLayer == "yes")
+            cacheDstLayer->Save();
 
         // No further traversal should take place.
         return PushCopySpecs::Prune;
