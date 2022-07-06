@@ -23,8 +23,6 @@
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/stageData.h>
-#include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/selectability.h>
 
 #include <pxr/base/tf/diagnostic.h>
@@ -69,6 +67,7 @@
 #endif
 
 #if defined(WANT_UFE_BUILD)
+#include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
 
