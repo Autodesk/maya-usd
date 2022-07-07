@@ -17,6 +17,7 @@
 #define PROXY_RENDER_DELEGATE
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hd/selection.h>
@@ -37,9 +38,9 @@
 #include <maya/MPxSubSceneOverride.h>
 
 #include <memory>
-
 #if defined(WANT_UFE_BUILD)
 #include <ufe/observer.h>
+#include <ufe/path.h>
 #endif
 
 // Conditional compilation due to Maya API gap.
@@ -177,10 +178,16 @@ public:
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
     MAYAUSD_CORE_PUBLIC
-    void DisplayLayerMembershipChanged();
+    static void DisplayLayerAdded(MObject& node, void* clientData);
 
     MAYAUSD_CORE_PUBLIC
-    void DisplayLayerDirty(MObject& node);
+    static void DisplayLayerRemoved(MObject& node, void* clientData);
+
+    MAYAUSD_CORE_PUBLIC
+    void DisplayLayerMembershipChanged(const MString& memberPath);
+
+    MAYAUSD_CORE_PUBLIC
+    void DisplayLayerDirty(MFnDisplayLayer& displayLayer);
 #endif
 
     MAYAUSD_CORE_PUBLIC
@@ -237,7 +244,9 @@ private:
     void _UpdateRenderTags();
     void _ClearRenderDelegate();
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
-    void _UpdateDisplayLayers();
+    void _DirtyUfeSubtree(const Ufe::Path& rootPath);
+    void _DirtyUfeSubtree(const MString& rootStr);
+    void _DirtyUsdSubtree(const UsdPrim& prim);
     void _RequestRefresh();
 #endif
     SdfPathVector
@@ -308,15 +317,15 @@ private:
     bool _selectionChanged { true }; //!< Whether there is any selection change or not
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
+    using NodeHandleToCallbackIdMap = UsdMayaUtil::MObjectHandleUnorderedMap<MCallbackId>;
+
     bool _refreshRequested {
         false
     }; //!< True if the render delegate has already requested a refresh.
-    bool _displayLayerMembershipChanged {
-        false
-    }; //~< Whether or not there is any display layer membership changes.
-    MCallbackId              _mayaDisplayLayerMembersCallbackId { 0 };
-    MObjectArray             _mayaDisplayLayers;
-    std::vector<MCallbackId> _mayaDisplayLayerCallbacks;
+    MCallbackId               _mayaDisplayLayerAddedCallbackId { 0 };
+    MCallbackId               _mayaDisplayLayerRemovedCallbackId { 0 };
+    MCallbackId               _mayaDisplayLayerMembersCallbackId { 0 };
+    NodeHandleToCallbackIdMap _mayaDisplayLayerDirtyCallbackIds;
 #endif
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
