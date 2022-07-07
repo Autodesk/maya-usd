@@ -408,6 +408,116 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.redo()
         self.assertTrue(capsuleBindAPI.GetDirectBinding().GetMaterialPath().isEmpty)
 
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
+    def testMaterialCreation(self):
+        """This test builds a material using contextOps capabilities."""
+        cmds.file(new=True, force=True)
+
+        # Create a proxy shape with empty stage to start with.
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        # Create a ContextOps interface for the proxy shape.
+        proxyPathSegment = mayaUtils.createUfePathSegment(proxyShape)
+        proxyShapePath = ufe.Path([proxyPathSegment])
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+
+        cmd = contextOps.doOpCmd(['Add New Prim', 'Capsule'])
+        ufeCmd.execute(cmd)
+
+        rootHier = ufe.Hierarchy.hierarchy(proxyShapeItem)
+        self.assertTrue(rootHier.hasChildren())
+        self.assertEqual(len(rootHier.children()), 1)
+
+        capsuleItem = rootHier.children()[-1]
+        contextOps = ufe.ContextOps.contextOps(capsuleItem)
+
+        capsulePrim = usdUtils.getPrimFromSceneItem(capsuleItem)
+        self.assertFalse(capsulePrim.HasAPI(UsdShade.MaterialBindingAPI))
+
+        cmdPS = contextOps.doOpCmd(['Assign New Material', 'USD', 'UsdPreviewSurface'])
+        self.assertIsNotNone(cmdPS)
+        ufeCmd.execute(cmdPS)
+
+        # Complex command. We should now have a fully working preview surface material bound to
+        # the capsule prim:
+        def checkMaterial(self, rootHier, numMat, idx, matType, context, shaderOutputName):
+            self.assertTrue(rootHier.hasChildren())
+            self.assertEqual(len(rootHier.children()), 2)
+
+            def checkItem(self, item, type, path):
+                self.assertEqual(item.nodeType(), type)            
+                prim = usdUtils.getPrimFromSceneItem(item)
+                self.assertEqual(prim.GetPath(), Sdf.Path(path))
+
+            scopeItem = rootHier.children()[-1]
+            checkItem(self, scopeItem, "Scope", "/mtl")
+
+            scopeHier = ufe.Hierarchy.hierarchy(scopeItem)
+            self.assertTrue(scopeHier.hasChildren())
+            self.assertEqual(len(scopeHier.children()), numMat)
+            materialItem = scopeHier.children()[idx]
+            checkItem(self, materialItem, "Material", "/mtl/{0}1".format(matType))
+
+            # Binding and selection are always on the last item:
+            if (numMat - 1 == idx):
+                self.assertTrue(capsulePrim.HasAPI(UsdShade.MaterialBindingAPI))
+                self.assertEqual(UsdShade.MaterialBindingAPI(capsulePrim).GetDirectBinding().GetMaterialPath(),
+                                Sdf.Path("/mtl/{0}1".format(matType)))
+                selection = ufe.GlobalSelection.get()
+                self.assertEqual(len(selection), 1)
+                self.assertEqual(selection.front().nodeName(), "{0}1".format(matType))
+                self.assertEqual(selection.front().nodeType(), "Shader")
+
+
+            hier = ufe.Hierarchy.hierarchy(materialItem)
+            self.assertTrue(hier.hasChildren())
+            self.assertEqual(len(hier.children()), 1)
+            shaderItem = hier.children()[0]
+            checkItem(self, shaderItem, "Shader", "/mtl/{0}1/{0}1".format(matType))
+
+            materialPrim = UsdShade.Material(usdUtils.getPrimFromSceneItem(materialItem))
+            self.assertTrue(materialPrim)
+
+            surfaceOutput = materialPrim.GetSurfaceOutput(context)
+            self.assertTrue(surfaceOutput)
+
+            sourceInfos, invalidPaths = surfaceOutput.GetConnectedSources()
+            self.assertEqual(len(sourceInfos), 1)
+            self.assertEqual(sourceInfos[0].source.GetPath(), Sdf.Path("/mtl/{0}1/{0}1".format(matType)))
+            self.assertEqual(sourceInfos[0].sourceName, shaderOutputName)
+
+        checkMaterial(self, rootHier, 1, 0, "UsdPreviewSurface", "", "surface")
+
+        cmdSS = contextOps.doOpCmd(['Assign New Material', 'MaterialX', 'ND_standard_surface_surfaceshader'])
+        self.assertIsNotNone(cmdSS)
+        ufeCmd.execute(cmdSS)
+
+        checkMaterial(self, rootHier, 2, 0, "UsdPreviewSurface", "", "surface")
+        checkMaterial(self, rootHier, 2, 1, "standard_surface", "mtlx", "out")
+
+        cmds.undo()
+
+        checkMaterial(self, rootHier, 1, 0, "UsdPreviewSurface", "", "surface")
+
+        cmds.redo()
+
+        checkMaterial(self, rootHier, 2, 0, "UsdPreviewSurface", "", "surface")
+        checkMaterial(self, rootHier, 2, 1, "standard_surface", "mtlx", "out")
+
+        cmds.undo()
+        cmds.undo()
+
+        # Not even a mtl scope:
+        self.assertEqual(len(rootHier.children()), 1)
+        self.assertFalse(capsulePrim.HasAPI(UsdShade.MaterialBindingAPI))
+
+        cmds.redo()
+
+        checkMaterial(self, rootHier, 1, 0, "UsdPreviewSurface", "", "surface")
+
+
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testMaterialBindingWithNodeDefHandler(self):

@@ -124,9 +124,15 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
             PRIVATE
                 UsdConnections.cpp
                 UsdConnectionHandler.cpp
-                UsdUndoCreateMaterialNodeCommand.cpp
         )
     endif()
+endif()
+
+if(PXR_VERSION GREATER_EQUAL 2108)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            UsdUndoMaterialCommands.cpp
+    )
 endif()
 
 set(HEADERS
@@ -241,9 +247,14 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         list(APPEND HEADERS
             UsdConnections.h
             UsdConnectionHandler.h
-            UsdUndoCreateMaterialNodeCommand.h
         )
     endif()
+endif()
+
+if(PXR_VERSION GREATER_EQUAL 2108)
+    list(APPEND HEADERS
+        UsdUndoMaterialCommands.h
+    )
 endif()
 
 # -----------------------------------------------------------------------------
