@@ -78,6 +78,7 @@ class DisplayLayerTestCase(unittest.TestCase):
         layer = om.MFnDisplayLayer(mo)
         self.assertEqual(layerName, layer.name())
         self.assertTrue(layer.contains(pathStr))
+        self.assertTrue(pathStr in layer.getMembers().getSelectionStrings())
 
     @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() >= 2, "Requires Display Layer Ufe item rename fix.")
     def testDisplayLayerItemRename(self):
