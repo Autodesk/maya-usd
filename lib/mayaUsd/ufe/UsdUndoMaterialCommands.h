@@ -113,16 +113,14 @@ public:
     void redo() override;
 
 private:
-    bool connectShaderToMaterial(Ufe::SceneItem::Ptr shaderItem, PXR_NS::UsdPrim materialPrim);
+    void connectShaderToMaterial(Ufe::SceneItem::Ptr shaderItem, PXR_NS::UsdPrim materialPrim);
+    void markAsFailed();
 
     const Ufe::Path   _parentPath;
     const std::string _nodeId;
 
-    std::shared_ptr<UsdUndoAddNewPrimCommand>        _createScopeCmd;
-    UndoableCommand::Ptr                             _renameScopeCmd;
-    std::shared_ptr<UsdUndoAddNewPrimCommand>        _createMaterialCmd;
-    std::shared_ptr<UsdUndoCreateFromNodeDefCommand> _createShaderCmd;
-    std::shared_ptr<BindMaterialUndoableCommand>     _bindCmd;
+    size_t                                         _createMaterialCmdIdx = -1;
+    std::shared_ptr<Ufe::CompositeUndoableCommand> _cmds;
 
 }; // UsdUndoAssignNewMaterialCommand
 #endif

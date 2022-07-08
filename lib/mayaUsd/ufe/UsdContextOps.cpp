@@ -254,80 +254,51 @@ const MxShaderMenuEntryVec& getMaterialXSurfaceShaders()
 #endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
-//! \brief Create an Item and select it:
-class BaseCreateAndSelectUndoableCommand : public Ufe::UndoableCommand
-{
-public:
-    BaseCreateAndSelectUndoableCommand(const Ufe::UndoableCommand::Ptr& creationCmd)
-        : _creationCmd(creationCmd)
-    {
-    }
-
-    void redo() override
-    {
-        if (_selectionCmd) {
-            _creationCmd->redo();
-            _selectionCmd->redo();
-        }
-    }
-
-    void undo() override
-    {
-        if (_selectionCmd) {
-            _selectionCmd->undo();
-            _creationCmd->undo();
-        }
-    }
-
-protected:
-    Ufe::UndoableCommand::Ptr _creationCmd;
-    Ufe::UndoableCommand::Ptr _selectionCmd;
-};
-
 //! \brief Create a Prim and select it:
-class UsdUndoAddNewPrimAndSelectCommand : public BaseCreateAndSelectUndoableCommand
+class UsdUndoAddNewPrimAndSelectCommand : public Ufe::CompositeUndoableCommand
 {
 public:
     UsdUndoAddNewPrimAndSelectCommand(
         const MAYAUSD_NS::ufe::UsdUndoAddNewPrimCommand::Ptr& creationCmd)
-        : BaseCreateAndSelectUndoableCommand(creationCmd)
+        : Ufe::CompositeUndoableCommand({ creationCmd })
     {
     }
 
     void execute() override
     {
-        _creationCmd->execute();
-        auto addPrimCmd
-            = std::dynamic_pointer_cast<MAYAUSD_NS::ufe::UsdUndoAddNewPrimCommand>(_creationCmd);
+        auto addPrimCmd = std::dynamic_pointer_cast<MAYAUSD_NS::ufe::UsdUndoAddNewPrimCommand>(
+            cmdsList().front());
+        addPrimCmd->execute();
         // Create the selection command only if the creation succeeded:
         if (!addPrimCmd->newUfePath().empty()) {
             Ufe::Selection newSelection;
             newSelection.append(Ufe::Hierarchy::createItem(addPrimCmd->newUfePath()));
-            _selectionCmd = Ufe::SelectionReplaceWith::createAndExecute(
-                Ufe::GlobalSelection::get(), newSelection);
+            append(Ufe::SelectionReplaceWith::createAndExecute(
+                Ufe::GlobalSelection::get(), newSelection));
         }
     }
 };
 
 //! \brief Create a working Material and select it:
-class InsertChildAndSelectCommand : public BaseCreateAndSelectUndoableCommand
+class InsertChildAndSelectCommand : public Ufe::CompositeUndoableCommand
 {
 public:
     InsertChildAndSelectCommand(const Ufe::InsertChildCommand::Ptr& creationCmd)
-        : BaseCreateAndSelectUndoableCommand(creationCmd)
+        : Ufe::CompositeUndoableCommand({ creationCmd })
     {
     }
 
     void execute() override
     {
-        _creationCmd->execute();
-        auto insertChildCmd = std::dynamic_pointer_cast<Ufe::InsertChildCommand>(_creationCmd);
+        auto insertChildCmd
+            = std::dynamic_pointer_cast<Ufe::InsertChildCommand>(cmdsList().front());
+        insertChildCmd->execute();
         // Create the selection command only if the creation succeeded:
         if (insertChildCmd->insertedChild()) {
             Ufe::Selection newSelection;
             newSelection.append(insertChildCmd->insertedChild());
-            _selectionCmd = Ufe::SelectionReplaceWith::createAndExecute(
-                Ufe::GlobalSelection::get(), newSelection);
+            append(Ufe::SelectionReplaceWith::createAndExecute(
+                Ufe::GlobalSelection::get(), newSelection));
         }
     }
 };
