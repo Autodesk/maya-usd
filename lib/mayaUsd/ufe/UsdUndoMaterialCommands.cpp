@@ -186,10 +186,11 @@ namespace {
 class UndoGuard
 {
 public:
-    UndoGuard(Ufe::UndoableCommand* cmd)
+    explicit UndoGuard(Ufe::UndoableCommand* cmd)
         : _this(cmd)
     {
     }
+
     ~UndoGuard()
     {
         // Incomplete. Undo all stored tasks until we get back to original state.
@@ -244,7 +245,7 @@ void UsdUndoAssignNewMaterialCommand::execute()
         }
     }
     if (scopePath.empty()) {
-        TF_RUNTIME_ERROR("Failed to create materials scope at stage root");
+        // The _createScopeCmd and/or _renameScopeCmd will have emitted errors.
         return;
     }
     //
@@ -266,7 +267,7 @@ void UsdUndoAssignNewMaterialCommand::execute()
         scopeItem, shaderNodeDef->GetFamily().GetString(), "Material");
     _createMaterialCmd->execute();
     if (!_createMaterialCmd->newPrim()) {
-        TF_RUNTIME_ERROR("Could not create material under %s", scopePath.string().c_str());
+        // The _createMaterialCmd will have emitted errors.
         return;
     }
     //
@@ -278,10 +279,7 @@ void UsdUndoAssignNewMaterialCommand::execute()
         shaderNodeDef, materialItem, shaderNodeDef->GetFamily().GetString());
     _createShaderCmd->execute();
     if (!_createShaderCmd->insertedChild()) {
-        TF_RUNTIME_ERROR(
-            "Could not create %s shader under %s",
-            _nodeId.c_str(),
-            _createMaterialCmd->newUfePath().string().c_str());
+        // The _createShaderCmd will have emitted errors.
         return;
     }
     //
@@ -324,14 +322,39 @@ void UsdUndoAssignNewMaterialCommand::undo()
 
 void UsdUndoAssignNewMaterialCommand::redo()
 {
+    if (!_bindCmd) {
+        // Initial execute() call failed to complete.
+        return;
+    }
+    // If redo fails, then there is a bigger problem to fix because the scene state is not what
+    // it should be before redo is called.
+    UndoGuard guard(this);
+
+    // Each subcommand is responsible for emitting error messages on redo. We will not tag extra
+    // messages if a subcommand fails.
     if (_createScopeCmd) {
         _createScopeCmd->redo();
+        if (_createScopeCmd->newUfePath().empty()) {
+            return;
+        }
         _renameScopeCmd->redo();
     }
     _createMaterialCmd->redo();
+    if (_createMaterialCmd->newUfePath().empty()) {
+        return;
+    }
     _createShaderCmd->redo();
-    connectShaderToMaterial(_createShaderCmd->insertedChild(), _createMaterialCmd->newPrim());
+    if (!_createShaderCmd->insertedChild()) {
+        return;
+    }
+    if (!connectShaderToMaterial(
+            _createShaderCmd->insertedChild(), _createMaterialCmd->newPrim())) {
+        return;
+    }
     _bindCmd->redo();
+
+    // Successfully completed the task:
+    guard.markAsCompleted();
 }
 
 bool UsdUndoAssignNewMaterialCommand::connectShaderToMaterial(

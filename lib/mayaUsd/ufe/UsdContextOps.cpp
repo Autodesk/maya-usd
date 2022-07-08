@@ -195,6 +195,7 @@ struct WaitCursor
     ~WaitCursor() { MGlobal::executeCommand("waitCursor -state 0"); }
 };
 
+#if UFE_PREVIEW_VERSION_NUM >= 4010
 //! \brief This check has a 3 seconds slowdown to load all Sdr nodes in the registry. We do it in
 ///        advance in order to not have this 3 seconds delay when the "Assign New Material" submenu
 ///        is built for the first time.
@@ -217,7 +218,7 @@ struct MxShaderMenuEntry
         , _identifier(identifier)
     {
     }
-    std::string        _label;
+    const std::string  _label;
     const std::string& _identifier;
 };
 typedef std::vector<MxShaderMenuEntry> MxShaderMenuEntryVec;
@@ -225,7 +226,8 @@ typedef std::vector<MxShaderMenuEntry> MxShaderMenuEntryVec;
 const MxShaderMenuEntryVec& getMaterialXSurfaceShaders()
 {
     static MxShaderMenuEntryVec mxSurfaceShaders;
-    if (mxSurfaceShaders.empty()) {
+    static bool                 initialized = false;
+    if (!initialized) {
         auto& sdrRegistry = PXR_NS::SdrRegistry::GetInstance();
         // Here is a list of nodes we know work fine as starting materials for the contextual menu.
         // We might add discovery code later, but this discovery code will have the difficult task
@@ -233,20 +235,23 @@ const MxShaderMenuEntryVec& getMaterialXSurfaceShaders()
         //   - utility nodes like ND_add_surfaceshader
         //   - basic building blocks like ND_thin_surface
         //   - shaders that exist only as pure definitions like ND_disney_bsdf_2015_surface
-        const std::vector<std::string> vettedSurfaces = { "ND_standard_surface_surfaceshader",
-                                                          "ND_gltf_pbr_surfaceshader",
-                                                          "ND_UsdPreviewSurface_surfaceshader" };
+        static const std::vector<std::string> vettedSurfaces
+            = { "ND_standard_surface_surfaceshader",
+                "ND_gltf_pbr_surfaceshader",
+                "ND_UsdPreviewSurface_surfaceshader" };
         for (auto&& identifier : vettedSurfaces) {
             auto shaderDef = sdrRegistry.GetShaderNodeByIdentifier(TfToken(identifier));
             if (!shaderDef) {
                 continue;
             }
-            std::string label = UsdMayaUtil::prettifyName(shaderDef->GetFamily().GetString());
+            const std::string label = UsdMayaUtil::prettifyName(shaderDef->GetFamily().GetString());
             mxSurfaceShaders.emplace_back(label, shaderDef->GetIdentifier().GetString());
         }
+        initialized = true;
     }
     return mxSurfaceShaders;
 }
+#endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 //! \brief Create an Item and select it:
