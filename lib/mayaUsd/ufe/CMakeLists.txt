@@ -109,6 +109,12 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
                 UsdShaderAttributeDef.cpp
                 UsdUndoCreateFromNodeDefCommand.cpp
         )
+        if(PXR_VERSION GREATER_EQUAL 2108)
+            target_sources(${PROJECT_NAME}
+                PRIVATE
+                    UsdUndoMaterialCommands.cpp
+            )
+        endif()
     endif()
 
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4013)
@@ -126,13 +132,6 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
                 UsdConnectionHandler.cpp
         )
     endif()
-endif()
-
-if(PXR_VERSION GREATER_EQUAL 2108)
-    target_sources(${PROJECT_NAME}
-        PRIVATE
-            UsdUndoMaterialCommands.cpp
-    )
 endif()
 
 set(HEADERS
@@ -234,6 +233,11 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
             UsdShaderAttributeDef.h
             UsdUndoCreateFromNodeDefCommand.h
         )
+        if(PXR_VERSION GREATER_EQUAL 2108)
+            list(APPEND HEADERS
+                UsdUndoMaterialCommands.h
+            )
+        endif()
     endif()
 
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4013)
@@ -249,12 +253,6 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
             UsdConnectionHandler.h
         )
     endif()
-endif()
-
-if(PXR_VERSION GREATER_EQUAL 2108)
-    list(APPEND HEADERS
-        UsdUndoMaterialCommands.h
-    )
 endif()
 
 # -----------------------------------------------------------------------------
