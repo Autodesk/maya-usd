@@ -15,18 +15,12 @@
 //
 #include "UsdUndoMaterialCommands.h"
 
-#include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
-#include <mayaUsd/ufe/UsdUndoCreateFromNodeDefCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>
 #include <pxr/usd/usd/prim.h>
 
-#include <ufe/attributes.h>
-#include <ufe/connectionUndoableCommands.h>
-#include <ufe/globalSelection.h>
-#include <ufe/observableSelection.h>
 #include <ufe/sceneItemOps.h>
 
 #include <iostream>
@@ -158,6 +152,7 @@ void UnbindMaterialUndoableCommand::redo()
 }
 const std::string UnbindMaterialUndoableCommand::commandName("Unbind Material");
 
+#if (UFE_PREVIEW_VERSION_NUM >= 4010)
 UsdUndoAssignNewMaterialCommand::UsdUndoAssignNewMaterialCommand(
     const UsdSceneItem::Ptr& parentItem,
     const std::string&       nodeId)
@@ -369,6 +364,6 @@ bool UsdUndoAssignNewMaterialCommand::connectShaderToMaterial(
     UsdShadeConnectableAPI::ConnectToSource(materialOutput, shaderOutput);
     return true;
 }
-
+#endif
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

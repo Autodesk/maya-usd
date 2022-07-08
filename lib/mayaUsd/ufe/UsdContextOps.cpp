@@ -53,6 +53,7 @@
 #include <ufe/attribute.h>
 #include <ufe/attributes.h>
 #include <ufe/globalSelection.h>
+#include <ufe/hierarchy.h>
 #include <ufe/object3d.h>
 #include <ufe/observableSelection.h>
 #include <ufe/path.h>
@@ -134,6 +135,7 @@ static constexpr char    kAddMayaReferenceLabel[] = "Add Maya Reference...";
 #if PXR_VERSION >= 2108
 static constexpr char kBindMaterialToSelectionItem[] = "Assign Material to Selection";
 static constexpr char kBindMaterialToSelectionLabel[] = "Assign Material to Selection";
+#if UFE_PREVIEW_VERSION_NUM >= 4010
 static constexpr char kAssignNewMaterialItem[] = "Assign New Material";
 static constexpr char kAssignNewMaterialLabel[] = "Assign New Material";
 static constexpr char kAssignNewUsdMaterialItem[] = "USD Material";
@@ -146,6 +148,7 @@ static constexpr char kAssignNewUsdPreviewSurfaceMaterialItem[] = "UsdPreviewSur
 static constexpr char kAssignNewUsdPreviewSurfaceMaterialLabel[] = "Usd Preview Surface";
 static constexpr char kAssignNewAIStandardSurfaceMaterialItem[] = "arnold:standard_surface";
 static constexpr char kAssignNewAIStandardSurfaceMaterialLabel[] = "AI Standard Surface";
+#endif
 #endif
 
 #if PXR_VERSION >= 2008
@@ -245,6 +248,7 @@ const MxShaderMenuEntryVec& getMaterialXSurfaceShaders()
     return mxSurfaceShaders;
 }
 
+#ifdef UFE_V3_FEATURES_AVAILABLE
 //! \brief Create an Item and select it:
 class BaseCreateAndSelectUndoableCommand : public Ufe::UndoableCommand
 {
@@ -322,6 +326,7 @@ public:
         }
     }
 };
+#endif
 
 //! \brief Undoable command for loading a USD prim.
 class LoadUnloadBaseUndoableCommand : public Ufe::UndoableCommand
@@ -963,10 +968,12 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                             Ufe::ContextItem::kHasChildren);
                     }
                 }
+#if UFE_PREVIEW_VERSION_NUM >= 4010
                 items.emplace_back(
                     kAssignNewMaterialItem,
                     kAssignNewMaterialLabel,
                     Ufe::ContextItem::kHasChildren);
+#endif
             }
             if (fItem->prim().HasAPI<UsdShadeMaterialBindingAPI>()) {
                 UsdShadeMaterialBindingAPI bindingAPI(fItem->prim());
@@ -1100,6 +1107,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                     }
                 }
             }
+#if UFE_PREVIEW_VERSION_NUM >= 4010
         } else if (itemPath.size() == 1u && itemPath[0] == kAssignNewMaterialItem) {
             items.emplace_back(
                 kAssignNewUsdMaterialItem,
@@ -1125,6 +1133,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
         } else if (itemPath.size() == 2u && itemPath[1] == kAssignNewArnoldMaterialItem) {
             items.emplace_back(
                 kAssignNewAIStandardSurfaceMaterialItem, kAssignNewAIStandardSurfaceMaterialLabel);
+#endif
         }
 #endif
     } // Top-level items
@@ -1179,8 +1188,12 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         }
         // At this point we know the last item in the itemPath is the prim type to create
         auto primType = itemPath[itemPath.size() - 1];
+#ifdef UFE_V3_FEATURES_AVAILABLE
         return std::make_shared<UsdUndoAddNewPrimAndSelectCommand>(
             UsdUndoAddNewPrimCommand::create(fItem, primType, primType));
+#else
+        return UsdUndoAddNewPrimCommand::create(fItem, primType, primType);
+#endif
 #ifdef WANT_QT_BUILD
         // When building without Qt there is no LayerEditor
     } else if (itemPath[0] == kUSDLayerEditorItem) {
@@ -1252,11 +1265,13 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         return compositeCmd;
     } else if (itemPath[0] == UnbindMaterialUndoableCommand::commandName) {
         return std::make_shared<UnbindMaterialUndoableCommand>(fItem->prim());
+#if UFE_PREVIEW_VERSION_NUM >= 4010
     } else if (itemPath.size() == 3u && itemPath[0] == kAssignNewMaterialItem) {
         if (fItem) {
             return std::make_shared<InsertChildAndSelectCommand>(
                 UsdUndoAssignNewMaterialCommand::create(fItem, itemPath[2]));
         }
+#endif
     }
 #endif
     return nullptr;

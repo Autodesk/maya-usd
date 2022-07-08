@@ -17,8 +17,10 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
+#if (UFE_PREVIEW_VERSION_NUM >= 4010)
 #include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
 #include <mayaUsd/ufe/UsdUndoCreateFromNodeDefCommand.h>
+#endif
 
 #include <pxr/usd/usd/prim.h>
 
@@ -81,6 +83,7 @@ private:
     PXR_NS::SdfPath         _materialPath;
 };
 
+#if (UFE_PREVIEW_VERSION_NUM >= 4010)
 //! \brief UsdUndoAssignNewMaterialCommand
 class MAYAUSD_CORE_PUBLIC UsdUndoAssignNewMaterialCommand : public Ufe::InsertChildCommand
 {
@@ -122,6 +125,7 @@ private:
     std::shared_ptr<BindMaterialUndoableCommand>     _bindCmd;
 
 }; // UsdUndoAssignNewMaterialCommand
+#endif
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
