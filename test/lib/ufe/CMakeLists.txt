@@ -54,17 +54,17 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     )
 endif()
 
+if (UFE_SCENE_SEGMENT_SUPPORT)
+    list(APPEND TEST_SCRIPT_FILES
+        testSceneSegment.py
+    )
+endif()
+
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
         list(APPEND TEST_SCRIPT_FILES
             testAttributeInfo.py
             testConnections.py
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4013)
-        list(APPEND TEST_SCRIPT_FILES
-            testSceneSegment.py
         )
     endif()
 
