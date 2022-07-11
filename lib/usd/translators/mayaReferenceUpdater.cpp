@@ -227,8 +227,8 @@ UsdMayaPrimUpdater::PushCopySpecs PxrUsdTranslators_MayaReferenceUpdater::pushCo
             // attribute edits over to the Maya reference prim.
             MayaUsdUtils::MergePrimsOptions options;
             options.ignoreUpperLayerOpinions = true;
-            MayaUsdUtils::mergePrims(
-                srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath, options);
+            TF_VERIFY(MayaUsdUtils::mergePrims(
+                srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath, options));
         }
     }
 

@@ -70,6 +70,16 @@ struct UsdMayaTranslatorUtil
     /// contain the \c typeName metadata of \p usdPrim, so the \c typeName will
     /// be applied on export. Otherwise, this attribute will be set to the
     /// empty string, so a typeless def will be generated on export.
+    /// If \p dummyTransformType is
+    /// <tt>UsdMayaDummyTransformType::LockedTransform</tt> (default), all
+    /// Maya transform attributes on the created transform node will be
+    /// locked, not keyable, and not shown in the channel box.  If \p
+    /// dummyTransformType is
+    /// <tt>UsdMayaDummyTransformType::UnlockedTransform</tt>, then the Maya
+    /// transform attributes on the created transform node will be unlocked,
+    /// keyable, and shown in the channel box.  Furthermore, if the argument
+    /// \p usdPrim supports the \p UsdGeomXformable schema, the transform will
+    /// be read from the \p usdPrim and written into the created transform node.
     MAYAUSD_CORE_PUBLIC
     static bool CreateDummyTransformNode(
         const UsdPrim&                  usdPrim,
