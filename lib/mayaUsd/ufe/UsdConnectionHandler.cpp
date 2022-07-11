@@ -33,22 +33,21 @@ namespace ufe {
 
 namespace {
 
-PXR_NS::UsdAttribute usdAttrFromUfeAttr(const Ufe::Attribute::Ptr& attr)
+UsdAttribute* usdAttrFromUfeAttr(const Ufe::Attribute::Ptr& attr)
 {
     if (!attr) {
         TF_RUNTIME_ERROR("Invalid attribute.");
-        return PXR_NS::UsdAttribute();
+        return nullptr;
     }
 
     if (attr->sceneItem()->runTimeId() != getUsdRunTimeId()) {
         TF_RUNTIME_ERROR(
             "Invalid runtime identifier for the attribute '" + attr->name() + "' in the node '"
             + Ufe::PathString::string(attr->sceneItem()->path()) + "'.");
-        return PXR_NS::UsdAttribute();
+        return nullptr;
     }
 
-    UsdAttribute* usd = dynamic_cast<UsdAttribute*>(attr.get());
-    return usd->usdAttribute();
+    return dynamic_cast<UsdAttribute*>(attr.get());
 }
 
 bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttribute& dstUsdAttr)
@@ -88,14 +87,51 @@ bool UsdConnectionHandler::createConnection(
     const Ufe::Attribute::Ptr& srcAttr,
     const Ufe::Attribute::Ptr& dstAttr) const
 {
-    PXR_NS::UsdAttribute srcUsdAttr = usdAttrFromUfeAttr(srcAttr);
-    PXR_NS::UsdAttribute dstUsdAttr = usdAttrFromUfeAttr(dstAttr);
+    UsdAttribute* srcUsdAttr = usdAttrFromUfeAttr(srcAttr);
+    UsdAttribute* dstUsdAttr = usdAttrFromUfeAttr(dstAttr);
 
-    if (!isConnected(srcUsdAttr, dstUsdAttr)) {
-        return dstUsdAttr.AddConnection(srcUsdAttr.GetPath());
+    if (!srcUsdAttr || !dstUsdAttr
+        || isConnected(srcUsdAttr->usdAttribute(), dstUsdAttr->usdAttribute())) {
+        return false;
     }
 
-    // Return a failure because there is already a connection.
+    UsdShadeConnectableAPI srcApi(srcUsdAttr->usdPrim());
+    TfToken                srcBaseName;
+    UsdShadeAttributeType  srcAttrType;
+    std::tie(srcBaseName, srcAttrType)
+        = UsdShadeUtils::GetBaseNameAndType(TfToken(srcAttr->name()));
+
+    UsdShadeConnectableAPI dstApi(dstUsdAttr->usdPrim());
+    TfToken                dstBaseName;
+    UsdShadeAttributeType  dstAttrType;
+    std::tie(dstBaseName, dstAttrType)
+        = UsdShadeUtils::GetBaseNameAndType(TfToken(dstAttr->name()));
+
+    if (srcAttrType == UsdShadeAttributeType::Input) {
+        UsdShadeInput srcInput = srcApi.CreateInput(srcBaseName, srcUsdAttr->usdAttributeType());
+        if (dstAttrType == UsdShadeAttributeType::Input) {
+            UsdShadeInput dstInput
+                = dstApi.CreateInput(dstBaseName, dstUsdAttr->usdAttributeType());
+            return UsdShadeConnectableAPI::ConnectToSource(dstInput, srcInput);
+        } else {
+            UsdShadeOutput dstOutput
+                = dstApi.CreateOutput(dstBaseName, dstUsdAttr->usdAttributeType());
+            return UsdShadeConnectableAPI::ConnectToSource(dstOutput, srcInput);
+        }
+    } else {
+        UsdShadeOutput srcOutput = srcApi.CreateOutput(srcBaseName, srcUsdAttr->usdAttributeType());
+        if (dstAttrType == UsdShadeAttributeType::Input) {
+            UsdShadeInput dstInput
+                = dstApi.CreateInput(dstBaseName, dstUsdAttr->usdAttributeType());
+            return UsdShadeConnectableAPI::ConnectToSource(dstInput, srcOutput);
+        } else {
+            UsdShadeOutput dstOutput
+                = dstApi.CreateOutput(dstBaseName, dstUsdAttr->usdAttributeType());
+            return UsdShadeConnectableAPI::ConnectToSource(dstOutput, srcOutput);
+        }
+    }
+
+    // Return a failure.
     return false;
 }
 
@@ -103,15 +139,16 @@ bool UsdConnectionHandler::deleteConnection(
     const Ufe::Attribute::Ptr& srcAttr,
     const Ufe::Attribute::Ptr& dstAttr) const
 {
-    PXR_NS::UsdAttribute srcUsdAttr = usdAttrFromUfeAttr(srcAttr);
-    PXR_NS::UsdAttribute dstUsdAttr = usdAttrFromUfeAttr(dstAttr);
+    UsdAttribute* srcUsdAttr = usdAttrFromUfeAttr(srcAttr);
+    UsdAttribute* dstUsdAttr = usdAttrFromUfeAttr(dstAttr);
 
-    if (isConnected(srcUsdAttr, dstUsdAttr)) {
-        return dstUsdAttr.RemoveConnection(srcUsdAttr.GetPath());
+    if (!srcUsdAttr || !dstUsdAttr
+        || !isConnected(srcUsdAttr->usdAttribute(), dstUsdAttr->usdAttribute())) {
+        return false;
     }
 
-    // Return a failure because there is no connection.
-    return false;
+    return UsdShadeConnectableAPI::DisconnectSource(
+        dstUsdAttr->usdAttribute(), srcUsdAttr->usdAttribute());
 }
 
 } // namespace ufe
