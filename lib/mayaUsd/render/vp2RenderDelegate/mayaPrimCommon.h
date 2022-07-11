@@ -256,6 +256,9 @@ protected:
     //! Selection status of the Rprim
     HdVP2SelectionStatus _selectionStatus { kUnselected };
 
+    //! HideOnPlayback status of the Rprim
+    bool _hideOnPlayback { false };
+
     //! The string representation of the runtime only path to this object
     MStringArray _PrimSegmentString;
 };

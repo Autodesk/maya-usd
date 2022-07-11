@@ -459,6 +459,15 @@ if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MDisplayLayerMessage.h
     endif()
 endif()
 
+set(MAYA_HAS_RENDER_ITEM_HIDE_ON_PLAYBACK_API FALSE CACHE INTERNAL "hasRenderItemHideOnPlaybackFunction")
+if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MHWGeometry.h")
+    file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MHWGeometry.h MAYA_HAS_API REGEX "isHideOnPlayback")
+    if(MAYA_HAS_API)
+        set(MAYA_HAS_RENDER_ITEM_HIDE_ON_PLAYBACK_API TRUE CACHE INTERNAL "hasRenderItemHideOnPlaybackFunction")
+        message(STATUS "MRenderItem has HideOnPlayback API")
+    endif()
+endif()
+
 set(MAYA_CAMERA_GIZMO_SUPPORT FALSE CACHE INTERNAL "ufeCameraGizmos")
 if (MAYA_API_VERSION VERSION_GREATER_EQUAL 20230200)
     set(MAYA_CAMERA_GIZMO_SUPPORT TRUE CACHE INTERNAL "ufeCameraGizmos")

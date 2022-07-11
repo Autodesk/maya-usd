@@ -586,6 +586,7 @@ void MayaUsdRPrim::_SyncSharedData(
             _MakeOtherReprRenderItemsInvisible(reprToken, reprs);
 
         bool displayLayerVisibility = true; // objects in the default display layer are visible
+        bool hideOnPlayback = false;
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
         // Maya Display Layers do not have a representation in USD, so a prim can be
         // visible from USD's point of view, but hidden from Maya's point of view.
@@ -610,11 +611,25 @@ void MayaUsdRPrim::_SyncSharedData(
             MFnDependencyNode displayLayerNodeFn(ancestorDisplayLayers[i]);
             MPlug             layerEnabled = displayLayerNodeFn.findPlug("enabled");
             MPlug             layerVisible = displayLayerNodeFn.findPlug("visibility");
+            MPlug             layerHidesOnPlayback = displayLayerNodeFn.findPlug("hideOnPlayback");
             displayLayerVisibility &= layerEnabled.asBool() ? layerVisible.asBool() : true;
+            hideOnPlayback |= layerHidesOnPlayback.asBool();
         }
 #endif
         sharedData.visible = usdVisibility && displayLayerVisibility;
+#ifdef MAYA_HAS_RENDER_ITEM_HIDE_ON_PLAYBACK_API
+        // Also update "hide on playback" status
+        if (_hideOnPlayback != hideOnPlayback) {
+            RenderItemFunc setHideOnPlayback
+                    = [hideOnPlayback](HdVP2DrawItem::RenderItemData& renderItemData) {
+                          renderItemData._renderItem->setHideOnPlayback(hideOnPlayback);
+                      };
+            
+            _ForEachRenderItem(reprs, setHideOnPlayback);
+            _hideOnPlayback = hideOnPlayback;
+        }
     }
+#endif
 
 #if PXR_VERSION > 2111
     // Hydra now manages and caches render tags under the hood and is clearing
