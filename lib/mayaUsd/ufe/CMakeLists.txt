@@ -140,6 +140,13 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     endif()
 endif()
 
+if(PXR_VERSION GREATER_EQUAL 2108)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            UsdUndoMaterialCommands.cpp
+    )
+endif()
+
 set(HEADERS
     Global.h
     ProxyShapeHandler.h
@@ -233,15 +240,6 @@ if (UFE_SCENE_SEGMENT_SUPPORT)
 endif()
 
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
-        list(APPEND HEADERS
-            UsdConnections.h
-            UsdConnectionHandler.h
-        )
-    endif()
-endif()
-
-if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4001)
         list(APPEND HEADERS
             UsdShaderNodeDef.h
@@ -261,6 +259,19 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
             ProxyShapeCameraHandler.h
         )
     endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
+        list(APPEND HEADERS
+            UsdConnections.h
+            UsdConnectionHandler.h
+        )
+    endif()
+endif()
+
+if(PXR_VERSION GREATER_EQUAL 2108)
+    list(APPEND HEADERS
+        UsdUndoMaterialCommands.h
+    )
 endif()
 
 # -----------------------------------------------------------------------------
