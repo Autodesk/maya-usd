@@ -24,6 +24,8 @@
 #include "Global.h"
 #include "Utils.h"
 
+#include <mayaUsd/utils/util.h>
+
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/ndr/declare.h>
 #include <pxr/usd/sdf/types.h>
@@ -104,7 +106,7 @@ const Ufe::ConstAttributeDefs& UsdShaderNodeDef::outputs() const { return fOutpu
 std::string UsdShaderNodeDef::type() const
 {
     TF_AXIOM(fShaderNodeDef);
-    return fShaderNodeDef->GetName();
+    return fShaderNodeDef->GetIdentifier();
 }
 
 std::size_t UsdShaderNodeDef::nbClassifications() const
@@ -224,6 +226,24 @@ Ufe::ConstAttributeDefs UsdShaderNodeDef::outputs() const
     return getAttrs<Ufe::AttributeDef::OUTPUT_ATTR>(fShaderNodeDef);
 }
 
+namespace {
+typedef std::unordered_map<std::string, std::function<Ufe::Value(const PXR_NS::SdrShaderNode&)>>
+    MetadataMap;
+static const MetadataMap _metaMap = {
+    // Conversion map between known USD metadata and its MaterialX equivalent:
+    { "uiname",
+      [](const PXR_NS::SdrShaderNode& n) {
+          return !n.GetLabel().IsEmpty() ? n.GetLabel().GetString()
+                                         : UsdMayaUtil::prettifyName(n.GetFamily().GetString());
+      } },
+    { "doc",
+      [](const PXR_NS::SdrShaderNode& n) {
+          return !n.GetHelp().empty() ? n.GetHelp() : Ufe::Value();
+      } },
+    // If Ufe decides to use another completely different convention, it can be added here:
+};
+} // namespace
+
 Ufe::Value UsdShaderNodeDef::getMetadata(const std::string& key) const
 {
     TF_AXIOM(fShaderNodeDef);
@@ -232,8 +252,12 @@ Ufe::Value UsdShaderNodeDef::getMetadata(const std::string& key) const
     if (it != metadata.cend()) {
         return Ufe::Value(it->second);
     }
-    // TODO: Adapt UI metadata information found in SdrShaderNode to Ufe standards
-    // TODO: Fix Mtlx parser in USD to populate UI metadata in SdrShaderNode
+
+    MetadataMap::const_iterator itMapper = _metaMap.find(key);
+    if (itMapper != _metaMap.end()) {
+        return itMapper->second(*fShaderNodeDef);
+    }
+
     return {};
 }
 
@@ -242,7 +266,16 @@ bool UsdShaderNodeDef::hasMetadata(const std::string& key) const
     TF_AXIOM(fShaderNodeDef);
     const NdrTokenMap& metadata = fShaderNodeDef->GetMetadata();
     auto it = metadata.find(TfToken(key));
-    return it != metadata.cend();
+    if (it != metadata.cend()) {
+        return true;
+    }
+
+    MetadataMap::const_iterator itMapper = _metaMap.find(key);
+    if (itMapper != _metaMap.end() && !itMapper->second(*fShaderNodeDef).empty()) {
+        return true;
+    }
+
+    return false;
 }
 
 Ufe::SceneItem::Ptr UsdShaderNodeDef::createNode(
@@ -269,7 +302,8 @@ Ufe::InsertChildCommand::Ptr UsdShaderNodeDef::createNodeCmd(
     TF_AXIOM(fShaderNodeDef);
     UsdSceneItem::Ptr parentItem = std::dynamic_pointer_cast<UsdSceneItem>(parent);
     if (parentItem) {
-        return UsdUndoCreateFromNodeDefCommand::create(fShaderNodeDef, parentItem, name.string());
+        return UsdUndoCreateFromNodeDefCommand::create(
+            fShaderNodeDef, parentItem, UsdMayaUtil::SanitizeName(name.string()));
     }
     return {};
 }

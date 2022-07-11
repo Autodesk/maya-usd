@@ -78,8 +78,10 @@ class testProxyShapeBase(unittest.TestCase):
         self.assertEqual(True, "-session" in stage.GetSessionLayer().identifier)
         self.assertEqual(True, "anonymousLayer1" in stage.GetRootLayer().identifier)
 
-        # add proxyShapeItem to selection list
-        ufe.GlobalSelection.get().append(proxyShapeItem)
+        # Select proxyShapeItem
+        proxySelection = ufe.Selection()
+        proxySelection.append(proxyShapeItem)
+        ufe.GlobalSelection.get().replaceWith(proxySelection)
 
         # duplicate the proxyShape. 
         cmds.duplicate()
@@ -115,7 +117,7 @@ class testProxyShapeBase(unittest.TestCase):
         self.assertEqual(0, len(ufe.Hierarchy.hierarchy(duplProxyShapeItem).children()))
         self.assertEqual(1, len(ufe.Hierarchy.hierarchy(proxyShapeItem).children()))
 
-    @unittest.skipUnless(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') > '4012', 'testDeleteStage requires Ufe Preview Version at least 4013.')
+    @unittest.skipUnless(os.getenv('UFE_SCENE_SEGMENT_SUPPORT', '0') > '0', 'testDeleteStage requires sceneSegment support.')
     def testDeleteStage(self):
         '''
         Verify that we can delete the stage.

@@ -56,10 +56,14 @@ set(PXR_OVERRIDE_PLUGINPATH_NAME PXR_PLUGINPATH_NAME
 # Avoid noisy install messages
 set(CMAKE_INSTALL_MESSAGE "NEVER")
 
-if (BUILD_UB2)
-    set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
-else()
-    set(CMAKE_OSX_ARCHITECTURES "x86_64")
+if(APPLE)
+    if(BUILD_UB2)
+        set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
+        set(CMAKE_OSX_DEPLOYMENT_TARGET 11.0)
+    else()
+        set(CMAKE_OSX_ARCHITECTURES "x86_64")
+        set(CMAKE_OSX_DEPLOYMENT_TARGET 10.14)
+    endif()
 endif()
 
 set(CMAKE_MODULE_PATH

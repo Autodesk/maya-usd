@@ -155,7 +155,6 @@ void UsdMayaShadingModeExporter::DoExport(
                 "Could not get prim at path <%s>. Not exporting material "
                 "collections / bindings.",
                 rootPrimPath.GetText());
-            return;
         }
 
         std::vector<UsdCollectionAPI> collections

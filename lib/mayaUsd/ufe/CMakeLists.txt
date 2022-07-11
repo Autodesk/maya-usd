@@ -94,6 +94,19 @@ if (UFE_LIGHTS_SUPPORT)
     )
 endif()
 
+message(STATUS "UFE_SCENE_SEGMENT_SUPPORT is ${UFE_SCENE_SEGMENT_SUPPORT}")
+if (UFE_SCENE_SEGMENT_SUPPORT)
+    target_sources(${PROJECT_NAME}
+    PRIVATE
+        ProxyShapeSceneSegmentHandler.cpp
+    )
+
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_SCENE_SEGMENT_SUPPORT=1
+    )
+endif()
+
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4001)
         target_sources(${PROJECT_NAME}
@@ -115,7 +128,6 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         target_sources(${PROJECT_NAME}
             PRIVATE
                 ProxyShapeCameraHandler.cpp
-                ProxyShapeSceneSegmentHandler.cpp
         )
     endif()
 
@@ -126,6 +138,13 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
                 UsdConnectionHandler.cpp
         )
     endif()
+endif()
+
+if(PXR_VERSION GREATER_EQUAL 2108)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            UsdUndoMaterialCommands.cpp
+    )
 endif()
 
 set(HEADERS
@@ -214,13 +233,10 @@ if (UFE_LIGHTS_SUPPORT)
     )
 endif()
 
-if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
-        list(APPEND HEADERS
-            UsdConnections.h
-            UsdConnectionHandler.h
-        )
-    endif()
+if (UFE_SCENE_SEGMENT_SUPPORT)
+    list(APPEND HEADERS
+        ProxyShapeSceneSegmentHandler.h
+    )
 endif()
 
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
@@ -241,9 +257,21 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4013)
         list(APPEND HEADERS
             ProxyShapeCameraHandler.h
-            ProxyShapeSceneSegmentHandler.h
         )
     endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
+        list(APPEND HEADERS
+            UsdConnections.h
+            UsdConnectionHandler.h
+        )
+    endif()
+endif()
+
+if(PXR_VERSION GREATER_EQUAL 2108)
+    list(APPEND HEADERS
+        UsdUndoMaterialCommands.h
+    )
 endif()
 
 # -----------------------------------------------------------------------------
