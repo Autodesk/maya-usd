@@ -22,6 +22,7 @@
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/usd/sdr/registry.h>
 
 #include <ufe/pathString.h>
 #include <ufe/scene.h>
@@ -125,8 +126,36 @@ bool UsdConnectionHandler::createConnection(
                 = dstApi.CreateInput(dstBaseName, dstUsdAttr->usdAttributeType());
             return UsdShadeConnectableAPI::ConnectToSource(dstInput, srcOutput);
         } else {
-            UsdShadeOutput dstOutput
-                = dstApi.CreateOutput(dstBaseName, dstUsdAttr->usdAttributeType());
+            UsdShadeOutput   dstOutput;
+            UsdShadeMaterial dstMaterial(dstUsdAttr->usdPrim());
+            // Special case when connecting to Material outputs:
+            if (dstMaterial
+                && (dstBaseName == UsdShadeTokens->surface || dstBaseName == UsdShadeTokens->volume
+                    || dstBaseName == UsdShadeTokens->displacement)) {
+                // Create the required output based on the type of the shader node we are trying to
+                // connect:
+                UsdShadeShader       srcShader(srcUsdAttr->usdPrim());
+                PXR_NS::SdrRegistry& registry = PXR_NS::SdrRegistry::GetInstance();
+                PXR_NS::TfToken      srcInfoId;
+                srcShader.GetIdAttr().Get(&srcInfoId);
+                PXR_NS::SdrShaderNodeConstPtr srcShaderNodeDef
+                    = registry.GetShaderNodeByIdentifier(srcInfoId);
+                if (!srcShaderNodeDef) {
+                    return false;
+                }
+                TfToken renderContext = srcShaderNodeDef->GetSourceType() == "glslfx"
+                    ? UsdShadeTokens->universalRenderContext
+                    : srcShaderNodeDef->GetSourceType();
+                if (dstBaseName == UsdShadeTokens->surface) {
+                    dstOutput = dstMaterial.CreateSurfaceOutput(renderContext);
+                } else if (dstBaseName == UsdShadeTokens->volume) {
+                    dstOutput = dstMaterial.CreateVolumeOutput(renderContext);
+                } else {
+                    dstOutput = dstMaterial.CreateDisplacementOutput(renderContext);
+                }
+            } else {
+                dstOutput = dstApi.CreateOutput(dstBaseName, dstUsdAttr->usdAttributeType());
+            }
             return UsdShadeConnectableAPI::ConnectToSource(dstOutput, srcOutput);
         }
     }
