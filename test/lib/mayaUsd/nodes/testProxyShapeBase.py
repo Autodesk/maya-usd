@@ -79,8 +79,10 @@ class testProxyShapeBase(unittest.TestCase):
         self.assertEqual(True, "-session" in stage.GetSessionLayer().identifier)
         self.assertEqual(True, "anonymousLayer1" in stage.GetRootLayer().identifier)
 
-        # add proxyShapeItem to selection list
-        ufe.GlobalSelection.get().append(proxyShapeItem)
+        # Select proxyShapeItem
+        proxySelection = ufe.Selection()
+        proxySelection.append(proxyShapeItem)
+        ufe.GlobalSelection.get().replaceWith(proxySelection)
 
         # duplicate the proxyShape. 
         cmds.duplicate()
