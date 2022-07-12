@@ -41,6 +41,10 @@ UsdHierarchyHandler::Ptr UsdHierarchyHandler::create()
 Ufe::Hierarchy::Ptr UsdHierarchyHandler::hierarchy(const Ufe::SceneItem::Ptr& item) const
 {
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    if (!usdItem)
+    {
+        return nullptr;
+    }
     return isRootChild(usdItem->path()) ? UsdRootChildHierarchy::create(usdItem)
                                         : UsdHierarchy::create(usdItem);
 }
