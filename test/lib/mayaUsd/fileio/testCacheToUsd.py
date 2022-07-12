@@ -31,7 +31,7 @@ import mayaUsd.ufe
 import mayaUsdAddMayaReference
 import mayaUsdMayaReferenceUtils as mayaRefUtils
 
-from pxr import Usd, UsdGeom, Sdf, Pcp
+from pxr import Usd, UsdGeom, Sdf, Pcp, Gf
 
 from maya import cmds
 from maya import standalone
@@ -41,7 +41,7 @@ import ufe
 
 import unittest
 
-from testUtils import assertVectorAlmostEqual, getTestScene
+from testUtils import assertVectorAlmostEqual
 
 import os
 
@@ -120,6 +120,9 @@ class CacheToUsdTestCase(unittest.TestCase):
         self.proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         self.stage = mayaUsd.lib.GetPrim(self.proxyShapePathStr).GetStage()
         # Make sure the cache file is removed in case a previous test failed mid-way.
+        self.removeCacheFile()
+
+    def tearDown(self):
         self.removeCacheFile()
 
     def runTestCacheToUsd(self, createMayaRefPrimFn, checkCacheParentFn):
@@ -250,16 +253,11 @@ class CacheToUsdTestCase(unittest.TestCase):
 
         self.assertTrue(foundPayload)
 
-        # Clean up
-        self.removeCacheFile()
-
-
     def testCacheToUsdSibling(self):
         self.runTestCacheToUsd(createMayaRefPrimSiblingCache, checkSiblingCacheParent)
 
     def testCacheToUsdVariant(self):
         self.runTestCacheToUsd(createMayaRefPrimVariantCache, checkVariantCacheParent)
-
 
     def testAutoEditAndCache(self):
         '''Test editing then caching a Maya Reference.
@@ -320,8 +318,83 @@ class CacheToUsdTestCase(unittest.TestCase):
         self.assertTrue(attr.IsValid())
         self.assertEqual(attr.Get(), False)
 
-        self.removeCacheFile()
+    def testMayaRefPrimTransform(self):
+        '''Test transforming the Maya Reference prim, editing it in Maya, then merging back the result.'''
 
+        # The Maya reference prim is transformable.  Change its local
+        # transformation and confirm that the transformation appears in the
+        # corresponding Maya transform node.
+
+        # Create a Maya reference prim using the defaults, under a
+        # newly-created parent, without any variant sets.
+        cacheParent = self.stage.DefinePrim('/CacheParent', 'Xform')
+        cacheParentPathStr = self.proxyShapePathStr + ',/CacheParent'
+        self.assertFalse(cacheParent.HasVariantSets())
+
+        (mayaRefPrim, variantSetName, variantSet, cacheVariantName) = \
+            createMayaRefPrimSiblingCache(self, cacheParent, cacheParentPathStr)
+
+        xformable = UsdGeom.Xformable(mayaRefPrim)
+        xlateOp = xformable.AddTranslateOp()
+        xlation = Gf.Vec3d(1, 2, 3)
+        xlateOp.Set(xlation)
+
+        # The Maya reference prim is a child of the cache parent.  This is
+        # already tested in testCacheToUsd{Sibling,Variant}.
+        mayaRefPrimPathStr = cacheParentPathStr + '/' + mayaRefPrim.GetName()
+
+        # testAddMayaReference tests Maya reference prim creation, so we do not
+        # repeat these tests here.  Edit the Maya reference prim as Maya, which
+        # will create and load the corresponding Maya reference node.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(
+                mayaRefPrimPathStr))
+
+        # The Maya reference prim has been replaced by a Maya transform, which
+        # is a child of the cache parent.
+        cacheParentHier = createHierarchy(cacheParentPathStr)
+        cacheParentChildren = cacheParentHier.children()
+        self.assertTrue(len(cacheParentChildren), 1)
+        mayaTransformItem = cacheParentChildren[0]
+        self.assertEqual(mayaTransformItem.nodeType(), 'transform')
+
+        # The Maya transform has the same transform as the Maya reference prim.
+        mayaTransformPathStr = ufe.PathString.string(mayaTransformItem.path())
+        dagPath = om.MSelectionList().add(mayaTransformPathStr).getDagPath(0)
+        fn= om.MFnTransform(dagPath)
+        self.assertEqual(fn.translation(om.MSpace.kObject), om.MVector(*xlation))
+        mayaMatrix = fn.transformation().asMatrix()
+        usdMatrix = xlateOp.GetOpTransform(mayaUsd.ufe.getTime(mayaRefPrimPathStr))
+        mayaValues = [v for v in mayaMatrix]
+        usdValues = [v for row in usdMatrix for v in row]
+
+        assertVectorAlmostEqual(self, mayaValues, usdValues)
+
+        # Change the Maya transform translation, then cache to USD.  Confirm
+        # that the Maya edit is transported back to the Maya reference prim.
+        # Use any cache options, not the purpose of this test.
+        fn.setTranslation(om.MVector(4, 5, 6), om.MSpace.kObject)
+
+        defaultExportOptions = cacheToUsd.getDefaultExportOptions()
+        cacheFile = self.getCacheFileName()
+        cachePrimName = 'cachePrimName'
+        payloadOrReference = 'Payload'
+        listEditType = 'Prepend'
+
+        cacheOptions = cacheToUsd.createCacheCreationOptions(
+            defaultExportOptions, cacheFile, cachePrimName, payloadOrReference,
+            listEditType)
+
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(mayaTransformPathStr, cacheOptions))
+        
+        # Maya reference prim should now have the updated transformation.
+        ops = xformable.GetOrderedXformOps()
+        self.assertEqual(len(ops), 1)
+        usdMatrix = ops[0].GetOpTransform(mayaUsd.ufe.getTime(mayaRefPrimPathStr))
+        usdValues = [v for row in usdMatrix for v in row]
+        assertVectorAlmostEqual(self, usdValues, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0,
+                                                  1, 0, 4, 5, 6, 1])
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
