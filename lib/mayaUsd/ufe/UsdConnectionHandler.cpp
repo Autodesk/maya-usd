@@ -96,6 +96,12 @@ bool UsdConnectionHandler::createConnection(
         return false;
     }
 
+    // Use the UsdShadeConnectableAPI to create the connections and attributes to make sure the USD
+    // data model ends up in the right state.
+    //
+    // Using lower level APIs, like UsdPrim::CreateAttribute() tend leave the attributes marked as
+    // being custom instead of native.
+
     UsdShadeConnectableAPI srcApi(srcUsdAttr->usdPrim());
     TfToken                srcBaseName;
     UsdShadeAttributeType  srcAttrType;

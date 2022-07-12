@@ -22,7 +22,6 @@ import usdUtils
 import testUtils
 
 from maya import cmds
-from maya.internal.ufeSupport import ufeCmdWrapper as ufeCmd
 
 import ufe
 import unittest
@@ -429,6 +428,8 @@ class ConnectionTestCase(unittest.TestCase):
         #
         # We start with standard code from testContextOps:
         #
+        # Not testing undo/redo at this point in time.
+        #
         #
         cmds.file(new=True, force=True)
 
@@ -442,10 +443,8 @@ class ConnectionTestCase(unittest.TestCase):
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
         contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
 
-        cmd = contextOps.doOpCmd(['Add New Prim', 'Capsule'])
-        ufeCmd.execute(cmd)
-        cmd = contextOps.doOpCmd(['Add New Prim', 'Material'])
-        ufeCmd.execute(cmd)
+        cmd = contextOps.doOp(['Add New Prim', 'Capsule'])
+        cmd = contextOps.doOp(['Add New Prim', 'Material'])
 
         rootHier = ufe.Hierarchy.hierarchy(proxyShapeItem)
 
@@ -453,8 +452,7 @@ class ConnectionTestCase(unittest.TestCase):
         materialAttrs = ufe.Attributes.attributes(materialItem)
         contextOps = ufe.ContextOps.contextOps(materialItem)
 
-        cmd = contextOps.doOpCmd(['Add New Prim', 'Shader'])
-        ufeCmd.execute(cmd)
+        cmd = contextOps.doOp(['Add New Prim', 'Shader'])
 
         materialHier = ufe.Hierarchy.hierarchy(materialItem)
         materialPrim = usdUtils.getPrimFromSceneItem(materialItem)
