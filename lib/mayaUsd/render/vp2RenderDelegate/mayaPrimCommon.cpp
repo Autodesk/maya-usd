@@ -621,15 +621,15 @@ void MayaUsdRPrim::_SyncSharedData(
         // Also update "hide on playback" status
         if (_hideOnPlayback != hideOnPlayback) {
             RenderItemFunc setHideOnPlayback
-                    = [hideOnPlayback](HdVP2DrawItem::RenderItemData& renderItemData) {
-                          renderItemData._renderItem->setHideOnPlayback(hideOnPlayback);
-                      };
-            
+                = [hideOnPlayback](HdVP2DrawItem::RenderItemData& renderItemData) {
+                      renderItemData._renderItem->setHideOnPlayback(hideOnPlayback);
+                  };
+
             _ForEachRenderItem(reprs, setHideOnPlayback);
             _hideOnPlayback = hideOnPlayback;
         }
-    }
 #endif
+    }
 
 #if PXR_VERSION > 2111
     // Hydra now manages and caches render tags under the hood and is clearing
