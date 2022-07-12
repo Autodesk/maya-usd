@@ -712,6 +712,10 @@ bool UsdAttribute::hasMetadata(const std::string& key) const
 }
 #endif
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+PXR_NS::SdfValueTypeName UsdAttribute::usdAttributeType() const { return ufeTypeToUsd(typeName()); }
+#endif
+
 //------------------------------------------------------------------------------
 // UsdAttributeGeneric:
 //------------------------------------------------------------------------------

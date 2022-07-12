@@ -134,8 +134,9 @@ public:
     bool                      _clearMetadata(const std::string& key);
     bool                      _hasMetadata(const std::string& key) const;
 
-    PXR_NS::UsdPrim      usdPrim() const { return fPrim; }
-    PXR_NS::UsdAttribute usdAttribute() const { return fUsdAttr; }
+    PXR_NS::UsdPrim          usdPrim() const { return fPrim; }
+    PXR_NS::UsdAttribute     usdAttribute() const { return fUsdAttr; }
+    PXR_NS::SdfValueTypeName usdAttributeType() const;
 #else
     // Ufe::Attribute override methods that we've mimic'd here.
     bool                      hasValue() const;

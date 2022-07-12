@@ -18,6 +18,7 @@
 
 import mayaUtils
 import ufeUtils
+import usdUtils
 import testUtils
 
 from maya import cmds
@@ -420,6 +421,99 @@ class ConnectionTestCase(unittest.TestCase):
         self.assertIsNotNone(connections)
         conns = connections.allConnections()
         self.assertEqual(len(conns), 1)
+
+    def testCreateStandardSurface(self):
+        '''Test create a working standard surface shader.'''
+        #
+        #
+        # We start with standard code from testContextOps:
+        #
+        # Not testing undo/redo at this point in time.
+        #
+        #
+        cmds.file(new=True, force=True)
+
+        # Create a proxy shape with empty stage to start with.
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        # Create a ContextOps interface for the proxy shape.
+        proxyPathSegment = mayaUtils.createUfePathSegment(proxyShape)
+        proxyShapePath = ufe.Path([proxyPathSegment])
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+
+        cmd = contextOps.doOp(['Add New Prim', 'Capsule'])
+        cmd = contextOps.doOp(['Add New Prim', 'Material'])
+
+        rootHier = ufe.Hierarchy.hierarchy(proxyShapeItem)
+
+        materialItem = rootHier.children()[-1]
+        materialAttrs = ufe.Attributes.attributes(materialItem)
+        contextOps = ufe.ContextOps.contextOps(materialItem)
+
+        cmd = contextOps.doOp(['Add New Prim', 'Shader'])
+
+        materialHier = ufe.Hierarchy.hierarchy(materialItem)
+        materialPrim = usdUtils.getPrimFromSceneItem(materialItem)
+
+
+        shaderItem = materialHier.children()[0]
+        shaderAttrs = ufe.Attributes.attributes(shaderItem)
+        shaderPrim = usdUtils.getPrimFromSceneItem(shaderItem)
+
+        shaderAttr = shaderAttrs.attribute("info:id")
+        shaderAttr.set("ND_standard_surface_surfaceshader")
+        #
+        #
+        # Then switch to connection code to connect the shader. Since we never created the
+        # attributes, we expect the connection code to create them.
+        #
+        #
+        shaderOutput = shaderAttrs.attribute("outputs:out")
+        materialOutput = materialAttrs.attribute("outputs:surface")
+
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(materialItem.runTimeId())
+
+        # The attributes are not created yet:
+        self.assertEqual(len(materialPrim.GetAuthoredProperties()), 0)
+        self.assertEqual(len(shaderPrim.GetAuthoredProperties()), 1)
+        self.assertEqual("info:id", shaderPrim.GetAuthoredProperties()[0].GetName())
+
+        connectionHandler.connect(shaderOutput, materialOutput)
+
+        connections = connectionHandler.sourceConnections(materialItem)
+        self.assertIsNotNone(connections)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        # The attributes directly used by the connection got created:
+        self.assertEqual(len(shaderPrim.GetAuthoredProperties()), 2)
+        self.assertIn("info:id", [i.GetName() for i in shaderPrim.GetAuthoredProperties()])
+        self.assertIn("outputs:out", [i.GetName() for i in shaderPrim.GetAuthoredProperties()])
+        # The connection of a MaterialX shader to the material got redirected to the proper render context.
+        self.assertEqual(len(materialPrim.GetAuthoredProperties()), 1)
+        self.assertEqual(materialPrim.GetAuthoredProperties()[0].GetName(), "outputs:mtlx:surface")
+
+        materialOutput = materialAttrs.attribute("outputs:mtlx:surface")
+        connectionHandler.disconnect(shaderOutput, materialOutput)
+
+        connections = connectionHandler.sourceConnections(materialItem)
+        self.assertIsNotNone(connections)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 0)
+
+        # Not redirected since already on outputs:mtlx:surface:
+        connectionHandler.connect(shaderOutput, materialOutput)
+
+        connections = connectionHandler.sourceConnections(materialItem)
+        self.assertIsNotNone(connections)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        # TODO: Test the undoable versions of these commands. They MUST restore the prims as they
+        #       were before connecting, which might require deleting authored attributes.
+        #       The undo must also be aware that the connection on the material got redirected.
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
