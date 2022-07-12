@@ -615,18 +615,19 @@ void MayaUsdRPrim::_SyncSharedData(
             displayLayerVisibility &= layerEnabled.asBool() ? layerVisible.asBool() : true;
             hideOnPlayback |= layerHidesOnPlayback.asBool();
         }
-#ifdef MAYA_HAS_RENDER_ITEM_HIDE_ON_PLAYBACK_API
+
         // Update "hide on playback" status
         if (_hideOnPlayback != hideOnPlayback) {
+#ifdef MAYA_HAS_RENDER_ITEM_HIDE_ON_PLAYBACK_API
             RenderItemFunc setHideOnPlayback
                 = [hideOnPlayback](HdVP2DrawItem::RenderItemData& renderItemData) {
                       renderItemData._renderItem->setHideOnPlayback(hideOnPlayback);
                   };
 
             _ForEachRenderItem(reprs, setHideOnPlayback);
+#endif
             _hideOnPlayback = hideOnPlayback;
         }
-#endif
 #endif
         sharedData.visible = usdVisibility && displayLayerVisibility;
     }
