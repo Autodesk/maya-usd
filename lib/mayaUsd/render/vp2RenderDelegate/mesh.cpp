@@ -1099,7 +1099,7 @@ HdDirtyBits HdVP2Mesh::_PropagateDirtyBits(HdDirtyBits bits) const
     This is called prior to syncing the prim, the first time the repr
     is used.
 
-    \param  reprToken   the name of the repr to initalize.  HdRprim has already
+    \param  reprToken   the name of the repr to initialize.  HdRprim has already
                         resolved the reprName to its final value.
 
     \param  dirtyBits   an in/out value.  It is initialized to the dirty bits

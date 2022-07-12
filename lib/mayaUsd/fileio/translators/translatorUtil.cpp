@@ -115,6 +115,12 @@ bool UsdMayaTranslatorUtil::CreateDummyTransformNode(
     }
 
     if (dummyTransformType == UsdMayaDummyTransformType::UnlockedTransform) {
+        // If we are leaving transform-related plugs unlocked, we assume that
+        // the Maya transform must reflect the current prim's transformation.
+        UsdGeomXformable xformable(usdPrim);
+        if (xformable) {
+            UsdMayaTranslatorXformable::Read(xformable, *mayaNodeObj, args, context);
+        }
         return true;
     }
 

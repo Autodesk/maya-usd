@@ -56,13 +56,11 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022)
     )
 endif()
 
-if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4007)
-        list(APPEND TEST_SCRIPT_FILES
-            testVP2RenderDelegateLights.py
-            testVP2RenderDelegateCameras.py
-        )
-    endif()
+if(MAYA_CAMERA_GIZMO_SUPPORT)
+    list(APPEND TEST_SCRIPT_FILES
+        testVP2RenderDelegateLights.py
+        testVP2RenderDelegateCameras.py
+    )
 endif()
 
 if (CMAKE_WANT_MATERIALX_BUILD)
@@ -90,6 +88,12 @@ if(MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT)
     list(APPEND TEST_SCRIPT_FILES
         testVP2RenderDelegateIsolateSelect.py
     )
+endif()
+
+if (MAYA_HAS_DISPLAY_LAYER_API)
+    list(APPEND TEST_SCRIPT_FILES
+        testVP2RenderDelegateDisplayLayers.py
+        )
 endif()
 
 foreach(script ${TEST_SCRIPT_FILES})

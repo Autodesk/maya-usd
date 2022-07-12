@@ -5,6 +5,7 @@ if (CMAKE_UFE_V2_FEATURES_AVAILABLE)
     # We need an empty __init__.py file in each subfolder so it is considered a python module.
     install(FILES __init__.py DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae)
     install(FILES __init__.py DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/usd)
+    install(FILES ae_utils.py DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/usd)
     install(FILES __init__.py DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/usd/nodes)
 
     # Maya Attribute Editor python template - just uses a single schema base template file.

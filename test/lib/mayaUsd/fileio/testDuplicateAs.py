@@ -395,9 +395,10 @@ class DuplicateAsTestCase(unittest.TestCase):
         psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
         
-        # Duplicate Maya data as USD data using default options that are without materials
+        # Duplicate Maya data as USD data using modified default options to export materials
         defaultDuplicateAsMayaDataOptions = mayaUsdDuplicateAsMayaDataOptions.getDuplicateAsMayaDataOptionsText()
-        cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr, exportOptions=defaultDuplicateAsMayaDataOptions)
+        modifiedDuplicateAsMayaDataOptions = defaultDuplicateAsMayaDataOptions.replace('shadingMode=useRegistry','shadingMode=none')
+        cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr, exportOptions=modifiedDuplicateAsMayaDataOptions)
 
         # Verify that the copied sphere does not have a look (material) prim.
         looksPrim = stage.GetPrimAtPath("/pSphere1/Looks")
@@ -406,8 +407,8 @@ class DuplicateAsTestCase(unittest.TestCase):
         # Undo duplicate to USD.
         cmds.undo()
 
-        # Duplicate Maya data as USD data using modified default options to export materials
-        modifiedDuplicateAsMayaDataOptions = defaultDuplicateAsMayaDataOptions.replace('shadingMode=none','')
+        # Duplicate Maya data as USD data using default options that are with materials
+        modifiedDuplicateAsMayaDataOptions = defaultDuplicateAsMayaDataOptions[:]
         cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr, exportOptions=modifiedDuplicateAsMayaDataOptions)
 
         # Verify that the copied sphere has a look (material) prim.

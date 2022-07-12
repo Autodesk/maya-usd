@@ -24,13 +24,13 @@
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/utils/selectability.h>
-#include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/imaging/hd/basisCurves.h>
+#include <pxr/imaging/hd/changeTracker.h>
 #include <pxr/imaging/hd/enums.h>
 #include <pxr/imaging/hd/mesh.h>
 #include <pxr/imaging/hd/primGather.h>
@@ -45,17 +45,29 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/modelAPI.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usdGeom/gprim.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <maya/MColorPickerUtilities.h>
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+#include <maya/MDGMessage.h>
+#include <maya/MDisplayLayerMessage.h>
+#endif
 #include <maya/MEventMessage.h>
 #include <maya/MFileIO.h>
 #include <maya/MFnPluginData.h>
 #include <maya/MHWGeometryUtilities.h>
 #include <maya/MProfiler.h>
 #include <maya/MSelectionContext.h>
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+#include <maya/M3dView.h>
+#include <maya/MFnDisplayLayer.h>
+#include <maya/MFnDisplayLayerManager.h>
+#include <maya/MNodeMessage.h>
+#endif
 
 #if defined(WANT_UFE_BUILD)
+#include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
 
@@ -64,7 +76,10 @@
 #include <ufe/namedSelection.h>
 #endif
 #include <ufe/observableSelection.h>
-#include <ufe/path.h>
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+#include <ufe/pathString.h>
+#include <ufe/pathStringExcept.h>
+#endif
 #include <ufe/pathSegment.h>
 #include <ufe/runTimeMgr.h>
 #include <ufe/scene.h>
@@ -332,6 +347,38 @@ void SelectionChangedCB(void* data)
 }
 #endif
 
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+#ifdef MAYA_HAS_NEW_DISPLAY_LAYER_MESSAGING_API
+void displayLayerMembershipChangedCB(void* data, const MString& memberPath)
+{
+    ProxyRenderDelegate* prd = static_cast<ProxyRenderDelegate*>(data);
+    if (prd) {
+        prd->DisplayLayerMembershipChanged(memberPath);
+    }
+}
+#else
+void displayLayerMembershipChangedCB(void* data)
+{
+    ProxyRenderDelegate* prd = static_cast<ProxyRenderDelegate*>(data);
+    if (prd) {
+        for (const auto& stage : MayaUsd::ufe::getAllStages()) {
+            auto stagePath = Ufe::PathString::string(MayaUsd::ufe::stagePath(stage));
+            prd->DisplayLayerMembershipChanged(MString(stagePath.c_str()));
+        }
+    }
+}
+#endif
+
+void displayLayerDirtyCB(MObject& node, void* clientData)
+{
+    ProxyRenderDelegate* prd = static_cast<ProxyRenderDelegate*>(clientData);
+    if (prd && node.hasFn(MFn::kDisplayLayer)) {
+        MFnDisplayLayer displayLayer(node);
+        prd->DisplayLayerDirty(displayLayer);
+    }
+}
+#endif
+
 // Copied from renderIndex.cpp, the code that does HdRenderIndex::GetDrawItems. But I just want the
 // rprimIds, I don't want to go all the way to draw items.
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 42
@@ -466,6 +513,14 @@ ProxyRenderDelegate::~ProxyRenderDelegate()
     if (_mayaSelectionCallbackId != 0) {
         MMessage::removeCallback(_mayaSelectionCallbackId);
     }
+#endif
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+    if (_mayaDisplayLayerAddedCallbackId != 0)
+        MMessage::removeCallback(_mayaDisplayLayerAddedCallbackId);
+    if (_mayaDisplayLayerRemovedCallbackId != 0)
+        MMessage::removeCallback(_mayaDisplayLayerRemovedCallbackId);
+    if (_mayaDisplayLayerMembersCallbackId != 0)
+        MMessage::removeCallback(_mayaDisplayLayerMembersCallbackId);
 #endif
 }
 
@@ -615,6 +670,27 @@ void ProxyRenderDelegate::_InitRenderDelegate()
         }
 #endif
 
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+        // Monitor display layers
+        if (!_mayaDisplayLayerAddedCallbackId) {
+            _mayaDisplayLayerAddedCallbackId
+                = MDGMessage::addNodeAddedCallback(DisplayLayerAdded, "displayLayer", this);
+        }
+        if (!_mayaDisplayLayerRemovedCallbackId) {
+            _mayaDisplayLayerRemovedCallbackId
+                = MDGMessage::addNodeRemovedCallback(DisplayLayerRemoved, "displayLayer", this);
+        }
+        if (!_mayaDisplayLayerMembersCallbackId) {
+            _mayaDisplayLayerMembersCallbackId
+#ifdef MAYA_HAS_NEW_DISPLAY_LAYER_MESSAGING_API
+                = MDisplayLayerMessage::addDisplayLayerMemberChangedCallback(
+#else
+                = MDisplayLayerMessage::addDisplayLayerMembersChangedCallback(
+#endif
+                    displayLayerMembershipChangedCB, this);
+        }
+#endif
+
         // We don't really need any HdTask because VP2RenderDelegate uses Hydra
         // engine for data preparation only, but we have to add a dummy render
         // task to bootstrap data preparation.
@@ -724,6 +800,58 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
     }
 }
 
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+void ProxyRenderDelegate::_DirtyUsdSubtree(const UsdPrim& prim)
+{
+    HdChangeTracker&      changeTracker = _renderIndex->GetChangeTracker();
+    constexpr HdDirtyBits dirtyBits = HdChangeTracker::DirtyVisibility
+        | MayaUsdRPrim::DirtyDisplayMode | MayaUsdRPrim::DirtySelectionHighlight;
+
+    if (prim.IsA<UsdGeomGprim>()) {
+        auto indexPath = _sceneDelegate->ConvertCachePathToIndexPath(prim.GetPath());
+        changeTracker.MarkRprimDirty(indexPath, dirtyBits);
+    }
+
+    UsdPrimSubtreeRange range = prim.GetDescendants();
+    for (auto iter = range.begin(); iter != range.end(); ++iter) {
+        if (iter->IsA<UsdGeomGprim>()) {
+            auto indexPath = _sceneDelegate->ConvertCachePathToIndexPath(iter->GetPath());
+            changeTracker.MarkRprimDirty(indexPath, dirtyBits);
+        }
+    }
+}
+
+void ProxyRenderDelegate::_DirtyUfeSubtree(const Ufe::Path& rootPath)
+{
+    if (rootPath.runTimeId() == MayaUsd::ufe::getUsdRunTimeId()) {
+        _DirtyUsdSubtree(MayaUsd::ufe::ufePathToPrim(rootPath));
+    } else {
+        for (const auto& stage : MayaUsd::ufe::getAllStages()) {
+            Ufe::Path proxyShapePath = MayaUsd::ufe::stagePath(stage);
+            if (proxyShapePath.startsWith(rootPath)) {
+                _DirtyUsdSubtree(stage->GetPseudoRoot());
+            }
+        }
+    }
+}
+
+void ProxyRenderDelegate::_DirtyUfeSubtree(const MString& rootStr)
+{
+    Ufe::Path rootPath;
+    try {
+        rootPath = Ufe::PathString::path(rootStr.asChar());
+    } catch (const Ufe::InvalidPath&) {
+        return;
+    } catch (const Ufe::InvalidPathComponentSeparator&) {
+        return;
+    } catch (const Ufe::EmptyPathSegment&) {
+        return;
+    }
+
+    _DirtyUfeSubtree(rootPath);
+}
+#endif
+
 //! \brief  Execute Hydra engine to perform minimal VP2 draw data update based on change tracker.
 void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 {
@@ -731,6 +859,10 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorC_L1, "Execute");
 
     ++_frameCounter;
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+    _refreshRequested = false;
+#endif
+
     _UpdateRenderTags();
 
     // If update for selection is enabled, the draw data for the "points" repr
@@ -910,6 +1042,11 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     param->EndUpdate();
 }
 
+MDagPath ProxyRenderDelegate::GetProxyShapeDagPath() const
+{
+    return _proxyShapeData->ProxyDagPath();
+}
+
 //! \brief  Update selection granularity for point snapping.
 void ProxyRenderDelegate::updateSelectionGranularity(
     const MDagPath&               path,
@@ -1035,7 +1172,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         topLevelInstanceIndex = instancerContext.front().second;
     }
 #else
-    SdfPath usdPath = GetScenePrimPath(rprimId, instanceIndex);
+    SdfPath                         usdPath = GetScenePrimPath(rprimId, instanceIndex);
 #endif
 
     // If update for selection is enabled, we can query the Maya selection list
@@ -1047,9 +1184,9 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     const UsdPointInstancesPickMode& pointInstancesPickMode = _pointInstancesPickMode;
     const MGlobal::ListAdjustment&   listAdjustment = _globalListAdjustment;
 #else
-    const TfToken selectionKind = GetSelectionKind();
+    const TfToken                   selectionKind = GetSelectionKind();
     const UsdPointInstancesPickMode pointInstancesPickMode = GetPointInstancesPickMode();
-    const MGlobal::ListAdjustment listAdjustment = GetListAdjustment();
+    const MGlobal::ListAdjustment   listAdjustment = GetListAdjustment();
 #endif
 
     UsdPrim       prim = _proxyShapeData->UsdStage()->GetPrimAtPath(usdPath);
@@ -1135,7 +1272,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     auto ufeSel = Ufe::NamedSelection::get("MayaSelectTool");
     ufeSel->append(si);
 #else
-    auto globalSelection = Ufe::GlobalSelection::get();
+    auto                            globalSelection = Ufe::GlobalSelection::get();
 
     switch (listAdjustment) {
     case MGlobal::kReplaceList:
@@ -1208,6 +1345,67 @@ bool ProxyRenderDelegate::updateUfeIdentifiers(
 
 //! \brief  Notify of selection change.
 void ProxyRenderDelegate::SelectionChanged() { _selectionChanged = true; }
+
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+void ProxyRenderDelegate::DisplayLayerAdded(MObject& node, void* clientData)
+{
+    ProxyRenderDelegate* me = static_cast<ProxyRenderDelegate*>(clientData);
+    MObjectHandle        handle(node);
+    if (me->_mayaDisplayLayerDirtyCallbackIds.count(handle) == 0) {
+        me->_mayaDisplayLayerDirtyCallbackIds[handle]
+            = MNodeMessage::addNodeDirtyCallback(node, displayLayerDirtyCB, me, nullptr);
+    }
+}
+
+void ProxyRenderDelegate::DisplayLayerRemoved(MObject& node, void* clientData)
+{
+    ProxyRenderDelegate* me = static_cast<ProxyRenderDelegate*>(clientData);
+    MObjectHandle        handle(node);
+    auto                 iter = me->_mayaDisplayLayerDirtyCallbackIds.find(handle);
+    if (iter != me->_mayaDisplayLayerDirtyCallbackIds.end()) {
+        MMessage::removeCallback(iter->second);
+        me->_mayaDisplayLayerDirtyCallbackIds.erase(iter);
+    }
+}
+
+//! \brief  Notify of display layer membership change.
+void ProxyRenderDelegate::DisplayLayerMembershipChanged(const MString& memberPath)
+{
+    _DirtyUfeSubtree(memberPath);
+    _RequestRefresh();
+}
+
+void ProxyRenderDelegate::DisplayLayerDirty(MFnDisplayLayer& displayLayer)
+{
+    MSelectionList members;
+    displayLayer.getMembers(members);
+
+    auto membersCount = members.length();
+    for (unsigned int j = 0; j < membersCount; ++j) {
+        MDagPath dagPath;
+        if (members.getDagPath(j, dagPath) == MS::kSuccess) {
+            _DirtyUfeSubtree(MayaUsd::ufe::dagPathToUfe(dagPath));
+        } else {
+            MStringArray selectionStrings;
+            members.getSelectionStrings(j, selectionStrings);
+            for (auto it = selectionStrings.begin(); it != selectionStrings.end(); ++it) {
+                _DirtyUfeSubtree(*it);
+            }
+        }
+    }
+
+    if (membersCount) {
+        _RequestRefresh();
+    }
+}
+
+void ProxyRenderDelegate::_RequestRefresh()
+{
+    if (!_refreshRequested)
+        M3dView::scheduleRefreshAllViews();
+    _refreshRequested = true;
+}
+#endif
 
 //! \brief  Populate lead and active selection for Rprims under the proxy shape.
 void ProxyRenderDelegate::_PopulateSelection()

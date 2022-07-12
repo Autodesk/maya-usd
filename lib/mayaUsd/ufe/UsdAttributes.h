@@ -22,6 +22,11 @@
 #include <pxr/usd/usd/prim.h>
 
 #include <ufe/attributes.h>
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4008)
+#include <ufe/nodeDef.h>
+#endif
+#endif
 
 #include <unordered_map>
 
@@ -52,6 +57,12 @@ public:
     Ufe::Attribute::Ptr      attribute(const std::string& name) override;
     std::vector<std::string> attributeNames() const override;
     bool                     hasAttribute(const std::string& name) const override;
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4008)
+    inline Ufe::NodeDef::Ptr nodeDef() const;
+#endif
+#endif
 
 private:
     Ufe::Attribute::Type getUfeTypeForAttribute(const PXR_NS::UsdAttribute& usdAttr) const;

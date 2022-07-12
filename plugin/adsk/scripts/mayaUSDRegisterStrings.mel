@@ -212,7 +212,6 @@ global proc mayaUSDRegisterStrings()
     register("kImportUSDZTxtAnn", "When a .usdz file is chosen and this is selected, .usdz texture files are imported and copied to new files on disk. To locate these files, navigate to the current Maya workspace /sourceimages directory.");
     register("kImportUSDZTxtLbl", "USDZ Texture Import: ");
     register("kImportVariantsInScopeNumLbl", "Variants Switched in Scope:");
-    register("kMayaRefMergeEdits", "Merge Maya Edits to USD");
     register("kMayaDiscardEdits", "Discard Maya Edits");
     register("kMayaRefDiscardEdits", "Cancel Editing as Maya Data");
     register("kMayaRefDuplicateAsUsdData", "Duplicate As USD Data");

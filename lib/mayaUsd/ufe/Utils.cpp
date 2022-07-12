@@ -30,6 +30,7 @@
 #include <pxr/usd/pcp/site.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/tokens.h>
+#include <pxr/usd/sdr/shaderProperty.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/pointInstancer.h>
@@ -61,6 +62,12 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 constexpr auto kIllegalUFEPath = "Illegal UFE run-time path %s.";
+#ifdef UFE_V2_FEATURES_AVAILABLE
+constexpr auto kInvalidValue = "Invalid value '%s' for data type '%s'";
+#endif
+
+typedef std::unordered_map<PXR_NS::TfToken, PXR_NS::SdfValueTypeName, PXR_NS::TfToken::HashFunctor>
+    TokenToSdfTypeMap;
 
 bool stringBeginsWithDigit(const std::string& inputString)
 {
@@ -576,7 +583,6 @@ Ufe::Attribute::Type usdTypeToUfe(const SdfValueTypeName& usdType)
             { SdfValueTypeNames->Matrix4d.GetHash(), Ufe::Attribute::kMatrix4d },   // GfMatrix4d
 #endif
     };
-
     const auto iter = sUsdTypeToUfe.find(usdType.GetHash());
     if (iter != sUsdTypeToUfe.end()) {
         return iter->second;
@@ -584,6 +590,174 @@ Ufe::Attribute::Type usdTypeToUfe(const SdfValueTypeName& usdType)
         return Ufe::Attribute::kGeneric;
     }
 }
+
+Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdrShaderPropertyConstPtr& shaderProperty)
+{
+    const PXR_NS::SdfValueTypeName typeName = shaderProperty->GetTypeAsSdfType().first;
+    if (typeName.GetHash() == PXR_NS::SdfValueTypeNames->Token.GetHash()) {
+        static const TokenToSdfTypeMap tokenTypeToSdfType
+            = { { PXR_NS::SdrPropertyTypes->Int, PXR_NS::SdfValueTypeNames->Int },
+                { PXR_NS::SdrPropertyTypes->String, PXR_NS::SdfValueTypeNames->String },
+                { PXR_NS::SdrPropertyTypes->Float, PXR_NS::SdfValueTypeNames->Float },
+                { PXR_NS::SdrPropertyTypes->Color, PXR_NS::SdfValueTypeNames->Color3f },
+#if defined(USD_HAS_COLOR4_SDR_SUPPORT)
+                { PXR_NS::SdrPropertyTypes->Color4, PXR_NS::SdfValueTypeNames->Color4f },
+#endif
+                { PXR_NS::SdrPropertyTypes->Point, PXR_NS::SdfValueTypeNames->Point3f },
+                { PXR_NS::SdrPropertyTypes->Normal, PXR_NS::SdfValueTypeNames->Normal3f },
+                { PXR_NS::SdrPropertyTypes->Vector, PXR_NS::SdfValueTypeNames->Vector3f },
+                { PXR_NS::SdrPropertyTypes->Matrix, PXR_NS::SdfValueTypeNames->Matrix4d } };
+        TokenToSdfTypeMap::const_iterator it
+            = tokenTypeToSdfType.find(shaderProperty->GetTypeAsSdfType().second);
+        if (it != tokenTypeToSdfType.end()) {
+            return usdTypeToUfe(it->second);
+        } else {
+#if PXR_VERSION < 2205
+            // Pre-22.05 boolean inputs are special:
+            if (shaderProperty->GetType() == SdfValueTypeNames->Bool.GetAsToken()) {
+                return usdTypeToUfe(PXR_NS::SdfValueTypeNames->Bool);
+            }
+#endif
+            // There is no Matrix3d type in Sdr, so we need to infer it from Sdf until a fix similar
+            // to what was done to booleans is submitted to USD. This also means that there will be
+            // no default value for that type.
+            if (shaderProperty->GetType() == SdfValueTypeNames->Matrix3d.GetAsToken()) {
+                return usdTypeToUfe(PXR_NS::SdfValueTypeNames->Matrix3d);
+            }
+            return usdTypeToUfe(PXR_NS::SdfValueTypeNames->Token);
+        }
+    } else {
+        return usdTypeToUfe(typeName);
+    }
+}
+
+PXR_NS::SdfValueTypeName ufeTypeToUsd(const std::string& ufeType)
+{
+    // Map the USD type into UFE type.
+    static const std::unordered_map<Ufe::Attribute::Type, PXR_NS::SdfValueTypeName> sUfeTypeToUsd
+    {
+        { Ufe::Attribute::kBool, PXR_NS::SdfValueTypeNames->Bool },
+            { Ufe::Attribute::kInt, PXR_NS::SdfValueTypeNames->Int },
+            { Ufe::Attribute::kFloat, PXR_NS::SdfValueTypeNames->Float },
+            { Ufe::Attribute::kDouble, PXR_NS::SdfValueTypeNames->Double },
+            { Ufe::Attribute::kString, PXR_NS::SdfValueTypeNames->String },
+            { Ufe::Attribute::kEnumString, PXR_NS::SdfValueTypeNames->Token },
+            { Ufe::Attribute::kInt3, PXR_NS::SdfValueTypeNames->Int3 },
+            { Ufe::Attribute::kFloat3, PXR_NS::SdfValueTypeNames->Float3 },
+            { Ufe::Attribute::kDouble3, PXR_NS::SdfValueTypeNames->Double3 },
+            { Ufe::Attribute::kColorFloat3, PXR_NS::SdfValueTypeNames->Color3f },
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+            { Ufe::Attribute::kFilename, PXR_NS::SdfValueTypeNames->Asset },
+            { Ufe::Attribute::kFloat2, PXR_NS::SdfValueTypeNames->Float2 },
+            { Ufe::Attribute::kFloat4, PXR_NS::SdfValueTypeNames->Float4 },
+            { Ufe::Attribute::kColorFloat4, PXR_NS::SdfValueTypeNames->Color4f },
+            { Ufe::Attribute::kMatrix3d, PXR_NS::SdfValueTypeNames->Matrix3d },
+            { Ufe::Attribute::kMatrix4d, PXR_NS::SdfValueTypeNames->Matrix4d },
+#endif
+    };
+
+    const auto iter = sUfeTypeToUsd.find(ufeType);
+    if (iter != sUfeTypeToUsd.end()) {
+        return iter->second;
+    } else {
+        return SdfValueTypeName();
+    }
+}
+
+PXR_NS::VtValue vtValueFromString(const std::string& typeName, const std::string& strValue)
+{
+    PXR_NS::VtValue result;
+    if (typeName == Ufe::Attribute::kBool) {
+        result = "true" == strValue ? true : false;
+    } else if (typeName == Ufe::Attribute::kInt) {
+        result = std::stoi(strValue.c_str());
+    } else if (typeName == Ufe::Attribute::kFloat) {
+        result = std::stof(strValue.c_str());
+    } else if (typeName == Ufe::Attribute::kDouble) {
+        result = std::stod(strValue.c_str());
+    } else if (typeName == Ufe::Attribute::kString) {
+        result = strValue;
+    } else if (typeName == Ufe::Attribute::kEnumString) {
+        result = PXR_NS::TfToken(strValue.c_str());
+    } else if (typeName == Ufe::Attribute::kInt3) {
+        std::vector<std::string> tokens = splitString(strValue, "()[], ");
+        if (TF_VERIFY(tokens.size() == 3, kInvalidValue, strValue.c_str(), typeName.c_str())) {
+            result = GfVec3i(
+                std::stoi(tokens[0].c_str()),
+                std::stoi(tokens[1].c_str()),
+                std::stoi(tokens[2].c_str()));
+        }
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+    } else if (typeName == Ufe::Attribute::kFloat2) {
+        std::vector<std::string> tokens = splitString(strValue, "()[], ");
+        if (TF_VERIFY(tokens.size() == 2, kInvalidValue, strValue.c_str(), typeName.c_str())) {
+            result = GfVec2f(std::stof(tokens[0].c_str()), std::stof(tokens[1].c_str()));
+        }
+#endif
+#endif
+    } else if (typeName == Ufe::Attribute::kFloat3 || typeName == Ufe::Attribute::kColorFloat3) {
+        std::vector<std::string> tokens = splitString(strValue, "()[], ");
+        if (TF_VERIFY(tokens.size() == 3, kInvalidValue, strValue.c_str(), typeName.c_str())) {
+            result = GfVec3f(
+                std::stof(tokens[0].c_str()),
+                std::stof(tokens[1].c_str()),
+                std::stof(tokens[2].c_str()));
+        }
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+    } else if (typeName == Ufe::Attribute::kFloat4 || typeName == Ufe::Attribute::kColorFloat4) {
+        std::vector<std::string> tokens = splitString(strValue, "()[], ");
+        if (TF_VERIFY(tokens.size() == 4, kInvalidValue, strValue.c_str(), typeName.c_str())) {
+            result = GfVec4f(
+                std::stof(tokens[0].c_str()),
+                std::stof(tokens[1].c_str()),
+                std::stof(tokens[2].c_str()),
+                std::stof(tokens[3].c_str()));
+        }
+#endif
+#endif
+    } else if (typeName == Ufe::Attribute::kDouble3) {
+        std::vector<std::string> tokens = splitString(strValue, "()[], ");
+        if (TF_VERIFY(tokens.size() == 3, kInvalidValue, strValue.c_str(), typeName.c_str())) {
+            result = GfVec3d(
+                std::stod(tokens[0].c_str()),
+                std::stod(tokens[1].c_str()),
+                std::stod(tokens[2].c_str()));
+        }
+    }
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+    else if (typeName == Ufe::Attribute::kMatrix3d) {
+        std::vector<std::string> tokens = splitString(strValue, "()[], ");
+        if (TF_VERIFY(tokens.size() == 9, kInvalidValue, strValue.c_str(), typeName.c_str())) {
+            double m[3][3];
+            for (int i = 0, k = 0; i < 3; ++i) {
+                for (int j = 0; j < 3; ++j, ++k) {
+                    m[i][j] = std::stod(tokens[k].c_str());
+                }
+            }
+            result = GfMatrix3d(m);
+        }
+    } else if (typeName == Ufe::Attribute::kMatrix4d) {
+        std::vector<std::string> tokens = splitString(strValue, "()[], ");
+        if (TF_VERIFY(tokens.size() == 16, kInvalidValue, strValue.c_str(), typeName.c_str())) {
+            double m[4][4];
+            for (int i = 0, k = 0; i < 4; ++i) {
+                for (int j = 0; j < 4; ++j, ++k) {
+                    m[i][j] = std::stod(tokens[k].c_str());
+                }
+            }
+            result = GfMatrix4d(m);
+        }
+    } else if (typeName == Ufe::Attribute::kFilename) {
+        result = strValue;
+    }
+#endif
+#endif
+    return result;
+}
+
 #endif
 
 Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath)
@@ -616,6 +790,22 @@ Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& f
         }
     }
     return dst;
+}
+
+std::vector<std::string> splitString(const std::string& str, const std::string& separators)
+{
+    std::vector<std::string> split;
+
+    std::string::size_type lastPos = str.find_first_not_of(separators, 0);
+    std::string::size_type pos = str.find_first_of(separators, lastPos);
+
+    while (pos != std::string::npos || lastPos != std::string::npos) {
+        split.push_back(str.substr(lastPos, pos - lastPos));
+        lastPos = str.find_first_not_of(separators, pos);
+        pos = str.find_first_of(separators, lastPos);
+    }
+
+    return split;
 }
 
 } // namespace ufe

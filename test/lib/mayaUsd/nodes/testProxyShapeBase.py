@@ -79,8 +79,10 @@ class testProxyShapeBase(unittest.TestCase):
         self.assertEqual(True, "-session" in stage.GetSessionLayer().identifier)
         self.assertEqual(True, "anonymousLayer1" in stage.GetRootLayer().identifier)
 
-        # add proxyShapeItem to selection list
-        ufe.GlobalSelection.get().append(proxyShapeItem)
+        # Select proxyShapeItem
+        proxySelection = ufe.Selection()
+        proxySelection.append(proxyShapeItem)
+        ufe.GlobalSelection.get().replaceWith(proxySelection)
 
         # duplicate the proxyShape. 
         cmds.duplicate()
@@ -116,7 +118,7 @@ class testProxyShapeBase(unittest.TestCase):
         self.assertEqual(0, len(ufe.Hierarchy.hierarchy(duplProxyShapeItem).children()))
         self.assertEqual(1, len(ufe.Hierarchy.hierarchy(proxyShapeItem).children()))
 
-    @unittest.skipUnless(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') > '4012', 'testDeleteStage requires Ufe Preview Version at least 4013.')
+    @unittest.skipUnless(os.getenv('UFE_SCENE_SEGMENT_SUPPORT', '0') > '0', 'testDeleteStage requires sceneSegment support.')
     def testDeleteStage(self):
         '''
         Verify that we can delete the stage.
@@ -295,6 +297,82 @@ class testProxyShapeBase(unittest.TestCase):
         # check that the stage is now shared again and the layer is the same
         self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
         self.assertEqual(stage.GetRootLayer().GetDisplayName(), "cylinder.usda")
+
+    def testShareStagePreserveSession(self):
+        '''
+        Verify share/unshare stage preserves the data in the session layer
+        '''
+        # create new stage
+        cmds.file(new=True, force=True)
+
+        # Open usdCylinder.ma scene in testSamples
+        mayaUtils.openCylinderScene()
+
+        # get the stage
+        def getStage():
+            proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+            self.assertGreater(len(proxyShapes), 0)
+            proxyShapePath = proxyShapes[0]
+            return mayaUsd.lib.GetPrim(proxyShapePath).GetStage(), proxyShapePath
+
+        # check that the stage is shared and the root is the right one
+        stage, proxyShapePath = getStage()
+        self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
+
+        # create a prim in the session layer.
+        stage.SetEditTarget(stage.GetSessionLayer())
+        stage.DefinePrim("/dummy", "xform")
+
+        # verify that the prim exists.
+        def verifyPrim():
+            stage, _ = getStage()
+            self.assertTrue(stage.GetPrimAtPath("/dummy"))
+
+        verifyPrim()
+
+        # unshare the stage and verify the prim in the session layer still exists.
+        cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), False)
+
+        verifyPrim()
+
+        # re-share the stage and verify the prim in the session layer still exists.
+        cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), True)
+
+        verifyPrim()
+
+    def testUnsavedStagePreserveRootLayerWhenUpdated(self):
+        '''
+        Verify that a freshly-created stage preserve its data when an attribute is set.
+        '''
+        # Create an empty stage.
+        cmds.file(new=True, force=True)
+        mayaUtils.createProxyAndStage()
+
+        # Helper to get the stage,
+        def getStage():
+            proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+            self.assertGreater(len(proxyShapes), 0)
+            proxyShapePath = proxyShapes[0]
+            return mayaUsd.lib.GetPrim(proxyShapePath).GetStage(), proxyShapePath
+
+        # create a prim in the root layer.
+        stage, proxyShapePath = getStage()
+        stage.SetEditTarget(stage.GetRootLayer())
+        stage.DefinePrim("/dummy", "xform")
+
+        # verify that the prim exists.
+        def verifyPrim():
+            stage, _ = getStage()
+            self.assertTrue(stage.GetPrimAtPath("/dummy"))
+
+        verifyPrim()
+
+        # Set an attribute on the proxy shape. Here we set the loadPayloads.
+        # It was already set, this only triggers a Maya node recompute.
+        cmds.setAttr('{}.{}'.format(proxyShapePath,"loadPayloads"), True)
+
+        # Verify that we did not lose the data on the root layer.
+        verifyPrim()
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testShareStageLoadRules only available in UFE v2 or greater.')
     def testShareStageLoadRules(self):

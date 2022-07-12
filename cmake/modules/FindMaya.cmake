@@ -22,6 +22,7 @@
 # MAYA_HAS_DISPLAY_STYLE_ALL_VIEWPORTS Presence of MFrameContext::getDisplayStyleOfAllViewports.
 # MAYA_ARRAY_ITERATOR_DIFFERENCE_TYPE_SUPPORT Presence of maya array iterator difference_type trait
 # MAYA_HAS_GET_MEMBER_PATHS Presence of MFnSet::getMemberPaths
+# MAYA_CAMERA_GIZMO_SUPPORT Support for drawing Ufe cameras and lights in the viewport.
 
 #=============================================================================
 # Copyright 2011-2012 Francisco Requena <frarees@gmail.com>
@@ -435,12 +436,33 @@ if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MArrayIteratorTemplate
 endif()
 
 set(MAYA_HAS_GET_MEMBER_PATHS FALSE CACHE INTERNAL "hasGetMemberPaths")
-if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MfnSet.h")
-    file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MfnSet.h MAYA_HAS_API REGEX "getMemberPaths")
+if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MFnSet.h")
+    file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MFnSet.h MAYA_HAS_API REGEX "getMemberPaths")
     if(MAYA_HAS_API)
         set(MAYA_HAS_GET_MEMBER_PATHS TRUE CACHE INTERNAL "hasGetMemberPaths")
         message(STATUS "MFnSet has getMemberPaths function")
     endif()
+endif()
+
+set(MAYA_HAS_DISPLAY_LAYER_API FALSE CACHE INTERNAL "hasDisplayLayerAPI")
+if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MFnDisplayLayer.h")
+    set(MAYA_HAS_DISPLAY_LAYER_API TRUE CACHE INTERNAL "hasDisplayLayerAPI")
+    message(STATUS "MFnDisplayLayer exists")
+endif()
+
+set(MAYA_HAS_NEW_DISPLAY_LAYER_MESSAGING_API FALSE CACHE INTERNAL "hasDisplayLayerMemberChangedFunction")
+if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MDisplayLayerMessage.h")
+    file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MDisplayLayerMessage.h MAYA_HAS_API REGEX "MDisplayLayerMemberChangedFunction")
+    if(MAYA_HAS_API)
+        set(MAYA_HAS_NEW_DISPLAY_LAYER_MESSAGING_API TRUE CACHE INTERNAL "hasDisplayLayerMemberChangedFunction")
+        message(STATUS "MDisplayLayerMessage has MDisplayLayerMemberChangedFunction")
+    endif()
+endif()
+
+set(MAYA_CAMERA_GIZMO_SUPPORT FALSE CACHE INTERNAL "ufeCameraGizmos")
+if (MAYA_API_VERSION VERSION_GREATER_EQUAL 20230200)
+    set(MAYA_CAMERA_GIZMO_SUPPORT TRUE CACHE INTERNAL "ufeCameraGizmos")
+    message(STATUS "Maya has UFE gizmo drawing")
 endif()
 
 # handle the QUIETLY and REQUIRED arguments and set MAYA_FOUND to TRUE if
