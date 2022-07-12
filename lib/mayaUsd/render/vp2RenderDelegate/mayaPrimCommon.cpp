@@ -586,8 +586,8 @@ void MayaUsdRPrim::_SyncSharedData(
             _MakeOtherReprRenderItemsInvisible(reprToken, reprs);
 
         bool displayLayerVisibility = true; // objects in the default display layer are visible
-        bool hideOnPlayback = false;
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
+        bool hideOnPlayback = false;
         // Maya Display Layers do not have a representation in USD, so a prim can be
         // visible from USD's point of view, but hidden from Maya's point of view.
         // In Maya Display Layer visibility really hides the render items vs. using
@@ -615,10 +615,8 @@ void MayaUsdRPrim::_SyncSharedData(
             displayLayerVisibility &= layerEnabled.asBool() ? layerVisible.asBool() : true;
             hideOnPlayback |= layerHidesOnPlayback.asBool();
         }
-#endif
-        sharedData.visible = usdVisibility && displayLayerVisibility;
 #ifdef MAYA_HAS_RENDER_ITEM_HIDE_ON_PLAYBACK_API
-        // Also update "hide on playback" status
+        // Update "hide on playback" status
         if (_hideOnPlayback != hideOnPlayback) {
             RenderItemFunc setHideOnPlayback
                 = [hideOnPlayback](HdVP2DrawItem::RenderItemData& renderItemData) {
@@ -629,6 +627,8 @@ void MayaUsdRPrim::_SyncSharedData(
             _hideOnPlayback = hideOnPlayback;
         }
 #endif
+#endif
+        sharedData.visible = usdVisibility && displayLayerVisibility;
     }
 
 #if PXR_VERSION > 2111
