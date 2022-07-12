@@ -480,7 +480,7 @@ class ConnectionTestCase(unittest.TestCase):
         # The attributes are not created yet:
         self.assertEqual(len(materialPrim.GetAuthoredProperties()), 0)
         self.assertEqual(len(shaderPrim.GetAuthoredProperties()), 1)
-        self.assertIn("info:id", [i.GetName() for i in shaderPrim.GetAuthoredProperties()])
+        self.assertEqual("info:id", shaderPrim.GetAuthoredProperties()[0].GetName())
 
         connectionHandler.connect(shaderOutput, materialOutput)
 

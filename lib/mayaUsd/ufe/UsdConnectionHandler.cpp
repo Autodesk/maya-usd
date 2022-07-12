@@ -141,6 +141,10 @@ bool UsdConnectionHandler::createConnection(
                 PXR_NS::SdrShaderNodeConstPtr srcShaderNodeDef
                     = registry.GetShaderNodeByIdentifier(srcInfoId);
                 if (!srcShaderNodeDef) {
+                    TF_RUNTIME_ERROR(
+                        "Could not find node definition '%s' for node '%s'.",
+                        srcInfoId.GetText(),
+                        Ufe::PathString::string(srcAttr->sceneItem()->path()).c_str());
                     return false;
                 }
                 TfToken renderContext = srcShaderNodeDef->GetSourceType() == "glslfx"
