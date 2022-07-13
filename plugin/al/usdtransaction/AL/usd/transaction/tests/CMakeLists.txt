@@ -24,15 +24,11 @@ target_sources(${TARGET_NAME}
 target_include_directories(${TARGET_NAME}
   PUBLIC
     ${GTEST_INCLUDE_DIRS}
-    ${USDTRANSACTION_INCLUDE_LOCATION}
     ${USD_INCLUDE_DIR}
 )
 
 target_link_libraries(${TARGET_NAME}
     ${GTEST_LIBRARIES}
-    arch
-    usd
-    vt
     ${USDTRANSACTION_LIBRARY_NAME}
 )
 
@@ -59,8 +55,11 @@ endif()
 mayaUsd_add_test(GTest:${TARGET_NAME}
     COMMAND $<TARGET_FILE:${TARGET_NAME}>
     ENV
-        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
-        "DYLD_PRINT_LIBRARIES=YES"
+    "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+
+    # OSX Debugging
+    "DYLD_PRINT_LIBRARIES=YES" # https://developer.apple.com/library/archive/documentation/DeveloperTools/Conceptual/DynamicLibraries/100-Articles/LoggingDynamicLoaderEvents.html
+    "DYLD_PRINT_LIBRARIES_POST_LAUNCH=YES"
 )
 
 mayaUsd_add_test(Python:${TARGET_NAME}

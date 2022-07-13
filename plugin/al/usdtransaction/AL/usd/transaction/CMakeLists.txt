@@ -59,7 +59,7 @@ target_link_libraries(${USDTRANSACTION_LIBRARY_NAME}
   tf
   sdf
   usd
-  ${python_LIBRARIES}
+  ${PYTHON_LIBRARIES}
 )
 
 list(APPEND usdtransaction_python_source
@@ -95,7 +95,7 @@ target_include_directories(${USDTRANSACTION_PYTHON_LIBRARY_NAME}
 
 target_link_libraries(${USDTRANSACTION_PYTHON_LIBRARY_NAME}
   ${USDTRANSACTION_LIBRARY_NAME}
-  ${python_LIBRARIES}
+  ${PYTHON_LIBRARIES}
 )
 
 set_target_properties(${USDTRANSACTION_PYTHON_LIBRARY_NAME}
