@@ -29,7 +29,7 @@ target_include_directories(${TARGET_NAME}
 
 target_link_libraries(${TARGET_NAME}
     ${GTEST_LIBRARIES}
-#    ${USDTRANSACTION_LIBRARY_NAME}
+    ${USDTRANSACTION_LIBRARY_NAME}
 )
 
 # install
