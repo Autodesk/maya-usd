@@ -11,3 +11,4 @@
 + [MaterialX](doc/MaterialX.md)
 + [MaterialX Code Gen](lib/mayaUsd/render/MaterialXGenOgsXml/README.md)
 + [MayaToHydra](doc/MayaToHydra.md)
++ [Layer Saving](lib/mayaUsd/nodes/Layer_Saving_Docs.md)
