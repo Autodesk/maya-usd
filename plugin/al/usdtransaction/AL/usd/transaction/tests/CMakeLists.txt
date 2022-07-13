@@ -17,8 +17,8 @@ target_compile_definitions(${TARGET_NAME}
 target_sources(${TARGET_NAME}
   PRIVATE
     testMain.cpp
-    testTransactionManager.cpp
-    testTransaction.cpp
+#    testTransactionManager.cpp
+#    testTransaction.cpp
 )
 
 target_include_directories(${TARGET_NAME}
@@ -29,7 +29,7 @@ target_include_directories(${TARGET_NAME}
 
 target_link_libraries(${TARGET_NAME}
     ${GTEST_LIBRARIES}
-    ${USDTRANSACTION_LIBRARY_NAME}
+#    ${USDTRANSACTION_LIBRARY_NAME}
 )
 
 # install
