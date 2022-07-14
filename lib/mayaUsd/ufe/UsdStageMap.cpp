@@ -135,6 +135,42 @@ UsdStageWeakPtr UsdStageMap::stage(const Ufe::Path& path)
     return objToStage(obj);
 }
 
+void UsdStageMap::fixByDoingNothing()
+{
+    // The first fix is to do nothing and just use the cache as-is.
+}
+
+void UsdStageMap::fixByDetectingRenamedStageProxies()
+{
+    // The second fix is to try to detect renamed proxy shapes and adjust
+    // only those entries.
+
+    // MObjects stay valid even when re-parented or re-named, so we can
+    // scan through all the entries in the cache and validate that the current
+    // DAG path to the MObject matches the key Ufe::Path for the MObject in
+    // the cache. When the don't match, update fPathToObject so that the key and
+    // the MObject are in sync again.
+    auto pathToObject = fPathToObject;
+    for (const auto& entry : pathToObject) {
+        const auto& cachedPath = entry.first;
+        const auto& cachedObject = entry.second;
+        // Get the UFE path from the map value.
+        auto newPath = firstPath(cachedObject);
+        if (newPath != cachedPath) {
+            // Key is stale.  Remove it from our cache, and add the new entry.
+            auto count = fPathToObject.erase(cachedPath);
+            TF_AXIOM(count);
+            fPathToObject[newPath] = cachedObject;
+        }
+    }
+}
+
+void UsdStageMap::fixByRebuildingCache()
+{
+    // Final attempt is to just rebuild the entire cache.
+    rebuildCache();
+}
+
 MObject UsdStageMap::proxyShape(const Ufe::Path& path)
 {
     // In additional to the explicit dirty system it is possible that
@@ -164,37 +200,56 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path)
     const auto& singleSegmentPath
         = nbPathSegments(path) == 1 ? path : Ufe::Path(path.getSegments()[0]);
 
-    auto iter = fPathToObject.find(singleSegmentPath);
+    // The various cache healing fixes in order of costs.
+    // The first one does nothing.
+    //
+    // We did it this way with a first no-op fix to simplify the structure
+    // of the for loop, if we had applied the fix at the end of the loop,
+    // we would have needed a final lookup after the final element has been
+    // used, which would preclude a simple for loop and required a harder
+    // to follow do/while with manual iteration over the fixes.
+    static const std::function<void()> fixAttempts[]
+        = { [this]() { fixByDoingNothing(); },
+            [this]() { fixByDetectingRenamedStageProxies(); },
+            [this]() { fixByRebuildingCache(); } };
 
-    if (iter == std::end(fPathToObject)) {
-        // When we don't find an entry in the cache then we are in scenerio 1.
-        rebuildCache();
+    for (const auto& fix : fixAttempts) {
+        // Apply fix, the first one tried does nothing and we thus use the cache as-is.
+        fix();
 
-        // Now that the cache is in a good state, attempt to find the searched for
-        // proxyShape again.
-        iter = fPathToObject.find(singleSegmentPath);
-    } else {
+        auto iter = fPathToObject.find(singleSegmentPath);
+
+        // No entry found, try the next fix and lookup again.
+        if (iter == std::end(fPathToObject))
+            continue;
+
         auto object = iter->second;
-        // If the cached object itself is invalid then remove it from the map.
-        // Rebuild the cache and try to find it again.
+
+        // If the cached object itself is invalid then remove it from the map
+        // and try the next fix and lookup again.
         if (!object.isValid()) {
             fPathToObject.erase(singleSegmentPath);
-            rebuildCache();
-            iter = fPathToObject.find(singleSegmentPath);
-        } else {
-            auto objectPath = firstPath(object);
-            if (objectPath != iter->first) {
-                // When we hit the cache and the key path doesn't match the current object path
-                // we are in scenerio 2.
-                rebuildCache();
-                iter = fPathToObject.find(singleSegmentPath);
-            }
+            continue;
         }
+
+        auto objectPath = firstPath(object);
+
+        // When we hit the cache and the key path doesn't match the current object path
+        // we are in scenerio 2. Update the entry in fPathToObject so that the key path
+        // is the current object path, then try the next fix and lookup again.
+        if (objectPath != iter->first) {
+            fPathToObject.erase(singleSegmentPath);
+            fPathToObject[objectPath] = object;
+            TF_VERIFY(std::end(fPathToObject) == fPathToObject.find(singleSegmentPath));
+            continue;
+        }
+
+        // Everything is fine, return the found object.
+        return object.object();
     }
 
-    // At this point the cache is rebuilt, so lookup failure means the object
-    // doesn't exist.
-    return iter == std::end(fPathToObject) ? MObject() : iter->second.object();
+    // At this point lookup failure means the object doesn't exist.
+    return MObject();
 }
 
 MayaUsdProxyShapeBase* UsdStageMap::proxyShapeNode(const Ufe::Path& path)

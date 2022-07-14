@@ -96,6 +96,11 @@ private:
     void rebuildCache();
     void rebuildIfDirty();
 
+    // Various ways to try to heal a dirty cache in order or processing costs.
+    void fixByDoingNothing();
+    void fixByDetectingRenamedStageProxies();
+    void fixByRebuildingCache();
+
 private:
     // We keep two maps for fast lookup when there are many proxy shapes.
     using PathToObject = std::unordered_map<Ufe::Path, MObjectHandle>;
