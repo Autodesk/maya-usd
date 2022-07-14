@@ -190,7 +190,10 @@ Ufe::UIInfoHandler::Icon UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Pt
         { "Skeleton", "out_USD_Skeleton.png" },
         { "SkelRoot", "out_USD_SkelRoot.png" },
         { "Sphere", "out_USD_Sphere.png" },
-        { "Volume", "out_USD_Volume.png" }
+        { "Volume", "out_USD_Volume.png" },
+        { "Material", "out_USD_Material.png"},
+        { "NodeGraph", "out_USD_Shader.png"},
+        { "Shader", "out_USD_Shader.png"},
     };
 
     Ufe::UIInfoHandler::Icon icon; // Default is empty (no icon and no badge).

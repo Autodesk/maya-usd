@@ -31,6 +31,8 @@ if (CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdGeomXformable
         UsdTyped
         Volume
+        Material
+        Shader
     )
     if (PXR_VERSION GREATER_EQUAL 2111)
         list(APPEND OUTLINER_ICONS
