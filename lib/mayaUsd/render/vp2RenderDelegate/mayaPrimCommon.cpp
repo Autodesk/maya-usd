@@ -588,6 +588,7 @@ void MayaUsdRPrim::_SyncSharedData(
         bool displayLayerVisibility = true; // objects in the default display layer are visible
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
         bool hideOnPlayback = false;
+        _displayType = kNormal;
         // Maya Display Layers do not have a representation in USD, so a prim can be
         // visible from USD's point of view, but hidden from Maya's point of view.
         // In Maya Display Layer visibility really hides the render items vs. using
@@ -612,8 +613,12 @@ void MayaUsdRPrim::_SyncSharedData(
             MPlug             layerEnabled = displayLayerNodeFn.findPlug("enabled");
             MPlug             layerVisible = displayLayerNodeFn.findPlug("visibility");
             MPlug             layerHidesOnPlayback = displayLayerNodeFn.findPlug("hideOnPlayback");
+            MPlug             layerDisplayType = displayLayerNodeFn.findPlug("displayType");
             displayLayerVisibility &= layerEnabled.asBool() ? layerVisible.asBool() : true;
             hideOnPlayback |= layerHidesOnPlayback.asBool();
+            if (_displayType == kNormal) {
+                _displayType = (DisplayType)layerDisplayType.asShort();
+            }
         }
 
         // Update "hide on playback" status

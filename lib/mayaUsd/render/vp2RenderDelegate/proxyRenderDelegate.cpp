@@ -1034,11 +1034,14 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     // render param's.
     auto* param = reinterpret_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
     param->BeginUpdate(container, _sceneDelegate->GetTime());
+    _currentFrameContext = &frameContext;
 
     if (_Populate()) {
         _UpdateSceneDelegate();
         _Execute(frameContext);
     }
+
+    _currentFrameContext = nullptr;
     param->EndUpdate();
 }
 
@@ -1736,6 +1739,50 @@ GfVec3f ProxyRenderDelegate::GetDefaultColor(const TfToken& className)
     // Update the cache and return
     colorCache->second = _frameCounter;
     return colorCache->first;
+}
+
+MColor ProxyRenderDelegate::GetTemplateColor(bool active)
+{
+    MColorCache& colorCache = active ? _activeTemplateColorCache : _dormantTemplateColorCache;
+
+    // Check the cache. It is safe since colorCache.second is atomic
+    if (colorCache.second == _frameCounter) {
+        return colorCache.first;
+    }
+
+    // Enter the mutex and check the cache again
+    std::lock_guard<std::mutex> mutexGuard(_mayaCommandEngineMutex);
+    if (colorCache.second == _frameCounter) {
+        return colorCache.first;
+    }
+
+    // Construct the query command string.
+    MString queryCommand;
+    queryCommand = "displayRGBColor -q \"";
+    queryCommand += active ? "templateActive" : "templateDormant";
+    queryCommand += "\"";
+
+    // Query and return the template color.
+    MDoubleArray colorResult;
+    MGlobal::executeCommand(queryCommand, colorResult);
+
+    if (colorResult.length() == 3) {
+        colorCache.first = MColor(colorResult[0], colorResult[1], colorResult[2]);
+#if MAYA_API_VERSION >= 20230200
+        if (active && _currentFrameContext) {
+            colorCache.first = _currentFrameContext->applyViewTransform(colorCache.first, MFrameContext::kInverse);
+        }
+#endif        
+    } else {
+        TF_WARN("Failed to obtain template color.");
+
+        // In case of any failure, return the default color
+        colorCache.first = MColor(0.5f, 0.5f, 0.5f);
+    }
+
+    // Update the cache and return
+    colorCache.second = _frameCounter;
+    return colorCache.first;
 }
 
 //! \brief

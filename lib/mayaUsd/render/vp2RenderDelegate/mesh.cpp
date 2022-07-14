@@ -1455,7 +1455,8 @@ void HdVP2Mesh::_UpdateDrawItem(
     // is no selection highlight change and the mesh is not selected. Draw item
     // has its own dirty bits, so update will be done when it shows in viewport.
     const bool isDedicatedSelectionHighlightItem
-        = drawItem->MatchesUsage(HdVP2DrawItem::kSelectionHighlight);
+        = drawItem->MatchesUsage(HdVP2DrawItem::kSelectionHighlight) && 
+            (_displayType != MayaUsdRPrim::kTemplate);
     if (isDedicatedSelectionHighlightItem && ((itemDirtyBits & DirtySelectionHighlight) == 0)
         && (_selectionStatus == kUnselected)) {
         return;
@@ -1947,10 +1948,15 @@ void HdVP2Mesh::_UpdateDrawItem(
         // Non-instanced Rprims.
         if ((itemDirtyBits & DirtySelectionHighlight)
             && drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight)) {
-            const MColor& color
-                = (_selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
-                       _selectionStatus == kFullyLead ? TfToken() : HdPrimTypeTokens->mesh)
-                                                   : drawScene.GetWireframeColor());
+            MColor color;
+            if (_displayType == kTemplate) {
+                color = drawScene.GetTemplateColor(_selectionStatus != kUnselected);
+            }
+            else {
+                color = (_selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
+                         _selectionStatus == kFullyLead ? TfToken() : HdPrimTypeTokens->mesh)
+                                : drawScene.GetWireframeColor());
+            }
 
             MHWRender::MShaderInstance* shader = _delegate->Get3dSolidShader(color);
             if (shader != nullptr && shader != drawItemData._shader) {
@@ -1970,7 +1976,11 @@ void HdVP2Mesh::_UpdateDrawItem(
         bool enable = drawItem->GetVisible() && !_points(_meshSharedData->_primvarInfo).empty()
             && !instancerWithNoInstances;
 
-        if (isDedicatedSelectionHighlightItem) {
+        if (_displayType == MayaUsdRPrim::kTemplate && 
+                drawItem->MatchesUsage(HdVP2DrawItem::kRegular)) {
+            enable = false;
+        }
+        else if (isDedicatedSelectionHighlightItem) {
             enable = enable && (_selectionStatus != kUnselected);
         } else if (isPointSnappingItem) {
             enable = enable && (_selectionStatus == kUnselected);
@@ -1991,8 +2001,11 @@ void HdVP2Mesh::_UpdateDrawItem(
            & (HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyNormals
               | HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyTopology));
 
+    const bool isTemplateItem = (_displayType == MayaUsdRPrim::kTemplate) &&
+        drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight);
+
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-    if (!isBBoxItem && !isDedicatedSelectionHighlightItem
+    if (!isBBoxItem && !isDedicatedSelectionHighlightItem && !isTemplateItem
         && (itemDirtyBits & (DirtySelectionHighlight | DirtySelectionMode))) {
         MSelectionMask selectionMask(MSelectionMask::kSelectMeshes);
 
