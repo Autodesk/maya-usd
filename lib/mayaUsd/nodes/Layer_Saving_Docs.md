@@ -87,26 +87,34 @@ node. It is where the known layers are kept in Maya. It is used both by
 the Proxy Shape to find the layers and by the Layer Manager UI to show
 the known layers to the user.
 
-One peculiarity is that the Layer Manager's Maya node is only briefly
-kept alive. When a Maya scene is loaded, the Maya node contains the list
-of known layers ID. That is used to re-open or re-create all these known
-layers. The ID of the layers are forced to be the ID that were kept in
-the Layer Manager node. Once this layer loading is done, the Maya node
-is destroyed. It will only be created when the scene is about to be
-saved. Also, this processing to find all layers is done the first time a
-layer is requested. It is done when LayerManager::findLayer() is called.
-This will be important when we discuss the problems we encountered in
-the saving process.
+One peculiarity is that the Layer Manager's Maya node is only briefly kept
+alive. When a Maya scene is loaded, the Maya node contains the list of known
+layers ID and possibly text attribute withthe content of these layers, if they
+were not saved to external files. For example, all session layers are always
+saved within these text attributes. These ID and contentd are used to re-open
+or re-create all these known layers. The ID of the layers are forced to be the
+ID that were kept in the Layer Manager node. Once this layer loading is done,
+the Maya node is destroyed. It will only be recreated when the scene is about
+to be saved. 
 
-Why were the layer found on first access? I don't know but I would think
-it would be because the Proxy Shape uses the Layer Manager to find its
-layers and when the Proxy Shape will be computed is ill-defined, so the
-Layer Manager needs to be ready to provide them at any time. In
-particular, it probably could not assume that a post-scene-load callback
-would be triggered early enough. It might happen that the Proxy Shape is
-accessed earlier and would thus need the Layer Manager to be ready
-earlier? This is speculation, of course. (Tim Fowler might remember.)
+This processing to create layers from text attributes is done the first time
+a layer is requested. It is done when LayerManager::findLayer() is called.
+This will be important when we discuss the problems we encountered in the
+saving process.
 
+The layer found on first access because the Proxy Shape uses the Layer
+Manager to find its layers and when the Proxy Shape will be computed
+is ill-defined, so the Layer Manager needs to be ready to provide them
+at any time. In particular, it probably could not assume that a
+post-scene-load callback would be triggered early enough. It might happen
+that the Proxy Shape is accessed earlier and would thus need the Layer
+Manager to be ready earlier.
+
+The reason we need this Layer Manager is that there is no such thing as a
+layer cache in USD. A layer only exists as long as something references it.
+So, something needs to hold on to the layers between the time teh Layer Manager
+Maya node is deserialized and the time the layers are requested by the Proxy
+Shapes.
 
 ### Layer and Load Rules Saving
 
@@ -248,32 +256,35 @@ and connections.
 ### Why does the layer manager have a layer database?
 
 Why is it not solely responsible for serialization? Doesn't USD have a
-layer database, which we  could use as the Single Point of Truth?  Why
+layer database, which we could use as the Single Point of Truth?  Why
 can't we use SdfLayer::GetLoadedLayers()?
 
-The post-read processing triggered by the first call to findLayer() does
-call SdfLayer::Find(). It also does special processing for USD layers
-saved inside the Maya scene file. These layers are not on-disk and are
-de-serialized from text attributes on the Layer Manager. This does not
-explain why SdfLayer::Find() could not be called by others instead of
-having findLayers(). It seems findLayers() only prupose currently is to
-ensure that the post-read processing has been executed.
+The reason is that while USD knows about all loaded layers, it does not
+have a layer cache. It only keeps and know about layers that are kept alive
+by at least one smart pointer. So SdfLayer::Find() can only find layers that
+are already in active use, in a USD Stage.
 
-*Speculative answer*: it serve no other purpose than ensuring the
-post-read processing has been executed. That could potentially be done
-in a true post-read callback? Why was it not done that way? Maybe Tim
-Fowler remembers.
+The post-read processing triggered by the first call to findLayer() does
+call SdfLayer::Find(). This is in case a layer is shared by multiple Stages.
+It also does special processing for USD layers saved inside the Maya scene
+file. These layers are not on-disk and are de-serialized from text attributes
+on the Layer Manager. OTOH, the only prupose of findLayers() is to ensure that
+the post-read processing has been executed.
+
+In the future, we are thinking of replacing the findLayers() and the one-time
+processing it does by an explicit Maya post-read callback that would compute
+all Proxy Shape and get rid of the Layer Mabaer layer database after all Proxy
+Shape are computed.
 
 
 ### Why does LayerManager::findLayer() triggers processing?
 
-The default implementation of
-MayaUsdProxyShapeBase::computeSessionLayer() calls
-LayerManager::findLayer()!
+The default implementation of MayaUsdProxyShapeBase::computeSessionLayer()
+calls LayerManager::findLayer().
 
-*Speculative answer*: to avoid order dependency or de-serialization and
-computation between the Proxy Shape and Layer manager. Maybe Tim Fowler
-would remember the reason.
+It's to avoid order dependency during de-serialization and computation between
+the Proxy Shape and Layer manager. The Layer Manager needs to hold onto the
+layers until all Proxy Shape have been computed.
 
 
 ### Why Layer Manager ask the Proxy Shape for the stage again after calling the optional save callback?
@@ -281,12 +292,10 @@ would remember the reason.
 Why doesn't the layer manager have the list of its layers, and can
 access it directly, at this point?
 
-*Partial answer*: with the proposed code change, the Layer Manager does
-keep the list of layers.
-
-*Speculative answer*: maybe it did not want to assume what the
-save-stage callback did. It wanted to allow the callback to create new
-layers or even new stages?
+With the latest proposed code change in review, the Layer Manager does keep
+the list of layers. Possibly, it does not want to assume what the save-stage
+callback vould do. It wants to allow the callback to create new layers or even
+new stages, or modify them in arbitrary ways.
 
 
 ### What is the session layer ID problem?
