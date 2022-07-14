@@ -60,6 +60,8 @@ mayaUsd_add_test(GTest:${TARGET_NAME}
     # OSX Debugging
     "DYLD_PRINT_LIBRARIES=YES" # https://developer.apple.com/library/archive/documentation/DeveloperTools/Conceptual/DynamicLibraries/100-Articles/LoggingDynamicLoaderEvents.html
     "DYLD_PRINT_LIBRARIES_POST_LAUNCH=YES"
+    "DYLD_PRINT_BINDINGS=YES"
+    "DYLD_PRINT_APIS=YES"
 )
 
 mayaUsd_add_test(Python:${TARGET_NAME}
