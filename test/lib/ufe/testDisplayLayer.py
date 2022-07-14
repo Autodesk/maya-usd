@@ -44,6 +44,7 @@ class DisplayLayerTestCase(unittest.TestCase):
     NEW_SPHERE1 = '|stage1|stageShape1,/NewSphere1'
     XFORM1_SPHERE1 = '|stage1|stageShape1,/Xform1/Sphere1'
     NEW_XFORM1_SPHERE1 = '|stage1|stageShape1,/NewXform1/Sphere1'
+    INVALID_PRIM = '|stage1|stageShape1,/BogusPrim'
 
     @classmethod
     def setUpClass(cls):
@@ -268,3 +269,39 @@ class DisplayLayerTestCase(unittest.TestCase):
 
         # TODO - test the undo/redo for delete of Ufe item in Layer.
         # This currently doesn't work.
+
+    def testDisplayLayerClear(self):
+        cmdHelp = cmds.help('editDisplayLayerMembers')
+        if '-clear' not in cmdHelp:
+            self.skipTest('Requires clear flag in editDisplayLayerMembers command.')
+
+        # First create Display Layer.
+        cmds.createDisplayLayer(name=self.LAYER1, number=1, empty=True)
+        layer1 = self.displayLayer(self.LAYER1)
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+
+        # Add the one valid and one invalid prim to the layer.
+        # Note: we cannot use the command to add an invalid prim since it verifies that a valid
+        #       scene item can be created. Instead we use the Maya API to add it.
+        # Note: you can get invalid prims thru different operations such as loading USD file
+        #       or changing variants.
+        stage.DefinePrim('/Cube1', 'Cube')
+        cmds.editDisplayLayerMembers(self.LAYER1, self.CUBE1, noRecurse=True)
+        layer1.add(self.INVALID_PRIM)
+
+        # Verify that both prims are in layer.
+        # Note: the editDisplayLayerMembers command only returns valid prims.
+        #       But the MFnDisplayLayer will return all prims (including invalid ones).
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, fn=True)
+        self.assertTrue(self.CUBE1 in layerObjs)
+        self.assertFalse(self.INVALID_PRIM in layerObjs)
+        self._testLayerFromPath(self.CUBE1, self.LAYER1)
+        self._testLayerFromPath(self.INVALID_PRIM, self.LAYER1)
+
+        # Now clear the layer and make sure both prims (valid and invalid) got removed.
+        cmds.editDisplayLayerMembers(self.LAYER1, clear=True)
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, fn=True)
+        self.assertIsNone(layerObjs)
+        self.assertFalse(layer1.contains(self.CUBE1))
+        self.assertFalse(layer1.contains(self.INVALID_PRIM))
