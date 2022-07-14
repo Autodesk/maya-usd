@@ -147,6 +147,7 @@ class testProxyShapeBase(unittest.TestCase):
         # Request the now dead proxy shape. This should not crash.
         result = handler.findGatewayItems(proxyShapePath)
 
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testDeleteStageUndo uses PathString which is only available in UFE v2 or greater.')
     def testDeleteStageUndo(self):
         '''
         Verify that we can undo the deletion of the stage.

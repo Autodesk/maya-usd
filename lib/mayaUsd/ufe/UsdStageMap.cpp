@@ -155,12 +155,13 @@ void UsdStageMap::fixByDetectingRenamedStageProxies()
         const auto& cachedPath = entry.first;
         const auto& cachedObject = entry.second;
         // Get the UFE path from the map value.
-        auto newPath = firstPath(cachedObject);
+        auto newPath = cachedObject.isValid() ? firstPath(cachedObject) : Ufe::Path();
         if (newPath != cachedPath) {
             // Key is stale.  Remove it from our cache, and add the new entry.
             auto count = fPathToObject.erase(cachedPath);
             TF_AXIOM(count);
-            fPathToObject[newPath] = cachedObject;
+            if (!newPath.empty())
+                fPathToObject[newPath] = cachedObject;
         }
     }
 }
