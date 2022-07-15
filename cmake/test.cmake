@@ -386,7 +386,7 @@ finally:
         set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
             "DYLD_LIBRARY_PATH=${MAYA_LOCATION}/MacOS:$ENV{DYLD_LIBRARY_PATH}")
         set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
-            "DYLD_FRAMEWORK_PATH=${MAYA_LOCATION}/Maya.app/Contents/Frameworks")
+            "DYLD_FRAMEWORK_PATH=${MAYA_LOCATION}/Frameworks")
     endif()
 
     if (PREFIX_INTERACTIVE)

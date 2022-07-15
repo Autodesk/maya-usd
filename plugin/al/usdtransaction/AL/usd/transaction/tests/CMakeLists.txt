@@ -45,13 +45,6 @@ if(IS_MACOSX OR IS_LINUX)
     mayaUsd_install_rpath(rpath ${TARGET_NAME})
 endif()
 
-if(IS_MACOSX)
-    # Create symbolic link to python framework
-    file(CREATE_LINK ${MAYA_LOCATION}/Frameworks ${CMAKE_CURRENT_BINARY_DIR}/../Frameworks SYMBOLIC)
-    file(MAKE_DIRECTORY ${AL_INSTALL_PREFIX})
-    file(CREATE_LINK ${MAYA_LOCATION}/Frameworks ${AL_INSTALL_PREFIX}/Frameworks SYMBOLIC)
-endif()
-
 mayaUsd_add_test(GTest:${TARGET_NAME}
     COMMAND $<TARGET_FILE:${TARGET_NAME}>
     ENV
