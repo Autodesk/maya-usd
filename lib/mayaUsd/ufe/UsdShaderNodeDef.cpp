@@ -109,6 +109,29 @@ std::string UsdShaderNodeDef::type() const
     return fShaderNodeDef->GetIdentifier();
 }
 
+namespace {
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    (arnold)
+    (shader)
+);
+// clang-format on
+
+// Arnold nodes seem to be incompletely registered, this affects the "classification" scheme used
+// by the UFE abstraction. This has been identified as Arnold-USD issue 1214:
+//    https://github.com/Autodesk/arnold-usd/issues/1214
+// We will detect this in a way that should switch back to the normal classification scheme if the
+// registration code is updated.
+bool _isArnoldWithIssue1214(const PXR_NS::SdrShaderNode& shaderNodeDef)
+{
+    return shaderNodeDef.GetSourceType() == _tokens->arnold
+        && shaderNodeDef.GetFamily() == _tokens->shader
+        && shaderNodeDef.GetName() != _tokens->shader;
+}
+} // namespace
+
 std::size_t UsdShaderNodeDef::nbClassifications() const
 {
     TF_AXIOM(fShaderNodeDef);
@@ -120,6 +143,14 @@ std::size_t UsdShaderNodeDef::nbClassifications() const
     //     - SourceType
     if (fShaderNodeDef->GetFamily().IsEmpty()) {
         return 2;
+    }
+
+    if (_isArnoldWithIssue1214(*fShaderNodeDef)) {
+        // With 1214 active, we can provide 2 classification levels:
+        //    - Name (as substitute for family)
+        //    - SourceType
+        return 2;
+        // This might change in some future and fallback to the last case below.
     }
 
     // Regular shader nodes provide 3 classification levels:
@@ -136,6 +167,13 @@ std::string UsdShaderNodeDef::classification(std::size_t level) const
         switch (level) {
         // UsdLux:
         case 0: return fShaderNodeDef->GetContext().GetString();
+        case 1: return fShaderNodeDef->GetSourceType().GetString();
+        }
+    }
+    if (_isArnoldWithIssue1214(*fShaderNodeDef)) {
+        switch (level) {
+        // Arnold with issue 1214 active:
+        case 0: return fShaderNodeDef->GetName();
         case 1: return fShaderNodeDef->GetSourceType().GetString();
         }
     }
@@ -233,8 +271,14 @@ static const MetadataMap _metaMap = {
     // Conversion map between known USD metadata and its MaterialX equivalent:
     { "uiname",
       [](const PXR_NS::SdrShaderNode& n) {
-          return !n.GetLabel().IsEmpty() ? n.GetLabel().GetString()
-                                         : UsdMayaUtil::prettifyName(n.GetFamily().GetString());
+          std::string uiname;
+          if (!n.GetLabel().IsEmpty()) {
+              return n.GetLabel().GetString();
+          }
+          if (!n.GetFamily().IsEmpty() && !_isArnoldWithIssue1214(n)) {
+              return UsdMayaUtil::prettifyName(n.GetFamily().GetString());
+          }
+          return UsdMayaUtil::prettifyName(n.GetName());
       } },
     { "doc",
       [](const PXR_NS::SdrShaderNode& n) {
