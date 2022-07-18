@@ -310,6 +310,10 @@ private:
         UsdShadeMaterial* const                mat,
         SdfPathSet* const                      boundPrimPaths) override
     {
+        if (context.GetExportArgs().allMaterialConversions.empty()) {
+            return;
+        }
+
         MStatus status;
 
         MObject                 shadingEngine = context.GetShadingEngine();
