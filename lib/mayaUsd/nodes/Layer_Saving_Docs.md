@@ -89,7 +89,7 @@ It is where the known layers are kept in Maya USD. It is used both by the
 Proxy Shape to find the layers and by the Layer Manager UI to show the known
 layers to the user.
 
-One peculiarity is that the Layer Manager's Maya node is only briefly kept
+It is important to note that the Layer Manager's Maya node is only briefly kept
 alive. When a Maya scene is loaded, the Maya node contains the list of known
 layer IDs and possibly string attributes with the content of these layers,
 if they were not saved to external files. For each layer saved in the node,
