@@ -119,7 +119,7 @@ post-load-scene callback could access the Proxy Shape and would thus need
 the Layer Manager to be ready to provide layers.
 
 The reason we need this Layer Manager is that there is no such thing as a
-layer cache in USD. Sdf layers only exist only if they are referenced. The
+layer cache in USD. Sdf layers only exist if they are referenced. The
 Layer Manager meets this requirement by holding a reference to each layer.
 This preserves the layer lifescope between the time the Layer Manager Maya
 node is deserialized and the time the layers are requested by the Proxy
@@ -131,11 +131,11 @@ The USD Stage is a pure run-time object. The objects that are saved are
 only the layers. Stages get re-created based on layers, as explained above.
 
 Layers are saved just before the Maya scene is saved, in a Maya pre-save
-callback. All layers that needs to be saved to external files are saved,
-then all layers that need to be saved inside Maya file, including session
+callback. All layers that need to be saved to external files are saved,
+then all layers that need to be saved inside the Maya file, including session
 layers, are serialized into string attributes in the Layer Manager Maya node.
 
-This layer-saving process is not customizable. The USD plugin can provide
+This layer-saving process is customizable. The USD plugin can provide
 a callback to do some of the work of saving layers. If such a callback is
 provided (and the Maya USD plugin does provide one), then it gets called
 with a list of objects describing each stage that need to be saved. For each
@@ -161,7 +161,7 @@ Maya USD, we do save load state of all payload for each stage as an attribute
 on the Proxy Shape. This is also done in another Maya pre-saved callback.
 
 
-## Save Architecture Challenge
+## Save Architecture Challenges
 
 The main challenges that the save architecture must deal with are that:
 
@@ -177,7 +177,7 @@ The use of SdfNotice::LayerIdentifierDidChange should be investigated.
 
 ## FAQ
 
-### Where are stage caches created is Maya USD?
+### Where are stage caches created in Maya USD?
 
 *Answer*: The Maya USD UsdStageCache class is creating and holding the caches.
 
@@ -218,7 +218,7 @@ a new stage, all that the user specifies is the file-name of the root layer
 previously-existing shared stage, only the root layer must be passed so that
 USD will return the existing stage, thus implementing the desired sharing of
 the stage and session layer. We could not possibly pass a session layer,
-because we don't have it and we want ot find a stage with the root layer and
+because we don't have it and we want to find a stage with the root layer and
 existing session layer, if any are already loaded.
 
 
