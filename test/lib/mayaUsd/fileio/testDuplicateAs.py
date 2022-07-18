@@ -407,8 +407,20 @@ class DuplicateAsTestCase(unittest.TestCase):
         # Undo duplicate to USD.
         cmds.undo()
 
-        # Duplicate Maya data as USD data using default options that are with materials
+        # Duplicate Maya data as USD data using default options. The default do not specify any
+        # material conversion option, so we still get no material.
         modifiedDuplicateAsMayaDataOptions = defaultDuplicateAsMayaDataOptions[:]
+        cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr, exportOptions=modifiedDuplicateAsMayaDataOptions)
+
+        # Verify that the copied sphere does not have a look (material) prim.
+        looksPrim = stage.GetPrimAtPath("/pSphere1/Looks")
+        self.assertFalse(looksPrim.IsValid())
+
+        # Undo duplicate to USD.
+        cmds.undo()
+
+        # Duplicate Maya data as USD data using default options that are with materials.
+        modifiedDuplicateAsMayaDataOptions = defaultDuplicateAsMayaDataOptions.replace("convertMaterialsTo=[]", "convertMaterialsTo=[UsdPreviewSurface]")
         cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr, exportOptions=modifiedDuplicateAsMayaDataOptions)
 
         # Verify that the copied sphere has a look (material) prim.
