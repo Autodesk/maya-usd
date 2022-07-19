@@ -1060,6 +1060,11 @@ HdDirtyBits HdVP2Mesh::_PropagateDirtyBits(HdDirtyBits bits) const
         bits |= HdChangeTracker::DirtySubdivTags | HdChangeTracker::DirtyDisplayStyle;
     }
 
+    // This support UsdSkel affecting the points position when th etransform is dirty.
+    if (bits & HdChangeTracker::DirtyTransform && _pointsFromSkel) {
+        bits |= HdChangeTracker::DirtyPoints;
+    }
+
     // A change of material means that the Quadrangulate state may have
     // changed.
     if (bits & HdChangeTracker::DirtyMaterialId) {
@@ -2405,6 +2410,7 @@ void HdVP2Mesh::_UpdatePrimvarSources(
     HdExtComputationPrimvarDescriptorVector compPrimvars
         = sceneDelegate->GetExtComputationPrimvarDescriptors(id, HdInterpolationVertex);
     const HdRenderIndex& renderIndex = sceneDelegate->GetRenderIndex();
+    bool                 pointsAreComputed = false;
     for (const auto& primvarName : requiredPrimvars) {
         // The compPrimvars are a description of the link between the compute system and
         // what we need to draw.
@@ -2447,7 +2453,18 @@ void HdVP2Mesh::_UpdatePrimvarSources(
             updatePrimvarInfo(
                 primvarName, cpuComputation->GetOutputByIndex(outputIndex), HdInterpolationVertex);
         }
+
+        // Records that points primvar is computed.
+        if (primvarName == HdTokens->points) {
+            pointsAreComputed = true;
+        }
     }
+
+    // When points are computed then we will have to propagate that fact to the function
+    // _PropagateDirtyBits() so that it can mark points dirty when the transform change.
+    // This support UsdSkel affecting the points position and properly making the render
+    // delegate dirty.
+    _pointsFromSkel = pointsAreComputed;
 }
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
