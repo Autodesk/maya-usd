@@ -1,0 +1,29 @@
+@Library(["PSL@LKG", "cot-psl@master"]) _
+
+// this Jenkinsfile replaces a curl command
+// curl -d "DISABLE_MAIL_NOTIFICATIONS=ON" -i -X POST "https://svc_d_ecg:11111111111111111111111111111111@ecg-jenkins.ecs.ads.autodesk.com/job/ecg-mayausd-preflight-update-submodule-master/buildWithParameters"
+
+GITHUB_ORG_NAME = 'media-and-entertainment'
+PROJECT_NAME = 'ecg-maya-usd'
+pipeline {
+    agent {
+        label 'mayausd-preload-pool'
+    }
+    stages {
+        stage('Triggering Preflight update submodule') {
+            steps {
+                sh 'env|sort'
+                script {
+                        build(
+                            job: "ECP/${PROJECT_NAME}/ecg-mayausd-preflight-update-submodule-master",
+                            parameters: [
+                                string(name:'DISABLE_MAIL_NOTIFICATIONS', value:'ON')
+                            ],
+                            wait: false,
+                            propagate: false
+                        )
+                }
+            }
+        }
+    }
+}
