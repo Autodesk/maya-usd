@@ -99,6 +99,8 @@ void cacheMayaReference(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionar
         = PXR_NS::SdfLayer::CreateAnonymous("", fileFormat, fileFormatArgs);
     SdfJustCreatePrimInLayer(tmpLayer, dstPrimPath);
 
+    tmpLayer->SetDefaultPrim(dstPrimPath.GetNameToken());
+
     tmpLayer->Export(dstLayerPath, "", fileFormatArgs);
     PXR_NS::SdfLayerRefPtr dstLayer = PXR_NS::SdfLayer::FindOrOpen(dstLayerPath);
     if (!dstLayer)
