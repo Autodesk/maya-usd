@@ -208,7 +208,7 @@ protected:
         HdSceneDelegate*   delegate,
         HdDirtyBits const* dirtyBits,
         TfToken const&     reprToken,
-        SdfPath const&     id,
+        HdRprim const&     refThis,
         ReprVector const&  reprs,
         TfToken const&     renderTag);
 

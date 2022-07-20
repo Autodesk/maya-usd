@@ -509,7 +509,7 @@ void HdVP2BasisCurves::Sync(
     const TfToken& renderTag = delegate->GetRenderTag(id);
 #endif
 
-    _SyncSharedData(_sharedData, delegate, dirtyBits, reprToken, id, _reprs, renderTag);
+    _SyncSharedData(_sharedData, delegate, dirtyBits, reprToken, *this, _reprs, renderTag);
 
     *dirtyBits = HdChangeTracker::Clean;
 
