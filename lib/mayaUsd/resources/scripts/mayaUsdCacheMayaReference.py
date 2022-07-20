@@ -169,7 +169,6 @@ def variantOrNewPrim(buttonChecked):
     variantSelected = cmds.radioButtonGrp('variantRadioButton', query=True, select=1)
     cmds.rowLayout('usdCacheVariantSetRow', edit=True, enable=variantSelected)
     cmds.rowLayout('usdCacheVariantNameRow', edit=True, enable=variantSelected)
-    cmds.textFieldGrp('primNameText', edit=True, enable=not variantSelected)
 
 def cacheFileUsdHierarchyOptions(topForm):
     '''Create controls to insert Maya reference USD cache into USD hierarchy.'''
