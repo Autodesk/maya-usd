@@ -803,6 +803,9 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
 void ProxyRenderDelegate::_DirtyUsdSubtree(const UsdPrim& prim)
 {
+    if (!prim.IsValid())
+        return;
+
     HdChangeTracker&      changeTracker = _renderIndex->GetChangeTracker();
     constexpr HdDirtyBits dirtyBits = HdChangeTracker::DirtyVisibility
         | MayaUsdRPrim::DirtyDisplayMode | MayaUsdRPrim::DirtySelectionHighlight;
