@@ -344,6 +344,9 @@ private:
     std::mutex _mayaCommandEngineMutex;
     uint64_t   _frameCounter { 0 };
 
+    // The name of the currently used color space
+    MString _colorTransformId;
+
     typedef std::pair<MColor, std::atomic<uint64_t>>  MColorCache;
     typedef std::pair<GfVec3f, std::atomic<uint64_t>> GfVec3fCache;
 

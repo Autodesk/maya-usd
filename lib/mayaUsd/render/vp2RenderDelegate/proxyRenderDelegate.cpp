@@ -804,8 +804,8 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
 void ProxyRenderDelegate::_DirtyUsdSubtree(const UsdPrim& prim)
 {
     HdChangeTracker&      changeTracker = _renderIndex->GetChangeTracker();
-    constexpr HdDirtyBits dirtyBits = HdChangeTracker::DirtyVisibility
-        | MayaUsdRPrim::DirtyDisplayMode | MayaUsdRPrim::DirtySelectionHighlight;
+    constexpr HdDirtyBits dirtyBits = 
+        HdChangeTracker::DirtyVisibility | MayaUsdRPrim::DirtySelectionHighlight;
 
     if (prim.IsA<UsdGeomGprim>()) {
         auto indexPath = _sceneDelegate->ConvertCachePathToIndexPath(prim.GetPath());
@@ -972,16 +972,32 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 
     // if there are no repr's to update then don't even call sync.
     if (reprSelector != HdReprSelector()) {
+        HdDirtyBits dirtyBits = HdChangeTracker::Clean;
+        
+        // check to see if representation mode changed
         if (_defaultCollection->GetReprSelector() != reprSelector) {
             _defaultCollection->SetReprSelector(reprSelector);
             _taskController->SetCollection(*_defaultCollection);
+            dirtyBits |= MayaUsdRPrim::DirtyDisplayMode;
+        }
 
+#if MAYA_API_VERSION >= 20230200
+        // check to see if the color space changed
+        MString colorTransformId;
+        frameContext.viewTransformName(colorTransformId);
+        if (colorTransformId != _colorTransformId) {
+            _colorTransformId = colorTransformId;
+            dirtyBits |= MayaUsdRPrim::DirtySelectionHighlight;
+        }
+#endif
+
+        if (dirtyBits != HdChangeTracker::Clean) {
             // Mark everything "dirty" so that sync is called on everything
             // If there are multiple views up with different viewport modes then
             // this is slow.
             auto& rprims = _renderIndex->GetRprimIds();
             for (auto path : rprims) {
-                changeTracker.MarkRprimDirty(path, MayaUsdRPrim::DirtyDisplayMode);
+                changeTracker.MarkRprimDirty(path, dirtyBits);
             }
         }
 
