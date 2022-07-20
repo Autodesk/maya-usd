@@ -681,7 +681,7 @@ void ProxyRenderDelegate::_InitRenderDelegate()
         for (unsigned int j = 0; j < layers.length(); ++j) {
             DisplayLayerAdded(layers[j], this);
         }
-        
+
         // Monitor display layers
         if (!_mayaDisplayLayerAddedCallbackId) {
             _mayaDisplayLayerAddedCallbackId
