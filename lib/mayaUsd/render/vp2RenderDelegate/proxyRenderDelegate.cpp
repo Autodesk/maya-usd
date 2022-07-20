@@ -521,6 +521,9 @@ ProxyRenderDelegate::~ProxyRenderDelegate()
         MMessage::removeCallback(_mayaDisplayLayerRemovedCallbackId);
     if (_mayaDisplayLayerMembersCallbackId != 0)
         MMessage::removeCallback(_mayaDisplayLayerMembersCallbackId);
+    for (auto cb : _mayaDisplayLayerDirtyCallbackIds) {
+        MMessage::removeCallback(cb.second);
+    }
 #endif
 }
 
@@ -671,6 +674,14 @@ void ProxyRenderDelegate::_InitRenderDelegate()
 #endif
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
+        // Display layers maybe loaded before us, so make sure to track them
+        MFnDisplayLayerManager displayLayerManager(
+            MFnDisplayLayerManager::currentDisplayLayerManager());
+        auto layers = displayLayerManager.getAllDisplayLayers();
+        for (unsigned int j = 0; j < layers.length(); ++j) {
+            DisplayLayerAdded(layers[j], this);
+        }
+        
         // Monitor display layers
         if (!_mayaDisplayLayerAddedCallbackId) {
             _mayaDisplayLayerAddedCallbackId
