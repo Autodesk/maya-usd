@@ -324,7 +324,7 @@ UsdMayaPrimUpdater::PushCopySpecs PxrUsdTranslators_MayaReferenceUpdater::pushCo
     // Maya reference prim.  The Maya transform node changes have already been
     // exported into the temporary layer as a transform prim, which is our
     // source.  The destination prim in the stage is the Maya reference prim.
-    auto srcPrim = srcStage->GetPrimAtPath(srcSdfPath);
+    auto             srcPrim = srcStage->GetPrimAtPath(srcSdfPath);
     UsdGeomXformable srcXform(srcPrim);
     if (TF_VERIFY(srcXform)) {
         std::unique_ptr<AutoVariantRestore> variantRestore;
