@@ -318,7 +318,20 @@ void HdMayaSceneDelegate::Populate()
     if (status) {
         _callbacks.push_back(id);
     }
+#elif 1
+    // Add lights to the scene using HdMayaLightAdapter
+    MItDag dagIt(MItDag::kDepthFirst, MFn::kLight);
+    dagIt.traverseUnderWorld(true);
+    for (; !dagIt.isDone(); dagIt.next()) {
+        MDagPath path;
+        dagIt.getPath(path);
+        InsertDag(path);
+    }
+    
+
 #endif
+
+
 
     // Adding fallback materials sprim to the render index.
     if (renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->material)) {
@@ -1110,11 +1123,18 @@ GfMatrix4d HdMayaSceneDelegate::GetTransform(const SdfPath& id)
 #ifdef HDMAYA_SCENE_RENDER_DATASERVER
     TF_DEBUG(HDMAYA_DELEGATE_GET_TRANSFORM)
         .Msg("HdMayaSceneDelegate::GetTransform(%s)\n", id.GetText());
-    return _GetValue<HdMayaRenderItemAdapter, GfMatrix4d>(
-        id,
-        [](HdMayaRenderItemAdapter* a) -> GfMatrix4d { return a->GetTransform(); },
-        _renderItemsAdapters
-		);
+    if (TfMapLookupPtr(_lightAdapters, id) != nullptr) {
+        // TODO:  merge adapter hierarchy to avoid this kind of branching
+        return _GetValue<HdMayaDagAdapter, GfMatrix4d>(
+            id,
+            [](HdMayaDagAdapter* a) -> GfMatrix4d { return a->GetTransform(); },
+            _lightAdapters);
+    } else {
+        return _GetValue<HdMayaRenderItemAdapter, GfMatrix4d>(
+            id,
+            [](HdMayaRenderItemAdapter* a) -> GfMatrix4d { return a->GetTransform(); },
+            _renderItemsAdapters);
+    }
 #else
     TF_DEBUG(HDMAYA_DELEGATE_GET_TRANSFORM)
         .Msg("HdMayaSceneDelegate::GetTransform(%s)\n", id.GetText());
@@ -1171,7 +1191,9 @@ VtValue HdMayaSceneDelegate::Get(const SdfPath& id, const TfToken& key)
 		id,
 		[&key](HdMayaAdapter* a) -> VtValue { return a->Get(key); },
 		_renderItemsAdapters,
-		_renderItemShaderAdapters
+		_renderItemShaderAdapters,
+        _lightAdapters
+        //,_materialAdapters
 		);
 #else
     TF_DEBUG(HDMAYA_DELEGATE_GET)

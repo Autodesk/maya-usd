@@ -587,11 +587,6 @@ VtValue HdMayaRenderItemAdapter::Get(const TfToken& key)
 	return {};
 }
 
-const GfMatrix4d& HdMayaRenderItemAdapter::GetTransform()
-{    
-    return _transform[0];
-}
-
 void HdMayaRenderItemAdapter::MarkDirty(HdDirtyBits dirtyBits)
 {
     if (dirtyBits != 0) 

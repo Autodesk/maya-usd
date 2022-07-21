@@ -184,8 +184,9 @@ public:
 	HDMAYA_API
     virtual bool GetVisible() { return IsVisible(); }
     
+	// TODO:  move transform to common base class with HdMayaDagAdapter
 	HDMAYA_API
-    const GfMatrix4d& GetTransform();
+    GfMatrix4d GetTransform() { return _transform[0]; }
     
 	HDMAYA_API
 	bool UpdateVisibility() { return true; }
@@ -237,7 +238,7 @@ private:
 	VtVec2fArray _uvs = {};
 	MGeometry::Primitive _primitive;
 	MString _name;
-    GfMatrix4d _transform[2];
+    GfMatrix4d _transform[2];  // TODO:  move transform to common base class with HdMayaDagAdapter
     bool _isVisible = true;
 	bool _isStale = false;
 };
