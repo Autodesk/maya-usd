@@ -49,6 +49,8 @@
 
 namespace {
 
+using AutoVariantRestore = MAYAUSD_NS_DEF::AutoVariantRestore;
+
 // Clear the auto-edit flag on a USD Maya Reference so that it does not
 // get edited immediately again. Clear in all variants, since each
 // variant has its own copy of the flag.
@@ -73,6 +75,110 @@ std::string findValue(const PXR_NS::VtDictionary& routingData, const PXR_NS::TfT
         return std::string();
     }
     return found->second.UncheckedGet<std::string>();
+}
+
+// Verify if the prim at the given path in the given stage is a transformable.
+bool isValidXformable(const UsdStageRefPtr& stage, const SdfPath& mayaRefPath)
+{
+    // Note: the operrator is tagged as explicit, so we need to use a bool context.
+    return UsdGeomXformable::Get(stage, mayaRefPath) ? true : false;
+}
+
+// Find the variant edit target that contains the Maya Reference.
+//
+// Since both the variant set name and the variant name are under the user's
+// control and that where these can be found could vary from plugin-to-plugin,
+// we need to search for it.
+bool findMayaRefVariantEditTarget(
+    const UsdStageRefPtr&                stage,
+    const SdfPath&                       mayaRefPath,
+    const VtDictionary&                  context,
+    std::unique_ptr<AutoVariantRestore>& variantRestore)
+{
+    // Find where the variant sets would be: in the parent of the reference.
+    const std::string pulledPathStr = VtDictionaryGet<std::string>(context, "prim", VtDefault = "");
+
+    if (!SdfPath::IsValidPathString(pulledPathStr))
+        return false;
+
+    const SdfPath pulledPath(pulledPathStr);
+    if (!pulledPath.IsPrimPath())
+        return false;
+
+    // Search each variant in each variant set for a Maya Reference.
+    const SdfPath  primWithVariantPath = pulledPath.GetParentPath();
+    UsdPrim        primWithVariant = stage->GetPrimAtPath(primWithVariantPath);
+    UsdVariantSets variantSets = primWithVariant.GetVariantSets();
+    for (const std::string& variantSetName : variantSets.GetNames()) {
+        UsdVariantSet variantSet = primWithVariant.GetVariantSet(variantSetName);
+        std::string   mayaRefVariantName;
+
+        // We will need to restore the variant before creating the final, returned
+        // AutoVariantRestore. That is why we are using a scope here. Otherwise,
+        // the final AutoVariantRestore would capture the wrong "current variant".
+        {
+            AutoVariantRestore currentVariant(variantSet);
+            for (const std::string& variantName : variantSet.GetVariantNames()) {
+                variantSet.SetVariantSelection(variantName);
+
+                if (isValidXformable(stage, mayaRefPath)) {
+                    mayaRefVariantName = variantName;
+                    break;
+                }
+            }
+        }
+
+        // Note: UsdVariantSet has no publicly accessible constructor except the
+        //       copy constructor. In addition to that, it is returned by value
+        //       from UsdPrim. So that is why AutoVariantRestore is returned with
+        //       a unique_ptr.
+        if (!mayaRefVariantName.empty()) {
+            variantRestore = std::make_unique<AutoVariantRestore>(variantSet);
+            variantSet.SetVariantSelection(mayaRefVariantName);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// Find the edit target that contains the Maya Reference.
+bool findMayaRefEditTarget(
+    const UsdStageRefPtr&                stage,
+    const SdfPath&                       mayaRefPath,
+    const VtDictionary&                  context,
+    std::unique_ptr<AutoVariantRestore>& variantRestore)
+{
+    // First, let's see if we can find the Maya Reference right-away.
+    if (isValidXformable(stage, mayaRefPath))
+        return true;
+
+    // Otherwise assume that it is in a different variant.
+    return findMayaRefVariantEditTarget(stage, mayaRefPath, context, variantRestore);
+}
+
+// Copy the transform from the source to target transformable.
+//
+// For a while we used mergePrims(), but that fails to do the right thing if the source
+// is not in a variant but the target is.
+void copyTransform(const UsdGeomXformable& srcXform, UsdGeomXformable& dstXform)
+{
+    UsdGeomXformable::XformQuery srcQuery(srcXform);
+    std::vector<double>          times;
+    dstXform.ClearXformOpOrder();
+    UsdGeomXformOp dstOp = dstXform.AddTransformOp();
+    if (srcQuery.TransformMightBeTimeVarying()) {
+        srcQuery.GetTimeSamples(&times);
+        for (auto time : times) {
+            GfMatrix4d mtx;
+            srcQuery.GetLocalTransformation(&mtx, UsdTimeCode(time));
+            dstOp.Set(mtx, time);
+        }
+    } else {
+        GfMatrix4d mtx;
+        srcQuery.GetLocalTransformation(&mtx, UsdTimeCode());
+        dstOp.Set(mtx, UsdTimeCode());
+    }
 }
 
 } // namespace
@@ -219,16 +325,25 @@ UsdMayaPrimUpdater::PushCopySpecs PxrUsdTranslators_MayaReferenceUpdater::pushCo
     // exported into the temporary layer as a transform prim, which is our
     // source.  The destination prim in the stage is the Maya reference prim.
     auto srcPrim = srcStage->GetPrimAtPath(srcSdfPath);
-    if (TF_VERIFY(UsdGeomXformable(srcPrim))) {
-        auto dstPrim = dstStage->GetPrimAtPath(dstSdfPath);
-        if (TF_VERIFY(UsdGeomXformable(dstPrim))) {
+    UsdGeomXformable srcXform(srcPrim);
+    if (TF_VERIFY(srcXform)) {
+        std::unique_ptr<AutoVariantRestore> variantRestore;
+        if (TF_VERIFY(findMayaRefEditTarget(dstStage, dstSdfPath, routerContext, variantRestore))) {
             // The Maya transform that corresponds to the Maya reference prim
             // only has its transform attributes unlocked.  Bring any transform
             // attribute edits over to the Maya reference prim.
-            MayaUsdUtils::MergePrimsOptions options;
-            options.ignoreUpperLayerOpinions = true;
-            TF_VERIFY(MayaUsdUtils::mergePrims(
-                srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath, options));
+            UsdEditTarget editTarget = dstStage->GetEditTarget();
+            if (variantRestore) {
+                editTarget
+                    = variantRestore->getVariantSet().GetVariantEditTarget(editTarget.GetLayer());
+            }
+            UsdEditContext editContext(dstStage, editTarget);
+
+            UsdPrim          dstPrim = dstStage->GetPrimAtPath(dstSdfPath);
+            UsdGeomXformable dstXform(dstPrim);
+            if (TF_VERIFY(dstXform)) {
+                copyTransform(srcXform, dstXform);
+            }
         }
     }
 
