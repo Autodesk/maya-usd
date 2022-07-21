@@ -18,6 +18,9 @@
 
 import fixturesUtils
 
+import ufe
+import maya.internal.ufeSupport.ufeCmdWrapper as ufeCmd
+
 from maya import cmds
 from maya import standalone
 import maya.api.OpenMaya as om
@@ -25,6 +28,10 @@ import maya.api.OpenMaya as om
 import mayaUtils
 import mayaUsd
 import mayaUsd_createStageWithNewLayer
+import mayaUsd.ufe as mayaUsdUfe
+import mayaUsd.lib as mayaUsdLib
+
+from pxr import Usd, Kind
 
 import unittest
 
@@ -42,6 +49,7 @@ class DisplayLayerTestCase(unittest.TestCase):
     XFORM1 = '|stage1|stageShape1,/Xform1'
     NEW_XFORM1 = '|stage1|stageShape1,/NewXform1'
     NEW_SPHERE1 = '|stage1|stageShape1,/NewSphere1'
+    XFORM1_CUBE1 = '|stage1|stageShape1,/Xform1/Cube1'
     XFORM1_SPHERE1 = '|stage1|stageShape1,/Xform1/Sphere1'
     NEW_XFORM1_SPHERE1 = '|stage1|stageShape1,/NewXform1/Sphere1'
     INVALID_PRIM = '|stage1|stageShape1,/BogusPrim'
@@ -305,3 +313,62 @@ class DisplayLayerTestCase(unittest.TestCase):
         self.assertIsNone(layerObjs)
         self.assertFalse(layer1.contains(self.CUBE1))
         self.assertFalse(layer1.contains(self.INVALID_PRIM))
+
+    @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() >= 3, "Requires Display Layer Ufe subtree invalidate fix.")
+    def testDisplayLayerSubtreeInvalidate(self):
+        # Create a scene with two variants.
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(proxyShape).GetStage()
+        top = stage.DefinePrim('/Xform1', 'Xform')
+        vset = top.GetVariantSets().AddVariantSet('modelingVariant')
+        vset.AddVariant('cube')
+        vset.AddVariant('sphere')
+        vset.SetVariantSelection('cube')
+        with vset.GetVariantEditContext():
+            stage.DefinePrim('/Xform1/Cube1', 'Cube')
+        vset.SetVariantSelection('sphere')
+        with vset.GetVariantEditContext():
+            stage.DefinePrim('/Xform1/Sphere1', 'Sphere')
+
+        # Create a display layer and add the Sphere1 prim (currently the one under the Xform1).
+        cmds.createDisplayLayer(name=self.LAYER1, number=1, empty=True)
+        cmds.editDisplayLayerMembers(self.LAYER1, self.XFORM1_SPHERE1, noRecurse=True)
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, fn=True)
+        self.assertFalse(self.XFORM1_CUBE1 in layerObjs)
+        self.assertTrue(self.XFORM1_SPHERE1 in layerObjs)
+
+        xformPath  = ufe.PathString.path(self.XFORM1)
+        xformItem  = ufe.Hierarchy.createItem(xformPath)
+        xformCtxOps = ufe.ContextOps.contextOps(xformItem)
+
+        # Using the variant, switch to the Cube1.
+        cmd = xformCtxOps.doOpCmd(['Variant Sets', 'modelingVariant', 'cube'])
+        ufeCmd.execute(cmd)
+
+        # The Cube1 should not be in the display layer.
+        # The Sphere1 prim should still be in the display layer, but as an invalid path.
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, fn=True)
+        self.assertIsNone(layerObjs)
+        self._testLayerFromPath(self.XFORM1_SPHERE1, self.LAYER1)
+
+        # Using the variant, switch back to the Sphere1.
+        cmd = xformCtxOps.doOpCmd(['Variant Sets', 'modelingVariant', 'sphere'])
+        ufeCmd.execute(cmd)
+
+        # The Sphere1 should be back (as valid path) in the display layer.
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, fn=True)
+        self.assertFalse(self.XFORM1_CUBE1 in layerObjs)
+        self.assertTrue(self.XFORM1_SPHERE1 in layerObjs)
+        self._testLayerFromPath(self.XFORM1_SPHERE1, self.LAYER1)
+
+        # Change some metadata on the prim, which will send a subtree invalidate.
+        prim = mayaUsdUfe.ufePathToPrim(self.XFORM1_SPHERE1)
+        with mayaUsdLib.UsdUndoBlock():
+            model = Usd.ModelAPI(prim)
+            model.SetKind(Kind.Tokens.group)
+
+        # The Sphere1 should still be in the display layer as valid path.
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, fn=True)
+        self.assertFalse(self.XFORM1_CUBE1 in layerObjs)
+        self.assertTrue(self.XFORM1_SPHERE1 in layerObjs)
+        self._testLayerFromPath(self.XFORM1_SPHERE1, self.LAYER1)
