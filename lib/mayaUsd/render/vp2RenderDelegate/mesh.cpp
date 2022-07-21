@@ -1451,13 +1451,16 @@ void HdVP2Mesh::_UpdateDrawItem(
     const bool usingShadedSelectedInstanceItem = false;
 #endif
 
-    // We don't need to update the dedicated selection highlight item when there
-    // is no selection highlight change and the mesh is not selected. Draw item
-    // has its own dirty bits, so update will be done when it shows in viewport.
-    const bool isDedicatedSelectionHighlightItem
-        = drawItem->MatchesUsage(HdVP2DrawItem::kSelectionHighlight) && 
-            (_displayType != MayaUsdRPrim::kTemplate);
-    if (isDedicatedSelectionHighlightItem && ((itemDirtyBits & DirtySelectionHighlight) == 0)
+    const bool isDedicatedHighlightItem 
+        = drawItem->MatchesUsage(HdVP2DrawItem::kSelectionHighlight);
+    const bool isHighlightItem = drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight);
+    const bool inTemplateMode = _displayType == MayaUsdRPrim::kTemplate;
+    const bool inPureSelectionHighlightMode = isDedicatedHighlightItem && !inTemplateMode;     
+
+    // We don't need to update the selection-highlight-only item when there is no selection
+    // highlight change and the mesh is not selected. Render item stores its own
+    // dirty bits, so the proper update will be done when it shows in the viewport.
+    if (inPureSelectionHighlightMode && ((itemDirtyBits & DirtySelectionHighlight) == 0)
         && (_selectionStatus == kUnselected)) {
         return;
     }
@@ -1718,7 +1721,7 @@ void HdVP2Mesh::_UpdateDrawItem(
             unsigned char modeActive = invalid;
             unsigned char modeLead = invalid;
 
-            if (!drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight)) {
+            if (!isHighlightItem) {
                 stateToCommit._instanceColorParam = kDiffuseColorStr;
                 if (!usingShadedSelectedInstanceItem) {
                     if (isShadedSelectedInstanceItem) {
@@ -1745,7 +1748,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                 modeDormant = _selectionStatus == kFullyLead ? lead : active;
                 stateToCommit._instanceColorParam = kSolidColorStr;
             } else {
-                modeDormant = isDedicatedSelectionHighlightItem ? invalid : dormant;
+                modeDormant = inPureSelectionHighlightMode ? invalid : dormant;
                 modeActive = active;
                 modeLead = lead;
                 stateToCommit._instanceColorParam = kSolidColorStr;
@@ -1946,8 +1949,7 @@ void HdVP2Mesh::_UpdateDrawItem(
 
     } else {
         // Non-instanced Rprims.
-        if ((itemDirtyBits & DirtySelectionHighlight)
-            && drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight)) {
+        if ((itemDirtyBits & DirtySelectionHighlight) && isHighlightItem) {
             MColor color;
             if (_displayType == kTemplate) {
                 color = drawScene.GetTemplateColor(_selectionStatus != kUnselected);
@@ -1976,16 +1978,16 @@ void HdVP2Mesh::_UpdateDrawItem(
         bool enable = drawItem->GetVisible() && !_points(_meshSharedData->_primvarInfo).empty()
             && !instancerWithNoInstances;
 
-        if (_displayType == MayaUsdRPrim::kTemplate && 
-                drawItem->MatchesUsage(HdVP2DrawItem::kRegular)) {
-            enable = false;
-        }
-        else if (isDedicatedSelectionHighlightItem) {
+        if (inPureSelectionHighlightMode) {
             enable = enable && (_selectionStatus != kUnselected);
         } else if (isPointSnappingItem) {
             enable = enable && (_selectionStatus == kUnselected);
         } else if (isBBoxItem) {
             enable = enable && !range.IsEmpty();
+        }
+
+        if (inTemplateMode) {
+            enable = enable && isHighlightItem;
         }
 
         enable = enable && drawScene.DrawRenderTag(_meshSharedData->_renderTag);
@@ -2001,29 +2003,40 @@ void HdVP2Mesh::_UpdateDrawItem(
            & (HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyNormals
               | HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyTopology));
 
-    const bool isTemplateItem = (_displayType == MayaUsdRPrim::kTemplate) &&
-        drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight);
-
-#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-    if (!isBBoxItem && !isDedicatedSelectionHighlightItem && !isTemplateItem
+    // Some items may require selection mask overrides
+    if (!isDedicatedHighlightItem
         && (itemDirtyBits & (DirtySelectionHighlight | DirtySelectionMode))) {
+        bool dynamicSelectionMaskItem = false;
         MSelectionMask selectionMask(MSelectionMask::kSelectMeshes);
 
-        bool shadedUnselectedInstances = !isShadedSelectedInstanceItem
-            && !isDedicatedSelectionHighlightItem && !GetInstancerId().IsEmpty();
-        if (_selectionStatus == kUnselected || drawScene.SnapToSelectedObjects()
-            || shadedUnselectedInstances) {
-            selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+        if (!isBBoxItem) {
+            dynamicSelectionMaskItem = true;
+            bool shadedUnselectedInstances = !isShadedSelectedInstanceItem
+                && !GetInstancerId().IsEmpty();
+            if (_selectionStatus == kUnselected || drawScene.SnapToSelectedObjects()
+                || shadedUnselectedInstances) {
+                selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
+            }
+            // Only unselected Rprims can be used for point snapping.
+            if (_selectionStatus == kUnselected && !shadedUnselectedInstances) {
+                selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
+            }
         }
-        // Only unselected Rprims can be used for point snapping.
-        if (_selectionStatus == kUnselected && !shadedUnselectedInstances) {
-            selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
+#endif
+        if (isHighlightItem) {
+            dynamicSelectionMaskItem = true;
+            // In template mode, items should have no selection
+            if (inTemplateMode) {
+                selectionMask = MSelectionMask();
+            }
         }
 
-        // The function is thread-safe, thus called in place to keep simple.
-        renderItem->setSelectionMask(selectionMask);
+        if (dynamicSelectionMaskItem) {
+            // The function is thread-safe, thus called in place to keep simple.
+            renderItem->setSelectionMask(selectionMask);
+        }
     }
-#endif
 
     // Capture buffers we need
     MHWRender::MIndexBuffer* indexBuffer = drawItemData._indexBuffer.get();
