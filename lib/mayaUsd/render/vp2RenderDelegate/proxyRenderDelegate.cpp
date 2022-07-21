@@ -804,8 +804,8 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
 void ProxyRenderDelegate::_DirtyUsdSubtree(const UsdPrim& prim)
 {
     HdChangeTracker&      changeTracker = _renderIndex->GetChangeTracker();
-    constexpr HdDirtyBits dirtyBits = 
-        HdChangeTracker::DirtyVisibility | MayaUsdRPrim::DirtySelectionHighlight;
+    constexpr HdDirtyBits dirtyBits = HdChangeTracker::DirtyVisibility
+        | HdChangeTracker::DirtyDisplayStyle | MayaUsdRPrim::DirtySelectionHighlight;
 
     if (prim.IsA<UsdGeomGprim>()) {
         auto indexPath = _sceneDelegate->ConvertCachePathToIndexPath(prim.GetPath());
