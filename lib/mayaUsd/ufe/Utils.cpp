@@ -590,7 +590,7 @@ Ufe::Attribute::Type usdTypeToUfe(const SdfValueTypeName& usdType)
         static const std::unordered_map<std::string, Ufe::Attribute::Type> sCPPTypeToUfe
         {
             // There are custom Normal3f, Point3f types in USD. They can all be recognized by the
-            // underlying CPP type and if there is a Ufe typethat matches, use it.
+            // underlying CPP type and if there is a Ufe type that matches, use it.
             { "GfVec3i", Ufe::Attribute::kInt3 }, { "GfVec3d", Ufe::Attribute::kDouble3 },
                 { "GfVec3f", Ufe::Attribute::kFloat3 },
 #if (UFE_PREVIEW_VERSION_NUM >= 4015)
