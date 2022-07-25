@@ -587,7 +587,23 @@ Ufe::Attribute::Type usdTypeToUfe(const SdfValueTypeName& usdType)
     if (iter != sUsdTypeToUfe.end()) {
         return iter->second;
     } else {
-        return Ufe::Attribute::kGeneric;
+        static const std::unordered_map<std::string, Ufe::Attribute::Type> sCPPTypeToUfe
+        {
+            // There are custom Normal3f, Point3f types in USD. They can all be recognized by the
+            // underlying CPP type and if there is a Ufe type that matches, use it.
+            { "GfVec3i", Ufe::Attribute::kInt3 }, { "GfVec3d", Ufe::Attribute::kDouble3 },
+                { "GfVec3f", Ufe::Attribute::kFloat3 },
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+                { "GfVec2f", Ufe::Attribute::kFloat2 }, { "GfVec4f", Ufe::Attribute::kFloat4 },
+#endif
+        };
+
+        const auto iter = sCPPTypeToUfe.find(usdType.GetCPPTypeName());
+        if (iter != sCPPTypeToUfe.end()) {
+            return iter->second;
+        } else {
+            return Ufe::Attribute::kGeneric;
+        }
     }
 }
 
