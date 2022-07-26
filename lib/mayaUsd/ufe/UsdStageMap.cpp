@@ -22,7 +22,9 @@
 #include <mayaUsd/utils/util.h>
 
 #include <maya/MFnDagNode.h>
+#ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/pathString.h>
+#endif
 
 #include <cassert>
 
