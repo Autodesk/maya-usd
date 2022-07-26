@@ -84,6 +84,16 @@ inline Ufe::Path::Segments::size_type nbPathSegments(const Ufe::Path& path)
 #endif
 }
 
+inline Ufe::Path toPath(const std::string& pathString)
+{
+    return
+#ifdef UFE_V2_FEATURES_AVAILABLE
+        Ufe::PathString::path(pathString);
+#else
+        Ufe::Path(Ufe::PathSegment("|world" + psn, getMayaRunTimeId(), '|'));
+#endif
+}
+
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -186,7 +196,7 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path)
             // Still not found, must have re-appeared through undo of delete.
             // Add it back to the cache.
             for (const auto& psn : ProxyShapeHandler::getAllNames()) {
-                auto psPath = Ufe::PathString::path(psn);
+                auto psPath = toPath(psn);
                 if (fPathToObject.find(psPath) == std::end(fPathToObject)) {
                     addItem(psPath);
                 }
@@ -281,7 +291,7 @@ void UsdStageMap::rebuildIfDirty()
         return;
 
     for (const auto& psn : ProxyShapeHandler::getAllNames()) {
-        addItem(Ufe::Path(Ufe::PathSegment("|world" + psn, getMayaRunTimeId(), '|')));
+        addItem(toPath(psn));
     }
     fDirty = false;
 }
