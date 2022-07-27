@@ -1951,7 +1951,7 @@ void HdVP2Mesh::_UpdateDrawItem(
         // Non-instanced Rprims.
         if ((itemDirtyBits & DirtySelectionHighlight) && isHighlightItem) {
             MColor color;
-            if (_displayType == kTemplate) {
+            if (inTemplateMode) {
                 color = drawScene.GetTemplateColor(_selectionStatus != kUnselected);
             }
             else {
@@ -2004,7 +2004,7 @@ void HdVP2Mesh::_UpdateDrawItem(
               | HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyTopology));
 
     // Some items may require selection mask overrides
-    if (!isDedicatedHighlightItem
+    if (!isDedicatedHighlightItem && !isPointSnappingItem
         && (itemDirtyBits & (DirtySelectionHighlight | DirtySelectionMode))) {
         bool dynamicSelectionMaskItem = false;
         MSelectionMask selectionMask(MSelectionMask::kSelectMeshes);

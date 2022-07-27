@@ -290,6 +290,8 @@ void HdVP2Points::_UpdateDrawItem(
     // doesn't need to extract index data from topology. Points use non-indexed
     // draw.
     const bool isBoundingBoxItem = (drawMode == MHWRender::MGeometry::kBoundingBox);
+    const bool isHighlightItem = drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight);
+    const bool inTemplateMode = _displayType == MayaUsdRPrim::kTemplate;    
 
     if (desc.geomStyle == HdPointsGeomStylePoints) {
         // Prepare normals buffer.
@@ -617,7 +619,7 @@ void HdVP2Points::_UpdateDrawItem(
             // If the item is used for both regular draw and selection highlight,
             // it needs to display both wireframe color and selection highlight
             // with one color vertex buffer.
-            if (drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight)) {
+            if (isHighlightItem) {
                 const MColor colors[]
                     = { drawScene.GetWireframeColor(),
                         drawScene.GetSelectionHighlightColor(HdPrimTypeTokens->points),
@@ -669,20 +671,24 @@ void HdVP2Points::_UpdateDrawItem(
     } else {
         // Non-instanced Rprims.
         if (itemDirtyBits & (DirtySelectionHighlight | HdChangeTracker::DirtyDisplayStyle)) {
-            if (drawItem->ContainsUsage(HdVP2DrawItem::kRegular)
-                && drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight)) {
+            if (drawItem->ContainsUsage(HdVP2DrawItem::kRegular) && isHighlightItem) {
                 MHWRender::MShaderInstance* shader = nullptr;
 
                 auto primitiveType = MHWRender::MGeometry::kPoints;
                 int  primitiveStride = 0;
 
-                const MColor& color
-                    = (_selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
+                MColor color;
+                if (inTemplateMode) {
+                    color = drawScene.GetTemplateColor(_selectionStatus != kUnselected);
+                }
+                else {
+                    color = (_selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
                            _selectionStatus == kFullyLead ? TfToken() : HdPrimTypeTokens->points)
                                                        : drawScene.GetWireframeColor());
+                }
 
                 if (desc.geomStyle == HdPointsGeomStylePoints) {
-                    if (_selectionStatus != kUnselected) {
+                    if (_selectionStatus != kUnselected || inTemplateMode) {
                         shader = _delegate->GetPointsFallbackShader(color);
                     }
                 } else {
@@ -734,19 +740,26 @@ void HdVP2Points::_UpdateDrawItem(
               | HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyTopology
               | DirtySelectionHighlight));
 
-#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-    if ((itemDirtyBits & DirtySelectionHighlight) && !isBoundingBoxItem) {
+    // update selection mask if dirty
+    if (itemDirtyBits & DirtySelectionHighlight) {
         MSelectionMask selectionMask(MSelectionMask::kSelectParticleShapes);
 
-        // Only unselected Rprims can be used for point snapping.
-        if (_selectionStatus == kUnselected) {
-            selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+        if (!isBoundingBoxItem) {
+            // Only unselected Rprims can be used for point snapping.
+            if (_selectionStatus == kUnselected) {
+                selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
+            }
+        }
+#endif
+        // In template mode, items should have no selection
+        if (inTemplateMode) {
+            selectionMask = MSelectionMask();
         }
 
         // The function is thread-safe, thus called in place to keep simple.
         renderItem->setSelectionMask(selectionMask);
     }
-#endif
 
     // Reset dirty bits because we've prepared commit state for this draw item.
     drawItem->ResetDirtyBits();
