@@ -320,6 +320,19 @@ void MayaUsdRPrim::_PropagateDirtyBitsCommon(HdDirtyBits& bits, const ReprVector
     }
 }
 
+void MayaUsdRPrim::_InitRenderItemCommon(MHWRender::MRenderItem* renderItem) const
+{
+#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
+#endif
+
+    _SetWantConsolidation(*renderItem, true);
+
+    renderItem->setHideOnPlayback(_hideOnPlayback);
+}
+
 /*! \brief  Create render item for bbox repr.
  */
 MHWRender::MRenderItem* MayaUsdRPrim::_CreateBoundingBoxRenderItem(
@@ -336,17 +349,11 @@ MHWRender::MRenderItem* MayaUsdRPrim::_CreateBoundingBoxRenderItem(
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->Get3dSolidShader(color));
     renderItem->setSelectionMask(selectionMask);
-#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
-#endif
+    _InitRenderItemCommon(renderItem);
 
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(exclusionFlag);
 #endif
-
-    _SetWantConsolidation(*renderItem, true);
 
     return renderItem;
 }
@@ -375,17 +382,11 @@ MHWRender::MRenderItem* MayaUsdRPrim::_CreateWireframeRenderItem(
 #else
     renderItem->setSelectionMask(selectionMask);
 #endif
-#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
-#endif
+    _InitRenderItemCommon(renderItem);
 
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(exclusionFlag);
 #endif
-
-    _SetWantConsolidation(*renderItem, true);
 
     return renderItem;
 }
@@ -410,17 +411,11 @@ MHWRender::MRenderItem* MayaUsdRPrim::_CreatePointsRenderItem(
     MSelectionMask selectionMasks(selectionMask);
     selectionMasks.addMask(MSelectionMask::kSelectPointsForGravity);
     renderItem->setSelectionMask(selectionMasks);
-#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
-#endif
+    _InitRenderItemCommon(renderItem);
 
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(exclusionFlag);
 #endif
-
-    _SetWantConsolidation(*renderItem, true);
 
     return renderItem;
 }

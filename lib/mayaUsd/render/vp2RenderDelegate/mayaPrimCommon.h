@@ -227,6 +227,8 @@ protected:
     //! Helper utility function to adapt Maya API changes.
     static void _SetWantConsolidation(MHWRender::MRenderItem& renderItem, bool state);
 
+    void _InitRenderItemCommon(MHWRender::MRenderItem* renderItem) const;
+
     MHWRender::MRenderItem* _CreateWireframeRenderItem(
         const MString&        name,
         const MColor&         color,

@@ -2509,11 +2509,7 @@ HdVP2DrawItem::RenderItemData& HdVP2Mesh::_CreateSmoothHullRenderItem(
     renderItem->castsShadows(true);
     renderItem->receivesShadows(true);
     renderItem->setShader(_delegate->GetFallbackShader(kOpaqueGray));
-#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
-#endif
+    _InitRenderItemCommon(renderItem);
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     MSelectionMask selectionMask(MSelectionMask::kSelectMeshes);
@@ -2530,8 +2526,6 @@ HdVP2DrawItem::RenderItemData& HdVP2Mesh::_CreateSmoothHullRenderItem(
 #ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
     renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
 #endif
-
-    _SetWantConsolidation(*renderItem, true);
 
     _delegate->GetVP2ResourceRegistry().EnqueueCommit(
         [&subSceneContainer, renderItem]() { subSceneContainer.add(renderItem); });
@@ -2554,17 +2548,11 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateSelectionHighlightRenderItem(const MSt
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueBlue));
     renderItem->setSelectionMask(MSelectionMask());
-#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
-#endif
+    _InitRenderItemCommon(renderItem);
 
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
 #endif
-
-    _SetWantConsolidation(*renderItem, true);
 
     return renderItem;
 }
