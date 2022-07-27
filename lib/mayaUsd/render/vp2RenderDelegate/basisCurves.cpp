@@ -999,12 +999,12 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 MColor color;
                 if (inTemplateMode) {
                     color = drawScene.GetTemplateColor(_selectionStatus != kUnselected);
-                }
-                else {
-                    color = (_selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
-                           _selectionStatus == kFullyLead ? TfToken()
-                                                          : HdPrimTypeTokens->basisCurves)
-                                                       : drawScene.GetWireframeColor());
+                } else {
+                    color
+                        = (_selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
+                               _selectionStatus == kFullyLead ? TfToken()
+                                                              : HdPrimTypeTokens->basisCurves)
+                                                           : drawScene.GetWireframeColor());
                 }
 
                 if (desc.geomStyle == HdBasisCurvesGeomStylePatch) {

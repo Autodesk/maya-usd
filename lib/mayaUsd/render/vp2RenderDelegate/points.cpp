@@ -267,7 +267,7 @@ void HdVP2Points::_UpdateDrawItem(
     }
 
     MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
-    HdDirtyBits itemDirtyBits = drawItem->GetDirtyBits();
+    HdDirtyBits             itemDirtyBits = drawItem->GetDirtyBits();
 
     MayaUsdCommitState             stateToCommit(drawItem->GetRenderItemData());
     HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._renderItemData;
@@ -291,7 +291,7 @@ void HdVP2Points::_UpdateDrawItem(
     // draw.
     const bool isBoundingBoxItem = (drawMode == MHWRender::MGeometry::kBoundingBox);
     const bool isHighlightItem = drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight);
-    const bool inTemplateMode = _displayType == MayaUsdRPrim::kTemplate;    
+    const bool inTemplateMode = _displayType == MayaUsdRPrim::kTemplate;
 
     if (desc.geomStyle == HdPointsGeomStylePoints) {
         // Prepare normals buffer.
@@ -683,11 +683,12 @@ void HdVP2Points::_UpdateDrawItem(
                 MColor color;
                 if (inTemplateMode) {
                     color = drawScene.GetTemplateColor(_selectionStatus != kUnselected);
-                }
-                else {
-                    color = (_selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
-                           _selectionStatus == kFullyLead ? TfToken() : HdPrimTypeTokens->points)
-                                                       : drawScene.GetWireframeColor());
+                } else {
+                    color
+                        = (_selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
+                               _selectionStatus == kFullyLead ? TfToken()
+                                                              : HdPrimTypeTokens->points)
+                                                           : drawScene.GetWireframeColor());
                 }
 
                 if (desc.geomStyle == HdPointsGeomStylePoints) {

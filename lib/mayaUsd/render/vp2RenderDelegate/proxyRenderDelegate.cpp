@@ -973,7 +973,7 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
     // if there are no repr's to update then don't even call sync.
     if (reprSelector != HdReprSelector()) {
         HdDirtyBits dirtyBits = HdChangeTracker::Clean;
-        
+
         // check to see if representation mode changed
         if (_defaultCollection->GetReprSelector() != reprSelector) {
             _defaultCollection->SetReprSelector(reprSelector);
@@ -1786,7 +1786,8 @@ MColor ProxyRenderDelegate::GetTemplateColor(bool active)
         colorCache.first = MColor(colorResult[0], colorResult[1], colorResult[2]);
 #if MAYA_API_VERSION >= 20230200
         if (active && _currentFrameContext) {
-            colorCache.first = _currentFrameContext->applyViewTransform(colorCache.first, MFrameContext::kInverse);
+            colorCache.first = _currentFrameContext->applyViewTransform(
+                colorCache.first, MFrameContext::kInverse);
         }
 #endif
     } else {
@@ -1868,19 +1869,19 @@ MColor ProxyRenderDelegate::GetSelectionHighlightColor(const TfToken& className)
 
         if (className.IsEmpty()) {
             // The 'lead' color is returned in display space, so we need to convert it to
-            // rendering space. However, the required functionality for this conversion is 
+            // rendering space. However, the required functionality for this conversion is
             // available only starting from Maya 2023.2
 #if MAYA_API_VERSION >= 20230000
 #if MAYA_API_VERSION >= 20230200
-        if (_currentFrameContext) {
-            colorCache->first = _currentFrameContext->applyViewTransform(color, MFrameContext::kInverse);
-        }
-        else
+            if (_currentFrameContext) {
+                colorCache->first
+                    = _currentFrameContext->applyViewTransform(color, MFrameContext::kInverse);
+            } else
 #endif
-        {
-            colorCache->first
-                = MColorPickerUtilities::applyViewTransform(color, MColorPickerUtilities::kInverse);
-        }
+            {
+                colorCache->first = MColorPickerUtilities::applyViewTransform(
+                    color, MColorPickerUtilities::kInverse);
+            }
 #else
             colorCache->first = kDefaultLeadColor;
 #endif

@@ -173,8 +173,8 @@ protected:
     using ErasePrimvarInfoFunc = std::function<void(const TfToken& name)>;
 
     enum DisplayType
-    { 
-        kNormal = 0, 
+    {
+        kNormal = 0,
         kTemplate = 1,
         kReference = 2
     };

@@ -597,14 +597,14 @@ void MayaUsdRPrim::_SyncSharedData(
         // render item filtering (like for example the "Show" menu). So we want to
         // set the "enabled" state of the MRenderItem.
 
-        // Display layer features are currently implemented only for non-instanced geometry 
+        // Display layer features are currently implemented only for non-instanced geometry
         if (refThis.GetInstancerId().IsEmpty()) {
             // Get all the display layers the object is affected by. If any of those layers
             // are invisible, the object is invisible.
             MFnDisplayLayerManager displayLayerManager(
                 MFnDisplayLayerManager::currentDisplayLayerManager());
-            MStatus              status;
-            auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+            MStatus     status;
+            auto* const param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
             ProxyRenderDelegate& drawScene = param->GetDrawScene();
             MDagPath             proxyDagPath = drawScene.GetProxyShapeDagPath();
             MString              pathString = proxyDagPath.fullPathName()
@@ -612,12 +612,12 @@ void MayaUsdRPrim::_SyncSharedData(
             MObjectArray ancestorDisplayLayers
                 = displayLayerManager.getAncestorLayersInclusive(pathString, &status);
             for (unsigned int i = 0; i < ancestorDisplayLayers.length() && displayLayerVisibility;
-                i++) {
+                 i++) {
                 MFnDependencyNode displayLayerNodeFn(ancestorDisplayLayers[i]);
                 MPlug             layerEnabled = displayLayerNodeFn.findPlug("enabled");
                 MPlug             layerVisible = displayLayerNodeFn.findPlug("visibility");
-                MPlug             layerHidesOnPlayback = displayLayerNodeFn.findPlug("hideOnPlayback");
-                MPlug             layerDisplayType = displayLayerNodeFn.findPlug("displayType");
+                MPlug layerHidesOnPlayback = displayLayerNodeFn.findPlug("hideOnPlayback");
+                MPlug layerDisplayType = displayLayerNodeFn.findPlug("displayType");
                 displayLayerVisibility &= layerEnabled.asBool() ? layerVisible.asBool() : true;
                 hideOnPlayback |= layerHidesOnPlayback.asBool();
                 if (_displayType == kNormal) {

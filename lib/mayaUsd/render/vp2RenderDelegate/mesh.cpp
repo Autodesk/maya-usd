@@ -1451,11 +1451,11 @@ void HdVP2Mesh::_UpdateDrawItem(
     const bool usingShadedSelectedInstanceItem = false;
 #endif
 
-    const bool isDedicatedHighlightItem 
+    const bool isDedicatedHighlightItem
         = drawItem->MatchesUsage(HdVP2DrawItem::kSelectionHighlight);
     const bool isHighlightItem = drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight);
     const bool inTemplateMode = _displayType == MayaUsdRPrim::kTemplate;
-    const bool inPureSelectionHighlightMode = isDedicatedHighlightItem && !inTemplateMode;     
+    const bool inPureSelectionHighlightMode = isDedicatedHighlightItem && !inTemplateMode;
 
     // We don't need to update the selection-highlight-only item when there is no selection
     // highlight change and the mesh is not selected. Render item stores its own
@@ -1953,11 +1953,11 @@ void HdVP2Mesh::_UpdateDrawItem(
             MColor color;
             if (inTemplateMode) {
                 color = drawScene.GetTemplateColor(_selectionStatus != kUnselected);
-            }
-            else {
-                color = (_selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
-                         _selectionStatus == kFullyLead ? TfToken() : HdPrimTypeTokens->mesh)
-                                : drawScene.GetWireframeColor());
+            } else {
+                color
+                    = (_selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
+                           _selectionStatus == kFullyLead ? TfToken() : HdPrimTypeTokens->mesh)
+                                                       : drawScene.GetWireframeColor());
             }
 
             MHWRender::MShaderInstance* shader = _delegate->Get3dSolidShader(color);
@@ -2006,14 +2006,14 @@ void HdVP2Mesh::_UpdateDrawItem(
     // Some items may require selection mask overrides
     if (!isDedicatedHighlightItem && !isPointSnappingItem
         && (itemDirtyBits & (DirtySelectionHighlight | DirtySelectionMode))) {
-        bool dynamicSelectionMaskItem = false;
+        bool           dynamicSelectionMaskItem = false;
         MSelectionMask selectionMask(MSelectionMask::kSelectMeshes);
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
         if (!isBBoxItem) {
             dynamicSelectionMaskItem = true;
-            bool shadedUnselectedInstances = !isShadedSelectedInstanceItem
-                && !GetInstancerId().IsEmpty();
+            bool shadedUnselectedInstances
+                = !isShadedSelectedInstanceItem && !GetInstancerId().IsEmpty();
             if (_selectionStatus == kUnselected || drawScene.SnapToSelectedObjects()
                 || shadedUnselectedInstances) {
                 selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);

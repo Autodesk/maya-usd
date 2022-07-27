@@ -202,7 +202,7 @@ public:
     MColor GetSelectionHighlightColor(const TfToken& className = TfToken());
 
     MAYAUSD_CORE_PUBLIC
-    MColor GetTemplateColor(bool active);    
+    MColor GetTemplateColor(bool active);
 
     MAYAUSD_CORE_PUBLIC
     const HdSelection::PrimSelectionState* GetLeadSelectionState(const SdfPath& path) const;
@@ -313,7 +313,7 @@ private:
                          //!< really need it, but there doesn't seem to be a way to get
                          //!< synchronization running without it)
     std::unique_ptr<UsdImagingDelegate> _sceneDelegate; //!< USD scene delegate
-    const MHWRender::MFrameContext* _currentFrameContext = nullptr;
+    const MHWRender::MFrameContext*     _currentFrameContext = nullptr;
 
     bool _isPopulated {
         false
