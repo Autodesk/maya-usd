@@ -86,14 +86,10 @@ inline Ufe::Path::Segments::size_type nbPathSegments(const Ufe::Path& path)
 #endif
 }
 
-inline Ufe::Path toPath(const std::string& pathString)
+inline Ufe::Path toPath(const std::string& mayaPathString)
 {
-    return
-#ifdef UFE_V2_FEATURES_AVAILABLE
-        Ufe::PathString::path(pathString);
-#else
-        Ufe::Path(Ufe::PathSegment("|world" + psn, getMayaRunTimeId(), '|'));
-#endif
+    return Ufe::Path(
+        Ufe::PathSegment("|world" + mayaPathString, MayaUsd::ufe::getMayaRunTimeId(), '|'));
 }
 
 } // namespace
