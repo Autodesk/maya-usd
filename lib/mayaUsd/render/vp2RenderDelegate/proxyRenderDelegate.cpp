@@ -1788,7 +1788,7 @@ MColor ProxyRenderDelegate::GetTemplateColor(bool active)
         if (active && _currentFrameContext) {
             colorCache.first = _currentFrameContext->applyViewTransform(colorCache.first, MFrameContext::kInverse);
         }
-#endif        
+#endif
     } else {
         TF_WARN("Failed to obtain template color.");
 
@@ -1868,12 +1868,19 @@ MColor ProxyRenderDelegate::GetSelectionHighlightColor(const TfToken& className)
 
         if (className.IsEmpty()) {
             // The 'lead' color is returned in display space, so we need to convert it to
-            // rendering space. However, function MColorPickerUtilities::applyViewTransform
-            // is supported only starting from Maya 2023, so in opposite case we just return
-            // the default lead color.
+            // rendering space. However, the required functionality for this conversion is 
+            // available only starting from Maya 2023.2
 #if MAYA_API_VERSION >= 20230000
+#if MAYA_API_VERSION >= 20230200
+        if (_currentFrameContext) {
+            colorCache->first = _currentFrameContext->applyViewTransform(color, MFrameContext::kInverse);
+        }
+        else
+#endif
+        {
             colorCache->first
                 = MColorPickerUtilities::applyViewTransform(color, MColorPickerUtilities::kInverse);
+        }
 #else
             colorCache->first = kDefaultLeadColor;
 #endif
