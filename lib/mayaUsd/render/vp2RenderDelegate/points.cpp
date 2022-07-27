@@ -393,6 +393,7 @@ void HdVP2Points::_UpdateDrawItem(
 
             if (material) {
                 MHWRender::MShaderInstance* shader = material->GetPointShader();
+                drawItemData._shaderIsFallback = (shader == nullptr);
                 if (shader != nullptr && shader != drawItemData._shader) {
                     drawItemData._shader = shader;
                     stateToCommit._shader = shader;
@@ -411,6 +412,8 @@ void HdVP2Points::_UpdateDrawItem(
                     drawItemData._primitiveStride = primitiveStride;
                     stateToCommit._primitiveStride = &drawItemData._primitiveStride;
                 }
+            } else {
+                drawItemData._shaderIsFallback = true;
             }
         }
 
@@ -470,7 +473,7 @@ void HdVP2Points::_UpdateDrawItem(
 
             // Use fallback shader if there is no material binding or we failed to create a shader
             // instance from the material.
-            if (!stateToCommit._shader) {
+            if (drawItemData._shaderIsFallback) {
                 MHWRender::MShaderInstance*     shader = nullptr;
                 MHWRender::MGeometry::Primitive primitiveType = MHWRender::MGeometry::kPoints;
                 int                             primitiveStride = 0;
