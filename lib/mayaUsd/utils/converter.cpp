@@ -41,11 +41,14 @@
 | Double           | double                | MFnNumericData::kDouble                                        | double                  | MakeMayaSimpleData |
 ||
 | String           | std::string           | MFnData::kString, MFn::kStringData                             | MString, MFnStringData  | MakeMayaFnData     |
+| Asset            | SdfAssetPath          | MFnData::kString, MFn::kStringData                             | MString, MFnStringData  | MakeMayaFnData     |
 ||
 | Float3           | GfVec3f               | MFnData::kNumeric, MFn::kNumericData, MFnNumericData::k3Float  | float3,  MFnNumericData | MakeMayaFnData     |
 | Double3          | GfVec3d               | MFnData::kNumeric, MFn::kNumericData, MFnNumericData::k3Double | double3, MFnNumericData | MakeMayaFnData     |
 | Color3f          | GfVec3f               | MFnData::kNumeric, MFn::kNumericData, MFnNumericData::k3Float  | float3,  MFnNumericData | MakeMayaFnData     |
+| Vector3f         | GfVec3f               | MFnData::kNumeric, MFn::kNumericData, MFnNumericData::k3Float  | float3,  MFnNumericData | MakeMayaFnData     |
 | Color3d          | GfVec3d               | MFnData::kNumeric, MFn::kNumericData, MFnNumericData::k3Double | double3, MFnNumericData | MakeMayaFnData     |
+| Vector3d         | GfVec3d               | MFnData::kNumeric, MFn::kNumericData, MFnNumericData::k3Double | double3, MFnNumericData | MakeMayaFnData     |
 ||
 | Matrix4d         | GfMatrix4d            | MFnData::kMatrix,  MFn::kMatrixData                            | MMatrix, MFnMatrixData  | MakeMayaFnData     |
 ||
@@ -1054,8 +1057,11 @@ struct Converter::GenerateConverters
         createConverter<double, double>(converters, SdfValueTypeNames->Double);
 
         createConverter<MString, std::string>(converters, SdfValueTypeNames->String);
+        createConverter<MString, SdfAssetPath>(converters, SdfValueTypeNames->Asset);
         createConverter<float3, GfVec3f>(converters, SdfValueTypeNames->Float3);
         createConverter<double3, GfVec3d>(converters, SdfValueTypeNames->Double3);
+        createConverter<float3, GfVec3f>(converters, SdfValueTypeNames->Vector3f);
+        createConverter<double3, GfVec3d>(converters, SdfValueTypeNames->Vector3d);
         createConverter<MMatrix, GfMatrix4d>(converters, SdfValueTypeNames->Matrix4d);
 
         createConverter<float3, GfVec3f, NeedsGammaCorrection::kYes>(
