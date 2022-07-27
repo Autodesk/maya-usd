@@ -262,11 +262,11 @@ void HdVP2Points::_UpdateDrawItem(
     HdVP2DrawItem*          drawItem,
     HdPointsReprDesc const& desc)
 {
-    MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
-    if (ARCH_UNLIKELY(!renderItem)) {
+    if (drawItem->GetRenderItems().empty()) {
         return;
     }
 
+    MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
     HdDirtyBits itemDirtyBits = drawItem->GetDirtyBits();
 
     MayaUsdCommitState             stateToCommit(drawItem->GetRenderItemData());
@@ -982,11 +982,13 @@ void HdVP2Points::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBits)
 
         switch (desc.geomStyle) {
         case HdPointsGeomStylePoints:
-            renderItem = _CreateFatPointsRenderItem(renderItemName);
-            drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
+            if (reprToken == HdReprTokens->smoothHull) {
+                renderItem = _CreateFatPointsRenderItem(renderItemName);
+                drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
 #ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
-            renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
+                renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
 #endif
+            }
             break;
         default: TF_WARN("Unsupported geomStyle"); break;
         }
