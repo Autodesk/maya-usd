@@ -18,13 +18,15 @@ UsdUINodeGraphNodeHandler::Ptr UsdUINodeGraphNodeHandler::create()
     return std::make_shared<UsdUINodeGraphNodeHandler>();
 }
 
-Ufe::UINodeGraphNode::Ptr UsdUINodeGraphNodeHandler::uiNodeGraphNode(const Ufe::SceneItem::Ptr& item) const
+Ufe::UINodeGraphNode::Ptr
+UsdUINodeGraphNodeHandler::uiNodeGraphNode(const Ufe::SceneItem::Ptr& item) const
 {
     PXR_NAMESPACE_USING_DIRECTIVE
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
     TF_VERIFY(usdItem);
 
-    return UsdUINodeGraphNode::create(usdItem);}
+    return UsdUINodeGraphNode::create(usdItem);
+}
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

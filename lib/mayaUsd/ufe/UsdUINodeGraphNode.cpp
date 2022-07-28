@@ -3,8 +3,8 @@
 //
 // This computer source code and related instructions and comments are the
 // unpublished confidential  and proprietary information of Autodesk, Inc.
-// and are protected under applicable copyright and trade secret law. They 
-// may not be disclosed to, copied  or used by any third party without the 
+// and are protected under applicable copyright and trade secret law. They
+// may not be disclosed to, copied  or used by any third party without the
 // prior written consent of Autodesk, Inc.
 // =======================================================================
 
@@ -18,36 +18,40 @@ namespace ufe {
 class SetPositionCommand : public Ufe::UndoableCommand
 {
 public:
-    SetPositionCommand(
-        UsdSceneItem::Ptr& sceneItem,
-        const Ufe::Vector2f& newPos)
-        : _sceneItem(sceneItem)
+    SetPositionCommand(const PXR_NS::UsdPrim& prim, const Ufe::Vector2f& newPos)
+        : Ufe::UndoableCommand()
         , _newPos(PXR_NS::GfVec2f(newPos.x(), newPos.y()))
     {
+        _stage = prim.GetStage();
+        _primPath = prim.GetPath();
     }
 
-    void execute() override {
-        const PXR_NS::UsdPrim prim = _sceneItem->prim();
-        if (!prim.HasAPI<PXR_NS::UsdUINodeGraphNodeAPI>()
-            && PXR_NS::UsdUINodeGraphNodeAPI::CanApply(prim)) {
-            PXR_NS::UsdUINodeGraphNodeAPI::Apply(prim);
-        }
-        if (prim.HasAPI<PXR_NS::UsdUINodeGraphNodeAPI>()) {
-            PXR_NS::UsdUINodeGraphNodeAPI posApi(prim);
-            PXR_NS::UsdAttribute          attr = posApi.GetPosAttr();
-            if (!attr) {
-                attr = posApi.CreatePosAttr();
+    void execute() override
+    {
+        if (_stage) {
+            const PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+            if (!prim.HasAPI<PXR_NS::UsdUINodeGraphNodeAPI>()
+                && PXR_NS::UsdUINodeGraphNodeAPI::CanApply(prim)) {
+                PXR_NS::UsdUINodeGraphNodeAPI::Apply(prim);
             }
-            attr.Set(_newPos);
+            if (prim.HasAPI<PXR_NS::UsdUINodeGraphNodeAPI>()) {
+                PXR_NS::UsdUINodeGraphNodeAPI posApi(prim);
+                PXR_NS::UsdAttribute          attr = posApi.GetPosAttr();
+                if (!attr) {
+                    attr = posApi.CreatePosAttr();
+                }
+                attr.Set(_newPos);
+            }
         }
     }
 
-    void undo() override {}
-    void redo() override {}
+    void undo() override { }
+    void redo() override { }
 
 private:
-    UsdSceneItem::Ptr _sceneItem;
-    const PXR_NS::VtValue _newPos;
+    PXR_NS::UsdStageWeakPtr _stage;
+    PXR_NS::SdfPath         _primPath;
+    const PXR_NS::VtValue   _newPos;
 };
 
 UsdUINodeGraphNode::UsdUINodeGraphNode(const UsdSceneItem::Ptr& item)
@@ -61,16 +65,12 @@ UsdUINodeGraphNode::Ptr UsdUINodeGraphNode::create(const UsdSceneItem::Ptr& item
     return std::make_shared<UsdUINodeGraphNode>(item);
 }
 
-Ufe::SceneItem::Ptr UsdUINodeGraphNode::sceneItem() const
-{
-    return fItem;
-}
+Ufe::SceneItem::Ptr UsdUINodeGraphNode::sceneItem() const { return fItem; }
 
 bool UsdUINodeGraphNode::hasPosition() const
 {
     const PXR_NS::UsdPrim prim = fItem->prim();
-    if (prim.HasAPI<PXR_NS::UsdUINodeGraphNodeAPI>())
-    {
+    if (prim.HasAPI<PXR_NS::UsdUINodeGraphNodeAPI>()) {
         PXR_NS::UsdUINodeGraphNodeAPI posApi(prim);
         PXR_NS::UsdAttribute          attr = posApi.GetPosAttr();
         return attr.IsValid();
@@ -81,10 +81,10 @@ bool UsdUINodeGraphNode::hasPosition() const
 Ufe::Vector2f UsdUINodeGraphNode::getPosition() const
 {
     if (hasPosition()) {
-        const PXR_NS::UsdPrim prim = fItem->prim();
+        const PXR_NS::UsdPrim               prim = fItem->prim();
         const PXR_NS::UsdUINodeGraphNodeAPI posApi(prim);
         const PXR_NS::UsdAttribute          attr = posApi.GetPosAttr();
-        PXR_NS::VtValue v;
+        PXR_NS::VtValue                     v;
         attr.Get(&v);
         const PXR_NS::GfVec2f pos = v.Get<PXR_NS::GfVec2f>();
         return Ufe::Vector2f(pos[0], pos[1]);
@@ -95,7 +95,7 @@ Ufe::Vector2f UsdUINodeGraphNode::getPosition() const
 
 Ufe::UndoableCommand::Ptr UsdUINodeGraphNode::setPositionCmd(const Ufe::Vector2f& pos)
 {
-    return std::make_shared<SetPositionCommand>(fItem, pos);
+    return std::make_shared<SetPositionCommand>(fItem ? fItem->prim() : PXR_NS::UsdPrim(), pos);
 }
 
 } // namespace ufe

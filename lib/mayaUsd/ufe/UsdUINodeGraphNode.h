@@ -11,11 +11,11 @@
 // prior written consent of Autodesk, Inc.
 // =======================================================================
 
+#include "UsdSceneItem.h"
+
 #include <mayaUsd/base/api.h>
 
 #include <ufe/uiNodeGraphNode.h>
-
-#include "UsdSceneItem.h"
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -38,9 +38,9 @@ public:
     static UsdUINodeGraphNode::Ptr create(const UsdSceneItem::Ptr& item);
 
     // Ufe::UsdUINodeGraphNode overrides
-    Ufe::SceneItem::Ptr sceneItem() const override;
-    bool hasPosition() const override;
-    Ufe::Vector2f getPosition() const override;
+    Ufe::SceneItem::Ptr       sceneItem() const override;
+    bool                      hasPosition() const override;
+    Ufe::Vector2f             getPosition() const override;
     Ufe::UndoableCommand::Ptr setPositionCmd(const Ufe::Vector2f& pos) override;
 
 private:

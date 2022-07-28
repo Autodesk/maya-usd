@@ -9,11 +9,11 @@
 // otherwise accompanies this software in either electronic or hard copy form.
 // ===========================================================================
 
+#include "UsdSceneItem.h"
+
 #include <mayaUsd/base/api.h>
 
 #include <ufe/uiNodeGraphNodeHandler.h>
-
-#include "UsdSceneItem.h"
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
