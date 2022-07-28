@@ -330,7 +330,9 @@ void MayaUsdRPrim::_InitRenderItemCommon(MHWRender::MRenderItem* renderItem) con
 
     _SetWantConsolidation(*renderItem, true);
 
+#ifdef MAYA_HAS_RENDER_ITEM_HIDE_ON_PLAYBACK_API
     renderItem->setHideOnPlayback(_hideOnPlayback);
+#endif
 }
 
 /*! \brief  Create render item for bbox repr.
