@@ -1091,11 +1091,7 @@ MHWRender::MRenderItem* HdVP2Points::_CreateFatPointsRenderItem(const MString& n
     renderItem->castsShadows(false);
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->GetPointsFallbackShader(MColor()));
-#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
-#endif
+    _InitRenderItemCommon(renderItem);
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     MSelectionMask selectionMask(MSelectionMask::kSelectParticleShapes);
@@ -1108,8 +1104,6 @@ MHWRender::MRenderItem* HdVP2Points::_CreateFatPointsRenderItem(const MString& n
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNParticles);
 #endif
-
-    _SetWantConsolidation(*renderItem, true);
 
     return renderItem;
 }
