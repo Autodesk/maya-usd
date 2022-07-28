@@ -138,6 +138,14 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
                 UsdConnectionHandler.cpp
         )
     endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4023)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+                UsdUINodeGraphNode.cpp
+                UsdUINodeGraphNodeHandler.cpp
+        )
+    endif()
 endif()
 
 if(PXR_VERSION GREATER_EQUAL 2108)
@@ -264,6 +272,13 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         list(APPEND HEADERS
             UsdConnections.h
             UsdConnectionHandler.h
+        )
+    endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4023)
+        list(APPEND HEADERS
+            UsdUINodeGraphNode.h
+            UsdUINodeGraphNodeHandler.h
         )
     endif()
 endif()

@@ -51,6 +51,9 @@
 #if (UFE_PREVIEW_VERSION_NUM >= 4020)
 #include <mayaUsd/ufe/UsdConnectionHandler.h>
 #endif
+#if (UFE_PREVIEW_VERSION_NUM >= 4023)
+#include <mayaUsd/ufe/UsdUINodeGraphNodeHandler.h>
+#endif
 #if (UFE_PREVIEW_VERSION_NUM >= 4001)
 #include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
 #endif
@@ -189,6 +192,9 @@ MStatus initialize()
 #endif
 #if (UFE_PREVIEW_VERSION_NUM >= 4020)
     handlers.connectionHandler = UsdConnectionHandler::create();
+#endif
+#if (UFE_PREVIEW_VERSION_NUM >= 4023)
+    handlers.uiNodeGraphNodeHandler = UsdUINodeGraphNodeHandler::create();
 #endif
 #if (UFE_PREVIEW_VERSION_NUM >= 4001)
     handlers.nodeDefHandler = UsdShaderNodeDefHandler::create();
