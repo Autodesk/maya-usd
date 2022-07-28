@@ -320,6 +320,10 @@ class testUsdImportRfMLight(unittest.TestCase):
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.iesProfileScale' % nodePath),
             expectedProfileScale, 1e-6))
 
+        expectedProfileNormalize = False
+        self.assertEqual(cmds.getAttr('%s.iesProfileNormalize' % nodePath),
+            expectedProfileNormalize)
+
     def _ValidateMayaLightShadow(self):
         nodePath = '|RfMLightsTest|Lights|RectLight|RectLightShape'
 
