@@ -861,34 +861,40 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
         sn.clear()
         sn.append(capsuleItem)
 
-        # center point is expected to be at [0.0, 0.0, 0.0]
-        assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [0.0, 0.0, 0.0])
-        assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [0.0, 0.0, 0.0])
+        kwArgs = [{'cp' : True}]
+        if mayaUtils.ufeSupportFixLevel() >= 4:
+            kwArgs.append({'cpc' : True})
 
-        # move the pivot location
-        cmds.move(7, 2, 1, r=True, urp=True, usp=True)
-
-        assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [7.0, 2.0, 1.0])
-        assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [7.0, 2.0, 1.0])
-
-        # call center pivot command
-        cmds.xform(cp=True)
-
-        # center point is expected to be at [0.0, 0.0, 0.0]
-        assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [0.0, 0.0, 0.0])
-        assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [0.0, 0.0, 0.0])
-
-        # undo
-        cmds.undo()
-
-        assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [7.0, 2.0, 1.0])
-        assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [7.0, 2.0, 1.0])
-
-        # redo
-        cmds.redo()
-
-        assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [0.0, 0.0, 0.0])
-        assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [0.0, 0.0, 0.0])
+        for kwArg in kwArgs:
+    
+            # center point is expected to be at [0.0, 0.0, 0.0]
+            assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [0.0, 0.0, 0.0])
+            assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [0.0, 0.0, 0.0])
+    
+            # move the pivot location
+            cmds.move(7, 2, 1, r=True, urp=True, usp=True)
+    
+            assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [7.0, 2.0, 1.0])
+            assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [7.0, 2.0, 1.0])
+    
+            # call center pivot command
+            cmds.xform(**kwArg)
+    
+            # center point is expected to be at [0.0, 0.0, 0.0]
+            assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [0.0, 0.0, 0.0])
+            assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [0.0, 0.0, 0.0])
+    
+            # undo
+            cmds.undo()
+    
+            assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [7.0, 2.0, 1.0])
+            assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [7.0, 2.0, 1.0])
+    
+            # redo
+            cmds.redo()
+    
+            assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [0.0, 0.0, 0.0])
+            assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [0.0, 0.0, 0.0])
 
     @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() > 0, "Requires center pivot Maya fix.")
     def testCenterPivotUpdatePivotCompensations(self):
