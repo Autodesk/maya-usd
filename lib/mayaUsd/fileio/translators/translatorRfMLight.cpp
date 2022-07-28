@@ -126,6 +126,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((ConeSoftnessPlugName, "coneSoftness"))
     ((ProfileFilePlugName, "iesProfile"))
     ((ProfileScalePlugName, "iesProfileScale"))
+    ((ProfileNormalizePlugName, "iesProfileNormalize"))
 
     // ShadowAPI plug names.
     ((EnableShadowsPlugName, "enableShadows"))
@@ -1587,6 +1588,23 @@ static bool _WriteLightShapingAPI(const MFnDependencyNode& depFn, UsdLuxLightAPI
         shapingAPI.CreateShapingIesAngleScaleAttr(VtValue(mayaLightProfileScale), true);
     }
 
+    // Profile Normalize.
+    MPlug lightProfileNormalizePlug
+        = depFn.findPlug(_tokens->ProfileNormalizePlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    if (UsdMayaUtil::IsAuthored(lightProfileNormalizePlug)) {
+        bool mayaLightProfileNormalize = false;
+        status = lightProfileNormalizePlug.getValue(mayaLightProfileNormalize);
+        if (status != MS::kSuccess) {
+            return false;
+        }
+
+        shapingAPI.CreateShapingIesNormalizeAttr(VtValue(mayaLightProfileNormalize), true);
+    }
+
     return true;
 }
 
@@ -1686,6 +1704,18 @@ static bool _ReadLightShapingAPI(const UsdLuxLightAPI& lightSchema, MFnDependenc
     shapingAPI.GetShapingIesAngleScaleAttr().Get(&lightProfileScale);
 
     status = lightProfileScalePlug.setValue(lightProfileScale);
+
+    // Profile Normalize.
+    MPlug lightProfileNormalizePlug
+        = depFn.findPlug(_tokens->ProfileNormalizePlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    bool lightProfileNormalize = false;
+    shapingAPI.GetShapingIesNormalizeAttr().Get(&lightProfileNormalize);
+
+    status = lightProfileNormalizePlug.setValue(lightProfileNormalize);
     return status == MS::kSuccess;
 }
 
