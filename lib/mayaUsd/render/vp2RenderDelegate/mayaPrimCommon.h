@@ -172,6 +172,13 @@ protected:
         void(const TfToken& name, const VtValue& value, const HdInterpolation interpolation)>;
     using ErasePrimvarInfoFunc = std::function<void(const TfToken& name)>;
 
+    enum DisplayType
+    {
+        kNormal = 0,
+        kTemplate = 1,
+        kReference = 2
+    };
+
     void _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
 
     void _UpdateTransform(
@@ -201,7 +208,7 @@ protected:
         HdSceneDelegate*   delegate,
         HdDirtyBits const* dirtyBits,
         TfToken const&     reprToken,
-        SdfPath const&     id,
+        HdRprim const&     refThis,
         ReprVector const&  reprs,
         TfToken const&     renderTag);
 
@@ -258,6 +265,9 @@ protected:
 
     //! HideOnPlayback status of the Rprim
     bool _hideOnPlayback { false };
+
+    //! Display type of the Rprim
+    DisplayType _displayType { kNormal };
 
     //! The string representation of the runtime only path to this object
     MStringArray _PrimSegmentString;

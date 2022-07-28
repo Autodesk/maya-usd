@@ -202,6 +202,9 @@ public:
     MColor GetSelectionHighlightColor(const TfToken& className = TfToken());
 
     MAYAUSD_CORE_PUBLIC
+    MColor GetTemplateColor(bool active);
+
+    MAYAUSD_CORE_PUBLIC
     const HdSelection::PrimSelectionState* GetLeadSelectionState(const SdfPath& path) const;
 
     MAYAUSD_CORE_PUBLIC
@@ -310,6 +313,7 @@ private:
                          //!< really need it, but there doesn't seem to be a way to get
                          //!< synchronization running without it)
     std::unique_ptr<UsdImagingDelegate> _sceneDelegate; //!< USD scene delegate
+    const MHWRender::MFrameContext*     _currentFrameContext = nullptr;
 
     bool _isPopulated {
         false
@@ -340,6 +344,9 @@ private:
     std::mutex _mayaCommandEngineMutex;
     uint64_t   _frameCounter { 0 };
 
+    // The name of the currently used color space
+    MString _colorTransformId;
+
     typedef std::pair<MColor, std::atomic<uint64_t>>  MColorCache;
     typedef std::pair<GfVec3f, std::atomic<uint64_t>> GfVec3fCache;
 
@@ -347,6 +354,8 @@ private:
     MColorCache  _activeCurveColorCache { MColor(), 0 };
     MColorCache  _activePointsColorCache { MColor(), 0 };
     MColorCache  _leadColorCache { MColor(), 0 };
+    MColorCache  _activeTemplateColorCache { MColor(), 0 };
+    MColorCache  _dormantTemplateColorCache { MColor(), 0 };
     GfVec3fCache _dormantCurveColorCache { GfVec3f(), 0 };
     GfVec3fCache _dormantPointsColorCache { GfVec3f(), 0 };
 

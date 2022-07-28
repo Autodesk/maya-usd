@@ -563,10 +563,12 @@ void MayaUsdRPrim::_SyncSharedData(
     HdSceneDelegate*   delegate,
     HdDirtyBits const* dirtyBits,
     TfToken const&     reprToken,
-    SdfPath const&     id,
+    HdRprim const&     refThis,
     ReprVector const&  reprs,
     TfToken const&     renderTag)
 {
+    const SdfPath& id = refThis.GetId();
+
     if (HdChangeTracker::IsExtentDirty(*dirtyBits, id)) {
         sharedData.bounds.SetRange(delegate->GetExtent(id));
     }
@@ -588,32 +590,40 @@ void MayaUsdRPrim::_SyncSharedData(
         bool displayLayerVisibility = true; // objects in the default display layer are visible
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
         bool hideOnPlayback = false;
+        _displayType = kNormal;
         // Maya Display Layers do not have a representation in USD, so a prim can be
         // visible from USD's point of view, but hidden from Maya's point of view.
         // In Maya Display Layer visibility really hides the render items vs. using
         // render item filtering (like for example the "Show" menu). So we want to
         // set the "enabled" state of the MRenderItem.
 
-        // Get all the display layers the object is affected by. If any of those layers
-        // are invisible, the object is invisible.
-        MFnDisplayLayerManager displayLayerManager(
-            MFnDisplayLayerManager::currentDisplayLayerManager());
-        MStatus              status;
-        auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-        ProxyRenderDelegate& drawScene = param->GetDrawScene();
-        MDagPath             proxyDagPath = drawScene.GetProxyShapeDagPath();
-        MString              pathString = proxyDagPath.fullPathName()
-            + Ufe::PathString::pathSegmentSeparator().c_str() + _PrimSegmentString[0];
-        MObjectArray ancestorDisplayLayers
-            = displayLayerManager.getAncestorLayersInclusive(pathString, &status);
-        for (unsigned int i = 0; i < ancestorDisplayLayers.length() && displayLayerVisibility;
-             i++) {
-            MFnDependencyNode displayLayerNodeFn(ancestorDisplayLayers[i]);
-            MPlug             layerEnabled = displayLayerNodeFn.findPlug("enabled");
-            MPlug             layerVisible = displayLayerNodeFn.findPlug("visibility");
-            MPlug             layerHidesOnPlayback = displayLayerNodeFn.findPlug("hideOnPlayback");
-            displayLayerVisibility &= layerEnabled.asBool() ? layerVisible.asBool() : true;
-            hideOnPlayback |= layerHidesOnPlayback.asBool();
+        // Display layer features are currently implemented only for non-instanced geometry
+        if (refThis.GetInstancerId().IsEmpty()) {
+            // Get all the display layers the object is affected by. If any of those layers
+            // are invisible, the object is invisible.
+            MFnDisplayLayerManager displayLayerManager(
+                MFnDisplayLayerManager::currentDisplayLayerManager());
+            MStatus     status;
+            auto* const param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+            ProxyRenderDelegate& drawScene = param->GetDrawScene();
+            MDagPath             proxyDagPath = drawScene.GetProxyShapeDagPath();
+            MString              pathString = proxyDagPath.fullPathName()
+                + Ufe::PathString::pathSegmentSeparator().c_str() + _PrimSegmentString[0];
+            MObjectArray ancestorDisplayLayers
+                = displayLayerManager.getAncestorLayersInclusive(pathString, &status);
+            for (unsigned int i = 0; i < ancestorDisplayLayers.length() && displayLayerVisibility;
+                 i++) {
+                MFnDependencyNode displayLayerNodeFn(ancestorDisplayLayers[i]);
+                MPlug             layerEnabled = displayLayerNodeFn.findPlug("enabled");
+                MPlug             layerVisible = displayLayerNodeFn.findPlug("visibility");
+                MPlug layerHidesOnPlayback = displayLayerNodeFn.findPlug("hideOnPlayback");
+                MPlug layerDisplayType = displayLayerNodeFn.findPlug("displayType");
+                displayLayerVisibility &= layerEnabled.asBool() ? layerVisible.asBool() : true;
+                hideOnPlayback |= layerHidesOnPlayback.asBool();
+                if (_displayType == kNormal) {
+                    _displayType = (DisplayType)layerDisplayType.asShort();
+                }
+            }
         }
 
         // Update "hide on playback" status
