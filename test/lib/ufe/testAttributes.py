@@ -22,7 +22,9 @@ import usdUtils
 
 from pxr import UsdGeom
 
+from maya import cmds
 from maya import standalone
+from maya.internal.ufeSupport import ufeCmdWrapper as ufeCmd
 
 import ufe
 
@@ -49,6 +51,8 @@ class AttributesTestCase(unittest.TestCase):
     def setUp(self):
         ''' Called initially to set up the maya test environment '''
         self.assertTrue(self.pluginsLoaded)
+
+        cmds.file(new=True, force=True)
 
         # Open top_layer.ma scene in testSamples
         mayaUtils.openTopLayerScene()
@@ -80,6 +84,61 @@ class AttributesTestCase(unittest.TestCase):
 
         # Visibility should be in this list.
         self.assertIn(UsdGeom.Tokens.visibility, ball35AttrNames)
+
+    def testAddRemoveAttribute(self):
+        '''Test adding and removing custom attributes'''
+
+        ball35Path = ufe.Path([
+            mayaUtils.createUfePathSegment("|transform1|proxyShape1"), 
+            usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
+        ball35Item = ufe.Hierarchy.createItem(ball35Path)
+
+        # Then create the attributes interface for that item.
+        ball35Attrs = ufe.Attributes.attributes(ball35Item)
+        self.assertIsNotNone(ball35Attrs)
+
+        cmd = ball35Attrs.addAttributeCmd("MyAttribute", ufe.Attribute.kString)
+        self.assertIsNotNone(cmd)
+
+        ufeCmd.execute(cmd)
+
+        self.assertIsNotNone(cmd.attribute)
+        self.assertIn("MyAttribute", ball35Attrs.attributeNames)
+        attr = ball35Attrs.attribute("MyAttribute")
+        self.assertEqual(repr(attr),"ufe.AttributeString(<|world|transform1|proxyShape1/Room_set/Props/Ball_35.MyAttribute>)")
+
+        cmds.undo()
+
+        self.assertNotIn("MyAttribute", ball35Attrs.attributeNames)
+        with self.assertRaisesRegex(KeyError, "Attribute 'MyAttribute' does not exist") as cm:
+            attr = ball35Attrs.attribute("MyAttribute")
+
+        cmds.redo()
+
+        self.assertIn("MyAttribute", ball35Attrs.attributeNames)
+        attr = ball35Attrs.attribute("MyAttribute")
+
+        cmd = ball35Attrs.removeAttributeCmd("MyAttribute")
+        self.assertIsNotNone(cmd)
+
+        ufeCmd.execute(cmd)
+
+        self.assertNotIn("MyAttribute", ball35Attrs.attributeNames)
+        with self.assertRaisesRegex(KeyError, "Attribute 'MyAttribute' does not exist") as cm:
+            attr = ball35Attrs.attribute("MyAttribute")
+        with self.assertRaisesRegex(ValueError, "Requested attribute with empty name") as cm:
+            attr = ball35Attrs.attribute("")
+
+        cmds.undo()
+
+        self.assertIn("MyAttribute", ball35Attrs.attributeNames)
+        attr = ball35Attrs.attribute("MyAttribute")
+
+        cmds.redo()
+
+        self.assertNotIn("MyAttribute", ball35Attrs.attributeNames)
+        with self.assertRaisesRegex(KeyError, "Attribute 'MyAttribute' does not exist") as cm:
+            attr = ball35Attrs.attribute("MyAttribute")
 
 
 if __name__ == '__main__':

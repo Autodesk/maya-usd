@@ -57,11 +57,33 @@ public:
     Ufe::Attribute::Ptr      attribute(const std::string& name) override;
     std::vector<std::string> attributeNames() const override;
     bool                     hasAttribute(const std::string& name) const override;
+#if (UFE_PREVIEW_VERSION_NUM >= 4024)
+    Ufe::Attribute::Ptr
+    addAttribute(const std::string& name, const Ufe::Attribute::Type& type) override;
+    Ufe::AddAttributeCommand::Ptr
+                              addAttributeCmd(const std::string& name, const Ufe::Attribute::Type& type) override;
+    bool                      removeAttribute(const std::string& name) override;
+    Ufe::UndoableCommand::Ptr removeAttributeCmd(const std::string& name) override;
+#endif
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4008)
     inline Ufe::NodeDef::Ptr nodeDef() const;
 #endif
+#endif
+
+#if (UFE_PREVIEW_VERSION_NUM >= 4024)
+    // Helpers for validation and execution:
+    static bool canAddAttribute(
+        const UsdSceneItem::Ptr&    item,
+        const std::string&          name,
+        const Ufe::Attribute::Type& type);
+    static Ufe::Attribute::Ptr doAddAttribute(
+        const UsdSceneItem::Ptr&    item,
+        const std::string&          name,
+        const Ufe::Attribute::Type& type);
+    static bool canRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
+    static bool doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
 #endif
 
 private:
@@ -70,10 +92,6 @@ private:
 private:
     UsdSceneItem::Ptr fItem;
     PXR_NS::UsdPrim   fPrim;
-
-    typedef std::unordered_map<std::string, Ufe::Attribute::Ptr> AttributeMap;
-    AttributeMap                                                 fAttributes;
-
 }; // UsdAttributes
 
 } // namespace ufe
