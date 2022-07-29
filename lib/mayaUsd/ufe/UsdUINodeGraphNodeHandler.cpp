@@ -27,8 +27,8 @@ UsdUINodeGraphNodeHandler::uiNodeGraphNode(const Ufe::SceneItem::Ptr& item) cons
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
     TF_VERIFY(usdItem);
 
-    const PXR_NS::UsdPrim prim = usdItem->prim();
-    if (prim.IsValid() && PXR_NS::UsdUINodeGraphNodeAPI::CanApply(prim)) {
+    const UsdPrim prim = usdItem->prim();
+    if (prim.IsValid() && UsdUINodeGraphNodeAPI::CanApply(prim)) {
         return UsdUINodeGraphNode::create(usdItem);
     }
     return nullptr;

@@ -30,14 +30,14 @@ public:
     {
         PXR_NAMESPACE_USING_DIRECTIVE
         if (_stage) {
-            const PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
-            if (!prim.HasAPI<PXR_NS::UsdUINodeGraphNodeAPI>()) {
-                PXR_NS::UsdUINodeGraphNodeAPI::Apply(prim);
+            const UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+            if (!prim.HasAPI<UsdUINodeGraphNodeAPI>()) {
+                UsdUINodeGraphNodeAPI::Apply(prim);
             }
-            if (prim.HasAPI<PXR_NS::UsdUINodeGraphNodeAPI>()) {
-                PXR_NS::UsdUINodeGraphNodeAPI posApi(prim);
+            if (prim.HasAPI<UsdUINodeGraphNodeAPI>()) {
+                UsdUINodeGraphNodeAPI posApi(prim);
                 TF_VERIFY(posApi);
-                PXR_NS::UsdAttribute attr = posApi.GetPosAttr();
+                UsdAttribute attr = posApi.GetPosAttr();
                 if (!attr) {
                     attr = posApi.CreatePosAttr();
                 }
@@ -71,10 +71,10 @@ Ufe::SceneItem::Ptr UsdUINodeGraphNode::sceneItem() const { return fItem; }
 bool UsdUINodeGraphNode::hasPosition() const
 {
     PXR_NAMESPACE_USING_DIRECTIVE
-    const PXR_NS::UsdPrim         prim = fItem->prim();
-    PXR_NS::UsdUINodeGraphNodeAPI posApi(prim);
+    const UsdPrim         prim = fItem->prim();
+    UsdUINodeGraphNodeAPI posApi(prim);
     TF_VERIFY(posApi);
-    PXR_NS::UsdAttribute attr = posApi.GetPosAttr();
+    UsdAttribute attr = posApi.GetPosAttr();
     return attr.IsValid();
 }
 
