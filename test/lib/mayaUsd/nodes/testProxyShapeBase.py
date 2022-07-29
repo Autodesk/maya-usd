@@ -130,7 +130,7 @@ class testProxyShapeBase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         # Open usdCylinder.ma scene in testSamples twice, so that deleting one instance
-        # will still leave another and have something to iterate over in th estage cache.
+        # will still leave another and have something to iterate over in the stage cache.
         mayaUtils.openCylinderScene()
         mayaUtils.openCylinderScene()
 
@@ -146,6 +146,53 @@ class testProxyShapeBase(unittest.TestCase):
 
         # Request the now dead proxy shape. This should not crash.
         result = handler.findGatewayItems(proxyShapePath)
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testDeleteStageUndo uses PathString which is only available in UFE v2 or greater.')
+    def testDeleteStageUndo(self):
+        '''
+        Verify that we can undo the deletion of the stage.
+
+        Used to fail when selecting prim afterward, so we validate by using the selection.
+        '''
+        # create new stage
+        cmds.file(new=True, force=True)
+
+        # Open usdCylinder.ma scene in testSamples.
+        mayaUtils.openCylinderScene()
+
+        # get the proxy shape path
+        proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+
+        # select the cylinder. Should not fail.
+        cylPath = ufe.Path([
+            mayaUtils.createUfePathSegment("|mayaUsdTransform|shape"), 
+            usdUtils.createUfePathSegment("/pCylinder1")])
+        cylItem = ufe.Hierarchy.createItem(cylPath)
+        self.assertIsNotNone(cylItem)
+        ufe.GlobalSelection.get().clear()
+        ufe.GlobalSelection.get().append(cylItem)
+
+        # Get the USD handler.
+        proxyShapePath = ufe.PathString.path(proxyShapes[0])
+
+        # Delete the proxy shape.
+        cmds.delete(proxyShapes[0])
+
+        # select the cylinder. Should not fail.
+        cylPath = ufe.Path([
+            mayaUtils.createUfePathSegment("|mayaUsdTransform|shape"), 
+            usdUtils.createUfePathSegment("/pCylinder1")])
+        cylItem = ufe.Hierarchy.createItem(cylPath)
+        self.assertIsNone(cylItem)
+
+        # Undo the deletion.
+        cmds.undo()
+
+        # select the cylinder. Should not fail. (Used to fail.)
+        cylItem = ufe.Hierarchy.createItem(cylPath)
+        self.assertIsNotNone(cylItem)
+        ufe.GlobalSelection.get().clear()
+        ufe.GlobalSelection.get().append(cylItem)
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testDuplicateProxyStageFileBacked only available in UFE v2 or greater.')
     def testDuplicateProxyStageFileBacked(self):
