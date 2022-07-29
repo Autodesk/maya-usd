@@ -142,7 +142,7 @@ class AttributesTestCase(unittest.TestCase):
         self.assertIsNotNone(cmd.attribute)
         self.assertIn("MyAttribute", ball35Attrs.attributeNames)
         attr = ball35Attrs.attribute("MyAttribute")
-        self.assertEqual(repr(attr),"ufe.AttributeString(<|world|transform1|proxyShape1/Room_set/Props/Ball_35.MyAttribute>)")
+        self.assertEqual(repr(attr),"ufe.AttributeString(<|transform1|proxyShape1,/Room_set/Props/Ball_35.MyAttribute>)")
 
         cmds.undo()
         ballObserver.assertNotificationCount(self, numAdded = 1, numRemoved = 1)

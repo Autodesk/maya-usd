@@ -59,11 +59,8 @@ public:
     bool                     hasAttribute(const std::string& name) const override;
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4024)
-    Ufe::Attribute::Ptr
-    addAttribute(const std::string& name, const Ufe::Attribute::Type& type) override;
     Ufe::AddAttributeCommand::Ptr
                               addAttributeCmd(const std::string& name, const Ufe::Attribute::Type& type) override;
-    bool                      removeAttribute(const std::string& name) override;
     Ufe::UndoableCommand::Ptr removeAttributeCmd(const std::string& name) override;
 #endif
 

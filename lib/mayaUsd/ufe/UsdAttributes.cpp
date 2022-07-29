@@ -308,28 +308,10 @@ bool UsdAttributes::hasAttribute(const std::string& name) const
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4024)
-Ufe::Attribute::Ptr
-UsdAttributes::addAttribute(const std::string& name, const Ufe::Attribute::Type& type)
-{
-
-    if (canAddAttribute(fItem, name, type)) {
-        return doAddAttribute(fItem, name, type);
-    }
-    return {};
-}
-
 Ufe::AddAttributeCommand::Ptr
 UsdAttributes::addAttributeCmd(const std::string& name, const Ufe::Attribute::Type& type)
 {
     return UsdAddAttributeCommand::create(fItem, name, type);
-}
-
-bool UsdAttributes::removeAttribute(const std::string& name)
-{
-    if (canRemoveAttribute(fItem, name)) {
-        return doRemoveAttribute(fItem, name);
-    }
-    return false;
 }
 
 Ufe::UndoableCommand::Ptr UsdAttributes::removeAttributeCmd(const std::string& name)
