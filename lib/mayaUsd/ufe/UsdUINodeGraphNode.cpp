@@ -20,10 +20,10 @@ class SetPositionCommand : public Ufe::UndoableCommand
 public:
     SetPositionCommand(const PXR_NS::UsdPrim& prim, const Ufe::Vector2f& newPos)
         : Ufe::UndoableCommand()
+        , _stage(prim.GetStage())
+        , _primPath(prim.GetPath())
         , _newPos(PXR_NS::GfVec2f(newPos.x(), newPos.y()))
     {
-        _stage = prim.GetStage();
-        _primPath = prim.GetPath();
     }
 
     void execute() override
@@ -49,9 +49,9 @@ public:
     void redo() override { }
 
 private:
-    PXR_NS::UsdStageWeakPtr _stage;
-    PXR_NS::SdfPath         _primPath;
-    const PXR_NS::VtValue   _newPos;
+    const PXR_NS::UsdStageWeakPtr _stage;
+    const PXR_NS::SdfPath         _primPath;
+    const PXR_NS::VtValue         _newPos;
 };
 
 UsdUINodeGraphNode::UsdUINodeGraphNode(const UsdSceneItem::Ptr& item)
