@@ -27,6 +27,34 @@ import os
 import ufe
 import unittest
 
+class TestObserver(ufe.Observer):
+    def __init__(self):
+        super(TestObserver, self).__init__()
+        self._addedNotifications = 0
+        self._removedNotifications = 0
+        self._valueChangedNotifications = 0
+        self._connectionChangedNotifications = 0
+        self._unknownNotifications = 0
+
+    def __call__(self, notification):
+        if isinstance(notification, ufe.AttributeAdded):
+            self._addedNotifications += 1
+        elif isinstance(notification, ufe.AttributeRemoved):
+            self._removedNotifications += 1
+        elif isinstance(notification, ufe.AttributeValueChanged):
+            self._valueChangedNotifications += 1
+        elif isinstance(notification, ufe.AttributeConnectionChanged):
+            self._connectionChangedNotifications += 1
+        else:
+            self._unknownNotifications += 1
+
+    def assertNotificationCount(self, test, **counters):
+        test.assertEqual(self._addedNotifications, counters.get("numAdded", 0))
+        test.assertEqual(self._removedNotifications, counters.get("numRemoved", 0))
+        test.assertEqual(self._valueChangedNotifications, counters.get("numValue", 0))
+        test.assertEqual(self._connectionChangedNotifications, counters.get("numConnection", 0))
+        test.assertEqual(self._unknownNotifications, 0)
+
 
 class ConnectionTestCase(unittest.TestCase):
     '''Test(s) validating the connections (i.e. list, create and delete).'''
@@ -546,6 +574,9 @@ class ConnectionTestCase(unittest.TestCase):
         materialItem = rootHier.children()[-1]
         materialAttrs = ufe.Attributes.attributes(materialItem)
         contextOps = ufe.ContextOps.contextOps(materialItem)
+        materialObserver = TestObserver()
+        materialAttrs.addObserver(materialItem, materialObserver)
+        materialObserver.assertNotificationCount(self)
 
         cmd = contextOps.doOp(['Add New Prim', 'Shader'])
 
@@ -571,6 +602,7 @@ class ConnectionTestCase(unittest.TestCase):
         # Big difference here: using the addAttribute to add the surface output for MaterialX:
         #
         materialOutput = materialAttrs.addAttribute("outputs:mtlx:surface", ufe.Attribute.kString)
+        materialObserver.assertNotificationCount(self, numAdded = 1)
 
         self.assertEqual(len(materialPrim.GetAuthoredProperties()), 1)
         self.assertEqual(materialPrim.GetAuthoredProperties()[0].GetName(), "outputs:mtlx:surface")
@@ -583,6 +615,7 @@ class ConnectionTestCase(unittest.TestCase):
         self.assertEqual("info:id", shaderPrim.GetAuthoredProperties()[0].GetName())
 
         connectionHandler.connect(shaderOutput, materialOutput)
+        materialObserver.assertNotificationCount(self, numAdded = 1, numConnection = 1)
 
         connections = connectionHandler.sourceConnections(materialItem)
         self.assertIsNotNone(connections)
@@ -600,6 +633,7 @@ class ConnectionTestCase(unittest.TestCase):
 
         materialOutput = materialAttrs.attribute("outputs:mtlx:surface")
         connectionHandler.disconnect(shaderOutput, materialOutput)
+        materialObserver.assertNotificationCount(self, numAdded = 1, numConnection = 2)
 
         connections = connectionHandler.sourceConnections(materialItem)
         self.assertIsNotNone(connections)
@@ -608,6 +642,7 @@ class ConnectionTestCase(unittest.TestCase):
 
         # Not redirected since already on outputs:mtlx:surface:
         connectionHandler.connect(shaderOutput, materialOutput)
+        materialObserver.assertNotificationCount(self, numAdded = 1, numConnection = 3)
 
         connections = connectionHandler.sourceConnections(materialItem)
         self.assertIsNotNone(connections)

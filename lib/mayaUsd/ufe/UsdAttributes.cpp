@@ -18,8 +18,10 @@
 #include "Global.h"
 #include "Utils.h"
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4024)
 #include <mayaUsd/ufe/UsdUndoAttributesCommands.h>
+#endif
 #endif
 
 #include <pxr/base/tf/token.h>
@@ -304,6 +306,7 @@ bool UsdAttributes::hasAttribute(const std::string& name) const
     return false;
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4024)
 Ufe::Attribute::Ptr
 UsdAttributes::addAttribute(const std::string& name, const Ufe::Attribute::Type& type)
@@ -333,6 +336,7 @@ Ufe::UndoableCommand::Ptr UsdAttributes::removeAttributeCmd(const std::string& n
 {
     return UsdRemoveAttributeCommand::create(fItem, name);
 }
+#endif
 #endif
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
@@ -365,6 +369,7 @@ UsdAttributes::getUfeTypeForAttribute(const PXR_NS::UsdAttribute& usdAttr) const
     return Ufe::Attribute::kInvalid;
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4024)
 // Helpers for validation and execution:
 bool UsdAttributes::canAddAttribute(
@@ -387,12 +392,6 @@ Ufe::Attribute::Ptr UsdAttributes::doAddAttribute(
     const std::string&          name,
     const Ufe::Attribute::Type& type)
 {
-    // See if we can edit this attribute, and that it is not already part of the schema or node
-    // definition
-    if (!item || !item->prim().IsActive() || UsdAttributes(item).hasAttribute(name)) {
-        return nullptr;
-    }
-
     // We have many ways of creating an attribute. Try to follow the rules whenever possible:
     PXR_NS::TfToken                nameAsToken(name);
     auto                           prim = item->prim();
@@ -474,10 +473,6 @@ bool UsdAttributes::canRemoveAttribute(const UsdSceneItem::Ptr& item, const std:
 
 bool UsdAttributes::doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name)
 {
-    if (!item || !item->prim().IsActive() || !UsdAttributes(item).hasAttribute(name)) {
-        return false;
-    }
-
     PXR_NS::TfToken nameAsToken(name);
     auto            prim = item->prim();
     auto            attribute = prim.GetAttribute(nameAsToken);
@@ -507,6 +502,7 @@ bool UsdAttributes::doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::
     }
     return false;
 }
+#endif
 #endif
 
 } // namespace ufe

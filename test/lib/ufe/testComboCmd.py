@@ -101,8 +101,13 @@ class TestObserver(ufe.Observer):
 
     def __call__(self, notification):
         if (ufeUtils.ufeFeatureSetVersion() >= 2):
-            if isinstance(notification, ufe.AttributeValueChanged):
-                self._valueChanged += 1
+            if os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '4024':
+                if isinstance(notification, ufe.AttributeChanged):
+                    self._valueChanged += 1
+            else:
+                if isinstance(notification, ufe.AttributeValueChanged):
+                    self._valueChanged += 1
+
         if isinstance(notification, ufe.Transform3dChanged):
             self._transform3d += 1
 
