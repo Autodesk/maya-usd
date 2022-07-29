@@ -18,7 +18,9 @@
 #include "Global.h"
 #include "Utils.h"
 
+#if (UFE_PREVIEW_VERSION_NUM >= 4024)
 #include <mayaUsd/ufe/UsdUndoAttributesCommands.h>
+#endif
 
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
