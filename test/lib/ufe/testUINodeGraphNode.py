@@ -23,7 +23,6 @@ from maya import cmds
 from maya import standalone
 
 import ufe
-import mayaUsd.ufe
 
 import os
 import unittest
