@@ -91,6 +91,7 @@ void _ReadShaderAttributesFromUsdPrim_deprecated(
 #else
     const UsdLuxLightAPI lightSchema,
 #endif
+    MFnDependencyNode& depFn);
 
 void _WriteShaderAttributesToUsdPrim_deprecated(
     const MFnDependencyNode& depFn,
