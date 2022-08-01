@@ -33,7 +33,6 @@
 #endif
 #endif
 
-
 // Note: normally we would use this using directive, but here we cannot because
 //       one of our classes is called UsdAttribute which is exactly the same as
 //      the one in USD.
