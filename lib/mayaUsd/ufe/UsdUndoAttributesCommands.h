@@ -18,7 +18,7 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdAttribute.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
-#include <mayaUsd/undo/UsdUndoableItem.h>
+#include <mayaUsd/ufe/UsdUndoableCommand.h>
 
 #include <pxr/usd/usd/prim.h>
 
@@ -35,7 +35,7 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Implementation of AddAttributeCommand
-class UsdAddAttributeCommand : public Ufe::AddAttributeCommand
+class UsdAddAttributeCommand : public UsdUndoableCommand<Ufe::AddAttributeCommand>
 {
 public:
     typedef std::shared_ptr<UsdAddAttributeCommand> Ptr;
@@ -60,19 +60,16 @@ public:
 
     Ufe::Attribute::Ptr attribute() const override;
 
-    void execute() override;
-    void undo() override;
-    void redo() override;
+    void executeUndoBlock() override;
 
 private:
     const Ufe::Path            _sceneItemPath;
     const std::string          _name;
     const Ufe::Attribute::Type _type;
-    UsdUndoableItem            _undoableItem;
 }; // UsdAddAttributeCommand
 
 //! \brief Implementation of AddAttributeCommand
-class UsdRemoveAttributeCommand : public Ufe::UndoableCommand
+class UsdRemoveAttributeCommand : public UsdUndoableCommand<Ufe::UndoableCommand>
 {
 public:
     typedef std::shared_ptr<UsdRemoveAttributeCommand> Ptr;
@@ -90,14 +87,11 @@ public:
     static UsdRemoveAttributeCommand::Ptr
     create(const UsdSceneItem::Ptr& sceneItem, const std::string& name);
 
-    void execute() override;
-    void undo() override;
-    void redo() override;
+    void executeUndoBlock() override;
 
 private:
     const Ufe::Path   _sceneItemPath;
     const std::string _name;
-    UsdUndoableItem   _undoableItem;
 }; // UsdRemoveAttributeCommand
 
 } // namespace ufe

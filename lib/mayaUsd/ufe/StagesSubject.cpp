@@ -178,6 +178,7 @@ void valueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
     }
 }
 
+#if (UFE_PREVIEW_VERSION_NUM >= 4024)
 void attributeChanged(
     const Ufe::Path&    ufePath,
     const TfToken&      changedToken,
@@ -197,6 +198,7 @@ void attributeChanged(
         sendAttributeChanged(ufePath, changedToken, changeType);
     }
 }
+#endif
 
 void processAttributeChanges(
     const Ufe::Path&                                ufePath,

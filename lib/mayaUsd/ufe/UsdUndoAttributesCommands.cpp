@@ -16,7 +16,6 @@
 #include "UsdUndoAttributesCommands.h"
 
 #include <mayaUsd/ufe/UsdAttributes.h>
-#include <mayaUsd/undo/UsdUndoBlock.h>
 
 #include <ufe/hierarchy.h>
 
@@ -29,7 +28,7 @@ UsdAddAttributeCommand::UsdAddAttributeCommand(
     const UsdSceneItem::Ptr&    sceneItem,
     const std::string&          name,
     const Ufe::Attribute::Type& type)
-    : Ufe::AddAttributeCommand()
+    : UsdUndoableCommand<Ufe::AddAttributeCommand>()
     , _sceneItemPath(sceneItem->path())
     , _name(name)
     , _type(type)
@@ -56,25 +55,18 @@ Ufe::Attribute::Ptr UsdAddAttributeCommand::attribute() const
     return UsdAttributes(sceneItem).attribute(_name);
 }
 
-void UsdAddAttributeCommand::execute()
+void UsdAddAttributeCommand::executeUndoBlock()
 {
-    // Gather undo data:
-    UsdUndoBlock undoBlock(&_undoableItem);
-
     // Validation has already been done. Just create the attribute.
     auto sceneItem
         = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(_sceneItemPath));
     UsdAttributes::doAddAttribute(sceneItem, _name, _type);
 }
 
-void UsdAddAttributeCommand::undo() { _undoableItem.undo(); }
-
-void UsdAddAttributeCommand::redo() { _undoableItem.redo(); }
-
 UsdRemoveAttributeCommand::UsdRemoveAttributeCommand(
     const UsdSceneItem::Ptr& sceneItem,
     const std::string&       name)
-    : Ufe::UndoableCommand()
+    : UsdUndoableCommand<Ufe::UndoableCommand>()
     , _sceneItemPath(sceneItem->path())
     , _name(name)
 {
@@ -91,20 +83,13 @@ UsdRemoveAttributeCommand::create(const UsdSceneItem::Ptr& sceneItem, const std:
     return nullptr;
 }
 
-void UsdRemoveAttributeCommand::execute()
+void UsdRemoveAttributeCommand::executeUndoBlock()
 {
-    // Gather undo data:
-    UsdUndoBlock undoBlock(&_undoableItem);
-
     // Validation has already been done. Just remove the attribute.
     auto sceneItem
         = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(_sceneItemPath));
     UsdAttributes::doRemoveAttribute(sceneItem, _name);
 }
-
-void UsdRemoveAttributeCommand::undo() { _undoableItem.undo(); }
-
-void UsdRemoveAttributeCommand::redo() { _undoableItem.redo(); }
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
