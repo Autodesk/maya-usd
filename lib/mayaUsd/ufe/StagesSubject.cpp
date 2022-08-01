@@ -168,7 +168,8 @@ void valueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
 {
     if (inAttributeChangedNotificationGuard()) {
         // Don't add pending notif if one already exists with same path/token.
-        auto p = AttributeNotification { ufePath, changedToken, AttributeChangeType::kValueChanged };
+        auto p
+            = AttributeNotification { ufePath, changedToken, AttributeChangeType::kValueChanged };
         if (std::find(
                 pendingAttributeChangedNotifications.begin(),
                 pendingAttributeChangedNotifications.end(),
