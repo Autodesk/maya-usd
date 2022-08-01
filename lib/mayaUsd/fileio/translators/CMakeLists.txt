@@ -14,6 +14,7 @@ target_sources(${PROJECT_NAME}
         translatorNurbsPatch.cpp
         translatorPrim.cpp
         translatorRfMLight.cpp
+        translatorRfMLight_deprecated.cpp
         translatorSkel.cpp
         translatorUtil.cpp
         translatorXformable.cpp
