@@ -18,12 +18,6 @@
 #include "Global.h"
 #include "Utils.h"
 
-#ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4024)
-#include <mayaUsd/ufe/UsdUndoAttributesCommands.h>
-#endif
-#endif
-
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/attributeSpec.h>
@@ -32,6 +26,13 @@
 
 #include <ufe/runTimeMgr.h>
 #include <ufe/ufeAssert.h>
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4024)
+#include <mayaUsd/ufe/UsdUndoAttributesCommands.h>
+#endif
+#endif
+
 
 // Note: normally we would use this using directive, but here we cannot because
 //       one of our classes is called UsdAttribute which is exactly the same as

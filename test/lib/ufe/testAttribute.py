@@ -1118,7 +1118,7 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(globalObs.notifications, 11)
 
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test for UFE preview version 0.4.24 and later')
-    def testObservation(self):
+    def testObservationWithFineGrainedNotifications(self):
         '''
         Test Attributes observation interface.
 

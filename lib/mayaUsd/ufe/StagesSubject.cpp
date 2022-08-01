@@ -87,10 +87,10 @@ std::atomic_int attributeChangedNotificationGuardCount { 0 };
 
 enum class AttributeChangeType
 {
-    added,
-    valueChanged,
-    connectionChanged,
-    removed
+    kAdded,
+    kValueChanged,
+    kConnectionChanged,
+    kRemoved
 };
 
 struct AttributeNotification
@@ -101,7 +101,10 @@ struct AttributeNotification
 
     bool operator==(const AttributeNotification& other)
     {
-        return other._type == _type && other._token == _token && other._path == _path;
+        // Only collapse multiple value changes. Collapsing added/removed notifications needs to be
+        // done safely so the observer ends up in the right state.
+        return other._type == _type && other._token == _token && other._path == _path
+            && _type == AttributeChangeType::kValueChanged;
     }
 };
 
@@ -130,7 +133,7 @@ void sendAttributeChanged(
 {
 #if (UFE_PREVIEW_VERSION_NUM >= 4024)
     switch (changeType) {
-    case AttributeChangeType::valueChanged: {
+    case AttributeChangeType::kValueChanged: {
         notifyWithoutExceptions<Ufe::Attributes>(
             Ufe::AttributeValueChanged(ufePath, changedToken.GetString()));
 
@@ -138,15 +141,15 @@ void sendAttributeChanged(
             notifyWithoutExceptions<Ufe::Camera>(ufePath);
         }
     } break;
-    case AttributeChangeType::added: {
+    case AttributeChangeType::kAdded: {
         notifyWithoutExceptions<Ufe::Attributes>(
             Ufe::AttributeAdded(ufePath, changedToken.GetString()));
     } break;
-    case AttributeChangeType::removed: {
+    case AttributeChangeType::kRemoved: {
         notifyWithoutExceptions<Ufe::Attributes>(
             Ufe::AttributeRemoved(ufePath, changedToken.GetString()));
     } break;
-    case AttributeChangeType::connectionChanged: {
+    case AttributeChangeType::kConnectionChanged: {
         notifyWithoutExceptions<Ufe::Attributes>(
             Ufe::AttributeConnectionChanged(ufePath, changedToken.GetString()));
     } break;
@@ -165,7 +168,7 @@ void valueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
 {
     if (inAttributeChangedNotificationGuard()) {
         // Don't add pending notif if one already exists with same path/token.
-        auto p = AttributeNotification { ufePath, changedToken, AttributeChangeType::valueChanged };
+        auto p = AttributeNotification { ufePath, changedToken, AttributeChangeType::kValueChanged };
         if (std::find(
                 pendingAttributeChangedNotifications.begin(),
                 pendingAttributeChangedNotifications.end(),
@@ -174,7 +177,7 @@ void valueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
             pendingAttributeChangedNotifications.emplace_back(p);
         }
     } else {
-        sendAttributeChanged(ufePath, changedToken, AttributeChangeType::valueChanged);
+        sendAttributeChanged(ufePath, changedToken, AttributeChangeType::kValueChanged);
     }
 }
 
@@ -224,17 +227,17 @@ void processAttributeChanges(
         }
     }
     if (sendAdded) {
-        attributeChanged(ufePath, changedPath.GetNameToken(), AttributeChangeType::added);
+        attributeChanged(ufePath, changedPath.GetNameToken(), AttributeChangeType::kAdded);
     }
     if (sendValueChanged) {
         valueChanged(ufePath, changedPath.GetNameToken());
     }
     if (sendConnectionChanged) {
         attributeChanged(
-            ufePath, changedPath.GetNameToken(), AttributeChangeType::connectionChanged);
+            ufePath, changedPath.GetNameToken(), AttributeChangeType::kConnectionChanged);
     }
     if (sendRemoved) {
-        attributeChanged(ufePath, changedPath.GetNameToken(), AttributeChangeType::removed);
+        attributeChanged(ufePath, changedPath.GetNameToken(), AttributeChangeType::kRemoved);
     }
 #else
     valueChanged(ufePath, changedPath.GetNameToken());
