@@ -23,10 +23,13 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
 
+#include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
 #include <maya/MString.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+class UsdPrim;
 
 enum class UsdMayaShadingNodeType
 {
@@ -45,7 +48,7 @@ enum class UsdMayaDummyTransformType
     LockedTransform
 };
 
-/// \brief Provides helper functions for other readers to use.
+/// \brief Provides helper functions for other readers/writers to use.
 struct UsdMayaTranslatorUtil
 {
     /// \brief Often when creating a prim, we want to first create a Transform
@@ -171,6 +174,28 @@ struct UsdMayaTranslatorUtil
     /// for success.
     MAYAUSD_CORE_PUBLIC
     static bool SetUsdTypeName(const MObject& mayaNodeObj, const TfToken& usdTypeName);
+
+    /// Reads shader attributes from \p usdPrim and writes them to \p depFn.
+    /// This uses \p sdrShaderId to determine which attributes are read.
+    ///
+    /// This will produce runtime errors if it encounters any problems with
+    /// reading the attributes.
+    MAYAUSD_CORE_PUBLIC
+    static void ReadShaderAttributesFromUsdPrim(
+        const UsdPrim&           usdPrim,
+        const TfToken&           sdrShaderId,
+        const MFnDependencyNode& depFn);
+
+    /// Reads shader attributes from \p depFn and writes them to \p usdPrim.  This uses
+    /// \p sdrShaderId to determine which attributes are read.
+    ///
+    /// This will produce runtime errors if it encounters any problems with
+    /// writing the attributes.
+    MAYAUSD_CORE_PUBLIC
+    static void WriteShaderAttributesToUsdPrim(
+        const MFnDependencyNode& depFn,
+        const TfToken&           sdrShaderId,
+        const UsdPrim&           usdPrim);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

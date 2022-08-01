@@ -15,18 +15,26 @@
 //
 #include "translatorUtil.h"
 
+#include "pxr/usd/sdr/registry.h"
+#include "pxr/usd/sdr/shaderNode.h"
+#include "pxr/usd/sdr/shaderProperty.h"
+
 #include <mayaUsd/fileio/primReaderArgs.h>
 #include <mayaUsd/fileio/primReaderContext.h>
 #include <mayaUsd/fileio/translators/translatorXformable.h>
 #include <mayaUsd/fileio/utils/adaptor.h>
 #include <mayaUsd/fileio/utils/xformStack.h>
 #include <mayaUsd/undo/OpUndoItems.h>
+#include <mayaUsd/utils/converter.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/schema.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdGeom/xformable.h>
+#include <pxr/usd/usdLux/shadowAPI.h>
+#include <pxr/usd/usdLux/shapingAPI.h>
+#include <pxr/usd/usdShade/tokens.h>
 
 #include <maya/MDagModifier.h>
 #include <maya/MDagPath.h>
@@ -41,6 +49,11 @@
 using namespace MAYAUSD_NS_DEF;
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    (usdSuppressProperty));
 
 const MString _DEFAULT_TRANSFORM_TYPE("transform");
 
@@ -351,6 +364,231 @@ bool UsdMayaTranslatorUtil::SetUsdTypeName(const MObject& mayaNodeObj, const TfT
         return true;
     }
     return false;
+}
+
+// Below are some helpers for the using Sdr to read/write RfM lights to Usd.
+// XXX: LightFilters not yet implemented.
+// XXX: GeometryLight geometry not yet implemented.
+// XXX: DomeLight LightPortals not yet implemented.
+
+// Returns true if the property is something that should be written to or read
+// from the usd.  Some properties will have metadata that specifies that they
+// are not meant to be serialized.
+static bool _ShouldBeWrittenInUsd(const SdrShaderPropertyConstPtr& shaderProp)
+{
+    std::string usdSuppressProperty;
+
+    if (TfMapLookup(shaderProp->GetMetadata(), _tokens->usdSuppressProperty, &usdSuppressProperty)
+        && usdSuppressProperty == "True") {
+        return false;
+    }
+
+    return true;
+}
+
+// Reads from the usdAttribute and writes into attrPlug (using sdfValueTypeName
+// to help guide the conversion).
+//
+// Returns true if successful.  This will return false if it failed and populate
+// reason with the reason for failure.
+static bool _ReadFromUsdAttribute(
+    const UsdAttribute&     usdAttr,
+    const SdfValueTypeName& sdfValueTypeName,
+    MPlug&                  attrPlug,
+    std::string*            reason)
+{
+    static constexpr bool isArrayPlug = false;
+    if (const MayaUsd::Converter* converter
+        = MayaUsd::Converter::find(sdfValueTypeName, isArrayPlug)) {
+        static constexpr bool               doGammaCorrection = false;
+        static const MayaUsd::ConverterArgs args { UsdTimeCode::Default(), doGammaCorrection };
+        converter->convert(usdAttr, attrPlug, args);
+    } else {
+        if (reason) {
+            *reason = TfStringPrintf(
+                "Unsupported type %s on attr %s.",
+                sdfValueTypeName.GetAsToken().GetText(),
+                usdAttr.GetPath().GetText());
+        }
+        return false;
+    }
+    return true;
+}
+
+static inline TfToken _ShaderAttrName(const std::string& shaderParamName)
+{
+    return TfToken(UsdShadeTokens->inputs.GetString() + shaderParamName);
+}
+
+// Reads the property identified by shaderProp from the prim onto depFn.
+//
+// Returns true if successful.  This will return false if it failed and populate
+// reason with the reason for failure.
+static bool _ReadProperty(
+    const SdrShaderPropertyConstPtr& shaderProp,
+    const UsdPrim&                   usdPrim,
+    const MFnDependencyNode&         depFn,
+    std::string*                     reason)
+{
+    const TfToken          mayaAttrName(shaderProp->GetImplementationName());
+    const TfToken          usdAttrName(_ShaderAttrName(shaderProp->GetName()));
+    const SdfValueTypeName sdfValueTypeName = shaderProp->GetTypeAsSdfType().first;
+
+    UsdAttribute usdAttr = usdPrim.GetAttribute(usdAttrName);
+    if (!usdAttr) {
+        // If no attribute, no need to author anything.
+        return true;
+    }
+
+    MStatus status;
+    MPlug   attrPlug = depFn.findPlug(mayaAttrName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        if (reason) {
+            *reason = TfStringPrintf(
+                "Could not get maya attr %s.%s.", depFn.name().asChar(), mayaAttrName.GetText());
+        }
+        return false;
+    }
+
+    // Use the converter to read from usd attribute and set it in Maya.
+    return _ReadFromUsdAttribute(usdAttr, sdfValueTypeName, attrPlug, reason);
+}
+
+// Gets the stored in attrPlug using the sdfValueTypeName to help guide the
+// conversion.
+static VtValue _GetValue(const MPlug& attrPlug, const SdfValueTypeName& sdfValueTypeName)
+{
+    static constexpr bool isArrayPlug = false;
+    if (const MayaUsd::Converter* converter
+        = MayaUsd::Converter::find(sdfValueTypeName, isArrayPlug)) {
+        static constexpr bool               doGammaCorrection = false;
+        static const MayaUsd::ConverterArgs args { UsdTimeCode::Default(), doGammaCorrection };
+
+        VtValue value;
+        converter->convert(attrPlug, value, args);
+        return value;
+    } else {
+        TF_RUNTIME_ERROR(
+            "Could not get value for  %s (unconvertable type).", attrPlug.name().asChar());
+        return VtValue();
+    }
+}
+
+// based on UsdSchemaBase::_CreateAttr
+static UsdAttribute _CreateAttr(
+    const UsdPrim&          usdPrim,
+    const TfToken&          attrName,
+    const SdfValueTypeName& typeName,
+    const VtValue&          defaultValue)
+{
+    const bool                      writeSparsely = true;
+    static constexpr bool           custom = false;
+    static constexpr SdfVariability variability = SdfVariabilityVarying;
+
+    VtValue fallback;
+    if (writeSparsely && !custom) {
+        UsdAttribute attr = usdPrim.GetAttribute(attrName);
+        if (defaultValue.IsEmpty()
+            || (!attr.HasAuthoredValue() && attr.Get(&fallback) && fallback == defaultValue)) {
+            return attr;
+        }
+    }
+
+    UsdAttribute attr = usdPrim.CreateAttribute(attrName, typeName, custom, variability);
+    if (attr && !defaultValue.IsEmpty()) {
+        attr.Set(defaultValue);
+    }
+
+    return attr;
+}
+
+// Writes the property specified via the shaderProp from the depFn onto the
+// usdPrim.
+//
+// Returns true if successful.  This will return false if it failed and populate
+// reason with the reason for failure.
+static bool _WriteProperty(
+    const SdrShaderPropertyConstPtr& shaderProp,
+    const MFnDependencyNode&         depFn,
+    UsdPrim                          usdPrim,
+    std::string*                     reason)
+{
+    const TfToken          mayaAttrName(shaderProp->GetImplementationName());
+    const TfToken          usdAttrName(_ShaderAttrName(shaderProp->GetName()));
+    const SdfValueTypeName sdfValueTypeName = shaderProp->GetTypeAsSdfType().first;
+
+    MStatus     status;
+    const MPlug attrPlug = depFn.findPlug(mayaAttrName.GetText(), &status);
+    if (status == MS::kSuccess) {
+        const VtValue value = _GetValue(attrPlug, sdfValueTypeName);
+        if (!value.IsEmpty()) {
+            _CreateAttr(usdPrim, usdAttrName, sdfValueTypeName, value);
+        }
+    }
+    return true;
+}
+
+/* static */
+void UsdMayaTranslatorUtil::ReadShaderAttributesFromUsdPrim(
+    const UsdPrim&           usdPrim,
+    const TfToken&           sdrShaderId,
+    const MFnDependencyNode& depFn)
+{
+    SdrShaderNodeConstPtr shaderNode
+        = SdrRegistry::GetInstance().GetShaderNodeByIdentifier(sdrShaderId);
+    if (!shaderNode) {
+        TF_RUNTIME_ERROR(
+            "Could not find SdrShader %s for %s.",
+            sdrShaderId.GetText(),
+            usdPrim.GetPath().GetText());
+        return;
+    }
+
+    std::string reason;
+    for (const TfToken& inputName : shaderNode->GetInputNames()) {
+        if (SdrShaderPropertyConstPtr shaderProp = shaderNode->GetShaderInput(inputName)) {
+            // We only read attributes that should have been written.
+            if (_ShouldBeWrittenInUsd(shaderProp)) {
+                if (!_ReadProperty(shaderProp, usdPrim, depFn, &reason)) {
+                    TF_RUNTIME_ERROR(reason);
+                }
+            }
+        } else {
+            TF_RUNTIME_ERROR("Failed to get SdrProperty for input %s.", inputName.GetText());
+        }
+    }
+}
+
+/* static */
+void UsdMayaTranslatorUtil::WriteShaderAttributesToUsdPrim(
+    const MFnDependencyNode& depFn,
+    const TfToken&           sdrShaderId,
+    const UsdPrim&           usdPrim)
+{
+    SdrShaderNodeConstPtr shaderNode
+        = SdrRegistry::GetInstance().GetShaderNodeByIdentifier(sdrShaderId);
+    if (!shaderNode) {
+        TF_RUNTIME_ERROR(
+            "Could not find SdrShader %s for %s.",
+            sdrShaderId.GetText(),
+            usdPrim.GetPrim().GetPath().GetText());
+        return;
+    }
+
+    UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<UsdLuxShapingAPI>(usdPrim);
+    UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<UsdLuxShadowAPI>(usdPrim);
+    std::string reason;
+    for (const TfToken& inputName : shaderNode->GetInputNames()) {
+        if (SdrShaderPropertyConstPtr shaderProp = shaderNode->GetShaderInput(inputName)) {
+            if (_ShouldBeWrittenInUsd(shaderProp)) {
+                if (!_WriteProperty(shaderProp, depFn, usdPrim, &reason)) {
+                    TF_RUNTIME_ERROR(reason);
+                }
+            }
+        } else {
+            TF_RUNTIME_ERROR("Failed to get SdrProperty for input %s.", inputName.GetText());
+        }
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
