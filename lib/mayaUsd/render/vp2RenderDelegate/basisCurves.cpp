@@ -568,6 +568,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
     const bool isBoundingBoxItem = (drawMode == MHWRender::MGeometry::kBoundingBox);
     const bool isHighlightItem = drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight);
     const bool inTemplateMode = _displayType == MayaUsdRPrim::kTemplate;
+    const bool inReferenceMode = _displayType == MayaUsdRPrim::kReference;
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     constexpr bool isPointSnappingItem = false;
@@ -996,17 +997,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 auto primitiveType = MHWRender::MGeometry::kLines;
                 int  primitiveStride = 0;
 
-                MColor color;
-                if (inTemplateMode) {
-                    color = drawScene.GetTemplateColor(_selectionStatus != kUnselected);
-                } else {
-                    color
-                        = (_selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
-                               _selectionStatus == kFullyLead ? TfToken()
-                                                              : HdPrimTypeTokens->basisCurves)
-                                                           : drawScene.GetWireframeColor());
-                }
-
+                MColor color = _GetHighlightColor(HdPrimTypeTokens->basisCurves);
                 if (desc.geomStyle == HdBasisCurvesGeomStylePatch) {
                     if (_selectionStatus != kUnselected || inTemplateMode) {
                         if (refineLevel <= 0) {
@@ -1081,7 +1072,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
         }
 #endif
         // In template mode, items should have no selection
-        if (inTemplateMode) {
+        if (inTemplateMode || inReferenceMode) {
             selectionMask = MSelectionMask();
         }
 
