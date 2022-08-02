@@ -539,7 +539,7 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
 						float* uvs = (float*)mvb->map();
 						for (int i = 0; i < indexCount; i++)
 						{
-							_uvs[i].Set(&uvs[indicesData[i]*3]);
+							_uvs[i].Set(&uvs[indicesData[i]*2]);
 						}
 						mvb->unmap();
 						break;
