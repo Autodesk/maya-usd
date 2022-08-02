@@ -1249,7 +1249,7 @@ class ParentCmdTestCase(unittest.TestCase):
         # Restore default edit router.
         mayaUsd.lib.restoreDefaultEditRouter('parent')
 
-    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2024 and mayaUtils.ufeSupportFixLevel() >= 5, 'Requires Maya fixes only available in Maya 2024 or greater.')
+    @unittest.skipUnless(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '4025', 'Require Transform3dRead interface in Ufe 0.4.25')
     def testParentAbsoluteUnderScope(self):
         """Test parent -absolute to move prim under scope."""
 
@@ -1370,7 +1370,7 @@ class ParentCmdTestCase(unittest.TestCase):
         checkParentDone()
         checkCapsuleMatrix('/Xform1/Scope1/Capsule1')
 
-    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2024 and mayaUtils.ufeSupportFixLevel() >= 5, 'Requires Maya fixes only available in Maya 2024 or greater.')
+    @unittest.skipUnless(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '4025', 'Require Transform3dRead interface in Ufe 0.4.25')
     def testParentAbsoluteScope(self):
         """Test parent -absolute to move a scope with a prim under it under an xform."""
 

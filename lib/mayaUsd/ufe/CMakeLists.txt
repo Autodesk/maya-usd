@@ -138,6 +138,14 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
                 UsdConnectionHandler.cpp
         )
     endif()
+
+    if(${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4025)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+            UsdTransform3dRead.cpp
+        )
+    endif()
+
 endif()
 
 if(PXR_VERSION GREATER_EQUAL 2108)
@@ -226,7 +234,7 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     )
 endif()
 
-if (UFE_LIGHTS_SUPPORT)
+if(UFE_LIGHTS_SUPPORT)
     list(APPEND HEADERS
         UsdLight.h
         UsdLightHandler.h
@@ -264,6 +272,12 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         list(APPEND HEADERS
             UsdConnections.h
             UsdConnectionHandler.h
+        )
+    endif()
+
+    if(${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4025)
+        list(APPEND HEADERS
+            UsdTransform3dRead.h
         )
     endif()
 endif()

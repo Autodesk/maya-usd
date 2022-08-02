@@ -169,6 +169,22 @@ UsdTransform3dPointInstanceHandler::transform3d(const Ufe::SceneItem::Ptr& item)
     return UsdTransform3dPointInstance::create(usdItem);
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4025)
+/* override */
+Ufe::Transform3dRead::Ptr
+UsdTransform3dPointInstanceHandler::transform3dRead(const Ufe::SceneItem::Ptr& item) const
+{
+    auto trfRead = transform3d(item);
+    if (trfRead) {
+        return trfRead;
+    }
+
+    return _nextHandler->transform3dRead(item);
+}
+#endif
+#endif
+
 /* override */
 Ufe::Transform3d::Ptr UsdTransform3dPointInstanceHandler::editTransform3d(
     const Ufe::SceneItem::Ptr&      item,

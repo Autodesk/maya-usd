@@ -24,6 +24,14 @@
 #include <mayaUsd/ufe/UsdTransform3dPointInstance.h>
 #endif
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4025)
+#include <mayaUsd/ufe/UsdTransform3dRead.h>
+#endif
+#endif
+
+#include <pxr/usd/usdGeom/xformable.h>
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -85,6 +93,29 @@ Ufe::Transform3d::Ptr UsdTransform3dHandler::transform3d(const Ufe::SceneItem::P
 
     return UsdTransform3d::create(usdItem);
 }
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4025)
+Ufe::Transform3dRead::Ptr
+UsdTransform3dHandler::transform3dRead(const Ufe::SceneItem::Ptr& item) const
+{
+    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+#if !defined(NDEBUG)
+    assert(usdItem);
+#endif
+
+    if (!usdItem) {
+        return nullptr;
+    }
+
+    if (!PXR_NS::UsdGeomXformable(usdItem->prim())) {
+        return UsdTransform3dRead::create(usdItem);
+    } else {
+        return transform3d(item);
+    }
+}
+#endif
+#endif
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

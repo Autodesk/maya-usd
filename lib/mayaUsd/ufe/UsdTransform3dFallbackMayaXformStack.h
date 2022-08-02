@@ -105,6 +105,11 @@ public:
 
     // Ufe::Transform3dHandler overrides
     Ufe::Transform3d::Ptr transform3d(const Ufe::SceneItem::Ptr& item) const override;
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4025)
+    Ufe::Transform3dRead::Ptr transform3dRead(const Ufe::SceneItem::Ptr& item) const override;
+#endif
+#endif
     Ufe::Transform3d::Ptr editTransform3d(const Ufe::SceneItem::Ptr& item UFE_V2(
         ,
         const Ufe::EditTransform3dHint& hint)) const override;

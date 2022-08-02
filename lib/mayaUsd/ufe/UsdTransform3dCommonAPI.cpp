@@ -291,6 +291,22 @@ UsdTransform3dCommonAPIHandler::transform3d(const Ufe::SceneItem::Ptr& item) con
     return commonAPI ? UsdTransform3dCommonAPI::create(usdItem) : _nextHandler->transform3d(item);
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4025)
+/* override */
+Ufe::Transform3dRead::Ptr
+UsdTransform3dCommonAPIHandler::transform3dRead(const Ufe::SceneItem::Ptr& item) const
+{
+    auto trfRead = transform3d(item);
+    if (trfRead) {
+        return trfRead;
+    }
+
+    return _nextHandler->transform3dRead(item);
+}
+#endif
+#endif
+
 Ufe::Transform3d::Ptr UsdTransform3dCommonAPIHandler::editTransform3d(
     const Ufe::SceneItem::Ptr& item UFE_V2(, const Ufe::EditTransform3dHint& hint)) const
 {
