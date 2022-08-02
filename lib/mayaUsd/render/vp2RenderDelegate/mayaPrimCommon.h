@@ -221,6 +221,7 @@ protected:
         ErasePrimvarInfoFunc&  erasePrimvarInfo);
 
     SdfPath _GetUpdatedMaterialId(HdRprim* rprim, HdSceneDelegate* delegate);
+    MColor  _GetHighlightColor(const TfToken& className);
 
     void _PropagateDirtyBitsCommon(HdDirtyBits& bits, const ReprVector& reprs) const;
 

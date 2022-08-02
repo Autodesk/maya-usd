@@ -292,6 +292,7 @@ void HdVP2Points::_UpdateDrawItem(
     const bool isBoundingBoxItem = (drawMode == MHWRender::MGeometry::kBoundingBox);
     const bool isHighlightItem = drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight);
     const bool inTemplateMode = _displayType == MayaUsdRPrim::kTemplate;
+    const bool inReferenceMode = _displayType == MayaUsdRPrim::kReference;
 
     if (desc.geomStyle == HdPointsGeomStylePoints) {
         // Prepare normals buffer.
@@ -680,17 +681,7 @@ void HdVP2Points::_UpdateDrawItem(
                 auto primitiveType = MHWRender::MGeometry::kPoints;
                 int  primitiveStride = 0;
 
-                MColor color;
-                if (inTemplateMode) {
-                    color = drawScene.GetTemplateColor(_selectionStatus != kUnselected);
-                } else {
-                    color
-                        = (_selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
-                               _selectionStatus == kFullyLead ? TfToken()
-                                                              : HdPrimTypeTokens->points)
-                                                           : drawScene.GetWireframeColor());
-                }
-
+                MColor color = _GetHighlightColor(HdPrimTypeTokens->points);
                 if (desc.geomStyle == HdPointsGeomStylePoints) {
                     if (_selectionStatus != kUnselected || inTemplateMode) {
                         shader = _delegate->GetPointsFallbackShader(color);
@@ -757,7 +748,7 @@ void HdVP2Points::_UpdateDrawItem(
         }
 #endif
         // In template mode, items should have no selection
-        if (inTemplateMode) {
+        if (inTemplateMode || inReferenceMode) {
             selectionMask = MSelectionMask();
         }
 

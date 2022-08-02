@@ -27,6 +27,12 @@
 #include <ufe/runTimeMgr.h>
 #include <ufe/ufeAssert.h>
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4024)
+#include <mayaUsd/ufe/UsdUndoAttributesCommands.h>
+#endif
+#endif
+
 // Note: normally we would use this using directive, but here we cannot because
 //       one of our classes is called UsdAttribute which is exactly the same as
 //      the one in USD.
@@ -114,11 +120,6 @@ static PXR_NS::UsdAttribute _GetAttributeType(const PXR_NS::UsdPrim& prim, const
 
 Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
 {
-    // If we've already created an attribute for this name, just return the type.
-    auto iter = fAttributes.find(name);
-    if (iter != std::end(fAttributes))
-        return iter->second->type();
-
     PXR_NS::TfToken      tok(name);
     PXR_NS::UsdAttribute usdAttr = _GetAttributeType(fPrim, name);
     if (usdAttr.IsValid()) {
@@ -144,11 +145,6 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
     if (name.empty()) {
         return nullptr;
     }
-
-    // If we've already created an attribute for this name, just return it.
-    auto iter = fAttributes.find(name);
-    if (iter != std::end(fAttributes))
-        return iter->second;
 
     // No attribute for the input name was found -> create one.
     PXR_NS::TfToken      tok(name);
@@ -253,7 +249,6 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
         newAttr = ctorIt->second(fItem, usdAttr);
 #endif
 
-    fAttributes[name] = newAttr;
     return newAttr;
 }
 
@@ -312,6 +307,21 @@ bool UsdAttributes::hasAttribute(const std::string& name) const
 }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4024)
+Ufe::AddAttributeCommand::Ptr
+UsdAttributes::addAttributeCmd(const std::string& name, const Ufe::Attribute::Type& type)
+{
+    return UsdAddAttributeCommand::create(fItem, name, type);
+}
+
+Ufe::UndoableCommand::Ptr UsdAttributes::removeAttributeCmd(const std::string& name)
+{
+    return UsdRemoveAttributeCommand::create(fItem, name);
+}
+#endif
+#endif
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4008)
 Ufe::NodeDef::Ptr UsdAttributes::nodeDef() const
 {
@@ -340,6 +350,142 @@ UsdAttributes::getUfeTypeForAttribute(const PXR_NS::UsdAttribute& usdAttr) const
     UFE_ASSERT_MSG(false, kErrorMsgInvalidAttribute);
     return Ufe::Attribute::kInvalid;
 }
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4024)
+// Helpers for validation and execution:
+bool UsdAttributes::canAddAttribute(
+    const UsdSceneItem::Ptr&    item,
+    const std::string&          name,
+    const Ufe::Attribute::Type& type)
+{
+    // See if we can edit this attribute, and that it is not already part of the schema or node
+    // definition
+    if (!item || !item->prim().IsActive() || UsdAttributes(item).hasAttribute(name)) {
+        return false;
+    }
+
+    // Since we can always fallback to adding a custom attribute on any UsdPrim, we accept.
+    return true;
+}
+
+Ufe::Attribute::Ptr UsdAttributes::doAddAttribute(
+    const UsdSceneItem::Ptr&    item,
+    const std::string&          name,
+    const Ufe::Attribute::Type& type)
+{
+    // We have many ways of creating an attribute. Try to follow the rules whenever possible:
+    PXR_NS::TfToken                nameAsToken(name);
+    auto                           prim = item->prim();
+    PXR_NS::UsdShadeNodeGraph      ngPrim(prim);
+    PXR_NS::UsdShadeConnectableAPI connectApi(prim);
+    if (ngPrim && connectApi) {
+        auto baseNameAndType = PXR_NS::UsdShadeUtils::GetBaseNameAndType(nameAsToken);
+        if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Output) {
+            PXR_NS::UsdShadeMaterial matPrim(prim);
+            if (matPrim) {
+                auto splitName = PXR_NS::TfStringSplit(name, ":");
+                if (splitName.size() == 3) {
+                    if (splitName.back() == PXR_NS::UsdShadeTokens->surface) {
+                        matPrim.CreateSurfaceOutput(PXR_NS::TfToken(splitName[1]));
+                    } else if (splitName.back() == PXR_NS::UsdShadeTokens->displacement) {
+                        matPrim.CreateDisplacementOutput(PXR_NS::TfToken(splitName[1]));
+                    } else if (splitName.back() == PXR_NS::UsdShadeTokens->volume) {
+                        matPrim.CreateVolumeOutput(PXR_NS::TfToken(splitName[1]));
+                    }
+                }
+            }
+            // Fallback to creating a nodegraph output.
+            connectApi.CreateOutput(baseNameAndType.first, ufeTypeToUsd(type));
+        } else if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input) {
+            connectApi.CreateInput(baseNameAndType.first, ufeTypeToUsd(type));
+        }
+    }
+
+    // Fallback to creating a custom attribute.
+    prim.CreateAttribute(nameAsToken, ufeTypeToUsd(type));
+
+    return UsdAttributes(item).attribute(name);
+}
+bool UsdAttributes::canRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name)
+{
+    if (!item || !item->prim().IsActive() || !UsdAttributes(item).hasAttribute(name)) {
+        return false;
+    }
+
+    PXR_NS::TfToken nameAsToken(name);
+    auto            prim = item->prim();
+    auto            attribute = prim.GetAttribute(nameAsToken);
+    if (attribute.IsCustom()) {
+        // Custom attributes can be removed.
+        return true;
+    }
+
+    // We can also remove NodeGraph boundary attributes
+    PXR_NS::UsdShadeNodeGraph      ngPrim(prim);
+    PXR_NS::UsdShadeConnectableAPI connectApi(prim);
+    if (ngPrim && connectApi) {
+        auto baseNameAndType = PXR_NS::UsdShadeUtils::GetBaseNameAndType(nameAsToken);
+        if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Output) {
+            PXR_NS::UsdShadeMaterial matPrim(prim);
+            if (matPrim) {
+                // Can not remove the 3 main material outputs as they are part of the schema
+                if (baseNameAndType.first == PXR_NS::UsdShadeTokens->surface
+                    || baseNameAndType.first == PXR_NS::UsdShadeTokens->displacement
+                    || baseNameAndType.first == PXR_NS::UsdShadeTokens->volume) {
+                    return false;
+                }
+            } else {
+                for (auto&& authoredOutput : connectApi.GetOutputs(true)) {
+                    if (authoredOutput.GetFullName() == name) {
+                        return true;
+                    }
+                }
+            }
+        } else if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input) {
+            for (auto&& authoredInput : connectApi.GetInputs(true)) {
+                if (authoredInput.GetFullName() == name) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+bool UsdAttributes::doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name)
+{
+    PXR_NS::TfToken nameAsToken(name);
+    auto            prim = item->prim();
+    auto            attribute = prim.GetAttribute(nameAsToken);
+    if (attribute.IsCustom()) {
+        // Custom attributes can be removed.
+        return prim.RemoveProperty(nameAsToken);
+    }
+
+    // We can also remove NodeGraph boundary attributes
+    PXR_NS::UsdShadeNodeGraph      ngPrim(prim);
+    PXR_NS::UsdShadeConnectableAPI connectApi(prim);
+    if (ngPrim && connectApi) {
+        auto baseNameAndType = PXR_NS::UsdShadeUtils::GetBaseNameAndType(nameAsToken);
+        if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Output) {
+            auto output = connectApi.GetOutput(nameAsToken);
+            if (output) {
+                connectApi.ClearSources(output);
+                return prim.RemoveProperty(nameAsToken);
+            }
+        } else if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input) {
+            auto input = connectApi.GetInput(nameAsToken);
+            if (input) {
+                connectApi.ClearSources(input);
+                return prim.RemoveProperty(nameAsToken);
+            }
+        }
+    }
+    return false;
+}
+#endif
+#endif
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

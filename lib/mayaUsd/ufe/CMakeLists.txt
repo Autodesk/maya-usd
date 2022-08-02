@@ -1,141 +1,159 @@
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
-target_sources(${PROJECT_NAME} 
+target_sources(${PROJECT_NAME}
     PRIVATE
-        Global.cpp
-        ProxyShapeHandler.cpp
-        ProxyShapeHierarchy.cpp
-        ProxyShapeHierarchyHandler.cpp
-        StagesSubject.cpp
-        UsdHierarchy.cpp
-        UsdHierarchyHandler.cpp
-        UsdPointInstanceOrientationModifier.cpp
-        UsdPointInstancePositionModifier.cpp
-        UsdPointInstanceScaleModifier.cpp
-        UsdRootChildHierarchy.cpp
-        UsdRotatePivotTranslateUndoableCommand.cpp
-        UsdRotateUndoableCommand.cpp
-        UsdScaleUndoableCommand.cpp
-        UsdSceneItem.cpp
-        UsdSceneItemOps.cpp
-        UsdSceneItemOpsHandler.cpp
-        UsdStageMap.cpp
-        UsdTRSUndoableCommandBase.cpp
-        UsdTransform3d.cpp
-        UsdTransform3dHandler.cpp
-        UsdTranslateUndoableCommand.cpp
-        UsdUndoDeleteCommand.cpp
-        UsdUndoDuplicateCommand.cpp
-        UsdUndoRenameCommand.cpp
-        Utils.cpp
-        moduleDeps.cpp
+    Global.cpp
+    ProxyShapeHandler.cpp
+    ProxyShapeHierarchy.cpp
+    ProxyShapeHierarchyHandler.cpp
+    StagesSubject.cpp
+    UsdHierarchy.cpp
+    UsdHierarchyHandler.cpp
+    UsdPointInstanceOrientationModifier.cpp
+    UsdPointInstancePositionModifier.cpp
+    UsdPointInstanceScaleModifier.cpp
+    UsdRootChildHierarchy.cpp
+    UsdRotatePivotTranslateUndoableCommand.cpp
+    UsdRotateUndoableCommand.cpp
+    UsdScaleUndoableCommand.cpp
+    UsdSceneItem.cpp
+    UsdSceneItemOps.cpp
+    UsdSceneItemOpsHandler.cpp
+    UsdStageMap.cpp
+    UsdTRSUndoableCommandBase.cpp
+    UsdTransform3d.cpp
+    UsdTransform3dHandler.cpp
+    UsdTranslateUndoableCommand.cpp
+    UsdUndoDeleteCommand.cpp
+    UsdUndoDuplicateCommand.cpp
+    UsdUndoRenameCommand.cpp
+    Utils.cpp
+    moduleDeps.cpp
 )
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
-            ProxyShapeContextOpsHandler.cpp
-            RotationUtils.cpp
-            UsdAttribute.cpp
-            UsdAttributes.cpp
-            UsdAttributesHandler.cpp
-            UsdCamera.cpp
-            UsdCameraHandler.cpp
-            UsdContextOps.cpp
-            UsdContextOpsHandler.cpp
-            UsdObject3d.cpp
-            UsdObject3dHandler.cpp
-            UsdSetXformOpUndoableCommandBase.cpp
-            UsdTransform3dBase.cpp
-            UsdTransform3dCommonAPI.cpp
-            UsdTransform3dFallbackMayaXformStack.cpp
-            UsdTransform3dMatrixOp.cpp
-            UsdTransform3dMayaXformStack.cpp
-            UsdTransform3dPointInstance.cpp
-            UsdTransform3dSetObjectMatrix.cpp
-            UsdTransform3dUndoableCommands.cpp
-            UsdUIInfoHandler.cpp
-            UsdUIUfeObserver.cpp
-            UsdUndoAddNewPrimCommand.cpp
-            UsdUndoCreateGroupCommand.cpp
-            UsdUndoInsertChildCommand.cpp
-            UsdUndoReorderCommand.cpp
-            UsdUndoSetKindCommand.cpp
-            UsdUndoVisibleCommand.cpp
-            UsdUndoUngroupCommand.cpp
-            XformOpUtils.cpp
+        ProxyShapeContextOpsHandler.cpp
+        RotationUtils.cpp
+        UsdAttribute.cpp
+        UsdAttributes.cpp
+        UsdAttributesHandler.cpp
+        UsdCamera.cpp
+        UsdCameraHandler.cpp
+        UsdContextOps.cpp
+        UsdContextOpsHandler.cpp
+        UsdObject3d.cpp
+        UsdObject3dHandler.cpp
+        UsdSetXformOpUndoableCommandBase.cpp
+        UsdTransform3dBase.cpp
+        UsdTransform3dCommonAPI.cpp
+        UsdTransform3dFallbackMayaXformStack.cpp
+        UsdTransform3dMatrixOp.cpp
+        UsdTransform3dMayaXformStack.cpp
+        UsdTransform3dPointInstance.cpp
+        UsdTransform3dSetObjectMatrix.cpp
+        UsdTransform3dUndoableCommands.cpp
+        UsdUIInfoHandler.cpp
+        UsdUIUfeObserver.cpp
+        UsdUndoAddNewPrimCommand.cpp
+        UsdUndoCreateGroupCommand.cpp
+        UsdUndoInsertChildCommand.cpp
+        UsdUndoReorderCommand.cpp
+        UsdUndoSetKindCommand.cpp
+        UsdUndoVisibleCommand.cpp
+        UsdUndoUngroupCommand.cpp
+        XformOpUtils.cpp
     )
 endif()
 
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
-            # See MayaUIInfoHandler.h comments.
-            MayaUIInfoHandler.cpp
-            PulledObjectHierarchy.cpp
-            PulledObjectHierarchyHandler.cpp
-            UsdPathMappingHandler.cpp
-            UsdUndoUngroupCommand.cpp
+
+        # See MayaUIInfoHandler.h comments.
+        MayaUIInfoHandler.cpp
+        PulledObjectHierarchy.cpp
+        PulledObjectHierarchyHandler.cpp
+        UsdPathMappingHandler.cpp
+        UsdUndoUngroupCommand.cpp
     )
 endif()
 
 message(STATUS "UFE_LIGHTS_SUPPORT is ${UFE_LIGHTS_SUPPORT}")
-if (UFE_LIGHTS_SUPPORT)
+
+if(UFE_LIGHTS_SUPPORT)
     target_sources(${PROJECT_NAME}
         PRIVATE
-            UsdLight.cpp
-            UsdLightHandler.cpp
+        UsdLight.cpp
+        UsdLightHandler.cpp
     )
 
     target_compile_definitions(${PROJECT_NAME}
-    PRIVATE
+        PRIVATE
         UFE_LIGHTS_SUPPORT=1
     )
 endif()
 
 message(STATUS "UFE_SCENE_SEGMENT_SUPPORT is ${UFE_SCENE_SEGMENT_SUPPORT}")
-if (UFE_SCENE_SEGMENT_SUPPORT)
+
+if(UFE_SCENE_SEGMENT_SUPPORT)
     target_sources(${PROJECT_NAME}
-    PRIVATE
+        PRIVATE
         ProxyShapeSceneSegmentHandler.cpp
     )
 
     target_compile_definitions(${PROJECT_NAME}
-    PRIVATE
+        PRIVATE
         UFE_SCENE_SEGMENT_SUPPORT=1
     )
 endif()
 
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4001)
+    if(${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4001)
         target_sources(${PROJECT_NAME}
             PRIVATE
-                UsdShaderNodeDef.cpp
-                UsdShaderNodeDefHandler.cpp
+            UsdShaderNodeDef.cpp
+            UsdShaderNodeDefHandler.cpp
         )
     endif()
 
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4010)
+    if(${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4010)
         target_sources(${PROJECT_NAME}
             PRIVATE
-                UsdShaderAttributeDef.cpp
-                UsdUndoCreateFromNodeDefCommand.cpp
+            UsdShaderAttributeDef.cpp
+            UsdUndoCreateFromNodeDefCommand.cpp
         )
     endif()
 
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4013)
+    if(${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4013)
         target_sources(${PROJECT_NAME}
             PRIVATE
-                ProxyShapeCameraHandler.cpp
+            ProxyShapeCameraHandler.cpp
         )
     endif()
 
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
+    if(${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
         target_sources(${PROJECT_NAME}
             PRIVATE
-                UsdConnections.cpp
-                UsdConnectionHandler.cpp
+            UsdConnections.cpp
+            UsdConnectionHandler.cpp
+        )
+    endif()
+
+    if(${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4023)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+            UsdUINodeGraphNode.cpp
+            UsdUINodeGraphNodeHandler.cpp
+        )
+    endif()
+
+    if(${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4024)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+            UsdUndoAttributesCommands.cpp
         )
     endif()
 
@@ -145,13 +163,12 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
             UsdTransform3dRead.cpp
         )
     endif()
-
 endif()
 
 if(PXR_VERSION GREATER_EQUAL 2108)
     target_sources(${PROJECT_NAME}
         PRIVATE
-            UsdUndoMaterialCommands.cpp
+        UsdUndoMaterialCommands.cpp
     )
 endif()
 
@@ -224,6 +241,7 @@ endif()
 
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     list(APPEND HEADERS
+
         # Not dependent on UFE v3, but used to draw orphaned pulled Maya nodes
         # in the Outliner, which is a UFE v3 feature.
         MayaUIInfoHandler.h
@@ -241,37 +259,50 @@ if(UFE_LIGHTS_SUPPORT)
     )
 endif()
 
-if (UFE_SCENE_SEGMENT_SUPPORT)
+if(UFE_SCENE_SEGMENT_SUPPORT)
     list(APPEND HEADERS
         ProxyShapeSceneSegmentHandler.h
     )
 endif()
 
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4001)
+    if(${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4001)
         list(APPEND HEADERS
             UsdShaderNodeDef.h
             UsdShaderNodeDefHandler.h
         )
     endif()
 
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4010)
+    if(${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4010)
         list(APPEND HEADERS
             UsdShaderAttributeDef.h
             UsdUndoCreateFromNodeDefCommand.h
         )
     endif()
 
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4013)
+    if(${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4013)
         list(APPEND HEADERS
             ProxyShapeCameraHandler.h
         )
     endif()
 
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
+    if(${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
         list(APPEND HEADERS
             UsdConnections.h
             UsdConnectionHandler.h
+        )
+    endif()
+
+    if(${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4023)
+        list(APPEND HEADERS
+            UsdUINodeGraphNode.h
+            UsdUINodeGraphNodeHandler.h
+        )
+    endif()
+
+    if(${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4024)
+        list(APPEND HEADERS
+            UsdUndoAttributesCommands.h
         )
     endif()
 
@@ -323,12 +354,12 @@ add_library(${UFE_PYTHON_TARGET_NAME} SHARED)
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
-target_sources(${UFE_PYTHON_TARGET_NAME} 
+target_sources(${UFE_PYTHON_TARGET_NAME}
     PRIVATE
-        module.cpp
-        wrapGlobal.cpp
-        wrapUtils.cpp
-        wrapNotice.cpp
+    module.cpp
+    wrapGlobal.cpp
+    wrapUtils.cpp
+    wrapNotice.cpp
 )
 
 # -----------------------------------------------------------------------------
@@ -336,10 +367,10 @@ target_sources(${UFE_PYTHON_TARGET_NAME}
 # -----------------------------------------------------------------------------
 target_compile_definitions(${UFE_PYTHON_TARGET_NAME}
     PRIVATE
-        $<$<BOOL:${IS_MACOSX}>:OSMac_>
-        MFB_PACKAGE_NAME=${UFE_PYTHON_MODULE_NAME}
-        MFB_ALT_PACKAGE_NAME=${UFE_PYTHON_MODULE_NAME}
-        MFB_PACKAGE_MODULE="${PROJECT_NAME}.${UFE_PYTHON_MODULE_NAME}"
+    $<$<BOOL:${IS_MACOSX}>:OSMac_>
+    MFB_PACKAGE_NAME=${UFE_PYTHON_MODULE_NAME}
+    MFB_ALT_PACKAGE_NAME=${UFE_PYTHON_MODULE_NAME}
+    MFB_PACKAGE_MODULE="${PROJECT_NAME}.${UFE_PYTHON_MODULE_NAME}"
 )
 
 mayaUsd_compile_config(${UFE_PYTHON_TARGET_NAME})
@@ -349,7 +380,7 @@ mayaUsd_compile_config(${UFE_PYTHON_TARGET_NAME})
 # -----------------------------------------------------------------------------
 target_link_libraries(${UFE_PYTHON_TARGET_NAME}
     PUBLIC
-        ${PROJECT_NAME}
+    ${PROJECT_NAME}
 )
 
 # -----------------------------------------------------------------------------
@@ -363,9 +394,11 @@ set_python_module_property(${UFE_PYTHON_TARGET_NAME})
 if(IS_MACOSX OR IS_LINUX)
     mayaUsd_init_rpath(rpath "${PROJECT_NAME}")
     mayaUsd_add_rpath(rpath "../../..")
+
     if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
         mayaUsd_add_rpath(rpath "../../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
     endif()
+
     mayaUsd_install_rpath(rpath ${UFE_PYTHON_TARGET_NAME})
 endif()
 
@@ -384,6 +417,6 @@ install(FILES __init__.py
 )
 
 if(IS_WINDOWS)
-    install(FILES $<TARGET_PDB_FILE:${UFE_PYTHON_TARGET_NAME}> 
-            DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}/${UFE_PYTHON_MODULE_NAME} OPTIONAL)
+    install(FILES $<TARGET_PDB_FILE:${UFE_PYTHON_TARGET_NAME}>
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}/${UFE_PYTHON_MODULE_NAME} OPTIONAL)
 endif()
