@@ -483,11 +483,10 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
     }
 
     // Indices
-	int indexCount = 0;
     MIndexBuffer* indices = nullptr;
     if (topoChanged && geom && geom->vertexBufferCount() > 0) {
         if (indices = geom->indexBuffer(0)) {
-            indexCount = indices->size();
+            int indexCount = indices->size();
             vertexIndices.resize(indexCount);
             int* indicesData = (int*)indices->map();
             // USD spamming the "topology references only upto element" message is super
