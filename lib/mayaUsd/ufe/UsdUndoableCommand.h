@@ -33,10 +33,44 @@ namespace ufe {
 // This function does the real work of modifying values, and these changes
 // will be captured in the UsdUndoableItem via the UsdUndoBlock declared
 // in execute().
+
+// This version wraps Ufe::UndoableCommand and derived classes.
 template <typename Cmd> class UsdUndoableCommand : public Cmd
 {
 public:
-    UsdUndoableCommand(const Ufe::Path& path)
+    UsdUndoableCommand() = default;
+
+    // Ufe::UndoableCommand overrides.
+
+    // Declares a UsdUndoBlock and calls executeUndoBlock()
+    void execute() override
+    {
+        UsdUndoBlock undoBlock(&_undoableItem);
+        executeUndoBlock();
+    }
+
+    // Calls undo on the undoable item.
+    void undo() override { _undoableItem.undo(); }
+
+    // Calls redo on the undoable item.
+    void redo() override { _undoableItem.redo(); }
+
+protected:
+    // Actual implementation of the execution of the command,
+    // executed "within" a UsdUndoBlock to capture undo data,
+    // to be implemented by the sub-class.
+    virtual void executeUndoBlock() = 0;
+
+private:
+    UsdUndoableItem _undoableItem;
+};
+
+// This version wraps Ufe::BaseUndoableCommand and derived classes providing a path to the
+// constructor
+template <typename Cmd> class UsdBaseUndoableCommand : public Cmd
+{
+public:
+    UsdBaseUndoableCommand(const Ufe::Path& path)
         : Cmd(path)
     {
     }

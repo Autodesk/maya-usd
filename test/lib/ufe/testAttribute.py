@@ -57,6 +57,35 @@ class TestObserver(ufe.Observer):
     def notifications(self):
         return self._notifications
 
+class TestObserver_4_24(ufe.Observer):
+    """This advanced observer listens to notifications that appeared in UFE 0.4.24"""
+    def __init__(self):
+        super(TestObserver_4_24, self).__init__()
+        self._addedNotifications = 0
+        self._removedNotifications = 0
+        self._valueChangedNotifications = 0
+        self._connectionChangedNotifications = 0
+        self._unknownNotifications = 0
+
+    def __call__(self, notification):
+        if isinstance(notification, ufe.AttributeAdded):
+            self._addedNotifications += 1
+        elif isinstance(notification, ufe.AttributeRemoved):
+            self._removedNotifications += 1
+        elif isinstance(notification, ufe.AttributeValueChanged):
+            self._valueChangedNotifications += 1
+        elif isinstance(notification, ufe.AttributeConnectionChanged):
+            self._connectionChangedNotifications += 1
+        else:
+            self._unknownNotifications += 1
+
+    def assertNotificationCount(self, test, **counters):
+        test.assertEqual(self._addedNotifications, counters.get("numAdded", 0))
+        test.assertEqual(self._removedNotifications, counters.get("numRemoved", 0))
+        test.assertEqual(self._valueChangedNotifications, counters.get("numValue", 0))
+        test.assertEqual(self._connectionChangedNotifications, counters.get("numConnection", 0))
+        test.assertEqual(self._unknownNotifications, 0)
+
 class AttributeTestCase(unittest.TestCase):
     '''Verify the Attribute UFE interface, for multiple runtimes.
     '''
@@ -916,6 +945,7 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
 
+    @unittest.skipUnless(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test for UFE preview version 0.4.23 and earlier')
     def testObservation(self):
         '''
         Test Attributes observation interface.
@@ -1086,6 +1116,180 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(ball34Obs.notifications, 7)
         self.assertEqual(ball35Obs.notifications, 3)
         self.assertEqual(globalObs.notifications, 11)
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test for UFE preview version 0.4.24 and later')
+    def testObservationWithFineGrainedNotifications(self):
+        '''
+        Test Attributes observation interface.
+
+        Test both global attribute observation and per-node attribute
+        observation.
+        '''
+
+        # Start we a clean scene so we can get a consistent number of notifications
+        mayaUtils.openTopLayerScene()
+
+        # Create three observers, one for global attribute observation, and two
+        # on different UFE items.
+        proxyShapePathSegment = mayaUtils.createUfePathSegment(
+            "|transform1|proxyShape1")
+        path = ufe.Path([
+            proxyShapePathSegment, 
+            usdUtils.createUfePathSegment('/Room_set/Props/Ball_34')])
+        ball34 = ufe.Hierarchy.createItem(path)
+        path = ufe.Path([
+            proxyShapePathSegment, 
+            usdUtils.createUfePathSegment('/Room_set/Props/Ball_35')])
+        ball35 = ufe.Hierarchy.createItem(path)
+        
+        (ball34Obs, ball35Obs, globalObs) = [TestObserver_4_24() for i in range(3)]
+
+        # Maya registers a single global observer on startup.
+        # Maya-Usd lib registers a single global observer when it is initialized.
+        kNbGlobalObs = 2
+        self.assertEqual(ufe.Attributes.nbObservers(), kNbGlobalObs)
+
+        # No item-specific observers.
+        self.assertFalse(ufe.Attributes.hasObservers(ball34.path()))
+        self.assertFalse(ufe.Attributes.hasObservers(ball35.path()))
+        self.assertEqual(ufe.Attributes.nbObservers(ball34), 0)
+        self.assertEqual(ufe.Attributes.nbObservers(ball35), 0)
+        self.assertFalse(ufe.Attributes.hasObserver(ball34, ball34Obs))
+        self.assertFalse(ufe.Attributes.hasObserver(ball35, ball35Obs))
+
+        # No notifications yet.
+        ball34Obs.assertNotificationCount(self)
+        ball35Obs.assertNotificationCount(self)
+        globalObs.assertNotificationCount(self)
+
+        # Add a global observer.
+        ufe.Attributes.addObserver(globalObs)
+
+        self.assertEqual(ufe.Attributes.nbObservers(), kNbGlobalObs+1)
+        self.assertFalse(ufe.Attributes.hasObservers(ball34.path()))
+        self.assertFalse(ufe.Attributes.hasObservers(ball35.path()))
+        self.assertEqual(ufe.Attributes.nbObservers(ball34), 0)
+        self.assertEqual(ufe.Attributes.nbObservers(ball35), 0)
+        self.assertFalse(ufe.Attributes.hasObserver(ball34, ball34Obs))
+        self.assertFalse(ufe.Attributes.hasObserver(ball35, ball35Obs))
+
+        # Add item-specific observers.
+        ufe.Attributes.addObserver(ball34, ball34Obs)
+
+        self.assertEqual(ufe.Attributes.nbObservers(), kNbGlobalObs+1)
+        self.assertTrue(ufe.Attributes.hasObservers(ball34.path()))
+        self.assertFalse(ufe.Attributes.hasObservers(ball35.path()))
+        self.assertEqual(ufe.Attributes.nbObservers(ball34), 1)
+        self.assertEqual(ufe.Attributes.nbObservers(ball35), 0)
+        self.assertTrue(ufe.Attributes.hasObserver(ball34, ball34Obs))
+        self.assertFalse(ufe.Attributes.hasObserver(ball34, ball35Obs))
+        self.assertFalse(ufe.Attributes.hasObserver(ball35, ball35Obs))
+
+        ufe.Attributes.addObserver(ball35, ball35Obs)
+
+        self.assertTrue(ufe.Attributes.hasObservers(ball35.path()))
+        self.assertEqual(ufe.Attributes.nbObservers(ball34), 1)
+        self.assertEqual(ufe.Attributes.nbObservers(ball35), 1)
+        self.assertTrue(ufe.Attributes.hasObserver(ball35, ball35Obs))
+        self.assertFalse(ufe.Attributes.hasObserver(ball35, ball34Obs))
+
+        # Make a change to ball34, global and ball34 observers change.
+        ball34Attrs = ufe.Attributes.attributes(ball34)
+        ball34XlateAttr = ball34Attrs.attribute('xformOp:translate')
+
+        ball34Obs.assertNotificationCount(self)
+
+        # The first modification adds a new spec to ball_34 & its ancestors
+        # "Props" and "Room_set". Ufe should be filtering out those notifications
+        # so the global observer should still only see one notification.
+        ufeCmd.execute(ball34XlateAttr.setCmd(ufe.Vector3d(4, 4, 15)))
+        ball34Obs.assertNotificationCount(self, numAdded = 1, numValue = 1)
+        ball35Obs.assertNotificationCount(self)
+        globalObs.assertNotificationCount(self, numAdded = 1, numValue = 1)
+
+        # The second modification only sends one USD notification for "xformOps:translate"
+        # because all the spec's already exist. Ufe should also see one notification.
+        ufeCmd.execute(ball34XlateAttr.setCmd(ufe.Vector3d(4, 4, 20)))
+        ball34Obs.assertNotificationCount(self, numAdded = 1, numValue = 2)
+        ball35Obs.assertNotificationCount(self)
+        globalObs.assertNotificationCount(self, numAdded = 1, numValue = 2)
+
+        # Undo, redo
+        cmds.undo()
+        ball34Obs.assertNotificationCount(self, numAdded = 1, numValue = 3)
+        ball35Obs.assertNotificationCount(self)
+        globalObs.assertNotificationCount(self, numAdded = 1, numValue = 3)
+
+        cmds.redo()
+        ball34Obs.assertNotificationCount(self, numAdded = 1, numValue = 4)
+        ball35Obs.assertNotificationCount(self)
+        globalObs.assertNotificationCount(self, numAdded = 1, numValue = 4)
+
+        # get ready to undo the first modification
+        cmds.undo()
+        ball34Obs.assertNotificationCount(self, numAdded = 1, numValue = 5)
+        ball35Obs.assertNotificationCount(self)
+        globalObs.assertNotificationCount(self, numAdded = 1, numValue = 5)
+
+        # Undo-ing the modification which created the USD specs is a little
+        # different in USD, but from Ufe we should just still see one notification.
+        cmds.undo()
+        ball34Obs.assertNotificationCount(self, numAdded = 1, numRemoved = 1, numValue = 5)
+        ball35Obs.assertNotificationCount(self)
+        globalObs.assertNotificationCount(self, numAdded = 1, numRemoved = 1, numValue = 5)
+
+        cmds.redo()
+        # Note that UsdUndoHelper add an attribute with its value in one shot, which results in a
+        # single AttributeAdded notification:
+        ball34Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 5)
+        ball35Obs.assertNotificationCount(self)
+        globalObs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 5)
+
+        # Make a change to ball35, global and ball35 observers change.
+        ball35Attrs = ufe.Attributes.attributes(ball35)
+        ball35XlateAttr = ball35Attrs.attribute('xformOp:translate')
+
+        # "xformOp:translate"
+        ufeCmd.execute(ball35XlateAttr.setCmd(ufe.Vector3d(4, 8, 15)))
+        ball34Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 5)
+        ball35Obs.assertNotificationCount(self, numAdded = 1, numValue = 1)
+        globalObs.assertNotificationCount(self, numAdded = 3, numRemoved = 1, numValue = 6)
+
+        # Undo, redo
+        cmds.undo()
+        ball34Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 5)
+        ball35Obs.assertNotificationCount(self, numAdded = 1, numRemoved = 1, numValue = 1)
+        globalObs.assertNotificationCount(self, numAdded = 3, numRemoved = 2, numValue = 6)
+
+        cmds.redo()
+        ball34Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 5)
+        ball35Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 1)
+        globalObs.assertNotificationCount(self, numAdded = 4, numRemoved = 2, numValue = 6)
+
+        # Test removeObserver.
+        ufe.Attributes.removeObserver(ball34, ball34Obs)
+
+        self.assertFalse(ufe.Attributes.hasObservers(ball34.path()))
+        self.assertTrue(ufe.Attributes.hasObservers(ball35.path()))
+        self.assertEqual(ufe.Attributes.nbObservers(ball34), 0)
+        self.assertEqual(ufe.Attributes.nbObservers(ball35), 1)
+        self.assertFalse(ufe.Attributes.hasObserver(ball34, ball34Obs))
+
+        ufeCmd.execute(ball34XlateAttr.setCmd(ufe.Vector3d(4, 4, 25)))
+
+        ball34Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 5)
+        ball35Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 1)
+        globalObs.assertNotificationCount(self, numAdded = 4, numRemoved = 2, numValue = 7)
+
+        ufe.Attributes.removeObserver(globalObs)
+
+        self.assertEqual(ufe.Attributes.nbObservers(), kNbGlobalObs)
+
+        ufeCmd.execute(ball34XlateAttr.setCmd(ufe.Vector3d(7, 8, 9)))
+
+        ball34Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 5)
+        ball35Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 1)
+        globalObs.assertNotificationCount(self, numAdded = 4, numRemoved = 2, numValue = 7)
 
     def testAttrChangeRedoAfterPrimCreateRedo(self):
         '''Redo attribute change after redo of prim creation.'''

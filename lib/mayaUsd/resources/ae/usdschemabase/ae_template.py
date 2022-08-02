@@ -64,9 +64,17 @@ class UfeAttributesObserver(ufe.Observer):
         ufe.Attributes.removeObserver(self)
 
     def __call__(self, notification):
+        refreshEditor = False
         if isinstance(notification, ufe.AttributeValueChanged):
             if notification.name() == UsdGeom.Tokens.xformOpOrder:
-                mel.eval("evalDeferred -low \"refreshEditorTemplates\";")
+                refreshEditor = True
+        if hasattr(ufe, "AttributeAdded") and isinstance(notification, ufe.AttributeAdded):
+            refreshEditor = True
+        if hasattr(ufe, "AttributeRemoved") and isinstance(notification, ufe.AttributeRemoved):
+            refreshEditor = True
+        if refreshEditor:
+            mel.eval("evalDeferred -low \"refreshEditorTemplates\";")
+
 
     def onCreate(self, *args):
         ufe.Attributes.addObserver(self._item, self)
