@@ -85,33 +85,91 @@ void notifyWithoutExceptions(const NOTIFICATION& notif)
 // use a counter nonetheless to provide consistent behavior in such cases.
 std::atomic_int attributeChangedNotificationGuardCount { 0 };
 
-// Keep an array of the pending attribute change notifications. Using a vector
+enum class AttributeChangeType
+{
+    kAdded,
+    kValueChanged,
+    kConnectionChanged,
+    kRemoved
+};
+
+struct AttributeNotification
+{
+    Ufe::Path           _path;
+    TfToken             _token;
+    AttributeChangeType _type;
+
+    bool operator==(const AttributeNotification& other)
+    {
+        // Only collapse multiple value changes. Collapsing added/removed notifications needs to be
+        // done safely so the observer ends up in the right state.
+        return other._type == _type && other._token == _token && other._path == _path
+            && _type == AttributeChangeType::kValueChanged;
+    }
+};
+
+// Keep an array of the pending attribute notifications. Using a vector
 // for two main reasons:
 // 1) Order of notifs must be maintained.
 // 2) Allow notif with same path, but different token. At worst the check is linear
 //    in the size of the vector (which is the same as an unordered_multimap).
-std::vector<std::pair<Ufe::Path, TfToken>> pendingAttributeChangedNotifications;
+std::vector<AttributeNotification> pendingAttributeChangedNotifications;
 
 bool inAttributeChangedNotificationGuard()
 {
     return attributeChangedNotificationGuardCount.load() > 0;
 }
 
-void sendValueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
+#if (UFE_PREVIEW_VERSION_NUM >= 4024)
+#define UFE_V4_24(...) __VA_ARGS__
+#else
+#define UFE_V4_24(...)
+#endif
+
+void sendAttributeChanged(
+    const Ufe::Path&    ufePath,
+    const TfToken&      changedToken,
+    AttributeChangeType UFE_V4_24(changeType))
 {
+#if (UFE_PREVIEW_VERSION_NUM >= 4024)
+    switch (changeType) {
+    case AttributeChangeType::kValueChanged: {
+        notifyWithoutExceptions<Ufe::Attributes>(
+            Ufe::AttributeValueChanged(ufePath, changedToken.GetString()));
+
+        if (MayaUsd::ufe::UsdCamera::isCameraToken(changedToken)) {
+            notifyWithoutExceptions<Ufe::Camera>(ufePath);
+        }
+    } break;
+    case AttributeChangeType::kAdded: {
+        notifyWithoutExceptions<Ufe::Attributes>(
+            Ufe::AttributeAdded(ufePath, changedToken.GetString()));
+    } break;
+    case AttributeChangeType::kRemoved: {
+        notifyWithoutExceptions<Ufe::Attributes>(
+            Ufe::AttributeRemoved(ufePath, changedToken.GetString()));
+    } break;
+    case AttributeChangeType::kConnectionChanged: {
+        notifyWithoutExceptions<Ufe::Attributes>(
+            Ufe::AttributeConnectionChanged(ufePath, changedToken.GetString()));
+    } break;
+    }
+#else
     notifyWithoutExceptions<Ufe::Attributes>(
         Ufe::AttributeValueChanged(ufePath, changedToken.GetString()));
 
     if (MayaUsd::ufe::UsdCamera::isCameraToken(changedToken)) {
         notifyWithoutExceptions<Ufe::Camera>(ufePath);
     }
+#endif
 }
 
 void valueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
 {
     if (inAttributeChangedNotificationGuard()) {
         // Don't add pending notif if one already exists with same path/token.
-        auto p = std::make_pair(ufePath, changedToken);
+        auto p
+            = AttributeNotification { ufePath, changedToken, AttributeChangeType::kValueChanged };
         if (std::find(
                 pendingAttributeChangedNotifications.begin(),
                 pendingAttributeChangedNotifications.end(),
@@ -120,9 +178,72 @@ void valueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
             pendingAttributeChangedNotifications.emplace_back(p);
         }
     } else {
-        sendValueChanged(ufePath, changedToken);
+        sendAttributeChanged(ufePath, changedToken, AttributeChangeType::kValueChanged);
     }
 }
+
+#if (UFE_PREVIEW_VERSION_NUM >= 4024)
+void attributeChanged(
+    const Ufe::Path&    ufePath,
+    const TfToken&      changedToken,
+    AttributeChangeType changeType)
+{
+    if (inAttributeChangedNotificationGuard()) {
+        // Don't add pending notif if one already exists with same path/token.
+        auto p = AttributeNotification { ufePath, changedToken, changeType };
+        if (std::find(
+                pendingAttributeChangedNotifications.begin(),
+                pendingAttributeChangedNotifications.end(),
+                p)
+            == pendingAttributeChangedNotifications.end()) {
+            pendingAttributeChangedNotifications.emplace_back(p);
+        }
+    } else {
+        sendAttributeChanged(ufePath, changedToken, changeType);
+    }
+}
+#endif
+
+void processAttributeChanges(
+    const Ufe::Path&                                ufePath,
+    const SdfPath&                                  changedPath,
+    const std::vector<const SdfChangeList::Entry*>& UFE_V4_24(entries))
+{
+#if (UFE_PREVIEW_VERSION_NUM >= 4024)
+    bool sendValueChanged = false;
+    bool sendAdded = false;
+    bool sendRemoved = false;
+    bool sendConnectionChanged = false;
+    for (const auto& entry : entries) {
+        if (entry->flags.didAddProperty || entry->flags.didAddPropertyWithOnlyRequiredFields) {
+            sendAdded = true;
+        } else if (
+            entry->flags.didRemoveProperty
+            || entry->flags.didRemovePropertyWithOnlyRequiredFields) {
+            sendRemoved = true;
+        } else if (entry->flags.didChangeAttributeConnection) {
+            sendConnectionChanged = true;
+        } else {
+            sendValueChanged = true;
+        }
+    }
+    if (sendAdded) {
+        attributeChanged(ufePath, changedPath.GetNameToken(), AttributeChangeType::kAdded);
+    }
+    if (sendValueChanged) {
+        valueChanged(ufePath, changedPath.GetNameToken());
+    }
+    if (sendConnectionChanged) {
+        attributeChanged(
+            ufePath, changedPath.GetNameToken(), AttributeChangeType::kConnectionChanged);
+    }
+    if (sendRemoved) {
+        attributeChanged(ufePath, changedPath.GetNameToken(), AttributeChangeType::kRemoved);
+    }
+#else
+    valueChanged(ufePath, changedPath.GetNameToken());
+#endif
+};
 
 #endif
 
@@ -341,8 +462,7 @@ void StagesSubject::stageChanged(
                     notifyWithoutExceptions<Ufe::Transform3d>(ufePath);
                 }
             }
-            UFE_V2(valueChanged(ufePath, changedPath.GetNameToken());)
-
+            UFE_V2(processAttributeChanges(ufePath, changedPath, it.base()->second);)
             // No further processing for this prim property path is required.
             continue;
         }
@@ -450,7 +570,7 @@ void StagesSubject::stageChanged(
         // isPropertyPath() does consider relational attributes
         // isRelationalAttributePath() considers only relational attributes
         if (changedPath.IsPrimPropertyPath()) {
-            valueChanged(ufePath, changedPath.GetNameToken());
+            processAttributeChanges(ufePath, changedPath, it.base()->second);
             sendValueChangedFallback = false;
         }
 
@@ -645,7 +765,8 @@ AttributeChangedNotificationGuard::~AttributeChangedNotificationGuard()
     }
 
     for (const auto& notificationInfo : pendingAttributeChangedNotifications) {
-        sendValueChanged(notificationInfo.first, notificationInfo.second);
+        sendAttributeChanged(
+            notificationInfo._path, notificationInfo._token, notificationInfo._type);
     }
 
     pendingAttributeChangedNotifications.clear();
