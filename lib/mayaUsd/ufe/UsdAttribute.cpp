@@ -296,7 +296,7 @@ void setUsdAttributeMatrixFromUfe(
 }
 #endif
 
-class UsdUndoableCommand : public Ufe::UndoableCommand
+class UsdBaseUndoableCommand : public Ufe::UndoableCommand
 {
 public:
     void execute() override
@@ -319,7 +319,7 @@ private:
 };
 
 template <typename T, typename A = MayaUsd::ufe::TypedUsdAttribute<T>>
-class SetUndoableCommand : public UsdUndoableCommand
+class SetUndoableCommand : public UsdBaseUndoableCommand
 {
 public:
     SetUndoableCommand(const typename A::Ptr& attr, const T& newValue)
@@ -336,7 +336,7 @@ private:
 };
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
-class SetUndoableMetadataCommand : public UsdUndoableCommand
+class SetUndoableMetadataCommand : public UsdBaseUndoableCommand
 {
 public:
     SetUndoableMetadataCommand(
@@ -710,6 +710,10 @@ bool UsdAttribute::hasMetadata(const std::string& key) const
 #endif
     return false;
 }
+#endif
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+PXR_NS::SdfValueTypeName UsdAttribute::usdAttributeType() const { return ufeTypeToUsd(typeName()); }
 #endif
 
 //------------------------------------------------------------------------------

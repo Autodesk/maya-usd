@@ -104,10 +104,10 @@ class UIIconsTestCase(unittest.TestCase):
             ('GeometryLight',           'out_USD_UsdLuxNonboundableLightBase.png' if usdVer >= (0, 21, 11) else 'out_USD_UsdLuxLight.png'),
             ('HermiteCurves',           'out_USD_UsdGeomCurves.png'),
             ('LightFilter',             'out_USD_LightFilter.png'),
-            ('Material',                'out_USD_UsdTyped.png'),
+            ('Material',                'out_USD_Material.png'),
             ('MayaReference',           'out_USD_MayaReference.png'),
             ('Mesh',                    'out_USD_Mesh.png'),
-            ('NodeGraph',               'out_USD_UsdTyped.png'),
+            ('NodeGraph',               'out_USD_Shader.png'),
             ('NurbsCurves',             'out_USD_UsdGeomCurves.png'),
             ('NurbsPatch',              'out_USD_NurbsPatch.png'),
             ('OpenVDBAsset',            'out_USD_UsdGeomXformable.png'),
@@ -122,7 +122,7 @@ class UIIconsTestCase(unittest.TestCase):
             ('RenderSettings',          'out_USD_UsdTyped.png'),
             ('RenderVar',               'out_USD_UsdTyped.png'),
             ('Scope',                   'out_USD_Scope.png'),
-            ('Shader',                  'out_USD_UsdTyped.png'),
+            ('Shader',                  'out_USD_Shader.png'),
             ('SkelAnimation',           'out_USD_SkelAnimation.png'),
             ('SkelRoot',                'out_USD_SkelRoot.png'),
             ('Skeleton',                'out_USD_Skeleton.png'),
@@ -130,7 +130,7 @@ class UIIconsTestCase(unittest.TestCase):
             ('Sphere',                  'out_USD_Sphere.png'),
             ('SphereLight',             'out_USD_UsdLuxBoundableLightBase.png' if usdVer >= (0, 21, 11) else 'out_USD_UsdLuxLight.png'),
             ('Volume',                  'out_USD_Volume.png'),
-            ('Xform',                   'out_USD_UsdGeomXformable.png')
+            ('Xform',                   'out_USD_UsdGeomXformable.png'),
         ]
         if usdVer >= (0, 21, 11):
             primTypes.extend([

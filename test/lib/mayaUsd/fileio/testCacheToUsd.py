@@ -125,6 +125,14 @@ class CacheToUsdTestCase(unittest.TestCase):
     def tearDown(self):
         self.removeCacheFile()
 
+    def verifyCacheFileDefaultPrim(self, cacheFilename, defaultPrimName):
+        layer = Sdf.Find(cacheFilename)
+        self.assertIsNotNone(layer)
+        self.assertTrue(layer.HasDefaultPrim())
+        defPrim = layer.defaultPrim
+        self.assertIsNotNone(defPrim)
+        self.assertEqual(defPrim, defaultPrimName)
+
     def runTestCacheToUsd(self, createMayaRefPrimFn, checkCacheParentFn):
         '''Cache edits on a pulled Maya reference prim test engine.'''
 
@@ -253,6 +261,8 @@ class CacheToUsdTestCase(unittest.TestCase):
 
         self.assertTrue(foundPayload)
 
+        self.verifyCacheFileDefaultPrim(cacheFile, cachePrimName)
+
     def testCacheToUsdSibling(self):
         self.runTestCacheToUsd(createMayaRefPrimSiblingCache, checkSiblingCacheParent)
 
@@ -317,6 +327,8 @@ class CacheToUsdTestCase(unittest.TestCase):
         attr = mayaRefPrim.GetAttribute('mayaAutoEdit')
         self.assertTrue(attr.IsValid())
         self.assertEqual(attr.Get(), False)
+
+        self.verifyCacheFileDefaultPrim(cacheFile, cachePrimName)
 
     def testMayaRefPrimTransform(self):
         '''Test transforming the Maya Reference prim, editing it in Maya, then merging back the result.'''
@@ -395,6 +407,8 @@ class CacheToUsdTestCase(unittest.TestCase):
         usdValues = [v for row in usdMatrix for v in row]
         assertVectorAlmostEqual(self, usdValues, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0,
                                                   1, 0, 4, 5, 6, 1])
+
+        self.verifyCacheFileDefaultPrim(cacheFile, cachePrimName)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

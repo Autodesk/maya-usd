@@ -521,6 +521,9 @@ ProxyRenderDelegate::~ProxyRenderDelegate()
         MMessage::removeCallback(_mayaDisplayLayerRemovedCallbackId);
     if (_mayaDisplayLayerMembersCallbackId != 0)
         MMessage::removeCallback(_mayaDisplayLayerMembersCallbackId);
+    for (auto cb : _mayaDisplayLayerDirtyCallbackIds) {
+        MMessage::removeCallback(cb.second);
+    }
 #endif
 }
 
@@ -671,6 +674,14 @@ void ProxyRenderDelegate::_InitRenderDelegate()
 #endif
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
+        // Display layers maybe loaded before us, so make sure to track them
+        MFnDisplayLayerManager displayLayerManager(
+            MFnDisplayLayerManager::currentDisplayLayerManager());
+        auto layers = displayLayerManager.getAllDisplayLayers();
+        for (unsigned int j = 0; j < layers.length(); ++j) {
+            DisplayLayerAdded(layers[j], this);
+        }
+
         // Monitor display layers
         if (!_mayaDisplayLayerAddedCallbackId) {
             _mayaDisplayLayerAddedCallbackId
@@ -803,9 +814,12 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
 void ProxyRenderDelegate::_DirtyUsdSubtree(const UsdPrim& prim)
 {
+    if (!prim.IsValid())
+        return;
+
     HdChangeTracker&      changeTracker = _renderIndex->GetChangeTracker();
     constexpr HdDirtyBits dirtyBits = HdChangeTracker::DirtyVisibility
-        | MayaUsdRPrim::DirtyDisplayMode | MayaUsdRPrim::DirtySelectionHighlight;
+        | HdChangeTracker::DirtyDisplayStyle | MayaUsdRPrim::DirtySelectionHighlight;
 
     if (prim.IsA<UsdGeomGprim>()) {
         auto indexPath = _sceneDelegate->ConvertCachePathToIndexPath(prim.GetPath());
@@ -972,16 +986,32 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 
     // if there are no repr's to update then don't even call sync.
     if (reprSelector != HdReprSelector()) {
+        HdDirtyBits dirtyBits = HdChangeTracker::Clean;
+
+        // check to see if representation mode changed
         if (_defaultCollection->GetReprSelector() != reprSelector) {
             _defaultCollection->SetReprSelector(reprSelector);
             _taskController->SetCollection(*_defaultCollection);
+            dirtyBits |= MayaUsdRPrim::DirtyDisplayMode;
+        }
 
+#if MAYA_API_VERSION >= 20230200
+        // check to see if the color space changed
+        MString colorTransformId;
+        frameContext.viewTransformName(colorTransformId);
+        if (colorTransformId != _colorTransformId) {
+            _colorTransformId = colorTransformId;
+            dirtyBits |= MayaUsdRPrim::DirtySelectionHighlight;
+        }
+#endif
+
+        if (dirtyBits != HdChangeTracker::Clean) {
             // Mark everything "dirty" so that sync is called on everything
             // If there are multiple views up with different viewport modes then
             // this is slow.
             auto& rprims = _renderIndex->GetRprimIds();
             for (auto path : rprims) {
-                changeTracker.MarkRprimDirty(path, MayaUsdRPrim::DirtyDisplayMode);
+                changeTracker.MarkRprimDirty(path, dirtyBits);
             }
         }
 
@@ -1034,11 +1064,14 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     // render param's.
     auto* param = reinterpret_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
     param->BeginUpdate(container, _sceneDelegate->GetTime());
+    _currentFrameContext = &frameContext;
 
     if (_Populate()) {
         _UpdateSceneDelegate();
         _Execute(frameContext);
     }
+
+    _currentFrameContext = nullptr;
     param->EndUpdate();
 }
 
@@ -1736,6 +1769,51 @@ GfVec3f ProxyRenderDelegate::GetDefaultColor(const TfToken& className)
     // Update the cache and return
     colorCache->second = _frameCounter;
     return colorCache->first;
+}
+
+MColor ProxyRenderDelegate::GetTemplateColor(bool active)
+{
+    MColorCache& colorCache = active ? _activeTemplateColorCache : _dormantTemplateColorCache;
+
+    // Check the cache. It is safe since colorCache.second is atomic
+    if (colorCache.second == _frameCounter) {
+        return colorCache.first;
+    }
+
+    // Enter the mutex and check the cache again
+    std::lock_guard<std::mutex> mutexGuard(_mayaCommandEngineMutex);
+    if (colorCache.second == _frameCounter) {
+        return colorCache.first;
+    }
+
+    // Construct the query command string.
+    MString queryCommand;
+    queryCommand = "displayRGBColor -q \"";
+    queryCommand += active ? "templateActive" : "templateDormant";
+    queryCommand += "\"";
+
+    // Query and return the template color.
+    MDoubleArray colorResult;
+    MGlobal::executeCommand(queryCommand, colorResult);
+
+    if (colorResult.length() == 3) {
+        colorCache.first = MColor(colorResult[0], colorResult[1], colorResult[2]);
+#if MAYA_API_VERSION >= 20230200
+        if (active && _currentFrameContext) {
+            colorCache.first = _currentFrameContext->applyViewTransform(
+                colorCache.first, MFrameContext::kInverse);
+        }
+#endif
+    } else {
+        TF_WARN("Failed to obtain template color.");
+
+        // In case of any failure, return the default color
+        colorCache.first = MColor(0.5f, 0.5f, 0.5f);
+    }
+
+    // Update the cache and return
+    colorCache.second = _frameCounter;
+    return colorCache.first;
 }
 
 //! \brief

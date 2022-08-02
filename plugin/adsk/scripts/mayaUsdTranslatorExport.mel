@@ -325,6 +325,7 @@ global proc mayaUsdTranslatorExport_EnableAllControls() {
         optionMenuGrp -e -en 1 skinClustersPopup;
         checkBoxGrp -e -en 1 exportBlendShapesCheckBox;
         checkBoxGrp -e -en 1 exportDisplayColorCheckBox;
+        checkBoxGrp -e -en 1 exportComponentTagsCheckBox;
         checkBoxGrp -e -en 1 exportCurvesCheckBox;
         checkBoxGrp -e -en 1 exportColorSetsCheckBox;
     }
@@ -400,6 +401,8 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
                 }
             } else if ($optionBreakDown[0] == "exportColorSets") {
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportColorSetsCheckBox");
+            } else if ($optionBreakDown[0] == "exportComponentTags") {
+                mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportComponentTagsCheckBox");
             } else if ($optionBreakDown[0] == "jobContext" && $processJobContext == 1) {
                 // Must be kept last, and only done on main options:
                 $jobContext = $optionBreakDown[1];
@@ -623,6 +626,8 @@ global proc int mayaUsdTranslatorExport (string $parent,
                     menuItem -l `getMayaUsdString("kExportSubdMethodLoLbl")` -ann "loop";
                     menuItem -l `getMayaUsdString("kExportSubdMethodNoLbl")` -ann "none";
 
+                checkBoxGrp -l `getMayaUsdString("kExportComponentTagsLbl")` -annotation `getMayaUsdString("kExportComponentTagsAnn")` exportComponentTagsCheckBox;
+
                 checkBoxGrp -l `getMayaUsdString("kExportCurvesLbl")` -annotation `getMayaUsdString("kExportCurvesAnn")` exportCurvesCheckBox;
 
                 checkBoxGrp -l `getMayaUsdString("kExportColorSetsLbl")` -annotation `getMayaUsdString("kExportColorSetsAnn")` exportColorSetsCheckBox;
@@ -738,6 +743,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
             // We currently have only one type to filter. In the future, we might need to build the array separately as more types are added.
             $currentOptions = mayaUsdTranslatorExport_SetFromCheckbox($currentOptions, "", "filterTypes=nurbsCurve", "exportCurvesCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportColorSets", "exportColorSetsCheckBox");
+            $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportComponentTags", "exportComponentTagsCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendFromPopup($currentOptions, "defaultMeshScheme", "defaultMeshSchemePopup");
         }
 

@@ -22,6 +22,9 @@
 #include <mayaUsd/utils/util.h>
 
 #include <maya/MFnDagNode.h>
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#include <ufe/pathString.h>
+#endif
 
 #include <cassert>
 
@@ -83,6 +86,12 @@ inline Ufe::Path::Segments::size_type nbPathSegments(const Ufe::Path& path)
 #endif
 }
 
+inline Ufe::Path toPath(const std::string& mayaPathString)
+{
+    return Ufe::Path(
+        Ufe::PathSegment("|world" + mayaPathString, MayaUsd::ufe::getMayaRunTimeId(), '|'));
+}
+
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -142,7 +151,7 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path)
     // In additional to the explicit dirty system it is possible that
     // the cache is in an invalid state and needs to be refreshed. See
     // the class comment in UsdStageMap.h for details.
-    // There are two scenerios which signal a cache refresh is required:
+    // There are two scenarios which signal a cache refresh is required:
     // 1. A path is searched for which cannot be found. This indicates that
     //    the stage has been reparented and the new path has been used to search
     //    for the stage and the stage is not present in the cache.
@@ -157,7 +166,7 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path)
     auto iter = fPathToObject.find(singleSegmentPath);
 
     if (iter == std::end(fPathToObject)) {
-        // When we don't find an entry in the cache then we are in scenerio 1.
+        // When we don't find an entry in the cache then we are in scenario 1.
         // MObjects stay valid even when re-parented or re-named, so we can
         // scan through all the entries in the cache and validate that the current
         // DAG path to the MObject matches the key Ufe::Path for the MObject in
@@ -177,9 +186,27 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path)
             }
         }
 
-        // Now that the cache is in a good state, attempt to find the searched for
+        // Now that the cache is in a better state, attempt to find the searched for
         // proxyShape again.
         iter = fPathToObject.find(singleSegmentPath);
+
+        if (iter == std::end(fPathToObject)) {
+            // Still not found, must have re-appeared through undo of delete.
+            // Add it back to the cache.
+            for (const auto& psn : ProxyShapeHandler::getAllNames()) {
+                auto psPath = toPath(psn);
+                if (fPathToObject.find(psPath) == std::end(fPathToObject)) {
+                    addItem(psPath);
+                }
+            }
+
+            iter = fPathToObject.find(singleSegmentPath);
+            if (iter == std::end(fPathToObject)) {
+                // Since our cache is fresh, path not found means it's not a
+                // proxy shape.
+                return MObject();
+            }
+        }
     } else {
         auto object = iter->second;
         // If the cached object itself is invalid then remove it from the map.
@@ -190,7 +217,7 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path)
         auto objectPath = firstPath(object);
         if (objectPath != iter->first) {
             // When we hit the cache and the key path doesn't match the current object path
-            // we are in scenerio 2. Update the entry in fPathToObject so that the key path
+            // we are in scenario 2. Update the entry in fPathToObject so that the key path
             // is the current object path.
             fPathToObject.erase(singleSegmentPath);
             fPathToObject[objectPath] = object;
@@ -262,7 +289,7 @@ void UsdStageMap::rebuildIfDirty()
         return;
 
     for (const auto& psn : ProxyShapeHandler::getAllNames()) {
-        addItem(Ufe::Path(Ufe::PathSegment("|world" + psn, getMayaRunTimeId(), '|')));
+        addItem(toPath(psn));
     }
     fDirty = false;
 }
