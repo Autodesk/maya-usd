@@ -433,7 +433,7 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
     HdDirtyBits dirtyBits = 0;
     if (isNew) {
 		// TODO:
-        // dirtyBits |= HdChangeTracker::AllDirty;
+        dirtyBits |= HdChangeTracker::DirtyMaterialId;
     }
     if (matrixChanged) {
         dirtyBits |= HdChangeTracker::DirtyTransform;
@@ -454,7 +454,7 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
     // TODO : Multiple streams
     // for now assume first is position
 
- 	//------ Vertices
+ 	// Vertices
     MVertexBuffer* verts = nullptr;
     if (geomChanged && geom && geom->vertexBufferCount() > 0) {
         if (verts = geom->vertexBuffer(0)) {
@@ -482,7 +482,7 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
         }
     }
 
-    //------ Indices
+    // Indices
 	int indexCount = 0;
     MIndexBuffer* indices = nullptr;
     if (topoChanged && geom && geom->vertexBufferCount() > 0) {
@@ -517,7 +517,7 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
                 vertexCounts.assign(indexCount / 3, 3);
 
 
-				//------ UVs
+				// UVs
 				if(indexCount > 0)
 				{
 					MVertexBuffer* mvb = nullptr;
@@ -527,7 +527,6 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
 						if (!mvb) continue;
 
 						const MVertexBufferDescriptor& desc = mvb->descriptor();
-						//if (desc.dimension() = 2) continue;
 
 						if (desc.semantic() != MGeometry::Semantic::kTexture) continue;
 
@@ -537,10 +536,10 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
 						// See HdStMesh::_PopulateFaceVaryingPrimvars
 						_uvs.clear();
 						_uvs.resize(indices->size());
-						const auto* uvs = reinterpret_cast<const GfVec2f*>(mvb->map());
+						float* uvs = (float*)mvb->map();
 						for (int i = 0; i < indexCount; i++)
 						{
-							_uvs[i] = uvs[indicesData[i]];
+							_uvs[i].Set(&uvs[indicesData[i]*3]);
 						}
 						mvb->unmap();
 						break;
