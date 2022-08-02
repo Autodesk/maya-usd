@@ -432,7 +432,8 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
 
     HdDirtyBits dirtyBits = 0;
     if (isNew) {
-        dirtyBits |= HdChangeTracker::DirtyMaterialId;
+		// TODO:
+        // dirtyBits |= HdChangeTracker::AllDirty;
     }
     if (matrixChanged) {
         dirtyBits |= HdChangeTracker::DirtyTransform;
@@ -453,7 +454,7 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
     // TODO : Multiple streams
     // for now assume first is position
 
- 	// Vertices
+ 	//------ Vertices
     MVertexBuffer* verts = nullptr;
     if (geomChanged && geom && geom->vertexBufferCount() > 0) {
         if (verts = geom->vertexBuffer(0)) {
@@ -481,11 +482,12 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
         }
     }
 
-    // Indices
+    //------ Indices
+	int indexCount = 0;
     MIndexBuffer* indices = nullptr;
     if (topoChanged && geom && geom->vertexBufferCount() > 0) {
         if (indices = geom->indexBuffer(0)) {
-            int indexCount = indices->size();
+            indexCount = indices->size();
             vertexIndices.resize(indexCount);
             int* indicesData = (int*)indices->map();
             // USD spamming the "topology references only upto element" message is super
@@ -513,6 +515,39 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
                 vertexCounts.resize(indexCount / 3);
                 // for (int i = 0; i < indexCount / 3; i++) vertexCounts[i] = 3;
                 vertexCounts.assign(indexCount / 3, 3);
+
+
+				//------ UVs
+				if(indexCount > 0)
+				{
+					MVertexBuffer* mvb = nullptr;
+					for (int vbIdx = 0; vbIdx < geom->vertexBufferCount(); vbIdx++)
+					{
+						mvb = geom->vertexBuffer(vbIdx);
+						if (!mvb) continue;
+
+						const MVertexBufferDescriptor& desc = mvb->descriptor();
+						//if (desc.dimension() = 2) continue;
+
+						if (desc.semantic() != MGeometry::Semantic::kTexture) continue;
+
+						// Hydra expects a uv coordinate for each face-index (total of 36), not 1 per vertex.
+						// not for every vertex. e.g. a cube expects 36 uvs not 24.
+						// Note that ASSERT(mvb->vertexCount() == 24)
+						// See HdStMesh::_PopulateFaceVaryingPrimvars
+						_uvs.clear();
+						_uvs.resize(indices->size());
+						const auto* uvs = reinterpret_cast<const GfVec2f*>(mvb->map());
+						for (int i = 0; i < indexCount; i++)
+						{
+							_uvs[i] = uvs[indicesData[i]];
+						}
+						mvb->unmap();
+						break;
+					}
+				}
+
+
                 break;
             case MHWRender::MGeometry::Primitive::kLines:
                 vertexCounts.resize(indexCount);
@@ -523,16 +558,6 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
             indices->unmap();
         }
     }
-    // UVs
-    // if(indices)
-    //{
-    //	_uvs.clear();
-    //	int indexCount = indices->size();
-    //	_uvs.resize(indexCount);
-    //	// TODO : Fix this. these are bogus UVs but need to be there
-    //	// to display anything at all
-    //	for (int i = 0; i < indexCount; i++) _uvs[i] = (GfVec2f(0, 0));
-    //}
 
     if (indices && verts) {
         if (topoChanged) {
