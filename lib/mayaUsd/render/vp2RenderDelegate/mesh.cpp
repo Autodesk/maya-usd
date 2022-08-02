@@ -1460,6 +1460,7 @@ void HdVP2Mesh::_UpdateDrawItem(
         = drawItem->MatchesUsage(HdVP2DrawItem::kSelectionHighlight);
     const bool isHighlightItem = drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight);
     const bool inTemplateMode = _displayType == MayaUsdRPrim::kTemplate;
+    const bool inReferenceMode = _displayType == MayaUsdRPrim::kReference;
     const bool inPureSelectionHighlightMode = isDedicatedHighlightItem && !inTemplateMode;
 
     // We don't need to update the selection-highlight-only item when there is no selection
@@ -1955,16 +1956,7 @@ void HdVP2Mesh::_UpdateDrawItem(
     } else {
         // Non-instanced Rprims.
         if ((itemDirtyBits & DirtySelectionHighlight) && isHighlightItem) {
-            MColor color;
-            if (inTemplateMode) {
-                color = drawScene.GetTemplateColor(_selectionStatus != kUnselected);
-            } else {
-                color
-                    = (_selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
-                           _selectionStatus == kFullyLead ? TfToken() : HdPrimTypeTokens->mesh)
-                                                       : drawScene.GetWireframeColor());
-            }
-
+            MColor                      color = _GetHighlightColor(HdPrimTypeTokens->mesh);
             MHWRender::MShaderInstance* shader = _delegate->Get3dSolidShader(color);
             if (shader != nullptr && shader != drawItemData._shader) {
                 drawItemData._shader = shader;
@@ -1993,6 +1985,8 @@ void HdVP2Mesh::_UpdateDrawItem(
 
         if (inTemplateMode) {
             enable = enable && isHighlightItem;
+        } else if (inReferenceMode) {
+            enable = enable && !isPointSnappingItem;
         }
 
         enable = enable && drawScene.DrawRenderTag(_meshSharedData->_renderTag);
@@ -2011,12 +2005,10 @@ void HdVP2Mesh::_UpdateDrawItem(
     // Some items may require selection mask overrides
     if (!isDedicatedHighlightItem && !isPointSnappingItem
         && (itemDirtyBits & (DirtySelectionHighlight | DirtySelectionMode))) {
-        bool           dynamicSelectionMaskItem = false;
         MSelectionMask selectionMask(MSelectionMask::kSelectMeshes);
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
         if (!isBBoxItem) {
-            dynamicSelectionMaskItem = true;
             bool shadedUnselectedInstances
                 = !isShadedSelectedInstanceItem && !GetInstancerId().IsEmpty();
             if (_selectionStatus == kUnselected || drawScene.SnapToSelectedObjects()
@@ -2029,18 +2021,13 @@ void HdVP2Mesh::_UpdateDrawItem(
             }
         }
 #endif
-        if (isHighlightItem) {
-            dynamicSelectionMaskItem = true;
-            // In template mode, items should have no selection
-            if (inTemplateMode) {
-                selectionMask = MSelectionMask();
-            }
+        // In template and reference modes, items should have no selection
+        if (inTemplateMode || inReferenceMode) {
+            selectionMask = MSelectionMask();
         }
 
-        if (dynamicSelectionMaskItem) {
-            // The function is thread-safe, thus called in place to keep simple.
-            renderItem->setSelectionMask(selectionMask);
-        }
+        // The function is thread-safe, thus called in place to keep simple.
+        renderItem->setSelectionMask(selectionMask);
     }
 
     // Capture buffers we need

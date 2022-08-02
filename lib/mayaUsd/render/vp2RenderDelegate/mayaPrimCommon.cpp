@@ -689,6 +689,23 @@ bool MayaUsdRPrim::_SyncCommon(
     return true;
 }
 
+MColor MayaUsdRPrim::_GetHighlightColor(const TfToken& className)
+{
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+
+    if (_displayType == MayaUsdRPrim::kTemplate) {
+        return drawScene.GetTemplateColor(_selectionStatus != kUnselected);
+    } else if (_displayType == MayaUsdRPrim::kReference && _selectionStatus == kUnselected) {
+        return drawScene.GetReferenceColor();
+    } else {
+        return (
+            _selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
+                _selectionStatus == kFullyLead ? TfToken() : className)
+                                            : drawScene.GetWireframeColor());
+    }
+}
+
 SdfPath MayaUsdRPrim::_GetUpdatedMaterialId(HdRprim* rprim, HdSceneDelegate* delegate)
 {
     const SdfPath& id = rprim->GetId();

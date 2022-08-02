@@ -1774,7 +1774,24 @@ GfVec3f ProxyRenderDelegate::GetDefaultColor(const TfToken& className)
 MColor ProxyRenderDelegate::GetTemplateColor(bool active)
 {
     MColorCache& colorCache = active ? _activeTemplateColorCache : _dormantTemplateColorCache;
+    const char*  colorName = active ? "templateActive" : "templateDormant";
+    static const MColor defaultColor(0.5f, 0.5f, 0.5f);
 
+    return _GetDisplayColor(colorCache, colorName, active, defaultColor);
+}
+
+MColor ProxyRenderDelegate::GetReferenceColor()
+{
+    static const MColor defaultColor(0.f, 0.f, 0.f);
+    return _GetDisplayColor(_referenceColorCache, "referenceLayer", true, defaultColor);
+}
+
+MColor ProxyRenderDelegate::_GetDisplayColor(
+    MColorCache&  colorCache,
+    const char*   colorName,
+    bool          colorCorrection,
+    const MColor& defaultColor)
+{
     // Check the cache. It is safe since colorCache.second is atomic
     if (colorCache.second == _frameCounter) {
         return colorCache.first;
@@ -1789,26 +1806,26 @@ MColor ProxyRenderDelegate::GetTemplateColor(bool active)
     // Construct the query command string.
     MString queryCommand;
     queryCommand = "displayRGBColor -q \"";
-    queryCommand += active ? "templateActive" : "templateDormant";
+    queryCommand += colorName;
     queryCommand += "\"";
 
-    // Query and return the template color.
+    // Query and return the display color.
     MDoubleArray colorResult;
     MGlobal::executeCommand(queryCommand, colorResult);
 
     if (colorResult.length() == 3) {
         colorCache.first = MColor(colorResult[0], colorResult[1], colorResult[2]);
 #if MAYA_API_VERSION >= 20230200
-        if (active && _currentFrameContext) {
+        if (colorCorrection && _currentFrameContext) {
             colorCache.first = _currentFrameContext->applyViewTransform(
                 colorCache.first, MFrameContext::kInverse);
         }
 #endif
     } else {
-        TF_WARN("Failed to obtain template color.");
+        TF_WARN("Failed to obtain display color %s.", colorName);
 
         // In case of any failure, return the default color
-        colorCache.first = MColor(0.5f, 0.5f, 0.5f);
+        colorCache.first = defaultColor;
     }
 
     // Update the cache and return

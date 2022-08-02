@@ -205,6 +205,9 @@ public:
     MColor GetTemplateColor(bool active);
 
     MAYAUSD_CORE_PUBLIC
+    MColor GetReferenceColor();
+
+    MAYAUSD_CORE_PUBLIC
     const HdSelection::PrimSelectionState* GetLeadSelectionState(const SdfPath& path) const;
 
     MAYAUSD_CORE_PUBLIC
@@ -241,11 +244,19 @@ private:
     void _UpdateSceneDelegate();
     void _Execute(const MHWRender::MFrameContext& frameContext);
 
-    bool _isInitialized();
-    void _PopulateSelection();
-    void _UpdateSelectionStates();
-    void _UpdateRenderTags();
-    void _ClearRenderDelegate();
+    typedef std::pair<MColor, std::atomic<uint64_t>>  MColorCache;
+    typedef std::pair<GfVec3f, std::atomic<uint64_t>> GfVec3fCache;
+
+    bool   _isInitialized();
+    void   _PopulateSelection();
+    void   _UpdateSelectionStates();
+    void   _UpdateRenderTags();
+    void   _ClearRenderDelegate();
+    MColor _GetDisplayColor(
+        MColorCache&  colorCache,
+        const char*   colorName,
+        bool          colorCorrection,
+        const MColor& defaultColor);
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
     void _DirtyUfeSubtree(const Ufe::Path& rootPath);
     void _DirtyUfeSubtree(const MString& rootStr);
@@ -347,15 +358,13 @@ private:
     // The name of the currently used color space
     MString _colorTransformId;
 
-    typedef std::pair<MColor, std::atomic<uint64_t>>  MColorCache;
-    typedef std::pair<GfVec3f, std::atomic<uint64_t>> GfVec3fCache;
-
     MColorCache  _activeMeshColorCache { MColor(), 0 };
     MColorCache  _activeCurveColorCache { MColor(), 0 };
     MColorCache  _activePointsColorCache { MColor(), 0 };
     MColorCache  _leadColorCache { MColor(), 0 };
     MColorCache  _activeTemplateColorCache { MColor(), 0 };
     MColorCache  _dormantTemplateColorCache { MColor(), 0 };
+    MColorCache  _referenceColorCache { MColor(), 0 };
     GfVec3fCache _dormantCurveColorCache { GfVec3f(), 0 };
     GfVec3fCache _dormantPointsColorCache { GfVec3f(), 0 };
 
