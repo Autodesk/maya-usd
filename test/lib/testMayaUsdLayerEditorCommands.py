@@ -19,7 +19,7 @@
 import unittest
 import tempfile
 from os import path
-from maya import cmds
+from maya import cmds, mel
 import mayaUsd_createStageWithNewLayer
 import mayaUsd
 from pxr import Sdf, Usd
@@ -361,6 +361,40 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         self.assertEqual(stage.GetEditTarget().GetLayer().identifier, rootLayerID)
         cmds.undo()
         self.assertEqual(path.normcase(stage.GetEditTarget().GetLayer().identifier), sharedLayer)
+
+    def testRemoveMultipleLayers(self):
+
+        shapePath, stage = getCleanMayaStage()
+        rootLayer = stage.GetRootLayer()
+        rootLayerID = rootLayer.identifier
+
+        # Add six layers
+        layerNames = []
+        for index in range(1,7):
+            layerName = "layer%d" % index
+            layerName = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True,  addAnonymous=layerName)
+            layerNames.append(layerName[0])
+
+        # Verify that the root has the expected six layers.
+        def subLayerNames():
+            return list(rootLayer.subLayerPaths)
+
+        def verifySubLayers(expectedNames):
+            rootSubLayers = subLayerNames()
+            self.assertEqual(len(expectedNames), len(rootSubLayers))
+            for name in expectedNames:
+                self.assertIn(name, rootSubLayers)
+
+        verifySubLayers(layerNames)
+
+        # Remove layers 0 and 1 and verify that the correct layers have been removed.
+        #
+        # Note: passing the same argument multiple times does not work in Python, so we call MEL.
+        #
+        # Note: when inserted in USD, layers are added at the top, so layer 0 and 1 are
+        #       layer5 and layer6.
+        mel.eval("""mayaUsdLayerEditor -removeSubPath 0 "%s" -removeSubPath 1 "%s" "%s";""" % (shapePath, shapePath, rootLayer.identifier))
+        verifySubLayers(layerNames[0:4])
 
     def testMoveSubPath(self):
         """ test 'mayaUsdLayerEditor' command 'moveSubPath' paramater """
