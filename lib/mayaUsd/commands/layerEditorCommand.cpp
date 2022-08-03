@@ -653,7 +653,7 @@ public:
         // Apply all adjustment that were done on indexes lower or
         // equal to the input index.
         int adjustedIndex = index;
-        for (const auto indexAndAdjustement : _indexAdjustments) {
+        for (const auto& indexAndAdjustement : _indexAdjustments) {
             if (indexAndAdjustement.first > index)
                 break;
             adjustedIndex += indexAndAdjustement.second;
