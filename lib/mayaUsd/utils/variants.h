@@ -65,9 +65,11 @@ public:
     MAYAUSD_CORE_PUBLIC
     ~AutoVariantRestore() { _variantSet.SetVariantSelection(_variant); }
 
+    const PXR_NS::UsdVariantSet& getVariantSet() const { return _variantSet; }
+
 private:
-    PXR_NS::UsdVariantSet& _variantSet;
-    std::string            _variant;
+    PXR_NS::UsdVariantSet _variantSet;
+    std::string           _variant;
 };
 
 } // namespace MAYAUSD_NS_DEF
