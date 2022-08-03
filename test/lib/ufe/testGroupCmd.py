@@ -19,6 +19,7 @@
 import fixturesUtils
 import mayaUtils
 import testUtils
+from testUtils import assertVectorAlmostEqual
 import ufeUtils
 import usdUtils
 
@@ -26,12 +27,11 @@ import mayaUsd.ufe
 
 from pxr import Kind, Usd, UsdGeom, Vt
 
-from maya import cmds
+from maya import cmds, mel
 from maya import standalone
 
 import ufe
 
-import os
 import unittest
 
 def createStage():
@@ -866,6 +866,72 @@ class GroupCmdTestCase(unittest.TestCase):
         checkBefore()
         cmds.redo()
         checkAfter()
+
+    def runTestGroupPivotOptions(self, doGroupCmd, expectPivot):
+        '''Test group under parent with preserve position.'''
+
+        # Maya menu invokes doGroup MEL script, we'll do the same.
+        # 
+        # doGroup 0 1 0: group under parent, preserve position, group pivot
+        #                center.
+        # doGroup 0 1 1: group under parent, preserve position, group pivot
+        #                origin.
+        #
+        # Compare against Maya object behavior.
+
+        cmds.file(new=True, force=True)
+
+        sphere, _ = cmds.polySphere()
+        v = [5, 0, 0]
+        cmds.move(*v)
+        # doGroup has no return value.  It creates group1 and selects it.
+        mel.eval(doGroupCmd)
+
+        # group transform is the identity.
+        groupMayaXform = cmds.xform(q=True, matrix=True)
+        rpMaya = cmds.xform(q=True, rotatePivot=True)
+        spMaya = cmds.xform(q=True, scalePivot=True)
+        identity = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
+                    0.0, 0.0, 0.0, 1.0]
+
+        assertVectorAlmostEqual(self, groupMayaXform, identity)
+        assertVectorAlmostEqual(self, expectPivot, rpMaya, 6)
+        assertVectorAlmostEqual(self, expectPivot, spMaya, 6)
+
+        # Do the same with USD.
+        import mayaUsd_createStageWithNewLayer
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        psPathStr = '|stage1|stageShape1'
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        xform = stage.DefinePrim('/Xform1', 'Xform')
+        
+        cmds.select(psPathStr + ',/Xform1', r=True)
+        cmds.move(*v)
+
+        mel.eval(doGroupCmd)
+        groupPath = psPathStr + ',/group1'
+        groupItem = ufeUtils.createItem(groupPath)
+        t3d = ufe.Transform3d.transform3d(groupItem)
+
+        rpUsd = t3d.rotatePivot()
+        spUsd = t3d.scalePivot()
+        # Flatten out UFE matrices for comparison.
+        groupUsdXform = [y for x in t3d.matrix().matrix for y in x]
+        
+        assertVectorAlmostEqual(self, groupUsdXform, identity)
+        assertVectorAlmostEqual(self, expectPivot, rpUsd.vector, 6)
+        assertVectorAlmostEqual(self, expectPivot, spUsd.vector, 6)
+
+    @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() >= 5, 'Requires Maya xform command fix.')
+    def testGroupPivotCenter(self):
+        # With group pivot center the group pivot is on the grouped object.
+        self.runTestGroupPivotOptions("doGroup 0 1 0", [5, 0, 0])
+
+    @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() >= 5, 'Requires Maya xform command fix.')
+    def testGroupPivotOrigin(self):
+        # With group pivot origin the group pivot is at the origin.
+        self.runTestGroupPivotOptions("doGroup 0 1 1", [0, 0, 0])
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
