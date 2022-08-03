@@ -630,6 +630,41 @@ private:
     PXR_NS::SdfLayerRefPtr _mutedLayer;
 };
 
+// We assume the indexes given to the command are the original indexes
+// of the layers. Since each command is executed individually and in
+// order, each one may affect the index of subsequent commands. We
+// records adjustements that must be applied to indexes in the map.
+// Removal of a layer creates a negative adjustment, inserttion of a
+// layer creates a positive adjustment.
+class IndexAdjustments
+{
+public:
+    IndexAdjustments() = default;
+
+    // Insertion and removal additional adjustment.
+    // Must be called with the original index as provided by the user.
+    void addInsertionAdjustment(int index) { _indexAdjustments[index] += 1; }
+    void addRemovalAdjustment(int index) { _indexAdjustments[index] -= 1; }
+
+    // Calculate the adjusted index from the user-supplied index that
+    // need to be used by the command to account for previous commands.
+    int getAdjustedIndex(int index) const
+    {
+        // Apply all adjustment that were done on indexes lower or
+        // equal to the input index.
+        int adjustedIndex = index;
+        for (const auto indexAndAdjustement : _indexAdjustments) {
+            if (indexAndAdjustement.first > index)
+                break;
+            adjustedIndex += indexAndAdjustement.second;
+        }
+        return adjustedIndex;
+    }
+
+private:
+    std::map<int, int> _indexAdjustments;
+};
+
 } // namespace Impl
 
 const char LayerEditorCommand::commandName[] = "mayaUsdLayerEditor";
@@ -694,6 +729,8 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
     _layerIdentifier = objects[0].asChar();
 
     if (!isQuery()) {
+        Impl::IndexAdjustments indexAdjustments;
+
         if (argParser.isFlagSet(kInsertSubPathFlag)) {
             auto count = argParser.numberOfFlagUses(kInsertSubPathFlag);
             for (unsigned i = 0; i < count; i++) {
@@ -701,8 +738,14 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
 
                 MArgList listOfArgs;
                 argParser.getFlagArgumentList(kInsertSubPathFlag, i, listOfArgs);
-                cmd->_index = listOfArgs.asInt(0);
+
+                const int originalIndex = listOfArgs.asInt(0);
+                const int adjustedIndex = indexAdjustments.getAdjustedIndex(originalIndex);
+                indexAdjustments.addInsertionAdjustment(originalIndex);
+
+                cmd->_index = adjustedIndex;
                 cmd->_subPath = listOfArgs.asString(1).asUTF8();
+
                 _subCommands.push_back(std::move(cmd));
             }
         }
@@ -714,7 +757,6 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
                 MArgList listOfArgs;
                 argParser.getFlagArgumentList(kRemoveSubPathFlag, i, listOfArgs);
 
-                auto index = listOfArgs.asInt(0);
                 auto shapePath = listOfArgs.asString(1);
                 auto prim = UsdMayaQuery::GetPrim(shapePath.asChar());
                 if (prim == UsdPrim()) {
@@ -722,8 +764,12 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
                     return MS::kInvalidParameter;
                 }
 
+                const int originalIndex = listOfArgs.asInt(0);
+                const int adjustedIndex = indexAdjustments.getAdjustedIndex(originalIndex);
+                indexAdjustments.addRemovalAdjustment(originalIndex);
+
                 auto cmd = std::make_shared<Impl::RemoveSubPath>();
-                cmd->_index = index;
+                cmd->_index = adjustedIndex;
                 cmd->_proxyShapePath = shapePath.asChar();
                 _subCommands.push_back(std::move(cmd));
             }
@@ -749,11 +795,13 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
             MString newParentLayer;
             argParser.getFlagArgument(kMoveSubPathFlag, 1, newParentLayer);
 
-            unsigned int index { 0 };
-            argParser.getFlagArgument(kMoveSubPathFlag, 2, index);
+            int originalIndex { 0 };
+            argParser.getFlagArgument(kMoveSubPathFlag, 2, originalIndex);
+            const int adjustedIndex = indexAdjustments.getAdjustedIndex(originalIndex);
+            indexAdjustments.addRemovalAdjustment(originalIndex);
 
             auto cmd = std::make_shared<Impl::MoveSubPath>(
-                subPath.asUTF8(), newParentLayer.asUTF8(), index);
+                subPath.asUTF8(), newParentLayer.asUTF8(), adjustedIndex);
             _subCommands.push_back(std::move(cmd));
         }
 
