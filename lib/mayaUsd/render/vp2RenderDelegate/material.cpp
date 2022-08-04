@@ -50,6 +50,7 @@
 #include <maya/MFragmentManager.h>
 #include <maya/MGlobal.h>
 #include <maya/MProfiler.h>
+#include <maya/MSceneMessage.h>
 #include <maya/MShaderManager.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
@@ -115,6 +116,16 @@ static bool _IsDisabledAsyncTextureLoading()
 static const std::size_t kRefreshDuration { 1000 };
 
 namespace {
+
+// USD `UsdImagingDelegate::ApplyPendingUpdates()` would request to
+// remove the material then recreate, this is causing texture disappearing
+// when user manipulating a prim (while holding mouse buttion).
+// We hold a copy of the texture info reference, so that the texture will not
+// get released immediately along with material removal.
+// If the textures would have been requested to reload in `ApplyPendingUpdates()`,
+// we could still reuse the loaded one from cache, otherwise the idle task can
+// safely release the texture.
+std::unordered_set<HdVP2TextureInfoSharedPtr> pendingRemovalTextures;
 
 // clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
@@ -1734,18 +1745,8 @@ HdVP2Material::~HdVP2Material()
     // Tell pending tasks or running tasks (if any) to terminate
     ClearPendingTasks();
 
-    // USD `UsdImagingDelegate::ApplyPendingUpdates()` would request to
-    // remove the material then recreate, this is causing texture disappearing
-    // when user manipulating a prim (while holding mouse buttion).
-    // We hold a copy of the texture info reference, so that the texture will not
-    // get released immediately along with material removal.
-    // If the textures would have been requested to reload in `ApplyPendingUpdates()`,
-    // we could still reuse the loaded one from cache, otherwise the idle task can
-    // safely release the texture.
-    static std::unordered_set<HdVP2TextureInfoSharedPtr> pendingRemovalTextures;
-    static std::mutex                                    removalTaskMutex;
-
     if (!_IsDisabledAsyncTextureLoading() && !_localTextureMap.empty()) {
+        std::mutex removalTaskMutex;
         // Locking to avoid race condition for insertion to pendingRemovalTextures
         std::lock_guard<std::mutex> lock(removalTaskMutex);
 
@@ -3027,6 +3028,19 @@ void HdVP2Material::_UpdateShaderInstance(
     }
 }
 
+namespace {
+
+void exitingCallback(void* /* unusedData */)
+{
+    // Maya does not unload plugins on exit.  Make sure we perform an orderly
+    // cleanup of the texture cache. Otherwise the cache will clear after VP2
+    // has shut down.
+    HdVP2Material::OnMayaExit();
+}
+
+MCallbackId gExitingCbId = 0;
+} // namespace
+
 /*! \brief  Acquires a texture for the given image path.
  */
 const HdVP2TextureInfo& HdVP2Material::_AcquireTexture(
@@ -3034,6 +3048,11 @@ const HdVP2TextureInfo& HdVP2Material::_AcquireTexture(
     const std::string&    path,
     const HdMaterialNode& node)
 {
+    // Register for the Maya exit message
+    if (!gExitingCbId) {
+        gExitingCbId = MSceneMessage::addCallback(MSceneMessage::kMayaExiting, exitingCallback);
+    }
+
     // see if we already have the texture loaded.
     const auto it = _globalTextureMap.find(path);
     if (it != _globalTextureMap.end()) {
@@ -3225,5 +3244,12 @@ void HdVP2Material::_MaterialChanged(HdSceneDelegate* sceneDelegate)
 }
 
 #endif
+
+void HdVP2Material::OnMayaExit()
+{
+    pendingRemovalTextures.clear();
+    _globalTextureMap.clear();
+    HdVP2RenderDelegate::OnMayaExit();
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
