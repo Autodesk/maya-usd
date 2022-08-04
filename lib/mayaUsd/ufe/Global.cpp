@@ -35,6 +35,7 @@
 #include <mayaUsd/ufe/UsdTransform3dMatrixOp.h>
 #include <mayaUsd/ufe/UsdTransform3dMayaXformStack.h>
 #include <mayaUsd/ufe/UsdTransform3dPointInstance.h>
+#include <mayaUsd/ufe/UsdTransform3dRead.h>
 #include <mayaUsd/ufe/UsdUIInfoHandler.h>
 #include <mayaUsd/ufe/UsdUIUfeObserver.h>
 #endif
@@ -229,15 +230,17 @@ MStatus initialize()
     // - Perform operations using the USD common transform API.
     // - Perform operations using a Maya transform stack.
     // - If the object is a point instance, use the point instance handler.
-    auto fallbackHandler = MayaUsd::ufe::UsdTransform3dFallbackMayaXformStackHandler::create();
-    auto matrixHandler = MayaUsd::ufe::UsdTransform3dMatrixOpHandler::create(fallbackHandler);
-    auto commonAPIHandler = MayaUsd::ufe::UsdTransform3dCommonAPIHandler::create(matrixHandler);
-    auto mayaStackHandler
-        = MayaUsd::ufe::UsdTransform3dMayaXformStackHandler::create(commonAPIHandler);
-    auto pointInstanceHandler
-        = MayaUsd::ufe::UsdTransform3dPointInstanceHandler::create(mayaStackHandler);
-
-    handlers.transform3dHandler = pointInstanceHandler;
+    Ufe::Transform3dHandler::Ptr lastHandler = MayaUsd::ufe::UsdTransform3dFallbackMayaXformStackHandler::create();
+    lastHandler = MayaUsd::ufe::UsdTransform3dMatrixOpHandler::create(lastHandler);
+    lastHandler = MayaUsd::ufe::UsdTransform3dCommonAPIHandler::create(lastHandler);
+    lastHandler = MayaUsd::ufe::UsdTransform3dMayaXformStackHandler::create(lastHandler);
+    lastHandler = MayaUsd::ufe::UsdTransform3dPointInstanceHandler::create(lastHandler);
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4025)
+    lastHandler = MayaUsd::ufe::UsdTransform3dReadHandler::create(lastHandler);
+#endif
+#endif
+    handlers.transform3dHandler = lastHandler;
 
     g_USDRtid = runTimeMgr.register_(kUSDRunTimeName, handlers);
     MayaUsd::ufe::UsdUIUfeObserver::create();
