@@ -171,15 +171,6 @@ ShaderPtr GlslFragmentGenerator::generate(
 
     const bool lighting = requiresLighting(graph);
 
-#if !defined(MATERIALX_NAMESPACE_BEGIN)
-// Consider all older builds (that do not have version info) as being 1.38.3
-#define MX_COMBINED_VERSION 13803
-#else
-#define MX_COMBINED_VERSION                                                  \
-    ((MATERIALX_MAJOR_VERSION * 100 * 100) + (MATERIALX_MINOR_VERSION * 100) \
-     + MATERIALX_BUILD_VERSION)
-#endif
-
 #if MX_COMBINED_VERSION == 13804
     // 1.38.4 is the only version requiring "libraries" in the path
     std::string libRoot = "libraries/";
@@ -238,6 +229,10 @@ ShaderPtr GlslFragmentGenerator::generate(
             + std::to_string(specularMethod) + "'");
     }
     emitLineBreak(pixelStage);
+
+#if MX_COMBINED_VERSION >= 13805
+    emitTransmissionRender(context, pixelStage);
+#endif
 
     // Set the include file to use for uv transformations,
     // depending on the vertical flip flag.

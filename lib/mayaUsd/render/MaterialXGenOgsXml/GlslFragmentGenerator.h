@@ -15,6 +15,15 @@
 
 MATERIALX_NAMESPACE_BEGIN
 
+#if !defined(MATERIALX_NAMESPACE_BEGIN)
+// Consider all older builds (that do not have version info) as being 1.38.3
+#define MX_COMBINED_VERSION 13803
+#else
+#define MX_COMBINED_VERSION                                                  \
+    ((MATERIALX_MAJOR_VERSION * 100 * 100) + (MATERIALX_MINOR_VERSION * 100) \
+     + MATERIALX_BUILD_VERSION)
+#endif
+
 #define MX_REFRACTION_SUBSTITUTION "(mayaGetSpecularEnvironmentNumLOD() > 0)"
 
 namespace Stage {
