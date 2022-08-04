@@ -54,6 +54,12 @@ class DisplayLayerSaveNonMaya(unittest.TestCase):
         if 'ufeMembers' not in cmds.listAttr('layer1'):
             self.skipTest('Maya DisplayLayer does not support saving/restoring Ufe (non-Maya) members.')
 
+        # editDisplayLayerMembers became Ufe opt-in
+        kwArgs = {'fn' : True}
+        cmdHelp = cmds.help('editDisplayLayerMembers')
+        if '-ufeObjects' in cmdHelp:
+            kwArgs['ufeObjects'] = True
+
         # Create some objects to add to layer.
         cmds.CreatePolygonSphere()
         cmds.CreatePolygonCube()
@@ -67,7 +73,7 @@ class DisplayLayerSaveNonMaya(unittest.TestCase):
         cmds.editDisplayLayerMembers('layer1', '|pSphere1', '|stage1|stageShape1,/Sphere1', noRecurse=True)
 
         # Verify they are in layer.
-        layerObjs = cmds.editDisplayLayerMembers('layer1', query=True, fn=True)
+        layerObjs = cmds.editDisplayLayerMembers('layer1', query=True, **kwArgs)
         self.assertTrue('|pSphere1' in layerObjs)
         self.assertTrue('|stage1|stageShape1,/Sphere1' in layerObjs)
 
@@ -81,7 +87,7 @@ class DisplayLayerSaveNonMaya(unittest.TestCase):
         cmds.file(tempMayaFile, open=True)
 
         # Verify the two objects (Maya and non-Maya are in layer).
-        layerObjs = cmds.editDisplayLayerMembers('layer1', query=True, fn=True)
+        layerObjs = cmds.editDisplayLayerMembers('layer1', query=True, **kwArgs)
         self.assertTrue('|pSphere1' in layerObjs)
         self.assertTrue('|stage1|stageShape1,/Sphere1' in layerObjs)
 
