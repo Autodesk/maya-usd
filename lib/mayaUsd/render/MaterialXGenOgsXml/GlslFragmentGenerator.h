@@ -16,7 +16,8 @@
 MATERIALX_NAMESPACE_BEGIN
 
 #if !defined(MATERIALX_NAMESPACE_BEGIN)
-// Consider all older builds (that do not have version info) as being 1.38.3
+// The above define was introduced in MaterialX 1.38.3. If it does not exist, we know we are on an
+// earlier 1.38 MaterialX version that can use the same code we use for 1.38.3
 #define MX_COMBINED_VERSION 13803
 #else
 #define MX_COMBINED_VERSION                                                  \
