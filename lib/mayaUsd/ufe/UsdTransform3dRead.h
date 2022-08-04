@@ -78,9 +78,9 @@ public:
     static Ptr create(const Ufe::Transform3dHandler::Ptr& nextHandler);
 
     // Ufe::Transform3dHandler overrides
-    Ufe::Transform3d::Ptr transform3d(const Ufe::SceneItem::Ptr& item) const override;
+    Ufe::Transform3d::Ptr     transform3d(const Ufe::SceneItem::Ptr& item) const override;
     Ufe::Transform3dRead::Ptr transform3dRead(const Ufe::SceneItem::Ptr& item) const override;
-    Ufe::Transform3d::Ptr editTransform3d(
+    Ufe::Transform3d::Ptr     editTransform3d(
             const Ufe::SceneItem::Ptr&      item,
             const Ufe::EditTransform3dHint& hint = Ufe::EditTransform3dHint()) const override;
 

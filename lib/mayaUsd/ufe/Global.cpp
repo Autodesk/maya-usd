@@ -230,7 +230,8 @@ MStatus initialize()
     // - Perform operations using the USD common transform API.
     // - Perform operations using a Maya transform stack.
     // - If the object is a point instance, use the point instance handler.
-    Ufe::Transform3dHandler::Ptr lastHandler = MayaUsd::ufe::UsdTransform3dFallbackMayaXformStackHandler::create();
+    Ufe::Transform3dHandler::Ptr lastHandler
+        = MayaUsd::ufe::UsdTransform3dFallbackMayaXformStackHandler::create();
     lastHandler = MayaUsd::ufe::UsdTransform3dMatrixOpHandler::create(lastHandler);
     lastHandler = MayaUsd::ufe::UsdTransform3dCommonAPIHandler::create(lastHandler);
     lastHandler = MayaUsd::ufe::UsdTransform3dMayaXformStackHandler::create(lastHandler);
