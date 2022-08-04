@@ -394,11 +394,9 @@ set_python_module_property(${UFE_PYTHON_TARGET_NAME})
 if(IS_MACOSX OR IS_LINUX)
     mayaUsd_init_rpath(rpath "${PROJECT_NAME}")
     mayaUsd_add_rpath(rpath "../../..")
-
     if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
         mayaUsd_add_rpath(rpath "../../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
     endif()
-
     mayaUsd_install_rpath(rpath ${UFE_PYTHON_TARGET_NAME})
 endif()
 
