@@ -148,7 +148,10 @@ SdfLayerHandle getStrongerLayer(
     return SdfLayerHandle();
 }
 
-bool allowedInStrongerLayer(const UsdPrim& prim, const SdfPrimSpecHandleVector& primStack, bool allowStronger)
+bool allowedInStrongerLayer(
+    const UsdPrim&                 prim,
+    const SdfPrimSpecHandleVector& primStack,
+    bool                           allowStronger)
 {
     // If the flag to allow edits in a stronger layer if off, then it is not allowed.
     if (!allowStronger)
