@@ -125,7 +125,54 @@ namespace {
 // If the textures would have been requested to reload in `ApplyPendingUpdates()`,
 // we could still reuse the loaded one from cache, otherwise the idle task can
 // safely release the texture.
-std::unordered_set<HdVP2TextureInfoSharedPtr> pendingRemovalTextures;
+class _TransientTexturePreserver
+{
+public:
+    static _TransientTexturePreserver& GetInstance()
+    {
+        static _TransientTexturePreserver sInstance;
+        return sInstance;
+    }
+
+    void PreserveTextures(HdVP2LocalTextureMap& localTextureMap)
+    {
+        if (_isExiting) {
+            return;
+        }
+
+        // Locking to avoid race condition for insertion to pendingRemovalTextures
+        std::lock_guard<std::mutex> lock(_removalTaskMutex);
+
+        // Avoid creating multiple idle tasks if there is already one
+        bool hasRemovalTask = !_pendingRemovalTextures.empty();
+        for (const auto& info : localTextureMap) {
+            _pendingRemovalTextures.emplace(info.second);
+        }
+
+        if (!hasRemovalTask) {
+            // Note that we do not need locking inside idle task since it will
+            // only be executed serially.
+            MGlobal::executeTaskOnIdle(
+                [](void* data) { _TransientTexturePreserver::GetInstance().Clear(); });
+        }
+    }
+
+    void Clear() { _pendingRemovalTextures.clear(); }
+
+    void OnMayaExit()
+    {
+        _isExiting = true;
+        Clear();
+    }
+
+private:
+    _TransientTexturePreserver() = default;
+    ~_TransientTexturePreserver() = default;
+
+    std::unordered_set<HdVP2TextureInfoSharedPtr> _pendingRemovalTextures;
+    std::mutex                                    _removalTaskMutex;
+    bool                                          _isExiting = false;
+};
 
 // clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
@@ -1746,21 +1793,7 @@ HdVP2Material::~HdVP2Material()
     ClearPendingTasks();
 
     if (!_IsDisabledAsyncTextureLoading() && !_localTextureMap.empty()) {
-        std::mutex removalTaskMutex;
-        // Locking to avoid race condition for insertion to pendingRemovalTextures
-        std::lock_guard<std::mutex> lock(removalTaskMutex);
-
-        // Avoid creating multiple idle tasks if there is already one
-        bool hasRemovalTask = !pendingRemovalTextures.empty();
-        for (const auto& info : _localTextureMap) {
-            pendingRemovalTextures.emplace(info.second);
-        }
-
-        if (!hasRemovalTask) {
-            // Note that we do not need locking inside idle task since it will
-            // only be executed serially.
-            MGlobal::executeTaskOnIdle([](void* data) { pendingRemovalTextures.clear(); });
-        }
+        _TransientTexturePreserver::GetInstance().PreserveTextures(_localTextureMap);
     }
 }
 
@@ -3247,7 +3280,7 @@ void HdVP2Material::_MaterialChanged(HdSceneDelegate* sceneDelegate)
 
 void HdVP2Material::OnMayaExit()
 {
-    pendingRemovalTextures.clear();
+    _TransientTexturePreserver::GetInstance().OnMayaExit();
     _globalTextureMap.clear();
     HdVP2RenderDelegate::OnMayaExit();
 }
