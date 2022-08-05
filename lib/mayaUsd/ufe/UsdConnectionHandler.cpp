@@ -180,7 +180,7 @@ bool UsdConnectionHandler::createConnection(
                 PXR_NS::SdrShaderNodeConstPtr srcShaderNodeDef
                     = _GetShaderNodeDef(srcUsdAttr->usdPrim(), srcBaseName);
                 TfToken renderContext
-                    = !srcShaderNodeDef || srcShaderNodeDef->GetSourceType() == "glslfx"
+                    = (!srcShaderNodeDef || srcShaderNodeDef->GetSourceType() == "glslfx")
                     ? UsdShadeTokens->universalRenderContext
                     : srcShaderNodeDef->GetSourceType();
                 if (dstBaseName == UsdShadeTokens->surface) {
