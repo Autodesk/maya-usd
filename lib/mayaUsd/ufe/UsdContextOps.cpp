@@ -148,6 +148,8 @@ static constexpr char kAssignNewUsdPreviewSurfaceMaterialItem[] = "UsdPreviewSur
 static constexpr char kAssignNewUsdPreviewSurfaceMaterialLabel[] = "Usd Preview Surface";
 static constexpr char kAssignNewAIStandardSurfaceMaterialItem[] = "arnold:standard_surface";
 static constexpr char kAssignNewAIStandardSurfaceMaterialLabel[] = "AI Standard Surface";
+static constexpr char kShowInLookdevXItem[] = "Show in LookdevX";
+static constexpr char kShowInLookdevXLabel[] = "Show in LookdevX";
 #endif
 #endif
 
@@ -820,6 +822,12 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
             // still mark it as disabled if nothing is selected or if the selection does not contain
             // imageable primitives.
             items.back().enabled = enable;
+
+#if UFE_PREVIEW_VERSION_NUM >= 4010
+            items.emplace_back(kShowInLookdevXItem, kShowInLookdevXLabel);
+            items.back().enabled = enable;
+#endif
+
             items.emplace_back(Ufe::ContextItem::kSeparator);
         }
 #endif
@@ -1241,14 +1249,18 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         return compositeCmd;
     } else if (itemPath[0] == UnbindMaterialUndoableCommand::commandName) {
         return std::make_shared<UnbindMaterialUndoableCommand>(fItem->prim());
+    }
 #if UFE_PREVIEW_VERSION_NUM >= 4010
-    } else if (itemPath.size() == 3u && itemPath[0] == kAssignNewMaterialItem) {
+    else if (itemPath.size() == 3u && itemPath[0] == kAssignNewMaterialItem) {
         if (fItem) {
             return std::make_shared<InsertChildAndSelectCommand>(
                 UsdUndoAssignNewMaterialCommand::create(fItem, itemPath[2]));
         }
-#endif
+    } else if (itemPath[0] == kShowInLookdevXItem) {
+        MGlobal::executeCommand("lookdevXGraph -gsn", false, false);
     }
+#endif
+    
 #endif
     return nullptr;
 }
