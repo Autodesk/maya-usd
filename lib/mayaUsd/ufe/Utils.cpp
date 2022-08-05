@@ -194,7 +194,8 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
         return UsdPrim();
     }
     auto stage = getStage(Ufe::Path(segments[0]));
-    if (!TF_VERIFY(stage, kIllegalUFEPath, path.string().c_str())) {
+    if (!stage) {
+        TF_WARN(kIllegalUFEPath, path.string().c_str());
         return UsdPrim();
     }
 
