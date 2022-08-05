@@ -128,6 +128,14 @@ protected:
             }
         }
 
+#if MX_COMBINED_VERSION >= 13805
+        // MaterialX has a new implementation of transmission as refraction in version 1.38.5, but
+        // does not work out of the box in Maya (probably because we only output a color).
+        // We will deactivate until we have time to upgrade the MaterialX output to a Maya surface
+        // struct where we can expose transmission values.
+        genOptions.hwTransmissionRenderMethod = mx::TRANSMISSION_OPACITY;
+#endif
+
         // Set to use no direct lighting
         if (mx::OgsXmlGenerator::useLightAPI() >= 2) {
             genOptions.hwMaxActiveLightSources = 0;
