@@ -148,6 +148,20 @@ SdfLayerHandle getStrongerLayer(
     return SdfLayerHandle();
 }
 
+bool allowedInStrongerLayer(const UsdPrim& prim, const SdfPrimSpecHandleVector& primStack, bool allowStronger)
+{
+    // If the flag to allow edits in a stronger layer if off, then it is not allowed.
+    if (!allowStronger)
+        return false;
+
+    // If allowed, verify if the target layer is stronger than any existing layer with an opinion.
+    auto stage = prim.GetStage();
+    auto rootLayer = stage->GetRootLayer();
+    auto targetLayer = stage->GetEditTarget().GetLayer();
+    auto topLayer = primStack.front()->GetLayer();
+    return getStrongerLayer(rootLayer, targetLayer, topLayer) == targetLayer;
+}
+
 } // namespace
 void applyCommandRestriction(
     const UsdPrim&     prim,
@@ -207,6 +221,8 @@ void applyCommandRestriction(
     UsdPrimCompositionQuery query(prim);
     for (const auto& compQueryArc : query.GetCompositionArcs()) {
         if (!primSpec && PcpArcTypeVariant == compQueryArc.GetArcType()) {
+            if (allowedInStrongerLayer(prim, primStack, allowStronger))
+                return;
             std::string err = TfStringPrintf(
                 "Cannot %s [%s] because it is defined inside the variant composition arc %s.",
                 commandName.c_str(),
@@ -217,15 +233,8 @@ void applyCommandRestriction(
     }
 
     if (!layerDisplayName.empty()) {
-        if (allowStronger) {
-            auto stage = prim.GetStage();
-            auto rootLayer = stage->GetRootLayer();
-            auto targetLayer = stage->GetEditTarget().GetLayer();
-            auto topLayer = primStack.front()->GetLayer();
-            if (getStrongerLayer(rootLayer, targetLayer, topLayer) == targetLayer) {
-                return;
-            }
-        }
+        if (allowedInStrongerLayer(prim, primStack, allowStronger))
+            return;
         std::string err = TfStringPrintf(
             "Cannot %s [%s]. %s. Please set %s as the target layer to proceed.",
             commandName.c_str(),
