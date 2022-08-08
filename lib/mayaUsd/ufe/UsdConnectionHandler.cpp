@@ -186,8 +186,37 @@ bool UsdConnectionHandler::deleteConnection(
         return false;
     }
 
-    return UsdShadeConnectableAPI::DisconnectSource(
+    bool retVal = UsdShadeConnectableAPI::DisconnectSource(
         dstUsdAttr->usdAttribute(), srcUsdAttr->usdAttribute());
+
+    // We need to make sure we cleanup on disconnection. Since having an empty connection array
+    // counts as having connections, we need to get the array and see if it is empty.
+    PXR_NS::SdfPathVector connectedAttrs;
+    dstUsdAttr->usdAttribute().GetConnections(&connectedAttrs);
+    if (connectedAttrs.empty()) {
+        // Remove empty connection array
+        UsdShadeConnectableAPI::ClearSources(dstUsdAttr->usdAttribute());
+
+        // Remove attribute if it does not have a value, default value, or time samples. We do this
+        // on Shader nodes and on the Material outputs since they are re-created automatically.
+        // Other NodeGraph inputs and outputs require explicit removal.
+        if (!dstUsdAttr->usdAttribute().HasValue()) {
+            UsdShadeShader asShader(dstUsdAttr->usdPrim());
+            if (asShader) {
+                dstUsdAttr->usdPrim().RemoveProperty(dstUsdAttr->usdAttribute().GetName());
+            }
+            UsdShadeMaterial asMaterial(dstUsdAttr->usdPrim());
+            if (asMaterial) {
+                const TfToken baseName = dstUsdAttr->usdAttribute().GetBaseName();
+                if (baseName == UsdShadeTokens->surface || baseName == UsdShadeTokens->volume
+                    || baseName == UsdShadeTokens->displacement) {
+                    dstUsdAttr->usdPrim().RemoveProperty(dstUsdAttr->usdAttribute().GetName());
+                }
+            }
+        }
+    }
+
+    return retVal;
 }
 
 } // namespace ufe
