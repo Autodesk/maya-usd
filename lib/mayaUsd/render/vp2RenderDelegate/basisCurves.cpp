@@ -419,9 +419,7 @@ void HdVP2BasisCurves::Sync(
     HdDirtyBits*     dirtyBits,
     TfToken const&   reprToken)
 {
-    const SdfPath& id = GetId();
-    HdRenderIndex& renderIndex = delegate->GetRenderIndex();
-    if (!_SyncCommon(dirtyBits, id, _GetRepr(reprToken), renderIndex)) {
+    if (!_SyncCommon(*this, delegate, renderParam, dirtyBits, _GetRepr(reprToken), reprToken)) {
         return;
     }
 
@@ -431,6 +429,7 @@ void HdVP2BasisCurves::Sync(
         _rprimId.asChar(),
         "HdVP2BasisCurves::Sync");
 
+    HdRenderIndex& renderIndex = delegate->GetRenderIndex();
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         const SdfPath materialId = _GetUpdatedMaterialId(this, delegate);
 #if HD_API_VERSION < 37
@@ -445,6 +444,7 @@ void HdVP2BasisCurves::Sync(
     _UpdateInstancer(delegate, dirtyBits);
 #endif
 
+    const SdfPath& id = GetId();
     if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals)
         || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->primvar)) {
         const HdVP2Material* material = static_cast<const HdVP2Material*>(
@@ -565,7 +565,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
     // The bounding box item uses a globally-shared geometry data therefore it
     // doesn't need to extract index data from topology. Points use non-indexed
     // draw.
-    const bool isBoundingBoxItem = (drawMode == MHWRender::MGeometry::kBoundingBox);
+    const bool isBoundingBoxItem = (drawMode & MHWRender::MGeometry::kBoundingBox) != 0;
     const bool isHighlightItem = drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight);
     const bool inTemplateMode = _displayType == MayaUsdRPrim::kTemplate;
     const bool inReferenceMode = _displayType == MayaUsdRPrim::kReference;
@@ -1286,7 +1286,7 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
     if (ARCH_UNLIKELY(!subSceneContainer))
         return;
 
-    HdReprSharedPtr repr = _AddNewRepr(reprToken, _reprs, dirtyBits, GetId());
+    HdReprSharedPtr repr = _InitReprCommon(*this, reprToken, _reprs, dirtyBits, GetId());
     if (!repr)
         return;
 
@@ -1368,12 +1368,7 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
         }
 
         if (renderItem) {
-            // Store the render item pointer to avoid expensive lookup in the
-            // subscene container.
-            drawItem->SetRenderItem(renderItem);
-
-            _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-                [subSceneContainer, renderItem]() { subSceneContainer->add(renderItem); });
+            _AddRenderItem(*drawItem, renderItem, *subSceneContainer);
         }
 #if HD_API_VERSION < 35
         repr->AddDrawItem(drawItem);

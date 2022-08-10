@@ -191,7 +191,7 @@ public:
 #endif
 
     MAYAUSD_CORE_PUBLIC
-    const MColor& GetWireframeColor() const;
+    MColor GetWireframeColor();
 
     MAYAUSD_CORE_PUBLIC
     GfVec3f GetDefaultColor(const TfToken& className);
@@ -350,7 +350,6 @@ private:
         false
     }; //!< Whether point snapping should snap to selected objects
 #endif
-    MColor _wireframeColor; //!< Wireframe color assigned to the proxy shape
 
     std::mutex _mayaCommandEngineMutex;
     uint64_t   _frameCounter { 0 };
@@ -358,6 +357,7 @@ private:
     // The name of the currently used color space
     MString _colorTransformId;
 
+    MColorCache  _wireframeColorCache { MColor(), 0 };
     MColorCache  _activeMeshColorCache { MColor(), 0 };
     MColorCache  _activeCurveColorCache { MColor(), 0 };
     MColorCache  _activePointsColorCache { MColor(), 0 };

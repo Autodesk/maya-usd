@@ -818,7 +818,7 @@ void ProxyRenderDelegate::_DirtyUsdSubtree(const UsdPrim& prim)
         return;
 
     HdChangeTracker&      changeTracker = _renderIndex->GetChangeTracker();
-    constexpr HdDirtyBits dirtyBits = HdChangeTracker::DirtyVisibility
+    constexpr HdDirtyBits dirtyBits = HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyRepr
         | HdChangeTracker::DirtyDisplayStyle | MayaUsdRPrim::DirtySelectionHighlight;
 
     if (prim.IsA<UsdGeomGprim>()) {
@@ -913,13 +913,6 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 #endif // defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
 
     const unsigned int currentDisplayStyle = frameContext.getDisplayStyle();
-
-    // Query the wireframe color assigned to proxy shape.
-    if (currentDisplayStyle
-        & (MHWRender::MFrameContext::kBoundingBox | MHWRender::MFrameContext::kWireFrame)) {
-        _wireframeColor
-            = MHWRender::MGeometryUtilities::wireframeColor(_proxyShapeData->ProxyDagPath());
-    }
 #ifdef MAYA_HAS_DISPLAY_STYLE_ALL_VIEWPORTS
     const unsigned int displayStyle = frameContext.getDisplayStyleOfAllViewports();
 #else
@@ -1718,7 +1711,11 @@ HdVP2SelectionStatus ProxyRenderDelegate::GetSelectionStatus(const SdfPath& path
 }
 
 //! \brief  Query the wireframe color assigned to the proxy shape.
-const MColor& ProxyRenderDelegate::GetWireframeColor() const { return _wireframeColor; }
+MColor ProxyRenderDelegate::GetWireframeColor()
+{ 
+    static const MColor defaultColor(0.f, 0.f, 0.f);
+    return _GetDisplayColor(_wireframeColorCache, "polymeshDormant", false, defaultColor);
+}
 
 GfVec3f ProxyRenderDelegate::GetDefaultColor(const TfToken& className)
 {

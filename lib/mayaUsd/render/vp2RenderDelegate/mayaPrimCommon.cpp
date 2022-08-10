@@ -19,6 +19,7 @@
 #include "bboxGeom.h"
 #include "material.h"
 #include "render_delegate.h"
+#include "tokens.h"
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
 #include <mayaUsd/ufe/Utils.h>
@@ -50,6 +51,7 @@ const MString MayaUsdRPrim::kSolidColorStr("solidColor");
 
 namespace {
 
+std::mutex sUfePathsMutex;
 MayaUsdCustomData sMayaUsdCustomData;
 
 } // namespace
@@ -250,7 +252,8 @@ void MayaUsdRPrim::_SetDirtyRepr(const HdReprSharedPtr& repr)
     }
 }
 
-HdReprSharedPtr MayaUsdRPrim::_AddNewRepr(
+HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
+    HdRprim&       refThis,
     TfToken const& reprToken,
     ReprVector&    reprs,
     HdDirtyBits*   dirtyBits,
@@ -260,12 +263,68 @@ HdReprSharedPtr MayaUsdRPrim::_AddNewRepr(
         _FirstInitRepr(dirtyBits, id);
     }
 
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+    // Check if the prim is in bbox mode
+    bool asBoundBox = false;
+
+    // Display layer features are currently implemented only for non-instanced geometry
+    if (refThis.GetInstancerId().IsEmpty()) {
+        MFnDisplayLayerManager displayLayerManager(
+            MFnDisplayLayerManager::currentDisplayLayerManager());
+        MStatus     status;
+        MString     pathString = drawScene.GetProxyShapeDagPath().fullPathName()
+            + Ufe::PathString::pathSegmentSeparator().c_str() + _PrimSegmentString[0];
+        
+        MObjectArray ancestorDisplayLayers;
+        {
+            std::lock_guard<std::mutex> mutexGuard(sUfePathsMutex);
+            ancestorDisplayLayers = displayLayerManager.getAncestorLayersInclusive(pathString, &status);
+        }
+
+        for (unsigned int i = 0; i < ancestorDisplayLayers.length(); i++) {
+            MFnDependencyNode displayLayerNodeFn(ancestorDisplayLayers[i]);
+            MPlug levelOfDetail = displayLayerNodeFn.findPlug("levelOfDetail");
+            asBoundBox = asBoundBox || (levelOfDetail.asShort() != 0);
+        }
+    }
+
+    if (_asBoundBox != asBoundBox) {
+        // In bbox mode, disable all representations except the bounding box representation, 
+        // which now will be visible in all the draw modes
+        RenderItemFunc updateItemsForBBoxMode
+            = [this, asBoundBox](HdVP2DrawItem::RenderItemData& renderItemData) {
+                if (renderItemData._renderItem->drawMode() & MHWRender::MGeometry::kBoundingBox) {
+                    renderItemData._renderItem->setDrawMode(asBoundBox ? MHWRender::MGeometry::kAll : MHWRender::MGeometry::kBoundingBox);
+                } else if (asBoundBox) {
+                    renderItemData._enabled = false;
+                    _delegate->GetVP2ResourceRegistry().EnqueueCommit([&renderItemData]() { renderItemData._renderItem->enable(false); });
+                }
+            };
+
+        _asBoundBox = asBoundBox;
+        _ForEachRenderItem(reprs, updateItemsForBBoxMode);
+    }
+#endif    
+
     ReprVector::const_iterator it
         = std::find_if(reprs.begin(), reprs.end(), [reprToken](ReprVector::const_reference e) {
               return reprToken == e.first;
           });
-    if (it != reprs.end()) {
-        _SetDirtyRepr(it->second);
+    HdReprSharedPtr curRepr = (it != reprs.end() ? it->second : nullptr);
+
+    // In bbox mode call InitRepr for bbox representation.
+    if (_asBoundBox && reprToken != HdVP2ReprTokens->bbox) {
+        refThis.InitRepr(drawScene.GetUsdImagingDelegate(), HdVP2ReprTokens->bbox, dirtyBits);
+        if (curRepr) {
+            return nullptr; // if the overriden repr is already created, we can safely exit here
+        }
+    }
+
+    if (curRepr) {
+        _SetDirtyRepr(curRepr);
         return nullptr;
     }
 
@@ -325,7 +384,11 @@ void MayaUsdRPrim::_InitRenderItemCommon(MHWRender::MRenderItem* renderItem) con
 #ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
+    
+    // setUfeIdentifiers is not thread-safe, so enqueue the call here for later processing
+    _delegate->GetVP2ResourceRegistry().EnqueueCommit([this, &drawScene, renderItem]() { 
+        drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
+    });
 #endif
 
     _SetWantConsolidation(*renderItem, true);
@@ -333,6 +396,28 @@ void MayaUsdRPrim::_InitRenderItemCommon(MHWRender::MRenderItem* renderItem) con
 #ifdef MAYA_HAS_RENDER_ITEM_HIDE_ON_PLAYBACK_API
     renderItem->setHideOnPlayback(_hideOnPlayback);
 #endif
+}
+
+HdVP2DrawItem::RenderItemData&
+MayaUsdRPrim::_AddRenderItem(HdVP2DrawItem& drawItem, MHWRender::MRenderItem* renderItem, MSubSceneContainer& subSceneContainer, const HdGeomSubset* geomSubset) const
+{
+    _delegate->GetVP2ResourceRegistry().EnqueueCommit(
+            [&subSceneContainer, renderItem]() { subSceneContainer.add(renderItem); });
+
+    auto& renderItemData = drawItem.AddRenderItem(renderItem, geomSubset);
+
+    // Items drawn as bound box require a special setup
+    if (_asBoundBox) {
+        if (renderItem->drawMode() & MHWRender::MGeometry::kBoundingBox) {
+            renderItem->setDrawMode(MHWRender::MGeometry::kAll);
+        } 
+        else {
+            renderItemData._enabled = false;
+            _delegate->GetVP2ResourceRegistry().EnqueueCommit([renderItem]() { renderItem->enable(false); });
+        }
+    }
+
+    return renderItemData;
 }
 
 /*! \brief  Create render item for bbox repr.
@@ -584,7 +669,7 @@ void MayaUsdRPrim::_SyncSharedData(
         if (!usdVisibility)
             _MakeOtherReprRenderItemsInvisible(reprToken, reprs);
 
-        bool displayLayerVisibility = true; // objects in the default display layer are visible
+        _displayLayerVisibility = true;
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
         bool hideOnPlayback = false;
         _displayType = kNormal;
@@ -606,16 +691,20 @@ void MayaUsdRPrim::_SyncSharedData(
             MDagPath             proxyDagPath = drawScene.GetProxyShapeDagPath();
             MString              pathString = proxyDagPath.fullPathName()
                 + Ufe::PathString::pathSegmentSeparator().c_str() + _PrimSegmentString[0];
-            MObjectArray ancestorDisplayLayers
-                = displayLayerManager.getAncestorLayersInclusive(pathString, &status);
-            for (unsigned int i = 0; i < ancestorDisplayLayers.length() && displayLayerVisibility;
-                 i++) {
+            
+            MObjectArray ancestorDisplayLayers;
+            {
+                std::lock_guard<std::mutex> mutexGuard(sUfePathsMutex);
+                ancestorDisplayLayers = displayLayerManager.getAncestorLayersInclusive(pathString, &status);
+            }
+            
+            for (unsigned int i = 0; i < ancestorDisplayLayers.length(); i++) {
                 MFnDependencyNode displayLayerNodeFn(ancestorDisplayLayers[i]);
                 MPlug             layerEnabled = displayLayerNodeFn.findPlug("enabled");
                 MPlug             layerVisible = displayLayerNodeFn.findPlug("visibility");
                 MPlug layerHidesOnPlayback = displayLayerNodeFn.findPlug("hideOnPlayback");
                 MPlug layerDisplayType = displayLayerNodeFn.findPlug("displayType");
-                displayLayerVisibility &= layerEnabled.asBool() ? layerVisible.asBool() : true;
+                _displayLayerVisibility &= layerEnabled.asBool() ? layerVisible.asBool() : true;
                 hideOnPlayback |= layerHidesOnPlayback.asBool();
                 if (_displayType == kNormal) {
                     _displayType = (DisplayType)layerDisplayType.asShort();
@@ -636,7 +725,7 @@ void MayaUsdRPrim::_SyncSharedData(
             _hideOnPlayback = hideOnPlayback;
         }
 #endif
-        sharedData.visible = usdVisibility && displayLayerVisibility;
+        sharedData.visible = usdVisibility && _displayLayerVisibility;
     }
 
 #if PXR_VERSION > 2111
@@ -657,11 +746,20 @@ void MayaUsdRPrim::_SyncSharedData(
 }
 
 bool MayaUsdRPrim::_SyncCommon(
-    HdDirtyBits*           dirtyBits,
-    const SdfPath&         id,
-    HdReprSharedPtr const& curRepr,
-    HdRenderIndex&         renderIndex)
+        HdRprim&         refThis,
+        HdSceneDelegate* delegate,
+        HdRenderParam*   renderParam,
+        HdDirtyBits*     dirtyBits,
+        HdReprSharedPtr const& curRepr,
+        TfToken const& reprToken)
 {
+    // In bbox mode call Sync for bbox representation instead.
+    if (_asBoundBox && reprToken != HdVP2ReprTokens->bbox) {
+        refThis.Sync(delegate, renderParam, dirtyBits, HdVP2ReprTokens->bbox);
+        return false;
+    }
+
+    const SdfPath&       id = refThis.GetId();
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
 
@@ -675,6 +773,7 @@ bool MayaUsdRPrim::_SyncCommon(
     // We don't update the repr if it is hidden by the render tags (purpose)
     // of the ProxyRenderDelegate. In additional, we need to hide any already
     // existing render items because they should not be drawn.
+    HdRenderIndex& renderIndex = delegate->GetRenderIndex();
     if (!drawScene.DrawRenderTag(renderIndex.GetRenderTag(id))) {
         _HideAllDrawItems(curRepr);
         *dirtyBits &= ~(

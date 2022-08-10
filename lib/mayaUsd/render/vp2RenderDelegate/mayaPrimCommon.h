@@ -191,17 +191,20 @@ protected:
 
     void _SetDirtyRepr(const HdReprSharedPtr& repr);
 
-    HdReprSharedPtr _AddNewRepr(
+    HdReprSharedPtr _InitReprCommon(
+        HdRprim&       refThis,
         TfToken const& reprToken,
         ReprVector&    reprs,
         HdDirtyBits*   dirtyBits,
         SdfPath const& id);
 
     bool _SyncCommon(
-        HdDirtyBits*           dirtyBits,
-        const SdfPath&         id,
+        HdRprim&         refThis,
+        HdSceneDelegate* delegate,
+        HdRenderParam*   renderParam,
+        HdDirtyBits*     dirtyBits,
         HdReprSharedPtr const& curRepr,
-        HdRenderIndex&         renderIndex);
+        TfToken const& reprToken);
 
     void _SyncSharedData(
         HdRprimSharedData& sharedData,
@@ -237,6 +240,9 @@ protected:
 
     void _InitRenderItemCommon(MHWRender::MRenderItem* renderItem) const;
 
+    HdVP2DrawItem::RenderItemData&
+    _AddRenderItem(HdVP2DrawItem& drawItem, MHWRender::MRenderItem* renderItem, MSubSceneContainer& subSceneContainer, const HdGeomSubset* geomSubset = nullptr) const;
+
     MHWRender::MRenderItem* _CreateWireframeRenderItem(
         const MString&        name,
         const MColor&         color,
@@ -268,6 +274,12 @@ protected:
 
     //! HideOnPlayback status of the Rprim
     bool _hideOnPlayback { false };
+
+    //! True if the prim has to be displayed as bound box no matter it's actual representation
+    bool _asBoundBox { false };
+
+    //! Display layer visibility of the prim
+    bool _displayLayerVisibility { true };
 
     //! Display type of the Rprim
     DisplayType _displayType { kNormal };
