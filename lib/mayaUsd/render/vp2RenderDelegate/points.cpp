@@ -291,8 +291,8 @@ void HdVP2Points::_UpdateDrawItem(
     // draw.
     const bool isBoundingBoxItem = (drawMode & MHWRender::MGeometry::kBoundingBox) != 0;
     const bool isHighlightItem = drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight);
-    const bool inTemplateMode = _displayType == MayaUsdRPrim::kTemplate;
-    const bool inReferenceMode = _displayType == MayaUsdRPrim::kReference;
+    const bool inTemplateMode = _displayLayerModes._displayType == MayaUsdRPrim::kTemplate;
+    const bool inReferenceMode = _displayLayerModes._displayType == MayaUsdRPrim::kReference;
 
     if (desc.geomStyle == HdPointsGeomStylePoints) {
         // Prepare normals buffer.

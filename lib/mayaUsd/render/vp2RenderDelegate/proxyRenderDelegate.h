@@ -208,6 +208,9 @@ public:
     MColor GetReferenceColor();
 
     MAYAUSD_CORE_PUBLIC
+    uint64_t GetFrameCounter() const { return _frameCounter; }
+
+    MAYAUSD_CORE_PUBLIC
     const HdSelection::PrimSelectionState* GetLeadSelectionState(const SdfPath& path) const;
 
     MAYAUSD_CORE_PUBLIC

@@ -1454,8 +1454,8 @@ void HdVP2Mesh::_UpdateDrawItem(
     const bool isDedicatedHighlightItem
         = drawItem->MatchesUsage(HdVP2DrawItem::kSelectionHighlight);
     const bool isHighlightItem = drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight);
-    const bool inTemplateMode = _displayType == MayaUsdRPrim::kTemplate;
-    const bool inReferenceMode = _displayType == MayaUsdRPrim::kReference;
+    const bool inTemplateMode = _displayLayerModes._displayType == MayaUsdRPrim::kTemplate;
+    const bool inReferenceMode = _displayLayerModes._displayType == MayaUsdRPrim::kReference;
     const bool inPureSelectionHighlightMode = isDedicatedHighlightItem && !inTemplateMode;
 
     // We don't need to update the selection-highlight-only item when there is no selection

@@ -567,8 +567,8 @@ void HdVP2BasisCurves::_UpdateDrawItem(
     // draw.
     const bool isBoundingBoxItem = (drawMode & MHWRender::MGeometry::kBoundingBox) != 0;
     const bool isHighlightItem = drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight);
-    const bool inTemplateMode = _displayType == MayaUsdRPrim::kTemplate;
-    const bool inReferenceMode = _displayType == MayaUsdRPrim::kReference;
+    const bool inTemplateMode = _displayLayerModes._displayType == MayaUsdRPrim::kTemplate;
+    const bool inReferenceMode = _displayLayerModes._displayType == MayaUsdRPrim::kReference;
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     constexpr bool isPointSnappingItem = false;

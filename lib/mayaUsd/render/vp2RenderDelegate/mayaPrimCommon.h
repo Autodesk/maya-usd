@@ -179,6 +179,21 @@ protected:
         kReference = 2
     };
 
+    struct DisplayLayerModes
+    {
+        //! Requested display layer visibility
+        bool _visibility { true };
+
+        //! Requested HideOnPlayback status
+        bool _hideOnPlayback { false };
+
+        //! True if the prim has to be displayed as bound box no matter it's actual representation
+        bool _asBoundBox { false };
+
+        //! Requested display type of the Rprim
+        DisplayType _displayType { kNormal };
+    };
+
     void _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
 
     void _UpdateTransform(
@@ -214,6 +229,8 @@ protected:
         HdRprim const&     refThis,
         ReprVector const&  reprs,
         TfToken const&     renderTag);
+
+    void _SyncDisplayLayerModes(const HdRprim& refThis);
 
     void _UpdatePrimvarSourcesGeneric(
         HdSceneDelegate*       sceneDelegate,
@@ -272,17 +289,15 @@ protected:
     //! Selection status of the Rprim
     HdVP2SelectionStatus _selectionStatus { kUnselected };
 
+    //! Modes requested by display layer along with the frame they are updated on
+    DisplayLayerModes _displayLayerModes;
+    uint64_t _displayLayerModesFrame { 0 };
+
     //! HideOnPlayback status of the Rprim
     bool _hideOnPlayback { false };
 
-    //! True if the prim has to be displayed as bound box no matter it's actual representation
+    //! True if the prim is displayed as bound box no matter it's actual representation
     bool _asBoundBox { false };
-
-    //! Display layer visibility of the prim
-    bool _displayLayerVisibility { true };
-
-    //! Display type of the Rprim
-    DisplayType _displayType { kNormal };
 
     //! The string representation of the runtime only path to this object
     MStringArray _PrimSegmentString;
