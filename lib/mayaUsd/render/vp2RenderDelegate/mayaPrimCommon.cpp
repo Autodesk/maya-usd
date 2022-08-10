@@ -623,9 +623,12 @@ void MayaUsdRPrim::_UpdatePrimvarSourcesGeneric(
     }
 }
 
-void MayaUsdRPrim::_SyncDisplayLayerModes(const HdRprim& refThis)
+void MayaUsdRPrim::_SyncDisplayLayerModes(const HdRprim&
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+                                              refThis
+#endif
+)
 {
-    refThis;
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
