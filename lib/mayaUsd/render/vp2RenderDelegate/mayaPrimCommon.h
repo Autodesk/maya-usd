@@ -214,12 +214,12 @@ protected:
         SdfPath const& id);
 
     bool _SyncCommon(
-        HdRprim&         refThis,
-        HdSceneDelegate* delegate,
-        HdRenderParam*   renderParam,
-        HdDirtyBits*     dirtyBits,
+        HdRprim&               refThis,
+        HdSceneDelegate*       delegate,
+        HdRenderParam*         renderParam,
+        HdDirtyBits*           dirtyBits,
         HdReprSharedPtr const& curRepr,
-        TfToken const& reprToken);
+        TfToken const&         reprToken);
 
     void _SyncSharedData(
         HdRprimSharedData& sharedData,
@@ -257,8 +257,11 @@ protected:
 
     void _InitRenderItemCommon(MHWRender::MRenderItem* renderItem) const;
 
-    HdVP2DrawItem::RenderItemData&
-    _AddRenderItem(HdVP2DrawItem& drawItem, MHWRender::MRenderItem* renderItem, MSubSceneContainer& subSceneContainer, const HdGeomSubset* geomSubset = nullptr) const;
+    HdVP2DrawItem::RenderItemData& _AddRenderItem(
+        HdVP2DrawItem&          drawItem,
+        MHWRender::MRenderItem* renderItem,
+        MSubSceneContainer&     subSceneContainer,
+        const HdGeomSubset*     geomSubset = nullptr) const;
 
     MHWRender::MRenderItem* _CreateWireframeRenderItem(
         const MString&        name,
@@ -291,7 +294,7 @@ protected:
 
     //! Modes requested by display layer along with the frame they are updated on
     DisplayLayerModes _displayLayerModes;
-    uint64_t _displayLayerModesFrame { 0 };
+    uint64_t          _displayLayerModesFrame { 0 };
 
     //! HideOnPlayback status of the Rprim
     bool _hideOnPlayback { false };

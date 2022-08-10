@@ -986,7 +986,7 @@ void HdVP2Points::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBits)
         }
 
         if (renderItem) {
-             _AddRenderItem(*drawItem, renderItem, *subSceneContainer);
+            _AddRenderItem(*drawItem, renderItem, *subSceneContainer);
         }
 #if HD_API_VERSION < 35
         repr->AddDrawItem(drawItem);

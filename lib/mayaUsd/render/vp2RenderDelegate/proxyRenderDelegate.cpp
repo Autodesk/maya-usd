@@ -1712,7 +1712,7 @@ HdVP2SelectionStatus ProxyRenderDelegate::GetSelectionStatus(const SdfPath& path
 
 //! \brief  Query the wireframe color assigned to the proxy shape.
 MColor ProxyRenderDelegate::GetWireframeColor()
-{ 
+{
     static const MColor defaultColor(0.f, 0.f, 0.f);
     return _GetDisplayColor(_wireframeColorCache, "polymeshDormant", false, defaultColor);
 }

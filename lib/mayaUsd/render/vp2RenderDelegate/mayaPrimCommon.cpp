@@ -51,7 +51,7 @@ const MString MayaUsdRPrim::kSolidColorStr("solidColor");
 
 namespace {
 
-std::mutex sUfePathsMutex;
+std::mutex        sUfePathsMutex;
 MayaUsdCustomData sMayaUsdCustomData;
 
 } // namespace
@@ -268,17 +268,19 @@ HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
     if (_asBoundBox != _displayLayerModes._asBoundBox) {
         _asBoundBox = _displayLayerModes._asBoundBox;
 
-        // In bbox mode, disable all representations except the bounding box representation, 
+        // In bbox mode, disable all representations except the bounding box representation,
         // which now will be visible in all the draw modes
-        RenderItemFunc updateItemsForBBoxMode
-            = [this](HdVP2DrawItem::RenderItemData& renderItemData) {
-                if (renderItemData._renderItem->drawMode() & MHWRender::MGeometry::kBoundingBox) {
-                    renderItemData._renderItem->setDrawMode(_asBoundBox ? MHWRender::MGeometry::kAll : MHWRender::MGeometry::kBoundingBox);
-                } else if (_asBoundBox) {
-                    renderItemData._enabled = false;
-                    _delegate->GetVP2ResourceRegistry().EnqueueCommit([&renderItemData]() { renderItemData._renderItem->enable(false); });
-                }
-            };
+        RenderItemFunc updateItemsForBBoxMode = [this](
+                                                    HdVP2DrawItem::RenderItemData& renderItemData) {
+            if (renderItemData._renderItem->drawMode() & MHWRender::MGeometry::kBoundingBox) {
+                renderItemData._renderItem->setDrawMode(
+                    _asBoundBox ? MHWRender::MGeometry::kAll : MHWRender::MGeometry::kBoundingBox);
+            } else if (_asBoundBox) {
+                renderItemData._enabled = false;
+                _delegate->GetVP2ResourceRegistry().EnqueueCommit(
+                    [&renderItemData]() { renderItemData._renderItem->enable(false); });
+            }
+        };
 
         _ForEachRenderItem(reprs, updateItemsForBBoxMode);
     }
@@ -362,9 +364,9 @@ void MayaUsdRPrim::_InitRenderItemCommon(MHWRender::MRenderItem* renderItem) con
 #ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    
+
     // setUfeIdentifiers is not thread-safe, so enqueue the call here for later processing
-    _delegate->GetVP2ResourceRegistry().EnqueueCommit([this, &drawScene, renderItem]() { 
+    _delegate->GetVP2ResourceRegistry().EnqueueCommit([this, &drawScene, renderItem]() {
         drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
     });
 #endif
@@ -376,11 +378,14 @@ void MayaUsdRPrim::_InitRenderItemCommon(MHWRender::MRenderItem* renderItem) con
 #endif
 }
 
-HdVP2DrawItem::RenderItemData&
-MayaUsdRPrim::_AddRenderItem(HdVP2DrawItem& drawItem, MHWRender::MRenderItem* renderItem, MSubSceneContainer& subSceneContainer, const HdGeomSubset* geomSubset) const
+HdVP2DrawItem::RenderItemData& MayaUsdRPrim::_AddRenderItem(
+    HdVP2DrawItem&          drawItem,
+    MHWRender::MRenderItem* renderItem,
+    MSubSceneContainer&     subSceneContainer,
+    const HdGeomSubset*     geomSubset) const
 {
     _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-            [&subSceneContainer, renderItem]() { subSceneContainer.add(renderItem); });
+        [&subSceneContainer, renderItem]() { subSceneContainer.add(renderItem); });
 
     auto& renderItemData = drawItem.AddRenderItem(renderItem, geomSubset);
 
@@ -388,10 +393,10 @@ MayaUsdRPrim::_AddRenderItem(HdVP2DrawItem& drawItem, MHWRender::MRenderItem* re
     if (_asBoundBox) {
         if (renderItem->drawMode() & MHWRender::MGeometry::kBoundingBox) {
             renderItem->setDrawMode(MHWRender::MGeometry::kAll);
-        } 
-        else {
+        } else {
             renderItemData._enabled = false;
-            _delegate->GetVP2ResourceRegistry().EnqueueCommit([renderItem]() { renderItem->enable(false); });
+            _delegate->GetVP2ResourceRegistry().EnqueueCommit(
+                [renderItem]() { renderItem->enable(false); });
         }
     }
 
@@ -622,7 +627,7 @@ void MayaUsdRPrim::_SyncDisplayLayerModes(const HdRprim& refThis)
 {
     refThis;
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
-    auto* const param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
 
     // First check if the status need updating
@@ -637,24 +642,27 @@ void MayaUsdRPrim::_SyncDisplayLayerModes(const HdRprim& refThis)
     if (refThis.GetInstancerId().IsEmpty()) {
         MFnDisplayLayerManager displayLayerManager(
             MFnDisplayLayerManager::currentDisplayLayerManager());
-        MStatus     status;
-        MString     pathString = drawScene.GetProxyShapeDagPath().fullPathName()
+        MStatus status;
+        MString pathString = drawScene.GetProxyShapeDagPath().fullPathName()
             + Ufe::PathString::pathSegmentSeparator().c_str() + _PrimSegmentString[0];
-        
+
         MObjectArray ancestorDisplayLayers;
         {
+            // Function getAncestorLayersInclusive is not multithreadable because of the
+            // use of Ufe::Path inside, so we use a mutex here
             std::lock_guard<std::mutex> mutexGuard(sUfePathsMutex);
-            ancestorDisplayLayers = displayLayerManager.getAncestorLayersInclusive(pathString, &status);
+            ancestorDisplayLayers
+                = displayLayerManager.getAncestorLayersInclusive(pathString, &status);
         }
 
         for (unsigned int i = 0; i < ancestorDisplayLayers.length(); i++) {
             MFnDependencyNode displayLayerNodeFn(ancestorDisplayLayers[i]);
             MPlug             layerEnabled = displayLayerNodeFn.findPlug("enabled");
             MPlug             layerVisible = displayLayerNodeFn.findPlug("visibility");
-            MPlug layerHidesOnPlayback = displayLayerNodeFn.findPlug("hideOnPlayback");
-            MPlug layerDisplayType = displayLayerNodeFn.findPlug("displayType");
-            MPlug levelOfDetail = displayLayerNodeFn.findPlug("levelOfDetail");
-            
+            MPlug             layerHidesOnPlayback = displayLayerNodeFn.findPlug("hideOnPlayback");
+            MPlug             layerDisplayType = displayLayerNodeFn.findPlug("displayType");
+            MPlug             levelOfDetail = displayLayerNodeFn.findPlug("levelOfDetail");
+
             _displayLayerModes._visibility &= layerEnabled.asBool() ? layerVisible.asBool() : true;
             _displayLayerModes._hideOnPlayback |= layerHidesOnPlayback.asBool();
             _displayLayerModes._asBoundBox |= (levelOfDetail.asShort() != 0);
@@ -663,7 +671,7 @@ void MayaUsdRPrim::_SyncDisplayLayerModes(const HdRprim& refThis)
             }
         }
     }
-#endif 
+#endif
 }
 
 void MayaUsdRPrim::_SyncSharedData(
@@ -731,12 +739,12 @@ void MayaUsdRPrim::_SyncSharedData(
 }
 
 bool MayaUsdRPrim::_SyncCommon(
-        HdRprim&         refThis,
-        HdSceneDelegate* delegate,
-        HdRenderParam*   renderParam,
-        HdDirtyBits*     dirtyBits,
-        HdReprSharedPtr const& curRepr,
-        TfToken const& reprToken)
+    HdRprim&               refThis,
+    HdSceneDelegate*       delegate,
+    HdRenderParam*         renderParam,
+    HdDirtyBits*           dirtyBits,
+    HdReprSharedPtr const& curRepr,
+    TfToken const&         reprToken)
 {
     // In bbox mode call Sync for bbox representation instead.
     if (_asBoundBox && reprToken != HdVP2ReprTokens->bbox) {
@@ -780,7 +788,9 @@ MColor MayaUsdRPrim::_GetHighlightColor(const TfToken& className)
 
     if (_displayLayerModes._displayType == MayaUsdRPrim::kTemplate) {
         return drawScene.GetTemplateColor(_selectionStatus != kUnselected);
-    } else if (_displayLayerModes._displayType == MayaUsdRPrim::kReference && _selectionStatus == kUnselected) {
+    } else if (
+        _displayLayerModes._displayType == MayaUsdRPrim::kReference
+        && _selectionStatus == kUnselected) {
         return drawScene.GetReferenceColor();
     } else {
         return (
