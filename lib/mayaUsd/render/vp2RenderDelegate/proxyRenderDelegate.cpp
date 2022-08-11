@@ -912,11 +912,10 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 #endif
 #endif // defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
 
-    const unsigned int currentDisplayStyle = frameContext.getDisplayStyle();
 #ifdef MAYA_HAS_DISPLAY_STYLE_ALL_VIEWPORTS
     const unsigned int displayStyle = frameContext.getDisplayStyleOfAllViewports();
 #else
-    const unsigned int displayStyle = currentDisplayStyle;
+    const unsigned int displayStyle = frameContext.getDisplayStyle();
 #endif
 
     // Work around USD issue #1516. There is a significant performance overhead caused by populating
