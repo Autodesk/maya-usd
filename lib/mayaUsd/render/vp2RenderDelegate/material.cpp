@@ -654,6 +654,9 @@ void _AddMissingTangents(mx::DocumentPtr& mtlxDoc)
             material = surfaceInput->getConnectedNode();
         }
         mx::NodeDefPtr nodeDef = material->getNodeDef();
+        if (!nodeDef) {
+            continue;
+        }
         for (mx::InputPtr input : nodeDef->getActiveInputs()) {
             if (input->hasDefaultGeomPropString()) {
                 const std::string& geomPropString = input->getDefaultGeomPropString();
