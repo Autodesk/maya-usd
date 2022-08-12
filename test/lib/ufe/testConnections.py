@@ -653,6 +653,40 @@ class ConnectionTestCase(unittest.TestCase):
         #       were before connecting, which might require deleting authored attributes.
         #       The undo must also be aware that the connection on the material got redirected.
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test only available in UFE preview version 0.4.24 and greater')
+    def testCreateNodeGraphAttributes(self):
+        '''Test create attributes on compound boundaries.'''
+        cmds.file(new=True, force=True)
+
+        # Create a proxy shape with empty stage to start with.
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        # Create a ContextOps interface for the proxy shape.
+        proxyPathSegment = mayaUtils.createUfePathSegment(proxyShape)
+        proxyShapePath = ufe.Path([proxyPathSegment])
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+
+        cmd = contextOps.doOp(['Add New Prim', 'Material'])
+        cmd = contextOps.doOp(['Add New Prim', 'NodeGraph'])
+
+        rootHier = ufe.Hierarchy.hierarchy(proxyShapeItem)
+
+        for testItem in rootHier.children():
+            testAttrs = ufe.Attributes.attributes(testItem)
+            testObserver = TestObserver()
+            testAttrs.addObserver(testItem, testObserver)
+            testObserver.assertNotificationCount(self)
+
+            testAttrs.addAttribute("inputs:foo", ufe.Attribute.kFloat)
+            testObserver.assertNotificationCount(self, numAdded = 1)
+            testAttrs.addAttribute("outputs:bar", ufe.Attribute.kFloat4)
+            testObserver.assertNotificationCount(self, numAdded = 2)
+            testAttrs.removeAttribute("inputs:foo")
+            testObserver.assertNotificationCount(self, numAdded = 2, numRemoved = 1)
+            testAttrs.removeAttribute("outputs:bar")
+            testObserver.assertNotificationCount(self, numAdded = 2, numRemoved = 2)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
