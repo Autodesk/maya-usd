@@ -1,0 +1,18 @@
+#usda 1.0
+(
+    defaultPrim = "A_ref"
+    upAxis = "Z"
+)
+
+def Xform "A_ref" (
+    payload = @./A_payload.usda@
+    prepend variantSets = "abVariant"
+)
+{
+    variantSet "abVariant" = {
+        "a" {
+        }
+        "b" {
+        }
+    }
+}

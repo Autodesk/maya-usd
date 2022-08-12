@@ -25,12 +25,14 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 
+#include <maya/MApiNamespace.h>
 #include <maya/MCallbackIdArray.h>
 #include <maya/MDagPath.h>
-#include <maya/MFnDependencyNode.h>
-#include <maya/MObject.h>
+#include <ufe/observer.h>
 #include <ufe/path.h>
 #include <ufe/sceneItem.h>
+#include <ufe/sceneNotification.h>
+#include <ufe/trie.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -78,6 +80,53 @@ public:
     bool hasPulledPrims() const { return _hasPulledPrims; }
 
 private:
+    struct VariantSelection
+    {
+        VariantSelection() = default;
+        VariantSelection(const std::string& vsn, const std::string& vs)
+            : variantSetName(vsn)
+            , variantSelection(vs)
+        {
+        }
+        bool operator==(const VariantSelection& rhs) const
+        {
+            return (variantSetName == rhs.variantSetName)
+                && (variantSelection == rhs.variantSelection);
+        }
+
+        std::string variantSetName;
+        std::string variantSelection;
+    };
+
+    struct VariantSetDescriptor
+    {
+        VariantSetDescriptor() = default;
+        VariantSetDescriptor(const Ufe::Path& p, const std::list<VariantSelection>& vs)
+            : path(p)
+            , variantSelections(vs)
+        {
+        }
+        bool operator==(const VariantSetDescriptor& rhs) const
+        {
+            return (path == rhs.path) && (variantSelections == rhs.variantSelections);
+        }
+
+        Ufe::Path                   path;
+        std::list<VariantSelection> variantSelections;
+    };
+
+    struct PullVariantInfo
+    {
+        PullVariantInfo() = default;
+        PullVariantInfo(const MDagPath& dp, const std::list<VariantSetDescriptor>& vsd)
+            : dagPath(dp)
+            , variantSetDescriptors(vsd)
+        {
+        }
+        MDagPath                        dagPath;
+        std::list<VariantSetDescriptor> variantSetDescriptors;
+    };
+
     PrimUpdaterManager();
 
     PrimUpdaterManager(PrimUpdaterManager&) = delete;
@@ -90,7 +139,8 @@ private:
     void onProxyContentChanged(const MayaUsdProxyStageObjectsChangedNotice& notice);
 
     //! Ensure the Dag pull root exists.  This is the child of the Maya world
-    //! node under which all pulled nodes are created.
+    //! node under which all pulled nodes are created.  Complexity is O(n) for
+    //! n children of the Maya world node.
     MObject findOrCreatePullRoot();
 
     //! Create the pull parent for the pulled hierarchy.  This is the node
@@ -103,7 +153,44 @@ private:
     //! Create the pull parent and set it into the prim updater context.
     MDagPath setupPullParent(const Ufe::Path& pulledPath, VtDictionary& args);
 
+    //! Record pull information for the pulled path, for inspection on
+    //! scene changes.
+    void recordPullVariantInfo(const Ufe::Path& pulledPath, const MDagPath& pullParentPath);
+
+    // Maya file new or open callback.  Member function to access other private
+    // member functions.
+    static void beforeNewOrOpenCallback(void* clientData);
+
+    void beginManagePulledPrims();
+    void endManagePulledPrims();
+
+    // Member function to access private nested classes.
+    static std::list<VariantSetDescriptor> variantSetDescriptors(const Ufe::Path& path);
+
     friend class TfSingleton<PrimUpdaterManager>;
+
+    class OrphanedNodesManager : public Ufe::Observer
+    {
+    public:
+        OrphanedNodesManager(const Ufe::Trie<PullVariantInfo>& pulledPrims);
+
+        void operator()(const Ufe::Notification&) override;
+
+    private:
+        void handleOp(const Ufe::SceneCompositeNotification::Op& op);
+
+        static void recursiveSetVisibility(
+            const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode,
+            bool                                       visibility);
+        static void recursiveSwitch(
+            const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode,
+            const Ufe::Path&                           ufePath);
+
+        static bool
+        setVisibilityPlug(const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode, bool visibility);
+
+        const Ufe::Trie<PullVariantInfo>& _pulledPrims;
+    };
 
     bool _inPushPull { false };
 
@@ -111,6 +198,19 @@ private:
     // The goal is to let code that can be optimized when there is no pull prim
     // to check rapidly.
     bool _hasPulledPrims { false };
+
+    // Trie for fast lookup of descendant pulled prims.  The Trie key is the
+    // UFE pulled path, and the Trie value is the corresponding Dag pull parent
+    // and all ancestor variant set selections.
+    Ufe::Trie<PullVariantInfo> _pulledPrims {};
+
+    // Orphaned nodes manager that observes the scene, to determine when to hide
+    // pulled prims that have become orphaned, or to show them again, because
+    // of structural changes to their USD or Maya ancestors.
+    Ufe::Observer::Ptr _orphanedNodesManager {};
+
+    // Maya scene observation, to stop UFE scene observation.
+    MCallbackIdArray _fileCbs;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

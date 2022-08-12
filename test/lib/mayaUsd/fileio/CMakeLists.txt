@@ -27,6 +27,7 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
         testPrimUpdater.py
         testCacheToUsd.py
         testMayaUsdOptions.py
+        testHideOrphanedNodes.py
     )
 endif()
 
