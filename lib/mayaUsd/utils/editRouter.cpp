@@ -136,6 +136,7 @@ void createCachePrim(
     }
 }
 
+
 void cacheMayaReference(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionary& routingData)
 {
     // FIXME  Need to handle undo / redo.
@@ -264,7 +265,8 @@ EditRouters defaultEditRouters()
     PXR_NAMESPACE_USING_DIRECTIVE
 
     EditRouters   defaultRouters;
-    TfTokenVector defaultOperations = { TfToken("parent"), TfToken("duplicate") };
+    TfTokenVector defaultOperations
+        = { TfToken("parent"), TfToken("duplicate"), TfToken("visibility") };
     for (const auto& o : defaultOperations) {
         defaultRouters[o] = std::make_shared<CxxEditRouter>(editTargetLayer);
     }
@@ -289,6 +291,27 @@ bool restoreDefaultEditRouter(const PXR_NS::TfToken& operation)
     }
     registerEditRouter(operation, found->second);
     return true;
+}
+
+static void setEditTarget(const PXR_NS::UsdPrim& prim, const PXR_NS::UsdEditTarget& editTarget)
+{
+    prim.GetStage()->SetEditTarget(editTarget);
+}
+
+EditTargetGuard::EditTargetGuard(
+    const PXR_NS::UsdPrim&       prim,
+    const PXR_NS::UsdEditTarget& editTarget)
+    : _prim(prim)
+    , _prevEditTarget(_prim.GetStage()->GetEditTarget())
+{
+    // Set editTarget as the edit target
+    setEditTarget(_prim, editTarget);
+}
+
+EditTargetGuard::~EditTargetGuard()
+{
+    // Restore editTarget to the stage's previous edit target
+    setEditTarget(_prim, _prevEditTarget);
 }
 
 EditRouter::Ptr getEditRouter(const PXR_NS::TfToken& operation)
