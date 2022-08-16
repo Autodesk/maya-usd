@@ -244,9 +244,9 @@ void PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
         MString colorRuleCmd;
         colorRuleCmd.format(
             "colorManagementFileRules -evaluate \"^1s\";", fileTextureNamePlug.asString());
-        const MString colorSpaceByRule(MGlobal::executeCommandStringResult(colorRuleCmd));
+
         const MString colorSpace(colorSpacePlug.asString(&status));
-        if (status == MS::kSuccess && colorSpace != colorSpaceByRule) {
+        if (status == MS::kSuccess) {
             fileInput.GetAttr().SetColorSpace(TfToken(colorSpace.asChar()));
         }
 
