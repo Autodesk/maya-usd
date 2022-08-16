@@ -51,7 +51,6 @@ class VisibilityCmdTestCase(unittest.TestCase):
         ''' Called initially to set up the Maya test environment '''
         # Load plugins
         self.assertTrue(self.pluginsLoaded)
-        mayaUtils.openTopLayerScene()
         cmds.select(clear=True)
 
      def testEditRouter(self):

@@ -136,7 +136,6 @@ void createCachePrim(
     }
 }
 
-
 void cacheMayaReference(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionary& routingData)
 {
     // FIXME  Need to handle undo / redo.
