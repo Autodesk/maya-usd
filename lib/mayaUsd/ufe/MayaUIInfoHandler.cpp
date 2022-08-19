@@ -121,9 +121,12 @@ bool MayaUIInfoHandler::treeViewCellInfo(const Ufe::SceneItem::Ptr& mayaItem, Uf
 
 Ufe::UIInfoHandler::Icon MayaUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Ptr& mayaItem) const
 {
-    return isOrphaned(mayaItem)
-        ? Ufe::UIInfoHandler::Icon("", "orphaned_node_badge", Ufe::UIInfoHandler::LowerRight)
-        : Ufe::UIInfoHandler::Icon();
+    Ufe::UIInfoHandler::Icon icon;
+    if (isOrphaned(mayaItem)) {
+        icon = Ufe::UIInfoHandler::Icon("", "orphaned_node_badge", Ufe::UIInfoHandler::LowerRight);
+        icon.mode = UIInfoHandler::Disabled;
+    }
+    return icon;
 }
 
 std::string MayaUIInfoHandler::treeViewTooltip(const Ufe::SceneItem::Ptr& mayaItem) const
