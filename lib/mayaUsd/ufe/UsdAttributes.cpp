@@ -435,11 +435,10 @@ bool UsdAttributes::canRemoveAttribute(const UsdSceneItem::Ptr& item, const std:
                     || baseNameAndType.first == PXR_NS::UsdShadeTokens->volume) {
                     return false;
                 }
-            } else {
-                for (auto&& authoredOutput : connectApi.GetOutputs(true)) {
-                    if (authoredOutput.GetFullName() == name) {
-                        return true;
-                    }
+            }
+            for (auto&& authoredOutput : connectApi.GetOutputs(true)) {
+                if (authoredOutput.GetFullName() == name) {
+                    return true;
                 }
             }
         } else if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input) {
@@ -469,13 +468,13 @@ bool UsdAttributes::doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::
     if (ngPrim && connectApi) {
         auto baseNameAndType = PXR_NS::UsdShadeUtils::GetBaseNameAndType(nameAsToken);
         if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Output) {
-            auto output = connectApi.GetOutput(nameAsToken);
+            auto output = connectApi.GetOutput(baseNameAndType.first);
             if (output) {
                 connectApi.ClearSources(output);
                 return prim.RemoveProperty(nameAsToken);
             }
         } else if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input) {
-            auto input = connectApi.GetInput(nameAsToken);
+            auto input = connectApi.GetInput(baseNameAndType.first);
             if (input) {
                 connectApi.ClearSources(input);
                 return prim.RemoveProperty(nameAsToken);

@@ -65,6 +65,43 @@ bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttrib
     return false;
 }
 
+PXR_NS::SdrShaderNodeConstPtr
+_GetShaderNodeDef(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName)
+{
+    UsdPrim           targetPrim = prim;
+    TfToken           targetName = attrName;
+    UsdShadeNodeGraph ngTarget(targetPrim);
+    while (ngTarget) {
+        // Dig inside, following the connection on targetName until we find a shader.
+        UsdShadeOutput graphOutput = ngTarget.GetOutput(targetName);
+        if (!graphOutput) {
+            // Not a NodeGraph we recognize.
+            return {};
+        }
+        UsdShadeConnectableAPI source;
+        TfToken                sourceOutputName;
+        UsdShadeAttributeType  sourceType;
+        if (UsdShadeConnectableAPI::GetConnectedSource(
+                graphOutput, &source, &sourceOutputName, &sourceType)) {
+            targetPrim = source.GetPrim();
+            ngTarget = UsdShadeNodeGraph(targetPrim);
+            targetName = sourceOutputName;
+        } else {
+            // Could not find a shader source connected to this nodegraph.
+            return {};
+        }
+    }
+
+    UsdShadeShader srcShader(targetPrim);
+    if (!srcShader) {
+        return {};
+    }
+    PXR_NS::SdrRegistry& registry = PXR_NS::SdrRegistry::GetInstance();
+    PXR_NS::TfToken      srcInfoId;
+    srcShader.GetIdAttr().Get(&srcInfoId);
+    return registry.GetShaderNodeByIdentifier(srcInfoId);
+}
+
 } // namespace
 
 UsdConnectionHandler::UsdConnectionHandler()
@@ -140,20 +177,10 @@ bool UsdConnectionHandler::createConnection(
                     || dstBaseName == UsdShadeTokens->displacement)) {
                 // Create the required output based on the type of the shader node we are trying to
                 // connect:
-                UsdShadeShader       srcShader(srcUsdAttr->usdPrim());
-                PXR_NS::SdrRegistry& registry = PXR_NS::SdrRegistry::GetInstance();
-                PXR_NS::TfToken      srcInfoId;
-                srcShader.GetIdAttr().Get(&srcInfoId);
                 PXR_NS::SdrShaderNodeConstPtr srcShaderNodeDef
-                    = registry.GetShaderNodeByIdentifier(srcInfoId);
-                if (!srcShaderNodeDef) {
-                    TF_RUNTIME_ERROR(
-                        "Could not find node definition '%s' for node '%s'.",
-                        srcInfoId.GetText(),
-                        Ufe::PathString::string(srcAttr->sceneItem()->path()).c_str());
-                    return false;
-                }
-                TfToken renderContext = srcShaderNodeDef->GetSourceType() == "glslfx"
+                    = _GetShaderNodeDef(srcUsdAttr->usdPrim(), srcBaseName);
+                TfToken renderContext
+                    = (!srcShaderNodeDef || srcShaderNodeDef->GetSourceType() == "glslfx")
                     ? UsdShadeTokens->universalRenderContext
                     : srcShaderNodeDef->GetSourceType();
                 if (dstBaseName == UsdShadeTokens->surface) {
@@ -186,8 +213,37 @@ bool UsdConnectionHandler::deleteConnection(
         return false;
     }
 
-    return UsdShadeConnectableAPI::DisconnectSource(
+    bool retVal = UsdShadeConnectableAPI::DisconnectSource(
         dstUsdAttr->usdAttribute(), srcUsdAttr->usdAttribute());
+
+    // We need to make sure we cleanup on disconnection. Since having an empty connection array
+    // counts as having connections, we need to get the array and see if it is empty.
+    PXR_NS::SdfPathVector connectedAttrs;
+    dstUsdAttr->usdAttribute().GetConnections(&connectedAttrs);
+    if (connectedAttrs.empty()) {
+        // Remove empty connection array
+        UsdShadeConnectableAPI::ClearSources(dstUsdAttr->usdAttribute());
+
+        // Remove attribute if it does not have a value, default value, or time samples. We do this
+        // on Shader nodes and on the Material outputs since they are re-created automatically.
+        // Other NodeGraph inputs and outputs require explicit removal.
+        if (!dstUsdAttr->usdAttribute().HasValue()) {
+            UsdShadeShader asShader(dstUsdAttr->usdPrim());
+            if (asShader) {
+                dstUsdAttr->usdPrim().RemoveProperty(dstUsdAttr->usdAttribute().GetName());
+            }
+            UsdShadeMaterial asMaterial(dstUsdAttr->usdPrim());
+            if (asMaterial) {
+                const TfToken baseName = dstUsdAttr->usdAttribute().GetBaseName();
+                if (baseName == UsdShadeTokens->surface || baseName == UsdShadeTokens->volume
+                    || baseName == UsdShadeTokens->displacement) {
+                    dstUsdAttr->usdPrim().RemoveProperty(dstUsdAttr->usdAttribute().GetName());
+                }
+            }
+        }
+    }
+
+    return retVal;
 }
 
 } // namespace ufe
