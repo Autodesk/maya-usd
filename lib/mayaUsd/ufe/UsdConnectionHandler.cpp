@@ -65,6 +65,43 @@ bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttrib
     return false;
 }
 
+PXR_NS::SdrShaderNodeConstPtr
+_GetShaderNodeDef(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName)
+{
+    UsdPrim           targetPrim = prim;
+    TfToken           targetName = attrName;
+    UsdShadeNodeGraph ngTarget(targetPrim);
+    while (ngTarget) {
+        // Dig inside, following the connection on targetName until we find a shader.
+        UsdShadeOutput graphOutput = ngTarget.GetOutput(targetName);
+        if (!graphOutput) {
+            // Not a NodeGraph we recognize.
+            return {};
+        }
+        UsdShadeConnectableAPI source;
+        TfToken                sourceOutputName;
+        UsdShadeAttributeType  sourceType;
+        if (UsdShadeConnectableAPI::GetConnectedSource(
+                graphOutput, &source, &sourceOutputName, &sourceType)) {
+            targetPrim = source.GetPrim();
+            ngTarget = UsdShadeNodeGraph(targetPrim);
+            targetName = sourceOutputName;
+        } else {
+            // Could not find a shader source connected to this nodegraph.
+            return {};
+        }
+    }
+
+    UsdShadeShader srcShader(targetPrim);
+    if (!srcShader) {
+        return {};
+    }
+    PXR_NS::SdrRegistry& registry = PXR_NS::SdrRegistry::GetInstance();
+    PXR_NS::TfToken      srcInfoId;
+    srcShader.GetIdAttr().Get(&srcInfoId);
+    return registry.GetShaderNodeByIdentifier(srcInfoId);
+}
+
 } // namespace
 
 UsdConnectionHandler::UsdConnectionHandler()
@@ -140,20 +177,10 @@ bool UsdConnectionHandler::createConnection(
                     || dstBaseName == UsdShadeTokens->displacement)) {
                 // Create the required output based on the type of the shader node we are trying to
                 // connect:
-                UsdShadeShader       srcShader(srcUsdAttr->usdPrim());
-                PXR_NS::SdrRegistry& registry = PXR_NS::SdrRegistry::GetInstance();
-                PXR_NS::TfToken      srcInfoId;
-                srcShader.GetIdAttr().Get(&srcInfoId);
                 PXR_NS::SdrShaderNodeConstPtr srcShaderNodeDef
-                    = registry.GetShaderNodeByIdentifier(srcInfoId);
-                if (!srcShaderNodeDef) {
-                    TF_RUNTIME_ERROR(
-                        "Could not find node definition '%s' for node '%s'.",
-                        srcInfoId.GetText(),
-                        Ufe::PathString::string(srcAttr->sceneItem()->path()).c_str());
-                    return false;
-                }
-                TfToken renderContext = srcShaderNodeDef->GetSourceType() == "glslfx"
+                    = _GetShaderNodeDef(srcUsdAttr->usdPrim(), srcBaseName);
+                TfToken renderContext
+                    = (!srcShaderNodeDef || srcShaderNodeDef->GetSourceType() == "glslfx")
                     ? UsdShadeTokens->universalRenderContext
                     : srcShaderNodeDef->GetSourceType();
                 if (dstBaseName == UsdShadeTokens->surface) {
