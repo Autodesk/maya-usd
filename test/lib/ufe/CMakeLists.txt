@@ -39,6 +39,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         testTransform3dChainOfResponsibility.py
         testTransform3dTranslate.py
         testUIInfoHandler.py
+        testVisibilityCmd.py
         testObservableScene.py
     )
 
