@@ -524,15 +524,19 @@ class ConnectionTestCase(unittest.TestCase):
         self.assertEqual(len(materialPrim.GetAuthoredProperties()), 1)
         self.assertEqual(materialPrim.GetAuthoredProperties()[0].GetName(), "outputs:mtlx:surface")
 
-        materialOutput = materialAttrs.attribute("outputs:mtlx:surface")
-        connectionHandler.disconnect(shaderOutput, materialOutput)
+        materialXOutput = materialAttrs.attribute("outputs:mtlx:surface")
+        connectionHandler.disconnect(shaderOutput, materialXOutput)
+
+        # Cleanup on disconnection should remove the MaterialX surface output.
+        with self.assertRaisesRegex(KeyError, "Attribute 'outputs:mtlx:surface' does not exist") as cm:
+            materialAttrs.attribute("outputs:mtlx:surface")
 
         connections = connectionHandler.sourceConnections(materialItem)
         self.assertIsNotNone(connections)
         conns = connections.allConnections()
         self.assertEqual(len(conns), 0)
 
-        # Not redirected since already on outputs:mtlx:surface:
+        # Still need original outputs:surface since the MaterialX port was cleaned-up:
         connectionHandler.connect(shaderOutput, materialOutput)
 
         connections = connectionHandler.sourceConnections(materialItem)
@@ -631,18 +635,23 @@ class ConnectionTestCase(unittest.TestCase):
         self.assertEqual(materialPrim.GetAuthoredProperties()[0].GetName(), "outputs:mtlx:surface")
         self.assertFalse(materialPrim.GetAuthoredProperties()[0].IsCustom())
 
-        materialOutput = materialAttrs.attribute("outputs:mtlx:surface")
-        connectionHandler.disconnect(shaderOutput, materialOutput)
-        materialObserver.assertNotificationCount(self, numAdded = 1, numConnection = 2)
+        materialXOutput = materialAttrs.attribute("outputs:mtlx:surface")
+        connectionHandler.disconnect(shaderOutput, materialXOutput)
+        # We get one connection changed from the disconnection, a second one for when we cleanup the
+        # connection array, then finally a removed on the MaterialX surface output.
+        self.assertEqual(len(materialPrim.GetAuthoredProperties()), 0)
+        materialObserver.assertNotificationCount(self, numAdded = 1, numConnection = 3, numRemoved = 1)
 
         connections = connectionHandler.sourceConnections(materialItem)
         self.assertIsNotNone(connections)
         conns = connections.allConnections()
         self.assertEqual(len(conns), 0)
 
-        # Not redirected since already on outputs:mtlx:surface:
+        # Since it got removed on disconnection, we need to add it back before reconnecting (or use
+        # the universal output to get redirected)
+        materialOutput = materialAttrs.addAttribute("outputs:mtlx:surface", ufe.Attribute.kString)
         connectionHandler.connect(shaderOutput, materialOutput)
-        materialObserver.assertNotificationCount(self, numAdded = 1, numConnection = 3)
+        materialObserver.assertNotificationCount(self, numAdded = 2, numConnection = 4, numRemoved = 1)
 
         connections = connectionHandler.sourceConnections(materialItem)
         self.assertIsNotNone(connections)
