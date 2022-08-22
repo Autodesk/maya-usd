@@ -349,6 +349,7 @@ bool UsdMayaTranslatorRfMLight::Read(
     return true;
 }
 
+#if PXR_VERSION >= 2209
 static bool _FindBoundShadingEngine(const MDagPath& meshDagPath, MObject* shadingEngineObj)
 {
     MStatus    status;
@@ -418,6 +419,7 @@ static bool _ShouldWriteMeshLightAPI(const UsdMayaApiWriterContext& context)
 
     return true;
 }
+#endif
 
 bool UsdMayaTranslatorRfMLight::CheckAndWriteMeshLightAPI(UsdMayaApiWriterContext* context)
 {
