@@ -72,7 +72,10 @@ class testUsdExportRfMLight(unittest.TestCase):
     def _ValidateUsdLuxLight(self, lightTypeName):
         primPathFormat = '/RfMLightsTest/Lights/%s'
 
-        lightPrimPath = primPathFormat % lightTypeName
+        if lightTypeName == 'MeshLight':
+            lightPrimPath = '/RfMLightsTest/Geom/SphereWithMeshLight'
+        else:
+            lightPrimPath = primPathFormat % lightTypeName
         lightPrim = self._stage.GetPrimAtPath(lightPrimPath)
         self.assertTrue(lightPrim)
 
@@ -90,7 +93,7 @@ class testUsdExportRfMLight(unittest.TestCase):
             self.assertTrue(lightPrim.IsA(UsdLux.DomeLight))
             testNumber = 4
         elif lightTypeName == 'MeshLight':
-            self.assertTrue(lightPrim.IsA(UsdLux.GeometryLight))
+            self.assertTrue(lightPrim.HasAPI(UsdLux.MeshLightAPI))
             testNumber = 5
         elif lightTypeName == 'RectLight':
             self.assertTrue(lightPrim.IsA(UsdLux.RectLight))
@@ -397,7 +400,7 @@ class testUsdExportRfMLight(unittest.TestCase):
         self._ValidateUsdLuxLight('DomeLight')
         self._ValidateUsdLuxDomeLightTextureFile()
 
-    def testExportMeshLight(self):
+    def testExportMeshLightAPI(self):
         self._ValidateUsdLuxLight('MeshLight')
 
     def testExportRectLight(self):

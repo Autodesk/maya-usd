@@ -15,6 +15,8 @@
 //
 #include "primWriter.h"
 
+#include <mayaUsd/fileio/apiWriterContext.h>
+#include <mayaUsd/fileio/apiWriterRegistry.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/translators/translatorGprim.h>
 #include <mayaUsd/fileio/utils/adaptor.h>
@@ -104,6 +106,20 @@ static bool _GetClassNamesToWrite(const MObject& mObj, std::vector<std::string>*
 {
     return UsdMayaWriteUtil::ReadMayaAttribute(
         MFnDependencyNode(mObj), MString(_tokens->USD_inheritClassNames.GetText()), outClassNames);
+}
+
+static void _WriteAPISchemasFromRegistry(UsdMayaApiWriterContext* ctx)
+{
+    for (const auto& idAndFn : UsdMayaApiWriterRegistry::GetAll()) {
+        const std::string&                        writerId = idAndFn.first;
+        const UsdMayaApiWriterRegistry::WriterFn& writerFn = idAndFn.second;
+        if (!writerFn(ctx)) {
+            TF_WARN(
+                "API writer '%s' did not export properly at %s.",
+                writerId.c_str(),
+                ctx->GetUsdPrim().GetPath().GetText());
+        }
+    }
 }
 
 /* virtual */
@@ -201,6 +217,12 @@ void UsdMayaPrimWriter::Write(const UsdTimeCode& usdTime)
         // Write API schema attributes and strongly-typed metadata.
         // We currently only support these at default time.
         UsdMayaWriteUtil::WriteMetadataToPrim(GetMayaObject(), _usdPrim);
+    }
+
+    // Write any applied API schemas via the API writer registry.
+    {
+        UsdMayaApiWriterContext ctx(GetDagPath(), _usdPrim, usdTime);
+        _WriteAPISchemasFromRegistry(&ctx);
     }
 
     UsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(

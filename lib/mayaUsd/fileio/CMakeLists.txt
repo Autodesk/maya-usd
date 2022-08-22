@@ -3,6 +3,8 @@
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
+        apiWriterContext.cpp
+        apiWriterRegistry.cpp
         fallbackPrimReader.cpp
         functorPrimReader.cpp
         functorPrimWriter.cpp
@@ -42,6 +44,8 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
 endif()
 
 set(HEADERS
+    apiWriterContext.h
+    apiWriterRegistry.h
     fallbackPrimReader.h
     functorPrimReader.h
     functorPrimWriter.h

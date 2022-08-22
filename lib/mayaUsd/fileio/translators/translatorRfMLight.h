@@ -17,6 +17,7 @@
 #define PXRUSDMAYA_TRANSLATOR_RFM_LIGHT_H
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/apiWriterContext.h>
 #include <mayaUsd/fileio/primReaderArgs.h>
 #include <mayaUsd/fileio/primReaderContext.h>
 #include <mayaUsd/fileio/primWriterArgs.h>
@@ -40,6 +41,10 @@ struct UsdMayaTranslatorRfMLight
     /// Returns true if this succeeds in creating a RenderMan for Maya light.
     MAYAUSD_CORE_PUBLIC
     static bool Read(const UsdMayaPrimReaderArgs& args, UsdMayaPrimReaderContext& context);
+
+    /// Exports (applies) UsdLuxMeshLightAPI on an exported UsdPrim.
+    MAYAUSD_CORE_PUBLIC
+    static bool CheckAndWriteMeshLightAPI(UsdMayaApiWriterContext* context);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

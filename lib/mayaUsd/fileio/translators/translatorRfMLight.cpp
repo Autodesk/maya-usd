@@ -32,6 +32,7 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdLux/cylinderLight.h>
 #include <pxr/usd/usdLux/diskLight.h>
 #include <pxr/usd/usdLux/distantLight.h>
@@ -41,6 +42,7 @@
 #include <pxr/usd/usdLux/light.h>
 #else
 #include <pxr/usd/usdLux/lightAPI.h>
+#include <pxr/usd/usdLux/meshLightAPI.h>
 #endif
 #include <pxr/usd/usdLux/rectLight.h>
 #include <pxr/usd/usdLux/shadowAPI.h>
@@ -49,6 +51,7 @@
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
+#include <maya/MPlugArray.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
@@ -69,9 +72,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((DistantLightMayaTypeName, "PxrDistantLight"))
     ((DomeLightMayaTypeName, "PxrDomeLight"))
     ((EnvDayLightMayaTypeName, "PxrEnvDayLight"))
-    ((GeometryLightMayaTypeName, "PxrMeshLight"))
+    ((MeshLightMayaTypeName, "PxrMeshLight"))
     ((RectLightMayaTypeName, "PxrRectLight"))
     ((SphereLightMayaTypeName, "PxrSphereLight"))
+
+    (instObjGroups)
+    ((MeshLightPlugName, "rman__torattr___areaLightShader"))
 );
 // clang-format on
 
@@ -141,8 +147,11 @@ static UsdLuxLight _DefineUsdLuxLightForMayaLight(
         lightSchema = UsdLuxDomeLight::Define(stage, authorPath);
     } else if (mayaLightTypeToken == _tokens->EnvDayLightMayaTypeName) {
         lightSchema = UsdLuxLight(stage->DefinePrim(authorPath, _tokens->EnvDayLightMayaTypeName));
-    } else if (mayaLightTypeToken == _tokens->GeometryLightMayaTypeName) {
+#if PXR_VERSION < 2209
+    } else if (mayaLightTypeToken == _tokens->MeshLightMayaTypeName) {
+        // In 22.09, MeshLight is exported as a MeshLightAPI schema
         lightSchema = UsdLuxGeometryLight::Define(stage, authorPath);
+#endif
     } else if (mayaLightTypeToken == _tokens->RectLightMayaTypeName) {
         lightSchema = UsdLuxRectLight::Define(stage, authorPath);
     } else if (mayaLightTypeToken == _tokens->SphereLightMayaTypeName) {
@@ -177,8 +186,11 @@ static UsdLuxLightAPI _DefineUsdLuxLightForMayaLight(
     } else if (mayaLightTypeToken == _tokens->EnvDayLightMayaTypeName) {
         lightSchema
             = UsdLuxLightAPI(stage->DefinePrim(authorPath, _tokens->EnvDayLightMayaTypeName));
-    } else if (mayaLightTypeToken == _tokens->GeometryLightMayaTypeName) {
+#if PXR_VERSION < 2209
+    } else if (mayaLightTypeToken == _tokens->MeshLightMayaTypeName) {
+        // In 22.09, MeshLight is exported as a MeshLightAPI schema
         lightSchema = UsdLuxGeometryLight::Define(stage, authorPath).LightAPI();
+#endif
     } else if (mayaLightTypeToken == _tokens->RectLightMayaTypeName) {
         lightSchema = UsdLuxRectLight::Define(stage, authorPath).LightAPI();
     } else if (mayaLightTypeToken == _tokens->SphereLightMayaTypeName) {
@@ -259,7 +271,7 @@ static TfToken _GetMayaTypeTokenForUsdLuxLight(const UsdLuxLightAPI& lightSchema
     } else if (lightType.IsA(pxrEnvDayLightType)) {
         return _tokens->EnvDayLightMayaTypeName;
     } else if (lightPrim.IsA<UsdLuxGeometryLight>()) {
-        return _tokens->GeometryLightMayaTypeName;
+        return _tokens->MeshLightMayaTypeName;
     } else if (lightPrim.IsA<UsdLuxRectLight>()) {
         return _tokens->RectLightMayaTypeName;
     } else if (lightPrim.IsA<UsdLuxSphereLight>()) {
@@ -335,6 +347,110 @@ bool UsdMayaTranslatorRfMLight::Read(
     }
 
     return true;
+}
+
+static bool _FindBoundShadingEngine(const MDagPath& meshDagPath, MObject* shadingEngineObj)
+{
+    MStatus    status;
+    MFnDagNode dagNode(meshDagPath, &status);
+    if (!status) {
+        return false;
+    }
+
+    MPlug instObjGroups = dagNode.findPlug(_tokens->instObjGroups.GetText(), true);
+    if (instObjGroups.isNull()) {
+        return false;
+    }
+
+    MPlugArray conns;
+    instObjGroups.elementByLogicalIndex(0).connectedTo(conns, false, true);
+    const unsigned int numConnections = conns.length();
+    for (unsigned int i = 0; i < numConnections; ++i) {
+        auto node = conns[i].node();
+        if (node.apiType() == MFn::kShadingEngine) {
+            *shadingEngineObj = node;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool _FindBoundMeshLightObject(const MDagPath& meshDagPath, MObject* meshLightObj)
+{
+    // See if there's a shadingEngine bound.
+    MObject seObj;
+    if (!_FindBoundShadingEngine(meshDagPath, &seObj)) {
+        return false;
+    }
+
+    MStatus                 status;
+    const MFnDependencyNode seDepNodeFn(seObj, &status);
+    if (!status) {
+        return false;
+    }
+
+    // See if it has the special RfM mesh light plug.
+    const MPlug areaLightPlug = seDepNodeFn.findPlug(
+        _tokens->MeshLightPlugName.GetText(),
+        /* wantNetworkedPlug = */ true,
+        &status);
+    if (!status) {
+        return false;
+    }
+
+    MPlug lightMsgPlug = UsdMayaUtil::GetConnected(areaLightPlug);
+    if (!lightMsgPlug) {
+        return false;
+    }
+
+    *meshLightObj = lightMsgPlug.node();
+    return true;
+}
+
+static bool _ShouldWriteMeshLightAPI(const UsdMayaApiWriterContext& context)
+{
+    // For now, we're just checking if the prim is a mesh.
+    UsdPrim prim = context.GetUsdPrim();
+    if (!prim.IsA<UsdGeomMesh>()) {
+        return false;
+    }
+
+    return true;
+}
+
+bool UsdMayaTranslatorRfMLight::CheckAndWriteMeshLightAPI(UsdMayaApiWriterContext* context)
+{
+#if PXR_VERSION < 2209
+    // If we're in an old version of Usd, don't bother trying to do anything
+    // here.
+    TF_CODING_ERROR("MeshLight should not be using CheckAndWriteMeshLightAPI");
+    return false;
+#else
+    if (!_ShouldWriteMeshLightAPI(*context)) {
+        return true;
+    }
+
+    MObject meshLightObj;
+    if (!_FindBoundMeshLightObject(context->GetMDagPath(), &meshLightObj)) {
+        return false;
+    }
+
+    MStatus           status;
+    MFnDependencyNode meshLightDepFn(meshLightObj, &status);
+    if (!status) {
+        return false;
+    }
+
+    // Apply the MeshLightAPI
+    UsdLuxMeshLightAPI meshLightAPI = UsdLuxMeshLightAPI::Apply(context->GetUsdPrim());
+
+    // Import all the attributes
+    UsdMayaTranslatorUtil::WriteShaderAttributesToUsdPrim(
+        meshLightDepFn, _tokens->MeshLightMayaTypeName, meshLightAPI.GetPrim());
+
+    return true;
+#endif
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

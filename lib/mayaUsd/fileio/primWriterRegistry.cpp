@@ -44,6 +44,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 typedef std::map<std::string, UsdMayaPrimWriterRegistry::WriterFactoryFn> _Registry;
 static _Registry                                                          _reg;
+static std::set<std::string> _mayaTypesThatDoNotCreatePrims;
 
 /* static */
 void UsdMayaPrimWriterRegistry::Register(
@@ -99,6 +100,19 @@ UsdMayaPrimWriterRegistry::Find(const std::string& mayaTypeName)
     }
 
     return ret;
+}
+
+/* static */
+void UsdMayaPrimWriterRegistry::RegisterPrimless(const std::string& mayaTypeName)
+{
+    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaPrimWriterRegistry>();
+    _mayaTypesThatDoNotCreatePrims.insert(mayaTypeName);
+}
+
+/* static */
+bool UsdMayaPrimWriterRegistry::IsPrimless(const std::string& mayaTypeName)
+{
+    return _mayaTypesThatDoNotCreatePrims.count(mayaTypeName) == 0;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

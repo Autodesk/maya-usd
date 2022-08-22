@@ -15,6 +15,7 @@
 //
 #include "writeJobContext.h"
 
+#include <mayaUsd/fileio/apiWriterRegistry.h>
 #include <mayaUsd/fileio/instancedNodeWriter.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/primWriter.h>
@@ -91,6 +92,25 @@ UsdMayaWriteJobContext::UsdMayaWriteJobContext(const UsdMayaJobExportArgs& args)
 }
 
 UsdMayaWriteJobContext::~UsdMayaWriteJobContext() = default;
+
+static bool _ShouldCreatePrim(const MDagPath& dagPath, bool isMerged)
+{
+    MDagPath shapeDagPath = dagPath;
+    if (isMerged) {
+        // if we're merging transforms, then we need to look at the shape.
+        shapeDagPath.extendToShape();
+    }
+
+    MStatus                 status;
+    MObject                 obj = shapeDagPath.node();
+    const MFnDependencyNode depFn(obj, &status);
+    if (!status) {
+        return false;
+    }
+
+    const std::string mayaTypeName(depFn.typeName().asChar());
+    return UsdMayaPrimWriterRegistry::IsPrimless(mayaTypeName);
+}
 
 bool UsdMayaWriteJobContext::IsMergedTransform(const MDagPath& path) const
 {
@@ -360,6 +380,12 @@ bool UsdMayaWriteJobContext::_NeedToTraverse(const MDagPath& curDag) const
         if (mArgs.filteredTypeIds.find(mfnNode.typeId().id()) != mArgs.filteredTypeIds.end()) {
             return false;
         }
+    }
+
+    if (!_ShouldCreatePrim(curDag, mArgs.mergeTransformAndShape)) {
+        // If we're not going to create a prim at curDag, then we do not need to
+        // traverse.
+        return false;
     }
 
     return true;
