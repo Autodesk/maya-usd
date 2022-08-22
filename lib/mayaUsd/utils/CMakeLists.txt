@@ -15,6 +15,7 @@ target_sources(${PROJECT_NAME}
         loadRulesAttribute.cpp
         query.cpp
         plugRegistryHelper.cpp
+        progressBarScope.cpp
         selectability.cpp
         stageCache.cpp
         traverseLayer.cpp
@@ -22,6 +23,7 @@ target_sources(${PROJECT_NAME}
         util.cpp
         utilFileSystem.cpp
         utilSerialization.cpp
+        variants.cpp
 )
 
 set(HEADERS
@@ -36,6 +38,7 @@ set(HEADERS
     loadRules.h
     query.h
     plugRegistryHelper.h
+    progressBarScope.h
     selectability.h
     stageCache.h
     traverseLayer.h
@@ -43,6 +46,7 @@ set(HEADERS
     util.h
     utilFileSystem.h
     utilSerialization.h
+    variants.h
 )
 
 set(PLUGINFO

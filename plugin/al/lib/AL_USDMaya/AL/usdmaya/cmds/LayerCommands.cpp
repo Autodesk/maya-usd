@@ -22,6 +22,8 @@
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 
+#include <mayaUsd/utils/utilSerialization.h>
+
 #include <pxr/usd/sdf/listOp.h>
 #include <pxr/usd/usd/stage.h>
 

@@ -58,6 +58,10 @@ UsdUndoCreateGroupCommand::Ptr UsdUndoCreateGroupCommand::create(
 #endif
     const Ufe::PathComponent& name)
 {
+    // Changing the hierarchy of invalid items is not allowed.
+    if (!parentItem || !parentItem->prim().IsActive())
+        return nullptr;
+
 #ifdef UFE_V3_FEATURES_AVAILABLE
     return std::make_shared<UsdUndoCreateGroupCommand>(parentItem, name);
 #else

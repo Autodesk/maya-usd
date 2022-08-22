@@ -1,4 +1,4 @@
-// Copyright 2020 Autodesk
+// Copyright 2022 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -126,6 +126,8 @@ global proc mayaUSDRegisterStrings()
     register("kExportBlendShapesLbl", "Blend Shapes:");
     register("kExportColorSetsAnn", "Exports Maya Color Sets as USD primvars.");
     register("kExportColorSetsLbl", "Color Sets:");
+    register("kExportComponentTagsAnn", "If selected, component tags get exported as USDGeomSubsets. Note: Edges and vertices are unsupported in USD.");
+    register("kExportComponentTagsLbl", "Component Tags:");
     register("kExportCurvesAnn", "If selected, curves get exported to USD primTypes NurbsCurves or BasisCurves.");
     register("kExportCurvesLbl", "NURBS Curves:");
     register("kExportDefaultFormatAnn", "Select whether the .usd file is written out in binary or ASCII");
@@ -212,11 +214,11 @@ global proc mayaUSDRegisterStrings()
     register("kImportUSDZTxtAnn", "When a .usdz file is chosen and this is selected, .usdz texture files are imported and copied to new files on disk. To locate these files, navigate to the current Maya workspace /sourceimages directory.");
     register("kImportUSDZTxtLbl", "USDZ Texture Import: ");
     register("kImportVariantsInScopeNumLbl", "Variants Switched in Scope:");
-    register("kMayaRefMergeEdits", "Merge Maya Edits to USD");
     register("kMayaDiscardEdits", "Discard Maya Edits");
     register("kMayaRefDiscardEdits", "Cancel Editing as Maya Data");
     register("kMayaRefDuplicateAsUsdData", "Duplicate As USD Data");
     register("kMayaRefDuplicateAsUsdDataDiv", "Stages");
+    register("kMayaRefDuplicateAsUsdDataOptions", "Options...");
 
     // Register the strings from the python equivalent register function.
     // Note: the strings from both the MEL and python register can be loaded

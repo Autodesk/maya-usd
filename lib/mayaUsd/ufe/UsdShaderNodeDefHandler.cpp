@@ -51,16 +51,36 @@ Ufe::NodeDef::Ptr UsdShaderNodeDefHandler::definition(const Ufe::SceneItem::Ptr&
     }
     PXR_NS::UsdPrim        prim = usdItem->prim();
     PXR_NS::UsdShadeShader shader(prim);
-    PXR_NS::TfToken        mxNodeType;
+    if (!shader) {
+        return nullptr;
+    }
+    PXR_NS::TfToken mxNodeType;
     shader.GetIdAttr().Get(&mxNodeType);
-    std::string type = mxNodeType.GetString();
-    return definition(type);
+
+    // Careful around name and identifier. They are not the same concept.
+    //
+    // Here is one example from MaterialX to illustrate:
+    //
+    //  ND_standard_surface_surfaceshader exists in 2 versions with identifiers:
+    //     ND_standard_surface_surfaceshader     (latest version)
+    //     ND_standard_surface_surfaceshader_100 (version 1.0.0)
+    // Same name, 2 different identifiers.
+    PXR_NS::SdrRegistry&          registry = PXR_NS::SdrRegistry::GetInstance();
+    PXR_NS::SdrShaderNodeConstPtr shaderNodeDef = registry.GetShaderNodeByIdentifier(mxNodeType);
+    if (!shaderNodeDef) {
+        return nullptr;
+    }
+    return UsdShaderNodeDef::create(shaderNodeDef);
 }
 
 Ufe::NodeDef::Ptr UsdShaderNodeDefHandler::definition(const std::string& type) const
 {
     PXR_NS::SdrRegistry&          registry = PXR_NS::SdrRegistry::GetInstance();
-    PXR_NS::SdrShaderNodeConstPtr shaderNodeDef = registry.GetShaderNodeByName(type);
+    PXR_NS::TfToken               mxNodeType(type);
+    PXR_NS::SdrShaderNodeConstPtr shaderNodeDef = registry.GetShaderNodeByIdentifier(mxNodeType);
+    if (!shaderNodeDef) {
+        return nullptr;
+    }
     return UsdShaderNodeDef::create(shaderNodeDef);
 }
 

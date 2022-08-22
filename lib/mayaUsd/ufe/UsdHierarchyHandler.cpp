@@ -18,6 +18,8 @@
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
 
+#include <pxr/base/tf/diagnostic.h>
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -40,7 +42,11 @@ UsdHierarchyHandler::Ptr UsdHierarchyHandler::create()
 
 Ufe::Hierarchy::Ptr UsdHierarchyHandler::hierarchy(const Ufe::SceneItem::Ptr& item) const
 {
+    PXR_NAMESPACE_USING_DIRECTIVE
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    if (!item || !TF_VERIFY(usdItem)) {
+        return nullptr;
+    }
     return isRootChild(usdItem->path()) ? UsdRootChildHierarchy::create(usdItem)
                                         : UsdHierarchy::create(usdItem);
 }

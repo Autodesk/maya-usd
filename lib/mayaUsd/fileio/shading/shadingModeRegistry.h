@@ -178,15 +178,28 @@ public:
         TfToken importDescription;
         bool    hasExporter = false;
         bool    hasImporter = false;
+        bool    noFallbackExport = false;
+        bool    noFallbackImport = false;
 
         ConversionInfo() = default;
-        ConversionInfo(TfToken rc, TfToken nn, TfToken ed, TfToken id, bool he, bool hi)
+
+        ConversionInfo(
+            TfToken rc,
+            TfToken nn,
+            TfToken ed,
+            TfToken id,
+            bool    he,
+            bool    hi,
+            bool    nfe,
+            bool    nfi)
             : renderContext(rc)
             , niceName(nn)
             , exportDescription(ed)
             , importDescription(id)
             , hasExporter(he)
             , hasImporter(hi)
+            , noFallbackExport(nfe)
+            , noFallbackImport(nfi)
         {
         }
     };
@@ -211,12 +224,16 @@ public:
     /// The \p niceName is the name displayed in the render options dialog.
     ///
     /// The \p description is displayed as a tooltip in the render options dialog.
+    ///
+    /// \p noFallback is a hint that shader writers returning ContextSupport::Fallback will be
+    /// ignored while using this material conversion.
     MAYAUSD_CORE_PUBLIC
     void RegisterExportConversion(
         const TfToken& materialConversion,
         const TfToken& renderContext,
         const TfToken& niceName,
-        const TfToken& description);
+        const TfToken& description,
+        bool           noFallback = false);
 
     /// Registers an import material conversion, with render context, nice name and description.
     /// This is the import counterpart of the RegisterExportConversion to be used if importers are
@@ -233,12 +250,16 @@ public:
     /// The \p niceName is the name to be displayed in the import options dialog.
     ///
     /// The \p description is displayed as a tooltip in the import options dialog.
+    ///
+    /// \p noFallback is a hint that shader readers returning ContextSupport::Fallback will be
+    /// ignored while using this material conversion.
     MAYAUSD_CORE_PUBLIC
     void RegisterImportConversion(
         const TfToken& materialConversion,
         const TfToken& renderContext,
         const TfToken& niceName,
-        const TfToken& description);
+        const TfToken& description,
+        bool           noFallback = false);
 
 private:
     MAYAUSD_CORE_PUBLIC

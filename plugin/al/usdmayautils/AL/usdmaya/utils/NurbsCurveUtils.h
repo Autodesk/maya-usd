@@ -37,9 +37,9 @@ void copyPoints(
 
 AL_USDMAYA_UTILS_PUBLIC
 void copyExtent(
-    const MFnNurbsCurve& fnCurve,
-    const UsdAttribute&  extentAttr,
-    UsdTimeCode          time = UsdTimeCode::Default());
+    const MFnNurbsCurve&      fnCurve,
+    const UsdGeomNurbsCurves& nurbs,
+    UsdTimeCode               time = UsdTimeCode::Default());
 
 AL_USDMAYA_UTILS_PUBLIC
 void copyCurveVertexCounts(

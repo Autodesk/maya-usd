@@ -19,12 +19,18 @@
 """
 
 import os
-
+import shutil
+import tempfile
 
 def stripPrefix(input_str, prefix):
     if input_str.startswith(prefix):
         return input_str[len(prefix):]
     return input_str
+
+def assertMatrixAlmostEqual(testCase, ma, mb, places=7):
+    for ra, rb in zip(ma, mb):
+        for a, b in zip(ra, rb):
+            testCase.assertAlmostEqual(a, b, places)
 
 def assertVectorAlmostEqual(testCase, a, b, places=7):
     for va, vb in zip(a, b):
@@ -40,3 +46,35 @@ def assertVectorEqual(testCase, a, b):
 
 def getTestScene(*args):
     return os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", *args)
+
+class TemporaryDirectory:
+    '''
+    Context manager that creates a temporary directory and deletes it on exit,
+    so it's usable with "with" statement.
+    '''
+    def __init__(self, suffix=None, prefix=None, ignore_errors=True, keep_files=False):
+        # Note: the default for suffix and prefix changed between Maya 2.7 and 3.X
+        #       from empty strings to None. To be compatible with both, we won't
+        #       pass values when we want the default, so we have these awkward if elif.
+        if suffix and prefix:
+            self.name = tempfile.mkdtemp(suffix=suffix, prefix=prefix)
+        elif suffix:
+            self.name = tempfile.mkdtemp(suffix=suffix)
+        elif prefix:
+            self.name = tempfile.mkdtemp(prefix=prefix)
+        else:
+            self.name = tempfile.mkdtemp()
+        self.ignore_errors = ignore_errors
+        self.keep_files = keep_files
+
+    def __enter__(self):
+        return self.name
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.keep_files:
+            return
+        try:
+            shutil.rmtree(self.name)
+        except:
+            if not self.ignore_errors:
+                raise

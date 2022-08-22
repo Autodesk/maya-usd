@@ -56,34 +56,34 @@ class testUsdImportUVSetMappings(unittest.TestCase):
         # two of them were made unmergeable)
         expected_sg = set(['initialParticleSE',
                            'initialShadingGroup',
-                           'blinn1SG',
-                           'blinn2SG',
-                           'blinn3SG',
-                           'blinn3SG_uvSet1',
-                           'blinn4SG',
-                           'blinn4SG_uvSet2'])
+                           'Test:blinn1SG',
+                           'Test:blinn2SG',
+                           'Test:blinn3SG',
+                           'Test:blinn3SG_uvSet1',
+                           'Test:blinn4SG',
+                           'Test:blinn4SG_uvSet2'])
 
         self.assertEqual(set(cmds.ls(type="shadingEngine")), expected_sg)
 
         expected_links = [
-            ("file1", ['pPlane4Shape.uvSet[0].uvSetName',
-                       'pPlane3Shape.uvSet[0].uvSetName',
-                       'pPlane1Shape.uvSet[0].uvSetName',
-                       'pPlane2Shape.uvSet[0].uvSetName']),
-            ("file2", ['pPlane4Shape.uvSet[1].uvSetName',
-                       'pPlane3Shape.uvSet[1].uvSetName',
-                       'pPlane1Shape.uvSet[1].uvSetName',
-                       'pPlane2Shape.uvSet[1].uvSetName']),
-            ("file3", ['pPlane4Shape.uvSet[2].uvSetName',
-                       'pPlane3Shape.uvSet[2].uvSetName',
-                       'pPlane1Shape.uvSet[2].uvSetName',
-                       'pPlane2Shape.uvSet[2].uvSetName']),
-            ("file4", ['pPlane4Shape.uvSet[0].uvSetName',
-                       'pPlane2Shape.uvSet[0].uvSetName']),
-            ("file5", ['pPlane2Shape.uvSet[1].uvSetName',]),
-            ("file6", ['pPlane2Shape.uvSet[2].uvSetName',]),
-            ("file7", ['pPlane4Shape.uvSet[1].uvSetName',]),
-            ("file8", ['pPlane4Shape.uvSet[2].uvSetName',]),
+            ("Test:file1", ['Test:pPlane4Shape.uvSet[0].uvSetName',
+                       'Test:pPlane3Shape.uvSet[0].uvSetName',
+                       'Test:pPlane1Shape.uvSet[0].uvSetName',
+                       'Test:pPlane2Shape.uvSet[0].uvSetName']),
+            ("Test:file2", ['Test:pPlane4Shape.uvSet[1].uvSetName',
+                       'Test:pPlane3Shape.uvSet[1].uvSetName',
+                       'Test:pPlane1Shape.uvSet[1].uvSetName',
+                       'Test:pPlane2Shape.uvSet[1].uvSetName']),
+            ("Test:file3", ['Test:pPlane4Shape.uvSet[2].uvSetName',
+                       'Test:pPlane3Shape.uvSet[2].uvSetName',
+                       'Test:pPlane1Shape.uvSet[2].uvSetName',
+                       'Test:pPlane2Shape.uvSet[2].uvSetName']),
+            ("Test:file4", ['Test:pPlane4Shape.uvSet[0].uvSetName',
+                       'Test:pPlane2Shape.uvSet[0].uvSetName']),
+            ("Test:file5", ['Test:pPlane2Shape.uvSet[1].uvSetName',]),
+            ("Test:file6", ['Test:pPlane2Shape.uvSet[2].uvSetName',]),
+            ("Test:file7", ['Test:pPlane4Shape.uvSet[1].uvSetName',]),
+            ("Test:file8", ['Test:pPlane4Shape.uvSet[2].uvSetName',]),
         ]
         for file_name, links in expected_links:
             links = set(links)

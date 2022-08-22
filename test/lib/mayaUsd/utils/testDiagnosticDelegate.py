@@ -162,7 +162,9 @@ class testDiagnosticDelegate(unittest.TestCase):
             ("spam warning 0 -- and 2 similar", OM.MCommandMessage.kWarning)
         ])
 
-    def testBatching_DelegateRemoved(self):
+    # Note: giving the test a name starting with Z so it is run last because unloading the plugin
+    #       can break other tests when they try to reload the plugin.
+    def testZZZBatching_DelegateRemoved(self):
         """Tests removing the diagnostic delegate when the batch context is
         still open."""
         self._StartRecording()

@@ -651,7 +651,9 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
     }
 
     // Normal context computation
-    UsdStageRefPtr usdStage;
+    UsdStageRefPtr sharedUsdStage;
+    UsdStageRefPtr unsharedUsdStage;
+    UsdStageRefPtr finalUsdStage;
     SdfPath        primPath;
 
     MDataHandle inDataHandle = dataBlock.inputValue(inStageDataAttr, &retValue);
@@ -693,11 +695,25 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
     bool isIncomingStage = false;
 
+    // Compute the load set for the stage.
+    MDataHandle loadPayloadsHandle = dataBlock.inputValue(loadPayloadsAttr, &retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    UsdStage::InitialLoadSet loadSet = loadPayloadsHandle.asBool()
+        ? UsdStage::InitialLoadSet::LoadAll
+        : UsdStage::InitialLoadSet::LoadNone;
+
+    // If there is a dynamic attribute containing the exact load rules
+    // for payload, start by loading nothing. The correct payload will
+    // be loaded by the load rules.
+    if (hasLoadRulesAttribute(thisMObject()))
+        loadSet = UsdStage::InitialLoadSet::LoadNone;
+
     // If inData has an incoming connection, then use it. Otherwise generate stage from the filepath
     if (!inDataHandle.data().isNull()) {
         MayaUsdStageData* inStageData
             = dynamic_cast<MayaUsdStageData*>(inDataHandle.asPluginData());
-        usdStage = inStageData->stage;
+        sharedUsdStage = inStageData->stage;
         primPath = inStageData->primPath;
         isIncomingStage = true;
     } else {
@@ -707,7 +723,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         const auto cacheId = UsdStageCache::Id::FromLongInt(cacheIdNum);
         const auto stageCached = cacheId.IsValid() && UsdUtilsStageCache::Get().Contains(cacheId);
         if (stageCached) {
-            usdStage = UsdUtilsStageCache::Get().Find(cacheId);
+            sharedUsdStage = UsdUtilsStageCache::Get().Find(cacheId);
             isIncomingStage = true;
         } else {
             //
@@ -753,18 +769,6 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                 .Msg("ProxyShapeBase::loadStage called for the usd file: %s\n", fileString.c_str());
 
             // == Load the Stage
-            MDataHandle loadPayloadsHandle = dataBlock.inputValue(loadPayloadsAttr, &retValue);
-            CHECK_MSTATUS_AND_RETURN_IT(retValue);
-
-            UsdStage::InitialLoadSet loadSet = loadPayloadsHandle.asBool()
-                ? UsdStage::InitialLoadSet::LoadAll
-                : UsdStage::InitialLoadSet::LoadNone;
-
-            // If there is a dynamic attribute containing the exact load rules
-            // for payload, start by loading nothing. The correct payload will
-            // be loaded by the load rules.
-            if (hasLoadRulesAttribute(thisMObject()))
-                loadSet = UsdStage::InitialLoadSet::LoadNone;
 
             {
 #if AR_VERSION == 1
@@ -776,14 +780,29 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                 // UsdStage. See https://github.com/Autodesk/maya-usd/issues/528 for
                 // more information.
                 UsdStageCacheContext ctx(
-                    UsdMayaStageCache::Get(loadSet == UsdStage::InitialLoadSet::LoadAll));
+                    UsdMayaStageCache::Get(loadSet, UsdMayaStageCache::ShareMode::Shared));
 
                 SdfLayerRefPtr rootLayer
                     = sharableStage ? computeRootLayer(dataBlock, fileString) : nullptr;
                 if (nullptr == rootLayer)
                     rootLayer = SdfLayer::FindOrOpen(fileString);
 
-                if (rootLayer) {
+                if (nullptr == rootLayer) {
+                    // Create an empty in-memory root layer so that a new stage in memory
+                    // will be created below by the UsdStage::Open call. This happens when
+                    // a brand new stage with a new anonymous layer is requested to be
+                    // created by the user.
+                    if (!_anonymousRootLayer)
+                        _anonymousRootLayer = SdfLayer::CreateAnonymous(kAnonymousLayerName);
+                    rootLayer = _anonymousRootLayer;
+                }
+
+                {
+                    // Note: computeSessionLayer will find a session layer *only* if the
+                    //       Maya scene had been saved and thus serialized the session
+                    //       layer. Otherwise it returns null which will mean to use
+                    //       whatever session layer happens to be associated with the
+                    //       stage we potentially find in the stage cache.
                     SdfLayerRefPtr sessionLayer = computeSessionLayer(dataBlock);
 
                     MProfilingScope profilingScope(
@@ -796,36 +815,45 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                         = MGlobal::optionVarIntValue(kSessionLayerOptionVarName) == 1;
                     targetSession = targetSession || !rootLayer->PermissionToEdit();
 
-                    if (sessionLayer || targetSession) {
-                        if (!sessionLayer)
-                            sessionLayer = SdfLayer::CreateAnonymous();
-                        usdStage = UsdStage::Open(
+                    // Note: UsdStage::Open has the peculiar design that it will return
+                    //       any previously open stage that happen to match its arguments,
+                    //       all its arguments, but only those arguments.
+                    //
+                    //       So *not* passing in a session layer will find any stage that
+                    //       has the given root layer. That is why it is important *not* to
+                    //       pass the session layer if the session layer is null. Otherwise
+                    //       the cache would try find a stage *without* a session layer.
+                    //
+                    //       So, not passing the (null) session layer is how a newly-created
+                    //       shared stage with the same root layer will find the correct stage
+                    //       with the existing session layer.
+                    //
+                    //       If the stage is not in the cache and no session layer is passed
+                    //       then UsdStage::Open will create the in-memory session layer for us,
+                    //       just as we want.
+                    if (sessionLayer) {
+                        sharedUsdStage = UsdStage::Open(
                             rootLayer,
                             sessionLayer,
                             ArGetResolver().CreateDefaultContextForAsset(fileString),
                             loadSet);
                     } else {
-                        usdStage = UsdStage::Open(
+                        sharedUsdStage = UsdStage::Open(
                             rootLayer,
                             ArGetResolver().CreateDefaultContextForAsset(fileString),
                             loadSet);
                     }
-                    if (sessionLayer && targetSession) {
-                        usdStage->SetEditTarget(sessionLayer);
-                    } else {
-                        usdStage->SetEditTarget(usdStage->GetRootLayer());
-                    }
-                } else {
-                    // Create a new stage in memory with an anonymous root layer.
-                    usdStage = UsdStage::CreateInMemory(kAnonymousLayerName, loadSet);
+
+                    sharedUsdStage->SetEditTarget(
+                        targetSession ? sharedUsdStage->GetSessionLayer()
+                                      : sharedUsdStage->GetRootLayer());
                 }
             }
         }
+    }
 
-        if (usdStage) {
-            primPath = usdStage->GetPseudoRoot().GetPath();
-            copyLoadRulesFromAttribute(thisMObject(), *usdStage);
-        }
+    if (!sharedUsdStage) {
+        return MS::kFailure;
     }
 
     // Create the output outData
@@ -837,7 +865,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     if (isIncomingStage) {
-        std::vector<std::string> incomingLayers { usdStage->GetRootLayer()->GetIdentifier() };
+        std::vector<std::string> incomingLayers { sharedUsdStage->GetRootLayer()->GetIdentifier() };
         _incomingLayers = UsdMayaUtil::getAllSublayers(incomingLayers, true);
     } else {
         _incomingLayers.clear();
@@ -858,23 +886,11 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                 }
             }
         }
-
-        // Set the outUsdStageData
-        stageData->stage = usdStage;
-        stageData->primPath = primPath;
-
-        // Set the data on the output plug
-        MDataHandle inDataCachedHandle = dataBlock.outputValue(inStageDataCachedAttr, &retValue);
-        CHECK_MSTATUS_AND_RETURN_IT(retValue);
-
-        inDataCachedHandle.set(stageData);
-        inDataCachedHandle.setClean();
-
-        return MS::kSuccess;
+        finalUsdStage = sharedUsdStage;
     }
     // Own the stage
     else {
-        SdfLayerRefPtr inRootLayer = usdStage->GetRootLayer();
+        SdfLayerRefPtr inRootLayer = sharedUsdStage->GetRootLayer();
 
         if (!_unsharedStageRootLayer) {
             _unsharedStageRootLayer = SdfLayer::CreateAnonymous(kUnsharedStageLayerName);
@@ -915,16 +931,104 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                 newReferencedLayers, _unsharedStageRootLayer, MayaUsdMetadata->ReferencedLayers);
         }
 
-        stageData->stage = UsdStage::UsdStage::Open(_unsharedStageRootLayer);
-        stageData->primPath = stageData->stage->GetPseudoRoot().GetPath();
+        unsharedUsdStage = getUnsharedStage(loadSet);
+        finalUsdStage = unsharedUsdStage;
+    }
 
-        MDataHandle inDataCachedHandle = dataBlock.outputValue(inStageDataCachedAttr, &retValue);
-        CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    if (finalUsdStage) {
+        primPath = finalUsdStage->GetPseudoRoot().GetPath();
+        copyLoadRulesFromAttribute(thisMObject(), *finalUsdStage);
+        updateShareMode(sharedUsdStage, unsharedUsdStage, loadSet);
+    }
 
-        inDataCachedHandle.set(stageData);
-        inDataCachedHandle.setClean();
+    // Set the outUsdStageData
+    stageData->stage = finalUsdStage;
+    stageData->primPath = primPath;
 
-        return MS::kSuccess;
+    // Set the data on the output plug
+    MDataHandle inDataCachedHandle = dataBlock.outputValue(inStageDataCachedAttr, &retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    inDataCachedHandle.set(stageData);
+    inDataCachedHandle.setClean();
+
+    return MS::kSuccess;
+}
+
+UsdStageRefPtr MayaUsdProxyShapeBase::getUnsharedStage(UsdStage::InitialLoadSet loadSet)
+{
+    // The unshared stages are *also* kept in a stage cache so that we can find them
+    // again when proxy shape attribute change. For example, if the 'loadPayloads'
+    // attribute change, we want to find the same unshared stage, we don't want to lose
+    // edits, in particular in its session layer.
+    //
+    // We also need to be able to find them when switching a stage between non-shared
+    // and shared, so that we can transfer the content of the session layer.
+    //
+    // Fortunately, the USD stage cache matches stages using *all* arguments provided.
+    // So if the unshared session layer is unique to this proxy shape, there is no
+    // chance of finding it by accident from another proxy shape.
+    UsdStageCacheContext ctx(
+        UsdMayaStageCache::Get(loadSet, UsdMayaStageCache::ShareMode::Unshared));
+
+    if (!_unsharedStageSessionLayer)
+        _unsharedStageSessionLayer = SdfLayer::CreateAnonymous();
+
+    return UsdStage::UsdStage::Open(_unsharedStageRootLayer, _unsharedStageSessionLayer, loadSet);
+}
+
+void MayaUsdProxyShapeBase::updateShareMode(
+    const UsdStageRefPtr&    sharedUsdStage,
+    const UsdStageRefPtr&    unsharedUsdStage,
+    UsdStage::InitialLoadSet loadSet)
+{
+    // Based on the previous shared mode and current shared mode of the stage,
+    // transfer the content of the session layer from one to the other as needed.
+    const auto shareMode = isShareableStage() ? ShareMode::Shared : ShareMode::Unshared;
+    if (shareMode == _previousShareMode)
+        return;
+
+    // Only transfer the session content if the previous mode was known
+    // or if the current mode is unshared, as the session layer content
+    // is put in the shared stage when loaded from disk in a Maya scene.
+    //
+    // IOW:
+    //     Shared   -> Unshared : copy
+    //     Unshared -> Shared   : copy
+    //     Unknown  -> Unshared : copy
+    //
+    //     Shared   -> Shared   : content already in place, pruned above
+    //     Unshared -> Unshared : content already in place, pruned above
+    //     Unknown  -> Shared   : content already in place
+    //
+    //     X -> Unknown : impossible since the new mode is always known
+    if (_previousShareMode != ShareMode::Unknown || shareMode == ShareMode::Unshared)
+        transferSessionLayer(shareMode, sharedUsdStage, unsharedUsdStage, loadSet);
+
+    _previousShareMode = shareMode;
+}
+
+void MayaUsdProxyShapeBase::transferSessionLayer(
+    ShareMode                currentMode,
+    const UsdStageRefPtr&    sharedUsdStage,
+    const UsdStageRefPtr&    unsharedUsdStage,
+    UsdStage::InitialLoadSet loadSet)
+{
+    // When flipping to shared from unshared, the unshared set was not loaded.
+    // Load it now to be able to transfer the session layer content.
+    UsdStageRefPtr validUnsharedUsdStage
+        = unsharedUsdStage ? unsharedUsdStage : getUnsharedStage(loadSet);
+
+    SdfLayerHandle sharedSession = sharedUsdStage->GetSessionLayer();
+    SdfLayerHandle unsharedSession = validUnsharedUsdStage->GetSessionLayer();
+
+    if (!sharedSession || !unsharedSession)
+        return;
+
+    if (currentMode == ShareMode::Shared) {
+        sharedSession->TransferContent(unsharedSession);
+    } else {
+        unsharedSession->TransferContent(sharedSession);
     }
 }
 
@@ -1241,8 +1345,10 @@ MBoundingBox MayaUsdProxyShapeBase::boundingBox() const
     const TfToken purpose3 = drawProxyPurpose ? UsdGeomTokens->proxy : TfToken();
     const TfToken purpose4 = drawGuidePurpose ? UsdGeomTokens->guide : TfToken();
 
-    const GfBBox3d allBox
+    GfBBox3d allBox
         = imageablePrim.ComputeUntransformedBound(currTime, purpose1, purpose2, purpose3, purpose4);
+
+    UsdMayaUtil::AddMayaExtents(allBox, prim, currTime);
 
     MBoundingBox& retval = nonConstThis->_boundingBoxCache[currTime];
 
@@ -1614,18 +1720,25 @@ MDagPath MayaUsdProxyShapeBase::parentTransform()
     return proxyTransformPath;
 }
 
-MayaUsdProxyShapeBase::MayaUsdProxyShapeBase(const bool enableUfeSelection)
+MayaUsdProxyShapeBase::MayaUsdProxyShapeBase(
+    const bool enableUfeSelection,
+    const bool useLoadRulesHandling)
     : MPxSurfaceShape()
     , _isUfeSelectionEnabled(enableUfeSelection)
+    , _previousShareMode(ShareMode::Unknown)
+    , _anonymousRootLayer(nullptr)
+    , _unsharedStageSessionLayer(nullptr)
     , _unsharedStageRootLayer(nullptr)
     , _unsharedStageRootSublayers()
     , _incomingLayers()
 {
     TfRegistryManager::GetInstance().SubscribeTo<MayaUsdProxyShapeBase>();
 
-    // Register with the load-rules handling used to transfer load rules
-    // between the USD stage and a dynamic attribute on the proxy shape.
-    MayaUsdProxyShapeLoadRules::addProxyShape(*this);
+    if (useLoadRulesHandling) {
+        // Register with the load-rules handling used to transfer load rules
+        // between the USD stage and a dynamic attribute on the proxy shape.
+        MayaUsdProxyShapeLoadRules::addProxyShape(*this);
+    }
 }
 
 /* virtual */

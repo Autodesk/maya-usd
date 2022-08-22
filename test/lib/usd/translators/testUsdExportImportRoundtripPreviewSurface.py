@@ -152,8 +152,8 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
 
         # Check the new sphere is in the new shading group:
         self.assertTrue(cmds.sets(
-            "pSphere1Shape",
-            isMember=material_sg))
+            "Test:pSphere1Shape",
+            isMember="Test:"+material_sg))
 
         # MaterialX preserves the place2dTexture name:
         p2dName = "place2dTexture"
@@ -161,43 +161,43 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
             p2dName = uv_node
 
         # Check that we have no spurious "Looks" transform
-        expectedTr = set(['front', 'persp', 'side', 'top', 'pSphere1'])
+        expectedTr = set(['front', 'persp', 'side', 'top', 'Test:pSphere1'])
         allTr = set(cmds.ls(tr=True))
         self.assertEqual(allTr, expectedTr)
 
         # Check connections:
         self.assertEqual(
-            cmds.connectionInfo(material_node+".outColor", dfs=True),
-            [material_sg+".surfaceShader"])
+            cmds.connectionInfo("Test:"+material_node+".outColor", dfs=True),
+            ["Test:"+material_sg+".surfaceShader"])
         self.assertEqual(
-            cmds.connectionInfo(material_node+".diffuseColor", sfd=True),
-            file_node+".outColor")
+            cmds.connectionInfo("Test:"+material_node+".diffuseColor", sfd=True),
+            "Test:"+file_node+".outColor")
         self.assertEqual(
-            cmds.connectionInfo(file_node+".wrapU", sfd=True),
-            "%s.wrapU"%p2dName)
+            cmds.connectionInfo("Test:"+file_node+".wrapU", sfd=True),
+            "Test:%s.wrapU"%p2dName)
 
         # Check values:
-        self.assertAlmostEqual(cmds.getAttr(material_node+".ior"), 2)
-        self.assertAlmostEqual(cmds.getAttr(material_node+".roughness"),
+        self.assertAlmostEqual(cmds.getAttr("Test:"+material_node+".ior"), 2)
+        self.assertAlmostEqual(cmds.getAttr("Test:"+material_node+".roughness"),
                                0.25)
-        self.assertAlmostEqual(cmds.getAttr(material_node+".opacityThreshold"),
+        self.assertAlmostEqual(cmds.getAttr("Test:"+material_node+".opacityThreshold"),
                                0.5)
-        self.assertEqual(cmds.getAttr(material_node+".specularColor"),
+        self.assertEqual(cmds.getAttr("Test:"+material_node+".specularColor"),
                          [(0.125, 0.25, 0.75)])
 
-        self.assertEqual(cmds.getAttr(material_node+".useSpecularWorkflow"), int(not metallic))
+        self.assertEqual(cmds.getAttr("Test:"+material_node+".useSpecularWorkflow"), int(not metallic))
 
-        self.assertEqual(cmds.getAttr(file_node+".defaultColor"),
+        self.assertEqual(cmds.getAttr("Test:"+file_node+".defaultColor"),
                          [(0.5, 0.25, 0.125)])
-        self.assertEqual(cmds.getAttr(file_node+".colorSpace"), "ACEScg")
-        self.assertEqual(cmds.getAttr(file_node+".colorSpace"), "ACEScg")
-        imported_path = cmds.getAttr(file_node+".fileTextureName")
+        self.assertEqual(cmds.getAttr("Test:"+file_node+".colorSpace"), "ACEScg")
+        self.assertEqual(cmds.getAttr("Test:"+file_node+".colorSpace"), "ACEScg")
+        imported_path = cmds.getAttr("Test:"+file_node+".fileTextureName")
         # imported path will be absolute:
         self.assertFalse(imported_path.startswith(".."))
         self.assertEqual(os.path.normpath(imported_path.lower()),
                          os.path.normpath(original_path.lower()))
-        self.assertEqual(cmds.getAttr("%s.wrapU"%p2dName), 0)
-        self.assertEqual(cmds.getAttr("%s.wrapV"%p2dName), 1)
+        self.assertEqual(cmds.getAttr("Test:%s.wrapU"%p2dName), 0)
+        self.assertEqual(cmds.getAttr("Test:%s.wrapV"%p2dName), 1)
 
         # Make sure paths are relative in the USD file. Joining the directory
         # that the USD file lives in with the texture path should point us at
@@ -294,12 +294,12 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
                     options=";".join(import_options))
 
             # Check shading group name:
-            self.assertTrue(cmds.sets("pSphere1Shape", isMember=final_sg))
+            self.assertTrue(cmds.sets("Test:pSphere1Shape", isMember="Test:"+final_sg))
 
             # Check surface name:
             self.assertEqual(
-                cmds.connectionInfo(final_surf+".outColor", dfs=True),
-                [final_sg+".surfaceShader"])
+                cmds.connectionInfo("Test:"+final_surf+".outColor", dfs=True),
+                ["Test:"+final_sg+".surfaceShader"])
 
         self.assertTrue(mark.IsClean())
 
@@ -349,7 +349,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
 
             for i in ("", "1", "2"):
                 # We expect blinn, blinn1, blinn2
-                final_surf = "%s%s" % (preferred, i)
+                final_surf = "Test:%s%s" % (preferred, i)
                 # We expect blinnSG, blinn1SG, blinn2SG
                 final_sg = final_surf + "SG"
 
@@ -517,10 +517,10 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         opacity_names = ["opacityR", "opacityG", "opacityB"]
         for i, val in enumerate(expected):
             if (isinstance(val, float)):
-                for v in cmds.getAttr("standardSurface8.opacity")[0]:
+                for v in cmds.getAttr("Test:standardSurface8.opacity")[0]:
                     self.assertAlmostEqual(v, val)
             else:
-                cnx = cmds.listConnections("standardSurface{}".format(i+2),
+                cnx = cmds.listConnections("Test:standardSurface{}".format(i+2),
                                            d=False, c=True, p=True)
                 self.assertEqual(len(cnx), 6)
                 for j in range(int(len(cnx)/2)):
@@ -529,7 +529,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
                     self.assertEqual(len(k), 2)
                     self.assertEqual(len(v), 2)
                     self.assertTrue(k[1] in opacity_names)
-                    self.assertEqual(v[0], "file{}".format(i+1))
+                    self.assertEqual(v[0], "Test:file{}".format(i+1))
                     self.assertEqual(v[1], port_names[val])
 
         cmds.file(f=True, new=True)

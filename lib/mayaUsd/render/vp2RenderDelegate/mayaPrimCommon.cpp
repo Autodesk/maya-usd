@@ -20,9 +20,21 @@
 #include "material.h"
 #include "render_delegate.h"
 
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+#include <mayaUsd/ufe/Utils.h>
+#endif
+
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+#include <maya/MFnDisplayLayer.h>
+#include <maya/MFnDisplayLayerManager.h>
+#include <maya/MObjectArray.h>
+#endif
 #include <maya/MProfiler.h>
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+#include <ufe/pathString.h>
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -308,6 +320,21 @@ void MayaUsdRPrim::_PropagateDirtyBitsCommon(HdDirtyBits& bits, const ReprVector
     }
 }
 
+void MayaUsdRPrim::_InitRenderItemCommon(MHWRender::MRenderItem* renderItem) const
+{
+#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
+#endif
+
+    _SetWantConsolidation(*renderItem, true);
+
+#ifdef MAYA_HAS_RENDER_ITEM_HIDE_ON_PLAYBACK_API
+    renderItem->setHideOnPlayback(_hideOnPlayback);
+#endif
+}
+
 /*! \brief  Create render item for bbox repr.
  */
 MHWRender::MRenderItem* MayaUsdRPrim::_CreateBoundingBoxRenderItem(
@@ -324,17 +351,11 @@ MHWRender::MRenderItem* MayaUsdRPrim::_CreateBoundingBoxRenderItem(
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->Get3dSolidShader(color));
     renderItem->setSelectionMask(selectionMask);
-#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
-#endif
+    _InitRenderItemCommon(renderItem);
 
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(exclusionFlag);
 #endif
-
-    _SetWantConsolidation(*renderItem, true);
 
     return renderItem;
 }
@@ -363,17 +384,11 @@ MHWRender::MRenderItem* MayaUsdRPrim::_CreateWireframeRenderItem(
 #else
     renderItem->setSelectionMask(selectionMask);
 #endif
-#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
-#endif
+    _InitRenderItemCommon(renderItem);
 
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(exclusionFlag);
 #endif
-
-    _SetWantConsolidation(*renderItem, true);
 
     return renderItem;
 }
@@ -398,17 +413,11 @@ MHWRender::MRenderItem* MayaUsdRPrim::_CreatePointsRenderItem(
     MSelectionMask selectionMasks(selectionMask);
     selectionMasks.addMask(MSelectionMask::kSelectPointsForGravity);
     renderItem->setSelectionMask(selectionMasks);
-#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
-#endif
+    _InitRenderItemCommon(renderItem);
 
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(exclusionFlag);
 #endif
-
-    _SetWantConsolidation(*renderItem, true);
 
     return renderItem;
 }
@@ -551,10 +560,12 @@ void MayaUsdRPrim::_SyncSharedData(
     HdSceneDelegate*   delegate,
     HdDirtyBits const* dirtyBits,
     TfToken const&     reprToken,
-    SdfPath const&     id,
+    HdRprim const&     refThis,
     ReprVector const&  reprs,
     TfToken const&     renderTag)
 {
+    const SdfPath& id = refThis.GetId();
+
     if (HdChangeTracker::IsExtentDirty(*dirtyBits, id)) {
         sharedData.bounds.SetRange(delegate->GetExtent(id));
     }
@@ -564,14 +575,68 @@ void MayaUsdRPrim::_SyncSharedData(
     }
 
     if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, id)) {
-        sharedData.visible = delegate->GetVisible(id);
+        bool usdVisibility = delegate->GetVisible(id);
 
         // Invisible rprims don't get calls to Sync or _PropagateDirtyBits while
         // they are invisible. This means that when a prim goes from visible to
         // invisible that we must update every repr, because if we switch reprs while
         // invisible we'll get no chance to update!
-        if (!sharedData.visible)
+        if (!usdVisibility)
             _MakeOtherReprRenderItemsInvisible(reprToken, reprs);
+
+        bool displayLayerVisibility = true; // objects in the default display layer are visible
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+        bool hideOnPlayback = false;
+        _displayType = kNormal;
+        // Maya Display Layers do not have a representation in USD, so a prim can be
+        // visible from USD's point of view, but hidden from Maya's point of view.
+        // In Maya Display Layer visibility really hides the render items vs. using
+        // render item filtering (like for example the "Show" menu). So we want to
+        // set the "enabled" state of the MRenderItem.
+
+        // Display layer features are currently implemented only for non-instanced geometry
+        if (refThis.GetInstancerId().IsEmpty()) {
+            // Get all the display layers the object is affected by. If any of those layers
+            // are invisible, the object is invisible.
+            MFnDisplayLayerManager displayLayerManager(
+                MFnDisplayLayerManager::currentDisplayLayerManager());
+            MStatus     status;
+            auto* const param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+            ProxyRenderDelegate& drawScene = param->GetDrawScene();
+            MDagPath             proxyDagPath = drawScene.GetProxyShapeDagPath();
+            MString              pathString = proxyDagPath.fullPathName()
+                + Ufe::PathString::pathSegmentSeparator().c_str() + _PrimSegmentString[0];
+            MObjectArray ancestorDisplayLayers
+                = displayLayerManager.getAncestorLayersInclusive(pathString, &status);
+            for (unsigned int i = 0; i < ancestorDisplayLayers.length() && displayLayerVisibility;
+                 i++) {
+                MFnDependencyNode displayLayerNodeFn(ancestorDisplayLayers[i]);
+                MPlug             layerEnabled = displayLayerNodeFn.findPlug("enabled");
+                MPlug             layerVisible = displayLayerNodeFn.findPlug("visibility");
+                MPlug layerHidesOnPlayback = displayLayerNodeFn.findPlug("hideOnPlayback");
+                MPlug layerDisplayType = displayLayerNodeFn.findPlug("displayType");
+                displayLayerVisibility &= layerEnabled.asBool() ? layerVisible.asBool() : true;
+                hideOnPlayback |= layerHidesOnPlayback.asBool();
+                if (_displayType == kNormal) {
+                    _displayType = (DisplayType)layerDisplayType.asShort();
+                }
+            }
+        }
+
+        // Update "hide on playback" status
+        if (_hideOnPlayback != hideOnPlayback) {
+#ifdef MAYA_HAS_RENDER_ITEM_HIDE_ON_PLAYBACK_API
+            RenderItemFunc setHideOnPlayback
+                = [hideOnPlayback](HdVP2DrawItem::RenderItemData& renderItemData) {
+                      renderItemData._renderItem->setHideOnPlayback(hideOnPlayback);
+                  };
+
+            _ForEachRenderItem(reprs, setHideOnPlayback);
+#endif
+            _hideOnPlayback = hideOnPlayback;
+        }
+#endif
+        sharedData.visible = usdVisibility && displayLayerVisibility;
     }
 
 #if PXR_VERSION > 2111
@@ -622,6 +687,23 @@ bool MayaUsdRPrim::_SyncCommon(
     }
 
     return true;
+}
+
+MColor MayaUsdRPrim::_GetHighlightColor(const TfToken& className)
+{
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+
+    if (_displayType == MayaUsdRPrim::kTemplate) {
+        return drawScene.GetTemplateColor(_selectionStatus != kUnselected);
+    } else if (_displayType == MayaUsdRPrim::kReference && _selectionStatus == kUnselected) {
+        return drawScene.GetReferenceColor();
+    } else {
+        return (
+            _selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
+                _selectionStatus == kFullyLead ? TfToken() : className)
+                                            : drawScene.GetWireframeColor());
+    }
 }
 
 SdfPath MayaUsdRPrim::_GetUpdatedMaterialId(HdRprim* rprim, HdSceneDelegate* delegate)

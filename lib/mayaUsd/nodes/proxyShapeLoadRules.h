@@ -51,6 +51,14 @@ public:
     /// \brief remove a proxy shape so that it will no longer have its load rules saved and loaded.
     MAYAUSD_CORE_PUBLIC
     static void removeProxyShape(MayaUsdProxyShapeBase& proxyShape);
+
+    /// \brief save load rules of tracked proxy shapes.
+    MAYAUSD_CORE_PUBLIC
+    static void saveAllLoadRules();
+
+    /// \brief save load rules of the tracked proxy shape corresponding to the given stage.
+    MAYAUSD_CORE_PUBLIC
+    static void saveLoadRules(const UsdStageRefPtr& stage);
 };
 
 } // namespace MAYAUSD_NS_DEF

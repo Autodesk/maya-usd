@@ -17,6 +17,7 @@
 #define PROXY_RENDER_DELEGATE
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hd/selection.h>
@@ -33,12 +34,13 @@
 #include <maya/MHWGeometryUtilities.h>
 #include <maya/MMessage.h>
 #include <maya/MObject.h>
+#include <maya/MObjectArray.h>
 #include <maya/MPxSubSceneOverride.h>
 
 #include <memory>
-
 #if defined(WANT_UFE_BUILD)
 #include <ufe/observer.h>
+#include <ufe/path.h>
 #endif
 
 // Conditional compilation due to Maya API gap.
@@ -174,6 +176,20 @@ public:
     MAYAUSD_CORE_PUBLIC
     void SelectionChanged();
 
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+    MAYAUSD_CORE_PUBLIC
+    static void DisplayLayerAdded(MObject& node, void* clientData);
+
+    MAYAUSD_CORE_PUBLIC
+    static void DisplayLayerRemoved(MObject& node, void* clientData);
+
+    MAYAUSD_CORE_PUBLIC
+    void DisplayLayerMembershipChanged(const MString& memberPath);
+
+    MAYAUSD_CORE_PUBLIC
+    void DisplayLayerDirty(MFnDisplayLayer& displayLayer);
+#endif
+
     MAYAUSD_CORE_PUBLIC
     const MColor& GetWireframeColor() const;
 
@@ -184,6 +200,12 @@ public:
     // If className is empty, returns the lead highlight color.
     MAYAUSD_CORE_PUBLIC
     MColor GetSelectionHighlightColor(const TfToken& className = TfToken());
+
+    MAYAUSD_CORE_PUBLIC
+    MColor GetTemplateColor(bool active);
+
+    MAYAUSD_CORE_PUBLIC
+    MColor GetReferenceColor();
 
     MAYAUSD_CORE_PUBLIC
     const HdSelection::PrimSelectionState* GetLeadSelectionState(const SdfPath& path) const;
@@ -199,6 +221,9 @@ public:
 
     MAYAUSD_CORE_PUBLIC
     UsdImagingDelegate* GetUsdImagingDelegate() const;
+
+    MAYAUSD_CORE_PUBLIC
+    MDagPath GetProxyShapeDagPath() const;
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     MAYAUSD_CORE_PUBLIC
@@ -219,11 +244,25 @@ private:
     void _UpdateSceneDelegate();
     void _Execute(const MHWRender::MFrameContext& frameContext);
 
-    bool _isInitialized();
-    void _PopulateSelection();
-    void _UpdateSelectionStates();
-    void _UpdateRenderTags();
-    void _ClearRenderDelegate();
+    typedef std::pair<MColor, std::atomic<uint64_t>>  MColorCache;
+    typedef std::pair<GfVec3f, std::atomic<uint64_t>> GfVec3fCache;
+
+    bool   _isInitialized();
+    void   _PopulateSelection();
+    void   _UpdateSelectionStates();
+    void   _UpdateRenderTags();
+    void   _ClearRenderDelegate();
+    MColor _GetDisplayColor(
+        MColorCache&  colorCache,
+        const char*   colorName,
+        bool          colorCorrection,
+        const MColor& defaultColor);
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+    void _DirtyUfeSubtree(const Ufe::Path& rootPath);
+    void _DirtyUfeSubtree(const MString& rootStr);
+    void _DirtyUsdSubtree(const UsdPrim& prim);
+    void _RequestRefresh();
+#endif
     SdfPathVector
     _GetFilteredRprims(HdRprimCollection const& collection, TfTokenVector const& renderTags);
 
@@ -285,11 +324,25 @@ private:
                          //!< really need it, but there doesn't seem to be a way to get
                          //!< synchronization running without it)
     std::unique_ptr<UsdImagingDelegate> _sceneDelegate; //!< USD scene delegate
+    const MHWRender::MFrameContext*     _currentFrameContext = nullptr;
 
     bool _isPopulated {
         false
     }; //!< If false, scene delegate wasn't populated yet within render index
     bool _selectionChanged { true }; //!< Whether there is any selection change or not
+
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+    using NodeHandleToCallbackIdMap = UsdMayaUtil::MObjectHandleUnorderedMap<MCallbackId>;
+
+    bool _refreshRequested {
+        false
+    }; //!< True if the render delegate has already requested a refresh.
+    MCallbackId               _mayaDisplayLayerAddedCallbackId { 0 };
+    MCallbackId               _mayaDisplayLayerRemovedCallbackId { 0 };
+    MCallbackId               _mayaDisplayLayerMembersCallbackId { 0 };
+    NodeHandleToCallbackIdMap _mayaDisplayLayerDirtyCallbackIds;
+#endif
+
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     bool _selectionModeChanged { true }; //!< Whether the global selection mode has changed
     bool _snapToPoints { false };        //!< Whether point snapping is enabled or not
@@ -302,13 +355,16 @@ private:
     std::mutex _mayaCommandEngineMutex;
     uint64_t   _frameCounter { 0 };
 
-    typedef std::pair<MColor, std::atomic<uint64_t>>  MColorCache;
-    typedef std::pair<GfVec3f, std::atomic<uint64_t>> GfVec3fCache;
+    // The name of the currently used color space
+    MString _colorTransformId;
 
     MColorCache  _activeMeshColorCache { MColor(), 0 };
     MColorCache  _activeCurveColorCache { MColor(), 0 };
     MColorCache  _activePointsColorCache { MColor(), 0 };
     MColorCache  _leadColorCache { MColor(), 0 };
+    MColorCache  _activeTemplateColorCache { MColor(), 0 };
+    MColorCache  _dormantTemplateColorCache { MColor(), 0 };
+    MColorCache  _referenceColorCache { MColor(), 0 };
     GfVec3fCache _dormantCurveColorCache { GfVec3f(), 0 };
     GfVec3fCache _dormantPointsColorCache { GfVec3f(), 0 };
 

@@ -55,9 +55,38 @@ class testUsdExportNurbsCurve(unittest.TestCase):
         nc = UsdGeom.NurbsCurves.Get(stage, '/curve1')
         self.assertEqual(nc.GetWidthsAttr().Get(), Vt.FloatArray([1.0]))
         self.assertEqual(nc.GetWidthsInterpolation(), UsdGeom.Tokens.constant)
+        self.assertEqual(nc.GetKnotsAttr().Get(), Vt.DoubleArray([0, 0, 0, 1, 2, 3, 4, 5, 5, 5]))
         self.assertEqual(nc.GetRangesAttr().Get(), Vt.Vec2dArray([Gf.Vec2d(0, 5)]))
         self.assertEqual(nc.GetOrderAttr().Get(), Vt.IntArray([4]))
         self.assertEqual(nc.GetCurveVertexCountsAttr().Get(), Vt.IntArray([8]))
+
+    def testExportWidths(self):
+        '''
+        Test export with manually authored widths on the curve.
+        '''
+        expectedWidths = [1., 2., 3., 4., 5., 6., 7., 8.]
+        cmds.select("curveShape1")
+        cmds.addAttr(longName="widths", dt="floatArray")
+        cmds.setAttr("curveShape1.widths", expectedWidths ,type="floatArray")
+        self.assertEqual(cmds.getAttr("curveShape1.widths"), expectedWidths)
+
+        usdFile = os.path.abspath('UsdExportNurbsCurveTest_Widths.usda')
+        cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
+            shadingMode='none')
+
+        stage = Usd.Stage.Open(usdFile)
+        
+        nc = UsdGeom.NurbsCurves.Get(stage, '/curve1')
+        self.assertEqual(nc.GetWidthsAttr().Get(), Vt.FloatArray(expectedWidths))
+        self.assertEqual(nc.GetWidthsInterpolation(), UsdGeom.Tokens.vertex)
+        self.assertEqual(nc.GetKnotsAttr().Get(), Vt.DoubleArray([0, 0, 0, 1, 2, 3, 4, 5, 5, 5]))
+        self.assertEqual(nc.GetRangesAttr().Get(), Vt.Vec2dArray([Gf.Vec2d(0, 5)]))
+        self.assertEqual(nc.GetOrderAttr().Get(), Vt.IntArray([4]))
+        self.assertEqual(nc.GetCurveVertexCountsAttr().Get(), Vt.IntArray([8]))
+        
+        with self.assertRaises(ValueError):
+            cmds.deleteAttr("widths")
+            cmds.getAttr("curveShape1.widths")
 
     def testNotExportViaPython(self):
         '''

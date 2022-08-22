@@ -9,6 +9,8 @@
 # UFE_LIBRARY         Path to UFE library
 # UFE_INCLUDE_DIR     Path to the UFE include directory
 # UFE_VERSION         UFE version (major.minor.patch) from ufe.h
+# UFE_LIGHTS_SUPPORT  Presence of UFE lights support
+# UFE_SCENE_SEGMENT_SUPPORT Presence of UFE scene segment support
 #
 
 find_path(UFE_INCLUDE_DIR
@@ -96,4 +98,16 @@ if(UFE_FOUND)
     message(STATUS "UFE include dir: ${UFE_INCLUDE_DIR}")
     message(STATUS "UFE library: ${UFE_LIBRARY}")
     message(STATUS "UFE version: ${UFE_VERSION}")
+endif()
+
+set(UFE_LIGHTS_SUPPORT FALSE CACHE INTERNAL "ufeLights")
+if (UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/lightHandler.h")
+    set(UFE_LIGHTS_SUPPORT TRUE CACHE INTERNAL "ufeLights")
+    message(STATUS "Maya has UFE lights API")
+endif()
+
+set(UFE_SCENE_SEGMENT_SUPPORT FALSE CACHE INTERNAL "ufeSceneSegment")
+if (UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/sceneSegmentHandler.h")
+    set(UFE_SCENE_SEGMENT_SUPPORT TRUE CACHE INTERNAL "ufeSceneSegment")
+    message(STATUS "Maya has UFE scene segment API")
 endif()

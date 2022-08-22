@@ -56,6 +56,13 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022)
     )
 endif()
 
+if(MAYA_CAMERA_GIZMO_SUPPORT)
+    list(APPEND TEST_SCRIPT_FILES
+        testVP2RenderDelegateLights.py
+        testVP2RenderDelegateCameras.py
+    )
+endif()
+
 if (CMAKE_WANT_MATERIALX_BUILD)
     # We want modern OCIO for the MaterialX test:
     mayaUsd_get_unittest_target(target testVP2RenderDelegateMaterialX.py)
@@ -81,6 +88,12 @@ if(MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT)
     list(APPEND TEST_SCRIPT_FILES
         testVP2RenderDelegateIsolateSelect.py
     )
+endif()
+
+if (MAYA_HAS_DISPLAY_LAYER_API)
+    list(APPEND TEST_SCRIPT_FILES
+        testVP2RenderDelegateDisplayLayers.py
+        )
 endif()
 
 foreach(script ${TEST_SCRIPT_FILES})

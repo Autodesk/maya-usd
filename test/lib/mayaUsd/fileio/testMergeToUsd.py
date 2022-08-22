@@ -336,6 +336,45 @@ class MergeToUsdTestCase(unittest.TestCase):
         self.assertEqual(1, len(opOrder))
         self.assertEqual("xformOp:rotateY", opOrder[0])
 
+    def testPrimvarsNormalsMergeToUsd(self):
+        '''Merge edits when the original USD had primvars normals vs the Maya-generated normals.'''
+
+        # Create a simple scene with a prim with a rotateY attribute.
+        testFile = getTestScene("normals", "primvars_normals.usda")
+        testDagPath, stage = mayaUtils.createProxyFromFile(testFile)
+        usdSpherePathString = testDagPath + ",/pSphere1"
+
+
+        # Check that the primvars:normals and primvaras:normals:indices are present,
+        # and check a few others.
+        sphereBottomPrim = stage.GetPrimAtPath("/pSphere1")
+        self.assertTrue(sphereBottomPrim.HasAttribute("primvars:normals"))
+        self.assertTrue(sphereBottomPrim.HasAttribute("primvars:normals:indices"))
+        self.assertTrue(sphereBottomPrim.HasAttribute("primvars:st"))
+        self.assertTrue(sphereBottomPrim.HasAttribute("primvars:st:indices"))
+        sphereBottomPrim = None
+
+        # Edit as maya and do nothing.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(usdSpherePathString))
+
+        sphereMayaItem = ufe.GlobalSelection.get().front()
+
+        # Merge edits back to USD.
+        with mayaUsd.lib.OpUndoItemList():
+            sphereMayaPath = sphereMayaItem.path()
+            sphereMayaPathStr = ufe.PathString.string(sphereMayaPath)
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(sphereMayaPathStr))
+
+        # Check that the normal attribute was created and the primvars:normals and
+        # primvaras:normals:indices are gone.
+        sphereBottomPrim = stage.GetPrimAtPath("/pSphere1")
+        self.assertTrue(sphereBottomPrim.HasAttribute("normals"))
+        self.assertFalse(sphereBottomPrim.HasAttribute("primvars:normals"))
+        self.assertFalse(sphereBottomPrim.HasAttribute("primvars:normals:indices"))
+        self.assertTrue(sphereBottomPrim.HasAttribute("primvars:st"))
+        self.assertTrue(sphereBottomPrim.HasAttribute("primvars:st:indices"))
+
     def testMergeToUsdReferencedPrim(self):
         '''Merge edits on a USD reference back to USD.'''
 

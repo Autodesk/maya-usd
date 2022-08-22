@@ -552,6 +552,15 @@ void HdMayaSceneDelegate::InsertDag(const MDagPath& dag)
         return;
     }
 
+    // Skip UFE nodes coming from USD runtime
+    // Those will be handled by USD Imaging delegate
+    MStatus              status;
+    static const MString ufeRuntimeStr = "ufeRuntime";
+    MPlug                ufeRuntimePlug = dagNode.findPlug(ufeRuntimeStr, false, &status);
+    if ((status == MS::kSuccess) && ufeRuntimePlug.asString() == "USD") {
+        return;
+    }
+
     // Custom lights don't have MFn::kLight.
     if (GetLightsEnabled()) {
         if (Create(dag, HdMayaAdapterRegistry::GetLightAdapterCreator(dag), _lightAdapters, true))

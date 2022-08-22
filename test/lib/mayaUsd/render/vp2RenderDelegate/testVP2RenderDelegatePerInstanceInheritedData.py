@@ -43,9 +43,9 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
 
     @classmethod
     def setUpClass(cls):
-        # The test USD data is authored Z-up, so make sure Maya is configured
+        # The baselines assume Y-up, so make sure Maya is configured
         # that way too.
-        # cmds.upAxis(axis='z')
+        cmds.upAxis(axis='y')
 
         inputPath = fixturesUtils.setUpClass(__file__,
             initializeStandalone=False, loadPlugin=False)
@@ -150,6 +150,14 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
     @unittest.skipUnless("SkipWhenDefaultMaterialActive" in dir(omr.MRenderItem), "Requires new SDK API")
     def testInstanceDefaultMaterial(self):
         self._StartTest('defaultMaterialBillboards')
+
+        # The color and specular roughness of the default standard surface changed, set
+        # them back to the old default value so the tests keep on working correctly.
+        if maya.mel.eval("defaultShaderName") == "standardSurface1":
+            color = (0.8, 0.8, 0.8)
+            cmds.setAttr("standardSurface1.baseColor", type='float3', *color)
+            cmds.setAttr("standardSurface1.specularRoughness", 0.4)
+
         cmds.select("|stage|stageShape,/root/group/billboard_03",
                     "|stage|stageShape,/root/group/flatquad_03")
         self.assertSnapshotClose('%s_selected.png' % self._testName)

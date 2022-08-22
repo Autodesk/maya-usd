@@ -27,7 +27,7 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-//! \brief Interface to create a UsdUIInfoHandler interface object.
+//! \brief Implementation of Ufe::UIInfoHandler interface for USD objects.
 class MAYAUSD_CORE_PUBLIC UsdUIInfoHandler : public Ufe::UIInfoHandler
 {
 public:

@@ -17,6 +17,8 @@
 
 #include <mayaUsd/base/api.h>
 
+#include <pxr/usd/usd/prim.h>
+
 #include <ufe/cameraHandler.h>
 
 namespace MAYAUSD_NS_DEF {
@@ -42,6 +44,13 @@ public:
 
     // Ufe::CameraHandler overrides
     Ufe::Camera::Ptr camera(const Ufe::SceneItem::Ptr& item) const override;
+
+#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4013)
+    Ufe::Selection find_(const Ufe::Path& path) const override;
+
+    static Ufe::Selection
+    find(const Ufe::Path& stagePath, const Ufe::Path& searchPath, const PXR_NS::UsdPrim& prim);
+#endif
 
 }; // UsdCameraHandler
 
