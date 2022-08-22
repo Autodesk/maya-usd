@@ -92,7 +92,7 @@ void copyTransform(
 {
     // Note: necessary to compile the TF_VERIFY macro as it refers to USD types without using
     //       the namespace prefix.
-    using namespace PXR_NS;
+    PXR_NAMESPACE_USING_DIRECTIVE;
 
     // Copy transform changes that came from the Maya transform node into the
     // Maya reference prim.  The Maya transform node changes have already been
