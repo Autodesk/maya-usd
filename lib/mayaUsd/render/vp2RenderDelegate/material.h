@@ -120,6 +120,8 @@ public:
     class TextureLoadingTask;
     friend class TextureLoadingTask;
 
+    static void OnMayaExit();
+
 private:
     void _ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNetwork& inNet);
 #ifdef WANT_MATERIALX_BUILD
