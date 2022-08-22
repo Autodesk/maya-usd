@@ -2502,18 +2502,24 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
         if (mtlxSdrNode) {
 
             // Create the MaterialX Document from the HdMaterialNetwork
+#if PXR_VERSION > 2111
+            mtlxDoc = HdMtlxCreateMtlxDocumentFromHdNetwork(
+                fixedNetwork,
+                *surfTerminal, // MaterialX HdNode
+                fixedPath,
+                SdfPath(_mtlxTokens->USD_Mtlx_VP2_Material),
+                _GetMaterialXData()._mtlxLibrary);
+#else
             std::set<SdfPath> hdTextureNodes;
             mx::StringMap     mxHdTextureMap; // Mx-Hd texture name counterparts
             mtlxDoc = HdMtlxCreateMtlxDocumentFromHdNetwork(
                 fixedNetwork,
                 *surfTerminal, // MaterialX HdNode
-#if PXR_VERSION > 2111
-                fixedPath,
-#endif
                 SdfPath(_mtlxTokens->USD_Mtlx_VP2_Material),
                 _GetMaterialXData()._mtlxLibrary,
                 &hdTextureNodes,
                 &mxHdTextureMap);
+#endif
 
             if (!mtlxDoc) {
                 return shaderInstance;
