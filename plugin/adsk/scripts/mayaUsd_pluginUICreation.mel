@@ -50,5 +50,6 @@ global proc mayaUsd_pluginUICreation()
         source "mayaUsdAddMayaReference.mel";
         source "mayaUsdCacheMayaReference.mel";
         source "mayaUsdMergeToUSDOptions.mel";
+        source "mayaUsdDuplicateAsMayaDataOptions.mel";
     }
 }

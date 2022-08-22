@@ -62,6 +62,39 @@ namespace {
 //       them differently.
 const Usd_PrimFlagsConjunction MayaUsdPrimDefaultPredicate = UsdPrimIsDefined && !UsdPrimIsAbstract;
 
+UsdPrimSiblingRange invalidSiblingRange()
+{
+    // Note: we explicitly create a range using the *same* underlying iterator instance
+    //       to ensure the range can be detected as being empty.
+    //
+    //       Normally, we would simply return a default-constructed range, but there
+    //       is a bug in USD that default-constructed ranges create invalid object
+    //       containing uninitialized pointers that are very likely to crash, because
+    //       they will *not* be interpreted as an empty range because the uninitialized
+    //       pointers are *very unlikely* to have the same value and "look" like identical
+    //       iterators. Most of the times they will have different value and thus look like
+    //       a large range pointing at random locations and crash on use.
+    //
+    //       The low-level cause is that the range class in based on boost adaptors, which
+    //       take as template argument the type of the underlying iterator. Unfortunately,
+    //       USD uses raw pointers as the underlying iterator type. Also unfortunately,
+    //       boost adaptor default constructor does nothing, which mean its member variable
+    //       use the default constructor, which is a no-op for raw pointers. Boost should
+    //       have used the "member_var {}" trick to initialize its members to proper
+    //       default values even in the presence of pointers.
+    //
+    //       So we instead explicitly build a range using the same underlying iterator instance.
+    //       This iterator will also contain an uninitialized pointer (for the same reason as
+    //       above, a boost iterator adaptor problem), but since it will be the same pointer
+    //       in the begin and end iterator, they will look like an empty range and prevent any
+    //       algorithm from deferencing the invalid pointer.
+    //
+    //       And to be even safer, we use a static variable, which ensures that the uninitialized
+    //       raw pointer will be null.
+    static const UsdPrimSiblingIterator empty;
+    return UsdPrimSiblingRange(empty, empty);
+}
+
 UsdPrimSiblingRange getUSDFilteredChildren(
     const MayaUsd::ufe::UsdSceneItem::Ptr usdSceneItem,
     const Usd_PrimFlagsPredicate          pred = MayaUsdPrimDefaultPredicate)
@@ -73,10 +106,12 @@ UsdPrimSiblingRange getUSDFilteredChildren(
     // point instance should be done either to the PointInstancer or to the
     // prototype that is being instanced.
     if (usdSceneItem->isPointInstance()) {
-        return UsdPrimSiblingRange();
+        return invalidSiblingRange();
     }
 
     const UsdPrim& prim = usdSceneItem->prim();
+    if (!prim.IsValid())
+        return invalidSiblingRange();
 
     // We need to be able to traverse down to instance proxies, so turn
     // on that part of the predicate, since by default, it is off. Since
@@ -214,7 +249,11 @@ Ufe::SceneItem::Ptr UsdHierarchy::parent() const
     // PointInstancer prim to be the "parent" of the point instance, even
     // though this isn't really true in the USD sense. This allows pick-walking
     // from point instances up to their PointInstancer.
-    return UsdSceneItem::create(fItem->path().pop(), prim().GetParent());
+    UsdPrim p = prim();
+    if (p.IsValid())
+        return UsdSceneItem::create(fItem->path().pop(), p.GetParent());
+    else
+        return Hierarchy::createItem(fItem->path().pop());
 }
 
 #ifndef UFE_V2_FEATURES_AVAILABLE
@@ -270,6 +309,10 @@ Ufe::AppendedChild UsdHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
 Ufe::InsertChildCommand::Ptr
 UsdHierarchy::insertChildCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos)
 {
+    // Changing the hierarchy of inactive items is not allowed.
+    if (!fItem->prim().IsActive())
+        return nullptr;
+
     return UsdUndoInsertChildCommand::create(fItem, downcast(child), downcast(pos));
 }
 
@@ -277,6 +320,9 @@ Ufe::SceneItem::Ptr
 UsdHierarchy::insertChild(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos)
 {
     auto insertChildCommand = insertChildCmd(child, pos);
+    if (!insertChildCommand)
+        return nullptr;
+
     return insertChildCommand->insertedChild();
 }
 

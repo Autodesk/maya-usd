@@ -15,6 +15,8 @@
 //
 #include "editRouter.h"
 
+#include <mayaUsdUtils/MergePrims.h>
+
 #include <pxr/base/tf/callContext.h>
 #include <pxr/base/tf/diagnosticLite.h>
 #include <pxr/base/tf/token.h>
@@ -47,35 +49,119 @@ void editTargetLayer(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionary& 
     routingData["layer"] = PXR_NS::VtValue(layer);
 }
 
+PXR_NS::UsdStageRefPtr getMayaReferenceStage(const PXR_NS::VtDictionary& context)
+{
+    auto foundStage = context.find("stage");
+    if (foundStage == context.end())
+        return nullptr;
+
+    return foundStage->second.Get<PXR_NS::UsdStageRefPtr>();
+}
+
+// Retrieve a value from a USD dictionary, with a default value.
+template <class T> T getDictValue(const PXR_NS::VtDictionary& dict, const char* key, T defaultValue)
+{
+    return PXR_NS::VtDictionaryGet<T>(dict, key, PXR_NS::VtDefault = defaultValue);
+}
+
+// Retrieve a string from a USD dictionary, with a default value.
+// This variation allows specifying the default with a string literal while
+// still having a std::string return value.
+std::string
+getDictString(const PXR_NS::VtDictionary& dict, const char* key, const char* defaultValue = "")
+{
+    return getDictValue(dict, key, std::string(defaultValue));
+}
+
+// Copy the transform from the top Maya object that was holding the top reference
+// object into the prim that represent the Maya Reference.
+//
+// We must pass the destination path in two form: one that is compatible with
+// getPrimAtPath() and one that is compatible with SdfCopySpec(). The reason
+// they are different is that when there is a variant, the destination variant
+// must be specified in the path to SdfCopySpec(), but specifying a variant is
+// not supported by getPrimAtPath(), it fails to find the prim.
+void copyTransform(
+    const PXR_NS::UsdStageRefPtr& srcStage,
+    const PXR_NS::SdfLayerRefPtr& srcLayer,
+    const PXR_NS::SdfPath&        srcSdfPath,
+    const PXR_NS::UsdStageRefPtr& dstStage,
+    const PXR_NS::SdfLayerRefPtr& dstLayer,
+    const PXR_NS::SdfPath&        dstSdfPath,
+    const PXR_NS::SdfPath&        dstSdfPathForMerge)
+{
+    // Note: necessary to compile the TF_VERIFY macro as it refers to USD types without using
+    //       the namespace prefix.
+    using namespace PXR_NS;
+
+    // Copy transform changes that came from the Maya transform node into the
+    // Maya reference prim.  The Maya transform node changes have already been
+    // exported into the temporary layer as a transform prim, which is our
+    // source.  The destination prim in the stage is the Maya reference prim.
+    auto srcPrim = srcStage->GetPrimAtPath(srcSdfPath);
+    if (TF_VERIFY(UsdGeomXformable(srcPrim))) {
+        auto dstPrim = dstStage->GetPrimAtPath(dstSdfPath);
+        if (TF_VERIFY(UsdGeomXformable(dstPrim))) {
+            // The Maya transform that corresponds to the Maya reference prim
+            // only has its transform attributes unlocked.  Bring any transform
+            // attribute edits over to the Maya reference prim.
+            MayaUsdUtils::MergePrimsOptions options;
+            options.ignoreUpperLayerOpinions = false;
+            TF_VERIFY(MayaUsdUtils::mergePrims(
+                srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPathForMerge, options));
+        }
+    }
+}
+
+// Create the prim that will hold the cache.
+void createCachePrim(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const PXR_NS::SdfLayerRefPtr& dstLayer,
+    PXR_NS::SdfPath               dstPrimPath,
+    const PXR_NS::SdfPath&        primPath,
+    bool                          asReference,
+    bool                          append)
+{
+    PXR_NS::UsdPrim cachePrim = stage->DefinePrim(primPath, PXR_NS::TfToken("Xform"));
+
+    auto position = append ? PXR_NS::UsdListPositionFrontOfAppendList
+                           : PXR_NS::UsdListPositionBackOfPrependList;
+
+    if (asReference) {
+        cachePrim.GetReferences().AddReference(
+            dstLayer->GetIdentifier(), dstPrimPath, PXR_NS::SdfLayerOffset(), position);
+    } else {
+        cachePrim.GetPayloads().AddPayload(
+            dstLayer->GetIdentifier(), dstPrimPath, PXR_NS::SdfLayerOffset(), position);
+    }
+}
+
 void cacheMayaReference(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionary& routingData)
 {
     // FIXME  Need to handle undo / redo.
 
     // Read from data provided by MayaReference updater
-    auto foundStage = context.find("stage");
-    if (foundStage == context.end()) {
+    PXR_NS::UsdStageRefPtr stage = getMayaReferenceStage(context);
+    if (!stage)
         return;
-    }
 
-    PXR_NS::UsdStageRefPtr stage = foundStage->second.Get<PXR_NS::UsdStageRefPtr>();
-    if (!stage) {
-        return;
-    }
-
-    auto pulledPathStr
-        = PXR_NS::VtDictionaryGet<std::string>(context, "prim", PXR_NS::VtDefault = "");
+    // Read user arguments provide in the context dictionary.
+    // TODO: document all arguments for plugin users.
+    auto pulledPathStr = getDictString(context, "prim");
+    auto fileFormatExtension = getDictString(context, "defaultUSDFormat");
+    auto dstLayerPath = getDictString(context, "rn_layer");
+    auto dstPrimName = getDictString(context, "rn_primName");
+    bool appendListEdit = (getDictString(context, "rn_listEditType", "Append") == "Append");
+    bool asReference = (getDictString(context, "rn_payloadOrReference", "") == "Reference");
+    bool dstIsVariant = (getDictValue(context, "rn_defineInVariant", 1) == 1);
+    auto dstVariantSet = getDictString(context, "rn_variantSetName");
+    auto dstVariant = getDictString(context, "rn_variantName");
 
     if (!PXR_NS::SdfPath::IsValidPathString(pulledPathStr))
         return;
 
     const PXR_NS::SdfPath pulledPath(pulledPathStr);
-
-    // Read user args
-    auto dstLayerPath
-        = PXR_NS::VtDictionaryGet<std::string>(context, "rn_layer", PXR_NS::VtDefault = "");
-
-    auto dstPrimName
-        = PXR_NS::VtDictionaryGet<std::string>(context, "rn_primName", PXR_NS::VtDefault = "");
+    const PXR_NS::SdfPath pulledParentPath = pulledPath.GetParentPath();
 
     if (dstLayerPath.empty() || dstPrimName.empty())
         return;
@@ -84,8 +170,6 @@ void cacheMayaReference(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionar
     PXR_NS::SdfLayer::FileFormatArguments fileFormatArgs;
     PXR_NS::SdfFileFormatConstPtr         fileFormat;
 
-    auto fileFormatExtension
-        = PXR_NS::VtDictionaryGet<std::string>(context, "defaultUSDFormat", PXR_NS::VtDefault = "");
     if (fileFormatExtension.size() > 0) {
         fileFormatArgs[PXR_NS::UsdUsdFileFormatTokens->FormatArg] = fileFormatExtension;
         auto dummyFilename = std::string("a.") + fileFormatExtension;
@@ -99,59 +183,59 @@ void cacheMayaReference(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionar
         = PXR_NS::SdfLayer::CreateAnonymous("", fileFormat, fileFormatArgs);
     SdfJustCreatePrimInLayer(tmpLayer, dstPrimPath);
 
+    tmpLayer->SetDefaultPrim(dstPrimPath.GetNameToken());
+
     tmpLayer->Export(dstLayerPath, "", fileFormatArgs);
     PXR_NS::SdfLayerRefPtr dstLayer = PXR_NS::SdfLayer::FindOrOpen(dstLayerPath);
     if (!dstLayer)
         return;
 
-    auto listEditName = PXR_NS::VtDictionaryGet<std::string>(
-        context, "rn_listEditType", PXR_NS::VtDefault = "Append");
+    // Copy the transform to the Maya reference prim under the Maya reference variant.
+    {
+        auto srcStage = getDictValue(context, "src_stage", PXR_NS::UsdStageRefPtr());
+        auto srcLayer = getDictValue(context, "src_layer", PXR_NS::SdfLayerRefPtr());
+        auto srcSdfPath = getDictValue(context, "src_path", PXR_NS::SdfPath());
+        auto dstStage = getDictValue(context, "dst_stage", PXR_NS::UsdStageRefPtr());
+        auto dstLayer = getDictValue(context, "dst_layer", PXR_NS::SdfLayerRefPtr());
+        auto dstSdfPath = getDictValue(context, "dst_path", PXR_NS::SdfPath());
 
-    auto createCachePrimFn = [stage, dstLayer, dstPrimPath](
-                                 const PXR_NS::SdfPath& primPath, bool asReference, bool append) {
-        auto cachePrim = stage->DefinePrim(primPath, PXR_NS::TfToken("Xform"));
+        // Prepare destination path for merge, incorporating the destination variant
+        // if caching into a variant.
+        auto dstSdfPathForMerge = dstSdfPath;
+        if (dstIsVariant) {
+            auto primWithVariant = stage->GetPrimAtPath(pulledParentPath);
+            auto variantSet = primWithVariant.GetVariantSet(dstVariantSet);
+            auto parent = dstSdfPath.GetParentPath();
+            auto withVariant
+                = parent.AppendVariantSelection(dstVariantSet, variantSet.GetVariantSelection());
 
-        auto position = append ? PXR_NS::UsdListPositionFrontOfAppendList
-                               : PXR_NS::UsdListPositionBackOfPrependList;
-
-        if (asReference) {
-            cachePrim.GetReferences().AddReference(
-                dstLayer->GetIdentifier(), dstPrimPath, PXR_NS::SdfLayerOffset(), position);
-        } else {
-            cachePrim.GetPayloads().AddPayload(
-                dstLayer->GetIdentifier(), dstPrimPath, PXR_NS::SdfLayerOffset(), position);
+            dstSdfPathForMerge = withVariant.AppendChild(dstSdfPath.GetNameToken());
         }
-    };
+
+        copyTransform(
+            srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath, dstSdfPathForMerge);
+    }
 
     // Prepare the composition
-    auto compositionArc = PXR_NS::VtDictionaryGet<std::string>(
-        context, "rn_payloadOrReference", PXR_NS::VtDefault = "");
-    bool dstIsVariant
-        = (PXR_NS::VtDictionaryGet<int>(context, "rn_defineInVariant", PXR_NS::VtDefault = 1) == 1);
-    const auto parentPath = pulledPath.GetParentPath();
-    const auto cachePrimPath = parentPath.AppendChild(PXR_NS::TfToken(dstPrimName));
+    const auto cachePrimPath = pulledParentPath.AppendChild(PXR_NS::TfToken(dstPrimName));
 
     if (dstIsVariant) {
-        auto dstVariantSet = PXR_NS::VtDictionaryGet<std::string>(
-            context, "rn_variantSetName", PXR_NS::VtDefault = "");
-        auto dstVariant = PXR_NS::VtDictionaryGet<std::string>(
-            context, "rn_variantName", PXR_NS::VtDefault = "");
 
-        PXR_NS::UsdPrim primWithVariant = stage->GetPrimAtPath(parentPath);
-
+        PXR_NS::UsdPrim       primWithVariant = stage->GetPrimAtPath(pulledParentPath);
         PXR_NS::UsdVariantSet variantSet = primWithVariant.GetVariantSet(dstVariantSet);
+
+        // Cache the Maya reference as USD prims under the cache variant.
         if (variantSet.AddVariant(dstVariant) && variantSet.SetVariantSelection(dstVariant)) {
             PXR_NS::UsdEditTarget target = stage->GetEditTarget();
 
             PXR_NS::UsdEditContext switchEditContext(
                 stage, variantSet.GetVariantEditTarget(target.GetLayer()));
 
-            createCachePrimFn(
-                cachePrimPath, (compositionArc == "Reference"), (listEditName == "Append"));
+            createCachePrim(
+                stage, dstLayer, dstPrimPath, cachePrimPath, asReference, appendListEdit);
         }
     } else {
-        createCachePrimFn(
-            cachePrimPath, (compositionArc == "Reference"), (listEditName == "Append"));
+        createCachePrim(stage, dstLayer, dstPrimPath, cachePrimPath, asReference, appendListEdit);
     }
 
     // Fill routing info

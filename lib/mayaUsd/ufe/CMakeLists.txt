@@ -71,6 +71,8 @@ endif()
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
+            # See MayaUIInfoHandler.h comments.
+            MayaUIInfoHandler.cpp
             PulledObjectHierarchy.cpp
             PulledObjectHierarchyHandler.cpp
             UsdPathMappingHandler.cpp
@@ -78,15 +80,34 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     )
 endif()
 
-if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4007)
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-                UsdLight.cpp
-                UsdLightHandler.cpp
-        )
-    endif()
+message(STATUS "UFE_LIGHTS_SUPPORT is ${UFE_LIGHTS_SUPPORT}")
+if (UFE_LIGHTS_SUPPORT)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            UsdLight.cpp
+            UsdLightHandler.cpp
+    )
 
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_LIGHTS_SUPPORT=1
+    )
+endif()
+
+message(STATUS "UFE_SCENE_SEGMENT_SUPPORT is ${UFE_SCENE_SEGMENT_SUPPORT}")
+if (UFE_SCENE_SEGMENT_SUPPORT)
+    target_sources(${PROJECT_NAME}
+    PRIVATE
+        ProxyShapeSceneSegmentHandler.cpp
+    )
+
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_SCENE_SEGMENT_SUPPORT=1
+    )
+endif()
+
+if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4001)
         target_sources(${PROJECT_NAME}
             PRIVATE
@@ -94,6 +115,51 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
                 UsdShaderNodeDefHandler.cpp
         )
     endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4010)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+                UsdShaderAttributeDef.cpp
+                UsdUndoCreateFromNodeDefCommand.cpp
+        )
+    endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4013)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+                ProxyShapeCameraHandler.cpp
+        )
+    endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+                UsdConnections.cpp
+                UsdConnectionHandler.cpp
+        )
+    endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4023)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+                UsdUINodeGraphNode.cpp
+                UsdUINodeGraphNodeHandler.cpp
+        )
+    endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4024)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+                UsdUndoAttributesCommands.cpp
+        )
+    endif()
+endif()
+
+if(PXR_VERSION GREATER_EQUAL 2108)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            UsdUndoMaterialCommands.cpp
+    )
 endif()
 
 set(HEADERS
@@ -165,6 +231,9 @@ endif()
 
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     list(APPEND HEADERS
+        # Not dependent on UFE v3, but used to draw orphaned pulled Maya nodes
+        # in the Outliner, which is a UFE v3 feature.
+        MayaUIInfoHandler.h
         PulledObjectHierarchy.h
         PulledObjectHierarchyHandler.h
         UsdPathMappingHandler.h
@@ -172,20 +241,65 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     )
 endif()
 
-if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4007)
-        list(APPEND HEADERS
-            UsdLight.h
-            UsdLightHandler.h
-        )
-    endif()
+if (UFE_LIGHTS_SUPPORT)
+    list(APPEND HEADERS
+        UsdLight.h
+        UsdLightHandler.h
+    )
+endif()
 
+if (UFE_SCENE_SEGMENT_SUPPORT)
+    list(APPEND HEADERS
+        ProxyShapeSceneSegmentHandler.h
+    )
+endif()
+
+if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4001)
         list(APPEND HEADERS
             UsdShaderNodeDef.h
             UsdShaderNodeDefHandler.h
         )
     endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4010)
+        list(APPEND HEADERS
+            UsdShaderAttributeDef.h
+            UsdUndoCreateFromNodeDefCommand.h
+        )
+    endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4013)
+        list(APPEND HEADERS
+            ProxyShapeCameraHandler.h
+        )
+    endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
+        list(APPEND HEADERS
+            UsdConnections.h
+            UsdConnectionHandler.h
+        )
+    endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4023)
+        list(APPEND HEADERS
+            UsdUINodeGraphNode.h
+            UsdUINodeGraphNodeHandler.h
+        )
+    endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4024)
+        list(APPEND HEADERS
+                UsdUndoAttributesCommands.h
+        )
+    endif()
+endif()
+
+if(PXR_VERSION GREATER_EQUAL 2108)
+    list(APPEND HEADERS
+        UsdUndoMaterialCommands.h
+    )
 endif()
 
 # -----------------------------------------------------------------------------

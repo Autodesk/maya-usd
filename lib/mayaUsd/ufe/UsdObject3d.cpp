@@ -17,6 +17,7 @@
 
 #include <mayaUsd/ufe/UsdUndoVisibleCommand.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/bboxCache.h>
@@ -59,30 +60,29 @@ Ufe::SceneItem::Ptr UsdObject3d::sceneItem() const { return fItem; }
 
 Ufe::BBox3d UsdObject3d::boundingBox() const
 {
-    // Use USD to compute the bounding box.  This is strictly speaking
-    // incorrect, as a USD node may eventually have a Maya child, given the
-    // full generality of UFE paths.  However, as of 24-Oct-2019, this does not
-    // exist.  To support this use case,
+    // Use USD to compute the bounding box in local space.
     // UsdGeomBoundable::ComputeExtentFromPlugins() allows a plugin to register
-    // an extent computation; this should be explored.
-    //
-    // UsdGeomImageable::ComputeUntransformedBound() just calls
-    // UsdGeomBBoxCache, so do this here as well.
+    // an extent computation; this could be explored if needed in the future.
     //
     // Would be nice to know if the object extents are animated or not, so
     // we can bypass time computation and simply use UsdTimeCode::Default()
     // as the time.
 
-    auto path = sceneItem()->path();
-    auto purposes = getProxyShapePurposes(path);
+    const auto& path = sceneItem()->path();
+    auto        purposes = getProxyShapePurposes(path);
     // Add in the default purpose.
     purposes.emplace_back(UsdGeomTokens->default_);
 
-    auto bbox = UsdGeomBBoxCache(getTime(path), purposes).ComputeUntransformedBound(fPrim);
+    // UsdGeomImageable::ComputeUntransformedBound() just calls
+    // UsdGeomBBoxCache, so do this here as well.
+    auto time = getTime(path);
+    auto bbox = UsdGeomBBoxCache(time, purposes).ComputeUntransformedBound(fPrim);
+
+    // Add maya-specific extents
+    UsdMayaUtil::AddMayaExtents(bbox, fPrim, time);
+
     auto range = bbox.ComputeAlignedRange();
-    auto min = range.GetMin();
-    auto max = range.GetMax();
-    return Ufe::BBox3d(toVector3d(min), toVector3d(max));
+    return Ufe::BBox3d(toVector3d(range.GetMin()), toVector3d(range.GetMax()));
 }
 
 bool UsdObject3d::visibility() const

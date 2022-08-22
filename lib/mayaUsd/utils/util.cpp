@@ -81,8 +81,12 @@
 #include <pxr/base/vt/value.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/tokens.h>
+#include <pxr/usd/usdGeom/camera.h>
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/metrics.h>
+#include <pxr/usd/usdGeom/xformCache.h>
+
+#include <cctype>
 
 using namespace MAYAUSD_NS_DEF;
 
@@ -117,6 +121,18 @@ bool shouldAddToSet(const MDagPath& toAdd, const UsdMayaUtil::MDagPathSet& dagPa
     }
 
     return true;
+}
+
+bool GetMayaExtent(const UsdPrim& prim, GfRange3d& range)
+{
+    if (prim.IsA<UsdGeomCamera>()) {
+        // UsdGeomCamera, not being a UsdGeomBoundable, doesn't provide any extent information.
+        // So let's add Maya camera dimensions here
+        range = GfRange3d(GfVec3d(-0.4f, -0.3f, -2.0f), GfVec3d(0.4f, 1.0f, 2.0f));
+        return true;
+    }
+
+    return false;
 }
 } // namespace
 
@@ -706,6 +722,32 @@ std::string UsdMayaUtil::stripNamespaces(const std::string& nodeName, const int 
 std::string UsdMayaUtil::SanitizeName(const std::string& name)
 {
     return TfStringReplace(name, ":", "_");
+}
+
+std::string UsdMayaUtil::prettifyName(const std::string& name)
+{
+    std::string prettyName(1, std::toupper(name[0]));
+    size_t      nbChars = name.size();
+    bool        capitalizeNext = false;
+    for (size_t i = 1; i < nbChars; ++i) {
+        unsigned char nextLetter = name[i];
+        if (capitalizeNext) {
+            nextLetter = std::toupper(nextLetter);
+            capitalizeNext = false;
+        }
+        if (std::isupper(name[i]) && !std::isdigit(name[i - 1])) {
+            if ((i < (nbChars - 1)) && !std::isupper(name[i + 1])) {
+                prettyName += ' ';
+            }
+            prettyName += nextLetter;
+        } else if (name[i] == '_') {
+            prettyName += " ";
+            capitalizeNext = true;
+        } else {
+            prettyName += nextLetter;
+        }
+    }
+    return prettyName;
 }
 
 // This to allow various pipeline to sanitize the colorset name for output
@@ -2522,4 +2564,22 @@ UsdMayaUtil::getAllSublayers(const std::vector<std::string>& layerPaths, bool in
     }
 
     return layers;
+}
+
+void UsdMayaUtil::AddMayaExtents(GfBBox3d& bbox, const UsdPrim& root, const UsdTimeCode time)
+{
+    GfRange3d localExtents;
+    if (GetMayaExtent(root, localExtents)) {
+        bbox = GfBBox3d::Combine(bbox, GfBBox3d(localExtents));
+    }
+
+    UsdGeomXformCache   xformCache(time);
+    UsdPrimSubtreeRange descendants = root.GetDescendants();
+    for (auto it = descendants.begin(); it != descendants.end(); ++it) {
+        if (GetMayaExtent(*it, localExtents)) {
+            bool resetXformStack;
+            auto xform = xformCache.ComputeRelativeTransform(*it, root, &resetXformStack);
+            bbox = GfBBox3d::Combine(bbox, GfBBox3d(localExtents, xform));
+        }
+    }
 }

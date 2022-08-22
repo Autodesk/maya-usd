@@ -18,6 +18,7 @@
 
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/jobs/writeJob.h>
+#include <mayaUsd/utils/progressBarScope.h>
 
 #include <maya/MFileObject.h>
 #include <maya/MGlobal.h>
@@ -56,6 +57,10 @@ MStatus UsdMayaExportTranslator::writer(
 
     std::string fileName(file.fullName().asChar(), file.fullName().length());
 
+    MString progStatus, mStrFileName(fileName.c_str());
+    progStatus.format("Writing ^1s", mStrFileName);
+    MayaUsd::ProgressBarScope progressBar(3, progStatus);
+
     MSelectionList           objSelList;
     UsdMayaUtil::MDagPathSet dagPaths;
     GetFilteredSelectionToExport(
@@ -65,6 +70,7 @@ MStatus UsdMayaExportTranslator::writer(
         TF_WARN("No DAG nodes to export. Skipping.");
         return MS::kSuccess;
     }
+    progressBar.advance();
 
     VtDictionary userArgs;
     MStatus      status
@@ -77,11 +83,13 @@ MStatus UsdMayaExportTranslator::writer(
 
     auto jobArgs = UsdMayaJobExportArgs::CreateFromDictionary(userArgs, dagPaths, timeSamples);
     bool append = false;
+    progressBar.advance();
 
     UsdMaya_WriteJob writeJob(jobArgs);
     if (!writeJob.Write(fileName, append)) {
         return MS::kFailure;
     }
+    progressBar.advance();
 
     return MS::kSuccess;
 }

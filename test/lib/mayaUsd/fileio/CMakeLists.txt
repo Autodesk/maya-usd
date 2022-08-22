@@ -3,7 +3,9 @@ set(TEST_SCRIPT_FILES
     testPrimWriter.py
     testExportChaser.py
     testImportChaser.py
+    testImportWithNamespace.py
     testJobContextRegistry.py
+    testDisplayLayerSaveRestore.py
 
     # Once of the tests in this file requires UsdMaya (from the Pixar plugin). That test
     # will be skipped if not found (probably because BUILD_PXR_PLUGIN is off).

@@ -68,38 +68,108 @@ bool isTransformChange(const TfToken& nameToken)
     return nameToken == UsdGeomTokens->xformOpOrder || UsdGeomXformOp::IsXformOp(nameToken);
 }
 
+// Prevent exception from the notifications from escaping and breaking USD/Maya.
+// USD does not wrap its notification in try/catch, so we need to do it ourselves.
+template <class RECEIVER, class NOTIFICATION>
+void notifyWithoutExceptions(const NOTIFICATION& notif)
+{
+    try {
+        RECEIVER::notify(notif);
+    } catch (const std::exception& ex) {
+        TF_WARN("Caught error during notification: %s", ex.what());
+    }
+}
+
 #ifdef UFE_V2_FEATURES_AVAILABLE
 // The attribute change notification guard is not meant to be nested, but
 // use a counter nonetheless to provide consistent behavior in such cases.
 std::atomic_int attributeChangedNotificationGuardCount { 0 };
 
-// Keep an array of the pending attribute change notifications. Using a vector
+enum class AttributeChangeType
+{
+    kAdded,
+    kValueChanged,
+    kConnectionChanged,
+    kRemoved
+};
+
+struct AttributeNotification
+{
+    Ufe::Path           _path;
+    TfToken             _token;
+    AttributeChangeType _type;
+
+    bool operator==(const AttributeNotification& other)
+    {
+        // Only collapse multiple value changes. Collapsing added/removed notifications needs to be
+        // done safely so the observer ends up in the right state.
+        return other._type == _type && other._token == _token && other._path == _path
+            && _type == AttributeChangeType::kValueChanged;
+    }
+};
+
+// Keep an array of the pending attribute notifications. Using a vector
 // for two main reasons:
 // 1) Order of notifs must be maintained.
 // 2) Allow notif with same path, but different token. At worst the check is linear
 //    in the size of the vector (which is the same as an unordered_multimap).
-std::vector<std::pair<Ufe::Path, TfToken>> pendingAttributeChangedNotifications;
+std::vector<AttributeNotification> pendingAttributeChangedNotifications;
 
 bool inAttributeChangedNotificationGuard()
 {
     return attributeChangedNotificationGuardCount.load() > 0;
 }
 
-void sendValueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
+#if (UFE_PREVIEW_VERSION_NUM >= 4024)
+#define UFE_V4_24(...) __VA_ARGS__
+#else
+#define UFE_V4_24(...)
+#endif
+
+void sendAttributeChanged(
+    const Ufe::Path&    ufePath,
+    const TfToken&      changedToken,
+    AttributeChangeType UFE_V4_24(changeType))
 {
-    Ufe::AttributeValueChanged vc(ufePath, changedToken.GetString());
-    Ufe::Attributes::notify(vc);
+#if (UFE_PREVIEW_VERSION_NUM >= 4024)
+    switch (changeType) {
+    case AttributeChangeType::kValueChanged: {
+        notifyWithoutExceptions<Ufe::Attributes>(
+            Ufe::AttributeValueChanged(ufePath, changedToken.GetString()));
+
+        if (MayaUsd::ufe::UsdCamera::isCameraToken(changedToken)) {
+            notifyWithoutExceptions<Ufe::Camera>(ufePath);
+        }
+    } break;
+    case AttributeChangeType::kAdded: {
+        notifyWithoutExceptions<Ufe::Attributes>(
+            Ufe::AttributeAdded(ufePath, changedToken.GetString()));
+    } break;
+    case AttributeChangeType::kRemoved: {
+        notifyWithoutExceptions<Ufe::Attributes>(
+            Ufe::AttributeRemoved(ufePath, changedToken.GetString()));
+    } break;
+    case AttributeChangeType::kConnectionChanged: {
+        notifyWithoutExceptions<Ufe::Attributes>(
+            Ufe::AttributeConnectionChanged(ufePath, changedToken.GetString()));
+    } break;
+    }
+#else
+    notifyWithoutExceptions<Ufe::Attributes>(
+        Ufe::AttributeValueChanged(ufePath, changedToken.GetString()));
 
     if (MayaUsd::ufe::UsdCamera::isCameraToken(changedToken)) {
-        Ufe::Camera::notify(ufePath);
+        notifyWithoutExceptions<Ufe::Camera>(ufePath);
     }
+#endif
 }
 
 void valueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
 {
     if (inAttributeChangedNotificationGuard()) {
         // Don't add pending notif if one already exists with same path/token.
-        auto p = std::make_pair(ufePath, changedToken);
+        auto p
+            = AttributeNotification { ufePath, changedToken, AttributeChangeType::kValueChanged };
         if (std::find(
                 pendingAttributeChangedNotifications.begin(),
                 pendingAttributeChangedNotifications.end(),
@@ -108,62 +178,141 @@ void valueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
             pendingAttributeChangedNotifications.emplace_back(p);
         }
     } else {
-        sendValueChanged(ufePath, changedToken);
+        sendAttributeChanged(ufePath, changedToken, AttributeChangeType::kValueChanged);
     }
 }
+
+#if (UFE_PREVIEW_VERSION_NUM >= 4024)
+void attributeChanged(
+    const Ufe::Path&    ufePath,
+    const TfToken&      changedToken,
+    AttributeChangeType changeType)
+{
+    if (inAttributeChangedNotificationGuard()) {
+        // Don't add pending notif if one already exists with same path/token.
+        auto p = AttributeNotification { ufePath, changedToken, changeType };
+        if (std::find(
+                pendingAttributeChangedNotifications.begin(),
+                pendingAttributeChangedNotifications.end(),
+                p)
+            == pendingAttributeChangedNotifications.end()) {
+            pendingAttributeChangedNotifications.emplace_back(p);
+        }
+    } else {
+        sendAttributeChanged(ufePath, changedToken, changeType);
+    }
+}
+#endif
+
+void processAttributeChanges(
+    const Ufe::Path&                                ufePath,
+    const SdfPath&                                  changedPath,
+    const std::vector<const SdfChangeList::Entry*>& UFE_V4_24(entries))
+{
+#if (UFE_PREVIEW_VERSION_NUM >= 4024)
+    bool sendValueChanged = false;
+    bool sendAdded = false;
+    bool sendRemoved = false;
+    bool sendConnectionChanged = false;
+    for (const auto& entry : entries) {
+        if (entry->flags.didAddProperty || entry->flags.didAddPropertyWithOnlyRequiredFields) {
+            sendAdded = true;
+        } else if (
+            entry->flags.didRemoveProperty
+            || entry->flags.didRemovePropertyWithOnlyRequiredFields) {
+            sendRemoved = true;
+        } else if (entry->flags.didChangeAttributeConnection) {
+            sendConnectionChanged = true;
+        } else {
+            sendValueChanged = true;
+        }
+    }
+    if (sendAdded) {
+        attributeChanged(ufePath, changedPath.GetNameToken(), AttributeChangeType::kAdded);
+    }
+    if (sendValueChanged) {
+        valueChanged(ufePath, changedPath.GetNameToken());
+    }
+    if (sendConnectionChanged) {
+        attributeChanged(
+            ufePath, changedPath.GetNameToken(), AttributeChangeType::kConnectionChanged);
+    }
+    if (sendRemoved) {
+        attributeChanged(ufePath, changedPath.GetNameToken(), AttributeChangeType::kRemoved);
+    }
+#else
+    valueChanged(ufePath, changedPath.GetNameToken());
+#endif
+};
 
 #endif
 
 void sendObjectAdd(const Ufe::SceneItem::Ptr& sceneItem)
 {
+    try {
 #ifdef UFE_V2_FEATURES_AVAILABLE
-    Ufe::Scene::instance().notify(Ufe::ObjectAdd(sceneItem));
+        Ufe::Scene::instance().notify(Ufe::ObjectAdd(sceneItem));
 #else
-    auto notification = Ufe::ObjectAdd(sceneItem);
-    Ufe::Scene::notifyObjectAdd(notification);
+        auto notification = Ufe::ObjectAdd(sceneItem);
+        Ufe::Scene::notifyObjectAdd(notification);
 #endif
+    } catch (const std::exception& ex) {
+        TF_WARN("Caught error during notification: %s", ex.what());
+    }
 }
 
 void sendObjectPostDelete(const Ufe::SceneItem::Ptr& sceneItem)
 {
+    try {
 #ifdef UFE_V2_FEATURES_AVAILABLE
-    Ufe::Scene::instance().notify(Ufe::ObjectPostDelete(sceneItem));
+        Ufe::Scene::instance().notify(Ufe::ObjectPostDelete(sceneItem));
 #else
-    auto notification = Ufe::ObjectPostDelete(sceneItem);
-    Ufe::Scene::notifyObjectDelete(notification);
+        auto notification = Ufe::ObjectPostDelete(sceneItem);
+        Ufe::Scene::notifyObjectDelete(notification);
 #endif
+    } catch (const std::exception& ex) {
+        TF_WARN("Caught error during notification: %s", ex.what());
+    }
 }
 
 void sendObjectDestroyed(const Ufe::Path& ufePath)
 {
+    try {
 #ifdef UFE_V2_FEATURES_AVAILABLE
-    Ufe::Scene::instance().notify(Ufe::ObjectDestroyed(ufePath));
+        Ufe::Scene::instance().notify(Ufe::ObjectDestroyed(ufePath));
 #else
-    // Unfortunately in Ufe v1 there was no object destroyed notif
-    // and the only delete notifs we have both take a scene item
-    // which we cannot create for the input Ufe path since that
-    // path is no longer valid (it has already been destroyed).
-    // So the only choice we have is to subtree invalidate the
-    // parent which will remove the destroyed item (keeping all
-    // the valid children).
-    auto sceneItem = Ufe::Hierarchy::createItem(ufePath.pop());
-    if (TF_VERIFY(sceneItem)) {
-        sendObjectPostDelete(sceneItem);
-        sendObjectAdd(sceneItem);
-    }
+        // Unfortunately in Ufe v1 there was no object destroyed notif
+        // and the only delete notifs we have both take a scene item
+        // which we cannot create for the input Ufe path since that
+        // path is no longer valid (it has already been destroyed).
+        // So the only choice we have is to subtree invalidate the
+        // parent which will remove the destroyed item (keeping all
+        // the valid children).
+        auto sceneItem = Ufe::Hierarchy::createItem(ufePath.pop());
+        if (TF_VERIFY(sceneItem)) {
+            sendObjectPostDelete(sceneItem);
+            sendObjectAdd(sceneItem);
+        }
 #endif
+    } catch (const std::exception& ex) {
+        TF_WARN("Caught error during notification: %s", ex.what());
+    }
 }
 
 void sendSubtreeInvalidate(const Ufe::SceneItem::Ptr& sceneItem)
 {
+    try {
 #ifdef UFE_V2_FEATURES_AVAILABLE
-    Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
+        Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
 #else
-    // In Ufe v1 there was no subtree invalidate notif. So we mimic it by sending
-    // delete/add notifs.
-    sendObjectPostDelete(sceneItem);
-    sendObjectAdd(sceneItem);
+        // In Ufe v1 there was no subtree invalidate notif. So we mimic it by sending
+        // delete/add notifs.
+        sendObjectPostDelete(sceneItem);
+        sendObjectAdd(sceneItem);
 #endif
+    } catch (const std::exception& ex) {
+        TF_WARN("Caught error during notification: %s", ex.what());
+    }
 }
 
 } // namespace
@@ -310,11 +459,10 @@ void StagesSubject::stageChanged(
             auto ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
             if (isTransformChange(nameToken)) {
                 if (!InTransform3dChange::inTransform3dChange()) {
-                    Ufe::Transform3d::notify(ufePath);
+                    notifyWithoutExceptions<Ufe::Transform3d>(ufePath);
                 }
             }
-            UFE_V2(valueChanged(ufePath, changedPath.GetNameToken());)
-
+            UFE_V2(processAttributeChanges(ufePath, changedPath, it.base()->second);)
             // No further processing for this prim property path is required.
             continue;
         }
@@ -422,14 +570,14 @@ void StagesSubject::stageChanged(
         // isPropertyPath() does consider relational attributes
         // isRelationalAttributePath() considers only relational attributes
         if (changedPath.IsPrimPropertyPath()) {
-            valueChanged(ufePath, changedPath.GetNameToken());
+            processAttributeChanges(ufePath, changedPath, it.base()->second);
             sendValueChangedFallback = false;
         }
 
         // Send a special message when visibility has changed.
         if (changedPath.GetNameToken() == UsdGeomTokens->visibility) {
             Ufe::VisibilityChanged vis(ufePath);
-            Ufe::Object3d::notify(vis);
+            notifyWithoutExceptions<Ufe::Object3d>(vis);
             sendValueChangedFallback = false;
         }
 #endif
@@ -439,7 +587,7 @@ void StagesSubject::stageChanged(
             const UsdPrim prim = stage->GetPrimAtPath(changedPath.GetPrimPath());
             const TfToken nameToken = changedPath.GetNameToken();
             if (isTransformChange(nameToken)) {
-                Ufe::Transform3d::notify(ufePath);
+                notifyWithoutExceptions<Ufe::Transform3d>(ufePath);
                 UFE_V2(sendValueChangedFallback = false;)
             } else if (prim && prim.IsA<UsdGeomPointInstancer>()) {
                 // If the prim at the changed path is a PointInstancer, check
@@ -485,7 +633,7 @@ void StagesSubject::stageChanged(
                     for (int instanceIndex = 0; instanceIndex < numIndices; ++instanceIndex) {
                         const Ufe::Path instanceUfePath = stagePath(sender)
                             + usdPathToUfePathSegment(changedPath.GetPrimPath(), instanceIndex);
-                        Ufe::Transform3d::notify(instanceUfePath);
+                        notifyWithoutExceptions<Ufe::Transform3d>(instanceUfePath);
                     }
                     UFE_V2(sendValueChangedFallback = false;)
                 }
@@ -516,7 +664,7 @@ void StagesSubject::stageChanged(
     if (notice.GetResyncedPaths().empty() && notice.GetChangedInfoOnlyPaths().empty()) {
         auto                       ufePath = stagePath(sender);
         Ufe::AttributeValueChanged vc(ufePath, "/");
-        Ufe::Attributes::notify(vc);
+        notifyWithoutExceptions<Ufe::Attributes>(vc);
     }
 #endif
 }
@@ -617,7 +765,8 @@ AttributeChangedNotificationGuard::~AttributeChangedNotificationGuard()
     }
 
     for (const auto& notificationInfo : pendingAttributeChangedNotifications) {
-        sendValueChanged(notificationInfo.first, notificationInfo.second);
+        sendAttributeChanged(
+            notificationInfo._path, notificationInfo._token, notificationInfo._type);
     }
 
     pendingAttributeChangedNotifications.clear();

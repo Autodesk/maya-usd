@@ -29,6 +29,7 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
 #include <pxr/usd/usdGeom/mesh.h>
+#include <pxr/usd/usdGeom/primvarsAPI.h>
 #include <pxr/usd/usdGeom/subset.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdUtils/pipeline.h>
@@ -598,7 +599,7 @@ void UsdMayaMeshReadUtils::assignPrimvarsToMesh(
     MFnMesh meshFn(meshObj);
 
     // GETTING PRIMVARS
-    const std::vector<UsdGeomPrimvar> primvars = mesh.GetPrimvars();
+    const std::vector<UsdGeomPrimvar> primvars = UsdGeomPrimvarsAPI(mesh).GetPrimvars();
     bool                              firstUVPrimvar = true;
 
     for (const UsdGeomPrimvar& primvar : primvars) {

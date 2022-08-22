@@ -140,7 +140,9 @@ class testUsdExportUVSets(unittest.TestCase):
             shadingMode='none',
             exportColorSets=False,
             exportDisplayColor=False,
-            exportUVs=True)
+            exportUVs=True,
+            preserveUVSetNames=False,
+            remapUVSetsTo=[['','']])
 
         testUsdExportUVSets._stage = Usd.Stage.Open(usdFilePath)
 
@@ -168,7 +170,7 @@ class testUsdExportUVSets(unittest.TestCase):
         """
         usdCubeMesh = self._GetCubeUsdMesh('EmptyDefaultUVSetCube')
 
-        self.assertFalse(usdCubeMesh.GetPrimvar('map1'))
+        self.assertFalse(UsdGeom.PrimvarsAPI(usdCubeMesh).GetPrimvar('map1'))
 
     def testExportDefaultUVSet(self):
         """
@@ -207,7 +209,7 @@ class testUsdExportUVSets(unittest.TestCase):
 
         expectedInterpolation = UsdGeom.Tokens.faceVarying
 
-        primvar = usdCubeMesh.GetPrimvar('st')
+        primvar = UsdGeom.PrimvarsAPI(usdCubeMesh).GetPrimvar('st')
 
         self._AssertUVPrimvar(primvar,
             expectedValues=expectedValues,
@@ -250,7 +252,7 @@ class testUsdExportUVSets(unittest.TestCase):
 
         expectedInterpolation = UsdGeom.Tokens.faceVarying
 
-        primvar = usdCubeMesh.GetPrimvar('st')
+        primvar = UsdGeom.PrimvarsAPI(usdCubeMesh).GetPrimvar('st')
 
         self._AssertUVPrimvar(primvar,
             expectedValues=expectedValues,
@@ -284,7 +286,7 @@ class testUsdExportUVSets(unittest.TestCase):
 
         expectedInterpolation = UsdGeom.Tokens.faceVarying
 
-        primvar = usdCubeMesh.GetPrimvar('st')
+        primvar = UsdGeom.PrimvarsAPI(usdCubeMesh).GetPrimvar('st')
 
         self._AssertUVPrimvar(primvar,
             expectedValues=expectedValues,
@@ -297,7 +299,7 @@ class testUsdExportUVSets(unittest.TestCase):
         """
         Uses roundtripping utils to get a renamed primvar.
         """
-        for primVar in mesh.GetPrimvars():
+        for primVar in UsdGeom.PrimvarsAPI(mesh).GetPrimvars():
             if mayaUsdLib.RoundTripUtil.GetPrimVarMayaName(primVar) == name:
                 return primVar
 
@@ -357,7 +359,7 @@ class testUsdExportUVSets(unittest.TestCase):
         """
         brokenBoxMesh = UsdGeom.Mesh(self._stage.GetPrimAtPath(
                 "/UsdExportUVSetsTest/Geom/BrokenUVs/box"))
-        stPrimvar = brokenBoxMesh.GetPrimvar("st").ComputeFlattened()
+        stPrimvar = UsdGeom.PrimvarsAPI(brokenBoxMesh).GetPrimvar("st").ComputeFlattened()
 
         self.assertEqual(stPrimvar[0], Gf.Vec2f(1.0, 2.0))
 
@@ -381,10 +383,11 @@ class testUsdExportUVSets(unittest.TestCase):
 
         # Sets should all be renamed to st1, st2, etc. by default
         usdCubeMesh = self._GetCubeUsdMesh('MultipleUVSetsCube')
-        map1 = usdCubeMesh.GetPrimvar('map1')
-        st = usdCubeMesh.GetPrimvar('st')
-        st1 = usdCubeMesh.GetPrimvar('st1')
-        foo1 = usdCubeMesh.GetPrimvar('foo1')
+        pvAPI = UsdGeom.PrimvarsAPI(usdCubeMesh)
+        map1 = pvAPI.GetPrimvar('map1')
+        st = pvAPI.GetPrimvar('st')
+        st1 = pvAPI.GetPrimvar('st1')
+        foo1 = pvAPI.GetPrimvar('foo1')
         self.assertFalse(map1)
         self.assertTrue(st)
         self.assertTrue(st1)
@@ -393,11 +396,12 @@ class testUsdExportUVSets(unittest.TestCase):
         # Sets should not be renamed at all when preserveUVSetNames is True
         usdCubeMesh = reexportUVSets(
             preserveUVSetNames=True,
-            remapUVSetsTo=[])
-        map1 = usdCubeMesh.GetPrimvar('map1')
-        st = usdCubeMesh.GetPrimvar('st')
-        st1 = usdCubeMesh.GetPrimvar('st1')
-        foo1 = usdCubeMesh.GetPrimvar('foo1')
+            remapUVSetsTo=[['','']])
+        pvAPI = UsdGeom.PrimvarsAPI(usdCubeMesh)
+        map1 = pvAPI.GetPrimvar('map1')
+        st = pvAPI.GetPrimvar('st')
+        st1 = pvAPI.GetPrimvar('st1')
+        foo1 = pvAPI.GetPrimvar('foo1')
         self.assertTrue(map1)
         self.assertFalse(st)
         self.assertFalse(st1)
@@ -408,11 +412,12 @@ class testUsdExportUVSets(unittest.TestCase):
         usdCubeMesh = reexportUVSets(
             preserveUVSetNames=True,
             remapUVSetsTo=[('map1', 'test1')])
-        map1 = usdCubeMesh.GetPrimvar('map1')
-        st = usdCubeMesh.GetPrimvar('st')
-        st1 = usdCubeMesh.GetPrimvar('st1')
-        foo1 = usdCubeMesh.GetPrimvar('foo1')
-        test1 = usdCubeMesh.GetPrimvar('test1')
+        pvAPI = UsdGeom.PrimvarsAPI(usdCubeMesh)
+        map1 = pvAPI.GetPrimvar('map1')
+        st = pvAPI.GetPrimvar('st')
+        st1 = pvAPI.GetPrimvar('st1')
+        foo1 = pvAPI.GetPrimvar('foo1')
+        test1 = pvAPI.GetPrimvar('test1')
         self.assertFalse(map1)
         self.assertFalse(st)
         self.assertFalse(st1)
@@ -424,11 +429,12 @@ class testUsdExportUVSets(unittest.TestCase):
         usdCubeMesh = reexportUVSets(
             preserveUVSetNames=False,
             remapUVSetsTo=[('map1', 'test1')])
-        map1 = usdCubeMesh.GetPrimvar('map1')
-        st = usdCubeMesh.GetPrimvar('st')
-        st1 = usdCubeMesh.GetPrimvar('st1')
-        foo1 = usdCubeMesh.GetPrimvar('foo1')
-        test1 = usdCubeMesh.GetPrimvar('test1')
+        pvAPI = UsdGeom.PrimvarsAPI(usdCubeMesh)
+        map1 = pvAPI.GetPrimvar('map1')
+        st = pvAPI.GetPrimvar('st')
+        st1 = pvAPI.GetPrimvar('st1')
+        foo1 = pvAPI.GetPrimvar('foo1')
+        test1 = pvAPI.GetPrimvar('test1')
         self.assertFalse(map1)
         self.assertFalse(st)
         self.assertTrue(st1)
@@ -440,12 +446,13 @@ class testUsdExportUVSets(unittest.TestCase):
         usdCubeMesh = reexportUVSets(
             preserveUVSetNames=False,
             remapUVSetsTo=[('map1', 'test1'), ('foo1', 'test2')])
-        map1 = usdCubeMesh.GetPrimvar('map1')
-        st = usdCubeMesh.GetPrimvar('st')
-        st1 = usdCubeMesh.GetPrimvar('st1')
-        foo1 = usdCubeMesh.GetPrimvar('foo1')
-        test1 = usdCubeMesh.GetPrimvar('test1')
-        test2 = usdCubeMesh.GetPrimvar('test2')
+        pvAPI = UsdGeom.PrimvarsAPI(usdCubeMesh)
+        map1 = pvAPI.GetPrimvar('map1')
+        st = pvAPI.GetPrimvar('st')
+        st1 = pvAPI.GetPrimvar('st1')
+        foo1 = pvAPI.GetPrimvar('foo1')
+        test1 = pvAPI.GetPrimvar('test1')
+        test2 = pvAPI.GetPrimvar('test2')
         self.assertFalse(map1)
         self.assertFalse(st)
         self.assertFalse(st1)

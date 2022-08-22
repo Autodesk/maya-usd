@@ -25,6 +25,7 @@
 #include <pxr/usd/usdGeom/tokens.h>
 
 #include <maya/MFileIO.h>
+#include <maya/MGlobal.h>
 #include <maya/MSceneMessage.h>
 
 #include <map>
@@ -57,25 +58,58 @@ struct _OnSceneResetListener : public TfWeakBase
     }
 };
 
+void clearMayaAttributeEditor()
+{
+    // When a stage is deleted, the attribute editor could still refer to prims
+    // that were on that stage. If the attribute editor is collapsed, then it
+    // won't refresh itself and could later on try to access the prim.
+    //
+    // This happens when it receives a UFE notification that it thinks is about
+    // the prim it is showing. This only happens if one re-stage the same file,
+    // as the UFE notification will contain the same stage name and the same
+    // prim path.
+    //
+    // To avoid crashes, we refresh the attribute editor templates when the
+    // stages get cleared.
+    MGlobal::executeCommand("refreshEditorTemplates");
+}
+
 } // anonymous namespace
 
-/* static */
-UsdStageCache& UsdMayaStageCache::Get(const bool loadAll)
+/*static */
+UsdMayaStageCache::Caches& UsdMayaStageCache::GetAllCaches()
 {
-    static UsdStageCache theCacheLoadAll; // used when UsdStage::Open() will be called with
-                                          // UsdStage::InitialLoadSet::LoadAll
-    static UsdStageCache theCache;        // used when UsdStage::Open() will be called with
-                                          // UsdStage::InitialLoadSet::LoadNode
+    static Caches                caches;
     static _OnSceneResetListener onSceneResetListener;
+    return caches;
+}
 
-    return loadAll ? theCacheLoadAll : theCache;
+/* static */
+UsdStageCache& UsdMayaStageCache::Get(UsdStage::InitialLoadSet loadSet, ShareMode shared)
+{
+    // The different caches are separated by:
+    //
+    //    - load all payload / load nothing
+    //    - shared stages / unshared stages
+    //
+    // The load all / load nothing correspond to the UsdStage::InitialLoadSet::LoadAll /
+    // UsdStage::InitialLoadSet::LoadNode mode of UsdStage::Open
+
+    // Note: each criteria uses increasing power of two to select among the array
+    //       of cache. If you add new criteria, the new indexes will be 4, 8, 16...
+    const int loadSetIndex = (loadSet == UsdStage::InitialLoadSet::LoadAll) ? 0 : 1;
+    const int sharedIndex = (shared == ShareMode::Shared) ? 0 : 2;
+
+    auto& caches = GetAllCaches();
+    return caches[loadSetIndex + sharedIndex];
 }
 
 /* static */
 void UsdMayaStageCache::Clear()
 {
-    Get(true).Clear();
-    Get(false).Clear();
+    clearMayaAttributeEditor();
+    for (auto& cache : GetAllCaches())
+        cache.Clear();
 }
 
 /* static */
@@ -88,8 +122,10 @@ size_t UsdMayaStageCache::EraseAllStagesWithRootLayerPath(const std::string& lay
         return erasedStages;
     }
 
-    erasedStages += Get(true).EraseAll(rootLayer);
-    erasedStages += Get(false).EraseAll(rootLayer);
+    clearMayaAttributeEditor();
+
+    for (auto& cache : GetAllCaches())
+        erasedStages += cache.EraseAll(rootLayer);
 
     return erasedStages;
 }

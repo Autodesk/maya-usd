@@ -781,7 +781,7 @@ MStatus ProxyShapeResync::redoIt()
         return MStatus::kFailure;
     }
 
-    m_shapeNode->primChangedAtPath(m_resyncPrimPath);
+    m_shapeNode->resync(m_resyncPrimPath);
 
     return MStatus::kSuccess;
 }

@@ -19,6 +19,7 @@
 import fixturesUtils
 import mayaUtils
 import testUtils
+from testUtils import assertVectorAlmostEqual
 import ufeUtils
 import usdUtils
 
@@ -26,12 +27,11 @@ import mayaUsd.ufe
 
 from pxr import Kind, Usd, UsdGeom, Vt
 
-from maya import cmds
+from maya import cmds, mel
 from maya import standalone
 
 import ufe
 
-import os
 import unittest
 
 def createStage():
@@ -581,6 +581,61 @@ class GroupCmdTestCase(unittest.TestCase):
         self.assertEqual(loadRules.NoneRule, stage.GetLoadRules().GetEffectiveRuleForPath('/group1/Sphere1'))
         self.assertEqual(loadRules.AllRule, stage.GetLoadRules().GetEffectiveRuleForPath('/group1/Sphere2'))
 
+    def testGroupLiftedRestrictions(self):
+        '''
+        Test that we can create a group in a stronger layer even though
+        the prim has been authored in a weaker layer.
+
+            1. Create a stage with a new layer.
+            2. Add a sub-layer.
+            3. Set the edit target to the new sub-layer.
+            4. Create an xform under the proxyShape node.
+            5. Set editTarget to the top layer.
+            6. Add a new prim under the xform, using the group command.
+            7. Previously this would have been denied, now we have lifted the restriction.
+        '''
+        cmds.file(new=True, force=True)
+
+        # 1. Create a stage with a new layer.
+        # 2. Add a sub-layer.
+        psPathStr, psPath, psItem, layers = usdUtils.createLayeredStage(2)
+
+        topLayer = layers[1]
+        subLayer = layers[2]
+
+        # 3. Set the edit target to the new sub-layer.
+        # 4. Create an xform under the proxyShape node.
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        stage.SetEditTarget(subLayer)
+        stage.DefinePrim('/A', 'Xform')
+
+        psPathSegment = psPath.segments[0]
+        aPath = ufe.Path([psPathSegment, usdUtils.createUfePathSegment('/A')])
+        aItem = ufe.Hierarchy.createItem(aPath)
+
+        # 5. Set editTarget to the top layer.
+        stage.SetEditTarget(topLayer)
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+
+        # 6. Add a new prim under the xform, using the group command.
+        #    Note: we use an explicit create-group command because it is the only command
+        #          accessible from Python but the command as exposed by Maya requires a selection
+        #          so we create the command directly here to avoid that requirement.
+        aHier = ufe.Hierarchy.hierarchy(aItem)
+        if ufeUtils.ufeFeatureSetVersion() >= 3:
+            aHier.createGroup(ufe.PathComponent("newGroup"))
+        else:
+            aHier.createGroup(sn, ufe.PathComponent("newGroup"))
+        groupPath = aPath + ufe.PathComponent('newGroup1')
+        groupItem = ufe.Hierarchy.createItem(groupPath)
+
+        # 7. Verify the group creation succeeded.
+        aHier = ufe.Hierarchy.hierarchy(aItem)
+        self.assertTrue(aHier.hasChildren())
+        aChildren = aHier.children()
+        self.assertIn(groupItem, aChildren)
+
     @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
     def testGroupHierarchy(self):
         '''Grouping a node and a descendant.'''
@@ -811,6 +866,72 @@ class GroupCmdTestCase(unittest.TestCase):
         checkBefore()
         cmds.redo()
         checkAfter()
+
+    def runTestGroupPivotOptions(self, doGroupCmd, expectPivot):
+        '''Test group under parent with preserve position.'''
+
+        # Maya menu invokes doGroup MEL script, we'll do the same.
+        # 
+        # doGroup 0 1 0: group under parent, preserve position, group pivot
+        #                center.
+        # doGroup 0 1 1: group under parent, preserve position, group pivot
+        #                origin.
+        #
+        # Compare against Maya object behavior.
+
+        cmds.file(new=True, force=True)
+
+        sphere, _ = cmds.polySphere()
+        v = [5, 0, 0]
+        cmds.move(*v)
+        # doGroup has no return value.  It creates group1 and selects it.
+        mel.eval(doGroupCmd)
+
+        # group transform is the identity.
+        groupMayaXform = cmds.xform(q=True, matrix=True)
+        rpMaya = cmds.xform(q=True, rotatePivot=True)
+        spMaya = cmds.xform(q=True, scalePivot=True)
+        identity = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
+                    0.0, 0.0, 0.0, 1.0]
+
+        assertVectorAlmostEqual(self, groupMayaXform, identity)
+        assertVectorAlmostEqual(self, expectPivot, rpMaya, 6)
+        assertVectorAlmostEqual(self, expectPivot, spMaya, 6)
+
+        # Do the same with USD.
+        import mayaUsd_createStageWithNewLayer
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        psPathStr = '|stage1|stageShape1'
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        xform = stage.DefinePrim('/Xform1', 'Xform')
+        
+        cmds.select(psPathStr + ',/Xform1', r=True)
+        cmds.move(*v)
+
+        mel.eval(doGroupCmd)
+        groupPath = psPathStr + ',/group1'
+        groupItem = ufeUtils.createItem(groupPath)
+        t3d = ufe.Transform3d.transform3d(groupItem)
+
+        rpUsd = t3d.rotatePivot()
+        spUsd = t3d.scalePivot()
+        # Flatten out UFE matrices for comparison.
+        groupUsdXform = [y for x in t3d.matrix().matrix for y in x]
+        
+        assertVectorAlmostEqual(self, groupUsdXform, identity)
+        assertVectorAlmostEqual(self, expectPivot, rpUsd.vector, 6)
+        assertVectorAlmostEqual(self, expectPivot, spUsd.vector, 6)
+
+    @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() >= 5, 'Requires Maya xform command fix.')
+    def testGroupPivotCenter(self):
+        # With group pivot center the group pivot is on the grouped object.
+        self.runTestGroupPivotOptions("doGroup 0 1 0", [5, 0, 0])
+
+    @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() >= 5, 'Requires Maya xform command fix.')
+    def testGroupPivotOrigin(self):
+        # With group pivot origin the group pivot is at the origin.
+        self.runTestGroupPivotOptions("doGroup 0 1 1", [0, 0, 0])
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

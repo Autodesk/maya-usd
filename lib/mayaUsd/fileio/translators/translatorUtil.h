@@ -23,10 +23,13 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
 
+#include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
 #include <maya/MString.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+class UsdPrim;
 
 enum class UsdMayaShadingNodeType
 {
@@ -45,7 +48,7 @@ enum class UsdMayaDummyTransformType
     LockedTransform
 };
 
-/// \brief Provides helper functions for other readers to use.
+/// \brief Provides helper functions for other readers/writers to use.
 struct UsdMayaTranslatorUtil
 {
     /// \brief Often when creating a prim, we want to first create a Transform
@@ -70,6 +73,16 @@ struct UsdMayaTranslatorUtil
     /// contain the \c typeName metadata of \p usdPrim, so the \c typeName will
     /// be applied on export. Otherwise, this attribute will be set to the
     /// empty string, so a typeless def will be generated on export.
+    /// If \p dummyTransformType is
+    /// <tt>UsdMayaDummyTransformType::LockedTransform</tt> (default), all
+    /// Maya transform attributes on the created transform node will be
+    /// locked, not keyable, and not shown in the channel box.  If \p
+    /// dummyTransformType is
+    /// <tt>UsdMayaDummyTransformType::UnlockedTransform</tt>, then the Maya
+    /// transform attributes on the created transform node will be unlocked,
+    /// keyable, and shown in the channel box.  Furthermore, if the argument
+    /// \p usdPrim supports the \p UsdGeomXformable schema, the transform will
+    /// be read from the \p usdPrim and written into the created transform node.
     MAYAUSD_CORE_PUBLIC
     static bool CreateDummyTransformNode(
         const UsdPrim&                  usdPrim,
@@ -161,6 +174,28 @@ struct UsdMayaTranslatorUtil
     /// for success.
     MAYAUSD_CORE_PUBLIC
     static bool SetUsdTypeName(const MObject& mayaNodeObj, const TfToken& usdTypeName);
+
+    /// Reads shader attributes from \p usdPrim and writes them to \p depFn.
+    /// This uses \p sdrShaderId to determine which attributes are read.
+    ///
+    /// This will produce runtime errors if it encounters any problems with
+    /// reading the attributes.
+    MAYAUSD_CORE_PUBLIC
+    static void ReadShaderAttributesFromUsdPrim(
+        const UsdPrim&           usdPrim,
+        const TfToken&           sdrShaderId,
+        const MFnDependencyNode& depFn);
+
+    /// Reads shader attributes from \p depFn and writes them to \p usdPrim.  This uses
+    /// \p sdrShaderId to determine which attributes are read.
+    ///
+    /// This will produce runtime errors if it encounters any problems with
+    /// writing the attributes.
+    MAYAUSD_CORE_PUBLIC
+    static void WriteShaderAttributesToUsdPrim(
+        const MFnDependencyNode& depFn,
+        const TfToken&           sdrShaderId,
+        const UsdPrim&           usdPrim);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

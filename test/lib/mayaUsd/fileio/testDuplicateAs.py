@@ -32,6 +32,8 @@ from maya import cmds
 from maya import standalone
 from maya.api import OpenMaya as om
 
+import mayaUsdDuplicateAsMayaDataOptions
+
 import ufe
 
 import unittest
@@ -381,6 +383,53 @@ class DuplicateAsTestCase(unittest.TestCase):
         # Verify that the copied sphere does not have a look (material) prim.
         looksPrim = stage.GetPrimAtPath("/pSphere1/Looks")
         self.assertFalse(looksPrim.IsValid())
+
+
+    def testDuplicateUsingOptions(self):
+        '''Duplicate a Maya sphere using options to merge with or without materials.'''
+
+        # Create a sphere.
+        sphere = cmds.polySphere(r=1)
+
+        # Create a stage to receive the USD duplicate.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        
+        # Duplicate Maya data as USD data using modified default options to export materials
+        defaultDuplicateAsMayaDataOptions = mayaUsdDuplicateAsMayaDataOptions.getDuplicateAsMayaDataOptionsText()
+        modifiedDuplicateAsMayaDataOptions = defaultDuplicateAsMayaDataOptions.replace('shadingMode=useRegistry','shadingMode=none')
+        cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr, exportOptions=modifiedDuplicateAsMayaDataOptions)
+
+        # Verify that the copied sphere does not have a look (material) prim.
+        looksPrim = stage.GetPrimAtPath("/pSphere1/Looks")
+        self.assertFalse(looksPrim.IsValid())
+
+        # Undo duplicate to USD.
+        cmds.undo()
+
+        # Duplicate Maya data as USD data using default options. The default do not specify any
+        # material conversion option, so we still get no material.
+        modifiedDuplicateAsMayaDataOptions = defaultDuplicateAsMayaDataOptions[:]
+        cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr, exportOptions=modifiedDuplicateAsMayaDataOptions)
+
+        # Verify that the copied sphere does not have a look (material) prim.
+        looksPrim = stage.GetPrimAtPath("/pSphere1/Looks")
+        self.assertFalse(looksPrim.IsValid())
+
+        # Undo duplicate to USD.
+        cmds.undo()
+
+        # Duplicate Maya data as USD data using default options that are with materials.
+        modifiedDuplicateAsMayaDataOptions = defaultDuplicateAsMayaDataOptions.replace("convertMaterialsTo=[]", "convertMaterialsTo=[UsdPreviewSurface]")
+        cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr, exportOptions=modifiedDuplicateAsMayaDataOptions)
+
+        # Verify that the copied sphere has a look (material) prim.
+        looksPrim = stage.GetPrimAtPath("/pSphere1/Looks")
+        self.assertTrue(looksPrim.IsValid())
+
+        # Restore default options
+        mayaUsdDuplicateAsMayaDataOptions.setDuplicateAsMayaDataOptionsText(defaultDuplicateAsMayaDataOptions)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

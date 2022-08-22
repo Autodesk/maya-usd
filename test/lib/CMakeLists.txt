@@ -53,15 +53,15 @@ endforeach()
 # Can be started with VS Code but won't be part of test suites.
 # -----------------------------------------------------------------------------
 set(target _Interactive_Maya)
-mayaUsd_add_test(${target}
+add_test(
+    NAME "${target}"
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     COMMAND ${MAYA_EXECUTABLE}
-    ENV
-        "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
-        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
 )
+
 set_property(TEST ${target} APPEND PROPERTY DISABLED True)
 set_property(TEST ${target} APPEND PROPERTY LABELS Debugging)
+set_property(TEST ${target} APPEND PROPERTY ENVIRONMENT "MAYA_MODULE_PATH=${CMAKE_INSTALL_PREFIX}")
 
 #
 # -----------------------------------------------------------------------------

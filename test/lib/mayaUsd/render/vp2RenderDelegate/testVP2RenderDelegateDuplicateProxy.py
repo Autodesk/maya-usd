@@ -39,9 +39,9 @@ class testVP2RenderDelegateDuplicateProxy(imageUtils.ImageDiffingTestCase):
 
     @classmethod
     def setUpClass(cls):
-        # The test USD data is authored Z-up, so make sure Maya is configured
+        # The baselines assume Y-up, so make sure Maya is configured
         # that way too.
-        # cmds.upAxis(axis='z')
+        cmds.upAxis(axis='y')
 
         inputPath = fixturesUtils.setUpClass(__file__,
             initializeStandalone=False, loadPlugin=False)

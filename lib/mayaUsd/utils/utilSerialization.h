@@ -82,6 +82,17 @@ struct stageLayersToSave
     std::vector<SdfLayerRefPtr>                         _dirtyFileBackedLayers;
 };
 
+/*! \brief Save an layer to disk to the given file path and using the given format.
+    If the file path is empty then use the current file path of the layer.
+    If the format is empty then use the current user-selected USD format option
+    as defined by the usdFormatArgOption() function. (See above.)
+ */
+MAYAUSD_CORE_PUBLIC
+bool saveLayerWithFormat(
+    SdfLayerRefPtr     layer,
+    const std::string& requestedFilePath = "",
+    const std::string& requestedFormatArg = "");
+
 /*! \brief Save an anonymous layer to disk and update the sublayer path array
     in the parent layer.
  */

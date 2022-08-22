@@ -32,5 +32,5 @@ class MayaUsdPythonImportTestCase(unittest.TestCase):
         # mayaUsd library also loaded its dependencies (i.e. the core USD
         # libraries). We test the type name as a string to ensure that we're
         # not causing USD libraries to be loaded any other way.
-        stageCache = mayaUsdLib.StageCache.Get(True)
+        stageCache = mayaUsdLib.StageCache.Get(True, True)
         self.assertEqual(type(stageCache).__name__, 'StageCache')

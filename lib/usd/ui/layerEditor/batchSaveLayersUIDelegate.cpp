@@ -32,7 +32,8 @@ void UsdLayerEditor::initialize()
     }
 }
 
-MayaUsd::BatchSaveResult UsdLayerEditor::batchSaveLayersUIDelegate(const MDagPathArray& proxyShapes)
+MayaUsd::BatchSaveResult
+UsdLayerEditor::batchSaveLayersUIDelegate(const std::vector<MayaUsd::StageSavingInfo>& infos)
 {
     if (MGlobal::kInteractive == MGlobal::mayaState()) {
         auto opt = MayaUsd::utils::serializeUsdEditsLocationOption();
@@ -46,10 +47,10 @@ MayaUsd::BatchSaveResult UsdLayerEditor::batchSaveLayersUIDelegate(const MDagPat
             // if at least one stage contains anonymous layers, you need to show the comfirm dialog
             // so the user can choose where to save the anonymous layers.
             if (!showConfirmDgl) {
-                for (auto& shape : proxyShapes) {
+                for (const auto& info : infos) {
                     MayaUsd::utils::stageLayersToSave stageLayersToSave;
                     MayaUsd::utils::getLayersToSaveFromProxy(
-                        shape.fullPathName().asChar(), stageLayersToSave);
+                        info.dagPath.fullPathName().asChar(), stageLayersToSave);
                     if (!stageLayersToSave._anonLayers.empty()) {
                         showConfirmDgl = true;
                         break;
@@ -58,7 +59,7 @@ MayaUsd::BatchSaveResult UsdLayerEditor::batchSaveLayersUIDelegate(const MDagPat
             }
 
             if (showConfirmDgl) {
-                UsdLayerEditor::SaveLayersDialog dlg(nullptr, proxyShapes);
+                UsdLayerEditor::SaveLayersDialog dlg(nullptr, infos);
 
                 // The SaveLayers dialog only handles choosing new names for anonymous layers and
                 // making sure that they are remapped correctly in either their parent layer or by
