@@ -120,6 +120,11 @@ static PXR_NS::UsdAttribute _GetAttributeType(const PXR_NS::UsdPrim& prim, const
 
 Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
 {
+    // If we've already created an attribute for this name, just return the type.
+    auto iter = fUsdAttributes.find(name);
+    if (iter != std::end(fUsdAttributes))
+        return iter->second->type();
+
     PXR_NS::TfToken      tok(name);
     PXR_NS::UsdAttribute usdAttr = _GetAttributeType(fPrim, name);
     if (usdAttr.IsValid()) {
@@ -145,6 +150,11 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
     if (name.empty()) {
         return nullptr;
     }
+
+    // If we've already created an attribute for this name, just return it.
+    auto iter = fUsdAttributes.find(name);
+    if (iter != std::end(fUsdAttributes))
+        return iter->second;
 
     // No attribute for the input name was found -> create one.
     PXR_NS::TfToken      tok(name);
@@ -248,6 +258,11 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
     if (ctorIt != ctorMap.end())
         newAttr = ctorIt->second(fItem, usdAttr);
 #endif
+
+    // If this is a Usd attribute (cannot change) then we cache it for future access.
+    if (!canRemoveAttribute(fItem, name)) {
+        fUsdAttributes[name] = newAttr;
+    }
 
     return newAttr;
 }
