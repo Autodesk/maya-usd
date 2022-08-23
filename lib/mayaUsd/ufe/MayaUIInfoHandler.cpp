@@ -124,7 +124,9 @@ Ufe::UIInfoHandler::Icon MayaUIInfoHandler::treeViewIcon(const Ufe::SceneItem::P
     Ufe::UIInfoHandler::Icon icon;
     if (isOrphaned(mayaItem)) {
         icon = Ufe::UIInfoHandler::Icon("", "orphaned_node_badge", Ufe::UIInfoHandler::LowerRight);
+#if (UFE_PREVIEW_VERSION_NUM >= 4029)
         icon.mode = UIInfoHandler::Disabled;
+#endif
     }
     return icon;
 }
