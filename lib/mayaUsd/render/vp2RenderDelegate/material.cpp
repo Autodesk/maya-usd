@@ -1852,10 +1852,13 @@ void HdVP2Material::Sync(
                             _CreateMaterialXShaderInstance(GetId(), surfaceNetwork));
                         _pointShader.reset(nullptr);
                         _topoHash = topoHash;
+                        // TopoChanged: We have a brand new surface material, tell the mesh to use it.
+                        _MaterialChanged(sceneDelegate);
                     }
 
                     if (_surfaceShader) {
                         _UpdateShaderInstance(sceneDelegate, bxdfNet);
+// Consolidation workaround requires dirtying the mesh even on a ValueChanged
 #ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
                         _MaterialChanged(sceneDelegate);
 #endif
@@ -1911,6 +1914,8 @@ void HdVP2Material::Sync(
                     // The shader instance is owned by the material solely.
                     _surfaceShader.reset(shader);
                     _pointShader.reset(nullptr);
+                    // TopoChanged: We have a brand new surface material, tell the mesh to use it.
+                    _MaterialChanged(sceneDelegate);
 
                     if (TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
                         std::cout << "BXDF material network for " << id << ":\n"
@@ -1982,6 +1987,7 @@ void HdVP2Material::Sync(
 
                 _UpdateShaderInstance(sceneDelegate, bxdfNet);
 
+// Consolidation workaround requires dirtying the mesh even on a ValueChanged
 #ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
                 _MaterialChanged(sceneDelegate);
 #endif
@@ -3259,8 +3265,6 @@ MHWRender::MShaderInstance* HdVP2Material::GetPointShader() const
     return _pointShader.get();
 }
 
-#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
-
 void HdVP2Material::SubscribeForMaterialUpdates(const SdfPath& rprimId)
 {
     std::lock_guard<std::mutex> lock(_materialSubscriptionsMutex);
@@ -3284,8 +3288,6 @@ void HdVP2Material::_MaterialChanged(HdSceneDelegate* sceneDelegate)
         changeTracker.MarkRprimDirty(rprimId, HdChangeTracker::DirtyMaterialId);
     }
 }
-
-#endif
 
 void HdVP2Material::OnMayaExit()
 {
