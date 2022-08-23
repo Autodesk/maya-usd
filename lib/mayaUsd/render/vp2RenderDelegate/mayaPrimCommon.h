@@ -179,6 +179,13 @@ protected:
         kReference = 2
     };
 
+    enum ReprOverride
+    {
+        kNone = 0,
+        kBBox = 1,
+        kWire = 2
+    };
+
     struct DisplayLayerModes
     {
         //! Requested display layer visibility
@@ -187,8 +194,8 @@ protected:
         //! Requested HideOnPlayback status
         bool _hideOnPlayback { false };
 
-        //! True if the prim has to be displayed as bound box no matter it's actual representation
-        bool _asBoundBox { false };
+        //! Defines representation override that should be applied to the prim
+        ReprOverride _reprOverride { kNone };
 
         //! Requested display type of the Rprim
         DisplayType _displayType { kNormal };
@@ -205,6 +212,10 @@ protected:
     void _FirstInitRepr(HdDirtyBits* dirtyBits, SdfPath const& id);
 
     void _SetDirtyRepr(const HdReprSharedPtr& repr);
+
+    void _UpdateReprOverrides(ReprVector& reprs);
+
+    TfToken _GetOverrideToken(TfToken const& reprToken) const;
 
     HdReprSharedPtr _InitReprCommon(
         HdRprim&       refThis,
@@ -299,8 +310,8 @@ protected:
     //! HideOnPlayback status of the Rprim
     bool _hideOnPlayback { false };
 
-    //! True if the prim is displayed as bound box no matter it's actual representation
-    bool _asBoundBox { false };
+    //! Representation override applied to the prim, if any
+    ReprOverride _reprOverride { kNone };
 
     //! The string representation of the runtime only path to this object
     MStringArray _PrimSegmentString;
