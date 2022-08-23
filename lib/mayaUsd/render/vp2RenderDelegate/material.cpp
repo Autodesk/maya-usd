@@ -1852,7 +1852,8 @@ void HdVP2Material::Sync(
                             _CreateMaterialXShaderInstance(GetId(), surfaceNetwork));
                         _pointShader.reset(nullptr);
                         _topoHash = topoHash;
-                        // TopoChanged: We have a brand new surface material, tell the mesh to use it.
+                        // TopoChanged: We have a brand new surface material, tell the mesh to use
+                        // it.
                         _MaterialChanged(sceneDelegate);
                     }
 
