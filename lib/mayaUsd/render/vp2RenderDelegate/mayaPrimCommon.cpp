@@ -47,15 +47,15 @@ const MString MayaUsdRPrim::kNormalsStr("normals");
 const MString MayaUsdRPrim::kDiffuseColorStr("diffuseColor");
 const MString MayaUsdRPrim::kSolidColorStr("solidColor");
 
+constexpr auto sDrawModeAllButBBox = (MHWRender::MGeometry::DrawMode)(
+    MHWRender::MGeometry::kAll & ~MHWRender::MGeometry::kBoundingBox);
+
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
 
 namespace {
 
 std::mutex        sUfePathsMutex;
 MayaUsdCustomData sMayaUsdCustomData;
-
-constexpr auto sDrawModeAllButBBox = (MHWRender::MGeometry::DrawMode)(
-    MHWRender::MGeometry::kAll & ~MHWRender::MGeometry::kBoundingBox);
 } // namespace
 
 /* static */
