@@ -293,7 +293,7 @@ void MayaUsdRPrim::_UpdateReprOverrides(ReprVector& reprs)
             };
         } else {
             // If repr override is disabled, set bbox and wireframe representations back
-            updateItemsForReprOverride = [this](HdVP2DrawItem::RenderItemData& renderItemData) {
+            updateItemsForReprOverride = [](HdVP2DrawItem::RenderItemData& renderItemData) {
                 if (renderItemData._renderItem->drawMode() & MHWRender::MGeometry::kBoundingBox) {
                     renderItemData._renderItem->setDrawMode(MHWRender::MGeometry::kBoundingBox);
                 } else if (
