@@ -21,7 +21,7 @@ import mayaUtils
 import ufeUtils
 import usdUtils
 
-from pxr import UsdGeom, Vt, Gf, Usd, Sdf
+from pxr import UsdGeom, Vt, Gf
 
 from maya import cmds
 from maya import standalone
@@ -32,8 +32,6 @@ from mayaUsd import ufe as mayaUsdUfe
 import ufe
 import os
 import unittest
-import textwrap
-
 
 class AttributeBlockTestCase(unittest.TestCase):
 
@@ -349,83 +347,6 @@ class AttributeBlockTestCase(unittest.TestCase):
 
         # authoring new transformation edit is allowed.
         self.assertTrue(mayaUsdUfe.isAttributeEditAllowed(transformAttr))
-    
-    def testIsAttributeEditAllowedFunction(self):
-        rootLayerStr = """\
-        #sdf 1.4.32
-        ()
-        def "root"
-        {
-        }
-        """
-        subLayerAStr = """\
-        #sdf 1.4.32
-        over "root"
-        {
-            def "a" 
-            {
-                float foo = 0.0
-            }
-
-            def "b" 
-            {
-                float foo = 0.0
-            }
-        }
-        """
-        subLayerBStr = """\
-        #sdf 1.4.32
-        over "root"
-        {
-        }
-        """
-        subLayerCStr = """\
-        #sdf 1.4.32
-        over "root"
-        {
-            over "a" 
-            {
-                float foo = 10.0
-            }
-        }
-        """
-
-        rootLayer = Sdf.Layer.CreateAnonymous()
-        rootLayer.ImportFromString(textwrap.dedent(rootLayerStr))
-
-        subLayerA = Sdf.Layer.CreateAnonymous()
-        subLayerA.ImportFromString(textwrap.dedent(subLayerAStr))
-
-        subLayerB = Sdf.Layer.CreateAnonymous()
-        subLayerB.ImportFromString(textwrap.dedent(subLayerBStr))
-
-        subLayerC = Sdf.Layer.CreateAnonymous()
-        subLayerC.ImportFromString(textwrap.dedent(subLayerCStr))
-
-        rootLayer.subLayerPaths = [
-            subLayerC.identifier,
-            subLayerB.identifier,
-            subLayerA.identifier,
-        ]
-        stage = Usd.Stage.Open(rootLayer)
-
-        primB = stage.GetPrimAtPath("/root/b")
-        self.assertTrue(primB.IsValid())
-
-        fooattrB = primB.GetAttribute("foo")
-        self.assertTrue(fooattrB.IsValid())
-
-        stage.SetEditTarget(Usd.EditTarget(subLayerB))
-        self.assertTrue(mayaUsdUfe.isAttributeEditAllowed(fooattrB))
-
-        primA = stage.GetPrimAtPath("/root/a")
-        self.assertTrue(primA.IsValid())
-
-        fooattrA = primA.GetAttribute("foo")
-        self.assertTrue(fooattrA.IsValid())
-
-        self.assertFalse(mayaUsdUfe.isAttributeEditAllowed(fooattrA))
-
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
