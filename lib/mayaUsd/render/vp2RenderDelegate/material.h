@@ -109,13 +109,11 @@ public:
     void EnqueueLoadTextures();
     void ClearPendingTasks();
 
-#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
     //! The specified Rprim starts listening to changes on this material.
     void SubscribeForMaterialUpdates(const SdfPath& rprimId);
 
     //! The specified Rprim stops listening to changes on this material.
     void UnsubscribeFromMaterialUpdates(const SdfPath& rprimId);
-#endif
 
     class TextureLoadingTask;
     friend class TextureLoadingTask;
@@ -143,10 +141,8 @@ private:
         bool                 isColorSpaceSRGB,
         const MFloatArray&   uvScaleOffset);
 
-#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
     //! Trigger sync on all Rprims which are listening to changes on this material.
     void _MaterialChanged(HdSceneDelegate* sceneDelegate);
-#endif
 
     static void _ScheduleRefresh();
 
@@ -171,13 +167,11 @@ private:
 
     std::unordered_map<std::string, TextureLoadingTask*> _textureLoadingTasks;
 
-#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
     //! Mutex protecting concurrent access to the Rprim set
     std::mutex _materialSubscriptionsMutex;
 
     //! The set of Rprims listening to changes on this material
     std::set<SdfPath> _materialSubscriptions;
-#endif
 
 #ifdef WANT_MATERIALX_BUILD
     // MaterialX-only at the moment, but will be used for UsdPreviewSurface when the upgrade to

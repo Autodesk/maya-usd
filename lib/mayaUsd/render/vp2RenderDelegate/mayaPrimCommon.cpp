@@ -818,7 +818,7 @@ SdfPath MayaUsdRPrim::_GetUpdatedMaterialId(HdRprim* rprim, HdSceneDelegate* del
         }
     }
 
-#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
+    // Register to be notified if the surface shader changes due to a topology change:
     const SdfPath& origMaterialId = rprim->GetMaterialId();
     if (materialId != origMaterialId) {
         HdRenderIndex& renderIndex = delegate->GetRenderIndex();
@@ -839,7 +839,6 @@ SdfPath MayaUsdRPrim::_GetUpdatedMaterialId(HdRprim* rprim, HdSceneDelegate* del
             }
         }
     }
-#endif
 
     return materialId;
 }
