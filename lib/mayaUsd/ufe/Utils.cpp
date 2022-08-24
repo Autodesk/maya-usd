@@ -82,7 +82,7 @@ uint32_t findLayerIndex(const UsdPrim& prim, const SdfLayerHandle& layer)
 {
     uint32_t position { 0 };
 
-    const PcpPrimIndex& primIndex = prim.GetPrimIndex();
+    const PcpPrimIndex& primIndex = prim.ComputeExpandedPrimIndex();
 
     // iterate through the expanded primIndex
     for (PcpNodeRef node : primIndex.GetNodeRange()) {

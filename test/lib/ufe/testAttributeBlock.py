@@ -20,8 +20,9 @@ import fixturesUtils
 import mayaUtils
 import ufeUtils
 import usdUtils
+import testUtils
 
-from pxr import UsdGeom, Vt, Gf
+from pxr import UsdGeom, Vt, Gf, Usd
 
 from maya import cmds
 from maya import standalone
@@ -347,6 +348,46 @@ class AttributeBlockTestCase(unittest.TestCase):
 
         # authoring new transformation edit is allowed.
         self.assertTrue(mayaUsdUfe.isAttributeEditAllowed(transformAttr))
+
+    def testIsAttributeEditAllowed(self):
+        '''
+        Verify a edit target layer from a referenced prim can be allowed to edit if it's a stronger layer.
+        '''
+        rootLaerPath = testUtils.getTestScene("attributeBlock", "root.usda")
+        stage = Usd.Stage.Open(rootLaerPath)
+        
+        primA = stage.GetPrimAtPath("/root/a")
+        self.assertTrue(primA.IsValid())
+        fooattrA = primA.GetAttribute("foo")
+        self.assertTrue(fooattrA.IsValid())
+   
+        root = stage.GetPrimAtPath('/root')
+        targetLayer = None 
+        
+        for layer in stage.GetUsedLayers():
+            if 'subBRef' in layer.identifier:
+                targetLayer = layer 
+                break 
+        
+        self.assertIsNotNone(targetLayer)
+
+        editTarget = _getEditTarget(targetLayer, root)
+        self.assertIsNotNone(editTarget)
+        stage.SetEditTarget(editTarget)
+        
+        self.assertEqual(fooattrA.Get(), 0.0)
+        self.assertTrue(mayaUsdUfe.isAttributeEditAllowed(fooattrA))
+        fooattrA.Set(10.0)
+        primspecA = targetLayer.GetObjectAtPath('/root/a.foo')
+        self.assertTrue(bool(primspecA))
+
+
+def _getEditTarget(layer, prim):
+    query = Usd.PrimCompositionQuery(prim)
+    for arc in query.GetCompositionArcs():
+        if (arc.GetTargetNode().layerStack.identifier.rootLayer == layer
+            and not arc.GetTargetNode().path.ContainsPrimVariantSelection()):
+            return Usd.EditTarget(layer, arc.GetTargetNode())
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -1,0 +1,16 @@
+#usda 1.0
+(
+    defaultPrim = "root"
+)
+def "root"
+{
+    def "a" 
+    {
+        float foo = 0.0
+    }
+
+    def "b" 
+    {
+        float foo = 0.0
+    }
+}
