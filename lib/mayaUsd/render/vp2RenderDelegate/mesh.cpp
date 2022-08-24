@@ -784,8 +784,7 @@ void HdVP2Mesh::Sync(
     // the additional materialIds that get bound by geom subsets before we build the
     // _primvaInfo. So the very first thing I need to do is grab the topology.
     if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)) {
-        // unsubscribe from material updates from the old geom subset materials
-#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
+        // unsubscribe from material TopoChanged updates from the old geom subset materials
         for (const auto& geomSubset : _meshSharedData->_topology.GetGeomSubsets()) {
             if (!geomSubset.materialId.IsEmpty()) {
                 const SdfPath materialId
@@ -798,7 +797,6 @@ void HdVP2Mesh::Sync(
                 }
             }
         }
-#endif
 
         {
             MProfilingScope profilingScope(
@@ -824,8 +822,7 @@ void HdVP2Mesh::Sync(
             }
         }
 
-        // subscribe to material updates from the new geom subset materials
-#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
+        // subscribe to material TopoChanged updates from the new geom subset materials
         for (const auto& geomSubset : _meshSharedData->_topology.GetGeomSubsets()) {
             if (!geomSubset.materialId.IsEmpty()) {
                 const SdfPath materialId
@@ -838,7 +835,6 @@ void HdVP2Mesh::Sync(
                 }
             }
         }
-#endif
     }
 
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
