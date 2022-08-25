@@ -785,6 +785,7 @@ void HdVP2Mesh::Sync(
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
     UsdImagingDelegate*  usdImagingDelegate = drawScene.GetUsdImagingDelegate();
 #endif
+
     // Geom subsets are accessed through the mesh topology. I need to know about
     // the additional materialIds that get bound by geom subsets before we build the
     // _primvaInfo. So the very first thing I need to do is grab the topology.
