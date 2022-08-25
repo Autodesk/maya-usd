@@ -777,8 +777,8 @@ void HdVP2Mesh::Sync(
         _rprimId.asChar(),
         "HdVP2Mesh::Sync");
 
-    const SdfPath&       id = GetId();
-    HdRenderIndex&       renderIndex = delegate->GetRenderIndex();
+    const SdfPath& id = GetId();
+    HdRenderIndex& renderIndex = delegate->GetRenderIndex();
 
 #if !defined(USD_IMAGING_API_VERSION) || USD_IMAGING_API_VERSION < 18
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
@@ -1448,7 +1448,7 @@ void HdVP2Mesh::_UpdateDrawItem(
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
 #if !defined(USD_IMAGING_API_VERSION) || USD_IMAGING_API_VERSION < 18
-    UsdImagingDelegate*  usdImagingDelegate = drawScene.GetUsdImagingDelegate();
+    UsdImagingDelegate* usdImagingDelegate = drawScene.GetUsdImagingDelegate();
 #endif
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
@@ -1625,7 +1625,7 @@ void HdVP2Mesh::_UpdateDrawItem(
         && desc.shadingTerminal == HdMeshReprDescTokens->surfaceShader) {
         bool dirtyMaterialId = (itemDirtyBits & HdChangeTracker::DirtyMaterialId) != 0;
         if (dirtyMaterialId) {
-            SdfPath materialId = GetMaterialId(); 
+            SdfPath materialId = GetMaterialId();
             if (drawItemData._geomSubset.id != SdfPath::EmptyPath()) {
                 materialId = drawItemData._geomSubset.materialId;
 #if !defined(USD_IMAGING_API_VERSION) || USD_IMAGING_API_VERSION < 18
