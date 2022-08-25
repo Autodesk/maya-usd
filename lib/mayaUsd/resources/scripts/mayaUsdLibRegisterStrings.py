@@ -41,7 +41,7 @@ def mayaUsdLibRegisterStrings():
     # mayaUsdCacheMayaReference.py
     register('kButtonNewChildPrim', 'New Child Prim')
     register('kButtonNewChildPrimToolTip', 'If selected, your Maya reference will be defined in a new child prim. This will enable\nyou to work with your Maya reference and its USD cache side-by-side.')
-    register('kCacheFileWillAppear', 'Cache file will appear\non parent prim:')
+    register('kCacheFileWillAppear', 'Cache file will\nappear on parent\nprim:')
     register('kCacheMayaRefCache', 'Cache')
     register('kCacheMayaRefOptions', 'Cache File Options')
     register('kCacheMayaRefUsdHierarchy', 'Author Cache File to USD Hierarchy')
