@@ -341,6 +341,9 @@ public:
     /// fallbacks
     AL_DECL_ATTRIBUTE(variantFallbacks);
 
+    /// Don't run translation when enabled
+    AL_DECL_ATTRIBUTE(sleepTranslation);
+
     //--------------------------------------------------------------------------------------------------------------------
     /// \name   Output Attributes
     //--------------------------------------------------------------------------------------------------------------------
@@ -677,7 +680,7 @@ public:
 
     /// \brief Whether the proxy shape is currently listening to changes made to the usd stage
     ///        Note that, because the proxy shape uses hydra for display purposes, which is
-    ///        connected to the underlying stage a a low level independent of this node, if
+    ///        connected to the underlying stage at a low level independent of this node, if
     ///        ignoringUpdates / pauseUpdates are true, this does NOT mean that the displayed proxy
     ///        shape will never reflect changes to the usd stage; rather, it just means that certain
     ///        event listeners for the proxyShape are disabled. For instance, loading of
@@ -785,12 +788,17 @@ public:
     AL_USDMAYA_PUBLIC
     MSelectionMask getShapeSelectionMask() const override;
 
-    /// \brief  determines if this prim has a parent that has been tagged as excluded geometry
+    /// \brief  Determines if this prim has a parent that has been tagged as excluded geometry
     ///         (i.e. will not be shown in the viewport)
     /// \param  prim the prim to check
     /// \return true if the prim (or a parent prim) has been tagged as excluded
     AL_USDMAYA_PUBLIC
     bool primHasExcludedParent(UsdPrim prim);
+
+    /// \brief  Gets the current translation sleep state of the proxy shape
+    /// \return true if translation is in sleep mode, false otherwise
+    AL_USDMAYA_PUBLIC
+    bool translationSleeping() const;
 
 private:
     /// \brief  constructs the USD imaging engine for this shape

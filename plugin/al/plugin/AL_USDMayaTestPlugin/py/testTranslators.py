@@ -596,6 +596,39 @@ class TestPythonTranslators(unittest.TestCase):
         self.assertFalse(cmds.ls("|updateProxyShape|root|group2|rig2|test2"))
         self.assertTrue(cmds.ls("|updateProxyShape|root|group3|rig3|test3"))
 
+    def test_sleep_translation(self):
+        ''' Test the "pause" mode, i.e., `sleepTranslation` attribute
+        '''
+        usdmaya.TranslatorBase.registerTranslator(CubeGenerator(), 'beast_rig')
+
+        stage = Usd.Stage.Open(self._testDataDir + "inactivetest.usda")
+
+        stageCache = UsdUtils.StageCache.Get()
+        stageCache.Insert(stage)
+        stageId = stageCache.GetId(stage)
+        shapeName = "updateProxyShape"
+        cmds.AL_usdmaya_ProxyShapeImport(stageId=stageId.ToLongInt(), name=shapeName)
+
+        # Pause translation
+        cmds.setAttr(shapeName + ".sleepTranslation", 1)
+
+        # Trigger a change
+        prim = stage.GetPrimAtPath('/root/peter01')
+        vs = prim.GetVariantSet("cubes")
+        vs.SetVariantSelection("fiveCubes")
+
+        # No translation should have taken place
+        self.assertEqual(CubeGenerator.getState()["importObjectCount"], 0)
+        self.assertListEqual(CubeGenerator.importObjectMObjects, [])
+
+        # Enable translation and resync
+        cmds.setAttr(shapeName + ".sleepTranslation", 0)
+        cmds.AL_usdmaya_ProxyShapeResync(p=shapeName, pp="/root")
+
+        # Assert translation ran
+        self.assertEqual(CubeGenerator.getState()["importObjectCount"], 1)
+        self.assertEqual(len(CubeGenerator.importObjectMObjects), 5)
+
 class TestTranslatorUniqueKey(usdmaya.TranslatorBase):
     """
     Basic Translator for testing unique key

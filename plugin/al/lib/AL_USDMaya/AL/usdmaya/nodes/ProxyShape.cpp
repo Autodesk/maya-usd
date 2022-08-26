@@ -162,6 +162,7 @@ MObject ProxyShape::m_assetResolverConfig = MObject::kNullObj;
 MObject ProxyShape::m_variantFallbacks = MObject::kNullObj;
 MObject ProxyShape::m_visibleInReflections = MObject::kNullObj;
 MObject ProxyShape::m_visibleInRefractions = MObject::kNullObj;
+MObject ProxyShape::m_sleepTranslation = MObject::kNullObj;
 
 //----------------------------------------------------------------------------------------------------------------------
 std::vector<MObjectHandle> ProxyShape::m_unloadedProxyShapes;
@@ -600,6 +601,9 @@ MStatus ProxyShape::initialise()
         m_serializedTrCtx
             = addStringAttr("serializedTrCtx", "srtc", kReadable | kWritable | kStorable | kHidden);
 
+        m_sleepTranslation = addBoolAttr(
+            "sleepTranslation", "slp", false, kReadable | kWritable | kStorable);
+
         addFrame("USD Timing Information");
         inheritTimeAttr(
             "time",
@@ -769,6 +773,13 @@ void ProxyShape::trackAllDirtyLayers(LayerManager* layerManager)
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::onPrimResync(SdfPath primPath, SdfPathVector& previousPrims)
 {
+    // Check if the proxy shape is in translation sleep mode before attempting resync operations
+    if (translationSleeping()) {
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg(
+            "ProxyShape::onPrimResync ignoring resync; translation sleeping\n");
+        return;
+    }
+
     MProfilingScope profilerScope(
         _proxyShapeProfilerCategory, MProfiler::kColorE_L3, "Run onPrimResync");
 
@@ -2194,6 +2205,14 @@ bool ProxyShape::isPrimLocked(const UsdPrim& prim, LockPrimCache& cache) const
 {
     return checkPrimMetadata(
         prim, Metadata::locked, Metadata::lockTransform, Metadata::lockUnlocked, cache);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool ProxyShape::translationSleeping() const
+{
+    bool value;
+    MStatus status = sleepTranslationPlug().getValue(value);
+    return status && value;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
