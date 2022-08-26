@@ -102,6 +102,20 @@ _GetShaderNodeDef(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName)
     return registry.GetShaderNodeByIdentifier(srcInfoId);
 }
 
+void _SendIssue2013NotifWorkaround(const UsdPrim& usdPrim)
+{
+    // See https://github.com/PixarAnimationStudios/USD/issues/2013 for details.
+    //
+    // The notification sent on connection change is not strong enough to force a Hydra resync of
+    // the material, which forces a resync of the dependent geometries. This means the list of
+    // primvars required by the material will not be updated on those geometries. Play a trick on
+    // the stage that generates a stronger notification so the primvars get properly rescanned.
+    const TfToken waToken("Issue_2013_Notif_Workaround");
+    SdfPath       waPath = usdPrim.GetPath().AppendChild(waToken);
+    usdPrim.GetStage()->DefinePrim(waPath);
+    usdPrim.GetStage()->RemovePrim(waPath);
+}
+
 } // namespace
 
 UsdConnectionHandler::UsdConnectionHandler()
@@ -151,23 +165,25 @@ bool UsdConnectionHandler::createConnection(
     std::tie(dstBaseName, dstAttrType)
         = UsdShadeUtils::GetBaseNameAndType(TfToken(dstAttr->name()));
 
+    bool retVal = false;
+
     if (srcAttrType == UsdShadeAttributeType::Input) {
         UsdShadeInput srcInput = srcApi.CreateInput(srcBaseName, srcUsdAttr->usdAttributeType());
         if (dstAttrType == UsdShadeAttributeType::Input) {
             UsdShadeInput dstInput
                 = dstApi.CreateInput(dstBaseName, dstUsdAttr->usdAttributeType());
-            return UsdShadeConnectableAPI::ConnectToSource(dstInput, srcInput);
+            retVal = UsdShadeConnectableAPI::ConnectToSource(dstInput, srcInput);
         } else {
             UsdShadeOutput dstOutput
                 = dstApi.CreateOutput(dstBaseName, dstUsdAttr->usdAttributeType());
-            return UsdShadeConnectableAPI::ConnectToSource(dstOutput, srcInput);
+            retVal = UsdShadeConnectableAPI::ConnectToSource(dstOutput, srcInput);
         }
     } else {
         UsdShadeOutput srcOutput = srcApi.CreateOutput(srcBaseName, srcUsdAttr->usdAttributeType());
         if (dstAttrType == UsdShadeAttributeType::Input) {
             UsdShadeInput dstInput
                 = dstApi.CreateInput(dstBaseName, dstUsdAttr->usdAttributeType());
-            return UsdShadeConnectableAPI::ConnectToSource(dstInput, srcOutput);
+            retVal = UsdShadeConnectableAPI::ConnectToSource(dstInput, srcOutput);
         } else {
             UsdShadeOutput   dstOutput;
             UsdShadeMaterial dstMaterial(dstUsdAttr->usdPrim());
@@ -193,12 +209,15 @@ bool UsdConnectionHandler::createConnection(
             } else {
                 dstOutput = dstApi.CreateOutput(dstBaseName, dstUsdAttr->usdAttributeType());
             }
-            return UsdShadeConnectableAPI::ConnectToSource(dstOutput, srcOutput);
+            retVal = UsdShadeConnectableAPI::ConnectToSource(dstOutput, srcOutput);
         }
     }
 
-    // Return a failure.
-    return false;
+    if (retVal) {
+        _SendIssue2013NotifWorkaround(dstApi.GetPrim());
+    }
+
+    return retVal;
 }
 
 bool UsdConnectionHandler::deleteConnection(
@@ -241,6 +260,10 @@ bool UsdConnectionHandler::deleteConnection(
                 }
             }
         }
+    }
+
+    if (retVal) {
+        _SendIssue2013NotifWorkaround(dstUsdAttr->usdPrim());
     }
 
     return retVal;
