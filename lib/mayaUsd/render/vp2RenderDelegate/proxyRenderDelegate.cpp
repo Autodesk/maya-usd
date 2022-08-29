@@ -32,6 +32,7 @@
 #include <pxr/imaging/hd/basisCurves.h>
 #include <pxr/imaging/hd/changeTracker.h>
 #include <pxr/imaging/hd/enums.h>
+#include <pxr/imaging/hd/material.h>
 #include <pxr/imaging/hd/mesh.h>
 #include <pxr/imaging/hd/primGather.h>
 #include <pxr/imaging/hd/repr.h>
@@ -917,6 +918,8 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 #else
     const unsigned int displayStyle = frameContext.getDisplayStyle();
 #endif
+    const unsigned int oldDisplayStyle = _currentDisplayStyle;
+    _currentDisplayStyle = displayStyle;
 
     // Work around USD issue #1516. There is a significant performance overhead caused by populating
     // selection, so only force the populate selection to occur when we detect a change which
@@ -996,6 +999,15 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
             dirtyBits |= MayaUsdRPrim::DirtySelectionHighlight;
         }
 #endif
+
+        // if textured/untextured mode has changed, we need to update materials
+        if (((_currentDisplayStyle ^ oldDisplayStyle) & MHWRender::MFrameContext::kTextured) != 0) {
+            auto materials = _renderIndex->GetSprimSubtree(
+                HdPrimTypeTokens->material, SdfPath::AbsoluteRootPath());
+            for (auto material : materials) {
+                changeTracker.MarkSprimDirty(material, HdMaterial::DirtyParams);
+            }
+        }
 
         if (dirtyBits != HdChangeTracker::Clean) {
             // Mark everything "dirty" so that sync is called on everything

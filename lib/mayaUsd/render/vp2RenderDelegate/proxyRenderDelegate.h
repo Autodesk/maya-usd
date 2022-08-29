@@ -211,6 +211,9 @@ public:
     uint64_t GetFrameCounter() const { return _frameCounter; }
 
     MAYAUSD_CORE_PUBLIC
+    unsigned int GetDisplayStyle() const { return _currentDisplayStyle; }
+
+    MAYAUSD_CORE_PUBLIC
     const HdSelection::PrimSelectionState* GetLeadSelectionState(const SdfPath& path) const;
 
     MAYAUSD_CORE_PUBLIC
@@ -328,6 +331,7 @@ private:
                          //!< synchronization running without it)
     std::unique_ptr<UsdImagingDelegate> _sceneDelegate; //!< USD scene delegate
     const MHWRender::MFrameContext*     _currentFrameContext = nullptr;
+    unsigned int                        _currentDisplayStyle = 0;
 
     bool _isPopulated {
         false
