@@ -76,7 +76,7 @@ class testVP2RenderDelegateTextureLoading(imageUtils.ImageDiffingTestCase):
         cmds.xform("persp", ro=[0, 0, 0], ws=True)
 
         panel = mayaUtils.activeModelPanel()
-        cmds.modelEditor(panel, edit=True, lights=False, displayLights="default")
+        cmds.modelEditor(panel, edit=True, lights=False, displayLights="default", displayTextures=True)
 
         testFile = testUtils.getTestScene("multipleMaterialsAssignment",
                                           "MultipleMaterialsAssignment.usda")
@@ -102,7 +102,7 @@ class testVP2RenderDelegateTextureLoading(imageUtils.ImageDiffingTestCase):
         cmds.xform("persp", ro=[0, 0, 0], ws=True)
 
         panel = mayaUtils.activeModelPanel()
-        cmds.modelEditor(panel, edit=True, lights=False, displayLights="default")
+        cmds.modelEditor(panel, edit=True, lights=False, displayLights="default", displayTextures=True)
 
         testFile = testUtils.getTestScene("multipleMaterialsAssignment",
                                           "MultipleMaterialsAssignment.usda")
