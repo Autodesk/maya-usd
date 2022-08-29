@@ -259,10 +259,14 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
         newAttr = ctorIt->second(fItem, usdAttr);
 #endif
 
+#if (UFE_PREVIEW_VERSION_NUM >= 4024)
     // If this is a Usd attribute (cannot change) then we cache it for future access.
     if (!canRemoveAttribute(fItem, name)) {
         fUsdAttributes[name] = newAttr;
     }
+#else
+    fUsdAttributes[name] = newAttr;
+#endif
 
     return newAttr;
 }
