@@ -102,7 +102,7 @@ _GetShaderNodeDef(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName)
     return registry.GetShaderNodeByIdentifier(srcInfoId);
 }
 
-void _SendIssue2013NotifWorkaround(const UsdPrim& usdPrim)
+void _SendStrongConnectionChangeNotification(const UsdPrim& usdPrim)
 {
     // See https://github.com/PixarAnimationStudios/USD/issues/2013 for details.
     //
@@ -214,7 +214,7 @@ bool UsdConnectionHandler::createConnection(
     }
 
     if (retVal) {
-        _SendIssue2013NotifWorkaround(dstApi.GetPrim());
+        _SendStrongConnectionChangeNotification(dstApi.GetPrim());
     }
 
     return retVal;
@@ -263,7 +263,7 @@ bool UsdConnectionHandler::deleteConnection(
     }
 
     if (retVal) {
-        _SendIssue2013NotifWorkaround(dstUsdAttr->usdPrim());
+        _SendStrongConnectionChangeNotification(dstUsdAttr->usdPrim());
     }
 
     return retVal;
