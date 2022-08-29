@@ -47,15 +47,13 @@ const MString MayaUsdRPrim::kNormalsStr("normals");
 const MString MayaUsdRPrim::kDiffuseColorStr("diffuseColor");
 const MString MayaUsdRPrim::kSolidColorStr("solidColor");
 
-constexpr auto sDrawModeAllButBBox = (MHWRender::MGeometry::DrawMode)(
-    MHWRender::MGeometry::kAll & ~MHWRender::MGeometry::kBoundingBox);
-
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
 
 namespace {
 
 std::mutex        sUfePathsMutex;
 MayaUsdCustomData sMayaUsdCustomData;
+
 } // namespace
 
 /* static */
@@ -254,72 +252,6 @@ void MayaUsdRPrim::_SetDirtyRepr(const HdReprSharedPtr& repr)
     }
 }
 
-void DisableRenderItem(HdVP2DrawItem::RenderItemData& renderItemData, HdVP2RenderDelegate* delegate)
-{
-    renderItemData._enabled = false;
-    delegate->GetVP2ResourceRegistry().EnqueueCommit(
-        [&renderItemData]() { renderItemData._renderItem->enable(false); });
-}
-
-void MayaUsdRPrim::_UpdateReprOverrides(ReprVector& reprs)
-{
-    if (_reprOverride != _displayLayerModes._reprOverride) {
-        _reprOverride = _displayLayerModes._reprOverride;
-
-        RenderItemFunc updateItemsForReprOverride;
-        if (_reprOverride == kBBox) {
-            // In bbox mode, disable all representations except the bounding box representation,
-            // which now will be visible in all the draw modes
-            updateItemsForReprOverride = [this](HdVP2DrawItem::RenderItemData& renderItemData) {
-                if (renderItemData._renderItem->drawMode() & MHWRender::MGeometry::kBoundingBox) {
-                    renderItemData._renderItem->setDrawMode(MHWRender::MGeometry::kAll);
-                } else {
-                    DisableRenderItem(renderItemData, _delegate);
-                }
-            };
-        } else if (_reprOverride == kWire) {
-            // BBox representation is stronger than wire representation so it will not be affected
-            // by unshaded mode. All other representations are disabled except the wireframe
-            // representation, which now will be visible in all the other draw modes.
-            updateItemsForReprOverride = [this](HdVP2DrawItem::RenderItemData& renderItemData) {
-                if (renderItemData._renderItem->drawMode() & MHWRender::MGeometry::kBoundingBox) {
-                    renderItemData._renderItem->setDrawMode(MHWRender::MGeometry::kBoundingBox);
-                } else if (
-                    renderItemData._renderItem->drawMode() & MHWRender::MGeometry::kWireframe) {
-                    renderItemData._renderItem->setDrawMode(sDrawModeAllButBBox);
-                } else {
-                    DisableRenderItem(renderItemData, _delegate);
-                }
-            };
-        } else {
-            // If repr override is disabled, set bbox and wireframe representations back
-            updateItemsForReprOverride = [](HdVP2DrawItem::RenderItemData& renderItemData) {
-                if (renderItemData._renderItem->drawMode() & MHWRender::MGeometry::kBoundingBox) {
-                    renderItemData._renderItem->setDrawMode(MHWRender::MGeometry::kBoundingBox);
-                } else if (
-                    renderItemData._renderItem->drawMode() & MHWRender::MGeometry::kWireframe) {
-                    renderItemData._renderItem->setDrawMode(MHWRender::MGeometry::kWireframe);
-                }
-            };
-        }
-
-        _ForEachRenderItem(reprs, updateItemsForReprOverride);
-    }
-}
-
-TfToken MayaUsdRPrim::_GetOverrideToken(TfToken const& reprToken) const
-{
-    if (_reprOverride == kBBox) {
-        return HdVP2ReprTokens->bbox;
-    } else if (_reprOverride == kWire) {
-        // BBox representation is strong than Wire representation, so it will not be overridden
-        if (reprToken != HdVP2ReprTokens->bbox) {
-            return HdReprTokens->wire;
-        }
-    }
-    return TfToken();
-}
-
 HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
     HdRprim&       refThis,
     TfToken const& reprToken,
@@ -333,25 +265,41 @@ HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
 
     _SyncDisplayLayerModes(refThis);
 
-    _UpdateReprOverrides(reprs);
+    if (_asBoundBox != _displayLayerModes._asBoundBox) {
+        _asBoundBox = _displayLayerModes._asBoundBox;
+
+        // In bbox mode, disable all representations except the bounding box representation,
+        // which now will be visible in all the draw modes
+        RenderItemFunc updateItemsForBBoxMode = [this](
+                                                    HdVP2DrawItem::RenderItemData& renderItemData) {
+            if (renderItemData._renderItem->drawMode() & MHWRender::MGeometry::kBoundingBox) {
+                renderItemData._renderItem->setDrawMode(
+                    _asBoundBox ? MHWRender::MGeometry::kAll : MHWRender::MGeometry::kBoundingBox);
+            } else if (_asBoundBox) {
+                renderItemData._enabled = false;
+                _delegate->GetVP2ResourceRegistry().EnqueueCommit(
+                    [&renderItemData]() { renderItemData._renderItem->enable(false); });
+            }
+        };
+
+        _ForEachRenderItem(reprs, updateItemsForBBoxMode);
+    }
 
     // Finally we can get to actually init/dirty the repr
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+
     ReprVector::const_iterator it
         = std::find_if(reprs.begin(), reprs.end(), [reprToken](ReprVector::const_reference e) {
               return reprToken == e.first;
           });
     HdReprSharedPtr curRepr = (it != reprs.end() ? it->second : nullptr);
 
-    // In repr override mode, call InitRepr for the representation that overrides.
-    if (_reprOverride != kNone) {
-        TfToken overrideToken = _GetOverrideToken(reprToken);
-        if (!overrideToken.IsEmpty() && (overrideToken != reprToken)) {
-            auto* const param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-            auto&       drawScene = param->GetDrawScene();
-            refThis.InitRepr(drawScene.GetUsdImagingDelegate(), overrideToken, dirtyBits);
-            if (curRepr) {
-                return nullptr; // if the overriden repr is already created, we can safely exit here
-            }
+    // In bbox mode call InitRepr for bbox representation.
+    if (_asBoundBox && reprToken != HdVP2ReprTokens->bbox) {
+        refThis.InitRepr(drawScene.GetUsdImagingDelegate(), HdVP2ReprTokens->bbox, dirtyBits);
+        if (curRepr) {
+            return nullptr; // if the overriden repr is already created, we can safely exit here
         }
     }
 
@@ -441,20 +389,14 @@ HdVP2DrawItem::RenderItemData& MayaUsdRPrim::_AddRenderItem(
 
     auto& renderItemData = drawItem.AddRenderItem(renderItem, geomSubset);
 
-    // Representation override modes require a special setup
-    if (_reprOverride == kBBox) {
+    // Items drawn as bound box require a special setup
+    if (_asBoundBox) {
         if (renderItem->drawMode() & MHWRender::MGeometry::kBoundingBox) {
             renderItem->setDrawMode(MHWRender::MGeometry::kAll);
         } else {
-            DisableRenderItem(renderItemData, _delegate);
-        }
-    } else if (_reprOverride == kWire) {
-        if (renderItem->drawMode() & MHWRender::MGeometry::kBoundingBox) {
-            // BBox mode is stronger than Wire mode so nothing to change here
-        } else if (renderItem->drawMode() & MHWRender::MGeometry::kWireframe) {
-            renderItem->setDrawMode(sDrawModeAllButBBox);
-        } else {
-            DisableRenderItem(renderItemData, _delegate);
+            renderItemData._enabled = false;
+            _delegate->GetVP2ResourceRegistry().EnqueueCommit(
+                [renderItem]() { renderItem->enable(false); });
         }
     }
 
@@ -723,15 +665,10 @@ void MayaUsdRPrim::_SyncDisplayLayerModes(const HdRprim&
             MPlug             layerHidesOnPlayback = displayLayerNodeFn.findPlug("hideOnPlayback");
             MPlug             layerDisplayType = displayLayerNodeFn.findPlug("displayType");
             MPlug             levelOfDetail = displayLayerNodeFn.findPlug("levelOfDetail");
-            MPlug             shading = displayLayerNodeFn.findPlug("shading");
 
             _displayLayerModes._visibility &= layerEnabled.asBool() ? layerVisible.asBool() : true;
             _displayLayerModes._hideOnPlayback |= layerHidesOnPlayback.asBool();
-            if (levelOfDetail.asShort() != 0) {
-                _displayLayerModes._reprOverride = kBBox;
-            } else if (shading.asShort() == 0 && _displayLayerModes._reprOverride != kBBox) {
-                _displayLayerModes._reprOverride = kWire;
-            }
+            _displayLayerModes._asBoundBox |= (levelOfDetail.asShort() != 0);
             if (_displayLayerModes._displayType == kNormal) {
                 _displayLayerModes._displayType = (DisplayType)layerDisplayType.asShort();
             }
@@ -768,6 +705,8 @@ void MayaUsdRPrim::_SyncSharedData(
         // invisible we'll get no chance to update!
         if (!usdVisibility)
             _MakeOtherReprRenderItemsInvisible(reprToken, reprs);
+
+        _SyncDisplayLayerModes(refThis);
 
         // Update "hide on playback" status
         if (_hideOnPlayback != _displayLayerModes._hideOnPlayback) {
@@ -810,13 +749,10 @@ bool MayaUsdRPrim::_SyncCommon(
     HdReprSharedPtr const& curRepr,
     TfToken const&         reprToken)
 {
-    // In representation override mode call Sync for the representation override instead.
-    if (_reprOverride != kNone) {
-        TfToken overrideToken = _GetOverrideToken(reprToken);
-        if (!overrideToken.IsEmpty() && (overrideToken != reprToken)) {
-            refThis.Sync(delegate, renderParam, dirtyBits, overrideToken);
-            return false;
-        }
+    // In bbox mode call Sync for bbox representation instead.
+    if (_asBoundBox && reprToken != HdVP2ReprTokens->bbox) {
+        refThis.Sync(delegate, renderParam, dirtyBits, HdVP2ReprTokens->bbox);
+        return false;
     }
 
     const SdfPath&       id = refThis.GetId();
