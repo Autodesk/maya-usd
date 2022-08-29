@@ -757,6 +757,16 @@ bool HdVP2Mesh::_PrimvarIsRequired(const TfToken& primvar) const
     return (std::find(begin, end, primvar) != end);
 }
 
+void HdVP2Mesh::_ResetRenderingTopology()
+{
+    _meshSharedData->_renderingTopology = HdMeshTopology();
+
+    RenderItemFunc setIndexBufferDirty = [](HdVP2DrawItem::RenderItemData& renderItemData) {
+        renderItemData._indexBufferValid = false;
+    };
+    _ForEachRenderItem(_reprs, setIndexBufferDirty);
+}
+
 //! \brief  Synchronize VP2 state with scene delegate state based on dirty bits and representation
 void HdVP2Mesh::Sync(
     HdSceneDelegate* delegate,
@@ -812,13 +822,7 @@ void HdVP2Mesh::Sync(
             if (!(newTopology == _meshSharedData->_topology)) {
                 _meshSharedData->_topology = newTopology;
                 _meshSharedData->_adjacency.reset();
-                _meshSharedData->_renderingTopology = HdMeshTopology();
-
-                RenderItemFunc setIndexBufferDirty
-                    = [](HdVP2DrawItem::RenderItemData& renderItemData) {
-                          renderItemData._indexBufferValid = false;
-                      };
-                _ForEachRenderItem(_reprs, setIndexBufferDirty);
+                _ResetRenderingTopology();
             }
         }
 
@@ -895,6 +899,14 @@ void HdVP2Mesh::Sync(
             _meshSharedData->_allRequiredPrimvars.push_back(HdTokens->points);
 
         _UpdatePrimvarSources(delegate, *dirtyBits, _meshSharedData->_allRequiredPrimvars);
+
+        // update the type of vertex layout to use (shared/unshared)
+        bool requireUnsharedVertexLayout
+            = _IsUnsharedVertexLayoutRequired(_meshSharedData->_primvarInfo);
+        if (_meshSharedData->_isVertexLayoutUnshared != requireUnsharedVertexLayout) {
+            _meshSharedData->_isVertexLayoutUnshared = requireUnsharedVertexLayout;
+            _ResetRenderingTopology();
+        }
     }
 
     if (_meshSharedData->_renderingTopology == HdMeshTopology()) {
@@ -911,7 +923,7 @@ void HdVP2Mesh::Sync(
         VtIntArray newFaceVertexIndices;
         newFaceVertexIndices.resize(numFaceVertexIndices);
 
-        if (_IsUnsharedVertexLayoutRequired(_meshSharedData->_primvarInfo)) {
+        if (_meshSharedData->_isVertexLayoutUnshared) {
             _meshSharedData->_numVertices = numFaceVertexIndices;
             _meshSharedData->_renderingToSceneFaceVtxIds = faceVertexIndices;
             _meshSharedData->_sceneToRenderingFaceVtxIds.clear();
