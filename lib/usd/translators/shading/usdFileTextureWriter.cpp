@@ -51,13 +51,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// Maya USD used to only write the colorspace if the colorspace was not the default.
-// This env var allows users to go back to the sparse write method when desired
-TF_DEFINE_ENV_SETTING(
-    MAYAUSD_EXPORT_VERBOSE_COLORSPACE_METADATA,
-    true,
-    "This env flag controls whether colorspace values are written even if they're the default.")
-
 class PxrUsdTranslators_FileTextureWriter : public UsdMayaShaderWriter
 {
 public:
@@ -248,13 +241,12 @@ void PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
 
     MPlug colorSpacePlug = depNodeFn.findPlug(TrMayaTokens->colorSpace.GetText(), true, &status);
     if (status == MS::kSuccess) {
-        const bool verboseColorspace = TfGetEnvSetting(MAYAUSD_EXPORT_VERBOSE_COLORSPACE_METADATA);
-        MString    colorRuleCmd;
+        MString colorRuleCmd;
         colorRuleCmd.format(
             "colorManagementFileRules -evaluate \"^1s\";", fileTextureNamePlug.asString());
         const MString colorSpaceByRule(MGlobal::executeCommandStringResult(colorRuleCmd));
         const MString colorSpace(colorSpacePlug.asString(&status));
-        if (status == MS::kSuccess && (verboseColorspace || colorSpace != colorSpaceByRule)) {
+        if (status == MS::kSuccess && colorSpace != colorSpaceByRule) {
             fileInput.GetAttr().SetColorSpace(TfToken(colorSpace.asChar()));
         }
 
