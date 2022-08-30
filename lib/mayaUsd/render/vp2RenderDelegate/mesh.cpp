@@ -36,7 +36,10 @@
 #include <pxr/imaging/hd/version.h>
 #include <pxr/imaging/hd/vertexAdjacency.h>
 #include <pxr/pxr.h>
+#include <pxr/usdImaging/usdImaging/version.h>
+#if !defined(USD_IMAGING_API_VERSION) || USD_IMAGING_API_VERSION < 18
 #include <pxr/usdImaging/usdImaging/delegate.h>
+#endif
 
 #include <maya/MFrameContext.h>
 #include <maya/MMatrix.h>
@@ -774,12 +777,14 @@ void HdVP2Mesh::Sync(
         _rprimId.asChar(),
         "HdVP2Mesh::Sync");
 
-    const SdfPath&       id = GetId();
-    HdRenderIndex&       renderIndex = delegate->GetRenderIndex();
+    const SdfPath& id = GetId();
+    HdRenderIndex& renderIndex = delegate->GetRenderIndex();
+
+#if !defined(USD_IMAGING_API_VERSION) || USD_IMAGING_API_VERSION < 18
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
     UsdImagingDelegate*  usdImagingDelegate = drawScene.GetUsdImagingDelegate();
-
+#endif
     // Geom subsets are accessed through the mesh topology. I need to know about
     // the additional materialIds that get bound by geom subsets before we build the
     // _primvaInfo. So the very first thing I need to do is grab the topology.
@@ -788,7 +793,11 @@ void HdVP2Mesh::Sync(
         for (const auto& geomSubset : _meshSharedData->_topology.GetGeomSubsets()) {
             if (!geomSubset.materialId.IsEmpty()) {
                 const SdfPath materialId
+#if !defined(USD_IMAGING_API_VERSION) || USD_IMAGING_API_VERSION < 18
                     = usdImagingDelegate->ConvertCachePathToIndexPath(geomSubset.materialId);
+#else
+                    = geomSubset.materialId;
+#endif
                 HdVP2Material* material = static_cast<HdVP2Material*>(
                     renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
 
@@ -826,7 +835,11 @@ void HdVP2Mesh::Sync(
         for (const auto& geomSubset : _meshSharedData->_topology.GetGeomSubsets()) {
             if (!geomSubset.materialId.IsEmpty()) {
                 const SdfPath materialId
+#if !defined(USD_IMAGING_API_VERSION) || USD_IMAGING_API_VERSION < 18
                     = usdImagingDelegate->ConvertCachePathToIndexPath(geomSubset.materialId);
+#else
+                    = geomSubset.materialId;
+#endif
                 HdVP2Material* material = static_cast<HdVP2Material*>(
                     renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
 
@@ -887,7 +900,12 @@ void HdVP2Mesh::Sync(
 
         for (const auto& geomSubset : _meshSharedData->_topology.GetGeomSubsets()) {
             addRequiredPrimvars(
-                usdImagingDelegate->ConvertCachePathToIndexPath(geomSubset.materialId));
+#if !defined(USD_IMAGING_API_VERSION) || USD_IMAGING_API_VERSION < 18
+                usdImagingDelegate->ConvertCachePathToIndexPath(geomSubset.materialId)
+#else
+                geomSubset.materialId
+#endif
+            );
         }
 
         // also, we always require points
@@ -1429,7 +1447,9 @@ void HdVP2Mesh::_UpdateDrawItem(
 
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    UsdImagingDelegate*  usdImagingDelegate = drawScene.GetUsdImagingDelegate();
+#if !defined(USD_IMAGING_API_VERSION) || USD_IMAGING_API_VERSION < 18
+    UsdImagingDelegate* usdImagingDelegate = drawScene.GetUsdImagingDelegate();
+#endif
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     // We don't need to update the shaded selected instance item when the selection mode is not
@@ -1605,12 +1625,12 @@ void HdVP2Mesh::_UpdateDrawItem(
         && desc.shadingTerminal == HdMeshReprDescTokens->surfaceShader) {
         bool dirtyMaterialId = (itemDirtyBits & HdChangeTracker::DirtyMaterialId) != 0;
         if (dirtyMaterialId) {
-            SdfPath materialId = GetMaterialId(); // This is an index path
+            SdfPath materialId = GetMaterialId();
             if (drawItemData._geomSubset.id != SdfPath::EmptyPath()) {
-                SdfPath cachePathMaterialId = drawItemData._geomSubset.materialId;
-                // This is annoying! The saved materialId is a cache path, but to look up the
-                // material in the render index we need the index path.
-                materialId = usdImagingDelegate->ConvertCachePathToIndexPath(cachePathMaterialId);
+                materialId = drawItemData._geomSubset.materialId;
+#if !defined(USD_IMAGING_API_VERSION) || USD_IMAGING_API_VERSION < 18
+                materialId = usdImagingDelegate->ConvertCachePathToIndexPath(materialId);
+#endif
             }
             const HdVP2Material* material = static_cast<const HdVP2Material*>(
                 renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
@@ -1627,6 +1647,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                 }
             } else {
                 drawItemData._shaderIsFallback = true;
+                TF_WARN("Could not resolve material <%s>\n", materialId.GetText());
             }
         }
 
