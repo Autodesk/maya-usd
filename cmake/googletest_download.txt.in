@@ -21,9 +21,8 @@ ExternalProject_Add(googletest
   SOURCE_DIR        "${GOOGLETEST_BUILD_ROOT}/googletest-src"
   BINARY_DIR        "${GOOGLETEST_BUILD_ROOT}/googletest-build"
   CMAKE_ARGS
-                    "-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
+                    "${MAYAUSD_EXTERNAL_PROJECT_GENERAL_SETTINGS}"
                     "-DCMAKE_INSTALL_PREFIX=${GOOGLETEST_BUILD_ROOT}/googletest-install"
-                    "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
                     "-Dgtest_force_shared_crt=ON"
                     "-DBUILD_GMOCK=OFF"
                     "-DBUILD_SHARED_LIBS=ON"
@@ -32,5 +31,5 @@ ExternalProject_Add(googletest
                     "-DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}"
                     "-DCMAKE_CXX_EXTENSIONS=${CMAKE_CXX_EXTENSIONS}"
                     "-DCMAKE_CXX_STANDARD_REQUIRED=${CMAKE_CXX_STANDARD_REQUIRED}"
-                    "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} ${FORCE_OLD_ABI}"                    
+                    "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}"
 )
