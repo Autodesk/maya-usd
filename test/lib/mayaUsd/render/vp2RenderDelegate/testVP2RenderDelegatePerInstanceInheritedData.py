@@ -80,7 +80,7 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
         cmds.file(force=True, new=True)
         mayaUtils.loadPlugin("mayaUsdPlugin")
         panel = mayaUtils.activeModelPanel()
-        cmds.modelEditor(panel, edit=True, useDefaultMaterial=False)
+        cmds.modelEditor(panel, edit=True, useDefaultMaterial=False, displayTextures=True)
         self._testName = testName
         testFile = testUtils.getTestScene("instances", self._testName + ".usda")
         mayaUtils.createProxyFromFile(testFile)
