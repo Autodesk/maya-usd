@@ -919,7 +919,7 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
     const unsigned int displayStyle = frameContext.getDisplayStyle();
 #endif
     const unsigned int oldDisplayStyle = _currentDisplayStyle;
-    _currentDisplayStyle = displayStyle;
+    _currentDisplayStyle = frameContext.getDisplayStyle();
 
     // Work around USD issue #1516. There is a significant performance overhead caused by populating
     // selection, so only force the populate selection to occur when we detect a change which
