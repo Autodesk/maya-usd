@@ -53,7 +53,7 @@ def createMayaRefPrimSiblingCache(testCase, cacheParent, cacheParentPathStr):
 
     # The sibling cache is a new child of its parent, thus the parent has no
     # variant data.
-    return (mayaRefPrim, None, None, None)
+    return (mayaRefPrim, None, None, None, None)
 
 def checkSiblingCacheParent(testCase, cacheParentChildren, vs, vn):
     '''Verify the cache parent after caching in the sibling cache test case.'''
@@ -65,17 +65,20 @@ def createMayaRefPrimVariantCache(testCase, cacheParent, cacheParentPathStr):
     '''Create a Maya reference prim for the variant cache test case.'''
     # Add a variant set to the cache parent.
     variantSetName = 'animation'
-    variantSet = cacheParent.GetVariantSets().AddVariantSet(variantSetName)
-
-    # Add a rig variant to the variant set.
-    variantSet.AddVariant('Rig')
+    variantName = 'Rig'
+    groupPrim = None
+    autoEdit = False
 
     # Author a Maya reference prim to the rig variant.
-    with variantSet.GetVariantEditContext():
-        mayaRefPrim = mayaUsdAddMayaReference.createMayaReferencePrim(
-            cacheParentPathStr, testCase.mayaSceneStr, testCase.kDefaultNamespace)
+    mayaRefPrim = mayaUsdAddMayaReference.createMayaReferencePrim(
+        cacheParentPathStr, testCase.mayaSceneStr, testCase.kDefaultNamespace,
+        'Reference1', groupPrim, (variantSetName, variantName), autoEdit)
 
-    return (mayaRefPrim, variantSetName, variantSet, 'Cache')
+    refParent = mayaRefPrim.GetParent()
+    vs = refParent.GetVariantSets()
+    variantSet = vs.GetVariantSet(variantSetName)
+
+    return (mayaRefPrim, variantSetName, variantSet, variantName, 'Cache')
 
 def checkVariantCacheParent(testCase, cacheParentChildren, variantSet, cacheVariantName):
     '''Verify the cache parent after caching in the variant cache test case.'''
@@ -126,7 +129,7 @@ class CacheToUsdTestCase(unittest.TestCase):
         self.removeCacheFile()
 
     def verifyCacheFileDefaultPrim(self, cacheFilename, defaultPrimName):
-        layer = Sdf.Find(cacheFilename)
+        layer = Sdf.Layer.FindOrOpen(cacheFilename)
         self.assertIsNotNone(layer)
         self.assertTrue(layer.HasDefaultPrim())
         defPrim = layer.defaultPrim
@@ -142,7 +145,7 @@ class CacheToUsdTestCase(unittest.TestCase):
         cacheParentPathStr = self.proxyShapePathStr + ',/CacheParent'
         self.assertFalse(cacheParent.HasVariantSets())
 
-        (mayaRefPrim, variantSetName, variantSet, cacheVariantName) = \
+        (mayaRefPrim, variantSetName, variantSet, refVariantName, cacheVariantName) = \
             createMayaRefPrimFn(self, cacheParent, cacheParentPathStr)
 
         # The Maya reference prim is a child of the cache parent.
@@ -330,26 +333,36 @@ class CacheToUsdTestCase(unittest.TestCase):
 
         self.verifyCacheFileDefaultPrim(cacheFile, cachePrimName)
 
-    def testMayaRefPrimTransform(self):
-        '''Test transforming the Maya Reference prim, editing it in Maya, then merging back the result.'''
+    def runTestMayaRefPrimTransform(self, createMayaRefPrimFn, checkCacheParentFn):
+        '''
+        Run a test transforming the Maya Reference prim, editing it in Maya,
+        then merging back the result. The caching can be done in a variant or not.
+        '''
 
         # The Maya reference prim is transformable.  Change its local
         # transformation and confirm that the transformation appears in the
         # corresponding Maya transform node.
 
         # Create a Maya reference prim using the defaults, under a
-        # newly-created parent, without any variant sets.
+        # newly-created parent.
         cacheParent = self.stage.DefinePrim('/CacheParent', 'Xform')
         cacheParentPathStr = self.proxyShapePathStr + ',/CacheParent'
         self.assertFalse(cacheParent.HasVariantSets())
 
-        (mayaRefPrim, variantSetName, variantSet, cacheVariantName) = \
-            createMayaRefPrimSiblingCache(self, cacheParent, cacheParentPathStr)
+        (mayaRefPrim, variantSetName, variantSet, refVariantName, cacheVariantName) = \
+            createMayaRefPrimFn(self, cacheParent, cacheParentPathStr)
 
-        xformable = UsdGeom.Xformable(mayaRefPrim)
-        xlateOp = xformable.AddTranslateOp()
-        xlation = Gf.Vec3d(1, 2, 3)
-        xlateOp.Set(xlation)
+        # Set an initial translation.
+        editTarget = self.stage.GetEditTarget()
+        if variantSet:
+            variantSet.SetVariantSelection(refVariantName)
+            editTarget = variantSet.GetVariantEditTarget(editTarget.GetLayer())
+
+        with Usd.EditContext(self.stage, editTarget):
+            xformable = UsdGeom.Xformable(mayaRefPrim)
+            xlateOp = xformable.AddTranslateOp()
+            xlation = Gf.Vec3d(1, 2, 3)
+            xlateOp.Set(xlation)
 
         # The Maya reference prim is a child of the cache parent.  This is
         # already tested in testCacheToUsd{Sibling,Variant}.
@@ -394,21 +407,45 @@ class CacheToUsdTestCase(unittest.TestCase):
         listEditType = 'Prepend'
 
         cacheOptions = cacheToUsd.createCacheCreationOptions(
-            defaultExportOptions, cacheFile, cachePrimName, payloadOrReference,
-            listEditType)
+            defaultExportOptions, cacheFile, cachePrimName,
+            payloadOrReference, listEditType, variantSetName, cacheVariantName)
 
+        # Before caching, the cache file does not exist.
+        self.assertFalse(os.path.exists(cacheFile))
+
+        # Cache edits back to USD.
         with mayaUsd.lib.OpUndoItemList():
-            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(mayaTransformPathStr, cacheOptions))
-        
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(ufe.PathString.string(mayaTransformItem.path()), cacheOptions))
+
+        # There is a new child under the cache parent, with the chosen cache
+        # prim name.
+        cacheParentChildren = cacheParentHier.children()
+        checkCacheParentFn(self, cacheParentChildren, variantSet, cacheVariantName)
+
         # Maya reference prim should now have the updated transformation.
-        ops = xformable.GetOrderedXformOps()
-        self.assertEqual(len(ops), 1)
-        usdMatrix = ops[0].GetOpTransform(mayaUsd.ufe.getTime(mayaRefPrimPathStr))
-        usdValues = [v for row in usdMatrix for v in row]
-        assertVectorAlmostEqual(self, usdValues, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0,
-                                                  1, 0, 4, 5, 6, 1])
+        editTarget = self.stage.GetEditTarget()
+        if variantSet:
+            variantSet.SetVariantSelection('Rig')
+            editTarget = variantSet.GetVariantEditTarget(editTarget.GetLayer())
+
+        with Usd.EditContext(self.stage, editTarget):
+            xformable = UsdGeom.Xformable(mayaRefPrim)
+            ops = xformable.GetOrderedXformOps()
+            self.assertEqual(len(ops), 1)
+            usdMatrix = ops[0].GetOpTransform(mayaUsd.ufe.getTime(mayaRefPrimPathStr))
+            usdValues = [v for row in usdMatrix for v in row]
+            assertVectorAlmostEqual(self, usdValues, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0,
+                                                    1, 0, 4, 5, 6, 1])
 
         self.verifyCacheFileDefaultPrim(cacheFile, cachePrimName)
+
+    def testMayaRefPrimTransform(self):
+        '''Test transforming the Maya Reference prim, editing it in Maya, then merging back the result.'''
+        self.runTestMayaRefPrimTransform(createMayaRefPrimSiblingCache, checkSiblingCacheParent)
+
+    def testMayaRefPrimTransformToVariant(self):
+        '''Test transforming the Maya Reference prim, editing it in Maya, then merging back the result.'''
+        self.runTestMayaRefPrimTransform(createMayaRefPrimVariantCache, checkVariantCacheParent)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

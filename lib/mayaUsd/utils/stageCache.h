@@ -23,6 +23,7 @@
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/stageCache.h>
 
+#include <array>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -30,11 +31,24 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdMayaStageCache
 {
 public:
+    /// The shared mode of stage kept in a particular cache.
+    ///
+    /// Shared stages allow staging the same root layer multiple times in Maya
+    /// with the same session layer.
+    ///
+    /// Unshared stages ensure they do not share their session layer.
     enum class ShareMode
     {
         Shared,
         Unshared
     };
+
+    /// Container of caches.
+    using Caches = std::array<UsdStageCache, 4>;
+
+    /// Return all the stage caches.
+    MAYAUSD_CORE_PUBLIC
+    static Caches& GetAllCaches();
 
     /// Return the singleton stage cache for use by all USD clients within Maya.
     /// Four stage caches are maintained. They are divided based on two criteria:

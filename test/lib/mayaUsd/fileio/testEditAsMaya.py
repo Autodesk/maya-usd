@@ -213,6 +213,44 @@ class EditAsMayaTestCase(unittest.TestCase):
 
         verifyEditedScene()
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4029', 'Test only available in UFE preview version 0.4.29 and greater')
+    def testEditAsMayaUIInfo(self):
+        '''Edit a USD transform as a Maya Object and test the UI Info.'''
+
+        # Maya UI info handler
+        rid = ufe.RunTimeMgr.instance().getId('Maya-DG')
+        ufeUIInfo = ufe.UIInfoHandler.uiInfoHandler(rid)
+        self.assertIsNotNone(ufeUIInfo)
+
+        (ps, aXlateOp, aXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
+             bXlateOp, bXlation, bUsdUfePathStr, bUsdUfePath, bUsdItem) = createSimpleXformScene()
+        aPrim = mayaUsd.ufe.ufePathToPrim(aUsdUfePathStr)
+
+        # Edit bPrim as Maya data. This will auto-select the item after so get the Maya scene item
+        # for this edited object.
+        cmds.mayaUsdEditAsMaya(bUsdUfePathStr)
+        bMayaItem = ufe.GlobalSelection.get().front()
+
+        # Initially there should be no special color or icon mode.
+        # Note: operator= in Python creates a new variable that shares the reference
+        #       of the original object. So don't create initTextFgClr from ci.textFgColor.
+        ci = ufe.CellInfo()
+        ci.textFgColor = ufe.Color3f(0.5, 0.5, 0.5)
+        initTextFgClr = ufe.Color3f(ci.textFgColor.r(), ci.textFgColor.g(), ci.textFgColor.b())
+        ufeUIInfo.treeViewCellInfo(bMayaItem, ci)
+        self.assertEqual(initTextFgClr, ci.textFgColor)
+        icon = ufeUIInfo.treeViewIcon(bMayaItem)
+        self.assertEqual(ufe.UIInfoHandler.Normal, icon.mode)
+
+        # Deactivating the parent of this pulled item will orphan it.
+        # This will set a disabled text foreground color and a disabled mode for the icon.
+        aPrim.SetActive(False)
+        ufeUIInfo.treeViewCellInfo(bMayaItem, ci)
+        self.assertFalse(initTextFgClr == ci.textFgColor)
+        icon = ufeUIInfo.treeViewIcon(bMayaItem)
+        self.assertEqual('', icon.baseIcon)
+        self.assertEqual(ufe.UIInfoHandler.Disabled, icon.mode)
+
     @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testIllegalEditAsMaya(self):
         '''Trying to edit as Maya on object that doesn't support it.'''

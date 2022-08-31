@@ -36,7 +36,10 @@
 #include <pxr/imaging/hd/version.h>
 #include <pxr/imaging/hd/vertexAdjacency.h>
 #include <pxr/pxr.h>
+#include <pxr/usdImaging/usdImaging/version.h>
+#if !defined(USD_IMAGING_API_VERSION) || USD_IMAGING_API_VERSION < 18
 #include <pxr/usdImaging/usdImaging/delegate.h>
+#endif
 
 #include <maya/MFrameContext.h>
 #include <maya/MMatrix.h>
@@ -764,9 +767,7 @@ void HdVP2Mesh::Sync(
     HdDirtyBits*     dirtyBits,
     TfToken const&   reprToken)
 {
-    const SdfPath& id = GetId();
-    HdRenderIndex& renderIndex = delegate->GetRenderIndex();
-    if (!_SyncCommon(dirtyBits, id, _GetRepr(reprToken), renderIndex)) {
+    if (!_SyncCommon(*this, delegate, renderParam, dirtyBits, _GetRepr(reprToken), reprToken)) {
         return;
     }
 
@@ -776,20 +777,27 @@ void HdVP2Mesh::Sync(
         _rprimId.asChar(),
         "HdVP2Mesh::Sync");
 
+    const SdfPath& id = GetId();
+    HdRenderIndex& renderIndex = delegate->GetRenderIndex();
+
+#if !defined(USD_IMAGING_API_VERSION) || USD_IMAGING_API_VERSION < 18
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
     UsdImagingDelegate*  usdImagingDelegate = drawScene.GetUsdImagingDelegate();
-
+#endif
     // Geom subsets are accessed through the mesh topology. I need to know about
     // the additional materialIds that get bound by geom subsets before we build the
     // _primvaInfo. So the very first thing I need to do is grab the topology.
     if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)) {
-        // unsubscribe from material updates from the old geom subset materials
-#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
+        // unsubscribe from material TopoChanged updates from the old geom subset materials
         for (const auto& geomSubset : _meshSharedData->_topology.GetGeomSubsets()) {
             if (!geomSubset.materialId.IsEmpty()) {
                 const SdfPath materialId
+#if !defined(USD_IMAGING_API_VERSION) || USD_IMAGING_API_VERSION < 18
                     = usdImagingDelegate->ConvertCachePathToIndexPath(geomSubset.materialId);
+#else
+                    = geomSubset.materialId;
+#endif
                 HdVP2Material* material = static_cast<HdVP2Material*>(
                     renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
 
@@ -798,7 +806,6 @@ void HdVP2Mesh::Sync(
                 }
             }
         }
-#endif
 
         {
             MProfilingScope profilingScope(
@@ -824,12 +831,15 @@ void HdVP2Mesh::Sync(
             }
         }
 
-        // subscribe to material updates from the new geom subset materials
-#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
+        // subscribe to material TopoChanged updates from the new geom subset materials
         for (const auto& geomSubset : _meshSharedData->_topology.GetGeomSubsets()) {
             if (!geomSubset.materialId.IsEmpty()) {
                 const SdfPath materialId
+#if !defined(USD_IMAGING_API_VERSION) || USD_IMAGING_API_VERSION < 18
                     = usdImagingDelegate->ConvertCachePathToIndexPath(geomSubset.materialId);
+#else
+                    = geomSubset.materialId;
+#endif
                 HdVP2Material* material = static_cast<HdVP2Material*>(
                     renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
 
@@ -838,7 +848,6 @@ void HdVP2Mesh::Sync(
                 }
             }
         }
-#endif
     }
 
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
@@ -891,7 +900,12 @@ void HdVP2Mesh::Sync(
 
         for (const auto& geomSubset : _meshSharedData->_topology.GetGeomSubsets()) {
             addRequiredPrimvars(
-                usdImagingDelegate->ConvertCachePathToIndexPath(geomSubset.materialId));
+#if !defined(USD_IMAGING_API_VERSION) || USD_IMAGING_API_VERSION < 18
+                usdImagingDelegate->ConvertCachePathToIndexPath(geomSubset.materialId)
+#else
+                geomSubset.materialId
+#endif
+            );
         }
 
         // also, we always require points
@@ -1123,7 +1137,7 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
     if (ARCH_UNLIKELY(!subSceneContainer))
         return;
 
-    HdReprSharedPtr repr = _AddNewRepr(reprToken, _reprs, dirtyBits, GetId());
+    HdReprSharedPtr repr = _InitReprCommon(*this, reprToken, _reprs, dirtyBits, GetId());
     if (!repr)
         return;
 
@@ -1254,12 +1268,7 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
         }
 
         if (renderItem) {
-            // Store the render item pointer to avoid expensive lookup in the
-            // subscene container.
-            drawItem->AddRenderItem(renderItem);
-
-            _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-                [subSceneContainer, renderItem]() { subSceneContainer->add(renderItem); });
+            _AddRenderItem(*drawItem, renderItem, *subSceneContainer);
         }
 
         if (desc.geomStyle == HdMeshGeomStyleHull) {
@@ -1438,7 +1447,9 @@ void HdVP2Mesh::_UpdateDrawItem(
 
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    UsdImagingDelegate*  usdImagingDelegate = drawScene.GetUsdImagingDelegate();
+#if !defined(USD_IMAGING_API_VERSION) || USD_IMAGING_API_VERSION < 18
+    UsdImagingDelegate* usdImagingDelegate = drawScene.GetUsdImagingDelegate();
+#endif
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     // We don't need to update the shaded selected instance item when the selection mode is not
@@ -1459,8 +1470,8 @@ void HdVP2Mesh::_UpdateDrawItem(
     const bool isDedicatedHighlightItem
         = drawItem->MatchesUsage(HdVP2DrawItem::kSelectionHighlight);
     const bool isHighlightItem = drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight);
-    const bool inTemplateMode = _displayType == MayaUsdRPrim::kTemplate;
-    const bool inReferenceMode = _displayType == MayaUsdRPrim::kReference;
+    const bool inTemplateMode = _displayLayerModes._displayType == MayaUsdRPrim::kTemplate;
+    const bool inReferenceMode = _displayLayerModes._displayType == MayaUsdRPrim::kReference;
     const bool inPureSelectionHighlightMode = isDedicatedHighlightItem && !inTemplateMode;
 
     // We don't need to update the selection-highlight-only item when there is no selection
@@ -1485,7 +1496,7 @@ void HdVP2Mesh::_UpdateDrawItem(
     // The bounding box item uses a globally-shared geometry data therefore it
     // doesn't need to extract index data from topology. Points use non-indexed
     // draw.
-    const bool isBBoxItem = (renderItem->drawMode() == MHWRender::MGeometry::kBoundingBox);
+    const bool isBBoxItem = (renderItem->drawMode() & MHWRender::MGeometry::kBoundingBox) != 0;
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     constexpr bool isPointSnappingItem = false;
@@ -1614,12 +1625,12 @@ void HdVP2Mesh::_UpdateDrawItem(
         && desc.shadingTerminal == HdMeshReprDescTokens->surfaceShader) {
         bool dirtyMaterialId = (itemDirtyBits & HdChangeTracker::DirtyMaterialId) != 0;
         if (dirtyMaterialId) {
-            SdfPath materialId = GetMaterialId(); // This is an index path
+            SdfPath materialId = GetMaterialId();
             if (drawItemData._geomSubset.id != SdfPath::EmptyPath()) {
-                SdfPath cachePathMaterialId = drawItemData._geomSubset.materialId;
-                // This is annoying! The saved materialId is a cache path, but to look up the
-                // material in the render index we need the index path.
-                materialId = usdImagingDelegate->ConvertCachePathToIndexPath(cachePathMaterialId);
+                materialId = drawItemData._geomSubset.materialId;
+#if !defined(USD_IMAGING_API_VERSION) || USD_IMAGING_API_VERSION < 18
+                materialId = usdImagingDelegate->ConvertCachePathToIndexPath(materialId);
+#endif
             }
             const HdVP2Material* material = static_cast<const HdVP2Material*>(
                 renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
@@ -1636,6 +1647,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                 }
             } else {
                 drawItemData._shaderIsFallback = true;
+                TF_WARN("Could not resolve material <%s>\n", materialId.GetText());
             }
         }
 
@@ -2540,10 +2552,7 @@ HdVP2DrawItem::RenderItemData& HdVP2Mesh::_CreateSmoothHullRenderItem(
     renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
 #endif
 
-    _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-        [&subSceneContainer, renderItem]() { subSceneContainer.add(renderItem); });
-
-    return drawItem.AddRenderItem(renderItem, geomSubset);
+    return _AddRenderItem(drawItem, renderItem, subSceneContainer, geomSubset);
 }
 
 /*! \brief  Create render item to support selection highlight for smoothHull repr.

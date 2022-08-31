@@ -83,6 +83,25 @@ class UfeAttributesObserver(ufe.Observer):
         # Nothing needed here since we don't create any UI.
         pass
 
+class UfeConnectionChangedObserver(ufe.Observer):
+    def __init__(self, item):
+        super(UfeConnectionChangedObserver, self).__init__()
+        self._item = item
+
+    def __del__(self):
+        ufe.Attributes.removeObserver(self)
+
+    def __call__(self, notification):
+        if hasattr(ufe, "AttributeConnectionChanged") and isinstance(notification, ufe.AttributeConnectionChanged):
+            mel.eval("evalDeferred -low \"refreshEditorTemplates\";")
+
+    def onCreate(self, *args):
+        ufe.Attributes.addObserver(self._item, self)
+
+    def onReplace(self, *args):
+        # Nothing needed here since we don't create any UI.
+        pass
+
 class MetaDataCustomControl(object):
     # Custom control for all prim metadata we want to display.
     def __init__(self, item, prim, useNiceName):
@@ -513,6 +532,9 @@ class AETemplate(object):
         nodeDef = Sdr.Registry().GetShaderNodeByIdentifier(nodeId)
         if not nodeDef:
             return
+        # Add a custom control to monitor for connection changed.
+        cnxObs = UfeConnectionChangedObserver(self.item)
+        self.defineCustom(cnxObs)
         label = nodeDef.GetLabel()
         if not label:
             label = nodeDef.GetFamily()

@@ -524,15 +524,19 @@ class ConnectionTestCase(unittest.TestCase):
         self.assertEqual(len(materialPrim.GetAuthoredProperties()), 1)
         self.assertEqual(materialPrim.GetAuthoredProperties()[0].GetName(), "outputs:mtlx:surface")
 
-        materialOutput = materialAttrs.attribute("outputs:mtlx:surface")
-        connectionHandler.disconnect(shaderOutput, materialOutput)
+        materialXOutput = materialAttrs.attribute("outputs:mtlx:surface")
+        connectionHandler.disconnect(shaderOutput, materialXOutput)
+
+        # Cleanup on disconnection should remove the MaterialX surface output.
+        with self.assertRaisesRegex(KeyError, "Attribute 'outputs:mtlx:surface' does not exist") as cm:
+            materialAttrs.attribute("outputs:mtlx:surface")
 
         connections = connectionHandler.sourceConnections(materialItem)
         self.assertIsNotNone(connections)
         conns = connections.allConnections()
         self.assertEqual(len(conns), 0)
 
-        # Not redirected since already on outputs:mtlx:surface:
+        # Still need original outputs:surface since the MaterialX port was cleaned-up:
         connectionHandler.connect(shaderOutput, materialOutput)
 
         connections = connectionHandler.sourceConnections(materialItem)
@@ -631,18 +635,23 @@ class ConnectionTestCase(unittest.TestCase):
         self.assertEqual(materialPrim.GetAuthoredProperties()[0].GetName(), "outputs:mtlx:surface")
         self.assertFalse(materialPrim.GetAuthoredProperties()[0].IsCustom())
 
-        materialOutput = materialAttrs.attribute("outputs:mtlx:surface")
-        connectionHandler.disconnect(shaderOutput, materialOutput)
-        materialObserver.assertNotificationCount(self, numAdded = 1, numConnection = 2)
+        materialXOutput = materialAttrs.attribute("outputs:mtlx:surface")
+        connectionHandler.disconnect(shaderOutput, materialXOutput)
+        # We get one connection changed from the disconnection, a second one for when we cleanup the
+        # connection array, then finally a removed on the MaterialX surface output.
+        self.assertEqual(len(materialPrim.GetAuthoredProperties()), 0)
+        materialObserver.assertNotificationCount(self, numAdded = 1, numConnection = 3, numRemoved = 1)
 
         connections = connectionHandler.sourceConnections(materialItem)
         self.assertIsNotNone(connections)
         conns = connections.allConnections()
         self.assertEqual(len(conns), 0)
 
-        # Not redirected since already on outputs:mtlx:surface:
+        # Since it got removed on disconnection, we need to add it back before reconnecting (or use
+        # the universal output to get redirected)
+        materialOutput = materialAttrs.addAttribute("outputs:mtlx:surface", ufe.Attribute.kString)
         connectionHandler.connect(shaderOutput, materialOutput)
-        materialObserver.assertNotificationCount(self, numAdded = 1, numConnection = 3)
+        materialObserver.assertNotificationCount(self, numAdded = 2, numConnection = 4, numRemoved = 1)
 
         connections = connectionHandler.sourceConnections(materialItem)
         self.assertIsNotNone(connections)
@@ -653,6 +662,40 @@ class ConnectionTestCase(unittest.TestCase):
         #       were before connecting, which might require deleting authored attributes.
         #       The undo must also be aware that the connection on the material got redirected.
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test only available in UFE preview version 0.4.24 and greater')
+    def testCreateNodeGraphAttributes(self):
+        '''Test create attributes on compound boundaries.'''
+        cmds.file(new=True, force=True)
+
+        # Create a proxy shape with empty stage to start with.
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        # Create a ContextOps interface for the proxy shape.
+        proxyPathSegment = mayaUtils.createUfePathSegment(proxyShape)
+        proxyShapePath = ufe.Path([proxyPathSegment])
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+
+        cmd = contextOps.doOp(['Add New Prim', 'Material'])
+        cmd = contextOps.doOp(['Add New Prim', 'NodeGraph'])
+
+        rootHier = ufe.Hierarchy.hierarchy(proxyShapeItem)
+
+        for testItem in rootHier.children():
+            testAttrs = ufe.Attributes.attributes(testItem)
+            testObserver = TestObserver()
+            testAttrs.addObserver(testItem, testObserver)
+            testObserver.assertNotificationCount(self)
+
+            testAttrs.addAttribute("inputs:foo", ufe.Attribute.kFloat)
+            testObserver.assertNotificationCount(self, numAdded = 1)
+            testAttrs.addAttribute("outputs:bar", ufe.Attribute.kFloat4)
+            testObserver.assertNotificationCount(self, numAdded = 2)
+            testAttrs.removeAttribute("inputs:foo")
+            testObserver.assertNotificationCount(self, numAdded = 2, numRemoved = 1)
+            testAttrs.removeAttribute("outputs:bar")
+            testObserver.assertNotificationCount(self, numAdded = 2, numRemoved = 2)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

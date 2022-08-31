@@ -461,6 +461,23 @@ public:
     }
 #endif
 
+    void OnMayaExit()
+    {
+        if (_isInitialized) {
+            for (size_t i = 0; i < FallbackShaderTypeCount; ++i) {
+                _fallbackShaders[i]._map.clear();
+                _fallbackCPVShaders[i] = nullptr;
+            }
+            _3dSolidShaders._map.clear();
+            _3dFatPointShaders._map.clear();
+            _userCache._map.clear();
+            _3dDefaultMaterialShader = nullptr;
+            _3dCPVSolidShader = nullptr;
+            _3dCPVFatPointShader = nullptr;
+        }
+        _isInitialized = false;
+    }
+
 private:
     bool _isInitialized { false }; //!< Whether the shader cache is initialized
 
@@ -588,6 +605,10 @@ HdVP2RenderDelegate::HdVP2RenderDelegate(ProxyRenderDelegate& drawScene)
  */
 HdVP2RenderDelegate::~HdVP2RenderDelegate()
 {
+    CleanupMaterials();
+    // Release Textures and Shader resources:
+    _materialSprims.clear();
+
     std::lock_guard<std::mutex> guard(_renderDelegateMutex);
     if (_renderDelegateCounter.fetch_sub(1) == 1) {
         _resourceRegistry.reset();
@@ -1140,5 +1161,7 @@ void HdVP2RenderDelegate::CleanupMaterials()
         }
     }
 }
+
+void HdVP2RenderDelegate::OnMayaExit() { sShaderCache.OnMayaExit(); }
 
 PXR_NAMESPACE_CLOSE_SCOPE

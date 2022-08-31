@@ -89,7 +89,7 @@ uint32_t findLayerIndex(const UsdPrim& prim, const SdfLayerHandle& layer)
 {
     uint32_t position { 0 };
 
-    const PcpPrimIndex& primIndex = prim.GetPrimIndex();
+    const PcpPrimIndex& primIndex = prim.ComputeExpandedPrimIndex();
 
     // iterate through the expanded primIndex
     for (PcpNodeRef node : primIndex.GetNodeRange()) {
@@ -194,7 +194,8 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
         return UsdPrim();
     }
     auto stage = getStage(Ufe::Path(segments[0]));
-    if (!TF_VERIFY(stage, kIllegalUFEPath, path.string().c_str())) {
+    if (!stage) {
+        TF_WARN(kIllegalUFEPath, path.string().c_str());
         return UsdPrim();
     }
 

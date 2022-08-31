@@ -210,21 +210,24 @@ void processAttributeChanges(
     const std::vector<const SdfChangeList::Entry*>& UFE_V4_24(entries))
 {
 #if (UFE_PREVIEW_VERSION_NUM >= 4024)
-    bool sendValueChanged = false;
+    bool sendValueChanged = true; // Default notification to send.
     bool sendAdded = false;
     bool sendRemoved = false;
     bool sendConnectionChanged = false;
     for (const auto& entry : entries) {
+        // We can have multiple flags merged into a single entry:
         if (entry->flags.didAddProperty || entry->flags.didAddPropertyWithOnlyRequiredFields) {
             sendAdded = true;
-        } else if (
-            entry->flags.didRemoveProperty
+            sendValueChanged = false;
+        }
+        if (entry->flags.didRemoveProperty
             || entry->flags.didRemovePropertyWithOnlyRequiredFields) {
             sendRemoved = true;
-        } else if (entry->flags.didChangeAttributeConnection) {
+            sendValueChanged = false;
+        }
+        if (entry->flags.didChangeAttributeConnection) {
             sendConnectionChanged = true;
-        } else {
-            sendValueChanged = true;
+            sendValueChanged = false;
         }
     }
     if (sendAdded) {
