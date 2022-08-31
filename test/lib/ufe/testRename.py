@@ -18,11 +18,12 @@
 
 import fixturesUtils
 import mayaUtils
+import testUtils
 import usdUtils
 
 import mayaUsd.ufe
 
-from pxr import Usd, Tf
+from pxr import Usd, Tf, UsdShade, Sdf
 
 from maya import cmds
 from maya import standalone
@@ -717,6 +718,42 @@ class RenameTestCase(unittest.TestCase):
 
         compQueryPrimC = CompositionQuery(stage.GetPrimAtPath('/objects_eggplant/geos_cucumber/cube_C'))
         self.assertTrue(list(compQueryPrimC.getData()[1].values()), ['specialize', '/objects_eggplant/geos_cucumber/cube_banana'])
+
+    def testRelationshipAndConnectionUpdatesOnRename(self):
+
+        '''
+        Verify that relationship targets and connection sources are properly
+        updated when renaming.
+        '''
+
+        cmds.file(new=True, force=True)
+        testFile = testUtils.getTestScene("MaterialX", "MtlxUVStreamTest.usda")
+        shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
+
+        def testPaths(self, shapeStage, cubeName):
+            # Test the Material assignment relationship on the Mesh:
+            pCube1Binding = UsdShade.MaterialBindingAPI(shapeStage.GetPrimAtPath('/{}'.format(cubeName)))
+            self.assertEqual(pCube1Binding.GetDirectBinding().GetMaterialPath(), Sdf.Path("/{}/Looks/standardSurface2SG".format(cubeName)))
+
+            # Test one connection inside the Material:
+            mix1Shader = UsdShade.ConnectableAPI(shapeStage.GetPrimAtPath('/{}/Looks/standardSurface2SG/MayaNG_standardSurface2SG/mix1'.format(cubeName)))
+            fgInput = mix1Shader.GetInput("fg")
+            srcConnectAPI = fgInput.GetConnectedSource()[0]
+            self.assertEqual(srcConnectAPI.GetPath(), Sdf.Path("/{}/Looks/standardSurface2SG/MayaNG_standardSurface2SG/ramp1".format(cubeName)))
+
+        testPaths(self, shapeStage, "pCube1")
+
+        # Rename /pCube1 to /banana
+        cubePath = ufe.PathString.path('|stage|stageShape,/pCube1')
+        cubeItem = ufe.Hierarchy.createItem(cubePath)
+        ufe.GlobalSelection.get().append(cubeItem)
+        cmds.rename("banana")
+
+        testPaths(self, shapeStage, "banana")
+
+        cmds.undo()
+
+        testPaths(self, shapeStage, "pCube1")
 
 
 if __name__ == '__main__':

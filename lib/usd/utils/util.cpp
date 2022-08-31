@@ -19,11 +19,14 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/pcp/layerStack.h>
 #include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/inherits.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primCompositionQuery.h>
 #include <pxr/usd/usd/primRange.h>
+#include <pxr/usd/usd/property.h>
 #include <pxr/usd/usd/references.h>
+#include <pxr/usd/usd/relationship.h>
 #include <pxr/usd/usd/specializes.h>
 #include <pxr/usd/usd/stage.h>
 
@@ -142,6 +145,43 @@ void replacePath(const UsdPrim& oldPrim, const SdfPath& newPath, const T& proxy,
     }
 }
 
+void replacePropertyPath(const UsdPrim& oldPrim, const SdfPath& newPath, UsdProperty& prop)
+{
+    if (prop.Is<UsdAttribute>()) {
+        UsdAttribute  attr = prop.As<UsdAttribute>();
+        SdfPathVector sources;
+        attr.GetConnections(&sources);
+        bool hasChanged = false;
+        for (size_t i = 0; i < sources.size(); ++i) {
+            const SdfPath& path = sources[i];
+            SdfPath        finalPath = path.ReplacePrefix(oldPrim.GetPath(), newPath);
+            if (path != finalPath) {
+                sources[i] = finalPath;
+                hasChanged = true;
+            }
+        }
+        if (hasChanged) {
+            attr.SetConnections(sources);
+        }
+    } else if (prop.Is<UsdRelationship>()) {
+        UsdRelationship rel = prop.As<UsdRelationship>();
+        SdfPathVector   targets;
+        rel.GetTargets(&targets);
+        bool hasChanged = false;
+        for (size_t i = 0; i < targets.size(); ++i) {
+            const SdfPath& path = targets[i];
+            SdfPath        finalPath = path.ReplacePrefix(oldPrim.GetPath(), newPath);
+            if (path != finalPath) {
+                targets[i] = finalPath;
+                hasChanged = true;
+            }
+        }
+        if (hasChanged) {
+            rel.SetTargets(targets);
+        }
+    }
+}
+
 } // namespace
 
 namespace MayaUsdUtils {
@@ -231,6 +271,11 @@ bool updateReferencedPath(const UsdPrim& oldPrim, const SdfPath& newPath)
                 replacePath<SdfSpecializesProxy>(
                     oldPrim, newPath, specializesList, SdfListOpTypePrepended);
             }
+        }
+
+        // Need to repath connections and relationships:
+        for (auto& prop : p.GetProperties()) {
+            replacePropertyPath(oldPrim, newPath, prop);
         }
     }
 
