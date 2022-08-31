@@ -36,7 +36,7 @@ namespace ufe {
 // could be changed to use the current time, using getTime(path()).
 
 class MAYAUSD_CORE_PUBLIC UsdTransform3dBase
-    : public UsdTransform3dReadImpl
+    : private UsdTransform3dReadImpl
     , public Ufe::Transform3d
 {
 public:

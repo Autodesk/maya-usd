@@ -58,8 +58,8 @@ public:
     Ufe::Matrix4d segmentExclusiveMatrix() const;
 
 private:
-    UsdSceneItem::Ptr fItem;
-    PXR_NS::UsdPrim   fPrim;
+    const UsdSceneItem::Ptr fItem;
+    PXR_NS::UsdPrim         fPrim;
 
 }; // UsdTransform3dReadImpl
 
