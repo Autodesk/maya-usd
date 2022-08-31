@@ -19,7 +19,7 @@
 import fixturesUtils
 import mayaUtils
 import testUtils
-from testUtils import assertVectorAlmostEqual
+from testUtils import assertVectorAlmostEqual, assertVectorNotAlmostEqual
 import usdUtils
 
 import mayaUsd.ufe
@@ -1372,7 +1372,10 @@ class ParentCmdTestCase(unittest.TestCase):
 
     @unittest.skipUnless(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '4025', 'Require Transform3dRead interface in Ufe 0.4.25')
     def testParentAbsoluteScope(self):
-        """Test parent -absolute to move a scope with a prim under it under an xform."""
+        """
+        Test parent -absolute to move a scope with a prim under it under an xform.
+        Since tghe scoe is not transformable, the prim will move.
+        """
 
         cmds.file(new=True, force=True)
 
@@ -1403,12 +1406,11 @@ class ParentCmdTestCase(unittest.TestCase):
         sn.append(xformItem)
 
         cmds.move(0, -5, 0, r=True, os=True, wd=True)
-        cmds.rotate(0, -90, 0, r=True, os=True, fo=True)
 
         xformXformable = UsdGeom.Xformable(xformPrim)
         self.assertEqual(
             xformXformable.GetXformOpOrderAttr().Get(), Vt.TokenArray((
-                "xformOp:translate", "xformOp:rotateXYZ")))
+                "xformOp:translate", )))
 
         sn.clear()
 
@@ -1423,7 +1425,6 @@ class ParentCmdTestCase(unittest.TestCase):
         sn.append(capsuleItem)
 
         cmds.move(0, 15, 0, r=True, os=True, wd=True)
-        cmds.rotate(0, 60, 0, r=True, os=True, fo=True)
 
         sn.clear()
 
@@ -1453,8 +1454,8 @@ class ParentCmdTestCase(unittest.TestCase):
             xformChildren = xformHier.children()
             self.assertEqual(len(xformChildren), 0)
 
-        def checkCapsuleMatrix(capsulePath):
-            # Confirm that the capsule has not moved in world space.  Must
+        def checkCapsuleMatrix(capsulePath, xpos):
+            # Confirm that the capsule has moved in world space.  Must
             # re-create the scene item after path change.
             capsulePath = ufe.Path(
                 [proxyShapePathSegment,
@@ -1464,32 +1465,34 @@ class ParentCmdTestCase(unittest.TestCase):
             capsuleT3d = ufe.Transform3d.transform3d(capsuleItem)
             self.assertIsNotNone(capsuleT3d)
             capsuleWorld = capsuleT3d.inclusiveMatrix()
+            self.assertEqual(xpos, matrixToList(capsuleWorld)[13])
             assertVectorAlmostEqual(
-                self, capsuleWorldPre, matrixToList(capsuleWorld))
+                self, capsuleWorldPre[0:13], matrixToList(capsuleWorld)[0:13])
+            assertVectorAlmostEqual(
+                self, capsuleWorldPre[14:16], matrixToList(capsuleWorld)[14:16])
 
         # The xform currently has no children, capsule has not moved.
         checkParentNotDone()
-        checkCapsuleMatrix('/Scope1/Capsule1')
+        checkCapsuleMatrix('/Scope1/Capsule1', 15.0)
 
-        # Parent the scope to the xform.
+        # Parent the scope to the xform, the capsule moved due to relative mode
         cmds.parent(ufe.PathString.string(scopePath),
                     ufe.PathString.string(xformPath))
 
         checkParentDone()
-        checkCapsuleMatrix('/Xform1/Scope1/Capsule1')
+        checkCapsuleMatrix('/Xform1/Scope1/Capsule1', 10.0)
 
-        # Undo: the xform no longer has a child, the capsule is still where
-        # it has always been.
+        # Undo: the xform no longer has a child, the capsule moved back due to relative mode.
         cmds.undo()
 
         checkParentNotDone()
-        checkCapsuleMatrix('/Scope1/Capsule1')
+        checkCapsuleMatrix('/Scope1/Capsule1', 15.0)
 
-        # Redo: capsule still hasn't moved.
+        # Redo: the capsule moved due to relative mode.
         cmds.redo()
 
         checkParentDone()
-        checkCapsuleMatrix('/Xform1/Scope1/Capsule1')
+        checkCapsuleMatrix('/Xform1/Scope1/Capsule1', 10.0)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
