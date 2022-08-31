@@ -23,6 +23,7 @@ set(FETCHCONTENT_QUIET OFF)
 # GULRAK_SOURCE_DIR : Set this to the directory where you have cloned gulrak filesystem repo, 
 #                     if you would like to bypass pulling from Github repository via Internet.
 if(DEFINED GULRAK_SOURCE_DIR)
+    file(TO_CMAKE_PATH "${GULRAK_SOURCE_DIR}" GULRAK_SOURCE_DIR)
     message(STATUS "**** Building Gulrak From " ${GULRAK_SOURCE_DIR})
     FetchContent_Declare(
         ${CONTENT_NAME}

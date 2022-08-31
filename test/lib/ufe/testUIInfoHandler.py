@@ -68,7 +68,7 @@ class UIInfoHandlerTestCase(unittest.TestCase):
         # Deactivate one of the balls.
         ballSetPrim = mayaUsd.ufe.ufePathToPrim('|transform1|proxyShape1,/Ball_set/Props/Ball_3')
         ballSetPrim.SetActive(False)
-		
+
         # Now ask for the treeViewCellInfo and test that some values were set
         # (because the ball is inactive).
         ball3Path = ufe.PathString.path('|transform1|proxyShape1,/Ball_set/Props/Ball_3')
@@ -91,6 +91,9 @@ class UIInfoHandlerTestCase(unittest.TestCase):
         self.assertEqual(icon.baseIcon, "out_USD_Sphere.png")
         self.assertFalse(icon.badgeIcon)    # empty string
 
+        if os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '4029':
+            # Ball_3 should have a "normal" icon mode.
+            self.assertEqual(ufe.UIInfoHandler.Normal, icon.mode)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -72,6 +72,12 @@ class DisplayLayerTestCase(unittest.TestCase):
         mo = om.MFnDisplayLayerManager.currentDisplayLayerManager() if mayaUtils.ufeSupportFixLevel() >= 2 else om.MFnDisplayLayerManager().currentDisplayLayerManager()
         self.dlm = om.MFnDisplayLayerManager(mo)
 
+        # editDisplayLayerMembers became Ufe opt-in
+        self.kwArgsEditDisplayLayerMembers = {'fn' : True}
+        cmdHelp = cmds.help('editDisplayLayerMembers')
+        if '-ufeObjects' in cmdHelp:
+            self.kwArgsEditDisplayLayerMembers['ufeObjects'] = True
+
     def displayLayer(self, layer_name):
         displayLayerObjs = self.dlm.getAllDisplayLayers()
         for dl in displayLayerObjs:
@@ -89,6 +95,29 @@ class DisplayLayerTestCase(unittest.TestCase):
         self.assertTrue(layer.contains(pathStr))
         self.assertTrue(pathStr in layer.getMembers().getSelectionStrings())
 
+    def testDisplayLayerQuery(self):
+        cmdHelp = cmds.help('editDisplayLayerMembers')
+        if '-ufeObjects' not in cmdHelp:
+            self.skipTest('Requires ufeObjects flag in editDisplayLayerMembers command.')
+
+        # First create a layer and add some Maya objects and USD prims to it.
+        cmds.createDisplayLayer(name='layer1', number=1, empty=True)
+        cmds.CreatePolygonSphere()
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        stage.DefinePrim('/Sphere1', 'Sphere')
+        cmds.editDisplayLayerMembers(self.LAYER1, '|pSphere1', self.SPHERE1, noRecurse=True)
+
+        # Query the display layer members (default) without ufe.
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, fn=True)
+        self.assertTrue('|pSphere1' in layerObjs)
+        self.assertFalse(self.SPHERE1 in layerObjs)
+
+        # Then query the display layer members with ufe.
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, fn=True, ufeObjects=True)
+        self.assertTrue('|pSphere1' in layerObjs)
+        self.assertTrue(self.SPHERE1 in layerObjs)
+
     @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() >= 2, "Requires Display Layer Ufe item rename fix.")
     def testDisplayLayerItemRename(self):
         # First create Display Layer and add some prims to it.
@@ -104,7 +133,7 @@ class DisplayLayerTestCase(unittest.TestCase):
         cmds.editDisplayLayerMembers(self.LAYER1, self.SPHERE1, self.CUBE1, noRecurse=True)
 
         # Verify they are in layer.
-        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, fn=True)
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, **self.kwArgsEditDisplayLayerMembers)
         self.assertTrue(self.CUBE1 in layerObjs)
         self.assertTrue(self.SPHERE1 in layerObjs)
         self.assertFalse(self.NEW_SPHERE1 in layerObjs)
@@ -118,7 +147,7 @@ class DisplayLayerTestCase(unittest.TestCase):
         # Rename the Sphere and make sure it is still in the layer.
         cmds.select(self.SPHERE1, replace=True)
         cmds.rename('NewSphere1')
-        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, fn=True)
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, **self.kwArgsEditDisplayLayerMembers)
         self.assertTrue(self.CUBE1 in layerObjs)
         self.assertFalse(self.SPHERE1 in layerObjs)
         self.assertTrue(self.NEW_SPHERE1 in layerObjs)
@@ -130,7 +159,7 @@ class DisplayLayerTestCase(unittest.TestCase):
 
         # Undo the rename.
         cmds.undo()
-        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, fn=True)
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, **self.kwArgsEditDisplayLayerMembers)
         self.assertTrue(self.CUBE1 in layerObjs)
         self.assertTrue(self.SPHERE1 in layerObjs)
         self.assertFalse(self.NEW_SPHERE1 in layerObjs)
@@ -142,7 +171,7 @@ class DisplayLayerTestCase(unittest.TestCase):
 
         # Redo the rename.
         cmds.redo()
-        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, fn=True)
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, **self.kwArgsEditDisplayLayerMembers)
         self.assertTrue(self.CUBE1 in layerObjs)
         self.assertFalse(self.SPHERE1 in layerObjs)
         self.assertTrue(self.NEW_SPHERE1 in layerObjs)
@@ -169,13 +198,13 @@ class DisplayLayerTestCase(unittest.TestCase):
         # Rename the Xform1 (parent of Sphere1) and make sure Sphere1 is still in the layer.
         cmds.select(self.XFORM1, replace=True)
         cmds.rename('NewXform1')
-        layerObjs = cmds.editDisplayLayerMembers(self.DEFAULT_LAYER, query=True, fn=True)
+        layerObjs = cmds.editDisplayLayerMembers(self.DEFAULT_LAYER, query=True, **self.kwArgsEditDisplayLayerMembers)
         self.assertFalse(self.XFORM1 in layerObjs)
         self.assertTrue(self.NEW_XFORM1 in layerObjs)
         self.assertFalse(self.XFORM1_SPHERE1 in layerObjs)
         self.assertFalse(self.NEW_XFORM1_SPHERE1 in layerObjs)
 
-        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, fn=True)
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, **self.kwArgsEditDisplayLayerMembers)
         self.assertFalse(self.XFORM1 in layerObjs)
         self.assertFalse(self.NEW_XFORM1 in layerObjs)
         self.assertFalse(self.XFORM1_SPHERE1 in layerObjs)
@@ -199,7 +228,7 @@ class DisplayLayerTestCase(unittest.TestCase):
         cmds.editDisplayLayerMembers(self.LAYER1, self.SPHERE1, self.CUBE1, noRecurse=True)
 
         # Verify they are in layer.
-        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, fn=True)
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, **self.kwArgsEditDisplayLayerMembers)
         self.assertTrue(self.CUBE1 in layerObjs)
         self.assertTrue(self.SPHERE1 in layerObjs)
         self.assertFalse(self.XFORM1 in layerObjs)
@@ -210,7 +239,7 @@ class DisplayLayerTestCase(unittest.TestCase):
 
         # Reparent the Sphere and make sure it is still in the layer.
         cmds.parent(self.SPHERE1, self.XFORM1)
-        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, fn=True)
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, **self.kwArgsEditDisplayLayerMembers)
         self.assertTrue(self.CUBE1 in layerObjs)
         self.assertTrue(self.XFORM1_SPHERE1 in layerObjs)
         self.assertFalse(self.XFORM1 in layerObjs)
@@ -221,7 +250,7 @@ class DisplayLayerTestCase(unittest.TestCase):
 
         # Undo the reparent.
         cmds.undo()
-        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, fn=True)
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, **self.kwArgsEditDisplayLayerMembers)
         self.assertTrue(self.CUBE1 in layerObjs)
         self.assertTrue(self.SPHERE1 in layerObjs)
         self.assertFalse(self.XFORM1 in layerObjs)
@@ -232,7 +261,7 @@ class DisplayLayerTestCase(unittest.TestCase):
 
         # Redo the reparent.
         cmds.redo()
-        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, fn=True)
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, **self.kwArgsEditDisplayLayerMembers)
         self.assertTrue(self.CUBE1 in layerObjs)
         self.assertTrue(self.XFORM1_SPHERE1 in layerObjs)
         self.assertFalse(self.XFORM1 in layerObjs)
@@ -255,7 +284,7 @@ class DisplayLayerTestCase(unittest.TestCase):
         cmds.editDisplayLayerMembers(self.LAYER1, self.SPHERE1, self.CUBE1, noRecurse=True)
 
         # Verify they are in layer.
-        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, fn=True)
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, **self.kwArgsEditDisplayLayerMembers)
         self.assertTrue(self.CUBE1 in layerObjs)
         self.assertTrue(self.SPHERE1 in layerObjs)
         self.assertFalse(self.NEW_SPHERE1 in layerObjs)
@@ -265,7 +294,7 @@ class DisplayLayerTestCase(unittest.TestCase):
 
         # Delete the Sphere and make sure it is removed from the layer.
         cmds.delete(self.SPHERE1)
-        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, fn=True)
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, **self.kwArgsEditDisplayLayerMembers)
         self.assertTrue(self.CUBE1 in layerObjs)
         self.assertFalse(self.SPHERE1 in layerObjs)
 
@@ -301,7 +330,7 @@ class DisplayLayerTestCase(unittest.TestCase):
         # Verify that both prims are in layer.
         # Note: the editDisplayLayerMembers command only returns valid prims.
         #       But the MFnDisplayLayer will return all prims (including invalid ones).
-        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, fn=True)
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, **self.kwArgsEditDisplayLayerMembers)
         self.assertTrue(self.CUBE1 in layerObjs)
         self.assertFalse(self.INVALID_PRIM in layerObjs)
         self._testLayerFromPath(self.CUBE1, self.LAYER1)
@@ -309,7 +338,7 @@ class DisplayLayerTestCase(unittest.TestCase):
 
         # Now clear the layer and make sure both prims (valid and invalid) got removed.
         cmds.editDisplayLayerMembers(self.LAYER1, clear=True)
-        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, fn=True)
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, **self.kwArgsEditDisplayLayerMembers)
         self.assertIsNone(layerObjs)
         self.assertFalse(layer1.contains(self.CUBE1))
         self.assertFalse(layer1.contains(self.INVALID_PRIM))
@@ -333,7 +362,7 @@ class DisplayLayerTestCase(unittest.TestCase):
         # Create a display layer and add the Sphere1 prim (currently the one under the Xform1).
         cmds.createDisplayLayer(name=self.LAYER1, number=1, empty=True)
         cmds.editDisplayLayerMembers(self.LAYER1, self.XFORM1_SPHERE1, noRecurse=True)
-        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, fn=True)
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, **self.kwArgsEditDisplayLayerMembers)
         self.assertFalse(self.XFORM1_CUBE1 in layerObjs)
         self.assertTrue(self.XFORM1_SPHERE1 in layerObjs)
 
@@ -347,7 +376,7 @@ class DisplayLayerTestCase(unittest.TestCase):
 
         # The Cube1 should not be in the display layer.
         # The Sphere1 prim should still be in the display layer, but as an invalid path.
-        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, fn=True)
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, **self.kwArgsEditDisplayLayerMembers)
         self.assertIsNone(layerObjs)
         self._testLayerFromPath(self.XFORM1_SPHERE1, self.LAYER1)
 
@@ -356,7 +385,7 @@ class DisplayLayerTestCase(unittest.TestCase):
         ufeCmd.execute(cmd)
 
         # The Sphere1 should be back (as valid path) in the display layer.
-        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, fn=True)
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, **self.kwArgsEditDisplayLayerMembers)
         self.assertFalse(self.XFORM1_CUBE1 in layerObjs)
         self.assertTrue(self.XFORM1_SPHERE1 in layerObjs)
         self._testLayerFromPath(self.XFORM1_SPHERE1, self.LAYER1)
@@ -368,7 +397,7 @@ class DisplayLayerTestCase(unittest.TestCase):
             model.SetKind(Kind.Tokens.group)
 
         # The Sphere1 should still be in the display layer as valid path.
-        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, fn=True)
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, **self.kwArgsEditDisplayLayerMembers)
         self.assertFalse(self.XFORM1_CUBE1 in layerObjs)
         self.assertTrue(self.XFORM1_SPHERE1 in layerObjs)
         self._testLayerFromPath(self.XFORM1_SPHERE1, self.LAYER1)

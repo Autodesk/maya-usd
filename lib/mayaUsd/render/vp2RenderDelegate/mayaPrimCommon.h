@@ -179,6 +179,28 @@ protected:
         kReference = 2
     };
 
+    enum ReprOverride
+    {
+        kNone = 0,
+        kBBox = 1,
+        kWire = 2
+    };
+
+    struct DisplayLayerModes
+    {
+        //! Requested display layer visibility
+        bool _visibility { true };
+
+        //! Requested HideOnPlayback status
+        bool _hideOnPlayback { false };
+
+        //! Defines representation override that should be applied to the prim
+        ReprOverride _reprOverride { kNone };
+
+        //! Requested display type of the Rprim
+        DisplayType _displayType { kNormal };
+    };
+
     void _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
 
     void _UpdateTransform(
@@ -191,17 +213,24 @@ protected:
 
     void _SetDirtyRepr(const HdReprSharedPtr& repr);
 
-    HdReprSharedPtr _AddNewRepr(
+    void _UpdateReprOverrides(ReprVector& reprs);
+
+    TfToken _GetOverrideToken(TfToken const& reprToken) const;
+
+    HdReprSharedPtr _InitReprCommon(
+        HdRprim&       refThis,
         TfToken const& reprToken,
         ReprVector&    reprs,
         HdDirtyBits*   dirtyBits,
         SdfPath const& id);
 
     bool _SyncCommon(
+        HdRprim&               refThis,
+        HdSceneDelegate*       delegate,
+        HdRenderParam*         renderParam,
         HdDirtyBits*           dirtyBits,
-        const SdfPath&         id,
         HdReprSharedPtr const& curRepr,
-        HdRenderIndex&         renderIndex);
+        TfToken const&         reprToken);
 
     void _SyncSharedData(
         HdRprimSharedData& sharedData,
@@ -211,6 +240,8 @@ protected:
         HdRprim const&     refThis,
         ReprVector const&  reprs,
         TfToken const&     renderTag);
+
+    void _SyncDisplayLayerModes(const HdRprim& refThis);
 
     void _UpdatePrimvarSourcesGeneric(
         HdSceneDelegate*       sceneDelegate,
@@ -236,6 +267,12 @@ protected:
     static void _SetWantConsolidation(MHWRender::MRenderItem& renderItem, bool state);
 
     void _InitRenderItemCommon(MHWRender::MRenderItem* renderItem) const;
+
+    HdVP2DrawItem::RenderItemData& _AddRenderItem(
+        HdVP2DrawItem&          drawItem,
+        MHWRender::MRenderItem* renderItem,
+        MSubSceneContainer&     subSceneContainer,
+        const HdGeomSubset*     geomSubset = nullptr) const;
 
     MHWRender::MRenderItem* _CreateWireframeRenderItem(
         const MString&        name,
@@ -266,11 +303,15 @@ protected:
     //! Selection status of the Rprim
     HdVP2SelectionStatus _selectionStatus { kUnselected };
 
+    //! Modes requested by display layer along with the frame they are updated on
+    DisplayLayerModes _displayLayerModes;
+    uint64_t          _displayLayerModesFrame { 0 };
+
     //! HideOnPlayback status of the Rprim
     bool _hideOnPlayback { false };
 
-    //! Display type of the Rprim
-    DisplayType _displayType { kNormal };
+    //! Representation override applied to the prim, if any
+    ReprOverride _reprOverride { kNone };
 
     //! The string representation of the runtime only path to this object
     MStringArray _PrimSegmentString;

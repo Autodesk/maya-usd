@@ -167,6 +167,8 @@ public:
 
     static const int sProfilerCategory; //!< Profiler category
 
+    static void OnMayaExit();
+
 private:
     HdVP2RenderDelegate(const HdVP2RenderDelegate&) = delete;
     HdVP2RenderDelegate& operator=(const HdVP2RenderDelegate&) = delete;

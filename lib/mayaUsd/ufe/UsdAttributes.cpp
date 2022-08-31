@@ -120,6 +120,11 @@ static PXR_NS::UsdAttribute _GetAttributeType(const PXR_NS::UsdPrim& prim, const
 
 Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
 {
+    // If we've already created an attribute for this name, just return the type.
+    auto iter = fUsdAttributes.find(name);
+    if (iter != std::end(fUsdAttributes))
+        return iter->second->type();
+
     PXR_NS::TfToken      tok(name);
     PXR_NS::UsdAttribute usdAttr = _GetAttributeType(fPrim, name);
     if (usdAttr.IsValid()) {
@@ -145,6 +150,11 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
     if (name.empty()) {
         return nullptr;
     }
+
+    // If we've already created an attribute for this name, just return it.
+    auto iter = fUsdAttributes.find(name);
+    if (iter != std::end(fUsdAttributes))
+        return iter->second;
 
     // No attribute for the input name was found -> create one.
     PXR_NS::TfToken      tok(name);
@@ -247,6 +257,15 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
 #else
     if (ctorIt != ctorMap.end())
         newAttr = ctorIt->second(fItem, usdAttr);
+#endif
+
+#if (UFE_PREVIEW_VERSION_NUM >= 4024)
+    // If this is a Usd attribute (cannot change) then we cache it for future access.
+    if (!canRemoveAttribute(fItem, name)) {
+        fUsdAttributes[name] = newAttr;
+    }
+#else
+    fUsdAttributes[name] = newAttr;
 #endif
 
     return newAttr;
@@ -435,11 +454,10 @@ bool UsdAttributes::canRemoveAttribute(const UsdSceneItem::Ptr& item, const std:
                     || baseNameAndType.first == PXR_NS::UsdShadeTokens->volume) {
                     return false;
                 }
-            } else {
-                for (auto&& authoredOutput : connectApi.GetOutputs(true)) {
-                    if (authoredOutput.GetFullName() == name) {
-                        return true;
-                    }
+            }
+            for (auto&& authoredOutput : connectApi.GetOutputs(true)) {
+                if (authoredOutput.GetFullName() == name) {
+                    return true;
                 }
             }
         } else if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input) {
@@ -469,13 +487,13 @@ bool UsdAttributes::doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::
     if (ngPrim && connectApi) {
         auto baseNameAndType = PXR_NS::UsdShadeUtils::GetBaseNameAndType(nameAsToken);
         if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Output) {
-            auto output = connectApi.GetOutput(nameAsToken);
+            auto output = connectApi.GetOutput(baseNameAndType.first);
             if (output) {
                 connectApi.ClearSources(output);
                 return prim.RemoveProperty(nameAsToken);
             }
         } else if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input) {
-            auto input = connectApi.GetInput(nameAsToken);
+            auto input = connectApi.GetInput(baseNameAndType.first);
             if (input) {
                 connectApi.ClearSources(input);
                 return prim.RemoveProperty(nameAsToken);

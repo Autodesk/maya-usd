@@ -50,6 +50,7 @@
 #include <maya/MFragmentManager.h>
 #include <maya/MGlobal.h>
 #include <maya/MProfiler.h>
+#include <maya/MSceneMessage.h>
 #include <maya/MShaderManager.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
@@ -115,6 +116,63 @@ static bool _IsDisabledAsyncTextureLoading()
 static const std::size_t kRefreshDuration { 1000 };
 
 namespace {
+
+// USD `UsdImagingDelegate::ApplyPendingUpdates()` would request to
+// remove the material then recreate, this is causing texture disappearing
+// when user manipulating a prim (while holding mouse buttion).
+// We hold a copy of the texture info reference, so that the texture will not
+// get released immediately along with material removal.
+// If the textures would have been requested to reload in `ApplyPendingUpdates()`,
+// we could still reuse the loaded one from cache, otherwise the idle task can
+// safely release the texture.
+class _TransientTexturePreserver
+{
+public:
+    static _TransientTexturePreserver& GetInstance()
+    {
+        static _TransientTexturePreserver sInstance;
+        return sInstance;
+    }
+
+    void PreserveTextures(HdVP2LocalTextureMap& localTextureMap)
+    {
+        if (_isExiting) {
+            return;
+        }
+
+        // Locking to avoid race condition for insertion to pendingRemovalTextures
+        std::lock_guard<std::mutex> lock(_removalTaskMutex);
+
+        // Avoid creating multiple idle tasks if there is already one
+        bool hasRemovalTask = !_pendingRemovalTextures.empty();
+        for (const auto& info : localTextureMap) {
+            _pendingRemovalTextures.emplace(info.second);
+        }
+
+        if (!hasRemovalTask) {
+            // Note that we do not need locking inside idle task since it will
+            // only be executed serially.
+            MGlobal::executeTaskOnIdle(
+                [](void* data) { _TransientTexturePreserver::GetInstance().Clear(); });
+        }
+    }
+
+    void Clear() { _pendingRemovalTextures.clear(); }
+
+    void OnMayaExit()
+    {
+        _isExiting = true;
+        Clear();
+    }
+
+private:
+    _TransientTexturePreserver() = default;
+    ~_TransientTexturePreserver() = default;
+
+    std::unordered_set<HdVP2TextureInfoSharedPtr> _pendingRemovalTextures;
+    std::mutex                                    _removalTaskMutex;
+    bool                                          _isExiting = false;
+};
 
 // clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
@@ -654,6 +712,9 @@ void _AddMissingTangents(mx::DocumentPtr& mtlxDoc)
             material = surfaceInput->getConnectedNode();
         }
         mx::NodeDefPtr nodeDef = material->getNodeDef();
+        if (!nodeDef) {
+            continue;
+        }
         for (mx::InputPtr input : nodeDef->getActiveInputs()) {
             if (input->hasDefaultGeomPropString()) {
                 const std::string& geomPropString = input->getDefaultGeomPropString();
@@ -1734,32 +1795,8 @@ HdVP2Material::~HdVP2Material()
     // Tell pending tasks or running tasks (if any) to terminate
     ClearPendingTasks();
 
-    // USD `UsdImagingDelegate::ApplyPendingUpdates()` would request to
-    // remove the material then recreate, this is causing texture disappearing
-    // when user manipulating a prim (while holding mouse buttion).
-    // We hold a copy of the texture info reference, so that the texture will not
-    // get released immediately along with material removal.
-    // If the textures would have been requested to reload in `ApplyPendingUpdates()`,
-    // we could still reuse the loaded one from cache, otherwise the idle task can
-    // safely release the texture.
-    static std::unordered_set<HdVP2TextureInfoSharedPtr> pendingRemovalTextures;
-    static std::mutex                                    removalTaskMutex;
-
     if (!_IsDisabledAsyncTextureLoading() && !_localTextureMap.empty()) {
-        // Locking to avoid race condition for insertion to pendingRemovalTextures
-        std::lock_guard<std::mutex> lock(removalTaskMutex);
-
-        // Avoid creating multiple idle tasks if there is already one
-        bool hasRemovalTask = !pendingRemovalTextures.empty();
-        for (const auto& info : _localTextureMap) {
-            pendingRemovalTextures.emplace(info.second);
-        }
-
-        if (!hasRemovalTask) {
-            // Note that we do not need locking inside idle task since it will
-            // only be executed serially.
-            MGlobal::executeTaskOnIdle([](void* data) { pendingRemovalTextures.clear(); });
-        }
+        _TransientTexturePreserver::GetInstance().PreserveTextures(_localTextureMap);
     }
 }
 
@@ -1815,10 +1852,14 @@ void HdVP2Material::Sync(
                             _CreateMaterialXShaderInstance(GetId(), surfaceNetwork));
                         _pointShader.reset(nullptr);
                         _topoHash = topoHash;
+                        // TopoChanged: We have a brand new surface material, tell the mesh to use
+                        // it.
+                        _MaterialChanged(sceneDelegate);
                     }
 
                     if (_surfaceShader) {
                         _UpdateShaderInstance(sceneDelegate, bxdfNet);
+// Consolidation workaround requires dirtying the mesh even on a ValueChanged
 #ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
                         _MaterialChanged(sceneDelegate);
 #endif
@@ -1874,6 +1915,8 @@ void HdVP2Material::Sync(
                     // The shader instance is owned by the material solely.
                     _surfaceShader.reset(shader);
                     _pointShader.reset(nullptr);
+                    // TopoChanged: We have a brand new surface material, tell the mesh to use it.
+                    _MaterialChanged(sceneDelegate);
 
                     if (TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
                         std::cout << "BXDF material network for " << id << ":\n"
@@ -1945,6 +1988,7 @@ void HdVP2Material::Sync(
 
                 _UpdateShaderInstance(sceneDelegate, bxdfNet);
 
+// Consolidation workaround requires dirtying the mesh even on a ValueChanged
 #ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
                 _MaterialChanged(sceneDelegate);
 #endif
@@ -2468,18 +2512,24 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
         if (mtlxSdrNode) {
 
             // Create the MaterialX Document from the HdMaterialNetwork
+#if PXR_VERSION > 2111
+            mtlxDoc = HdMtlxCreateMtlxDocumentFromHdNetwork(
+                fixedNetwork,
+                *surfTerminal, // MaterialX HdNode
+                fixedPath,
+                SdfPath(_mtlxTokens->USD_Mtlx_VP2_Material),
+                _GetMaterialXData()._mtlxLibrary);
+#else
             std::set<SdfPath> hdTextureNodes;
             mx::StringMap     mxHdTextureMap; // Mx-Hd texture name counterparts
             mtlxDoc = HdMtlxCreateMtlxDocumentFromHdNetwork(
                 fixedNetwork,
                 *surfTerminal, // MaterialX HdNode
-#if PXR_VERSION > 2111
-                fixedPath,
-#endif
                 SdfPath(_mtlxTokens->USD_Mtlx_VP2_Material),
                 _GetMaterialXData()._mtlxLibrary,
                 &hdTextureNodes,
                 &mxHdTextureMap);
+#endif
 
             if (!mtlxDoc) {
                 return shaderInstance;
@@ -3027,6 +3077,19 @@ void HdVP2Material::_UpdateShaderInstance(
     }
 }
 
+namespace {
+
+void exitingCallback(void* /* unusedData */)
+{
+    // Maya does not unload plugins on exit.  Make sure we perform an orderly
+    // cleanup of the texture cache. Otherwise the cache will clear after VP2
+    // has shut down.
+    HdVP2Material::OnMayaExit();
+}
+
+MCallbackId gExitingCbId = 0;
+} // namespace
+
 /*! \brief  Acquires a texture for the given image path.
  */
 const HdVP2TextureInfo& HdVP2Material::_AcquireTexture(
@@ -3034,6 +3097,11 @@ const HdVP2TextureInfo& HdVP2Material::_AcquireTexture(
     const std::string&    path,
     const HdMaterialNode& node)
 {
+    // Register for the Maya exit message
+    if (!gExitingCbId) {
+        gExitingCbId = MSceneMessage::addCallback(MSceneMessage::kMayaExiting, exitingCallback);
+    }
+
     // see if we already have the texture loaded.
     const auto it = _globalTextureMap.find(path);
     if (it != _globalTextureMap.end()) {
@@ -3198,8 +3266,6 @@ MHWRender::MShaderInstance* HdVP2Material::GetPointShader() const
     return _pointShader.get();
 }
 
-#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
-
 void HdVP2Material::SubscribeForMaterialUpdates(const SdfPath& rprimId)
 {
     std::lock_guard<std::mutex> lock(_materialSubscriptionsMutex);
@@ -3224,6 +3290,11 @@ void HdVP2Material::_MaterialChanged(HdSceneDelegate* sceneDelegate)
     }
 }
 
-#endif
+void HdVP2Material::OnMayaExit()
+{
+    _TransientTexturePreserver::GetInstance().OnMayaExit();
+    _globalTextureMap.clear();
+    HdVP2RenderDelegate::OnMayaExit();
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
