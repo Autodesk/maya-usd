@@ -69,7 +69,7 @@ class testVP2RenderDelegateDrawModes(imageUtils.ImageDiffingTestCase):
 
     def testDrawModes(self):
         self._StartTest('DrawModes')
-        cmds.modelEditor('modelPanel4', edit=True, grid=False)
+        cmds.modelEditor('modelPanel4', edit=True, grid=False, displayTextures=True)
 
         cmds.move(2, 2, 2, 'persp')
         cmds.rotate(-33, 45, 0, 'persp')
