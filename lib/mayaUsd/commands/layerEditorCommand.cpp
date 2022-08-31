@@ -661,6 +661,24 @@ public:
         return adjustedIndex;
     }
 
+    // Convenience method that retrieve the adjusted index and adds
+    // the insertion index adjustment.
+    int insertionAdjustment(int originalIndex)
+    {
+        const int adjustedIndex = getAdjustedIndex(originalIndex);
+        addInsertionAdjustment(originalIndex);
+        return adjustedIndex;
+    }
+
+    // Convenience method that retrieve the adjusted index and adds
+    // the removal index adjustment.
+    int removalAdjustment(int originalIndex)
+    {
+        const int adjustedIndex = getAdjustedIndex(originalIndex);
+        addRemovalAdjustment(originalIndex);
+        return adjustedIndex;
+    }
+
 private:
     std::map<int, int> _indexAdjustments;
 };
@@ -740,8 +758,7 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
                 argParser.getFlagArgumentList(kInsertSubPathFlag, i, listOfArgs);
 
                 const int originalIndex = listOfArgs.asInt(0);
-                const int adjustedIndex = indexAdjustments.getAdjustedIndex(originalIndex);
-                indexAdjustments.addInsertionAdjustment(originalIndex);
+                const int adjustedIndex = indexAdjustments.insertionAdjustment(originalIndex);
 
                 cmd->_index = adjustedIndex;
                 cmd->_subPath = listOfArgs.asString(1).asUTF8();
@@ -765,8 +782,7 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
                 }
 
                 const int originalIndex = listOfArgs.asInt(0);
-                const int adjustedIndex = indexAdjustments.getAdjustedIndex(originalIndex);
-                indexAdjustments.addRemovalAdjustment(originalIndex);
+                const int adjustedIndex = indexAdjustments.removalAdjustment(originalIndex);
 
                 auto cmd = std::make_shared<Impl::RemoveSubPath>();
                 cmd->_index = adjustedIndex;
@@ -797,8 +813,7 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
 
             int originalIndex { 0 };
             argParser.getFlagArgument(kMoveSubPathFlag, 2, originalIndex);
-            const int adjustedIndex = indexAdjustments.getAdjustedIndex(originalIndex);
-            indexAdjustments.addRemovalAdjustment(originalIndex);
+            const int adjustedIndex = indexAdjustments.removalAdjustment(originalIndex);
 
             auto cmd = std::make_shared<Impl::MoveSubPath>(
                 subPath.asUTF8(), newParentLayer.asUTF8(), adjustedIndex);
