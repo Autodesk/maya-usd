@@ -26,15 +26,17 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdTransform3dBase::UsdTransform3dBase(const UsdSceneItem::Ptr& item)
-    : Transform3d()
-    , fItem(item)
-    , fPrim(item->prim())
+    : UsdTransform3dReadImpl(item)
+    , Transform3d()
 {
 }
 
-const Ufe::Path& UsdTransform3dBase::path() const { return fItem->path(); }
+const Ufe::Path& UsdTransform3dBase::path() const { return UsdTransform3dReadImpl::path(); }
 
-Ufe::SceneItem::Ptr UsdTransform3dBase::sceneItem() const { return fItem; }
+Ufe::SceneItem::Ptr UsdTransform3dBase::sceneItem() const
+{
+    return UsdTransform3dReadImpl::sceneItem();
+}
 
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dBase::translateCmd(double /* x */, double /* y */, double /* z */)
@@ -104,32 +106,17 @@ Ufe::SetMatrix4dUndoableCommand::Ptr UsdTransform3dBase::setMatrixCmd(const Ufe:
     return nullptr;
 }
 
-Ufe::Matrix4d UsdTransform3dBase::matrix() const
-{
-    UsdGeomXformable xformable(prim());
-    bool             unused;
-    auto             ops = xformable.GetOrderedXformOps(&unused);
-
-    GfMatrix4d m(1);
-    if (!UsdGeomXformable::GetLocalTransformation(&m, ops, getTime(path()))) {
-        TF_FATAL_ERROR(
-            "Local transformation computation for prim %s failed.", prim().GetPath().GetText());
-    }
-
-    return toUfe(m);
-}
+Ufe::Matrix4d UsdTransform3dBase::matrix() const { return UsdTransform3dReadImpl::matrix(); }
 #endif
 
 Ufe::Matrix4d UsdTransform3dBase::segmentInclusiveMatrix() const
 {
-    UsdGeomXformCache xformCache(getTime(path()));
-    return toUfe(xformCache.GetLocalToWorldTransform(fPrim));
+    return UsdTransform3dReadImpl::segmentInclusiveMatrix();
 }
 
 Ufe::Matrix4d UsdTransform3dBase::segmentExclusiveMatrix() const
 {
-    UsdGeomXformCache xformCache(getTime(path()));
-    return toUfe(xformCache.GetParentToWorldTransform(fPrim));
+    return UsdTransform3dReadImpl::segmentExclusiveMatrix();
 }
 
 } // namespace ufe

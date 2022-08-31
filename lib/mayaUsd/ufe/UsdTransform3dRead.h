@@ -17,6 +17,7 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
+#include <mayaUsd/ufe/UsdTransform3dReadImpl.h>
 
 #include <pxr/usd/usd/prim.h>
 
@@ -31,7 +32,9 @@ namespace ufe {
 // Note that all calls to specify time use the default time, but this
 // could be changed to use the current time, using getTime(path()).
 
-class MAYAUSD_CORE_PUBLIC UsdTransform3dRead : public Ufe::Transform3dRead
+class MAYAUSD_CORE_PUBLIC UsdTransform3dRead
+    : public UsdTransform3dReadImpl
+    , public Ufe::Transform3dRead
 {
 public:
     typedef std::shared_ptr<UsdTransform3dRead> Ptr;
@@ -52,18 +55,13 @@ public:
     const Ufe::Path&    path() const override;
     Ufe::SceneItem::Ptr sceneItem() const override;
 
-    inline UsdSceneItem::Ptr usdSceneItem() const { return fItem; }
-    inline PXR_NS::UsdPrim   prim() const { return fPrim; }
+    inline UsdSceneItem::Ptr usdSceneItem() const { return UsdTransform3dReadImpl::usdSceneItem(); }
+    inline PXR_NS::UsdPrim   prim() const { return UsdTransform3dReadImpl::prim(); }
 
     Ufe::Matrix4d matrix() const override;
 
     Ufe::Matrix4d segmentInclusiveMatrix() const override;
     Ufe::Matrix4d segmentExclusiveMatrix() const override;
-
-private:
-    UsdSceneItem::Ptr fItem;
-    PXR_NS::UsdPrim   fPrim;
-
 }; // UsdTransform3dRead
 
 //! \brief Factory to create a UsdTransform3dRead interface object.

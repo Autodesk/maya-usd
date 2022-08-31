@@ -18,8 +18,6 @@
 #include <mayaUsd/ufe/Utils.h>
 
 #include <pxr/usd/usdGeom/scope.h>
-#include <pxr/usd/usdGeom/xformCache.h>
-#include <pxr/usd/usdGeom/xformCommonAPI.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -32,42 +30,28 @@ UsdTransform3dRead::Ptr UsdTransform3dRead::create(const UsdSceneItem::Ptr& item
 }
 
 UsdTransform3dRead::UsdTransform3dRead(const UsdSceneItem::Ptr& item)
-    : Transform3dRead()
-    , fItem(item)
-    , fPrim(item->prim())
+    : UsdTransform3dReadImpl(item)
+    , Transform3dRead()
 {
 }
 
-const Ufe::Path& UsdTransform3dRead::path() const { return fItem->path(); }
+const Ufe::Path& UsdTransform3dRead::path() const { return UsdTransform3dReadImpl::path(); }
 
-Ufe::SceneItem::Ptr UsdTransform3dRead::sceneItem() const { return fItem; }
-
-Ufe::Matrix4d UsdTransform3dRead::matrix() const
+Ufe::SceneItem::Ptr UsdTransform3dRead::sceneItem() const
 {
-    GfMatrix4d       m(1);
-    UsdGeomXformable xformable(prim());
-    if (xformable) {
-        bool unused;
-        auto ops = xformable.GetOrderedXformOps(&unused);
-        if (!UsdGeomXformable::GetLocalTransformation(&m, ops, getTime(path()))) {
-            TF_FATAL_ERROR(
-                "Local transformation computation for prim %s failed.", prim().GetPath().GetText());
-        }
-    }
-
-    return toUfe(m);
+    return UsdTransform3dReadImpl::sceneItem();
 }
+
+Ufe::Matrix4d UsdTransform3dRead::matrix() const { return UsdTransform3dReadImpl::matrix(); }
 
 Ufe::Matrix4d UsdTransform3dRead::segmentInclusiveMatrix() const
 {
-    UsdGeomXformCache xformCache(getTime(path()));
-    return toUfe(xformCache.GetLocalToWorldTransform(fPrim));
+    return UsdTransform3dReadImpl::segmentInclusiveMatrix();
 }
 
 Ufe::Matrix4d UsdTransform3dRead::segmentExclusiveMatrix() const
 {
-    UsdGeomXformCache xformCache(getTime(path()));
-    return toUfe(xformCache.GetParentToWorldTransform(fPrim));
+    return UsdTransform3dReadImpl::segmentExclusiveMatrix();
 }
 
 //------------------------------------------------------------------------------
