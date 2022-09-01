@@ -383,6 +383,26 @@ class NoticeListener(object):
                 if hasattr(ctrl, 'refresh'):
                     ctrl.refresh()
 
+def connectionsCustomControlCreator(self, c):
+    if self.attributeHasConnections(c):
+        connectionsCustomControl = ConnectionsCustomControl(self.item, self.prim, c, self.useNiceName)
+        self.defineCustom(connectionsCustomControl, c)
+        return connectionsCustomControl
+    else:
+        return None
+
+def arrayCustomControlCreator(self, c):
+    if self.isArrayAttribute(c):
+        ufeAttr = self.attrS.attribute(c)
+        arrayCustomControl = ArrayCustomControl(ufeAttr, self.prim, c, self.useNiceName)
+        self.defineCustom(arrayCustomControl, c)
+        return arrayCustomControl
+    else:
+        return None
+
+def defaultControlCreator(self, c):
+    cmds.editorTemplate(addControl=[c])
+    return None
 
 # SchemaBase template class for categorization of the attributes.
 # We no longer use the base class ufeAeTemplate.Template as we want to control
@@ -428,18 +448,19 @@ class AETemplate(object):
             except:
                 pass
 
+    _controlCreators[connectionsCustomControlCreator, arrayCustomControlCreator, defaultControlCreator]
+
+    @staticmethod
+    def prependControlCreator(controlCreator):
+        AETemplate._controlCreators.insert(0, controlCreator)
+
     def addControls(self, controls):
         for c in controls:
             if c not in self.suppressedAttrs:
-                if self.attributeHasConnections(c):
-                    connectionsCustomControl = ConnectionsCustomControl(self.item, self.prim, c, self.useNiceName)
-                    self.defineCustom(connectionsCustomControl, c)
-                elif self.isArrayAttribute(c):
-                    ufeAttr = self.attrS.attribute(c)
-                    arrayCustomControl = ArrayCustomControl(ufeAttr, self.prim, c, self.useNiceName)
-                    self.defineCustom(arrayCustomControl, c)
-                else:
-                    cmds.editorTemplate(addControl=[c])
+                for controlCreator in AETemplate._controlCreators:
+                    createdControl = controlCreator(self, c)
+                    if createdControl:
+                        break
                 self.addedAttrs.append(c)
 
     def suppress(self, control):
