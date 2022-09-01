@@ -634,32 +634,12 @@ private:
 // of the layers. Since each command is executed individually and in
 // order, each one may affect the index of subsequent commands. We
 // records adjustements that must be applied to indexes in the map.
-// Removal of a layer creates a negative adjustment, inserttion of a
+// Removal of a layer creates a negative adjustment, insertion of a
 // layer creates a positive adjustment.
 class IndexAdjustments
 {
 public:
     IndexAdjustments() = default;
-
-    // Insertion and removal additional adjustment.
-    // Must be called with the original index as provided by the user.
-    void addInsertionAdjustment(int index) { _indexAdjustments[index] += 1; }
-    void addRemovalAdjustment(int index) { _indexAdjustments[index] -= 1; }
-
-    // Calculate the adjusted index from the user-supplied index that
-    // need to be used by the command to account for previous commands.
-    int getAdjustedIndex(int index) const
-    {
-        // Apply all adjustment that were done on indexes lower or
-        // equal to the input index.
-        int adjustedIndex = index;
-        for (const auto& indexAndAdjustement : _indexAdjustments) {
-            if (indexAndAdjustement.first > index)
-                break;
-            adjustedIndex += indexAndAdjustement.second;
-        }
-        return adjustedIndex;
-    }
 
     // Convenience method that retrieve the adjusted index and adds
     // the insertion index adjustment.
@@ -680,6 +660,26 @@ public:
     }
 
 private:
+    // Insertion and removal additional adjustment.
+    // Must be called with the original index as provided by the user.
+    void addInsertionAdjustment(int index) { _indexAdjustments[index] += 1; }
+    void addRemovalAdjustment(int index) { _indexAdjustments[index] -= 1; }
+
+    // Calculate the adjusted index from the user-supplied index that
+    // need to be used by the command to account for previous commands.
+    int getAdjustedIndex(int index) const
+    {
+        // Apply all adjustment that were done on indexes lower or
+        // equal to the input index.
+        int adjustedIndex = index;
+        for (const auto& indexAndAdjustement : _indexAdjustments) {
+            if (indexAndAdjustement.first > index)
+                break;
+            adjustedIndex += indexAndAdjustement.second;
+        }
+        return adjustedIndex;
+    }
+
     std::map<int, int> _indexAdjustments;
 };
 

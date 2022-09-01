@@ -389,11 +389,9 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
 
         # Remove layers 0 and 1 and verify that the correct layers have been removed.
         #
-        # Note: passing the same argument multiple times does not work in Python, so we call MEL.
-        #
         # Note: when inserted in USD, layers are added at the top, so layer 0 and 1 are
         #       layer5 and layer6.
-        mel.eval("""mayaUsdLayerEditor -removeSubPath 0 "%s" -removeSubPath 1 "%s" "%s";""" % (shapePath, shapePath, rootLayer.identifier))
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, removeSubPath=((0, shapePath), (1, shapePath)))
         verifySubLayers(layerNames[0:4])
 
     def testMoveSubPath(self):
