@@ -22,6 +22,7 @@
 #include "tokens.h"
 
 #include <mayaUsd/base/tokens.h>
+#include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 #include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
 #include <mayaUsd/utils/hash.h>
 
@@ -1800,6 +1801,21 @@ HdVP2Material::~HdVP2Material()
     }
 }
 
+void ConvertNetworkMapToUntextured(HdMaterialNetworkMap& networkMap)
+{
+    for (auto& item : networkMap.map) {
+        auto& network = item.second;
+        auto  isInputNode = [&networkMap](const HdMaterialNode& node) {
+            return std::find(networkMap.terminals.begin(), networkMap.terminals.end(), node.path)
+                == networkMap.terminals.end();
+        };
+
+        auto eraseBegin = std::remove_if(network.nodes.begin(), network.nodes.end(), isInputNode);
+        network.nodes.erase(eraseBegin, network.nodes.end());
+        network.relationships.clear();
+    }
+}
+
 /*! \brief  Synchronize VP2 state with scene delegate state based on dirty bits
  */
 void HdVP2Material::Sync(
@@ -1819,8 +1835,20 @@ void HdVP2Material::Sync(
         VtValue vtMatResource = sceneDelegate->GetMaterialResource(id);
 
         if (vtMatResource.IsHolding<HdMaterialNetworkMap>()) {
-            const HdMaterialNetworkMap& networkMap
-                = vtMatResource.UncheckedGet<HdMaterialNetworkMap>();
+            auto* const param = static_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
+            const bool  inUntexturedMode
+                = (param->GetDrawScene().GetDisplayStyle() & MHWRender::MFrameContext::kTextured)
+                == 0;
+
+            HdMaterialNetworkMap        untexturedNetworkMap;
+            const HdMaterialNetworkMap& networkMap = inUntexturedMode
+                ? untexturedNetworkMap
+                : vtMatResource.UncheckedGet<HdMaterialNetworkMap>();
+
+            if (inUntexturedMode) {
+                untexturedNetworkMap = vtMatResource.UncheckedGet<HdMaterialNetworkMap>();
+                ConvertNetworkMapToUntextured(untexturedNetworkMap);
+            }
 
             HdMaterialNetwork bxdfNet, dispNet, vp2BxdfNet;
 

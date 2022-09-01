@@ -58,7 +58,9 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
 
     def _StartTest(self, testName):
         mayaUtils.loadPlugin("mayaUsdPlugin")
-        
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, displayTextures=True)
+
         self._testName = testName
         testFile = testUtils.getTestScene("MaterialX", self._testName + ".usda")
         mayaUtils.createProxyFromFile(testFile)
@@ -88,6 +90,8 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
 
     def testMayaPlace2dTexture(self):
         mayaUtils.loadPlugin("mayaUsdPlugin")
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, displayTextures=True)
 
         # Too much differences between Linux and Windows otherwise
         cmds.setAttr("hardwareRenderingGlobals.multiSampleEnable", True)
@@ -115,6 +119,8 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
     def testMayaNodesExport(self):
         """Test a scene that will contain test samples for MaterialX exported nodes"""
         mayaUtils.loadPlugin("mayaUsdPlugin")
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, displayTextures=True)
 
         # Too much differences between Linux and Windows otherwise
         cmds.setAttr("hardwareRenderingGlobals.multiSampleEnable", True)

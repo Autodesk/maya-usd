@@ -56,6 +56,9 @@ struct HdVP2MeshSharedData
     //! for efficient GPU rendering.
     HdMeshTopology _renderingTopology;
 
+    //! Defines whether or not the vertex layout used for drawing is unshared
+    bool _isVertexLayoutUnshared { false };
+
     //! An array to store original scene face vertex index of each rendering
     //! face vertex index.
     VtIntArray _renderingToSceneFaceVtxIds;
@@ -174,6 +177,8 @@ private:
         MSubSceneContainer& subSceneContainer,
         const HdGeomSubset* geomSubset) const;
     MHWRender::MRenderItem* _CreateSelectionHighlightRenderItem(const MString& name) const;
+
+    void _ResetRenderingTopology();
 
     static void _InitGPUCompute();
 
