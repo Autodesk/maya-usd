@@ -402,24 +402,20 @@ class NoticeListener(object):
                 if hasattr(ctrl, 'refresh'):
                     ctrl.refresh()
 
-def connectionsCustomControlCreator(self, c):
-    if self.attributeHasConnections(c):
-        connectionsCustomControl = ConnectionsCustomControl(self.item, self.prim, c, self.useNiceName)
-        self.defineCustom(connectionsCustomControl, c)
-        return connectionsCustomControl
+def connectionsCustomControlCreator(aeTemplate, c):
+    if aeTemplate.attributeHasConnections(c):
+        return ConnectionsCustomControl(aeTemplate.item, aeTemplate.prim, c, aeTemplate.useNiceName)
     else:
         return None
 
-def arrayCustomControlCreator(self, c):
-    if self.isArrayAttribute(c):
-        ufeAttr = self.attrS.attribute(c)
-        arrayCustomControl = ArrayCustomControl(ufeAttr, self.prim, c, self.useNiceName)
-        self.defineCustom(arrayCustomControl, c)
-        return arrayCustomControl
+def arrayCustomControlCreator(aeTemplate, c):
+    if aeTemplate.isArrayAttribute(c):
+        ufeAttr = aeTemplate.attrS.attribute(c)
+        return ArrayCustomControl(ufeAttr, aeTemplate.prim, c, aeTemplate.useNiceName)
     else:
         return None
 
-def defaultControlCreator(self, c):
+def defaultControlCreator(aeTemplate, c):
     cmds.editorTemplate(addControl=[c])
     return None
 
@@ -479,6 +475,7 @@ class AETemplate(object):
                 for controlCreator in AETemplate._controlCreators:
                     createdControl = controlCreator(self, c)
                     if createdControl:
+                        self.defineCustom(createdControl, c)
                         break
                 self.addedAttrs.append(c)
 
