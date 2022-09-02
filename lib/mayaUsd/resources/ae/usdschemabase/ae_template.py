@@ -402,6 +402,22 @@ class NoticeListener(object):
                 if hasattr(ctrl, 'refresh'):
                     ctrl.refresh()
 
+def connectionsCustomControlCreator(aeTemplate, c):
+    if aeTemplate.attributeHasConnections(c):
+        return ConnectionsCustomControl(aeTemplate.item, aeTemplate.prim, c, aeTemplate.useNiceName)
+    else:
+        return None
+
+def arrayCustomControlCreator(aeTemplate, c):
+    if aeTemplate.isArrayAttribute(c):
+        ufeAttr = aeTemplate.attrS.attribute(c)
+        return ArrayCustomControl(ufeAttr, aeTemplate.prim, c, aeTemplate.useNiceName)
+    else:
+        return None
+
+def defaultControlCreator(aeTemplate, c):
+    cmds.editorTemplate(addControl=[c])
+    return None
 
 # SchemaBase template class for categorization of the attributes.
 # We no longer use the base class ufeAeTemplate.Template as we want to control
@@ -447,18 +463,20 @@ class AETemplate(object):
             except:
                 pass
 
+    _controlCreators = [connectionsCustomControlCreator, arrayCustomControlCreator, defaultControlCreator]
+
+    @staticmethod
+    def prependControlCreator(controlCreator):
+        AETemplate._controlCreators.insert(0, controlCreator)
+
     def addControls(self, controls):
         for c in controls:
             if c not in self.suppressedAttrs:
-                if self.attributeHasConnections(c):
-                    connectionsCustomControl = ConnectionsCustomControl(self.item, self.prim, c, self.useNiceName)
-                    self.defineCustom(connectionsCustomControl, c)
-                elif self.isArrayAttribute(c):
-                    ufeAttr = self.attrS.attribute(c)
-                    arrayCustomControl = ArrayCustomControl(ufeAttr, self.prim, c, self.useNiceName)
-                    self.defineCustom(arrayCustomControl, c)
-                else:
-                    cmds.editorTemplate(addControl=[c])
+                for controlCreator in AETemplate._controlCreators:
+                    createdControl = controlCreator(self, c)
+                    if createdControl:
+                        self.defineCustom(createdControl, c)
+                        break
                 self.addedAttrs.append(c)
 
     def suppress(self, control):
