@@ -18,9 +18,6 @@
 #include "Utils.h"
 #include "private/Utils.h"
 
-#ifdef UFE_V3_FEATURES_AVAILABLE
-#include <mayaUsd/base/tokens.h>
-#endif
 #include <mayaUsd/ufe/StagesSubject.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
@@ -36,6 +33,13 @@
 #include <sstream>
 #include <unordered_map>
 #include <unordered_set>
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#include "UsdShaderAttributeDef.h"
+#endif
+#ifdef UFE_V3_FEATURES_AVAILABLE
+#include <mayaUsd/base/tokens.h>
+#endif
 
 // Note: normally we would use this using directive, but here we cannot because
 //       our class is called UsdAttribute which is exactly the same as the one
@@ -424,7 +428,17 @@ std::string UsdAttribute::isEditAllowedMsg() const
 std::string UsdAttribute::typeName() const
 {
     if (isValid()) {
-        return usdTypeToUfe(fUsdAttr.GetTypeName());
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        UsdShaderAttributeDef::ConstPtr shaderAttrDef
+            = std::dynamic_pointer_cast<const UsdShaderAttributeDef>(fAttrDef);
+        if (shaderAttrDef) {
+            return usdTypeToUfe(shaderAttrDef->shaderProperty());
+        } else {
+#endif
+            return usdTypeToUfe(fUsdAttr.GetTypeName());
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        }
+#endif
     }
 #ifdef UFE_V4_FEATURES_AVAILABLE
     else {
@@ -864,6 +878,12 @@ Ufe::UndoableCommand::Ptr UsdAttributeFilename::setCmd(const std::string& value)
 // UsdAttributeEnumString:
 //------------------------------------------------------------------------------
 
+bool UsdAttributeEnumString::isHoldingTfToken() const
+{
+    PXR_NS::VtValue vt;
+    return UsdAttribute::get(vt, UsdTimeCode::Default()) && vt.IsHolding<TfToken>();
+}
+
 #ifdef UFE_V4_FEATURES_AVAILABLE
 UsdAttributeEnumString::UsdAttributeEnumString(
     const UsdSceneItem::Ptr&           item,
@@ -871,6 +891,7 @@ UsdAttributeEnumString::UsdAttributeEnumString(
     const Ufe::AttributeDef::ConstPtr& attrDef)
     : Ufe::AttributeEnumString(item)
     , UsdAttribute(prim, attrDef)
+    , _isHoldingTfToken(isHoldingTfToken())
 {
 }
 #endif
@@ -880,6 +901,7 @@ UsdAttributeEnumString::UsdAttributeEnumString(
     const PXR_NS::UsdAttribute& usdAttr)
     : Ufe::AttributeEnumString(item)
     , UsdAttribute(usdAttr)
+    , _isHoldingTfToken(isHoldingTfToken())
 {
 }
 
@@ -910,9 +932,13 @@ UsdAttributeEnumString::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdA
 std::string UsdAttributeEnumString::get() const
 {
     PXR_NS::VtValue vt;
-    if (UsdAttribute::get(vt, getCurrentTime(sceneItem())) && vt.IsHolding<TfToken>()) {
-        TfToken tok = vt.UncheckedGet<TfToken>();
-        return tok.GetString();
+    if (UsdAttribute::get(vt, getCurrentTime(sceneItem()))) {
+        if (vt.IsHolding<TfToken>()) {
+            TfToken tok = vt.UncheckedGet<TfToken>();
+            return tok.GetString();
+        } else if (vt.IsHolding<std::string>()) {
+            return vt.UncheckedGet<std::string>();
+        }
     }
 
     return std::string();
@@ -920,8 +946,12 @@ std::string UsdAttributeEnumString::get() const
 
 void UsdAttributeEnumString::set(const std::string& value)
 {
-    PXR_NS::TfToken tok(value);
-    setUsdAttr<PXR_NS::TfToken>(*this, tok);
+    if (_isHoldingTfToken) {
+        PXR_NS::TfToken tok(value);
+        setUsdAttr<PXR_NS::TfToken>(*this, tok);
+    } else {
+        setUsdAttr<std::string>(*this, value);
+    }
 }
 
 Ufe::UndoableCommand::Ptr UsdAttributeEnumString::setCmd(const std::string& value)
@@ -949,7 +979,25 @@ Ufe::AttributeEnumString::EnumValues UsdAttributeEnumString::getEnumValues() con
         EnumValues                   tokens = PXR_NS::TfToStringVector(tokenVec);
         return tokens;
     }
-
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4008)
+    else {
+        EnumValues                      result;
+        UsdShaderAttributeDef::ConstPtr shaderAttrDef
+            = std::dynamic_pointer_cast<const UsdShaderAttributeDef>(fAttrDef);
+        if (shaderAttrDef) {
+            const auto& shaderProperty = shaderAttrDef->shaderProperty();
+            if (shaderProperty) {
+                const auto& options = shaderProperty->GetOptions();
+                for (const auto& option : options) {
+                    result.push_back(option.first.GetString());
+                }
+            }
+        }
+        return result;
+    }
+#endif
+#endif
     return EnumValues();
 }
 
@@ -1024,6 +1072,13 @@ template <> void TypedUsdAttribute<std::string>::set(const std::string& value)
         setUsdAttr<std::string>(*this, value);
         return;
     } else if (typeName == Ufe::Attribute::kEnumString) {
+        PXR_NS::VtValue vt;
+        if (UsdAttribute::get(vt, UsdTimeCode::Default())) {
+            if (vt.IsHolding<std::string>()) {
+                setUsdAttr<std::string>(*this, value);
+                return;
+            }
+        }
         PXR_NS::TfToken tok(value);
         setUsdAttr<PXR_NS::TfToken>(*this, tok);
         return;
