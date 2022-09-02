@@ -132,8 +132,8 @@ private:
     PrimUpdaterManager(PrimUpdaterManager&) = delete;
     PrimUpdaterManager(PrimUpdaterManager&&) = delete;
 
-    bool discardPrimEdits(const Ufe::Path& path);
-    bool discardOrphanedEdits(const MDagPath& dagPath);
+    bool discardPrimEdits(const Ufe::Path& pulledPath);
+    bool discardOrphanedEdits(const MDagPath& dagPath, const Ufe::Path& pulledPath);
     void discardPullSetIfEmpty();
 
     void onProxyContentChanged(const MayaUsdProxyStageObjectsChangedNotice& notice);
@@ -147,8 +147,11 @@ private:
     //! which receives the pulled node's parent transformation.
     MObject createPullParent(const Ufe::Path& pulledPath, MObject pullRoot);
 
-    //! Remove the pull parent for the pulled hierarchy.
-    bool removePullParent(const MDagPath& pullParent);
+    //! Remove the pull parent for the pulled hierarchy.  Pass in the original
+    //! USD pulled path, because at the point of removal of the pull parent the
+    //! Maya pulled node no longer exists, and cannot be used to retrieve the
+    //! pull information.
+    bool removePullParent(const MDagPath& pullParent, const Ufe::Path& pulledPath);
 
     //! Create the pull parent and set it into the prim updater context.
     MDagPath setupPullParent(const Ufe::Path& pulledPath, VtDictionary& args);

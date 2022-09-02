@@ -1006,7 +1006,7 @@ bool PrimUpdaterManager::mergeToUsd(
     }
 
     if (!isCopy) {
-        if (!TF_VERIFY(removePullParent(pullParentPath))) {
+        if (!TF_VERIFY(removePullParent(pullParentPath, pulledPath))) {
             return false;
         }
     }
@@ -1132,14 +1132,14 @@ bool PrimUpdaterManager::canEditAsMaya(const Ufe::Path& path) const
 
 bool PrimUpdaterManager::discardEdits(const MDagPath& dagPath)
 {
-    Ufe::Path primPath;
-    if (!readPullInformation(dagPath, primPath))
+    Ufe::Path pulledPath;
+    if (!readPullInformation(dagPath, pulledPath))
         return false;
 
     MayaUsd::ProgressBarScope progressBar(1, "Discarding Converted Maya Data");
 
-    auto usdPrim = MayaUsd::ufe::ufePathToPrim(primPath);
-    auto ret = usdPrim ? discardPrimEdits(primPath) : discardOrphanedEdits(dagPath);
+    auto usdPrim = MayaUsd::ufe::ufePathToPrim(pulledPath);
+    auto ret = usdPrim ? discardPrimEdits(pulledPath) : discardOrphanedEdits(dagPath, pulledPath);
     progressBar.advance();
     return ret;
 }
@@ -1230,7 +1230,7 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
         return false;
     }
 
-    if (!TF_VERIFY(removePullParent(pullParent))) {
+    if (!TF_VERIFY(removePullParent(pullParent, pulledPath))) {
         return false;
     }
     progressBar.advance();
@@ -1246,7 +1246,7 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
     return true;
 }
 
-bool PrimUpdaterManager::discardOrphanedEdits(const MDagPath& dagPath)
+bool PrimUpdaterManager::discardOrphanedEdits(const MDagPath& dagPath, const Ufe::Path& pulledPath)
 {
     MayaUsd::ProgressBarScope progressBar(2);
     PushPullScope             scopeIt(_inPushPull);
@@ -1284,7 +1284,7 @@ bool PrimUpdaterManager::discardOrphanedEdits(const MDagPath& dagPath)
         toApplyOnLoop.loopAdvance();
     }
 
-    if (!TF_VERIFY(removePullParent(pullParent))) {
+    if (!TF_VERIFY(removePullParent(pullParent, pulledPath))) {
         return false;
     }
     progressBar.advance();
@@ -1586,14 +1586,14 @@ MObject PrimUpdaterManager::createPullParent(const Ufe::Path& pulledPath, MObjec
     return (ret == MStatus::kSuccess) ? pullParentObj : MObject::kNullObj;
 }
 
-bool PrimUpdaterManager::removePullParent(const MDagPath& parentDagPath)
+bool PrimUpdaterManager::removePullParent(
+    const MDagPath&  parentDagPath,
+    const Ufe::Path& pulledPath)
 {
     if (!TF_VERIFY(parentDagPath.isValid())) {
         return false;
     }
 
-    Ufe::Path pulledPath;
-    TF_VERIFY(readPullInformation(parentDagPath, pulledPath));
     TF_VERIFY(_pulledPrims.remove(pulledPath) != nullptr);
 
     MayaUsd::ProgressBarScope progressBar(2);
