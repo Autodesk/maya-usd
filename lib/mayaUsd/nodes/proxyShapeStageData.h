@@ -27,7 +27,8 @@
 namespace MAYAUSD_NS_DEF {
 
 /// \class MayaUsdProxyShapeStageData
-/// \brief Encapsulates plugin registration and deregistration for the proxy shape extra data handling.
+/// \brief Encapsulates plugin registration and deregistration for the proxy shape extra data
+/// handling.
 ///
 /// USD proxy shape extra data are persisted on-disk in the proxy shape. We use a Maya callback
 /// triggered before a scene is saved to copy the current proxy shape extra data from the stage
@@ -50,7 +51,8 @@ public:
     MAYAUSD_CORE_PUBLIC
     static void addProxyShape(MayaUsdProxyShapeBase& proxyShape);
 
-    /// \brief remove a proxy shape so that it will no longer have its proxy shape extra data saved and loaded.
+    /// \brief remove a proxy shape so that it will no longer have its proxy shape extra data saved
+    /// and loaded.
     MAYAUSD_CORE_PUBLIC
     static void removeProxyShape(MayaUsdProxyShapeBase& proxyShape);
 

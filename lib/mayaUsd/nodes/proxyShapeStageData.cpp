@@ -36,10 +36,7 @@ ProxyShapeSet& getTrackedProxyShapes()
     return tracked;
 }
 
-void onMayaAboutToSave(void* /* unused */)
-{
-    MayaUsdProxyShapeStageData::saveAllStageData();
-}
+void onMayaAboutToSave(void* /* unused */) { MayaUsdProxyShapeStageData::saveAllStageData(); }
 
 // Saving some stage data for all valid tracked stages or one specific stage.
 typedef MStatus (*SaveFunc)(const PXR_NS::UsdStage& stage, MObject& obj);

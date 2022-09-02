@@ -38,7 +38,6 @@ namespace MAYAUSD_NS_DEF {
 // We thus saved the muted state of layers in the proxy shape as a dynamic
 // attribute.
 
-
 /*! \brief convert the stage layers muting to a text format.
  */
 MAYAUSD_CORE_PUBLIC

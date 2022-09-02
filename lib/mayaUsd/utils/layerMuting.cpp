@@ -34,7 +34,7 @@ const char layerMutingAttrName[] = "usdStageLayerMuting";
 // The USD layer identifier has an unspecified format that could change.
 // In particular, we don't know what charaters it can use. To avoid problem
 // when setting dynamic attributes, we convert the identifier into characters
-// from A to P 
+// from A to P
 // to ensure we don't get any issue and can select the separator used to split
 // identifiers as we wish.
 
@@ -60,7 +60,8 @@ std::string convertTextToIdentifier(const std::string& text)
     for (size_t index = 0; index < text.length(); index += 2) {
         const char c1 = text[index];
         const char c2 = text[index + 1];
-        const char c = (char)((((unsigned int)(c1 - 'A') * 16)) + (((unsigned int)(c2 - 'A')) % 16));
+        const char c
+            = (char)((((unsigned int)(c1 - 'A') * 16)) + (((unsigned int)(c2 - 'A')) % 16));
         identifier += c;
     }
 

@@ -14,9 +14,8 @@
 // limitations under the License.
 //
 
-#include "loadRules.h"
-
 #include "dynamicAttribute.h"
+#include "loadRules.h"
 
 #include <maya/MCommandResult.h>
 #include <maya/MDGModifier.h>
