@@ -85,7 +85,15 @@ void fixupVertexDataInstance(ShaderStage& stage)
     code = std::regex_replace(code, paramRegex, "vec3 unused_$1");
     code = std::regex_replace(code, vtxRegex, "$$$1( PIX_IN.$$$1 )");
     code = std::regex_replace(code, vdCleanupRegex, "");
+
+#if MX_COMBINED_VERSION >= 13804
     stage.setSourceCode(code);
+#else
+    // setSourceCode was added in 1.38.4. Use const casting in previous versions to modify the
+    // member variable directly (since getSourceCode returns by reference).
+    std::string& ncCode(const_cast<std::string&>(stage.getSourceCode()));
+    ncCode = code;
+#endif
 }
 } // namespace
 
