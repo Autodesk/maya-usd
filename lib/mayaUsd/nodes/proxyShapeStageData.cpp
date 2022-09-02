@@ -13,8 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "proxyShapeLoadRules.h"
+#include "proxyShapeStageData.h"
 
+#include <mayaUsd/utils/layerMuting.h>
 #include <mayaUsd/utils/loadRules.h>
 
 #include <maya/MSceneMessage.h>
@@ -37,11 +38,12 @@ ProxyShapeSet& getTrackedProxyShapes()
 
 void onMayaAboutToSave(void* /* unused */)
 {
-    // Note: passing nullptr means save all stages.
-    MayaUsdProxyShapeLoadRules::saveLoadRules(nullptr);
+    MayaUsdProxyShapeStageData::saveAllStageData();
 }
 
-void saveTrackedLoadRules(const UsdStageRefPtr& stage)
+// Saving some stage data for all valid tracked stages or one specific stage.
+typedef MStatus (*SaveFunc)(const PXR_NS::UsdStage& stage, MObject& obj);
+void saveTrackedData(const UsdStageRefPtr& stage, SaveFunc saveFunc)
 {
     ProxyShapeSet& tracked = getTrackedProxyShapes();
     for (MayaUsdProxyShapeBase* proxyShape : tracked) {
@@ -59,14 +61,24 @@ void saveTrackedLoadRules(const UsdStageRefPtr& stage)
         if (proxyObj.isNull())
             continue;
 
-        copyLoadRulesToAttribute(*stagePtr, proxyObj);
+        saveFunc(*stagePtr, proxyObj);
     }
+}
+
+void saveTrackedLoadRules(const UsdStageRefPtr& stage)
+{
+    saveTrackedData(stage, copyLoadRulesToAttribute);
+}
+
+void saveTrackedLayerMutings(const UsdStageRefPtr& stage)
+{
+    saveTrackedData(stage, copyLayerMutingToAttribute);
 }
 
 } // namespace
 
 /* static */
-MStatus MayaUsdProxyShapeLoadRules::initialize()
+MStatus MayaUsdProxyShapeStageData::initialize()
 {
     MStatus status = MS::kSuccess;
     if (beforeFileSaveCallbackId == 0) {
@@ -77,7 +89,7 @@ MStatus MayaUsdProxyShapeLoadRules::initialize()
 }
 
 /* static */
-MStatus MayaUsdProxyShapeLoadRules::finalize()
+MStatus MayaUsdProxyShapeStageData::finalize()
 {
     MStatus status = MS::kSuccess;
 
@@ -90,28 +102,48 @@ MStatus MayaUsdProxyShapeLoadRules::finalize()
 }
 
 /* static */
-void MayaUsdProxyShapeLoadRules::addProxyShape(MayaUsdProxyShapeBase& proxyShape)
+void MayaUsdProxyShapeStageData::addProxyShape(MayaUsdProxyShapeBase& proxyShape)
 {
     getTrackedProxyShapes().insert(&proxyShape);
 }
 
 /* static */
-void MayaUsdProxyShapeLoadRules::removeProxyShape(MayaUsdProxyShapeBase& proxyShape)
+void MayaUsdProxyShapeStageData::removeProxyShape(MayaUsdProxyShapeBase& proxyShape)
 {
     getTrackedProxyShapes().erase(&proxyShape);
 }
 
 /* static */
-void MayaUsdProxyShapeLoadRules::saveAllLoadRules()
+void MayaUsdProxyShapeStageData::saveAllStageData()
+{
+    saveAllLoadRules();
+    saveAllLayerMutings();
+}
+
+/* static */
+void MayaUsdProxyShapeStageData::saveAllLoadRules()
 {
     // Note: passing nullptr means save all stages.
     saveTrackedLoadRules(nullptr);
 }
 
 /* static */
-void MayaUsdProxyShapeLoadRules::saveLoadRules(const UsdStageRefPtr& stage)
+void MayaUsdProxyShapeStageData::saveLoadRules(const UsdStageRefPtr& stage)
 {
     saveTrackedLoadRules(stage);
+}
+
+/* static */
+void MayaUsdProxyShapeStageData::saveAllLayerMutings()
+{
+    // Note: passing nullptr means save all stages.
+    saveTrackedLayerMutings(nullptr);
+}
+
+/* static */
+void MayaUsdProxyShapeStageData::saveLayerMuting(const UsdStageRefPtr& stage)
+{
+    saveTrackedLayerMutings(stage);
 }
 
 } // namespace MAYAUSD_NS_DEF

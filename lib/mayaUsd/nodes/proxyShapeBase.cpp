@@ -18,9 +18,10 @@
 #include <mayaUsd/base/debugCodes.h>
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/listeners/proxyShapeNotice.h>
-#include <mayaUsd/nodes/proxyShapeLoadRules.h>
+#include <mayaUsd/nodes/proxyShapeStageData.h>
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/utils/customLayerData.h>
+#include <mayaUsd/utils/layerMuting.h>
 #include <mayaUsd/utils/loadRules.h>
 #include <mayaUsd/utils/query.h>
 #include <mayaUsd/utils/stageCache.h>
@@ -938,6 +939,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
     if (finalUsdStage) {
         primPath = finalUsdStage->GetPseudoRoot().GetPath();
         copyLoadRulesFromAttribute(thisMObject(), *finalUsdStage);
+        copyLayerMutingFromAttribute(thisMObject(), *finalUsdStage);
         updateShareMode(sharedUsdStage, unsharedUsdStage, loadSet);
     }
 
@@ -1737,7 +1739,7 @@ MayaUsdProxyShapeBase::MayaUsdProxyShapeBase(
     if (useLoadRulesHandling) {
         // Register with the load-rules handling used to transfer load rules
         // between the USD stage and a dynamic attribute on the proxy shape.
-        MayaUsdProxyShapeLoadRules::addProxyShape(*this);
+        MayaUsdProxyShapeStageData::addProxyShape(*this);
     }
 }
 
@@ -1746,7 +1748,7 @@ MayaUsdProxyShapeBase::~MayaUsdProxyShapeBase()
 {
     // Deregister from the load-rules handling used to transfer load rules
     // between the USD stage and a dynamic attribute on the proxy shape.
-    MayaUsdProxyShapeLoadRules::removeProxyShape(*this);
+    MayaUsdProxyShapeStageData::removeProxyShape(*this);
 }
 
 MSelectionMask MayaUsdProxyShapeBase::getShapeSelectionMask() const

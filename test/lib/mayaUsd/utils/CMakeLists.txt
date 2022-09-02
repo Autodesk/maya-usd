@@ -104,6 +104,10 @@ if(IS_WINDOWS)
         testLoadRules.cpp
     )
     add_mayaUsdLibUtils_test(
+        testLayerMuting
+        testLayerMuting.cpp
+    )
+    add_mayaUsdLibUtils_test(
 	    testSplitString
 	    testSplitString.cpp
     )

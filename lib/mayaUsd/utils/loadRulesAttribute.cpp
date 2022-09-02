@@ -16,6 +16,8 @@
 
 #include "loadRules.h"
 
+#include "dynamicAttribute.h"
+
 #include <maya/MCommandResult.h>
 #include <maya/MDGModifier.h>
 #include <maya/MFnDependencyNode.h>
@@ -29,74 +31,11 @@ namespace {
 
 const char loadRulesAttrName[] = "usdStageLoadRules";
 
-bool hasLoadRulesAttribute(const MFnDependencyNode& depNode)
-{
-    MString nodeName = depNode.absoluteName();
-    MString cmd;
-    cmd.format("attributeQuery -exists -n \"^2s\" \"^1s\"", loadRulesAttrName, nodeName);
-
-    int        result = 0;
-    const bool display = false;
-    const bool undoable = false;
-    MGlobal::executeCommand(cmd, result, display, undoable);
-
-    return result != 0;
-}
-
-MStatus createLoadRulesAttribute(const MFnDependencyNode& depNode)
-{
-    MStatus status = MS::kSuccess;
-
-    MString nodeName = depNode.absoluteName();
-    MString cmd;
-    cmd.format(
-        "addAttr -longName \"^1s\" -dataType \"string\" -hidden true -keyable false -writable true "
-        "-storable true \"^2s\";",
-        loadRulesAttrName,
-        nodeName);
-
-    const bool display = false;
-    const bool undoable = false;
-    status = MGlobal::executeCommand(cmd, display, undoable);
-
-    return status;
-}
-
-MStatus getLoadRulesAttribute(const MFnDependencyNode& depNode, MString& value)
-{
-    MStatus status = MS::kSuccess;
-
-    MString nodeName = depNode.absoluteName();
-    MString cmd;
-    cmd.format("getAttr \"^2s.^1s\";", loadRulesAttrName, nodeName);
-
-    const bool display = false;
-    const bool undoable = false;
-    status = MGlobal::executeCommand(cmd, value, display, undoable);
-
-    return status;
-}
-
-MStatus setLoadRulesAttribute(const MFnDependencyNode& depNode, const MString& value)
-{
-    MStatus status = MS::kSuccess;
-
-    MString nodeName = depNode.absoluteName();
-    MString cmd;
-    cmd.format("setAttr \"^2s.^1s\" -type \"string\" \"^3s\";", loadRulesAttrName, nodeName, value);
-
-    const bool display = false;
-    const bool undoable = false;
-    status = MGlobal::executeCommand(cmd, display, undoable);
-
-    return status;
-}
-
 } // namespace
 
 bool hasLoadRulesAttribute(const MObject& obj)
 {
-    return hasLoadRulesAttribute(MFnDependencyNode(obj));
+    return hasDynamicAttribute(MFnDependencyNode(obj), loadRulesAttrName);
 }
 
 MStatus copyLoadRulesToAttribute(const PXR_NS::UsdStage& stage, MObject& obj)
@@ -104,12 +43,12 @@ MStatus copyLoadRulesToAttribute(const PXR_NS::UsdStage& stage, MObject& obj)
     MStatus status = MS::kSuccess;
 
     MFnDependencyNode depNode(obj);
-    if (!hasLoadRulesAttribute(depNode))
-        createLoadRulesAttribute(depNode);
+    if (!hasDynamicAttribute(depNode, loadRulesAttrName))
+        createDynamicAttribute(depNode, loadRulesAttrName);
 
     MString loadRulesText = convertLoadRulesToText(stage);
 
-    status = setLoadRulesAttribute(depNode, loadRulesText);
+    status = setDynamicAttribute(depNode, loadRulesAttrName, loadRulesText);
 
     return status;
 }
@@ -119,11 +58,11 @@ MStatus copyLoadRulesFromAttribute(const MObject& obj, PXR_NS::UsdStage& stage)
     MStatus status = MS::kSuccess;
 
     MFnDependencyNode depNode(obj);
-    if (!hasLoadRulesAttribute(depNode))
+    if (!hasDynamicAttribute(depNode, loadRulesAttrName))
         return MS::kNotFound;
 
     MString loadRulesText;
-    status = getLoadRulesAttribute(depNode, loadRulesText);
+    status = getDynamicAttribute(depNode, loadRulesAttrName, loadRulesText);
     if (status == MS::kSuccess)
         setLoadRulesFromText(stage, loadRulesText);
 
