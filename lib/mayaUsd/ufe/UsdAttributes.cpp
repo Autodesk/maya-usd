@@ -28,6 +28,7 @@
 #include <ufe/ufeAssert.h>
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
+#include "UsdShaderAttributeDef.h"
 #if (UFE_PREVIEW_VERSION_NUM >= 4024)
 #include <mayaUsd/ufe/UsdUndoAttributesCommands.h>
 #endif
@@ -124,23 +125,27 @@ Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
     auto iter = fUsdAttributes.find(name);
     if (iter != std::end(fUsdAttributes))
         return iter->second->type();
-
-    PXR_NS::TfToken      tok(name);
-    PXR_NS::UsdAttribute usdAttr = _GetAttributeType(fPrim, name);
-    if (usdAttr.IsValid()) {
-        return getUfeTypeForAttribute(usdAttr);
-    }
+    PXR_NS::TfToken tok(name);
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4008)
     Ufe::NodeDef::Ptr nodeDef = UsdAttributes::nodeDef();
     if (nodeDef) {
-        Ufe::AttributeDef::ConstPtr attrDef = nameToAttrDef(tok, nodeDef);
-        if (attrDef) {
-            return attrDef->type();
+        Ufe::AttributeDef::ConstPtr     attrDef = nameToAttrDef(tok, nodeDef);
+        UsdShaderAttributeDef::ConstPtr shaderAttrDef
+            = std::dynamic_pointer_cast<const UsdShaderAttributeDef>(attrDef);
+        if (shaderAttrDef) {
+            const auto& shaderProperty = shaderAttrDef->shaderProperty();
+            if (shaderProperty) {
+                return usdTypeToUfe(shaderProperty);
+            }
         }
     }
 #endif
 #endif
+    PXR_NS::UsdAttribute usdAttr = _GetAttributeType(fPrim, name);
+    if (usdAttr.IsValid()) {
+        return getUfeTypeForAttribute(usdAttr);
+    }
     return Ufe::Attribute::kInvalid;
 }
 
@@ -173,7 +178,7 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
 #endif
 #endif
     bool canCreateAttribute = usdAttr.IsValid();
-    if (usdAttr.IsValid()) {
+    if (canCreateAttribute) {
         newAttrType = attributeType(name);
     }
 #ifdef UFE_V4_FEATURES_AVAILABLE
