@@ -463,7 +463,7 @@ class AETemplate(object):
             except:
                 pass
 
-    _controlCreators[connectionsCustomControlCreator, arrayCustomControlCreator, defaultControlCreator]
+    _controlCreators = [connectionsCustomControlCreator, arrayCustomControlCreator, defaultControlCreator]
 
     @staticmethod
     def prependControlCreator(controlCreator):
