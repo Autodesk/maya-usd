@@ -88,8 +88,9 @@ struct TempNodeTrackerScope
 
 struct AutoTimelineRestore
 {
-    AutoTimelineRestore()
-        : originalAnimStartTime(MAnimControl::animationStartTime())
+    AutoTimelineRestore(bool preserve)
+        : preserveTimeline(preserve)
+        , originalAnimStartTime(MAnimControl::animationStartTime())
         , originalAnimEndTime(MAnimControl::animationEndTime())
         , originalMinTime(MAnimControl::minTime())
         , originalMaxTime(MAnimControl::maxTime())
@@ -99,6 +100,9 @@ struct AutoTimelineRestore
 
     ~AutoTimelineRestore()
     {
+        if (!preserveTimeline)
+            return;
+
         try {
             if (MAnimControl::minTime() != originalMinTime) {
                 MAnimControl::setMinTime(originalMinTime);
@@ -121,6 +125,7 @@ struct AutoTimelineRestore
         }
     }
 
+    const bool  preserveTimeline;       // If false, the timeline values are not preserved.
     const MTime originalAnimStartTime;
     const MTime originalAnimEndTime;
     const MTime originalMinTime;
@@ -225,7 +230,7 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
 
     // If the import time interval isn't empty, we expand the Min/Max time
     // sliders to include the stage's range if necessary.
-    AutoTimelineRestore timelineRestore;
+    AutoTimelineRestore timelineRestore(mArgs.preserveTimeline);
     if (!mArgs.timeInterval.IsEmpty()) {
         GfInterval stageInterval;
         if (mArgs.timeInterval.IsFinite()) {
