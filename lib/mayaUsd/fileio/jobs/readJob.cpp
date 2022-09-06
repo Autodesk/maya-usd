@@ -125,7 +125,7 @@ struct AutoTimelineRestore
         }
     }
 
-    const bool  preserveTimeline;       // If false, the timeline values are not preserved.
+    const bool  preserveTimeline; // If false, the timeline values are not preserved.
     const MTime originalAnimStartTime;
     const MTime originalAnimEndTime;
     const MTime originalMinTime;
