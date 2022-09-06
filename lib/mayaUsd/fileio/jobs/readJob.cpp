@@ -95,13 +95,11 @@ struct AutoTimelineRestore
         , originalMaxTime(MAnimControl::maxTime())
 
     {
-        
     }
 
     ~AutoTimelineRestore()
     {
-        try
-        {
+        try {
             if (MAnimControl::minTime() != originalMinTime) {
                 MAnimControl::setMinTime(originalMinTime);
             }
