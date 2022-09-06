@@ -1002,6 +1002,7 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 
         // if textured/untextured mode has changed, we need to update materials
         if (((_currentDisplayStyle ^ oldDisplayStyle) & MHWRender::MFrameContext::kTextured) != 0) {
+            dirtyBits |= HdChangeTracker::DirtyMaterialId;
             auto materials = _renderIndex->GetSprimSubtree(
                 HdPrimTypeTokens->material, SdfPath::AbsoluteRootPath());
             for (auto material : materials) {

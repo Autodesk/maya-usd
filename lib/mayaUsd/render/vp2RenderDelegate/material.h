@@ -99,12 +99,21 @@ public:
     void Reload() override {};
 #endif
 
+    enum NetworkConfig
+    {
+        kFull = 0,
+        kUntextured,
+
+        kNumNetworkConfigs,
+        kDefault = kNumNetworkConfigs
+    };
+
     //! Get the surface shader instance.
-    MHWRender::MShaderInstance* GetSurfaceShader() const { return _mainNetwork.GetSurfaceShader(); }
-    MHWRender::MShaderInstance* GetPointShader() const { return _mainNetwork.GetPointShader(); }
+    MHWRender::MShaderInstance* GetSurfaceShader(NetworkConfig cfg = kDefault) const;
+    MHWRender::MShaderInstance* GetPointShader(NetworkConfig cfg = kDefault) const;
 
     //! Get primvar tokens required by this material.
-    const TfTokenVector& GetRequiredPrimvars() const { return _mainNetwork.GetRequiredPrimvars(); }
+    const TfTokenVector& GetRequiredPrimvars(NetworkConfig cfg = kDefault) const;
 
     void EnqueueLoadTextures();
     void ClearPendingTasks();
@@ -172,6 +181,8 @@ private:
 
     static void _ScheduleRefresh();
 
+    NetworkConfig _GetCompiledConfig(NetworkConfig cfg) const;
+
     static std::mutex                            _refreshMutex;
     static std::chrono::steady_clock::time_point _startTime;
     static std::atomic_size_t                    _runningTasksCounter;
@@ -179,7 +190,7 @@ private:
     HdVP2RenderDelegate* const
         _renderDelegate; //!< VP2 render delegate for which this material was created
 
-    CompiledNetwork              _mainNetwork;
+    CompiledNetwork              _compiledNetworks[kNumNetworkConfigs];
     static HdVP2GlobalTextureMap _globalTextureMap; //!< Texture in use by all materials in MayaUSD
     HdVP2LocalTextureMap         _localTextureMap;  //!< Textures used by this material
 

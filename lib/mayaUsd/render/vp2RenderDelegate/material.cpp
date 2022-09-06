@@ -1788,7 +1788,7 @@ void HdVP2TextureDeleter::operator()(MHWRender::MTexture* texture)
 HdVP2Material::HdVP2Material(HdVP2RenderDelegate* renderDelegate, const SdfPath& id)
     : HdMaterial(id)
     , _renderDelegate(renderDelegate)
-    , _mainNetwork(this)
+    , _compiledNetworks{this, this}
 {
 }
 
@@ -1836,22 +1836,18 @@ void HdVP2Material::Sync(
         VtValue vtMatResource = sceneDelegate->GetMaterialResource(id);
 
         if (vtMatResource.IsHolding<HdMaterialNetworkMap>()) {
+            const HdMaterialNetworkMap& fullNetworkMap = vtMatResource.UncheckedGet<HdMaterialNetworkMap>();            
+
+            // untextured network is always synced
+            HdMaterialNetworkMap untexturedNetworkMap = fullNetworkMap;
+            ConvertNetworkMapToUntextured(untexturedNetworkMap);
+            _compiledNetworks[kUntextured].Sync(sceneDelegate, untexturedNetworkMap);
+
+            // full network is synced only if required by display style 
             auto* const param = static_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
-            const bool  inUntexturedMode
-                = (param->GetDrawScene().GetDisplayStyle() & MHWRender::MFrameContext::kTextured)
-                == 0;
-
-            HdMaterialNetworkMap        untexturedNetworkMap;
-            const HdMaterialNetworkMap& networkMap = inUntexturedMode
-                ? untexturedNetworkMap
-                : vtMatResource.UncheckedGet<HdMaterialNetworkMap>();
-
-            if (inUntexturedMode) {
-                untexturedNetworkMap = vtMatResource.UncheckedGet<HdMaterialNetworkMap>();
-                ConvertNetworkMapToUntextured(untexturedNetworkMap);
+            if (param->GetDrawScene().GetDisplayStyle() & MHWRender::MFrameContext::kTextured) {
+                _compiledNetworks[kFull].Sync(sceneDelegate, fullNetworkMap);
             }
-
-            _mainNetwork.Sync(sceneDelegate, networkMap);
         } else {
             TF_WARN(
                 "Expected material resource for <%s> to hold HdMaterialNetworkMap,"
@@ -3299,6 +3295,31 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::GetPointShader() con
     }
 
     return _pointShader.get();
+}
+
+HdVP2Material::NetworkConfig HdVP2Material::_GetCompiledConfig(NetworkConfig cfg) const
+{
+    if (cfg == kDefault) {
+        auto* const param = static_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
+        return (param->GetDrawScene().GetDisplayStyle() & MHWRender::MFrameContext::kTextured) ? kFull : kUntextured;
+    }
+
+    return cfg;
+}
+
+MHWRender::MShaderInstance* HdVP2Material::GetSurfaceShader(NetworkConfig cfg) const
+{
+    return _compiledNetworks[_GetCompiledConfig(cfg)].GetSurfaceShader();
+}
+
+MHWRender::MShaderInstance* HdVP2Material::GetPointShader(NetworkConfig cfg) const
+{
+    return _compiledNetworks[_GetCompiledConfig(cfg)].GetPointShader();
+}
+
+const TfTokenVector& HdVP2Material::GetRequiredPrimvars(NetworkConfig cfg) const
+{
+    return _compiledNetworks[_GetCompiledConfig(cfg)].GetRequiredPrimvars();
 }
 
 void HdVP2Material::SubscribeForMaterialUpdates(const SdfPath& rprimId)
