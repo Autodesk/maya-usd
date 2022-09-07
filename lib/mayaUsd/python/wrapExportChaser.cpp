@@ -151,7 +151,7 @@ void wrapExportChaserRegistryFactoryContext()
     boost::python::class_<UsdMayaExportChaserRegistry::FactoryContext::DagToUsdMap>("DagToUsdMap")
         .def(boost::python::map_indexing_suite<
              UsdMayaExportChaserRegistry::FactoryContext::DagToUsdMap>());
-             
+
     boost::python::class_<UsdMayaExportChaserRegistry::FactoryContext>(
         "UsdMayaExportChaserRegistryFactoryContext", boost::python::no_init)
         .def("GetStage", &UsdMayaExportChaserRegistry::FactoryContext::GetStage)
