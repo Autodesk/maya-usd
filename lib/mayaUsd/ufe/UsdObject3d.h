@@ -38,6 +38,7 @@ public:
 
     // Ufe::Object3d overrides
     Ufe::SceneItem::Ptr       sceneItem() const override;
+    Ufe::SceneItem::Ptr       assignedMaterial() const override;
     Ufe::BBox3d               boundingBox() const override;
     bool                      visibility() const override;
     void                      setVisibility(bool vis) override;

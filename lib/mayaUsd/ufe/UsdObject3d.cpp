@@ -22,6 +22,7 @@
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/bboxCache.h>
 #include <pxr/usd/usdGeom/tokens.h>
+#include <pxr/usd/usdShade/materialBindingAPI.h>
 
 #include <ufe/attributes.h>
 #include <ufe/types.h>
@@ -57,6 +58,29 @@ UsdObject3d::Ptr UsdObject3d::create(const UsdSceneItem::Ptr& item)
 //------------------------------------------------------------------------------
 
 Ufe::SceneItem::Ptr UsdObject3d::sceneItem() const { return fItem; }
+
+Ufe::SceneItem::Ptr UsdObject3d::assignedMaterial() const
+{
+    PXR_NAMESPACE_USING_DIRECTIVE
+    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(fItem);
+    if (!fItem || !TF_VERIFY(usdItem)) {
+        return nullptr;
+    }
+
+    const PXR_NS::UsdPrim& prim = usdItem->prim();
+    PXR_NS::UsdShadeMaterialBindingAPI bindingApi(prim);
+    PXR_NS::UsdShadeMaterialBindingAPI::DirectBinding directBinding = bindingApi.GetDirectBinding();
+    PXR_NS::UsdShadeMaterial material = directBinding.GetMaterial();
+    if (material) {
+        const PXR_NS::UsdPrim& materialPrim = material.GetPrim();
+        if (materialPrim) {
+            const PXR_NS::SdfPath& materialSdfPath = materialPrim.GetPath();
+            Ufe::Path materialUfePath = usdPathToUfePathSegment(materialSdfPath);
+            return UsdSceneItem::create(materialUfePath, materialPrim);
+        }
+    }
+    return nullptr;
+}
 
 Ufe::BBox3d UsdObject3d::boundingBox() const
 {
