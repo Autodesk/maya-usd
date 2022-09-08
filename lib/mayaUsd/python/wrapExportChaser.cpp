@@ -26,6 +26,7 @@
 #include <boost/python/def.hpp>
 #include <boost/python/make_constructor.hpp>
 #include <boost/python/return_internal_reference.hpp>
+#include <boost/python/suite/indexing/map_indexing_suite.hpp>
 #include <boost/python/wrapper.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -147,6 +148,10 @@ public:
 //----------------------------------------------------------------------------------------------------------------------
 void wrapExportChaserRegistryFactoryContext()
 {
+    boost::python::class_<UsdMayaExportChaserRegistry::FactoryContext::DagToUsdMap>("DagToUsdMap")
+        .def(boost::python::map_indexing_suite<
+             UsdMayaExportChaserRegistry::FactoryContext::DagToUsdMap>());
+
     boost::python::class_<UsdMayaExportChaserRegistry::FactoryContext>(
         "UsdMayaExportChaserRegistryFactoryContext", boost::python::no_init)
         .def("GetStage", &UsdMayaExportChaserRegistry::FactoryContext::GetStage)
