@@ -341,6 +341,7 @@ PullImportPaths pullImport(
 
     VtDictionary userArgs(context.GetUserArgs());
     userArgs[UsdMayaJobImportArgsTokens->pullImportStage] = PXR_NS::VtValue(context.GetUsdStage());
+    userArgs[UsdMayaJobImportArgsTokens->preserveTimeline] = true;
 
     UsdMayaJobImportArgs jobArgs = UsdMayaJobImportArgs::CreateFromDictionary(
         userArgs,
