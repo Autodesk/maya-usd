@@ -21,6 +21,9 @@ import fixturesUtils
 from usdUtils import createSimpleXformScene
 from ufeUtils import ufeFeatureSetVersion
 
+from maya import OpenMaya as OM
+from maya import OpenMayaAnim as OMA
+
 import mayaUsd.lib
 
 import mayaUtils
@@ -63,8 +66,8 @@ class EditAsMayaTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
     @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
-    def testTransformEditAsMaya(self):
-        '''Edit a USD transform as a Maya object.'''
+    def testCannotEditAsMayaAnAncestor(self):
+        '''Test that trying to edit an ancestor is not allowed.'''
 
         (ps, aXlateOp, aXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
              bXlateOp, bXlation, bUsdUfePathStr, bUsdUfePath, bUsdItem) = createSimpleXformScene()
@@ -80,8 +83,40 @@ class EditAsMayaTestCase(unittest.TestCase):
             self.assertFalse(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
 
     @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
-    def testCannotEditAsMayaAnAncestor(self):
-        '''Test that trying to edit an ancestor is not allowed.'''
+    def testEditAsMayaPreserveTimeline(self):
+        '''Test that edit does not change the timeline start and end.'''
+
+        (ps, aXlateOp, aXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
+             bXlateOp, bXlation, bUsdUfePathStr, bUsdUfePath, bUsdItem) = createSimpleXformScene()
+
+        timeUnit = OM.MTime.uiUnit()
+
+        startTime = OM.MTime(30, timeUnit)
+        minTime = OM.MTime(40, timeUnit)
+        maxTime = OM.MTime(50, timeUnit)
+        endTime = OM.MTime(60, timeUnit)
+
+        OMA.MAnimControl.setMinMaxTime(minTime, maxTime)
+        OMA.MAnimControl.setAnimationStartEndTime(startTime, endTime)
+
+        def verifyTimeline():
+            self.assertEqual(minTime.value(), OMA.MAnimControl.minTime().value())
+            self.assertEqual(maxTime.value(), OMA.MAnimControl.maxTime().value())
+            self.assertEqual(startTime.value(), OMA.MAnimControl.animationStartTime().value())
+            self.assertEqual(endTime.value(), OMA.MAnimControl.animationEndTime().value())
+
+        verifyTimeline()
+
+        # Edit "B" Prim as Maya data.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(bUsdUfePathStr))
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(bUsdUfePathStr))
+
+        verifyTimeline()
+
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
+    def testTransformEditAsMaya(self):
+        '''Edit a USD transform as a Maya object.'''
 
         (ps, xlateOp, xlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
          _, _, _, _, _) = createSimpleXformScene()
