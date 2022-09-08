@@ -34,6 +34,7 @@
 #include <maya/MDGContextGuard.h>
 #include <maya/MHWGeometry.h>
 #include <maya/MShaderManager.h>
+#include <maya/MViewport2Renderer.h>
 
 #include <functional>
 
@@ -232,34 +233,22 @@ VtValue HdMayaShapeUIShaderAdapter::Get(const TfToken& key)
 ///////////////////////////////////////////////////////////////////////
 
 HdMayaRenderItemAdapter::HdMayaRenderItemAdapter(
-    const SdfPath& id,
+    const SdfPath& slowId,
+	int fastId,
     HdMayaDelegateCtx* del,
-	const MRenderItem& ri,
-	const HdMayaShaderInstanceData& sd
+	const MRenderItem& ri
 	)
-    : HdMayaAdapter(MObject(), id, del)
-	, _shaderInstance(sd)
+    : HdMayaAdapter(MObject(), slowId, del)
 	, _primitive(ri.primitive())
 	, _name(ri.name())
+	, _fastId(fastId)
 {
-	_isPopulated = true;
-	switch (_primitive)
-	{
-	case MHWRender::MGeometry::Primitive::kTriangles:
-		GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), {});
-		break;
-	case MHWRender::MGeometry::Primitive::kLines:
-		GetDelegate()->InsertRprim(HdPrimTypeTokens->basisCurves, GetID(), {});
-		break;
-	case MHWRender::MGeometry::Primitive::kPoints:
-		GetDelegate()->InsertRprim(HdPrimTypeTokens->points, GetID(), {});
-		break;
-	}	
+	_InsertRprim();
 }
 
 HdMayaRenderItemAdapter::~HdMayaRenderItemAdapter()
 {
-	GetDelegate()->RemoveRprim(GetID());	
+	_RemoveRprim();
 }
 
 TfToken HdMayaRenderItemAdapter::GetRenderTag() const
@@ -418,6 +407,27 @@ void HdMayaRenderItemAdapter::UpdateTopology(MRenderItem& ri)
 	}	
 }
 
+void HdMayaRenderItemAdapter::_InsertRprim()
+{
+	switch (GetPrimitive())
+	{
+	case MHWRender::MGeometry::Primitive::kTriangles:
+		GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), {});
+		break;
+	case MHWRender::MGeometry::Primitive::kLines:
+		GetDelegate()->InsertRprim(HdPrimTypeTokens->basisCurves, GetID(), {});
+		break;
+	case MHWRender::MGeometry::Primitive::kPoints:
+		GetDelegate()->InsertRprim(HdPrimTypeTokens->points, GetID(), {});
+		break;
+	}
+}
+
+void HdMayaRenderItemAdapter::_RemoveRprim()
+{
+	GetDelegate()->RemoveRprim(GetID());
+}
+
 void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flags)
 { 
     if (_primitive != MHWRender::MGeometry::Primitive::kTriangles
@@ -425,16 +435,26 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
         return;
     }
 
-    const bool isNew = flags & 1;         // MViewPortScene::MVS_new;  //not used yet
-    const bool matrixChanged = flags & 2; // MViewPortScene::MVS_matrix;
-    const bool geomChanged = flags & 4;   // MViewPortScene::MVS_geometry;
-    const bool topoChanged = flags & 8;   // MViewPortScene::MVS_topo;
+    const bool isNew = flags & MViewportScene::MVS_new;  //not used yet
+	const bool visible = flags & MViewportScene::MVS_visible;
+
+    const bool matrixChanged = flags & MViewportScene::MVS_changedMatrix;
+    const bool geomChanged = flags & MViewportScene::MVS_changedGeometry;
+    const bool topoChanged = flags & MViewportScene::MVS_changedTopo;
+	const bool visibChanged = flags & MViewportScene::MVS_changedVisibility;
+	const bool effectChanged = flags & MViewportScene::MVS_changedEffect;
 
     HdDirtyBits dirtyBits = 0;
-    if (isNew) {
-		// TODO:
-        dirtyBits |= HdChangeTracker::DirtyMaterialId;
-    }
+	
+	if (visibChanged)
+	{
+		SetVisible(visible);
+		dirtyBits |= HdChangeTracker::DirtyVisibility;
+	}
+
+	if (effectChanged) {
+		dirtyBits |= HdChangeTracker::DirtyMaterialId;
+	}
     if (matrixChanged) {
         dirtyBits |= HdChangeTracker::DirtyTransform;
     }
@@ -612,10 +632,10 @@ VtValue HdMayaRenderItemAdapter::Get(const TfToken& key)
 
 void HdMayaRenderItemAdapter::MarkDirty(HdDirtyBits dirtyBits)
 {
-    if (dirtyBits != 0) 
+	if (dirtyBits != 0)
 	{
 		GetDelegate()->GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits);
-    }
+	}
 }
 
 HdPrimvarDescriptorVector HdMayaRenderItemAdapter::GetPrimvarDescriptors(HdInterpolation interpolation)

@@ -78,9 +78,9 @@ public:
 class HdMayaRender : public MHWRender::MUserRenderOperation
 {
 public:
-    HdMayaRender(const MString& name, MtohRenderOverride* override)
+    HdMayaRender(const MString& name, MtohRenderOverride* override, bool dataServer=false)
 #ifdef HDMAYA_SCENE_RENDER_DATASERVER
-        : MHWRender::MUserRenderOperation(name, MHWRender::MUserRenderOperation::DataServerTag())
+        : MHWRender::MUserRenderOperation(name, MHWRender::MUserRenderOperation::DataServerTag(), dataServer)
 #else
         : MHWRender::MUserRenderOperation(name)
 #endif

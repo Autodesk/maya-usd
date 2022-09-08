@@ -995,7 +995,7 @@ MStatus MtohRenderOverride::setup(const MString& destination)
 #endif
 
         // The main hydra render
-        _operations.push_back(new HdMayaRender("HydraRenderOverride_Hydra", this));
+        _operations.push_back(new HdMayaRender("HydraRenderOverride_Hydra", this, true));
 
         // Draw scene elements (cameras, CVs, grid, shapes not pushed into hydra)
         _operations.push_back(new HdMayaPostRender("HydraRenderOverride_PostScene"));

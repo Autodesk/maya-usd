@@ -90,9 +90,6 @@ public:
     HDMAYA_API
     void MaterialTagChanged(const SdfPath& id) override;
 
-	HDMAYA_API
-	HdMayaRenderItemAdapterPtr GetRenderItemAdapter(const SdfPath& id);
-
     HDMAYA_API
     HdMayaShapeAdapterPtr GetShapeAdapter(const SdfPath& id);
 
@@ -106,17 +103,6 @@ public:
     void InsertDag(const MDagPath& dag);
 
 	HDMAYA_API
-    bool CreateOrGetRenderItem(
-		const MRenderItem& ri, 
-		//const HdMayaShaderInstanceData& sa,
-		HdMayaRenderItemAdapterPtr& adapter);
-
-	HDMAYA_API
-		bool InsertRenderItemMaterial(
-			const MRenderItem& ri,
-			HdMayaShaderInstanceData& sd);
-
-	HDMAYA_API
 		void ScheduleRenderTasks(HdTaskSharedPtrVector& tasks);
 
     HDMAYA_API
@@ -127,9 +113,6 @@ public:
 
     HDMAYA_API
     void AddNewInstance(const MDagPath& dag);
-
-	HDMAYA_API
-	void AddNewInstance(const MRenderItem& ri);
 
     HDMAYA_API
     void SetParams(const HdMayaParams& params) override;
@@ -276,6 +259,24 @@ private:
         const std::function<AdapterPtr(HdMayaDelegateCtx*, const MDagPath&)>& adapterCreator,
         Map&                                                                  adapterMap,
         bool                                                                  isSprim = false);
+
+
+	HDMAYA_API
+	bool _GetRenderItem(
+		int fastId,
+		HdMayaRenderItemAdapterPtr& adapter);
+
+	HDMAYA_API
+	void _AddRenderItem(const HdMayaRenderItemAdapterPtr& ria);
+
+	HDMAYA_API
+	void _RemoveRenderItem(const HdMayaRenderItemAdapterPtr& ria);
+
+	HDMAYA_API
+	bool _GetRenderItemMaterial(
+		const MRenderItem& ri,
+		HdMayaShaderInstanceData& sd,
+		MObject& shadingEngineNode);
 
     bool _CreateMaterial(const SdfPath& id, const MObject& obj);
     /// \brief Unordered Map storing the shape adapters.

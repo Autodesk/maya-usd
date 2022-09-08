@@ -233,6 +233,20 @@ HdMayaSceneDelegate::~HdMayaSceneDelegate()
 #endif
 }
 
+void HdMayaSceneDelegate::_AddRenderItem(const HdMayaRenderItemAdapterPtr& ria)
+{
+	_renderItemsAdaptersFast.insert({ ria->GetFastID(), ria });
+	_renderItemsAdapters.insert({ ria->GetID(), ria });
+}
+
+void HdMayaSceneDelegate::_RemoveRenderItem(
+	const HdMayaRenderItemAdapterPtr& ria)
+{
+	_renderItemsAdaptersFast.erase(ria->GetFastID());
+	_renderItemsAdapters.erase(ria->GetID());
+}
+
+
 //void HdMayaSceneDelegate::_TransformNodeDirty(MObject& node, MPlug& plug, void* clientData)
 void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scene)
 {
@@ -245,16 +259,47 @@ void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scen
         if (flags == 0)
             continue;
 
-        // We have a flag to know the render item is new.  Is that useful to CreateOrGetRenderItem?
-        HdMayaRenderItemAdapterPtr adapter;
-        CreateOrGetRenderItem(*scene.mItems[i], adapter);
+		const auto& ri = *scene.mItems[i];
+		int fastId = scene.mItems[i]->InternalObjectId();
+		HdMayaRenderItemAdapterPtr ria = nullptr;
+		if (_GetRenderItem(fastId, ria))
+		{
+			// TODO:
+			//if (flags & MViewportScene::MVS_removed)
+			//{
+			//	RemoveRenderItem(ria);
+			//	continue;
+			//}
+		}		
+		else
+		{
+			const SdfPath slowId = GetRenderItemPrimPath(ri);
+			ria = std::make_shared<HdMayaRenderItemAdapter>(slowId, fastId, this, ri);
+			_AddRenderItem(ria);
+		}
+		
+		HdMayaShaderInstanceData sd;
+		MObject shadingEngineNode;
+		if (!_GetRenderItemMaterial(*scene.mItems[i], sd, shadingEngineNode))
+		{
+			if (sd.Material != kInvalidMaterial)
+			{
+				_CreateMaterial(sd.Material, shadingEngineNode);
+			}
+		}
+
+		if (flags & MViewportScene::MVS_changedEffect)
+		{
+			ria->SetShaderData(sd);
+		}
+
         // if (flags & (MViewPortScene::MVS_geometry | MViewPortScene::MVS_topo) {
         // notify transform changed also in UpdateGeometry, so always call if anything changed
         // TODO:  refactor to separate notifications from geometry
-        adapter->UpdateFromDelta(*scene.mItems[i], flags);
+        ria->UpdateFromDelta(*scene.mItems[i], flags);
         //}
-        if (flags & MViewportScene::MVS_matrix) {
-            adapter->UpdateTransform(*scene.mItems[i]);
+        if (flags & MViewportScene::MVS_changedMatrix) {
+			ria->UpdateTransform(*scene.mItems[i]);
         }
     }
 
@@ -620,13 +665,6 @@ HdMayaShapeAdapterPtr HdMayaSceneDelegate::GetShapeAdapter(const SdfPath& id)
     return iter == _shapeAdapters.end() ? nullptr : iter->second;
 }
 
-
-HdMayaRenderItemAdapterPtr HdMayaSceneDelegate::GetRenderItemAdapter(const SdfPath& id)
-{
-	auto iter = _renderItemsAdapters.find(id);
-	return iter == _renderItemsAdapters.end() ? nullptr : iter->second;
-}
-
 HdMayaLightAdapterPtr HdMayaSceneDelegate::GetLightAdapter(const SdfPath& id)
 {
     auto iter = _lightAdapters.find(id);
@@ -674,7 +712,11 @@ AdapterPtr HdMayaSceneDelegate::Create(
 namespace
 {
 	static constexpr char kOutColorString[] = "outColor";
+    static constexpr char kInitialShadingGroup[] = "initialShadingGroup";
+    static constexpr char kLambert1SG[] = "lambert1SG";
 
+	// TODO: this procedure previously confused the shading engine with initialParticleSE
+	// the ones needed are hardcoded above. We need to fond a better solution
 	bool GetShadingEngineNode(const MObject& shaderNode, MObject& shadingEngineNode)
 	{
 		MFnDependencyNode depNode(shaderNode);
@@ -687,8 +729,11 @@ namespace
 			plug.connectedTo(destinations, false, true);
 			for (auto dest : destinations)
 			{
-				if (dest.node().isNull()) continue;
-				if (dest.node().apiType() != MFn::Type::kShadingEngine) continue;
+				MObject obj = dest.node();
+				if (obj.isNull()) continue;
+				if (obj.apiType() != MFn::Type::kShadingEngine) continue;
+				MFnDependencyNode dn(obj);
+				if (dn.name() != kInitialShadingGroup && dn.name() != kLambert1SG) continue;
 				shadingEngineNode = dest.node();
 				return true;
 			}
@@ -698,15 +743,17 @@ namespace
 	}
 }
 
-bool HdMayaSceneDelegate::InsertRenderItemMaterial(
+bool HdMayaSceneDelegate::_GetRenderItemMaterial(
 	const MRenderItem& ri,
-	HdMayaShaderInstanceData& sd
+	HdMayaShaderInstanceData& sd,
+	MObject& shadingEngineNode
 	)
 {
 	MObject shaderNode;
-	MObject shadingEngineNode;	
 	if (HdMayaRenderItemShaderConverter::ExtractShapeUIShaderData(ri, sd))
-		// Determine whether this is a supported UI shader
+		// TODO: This block is intended to translate shape ui (wireframe, verts etc) shaders
+        // To Usd preview surface. This block is currently unused.
+        // Determine whether this is a supported UI shader
 	{
 		SdfPath id = SdfPath(sd.ShapeUIShader->Name);
 		if (!TfMapLookupPtr(_renderItemShaderAdapters, id))
@@ -731,56 +778,36 @@ bool HdMayaSceneDelegate::InsertRenderItemMaterial(
 	{
 		sd.ShapeUIShader = nullptr;
 		sd.Material = GetMaterialPath(shadingEngineNode);
-		if (TfMapLookupPtr(_materialAdapters, sd.Material) == nullptr)
+		if (TfMapLookupPtr(_materialAdapters, sd.Material) != nullptr)
 		{
-			_CreateMaterial(sd.Material, shadingEngineNode);
+			return true;
 		}
-
-		return true;
 	}
 
 	return false;
 }
 
 // Analogous to HdMayaSceneDelegate::InsertDag
-bool HdMayaSceneDelegate::CreateOrGetRenderItem(
-	const MRenderItem& ri,
-	//const HdMayaShaderInstanceData& sd,
+bool HdMayaSceneDelegate::_GetRenderItem(
+	int fastId,
 	HdMayaRenderItemAdapterPtr& ria
 	)
 {
-    TF_DEBUG(HDMAYA_DELEGATE_INSERTDAG)
-        .Msg(
-            "HdMayaSceneDelegate::CreateOrGetRenderItem"
-            "found shape: %s\n",
-            ri.name().asChar());
-
     // Using SdfPath as the hash table key is extremely slow.  The cost appears to be GetPrimPath, which would depend
     // on MdagPath, which is a wrapper on TdagPath.  TdagPath is a very slow class and best to avoid in any performance-
     // critical area.
     // Simply workaround for the prototype is an additional lookup index based on InternalObjectID.  Long term goal would
     // be that the plugin rarely, if ever, deals with TdagPath.
-    const int fastId = ri.InternalObjectId();
     HdMayaRenderItemAdapterPtr* result = TfMapLookupPtr(_renderItemsAdaptersFast, fastId);
 
-	//HdMayaRenderItemAdapterPtr* result = TfMapLookupPtr(_renderItemsAdapters, id);
-    if (result != nullptr) 
+    if (result != nullptr)
 	{
         // adapter already exists, return it
 		ria = *result;
-        return false;
+        return true;
     }
 
-    HdMayaShaderInstanceData sd;
-    InsertRenderItemMaterial(ri, sd);
-
-    const SdfPath slowId = GetRenderItemPrimPath(ri);
-
-    ria = std::make_shared<HdMayaRenderItemAdapter>(slowId, this, ri, sd);
-    _renderItemsAdaptersFast.insert({ fastId, ria });
-    _renderItemsAdapters.insert({ slowId, ria });
-
-	return true;
+	return false;
 }
 
 void HdMayaSceneDelegate::InsertDag(const MDagPath& dag)

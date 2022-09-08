@@ -109,7 +109,7 @@ public:
 	HDMAYA_API
 		virtual bool GetDoubleSided() const { return true; };
 
-	
+
 
 	HDMAYA_API
 		virtual void MarkDirty(HdDirtyBits dirtyBits) override;
@@ -134,15 +134,17 @@ private:
 // HdMayaRenderItemAdapter
 ///////////////////////////////////////////////////////////////////////
 
+// TODO: Remove dependency on HdMayaAdapter.
+//  None of it is used apart from cast inside generic method called in the scene delegate.
 class HdMayaRenderItemAdapter : public HdMayaAdapter
 {
 public:
 	HDMAYA_API
 	HdMayaRenderItemAdapter(
-		const SdfPath& id,
+		const SdfPath& slowId,
+		int fastId,
 		HdMayaDelegateCtx* del,
-		const MRenderItem& ri,
-		const HdMayaShaderInstanceData& sd
+		const MRenderItem& ri
 		);
 
 	HDMAYA_API
@@ -182,18 +184,15 @@ public:
 	VtValue GetMaterialResource();
 
 	HDMAYA_API
-    virtual bool GetVisible() { return IsVisible(); }
-    
+	bool GetVisible() { return _visible; }
+	
+	HDMAYA_API
+	void SetVisible(bool val) { _visible = val; }
+
 	// TODO:  move transform to common base class with HdMayaDagAdapter
 	HDMAYA_API
     GfMatrix4d GetTransform() { return _transform[0]; }
     
-	HDMAYA_API
-	bool UpdateVisibility() { return true; }
-	
-	HDMAYA_API	
-	bool IsVisible(bool checkDirty = true) { return true; }   	
-
 	HDMAYA_API
     void InvalidateTransform() { }
 
@@ -223,15 +222,24 @@ public:
 	virtual TfToken GetRenderTag() const;
 
 	HDMAYA_API
-	virtual void IsStale(bool stale) { _isStale = stale; }
+	HdMayaShaderInstanceData& GetShaderData() { return _shaderInstance; }
 	
 	HDMAYA_API
-	virtual bool IsStale() const { return _isStale; }
+	void SetShaderData(const HdMayaShaderInstanceData& val) { _shaderInstance = val; }
 
 	HDMAYA_API
-	HdMayaShaderInstanceData& GetShaderData() { return _shaderInstance; }
+	int GetFastID() const { return _fastId; }
+
+	HDMAYA_API
+	MGeometry::Primitive GetPrimitive() const { return _primitive; }
 
 private:
+	HDMAYA_API
+	void _RemoveRprim();
+
+	HDMAYA_API
+	void _InsertRprim();
+
 	HdMayaShaderInstanceData _shaderInstance;
 	std::shared_ptr<HdTopology> _topology = nullptr;
 	VtVec3fArray _positions = {};
@@ -239,8 +247,9 @@ private:
 	MGeometry::Primitive _primitive;
 	MString _name;
     GfMatrix4d _transform[2];  // TODO:  move transform to common base class with HdMayaDagAdapter
-    bool _isVisible = true;
-	bool _isStale = false;
+	int _fastId = 0;
+	bool _visible = false;
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
