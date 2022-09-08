@@ -1845,7 +1845,7 @@ void HdVP2Material::Sync(
 
             // full network is synced only if required by display style 
             auto* const param = static_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
-            if (param->GetDrawScene().GetDisplayStyle() & MHWRender::MFrameContext::kTextured) {
+            if (param->GetDrawScene().NeedTexturedMaterials()) {
                 _compiledNetworks[kFull].Sync(sceneDelegate, fullNetworkMap);
             }
         } else {
@@ -3301,7 +3301,7 @@ HdVP2Material::NetworkConfig HdVP2Material::_GetCompiledConfig(NetworkConfig cfg
 {
     if (cfg == kDefault) {
         auto* const param = static_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
-        return (param->GetDrawScene().GetDisplayStyle() & MHWRender::MFrameContext::kTextured) ? kFull : kUntextured;
+        return param->GetDrawScene().NeedTexturedMaterials() ? kFull : kUntextured;
     }
 
     return cfg;

@@ -211,7 +211,7 @@ public:
     uint64_t GetFrameCounter() const { return _frameCounter; }
 
     MAYAUSD_CORE_PUBLIC
-    unsigned int GetDisplayStyle() const { return _currentDisplayStyle; }
+    bool NeedTexturedMaterials() const { return _needTexturedMaterials; }
 
     MAYAUSD_CORE_PUBLIC
     const HdSelection::PrimSelectionState* GetLeadSelectionState(const SdfPath& path) const;
@@ -272,6 +272,8 @@ private:
     SdfPathVector
     _GetFilteredRprims(HdRprimCollection const& collection, TfTokenVector const& renderTags);
 
+    void ComputeCombinedDisplayStyles(const unsigned int newDisplayStyle);
+
     /*! \brief  Hold all data related to the proxy shape.
 
         In addition to holding data read from the proxy shape, ProxyShapeData tracks when data read
@@ -331,7 +333,8 @@ private:
                          //!< synchronization running without it)
     std::unique_ptr<UsdImagingDelegate> _sceneDelegate; //!< USD scene delegate
     const MHWRender::MFrameContext*     _currentFrameContext = nullptr;
-    unsigned int                        _currentDisplayStyle = 0;
+    std::map<TfToken, uint64_t>         _combinedDisplayStyles;
+    bool                                _needTexturedMaterials = false;
 
     bool _isPopulated {
         false
