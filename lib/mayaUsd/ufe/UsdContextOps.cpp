@@ -25,7 +25,7 @@
 #if PXR_VERSION >= 2108
 #include <mayaUsd/ufe/UsdUndoMaterialCommands.h>
 #endif
-#include <mayaUsd/nodes/proxyShapeStageData.h>
+#include <mayaUsd/nodes/proxyShapeStageExtraData.h>
 #include <mayaUsd/ufe/UsdObject3d.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
@@ -331,7 +331,7 @@ protected:
     {
         // Save the load rules so that switching the stage settings will be able to preserve the
         // load rules.
-        MAYAUSD_NS::MayaUsdProxyShapeStageData::saveLoadRules(_stage);
+        MAYAUSD_NS::MayaUsdProxyShapeStageExtraData::saveLoadRules(_stage);
     }
 
     const UsdStageWeakPtr   _stage;

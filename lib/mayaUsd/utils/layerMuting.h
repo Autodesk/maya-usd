@@ -17,11 +17,9 @@
 #define MAYAUSD_LAYERMUTING_H
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
 
 #include <pxr/usd/usd/stage.h>
-
-#include <maya/MObject.h>
-#include <maya/MString.h>
 
 namespace MAYAUSD_NS_DEF {
 
@@ -31,37 +29,23 @@ namespace MAYAUSD_NS_DEF {
 // layer could be muted in one stage and not muted in another stage. So, the
 // muted state cannot be a layer-level data.
 //
-// Furthermore, stages in USD are not saved but are apure-run-time entity,
+// Furthermore, stages in USD are not saved but are a pure run-time entity,
 // part of the hosting application. It is thus the host responsibility to save
 // stage-level state. So, we need to explicitly save the layer muted state.
 //
-// We thus saved the muted state of layers in the proxy shape as a dynamic
-// attribute.
+// We thus saved the muted state of layers in the proxy shape as an attribute.
 
-/*! \brief convert the stage layers muting to a text format.
+/*! \brief copy the stage layers muting in the corresponding attribute of the proxy shape.
  */
 MAYAUSD_CORE_PUBLIC
-MString convertLayerMutingToText(const PXR_NS::UsdStage& stage);
+MStatus
+copyLayerMutingToAttribute(const PXR_NS::UsdStage& stage, MayaUsdProxyShapeBase& proxyShape);
 
-/*! \brief set the stage layers muting from a text format.
+/*! \brief set the stage layers muting from data in the corresponding attribute of the proxy shape.
  */
 MAYAUSD_CORE_PUBLIC
-void setLayerMutingFromText(PXR_NS::UsdStage& stage, const MString& text);
-
-/*! \brief verify if there is a dynamic attribute on the object for layers muting.
- */
-MAYAUSD_CORE_PUBLIC
-bool hasLayerMutingAttribute(const MObject& proxyShape);
-
-/*! \brief copy the stage layers muting in a dynamic attribute on the object.
- */
-MAYAUSD_CORE_PUBLIC
-MStatus copyLayerMutingToAttribute(const PXR_NS::UsdStage& stage, MObject& proxyShape);
-
-/*! \brief set the stage layers muting from data in a dynamic attribute on the object.
- */
-MAYAUSD_CORE_PUBLIC
-MStatus copyLayerMutingFromAttribute(const MObject& proxyShape, PXR_NS::UsdStage& stage);
+MStatus
+copyLayerMutingFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_NS::UsdStage& stage);
 
 } // namespace MAYAUSD_NS_DEF
 

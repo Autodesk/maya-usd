@@ -18,8 +18,7 @@
 
 #include <mayaUsd/base/api.h>
 
-#include <maya/MObject.h>
-#include <maya/MString.h>
+#include <maya/MApiNamespace.h>
 
 namespace MAYAUSD_NS_DEF {
 

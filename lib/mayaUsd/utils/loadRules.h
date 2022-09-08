@@ -17,12 +17,12 @@
 #define MAYAUSD_LOADRULES_H
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
 
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/stageLoadRules.h>
 
-#include <maya/MObject.h>
-#include <maya/MString.h>
+#include <maya/MApiNamespace.h>
 
 namespace MAYAUSD_NS_DEF {
 
@@ -63,17 +63,20 @@ PXR_NS::UsdStageLoadRules createLoadRulesFromText(const MString& text);
 /*! \brief verify if there is a dynamic attribute on the object for load rules.
  */
 MAYAUSD_CORE_PUBLIC
-bool hasLoadRulesAttribute(const MObject& obj);
+bool hasLoadRulesAttribute(PXR_NS::MayaUsdProxyShapeBase& proxyShape);
 
 /*! \brief copy the stage load rules in a dynamic attribute on the object.
  */
 MAYAUSD_CORE_PUBLIC
-MStatus copyLoadRulesToAttribute(const PXR_NS::UsdStage& stage, MObject& obj);
+MStatus
+copyLoadRulesToAttribute(const PXR_NS::UsdStage& stage, PXR_NS::MayaUsdProxyShapeBase& proxyShape);
 
 /*! \brief set the stage load rules from data in a dynamic attribute on the object.
  */
 MAYAUSD_CORE_PUBLIC
-MStatus copyLoadRulesFromAttribute(const MObject& obj, PXR_NS::UsdStage& stage);
+MStatus copyLoadRulesFromAttribute(
+    const PXR_NS::MayaUsdProxyShapeBase& proxyShape,
+    PXR_NS::UsdStage&                    stage);
 
 } // namespace MAYAUSD_NS_DEF
 

@@ -26,7 +26,7 @@
 
 namespace MAYAUSD_NS_DEF {
 
-/// \class MayaUsdProxyShapeStageData
+/// \class MayaUsdProxyShapeStageExtraData
 /// \brief Encapsulates plugin registration and deregistration for the proxy shape extra data
 /// handling.
 ///
@@ -34,9 +34,9 @@ namespace MAYAUSD_NS_DEF {
 /// triggered before a scene is saved to copy the current proxy shape extra data from the stage
 /// to the proxy shape.
 ///
-/// The extra data saved this way currently are: payload load rules and layer muted state.
+/// The extra data saved this way currently are: payload load rules.
 
-class MayaUsdProxyShapeStageData
+class MayaUsdProxyShapeStageExtraData
 {
 public:
     /// \brief initialise by registering the callbacks.
@@ -67,14 +67,6 @@ public:
     /// \brief save load rules of the tracked proxy shape corresponding to the given stage.
     MAYAUSD_CORE_PUBLIC
     static void saveLoadRules(const UsdStageRefPtr& stage);
-
-    /// \brief save layer muting of all tracked proxy shapes.
-    MAYAUSD_CORE_PUBLIC
-    static void saveAllLayerMutings();
-
-    /// \brief save layer muting of the tracked proxy shape corresponding to the given stage.
-    MAYAUSD_CORE_PUBLIC
-    static void saveLayerMuting(const UsdStageRefPtr& stage);
 };
 
 } // namespace MAYAUSD_NS_DEF

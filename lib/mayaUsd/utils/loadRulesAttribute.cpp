@@ -22,6 +22,7 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MGlobal.h>
+#include <maya/MObject.h>
 #include <maya/MString.h>
 
 namespace MAYAUSD_NS_DEF {
@@ -32,36 +33,44 @@ const char loadRulesAttrName[] = "usdStageLoadRules";
 
 } // namespace
 
-bool hasLoadRulesAttribute(const MObject& obj)
+bool hasLoadRulesAttribute(PXR_NS::MayaUsdProxyShapeBase& proxyShape)
 {
-    return hasDynamicAttribute(MFnDependencyNode(obj), loadRulesAttrName);
+    MObject proxyObj = proxyShape.thisMObject();
+    if (proxyObj.isNull())
+        return false;
+
+    return hasDynamicAttribute(MFnDependencyNode(proxyObj), loadRulesAttrName);
 }
 
-MStatus copyLoadRulesToAttribute(const PXR_NS::UsdStage& stage, MObject& obj)
+MStatus copyLoadRulesToAttribute(const PXR_NS::UsdStage& stage, MayaUsdProxyShapeBase& proxyShape)
 {
-    MStatus status = MS::kSuccess;
+    MObject proxyObj = proxyShape.thisMObject();
+    if (proxyObj.isNull())
+        return MS::kFailure;
 
-    MFnDependencyNode depNode(obj);
+    MFnDependencyNode depNode(proxyObj);
     if (!hasDynamicAttribute(depNode, loadRulesAttrName))
         createDynamicAttribute(depNode, loadRulesAttrName);
 
     MString loadRulesText = convertLoadRulesToText(stage);
 
-    status = setDynamicAttribute(depNode, loadRulesAttrName, loadRulesText);
+    MStatus status = setDynamicAttribute(depNode, loadRulesAttrName, loadRulesText);
 
     return status;
 }
 
-MStatus copyLoadRulesFromAttribute(const MObject& obj, PXR_NS::UsdStage& stage)
+MStatus copyLoadRulesFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_NS::UsdStage& stage)
 {
-    MStatus status = MS::kSuccess;
+    MObject proxyObj = proxyShape.thisMObject();
+    if (proxyObj.isNull())
+        return MS::kFailure;
 
-    MFnDependencyNode depNode(obj);
+    MFnDependencyNode depNode(proxyObj);
     if (!hasDynamicAttribute(depNode, loadRulesAttrName))
         return MS::kNotFound;
 
     MString loadRulesText;
-    status = getDynamicAttribute(depNode, loadRulesAttrName, loadRulesText);
+    MStatus status = getDynamicAttribute(depNode, loadRulesAttrName, loadRulesText);
     if (status == MS::kSuccess)
         setLoadRulesFromText(stage, loadRulesText);
 
