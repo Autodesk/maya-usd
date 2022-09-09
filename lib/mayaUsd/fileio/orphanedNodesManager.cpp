@@ -38,15 +38,18 @@ namespace MAYAUSD_NS_DEF {
 
 OrphanedNodesManager::Memento::Memento(Ufe::Trie<PullVariantInfo>&& pulledPrims)
     : _pulledPrims(std::move(pulledPrims))
-{ }
+{
+}
 
 OrphanedNodesManager::Memento::Memento()
     : _pulledPrims()
-{ }
+{
+}
 
 OrphanedNodesManager::Memento::Memento(Memento&& rhs)
     : _pulledPrims(std::move(rhs._pulledPrims))
-{ }
+{
+}
 
 OrphanedNodesManager::Memento& OrphanedNodesManager::Memento::operator=(Memento&& rhs)
 {
@@ -54,8 +57,7 @@ OrphanedNodesManager::Memento& OrphanedNodesManager::Memento::operator=(Memento&
     return *this;
 }
 
-Ufe::Trie<OrphanedNodesManager::PullVariantInfo>
-OrphanedNodesManager::Memento::release()
+Ufe::Trie<OrphanedNodesManager::PullVariantInfo> OrphanedNodesManager::Memento::release()
 {
     return std::move(_pulledPrims);
 }
@@ -64,12 +66,12 @@ OrphanedNodesManager::Memento::release()
 // Class OrphanedNodesManager
 //------------------------------------------------------------------------------
 
-OrphanedNodesManager::OrphanedNodesManager() : _pulledPrims() { }
+OrphanedNodesManager::OrphanedNodesManager()
+    : _pulledPrims()
+{
+}
 
-void OrphanedNodesManager::add(
-    const Ufe::Path& pulledPath,
-    const MDagPath&  pullParentPath
-)
+void OrphanedNodesManager::add(const Ufe::Path& pulledPath, const MDagPath& pullParentPath)
 {
     // Add the pull parent to our pulled prims prefix tree.  Also add the full
     // configuration of variant set selections for each ancestor, up to the USD
@@ -220,27 +222,19 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
     }
 }
 
-Ufe::Trie<OrphanedNodesManager::PullVariantInfo>& 
-OrphanedNodesManager::pulledPrims()
+Ufe::Trie<OrphanedNodesManager::PullVariantInfo>& OrphanedNodesManager::pulledPrims()
 {
     return _pulledPrims;
 }
 
-const Ufe::Trie<OrphanedNodesManager::PullVariantInfo>& 
-OrphanedNodesManager::pulledPrims() const
+const Ufe::Trie<OrphanedNodesManager::PullVariantInfo>& OrphanedNodesManager::pulledPrims() const
 {
     return _pulledPrims;
 }
 
-void OrphanedNodesManager::clear()
-{
-    pulledPrims().clear();
-}
+void OrphanedNodesManager::clear() { pulledPrims().clear(); }
 
-bool OrphanedNodesManager::empty() const
-{
-    return pulledPrims().root()->empty();
-}
+bool OrphanedNodesManager::empty() const { return pulledPrims().root()->empty(); }
 
 void OrphanedNodesManager::restore(Memento&& previous)
 {
@@ -345,9 +339,8 @@ OrphanedNodesManager::variantSetDescriptors(const Ufe::Path& p)
 }
 
 /* static */
-Ufe::Trie<OrphanedNodesManager::PullVariantInfo> OrphanedNodesManager::deepCopy(
-    const Ufe::Trie<PullVariantInfo>& src
-)
+Ufe::Trie<OrphanedNodesManager::PullVariantInfo>
+OrphanedNodesManager::deepCopy(const Ufe::Trie<PullVariantInfo>& src)
 {
     Ufe::Trie<PullVariantInfo> dst;
     deepCopy(src.root(), dst.root());
@@ -357,12 +350,11 @@ Ufe::Trie<OrphanedNodesManager::PullVariantInfo> OrphanedNodesManager::deepCopy(
 /* static */
 void OrphanedNodesManager::deepCopy(
     const Ufe::TrieNode<PullVariantInfo>::Ptr& src,
-    const Ufe::TrieNode<PullVariantInfo>::Ptr& dst
-)
+    const Ufe::TrieNode<PullVariantInfo>::Ptr& dst)
 {
     for (const auto& c : src->childrenComponents()) {
         const auto& srcChild = (*src)[c];
-        auto dstChild = std::make_shared<Ufe::TrieNode<PullVariantInfo>>(c);
+        auto        dstChild = std::make_shared<Ufe::TrieNode<PullVariantInfo>>(c);
         dst->add(dstChild);
         if (srcChild->hasData()) {
             dstChild->setData(srcChild->data());

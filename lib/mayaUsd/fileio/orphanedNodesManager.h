@@ -78,9 +78,9 @@ class OrphanedNodesManager : public Ufe::Observer
 public:
     typedef std::shared_ptr<OrphanedNodesManager> Ptr;
 
-    class Memento {
+    class Memento
+    {
     public:
-        
         // Can create an initial empty state, for it to be overwritten later.
         Memento();
         ~Memento() = default;
@@ -90,9 +90,8 @@ public:
 
         Memento(const Memento&) = delete;
         Memento& operator=(const Memento&) = delete;
-        
-    private:
 
+    private:
         // Private, for opacity.
         friend class OrphanedNodesManager;
 
@@ -126,10 +125,9 @@ public:
     bool empty() const;
 
 private:
-
     void handleOp(const Ufe::SceneCompositeNotification::Op& op);
 
-    Ufe::Trie<PullVariantInfo>& pulledPrims();
+    Ufe::Trie<PullVariantInfo>&       pulledPrims();
     const Ufe::Trie<PullVariantInfo>& pulledPrims() const;
 
     static void
@@ -144,10 +142,9 @@ private:
     static std::list<VariantSetDescriptor> variantSetDescriptors(const Ufe::Path& path);
 
     static Ufe::Trie<PullVariantInfo> deepCopy(const Ufe::Trie<PullVariantInfo>& src);
-    static void deepCopy(
-        const Ufe::TrieNode<PullVariantInfo>::Ptr& src,
-        const Ufe::TrieNode<PullVariantInfo>::Ptr& dst
-    );
+    static void                       deepCopy(
+                              const Ufe::TrieNode<PullVariantInfo>::Ptr& src,
+                              const Ufe::TrieNode<PullVariantInfo>::Ptr& dst);
 
     // Trie for fast lookup of descendant pulled prims.  The Trie key is the
     // UFE pulled path, and the Trie value is the corresponding Dag pull parent
