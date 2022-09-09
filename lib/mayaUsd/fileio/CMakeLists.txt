@@ -33,6 +33,7 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
             fallbackPrimUpdater.cpp
+            orphanedNodesManager.cpp
             primUpdater.cpp
             primUpdaterArgs.cpp
             primUpdaterContext.cpp
@@ -70,6 +71,7 @@ set(HEADERS
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     list(APPEND HEADERS
         fallbackPrimUpdater.h
+        orphanedNodesManager.h
         primUpdater.h
         primUpdaterArgs.h
         primUpdaterContext.h

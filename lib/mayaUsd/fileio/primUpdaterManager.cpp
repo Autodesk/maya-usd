@@ -20,6 +20,7 @@
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/jobs/readJob.h>
 #include <mayaUsd/fileio/jobs/writeJob.h>
+#include <mayaUsd/fileio/orphanedNodesManager.h>
 #include <mayaUsd/fileio/primUpdaterRegistry.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
@@ -56,8 +57,6 @@
 #include <ufe/observableSelection.h>
 #include <ufe/path.h>
 #include <ufe/pathString.h>
-#include <ufe/sceneNotification.h>
-#include <ufe/trie.imp.h>
 
 #include <functional>
 #include <tuple>
@@ -821,22 +820,73 @@ bool pushCustomize(
 class PushPullScope
 {
 public:
-    PushPullScope(bool& controlingFlag)
+    PushPullScope(bool& controllingFlag)
     {
-        if (!controlingFlag) {
-            controlingFlag = true;
-            _controlingFlag = &controlingFlag;
+        if (!controllingFlag) {
+            controllingFlag = true;
+            _controllingFlag = &controllingFlag;
         }
     }
     ~PushPullScope()
     {
-        if (_controlingFlag) {
-            *_controlingFlag = false;
+        if (_controllingFlag) {
+            *_controllingFlag = false;
         }
     }
 
 private:
-    bool* _controlingFlag { nullptr };
+    bool* _controllingFlag { nullptr };
+};
+
+class RemovePullPathUndoItem : public MayaUsd::OpUndoItem
+{
+public:
+    // Remove the path from the orphaned nodes manager, and add an entry onto
+    // the global undo list.
+    static bool execute(
+        const std::shared_ptr<OrphanedNodesManager>& orphanedNodesManager,
+        const Ufe::Path&                             pulledPath)
+    {
+        // Get the global undo list.
+        auto& undoInfo = OpUndoItemList::instance();
+
+        auto item = std::make_unique<RemovePullPathUndoItem>(orphanedNodesManager, pulledPath);
+        if (!item->redo()) {
+            return false;
+        }
+
+        undoInfo.addItem(std::move(item));
+
+        return true;
+    }
+
+    RemovePullPathUndoItem(
+        const std::shared_ptr<OrphanedNodesManager>& orphanedNodesManager,
+        const Ufe::Path&                             pulledPath)
+        : OpUndoItem(std::string("Remove pull path ") + Ufe::PathString::string(pulledPath))
+        , _orphanedNodesManager(orphanedNodesManager)
+        , _pulledPath(pulledPath)
+    {
+    }
+
+    bool undo() override
+    {
+        _orphanedNodesManager->restore(std::move(_memento));
+        return true;
+    }
+
+    bool redo() override
+    {
+        _memento = _orphanedNodesManager->remove(_pulledPath);
+        return true;
+    }
+
+private:
+    const std::shared_ptr<OrphanedNodesManager> _orphanedNodesManager;
+    const Ufe::Path                             _pulledPath;
+
+    // Created by redo().
+    OrphanedNodesManager::Memento _memento;
 };
 
 } // namespace
@@ -846,6 +896,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_INSTANTIATE_SINGLETON(PrimUpdaterManager);
 
 PrimUpdaterManager::PrimUpdaterManager()
+    : _orphanedNodesManager(std::make_shared<OrphanedNodesManager>())
 {
     TfSingleton<PrimUpdaterManager>::SetInstanceConstructed(*this);
     TfRegistryManager::GetInstance().SubscribeTo<PrimUpdaterManager>();
@@ -1594,7 +1645,13 @@ bool PrimUpdaterManager::removePullParent(
         return false;
     }
 
-    TF_VERIFY(_pulledPrims.remove(pulledPath) != nullptr);
+    if (!TF_VERIFY(_orphanedNodesManager)) {
+        return false;
+    }
+
+    if (!TF_VERIFY(RemovePullPathUndoItem::execute(_orphanedNodesManager, pulledPath))) {
+        return false;
+    }
 
     MayaUsd::ProgressBarScope progressBar(2);
     MStatus                   status = NodeDeletionUndoItem::deleteNode(
@@ -1615,20 +1672,20 @@ bool PrimUpdaterManager::removePullParent(
             if (status != MStatus::kSuccess) {
                 return false;
             }
-            if (!FunctionUndoItem::execute(
-                    "Delete pull root cache no pulled prims",
-                    [self = this]() {
-                        self->_hasPulledPrims = false;
+            if (!TF_VERIFY(FunctionUndoItem::execute(
+                    "Remove orphaned nodes manager, pulled prims flag reset",
+                    [&]() {
+                        _hasPulledPrims = false;
+                        endManagePulledPrims();
                         return true;
                     },
-                    [self = this]() {
-                        self->_hasPulledPrims = true;
+                    [&]() {
+                        _hasPulledPrims = true;
+                        beginManagePulledPrims();
                         return true;
-                    })) {
-                TF_WARN("Cannot removed pulled prim from the pulled prim cache.");
+                    }))) {
                 return false;
             }
-            endManagePulledPrims();
         }
     }
     progressBar.advance();
@@ -1675,19 +1732,7 @@ void PrimUpdaterManager::recordPullVariantInfo(
     const Ufe::Path& pulledPath,
     const MDagPath&  pullParentPath)
 {
-    // Add the pull parent to our pulled prims prefix tree.  Also add the full
-    // configuration of variant set selections for each ancestor, up to the USD
-    // pseudo-root.  Variants on the pulled path itself are ignored, as once
-    // pulled into Maya they cannot be changed.
-    TF_VERIFY(!_pulledPrims.containsDescendantInclusive(pulledPath));
-    TF_VERIFY(pulledPath.runTimeId() == MayaUsd::ufe::getUsdRunTimeId());
-
-    // We store a list of (path, list of (variant set, variant set selection)),
-    // for all ancestors, starting at closest ancestor.
-    auto ancestorPath = pulledPath.pop();
-    auto vsd = variantSetDescriptors(ancestorPath);
-
-    _pulledPrims.add(pulledPath, PullVariantInfo(pullParentPath, vsd));
+    _orphanedNodesManager->add(pulledPath, pullParentPath);
 }
 
 /* static */
@@ -1747,30 +1792,9 @@ bool PrimUpdaterManager::readPullInformation(const MDagPath& dagPath, Ufe::Path&
     return false;
 }
 
-/* static */
-std::list<PrimUpdaterManager::VariantSetDescriptor>
-PrimUpdaterManager::variantSetDescriptors(const Ufe::Path& p)
-{
-    std::list<VariantSetDescriptor> vsd;
-    auto                            path = p;
-    while (path.nbSegments() > 1) {
-        auto ancestor = Ufe::Hierarchy::createItem(path);
-        auto usdAncestor = std::static_pointer_cast<MayaUsd::ufe::UsdSceneItem>(ancestor);
-        auto variantSets = usdAncestor->prim().GetVariantSets();
-        std::list<VariantSelection> vs;
-        for (const auto& vsn : variantSets.GetNames()) {
-            vs.emplace_back(vsn, variantSets.GetVariantSelection(vsn));
-        }
-        vsd.emplace_back(path, vs);
-        path = path.pop();
-    }
-    return vsd;
-}
-
 void PrimUpdaterManager::beginManagePulledPrims()
 {
-    TF_VERIFY(_pulledPrims.root()->empty());
-    _orphanedNodesManager = std::make_shared<OrphanedNodesManager>(_pulledPrims);
+    TF_VERIFY(_orphanedNodesManager->empty());
     Ufe::Scene::instance().addObserver(_orphanedNodesManager);
 
     // Observe Maya so we can stop scene observation on file new or open.
@@ -1784,13 +1808,11 @@ void PrimUpdaterManager::beginManagePulledPrims()
 
 void PrimUpdaterManager::endManagePulledPrims()
 {
-    TF_VERIFY(_orphanedNodesManager);
     TF_VERIFY(Ufe::Scene::instance().removeObserver(_orphanedNodesManager));
     auto status = MMessage::removeCallbacks(_fileCbs);
     CHECK_MSTATUS(status);
     _fileCbs.clear();
-    _orphanedNodesManager.reset();
-    _pulledPrims.clear();
+    _orphanedNodesManager->clear();
 }
 
 /*static*/
@@ -1798,219 +1820,6 @@ void PrimUpdaterManager::beforeNewOrOpenCallback(void* clientData)
 {
     auto* pum = static_cast<PrimUpdaterManager*>(clientData);
     pum->endManagePulledPrims();
-}
-
-//==============================================================================
-//
-// CLASS PrimUpdaterManager::OrphanedNodesManager
-//
-//==============================================================================
-
-PrimUpdaterManager::OrphanedNodesManager::OrphanedNodesManager(
-    const Ufe::Trie<PullVariantInfo>& pulledPrims)
-    : _pulledPrims(pulledPrims)
-{
-}
-
-void PrimUpdaterManager::OrphanedNodesManager::operator()(const Ufe::Notification& n)
-{
-    const auto& sceneNotification = static_cast<const Ufe::SceneChanged&>(n);
-    auto        changedPath = sceneNotification.changedPath();
-
-    // No changedPath means composite.  Use containsDescendant(), as
-    // containsDescendantInclusive() would mean a structure change on the
-    // pulled node itself, which is not possible (pulled objects are locked).
-    if (changedPath.empty()) {
-        const auto& sceneCompositeNotification
-            = static_cast<const Ufe::SceneCompositeNotification&>(n);
-        for (const auto& op : sceneCompositeNotification.opsList()) {
-            if (_pulledPrims.containsDescendant(op.path)) {
-                handleOp(op);
-            }
-        }
-    } else if (_pulledPrims.containsDescendant(changedPath)) {
-        handleOp(sceneNotification);
-    }
-}
-
-void PrimUpdaterManager::OrphanedNodesManager::handleOp(
-    const Ufe::SceneCompositeNotification::Op& op)
-{
-    switch (op.opType) {
-    case Ufe::SceneChanged::ObjectAdd: {
-        // Restoring a previously-deleted scene item may restore an orphaned
-        // node.  Traverse the trie, and show hidden pull parents that are
-        // descendants of the argument path.  The trie node that corresponds to
-        // the added path is the starting point.  It may be an internal node,
-        // without data.
-        auto ancestorNode = _pulledPrims.node(op.path);
-        TF_VERIFY(ancestorNode);
-        recursiveSetVisibility(ancestorNode, true);
-    } break;
-    case Ufe::SceneChanged::ObjectDelete: {
-        // The following cases will generate object delete:
-        // - Inactivate of ancestor USD prim sends object post delete.  The
-        //   inactive object has no children.
-        // - Delete of ancestor Maya Dag node, which sends object pre delete.
-        //
-        // At time of writing (25-Aug-2022), delete of an ancestor USD prim
-        // (which sends object destroyed) is prevented by edit restrictions, as
-        // pulling creates an over opinion all along the ancestor chain in the
-        // session layer, which is strongest.  If these restrictions are
-        // lifted, hiding the pull parent is appropriate.
-        //
-        // Traverse the trie, and hide pull parents that are descendants of
-        // the argument path.  First, get the trie node that corresponds to
-        // the path.  It may be an internal node, without data.
-        auto ancestorNode = _pulledPrims.node(op.path);
-        TF_VERIFY(ancestorNode);
-        recursiveSetVisibility(ancestorNode, false);
-    } break;
-    case Ufe::SceneChanged::SubtreeInvalidate: {
-        // On subtree invalidate, the scene item itself has not had a structure
-        // change, but its children have changed.  There are two cases:
-        // - the node has children: from a variant switch, or from a payload
-        //   load.
-        // - the node has no children: from a payload unload.
-        // In the latter case, call recursiveHide(), because there is nothing
-        // below the invalidated node.
-
-        auto parentItem = Ufe::Hierarchy::createItem(op.path);
-        if (!TF_VERIFY(parentItem)) {
-            return;
-        }
-
-        auto parentHier = Ufe::Hierarchy::hierarchy(parentItem);
-        if (!parentHier->hasChildren()) {
-            auto ancestorNode = _pulledPrims.node(op.path);
-            if (ancestorNode) {
-                recursiveSetVisibility(ancestorNode, false);
-            }
-            return;
-        } else {
-            // On variant switch, given a pulled prim, the session layer will
-            // have path-based USD overs for pull information and active
-            // (false) for that prim in the session layer.  If a prim child
-            // brought in by variant switching has the same name as that of the
-            // pulled prim in a previous variant, the overs will apply to to
-            // the new prim, which would then get a path mapping, which is
-            // inappropriate.  Read children using the USD API, including
-            // inactive children (since pulled prims are inactivated), to
-            // support a variant switch to variant child with the same name.
-
-            auto parentUsdItem = std::dynamic_pointer_cast<MayaUsd::ufe::UsdSceneItem>(parentItem);
-            if (!TF_VERIFY(parentUsdItem)) {
-                return;
-            }
-            auto parentPrim = parentUsdItem->prim();
-            bool foundChild { false };
-            for (const auto& c :
-                 parentPrim.GetFilteredChildren(UsdPrimIsDefined && !UsdPrimIsAbstract)) {
-                auto cPath = parentItem->path().popSegment();
-                cPath = cPath
-                    + Ufe::PathSegment(
-                            c.GetPath().GetAsString(), MayaUsd::ufe::getUsdRunTimeId(), '/');
-
-                auto ancestorNode = _pulledPrims.node(cPath);
-                // If there is no ancestor node in the trie, this means that
-                // the new hierarchy is completely different from the one when
-                // the pull occurred, which means that the pulled object must
-                // stay hidden.
-                if (ancestorNode) {
-                    foundChild = true;
-                    recursiveSwitch(ancestorNode, cPath);
-                }
-            }
-            if (!foundChild) {
-                // Following a subtree invalidate, if none of the now-valid
-                // children appear in the trie, means that we've switched to a
-                // different variant, and everything below that path should be
-                // hidden.
-                auto ancestorNode = _pulledPrims.node(op.path);
-                if (ancestorNode) {
-                    recursiveSetVisibility(ancestorNode, false);
-                }
-            }
-        }
-    } break;
-    }
-}
-
-/* static */
-bool PrimUpdaterManager::OrphanedNodesManager::setVisibilityPlug(
-    const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode,
-    bool                                       visibility)
-{
-    TF_VERIFY(trieNode->hasData());
-    const auto& pullParentPath = trieNode->data().dagPath;
-    MFnDagNode  fn(pullParentPath);
-    auto        visibilityPlug = fn.findPlug("visibility", /* tryNetworked */ true);
-    return (visibilityPlug.setBool(visibility) == MS::kSuccess);
-}
-
-/* static */
-void PrimUpdaterManager::OrphanedNodesManager::recursiveSetVisibility(
-    const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode,
-    bool                                       visibility)
-{
-    // We know in our case that a trie node with data can't have children,
-    // since descendants of a pulled prim can't be pulled.
-    if (trieNode->hasData()) {
-        TF_VERIFY(trieNode->empty());
-        TF_VERIFY(setVisibilityPlug(trieNode, visibility));
-    } else {
-        auto childrenComponents = trieNode->childrenComponents();
-        for (const auto& c : childrenComponents) {
-            recursiveSetVisibility((*trieNode)[c], visibility);
-        }
-    }
-}
-
-/* static */
-void PrimUpdaterManager::OrphanedNodesManager::recursiveSwitch(
-    const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode,
-    const Ufe::Path&                           ufePath)
-{
-    // We know in our case that a trie node with data can't have children,
-    // since descendants of a pulled prim can't be pulled.  A trie node with
-    // data is one that's been pulled.
-    if (trieNode->hasData()) {
-        TF_VERIFY(trieNode->empty());
-
-        auto pulledNode = std::dynamic_pointer_cast<MayaUsd::ufe::UsdSceneItem>(
-            Ufe::Hierarchy::createItem(ufePath));
-        if (!TF_VERIFY(pulledNode)) {
-            return;
-        }
-
-        // If the variant set configuration of the pulled node and the current
-        // tree state don't match, the pulled node must be made invisible.
-        // Inactivation must not be considered, as the USD pulled node is made
-        // inactive on pull, to avoid rendering it.
-        const bool variantSetsMatch
-            = (trieNode->data().variantSetDescriptors == variantSetDescriptors(ufePath.pop()));
-        const bool visibility = (pulledNode && variantSetsMatch);
-        TF_VERIFY(setVisibilityPlug(trieNode, visibility));
-
-        // Set the activation of the pulled USD prim to the opposite of that of
-        // the corresponding Maya node: other variants may refer to the same
-        // path, and we don't want those paths to hit an inactive prim.  No
-        // need to remove an inert primSpec: this will be done on push.
-        auto prim = MayaUsd::ufe::ufePathToPrim(ufePath);
-        auto stage = prim.GetStage();
-        if (TF_VERIFY(stage)) {
-            UsdEditContext editContext(stage, stage->GetSessionLayer());
-            TF_VERIFY(prim.SetActive(!visibility));
-        }
-    } else {
-        auto childrenComponents = trieNode->childrenComponents();
-        for (const auto& c : childrenComponents) {
-            auto childTrieNode = (*trieNode)[c];
-            if (childTrieNode) {
-                recursiveSwitch((*trieNode)[c], ufePath + c);
-            }
-        }
-    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
