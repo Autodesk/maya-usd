@@ -28,7 +28,9 @@
 #include <ufe/ufeAssert.h>
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4010)
 #include "UsdShaderAttributeDef.h"
+#endif
 #if (UFE_PREVIEW_VERSION_NUM >= 4024)
 #include <mayaUsd/ufe/UsdUndoAttributesCommands.h>
 #endif
@@ -127,7 +129,7 @@ Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
         return iter->second->type();
     PXR_NS::TfToken tok(name);
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4008)
+#if (UFE_PREVIEW_VERSION_NUM >= 4010)
     Ufe::NodeDef::Ptr nodeDef = UsdAttributes::nodeDef();
     if (nodeDef) {
         Ufe::AttributeDef::ConstPtr     attrDef = nameToAttrDef(tok, nodeDef);
