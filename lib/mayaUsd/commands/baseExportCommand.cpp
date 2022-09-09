@@ -351,7 +351,7 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
                 const auto exportRoots = DictUtils::extractVector<std::string>(
                     userArgs, UsdMayaJobExportArgsTokens->exportRoots);
                 if (exportRoots.size() > 0) {
-                    for (const std::string root : exportRoots) {
+                    for (const std::string& root : exportRoots) {
                         objSelList.add(root.c_str());
                     }
                 }
