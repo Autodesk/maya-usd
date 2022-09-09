@@ -62,21 +62,31 @@ Ufe::SceneItem::Ptr UsdObject3d::sceneItem() const { return fItem; }
 Ufe::SceneItem::Ptr UsdObject3d::assignedMaterial() const
 {
     PXR_NAMESPACE_USING_DIRECTIVE
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(fItem);
+    const UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(fItem);
     if (!fItem || !TF_VERIFY(usdItem)) {
         return nullptr;
     }
 
     const PXR_NS::UsdPrim& prim = usdItem->prim();
-    PXR_NS::UsdShadeMaterialBindingAPI bindingApi(prim);
-    PXR_NS::UsdShadeMaterialBindingAPI::DirectBinding directBinding = bindingApi.GetDirectBinding();
-    PXR_NS::UsdShadeMaterial material = directBinding.GetMaterial();
+    const PXR_NS::UsdShadeMaterialBindingAPI bindingApi(prim);
+    const PXR_NS::UsdShadeMaterialBindingAPI::DirectBinding directBinding = bindingApi.GetDirectBinding();
+    const PXR_NS::UsdShadeMaterial material = directBinding.GetMaterial();
     if (material) {
         const PXR_NS::UsdPrim& materialPrim = material.GetPrim();
         if (materialPrim) {
             const PXR_NS::SdfPath& materialSdfPath = materialPrim.GetPath();
-            Ufe::Path materialUfePath = usdPathToUfePathSegment(materialSdfPath);
-            return UsdSceneItem::create(materialUfePath, materialPrim);
+            const Ufe::Path materialUfePath = usdPathToUfePathSegment(materialSdfPath);
+
+            // Construct a UFE path consisting of two segments: 
+            // 1. The path to the USD stage
+            // 2. The path to our material
+            const auto stagePathSegments    = usdItem->path().getSegments();
+            const auto materialPathSegments = materialUfePath.getSegments();
+            if (stagePathSegments.empty() || materialPathSegments.empty())
+                return nullptr;
+            const auto ufePath = Ufe::Path({stagePathSegments[0], materialPathSegments[0]});
+
+            return UsdSceneItem::create(ufePath, materialPrim);
         }
     }
     return nullptr;
