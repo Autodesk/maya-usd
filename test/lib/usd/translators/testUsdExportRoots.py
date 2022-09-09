@@ -308,7 +308,7 @@ class testUsdExportRoot(unittest.TestCase):
         self.doExportImportTest(validator, shouldError=True, root='NoneExisting', selection='OtherTop')
 
     def testExportRootStripNamespace(self):
-        # Test that stipnamespace works with export roots when stripped node names would conflict
+        # Test that stripnamespace works with export roots when stripped node names would conflict
         # but only one was specified as root.
 
         cmds.file(new=True, force=True)
