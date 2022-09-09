@@ -35,7 +35,9 @@
 #include <unordered_set>
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4010)
 #include "UsdShaderAttributeDef.h"
+#endif
 #endif
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #include <mayaUsd/base/tokens.h>
@@ -429,15 +431,19 @@ std::string UsdAttribute::typeName() const
 {
     if (isValid()) {
 #ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4010)
         UsdShaderAttributeDef::ConstPtr shaderAttrDef
             = std::dynamic_pointer_cast<const UsdShaderAttributeDef>(fAttrDef);
         if (shaderAttrDef) {
             return usdTypeToUfe(shaderAttrDef->shaderProperty());
         } else {
 #endif
+#endif
             return usdTypeToUfe(fUsdAttr.GetTypeName());
 #ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4010)
         }
+#endif
 #endif
     }
 #ifdef UFE_V4_FEATURES_AVAILABLE
@@ -980,7 +986,7 @@ Ufe::AttributeEnumString::EnumValues UsdAttributeEnumString::getEnumValues() con
         return tokens;
     }
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4008)
+#if (UFE_PREVIEW_VERSION_NUM >= 4010)
     else {
         EnumValues                      result;
         UsdShaderAttributeDef::ConstPtr shaderAttrDef
