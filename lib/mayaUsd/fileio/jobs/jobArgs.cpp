@@ -19,6 +19,7 @@
 #include <mayaUsd/fileio/registryHelper.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/utils/utilDictionary.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsdUtils/DiffPrims.h>
 
@@ -75,159 +76,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 // clang-format on
 
 namespace {
-/// Extracts a bool at \p key from \p userArgs, or false if it can't extract.
-bool _Boolean(const VtDictionary& userArgs, const TfToken& key)
-{
-    if (!VtDictionaryIsHolding<bool>(userArgs, key)) {
-        TF_CODING_ERROR(
-            "Dictionary is missing required key '%s' or key is "
-            "not bool type",
-            key.GetText());
-        return false;
-    }
-    return VtDictionaryGet<bool>(userArgs, key);
-}
 
-/// Extracts a pointer at \p key from \p userArgs, or nullptr if it can't extract.
-UsdStageRefPtr _UsdStageRefPtr(const VtDictionary& userArgs, const TfToken& key)
-{
-    if (!VtDictionaryIsHolding<UsdStageRefPtr>(userArgs, key)) {
-        TF_CODING_ERROR(
-            "Dictionary is missing required key '%s' or key is "
-            "not pointer type",
-            key.GetText());
-        return nullptr;
-    }
-    return VtDictionaryGet<UsdStageRefPtr>(userArgs, key);
-}
-
-/// Extracts a double at \p key from \p userArgs, or defaultValue if it can't extract.
-double _Double(const VtDictionary& userArgs, const TfToken& key, double defaultValue)
-{
-    if (VtDictionaryIsHolding<double>(userArgs, key))
-        return VtDictionaryGet<double>(userArgs, key);
-
-    // Since user dictionary can be provided from Python and in Python it is easy to
-    // mix int and double, especially since value literal will take the simplest value
-    // they can, for example 0 will be an int, support receiving the value as an integer.
-    if (VtDictionaryIsHolding<int>(userArgs, key))
-        return VtDictionaryGet<int>(userArgs, key);
-
-    TF_CODING_ERROR(
-        "Dictionary is missing required key '%s' or key is "
-        "not double type",
-        key.GetText());
-    return defaultValue;
-}
-
-/// Extracts a string at \p key from \p userArgs, or "" if it can't extract.
-std::string _String(const VtDictionary& userArgs, const TfToken& key)
-{
-    if (!VtDictionaryIsHolding<std::string>(userArgs, key)) {
-        TF_CODING_ERROR(
-            "Dictionary is missing required key '%s' or key is "
-            "not string type",
-            key.GetText());
-        return std::string();
-    }
-    return VtDictionaryGet<std::string>(userArgs, key);
-}
-
-/// Extracts a token at \p key from \p userArgs.
-/// If the token value is not either \p defaultToken or one of the
-/// \p otherTokens, then returns \p defaultToken instead.
-TfToken _Token(
-    const VtDictionary&         userArgs,
-    const TfToken&              key,
-    const TfToken&              defaultToken,
-    const std::vector<TfToken>& otherTokens)
-{
-    const TfToken tok(_String(userArgs, key));
-    for (const TfToken& allowedTok : otherTokens) {
-        if (tok == allowedTok) {
-            return tok;
-        }
-    }
-
-    // Empty token will silently be promoted to default value.
-    // Warning for non-empty tokens that don't match.
-    if (tok != defaultToken && !tok.IsEmpty()) {
-        TF_WARN(
-            "Value '%s' is not allowed for flag '%s'; using fallback '%s' "
-            "instead",
-            tok.GetText(),
-            key.GetText(),
-            defaultToken.GetText());
-    }
-    return defaultToken;
-}
-
-/// Extracts an absolute path at \p key from \p userArgs, or the empty path if
-/// it can't extract.
-SdfPath _AbsolutePath(const VtDictionary& userArgs, const TfToken& key)
-{
-    const std::string s = _String(userArgs, key);
-    // Assume that empty strings are empty paths. (This might be an error case.)
-    if (s.empty()) {
-        return SdfPath();
-    }
-    // Make all relative paths into absolute paths.
-    SdfPath path(s);
-    if (path.IsAbsolutePath()) {
-        return path;
-    } else {
-        return SdfPath::AbsoluteRootPath().AppendPath(path);
-    }
-}
-
-/// Extracts an vector<T> from the vector<VtValue> at \p key in \p userArgs.
-/// Returns an empty vector if it can't convert the entire value at \p key into
-/// a vector<T>.
-template <typename T> std::vector<T> _Vector(const VtDictionary& userArgs, const TfToken& key)
-{
-    // Check that vector exists.
-    if (VtDictionaryIsHolding<std::vector<T>>(userArgs, key)) {
-        std::vector<T> vals = VtDictionaryGet<std::vector<T>>(userArgs, key);
-        return vals;
-    }
-
-    if (!VtDictionaryIsHolding<std::vector<VtValue>>(userArgs, key)) {
-        TF_CODING_ERROR(
-            "Dictionary is missing required key '%s' or key is "
-            "not vector type",
-            key.GetText());
-        return std::vector<T>();
-    }
-
-    // Check that vector is correctly-typed.
-    std::vector<VtValue> vals = VtDictionaryGet<std::vector<VtValue>>(userArgs, key);
-    if (!std::all_of(vals.begin(), vals.end(), [](const VtValue& v) { return v.IsHolding<T>(); })) {
-        TF_CODING_ERROR(
-            "Vector at dictionary key '%s' contains elements of "
-            "the wrong type",
-            key.GetText());
-        return std::vector<T>();
-    }
-
-    // Extract values.
-    std::vector<T> result;
-    for (const VtValue& v : vals) {
-        result.push_back(v.UncheckedGet<T>());
-    }
-    return result;
-}
-
-/// Convenience function that takes the result of _Vector and converts it to a
-/// TfToken::Set.
-TfToken::Set _TokenSet(const VtDictionary& userArgs, const TfToken& key)
-{
-    const std::vector<std::string> vec = _Vector<std::string>(userArgs, key);
-    TfToken::Set                   result;
-    for (const std::string& s : vec) {
-        result.insert(TfToken(s));
-    }
-    return result;
-}
+using namespace MayaUsd::DictUtils;
 
 // The chaser args are stored as vectors of vectors (since this is how you
 // would need to pass them in the Maya Python command API). Convert this to a
@@ -236,7 +86,7 @@ std::map<std::string, UsdMayaJobExportArgs::ChaserArgs>
 _ChaserArgs(const VtDictionary& userArgs, const TfToken& key)
 {
     const std::vector<std::vector<VtValue>> chaserArgs
-        = _Vector<std::vector<VtValue>>(userArgs, key);
+        = extractVector<std::vector<VtValue>>(userArgs, key);
 
     std::map<std::string, UsdMayaJobExportArgs::ChaserArgs> result;
     for (const std::vector<VtValue>& argTriple : chaserArgs) {
@@ -255,7 +105,8 @@ _ChaserArgs(const VtDictionary& userArgs, const TfToken& key)
 
 std::map<std::string, std::string> _UVSetRemaps(const VtDictionary& userArgs, const TfToken& key)
 {
-    const std::vector<std::vector<VtValue>> uvRemaps = _Vector<std::vector<VtValue>>(userArgs, key);
+    const std::vector<std::vector<VtValue>> uvRemaps
+        = extractVector<std::vector<VtValue>>(userArgs, key);
 
     std::map<std::string, std::string> result;
     for (const std::vector<VtValue>& remap : uvRemaps) {
@@ -277,7 +128,7 @@ UsdMayaJobImportArgs::ShadingModes
 _shadingModesImportArgs(const VtDictionary& userArgs, const TfToken& key)
 {
     const std::vector<std::vector<VtValue>> shadingModeArgs
-        = _Vector<std::vector<VtValue>>(userArgs, key);
+        = extractVector<std::vector<VtValue>>(userArgs, key);
 
     const TfTokenVector modes = UsdMayaShadingModeRegistry::ListImporters();
 
@@ -365,7 +216,7 @@ PcpMapFunction::PathMap _ExportRootsMap(
 
     bool includeEntireSelection = false;
 
-    const std::vector<std::string> exportRoots = _Vector<std::string>(userArgs, key);
+    const std::vector<std::string> exportRoots = extractVector<std::string>(userArgs, key);
     for (const std::string& rootPath : exportRoots) {
         if (!rootPath.empty()) {
             MDagPath rootDagPath = UsdMayaUtil::nameToDagPath(rootPath);
@@ -425,7 +276,7 @@ void _AddFilteredTypeName(const MString& typeName, std::set<unsigned int>& filte
 std::set<unsigned int> _FilteredTypeIds(const VtDictionary& userArgs)
 {
     const std::vector<std::string> vec
-        = _Vector<std::string>(userArgs, UsdMayaJobExportArgsTokens->filterTypes);
+        = extractVector<std::string>(userArgs, UsdMayaJobExportArgsTokens->filterTypes);
     std::set<unsigned int> result;
     for (const std::string& s : vec) {
         _AddFilteredTypeName(s.c_str(), result);
@@ -570,75 +421,76 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     const VtDictionary&             userArgs,
     const UsdMayaUtil::MDagPathSet& dagPaths,
     const std::vector<double>&      timeSamples)
-    : compatibility(_Token(
+    : compatibility(extractToken(
         userArgs,
         UsdMayaJobExportArgsTokens->compatibility,
         UsdMayaJobExportArgsTokens->none,
         { UsdMayaJobExportArgsTokens->appleArKit }))
-    , defaultMeshScheme(_Token(
+    , defaultMeshScheme(extractToken(
           userArgs,
           UsdMayaJobExportArgsTokens->defaultMeshScheme,
           UsdGeomTokens->catmullClark,
           { UsdGeomTokens->loop, UsdGeomTokens->bilinear, UsdGeomTokens->none }))
-    , defaultUSDFormat(_Token(
+    , defaultUSDFormat(extractToken(
           userArgs,
           UsdMayaJobExportArgsTokens->defaultUSDFormat,
           UsdUsdcFileFormatTokens->Id,
           { UsdUsdaFileFormatTokens->Id }))
-    , eulerFilter(_Boolean(userArgs, UsdMayaJobExportArgsTokens->eulerFilter))
-    , excludeInvisible(_Boolean(userArgs, UsdMayaJobExportArgsTokens->renderableOnly))
+    , eulerFilter(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->eulerFilter))
+    , excludeInvisible(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->renderableOnly))
     , exportCollectionBasedBindings(
-          _Boolean(userArgs, UsdMayaJobExportArgsTokens->exportCollectionBasedBindings))
-    , exportColorSets(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportColorSets))
-    , exportDefaultCameras(_Boolean(userArgs, UsdMayaJobExportArgsTokens->defaultCameras))
-    , exportDisplayColor(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportDisplayColor))
-    , exportDistanceUnit(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportDistanceUnit))
-    , exportInstances(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportInstances))
+          extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportCollectionBasedBindings))
+    , exportColorSets(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportColorSets))
+    , exportDefaultCameras(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->defaultCameras))
+    , exportDisplayColor(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportDisplayColor))
+    , exportDistanceUnit(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportDistanceUnit))
+    , exportInstances(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportInstances))
     , exportMaterialCollections(
-          _Boolean(userArgs, UsdMayaJobExportArgsTokens->exportMaterialCollections))
-    , exportMeshUVs(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportUVs))
-    , exportNurbsExplicitUV(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportUVs))
-    , referenceObjectMode(_Token(
+          extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportMaterialCollections))
+    , exportMeshUVs(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportUVs))
+    , exportNurbsExplicitUV(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportUVs))
+    , referenceObjectMode(extractToken(
           userArgs,
           UsdMayaJobExportArgsTokens->referenceObjectMode,
           UsdMayaJobExportArgsTokens->none,
           { UsdMayaJobExportArgsTokens->attributeOnly, UsdMayaJobExportArgsTokens->defaultToMesh }))
     , exportRefsAsInstanceable(
-          _Boolean(userArgs, UsdMayaJobExportArgsTokens->exportRefsAsInstanceable))
-    , exportSkels(_Token(
+          extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportRefsAsInstanceable))
+    , exportSkels(extractToken(
           userArgs,
           UsdMayaJobExportArgsTokens->exportSkels,
           UsdMayaJobExportArgsTokens->none,
           { UsdMayaJobExportArgsTokens->auto_, UsdMayaJobExportArgsTokens->explicit_ }))
-    , exportSkin(_Token(
+    , exportSkin(extractToken(
           userArgs,
           UsdMayaJobExportArgsTokens->exportSkin,
           UsdMayaJobExportArgsTokens->none,
           { UsdMayaJobExportArgsTokens->auto_, UsdMayaJobExportArgsTokens->explicit_ }))
-    , exportBlendShapes(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportBlendShapes))
-    , exportVisibility(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportVisibility))
-    , exportComponentTags(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportComponentTags))
-    , file(_String(userArgs, UsdMayaJobExportArgsTokens->file))
-    , ignoreWarnings(_Boolean(userArgs, UsdMayaJobExportArgsTokens->ignoreWarnings))
+    , exportBlendShapes(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportBlendShapes))
+    , exportVisibility(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportVisibility))
+    , exportComponentTags(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportComponentTags))
+    , file(extractString(userArgs, UsdMayaJobExportArgsTokens->file))
+    , ignoreWarnings(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->ignoreWarnings))
     , materialCollectionsPath(
-          _AbsolutePath(userArgs, UsdMayaJobExportArgsTokens->materialCollectionsPath))
-    , materialsScopeName(
-          _GetMaterialsScopeName(_String(userArgs, UsdMayaJobExportArgsTokens->materialsScopeName)))
-    , mergeTransformAndShape(_Boolean(userArgs, UsdMayaJobExportArgsTokens->mergeTransformAndShape))
-    , normalizeNurbs(_Boolean(userArgs, UsdMayaJobExportArgsTokens->normalizeNurbs))
-    , preserveUVSetNames(_Boolean(userArgs, UsdMayaJobExportArgsTokens->preserveUVSetNames))
-    , stripNamespaces(_Boolean(userArgs, UsdMayaJobExportArgsTokens->stripNamespaces))
-    , parentScope(_AbsolutePath(userArgs, UsdMayaJobExportArgsTokens->parentScope))
-    , renderLayerMode(_Token(
+          extractAbsolutePath(userArgs, UsdMayaJobExportArgsTokens->materialCollectionsPath))
+    , materialsScopeName(_GetMaterialsScopeName(
+          extractString(userArgs, UsdMayaJobExportArgsTokens->materialsScopeName)))
+    , mergeTransformAndShape(
+          extractBoolean(userArgs, UsdMayaJobExportArgsTokens->mergeTransformAndShape))
+    , normalizeNurbs(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->normalizeNurbs))
+    , preserveUVSetNames(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->preserveUVSetNames))
+    , stripNamespaces(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->stripNamespaces))
+    , parentScope(extractAbsolutePath(userArgs, UsdMayaJobExportArgsTokens->parentScope))
+    , renderLayerMode(extractToken(
           userArgs,
           UsdMayaJobExportArgsTokens->renderLayerMode,
           UsdMayaJobExportArgsTokens->defaultLayer,
           { UsdMayaJobExportArgsTokens->currentLayer,
             UsdMayaJobExportArgsTokens->modelingVariant }))
-    , rootKind(_String(userArgs, UsdMayaJobExportArgsTokens->kind))
+    , rootKind(extractString(userArgs, UsdMayaJobExportArgsTokens->kind))
     , disableModelKindProcessor(
-          _Boolean(userArgs, UsdMayaJobExportArgsTokens->disableModelKindProcessor))
-    , shadingMode(_Token(
+          extractBoolean(userArgs, UsdMayaJobExportArgsTokens->disableModelKindProcessor))
+    , shadingMode(extractToken(
           userArgs,
           UsdMayaJobExportArgsTokens->shadingMode,
           UsdMayaShadingModeTokens->useRegistry,
@@ -647,23 +499,25 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
               exporters.emplace_back(UsdMayaShadingModeTokens->none);
               return exporters;
           }()))
-    , allMaterialConversions(_TokenSet(userArgs, UsdMayaJobExportArgsTokens->convertMaterialsTo))
-    , verbose(_Boolean(userArgs, UsdMayaJobExportArgsTokens->verbose))
-    , staticSingleSample(_Boolean(userArgs, UsdMayaJobExportArgsTokens->staticSingleSample))
-    , geomSidedness(_Token(
+    , allMaterialConversions(
+          extractTokenSet(userArgs, UsdMayaJobExportArgsTokens->convertMaterialsTo))
+    , verbose(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->verbose))
+    , staticSingleSample(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->staticSingleSample))
+    , geomSidedness(extractToken(
           userArgs,
           UsdMayaJobExportArgsTokens->geomSidedness,
           UsdMayaJobExportArgsTokens->derived,
           { UsdMayaJobExportArgsTokens->single, UsdMayaJobExportArgsTokens->double_ }))
-    , includeAPINames(_TokenSet(userArgs, UsdMayaJobExportArgsTokens->apiSchema))
-    , jobContextNames(_TokenSet(userArgs, UsdMayaJobExportArgsTokens->jobContext))
-    , chaserNames(_Vector<std::string>(userArgs, UsdMayaJobExportArgsTokens->chaser))
+    , includeAPINames(extractTokenSet(userArgs, UsdMayaJobExportArgsTokens->apiSchema))
+    , jobContextNames(extractTokenSet(userArgs, UsdMayaJobExportArgsTokens->jobContext))
+    , chaserNames(extractVector<std::string>(userArgs, UsdMayaJobExportArgsTokens->chaser))
     , allChaserArgs(_ChaserArgs(userArgs, UsdMayaJobExportArgsTokens->chaserArgs))
     , remapUVSetsTo(_UVSetRemaps(userArgs, UsdMayaJobExportArgsTokens->remapUVSetsTo))
-    , melPerFrameCallback(_String(userArgs, UsdMayaJobExportArgsTokens->melPerFrameCallback))
-    , melPostCallback(_String(userArgs, UsdMayaJobExportArgsTokens->melPostCallback))
-    , pythonPerFrameCallback(_String(userArgs, UsdMayaJobExportArgsTokens->pythonPerFrameCallback))
-    , pythonPostCallback(_String(userArgs, UsdMayaJobExportArgsTokens->pythonPostCallback))
+    , melPerFrameCallback(extractString(userArgs, UsdMayaJobExportArgsTokens->melPerFrameCallback))
+    , melPostCallback(extractString(userArgs, UsdMayaJobExportArgsTokens->melPostCallback))
+    , pythonPerFrameCallback(
+          extractString(userArgs, UsdMayaJobExportArgsTokens->pythonPerFrameCallback))
+    , pythonPostCallback(extractString(userArgs, UsdMayaJobExportArgsTokens->pythonPostCallback))
     , dagPaths(dagPaths)
     , timeSamples(timeSamples)
     , rootMapFunction(PcpMapFunction::Create(
@@ -898,12 +752,13 @@ void UsdMayaJobExportArgs::GetDictionaryTimeSamples(
     const VtDictionary&  userArgs,
     std::vector<double>& timeSamples)
 {
-    const bool   exportAnimation = _Boolean(userArgs, UsdMayaJobExportArgsTokens->animation);
-    const double startTime = _Double(userArgs, UsdMayaJobExportArgsTokens->startTime, 1.0);
-    const double endTime = _Double(userArgs, UsdMayaJobExportArgsTokens->endTime, 1.0);
-    const double frameStride = _Double(userArgs, UsdMayaJobExportArgsTokens->frameStride, 1.0);
+    const bool   exportAnimation = extractBoolean(userArgs, UsdMayaJobExportArgsTokens->animation);
+    const double startTime = extractDouble(userArgs, UsdMayaJobExportArgsTokens->startTime, 1.0);
+    const double endTime = extractDouble(userArgs, UsdMayaJobExportArgsTokens->endTime, 1.0);
+    const double frameStride
+        = extractDouble(userArgs, UsdMayaJobExportArgsTokens->frameStride, 1.0);
     const std::vector<double> samples
-        = _Vector<double>(userArgs, UsdMayaJobExportArgsTokens->frameSample);
+        = extractVector<double>(userArgs, UsdMayaJobExportArgsTokens->frameSample);
 
     std::set<double> frameSamples(samples.begin(), samples.end());
 
@@ -1100,31 +955,31 @@ UsdMayaJobImportArgs::UsdMayaJobImportArgs(
     const VtDictionary& userArgs,
     const bool          importWithProxyShapes,
     const GfInterval&   timeInterval)
-    : assemblyRep(_Token(
+    : assemblyRep(extractToken(
         userArgs,
         UsdMayaJobImportArgsTokens->assemblyRep,
         UsdMayaJobImportArgsTokens->Collapsed,
         { UsdMayaJobImportArgsTokens->Full,
           UsdMayaJobImportArgsTokens->Import,
           UsdMayaJobImportArgsTokens->Unloaded }))
-    , excludePrimvarNames(_TokenSet(userArgs, UsdMayaJobImportArgsTokens->excludePrimvar))
-    , includeAPINames(_TokenSet(userArgs, UsdMayaJobImportArgsTokens->apiSchema))
-    , jobContextNames(_TokenSet(userArgs, UsdMayaJobImportArgsTokens->jobContext))
-    , includeMetadataKeys(_TokenSet(userArgs, UsdMayaJobImportArgsTokens->metadata))
+    , excludePrimvarNames(extractTokenSet(userArgs, UsdMayaJobImportArgsTokens->excludePrimvar))
+    , includeAPINames(extractTokenSet(userArgs, UsdMayaJobImportArgsTokens->apiSchema))
+    , jobContextNames(extractTokenSet(userArgs, UsdMayaJobImportArgsTokens->jobContext))
+    , includeMetadataKeys(extractTokenSet(userArgs, UsdMayaJobImportArgsTokens->metadata))
     , shadingModes(_shadingModesImportArgs(userArgs, UsdMayaJobImportArgsTokens->shadingMode))
-    , preferredMaterial(_Token(
+    , preferredMaterial(extractToken(
           userArgs,
           UsdMayaJobImportArgsTokens->preferredMaterial,
           UsdMayaPreferredMaterialTokens->none,
           UsdMayaPreferredMaterialTokens->allTokens))
     , importUSDZTexturesFilePath(UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(userArgs))
-    , importUSDZTextures(_Boolean(userArgs, UsdMayaJobImportArgsTokens->importUSDZTextures))
-    , importInstances(_Boolean(userArgs, UsdMayaJobImportArgsTokens->importInstances))
-    , useAsAnimationCache(_Boolean(userArgs, UsdMayaJobImportArgsTokens->useAsAnimationCache))
+    , importUSDZTextures(extractBoolean(userArgs, UsdMayaJobImportArgsTokens->importUSDZTextures))
+    , importInstances(extractBoolean(userArgs, UsdMayaJobImportArgsTokens->importInstances))
+    , useAsAnimationCache(extractBoolean(userArgs, UsdMayaJobImportArgsTokens->useAsAnimationCache))
     , importWithProxyShapes(importWithProxyShapes)
-    , pullImportStage(_UsdStageRefPtr(userArgs, UsdMayaJobImportArgsTokens->pullImportStage))
+    , pullImportStage(extractUsdStageRefPtr(userArgs, UsdMayaJobImportArgsTokens->pullImportStage))
     , timeInterval(timeInterval)
-    , chaserNames(_Vector<std::string>(userArgs, UsdMayaJobImportArgsTokens->chaser))
+    , chaserNames(extractVector<std::string>(userArgs, UsdMayaJobImportArgsTokens->chaser))
     , allChaserArgs(_ChaserArgs(userArgs, UsdMayaJobImportArgsTokens->chaserArgs))
 {
 }
@@ -1262,11 +1117,11 @@ const VtDictionary& UsdMayaJobImportArgs::GetGuideDictionary()
 
 const std::string UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(const VtDictionary& userArgs)
 {
-    if (!_Boolean(userArgs, UsdMayaJobImportArgsTokens->importUSDZTextures))
+    if (!extractBoolean(userArgs, UsdMayaJobImportArgsTokens->importUSDZTextures))
         return ""; // Not importing textures. File path stays empty.
 
     const std::string pathArg
-        = _String(userArgs, UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath);
+        = extractString(userArgs, UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath);
     std::string importTexturesRootDirPath;
     if (pathArg.size() == 0) { // NOTE: (yliangsiew) If the user gives an empty argument, we'll try
                                // to determine the best directory to write to instead.
