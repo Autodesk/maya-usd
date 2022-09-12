@@ -112,14 +112,31 @@ void OrphanedNodesManager::operator()(const Ufe::Notification& n)
             }
         }
     } else if (pulledPrims().containsDescendant(changedPath)) {
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        // Use UFE v4 notification to op conversion.
         handleOp(sceneNotification);
+#else
+        // UFE v3: convert to op ourselves.  Only convert supported
+        // notifications.
+        if (auto objAdd = dynamic_cast<const Ufe::ObjectAdd*>(&sceneNotification)) {
+            handleOp(Ufe::SceneCompositeNotification::Op(
+                Ufe::SceneCompositeNotification::ObjectAdd, objAdd->item()));
+        } else if (auto objDel = dynamic_cast<const Ufe::ObjectDelete*>(&sceneNotification)) {
+            handleOp(Ufe::SceneCompositeNotification::Op(
+                Ufe::SceneCompositeNotification::ObjectDelete, objDel->path()));
+        } else if (
+            auto subtrInv = dynamic_cast<const Ufe::SubtreeInvalidate*>(&sceneNotification)) {
+            handleOp(Ufe::SceneCompositeNotification::Op(
+                Ufe::SceneCompositeNotification::SubtreeInvalidate, subtrInv->root()));
+        }
+#endif
     }
 }
 
 void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& op)
 {
     switch (op.opType) {
-    case Ufe::SceneChanged::ObjectAdd: {
+    case Ufe::SceneCompositeNotification::ObjectAdd: {
         // Restoring a previously-deleted scene item may restore an orphaned
         // node.  Traverse the trie, and show hidden pull parents that are
         // descendants of the argument path.  The trie node that corresponds to
@@ -129,7 +146,7 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
         TF_VERIFY(ancestorNode);
         recursiveSetVisibility(ancestorNode, true);
     } break;
-    case Ufe::SceneChanged::ObjectDelete: {
+    case Ufe::SceneCompositeNotification::ObjectDelete: {
         // The following cases will generate object delete:
         // - Inactivate of ancestor USD prim sends object post delete.  The
         //   inactive object has no children.
@@ -148,7 +165,7 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
         TF_VERIFY(ancestorNode);
         recursiveSetVisibility(ancestorNode, false);
     } break;
-    case Ufe::SceneChanged::SubtreeInvalidate: {
+    case Ufe::SceneCompositeNotification::SubtreeInvalidate: {
         // On subtree invalidate, the scene item itself has not had a structure
         // change, but its children have changed.  There are two cases:
         // - the node has children: from a variant switch, or from a payload
@@ -219,6 +236,10 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
             }
         }
     } break;
+    default: {
+        // ObjectPathChange (reparent, rename): to be implemented (MAYA-125039).
+        // SceneCompositeNotification: already expanded in operator().
+    }
     }
 }
 
@@ -236,10 +257,7 @@ void OrphanedNodesManager::clear() { pulledPrims().clear(); }
 
 bool OrphanedNodesManager::empty() const { return pulledPrims().root()->empty(); }
 
-void OrphanedNodesManager::restore(Memento&& previous)
-{
-    _pulledPrims = std::move(previous.release());
-}
+void OrphanedNodesManager::restore(Memento&& previous) { _pulledPrims = previous.release(); }
 
 /* static */
 bool OrphanedNodesManager::setVisibilityPlug(
