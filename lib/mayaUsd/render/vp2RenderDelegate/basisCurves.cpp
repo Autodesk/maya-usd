@@ -450,8 +450,9 @@ void HdVP2BasisCurves::Sync(
         const HdVP2Material* material = static_cast<const HdVP2Material*>(
             renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
 
-        const TfTokenVector& requiredPrimvars = (material && material->GetSurfaceShader())
-            ? material->GetRequiredPrimvars()
+        TfToken materialNetworkToken = _GetMaterialNetworkToken(reprToken);
+        const TfTokenVector& requiredPrimvars = (material && material->GetSurfaceShader(materialNetworkToken))
+            ? material->GetRequiredPrimvars(materialNetworkToken)
             : sFallbackShaderPrimvars;
 
         _UpdatePrimvarSources(delegate, *dirtyBits, requiredPrimvars);
@@ -525,6 +526,7 @@ void HdVP2BasisCurves::Sync(
 void HdVP2BasisCurves::_UpdateDrawItem(
     HdSceneDelegate*             sceneDelegate,
     HdVP2DrawItem*               drawItem,
+    const TfToken& reprToken,
     HdBasisCurvesReprDesc const& desc)
 {
     MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
@@ -701,7 +703,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
 
             if (material) {
-                MHWRender::MShaderInstance* shader = material->GetSurfaceShader();
+                MHWRender::MShaderInstance* shader = material->GetSurfaceShader(_GetMaterialNetworkToken(reprToken));
                 drawItemData._shaderIsFallback = (shader == nullptr);
                 if (shader != nullptr && shader != drawItemData._shader) {
                     drawItemData._shader = shader;
@@ -1311,7 +1313,7 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
 
         switch (desc.geomStyle) {
         case HdBasisCurvesGeomStylePatch:
-            renderItem = _CreatePatchRenderItem(renderItemName);
+            renderItem = _CreatePatchRenderItem(renderItemName, reprToken);
             drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
 #ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
             renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
@@ -1349,7 +1351,7 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
                     kOpaqueGray,
                     MSelectionMask::kSelectNurbsCurves,
                     MHWRender::MFrameContext::kExcludeNurbsCurves);
-                renderItem->setDrawMode(MHWRender::MGeometry::kAll);
+                renderItem->setDrawMode(static_cast<MHWRender::MGeometry::DrawMode>(MHWRender::MGeometry::kShaded | MHWRender::MGeometry::kTextured));
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
                 renderItem->setDefaultMaterialHandling(
                     MRenderItem::DrawOnlyWhenDefaultMaterialActive);
@@ -1400,7 +1402,7 @@ void HdVP2BasisCurves::_UpdateRepr(HdSceneDelegate* sceneDelegate, TfToken const
             HdVP2DrawItem* drawItem
                 = static_cast<HdVP2DrawItem*>(repr->GetDrawItem(drawItemIndex++));
             if (drawItem) {
-                _UpdateDrawItem(sceneDelegate, drawItem, desc);
+                _UpdateDrawItem(sceneDelegate, drawItem, reprToken, desc);
             }
         }
     }
@@ -1451,13 +1453,20 @@ void HdVP2BasisCurves::_UpdatePrimvarSources(
 
 /*! \brief  Create render item for smoothHull repr.
  */
-MHWRender::MRenderItem* HdVP2BasisCurves::_CreatePatchRenderItem(const MString& name) const
+MHWRender::MRenderItem* HdVP2BasisCurves::_CreatePatchRenderItem(const MString& name, const TfToken& reprToken) const
 {
     MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
         name, MHWRender::MRenderItem::MaterialSceneItem, MHWRender::MGeometry::kLines);
 
-    renderItem->setDrawMode(static_cast<MHWRender::MGeometry::DrawMode>(
-        MHWRender::MGeometry::kShaded | MHWRender::MGeometry::kTextured));
+    MHWRender::MGeometry::DrawMode drawMode = static_cast<MHWRender::MGeometry::DrawMode>(
+        MHWRender::MGeometry::kShaded | MHWRender::MGeometry::kTextured);
+    if (reprToken == HdReprTokens->smoothHull) {
+        drawMode = MHWRender::MGeometry::kTextured;
+    } else if (reprToken == HdVP2ReprTokens->smoothHullUntextured) {
+        drawMode = MHWRender::MGeometry::kShaded;
+    }
+
+    renderItem->setDrawMode(drawMode);
     renderItem->castsShadows(false);
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueGray));

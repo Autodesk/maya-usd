@@ -139,6 +139,7 @@ private:
     void _UpdateDrawItem(
         HdSceneDelegate*             sceneDelegate,
         HdVP2DrawItem*               drawItem,
+        const TfToken& reprToken,
         HdBasisCurvesReprDesc const& desc);
 
     void _UpdatePrimvarSources(
@@ -146,7 +147,7 @@ private:
         HdDirtyBits          dirtyBits,
         TfTokenVector const& requiredPrimvars);
 
-    MHWRender::MRenderItem* _CreatePatchRenderItem(const MString& name) const;
+    MHWRender::MRenderItem* _CreatePatchRenderItem(const MString& name, const TfToken& reprToken) const;
 
     enum DirtyBits : HdDirtyBits
     {

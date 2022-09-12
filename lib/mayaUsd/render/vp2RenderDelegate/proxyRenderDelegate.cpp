@@ -290,6 +290,9 @@ void _ConfigureReprs()
     // Edge desc for bbox display.
     HdMesh::ConfigureRepr(HdVP2ReprTokens->bbox, reprDescEdge);
 
+    // smooth hull for untextured display
+    HdBasisCurves::ConfigureRepr(HdVP2ReprTokens->smoothHullUntextured, HdBasisCurvesGeomStylePatch);
+
     // Wireframe desc for bbox display.
     HdBasisCurves::ConfigureRepr(HdVP2ReprTokens->bbox, HdBasisCurvesGeomStyleWire);
 
