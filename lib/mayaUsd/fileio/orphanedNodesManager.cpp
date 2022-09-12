@@ -136,7 +136,7 @@ void OrphanedNodesManager::operator()(const Ufe::Notification& n)
 void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& op)
 {
     switch (op.opType) {
-    case Ufe::SceneCompositeNotification::ObjectAdd: {
+    case Ufe::SceneCompositeNotification::OpType::ObjectAdd: {
         // Restoring a previously-deleted scene item may restore an orphaned
         // node.  Traverse the trie, and show hidden pull parents that are
         // descendants of the argument path.  The trie node that corresponds to
@@ -146,7 +146,7 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
         TF_VERIFY(ancestorNode);
         recursiveSetVisibility(ancestorNode, true);
     } break;
-    case Ufe::SceneCompositeNotification::ObjectDelete: {
+    case Ufe::SceneCompositeNotification::OpType::ObjectDelete: {
         // The following cases will generate object delete:
         // - Inactivate of ancestor USD prim sends object post delete.  The
         //   inactive object has no children.
@@ -165,7 +165,7 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
         TF_VERIFY(ancestorNode);
         recursiveSetVisibility(ancestorNode, false);
     } break;
-    case Ufe::SceneCompositeNotification::SubtreeInvalidate: {
+    case Ufe::SceneCompositeNotification::OpType::SubtreeInvalidate: {
         // On subtree invalidate, the scene item itself has not had a structure
         // change, but its children have changed.  There are two cases:
         // - the node has children: from a variant switch, or from a payload
