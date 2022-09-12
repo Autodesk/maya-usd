@@ -199,6 +199,9 @@ protected:
 
         //! Requested display type of the Rprim
         DisplayType _displayType { kNormal };
+
+        //! Requested texturing status
+        bool _texturing { true };
     };
 
     void _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
@@ -216,6 +219,8 @@ protected:
     void _UpdateReprOverrides(ReprVector& reprs);
 
     TfToken _GetOverrideToken(TfToken const& reprToken) const;
+
+    TfToken _GetMaterialNetworkToken(const TfToken& reprToken) const;
 
     HdReprSharedPtr _InitReprCommon(
         HdRprim&       refThis,

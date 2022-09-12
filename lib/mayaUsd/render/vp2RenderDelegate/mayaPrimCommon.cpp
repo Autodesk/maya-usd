@@ -320,6 +320,11 @@ TfToken MayaUsdRPrim::_GetOverrideToken(TfToken const& reprToken) const
     return TfToken();
 }
 
+TfToken MayaUsdRPrim::_GetMaterialNetworkToken(const TfToken& reprToken) const
+{
+    return _displayLayerModes._texturing ? reprToken : TfToken();
+}
+
 HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
     HdRprim&       refThis,
     TfToken const& reprToken,
@@ -724,9 +729,11 @@ void MayaUsdRPrim::_SyncDisplayLayerModes(const HdRprim&
             MPlug             layerDisplayType = displayLayerNodeFn.findPlug("displayType");
             MPlug             levelOfDetail = displayLayerNodeFn.findPlug("levelOfDetail");
             MPlug             shading = displayLayerNodeFn.findPlug("shading");
+            MPlug             texturing = displayLayerNodeFn.findPlug("texturing");
 
             _displayLayerModes._visibility &= layerEnabled.asBool() ? layerVisible.asBool() : true;
             _displayLayerModes._hideOnPlayback |= layerHidesOnPlayback.asBool();
+            _displayLayerModes._texturing = texturing.asBool();
             if (levelOfDetail.asShort() != 0) {
                 _displayLayerModes._reprOverride = kBBox;
             } else if (shading.asShort() == 0 && _displayLayerModes._reprOverride != kBBox) {

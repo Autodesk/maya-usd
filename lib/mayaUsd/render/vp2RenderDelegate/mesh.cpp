@@ -884,8 +884,9 @@ void HdVP2Mesh::Sync(
         auto addRequiredPrimvars = [&](const SdfPath& materialId) {
             const HdVP2Material* material = static_cast<const HdVP2Material*>(
                 renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
-            const TfTokenVector& requiredPrimvars = material && material->GetSurfaceShader(reprToken)
-                ? material->GetRequiredPrimvars(reprToken)
+            TfToken materialNetworkToken = _GetMaterialNetworkToken(reprToken);
+            const TfTokenVector& requiredPrimvars = material && material->GetSurfaceShader(materialNetworkToken)
+                ? material->GetRequiredPrimvars(materialNetworkToken)
                 : sFallbackShaderPrimvars;
 
             for (const auto& requiredPrimvar : requiredPrimvars) {
@@ -1634,7 +1635,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                 renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
 
             if (material) {
-                MHWRender::MShaderInstance* shader = material->GetSurfaceShader(reprToken);
+                MHWRender::MShaderInstance* shader = material->GetSurfaceShader(_GetMaterialNetworkToken(reprToken));
                 if (shader != nullptr
                     && (shader != drawItemData._shader || shader != stateToCommit._shader)) {
                     drawItemData._shader = shader;
