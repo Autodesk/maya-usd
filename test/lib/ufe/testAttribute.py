@@ -23,6 +23,7 @@ import testUtils
 import usdUtils
 
 from pxr import Usd, UsdGeom, Vt, Gf
+from pxr import UsdShade
 
 from maya import cmds
 from maya import standalone
@@ -418,6 +419,43 @@ class AttributeTestCase(unittest.TestCase):
 
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
+
+    @unittest.skipIf(os.getenv('USD_HAS_MX_METADATA_SUPPORT', 'NOT-FOUND') not in ('1', "TRUE"), 'Test only available if USD can read MaterialX metadata')
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4001', 'nodeDefHandler is only available in UFE preview version 0.4.1 and greater')
+    def testAttributeEnumStringToken(self):
+        '''Test the EnumString attribute type that stores a token instead of a string.'''
+
+        import mayaUsd_createStageWithNewLayer
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+        proxyShapePath = proxyShapes[0]
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+        materialPathStr = '/material1'
+        UsdShade.Material.Define(stage, materialPathStr)
+        materialPath = ufe.PathString.path(proxyShapePath + ',' + materialPathStr)
+        materialSceneItem = ufe.Hierarchy.createItem(materialPath)
+
+        runTimeMgr = ufe.RunTimeMgr.instance()
+        id = runTimeMgr.getId("USD")
+        nodeDefHandler = runTimeMgr.nodeDefHandler(id)
+        nodeDef = nodeDefHandler.definition("ND_image_color3")
+        imageSceneItem = nodeDef.createNode(materialSceneItem, ufe.PathComponent("image1"))
+        imageAttrs = ufe.Attributes.attributes(imageSceneItem)
+        uaddressModeAttr = imageAttrs.attribute("inputs:uaddressmode")
+
+        # Compare the initial UFE value to that directly from USD.
+        self.assertEqual(uaddressModeAttr.get(), 'periodic')
+
+        # Change to 'constant' and verify the return in UFE.
+        uaddressModeAttr.set('constant')
+        self.assertEqual(uaddressModeAttr.get(), 'constant')
+
+        uaddressModeEnumValues = uaddressModeAttr.getEnumValues()
+        self.assertEqual(len(uaddressModeEnumValues), 4)
+        self.assertTrue('constant' in uaddressModeEnumValues)
+        self.assertTrue('periodic' in uaddressModeEnumValues)
+        self.assertTrue('clamp' in uaddressModeEnumValues)
+        self.assertTrue('mirror' in uaddressModeEnumValues)
 
     def testAttributeBool(self):
         '''Test the Bool attribute type.'''
