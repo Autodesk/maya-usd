@@ -28,7 +28,8 @@ namespace ufe {
 class MAYAUSD_CORE_PUBLIC UsdShaderAttributeDef : public Ufe::AttributeDef
 {
 public:
-    typedef std::shared_ptr<UsdShaderAttributeDef> Ptr;
+    typedef std::shared_ptr<UsdShaderAttributeDef>       Ptr;
+    typedef std::shared_ptr<const UsdShaderAttributeDef> ConstPtr;
 
     UsdShaderAttributeDef(const PXR_NS::SdrShaderPropertyConstPtr& shaderAttributeDef);
     ~UsdShaderAttributeDef();
@@ -60,6 +61,11 @@ public:
 
     //! Returns true if metadata key has a non-empty value.
     bool hasMetadata(const std::string& key) const override;
+
+    inline const PXR_NS::SdrShaderPropertyConstPtr& shaderProperty() const
+    {
+        return fShaderAttributeDef;
+    }
 
 private:
     const PXR_NS::SdrShaderPropertyConstPtr fShaderAttributeDef;

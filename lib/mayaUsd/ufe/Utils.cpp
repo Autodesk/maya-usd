@@ -627,7 +627,12 @@ Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdrShaderPropertyConstPtr& shade
         TokenToSdfTypeMap::const_iterator it
             = tokenTypeToSdfType.find(shaderProperty->GetTypeAsSdfType().second);
         if (it != tokenTypeToSdfType.end()) {
-            return usdTypeToUfe(it->second);
+            Ufe::Attribute::Type type = usdTypeToUfe(it->second);
+            if (type == Ufe::Attribute::kString && !shaderProperty->GetOptions().empty()) {
+                return Ufe::Attribute::kEnumString;
+            } else {
+                return type;
+            }
         } else {
 #if PXR_VERSION < 2205
             // Pre-22.05 boolean inputs are special:
@@ -644,7 +649,12 @@ Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdrShaderPropertyConstPtr& shade
             return usdTypeToUfe(PXR_NS::SdfValueTypeNames->Token);
         }
     } else {
-        return usdTypeToUfe(typeName);
+        Ufe::Attribute::Type type = usdTypeToUfe(typeName);
+        if (type == Ufe::Attribute::kString && !shaderProperty->GetOptions().empty()) {
+            return Ufe::Attribute::kEnumString;
+        } else {
+            return type;
+        }
     }
 }
 
