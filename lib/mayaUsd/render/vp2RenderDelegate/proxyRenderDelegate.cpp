@@ -279,6 +279,7 @@ void _ConfigureReprs()
 
     // Hull desc for shaded display, edge desc for selection highlight.
     HdMesh::ConfigureRepr(HdReprTokens->smoothHull, reprDescHull, reprDescEdge);
+    HdMesh::ConfigureRepr(HdVP2ReprTokens->smoothHullUntextured, reprDescHull, reprDescEdge); 
 
 #ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
     // Hull desc for default material display, edge desc for selection highlight.
@@ -870,8 +871,10 @@ void ProxyRenderDelegate::ComputeCombinedDisplayStyles(const unsigned int newDis
                 _combinedDisplayStyles[HdVP2ReprTokens->defaultMaterial] = _frameCounter;
             } else
 #endif
-            {
+            if (newDisplayStyle & MHWRender::MFrameContext::kTextured) {
                 _combinedDisplayStyles[HdReprTokens->smoothHull] = _frameCounter;
+            } else {
+                _combinedDisplayStyles[HdVP2ReprTokens->smoothHullUntextured] = _frameCounter;
             }
         }
     }
@@ -1006,11 +1009,10 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         }
 #endif
 
-        // if textured/untextured mode has changed, we need to update materials
+        // if switching to textured mode, we need to update materials
         const bool neededTexturedMaterials = _needTexturedMaterials;
         _needTexturedMaterials = _combinedDisplayStyles.find(HdReprTokens->smoothHull) != _combinedDisplayStyles.end();
-        if (_needTexturedMaterials != neededTexturedMaterials) {
-            dirtyBits |= HdChangeTracker::DirtyMaterialId;
+        if (_needTexturedMaterials && !neededTexturedMaterials) {
             auto materials = _renderIndex->GetSprimSubtree(
                 HdPrimTypeTokens->material, SdfPath::AbsoluteRootPath());
             for (auto material : materials) {

@@ -3297,29 +3297,24 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::GetPointShader() con
     return _pointShader.get();
 }
 
-HdVP2Material::NetworkConfig HdVP2Material::_GetCompiledConfig(NetworkConfig cfg) const
+HdVP2Material::NetworkConfig HdVP2Material::_GetCompiledConfig(const TfToken& reprToken) const
 {
-    if (cfg == kDefault) {
-        auto* const param = static_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
-        return param->GetDrawScene().NeedTexturedMaterials() ? kFull : kUntextured;
-    }
-
-    return cfg;
+    return (reprToken == HdReprTokens->smoothHull) ? kFull : kUntextured;
 }
 
-MHWRender::MShaderInstance* HdVP2Material::GetSurfaceShader(NetworkConfig cfg) const
+MHWRender::MShaderInstance* HdVP2Material::GetSurfaceShader(const TfToken& reprToken) const
 {
-    return _compiledNetworks[_GetCompiledConfig(cfg)].GetSurfaceShader();
+    return _compiledNetworks[_GetCompiledConfig(reprToken)].GetSurfaceShader();
 }
 
-MHWRender::MShaderInstance* HdVP2Material::GetPointShader(NetworkConfig cfg) const
+MHWRender::MShaderInstance* HdVP2Material::GetPointShader(const TfToken& reprToken) const
 {
-    return _compiledNetworks[_GetCompiledConfig(cfg)].GetPointShader();
+    return _compiledNetworks[_GetCompiledConfig(reprToken)].GetPointShader();
 }
 
-const TfTokenVector& HdVP2Material::GetRequiredPrimvars(NetworkConfig cfg) const
+const TfTokenVector& HdVP2Material::GetRequiredPrimvars(const TfToken& reprToken) const
 {
-    return _compiledNetworks[_GetCompiledConfig(cfg)].GetRequiredPrimvars();
+    return _compiledNetworks[_GetCompiledConfig(reprToken)].GetRequiredPrimvars();
 }
 
 void HdVP2Material::SubscribeForMaterialUpdates(const SdfPath& rprimId)

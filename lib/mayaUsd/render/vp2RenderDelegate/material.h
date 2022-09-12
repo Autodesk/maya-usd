@@ -99,21 +99,12 @@ public:
     void Reload() override {};
 #endif
 
-    enum NetworkConfig
-    {
-        kFull = 0,
-        kUntextured,
-
-        kNumNetworkConfigs,
-        kDefault = kNumNetworkConfigs
-    };
-
     //! Get the surface shader instance.
-    MHWRender::MShaderInstance* GetSurfaceShader(NetworkConfig cfg = kDefault) const;
-    MHWRender::MShaderInstance* GetPointShader(NetworkConfig cfg = kDefault) const;
+    MHWRender::MShaderInstance* GetSurfaceShader(const TfToken& reprToken = TfToken()) const;
+    MHWRender::MShaderInstance* GetPointShader(const TfToken& reprToken = TfToken()) const;
 
     //! Get primvar tokens required by this material.
-    const TfTokenVector& GetRequiredPrimvars(NetworkConfig cfg = kDefault) const;
+    const TfTokenVector& GetRequiredPrimvars(const TfToken& reprToken = TfToken()) const;
 
     void EnqueueLoadTextures();
     void ClearPendingTasks();
@@ -165,6 +156,14 @@ private:
         void _UpdateShaderInstance(HdSceneDelegate* sceneDelegate, const HdMaterialNetwork& mat);
     };
 
+    enum NetworkConfig
+    {
+        kFull = 0,
+        kUntextured,
+
+        kNumNetworkConfigs
+    };
+
     const HdVP2TextureInfo& _AcquireTexture(
         HdSceneDelegate*      sceneDelegate,
         const std::string&    path,
@@ -181,7 +180,7 @@ private:
 
     static void _ScheduleRefresh();
 
-    NetworkConfig _GetCompiledConfig(NetworkConfig cfg) const;
+    NetworkConfig _GetCompiledConfig(const TfToken& reprToken) const;
 
     static std::mutex                            _refreshMutex;
     static std::chrono::steady_clock::time_point _startTime;
