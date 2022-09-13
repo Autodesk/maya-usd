@@ -1249,7 +1249,7 @@ class ParentCmdTestCase(unittest.TestCase):
         # Restore default edit router.
         mayaUsd.lib.restoreDefaultEditRouter('parent')
 
-    @unittest.skipUnless(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '4025', 'Require Transform3dRead interface in Ufe 0.4.25')
+    @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() >= 6, 'Require parent command fix from Maya')
     def testParentAbsoluteUnderScope(self):
         """Test parent -absolute to move prim under scope."""
 
