@@ -66,8 +66,7 @@ constexpr auto kIllegalUFEPath = "Illegal UFE run-time path %s.";
 constexpr auto kInvalidValue = "Invalid value '%s' for data type '%s'";
 #endif
 
-typedef std::unordered_map<PXR_NS::TfToken, PXR_NS::SdfValueTypeName, PXR_NS::TfToken::HashFunctor>
-    TokenToSdfTypeMap;
+typedef std::unordered_map<TfToken, SdfValueTypeName, TfToken::HashFunctor> TokenToSdfTypeMap;
 
 bool stringBeginsWithDigit(const std::string& inputString)
 {
@@ -558,7 +557,11 @@ bool isEditTargetLayerModifiable(const UsdStageWeakPtr stage, std::string* errMs
 }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-Ufe::Attribute::Type usdTypeToUfe(const SdfValueTypeName& usdType)
+
+namespace {
+// Do not expose that function. The input parameter does not provide enough information to
+// distinguish between kEnum and kEnumString.
+Ufe::Attribute::Type _UsdTypeToUfe(const SdfValueTypeName& usdType)
 {
     // Map the USD type into UFE type.
     static const std::unordered_map<size_t, Ufe::Attribute::Type> sUsdTypeToUfe
@@ -568,7 +571,7 @@ Ufe::Attribute::Type usdTypeToUfe(const SdfValueTypeName& usdType)
             { SdfValueTypeNames->Float.GetHash(), Ufe::Attribute::kFloat },         // float
             { SdfValueTypeNames->Double.GetHash(), Ufe::Attribute::kDouble },       // double
             { SdfValueTypeNames->String.GetHash(), Ufe::Attribute::kString },       // std::string
-            { SdfValueTypeNames->Token.GetHash(), Ufe::Attribute::kEnumString },    // TfToken
+            { SdfValueTypeNames->Token.GetHash(), Ufe::Attribute::kString },        // TfToken
             { SdfValueTypeNames->Int3.GetHash(), Ufe::Attribute::kInt3 },           // GfVec3i
             { SdfValueTypeNames->Float3.GetHash(), Ufe::Attribute::kFloat3 },       // GfVec3f
             { SdfValueTypeNames->Double3.GetHash(), Ufe::Attribute::kDouble3 },     // GfVec3d
@@ -607,69 +610,110 @@ Ufe::Attribute::Type usdTypeToUfe(const SdfValueTypeName& usdType)
         }
     }
 }
+} // namespace
 
-Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdrShaderPropertyConstPtr& shaderProperty)
+Ufe::Attribute::Type usdTypeToUfe(const SdrShaderPropertyConstPtr& shaderProperty)
 {
-    const PXR_NS::SdfValueTypeName typeName = shaderProperty->GetTypeAsSdfType().first;
-    if (typeName.GetHash() == PXR_NS::SdfValueTypeNames->Token.GetHash()) {
+    Ufe::Attribute::Type retVal = Ufe::Attribute::kInvalid;
+
+    const SdfValueTypeName typeName = shaderProperty->GetTypeAsSdfType().first;
+    if (typeName.GetHash() == SdfValueTypeNames->Token.GetHash()) {
         static const TokenToSdfTypeMap tokenTypeToSdfType
-            = { { PXR_NS::SdrPropertyTypes->Int, PXR_NS::SdfValueTypeNames->Int },
-                { PXR_NS::SdrPropertyTypes->String, PXR_NS::SdfValueTypeNames->String },
-                { PXR_NS::SdrPropertyTypes->Float, PXR_NS::SdfValueTypeNames->Float },
-                { PXR_NS::SdrPropertyTypes->Color, PXR_NS::SdfValueTypeNames->Color3f },
+            = { { SdrPropertyTypes->Int, SdfValueTypeNames->Int },
+                { SdrPropertyTypes->String, SdfValueTypeNames->String },
+                { SdrPropertyTypes->Float, SdfValueTypeNames->Float },
+                { SdrPropertyTypes->Color, SdfValueTypeNames->Color3f },
 #if defined(USD_HAS_COLOR4_SDR_SUPPORT)
-                { PXR_NS::SdrPropertyTypes->Color4, PXR_NS::SdfValueTypeNames->Color4f },
+                { SdrPropertyTypes->Color4, SdfValueTypeNames->Color4f },
 #endif
-                { PXR_NS::SdrPropertyTypes->Point, PXR_NS::SdfValueTypeNames->Point3f },
-                { PXR_NS::SdrPropertyTypes->Normal, PXR_NS::SdfValueTypeNames->Normal3f },
-                { PXR_NS::SdrPropertyTypes->Vector, PXR_NS::SdfValueTypeNames->Vector3f },
-                { PXR_NS::SdrPropertyTypes->Matrix, PXR_NS::SdfValueTypeNames->Matrix4d } };
+                { SdrPropertyTypes->Point, SdfValueTypeNames->Point3f },
+                { SdrPropertyTypes->Normal, SdfValueTypeNames->Normal3f },
+                { SdrPropertyTypes->Vector, SdfValueTypeNames->Vector3f },
+                { SdrPropertyTypes->Matrix, SdfValueTypeNames->Matrix4d } };
         TokenToSdfTypeMap::const_iterator it
             = tokenTypeToSdfType.find(shaderProperty->GetTypeAsSdfType().second);
         if (it != tokenTypeToSdfType.end()) {
-            return usdTypeToUfe(it->second);
+            retVal = _UsdTypeToUfe(it->second);
         } else {
 #if PXR_VERSION < 2205
             // Pre-22.05 boolean inputs are special:
             if (shaderProperty->GetType() == SdfValueTypeNames->Bool.GetAsToken()) {
-                return usdTypeToUfe(PXR_NS::SdfValueTypeNames->Bool);
-            }
+                retVal = _UsdTypeToUfe(SdfValueTypeNames->Bool);
+            } else
 #endif
-            // There is no Matrix3d type in Sdr, so we need to infer it from Sdf until a fix similar
-            // to what was done to booleans is submitted to USD. This also means that there will be
-            // no default value for that type.
-            if (shaderProperty->GetType() == SdfValueTypeNames->Matrix3d.GetAsToken()) {
-                return usdTypeToUfe(PXR_NS::SdfValueTypeNames->Matrix3d);
+                // There is no Matrix3d type in Sdr, so we need to infer it from Sdf until a fix
+                // similar to what was done to booleans is submitted to USD. This also means that
+                // there will be no default value for that type.
+                if (shaderProperty->GetType() == SdfValueTypeNames->Matrix3d.GetAsToken()) {
+                retVal = _UsdTypeToUfe(SdfValueTypeNames->Matrix3d);
+            } else {
+                retVal = Ufe::Attribute::kGeneric;
             }
-            return usdTypeToUfe(PXR_NS::SdfValueTypeNames->Token);
         }
     } else {
-        return usdTypeToUfe(typeName);
+        retVal = _UsdTypeToUfe(typeName);
     }
+
+    if (retVal == Ufe::Attribute::kString && !shaderProperty->GetOptions().empty()) {
+        retVal = Ufe::Attribute::kEnumString;
+    }
+
+    return retVal;
 }
 
-PXR_NS::SdfValueTypeName ufeTypeToUsd(const std::string& ufeType)
+Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::UsdAttribute& usdAttr)
+{
+    if (usdAttr.IsValid()) {
+        const SdfValueTypeName typeName = usdAttr.GetTypeName();
+        Ufe::Attribute::Type   type = _UsdTypeToUfe(typeName);
+        if (type == Ufe::Attribute::kString) {
+            // Both std::string and TfToken resolve to kString, but if there is a list of allowed
+            // tokens, then we use kEnumString instead.
+            auto attrDefn
+                = usdAttr.GetPrim().GetPrimDefinition().GetSchemaAttributeSpec(usdAttr.GetName());
+            if (attrDefn && attrDefn->HasAllowedTokens()) {
+                type = Ufe::Attribute::kEnumString;
+            }
+            // TfToken is also used in UsdShade as a Generic placeholder for connecting struct I/O.
+            UsdShadeNodeGraph asNodeGraph(usdAttr.GetPrim());
+            if (asNodeGraph && usdAttr.GetTypeName() == SdfValueTypeNames->Token) {
+                if (UsdShadeUtils::GetBaseNameAndType(usdAttr.GetName()).second
+                    != UsdShadeAttributeType::Invalid) {
+                    type = Ufe::Attribute::kGeneric;
+                }
+            }
+        }
+        return type;
+    }
+
+    TF_RUNTIME_ERROR("Invalid USDAttribute: %s", usdAttr.GetPath().GetAsString().c_str());
+    return Ufe::Attribute::kInvalid;
+}
+
+SdfValueTypeName ufeTypeToUsd(const Ufe::Attribute::Type ufeType)
 {
     // Map the USD type into UFE type.
-    static const std::unordered_map<Ufe::Attribute::Type, PXR_NS::SdfValueTypeName> sUfeTypeToUsd
+    static const std::unordered_map<Ufe::Attribute::Type, SdfValueTypeName> sUfeTypeToUsd
     {
-        { Ufe::Attribute::kBool, PXR_NS::SdfValueTypeNames->Bool },
-            { Ufe::Attribute::kInt, PXR_NS::SdfValueTypeNames->Int },
-            { Ufe::Attribute::kFloat, PXR_NS::SdfValueTypeNames->Float },
-            { Ufe::Attribute::kDouble, PXR_NS::SdfValueTypeNames->Double },
-            { Ufe::Attribute::kString, PXR_NS::SdfValueTypeNames->String },
-            { Ufe::Attribute::kEnumString, PXR_NS::SdfValueTypeNames->Token },
-            { Ufe::Attribute::kInt3, PXR_NS::SdfValueTypeNames->Int3 },
-            { Ufe::Attribute::kFloat3, PXR_NS::SdfValueTypeNames->Float3 },
-            { Ufe::Attribute::kDouble3, PXR_NS::SdfValueTypeNames->Double3 },
-            { Ufe::Attribute::kColorFloat3, PXR_NS::SdfValueTypeNames->Color3f },
+        { Ufe::Attribute::kBool, SdfValueTypeNames->Bool },
+            { Ufe::Attribute::kInt, SdfValueTypeNames->Int },
+            { Ufe::Attribute::kFloat, SdfValueTypeNames->Float },
+            { Ufe::Attribute::kDouble, SdfValueTypeNames->Double },
+            { Ufe::Attribute::kString, SdfValueTypeNames->String },
+            // Not enough info at this point to differentiate between TfToken and std:string.
+            { Ufe::Attribute::kEnumString, SdfValueTypeNames->Token },
+            { Ufe::Attribute::kInt3, SdfValueTypeNames->Int3 },
+            { Ufe::Attribute::kFloat3, SdfValueTypeNames->Float3 },
+            { Ufe::Attribute::kDouble3, SdfValueTypeNames->Double3 },
+            { Ufe::Attribute::kColorFloat3, SdfValueTypeNames->Color3f },
+            { Ufe::Attribute::kGeneric, SdfValueTypeNames->Token },
 #if (UFE_PREVIEW_VERSION_NUM >= 4015)
-            { Ufe::Attribute::kFilename, PXR_NS::SdfValueTypeNames->Asset },
-            { Ufe::Attribute::kFloat2, PXR_NS::SdfValueTypeNames->Float2 },
-            { Ufe::Attribute::kFloat4, PXR_NS::SdfValueTypeNames->Float4 },
-            { Ufe::Attribute::kColorFloat4, PXR_NS::SdfValueTypeNames->Color4f },
-            { Ufe::Attribute::kMatrix3d, PXR_NS::SdfValueTypeNames->Matrix3d },
-            { Ufe::Attribute::kMatrix4d, PXR_NS::SdfValueTypeNames->Matrix4d },
+            { Ufe::Attribute::kFilename, SdfValueTypeNames->Asset },
+            { Ufe::Attribute::kFloat2, SdfValueTypeNames->Float2 },
+            { Ufe::Attribute::kFloat4, SdfValueTypeNames->Float4 },
+            { Ufe::Attribute::kColorFloat4, SdfValueTypeNames->Color4f },
+            { Ufe::Attribute::kMatrix3d, SdfValueTypeNames->Matrix3d },
+            { Ufe::Attribute::kMatrix4d, SdfValueTypeNames->Matrix4d },
 #endif
     };
 
@@ -681,98 +725,220 @@ PXR_NS::SdfValueTypeName ufeTypeToUsd(const std::string& ufeType)
     }
 }
 
-PXR_NS::VtValue vtValueFromString(const std::string& typeName, const std::string& strValue)
+VtValue vtValueFromString(const SdfValueTypeName& typeName, const std::string& strValue)
 {
-    PXR_NS::VtValue result;
-    if (typeName == Ufe::Attribute::kBool) {
-        result = "true" == strValue ? true : false;
-    } else if (typeName == Ufe::Attribute::kInt) {
-        result = std::stoi(strValue.c_str());
-    } else if (typeName == Ufe::Attribute::kFloat) {
-        result = std::stof(strValue.c_str());
-    } else if (typeName == Ufe::Attribute::kDouble) {
-        result = std::stod(strValue.c_str());
-    } else if (typeName == Ufe::Attribute::kString) {
-        result = strValue;
-    } else if (typeName == Ufe::Attribute::kEnumString) {
-        result = PXR_NS::TfToken(strValue.c_str());
-    } else if (typeName == Ufe::Attribute::kInt3) {
-        std::vector<std::string> tokens = splitString(strValue, "()[], ");
-        if (TF_VERIFY(tokens.size() == 3, kInvalidValue, strValue.c_str(), typeName.c_str())) {
-            result = GfVec3i(
+    const auto _int3Converter = [](const std::string& s) {
+        std::vector<std::string> tokens = splitString(s, "()[], ");
+        if (tokens.size() == 3) {
+            return VtValue(GfVec3i(
                 std::stoi(tokens[0].c_str()),
                 std::stoi(tokens[1].c_str()),
-                std::stoi(tokens[2].c_str()));
+                std::stoi(tokens[2].c_str())));
         }
-#ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4015)
-    } else if (typeName == Ufe::Attribute::kFloat2) {
-        std::vector<std::string> tokens = splitString(strValue, "()[], ");
-        if (TF_VERIFY(tokens.size() == 2, kInvalidValue, strValue.c_str(), typeName.c_str())) {
-            result = GfVec2f(std::stof(tokens[0].c_str()), std::stof(tokens[1].c_str()));
-        }
-#endif
-#endif
-    } else if (typeName == Ufe::Attribute::kFloat3 || typeName == Ufe::Attribute::kColorFloat3) {
-        std::vector<std::string> tokens = splitString(strValue, "()[], ");
-        if (TF_VERIFY(tokens.size() == 3, kInvalidValue, strValue.c_str(), typeName.c_str())) {
-            result = GfVec3f(
+        return VtValue();
+    };
+
+    const auto _float3Converter = [](const std::string& s) {
+        std::vector<std::string> tokens = splitString(s, "()[], ");
+        if (tokens.size() == 3) {
+            return VtValue(GfVec3f(
                 std::stof(tokens[0].c_str()),
                 std::stof(tokens[1].c_str()),
-                std::stof(tokens[2].c_str()));
+                std::stof(tokens[2].c_str())));
         }
-#ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4015)
-    } else if (typeName == Ufe::Attribute::kFloat4 || typeName == Ufe::Attribute::kColorFloat4) {
-        std::vector<std::string> tokens = splitString(strValue, "()[], ");
-        if (TF_VERIFY(tokens.size() == 4, kInvalidValue, strValue.c_str(), typeName.c_str())) {
-            result = GfVec4f(
+        return VtValue();
+    };
+
+    const auto _double3Converter = [](const std::string& s) {
+        std::vector<std::string> tokens = splitString(s, "()[], ");
+        if (tokens.size() == 3) {
+            return VtValue(GfVec3d(
+                std::stod(tokens[0].c_str()),
+                std::stod(tokens[1].c_str()),
+                std::stod(tokens[2].c_str())));
+        }
+        return VtValue();
+    };
+
+    const auto _float2Converter = [](const std::string& s) {
+        std::vector<std::string> tokens = splitString(s, "()[], ");
+        if (tokens.size() == 2) {
+            return VtValue(GfVec2f(std::stof(tokens[0].c_str()), std::stof(tokens[1].c_str())));
+        }
+        return VtValue();
+    };
+
+    const auto _float4Converter = [](const std::string& s) {
+        std::vector<std::string> tokens = splitString(s, "()[], ");
+        if (tokens.size() == 4) {
+            return VtValue(GfVec4f(
                 std::stof(tokens[0].c_str()),
                 std::stof(tokens[1].c_str()),
                 std::stof(tokens[2].c_str()),
-                std::stof(tokens[3].c_str()));
+                std::stof(tokens[3].c_str())));
         }
-#endif
-#endif
-    } else if (typeName == Ufe::Attribute::kDouble3) {
-        std::vector<std::string> tokens = splitString(strValue, "()[], ");
-        if (TF_VERIFY(tokens.size() == 3, kInvalidValue, strValue.c_str(), typeName.c_str())) {
-            result = GfVec3d(
+        return VtValue();
+    };
+
+    const auto _double4Converter = [](const std::string& s) {
+        std::vector<std::string> tokens = splitString(s, "()[], ");
+        if (tokens.size() == 4) {
+            return VtValue(GfVec4d(
                 std::stod(tokens[0].c_str()),
                 std::stod(tokens[1].c_str()),
-                std::stod(tokens[2].c_str()));
+                std::stod(tokens[2].c_str()),
+                std::stod(tokens[3].c_str())));
         }
-    }
-#ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4015)
-    else if (typeName == Ufe::Attribute::kMatrix3d) {
-        std::vector<std::string> tokens = splitString(strValue, "()[], ");
-        if (TF_VERIFY(tokens.size() == 9, kInvalidValue, strValue.c_str(), typeName.c_str())) {
+        return VtValue();
+    };
+
+    const auto _matrix3dConverter = [](const std::string& s) {
+        std::vector<std::string> tokens = splitString(s, "()[], ");
+        if (tokens.size() == 9) {
             double m[3][3];
             for (int i = 0, k = 0; i < 3; ++i) {
                 for (int j = 0; j < 3; ++j, ++k) {
                     m[i][j] = std::stod(tokens[k].c_str());
                 }
             }
-            result = GfMatrix3d(m);
+            return VtValue(GfMatrix3d(m));
         }
-    } else if (typeName == Ufe::Attribute::kMatrix4d) {
-        std::vector<std::string> tokens = splitString(strValue, "()[], ");
-        if (TF_VERIFY(tokens.size() == 16, kInvalidValue, strValue.c_str(), typeName.c_str())) {
+        return VtValue();
+    };
+
+    const auto _matrix4dConverter = [](const std::string& s) {
+        std::vector<std::string> tokens = splitString(s, "()[], ");
+        if (tokens.size() == 16) {
             double m[4][4];
             for (int i = 0, k = 0; i < 4; ++i) {
                 for (int j = 0; j < 4; ++j, ++k) {
                     m[i][j] = std::stod(tokens[k].c_str());
                 }
             }
-            result = GfMatrix4d(m);
+            return VtValue(GfMatrix4d(m));
         }
-    } else if (typeName == Ufe::Attribute::kFilename) {
-        result = strValue;
+        return VtValue();
+    };
+
+    static const std::unordered_map<std::string, std::function<VtValue(const std::string&)>>
+        sUsdConverterMap {
+            // Using the CPPTypeName prevents having to repeat converters for types that share the
+            // same VtValue representation like Float3, Color3f, Normal3f, Point3f, allowing support
+            // for more Sdf types without having to list them all.
+            { SdfValueTypeNames->Bool.GetCPPTypeName(),
+              [](const std::string& s) { return VtValue("true" == s ? true : false); } },
+            { SdfValueTypeNames->Int.GetCPPTypeName(),
+              [](const std::string& s) { return VtValue(std::stoi(s.c_str())); } },
+            { SdfValueTypeNames->Float.GetCPPTypeName(),
+              [](const std::string& s) { return VtValue(std::stof(s.c_str())); } },
+            { SdfValueTypeNames->Double.GetCPPTypeName(),
+              [](const std::string& s) { return VtValue(std::stod(s.c_str())); } },
+            { SdfValueTypeNames->String.GetCPPTypeName(),
+              [](const std::string& s) { return VtValue(s); } },
+            { SdfValueTypeNames->Token.GetCPPTypeName(),
+              [](const std::string& s) { return VtValue(TfToken(s)); } },
+            { SdfValueTypeNames->Asset.GetCPPTypeName(),
+              [](const std::string& s) { return VtValue(SdfAssetPath(s)); } },
+            { SdfValueTypeNames->Int3.GetCPPTypeName(),
+              [](const std::string& s) {
+                  std::vector<std::string>tokens = splitString(s, "()[], ");
+                  if (tokens.size() == 3) {
+                      return VtValue(GfVec3i(
+                          std::stoi(tokens[0].c_str()),
+                          std::stoi(tokens[1].c_str()),
+                          std::stoi(tokens[2].c_str())));
+                  }
+                  return VtValue();
+              } },
+            { SdfValueTypeNames->Float2.GetCPPTypeName(),
+              [](const std::string& s) {
+                  std::vector<std::string>tokens = splitString(s, "()[], ");
+                  if (tokens.size() == 2) {
+                      return VtValue(
+                          GfVec2f(std::stof(tokens[0].c_str()), std::stof(tokens[1].c_str())));
+                  }
+                  return VtValue();
+              } },
+            { SdfValueTypeNames->Float3.GetCPPTypeName(),
+              [](const std::string& s) {
+                  std::vector<std::string>tokens = splitString(s, "()[], ");
+                  if (tokens.size() == 3) {
+                      return VtValue(GfVec3f(
+                          std::stof(tokens[0].c_str()),
+                          std::stof(tokens[1].c_str()),
+                          std::stof(tokens[2].c_str())));
+                  }
+                  return VtValue();
+              } },
+            { SdfValueTypeNames->Float4.GetCPPTypeName(),
+              [](const std::string& s) {
+                  std::vector<std::string>tokens = splitString(s, "()[], ");
+                  if (tokens.size() == 4) {
+                      return VtValue(GfVec4f(
+                          std::stof(tokens[0].c_str()),
+                          std::stof(tokens[1].c_str()),
+                          std::stof(tokens[2].c_str()),
+                          std::stof(tokens[3].c_str())));
+                  }
+                  return VtValue();
+              } },
+            { SdfValueTypeNames->Double3.GetCPPTypeName(),
+              [](const std::string& s) {
+                  std::vector<std::string>tokens = splitString(s, "()[], ");
+                  if (tokens.size() == 3) {
+                      return VtValue(GfVec3d(
+                          std::stod(tokens[0].c_str()),
+                          std::stod(tokens[1].c_str()),
+                          std::stod(tokens[2].c_str())));
+                  }
+                  return VtValue();
+              } },
+            { SdfValueTypeNames->Double4.GetCPPTypeName(),
+              [](const std::string& s) {
+                  std::vector<std::string>tokens = splitString(s, "()[], ");
+                  if (tokens.size() == 4) {
+                      return VtValue(GfVec4d(
+                          std::stod(tokens[0].c_str()),
+                          std::stod(tokens[1].c_str()),
+                          std::stod(tokens[2].c_str()),
+                          std::stod(tokens[3].c_str())));
+                  }
+                  return VtValue();
+              } },
+            { SdfValueTypeNames->Matrix3d.GetCPPTypeName(),
+              [](const std::string& s) {
+                  std::vector<std::string>tokens = splitString(s, "()[], ");
+                  if (tokens.size() == 9) {
+                      double m[3][3];
+                      for (int i = 0, k = 0; i < 3; ++i) {
+                          for (int j = 0; j < 3; ++j, ++k) {
+                              m[i][j] = std::stod(tokens[k].c_str());
+                          }
+                      }
+                      return VtValue(GfMatrix3d(m));
+                  }
+                  return VtValue();
+              } },
+            { SdfValueTypeNames->Matrix4d.GetCPPTypeName(),
+              [](const std::string& s) {
+                  std::vector<std::string>tokens = splitString(s, "()[], ");
+                  if (tokens.size() == 16) {
+                      double m[4][4];
+                      for (int i = 0, k = 0; i < 4; ++i) {
+                          for (int j = 0; j < 4; ++j, ++k) {
+                              m[i][j] = std::stod(tokens[k].c_str());
+                          }
+                      }
+                      return VtValue(GfMatrix4d(m));
+                  }
+                  return VtValue();
+              } },
+        };
+    const auto iter = sUsdConverterMap.find(typeName.GetCPPTypeName());
+    if (iter != sUsdConverterMap.end()) {
+        return iter->second(strValue);
     }
-#endif
-#endif
-    return result;
+    return {};
 }
 
 #endif
