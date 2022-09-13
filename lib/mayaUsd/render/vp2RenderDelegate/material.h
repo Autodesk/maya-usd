@@ -100,11 +100,11 @@ public:
 #endif
 
     //! Get the surface shader instance.
-    MHWRender::MShaderInstance* GetSurfaceShader(const TfToken& reprToken = TfToken()) const;
-    MHWRender::MShaderInstance* GetPointShader(const TfToken& reprToken = TfToken()) const;
+    MHWRender::MShaderInstance* GetSurfaceShader(const TfToken& reprToken) const;
+    MHWRender::MShaderInstance* GetPointShader(const TfToken& reprToken) const;
 
     //! Get primvar tokens required by this material.
-    const TfTokenVector& GetRequiredPrimvars(const TfToken& reprToken = TfToken()) const;
+    const TfTokenVector& GetRequiredPrimvars(const TfToken& reprToken) const;
 
     void EnqueueLoadTextures();
     void ClearPendingTasks();

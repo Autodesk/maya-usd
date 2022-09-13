@@ -148,8 +148,9 @@ void HdVP2Points::Sync(
 
         TfTokenVector        materialPrimvars;
         const TfTokenVector* requiredPrimvars = &sFallbackShaderPrimvars;
-        if (material && material->GetSurfaceShader()) {
-            materialPrimvars = material->GetRequiredPrimvars();
+        TfToken materialNetworkToken = _GetMaterialNetworkToken(reprToken);
+        if (material && material->GetSurfaceShader(materialNetworkToken)) {
+            materialPrimvars = material->GetRequiredPrimvars(materialNetworkToken);
             materialPrimvars.push_back(HdTokens->widths);
             requiredPrimvars = &materialPrimvars;
         }
@@ -260,6 +261,7 @@ void PreparePrimvarBuffer(
 void HdVP2Points::_UpdateDrawItem(
     HdSceneDelegate*        sceneDelegate,
     HdVP2DrawItem*          drawItem,
+    const TfToken& reprToken,
     HdPointsReprDesc const& desc)
 {
     if (drawItem->GetRenderItems().empty()) {
@@ -393,7 +395,7 @@ void HdVP2Points::_UpdateDrawItem(
                 renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
 
             if (material) {
-                MHWRender::MShaderInstance* shader = material->GetPointShader();
+                MHWRender::MShaderInstance* shader = material->GetPointShader(_GetMaterialNetworkToken(reprToken));
                 drawItemData._shaderIsFallback = (shader == nullptr);
                 if (shader != nullptr && shader != drawItemData._shader) {
                     drawItemData._shader = shader;
@@ -921,6 +923,10 @@ void HdVP2Points::_UpdateDrawItem(
 */
 HdDirtyBits HdVP2Points::_PropagateDirtyBits(HdDirtyBits bits) const
 {
+    if (bits & HdChangeTracker::DirtyMaterialId) {
+        bits |= HdChangeTracker::DirtyPrimvar;
+    }
+
     _PropagateDirtyBitsCommon(bits, _reprs);
     return bits;
 }
@@ -974,8 +980,8 @@ void HdVP2Points::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBits)
 
         switch (desc.geomStyle) {
         case HdPointsGeomStylePoints:
-            if (reprToken == HdReprTokens->smoothHull) {
-                renderItem = _CreateFatPointsRenderItem(renderItemName);
+            if (reprToken == HdReprTokens->smoothHull || reprToken == HdVP2ReprTokens->smoothHullUntextured) {
+                renderItem = _CreateFatPointsRenderItem(renderItemName, reprToken);
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
 #ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
                 renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
@@ -1018,7 +1024,7 @@ void HdVP2Points::_UpdateRepr(HdSceneDelegate* sceneDelegate, TfToken const& rep
             HdVP2DrawItem* drawItem
                 = static_cast<HdVP2DrawItem*>(repr->GetDrawItem(drawItemIndex++));
             if (drawItem) {
-                _UpdateDrawItem(sceneDelegate, drawItem, desc);
+                _UpdateDrawItem(sceneDelegate, drawItem, reprToken, desc);
             }
         }
     }
@@ -1067,13 +1073,20 @@ void HdVP2Points::_UpdatePrimvarSources(
 
 /*! \brief  Create render item for smoothHull repr.
  */
-MHWRender::MRenderItem* HdVP2Points::_CreateFatPointsRenderItem(const MString& name) const
+MHWRender::MRenderItem* HdVP2Points::_CreateFatPointsRenderItem(const MString& name, const TfToken& reprToken) const
 {
     MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
         name, MHWRender::MRenderItem::MaterialSceneItem, MHWRender::MGeometry::kPoints);
 
-    renderItem->setDrawMode(static_cast<MHWRender::MGeometry::DrawMode>(
-        MHWRender::MGeometry::kShaded | MHWRender::MGeometry::kTextured));
+    MHWRender::MGeometry::DrawMode drawMode = static_cast<MHWRender::MGeometry::DrawMode>(
+        MHWRender::MGeometry::kShaded | MHWRender::MGeometry::kTextured);
+    if (reprToken == HdReprTokens->smoothHull) {
+        drawMode = MHWRender::MGeometry::kTextured;
+    } else if (reprToken == HdVP2ReprTokens->smoothHullUntextured) {
+        drawMode = MHWRender::MGeometry::kShaded;
+    }
+
+    renderItem->setDrawMode(drawMode);
     renderItem->castsShadows(false);
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->GetPointsFallbackShader(MColor()));

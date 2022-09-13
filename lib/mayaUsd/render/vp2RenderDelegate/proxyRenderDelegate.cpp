@@ -34,6 +34,7 @@
 #include <pxr/imaging/hd/enums.h>
 #include <pxr/imaging/hd/material.h>
 #include <pxr/imaging/hd/mesh.h>
+#include <pxr/imaging/hd/points.h>
 #include <pxr/imaging/hd/primGather.h>
 #include <pxr/imaging/hd/repr.h>
 #include <pxr/imaging/hd/rprimCollection.h>
@@ -300,6 +301,8 @@ void _ConfigureReprs()
     // Wire for default material:
     HdBasisCurves::ConfigureRepr(HdVP2ReprTokens->defaultMaterial, HdBasisCurvesGeomStyleWire);
 #endif
+
+    HdPoints::ConfigureRepr(HdVP2ReprTokens->smoothHullUntextured, HdPointsGeomStylePoints);
 }
 
 #if defined(WANT_UFE_BUILD)
