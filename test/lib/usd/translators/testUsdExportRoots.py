@@ -33,14 +33,15 @@ class testUsdExportRoot(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         inputPath = fixturesUtils.setUpClass(__file__)
-
-        filePath = os.path.join(inputPath, "UsdExportRootsTest", "UsdExportRootsTest.ma")
-        cmds.file(filePath, force=True, open=True)
+        cls.filePath = os.path.join(inputPath, "UsdExportRootsTest", "UsdExportRootsTest.ma")
 
     @classmethod
     def tearDownClass(cls):
         standalone.uninitialize()
         
+    def setUp(self):
+        cmds.file(testUsdExportRoot.filePath, force=True, open=True)
+
     def doExportImportOneMethod(self, method, shouldError=False, root=None, selection=None):
         if isinstance(root, str):
             root = [root]
@@ -100,11 +101,11 @@ class testUsdExportRoot(unittest.TestCase):
 
     def assertPrim(self, stage, path, type):
         prim = stage.GetPrimAtPath(path)
-        self.assertTrue(prim.IsValid())
-        self.assertEqual(prim.GetTypeName(), type)
+        self.assertTrue(prim.IsValid(), "Expected to find %s" % path)
+        self.assertEqual(prim.GetTypeName(), type, "Expected prim %s to have type %s" % (path, type))
 
     def assertNotPrim(self, stage, path):
-        self.assertFalse(stage.GetPrimAtPath(path).IsValid())
+        self.assertFalse(stage.GetPrimAtPath(path).IsValid(), "Did not expect to find %s" % path)
 
     def testNonOverlappingSelectionRoot(self):
         # test that the command errors if we give it a root + selection that
@@ -305,6 +306,29 @@ class testUsdExportRoot(unittest.TestCase):
         def validator(stage):
             pass
         self.doExportImportTest(validator, shouldError=True, root='NoneExisting', selection='OtherTop')
+
+    def testExportRootStripNamespace(self):
+        # Test that stripnamespace works with export roots when stripped node names would conflict
+        # but only one was specified as root.
+
+        cmds.file(new=True, force=True)
+
+        cmds.namespace(add="myAssetA")
+        cmds.polySphere(name="myAssetA:sphere_GEO")
+        cmds.namespace(add="myAssetB")
+        cmds.polySphere(name="myAssetB:sphere_GEO")
+
+        usdFile = os.path.abspath("testExportRootStripNamespace.usda")
+
+        cmds.mayaUSDExport(file=usdFile,
+            exportRoots=['|myAssetA:sphere_GEO'],
+            stripNamespaces=True,
+            )
+            
+        stage = Usd.Stage.Open(usdFile)
+
+        self.assertPrim(stage, '/sphere_GEO', 'Mesh')
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

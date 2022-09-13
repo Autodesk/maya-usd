@@ -21,6 +21,7 @@ target_sources(${PROJECT_NAME}
         traverseLayer.cpp
         undoHelperCommand.cpp
         util.cpp
+        utilDictionary.cpp
         utilFileSystem.cpp
         utilSerialization.cpp
         variants.cpp
@@ -44,6 +45,7 @@ set(HEADERS
     traverseLayer.h
     undoHelperCommand.h
     util.h
+    utilDictionary.h
     utilFileSystem.h
     utilSerialization.h
     variants.h
