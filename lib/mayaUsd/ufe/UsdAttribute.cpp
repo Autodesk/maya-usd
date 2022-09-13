@@ -18,9 +18,6 @@
 #include "Utils.h"
 #include "private/Utils.h"
 
-#ifdef UFE_V3_FEATURES_AVAILABLE
-#include <mayaUsd/base/tokens.h>
-#endif
 #include <mayaUsd/ufe/StagesSubject.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
@@ -36,6 +33,15 @@
 #include <sstream>
 #include <unordered_map>
 #include <unordered_set>
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4010)
+#include "UsdShaderAttributeDef.h"
+#endif
+#endif
+#ifdef UFE_V3_FEATURES_AVAILABLE
+#include <mayaUsd/base/tokens.h>
+#endif
 
 // Note: normally we would use this using directive, but here we cannot because
 //       our class is called UsdAttribute which is exactly the same as the one

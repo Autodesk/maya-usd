@@ -73,7 +73,9 @@ bool UsdUINodeGraphNode::hasPosition() const
     PXR_NAMESPACE_USING_DIRECTIVE
     const UsdPrim         prim = fItem->prim();
     UsdUINodeGraphNodeAPI posApi(prim);
-    TF_VERIFY(posApi);
+    if (!posApi) {
+        return false;
+    }
     UsdAttribute attr = posApi.GetPosAttr();
     return attr.IsValid();
 }

@@ -465,6 +465,7 @@ void wrapJobImportArgs()
             make_getter(
                 &UsdMayaJobImportArgs::timeInterval, return_value_policy<return_by_value>()))
         .def_readonly("useAsAnimationCache", &UsdMayaJobImportArgs::useAsAnimationCache)
+        .def_readonly("preserveTimeline", &UsdMayaJobImportArgs::preserveTimeline)
         .def("GetMaterialConversion", &UsdMayaJobImportArgs::GetMaterialConversion);
 
     to_python_converter<

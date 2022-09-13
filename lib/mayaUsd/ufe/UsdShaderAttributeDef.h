@@ -61,6 +61,11 @@ public:
     //! Returns true if metadata key has a non-empty value.
     bool hasMetadata(const std::string& key) const override;
 
+    inline const PXR_NS::SdrShaderPropertyConstPtr& shaderProperty() const
+    {
+        return fShaderAttributeDef;
+    }
+
 private:
     const PXR_NS::SdrShaderPropertyConstPtr fShaderAttributeDef;
 
