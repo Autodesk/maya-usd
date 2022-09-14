@@ -55,6 +55,7 @@ namespace ufe {
 namespace {
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4010)
 std::pair<PXR_NS::SdrShaderPropertyConstPtr, PXR_NS::UsdShadeAttributeType>
 _GetSdrPropertyAndType(const Ufe::SceneItem::Ptr& item, const std::string& tokName)
 {
@@ -72,7 +73,7 @@ _GetSdrPropertyAndType(const Ufe::SceneItem::Ptr& item, const std::string& tokNa
     return { nullptr, PXR_NS::UsdShadeAttributeType::Invalid };
 }
 #endif
-
+#endif
 } // namespace
 
 UsdAttributes::UsdAttributes(const UsdSceneItem::Ptr& item)

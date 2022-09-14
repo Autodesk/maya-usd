@@ -38,7 +38,7 @@ public:
         PXR_NS::UsdPrim                   usdPrim,
         PXR_NS::SdrShaderPropertyConstPtr sdrProp,
         PXR_NS::UsdShadeAttributeType     sdrType);
-    ~UsdShaderAttributeHolder() = default;
+    virtual ~UsdShaderAttributeHolder() = default;
 
     virtual bool        isAuthored() const { return isValid() && _usdAttr.IsAuthored(); }
     virtual bool        isValid() const { return _usdAttr.IsValid(); }

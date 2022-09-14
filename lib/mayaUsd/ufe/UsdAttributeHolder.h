@@ -31,7 +31,7 @@ class UsdAttributeHolder
 {
 public:
     UsdAttributeHolder(const PXR_NS::UsdAttribute& usdAttr);
-    ~UsdAttributeHolder() = default;
+    virtual ~UsdAttributeHolder() = default;
 
     virtual bool        isAuthored() const { return isValid() && _usdAttr.IsAuthored(); }
     virtual bool        isValid() const { return _usdAttr.IsValid(); }
