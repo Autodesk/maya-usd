@@ -34,6 +34,9 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/sdf/valueTypeName.h>
+#include <pxr/usd/sdr/registry.h>
+#include <pxr/usd/sdr/shaderNode.h>
+#include <pxr/usd/sdr/shaderProperty.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdShade/input.h>
 #include <pxr/usd/usdShade/output.h>
@@ -163,11 +166,11 @@ UsdAttribute MtlxUsd_BaseWriter::ExtractChannel(size_t channelIndex, UsdAttribut
     swizzleSchema.CreateInput(TrMtlxTokens->channels, SdfValueTypeNames->String)
         .Set(channel, UsdTimeCode::Default());
 
-    swizzleOutput = swizzleSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Float);
-
     TfToken swizzleID(TfStringPrintf("ND_swizzle_%s_float", materialXType.c_str()));
 
     swizzleSchema.CreateIdAttr(VtValue(swizzleID));
+
+    swizzleOutput = swizzleSchema.CreateOutput(_GetOutputName(swizzleID), SdfValueTypeNames->Float);
 
     return swizzleOutput;
 }
@@ -208,6 +211,8 @@ MtlxUsd_BaseWriter::AddConstructor(UsdAttribute nodeInput, size_t channelIndex, 
         channelIndex = maxChannels - 1;
     }
 
+    TfToken ctorID(TfStringPrintf("ND_combine%zu_%s", maxChannels, materialXType.c_str()));
+
     UsdShadeNodeGraph nodegraphSchema(GetNodeGraph());
     SdfPath           nodegraphPath = nodegraphSchema.GetPath();
 
@@ -233,10 +238,10 @@ MtlxUsd_BaseWriter::AddConstructor(UsdAttribute nodeInput, size_t channelIndex, 
     // Here we must initialize the CTOR from the provided plug:
     if (outputPath == nodegraphPath) {
         UsdShadeOutput(nodeInput).ConnectToSource(
-            ctorSchema.CreateOutput(TrMtlxTokens->out, sourceType));
+            ctorSchema.CreateOutput(_GetOutputName(ctorID), sourceType));
     } else {
         UsdShadeInput(nodeInput).ConnectToSource(
-            ctorSchema.CreateOutput(TrMtlxTokens->out, sourceType));
+            ctorSchema.CreateOutput(_GetOutputName(ctorID), sourceType));
     }
 
     for (size_t i = 0; i < maxChannels; ++i) {
@@ -253,8 +258,6 @@ MtlxUsd_BaseWriter::AddConstructor(UsdAttribute nodeInput, size_t channelIndex, 
             childAttr.Set(channelValue, UsdTimeCode::Default());
         }
     }
-
-    TfToken ctorID(TfStringPrintf("ND_combine%zu_%s", maxChannels, materialXType.c_str()));
 
     ctorSchema.CreateIdAttr(VtValue(ctorID));
 
@@ -405,14 +408,14 @@ MtlxUsd_BaseWriter::AddConversion(const SdfValueTypeName& destType, UsdAttribute
             .Set(*channels, UsdTimeCode::Default());
     }
 
-    swizzleOutput = swizzleSchema.CreateOutput(TrMtlxTokens->out, destType);
-
     TfToken swizzleID(TfStringPrintf(
         (channels->empty() ? "ND_convert_%s_%s" : "ND_swizzle_%s_%s"),
         srcType->c_str(),
         dstType->c_str()));
 
     swizzleSchema.CreateIdAttr(VtValue(swizzleID));
+
+    swizzleOutput = swizzleSchema.CreateOutput(_GetOutputName(swizzleID), destType);
 
     return swizzleOutput;
 }
@@ -451,15 +454,15 @@ UsdAttribute MtlxUsd_BaseWriter::AddLuminance(int numChannels, UsdAttribute node
         luminanceSchema.CreateIdAttr(VtValue(TrMtlxTokens->ND_luminance_color3));
         luminanceSchema.CreateInput(TrMtlxTokens->in, SdfValueTypeNames->Color3f)
             .ConnectToSource(UsdShadeOutput(nodeOutput));
-        luminanceOutput
-            = luminanceSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Color3f);
+        luminanceOutput = luminanceSchema.CreateOutput(
+            _GetOutputName(TrMtlxTokens->ND_luminance_color3), SdfValueTypeNames->Color3f);
         break;
     case 4:
         luminanceSchema.CreateIdAttr(VtValue(TrMtlxTokens->ND_luminance_color4));
         luminanceSchema.CreateInput(TrMtlxTokens->in, SdfValueTypeNames->Color4f)
             .ConnectToSource(UsdShadeOutput(nodeOutput));
-        luminanceOutput
-            = luminanceSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Color4f);
+        luminanceOutput = luminanceSchema.CreateOutput(
+            _GetOutputName(TrMtlxTokens->ND_luminance_color4), SdfValueTypeNames->Color4f);
         break;
     default: TF_CODING_ERROR("Unsupported format for luminance"); return UsdAttribute();
     }
@@ -492,8 +495,8 @@ UsdAttribute MtlxUsd_BaseWriter::AddNormalMapping(UsdAttribute normalInput)
     UsdShadeShader nodeSchema = UsdShadeShader::Define(GetUsdStage(), nodePath);
     nodeSchema.CreateIdAttr(VtValue(TrMtlxTokens->ND_normalmap));
     UsdShadeInput  mapInput = nodeSchema.CreateInput(TrMtlxTokens->in, SdfValueTypeNames->Float3);
-    UsdShadeOutput mapOutput
-        = nodeSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Float3);
+    UsdShadeOutput mapOutput = nodeSchema.CreateOutput(
+        _GetOutputName(TrMtlxTokens->ND_normalmap), SdfValueTypeNames->Float3);
     UsdShadeOutput(normalInput).ConnectToSource(UsdShadeOutput(mapOutput));
 
     return mapInput;
@@ -516,6 +519,34 @@ UsdAttribute MtlxUsd_BaseWriter::PreserveNodegraphBoundaries(UsdAttribute input)
 
     return input;
 }
+
+TfToken MtlxUsd_BaseWriter::_GetOutputName(const TfToken& nodeID)
+{
+    SdrRegistry&          registry = SdrRegistry::GetInstance();
+    SdrShaderNodeConstPtr shaderNodeDef = registry.GetShaderNodeByIdentifier(nodeID);
+    const NdrTokenVec&    outputNames = shaderNodeDef->GetOutputNames();
+    return !outputNames.empty() ? outputNames[0] : TfToken();
+}
+
+TfToken MtlxUsd_BaseWriter::_GetVarnameName()
+{
+    static TfToken _varnameName;
+    if (_varnameName.IsEmpty()) {
+        // UsdPrimvarReaders varname input went from TfToken to std::string in USD 20.11. Fetch the
+        // type directly from the registry:
+        SdrRegistry&          registry = SdrRegistry::GetInstance();
+        SdrShaderNodeConstPtr shaderNodeDef
+            = registry.GetShaderNodeByIdentifier(TrUsdTokens->UsdPrimvarReader_float2);
+        SdfValueTypeName varnameType
+            = shaderNodeDef->GetShaderInput(TrUsdTokens->varname)->GetTypeAsSdfType().first;
+
+        // If UsdPrimvarReaders use string varnames, then we do not need to use varnameStr anymore.
+        _varnameName = varnameType == SdfValueTypeNames->String ? TrUsdTokens->varname
+                                                                : TrMtlxTokens->varnameStr;
+    }
+    return _varnameName;
+}
+
 
 bool MtlxUsd_BaseWriter::AuthorShaderInputFromShadingNodeAttr(
     const MFnDependencyNode& depNodeFn,
