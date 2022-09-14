@@ -69,12 +69,16 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(
     , _ufeDstItem(nullptr)
     , _stage(_ufeSrcItem->prim().GetStage())
 {
-    const UsdPrim& prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
+    const UsdPrim prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
 
     ufe::applyCommandRestriction(prim, "rename");
 
     // handle unique name for _newName
-    _newName = uniqueChildName(prim.GetParent(), TfMakeValidIdentifier(newName.string()));
+    const std::string validNewName = TfMakeValidIdentifier(newName.string());
+    if (validNewName != prim.GetName())
+        _newName = uniqueChildName(prim.GetParent(), validNewName);
+    else
+        _unchanged = true;
 }
 
 UsdUndoRenameCommand::~UsdUndoRenameCommand() { }
@@ -89,6 +93,13 @@ UsdSceneItem::Ptr UsdUndoRenameCommand::renamedItem() const { return _ufeDstItem
 
 bool UsdUndoRenameCommand::renameRedo()
 {
+    // If the new name is the same as the current name, do nothing.
+    // This is the same behavior as the Maya rename command for Maya nodes.
+    if (_unchanged) {
+        _ufeDstItem = _ufeSrcItem;
+        return true;
+    }
+
     // get the stage's default prim path
     auto defaultPrimPath = _stage->GetDefaultPrim().GetPath();
 
@@ -143,6 +154,11 @@ bool UsdUndoRenameCommand::renameRedo()
 
 bool UsdUndoRenameCommand::renameUndo()
 {
+    // If the new name is the same as the current name, do nothing.
+    // This is the same behavior as the Maya rename command for Maya nodes.
+    if (_unchanged)
+        return true;
+
     // get the stage's default prim path
     auto defaultPrimPath = _stage->GetDefaultPrim().GetPath();
 

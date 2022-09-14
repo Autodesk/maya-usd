@@ -58,6 +58,7 @@ private:
 
     PXR_NS::UsdStageWeakPtr _stage;
     std::string             _newName;
+    bool                    _unchanged {false};
 
 }; // UsdUndoRenameCommand
 
