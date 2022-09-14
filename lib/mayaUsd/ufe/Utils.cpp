@@ -62,9 +62,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 constexpr auto kIllegalUFEPath = "Illegal UFE run-time path %s.";
-#ifdef UFE_V2_FEATURES_AVAILABLE
-constexpr auto kInvalidValue = "Invalid value '%s' for data type '%s'";
-#endif
 
 typedef std::unordered_map<TfToken, SdfValueTypeName, TfToken::HashFunctor> TokenToSdfTypeMap;
 
