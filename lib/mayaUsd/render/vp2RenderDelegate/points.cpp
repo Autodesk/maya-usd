@@ -244,12 +244,9 @@ void PreparePrimvarBuffer(
 
     unsigned int numElems = primvarArray.size();
     if (primvarBuffer && numElems > 0) {
-        void* bufferData = primvarBuffer->acquire(numElems, true);
-        stateToCommit._primvarBufferDataMap[bufferToken] = bufferData;
-
-        if (bufferData != nullptr) {
-            memcpy(bufferData, primvarArray.cdata(), numElems * sizeof(BaseType));
-        }
+        auto& bufferData = stateToCommit._primvarBufferDataMap[bufferToken];
+        bufferData.resize(numElems * sizeof(BaseType));
+        memcpy(&bufferData[0], primvarArray.cdata(), numElems * sizeof(BaseType));
     }
 }
 
@@ -790,14 +787,14 @@ void HdVP2Points::_UpdateDrawItem(
 
         // If available, something changed
         for (const auto& entry : stateToCommit._primvarBufferDataMap) {
-            const TfToken& primvarName = entry.first;
-            void*          primvarBufferData = entry.second;
-            if (primvarBufferData) {
-                const auto it = primvarBuffers->find(primvarName);
+            auto& primvarBufferData = entry.second;
+            if (!primvarBufferData.empty()) {
+                const auto it = primvarBuffers->find(entry.first);
                 if (it != primvarBuffers->end()) {
-                    MHWRender::MVertexBuffer* primvarBuffer = it->second.get();
-                    if (primvarBuffer) {
-                        primvarBuffer->commit(primvarBufferData);
+                    if (auto primvarBuffer = it->second.get()) {
+                        const auto& desc = primvarBuffer->descriptor();
+                        unsigned int numElems = primvarBufferData.size() / (desc.dataTypeSize() * desc.dimension());
+                        primvarBuffer->update(&primvarBufferData[0], 0, numElems, true);
                     }
                 }
             }

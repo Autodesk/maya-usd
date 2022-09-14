@@ -688,12 +688,9 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
             unsigned int numWidths = widths.size();
             if (widthsBuffer && numWidths > 0) {
-                void* bufferData = widthsBuffer->acquire(numWidths, true);
-                stateToCommit._primvarBufferDataMap[HdTokens->widths] = bufferData;
-
-                if (bufferData != nullptr) {
-                    memcpy(bufferData, widths.cdata(), numWidths * sizeof(float));
-                }
+                auto& bufferData = stateToCommit._primvarBufferDataMap[HdTokens->widths];
+                bufferData.resize(numWidths * sizeof(float));
+                memcpy(&bufferData[0], widths.cdata(), numWidths * sizeof(float));    
             }
         }
 
@@ -1114,14 +1111,14 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
         // If available, something changed
         for (const auto& entry : stateToCommit._primvarBufferDataMap) {
-            const TfToken& primvarName = entry.first;
-            void*          primvarBufferData = entry.second;
-            if (primvarBufferData) {
-                const auto it = primvarBuffers->find(primvarName);
+            auto& primvarBufferData = entry.second;
+            if (!primvarBufferData.empty()) {
+                const auto it = primvarBuffers->find(entry.first);
                 if (it != primvarBuffers->end()) {
-                    MHWRender::MVertexBuffer* primvarBuffer = it->second.get();
-                    if (primvarBuffer) {
-                        primvarBuffer->commit(primvarBufferData);
+                    if (auto primvarBuffer = it->second.get()) {
+                        const auto& desc = primvarBuffer->descriptor();
+                        unsigned int numElems = primvarBufferData.size() / (desc.dataTypeSize() * desc.dimension());
+                        primvarBuffer->update(&primvarBufferData[0], 0, numElems, true);
                     }
                 }
             }

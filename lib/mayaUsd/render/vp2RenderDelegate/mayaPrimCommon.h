@@ -69,7 +69,7 @@ public:
 #endif
 
 //! A primvar vertex buffer data map indexed by primvar name.
-using PrimvarBufferDataMap = std::unordered_map<TfToken, void*, TfToken::HashFunctor>;
+using PrimvarBufferDataMap = std::unordered_map<TfToken, std::vector<char>, TfToken::HashFunctor>;
 
 //! \brief  Helper struct used to package all the changes into single commit task
 //!         (such commit task will be executed on main-thread)
