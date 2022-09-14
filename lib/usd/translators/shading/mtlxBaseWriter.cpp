@@ -547,7 +547,6 @@ TfToken MtlxUsd_BaseWriter::_GetVarnameName()
     return _varnameName;
 }
 
-
 bool MtlxUsd_BaseWriter::AuthorShaderInputFromShadingNodeAttr(
     const MFnDependencyNode& depNodeFn,
     const TfToken&           shadingNodeAttrName,
