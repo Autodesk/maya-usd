@@ -884,8 +884,9 @@ void HdVP2Mesh::Sync(
         auto addRequiredPrimvars = [&](const SdfPath& materialId) {
             const HdVP2Material* material = static_cast<const HdVP2Material*>(
                 renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
-            TfToken materialNetworkToken = _GetMaterialNetworkToken(reprToken);
-            const TfTokenVector& requiredPrimvars = material && material->GetSurfaceShader(materialNetworkToken)
+            TfToken              materialNetworkToken = _GetMaterialNetworkToken(reprToken);
+            const TfTokenVector& requiredPrimvars
+                = material && material->GetSurfaceShader(materialNetworkToken)
                 ? material->GetRequiredPrimvars(materialNetworkToken)
                 : sFallbackShaderPrimvars;
 
@@ -1209,7 +1210,9 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
             break;
         case HdMeshGeomStyleHullEdgeOnly:
             // The hull reprs use the wireframe item for selection highlight only.
-            if (reprToken == HdReprTokens->smoothHull || reprToken == HdVP2ReprTokens->smoothHullUntextured || reprToken == HdVP2ReprTokens->defaultMaterial) {
+            if (reprToken == HdReprTokens->smoothHull
+                || reprToken == HdVP2ReprTokens->smoothHullUntextured
+                || reprToken == HdVP2ReprTokens->defaultMaterial) {
                 // Share selection highlight render item between hull reprs
                 bool foundShared = false;
                 for (auto it = _reprs.begin(); (it != _reprs.end()) && !foundShared; ++it) {
@@ -1228,12 +1231,12 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
                             foundShared = true;
                             break;
                         }
-                    }                    
+                    }
                 }
                 if (!foundShared) {
                     renderItem = _CreateSelectionHighlightRenderItem(renderItemName);
                 }
-                drawItem->SetUsage(HdVP2DrawItem::kSelectionHighlight);                
+                drawItem->SetUsage(HdVP2DrawItem::kSelectionHighlight);
             }
             // The item is used for wireframe display and selection highlight.
             else if (reprToken == HdReprTokens->wire) {
@@ -1330,7 +1333,8 @@ void HdVP2Mesh::_CreateSmoothHullRenderItems(
         MString renderItemName = drawItem.GetDrawItemName();
         renderItemName += std::string(1, VP2_RENDER_DELEGATE_SEPARATOR).c_str();
         renderItemName += geomSubset.id.GetString().c_str();
-        _CreateSmoothHullRenderItem(renderItemName, drawItem, reprToken, subSceneContainer, &geomSubset);
+        _CreateSmoothHullRenderItem(
+            renderItemName, drawItem, reprToken, subSceneContainer, &geomSubset);
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
         if (!GetInstancerId().IsEmpty()) {
@@ -1635,7 +1639,8 @@ void HdVP2Mesh::_UpdateDrawItem(
                 renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
 
             if (material) {
-                MHWRender::MShaderInstance* shader = material->GetSurfaceShader(_GetMaterialNetworkToken(reprToken));
+                MHWRender::MShaderInstance* shader
+                    = material->GetSurfaceShader(_GetMaterialNetworkToken(reprToken));
                 if (shader != nullptr
                     && (shader != drawItemData._shader || shader != stateToCommit._shader)) {
                     drawItemData._shader = shader;

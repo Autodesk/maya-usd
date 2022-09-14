@@ -148,7 +148,7 @@ void HdVP2Points::Sync(
 
         TfTokenVector        materialPrimvars;
         const TfTokenVector* requiredPrimvars = &sFallbackShaderPrimvars;
-        TfToken materialNetworkToken = _GetMaterialNetworkToken(reprToken);
+        TfToken              materialNetworkToken = _GetMaterialNetworkToken(reprToken);
         if (material && material->GetSurfaceShader(materialNetworkToken)) {
             materialPrimvars = material->GetRequiredPrimvars(materialNetworkToken);
             materialPrimvars.push_back(HdTokens->widths);
@@ -258,7 +258,7 @@ void PreparePrimvarBuffer(
 void HdVP2Points::_UpdateDrawItem(
     HdSceneDelegate*        sceneDelegate,
     HdVP2DrawItem*          drawItem,
-    const TfToken& reprToken,
+    const TfToken&          reprToken,
     HdPointsReprDesc const& desc)
 {
     if (drawItem->GetRenderItems().empty()) {
@@ -392,7 +392,8 @@ void HdVP2Points::_UpdateDrawItem(
                 renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
 
             if (material) {
-                MHWRender::MShaderInstance* shader = material->GetPointShader(_GetMaterialNetworkToken(reprToken));
+                MHWRender::MShaderInstance* shader
+                    = material->GetPointShader(_GetMaterialNetworkToken(reprToken));
                 drawItemData._shaderIsFallback = (shader == nullptr);
                 if (shader != nullptr && shader != drawItemData._shader) {
                     drawItemData._shader = shader;
@@ -792,8 +793,9 @@ void HdVP2Points::_UpdateDrawItem(
                 const auto it = primvarBuffers->find(entry.first);
                 if (it != primvarBuffers->end()) {
                     if (auto primvarBuffer = it->second.get()) {
-                        const auto& desc = primvarBuffer->descriptor();
-                        unsigned int numElems = primvarBufferData.size() / (desc.dataTypeSize() * desc.dimension());
+                        const auto&  desc = primvarBuffer->descriptor();
+                        unsigned int numElems
+                            = primvarBufferData.size() / (desc.dataTypeSize() * desc.dimension());
                         primvarBuffer->update(&primvarBufferData[0], 0, numElems, true);
                     }
                 }
@@ -977,7 +979,8 @@ void HdVP2Points::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBits)
 
         switch (desc.geomStyle) {
         case HdPointsGeomStylePoints:
-            if (reprToken == HdReprTokens->smoothHull || reprToken == HdVP2ReprTokens->smoothHullUntextured) {
+            if (reprToken == HdReprTokens->smoothHull
+                || reprToken == HdVP2ReprTokens->smoothHullUntextured) {
                 renderItem = _CreateFatPointsRenderItem(renderItemName, reprToken);
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
 #ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
@@ -1070,7 +1073,8 @@ void HdVP2Points::_UpdatePrimvarSources(
 
 /*! \brief  Create render item for smoothHull repr.
  */
-MHWRender::MRenderItem* HdVP2Points::_CreateFatPointsRenderItem(const MString& name, const TfToken& reprToken) const
+MHWRender::MRenderItem*
+HdVP2Points::_CreateFatPointsRenderItem(const MString& name, const TfToken& reprToken) const
 {
     MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
         name, MHWRender::MRenderItem::MaterialSceneItem, MHWRender::MGeometry::kPoints);

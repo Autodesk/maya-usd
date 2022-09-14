@@ -124,23 +124,26 @@ private:
     class CompiledNetwork
     {
     public:
-        CompiledNetwork(HdVP2Material* m) : _owner(m) {}
+        CompiledNetwork(HdVP2Material* m)
+            : _owner(m)
+        {
+        }
 
         void Sync(HdSceneDelegate*, const HdMaterialNetworkMap&);
 
         MHWRender::MShaderInstance* GetSurfaceShader() const { return _surfaceShader.get(); }
         MHWRender::MShaderInstance* GetPointShader() const;
-        const TfTokenVector& GetRequiredPrimvars() const { return _requiredPrimvars; }
+        const TfTokenVector&        GetRequiredPrimvars() const { return _requiredPrimvars; }
 
     private:
-        HdVP2Material*               _owner;
-        TfToken                      _surfaceNetworkToken; //!< Generated token to uniquely identify a material network
-        SdfPath                      _surfaceShaderId;  //!< Path of the surface shader
+        HdVP2Material* _owner;
+        TfToken _surfaceNetworkToken; //!< Generated token to uniquely identify a material network
+        SdfPath _surfaceShaderId;     //!< Path of the surface shader
         HdVP2ShaderUniquePtr         _surfaceShader;    //!< VP2 surface shader instance
         mutable HdVP2ShaderUniquePtr _pointShader;      //!< VP2 point shader instance, if needed
         TfTokenVector                _requiredPrimvars; //!< primvars required by this network
         std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>
-                                    _nodePathMap; //!< Mapping from authored node paths to VP2-specific simplified pathes
+            _nodePathMap; //!< Mapping from authored node paths to VP2-specific simplified pathes
 #ifdef WANT_MATERIALX_BUILD
         // MaterialX-only at the moment, but will be used for UsdPreviewSurface when the upgrade to
         // HdMaterialNetwork2 is complete.

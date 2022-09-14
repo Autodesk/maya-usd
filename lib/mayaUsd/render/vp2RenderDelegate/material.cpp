@@ -1788,7 +1788,7 @@ void HdVP2TextureDeleter::operator()(MHWRender::MTexture* texture)
 HdVP2Material::HdVP2Material(HdVP2RenderDelegate* renderDelegate, const SdfPath& id)
     : HdMaterial(id)
     , _renderDelegate(renderDelegate)
-    , _compiledNetworks{this, this}
+    , _compiledNetworks { this, this }
 {
 }
 
@@ -1836,14 +1836,15 @@ void HdVP2Material::Sync(
         VtValue vtMatResource = sceneDelegate->GetMaterialResource(id);
 
         if (vtMatResource.IsHolding<HdMaterialNetworkMap>()) {
-            const HdMaterialNetworkMap& fullNetworkMap = vtMatResource.UncheckedGet<HdMaterialNetworkMap>();            
+            const HdMaterialNetworkMap& fullNetworkMap
+                = vtMatResource.UncheckedGet<HdMaterialNetworkMap>();
 
             // untextured network is always synced
             HdMaterialNetworkMap untexturedNetworkMap = fullNetworkMap;
             ConvertNetworkMapToUntextured(untexturedNetworkMap);
             _compiledNetworks[kUntextured].Sync(sceneDelegate, untexturedNetworkMap);
 
-            // full network is synced only if required by display style 
+            // full network is synced only if required by display style
             auto* const param = static_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
             if (param->GetDrawScene().NeedTexturedMaterials()) {
                 _compiledNetworks[kFull].Sync(sceneDelegate, fullNetworkMap);
@@ -1860,9 +1861,11 @@ void HdVP2Material::Sync(
     *dirtyBits = HdMaterial::Clean;
 }
 
-void HdVP2Material::CompiledNetwork::Sync(HdSceneDelegate* sceneDelegate, const HdMaterialNetworkMap& networkMap)
+void HdVP2Material::CompiledNetwork::Sync(
+    HdSceneDelegate*            sceneDelegate,
+    const HdMaterialNetworkMap& networkMap)
 {
-    const SdfPath& id = _owner->GetId();
+    const SdfPath&    id = _owner->GetId();
     HdMaterialNetwork bxdfNet, dispNet, vp2BxdfNet;
 
     TfMapLookup(networkMap.map, HdMaterialTerminalTokens->surface, &bxdfNet);
@@ -1889,8 +1892,7 @@ void HdVP2Material::CompiledNetwork::Sync(HdSceneDelegate* sceneDelegate, const 
             size_t topoHash = _GenerateNetwork2TopoHash(surfaceNetwork);
 
             if (!_surfaceShader || topoHash != _topoHash) {
-                _surfaceShader.reset(
-                    _CreateMaterialXShaderInstance(id, surfaceNetwork));
+                _surfaceShader.reset(_CreateMaterialXShaderInstance(id, surfaceNetwork));
                 _pointShader.reset(nullptr);
                 _topoHash = topoHash;
                 // TopoChanged: We have a brand new surface material, tell the mesh to use
@@ -1960,11 +1962,11 @@ void HdVP2Material::CompiledNetwork::Sync(HdSceneDelegate* sceneDelegate, const 
 
             if (TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
                 std::cout << "BXDF material network for " << id << ":\n"
-                        << _GenerateXMLString(bxdfNet) << "\n"
-                        << "BXDF (with VP2 fixes) material network for " << id << ":\n"
-                        << _GenerateXMLString(vp2BxdfNet) << "\n"
-                        << "Displacement material network for " << id << ":\n"
-                        << _GenerateXMLString(dispNet) << "\n";
+                          << _GenerateXMLString(bxdfNet) << "\n"
+                          << "BXDF (with VP2 fixes) material network for " << id << ":\n"
+                          << _GenerateXMLString(vp2BxdfNet) << "\n"
+                          << "Displacement material network for " << id << ":\n"
+                          << _GenerateXMLString(dispNet) << "\n";
 
                 if (_surfaceShader) {
                     auto tmpDir = ghc::filesystem::temp_directory_path();
@@ -1987,8 +1989,7 @@ void HdVP2Material::CompiledNetwork::Sync(HdSceneDelegate* sceneDelegate, const 
                 MVertexBufferDescriptorList requiredVertexBuffers;
                 MStatus status = shader->requiredVertexBuffers(requiredVertexBuffers);
                 if (status) {
-                    for (int reqIndex = 0; reqIndex < requiredVertexBuffers.length();
-                        reqIndex++) {
+                    for (int reqIndex = 0; reqIndex < requiredVertexBuffers.length(); reqIndex++) {
                         MVertexBufferDescriptor desc;
                         requiredVertexBuffers.getDescriptor(reqIndex, desc);
                         TfToken requiredPrimvar = MayaDescriptorToToken(desc);
@@ -2042,7 +2043,9 @@ HdDirtyBits HdVP2Material::GetInitialDirtyBitsMask() const { return HdMaterial::
 
 /*! \brief  Applies VP2-specific fixes to the material network.
  */
-void HdVP2Material::CompiledNetwork::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNetwork& inNet)
+void HdVP2Material::CompiledNetwork::_ApplyVP2Fixes(
+    HdMaterialNetwork&       outNet,
+    const HdMaterialNetwork& inNet)
 {
     // To avoid relocation, reserve enough space for possible maximal size. The
     // output network is temporary C++ object that will be released after use.
@@ -2383,7 +2386,9 @@ TfToken _RequiresColorManagement(
     }
 }
 
-void HdVP2Material::CompiledNetwork::_ApplyMtlxVP2Fixes(HdMaterialNetwork2& outNet, const HdMaterialNetwork2& inNet)
+void HdVP2Material::CompiledNetwork::_ApplyMtlxVP2Fixes(
+    HdMaterialNetwork2&       outNet,
+    const HdMaterialNetwork2& inNet)
 {
 
     // The goal here is to strip all local names in the network paths in order to reduce the shader
@@ -2493,7 +2498,7 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
     SdfPath const&            materialId,
     HdMaterialNetwork2 const& surfaceNetwork)
 {
-    auto renderDelegate = _owner->_renderDelegate;
+    auto                        renderDelegate = _owner->_renderDelegate;
     MHWRender::MShaderInstance* shaderInstance = nullptr;
 
     auto const& terminalConnIt = surfaceNetwork.terminals.find(HdMaterialTerminalTokens->surface);
@@ -2715,7 +2720,8 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
 
 /*! \brief  Creates a shader instance for the surface shader.
  */
-MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateShaderInstance(const HdMaterialNetwork& mat)
+MHWRender::MShaderInstance*
+HdVP2Material::CompiledNetwork::_CreateShaderInstance(const HdMaterialNetwork& mat)
 {
     MHWRender::MRenderer* const renderer = MHWRender::MRenderer::theRenderer();
     if (!TF_VERIFY(renderer)) {
@@ -2953,7 +2959,8 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
 
         if (_IsUsdUVTexture(node)) {
             const MHWRender::MSamplerStateDesc desc = _GetSamplerStateDesc(node);
-            const MHWRender::MSamplerState*    sampler = _owner->_renderDelegate->GetSamplerState(desc);
+            const MHWRender::MSamplerState*    sampler
+                = _owner->_renderDelegate->GetSamplerState(desc);
             if (sampler) {
 #ifdef WANT_MATERIALX_BUILD
                 if (isMaterialXNode) {

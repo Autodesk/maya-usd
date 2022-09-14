@@ -280,7 +280,7 @@ void _ConfigureReprs()
 
     // Hull desc for shaded display, edge desc for selection highlight.
     HdMesh::ConfigureRepr(HdReprTokens->smoothHull, reprDescHull, reprDescEdge);
-    HdMesh::ConfigureRepr(HdVP2ReprTokens->smoothHullUntextured, reprDescHull, reprDescEdge); 
+    HdMesh::ConfigureRepr(HdVP2ReprTokens->smoothHullUntextured, reprDescHull, reprDescEdge);
 
 #ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
     // Hull desc for default material display, edge desc for selection highlight.
@@ -292,7 +292,8 @@ void _ConfigureReprs()
     HdMesh::ConfigureRepr(HdVP2ReprTokens->bbox, reprDescEdge);
 
     // smooth hull for untextured display
-    HdBasisCurves::ConfigureRepr(HdVP2ReprTokens->smoothHullUntextured, HdBasisCurvesGeomStylePatch);
+    HdBasisCurves::ConfigureRepr(
+        HdVP2ReprTokens->smoothHullUntextured, HdBasisCurvesGeomStylePatch);
 
     // Wireframe desc for bbox display.
     HdBasisCurves::ConfigureRepr(HdVP2ReprTokens->bbox, HdBasisCurvesGeomStyleWire);
@@ -814,7 +815,8 @@ void ProxyRenderDelegate::_DirtyUsdSubtree(const UsdPrim& prim)
 
     HdChangeTracker&      changeTracker = _renderIndex->GetChangeTracker();
     constexpr HdDirtyBits dirtyBits = HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyRepr
-        | HdChangeTracker::DirtyDisplayStyle | MayaUsdRPrim::DirtySelectionHighlight | HdChangeTracker::DirtyMaterialId;
+        | HdChangeTracker::DirtyDisplayStyle | MayaUsdRPrim::DirtySelectionHighlight
+        | HdChangeTracker::DirtyMaterialId;
 
     if (prim.IsA<UsdGeomGprim>()) {
         auto indexPath = _sceneDelegate->ConvertCachePathToIndexPath(prim.GetPath());
@@ -877,7 +879,7 @@ void ProxyRenderDelegate::ComputeCombinedDisplayStyles(const unsigned int newDis
                 _combinedDisplayStyles[HdVP2ReprTokens->defaultMaterial] = _frameCounter;
             } else
 #endif
-            if (newDisplayStyle & MHWRender::MFrameContext::kTextured) {
+                if (newDisplayStyle & MHWRender::MFrameContext::kTextured) {
                 _combinedDisplayStyles[HdReprTokens->smoothHull] = _frameCounter;
             } else {
                 _combinedDisplayStyles[HdVP2ReprTokens->smoothHullUntextured] = _frameCounter;
@@ -887,7 +889,7 @@ void ProxyRenderDelegate::ComputeCombinedDisplayStyles(const unsigned int newDis
 
     // Erase aged styles
     for (auto it = _combinedDisplayStyles.begin(); it != _combinedDisplayStyles.end();) {
-        auto curIt = it++;
+        auto          curIt = it++;
         constexpr int numFramesToAge = 8;
         if (curIt->second + numFramesToAge < _frameCounter) {
             _combinedDisplayStyles.erase(curIt);
@@ -946,9 +948,9 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 #else // !defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
     _combinedDisplayStyles[HdReprTokens->points] = _frameCounter;
 
-    constexpr bool     inSelectionPass = false;
+    constexpr bool inSelectionPass = false;
 #if !defined(MAYA_NEW_POINT_SNAPPING_SUPPORT)
-    constexpr bool     inPointSnapping = false;
+    constexpr bool inPointSnapping = false;
 #endif
 #endif // defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
 
@@ -986,11 +988,13 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 
         // Update repr selector based on combined display styles
         TfToken reprNames[HdReprSelector::MAX_TOPOLOGY_REPRS];
-        auto it = _combinedDisplayStyles.begin();
-        for (int j = 0; (it != _combinedDisplayStyles.end()) && (j < HdReprSelector::MAX_TOPOLOGY_REPRS); ++it, ++j) {
+        auto    it = _combinedDisplayStyles.begin();
+        for (int j = 0;
+             (it != _combinedDisplayStyles.end()) && (j < HdReprSelector::MAX_TOPOLOGY_REPRS);
+             ++it, ++j) {
             reprNames[j] = it->first;
         }
-        
+
         reprSelector = HdReprSelector(reprNames[0], reprNames[1], reprNames[2]);
     }
 
@@ -1017,7 +1021,8 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 
         // if switching to textured mode, we need to update materials
         const bool neededTexturedMaterials = _needTexturedMaterials;
-        _needTexturedMaterials = _combinedDisplayStyles.find(HdReprTokens->smoothHull) != _combinedDisplayStyles.end();
+        _needTexturedMaterials
+            = _combinedDisplayStyles.find(HdReprTokens->smoothHull) != _combinedDisplayStyles.end();
         if (_needTexturedMaterials && !neededTexturedMaterials) {
             auto materials = _renderIndex->GetSprimSubtree(
                 HdPrimTypeTokens->material, SdfPath::AbsoluteRootPath());

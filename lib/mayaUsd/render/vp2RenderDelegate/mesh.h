@@ -161,8 +161,10 @@ private:
         const HdDirtyBits& rprimDirtyBits,
         const TfToken&     reprToken);
 
-    void
-    _CreateSmoothHullRenderItems(HdVP2DrawItem& drawItem, const TfToken& reprToken, MSubSceneContainer& subSceneContainer);
+    void _CreateSmoothHullRenderItems(
+        HdVP2DrawItem&      drawItem,
+        const TfToken&      reprToken,
+        MSubSceneContainer& subSceneContainer);
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     MHWRender::MRenderItem* _CreateShadedSelectedInstancesItem(
