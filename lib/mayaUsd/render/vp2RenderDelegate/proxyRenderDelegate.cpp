@@ -989,7 +989,7 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         // Update repr selector based on combined display styles
         TfToken reprNames[HdReprSelector::MAX_TOPOLOGY_REPRS];
         auto    it = _combinedDisplayStyles.begin();
-        for (int j = 0;
+        for (size_t j = 0;
              (it != _combinedDisplayStyles.end()) && (j < HdReprSelector::MAX_TOPOLOGY_REPRS);
              ++it, ++j) {
             reprNames[j] = it->first;
