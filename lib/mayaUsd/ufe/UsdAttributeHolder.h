@@ -29,8 +29,12 @@ namespace ufe {
 //! \brief Internal helper class holding a USD attributes for query:
 class UsdAttributeHolder
 {
-public:
+protected:
     UsdAttributeHolder(const PXR_NS::UsdAttribute& usdAttr);
+
+public:
+    typedef std::unique_ptr<UsdAttributeHolder> UPtr;
+    static UPtr                                 create(const PXR_NS::UsdAttribute& usdAttr);
     virtual ~UsdAttributeHolder() = default;
 
     virtual bool        isAuthored() const { return isValid() && _usdAttr.IsAuthored(); }

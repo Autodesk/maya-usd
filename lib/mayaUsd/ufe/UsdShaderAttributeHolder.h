@@ -28,22 +28,25 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-//! \brief Internal helper class holding a USD attributes for query:
+//! \brief Internal helper class holding a SdrShaderProperty, providing services to transparently
+// handle it as if it was a native USD attribute found in a regular schema:
 class UsdShaderAttributeHolder : public UsdAttributeHolder
 {
     typedef UsdAttributeHolder _Base;
 
-public:
     UsdShaderAttributeHolder(
+        PXR_NS::UsdPrim                   usdPrim,
+        PXR_NS::SdrShaderPropertyConstPtr sdrProp,
+        PXR_NS::UsdShadeAttributeType     sdrType);
+
+public:
+    static UPtr create(
         PXR_NS::UsdPrim                   usdPrim,
         PXR_NS::SdrShaderPropertyConstPtr sdrProp,
         PXR_NS::UsdShadeAttributeType     sdrType);
     virtual ~UsdShaderAttributeHolder() = default;
 
-    virtual bool        isAuthored() const { return isValid() && _usdAttr.IsAuthored(); }
-    virtual bool        isValid() const { return _usdAttr.IsValid(); }
     virtual std::string isEditAllowedMsg() const;
-    virtual bool        isEditAllowed() const { return isEditAllowedMsg().empty(); }
     virtual std::string defaultValue() const;
     virtual std::string nativeType() const;
     virtual bool        get(PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time) const;
@@ -60,12 +63,10 @@ public:
 #endif
 
     virtual PXR_NS::UsdPrim                      usdPrim() const { return _usdAttr.GetPrim(); }
-    virtual PXR_NS::UsdAttribute                 usdAttribute() const { return _usdAttr; }
     virtual PXR_NS::SdfValueTypeName             usdAttributeType() const;
     virtual Ufe::AttributeEnumString::EnumValues getEnumValues() const;
 
 private:
-    PXR_NS::UsdPrim                   _usdPrim;
     PXR_NS::SdrShaderPropertyConstPtr _sdrProp;
     PXR_NS::UsdShadeAttributeType     _sdrType;
 

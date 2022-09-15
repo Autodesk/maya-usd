@@ -160,17 +160,17 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
         // Use a map of constructors to reduce the number of string comparisons. Since the naming
         // convention is extremely uniform, let's use a macro to simplify definition (and prevent
         // mismatch errors).
-#define ADD_UFE_USD_CTOR(TYPE)                                                                     \
-    {                                                                                              \
-        Ufe::Attribute::k##TYPE, [](const UsdSceneItem::Ptr& si, UsdAttributeHolder* attrHolder) { \
-            return UsdAttribute##TYPE::create(si, attrHolder);                                     \
-        }                                                                                          \
+#define ADD_UFE_USD_CTOR(TYPE)                                                       \
+    {                                                                                \
+        Ufe::Attribute::k##TYPE,                                                     \
+            [](const UsdSceneItem::Ptr& si, UsdAttributeHolder::UPtr&& attrHolder) { \
+                return UsdAttribute##TYPE::create(si, std::move(attrHolder));        \
+            }                                                                        \
     }
 
     static const std::unordered_map<
         std::string,
-        std::function<Ufe::Attribute::Ptr(
-            const UsdSceneItem::Ptr&, UsdAttributeHolder* attrHolder)>>
+        std::function<Ufe::Attribute::Ptr(const UsdSceneItem::Ptr&, UsdAttributeHolder::UPtr&&)>>
         ctorMap
         = { ADD_UFE_USD_CTOR(Bool),
             ADD_UFE_USD_CTOR(Int),
@@ -190,21 +190,21 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
             ADD_UFE_USD_CTOR(Matrix4d),
 #endif
             { Ufe::Attribute::kString,
-              [](const UsdSceneItem::Ptr& si,
-                 UsdAttributeHolder*      attrHolder) -> Ufe::Attribute::Ptr {
+              [](const UsdSceneItem::Ptr&   si,
+                 UsdAttributeHolder::UPtr&& attrHolder) -> Ufe::Attribute::Ptr {
                   if (attrHolder->usdAttributeType() == PXR_NS::SdfValueTypeNames->String) {
-                      return UsdAttributeString::create(si, attrHolder);
+                      return UsdAttributeString::create(si, std::move(attrHolder));
                   } else {
-                      return UsdAttributeToken::create(si, attrHolder);
+                      return UsdAttributeToken::create(si, std::move(attrHolder));
                   }
               } },
             { Ufe::Attribute::kEnumString,
-              [](const UsdSceneItem::Ptr& si,
-                 UsdAttributeHolder*      attrHolder) -> Ufe::Attribute::Ptr {
+              [](const UsdSceneItem::Ptr&   si,
+                 UsdAttributeHolder::UPtr&& attrHolder) -> Ufe::Attribute::Ptr {
                   if (attrHolder->usdAttributeType() == PXR_NS::SdfValueTypeNames->String) {
-                      return UsdAttributeEnumString::create(si, attrHolder);
+                      return UsdAttributeEnumString::create(si, std::move(attrHolder));
                   } else {
-                      return UsdAttributeEnumToken::create(si, attrHolder);
+                      return UsdAttributeEnumToken::create(si, std::move(attrHolder));
                   }
               } },
           };
@@ -222,8 +222,8 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
         if (ctorIt != ctorMap.end()) {
             newAttr = ctorIt->second(
                 fItem,
-                new UsdShaderAttributeHolder(
-                    fPrim, shaderPropAndType.first, shaderPropAndType.second));
+                std::move(UsdShaderAttributeHolder::create(
+                    fPrim, shaderPropAndType.first, shaderPropAndType.second)));
         }
     }
 #endif
@@ -241,7 +241,7 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
         auto ctorIt = ctorMap.find(newAttrType);
         UFE_ASSERT_MSG(ctorIt != ctorMap.end(), kErrorMsgUnknown);
         if (ctorIt != ctorMap.end())
-            newAttr = ctorIt->second(fItem, new UsdAttributeHolder(usdAttr));
+            newAttr = ctorIt->second(fItem, std::move(UsdAttributeHolder::create(usdAttr)));
     }
 
 #if (UFE_PREVIEW_VERSION_NUM >= 4024)

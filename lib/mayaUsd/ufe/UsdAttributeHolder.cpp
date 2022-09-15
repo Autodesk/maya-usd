@@ -91,6 +91,11 @@ UsdAttributeHolder::UsdAttributeHolder(const PXR_NS::UsdAttribute& usdAttr)
 {
 }
 
+UsdAttributeHolder::UPtr UsdAttributeHolder::create(const PXR_NS::UsdAttribute& usdAttr)
+{
+    return std::unique_ptr<UsdAttributeHolder>(new UsdAttributeHolder(usdAttr));
+}
+
 std::string UsdAttributeHolder::isEditAllowedMsg() const
 {
     if (isValid()) {
