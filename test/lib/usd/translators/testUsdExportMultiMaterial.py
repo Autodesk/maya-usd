@@ -221,7 +221,7 @@ class testUsdExportMultiMaterial(unittest.TestCase):
         ]
 
         primvarReader = Sdr.Registry().GetShaderNodeByIdentifier("UsdPrimvarReader_float2")
-        if primvarReader.GetShaderInput("varname").GetType() == "string":
+        if primvarReader and primvarReader.GetShaderInput("varname").GetType() == "string":
             connections.extend(
                 [
                     # Making sure no NodeGraph boundaries were skipped upstream, and that the right varname is used

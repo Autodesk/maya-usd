@@ -65,8 +65,9 @@ SdfValueTypeName _GetVarnameType()
         SdrRegistry&          registry = SdrRegistry::GetInstance();
         SdrShaderNodeConstPtr shaderNodeDef
             = registry.GetShaderNodeByIdentifier(TrUsdTokens->UsdPrimvarReader_float2);
-        _varnameType
-            = shaderNodeDef->GetShaderInput(TrUsdTokens->varname)->GetTypeAsSdfType().first;
+        _varnameType = shaderNodeDef
+            ? shaderNodeDef->GetShaderInput(TrUsdTokens->varname)->GetTypeAsSdfType().first
+            : SdfValueTypeNames->Token;
         _once = false;
     }
     return _varnameType;

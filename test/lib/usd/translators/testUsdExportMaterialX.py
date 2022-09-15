@@ -167,7 +167,7 @@ class testUsdExportMaterialX(unittest.TestCase):
 
         mxName = "file1:varnameStr"
         primvarReader = Sdr.Registry().GetShaderNodeByIdentifier("UsdPrimvarReader_float2")
-        if primvarReader.GetShaderInput("varname").GetType() == "string":
+        if primvarReader and primvarReader.GetShaderInput("varname").GetType() == "string":
             mxName = "file1:varname"
 
         # Needs a resolved inputs:file1:varnameStr attribute:
@@ -180,7 +180,9 @@ class testUsdExportMaterialX(unittest.TestCase):
         # Which is a standard surface:
         self.assertEqual(shader.GetIdAttr().Get(),
                          "ND_standard_surface_surfaceshader")
-        self.assertEqual(outputName, Sdr.Registry().GetShaderNodeByIdentifier("ND_standard_surface_surfaceshader").GetOutputNames()[0])
+        mxNode = Sdr.Registry().GetShaderNodeByIdentifier("ND_standard_surface_surfaceshader")
+        if mxNode:
+            self.assertEqual(outputName, mxNode.GetOutputNames()[0])
 
         # With a connected file texture on base_color going to baseColor on the
         # nodegraph:

@@ -524,8 +524,14 @@ TfToken MtlxUsd_BaseWriter::_GetOutputName(const TfToken& nodeID)
 {
     SdrRegistry&          registry = SdrRegistry::GetInstance();
     SdrShaderNodeConstPtr shaderNodeDef = registry.GetShaderNodeByIdentifier(nodeID);
-    const NdrTokenVec&    outputNames = shaderNodeDef->GetOutputNames();
-    return !outputNames.empty() ? outputNames[0] : TfToken();
+    if (shaderNodeDef) {
+        const NdrTokenVec& outputNames = shaderNodeDef->GetOutputNames();
+        if (!outputNames.empty()) {
+            return outputNames.front();
+        }
+    }
+    // If MaterialX nodes are not registered, return "out" as default. Correct 99% of the time.
+    return TrMtlxTokens->out;
 }
 
 TfToken MtlxUsd_BaseWriter::_GetVarnameName()
@@ -537,8 +543,9 @@ TfToken MtlxUsd_BaseWriter::_GetVarnameName()
         SdrRegistry&          registry = SdrRegistry::GetInstance();
         SdrShaderNodeConstPtr shaderNodeDef
             = registry.GetShaderNodeByIdentifier(TrUsdTokens->UsdPrimvarReader_float2);
-        SdfValueTypeName varnameType
-            = shaderNodeDef->GetShaderInput(TrUsdTokens->varname)->GetTypeAsSdfType().first;
+        SdfValueTypeName varnameType = shaderNodeDef
+            ? shaderNodeDef->GetShaderInput(TrUsdTokens->varname)->GetTypeAsSdfType().first
+            : SdfValueTypeNames->Token;
 
         // If UsdPrimvarReaders use string varnames, then we do not need to use varnameStr anymore.
         _varnameName = varnameType == SdfValueTypeNames->String ? TrUsdTokens->varname
