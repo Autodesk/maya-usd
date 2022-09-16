@@ -470,10 +470,18 @@ class RenameTestCase(unittest.TestCase):
         self.assertTrue(usdPrim)
 
         # the new prim name is expected to be "leavesXform1"
-        assert ([x for x in stage.Traverse()] == [stage.GetPrimAtPath("/TreeBase"), 
-            stage.GetPrimAtPath("/TreeBase/leavesXform"), 
-            stage.GetPrimAtPath("/TreeBase/leavesXform/leaves"),
-            stage.GetPrimAtPath("/TreeBase/leavesXform1"),])
+        def verifyNames():
+            assert ([x for x in stage.Traverse()] == [stage.GetPrimAtPath("/TreeBase"), 
+                stage.GetPrimAtPath("/TreeBase/leavesXform"), 
+                stage.GetPrimAtPath("/TreeBase/leavesXform/leaves"),
+                stage.GetPrimAtPath("/TreeBase/leavesXform1"),])
+
+        verifyNames()
+
+        # rename `/TreeBase/leavesXform1` to `/TreeBase/leavesXform1`: should not affect the name.
+        cmds.rename("leavesXform1")
+
+        verifyNames()
 
     def testRenameSpecialCharacter(self):
         # open twoSpheres.ma scene in testSamples
