@@ -20,6 +20,7 @@ import fixturesUtils
 import mayaUtils
 import testUtils
 import usdUtils
+import mayaUsd_createStageWithNewLayer
 
 import mayaUsd.ufe
 
@@ -525,7 +526,6 @@ class RenameTestCase(unittest.TestCase):
 
         # [GitHub #2150] renaming 2 usd items with illegal characters will cause Maya to crash
         cmds.file(new=True, force=True)
-        import mayaUsd_createStageWithNewLayer
         psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
         x1 = stage.DefinePrim('/Xform1', 'Xform')
@@ -539,6 +539,35 @@ class RenameTestCase(unittest.TestCase):
         cmds.select('|stage1|stageShape1,/test_', '|stage1|stageShape1,/test_1', replace=True)
         sel = ufe.GlobalSelection.get()
         self.assertEqual(2, len(sel))
+
+    def testRenameAutoNumber(self):
+        '''Test that a trailing # is converted to a number that makes the name unique.'''
+
+        # Create stage with two xforms.
+        cmds.file(new=True, force=True)
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        stage.DefinePrim('/Xform1', 'Xform')
+        stage.DefinePrim('/Xform2', 'Xform')
+
+        # rename with trailing #
+        cmds.select('|stage1|stageShape1,/Xform1', replace=True)
+        cmds.rename('hello#')
+
+        # The prim # should have been changed to a number: hello1.
+        item = ufe.GlobalSelection.get().front()
+        usdPrim = stage.GetPrimAtPath(str(item.path().segments[1]))
+        self.assertTrue(usdPrim)
+        self.assertEqual(usdPrim.GetName(), "hello1")
+
+        cmds.select('|stage1|stageShape1,/Xform2', replace=True)
+        cmds.rename('hello#')
+
+        # The prim # should have been changed to a unique number: hello2.
+        item = ufe.GlobalSelection.get().front()
+        usdPrim = stage.GetPrimAtPath(str(item.path().segments[1]))
+        self.assertTrue(usdPrim)
+        self.assertEqual(usdPrim.GetName(), "hello2")
 
     def testRenameNotifications(self):
         '''Rename a USD node and test for the UFE notifications.'''

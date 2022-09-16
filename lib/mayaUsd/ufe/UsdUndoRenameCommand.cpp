@@ -73,8 +73,19 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(
 
     ufe::applyCommandRestriction(prim, "rename");
 
+    // Handle trailing #: convert it to a number which will be increased as needed.
+    // Increasing the number to make it unique is handled in the function uniqueChildName
+    // below.
+    //
+    // Converting the # must be done before calling TfMakeValidIdentifier as it would
+    // convert it to a an underscore ('_').
+    std::string newNameStr = newName.string();
+    if (newNameStr.size() > 0 && newNameStr.back() == '#') {
+        newNameStr.back() = '1';
+    }
+
     // handle unique name for _newName
-    _newName = uniqueChildName(prim.GetParent(), TfMakeValidIdentifier(newName.string()));
+    _newName = uniqueChildName(prim.GetParent(), TfMakeValidIdentifier(newNameStr));
 }
 
 UsdUndoRenameCommand::~UsdUndoRenameCommand() { }
