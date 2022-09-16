@@ -222,8 +222,8 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
         if (ctorIt != ctorMap.end()) {
             newAttr = ctorIt->second(
                 fItem,
-                std::move(UsdShaderAttributeHolder::create(
-                    fPrim, shaderPropAndType.first, shaderPropAndType.second)));
+                UsdShaderAttributeHolder::create(
+                    fPrim, shaderPropAndType.first, shaderPropAndType.second));
         }
     }
 #endif
@@ -241,7 +241,7 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
         auto ctorIt = ctorMap.find(newAttrType);
         UFE_ASSERT_MSG(ctorIt != ctorMap.end(), kErrorMsgUnknown);
         if (ctorIt != ctorMap.end())
-            newAttr = ctorIt->second(fItem, std::move(UsdAttributeHolder::create(usdAttr)));
+            newAttr = ctorIt->second(fItem, UsdAttributeHolder::create(usdAttr));
     }
 
 #if (UFE_PREVIEW_VERSION_NUM >= 4024)
