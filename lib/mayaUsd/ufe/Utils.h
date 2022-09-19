@@ -27,6 +27,7 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
@@ -159,15 +160,16 @@ bool isAttributeEditAllowed(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& 
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 MAYAUSD_CORE_PUBLIC
-Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdfValueTypeName& usdType);
+Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::UsdAttribute& usdAttr);
 
 MAYAUSD_CORE_PUBLIC
 Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdrShaderPropertyConstPtr& shaderProperty);
 
 MAYAUSD_CORE_PUBLIC
-PXR_NS::SdfValueTypeName ufeTypeToUsd(const std::string& ufeType);
+PXR_NS::SdfValueTypeName ufeTypeToUsd(const Ufe::Attribute::Type ufeType);
 
-PXR_NS::VtValue vtValueFromString(const std::string& typeName, const std::string& strValue);
+PXR_NS::VtValue
+vtValueFromString(const PXR_NS::SdfValueTypeName& typeName, const std::string& strValue);
 #endif
 
 //! Check if the edit target in the stage is allowed to be changed.

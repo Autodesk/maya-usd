@@ -23,7 +23,7 @@
 
 #include <ufe/attributes.h>
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4008)
+#if (UFE_PREVIEW_VERSION_NUM >= 4010)
 #include <ufe/nodeDef.h>
 #endif
 #endif
@@ -64,7 +64,7 @@ public:
     Ufe::UndoableCommand::Ptr removeAttributeCmd(const std::string& name) override;
 #endif
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4008)
+#if (UFE_PREVIEW_VERSION_NUM >= 4010)
     inline Ufe::NodeDef::Ptr nodeDef() const;
 #endif
 
@@ -82,9 +82,6 @@ public:
     static bool doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
 #endif
 #endif
-
-private:
-    Ufe::Attribute::Type getUfeTypeForAttribute(const PXR_NS::UsdAttribute& usdAttr) const;
 
 private:
     UsdSceneItem::Ptr fItem;
