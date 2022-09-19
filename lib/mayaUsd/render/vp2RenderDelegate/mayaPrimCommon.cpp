@@ -728,12 +728,12 @@ void MayaUsdRPrim::_SyncDisplayLayerModes(const HdRprim&
                 continue;
             }
 
-            MPlug             layerVisible = displayLayerNodeFn.findPlug("visibility");
-            MPlug             layerHidesOnPlayback = displayLayerNodeFn.findPlug("hideOnPlayback");
-            MPlug             layerDisplayType = displayLayerNodeFn.findPlug("displayType");
-            MPlug             levelOfDetail = displayLayerNodeFn.findPlug("levelOfDetail");
-            MPlug             shading = displayLayerNodeFn.findPlug("shading");
-            MPlug             texturing = displayLayerNodeFn.findPlug("texturing");
+            MPlug layerVisible = displayLayerNodeFn.findPlug("visibility");
+            MPlug layerHidesOnPlayback = displayLayerNodeFn.findPlug("hideOnPlayback");
+            MPlug layerDisplayType = displayLayerNodeFn.findPlug("displayType");
+            MPlug levelOfDetail = displayLayerNodeFn.findPlug("levelOfDetail");
+            MPlug shading = displayLayerNodeFn.findPlug("shading");
+            MPlug texturing = displayLayerNodeFn.findPlug("texturing");
 
             _displayLayerModes._visibility &= layerVisible.asBool();
             _displayLayerModes._hideOnPlayback |= layerHidesOnPlayback.asBool();
@@ -916,22 +916,26 @@ SdfPath MayaUsdRPrim::_GetUpdatedMaterialId(HdRprim* rprim, HdSceneDelegate* del
     return materialId;
 }
 
-bool MayaUsdRPrim::_GetMaterialPrimvars(HdRenderIndex& renderIndex, const SdfPath& materialId, TfTokenVector& primvars)
+bool MayaUsdRPrim::_GetMaterialPrimvars(
+    HdRenderIndex& renderIndex,
+    const SdfPath& materialId,
+    TfTokenVector& primvars)
 {
-    const HdVP2Material* material = static_cast<const HdVP2Material*>(renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
+    const HdVP2Material* material = static_cast<const HdVP2Material*>(
+        renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
     if (!material || !material->GetSurfaceShader(TfToken())) {
         return false;
     }
 
     // Get basic primvars
     primvars = material->GetRequiredPrimvars(TfToken());
-    
+
     // Get extra primvars
     if (material->GetSurfaceShader(HdReprTokens->smoothHull)) {
         const auto& extraPrimvars = material->GetRequiredPrimvars(HdReprTokens->smoothHull);
-        for (const auto& extraPrimvar: extraPrimvars) {
+        for (const auto& extraPrimvar : extraPrimvars) {
             if (std::find(primvars.begin(), primvars.end(), extraPrimvar) == primvars.end()) {
-               primvars.push_back(extraPrimvar); 
+                primvars.push_back(extraPrimvar);
             }
         }
     }
