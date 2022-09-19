@@ -146,6 +146,9 @@ void MayaSessionState::registerNotifications()
         MSceneMessage::kBeforeNew, MayaSessionState::sceneClosingCB, this);
     _callbackIds.push_back(id);
 
+    id = MSceneMessage::addNamespaceRenamedCallback(MayaSessionState::namespaceRenamedCB, this);
+    _callbackIds.push_back(id);
+
     TfWeakPtr<MayaSessionState> me(this);
     _stageResetNoticeKey = TfNotice::Register(me, &MayaSessionState::mayaUsdStageReset);
 }
@@ -209,6 +212,21 @@ void MayaSessionState::proxyShapeRemovedCB(MObject& node, void* clientData)
 {
     auto THIS = static_cast<MayaSessionState*>(clientData);
     QTimer::singleShot(0, [THIS]() { THIS->stageListChangedSignal(); });
+}
+
+/* static */
+void MayaSessionState::namespaceRenamedCB(const MString& oldName, const MString& newName, void* clientData)
+{
+    if (oldName.length() != 0) {
+        auto THIS = static_cast<MayaSessionState*>(clientData);
+        for (StageEntry& entry : THIS->allStages()) {
+            // Need to update the current Entry also
+            if (THIS->_currentStageEntry._id == entry._id) {
+                THIS->_currentStageEntry = entry;
+            }
+            Q_EMIT THIS->stageRenamedSignal(entry);
+        }
+    }
 }
 
 /* static */
