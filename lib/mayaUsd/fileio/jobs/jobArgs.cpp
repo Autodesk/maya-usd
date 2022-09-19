@@ -46,6 +46,7 @@
 
 #include <ghc/filesystem.hpp>
 
+#include <mutex>
 #include <ostream>
 #include <string>
 
