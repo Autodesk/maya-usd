@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/translators/translatorRfMLight.h>
 
@@ -48,15 +49,12 @@ PXRUSDMAYA_DEFINE_WRITER(PxrEnvDayLight, args, context)
     return UsdMayaTranslatorRfMLight::Write(args, context);
 }
 
-PXRUSDMAYA_DEFINE_WRITER(PxrMeshLight, args, context)
-{
-    return UsdMayaTranslatorRfMLight::Write(args, context);
-}
-
 PXRUSDMAYA_DEFINE_WRITER(PxrRectLight, args, context)
 {
     return UsdMayaTranslatorRfMLight::Write(args, context);
 }
+
+// see lightRfMWriter_PxrMeshLight.cpp for PxrMeshLight.
 
 PXRUSDMAYA_DEFINE_WRITER(PxrSphereLight, args, context)
 {

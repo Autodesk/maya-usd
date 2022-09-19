@@ -22,6 +22,7 @@ target_sources(${TARGET_NAME}
         lightReader.cpp
         lightRfMReader.cpp
         lightRfMWriter.cpp
+        lightRfMWriter_PxrMeshLight.cpp
         lightWriter.cpp
         locatorWriter.cpp
         materialReader.cpp
