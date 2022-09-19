@@ -83,7 +83,7 @@ struct MayaUsdCommitState
     PrimvarBufferDataMap _primvarBufferDataMap;
 
     //! If valid, world matrix to set on the render item
-    MMatrix* _worldMatrix { nullptr };
+    const MMatrix* _worldMatrix { nullptr };
 
     //! If valid, bounding box to set on the render item
     MBoundingBox* _boundingBox { nullptr };
@@ -270,6 +270,8 @@ protected:
 
     //! Helper utility function to adapt Maya API changes.
     static void _SetWantConsolidation(MHWRender::MRenderItem& renderItem, bool state);
+
+    static bool _GetMaterialPrimvars(HdRenderIndex&, const SdfPath&, TfTokenVector&);
 
     void _InitRenderItemCommon(MHWRender::MRenderItem* renderItem) const;
 

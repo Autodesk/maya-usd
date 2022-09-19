@@ -447,14 +447,10 @@ void HdVP2BasisCurves::Sync(
     const SdfPath& id = GetId();
     if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals)
         || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->primvar)) {
-        const HdVP2Material* material = static_cast<const HdVP2Material*>(
-            renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
-
-        TfToken              materialNetworkToken = _GetMaterialNetworkToken(reprToken);
-        const TfTokenVector& requiredPrimvars
-            = (material && material->GetSurfaceShader(materialNetworkToken))
-            ? material->GetRequiredPrimvars(materialNetworkToken)
-            : sFallbackShaderPrimvars;
+        TfTokenVector requiredPrimvars;
+        if (!_GetMaterialPrimvars(renderIndex, GetMaterialId(), requiredPrimvars)) {
+            requiredPrimvars = sFallbackShaderPrimvars;
+        }
 
         _UpdatePrimvarSources(delegate, *dirtyBits, requiredPrimvars);
     }
@@ -906,7 +902,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
     const GfRange3d& range = _sharedData.bounds.GetRange();
 
     _UpdateTransform(stateToCommit, _sharedData, itemDirtyBits, isBoundingBoxItem);
-    MMatrix& worldMatrix = drawItemData._worldMatrix;
+    const MMatrix& worldMatrix = drawItemData._worldMatrix;
 
     // If the prim is instanced, create one new instance per transform.
     // The current instancer invalidation tracking makes it hard for
