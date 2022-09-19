@@ -86,7 +86,8 @@ protected:
     static void proxyShapeAddedCB(MObject& node, void* clientData);
     static void proxyShapeRemovedCB(MObject& node, void* clientData);
     static void nodeRenamedCB(MObject& node, const MString& oldName, void* clientData);
-    static void namespaceRenamedCB(const MString& oldName, const MString& newName, void* clientData);
+    static void
+                namespaceRenamedCB(const MString& oldName, const MString& newName, void* clientData);
     static void sceneClosingCB(void* clientData);
 
     void proxyShapeAddedCBOnIdle(const MObject& node);

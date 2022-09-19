@@ -215,7 +215,10 @@ void MayaSessionState::proxyShapeRemovedCB(MObject& node, void* clientData)
 }
 
 /* static */
-void MayaSessionState::namespaceRenamedCB(const MString& oldName, const MString& newName, void* clientData)
+void MayaSessionState::namespaceRenamedCB(
+    const MString& oldName,
+    const MString& newName,
+    void*          clientData)
 {
     if (oldName.length() != 0) {
         auto THIS = static_cast<MayaSessionState*>(clientData);
