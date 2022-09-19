@@ -106,7 +106,8 @@ public:
     ~_SchemaApiAdaptorForMeshLight() override = default;
 
 public: // UsdMayaSchemaApiAdaptor overrides
-    bool CanAdapt() const override { 
+    bool CanAdapt() const override
+    {
         // Since we have to register the schema API adaptor for all shapes
         // (due to https://github.com/Autodesk/maya-usd/issues/2605), we filter
         // here to make sure we only run on "mesh".
