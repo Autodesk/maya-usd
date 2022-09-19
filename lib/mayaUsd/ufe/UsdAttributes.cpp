@@ -18,6 +18,8 @@
 #include "Global.h"
 #include "Utils.h"
 
+#include <mayaUsd/ufe/UsdAttributeHolder.h>
+
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/attributeSpec.h>
@@ -29,7 +31,9 @@
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4010)
-#include "UsdShaderAttributeDef.h"
+#include <mayaUsd/ufe/UsdShaderAttributeDef.h>
+#include <mayaUsd/ufe/UsdShaderAttributeHolder.h>
+#include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
 #endif
 #if (UFE_PREVIEW_VERSION_NUM >= 4024)
 #include <mayaUsd/ufe/UsdUndoAttributesCommands.h>
@@ -43,7 +47,6 @@
 
 #ifdef UFE_ENABLE_ASSERTS
 static constexpr char kErrorMsgUnknown[] = "Unknown UFE attribute type encountered";
-static constexpr char kErrorMsgInvalidAttribute[] = "Invalid USDAttribute!";
 #endif
 
 namespace MAYAUSD_NS_DEF {
@@ -52,30 +55,25 @@ namespace ufe {
 namespace {
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4008)
-Ufe::AttributeDef::ConstPtr
-nameToAttrDef(const PXR_NS::TfToken& tokName, const Ufe::NodeDef::Ptr& nodeDef)
+#if (UFE_PREVIEW_VERSION_NUM >= 4010)
+std::pair<PXR_NS::SdrShaderPropertyConstPtr, PXR_NS::UsdShadeAttributeType>
+_GetSdrPropertyAndType(const Ufe::SceneItem::Ptr& item, const std::string& tokName)
 {
-    auto baseNameAndType = PXR_NS::UsdShadeUtils::GetBaseNameAndType(tokName);
-    Ufe::AttributeDef::ConstPtr attrDef
-        = baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input
-        ? nodeDef->input(baseNameAndType.first)
-        : nodeDef->output(baseNameAndType.first);
-    return attrDef;
-}
-#endif
-
-Ufe::NodeDefHandler::Ptr getUsdNodeDefHandler()
-{
-    static Ufe::NodeDefHandler::Ptr nodeDefHandler = nullptr;
-    if (!nodeDefHandler) {
-        Ufe::RunTimeMgr& runTimeMgr = Ufe::RunTimeMgr::instance();
-        nodeDefHandler = runTimeMgr.nodeDefHandler(getUsdRunTimeId());
+    auto shaderNode = UsdShaderNodeDefHandler::usdDefinition(item);
+    if (shaderNode) {
+        auto baseNameAndType = PXR_NS::UsdShadeUtils::GetBaseNameAndType(TfToken(tokName));
+        switch (baseNameAndType.second) {
+        case PXR_NS::UsdShadeAttributeType::Invalid: return { nullptr, baseNameAndType.second };
+        case PXR_NS::UsdShadeAttributeType::Input:
+            return { shaderNode->GetShaderInput(baseNameAndType.first), baseNameAndType.second };
+        case PXR_NS::UsdShadeAttributeType::Output:
+            return { shaderNode->GetShaderOutput(baseNameAndType.first), baseNameAndType.second };
+        }
     }
-    return nodeDefHandler;
+    return { nullptr, PXR_NS::UsdShadeAttributeType::Invalid };
 }
 #endif
-
+#endif
 } // namespace
 
 UsdAttributes::UsdAttributes(const UsdSceneItem::Ptr& item)
@@ -127,26 +125,22 @@ Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
     auto iter = fUsdAttributes.find(name);
     if (iter != std::end(fUsdAttributes))
         return iter->second->type();
-    PXR_NS::TfToken tok(name);
+
+        // Shader definitions always win over created UsdAttributes:
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4010)
-    Ufe::NodeDef::Ptr nodeDef = UsdAttributes::nodeDef();
-    if (nodeDef) {
-        Ufe::AttributeDef::ConstPtr     attrDef = nameToAttrDef(tok, nodeDef);
-        UsdShaderAttributeDef::ConstPtr shaderAttrDef
-            = std::dynamic_pointer_cast<const UsdShaderAttributeDef>(attrDef);
-        if (shaderAttrDef) {
-            const auto& shaderProperty = shaderAttrDef->shaderProperty();
-            if (shaderProperty) {
-                return usdTypeToUfe(shaderProperty);
-            }
-        }
+    PXR_NS::SdrShaderPropertyConstPtr shaderProp = _GetSdrPropertyAndType(fItem, name).first;
+    if (shaderProp) {
+        return UsdShaderAttributeDef(shaderProp).type();
     }
 #endif
 #endif
+
+    // See if a UsdAttribute can be wrapped:
+    PXR_NS::TfToken      tok(name);
     PXR_NS::UsdAttribute usdAttr = _GetAttributeType(fPrim, name);
     if (usdAttr.IsValid()) {
-        return getUfeTypeForAttribute(usdAttr);
+        return usdTypeToUfe(usdAttr);
     }
     return Ufe::Attribute::kInvalid;
 }
@@ -163,83 +157,26 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
     if (iter != std::end(fUsdAttributes))
         return iter->second;
 
-    // No attribute for the input name was found -> create one.
-    PXR_NS::TfToken      tok(name);
-    PXR_NS::UsdAttribute usdAttr = _GetAttributeType(fPrim, name);
-    Ufe::Attribute::Type newAttrType;
-#ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4008)
-    Ufe::AttributeDef::ConstPtr attributeDef = nullptr;
-    Ufe::NodeDef::Ptr           nodeDef = UsdAttributes::nodeDef();
-    if (nodeDef) {
-        attributeDef = nameToAttrDef(tok, nodeDef);
-        if (attributeDef) {
-            newAttrType = attributeDef->type();
-        }
-    }
-#endif
-#endif
-    bool canCreateAttribute = usdAttr.IsValid();
-    if (canCreateAttribute) {
-        newAttrType = attributeType(name);
-    }
-#ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4008)
-    if (nodeDef) {
-        canCreateAttribute = true;
-    }
-#endif
-#endif
-    if (!canCreateAttribute) {
-        return nullptr;
+        // Use a map of constructors to reduce the number of string comparisons. Since the naming
+        // convention is extremely uniform, let's use a macro to simplify definition (and prevent
+        // mismatch errors).
+#define ADD_UFE_USD_CTOR(TYPE)                                                       \
+    {                                                                                \
+        Ufe::Attribute::k##TYPE,                                                     \
+            [](const UsdSceneItem::Ptr& si, UsdAttributeHolder::UPtr&& attrHolder) { \
+                return UsdAttribute##TYPE::create(si, std::move(attrHolder));        \
+            }                                                                        \
     }
 
-    // Use a map of constructors to reduce the number of string comparisons. Since the naming
-    // convention is extremely uniform, let's use a macro to simplify definition (and prevent
-    // mismatch errors).
-#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4008)
-#define ADD_UFE_USD_CTOR(TYPE)                                            \
-    {                                                                     \
-        Ufe::Attribute::k##TYPE,                                          \
-            [](const UsdSceneItem::Ptr&           si,                     \
-               const PXR_NS::UsdPrim&             prim,                   \
-               const Ufe::AttributeDef::ConstPtr& attrDef,                \
-               const PXR_NS::UsdAttribute&        usdAttr) {                     \
-                if (attrDef) {                                            \
-                    return UsdAttribute##TYPE::create(si, prim, attrDef); \
-                } else {                                                  \
-                    return UsdAttribute##TYPE::create(si, usdAttr);       \
-                }                                                         \
-            }                                                             \
-    }
-#else
-#define ADD_UFE_USD_CTOR(TYPE)                                                     \
-    {                                                                              \
-        Ufe::Attribute::k##TYPE,                                                   \
-            [](const UsdSceneItem::Ptr& si, const PXR_NS::UsdAttribute& usdAttr) { \
-                return UsdAttribute##TYPE::create(si, usdAttr);                    \
-            }                                                                      \
-    }
-#endif
     static const std::unordered_map<
         std::string,
-#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4008)
-        std::function<Ufe::Attribute::Ptr(
-            const UsdSceneItem::Ptr&,
-            const PXR_NS::UsdPrim&,
-            const Ufe::AttributeDef::ConstPtr&,
-            const PXR_NS::UsdAttribute&)>>
-#else
-        std::function<Ufe::Attribute::Ptr(const UsdSceneItem::Ptr&, const PXR_NS::UsdAttribute&)>>
-#endif
+        std::function<Ufe::Attribute::Ptr(const UsdSceneItem::Ptr&, UsdAttributeHolder::UPtr&&)>>
         ctorMap
         = { ADD_UFE_USD_CTOR(Bool),
             ADD_UFE_USD_CTOR(Int),
             ADD_UFE_USD_CTOR(Float),
             ADD_UFE_USD_CTOR(Double),
-            ADD_UFE_USD_CTOR(String),
             ADD_UFE_USD_CTOR(ColorFloat3),
-            ADD_UFE_USD_CTOR(EnumString),
             ADD_UFE_USD_CTOR(Int3),
             ADD_UFE_USD_CTOR(Float3),
             ADD_UFE_USD_CTOR(Double3),
@@ -252,19 +189,60 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
             ADD_UFE_USD_CTOR(Matrix3d),
             ADD_UFE_USD_CTOR(Matrix4d),
 #endif
+            { Ufe::Attribute::kString,
+              [](const UsdSceneItem::Ptr&   si,
+                 UsdAttributeHolder::UPtr&& attrHolder) -> Ufe::Attribute::Ptr {
+                  if (attrHolder->usdAttributeType() == PXR_NS::SdfValueTypeNames->String) {
+                      return UsdAttributeString::create(si, std::move(attrHolder));
+                  } else {
+                      return UsdAttributeToken::create(si, std::move(attrHolder));
+                  }
+              } },
+            { Ufe::Attribute::kEnumString,
+              [](const UsdSceneItem::Ptr&   si,
+                 UsdAttributeHolder::UPtr&& attrHolder) -> Ufe::Attribute::Ptr {
+                  if (attrHolder->usdAttributeType() == PXR_NS::SdfValueTypeNames->String) {
+                      return UsdAttributeEnumString::create(si, std::move(attrHolder));
+                  } else {
+                      return UsdAttributeEnumToken::create(si, std::move(attrHolder));
+                  }
+              } },
           };
-
 #undef ADD_UFE_USD_CTOR
-    auto                ctorIt = ctorMap.find(newAttrType);
+
     Ufe::Attribute::Ptr newAttr;
-    UFE_ASSERT_MSG(ctorIt != ctorMap.end(), kErrorMsgUnknown);
-#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4008)
-    if (ctorIt != ctorMap.end())
-        newAttr = ctorIt->second(fItem, fPrim, attributeDef, usdAttr);
-#else
-    if (ctorIt != ctorMap.end())
-        newAttr = ctorIt->second(fItem, usdAttr);
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4010)
+    // The shader definition always wins over a created attribute:
+    auto shaderPropAndType = _GetSdrPropertyAndType(fItem, name);
+    if (shaderPropAndType.first) {
+        auto ctorIt = ctorMap.find(usdTypeToUfe(shaderPropAndType.first));
+        UFE_ASSERT_MSG(ctorIt != ctorMap.end(), kErrorMsgUnknown);
+        if (ctorIt != ctorMap.end()) {
+            newAttr = ctorIt->second(
+                fItem,
+                UsdShaderAttributeHolder::create(
+                    fPrim, shaderPropAndType.first, shaderPropAndType.second));
+        }
+    }
 #endif
+#endif
+
+    if (!newAttr) {
+        // No attribute for the input name was found -> create one.
+        PXR_NS::TfToken      tok(name);
+        PXR_NS::UsdAttribute usdAttr = _GetAttributeType(fPrim, name);
+        if (!usdAttr.IsValid()) {
+            return nullptr;
+        }
+        Ufe::Attribute::Type newAttrType = usdTypeToUfe(usdAttr);
+
+        auto ctorIt = ctorMap.find(newAttrType);
+        UFE_ASSERT_MSG(ctorIt != ctorMap.end(), kErrorMsgUnknown);
+        if (ctorIt != ctorMap.end())
+            newAttr = ctorIt->second(fItem, UsdAttributeHolder::create(usdAttr));
+    }
 
 #if (UFE_PREVIEW_VERSION_NUM >= 4024)
     // If this is a Usd attribute (cannot change) then we cache it for future access.
@@ -284,21 +262,20 @@ std::vector<std::string> UsdAttributes::attributeNames() const
     std::set<std::string>    nameSet;
     std::string              name;
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4008)
-    Ufe::NodeDef::Ptr nodeDef = UsdAttributes::nodeDef();
-    if (nodeDef) {
+#if (UFE_PREVIEW_VERSION_NUM >= 4010)
+    PXR_NS::SdrShaderNodeConstPtr shaderNode = UsdShaderNodeDefHandler::usdDefinition(fItem);
+    if (shaderNode) {
         auto addAttributeNames
             = [&names, &nameSet, &name](
-                  Ufe::ConstAttributeDefs attributeDefs, PXR_NS::UsdShadeAttributeType attrType) {
-                  for (auto const& attributeDef : attributeDefs) {
-                      name = PXR_NS::UsdShadeUtils::GetFullName(
-                          PXR_NS::TfToken(attributeDef->name()), attrType);
+                  auto const& shortNames, PXR_NS::UsdShadeAttributeType attrType) {
+                  for (auto const& shortName : shortNames) {
+                      name = PXR_NS::UsdShadeUtils::GetFullName(shortName, attrType);
                       names.push_back(name);
                       nameSet.insert(name);
                   }
               };
-        addAttributeNames(nodeDef->inputs(), PXR_NS::UsdShadeAttributeType::Input);
-        addAttributeNames(nodeDef->outputs(), PXR_NS::UsdShadeAttributeType::Output);
+        addAttributeNames(shaderNode->GetInputNames(), PXR_NS::UsdShadeAttributeType::Input);
+        addAttributeNames(shaderNode->GetOutputNames(), PXR_NS::UsdShadeAttributeType::Output);
     }
 #endif
 #endif
@@ -321,11 +298,9 @@ bool UsdAttributes::hasAttribute(const std::string& name) const
         return true;
     }
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4008)
-    Ufe::NodeDef::Ptr nodeDef = UsdAttributes::nodeDef();
-    if (nodeDef) {
-        Ufe::AttributeDef::ConstPtr port = nameToAttrDef(tkName, nodeDef);
-        return port != nullptr;
+#if (UFE_PREVIEW_VERSION_NUM >= 4010)
+    if (_GetSdrPropertyAndType(fItem, name).first) {
+        return true;
     }
 #endif
 #endif
@@ -346,36 +321,6 @@ Ufe::UndoableCommand::Ptr UsdAttributes::removeAttributeCmd(const std::string& n
 }
 #endif
 #endif
-
-#ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4008)
-Ufe::NodeDef::Ptr UsdAttributes::nodeDef() const
-{
-    static auto nodeDefHandler = getUsdNodeDefHandler();
-    return nodeDefHandler->definition(fItem);
-}
-#endif
-#endif
-
-Ufe::Attribute::Type
-UsdAttributes::getUfeTypeForAttribute(const PXR_NS::UsdAttribute& usdAttr) const
-{
-    if (usdAttr.IsValid()) {
-        const PXR_NS::SdfValueTypeName typeName = usdAttr.GetTypeName();
-        Ufe::Attribute::Type           type = usdTypeToUfe(typeName);
-        // Special case for TfToken -> Enum. If it doesn't have any allowed
-        // tokens, then use String instead.
-        if (type == Ufe::Attribute::kEnumString) {
-            auto attrDefn = fPrim.GetPrimDefinition().GetSchemaAttributeSpec(usdAttr.GetName());
-            if (!attrDefn || !attrDefn->HasAllowedTokens())
-                return Ufe::Attribute::kString;
-        }
-        return type;
-    }
-
-    UFE_ASSERT_MSG(false, kErrorMsgInvalidAttribute);
-    return Ufe::Attribute::kInvalid;
-}
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4024)

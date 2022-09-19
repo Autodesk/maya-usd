@@ -28,8 +28,7 @@ namespace ufe {
 class MAYAUSD_CORE_PUBLIC UsdShaderAttributeDef : public Ufe::AttributeDef
 {
 public:
-    typedef std::shared_ptr<UsdShaderAttributeDef>       Ptr;
-    typedef std::shared_ptr<const UsdShaderAttributeDef> ConstPtr;
+    typedef std::shared_ptr<UsdShaderAttributeDef> Ptr;
 
     UsdShaderAttributeDef(const PXR_NS::SdrShaderPropertyConstPtr& shaderAttributeDef);
     ~UsdShaderAttributeDef();

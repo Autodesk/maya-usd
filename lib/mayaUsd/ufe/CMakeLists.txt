@@ -39,6 +39,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             ProxyShapeContextOpsHandler.cpp
             RotationUtils.cpp
             UsdAttribute.cpp
+            UsdAttributeHolder.cpp
             UsdAttributes.cpp
             UsdAttributesHandler.cpp
             UsdCamera.cpp
@@ -121,6 +122,7 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         target_sources(${PROJECT_NAME}
             PRIVATE
                 UsdShaderAttributeDef.cpp
+                UsdShaderAttributeHolder.cpp
                 UsdUndoCreateFromNodeDefCommand.cpp
         )
     endif()
@@ -207,6 +209,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         ProxyShapeContextOpsHandler.h
         RotationUtils.h
         UsdAttribute.h
+        UsdAttributeHolder.h
         UsdAttributes.h
         UsdAttributesHandler.h
         UsdCamera.h
@@ -274,6 +277,7 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4010)
         list(APPEND HEADERS
             UsdShaderAttributeDef.h
+            UsdShaderAttributeHolder.h
             UsdUndoCreateFromNodeDefCommand.h
         )
     endif()

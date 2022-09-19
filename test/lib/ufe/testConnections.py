@@ -502,6 +502,11 @@ class ConnectionTestCase(unittest.TestCase):
         shaderOutput = shaderAttrs.attribute("outputs:out")
         materialOutput = materialAttrs.attribute("outputs:surface")
 
+        self.assertEqual(shaderOutput.type, "Generic")
+        self.assertEqual(shaderOutput.nativeType(), "surfaceshader")
+        self.assertEqual(materialOutput.type, "Generic")
+        self.assertEqual(materialOutput.nativeType(), "TfToken")
+
         connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(materialItem.runTimeId())
 
         # The attributes are not created yet:
@@ -525,6 +530,9 @@ class ConnectionTestCase(unittest.TestCase):
         self.assertEqual(materialPrim.GetAuthoredProperties()[0].GetName(), "outputs:mtlx:surface")
 
         materialXOutput = materialAttrs.attribute("outputs:mtlx:surface")
+        self.assertEqual(materialXOutput.type, "Generic")
+        self.assertEqual(materialXOutput.nativeType(), "TfToken")
+
         connectionHandler.disconnect(shaderOutput, materialXOutput)
 
         # Cleanup on disconnection should remove the MaterialX surface output.
@@ -543,6 +551,13 @@ class ConnectionTestCase(unittest.TestCase):
         self.assertIsNotNone(connections)
         conns = connections.allConnections()
         self.assertEqual(len(conns), 1)
+
+        # Shader output is still generic, even in the presence of a USD attribute. We need to
+        # refetch shaderAttrs to get a fresh attribute cache.
+        shaderAttrs = ufe.Attributes.attributes(shaderItem)
+        shaderOutput = shaderAttrs.attribute("outputs:out")
+        self.assertEqual(shaderOutput.type, "Generic")
+        self.assertEqual(shaderOutput.nativeType(), "surfaceshader")
 
         # TODO: Test the undoable versions of these commands. They MUST restore the prims as they
         #       were before connecting, which might require deleting authored attributes.
