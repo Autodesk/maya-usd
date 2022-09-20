@@ -245,12 +245,12 @@ def _getMergeToUSDOptionsVarName():
 
 def getMergeToUSDOptionsText():
     """
-    Retrieves the current merge-to-USD options as text with column-spearated key/value pairs.
+    Retrieves the current merge-to-USD options as text with column-seperated key/value pairs.
     """
     return mayaUsdOptions.getOptionsText(
         _getMergeToUSDOptionsVarName(),
         getDefaultMergeToUSDOptionsDict())
-    
+
 
 def setMergeToUSDOptionsText(optionsText):
     """
