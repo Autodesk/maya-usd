@@ -57,6 +57,7 @@
                 "PxrDistantLight",
                 "PxrDomeLight",
                 "PxrEnvDayLight",
+                "PxrMeshLight",
                 "PxrRectLight",
                 "PxrSphereLight",
                 "spotLight",
