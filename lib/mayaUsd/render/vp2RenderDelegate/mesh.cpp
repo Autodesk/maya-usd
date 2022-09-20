@@ -882,13 +882,10 @@ void HdVP2Mesh::Sync(
         || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->primvar) || instancerDirty) {
 
         auto addRequiredPrimvars = [&](const SdfPath& materialId) {
-            const HdVP2Material* material = static_cast<const HdVP2Material*>(
-                renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
-            TfToken              materialNetworkToken = _GetMaterialNetworkToken(reprToken);
-            const TfTokenVector& requiredPrimvars
-                = material && material->GetSurfaceShader(materialNetworkToken)
-                ? material->GetRequiredPrimvars(materialNetworkToken)
-                : sFallbackShaderPrimvars;
+            TfTokenVector requiredPrimvars;
+            if (!_GetMaterialPrimvars(renderIndex, materialId, requiredPrimvars)) {
+                requiredPrimvars = sFallbackShaderPrimvars;
+            }
 
             for (const auto& requiredPrimvar : requiredPrimvars) {
                 if (!_PrimvarIsRequired(requiredPrimvar)) {
@@ -1697,7 +1694,7 @@ void HdVP2Mesh::_UpdateDrawItem(
     const GfRange3d& range = _sharedData.bounds.GetRange();
 
     _UpdateTransform(stateToCommit, _sharedData, itemDirtyBits, isBBoxItem);
-    MMatrix& worldMatrix = drawItemData._worldMatrix;
+    const MMatrix& worldMatrix = drawItemData._worldMatrix;
 
     // If the mesh is instanced, create one new instance per transform.
     // The current instancer invalidation tracking makes it hard for

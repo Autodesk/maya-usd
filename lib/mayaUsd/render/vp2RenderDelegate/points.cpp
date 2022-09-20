@@ -143,19 +143,14 @@ void HdVP2Points::Sync(
     if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals)
         || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->widths)
         || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->primvar)) {
-        const HdVP2Material* material = static_cast<const HdVP2Material*>(
-            renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
-
-        TfTokenVector        materialPrimvars;
-        const TfTokenVector* requiredPrimvars = &sFallbackShaderPrimvars;
-        TfToken              materialNetworkToken = _GetMaterialNetworkToken(reprToken);
-        if (material && material->GetSurfaceShader(materialNetworkToken)) {
-            materialPrimvars = material->GetRequiredPrimvars(materialNetworkToken);
-            materialPrimvars.push_back(HdTokens->widths);
-            requiredPrimvars = &materialPrimvars;
+        TfTokenVector requiredPrimvars;
+        if (!_GetMaterialPrimvars(renderIndex, GetMaterialId(), requiredPrimvars)) {
+            requiredPrimvars = sFallbackShaderPrimvars;
+        } else {
+            requiredPrimvars.push_back(HdTokens->widths);
         }
 
-        _UpdatePrimvarSources(delegate, *dirtyBits, *requiredPrimvars);
+        _UpdatePrimvarSources(delegate, *dirtyBits, requiredPrimvars);
     }
 
     if (*dirtyBits & HdChangeTracker::DirtyDisplayStyle) {
@@ -589,7 +584,7 @@ void HdVP2Points::_UpdateDrawItem(
     const GfRange3d& range = _sharedData.bounds.GetRange();
 
     _UpdateTransform(stateToCommit, _sharedData, itemDirtyBits, isBoundingBoxItem);
-    MMatrix& worldMatrix = drawItemData._worldMatrix;
+    const MMatrix& worldMatrix = drawItemData._worldMatrix;
 
     // If the prim is instanced, create one new instance per transform.
     // The current instancer invalidation tracking makes it hard for

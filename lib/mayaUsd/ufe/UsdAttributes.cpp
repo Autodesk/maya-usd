@@ -61,7 +61,7 @@ _GetSdrPropertyAndType(const Ufe::SceneItem::Ptr& item, const std::string& tokNa
 {
     auto shaderNode = UsdShaderNodeDefHandler::usdDefinition(item);
     if (shaderNode) {
-        auto baseNameAndType = PXR_NS::UsdShadeUtils::GetBaseNameAndType(TfToken(tokName));
+        auto baseNameAndType = PXR_NS::UsdShadeUtils::GetBaseNameAndType(PXR_NS::TfToken(tokName));
         switch (baseNameAndType.second) {
         case PXR_NS::UsdShadeAttributeType::Invalid: return { nullptr, baseNameAndType.second };
         case PXR_NS::UsdShadeAttributeType::Input:
