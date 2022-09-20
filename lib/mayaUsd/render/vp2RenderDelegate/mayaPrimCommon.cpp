@@ -177,21 +177,20 @@ void MayaUsdRPrim::_UpdateTransform(
     }
 
     // Local-to-world transformation
-    MMatrix& worldMatrix = drawItemData._worldMatrix;
-    sharedData.bounds.GetMatrix().Get(worldMatrix.matrix);
-
     // The bounding box draw item uses a globally-shared unit wire cube as the
     // geometry and transfers scale and offset of the bounds to world matrix.
     if (isBoundingBoxItem) {
         if ((itemDirtyBits & (HdChangeTracker::DirtyExtent | HdChangeTracker::DirtyTransform))
             && !range.IsEmpty()) {
+            sharedData.bounds.GetMatrix().Get(drawItemData._worldMatrix.matrix);
+
             const GfVec3d midpoint = range.GetMidpoint();
             const GfVec3d size = range.GetSize();
 
             MPoint midp(midpoint[0], midpoint[1], midpoint[2]);
-            midp *= worldMatrix;
+            midp *= drawItemData._worldMatrix;
 
-            auto& m = worldMatrix.matrix;
+            auto& m = drawItemData._worldMatrix.matrix;
             m[0][0] *= size[0];
             m[0][1] *= size[0];
             m[0][2] *= size[0];
@@ -212,6 +211,7 @@ void MayaUsdRPrim::_UpdateTransform(
             stateToCommit._worldMatrix = &drawItemData._worldMatrix;
         }
     } else if (itemDirtyBits & HdChangeTracker::DirtyTransform) {
+        sharedData.bounds.GetMatrix().Get(drawItemData._worldMatrix.matrix);
         stateToCommit._worldMatrix = &drawItemData._worldMatrix;
     }
 }
@@ -724,14 +724,18 @@ void MayaUsdRPrim::_SyncDisplayLayerModes(const HdRprim&
         for (unsigned int i = 0; i < ancestorDisplayLayers.length(); i++) {
             MFnDependencyNode displayLayerNodeFn(ancestorDisplayLayers[i]);
             MPlug             layerEnabled = displayLayerNodeFn.findPlug("enabled");
-            MPlug             layerVisible = displayLayerNodeFn.findPlug("visibility");
-            MPlug             layerHidesOnPlayback = displayLayerNodeFn.findPlug("hideOnPlayback");
-            MPlug             layerDisplayType = displayLayerNodeFn.findPlug("displayType");
-            MPlug             levelOfDetail = displayLayerNodeFn.findPlug("levelOfDetail");
-            MPlug             shading = displayLayerNodeFn.findPlug("shading");
-            MPlug             texturing = displayLayerNodeFn.findPlug("texturing");
+            if (!layerEnabled.asBool()) {
+                continue;
+            }
 
-            _displayLayerModes._visibility &= layerEnabled.asBool() ? layerVisible.asBool() : true;
+            MPlug layerVisible = displayLayerNodeFn.findPlug("visibility");
+            MPlug layerHidesOnPlayback = displayLayerNodeFn.findPlug("hideOnPlayback");
+            MPlug layerDisplayType = displayLayerNodeFn.findPlug("displayType");
+            MPlug levelOfDetail = displayLayerNodeFn.findPlug("levelOfDetail");
+            MPlug shading = displayLayerNodeFn.findPlug("shading");
+            MPlug texturing = displayLayerNodeFn.findPlug("texturing");
+
+            _displayLayerModes._visibility &= layerVisible.asBool();
             _displayLayerModes._hideOnPlayback |= layerHidesOnPlayback.asBool();
             _displayLayerModes._texturing = texturing.asBool();
             if (levelOfDetail.asShort() != 0) {
@@ -767,13 +771,13 @@ void MayaUsdRPrim::_SyncSharedData(
     }
 
     if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, id)) {
-        bool usdVisibility = delegate->GetVisible(id);
+        sharedData.visible = delegate->GetVisible(id) && _displayLayerModes._visibility;
 
         // Invisible rprims don't get calls to Sync or _PropagateDirtyBits while
         // they are invisible. This means that when a prim goes from visible to
         // invisible that we must update every repr, because if we switch reprs while
         // invisible we'll get no chance to update!
-        if (!usdVisibility)
+        if (!sharedData.visible)
             _MakeOtherReprRenderItemsInvisible(reprToken, reprs);
 
         // Update "hide on playback" status
@@ -788,8 +792,6 @@ void MayaUsdRPrim::_SyncSharedData(
             _ForEachRenderItem(reprs, setHideOnPlayback);
 #endif
         }
-
-        sharedData.visible = usdVisibility && _displayLayerModes._visibility;
     }
 
 #if PXR_VERSION > 2111
@@ -912,6 +914,33 @@ SdfPath MayaUsdRPrim::_GetUpdatedMaterialId(HdRprim* rprim, HdSceneDelegate* del
     }
 
     return materialId;
+}
+
+bool MayaUsdRPrim::_GetMaterialPrimvars(
+    HdRenderIndex& renderIndex,
+    const SdfPath& materialId,
+    TfTokenVector& primvars)
+{
+    const HdVP2Material* material = static_cast<const HdVP2Material*>(
+        renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
+    if (!material || !material->GetSurfaceShader(TfToken())) {
+        return false;
+    }
+
+    // Get basic primvars
+    primvars = material->GetRequiredPrimvars(TfToken());
+
+    // Get extra primvars
+    if (material->GetSurfaceShader(HdReprTokens->smoothHull)) {
+        const auto& extraPrimvars = material->GetRequiredPrimvars(HdReprTokens->smoothHull);
+        for (const auto& extraPrimvar : extraPrimvars) {
+            if (std::find(primvars.begin(), primvars.end(), extraPrimvar) == primvars.end()) {
+                primvars.push_back(extraPrimvar);
+            }
+        }
+    }
+
+    return true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
