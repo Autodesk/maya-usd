@@ -22,7 +22,6 @@ target_sources(${TARGET_NAME}
         lightReader.cpp
         lightRfMReader.cpp
         lightRfMWriter.cpp
-        lightRfMWriter_PxrMeshLight.cpp
         lightWriter.cpp
         locatorWriter.cpp
         materialReader.cpp
@@ -47,6 +46,14 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     target_sources(${TARGET_NAME}
         PRIVATE
             mayaReferenceUpdater.cpp
+    )
+endif()
+
+# MeshLightAPI Schema export requires USD 21.11
+if(PXR_VERSION GREATER_EQUAL 2111)
+    target_sources(${TARGET_NAME}
+        PRIVATE
+            lightRfMWriter_PxrMeshLight.cpp
     )
 endif()
 

@@ -22,12 +22,9 @@
 
 #include <pxr/base/tf/registryManager.h>
 #include <pxr/base/tf/staticTokens.h>
-
-#if PXR_VERSION >= 2111
 #include <pxr/usd/usdLux/meshLightAPI.h>
 #include <pxr/usd/usdLux/shadowAPI.h>
 #include <pxr/usd/usdLux/shapingAPI.h>
-#endif
 
 // PxrMeshLight gets exported specially.  Rather than resulting in it's own
 // prim, the PxrMeshLight is instead exported as a MeshLightAPI on the mesh
@@ -189,7 +186,6 @@ public: // UsdMayaSchemaApiAdaptor overrides
     }
 };
 
-#if PXR_VERSION >= 2111
 using _MeshLightAdaptor_MeshLightAPI = _SchemaApiAdaptorForMeshLight<UsdLuxMeshLightAPI>;
 using _MeshLightAdaptor_ShadowAPI = _SchemaApiAdaptorForMeshLight<UsdLuxShadowAPI>;
 using _MeshLightAdaptor_ShapingAPI = _SchemaApiAdaptorForMeshLight<UsdLuxShapingAPI>;
@@ -210,6 +206,5 @@ TF_REGISTRY_FUNCTION(UsdMayaPrimWriterRegistry)
     // a "primless" type.
     UsdMayaPrimWriterRegistry::RegisterPrimless(_tokens->PxrMeshLight);
 }
-#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE
