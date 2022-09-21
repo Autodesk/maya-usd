@@ -39,7 +39,15 @@ For additional information on building Pixar USD, see the ***Additional Build In
 
 #### 3. Universal Front End (UFE)
 
-The Universal Front End (UFE) is a DCC-agnostic component that allows Maya to browse and edit data in multiple data models. This allows Maya to edit pipeline data such as USD. UFE comes installed as a built-in component with Maya 2019 and later. UFE is developed as a separate binary component, and therefore versioned separately from Maya. Maya 2019 and Maya 2020 both shipped with UFE **v1.0.0**. Maya 2022 shipped with UFE **v2.0.0**. Maya 2022.4 shipped with UFE **v2.1.0**. Maya 2023 shipped with UFE **v3.0.0**.
+The Universal Front End (UFE) is a DCC-agnostic component that allows Maya to browse and edit data in multiple data models. This allows Maya to edit pipeline data such as USD. UFE comes installed as a built-in component with Maya 2019 and later. UFE is developed as a separate binary component, and therefore versioned separately from Maya.
+
+| Ufe Version                | Maya Version                                           | Ufe Docs (external) |
+|----------------------------|--------------------------------------------------------|:-------------------:|
+| v1.0.0                     | Maya 2019.x                                            | |
+| v1.0.0                     | Maya 2020.x                                            | |
+| v2.0.0<br>v2.0.3<br>v2.1.0 | Maya 2022 <br>Maya 2022.1/2022.2/2022.3<br>Maya 2022.4 | https://help.autodesk.com/view/MAYAUL/2022/ENU/?guid=Maya_SDK_ufe_ref_index_html |
+| v3.0.0<br>v3.2.0           | Maya 2023/2023.1<br>Maya 2023.2                        | https://help.autodesk.com/view/MAYAUL/2023/ENU/?guid=Maya_SDK_ufe_ref_index_html |
+| v0.4.x                     | Maya PR                                                | |
 
 To build the project with UFE support, you will need to use the headers and libraries included in the ***Maya Devkit***:
 
