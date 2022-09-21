@@ -400,8 +400,7 @@ static bool _ReadFromUsdAttribute(
     static constexpr bool isArrayPlug = false;
     if (const MayaUsd::Converter* converter
         = MayaUsd::Converter::find(sdfValueTypeName, isArrayPlug)) {
-        static constexpr bool               doGammaCorrection = false;
-        static const MayaUsd::ConverterArgs args { UsdTimeCode::Default(), doGammaCorrection };
+        static const MayaUsd::ConverterArgs args;
         converter->convert(usdAttr, attrPlug, args);
     } else {
         if (reason) {
@@ -461,8 +460,7 @@ static VtValue _GetValue(const MPlug& attrPlug, const SdfValueTypeName& sdfValue
     static constexpr bool isArrayPlug = false;
     if (const MayaUsd::Converter* converter
         = MayaUsd::Converter::find(sdfValueTypeName, isArrayPlug)) {
-        static constexpr bool               doGammaCorrection = false;
-        static const MayaUsd::ConverterArgs args { UsdTimeCode::Default(), doGammaCorrection };
+        static const MayaUsd::ConverterArgs args;
 
         VtValue value;
         converter->convert(attrPlug, value, args);
@@ -589,6 +587,31 @@ void UsdMayaTranslatorUtil::WriteShaderAttributesToUsdPrim(
             TF_RUNTIME_ERROR("Failed to get SdrProperty for input %s.", inputName.GetText());
         }
     }
+}
+
+std::map<TfToken, TfToken>
+UsdMayaTranslatorUtil::ComputeUsdAttributeToMayaAttributeNamesForShader(const TfToken& sdrShaderId)
+{
+    SdrShaderNodeConstPtr shaderNode
+        = SdrRegistry::GetInstance().GetShaderNodeByIdentifier(sdrShaderId);
+    if (!shaderNode) {
+        TF_RUNTIME_ERROR("Could not find SdrShader %s.", sdrShaderId.GetText());
+        return {};
+    }
+
+    std::map<TfToken, TfToken> usdAttrToMayaAttrNames;
+    for (const TfToken& inputName : shaderNode->GetInputNames()) {
+        if (SdrShaderPropertyConstPtr shaderProp = shaderNode->GetShaderInput(inputName)) {
+            if (_ShouldBeWrittenInUsd(shaderProp)) {
+                const TfToken mayaAttrName(shaderProp->GetImplementationName());
+                const TfToken usdAttrName(_ShaderAttrName(shaderProp->GetName()));
+                usdAttrToMayaAttrNames[usdAttrName] = mayaAttrName;
+            }
+        } else {
+            TF_RUNTIME_ERROR("Failed to get SdrProperty for input %s.", inputName.GetText());
+        }
+    }
+    return usdAttrToMayaAttrNames;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

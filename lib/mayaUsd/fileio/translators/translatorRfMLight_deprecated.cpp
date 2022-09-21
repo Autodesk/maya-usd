@@ -19,6 +19,7 @@
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/utils/util.h>
 
+#include <pxr/base/gf/gamma.h>
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
@@ -396,10 +397,10 @@ static bool _WriteLightColor(const MFnDependencyNode& depFn, UsdLuxLightAPI& lig
         return false;
     }
 
-    const GfVec3f lightColor(
+    const GfVec3f lightColor = GfConvertDisplayToLinear(GfVec3f(
         lightColorPlug.child(0).asFloat(),
         lightColorPlug.child(1).asFloat(),
-        lightColorPlug.child(2).asFloat());
+        lightColorPlug.child(2).asFloat()));
     lightSchema.CreateColorAttr(VtValue(lightColor), true);
 
     return true;
@@ -419,6 +420,7 @@ static bool _ReadLightColor(const UsdLuxLightAPI& lightSchema, MFnDependencyNode
 
     GfVec3f lightColor(1.0f);
     lightSchema.GetColorAttr().Get(&lightColor);
+    lightColor = GfConvertLinearToDisplay(lightColor);
 
     status = lightColorPlug.child(0).setValue(lightColor[0]);
     status = lightColorPlug.child(1).setValue(lightColor[1]);
@@ -1130,10 +1132,10 @@ static bool _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLightAPI& li
     }
 
     if (UsdMayaUtil::IsAuthored(skyTintPlug)) {
-        const GfVec3f mayaSkyTint(
+        const GfVec3f mayaSkyTint = GfConvertDisplayToLinear(GfVec3f(
             skyTintPlug.child(0).asFloat(),
             skyTintPlug.child(1).asFloat(),
-            skyTintPlug.child(2).asFloat());
+            skyTintPlug.child(2).asFloat()));
 
         _SetLightPrimAttr(
             lightPrim,
@@ -1197,10 +1199,10 @@ static bool _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLightAPI& li
     }
 
     if (UsdMayaUtil::IsAuthored(sunTintPlug)) {
-        const GfVec3f mayaSunTint(
+        const GfVec3f mayaSunTint = GfConvertDisplayToLinear(GfVec3f(
             sunTintPlug.child(0).asFloat(),
             sunTintPlug.child(1).asFloat(),
-            sunTintPlug.child(2).asFloat());
+            sunTintPlug.child(2).asFloat()));
 
         _SetLightPrimAttr(
             lightPrim,
@@ -1365,6 +1367,7 @@ static bool _ReadEnvDayLight(const UsdLuxLightAPI& lightSchema, MFnDependencyNod
     GfVec3f lightSkyTint(1.0f);
     lightPrim.GetAttribute(_ShaderAttrName(_PrefixRiLightAttrNamespace(_tokens->SkyTintPlugName)))
         .Get(&lightSkyTint);
+    lightSkyTint = GfConvertLinearToDisplay(lightSkyTint);
     status = lightSkyTintPlug.child(0).setValue(lightSkyTint[0]);
     status = lightSkyTintPlug.child(1).setValue(lightSkyTint[1]);
     status = lightSkyTintPlug.child(2).setValue(lightSkyTint[2]);
@@ -1409,6 +1412,7 @@ static bool _ReadEnvDayLight(const UsdLuxLightAPI& lightSchema, MFnDependencyNod
     GfVec3f lightSunTint(1.0f);
     lightPrim.GetAttribute(_ShaderAttrName(_PrefixRiLightAttrNamespace(_tokens->SunTintPlugName)))
         .Get(&lightSunTint);
+    lightSunTint = GfConvertLinearToDisplay(lightSunTint);
     status = lightSunTintPlug.child(0).setValue(lightSunTint[0]);
     status = lightSunTintPlug.child(1).setValue(lightSunTint[1]);
     status = lightSunTintPlug.child(2).setValue(lightSunTint[2]);
@@ -1480,10 +1484,10 @@ static bool _WriteLightShapingAPI(const MFnDependencyNode& depFn, UsdLuxLightAPI
     }
 
     if (UsdMayaUtil::IsAuthored(lightFocusTintPlug)) {
-        const GfVec3f lightFocusTint(
+        const GfVec3f lightFocusTint = GfConvertDisplayToLinear(GfVec3f(
             lightFocusTintPlug.child(0).asFloat(),
             lightFocusTintPlug.child(1).asFloat(),
-            lightFocusTintPlug.child(2).asFloat());
+            lightFocusTintPlug.child(2).asFloat()));
 
         shapingAPI.CreateShapingFocusTintAttr(VtValue(lightFocusTint), true);
     }
@@ -1610,6 +1614,7 @@ static bool _ReadLightShapingAPI(const UsdLuxLightAPI& lightSchema, MFnDependenc
 
     GfVec3f lightFocusTint(0.0f);
     shapingAPI.GetShapingFocusTintAttr().Get(&lightFocusTint);
+    lightFocusTint = GfConvertLinearToDisplay(lightFocusTint);
 
     status = lightFocusTintPlug.child(0).setValue(lightFocusTint[0]);
     status = lightFocusTintPlug.child(1).setValue(lightFocusTint[1]);
@@ -1732,10 +1737,10 @@ static bool _WriteLightShadowAPI(const MFnDependencyNode& depFn, UsdLuxLightAPI&
     }
 
     if (UsdMayaUtil::IsAuthored(lightShadowColorPlug)) {
-        const GfVec3f lightShadowColor(
+        const GfVec3f lightShadowColor = GfConvertDisplayToLinear(GfVec3f(
             lightShadowColorPlug.child(0).asFloat(),
             lightShadowColorPlug.child(1).asFloat(),
-            lightShadowColorPlug.child(2).asFloat());
+            lightShadowColorPlug.child(2).asFloat()));
 
         shadowAPI.CreateShadowColorAttr(VtValue(lightShadowColor), true);
     }
@@ -1836,6 +1841,7 @@ static bool _ReadLightShadowAPI(const UsdLuxLightAPI& lightSchema, MFnDependency
 
     GfVec3f lightShadowColor(0.0f);
     shadowAPI.GetShadowColorAttr().Get(&lightShadowColor);
+    lightShadowColor = GfConvertLinearToDisplay(lightShadowColor);
 
     status = lightShadowColorPlug.child(0).setValue(lightShadowColor[0]);
     status = lightShadowColorPlug.child(1).setValue(lightShadowColor[1]);
