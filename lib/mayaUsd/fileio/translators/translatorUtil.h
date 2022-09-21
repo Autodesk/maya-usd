@@ -196,6 +196,12 @@ struct UsdMayaTranslatorUtil
         const MFnDependencyNode& depFn,
         const TfToken&           sdrShaderId,
         const UsdPrim&           usdPrim);
+
+    /// Returns the mapping from Usd attribute name to Maya attribute name for
+    /// all the properties of \p sdrShaderId.
+    MAYAUSD_CORE_PUBLIC
+    static std::map<TfToken, TfToken>
+    ComputeUsdAttributeToMayaAttributeNamesForShader(const TfToken& sdrShaderId);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
