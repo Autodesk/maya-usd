@@ -711,31 +711,30 @@ AdapterPtr HdMayaSceneDelegate::Create(
 
 namespace
 {
-	static constexpr char kOutColorString[] = "outColor";
-    static constexpr char kInitialShadingGroup[] = "initialShadingGroup";
-    static constexpr char kLambert1SG[] = "lambert1SG";
+	static constexpr char kInstObjGroups[] = "instObjGroups";
 
-	// TODO: this procedure previously confused the shading engine with initialParticleSE
-	// the ones needed are hardcoded above. We need to fond a better solution
-	bool GetShadingEngineNode(const MObject& shaderNode, MObject& shadingEngineNode)
+	bool GetShadingEngineNode(const MObject& meshNode, MObject& shadingEngineNode)
 	{
-		MFnDependencyNode depNode(shaderNode);
+		MFnDependencyNode depNode(meshNode);
 		MStatus ms;
-		MPlug plug = depNode.findPlug(kOutColorString, ms);
+		MPlug instObjGroups = depNode.findPlug(kInstObjGroups, ms);
 
 		if (ms == MS::kSuccess)
 		{
-			MPlugArray destinations;
-			plug.connectedTo(destinations, false, true);
-			for (auto dest : destinations)
+			unsigned int elemCount = instObjGroups.numElements();
+			for (unsigned int i = 0; i < elemCount; i++)
 			{
-				MObject obj = dest.node();
-				if (obj.isNull()) continue;
-				if (obj.apiType() != MFn::Type::kShadingEngine) continue;
-				MFnDependencyNode dn(obj);
-				if (dn.name() != kInitialShadingGroup && dn.name() != kLambert1SG) continue;
-				shadingEngineNode = dest.node();
-				return true;
+				auto instObjGroup = instObjGroups.elementByLogicalIndex(i);
+
+				MPlugArray destinations;
+				instObjGroup.connectedTo(destinations, false, true);
+				for (auto dest : destinations)
+				{
+					if (dest.node().isNull()) continue;
+					if (dest.node().apiType() != MFn::Type::kShadingEngine) continue;
+					shadingEngineNode = dest.node();
+					return true;
+				}
 			}
 		}
 
@@ -749,30 +748,30 @@ bool HdMayaSceneDelegate::_GetRenderItemMaterial(
 	MObject& shadingEngineNode
 	)
 {
-	MObject shaderNode;
-	if (HdMayaRenderItemShaderConverter::ExtractShapeUIShaderData(ri, sd))
-		// TODO: This block is intended to translate shape ui (wireframe, verts etc) shaders
-        // To Usd preview surface. This block is currently unused.
-        // Determine whether this is a supported UI shader
-	{
-		SdfPath id = SdfPath(sd.ShapeUIShader->Name);
-		if (!TfMapLookupPtr(_renderItemShaderAdapters, id))
-		{
-			_renderItemShaderAdapters.insert(
-				{
-					id,
-					HdMayaShaderAdapterPtr(new HdMayaShapeUIShaderAdapter(this, *sd.ShapeUIShader))
-				});
 
-			GetChangeTracker().MarkTaskDirty(id, HdChangeTracker::DirtyCollection);
-		}
+	MObject meshNode;
+	MObject shadingEngineNode;
+	// TODO: Remove previous shape UI code all at once
+	//if (HdMayaRenderItemShaderConverter::ExtractShapeUIShaderData(ri, sd))
+	//	// Determine whether this is a supported UI shader
+	//{
+	//	SdfPath id = SdfPath(sd.ShapeUIShader->Name);
+	//	if (!TfMapLookupPtr(_renderItemShaderAdapters, id))
+	//	{
+	//		_renderItemShaderAdapters.insert(
+	//			{
+	//				id,
+	//				HdMayaShaderAdapterPtr(new HdMayaShapeUIShaderAdapter(this, *sd.ShapeUIShader))
+	//			});
 
-		return true;
-	}
-	else if (
-		ri.getShaderNode(shaderNode) == MS::kSuccess &&
-		GetShadingEngineNode(shaderNode, shadingEngineNode)
-		)
+	//		GetChangeTracker().MarkTaskDirty(id, HdChangeTracker::DirtyCollection);
+	//	}
+
+	//	return true;
+	//}
+	//else 	
+	MDagPath dagPath = ri.sourceDagPath();
+	if (dagPath.isValid() && GetShadingEngineNode(dagPath.node(), shadingEngineNode))
 		// Else try to find associated material node if this is a material shader.
 		// NOTE: The existing maya material support in hydra expects a shading engine node
 	{
