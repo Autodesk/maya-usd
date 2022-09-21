@@ -738,7 +738,7 @@ void MayaUsdRPrim::_SyncDisplayLayerModes(const HdRprim&
             MPlug colorIndex = displayLayerNodeFn.findPlug("color");
             MPlug useRGBColors = displayLayerNodeFn.findPlug("overrideRGBColors");
             MPlug colorRGB = displayLayerNodeFn.findPlug("overrideColorRGB");
-            MPlug colorA = displayLayerNodeFn.findPlug("overrideColorA");            
+            MPlug colorA = displayLayerNodeFn.findPlug("overrideColorA");
 
             _displayLayerModes._visibility &= layerVisible.asBool();
             _displayLayerModes._hideOnPlayback |= layerHidesOnPlayback.asBool();
@@ -755,11 +755,8 @@ void MayaUsdRPrim::_SyncDisplayLayerModes(const HdRprim&
             if (useRGBColors.asBool()) {
                 const float3& rgbColor = colorRGB.asMDataHandle().asFloat3();
                 _displayLayerModes._wireframeColorIndex = -1;
-                _displayLayerModes._wireframeColorRGBA = 
-                    MColor( rgbColor[0],
-                            rgbColor[1],
-                            rgbColor[2],
-                            colorA.asFloat()); 
+                _displayLayerModes._wireframeColorRGBA
+                    = MColor(rgbColor[0], rgbColor[1], rgbColor[2], colorA.asFloat());
             } else {
                 _displayLayerModes._wireframeColorIndex = colorIndex.asInt();
             }
@@ -896,7 +893,8 @@ MColor MayaUsdRPrim::_GetHighlightColor(const TfToken& className)
 MColor MayaUsdRPrim::_GetWireframeColor()
 {
     if (_displayLayerModes._wireframeColorIndex > 0) {
-        return MColor(M3dView::active3dView().colorAtIndex(_displayLayerModes._wireframeColorIndex - 1, M3dView::kDormantColors));
+        return MColor(M3dView::active3dView().colorAtIndex(
+            _displayLayerModes._wireframeColorIndex - 1, M3dView::kDormantColors));
     } else if (_displayLayerModes._wireframeColorIndex < 0) {
         return _displayLayerModes._wireframeColorRGBA;
     } else {
