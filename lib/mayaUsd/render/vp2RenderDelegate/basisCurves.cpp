@@ -447,12 +447,10 @@ void HdVP2BasisCurves::Sync(
     const SdfPath& id = GetId();
     if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals)
         || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->primvar)) {
-        const HdVP2Material* material = static_cast<const HdVP2Material*>(
-            renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
-
-        const TfTokenVector& requiredPrimvars = (material && material->GetSurfaceShader())
-            ? material->GetRequiredPrimvars()
-            : sFallbackShaderPrimvars;
+        TfTokenVector requiredPrimvars;
+        if (!_GetMaterialPrimvars(renderIndex, GetMaterialId(), requiredPrimvars)) {
+            requiredPrimvars = sFallbackShaderPrimvars;
+        }
 
         _UpdatePrimvarSources(delegate, *dirtyBits, requiredPrimvars);
     }
@@ -525,6 +523,7 @@ void HdVP2BasisCurves::Sync(
 void HdVP2BasisCurves::_UpdateDrawItem(
     HdSceneDelegate*             sceneDelegate,
     HdVP2DrawItem*               drawItem,
+    const TfToken&               reprToken,
     HdBasisCurvesReprDesc const& desc)
 {
     MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
@@ -686,12 +685,9 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
             unsigned int numWidths = widths.size();
             if (widthsBuffer && numWidths > 0) {
-                void* bufferData = widthsBuffer->acquire(numWidths, true);
-                stateToCommit._primvarBufferDataMap[HdTokens->widths] = bufferData;
-
-                if (bufferData != nullptr) {
-                    memcpy(bufferData, widths.cdata(), numWidths * sizeof(float));
-                }
+                auto& bufferData = stateToCommit._primvarBufferDataMap[HdTokens->widths];
+                bufferData.resize(numWidths * sizeof(float));
+                memcpy(&bufferData[0], widths.cdata(), numWidths * sizeof(float));
             }
         }
 
@@ -701,7 +697,8 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
 
             if (material) {
-                MHWRender::MShaderInstance* shader = material->GetSurfaceShader();
+                MHWRender::MShaderInstance* shader
+                    = material->GetSurfaceShader(_GetMaterialNetworkToken(reprToken));
                 drawItemData._shaderIsFallback = (shader == nullptr);
                 if (shader != nullptr && shader != drawItemData._shader) {
                     drawItemData._shader = shader;
@@ -905,7 +902,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
     const GfRange3d& range = _sharedData.bounds.GetRange();
 
     _UpdateTransform(stateToCommit, _sharedData, itemDirtyBits, isBoundingBoxItem);
-    MMatrix& worldMatrix = drawItemData._worldMatrix;
+    const MMatrix& worldMatrix = drawItemData._worldMatrix;
 
     // If the prim is instanced, create one new instance per transform.
     // The current instancer invalidation tracking makes it hard for
@@ -1112,14 +1109,15 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
         // If available, something changed
         for (const auto& entry : stateToCommit._primvarBufferDataMap) {
-            const TfToken& primvarName = entry.first;
-            void*          primvarBufferData = entry.second;
-            if (primvarBufferData) {
-                const auto it = primvarBuffers->find(primvarName);
+            auto& primvarBufferData = entry.second;
+            if (!primvarBufferData.empty()) {
+                const auto it = primvarBuffers->find(entry.first);
                 if (it != primvarBuffers->end()) {
-                    MHWRender::MVertexBuffer* primvarBuffer = it->second.get();
-                    if (primvarBuffer) {
-                        primvarBuffer->commit(primvarBufferData);
+                    if (auto primvarBuffer = it->second.get()) {
+                        const auto&  desc = primvarBuffer->descriptor();
+                        unsigned int numElems
+                            = primvarBufferData.size() / (desc.dataTypeSize() * desc.dimension());
+                        primvarBuffer->update(&primvarBufferData[0], 0, numElems, true);
                     }
                 }
             }
@@ -1311,7 +1309,7 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
 
         switch (desc.geomStyle) {
         case HdBasisCurvesGeomStylePatch:
-            renderItem = _CreatePatchRenderItem(renderItemName);
+            renderItem = _CreatePatchRenderItem(renderItemName, reprToken);
             drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
 #ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
             renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
@@ -1349,7 +1347,8 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
                     kOpaqueGray,
                     MSelectionMask::kSelectNurbsCurves,
                     MHWRender::MFrameContext::kExcludeNurbsCurves);
-                renderItem->setDrawMode(MHWRender::MGeometry::kAll);
+                renderItem->setDrawMode(static_cast<MHWRender::MGeometry::DrawMode>(
+                    MHWRender::MGeometry::kShaded | MHWRender::MGeometry::kTextured));
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
                 renderItem->setDefaultMaterialHandling(
                     MRenderItem::DrawOnlyWhenDefaultMaterialActive);
@@ -1400,7 +1399,7 @@ void HdVP2BasisCurves::_UpdateRepr(HdSceneDelegate* sceneDelegate, TfToken const
             HdVP2DrawItem* drawItem
                 = static_cast<HdVP2DrawItem*>(repr->GetDrawItem(drawItemIndex++));
             if (drawItem) {
-                _UpdateDrawItem(sceneDelegate, drawItem, desc);
+                _UpdateDrawItem(sceneDelegate, drawItem, reprToken, desc);
             }
         }
     }
@@ -1451,13 +1450,21 @@ void HdVP2BasisCurves::_UpdatePrimvarSources(
 
 /*! \brief  Create render item for smoothHull repr.
  */
-MHWRender::MRenderItem* HdVP2BasisCurves::_CreatePatchRenderItem(const MString& name) const
+MHWRender::MRenderItem*
+HdVP2BasisCurves::_CreatePatchRenderItem(const MString& name, const TfToken& reprToken) const
 {
     MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
         name, MHWRender::MRenderItem::MaterialSceneItem, MHWRender::MGeometry::kLines);
 
-    renderItem->setDrawMode(static_cast<MHWRender::MGeometry::DrawMode>(
-        MHWRender::MGeometry::kShaded | MHWRender::MGeometry::kTextured));
+    MHWRender::MGeometry::DrawMode drawMode = static_cast<MHWRender::MGeometry::DrawMode>(
+        MHWRender::MGeometry::kShaded | MHWRender::MGeometry::kTextured);
+    if (reprToken == HdReprTokens->smoothHull) {
+        drawMode = MHWRender::MGeometry::kTextured;
+    } else if (reprToken == HdVP2ReprTokens->smoothHullUntextured) {
+        drawMode = MHWRender::MGeometry::kShaded;
+    }
+
+    renderItem->setDrawMode(drawMode);
     renderItem->castsShadows(false);
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueGray));

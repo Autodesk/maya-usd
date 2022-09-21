@@ -69,7 +69,7 @@ public:
 #endif
 
 //! A primvar vertex buffer data map indexed by primvar name.
-using PrimvarBufferDataMap = std::unordered_map<TfToken, void*, TfToken::HashFunctor>;
+using PrimvarBufferDataMap = std::unordered_map<TfToken, std::vector<char>, TfToken::HashFunctor>;
 
 //! \brief  Helper struct used to package all the changes into single commit task
 //!         (such commit task will be executed on main-thread)
@@ -83,7 +83,7 @@ struct MayaUsdCommitState
     PrimvarBufferDataMap _primvarBufferDataMap;
 
     //! If valid, world matrix to set on the render item
-    MMatrix* _worldMatrix { nullptr };
+    const MMatrix* _worldMatrix { nullptr };
 
     //! If valid, bounding box to set on the render item
     MBoundingBox* _boundingBox { nullptr };
@@ -199,6 +199,9 @@ protected:
 
         //! Requested display type of the Rprim
         DisplayType _displayType { kNormal };
+
+        //! Requested texturing status
+        bool _texturing { true };
     };
 
     void _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
@@ -216,6 +219,8 @@ protected:
     void _UpdateReprOverrides(ReprVector& reprs);
 
     TfToken _GetOverrideToken(TfToken const& reprToken) const;
+
+    TfToken _GetMaterialNetworkToken(const TfToken& reprToken) const;
 
     HdReprSharedPtr _InitReprCommon(
         HdRprim&       refThis,
@@ -265,6 +270,8 @@ protected:
 
     //! Helper utility function to adapt Maya API changes.
     static void _SetWantConsolidation(MHWRender::MRenderItem& renderItem, bool state);
+
+    static bool _GetMaterialPrimvars(HdRenderIndex&, const SdfPath&, TfTokenVector&);
 
     void _InitRenderItemCommon(MHWRender::MRenderItem* renderItem) const;
 

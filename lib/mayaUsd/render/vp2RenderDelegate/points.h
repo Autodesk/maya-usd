@@ -123,6 +123,7 @@ private:
     void _UpdateDrawItem(
         HdSceneDelegate*        sceneDelegate,
         HdVP2DrawItem*          drawItem,
+        const TfToken&          reprToken,
         HdPointsReprDesc const& desc);
 
     void _UpdatePrimvarSources(
@@ -130,7 +131,8 @@ private:
         HdDirtyBits          dirtyBits,
         TfTokenVector const& requiredPrimvars);
 
-    MHWRender::MRenderItem* _CreateFatPointsRenderItem(const MString& name) const;
+    MHWRender::MRenderItem*
+    _CreateFatPointsRenderItem(const MString& name, const TfToken& reprToken) const;
 
     enum DirtyBits : HdDirtyBits
     {
