@@ -57,20 +57,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace {
 SdfValueTypeName _GetVarnameType()
 {
-    static SdfValueTypeName _varnameType;
-    static bool             _once = true;
-    if (_once) {
+    static SdfValueTypeName varnameType;
+    static std::once_flag   once;
+    std::call_once(once, []() {
         // varname input went from TfToken to std::string in USD 20.11. Fetch the type directly from
         // the registry:
         SdrRegistry&          registry = SdrRegistry::GetInstance();
         SdrShaderNodeConstPtr shaderNodeDef
             = registry.GetShaderNodeByIdentifier(TrUsdTokens->UsdPrimvarReader_float2);
-        _varnameType = shaderNodeDef
+        varnameType = shaderNodeDef
             ? shaderNodeDef->GetShaderInput(TrUsdTokens->varname)->GetTypeAsSdfType().first
             : SdfValueTypeNames->Token;
-        _once = false;
-    }
-    return _varnameType;
+    });
+    return varnameType;
 }
 } // namespace
 
