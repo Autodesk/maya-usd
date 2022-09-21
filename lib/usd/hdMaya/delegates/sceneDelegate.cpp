@@ -748,9 +748,6 @@ bool HdMayaSceneDelegate::_GetRenderItemMaterial(
 	MObject& shadingEngineNode
 	)
 {
-
-	MObject meshNode;
-	MObject shadingEngineNode;
 	// TODO: Remove previous shape UI code all at once
 	//if (HdMayaRenderItemShaderConverter::ExtractShapeUIShaderData(ri, sd))
 	//	// Determine whether this is a supported UI shader
