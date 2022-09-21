@@ -340,6 +340,29 @@ bool UsdAttributes::canAddAttribute(
     return true;
 }
 
+std::string
+UsdAttributes::getUniqueAttrName(const UsdSceneItem::Ptr& item, const std::string& attrName)
+{
+    //Then we need to create a new unique name using incremental digit
+    if (UsdAttributes(item).hasAttribute(attrName)) {
+        size_t            last_index = attrName.find_last_not_of("0123456789");
+        const std::string nameLastInt = attrName.substr(last_index + 1);
+        const std::string nameWithoutInt = attrName.substr(0, last_index + 1);
+        int               nameInt = 1;
+        if (!nameLastInt.empty()) {
+            // the next name int is progressive
+            try {
+                nameInt = std::stoi(nameLastInt) + 1;
+            } catch (const std::exception&) {
+                return attrName;
+            }
+        }
+        // Update the unique name
+        return nameWithoutInt + std::to_string(nameInt);
+    }
+    return attrName;
+}
+
 Ufe::Attribute::Ptr UsdAttributes::doAddAttribute(
     const UsdSceneItem::Ptr&    item,
     const std::string&          name,

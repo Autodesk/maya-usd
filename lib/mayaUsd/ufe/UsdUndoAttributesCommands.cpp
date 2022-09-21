@@ -40,8 +40,9 @@ UsdAddAttributeCommand::Ptr UsdAddAttributeCommand::create(
     const std::string&          name,
     const Ufe::Attribute::Type& type)
 {
-    if (UsdAttributes::canAddAttribute(sceneItem, name, type)) {
-        return std::make_shared<UsdAddAttributeCommand>(sceneItem, name, type);
+    const std::string uniqueName = UsdAttributes::getUniqueAttrName(sceneItem, name);
+    if (UsdAttributes::canAddAttribute(sceneItem, uniqueName, type)) {
+        return std::make_shared<UsdAddAttributeCommand>(sceneItem, uniqueName, type);
     }
     return nullptr;
 }
