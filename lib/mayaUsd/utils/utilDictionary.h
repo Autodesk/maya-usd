@@ -21,7 +21,6 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/dictionary.h>
 #include <pxr/base/vt/value.h>
-#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/property.h>
 #include <pxr/usd/usd/stage.h>
