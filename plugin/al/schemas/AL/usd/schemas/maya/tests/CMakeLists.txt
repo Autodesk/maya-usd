@@ -29,7 +29,7 @@ target_link_libraries(${TARGET_NAME}
     tf
     vt
     plug
-    ${Boost_PYTHON_LIBRARY}
+    $<$<BOOL:${IS_LINUX}>:${Boost_PYTHON_LIBRARY}>
 )
 
 # install

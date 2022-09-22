@@ -33,7 +33,7 @@ target_link_libraries(${TARGET_NAME}
     arch
     usd
     vt
-    ${Boost_PYTHON_LIBRARY}
+    $<$<BOOL:${IS_LINUX}>:${Boost_PYTHON_LIBRARY}>
     ${USDTRANSACTION_LIBRARY_NAME}
 )
 
