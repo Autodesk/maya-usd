@@ -27,8 +27,9 @@ import mayaUsd.lib
 import mayaUtils
 import mayaUsd.ufe
 import usdUtils
+import ufeUtils
 
-from pxr import UsdGeom, Gf
+from pxr import UsdGeom, Gf, Usd
 
 from maya import cmds
 from maya import standalone
@@ -117,6 +118,72 @@ class MergeToUsdTestCase(unittest.TestCase):
         # Maya node is removed.
         with self.assertRaises(RuntimeError):
             om.MSelectionList().add(aMayaPathStr)
+
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
+    def testDiscardEditsWhenParentIsDeactivated(self):
+        '''Discard edits on a USD transform when its parent is deactivated shoudl fail but not crash.'''
+
+        # Edit as Maya the B item.
+        (ps,
+         aXlateOp, aUsdXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
+         bXlateOp, bUsdXlation, bUsdUfePathStr, bUsdUfePath, bUsdItem) = createSimpleXformScene()
+
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(bUsdUfePathStr))
+
+        bMayaItem = ufe.GlobalSelection.get().front()
+        bMayaXlation = om.MVector(4, 5, 6)
+        (bMayaPath, bMayaPathStr, bFn, mayaMatrix) = \
+            setMayaTranslation(bMayaItem, bMayaXlation)
+
+        self.assertEqual(bFn.translation(om.MSpace.kObject), bMayaXlation)
+
+        mayaToUsd = ufe.PathMappingHandler.pathMappingHandler(bMayaItem)
+        self.assertEqual(mayaToUsd.fromHost(bMayaPath), bUsdUfePath)
+
+        aHier = ufe.Hierarchy.hierarchy(aUsdItem)
+        self.assertNotIn(bUsdItem, aHier.children())
+        self.assertIn(bMayaItem, aHier.children())
+
+        # Deactivate the parent of B in USD, the A item.
+        aUsdPrim = usdUtils.getPrimFromSceneItem(aUsdItem)
+        aUsdPrim.SetActive(False)
+        self.assertFalse(aUsdPrim.IsActive())
+
+        # Discard Maya edits. It won't crash, but the B USD item will stay deactivated,
+        # because its activated flag cannot be reset because it's parent is deactivated
+        # and prevents access to its child.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.discardEdits(bMayaPathStr))
+
+        # Activate the parent of B in USD, the A item.
+        # Recreate the UFE item since the USD Prim was temporarily deactive.
+        aUsdItem = ufeUtils.createItem(aUsdUfePath)
+        aUsdPrim = usdUtils.getPrimFromSceneItem(aUsdItem)
+        aUsdPrim.SetActive(True)
+
+        # The B item is still inactive.
+        # Recreate the UFE item since the USD Prim was temporarily deactive
+        bUsdItem = ufeUtils.createItem(bUsdUfePath)
+        bUsdPrim = usdUtils.getPrimFromSceneItem(bUsdItem)
+        self.assertFalse(bUsdPrim.IsActive())
+
+        # Activate the B item. Need to target the session layer since edit-as-Maya
+        # had deactivated the prim in the session layer.
+        stage = bUsdPrim.GetStage()
+        with Usd.EditContext(stage, Usd.EditTarget(stage.GetSessionLayer())):
+            bUsdPrim.SetActive(True)
+        self.assertTrue(bUsdPrim.IsActive())
+
+        # Hierarchy is restored: USD item is child of proxy shape, Maya item is
+        # not.  Be careful to use the Maya path rather than the Maya item, which
+        # should no longer exist.
+        self.assertIn(bUsdItem, aHier.children())
+        self.assertNotIn(bMayaPath, [child.path() for child in aHier.children()])
+
+        # Maya node is removed.
+        with self.assertRaises(RuntimeError):
+            om.MSelectionList().add(bMayaPathStr)
 
     @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testDiscardEditsUndoRedo(self):
