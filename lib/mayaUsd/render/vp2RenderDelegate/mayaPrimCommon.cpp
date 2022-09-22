@@ -28,11 +28,11 @@
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
-#include <maya/M3dView.h>
 #include <maya/MFnDisplayLayer.h>
 #include <maya/MFnDisplayLayerManager.h>
 #include <maya/MObjectArray.h>
 #endif
+#include <maya/M3dView.h>
 #include <maya/MProfiler.h>
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
 #include <ufe/pathString.h>
