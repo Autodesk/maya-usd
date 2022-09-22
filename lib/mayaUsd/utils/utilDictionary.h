@@ -21,6 +21,7 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/dictionary.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/property.h>
 #include <pxr/usd/usd/stage.h>
@@ -87,7 +88,7 @@ MAYAUSD_CORE_PUBLIC std::vector<T>
 {
     // Using declaration is necessary for the TF_ macros to compile as they assume
     // to be in that namespace.
-    using namespace PXR_NS;
+    PXR_NAMESPACE_USING_DIRECTIVE
 
     // Check that vector exists.
     if (VtDictionaryIsHolding<std::vector<T>>(userArgs, key)) {
