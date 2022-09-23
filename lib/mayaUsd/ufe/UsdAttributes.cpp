@@ -343,7 +343,7 @@ bool UsdAttributes::canAddAttribute(
 std::string
 UsdAttributes::getUniqueAttrName(const UsdSceneItem::Ptr& item, const std::string& attrName)
 {
-    //Then we need a create a unique one
+    // Then we need a create a unique one
     if (UsdAttributes(item).hasAttribute(attrName)) {
         const auto               kAttributeNames = UsdAttributes(item).attributeNames();
         PXR_NS::TfToken::HashSet attributeNames;

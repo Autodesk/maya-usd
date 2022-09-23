@@ -79,8 +79,8 @@ public:
         const std::string&          name,
         const Ufe::Attribute::Type& type);
     static std::string getUniqueAttrName(const UsdSceneItem::Ptr& item, const std::string& name);
-    static bool canRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
-    static bool doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
+    static bool        canRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
+    static bool        doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
 #endif
 #endif
 
