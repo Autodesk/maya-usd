@@ -202,6 +202,15 @@ protected:
 
         //! Requested texturing status
         bool _texturing { true };
+
+        //! Wireframe color index
+        // zero - override is disabled
+        // negative - override with RGB color
+        // positive - override with the given index
+        int _wireframeColorIndex { 0 };
+
+        //! Wireframe color override
+        MColor _wireframeColorRGBA;
     };
 
     void _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
@@ -258,6 +267,7 @@ protected:
 
     SdfPath _GetUpdatedMaterialId(HdRprim* rprim, HdSceneDelegate* delegate);
     MColor  _GetHighlightColor(const TfToken& className);
+    MColor  _GetWireframeColor();
 
     void _PropagateDirtyBitsCommon(HdDirtyBits& bits, const ReprVector& reprs) const;
 
