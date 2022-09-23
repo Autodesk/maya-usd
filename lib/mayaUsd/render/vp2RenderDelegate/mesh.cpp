@@ -1974,7 +1974,7 @@ void HdVP2Mesh::_UpdateDrawItem(
             if (shader != nullptr && shader != drawItemData._shader) {
                 drawItemData._shader = shader;
                 stateToCommit._shader = shader;
-                stateToCommit._isTransparent = false;
+                stateToCommit._isTransparent = (color.a < 0.999f);
             }
         }
     }
