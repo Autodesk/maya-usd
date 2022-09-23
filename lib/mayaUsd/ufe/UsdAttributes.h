@@ -81,8 +81,6 @@ public:
     static std::string getUniqueAttrName(const UsdSceneItem::Ptr& item, const std::string& name);
     static bool canRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
     static bool doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
-    static Ufe::Attribute::Ptr
-    renameAttribute(const Ufe::Attribute& target, const std::string& newName);
 #endif
 #endif
 
