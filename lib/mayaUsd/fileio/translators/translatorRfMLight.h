@@ -40,6 +40,12 @@ struct UsdMayaTranslatorRfMLight
     /// Returns true if this succeeds in creating a RenderMan for Maya light.
     MAYAUSD_CORE_PUBLIC
     static bool Read(const UsdMayaPrimReaderArgs& args, UsdMayaPrimReaderContext& context);
+
+    /// For a \p mesh, returns the MObject that corresponds to the attached
+    /// PxrMeshLight if it exists.  If it does not exist, this will return a
+    /// null MObject.
+    MAYAUSD_CORE_PUBLIC
+    static MObject GetAttachedPxrMeshLight(const MObject& mesh);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

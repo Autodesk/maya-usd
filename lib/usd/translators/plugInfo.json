@@ -3,6 +3,11 @@
       {
         "Info": {
           "UsdMaya": {
+            "SchemaApiAdaptor": {
+              "providesTranslator": [
+                "shape"
+              ]
+            },
             "PrimReader": {
               "providesTranslator": [
                 "UsdGeomCamera",

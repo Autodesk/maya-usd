@@ -47,7 +47,8 @@ class testUsdExportRfMLight(unittest.TestCase):
         cmds.loadPlugin('pxrUsd')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFilePath,
             shadingMode='pxrRis',
-            frameRange=(cls.START_TIMECODE, cls.END_TIMECODE))
+            frameRange=(cls.START_TIMECODE, cls.END_TIMECODE),
+            apiSchema=["MeshLightAPI", "ShadowsAPI", "ShapingAPI", ])
 
         cls._stage = Usd.Stage.Open(usdFilePath)
 
@@ -72,7 +73,10 @@ class testUsdExportRfMLight(unittest.TestCase):
     def _ValidateUsdLuxLight(self, lightTypeName):
         primPathFormat = '/RfMLightsTest/Lights/%s'
 
-        lightPrimPath = primPathFormat % lightTypeName
+        if lightTypeName == 'MeshLight':
+            lightPrimPath = '/RfMLightsTest/Geom/SphereWithMeshLight'
+        else:
+            lightPrimPath = primPathFormat % lightTypeName
         lightPrim = self._stage.GetPrimAtPath(lightPrimPath)
         self.assertTrue(lightPrim)
 
@@ -90,7 +94,7 @@ class testUsdExportRfMLight(unittest.TestCase):
             self.assertTrue(lightPrim.IsA(UsdLux.DomeLight))
             testNumber = 4
         elif lightTypeName == 'MeshLight':
-            self.assertTrue(lightPrim.IsA(UsdLux.GeometryLight))
+            self.assertTrue(lightPrim.HasAPI(UsdLux.MeshLightAPI))
             testNumber = 5
         elif lightTypeName == 'RectLight':
             self.assertTrue(lightPrim.IsA(UsdLux.RectLight))
@@ -149,7 +153,7 @@ class testUsdExportRfMLight(unittest.TestCase):
             self.assertEqual(lightSchema.GetNormalizeAttr().Get(),
                 expectedNormalize)
 
-        expectedColor = Gf.Vec3f(0.1 * testNumber)
+        expectedColor = Gf.ConvertDisplayToLinear(Gf.Vec3f(0.1 * testNumber))
         self._assertGfIsClose(lightSchema.GetColorAttr().Get(),
             expectedColor, 1e-6)
 
@@ -289,7 +293,7 @@ class testUsdExportRfMLight(unittest.TestCase):
         expectedMonth = 9
         self.assertEqual(envDayLight.GetAttribute("inputs:ri:light:month").Get(), expectedMonth)
 
-        expectedSkyTint = Gf.Vec3f(0.9)
+        expectedSkyTint = Gf.ConvertDisplayToLinear(Gf.Vec3f(0.9))
         self._assertGfIsClose(envDayLight.GetAttribute("inputs:ri:light:skyTint").Get(),
             expectedSkyTint, 1e-6)
 
@@ -301,7 +305,7 @@ class testUsdExportRfMLight(unittest.TestCase):
         self._assertGfIsClose(envDayLight.GetAttribute("inputs:ri:light:sunSize").Get(),
             expectedSunSize, 1e-6)
 
-        expectedSunTint = Gf.Vec3f(0.9)
+        expectedSunTint = Gf.ConvertDisplayToLinear(Gf.Vec3f(0.9))
         self._assertGfIsClose(envDayLight.GetAttribute("inputs:ri:light:sunTint").Get(),
             expectedSunTint, 1e-6)
 
@@ -326,7 +330,7 @@ class testUsdExportRfMLight(unittest.TestCase):
         self._assertGfIsClose(shapingAPI.GetShapingFocusAttr().Get(),
             expectedFocus, 1e-6)
 
-        expectedFocusTint = Gf.Vec3f(0.2)
+        expectedFocusTint = Gf.ConvertDisplayToLinear(Gf.Vec3f(0.2))
         self._assertGfIsClose(shapingAPI.GetShapingFocusTintAttr().Get(),
             expectedFocusTint, 1e-6)
 
@@ -364,7 +368,7 @@ class testUsdExportRfMLight(unittest.TestCase):
 
         self.assertTrue(shadowAPI.GetShadowEnableAttr().Get())
 
-        expectedShadowColor = Gf.Vec3f(0.6)
+        expectedShadowColor = Gf.ConvertDisplayToLinear(Gf.Vec3f(0.6))
         self._assertGfIsClose(shadowAPI.GetShadowColorAttr().Get(),
             expectedShadowColor, 1e-6)
 
@@ -397,7 +401,7 @@ class testUsdExportRfMLight(unittest.TestCase):
         self._ValidateUsdLuxLight('DomeLight')
         self._ValidateUsdLuxDomeLightTextureFile()
 
-    def testExportMeshLight(self):
+    def testExportMeshLightAPI(self):
         self._ValidateUsdLuxLight('MeshLight')
 
     def testExportRectLight(self):
