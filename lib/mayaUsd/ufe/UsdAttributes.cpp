@@ -346,19 +346,19 @@ UsdAttributes::getUniqueAttrName(const UsdSceneItem::Ptr& item, const std::strin
     //Then we need to create a new unique name using incremental digit
     if (UsdAttributes(item).hasAttribute(attrName)) {
         size_t            last_index = attrName.find_last_not_of("0123456789");
-        const std::string nameLastInt = attrName.substr(last_index + 1);
-        const std::string nameWithoutInt = attrName.substr(0, last_index + 1);
-        int               nameInt = 1;
-        if (!nameLastInt.empty()) {
+        const std::string kNameLastInt = attrName.substr(last_index + 1);
+        const std::string kNameWithoutInt = attrName.substr(0, last_index + 1);
+        int               intToAdd = 1;
+        if (!kNameLastInt.empty()) {
             // the next name int is progressive
             try {
-                nameInt = std::stoi(nameLastInt) + 1;
+                intToAdd = std::stoi(kNameLastInt) + 1;
             } catch (const std::exception&) {
                 return attrName;
             }
         }
-        // Update the unique name
-        return nameWithoutInt + std::to_string(nameInt);
+        // Call it recursively since the created name could already exist and we need to move on to a new unique name
+        return getUniqueAttrName(item,kNameWithoutInt + std::to_string(intToAdd));
     }
     return attrName;
 }
