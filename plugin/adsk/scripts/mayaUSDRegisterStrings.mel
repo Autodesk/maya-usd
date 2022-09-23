@@ -158,6 +158,7 @@ global proc mayaUSDRegisterStrings()
     register("kExportJobContextLbl", "Plug-in Configuration:");
     register("kExportJobContextNoneLbl", "None");
     register("kExportMaterialsAnn", "Select the material(s) to bind to prims for export. With USD, you can bind multiple materials to prims.");
+    register("kExportMaterialsDefaultScopeName", "mtl");
     register("kExportMergeShapesAnn", "Merges Maya transform and shape nodes into a single USD prim.");
     register("kExportMergeShapesLbl", "Merge Transform and\nShape Nodes:");
     register("kExportNamespacesAnn", "By default, namespaces are exported to the USD file in the following format: nameSpaceExample_pPlatonic1");
