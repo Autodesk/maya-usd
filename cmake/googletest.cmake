@@ -25,6 +25,10 @@ macro(fetch_googletest)
         # sequence parsing errors.  PPT, 22-Nov-2018.
         file(TO_CMAKE_PATH ${CMAKE_MAKE_PROGRAM} CMAKE_MAKE_PROGRAM)
 
+        set(CMAKE_CXX_STANDARD 11)
+        set(CMAKE_CXX_EXTENSIONS OFF)
+        set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
         if (GOOGLETEST_SRC_DIR)
             configure_file(cmake/googletest_src.txt.in ${GOOGLETEST_BUILD_ROOT}/googletest-config/CMakeLists.txt)
         else()
