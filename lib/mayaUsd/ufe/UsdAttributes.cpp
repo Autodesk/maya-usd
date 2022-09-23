@@ -332,7 +332,7 @@ bool UsdAttributes::canAddAttribute(
 {
     // See if we can edit this attribute, and that it is not already part of the schema or node
     // definition
-    if (!item || !item->prim().IsActive() || UsdAttributes(item).hasAttribute(name)) {
+    if (!item || !item->prim().IsActive()) {
         return false;
     }
 
@@ -343,22 +343,16 @@ bool UsdAttributes::canAddAttribute(
 std::string
 UsdAttributes::getUniqueAttrName(const UsdSceneItem::Ptr& item, const std::string& attrName)
 {
-    //Then we need to create a new unique name using incremental digit
+    //Then we need a create a unique one
     if (UsdAttributes(item).hasAttribute(attrName)) {
-        size_t            last_index = attrName.find_last_not_of("0123456789");
-        const std::string kNameLastInt = attrName.substr(last_index + 1);
-        const std::string kNameWithoutInt = attrName.substr(0, last_index + 1);
-        int               intToAdd = 1;
-        if (!kNameLastInt.empty()) {
-            // the next name int is progressive
-            try {
-                intToAdd = std::stoi(kNameLastInt) + 1;
-            } catch (const std::exception&) {
-                return attrName;
-            }
+        const auto               kAttributeNames = UsdAttributes(item).attributeNames();
+        PXR_NS::TfToken::HashSet attributeNames;
+
+        for (const auto& attributeName : kAttributeNames) {
+            attributeNames.insert(PXR_NS::TfToken(attributeName));
         }
-        // Call it recursively since the created name could already exist and we need to move on to a new unique name
-        return getUniqueAttrName(item,kNameWithoutInt + std::to_string(intToAdd));
+
+        return uniqueName(attributeNames, attrName);
     }
     return attrName;
 }
