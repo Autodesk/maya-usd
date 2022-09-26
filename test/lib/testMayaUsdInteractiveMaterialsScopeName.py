@@ -22,7 +22,7 @@ import maya.mel as mel
 import fixturesUtils
 
 class MayaUsdInteractiveMaterialsScopeNameTestCase(unittest.TestCase):
-    """Test interactive commands that need the UI of the layereditor."""
+    """Test interactive commands that set the materials scope name."""
 
     @classmethod
     def setUpClass(cls):
@@ -38,12 +38,12 @@ class MayaUsdInteractiveMaterialsScopeNameTestCase(unittest.TestCase):
         result2 = mel.eval("$w = `window`; $scrollLayout = `scrollLayout`; proc testTranslator(string $s){ global int $materialsScopeResult; $materialsScopeResult=endsWith($s, \"materialsScopeName=shouldFail\"); } mayaUsdTranslatorExport($scrollLayout, \"query\", \"\", \"testTranslator\"); deleteUI $w; global int $materialsScopeResult; int $r=$materialsScopeResult;");
         self.assertFalse(result2)
 
-
     def testMaterialsScopeNameEnvVariable(self):
         cmds.file(new=True, force=True)
         # Look for a materialsScopeName of test based upon env variable (should pass)
         mel.eval("putenv(\"MAYAUSD_MATERIALS_SCOPE_NAME\", \"test\")")
         result1 = mel.eval("$w = `window`; $scrollLayout = `scrollLayout`; proc testTranslator(string $s){ global int $materialsScopeResult; $materialsScopeResult=endsWith($s, \"materialsScopeName=test\"); } mayaUsdTranslatorExport($scrollLayout, \"query\", \"\", \"testTranslator\"); deleteUI $w; global int $materialsScopeResult; int $r=$materialsScopeResult;");
+        self.assertTrue(result1)
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())
