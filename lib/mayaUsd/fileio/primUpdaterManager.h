@@ -30,9 +30,11 @@
 
 UFE_NS_DEF { class Path; }
 
+#ifdef HAS_ORPHANED_NODES_MANAGER
 namespace MAYAUSD_NS_DEF {
 class OrphanedNodesManager;
 }
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -111,6 +113,7 @@ private:
 
     //! Record pull information for the pulled path, for inspection on
     //! scene changes.
+#ifdef HAS_ORPHANED_NODES_MANAGER
     void recordPullVariantInfo(const Ufe::Path& pulledPath, const MDagPath& pullParentPath);
 
     // Maya file new or open callback.  Member function to access other private
@@ -119,6 +122,7 @@ private:
 
     void beginManagePulledPrims();
     void endManagePulledPrims();
+#endif
 
     friend class TfSingleton<PrimUpdaterManager>;
 
@@ -132,10 +136,12 @@ private:
     // Orphaned nodes manager that observes the scene, to determine when to hide
     // pulled prims that have become orphaned, or to show them again, because
     // of structural changes to their USD or Maya ancestors.
+#ifdef HAS_ORPHANED_NODES_MANAGER
     std::shared_ptr<MayaUsd::OrphanedNodesManager> _orphanedNodesManager {};
 
     // Maya scene observation, to stop UFE scene observation.
     MCallbackIdArray _fileCbs;
+#endif
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

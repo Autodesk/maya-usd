@@ -276,7 +276,6 @@ void OrphanedNodesManager::recursiveSetVisibility(
     const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode,
     bool                                       visibility)
 {
-#if (UFE_PREVIEW_VERSION_NUM >= 4026)
     // We know in our case that a trie node with data can't have children,
     // since descendants of a pulled prim can't be pulled.
     if (trieNode->hasData()) {
@@ -288,7 +287,6 @@ void OrphanedNodesManager::recursiveSetVisibility(
             recursiveSetVisibility((*trieNode)[c], visibility);
         }
     }
-#endif
 }
 
 /* static */
@@ -296,7 +294,6 @@ void OrphanedNodesManager::recursiveSwitch(
     const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode,
     const Ufe::Path&                           ufePath)
 {
-#if (UFE_PREVIEW_VERSION_NUM >= 4026)
     // We know in our case that a trie node with data can't have children,
     // since descendants of a pulled prim can't be pulled.  A trie node with
     // data is one that's been pulled.
@@ -337,7 +334,6 @@ void OrphanedNodesManager::recursiveSwitch(
             }
         }
     }
-#endif
 }
 
 /* static */
@@ -374,7 +370,6 @@ void OrphanedNodesManager::deepCopy(
     const Ufe::TrieNode<PullVariantInfo>::Ptr& src,
     const Ufe::TrieNode<PullVariantInfo>::Ptr& dst)
 {
-#if (UFE_PREVIEW_VERSION_NUM >= 4026)
     for (const auto& c : src->childrenComponents()) {
         const auto& srcChild = (*src)[c];
         auto        dstChild = std::make_shared<Ufe::TrieNode<PullVariantInfo>>(c);
@@ -384,7 +379,6 @@ void OrphanedNodesManager::deepCopy(
         }
         deepCopy(srcChild, dstChild);
     }
-#endif
 }
 
 } // namespace MAYAUSD_NS_DEF

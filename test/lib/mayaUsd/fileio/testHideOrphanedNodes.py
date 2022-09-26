@@ -24,7 +24,7 @@ import mayaUsd.ufe
 import mayaUtils
 
 from pxr import UsdGeom
-# Usd, Gf, Sdf
+
 from maya import cmds
 from maya import standalone
 from maya.api import OpenMaya as om

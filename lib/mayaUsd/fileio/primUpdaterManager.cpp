@@ -20,7 +20,9 @@
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/jobs/readJob.h>
 #include <mayaUsd/fileio/jobs/writeJob.h>
+#ifdef HAS_ORPHANED_NODES_MANAGER
 #include <mayaUsd/fileio/orphanedNodesManager.h>
+#endif
 #include <mayaUsd/fileio/primUpdaterRegistry.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
@@ -57,6 +59,7 @@
 #include <ufe/observableSelection.h>
 #include <ufe/path.h>
 #include <ufe/pathString.h>
+#include <ufe/sceneNotification.h>
 
 #include <functional>
 #include <tuple>
@@ -838,6 +841,7 @@ private:
     bool* _controllingFlag { nullptr };
 };
 
+#ifdef HAS_ORPHANED_NODES_MANAGER
 class RemovePullPathUndoItem : public MayaUsd::OpUndoItem
 {
 public:
@@ -888,6 +892,7 @@ private:
     // Created by redo().
     OrphanedNodesManager::Memento _memento;
 };
+#endif
 
 } // namespace
 
@@ -896,7 +901,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_INSTANTIATE_SINGLETON(PrimUpdaterManager);
 
 PrimUpdaterManager::PrimUpdaterManager()
+#ifdef HAS_ORPHANED_NODES_MANAGER
     : _orphanedNodesManager(std::make_shared<OrphanedNodesManager>())
+#endif
 {
     TfSingleton<PrimUpdaterManager>::SetInstanceConstructed(*this);
     TfRegistryManager::GetInstance().SubscribeTo<PrimUpdaterManager>();
@@ -1611,7 +1618,9 @@ MObject PrimUpdaterManager::findOrCreatePullRoot()
 
     // As soon as we've pulled something, we must observe the scene for
     // structural changes.
+#ifdef HAS_ORPHANED_NODES_MANAGER
     beginManagePulledPrims();
+#endif
 
     return pullRootObj;
 }
@@ -1645,6 +1654,7 @@ bool PrimUpdaterManager::removePullParent(
         return false;
     }
 
+#ifdef HAS_ORPHANED_NODES_MANAGER
     if (!TF_VERIFY(_orphanedNodesManager)) {
         return false;
     }
@@ -1652,6 +1662,7 @@ bool PrimUpdaterManager::removePullParent(
     if (!TF_VERIFY(RemovePullPathUndoItem::execute(_orphanedNodesManager, pulledPath))) {
         return false;
     }
+#endif
 
     MayaUsd::ProgressBarScope progressBar(2);
     MStatus                   status = NodeDeletionUndoItem::deleteNode(
@@ -1672,6 +1683,7 @@ bool PrimUpdaterManager::removePullParent(
             if (status != MStatus::kSuccess) {
                 return false;
             }
+#ifdef HAS_ORPHANED_NODES_MANAGER
             if (!TF_VERIFY(FunctionUndoItem::execute(
                     "Remove orphaned nodes manager, pulled prims flag reset",
                     [&]() {
@@ -1686,6 +1698,7 @@ bool PrimUpdaterManager::removePullParent(
                     }))) {
                 return false;
             }
+#endif
         }
     }
     progressBar.advance();
@@ -1719,7 +1732,9 @@ MDagPath PrimUpdaterManager::setupPullParent(const Ufe::Path& pulledPath, VtDict
         return MDagPath();
     }
 
+#ifdef HAS_ORPHANED_NODES_MANAGER
     recordPullVariantInfo(pulledPath, pullParentPath);
+#endif
     progressBar.advance();
 
     // Add pull parent path to import args as a string.
@@ -1728,12 +1743,14 @@ MDagPath PrimUpdaterManager::setupPullParent(const Ufe::Path& pulledPath, VtDict
     return pullParentPath;
 }
 
+#ifdef HAS_ORPHANED_NODES_MANAGER
 void PrimUpdaterManager::recordPullVariantInfo(
     const Ufe::Path& pulledPath,
     const MDagPath&  pullParentPath)
 {
     _orphanedNodesManager->add(pulledPath, pullParentPath);
 }
+#endif
 
 /* static */
 bool PrimUpdaterManager::readPullInformation(const PXR_NS::UsdPrim& prim, std::string& dagPathStr)
@@ -1792,6 +1809,7 @@ bool PrimUpdaterManager::readPullInformation(const MDagPath& dagPath, Ufe::Path&
     return false;
 }
 
+#ifdef HAS_ORPHANED_NODES_MANAGER
 void PrimUpdaterManager::beginManagePulledPrims()
 {
     TF_VERIFY(_orphanedNodesManager->empty());
@@ -1821,5 +1839,6 @@ void PrimUpdaterManager::beforeNewOrOpenCallback(void* clientData)
     auto* pum = static_cast<PrimUpdaterManager*>(clientData);
     pum->endManagePulledPrims();
 }
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE
