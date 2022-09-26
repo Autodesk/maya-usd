@@ -95,6 +95,38 @@ private:
     const std::string _name;
 }; // UsdRemoveAttributeCommand
 
+//! \brief Implementation of RenameAttributeCommand
+class UsdRenameAttributeCommand : public UsdUndoableCommand<Ufe::UndoableCommand>
+{
+public:
+    typedef std::shared_ptr<UsdRenameAttributeCommand> Ptr;
+
+    UsdRenameAttributeCommand(
+        const UsdSceneItem::Ptr& sceneItem,
+        const std::string&       targetName,
+        const std::string&       newName);
+    ~UsdRenameAttributeCommand() override;
+
+    // Delete the copy/move constructors assignment operators.
+    UsdRenameAttributeCommand(const UsdRenameAttributeCommand&) = delete;
+    UsdRenameAttributeCommand& operator=(const UsdRenameAttributeCommand&) = delete;
+    UsdRenameAttributeCommand(UsdRenameAttributeCommand&&) = delete;
+    UsdRenameAttributeCommand& operator=(UsdRenameAttributeCommand&&) = delete;
+
+    //! Create a UsdRenameAttributeCommand
+    static UsdRenameAttributeCommand::Ptr create(
+        const UsdSceneItem::Ptr& sceneItem,
+        const std::string&       targetName,
+        const std::string&       newName);
+
+    void executeUndoBlock() override;
+
+private:
+    const Ufe::Path   _sceneItemPath;
+    const std::string _targetName;
+    const std::string _newName;
+}; // UsdRenameAttributeCommand
+
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
 

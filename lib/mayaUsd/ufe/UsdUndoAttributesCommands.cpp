@@ -89,5 +89,37 @@ void UsdRemoveAttributeCommand::executeUndoBlock()
     UsdAttributes::doRemoveAttribute(sceneItem, _name);
 }
 
+UsdRenameAttributeCommand::UsdRenameAttributeCommand(
+    const UsdSceneItem::Ptr& sceneItem,
+    const std::string&       targetName,
+    const std::string&       newName)
+    : UsdUndoableCommand<Ufe::UndoableCommand>()
+    , _sceneItemPath(sceneItem->path())
+    , _targetName(targetName)
+    , _newName(newName)
+{
+}
+
+UsdRenameAttributeCommand::~UsdRenameAttributeCommand() { }
+
+UsdRenameAttributeCommand::Ptr UsdRenameAttributeCommand::create(
+    const UsdSceneItem::Ptr& sceneItem,
+    const std::string&       targetName,
+    const std::string&       newName)
+{
+    if (UsdAttributes::canRenameAttribute(sceneItem, targetName, newName)) {
+        return std::make_shared<UsdRenameAttributeCommand>(sceneItem, targetName, newName);
+    }
+    return nullptr;
+}
+
+void UsdRenameAttributeCommand::executeUndoBlock()
+{
+    // Validation has already been done. Just remove the attribute.
+    auto sceneItem
+        = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(_sceneItemPath));
+    UsdAttributes::doRenameAttribute(sceneItem, _targetName, _newName);
+}
+
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
