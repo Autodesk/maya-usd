@@ -80,7 +80,11 @@ public:
         const Ufe::Attribute::Type& type);
     static bool canRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
     static bool doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
-    static bool renameAttribute(
+    static bool canRenameAttribute(
+        const UsdSceneItem::Ptr& sceneItem,
+        const std::string&       targetName,
+        const std::string&       newName);
+    static bool doRenameAttribute(
         const UsdSceneItem::Ptr& sceneItem,
         const std::string&       targetName,
         const std::string&       newName);
