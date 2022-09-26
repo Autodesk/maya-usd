@@ -376,6 +376,10 @@ Ufe::Attribute::Ptr UsdAttributes::doAddAttribute(
     // Fallback to creating a custom attribute.
     prim.CreateAttribute(nameAsToken, ufeTypeToUsd(type));
 
+    // TEST purpose
+    if (UsdAttributes(item).hasAttribute("outputs:out")) {
+        renameAttribute(item, "outputs:out", "outputs:test");
+    }
     return UsdAttributes(item).attribute(name);
 }
 bool UsdAttributes::canRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name)
@@ -432,7 +436,6 @@ bool UsdAttributes::doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::
         // Custom attributes can be removed.
         return prim.RemoveProperty(nameAsToken);
     }
-
     // We can also remove NodeGraph boundary attributes
     PXR_NS::UsdShadeNodeGraph      ngPrim(prim);
     PXR_NS::UsdShadeConnectableAPI connectApi(prim);
@@ -454,8 +457,35 @@ bool UsdAttributes::doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::
     }
     return false;
 }
-#endif
-#endif
+bool UsdAttributes::renameAttribute(
+    const UsdSceneItem::Ptr& sceneItem,
+    const std::string&       targetName,
+    const std::string&       newName)
+{
+    PXR_NS::TfToken           nameAsToken(targetName);
+    auto                      prim = sceneItem->prim();
+    auto                      attribute = prim.GetAttribute(nameAsToken);
+    PXR_NS::UsdShadeNodeGraph ngPrim(prim);
 
+    /*
+    // We can rename only custom attributes not boundary ports
+    if (!attribute.IsCustom()) {
+        // Custom attributes can be removed.
+        return false;
+    }
+    */
+
+    PXR_NS::UsdEditTarget editTarget = prim.GetStage()->GetEditTarget();
+    SdfPath               propertyPath = attribute.GetPrim().GetPath();
+    propertyPath = propertyPath.AppendProperty(attribute.GetName());
+    auto propertyHandle = editTarget.GetPropertySpecForScenePath(propertyPath);
+
+    if (propertyHandle)
+        return propertyHandle->SetName(newName);
+
+    return false;
+}
+#endif
+#endif
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
