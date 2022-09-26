@@ -66,7 +66,7 @@ public:
 
 private:
     const Ufe::Path            _sceneItemPath;
-    std::string          _name;
+    std::string                _name;
     const Ufe::Attribute::Type _type;
 }; // UsdAddAttributeCommand
 
