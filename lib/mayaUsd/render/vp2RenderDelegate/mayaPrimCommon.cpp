@@ -32,6 +32,7 @@
 #include <maya/MFnDisplayLayerManager.h>
 #include <maya/MObjectArray.h>
 #endif
+#include <maya/M3dView.h>
 #include <maya/MProfiler.h>
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
 #include <ufe/pathString.h>
@@ -734,6 +735,10 @@ void MayaUsdRPrim::_SyncDisplayLayerModes(const HdRprim&
             MPlug levelOfDetail = displayLayerNodeFn.findPlug("levelOfDetail");
             MPlug shading = displayLayerNodeFn.findPlug("shading");
             MPlug texturing = displayLayerNodeFn.findPlug("texturing");
+            MPlug colorIndex = displayLayerNodeFn.findPlug("color");
+            MPlug useRGBColors = displayLayerNodeFn.findPlug("overrideRGBColors");
+            MPlug colorRGB = displayLayerNodeFn.findPlug("overrideColorRGB");
+            MPlug colorA = displayLayerNodeFn.findPlug("overrideColorA");
 
             _displayLayerModes._visibility &= layerVisible.asBool();
             _displayLayerModes._hideOnPlayback |= layerHidesOnPlayback.asBool();
@@ -745,6 +750,15 @@ void MayaUsdRPrim::_SyncDisplayLayerModes(const HdRprim&
             }
             if (_displayLayerModes._displayType == kNormal) {
                 _displayLayerModes._displayType = (DisplayType)layerDisplayType.asShort();
+            }
+
+            if (useRGBColors.asBool()) {
+                const float3& rgbColor = colorRGB.asMDataHandle().asFloat3();
+                _displayLayerModes._wireframeColorIndex = -1;
+                _displayLayerModes._wireframeColorRGBA
+                    = MColor(rgbColor[0], rgbColor[1], rgbColor[2], colorA.asFloat());
+            } else {
+                _displayLayerModes._wireframeColorIndex = colorIndex.asInt();
             }
         }
     }
@@ -872,7 +886,20 @@ MColor MayaUsdRPrim::_GetHighlightColor(const TfToken& className)
         return (
             _selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
                 _selectionStatus == kFullyLead ? TfToken() : className)
-                                            : drawScene.GetWireframeColor());
+                                            : _GetWireframeColor());
+    }
+}
+
+MColor MayaUsdRPrim::_GetWireframeColor()
+{
+    if (_displayLayerModes._wireframeColorIndex > 0) {
+        return MColor(M3dView::active3dView().colorAtIndex(
+            _displayLayerModes._wireframeColorIndex - 1, M3dView::kDormantColors));
+    } else if (_displayLayerModes._wireframeColorIndex < 0) {
+        return _displayLayerModes._wireframeColorRGBA;
+    } else {
+        auto* const param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+        return param->GetDrawScene().GetWireframeColor();
     }
 }
 
