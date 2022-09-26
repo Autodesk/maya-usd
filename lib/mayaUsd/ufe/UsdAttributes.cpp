@@ -363,7 +363,9 @@ Ufe::Attribute::Ptr UsdAttributes::doAddAttribute(
     const Ufe::Attribute::Type& type)
 {
     // We have many ways of creating an attribute. Try to follow the rules whenever possible:
-    PXR_NS::TfToken                nameAsToken(name);
+    //Ensure the name is unique.
+    const std::string              kUniqueName = UsdAttributes::getUniqueAttrName(item, name);
+    PXR_NS::TfToken                nameAsToken(kUniqueName);
     auto                           prim = item->prim();
     PXR_NS::UsdShadeNodeGraph      ngPrim(prim);
     PXR_NS::UsdShadeConnectableAPI connectApi(prim);
@@ -372,7 +374,7 @@ Ufe::Attribute::Ptr UsdAttributes::doAddAttribute(
         if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Output) {
             PXR_NS::UsdShadeMaterial matPrim(prim);
             if (matPrim) {
-                auto splitName = PXR_NS::TfStringSplit(name, ":");
+                auto splitName = PXR_NS::TfStringSplit(kUniqueName, ":");
                 if (splitName.size() == 3) {
                     if (splitName.back() == PXR_NS::UsdShadeTokens->surface) {
                         matPrim.CreateSurfaceOutput(PXR_NS::TfToken(splitName[1]));
@@ -393,7 +395,7 @@ Ufe::Attribute::Ptr UsdAttributes::doAddAttribute(
     // Fallback to creating a custom attribute.
     prim.CreateAttribute(nameAsToken, ufeTypeToUsd(type));
 
-    return UsdAttributes(item).attribute(name);
+    return UsdAttributes(item).attribute(kUniqueName);
 }
 bool UsdAttributes::canRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name)
 {

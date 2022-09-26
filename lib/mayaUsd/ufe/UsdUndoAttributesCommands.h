@@ -60,12 +60,13 @@ public:
         const Ufe::Attribute::Type& type);
 
     Ufe::Attribute::Ptr attribute() const override;
+    void                setName(const std::string& newName);
 
     void executeUndoBlock() override;
 
 private:
     const Ufe::Path            _sceneItemPath;
-    const std::string          _name;
+    std::string          _name;
     const Ufe::Attribute::Type _type;
 }; // UsdAddAttributeCommand
 

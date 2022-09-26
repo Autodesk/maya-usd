@@ -40,9 +40,8 @@ UsdAddAttributeCommand::Ptr UsdAddAttributeCommand::create(
     const std::string&          name,
     const Ufe::Attribute::Type& type)
 {
-    const std::string kUniqueName = UsdAttributes::getUniqueAttrName(sceneItem, name);
-    if (UsdAttributes::canAddAttribute(sceneItem, kUniqueName, type)) {
-        return std::make_shared<UsdAddAttributeCommand>(sceneItem, kUniqueName, type);
+    if (UsdAttributes::canAddAttribute(sceneItem, name, type)) {
+        return std::make_shared<UsdAddAttributeCommand>(sceneItem, name, type);
     }
     return nullptr;
 }
@@ -54,12 +53,20 @@ Ufe::Attribute::Ptr UsdAddAttributeCommand::attribute() const
     return UsdAttributes(sceneItem).attribute(_name);
 }
 
+void UsdAddAttributeCommand::setName(const std::string& newName)
+{ _name = newName; }
+
 void UsdAddAttributeCommand::executeUndoBlock()
 {
     // Validation has already been done. Just create the attribute.
     auto sceneItem
         = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(_sceneItemPath));
-    UsdAttributes::doAddAttribute(sceneItem, _name, _type);
+    auto attrPtr = UsdAttributes::doAddAttribute(sceneItem, _name, _type);
+
+    // Set the name, since it could have been changed in order to be unique.
+    if (attrPtr) { 
+        setName(attrPtr->name());
+    }
 }
 
 UsdRemoveAttributeCommand::UsdRemoveAttributeCommand(
