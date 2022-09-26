@@ -53,8 +53,7 @@ Ufe::Attribute::Ptr UsdAddAttributeCommand::attribute() const
     return UsdAttributes(sceneItem).attribute(_name);
 }
 
-void UsdAddAttributeCommand::setName(const std::string& newName)
-{ _name = newName; }
+void UsdAddAttributeCommand::setName(const std::string& newName) { _name = newName; }
 
 void UsdAddAttributeCommand::executeUndoBlock()
 {
@@ -64,7 +63,7 @@ void UsdAddAttributeCommand::executeUndoBlock()
     auto attrPtr = UsdAttributes::doAddAttribute(sceneItem, _name, _type);
 
     // Set the name, since it could have been changed in order to be unique.
-    if (attrPtr) { 
+    if (attrPtr) {
         setName(attrPtr->name());
     }
 }

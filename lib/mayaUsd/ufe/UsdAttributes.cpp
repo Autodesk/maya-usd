@@ -363,7 +363,7 @@ Ufe::Attribute::Ptr UsdAttributes::doAddAttribute(
     const Ufe::Attribute::Type& type)
 {
     // We have many ways of creating an attribute. Try to follow the rules whenever possible:
-    //Ensure the name is unique.
+    // Ensure the name is unique.
     const std::string              kUniqueName = UsdAttributes::getUniqueAttrName(item, name);
     PXR_NS::TfToken                nameAsToken(kUniqueName);
     auto                           prim = item->prim();
