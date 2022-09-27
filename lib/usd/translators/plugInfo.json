@@ -27,6 +27,7 @@
             },
             "PrimUpdater": {
               "providesTranslator": [
+                "UsdShadeMaterial",
                 "MayaUsd_SchemasALMayaReference",
                 "MayaUsd_SchemasMayaReference"
               ]
