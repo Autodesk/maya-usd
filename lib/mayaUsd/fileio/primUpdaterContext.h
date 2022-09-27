@@ -26,7 +26,6 @@
 #include <pxr/usd/usd/timeCode.h>
 
 #include <maya/MDagPath.h>
-
 #include <ufe/path.h>
 #include <ufe/sceneItem.h>
 
@@ -88,7 +87,7 @@ private:
     const VtDictionary&          _userArgs;
     const UsdMayaPrimUpdaterArgs _args;
 
-    UfePathToDisplayLayerMap _displayLayerMap;
+    UfePathToDisplayLayerMap  _displayLayerMap;
     mutable std::set<SdfPath> _primsWithAssignedLayers;
 };
 

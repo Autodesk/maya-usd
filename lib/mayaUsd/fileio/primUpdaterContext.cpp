@@ -16,13 +16,12 @@
 //
 #include "primUpdaterContext.h"
 
+#include <mayaUsd/ufe/Utils.h>
+
 #include <maya/MFnDisplayLayer.h>
 #include <maya/MFnDisplayLayerManager.h>
-
 #include <ufe/hierarchy.h>
 #include <ufe/pathString.h>
-
-#include <mayaUsd/ufe/Utils.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -65,16 +64,19 @@ void UsdMayaPrimUpdaterContext::prepareToReplicateExtrasFromUSDtoMaya(Ufe::Scene
     MFnDisplayLayerManager displayLayerManager(
         MFnDisplayLayerManager::currentDisplayLayerManager());
 
-    MObject displayLayerObj = displayLayerManager.getLayer(Ufe::PathString::string(ufeItem->path()).c_str());
+    MObject displayLayerObj
+        = displayLayerManager.getLayer(Ufe::PathString::string(ufeItem->path()).c_str());
     if (displayLayerObj.hasFn(MFn::kDisplayLayer)) {
         MFnDisplayLayer displayLayer(displayLayerObj);
         if (displayLayer.name() != "defaultLayer") {
-           _displayLayerMap[ufeItem->path()] = displayLayerObj;
+            _displayLayerMap[ufeItem->path()] = displayLayerObj;
         }
     }
 }
 
-void UsdMayaPrimUpdaterContext::replicateExtrasFromUSDtoMaya(const Ufe::Path& path, const MObject& mayaObject) const
+void UsdMayaPrimUpdaterContext::replicateExtrasFromUSDtoMaya(
+    const Ufe::Path& path,
+    const MObject&   mayaObject) const
 {
     // Replicate display layer membership
     auto it = _displayLayerMap.find(path);
@@ -83,16 +85,18 @@ void UsdMayaPrimUpdaterContext::replicateExtrasFromUSDtoMaya(const Ufe::Path& pa
         if (MDagPath::getAPathTo(mayaObject, dagPath) == MStatus::kSuccess) {
             MFnDisplayLayer displayLayer(it->second);
             displayLayer.add(dagPath);
-            
-            // In case display layer membership was removed from the USD prim that we are replicating,
-            // we want to restore it here to make sure that the prim will stay in its display layer 
-            // on DiscardEdits
+
+            // In case display layer membership was removed from the USD prim that we are
+            // replicating, we want to restore it here to make sure that the prim will stay in its
+            // display layer on DiscardEdits
             displayLayer.add(Ufe::PathString::string(path).c_str());
         }
     }
 }
 
-void UsdMayaPrimUpdaterContext::replicateExtrasFromMayaToUSD(const MDagPath& dagPath, const SdfPath& usdPath) const
+void UsdMayaPrimUpdaterContext::replicateExtrasFromMayaToUSD(
+    const MDagPath& dagPath,
+    const SdfPath&  usdPath) const
 {
     // Replicate display layer membership
     // Since multiple dag paths may lead to a single USD path (like transform and node),
@@ -105,7 +109,7 @@ void UsdMayaPrimUpdaterContext::replicateExtrasFromMayaToUSD(const MDagPath& dag
         if (displayLayerObj.hasFn(MFn::kDisplayLayer)) {
             auto                psPath = MayaUsd::ufe::stagePath(_stage);
             Ufe::Path::Segments segments { psPath.getSegments()[0],
-                                        MayaUsd::ufe::usdPathToUfePathSegment(usdPath) };            
+                                           MayaUsd::ufe::usdPathToUfePathSegment(usdPath) };
             Ufe::Path           ufePath(std::move(segments));
 
             MFnDisplayLayer displayLayer(displayLayerObj);
