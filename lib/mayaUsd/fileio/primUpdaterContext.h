@@ -27,6 +27,9 @@
 
 #include <maya/MDagPath.h>
 
+#include <ufe/path.h>
+#include <ufe/sceneItem.h>
+
 #include <memory> // shared_ptr
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -41,6 +44,7 @@ class UsdMayaPrimUpdaterContext
 public:
     using UsdPathToDagPathMap = TfHashMap<SdfPath, MDagPath, SdfPath::Hash>;
     using UsdPathToDagPathMapPtr = std::shared_ptr<UsdPathToDagPathMap>;
+    using UfePathToDisplayLayerMap = std::unordered_map<Ufe::Path, MObject>;
 
     MAYAUSD_CORE_PUBLIC
     UsdMayaPrimUpdaterContext(
@@ -67,6 +71,15 @@ public:
     MAYAUSD_CORE_PUBLIC
     MDagPath MapSdfPathToDagPath(const SdfPath& sdfPath) const;
 
+    /// @brief prepares internal data for replication of extra features from USD to Maya
+    void prepareToReplicateExtrasFromUSDtoMaya(Ufe::SceneItem::Ptr);
+
+    /// @brief replicates extra features from USD to Maya
+    void replicateExtrasFromUSDtoMaya(const Ufe::Path& path, const MObject& mayaObject) const;
+
+    /// @brief replicates extra features from Maya to USD
+    void replicateExtrasFromMayaToUSD(const MDagPath& dagPath, const SdfPath& usdPath) const;
+
 private:
     const UsdTimeCode&           _timeCode;
     const UsdStageRefPtr         _stage;
@@ -74,6 +87,9 @@ private:
 
     const VtDictionary&          _userArgs;
     const UsdMayaPrimUpdaterArgs _args;
+
+    UfePathToDisplayLayerMap _displayLayerMap;
+    mutable std::set<SdfPath> _primsWithAssignedLayers;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
