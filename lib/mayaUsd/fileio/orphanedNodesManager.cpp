@@ -25,6 +25,7 @@
 #include <maya/MFnDagNode.h>
 #include <maya/MPlug.h>
 #include <ufe/hierarchy.h>
+#include <ufe/sceneSegmentHandler.h>
 #include <ufe/trie.imp.h>
 
 // For Tf diagnostics macros.
@@ -139,12 +140,12 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
     case Ufe::SceneCompositeNotification::OpType::ObjectAdd: {
         // Restoring a previously-deleted scene item may restore an orphaned
         // node.  Traverse the trie, and show hidden pull parents that are
-        // descendants of the argument path.  The trie node that corresponds to
-        // the added path is the starting point.  It may be an internal node,
-        // without data.
+        // descendants of the argument path that have all the proper variants.
+        // The trie node that corresponds to the added path is the starting
+        // point.  It may be an internal node, without data.
         auto ancestorNode = pulledPrims().node(op.path);
         TF_VERIFY(ancestorNode);
-        recursiveSetVisibility(ancestorNode, true);
+        recursiveSwitch(ancestorNode, op.path);
     } break;
     case Ufe::SceneCompositeNotification::OpType::ObjectDelete: {
         // The following cases will generate object delete:
@@ -207,22 +208,24 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
             }
             auto parentPrim = parentUsdItem->prim();
             bool foundChild { false };
-            for (const auto& c :
+            for (const auto& child :
                  parentPrim.GetFilteredChildren(UsdPrimIsDefined && !UsdPrimIsAbstract)) {
-                auto cPath = parentItem->path().popSegment();
-                cPath = cPath
+                auto childPath = parentItem->path().popSegment();
+                childPath
+                    = childPath
                     + Ufe::PathSegment(
-                            c.GetPath().GetAsString(), MayaUsd::ufe::getUsdRunTimeId(), '/');
+                          child.GetPath().GetAsString(), MayaUsd::ufe::getUsdRunTimeId(), '/');
 
-                auto ancestorNode = pulledPrims().node(cPath);
+                auto ancestorNode = pulledPrims().node(childPath);
                 // If there is no ancestor node in the trie, this means that
                 // the new hierarchy is completely different from the one when
                 // the pull occurred, which means that the pulled object must
                 // stay hidden.
-                if (ancestorNode) {
-                    foundChild = true;
-                    recursiveSwitch(ancestorNode, cPath);
-                }
+                if (!ancestorNode)
+                    continue;
+
+                foundChild = true;
+                recursiveSwitch(ancestorNode, childPath);
             }
             if (!foundChild) {
                 // Following a subtree invalidate, if none of the now-valid
@@ -327,10 +330,38 @@ void OrphanedNodesManager::recursiveSwitch(
         }
     } else {
         auto childrenComponents = trieNode->childrenComponents();
+        // Figure out the runtime ID of the children of the trie node.
+        // It only changes when the node is a gateway node. So we assume
+        // it will have the same runtime ID by default and only retrieve
+        // the new runtime ID if we cross a gateway node.
+        const Ufe::Rtid runtimeId = ufePath.runTimeId();
+        Ufe::Rtid childRuntimeId = runtimeId;
+        char      childSep = ufePath.getSegments().back().separator();
+        if (Ufe::SceneSegmentHandler::isGateway(ufePath)) {
+            if (Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(ufePath)) {
+                if (Ufe::Hierarchy::Ptr itemHier = Ufe::Hierarchy::hierarchy(sceneItem)) {
+                    Ufe::Hierarchy::ChildFilter filter
+                        = { Ufe::ChildFilterFlag("InactivePrims", "InactivePrims", 1) };
+                    for (auto child : itemHier->filteredChildren(filter)) {
+                        childRuntimeId = child->runTimeId();
+                        childSep = child->path().getSegments().back().separator();
+                        break;
+                    }
+                }
+            }
+        }
         for (const auto& c : childrenComponents) {
             auto childTrieNode = (*trieNode)[c];
             if (childTrieNode) {
-                recursiveSwitch((*trieNode)[c], ufePath + c);
+                // When not crossing runtimes, we can simply use the UFE path
+                // component stored in the trie. When crossing runtimes, we
+                // need to create a segment instead with the new runtime ID.
+                if (runtimeId == childRuntimeId) {
+                    recursiveSwitch(childTrieNode, ufePath + c);
+                } else {
+                    Ufe::PathSegment childSegment(c, childRuntimeId, childSep);
+                    recursiveSwitch(childTrieNode, ufePath + childSegment);
+                }
             }
         }
     }

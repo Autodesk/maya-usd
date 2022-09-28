@@ -182,7 +182,8 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path)
                 // Key is stale.  Remove it from our cache, and add the new entry.
                 auto count = fPathToObject.erase(cachedPath);
                 TF_AXIOM(count);
-                fPathToObject[newPath] = cachedObject;
+                if (!newPath.empty())
+                    fPathToObject[newPath] = cachedObject;
             }
         }
 
@@ -220,7 +221,8 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path)
             // we are in scenario 2. Update the entry in fPathToObject so that the key path
             // is the current object path.
             fPathToObject.erase(singleSegmentPath);
-            fPathToObject[objectPath] = object;
+            if (!objectPath.empty())
+                fPathToObject[objectPath] = object;
             TF_VERIFY(std::end(fPathToObject) == fPathToObject.find(singleSegmentPath));
             return MObject();
         }
