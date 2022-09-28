@@ -71,13 +71,16 @@ public:
     MDagPath MapSdfPathToDagPath(const SdfPath& sdfPath) const;
 
     /// @brief prepares internal data for replication of extra features from USD to Maya
-    void prepareToReplicateExtrasFromUSDtoMaya(Ufe::SceneItem::Ptr);
+    void replicateExtrasFromUSD_Start(Ufe::SceneItem::Ptr);
 
-    /// @brief replicates extra features from USD to Maya
-    void replicateExtrasFromUSDtoMaya(const Ufe::Path& path, const MObject& mayaObject) const;
+    /// @brief replicates extra features from USD to Maya for a particular item
+    void replicateExtrasFromUSD_Item(const Ufe::Path& path, const MObject& mayaObject) const;
 
-    /// @brief replicates extra features from Maya to USD
-    void replicateExtrasFromMayaToUSD(const MDagPath& dagPath, const SdfPath& usdPath) const;
+    /// @brief replicates extra features from Maya to USD for a particular item
+    void replicateExtrasToUSD_Item(const MDagPath& dagPath, const SdfPath& usdPath) const;
+
+    /// @brief finalizes replication of extra features to USD
+    void replicateExtrasToUSD_End() const;
 
 private:
     const UsdTimeCode&           _timeCode;
@@ -88,7 +91,7 @@ private:
     const UsdMayaPrimUpdaterArgs _args;
 
     UfePathToDisplayLayerMap  _displayLayerMap;
-    mutable std::set<SdfPath> _primsWithAssignedLayers;
+    mutable std::map<SdfPath, MObject> _primToLayerMap;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

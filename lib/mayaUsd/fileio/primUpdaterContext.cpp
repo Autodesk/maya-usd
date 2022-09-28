@@ -18,8 +18,11 @@
 
 #include <mayaUsd/ufe/Utils.h>
 
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
 #include <maya/MFnDisplayLayer.h>
 #include <maya/MFnDisplayLayerManager.h>
+#endif
+
 #include <ufe/hierarchy.h>
 #include <ufe/pathString.h>
 
@@ -48,7 +51,7 @@ MDagPath UsdMayaPrimUpdaterContext::MapSdfPathToDagPath(const SdfPath& sdfPath) 
     return found == _pathMap->end() ? MDagPath() : found->second;
 }
 
-void UsdMayaPrimUpdaterContext::prepareToReplicateExtrasFromUSDtoMaya(Ufe::SceneItem::Ptr ufeItem)
+void UsdMayaPrimUpdaterContext::replicateExtrasFromUSD_Start(Ufe::SceneItem::Ptr ufeItem)
 {
     auto node = Ufe::Hierarchy::hierarchy(ufeItem);
     if (!node) {
@@ -57,9 +60,10 @@ void UsdMayaPrimUpdaterContext::prepareToReplicateExtrasFromUSDtoMaya(Ufe::Scene
 
     // Go through the entire hierarchy
     for (auto child : node->children()) {
-        prepareToReplicateExtrasFromUSDtoMaya(child);
+        replicateExtrasFromUSD_Start(child);
     }
 
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
     // Prepare _displayLayerMap
     MFnDisplayLayerManager displayLayerManager(
         MFnDisplayLayerManager::currentDisplayLayerManager());
@@ -72,12 +76,14 @@ void UsdMayaPrimUpdaterContext::prepareToReplicateExtrasFromUSDtoMaya(Ufe::Scene
             _displayLayerMap[ufeItem->path()] = displayLayerObj;
         }
     }
+#endif
 }
 
-void UsdMayaPrimUpdaterContext::replicateExtrasFromUSDtoMaya(
+void UsdMayaPrimUpdaterContext::replicateExtrasFromUSD_Item(
     const Ufe::Path& path,
     const MObject&   mayaObject) const
 {
+#ifdef MAYA_HAS_DISPLAY_LAYER_API    
     // Replicate display layer membership
     auto it = _displayLayerMap.find(path);
     if (it != _displayLayerMap.end() && it->second.hasFn(MFn::kDisplayLayer)) {
@@ -92,34 +98,49 @@ void UsdMayaPrimUpdaterContext::replicateExtrasFromUSDtoMaya(
             displayLayer.add(Ufe::PathString::string(path).c_str());
         }
     }
+#endif    
 }
 
-void UsdMayaPrimUpdaterContext::replicateExtrasFromMayaToUSD(
+void UsdMayaPrimUpdaterContext::replicateExtrasToUSD_Item(
     const MDagPath& dagPath,
     const SdfPath&  usdPath) const
 {
-    // Replicate display layer membership
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+    // Populate display layer membership map
+
     // Since multiple dag paths may lead to a single USD path (like transform and node),
-    // we have to use _primsWithAssignedLayers here
-    if (_primsWithAssignedLayers.find(usdPath) == _primsWithAssignedLayers.end()) {
+    // we have to make sure we don't overwrite a non-default layer with a default one
+    bool displayLayerAssigned = false;
+    auto entry = _primToLayerMap.find(usdPath);
+    if (entry != _primToLayerMap.end() && entry->second.hasFn(MFn::kDisplayLayer)) {
+        MFnDisplayLayer displayLayer(entry->second);
+        displayLayerAssigned = (displayLayer.name() != "defaultLayer");
+    }
+
+    if (!displayLayerAssigned) {
         MFnDisplayLayerManager displayLayerManager(
             MFnDisplayLayerManager::currentDisplayLayerManager());
+        _primToLayerMap[usdPath] = displayLayerManager.getLayer(dagPath);
+    }
+#endif
+}
 
-        MObject displayLayerObj = displayLayerManager.getLayer(dagPath);
-        if (displayLayerObj.hasFn(MFn::kDisplayLayer)) {
+void UsdMayaPrimUpdaterContext::replicateExtrasToUSD_End() const
+{
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+    // Replicate display layer membership
+    for (const auto& entry : _primToLayerMap) {
+        if (entry.second.hasFn(MFn::kDisplayLayer)) {
             auto                psPath = MayaUsd::ufe::stagePath(_stage);
             Ufe::Path::Segments segments { psPath.getSegments()[0],
-                                           MayaUsd::ufe::usdPathToUfePathSegment(usdPath) };
+                                           MayaUsd::ufe::usdPathToUfePathSegment(entry.first) };
             Ufe::Path           ufePath(std::move(segments));
 
-            MFnDisplayLayer displayLayer(displayLayerObj);
+            MFnDisplayLayer displayLayer(entry.second);
             displayLayer.add(Ufe::PathString::string(ufePath).c_str());
-
-            if (displayLayer.name() != "defaultLayer") {
-                _primsWithAssignedLayers.insert(usdPath);
-            }
         }
     }
+#endif
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
