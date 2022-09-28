@@ -231,5 +231,23 @@ Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& f
 MAYAUSD_CORE_PUBLIC
 std::vector<std::string> splitString(const std::string& str, const std::string& separators);
 
+class PullExtras
+{
+public:
+    void initRecursive(Ufe::SceneItem::Ptr);
+    void processItem(const Ufe::Path& path, const MObject& mayaObject);
+private:
+    std::unordered_map<Ufe::Path, MObject> _displayLayerMap;
+};
+
+class PushExtras
+{
+public:
+    void processItem(const MDagPath& dagPath, const PXR_NS::SdfPath& usdPath);
+    void finalize(const Ufe::Path& stagePath);
+private:
+    std::map<PXR_NS::SdfPath, MObject> _primToLayerMap;
+};
+
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

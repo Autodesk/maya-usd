@@ -19,6 +19,7 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/primUpdaterArgs.h>
+#include <mayaUsd/ufe/Utils.h>
 
 #include <pxr/base/tf/hashmap.h>
 #include <pxr/pxr.h>
@@ -26,8 +27,6 @@
 #include <pxr/usd/usd/timeCode.h>
 
 #include <maya/MDagPath.h>
-#include <ufe/path.h>
-#include <ufe/sceneItem.h>
 
 #include <memory> // shared_ptr
 
@@ -43,7 +42,6 @@ class UsdMayaPrimUpdaterContext
 public:
     using UsdPathToDagPathMap = TfHashMap<SdfPath, MDagPath, SdfPath::Hash>;
     using UsdPathToDagPathMapPtr = std::shared_ptr<UsdPathToDagPathMap>;
-    using UfePathToDisplayLayerMap = std::unordered_map<Ufe::Path, MObject>;
 
     MAYAUSD_CORE_PUBLIC
     UsdMayaPrimUpdaterContext(
@@ -70,17 +68,8 @@ public:
     MAYAUSD_CORE_PUBLIC
     MDagPath MapSdfPathToDagPath(const SdfPath& sdfPath) const;
 
-    /// @brief prepares internal data for replication of extra features from USD to Maya
-    void replicateExtrasFromUSD_Start(Ufe::SceneItem::Ptr);
-
-    /// @brief replicates extra features from USD to Maya for a particular item
-    void replicateExtrasFromUSD_Item(const Ufe::Path& path, const MObject& mayaObject) const;
-
-    /// @brief replicates extra features from Maya to USD for a particular item
-    void replicateExtrasToUSD_Item(const MDagPath& dagPath, const SdfPath& usdPath) const;
-
-    /// @brief finalizes replication of extra features to USD
-    void replicateExtrasToUSD_End() const;
+    mutable MayaUsd::ufe::PullExtras _pullExtras;
+    mutable MayaUsd::ufe::PushExtras _pushExtras;
 
 private:
     const UsdTimeCode&           _timeCode;
@@ -89,9 +78,6 @@ private:
 
     const VtDictionary&          _userArgs;
     const UsdMayaPrimUpdaterArgs _args;
-
-    UfePathToDisplayLayerMap  _displayLayerMap;
-    mutable std::map<SdfPath, MObject> _primToLayerMap;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

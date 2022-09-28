@@ -503,7 +503,7 @@ PullImportPaths pullImport(
         Ufe::Path           p(std::move(s));
         objToUfePath.insert(ObjToUfePath::value_type(MObjectHandle(v.second), p));
 
-        context.replicateExtrasFromUSD_Item(p, v.second);
+        context._pullExtras.processItem(p, v.second);
     }
     progressBar.advance();
 
@@ -633,7 +633,7 @@ PushCustomizeSrc pushExport(
     auto usdPathToDagPathMap = std::make_shared<UsdPathToDagPathMap>();
     for (const auto& v : writeJob.GetDagPathToUsdPathMap()) {
         usdPathToDagPathMap->insert(UsdPathToDagPathMap::value_type(v.second, v.first));
-        context.replicateExtrasToUSD_Item(v.first, v.second);
+        context._pushExtras.processItem(v.first, v.second);
     }
 
     std::get<UsdPathToDagPathMapPtr>(pushCustomizeSrc) = usdPathToDagPathMap;
@@ -1023,7 +1023,7 @@ bool PrimUpdaterManager::mergeToUsd(
     }
     progressBar.advance();
 
-    context.replicateExtrasToUSD_End();
+    context._pushExtras.finalize(MayaUsd::ufe::stagePath(context.GetUsdStage()));
     progressBar.advance();
 
     discardPullSetIfEmpty();
@@ -1076,7 +1076,7 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
 
     auto& scene = Ufe::Scene::instance();
     auto  ufeItem = Ufe::Hierarchy::createItem(path);
-    context.replicateExtrasFromUSD_Start(ufeItem);
+    context._pullExtras.initRecursive(ufeItem);
     if (!updaterArgs._copyOperation && TF_VERIFY(ufeItem))
         scene.notify(Ufe::ObjectPreDelete(ufeItem));
 
@@ -1370,7 +1370,7 @@ bool PrimUpdaterManager::duplicate(
 
         UsdMayaPrimUpdaterContext context(
             srcProxyShape->getTime(), srcProxyShape->getUsdStage(), ctxArgs);
-        context.replicateExtrasFromUSD_Start(Ufe::Hierarchy::createItem(srcPath));
+        context._pullExtras.initRecursive(Ufe::Hierarchy::createItem(srcPath));
         progressBar.advance();
 
         pullImport(srcPath, srcPrim, context);
@@ -1431,7 +1431,7 @@ bool PrimUpdaterManager::duplicate(
         }
         progressBar.advance();
 
-        context.replicateExtrasToUSD_End();
+        context._pushExtras.finalize(MayaUsd::ufe::stagePath(context.GetUsdStage()));
         progressBar.advance();
 
         auto ufeItem = Ufe::Hierarchy::createItem(dstPath);
