@@ -928,11 +928,9 @@ void PullExtras::initRecursive(Ufe::SceneItem::Ptr ufeItem)
 #endif
 }
 
-void PullExtras::processItem(
-    const Ufe::Path& path,
-    const MObject&   mayaObject)
+void PullExtras::processItem(const Ufe::Path& path, const MObject& mayaObject)
 {
-#ifdef MAYA_HAS_DISPLAY_LAYER_API    
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
     // Replicate display layer membership
     auto it = _displayLayerMap.find(path);
     if (it != _displayLayerMap.end() && it->second.hasFn(MFn::kDisplayLayer)) {
@@ -947,12 +945,10 @@ void PullExtras::processItem(
             displayLayer.add(Ufe::PathString::string(path).c_str());
         }
     }
-#endif    
+#endif
 }
 
-void PushExtras::processItem(
-    const MDagPath& dagPath,
-    const SdfPath&  usdPath)
+void PushExtras::processItem(const MDagPath& dagPath, const SdfPath& usdPath)
 {
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
     // Populate display layer membership map
@@ -984,7 +980,7 @@ void PushExtras::finalize(const Ufe::Path& stagePath, const std::string* renameR
             if (renameRoot && !rootPath.empty()) {
                 *rootPath.begin() = Ufe::PathComponent(*renameRoot);
             }
-            
+
             Ufe::Path::Segments segments { stagePath.getSegments()[0], rootPath };
             Ufe::Path           ufePath(std::move(segments));
 

@@ -236,6 +236,7 @@ class PullExtras
 public:
     void initRecursive(Ufe::SceneItem::Ptr);
     void processItem(const Ufe::Path& path, const MObject& mayaObject);
+
 private:
     std::unordered_map<Ufe::Path, MObject> _displayLayerMap;
 };
@@ -245,6 +246,7 @@ class PushExtras
 public:
     void processItem(const MDagPath& dagPath, const PXR_NS::SdfPath& usdPath);
     void finalize(const Ufe::Path& stagePath, const std::string* renameRoot = nullptr);
+
 private:
     std::map<PXR_NS::SdfPath, MObject> _primToLayerMap;
 };
