@@ -335,8 +335,8 @@ void OrphanedNodesManager::recursiveSwitch(
         // it will have the same runtime ID by default and only retrieve
         // the new runtime ID if we cross a gateway node.
         const Ufe::Rtid runtimeId = ufePath.runTimeId();
-        Ufe::Rtid childRuntimeId = runtimeId;
-        char      childSep = ufePath.getSegments().back().separator();
+        Ufe::Rtid       childRuntimeId = runtimeId;
+        char            childSep = ufePath.getSegments().back().separator();
         if (Ufe::SceneSegmentHandler::isGateway(ufePath)) {
             if (Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(ufePath)) {
                 if (Ufe::Hierarchy::Ptr itemHier = Ufe::Hierarchy::hierarchy(sceneItem)) {
