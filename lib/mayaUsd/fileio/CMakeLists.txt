@@ -41,6 +41,19 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     )
 endif()
 
+if(UFE_TRIE_NODE_HAS_CHILDREN_COMPONENTS_ACCESSOR)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            orphanedNodesManager.cpp
+    )
+
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        HAS_ORPHANED_NODES_MANAGER=1
+    )
+endif()
+
+
 set(HEADERS
     fallbackPrimReader.h
     functorPrimReader.h
@@ -75,6 +88,12 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
         primUpdaterContext.h
         primUpdaterRegistry.h
         primUpdaterManager.h
+    )
+endif()
+
+if(UFE_TRIE_NODE_HAS_CHILDREN_COMPONENTS_ACCESSOR)
+    list(APPEND HEADERS
+        orphanedNodesManager.h
     )
 endif()
 
