@@ -974,14 +974,18 @@ void PushExtras::processItem(
 #endif
 }
 
-void PushExtras::finalize(const Ufe::Path& stagePath)
+void PushExtras::finalize(const Ufe::Path& stagePath, const std::string* renameRoot)
 {
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
     // Replicate display layer membership
     for (const auto& entry : _primToLayerMap) {
         if (entry.second.hasFn(MFn::kDisplayLayer)) {
-            Ufe::Path::Segments segments { stagePath.getSegments()[0],
-                                           MayaUsd::ufe::usdPathToUfePathSegment(entry.first) };
+            auto rootPath = MayaUsd::ufe::usdPathToUfePathSegment(entry.first);
+            if (renameRoot && !rootPath.empty()) {
+                *rootPath.begin() = Ufe::PathComponent(*renameRoot);
+            }
+            
+            Ufe::Path::Segments segments { stagePath.getSegments()[0], rootPath };
             Ufe::Path           ufePath(std::move(segments));
 
             MFnDisplayLayer displayLayer(entry.second);

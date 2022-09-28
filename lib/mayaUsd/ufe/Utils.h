@@ -244,7 +244,7 @@ class PushExtras
 {
 public:
     void processItem(const MDagPath& dagPath, const PXR_NS::SdfPath& usdPath);
-    void finalize(const Ufe::Path& stagePath);
+    void finalize(const Ufe::Path& stagePath, const std::string* renameRoot = nullptr);
 private:
     std::map<PXR_NS::SdfPath, MObject> _primToLayerMap;
 };
