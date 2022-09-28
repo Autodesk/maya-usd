@@ -236,6 +236,7 @@ target_link_libraries(${PROJECT_NAME}
         usdShade
         usdSkel
         usdUtils
+        $<$<BOOL:$<VERSION_GREATER_EQUAL:${UFE_PREVIEW_VERSION_NUM},4023>>:usdUI>
         vt
         $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
         ${MAYA_LIBRARIES}
