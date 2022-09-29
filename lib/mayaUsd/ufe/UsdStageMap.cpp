@@ -176,6 +176,11 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path)
         for (const auto& entry : pathToObject) {
             const auto& cachedPath = entry.first;
             const auto& cachedObject = entry.second;
+            // If the cached object itself is invalid then remove it from the map.
+            if (!cachedObject.isValid()) {
+                fPathToObject.erase(cachedPath);
+                continue;
+            }
             // Get the UFE path from the map value.
             auto newPath = firstPath(cachedObject);
             if (newPath != cachedPath) {
