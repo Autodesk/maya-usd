@@ -68,8 +68,8 @@ public:
     MAYAUSD_CORE_PUBLIC
     MDagPath MapSdfPathToDagPath(const SdfPath& sdfPath) const;
 
-    mutable MayaUsd::ufe::PullExtras _pullExtras;
-    mutable MayaUsd::ufe::PushExtras _pushExtras;
+    mutable MayaUsd::ufe::ReplicateExtrasFromUSD _pullExtras;
+    mutable MayaUsd::ufe::ReplicateExtrasToUSD   _pushExtras;
 
 private:
     const UsdTimeCode&           _timeCode;
