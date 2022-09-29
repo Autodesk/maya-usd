@@ -31,6 +31,8 @@ import mayaUsd_createStageWithNewLayer
 import mayaUsd.ufe as mayaUsdUfe
 import mayaUsd.lib as mayaUsdLib
 
+from usdUtils import createSimpleXformScene
+
 from pxr import Usd, Kind
 
 import unittest
@@ -342,6 +344,40 @@ class DisplayLayerTestCase(unittest.TestCase):
         self.assertIsNone(layerObjs)
         self.assertFalse(layer1.contains(self.CUBE1))
         self.assertFalse(layer1.contains(self.INVALID_PRIM))
+
+    def testDisplayLayerEditAsMaya(self):
+        '''Display layer membership in Edit As Maya workflow.'''
+        
+        (ps, xlateOp, xlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
+         _, _, _, _, _) = createSimpleXformScene()
+
+        # Add an item to a new display layer
+        cmds.createDisplayLayer(name='layer1', number=1, empty=True)
+        cmds.editDisplayLayerMembers('layer1', '|stage1|stageShape1,/A', noRecurse=True)
+
+        # Edit aPrim as Maya data.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(aUsdUfePathStr))
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+
+        # Check display layer membership on the other side
+        layerObjs = cmds.editDisplayLayerMembers('layer1', query=True, **self.kwArgsEditDisplayLayerMembers)
+        self.assertTrue("|__mayaUsd__|AParent|A" in layerObjs)
+
+        # Create a new layer and put the item there
+        cmds.createDisplayLayer(name='layer2', number=1, empty=True)
+        cmds.editDisplayLayerMembers('layer2', "|__mayaUsd__|AParent|A", noRecurse=True)
+
+        # Merge edits back to USD.
+        aMayaItem = ufe.GlobalSelection.get().front()
+        aMayaPath = aMayaItem.path()
+        aMayaPathStr = ufe.PathString.string(aMayaPath)
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(aMayaPathStr))
+
+        # Check display layer membership back on the USD side
+        layerObjs = cmds.editDisplayLayerMembers('layer2', query=True, **self.kwArgsEditDisplayLayerMembers)
+        self.assertTrue('|stage1|stageShape1,/A' in layerObjs)
 
     @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() >= 3, "Requires Display Layer Ufe subtree invalidate fix.")
     def testDisplayLayerSubtreeInvalidate(self):
