@@ -39,11 +39,11 @@ import ufe
 
 import unittest
 
-from testUtils import assertVectorAlmostEqual
+from testUtils import assertVectorAlmostEqual, getTestScene
 
 import os
 
-class MergeToUsdTestCase(unittest.TestCase):
+class DiscardEditsTestCase(unittest.TestCase):
     '''Test discard Maya edits: discard edits done as Maya data to USD prims.
     '''
 
@@ -247,7 +247,7 @@ class MergeToUsdTestCase(unittest.TestCase):
         verifyDiscard()
 
     @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
-    def testDiscardOrphaned(self):
+    def testDiscardOrphanedInactive(self):
         '''Discard orphaned edits due to prim inactivation'''
         
         # open appleBite.ma scene in testSamples
@@ -285,6 +285,31 @@ class MergeToUsdTestCase(unittest.TestCase):
         # validate redo
         cmds.redo()
         self.assertFalse(self._GetMayaDependencyNode(pulledDagPath))
+
+    @unittest.skipIf(os.getenv('HAS_ORPHANED_NODES_MANAGER', '0') < '1', 'Test requires support for orphaned Maya nodes.')
+    def testDiscardOrphanedUnload(self):
+        '''Discard orphaned edits due to prim unload'''
+
+        cmds.file(new=True, force=True)
+
+        testFile = getTestScene("hideOrphanedNodes", "hideOrphanedNodes.usda")
+        ps, stage = mayaUtils.createProxyFromFile(testFile)
+        cPathStr = ps + ',/A/B/C'
+
+        # See testHideOrphanedNodes.py for scene structure.  Pull on C.
+        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(cPathStr))
+        
+        cMayaItem = ufe.GlobalSelection.get().front()
+        cMayaPathStr = ufe.PathString.string(cMayaItem.path())
+
+        # Unload A, C's grandparent.
+        aPath = ufe.PathString.path(cPathStr).pop().pop()
+        aPrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(aPath))
+
+        aPrim.Unload()
+
+        # Discard edits on C.
+        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.discardEdits(cMayaPathStr))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

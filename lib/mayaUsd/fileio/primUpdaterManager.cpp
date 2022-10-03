@@ -1198,7 +1198,19 @@ bool PrimUpdaterManager::discardEdits(const MDagPath& dagPath)
     MayaUsd::ProgressBarScope progressBar(1, "Discarding Converted Maya Data");
 
     auto usdPrim = MayaUsd::ufe::ufePathToPrim(pulledPath);
+
+#ifdef HAS_ORPHANED_NODES_MANAGER
+    auto ret = _orphanedNodesManager->isOrphaned(pulledPath)
+        ? discardOrphanedEdits(dagPath, pulledPath)
+        : discardPrimEdits(pulledPath);
+#else
+    // The following is incorrect: because of pull information in the session
+    // layer stored as overs, the usdPrim will never be invalid: a prim that
+    // exists only because of over opinions is valid, but is typeless.
+    // Therefore, the conditional will always succeed, and
+    // discardOrphanedEdits() is never called.  PPT, 30-Sep-2022.
     auto ret = usdPrim ? discardPrimEdits(pulledPath) : discardOrphanedEdits(dagPath, pulledPath);
+#endif
     progressBar.advance();
     return ret;
 }
