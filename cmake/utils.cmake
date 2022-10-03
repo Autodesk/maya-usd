@@ -274,12 +274,6 @@ function(get_external_project_default_values out_var)
     # Therefore avoid useless warnings in the log.
     list(APPEND setting_list --no-warn-unused-cli)
 
-    # Force the use of ABI version 0 on Linux.
-    # This is what Maya has been using for 2019...2023
-    if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-        list(APPEND setting_list -D_GLIBCXX_USE_CXX11_ABI=0)
-    endif()
-
     if(ARGN)
         list(GET ARGN 0 custom_sep)
     endif()
