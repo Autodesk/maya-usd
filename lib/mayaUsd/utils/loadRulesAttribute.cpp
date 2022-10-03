@@ -33,7 +33,7 @@ const char loadRulesAttrName[] = "usdStageLoadRules";
 
 } // namespace
 
-bool hasLoadRulesAttribute(PXR_NS::MayaUsdProxyShapeBase& proxyShape)
+bool hasLoadRulesAttribute(const PXR_NS::MayaUsdProxyShapeBase& proxyShape)
 {
     MObject proxyObj = proxyShape.thisMObject();
     if (proxyObj.isNull())

@@ -63,7 +63,7 @@ PXR_NS::UsdStageLoadRules createLoadRulesFromText(const MString& text);
 /*! \brief verify if there is a dynamic attribute on the object for load rules.
  */
 MAYAUSD_CORE_PUBLIC
-bool hasLoadRulesAttribute(PXR_NS::MayaUsdProxyShapeBase& proxyShape);
+bool hasLoadRulesAttribute(const PXR_NS::MayaUsdProxyShapeBase& proxyShape);
 
 /*! \brief copy the stage load rules in a dynamic attribute on the object.
  */
