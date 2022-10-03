@@ -335,14 +335,18 @@ class DisplayLayerTestCase(unittest.TestCase):
         self._testLayerFromPath(self.SPHERE1, self.LAYER1)
 
         # Delete the Sphere and make sure it is removed from the layer.
-        cmds.delete(self.SPHERE1)
+        # To allow undo to work, we need to have an undo block open when
+        # executing the command. In Maya, using the UI, commands always
+        # have an undo chunk. In scripting, we must create an explicit one.
+        cmds.undoInfo(state=1)
+        cmds.undoInfo(openChunk=1)
+        try:
+            cmds.delete(self.SPHERE1)
+        finally:
+            cmds.undoInfo(closeChunk=1)
 
         verifyInLayer({ self.CUBE1 }, { self.NEW_SPHERE1, self.SPHERE1 })
 
-        # Must issue two undo because delete spawed another command
-        # That updated the display layer. The alternative would be to
-        # open an explicit undo chunk to combine both commands into one undo.
-        cmds.undo()
         cmds.undo()
 
         self._testLayerFromPath(self.CUBE1, self.LAYER1)
