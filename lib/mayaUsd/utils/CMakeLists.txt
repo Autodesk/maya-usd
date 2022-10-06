@@ -8,8 +8,10 @@ target_sources(${PROJECT_NAME}
         converter.cpp
         customLayerData.cpp
         diagnosticDelegate.cpp
+        dynamicAttribute.cpp
         editability.cpp
         editRouter.cpp
+        layerMuting.cpp
         loadRules.cpp
         loadRulesText.cpp
         loadRulesAttribute.cpp
@@ -33,9 +35,11 @@ set(HEADERS
     customLayerData.h
     converter.h
     diagnosticDelegate.h
+    dynamicAttribute.h
     editability.h
     editRouter.h
     hash.h
+    layerMuting.h
     loadRules.h
     query.h
     plugRegistryHelper.h

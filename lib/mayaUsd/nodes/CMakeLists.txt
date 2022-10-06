@@ -7,8 +7,8 @@ target_sources(${PROJECT_NAME}
         pointBasedDeformerNode.cpp
         proxyAccessor.cpp
         proxyShapeBase.cpp
-        proxyShapeLoadRules.cpp
         proxyShapePlugin.cpp
+        proxyShapeStageExtraData.cpp
         stageData.cpp
         stageNode.cpp
         usdPrimProvider.cpp
@@ -19,9 +19,9 @@ set(HEADERS
     pointBasedDeformerNode.h
     proxyAccessor.h
     proxyShapeBase.h
-    proxyShapeLoadRules.h
     proxyShapePlugin.h
     proxyStageProvider.h
+    proxyShapeStageExtraData.h
     stageData.h
     stageNode.h
     usdPrimProvider.h
