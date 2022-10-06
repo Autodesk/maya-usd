@@ -197,7 +197,8 @@ MaterialXTranslators_StandardSurfaceWriter::MaterialXTranslators_StandardSurface
     }
 
     // Surface Output
-    shaderSchema.CreateOutput(UsdShadeTokens->surface, SdfValueTypeNames->Token);
+    shaderSchema.CreateOutput(
+        _GetOutputName(TrMtlxTokens->ND_standard_surface_surfaceshader), SdfValueTypeNames->Token);
 }
 
 /* override */
@@ -245,7 +246,8 @@ UsdAttribute MaterialXTranslators_StandardSurfaceWriter::GetShadingAttributeForM
         }
 
         // Surface output is on the shader itself
-        return surfaceSchema.GetOutput(UsdShadeTokens->surface);
+        return surfaceSchema.GetOutput(
+            _GetOutputName(TrMtlxTokens->ND_standard_surface_surfaceshader));
     }
 
     // All other are outputs of the NodeGraph:

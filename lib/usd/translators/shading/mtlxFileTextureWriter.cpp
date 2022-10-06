@@ -165,7 +165,8 @@ MtlxUsd_FileWriter::MtlxUsd_FileWriter(
     default: TF_CODING_ERROR("Unsupported format"); return;
     }
     texSchema.CreateInput(TrMtlxTokens->filtertype, SdfValueTypeNames->String).Set("cubic");
-    UsdShadeOutput colorOutput = texSchema.CreateOutput(TrMtlxTokens->out, _outputDataType);
+    UsdShadeOutput colorOutput
+        = texSchema.CreateOutput(_GetOutputName(TrMtlxTokens->ND_image_color3), _outputDataType);
 
     // The color correction section of a fileTexture node exists on a separate node that post
     // processes the values of the MaterialX image node, which is kept visible to allow DCC to
@@ -218,7 +219,7 @@ MtlxUsd_FileWriter::MtlxUsd_FileWriter(
             = primvarReaderSchema.CreateInput(TrMtlxTokens->geomprop, SdfValueTypeNames->String);
 
         TfToken inputName(
-            TfStringPrintf("%s:%s", depNodeFn.name().asChar(), TrMtlxTokens->varnameStr.GetText()));
+            TfStringPrintf("%s:%s", depNodeFn.name().asChar(), _GetVarnameName().GetText()));
 
         // We expose the primvar reader varnameStr attribute to the material to allow
         // easy specialization based on UV mappings to geometries:
@@ -246,8 +247,8 @@ MtlxUsd_FileWriter::MtlxUsd_FileWriter(
             varnameInput.Set(UsdUtilsGetPrimaryUVSetName());
         }
 
-        primvarReaderOutput
-            = primvarReaderSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Float2);
+        primvarReaderOutput = primvarReaderSchema.CreateOutput(
+            _GetOutputName(TrMtlxTokens->ND_geompropvalue_vector2), SdfValueTypeNames->Float2);
     } else {
         // Re-using an existing primvar reader:
         UsdShadeShader primvarReaderShaderSchema(GetUsdStage()->GetPrimAtPath(primvarReaderPath));

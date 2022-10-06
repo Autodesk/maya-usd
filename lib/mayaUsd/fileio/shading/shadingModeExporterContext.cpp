@@ -30,6 +30,7 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/types.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/scope.h>
@@ -627,13 +628,18 @@ public:
                     TfStringPrintf("%s:%s", itNode->GetText(), _tokens->varname.GetText()));
                 UsdShadeInput materialInput = material.GetInput(TfToken(inputName.c_str()));
                 if (materialInput) {
-                    materialInput.Set(*itName);
+                    // varname becomes a std::string in USD 20.11
+                    if (materialInput.GetTypeName() == SdfValueTypeNames->Token) {
+                        materialInput.Set(*itName);
+                    } else {
+                        materialInput.Set(itName->GetString());
+                    }
                 }
                 inputName
                     = TfStringPrintf("%s:%s", itNode->GetText(), _tokens->varnameStr.GetText());
                 materialInput = material.GetInput(TfToken(inputName.c_str()));
                 if (materialInput) {
-                    materialInput.Set((*itName).GetString());
+                    materialInput.Set(itName->GetString());
                 }
             }
             _uvNamesToMaterial[largestSet] = material;
@@ -677,12 +683,17 @@ public:
                 TfStringPrintf("%s:%s", itNode->GetText(), _tokens->varname.GetText()));
             UsdShadeInput materialInput = newMaterial.GetInput(TfToken(inputName.c_str()));
             if (materialInput) {
-                materialInput.Set(*itName);
+                // varname becomes a std::string in USD 20.11
+                if (materialInput.GetTypeName() == SdfValueTypeNames->Token) {
+                    materialInput.Set(*itName);
+                } else {
+                    materialInput.Set(itName->GetString());
+                }
             }
             inputName = TfStringPrintf("%s:%s", itNode->GetText(), _tokens->varnameStr.GetText());
             materialInput = newMaterial.GetInput(TfToken(inputName.c_str()));
             if (materialInput) {
-                materialInput.Set((*itName).GetString());
+                materialInput.Set(itName->GetString());
             }
         }
         auto insertResult

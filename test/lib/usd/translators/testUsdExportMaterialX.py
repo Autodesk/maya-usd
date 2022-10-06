@@ -17,6 +17,7 @@
 
 from pxr import Usd
 from pxr import Sdf
+from pxr import Sdr
 from pxr import UsdShade
 
 from maya import cmds
@@ -164,16 +165,24 @@ class testUsdExportMaterialX(unittest.TestCase):
         material_path = mat.GetPath().pathString
         self.assertEqual(material_path, base_path)
 
+        mxName = "file1:varnameStr"
+        primvarReader = Sdr.Registry().GetShaderNodeByIdentifier("UsdPrimvarReader_float2")
+        if primvarReader and primvarReader.GetShaderInput("varname").GetType() == "string":
+            mxName = "file1:varname"
+
         # Needs a resolved inputs:file1:varnameStr attribute:
-        self.assertEqual(mat.GetInput("file1:varnameStr").GetAttr().Get(), "st")
+        self.assertEqual(mat.GetInput(mxName).GetAttr().Get(), "st")
 
         # Needs a MaterialX surface source:
-        shader = mat.ComputeSurfaceSource("mtlx")[0]
+        shader, outputName, _ = mat.ComputeSurfaceSource("mtlx")
         self.assertTrue(shader)
 
         # Which is a standard surface:
         self.assertEqual(shader.GetIdAttr().Get(),
                          "ND_standard_surface_surfaceshader")
+        mxNode = Sdr.Registry().GetShaderNodeByIdentifier("ND_standard_surface_surfaceshader")
+        if mxNode:
+            self.assertEqual(outputName, mxNode.GetOutputNames()[0])
 
         # With a connected file texture on base_color going to baseColor on the
         # nodegraph:
