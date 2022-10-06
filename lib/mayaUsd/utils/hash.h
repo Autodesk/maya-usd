@@ -18,6 +18,7 @@
 
 #include <mayaUsd/base/api.h>
 
+#include <cstddef>
 #include <functional>
 
 namespace MAYAUSD_NS_DEF {
@@ -28,7 +29,7 @@ namespace MAYAUSD_NS_DEF {
 // boost::hash implementation also relies on the same algorithm:
 // https://www.boost.org/doc/libs/1_64_0/boost/functional/hash/hash.hpp
 
-template <typename T> inline void hash_combine(size_t& seed, const T& value)
+template <typename T> inline void hash_combine(std::size_t& seed, const T& value)
 {
     ::std::hash<T> hasher;
     seed ^= hasher(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2);

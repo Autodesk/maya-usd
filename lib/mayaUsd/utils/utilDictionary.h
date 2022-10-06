@@ -87,7 +87,7 @@ MAYAUSD_CORE_PUBLIC std::vector<T>
 {
     // Using declaration is necessary for the TF_ macros to compile as they assume
     // to be in that namespace.
-    using namespace PXR_NS;
+    PXR_NAMESPACE_USING_DIRECTIVE
 
     // Check that vector exists.
     if (VtDictionaryIsHolding<std::vector<T>>(userArgs, key)) {

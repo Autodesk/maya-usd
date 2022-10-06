@@ -1,0 +1,11 @@
+#usda 1.0
+(
+    defaultPrim = "A_payload"
+    upAxis = "Z"
+)
+
+def "A_payload" (
+    add references = @./A_geom.usda@
+)
+{
+}

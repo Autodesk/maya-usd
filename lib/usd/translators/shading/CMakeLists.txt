@@ -35,6 +35,14 @@ if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2020)
     )
 endif()
 
+# Edit as Maya requires UFE path mapping.
+if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
+    target_sources(${TARGET_NAME}
+        PRIVATE
+            materialUpdater.cpp
+    )
+endif()
+
 # These import/export classes will work with older versions of Maya and USD if
 # you plan to render in usdView or other MaterialX-aware renderers. However,
 # getting these materials to appear in the Maya viewport when creating a USD

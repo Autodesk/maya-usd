@@ -19,7 +19,7 @@ namespace MAYAUSD_NS_DEF {
 
 namespace DictUtils {
 
-using namespace PXR_NS;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 /// Extracts a bool at \p key from \p userArgs, or false if it can't extract.
 bool extractBoolean(const VtDictionary& userArgs, const TfToken& key)

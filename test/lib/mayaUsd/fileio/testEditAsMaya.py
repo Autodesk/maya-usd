@@ -19,7 +19,6 @@
 import fixturesUtils
 
 from usdUtils import createSimpleXformScene
-from ufeUtils import ufeFeatureSetVersion
 
 from maya import OpenMaya as OM
 from maya import OpenMayaAnim as OMA
@@ -65,7 +64,6 @@ class EditAsMayaTestCase(unittest.TestCase):
     def setUp(self):
         cmds.file(new=True, force=True)
 
-    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testCannotEditAsMayaAnAncestor(self):
         '''Test that trying to edit an ancestor is not allowed.'''
 
@@ -82,7 +80,6 @@ class EditAsMayaTestCase(unittest.TestCase):
             self.assertFalse(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(aUsdUfePathStr))
             self.assertFalse(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
 
-    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testEditAsMayaPreserveTimeline(self):
         '''Test that edit does not change the timeline start and end.'''
 
@@ -114,7 +111,6 @@ class EditAsMayaTestCase(unittest.TestCase):
 
         verifyTimeline()
 
-    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testTransformEditAsMaya(self):
         '''Edit a USD transform as a Maya object.'''
 
@@ -164,7 +160,6 @@ class EditAsMayaTestCase(unittest.TestCase):
 
         assertVectorAlmostEqual(self, mayaValues, usdValues)
 
-    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testEditAsMayaUndoRedo(self):
         '''Edit a USD transform as a Maya object and apply undo and redo.'''
 
@@ -286,7 +281,6 @@ class EditAsMayaTestCase(unittest.TestCase):
         self.assertEqual('', icon.baseIcon)
         self.assertEqual(ufe.UIInfoHandler.Disabled, icon.mode)
 
-    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testIllegalEditAsMaya(self):
         '''Trying to edit as Maya on object that doesn't support it.'''
         
@@ -296,6 +290,8 @@ class EditAsMayaTestCase(unittest.TestCase):
         stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
         blendShape = stage.DefinePrim('/BlendShape1', 'BlendShape')
         scope = stage.DefinePrim('/Scope1', 'Scope')
+        scope = stage.DefinePrim('/Mesh1', 'Mesh')
+        scope = stage.DefinePrim('/Material1', 'Material')
 
         blendShapePathStr = proxyShapePathStr + ',/BlendShape1'
         scopePathStr = proxyShapePathStr + ',/Scope1'
@@ -312,8 +308,14 @@ class EditAsMayaTestCase(unittest.TestCase):
         # with mayaUsd.lib.OpUndoItemList():
         #     self.assertFalse(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(scopePathStr))
         #     self.assertFalse(mayaUsd.lib.PrimUpdaterManager.editAsMaya(scopePathStr))
+        
+        # Mesh can be edited as Maya.
+        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(proxyShapePathStr + ',/Mesh1'))
 
-    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
+        # Material cannot be edited as Maya: it explicitly disables this
+        # capability.
+        self.assertFalse(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(proxyShapePathStr + ',/Material1'))
+
     def testSessionLayer(self):
         '''Verify that the edit gets on the sessionLayer instead of the editTarget layer.'''
         
@@ -345,8 +347,6 @@ class EditAsMayaTestCase(unittest.TestCase):
 
         self.assertEqual(prim.GetCustomDataByKey(kPullPrimMetadataKey), None)
 
-
-    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testTargetLayer(self):
         '''Verify that the target layer is not moved after Edit As Maya.'''
         
