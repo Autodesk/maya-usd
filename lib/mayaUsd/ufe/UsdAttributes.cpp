@@ -488,6 +488,15 @@ bool UsdAttributes::canRenameAttribute(
         if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Output) {
             PXR_NS::UsdShadeMaterial matPrim(prim);
 
+            if (matPrim) {
+                // Can not rename the 3 main material outputs as they are part of the schema
+                if (baseNameAndType.first == PXR_NS::UsdShadeTokens->surface
+                    || baseNameAndType.first == PXR_NS::UsdShadeTokens->displacement
+                    || baseNameAndType.first == PXR_NS::UsdShadeTokens->volume) {
+                    return false;
+                }
+            }
+
             for (auto&& authoredOutput : connectApi.GetOutputs(true)) {
                 if (authoredOutput.GetFullName() == targetName) {
                     return true;

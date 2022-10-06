@@ -115,7 +115,7 @@ UsdRenameAttributeCommand::Ptr UsdRenameAttributeCommand::create(
 
 void UsdRenameAttributeCommand::executeUndoBlock()
 {
-    // Validation has already been done. Just remove the attribute.
+    // Validation has already been done. Just rename the attribute.
     auto sceneItem
         = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(_sceneItemPath));
     UsdAttributes::doRenameAttribute(sceneItem, _targetName, _newName);
