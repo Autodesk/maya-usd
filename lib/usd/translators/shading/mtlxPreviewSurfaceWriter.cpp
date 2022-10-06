@@ -144,7 +144,8 @@ MtlxUsd_PreviewSurfaceWriter::MtlxUsd_PreviewSurfaceWriter(
     }
 
     // Surface Output
-    shaderSchema.CreateOutput(UsdShadeTokens->surface, SdfValueTypeNames->Token);
+    shaderSchema.CreateOutput(
+        _GetOutputName(TrMtlxTokens->ND_UsdPreviewSurface_surfaceshader), SdfValueTypeNames->Token);
 }
 
 /* override */
@@ -192,7 +193,8 @@ UsdAttribute MtlxUsd_PreviewSurfaceWriter::GetShadingAttributeForMayaAttrName(
         }
 
         // Surface output is on the shader itself
-        return surfaceSchema.GetOutput(UsdShadeTokens->surface);
+        return surfaceSchema.GetOutput(
+            _GetOutputName(TrMtlxTokens->ND_UsdPreviewSurface_surfaceshader));
     }
 
     // All other are outputs of the NodeGraph:

@@ -35,6 +35,9 @@
 #include <pxr/usd/sdf/assetPath.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/types.h>
+#include <pxr/usd/sdr/registry.h>
+#include <pxr/usd/sdr/shaderNode.h>
+#include <pxr/usd/sdr/shaderProperty.h>
 #include <pxr/usd/usdShade/input.h>
 #include <pxr/usd/usdShade/material.h>
 #include <pxr/usd/usdShade/output.h>
@@ -50,6 +53,25 @@
 #include <maya/MString.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+namespace {
+SdfValueTypeName _GetVarnameType()
+{
+    static SdfValueTypeName varnameType;
+    static std::once_flag   once;
+    std::call_once(once, []() {
+        // varname input went from TfToken to std::string in USD 20.11. Fetch the type directly from
+        // the registry:
+        SdrRegistry&          registry = SdrRegistry::GetInstance();
+        SdrShaderNodeConstPtr shaderNodeDef
+            = registry.GetShaderNodeByIdentifier(TrUsdTokens->UsdPrimvarReader_float2);
+        varnameType = shaderNodeDef
+            ? shaderNodeDef->GetShaderInput(TrUsdTokens->varname)->GetTypeAsSdfType().first
+            : SdfValueTypeNames->Token;
+    });
+    return varnameType;
+}
+} // namespace
 
 // Maya USD used to only write the colorspace if the colorspace was not the default.
 // This env var allows users to go back to the sparse write method when desired
@@ -142,7 +164,7 @@ PxrUsdTranslators_FileTextureWriter::PxrUsdTranslators_FileTextureWriter(
         primvarReaderShaderSchema.CreateIdAttr(VtValue(TrUsdTokens->UsdPrimvarReader_float2));
 
         UsdShadeInput varnameInput
-            = primvarReaderShaderSchema.CreateInput(TrUsdTokens->varname, SdfValueTypeNames->Token);
+            = primvarReaderShaderSchema.CreateInput(TrUsdTokens->varname, _GetVarnameType());
 
         TfToken inputName(
             TfStringPrintf("%s:%s", depNodeFn.name().asChar(), TrUsdTokens->varname.GetText()));
@@ -155,7 +177,7 @@ PxrUsdTranslators_FileTextureWriter::PxrUsdTranslators_FileTextureWriter(
             UsdShadeNodeGraph intermediateNodeGraph(materialPrim);
             if (intermediateNodeGraph) {
                 UsdShadeInput intermediateInput
-                    = intermediateNodeGraph.CreateInput(inputName, SdfValueTypeNames->Token);
+                    = intermediateNodeGraph.CreateInput(inputName, _GetVarnameType());
                 varnameInput.ConnectToSource(intermediateInput);
                 varnameInput = intermediateInput;
             }
@@ -164,10 +186,16 @@ PxrUsdTranslators_FileTextureWriter::PxrUsdTranslators_FileTextureWriter(
             materialSchema = UsdShadeMaterial(materialPrim);
         }
 
+        VtValue varNameValue;
+        if (_GetVarnameType() == SdfValueTypeNames->Token) {
+            varNameValue = UsdUtilsGetPrimaryUVSetName();
+        } else {
+            varNameValue = UsdUtilsGetPrimaryUVSetName().GetString();
+        }
+
         if (materialSchema) {
-            UsdShadeInput materialInput
-                = materialSchema.CreateInput(inputName, SdfValueTypeNames->Token);
-            materialInput.Set(UsdUtilsGetPrimaryUVSetName());
+            UsdShadeInput materialInput = materialSchema.CreateInput(inputName, _GetVarnameType());
+            materialInput.Set(varNameValue);
             varnameInput.ConnectToSource(materialInput);
             // Note: This needs to be done for all nodes that require UV input. In
             // the UsdPreviewSurface case, the file node is the only one, but for
@@ -176,7 +204,7 @@ PxrUsdTranslators_FileTextureWriter::PxrUsdTranslators_FileTextureWriter(
             // find the unconnected one that implicitly connects to uvSet[0] of the
             // geometry, or an explicit uvChooser node connecting to alternate uvSets.
         } else {
-            varnameInput.Set(UsdUtilsGetPrimaryUVSetName());
+            varnameInput.Set(varNameValue);
         }
 
         UsdShadeOutput primvarReaderOutput = primvarReaderShaderSchema.CreateOutput(
