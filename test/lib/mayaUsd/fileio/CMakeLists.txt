@@ -22,7 +22,6 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
         testAddMayaReference.py
         testEditAsMaya.py
         testMergeToUsd.py
-        testDiscardEdits.py
         testDuplicateAs.py
         testPrimUpdater.py
         testCacheToUsd.py
@@ -83,6 +82,27 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
         ENV
             "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_SOURCE_DIR}/UsdCustomRigSchema/"
     )
+endif()
+
+if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
+    set(TEST_DISCARD_EDITS testDiscardEdits.py)
+    mayaUsd_get_unittest_target(target ${TEST_DISCARD_EDITS})
+    if(UFE_TRIE_NODE_HAS_CHILDREN_COMPONENTS_ACCESSOR)
+        mayaUsd_add_test(${target}
+            PYTHON_MODULE ${target}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            ENV
+                "HAS_ORPHANED_NODES_MANAGER=1"
+        )
+    else()
+        mayaUsd_add_test(${target}
+            PYTHON_MODULE ${target}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        )
+    endif()
+
+    # Add a ctest label for easy filtering.
+    set_property(TEST ${target} APPEND PROPERTY LABELS fileio)
 endif()
 
 add_subdirectory(utils)

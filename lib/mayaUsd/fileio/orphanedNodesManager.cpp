@@ -259,6 +259,18 @@ bool OrphanedNodesManager::empty() const { return pulledPrims().root()->empty();
 
 void OrphanedNodesManager::restore(Memento&& previous) { _pulledPrims = previous.release(); }
 
+bool OrphanedNodesManager::isOrphaned(const Ufe::Path& pulledPath) const
+{
+    auto trieNode = pulledPrims().node(pulledPath);
+    if (!trieNode) {
+        // If the argument path has not been pulled, it can't be orphaned.
+        return false;
+    }
+    TF_VERIFY(trieNode->hasData());
+    // If the pull parent is visible, the pulled path is not orphaned.
+    return !getVisibilityPlug(trieNode);
+}
+
 /* static */
 bool OrphanedNodesManager::setVisibilityPlug(
     const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode,
@@ -269,6 +281,16 @@ bool OrphanedNodesManager::setVisibilityPlug(
     MFnDagNode  fn(pullParentPath);
     auto        visibilityPlug = fn.findPlug("visibility", /* tryNetworked */ true);
     return (visibilityPlug.setBool(visibility) == MS::kSuccess);
+}
+
+/* static */
+bool OrphanedNodesManager::getVisibilityPlug(const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode)
+{
+    TF_VERIFY(trieNode->hasData());
+    const auto& pullParentPath = trieNode->data().dagPath;
+    MFnDagNode  fn(pullParentPath);
+    auto        visibilityPlug = fn.findPlug("visibility", /* tryNetworked */ true);
+    return visibilityPlug.asBool();
 }
 
 /* static */
