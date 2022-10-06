@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "proxyShapeLoadRules.h"
+#include "proxyShapeStageExtraData.h"
 
 #include <mayaUsd/utils/loadRules.h>
 
@@ -35,13 +35,11 @@ ProxyShapeSet& getTrackedProxyShapes()
     return tracked;
 }
 
-void onMayaAboutToSave(void* /* unused */)
-{
-    // Note: passing nullptr means save all stages.
-    MayaUsdProxyShapeLoadRules::saveLoadRules(nullptr);
-}
+void onMayaAboutToSave(void* /* unused */) { MayaUsdProxyShapeStageExtraData::saveAllStageData(); }
 
-void saveTrackedLoadRules(const UsdStageRefPtr& stage)
+// Saving some stage data for all valid tracked stages or one specific stage.
+typedef MStatus (*SaveFunc)(const PXR_NS::UsdStage& stage, MayaUsdProxyShapeBase& proxyShape);
+void saveTrackedData(const UsdStageRefPtr& stage, SaveFunc saveFunc)
 {
     ProxyShapeSet& tracked = getTrackedProxyShapes();
     for (MayaUsdProxyShapeBase* proxyShape : tracked) {
@@ -55,18 +53,19 @@ void saveTrackedLoadRules(const UsdStageRefPtr& stage)
         if (stage && stage != stagePtr)
             continue;
 
-        MObject proxyObj = proxyShape->thisMObject();
-        if (proxyObj.isNull())
-            continue;
-
-        copyLoadRulesToAttribute(*stagePtr, proxyObj);
+        saveFunc(*stagePtr, *proxyShape);
     }
+}
+
+void saveTrackedLoadRules(const UsdStageRefPtr& stage)
+{
+    saveTrackedData(stage, copyLoadRulesToAttribute);
 }
 
 } // namespace
 
 /* static */
-MStatus MayaUsdProxyShapeLoadRules::initialize()
+MStatus MayaUsdProxyShapeStageExtraData::initialize()
 {
     MStatus status = MS::kSuccess;
     if (beforeFileSaveCallbackId == 0) {
@@ -77,7 +76,7 @@ MStatus MayaUsdProxyShapeLoadRules::initialize()
 }
 
 /* static */
-MStatus MayaUsdProxyShapeLoadRules::finalize()
+MStatus MayaUsdProxyShapeStageExtraData::finalize()
 {
     MStatus status = MS::kSuccess;
 
@@ -90,26 +89,29 @@ MStatus MayaUsdProxyShapeLoadRules::finalize()
 }
 
 /* static */
-void MayaUsdProxyShapeLoadRules::addProxyShape(MayaUsdProxyShapeBase& proxyShape)
+void MayaUsdProxyShapeStageExtraData::addProxyShape(MayaUsdProxyShapeBase& proxyShape)
 {
     getTrackedProxyShapes().insert(&proxyShape);
 }
 
 /* static */
-void MayaUsdProxyShapeLoadRules::removeProxyShape(MayaUsdProxyShapeBase& proxyShape)
+void MayaUsdProxyShapeStageExtraData::removeProxyShape(MayaUsdProxyShapeBase& proxyShape)
 {
     getTrackedProxyShapes().erase(&proxyShape);
 }
 
 /* static */
-void MayaUsdProxyShapeLoadRules::saveAllLoadRules()
+void MayaUsdProxyShapeStageExtraData::saveAllStageData() { saveAllLoadRules(); }
+
+/* static */
+void MayaUsdProxyShapeStageExtraData::saveAllLoadRules()
 {
     // Note: passing nullptr means save all stages.
     saveTrackedLoadRules(nullptr);
 }
 
 /* static */
-void MayaUsdProxyShapeLoadRules::saveLoadRules(const UsdStageRefPtr& stage)
+void MayaUsdProxyShapeStageExtraData::saveLoadRules(const UsdStageRefPtr& stage)
 {
     saveTrackedLoadRules(stage);
 }
