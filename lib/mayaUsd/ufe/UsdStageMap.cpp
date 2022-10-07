@@ -176,13 +176,19 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path)
         for (const auto& entry : pathToObject) {
             const auto& cachedPath = entry.first;
             const auto& cachedObject = entry.second;
+            // If the cached object itself is invalid then remove it from the map.
+            if (!cachedObject.isValid()) {
+                fPathToObject.erase(cachedPath);
+                continue;
+            }
             // Get the UFE path from the map value.
             auto newPath = firstPath(cachedObject);
             if (newPath != cachedPath) {
                 // Key is stale.  Remove it from our cache, and add the new entry.
                 auto count = fPathToObject.erase(cachedPath);
                 TF_AXIOM(count);
-                fPathToObject[newPath] = cachedObject;
+                if (!newPath.empty())
+                    fPathToObject[newPath] = cachedObject;
             }
         }
 
@@ -220,7 +226,8 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path)
             // we are in scenario 2. Update the entry in fPathToObject so that the key path
             // is the current object path.
             fPathToObject.erase(singleSegmentPath);
-            fPathToObject[objectPath] = object;
+            if (!objectPath.empty())
+                fPathToObject[objectPath] = object;
             TF_VERIFY(std::end(fPathToObject) == fPathToObject.find(singleSegmentPath));
             return MObject();
         }
