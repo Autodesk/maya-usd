@@ -932,14 +932,12 @@ void handleDisplayLayer(
 
 void ReplicateExtrasFromUSD::initRecursive(Ufe::SceneItem::Ptr ufeItem) const
 {
-    auto node = Ufe::Hierarchy::hierarchy(ufeItem);
-    if (!node) {
-        return;
-    }
-
-    // Go through the entire hierarchy
-    for (auto child : node->children()) {
-        initRecursive(child);
+    auto hier = Ufe::Hierarchy::hierarchy(ufeItem);
+    if (hier) {
+        // Go through the entire hierarchy
+        for (auto child : hier->children()) {
+            initRecursive(child);
+        }
     }
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
@@ -991,6 +989,30 @@ void ReplicateExtrasToUSD::processItem(const MDagPath& dagPath, const SdfPath& u
             _primToLayerMap[usdPath] = displayLayer.object();
         });
     }
+#endif
+}
+
+void ReplicateExtrasToUSD::initRecursive(const Ufe::SceneItem::Ptr& item) const
+{
+    auto hier = Ufe::Hierarchy::hierarchy(item);
+    if (hier) {
+        // Go through the entire hierarchy.
+        for (auto child : hier->children()) {
+            initRecursive(child);
+        }
+    }
+
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+    MString displayLayerPath(Ufe::PathString::string(item->path()).c_str());
+    handleDisplayLayer(displayLayerPath, [this, &item](const MFnDisplayLayer& displayLayer) {
+        if (displayLayer.name() != "defaultLayer") {
+            auto usdItem = downcast(item);
+            if (usdItem) {
+                auto prim = usdItem->prim();
+                _primToLayerMap[prim.GetPath()] = displayLayer.object();
+            }
+        }
+    });
 #endif
 }
 
