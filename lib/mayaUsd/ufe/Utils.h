@@ -238,6 +238,7 @@ class ReplicateExtrasFromUSD
 public:
     // Prepares the replication operation for the subtree starting with the given scene item
     void initRecursive(Ufe::SceneItem::Ptr) const;
+
     // Replicates extra features from the USD item defined by 'path' to the maya object
     void processItem(const Ufe::Path& path, const MObject& mayaObject) const;
 
@@ -251,6 +252,10 @@ public:
     // Processes replication from a maya object defined by 'dagPath'
     // to the usd item defined by 'usdPath'
     void processItem(const MDagPath& dagPath, const PXR_NS::SdfPath& usdPath) const;
+
+    // Prepares the replication operation for the subtree starting at the given scene item.
+    void initRecursive(const Ufe::SceneItem::Ptr& item) const;
+
     // Finalizes the replication operation to the USD stage defined by 'stagePath'
     // with a possibility to rename the usd root node name to 'renameRoot'
     void finalize(const Ufe::Path& stagePath, const std::string* renameRoot = nullptr) const;
