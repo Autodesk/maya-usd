@@ -329,37 +329,17 @@ void OrphanedNodesManager::recursiveSwitch(
             TF_VERIFY(prim.SetActive(!visibility));
         }
     } else {
-        auto childrenComponents = trieNode->childrenComponents();
-        // Figure out the runtime ID of the children of the trie node.
-        // It only changes when the node is a gateway node. So we assume
-        // it will have the same runtime ID by default and only retrieve
-        // the new runtime ID if we cross a gateway node.
-        const Ufe::Rtid runtimeId = ufePath.runTimeId();
-        Ufe::Rtid       childRuntimeId = runtimeId;
-        char            childSep = ufePath.getSegments().back().separator();
-        if (Ufe::SceneSegmentHandler::isGateway(ufePath)) {
-            if (Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(ufePath)) {
-                if (Ufe::Hierarchy::Ptr itemHier = Ufe::Hierarchy::hierarchy(sceneItem)) {
-                    Ufe::Hierarchy::ChildFilter filter
-                        = { Ufe::ChildFilterFlag("InactivePrims", "InactivePrims", 1) };
-                    for (auto child : itemHier->filteredChildren(filter)) {
-                        childRuntimeId = child->runTimeId();
-                        childSep = child->path().getSegments().back().separator();
-                        break;
-                    }
-                }
-            }
-        }
-        for (const auto& c : childrenComponents) {
+        const bool isGatewayToUsd = Ufe::SceneSegmentHandler::isGateway(ufePath);
+        for (const auto& c : trieNode->childrenComponents()) {
             auto childTrieNode = (*trieNode)[c];
             if (childTrieNode) {
                 // When not crossing runtimes, we can simply use the UFE path
                 // component stored in the trie. When crossing runtimes, we
                 // need to create a segment instead with the new runtime ID.
-                if (runtimeId == childRuntimeId) {
+                if (!isGatewayToUsd) {
                     recursiveSwitch(childTrieNode, ufePath + c);
                 } else {
-                    Ufe::PathSegment childSegment(c, childRuntimeId, childSep);
+                    Ufe::PathSegment childSegment(c, ufe::getUsdRunTimeId(), '/');
                     recursiveSwitch(childTrieNode, ufePath + childSegment);
                 }
             }
