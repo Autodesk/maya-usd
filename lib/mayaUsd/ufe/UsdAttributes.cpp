@@ -319,6 +319,12 @@ Ufe::UndoableCommand::Ptr UsdAttributes::removeAttributeCmd(const std::string& n
 {
     return UsdRemoveAttributeCommand::create(fItem, name);
 }
+
+Ufe::UndoableCommand::Ptr
+UsdAttributes::renameAttributeCmd(const std::string& targetName, const std::string& newName)
+{
+    return UsdRenameAttributeCommand::create(fItem, targetName, newName);
+}
 #endif
 #endif
 

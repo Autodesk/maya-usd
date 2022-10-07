@@ -62,6 +62,8 @@ public:
     Ufe::AddAttributeCommand::Ptr
                               addAttributeCmd(const std::string& name, const Ufe::Attribute::Type& type) override;
     Ufe::UndoableCommand::Ptr removeAttributeCmd(const std::string& name) override;
+    Ufe::UndoableCommand::Ptr
+    renameAttributeCmd(const std::string& targetName, const std::string& newName) override;
 #endif
 
 #if (UFE_PREVIEW_VERSION_NUM >= 4010)
