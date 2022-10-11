@@ -245,5 +245,80 @@ class HideOrphanedNodesTestCase(unittest.TestCase):
         self.assertTrue(pullParentVisibilityPlug[self.cPathStr].asBool())
         self.assertTrue(pullParentVisibilityPlug[self.ePathStr].asBool())
 
+    def testHideOnVariantSwitchAndDeleteUndo(self):
+        '''
+        Edit-as-Maya an object, switch a variant in its ancestor, which
+        should hide the Maya edited object, delete an ancestor and undo
+        the deletion. The Maya object should still be deleted.
+        '''
+        # Pull on C.
+        pullParentVisibilityPlug = self.pullAndGetParentVisibility(
+            [self.cPathStr])
+
+        # A's variant set abVariant is set to variant selection a, so Maya
+        # version of pulled node C is present and has translation (1, 2, 3).
+        variantCXlation = (1, 2, 3)
+        cPrim = mayaUsd.ufe.ufePathToPrim(self.cPathStr)
+        cMayaPathStr = mayaUsd.lib.PrimUpdaterManager.readPullInformation(cPrim)
+        cDagPath = om.MSelectionList().add(cMayaPathStr).getDagPath(0)
+        cFn= om.MFnTransform(cDagPath)
+        self.assertEqual(cFn.translation(om.MSpace.kObject),
+                         om.MVector(*variantCXlation))
+
+        aPrim = cPrim.GetParent().GetParent()
+        abVariant = aPrim.GetVariantSet('abVariant')
+        self.assertEqual(abVariant.GetVariantSelection(), 'a')
+        self.assertEqual(aPrim.GetChildrenNames()[0], 'B')
+
+        # Switch A's variant set abVariant to variant selection b.  Pulled node
+        # C will be hidden.
+        abVariant.SetVariantSelection('b')
+        self.assertEqual(aPrim.GetChildrenNames()[0], 'F')
+
+        self.assertFalse(pullParentVisibilityPlug[self.cPathStr].asBool())
+
+        cmds.delete(self.ps)
+        self.assertFalse(pullParentVisibilityPlug[self.cPathStr].asBool())
+
+        cmds.undo()
+        self.assertFalse(pullParentVisibilityPlug[self.cPathStr].asBool())
+
+        # Revert back to variant selection a, pulled node is shown.
+        abVariant.SetVariantSelection('a')
+
+        self.assertTrue(pullParentVisibilityPlug[self.cPathStr].asBool())
+
+    def testShowOnCorrectVariantAndDeleteUndo(self):
+        '''
+        Edit-as-Maya an object, stay ton the correct variant in its ancestor,
+        delete an ancestor and undo the deletion. The Maya object should still
+        be visible.
+        '''
+        # Pull on C.
+        pullParentVisibilityPlug = self.pullAndGetParentVisibility(
+            [self.cPathStr])
+
+        # A's variant set abVariant is set to variant selection a, so Maya
+        # version of pulled node C is present and has translation (1, 2, 3).
+        variantCXlation = (1, 2, 3)
+        cPrim = mayaUsd.ufe.ufePathToPrim(self.cPathStr)
+        cMayaPathStr = mayaUsd.lib.PrimUpdaterManager.readPullInformation(cPrim)
+        cDagPath = om.MSelectionList().add(cMayaPathStr).getDagPath(0)
+        cFn= om.MFnTransform(cDagPath)
+        self.assertEqual(cFn.translation(om.MSpace.kObject),
+                         om.MVector(*variantCXlation))
+
+        aPrim = cPrim.GetParent().GetParent()
+        abVariant = aPrim.GetVariantSet('abVariant')
+        self.assertEqual(abVariant.GetVariantSelection(), 'a')
+        self.assertEqual(aPrim.GetChildrenNames()[0], 'B')
+        self.assertTrue(pullParentVisibilityPlug[self.cPathStr].asBool())
+
+        cmds.delete(self.ps)
+        self.assertFalse(pullParentVisibilityPlug[self.cPathStr].asBool())
+
+        cmds.undo()
+        self.assertTrue(pullParentVisibilityPlug[self.cPathStr].asBool())
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

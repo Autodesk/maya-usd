@@ -64,6 +64,12 @@ protected:
     // to subgraph nodes:
     UsdAttribute PreserveNodegraphBoundaries(UsdAttribute input);
 
+    // Get the official output name of a MaterialX node using Sdr information.
+    static TfToken _GetOutputName(const TfToken& nodeID);
+
+    // Get the global MaterialX name we use for primvar name inputs. Depends on UsdPrimvarReader.
+    static TfToken _GetVarnameName();
+
     /// Adds a schema attribute to the schema \p shaderSchema if the Maya attribute \p
     /// shadingNodeAttrName in dependency node \p depNodeFn has been modified or has an incoming
     /// connection at \p usdTime.

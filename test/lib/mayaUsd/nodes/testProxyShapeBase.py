@@ -20,8 +20,10 @@ from maya import standalone
 from pxr import Usd, Sdf
 
 import fixturesUtils
+import mayaUsd_createStageWithNewLayer
 
 import os
+import tempfile
 import unittest
 
 import usdUtils, mayaUtils, ufeUtils, testUtils
@@ -42,6 +44,14 @@ class testProxyShapeBase(unittest.TestCase):
     def tearDownClass(cls):
         standalone.uninitialize()
 
+    def setupEmptyScene(self):
+        self._currentTestDir = tempfile.mkdtemp(prefix='ProxyShapeBaseTest')
+        tempMayaFile = os.path.join(
+            self._currentTestDir, 'ProxyShapeBaseScene.ma')
+        cmds.file(new=True, force=True)
+        cmds.file(rename=tempMayaFile)
+        return tempMayaFile
+
     def testBoundingBox(self):
         cmds.file(self.mayaSceneFilePath, open=True, force=True)
 
@@ -57,7 +67,6 @@ class testProxyShapeBase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         # create a proxy shape and add a Capsule prim
-        import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         proxyShapePath = ufe.PathString.path(proxyShape)
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
@@ -520,6 +529,40 @@ class testProxyShapeBase(unittest.TestCase):
 
         # check that the expected load rules are still on the stage.
         check_load_rules(stage)
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testStageMutedLayers only available in UFE v2 or greater.')
+    def testStageMutedLayers(self):
+        '''
+        Verify that stage preserve the muted layers of the stage when a scene is reloaded.
+        '''
+        # create new scene
+        tempMayaFile = self.setupEmptyScene()
+
+        # create an empty scene
+        shapePath = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(shapePath).GetStage()
+
+        # Verify there are no muted layers by default.
+        self.assertListEqual([], stage.GetMutedLayers())
+
+        # select the room and get its context menu.
+        stage.MuteLayer("abc")
+        stage.MuteLayer("def")
+
+        def verifyMuting(stage):
+            self.assertListEqual(["abc", "def"], stage.GetMutedLayers())
+
+        verifyMuting(stage)
+
+        # Save the Maya scene.
+        cmds.file(save=True, force=True)
+
+        # Reload the scene and verify the muting are still there.
+        cmds.file(new=True, force=True)
+        cmds.file(tempMayaFile, open=True)
+
+        stage = mayaUsd.lib.GetPrim('|stage1|stageShape1').GetStage()
+        verifyMuting(stage)
 
     def testSerializationShareStage(self):
         '''
