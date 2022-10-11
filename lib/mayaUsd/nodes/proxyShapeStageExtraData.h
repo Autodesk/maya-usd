@@ -26,17 +26,20 @@
 
 namespace MAYAUSD_NS_DEF {
 
-/// \class MayaUsdProxyShapeLoadRules
-/// \brief Encapsulates plugin registration and deregistration for the load rules handling.
+/// \class MayaUsdProxyShapeStageExtraData
+/// \brief Encapsulates plugin registration and deregistration for the proxy shape extra data
+/// handling.
 ///
-/// USD load rules are persisted on-disk in the proxy shape. We use a Maya callback
-/// triggered before a scene is saved to copy the current load rules from the stage
+/// USD proxy shape extra data are persisted on-disk in the proxy shape. We use a Maya callback
+/// triggered before a scene is saved to copy the current proxy shape extra data from the stage
 /// to the proxy shape.
+///
+/// The extra data saved this way currently are: payload load rules.
 
-class MayaUsdProxyShapeLoadRules
+class MayaUsdProxyShapeStageExtraData
 {
 public:
-    /// \brief initialise by  registering the callbacks.
+    /// \brief initialise by registering the callbacks.
     MAYAUSD_CORE_PUBLIC
     static MStatus initialize();
 
@@ -44,13 +47,18 @@ public:
     MAYAUSD_CORE_PUBLIC
     static MStatus finalize();
 
-    /// \brief add a proxy shape so that it will have its load rules saved and loaded.
+    /// \brief add a proxy shape so that it will have its proxy shape extra data saved and loaded.
     MAYAUSD_CORE_PUBLIC
     static void addProxyShape(MayaUsdProxyShapeBase& proxyShape);
 
-    /// \brief remove a proxy shape so that it will no longer have its load rules saved and loaded.
+    /// \brief remove a proxy shape so that it will no longer have its proxy shape extra data saved
+    /// and loaded.
     MAYAUSD_CORE_PUBLIC
     static void removeProxyShape(MayaUsdProxyShapeBase& proxyShape);
+
+    /// \brief save all stage data of tracked proxy shapes.
+    MAYAUSD_CORE_PUBLIC
+    static void saveAllStageData();
 
     /// \brief save load rules of tracked proxy shapes.
     MAYAUSD_CORE_PUBLIC

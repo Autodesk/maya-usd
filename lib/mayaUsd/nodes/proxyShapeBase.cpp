@@ -17,10 +17,13 @@
 
 #include <mayaUsd/base/debugCodes.h>
 #include <mayaUsd/base/tokens.h>
+#include <mayaUsd/fileio/utils/readUtil.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/listeners/proxyShapeNotice.h>
-#include <mayaUsd/nodes/proxyShapeLoadRules.h>
+#include <mayaUsd/nodes/proxyShapeStageExtraData.h>
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/utils/customLayerData.h>
+#include <mayaUsd/utils/layerMuting.h>
 #include <mayaUsd/utils/loadRules.h>
 #include <mayaUsd/utils/query.h>
 #include <mayaUsd/utils/stageCache.h>
@@ -73,6 +76,7 @@
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnPluginData.h>
 #include <maya/MFnReference.h>
+#include <maya/MFnStringArrayData.h>
 #include <maya/MFnStringData.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnUnitAttribute.h>
@@ -115,9 +119,10 @@ TF_DEFINE_PUBLIC_TOKENS(MayaUsdProxyShapeBaseTokens, MAYAUSD_PROXY_SHAPE_BASE_TO
 MayaUsdProxyShapeBase::ClosestPointDelegate MayaUsdProxyShapeBase::_sharedClosestPointDelegate
     = nullptr;
 
-const std::string kAnonymousLayerName { "anonymousLayer1" };
-const std::string kSessionLayerPostfix { "-session" };
-const std::string kUnsharedStageLayerName { "unshareableLayer" };
+const std::string  kAnonymousLayerName { "anonymousLayer1" };
+const std::string  kSessionLayerPostfix { "-session" };
+const std::string  kUnsharedStageLayerName { "unshareableLayer" };
+static const char* kMutedLayersAttrName = "mutedLayers";
 
 // ========================================================
 
@@ -145,6 +150,7 @@ MObject MayaUsdProxyShapeBase::drawProxyPurposeAttr;
 MObject MayaUsdProxyShapeBase::drawGuidePurposeAttr;
 MObject MayaUsdProxyShapeBase::sessionLayerNameAttr;
 MObject MayaUsdProxyShapeBase::rootLayerNameAttr;
+MObject MayaUsdProxyShapeBase::mutedLayersAttr;
 // Output attributes
 MObject MayaUsdProxyShapeBase::outTimeAttr;
 MObject MayaUsdProxyShapeBase::outStageDataAttr;
@@ -386,6 +392,15 @@ MStatus MayaUsdProxyShapeBase::initialize()
     typedAttrFn.setHidden(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = addAttribute(rootLayerNameAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    mutedLayersAttr = typedAttrFn.create(
+        kMutedLayersAttrName, "mla", MFnData::kStringArray, MObject::kNullObj, &retValue);
+    typedAttrFn.setStorable(true);
+    typedAttrFn.setWritable(true);
+    typedAttrFn.setReadable(true);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = addAttribute(mutedLayersAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     //
@@ -706,7 +721,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
     // If there is a dynamic attribute containing the exact load rules
     // for payload, start by loading nothing. The correct payload will
     // be loaded by the load rules.
-    if (hasLoadRulesAttribute(thisMObject()))
+    if (hasLoadRulesAttribute(*this))
         loadSet = UsdStage::InitialLoadSet::LoadNone;
 
     // If inData has an incoming connection, then use it. Otherwise generate stage from the filepath
@@ -937,7 +952,8 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
     if (finalUsdStage) {
         primPath = finalUsdStage->GetPseudoRoot().GetPath();
-        copyLoadRulesFromAttribute(thisMObject(), *finalUsdStage);
+        copyLoadRulesFromAttribute(*this, *finalUsdStage);
+        copyLayerMutingFromAttribute(*this, *finalUsdStage);
         updateShareMode(sharedUsdStage, unsharedUsdStage, loadSet);
     }
 
@@ -1134,6 +1150,11 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
         _stageNoticeListener.SetStageObjectsChangedCallback(
             [this](const UsdNotice::ObjectsChanged& notice) {
                 return _OnStageObjectsChanged(notice);
+            });
+
+        _stageNoticeListener.SetStageLayerMutingChangedCallback(
+            [this](const UsdNotice::LayerMutingChanged& notice) {
+                return _OnLayerMutingChanged(notice);
             });
 
         MayaUsdProxyStageSetNotice(*this).Send();
@@ -1571,6 +1592,29 @@ UsdPrim MayaUsdProxyShapeBase::_GetUsdPrim(MDataBlock dataBlock) const
     return usdPrim;
 }
 
+std::vector<std::string> MayaUsdProxyShapeBase::getMutedLayers() const
+{
+    MStatus           status;
+    MFnDependencyNode depNode(thisMObject(), &status);
+    CHECK_MSTATUS_AND_RETURN(status, std::vector<std::string>());
+
+    std::vector<std::string> muted;
+    UsdMayaWriteUtil::ReadMayaAttribute(depNode, kMutedLayersAttrName, &muted);
+    return muted;
+}
+
+MStatus MayaUsdProxyShapeBase::setMutedLayers(const std::vector<std::string>& muted)
+{
+    MStatus           status;
+    MFnDependencyNode depNode(thisMObject(), &status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+
+    MPlug         mutedLayersPlug = depNode.findPlug(mutedLayersAttr, true);
+    VtStringArray mutedArray(muted.begin(), muted.end());
+    return UsdMayaReadUtil::SetMayaAttr(mutedLayersPlug, VtValue(mutedArray)) ? MStatus::kSuccess
+                                                                              : MStatus::kFailure;
+}
+
 int MayaUsdProxyShapeBase::getComplexity() const
 {
     return _GetComplexity(const_cast<MayaUsdProxyShapeBase*>(this)->forceCache());
@@ -1737,7 +1781,7 @@ MayaUsdProxyShapeBase::MayaUsdProxyShapeBase(
     if (useLoadRulesHandling) {
         // Register with the load-rules handling used to transfer load rules
         // between the USD stage and a dynamic attribute on the proxy shape.
-        MayaUsdProxyShapeLoadRules::addProxyShape(*this);
+        MayaUsdProxyShapeStageExtraData::addProxyShape(*this);
     }
 }
 
@@ -1746,7 +1790,7 @@ MayaUsdProxyShapeBase::~MayaUsdProxyShapeBase()
 {
     // Deregister from the load-rules handling used to transfer load rules
     // between the USD stage and a dynamic attribute on the proxy shape.
-    MayaUsdProxyShapeLoadRules::removeProxyShape(*this);
+    MayaUsdProxyShapeStageExtraData::removeProxyShape(*this);
 }
 
 MSelectionMask MayaUsdProxyShapeBase::getShapeSelectionMask() const
@@ -1783,6 +1827,15 @@ void MayaUsdProxyShapeBase::_OnStageContentsChanged(const UsdNotice::StageConten
     // If the USD stage this proxy represents changes without Maya's knowledge,
     // we need to inform Maya that the shape is dirty and needs to be redrawn.
     MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
+}
+
+void MayaUsdProxyShapeBase::_OnLayerMutingChanged(const UsdNotice::LayerMutingChanged& notice)
+{
+    const auto stage = getUsdStage();
+    if (!stage)
+        return;
+
+    copyLayerMutingToAttribute(*stage, *this);
 }
 
 void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChanged& notice)

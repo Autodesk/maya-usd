@@ -124,6 +124,10 @@ public:
     // Return true if there are no pulled paths in the trie of pulled prims.
     bool empty() const;
 
+    // Return whether the Dag hierarchy corresponding to the pulled path is
+    // orphaned.
+    bool isOrphaned(const Ufe::Path& pulledPath) const;
+
 private:
     void handleOp(const Ufe::SceneCompositeNotification::Op& op);
 
@@ -136,7 +140,8 @@ private:
     recursiveSwitch(const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode, const Ufe::Path& ufePath);
 
     static bool
-    setVisibilityPlug(const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode, bool visibility);
+                setVisibilityPlug(const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode, bool visibility);
+    static bool getVisibilityPlug(const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode);
 
     // Member function to access private nested classes.
     static std::list<VariantSetDescriptor> variantSetDescriptors(const Ufe::Path& path);

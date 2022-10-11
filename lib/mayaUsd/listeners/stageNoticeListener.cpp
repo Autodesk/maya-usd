@@ -56,6 +56,14 @@ void UsdMayaStageNoticeListener::SetStageObjectsChangedCallback(
     _UpdateStageContentsChangedRegistration();
 }
 
+void UsdMayaStageNoticeListener::SetStageLayerMutingChangedCallback(
+    const StageLayerMutingChangedCallback& callback)
+{
+    _stageLayerMutingChangedCallback = callback;
+
+    _UpdateStageContentsChangedRegistration();
+}
+
 void UsdMayaStageNoticeListener::_UpdateStageContentsChangedRegistration()
 {
     if (_stage && _stageContentsChangedCallback) {
@@ -85,6 +93,22 @@ void UsdMayaStageNoticeListener::_UpdateStageContentsChangedRegistration()
             TfNotice::Revoke(_stageObjectsChangedKey);
         }
     }
+
+    if (_stage && _stageLayerMutingChangedCallback) {
+        // Register for notices if we're not already listening.
+        if (!_stageLayerMutingChangedKey.IsValid()) {
+            _stageLayerMutingChangedKey = TfNotice::Register(
+                TfCreateWeakPtr(this),
+                &UsdMayaStageNoticeListener::_OnStageLayerMutingChanged,
+                _stage);
+        }
+    } else {
+        // Either the stage or the callback is invalid, so stop listening for
+        // notices.
+        if (_stageLayerMutingChangedKey.IsValid()) {
+            TfNotice::Revoke(_stageLayerMutingChangedKey);
+        }
+    }
 }
 
 void UsdMayaStageNoticeListener::_OnStageContentsChanged(
@@ -101,6 +125,14 @@ void UsdMayaStageNoticeListener::_OnStageObjectsChanged(
 {
     if (notice.GetStage() == _stage && _stageObjectsChangedCallback) {
         _stageObjectsChangedCallback(notice);
+    }
+}
+
+void UsdMayaStageNoticeListener::_OnStageLayerMutingChanged(
+    const UsdNotice::LayerMutingChanged& notice) const
+{
+    if (notice.GetStage() == _stage && _stageLayerMutingChangedCallback) {
+        _stageLayerMutingChangedCallback(notice);
     }
 }
 

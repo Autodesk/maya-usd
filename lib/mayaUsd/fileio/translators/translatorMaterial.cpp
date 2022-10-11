@@ -188,7 +188,7 @@ _GetUVBindingsFromMaterial(const UsdShadeMaterial& material, UsdMayaPrimReaderCo
         }
         VtValue val;
         usdAttr.Get(&val);
-        if (!val.IsHolding<TfToken>()) {
+        if (!val.IsHolding<TfToken>() && !val.IsHolding<std::string>()) {
             continue;
         }
         SdfPath nodePath = isMergeable
@@ -200,7 +200,11 @@ _GetUVBindingsFromMaterial(const UsdShadeMaterial& material, UsdMayaPrimReaderCo
         if (!status) {
             continue;
         }
-        retVal[val.UncheckedGet<TfToken>()] = TfToken(depFn.name().asChar());
+        if (val.IsHolding<TfToken>()) {
+            retVal[val.UncheckedGet<TfToken>()] = TfToken(depFn.name().asChar());
+        } else {
+            retVal[TfToken(val.UncheckedGet<std::string>())] = TfToken(depFn.name().asChar());
+        }
     }
 
     return retVal;

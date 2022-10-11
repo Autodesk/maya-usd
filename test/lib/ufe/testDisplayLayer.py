@@ -304,8 +304,55 @@ class DisplayLayerTestCase(unittest.TestCase):
             self.assertFalse(defaultLayer.contains(self.SPHERE1))
         self.assertFalse(layer1.contains(self.SPHERE1))
 
-        # TODO - test the undo/redo for delete of Ufe item in Layer.
-        # This currently doesn't work.
+    @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() >= 6, "Requires Display Layer Ufe item delete undo fix.")
+    def testDisplayLayerItemDeleteUndo(self):
+        '''
+        Test that undoing a prim deletion restores its display layer inclusion.
+        '''
+        # First create Display Layer and add some prims to it.
+        cmds.createDisplayLayer(name=self.LAYER1, number=1, empty=True)
+        defaultLayer = self.displayLayer(self.DEFAULT_LAYER)
+        layer1 = self.displayLayer(self.LAYER1)
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        stage.DefinePrim('/Cube1', 'Cube')
+        stage.DefinePrim('/Sphere1', 'Sphere')
+
+        # Add the two prims to the layer.
+        cmds.editDisplayLayerMembers(self.LAYER1, self.SPHERE1, self.CUBE1, noRecurse=True)
+
+        def verifyInLayer(present, absent):
+            # Verify they are in layer.
+            layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, **self.kwArgsEditDisplayLayerMembers)
+            for item in present:
+                self.assertTrue(item in layerObjs, "Item %s should be in layer" % item)
+            for item in absent:
+                self.assertFalse(item in layerObjs, "Item %s should not be in layer" % item)
+
+        verifyInLayer({ self.CUBE1, self.SPHERE1 }, { self.NEW_SPHERE1 })
+
+        self._testLayerFromPath(self.CUBE1, self.LAYER1)
+        self._testLayerFromPath(self.SPHERE1, self.LAYER1)
+
+        # Delete the Sphere and make sure it is removed from the layer.
+        # To allow undo to work, we need to have an undo block open when
+        # executing the command. In Maya, using the UI, commands always
+        # have an undo chunk. In scripting, we must create an explicit one.
+        cmds.undoInfo(state=1)
+        cmds.undoInfo(openChunk=1)
+        try:
+            cmds.delete(self.SPHERE1)
+        finally:
+            cmds.undoInfo(closeChunk=1)
+
+        verifyInLayer({ self.CUBE1 }, { self.NEW_SPHERE1, self.SPHERE1 })
+
+        cmds.undo()
+
+        self._testLayerFromPath(self.CUBE1, self.LAYER1)
+        self._testLayerFromPath(self.SPHERE1, self.LAYER1)
+
+        verifyInLayer({ self.CUBE1, self.SPHERE1 }, { self.NEW_SPHERE1 })
 
     def testDisplayLayerClear(self):
         cmdHelp = cmds.help('editDisplayLayerMembers')
