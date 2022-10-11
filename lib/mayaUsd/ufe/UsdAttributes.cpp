@@ -438,6 +438,7 @@ bool UsdAttributes::doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::
         // Custom attributes can be removed.
         return prim.RemoveProperty(nameAsToken);
     }
+
     // We can also remove NodeGraph boundary attributes
     PXR_NS::UsdShadeNodeGraph      ngPrim(prim);
     PXR_NS::UsdShadeConnectableAPI connectApi(prim);
@@ -540,8 +541,9 @@ bool UsdAttributes::doRenameAttribute(
     propertyPath = propertyPath.AppendProperty(attribute.GetName());
     auto propertyHandle = editTarget.GetPropertySpecForScenePath(propertyPath);
 
-    if (propertyHandle)
+    if (propertyHandle) {
         return propertyHandle->SetName(newName);
+    }
 
     return false;
 }
