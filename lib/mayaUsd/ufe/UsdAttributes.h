@@ -70,10 +70,7 @@ public:
 
 #if (UFE_PREVIEW_VERSION_NUM >= 4024)
     // Helpers for validation and execution:
-    static bool canAddAttribute(
-        const UsdSceneItem::Ptr&    item,
-        const std::string&          name,
-        const Ufe::Attribute::Type& type);
+    static bool canAddAttribute(const UsdSceneItem::Ptr& item, const Ufe::Attribute::Type& type);
     static Ufe::Attribute::Ptr doAddAttribute(
         const UsdSceneItem::Ptr&    item,
         const std::string&          name,

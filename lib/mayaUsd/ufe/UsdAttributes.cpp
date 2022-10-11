@@ -325,13 +325,12 @@ Ufe::UndoableCommand::Ptr UsdAttributes::removeAttributeCmd(const std::string& n
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4024)
 // Helpers for validation and execution:
-bool UsdAttributes::canAddAttribute(
-    const UsdSceneItem::Ptr&    item,
-    const std::string&          name,
-    const Ufe::Attribute::Type& type)
+bool UsdAttributes::canAddAttribute(const UsdSceneItem::Ptr& item, const Ufe::Attribute::Type& type)
 {
-    // See if we can edit this attribute, and that it is not already part of the schema or node
-    // definition
+    // See if we can add this attribute
+    // We do not check for the attribute name uniqueness as in the case of the existence of another
+    // attribute with the same name, a unique name (appending an incremental digit at the name end)
+    // will automatically be provided.
     if (!item || !item->prim().IsActive()) {
         return false;
     }
