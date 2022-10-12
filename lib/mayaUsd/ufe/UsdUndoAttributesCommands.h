@@ -96,14 +96,14 @@ private:
 }; // UsdRemoveAttributeCommand
 
 //! \brief Implementation of RenameAttributeCommand
-class UsdRenameAttributeCommand : public UsdUndoableCommand<Ufe::UndoableCommand>
+class UsdRenameAttributeCommand : public UsdUndoableCommand<Ufe::AddAttributeCommand>
 {
 public:
     typedef std::shared_ptr<UsdRenameAttributeCommand> Ptr;
 
     UsdRenameAttributeCommand(
         const UsdSceneItem::Ptr& sceneItem,
-        const std::string&       targetName,
+        const std::string&       originalName,
         const std::string&       newName);
     ~UsdRenameAttributeCommand() override;
 
@@ -116,14 +116,16 @@ public:
     //! Create a UsdRenameAttributeCommand
     static UsdRenameAttributeCommand::Ptr create(
         const UsdSceneItem::Ptr& sceneItem,
-        const std::string&       targetName,
+        const std::string&       originalName,
         const std::string&       newName);
 
     void executeUndoBlock() override;
 
+    Ufe::Attribute::Ptr attribute() const override;
+
 private:
     const Ufe::Path   _sceneItemPath;
-    const std::string _targetName;
+    const std::string _originalName;
     const std::string _newName;
 }; // UsdRenameAttributeCommand
 

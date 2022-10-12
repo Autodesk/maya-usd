@@ -319,13 +319,14 @@ Ufe::UndoableCommand::Ptr UsdAttributes::removeAttributeCmd(const std::string& n
 {
     return UsdRemoveAttributeCommand::create(fItem, name);
 }
-
-Ufe::UndoableCommand::Ptr
-UsdAttributes::renameAttributeCmd(const std::string& targetName, const std::string& newName)
-{
-    return UsdRenameAttributeCommand::create(fItem, targetName, newName);
-}
 #endif
+//#if (UFE_PREVIEW_VERSION_NUM >= 4033)
+Ufe::AddAttributeCommand::Ptr
+UsdAttributes::renameAttributeCmd(const std::string& originalName, const std::string& newName)
+{
+    return UsdRenameAttributeCommand::create(fItem, originalName, newName);
+}
+//#endif
 #endif
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
@@ -460,94 +461,53 @@ bool UsdAttributes::doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::
     }
     return false;
 }
-bool UsdAttributes::canRenameAttribute(
-    const UsdSceneItem::Ptr& sceneItem,
-    const std::string&       targetName,
-    const std::string&       newName)
-{
-    if (!sceneItem || !sceneItem->prim().IsActive()
-        || !UsdAttributes(sceneItem).hasAttribute(targetName)) {
-        return false;
-    }
-
-    // Do not rename if the newName is same as the targetName
-    if (targetName == newName) {
-        return false;
-    }
-
-    // Do not rename if an attribute already exists with the newName
-    if (UsdAttributes(sceneItem).hasAttribute(newName)) {
-        return false;
-    }
-
-    // We can rename attributes if they are:
-    // or boundary attributes,
-    // or custom attributes and not boundary
-
-    PXR_NS::TfToken nameAsToken(targetName);
-    auto            prim = sceneItem->prim();
-    auto            attribute = prim.GetAttribute(nameAsToken);
-
-    PXR_NS::UsdShadeNodeGraph      ngPrim(prim);
-    PXR_NS::UsdShadeConnectableAPI connectApi(prim);
-    if (ngPrim && connectApi) {
-        auto baseNameAndType = PXR_NS::UsdShadeUtils::GetBaseNameAndType(nameAsToken);
-        if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Output) {
-            PXR_NS::UsdShadeMaterial matPrim(prim);
-
-            if (matPrim) {
-                // Can not rename the 3 main material outputs as they are part of the schema
-                if (baseNameAndType.first == PXR_NS::UsdShadeTokens->surface
-                    || baseNameAndType.first == PXR_NS::UsdShadeTokens->displacement
-                    || baseNameAndType.first == PXR_NS::UsdShadeTokens->volume) {
-                    return false;
-                }
-            }
-
-            for (auto&& authoredOutput : connectApi.GetOutputs(true)) {
-                if (authoredOutput.GetFullName() == targetName) {
-                    return true;
-                }
-            }
-        } else if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input) {
-            for (auto&& authoredInput : connectApi.GetInputs(true)) {
-                if (authoredInput.GetFullName() == targetName) {
-                    return true;
-                }
-            }
-        }
-    }
-
-    // Custom attribute AND not boundary
-    if (attribute.IsCustom()) {
-        return true;
-    }
-
-    return false;
-}
-
+#endif
+//#if (UFE_PREVIEW_VERSION_NUM >= 4033)
 bool UsdAttributes::doRenameAttribute(
     const UsdSceneItem::Ptr& sceneItem,
-    const std::string&       targetName,
+    const std::string&       originalName,
     const std::string&       newName)
 {
     // Avoid checks since we have already did them
-    PXR_NS::TfToken           nameAsToken(targetName);
-    auto                      prim = sceneItem->prim();
-    auto                      attribute = prim.GetAttribute(nameAsToken);
-    PXR_NS::UsdShadeNodeGraph ngPrim(prim);
-    PXR_NS::UsdEditTarget     editTarget = prim.GetStage()->GetEditTarget();
-    SdfPath                   propertyPath = attribute.GetPrim().GetPath();
+    PXR_NS::TfToken                nameAsToken(originalName);
+    auto                           prim = sceneItem->prim();
+    auto                           attribute = prim.GetAttribute(nameAsToken);
+    PXR_NS::UsdShadeNodeGraph      ngPrim(prim);
+    PXR_NS::UsdShadeConnectableAPI connectApi(prim);
+
+    PXR_NS::UsdEditTarget editTarget = prim.GetStage()->GetEditTarget();
+    SdfPath               propertyPath = attribute.GetPrim().GetPath();
     propertyPath = propertyPath.AppendProperty(attribute.GetName());
     auto propertyHandle = editTarget.GetPropertySpecForScenePath(propertyPath);
 
+    // Save the connected sources since after the renaming we will lose it.
+    const auto               sourcesInfo = connectApi.GetConnectedSources(attribute);
+    UsdShadeSourceInfoVector out;
+
     if (propertyHandle) {
-        return propertyHandle->SetName(newName);
+        if (propertyHandle->SetName(newName)) {
+            // Recreate connections
+            if (!sourcesInfo.empty() || !out.empty()) {
+                auto renamedAttribute = prim.GetAttribute(PXR_NS::TfToken(newName));
+
+                if (!renamedAttribute) {
+                    return false;
+                }
+                std::vector<UsdShadeConnectionSourceInfo> connectionsInfo;
+
+                for (const auto& connectionInfo : sourcesInfo) {
+                    connectionsInfo.push_back(connectionInfo);
+                }
+
+                return connectApi.SetConnectedSources(renamedAttribute, connectionsInfo);
+            }
+            return true;
+        }
     }
 
     return false;
 }
-#endif
+//#endif
 #endif
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

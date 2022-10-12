@@ -91,11 +91,11 @@ void UsdRemoveAttributeCommand::executeUndoBlock()
 
 UsdRenameAttributeCommand::UsdRenameAttributeCommand(
     const UsdSceneItem::Ptr& sceneItem,
-    const std::string&       targetName,
+    const std::string&       originalName,
     const std::string&       newName)
-    : UsdUndoableCommand<Ufe::UndoableCommand>()
+    : UsdUndoableCommand<Ufe::AddAttributeCommand>()
     , _sceneItemPath(sceneItem->path())
-    , _targetName(targetName)
+    , _originalName(originalName)
     , _newName(newName)
 {
 }
@@ -104,11 +104,12 @@ UsdRenameAttributeCommand::~UsdRenameAttributeCommand() { }
 
 UsdRenameAttributeCommand::Ptr UsdRenameAttributeCommand::create(
     const UsdSceneItem::Ptr& sceneItem,
-    const std::string&       targetName,
+    const std::string&       originalName,
     const std::string&       newName)
 {
-    if (UsdAttributes::canRenameAttribute(sceneItem, targetName, newName)) {
-        return std::make_shared<UsdRenameAttributeCommand>(sceneItem, targetName, newName);
+    // TODO: handle unique name in order to avoid name collision
+    if (UsdAttributes::canRemoveAttribute(sceneItem, originalName)) {
+        return std::make_shared<UsdRenameAttributeCommand>(sceneItem, originalName, newName);
     }
     return nullptr;
 }
@@ -118,7 +119,14 @@ void UsdRenameAttributeCommand::executeUndoBlock()
     // Validation has already been done. Just rename the attribute.
     auto sceneItem
         = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(_sceneItemPath));
-    UsdAttributes::doRenameAttribute(sceneItem, _targetName, _newName);
+    UsdAttributes::doRenameAttribute(sceneItem, _originalName, _newName);
+}
+
+Ufe::Attribute::Ptr UsdRenameAttributeCommand::attribute() const
+{
+    auto sceneItem
+        = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(_sceneItemPath));
+    return UsdAttributes(sceneItem).attribute(_newName);
 }
 
 } // namespace ufe

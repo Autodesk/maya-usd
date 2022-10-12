@@ -62,8 +62,11 @@ public:
     Ufe::AddAttributeCommand::Ptr
                               addAttributeCmd(const std::string& name, const Ufe::Attribute::Type& type) override;
     Ufe::UndoableCommand::Ptr removeAttributeCmd(const std::string& name) override;
-    Ufe::UndoableCommand::Ptr
-    renameAttributeCmd(const std::string& targetName, const std::string& newName) override;
+#endif
+
+#if (UFE_PREVIEW_VERSION_NUM >= 4033)
+    Ufe::AddAttributeCommand::Ptr
+    renameAttributeCmd(const std::string& originalName, const std::string& newName) override;
 #endif
 
 #if (UFE_PREVIEW_VERSION_NUM >= 4010)
@@ -82,13 +85,11 @@ public:
         const Ufe::Attribute::Type& type);
     static bool canRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
     static bool doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
-    static bool canRenameAttribute(
-        const UsdSceneItem::Ptr& sceneItem,
-        const std::string&       targetName,
-        const std::string&       newName);
+#endif
+#if (UFE_PREVIEW_VERSION_NUM >= 4033)
     static bool doRenameAttribute(
         const UsdSceneItem::Ptr& sceneItem,
-        const std::string&       targetName,
+        const std::string&       originalName,
         const std::string&       newName);
 #endif
 #endif
