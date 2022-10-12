@@ -900,7 +900,7 @@ std::vector<std::string> splitString(const std::string& str, const std::string& 
     return split;
 }
 
-void ReplicateExtrasFromUSD::initRecursive(Ufe::SceneItem::Ptr ufeItem)
+void ReplicateExtrasFromUSD::initRecursive(Ufe::SceneItem::Ptr ufeItem) const
 {
     auto node = Ufe::Hierarchy::hierarchy(ufeItem);
     if (!node) {
@@ -928,7 +928,7 @@ void ReplicateExtrasFromUSD::initRecursive(Ufe::SceneItem::Ptr ufeItem)
 #endif
 }
 
-void ReplicateExtrasFromUSD::processItem(const Ufe::Path& path, const MObject& mayaObject)
+void ReplicateExtrasFromUSD::processItem(const Ufe::Path& path, const MObject& mayaObject) const
 {
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
     // Replicate display layer membership
@@ -948,7 +948,7 @@ void ReplicateExtrasFromUSD::processItem(const Ufe::Path& path, const MObject& m
 #endif
 }
 
-void ReplicateExtrasToUSD::processItem(const MDagPath& dagPath, const SdfPath& usdPath)
+void ReplicateExtrasToUSD::processItem(const MDagPath& dagPath, const SdfPath& usdPath) const
 {
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
     // Populate display layer membership map
@@ -970,7 +970,7 @@ void ReplicateExtrasToUSD::processItem(const MDagPath& dagPath, const SdfPath& u
 #endif
 }
 
-void ReplicateExtrasToUSD::finalize(const Ufe::Path& stagePath, const std::string* renameRoot)
+void ReplicateExtrasToUSD::finalize(const Ufe::Path& stagePath, const std::string* renameRoot) const
 {
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
     // Replicate display layer membership
