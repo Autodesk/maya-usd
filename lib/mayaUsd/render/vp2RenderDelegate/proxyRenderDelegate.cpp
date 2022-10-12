@@ -375,6 +375,14 @@ void displayLayerDirtyCB(MObject& node, void* clientData)
 }
 #endif
 
+void colorPrefsChangedCB(void* clientData)
+{
+    ProxyRenderDelegate* prd = static_cast<ProxyRenderDelegate*>(clientData);
+    if (prd) {
+        prd->ColorPrefsChanged();
+    }
+}
+
 // Copied from renderIndex.cpp, the code that does HdRenderIndex::GetDrawItems. But I just want the
 // rprimIds, I don't want to go all the way to draw items.
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 42
@@ -521,6 +529,9 @@ ProxyRenderDelegate::~ProxyRenderDelegate()
         MMessage::removeCallback(cb.second);
     }
 #endif
+    for (auto id : _mayaColorPrefsCallbackIds) {
+        MMessage::removeCallback(id);
+    }
 }
 
 //! \brief  This drawing routine supports all devices (DirectX and OpenGL)
@@ -697,6 +708,13 @@ void ProxyRenderDelegate::_InitRenderDelegate()
                     displayLayerMembershipChangedCB, this);
         }
 #endif
+        // Monitor color prefs.
+        _mayaColorPrefsCallbackIds.push_back(
+            MEventMessage::addEventCallback("ColorIndexChanged", colorPrefsChangedCB, this));
+        _mayaColorPrefsCallbackIds.push_back(
+            MEventMessage::addEventCallback("DisplayColorChanged", colorPrefsChangedCB, this));
+        _mayaColorPrefsCallbackIds.push_back(MEventMessage::addEventCallback(
+            "DisplayRGBColorChanged", colorPrefsChangedCB, this));
 
         // We don't really need any HdTask because VP2RenderDelegate uses Hydra
         // engine for data preparation only, but we have to add a dummy render
@@ -1431,6 +1449,18 @@ void ProxyRenderDelegate::DisplayLayerRemoved(MObject& node, void* clientData)
 void ProxyRenderDelegate::DisplayLayerMembershipChanged(const MString& memberPath)
 {
     _DirtyUfeSubtree(memberPath);
+    _RequestRefresh();
+}
+
+void ProxyRenderDelegate::ColorPrefsChanged()
+{
+    for (const auto& stage : MayaUsd::ufe::getAllStages()) {
+
+        PXR_NS::UsdStagePtr validStage = stage;
+        if (validStage) {
+            _DirtyUsdSubtree(validStage->GetPseudoRoot());
+        }
+    }
     _RequestRefresh();
 }
 

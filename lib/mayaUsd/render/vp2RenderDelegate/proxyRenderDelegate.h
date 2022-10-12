@@ -191,6 +191,9 @@ public:
 #endif
 
     MAYAUSD_CORE_PUBLIC
+    void ColorPrefsChanged();
+
+    MAYAUSD_CORE_PUBLIC
     MColor GetWireframeColor();
 
     MAYAUSD_CORE_PUBLIC
@@ -351,6 +354,7 @@ private:
     MCallbackId               _mayaDisplayLayerRemovedCallbackId { 0 };
     MCallbackId               _mayaDisplayLayerMembersCallbackId { 0 };
     NodeHandleToCallbackIdMap _mayaDisplayLayerDirtyCallbackIds;
+    std::vector<MCallbackId>  _mayaColorPrefsCallbackIds;
 #endif
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
