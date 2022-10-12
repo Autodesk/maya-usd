@@ -17,8 +17,8 @@
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
 
-#include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/pyResultConversions.h>
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
@@ -94,10 +94,10 @@ PXR_NS::UsdStageWeakPtr getStage(const std::string& ufePathString)
 
 std::vector<PXR_NS::UsdStageRefPtr> getAllStages()
 {
-    auto allStages = ufe::getAllStages();
+    auto                                allStages = ufe::getAllStages();
     std::vector<PXR_NS::UsdStageRefPtr> output;
     for (auto stage : allStages) {
-        PXR_NS::UsdStageRefPtr stageRefPtr{stage};
+        PXR_NS::UsdStageRefPtr stageRefPtr { stage };
         output.push_back(stageRefPtr);
     }
     return output;
