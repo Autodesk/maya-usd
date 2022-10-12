@@ -191,6 +191,9 @@ public:
 #endif
 
     MAYAUSD_CORE_PUBLIC
+    void ColorPrefsChanged();
+
+    MAYAUSD_CORE_PUBLIC
     MColor GetWireframeColor();
 
     MAYAUSD_CORE_PUBLIC
@@ -339,7 +342,8 @@ private:
     bool _isPopulated {
         false
     }; //!< If false, scene delegate wasn't populated yet within render index
-    bool _selectionChanged { true }; //!< Whether there is any selection change or not
+    bool _selectionChanged { true };   //!< Whether there is any selection change or not
+    bool _colorPrefsChanged { false }; //!< Whether there is any color preferences change or not
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
     using NodeHandleToCallbackIdMap = UsdMayaUtil::MObjectHandleUnorderedMap<MCallbackId>;
@@ -351,6 +355,7 @@ private:
     MCallbackId               _mayaDisplayLayerRemovedCallbackId { 0 };
     MCallbackId               _mayaDisplayLayerMembersCallbackId { 0 };
     NodeHandleToCallbackIdMap _mayaDisplayLayerDirtyCallbackIds;
+    std::vector<MCallbackId>  _mayaColorPrefsCallbackIds;
 #endif
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
