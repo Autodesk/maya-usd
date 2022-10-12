@@ -54,7 +54,7 @@ class PythonWrappersTestCase(unittest.TestCase):
 
     def testWrappers(self):
 
-        ''' Verify the python wappers.'''
+        ''' Verify the python wrappers.'''
 
         # Create empty stage and add a prim.
         import mayaUsd_createStageWithNewLayer
@@ -117,6 +117,29 @@ class PythonWrappersTestCase(unittest.TestCase):
         # from USD when it tries to destroy the layer data by creating
         # a worker thread.
         cmds.file(new=True, force=True)
+
+    def testGetAllStages(self):
+
+        # Create two stages.
+        import mayaUsd_createStageWithNewLayer
+        proxyShape1 = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShape2 = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        # Test maya-usd getAllStages() wrapper.
+        self.assertEqual(len(mayaUsd.ufe.getAllStages()), 2)
+
+        # Delete one of the stages.
+        cmds.delete(proxyShape1)
+
+        self.assertEqual(len(mayaUsd.ufe.getAllStages()), 1)
+
+        cmds.undo()
+
+        self.assertEqual(len(mayaUsd.ufe.getAllStages()), 2)
+
+        cmds.redo()
+
+        self.assertEqual(len(mayaUsd.ufe.getAllStages()), 1)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
