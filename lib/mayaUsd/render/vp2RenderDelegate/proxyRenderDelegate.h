@@ -342,7 +342,7 @@ private:
     bool _isPopulated {
         false
     }; //!< If false, scene delegate wasn't populated yet within render index
-    bool _selectionChanged { true }; //!< Whether there is any selection change or not
+    bool _selectionChanged { true };   //!< Whether there is any selection change or not
     bool _colorPrefsChanged { false }; //!< Whether there is any color preferences change or not
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
