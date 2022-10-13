@@ -491,7 +491,7 @@ bool UsdAttributes::doRenameAttribute(
         sourcesInfo = connectApi.GetConnectedSources(attribute);
     }
 
-    if (propertyHandle->SetName(newName)) {
+    if (!propertyHandle->SetName(newName)) {
         return false;
     }
 
@@ -502,7 +502,7 @@ bool UsdAttributes::doRenameAttribute(
     }
 
     const SdfPath kNewPropertyPath = kPrimPath.AppendProperty(renamedAttribute.GetName());
-    bool          connectionsSuccess = true;
+    bool          success = true;
 
     if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input) {
 
@@ -523,14 +523,14 @@ bool UsdAttributes::doRenameAttribute(
                 }
                 // Update the connections with the new property path.
                 if (hasChanged && !attr.SetConnections(sources)) {
-                    connectionsSuccess = false;
+                    success = false;
                 }
             }
         }
     } else {
 
         if (sourcesInfo.empty()) {
-            return connectionsSuccess;
+            return success;
         }
 
         std::vector<UsdShadeConnectionSourceInfo> connectionsInfo;
@@ -539,10 +539,10 @@ bool UsdAttributes::doRenameAttribute(
             connectionsInfo.push_back(connectionInfo);
         }
 
-        connectionsSuccess = connectApi.SetConnectedSources(renamedAttribute, connectionsInfo);
+        success = connectApi.SetConnectedSources(renamedAttribute, connectionsInfo);
     }
 
-    return connectionsSuccess;
+    return success;
 }
 #endif
 #endif
