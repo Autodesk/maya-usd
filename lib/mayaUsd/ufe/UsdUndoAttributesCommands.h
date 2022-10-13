@@ -96,7 +96,7 @@ private:
 }; // UsdRemoveAttributeCommand
 
 //! \brief Implementation of RenameAttributeCommand
-class UsdRenameAttributeCommand : public UsdUndoableCommand<Ufe::AddAttributeCommand>
+class UsdRenameAttributeCommand : public UsdUndoableCommand<Ufe::AttributeValuedUndoableCommand>
 {
 public:
     typedef std::shared_ptr<UsdRenameAttributeCommand> Ptr;
