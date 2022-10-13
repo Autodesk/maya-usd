@@ -355,8 +355,9 @@ private:
     MCallbackId               _mayaDisplayLayerRemovedCallbackId { 0 };
     MCallbackId               _mayaDisplayLayerMembersCallbackId { 0 };
     NodeHandleToCallbackIdMap _mayaDisplayLayerDirtyCallbackIds;
-    std::vector<MCallbackId>  _mayaColorPrefsCallbackIds;
 #endif
+
+    std::vector<MCallbackId> _mayaColorPrefsCallbackIds;
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     bool _selectionModeChanged { true }; //!< Whether the global selection mode has changed
