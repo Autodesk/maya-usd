@@ -713,8 +713,8 @@ void ProxyRenderDelegate::_InitRenderDelegate()
             MEventMessage::addEventCallback("ColorIndexChanged", colorPrefsChangedCB, this));
         _mayaColorPrefsCallbackIds.push_back(
             MEventMessage::addEventCallback("DisplayColorChanged", colorPrefsChangedCB, this));
-        _mayaColorPrefsCallbackIds.push_back(MEventMessage::addEventCallback(
-            "DisplayRGBColorChanged", colorPrefsChangedCB, this));
+        _mayaColorPrefsCallbackIds.push_back(
+            MEventMessage::addEventCallback("DisplayRGBColorChanged", colorPrefsChangedCB, this));
 
         // We don't really need any HdTask because VP2RenderDelegate uses Hydra
         // engine for data preparation only, but we have to add a dummy render
