@@ -1457,12 +1457,6 @@ void ProxyRenderDelegate::DisplayLayerMembershipChanged(const MString& memberPat
     _RequestRefresh();
 }
 
-void ProxyRenderDelegate::ColorPrefsChanged()
-{
-    _colorPrefsChanged = true;
-    _RequestRefresh();
-}
-
 void ProxyRenderDelegate::DisplayLayerDirty(MFnDisplayLayer& displayLayer)
 {
     MSelectionList members;
@@ -1494,6 +1488,12 @@ void ProxyRenderDelegate::_RequestRefresh()
     _refreshRequested = true;
 }
 #endif
+
+void ProxyRenderDelegate::ColorPrefsChanged()
+{
+    _colorPrefsChanged = true;
+    _RequestRefresh();
+}
 
 //! \brief  Populate lead and active selection for Rprims under the proxy shape.
 void ProxyRenderDelegate::_PopulateSelection()
