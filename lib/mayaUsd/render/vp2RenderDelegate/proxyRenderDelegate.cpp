@@ -1027,6 +1027,11 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
             dirtyBits |= MayaUsdRPrim::DirtyDisplayMode;
         }
 
+        if (_colorPrefsChanged) {
+            _colorPrefsChanged = false;
+            dirtyBits |= MayaUsdRPrim::DirtySelectionHighlight;
+        }
+
 #if MAYA_API_VERSION >= 20230200
         // check to see if the color space changed
         MString colorTransformId;
@@ -1454,13 +1459,7 @@ void ProxyRenderDelegate::DisplayLayerMembershipChanged(const MString& memberPat
 
 void ProxyRenderDelegate::ColorPrefsChanged()
 {
-    for (const auto& stage : MayaUsd::ufe::getAllStages()) {
-
-        PXR_NS::UsdStagePtr validStage = stage;
-        if (validStage) {
-            _DirtyUsdSubtree(validStage->GetPseudoRoot());
-        }
-    }
+    _colorPrefsChanged = true;
     _RequestRefresh();
 }
 
