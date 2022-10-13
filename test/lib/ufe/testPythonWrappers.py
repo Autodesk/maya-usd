@@ -118,6 +118,9 @@ class PythonWrappersTestCase(unittest.TestCase):
         # a worker thread.
         cmds.file(new=True, force=True)
 
+    # In Maya 2020 and 2022, undo does not restore the stage.  To be
+    # investigated as needed.
+    @unittest.skipUnless((mayaUtils.mayaMajorVersion() == 2023) or mayaUtils.previewReleaseVersion() >= 139, 'Only supported in Maya 2023 or greater.')
     def testGetAllStages(self):
 
         # Create two stages.
