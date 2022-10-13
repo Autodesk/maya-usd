@@ -462,7 +462,7 @@ bool UsdAttributes::doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::
     return false;
 }
 #endif
-//#if (UFE_PREVIEW_VERSION_NUM >= 4033)
+#if (UFE_PREVIEW_VERSION_NUM >= 4033)
 bool UsdAttributes::doRenameAttribute(
     const UsdSceneItem::Ptr& sceneItem,
     const std::string&       originalName,
@@ -472,42 +472,79 @@ bool UsdAttributes::doRenameAttribute(
     PXR_NS::TfToken                nameAsToken(originalName);
     auto                           prim = sceneItem->prim();
     auto                           attribute = prim.GetAttribute(nameAsToken);
-    PXR_NS::UsdShadeNodeGraph      ngPrim(prim);
     PXR_NS::UsdShadeConnectableAPI connectApi(prim);
 
     PXR_NS::UsdEditTarget editTarget = prim.GetStage()->GetEditTarget();
-    SdfPath               propertyPath = attribute.GetPrim().GetPath();
-    propertyPath = propertyPath.AppendProperty(attribute.GetName());
-    auto propertyHandle = editTarget.GetPropertySpecForScenePath(propertyPath);
+    const SdfPath         kPrimPath = attribute.GetPrim().GetPath();
+    const SdfPath         kPropertyPath = kPrimPath.AppendProperty(attribute.GetName());
+    auto                  propertyHandle = editTarget.GetPropertySpecForScenePath(kPropertyPath);
+    auto                  baseNameAndType = PXR_NS::UsdShadeUtils::GetBaseNameAndType(nameAsToken);
 
-    // Save the connected sources since after the renaming we will lose it.
-    const auto               sourcesInfo = connectApi.GetConnectedSources(attribute);
-    UsdShadeSourceInfoVector out;
-
-    if (propertyHandle) {
-        if (propertyHandle->SetName(newName)) {
-            // Recreate connections
-            if (!sourcesInfo.empty() || !out.empty()) {
-                auto renamedAttribute = prim.GetAttribute(PXR_NS::TfToken(newName));
-
-                if (!renamedAttribute) {
-                    return false;
-                }
-                std::vector<UsdShadeConnectionSourceInfo> connectionsInfo;
-
-                for (const auto& connectionInfo : sourcesInfo) {
-                    connectionsInfo.push_back(connectionInfo);
-                }
-
-                return connectApi.SetConnectedSources(renamedAttribute, connectionsInfo);
-            }
-            return true;
-        }
+    if (!propertyHandle || !connectApi) {
+        return false;
     }
 
-    return false;
+    UsdShadeSourceInfoVector sourcesInfo;
+
+    // Save the connected sources since after the renaming we will lose them.
+    if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Output) {
+        sourcesInfo = connectApi.GetConnectedSources(attribute);
+    }
+
+    if (propertyHandle->SetName(newName)) {
+        return false;
+    }
+
+    auto renamedAttribute = prim.GetAttribute(PXR_NS::TfToken(newName));
+
+    if (!renamedAttribute) {
+        return false;
+    }
+
+    const SdfPath kNewPropertyPath = kPrimPath.AppendProperty(renamedAttribute.GetName());
+    bool          connectionsSuccess = true;
+
+    if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input) {
+
+        // Update the connections with the new attribute name.
+        for (const auto& node : prim.GetChildren()) {
+            for (auto& attribute : node.GetAttributes()) {
+
+                PXR_NS::UsdAttribute  attr = attribute.As<PXR_NS::UsdAttribute>();
+                PXR_NS::SdfPathVector sources;
+                attr.GetConnections(&sources);
+                bool hasChanged = false;
+                // Check if the node attribute is connected to the original property path.
+                for (size_t i = 0; i < sources.size(); ++i) {
+                    if (sources[i] == kPropertyPath) {
+                        sources[i] = kNewPropertyPath;
+                        hasChanged = true;
+                    }
+                }
+                // Update the connections with the new property path.
+                if (hasChanged && !attr.SetConnections(sources)) {
+                    connectionsSuccess = false;
+                }
+            }
+        }
+    } else {
+
+        if (sourcesInfo.empty()) {
+            return connectionsSuccess;
+        }
+
+        std::vector<UsdShadeConnectionSourceInfo> connectionsInfo;
+
+        for (const auto& connectionInfo : sourcesInfo) {
+            connectionsInfo.push_back(connectionInfo);
+        }
+
+        connectionsSuccess = connectApi.SetConnectedSources(renamedAttribute, connectionsInfo);
+    }
+
+    return connectionsSuccess;
 }
-//#endif
+#endif
 #endif
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
