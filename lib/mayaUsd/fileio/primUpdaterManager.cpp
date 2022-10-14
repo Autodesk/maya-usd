@@ -32,6 +32,7 @@
 #include <mayaUsd/undo/OpUndoItemMuting.h>
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
+#include <mayaUsd/utils/dynamicAttribute.h>
 #include <mayaUsd/utils/progressBarScope.h>
 #include <mayaUsd/utils/traverseLayer.h>
 #include <mayaUsdUtils/util.h>
@@ -966,9 +967,19 @@ PrimUpdaterManager::PrimUpdaterManager()
 
     TfWeakPtr<PrimUpdaterManager> me(this);
     TfNotice::Register(me, &PrimUpdaterManager::onProxyContentChanged);
+
+#ifdef HAS_ORPHANED_NODES_MANAGER
+    beginLoadSaveCallbacks();
+#endif
 }
 
-PrimUpdaterManager::~PrimUpdaterManager() { }
+PrimUpdaterManager::~PrimUpdaterManager()
+{
+#ifdef HAS_ORPHANED_NODES_MANAGER
+    endLoadSaveCallbacks();
+    endManagePulledPrims();
+#endif
+}
 
 bool PrimUpdaterManager::mergeToUsd(
     const MFnDependencyNode& depNodeFn,
@@ -1878,6 +1889,7 @@ bool PrimUpdaterManager::hasPulledPrims() const
 }
 
 #ifdef HAS_ORPHANED_NODES_MANAGER
+
 void PrimUpdaterManager::beginManagePulledPrims()
 {
     TF_VERIFY(_orphanedNodesManager->empty());
@@ -1907,6 +1919,77 @@ void PrimUpdaterManager::beforeNewOrOpenCallback(void* clientData)
     auto* pum = static_cast<PrimUpdaterManager*>(clientData);
     pum->endManagePulledPrims();
 }
+
+void PrimUpdaterManager::beginLoadSaveCallbacks()
+{
+    MStatus                status;
+    MSceneMessage::Message msgs[] = { MSceneMessage::kAfterNew, MSceneMessage::kAfterOpen };
+    for (auto msg : msgs) {
+        _openSaveCbs.append(MSceneMessage::addCallback(msg, afterNewOrOpenCallback, this, &status));
+        CHECK_MSTATUS(status);
+    }
+
+    _openSaveCbs.append(
+        MSceneMessage::addCallback(MSceneMessage::kBeforeSave, beforeSaveCallback, this, &status));
+    CHECK_MSTATUS(status);
+}
+
+void PrimUpdaterManager::endLoadSaveCallbacks()
+{
+    auto status = MMessage::removeCallbacks(_openSaveCbs);
+    CHECK_MSTATUS(status);
+    _openSaveCbs.clear();
+}
+
+/*static*/
+void PrimUpdaterManager::afterNewOrOpenCallback(void* clientData)
+{
+    auto* pum = static_cast<PrimUpdaterManager*>(clientData);
+    pum->loadOrphanedNodesManagerData();
+}
+
+/*static*/
+void PrimUpdaterManager::beforeSaveCallback(void* clientData)
+{
+    auto* pum = static_cast<PrimUpdaterManager*>(clientData);
+    pum->saveOrphanedNodesManagerData();
+}
+
+static const char* orphanedNodesManagerDynAttrName = "orphanedNodeManagerState";
+
+void PrimUpdaterManager::loadOrphanedNodesManagerData()
+{
+    MObject pullRoot = findPullRoot();
+    if (pullRoot.isNull())
+        return;
+
+    beginManagePulledPrims();
+
+    if (!hasDynamicAttribute(pullRoot, orphanedNodesManagerDynAttrName))
+        return;
+
+    MString json;
+    if (!getDynamicAttribute(pullRoot, orphanedNodesManagerDynAttrName, json))
+        return;
+
+    _orphanedNodesManager->restore(OrphanedNodesManager::Memento::convertFromJson(json.asChar()));
+}
+
+void PrimUpdaterManager::saveOrphanedNodesManagerData()
+{
+    MObject pullRoot = findPullRoot();
+    if (pullRoot.isNull())
+        return;
+
+    OrphanedNodesManager::Memento memento = _orphanedNodesManager->preserve();
+    const std::string             json = OrphanedNodesManager::Memento::convertToJson(memento);
+
+    MFnDependencyNode pullRootDepNode(pullRoot);
+    MStatus           status
+        = setDynamicAttribute(pullRootDepNode, orphanedNodesManagerDynAttrName, json.c_str());
+    CHECK_MSTATUS(status);
+}
+
 #endif
 
 PXR_NAMESPACE_CLOSE_SCOPE
