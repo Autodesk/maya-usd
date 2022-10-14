@@ -26,8 +26,26 @@
 
 namespace MAYAUSD_NS_DEF {
 
+/// \class OrphanedNodesManager
+///
+/// \brief Records the data that affects which exact USD prim was edited as Maya.
+///
+/// Prims edited as Maya nodes are only valid if the prim is still accessible
+/// in the USD stage. If no longer accessible, we declared the Maya nodes as
+/// orphaned and hide them.
+///
+/// Observes the scene, to determine when to hide edited prims that have become
+/// orphaned, or to show them again, because of structural changes to their USD
+/// or Maya ancestors.
+///
+/// Currently, the only state that we monitor and consider for prim validity
+/// and edit orphaning is the set of variant selections of all ancestors of
+/// the prim being edited.
+
 class OrphanedNodesManager : public Ufe::Observer
 {
+public:
+    /// \brief Records a single variant selection of a single variant set.
     struct VariantSelection
     {
         VariantSelection() = default;
@@ -46,6 +64,7 @@ class OrphanedNodesManager : public Ufe::Observer
         std::string variantSelection;
     };
 
+    /// \brief Records all variant selections of a single prim.
     struct VariantSetDescriptor
     {
         VariantSetDescriptor() = default;
@@ -63,6 +82,8 @@ class OrphanedNodesManager : public Ufe::Observer
         std::list<VariantSelection> variantSelections;
     };
 
+    /// \brief Records all variant selections of all ancestors of the prim edited as maya,
+    ///        with the DAG path of the root of Maya nodes corresponding to the edited prim.
     struct PullVariantInfo
     {
         PullVariantInfo() = default;
@@ -75,9 +96,7 @@ class OrphanedNodesManager : public Ufe::Observer
         std::list<VariantSetDescriptor> variantSetDescriptors;
     };
 
-public:
-    typedef std::shared_ptr<OrphanedNodesManager> Ptr;
-
+    /// \brief Entire state of the OrphanedNodesManager at a point in time, used for undo/redo.
     class Memento
     {
     public:
@@ -91,6 +110,9 @@ public:
         Memento(const Memento&) = delete;
         Memento& operator=(const Memento&) = delete;
 
+        static std::string convertToJson(const Memento&);
+        static Memento convertFromJson(const std::string&);
+
     private:
         // Private, for opacity.
         friend class OrphanedNodesManager;
@@ -102,8 +124,10 @@ public:
         Ufe::Trie<PullVariantInfo> _pulledPrims;
     };
 
+    // Construct an empty orphan manager.
     OrphanedNodesManager();
 
+    // Notifications handling, part of the Ufe::Observer interface.
     void operator()(const Ufe::Notification&) override;
 
     // Add the pulled path and its Maya pull parent to the trie of pulled
@@ -114,6 +138,9 @@ public:
     // path is in the trie.  Returns a memento (see Memento Pattern) for undo
     // purposes, to be used as argument to restore().
     Memento remove(const Ufe::Path& pulledPath);
+
+    // Preserve the trie of pulled prims into a memento.
+    Memento preserve() const;
 
     // Restore the trie of pulled prims to the content of the argument memento.
     void restore(Memento&& previous);

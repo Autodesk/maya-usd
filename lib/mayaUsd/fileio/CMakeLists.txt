@@ -45,6 +45,7 @@ if(UFE_TRIE_NODE_HAS_CHILDREN_COMPONENTS_ACCESSOR)
     target_sources(${PROJECT_NAME}
         PRIVATE
             orphanedNodesManager.cpp
+            orphanedNodesManagerIO.cpp
     )
 
     target_compile_definitions(${PROJECT_NAME}
