@@ -935,9 +935,8 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorC_L1, "Execute");
 
     ++_frameCounter;
-#ifdef MAYA_HAS_DISPLAY_LAYER_API
+
     _refreshRequested = false;
-#endif
 
     _UpdateRenderTags();
 
@@ -1481,13 +1480,14 @@ void ProxyRenderDelegate::DisplayLayerDirty(MFnDisplayLayer& displayLayer)
     }
 }
 
+#endif
+
 void ProxyRenderDelegate::_RequestRefresh()
 {
     if (!_refreshRequested)
         M3dView::scheduleRefreshAllViews();
     _refreshRequested = true;
 }
-#endif
 
 void ProxyRenderDelegate::ColorPrefsChanged()
 {
