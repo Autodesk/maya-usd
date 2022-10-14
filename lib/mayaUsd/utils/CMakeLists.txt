@@ -11,6 +11,7 @@ target_sources(${PROJECT_NAME}
         dynamicAttribute.cpp
         editability.cpp
         editRouter.cpp
+        json.cpp
         layerMuting.cpp
         loadRules.cpp
         loadRulesText.cpp
@@ -28,6 +29,13 @@ target_sources(${PROJECT_NAME}
         utilSerialization.cpp
         variants.cpp
 )
+
+if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            json.cpp
+    )
+endif()
 
 set(HEADERS
     blockSceneModificationContext.h
@@ -54,6 +62,11 @@ set(HEADERS
     utilSerialization.h
     variants.h
 )
+if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
+    list(APPEND HEADERS
+        json.h
+    )
+endif()
 
 set(PLUGINFO
     plugInfo.json)

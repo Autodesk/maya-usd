@@ -91,7 +91,7 @@ void OrphanedNodesManager::add(const Ufe::Path& pulledPath, const MDagPath& pull
 
 OrphanedNodesManager::Memento OrphanedNodesManager::remove(const Ufe::Path& pulledPath)
 {
-    Memento oldPulledPrims(deepCopy(pulledPrims()));
+    Memento oldPulledPrims(preserve());
     TF_AXIOM(pulledPrims().remove(pulledPath) != nullptr);
     return oldPulledPrims;
 }
@@ -259,6 +259,11 @@ const Ufe::Trie<OrphanedNodesManager::PullVariantInfo>& OrphanedNodesManager::pu
 void OrphanedNodesManager::clear() { pulledPrims().clear(); }
 
 bool OrphanedNodesManager::empty() const { return pulledPrims().root()->empty(); }
+
+OrphanedNodesManager::Memento OrphanedNodesManager::preserve() const
+{
+    return Memento(deepCopy(pulledPrims()));
+}
 
 void OrphanedNodesManager::restore(Memento&& previous) { _pulledPrims = previous.release(); }
 
