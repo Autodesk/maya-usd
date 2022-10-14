@@ -55,6 +55,7 @@
 #include <maya/MDGMessage.h>
 #include <maya/MDisplayLayerMessage.h>
 #endif
+#include <maya/M3dView.h>
 #include <maya/MEventMessage.h>
 #include <maya/MFileIO.h>
 #include <maya/MFnPluginData.h>
@@ -62,7 +63,6 @@
 #include <maya/MProfiler.h>
 #include <maya/MSelectionContext.h>
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
-#include <maya/M3dView.h>
 #include <maya/MFnDisplayLayer.h>
 #include <maya/MFnDisplayLayerManager.h>
 #include <maya/MNodeMessage.h>
