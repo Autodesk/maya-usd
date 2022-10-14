@@ -231,5 +231,31 @@ Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& f
 MAYAUSD_CORE_PUBLIC
 std::vector<std::string> splitString(const std::string& str, const std::string& separators);
 
+class ReplicateExtrasFromUSD
+{
+public:
+    // Prepares the replication operation for the subtree starting with the given scene item
+    void initRecursive(Ufe::SceneItem::Ptr) const;
+    // Replicates extra features from the USD item defined by 'path' to the maya object
+    void processItem(const Ufe::Path& path, const MObject& mayaObject) const;
+
+private:
+    mutable std::unordered_map<Ufe::Path, MObject> _displayLayerMap;
+};
+
+class ReplicateExtrasToUSD
+{
+public:
+    // Processes replication from a maya object defined by 'dagPath'
+    // to the usd item defined by 'usdPath'
+    void processItem(const MDagPath& dagPath, const PXR_NS::SdfPath& usdPath) const;
+    // Finalizes the replication operation to the USD stage defined by 'stagePath'
+    // with a possibility to rename the usd root node name to 'renameRoot'
+    void finalize(const Ufe::Path& stagePath, const std::string* renameRoot = nullptr) const;
+
+private:
+    mutable std::map<PXR_NS::SdfPath, MObject> _primToLayerMap;
+};
+
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

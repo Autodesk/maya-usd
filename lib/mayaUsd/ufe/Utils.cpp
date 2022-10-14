@@ -37,6 +37,11 @@
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+#include <maya/MFnDisplayLayer.h>
+#include <maya/MFnDisplayLayerManager.h>
+#endif
+
 #include <maya/MFnDependencyNode.h>
 #include <maya/MGlobal.h>
 #include <maya/MObjectHandle.h>
@@ -893,6 +898,97 @@ std::vector<std::string> splitString(const std::string& str, const std::string& 
     }
 
     return split;
+}
+
+void ReplicateExtrasFromUSD::initRecursive(Ufe::SceneItem::Ptr ufeItem) const
+{
+    auto node = Ufe::Hierarchy::hierarchy(ufeItem);
+    if (!node) {
+        return;
+    }
+
+    // Go through the entire hierarchy
+    for (auto child : node->children()) {
+        initRecursive(child);
+    }
+
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+    // Prepare _displayLayerMap
+    MFnDisplayLayerManager displayLayerManager(
+        MFnDisplayLayerManager::currentDisplayLayerManager());
+
+    MObject displayLayerObj
+        = displayLayerManager.getLayer(Ufe::PathString::string(ufeItem->path()).c_str());
+    if (displayLayerObj.hasFn(MFn::kDisplayLayer)) {
+        MFnDisplayLayer displayLayer(displayLayerObj);
+        if (displayLayer.name() != "defaultLayer") {
+            _displayLayerMap[ufeItem->path()] = displayLayerObj;
+        }
+    }
+#endif
+}
+
+void ReplicateExtrasFromUSD::processItem(const Ufe::Path& path, const MObject& mayaObject) const
+{
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+    // Replicate display layer membership
+    auto it = _displayLayerMap.find(path);
+    if (it != _displayLayerMap.end() && it->second.hasFn(MFn::kDisplayLayer)) {
+        MDagPath dagPath;
+        if (MDagPath::getAPathTo(mayaObject, dagPath) == MStatus::kSuccess) {
+            MFnDisplayLayer displayLayer(it->second);
+            displayLayer.add(dagPath);
+
+            // In case display layer membership was removed from the USD prim that we are
+            // replicating, we want to restore it here to make sure that the prim will stay in its
+            // display layer on DiscardEdits
+            displayLayer.add(Ufe::PathString::string(path).c_str());
+        }
+    }
+#endif
+}
+
+void ReplicateExtrasToUSD::processItem(const MDagPath& dagPath, const SdfPath& usdPath) const
+{
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+    // Populate display layer membership map
+
+    // Since multiple dag paths may lead to a single USD path (like transform and node),
+    // we have to make sure we don't overwrite a non-default layer with a default one
+    bool displayLayerAssigned = false;
+    auto entry = _primToLayerMap.find(usdPath);
+    if (entry != _primToLayerMap.end() && entry->second.hasFn(MFn::kDisplayLayer)) {
+        MFnDisplayLayer displayLayer(entry->second);
+        displayLayerAssigned = (displayLayer.name() != "defaultLayer");
+    }
+
+    if (!displayLayerAssigned) {
+        MFnDisplayLayerManager displayLayerManager(
+            MFnDisplayLayerManager::currentDisplayLayerManager());
+        _primToLayerMap[usdPath] = displayLayerManager.getLayer(dagPath);
+    }
+#endif
+}
+
+void ReplicateExtrasToUSD::finalize(const Ufe::Path& stagePath, const std::string* renameRoot) const
+{
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+    // Replicate display layer membership
+    for (const auto& entry : _primToLayerMap) {
+        if (entry.second.hasFn(MFn::kDisplayLayer)) {
+            auto rootPath = MayaUsd::ufe::usdPathToUfePathSegment(entry.first);
+            if (renameRoot && !rootPath.empty()) {
+                *rootPath.begin() = Ufe::PathComponent(*renameRoot);
+            }
+
+            Ufe::Path::Segments segments { stagePath.getSegments()[0], rootPath };
+            Ufe::Path           ufePath(std::move(segments));
+
+            MFnDisplayLayer displayLayer(entry.second);
+            displayLayer.add(Ufe::PathString::string(ufePath).c_str());
+        }
+    }
+#endif
 }
 
 } // namespace ufe
