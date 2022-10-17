@@ -20,6 +20,8 @@
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usdUtils/pipeline.h>
+#include <pxr/base/tf/envSetting.h>
 
 #include <ufe/sceneItemOps.h>
 
@@ -194,6 +196,16 @@ static const std::string kDefaultMaterialScopeName("mtl");
 
 void UsdUndoAssignNewMaterialCommand::execute()
 {
+    std::string materialsScopeName = kDefaultMaterialScopeName;
+    if (TfGetEnvSetting(USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME)) {
+        materialsScopeName = UsdUtilsGetMaterialsScopeName().GetString();
+    } else {
+        const char* mayaUsdDefaultMaterialsScopeName = std::getenv("MAYAUSD_MATERIALS_SCOPE_NAME");
+        if(mayaUsdDefaultMaterialsScopeName) {
+            materialsScopeName = std::string(mayaUsdDefaultMaterialsScopeName);
+        }
+    }
+
     //
     // 1. Create the Scope "materials" if it does not exist:
     //
@@ -207,7 +219,7 @@ void UsdUndoAssignNewMaterialCommand::execute()
         if (stageHierarchy) {
             for (auto&& child : stageHierarchy->children()) {
                 // Could be "mtl1" if there is already something named mtl which is not a scope.
-                if (child->nodeName().rfind(kDefaultMaterialScopeName, 0) == 0
+                if (child->nodeName().rfind(materialsScopeName, 0) == 0
                     && child->nodeType() == "Scope") {
                     scopePath = child->path();
                     break;
@@ -217,14 +229,14 @@ void UsdUndoAssignNewMaterialCommand::execute()
         if (scopePath.empty()) {
             auto createScopeCmd = UsdUndoAddNewPrimCommand::create(
                 UsdSceneItem::create(MayaUsd::ufe::stagePath(stage), stage->GetPseudoRoot()),
-                kDefaultMaterialScopeName,
+                materialsScopeName,
                 "Scope");
             createScopeCmd->execute();
             _cmds->append(createScopeCmd);
             scopePath = createScopeCmd->newUfePath();
             // The code automatically appends a "1". We need to rename:
             auto itemOps = Ufe::SceneItemOps::sceneItemOps(Ufe::Hierarchy::createItem(scopePath));
-            auto rename = itemOps->renameItemCmd(Ufe::PathComponent(kDefaultMaterialScopeName));
+            auto rename = itemOps->renameItemCmd(Ufe::PathComponent(materialsScopeName));
             _cmds->append(rename.undoableCommand);
             scopePath = rename.item->path();
         }
