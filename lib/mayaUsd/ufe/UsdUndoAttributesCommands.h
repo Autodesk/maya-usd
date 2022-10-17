@@ -129,7 +129,10 @@ public:
 private:
     const Ufe::Path   _sceneItemPath;
     const std::string _originalName;
-    const std::string _newName;
+    std::string       _newName;
+
+    void setNewName(const std::string& newName);
+
 }; // UsdRenameAttributeCommand
 
 } // namespace ufe

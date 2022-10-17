@@ -114,10 +114,10 @@ UsdRenameAttributeCommand::Ptr UsdRenameAttributeCommand::create(
     const std::string&       originalName,
     const std::string&       newName)
 {
-    // TODO: handle unique name in order to avoid name collision
-    if (UsdAttributes::canRemoveAttribute(sceneItem, originalName)) {
+    if (UsdAttributes::canRenameAttribute(sceneItem, originalName, newName)) {
         return std::make_shared<UsdRenameAttributeCommand>(sceneItem, originalName, newName);
     }
+
     return nullptr;
 }
 
@@ -126,7 +126,12 @@ void UsdRenameAttributeCommand::executeUndoBlock()
     // Validation has already been done. Just rename the attribute.
     auto sceneItem
         = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(_sceneItemPath));
-    UsdAttributes::doRenameAttribute(sceneItem, _originalName, _newName);
+    auto renamedAttr = UsdAttributes::doRenameAttribute(sceneItem, _originalName, _newName);
+
+    // Set the new name, since it could have been changed in order to be unique.
+    if (renamedAttr) {
+        setNewName(renamedAttr->name());
+    }
 }
 
 Ufe::Attribute::Ptr UsdRenameAttributeCommand::attribute() const
@@ -135,6 +140,8 @@ Ufe::Attribute::Ptr UsdRenameAttributeCommand::attribute() const
         = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(_sceneItemPath));
     return UsdAttributes(sceneItem).attribute(_newName);
 }
+
+void UsdRenameAttributeCommand::setNewName(const std::string& newName) { _newName = newName; };
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

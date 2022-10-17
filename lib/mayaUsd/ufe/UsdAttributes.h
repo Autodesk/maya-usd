@@ -85,7 +85,11 @@ public:
     static bool        doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
 #endif
 #if (UFE_PREVIEW_VERSION_NUM >= 4033)
-    static bool doRenameAttribute(
+    static bool canRenameAttribute(
+        const UsdSceneItem::Ptr& sceneItem,
+        const std::string&       originalName,
+        const std::string&       newName);
+    static Ufe::Attribute::Ptr doRenameAttribute(
         const UsdSceneItem::Ptr& sceneItem,
         const std::string&       originalName,
         const std::string&       newName);

@@ -218,6 +218,45 @@ class AttributesTestCase(unittest.TestCase):
         attr = ball35Attrs.attribute("MyAttribute1")
         self.assertEqual(repr(attr),"ufe.AttributeString(<|transform1|proxyShape1,/Room_set/Props/Ball_35.MyAttribute1>)")
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4033', 'Test for UFE preview version 0.4.33 and later')
+    def testRenamingAttribute(self):
+        '''Test renaming an attribute'''
+
+        ball35Path = ufe.Path([
+            mayaUtils.createUfePathSegment("|transform1|proxyShape1"), 
+            usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
+        ball35Item = ufe.Hierarchy.createItem(ball35Path)
+
+        
+        # Then create the attributes interface for that item.
+        ball35Attrs = ufe.Attributes.attributes(ball35Item)
+        self.assertIsNotNone(ball35Attrs)
+
+        ballObserver = TestObserver()
+        ball35Attrs.addObserver(ball35Item, ballObserver)
+        ballObserver.assertNotificationCount(self, numAdded = 0, numRemoved = 0)
+
+        cmd = ball35Attrs.addAttributeCmd("MyAttribute", ufe.Attribute.kString)
+        self.assertIsNotNone(cmd)
+
+        ufeCmd.execute(cmd)
+        ballObserver.assertNotificationCount(self, numAdded = 1, numRemoved = 0)
+
+        self.assertIsNotNone(cmd.attribute)
+        self.assertIn("MyAttribute", ball35Attrs.attributeNames)
+        attr = ball35Attrs.attribute("MyAttribute")
+        self.assertEqual(repr(attr),"ufe.AttributeString(<|transform1|proxyShape1,/Room_set/Props/Ball_35.MyAttribute>)")
+        
+        # Rename the attribute
+        cmd = ball35Attrs.renameAttributeCmd("MyAttribute","NewName")
+        self.assertIsNotNone(cmd)
+
+        ufeCmd.execute(cmd)
+
+        self.assertNotIn("MyAttribute", ball35Attrs.attributeNames)
+        self.assertIn("NewName", ball35Attrs.attributeNames)
+        attr = ball35Attrs.attribute("NewName")
+        self.assertEqual(repr(attr),"ufe.AttributeString(<|transform1|proxyShape1,/Room_set/Props/Ball_35.NewName>)")
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

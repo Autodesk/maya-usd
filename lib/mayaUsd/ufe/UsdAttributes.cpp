@@ -481,7 +481,19 @@ bool UsdAttributes::doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::
 }
 #endif
 #if (UFE_PREVIEW_VERSION_NUM >= 4033)
-bool UsdAttributes::doRenameAttribute(
+bool UsdAttributes::canRenameAttribute(
+    const UsdSceneItem::Ptr& sceneItem,
+    const std::string&       originalName,
+    const std::string&       newName)
+{
+    // No need to rename the attribute.
+    if (originalName == newName) {
+        return false;
+    }
+    // Renaming meets the same conditions as attribute removal.
+    return canRemoveAttribute(sceneItem, originalName);
+}
+Ufe::Attribute::Ptr UsdAttributes::doRenameAttribute(
     const UsdSceneItem::Ptr& sceneItem,
     const std::string&       originalName,
     const std::string&       newName)
@@ -492,6 +504,9 @@ bool UsdAttributes::doRenameAttribute(
     auto                           attribute = prim.GetAttribute(nameAsToken);
     PXR_NS::UsdShadeConnectableAPI connectApi(prim);
 
+    // Ensure the newName is unique.
+    const std::string uniqueNewName = UsdAttributes::getUniqueAttrName(sceneItem, newName);
+
     PXR_NS::UsdEditTarget editTarget = prim.GetStage()->GetEditTarget();
     const SdfPath         kPrimPath = attribute.GetPrim().GetPath();
     const SdfPath         kPropertyPath = kPrimPath.AppendProperty(attribute.GetName());
@@ -499,7 +514,7 @@ bool UsdAttributes::doRenameAttribute(
     auto                  baseNameAndType = PXR_NS::UsdShadeUtils::GetBaseNameAndType(nameAsToken);
 
     if (!propertyHandle) {
-        return false;
+        return {};
     }
 
     UsdShadeSourceInfoVector sourcesInfo;
@@ -509,20 +524,16 @@ bool UsdAttributes::doRenameAttribute(
         sourcesInfo = connectApi.GetConnectedSources(attribute);
     }
 
-    if (!propertyHandle->SetName(newName)) {
-        return false;
+    if (!propertyHandle->SetName(uniqueNewName)) {
+        return {};
     }
 
-    bool success = true;
+    auto renamedAttr = UsdAttributes(sceneItem).attribute(uniqueNewName);
 
     if (connectApi) {
-        auto renamedAttribute = prim.GetAttribute(PXR_NS::TfToken(newName));
 
-        if (!renamedAttribute) {
-            return false;
-        }
-
-        const SdfPath kNewPropertyPath = kPrimPath.AppendProperty(renamedAttribute.GetName());
+        const PXR_NS::TfToken kNewNameAsToken = PXR_NS::TfToken(uniqueNewName);
+        const SdfPath         kNewPropertyPath = kPrimPath.AppendProperty(kNewNameAsToken);
 
         // Given the unidirectional nature of connections, we discriminate whether the source is
         // input or output
@@ -544,15 +555,15 @@ bool UsdAttributes::doRenameAttribute(
                         }
                     }
                     // Update the connections with the new property path.
-                    if (hasChanged && !attr.SetConnections(sources)) {
-                        success = false;
+                    if (hasChanged) {
+                        attr.SetConnections(sources);
                     }
                 }
             }
         } else {
 
             if (sourcesInfo.empty()) {
-                return success;
+                return renamedAttr;
             }
 
             std::vector<UsdShadeConnectionSourceInfo> connectionsInfo;
@@ -561,11 +572,12 @@ bool UsdAttributes::doRenameAttribute(
                 connectionsInfo.push_back(connectionInfo);
             }
 
-            success = connectApi.SetConnectedSources(renamedAttribute, connectionsInfo);
+            auto usdRenamedAttribute = prim.GetAttribute(PXR_NS::TfToken(uniqueNewName));
+            connectApi.SetConnectedSources(usdRenamedAttribute, connectionsInfo);
         }
     }
 
-    return success;
+    return renamedAttr;
 }
 #endif
 #endif
