@@ -65,8 +65,11 @@ public:
 
 private:
     const Ufe::Path            _sceneItemPath;
-    const std::string          _name;
+    std::string                _name;
     const Ufe::Attribute::Type _type;
+
+    void setName(const std::string& newName);
+
 }; // UsdAddAttributeCommand
 
 //! \brief Implementation of AddAttributeCommand

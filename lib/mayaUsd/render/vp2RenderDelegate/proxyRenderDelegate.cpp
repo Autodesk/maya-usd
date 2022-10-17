@@ -818,16 +818,20 @@ void ProxyRenderDelegate::_DirtyUsdSubtree(const UsdPrim& prim)
         | HdChangeTracker::DirtyDisplayStyle | MayaUsdRPrim::DirtySelectionHighlight
         | HdChangeTracker::DirtyMaterialId;
 
-    if (prim.IsA<UsdGeomGprim>()) {
+    if (prim.IsA<UsdGeomGprim>() && prim.IsActive()) {
         auto indexPath = _sceneDelegate->ConvertCachePathToIndexPath(prim.GetPath());
-        changeTracker.MarkRprimDirty(indexPath, dirtyBits);
+        if (_renderIndex->HasRprim(indexPath)) {
+            changeTracker.MarkRprimDirty(indexPath, dirtyBits);
+        }
     }
 
     UsdPrimSubtreeRange range = prim.GetDescendants();
     for (auto iter = range.begin(); iter != range.end(); ++iter) {
         if (iter->IsA<UsdGeomGprim>()) {
             auto indexPath = _sceneDelegate->ConvertCachePathToIndexPath(iter->GetPath());
-            changeTracker.MarkRprimDirty(indexPath, dirtyBits);
+            if (_renderIndex->HasRprim(indexPath)) {
+                changeTracker.MarkRprimDirty(indexPath, dirtyBits);
+            }
         }
     }
 }

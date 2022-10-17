@@ -497,6 +497,8 @@ PullImportPaths pullImport(
         Ufe::Path::Segments s { ps, Ufe::PathSegment(v.first, rtid, '/') };
         Ufe::Path           p(std::move(s));
         objToUfePath.insert(ObjToUfePath::value_type(MObjectHandle(v.second), p));
+
+        context._pullExtras.processItem(p, v.second);
     }
     progressBar.advance();
 
@@ -626,6 +628,7 @@ PushCustomizeSrc pushExport(
     auto usdPathToDagPathMap = std::make_shared<UsdPathToDagPathMap>();
     for (const auto& v : writeJob.GetDagPathToUsdPathMap()) {
         usdPathToDagPathMap->insert(UsdPathToDagPathMap::value_type(v.second, v.first));
+        context._pushExtras.processItem(v.first, v.second);
     }
 
     std::get<UsdPathToDagPathMapPtr>(pushCustomizeSrc) = usdPathToDagPathMap;
@@ -934,7 +937,7 @@ bool PrimUpdaterManager::mergeToUsd(
     MString progStr(
         VtDictionaryIsHolding<std::string>(userArgs, "rn_primName") ? "Caching to USD"
                                                                     : "Merging to USD");
-    MayaUsd::ProgressBarScope progressBar(9, progStr);
+    MayaUsd::ProgressBarScope progressBar(10, progStr);
     PushPullScope             scopeIt(_inPushPull);
 
     auto ctxArgs = VtDictionaryOver(userArgs, UsdMayaJobExportArgs::GetDefaultDictionary());
@@ -1071,6 +1074,9 @@ bool PrimUpdaterManager::mergeToUsd(
     }
     progressBar.advance();
 
+    context._pushExtras.finalize(MayaUsd::ufe::stagePath(context.GetUsdStage()));
+    progressBar.advance();
+
     discardPullSetIfEmpty();
 
     // Some updaters (like MayaReference) may be writing and changing the variant during merge.
@@ -1121,6 +1127,7 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
 
     auto& scene = Ufe::Scene::instance();
     auto  ufeItem = Ufe::Hierarchy::createItem(path);
+    context._pullExtras.initRecursive(ufeItem);
     if (!updaterArgs._copyOperation && TF_VERIFY(ufeItem))
         scene.notify(Ufe::ObjectPreDelete(ufeItem));
 
@@ -1426,6 +1433,7 @@ bool PrimUpdaterManager::duplicate(
 
         UsdMayaPrimUpdaterContext context(
             srcProxyShape->getTime(), srcProxyShape->getUsdStage(), ctxArgs);
+        context._pullExtras.initRecursive(Ufe::Hierarchy::createItem(srcPath));
         progressBar.advance();
 
         pullImport(srcPath, srcPrim, context);
@@ -1440,7 +1448,7 @@ bool PrimUpdaterManager::duplicate(
             return false;
         }
 
-        MayaUsd::ProgressBarScope progressBar(6, "Duplicating to USD");
+        MayaUsd::ProgressBarScope progressBar(7, "Duplicating to USD");
 
         auto ctxArgs = VtDictionaryOver(userArgs, UsdMayaJobExportArgs::GetDefaultDictionary());
 
@@ -1484,6 +1492,10 @@ bool PrimUpdaterManager::duplicate(
         if (!SdfCopySpec(srcLayer, srcRootPath, dstLayer, dstRootPath)) {
             return false;
         }
+        progressBar.advance();
+
+        std::string* rootRename = (dstChildName != srcRootPath.GetName()) ? &dstChildName : nullptr;
+        context._pushExtras.finalize(MayaUsd::ufe::stagePath(context.GetUsdStage()), rootRename);
         progressBar.advance();
 
         auto ufeItem = Ufe::Hierarchy::createItem(dstPath);
