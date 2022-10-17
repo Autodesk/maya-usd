@@ -82,7 +82,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (scaledDiffusePassThrough)
     (scaledSpecularPassThrough)
     (opacityToTransparency)
-    (UsdDrawModeCards)
     (usdPreviewSurfaceLightingAPI1)
     (usdPreviewSurfaceLightingAPI2)
     (usdPreviewSurfaceLightingAPI3)
@@ -145,7 +144,6 @@ static const TfTokenVector _FragmentNames = { _tokens->BasisCurvesCubicColorDoma
                                               _tokens->scaledDiffusePassThrough,
                                               _tokens->scaledSpecularPassThrough,
                                               _tokens->opacityToTransparency,
-                                              _tokens->UsdDrawModeCards,
                                               _tokens->usdPreviewSurfaceLightingAPI1,
                                               _tokens->usdPreviewSurfaceLightingAPI2,
                                               _tokens->usdPreviewSurfaceLightingAPI3,
