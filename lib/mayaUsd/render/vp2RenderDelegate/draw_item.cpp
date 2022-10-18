@@ -27,7 +27,14 @@ namespace {
 class HdVP2DrawItemUserData : public MUserData
 {
 public:
+#if MAYA_API_VERSION >= 20220000
     HdVP2DrawItemUserData() { }
+#else
+    HdVP2DrawItemUserData()
+        : MUserData(true)
+    {
+    }
+#endif
     ~HdVP2DrawItemUserData() override { }
 
     int increaseUseCount() { return ++_useCount; }
@@ -39,7 +46,9 @@ private:
     int _useCount = 0;
 };
 
+#if MAYA_API_VERSION >= 20220000
 using HdVP2DrawItemUserDataPtr = MSharedPtr<HdVP2DrawItemUserData>;
+#endif
 } // namespace
 
 /*! \brief  Constructor.
@@ -69,8 +78,13 @@ HdVP2DrawItem::~HdVP2DrawItem()
         MSubSceneContainer* subSceneContainer = param ? param->GetContainer() : nullptr;
         if (subSceneContainer) {
             for (const auto& renderItemData : _renderItems) {
+#if MAYA_API_VERSION >= 20220000
                 auto sharingData = HdVP2DrawItemUserDataPtr::dynamic_pointer_cast<>(
                     renderItemData._renderItem->getCustomData());
+#else
+                HdVP2DrawItemUserData* sharingData = dynamic_cast<HdVP2DrawItemUserData*>(
+                    renderItemData._renderItem->customData());
+#endif
                 if (!sharingData || sharingData->decreaseUseCount() == 0) {
                     TF_VERIFY(renderItemData._renderItemName == renderItemData._renderItem->name());
                     subSceneContainer->remove(renderItemData._renderItem->name());
@@ -90,10 +104,19 @@ HdVP2DrawItem::AddRenderItem(MHWRender::MRenderItem* item, const HdGeomSubset* g
 
     renderItemData._renderItem = item;
     renderItemData._renderItemName = item->name();
+#if MAYA_API_VERSION >= 20220000
     auto sharingData = HdVP2DrawItemUserDataPtr::dynamic_pointer_cast<>(item->getCustomData());
+#else
+    HdVP2DrawItemUserData* sharingData
+        = dynamic_cast<HdVP2DrawItemUserData*>(renderItemData._renderItem->customData());
+#endif
     if (!sharingData) {
         // create the custom data
+#if MAYA_API_VERSION >= 20220000
         sharingData = HdVP2DrawItemUserDataPtr(new HdVP2DrawItemUserData());
+#else
+        sharingData = new HdVP2DrawItemUserData();
+#endif
         item->setCustomData(sharingData);
     }
     sharingData->increaseUseCount();
