@@ -54,6 +54,7 @@
 #include <pxr/usdImaging/usdImaging/tokens.h>
 #include <pxr/imaging/hdx/renderTask.h>
 
+#include <cassert>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -246,11 +247,24 @@ void HdMayaSceneDelegate::_RemoveRenderItem(
 	_renderItemsAdapters.erase(ria->GetID());
 }
 
-
 //void HdMayaSceneDelegate::_TransformNodeDirty(MObject& node, MPlug& plug, void* clientData)
 void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scene)
 {
 #if 1
+	// First loop to get rid of removed items
+	constexpr int kInvalidId = 0;
+	for (int i = 0; i < scene.mRemovalCount; i++)
+	{
+		int fastId = scene.mRemovals[i];
+		if (fastId == kInvalidId) continue;
+		HdMayaRenderItemAdapterPtr ria = nullptr;		
+		if (_GetRenderItem(fastId, ria))
+		{
+			_RemoveRenderItem(ria);
+		}		
+		assert(ria != nullptr);
+	}
+
     //My version, does minimal update
     // This loop could, in theory, pe parallelized.  Unclear how large the gains would be, but maybe
     // nothing to lose unless there is some internal contention in USD.
@@ -262,16 +276,7 @@ void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scen
 		const auto& ri = *scene.mItems[i];
 		int fastId = scene.mItems[i]->InternalObjectId();
 		HdMayaRenderItemAdapterPtr ria = nullptr;
-		if (_GetRenderItem(fastId, ria))
-		{
-			// TODO:
-			//if (flags & MViewportScene::MVS_removed)
-			//{
-			//	RemoveRenderItem(ria);
-			//	continue;
-			//}
-		}		
-		else
+		if (!_GetRenderItem(fastId, ria))
 		{
 			const SdfPath slowId = GetRenderItemPrimPath(ri);
 			ria = std::make_shared<HdMayaRenderItemAdapter>(slowId, fastId, this, ri);

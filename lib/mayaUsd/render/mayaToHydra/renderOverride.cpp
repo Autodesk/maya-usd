@@ -526,7 +526,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, c
 
 		// TODO: Change management
 		// Every frame update everything
-		if (scene.mCount > 0)
+		if (scene.changed())
 		{
 			for (auto& it : _delegates) {
 				auto sceneDelegate = std::dynamic_pointer_cast<HdMayaSceneDelegate>(it);
@@ -995,7 +995,8 @@ MStatus MtohRenderOverride::setup(const MString& destination)
 #endif
 
         // The main hydra render
-        _operations.push_back(new HdMayaRender("HydraRenderOverride_Hydra", this, true));
+        // For the data server, This also invokes scene update then sync scene delegate after scene update
+        _operations.push_back(new HdMayaRender("HydraRenderOverride_DataServer", this));
 
         // Draw scene elements (cameras, CVs, grid, shapes not pushed into hydra)
         _operations.push_back(new HdMayaPostRender("HydraRenderOverride_PostScene"));

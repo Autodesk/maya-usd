@@ -75,28 +75,29 @@ public:
     MHWRender::MClearOperation& clearOperation() override { return mClearOperation; }
 };
 
+//! \brief Serves to synchronize maya viewport data with the scene delegate before scene update is called
+//	when requiresSceneUpdate=false, subtype=kDataServerRemovals and after scene update is called
+//  when requiresSceneUpdate=true, subtype=kDataServer
+//
 class HdMayaRender : public MHWRender::MUserRenderOperation
 {
 public:
-    HdMayaRender(const MString& name, MtohRenderOverride* override, bool dataServer=false)
-#ifdef HDMAYA_SCENE_RENDER_DATASERVER
-        : MHWRender::MUserRenderOperation(name, MHWRender::MUserRenderOperation::DataServerTag(), dataServer)
-#else
-        : MHWRender::MUserRenderOperation(name)
-#endif
-        , _override(override)
-    {
-    }
+	HdMayaRender(const MString& name, MtohRenderOverride* override)
+	: MUserRenderOperation(name, MUserRenderOperation::DataServerTag())
+	, _override(override)
+	{
+	}
 
     MStatus execute(const MHWRender::MDrawContext& drawContext) override
     {
-		static MHWRender::MViewportScene sEmptyScene;
-        return _override->Render(drawContext, sEmptyScene);
+		return MS::kFailure;
     }
     
     MStatus execute2(const MDrawContext & drawContext, const MHWRender::MViewportScene& scene) override
     {
-        return _override->Render(drawContext, scene);
+		if (requiresDataServer())
+			return _override->Render(drawContext, scene);
+		return MS::kFailure;
     }
 
 private:
