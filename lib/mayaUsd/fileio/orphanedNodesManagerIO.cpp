@@ -24,6 +24,7 @@
 #include <maya/MDagPath.h>
 #include <maya/MString.h>
 #include <ufe/pathString.h>
+#include <ufe/trie.imp.h>
 
 namespace MAYAUSD_NS_DEF {
 
