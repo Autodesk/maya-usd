@@ -846,6 +846,60 @@ private:
 };
 
 #ifdef HAS_ORPHANED_NODES_MANAGER
+class AddPullPathUndoItem : public MayaUsd::OpUndoItem
+{
+public:
+    // Add the path to the orphaned nodes manager, and add an undo entry onto
+    // the global undo list.
+    static bool execute(
+        const std::shared_ptr<OrphanedNodesManager>& orphanedNodesManager,
+        const Ufe::Path&                             pulledPath,
+        const MDagPath&                              pullParentPath)
+    {
+        // Get the global undo list.
+        auto& undoInfo = OpUndoItemList::instance();
+
+        auto item = std::make_unique<AddPullPathUndoItem>(orphanedNodesManager, pulledPath, pullParentPath);
+        if (!item->redo()) {
+            return false;
+        }
+
+        undoInfo.addItem(std::move(item));
+
+        return true;
+    }
+
+    AddPullPathUndoItem(
+        const std::shared_ptr<OrphanedNodesManager>& orphanedNodesManager,
+        const Ufe::Path&                             pulledPath,
+        const MDagPath&                              pullParentPath)
+        : OpUndoItem(
+            std::string("Add to orphaned nodes manager pull path ")
+            + Ufe::PathString::string(pulledPath))
+        , _orphanedNodesManager(orphanedNodesManager)
+        , _pulledPath(pulledPath)
+        , _pullParentPath(pullParentPath)
+    {
+    }
+
+    bool undo() override
+    {
+        _orphanedNodesManager->remove(_pulledPath);
+        return true;
+    }
+
+    bool redo() override
+    {
+        _orphanedNodesManager->add(_pulledPath, _pullParentPath);
+        return true;
+    }
+
+private:
+    const std::shared_ptr<OrphanedNodesManager> _orphanedNodesManager;
+    const Ufe::Path                             _pulledPath;
+    const MDagPath                              _pullParentPath;
+};
+
 class RemovePullPathUndoItem : public MayaUsd::OpUndoItem
 {
 public:
@@ -1773,7 +1827,7 @@ void PrimUpdaterManager::recordPullVariantInfo(
     const Ufe::Path& pulledPath,
     const MDagPath&  pullParentPath)
 {
-    _orphanedNodesManager->add(pulledPath, pullParentPath);
+    AddPullPathUndoItem::execute(_orphanedNodesManager, pulledPath, pullParentPath);
 }
 #endif
 
