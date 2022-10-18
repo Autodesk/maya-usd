@@ -63,6 +63,12 @@ public:
 
     void executeUndoBlock() override;
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4032)
+    std::string commandString() const override;
+#endif
+#endif
+
 private:
     const Ufe::Path            _sceneItemPath;
     std::string                _name;
@@ -92,6 +98,12 @@ public:
     create(const UsdSceneItem::Ptr& sceneItem, const std::string& name);
 
     void executeUndoBlock() override;
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4032)
+    std::string commandString() const override;
+#endif
+#endif
 
 private:
     const Ufe::Path   _sceneItemPath;

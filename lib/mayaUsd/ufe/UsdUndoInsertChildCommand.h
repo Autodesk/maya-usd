@@ -48,6 +48,12 @@ public:
 
     Ufe::SceneItem::Ptr insertedChild() const override { return _ufeDstItem; }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4032)
+    std::string commandString() const override;
+#endif
+#endif
+
 protected:
     //! Construct a UsdUndoInsertChildCommand.  Note that as of 4-May-2020 the
     //! pos argument is ignored, and only append is supported.
