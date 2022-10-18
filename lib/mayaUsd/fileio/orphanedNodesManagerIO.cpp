@@ -224,9 +224,9 @@ void convertToPullInfoTrieNodePtr(
     const PXR_NS::JsObject& pullInfoNodeJson,
     PullInfoTrieNode::Ptr   intoRoot)
 {
-    for (const auto iter : pullInfoNodeJson) {
-        const std::string&     key = iter.first;
-        const PXR_NS::JsValue& value = iter.second;
+    for (const auto& keyValue : pullInfoNodeJson) {
+        const std::string&     key = keyValue.first;
+        const PXR_NS::JsValue& value = keyValue.second;
         if (key.size() <= 0) {
             continue;
         } else if (key == pullInfoJsonKey) {
