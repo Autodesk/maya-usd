@@ -11,7 +11,6 @@ target_sources(${PROJECT_NAME}
         dynamicAttribute.cpp
         editability.cpp
         editRouter.cpp
-        json.cpp
         layerMuting.cpp
         loadRules.cpp
         loadRulesText.cpp
