@@ -45,21 +45,29 @@ ProxyShapeSceneSegmentHandler::create(const Ufe::SceneSegmentHandler::Ptr& mayaS
 // Ufe::SceneSegmentHandler overrides
 //------------------------------------------------------------------------------
 
-Ufe::Selection ProxyShapeSceneSegmentHandler::findGatewayItems_(const Ufe::Path& path) const
+Ufe::Selection
+ProxyShapeSceneSegmentHandler::findGatewayItems_(const Ufe::Path& path, Ufe::Rtid nestedRtid) const
 {
-    // Handle other gateway node types that MayaUSD is not aware of
-    Ufe::Selection result = fMayaSceneSegmentHandler
-        ? fMayaSceneSegmentHandler->findGatewayItems_(path)
-        : Ufe::Selection();
+    Ufe::Selection result = Ufe::Selection();
 
-    // Find the MayaUSD proxyShapes
-    for (const auto& stage : getAllStages()) {
-        Ufe::Path proxyShapePath = stagePath(stage);
-        // recall that findGatewayItems searches for descendents of path that are
-        // gateway nodes. If path itself is a gateway node it should not be included
-        // in the results.
-        if (proxyShapePath.startsWith(path) && proxyShapePath != path) {
-            result.append(Ufe::Hierarchy::createItem(proxyShapePath));
+    // Handle other gateway node types that MayaUSD is not aware of.
+    // `nestedRtid` is used as a filter. If it matches the MayaUSD runtime ID, MayaUSD is aware of
+    // the requested gateway items so this step can be skipped.
+    if (nestedRtid != g_USDRtid && fMayaSceneSegmentHandler) {
+        result = fMayaSceneSegmentHandler->findGatewayItems_(path, nestedRtid);
+    }
+
+    // Find the MayaUSD proxyShapes.
+    // `nestedRtid` is used as a filter. Only add MayaUSD proxyShapes to the result if the argument
+    // matches the MayaUSD runtime ID or if the argument is 0 which means return all.
+    if (nestedRtid == 0 || nestedRtid == g_USDRtid) {
+        for (const auto& stage : getAllStages()) {
+            Ufe::Path proxyShapePath = stagePath(stage);
+            // recall that findGatewayItems searches for descendants of path that are gateway nodes.
+            // If path itself is a gateway node it should not be included in the results.
+            if (proxyShapePath.startsWith(path) && proxyShapePath != path) {
+                result.append(Ufe::Hierarchy::createItem(proxyShapePath));
+            }
         }
     }
 

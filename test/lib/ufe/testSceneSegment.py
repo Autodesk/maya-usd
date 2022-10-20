@@ -72,12 +72,34 @@ class SceneSegmentTestCase(unittest.TestCase):
         result = handler.findGatewayItems(proxyShapePath)
         self.assertTrue(result.empty())
 
+        # When using the filtered version of `findGatewayItems()` on the
+        # same gateway item, the result should still be empty. Filtering
+        # can never increase the cardinality of the result.
+        usdRunTimeId = ufe.RunTimeMgr.instance().getId('USD');
+        result = handler.findGatewayItems(proxyShapePath, usdRunTimeId)
+        self.assertTrue(result.empty())
+
+        otherRunTimeId = 6174
+        result = handler.findGatewayItems(proxyShapePath, otherRunTimeId)
+        self.assertTrue(result.empty())
+
         # searching the the parent of a gateway item searches the Maya scene segment
         # for gateway nodes without recursing into USD. should be the proxy shape
         handler = ufe.RunTimeMgr.instance().sceneSegmentHandler(proxyShapeParentPath.runTimeId())
         result = handler.findGatewayItems(proxyShapeParentPath)
         self.assertTrue(result.contains(proxyShapePath))
         self.assertEqual(len(result), 1)
+
+        # Searching the the parent of a gateway item using the filtered 
+        # version of `findGatewayItems()` should result in the proxy 
+        # shape if the runtime ID that is used as a filter matches the 
+        # USD runtime ID. Otherwise the result should be empty.
+        result = handler.findGatewayItems(proxyShapeParentPath, usdRunTimeId)
+        self.assertTrue(result.contains(proxyShapePath))
+        self.assertTrue(len(result), 1)
+
+        result = handler.findGatewayItems(proxyShapeParentPath, otherRunTimeId)
+        self.assertTrue(result.empty())
 
         # searching for the USD parent of both cameras should find no scene segment handler
         handler = ufe.RunTimeMgr.instance().sceneSegmentHandler(camerasParentPath.runTimeId())
