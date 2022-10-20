@@ -912,7 +912,9 @@ void ReplicateExtrasFromUSD::initRecursive(Ufe::SceneItem::Ptr ufeItem) const
         initRecursive(child);
     }
 
-#ifdef MAYA_HAS_DISPLAY_LAYER_API
+// temporarily disable the feature to avoid the crash described in MAYA-125835
+#if false
+//#ifdef MAYA_HAS_DISPLAY_LAYER_API
     // Prepare _displayLayerMap
     MFnDisplayLayerManager displayLayerManager(
         MFnDisplayLayerManager::currentDisplayLayerManager());
@@ -930,7 +932,9 @@ void ReplicateExtrasFromUSD::initRecursive(Ufe::SceneItem::Ptr ufeItem) const
 
 void ReplicateExtrasFromUSD::processItem(const Ufe::Path& path, const MObject& mayaObject) const
 {
-#ifdef MAYA_HAS_DISPLAY_LAYER_API
+// temporarily disable the feature to avoid the crash described in MAYA-125835
+#if false
+//#ifdef MAYA_HAS_DISPLAY_LAYER_API
     // Replicate display layer membership
     auto it = _displayLayerMap.find(path);
     if (it != _displayLayerMap.end() && it->second.hasFn(MFn::kDisplayLayer)) {
@@ -950,7 +954,9 @@ void ReplicateExtrasFromUSD::processItem(const Ufe::Path& path, const MObject& m
 
 void ReplicateExtrasToUSD::processItem(const MDagPath& dagPath, const SdfPath& usdPath) const
 {
-#ifdef MAYA_HAS_DISPLAY_LAYER_API
+// temporarily disable the feature to avoid the crash described in MAYA-125835
+#if false
+//#ifdef MAYA_HAS_DISPLAY_LAYER_API
     // Populate display layer membership map
 
     // Since multiple dag paths may lead to a single USD path (like transform and node),
@@ -972,7 +978,9 @@ void ReplicateExtrasToUSD::processItem(const MDagPath& dagPath, const SdfPath& u
 
 void ReplicateExtrasToUSD::finalize(const Ufe::Path& stagePath, const std::string* renameRoot) const
 {
-#ifdef MAYA_HAS_DISPLAY_LAYER_API
+// temporarily disable the feature to avoid the crash described in MAYA-125835
+#if false
+//#ifdef MAYA_HAS_DISPLAY_LAYER_API
     // Replicate display layer membership
     for (const auto& entry : _primToLayerMap) {
         if (entry.second.hasFn(MFn::kDisplayLayer)) {
