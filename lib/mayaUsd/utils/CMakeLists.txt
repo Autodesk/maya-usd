@@ -30,6 +30,13 @@ target_sources(${PROJECT_NAME}
         variants.cpp
 )
 
+if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            json.cpp
+    )
+endif()
+
 set(HEADERS
     blockSceneModificationContext.h
     colorSpace.h
@@ -40,7 +47,6 @@ set(HEADERS
     editability.h
     editRouter.h
     hash.h
-    json.h
     layerMuting.h
     loadRules.h
     query.h
@@ -56,6 +62,11 @@ set(HEADERS
     utilSerialization.h
     variants.h
 )
+if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
+    list(APPEND HEADERS
+        json.h
+    )
+endif()
 
 set(PLUGINFO
     plugInfo.json)

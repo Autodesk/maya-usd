@@ -18,6 +18,8 @@
 
 #include <mayaUsd/utils/util.h>
 
+#include <ufe/pathString.h>
+
 namespace MAYAUSD_NS_DEF {
 
 static const char* invalidJson = "Invalid JSON";
