@@ -1681,19 +1681,6 @@ MObject PrimUpdaterManager::findOrCreatePullRoot()
     MFnDependencyNode pullRootFn(pullRootObj);
     UsdMayaUtil::SetHiddenInOutliner(pullRootFn, true);
 
-    if (!FunctionUndoItem::execute(
-            "Create pull root cache has pulled prims",
-            [self = this]() {
-                self->_hasPulledPrims = true;
-                return true;
-            },
-            [self = this]() {
-                self->_hasPulledPrims = false;
-                return true;
-            })) {
-        TF_WARN("Cannot create pulled prim cache.");
-        return MObject();
-    }
     progressBar.advance();
 
     // As soon as we've pulled something, we must observe the scene for
@@ -1767,12 +1754,10 @@ bool PrimUpdaterManager::removePullParent(
             if (!TF_VERIFY(FunctionUndoItem::execute(
                     "Remove orphaned nodes manager, pulled prims flag reset",
                     [&]() {
-                        _hasPulledPrims = false;
                         endManagePulledPrims();
                         return true;
                     },
                     [&]() {
-                        _hasPulledPrims = true;
                         beginManagePulledPrims();
                         return true;
                     }))) {
@@ -1887,6 +1872,12 @@ bool PrimUpdaterManager::readPullInformation(const MDagPath& dagPath, Ufe::Path&
     }
 
     return false;
+}
+
+bool PrimUpdaterManager::hasPulledPrims() const
+{
+    MObject pullRoot = findPullRoot();
+    return !pullRoot.isNull();
 }
 
 #ifdef HAS_ORPHANED_NODES_MANAGER
