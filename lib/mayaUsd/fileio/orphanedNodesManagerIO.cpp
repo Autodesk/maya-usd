@@ -191,7 +191,8 @@ PullVariantInfo convertToPullVariantInfo(const PXR_NS::JsObject& pullInfoJson)
 {
     PullVariantInfo pullInfo;
 
-    pullInfo.pulledParentPath = convertToDagPath(convertJsonKeyToValue(pullInfoJson, dagPathJsonKey));
+    pullInfo.pulledParentPath
+        = convertToDagPath(convertJsonKeyToValue(pullInfoJson, dagPathJsonKey));
     pullInfo.variantSetDescriptors = convertToVariantSetDescList(
         convertToArray(convertJsonKeyToValue(pullInfoJson, variantSetDescriptorsJsonKey)));
 
