@@ -39,7 +39,7 @@ namespace {
 //       "/UFE-path-component-1" : {
 //          "/UFE-path-component-2" : {
 //             "pull info": {
-//                "dagPath": "DAG-path-of-pulled-object",
+//                "pulledParentPath": "DAG-path-of-pulled-object",
 //                "variantSetDescriptors": [
 //                   {
 //                       "path": "UFE-path-of-one-ancestor",
@@ -59,7 +59,7 @@ namespace {
 
 static const std::string ufeComponentPrefix = "/";
 static const std::string pullInfoJsonKey = "pull info";
-static const std::string dagPathJsonKey = "dagPath";
+static const std::string dagPathJsonKey = "pulledParentPath";
 static const std::string variantSetDescriptorsJsonKey = "variantSetDescriptors";
 static const std::string pathJsonKey = "path";
 static const std::string variantSelKey = "variantSelections";
@@ -181,7 +181,7 @@ PXR_NS::JsObject convertToObject(const PullVariantInfo& pullInfo)
 {
     PXR_NS::JsObject pullInfoJson;
 
-    pullInfoJson[dagPathJsonKey] = convertToValue(pullInfo.dagPath);
+    pullInfoJson[dagPathJsonKey] = convertToValue(pullInfo.pulledParentPath);
     pullInfoJson[variantSetDescriptorsJsonKey] = convertToArray(pullInfo.variantSetDescriptors);
 
     return pullInfoJson;
@@ -191,7 +191,7 @@ PullVariantInfo convertToPullVariantInfo(const PXR_NS::JsObject& pullInfoJson)
 {
     PullVariantInfo pullInfo;
 
-    pullInfo.dagPath = convertToDagPath(convertJsonKeyToValue(pullInfoJson, dagPathJsonKey));
+    pullInfo.pulledParentPath = convertToDagPath(convertJsonKeyToValue(pullInfoJson, dagPathJsonKey));
     pullInfo.variantSetDescriptors = convertToVariantSetDescList(
         convertToArray(convertJsonKeyToValue(pullInfoJson, variantSetDescriptorsJsonKey)));
 

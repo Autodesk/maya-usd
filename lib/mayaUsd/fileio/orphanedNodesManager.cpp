@@ -285,7 +285,7 @@ bool OrphanedNodesManager::setVisibilityPlug(
     bool                                       visibility)
 {
     TF_VERIFY(trieNode->hasData());
-    const auto& pullParentPath = trieNode->data().dagPath;
+    const auto& pullParentPath = trieNode->data().pulledParentPath;
     MFnDagNode  fn(pullParentPath);
     auto        visibilityPlug = fn.findPlug("visibility", /* tryNetworked */ true);
     return (visibilityPlug.setBool(visibility) == MS::kSuccess);
@@ -295,7 +295,7 @@ bool OrphanedNodesManager::setVisibilityPlug(
 bool OrphanedNodesManager::getVisibilityPlug(const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode)
 {
     TF_VERIFY(trieNode->hasData());
-    const auto& pullParentPath = trieNode->data().dagPath;
+    const auto& pullParentPath = trieNode->data().pulledParentPath;
     MFnDagNode  fn(pullParentPath);
     auto        visibilityPlug = fn.findPlug("visibility", /* tryNetworked */ true);
     return visibilityPlug.asBool();

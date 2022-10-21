@@ -88,11 +88,11 @@ public:
     {
         PullVariantInfo() = default;
         PullVariantInfo(const MDagPath& dp, const std::list<VariantSetDescriptor>& vsd)
-            : dagPath(dp)
+            : pulledParentPath(dp)
             , variantSetDescriptors(vsd)
         {
         }
-        MDagPath                        dagPath;
+        MDagPath                        pulledParentPath;
         std::list<VariantSetDescriptor> variantSetDescriptors;
     };
 
