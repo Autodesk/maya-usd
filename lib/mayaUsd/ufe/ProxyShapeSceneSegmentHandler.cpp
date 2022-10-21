@@ -45,6 +45,7 @@ ProxyShapeSceneSegmentHandler::create(const Ufe::SceneSegmentHandler::Ptr& mayaS
 // Ufe::SceneSegmentHandler overrides
 //------------------------------------------------------------------------------
 
+#if (UFE_PREVIEW_VERSION_NUM >= 4033)
 Ufe::Selection
 ProxyShapeSceneSegmentHandler::findGatewayItems_(const Ufe::Path& path, Ufe::Rtid nestedRtid) const
 {
@@ -78,6 +79,33 @@ ProxyShapeSceneSegmentHandler::findGatewayItems_(const Ufe::Path& path, Ufe::Rti
 
     return result;
 }
+#else
+Ufe::Selection ProxyShapeSceneSegmentHandler::findGatewayItems_(const Ufe::Path& path) const
+{
+    // Handle other gateway node types that MayaUSD is not aware of
+    Ufe::Selection result = fMayaSceneSegmentHandler
+        ? fMayaSceneSegmentHandler->findGatewayItems_(path)
+        : Ufe::Selection();
+
+    // Find the MayaUSD proxyShapes
+    for (const auto& stage : getAllStages()) {
+        Ufe::Path proxyShapePath = stagePath(stage);
+        // recall that findGatewayItems searches for descendents of path that are
+        // gateway nodes. If path itself is a gateway node it should not be included
+        // in the results.
+        if (proxyShapePath.startsWith(path) && proxyShapePath != path) {
+            result.append(Ufe::Hierarchy::createItem(proxyShapePath));
+        }
+    }
+
+    // If there were Usd prims that are gateway items then we'd have an implementation
+    // of UsdSceneSegmentHandler that could find the gateway items and extra code
+    // here to handle the case where isAGatewayType() for path is true. But right now
+    // there are no gateway items in Usd, so I don't have to handle that.
+
+    return result;
+}
+#endif
 
 bool ProxyShapeSceneSegmentHandler::isGateway_(const Ufe::Path& path) const
 {
