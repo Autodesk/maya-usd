@@ -969,7 +969,7 @@ void ReplicateExtrasToUSD::processItem(const MDagPath& dagPath, const SdfPath& u
     if (!displayLayerAssigned) {
         MFnDisplayLayerManager displayLayerManager(
             MFnDisplayLayerManager::currentDisplayLayerManager());
-        
+
         MObject displayLayerObj = displayLayerManager.getLayer(dagPath);
         if (displayLayerObj.hasFn(MFn::kDisplayLayer)) {
             MFnDisplayLayer displayLayer(displayLayerObj);
