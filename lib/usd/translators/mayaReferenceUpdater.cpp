@@ -266,7 +266,7 @@ bool PxrUsdTranslators_MayaReferenceUpdater::discardEdits()
     MStatus  status = MDagPath::getAPathTo(parentNode, dagPath);
     if (status == MS::kSuccess) {
         Ufe::Path pulledPath;
-        if (PrimUpdaterManager::readPullInformation(dagPath, pulledPath)) {
+        if (readPullInformation(dagPath, pulledPath)) {
             // Reset the auto-edit when discarding the edit.
             UsdPrim prim = MayaUsd::ufe::ufePathToPrim(pulledPath);
             clearAutoEdit(prim);
