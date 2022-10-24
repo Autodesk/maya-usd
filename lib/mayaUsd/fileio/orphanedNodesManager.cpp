@@ -319,9 +319,13 @@ bool OrphanedNodesManager::isOrphaned(const Ufe::Path& pulledPath) const
 }
 
 namespace ufe {
+
 extern Ufe::Rtid g_MayaRtid;
 extern Ufe::Rtid g_USDRtid;
-} // namespace ufe
+
+}
+
+namespace {
 
 Ufe::Path
 trieNodeToPullePrimUfePath(Ufe::TrieNode<OrphanedNodesManager::PullVariantInfo>::Ptr trieNode)
@@ -363,6 +367,15 @@ trieNodeToPullePrimUfePath(Ufe::TrieNode<OrphanedNodesManager::PullVariantInfo>:
     return primPath;
 }
 
+MStatus setNodeVisibility(const MDagPath& dagPath, bool visibility)
+{
+    MFnDagNode fn(dagPath);
+    auto       visibilityPlug = fn.findPlug("visibility", /* tryNetworked */ true);
+    return visibilityPlug.setBool(visibility);
+}
+
+} // namespace ufe
+
 /* static */
 bool OrphanedNodesManager::setOrphaned(
     const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode,
@@ -371,7 +384,15 @@ bool OrphanedNodesManager::setOrphaned(
     TF_VERIFY(trieNode->hasData());
 
     const PullVariantInfo& variantInfo = trieNode->data();
-    const Ufe::Path        pulledPrimPath = trieNodeToPullePrimUfePath(trieNode);
+
+    // Note: the change to USD data must be done *after* changes to Maya data because
+    //       the outliner reacts to UFe notifications received following the USD edits
+    //       to rebuild the node tree and the Maya node we want to hide must have been
+    //       hidden by that point. So the node visibility change must be done *first*.
+    CHECK_MSTATUS_AND_RETURN(setNodeVisibility(variantInfo.editedAsMayaRoot, !orphaned), false);
+    CHECK_MSTATUS_AND_RETURN(setNodeVisibility(variantInfo.pulledParentPath, !orphaned), false);
+
+    const Ufe::Path pulledPrimPath = trieNodeToPullePrimUfePath(trieNode);
 
     if (orphaned) {
         removePulledPrimMetadata(pulledPrimPath);
@@ -381,9 +402,7 @@ bool OrphanedNodesManager::setOrphaned(
         addExcludeFromRendering(pulledPrimPath);
     }
 
-    MFnDagNode fn(variantInfo.pulledParentPath);
-    auto       visibilityPlug = fn.findPlug("visibility", /* tryNetworked */ true);
-    return (visibilityPlug.setBool(!orphaned) == MS::kSuccess);
+    return true;
 }
 
 /* static */
