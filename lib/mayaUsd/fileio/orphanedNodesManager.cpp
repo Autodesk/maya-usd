@@ -15,6 +15,9 @@
 //
 #include "orphanedNodesManager.h"
 
+#include <mayaUsd/fileio/primUpdaterManager.h>
+#include <mayaUsd/fileio/pullInformation.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
@@ -72,7 +75,10 @@ OrphanedNodesManager::OrphanedNodesManager()
 {
 }
 
-void OrphanedNodesManager::add(const Ufe::Path& pulledPath, const MDagPath& pullParentPath)
+void OrphanedNodesManager::add(
+    const Ufe::Path& pulledPath,
+    const MDagPath&  pullParentPath,
+    const MDagPath&  editedAsMayaRoot)
 {
     // Add the pull parent to our pulled prims prefix tree.  Also add the full
     // configuration of variant set selections for each ancestor, up to the USD
@@ -81,12 +87,37 @@ void OrphanedNodesManager::add(const Ufe::Path& pulledPath, const MDagPath& pull
     TF_AXIOM(!pulledPrims().containsDescendantInclusive(pulledPath));
     TF_AXIOM(pulledPath.runTimeId() == MayaUsd::ufe::getUsdRunTimeId());
 
+    MayaUsdProxyShapeBase* proxyShape = MayaUsd::ufe::getProxyShape(pulledPath);
+    if (!proxyShape)
+        return;
+
+    // Note: the reason we store the proxy shape path when it would seem we
+    //       could derive it from the pulledPath is exactly the reason we are
+    //       keeping all this information: when we need to use the information,
+    //       the pulled prim might no longer be accessible. For example, the
+    //       pulled prim might not be acccessible because an ancestor has
+    //       switched variant.
+    //
+    //       This is why we keep the proxy shape path.
+    //
+    //       We currently assume the user does not make the path to the proxy
+    //       shape invalid by renaming any ancestor or reparenting an ancestor...
+    //
+    //       FIXME: update the proxy shape path when objects are renamed or
+    //              reparented. Currently tracked as MAYA-125039.
+    //              This also affects the pulledPath, pullParentPath and
+    //              editedAsMayaRoot.
+    MDagPath proxyShapePath;
+    if (!MDagPath::getAPathTo(proxyShape->thisMObject(), proxyShapePath))
+        return;
+
     // We store a list of (path, list of (variant set, variant set selection)),
     // for all ancestors, starting at closest ancestor.
     auto ancestorPath = pulledPath.pop();
     auto vsd = variantSetDescriptors(ancestorPath);
 
-    pulledPrims().add(pulledPath, PullVariantInfo(pullParentPath, vsd));
+    pulledPrims().add(
+        pulledPath, PullVariantInfo(proxyShapePath, pullParentPath, editedAsMayaRoot, vsd));
 }
 
 OrphanedNodesManager::Memento OrphanedNodesManager::remove(const Ufe::Path& pulledPath)
@@ -164,7 +195,7 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
         // the path.  It may be an internal node, without data.
         auto ancestorNode = pulledPrims().node(op.path);
         TF_VERIFY(ancestorNode);
-        recursiveSetVisibility(ancestorNode, false);
+        recursiveSetOrphaned(ancestorNode, true);
     } break;
     case Ufe::SceneCompositeNotification::OpType::SubtreeInvalidate: {
         // On subtree invalidate, the scene item itself has not had a structure
@@ -184,7 +215,7 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
         if (!parentHier->hasChildren()) {
             auto ancestorNode = pulledPrims().node(op.path);
             if (ancestorNode) {
-                recursiveSetVisibility(ancestorNode, false);
+                recursiveSetOrphaned(ancestorNode, true);
             }
             return;
         } else {
@@ -234,7 +265,7 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
                 // hidden.
                 auto ancestorNode = pulledPrims().node(op.path);
                 if (ancestorNode) {
-                    recursiveSetVisibility(ancestorNode, false);
+                    recursiveSetOrphaned(ancestorNode, true);
                 }
             }
         }
@@ -274,47 +305,119 @@ bool OrphanedNodesManager::isOrphaned(const Ufe::Path& pulledPath) const
         // If the argument path has not been pulled, it can't be orphaned.
         return false;
     }
-    TF_VERIFY(trieNode->hasData());
+
+    if (!trieNode->hasData()) {
+        // If the argument path has not been pulled, it can't be orphaned.
+        return false;
+    }
+
     // If the pull parent is visible, the pulled path is not orphaned.
-    return !getVisibilityPlug(trieNode);
-}
-
-/* static */
-bool OrphanedNodesManager::setVisibilityPlug(
-    const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode,
-    bool                                       visibility)
-{
-    TF_VERIFY(trieNode->hasData());
     const auto& pullParentPath = trieNode->data().pulledParentPath;
     MFnDagNode  fn(pullParentPath);
     auto        visibilityPlug = fn.findPlug("visibility", /* tryNetworked */ true);
-    return (visibilityPlug.setBool(visibility) == MS::kSuccess);
+    return !visibilityPlug.asBool();
 }
 
+namespace ufe {
+
+extern Ufe::Rtid g_MayaRtid;
+extern Ufe::Rtid g_USDRtid;
+
+} // namespace ufe
+
+namespace {
+
+Ufe::Path
+trieNodeToPullePrimUfePath(Ufe::TrieNode<OrphanedNodesManager::PullVariantInfo>::Ptr trieNode)
+{
+    const OrphanedNodesManager::PullVariantInfo& variantInfo = trieNode->data();
+
+    Ufe::Path proxyShapeUfePath = ufe::dagPathToUfe(variantInfo.proxyShapePath);
+    if (proxyShapeUfePath.getSegments().size() < 1)
+        return Ufe::Path();
+
+    UsdStagePtr stage = ufe::getStage(proxyShapeUfePath);
+    if (!stage)
+        return Ufe::Path();
+
+    // Note: the trie root node is not really part of the hierarchy, so do not
+    //       include it in the components. We detect we are at the root when
+    //       the node has no parent.
+    Ufe::PathSegment::Components pathComponents;
+    while (trieNode->parent()) {
+        pathComponents.push_back(trieNode->component());
+        trieNode = trieNode->parent();
+    }
+    std::reverse(pathComponents.begin(), pathComponents.end());
+
+    const size_t proxyShapeComponentCount = proxyShapeUfePath.size();
+    if (pathComponents.size() < proxyShapeComponentCount)
+        return Ufe::Path();
+
+    const Ufe::PathSegment::Components proxyShapeComponents(
+        pathComponents.begin(), pathComponents.begin() + proxyShapeComponentCount);
+    const Ufe::PathSegment proxyShapeSegment(proxyShapeComponents, ufe::g_MayaRtid, '|');
+    if (proxyShapeSegment != proxyShapeUfePath.getSegments()[0])
+        return Ufe::Path();
+
+    Ufe::PathSegment::Components primComponents(
+        pathComponents.begin() + proxyShapeComponentCount, pathComponents.end());
+    const Ufe::PathSegment primSegment(primComponents, ufe::g_USDRtid, '/');
+    Ufe::Path              primPath = proxyShapeUfePath + primSegment;
+    return primPath;
+}
+
+MStatus setNodeVisibility(const MDagPath& dagPath, bool visibility)
+{
+    MFnDagNode fn(dagPath);
+    auto       visibilityPlug = fn.findPlug("visibility", /* tryNetworked */ true);
+    return visibilityPlug.setBool(visibility);
+}
+
+} // namespace
+
 /* static */
-bool OrphanedNodesManager::getVisibilityPlug(const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode)
+bool OrphanedNodesManager::setOrphaned(
+    const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode,
+    bool                                       orphaned)
 {
     TF_VERIFY(trieNode->hasData());
-    const auto& pullParentPath = trieNode->data().pulledParentPath;
-    MFnDagNode  fn(pullParentPath);
-    auto        visibilityPlug = fn.findPlug("visibility", /* tryNetworked */ true);
-    return visibilityPlug.asBool();
+
+    const PullVariantInfo& variantInfo = trieNode->data();
+
+    // Note: the change to USD data must be done *after* changes to Maya data because
+    //       the outliner reacts to UFe notifications received following the USD edits
+    //       to rebuild the node tree and the Maya node we want to hide must have been
+    //       hidden by that point. So the node visibility change must be done *first*.
+    CHECK_MSTATUS_AND_RETURN(setNodeVisibility(variantInfo.pulledParentPath, !orphaned), false);
+
+    const Ufe::Path pulledPrimPath = trieNodeToPullePrimUfePath(trieNode);
+
+    if (orphaned) {
+        removePulledPrimMetadata(pulledPrimPath);
+        removeExcludeFromRendering(pulledPrimPath);
+    } else {
+        writePulledPrimMetadata(pulledPrimPath, variantInfo.editedAsMayaRoot);
+        addExcludeFromRendering(pulledPrimPath);
+    }
+
+    return true;
 }
 
 /* static */
-void OrphanedNodesManager::recursiveSetVisibility(
+void OrphanedNodesManager::recursiveSetOrphaned(
     const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode,
-    bool                                       visibility)
+    bool                                       orphaned)
 {
     // We know in our case that a trie node with data can't have children,
     // since descendants of a pulled prim can't be pulled.
     if (trieNode->hasData()) {
         TF_VERIFY(trieNode->empty());
-        TF_VERIFY(setVisibilityPlug(trieNode, visibility));
+        TF_VERIFY(setOrphaned(trieNode, orphaned));
     } else {
         auto childrenComponents = trieNode->childrenComponents();
         for (const auto& c : childrenComponents) {
-            recursiveSetVisibility((*trieNode)[c], visibility);
+            recursiveSetOrphaned((*trieNode)[c], orphaned);
         }
     }
 }
@@ -342,19 +445,8 @@ void OrphanedNodesManager::recursiveSwitch(
         // inactive on pull, to avoid rendering it.
         const bool variantSetsMatch
             = (trieNode->data().variantSetDescriptors == variantSetDescriptors(ufePath.pop()));
-        const bool visibility = (pulledNode && variantSetsMatch);
-        TF_VERIFY(setVisibilityPlug(trieNode, visibility));
-
-        // Set the activation of the pulled USD prim to the opposite of that of
-        // the corresponding Maya node: other variants may refer to the same
-        // path, and we don't want those paths to hit an inactive prim.  No
-        // need to remove an inert primSpec: this will be done on push.
-        auto prim = MayaUsd::ufe::ufePathToPrim(ufePath);
-        auto stage = prim.GetStage();
-        if (TF_VERIFY(stage)) {
-            UsdEditContext editContext(stage, stage->GetSessionLayer());
-            TF_VERIFY(prim.SetActive(!visibility));
-        }
+        const bool orphaned = (pulledNode && !variantSetsMatch);
+        TF_VERIFY(setOrphaned(trieNode, orphaned));
     } else {
         const bool isGatewayToUsd = Ufe::SceneSegmentHandler::isGateway(ufePath);
         for (const auto& c : trieNode->childrenComponents()) {

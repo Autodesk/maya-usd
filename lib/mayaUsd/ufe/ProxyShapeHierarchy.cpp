@@ -219,7 +219,7 @@ ProxyShapeHierarchy::createUFEChildList(const UsdPrimSiblingRange& range, bool f
     UFE_V3(std::string dagPathStr;)
     for (const auto& child : range) {
 #ifdef UFE_V3_FEATURES_AVAILABLE
-        if (PXR_NS::PrimUpdaterManager::readPullInformation(child, dagPathStr)) {
+        if (PXR_NS::readPullInformation(child, dagPathStr)) {
             auto item = Ufe::Hierarchy::createItem(Ufe::PathString::path(dagPathStr));
             // if we mapped to a valid object, insert it. it's possible that we got stale object
             // so in this case simply fallback to the usual processing of items

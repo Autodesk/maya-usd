@@ -67,7 +67,7 @@ bool mergeToUsd(const std::string& nodeName, const VtDictionary& userArgs = VtDi
         return false;
 
     Ufe::Path path;
-    if (!PrimUpdaterManager::readPullInformation(dagPath, path))
+    if (!readPullInformation(dagPath, path))
         return false;
 
     return PrimUpdaterManager::getInstance().mergeToUsd(dagNode, path, userArgs);
@@ -109,11 +109,11 @@ bool duplicate(
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(duplicate_overloads, duplicate, 2, 3)
 
-std::string readPullInformation(const PXR_NS::UsdPrim& prim)
+std::string readPullInformationString(const PXR_NS::UsdPrim& prim)
 {
     std::string dagPathStr;
     // Ignore boolean return value, empty string is the proper error result.
-    PrimUpdaterManager::getInstance().readPullInformation(prim, dagPathStr);
+    readPullInformation(prim, dagPathStr);
     return dagPathStr;
 }
 
@@ -128,5 +128,5 @@ void wrapPrimUpdaterManager()
         .def("canEditAsMaya", canEditAsMaya)
         .def("discardEdits", discardEdits)
         .def("duplicate", duplicate, duplicate_overloads())
-        .def("readPullInformation", readPullInformation);
+        .def("readPullInformation", readPullInformationString);
 }
