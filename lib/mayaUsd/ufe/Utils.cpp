@@ -912,9 +912,7 @@ void ReplicateExtrasFromUSD::initRecursive(Ufe::SceneItem::Ptr ufeItem) const
         initRecursive(child);
     }
 
-// temporarily disable the feature to avoid the crash described in MAYA-125835
-#if false
-//#ifdef MAYA_HAS_DISPLAY_LAYER_API
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
     // Prepare _displayLayerMap
     MFnDisplayLayerManager displayLayerManager(
         MFnDisplayLayerManager::currentDisplayLayerManager());
@@ -924,7 +922,11 @@ void ReplicateExtrasFromUSD::initRecursive(Ufe::SceneItem::Ptr ufeItem) const
     if (displayLayerObj.hasFn(MFn::kDisplayLayer)) {
         MFnDisplayLayer displayLayer(displayLayerObj);
         if (displayLayer.name() != "defaultLayer") {
-            _displayLayerMap[ufeItem->path()] = displayLayerObj;
+            // UFE display layers coming from referenced files are not yet supported in Maya
+            // and their usage leads to a crash, so skip those for the time being
+            if (!displayLayer.isFromReferencedFile()) {
+                _displayLayerMap[ufeItem->path()] = displayLayerObj;
+            }
         }
     }
 #endif
@@ -932,9 +934,7 @@ void ReplicateExtrasFromUSD::initRecursive(Ufe::SceneItem::Ptr ufeItem) const
 
 void ReplicateExtrasFromUSD::processItem(const Ufe::Path& path, const MObject& mayaObject) const
 {
-// temporarily disable the feature to avoid the crash described in MAYA-125835
-#if false
-//#ifdef MAYA_HAS_DISPLAY_LAYER_API
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
     // Replicate display layer membership
     auto it = _displayLayerMap.find(path);
     if (it != _displayLayerMap.end() && it->second.hasFn(MFn::kDisplayLayer)) {
@@ -954,9 +954,7 @@ void ReplicateExtrasFromUSD::processItem(const Ufe::Path& path, const MObject& m
 
 void ReplicateExtrasToUSD::processItem(const MDagPath& dagPath, const SdfPath& usdPath) const
 {
-// temporarily disable the feature to avoid the crash described in MAYA-125835
-#if false
-//#ifdef MAYA_HAS_DISPLAY_LAYER_API
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
     // Populate display layer membership map
 
     // Since multiple dag paths may lead to a single USD path (like transform and node),
@@ -971,16 +969,23 @@ void ReplicateExtrasToUSD::processItem(const MDagPath& dagPath, const SdfPath& u
     if (!displayLayerAssigned) {
         MFnDisplayLayerManager displayLayerManager(
             MFnDisplayLayerManager::currentDisplayLayerManager());
-        _primToLayerMap[usdPath] = displayLayerManager.getLayer(dagPath);
+        
+        MObject displayLayerObj = displayLayerManager.getLayer(dagPath);
+        if (displayLayerObj.hasFn(MFn::kDisplayLayer)) {
+            MFnDisplayLayer displayLayer(displayLayerObj);
+            // UFE display layers coming from referenced files are not yet supported in Maya
+            // and their usage leads to a crash, so skip those for the time being
+            if (!displayLayer.isFromReferencedFile()) {
+                _primToLayerMap[usdPath] = displayLayerObj;
+            }
+        }
     }
 #endif
 }
 
 void ReplicateExtrasToUSD::finalize(const Ufe::Path& stagePath, const std::string* renameRoot) const
 {
-// temporarily disable the feature to avoid the crash described in MAYA-125835
-#if false
-//#ifdef MAYA_HAS_DISPLAY_LAYER_API
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
     // Replicate display layer membership
     for (const auto& entry : _primToLayerMap) {
         if (entry.second.hasFn(MFn::kDisplayLayer)) {
