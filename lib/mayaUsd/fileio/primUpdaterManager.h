@@ -79,6 +79,20 @@ public:
     MAYAUSD_CORE_PUBLIC
     static bool readPullInformation(const MDagPath& dagpath, Ufe::Path& ufePath);
 
+    MAYAUSD_CORE_PUBLIC
+    static bool writePulledPrimMetadata(const Ufe::Path& ufePulledPath, const MDagPath& editedRoot);
+    MAYAUSD_CORE_PUBLIC
+    static bool writePulledPrimMetadata(PXR_NS::UsdPrim& pulledPrim, const MDagPath& editedRoot);
+    MAYAUSD_CORE_PUBLIC
+    static void removePulledPrimMetadata(const Ufe::Path& ufePulledPath);
+    MAYAUSD_CORE_PUBLIC
+    static void removePulledPrimMetadata(const UsdStagePtr& stage, UsdPrim& prim);
+
+    MAYAUSD_CORE_PUBLIC
+    static bool addExcludeFromRendering(const Ufe::Path& ufePulledPath);
+    MAYAUSD_CORE_PUBLIC
+    static bool removeExcludeFromRendering(const Ufe::Path& ufePulledPath);
+
     bool hasPulledPrims() const { return _hasPulledPrims; }
 
 private:
@@ -114,8 +128,6 @@ private:
     //! Record pull information for the pulled path, for inspection on
     //! scene changes.
 #ifdef HAS_ORPHANED_NODES_MANAGER
-    void recordPullVariantInfo(const Ufe::Path& pulledPath, const MDagPath& pullParentPath);
-
     // Maya file new or open callback.  Member function to access other private
     // member functions.
     static void beforeNewOrOpenCallback(void* clientData);

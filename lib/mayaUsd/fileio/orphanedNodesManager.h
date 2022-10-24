@@ -87,12 +87,20 @@ public:
     struct PullVariantInfo
     {
         PullVariantInfo() = default;
-        PullVariantInfo(const MDagPath& pulledParent, const std::list<VariantSetDescriptor>& vsd)
-            : pulledParentPath(pulledParent)
+        PullVariantInfo(
+            const MDagPath&                        proxyShape,
+            const MDagPath&                        pulledParent,
+            const MDagPath&                        editedMayaRoot,
+            const std::list<VariantSetDescriptor>& vsd)
+            : proxyShapePath(proxyShape)
+            , pulledParentPath(pulledParent)
+            , editedAsMayaRoot(editedMayaRoot)
             , variantSetDescriptors(vsd)
         {
         }
+        MDagPath                        proxyShapePath;
         MDagPath                        pulledParentPath;
+        MDagPath                        editedAsMayaRoot;
         std::list<VariantSetDescriptor> variantSetDescriptors;
     };
 
@@ -130,9 +138,13 @@ public:
     // Notifications handling, part of the Ufe::Observer interface.
     void operator()(const Ufe::Notification&) override;
 
-    // Add the pulled path and its Maya pull parent to the trie of pulled
-    // prims.  Asserts that the pulled path is not in the trie.
-    void add(const Ufe::Path& pulledPath, const MDagPath& pullParentPath);
+    // Add the pulled path, its Maya pull parent and the root of the generated
+    // Maya nodes to the trie of pulled prims.
+    // Asserts that the pulled path is not in the trie.
+    void
+    add(const Ufe::Path& pulledPath,
+        const MDagPath&  pullParentPath,
+        const MDagPath&  editedAsMayaRoot);
 
     // Remove the pulled path from the trie of pulled prims.  Asserts that the
     // path is in the trie.  Returns a memento (see Memento Pattern) for undo
@@ -162,13 +174,11 @@ private:
     const Ufe::Trie<PullVariantInfo>& pulledPrims() const;
 
     static void
-    recursiveSetVisibility(const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode, bool visibility);
+    recursiveSetOrphaned(const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode, bool orphaned);
     static void
     recursiveSwitch(const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode, const Ufe::Path& ufePath);
 
-    static bool
-                setVisibilityPlug(const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode, bool visibility);
-    static bool getVisibilityPlug(const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode);
+    static bool setOrphaned(const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode, bool orphaned);
 
     // Member function to access private nested classes.
     static std::list<VariantSetDescriptor> variantSetDescriptors(const Ufe::Path& path);

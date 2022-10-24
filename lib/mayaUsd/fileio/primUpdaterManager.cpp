@@ -162,7 +162,7 @@ bool hasEditedDescendant(const Ufe::Path& ufeQueryPath)
 //
 // The UFE path is to the pulled prim, and the Dag path is the corresponding
 // Maya pulled object.
-bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& path)
+bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& editedAsMayaRoot)
 {
     MayaUsd::ProgressBarScope progressBar(3);
 
@@ -174,22 +174,22 @@ bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& path)
     // Add to a set, the set should already been created.
     if (!FunctionUndoItem::execute(
             "Add edited item to pull set.",
-            [path]() {
+            [editedAsMayaRoot]() {
                 MObject pullSetObj;
                 auto    status = UsdMayaUtil::GetMObjectByName(kPullSetName, pullSetObj);
                 if (status != MStatus::kSuccess)
                     return false;
                 MFnSet fnPullSet(pullSetObj);
-                fnPullSet.addMember(path);
+                fnPullSet.addMember(editedAsMayaRoot);
                 return true;
             },
-            [path]() {
+            [editedAsMayaRoot]() {
                 MObject pullSetObj;
                 auto    status = UsdMayaUtil::GetMObjectByName(kPullSetName, pullSetObj);
                 if (status != MStatus::kSuccess)
                     return false;
                 MFnSet fnPullSet(pullSetObj);
-                fnPullSet.removeMember(path, MObject::kNullObj);
+                fnPullSet.removeMember(editedAsMayaRoot, MObject::kNullObj);
                 return true;
             })) {
         TF_WARN("Cannot edited object to pulled set.");
@@ -198,18 +198,12 @@ bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& path)
     progressBar.advance();
 
     // Store metadata on the prim in the Session Layer.
-    auto stage = pulledPrim.GetStage();
-    if (!stage)
-        return false;
-    UsdEditContext editContext(stage, stage->GetSessionLayer());
-    VtValue        value(path.fullPathName().asChar());
-    if (!pulledPrim.SetMetadataByDictKey(SdfFieldKeys->CustomData, kPullPrimMetadataKey, value))
-        return false;
+    PrimUpdaterManager::writePulledPrimMetadata(ufePulledPath, editedAsMayaRoot);
     progressBar.advance();
 
     // Store medata on DG node
     auto              ufePathString = Ufe::PathString::string(ufePulledPath);
-    MFnDependencyNode depNode(path.node());
+    MFnDependencyNode depNode(editedAsMayaRoot.node());
     MStatus           status;
     MPlug             dgMetadata = depNode.findPlug(kPullDGMetadataKey, &status);
     if (status != MStatus::kSuccess) {
@@ -235,13 +229,13 @@ bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& path)
 //
 void removePullInformation(const Ufe::Path& ufePulledPath)
 {
-    MayaUsd::ProgressBarScope progressBar(1);
-    UsdPrim                   prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
-    auto                      stage = prim.GetStage();
+    UsdPrim     pulledPrim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
+    UsdStagePtr stage = pulledPrim.GetStage();
     if (!stage)
         return;
-    UsdEditContext editContext(stage, stage->GetSessionLayer());
-    prim.ClearCustomDataByKey(kPullPrimMetadataKey);
+
+    MayaUsd::ProgressBarScope progressBar(1);
+    PrimUpdaterManager::removePulledPrimMetadata(stage, pulledPrim);
     progressBar.advance();
 
     // Session layer cleanup
@@ -251,47 +245,6 @@ void removePullInformation(const Ufe::Path& ufePulledPath)
         stage->GetSessionLayer()->RemovePrimIfInert(rootPrimSpec);
         rootPrimsLoop.loopAdvance();
     }
-}
-
-//------------------------------------------------------------------------------
-//
-bool addExcludeFromRendering(const Ufe::Path& ufePulledPath)
-{
-    UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
-
-    auto stage = prim.GetStage();
-    if (!stage)
-        return false;
-
-    UsdEditContext editContext(stage, stage->GetSessionLayer());
-    if (!prim.SetActive(false))
-        return false;
-
-    return true;
-}
-
-//------------------------------------------------------------------------------
-//
-bool removeExcludeFromRendering(const Ufe::Path& ufePulledPath)
-{
-    UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
-
-    auto stage = prim.GetStage();
-    if (!stage)
-        return false;
-
-    SdfLayerHandle sessionLayer = stage->GetSessionLayer();
-    UsdEditContext editContext(stage, sessionLayer);
-
-    // Cleanup the field and potentially empty over
-    if (!prim.ClearActive())
-        return false;
-
-    SdfPrimSpecHandle primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
-    if (sessionLayer && primSpec)
-        sessionLayer->ScheduleRemoveIfInert(primSpec.GetSpec());
-
-    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -472,9 +425,11 @@ PullImportPaths pullImport(
 
         if (!FunctionUndoItem::execute(
                 "Pull import rendering exclusion",
-                [ufePulledPath]() { return addExcludeFromRendering(ufePulledPath); },
                 [ufePulledPath]() {
-                    removeExcludeFromRendering(ufePulledPath);
+                    return PrimUpdaterManager::addExcludeFromRendering(ufePulledPath);
+                },
+                [ufePulledPath]() {
+                    PrimUpdaterManager::removeExcludeFromRendering(ufePulledPath);
                     return true;
                 })) {
             TF_WARN("Cannot exclude original USD data from viewport rendering.");
@@ -847,7 +802,7 @@ private:
 };
 
 #ifdef HAS_ORPHANED_NODES_MANAGER
-class AddPullPathUndoItem : public MayaUsd::OpUndoItem
+class RecordPullVariantInfoUndoItem : public MayaUsd::OpUndoItem
 {
 public:
     // Add the path to the orphaned nodes manager, and add an undo entry onto
@@ -855,13 +810,14 @@ public:
     static bool execute(
         const std::shared_ptr<OrphanedNodesManager>& orphanedNodesManager,
         const Ufe::Path&                             pulledPath,
-        const MDagPath&                              pullParentPath)
+        const MDagPath&                              pullParentPath,
+        const MDagPath&                              editedAsMayaRoot)
     {
         // Get the global undo list.
         auto& undoInfo = OpUndoItemList::instance();
 
-        auto item = std::make_unique<AddPullPathUndoItem>(
-            orphanedNodesManager, pulledPath, pullParentPath);
+        auto item = std::make_unique<RecordPullVariantInfoUndoItem>(
+            orphanedNodesManager, pulledPath, pullParentPath, editedAsMayaRoot);
         if (!item->redo()) {
             return false;
         }
@@ -871,16 +827,18 @@ public:
         return true;
     }
 
-    AddPullPathUndoItem(
+    RecordPullVariantInfoUndoItem(
         const std::shared_ptr<OrphanedNodesManager>& orphanedNodesManager,
         const Ufe::Path&                             pulledPath,
-        const MDagPath&                              pullParentPath)
+        const MDagPath&                              pullParentPath,
+        const MDagPath&                              editedAsMayaRoot)
         : OpUndoItem(
             std::string("Add to orphaned nodes manager pull path ")
             + Ufe::PathString::string(pulledPath))
         , _orphanedNodesManager(orphanedNodesManager)
         , _pulledPath(pulledPath)
         , _pullParentPath(pullParentPath)
+        , _editedAsMayaRoot(editedAsMayaRoot)
     {
     }
 
@@ -892,7 +850,7 @@ public:
 
     bool redo() override
     {
-        _orphanedNodesManager->add(_pulledPath, _pullParentPath);
+        _orphanedNodesManager->add(_pulledPath, _pullParentPath, _editedAsMayaRoot);
         return true;
     }
 
@@ -900,9 +858,10 @@ private:
     const std::shared_ptr<OrphanedNodesManager> _orphanedNodesManager;
     const Ufe::Path                             _pulledPath;
     const MDagPath                              _pullParentPath;
+    const MDagPath                              _editedAsMayaRoot;
 };
 
-class RemovePullPathUndoItem : public MayaUsd::OpUndoItem
+class RemovePullVariantInfoUndoItem : public MayaUsd::OpUndoItem
 {
 public:
     // Remove the path from the orphaned nodes manager, and add an entry onto
@@ -914,7 +873,8 @@ public:
         // Get the global undo list.
         auto& undoInfo = OpUndoItemList::instance();
 
-        auto item = std::make_unique<RemovePullPathUndoItem>(orphanedNodesManager, pulledPath);
+        auto item
+            = std::make_unique<RemovePullVariantInfoUndoItem>(orphanedNodesManager, pulledPath);
         if (!item->redo()) {
             return false;
         }
@@ -924,7 +884,7 @@ public:
         return true;
     }
 
-    RemovePullPathUndoItem(
+    RemovePullVariantInfoUndoItem(
         const std::shared_ptr<OrphanedNodesManager>& orphanedNodesManager,
         const Ufe::Path&                             pulledPath)
         : OpUndoItem(std::string("Remove pull path ") + Ufe::PathString::string(pulledPath))
@@ -1217,6 +1177,11 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
         return false;
     }
     progressBar.advance();
+
+#ifdef HAS_ORPHANED_NODES_MANAGER
+    RecordPullVariantInfoUndoItem::execute(
+        _orphanedNodesManager, path, pullParentPath, importedPaths.first[0]);
+#endif
 
     if (!updaterArgs._copyOperation) {
         // Lock pulled nodes starting at the pull parent.
@@ -1750,7 +1715,7 @@ bool PrimUpdaterManager::removePullParent(
         return false;
     }
 
-    if (!TF_VERIFY(RemovePullPathUndoItem::execute(_orphanedNodesManager, pulledPath))) {
+    if (!TF_VERIFY(RemovePullVariantInfoUndoItem::execute(_orphanedNodesManager, pulledPath))) {
         return false;
     }
 #endif
@@ -1823,9 +1788,6 @@ MDagPath PrimUpdaterManager::setupPullParent(const Ufe::Path& pulledPath, VtDict
         return MDagPath();
     }
 
-#ifdef HAS_ORPHANED_NODES_MANAGER
-    recordPullVariantInfo(pulledPath, pullParentPath);
-#endif
     progressBar.advance();
 
     // Add pull parent path to import args as a string.
@@ -1833,15 +1795,6 @@ MDagPath PrimUpdaterManager::setupPullParent(const Ufe::Path& pulledPath, VtDict
 
     return pullParentPath;
 }
-
-#ifdef HAS_ORPHANED_NODES_MANAGER
-void PrimUpdaterManager::recordPullVariantInfo(
-    const Ufe::Path& pulledPath,
-    const MDagPath&  pullParentPath)
-{
-    AddPullPathUndoItem::execute(_orphanedNodesManager, pulledPath, pullParentPath);
-}
-#endif
 
 /* static */
 bool PrimUpdaterManager::readPullInformation(const PXR_NS::UsdPrim& prim, std::string& dagPathStr)
@@ -1898,6 +1851,94 @@ bool PrimUpdaterManager::readPullInformation(const MDagPath& dagPath, Ufe::Path&
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------------
+//
+/* static */
+bool PrimUpdaterManager::addExcludeFromRendering(const Ufe::Path& ufePulledPath)
+{
+    UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
+
+    auto stage = prim.GetStage();
+    if (!stage)
+        return false;
+
+    UsdEditContext editContext(stage, stage->GetSessionLayer());
+    if (!prim.SetActive(false))
+        return false;
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+//
+/* static */
+bool PrimUpdaterManager::removeExcludeFromRendering(const Ufe::Path& ufePulledPath)
+{
+    UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
+
+    auto stage = prim.GetStage();
+    if (!stage)
+        return false;
+
+    SdfLayerHandle sessionLayer = stage->GetSessionLayer();
+    UsdEditContext editContext(stage, sessionLayer);
+
+    // Cleanup the field and potentially empty over
+    if (!prim.ClearActive())
+        return false;
+
+    SdfPrimSpecHandle primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
+    if (sessionLayer && primSpec)
+        sessionLayer->ScheduleRemoveIfInert(primSpec.GetSpec());
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+//
+
+/* static */
+bool PrimUpdaterManager::writePulledPrimMetadata(
+    const Ufe::Path& ufePulledPath,
+    const MDagPath&  editedAsMayaRoot)
+{
+    auto pulledPrim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
+    if (!pulledPrim)
+        return false;
+    return writePulledPrimMetadata(pulledPrim, editedAsMayaRoot);
+}
+
+/* static */
+bool PrimUpdaterManager::writePulledPrimMetadata(
+    UsdPrim&        pulledPrim,
+    const MDagPath& editedAsMayaRoot)
+{
+    auto stage = pulledPrim.GetStage();
+    if (!stage)
+        return false;
+
+    UsdEditContext editContext(stage, stage->GetSessionLayer());
+    VtValue        value(editedAsMayaRoot.fullPathName().asChar());
+    return pulledPrim.SetMetadataByDictKey(SdfFieldKeys->CustomData, kPullPrimMetadataKey, value);
+}
+
+/* static */
+void PrimUpdaterManager::removePulledPrimMetadata(const Ufe::Path& ufePulledPath)
+{
+    UsdPrim     prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
+    UsdStagePtr stage = prim.GetStage();
+    if (!stage)
+        return;
+    removePulledPrimMetadata(stage, prim);
+}
+
+/* static */
+void PrimUpdaterManager::removePulledPrimMetadata(const UsdStagePtr& stage, UsdPrim& prim)
+{
+    UsdEditContext editContext(stage, stage->GetSessionLayer());
+    prim.ClearCustomDataByKey(kPullPrimMetadataKey);
 }
 
 #ifdef HAS_ORPHANED_NODES_MANAGER
