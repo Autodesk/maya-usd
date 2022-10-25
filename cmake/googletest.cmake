@@ -36,9 +36,7 @@ macro(fetch_googletest)
             # We will just update to newer version, if required.
             set(disable_all_warnings_flag -w)
 
-            # Force the use of ABI version 0 on Linux.
-            # This is what Maya has been using for 2019...2023
-            set(glibcxx_abi -D_GLIBCXX_USE_CXX11_ABI=0)
+            set(glibcxx_abi -D_GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${MAYA_LINUX_BUILT_WITH_CXX11_ABI}>,1,0>)
         endif()
 
         if (GOOGLETEST_SRC_DIR)

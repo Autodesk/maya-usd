@@ -58,7 +58,7 @@ def MyContextExportEnabler():
     }
 
 mayaUsdLib.JobContextRegistry.RegisterExportJobContext(
-    MyContext, 
+    "MyContext", 
     "UI name for MyContext",
     "Tooltip for MyContext when used for export",
     MyContextExportEnabler)

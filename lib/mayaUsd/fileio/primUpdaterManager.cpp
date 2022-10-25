@@ -90,22 +90,19 @@ const MString kPullDGMetadataKey("Pull_UfePath");
 
 // Name of Dag node under which all pulled sub-hierarchies are rooted.
 const MString kPullRootName("__mayaUsd__");
+const MString kPullRootPath("|__mayaUsd__");
 
 MObject findPullRoot()
 {
-    // Try to find one in the scene.
-    auto       worldObj = MItDag().root();
-    MFnDagNode world(worldObj);
-    auto       nbWorldChildren = world.childCount();
-    for (unsigned int i = 0; i < nbWorldChildren; ++i) {
-        auto              childObj = world.child(i);
-        MFnDependencyNode child(childObj);
-        if (child.name() == kPullRootName) {
-            return childObj;
-        }
-    }
+    // Try to find the pull root in the scene.
+    MSelectionList sel;
+    sel.add(kPullRootPath);
+    if (sel.isEmpty())
+        return MObject();
 
-    return MObject();
+    MObject obj;
+    sel.getDependNode(0, obj);
+    return obj;
 }
 
 Ufe::Path usdToMaya(const Ufe::Path& usdPath)
@@ -1681,19 +1678,6 @@ MObject PrimUpdaterManager::findOrCreatePullRoot()
     MFnDependencyNode pullRootFn(pullRootObj);
     UsdMayaUtil::SetHiddenInOutliner(pullRootFn, true);
 
-    if (!FunctionUndoItem::execute(
-            "Create pull root cache has pulled prims",
-            [self = this]() {
-                self->_hasPulledPrims = true;
-                return true;
-            },
-            [self = this]() {
-                self->_hasPulledPrims = false;
-                return true;
-            })) {
-        TF_WARN("Cannot create pulled prim cache.");
-        return MObject();
-    }
     progressBar.advance();
 
     // As soon as we've pulled something, we must observe the scene for
@@ -1767,12 +1751,10 @@ bool PrimUpdaterManager::removePullParent(
             if (!TF_VERIFY(FunctionUndoItem::execute(
                     "Remove orphaned nodes manager, pulled prims flag reset",
                     [&]() {
-                        _hasPulledPrims = false;
                         endManagePulledPrims();
                         return true;
                     },
                     [&]() {
-                        _hasPulledPrims = true;
                         beginManagePulledPrims();
                         return true;
                     }))) {
@@ -1887,6 +1869,12 @@ bool PrimUpdaterManager::readPullInformation(const MDagPath& dagPath, Ufe::Path&
     }
 
     return false;
+}
+
+bool PrimUpdaterManager::hasPulledPrims() const
+{
+    MObject pullRoot = findPullRoot();
+    return !pullRoot.isNull();
 }
 
 #ifdef HAS_ORPHANED_NODES_MANAGER
