@@ -90,22 +90,19 @@ const MString kPullDGMetadataKey("Pull_UfePath");
 
 // Name of Dag node under which all pulled sub-hierarchies are rooted.
 const MString kPullRootName("__mayaUsd__");
+const MString kPullRootPath("|__mayaUsd__");
 
 MObject findPullRoot()
 {
-    // Try to find one in the scene.
-    auto       worldObj = MItDag().root();
-    MFnDagNode world(worldObj);
-    auto       nbWorldChildren = world.childCount();
-    for (unsigned int i = 0; i < nbWorldChildren; ++i) {
-        auto              childObj = world.child(i);
-        MFnDependencyNode child(childObj);
-        if (child.name() == kPullRootName) {
-            return childObj;
-        }
-    }
+    // Try to find the pull root in the scene.
+    MSelectionList sel;
+    sel.add(kPullRootPath);
+    if (sel.isEmpty())
+        return MObject();
 
-    return MObject();
+    MObject obj;
+    sel.getDependNode(0, obj);
+    return obj;
 }
 
 Ufe::Path usdToMaya(const Ufe::Path& usdPath)
