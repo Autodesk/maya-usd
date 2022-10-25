@@ -106,7 +106,7 @@ function(mayaUsd_compile_config TARGET)
         if(IS_LINUX)
             target_compile_definitions(${TARGET}
                 PRIVATE
-                    _GLIBCXX_USE_CXX11_ABI=0 # USD is built with old ABI
+                    _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${MAYA_LINUX_BUILT_WITH_CXX11_ABI}>,1,0>
             )
         endif()
     elseif(IS_MSVC)

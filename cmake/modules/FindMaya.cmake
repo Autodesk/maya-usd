@@ -12,17 +12,25 @@
 # MAYA_API_VERSION    Maya version (6-8 digits)
 # MAYA_APP_VERSION    Maya app version (4 digits)
 # MAYA_LIGHTAPI_VERSION Maya light API version (1 or 2 or 3)
+# MAYA_PREVIEW_RELEASE_VERSION Preview Release number (3 or more digits) in preview releases, 0 in official releases
+#
+# Cache variables:
 # MAYA_HAS_DEFAULT_MATERIAL_API Presence of a default material API on MRenderItem.
 # MAYA_NEW_POINT_SNAPPING_SUPPORT Presence of point new snapping support.
-# MAYA_PREVIEW_RELEASE_VERSION Preview Release number (3 or more digits) in preview releases, 0 in official releases
 # MAYA_CURRENT_UFE_CAMERA_SUPPORT Presence of MFrameContext::getCurrentUfeCameraPath.
+# MAYA_HAS_CRASH_DETECTION Presence of isInCrashHandler API
 # MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT Presence of MPxSubSceneOverride::setUfeIdentifier.
 # MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT Presence of MPxSubSceneOverride::updateUfeIdentifier.
 # MAYA_ENABLE_NEW_PRIM_DELETE Enable new delete behaviour for delete command
 # MAYA_HAS_DISPLAY_STYLE_ALL_VIEWPORTS Presence of MFrameContext::getDisplayStyleOfAllViewports.
 # MAYA_ARRAY_ITERATOR_DIFFERENCE_TYPE_SUPPORT Presence of maya array iterator difference_type trait
 # MAYA_HAS_GET_MEMBER_PATHS Presence of MFnSet::getMemberPaths
+# MAYA_HAS_DISPLAY_LAYER_API Presence of MFnDisplayLayer
+# MAYA_HAS_NEW_DISPLAY_LAYER_MESSAGING_API Presence of MDisplayLayerMemberChangedFunction
+# MAYA_HAS_RENDER_ITEM_HIDE_ON_PLAYBACK_API Presence of MRenderItem has HideOnPlayback API
 # MAYA_CAMERA_GIZMO_SUPPORT Support for drawing Ufe cameras and lights in the viewport.
+# MAYA_LINUX_BUILT_WITH_CXX11_ABI Maya Linux was built with new cxx11 ABI.
+# MAYA_MACOSX_BUILT_WITH_UB2 Maya OSX was built with Universal Binary 2.
 
 #=============================================================================
 # Copyright 2011-2012 Francisco Requena <frarees@gmail.com>
@@ -472,6 +480,52 @@ set(MAYA_CAMERA_GIZMO_SUPPORT FALSE CACHE INTERNAL "ufeCameraGizmos")
 if (MAYA_API_VERSION VERSION_GREATER_EQUAL 20230200)
     set(MAYA_CAMERA_GIZMO_SUPPORT TRUE CACHE INTERNAL "ufeCameraGizmos")
     message(STATUS "Maya has UFE gizmo drawing")
+endif()
+
+set(MAYA_LINUX_BUILT_WITH_CXX11_ABI FALSE CACHE INTERNAL "MayaLinuxBuiltWithCxx11ABI")
+if(IS_LINUX AND MAYA_Foundation_LIBRARY)
+    # Determine if Maya (on Linux) was built using the new CXX11 ABI.
+    # If yes, then MayaUsd MUST also be built with new ABI.
+    execute_process(
+        COMMAND
+            nm "${MAYA_Foundation_LIBRARY}"
+        COMMAND
+            grep findVariableReplacement
+        COMMAND
+            grep " T "
+        WORKING_DIRECTORY
+            ${MAYA_LIBRARY_DIR}
+        OUTPUT_VARIABLE
+            maya_cxx11_abi)
+    if (NOT ("${maya_cxx11_abi}" STREQUAL ""))
+        string(FIND ${maya_cxx11_abi} "__cxx1112basic_string" maya_cxx11_abi_index)
+        if(NOT (${maya_cxx11_abi_index} STREQUAL "-1"))
+            set(MAYA_LINUX_BUILT_WITH_CXX11_ABI TRUE CACHE INTERNAL "MayaLinuxBuiltWithCxx11ABI")
+            message(STATUS "Linux: Maya was built with new cxx11 ABI")
+        endif()
+    endif()
+endif()
+
+set(MAYA_MACOSX_BUILT_WITH_UB2 FALSE CACHE INTERNAL "MayaMacOSXBuiltWithUB2")
+if(IS_MACOSX AND MAYA_Foundation_LIBRARY)
+    # Determine if Maya (on OSX) was built with Universal Binary 2 (x86_64 & arm64).
+    # If yes, then MayaUsd can be built with either: Intel, Arm or both.
+    execute_process(
+        COMMAND
+            lipo -archs "${MAYA_Foundation_LIBRARY}"
+        WORKING_DIRECTORY
+            ${MAYA_LIBRARY_DIR}
+        OUTPUT_VARIABLE
+            maya_lipo_output)
+    string(REGEX MATCHALL "(x86_64|arm64)" maya_ub2_match ${maya_lipo_output})
+    if (maya_ub2_match)
+        list(FIND maya_ub2_match "x86_64" ub2_index1)
+        list(FIND maya_ub2_match "arm64" ub2_index2)
+        if((NOT (${ub2_index1} STREQUAL "-1")) AND (NOT (${ub2_index2} STREQUAL "-1")))
+            set(MAYA_MACOSX_BUILT_WITH_UB2 TRUE CACHE INTERNAL "MayaMacOSXBuiltWithUB2")
+            message(STATUS "MacOSX: Maya was built with Universal Binary 2 (x86_64/arm64)")
+        endif()
+    endif()
 endif()
 
 # handle the QUIETLY and REQUIRED arguments and set MAYA_FOUND to TRUE if
