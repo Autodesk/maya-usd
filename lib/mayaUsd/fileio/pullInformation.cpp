@@ -16,8 +16,8 @@
 
 #include "pullInformation.h"
 
-#include <MayaUsdUtils/util.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsdUtils/util.h>
 
 #include <pxr/usd/usd/editContext.h>
 
