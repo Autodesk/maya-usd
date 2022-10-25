@@ -14,13 +14,14 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
 endif()
 
 set(INTERACTIVE_TEST_SCRIPT_FILES "")
+
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND INTERACTIVE_TEST_SCRIPT_FILES
         testUtilsSelectability.py
         testUtilsSelectabilityPointInstanceSelection.py
     )
 endif()
-        
+
 foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})
     mayaUsd_add_test(${target}
@@ -44,11 +45,9 @@ foreach(script ${INTERACTIVE_TEST_SCRIPT_FILES})
     set_property(TEST ${target} APPEND PROPERTY LABELS utils)
 endforeach()
 
-
 # -----------------------------------------------------------------------------
 # C++ unit tests
 # -----------------------------------------------------------------------------
-
 function(add_mayaUsdLibUtils_test TARGET_NAME)
     add_executable(${TARGET_NAME})
 
@@ -57,8 +56,8 @@ function(add_mayaUsdLibUtils_test TARGET_NAME)
     # -----------------------------------------------------------------------------
     target_sources(${TARGET_NAME}
         PRIVATE
-            main.cpp
-            ${ARGN}
+        main.cpp
+        ${ARGN}
     )
 
     # -----------------------------------------------------------------------------
@@ -68,20 +67,20 @@ function(add_mayaUsdLibUtils_test TARGET_NAME)
 
     target_compile_definitions(${TARGET_NAME}
         PRIVATE
-            $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
-            $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
-            $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
     )
 
     # -----------------------------------------------------------------------------
     # link libraries
     # -----------------------------------------------------------------------------
     target_link_libraries(${TARGET_NAME}
-        PRIVATE 
-            GTest::GTest
-            mayaUsdUtils
-            ${MAYA_LIBRARIES}
-            mayaUsd
+        PRIVATE
+        GTest::GTest
+        mayaUsdUtils
+        ${MAYA_LIBRARIES}
+        mayaUsd
     )
 
     # -----------------------------------------------------------------------------
@@ -90,8 +89,8 @@ function(add_mayaUsdLibUtils_test TARGET_NAME)
     mayaUsd_add_test(${TARGET_NAME}
         COMMAND $<TARGET_FILE:${TARGET_NAME}>
         ENV
-            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
-            "MAYA_LOCATION=${MAYA_LOCATION}"
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+        "MAYA_LOCATION=${MAYA_LOCATION}"
     )
 endfunction()
 
@@ -104,8 +103,7 @@ if(IS_WINDOWS)
         testLoadRules.cpp
     )
     add_mayaUsdLibUtils_test(
-	    testSplitString
-	    testSplitString.cpp
+        testSplitString
+        testSplitString.cpp
     )
 endif()
-

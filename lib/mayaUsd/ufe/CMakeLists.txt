@@ -23,6 +23,7 @@ target_sources(${PROJECT_NAME}
         UsdStageMap.cpp
         UsdTRSUndoableCommandBase.cpp
         UsdTransform3d.cpp
+        UsdTransform3dReadImpl.cpp
         UsdTransform3dHandler.cpp
         UsdTranslateUndoableCommand.cpp
         UsdUndoDeleteCommand.cpp
@@ -38,6 +39,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             ProxyShapeContextOpsHandler.cpp
             RotationUtils.cpp
             UsdAttribute.cpp
+            UsdAttributeHolder.cpp
             UsdAttributes.cpp
             UsdAttributesHandler.cpp
             UsdCamera.cpp
@@ -120,6 +122,7 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         target_sources(${PROJECT_NAME}
             PRIVATE
                 UsdShaderAttributeDef.cpp
+                UsdShaderAttributeHolder.cpp
                 UsdUndoCreateFromNodeDefCommand.cpp
         )
     endif()
@@ -153,6 +156,13 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
                 UsdUndoAttributesCommands.cpp
         )
     endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4025)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+                UsdTransform3dRead.cpp
+        )
+    endif()
 endif()
 
 if(PXR_VERSION GREATER_EQUAL 2108)
@@ -184,6 +194,7 @@ set(HEADERS
     UsdStageMap.h
     UsdTRSUndoableCommandBase.h
     UsdTransform3d.h
+    UsdTransform3dReadImpl.h
     UsdTransform3dHandler.h
     UsdTranslateUndoableCommand.h
     UsdUndoDeleteCommand.h
@@ -198,6 +209,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         ProxyShapeContextOpsHandler.h
         RotationUtils.h
         UsdAttribute.h
+        UsdAttributeHolder.h
         UsdAttributes.h
         UsdAttributesHandler.h
         UsdCamera.h
@@ -265,6 +277,7 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4010)
         list(APPEND HEADERS
             UsdShaderAttributeDef.h
+            UsdShaderAttributeHolder.h
             UsdUndoCreateFromNodeDefCommand.h
         )
     endif()
@@ -292,6 +305,12 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4024)
         list(APPEND HEADERS
                 UsdUndoAttributesCommands.h
+        )
+    endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4025)
+        list(APPEND HEADERS
+            UsdTransform3dRead.h
         )
     endif()
 endif()

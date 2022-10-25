@@ -25,12 +25,22 @@ macro(fetch_googletest)
         # sequence parsing errors.  PPT, 22-Nov-2018.
         file(TO_CMAKE_PATH ${CMAKE_MAKE_PROGRAM} CMAKE_MAKE_PROGRAM)
 
-        # Force the use of ABI version 0 on Linux.
-        # This is what Maya has been using for 2019...2023
+        # Set some options used when compiling googletest.
+        set(CMAKE_CXX_STANDARD 11)
+        set(CMAKE_CXX_EXTENSIONS OFF)
+        set(CMAKE_CXX_STANDARD_REQUIRED ON)
         if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-            set(FORCE_OLD_ABI "-D_GLIBCXX_USE_CXX11_ABI=0")
+            # In gcc 11 there was a new warning (about uninit variable) in googletest.
+            # Since we have warnings as errors, this causes build error.
+            # Simply disable all warnings in googletest since we won't fix them anyways.
+            # We will just update to newer version, if required.
+            set(disable_all_warnings_flag -w)
+
+            # Force the use of ABI version 0 on Linux.
+            # This is what Maya has been using for 2019...2023
+            set(glibcxx_abi -D_GLIBCXX_USE_CXX11_ABI=0)
         endif()
- 
+
         if (GOOGLETEST_SRC_DIR)
             configure_file(cmake/googletest_src.txt.in ${GOOGLETEST_BUILD_ROOT}/googletest-config/CMakeLists.txt)
         else()

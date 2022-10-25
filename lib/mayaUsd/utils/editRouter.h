@@ -64,6 +64,23 @@ private:
     EditRouterCb _cb;
 };
 
+// Guard class that holds previous edit target
+// Note : _prevEditTarget is a by-value copy rather than reference
+// since a reference does not change the edit target upon destruction
+class MAYAUSD_CORE_PUBLIC EditTargetGuard
+{
+public:
+    EditTargetGuard(const PXR_NS::UsdPrim& prim, const PXR_NS::UsdEditTarget& editTarget);
+
+    ~EditTargetGuard();
+
+private:
+    const PXR_NS::UsdPrim& _prim;
+
+    // The previous edit target, as a by-value copy.
+    const PXR_NS::UsdEditTarget _prevEditTarget;
+};
+
 using EditRouters
     = PXR_NS::TfHashMap<PXR_NS::TfToken, EditRouter::Ptr, PXR_NS::TfToken::HashFunctor>;
 

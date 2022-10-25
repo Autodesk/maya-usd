@@ -42,7 +42,8 @@ UsdShaderNodeDefHandler::Ptr UsdShaderNodeDefHandler::create()
 // Ufe::ShaderNodeDefHandler overrides
 //------------------------------------------------------------------------------
 
-Ufe::NodeDef::Ptr UsdShaderNodeDefHandler::definition(const Ufe::SceneItem::Ptr& item) const
+PXR_NS::SdrShaderNodeConstPtr
+UsdShaderNodeDefHandler::usdDefinition(const Ufe::SceneItem::Ptr& item)
 {
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
     PXR_NAMESPACE_USING_DIRECTIVE
@@ -65,8 +66,13 @@ Ufe::NodeDef::Ptr UsdShaderNodeDefHandler::definition(const Ufe::SceneItem::Ptr&
     //     ND_standard_surface_surfaceshader     (latest version)
     //     ND_standard_surface_surfaceshader_100 (version 1.0.0)
     // Same name, 2 different identifiers.
-    PXR_NS::SdrRegistry&          registry = PXR_NS::SdrRegistry::GetInstance();
-    PXR_NS::SdrShaderNodeConstPtr shaderNodeDef = registry.GetShaderNodeByIdentifier(mxNodeType);
+    PXR_NS::SdrRegistry& registry = PXR_NS::SdrRegistry::GetInstance();
+    return registry.GetShaderNodeByIdentifier(mxNodeType);
+}
+
+Ufe::NodeDef::Ptr UsdShaderNodeDefHandler::definition(const Ufe::SceneItem::Ptr& item) const
+{
+    PXR_NS::SdrShaderNodeConstPtr shaderNodeDef = usdDefinition(item);
     if (!shaderNodeDef) {
         return nullptr;
     }

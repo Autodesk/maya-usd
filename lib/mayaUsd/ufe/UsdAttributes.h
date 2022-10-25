@@ -23,7 +23,7 @@
 
 #include <ufe/attributes.h>
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4008)
+#if (UFE_PREVIEW_VERSION_NUM >= 4010)
 #include <ufe/nodeDef.h>
 #endif
 #endif
@@ -64,31 +64,29 @@ public:
     Ufe::UndoableCommand::Ptr removeAttributeCmd(const std::string& name) override;
 #endif
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4008)
+#if (UFE_PREVIEW_VERSION_NUM >= 4010)
     inline Ufe::NodeDef::Ptr nodeDef() const;
 #endif
 
 #if (UFE_PREVIEW_VERSION_NUM >= 4024)
     // Helpers for validation and execution:
-    static bool canAddAttribute(
-        const UsdSceneItem::Ptr&    item,
-        const std::string&          name,
-        const Ufe::Attribute::Type& type);
+    static bool canAddAttribute(const UsdSceneItem::Ptr& item, const Ufe::Attribute::Type& type);
     static Ufe::Attribute::Ptr doAddAttribute(
         const UsdSceneItem::Ptr&    item,
         const std::string&          name,
         const Ufe::Attribute::Type& type);
-    static bool canRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
-    static bool doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
+    static std::string getUniqueAttrName(const UsdSceneItem::Ptr& item, const std::string& name);
+    static bool        canRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
+    static bool        doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
 #endif
 #endif
-
-private:
-    Ufe::Attribute::Type getUfeTypeForAttribute(const PXR_NS::UsdAttribute& usdAttr) const;
 
 private:
     UsdSceneItem::Ptr fItem;
     PXR_NS::UsdPrim   fPrim;
+
+    typedef std::unordered_map<std::string, Ufe::Attribute::Ptr> AttributeMap;
+    AttributeMap                                                 fUsdAttributes;
 }; // UsdAttributes
 
 } // namespace ufe

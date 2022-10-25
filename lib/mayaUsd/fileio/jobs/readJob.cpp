@@ -85,6 +85,53 @@ struct TempNodeTrackerScope
 
     UsdMayaPrimReaderContext& _context;
 };
+
+struct AutoTimelineRestore
+{
+    AutoTimelineRestore(bool preserve)
+        : preserveTimeline(preserve)
+        , originalAnimStartTime(MAnimControl::animationStartTime())
+        , originalAnimEndTime(MAnimControl::animationEndTime())
+        , originalMinTime(MAnimControl::minTime())
+        , originalMaxTime(MAnimControl::maxTime())
+
+    {
+    }
+
+    ~AutoTimelineRestore()
+    {
+        if (!preserveTimeline)
+            return;
+
+        try {
+            if (MAnimControl::minTime() != originalMinTime) {
+                MAnimControl::setMinTime(originalMinTime);
+            }
+
+            if (MAnimControl::maxTime() != originalMaxTime) {
+                MAnimControl::setMaxTime(originalMaxTime);
+            }
+
+            if (MAnimControl::animationStartTime() != originalAnimStartTime) {
+                MAnimControl::setAnimationStartTime(originalAnimStartTime);
+            }
+
+            if (MAnimControl::animationEndTime() != originalAnimEndTime) {
+                MAnimControl::setAnimationEndTime(originalAnimEndTime);
+            }
+
+        } catch (std::exception&) {
+            // Ignore - don't trhow exceptions from the destructor.
+        }
+    }
+
+    const bool  preserveTimeline; // If false, the timeline values are not preserved.
+    const MTime originalAnimStartTime;
+    const MTime originalAnimEndTime;
+    const MTime originalMinTime;
+    const MTime originalMaxTime;
+};
+
 } // namespace
 
 UsdMaya_ReadJob::UsdMaya_ReadJob(
@@ -183,10 +230,8 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
 
     // If the import time interval isn't empty, we expand the Min/Max time
     // sliders to include the stage's range if necessary.
+    AutoTimelineRestore timelineRestore(mArgs.preserveTimeline);
     if (!mArgs.timeInterval.IsEmpty()) {
-        MTime currentMinTime = MAnimControl::minTime();
-        MTime currentMaxTime = MAnimControl::maxTime();
-
         GfInterval stageInterval;
         if (mArgs.timeInterval.IsFinite()) {
             if (mArgs.timeInterval.GetMin() > mArgs.timeInterval.GetMax()) {
@@ -203,11 +248,11 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         }
 
         MTime::Unit timeUnit = MTime::uiUnit();
-        if (stageInterval.GetMin() < currentMinTime.value()) {
+        if (stageInterval.GetMin() < timelineRestore.originalMinTime.value()) {
             MAnimControl::setMinTime(
                 MTime(stageInterval.GetMin() * mTimeSampleMultiplier, timeUnit));
         }
-        if (stageInterval.GetMax() > currentMaxTime.value()) {
+        if (stageInterval.GetMax() > timelineRestore.originalMaxTime.value()) {
             MAnimControl::setMaxTime(
                 MTime(stageInterval.GetMax() * mTimeSampleMultiplier, timeUnit));
         }

@@ -22,6 +22,8 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/valueTypeName.h>
+#include <pxr/usd/sdr/registry.h>
+#include <pxr/usd/sdr/shaderNode.h>
 #include <pxr/usd/usdShade/input.h>
 #include <pxr/usd/usdShade/material.h>
 #include <pxr/usd/usdShade/output.h>
@@ -147,7 +149,20 @@ UsdShadeOutput UsdMayaShadingUtil::CreateShaderOutputAndConnectMaterial(
         return UsdShadeOutput();
     }
 
-    UsdShadeOutput shaderOutput = shader.CreateOutput(terminalName, materialOutput.GetTypeName());
+    // Make sure the shading node has a registered output by that name.
+    SdrRegistry& registry = SdrRegistry::GetInstance();
+    TfToken      nodeID;
+    shader.GetIdAttr().Get(&nodeID);
+    TfToken               outputName = terminalName;
+    SdrShaderNodeConstPtr shaderNodeDef = registry.GetShaderNodeByIdentifier(nodeID);
+    if (shaderNodeDef) {
+        const NdrTokenVec& outputNames = shaderNodeDef->GetOutputNames();
+        if (std::find(outputNames.cbegin(), outputNames.cend(), terminalName) == outputNames.cend()
+            && outputNames.size() == 1) {
+            outputName = outputNames.front();
+        }
+    }
+    UsdShadeOutput shaderOutput = shader.CreateOutput(outputName, materialOutput.GetTypeName());
 
     UsdPrim parentPrim = shader.GetPrim().GetParent();
     if (parentPrim == material.GetPrim()) {

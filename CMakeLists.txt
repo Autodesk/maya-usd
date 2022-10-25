@@ -58,6 +58,7 @@ set(CMAKE_INSTALL_MESSAGE "NEVER")
 
 if(APPLE)
     if(BUILD_UB2)
+        message(STATUS "Building with Universal Binary 2")
         set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
         set(CMAKE_OSX_DEPLOYMENT_TARGET 11.0)
     else()

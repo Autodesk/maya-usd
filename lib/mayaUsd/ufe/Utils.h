@@ -27,6 +27,7 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
@@ -159,15 +160,16 @@ bool isAttributeEditAllowed(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& 
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 MAYAUSD_CORE_PUBLIC
-Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdfValueTypeName& usdType);
+Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::UsdAttribute& usdAttr);
 
 MAYAUSD_CORE_PUBLIC
 Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdrShaderPropertyConstPtr& shaderProperty);
 
 MAYAUSD_CORE_PUBLIC
-PXR_NS::SdfValueTypeName ufeTypeToUsd(const std::string& ufeType);
+PXR_NS::SdfValueTypeName ufeTypeToUsd(const Ufe::Attribute::Type ufeType);
 
-PXR_NS::VtValue vtValueFromString(const std::string& typeName, const std::string& strValue);
+PXR_NS::VtValue
+vtValueFromString(const PXR_NS::SdfValueTypeName& typeName, const std::string& strValue);
 #endif
 
 //! Check if the edit target in the stage is allowed to be changed.
@@ -228,6 +230,32 @@ Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& f
 //! Splits a string by each specified separator.
 MAYAUSD_CORE_PUBLIC
 std::vector<std::string> splitString(const std::string& str, const std::string& separators);
+
+class ReplicateExtrasFromUSD
+{
+public:
+    // Prepares the replication operation for the subtree starting with the given scene item
+    void initRecursive(Ufe::SceneItem::Ptr) const;
+    // Replicates extra features from the USD item defined by 'path' to the maya object
+    void processItem(const Ufe::Path& path, const MObject& mayaObject) const;
+
+private:
+    mutable std::unordered_map<Ufe::Path, MObject> _displayLayerMap;
+};
+
+class ReplicateExtrasToUSD
+{
+public:
+    // Processes replication from a maya object defined by 'dagPath'
+    // to the usd item defined by 'usdPath'
+    void processItem(const MDagPath& dagPath, const PXR_NS::SdfPath& usdPath) const;
+    // Finalizes the replication operation to the USD stage defined by 'stagePath'
+    // with a possibility to rename the usd root node name to 'renameRoot'
+    void finalize(const Ufe::Path& stagePath, const std::string* renameRoot = nullptr) const;
+
+private:
+    mutable std::map<PXR_NS::SdfPath, MObject> _primToLayerMap;
+};
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
