@@ -53,6 +53,7 @@ list(APPEND SHADERFRAGMENTS_XMLS
     PointsFallbackShader.xml
     PointsFallbackCPVShader.xml
     PointsGeometry.xml
+    UsdDrawModeCards.xml
     UsdPrimvarColor.xml
     UsdPrimvarReader_color.xml
     UsdPrimvarReader_float.xml

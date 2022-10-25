@@ -103,6 +103,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     (UsdPreviewSurfaceLightAPI1)
     (UsdPreviewSurfaceLightAPI2)
     (UsdPreviewSurfaceLightAPI3)
+
+#if PXR_VERSION <= 2211
+    (UsdDrawModeCards)
+#endif
 );
 // clang-format on
 
@@ -144,6 +148,9 @@ static const TfTokenVector _FragmentNames = { _tokens->BasisCurvesCubicColorDoma
                                               _tokens->scaledDiffusePassThrough,
                                               _tokens->scaledSpecularPassThrough,
                                               _tokens->opacityToTransparency,
+#if PXR_VERSION <= 2211
+                                              _tokens->UsdDrawModeCards,
+#endif
                                               _tokens->usdPreviewSurfaceLightingAPI1,
                                               _tokens->usdPreviewSurfaceLightingAPI2,
                                               _tokens->usdPreviewSurfaceLightingAPI3,
