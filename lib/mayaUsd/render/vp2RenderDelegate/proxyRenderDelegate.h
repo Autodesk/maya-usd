@@ -191,6 +191,9 @@ public:
 #endif
 
     MAYAUSD_CORE_PUBLIC
+    void ColorPrefsChanged();
+
+    MAYAUSD_CORE_PUBLIC
     MColor GetWireframeColor();
 
     MAYAUSD_CORE_PUBLIC
@@ -267,8 +270,8 @@ private:
     void _DirtyUfeSubtree(const Ufe::Path& rootPath);
     void _DirtyUfeSubtree(const MString& rootStr);
     void _DirtyUsdSubtree(const UsdPrim& prim);
-    void _RequestRefresh();
 #endif
+    void _RequestRefresh();
     SdfPathVector
     _GetFilteredRprims(HdRprimCollection const& collection, TfTokenVector const& renderTags);
 
@@ -339,19 +342,20 @@ private:
     bool _isPopulated {
         false
     }; //!< If false, scene delegate wasn't populated yet within render index
-    bool _selectionChanged { true }; //!< Whether there is any selection change or not
+    bool _selectionChanged { true };   //!< Whether there is any selection change or not
+    bool _colorPrefsChanged { false }; //!< Whether there is any color preferences change or not
+    bool _refreshRequested { false };  //!< True when a refresh has been requested.
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
     using NodeHandleToCallbackIdMap = UsdMayaUtil::MObjectHandleUnorderedMap<MCallbackId>;
 
-    bool _refreshRequested {
-        false
-    }; //!< True if the render delegate has already requested a refresh.
     MCallbackId               _mayaDisplayLayerAddedCallbackId { 0 };
     MCallbackId               _mayaDisplayLayerRemovedCallbackId { 0 };
     MCallbackId               _mayaDisplayLayerMembersCallbackId { 0 };
     NodeHandleToCallbackIdMap _mayaDisplayLayerDirtyCallbackIds;
 #endif
+
+    std::vector<MCallbackId> _mayaColorPrefsCallbackIds;
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     bool _selectionModeChanged { true }; //!< Whether the global selection mode has changed

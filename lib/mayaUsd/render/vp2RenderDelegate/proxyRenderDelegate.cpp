@@ -55,6 +55,7 @@
 #include <maya/MDGMessage.h>
 #include <maya/MDisplayLayerMessage.h>
 #endif
+#include <maya/M3dView.h>
 #include <maya/MEventMessage.h>
 #include <maya/MFileIO.h>
 #include <maya/MFnPluginData.h>
@@ -62,7 +63,6 @@
 #include <maya/MProfiler.h>
 #include <maya/MSelectionContext.h>
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
-#include <maya/M3dView.h>
 #include <maya/MFnDisplayLayer.h>
 #include <maya/MFnDisplayLayerManager.h>
 #include <maya/MNodeMessage.h>
@@ -375,6 +375,14 @@ void displayLayerDirtyCB(MObject& node, void* clientData)
 }
 #endif
 
+void colorPrefsChangedCB(void* clientData)
+{
+    ProxyRenderDelegate* prd = static_cast<ProxyRenderDelegate*>(clientData);
+    if (prd) {
+        prd->ColorPrefsChanged();
+    }
+}
+
 // Copied from renderIndex.cpp, the code that does HdRenderIndex::GetDrawItems. But I just want the
 // rprimIds, I don't want to go all the way to draw items.
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 42
@@ -521,6 +529,9 @@ ProxyRenderDelegate::~ProxyRenderDelegate()
         MMessage::removeCallback(cb.second);
     }
 #endif
+    for (auto id : _mayaColorPrefsCallbackIds) {
+        MMessage::removeCallback(id);
+    }
 }
 
 //! \brief  This drawing routine supports all devices (DirectX and OpenGL)
@@ -697,6 +708,13 @@ void ProxyRenderDelegate::_InitRenderDelegate()
                     displayLayerMembershipChangedCB, this);
         }
 #endif
+        // Monitor color prefs.
+        _mayaColorPrefsCallbackIds.push_back(
+            MEventMessage::addEventCallback("ColorIndexChanged", colorPrefsChangedCB, this));
+        _mayaColorPrefsCallbackIds.push_back(
+            MEventMessage::addEventCallback("DisplayColorChanged", colorPrefsChangedCB, this));
+        _mayaColorPrefsCallbackIds.push_back(
+            MEventMessage::addEventCallback("DisplayRGBColorChanged", colorPrefsChangedCB, this));
 
         // We don't really need any HdTask because VP2RenderDelegate uses Hydra
         // engine for data preparation only, but we have to add a dummy render
@@ -921,9 +939,8 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorC_L1, "Execute");
 
     ++_frameCounter;
-#ifdef MAYA_HAS_DISPLAY_LAYER_API
+
     _refreshRequested = false;
-#endif
 
     _UpdateRenderTags();
 
@@ -1011,6 +1028,11 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
             _defaultCollection->SetReprSelector(reprSelector);
             _taskController->SetCollection(*_defaultCollection);
             dirtyBits |= MayaUsdRPrim::DirtyDisplayMode;
+        }
+
+        if (_colorPrefsChanged) {
+            _colorPrefsChanged = false;
+            dirtyBits |= MayaUsdRPrim::DirtySelectionHighlight;
         }
 
 #if MAYA_API_VERSION >= 20230200
@@ -1462,13 +1484,20 @@ void ProxyRenderDelegate::DisplayLayerDirty(MFnDisplayLayer& displayLayer)
     }
 }
 
+#endif
+
 void ProxyRenderDelegate::_RequestRefresh()
 {
     if (!_refreshRequested)
         M3dView::scheduleRefreshAllViews();
     _refreshRequested = true;
 }
-#endif
+
+void ProxyRenderDelegate::ColorPrefsChanged()
+{
+    _colorPrefsChanged = true;
+    _RequestRefresh();
+}
 
 //! \brief  Populate lead and active selection for Rprims under the proxy shape.
 void ProxyRenderDelegate::_PopulateSelection()
