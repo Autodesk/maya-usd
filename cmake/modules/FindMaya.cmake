@@ -493,14 +493,16 @@ if(IS_LINUX AND MAYA_Foundation_LIBRARY)
             grep findVariableReplacement
         COMMAND
             grep " T "
-       WORKING_DIRECTORY
+        WORKING_DIRECTORY
             ${MAYA_LIBRARY_DIR}
         OUTPUT_VARIABLE
             maya_cxx11_abi)
-    string(FIND ${maya_cxx11_abi} "__cxx1112basic_string" maya_cxx11_abi_index)
-    if(NOT (${maya_cxx11_abi_index} STREQUAL "-1"))
-        set(MAYA_LINUX_BUILT_WITH_CXX11_ABI TRUE CACHE INTERNAL "MayaLinuxBuiltWithCxx11ABI")
-        message(STATUS "Linux: Maya was built with new cxx11 ABI")
+    if (NOT ("${maya_cxx11_abi}" STREQUAL ""))
+        string(FIND ${maya_cxx11_abi} "__cxx1112basic_string" maya_cxx11_abi_index)
+        if(NOT (${maya_cxx11_abi_index} STREQUAL "-1"))
+            set(MAYA_LINUX_BUILT_WITH_CXX11_ABI TRUE CACHE INTERNAL "MayaLinuxBuiltWithCxx11ABI")
+            message(STATUS "Linux: Maya was built with new cxx11 ABI")
+        endif()
     endif()
 endif()
 
