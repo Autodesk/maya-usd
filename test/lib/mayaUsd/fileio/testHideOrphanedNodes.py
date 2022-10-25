@@ -241,6 +241,7 @@ class HideOrphanedNodesTestCase(unittest.TestCase):
         variantCXlation = (1, 2, 3)
         cPrim = mayaUsd.ufe.ufePathToPrim(self.cPathStr)
         cMayaPathStr = mayaUsd.lib.PrimUpdaterManager.readPullInformation(cPrim)
+        self.assertNotEqual(cMayaPathStr, '')
         cDagPath = om.MSelectionList().add(cMayaPathStr).getDagPath(0)
         cFn= om.MFnTransform(cDagPath)
         self.assertEqual(cFn.translation(om.MSpace.kObject),
@@ -262,6 +263,10 @@ class HideOrphanedNodesTestCase(unittest.TestCase):
         self.assertFalse(pullParentVisibilityPlug[self.cPathStr].asBool())
         self.assertTrue(pullParentVisibilityPlug[self.ePathStr].asBool())
 
+        # Also verify that the session layer data has been removed.
+        cMayaPathStr = mayaUsd.lib.PrimUpdaterManager.readPullInformation(cPrim)
+        self.assertEqual(cMayaPathStr, '')
+
         cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', 2))
         filename = os.path.abspath("orphaned.ma")
         self._saveScene(filename)
@@ -281,6 +286,10 @@ class HideOrphanedNodesTestCase(unittest.TestCase):
 
         self.assertTrue(pullParentVisibilityPlug[self.cPathStr].asBool())
         self.assertTrue(pullParentVisibilityPlug[self.ePathStr].asBool())
+
+        # Also verify that the session layer data has been restored.
+        cMayaPathStr = mayaUsd.lib.PrimUpdaterManager.readPullInformation(cPrim)
+        self.assertNotEqual(cMayaPathStr, '')
 
     def testHideOnNestingVariantSwitch(self):
         # Pull on C and E.
