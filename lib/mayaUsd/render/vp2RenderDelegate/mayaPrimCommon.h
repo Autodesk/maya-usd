@@ -69,7 +69,7 @@ public:
 #endif
 
 //! A primvar vertex buffer data map indexed by primvar name.
-using PrimvarBufferDataMap = std::unordered_map<TfToken, void*, TfToken::HashFunctor>;
+using PrimvarBufferDataMap = std::unordered_map<TfToken, std::vector<char>, TfToken::HashFunctor>;
 
 //! \brief  Helper struct used to package all the changes into single commit task
 //!         (such commit task will be executed on main-thread)
@@ -83,7 +83,7 @@ struct MayaUsdCommitState
     PrimvarBufferDataMap _primvarBufferDataMap;
 
     //! If valid, world matrix to set on the render item
-    MMatrix* _worldMatrix { nullptr };
+    const MMatrix* _worldMatrix { nullptr };
 
     //! If valid, bounding box to set on the render item
     MBoundingBox* _boundingBox { nullptr };
@@ -179,6 +179,40 @@ protected:
         kReference = 2
     };
 
+    enum ReprOverride
+    {
+        kNone = 0,
+        kBBox = 1,
+        kWire = 2
+    };
+
+    struct DisplayLayerModes
+    {
+        //! Requested display layer visibility
+        bool _visibility { true };
+
+        //! Requested HideOnPlayback status
+        bool _hideOnPlayback { false };
+
+        //! Defines representation override that should be applied to the prim
+        ReprOverride _reprOverride { kNone };
+
+        //! Requested display type of the Rprim
+        DisplayType _displayType { kNormal };
+
+        //! Requested texturing status
+        bool _texturing { true };
+
+        //! Wireframe color index
+        // zero - override is disabled
+        // negative - override with RGB color
+        // positive - override with the given index
+        int _wireframeColorIndex { 0 };
+
+        //! Wireframe color override
+        MColor _wireframeColorRGBA;
+    };
+
     void _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
 
     void _UpdateTransform(
@@ -191,17 +225,26 @@ protected:
 
     void _SetDirtyRepr(const HdReprSharedPtr& repr);
 
-    HdReprSharedPtr _AddNewRepr(
+    void _UpdateReprOverrides(ReprVector& reprs);
+
+    TfToken _GetOverrideToken(TfToken const& reprToken) const;
+
+    TfToken _GetMaterialNetworkToken(const TfToken& reprToken) const;
+
+    HdReprSharedPtr _InitReprCommon(
+        HdRprim&       refThis,
         TfToken const& reprToken,
         ReprVector&    reprs,
         HdDirtyBits*   dirtyBits,
         SdfPath const& id);
 
     bool _SyncCommon(
+        HdRprim&               refThis,
+        HdSceneDelegate*       delegate,
+        HdRenderParam*         renderParam,
         HdDirtyBits*           dirtyBits,
-        const SdfPath&         id,
         HdReprSharedPtr const& curRepr,
-        HdRenderIndex&         renderIndex);
+        TfToken const&         reprToken);
 
     void _SyncSharedData(
         HdRprimSharedData& sharedData,
@@ -211,6 +254,8 @@ protected:
         HdRprim const&     refThis,
         ReprVector const&  reprs,
         TfToken const&     renderTag);
+
+    void _SyncDisplayLayerModes(const HdRprim& refThis);
 
     void _UpdatePrimvarSourcesGeneric(
         HdSceneDelegate*       sceneDelegate,
@@ -222,6 +267,7 @@ protected:
 
     SdfPath _GetUpdatedMaterialId(HdRprim* rprim, HdSceneDelegate* delegate);
     MColor  _GetHighlightColor(const TfToken& className);
+    MColor  _GetWireframeColor();
 
     void _PropagateDirtyBitsCommon(HdDirtyBits& bits, const ReprVector& reprs) const;
 
@@ -235,7 +281,15 @@ protected:
     //! Helper utility function to adapt Maya API changes.
     static void _SetWantConsolidation(MHWRender::MRenderItem& renderItem, bool state);
 
+    static bool _GetMaterialPrimvars(HdRenderIndex&, const SdfPath&, TfTokenVector&);
+
     void _InitRenderItemCommon(MHWRender::MRenderItem* renderItem) const;
+
+    HdVP2DrawItem::RenderItemData& _AddRenderItem(
+        HdVP2DrawItem&          drawItem,
+        MHWRender::MRenderItem* renderItem,
+        MSubSceneContainer&     subSceneContainer,
+        const HdGeomSubset*     geomSubset = nullptr) const;
 
     MHWRender::MRenderItem* _CreateWireframeRenderItem(
         const MString&        name,
@@ -266,11 +320,15 @@ protected:
     //! Selection status of the Rprim
     HdVP2SelectionStatus _selectionStatus { kUnselected };
 
+    //! Modes requested by display layer along with the frame they are updated on
+    DisplayLayerModes _displayLayerModes;
+    uint64_t          _displayLayerModesFrame { 0 };
+
     //! HideOnPlayback status of the Rprim
     bool _hideOnPlayback { false };
 
-    //! Display type of the Rprim
-    DisplayType _displayType { kNormal };
+    //! Representation override applied to the prim, if any
+    ReprOverride _reprOverride { kNone };
 
     //! The string representation of the runtime only path to this object
     MStringArray _PrimSegmentString;

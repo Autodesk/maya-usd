@@ -8,8 +8,10 @@ target_sources(${PROJECT_NAME}
         converter.cpp
         customLayerData.cpp
         diagnosticDelegate.cpp
+        dynamicAttribute.cpp
         editability.cpp
         editRouter.cpp
+        layerMuting.cpp
         loadRules.cpp
         loadRulesText.cpp
         loadRulesAttribute.cpp
@@ -21,6 +23,7 @@ target_sources(${PROJECT_NAME}
         traverseLayer.cpp
         undoHelperCommand.cpp
         util.cpp
+        utilDictionary.cpp
         utilFileSystem.cpp
         utilSerialization.cpp
         variants.cpp
@@ -32,9 +35,11 @@ set(HEADERS
     customLayerData.h
     converter.h
     diagnosticDelegate.h
+    dynamicAttribute.h
     editability.h
     editRouter.h
     hash.h
+    layerMuting.h
     loadRules.h
     query.h
     plugRegistryHelper.h
@@ -44,6 +49,7 @@ set(HEADERS
     traverseLayer.h
     undoHelperCommand.h
     util.h
+    utilDictionary.h
     utilFileSystem.h
     utilSerialization.h
     variants.h

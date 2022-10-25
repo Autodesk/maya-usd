@@ -32,7 +32,9 @@
 #include <pxr/imaging/hd/basisCurves.h>
 #include <pxr/imaging/hd/changeTracker.h>
 #include <pxr/imaging/hd/enums.h>
+#include <pxr/imaging/hd/material.h>
 #include <pxr/imaging/hd/mesh.h>
+#include <pxr/imaging/hd/points.h>
 #include <pxr/imaging/hd/primGather.h>
 #include <pxr/imaging/hd/repr.h>
 #include <pxr/imaging/hd/rprimCollection.h>
@@ -95,19 +97,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
-//! Representation selector for shaded and textured viewport mode
-const HdReprSelector kSmoothHullReprSelector(HdReprTokens->smoothHull);
-
-#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
-//! Representation selector for default material viewport mode
-const HdReprSelector kDefaultMaterialReprSelector(HdVP2ReprTokens->defaultMaterial);
-#endif
-
-//! Representation selector for wireframe viewport mode
-const HdReprSelector kWireReprSelector(TfToken(), HdReprTokens->wire);
-
-//! Representation selector for bounding box viewport mode
-const HdReprSelector kBBoxReprSelector(TfToken(), HdVP2ReprTokens->bbox);
 
 //! Representation selector for point snapping
 const HdReprSelector kPointsReprSelector(TfToken(), TfToken(), HdReprTokens->points);
@@ -291,6 +280,7 @@ void _ConfigureReprs()
 
     // Hull desc for shaded display, edge desc for selection highlight.
     HdMesh::ConfigureRepr(HdReprTokens->smoothHull, reprDescHull, reprDescEdge);
+    HdMesh::ConfigureRepr(HdVP2ReprTokens->smoothHullUntextured, reprDescHull, reprDescEdge);
 
 #ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
     // Hull desc for default material display, edge desc for selection highlight.
@@ -301,6 +291,10 @@ void _ConfigureReprs()
     // Edge desc for bbox display.
     HdMesh::ConfigureRepr(HdVP2ReprTokens->bbox, reprDescEdge);
 
+    // smooth hull for untextured display
+    HdBasisCurves::ConfigureRepr(
+        HdVP2ReprTokens->smoothHullUntextured, HdBasisCurvesGeomStylePatch);
+
     // Wireframe desc for bbox display.
     HdBasisCurves::ConfigureRepr(HdVP2ReprTokens->bbox, HdBasisCurvesGeomStyleWire);
 
@@ -308,6 +302,8 @@ void _ConfigureReprs()
     // Wire for default material:
     HdBasisCurves::ConfigureRepr(HdVP2ReprTokens->defaultMaterial, HdBasisCurvesGeomStyleWire);
 #endif
+
+    HdPoints::ConfigureRepr(HdVP2ReprTokens->smoothHullUntextured, HdPointsGeomStylePoints);
 }
 
 #if defined(WANT_UFE_BUILD)
@@ -818,19 +814,24 @@ void ProxyRenderDelegate::_DirtyUsdSubtree(const UsdPrim& prim)
         return;
 
     HdChangeTracker&      changeTracker = _renderIndex->GetChangeTracker();
-    constexpr HdDirtyBits dirtyBits = HdChangeTracker::DirtyVisibility
-        | HdChangeTracker::DirtyDisplayStyle | MayaUsdRPrim::DirtySelectionHighlight;
+    constexpr HdDirtyBits dirtyBits = HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyRepr
+        | HdChangeTracker::DirtyDisplayStyle | MayaUsdRPrim::DirtySelectionHighlight
+        | HdChangeTracker::DirtyMaterialId;
 
-    if (prim.IsA<UsdGeomGprim>()) {
+    if (prim.IsA<UsdGeomGprim>() && prim.IsActive()) {
         auto indexPath = _sceneDelegate->ConvertCachePathToIndexPath(prim.GetPath());
-        changeTracker.MarkRprimDirty(indexPath, dirtyBits);
+        if (_renderIndex->HasRprim(indexPath)) {
+            changeTracker.MarkRprimDirty(indexPath, dirtyBits);
+        }
     }
 
     UsdPrimSubtreeRange range = prim.GetDescendants();
     for (auto iter = range.begin(); iter != range.end(); ++iter) {
         if (iter->IsA<UsdGeomGprim>()) {
             auto indexPath = _sceneDelegate->ConvertCachePathToIndexPath(iter->GetPath());
-            changeTracker.MarkRprimDirty(indexPath, dirtyBits);
+            if (_renderIndex->HasRprim(indexPath)) {
+                changeTracker.MarkRprimDirty(indexPath, dirtyBits);
+            }
         }
     }
 }
@@ -866,6 +867,53 @@ void ProxyRenderDelegate::_DirtyUfeSubtree(const MString& rootStr)
 }
 #endif
 
+void ProxyRenderDelegate::ComputeCombinedDisplayStyles(const unsigned int newDisplayStyle)
+{
+    // Add new display styles to the map
+    if (newDisplayStyle & MHWRender::MFrameContext::kBoundingBox) {
+        _combinedDisplayStyles[HdVP2ReprTokens->bbox] = _frameCounter;
+    } else {
+        if (newDisplayStyle & MHWRender::MFrameContext::kWireFrame) {
+            _combinedDisplayStyles[HdReprTokens->wire] = _frameCounter;
+        }
+
+        if (newDisplayStyle & MHWRender::MFrameContext::kGouraudShaded) {
+#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
+            if (newDisplayStyle & MHWRender::MFrameContext::kDefaultMaterial) {
+                _combinedDisplayStyles[HdVP2ReprTokens->defaultMaterial] = _frameCounter;
+            } else
+#endif
+                if (newDisplayStyle & MHWRender::MFrameContext::kTextured) {
+                _combinedDisplayStyles[HdReprTokens->smoothHull] = _frameCounter;
+            } else {
+                _combinedDisplayStyles[HdVP2ReprTokens->smoothHullUntextured] = _frameCounter;
+            }
+        }
+    }
+
+    // Erase aged styles
+    for (auto it = _combinedDisplayStyles.begin(); it != _combinedDisplayStyles.end();) {
+        auto          curIt = it++;
+        constexpr int numFramesToAge = 8;
+        if (curIt->second + numFramesToAge < _frameCounter) {
+            _combinedDisplayStyles.erase(curIt);
+        }
+    }
+
+    // Erase excessive styles
+    while (_combinedDisplayStyles.size() > HdReprSelector::MAX_TOPOLOGY_REPRS) {
+        auto oldestIt = _combinedDisplayStyles.begin();
+        auto curIt = _combinedDisplayStyles.begin();
+        for (++curIt; curIt != _combinedDisplayStyles.end(); ++curIt) {
+            if (oldestIt->second > curIt->second) {
+                oldestIt = curIt;
+            }
+        }
+
+        _combinedDisplayStyles.erase(oldestIt);
+    }
+}
+
 //! \brief  Execute Hydra engine to perform minimal VP2 draw data update based on change tracker.
 void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 {
@@ -883,8 +931,6 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
     // won't be prepared until point snapping is activated; otherwise the draw
     // data have to be prepared early for possible activation of point snapping.
 #if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
-    HdReprSelector reprSelector;
-
     const bool inSelectionPass = (frameContext.getSelectionInfo() != nullptr);
 #if !defined(MAYA_NEW_POINT_SNAPPING_SUPPORT) || defined(WANT_UFE_BUILD)
     const bool inPointSnapping = pointSnappingActive();
@@ -904,27 +950,13 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 #endif // defined(WANT_UFE_BUILD)
 
 #else // !defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
-    HdReprSelector reprSelector = kPointsReprSelector;
+    _combinedDisplayStyles[HdReprTokens->points] = _frameCounter;
 
-    constexpr bool     inSelectionPass = false;
+    constexpr bool inSelectionPass = false;
 #if !defined(MAYA_NEW_POINT_SNAPPING_SUPPORT)
-    constexpr bool     inPointSnapping = false;
+    constexpr bool inPointSnapping = false;
 #endif
 #endif // defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
-
-    const unsigned int currentDisplayStyle = frameContext.getDisplayStyle();
-
-    // Query the wireframe color assigned to proxy shape.
-    if (currentDisplayStyle
-        & (MHWRender::MFrameContext::kBoundingBox | MHWRender::MFrameContext::kWireFrame)) {
-        _wireframeColor
-            = MHWRender::MGeometryUtilities::wireframeColor(_proxyShapeData->ProxyDagPath());
-    }
-#ifdef MAYA_HAS_DISPLAY_STYLE_ALL_VIEWPORTS
-    const unsigned int displayStyle = frameContext.getDisplayStyleOfAllViewports();
-#else
-    const unsigned int displayStyle = currentDisplayStyle;
-#endif
 
     // Work around USD issue #1516. There is a significant performance overhead caused by populating
     // selection, so only force the populate selection to occur when we detect a change which
@@ -947,6 +979,7 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
     }
 #endif
 
+    HdReprSelector reprSelector;
     if (inSelectionPass) {
         // The new Maya point snapping support doesn't require point snapping items any more.
 #if !defined(MAYA_NEW_POINT_SNAPPING_SUPPORT)
@@ -955,33 +988,18 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         }
 #endif
     } else {
-        // Update repr selector based on display style of the current viewport
-        if (displayStyle & MHWRender::MFrameContext::kBoundingBox) {
-            if (!reprSelector.Contains(HdVP2ReprTokens->bbox)) {
-                reprSelector = reprSelector.CompositeOver(kBBoxReprSelector);
-            }
-        } else {
-            // To support Wireframe on Shaded mode, the two displayStyle checks
-            // should not be mutually excluded.
-            if (displayStyle & MHWRender::MFrameContext::kGouraudShaded) {
-#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
-                if (displayStyle & MHWRender::MFrameContext::kDefaultMaterial) {
-                    if (!reprSelector.Contains(HdVP2ReprTokens->defaultMaterial)) {
-                        reprSelector = reprSelector.CompositeOver(kDefaultMaterialReprSelector);
-                    }
-                } else
-#endif
-                    if (!reprSelector.Contains(HdReprTokens->smoothHull)) {
-                    reprSelector = reprSelector.CompositeOver(kSmoothHullReprSelector);
-                }
-            }
+        ComputeCombinedDisplayStyles(frameContext.getDisplayStyle());
 
-            if (displayStyle & MHWRender::MFrameContext::kWireFrame) {
-                if (!reprSelector.Contains(HdReprTokens->wire)) {
-                    reprSelector = reprSelector.CompositeOver(kWireReprSelector);
-                }
-            }
+        // Update repr selector based on combined display styles
+        TfToken reprNames[HdReprSelector::MAX_TOPOLOGY_REPRS];
+        auto    it = _combinedDisplayStyles.begin();
+        for (size_t j = 0;
+             (it != _combinedDisplayStyles.end()) && (j < HdReprSelector::MAX_TOPOLOGY_REPRS);
+             ++it, ++j) {
+            reprNames[j] = it->first;
         }
+
+        reprSelector = HdReprSelector(reprNames[0], reprNames[1], reprNames[2]);
     }
 
     // if there are no repr's to update then don't even call sync.
@@ -1004,6 +1022,18 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
             dirtyBits |= MayaUsdRPrim::DirtySelectionHighlight;
         }
 #endif
+
+        // if switching to textured mode, we need to update materials
+        const bool neededTexturedMaterials = _needTexturedMaterials;
+        _needTexturedMaterials
+            = _combinedDisplayStyles.find(HdReprTokens->smoothHull) != _combinedDisplayStyles.end();
+        if (_needTexturedMaterials && !neededTexturedMaterials) {
+            auto materials = _renderIndex->GetSprimSubtree(
+                HdPrimTypeTokens->material, SdfPath::AbsoluteRootPath());
+            for (auto material : materials) {
+                changeTracker.MarkSprimDirty(material, HdMaterial::DirtyParams);
+            }
+        }
 
         if (dirtyBits != HdChangeTracker::Clean) {
             // Mark everything "dirty" so that sync is called on everything
@@ -1718,7 +1748,11 @@ HdVP2SelectionStatus ProxyRenderDelegate::GetSelectionStatus(const SdfPath& path
 }
 
 //! \brief  Query the wireframe color assigned to the proxy shape.
-const MColor& ProxyRenderDelegate::GetWireframeColor() const { return _wireframeColor; }
+MColor ProxyRenderDelegate::GetWireframeColor()
+{
+    static const MColor defaultColor(0.f, 0.f, 0.f);
+    return _GetDisplayColor(_wireframeColorCache, "polymeshDormant", false, defaultColor);
+}
 
 GfVec3f ProxyRenderDelegate::GetDefaultColor(const TfToken& className)
 {

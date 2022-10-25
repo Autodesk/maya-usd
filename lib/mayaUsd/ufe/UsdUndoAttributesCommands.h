@@ -25,7 +25,7 @@
 
 #include <ufe/attributes.h>
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4008)
+#if (UFE_PREVIEW_VERSION_NUM >= 4010)
 #include <ufe/nodeDef.h>
 #endif
 #endif
@@ -65,8 +65,11 @@ public:
 
 private:
     const Ufe::Path            _sceneItemPath;
-    const std::string          _name;
+    std::string                _name;
     const Ufe::Attribute::Type _type;
+
+    void setName(const std::string& newName);
+
 }; // UsdAddAttributeCommand
 
 //! \brief Implementation of AddAttributeCommand

@@ -18,11 +18,13 @@
 
 import fixturesUtils
 import mayaUtils
+import testUtils
 import usdUtils
+import mayaUsd_createStageWithNewLayer
 
 import mayaUsd.ufe
 
-from pxr import Usd, Tf
+from pxr import Usd, Tf, UsdShade, Sdf
 
 from maya import cmds
 from maya import standalone
@@ -469,10 +471,18 @@ class RenameTestCase(unittest.TestCase):
         self.assertTrue(usdPrim)
 
         # the new prim name is expected to be "leavesXform1"
-        assert ([x for x in stage.Traverse()] == [stage.GetPrimAtPath("/TreeBase"), 
-            stage.GetPrimAtPath("/TreeBase/leavesXform"), 
-            stage.GetPrimAtPath("/TreeBase/leavesXform/leaves"),
-            stage.GetPrimAtPath("/TreeBase/leavesXform1"),])
+        def verifyNames():
+            assert ([x for x in stage.Traverse()] == [stage.GetPrimAtPath("/TreeBase"), 
+                stage.GetPrimAtPath("/TreeBase/leavesXform"), 
+                stage.GetPrimAtPath("/TreeBase/leavesXform/leaves"),
+                stage.GetPrimAtPath("/TreeBase/leavesXform1"),])
+
+        verifyNames()
+
+        # rename `/TreeBase/leavesXform1` to `/TreeBase/leavesXform1`: should not affect the name.
+        cmds.rename("leavesXform1")
+
+        verifyNames()
 
     def testRenameSpecialCharacter(self):
         # open twoSpheres.ma scene in testSamples
@@ -524,7 +534,6 @@ class RenameTestCase(unittest.TestCase):
 
         # [GitHub #2150] renaming 2 usd items with illegal characters will cause Maya to crash
         cmds.file(new=True, force=True)
-        import mayaUsd_createStageWithNewLayer
         psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
         x1 = stage.DefinePrim('/Xform1', 'Xform')
@@ -538,6 +547,35 @@ class RenameTestCase(unittest.TestCase):
         cmds.select('|stage1|stageShape1,/test_', '|stage1|stageShape1,/test_1', replace=True)
         sel = ufe.GlobalSelection.get()
         self.assertEqual(2, len(sel))
+
+    def testRenameAutoNumber(self):
+        '''Test that a trailing # is converted to a number that makes the name unique.'''
+
+        # Create stage with two xforms.
+        cmds.file(new=True, force=True)
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        stage.DefinePrim('/Xform1', 'Xform')
+        stage.DefinePrim('/Xform2', 'Xform')
+
+        # rename with trailing #
+        cmds.select('|stage1|stageShape1,/Xform1', replace=True)
+        cmds.rename('hello#')
+
+        # The prim # should have been changed to a number: hello1.
+        item = ufe.GlobalSelection.get().front()
+        usdPrim = stage.GetPrimAtPath(str(item.path().segments[1]))
+        self.assertTrue(usdPrim)
+        self.assertEqual(usdPrim.GetName(), "hello1")
+
+        cmds.select('|stage1|stageShape1,/Xform2', replace=True)
+        cmds.rename('hello#')
+
+        # The prim # should have been changed to a unique number: hello2.
+        item = ufe.GlobalSelection.get().front()
+        usdPrim = stage.GetPrimAtPath(str(item.path().segments[1]))
+        self.assertTrue(usdPrim)
+        self.assertEqual(usdPrim.GetName(), "hello2")
 
     def testRenameNotifications(self):
         '''Rename a USD node and test for the UFE notifications.'''
@@ -717,6 +755,42 @@ class RenameTestCase(unittest.TestCase):
 
         compQueryPrimC = CompositionQuery(stage.GetPrimAtPath('/objects_eggplant/geos_cucumber/cube_C'))
         self.assertTrue(list(compQueryPrimC.getData()[1].values()), ['specialize', '/objects_eggplant/geos_cucumber/cube_banana'])
+
+    def testRelationshipAndConnectionUpdatesOnRename(self):
+
+        '''
+        Verify that relationship targets and connection sources are properly
+        updated when renaming.
+        '''
+
+        cmds.file(new=True, force=True)
+        testFile = testUtils.getTestScene("MaterialX", "MtlxUVStreamTest.usda")
+        shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
+
+        def testPaths(self, shapeStage, cubeName):
+            # Test the Material assignment relationship on the Mesh:
+            pCube1Binding = UsdShade.MaterialBindingAPI(shapeStage.GetPrimAtPath('/{}'.format(cubeName)))
+            self.assertEqual(pCube1Binding.GetDirectBinding().GetMaterialPath(), Sdf.Path("/{}/Looks/standardSurface2SG".format(cubeName)))
+
+            # Test one connection inside the Material:
+            mix1Shader = UsdShade.ConnectableAPI(shapeStage.GetPrimAtPath('/{}/Looks/standardSurface2SG/MayaNG_standardSurface2SG/mix1'.format(cubeName)))
+            fgInput = mix1Shader.GetInput("fg")
+            srcConnectAPI = fgInput.GetConnectedSource()[0]
+            self.assertEqual(srcConnectAPI.GetPath(), Sdf.Path("/{}/Looks/standardSurface2SG/MayaNG_standardSurface2SG/ramp1".format(cubeName)))
+
+        testPaths(self, shapeStage, "pCube1")
+
+        # Rename /pCube1 to /banana
+        cubePath = ufe.PathString.path('|stage|stageShape,/pCube1')
+        cubeItem = ufe.Hierarchy.createItem(cubePath)
+        ufe.GlobalSelection.get().append(cubeItem)
+        cmds.rename("banana")
+
+        testPaths(self, shapeStage, "banana")
+
+        cmds.undo()
+
+        testPaths(self, shapeStage, "pCube1")
 
 
 if __name__ == '__main__':

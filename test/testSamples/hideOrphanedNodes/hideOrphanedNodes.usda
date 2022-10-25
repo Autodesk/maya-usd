@@ -1,0 +1,17 @@
+#usda 1.0
+
+def Xform "A" (
+    prepend references = @./A.usda@
+    variants = {
+        string abVariant = "a"
+    }
+)
+{
+}
+
+def Xform "D"
+{
+    def Xform "E"
+    {
+    }
+}

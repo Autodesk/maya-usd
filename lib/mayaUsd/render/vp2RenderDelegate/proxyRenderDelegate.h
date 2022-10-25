@@ -191,7 +191,7 @@ public:
 #endif
 
     MAYAUSD_CORE_PUBLIC
-    const MColor& GetWireframeColor() const;
+    MColor GetWireframeColor();
 
     MAYAUSD_CORE_PUBLIC
     GfVec3f GetDefaultColor(const TfToken& className);
@@ -206,6 +206,12 @@ public:
 
     MAYAUSD_CORE_PUBLIC
     MColor GetReferenceColor();
+
+    MAYAUSD_CORE_PUBLIC
+    uint64_t GetFrameCounter() const { return _frameCounter; }
+
+    MAYAUSD_CORE_PUBLIC
+    bool NeedTexturedMaterials() const { return _needTexturedMaterials; }
 
     MAYAUSD_CORE_PUBLIC
     const HdSelection::PrimSelectionState* GetLeadSelectionState(const SdfPath& path) const;
@@ -266,6 +272,8 @@ private:
     SdfPathVector
     _GetFilteredRprims(HdRprimCollection const& collection, TfTokenVector const& renderTags);
 
+    void ComputeCombinedDisplayStyles(const unsigned int newDisplayStyle);
+
     /*! \brief  Hold all data related to the proxy shape.
 
         In addition to holding data read from the proxy shape, ProxyShapeData tracks when data read
@@ -325,6 +333,8 @@ private:
                          //!< synchronization running without it)
     std::unique_ptr<UsdImagingDelegate> _sceneDelegate; //!< USD scene delegate
     const MHWRender::MFrameContext*     _currentFrameContext = nullptr;
+    std::map<TfToken, uint64_t>         _combinedDisplayStyles;
+    bool                                _needTexturedMaterials = false;
 
     bool _isPopulated {
         false
@@ -350,7 +360,6 @@ private:
         false
     }; //!< Whether point snapping should snap to selected objects
 #endif
-    MColor _wireframeColor; //!< Wireframe color assigned to the proxy shape
 
     std::mutex _mayaCommandEngineMutex;
     uint64_t   _frameCounter { 0 };
@@ -358,6 +367,7 @@ private:
     // The name of the currently used color space
     MString _colorTransformId;
 
+    MColorCache  _wireframeColorCache { MColor(), 0 };
     MColorCache  _activeMeshColorCache { MColor(), 0 };
     MColorCache  _activeCurveColorCache { MColor(), 0 };
     MColorCache  _activePointsColorCache { MColor(), 0 };

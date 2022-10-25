@@ -17,6 +17,7 @@
 
 from pxr import Usd
 from pxr import UsdShade
+from pxr import Sdr
 
 from maya import cmds
 from maya import standalone
@@ -217,11 +218,26 @@ class testUsdExportMultiMaterial(unittest.TestCase):
             # Making sure no NodeGraph boundaries were skipped upstream:
             ("/UsdPreviewSurface/M_place2dTexture1", "varname", "/UsdPreviewSurface"),
             ("/UsdPreviewSurface", "M:file1:varname", ""),
-
-            ("/MaterialX/MayaNG_MaterialX/M_place2dTexture1_MayaGeomPropValue", "geomprop", "/MaterialX/MayaNG_MaterialX"),
-            ("/MaterialX/MayaNG_MaterialX", "M:file1:varnameStr", "/MaterialX"),
-            ("/MaterialX", "M:file1:varnameStr", ""),
         ]
+
+        primvarReader = Sdr.Registry().GetShaderNodeByIdentifier("UsdPrimvarReader_float2")
+        if primvarReader and primvarReader.GetShaderInput("varname").GetType() == "string":
+            connections.extend(
+                [
+                    # Making sure no NodeGraph boundaries were skipped upstream, and that the right varname is used
+                    ("/MaterialX/MayaNG_MaterialX/M_place2dTexture1_MayaGeomPropValue", "geomprop", "/MaterialX/MayaNG_MaterialX"),
+                    ("/MaterialX/MayaNG_MaterialX", "M:file1:varname", "/MaterialX"),
+                    ("/MaterialX", "M:file1:varname", ""),
+                ])
+        else:
+            connections.extend(
+                [
+                    # Making sure no NodeGraph boundaries were skipped upstream, and that the right varname is used
+                    ("/MaterialX/MayaNG_MaterialX/M_place2dTexture1_MayaGeomPropValue", "geomprop", "/MaterialX/MayaNG_MaterialX"),
+                    ("/MaterialX/MayaNG_MaterialX", "M:file1:varnameStr", "/MaterialX"),
+                    ("/MaterialX", "M:file1:varnameStr", ""),
+                ])
+
         for src_name, input_name, dst_name in connections:
             src_prim = stage.GetPrimAtPath(mat_path + src_name)
             self.assertTrue(src_prim, mat_path + src_name + " does not exist")

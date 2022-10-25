@@ -137,7 +137,8 @@ MtlxUsd_Place2dTextureWriter::MtlxUsd_Place2dTextureWriter(
     } else {
         // Just install a reader to save space.
         p2dTexSchema.CreateIdAttr(VtValue(TrMtlxTokens->ND_geompropvalue_vector2));
-        p2dTexSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Float2);
+        p2dTexSchema.CreateOutput(
+            _GetOutputName(TrMtlxTokens->ND_geompropvalue_vector2), SdfValueTypeNames->Float2);
         _ConnectVarnameInput(p2dTexSchema);
         return;
     }
@@ -158,8 +159,8 @@ MtlxUsd_Place2dTextureWriter::MtlxUsd_Place2dTextureWriter(
 
         _ConnectVarnameInput(primvarReaderSchema);
 
-        UsdShadeOutput primvarReaderOutput
-            = primvarReaderSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Float2);
+        UsdShadeOutput primvarReaderOutput = primvarReaderSchema.CreateOutput(
+            _GetOutputName(TrMtlxTokens->ND_geompropvalue_vector2), SdfValueTypeNames->Float2);
 
         // Connect the output of the primvar reader to the texture coordinate
         // input of the UV texture.
@@ -198,10 +199,9 @@ void MtlxUsd_Place2dTextureWriter::_ConnectVarnameInput(UsdShadeShader& primvarR
 
     UsdShadeInput varnameInput
         = primvarReaderSchema.CreateInput(TrMtlxTokens->geomprop, SdfValueTypeNames->String);
-    TfToken inputName(
-        TfStringPrintf("%s:%s", fileNodeName.c_str(), TrMtlxTokens->varnameStr.GetText()));
+    TfToken inputName(TfStringPrintf("%s:%s", fileNodeName.c_str(), _GetVarnameName().GetText()));
 
-    // We expose the primvar reader varnameStr attribute to the material to allow
+    // We expose the primvar reader varname attribute to the material to allow
     // easy specialization based on UV mappings to geometries:
     UsdPrim          materialPrim = primvarReaderSchema.GetPrim().GetParent();
     UsdShadeMaterial materialSchema(materialPrim);

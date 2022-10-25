@@ -56,6 +56,9 @@ struct HdVP2MeshSharedData
     //! for efficient GPU rendering.
     HdMeshTopology _renderingTopology;
 
+    //! Defines whether or not the vertex layout used for drawing is unshared
+    bool _isVertexLayoutUnshared { false };
+
     //! An array to store original scene face vertex index of each rendering
     //! face vertex index.
     VtIntArray _renderingToSceneFaceVtxIds;
@@ -158,22 +161,28 @@ private:
         const HdDirtyBits& rprimDirtyBits,
         const TfToken&     reprToken);
 
-    void
-    _CreateSmoothHullRenderItems(HdVP2DrawItem& drawItem, MSubSceneContainer& subSceneContainer);
+    void _CreateSmoothHullRenderItems(
+        HdVP2DrawItem&      drawItem,
+        const TfToken&      reprToken,
+        MSubSceneContainer& subSceneContainer);
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     MHWRender::MRenderItem* _CreateShadedSelectedInstancesItem(
         const MString&      name,
         HdVP2DrawItem&      drawItem,
+        const TfToken&      reprToken,
         MSubSceneContainer& subSceneContainer,
         const HdGeomSubset* geomSubset) const;
 #endif
     HdVP2DrawItem::RenderItemData& _CreateSmoothHullRenderItem(
         const MString&      name,
         HdVP2DrawItem&      drawItem,
+        const TfToken&      reprToken,
         MSubSceneContainer& subSceneContainer,
         const HdGeomSubset* geomSubset) const;
     MHWRender::MRenderItem* _CreateSelectionHighlightRenderItem(const MString& name) const;
+
+    void _ResetRenderingTopology();
 
     static void _InitGPUCompute();
 

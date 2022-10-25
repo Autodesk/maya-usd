@@ -53,6 +53,11 @@ namespace {
 // variant has its own copy of the flag.
 void clearAutoEdit(const UsdPrim& prim)
 {
+    // The given prim can be invalid. This happens for example if an
+    // ancestor was deactivated.
+    if (!prim.IsValid())
+        return;
+
     UsdPrim parentPrim = prim.GetParent();
     MAYAUSD_NS::applyToAllVariants(parentPrim, true, [prim]() {
         // Note: the prim might not exist in all variants, so check its validity.

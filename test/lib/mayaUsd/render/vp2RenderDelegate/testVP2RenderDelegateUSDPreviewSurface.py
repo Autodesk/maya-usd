@@ -160,6 +160,9 @@ class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
         testFile = testUtils.getTestScene("UsdPreviewSurface", "UsdTransform2dTest.usda")
         mayaUtils.createProxyFromFile(testFile)
 
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, displayTextures=True)
+
         self.assertSnapshotClose('UsdTransform2dTest.png')
 
     def testUseSpecularWorkflow(self):
@@ -210,6 +213,9 @@ class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
 
         testFile = testUtils.getTestScene("UsdPreviewSurface", "TestFallbackColor.usda")
         mayaUtils.createProxyFromFile(testFile)
+
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, displayTextures=True)
 
         self.assertSnapshotClose('TestFallbackColor.png')
 

@@ -1825,7 +1825,8 @@ VtDictionary UsdMayaUtil::GetDictionaryFromArgDatabase(
     // 1 - bools: Some bools are actual boolean flags (t/f) in Maya, and others
     //     are false if omitted, true if present (simple flags).
     // 2 - strings: Just strings!
-    // 3 - vectors (multi-use args): Try to mimic the way they're passed in the
+    // 3 - doubles: A simple double
+    // 4 - vectors (multi-use args): Try to mimic the way they're passed in the
     //     Python command API. If single arg per flag, make it a vector of
     //     strings. Multi arg per flag, vector of vector of strings.
     VtDictionary args;
@@ -1847,6 +1848,10 @@ VtDictionary UsdMayaUtil::GetDictionaryFromArgDatabase(
             args[key] = val;
         } else if (guideValue.IsHolding<std::string>()) {
             const std::string val = argData.flagArgumentString(key.c_str(), 0).asChar();
+            args[key] = val;
+        } else if (guideValue.IsHolding<double>()) {
+            double val = 0.0;
+            argData.getFlagArgument(key.c_str(), 0, val);
             args[key] = val;
         } else if (guideValue.IsHolding<std::vector<VtValue>>()) {
             unsigned int count = argData.numberOfFlagUses(entry.first.c_str());
@@ -1881,7 +1886,10 @@ VtDictionary UsdMayaUtil::GetDictionaryFromArgDatabase(
             }
             args[key] = val;
         } else {
-            TF_CODING_ERROR("Can't handle type '%s'", guideValue.GetTypeName().c_str());
+            TF_CODING_ERROR(
+                "Can't handle type '%s' for key '%s' ",
+                guideValue.GetTypeName().c_str(),
+                key.c_str());
         }
     }
 

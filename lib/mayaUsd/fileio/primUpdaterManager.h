@@ -26,11 +26,15 @@
 #include <pxr/usd/sdf/path.h>
 
 #include <maya/MCallbackIdArray.h>
-#include <maya/MDagPath.h>
-#include <maya/MFnDependencyNode.h>
-#include <maya/MObject.h>
-#include <ufe/path.h>
 #include <ufe/sceneItem.h>
+
+UFE_NS_DEF { class Path; }
+
+#ifdef HAS_ORPHANED_NODES_MANAGER
+namespace MAYAUSD_NS_DEF {
+class OrphanedNodesManager;
+}
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -83,25 +87,42 @@ private:
     PrimUpdaterManager(PrimUpdaterManager&) = delete;
     PrimUpdaterManager(PrimUpdaterManager&&) = delete;
 
-    bool discardPrimEdits(const Ufe::Path& path);
-    bool discardOrphanedEdits(const MDagPath& dagPath);
+    bool discardPrimEdits(const Ufe::Path& pulledPath);
+    bool discardOrphanedEdits(const MDagPath& dagPath, const Ufe::Path& pulledPath);
     void discardPullSetIfEmpty();
 
     void onProxyContentChanged(const MayaUsdProxyStageObjectsChangedNotice& notice);
 
     //! Ensure the Dag pull root exists.  This is the child of the Maya world
-    //! node under which all pulled nodes are created.
+    //! node under which all pulled nodes are created.  Complexity is O(n) for
+    //! n children of the Maya world node.
     MObject findOrCreatePullRoot();
 
     //! Create the pull parent for the pulled hierarchy.  This is the node
     //! which receives the pulled node's parent transformation.
     MObject createPullParent(const Ufe::Path& pulledPath, MObject pullRoot);
 
-    //! Remove the pull parent for the pulled hierarchy.
-    bool removePullParent(const MDagPath& pullParent);
+    //! Remove the pull parent for the pulled hierarchy.  Pass in the original
+    //! USD pulled path, because at the point of removal of the pull parent the
+    //! Maya pulled node no longer exists, and cannot be used to retrieve the
+    //! pull information.
+    bool removePullParent(const MDagPath& pullParent, const Ufe::Path& pulledPath);
 
     //! Create the pull parent and set it into the prim updater context.
     MDagPath setupPullParent(const Ufe::Path& pulledPath, VtDictionary& args);
+
+    //! Record pull information for the pulled path, for inspection on
+    //! scene changes.
+#ifdef HAS_ORPHANED_NODES_MANAGER
+    void recordPullVariantInfo(const Ufe::Path& pulledPath, const MDagPath& pullParentPath);
+
+    // Maya file new or open callback.  Member function to access other private
+    // member functions.
+    static void beforeNewOrOpenCallback(void* clientData);
+
+    void beginManagePulledPrims();
+    void endManagePulledPrims();
+#endif
 
     friend class TfSingleton<PrimUpdaterManager>;
 
@@ -111,6 +132,16 @@ private:
     // The goal is to let code that can be optimized when there is no pull prim
     // to check rapidly.
     bool _hasPulledPrims { false };
+
+    // Orphaned nodes manager that observes the scene, to determine when to hide
+    // pulled prims that have become orphaned, or to show them again, because
+    // of structural changes to their USD or Maya ancestors.
+#ifdef HAS_ORPHANED_NODES_MANAGER
+    std::shared_ptr<MayaUsd::OrphanedNodesManager> _orphanedNodesManager {};
+
+    // Maya scene observation, to stop UFE scene observation.
+    MCallbackIdArray _fileCbs;
+#endif
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -121,6 +121,8 @@ public:
     static MObject sessionLayerNameAttr;
     MAYAUSD_CORE_PUBLIC
     static MObject rootLayerNameAttr;
+    MAYAUSD_CORE_PUBLIC
+    static MObject mutedLayersAttr;
 
     // Output attributes
     MAYAUSD_CORE_PUBLIC
@@ -196,6 +198,12 @@ public:
 
     MAYAUSD_CORE_PUBLIC
     int getComplexity() const;
+
+    MAYAUSD_CORE_PUBLIC
+    std::vector<std::string> getMutedLayers() const;
+
+    MAYAUSD_CORE_PUBLIC
+    MStatus setMutedLayers(const std::vector<std::string>& muted);
 
     MAYAUSD_CORE_PUBLIC
     UsdTimeCode getTime() const override;
@@ -381,6 +389,7 @@ private:
 
     void _OnStageContentsChanged(const UsdNotice::StageContentsChanged& notice);
     void _OnStageObjectsChanged(const UsdNotice::ObjectsChanged& notice);
+    void _OnLayerMutingChanged(const UsdNotice::LayerMutingChanged& notice);
 
     UsdMayaStageNoticeListener _stageNoticeListener;
 

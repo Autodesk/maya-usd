@@ -142,13 +142,13 @@ class testUsdImportRfMLight(unittest.TestCase):
         if lightTypeName != 'DomeLight':
             self.assertTrue(cmds.getAttr('%s.areaNormalize' % nodePath))
 
-        expectedColor = 0.1 * testNumber
+        expectedColor = Gf.ConvertLinearToDisplay(Gf.Vec3f(0.1 * testNumber))
         self._assertGfIsClose(cmds.getAttr('%s.lightColorR' % nodePath),
-            expectedColor, 1e-6)
+            expectedColor[0], 1e-6)
         self._assertGfIsClose(cmds.getAttr('%s.lightColorG' % nodePath),
-            expectedColor, 1e-6)
+            expectedColor[1], 1e-6)
         self._assertGfIsClose(cmds.getAttr('%s.lightColorB' % nodePath),
-            expectedColor, 1e-6)
+            expectedColor[2], 1e-6)
 
         self.assertTrue(cmds.getAttr('%s.enableTemperature' % nodePath))
 
@@ -259,7 +259,7 @@ class testUsdImportRfMLight(unittest.TestCase):
         expectedMonth = 9
         self.assertEqual(cmds.getAttr('%s.month' % nodePath), expectedMonth)
 
-        expectedSkyTint = Gf.Vec3f(0.9)
+        expectedSkyTint = Gf.ConvertLinearToDisplay(Gf.Vec3f(0.9))
         self._assertGfIsClose(cmds.getAttr('%s.skyTintR' % nodePath),
             expectedSkyTint[0], 1e-6)
         self._assertGfIsClose(cmds.getAttr('%s.skyTintG' % nodePath),
@@ -279,7 +279,7 @@ class testUsdImportRfMLight(unittest.TestCase):
         self._assertGfIsClose(cmds.getAttr('%s.sunSize' % nodePath),
             expectedSunSize, 1e-6)
 
-        expectedSunTint = Gf.Vec3f(0.9)
+        expectedSunTint = Gf.ConvertLinearToDisplay(Gf.Vec3f(0.9))
         self._assertGfIsClose(cmds.getAttr('%s.sunTintR' % nodePath),
             expectedSunTint[0], 1e-6)
         self._assertGfIsClose(cmds.getAttr('%s.sunTintG' % nodePath),
@@ -301,13 +301,13 @@ class testUsdImportRfMLight(unittest.TestCase):
         self._assertGfIsClose(cmds.getAttr('%s.emissionFocus' % nodePath),
             expectedFocus, 1e-6)
 
-        expectedFocusTint = 0.2
+        expectedFocusTint = Gf.ConvertLinearToDisplay(Gf.Vec3f(0.2))
         self._assertGfIsClose(cmds.getAttr('%s.emissionFocusTintR' % nodePath),
-            expectedFocusTint, 1e-6)
+            expectedFocusTint[0], 1e-6)
         self._assertGfIsClose(cmds.getAttr('%s.emissionFocusTintG' % nodePath),
-            expectedFocusTint, 1e-6)
+            expectedFocusTint[1], 1e-6)
         self._assertGfIsClose(cmds.getAttr('%s.emissionFocusTintB' % nodePath),
-            expectedFocusTint, 1e-6)
+            expectedFocusTint[2], 1e-6)
 
         expectedConeAngle = 92.0
         self._assertGfIsClose(cmds.getAttr('%s.coneAngle' % nodePath),
@@ -340,13 +340,13 @@ class testUsdImportRfMLight(unittest.TestCase):
         self.assertEqual(cmds.getAttr('%s.enableShadows' % nodePath),
             expectedShadowsEnabled)
 
-        expectedShadowColor = 0.6
+        expectedShadowColor = Gf.ConvertLinearToDisplay(Gf.Vec3f(0.6))
         self._assertGfIsClose(cmds.getAttr('%s.shadowColorR' % nodePath),
-            expectedShadowColor, 1e-6)
+            expectedShadowColor[0], 1e-6)
         self._assertGfIsClose(cmds.getAttr('%s.shadowColorG' % nodePath),
-            expectedShadowColor, 1e-6)
+            expectedShadowColor[1], 1e-6)
         self._assertGfIsClose(cmds.getAttr('%s.shadowColorB' % nodePath),
-            expectedShadowColor, 1e-6)
+            expectedShadowColor[2], 1e-6)
 
         expectedShadowDistance = -0.6
         self._assertGfIsClose(cmds.getAttr('%s.shadowDistance' % nodePath),

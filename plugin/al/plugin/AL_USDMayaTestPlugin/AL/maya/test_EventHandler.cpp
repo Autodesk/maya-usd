@@ -114,7 +114,7 @@ TEST(Callback, Callback)
 //  uint32_t weight, bool isPython); EventId eventId() const;
 TEST(EventDispatcher, EventDispatcher)
 {
-    int             associated;
+    int             associated { 0 };
     EventDispatcher info(&g_eventSystem, "eventName", 42, kUserSpecifiedEventType, &associated, 23);
     EXPECT_EQ(info.name(), "eventName");
     EXPECT_EQ(info.eventId(), 42u);

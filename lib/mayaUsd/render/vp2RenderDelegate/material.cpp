@@ -22,6 +22,7 @@
 #include "tokens.h"
 
 #include <mayaUsd/base/tokens.h>
+#include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 #include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
 #include <mayaUsd/utils/hash.h>
 
@@ -50,6 +51,7 @@
 #include <maya/MFragmentManager.h>
 #include <maya/MGlobal.h>
 #include <maya/MProfiler.h>
+#include <maya/MSceneMessage.h>
 #include <maya/MShaderManager.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
@@ -115,6 +117,63 @@ static bool _IsDisabledAsyncTextureLoading()
 static const std::size_t kRefreshDuration { 1000 };
 
 namespace {
+
+// USD `UsdImagingDelegate::ApplyPendingUpdates()` would request to
+// remove the material then recreate, this is causing texture disappearing
+// when user manipulating a prim (while holding mouse buttion).
+// We hold a copy of the texture info reference, so that the texture will not
+// get released immediately along with material removal.
+// If the textures would have been requested to reload in `ApplyPendingUpdates()`,
+// we could still reuse the loaded one from cache, otherwise the idle task can
+// safely release the texture.
+class _TransientTexturePreserver
+{
+public:
+    static _TransientTexturePreserver& GetInstance()
+    {
+        static _TransientTexturePreserver sInstance;
+        return sInstance;
+    }
+
+    void PreserveTextures(HdVP2LocalTextureMap& localTextureMap)
+    {
+        if (_isExiting) {
+            return;
+        }
+
+        // Locking to avoid race condition for insertion to pendingRemovalTextures
+        std::lock_guard<std::mutex> lock(_removalTaskMutex);
+
+        // Avoid creating multiple idle tasks if there is already one
+        bool hasRemovalTask = !_pendingRemovalTextures.empty();
+        for (const auto& info : localTextureMap) {
+            _pendingRemovalTextures.emplace(info.second);
+        }
+
+        if (!hasRemovalTask) {
+            // Note that we do not need locking inside idle task since it will
+            // only be executed serially.
+            MGlobal::executeTaskOnIdle(
+                [](void* data) { _TransientTexturePreserver::GetInstance().Clear(); });
+        }
+    }
+
+    void Clear() { _pendingRemovalTextures.clear(); }
+
+    void OnMayaExit()
+    {
+        _isExiting = true;
+        Clear();
+    }
+
+private:
+    _TransientTexturePreserver() = default;
+    ~_TransientTexturePreserver() = default;
+
+    std::unordered_set<HdVP2TextureInfoSharedPtr> _pendingRemovalTextures;
+    std::mutex                                    _removalTaskMutex;
+    bool                                          _isExiting = false;
+};
 
 // clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
@@ -654,6 +713,9 @@ void _AddMissingTangents(mx::DocumentPtr& mtlxDoc)
             material = surfaceInput->getConnectedNode();
         }
         mx::NodeDefPtr nodeDef = material->getNodeDef();
+        if (!nodeDef) {
+            continue;
+        }
         for (mx::InputPtr input : nodeDef->getActiveInputs()) {
             if (input->hasDefaultGeomPropString()) {
                 const std::string& geomPropString = input->getDefaultGeomPropString();
@@ -1726,6 +1788,7 @@ void HdVP2TextureDeleter::operator()(MHWRender::MTexture* texture)
 HdVP2Material::HdVP2Material(HdVP2RenderDelegate* renderDelegate, const SdfPath& id)
     : HdMaterial(id)
     , _renderDelegate(renderDelegate)
+    , _compiledNetworks { this, this }
 {
 }
 
@@ -1734,32 +1797,23 @@ HdVP2Material::~HdVP2Material()
     // Tell pending tasks or running tasks (if any) to terminate
     ClearPendingTasks();
 
-    // USD `UsdImagingDelegate::ApplyPendingUpdates()` would request to
-    // remove the material then recreate, this is causing texture disappearing
-    // when user manipulating a prim (while holding mouse buttion).
-    // We hold a copy of the texture info reference, so that the texture will not
-    // get released immediately along with material removal.
-    // If the textures would have been requested to reload in `ApplyPendingUpdates()`,
-    // we could still reuse the loaded one from cache, otherwise the idle task can
-    // safely release the texture.
-    static std::unordered_set<HdVP2TextureInfoSharedPtr> pendingRemovalTextures;
-    static std::mutex                                    removalTaskMutex;
-
     if (!_IsDisabledAsyncTextureLoading() && !_localTextureMap.empty()) {
-        // Locking to avoid race condition for insertion to pendingRemovalTextures
-        std::lock_guard<std::mutex> lock(removalTaskMutex);
+        _TransientTexturePreserver::GetInstance().PreserveTextures(_localTextureMap);
+    }
+}
 
-        // Avoid creating multiple idle tasks if there is already one
-        bool hasRemovalTask = !pendingRemovalTextures.empty();
-        for (const auto& info : _localTextureMap) {
-            pendingRemovalTextures.emplace(info.second);
-        }
+void ConvertNetworkMapToUntextured(HdMaterialNetworkMap& networkMap)
+{
+    for (auto& item : networkMap.map) {
+        auto& network = item.second;
+        auto  isInputNode = [&networkMap](const HdMaterialNode& node) {
+            return std::find(networkMap.terminals.begin(), networkMap.terminals.end(), node.path)
+                == networkMap.terminals.end();
+        };
 
-        if (!hasRemovalTask) {
-            // Note that we do not need locking inside idle task since it will
-            // only be executed serially.
-            MGlobal::executeTaskOnIdle([](void* data) { pendingRemovalTextures.clear(); });
-        }
+        auto eraseBegin = std::remove_if(network.nodes.begin(), network.nodes.end(), isInputNode);
+        network.nodes.erase(eraseBegin, network.nodes.end());
+        network.relationships.clear();
     }
 }
 
@@ -1782,172 +1836,18 @@ void HdVP2Material::Sync(
         VtValue vtMatResource = sceneDelegate->GetMaterialResource(id);
 
         if (vtMatResource.IsHolding<HdMaterialNetworkMap>()) {
-            const HdMaterialNetworkMap& networkMap
+            const HdMaterialNetworkMap& fullNetworkMap
                 = vtMatResource.UncheckedGet<HdMaterialNetworkMap>();
 
-            HdMaterialNetwork bxdfNet, dispNet, vp2BxdfNet;
+            // untextured network is always synced
+            HdMaterialNetworkMap untexturedNetworkMap = fullNetworkMap;
+            ConvertNetworkMapToUntextured(untexturedNetworkMap);
+            _compiledNetworks[kUntextured].Sync(sceneDelegate, untexturedNetworkMap);
 
-            TfMapLookup(networkMap.map, HdMaterialTerminalTokens->surface, &bxdfNet);
-            TfMapLookup(networkMap.map, HdMaterialTerminalTokens->displacement, &dispNet);
-
-#ifdef WANT_MATERIALX_BUILD
-            if (!bxdfNet.nodes.empty()) {
-                if (_IsMaterialX(bxdfNet.nodes.back())) {
-
-                    bool isVolume = false;
-#if PXR_VERSION > 2203
-                    const HdMaterialNetwork2 surfaceNetwork
-                        = HdConvertToHdMaterialNetwork2(networkMap, &isVolume);
-#else
-                    HdMaterialNetwork2 surfaceNetwork;
-                    HdMaterialNetwork2ConvertFromHdMaterialNetworkMap(
-                        networkMap, &surfaceNetwork, &isVolume);
-#endif
-                    if (isVolume) {
-                        // Not supported.
-                        return;
-                    }
-
-                    size_t topoHash = _GenerateNetwork2TopoHash(surfaceNetwork);
-
-                    if (!_surfaceShader || topoHash != _topoHash) {
-                        _surfaceShader.reset(
-                            _CreateMaterialXShaderInstance(GetId(), surfaceNetwork));
-                        _pointShader.reset(nullptr);
-                        _topoHash = topoHash;
-                    }
-
-                    if (_surfaceShader) {
-                        _UpdateShaderInstance(sceneDelegate, bxdfNet);
-#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
-                        _MaterialChanged(sceneDelegate);
-#endif
-                        *dirtyBits = HdMaterial::Clean;
-                    }
-                    return;
-                }
-            }
-#endif
-
-            _ApplyVP2Fixes(vp2BxdfNet, bxdfNet);
-
-            if (!vp2BxdfNet.nodes.empty()) {
-                // Generate a XML string from the material network and convert it to a token for
-                // faster hashing and comparison.
-                const TfToken token(_GenerateXMLString(vp2BxdfNet, false));
-
-                // Skip creating a new shader instance if the token is unchanged. There is no plan
-                // to implement fine-grain dirty bit in Hydra for the same purpose:
-                // https://groups.google.com/g/usd-interest/c/xytT2azlJec/m/22Tnw4yXAAAJ
-                if (_surfaceNetworkToken != token) {
-                    MProfilingScope subProfilingScope(
-                        HdVP2RenderDelegate::sProfilerCategory,
-                        MProfiler::kColorD_L2,
-                        "CreateShaderInstance");
-
-                    // Remember the path of the surface shader for special handling: unlike other
-                    // fragments, the parameters of the surface shader fragment can't be renamed.
-                    _surfaceShaderId = vp2BxdfNet.nodes.back().path;
-
-                    MHWRender::MShaderInstance* shader;
-
-#ifndef HDVP2_DISABLE_SHADER_CACHE
-                    // Acquire a shader instance from the shader cache. If a shader instance has
-                    // been cached with the same token, a clone of the shader instance will be
-                    // returned. Multiple clones of a shader instance will share the same shader
-                    // effect, thus reduce compilation overhead and enable material consolidation.
-                    shader = _renderDelegate->GetShaderFromCache(token);
-
-                    // If the shader instance is not found in the cache, create one from the
-                    // material network and add a clone to the cache for reuse.
-                    if (!shader) {
-                        shader = _CreateShaderInstance(vp2BxdfNet);
-
-                        if (shader) {
-                            _renderDelegate->AddShaderToCache(token, *shader);
-                        }
-                    }
-#else
-                    shader = _CreateShaderInstance(vp2BxdfNet);
-#endif
-
-                    // The shader instance is owned by the material solely.
-                    _surfaceShader.reset(shader);
-                    _pointShader.reset(nullptr);
-
-                    if (TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
-                        std::cout << "BXDF material network for " << id << ":\n"
-                                  << _GenerateXMLString(bxdfNet) << "\n"
-                                  << "BXDF (with VP2 fixes) material network for " << id << ":\n"
-                                  << _GenerateXMLString(vp2BxdfNet) << "\n"
-                                  << "Displacement material network for " << id << ":\n"
-                                  << _GenerateXMLString(dispNet) << "\n";
-
-                        if (_surfaceShader) {
-                            auto tmpDir = ghc::filesystem::temp_directory_path();
-                            tmpDir /= "HdVP2Material_";
-                            tmpDir += id.GetName();
-                            tmpDir += ".txt";
-                            _surfaceShader->writeEffectSourceToFile(tmpDir.c_str());
-
-                            std::cout << "BXDF generated shader code for " << id << ":\n";
-                            std::cout << "  " << tmpDir << "\n";
-                        }
-                    }
-
-                    // Store primvar requirements.
-                    _requiredPrimvars = std::move(vp2BxdfNet.primvars);
-
-                    // Verify that _requiredPrivars contains all the requiredVertexBuffers() the
-                    // shader instance needs.
-                    if (shader) {
-                        MVertexBufferDescriptorList requiredVertexBuffers;
-                        MStatus status = shader->requiredVertexBuffers(requiredVertexBuffers);
-                        if (status) {
-                            for (int reqIndex = 0; reqIndex < requiredVertexBuffers.length();
-                                 reqIndex++) {
-                                MVertexBufferDescriptor desc;
-                                requiredVertexBuffers.getDescriptor(reqIndex, desc);
-                                TfToken requiredPrimvar = MayaDescriptorToToken(desc);
-                                // now make sure something matching requiredPrimvar is in
-                                // _requiredPrimvars
-                                if (requiredPrimvar != _tokens->Unknown
-                                    && requiredPrimvar != _tokens->Computed) {
-                                    bool found = false;
-                                    for (TfToken const& primvar : _requiredPrimvars) {
-                                        if (primvar == requiredPrimvar) {
-                                            found = true;
-                                            break;
-                                        }
-                                    }
-                                    if (!found) {
-                                        _requiredPrimvars.push_back(requiredPrimvar);
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // The token is saved and will be used to determine whether a new shader
-                    // instance is needed during the next sync.
-                    _surfaceNetworkToken = token;
-
-                    // If the surface shader has its opacity attribute connected to a node which
-                    // isn't a primvar reader, it is set as transparent. If the opacity attr is
-                    // connected to a primvar reader, the Rprim side will determine the transparency
-                    // state according to the primvars:displayOpacity data. If the opacity attr
-                    // isn't connected, the transparency state will be set in
-                    // _UpdateShaderInstance() according to the opacity value.
-                    if (shader) {
-                        shader->setIsTransparent(_IsTransparent(bxdfNet));
-                    }
-                }
-
-                _UpdateShaderInstance(sceneDelegate, bxdfNet);
-
-#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
-                _MaterialChanged(sceneDelegate);
-#endif
+            // full network is synced only if required by display style
+            auto* const param = static_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
+            if (param->GetDrawScene().NeedTexturedMaterials()) {
+                _compiledNetworks[kFull].Sync(sceneDelegate, fullNetworkMap);
             }
         } else {
             TF_WARN(
@@ -1961,6 +1861,181 @@ void HdVP2Material::Sync(
     *dirtyBits = HdMaterial::Clean;
 }
 
+void HdVP2Material::CompiledNetwork::Sync(
+    HdSceneDelegate*            sceneDelegate,
+    const HdMaterialNetworkMap& networkMap)
+{
+    const SdfPath&    id = _owner->GetId();
+    HdMaterialNetwork bxdfNet, dispNet, vp2BxdfNet;
+
+    TfMapLookup(networkMap.map, HdMaterialTerminalTokens->surface, &bxdfNet);
+    TfMapLookup(networkMap.map, HdMaterialTerminalTokens->displacement, &dispNet);
+
+#ifdef WANT_MATERIALX_BUILD
+    if (!bxdfNet.nodes.empty()) {
+        if (_IsMaterialX(bxdfNet.nodes.back())) {
+
+            bool isVolume = false;
+#if PXR_VERSION > 2203
+            const HdMaterialNetwork2 surfaceNetwork
+                = HdConvertToHdMaterialNetwork2(networkMap, &isVolume);
+#else
+            HdMaterialNetwork2 surfaceNetwork;
+            HdMaterialNetwork2ConvertFromHdMaterialNetworkMap(
+                networkMap, &surfaceNetwork, &isVolume);
+#endif
+            if (isVolume) {
+                // Not supported.
+                return;
+            }
+
+            size_t topoHash = _GenerateNetwork2TopoHash(surfaceNetwork);
+
+            if (!_surfaceShader || topoHash != _topoHash) {
+                _surfaceShader.reset(_CreateMaterialXShaderInstance(id, surfaceNetwork));
+                _pointShader.reset(nullptr);
+                _topoHash = topoHash;
+                // TopoChanged: We have a brand new surface material, tell the mesh to use
+                // it.
+                _owner->_MaterialChanged(sceneDelegate);
+            }
+
+            if (_surfaceShader) {
+                _UpdateShaderInstance(sceneDelegate, bxdfNet);
+// Consolidation workaround requires dirtying the mesh even on a ValueChanged
+#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
+                _owner->_MaterialChanged(sceneDelegate);
+#endif
+            }
+            return;
+        }
+    }
+#endif
+
+    _ApplyVP2Fixes(vp2BxdfNet, bxdfNet);
+
+    if (!vp2BxdfNet.nodes.empty()) {
+        // Generate a XML string from the material network and convert it to a token for
+        // faster hashing and comparison.
+        const TfToken token(_GenerateXMLString(vp2BxdfNet, false));
+
+        // Skip creating a new shader instance if the token is unchanged. There is no plan
+        // to implement fine-grain dirty bit in Hydra for the same purpose:
+        // https://groups.google.com/g/usd-interest/c/xytT2azlJec/m/22Tnw4yXAAAJ
+        if (_surfaceNetworkToken != token) {
+            MProfilingScope subProfilingScope(
+                HdVP2RenderDelegate::sProfilerCategory,
+                MProfiler::kColorD_L2,
+                "CreateShaderInstance");
+
+            // Remember the path of the surface shader for special handling: unlike other
+            // fragments, the parameters of the surface shader fragment can't be renamed.
+            _surfaceShaderId = vp2BxdfNet.nodes.back().path;
+
+            MHWRender::MShaderInstance* shader;
+
+#ifndef HDVP2_DISABLE_SHADER_CACHE
+            // Acquire a shader instance from the shader cache. If a shader instance has
+            // been cached with the same token, a clone of the shader instance will be
+            // returned. Multiple clones of a shader instance will share the same shader
+            // effect, thus reduce compilation overhead and enable material consolidation.
+            shader = _owner->_renderDelegate->GetShaderFromCache(token);
+
+            // If the shader instance is not found in the cache, create one from the
+            // material network and add a clone to the cache for reuse.
+            if (!shader) {
+                shader = _CreateShaderInstance(vp2BxdfNet);
+
+                if (shader) {
+                    _owner->_renderDelegate->AddShaderToCache(token, *shader);
+                }
+            }
+#else
+            shader = _CreateShaderInstance(vp2BxdfNet);
+#endif
+
+            // The shader instance is owned by the material solely.
+            _surfaceShader.reset(shader);
+            _pointShader.reset(nullptr);
+            // TopoChanged: We have a brand new surface material, tell the mesh to use it.
+            _owner->_MaterialChanged(sceneDelegate);
+
+            if (TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
+                std::cout << "BXDF material network for " << id << ":\n"
+                          << _GenerateXMLString(bxdfNet) << "\n"
+                          << "BXDF (with VP2 fixes) material network for " << id << ":\n"
+                          << _GenerateXMLString(vp2BxdfNet) << "\n"
+                          << "Displacement material network for " << id << ":\n"
+                          << _GenerateXMLString(dispNet) << "\n";
+
+                if (_surfaceShader) {
+                    auto tmpDir = ghc::filesystem::temp_directory_path();
+                    tmpDir /= "HdVP2Material_";
+                    tmpDir += id.GetName();
+                    tmpDir += ".txt";
+                    _surfaceShader->writeEffectSourceToFile(tmpDir.c_str());
+
+                    std::cout << "BXDF generated shader code for " << id << ":\n";
+                    std::cout << "  " << tmpDir << "\n";
+                }
+            }
+
+            // Store primvar requirements.
+            _requiredPrimvars = std::move(vp2BxdfNet.primvars);
+
+            // Verify that _requiredPrivars contains all the requiredVertexBuffers() the
+            // shader instance needs.
+            if (shader) {
+                MVertexBufferDescriptorList requiredVertexBuffers;
+                MStatus status = shader->requiredVertexBuffers(requiredVertexBuffers);
+                if (status) {
+                    for (int reqIndex = 0; reqIndex < requiredVertexBuffers.length(); reqIndex++) {
+                        MVertexBufferDescriptor desc;
+                        requiredVertexBuffers.getDescriptor(reqIndex, desc);
+                        TfToken requiredPrimvar = MayaDescriptorToToken(desc);
+                        // now make sure something matching requiredPrimvar is in
+                        // _requiredPrimvars
+                        if (requiredPrimvar != _tokens->Unknown
+                            && requiredPrimvar != _tokens->Computed) {
+                            bool found = false;
+                            for (TfToken const& primvar : _requiredPrimvars) {
+                                if (primvar == requiredPrimvar) {
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if (!found) {
+                                _requiredPrimvars.push_back(requiredPrimvar);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // The token is saved and will be used to determine whether a new shader
+            // instance is needed during the next sync.
+            _surfaceNetworkToken = token;
+
+            // If the surface shader has its opacity attribute connected to a node which
+            // isn't a primvar reader, it is set as transparent. If the opacity attr is
+            // connected to a primvar reader, the Rprim side will determine the transparency
+            // state according to the primvars:displayOpacity data. If the opacity attr
+            // isn't connected, the transparency state will be set in
+            // _UpdateShaderInstance() according to the opacity value.
+            if (shader) {
+                shader->setIsTransparent(_IsTransparent(bxdfNet));
+            }
+        }
+
+        _UpdateShaderInstance(sceneDelegate, bxdfNet);
+
+// Consolidation workaround requires dirtying the mesh even on a ValueChanged
+#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
+        _owner->_MaterialChanged(sceneDelegate);
+#endif
+    }
+}
+
 /*! \brief  Returns the minimal set of dirty bits to place in the
 change tracker for use in the first sync of this prim.
 */
@@ -1968,7 +2043,9 @@ HdDirtyBits HdVP2Material::GetInitialDirtyBitsMask() const { return HdMaterial::
 
 /*! \brief  Applies VP2-specific fixes to the material network.
  */
-void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNetwork& inNet)
+void HdVP2Material::CompiledNetwork::_ApplyVP2Fixes(
+    HdMaterialNetwork&       outNet,
+    const HdMaterialNetwork& inNet)
 {
     // To avoid relocation, reserve enough space for possible maximal size. The
     // output network is temporary C++ object that will be released after use.
@@ -2309,7 +2386,9 @@ TfToken _RequiresColorManagement(
     }
 }
 
-void HdVP2Material::_ApplyMtlxVP2Fixes(HdMaterialNetwork2& outNet, const HdMaterialNetwork2& inNet)
+void HdVP2Material::CompiledNetwork::_ApplyMtlxVP2Fixes(
+    HdMaterialNetwork2&       outNet,
+    const HdMaterialNetwork2& inNet)
 {
 
     // The goal here is to strip all local names in the network paths in order to reduce the shader
@@ -2415,10 +2494,11 @@ void HdVP2Material::_ApplyMtlxVP2Fixes(HdMaterialNetwork2& outNet, const HdMater
 
 /*! \brief  Detects MaterialX networks and rehydrates them.
  */
-MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
+MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShaderInstance(
     SdfPath const&            materialId,
     HdMaterialNetwork2 const& surfaceNetwork)
 {
+    auto                        renderDelegate = _owner->_renderDelegate;
     MHWRender::MShaderInstance* shaderInstance = nullptr;
 
     auto const& terminalConnIt = surfaceNetwork.terminals.find(HdMaterialTerminalTokens->surface);
@@ -2438,10 +2518,10 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
     // the same token, a clone of the shader instance will be returned. Multiple clones of a shader
     // instance will share the same shader effect, thus reduce compilation overhead and enable
     // material consolidation.
-    shaderInstance = _renderDelegate->GetShaderFromCache(shaderCacheID);
+    shaderInstance = renderDelegate->GetShaderFromCache(shaderCacheID);
     if (shaderInstance) {
         _surfaceShaderId = terminalPath;
-        const TfTokenVector* cachedPrimvars = _renderDelegate->GetPrimvarsFromCache(shaderCacheID);
+        const TfTokenVector* cachedPrimvars = renderDelegate->GetPrimvarsFromCache(shaderCacheID);
         if (cachedPrimvars) {
             _requiredPrimvars = *cachedPrimvars;
         }
@@ -2468,18 +2548,24 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
         if (mtlxSdrNode) {
 
             // Create the MaterialX Document from the HdMaterialNetwork
+#if PXR_VERSION > 2111
+            mtlxDoc = HdMtlxCreateMtlxDocumentFromHdNetwork(
+                fixedNetwork,
+                *surfTerminal, // MaterialX HdNode
+                fixedPath,
+                SdfPath(_mtlxTokens->USD_Mtlx_VP2_Material),
+                _GetMaterialXData()._mtlxLibrary);
+#else
             std::set<SdfPath> hdTextureNodes;
             mx::StringMap     mxHdTextureMap; // Mx-Hd texture name counterparts
             mtlxDoc = HdMtlxCreateMtlxDocumentFromHdNetwork(
                 fixedNetwork,
                 *surfTerminal, // MaterialX HdNode
-#if PXR_VERSION > 2111
-                fixedPath,
-#endif
                 SdfPath(_mtlxTokens->USD_Mtlx_VP2_Material),
                 _GetMaterialXData()._mtlxLibrary,
                 &hdTextureNodes,
                 &mxHdTextureMap);
+#endif
 
             if (!mtlxDoc) {
                 return shaderInstance;
@@ -2623,8 +2709,8 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
     }
 
     if (shaderInstance) {
-        _renderDelegate->AddShaderToCache(shaderCacheID, *shaderInstance);
-        _renderDelegate->AddPrimvarsToCache(shaderCacheID, _requiredPrimvars);
+        renderDelegate->AddShaderToCache(shaderCacheID, *shaderInstance);
+        renderDelegate->AddPrimvarsToCache(shaderCacheID, _requiredPrimvars);
     }
 
     return shaderInstance;
@@ -2634,7 +2720,8 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
 
 /*! \brief  Creates a shader instance for the surface shader.
  */
-MHWRender::MShaderInstance* HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat)
+MHWRender::MShaderInstance*
+HdVP2Material::CompiledNetwork::_CreateShaderInstance(const HdMaterialNetwork& mat)
 {
     MHWRender::MRenderer* const renderer = MHWRender::MRenderer::theRenderer();
     if (!TF_VERIFY(renderer)) {
@@ -2822,7 +2909,7 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateShaderInstance(const HdMateria
 
 /*! \brief  Updates parameters for the surface shader.
  */
-void HdVP2Material::_UpdateShaderInstance(
+void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
     HdSceneDelegate*         sceneDelegate,
     const HdMaterialNetwork& mat)
 {
@@ -2872,7 +2959,8 @@ void HdVP2Material::_UpdateShaderInstance(
 
         if (_IsUsdUVTexture(node)) {
             const MHWRender::MSamplerStateDesc desc = _GetSamplerStateDesc(node);
-            const MHWRender::MSamplerState*    sampler = _renderDelegate->GetSamplerState(desc);
+            const MHWRender::MSamplerState*    sampler
+                = _owner->_renderDelegate->GetSamplerState(desc);
             if (sampler) {
 #ifdef WANT_MATERIALX_BUILD
                 if (isMaterialXNode) {
@@ -2934,7 +3022,7 @@ void HdVP2Material::_UpdateShaderInstance(
                 const std::string&  resolvedPath = val.GetResolvedPath();
                 const std::string&  assetPath = val.GetAssetPath();
                 if (_IsUsdUVTexture(node) && token == _tokens->file) {
-                    const HdVP2TextureInfo& info = _AcquireTexture(
+                    const HdVP2TextureInfo& info = _owner->_AcquireTexture(
                         sceneDelegate, !resolvedPath.empty() ? resolvedPath : assetPath, node);
 
                     MHWRender::MTextureAssignment assignment;
@@ -3027,6 +3115,19 @@ void HdVP2Material::_UpdateShaderInstance(
     }
 }
 
+namespace {
+
+void exitingCallback(void* /* unusedData */)
+{
+    // Maya does not unload plugins on exit.  Make sure we perform an orderly
+    // cleanup of the texture cache. Otherwise the cache will clear after VP2
+    // has shut down.
+    HdVP2Material::OnMayaExit();
+}
+
+MCallbackId gExitingCbId = 0;
+} // namespace
+
 /*! \brief  Acquires a texture for the given image path.
  */
 const HdVP2TextureInfo& HdVP2Material::_AcquireTexture(
@@ -3034,6 +3135,11 @@ const HdVP2TextureInfo& HdVP2Material::_AcquireTexture(
     const std::string&    path,
     const HdMaterialNode& node)
 {
+    // Register for the Maya exit message
+    if (!gExitingCbId) {
+        gExitingCbId = MSceneMessage::addCallback(MSceneMessage::kMayaExiting, exitingCallback);
+    }
+
     // see if we already have the texture loaded.
     const auto it = _globalTextureMap.find(path);
     if (it != _globalTextureMap.end()) {
@@ -3188,7 +3294,7 @@ void HdVP2Material::_ScheduleRefresh()
     }
 }
 
-MHWRender::MShaderInstance* HdVP2Material::GetPointShader() const
+MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::GetPointShader() const
 {
     if (!_pointShader && _surfaceShader) {
         _pointShader.reset(_surfaceShader->clone());
@@ -3198,7 +3304,25 @@ MHWRender::MShaderInstance* HdVP2Material::GetPointShader() const
     return _pointShader.get();
 }
 
-#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
+HdVP2Material::NetworkConfig HdVP2Material::_GetCompiledConfig(const TfToken& reprToken) const
+{
+    return (reprToken == HdReprTokens->smoothHull) ? kFull : kUntextured;
+}
+
+MHWRender::MShaderInstance* HdVP2Material::GetSurfaceShader(const TfToken& reprToken) const
+{
+    return _compiledNetworks[_GetCompiledConfig(reprToken)].GetSurfaceShader();
+}
+
+MHWRender::MShaderInstance* HdVP2Material::GetPointShader(const TfToken& reprToken) const
+{
+    return _compiledNetworks[_GetCompiledConfig(reprToken)].GetPointShader();
+}
+
+const TfTokenVector& HdVP2Material::GetRequiredPrimvars(const TfToken& reprToken) const
+{
+    return _compiledNetworks[_GetCompiledConfig(reprToken)].GetRequiredPrimvars();
+}
 
 void HdVP2Material::SubscribeForMaterialUpdates(const SdfPath& rprimId)
 {
@@ -3224,6 +3348,11 @@ void HdVP2Material::_MaterialChanged(HdSceneDelegate* sceneDelegate)
     }
 }
 
-#endif
+void HdVP2Material::OnMayaExit()
+{
+    _TransientTexturePreserver::GetInstance().OnMayaExit();
+    _globalTextureMap.clear();
+    HdVP2RenderDelegate::OnMayaExit();
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -16,6 +16,7 @@
 #include "UsdContextOps.h"
 
 #include "private/UfeNotifGuard.h"
+#include "private/Utils.h"
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #include <mayaUsd/commands/PullPushCommands.h>
@@ -24,7 +25,7 @@
 #if PXR_VERSION >= 2108
 #include <mayaUsd/ufe/UsdUndoMaterialCommands.h>
 #endif
-#include <mayaUsd/nodes/proxyShapeLoadRules.h>
+#include <mayaUsd/nodes/proxyShapeStageExtraData.h>
 #include <mayaUsd/ufe/UsdObject3d.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
@@ -330,7 +331,7 @@ protected:
     {
         // Save the load rules so that switching the stage settings will be able to preserve the
         // load rules.
-        MAYAUSD_NS::MayaUsdProxyShapeLoadRules::saveLoadRules(_stage);
+        MAYAUSD_NS::MayaUsdProxyShapeStageExtraData::saveLoadRules(_stage);
     }
 
     const UsdStageWeakPtr   _stage;
@@ -395,6 +396,11 @@ public:
         , _oldSelection(_varSet.GetVariantSelection())
         , _newSelection(itemPath[2])
     {
+        const bool allowStronger = true;
+        MayaUsd::ufe::applyCommandRestriction(
+            prim,
+            "set variant set " + _varSet.GetName() + " to variant " + _newSelection + " on",
+            allowStronger);
     }
 
     void undo() override

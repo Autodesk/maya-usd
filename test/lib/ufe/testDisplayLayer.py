@@ -31,6 +31,8 @@ import mayaUsd_createStageWithNewLayer
 import mayaUsd.ufe as mayaUsdUfe
 import mayaUsd.lib as mayaUsdLib
 
+from usdUtils import createSimpleXformScene
+
 from pxr import Usd, Kind
 
 import unittest
@@ -304,8 +306,55 @@ class DisplayLayerTestCase(unittest.TestCase):
             self.assertFalse(defaultLayer.contains(self.SPHERE1))
         self.assertFalse(layer1.contains(self.SPHERE1))
 
-        # TODO - test the undo/redo for delete of Ufe item in Layer.
-        # This currently doesn't work.
+    @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() >= 6, "Requires Display Layer Ufe item delete undo fix.")
+    def testDisplayLayerItemDeleteUndo(self):
+        '''
+        Test that undoing a prim deletion restores its display layer inclusion.
+        '''
+        # First create Display Layer and add some prims to it.
+        cmds.createDisplayLayer(name=self.LAYER1, number=1, empty=True)
+        defaultLayer = self.displayLayer(self.DEFAULT_LAYER)
+        layer1 = self.displayLayer(self.LAYER1)
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        stage.DefinePrim('/Cube1', 'Cube')
+        stage.DefinePrim('/Sphere1', 'Sphere')
+
+        # Add the two prims to the layer.
+        cmds.editDisplayLayerMembers(self.LAYER1, self.SPHERE1, self.CUBE1, noRecurse=True)
+
+        def verifyInLayer(present, absent):
+            # Verify they are in layer.
+            layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, **self.kwArgsEditDisplayLayerMembers)
+            for item in present:
+                self.assertTrue(item in layerObjs, "Item %s should be in layer" % item)
+            for item in absent:
+                self.assertFalse(item in layerObjs, "Item %s should not be in layer" % item)
+
+        verifyInLayer({ self.CUBE1, self.SPHERE1 }, { self.NEW_SPHERE1 })
+
+        self._testLayerFromPath(self.CUBE1, self.LAYER1)
+        self._testLayerFromPath(self.SPHERE1, self.LAYER1)
+
+        # Delete the Sphere and make sure it is removed from the layer.
+        # To allow undo to work, we need to have an undo block open when
+        # executing the command. In Maya, using the UI, commands always
+        # have an undo chunk. In scripting, we must create an explicit one.
+        cmds.undoInfo(state=1)
+        cmds.undoInfo(openChunk=1)
+        try:
+            cmds.delete(self.SPHERE1)
+        finally:
+            cmds.undoInfo(closeChunk=1)
+
+        verifyInLayer({ self.CUBE1 }, { self.NEW_SPHERE1, self.SPHERE1 })
+
+        cmds.undo()
+
+        self._testLayerFromPath(self.CUBE1, self.LAYER1)
+        self._testLayerFromPath(self.SPHERE1, self.LAYER1)
+
+        verifyInLayer({ self.CUBE1, self.SPHERE1 }, { self.NEW_SPHERE1 })
 
     def testDisplayLayerClear(self):
         cmdHelp = cmds.help('editDisplayLayerMembers')
@@ -342,6 +391,41 @@ class DisplayLayerTestCase(unittest.TestCase):
         self.assertIsNone(layerObjs)
         self.assertFalse(layer1.contains(self.CUBE1))
         self.assertFalse(layer1.contains(self.INVALID_PRIM))
+
+    @unittest.skip("The feature was temporarily disabled so disable the autotest too")
+    def testDisplayLayerEditAsMaya(self):
+        '''Display layer membership in Edit As Maya workflow.'''
+        
+        (ps, xlateOp, xlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
+         _, _, _, _, _) = createSimpleXformScene()
+
+        # Add an item to a new display layer
+        cmds.createDisplayLayer(name='layer1', number=1, empty=True)
+        cmds.editDisplayLayerMembers('layer1', '|stage1|stageShape1,/A', noRecurse=True)
+
+        # Edit aPrim as Maya data.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(aUsdUfePathStr))
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+
+        # Check display layer membership on the other side
+        layerObjs = cmds.editDisplayLayerMembers('layer1', query=True, **self.kwArgsEditDisplayLayerMembers)
+        self.assertTrue("|__mayaUsd__|AParent|A" in layerObjs)
+
+        # Create a new layer and put the item there
+        cmds.createDisplayLayer(name='layer2', number=1, empty=True)
+        cmds.editDisplayLayerMembers('layer2', "|__mayaUsd__|AParent|A", noRecurse=True)
+
+        # Merge edits back to USD.
+        aMayaItem = ufe.GlobalSelection.get().front()
+        aMayaPath = aMayaItem.path()
+        aMayaPathStr = ufe.PathString.string(aMayaPath)
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(aMayaPathStr))
+
+        # Check display layer membership back on the USD side
+        layerObjs = cmds.editDisplayLayerMembers('layer2', query=True, **self.kwArgsEditDisplayLayerMembers)
+        self.assertTrue('|stage1|stageShape1,/A' in layerObjs)
 
     @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() >= 3, "Requires Display Layer Ufe subtree invalidate fix.")
     def testDisplayLayerSubtreeInvalidate(self):

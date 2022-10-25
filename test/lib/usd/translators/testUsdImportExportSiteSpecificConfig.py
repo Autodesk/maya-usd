@@ -33,17 +33,24 @@ import fixturesUtils, os
 import unittest
 
 class TestExportChaser(mayaUsdLib.ExportChaser):
-    CalledAsExpected = False
+    ValidExportDisplayColor = False
+    ValidExportSkin = False
+    ValidChaserNames = False
+    ValidChaserArgs = False
+    ValidDagToUsdMap = False
     def __init__(self, factoryContext, *args, **kwargs):
         super(TestExportChaser, self).__init__(factoryContext, *args, **kwargs)
-        TestExportChaser.CalledAsExpected = factoryContext.GetJobArgs().exportDisplayColor
-        if "auto" != factoryContext.GetJobArgs().exportSkin:
-            TestExportChaser.CalledAsExpected = False
-        if "TestExportChaserFromSiteSpecific" not in factoryContext.GetJobArgs().chaserNames:
-            TestExportChaser.CalledAsExpected = False
-        if "TestExportChaserFromSiteSpecific" not in factoryContext.GetJobArgs().allChaserArgs or\
-            "frob" not in factoryContext.GetJobArgs().allChaserArgs["TestExportChaserFromSiteSpecific"]:
-            TestExportChaser.CalledAsExpected = False
+        TestExportChaser.ValidExportDisplayColor = factoryContext.GetJobArgs().exportDisplayColor
+        TestExportChaser.ValidExportSkin = ("auto" == factoryContext.GetJobArgs().exportSkin)
+        TestExportChaser.ValidChaserNames = "TestExportChaserFromSiteSpecific" in factoryContext.GetJobArgs().chaserNames
+        TestExportChaser.ValidChaserArgs = "TestExportChaserFromSiteSpecific" in factoryContext.GetJobArgs().allChaserArgs and\
+            "frob" in factoryContext.GetJobArgs().allChaserArgs["TestExportChaserFromSiteSpecific"]
+        # Note: the DAG-to-USD map contains MDagPath and SdfPath. To avoid the complexity of building a MDagPath just
+        #       for the test, which would require getting the Maya node and getting a MDagPath from it, we convert
+        #       both to strings and use strings instead.
+        d2u = factoryContext.GetDagToUsdMap()
+        dagToUsdMap = { str(item.key()) : str(item.data()) for item in d2u }
+        TestExportChaser.ValidDagToUsdMap = "pCube1" in dagToUsdMap and "pCubeShape1" in dagToUsdMap
 
 class TestImportChaser(mayaUsdLib.ImportChaser):
     CalledAsExpected = False
@@ -82,7 +89,11 @@ class testSiteSpecificConfig(unittest.TestCase):
         # Import scene, which should use site-specific settings and trigger the chaser:
         cmds.mayaUSDImport(file=usd_file_path)
 
-        self.assertTrue(TestExportChaser.CalledAsExpected)
+        self.assertTrue(TestExportChaser.ValidChaserArgs)
+        self.assertTrue(TestExportChaser.ValidChaserNames)
+        self.assertTrue(TestExportChaser.ValidDagToUsdMap)
+        self.assertTrue(TestExportChaser.ValidExportDisplayColor)
+        self.assertTrue(TestExportChaser.ValidExportSkin)
         self.assertTrue(TestImportChaser.CalledAsExpected)
 
 

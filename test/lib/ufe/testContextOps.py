@@ -146,6 +146,62 @@ class ContextOpsTestCase(unittest.TestCase):
             if c.checked:
                 self.assertEqual(c.item, 'Ball_8')
 
+    def testSwitchVariantInWeakerLayer(self):
+        """
+        Test that switching variant in a weaker layer is restricted.
+        """
+        contextItems = self.contextOps.getItems([])
+
+        contextItemStrings = [c.item for c in contextItems]
+        self.assertIn('Variant Sets', contextItemStrings)
+
+        # Initial shadingVariant is "Ball_8"
+        contextItems = self.contextOps.getItems(
+            ['Variant Sets', 'shadingVariant'])
+
+        # Change variant in variant set.
+        def shadingVariant():
+            contextItems = self.contextOps.getItems(
+                ['Variant Sets', 'shadingVariant'])
+
+            for c in contextItems:
+                if c.checked:
+                    return c.item
+
+        def shadingVariantOnPrim():
+            variantSet = self.ball35Prim.GetVariantSet('shadingVariant')
+            self.assertIsNotNone(variantSet)
+            return variantSet.GetVariantSelection()
+
+        self.assertEqual(shadingVariant(), 'Ball_8')
+
+        cmd = self.contextOps.doOpCmd(
+            ['Variant Sets', 'shadingVariant', 'Cue'])
+        self.assertIsNotNone(cmd)
+
+        ufeCmd.execute(cmd)
+
+        self.assertEqual(shadingVariant(), 'Cue')
+        self.assertEqual(shadingVariantOnPrim(), 'Cue')
+
+        # Add a lower, weaker layer.
+        stage = self.ball35Prim.GetStage()
+        rootLayer = stage.GetRootLayer()
+        newLayerName = 'Layer_1'
+        usdFormat = Sdf.FileFormat.FindByExtension('usd')
+        subLayer = Sdf.Layer.New(usdFormat, newLayerName)
+        rootLayer.subLayerPaths.append(subLayer.identifier)
+        stage.SetEditTarget(subLayer)
+
+        # Verify we cannot switch variant in a weaker layer.
+        self.assertRaises(RuntimeError, lambda: self.contextOps.doOpCmd(
+            ['Variant Sets', 'shadingVariant', 'Ball_8']))
+
+        # Verify the variant has not switched.
+        self.assertEqual(shadingVariant(), 'Cue')
+        self.assertEqual(shadingVariantOnPrim(), 'Cue')
+        
+
     def testDoOp(self):
         # Change visibility, undo / redo.
         cmd = self.contextOps.doOpCmd(['Toggle Visibility'])

@@ -20,6 +20,8 @@ import fixturesUtils
 
 import mayaUsd
 import mayaUtils
+import ufeUtils
+import usdUtils
 
 from pxr import Tf, Usd, Kind
 
@@ -204,6 +206,68 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         attr = mayaRefPrim.GetAttribute('mayaAutoEdit')
         self.assertTrue(attr.IsValid())
         self.assertEqual(attr.Get(), False)
+
+
+    def testDiscardMayaRefUnderDeactivatedPrim(self):
+        '''
+        Test editing a Maya Reference, then deactivitng its parent, then discarding.
+        '''
+        kDefaultPrimName = mayaRefUtils.defaultMayaReferencePrimName()
+
+        # Since this is a brand new prim, it should not have variant sets.
+        primTestDefault = self.stage.DefinePrim('/Test_Default', 'Xform')
+        primPathStr = self.proxyShapePathStr + ',/Test_Default'
+        self.assertFalse(primTestDefault.HasVariantSets())
+
+        mayaRefPrim = mayaUsdAddMayaReference.createMayaReferencePrim(
+            primPathStr,
+            self.mayaSceneStr,
+            self.kDefaultNamespace,
+            mayaAutoEdit=True)
+        mayaRefPrimPathStr = self.proxyShapePathStr + ',' + str(mayaRefPrim.GetPath())
+
+        # The prim should not have any variant set.
+        self.assertFalse(primTestDefault.HasVariantSets())
+
+        # Verify that a Maya Reference prim was created.
+        self.assertTrue(mayaRefPrim.IsValid())
+        self.assertEqual(str(mayaRefPrim.GetName()), kDefaultPrimName)
+        self.assertEqual(mayaRefPrim, primTestDefault.GetChild(kDefaultPrimName))
+        self.assertTrue(mayaRefPrim.GetPrimTypeInfo().GetTypeName(), 'MayaReference')
+
+        attr = mayaRefPrim.GetAttribute('mayaAutoEdit')
+        self.assertTrue(attr.IsValid())
+        self.assertEqual(attr.Get(), True)
+
+        # Deactivate the parent of the Maya reference.
+        mayaRefPrim = None
+        primTestDefault.SetActive(False)
+        self.assertFalse(primTestDefault.IsActive())
+
+        # Discard Maya edits.
+        aMayaItem = ufe.GlobalSelection.get().front()
+        aMayaPath = aMayaItem.path()
+        aMayaPathStr = ufe.PathString.string(aMayaPath)
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.discardEdits(aMayaPathStr))
+        
+        # Activate the parent of the Maya reference.
+        primTestDefault.SetActive(True)
+        self.assertTrue(primTestDefault.IsActive())
+
+        # Verify that the auto-edit has *not* been turned off since it could not
+        # be edited when discarding edits since the prim was not accessible since
+        # its parent prim was deactivated.
+        #
+        # Note: we have to retrieved the Maya ref prim again because when its parent
+        #       was deactivated, the UsdPrim object became invalid and cannot be used
+        #       anymore.
+        mayaRefUsdItem = ufeUtils.createItem(mayaRefPrimPathStr)
+        mayaRefPrim = usdUtils.getPrimFromSceneItem(mayaRefUsdItem)
+        attr = mayaRefPrim.GetAttribute('mayaAutoEdit')
+        self.assertTrue(attr.IsValid())
+        self.assertEqual(attr.Get(), True)
+        self.assertFalse(mayaRefPrim.IsActive())
 
 
     def testBadNames(self):

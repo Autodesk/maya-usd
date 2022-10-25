@@ -182,6 +182,42 @@ class AttributesTestCase(unittest.TestCase):
         with self.assertRaisesRegex(KeyError, "Attribute 'MyAttribute' does not exist") as cm:
             attr = ball35Attrs.attribute("MyAttribute")
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test for UFE preview version 0.4.24 and later')
+    def testUniqueNameAttribute(self):
+        '''Test unique name attribute'''
+
+        ball35Path = ufe.Path([
+            mayaUtils.createUfePathSegment("|transform1|proxyShape1"), 
+            usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
+        ball35Item = ufe.Hierarchy.createItem(ball35Path)
+        
+        # Create an attribute with name 'MyAttribute'
+        ball35Attrs = ufe.Attributes.attributes(ball35Item)
+        self.assertIsNotNone(ball35Attrs)
+
+        cmd = ball35Attrs.addAttributeCmd("MyAttribute", ufe.Attribute.kString)
+        self.assertIsNotNone(cmd)
+
+        ufeCmd.execute(cmd)
+
+        self.assertIsNotNone(cmd.attribute)
+        self.assertIn("MyAttribute", ball35Attrs.attributeNames)
+        attr = ball35Attrs.attribute("MyAttribute")
+        self.assertEqual(repr(attr),"ufe.AttributeString(<|transform1|proxyShape1,/Room_set/Props/Ball_35.MyAttribute>)")
+
+        # Create another attribute with same name 'MyAttribute'
+        cmd = ball35Attrs.addAttributeCmd("MyAttribute", ufe.Attribute.kString)
+        self.assertIsNotNone(cmd)
+
+        ufeCmd.execute(cmd)
+
+        self.assertIsNotNone(cmd.attribute)
+
+        # Test the new attribute has name 'MyAttribute1'
+        self.assertIn("MyAttribute1", ball35Attrs.attributeNames)
+        attr = ball35Attrs.attribute("MyAttribute1")
+        self.assertEqual(repr(attr),"ufe.AttributeString(<|transform1|proxyShape1,/Room_set/Props/Ball_35.MyAttribute1>)")
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
