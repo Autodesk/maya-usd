@@ -70,6 +70,34 @@ class testVP2RenderDelegateDisplayLayers(imageUtils.ImageDiffingTestCase):
         selectionList.add(nodeName)
         return selectionList.getDependNode(0)
 
+    def testDisplayLayersTexturing(self):
+        cmds.file(force=True, new=True)
+        mayaUtils.loadPlugin("mayaUsdPlugin")
+
+        cmds.xform("persp", t=(2, 2, 5.8))
+        cmds.xform("persp", ro=[0, 0, 0], ws=True)
+
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, displayTextures=True)
+
+        testFile = testUtils.getTestScene("multipleMaterialsAssignment",
+                                          "MultipleMaterialsAssignment.usda")
+        proxyDagPath, usdStage = mayaUtils.createProxyFromFile(testFile)
+        cmds.select(cl=True)
+
+        # add the stage to a new display layer
+        cmds.createDisplayLayer(name="layer1", noRecurse=True)
+        displayLayer1 = OpenMaya.MFnDisplayLayer(self._GetMayaNode("layer1"))
+        displayLayer1.add(proxyDagPath + ",/root")
+
+        # verify untextured
+        cmds.setAttr('layer1.drawInfo.texturing', False)
+        self.assertSnapshotClose("displayLayers_untextured.png")
+
+        # verify textured
+        cmds.setAttr('layer1.drawInfo.texturing', True)
+        self.assertSnapshotClose("displayLayers_textured.png")
+
     def testDisplayLayers(self):
         self._StartTest('displayLayers')
         cmds.modelEditor('modelPanel4', edit=True, grid=False)
@@ -105,10 +133,50 @@ class testVP2RenderDelegateDisplayLayers(imageUtils.ImageDiffingTestCase):
         self.assertTrue(displayLayer1.contains(sphere4))
         self.assertFalse(displayLayer1.contains(sphere5))
 
+        # invisible
         cmds.setAttr('layer1.drawInfo.visibility', False)
         self.assertSnapshotClose('%s_sphere234_hidden.png' % self._testName)
+
+        # visible
         cmds.setAttr('layer1.drawInfo.visibility', True)
         self.assertSnapshotClose('%s_sphere234_visible.png' % self._testName)
+
+        # hide on playback
+        cmds.setAttr('layer1.drawInfo.hideOnPlayback', True)
+        self.assertSnapshotClose('%s_sphere234_hideonplayback.png' % self._testName)
+        cmds.setAttr('layer1.drawInfo.hideOnPlayback', False)
+
+        # templated
+        cmds.setAttr('layer1.drawInfo.displayType', 1)
+        self.assertSnapshotClose('%s_sphere234_templated.png' % self._testName)
+        cmds.setAttr('layer1.drawInfo.displayType', 0)
+
+        # bbox
+        cmds.setAttr('layer1.drawInfo.levelOfDetail', 1)
+        self.assertSnapshotClose('%s_sphere234_bbox.png' % self._testName)
+        cmds.setAttr('layer1.drawInfo.levelOfDetail', 0)
+
+        # wireframe
+        cmds.setAttr('layer1.drawInfo.shading', False)
+        self.assertSnapshotClose('%s_sphere234_wireframe.png' % self._testName)
+
+        # reference
+        cmds.setAttr('layer1.drawInfo.displayType', 2)
+        self.assertSnapshotClose('%s_sphere234_reference.png' % self._testName)
+        cmds.setAttr('layer1.drawInfo.displayType', 0)
+
+        # color index
+        cmds.setAttr('layer1.drawInfo.color', 10)
+        self.assertSnapshotClose('%s_sphere234_colored.png' % self._testName)
+        cmds.setAttr('layer1.drawInfo.color', 0)
+
+        # rgb color
+        cmds.setAttr('layer1.drawInfo.overrideRGBColors', True)
+        cmds.setAttr('layer1.drawInfo.overrideColorRGB', 1, 0, 0)
+        cmds.setAttr('layer1.drawInfo.overrideColorA', 0.5)
+        self.assertSnapshotClose('%s_sphere234_rgbcolor.png' % self._testName)
+        cmds.setAttr('layer1.drawInfo.overrideRGBColors', False)
+        cmds.setAttr('layer1.drawInfo.shading', True)
         cmds.setAttr('layer1.drawInfo.visibility', False)
 
         cmds.select(clear=True)
