@@ -18,6 +18,7 @@
 #include <mayaUsd/ufe/Utils.h>
 
 #include <pxr/base/tf/envSetting.h>
+#include <pxr/base/tf/getenv.h>
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>
 #include <pxr/usd/usd/prim.h>
@@ -200,9 +201,10 @@ void UsdUndoAssignNewMaterialCommand::execute()
     if (TfGetEnvSetting(USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME)) {
         materialsScopeName = UsdUtilsGetMaterialsScopeName().GetString();
     } else {
-        const char* mayaUsdDefaultMaterialsScopeName = std::getenv("MAYAUSD_MATERIALS_SCOPE_NAME");
-        if (mayaUsdDefaultMaterialsScopeName) {
-            materialsScopeName = std::string(mayaUsdDefaultMaterialsScopeName);
+        const std::string mayaUsdDefaultMaterialsScopeName
+            = TfGetenv("MAYAUSD_MATERIALS_SCOPE_NAME");
+        if (!mayaUsdDefaultMaterialsScopeName.empty()) {
+            materialsScopeName = mayaUsdDefaultMaterialsScopeName;
         }
     }
 
