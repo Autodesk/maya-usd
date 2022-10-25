@@ -323,7 +323,7 @@ namespace ufe {
 extern Ufe::Rtid g_MayaRtid;
 extern Ufe::Rtid g_USDRtid;
 
-}
+} // namespace ufe
 
 namespace {
 
@@ -374,7 +374,7 @@ MStatus setNodeVisibility(const MDagPath& dagPath, bool visibility)
     return visibilityPlug.setBool(visibility);
 }
 
-} // namespace ufe
+} // namespace
 
 /* static */
 bool OrphanedNodesManager::setOrphaned(

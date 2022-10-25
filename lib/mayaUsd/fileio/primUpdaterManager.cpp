@@ -393,9 +393,7 @@ PullImportPaths pullImport(
 
         if (!FunctionUndoItem::execute(
                 "Pull import rendering exclusion",
-                [ufePulledPath]() {
-                    return addExcludeFromRendering(ufePulledPath);
-                },
+                [ufePulledPath]() { return addExcludeFromRendering(ufePulledPath); },
                 [ufePulledPath]() {
                     removeExcludeFromRendering(ufePulledPath);
                     return true;
@@ -1763,7 +1761,6 @@ MDagPath PrimUpdaterManager::setupPullParent(const Ufe::Path& pulledPath, VtDict
 
     return pullParentPath;
 }
-
 
 #ifdef HAS_ORPHANED_NODES_MANAGER
 
