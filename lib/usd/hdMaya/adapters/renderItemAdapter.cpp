@@ -107,6 +107,9 @@ static const std::map<TfToken, HdMayaShaderData> sHdMayaSupportedShaders
 // HdMayaShaderAdapter
 ///////////////////////////////////////////////////////////////////////
 
+/*
+// Removed MShaderInstance::getParameter from the api, since it looks like we may not need it.
+
 // Extracts shape UI shader data
 bool HdMayaRenderItemShaderConverter::ExtractShapeUIShaderData(
 	const MRenderItem& renderItem,
@@ -176,6 +179,7 @@ bool HdMayaRenderItemShaderConverter::ExtractShapeUIShaderData(
 
 	return true;
 }
+*/
 
 HdMayaShapeUIShaderAdapter::HdMayaShapeUIShaderAdapter(	
 	HdMayaDelegateCtx* del,

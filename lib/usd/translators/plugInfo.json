@@ -47,7 +47,6 @@
                 "joint",
                 "locator",
                 "mesh",
-                "renderItem",
                 "nParticle",
                 "nurbsCurve",
                 "nurbsSurface",
