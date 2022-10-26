@@ -389,7 +389,6 @@ bool OrphanedNodesManager::setOrphaned(
     //       the outliner reacts to UFe notifications received following the USD edits
     //       to rebuild the node tree and the Maya node we want to hide must have been
     //       hidden by that point. So the node visibility change must be done *first*.
-    CHECK_MSTATUS_AND_RETURN(setNodeVisibility(variantInfo.editedAsMayaRoot, !orphaned), false);
     CHECK_MSTATUS_AND_RETURN(setNodeVisibility(variantInfo.pulledParentPath, !orphaned), false);
 
     const Ufe::Path pulledPrimPath = trieNodeToPullePrimUfePath(trieNode);
