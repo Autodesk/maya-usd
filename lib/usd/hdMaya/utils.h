@@ -37,6 +37,8 @@
 #include <maya/MRenderUtil.h>
 #include <maya/MSelectionList.h>
 
+#define HDMAYA_SCENE_RENDER_DATASERVER
+
 #if PXR_VERSION < 2011
 #include <pxr/imaging/hd/textureResource.h>
 #include <pxr/imaging/hd/types.h>

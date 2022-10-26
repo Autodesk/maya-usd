@@ -63,10 +63,11 @@ MtohInitializeRenderPlugins()
             }
 
             // XXX: As of 22.02, this needs to be called for Storm
-            if (pluginDesc.id == MtohTokens->HdStormRendererPlugin) {
-#if PXR_VERSION < 2102
-                GlfGlewInit();
-#endif
+			if (
+				pluginDesc.id == MtohTokens->HdStormRendererPlugin ||
+				pluginDesc.id == MtohTokens->HdMayaRenderItemRendererPlugin
+				)
+			{
                 GlfContextCaps::InitInstance();
             }
 

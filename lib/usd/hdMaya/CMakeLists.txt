@@ -53,10 +53,21 @@ mayaUsd_promoteHeaderList(
 # -----------------------------------------------------------------------------
 set(LIBFILENAME ${CMAKE_SHARED_LIBRARY_PREFIX}${TARGET_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
 set(PLUG_INFO_PATH "plugInfo.json")
+set(SHADER_DEFS_PATH 
+"shaderDefs.usda"
+"mayaStippleShader.glslfx"
+)
+
 set(PLUG_INFO_LIBRARY_PATH "../../../${LIBFILENAME}")
 set(PLUG_INFO_RESOURCE_PATH "resources")
 
 configure_file(${PLUG_INFO_PATH} ${CMAKE_CURRENT_BINARY_DIR}/${PLUG_INFO_PATH})
+
+# configure shader files
+foreach(X ${SHADER_DEFS_PATH})
+    configure_file(${X} ${CMAKE_CURRENT_BINARY_DIR}/${X})
+endforeach(X)
+
 
 install(TARGETS ${TARGET_NAME}
         LIBRARY
@@ -70,6 +81,16 @@ install(FILES
         DESTINATION 
             ${CMAKE_INSTALL_PREFIX}/lib/usd/hdMaya/resources
 )
+
+# install shaders
+foreach(X ${SHADER_DEFS_PATH})
+    install(FILES 
+            ${CMAKE_CURRENT_BINARY_DIR}/${X}
+        DESTINATION 
+            ${CMAKE_INSTALL_PREFIX}/lib/usd/hdMaya/resources
+    )
+endforeach(X)
+
 
 install(FILES ${HEADERS}
         DESTINATION 
@@ -86,3 +107,4 @@ endif()
 # -----------------------------------------------------------------------------
 add_subdirectory(adapters)
 add_subdirectory(delegates)
+add_subdirectory(renderItemClient)

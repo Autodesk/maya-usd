@@ -20,6 +20,7 @@
 #include <hdMaya/adapters/lightAdapter.h>
 #include <hdMaya/adapters/materialAdapter.h>
 #include <hdMaya/adapters/shapeAdapter.h>
+#include <hdMaya/adapters/renderItemAdapter.h>
 #include <hdMaya/delegates/delegateCtx.h>
 
 #include <pxr/base/gf/vec4d.h>
@@ -53,6 +54,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdMayaSceneDelegate : public HdMayaDelegateCtx
 {
 public:
+	template <typename T> using AdapterMap = std::unordered_map<SdfPath, T, SdfPath::Hash>;
+
     HDMAYA_API
     HdMayaSceneDelegate(const InitData& initData);
 
@@ -99,6 +102,9 @@ public:
     HDMAYA_API
     void InsertDag(const MDagPath& dag);
 
+	HDMAYA_API
+		void ScheduleRenderTasks(HdTaskSharedPtrVector& tasks);
+
     HDMAYA_API
     void NodeAdded(const MObject& obj);
 
@@ -119,6 +125,11 @@ public:
         const MSelectionList&       mayaSelection,
         SdfPathVector&              selectedSdfPaths,
         const HdSelectionSharedPtr& selection) override;
+
+	// TODO: change management
+	HDMAYA_API
+	void HandleCompleteViewportScene(const MViewportScene& scene);
+
 
 #if MAYA_API_VERSION >= 20210000
     HDMAYA_API
@@ -177,6 +188,9 @@ protected:
         size_t         maxSampleCount,
         float*         times,
         VtValue*       samples) override;
+
+	HDMAYA_API
+	TfTokenVector GetTaskRenderTags(SdfPath const& taskId) override;
 
     HDMAYA_API
     TfToken GetRenderTag(SdfPath const& id) override;
@@ -246,11 +260,33 @@ private:
         Map&                                                                  adapterMap,
         bool                                                                  isSprim = false);
 
-    bool _CreateMaterial(const SdfPath& id, const MObject& obj);
 
-    template <typename T> using AdapterMap = std::unordered_map<SdfPath, T, SdfPath::Hash>;
+	HDMAYA_API
+	bool _GetRenderItem(
+		int fastId,
+		HdMayaRenderItemAdapterPtr& adapter);
+
+	HDMAYA_API
+	void _AddRenderItem(const HdMayaRenderItemAdapterPtr& ria);
+
+	HDMAYA_API
+	void _RemoveRenderItem(const HdMayaRenderItemAdapterPtr& ria);
+
+	HDMAYA_API
+	bool _GetRenderItemMaterial(
+		const MRenderItem& ri,
+		HdMayaShaderInstanceData& sd,
+		MObject& shadingEngineNode);
+
+    bool _CreateMaterial(const SdfPath& id, const MObject& obj);
     /// \brief Unordered Map storing the shape adapters.
     AdapterMap<HdMayaShapeAdapterPtr> _shapeAdapters;
+	/// \brief Unordered Map storing the shape adapters.
+    AdapterMap<HdMayaRenderItemAdapterPtr>              _renderItemsAdapters;
+    std::unordered_map<int, HdMayaRenderItemAdapterPtr> _renderItemsAdaptersFast;
+
+	/// \brief Unordered Map storing the shape adapters.
+	AdapterMap<HdMayaShaderAdapterPtr> _renderItemShaderAdapters;
     /// \brief Unordered Map storing the light adapters.
     AdapterMap<HdMayaLightAdapterPtr> _lightAdapters;
     /// \brief Unordered Map storing the camera adapters.
@@ -264,6 +300,14 @@ private:
     std::vector<SdfPath>                       _materialTagsChanged;
 
     SdfPath _fallbackMaterial;
+	// TODO remove
+	SdfPath _wireframeMaterial;	
+	GfVec3f _wireframeColor = { 0.432f, 1.215f, 8.665f };
+	SdfPath _vertexMaterial;
+	GfVec3f _vertexColor = { 10.0f, 10.0f, 0 };
+
+	//GfVec3f _pointColor = 
+
     bool    _enableMaterials = false;
 };
 

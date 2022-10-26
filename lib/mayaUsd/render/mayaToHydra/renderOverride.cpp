@@ -22,6 +22,7 @@
 
 #include <hdMaya/delegates/delegateRegistry.h>
 #include <hdMaya/delegates/sceneDelegate.h>
+#include <hdMaya/renderItemClient/renderDelegate.h>
 #include <hdMaya/utils.h>
 #include <mayaUsd/render/px_vp20/utils.h>
 #include <mayaUsd/utils/hash.h>
@@ -207,7 +208,8 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
 #endif
     , _hgiDriver { HgiTokens->renderDriver, VtValue(_hgi.get()) }
     , _selectionTracker(new HdxSelectionTracker)
-    , _isUsingHdSt(desc.rendererName == MtohTokens->HdStormRendererPlugin)
+    , _isUsingHdSt(desc.rendererName == MtohTokens->HdStormRendererPlugin||
+                   desc.rendererName == MtohTokens->HdMayaRenderItemRendererPlugin)
 {
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
         .Msg(
@@ -430,6 +432,8 @@ void MtohRenderOverride::_DetectMayaDefaultLighting(const MHWRender::MDrawContex
                 _defaultLight.SetPosition({ -direction.x, -direction.y, -direction.z, 0.0f });
                 _defaultLight.SetDiffuse(
                     { intensity * color.r, intensity * color.g, intensity * color.b, 1.0f });
+                _defaultLight.SetSpecular(
+                    { intensity * color.r, intensity * color.g, intensity * color.b, 1.0f });
                 foundMayaDefaultLight = true;
             }
         }
@@ -454,7 +458,7 @@ void MtohRenderOverride::_DetectMayaDefaultLighting(const MHWRender::MDrawContex
     }
 }
 
-MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
+MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, const MHWRender::MViewportScene& scene)
 {
     // It would be good to clear the resources of the overrides that are
     // not in active use, but I'm not sure if we have a better way than
@@ -519,6 +523,21 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
                 }
             }
         }
+
+		// TODO: Change management
+		// Every frame update everything
+		if (scene.changed())
+		{
+			for (auto& it : _delegates) {
+				auto sceneDelegate = std::dynamic_pointer_cast<HdMayaSceneDelegate>(it);
+				if (sceneDelegate)
+				{
+					sceneDelegate->HandleCompleteViewportScene(scene);
+					sceneDelegate->ScheduleRenderTasks(tasks);
+				}
+			}
+		}
+
         _engine.Execute(_renderIndex, &tasks);
 
         // HdTaskController will query all of the tasks it can for IsConverged.
@@ -541,7 +560,9 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
     }
 
     if (!_initializationAttempted) {
-        _InitHydraResources();
+		// TODO: First time viewport scene update here
+        // Anything special ? Dag items populate called here before
+       _InitHydraResources();
 
         if (!_initializationSucceeded) {
             return MStatus::kFailure;
@@ -722,6 +743,7 @@ MtohRenderOverride* MtohRenderOverride::_GetByName(TfToken rendererName)
     return nullptr;
 }
 
+// TODO: Pass MViewportScene inside here
 void MtohRenderOverride::_InitHydraResources()
 {
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
@@ -957,10 +979,24 @@ MStatus MtohRenderOverride::setup(const MString& destination)
 
     if (_operations.empty()) {
         // Clear and draw the grid
-        _operations.push_back(new HdMayaPreRender("HydraRenderOverride_PreScene"));
+
+#ifdef HDMAYA_SCENE_RENDER_DATASERVER
+		// TODO: Integrate https://git.autodesk.com/maya3d/maya-usd/commit/634000c3f7d96cd02d9c92bbd32e17fdde12c284
+		// If render item data server is enabled, do not draw full HdMayaPreRender (MSceneRender)
+		// since the wireframes and other UI would be drawn on top of the hydra meshes. 
+		// Instead simply add a clear operation.
+		auto clearOperation = new MClearOperation("HydraRenderOverride_PreScene");
+		static float clearColor[] = { 0.5f, 0.5f, 0.5f, 1.0f };
+		clearOperation->setClearColor(clearColor);
+        _operations.push_back(clearOperation);
+#else
+		// Clear and draw the grid
+		_operations.push_back(new HdMayaPreRender("HydraRenderOverride_PreScene"));
+#endif
 
         // The main hydra render
-        _operations.push_back(new HdMayaRender("HydraRenderOverride_Hydra", this));
+        // For the data server, This also invokes scene update then sync scene delegate after scene update
+        _operations.push_back(new HdMayaRender("HydraRenderOverride_DataServer", this));
 
         // Draw scene elements (cameras, CVs, grid, shapes not pushed into hydra)
         _operations.push_back(new HdMayaPostRender("HydraRenderOverride_PostScene"));
@@ -1011,6 +1047,12 @@ bool MtohRenderOverride::select(
     MSelectionList& selectionList,
     MPointArray&    worldSpaceHitPts)
 {
+#ifdef HDMAYA_SCENE_RENDER_DATASERVER
+	// Skip override on plugin-side if prototype 2
+	// Rely on VP2 select and simply draw selection items
+	return false;
+#endif
+
     MStatus status = MStatus::kFailure;
 
     MMatrix viewMatrix = frameContext.getMatrix(MHWRender::MFrameContext::kViewMtx, &status);

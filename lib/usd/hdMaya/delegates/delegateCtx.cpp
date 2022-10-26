@@ -25,6 +25,7 @@
 #include <pxr/imaging/hio/glslfx.h>
 
 #include <maya/MFnLight.h>
+#include <maya/MShaderManager.h>
 
 #include <array>
 
@@ -47,6 +48,41 @@ SdfPath _GetPrimPath(const SdfPath& base, const MDagPath& dg)
         return {};
     }
     return base.AppendPath(SdfPath(s));
+}
+
+SdfPath _GetRenderItemPrimPath(const SdfPath& base, const MRenderItem& ri)
+{
+	if (ri.InternalObjectId() == 0) return {};
+	const auto mayaPath = UsdMayaUtil::RenderItemToUsdPath(ri, false, false);
+	if (mayaPath.IsEmpty()) return {};
+		
+	const auto* chr = mayaPath.GetText();
+	if (chr == nullptr) {
+		return {};
+	};
+	std::string s(chr + 1);
+	if (s.empty()) {
+		return {};
+	}
+	return base.AppendPath(SdfPath(s));
+	return SdfPath();
+}
+
+SdfPath _GetRenderItemShaderPrimPath(const SdfPath& base, const MRenderItem& ri)
+{
+	const auto mayaPath = UsdMayaUtil::RenderItemToUsdPath(ri, false, false);
+	if (mayaPath.IsEmpty()) return {};
+
+	const auto* chr = mayaPath.GetText();
+	if (chr == nullptr) {
+		return {};
+	};
+	std::string s(chr + 1);
+	if (s.empty()) {
+		return {};
+	}
+	return base.AppendPath(SdfPath(s));
+	return SdfPath();
 }
 
 SdfPath _GetMaterialPath(const SdfPath& base, const MObject& obj)
@@ -118,6 +154,16 @@ SdfPath HdMayaDelegateCtx::GetPrimPath(const MDagPath& dg, bool isSprim)
     } else {
         return _GetPrimPath(_rprimPath, dg);
     }
+}
+
+SdfPath HdMayaDelegateCtx::GetRenderItemPrimPath(const MRenderItem& ri)
+{
+	return _GetRenderItemPrimPath(_rprimPath, ri);
+}
+
+SdfPath HdMayaDelegateCtx::GetRenderItemShaderPrimPath(const MRenderItem& ri)
+{
+	return _GetRenderItemShaderPrimPath(_rprimPath, ri);
 }
 
 SdfPath HdMayaDelegateCtx::GetMaterialPath(const MObject& obj)

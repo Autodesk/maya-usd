@@ -72,7 +72,16 @@ PXR_NAMESPACE_OPEN_SCOPE
     (result)                                  \
     (eccentricity)                            \
     (usdPreviewSurface)                       \
-    (pxrUsdPreviewSurface)
+    (pxrUsdPreviewSurface)                    \
+    (HdMayaLambertShader)                     \
+    (HdMayaPhongShader)                       \
+    (HdMayaBlinnShader)                       \
+	(HdMayaStippleShader)                     \
+    (HdMayaSolidColorShader)                 
+    
+// TODO:
+// Stippled line, point shader
+
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(HdMayaAdapterTokens, HDMAYA_API, HDMAYA_ADAPTER_TOKENS);

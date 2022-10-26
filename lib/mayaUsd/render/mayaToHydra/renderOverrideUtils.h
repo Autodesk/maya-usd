@@ -18,6 +18,8 @@
 
 #include <pxr/pxr.h>
 
+#include <hdMaya/utils.h>
+
 #include <maya/MViewport2Renderer.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -73,18 +75,29 @@ public:
     MHWRender::MClearOperation& clearOperation() override { return mClearOperation; }
 };
 
+//! \brief Serves to synchronize maya viewport data with the scene delegate before scene update is called
+//	when requiresSceneUpdate=false, subtype=kDataServerRemovals and after scene update is called
+//  when requiresSceneUpdate=true, subtype=kDataServer
+//
 class HdMayaRender : public MHWRender::MUserRenderOperation
 {
 public:
-    HdMayaRender(const MString& name, MtohRenderOverride* override)
-        : MHWRender::MUserRenderOperation(name)
-        , _override(override)
-    {
-    }
+	HdMayaRender(const MString& name, MtohRenderOverride* override)
+	: MUserRenderOperation(name, MUserRenderOperation::DataServerTag())
+	, _override(override)
+	{
+	}
 
     MStatus execute(const MHWRender::MDrawContext& drawContext) override
     {
-        return _override->Render(drawContext);
+		return MS::kFailure;
+    }
+    
+    MStatus execute2(const MDrawContext & drawContext, const MHWRender::MViewportScene& scene) override
+    {
+		if (requiresDataServer())
+			return _override->Render(drawContext, scene);
+		return MS::kFailure;
     }
 
 private:

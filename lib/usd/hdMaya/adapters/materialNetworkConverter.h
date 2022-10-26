@@ -25,6 +25,7 @@
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
+#include <maya/MShaderManager.h>
 
 #include <unordered_map>
 
@@ -169,6 +170,9 @@ public:
 
     HDMAYA_API
     static const HdMayaShaderParams& GetPreviewShaderParams();
+
+	HDMAYA_API
+	static const HdMayaShaderParams& GetShaderParams(const TfToken& shaderIdentifier);
 
 private:
     HdMaterialNetwork& _network;
