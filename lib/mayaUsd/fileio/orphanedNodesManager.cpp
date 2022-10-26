@@ -70,6 +70,87 @@ Ufe::Trie<OrphanedNodesManager::PullVariantInfo> OrphanedNodesManager::Memento::
 // Class OrphanedNodesManager
 //------------------------------------------------------------------------------
 
+namespace {
+
+using PullVariantInfo = OrphanedNodesManager::PullVariantInfo;
+using VariantSetDescriptor = OrphanedNodesManager::VariantSetDescriptor;
+using VariantSelection = OrphanedNodesManager::VariantSelection;
+
+Ufe::Path trieNodeToPullePrimUfePath(Ufe::TrieNode<PullVariantInfo>::Ptr trieNode);
+
+void renameVariantDescriptors(
+    std::list<VariantSetDescriptor>& descriptors,
+    const Ufe::Path&                 oldPath,
+    const Ufe::Path&                 newPath)
+{
+    std::list<VariantSetDescriptor> newDescriptors;
+    for (VariantSetDescriptor& desc : descriptors) {
+        if (desc.path.startsWith(oldPath)) {
+            desc.path = desc.path.reparent(oldPath, newPath);
+        }
+    }
+}
+
+void renameVariantInfo(
+    const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode,
+    const Ufe::Path&                           oldPath,
+    const Ufe::Path&                           newPath)
+{
+    // Note: TrieNode has no non-const data() function, so to modify the
+    //       data we must make a copy, modify the copy and call setData().
+    PullVariantInfo newVariantInfo = trieNode->data();
+
+    // Note: the change to USD data must be done *after* changes to Maya data because
+    //       the outliner reacts to UFE notifications received following the USD edits
+    //       to rebuild the node tree and the Maya node we want to hide must have been
+    //       hidden by that point. So the node visibility change must be done *first*.
+    renameVariantDescriptors(newVariantInfo.variantSetDescriptors, oldPath, newPath);
+
+    Ufe::Path pulledPath = trieNodeToPullePrimUfePath(trieNode);
+    TF_VERIFY(writePullInformation(pulledPath, newVariantInfo.editedAsMayaRoot));
+
+    trieNode->setData(newVariantInfo);
+}
+
+void recursiveRename(
+    const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode,
+    const Ufe::Path&                           oldPath,
+    const Ufe::Path&                           newPath)
+{
+    if (trieNode->hasData()) {
+        renameVariantInfo(trieNode, oldPath, newPath);
+    } else {
+        auto childrenComponents = trieNode->childrenComponents();
+        for (auto& c : childrenComponents) {
+            recursiveRename((*trieNode)[c], oldPath, newPath);
+        }
+    }
+}
+
+void handlePathChange(
+    const Ufe::Path&            oldPath,
+    const Ufe::SceneItem::Ptr&  item,
+    Ufe::Trie<PullVariantInfo>& pulledPrims)
+{
+    if (!item)
+        return;
+
+    auto trieNode = pulledPrims.node(oldPath);
+    if (trieNode) {
+        const Ufe::Path& newPath = item->path();
+        // If the only change is the last part of teh UFE path, then
+        // we are dealing with a rename. Else it is a reparent.
+        if (newPath.pop() == oldPath.pop()) {
+            trieNode->rename(newPath.back());
+        } else {
+            pulledPrims.move(oldPath, newPath);
+        }
+        recursiveRename(trieNode, oldPath, newPath);
+    }
+}
+
+} // namespace
+
 OrphanedNodesManager::OrphanedNodesManager()
     : _pulledPrims()
 {
@@ -160,6 +241,10 @@ void OrphanedNodesManager::operator()(const Ufe::Notification& n)
             auto subtrInv = dynamic_cast<const Ufe::SubtreeInvalidate*>(&sceneNotification)) {
             handleOp(Ufe::SceneCompositeNotification::Op(
                 Ufe::SceneCompositeNotification::OpType::SubtreeInvalidate, subtrInv->root()));
+        } else if (auto objRename = dynamic_cast<const Ufe::ObjectRename*>(&sceneNotification)) {
+            handlePathChange(objRename->previousPath(), objRename->item(), _pulledPrims);
+        } else if (auto objRep = dynamic_cast<const Ufe::ObjectReparent*>(&sceneNotification)) {
+            handlePathChange(objRep->previousPath(), objRep->item(), _pulledPrims);
         }
 #endif
     }
@@ -270,22 +355,23 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
             }
         }
     } break;
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    case Ufe::SceneCompositeNotification::OpType::ObjectPathChange: {
+        if (op.subOpType == Ufe::ObjectPathChange::ObjectRename
+            || op.subOpType == Ufe::ObjectPathChange::ObjectReparent) {
+            handlePathChange(op.path, op.item, _pulledPrims);
+        }
+    } break;
+#endif
     default: {
-        // ObjectPathChange (reparent, rename): to be implemented (MAYA-125039).
         // SceneCompositeNotification: already expanded in operator().
     }
     }
 }
 
-Ufe::Trie<OrphanedNodesManager::PullVariantInfo>& OrphanedNodesManager::pulledPrims()
-{
-    return _pulledPrims;
-}
+Ufe::Trie<PullVariantInfo>& OrphanedNodesManager::pulledPrims() { return _pulledPrims; }
 
-const Ufe::Trie<OrphanedNodesManager::PullVariantInfo>& OrphanedNodesManager::pulledPrims() const
-{
-    return _pulledPrims;
-}
+const Ufe::Trie<PullVariantInfo>& OrphanedNodesManager::pulledPrims() const { return _pulledPrims; }
 
 void OrphanedNodesManager::clear() { pulledPrims().clear(); }
 
@@ -327,10 +413,9 @@ extern Ufe::Rtid g_USDRtid;
 
 namespace {
 
-Ufe::Path
-trieNodeToPullePrimUfePath(Ufe::TrieNode<OrphanedNodesManager::PullVariantInfo>::Ptr trieNode)
+Ufe::Path trieNodeToPullePrimUfePath(Ufe::TrieNode<PullVariantInfo>::Ptr trieNode)
 {
-    const OrphanedNodesManager::PullVariantInfo& variantInfo = trieNode->data();
+    const PullVariantInfo& variantInfo = trieNode->data();
 
     Ufe::Path proxyShapeUfePath = ufe::dagPathToUfe(variantInfo.proxyShapePath);
     if (proxyShapeUfePath.getSegments().size() < 1)
@@ -386,7 +471,7 @@ bool OrphanedNodesManager::setOrphaned(
     const PullVariantInfo& variantInfo = trieNode->data();
 
     // Note: the change to USD data must be done *after* changes to Maya data because
-    //       the outliner reacts to UFe notifications received following the USD edits
+    //       the outliner reacts to UFE notifications received following the USD edits
     //       to rebuild the node tree and the Maya node we want to hide must have been
     //       hidden by that point. So the node visibility change must be done *first*.
     CHECK_MSTATUS_AND_RETURN(setNodeVisibility(variantInfo.pulledParentPath, !orphaned), false);
@@ -397,8 +482,8 @@ bool OrphanedNodesManager::setOrphaned(
         removePulledPrimMetadata(pulledPrimPath);
         removeExcludeFromRendering(pulledPrimPath);
     } else {
-        writePulledPrimMetadata(pulledPrimPath, variantInfo.editedAsMayaRoot);
-        addExcludeFromRendering(pulledPrimPath);
+        TF_VERIFY(writePulledPrimMetadata(pulledPrimPath, variantInfo.editedAsMayaRoot));
+        TF_VERIFY(addExcludeFromRendering(pulledPrimPath));
     }
 
     return true;
@@ -487,8 +572,7 @@ OrphanedNodesManager::variantSetDescriptors(const Ufe::Path& p)
 }
 
 /* static */
-Ufe::Trie<OrphanedNodesManager::PullVariantInfo>
-OrphanedNodesManager::deepCopy(const Ufe::Trie<PullVariantInfo>& src)
+Ufe::Trie<PullVariantInfo> OrphanedNodesManager::deepCopy(const Ufe::Trie<PullVariantInfo>& src)
 {
     Ufe::Trie<PullVariantInfo> dst;
     deepCopy(src.root(), dst.root());
