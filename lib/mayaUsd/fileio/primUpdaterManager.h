@@ -18,15 +18,15 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/primUpdaterContext.h>
+#include <mayaUsd/fileio/pullInformation.h>
 #include <mayaUsd/listeners/proxyShapeNotice.h>
-#include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/registryManager.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
 
 #include <maya/MCallbackIdArray.h>
-#include <ufe/sceneItem.h>
 
 UFE_NS_DEF { class Path; }
 
@@ -69,29 +69,6 @@ public:
     /// \brief Returns the singleton prim updater manager
     MAYAUSD_CORE_PUBLIC
     static PrimUpdaterManager& getInstance();
-
-    MAYAUSD_CORE_PUBLIC
-    static bool readPullInformation(const PXR_NS::UsdPrim& prim, std::string& dagPathStr);
-    MAYAUSD_CORE_PUBLIC
-    static bool readPullInformation(const PXR_NS::UsdPrim& prim, Ufe::SceneItem::Ptr& dagPathItem);
-    MAYAUSD_CORE_PUBLIC
-    static bool readPullInformation(const Ufe::Path& ufePath, MDagPath& dagPath);
-    MAYAUSD_CORE_PUBLIC
-    static bool readPullInformation(const MDagPath& dagpath, Ufe::Path& ufePath);
-
-    MAYAUSD_CORE_PUBLIC
-    static bool writePulledPrimMetadata(const Ufe::Path& ufePulledPath, const MDagPath& editedRoot);
-    MAYAUSD_CORE_PUBLIC
-    static bool writePulledPrimMetadata(PXR_NS::UsdPrim& pulledPrim, const MDagPath& editedRoot);
-    MAYAUSD_CORE_PUBLIC
-    static void removePulledPrimMetadata(const Ufe::Path& ufePulledPath);
-    MAYAUSD_CORE_PUBLIC
-    static void removePulledPrimMetadata(const UsdStagePtr& stage, UsdPrim& prim);
-
-    MAYAUSD_CORE_PUBLIC
-    static bool addExcludeFromRendering(const Ufe::Path& ufePulledPath);
-    MAYAUSD_CORE_PUBLIC
-    static bool removeExcludeFromRendering(const Ufe::Path& ufePulledPath);
 
     bool hasPulledPrims() const;
 

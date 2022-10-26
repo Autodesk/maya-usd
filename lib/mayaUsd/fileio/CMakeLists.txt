@@ -38,6 +38,7 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
             primUpdaterContext.cpp
             primUpdaterRegistry.cpp
             primUpdaterManager.cpp
+            pullInformation.cpp
     )
 endif()
 
@@ -89,6 +90,7 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
         primUpdaterContext.h
         primUpdaterRegistry.h
         primUpdaterManager.h
+        pullInformation.h
     )
 endif()
 

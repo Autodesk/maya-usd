@@ -16,6 +16,7 @@
 #include "orphanedNodesManager.h"
 
 #include <mayaUsd/fileio/primUpdaterManager.h>
+#include <mayaUsd/fileio/pullInformation.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
@@ -373,11 +374,11 @@ bool OrphanedNodesManager::setOrphaned(
     const Ufe::Path        pulledPrimPath = trieNodeToPullePrimUfePath(trieNode);
 
     if (orphaned) {
-        PrimUpdaterManager::removePulledPrimMetadata(pulledPrimPath);
-        PrimUpdaterManager::removeExcludeFromRendering(pulledPrimPath);
+        removePulledPrimMetadata(pulledPrimPath);
+        removeExcludeFromRendering(pulledPrimPath);
     } else {
-        PrimUpdaterManager::writePulledPrimMetadata(pulledPrimPath, variantInfo.editedAsMayaRoot);
-        PrimUpdaterManager::addExcludeFromRendering(pulledPrimPath);
+        writePulledPrimMetadata(pulledPrimPath, variantInfo.editedAsMayaRoot);
+        addExcludeFromRendering(pulledPrimPath);
     }
 
     MFnDagNode fn(variantInfo.pulledParentPath);
