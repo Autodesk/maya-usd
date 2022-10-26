@@ -26,7 +26,7 @@ UsdAddAttributeCommand::UsdAddAttributeCommand(
     const UsdSceneItem::Ptr&    sceneItem,
     const std::string&          name,
     const Ufe::Attribute::Type& type)
-    : UsdUndoableCommand<Ufe::AddAttributeCommand>()
+    : UsdUndoableCommand<Ufe::AddAttributeUndoableCommand>()
     , _sceneItemPath(sceneItem->path())
     , _name(name)
     , _type(type)
@@ -100,7 +100,7 @@ UsdRenameAttributeCommand::UsdRenameAttributeCommand(
     const UsdSceneItem::Ptr& sceneItem,
     const std::string&       originalName,
     const std::string&       newName)
-    : UsdUndoableCommand<Ufe::AddAttributeCommand>()
+    : UsdUndoableCommand<Ufe::RenameAttributeUndoableCommand>()
     , _sceneItemPath(sceneItem->path())
     , _originalName(originalName)
     , _newName(newName)

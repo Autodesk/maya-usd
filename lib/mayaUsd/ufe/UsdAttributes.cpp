@@ -309,7 +309,7 @@ bool UsdAttributes::hasAttribute(const std::string& name) const
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4024)
-Ufe::AddAttributeCommand::Ptr
+Ufe::AddAttributeUndoableCommand::Ptr
 UsdAttributes::addAttributeCmd(const std::string& name, const Ufe::Attribute::Type& type)
 {
     return UsdAddAttributeCommand::create(fItem, name, type);
@@ -320,13 +320,13 @@ Ufe::UndoableCommand::Ptr UsdAttributes::removeAttributeCmd(const std::string& n
     return UsdRemoveAttributeCommand::create(fItem, name);
 }
 #endif
-//#if (UFE_PREVIEW_VERSION_NUM >= 4033)
-Ufe::AddAttributeCommand::Ptr
+#if (UFE_PREVIEW_VERSION_NUM >= 4033)
+Ufe::RenameAttributeUndoableCommand::Ptr
 UsdAttributes::renameAttributeCmd(const std::string& originalName, const std::string& newName)
 {
     return UsdRenameAttributeCommand::create(fItem, originalName, newName);
 }
-//#endif
+#endif
 #endif
 
 #ifdef UFE_V4_FEATURES_AVAILABLE

@@ -36,7 +36,7 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Implementation of AddAttributeCommand
-class UsdAddAttributeCommand : public UsdUndoableCommand<Ufe::AddAttributeCommand>
+class UsdAddAttributeCommand : public UsdUndoableCommand<Ufe::AddAttributeUndoableCommand>
 {
 public:
     typedef std::shared_ptr<UsdAddAttributeCommand> Ptr;
@@ -72,7 +72,7 @@ private:
 
 }; // UsdAddAttributeCommand
 
-//! \brief Implementation of AddAttributeCommand
+//! \brief Implementation of RemoveAttributeCommand
 class UsdRemoveAttributeCommand : public UsdUndoableCommand<Ufe::UndoableCommand>
 {
 public:
@@ -99,7 +99,7 @@ private:
 }; // UsdRemoveAttributeCommand
 
 //! \brief Implementation of RenameAttributeCommand
-class UsdRenameAttributeCommand : public UsdUndoableCommand<Ufe::AttributeValuedUndoableCommand>
+class UsdRenameAttributeCommand : public UsdUndoableCommand<Ufe::RenameAttributeUndoableCommand>
 {
 public:
     typedef std::shared_ptr<UsdRenameAttributeCommand> Ptr;
