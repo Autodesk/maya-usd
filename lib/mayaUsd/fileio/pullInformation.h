@@ -21,9 +21,8 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
 
-#include <ufe/sceneItem.h>
-
 #include <maya/MDagPath.h>
+#include <ufe/sceneItem.h>
 
 UFE_NS_DEF { class Path; }
 
