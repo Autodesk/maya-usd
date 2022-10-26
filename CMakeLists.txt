@@ -85,6 +85,10 @@ endif()
 include(cmake/utils.cmake)
 find_package(Maya 2018 REQUIRED)
 
+if(APPLE AND BUILD_UB2 AND NOT MAYA_MACOSX_BUILT_WITH_UB2)
+    message(WARNING  "Maya was NOT built with Universal Binary 2")
+endif()
+
 if (BUILD_MAYAUSD_LIBRARY)
     include(cmake/mayausd_version.info)
     set(MAYAUSD_VERSION "${MAYAUSD_MAJOR_VERSION}.${MAYAUSD_MINOR_VERSION}.${MAYAUSD_PATCH_LEVEL}")

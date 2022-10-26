@@ -221,6 +221,8 @@ global proc AEmayaUsdProxyShapeBaseTemplate( string $nodeName )
             editorTemplate -callCustom AEnewBbox AEreplaceBbox "boundingBoxMin" "boundingBoxMax";
         editorTemplate -endLayout;
 
+        // Apply hooks for custom UI (from AEdependNodeTemplate.mel):
+        callbacks -executeCallbacks -hook "AETemplateCustomContent" $nodeName;
         // UUID (from AEdependNodeTemplate.mel):
         editorTemplate -beginLayout (uiRes("m_AEdependNodeTemplate.kUUID"));
             editorTemplate -suppress "nodeState";

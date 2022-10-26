@@ -1,5 +1,84 @@
 # Changelog
 
+## [v0.20.0] - 2022-10-25
+
+**Build:**
+- Fixes for building with gcc 11 (still using old ABI) [#2633](https://github.com/Autodesk/maya-usd/pull/2633)
+- Fix for building with latest Maya PR and USD v21.8 [#2632](https://github.com/Autodesk/maya-usd/pull/2632)
+- Use Pixar's namespace directive macro [#2620](https://github.com/Autodesk/maya-usd/pull/2620) [#2536](https://github.com/Autodesk/maya-usd/pull/2536)
+- Broken AL_USDMaya and AL_USDTransaction builds (AL) [#2598](https://github.com/Autodesk/maya-usd/pull/2598)
+- Add the python support for DagToUsdMap [#2584](https://github.com/Autodesk/maya-usd/pull/2584)
+- Change how the active 3D view is retrieved in the test [#2581](https://github.com/Autodesk/maya-usd/pull/2581)
+- Fix MaterialX compilation on M1 Macs [#2579](https://github.com/Autodesk/maya-usd/pull/2579)
+- Build as Universal Binary 2 (x86_64 + arm64) [#2575](https://github.com/Autodesk/maya-usd/pull/2575)
+- Fix configuration error when GULRAK_SOURCE_DIR is specified on Windows [#2551](https://github.com/Autodesk/maya-usd/pull/2551)
+- Update to materialx 1.38.5 [#2528](https://github.com/Autodesk/maya-usd/pull/2528)
+
+**Translation Framework:**
+- Use Adapter to author MeshLightAPI for RfM's PxrMeshLight [#2613](https://github.com/Autodesk/maya-usd/pull/2613)
+- Update exporters for string varnames [#2601](https://github.com/Autodesk/maya-usd/pull/2601)
+- Fix export when exportRoots and stripNamespaces are combined [#2590](https://github.com/Autodesk/maya-usd/pull/2590)
+- Preserve timeline during Edit-As-Maya [#2583](https://github.com/Autodesk/maya-usd/pull/2583)
+- Always write color space to usd texture prims [#2548](https://github.com/Autodesk/maya-usd/pull/2548)
+- Include Extra Knots for NurbsCurves Export [#2531](https://github.com/Autodesk/maya-usd/pull/2531)
+
+**Workflow:**
+- Make adding a pulled prim to the orphan manager undoable [#2662](https://github.com/Autodesk/maya-usd/pull/2662)
+- Fix orphaned node discard edits with unloaded ancestor [#2638](https://github.com/Autodesk/maya-usd/pull/2638)
+- Display Layers:
+  - Temporarily disable support for display layers in EditAsMaya workflows [#2667](https://github.com/Autodesk/maya-usd/pull/2667)
+  - Correct handling of Display List vs Variants [#2634](https://github.com/Autodesk/maya-usd/pull/2634)
+  - Display Layer membership should survive the 'Edit As Maya Data' workflow [#2628](https://github.com/Autodesk/maya-usd/pull/2628)
+  - Test prim undo delete vs Display Layer [#2625](https://github.com/Autodesk/maya-usd/pull/2625)
+- Handle automatic creation of attribute unique name [#2622](https://github.com/Autodesk/maya-usd/pull/2622)
+- Duplicate as USD Data timeline options don't show what is currently applied [#2615](https://github.com/Autodesk/maya-usd/pull/2615)
+- Prevent crash when discarding deactivated Maya Ref [#2612](https://github.com/Autodesk/maya-usd/pull/2612)
+- Fix namespace renaming [#2610](https://github.com/Autodesk/maya-usd/pull/2610)
+- Handle trailing # in rename [#2604](https://github.com/Autodesk/maya-usd/pull/2604)
+- Do not change suffix if renamed to the same name [#2600](https://github.com/Autodesk/maya-usd/pull/2600)
+- Add support for Generic Shader Attributes [#2595](https://github.com/Autodesk/maya-usd/pull/2595)
+- Adds support for converting strings with options into enum strings [#2588](https://github.com/Autodesk/maya-usd/pull/2588)
+- Add layer muting serialization to the proxy shape [#2580](https://github.com/Autodesk/maya-usd/pull/2580)
+- Initial implementation of AETemplate control creators [#2578](https://github.com/Autodesk/maya-usd/pull/2578)
+- Hide orphaned pulled nodes on ancestor structure change [#2576](https://github.com/Autodesk/maya-usd/pull/2576)
+- Update relationship targets and connection sources on prim rename [#2574](https://github.com/Autodesk/maya-usd/pull/2574)
+- Workaround for USD Issue 2013 [#2569](https://github.com/Autodesk/maya-usd/pull/2569)
+- Cached to USD dialog: Label gets cut off on parent prim info message [#2566](https://github.com/Autodesk/maya-usd/pull/2566)
+- When adding an Xform to a USD prim two entries are shown in the Channel Box [#2565](https://github.com/Autodesk/maya-usd/pull/2565)
+- Set icon disabled when Maya object is orphaned [#2561](https://github.com/Autodesk/maya-usd/pull/2561)
+- Add support for doubles to GetDictionaryFromArgDatabase [#2547](https://github.com/Autodesk/maya-usd/pull/2547)
+- Route visibility edits [#2546](https://github.com/Autodesk/maya-usd/pull/2546)
+- Fix issues deleting attributes on NodeGraphs [#2544](https://github.com/Autodesk/maya-usd/pull/2544)
+- Disconnection code improvements [#2539](https://github.com/Autodesk/maya-usd/pull/2539)
+- Improve connecting to surface experience [#2534](https://github.com/Autodesk/maya-usd/pull/2534)
+- Disallow switching variants in a weaker layer [#2533](https://github.com/Autodesk/maya-usd/pull/2533)
+- Handle scope for read-only transform [#2530](https://github.com/Autodesk/maya-usd/pull/2530)
+- Fix removing multiple layers at the same time [#2523](https://github.com/Autodesk/maya-usd/pull/2523)
+- Allowing a new prim spec to be written in edit target layers [#2390](https://github.com/Autodesk/maya-usd/pull/2390)
+
+**Render:**
+- Disable Edit as Maya for materials [#2631](https://github.com/Autodesk/maya-usd/pull/2631)
+- Defaults materials scope name to mtl and allows setting [#2624](https://github.com/Autodesk/maya-usd/pull/2624)
+- Display Layers:
+  - Prims wireframes should have a specific color and opacity when in a Display Layer [#2618](https://github.com/Autodesk/maya-usd/pull/2618)
+  - When "Enable Overrides" is unchecked for a Display Layer USD Data still uses Bounding Box [#2611](https://github.com/Autodesk/maya-usd/pull/2611)
+  - Prims should be in untextured mode when in a Display Layer [#2599](https://github.com/Autodesk/maya-usd/pull/2599)
+  - Prims should be in bounding box mode when in a Display Layer [#2542](https://github.com/Autodesk/maya-usd/pull/2542)
+  - Prims should be in unshaded mode when in a Display Layer [#2562](https://github.com/Autodesk/maya-usd/pull/2562)
+- Show correct render backend name [#2617](https://github.com/Autodesk/maya-usd/pull/2617)
+- USD needs to support untextured mode like Maya does [#2570](https://github.com/Autodesk/maya-usd/pull/2570)
+- Use hydra material id fix [#2568](https://github.com/Autodesk/maya-usd/pull/2568)
+- Mark primitives as dirty if the shader has been rebuilt [#2564](https://github.com/Autodesk/maya-usd/pull/2564)
+- Fix MaterialX conversion crash with invalid graphs [#2543](https://github.com/Autodesk/maya-usd/pull/2543)
+- Update callsite to use new Hydra API [#2538](https://github.com/Autodesk/maya-usd/pull/2538)
+- Flush all resource caches on exit [#2529](https://github.com/Autodesk/maya-usd/pull/2529)
+
+**Documentation:**
+- Update build.md with Ufe version information [#2616](https://github.com/Autodesk/maya-usd/pull/2616)
+- Update build.md with USD v22.08 support [#2573](https://github.com/Autodesk/maya-usd/pull/2573)
+- Update CLA [#2535](https://github.com/Autodesk/maya-usd/pull/2535)
+- Document the Maya Ref Edit router [#2526](https://github.com/Autodesk/maya-usd/pull/2526)
+
 ## [v0.19.0] - 2022-08-19
 
 **Build:**

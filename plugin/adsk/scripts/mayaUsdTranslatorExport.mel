@@ -392,6 +392,7 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
         tokenize($currentOptions, ";", $optionList);
         int $supportsMultiExport = 1;
         int $exportNurbsCurves = 1;
+        int $contextForcesFilterTypes = 0;
         for ($index = 0; $index < size($optionList); $index++) {
             tokenize($optionList[$index], "=", $optionBreakDown);
             if ($optionBreakDown[0] == "exportUVs") {
@@ -403,6 +404,7 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
             } else if ($optionBreakDown[0] == "exportBlendShapes") {
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportBlendShapesCheckBox");
             } else if ($optionBreakDown[0] == "filterTypes") {
+                $contextForcesFilterTypes = 1;
                 // Negative filter. See if nurbsCurve is in the list:
                 if (mayaUsdTranslatorExport_HasFilteredPrimitive($optionBreakDown[1], "nurbsCurve")) {
                     $exportNurbsCurves = 0;
@@ -455,8 +457,10 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
             }
         }
 
-        // We now know if we export nurbs curves or not:
-        checkBoxGrp -e -v1 $exportNurbsCurves -en $enable exportCurvesCheckBox;
+        // We now know if we export nurbs curves or not and if forced by the job context:
+        if ($contextForcesFilterTypes == 1) {
+            checkBoxGrp -e -v1 $exportNurbsCurves -en $enable exportCurvesCheckBox;
+        }
 
         if ($jobContext != "" && $processJobContext == 1) {
             mayaUsdTranslatorExport_SetJobContextDropdown($jobContext);
