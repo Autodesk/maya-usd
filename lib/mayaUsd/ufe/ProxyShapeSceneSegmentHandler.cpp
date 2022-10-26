@@ -60,8 +60,8 @@ ProxyShapeSceneSegmentHandler::findGatewayItems_(const Ufe::Path& path, Ufe::Rti
 
     // Find the MayaUSD proxyShapes.
     // `nestedRtid` is used as a filter. Only add MayaUSD proxyShapes to the result if the argument
-    // matches the MayaUSD runtime ID or if the argument is 0 which means return all.
-    if (nestedRtid == 0 || nestedRtid == g_USDRtid) {
+    // matches the MayaUSD runtime ID or `Ufe::kAllRtid` which is used to refer to all runtimes.
+    if (nestedRtid == g_USDRtid || nestedRtid == Ufe::kAllRtid) {
         for (const auto& stage : getAllStages()) {
             Ufe::Path proxyShapePath = stagePath(stage);
             // recall that findGatewayItems searches for descendants of path that are gateway nodes.

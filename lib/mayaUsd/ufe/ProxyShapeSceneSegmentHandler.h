@@ -49,7 +49,7 @@ public:
     // Ufe::SceneSegmentHandler overrides
 #if (UFE_PREVIEW_VERSION_NUM >= 4033)
     Ufe::Selection
-    findGatewayItems_(const Ufe::Path& path, Ufe::Rtid nestedRtid = 0) const override;
+    findGatewayItems_(const Ufe::Path& path, Ufe::Rtid nestedRtid = Ufe::kAllRtid) const override;
 #else
     Ufe::Selection findGatewayItems_(const Ufe::Path& path) const override;
 #endif
