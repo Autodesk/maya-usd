@@ -70,6 +70,31 @@ Ufe::Trie<OrphanedNodesManager::PullVariantInfo> OrphanedNodesManager::Memento::
 // Class OrphanedNodesManager
 //------------------------------------------------------------------------------
 
+namespace {
+
+using PullVariantInfo = OrphanedNodesManager::PullVariantInfo;
+
+Ufe::Path trieNodeToPullePrimUfePath(Ufe::TrieNode<PullVariantInfo>::Ptr trieNode);
+
+void recursiveRename(
+    const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode,
+    const Ufe::Path&                           oldPath,
+    const Ufe::Path&                           newPath)
+{
+    if (trieNode->hasData()) {
+        const PullVariantInfo& variantInfo = trieNode->data();
+        Ufe::Path              pulledPath = trieNodeToPullePrimUfePath(trieNode);
+        TF_VERIFY(writePullInformation(pulledPath, variantInfo.editedAsMayaRoot));
+    } else {
+        auto childrenComponents = trieNode->childrenComponents();
+        for (const auto& c : childrenComponents) {
+            recursiveRename((*trieNode)[c], oldPath, newPath);
+        }
+    }
+}
+
+} // namespace
+
 OrphanedNodesManager::OrphanedNodesManager()
     : _pulledPrims()
 {
@@ -160,6 +185,18 @@ void OrphanedNodesManager::operator()(const Ufe::Notification& n)
             auto subtrInv = dynamic_cast<const Ufe::SubtreeInvalidate*>(&sceneNotification)) {
             handleOp(Ufe::SceneCompositeNotification::Op(
                 Ufe::SceneCompositeNotification::OpType::SubtreeInvalidate, subtrInv->root()));
+        } else if (auto objRename = dynamic_cast<const Ufe::ObjectRename*>(&sceneNotification)) {
+            handleOp(Ufe::SceneCompositeNotification::Op(
+                Ufe::SceneCompositeNotification::OpType::ObjectPathChange,
+                Ufe::ObjectPathChange::ObjectRename,
+                objRename->item(),
+                objRename->previousPath()));
+        } else if (auto objRep = dynamic_cast<const Ufe::ObjectReparent*>(&sceneNotification)) {
+            handleOp(Ufe::SceneCompositeNotification::Op(
+                Ufe::SceneCompositeNotification::OpType::ObjectPathChange,
+                Ufe::ObjectPathChange::ObjectReparent,
+                objRep->item(),
+                objRep->previousPath()));
         }
 #endif
     }
@@ -270,22 +307,24 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
             }
         }
     } break;
+    case Ufe::SceneCompositeNotification::OpType::ObjectPathChange: {
+        const Ufe::Path& oldPath = op.path;
+        auto             trieNode = _pulledPrims.node(oldPath);
+        if (trieNode) {
+            const Ufe::Path& newPath = op.item->path();
+            trieNode->rename(newPath.back());
+            recursiveRename(trieNode, oldPath, newPath);
+        }
+    } break;
     default: {
-        // ObjectPathChange (reparent, rename): to be implemented (MAYA-125039).
         // SceneCompositeNotification: already expanded in operator().
     }
     }
 }
 
-Ufe::Trie<OrphanedNodesManager::PullVariantInfo>& OrphanedNodesManager::pulledPrims()
-{
-    return _pulledPrims;
-}
+Ufe::Trie<PullVariantInfo>& OrphanedNodesManager::pulledPrims() { return _pulledPrims; }
 
-const Ufe::Trie<OrphanedNodesManager::PullVariantInfo>& OrphanedNodesManager::pulledPrims() const
-{
-    return _pulledPrims;
-}
+const Ufe::Trie<PullVariantInfo>& OrphanedNodesManager::pulledPrims() const { return _pulledPrims; }
 
 void OrphanedNodesManager::clear() { pulledPrims().clear(); }
 
@@ -327,10 +366,9 @@ extern Ufe::Rtid g_USDRtid;
 
 namespace {
 
-Ufe::Path
-trieNodeToPullePrimUfePath(Ufe::TrieNode<OrphanedNodesManager::PullVariantInfo>::Ptr trieNode)
+Ufe::Path trieNodeToPullePrimUfePath(Ufe::TrieNode<PullVariantInfo>::Ptr trieNode)
 {
-    const OrphanedNodesManager::PullVariantInfo& variantInfo = trieNode->data();
+    const PullVariantInfo& variantInfo = trieNode->data();
 
     Ufe::Path proxyShapeUfePath = ufe::dagPathToUfe(variantInfo.proxyShapePath);
     if (proxyShapeUfePath.getSegments().size() < 1)
@@ -397,8 +435,8 @@ bool OrphanedNodesManager::setOrphaned(
         removePulledPrimMetadata(pulledPrimPath);
         removeExcludeFromRendering(pulledPrimPath);
     } else {
-        writePulledPrimMetadata(pulledPrimPath, variantInfo.editedAsMayaRoot);
-        addExcludeFromRendering(pulledPrimPath);
+        TF_VERIFY(writePulledPrimMetadata(pulledPrimPath, variantInfo.editedAsMayaRoot));
+        TF_VERIFY(addExcludeFromRendering(pulledPrimPath));
     }
 
     return true;
@@ -487,8 +525,7 @@ OrphanedNodesManager::variantSetDescriptors(const Ufe::Path& p)
 }
 
 /* static */
-Ufe::Trie<OrphanedNodesManager::PullVariantInfo>
-OrphanedNodesManager::deepCopy(const Ufe::Trie<PullVariantInfo>& src)
+Ufe::Trie<PullVariantInfo> OrphanedNodesManager::deepCopy(const Ufe::Trie<PullVariantInfo>& src)
 {
     Ufe::Trie<PullVariantInfo> dst;
     deepCopy(src.root(), dst.root());
