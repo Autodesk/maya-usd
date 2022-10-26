@@ -163,6 +163,14 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
                 UsdTransform3dRead.cpp
         )
     endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4033)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+                UsdBatchOpsHandler.cpp
+                UsdUndoDuplicateFixupsCommand.cpp
+        )
+    endif()
 endif()
 
 if(PXR_VERSION GREATER_EQUAL 2108)
@@ -311,6 +319,13 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4025)
         list(APPEND HEADERS
             UsdTransform3dRead.h
+        )
+    endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4033)
+        list(APPEND HEADERS
+        UsdBatchOpsHandler.h
+        UsdUndoDuplicateFixupsCommand.h
         )
     endif()
 endif()
