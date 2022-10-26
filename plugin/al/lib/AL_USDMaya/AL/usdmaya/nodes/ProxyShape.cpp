@@ -1581,9 +1581,9 @@ MStatus ProxyShape::computeOutStageData(const MPlug& plug, MDataBlock& dataBlock
         return MS::kFailure;
     }
 
-    // Sending MayaUsdProxyStageInvalidateNotice will trigger a callback in StagesSubject 
-    // to clear out stage listeners before adding new stage listeners by the callback triggered by 
-    // MayaUsdProxyStageSetNotice. 
+    // Sending MayaUsdProxyStageInvalidateNotice will trigger a callback in StagesSubject
+    // to clear out stage listeners before adding new stage listeners by the callback triggered by
+    // MayaUsdProxyStageSetNotice.
     MayaUsdProxyStageInvalidateNotice(*this).Send();
     MayaUsdProxyStageSetNotice(*this).Send();
 
