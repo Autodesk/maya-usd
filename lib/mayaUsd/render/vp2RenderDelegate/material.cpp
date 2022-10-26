@@ -215,7 +215,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (Unknown)
     (Computed)
-#if PXR_VERSION <= 2211
+
+    // XXX Deprecated in PXR_VERSION > 2211
     (result)
     (cardsUv)
     (diffuseColor)
@@ -228,7 +229,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (mayaIsBackFacing)
     (isBackfacing)
     (FallbackShader)
-#endif
 );
 // clang-format on
 

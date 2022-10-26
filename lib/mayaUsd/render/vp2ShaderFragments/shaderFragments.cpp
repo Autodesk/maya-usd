@@ -104,9 +104,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (UsdPreviewSurfaceLightAPI2)
     (UsdPreviewSurfaceLightAPI3)
 
-#if PXR_VERSION <= 2211
+    // XXX Deprecated in PXR_VERSION > 2211
     (UsdDrawModeCards)
-#endif
 );
 // clang-format on
 
