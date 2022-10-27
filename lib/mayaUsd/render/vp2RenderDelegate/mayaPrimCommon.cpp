@@ -34,7 +34,6 @@
 #endif
 #include <maya/M3dView.h>
 #include <maya/MProfiler.h>
-#include <ufe/pathString.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -767,7 +766,7 @@ void MayaUsdRPrim::_SyncDisplayLayerModes(const HdRprim& refThis)
     // Otherwise display layer modes will be handled later, in the instancing loop.
     if (refThis.GetInstancerId().IsEmpty()) {
         MString pathString = drawScene.GetProxyShapeDagPath().fullPathName()
-            + Ufe::PathString::pathSegmentSeparator().c_str() + _PrimSegmentString[0];
+            + MayaUsd::ufe::pathSegmentSeparator().c_str() + _PrimSegmentString[0];
         _PopulateDisplayLayerModes(pathString, _displayLayerModes);
     } else {
         _displayLayerModes = DisplayLayerModes();

@@ -23,6 +23,7 @@
 #include "tokens.h"
 
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
+#include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/colorSpace.h>
 
 #include <pxr/base/gf/matrix4d.h>
@@ -45,7 +46,6 @@
 #include <maya/MMatrix.h>
 #include <maya/MProfiler.h>
 #include <maya/MSelectionMask.h>
-#include <ufe/pathString.h>
 
 #include <numeric>
 #include <type_traits>
@@ -1863,7 +1863,7 @@ void HdVP2Mesh::_UpdateDrawItem(
 
             DisplayLayerModes displayLayerModes;
             const MString     ufePathPrefix = drawScene.GetProxyShapeDagPath().fullPathName()
-                + Ufe::PathString::pathSegmentSeparator().c_str();
+                + MayaUsd::ufe::pathSegmentSeparator().c_str();
 
             stateToCommit._instanceTransforms = std::make_shared<MMatrixArray>();
             stateToCommit._instanceColors = std::make_shared<MFloatArray>();
