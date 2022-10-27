@@ -27,7 +27,7 @@ namespace ufe {
 UsdSetMatrix4dUndoableCommand::UsdSetMatrix4dUndoableCommand(
     const Ufe::Path&     path,
     const Ufe::Matrix4d& newM)
-    : UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>(path)
+    : UsdBaseUndoableCommand<Ufe::SetMatrix4dUndoableCommand>(path)
 {
     // Decompose new matrix to extract TRS.  Neither GfMatrix4d::Factor
     // nor GfTransform decomposition provide results that match Maya,

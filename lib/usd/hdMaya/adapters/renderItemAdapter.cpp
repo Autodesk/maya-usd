@@ -107,6 +107,7 @@ static const std::map<TfToken, HdMayaShaderData> sHdMayaSupportedShaders
 // HdMayaShaderAdapter
 ///////////////////////////////////////////////////////////////////////
 
+// TODO remove unused class
 HdMayaShapeUIShaderAdapter::HdMayaShapeUIShaderAdapter(	
 	HdMayaDelegateCtx* del,
 	const HdMayaShaderData& shader

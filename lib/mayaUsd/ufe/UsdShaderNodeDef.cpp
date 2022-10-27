@@ -24,6 +24,8 @@
 #include "Global.h"
 #include "Utils.h"
 
+#include <mayaUsd/utils/util.h>
+
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/ndr/declare.h>
 #include <pxr/usd/sdf/types.h>
@@ -41,14 +43,6 @@ namespace ufe {
 PXR_NAMESPACE_USING_DIRECTIVE
 
 constexpr char UsdShaderNodeDef::kNodeDefCategoryShader[];
-
-#if (UFE_PREVIEW_VERSION_NUM < 4010)
-Ufe::Attribute::Type getUfeTypeForAttribute(const SdrShaderPropertyConstPtr& shaderProperty)
-{
-    const SdfValueTypeName typeName = shaderProperty->GetTypeAsSdfType().first;
-    return usdTypeToUfe(typeName);
-}
-#endif
 
 template <Ufe::AttributeDef::IOType IOTYPE>
 Ufe::ConstAttributeDefs getAttrs(const SdrShaderNodeConstPtr& shaderNodeDef)
@@ -69,7 +63,7 @@ Ufe::ConstAttributeDefs getAttrs(const SdrShaderNodeConstPtr& shaderNodeDef)
 #if (UFE_PREVIEW_VERSION_NUM < 4010)
         std::ostringstream defaultValue;
         defaultValue << property->GetDefaultValue();
-        Ufe::Attribute::Type type = getUfeTypeForAttribute(property);
+        Ufe::Attribute::Type type = usdTypeToUfe(property);
         attrs.emplace_back(Ufe::AttributeDef::create(name, type, defaultValue.str(), IOTYPE));
 #else
         attrs.emplace_back(Ufe::AttributeDef::ConstPtr(new UsdShaderAttributeDef(property)));
@@ -112,8 +106,31 @@ const Ufe::ConstAttributeDefs& UsdShaderNodeDef::outputs() const { return fOutpu
 std::string UsdShaderNodeDef::type() const
 {
     TF_AXIOM(fShaderNodeDef);
-    return fShaderNodeDef->GetName();
+    return fShaderNodeDef->GetIdentifier();
 }
+
+namespace {
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    (arnold)
+    (shader)
+);
+// clang-format on
+
+// Arnold nodes seem to be incompletely registered, this affects the "classification" scheme used
+// by the UFE abstraction. This has been identified as Arnold-USD issue 1214:
+//    https://github.com/Autodesk/arnold-usd/issues/1214
+// We will detect this in a way that should switch back to the normal classification scheme if the
+// registration code is updated.
+bool _isArnoldWithIssue1214(const PXR_NS::SdrShaderNode& shaderNodeDef)
+{
+    return shaderNodeDef.GetSourceType() == _tokens->arnold
+        && shaderNodeDef.GetFamily() == _tokens->shader
+        && shaderNodeDef.GetName() != _tokens->shader;
+}
+} // namespace
 
 std::size_t UsdShaderNodeDef::nbClassifications() const
 {
@@ -126,6 +143,14 @@ std::size_t UsdShaderNodeDef::nbClassifications() const
     //     - SourceType
     if (fShaderNodeDef->GetFamily().IsEmpty()) {
         return 2;
+    }
+
+    if (_isArnoldWithIssue1214(*fShaderNodeDef)) {
+        // With 1214 active, we can provide 2 classification levels:
+        //    - Name (as substitute for family)
+        //    - SourceType
+        return 2;
+        // This might change in some future and fallback to the last case below.
     }
 
     // Regular shader nodes provide 3 classification levels:
@@ -142,6 +167,13 @@ std::string UsdShaderNodeDef::classification(std::size_t level) const
         switch (level) {
         // UsdLux:
         case 0: return fShaderNodeDef->GetContext().GetString();
+        case 1: return fShaderNodeDef->GetSourceType().GetString();
+        }
+    }
+    if (_isArnoldWithIssue1214(*fShaderNodeDef)) {
+        switch (level) {
+        // Arnold with issue 1214 active:
+        case 0: return fShaderNodeDef->GetName();
         case 1: return fShaderNodeDef->GetSourceType().GetString();
         }
     }
@@ -232,6 +264,30 @@ Ufe::ConstAttributeDefs UsdShaderNodeDef::outputs() const
     return getAttrs<Ufe::AttributeDef::OUTPUT_ATTR>(fShaderNodeDef);
 }
 
+namespace {
+typedef std::unordered_map<std::string, std::function<Ufe::Value(const PXR_NS::SdrShaderNode&)>>
+    MetadataMap;
+static const MetadataMap _metaMap = {
+    // Conversion map between known USD metadata and its MaterialX equivalent:
+    { "uiname",
+      [](const PXR_NS::SdrShaderNode& n) {
+          std::string uiname;
+          if (!n.GetLabel().IsEmpty()) {
+              return n.GetLabel().GetString();
+          }
+          if (!n.GetFamily().IsEmpty() && !_isArnoldWithIssue1214(n)) {
+              return UsdMayaUtil::prettifyName(n.GetFamily().GetString());
+          }
+          return UsdMayaUtil::prettifyName(n.GetName());
+      } },
+    { "doc",
+      [](const PXR_NS::SdrShaderNode& n) {
+          return !n.GetHelp().empty() ? n.GetHelp() : Ufe::Value();
+      } },
+    // If Ufe decides to use another completely different convention, it can be added here:
+};
+} // namespace
+
 Ufe::Value UsdShaderNodeDef::getMetadata(const std::string& key) const
 {
     TF_AXIOM(fShaderNodeDef);
@@ -240,8 +296,12 @@ Ufe::Value UsdShaderNodeDef::getMetadata(const std::string& key) const
     if (it != metadata.cend()) {
         return Ufe::Value(it->second);
     }
-    // TODO: Adapt UI metadata information found in SdrShaderNode to Ufe standards
-    // TODO: Fix Mtlx parser in USD to populate UI metadata in SdrShaderNode
+
+    MetadataMap::const_iterator itMapper = _metaMap.find(key);
+    if (itMapper != _metaMap.end()) {
+        return itMapper->second(*fShaderNodeDef);
+    }
+
     return {};
 }
 
@@ -250,7 +310,16 @@ bool UsdShaderNodeDef::hasMetadata(const std::string& key) const
     TF_AXIOM(fShaderNodeDef);
     const NdrTokenMap& metadata = fShaderNodeDef->GetMetadata();
     auto it = metadata.find(TfToken(key));
-    return it != metadata.cend();
+    if (it != metadata.cend()) {
+        return true;
+    }
+
+    MetadataMap::const_iterator itMapper = _metaMap.find(key);
+    if (itMapper != _metaMap.end() && !itMapper->second(*fShaderNodeDef).empty()) {
+        return true;
+    }
+
+    return false;
 }
 
 Ufe::SceneItem::Ptr UsdShaderNodeDef::createNode(
@@ -277,7 +346,8 @@ Ufe::InsertChildCommand::Ptr UsdShaderNodeDef::createNodeCmd(
     TF_AXIOM(fShaderNodeDef);
     UsdSceneItem::Ptr parentItem = std::dynamic_pointer_cast<UsdSceneItem>(parent);
     if (parentItem) {
-        return UsdUndoCreateFromNodeDefCommand::create(fShaderNodeDef, parentItem, name.string());
+        return UsdUndoCreateFromNodeDefCommand::create(
+            fShaderNodeDef, parentItem, UsdMayaUtil::SanitizeName(name.string()));
     }
     return {};
 }

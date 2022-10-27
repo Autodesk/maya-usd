@@ -19,6 +19,7 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/primUpdaterArgs.h>
+#include <mayaUsd/ufe/Utils.h>
 
 #include <pxr/base/tf/hashmap.h>
 #include <pxr/pxr.h>
@@ -66,6 +67,9 @@ public:
     /// empty if no correspondence exists.
     MAYAUSD_CORE_PUBLIC
     MDagPath MapSdfPathToDagPath(const SdfPath& sdfPath) const;
+
+    const MayaUsd::ufe::ReplicateExtrasFromUSD _pullExtras;
+    const MayaUsd::ufe::ReplicateExtrasToUSD   _pushExtras;
 
 private:
     const UsdTimeCode&           _timeCode;

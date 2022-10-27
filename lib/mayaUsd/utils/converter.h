@@ -396,6 +396,16 @@ template <> struct TypedConverter<MString, std::string>
     static void convert(const MString& src, std::string& dst) { dst = src.asChar(); }
 };
 
+//! \brief  Specialization of TypedConverter for MString <--> SdfAssetPath
+template <> struct TypedConverter<MString, SdfAssetPath>
+{
+    static void convert(const SdfAssetPath& src, MString& dst) { dst = src.GetAssetPath().c_str(); }
+    static void convert(const MString& src, SdfAssetPath& dst)
+    {
+        dst = SdfAssetPath(std::string(src.asChar()));
+    }
+};
+
 //! \brief  Specialization of TypedConverter for MMatrix <--> GfMatrix4d
 template <> struct TypedConverter<MMatrix, GfMatrix4d>
 {

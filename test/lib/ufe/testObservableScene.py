@@ -80,7 +80,7 @@ class UFEObservableSceneTest(unittest.TestCase):
         cb = ufe.PathComponent("b")
         cc = ufe.PathComponent("c")
 
-        sa = ufe.PathSegment([ca], 3, '/')
+        sa = ufe.PathSegment([ca], 1, '/')
         sab = ufe.PathSegment([ca, cb], 1, '|')
         sc = ufe.PathSegment([cc], 2, '/')
 

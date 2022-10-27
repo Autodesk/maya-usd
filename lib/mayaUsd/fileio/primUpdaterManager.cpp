@@ -1,5 +1,5 @@
 //
-// Copyright 2021 Autodesk
+// Copyright 2022 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,14 +20,19 @@
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/jobs/readJob.h>
 #include <mayaUsd/fileio/jobs/writeJob.h>
+#ifdef HAS_ORPHANED_NODES_MANAGER
+#include <mayaUsd/fileio/orphanedNodesManager.h>
+#endif
 #include <mayaUsd/fileio/primUpdaterRegistry.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Global.h>
+#include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/OpUndoItemMuting.h>
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
+#include <mayaUsd/utils/progressBarScope.h>
 #include <mayaUsd/utils/traverseLayer.h>
 #include <mayaUsdUtils/util.h>
 
@@ -41,11 +46,13 @@
 #include <maya/MAnimControl.h>
 #include <maya/MDagModifier.h>
 #include <maya/MFnDagNode.h>
+#include <maya/MFnDependencyNode.h>
 #include <maya/MFnSet.h>
 #include <maya/MFnStringData.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MGlobal.h>
 #include <maya/MItDag.h>
+#include <maya/MObject.h>
 #include <maya/MSceneMessage.h>
 #include <ufe/globalSelection.h>
 #include <ufe/hierarchy.h>
@@ -68,17 +75,6 @@ template <> struct hash<MObjectHandle>
 };
 } // namespace std
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
-
-//------------------------------------------------------------------------------
-// Global variables
-//------------------------------------------------------------------------------
-extern Ufe::Rtid g_MayaRtid;
-
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
-
 namespace {
 
 const std::string kPullParentPathKey("Maya:Pull:ParentPath");
@@ -94,22 +90,19 @@ const MString kPullDGMetadataKey("Pull_UfePath");
 
 // Name of Dag node under which all pulled sub-hierarchies are rooted.
 const MString kPullRootName("__mayaUsd__");
+const MString kPullRootPath("|__mayaUsd__");
 
 MObject findPullRoot()
 {
-    // Try to find one in the scene.
-    auto       worldObj = MItDag().root();
-    MFnDagNode world(worldObj);
-    auto       nbWorldChildren = world.childCount();
-    for (unsigned int i = 0; i < nbWorldChildren; ++i) {
-        auto              childObj = world.child(i);
-        MFnDependencyNode child(childObj);
-        if (child.name() == kPullRootName) {
-            return childObj;
-        }
-    }
+    // Try to find the pull root in the scene.
+    MSelectionList sel;
+    sel.add(kPullRootPath);
+    if (sel.isEmpty())
+        return MObject();
 
-    return MObject();
+    MObject obj;
+    sel.getDependNode(0, obj);
+    return obj;
 }
 
 Ufe::Path usdToMaya(const Ufe::Path& usdPath)
@@ -167,6 +160,8 @@ bool hasEditedDescendant(const Ufe::Path& ufeQueryPath)
 // Maya pulled object.
 bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& path)
 {
+    MayaUsd::ProgressBarScope progressBar(3);
+
     auto pulledPrim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
     if (!pulledPrim) {
         return false;
@@ -196,6 +191,7 @@ bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& path)
         TF_WARN("Cannot edited object to pulled set.");
         return false;
     }
+    progressBar.advance();
 
     // Store metadata on the prim in the Session Layer.
     auto stage = pulledPrim.GetStage();
@@ -205,6 +201,7 @@ bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& path)
     VtValue        value(path.fullPathName().asChar());
     if (!pulledPrim.SetMetadataByDictKey(SdfFieldKeys->CustomData, kPullPrimMetadataKey, value))
         return false;
+    progressBar.advance();
 
     // Store medata on DG node
     auto              ufePathString = Ufe::PathString::string(ufePulledPath);
@@ -225,6 +222,7 @@ bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& path)
         }
     }
     dgMetadata.setValue(ufePathString.c_str());
+    progressBar.advance();
 
     return true;
 }
@@ -233,16 +231,21 @@ bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& path)
 //
 void removePullInformation(const Ufe::Path& ufePulledPath)
 {
-    UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
-    auto    stage = prim.GetStage();
+    MayaUsd::ProgressBarScope progressBar(1);
+    UsdPrim                   prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
+    auto                      stage = prim.GetStage();
     if (!stage)
         return;
     UsdEditContext editContext(stage, stage->GetSessionLayer());
     prim.ClearCustomDataByKey(kPullPrimMetadataKey);
+    progressBar.advance();
 
     // Session layer cleanup
-    for (const SdfPrimSpecHandle& rootPrimSpec : stage->GetSessionLayer()->GetRootPrims()) {
+    auto                          rootPrims = stage->GetSessionLayer()->GetRootPrims();
+    MayaUsd::ProgressBarLoopScope rootPrimsLoop(rootPrims.size());
+    for (const SdfPrimSpecHandle& rootPrimSpec : rootPrims) {
         stage->GetSessionLayer()->RemovePrimIfInert(rootPrimSpec);
+        rootPrimsLoop.loopAdvance();
     }
 }
 
@@ -319,14 +322,18 @@ PullImportPaths pullImport(
     const UsdPrim&                   pulledPrim,
     const UsdMayaPrimUpdaterContext& context)
 {
+    MayaUsd::ProgressBarScope progressBar(9);
+
     std::string mFileName = context.GetUsdStage()->GetRootLayer()->GetIdentifier();
     if (mFileName.empty()) {
         TF_WARN("Nothing to edit: invalid layer.");
         return PullImportPaths();
     }
+    progressBar.advance();
 
     VtDictionary userArgs(context.GetUserArgs());
     userArgs[UsdMayaJobImportArgsTokens->pullImportStage] = PXR_NS::VtValue(context.GetUsdStage());
+    userArgs[UsdMayaJobImportArgsTokens->preserveTimeline] = true;
 
     UsdMayaJobImportArgs jobArgs = UsdMayaJobImportArgs::CreateFromDictionary(
         userArgs,
@@ -337,6 +344,7 @@ PullImportPaths pullImport(
     importData.setRootPrimPath(pulledPrim.GetPath().GetText());
 
     auto readJob = std::make_shared<UsdMaya_ReadJob>(importData, jobArgs);
+    progressBar.advance();
 
     MDagPath pullParentPath;
     {
@@ -349,6 +357,7 @@ PullImportPaths pullImport(
             }
         }
     }
+    progressBar.advance();
 
     std::vector<MDagPath>  addedDagPaths;
     std::vector<Ufe::Path> pulledUfePaths;
@@ -359,6 +368,7 @@ PullImportPaths pullImport(
         TF_WARN("Nothing to edit in the selection.");
         return PullImportPaths({}, {});
     }
+    progressBar.advance();
 
     // Note: UsdMaya_ReadJob has explicit Read(), Undo() and Redo() functions,
     //       and Read() has already been called, so create the function-undo item
@@ -369,9 +379,12 @@ PullImportPaths pullImport(
         [readJob]() { return readJob->Undo(); });
 
     MDagPath addedDagPath = addedDagPaths[0];
+    progressBar.advance();
 
     const bool isCopy = context.GetArgs()._copyOperation;
     if (!isCopy) {
+        progressBar.addSteps(4);
+
         // Quick workaround to reuse some POC code - to rewrite later
 
         // Communication to current proxyAccessor code is through the global
@@ -420,6 +433,7 @@ PullImportPaths pullImport(
             TF_WARN("Cannot parent pulled object.");
             return PullImportPaths();
         }
+        progressBar.advance();
 
         // Create the pull set if it does not exists.
         //
@@ -435,6 +449,7 @@ PullImportPaths pullImport(
             dgMod.commandToExecute(createSetCmd);
             dgMod.doIt();
         }
+        progressBar.advance();
 
         // Finalize the pull.
         if (!FunctionUndoItem::execute(
@@ -449,6 +464,7 @@ PullImportPaths pullImport(
             TF_WARN("Cannot write pull information metadata.");
             return PullImportPaths();
         }
+        progressBar.advance();
 
         if (!FunctionUndoItem::execute(
                 "Pull import rendering exclusion",
@@ -460,12 +476,14 @@ PullImportPaths pullImport(
             TF_WARN("Cannot exclude original USD data from viewport rendering.");
             return PullImportPaths();
         }
+        progressBar.advance();
 
         if (!UfeSelectionUndoItem::select("Pull import select DAG node", addedDagPath)) {
             TF_WARN("Cannot select the pulled nodes.");
             return PullImportPaths();
         }
     }
+    progressBar.advance();
 
     // Invert the new node registry, for MObject to Ufe::Path lookup.
     using ObjToUfePath = std::unordered_map<MObjectHandle, Ufe::Path>;
@@ -476,7 +494,10 @@ PullImportPaths pullImport(
         Ufe::Path::Segments s { ps, Ufe::PathSegment(v.first, rtid, '/') };
         Ufe::Path           p(std::move(s));
         objToUfePath.insert(ObjToUfePath::value_type(MObjectHandle(v.second), p));
+
+        context._pullExtras.processItem(p, v.second);
     }
+    progressBar.advance();
 
     // For each added Dag path, get the UFE path of the pulled USD prim.
     pulledUfePaths.reserve(addedDagPaths.size());
@@ -485,8 +506,11 @@ PullImportPaths pullImport(
         TF_AXIOM(found != objToUfePath.end());
         pulledUfePaths.emplace_back(found->second);
     }
+    progressBar.advance();
 
-    return PullImportPaths(addedDagPaths, pulledUfePaths);
+    auto ret = PullImportPaths(addedDagPaths, pulledUfePaths);
+    progressBar.advance();
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -511,6 +535,10 @@ UsdMayaPrimUpdaterRegistry::RegisterItem getUpdaterItem(const MFnDependencyNode&
 // Perform the customization step of the pull (second step).
 bool pullCustomize(const PullImportPaths& importedPaths, const UsdMayaPrimUpdaterContext& context)
 {
+    // The number of imported paths should (hopefully) never be so great
+    // as to overwhelm the computation with progress bar updates.
+    MayaUsd::ProgressBarScope progressBar(importedPaths.first.size());
+
     // Record all USD modifications in an undo block and item.
     UsdUndoBlock undoBlock(
         &UsdUndoableItemUndoItem::create("Pull customize USD data modifications"));
@@ -534,6 +562,7 @@ bool pullCustomize(const PullImportPaths& importedPaths, const UsdMayaPrimUpdate
         if (!updater->editAsMaya()) {
             return false;
         }
+        progressBar.advance();
     }
     return true;
 }
@@ -553,6 +582,8 @@ PushCustomizeSrc pushExport(
     const MObject&                   mayaObject,
     const UsdMayaPrimUpdaterContext& context)
 {
+    MayaUsd::ProgressBarScope progressBar(3);
+
     UsdStageRefPtr         srcStage = UsdStage::CreateInMemory();
     SdfLayerRefPtr         srcLayer = srcStage->GetRootLayer();
     UsdPathToDagPathMapPtr pathMapPtr;
@@ -580,11 +611,13 @@ PushCustomizeSrc pushExport(
 
     UsdMayaJobExportArgs jobArgs
         = UsdMayaJobExportArgs::CreateFromDictionary(userArgs, dagPaths, timeSamples);
+    progressBar.advance();
 
     UsdMaya_WriteJob writeJob(jobArgs);
     if (!writeJob.Write(fileName, false /* append */)) {
         return pushCustomizeSrc;
     }
+    progressBar.advance();
 
     std::get<SdfPath>(pushCustomizeSrc) = writeJob.MapDagPathToSdfPath(dagPath);
 
@@ -592,9 +625,11 @@ PushCustomizeSrc pushExport(
     auto usdPathToDagPathMap = std::make_shared<UsdPathToDagPathMap>();
     for (const auto& v : writeJob.GetDagPathToUsdPathMap()) {
         usdPathToDagPathMap->insert(UsdPathToDagPathMap::value_type(v.second, v.first));
+        context._pushExtras.processItem(v.first, v.second);
     }
 
     std::get<UsdPathToDagPathMapPtr>(pushCustomizeSrc) = usdPathToDagPathMap;
+    progressBar.advance();
 
     return pushCustomizeSrc;
 }
@@ -689,6 +724,8 @@ bool pushCustomize(
         return false;
     }
 
+    MayaUsd::ProgressBarScope progressBar(2);
+
     const bool  isCopy = context.GetArgs()._copyOperation;
     const auto& editTarget = context.GetUsdStage()->GetEditTarget();
     auto dstRootPath = editTarget.MapToSpecPath(getDstSdfPath(ufePulledPath, srcRootPath, isCopy));
@@ -732,6 +769,7 @@ bool pushCustomize(
     if (!MayaUsd::traverseLayer(srcLayer, srcRootPath, pushCopySpecsFn)) {
         return false;
     }
+    progressBar.advance();
 
     // Push end is a separate traversal, not a second phase of the same
     // traversal, because it is post-order: parents are traversed after
@@ -778,6 +816,7 @@ bool pushCustomize(
             e.reason().c_str());
         return false;
     }
+    progressBar.advance();
 
     return true;
 }
@@ -785,23 +824,131 @@ bool pushCustomize(
 class PushPullScope
 {
 public:
-    PushPullScope(bool& controlingFlag)
+    PushPullScope(bool& controllingFlag)
     {
-        if (!controlingFlag) {
-            controlingFlag = true;
-            _controlingFlag = &controlingFlag;
+        if (!controllingFlag) {
+            controllingFlag = true;
+            _controllingFlag = &controllingFlag;
         }
     }
     ~PushPullScope()
     {
-        if (_controlingFlag) {
-            *_controlingFlag = false;
+        if (_controllingFlag) {
+            *_controllingFlag = false;
         }
     }
 
 private:
-    bool* _controlingFlag { nullptr };
+    bool* _controllingFlag { nullptr };
 };
+
+#ifdef HAS_ORPHANED_NODES_MANAGER
+class AddPullPathUndoItem : public MayaUsd::OpUndoItem
+{
+public:
+    // Add the path to the orphaned nodes manager, and add an undo entry onto
+    // the global undo list.
+    static bool execute(
+        const std::shared_ptr<OrphanedNodesManager>& orphanedNodesManager,
+        const Ufe::Path&                             pulledPath,
+        const MDagPath&                              pullParentPath)
+    {
+        // Get the global undo list.
+        auto& undoInfo = OpUndoItemList::instance();
+
+        auto item = std::make_unique<AddPullPathUndoItem>(
+            orphanedNodesManager, pulledPath, pullParentPath);
+        if (!item->redo()) {
+            return false;
+        }
+
+        undoInfo.addItem(std::move(item));
+
+        return true;
+    }
+
+    AddPullPathUndoItem(
+        const std::shared_ptr<OrphanedNodesManager>& orphanedNodesManager,
+        const Ufe::Path&                             pulledPath,
+        const MDagPath&                              pullParentPath)
+        : OpUndoItem(
+            std::string("Add to orphaned nodes manager pull path ")
+            + Ufe::PathString::string(pulledPath))
+        , _orphanedNodesManager(orphanedNodesManager)
+        , _pulledPath(pulledPath)
+        , _pullParentPath(pullParentPath)
+    {
+    }
+
+    bool undo() override
+    {
+        _orphanedNodesManager->remove(_pulledPath);
+        return true;
+    }
+
+    bool redo() override
+    {
+        _orphanedNodesManager->add(_pulledPath, _pullParentPath);
+        return true;
+    }
+
+private:
+    const std::shared_ptr<OrphanedNodesManager> _orphanedNodesManager;
+    const Ufe::Path                             _pulledPath;
+    const MDagPath                              _pullParentPath;
+};
+
+class RemovePullPathUndoItem : public MayaUsd::OpUndoItem
+{
+public:
+    // Remove the path from the orphaned nodes manager, and add an entry onto
+    // the global undo list.
+    static bool execute(
+        const std::shared_ptr<OrphanedNodesManager>& orphanedNodesManager,
+        const Ufe::Path&                             pulledPath)
+    {
+        // Get the global undo list.
+        auto& undoInfo = OpUndoItemList::instance();
+
+        auto item = std::make_unique<RemovePullPathUndoItem>(orphanedNodesManager, pulledPath);
+        if (!item->redo()) {
+            return false;
+        }
+
+        undoInfo.addItem(std::move(item));
+
+        return true;
+    }
+
+    RemovePullPathUndoItem(
+        const std::shared_ptr<OrphanedNodesManager>& orphanedNodesManager,
+        const Ufe::Path&                             pulledPath)
+        : OpUndoItem(std::string("Remove pull path ") + Ufe::PathString::string(pulledPath))
+        , _orphanedNodesManager(orphanedNodesManager)
+        , _pulledPath(pulledPath)
+    {
+    }
+
+    bool undo() override
+    {
+        _orphanedNodesManager->restore(std::move(_memento));
+        return true;
+    }
+
+    bool redo() override
+    {
+        _memento = _orphanedNodesManager->remove(_pulledPath);
+        return true;
+    }
+
+private:
+    const std::shared_ptr<OrphanedNodesManager> _orphanedNodesManager;
+    const Ufe::Path                             _pulledPath;
+
+    // Created by redo().
+    OrphanedNodesManager::Memento _memento;
+};
+#endif
 
 } // namespace
 
@@ -810,6 +957,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_INSTANTIATE_SINGLETON(PrimUpdaterManager);
 
 PrimUpdaterManager::PrimUpdaterManager()
+#ifdef HAS_ORPHANED_NODES_MANAGER
+    : _orphanedNodesManager(std::make_shared<OrphanedNodesManager>())
+#endif
 {
     TfSingleton<PrimUpdaterManager>::SetInstanceConstructed(*this);
     TfRegistryManager::GetInstance().SubscribeTo<PrimUpdaterManager>();
@@ -835,7 +985,12 @@ bool PrimUpdaterManager::mergeToUsd(
         return false;
     }
 
-    PushPullScope scopeIt(_inPushPull);
+    // Are we doing a merge or cache?
+    MString progStr(
+        VtDictionaryIsHolding<std::string>(userArgs, "rn_primName") ? "Caching to USD"
+                                                                    : "Merging to USD");
+    MayaUsd::ProgressBarScope progressBar(10, progStr);
+    PushPullScope             scopeIt(_inPushPull);
 
     auto ctxArgs = VtDictionaryOver(userArgs, UsdMayaJobExportArgs::GetDefaultDictionary());
 
@@ -854,6 +1009,7 @@ bool PrimUpdaterManager::mergeToUsd(
             return false;
         }
     }
+    progressBar.advance();
 
     // If the user-provided argument does *not* contain an animation key, then
     // automatically infer if we should merge animations.
@@ -867,7 +1023,13 @@ bool PrimUpdaterManager::mergeToUsd(
         ctxArgs[UsdMayaJobExportArgsTokens->frameStride] = 1.0;
         ctxArgs[UsdMayaJobExportArgsTokens->startTime] = timeInterval.GetMin();
         ctxArgs[UsdMayaJobExportArgsTokens->endTime] = timeInterval.GetMax();
+    } else if (ctxArgs[UsdMayaJobExportArgsTokens->animation] == true) {
+        // If user asked for animation but there is no animation, skip the exportation of animation.
+        const bool isAnimated = PXR_NS::UsdMayaPrimUpdater::isAnimated(mayaDagPath);
+        if (!isAnimated)
+            ctxArgs[UsdMayaJobExportArgsTokens->animation] = false;
     }
+    progressBar.advance();
 
     // Reset the selection, otherwise it will keep a reference to a deleted node
     // and crash later on.
@@ -883,6 +1045,7 @@ bool PrimUpdaterManager::mergeToUsd(
     auto& scene = Ufe::Scene::instance();
     if (!isCopy && TF_VERIFY(ufeMayaItem))
         scene.notify(Ufe::ObjectPreDelete(ufeMayaItem));
+    progressBar.advance();
 
     // Record all USD modifications in an undo block and item.
     UsdUndoBlock undoBlock(
@@ -895,6 +1058,7 @@ bool PrimUpdaterManager::mergeToUsd(
 
     // 1) Perform the export to the temporary layer.
     auto pushCustomizeSrc = pushExport(pulledPath, depNodeFn.object(), context);
+    progressBar.advance();
 
     // 2) Traverse the in-memory layer, creating a prim updater for each prim,
     // and call Push for each updater.  Build a new context with the USD path
@@ -917,10 +1081,12 @@ bool PrimUpdaterManager::mergeToUsd(
             return false;
         }
     }
+    progressBar.advance();
 
     if (!pushCustomize(pulledPath, pushCustomizeSrc, customizeContext)) {
         return false;
     }
+    progressBar.advance();
 
     if (!isCopy) {
         if (!FunctionUndoItem::execute(
@@ -936,9 +1102,11 @@ bool PrimUpdaterManager::mergeToUsd(
             return false;
         }
     }
+    progressBar.advance();
 
     // Discard all pulled Maya nodes.
     std::vector<MDagPath> toApplyOn = UsdMayaUtil::getDescendantsStartingWithChildren(mayaDagPath);
+    MayaUsd::ProgressBarLoopScope toApplyOnLoop(toApplyOn.size());
     for (const MDagPath& curDagPath : toApplyOn) {
         MStatus status = NodeDeletionUndoItem::deleteNode(
             "Merge to USD Maya scene cleanup", curDagPath.fullPathName(), curDagPath.node());
@@ -948,13 +1116,18 @@ bool PrimUpdaterManager::mergeToUsd(
                 curDagPath.fullPathName().asChar());
             return false;
         }
+        toApplyOnLoop.loopAdvance();
     }
 
     if (!isCopy) {
-        if (!TF_VERIFY(removePullParent(pullParentPath))) {
+        if (!TF_VERIFY(removePullParent(pullParentPath, pulledPath))) {
             return false;
         }
     }
+    progressBar.advance();
+
+    context._pushExtras.finalize(MayaUsd::ufe::stagePath(context.GetUsdStage()));
+    progressBar.advance();
 
     discardPullSetIfEmpty();
 
@@ -965,6 +1138,7 @@ bool PrimUpdaterManager::mergeToUsd(
     if (TF_VERIFY(hier)) {
         scene.notify(Ufe::SubtreeInvalidate(hier->defaultParent()));
     }
+    progressBar.advance();
 
     return true;
 }
@@ -986,6 +1160,8 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
         return false;
     }
 
+    MayaUsd::ProgressBarScope progressBar(6, "Converting to Maya Data");
+
     PushPullScope scopeIt(_inPushPull);
 
     auto ctxArgs = VtDictionaryOver(userArgs, UsdMayaJobImportArgs::GetDefaultDictionary());
@@ -997,13 +1173,17 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
         TF_WARN("Cannot setup the edit parent node.");
         return false;
     }
+    progressBar.advance();
 
     UsdMayaPrimUpdaterContext context(proxyShape->getTime(), pulledPrim.GetStage(), ctxArgs);
 
     auto& scene = Ufe::Scene::instance();
     auto  ufeItem = Ufe::Hierarchy::createItem(path);
+    context._pullExtras.initRecursive(ufeItem);
     if (!updaterArgs._copyOperation && TF_VERIFY(ufeItem))
         scene.notify(Ufe::ObjectPreDelete(ufeItem));
+
+    progressBar.advance();
 
     // The pull is done in two stages:
     // 1) Perform the import into Maya.
@@ -1015,12 +1195,14 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
     if (importedPaths.first.empty()) {
         return false;
     }
+    progressBar.advance();
 
     // 2) Iterate over all imported Dag paths.
     if (!pullCustomize(importedPaths, context)) {
         TF_WARN("Failed to customize the edited nodes.");
         return false;
     }
+    progressBar.advance();
 
     if (!updaterArgs._copyOperation) {
         // Lock pulled nodes starting at the pull parent.
@@ -1031,11 +1213,13 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
         if (!allowTopologyModifications(pullParentPath))
             return false;
     }
+    progressBar.advance();
 
     // We must recreate the UFE item because it has changed data models (USD -> Maya).
     ufeItem = Ufe::Hierarchy::createItem(usdToMaya(path));
     if (TF_VERIFY(ufeItem))
         scene.notify(Ufe::ObjectAdd(ufeItem));
+    progressBar.advance();
 
     return true;
 }
@@ -1066,12 +1250,28 @@ bool PrimUpdaterManager::canEditAsMaya(const Ufe::Path& path) const
 
 bool PrimUpdaterManager::discardEdits(const MDagPath& dagPath)
 {
-    Ufe::Path primPath;
-    if (!PXR_NS::PrimUpdaterManager::readPullInformation(dagPath, primPath))
+    Ufe::Path pulledPath;
+    if (!readPullInformation(dagPath, pulledPath))
         return false;
 
-    auto usdPrim = MayaUsd::ufe::ufePathToPrim(primPath);
-    return usdPrim ? discardPrimEdits(primPath) : discardOrphanedEdits(dagPath);
+    MayaUsd::ProgressBarScope progressBar(1, "Discarding Converted Maya Data");
+
+    auto usdPrim = MayaUsd::ufe::ufePathToPrim(pulledPath);
+
+#ifdef HAS_ORPHANED_NODES_MANAGER
+    auto ret = _orphanedNodesManager->isOrphaned(pulledPath)
+        ? discardOrphanedEdits(dagPath, pulledPath)
+        : discardPrimEdits(pulledPath);
+#else
+    // The following is incorrect: because of pull information in the session
+    // layer stored as overs, the usdPrim will never be invalid: a prim that
+    // exists only because of over opinions is valid, but is typeless.
+    // Therefore, the conditional will always succeed, and
+    // discardOrphanedEdits() is never called.  PPT, 30-Sep-2022.
+    auto ret = usdPrim ? discardPrimEdits(pulledPath) : discardOrphanedEdits(dagPath, pulledPath);
+#endif
+    progressBar.advance();
+    return ret;
 }
 
 bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
@@ -1081,7 +1281,8 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
         return false;
     }
 
-    PushPullScope scopeIt(_inPushPull);
+    MayaUsd::ProgressBarScope progressBar(5);
+    PushPullScope             scopeIt(_inPushPull);
 
     // Record all USD modifications in an undo block and item.
     UsdUndoBlock undoBlock(
@@ -1097,6 +1298,7 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
     auto& scene = Ufe::Scene::instance();
     if (TF_VERIFY(ufeMayaItem))
         scene.notify(Ufe::ObjectPreDelete(ufeMayaItem));
+    progressBar.advance();
 
     // Unlock the pulled hierarchy, clear the pull information, and remove the
     // pull parent, which is simply the parent of the pulled path.
@@ -1108,6 +1310,7 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
     if (!LockNodesUndoItem::lock("Discard edits node unlocking", pullParent, false)) {
         return false;
     }
+    progressBar.advance();
 
     // Reset the selection, otherwise it will keep a reference to a deleted node
     // and crash later on.
@@ -1115,9 +1318,11 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
         TF_WARN("Cannot reset the selection.");
         return false;
     }
+    progressBar.advance();
 
     // Discard all pulled Maya nodes.
     std::vector<MDagPath> toApplyOn = UsdMayaUtil::getDescendantsStartingWithChildren(mayaDagPath);
+    MayaUsd::ProgressBarLoopScope toApplyOnLoop(toApplyOn.size());
     for (const MDagPath& curDagPath : toApplyOn) {
         MFnDependencyNode dgNodeFn(curDagPath.node());
 
@@ -1128,6 +1333,7 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
         auto updater = factory(context, dgNodeFn, path);
 
         updater->discardEdits();
+        toApplyOnLoop.loopAdvance();
     }
 
     if (!FunctionUndoItem::execute(
@@ -1154,9 +1360,10 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
         return false;
     }
 
-    if (!TF_VERIFY(removePullParent(pullParent))) {
+    if (!TF_VERIFY(removePullParent(pullParent, pulledPath))) {
         return false;
     }
+    progressBar.advance();
 
     discardPullSetIfEmpty();
 
@@ -1165,12 +1372,14 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
     if (TF_VERIFY(hier)) {
         scene.notify(Ufe::SubtreeInvalidate(hier->defaultParent()));
     }
+    progressBar.advance();
     return true;
 }
 
-bool PrimUpdaterManager::discardOrphanedEdits(const MDagPath& dagPath)
+bool PrimUpdaterManager::discardOrphanedEdits(const MDagPath& dagPath, const Ufe::Path& pulledPath)
 {
-    PushPullScope scopeIt(_inPushPull);
+    MayaUsd::ProgressBarScope progressBar(2);
+    PushPullScope             scopeIt(_inPushPull);
 
     // Unlock the pulled hierarchy, clear the pull information, and remove the
     // pull parent, which is simply the parent of the pulled path.
@@ -1189,9 +1398,11 @@ bool PrimUpdaterManager::discardOrphanedEdits(const MDagPath& dagPath)
     }
 
     UsdMayaPrimUpdaterContext context(UsdTimeCode(), nullptr, VtDictionary());
+    progressBar.advance();
 
     // Discard all pulled Maya nodes.
     std::vector<MDagPath> toApplyOn = UsdMayaUtil::getDescendantsStartingWithChildren(dagPath);
+    MayaUsd::ProgressBarLoopScope toApplyOnLoop(toApplyOn.size());
     for (const MDagPath& curDagPath : toApplyOn) {
         MFnDependencyNode dgNodeFn(curDagPath.node());
 
@@ -1200,11 +1411,13 @@ bool PrimUpdaterManager::discardOrphanedEdits(const MDagPath& dagPath)
         auto updater = factory(context, dgNodeFn, Ufe::Path());
 
         updater->discardEdits();
+        toApplyOnLoop.loopAdvance();
     }
 
-    if (!TF_VERIFY(removePullParent(pullParent))) {
+    if (!TF_VERIFY(removePullParent(pullParent, pulledPath))) {
         return false;
     }
+    progressBar.advance();
 
     return true;
 }
@@ -1251,6 +1464,8 @@ bool PrimUpdaterManager::duplicate(
             return false;
         }
 
+        MayaUsd::ProgressBarScope progressBar(2, "Duplicating to Maya Data");
+
         auto ctxArgs = VtDictionaryOver(userArgs, UsdMayaJobImportArgs::GetDefaultDictionary());
 
         // We will only do copy between two data models, setting this in arguments
@@ -1270,8 +1485,11 @@ bool PrimUpdaterManager::duplicate(
 
         UsdMayaPrimUpdaterContext context(
             srcProxyShape->getTime(), srcProxyShape->getUsdStage(), ctxArgs);
+        context._pullExtras.initRecursive(Ufe::Hierarchy::createItem(srcPath));
+        progressBar.advance();
 
         pullImport(srcPath, srcPrim, context);
+        progressBar.advance();
         return true;
     }
     // Copy from DG to USD
@@ -1282,11 +1500,14 @@ bool PrimUpdaterManager::duplicate(
             return false;
         }
 
+        MayaUsd::ProgressBarScope progressBar(7, "Duplicating to USD");
+
         auto ctxArgs = VtDictionaryOver(userArgs, UsdMayaJobExportArgs::GetDefaultDictionary());
 
         // Record all USD modifications in an undo block and item.
         MAYAUSD_NS::UsdUndoBlock undoBlock(
             &UsdUndoableItemUndoItem::create("Duplicate USD data modifications"));
+        progressBar.advance();
 
         // We will only do copy between two data models, setting this in arguments
         // to configure the updater
@@ -1300,6 +1521,7 @@ bool PrimUpdaterManager::duplicate(
         if (srcRootPath.IsEmpty()) {
             return false;
         }
+        progressBar.advance();
 
         // Copy the temporary layer contents out to the proper destination.
         const auto& srcLayer = std::get<SdfLayerRefPtr>(pushExportOutput);
@@ -1311,20 +1533,28 @@ bool PrimUpdaterManager::duplicate(
         if (!dstParentPrim.IsValid()) {
             return false;
         }
+        progressBar.advance();
 
         // Make the destination root path unique.
         SdfPath     dstParentPath = dstParentPrim.GetPath();
         std::string dstChildName = ufe::uniqueChildName(dstParentPrim, srcRootPath.GetName());
         SdfPath     dstRootPath = dstParentPath.AppendChild(TfToken(dstChildName));
+        progressBar.advance();
 
         if (!SdfCopySpec(srcLayer, srcRootPath, dstLayer, dstRootPath)) {
             return false;
         }
+        progressBar.advance();
+
+        std::string* rootRename = (dstChildName != srcRootPath.GetName()) ? &dstChildName : nullptr;
+        context._pushExtras.finalize(MayaUsd::ufe::stagePath(context.GetUsdStage()), rootRename);
+        progressBar.advance();
 
         auto ufeItem = Ufe::Hierarchy::createItem(dstPath);
         if (TF_VERIFY(ufeItem)) {
             Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(ufeItem));
         }
+        progressBar.advance();
         return true;
     }
 
@@ -1413,10 +1643,13 @@ PrimUpdaterManager& PrimUpdaterManager::getInstance()
 
 MObject PrimUpdaterManager::findOrCreatePullRoot()
 {
+    MayaUsd::ProgressBarScope progressBar(5);
+
     MObject pullRoot = findPullRoot();
     if (!pullRoot.isNull()) {
         return pullRoot;
     }
+    progressBar.advance();
 
     // No pull root in the scene, so create one.
     MDagModifier& dagMod = MDagModifierUndoItem::create("Create pull root");
@@ -1425,14 +1658,17 @@ MObject PrimUpdaterManager::findOrCreatePullRoot()
     if (status != MStatus::kSuccess) {
         return MObject();
     }
+    progressBar.advance();
     status = dagMod.renameNode(pullRootObj, kPullRootName);
     if (status != MStatus::kSuccess) {
         return MObject();
     }
+    progressBar.advance();
 
     if (dagMod.doIt() != MStatus::kSuccess) {
         return MObject();
     }
+    progressBar.advance();
 
     // Hide all objects under the pull root in the Outliner so only the pulled
     // objects under a proxy shape will be shown.
@@ -1442,25 +1678,21 @@ MObject PrimUpdaterManager::findOrCreatePullRoot()
     MFnDependencyNode pullRootFn(pullRootObj);
     UsdMayaUtil::SetHiddenInOutliner(pullRootFn, true);
 
-    if (!FunctionUndoItem::execute(
-            "Create pull root cache has pulled prims",
-            [self = this]() {
-                self->_hasPulledPrims = true;
-                return true;
-            },
-            [self = this]() {
-                self->_hasPulledPrims = false;
-                return true;
-            })) {
-        TF_WARN("Cannot create pulled prim cache.");
-        return MObject();
-    }
+    progressBar.advance();
+
+    // As soon as we've pulled something, we must observe the scene for
+    // structural changes.
+#ifdef HAS_ORPHANED_NODES_MANAGER
+    beginManagePulledPrims();
+#endif
 
     return pullRootObj;
 }
 
 MObject PrimUpdaterManager::createPullParent(const Ufe::Path& pulledPath, MObject pullRoot)
 {
+    MayaUsd::ProgressBarScope progressBar(2);
+
     MDagModifier& dagMod = MDagModifierUndoItem::create("Create pull parent node");
     MStatus       status;
     MObject       pullParentObj = dagMod.createNode(MString("transform"), pullRoot, &status);
@@ -1471,20 +1703,37 @@ MObject PrimUpdaterManager::createPullParent(const Ufe::Path& pulledPath, MObjec
     // Rename the pull parent to be the name of the node plus a "Parent" suffix.
     status = dagMod.renameNode(
         pullParentObj, MString(pulledPath.back().string().c_str()) + MString("Parent"));
+    progressBar.advance();
 
-    return (dagMod.doIt() == MStatus::kSuccess) ? pullParentObj : MObject::kNullObj;
+    auto ret = dagMod.doIt();
+    progressBar.advance();
+    return (ret == MStatus::kSuccess) ? pullParentObj : MObject::kNullObj;
 }
 
-bool PrimUpdaterManager::removePullParent(const MDagPath& parentDagPath)
+bool PrimUpdaterManager::removePullParent(
+    const MDagPath&  parentDagPath,
+    const Ufe::Path& pulledPath)
 {
     if (!TF_VERIFY(parentDagPath.isValid())) {
         return false;
     }
 
-    MStatus status = NodeDeletionUndoItem::deleteNode(
+#ifdef HAS_ORPHANED_NODES_MANAGER
+    if (!TF_VERIFY(_orphanedNodesManager)) {
+        return false;
+    }
+
+    if (!TF_VERIFY(RemovePullPathUndoItem::execute(_orphanedNodesManager, pulledPath))) {
+        return false;
+    }
+#endif
+
+    MayaUsd::ProgressBarScope progressBar(2);
+    MStatus                   status = NodeDeletionUndoItem::deleteNode(
         "Delete pull parent node", parentDagPath.fullPathName(), parentDagPath.node());
     if (status != MStatus::kSuccess)
         return false;
+    progressBar.advance();
 
     // If the pull parent was the last child of the pull root, remove the pull
     // root as well, and null out our pull root cache.
@@ -1498,27 +1747,31 @@ bool PrimUpdaterManager::removePullParent(const MDagPath& parentDagPath)
             if (status != MStatus::kSuccess) {
                 return false;
             }
-            if (!FunctionUndoItem::execute(
-                    "Delete pull root cache no pulled prims",
-                    [self = this]() {
-                        self->_hasPulledPrims = false;
+#ifdef HAS_ORPHANED_NODES_MANAGER
+            if (!TF_VERIFY(FunctionUndoItem::execute(
+                    "Remove orphaned nodes manager, pulled prims flag reset",
+                    [&]() {
+                        endManagePulledPrims();
                         return true;
                     },
-                    [self = this]() {
-                        self->_hasPulledPrims = true;
+                    [&]() {
+                        beginManagePulledPrims();
                         return true;
-                    })) {
-                TF_WARN("Cannot removed pulled prim from the pulled prim cache.");
+                    }))) {
                 return false;
             }
+#endif
         }
     }
+    progressBar.advance();
 
     return true;
 }
 
 MDagPath PrimUpdaterManager::setupPullParent(const Ufe::Path& pulledPath, VtDictionary& args)
 {
+    MayaUsd::ProgressBarScope progressBar(3);
+
     // Record all USD modifications in an undo block and item.
     UsdUndoBlock undoBlock(
         &UsdUndoableItemUndoItem::create("Setup pull parent USD data modification"));
@@ -1527,11 +1780,13 @@ MDagPath PrimUpdaterManager::setupPullParent(const Ufe::Path& pulledPath, VtDict
     if (pullRoot.isNull()) {
         return MDagPath();
     }
+    progressBar.advance();
 
     auto pullParent = createPullParent(pulledPath, pullRoot);
     if (pullParent == MObject::kNullObj) {
         return MDagPath();
     }
+    progressBar.advance();
 
     // Pull parent is not instanced, so use first path found.
     MDagPath pullParentPath;
@@ -1539,11 +1794,25 @@ MDagPath PrimUpdaterManager::setupPullParent(const Ufe::Path& pulledPath, VtDict
         return MDagPath();
     }
 
+#ifdef HAS_ORPHANED_NODES_MANAGER
+    recordPullVariantInfo(pulledPath, pullParentPath);
+#endif
+    progressBar.advance();
+
     // Add pull parent path to import args as a string.
     args[kPullParentPathKey] = VtValue(std::string(pullParentPath.fullPathName().asChar()));
 
     return pullParentPath;
 }
+
+#ifdef HAS_ORPHANED_NODES_MANAGER
+void PrimUpdaterManager::recordPullVariantInfo(
+    const Ufe::Path& pulledPath,
+    const MDagPath&  pullParentPath)
+{
+    AddPullPathUndoItem::execute(_orphanedNodesManager, pulledPath, pullParentPath);
+}
+#endif
 
 /* static */
 bool PrimUpdaterManager::readPullInformation(const PXR_NS::UsdPrim& prim, std::string& dagPathStr)
@@ -1601,5 +1870,43 @@ bool PrimUpdaterManager::readPullInformation(const MDagPath& dagPath, Ufe::Path&
 
     return false;
 }
+
+bool PrimUpdaterManager::hasPulledPrims() const
+{
+    MObject pullRoot = findPullRoot();
+    return !pullRoot.isNull();
+}
+
+#ifdef HAS_ORPHANED_NODES_MANAGER
+void PrimUpdaterManager::beginManagePulledPrims()
+{
+    TF_VERIFY(_orphanedNodesManager->empty());
+    Ufe::Scene::instance().addObserver(_orphanedNodesManager);
+
+    // Observe Maya so we can stop scene observation on file new or open.
+    MStatus                status;
+    MSceneMessage::Message msgs[] = { MSceneMessage::kBeforeNew, MSceneMessage::kBeforeOpen };
+    for (auto msg : msgs) {
+        _fileCbs.append(MSceneMessage::addCallback(msg, beforeNewOrOpenCallback, this, &status));
+        CHECK_MSTATUS(status);
+    }
+}
+
+void PrimUpdaterManager::endManagePulledPrims()
+{
+    TF_VERIFY(Ufe::Scene::instance().removeObserver(_orphanedNodesManager));
+    auto status = MMessage::removeCallbacks(_fileCbs);
+    CHECK_MSTATUS(status);
+    _fileCbs.clear();
+    _orphanedNodesManager->clear();
+}
+
+/*static*/
+void PrimUpdaterManager::beforeNewOrOpenCallback(void* clientData)
+{
+    auto* pum = static_cast<PrimUpdaterManager*>(clientData);
+    pum->endManagePulledPrims();
+}
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE

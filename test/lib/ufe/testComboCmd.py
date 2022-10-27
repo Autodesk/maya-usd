@@ -26,8 +26,7 @@ import usdUtils
 import mayaUsd.ufe
 import mayaUsd.lib
 
-from pxr import UsdGeom
-from pxr import Vt
+from pxr import UsdGeom, Vt, Gf
 
 from maya import cmds
 from maya import standalone
@@ -38,6 +37,7 @@ import ufe
 from functools import partial
 from math import degrees
 from math import radians
+from math import cos
 import os
 import unittest
 
@@ -101,8 +101,13 @@ class TestObserver(ufe.Observer):
 
     def __call__(self, notification):
         if (ufeUtils.ufeFeatureSetVersion() >= 2):
-            if isinstance(notification, ufe.AttributeValueChanged):
-                self._valueChanged += 1
+            if os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '4024':
+                if isinstance(notification, ufe.AttributeChanged):
+                    self._valueChanged += 1
+            else:
+                if isinstance(notification, ufe.AttributeValueChanged):
+                    self._valueChanged += 1
+
         if isinstance(notification, ufe.Transform3dChanged):
             self._transform3d += 1
 
@@ -861,34 +866,131 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
         sn.clear()
         sn.append(capsuleItem)
 
-        # center point is expected to be at [0.0, 0.0, 0.0]
-        assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [0.0, 0.0, 0.0])
-        assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [0.0, 0.0, 0.0])
+        kwArgs = [{'cp' : True}]
+        if mayaUtils.ufeSupportFixLevel() >= 4:
+            kwArgs.append({'cpc' : True})
 
-        # move the pivot location
-        cmds.move(7, 2, 1, r=True, urp=True, usp=True)
+        for kwArg in kwArgs:
+    
+            # center point is expected to be at [0.0, 0.0, 0.0]
+            assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [0.0, 0.0, 0.0])
+            assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [0.0, 0.0, 0.0])
+    
+            # move the pivot location
+            cmds.move(7, 2, 1, r=True, urp=True, usp=True)
+    
+            assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [7.0, 2.0, 1.0])
+            assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [7.0, 2.0, 1.0])
+    
+            # call center pivot command
+            cmds.xform(**kwArg)
+    
+            # center point is expected to be at [0.0, 0.0, 0.0]
+            assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [0.0, 0.0, 0.0])
+            assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [0.0, 0.0, 0.0])
+    
+            # undo
+            cmds.undo()
+    
+            assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [7.0, 2.0, 1.0])
+            assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [7.0, 2.0, 1.0])
+    
+            # redo
+            cmds.redo()
+    
+            assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [0.0, 0.0, 0.0])
+            assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [0.0, 0.0, 0.0])
 
-        assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [7.0, 2.0, 1.0])
-        assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [7.0, 2.0, 1.0])
+    @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() > 0, "Requires center pivot Maya fix.")
+    def testCenterPivotUpdatePivotCompensations(self):
+        '''Center pivot must correctly update rotate, scale pivot compensations.'''
+
+        cmds.file(new=True, force=True)
+
+        import mayaUsd_createStageWithNewLayer
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapeItem = ufeUtils.createItem('|stage1|stageShape1')
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
+
+        capsuleItem = ufeUtils.createItem('|stage1|stageShape1,/Capsule1')
+        t3d = ufe.Transform3d.transform3d(capsuleItem)
+
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(capsuleItem)
+
+        # Pivots and pivot compensations initially [0.0, 0.0, 0.0].
+        def checkNullPivotsAndCompensations():
+            for v in [t3d.rotatePivot(), t3d.scalePivot(), 
+                      t3d.rotatePivotTranslation(), 
+                      t3d.scalePivotTranslation()]:
+                assertVectorAlmostEqual(self, v.vector, [0.0, 0.0, 0.0])
+
+        checkNullPivotsAndCompensations()
+
+        # Rotate around x axis so that moving the pivot will create a rotate
+        # pivot translation as compensation, which keeps the total object
+        # transformation constant.
+        cmds.rotate(45, 0, 0, r=True, os=True, fo=True)
+
+        # Move the pivot.
+        cmds.move(0, 5, 0, r=True, urp=True, usp=True)
+
+        d = cos(radians(45)) * 5
+        assertVectorAlmostEqual(self, t3d.rotatePivot().vector, [0.0, d, -d])
+        assertVectorAlmostEqual(self, t3d.scalePivot().vector, [0, d, -d])
+        assertVectorAlmostEqual(self, t3d.rotatePivotTranslation().vector,
+                                [0.0, 1.464466095, d])
+        assertVectorAlmostEqual(self, t3d.scalePivotTranslation().vector,
+                                [0.0, 0.0, 0.0])
 
         # call center pivot command
         cmds.xform(cp=True)
 
-        # center point is expected to be at [0.0, 0.0, 0.0]
-        assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [0.0, 0.0, 0.0])
-        assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [0.0, 0.0, 0.0])
+        # Pivots and pivot compensations expected to be at [0.0, 0.0, 0.0]
+        checkNullPivotsAndCompensations()
 
-        # undo
-        cmds.undo()
+    @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() > 0, "Requires center pivot Maya fix.")
+    def testCenterPivotMatrixOp(self):
+        '''Center pivot must correctly update prim with matrix transform op.'''
 
-        assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [7.0, 2.0, 1.0])
-        assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [7.0, 2.0, 1.0])
+        cmds.file(new=True, force=True)
 
-        # redo
-        cmds.redo()
+        import mayaUsd_createStageWithNewLayer
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
-        assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [0.0, 0.0, 0.0])
-        assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [0.0, 0.0, 0.0])
+        proxyShapePathStr = '|stage1|stageShape1'
+        stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+        xform = stage.DefinePrim('/Xform1', 'Xform')
+        xformable = UsdGeom.Xformable(xform)
+        
+        transformOp = xformable.AddTransformOp()
+        transformOp.Set(Gf.Matrix4d(1.0))
+    
+        self.assertEqual(xformable.GetXformOpOrderAttr().Get(), Vt.TokenArray([
+            "xformOp:transform"]))
+
+        xformItem = ufeUtils.createItem(proxyShapePathStr + ',/Xform1')
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(xformItem)
+
+        t3d = ufe.Transform3d.transform3d(xformItem)
+
+        # Set the rotate and scale pivot.  Since the matrix op does not support
+        # these, this will create a Maya fallback transform stack after the
+        # matrix op.
+        cmds.move(3, 2, 1, r=True, urp=True, usp=True)
+
+        # Read back the rotate pivot using the Transform3d interface.
+        t3d = ufe.Transform3d.transform3d(xformItem)
+        self.assertEqual(t3d.rotatePivot().vector, [3, 2, 1])
+
+        # call center pivot command
+        cmds.xform(cp=True)
+
+        self.assertEqual(t3d.rotatePivot().vector, [0, 0, 0])
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testPrimPropertyPathNotifs only available in UFE v2 or greater.')
     def testPrimPropertyPathNotifs(self):

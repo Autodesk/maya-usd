@@ -19,6 +19,7 @@
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/utils/utilDictionary.h>
 
 #include <pxr/pxr.h>
 
@@ -332,11 +333,33 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
             frameSamples.insert(tmpArgList.asDouble(0));
         }
 
+        // The priority order for what objects get exported is (from highest to lowest):
+        //
+        //     - Requesting to export the current selection.
+        //     - Explicit export roots provided to the command.
+        //     - Explicit objects given to the command.
+        //     - Otherwise defaults to all objects.
+        //
+        // This priority order is embodied from code here and from code in the function
+        // UsdMayaUtil::GetFilteredSelectionToExport.
+
         MSelectionList           objSelList;
         UsdMayaUtil::MDagPathSet dagPaths;
         bool                     exportSelected = argData.isFlagSet(kSelectionFlag);
         if (!exportSelected) {
-            argData.getObjects(objSelList);
+            if (userArgs.count(UsdMayaJobExportArgsTokens->exportRoots) > 0) {
+                const auto exportRoots = DictUtils::extractVector<std::string>(
+                    userArgs, UsdMayaJobExportArgsTokens->exportRoots);
+                if (exportRoots.size() > 0) {
+                    for (const std::string& root : exportRoots) {
+                        objSelList.add(root.c_str());
+                    }
+                }
+            }
+
+            if (objSelList.isEmpty()) {
+                argData.getObjects(objSelList);
+            }
         }
         UsdMayaUtil::GetFilteredSelectionToExport(exportSelected, objSelList, dagPaths);
 

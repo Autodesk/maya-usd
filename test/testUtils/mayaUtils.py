@@ -298,6 +298,16 @@ def mayaMajorMinorVersions():
     """
     return (mayaMajorVersion(), mayaMinorVersion())
 
+def ufeSupportFixLevel():
+    '''
+    Return the fix level defined in the UFE support package.  This is used
+    to determine the presence of a UFE-related feature or bug fix in Maya that
+    does not depend on a version of UFE itself.
+    '''
+    import maya.internal.ufeSupport.utils as ufeSupportUtils
+    return ufeSupportUtils.fixLevel() if hasattr(ufeSupportUtils, 'fixLevel') \
+        else 0
+
 def activeModelPanel():
     """Return the model panel that will be used for playblasting etc..."""
     for panel in cmds.getPanel(type="modelPanel"):

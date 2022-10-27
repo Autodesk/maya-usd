@@ -3,6 +3,11 @@
       {
         "Info": {
           "UsdMaya": {
+            "SchemaApiAdaptor": {
+              "providesTranslator": [
+                "shape"
+              ]
+            },
             "PrimReader": {
               "providesTranslator": [
                 "UsdGeomCamera",
@@ -27,6 +32,7 @@
             },
             "PrimUpdater": {
               "providesTranslator": [
+                "UsdShadeMaterial",
                 "MayaUsd_SchemasALMayaReference",
                 "MayaUsd_SchemasMayaReference"
               ]
@@ -41,7 +47,6 @@
                 "joint",
                 "locator",
                 "mesh",
-                "renderItem",
                 "nParticle",
                 "nurbsCurve",
                 "nurbsSurface",

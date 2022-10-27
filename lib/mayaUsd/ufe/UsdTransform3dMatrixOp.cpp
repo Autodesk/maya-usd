@@ -91,11 +91,11 @@ GfMatrix4d xformInv(
 }
 
 // Class for setMatrixCmd() implementation.
-class UsdSetMatrix4dUndoableCmd : public UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>
+class UsdSetMatrix4dUndoableCmd : public UsdBaseUndoableCommand<Ufe::SetMatrix4dUndoableCommand>
 {
 public:
     UsdSetMatrix4dUndoableCmd(const Ufe::Path& path, const Ufe::Matrix4d& newM)
-        : UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>(path)
+        : UsdBaseUndoableCommand<Ufe::SetMatrix4dUndoableCommand>(path)
         , _newM(newM)
     {
     }

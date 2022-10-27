@@ -18,6 +18,7 @@
 #include <mayaUsd/base/debugCodes.h>
 #include <mayaUsd/fileio/functorPrimWriter.h>
 #include <mayaUsd/fileio/registryHelper.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 
 #include <pxr/base/tf/debug.h>
 #include <pxr/base/tf/diagnostic.h>
@@ -58,6 +59,10 @@ _Registry::const_iterator _Find(const TfToken& usdInfoId, const UsdMayaJobExport
 {
     using ContextSupport = UsdMayaShaderWriter::ContextSupport;
 
+    TfToken    conversion = exportArgs.convertMaterialsTo;
+    const bool noFallback
+        = UsdMayaShadingModeRegistry::GetMaterialConversionInfo(conversion).noFallbackExport;
+
     _Registry::const_iterator ret = _reg.cend();
     _Registry::const_iterator first, last;
     std::tie(first, last) = _reg.equal_range(usdInfoId);
@@ -66,7 +71,7 @@ _Registry::const_iterator _Find(const TfToken& usdInfoId, const UsdMayaJobExport
         if (support == ContextSupport::Supported) {
             ret = first;
             break;
-        } else if (support == ContextSupport::Fallback && ret == _reg.end()) {
+        } else if (!noFallback && support == ContextSupport::Fallback && ret == _reg.end()) {
             ret = first;
         }
         ++first;

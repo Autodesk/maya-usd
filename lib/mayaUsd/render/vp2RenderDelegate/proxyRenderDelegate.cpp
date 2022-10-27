@@ -24,15 +24,17 @@
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/utils/selectability.h>
-#include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/imaging/hd/basisCurves.h>
+#include <pxr/imaging/hd/changeTracker.h>
 #include <pxr/imaging/hd/enums.h>
+#include <pxr/imaging/hd/material.h>
 #include <pxr/imaging/hd/mesh.h>
+#include <pxr/imaging/hd/points.h>
 #include <pxr/imaging/hd/primGather.h>
 #include <pxr/imaging/hd/repr.h>
 #include <pxr/imaging/hd/rprimCollection.h>
@@ -45,17 +47,29 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/modelAPI.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usdGeom/gprim.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <maya/MColorPickerUtilities.h>
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+#include <maya/MDGMessage.h>
+#include <maya/MDisplayLayerMessage.h>
+#endif
+#include <maya/M3dView.h>
 #include <maya/MEventMessage.h>
 #include <maya/MFileIO.h>
 #include <maya/MFnPluginData.h>
 #include <maya/MHWGeometryUtilities.h>
 #include <maya/MProfiler.h>
 #include <maya/MSelectionContext.h>
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+#include <maya/MFnDisplayLayer.h>
+#include <maya/MFnDisplayLayerManager.h>
+#include <maya/MNodeMessage.h>
+#endif
 
 #if defined(WANT_UFE_BUILD)
+#include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
 
@@ -64,7 +78,10 @@
 #include <ufe/namedSelection.h>
 #endif
 #include <ufe/observableSelection.h>
-#include <ufe/path.h>
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+#include <ufe/pathString.h>
+#include <ufe/pathStringExcept.h>
+#endif
 #include <ufe/pathSegment.h>
 #include <ufe/runTimeMgr.h>
 #include <ufe/scene.h>
@@ -80,19 +97,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
-//! Representation selector for shaded and textured viewport mode
-const HdReprSelector kSmoothHullReprSelector(HdReprTokens->smoothHull);
-
-#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
-//! Representation selector for default material viewport mode
-const HdReprSelector kDefaultMaterialReprSelector(HdVP2ReprTokens->defaultMaterial);
-#endif
-
-//! Representation selector for wireframe viewport mode
-const HdReprSelector kWireReprSelector(TfToken(), HdReprTokens->wire);
-
-//! Representation selector for bounding box viewport mode
-const HdReprSelector kBBoxReprSelector(TfToken(), HdVP2ReprTokens->bbox);
 
 //! Representation selector for point snapping
 const HdReprSelector kPointsReprSelector(TfToken(), TfToken(), HdReprTokens->points);
@@ -276,6 +280,7 @@ void _ConfigureReprs()
 
     // Hull desc for shaded display, edge desc for selection highlight.
     HdMesh::ConfigureRepr(HdReprTokens->smoothHull, reprDescHull, reprDescEdge);
+    HdMesh::ConfigureRepr(HdVP2ReprTokens->smoothHullUntextured, reprDescHull, reprDescEdge);
 
 #ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
     // Hull desc for default material display, edge desc for selection highlight.
@@ -286,6 +291,10 @@ void _ConfigureReprs()
     // Edge desc for bbox display.
     HdMesh::ConfigureRepr(HdVP2ReprTokens->bbox, reprDescEdge);
 
+    // smooth hull for untextured display
+    HdBasisCurves::ConfigureRepr(
+        HdVP2ReprTokens->smoothHullUntextured, HdBasisCurvesGeomStylePatch);
+
     // Wireframe desc for bbox display.
     HdBasisCurves::ConfigureRepr(HdVP2ReprTokens->bbox, HdBasisCurvesGeomStyleWire);
 
@@ -293,6 +302,8 @@ void _ConfigureReprs()
     // Wire for default material:
     HdBasisCurves::ConfigureRepr(HdVP2ReprTokens->defaultMaterial, HdBasisCurvesGeomStyleWire);
 #endif
+
+    HdPoints::ConfigureRepr(HdVP2ReprTokens->smoothHullUntextured, HdPointsGeomStylePoints);
 }
 
 #if defined(WANT_UFE_BUILD)
@@ -331,6 +342,46 @@ void SelectionChangedCB(void* data)
     }
 }
 #endif
+
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+#ifdef MAYA_HAS_NEW_DISPLAY_LAYER_MESSAGING_API
+void displayLayerMembershipChangedCB(void* data, const MString& memberPath)
+{
+    ProxyRenderDelegate* prd = static_cast<ProxyRenderDelegate*>(data);
+    if (prd) {
+        prd->DisplayLayerMembershipChanged(memberPath);
+    }
+}
+#else
+void displayLayerMembershipChangedCB(void* data)
+{
+    ProxyRenderDelegate* prd = static_cast<ProxyRenderDelegate*>(data);
+    if (prd) {
+        for (const auto& stage : MayaUsd::ufe::getAllStages()) {
+            auto stagePath = Ufe::PathString::string(MayaUsd::ufe::stagePath(stage));
+            prd->DisplayLayerMembershipChanged(MString(stagePath.c_str()));
+        }
+    }
+}
+#endif
+
+void displayLayerDirtyCB(MObject& node, void* clientData)
+{
+    ProxyRenderDelegate* prd = static_cast<ProxyRenderDelegate*>(clientData);
+    if (prd && node.hasFn(MFn::kDisplayLayer)) {
+        MFnDisplayLayer displayLayer(node);
+        prd->DisplayLayerDirty(displayLayer);
+    }
+}
+#endif
+
+void colorPrefsChangedCB(void* clientData)
+{
+    ProxyRenderDelegate* prd = static_cast<ProxyRenderDelegate*>(clientData);
+    if (prd) {
+        prd->ColorPrefsChanged();
+    }
+}
 
 // Copied from renderIndex.cpp, the code that does HdRenderIndex::GetDrawItems. But I just want the
 // rprimIds, I don't want to go all the way to draw items.
@@ -467,6 +518,20 @@ ProxyRenderDelegate::~ProxyRenderDelegate()
         MMessage::removeCallback(_mayaSelectionCallbackId);
     }
 #endif
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+    if (_mayaDisplayLayerAddedCallbackId != 0)
+        MMessage::removeCallback(_mayaDisplayLayerAddedCallbackId);
+    if (_mayaDisplayLayerRemovedCallbackId != 0)
+        MMessage::removeCallback(_mayaDisplayLayerRemovedCallbackId);
+    if (_mayaDisplayLayerMembersCallbackId != 0)
+        MMessage::removeCallback(_mayaDisplayLayerMembersCallbackId);
+    for (auto cb : _mayaDisplayLayerDirtyCallbackIds) {
+        MMessage::removeCallback(cb.second);
+    }
+#endif
+    for (auto id : _mayaColorPrefsCallbackIds) {
+        MMessage::removeCallback(id);
+    }
 }
 
 //! \brief  This drawing routine supports all devices (DirectX and OpenGL)
@@ -615,6 +680,42 @@ void ProxyRenderDelegate::_InitRenderDelegate()
         }
 #endif
 
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+        // Display layers maybe loaded before us, so make sure to track them
+        MFnDisplayLayerManager displayLayerManager(
+            MFnDisplayLayerManager::currentDisplayLayerManager());
+        auto layers = displayLayerManager.getAllDisplayLayers();
+        for (unsigned int j = 0; j < layers.length(); ++j) {
+            DisplayLayerAdded(layers[j], this);
+        }
+
+        // Monitor display layers
+        if (!_mayaDisplayLayerAddedCallbackId) {
+            _mayaDisplayLayerAddedCallbackId
+                = MDGMessage::addNodeAddedCallback(DisplayLayerAdded, "displayLayer", this);
+        }
+        if (!_mayaDisplayLayerRemovedCallbackId) {
+            _mayaDisplayLayerRemovedCallbackId
+                = MDGMessage::addNodeRemovedCallback(DisplayLayerRemoved, "displayLayer", this);
+        }
+        if (!_mayaDisplayLayerMembersCallbackId) {
+            _mayaDisplayLayerMembersCallbackId
+#ifdef MAYA_HAS_NEW_DISPLAY_LAYER_MESSAGING_API
+                = MDisplayLayerMessage::addDisplayLayerMemberChangedCallback(
+#else
+                = MDisplayLayerMessage::addDisplayLayerMembersChangedCallback(
+#endif
+                    displayLayerMembershipChangedCB, this);
+        }
+#endif
+        // Monitor color prefs.
+        _mayaColorPrefsCallbackIds.push_back(
+            MEventMessage::addEventCallback("ColorIndexChanged", colorPrefsChangedCB, this));
+        _mayaColorPrefsCallbackIds.push_back(
+            MEventMessage::addEventCallback("DisplayColorChanged", colorPrefsChangedCB, this));
+        _mayaColorPrefsCallbackIds.push_back(
+            MEventMessage::addEventCallback("DisplayRGBColorChanged", colorPrefsChangedCB, this));
+
         // We don't really need any HdTask because VP2RenderDelegate uses Hydra
         // engine for data preparation only, but we have to add a dummy render
         // task to bootstrap data preparation.
@@ -724,6 +825,113 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
     }
 }
 
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+void ProxyRenderDelegate::_DirtyUsdSubtree(const UsdPrim& prim)
+{
+    if (!prim.IsValid())
+        return;
+
+    HdChangeTracker&      changeTracker = _renderIndex->GetChangeTracker();
+    constexpr HdDirtyBits dirtyBits = HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyRepr
+        | HdChangeTracker::DirtyDisplayStyle | MayaUsdRPrim::DirtySelectionHighlight
+        | HdChangeTracker::DirtyMaterialId;
+
+    if (prim.IsA<UsdGeomGprim>() && prim.IsActive()) {
+        auto indexPath = _sceneDelegate->ConvertCachePathToIndexPath(prim.GetPath());
+        if (_renderIndex->HasRprim(indexPath)) {
+            changeTracker.MarkRprimDirty(indexPath, dirtyBits);
+        }
+    }
+
+    UsdPrimSubtreeRange range = prim.GetDescendants();
+    for (auto iter = range.begin(); iter != range.end(); ++iter) {
+        if (iter->IsA<UsdGeomGprim>()) {
+            auto indexPath = _sceneDelegate->ConvertCachePathToIndexPath(iter->GetPath());
+            if (_renderIndex->HasRprim(indexPath)) {
+                changeTracker.MarkRprimDirty(indexPath, dirtyBits);
+            }
+        }
+    }
+}
+
+void ProxyRenderDelegate::_DirtyUfeSubtree(const Ufe::Path& rootPath)
+{
+    if (rootPath.runTimeId() == MayaUsd::ufe::getUsdRunTimeId()) {
+        _DirtyUsdSubtree(MayaUsd::ufe::ufePathToPrim(rootPath));
+    } else {
+        for (const auto& stage : MayaUsd::ufe::getAllStages()) {
+            Ufe::Path proxyShapePath = MayaUsd::ufe::stagePath(stage);
+            if (proxyShapePath.startsWith(rootPath)) {
+                _DirtyUsdSubtree(stage->GetPseudoRoot());
+            }
+        }
+    }
+}
+
+void ProxyRenderDelegate::_DirtyUfeSubtree(const MString& rootStr)
+{
+    Ufe::Path rootPath;
+    try {
+        rootPath = Ufe::PathString::path(rootStr.asChar());
+    } catch (const Ufe::InvalidPath&) {
+        return;
+    } catch (const Ufe::InvalidPathComponentSeparator&) {
+        return;
+    } catch (const Ufe::EmptyPathSegment&) {
+        return;
+    }
+
+    _DirtyUfeSubtree(rootPath);
+}
+#endif
+
+void ProxyRenderDelegate::ComputeCombinedDisplayStyles(const unsigned int newDisplayStyle)
+{
+    // Add new display styles to the map
+    if (newDisplayStyle & MHWRender::MFrameContext::kBoundingBox) {
+        _combinedDisplayStyles[HdVP2ReprTokens->bbox] = _frameCounter;
+    } else {
+        if (newDisplayStyle & MHWRender::MFrameContext::kWireFrame) {
+            _combinedDisplayStyles[HdReprTokens->wire] = _frameCounter;
+        }
+
+        if (newDisplayStyle & MHWRender::MFrameContext::kGouraudShaded) {
+#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
+            if (newDisplayStyle & MHWRender::MFrameContext::kDefaultMaterial) {
+                _combinedDisplayStyles[HdVP2ReprTokens->defaultMaterial] = _frameCounter;
+            } else
+#endif
+                if (newDisplayStyle & MHWRender::MFrameContext::kTextured) {
+                _combinedDisplayStyles[HdReprTokens->smoothHull] = _frameCounter;
+            } else {
+                _combinedDisplayStyles[HdVP2ReprTokens->smoothHullUntextured] = _frameCounter;
+            }
+        }
+    }
+
+    // Erase aged styles
+    for (auto it = _combinedDisplayStyles.begin(); it != _combinedDisplayStyles.end();) {
+        auto          curIt = it++;
+        constexpr int numFramesToAge = 8;
+        if (curIt->second + numFramesToAge < _frameCounter) {
+            _combinedDisplayStyles.erase(curIt);
+        }
+    }
+
+    // Erase excessive styles
+    while (_combinedDisplayStyles.size() > HdReprSelector::MAX_TOPOLOGY_REPRS) {
+        auto oldestIt = _combinedDisplayStyles.begin();
+        auto curIt = _combinedDisplayStyles.begin();
+        for (++curIt; curIt != _combinedDisplayStyles.end(); ++curIt) {
+            if (oldestIt->second > curIt->second) {
+                oldestIt = curIt;
+            }
+        }
+
+        _combinedDisplayStyles.erase(oldestIt);
+    }
+}
+
 //! \brief  Execute Hydra engine to perform minimal VP2 draw data update based on change tracker.
 void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 {
@@ -731,14 +939,15 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorC_L1, "Execute");
 
     ++_frameCounter;
+
+    _refreshRequested = false;
+
     _UpdateRenderTags();
 
     // If update for selection is enabled, the draw data for the "points" repr
     // won't be prepared until point snapping is activated; otherwise the draw
     // data have to be prepared early for possible activation of point snapping.
 #if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
-    HdReprSelector reprSelector;
-
     const bool inSelectionPass = (frameContext.getSelectionInfo() != nullptr);
 #if !defined(MAYA_NEW_POINT_SNAPPING_SUPPORT) || defined(WANT_UFE_BUILD)
     const bool inPointSnapping = pointSnappingActive();
@@ -758,27 +967,13 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 #endif // defined(WANT_UFE_BUILD)
 
 #else // !defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
-    HdReprSelector reprSelector = kPointsReprSelector;
+    _combinedDisplayStyles[HdReprTokens->points] = _frameCounter;
 
-    constexpr bool     inSelectionPass = false;
+    constexpr bool inSelectionPass = false;
 #if !defined(MAYA_NEW_POINT_SNAPPING_SUPPORT)
-    constexpr bool     inPointSnapping = false;
+    constexpr bool inPointSnapping = false;
 #endif
 #endif // defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
-
-    const unsigned int currentDisplayStyle = frameContext.getDisplayStyle();
-
-    // Query the wireframe color assigned to proxy shape.
-    if (currentDisplayStyle
-        & (MHWRender::MFrameContext::kBoundingBox | MHWRender::MFrameContext::kWireFrame)) {
-        _wireframeColor
-            = MHWRender::MGeometryUtilities::wireframeColor(_proxyShapeData->ProxyDagPath());
-    }
-#ifdef MAYA_HAS_DISPLAY_STYLE_ALL_VIEWPORTS
-    const unsigned int displayStyle = frameContext.getDisplayStyleOfAllViewports();
-#else
-    const unsigned int displayStyle = currentDisplayStyle;
-#endif
 
     // Work around USD issue #1516. There is a significant performance overhead caused by populating
     // selection, so only force the populate selection to occur when we detect a change which
@@ -801,6 +996,7 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
     }
 #endif
 
+    HdReprSelector reprSelector;
     if (inSelectionPass) {
         // The new Maya point snapping support doesn't require point snapping items any more.
 #if !defined(MAYA_NEW_POINT_SNAPPING_SUPPORT)
@@ -809,47 +1005,65 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         }
 #endif
     } else {
-        // Update repr selector based on display style of the current viewport
-        if (displayStyle & MHWRender::MFrameContext::kBoundingBox) {
-            if (!reprSelector.Contains(HdVP2ReprTokens->bbox)) {
-                reprSelector = reprSelector.CompositeOver(kBBoxReprSelector);
-            }
-        } else {
-            // To support Wireframe on Shaded mode, the two displayStyle checks
-            // should not be mutually excluded.
-            if (displayStyle & MHWRender::MFrameContext::kGouraudShaded) {
-#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
-                if (displayStyle & MHWRender::MFrameContext::kDefaultMaterial) {
-                    if (!reprSelector.Contains(HdVP2ReprTokens->defaultMaterial)) {
-                        reprSelector = reprSelector.CompositeOver(kDefaultMaterialReprSelector);
-                    }
-                } else
-#endif
-                    if (!reprSelector.Contains(HdReprTokens->smoothHull)) {
-                    reprSelector = reprSelector.CompositeOver(kSmoothHullReprSelector);
-                }
-            }
+        ComputeCombinedDisplayStyles(frameContext.getDisplayStyle());
 
-            if (displayStyle & MHWRender::MFrameContext::kWireFrame) {
-                if (!reprSelector.Contains(HdReprTokens->wire)) {
-                    reprSelector = reprSelector.CompositeOver(kWireReprSelector);
-                }
-            }
+        // Update repr selector based on combined display styles
+        TfToken reprNames[HdReprSelector::MAX_TOPOLOGY_REPRS];
+        auto    it = _combinedDisplayStyles.begin();
+        for (size_t j = 0;
+             (it != _combinedDisplayStyles.end()) && (j < HdReprSelector::MAX_TOPOLOGY_REPRS);
+             ++it, ++j) {
+            reprNames[j] = it->first;
         }
+
+        reprSelector = HdReprSelector(reprNames[0], reprNames[1], reprNames[2]);
     }
 
     // if there are no repr's to update then don't even call sync.
     if (reprSelector != HdReprSelector()) {
+        HdDirtyBits dirtyBits = HdChangeTracker::Clean;
+
+        // check to see if representation mode changed
         if (_defaultCollection->GetReprSelector() != reprSelector) {
             _defaultCollection->SetReprSelector(reprSelector);
             _taskController->SetCollection(*_defaultCollection);
+            dirtyBits |= MayaUsdRPrim::DirtyDisplayMode;
+        }
 
+        if (_colorPrefsChanged) {
+            _colorPrefsChanged = false;
+            dirtyBits |= MayaUsdRPrim::DirtySelectionHighlight;
+        }
+
+#if MAYA_API_VERSION >= 20230200
+        // check to see if the color space changed
+        MString colorTransformId;
+        frameContext.viewTransformName(colorTransformId);
+        if (colorTransformId != _colorTransformId) {
+            _colorTransformId = colorTransformId;
+            dirtyBits |= MayaUsdRPrim::DirtySelectionHighlight;
+        }
+#endif
+
+        // if switching to textured mode, we need to update materials
+        const bool neededTexturedMaterials = _needTexturedMaterials;
+        _needTexturedMaterials
+            = _combinedDisplayStyles.find(HdReprTokens->smoothHull) != _combinedDisplayStyles.end();
+        if (_needTexturedMaterials && !neededTexturedMaterials) {
+            auto materials = _renderIndex->GetSprimSubtree(
+                HdPrimTypeTokens->material, SdfPath::AbsoluteRootPath());
+            for (auto material : materials) {
+                changeTracker.MarkSprimDirty(material, HdMaterial::DirtyParams);
+            }
+        }
+
+        if (dirtyBits != HdChangeTracker::Clean) {
             // Mark everything "dirty" so that sync is called on everything
             // If there are multiple views up with different viewport modes then
             // this is slow.
             auto& rprims = _renderIndex->GetRprimIds();
             for (auto path : rprims) {
-                changeTracker.MarkRprimDirty(path, MayaUsdRPrim::DirtyDisplayMode);
+                changeTracker.MarkRprimDirty(path, dirtyBits);
             }
         }
 
@@ -902,12 +1116,20 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     // render param's.
     auto* param = reinterpret_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
     param->BeginUpdate(container, _sceneDelegate->GetTime());
+    _currentFrameContext = &frameContext;
 
     if (_Populate()) {
         _UpdateSceneDelegate();
         _Execute(frameContext);
     }
+
+    _currentFrameContext = nullptr;
     param->EndUpdate();
+}
+
+MDagPath ProxyRenderDelegate::GetProxyShapeDagPath() const
+{
+    return _proxyShapeData->ProxyDagPath();
 }
 
 //! \brief  Update selection granularity for point snapping.
@@ -1035,7 +1257,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         topLevelInstanceIndex = instancerContext.front().second;
     }
 #else
-    SdfPath usdPath = GetScenePrimPath(rprimId, instanceIndex);
+    SdfPath                         usdPath = GetScenePrimPath(rprimId, instanceIndex);
 #endif
 
     // If update for selection is enabled, we can query the Maya selection list
@@ -1047,9 +1269,9 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     const UsdPointInstancesPickMode& pointInstancesPickMode = _pointInstancesPickMode;
     const MGlobal::ListAdjustment&   listAdjustment = _globalListAdjustment;
 #else
-    const TfToken selectionKind = GetSelectionKind();
+    const TfToken                   selectionKind = GetSelectionKind();
     const UsdPointInstancesPickMode pointInstancesPickMode = GetPointInstancesPickMode();
-    const MGlobal::ListAdjustment listAdjustment = GetListAdjustment();
+    const MGlobal::ListAdjustment   listAdjustment = GetListAdjustment();
 #endif
 
     UsdPrim       prim = _proxyShapeData->UsdStage()->GetPrimAtPath(usdPath);
@@ -1135,7 +1357,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     auto ufeSel = Ufe::NamedSelection::get("MayaSelectTool");
     ufeSel->append(si);
 #else
-    auto globalSelection = Ufe::GlobalSelection::get();
+    auto                            globalSelection = Ufe::GlobalSelection::get();
 
     switch (listAdjustment) {
     case MGlobal::kReplaceList:
@@ -1208,6 +1430,74 @@ bool ProxyRenderDelegate::updateUfeIdentifiers(
 
 //! \brief  Notify of selection change.
 void ProxyRenderDelegate::SelectionChanged() { _selectionChanged = true; }
+
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+void ProxyRenderDelegate::DisplayLayerAdded(MObject& node, void* clientData)
+{
+    ProxyRenderDelegate* me = static_cast<ProxyRenderDelegate*>(clientData);
+    MObjectHandle        handle(node);
+    if (me->_mayaDisplayLayerDirtyCallbackIds.count(handle) == 0) {
+        me->_mayaDisplayLayerDirtyCallbackIds[handle]
+            = MNodeMessage::addNodeDirtyCallback(node, displayLayerDirtyCB, me, nullptr);
+    }
+}
+
+void ProxyRenderDelegate::DisplayLayerRemoved(MObject& node, void* clientData)
+{
+    ProxyRenderDelegate* me = static_cast<ProxyRenderDelegate*>(clientData);
+    MObjectHandle        handle(node);
+    auto                 iter = me->_mayaDisplayLayerDirtyCallbackIds.find(handle);
+    if (iter != me->_mayaDisplayLayerDirtyCallbackIds.end()) {
+        MMessage::removeCallback(iter->second);
+        me->_mayaDisplayLayerDirtyCallbackIds.erase(iter);
+    }
+}
+
+//! \brief  Notify of display layer membership change.
+void ProxyRenderDelegate::DisplayLayerMembershipChanged(const MString& memberPath)
+{
+    _DirtyUfeSubtree(memberPath);
+    _RequestRefresh();
+}
+
+void ProxyRenderDelegate::DisplayLayerDirty(MFnDisplayLayer& displayLayer)
+{
+    MSelectionList members;
+    displayLayer.getMembers(members);
+
+    auto membersCount = members.length();
+    for (unsigned int j = 0; j < membersCount; ++j) {
+        MDagPath dagPath;
+        if (members.getDagPath(j, dagPath) == MS::kSuccess) {
+            _DirtyUfeSubtree(MayaUsd::ufe::dagPathToUfe(dagPath));
+        } else {
+            MStringArray selectionStrings;
+            members.getSelectionStrings(j, selectionStrings);
+            for (auto it = selectionStrings.begin(); it != selectionStrings.end(); ++it) {
+                _DirtyUfeSubtree(*it);
+            }
+        }
+    }
+
+    if (membersCount) {
+        _RequestRefresh();
+    }
+}
+
+#endif
+
+void ProxyRenderDelegate::_RequestRefresh()
+{
+    if (!_refreshRequested)
+        M3dView::scheduleRefreshAllViews();
+    _refreshRequested = true;
+}
+
+void ProxyRenderDelegate::ColorPrefsChanged()
+{
+    _colorPrefsChanged = true;
+    _RequestRefresh();
+}
 
 //! \brief  Populate lead and active selection for Rprims under the proxy shape.
 void ProxyRenderDelegate::_PopulateSelection()
@@ -1487,7 +1777,11 @@ HdVP2SelectionStatus ProxyRenderDelegate::GetSelectionStatus(const SdfPath& path
 }
 
 //! \brief  Query the wireframe color assigned to the proxy shape.
-const MColor& ProxyRenderDelegate::GetWireframeColor() const { return _wireframeColor; }
+MColor ProxyRenderDelegate::GetWireframeColor()
+{
+    static const MColor defaultColor(0.f, 0.f, 0.f);
+    return _GetDisplayColor(_wireframeColorCache, "polymeshDormant", false, defaultColor);
+}
 
 GfVec3f ProxyRenderDelegate::GetDefaultColor(const TfToken& className)
 {
@@ -1538,6 +1832,68 @@ GfVec3f ProxyRenderDelegate::GetDefaultColor(const TfToken& className)
     // Update the cache and return
     colorCache->second = _frameCounter;
     return colorCache->first;
+}
+
+MColor ProxyRenderDelegate::GetTemplateColor(bool active)
+{
+    MColorCache& colorCache = active ? _activeTemplateColorCache : _dormantTemplateColorCache;
+    const char*  colorName = active ? "templateActive" : "templateDormant";
+    static const MColor defaultColor(0.5f, 0.5f, 0.5f);
+
+    return _GetDisplayColor(colorCache, colorName, active, defaultColor);
+}
+
+MColor ProxyRenderDelegate::GetReferenceColor()
+{
+    static const MColor defaultColor(0.f, 0.f, 0.f);
+    return _GetDisplayColor(_referenceColorCache, "referenceLayer", true, defaultColor);
+}
+
+MColor ProxyRenderDelegate::_GetDisplayColor(
+    MColorCache&  colorCache,
+    const char*   colorName,
+    bool          colorCorrection,
+    const MColor& defaultColor)
+{
+    // Check the cache. It is safe since colorCache.second is atomic
+    if (colorCache.second == _frameCounter) {
+        return colorCache.first;
+    }
+
+    // Enter the mutex and check the cache again
+    std::lock_guard<std::mutex> mutexGuard(_mayaCommandEngineMutex);
+    if (colorCache.second == _frameCounter) {
+        return colorCache.first;
+    }
+
+    // Construct the query command string.
+    MString queryCommand;
+    queryCommand = "displayRGBColor -q \"";
+    queryCommand += colorName;
+    queryCommand += "\"";
+
+    // Query and return the display color.
+    MDoubleArray colorResult;
+    MGlobal::executeCommand(queryCommand, colorResult);
+
+    if (colorResult.length() == 3) {
+        colorCache.first = MColor(colorResult[0], colorResult[1], colorResult[2]);
+#if MAYA_API_VERSION >= 20230200
+        if (colorCorrection && _currentFrameContext) {
+            colorCache.first = _currentFrameContext->applyViewTransform(
+                colorCache.first, MFrameContext::kInverse);
+        }
+#endif
+    } else {
+        TF_WARN("Failed to obtain display color %s.", colorName);
+
+        // In case of any failure, return the default color
+        colorCache.first = defaultColor;
+    }
+
+    // Update the cache and return
+    colorCache.second = _frameCounter;
+    return colorCache.first;
 }
 
 //! \brief

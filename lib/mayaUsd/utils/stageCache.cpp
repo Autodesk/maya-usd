@@ -76,24 +76,40 @@ void clearMayaAttributeEditor()
 
 } // anonymous namespace
 
-/* static */
-UsdStageCache& UsdMayaStageCache::Get(const bool loadAll)
+/*static */
+UsdMayaStageCache::Caches& UsdMayaStageCache::GetAllCaches()
 {
-    static UsdStageCache theCacheLoadAll; // used when UsdStage::Open() will be called with
-                                          // UsdStage::InitialLoadSet::LoadAll
-    static UsdStageCache theCache;        // used when UsdStage::Open() will be called with
-                                          // UsdStage::InitialLoadSet::LoadNode
+    static Caches                caches;
     static _OnSceneResetListener onSceneResetListener;
+    return caches;
+}
 
-    return loadAll ? theCacheLoadAll : theCache;
+/* static */
+UsdStageCache& UsdMayaStageCache::Get(UsdStage::InitialLoadSet loadSet, ShareMode shared)
+{
+    // The different caches are separated by:
+    //
+    //    - load all payload / load nothing
+    //    - shared stages / unshared stages
+    //
+    // The load all / load nothing correspond to the UsdStage::InitialLoadSet::LoadAll /
+    // UsdStage::InitialLoadSet::LoadNode mode of UsdStage::Open
+
+    // Note: each criteria uses increasing power of two to select among the array
+    //       of cache. If you add new criteria, the new indexes will be 4, 8, 16...
+    const int loadSetIndex = (loadSet == UsdStage::InitialLoadSet::LoadAll) ? 0 : 1;
+    const int sharedIndex = (shared == ShareMode::Shared) ? 0 : 2;
+
+    auto& caches = GetAllCaches();
+    return caches[loadSetIndex + sharedIndex];
 }
 
 /* static */
 void UsdMayaStageCache::Clear()
 {
     clearMayaAttributeEditor();
-    Get(true).Clear();
-    Get(false).Clear();
+    for (auto& cache : GetAllCaches())
+        cache.Clear();
 }
 
 /* static */
@@ -108,8 +124,8 @@ size_t UsdMayaStageCache::EraseAllStagesWithRootLayerPath(const std::string& lay
 
     clearMayaAttributeEditor();
 
-    erasedStages += Get(true).EraseAll(rootLayer);
-    erasedStages += Get(false).EraseAll(rootLayer);
+    for (auto& cache : GetAllCaches())
+        erasedStages += cache.EraseAll(rootLayer);
 
     return erasedStages;
 }

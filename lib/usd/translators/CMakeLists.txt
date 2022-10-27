@@ -49,6 +49,14 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     )
 endif()
 
+# MeshLightAPI Schema export requires USD 21.11
+if(PXR_VERSION GREATER_EQUAL 2111)
+    target_sources(${TARGET_NAME}
+        PRIVATE
+            lightRfMWriter_PxrMeshLight.cpp
+    )
+endif()
+
 add_subdirectory(shading)
 
 # -----------------------------------------------------------------------------

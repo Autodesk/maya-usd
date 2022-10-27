@@ -33,7 +33,7 @@
 #include <pxr/imaging/glf/contextCaps.h>
 #include <pxr/imaging/hd/rendererPlugin.h>
 #include <pxr/imaging/hd/rendererPluginRegistry.h>
-
+#include <pxr/usdImaging/usdImagingGL/engine.h>
 #include <maya/MGlobal.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -88,11 +88,13 @@ MtohInitializeRenderPlugins()
             // Null it out to make any possible usage later obv, wrong!
             delegate = nullptr;
 
+            std::shared_ptr<pxr::UsdImagingGLEngine> _engine;
             store.first.emplace_back(
                 renderer,
                 TfToken(TfStringPrintf("%s%s", MTOH_RENDER_OVERRIDE_PREFIX, renderer.GetText())),
                 TfToken(TfStringPrintf(
-                    "(Mtoh Experimental) Hydra %s", pluginDesc.displayName.c_str())));
+                    "(Mtoh Experimental) Hydra %s",
+                    _engine->GetRendererDisplayName(pluginDesc.id).c_str())));
             MtohRenderGlobals::BuildOptionsMenu(store.first.back(), rendererSettingDescriptors);
         }
 

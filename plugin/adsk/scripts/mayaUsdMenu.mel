@@ -1,4 +1,4 @@
-// Copyright 2020 Autodesk
+// Copyright 2022 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -305,6 +305,10 @@ global proc mayaUsdMenu_createMenuCallback() {
             menuItem -runTimeCommand mayaUsdCreateStageWithNewLayer;
             menuItem -runTimeCommand mayaUsdCreateStageFromFile;
             menuItem -runTimeCommand mayaUsdCreateStageFromFileOptions -optionBox true;
+
+            // Important: don't forget to reset the menu parent back to the create menu otherwise
+            //            another menu callback would add items to our menu.
+            setParent -menu ..;
         } else {
             error `getMayaUsdString("kMenuStageCreateMenuError")`;
         }
@@ -426,6 +430,10 @@ global proc mayaUsdMenu_selectMenuCallback() {
         // make sure the radio button are sync with the option var.
         mayaUsd_updateSelectionKindMenuItem();
         mayaUsd_updatePointInstancesPickModeMenuItem();
+
+        // Important: don't forget to reset the menu parent back to the select menu otherwise
+        //            another menu hook would add items to our menu.
+        setParent -menu ..;
 
         // Attach a script job to the optionVars to update the menu item menuItem radio button state.
         // This is required because the menu is tearable. So, if the user tear off the menu (menu always visible) we need to
@@ -663,9 +671,17 @@ global proc mayaUsdMenu_duplicateToUSD( string $proxy, string $obj )
     string $objLong[] = `ls -l $obj`;
     string $proxyLong[] = `ls -l $proxy`;
     if (size($objLong) && size($proxyLong)) {
-        // TODO: show options.
-        mayaUsdDuplicate -exportOptions "shadingMode=none" $objLong[0] $proxyLong[0];
+        string $exportOptions = `python("import mayaUsdDuplicateAsMayaDataOptions; import mayaUsdOptions; mayaUsdOptions.setAnimateOption('''" + $obj + "''', mayaUsdDuplicateAsMayaDataOptions.getDuplicateAsMayaDataOptionsText())")`;
+        mayaUsdDuplicate -exportOptions $exportOptions $objLong[0] $proxyLong[0];
     }
+}
+
+global proc mayaUsdMenu_duplicateAsUsdDataOptions(string $obj)
+{
+    if (!hasPrimUpdater())
+        return;
+
+    python("import mayaUsdDuplicateAsMayaDataOptions; mayaUsdDuplicateAsMayaDataOptions.showDuplicateAsMayaDataOptions()");
 }
 
 global proc mayaUsdMenu_markingMenuCallback( string $obj )
@@ -703,6 +719,12 @@ global proc mayaUsdMenu_markingMenuCallback( string $obj )
             for ($proxy in $proxyShapes) {
                 menuItem -label $proxy -command ("mayaUsdMenu_duplicateToUSD " + $proxy + " " + $obj);
             }
+            menuItem -divider true;
+            menuItem -label `getMayaUsdString("kMayaRefDuplicateAsUsdDataOptions")` -command ("mayaUsdMenu_duplicateAsUsdDataOptions " + $obj);
+
+            // Important: don't forget to reset the menu parent back to the context menu otherwise
+            //            another menu hook would add items to our menu.
+            setParent -menu ..;
         }
     }
 }

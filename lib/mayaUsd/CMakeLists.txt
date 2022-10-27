@@ -135,6 +135,38 @@ if (MAYA_HAS_GET_MEMBER_PATHS)
     )
 endif()
 
+message(STATUS "USD_HAS_COLOR4_SDR_SUPPORT is ${USD_HAS_COLOR4_SDR_SUPPORT}")
+if (USD_HAS_COLOR4_SDR_SUPPORT)
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+        USD_HAS_COLOR4_SDR_SUPPORT=1
+    )
+endif()
+
+message(STATUS "MAYA_HAS_DISPLAY_LAYER_API is ${MAYA_HAS_DISPLAY_LAYER_API}")
+if (MAYA_HAS_DISPLAY_LAYER_API)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+    MAYA_HAS_DISPLAY_LAYER_API=1
+    )
+endif()
+
+message(STATUS "MAYA_HAS_NEW_DISPLAY_LAYER_MESSAGING_API is ${MAYA_HAS_NEW_DISPLAY_LAYER_MESSAGING_API}")
+if (MAYA_HAS_NEW_DISPLAY_LAYER_MESSAGING_API)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+    MAYA_HAS_NEW_DISPLAY_LAYER_MESSAGING_API=1
+    )
+endif()
+
+message(STATUS "MAYA_HAS_RENDER_ITEM_HIDE_ON_PLAYBACK_API is ${MAYA_HAS_RENDER_ITEM_HIDE_ON_PLAYBACK_API}")
+if (MAYA_HAS_RENDER_ITEM_HIDE_ON_PLAYBACK_API)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+    MAYA_HAS_RENDER_ITEM_HIDE_ON_PLAYBACK_API=1
+    )
+endif()
+
 if (MAYA_LIGHTAPI_VERSION GREATER_EQUAL 2)
     target_compile_definitions(${PROJECT_NAME}
         PRIVATE
@@ -204,6 +236,7 @@ target_link_libraries(${PROJECT_NAME}
         usdShade
         usdSkel
         usdUtils
+        $<$<BOOL:$<VERSION_GREATER_EQUAL:${UFE_PREVIEW_VERSION_NUM},4023>>:usdUI>
         vt
         $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
         ${MAYA_LIBRARIES}

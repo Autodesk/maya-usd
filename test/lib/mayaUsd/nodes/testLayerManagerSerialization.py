@@ -185,7 +185,7 @@ class testLayerManagerSerialization(unittest.TestCase):
         self.assertTrue(stage.GetPrimAtPath(newPrimPath))
 
         newPrimPath = "/ChangeInSessionLayer"
-        self.assertFalse(stage.GetPrimAtPath(newPrimPath))
+        self.assertTrue(stage.GetPrimAtPath(newPrimPath))
 
         self.confirmEditsSavedStatus(True, False)
 

@@ -20,8 +20,10 @@
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/stageCache.h>
 
+#include <array>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -29,12 +31,37 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdMayaStageCache
 {
 public:
-    /// Return the singleton stage cache for use by all USD clients within Maya.
-    /// 2 stage caches are maintained; 1 for stages that have been opened with
-    /// UsdStage::InitialLoadSet::LoadAll, and 1 for stages that have been
-    /// opened with UsdStage::InitialLoadSet::LoadNode.
+    /// The shared mode of stage kept in a particular cache.
+    ///
+    /// Shared stages allow staging the same root layer multiple times in Maya
+    /// with the same session layer.
+    ///
+    /// Unshared stages ensure they do not share their session layer.
+    enum class ShareMode
+    {
+        Shared,
+        Unshared
+    };
+
+    /// Container of caches.
+    using Caches = std::array<UsdStageCache, 4>;
+
+    /// Return all the stage caches.
     MAYAUSD_CORE_PUBLIC
-    static UsdStageCache& Get(const bool loadAll);
+    static Caches& GetAllCaches();
+
+    /// Return the singleton stage cache for use by all USD clients within Maya.
+    /// Four stage caches are maintained. They are divided based on two criteria:
+    ///
+    ///    stages that have been opened with UsdStage::InitialLoadSet::LoadAll
+    ///                                  vs
+    ///    stages that have been opened with UsdStage::InitialLoadSet::LoadNone.
+    ///
+    ///    stages that are shared
+    ///            vs
+    ///    stages that are not-shared
+    MAYAUSD_CORE_PUBLIC
+    static UsdStageCache& Get(UsdStage::InitialLoadSet, ShareMode);
 
     /// Clear the cache
     MAYAUSD_CORE_PUBLIC

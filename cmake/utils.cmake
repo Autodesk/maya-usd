@@ -263,3 +263,49 @@ function(set_python_module_property target)
         )
     endif()
 endfunction()
+
+# This fuction will populate "out_var" with the default values external
+# projects are expected to need.
+# It can take an optional argument that will replace the list separator
+# in CMake values. For instance, if an external project uses a different
+# list separator, the values in here must be changed to reflect this.
+function(get_external_project_default_values out_var)
+    # Some of these variables might end up not being used by some projects
+    # Therefore avoid useless warnings in the log.
+    list(APPEND setting_list --no-warn-unused-cli)
+
+    if(ARGN)
+        list(GET ARGN 0 custom_sep)
+    endif()
+
+    # Macro to add the value only if it's present.
+    macro(external_project_conditional_define option)
+        if (${option})
+            if(custom_sep)
+                # This will change the list separator to the desired one.
+                # i.e. -DCMAKE_OSX_ARCHITECTURES=x86_64;arm64 -> -DCMAKE_OSX_ARCHITECTURES=x86_64|arm64
+                string(REPLACE ";" ${custom_sep} ${option} "${${option}}")
+            endif()
+            list(APPEND setting_list -D${option}=${${option}})
+        endif()
+    endmacro(external_project_conditional_define)
+
+    external_project_conditional_define(CMAKE_INSTALL_MESSAGE)
+    external_project_conditional_define(CMAKE_BUILD_TYPE)
+    external_project_conditional_define(CMAKE_MAKE_PROGRAM)
+
+    if(BUILD_UB2)
+        # UB2 builds require this flag
+        external_project_conditional_define(CMAKE_OSX_ARCHITECTURES)
+        external_project_conditional_define(CMAKE_OSX_DEPLOYMENT_TARGET)
+    endif()
+
+    # Debugging informations for external projects
+    external_project_conditional_define(CMAKE_VERBOSE_MAKEFILE)
+    external_project_conditional_define(CMAKE_FIND_DEBUG_MODE)
+
+    set(${out_var} ${setting_list} PARENT_SCOPE)
+endfunction(get_external_project_default_values)
+
+# Create one for all the project using the default list separator
+get_external_project_default_values(MAYAUSD_EXTERNAL_PROJECT_GENERAL_SETTINGS "$<SEMICOLON>")

@@ -114,9 +114,7 @@ void HdVP2Points::Sync(
     HdDirtyBits*     dirtyBits,
     TfToken const&   reprToken)
 {
-    const SdfPath& id = GetId();
-    HdRenderIndex& renderIndex = delegate->GetRenderIndex();
-    if (!_SyncCommon(dirtyBits, id, _GetRepr(reprToken), renderIndex)) {
+    if (!_SyncCommon(*this, delegate, renderParam, dirtyBits, _GetRepr(reprToken), reprToken)) {
         return;
     }
 
@@ -126,6 +124,7 @@ void HdVP2Points::Sync(
         _rprimId.asChar(),
         "HdVP2Points::Sync");
 
+    HdRenderIndex& renderIndex = delegate->GetRenderIndex();
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         const SdfPath materialId = _GetUpdatedMaterialId(this, delegate);
 #if HD_API_VERSION < 37
@@ -140,21 +139,18 @@ void HdVP2Points::Sync(
     _UpdateInstancer(delegate, dirtyBits);
 #endif
 
+    const SdfPath& id = GetId();
     if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals)
         || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->widths)
         || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->primvar)) {
-        const HdVP2Material* material = static_cast<const HdVP2Material*>(
-            renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
-
-        TfTokenVector        materialPrimvars;
-        const TfTokenVector* requiredPrimvars = &sFallbackShaderPrimvars;
-        if (material && material->GetSurfaceShader()) {
-            materialPrimvars = material->GetRequiredPrimvars();
-            materialPrimvars.push_back(HdTokens->widths);
-            requiredPrimvars = &materialPrimvars;
+        TfTokenVector requiredPrimvars;
+        if (!_GetMaterialPrimvars(renderIndex, GetMaterialId(), requiredPrimvars)) {
+            requiredPrimvars = sFallbackShaderPrimvars;
+        } else {
+            requiredPrimvars.push_back(HdTokens->widths);
         }
 
-        _UpdatePrimvarSources(delegate, *dirtyBits, *requiredPrimvars);
+        _UpdatePrimvarSources(delegate, *dirtyBits, requiredPrimvars);
     }
 
     if (*dirtyBits & HdChangeTracker::DirtyDisplayStyle) {
@@ -198,7 +194,7 @@ void HdVP2Points::Sync(
     const TfToken& renderTag = delegate->GetRenderTag(id);
 #endif
 
-    _SyncSharedData(_sharedData, delegate, dirtyBits, reprToken, id, _reprs, renderTag);
+    _SyncSharedData(_sharedData, delegate, dirtyBits, reprToken, *this, _reprs, renderTag);
 
     *dirtyBits = HdChangeTracker::Clean;
 
@@ -243,12 +239,9 @@ void PreparePrimvarBuffer(
 
     unsigned int numElems = primvarArray.size();
     if (primvarBuffer && numElems > 0) {
-        void* bufferData = primvarBuffer->acquire(numElems, true);
-        stateToCommit._primvarBufferDataMap[bufferToken] = bufferData;
-
-        if (bufferData != nullptr) {
-            memcpy(bufferData, primvarArray.cdata(), numElems * sizeof(BaseType));
-        }
+        auto& bufferData = stateToCommit._primvarBufferDataMap[bufferToken];
+        bufferData.resize(numElems * sizeof(BaseType));
+        memcpy(&bufferData[0], primvarArray.cdata(), numElems * sizeof(BaseType));
     }
 }
 
@@ -260,14 +253,15 @@ void PreparePrimvarBuffer(
 void HdVP2Points::_UpdateDrawItem(
     HdSceneDelegate*        sceneDelegate,
     HdVP2DrawItem*          drawItem,
+    const TfToken&          reprToken,
     HdPointsReprDesc const& desc)
 {
-    MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
-    if (ARCH_UNLIKELY(!renderItem)) {
+    if (drawItem->GetRenderItems().empty()) {
         return;
     }
 
-    HdDirtyBits itemDirtyBits = drawItem->GetDirtyBits();
+    MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
+    HdDirtyBits             itemDirtyBits = drawItem->GetDirtyBits();
 
     MayaUsdCommitState             stateToCommit(drawItem->GetRenderItemData());
     HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._renderItemData;
@@ -289,7 +283,10 @@ void HdVP2Points::_UpdateDrawItem(
     // The bounding box item uses a globally-shared geometry data therefore it
     // doesn't need to extract index data from topology. Points use non-indexed
     // draw.
-    const bool isBoundingBoxItem = (drawMode == MHWRender::MGeometry::kBoundingBox);
+    const bool isBoundingBoxItem = (drawMode & MHWRender::MGeometry::kBoundingBox) != 0;
+    const bool isHighlightItem = drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight);
+    const bool inTemplateMode = _displayLayerModes._displayType == MayaUsdRPrim::kTemplate;
+    const bool inReferenceMode = _displayLayerModes._displayType == MayaUsdRPrim::kReference;
 
     if (desc.geomStyle == HdPointsGeomStylePoints) {
         // Prepare normals buffer.
@@ -390,7 +387,9 @@ void HdVP2Points::_UpdateDrawItem(
                 renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
 
             if (material) {
-                MHWRender::MShaderInstance* shader = material->GetPointShader();
+                MHWRender::MShaderInstance* shader
+                    = material->GetPointShader(_GetMaterialNetworkToken(reprToken));
+                drawItemData._shaderIsFallback = (shader == nullptr);
                 if (shader != nullptr && shader != drawItemData._shader) {
                     drawItemData._shader = shader;
                     stateToCommit._shader = shader;
@@ -409,6 +408,8 @@ void HdVP2Points::_UpdateDrawItem(
                     drawItemData._primitiveStride = primitiveStride;
                     stateToCommit._primitiveStride = &drawItemData._primitiveStride;
                 }
+            } else {
+                drawItemData._shaderIsFallback = true;
             }
         }
 
@@ -468,7 +469,7 @@ void HdVP2Points::_UpdateDrawItem(
 
             // Use fallback shader if there is no material binding or we failed to create a shader
             // instance from the material.
-            if (!stateToCommit._shader) {
+            if (drawItemData._shaderIsFallback) {
                 MHWRender::MShaderInstance*     shader = nullptr;
                 MHWRender::MGeometry::Primitive primitiveType = MHWRender::MGeometry::kPoints;
                 int                             primitiveStride = 0;
@@ -583,7 +584,7 @@ void HdVP2Points::_UpdateDrawItem(
     const GfRange3d& range = _sharedData.bounds.GetRange();
 
     _UpdateTransform(stateToCommit, _sharedData, itemDirtyBits, isBoundingBoxItem);
-    MMatrix& worldMatrix = drawItemData._worldMatrix;
+    const MMatrix& worldMatrix = drawItemData._worldMatrix;
 
     // If the prim is instanced, create one new instance per transform.
     // The current instancer invalidation tracking makes it hard for
@@ -617,7 +618,7 @@ void HdVP2Points::_UpdateDrawItem(
             // If the item is used for both regular draw and selection highlight,
             // it needs to display both wireframe color and selection highlight
             // with one color vertex buffer.
-            if (drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight)) {
+            if (isHighlightItem) {
                 const MColor colors[]
                     = { drawScene.GetWireframeColor(),
                         drawScene.GetSelectionHighlightColor(HdPrimTypeTokens->points),
@@ -669,20 +670,15 @@ void HdVP2Points::_UpdateDrawItem(
     } else {
         // Non-instanced Rprims.
         if (itemDirtyBits & (DirtySelectionHighlight | HdChangeTracker::DirtyDisplayStyle)) {
-            if (drawItem->ContainsUsage(HdVP2DrawItem::kRegular)
-                && drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight)) {
+            if (drawItem->ContainsUsage(HdVP2DrawItem::kRegular) && isHighlightItem) {
                 MHWRender::MShaderInstance* shader = nullptr;
 
                 auto primitiveType = MHWRender::MGeometry::kPoints;
                 int  primitiveStride = 0;
 
-                const MColor& color
-                    = (_selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
-                           _selectionStatus == kFullyLead ? TfToken() : HdPrimTypeTokens->points)
-                                                       : drawScene.GetWireframeColor());
-
+                MColor color = _GetHighlightColor(HdPrimTypeTokens->points);
                 if (desc.geomStyle == HdPointsGeomStylePoints) {
-                    if (_selectionStatus != kUnselected) {
+                    if (_selectionStatus != kUnselected || inTemplateMode) {
                         shader = _delegate->GetPointsFallbackShader(color);
                     }
                 } else {
@@ -692,7 +688,7 @@ void HdVP2Points::_UpdateDrawItem(
                 if (shader != nullptr && shader != drawItemData._shader) {
                     drawItemData._shader = shader;
                     stateToCommit._shader = shader;
-                    stateToCommit._isTransparent = false;
+                    stateToCommit._isTransparent = (color.a < 0.999f);
 
                     if (primitiveType != drawItemData._primitiveType
                         || primitiveStride != drawItemData._primitiveStride) {
@@ -734,19 +730,26 @@ void HdVP2Points::_UpdateDrawItem(
               | HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyTopology
               | DirtySelectionHighlight));
 
-#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-    if ((itemDirtyBits & DirtySelectionHighlight) && !isBoundingBoxItem) {
+    // update selection mask if dirty
+    if (itemDirtyBits & DirtySelectionHighlight) {
         MSelectionMask selectionMask(MSelectionMask::kSelectParticleShapes);
 
-        // Only unselected Rprims can be used for point snapping.
-        if (_selectionStatus == kUnselected) {
-            selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+        if (!isBoundingBoxItem) {
+            // Only unselected Rprims can be used for point snapping.
+            if (_selectionStatus == kUnselected) {
+                selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
+            }
+        }
+#endif
+        // In template mode, items should have no selection
+        if (inTemplateMode || inReferenceMode) {
+            selectionMask = MSelectionMask();
         }
 
         // The function is thread-safe, thus called in place to keep simple.
         renderItem->setSelectionMask(selectionMask);
     }
-#endif
 
     // Reset dirty bits because we've prepared commit state for this draw item.
     drawItem->ResetDirtyBits();
@@ -780,14 +783,15 @@ void HdVP2Points::_UpdateDrawItem(
 
         // If available, something changed
         for (const auto& entry : stateToCommit._primvarBufferDataMap) {
-            const TfToken& primvarName = entry.first;
-            void*          primvarBufferData = entry.second;
-            if (primvarBufferData) {
-                const auto it = primvarBuffers->find(primvarName);
+            auto& primvarBufferData = entry.second;
+            if (!primvarBufferData.empty()) {
+                const auto it = primvarBuffers->find(entry.first);
                 if (it != primvarBuffers->end()) {
-                    MHWRender::MVertexBuffer* primvarBuffer = it->second.get();
-                    if (primvarBuffer) {
-                        primvarBuffer->commit(primvarBufferData);
+                    if (auto primvarBuffer = it->second.get()) {
+                        const auto&  desc = primvarBuffer->descriptor();
+                        unsigned int numElems
+                            = primvarBufferData.size() / (desc.dataTypeSize() * desc.dimension());
+                        primvarBuffer->update(&primvarBufferData[0], 0, numElems, true);
                     }
                 }
             }
@@ -913,6 +917,10 @@ void HdVP2Points::_UpdateDrawItem(
 */
 HdDirtyBits HdVP2Points::_PropagateDirtyBits(HdDirtyBits bits) const
 {
+    if (bits & HdChangeTracker::DirtyMaterialId) {
+        bits |= HdChangeTracker::DirtyPrimvar;
+    }
+
     _PropagateDirtyBitsCommon(bits, _reprs);
     return bits;
 }
@@ -941,7 +949,7 @@ void HdVP2Points::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBits)
     if (ARCH_UNLIKELY(!subSceneContainer))
         return;
 
-    HdReprSharedPtr repr = _AddNewRepr(reprToken, _reprs, dirtyBits, GetId());
+    HdReprSharedPtr repr = _InitReprCommon(*this, reprToken, _reprs, dirtyBits, GetId());
     if (!repr)
         return;
 
@@ -966,22 +974,20 @@ void HdVP2Points::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBits)
 
         switch (desc.geomStyle) {
         case HdPointsGeomStylePoints:
-            renderItem = _CreateFatPointsRenderItem(renderItemName);
-            drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
+            if (reprToken == HdReprTokens->smoothHull
+                || reprToken == HdVP2ReprTokens->smoothHullUntextured) {
+                renderItem = _CreateFatPointsRenderItem(renderItemName, reprToken);
+                drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
 #ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
-            renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
+                renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
 #endif
+            }
             break;
         default: TF_WARN("Unsupported geomStyle"); break;
         }
 
         if (renderItem) {
-            // Store the render item pointer to avoid expensive lookup in the
-            // subscene container.
-            drawItem->SetRenderItem(renderItem);
-
-            _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-                [subSceneContainer, renderItem]() { subSceneContainer->add(renderItem); });
+            _AddRenderItem(*drawItem, renderItem, *subSceneContainer);
         }
 #if HD_API_VERSION < 35
         repr->AddDrawItem(drawItem);
@@ -1013,7 +1019,7 @@ void HdVP2Points::_UpdateRepr(HdSceneDelegate* sceneDelegate, TfToken const& rep
             HdVP2DrawItem* drawItem
                 = static_cast<HdVP2DrawItem*>(repr->GetDrawItem(drawItemIndex++));
             if (drawItem) {
-                _UpdateDrawItem(sceneDelegate, drawItem, desc);
+                _UpdateDrawItem(sceneDelegate, drawItem, reprToken, desc);
             }
         }
     }
@@ -1062,21 +1068,25 @@ void HdVP2Points::_UpdatePrimvarSources(
 
 /*! \brief  Create render item for smoothHull repr.
  */
-MHWRender::MRenderItem* HdVP2Points::_CreateFatPointsRenderItem(const MString& name) const
+MHWRender::MRenderItem*
+HdVP2Points::_CreateFatPointsRenderItem(const MString& name, const TfToken& reprToken) const
 {
     MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
         name, MHWRender::MRenderItem::MaterialSceneItem, MHWRender::MGeometry::kPoints);
 
-    renderItem->setDrawMode(static_cast<MHWRender::MGeometry::DrawMode>(
-        MHWRender::MGeometry::kShaded | MHWRender::MGeometry::kTextured));
+    MHWRender::MGeometry::DrawMode drawMode = static_cast<MHWRender::MGeometry::DrawMode>(
+        MHWRender::MGeometry::kShaded | MHWRender::MGeometry::kTextured);
+    if (reprToken == HdReprTokens->smoothHull) {
+        drawMode = MHWRender::MGeometry::kTextured;
+    } else if (reprToken == HdVP2ReprTokens->smoothHullUntextured) {
+        drawMode = MHWRender::MGeometry::kShaded;
+    }
+
+    renderItem->setDrawMode(drawMode);
     renderItem->castsShadows(false);
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->GetPointsFallbackShader(MColor()));
-#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
-#endif
+    _InitRenderItemCommon(renderItem);
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     MSelectionMask selectionMask(MSelectionMask::kSelectParticleShapes);
@@ -1089,8 +1099,6 @@ MHWRender::MRenderItem* HdVP2Points::_CreateFatPointsRenderItem(const MString& n
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNParticles);
 #endif
-
-    _SetWantConsolidation(*renderItem, true);
 
     return renderItem;
 }

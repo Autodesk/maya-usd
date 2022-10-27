@@ -124,6 +124,28 @@ if(USD_INCLUDE_DIR)
     endif()
 endif()
 
+# See if MaterialX shaders with color4 inputs exist natively in Sdr:
+# Not yet in a tagged USD version: https://github.com/PixarAnimationStudios/USD/pull/1894
+set(USD_HAS_COLOR4_SDR_SUPPORT FALSE CACHE INTERNAL "USD.Sdr.PropertyTypes.Color4")
+if (USD_INCLUDE_DIR AND EXISTS "${USD_INCLUDE_DIR}/pxr/usd/sdr/shaderProperty.h")
+    file(STRINGS ${USD_INCLUDE_DIR}/pxr/usd/sdr/shaderProperty.h USD_HAS_API REGEX "Color4")
+    if(USD_HAS_API)
+        set(USD_HAS_COLOR4_SDR_SUPPORT TRUE CACHE INTERNAL "USD.Sdr.PropertyTypes.Color4")
+        message(STATUS "USD has new Sdr.PropertyTypes.Color4")
+    endif()
+endif()
+
+# See if MaterialX shaders have full Metadata imported:
+# Not yet in a tagged USD version: https://github.com/PixarAnimationStudios/USD/pull/1895
+set(USD_HAS_MX_METADATA_SUPPORT FALSE CACHE INTERNAL "USD.MaterialX.Metadata")
+if (USD_LIBRARY_DIR AND EXISTS "${USD_LIBRARY_DIR}/${USD_LIB_PREFIX}usdMtlx${CMAKE_SHARED_LIBRARY_SUFFIX}")
+    file(STRINGS ${USD_LIBRARY_DIR}/${USD_LIB_PREFIX}usdMtlx${CMAKE_SHARED_LIBRARY_SUFFIX} USD_HAS_API REGEX "uisoftmin")
+    if(USD_HAS_API)
+        set(USD_HAS_MX_METADATA_SUPPORT TRUE CACHE INTERNAL "USD.MaterialX.Metadata")
+        message(STATUS "USD has MaterialX metadata support")
+    endif()
+endif()
+
 message(STATUS "USD include dir: ${USD_INCLUDE_DIR}")
 message(STATUS "USD library dir: ${USD_LIBRARY_DIR}")
 message(STATUS "USD version: ${USD_VERSION}")

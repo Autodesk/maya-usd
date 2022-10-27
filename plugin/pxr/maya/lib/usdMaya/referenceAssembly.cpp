@@ -664,8 +664,8 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
                 sessionLayer = unsharedSessionLayer;
             }
 
-            const bool           loadAll = true;
-            UsdStageCacheContext ctx(UsdMayaStageCache::Get(loadAll));
+            UsdStageCacheContext ctx(UsdMayaStageCache::Get(
+                UsdStage::InitialLoadSet::LoadAll, UsdMayaStageCache::ShareMode::Shared));
             usdStage = UsdStage::Open(rootLayer, sessionLayer, ArGetResolver().GetCurrentContext());
             usdStage->SetEditTarget(usdStage->GetSessionLayer());
 
@@ -818,8 +818,8 @@ MStatus UsdMayaReferenceAssembly::computeOutStageData(MDataBlock& dataBlock)
             sessionLayer->TransferContent(oldLayer);
             sessionLayer->TransferContent(newLayer);
 
-            const bool           loadAll = true;
-            UsdStageCacheContext ctx(UsdMayaStageCache::Get(loadAll));
+            UsdStageCacheContext ctx(UsdMayaStageCache::Get(
+                UsdStage::InitialLoadSet::LoadAll, UsdMayaStageCache::ShareMode::Shared));
             usdStage = UsdStage::Open(
                 usdPrim.GetStage()->GetRootLayer(),
                 sessionLayer,

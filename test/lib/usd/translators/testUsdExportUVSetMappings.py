@@ -44,7 +44,8 @@ class testUsdExportUVSetMappings(unittest.TestCase):
         cls._usdFilePath = os.path.abspath('UsdExportUVSetMappingsTest.usda')
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=cls._usdFilePath,
             shadingMode='useRegistry', convertMaterialsTo=['UsdPreviewSurface'],
-            materialsScopeName='Materials')
+            materialsScopeName='Materials', preserveUVSetNames=False,
+            remapUVSetsTo=['',''])
 
         cls._stage = Usd.Stage.Open(cls._usdFilePath)
 

@@ -419,9 +419,7 @@ void HdVP2BasisCurves::Sync(
     HdDirtyBits*     dirtyBits,
     TfToken const&   reprToken)
 {
-    const SdfPath& id = GetId();
-    HdRenderIndex& renderIndex = delegate->GetRenderIndex();
-    if (!_SyncCommon(dirtyBits, id, _GetRepr(reprToken), renderIndex)) {
+    if (!_SyncCommon(*this, delegate, renderParam, dirtyBits, _GetRepr(reprToken), reprToken)) {
         return;
     }
 
@@ -431,6 +429,7 @@ void HdVP2BasisCurves::Sync(
         _rprimId.asChar(),
         "HdVP2BasisCurves::Sync");
 
+    HdRenderIndex& renderIndex = delegate->GetRenderIndex();
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         const SdfPath materialId = _GetUpdatedMaterialId(this, delegate);
 #if HD_API_VERSION < 37
@@ -445,14 +444,13 @@ void HdVP2BasisCurves::Sync(
     _UpdateInstancer(delegate, dirtyBits);
 #endif
 
+    const SdfPath& id = GetId();
     if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals)
         || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->primvar)) {
-        const HdVP2Material* material = static_cast<const HdVP2Material*>(
-            renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
-
-        const TfTokenVector& requiredPrimvars = (material && material->GetSurfaceShader())
-            ? material->GetRequiredPrimvars()
-            : sFallbackShaderPrimvars;
+        TfTokenVector requiredPrimvars;
+        if (!_GetMaterialPrimvars(renderIndex, GetMaterialId(), requiredPrimvars)) {
+            requiredPrimvars = sFallbackShaderPrimvars;
+        }
 
         _UpdatePrimvarSources(delegate, *dirtyBits, requiredPrimvars);
     }
@@ -509,7 +507,7 @@ void HdVP2BasisCurves::Sync(
     const TfToken& renderTag = delegate->GetRenderTag(id);
 #endif
 
-    _SyncSharedData(_sharedData, delegate, dirtyBits, reprToken, id, _reprs, renderTag);
+    _SyncSharedData(_sharedData, delegate, dirtyBits, reprToken, *this, _reprs, renderTag);
 
     *dirtyBits = HdChangeTracker::Clean;
 
@@ -525,6 +523,7 @@ void HdVP2BasisCurves::Sync(
 void HdVP2BasisCurves::_UpdateDrawItem(
     HdSceneDelegate*             sceneDelegate,
     HdVP2DrawItem*               drawItem,
+    const TfToken&               reprToken,
     HdBasisCurvesReprDesc const& desc)
 {
     MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
@@ -565,7 +564,10 @@ void HdVP2BasisCurves::_UpdateDrawItem(
     // The bounding box item uses a globally-shared geometry data therefore it
     // doesn't need to extract index data from topology. Points use non-indexed
     // draw.
-    const bool isBoundingBoxItem = (drawMode == MHWRender::MGeometry::kBoundingBox);
+    const bool isBoundingBoxItem = (drawMode & MHWRender::MGeometry::kBoundingBox) != 0;
+    const bool isHighlightItem = drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight);
+    const bool inTemplateMode = _displayLayerModes._displayType == MayaUsdRPrim::kTemplate;
+    const bool inReferenceMode = _displayLayerModes._displayType == MayaUsdRPrim::kReference;
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     constexpr bool isPointSnappingItem = false;
@@ -683,12 +685,9 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
             unsigned int numWidths = widths.size();
             if (widthsBuffer && numWidths > 0) {
-                void* bufferData = widthsBuffer->acquire(numWidths, true);
-                stateToCommit._primvarBufferDataMap[HdTokens->widths] = bufferData;
-
-                if (bufferData != nullptr) {
-                    memcpy(bufferData, widths.cdata(), numWidths * sizeof(float));
-                }
+                auto& bufferData = stateToCommit._primvarBufferDataMap[HdTokens->widths];
+                bufferData.resize(numWidths * sizeof(float));
+                memcpy(&bufferData[0], widths.cdata(), numWidths * sizeof(float));
             }
         }
 
@@ -698,9 +697,10 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
 
             if (material) {
-                MHWRender::MShaderInstance* shader = material->GetSurfaceShader();
-                if (shader != nullptr
-                    && (shader != drawItemData._shader || shader != stateToCommit._shader)) {
+                MHWRender::MShaderInstance* shader
+                    = material->GetSurfaceShader(_GetMaterialNetworkToken(reprToken));
+                drawItemData._shaderIsFallback = (shader == nullptr);
+                if (shader != nullptr && shader != drawItemData._shader) {
                     drawItemData._shader = shader;
                     stateToCommit._shader = shader;
                     stateToCommit._isTransparent = shader->isTransparent();
@@ -718,6 +718,8 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                     drawItemData._primitiveStride = primitiveStride;
                     stateToCommit._primitiveStride = &drawItemData._primitiveStride;
                 }
+            } else {
+                drawItemData._shaderIsFallback = true;
             }
         }
 
@@ -776,7 +778,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
             // Use fallback shader if there is no material binding or we failed to create a shader
             // instance from the material.
-            if (!stateToCommit._shader) {
+            if (drawItemData._shaderIsFallback) {
                 MHWRender::MShaderInstance*     shader = nullptr;
                 MHWRender::MGeometry::Primitive primitiveType = MHWRender::MGeometry::kLines;
                 int                             primitiveStride = 0;
@@ -900,7 +902,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
     const GfRange3d& range = _sharedData.bounds.GetRange();
 
     _UpdateTransform(stateToCommit, _sharedData, itemDirtyBits, isBoundingBoxItem);
-    MMatrix& worldMatrix = drawItemData._worldMatrix;
+    const MMatrix& worldMatrix = drawItemData._worldMatrix;
 
     // If the prim is instanced, create one new instance per transform.
     // The current instancer invalidation tracking makes it hard for
@@ -934,7 +936,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
             // If the item is used for both regular draw and selection highlight,
             // it needs to display both wireframe color and selection highlight
             // with one color vertex buffer.
-            if (drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight)) {
+            if (isHighlightItem) {
                 const MColor colors[]
                     = { drawScene.GetWireframeColor(),
                         drawScene.GetSelectionHighlightColor(HdPrimTypeTokens->basisCurves),
@@ -986,21 +988,15 @@ void HdVP2BasisCurves::_UpdateDrawItem(
     } else {
         // Non-instanced Rprims.
         if (itemDirtyBits & (DirtySelectionHighlight | HdChangeTracker::DirtyDisplayStyle)) {
-            if (drawItem->ContainsUsage(HdVP2DrawItem::kRegular)
-                && drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight)) {
+            if (drawItem->ContainsUsage(HdVP2DrawItem::kRegular) && isHighlightItem) {
                 MHWRender::MShaderInstance* shader = nullptr;
 
                 auto primitiveType = MHWRender::MGeometry::kLines;
                 int  primitiveStride = 0;
 
-                const MColor& color
-                    = (_selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
-                           _selectionStatus == kFullyLead ? TfToken()
-                                                          : HdPrimTypeTokens->basisCurves)
-                                                       : drawScene.GetWireframeColor());
-
+                MColor color = _GetHighlightColor(HdPrimTypeTokens->basisCurves);
                 if (desc.geomStyle == HdBasisCurvesGeomStylePatch) {
-                    if (_selectionStatus != kUnselected) {
+                    if (_selectionStatus != kUnselected || inTemplateMode) {
                         if (refineLevel <= 0) {
                             shader = _delegate->Get3dSolidShader(color);
                         } else {
@@ -1016,7 +1012,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 if (shader != nullptr && shader != drawItemData._shader) {
                     drawItemData._shader = shader;
                     stateToCommit._shader = shader;
-                    stateToCommit._isTransparent = false;
+                    stateToCommit._isTransparent = (color.a < 0.999f);
 
                     if (primitiveType != drawItemData._primitiveType
                         || primitiveStride != drawItemData._primitiveStride) {
@@ -1060,19 +1056,26 @@ void HdVP2BasisCurves::_UpdateDrawItem(
               | HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyTopology
               | DirtySelectionHighlight));
 
-#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-    if ((itemDirtyBits & DirtySelectionHighlight) && !isBoundingBoxItem) {
+    // update selection mask if dirty
+    if (itemDirtyBits & DirtySelectionHighlight) {
         MSelectionMask selectionMask(MSelectionMask::kSelectNurbsCurves);
 
-        // Only unselected Rprims can be used for point snapping.
-        if (_selectionStatus == kUnselected) {
-            selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+        if (!isBoundingBoxItem) {
+            // Only unselected Rprims can be used for point snapping.
+            if (_selectionStatus == kUnselected) {
+                selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
+            }
+        }
+#endif
+        // In template mode, items should have no selection
+        if (inTemplateMode || inReferenceMode) {
+            selectionMask = MSelectionMask();
         }
 
         // The function is thread-safe, thus called in place to keep simple.
         renderItem->setSelectionMask(selectionMask);
     }
-#endif
 
     // Reset dirty bits because we've prepared commit state for this draw item.
     drawItem->ResetDirtyBits();
@@ -1106,14 +1109,15 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
         // If available, something changed
         for (const auto& entry : stateToCommit._primvarBufferDataMap) {
-            const TfToken& primvarName = entry.first;
-            void*          primvarBufferData = entry.second;
-            if (primvarBufferData) {
-                const auto it = primvarBuffers->find(primvarName);
+            auto& primvarBufferData = entry.second;
+            if (!primvarBufferData.empty()) {
+                const auto it = primvarBuffers->find(entry.first);
                 if (it != primvarBuffers->end()) {
-                    MHWRender::MVertexBuffer* primvarBuffer = it->second.get();
-                    if (primvarBuffer) {
-                        primvarBuffer->commit(primvarBufferData);
+                    if (auto primvarBuffer = it->second.get()) {
+                        const auto&  desc = primvarBuffer->descriptor();
+                        unsigned int numElems
+                            = primvarBufferData.size() / (desc.dataTypeSize() * desc.dimension());
+                        primvarBuffer->update(&primvarBufferData[0], 0, numElems, true);
                     }
                 }
             }
@@ -1280,7 +1284,7 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
     if (ARCH_UNLIKELY(!subSceneContainer))
         return;
 
-    HdReprSharedPtr repr = _AddNewRepr(reprToken, _reprs, dirtyBits, GetId());
+    HdReprSharedPtr repr = _InitReprCommon(*this, reprToken, _reprs, dirtyBits, GetId());
     if (!repr)
         return;
 
@@ -1305,7 +1309,7 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
 
         switch (desc.geomStyle) {
         case HdBasisCurvesGeomStylePatch:
-            renderItem = _CreatePatchRenderItem(renderItemName);
+            renderItem = _CreatePatchRenderItem(renderItemName, reprToken);
             drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
 #ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
             renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
@@ -1343,7 +1347,8 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
                     kOpaqueGray,
                     MSelectionMask::kSelectNurbsCurves,
                     MHWRender::MFrameContext::kExcludeNurbsCurves);
-                renderItem->setDrawMode(MHWRender::MGeometry::kAll);
+                renderItem->setDrawMode(static_cast<MHWRender::MGeometry::DrawMode>(
+                    MHWRender::MGeometry::kShaded | MHWRender::MGeometry::kTextured));
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
                 renderItem->setDefaultMaterialHandling(
                     MRenderItem::DrawOnlyWhenDefaultMaterialActive);
@@ -1362,12 +1367,7 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
         }
 
         if (renderItem) {
-            // Store the render item pointer to avoid expensive lookup in the
-            // subscene container.
-            drawItem->SetRenderItem(renderItem);
-
-            _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-                [subSceneContainer, renderItem]() { subSceneContainer->add(renderItem); });
+            _AddRenderItem(*drawItem, renderItem, *subSceneContainer);
         }
 #if HD_API_VERSION < 35
         repr->AddDrawItem(drawItem);
@@ -1399,7 +1399,7 @@ void HdVP2BasisCurves::_UpdateRepr(HdSceneDelegate* sceneDelegate, TfToken const
             HdVP2DrawItem* drawItem
                 = static_cast<HdVP2DrawItem*>(repr->GetDrawItem(drawItemIndex++));
             if (drawItem) {
-                _UpdateDrawItem(sceneDelegate, drawItem, desc);
+                _UpdateDrawItem(sceneDelegate, drawItem, reprToken, desc);
             }
         }
     }
@@ -1450,21 +1450,25 @@ void HdVP2BasisCurves::_UpdatePrimvarSources(
 
 /*! \brief  Create render item for smoothHull repr.
  */
-MHWRender::MRenderItem* HdVP2BasisCurves::_CreatePatchRenderItem(const MString& name) const
+MHWRender::MRenderItem*
+HdVP2BasisCurves::_CreatePatchRenderItem(const MString& name, const TfToken& reprToken) const
 {
     MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
         name, MHWRender::MRenderItem::MaterialSceneItem, MHWRender::MGeometry::kLines);
 
-    renderItem->setDrawMode(static_cast<MHWRender::MGeometry::DrawMode>(
-        MHWRender::MGeometry::kShaded | MHWRender::MGeometry::kTextured));
+    MHWRender::MGeometry::DrawMode drawMode = static_cast<MHWRender::MGeometry::DrawMode>(
+        MHWRender::MGeometry::kShaded | MHWRender::MGeometry::kTextured);
+    if (reprToken == HdReprTokens->smoothHull) {
+        drawMode = MHWRender::MGeometry::kTextured;
+    } else if (reprToken == HdVP2ReprTokens->smoothHullUntextured) {
+        drawMode = MHWRender::MGeometry::kShaded;
+    }
+
+    renderItem->setDrawMode(drawMode);
     renderItem->castsShadows(false);
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueGray));
-#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
-#endif
+    _InitRenderItemCommon(renderItem);
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     MSelectionMask selectionMask(MSelectionMask::kSelectNurbsCurves);
@@ -1477,8 +1481,6 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreatePatchRenderItem(const MString& 
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNurbsCurves);
 #endif
-
-    _SetWantConsolidation(*renderItem, true);
 
     return renderItem;
 }

@@ -50,7 +50,8 @@ class testComponentTags(unittest.TestCase):
         usdFilePath = os.path.join(os.environ.get('MAYA_APP_DIR'),'testComponentTags.usda')
         cmds.mayaUSDExport(mergeTransformAndShape=True,
             file=usdFilePath,
-            shadingMode='none')
+            shadingMode='none',
+            exportComponentTags=True)
 
         cmds.file(new=True, force=True)
         rootPaths = cmds.mayaUSDImport(v=True, f=usdFilePath)

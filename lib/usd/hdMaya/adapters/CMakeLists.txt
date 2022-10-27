@@ -11,7 +11,6 @@ target_sources(${TARGET_NAME}
         cameraAdapter.cpp
         dagAdapter.cpp
         renderItemAdapter.cpp
-        renderItemDiscoveryPlugin.cpp
         directionalLightAdapter.cpp
         lightAdapter.cpp
         proxyAdapter.cpp
@@ -34,7 +33,6 @@ set(HEADERS
     constantShadowMatrix.h
     dagAdapter.h
     renderItemAdapter.h
-    renderItemDiscoveryPlugin.h
     lightAdapter.h
     proxyAdapter.h
     materialAdapter.h

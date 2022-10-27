@@ -23,6 +23,7 @@ target_sources(${PROJECT_NAME}
         UsdStageMap.cpp
         UsdTRSUndoableCommandBase.cpp
         UsdTransform3d.cpp
+        UsdTransform3dReadImpl.cpp
         UsdTransform3dHandler.cpp
         UsdTranslateUndoableCommand.cpp
         UsdUndoDeleteCommand.cpp
@@ -38,6 +39,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             ProxyShapeContextOpsHandler.cpp
             RotationUtils.cpp
             UsdAttribute.cpp
+            UsdAttributeHolder.cpp
             UsdAttributes.cpp
             UsdAttributesHandler.cpp
             UsdCamera.cpp
@@ -80,15 +82,34 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     )
 endif()
 
-if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4007)
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-                UsdLight.cpp
-                UsdLightHandler.cpp
-        )
-    endif()
+message(STATUS "UFE_LIGHTS_SUPPORT is ${UFE_LIGHTS_SUPPORT}")
+if (UFE_LIGHTS_SUPPORT)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            UsdLight.cpp
+            UsdLightHandler.cpp
+    )
 
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_LIGHTS_SUPPORT=1
+    )
+endif()
+
+message(STATUS "UFE_SCENE_SEGMENT_SUPPORT is ${UFE_SCENE_SEGMENT_SUPPORT}")
+if (UFE_SCENE_SEGMENT_SUPPORT)
+    target_sources(${PROJECT_NAME}
+    PRIVATE
+        ProxyShapeSceneSegmentHandler.cpp
+    )
+
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_SCENE_SEGMENT_SUPPORT=1
+    )
+endif()
+
+if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4001)
         target_sources(${PROJECT_NAME}
             PRIVATE
@@ -101,6 +122,7 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         target_sources(${PROJECT_NAME}
             PRIVATE
                 UsdShaderAttributeDef.cpp
+                UsdShaderAttributeHolder.cpp
                 UsdUndoCreateFromNodeDefCommand.cpp
         )
     endif()
@@ -109,9 +131,45 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         target_sources(${PROJECT_NAME}
             PRIVATE
                 ProxyShapeCameraHandler.cpp
-                ProxyShapeSceneSegmentHandler.cpp
         )
     endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+                UsdConnections.cpp
+                UsdConnectionHandler.cpp
+        )
+    endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4023)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+                UsdUINodeGraphNode.cpp
+                UsdUINodeGraphNodeHandler.cpp
+        )
+    endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4024)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+                UsdUndoAttributesCommands.cpp
+        )
+    endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4025)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+                UsdTransform3dRead.cpp
+        )
+    endif()
+endif()
+
+if(PXR_VERSION GREATER_EQUAL 2108)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            UsdUndoMaterialCommands.cpp
+    )
 endif()
 
 set(HEADERS
@@ -136,6 +194,7 @@ set(HEADERS
     UsdStageMap.h
     UsdTRSUndoableCommandBase.h
     UsdTransform3d.h
+    UsdTransform3dReadImpl.h
     UsdTransform3dHandler.h
     UsdTranslateUndoableCommand.h
     UsdUndoDeleteCommand.h
@@ -150,6 +209,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         ProxyShapeContextOpsHandler.h
         RotationUtils.h
         UsdAttribute.h
+        UsdAttributeHolder.h
         UsdAttributes.h
         UsdAttributesHandler.h
         UsdCamera.h
@@ -193,14 +253,20 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     )
 endif()
 
-if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4007)
-        list(APPEND HEADERS
-            UsdLight.h
-            UsdLightHandler.h
-        )
-    endif()
+if (UFE_LIGHTS_SUPPORT)
+    list(APPEND HEADERS
+        UsdLight.h
+        UsdLightHandler.h
+    )
+endif()
 
+if (UFE_SCENE_SEGMENT_SUPPORT)
+    list(APPEND HEADERS
+        ProxyShapeSceneSegmentHandler.h
+    )
+endif()
+
+if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4001)
         list(APPEND HEADERS
             UsdShaderNodeDef.h
@@ -211,6 +277,7 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4010)
         list(APPEND HEADERS
             UsdShaderAttributeDef.h
+            UsdShaderAttributeHolder.h
             UsdUndoCreateFromNodeDefCommand.h
         )
     endif()
@@ -218,9 +285,40 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4013)
         list(APPEND HEADERS
             ProxyShapeCameraHandler.h
-            ProxyShapeSceneSegmentHandler.h
         )
     endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
+        list(APPEND HEADERS
+            UsdConnections.h
+            UsdConnectionHandler.h
+        )
+    endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4023)
+        list(APPEND HEADERS
+            UsdUINodeGraphNode.h
+            UsdUINodeGraphNodeHandler.h
+        )
+    endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4024)
+        list(APPEND HEADERS
+                UsdUndoAttributesCommands.h
+        )
+    endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4025)
+        list(APPEND HEADERS
+            UsdTransform3dRead.h
+        )
+    endif()
+endif()
+
+if(PXR_VERSION GREATER_EQUAL 2108)
+    list(APPEND HEADERS
+        UsdUndoMaterialCommands.h
+    )
 endif()
 
 # -----------------------------------------------------------------------------

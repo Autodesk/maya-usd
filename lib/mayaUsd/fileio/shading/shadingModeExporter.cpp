@@ -19,6 +19,7 @@
 #include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/progressBarScope.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/diagnostic.h>
@@ -81,6 +82,8 @@ void UsdMayaShadingModeExporter::DoExport(
     UsdMayaWriteJobContext&                  writeJobContext,
     const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap)
 {
+    MayaUsd::ProgressBarScope progressBar(4);
+
     const UsdMayaJobExportArgs& exportArgs = writeJobContext.GetArgs();
     const UsdStageRefPtr&       stage = writeJobContext.GetUsdStage();
 
@@ -99,19 +102,26 @@ void UsdMayaShadingModeExporter::DoExport(
                 materialCollectionsPath.GetText());
         }
     }
+    progressBar.advance();
 
     UsdMayaShadingModeExportContext context(MObject(), writeJobContext, dagPathToUsdMap);
 
     PreExport(&context);
+    progressBar.advance();
 
     using MaterialAssignments = std::vector<std::pair<TfToken, SdfPathSet>>;
     MaterialAssignments matAssignments;
 
     std::vector<UsdShadeMaterial> exportedMaterials;
 
-    MItDependencyNodes shadingEngineIter(MFn::kShadingEngine);
+    std::vector<MObject> shadingEngines;
+    MItDependencyNodes   shadingEngineIter(MFn::kShadingEngine);
     for (; !shadingEngineIter.isDone(); shadingEngineIter.next()) {
         MObject shadingEngine(shadingEngineIter.thisNode());
+        shadingEngines.emplace_back(shadingEngine);
+    }
+    MayaUsd::ProgressBarLoopScope shadingEngineLoop(shadingEngines.size());
+    for (const auto& shadingEngine : shadingEngines) {
         context.SetShadingEngine(shadingEngine);
 
         UsdShadeMaterial mat;
@@ -122,10 +132,12 @@ void UsdMayaShadingModeExporter::DoExport(
             exportedMaterials.push_back(mat);
             matAssignments.push_back(std::make_pair(_GetCollectionName(mat), boundPrimPaths));
         }
+        shadingEngineLoop.loopAdvance();
     }
 
     context.SetShadingEngine(MObject());
     PostExport(context);
+    progressBar.advance();
 
     if ((materialCollectionsPrim || exportArgs.exportCollectionBasedBindings)
         && !matAssignments.empty()) {
@@ -143,7 +155,6 @@ void UsdMayaShadingModeExporter::DoExport(
                 "Could not get prim at path <%s>. Not exporting material "
                 "collections / bindings.",
                 rootPrimPath.GetText());
-            return;
         }
 
         std::vector<UsdCollectionAPI> collections
@@ -190,6 +201,7 @@ void UsdMayaShadingModeExporter::DoExport(
             }
         }
     }
+    progressBar.advance();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

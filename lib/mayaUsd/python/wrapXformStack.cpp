@@ -29,6 +29,8 @@
 #include <boost/python/import.hpp>
 #include <boost/python/raw_function.hpp>
 
+#include <mutex>
+
 using namespace std;
 using boost::python::class_;
 using boost::python::copy_const_reference;

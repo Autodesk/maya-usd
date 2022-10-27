@@ -26,7 +26,6 @@
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilSerialization.h>
 #include <mayaUsd/utils/variants.h>
-#include <mayaUsdUtils/MergePrims.h>
 #include <mayaUsd_Schemas/ALMayaReference.h>
 #include <mayaUsd_Schemas/MayaReference.h>
 
@@ -54,6 +53,11 @@ namespace {
 // variant has its own copy of the flag.
 void clearAutoEdit(const UsdPrim& prim)
 {
+    // The given prim can be invalid. This happens for example if an
+    // ancestor was deactivated.
+    if (!prim.IsValid())
+        return;
+
     UsdPrim parentPrim = prim.GetParent();
     MAYAUSD_NS::applyToAllVariants(parentPrim, true, [prim]() {
         // Note: the prim might not exist in all variants, so check its validity.
@@ -177,13 +181,26 @@ bool PxrUsdTranslators_MayaReferenceUpdater::editAsMaya()
     return true;
 }
 
+bool callEditRouter(
+    const char*                 routerName,
+    const PXR_NS::VtDictionary& routerContext,
+    PXR_NS::VtDictionary&       routingData)
+{
+    MayaUsd::EditRouter::Ptr dstEditRouter = MayaUsd::getEditRouter(TfToken(routerName));
+    if (!dstEditRouter)
+        return false;
+
+    (*dstEditRouter)(routerContext, routingData);
+    return true;
+}
+
 /* virtual */
 UsdMayaPrimUpdater::PushCopySpecs PxrUsdTranslators_MayaReferenceUpdater::pushCopySpecs(
     UsdStageRefPtr srcStage,
     SdfLayerRefPtr srcLayer,
     const SdfPath& srcSdfPath,
-    UsdStageRefPtr /* dstStage */,
-    SdfLayerRefPtr /* dstLayer */,
+    UsdStageRefPtr dstStage,
+    SdfLayerRefPtr dstLayer,
     const SdfPath& dstSdfPath)
 {
     // We need context to access user arguments
@@ -191,50 +208,53 @@ UsdMayaPrimUpdater::PushCopySpecs PxrUsdTranslators_MayaReferenceUpdater::pushCo
         return PushCopySpecs::Failed;
     }
 
-    // Use the edit router to find the destination layer and path.
-    auto dstEditRouter = MayaUsd::getEditRouter(TfToken("mayaReferencePush"));
-    if (!dstEditRouter) {
-        return PushCopySpecs::Failed;
-    }
-
     PXR_NS::VtDictionary routerContext = getContext()->GetUserArgs();
+
+    // Pass the source and destination stage, layer and path to routers.
+    routerContext["src_stage"] = PXR_NS::VtValue(srcStage);
+    routerContext["src_layer"] = PXR_NS::VtValue(srcLayer);
+    routerContext["src_path"] = PXR_NS::VtValue(srcSdfPath);
+
+    routerContext["dst_stage"] = PXR_NS::VtValue(dstStage);
+    routerContext["dst_layer"] = PXR_NS::VtValue(dstLayer);
+    routerContext["dst_path"] = PXR_NS::VtValue(dstSdfPath);
+
+    // Use the edit router to find the destination layer and path.
     routerContext["stage"] = PXR_NS::VtValue(getContext()->GetUsdStage());
     routerContext["prim"] = PXR_NS::VtValue(dstSdfPath.GetString());
+
     PXR_NS::VtDictionary routingData;
 
-    (*dstEditRouter)(routerContext, routingData);
+    if (!callEditRouter("mayaReferencePush", routerContext, routingData))
+        return PushCopySpecs::Failed;
 
     // Retrieve the destination layer and prim path from the routing data.
-    auto dstLayerStr = findValue(routingData, TfToken("layer"));
-    if (!TF_VERIFY(!dstLayerStr.empty())) {
+    auto cacheDstLayerStr = findValue(routingData, TfToken("layer"));
+    if (!TF_VERIFY(!cacheDstLayerStr.empty()))
         return PushCopySpecs::Failed;
-    }
-    auto dstPathStr = findValue(routingData, TfToken("path"));
-    if (!TF_VERIFY(!dstPathStr.empty())) {
-        return PushCopySpecs::Failed;
-    }
 
-    auto dstLayer = SdfLayer::FindOrOpen(dstLayerStr);
-    if (!TF_VERIFY(dstLayer)) {
+    auto cacheDstPathStr = findValue(routingData, TfToken("path"));
+    if (!TF_VERIFY(!cacheDstPathStr.empty()))
         return PushCopySpecs::Failed;
-    }
-    SdfPath dstPath(dstPathStr);
+
+    auto cacheDstLayer = SdfLayer::FindOrOpen(cacheDstLayerStr);
+    if (!TF_VERIFY(cacheDstLayer))
+        return PushCopySpecs::Failed;
 
     // The Maya reference is meant as a cache, and therefore fully
     // overwritten, so we don't call MayaUsdUtils::mergePrims().
-    if (SdfCopySpec(srcLayer, srcSdfPath, dstLayer, dstPath)) {
-        const MObject& parentNode = getMayaObject();
-        UsdMayaTranslatorMayaReference::UnloadMayaReference(parentNode);
+    if (!SdfCopySpec(srcLayer, srcSdfPath, cacheDstLayer, SdfPath(cacheDstPathStr)))
+        return PushCopySpecs::Failed;
 
-        auto dstLayerStr = findValue(routingData, TfToken("save_layer"));
-        if (dstLayerStr == "yes")
-            dstLayer->Save();
+    const MObject& parentNode = getMayaObject();
+    UsdMayaTranslatorMayaReference::UnloadMayaReference(parentNode);
 
-        // No further traversal should take place.
-        return PushCopySpecs::Prune;
-    }
+    auto saveLayer = findValue(routingData, TfToken("save_layer"));
+    if (saveLayer == "yes")
+        cacheDstLayer->Save();
 
-    return PushCopySpecs::Failed;
+    // No further traversal should take place.
+    return PushCopySpecs::Prune;
 }
 
 /* virtual */

@@ -54,12 +54,23 @@ _listEditedAsLabels = [getMayaUsdLibString('kMenuAppend'), getMayaUsdLibString('
 _listEditedAsValues = [                         'Append',                           'Prepend' ]
 
 
+def _getMenuGrpValue(menuName, values, defaultIndex = 0):
+    """
+    Retrieves the currently selected values from a menu.
+    """
+    # Note: option menu selection index start at 1, so we subtract 1.
+    menuIndex = cmds.optionMenuGrp(menuName, query=True, select=True) - 1
+    if 0 <= menuIndex < len(values):
+        return values[menuIndex]
+    else:
+        return values[defaultIndex]
+
 def _getMenuValue(menuName, values, defaultIndex = 0):
     """
     Retrieves the currently selected values from a menu.
     """
     # Note: option menu selection index start at 1, so we subtract 1.
-    menuIndex = cmds.optionMenuGrp('compositionArcTypeMenu', query=True, select=True) - 1
+    menuIndex = cmds.optionMenu(menuName, query=True, select=True) - 1
     if 0 <= menuIndex < len(values):
         return values[menuIndex]
     else:
@@ -152,20 +163,12 @@ def primNameTextChanged(primName):
         if validatedName != primName:
             cmds.textFieldGrp('primNameText', edit=True, text=validatedName)
 
-def variantOrNewPrim(variantSelected):
-    # The variant and new child prim radio buttons are mutually exclusive.
+def variantOrNewPrim(buttonChecked):
+    # The variant and new child prim radio buttons are part of a collection.
     # So only one can be checked.
-    if variantSelected:
-        cmds.radioButtonGrp('variantRadioButton', edit=True, select=1)
-        cmds.radioButtonGrp('newChildPrimInvisibleRadioButton', edit=True, select=1)
-    else:
-        cmds.radioButtonGrp('variantInvisibleRadioButton', edit=True, select=1)
-        cmds.radioButtonGrp('newChildPrimRadioButton', edit=True, select=1)
-    
+    variantSelected = cmds.radioButtonGrp('variantRadioButton', query=True, select=1)
     cmds.rowLayout('usdCacheVariantSetRow', edit=True, enable=variantSelected)
     cmds.rowLayout('usdCacheVariantNameRow', edit=True, enable=variantSelected)
-    cmds.rowLayout('usdCacheNewPrimRow', edit=True, enable=not variantSelected)
-    cmds.textFieldGrp('primNameText', edit=True, enable=not variantSelected)
 
 def cacheFileUsdHierarchyOptions(topForm):
     '''Create controls to insert Maya reference USD cache into USD hierarchy.'''
@@ -193,16 +196,12 @@ def cacheFileUsdHierarchyOptions(topForm):
         for label in _listEditedAsLabels:
             cmds.menuItem(label=label)
 
-    rl = mel.eval('createRowLayoutforMayaReference("' + widgetColumn + '", "usdCacheDefineInRow", 3)')
-    with mayaRefUtils.SetParentContext(rl):
-        cmds.text(label=getMayaUsdLibString('kTextDefineIn'))
-        variantGrp = cmds.radioButtonGrp('variantRadioButton',
-                        l1=getMayaUsdLibString('kTextVariant'),
-                        annotation=getMayaUsdLibString('kTextVariantToolTip'))
-        # Add an invisible radio button to the group to allow the visible one to be unselected.
-        cmds.radioButtonGrp('variantInvisibleRadioButton',
-                            scl=variantGrp,
-                            visible=False)
+    variantRb = cmds.radioButtonGrp('variantRadioButton',
+                                    nrb=1,
+                                    changeCommand1=variantOrNewPrim,
+                                    label=getMayaUsdLibString('kTextDefineIn'),
+                                    l1=getMayaUsdLibString('kTextVariant'),
+                                    annotation=getMayaUsdLibString('kTextVariantToolTip'))
 
     rl = mel.eval('createRowLayoutforMayaReference("' + widgetColumn + '", "usdCacheVariantSetRow", 3)')
     with mayaRefUtils.SetParentContext(rl):
@@ -219,21 +218,20 @@ def cacheFileUsdHierarchyOptions(topForm):
         cmds.textField('variantNameText',
                        cc=variantNameTextChanged)
 
-    rl = mel.eval('createRowLayoutforMayaReference("' + widgetColumn + '", "usdCacheNewPrimRow", 3)')
-    with mayaRefUtils.SetParentContext(rl):
-        cmds.text(label='')
-        newChildRb = cmds.radioButtonGrp('newChildPrimRadioButton',
-                                        l1=getMayaUsdLibString('kButtonNewChildPrim'),
-                                        annotation=getMayaUsdLibString('kButtonNewChildPrimToolTip'))
-        # Add an invisible radio button to the group to allow the visible one to be unselected.
-        cmds.radioButtonGrp('newChildPrimInvisibleRadioButton',
-                            scl=newChildRb,
-                            visible=False)
+    # Note: this radio button doesn't need the change command since its part of
+    #       the same collection as the variantRb (which has the changeCommand).
+    newChildRb = cmds.radioButtonGrp('newChildPrimRadioButton',
+                                     nrb=1,
+                                     label='',
+                                     scl=variantRb,
+                                     l1=getMayaUsdLibString('kButtonNewChildPrim'),
+                                     annotation=getMayaUsdLibString('kButtonNewChildPrimToolTip'))
 
     cmds.textFieldGrp('primNameText',
                       label=getMayaUsdLibString('kMayaRefPrimName'),
                       cc=primNameTextChanged)
 
+    cmds.radioButtonGrp(variantRb, edit=True, select=1)
     variantOrNewPrim(True)
 
 
@@ -381,7 +379,7 @@ def cacheCommitUi(parent, selectedFile):
     mel.eval('mayaUsdTranslatorExport("fileOptionsScroll", "query={exportOpts}", "", "mayaUsdCacheMayaReference_setCacheOptions")'.format(exportOpts=kTranslatorExportOptions))
 
     primName = cmds.textFieldGrp('primNameText', query=True, text=True)
-    payloadOrReference = _getMenuValue('compositionArcTypeMenu', _compositionArcValues)
+    payloadOrReference = _getMenuGrpValue('compositionArcTypeMenu', _compositionArcValues)
     listEditType = _getMenuValue('listEditedAsMenu', _listEditedAsValues)
     
     defineInVariant = cmds.radioButtonGrp('variantRadioButton', query=True, select=True)

@@ -74,6 +74,7 @@ struct HdMayaShaderInstanceData
 	std::map<TfToken, HdMayaRenderItemShaderParam> Params;
 };
 
+/*
 class HdMayaRenderItemShaderConverter
 {
 public:
@@ -81,6 +82,7 @@ public:
 		const MRenderItem& renderItem,		
 		HdMayaShaderInstanceData& shaderData);
 };
+*/
 
 // TODO: Remove, currently unused.
 class HdMayaShapeUIShaderAdapter : public HdMayaAdapter

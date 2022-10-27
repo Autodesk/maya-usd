@@ -23,7 +23,9 @@
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
 
+#include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
 #include <maya/MMessage.h>
 #include <maya/MObject.h>
@@ -33,6 +35,7 @@
 
 #include <functional>
 #include <string>
+#include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -47,7 +50,22 @@ enum BatchSaveResult
     kPartiallyCompleted // Callback has handled the saving of some stages, but not all. Layer
                         // Manager should continue to look for unsaved stages.
 };
-typedef std::function<BatchSaveResult(const MDagPathArray&)> BatchSaveDelegate;
+
+/*! \brief Information about the stages that need to be saved.
+ */
+struct StageSavingInfo
+{
+    MDagPath    dagPath;
+    UsdStagePtr stage;
+    bool        shareable = true;
+    bool        isIncoming = false;
+};
+
+/*! \brief Callback function to handle saving of Usd edits.  In a default build of the
+    plugin a delegate will be installed that posts a UI dialog that provides an opportunity
+    to choose file names and locations of all anonymous layers that need to be saved to disk.
+ */
+using BatchSaveDelegate = std::function<BatchSaveResult(const std::vector<StageSavingInfo>&)>;
 
 /*! \brief Maya dependency node responsible for serializing unsaved Usd edits.
 

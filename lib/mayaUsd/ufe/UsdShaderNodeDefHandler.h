@@ -17,6 +17,8 @@
 
 #include <mayaUsd/base/api.h>
 
+#include <pxr/usd/sdr/shaderNode.h>
+
 #include <ufe/nodeDefHandler.h>
 
 namespace MAYAUSD_NS_DEF {
@@ -51,6 +53,11 @@ public:
 
     //! Returns the node definitions that match the provided category.
     Ufe::NodeDefs definitions(const std::string& category) const override;
+
+    //! Returns the Sdr shader node for the given SceneItem. If the
+    // definition associated with the scene item's type is not found, a
+    // nullptr is returned.
+    static PXR_NS::SdrShaderNodeConstPtr usdDefinition(const Ufe::SceneItem::Ptr& item);
 
 }; // UsdShaderNodeDefHandler
 

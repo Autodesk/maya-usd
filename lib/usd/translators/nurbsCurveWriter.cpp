@@ -201,25 +201,22 @@ bool PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
     status = curveFn.getKnots(mayaCurveKnots);
     CHECK_MSTATUS_AND_RETURN(status, false);
     const uint32_t mayaKnotsCount = mayaCurveKnots.length();
-    VtDoubleArray  curveKnots;
-    auto copyKnotsFromIdx = [&mayaCurveKnots, &curveKnots, mayaKnotsCount](size_t fromIdx) {
-        memcpy(
-            ((double*)curveKnots.cdata()) + fromIdx,
-            (const double*)&mayaCurveKnots[0],
-            sizeof(double) * mayaKnotsCount);
-    };
+
+    // USD requires 2 additional knots
+    VtDoubleArray curveKnots(mayaKnotsCount + 2);
+    for (uint32_t i = 0; i < mayaKnotsCount; i++) {
+        curveKnots[i + 1] = mayaCurveKnots[i];
+    }
     if (wrap) {
-        // Insert wrapping knots at either end of the vector
-        curveKnots.resize(mayaKnotsCount + 2);
-        copyKnotsFromIdx(1);
+        // Set end knots according to the USD spec for periodic curves
         curveKnots[0] = curveKnots[1]
             - (curveKnots[curveKnots.size() - 2] - curveKnots[curveKnots.size() - 3]);
         curveKnots[curveKnots.size() - 1]
             = curveKnots[curveKnots.size() - 2] + (curveKnots[2] - curveKnots[1]);
     } else {
-        // Copy across the knots as-is, don't insert extra knots
-        curveKnots.resize(mayaKnotsCount);
-        copyKnotsFromIdx(0);
+        // Set end knots according to the USD spec for non-periodic curves
+        curveKnots[0] = curveKnots[1];
+        curveKnots[curveKnots.size() - 1] = curveKnots[curveKnots.size() - 2];
     }
 
     // Gprim

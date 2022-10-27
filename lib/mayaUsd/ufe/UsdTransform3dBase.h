@@ -17,6 +17,7 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
+#include <mayaUsd/ufe/UsdTransform3dReadImpl.h>
 
 #include <pxr/usd/usd/prim.h>
 
@@ -34,7 +35,9 @@ namespace ufe {
 // Note that all calls to specify time use the default time, but this
 // could be changed to use the current time, using getTime(path()).
 
-class MAYAUSD_CORE_PUBLIC UsdTransform3dBase : public Ufe::Transform3d
+class MAYAUSD_CORE_PUBLIC UsdTransform3dBase
+    : private UsdTransform3dReadImpl
+    , public Ufe::Transform3d
 {
 public:
     typedef std::shared_ptr<UsdTransform3dBase> Ptr;
@@ -52,8 +55,8 @@ public:
     const Ufe::Path&    path() const override;
     Ufe::SceneItem::Ptr sceneItem() const override;
 
-    inline UsdSceneItem::Ptr usdSceneItem() const { return fItem; }
-    inline PXR_NS::UsdPrim   prim() const { return fPrim; }
+    inline UsdSceneItem::Ptr usdSceneItem() const { return UsdTransform3dReadImpl::usdSceneItem(); }
+    inline PXR_NS::UsdPrim   prim() const { return UsdTransform3dReadImpl::prim(); }
 
     Ufe::TranslateUndoableCommand::Ptr translateCmd(double x, double y, double z) override;
     Ufe::RotateUndoableCommand::Ptr    rotateCmd(double x, double y, double z) override;
@@ -79,10 +82,6 @@ public:
 
     Ufe::Matrix4d segmentInclusiveMatrix() const override;
     Ufe::Matrix4d segmentExclusiveMatrix() const override;
-
-private:
-    UsdSceneItem::Ptr fItem;
-    PXR_NS::UsdPrim   fPrim;
 
 }; // UsdTransform3dBase
 

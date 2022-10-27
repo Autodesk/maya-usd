@@ -15,11 +15,9 @@
 //
 #include "UsdAttribute.h"
 
+#include "Utils.h"
 #include "private/Utils.h"
 
-#ifdef UFE_V3_FEATURES_AVAILABLE
-#include <mayaUsd/base/tokens.h>
-#endif
 #include <mayaUsd/ufe/StagesSubject.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
@@ -30,10 +28,20 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/usd/schemaRegistry.h>
+#include <pxr/usd/usdShade/utils.h>
 
 #include <sstream>
 #include <unordered_map>
 #include <unordered_set>
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4010)
+#include "UsdShaderAttributeDef.h"
+#endif
+#endif
+#ifdef UFE_V3_FEATURES_AVAILABLE
+#include <mayaUsd/base/tokens.h>
+#endif
 
 // Note: normally we would use this using directive, but here we cannot because
 //       our class is called UsdAttribute which is exactly the same as the one
@@ -41,12 +49,9 @@
 // PXR_NAMESPACE_USING_DIRECTIVE
 
 static constexpr char kErrorMsgFailedConvertToString[]
-    = "Could not convert the attribute to a string";
+    = "Could not convert the attribute '%s' to a string";
 static constexpr char kErrorMsgInvalidType[]
     = "USD attribute does not match created attribute class type";
-#ifdef UFE_V3_FEATURES_AVAILABLE
-static constexpr char kErrorMsgInvalidValueType[] = "Unexpected Ufe::Value type";
-#endif
 
 //------------------------------------------------------------------------------
 // Helper functions
@@ -54,7 +59,7 @@ static constexpr char kErrorMsgInvalidValueType[] = "Unexpected Ufe::Value type"
 
 namespace {
 
-template <typename T> bool setUsdAttr(const PXR_NS::UsdAttribute& attr, const T& value)
+template <typename T> bool setUsdAttr(MayaUsd::ufe::UsdAttribute& attr, const T& value)
 {
     // USD Attribute Notification doubling problem:
     // As of 24-Nov-2019, calling Set() on a UsdAttribute causes two "info only"
@@ -80,64 +85,16 @@ template <typename T> bool setUsdAttr(const PXR_NS::UsdAttribute& attr, const T&
     // Therefore, we have implemented an attribute change block notification of
     // our own in the StagesSubject, which we invoke here, so that only a
     // single UFE attribute changed notification is generated.
-    if (!attr.IsValid())
-        return false;
 
     MayaUsd::ufe::AttributeChangedNotificationGuard guard;
-    std::string                                     errMsg;
-    bool isSetAttrAllowed = MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg);
-    if (!isSetAttrAllowed) {
+    const std::string                               errMsg = attr.isEditAllowedMsg();
+    if (!errMsg.empty()) {
         throw std::runtime_error(errMsg);
     }
 
-    return attr.Set<T>(value);
+    PXR_NS::VtValue vt(value);
+    return attr.UsdAttribute::set(vt, UsdTimeCode::Default());
 }
-
-#ifdef UFE_V3_FEATURES_AVAILABLE
-bool setUsdAttrMetadata(
-    const PXR_NS::UsdAttribute& attr,
-    const std::string&          key,
-    const Ufe::Value&           value)
-{
-    // Special cases for known Ufe metadata keys.
-
-    // Note: we allow the locking attribute to be changed even if attribute is locked
-    //       since that is how you unlock.
-    if (key == Ufe::Attribute::kLocked) {
-        return attr.SetMetadata(
-            MayaUsdMetadata->Lock, value.get<bool>() ? MayaUsdTokens->On : MayaUsdTokens->Off);
-    }
-
-    // If attribute is locked don't allow setting Metadata.
-    std::string errMsg;
-    const bool  isSetAttrAllowed = MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg);
-    if (!isSetAttrAllowed) {
-        throw std::runtime_error(errMsg);
-    }
-
-    // We must convert the Ufe::Value to VtValue for storage in Usd.
-    // Figure out the type of the input Ufe Value and create proper Usd VtValue.
-    PXR_NS::VtValue usdValue;
-    if (value.isType<bool>())
-        usdValue = value.get<bool>();
-    else if (value.isType<int>())
-        usdValue = value.get<int>();
-    else if (value.isType<float>())
-        usdValue = value.get<float>();
-    else if (value.isType<double>())
-        usdValue = value.get<double>();
-    else if (value.isType<std::string>())
-        usdValue = value.get<std::string>();
-    else {
-        TF_CODING_ERROR(kErrorMsgInvalidValueType);
-    }
-    if (!usdValue.IsEmpty()) {
-        PXR_NS::TfToken tok(key);
-        return attr.SetMetadata(tok, usdValue);
-    }
-    return false;
-}
-#endif
 
 PXR_NS::UsdTimeCode getCurrentTime(const Ufe::SceneItem::Ptr& item)
 {
@@ -147,14 +104,20 @@ PXR_NS::UsdTimeCode getCurrentTime(const Ufe::SceneItem::Ptr& item)
     return MayaUsd::ufe::getTime(item->path());
 }
 
-std::string
-getUsdAttributeValueAsString(const PXR_NS::UsdAttribute& attr, const PXR_NS::UsdTimeCode& time)
+std::string getUsdAttributeValueAsString(
+    const MayaUsd::ufe::UsdAttribute& attr,
+    const PXR_NS::UsdTimeCode&        time)
 {
-    if (!attr.IsValid() || !attr.HasValue())
-        return std::string();
+    if (!attr.isValid() ||
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        !attr._hasValue())
+#else
+        !attr.hasValue())
+#endif
+        return attr.defaultValue();
 
     PXR_NS::VtValue v;
-    if (attr.Get(&v, time)) {
+    if (attr.get(v, time)) {
         if (v.CanCast<std::string>()) {
             PXR_NS::VtValue v_str = v.Cast<std::string>();
             return v_str.Get<std::string>();
@@ -165,33 +128,46 @@ getUsdAttributeValueAsString(const PXR_NS::UsdAttribute& attr, const PXR_NS::Usd
         return os.str();
     }
 
-    TF_CODING_ERROR(kErrorMsgFailedConvertToString);
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    TF_CODING_ERROR(kErrorMsgFailedConvertToString, attr._name().c_str());
+#else
+    TF_CODING_ERROR(kErrorMsgFailedConvertToString, attr.name().c_str());
+#endif
     return std::string();
 }
 
 template <typename T, typename U>
-U getUsdAttributeVectorAsUfe(const PXR_NS::UsdAttribute& attr, const PXR_NS::UsdTimeCode& time)
+U getUsdAttributeVectorAsUfe(
+    const MayaUsd::ufe::UsdAttribute& attr,
+    const PXR_NS::UsdTimeCode&        time)
 {
-    if (!attr.IsValid() || !attr.HasValue())
+    VtValue vt;
+    if (!attr.isValid() ||
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        !attr._hasValue()) {
+#else
+        !attr.hasValue()) {
+#endif
+        if (!attr.defaultValue().empty()) {
+            vt = MayaUsd::ufe::vtValueFromString(attr.usdAttributeType(), attr.defaultValue());
+        } else {
+            return U();
+        }
+    } else if (!attr.get(vt, time) || !vt.IsHolding<T>()) {
         return U();
-
-    PXR_NS::VtValue vt;
-    if (attr.Get(&vt, time) && vt.IsHolding<T>()) {
-        T                gfVec = vt.UncheckedGet<T>();
-        U                ret;
-        constexpr size_t num = ret.vector.size();
-        std::copy(gfVec.data(), gfVec.data() + num, ret.vector.data());
-        return ret;
     }
-
-    return U();
+    T                gfVec = vt.UncheckedGet<T>();
+    U                ret;
+    constexpr size_t num = ret.vector.size();
+    std::copy(gfVec.data(), gfVec.data() + num, ret.vector.data());
+    return ret;
 }
 
 template <typename T, typename U>
 void setUsdAttributeVectorFromUfe(
-    PXR_NS::UsdAttribute&      attr,
-    const U&                   value,
-    const PXR_NS::UsdTimeCode& time)
+    MayaUsd::ufe::UsdAttribute& attr,
+    const U&                    value,
+    const PXR_NS::UsdTimeCode&  time)
 {
     T vec;
     std::copy(value.vector.data(), value.vector.data() + value.vector.size(), vec.data());
@@ -199,27 +175,34 @@ void setUsdAttributeVectorFromUfe(
 }
 
 template <typename T, typename U>
-U getUsdAttributeColorAsUfe(const PXR_NS::UsdAttribute& attr, const PXR_NS::UsdTimeCode& time)
+U getUsdAttributeColorAsUfe(const MayaUsd::ufe::UsdAttribute& attr, const PXR_NS::UsdTimeCode& time)
 {
-    if (!attr.IsValid() || !attr.HasValue())
+    VtValue vt;
+    if (!attr.isValid() ||
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        !attr._hasValue()) {
+#else
+        !attr.hasValue()) {
+#endif
+        if (!attr.defaultValue().empty()) {
+            vt = MayaUsd::ufe::vtValueFromString(attr.usdAttributeType(), attr.defaultValue());
+        } else {
+            return U();
+        }
+    } else if (!attr.get(vt, time) || !vt.IsHolding<T>()) {
         return U();
-
-    PXR_NS::VtValue vt;
-    if (attr.Get(&vt, time) && vt.IsHolding<T>()) {
-        T gfVec = vt.UncheckedGet<T>();
-        U ret;
-        std::copy(gfVec.data(), gfVec.data() + ret.color.size(), ret.color.data());
-        return ret;
     }
-
-    return U();
+    T gfVec = vt.UncheckedGet<T>();
+    U ret;
+    std::copy(gfVec.data(), gfVec.data() + ret.color.size(), ret.color.data());
+    return ret;
 }
 
 template <typename T, typename U>
 void setUsdAttributeColorFromUfe(
-    PXR_NS::UsdAttribute&      attr,
-    const U&                   value,
-    const PXR_NS::UsdTimeCode& time)
+    MayaUsd::ufe::UsdAttribute& attr,
+    const U&                    value,
+    const PXR_NS::UsdTimeCode&  time)
 {
     T vec;
     std::copy(value.color.data(), value.color.data() + value.color.size(), vec.data());
@@ -228,30 +211,38 @@ void setUsdAttributeColorFromUfe(
 
 #if (UFE_PREVIEW_VERSION_NUM >= 4015)
 template <typename T, typename U>
-U getUsdAttributeMatrixAsUfe(const PXR_NS::UsdAttribute& attr, const PXR_NS::UsdTimeCode& time)
+U getUsdAttributeMatrixAsUfe(
+    const MayaUsd::ufe::UsdAttribute& attr,
+    const PXR_NS::UsdTimeCode&        time)
 {
-    if (!attr.IsValid() || !attr.HasValue())
+    VtValue vt;
+    if (!attr.isValid() ||
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        !attr._hasValue()) {
+#else
+        !attr.hasValue()) {
+#endif
+        if (!attr.defaultValue().empty()) {
+            vt = MayaUsd::ufe::vtValueFromString(attr.usdAttributeType(), attr.defaultValue());
+        } else {
+            return U();
+        }
+    } else if (!attr.get(vt, time) || !vt.IsHolding<T>()) {
         return U();
-
-    PXR_NS::VtValue vt;
-    if (attr.Get(&vt, time) && vt.IsHolding<T>()) {
-        T gfMat = vt.UncheckedGet<T>();
-        U ret;
-        std::copy(
-            gfMat.data(),
-            gfMat.data() + ret.matrix.size() * ret.matrix.size(),
-            ret.matrix[0].data());
-        return ret;
     }
 
-    return U();
+    T gfMat = vt.UncheckedGet<T>();
+    U ret;
+    std::copy(
+        gfMat.data(), gfMat.data() + ret.matrix.size() * ret.matrix.size(), ret.matrix[0].data());
+    return ret;
 }
 
 template <typename T, typename U>
 void setUsdAttributeMatrixFromUfe(
-    PXR_NS::UsdAttribute&      attr,
-    const U&                   value,
-    const PXR_NS::UsdTimeCode& time)
+    MayaUsd::ufe::UsdAttribute& attr,
+    const U&                    value,
+    const PXR_NS::UsdTimeCode&  time)
 {
     T mat;
     std::copy(
@@ -262,7 +253,7 @@ void setUsdAttributeMatrixFromUfe(
 }
 #endif
 
-class UsdUndoableCommand : public Ufe::UndoableCommand
+class UsdBaseUndoableCommand : public Ufe::UndoableCommand
 {
 public:
     void execute() override
@@ -285,7 +276,7 @@ private:
 };
 
 template <typename T, typename A = MayaUsd::ufe::TypedUsdAttribute<T>>
-class SetUndoableCommand : public UsdUndoableCommand
+class SetUndoableCommand : public UsdBaseUndoableCommand
 {
 public:
     SetUndoableCommand(const typename A::Ptr& attr, const T& newValue)
@@ -302,25 +293,32 @@ private:
 };
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
-class SetUndoableMetadataCommand : public UsdUndoableCommand
+class SetUndoableMetadataCommand : public UsdBaseUndoableCommand
 {
 public:
     SetUndoableMetadataCommand(
-        const PXR_NS::UsdAttribute& usdAttr,
+        MayaUsd::ufe::UsdAttribute& attr,
         const std::string&          key,
         const Ufe::Value&           newValue)
-        : _usdAttr(usdAttr)
+        : _attr(attr)
         , _key(key)
         , _newValue(newValue)
     {
     }
 
-    void executeUndoBlock() override { setUsdAttrMetadata(_usdAttr, _key, _newValue); }
+    void executeUndoBlock() override
+    {
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        _attr._setMetadata(_key, _newValue);
+#else
+        _attr.setMetadata(_key, _newValue);
+#endif
+    }
 
 private:
-    const PXR_NS::UsdAttribute _usdAttr;
-    const std::string          _key;
-    const Ufe::Value           _newValue;
+    MayaUsd::ufe::UsdAttribute& _attr;
+    const std::string           _key;
+    const Ufe::Value            _newValue;
 };
 #endif
 
@@ -333,111 +331,133 @@ namespace ufe {
 // UsdAttribute:
 //------------------------------------------------------------------------------
 
-UsdAttribute::UsdAttribute(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr)
-    : fUsdAttr(usdAttr)
+UsdAttribute::UsdAttribute(UsdAttributeHolder::UPtr&& attrHolder)
+    : _attrHolder(std::move(attrHolder))
 {
-    fPrim = item->prim();
 }
 
-UsdAttribute::~UsdAttribute() { }
+std::string UsdAttribute::isEditAllowedMsg() const { return _attrHolder->isEditAllowedMsg(); }
 
-bool UsdAttribute::hasValue() const { return fUsdAttr.HasValue(); }
+std::string UsdAttribute::defaultValue() const { return _attrHolder->defaultValue(); }
 
+std::string UsdAttribute::nativeType() const { return _attrHolder->nativeType(); }
+
+bool UsdAttribute::get(PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time) const
+{
+    return _attrHolder->get(value, time);
+}
+
+bool UsdAttribute::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time)
+{
+    return _attrHolder->set(value, time);
+}
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+bool UsdAttribute::_hasValue() const
+#else
+bool UsdAttribute::hasValue() const
+#endif
+{
+    return _attrHolder->hasValue();
+}
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+std::string UsdAttribute::_name() const
+#else
 std::string UsdAttribute::name() const
+#endif
 {
-    // Should be the same as the name we were created with.
-    return fUsdAttr.GetName().GetString();
+    return _attrHolder->name();
 }
 
-std::string UsdAttribute::documentation() const { return fUsdAttr.GetDocumentation(); }
-
-std::string UsdAttribute::string(const Ufe::SceneItem::Ptr& item) const
+#ifdef UFE_V4_FEATURES_AVAILABLE
+std::string UsdAttribute::_documentation() const
+#else
+std::string UsdAttribute::documentation() const
+#endif
 {
-    return getUsdAttributeValueAsString(fUsdAttr, getCurrentTime(item));
+    return _attrHolder->documentation();
+}
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+std::string UsdAttribute::_string(const Ufe::SceneItem::Ptr& item) const
+#else
+std::string UsdAttribute::string(const Ufe::SceneItem::Ptr& item) const
+#endif
+{
+    return getUsdAttributeValueAsString(*this, getCurrentTime(item));
 }
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
+#ifdef UFE_V4_FEATURES_AVAILABLE
+Ufe::Value UsdAttribute::_getMetadata(const std::string& key) const
+#else
 Ufe::Value UsdAttribute::getMetadata(const std::string& key) const
+#endif
 {
-    // Special cases for known Ufe metadata keys.
-    if (key == Ufe::Attribute::kLocked) {
-        PXR_NS::TfToken lock;
-        bool            ret = fUsdAttr.GetMetadata(MayaUsdMetadata->Lock, &lock);
-        if (ret)
-            return Ufe::Value((lock == MayaUsdTokens->On) ? true : false);
-        return Ufe::Value();
-    }
-
-    PXR_NS::TfToken tok(key);
-    PXR_NS::VtValue v;
-    if (fUsdAttr.GetMetadata(tok, &v)) {
-        if (v.IsHolding<bool>())
-            return Ufe::Value(v.Get<bool>());
-        else if (v.IsHolding<int>())
-            return Ufe::Value(v.Get<int>());
-        else if (v.IsHolding<float>())
-            return Ufe::Value(v.Get<float>());
-        else if (v.IsHolding<double>())
-            return Ufe::Value(v.Get<double>());
-        else if (v.IsHolding<std::string>())
-            return Ufe::Value(v.Get<std::string>());
-        else if (v.IsHolding<PXR_NS::TfToken>())
-            return Ufe::Value(v.Get<PXR_NS::TfToken>().GetString());
-    }
-    return Ufe::Value();
+    return _attrHolder->getMetadata(key);
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+bool UsdAttribute::_setMetadata(const std::string& key, const Ufe::Value& value)
+#else
 bool UsdAttribute::setMetadata(const std::string& key, const Ufe::Value& value)
+#endif
 {
-    return setUsdAttrMetadata(fUsdAttr, key, value);
+    return _attrHolder->setMetadata(key, value);
 }
 
 Ufe::UndoableCommand::Ptr
+#ifdef UFE_V4_FEATURES_AVAILABLE
+UsdAttribute::_setMetadataCmd(const std::string& key, const Ufe::Value& value)
+#else
 UsdAttribute::setMetadataCmd(const std::string& key, const Ufe::Value& value)
+#endif
 {
-    return std::make_shared<SetUndoableMetadataCommand>(fUsdAttr, key, value);
+    return std::make_shared<SetUndoableMetadataCommand>(*this, key, value);
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+bool UsdAttribute::_clearMetadata(const std::string& key)
+#else
 bool UsdAttribute::clearMetadata(const std::string& key)
+#endif
 {
-    // Special cases for known Ufe metadata keys.
-    if (key == Ufe::Attribute::kLocked) {
-        return fUsdAttr.ClearMetadata(MayaUsdMetadata->Lock);
-    }
-
-    PXR_NS::TfToken tok(key);
-    return fUsdAttr.ClearMetadata(tok);
+    return _attrHolder->clearMetadata(key);
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+bool UsdAttribute::_hasMetadata(const std::string& key) const
+#else
 bool UsdAttribute::hasMetadata(const std::string& key) const
+#endif
 {
-    // Special cases for known Ufe metadata keys.
-    if (key == Ufe::Attribute::kLocked) {
-        return fUsdAttr.HasMetadata(MayaUsdMetadata->Lock);
-    }
-
-    PXR_NS::TfToken tok(key);
-    return fUsdAttr.HasMetadata(tok);
+    return _attrHolder->hasMetadata(key);
 }
 #endif
+
+PXR_NS::SdfValueTypeName UsdAttribute::usdAttributeType() const
+{
+    return _attrHolder->usdAttributeType();
+}
 
 //------------------------------------------------------------------------------
 // UsdAttributeGeneric:
 //------------------------------------------------------------------------------
 
 UsdAttributeGeneric::UsdAttributeGeneric(
-    const UsdSceneItem::Ptr&    item,
-    const PXR_NS::UsdAttribute& usdAttr)
+    const UsdSceneItem::Ptr&   item,
+    UsdAttributeHolder::UPtr&& attrHolder)
     : Ufe::AttributeGeneric(item)
-    , UsdAttribute(item, usdAttr)
+    , UsdAttribute(std::move(attrHolder))
 {
 }
 
 /*static*/
 UsdAttributeGeneric::Ptr
-UsdAttributeGeneric::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr)
+UsdAttributeGeneric::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder)
 {
-    auto attr = std::make_shared<UsdAttributeGeneric>(item, usdAttr);
+    auto attr = std::make_shared<UsdAttributeGeneric>(item, std::move(attrHolder));
     return attr;
 }
 
@@ -445,10 +465,7 @@ UsdAttributeGeneric::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttr
 // UsdAttributeGeneric - Ufe::AttributeGeneric overrides
 //------------------------------------------------------------------------------
 
-std::string UsdAttributeGeneric::nativeType() const
-{
-    return fUsdAttr.GetTypeName().GetType().GetTypeName();
-}
+std::string UsdAttributeGeneric::nativeType() const { return UsdAttribute::nativeType(); }
 
 #if (UFE_PREVIEW_VERSION_NUM >= 4015)
 //------------------------------------------------------------------------------
@@ -456,18 +473,18 @@ std::string UsdAttributeGeneric::nativeType() const
 //------------------------------------------------------------------------------
 
 UsdAttributeFilename::UsdAttributeFilename(
-    const UsdSceneItem::Ptr&    item,
-    const PXR_NS::UsdAttribute& usdAttr)
+    const UsdSceneItem::Ptr&   item,
+    UsdAttributeHolder::UPtr&& attrHolder)
     : Ufe::AttributeFilename(item)
-    , UsdAttribute(item, usdAttr)
+    , UsdAttribute(std::move(attrHolder))
 {
 }
 
 /*static*/
 UsdAttributeFilename::Ptr
-UsdAttributeFilename::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr)
+UsdAttributeFilename::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder)
 {
-    auto attr = std::make_shared<UsdAttributeFilename>(item, usdAttr);
+    auto attr = std::make_shared<UsdAttributeFilename>(item, std::move(attrHolder));
     return attr;
 }
 
@@ -477,8 +494,11 @@ UsdAttributeFilename::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAtt
 
 std::string UsdAttributeFilename::get() const
 {
+    if (!hasValue())
+        return std::string();
+
     PXR_NS::VtValue vt;
-    if (fUsdAttr.Get(&vt, getCurrentTime(sceneItem())) && vt.IsHolding<SdfAssetPath>()) {
+    if (UsdAttribute::get(vt, getCurrentTime(sceneItem())) && vt.IsHolding<SdfAssetPath>()) {
         SdfAssetPath path = vt.UncheckedGet<SdfAssetPath>();
         return path.GetAssetPath();
     }
@@ -489,17 +509,17 @@ std::string UsdAttributeFilename::get() const
 void UsdAttributeFilename::set(const std::string& value)
 {
     SdfAssetPath path(value);
-    setUsdAttr<PXR_NS::SdfAssetPath>(fUsdAttr, path);
+    setUsdAttr<PXR_NS::SdfAssetPath>(*this, path);
 }
 
 Ufe::UndoableCommand::Ptr UsdAttributeFilename::setCmd(const std::string& value)
 {
-    auto self = std::dynamic_pointer_cast<UsdAttributeFilename>(shared_from_this());
+    auto self = std::static_pointer_cast<UsdAttributeFilename>(shared_from_this());
     if (!TF_VERIFY(self, kErrorMsgInvalidType))
         return nullptr;
 
-    std::string errMsg;
-    if (!MayaUsd::ufe::isAttributeEditAllowed(fUsdAttr, &errMsg)) {
+    const std::string errMsg = isEditAllowedMsg();
+    if (!errMsg.empty()) {
         MGlobal::displayError(errMsg.c_str());
         return nullptr;
     }
@@ -513,18 +533,18 @@ Ufe::UndoableCommand::Ptr UsdAttributeFilename::setCmd(const std::string& value)
 //------------------------------------------------------------------------------
 
 UsdAttributeEnumString::UsdAttributeEnumString(
-    const UsdSceneItem::Ptr&    item,
-    const PXR_NS::UsdAttribute& usdAttr)
+    const UsdSceneItem::Ptr&   item,
+    UsdAttributeHolder::UPtr&& attrHolder)
     : Ufe::AttributeEnumString(item)
-    , UsdAttribute(item, usdAttr)
+    , UsdAttribute(std::move(attrHolder))
 {
 }
 
 /*static*/
 UsdAttributeEnumString::Ptr
-UsdAttributeEnumString::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr)
+UsdAttributeEnumString::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder)
 {
-    auto attr = std::make_shared<UsdAttributeEnumString>(item, usdAttr);
+    auto attr = std::make_shared<UsdAttributeEnumString>(item, std::move(attrHolder));
     return attr;
 }
 
@@ -535,9 +555,8 @@ UsdAttributeEnumString::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdA
 std::string UsdAttributeEnumString::get() const
 {
     PXR_NS::VtValue vt;
-    if (fUsdAttr.Get(&vt, getCurrentTime(sceneItem())) && vt.IsHolding<TfToken>()) {
-        TfToken tok = vt.UncheckedGet<TfToken>();
-        return tok.GetString();
+    if (UsdAttribute::get(vt, getCurrentTime(sceneItem())) && vt.IsHolding<std::string>()) {
+        return vt.UncheckedGet<std::string>();
     }
 
     return std::string();
@@ -545,18 +564,17 @@ std::string UsdAttributeEnumString::get() const
 
 void UsdAttributeEnumString::set(const std::string& value)
 {
-    PXR_NS::TfToken tok(value);
-    setUsdAttr<PXR_NS::TfToken>(fUsdAttr, tok);
+    setUsdAttr<std::string>(*this, value);
 }
 
 Ufe::UndoableCommand::Ptr UsdAttributeEnumString::setCmd(const std::string& value)
 {
-    auto self = std::dynamic_pointer_cast<UsdAttributeEnumString>(shared_from_this());
+    auto self = std::static_pointer_cast<UsdAttributeEnumString>(shared_from_this());
     if (!TF_VERIFY(self, kErrorMsgInvalidType))
         return nullptr;
 
-    std::string errMsg;
-    if (!MayaUsd::ufe::isAttributeEditAllowed(fUsdAttr, &errMsg)) {
+    const std::string errMsg = isEditAllowedMsg();
+    if (!errMsg.empty()) {
         MGlobal::displayError(errMsg.c_str());
         return nullptr;
     }
@@ -566,16 +584,67 @@ Ufe::UndoableCommand::Ptr UsdAttributeEnumString::setCmd(const std::string& valu
 
 Ufe::AttributeEnumString::EnumValues UsdAttributeEnumString::getEnumValues() const
 {
-    PXR_NS::TfToken tk(name());
-    auto            attrDefn = fPrim.GetPrimDefinition().GetSchemaAttributeSpec(tk);
-    if (attrDefn && attrDefn->HasAllowedTokens()) {
-        auto                         tokenArray = attrDefn->GetAllowedTokens();
-        std::vector<PXR_NS::TfToken> tokenVec(tokenArray.begin(), tokenArray.end());
-        EnumValues                   tokens = PXR_NS::TfToStringVector(tokenVec);
-        return tokens;
+    return UsdAttribute::getEnumValues();
+}
+
+//------------------------------------------------------------------------------
+// UsdAttributeEnumToken:
+//------------------------------------------------------------------------------
+
+UsdAttributeEnumToken::UsdAttributeEnumToken(
+    const UsdSceneItem::Ptr&   item,
+    UsdAttributeHolder::UPtr&& attrHolder)
+    : Ufe::AttributeEnumString(item)
+    , UsdAttribute(std::move(attrHolder))
+{
+}
+
+/*static*/
+UsdAttributeEnumToken::Ptr
+UsdAttributeEnumToken::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder)
+{
+    auto attr = std::make_shared<UsdAttributeEnumToken>(item, std::move(attrHolder));
+    return attr;
+}
+
+//------------------------------------------------------------------------------
+// UsdAttributeEnumToken - Ufe::AttributeEnumString overrides
+//------------------------------------------------------------------------------
+
+std::string UsdAttributeEnumToken::get() const
+{
+    PXR_NS::VtValue vt;
+    if (UsdAttribute::get(vt, getCurrentTime(sceneItem())) && vt.IsHolding<TfToken>()) {
+        return vt.UncheckedGet<TfToken>().GetString();
     }
 
-    return EnumValues();
+    return std::string();
+}
+
+void UsdAttributeEnumToken::set(const std::string& value)
+{
+    PXR_NS::TfToken tok(value);
+    setUsdAttr<PXR_NS::TfToken>(*this, tok);
+}
+
+Ufe::UndoableCommand::Ptr UsdAttributeEnumToken::setCmd(const std::string& value)
+{
+    auto self = std::static_pointer_cast<UsdAttributeEnumToken>(shared_from_this());
+    if (!TF_VERIFY(self, kErrorMsgInvalidType))
+        return nullptr;
+
+    const std::string errMsg = isEditAllowedMsg();
+    if (!errMsg.empty()) {
+        MGlobal::displayError(errMsg.c_str());
+        return nullptr;
+    }
+
+    return std::make_shared<SetUndoableCommand<std::string, UsdAttributeEnumToken>>(self, value);
+}
+
+Ufe::AttributeEnumString::EnumValues UsdAttributeEnumToken::getEnumValues() const
+{
+    return UsdAttribute::getEnumValues();
 }
 
 //------------------------------------------------------------------------------
@@ -584,17 +653,17 @@ Ufe::AttributeEnumString::EnumValues UsdAttributeEnumString::getEnumValues() con
 
 template <typename T>
 TypedUsdAttribute<T>::TypedUsdAttribute(
-    const UsdSceneItem::Ptr&    item,
-    const PXR_NS::UsdAttribute& usdAttr)
+    const UsdSceneItem::Ptr&   item,
+    UsdAttributeHolder::UPtr&& attrHolder)
     : Ufe::TypedAttribute<T>(item)
-    , UsdAttribute(item, usdAttr)
+    , UsdAttribute(std::move(attrHolder))
 {
 }
 
 template <typename T> Ufe::UndoableCommand::Ptr TypedUsdAttribute<T>::setCmd(const T& value)
 {
-    std::string errMsg;
-    if (!MayaUsd::ufe::isAttributeEditAllowed(fUsdAttr, &errMsg)) {
+    const std::string errMsg = isEditAllowedMsg();
+    if (!errMsg.empty()) {
         MGlobal::displayError(errMsg.c_str());
         return nullptr;
     }
@@ -602,7 +671,7 @@ template <typename T> Ufe::UndoableCommand::Ptr TypedUsdAttribute<T>::setCmd(con
     // See
     // https://stackoverflow.com/questions/17853212/using-shared-from-this-in-templated-classes
     // for explanation of this->shared_from_this() in templated class.
-    auto self = std::dynamic_pointer_cast<TypedUsdAttribute<T>>(this->shared_from_this());
+    auto self = std::static_pointer_cast<TypedUsdAttribute<T>>(this->shared_from_this());
     return std::make_shared<SetUndoableCommand<T>>(self, value);
 }
 
@@ -610,163 +679,112 @@ template <typename T> Ufe::UndoableCommand::Ptr TypedUsdAttribute<T>::setCmd(con
 // TypedUsdAttribute<T> - Ufe::TypedAttribute overrides
 //------------------------------------------------------------------------------
 
-template <> std::string TypedUsdAttribute<std::string>::get() const
-{
-    if (!hasValue())
-        return std::string();
-
-    PXR_NS::VtValue vt;
-    if (fUsdAttr.Get(&vt, getCurrentTime(sceneItem()))) {
-        // The USDAttribute can be holding either TfToken or string.
-        if (vt.IsHolding<TfToken>()) {
-            TfToken tok = vt.UncheckedGet<TfToken>();
-            return tok.GetString();
-        } else if (vt.IsHolding<std::string>()) {
-            return vt.UncheckedGet<std::string>();
-        }
-    }
-
-    return std::string();
-}
-
-template <> void TypedUsdAttribute<std::string>::set(const std::string& value)
-{
-    // We need to figure out if the USDAttribute is holding a TfToken or string.
-    const PXR_NS::SdfValueTypeName typeName = fUsdAttr.GetTypeName();
-    if (typeName.GetHash() == SdfValueTypeNames->String.GetHash()) {
-        setUsdAttr<std::string>(fUsdAttr, value);
-        return;
-    } else if (typeName.GetHash() == SdfValueTypeNames->Token.GetHash()) {
-        PXR_NS::TfToken tok(value);
-        setUsdAttr<PXR_NS::TfToken>(fUsdAttr, tok);
-        return;
-    }
-
-    // If we get here it means the USDAttribute type wasn't TfToken or string.
-    TF_CODING_ERROR(kErrorMsgInvalidType);
-}
-
 template <> Ufe::Color3f TypedUsdAttribute<Ufe::Color3f>::get() const
 {
-    return getUsdAttributeColorAsUfe<GfVec3f, Ufe::Color3f>(fUsdAttr, getCurrentTime(sceneItem()));
+    return getUsdAttributeColorAsUfe<GfVec3f, Ufe::Color3f>(*this, getCurrentTime(sceneItem()));
 }
 
 template <> void TypedUsdAttribute<Ufe::Color3f>::set(const Ufe::Color3f& value)
 {
-    setUsdAttributeColorFromUfe<GfVec3f, Ufe::Color3f>(
-        fUsdAttr, value, getCurrentTime(sceneItem()));
+    setUsdAttributeColorFromUfe<GfVec3f, Ufe::Color3f>(*this, value, getCurrentTime(sceneItem()));
 }
 
 #if (UFE_PREVIEW_VERSION_NUM >= 4015)
 template <> Ufe::Color4f TypedUsdAttribute<Ufe::Color4f>::get() const
 {
-    return getUsdAttributeColorAsUfe<GfVec4f, Ufe::Color4f>(fUsdAttr, getCurrentTime(sceneItem()));
+    return getUsdAttributeColorAsUfe<GfVec4f, Ufe::Color4f>(*this, getCurrentTime(sceneItem()));
 }
 
 template <> void TypedUsdAttribute<Ufe::Color4f>::set(const Ufe::Color4f& value)
 {
-    setUsdAttributeColorFromUfe<GfVec4f, Ufe::Color4f>(
-        fUsdAttr, value, getCurrentTime(sceneItem()));
+    setUsdAttributeColorFromUfe<GfVec4f, Ufe::Color4f>(*this, value, getCurrentTime(sceneItem()));
 }
 #endif
 
 template <> Ufe::Vector3i TypedUsdAttribute<Ufe::Vector3i>::get() const
 {
-    return getUsdAttributeVectorAsUfe<GfVec3i, Ufe::Vector3i>(
-        fUsdAttr, getCurrentTime(sceneItem()));
+    return getUsdAttributeVectorAsUfe<GfVec3i, Ufe::Vector3i>(*this, getCurrentTime(sceneItem()));
 }
 
 template <> void TypedUsdAttribute<Ufe::Vector3i>::set(const Ufe::Vector3i& value)
 {
-    setUsdAttributeVectorFromUfe<GfVec3i, Ufe::Vector3i>(
-        fUsdAttr, value, getCurrentTime(sceneItem()));
+    setUsdAttributeVectorFromUfe<GfVec3i, Ufe::Vector3i>(*this, value, getCurrentTime(sceneItem()));
 }
 
 #if (UFE_PREVIEW_VERSION_NUM >= 4015)
 template <> Ufe::Vector2f TypedUsdAttribute<Ufe::Vector2f>::get() const
 {
-    return getUsdAttributeVectorAsUfe<GfVec2f, Ufe::Vector2f>(
-        fUsdAttr, getCurrentTime(sceneItem()));
+    return getUsdAttributeVectorAsUfe<GfVec2f, Ufe::Vector2f>(*this, getCurrentTime(sceneItem()));
 }
 
 template <> void TypedUsdAttribute<Ufe::Vector2f>::set(const Ufe::Vector2f& value)
 {
-    setUsdAttributeVectorFromUfe<GfVec2f, Ufe::Vector2f>(
-        fUsdAttr, value, getCurrentTime(sceneItem()));
+    setUsdAttributeVectorFromUfe<GfVec2f, Ufe::Vector2f>(*this, value, getCurrentTime(sceneItem()));
 }
 #endif
 
 template <> Ufe::Vector3f TypedUsdAttribute<Ufe::Vector3f>::get() const
 {
-    return getUsdAttributeVectorAsUfe<GfVec3f, Ufe::Vector3f>(
-        fUsdAttr, getCurrentTime(sceneItem()));
+    return getUsdAttributeVectorAsUfe<GfVec3f, Ufe::Vector3f>(*this, getCurrentTime(sceneItem()));
 }
 
 template <> void TypedUsdAttribute<Ufe::Vector3f>::set(const Ufe::Vector3f& value)
 {
-    setUsdAttributeVectorFromUfe<GfVec3f, Ufe::Vector3f>(
-        fUsdAttr, value, getCurrentTime(sceneItem()));
+    setUsdAttributeVectorFromUfe<GfVec3f, Ufe::Vector3f>(*this, value, getCurrentTime(sceneItem()));
 }
 
 #if (UFE_PREVIEW_VERSION_NUM >= 4015)
 template <> Ufe::Vector4f TypedUsdAttribute<Ufe::Vector4f>::get() const
 {
-    return getUsdAttributeVectorAsUfe<GfVec4f, Ufe::Vector4f>(
-        fUsdAttr, getCurrentTime(sceneItem()));
+    return getUsdAttributeVectorAsUfe<GfVec4f, Ufe::Vector4f>(*this, getCurrentTime(sceneItem()));
 }
 
 template <> void TypedUsdAttribute<Ufe::Vector4f>::set(const Ufe::Vector4f& value)
 {
-    setUsdAttributeVectorFromUfe<GfVec4f, Ufe::Vector4f>(
-        fUsdAttr, value, getCurrentTime(sceneItem()));
+    setUsdAttributeVectorFromUfe<GfVec4f, Ufe::Vector4f>(*this, value, getCurrentTime(sceneItem()));
 }
 #endif
 
 template <> Ufe::Vector3d TypedUsdAttribute<Ufe::Vector3d>::get() const
 {
-    return getUsdAttributeVectorAsUfe<GfVec3d, Ufe::Vector3d>(
-        fUsdAttr, getCurrentTime(sceneItem()));
+    return getUsdAttributeVectorAsUfe<GfVec3d, Ufe::Vector3d>(*this, getCurrentTime(sceneItem()));
 }
 
 template <> void TypedUsdAttribute<Ufe::Vector3d>::set(const Ufe::Vector3d& value)
 {
-    setUsdAttributeVectorFromUfe<GfVec3d, Ufe::Vector3d>(
-        fUsdAttr, value, getCurrentTime(sceneItem()));
+    setUsdAttributeVectorFromUfe<GfVec3d, Ufe::Vector3d>(*this, value, getCurrentTime(sceneItem()));
 }
 
 #if (UFE_PREVIEW_VERSION_NUM >= 4015)
 template <> Ufe::Matrix3d TypedUsdAttribute<Ufe::Matrix3d>::get() const
 {
     return getUsdAttributeMatrixAsUfe<GfMatrix3d, Ufe::Matrix3d>(
-        fUsdAttr, getCurrentTime(sceneItem()));
+        *this, getCurrentTime(sceneItem()));
 }
 
 template <> void TypedUsdAttribute<Ufe::Matrix3d>::set(const Ufe::Matrix3d& value)
 {
     setUsdAttributeMatrixFromUfe<GfMatrix3d, Ufe::Matrix3d>(
-        fUsdAttr, value, getCurrentTime(sceneItem()));
+        *this, value, getCurrentTime(sceneItem()));
 }
 
 template <> Ufe::Matrix4d TypedUsdAttribute<Ufe::Matrix4d>::get() const
 {
     return getUsdAttributeMatrixAsUfe<GfMatrix4d, Ufe::Matrix4d>(
-        fUsdAttr, getCurrentTime(sceneItem()));
+        *this, getCurrentTime(sceneItem()));
 }
 
 template <> void TypedUsdAttribute<Ufe::Matrix4d>::set(const Ufe::Matrix4d& value)
 {
     setUsdAttributeMatrixFromUfe<GfMatrix4d, Ufe::Matrix4d>(
-        fUsdAttr, value, getCurrentTime(sceneItem()));
+        *this, value, getCurrentTime(sceneItem()));
 }
 #endif
 
 template <typename T> T TypedUsdAttribute<T>::get() const
 {
-    if (!hasValue())
-        return T();
-
     PXR_NS::VtValue vt;
-    if (fUsdAttr.Get(&vt, getCurrentTime(Ufe::Attribute::sceneItem())) && vt.IsHolding<T>()) {
+    if (UsdAttribute::get(vt, getCurrentTime(Ufe::Attribute::sceneItem())) && vt.IsHolding<T>()) {
         return vt.UncheckedGet<T>();
     }
 
@@ -775,7 +793,7 @@ template <typename T> T TypedUsdAttribute<T>::get() const
 
 template <typename T> void TypedUsdAttribute<T>::set(const T& value)
 {
-    setUsdAttr<T>(fUsdAttr, value);
+    setUsdAttr<T>(*this, value);
 }
 
 //------------------------------------------------------------------------------
@@ -784,9 +802,9 @@ template <typename T> void TypedUsdAttribute<T>::set(const T& value)
 
 /*static*/
 UsdAttributeBool::Ptr
-UsdAttributeBool::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr)
+UsdAttributeBool::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder)
 {
-    auto attr = std::make_shared<UsdAttributeBool>(item, usdAttr);
+    auto attr = std::make_shared<UsdAttributeBool>(item, std::move(attrHolder));
     return attr;
 }
 
@@ -796,9 +814,9 @@ UsdAttributeBool::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribu
 
 /*static*/
 UsdAttributeInt::Ptr
-UsdAttributeInt::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr)
+UsdAttributeInt::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder)
 {
-    auto attr = std::make_shared<UsdAttributeInt>(item, usdAttr);
+    auto attr = std::make_shared<UsdAttributeInt>(item, std::move(attrHolder));
     return attr;
 }
 
@@ -808,9 +826,9 @@ UsdAttributeInt::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribut
 
 /*static*/
 UsdAttributeFloat::Ptr
-UsdAttributeFloat::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr)
+UsdAttributeFloat::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder)
 {
-    auto attr = std::make_shared<UsdAttributeFloat>(item, usdAttr);
+    auto attr = std::make_shared<UsdAttributeFloat>(item, std::move(attrHolder));
     return attr;
 }
 
@@ -820,9 +838,9 @@ UsdAttributeFloat::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttrib
 
 /*static*/
 UsdAttributeDouble::Ptr
-UsdAttributeDouble::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr)
+UsdAttributeDouble::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder)
 {
-    auto attr = std::make_shared<UsdAttributeDouble>(item, usdAttr);
+    auto attr = std::make_shared<UsdAttributeDouble>(item, std::move(attrHolder));
     return attr;
 }
 
@@ -830,12 +848,108 @@ UsdAttributeDouble::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttri
 // UsdAttributeString:
 //------------------------------------------------------------------------------
 
+UsdAttributeString::UsdAttributeString(
+    const UsdSceneItem::Ptr&   item,
+    UsdAttributeHolder::UPtr&& attrHolder)
+    : Ufe::AttributeString(item)
+    , UsdAttribute(std::move(attrHolder))
+{
+}
+
 /*static*/
 UsdAttributeString::Ptr
-UsdAttributeString::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr)
+UsdAttributeString::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder)
 {
-    auto attr = std::make_shared<UsdAttributeString>(item, usdAttr);
+    auto attr = std::make_shared<UsdAttributeString>(item, std::move(attrHolder));
     return attr;
+}
+
+std::string UsdAttributeString::get() const
+{
+    if (!hasValue())
+        return std::string();
+
+    PXR_NS::VtValue vt;
+    if (UsdAttribute::get(vt, getCurrentTime(sceneItem())) && vt.IsHolding<std::string>()) {
+        return vt.UncheckedGet<std::string>();
+    }
+
+    return std::string();
+}
+
+void UsdAttributeString::set(const std::string& value)
+{
+    // We need to figure out if the USDAttribute is holding a TfToken or string.
+    setUsdAttr<std::string>(*this, value);
+}
+
+Ufe::UndoableCommand::Ptr UsdAttributeString::setCmd(const std::string& value)
+{
+    auto self = std::static_pointer_cast<UsdAttributeString>(shared_from_this());
+    if (!TF_VERIFY(self, kErrorMsgInvalidType))
+        return nullptr;
+
+    const std::string errMsg = isEditAllowedMsg();
+    if (!errMsg.empty()) {
+        MGlobal::displayError(errMsg.c_str());
+        return nullptr;
+    }
+
+    return std::make_shared<SetUndoableCommand<std::string, UsdAttributeString>>(self, value);
+}
+
+//------------------------------------------------------------------------------
+// UsdAttributeToken:
+//------------------------------------------------------------------------------
+
+UsdAttributeToken::UsdAttributeToken(
+    const UsdSceneItem::Ptr&   item,
+    UsdAttributeHolder::UPtr&& attrHolder)
+    : Ufe::AttributeString(item)
+    , UsdAttribute(std::move(attrHolder))
+{
+}
+
+/*static*/
+UsdAttributeToken::Ptr
+UsdAttributeToken::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder)
+{
+    auto attr = std::make_shared<UsdAttributeToken>(item, std::move(attrHolder));
+    return attr;
+}
+
+std::string UsdAttributeToken::get() const
+{
+    if (!hasValue())
+        return std::string();
+
+    PXR_NS::VtValue vt;
+    if (UsdAttribute::get(vt, getCurrentTime(sceneItem())) && vt.IsHolding<TfToken>()) {
+        return vt.UncheckedGet<TfToken>().GetString();
+    }
+
+    return std::string();
+}
+
+void UsdAttributeToken::set(const std::string& value)
+{
+    PXR_NS::TfToken tok(value);
+    setUsdAttr<PXR_NS::TfToken>(*this, tok);
+}
+
+Ufe::UndoableCommand::Ptr UsdAttributeToken::setCmd(const std::string& value)
+{
+    auto self = std::static_pointer_cast<UsdAttributeToken>(shared_from_this());
+    if (!TF_VERIFY(self, kErrorMsgInvalidType))
+        return nullptr;
+
+    const std::string errMsg = isEditAllowedMsg();
+    if (!errMsg.empty()) {
+        MGlobal::displayError(errMsg.c_str());
+        return nullptr;
+    }
+
+    return std::make_shared<SetUndoableCommand<std::string, UsdAttributeToken>>(self, value);
 }
 
 //------------------------------------------------------------------------------
@@ -843,10 +957,11 @@ UsdAttributeString::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttri
 //------------------------------------------------------------------------------
 
 /*static*/
-UsdAttributeColorFloat3::Ptr
-UsdAttributeColorFloat3::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr)
+UsdAttributeColorFloat3::Ptr UsdAttributeColorFloat3::create(
+    const UsdSceneItem::Ptr&   item,
+    UsdAttributeHolder::UPtr&& attrHolder)
 {
-    auto attr = std::make_shared<UsdAttributeColorFloat3>(item, usdAttr);
+    auto attr = std::make_shared<UsdAttributeColorFloat3>(item, std::move(attrHolder));
     return attr;
 }
 
@@ -856,10 +971,11 @@ UsdAttributeColorFloat3::create(const UsdSceneItem::Ptr& item, const PXR_NS::Usd
 //------------------------------------------------------------------------------
 
 /*static*/
-UsdAttributeColorFloat4::Ptr
-UsdAttributeColorFloat4::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr)
+UsdAttributeColorFloat4::Ptr UsdAttributeColorFloat4::create(
+    const UsdSceneItem::Ptr&   item,
+    UsdAttributeHolder::UPtr&& attrHolder)
 {
-    auto attr = std::make_shared<UsdAttributeColorFloat4>(item, usdAttr);
+    auto attr = std::make_shared<UsdAttributeColorFloat4>(item, std::move(attrHolder));
     return attr;
 }
 #endif
@@ -870,9 +986,9 @@ UsdAttributeColorFloat4::create(const UsdSceneItem::Ptr& item, const PXR_NS::Usd
 
 /*static*/
 UsdAttributeInt3::Ptr
-UsdAttributeInt3::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr)
+UsdAttributeInt3::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder)
 {
-    auto attr = std::make_shared<UsdAttributeInt3>(item, usdAttr);
+    auto attr = std::make_shared<UsdAttributeInt3>(item, std::move(attrHolder));
     return attr;
 }
 
@@ -883,9 +999,9 @@ UsdAttributeInt3::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribu
 
 /*static*/
 UsdAttributeFloat2::Ptr
-UsdAttributeFloat2::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr)
+UsdAttributeFloat2::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder)
 {
-    auto attr = std::make_shared<UsdAttributeFloat2>(item, usdAttr);
+    auto attr = std::make_shared<UsdAttributeFloat2>(item, std::move(attrHolder));
     return attr;
 }
 #endif
@@ -896,9 +1012,9 @@ UsdAttributeFloat2::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttri
 
 /*static*/
 UsdAttributeFloat3::Ptr
-UsdAttributeFloat3::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr)
+UsdAttributeFloat3::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder)
 {
-    auto attr = std::make_shared<UsdAttributeFloat3>(item, usdAttr);
+    auto attr = std::make_shared<UsdAttributeFloat3>(item, std::move(attrHolder));
     return attr;
 }
 
@@ -909,9 +1025,9 @@ UsdAttributeFloat3::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttri
 
 /*static*/
 UsdAttributeFloat4::Ptr
-UsdAttributeFloat4::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr)
+UsdAttributeFloat4::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder)
 {
-    auto attr = std::make_shared<UsdAttributeFloat4>(item, usdAttr);
+    auto attr = std::make_shared<UsdAttributeFloat4>(item, std::move(attrHolder));
     return attr;
 }
 #endif
@@ -922,9 +1038,9 @@ UsdAttributeFloat4::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttri
 
 /*static*/
 UsdAttributeDouble3::Ptr
-UsdAttributeDouble3::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr)
+UsdAttributeDouble3::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder)
 {
-    auto attr = std::make_shared<UsdAttributeDouble3>(item, usdAttr);
+    auto attr = std::make_shared<UsdAttributeDouble3>(item, std::move(attrHolder));
     return attr;
 }
 
@@ -935,9 +1051,9 @@ UsdAttributeDouble3::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttr
 
 /*static*/
 UsdAttributeMatrix3d::Ptr
-UsdAttributeMatrix3d::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr)
+UsdAttributeMatrix3d::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder)
 {
-    auto attr = std::make_shared<UsdAttributeMatrix3d>(item, usdAttr);
+    auto attr = std::make_shared<UsdAttributeMatrix3d>(item, std::move(attrHolder));
     return attr;
 }
 
@@ -947,11 +1063,12 @@ UsdAttributeMatrix3d::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAtt
 
 /*static*/
 UsdAttributeMatrix4d::Ptr
-UsdAttributeMatrix4d::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr)
+UsdAttributeMatrix4d::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder)
 {
-    auto attr = std::make_shared<UsdAttributeMatrix4d>(item, usdAttr);
+    auto attr = std::make_shared<UsdAttributeMatrix4d>(item, std::move(attrHolder));
     return attr;
 }
+
 #endif
 
 #if 0
@@ -964,7 +1081,7 @@ bool UsdAttribute::setValue(const std::string& value)
 
     // Attempt to cast the value to what we want.  Get a default value for this
     // attribute's type name.
-    PXR_NS::VtValue defVal = fUsdAttr.GetTypeName().GetDefaultValue();
+    PXR_NS::VtValue defVal = fAttrHandle->type().GetDefaultValue();
 
     // Attempt to cast the given string to the default value's type.
     // If casting fails, attempt to continue with the given value.
@@ -972,7 +1089,7 @@ bool UsdAttribute::setValue(const std::string& value)
     if (!cast.IsEmpty())
         cast.Swap(val);
 
-    return setUsdAttr<PXR_NS::VtValue>(fUsdAttr, val);
+    return setUsdAttr<PXR_NS::VtValue>(fAttrHandle, val);
 }
 #endif
 

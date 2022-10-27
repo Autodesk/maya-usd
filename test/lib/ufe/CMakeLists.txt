@@ -39,10 +39,12 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         testTransform3dChainOfResponsibility.py
         testTransform3dTranslate.py
         testUIInfoHandler.py
+        testVisibilityCmd.py
         testObservableScene.py
     )
 
     list(APPEND INTERACTIVE_TEST_SCRIPT_FILES
+        testPixelMoveCmd.py
         testUIIcons.py
     )
 endif()
@@ -53,16 +55,23 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     )
 endif()
 
+if (UFE_SCENE_SEGMENT_SUPPORT)
+    list(APPEND TEST_SCRIPT_FILES
+        testSceneSegment.py
+    )
+endif()
+
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4007)
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
         list(APPEND TEST_SCRIPT_FILES
-            testLight.py
+            testAttributeInfo.py
+            testConnections.py
         )
     endif()
 
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4013)
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4023)
         list(APPEND TEST_SCRIPT_FILES
-            testSceneSegment.py
+            testUINodeGraphNode.py
         )
     endif()
 
@@ -71,6 +80,12 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
             testShaderNodeDef.py
         )
     endif()
+endif()
+
+if (UFE_LIGHTS_SUPPORT)
+    list(APPEND TEST_SCRIPT_FILES
+        testLight.py
+    )
 endif()
 
 if (MAYA_API_VERSION VERSION_GREATER_EQUAL 20220100)
@@ -95,6 +110,13 @@ else()
     )
 endif()
 
+if (MAYA_HAS_DISPLAY_LAYER_API)
+    list(APPEND TEST_SCRIPT_FILES
+        testDisplayLayer.py
+        )
+endif()
+
+
 foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})
     mayaUsd_add_test(${target}
@@ -104,6 +126,8 @@ foreach(script ${TEST_SCRIPT_FILES})
             "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_SOURCE_DIR}/ufeTestPlugins"
             "UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}"
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+            "USD_HAS_COLOR4_SDR_SUPPORT=${USD_HAS_COLOR4_SDR_SUPPORT}"
+            "USD_HAS_MX_METADATA_SUPPORT=${USD_HAS_MX_METADATA_SUPPORT}"
     )
 
     # Add a ctest label to these tests for easy filtering.

@@ -110,19 +110,24 @@ MStatus UsdMayaStageNode::compute(const MPlug& plug, MDataBlock& dataBlock)
         if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(usdFile)) {
             static const MString kSessionLayerOptionVarName(
                 MayaUsdOptionVars->ProxyTargetsSessionLayerOnOpen.GetText());
-            const bool           loadAll = true;
-            UsdStageCacheContext ctx(UsdMayaStageCache::Get(loadAll));
+            UsdStageCacheContext ctx(UsdMayaStageCache::Get(
+                UsdStage::InitialLoadSet::LoadAll, UsdMayaStageCache::ShareMode::Shared));
+
+            // Note: UsdStage::Open uses all its argument to match an existing stage
+            //       in the cache, including the sesssion layer if passed explicitly.
+            //       So do *not* pass a newly-created session layer in as would create
+            //       another stage instead of re-using the existing one.
+            //
+            //       If the stage is not in the cache and no session layer is passed
+            //       then UsdStage::Open will create the in-memory session layer for us.
+            usdStage = UsdStage::Open(rootLayer, ArGetResolver().GetCurrentContext());
 
             bool targetSession = MGlobal::optionVarIntValue(kSessionLayerOptionVarName) == 1;
             targetSession = targetSession || !rootLayer->PermissionToEdit();
-
-            if (targetSession) {
-                SdfLayerRefPtr sessionLayer = SdfLayer::CreateAnonymous();
-                usdStage
-                    = UsdStage::Open(rootLayer, sessionLayer, ArGetResolver().GetCurrentContext());
+            SdfLayerRefPtr sessionLayer = usdStage->GetSessionLayer();
+            if (sessionLayer && targetSession) {
                 usdStage->SetEditTarget(sessionLayer);
             } else {
-                usdStage = UsdStage::Open(rootLayer, ArGetResolver().GetCurrentContext());
                 usdStage->SetEditTarget(usdStage->GetRootLayer());
             }
         }

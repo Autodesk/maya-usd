@@ -71,9 +71,6 @@ bool Engine::TestIntersectionBatch(
     MProfilingScope profilerScope(
         _enginProfilerCategory, MProfiler::kColorE_L3, "Test intersection batch");
 
-    if (ARCH_UNLIKELY(_legacyImpl)) {
-        return false;
-    }
     _UpdateHydraCollection(&_intersectCollection, paths, params);
 
     TfTokenVector renderTags;

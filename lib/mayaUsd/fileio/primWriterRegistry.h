@@ -110,6 +110,33 @@ struct UsdMayaPrimWriterRegistry
     /// If there is no writer plugin for \p mayaTypeName, returns nullptr.
     MAYAUSD_CORE_PUBLIC
     static WriterFactoryFn Find(const std::string& mayaTypeName);
+
+    /// \brief Registers a maya node type to *not* create a new prim.
+    ///
+    /// This is relevant for Maya nodes that may not result in a new prim in
+    /// Usd.  For example, the Maya node may be exported as an applied API
+    /// schema on an exported UsdPrim.
+    ///
+    /// This could be relevant when determining whether or not a transform can
+    /// be collapsed.  For example:
+    /// ```
+    /// |Mesh             (transform)
+    ///   |MeshShape      (mesh)
+    ///   |MyNode         (transform)
+    ///     |MyNodeShape  (typeThatShouldNotBeExported)
+    /// ```
+    /// The "Mesh" and "MeshShape" nodes are collapsible because "MyNode" should
+    /// not result in a prim.
+    MAYAUSD_CORE_PUBLIC
+    static void RegisterPrimless(const std::string& mayaTypeName);
+
+    /// \brief Returns true if \p mayaTypeName nodes should result in a prim in
+    /// Usd.
+    ///
+    /// This typically returns true unless \p mayaTypeName was explicitly
+    /// registered to not be exported.
+    MAYAUSD_CORE_PUBLIC
+    static bool IsPrimless(const std::string& mayaTypeName);
 };
 
 // Note, TF_REGISTRY_FUNCTION_WITH_TAG needs a type to register with so we

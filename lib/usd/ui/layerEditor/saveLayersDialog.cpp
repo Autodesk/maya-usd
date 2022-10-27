@@ -227,28 +227,28 @@ public:
 namespace UsdLayerEditor {
 
 #if defined(WANT_UFE_BUILD)
-SaveLayersDialog::SaveLayersDialog(QWidget* in_parent, const MDagPathArray& proxyShapes)
+SaveLayersDialog::SaveLayersDialog(
+    QWidget*                                     in_parent,
+    const std::vector<MayaUsd::StageSavingInfo>& infos)
     : QDialog(in_parent)
     , _sessionState(nullptr)
 {
     MString msg, nbStages;
 
-    nbStages = proxyShapes.length();
+    nbStages = infos.size();
     msg.format(StringResources::getAsMString(StringResources::kSaveXStages), nbStages);
     setWindowTitle(MQtUtil::toQString(msg));
 
     // For each stage collect the layers to save.
-    for (const auto& shape : proxyShapes) {
+    for (const auto& info : infos) {
 
-        getLayersToSave(shape.fullPathName().asChar(), shape.partialPathName().asChar());
+        getLayersToSave(
+            info.dagPath.fullPathName().asChar(), info.dagPath.partialPathName().asChar());
     }
 
     QString msg1, msg2;
     getDialogMessages(
-        static_cast<int>(proxyShapes.length()),
-        static_cast<int>(_anonLayerPairs.size()),
-        msg1,
-        msg2);
+        static_cast<int>(infos.size()), static_cast<int>(_anonLayerPairs.size()), msg1, msg2);
     buildDialog(msg1, msg2);
 }
 #endif

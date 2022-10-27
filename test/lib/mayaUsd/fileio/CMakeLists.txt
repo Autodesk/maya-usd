@@ -5,6 +5,7 @@ set(TEST_SCRIPT_FILES
     testImportChaser.py
     testImportWithNamespace.py
     testJobContextRegistry.py
+    testDisplayLayerSaveRestore.py
 
     # Once of the tests in this file requires UsdMaya (from the Pixar plugin). That test
     # will be skipped if not found (probably because BUILD_PXR_PLUGIN is off).
@@ -21,11 +22,16 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
         testAddMayaReference.py
         testEditAsMaya.py
         testMergeToUsd.py
-        testDiscardEdits.py
         testDuplicateAs.py
         testPrimUpdater.py
         testCacheToUsd.py
         testMayaUsdOptions.py
+    )
+endif()
+
+if(UFE_TRIE_NODE_HAS_CHILDREN_COMPONENTS_ACCESSOR)
+    list(APPEND TEST_SCRIPT_FILES
+        testHideOrphanedNodes.py
     )
 endif()
 
@@ -42,6 +48,8 @@ foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_add_test(${target}
         PYTHON_MODULE ${target}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        ENV
+            "UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}"
     )
 
     # Add a ctest label to these tests for easy filtering.
@@ -74,6 +82,27 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
         ENV
             "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_SOURCE_DIR}/UsdCustomRigSchema/"
     )
+endif()
+
+if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
+    set(TEST_DISCARD_EDITS testDiscardEdits.py)
+    mayaUsd_get_unittest_target(target ${TEST_DISCARD_EDITS})
+    if(UFE_TRIE_NODE_HAS_CHILDREN_COMPONENTS_ACCESSOR)
+        mayaUsd_add_test(${target}
+            PYTHON_MODULE ${target}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            ENV
+                "HAS_ORPHANED_NODES_MANAGER=1"
+        )
+    else()
+        mayaUsd_add_test(${target}
+            PYTHON_MODULE ${target}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        )
+    endif()
+
+    # Add a ctest label for easy filtering.
+    set_property(TEST ${target} APPEND PROPERTY LABELS fileio)
 endif()
 
 add_subdirectory(utils)

@@ -55,7 +55,6 @@ set(LIBFILENAME ${CMAKE_SHARED_LIBRARY_PREFIX}${TARGET_NAME}${CMAKE_SHARED_LIBRA
 set(PLUG_INFO_PATH "plugInfo.json")
 set(SHADER_DEFS_PATH 
 "shaderDefs.usda"
-"mayaStippleShader.glslfx"
 )
 
 set(PLUG_INFO_LIBRARY_PATH "../../../${LIBFILENAME}")

@@ -29,7 +29,7 @@ namespace ufe {
 // derived classes, with undo / redo support.
 //
 class MAYAUSD_CORE_PUBLIC UsdSetMatrix4dUndoableCommand
-    : public UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>
+    : public UsdBaseUndoableCommand<Ufe::SetMatrix4dUndoableCommand>
 {
 public:
     UsdSetMatrix4dUndoableCommand(const Ufe::Path& path, const Ufe::Matrix4d& newM);
