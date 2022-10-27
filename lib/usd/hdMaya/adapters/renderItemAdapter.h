@@ -84,6 +84,7 @@ public:
 };
 */
 
+// TODO: Remove, currently unused.
 class HdMayaShapeUIShaderAdapter : public HdMayaAdapter
 {
 public:

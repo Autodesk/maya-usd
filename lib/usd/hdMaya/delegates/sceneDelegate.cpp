@@ -753,25 +753,6 @@ bool HdMayaSceneDelegate::_GetRenderItemMaterial(
 	MObject& shadingEngineNode
 	)
 {
-	// TODO: Remove previous shape UI code all at once
-	//if (HdMayaRenderItemShaderConverter::ExtractShapeUIShaderData(ri, sd))
-	//	// Determine whether this is a supported UI shader
-	//{
-	//	SdfPath id = SdfPath(sd.ShapeUIShader->Name);
-	//	if (!TfMapLookupPtr(_renderItemShaderAdapters, id))
-	//	{
-	//		_renderItemShaderAdapters.insert(
-	//			{
-	//				id,
-	//				HdMayaShaderAdapterPtr(new HdMayaShapeUIShaderAdapter(this, *sd.ShapeUIShader))
-	//			});
-
-	//		GetChangeTracker().MarkTaskDirty(id, HdChangeTracker::DirtyCollection);
-	//	}
-
-	//	return true;
-	//}
-	//else 	
 	MDagPath dagPath = ri.sourceDagPath();
 	if (dagPath.isValid() && GetShadingEngineNode(dagPath.node(), shadingEngineNode))
 		// Else try to find associated material node if this is a material shader.
