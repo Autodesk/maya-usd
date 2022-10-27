@@ -80,6 +80,85 @@ class EditAsMayaTestCase(unittest.TestCase):
             self.assertFalse(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(aUsdUfePathStr))
             self.assertFalse(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
 
+    def testRenameAncestorOfEditAsMaya(self):
+        '''Test that renaming an ancestor correctly updates the internal data.'''
+
+        (_, _, _, aUsdUfePathStr, aUsdUfePath, _,
+             _, _, _, _, _) = createSimpleXformScene()
+
+        # Edit "A" Prim as Maya data.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(aUsdUfePathStr))
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+
+        def validateEditAsMayaMetadata():
+            aMayaItem = ufe.GlobalSelection.get().front()
+            aMayaPath = aMayaItem.path()
+            self.assertEqual(aMayaPath.nbSegments(), 1)
+            mayaToUsd = ufe.PathMappingHandler.pathMappingHandler(aMayaItem)
+            aFromHostUfePath = mayaToUsd.fromHost(aMayaPath)
+            self.assertEqual(ufe.PathString.string(aFromHostUfePath), aUsdUfePathStr)
+            aDagPath = om.MSelectionList().add(ufe.PathString.string(aMayaPath)).getDagPath(0)
+            aPullUfePath = cmds.getAttr(str(aDagPath) + ".Pull_UfePath")
+            self.assertEqual(aPullUfePath, aUsdUfePathStr)
+            self.assertFalse(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(aUsdUfePathStr))
+
+        validateEditAsMayaMetadata()
+
+        cmds.rename("stage1", "waka")
+
+        aUsdUfePathStr = aUsdUfePathStr.replace("stage1", "waka").replace("stageShape1", "wakaShape")
+        validateEditAsMayaMetadata()
+
+        # Verify we can merge "A" Maya data after the rename of the stage.
+        with mayaUsd.lib.OpUndoItemList():
+            aMayaItem = ufe.GlobalSelection.get().front()
+            aMayaPath = aMayaItem.path()
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(ufe.PathString.string(aMayaPath)))
+
+    def testReparentAncestorOfEditAsMaya(self):
+        '''Test that reparting an ancestor correctly updates the internal data.'''
+
+        cmds.CreateLocator()
+        locName = "locator1"
+        
+        (_, _, _, aUsdUfePathStr, aUsdUfePath, _,
+             _, _, _, _, _) = createSimpleXformScene()
+
+        # Edit "A" Prim as Maya data.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(aUsdUfePathStr))
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+
+        def validateEditAsMayaMetadata():
+            aMayaItem = ufe.GlobalSelection.get().front()
+            aMayaPath = aMayaItem.path()
+            self.assertEqual(aMayaPath.nbSegments(), 1)
+            mayaToUsd = ufe.PathMappingHandler.pathMappingHandler(aMayaItem)
+            aFromHostUfePath = mayaToUsd.fromHost(aMayaPath)
+            self.assertEqual(ufe.PathString.string(aFromHostUfePath), aUsdUfePathStr)
+            aDagPath = om.MSelectionList().add(ufe.PathString.string(aMayaPath)).getDagPath(0)
+            aPullUfePath = cmds.getAttr(str(aDagPath) + ".Pull_UfePath")
+            self.assertEqual(aPullUfePath, aUsdUfePathStr)
+            self.assertFalse(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(aUsdUfePathStr))
+
+        validateEditAsMayaMetadata()
+
+        # Note: the parent command changes the selection, to preserve and restore it.
+        selToPreserve = ufe.GlobalSelection.get().front()
+        cmds.parent("stage1", locName)
+        ufe.GlobalSelection.get().clear()
+        ufe.GlobalSelection.get().append(selToPreserve)
+
+        aUsdUfePathStr = "|" + locName + aUsdUfePathStr
+        validateEditAsMayaMetadata()
+
+        # Verify we can merge "A" Maya data after the rename of the stage.
+        with mayaUsd.lib.OpUndoItemList():
+            aMayaItem = ufe.GlobalSelection.get().front()
+            aMayaPath = aMayaItem.path()
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(ufe.PathString.string(aMayaPath)))
+
     def testEditAsMayaPreserveTimeline(self):
         '''Test that edit does not change the timeline start and end.'''
 
