@@ -34,9 +34,7 @@
 #endif
 #include <maya/M3dView.h>
 #include <maya/MProfiler.h>
-#ifdef MAYA_HAS_DISPLAY_LAYER_API
 #include <ufe/pathString.h>
-#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
