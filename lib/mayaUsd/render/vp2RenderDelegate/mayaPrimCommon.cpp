@@ -687,13 +687,74 @@ void MayaUsdRPrim::_UpdatePrimvarSourcesGeneric(
     }
 }
 
-void MayaUsdRPrim::_SyncDisplayLayerModes(const HdRprim&
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
-                                              refThis
-#endif
-)
+void MayaUsdRPrim::_PopulateDisplayLayerModes(
+    const MString&     pathString,
+    DisplayLayerModes& displayLayerModes)
 {
-#ifdef MAYA_HAS_DISPLAY_LAYER_API
+    // Fetch display layers for the item and all its ancestors
+    MObjectArray ancestorDisplayLayers;
+    {
+        MFnDisplayLayerManager displayLayerManager(
+            MFnDisplayLayerManager::currentDisplayLayerManager());
+
+        // Function getAncestorLayersInclusive is not multithreadable because of the
+        // use of Ufe::Path inside, so we use a mutex here
+        std::lock_guard<std::mutex> mutexGuard(sUfePathsMutex);
+        ancestorDisplayLayers = displayLayerManager.getAncestorLayersInclusive(pathString);
+    }
+
+    // Now populate displayLayerModes
+    displayLayerModes = DisplayLayerModes();
+    for (unsigned int i = 0; i < ancestorDisplayLayers.length(); i++) {
+        MFnDependencyNode displayLayerNodeFn(ancestorDisplayLayers[i]);
+        MPlug             layerEnabled = displayLayerNodeFn.findPlug("enabled");
+        if (!layerEnabled.asBool()) {
+            continue;
+        }
+
+        MPlug layerVisible = displayLayerNodeFn.findPlug("visibility");
+        MPlug layerHidesOnPlayback = displayLayerNodeFn.findPlug("hideOnPlayback");
+        MPlug layerDisplayType = displayLayerNodeFn.findPlug("displayType");
+        MPlug levelOfDetail = displayLayerNodeFn.findPlug("levelOfDetail");
+        MPlug shading = displayLayerNodeFn.findPlug("shading");
+        MPlug texturing = displayLayerNodeFn.findPlug("texturing");
+        MPlug colorIndex = displayLayerNodeFn.findPlug("color");
+        MPlug useRGBColors = displayLayerNodeFn.findPlug("overrideRGBColors");
+        MPlug colorRGB = displayLayerNodeFn.findPlug("overrideColorRGB");
+        MPlug colorA = displayLayerNodeFn.findPlug("overrideColorA");
+
+        displayLayerModes._visibility &= layerVisible.asBool();
+        displayLayerModes._hideOnPlayback |= layerHidesOnPlayback.asBool();
+        displayLayerModes._texturing = texturing.asBool();
+        if (levelOfDetail.asShort() != 0) {
+            displayLayerModes._reprOverride = kBBox;
+        } else if (shading.asShort() == 0 && displayLayerModes._reprOverride != kBBox) {
+            displayLayerModes._reprOverride = kWire;
+        }
+        if (displayLayerModes._displayType == kNormal) {
+            displayLayerModes._displayType = (DisplayType)layerDisplayType.asShort();
+        }
+
+        if (useRGBColors.asBool()) {
+            const float3& rgbColor = colorRGB.asMDataHandle().asFloat3();
+            displayLayerModes._wireframeColorIndex = -1;
+            displayLayerModes._wireframeColorRGBA
+                = MColor(rgbColor[0], rgbColor[1], rgbColor[2], colorA.asFloat());
+        } else {
+            displayLayerModes._wireframeColorIndex = colorIndex.asInt();
+        }
+    }
+}
+#else
+void MayaUsdRPrim::_PopulateDisplayLayerModes(const MString&, DisplayLayerModes& displayLayerModes)
+{
+    displayLayerModes = DisplayLayerModes();
+}
+#endif
+
+void MayaUsdRPrim::_SyncDisplayLayerModes(const HdRprim& refThis)
+{
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
 
@@ -703,66 +764,16 @@ void MayaUsdRPrim::_SyncDisplayLayerModes(const HdRprim&
     }
 
     _displayLayerModesFrame = drawScene.GetFrameCounter();
-    _displayLayerModes = DisplayLayerModes();
 
-    // Display layer features are currently implemented only for non-instanced geometry
+    // If the prim is not instanced, populate _displayLayerModes.
+    // Otherwise display layer modes will be handled later, in the instancing loop.
     if (refThis.GetInstancerId().IsEmpty()) {
-        MFnDisplayLayerManager displayLayerManager(
-            MFnDisplayLayerManager::currentDisplayLayerManager());
-        MStatus status;
         MString pathString = drawScene.GetProxyShapeDagPath().fullPathName()
             + Ufe::PathString::pathSegmentSeparator().c_str() + _PrimSegmentString[0];
-
-        MObjectArray ancestorDisplayLayers;
-        {
-            // Function getAncestorLayersInclusive is not multithreadable because of the
-            // use of Ufe::Path inside, so we use a mutex here
-            std::lock_guard<std::mutex> mutexGuard(sUfePathsMutex);
-            ancestorDisplayLayers
-                = displayLayerManager.getAncestorLayersInclusive(pathString, &status);
-        }
-
-        for (unsigned int i = 0; i < ancestorDisplayLayers.length(); i++) {
-            MFnDependencyNode displayLayerNodeFn(ancestorDisplayLayers[i]);
-            MPlug             layerEnabled = displayLayerNodeFn.findPlug("enabled");
-            if (!layerEnabled.asBool()) {
-                continue;
-            }
-
-            MPlug layerVisible = displayLayerNodeFn.findPlug("visibility");
-            MPlug layerHidesOnPlayback = displayLayerNodeFn.findPlug("hideOnPlayback");
-            MPlug layerDisplayType = displayLayerNodeFn.findPlug("displayType");
-            MPlug levelOfDetail = displayLayerNodeFn.findPlug("levelOfDetail");
-            MPlug shading = displayLayerNodeFn.findPlug("shading");
-            MPlug texturing = displayLayerNodeFn.findPlug("texturing");
-            MPlug colorIndex = displayLayerNodeFn.findPlug("color");
-            MPlug useRGBColors = displayLayerNodeFn.findPlug("overrideRGBColors");
-            MPlug colorRGB = displayLayerNodeFn.findPlug("overrideColorRGB");
-            MPlug colorA = displayLayerNodeFn.findPlug("overrideColorA");
-
-            _displayLayerModes._visibility &= layerVisible.asBool();
-            _displayLayerModes._hideOnPlayback |= layerHidesOnPlayback.asBool();
-            _displayLayerModes._texturing = texturing.asBool();
-            if (levelOfDetail.asShort() != 0) {
-                _displayLayerModes._reprOverride = kBBox;
-            } else if (shading.asShort() == 0 && _displayLayerModes._reprOverride != kBBox) {
-                _displayLayerModes._reprOverride = kWire;
-            }
-            if (_displayLayerModes._displayType == kNormal) {
-                _displayLayerModes._displayType = (DisplayType)layerDisplayType.asShort();
-            }
-
-            if (useRGBColors.asBool()) {
-                const float3& rgbColor = colorRGB.asMDataHandle().asFloat3();
-                _displayLayerModes._wireframeColorIndex = -1;
-                _displayLayerModes._wireframeColorRGBA
-                    = MColor(rgbColor[0], rgbColor[1], rgbColor[2], colorA.asFloat());
-            } else {
-                _displayLayerModes._wireframeColorIndex = colorIndex.asInt();
-            }
-        }
+        _PopulateDisplayLayerModes(pathString, _displayLayerModes);
+    } else {
+        _displayLayerModes = DisplayLayerModes();
     }
-#endif
 }
 
 void MayaUsdRPrim::_SyncSharedData(
@@ -806,6 +817,21 @@ void MayaUsdRPrim::_SyncSharedData(
             _ForEachRenderItem(reprs, setHideOnPlayback);
 #endif
         }
+    }
+
+    // If instancer is dirty, update instancing map
+    if (HdChangeTracker::IsInstancerDirty(*dirtyBits, id)) {
+        bool instanced = !refThis.GetInstancerId().IsEmpty();
+
+        // UpdateInstancingMapEntry is not multithread-safe, so enqueue the call
+        _delegate->GetVP2ResourceRegistry().EnqueueCommit([this, id, instanced]() {
+            auto* const param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+            auto&       drawScene = param->GetDrawScene();
+
+            SdfPath newPathInPrototype = instanced ? drawScene.GetPathInPrototype(id) : SdfPath();
+            drawScene.UpdateInstancingMapEntry(_pathInPrototype, newPathInPrototype, id);
+            _pathInPrototype = newPathInPrototype;
+        });
     }
 
 #if PXR_VERSION > 2111

@@ -825,6 +825,38 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
     }
 }
 
+SdfPath ProxyRenderDelegate::GetPathInPrototype(const SdfPath& id)
+{
+    auto usdInstancePath = GetScenePrimPath(id, 0);
+    auto usdInstancePrim = _proxyShapeData->UsdStage()->GetPrimAtPath(usdInstancePath);
+    return usdInstancePrim.GetPrimInPrototype().GetPath();
+}
+
+void ProxyRenderDelegate::UpdateInstancingMapEntry(
+    const SdfPath& oldPathInPrototype,
+    const SdfPath& newPathInPrototype,
+    const SdfPath& rprimId)
+{
+    if (oldPathInPrototype != newPathInPrototype) {
+        // remove the old entry from the map
+        if (!oldPathInPrototype.IsEmpty()) {
+            auto range = _instancingMap.equal_range(oldPathInPrototype);
+            auto it = std::find(
+                range.first,
+                range.second,
+                std::pair<const SdfPath, SdfPath>(oldPathInPrototype, rprimId));
+            if (it != range.second) {
+                _instancingMap.erase(it);
+            }
+        }
+
+        // add new entry to the map
+        if (!newPathInPrototype.IsEmpty()) {
+            _instancingMap.insert(std::make_pair(newPathInPrototype, rprimId));
+        }
+    }
+}
+
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
 void ProxyRenderDelegate::_DirtyUsdSubtree(const UsdPrim& prim)
 {
@@ -836,21 +868,28 @@ void ProxyRenderDelegate::_DirtyUsdSubtree(const UsdPrim& prim)
         | HdChangeTracker::DirtyDisplayStyle | MayaUsdRPrim::DirtySelectionHighlight
         | HdChangeTracker::DirtyMaterialId;
 
-    if (prim.IsA<UsdGeomGprim>() && prim.IsActive()) {
-        auto indexPath = _sceneDelegate->ConvertCachePathToIndexPath(prim.GetPath());
-        if (_renderIndex->HasRprim(indexPath)) {
-            changeTracker.MarkRprimDirty(indexPath, dirtyBits);
-        }
-    }
-
-    UsdPrimSubtreeRange range = prim.GetDescendants();
-    for (auto iter = range.begin(); iter != range.end(); ++iter) {
-        if (iter->IsA<UsdGeomGprim>()) {
-            auto indexPath = _sceneDelegate->ConvertCachePathToIndexPath(iter->GetPath());
-            if (_renderIndex->HasRprim(indexPath)) {
-                changeTracker.MarkRprimDirty(indexPath, dirtyBits);
+    auto markRprimDirty = [this, &changeTracker, dirtyBits](const UsdPrim& prim) {
+        if (prim.IsA<UsdGeomGprim>()) {
+            if (prim.IsInstanceProxy()) {
+                auto range = _instancingMap.equal_range(prim.GetPrimInPrototype().GetPath());
+                for (auto it = range.first; it != range.second; ++it) {
+                    if (_renderIndex->HasRprim(it->second)) {
+                        changeTracker.MarkRprimDirty(it->second, dirtyBits);
+                    }
+                }
+            } else {
+                auto indexPath = _sceneDelegate->ConvertCachePathToIndexPath(prim.GetPath());
+                if (_renderIndex->HasRprim(indexPath)) {
+                    changeTracker.MarkRprimDirty(indexPath, dirtyBits);
+                }
             }
         }
+    };
+
+    markRprimDirty(prim);
+    auto range = prim.GetFilteredDescendants(UsdTraverseInstanceProxies());
+    for (auto iter = range.begin(); iter != range.end(); ++iter) {
+        markRprimDirty(iter->GetPrim());
     }
 }
 
