@@ -392,7 +392,6 @@ class DisplayLayerTestCase(unittest.TestCase):
         self.assertFalse(layer1.contains(self.CUBE1))
         self.assertFalse(layer1.contains(self.INVALID_PRIM))
 
-    @unittest.skip("The feature was temporarily disabled so disable the autotest too")
     def testDisplayLayerEditAsMaya(self):
         '''Display layer membership in Edit As Maya workflow.'''
         
