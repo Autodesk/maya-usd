@@ -616,6 +616,24 @@ void remapSublayerRecursive(
     }
 }
 
+void reproduceSharedStageState(
+    const UsdStageRefPtr& finalUsdStage,
+    const SdfLayerRefPtr& inRootLayer,
+    const SdfLayerRefPtr& unsharedStageRootLayer)
+{
+    // Transfer the FPS (frames-per-second) of the original root layer to the new unshared
+    // root layer, so that the animation timeline does not change. We copy both the metadata
+    // on the layer and on the stage object itself.
+    if (SdfDataRefPtr metadata = inRootLayer->GetMetadata()) {
+        VtValue fpsValue;
+        if (metadata->Has(SdfPath("/"), TfToken("framesPerSecond"), &fpsValue)) {
+            unsharedStageRootLayer->GetMetadata()->Set(
+                SdfPath("/"), TfToken("framesPerSecond"), fpsValue);
+            finalUsdStage->SetFramesPerSecond(fpsValue.Get<double>());
+        }
+    }
+}
+
 } // namespace
 
 MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
@@ -948,6 +966,12 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
         unsharedUsdStage = getUnsharedStage(loadSet);
         finalUsdStage = unsharedUsdStage;
+
+        // Transfer data of the original root layer to the new unshared root layer,
+        // so that some user-visible state does not change. For example, we need to
+        // transfer the FPS (frames-per-second) metadata so that the animations play
+        // at the same rate.
+        reproduceSharedStageState(finalUsdStage, inRootLayer, _unsharedStageRootLayer);
     }
 
     if (finalUsdStage) {
