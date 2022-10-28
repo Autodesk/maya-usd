@@ -16,6 +16,7 @@
 #include "orphanedNodesManagerUtil.h"
 
 #include <maya/MGlobal.h>
+#include <ufe/trie.imp.h>
 
 namespace MAYAUSD_NS_DEF {
 
