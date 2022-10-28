@@ -129,12 +129,15 @@ void recursiveRename(
 
 void handlePathChange(
     const Ufe::Path&            oldPath,
-    const Ufe::SceneItem&       item,
+    const Ufe::SceneItem::Ptr&  item,
     Ufe::Trie<PullVariantInfo>& pulledPrims)
 {
+    if (!item)
+        return;
+
     auto trieNode = pulledPrims.node(oldPath);
     if (trieNode) {
-        const Ufe::Path& newPath = item.path();
+        const Ufe::Path& newPath = item->path();
         // If the only change is the last part of teh UFE path, then
         // we are dealing with a rename. Else it is a reparent.
         if (newPath.pop() == oldPath.pop()) {
@@ -239,9 +242,9 @@ void OrphanedNodesManager::operator()(const Ufe::Notification& n)
             handleOp(Ufe::SceneCompositeNotification::Op(
                 Ufe::SceneCompositeNotification::OpType::SubtreeInvalidate, subtrInv->root()));
         } else if (auto objRename = dynamic_cast<const Ufe::ObjectRename*>(&sceneNotification)) {
-            handlePathChange(objRename->previousPath(), *objRename->item(), _pulledPrims);
+            handlePathChange(objRename->previousPath(), objRename->item(), _pulledPrims);
         } else if (auto objRep = dynamic_cast<const Ufe::ObjectReparent*>(&sceneNotification)) {
-            handlePathChange(objRename->previousPath(), *objRename->item(), _pulledPrims);
+            handlePathChange(objRep->previousPath(), objRep->item(), _pulledPrims);
         }
 #endif
     }
@@ -356,7 +359,7 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
     case Ufe::SceneCompositeNotification::OpType::ObjectPathChange: {
         if (op.subOpType == Ufe::ObjectPathChange::ObjectRename
             || op.subOpType == Ufe::ObjectPathChange::ObjectReparent) {
-            handlePathChange(op.path, *op.item, _pulledPrims);
+            handlePathChange(op.path, op.item, _pulledPrims);
         }
     } break;
 #endif
