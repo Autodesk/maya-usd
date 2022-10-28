@@ -51,20 +51,8 @@ TODO:
 */
 
 
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-// clang-format off
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    (translate)
-    (rotate)
-    (scale)
-    (instanceTransform)
-    (instancer)
-);
-// clang-format on
 
 #define PLUG_THIS_PLUGIN \
     PlugRegistry::GetInstance().GetPluginWithName(\
@@ -307,6 +295,9 @@ void HdMayaRenderItemAdapter::UpdateTopology(MRenderItem& ri)
 		vertexCounts.resize(1);
 		vertexCounts[0] = vertexIndices.size();
 		break;
+    default:
+		assert(false);  //unexpected/unsupported primitive type
+		break;
 	}
 	mib->unmap();
 	
@@ -335,6 +326,10 @@ void HdMayaRenderItemAdapter::UpdateTopology(MRenderItem& ri)
 				vertexIndices));
 			MarkDirty(HdChangeTracker::AllDirty);
 			break;
+
+		default:
+			assert(false); // unexpected/unsupported primitive type
+			break;
 	}	
 }
 
@@ -351,6 +346,9 @@ void HdMayaRenderItemAdapter::_InsertRprim()
 	case MHWRender::MGeometry::Primitive::kPoints:
 		GetDelegate()->InsertRprim(HdPrimTypeTokens->points, GetID(), {});
 		break;
+	default:
+		assert(false); // unexpected/unsupported primitive type
+		break;
 	}
 }
 
@@ -366,7 +364,7 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
         return;
     }
 
-    const bool isNew = flags & MViewportScene::MVS_new;  //not used yet
+    //const bool isNew = flags & MViewportScene::MVS_new;  //not used yet
 	const bool visible = flags & MViewportScene::MVS_visible;
 
     const bool matrixChanged = flags & MViewportScene::MVS_changedMatrix;
@@ -408,7 +406,8 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
  	// Vertices
     MVertexBuffer* verts = nullptr;
     if (geomChanged && geom && geom->vertexBufferCount() > 0) {
-        if (verts = geom->vertexBuffer(0)) {
+        verts = geom->vertexBuffer(0);
+        if (verts) {
             int vertCount = 0;
             if (topoChanged) {
                 vertCount = verts->vertexCount();
@@ -436,7 +435,8 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
     // Indices
     MIndexBuffer* indices = nullptr;
     if (topoChanged && geom && geom->vertexBufferCount() > 0) {
-        if (indices = geom->indexBuffer(0)) {
+        indices = geom->indexBuffer(0);
+        if (indices) {
             int indexCount = indices->size();
             vertexIndices.resize(indexCount);
             int* indicesData = (int*)indices->map();
@@ -456,7 +456,7 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
             // for (int i = 0; i < indexCount; i++) vertexIndices[i] = indicesData[i];
             vertexIndices.assign(indicesData, indicesData + indexCount);
 
-            if (maxIndex < _positions.size() - 1) {
+            if (maxIndex < (int64_t)_positions.size() - 1) {
                 _positions.resize(maxIndex + 1);
             }
 
@@ -495,13 +495,16 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
 						break;
 					}
 				}
-
-
                 break;
+
             case MHWRender::MGeometry::Primitive::kLines:
                 vertexCounts.resize(indexCount);
                 // for (int i = 0; i < indexCount; i++) vertexCounts[i] = 1;
                 vertexCounts.assign(indexCount / 2, 2);
+                break;
+
+            default:
+                assert(false); // unexpected/unsupported primitive type
                 break;
             }
             indices->unmap();

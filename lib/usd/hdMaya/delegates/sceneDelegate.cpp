@@ -60,6 +60,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
+#ifndef HDMAYA_SCENE_RENDER_DATASERVER
 void _nodeAdded(MObject& obj, void* clientData)
 {
     // In case of creating new instances, the instance below the
@@ -106,6 +107,7 @@ void _connectionChanged(MPlug& srcPlug, MPlug& destPlug, bool made, void* client
         delegate->UpdateLightVisibility(dagCopy);
     }
 }
+#endif
 
 template <typename T, typename F> inline bool _FindAdapter(const SdfPath&, F) { return false; }
 
@@ -253,7 +255,7 @@ void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scen
 #if 1
 	// First loop to get rid of removed items
 	constexpr int kInvalidId = 0;
-	for (int i = 0; i < scene.mRemovalCount; i++)
+	for (size_t i = 0; i < scene.mRemovalCount; i++)
 	{
 		int fastId = scene.mRemovals[i];
 		if (fastId == kInvalidId) continue;
@@ -268,7 +270,7 @@ void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scen
     //My version, does minimal update
     // This loop could, in theory, pe parallelized.  Unclear how large the gains would be, but maybe
     // nothing to lose unless there is some internal contention in USD.
-    for (int i = 0; i < scene.mCount; i++) {
+    for (size_t i = 0; i < scene.mCount; i++) {
         auto flags = scene.mFlags[i];
         if (flags == 0)
             continue;
