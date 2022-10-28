@@ -80,6 +80,7 @@ class EditAsMayaTestCase(unittest.TestCase):
             self.assertFalse(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(aUsdUfePathStr))
             self.assertFalse(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
 
+    @unittest.skipIf(os.getenv('HAS_ORPHANED_NODES_MANAGER', '0') != '1', 'Test only available when UFE supports the orphaned nodes manager')
     def testRenameAncestorOfEditAsMaya(self):
         '''Test that renaming an ancestor correctly updates the internal data.'''
 
@@ -116,6 +117,7 @@ class EditAsMayaTestCase(unittest.TestCase):
             aMayaPath = aMayaItem.path()
             self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(ufe.PathString.string(aMayaPath)))
 
+    @unittest.skipIf(os.getenv('HAS_ORPHANED_NODES_MANAGER', '0') != '1', 'Test only available when UFE supports the orphaned nodes manager')
     def testReparentAncestorOfEditAsMaya(self):
         '''Test that reparenting an ancestor correctly updates the internal data.'''
 
