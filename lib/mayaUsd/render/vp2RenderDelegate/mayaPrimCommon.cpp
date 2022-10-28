@@ -21,9 +21,7 @@
 #include "render_delegate.h"
 #include "tokens.h"
 
-#ifdef MAYA_HAS_DISPLAY_LAYER_API
 #include <mayaUsd/ufe/Utils.h>
-#endif
 
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
