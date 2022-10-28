@@ -117,7 +117,7 @@ class EditAsMayaTestCase(unittest.TestCase):
             self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(ufe.PathString.string(aMayaPath)))
 
     def testReparentAncestorOfEditAsMaya(self):
-        '''Test that reparting an ancestor correctly updates the internal data.'''
+        '''Test that reparenting an ancestor correctly updates the internal data.'''
 
         cmds.CreateLocator()
         locName = "locator1"

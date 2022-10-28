@@ -25,8 +25,6 @@ using PullVariantInfo = OrphanedNodesManager::PullVariantInfo;
 using VariantSetDescriptor = OrphanedNodesManager::VariantSetDescriptor;
 using VariantSelection = OrphanedNodesManager::VariantSelection;
 
-Ufe::Path trieNodeToPullePrimUfePath(Ufe::TrieNode<PullVariantInfo>::Ptr trieNode);
-
 void addIndent(std::string& buf, int indent)
 {
     for (int i = 0; i < indent; ++i)
