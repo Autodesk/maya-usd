@@ -127,6 +127,25 @@ void recursiveRename(
     }
 }
 
+void handlePathChange(
+    const Ufe::Path&            oldPath,
+    const Ufe::SceneItem&       item,
+    Ufe::Trie<PullVariantInfo>& pulledPrims)
+{
+    auto trieNode = pulledPrims.node(oldPath);
+    if (trieNode) {
+        const Ufe::Path& newPath = item.path();
+        // If the only change is the last part of teh UFE path, then
+        // we are dealing with a rename. Else it is a reparent.
+        if (newPath.pop() == oldPath.pop()) {
+            trieNode->rename(newPath.back());
+        } else {
+            pulledPrims.move(oldPath, newPath);
+        }
+        recursiveRename(trieNode, oldPath, newPath);
+    }
+}
+
 } // namespace
 
 OrphanedNodesManager::OrphanedNodesManager()
@@ -220,17 +239,9 @@ void OrphanedNodesManager::operator()(const Ufe::Notification& n)
             handleOp(Ufe::SceneCompositeNotification::Op(
                 Ufe::SceneCompositeNotification::OpType::SubtreeInvalidate, subtrInv->root()));
         } else if (auto objRename = dynamic_cast<const Ufe::ObjectRename*>(&sceneNotification)) {
-            handleOp(Ufe::SceneCompositeNotification::Op(
-                Ufe::SceneCompositeNotification::OpType::ObjectPathChange,
-                Ufe::ObjectPathChange::ObjectRename,
-                objRename->item(),
-                objRename->previousPath()));
+            handlePathChange(objRename->previousPath(), *objRename->item(), _pulledPrims);
         } else if (auto objRep = dynamic_cast<const Ufe::ObjectReparent*>(&sceneNotification)) {
-            handleOp(Ufe::SceneCompositeNotification::Op(
-                Ufe::SceneCompositeNotification::OpType::ObjectPathChange,
-                Ufe::ObjectPathChange::ObjectReparent,
-                objRep->item(),
-                objRep->previousPath()));
+            handlePathChange(objRename->previousPath(), *objRename->item(), _pulledPrims);
         }
 #endif
     }
@@ -341,20 +352,14 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
             }
         }
     } break;
+#ifdef UFE_V4_FEATURES_AVAILABLE
     case Ufe::SceneCompositeNotification::OpType::ObjectPathChange: {
-        const Ufe::Path& oldPath = op.path;
-        auto             trieNode = _pulledPrims.node(oldPath);
-        if (trieNode) {
-            const Ufe::Path& newPath = op.item->path();
-            if (op.subOpType == Ufe::ObjectPathChange::ObjectRename) {
-                trieNode->rename(newPath.back());
-                recursiveRename(trieNode, oldPath, newPath);
-            } else if (op.subOpType == Ufe::ObjectPathChange::ObjectReparent) {
-                _pulledPrims.move(oldPath, newPath);
-                recursiveRename(trieNode, oldPath, newPath);
-            }
+        if (op.subOpType == Ufe::ObjectPathChange::ObjectRename
+            || op.subOpType == Ufe::ObjectPathChange::ObjectReparent) {
+            handlePathChange(op.path, *op.item, _pulledPrims);
         }
     } break;
+#endif
     default: {
         // SceneCompositeNotification: already expanded in operator().
     }
