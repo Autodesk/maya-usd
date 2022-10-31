@@ -231,6 +231,8 @@ Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& f
 MAYAUSD_CORE_PUBLIC
 std::vector<std::string> splitString(const std::string& str, const std::string& separators);
 
+std::string pathSegmentSeparator();
+
 class ReplicateExtrasFromUSD
 {
 public:

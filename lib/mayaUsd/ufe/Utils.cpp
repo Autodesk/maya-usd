@@ -884,6 +884,15 @@ Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& f
     return dst;
 }
 
+std::string pathSegmentSeparator()
+{
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    return Ufe::PathString::pathSegmentSeparator();
+#else
+    return ",";
+#endif
+}
+
 std::vector<std::string> splitString(const std::string& str, const std::string& separators)
 {
     std::vector<std::string> split;
