@@ -627,7 +627,7 @@ void reproduceSharedStageState(
         return;
     if (!TF_VERIFY(unsharedRootLayer))
         return;
-        
+
     // Transfer the FPS (frames-per-second) of the original root layer to the new unshared
     // root layer, so that the animation timeline does not change. We copy both the metadata
     // on the layer and on the stage object itself.
