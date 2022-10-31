@@ -617,20 +617,24 @@ void remapSublayerRecursive(
 }
 
 void reproduceSharedStageState(
-    const UsdStageRefPtr& finalUsdStage,
-    const SdfLayerRefPtr& inRootLayer,
-    const SdfLayerRefPtr& unsharedStageRootLayer)
+    const UsdStageRefPtr& stage,
+    const SdfLayerRefPtr& sharedRootLayer,
+    const SdfLayerRefPtr& unsharedRootLayer)
 {
+    if (!TF_VERIFY(stage))
+        return;
+    if (!TF_VERIFY(sharedRootLayer))
+        return;
+    if (!TF_VERIFY(unsharedRootLayer))
+        return;
+        
     // Transfer the FPS (frames-per-second) of the original root layer to the new unshared
     // root layer, so that the animation timeline does not change. We copy both the metadata
     // on the layer and on the stage object itself.
-    if (SdfDataRefPtr metadata = inRootLayer->GetMetadata()) {
-        VtValue fpsValue;
-        if (metadata->Has(SdfPath("/"), TfToken("framesPerSecond"), &fpsValue)) {
-            unsharedStageRootLayer->GetMetadata()->Set(
-                SdfPath("/"), TfToken("framesPerSecond"), fpsValue);
-            finalUsdStage->SetFramesPerSecond(fpsValue.Get<double>());
-        }
+    if (sharedRootLayer->HasFramesPerSecond()) {
+        const double fps = sharedRootLayer->GetFramesPerSecond();
+        unsharedRootLayer->SetFramesPerSecond(fps);
+        stage->SetFramesPerSecond(fps);
     }
 }
 
