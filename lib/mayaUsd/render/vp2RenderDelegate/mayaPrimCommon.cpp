@@ -21,8 +21,6 @@
 #include "render_delegate.h"
 #include "tokens.h"
 
-#include <mayaUsd/ufe/Utils.h>
-
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
@@ -763,8 +761,7 @@ void MayaUsdRPrim::_SyncDisplayLayerModes(const HdRprim& refThis)
     // If the prim is not instanced, populate _displayLayerModes.
     // Otherwise display layer modes will be handled later, in the instancing loop.
     if (refThis.GetInstancerId().IsEmpty()) {
-        MString pathString = drawScene.GetProxyShapeDagPath().fullPathName()
-            + MayaUsd::ufe::pathSegmentSeparator().c_str() + _PrimSegmentString[0];
+        MString pathString = drawScene.GetUfePathPrefix() + _PrimSegmentString[0];
         _PopulateDisplayLayerModes(pathString, _displayLayerModes);
     } else {
         _displayLayerModes = DisplayLayerModes();

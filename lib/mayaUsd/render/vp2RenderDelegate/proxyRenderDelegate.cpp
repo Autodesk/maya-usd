@@ -863,12 +863,13 @@ void ProxyRenderDelegate::_DirtyUsdSubtree(const UsdPrim& prim)
     if (!prim.IsValid())
         return;
 
-    HdChangeTracker&      changeTracker = _renderIndex->GetChangeTracker();
-    constexpr HdDirtyBits dirtyBits = HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyRepr
-        | HdChangeTracker::DirtyDisplayStyle | MayaUsdRPrim::DirtySelectionHighlight
-        | HdChangeTracker::DirtyMaterialId;
+    HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
 
-    auto markRprimDirty = [this, &changeTracker, dirtyBits](const UsdPrim& prim) {
+    auto markRprimDirty = [this, &changeTracker](const UsdPrim& prim) {
+        constexpr HdDirtyBits dirtyBits = HdChangeTracker::DirtyVisibility
+            | HdChangeTracker::DirtyRepr | HdChangeTracker::DirtyDisplayStyle
+            | MayaUsdRPrim::DirtySelectionHighlight | HdChangeTracker::DirtyMaterialId;
+
         if (prim.IsA<UsdGeomGprim>()) {
             if (prim.IsInstanceProxy()) {
                 auto range = _instancingMap.equal_range(prim.GetPrimInPrototype().GetPath());
@@ -1237,6 +1238,15 @@ SdfPath ProxyRenderDelegate::GetScenePrimPath(const SdfPath& rprimId, int instan
 #endif
 
     return usdPath;
+}
+
+MString ProxyRenderDelegate::GetUfePathPrefix() const
+{
+#if defined(WANT_UFE_BUILD)
+    return GetProxyShapeDagPath().fullPathName() + MayaUsd::ufe::pathSegmentSeparator().c_str();
+#else
+    return MString();
+#endif
 }
 
 //! \brief  Selection for both instanced and non-instanced cases.
