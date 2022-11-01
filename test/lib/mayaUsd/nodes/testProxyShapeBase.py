@@ -306,6 +306,50 @@ class testProxyShapeBase(unittest.TestCase):
         self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
         self.assertEqual(stage.GetRootLayer().GetDisplayName(), "cylinder.usda")
 
+    def testShareStagePreserveFPS(self):
+        '''
+        Verify share/unshare stage preserve the FPS metadata of the stage.
+        '''
+        # create new stage
+        cmds.file(new=True, force=True)
+
+        # Open usdCylinder.ma scene in testSamples
+        mayaUtils.openCylinderScene()
+
+        # get the stage
+        proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+        proxyShapePath = proxyShapes[0]
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+        stage.GetRootLayer().identifier
+
+        # Set an unusual FPS on the stage.
+        fps = 45.0
+        stage.SetFramesPerSecond(fps)
+        stage.GetRootLayer().framesPerSecond = fps
+
+        # Check that the stage FPS is 45.
+        self.assertEqual(stage.GetFramesPerSecond(), fps)
+        self.assertEqual(stage.GetRootLayer().framesPerSecond, fps)
+
+        # Unshare the stage
+        cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), False)
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+        rootLayer = stage.GetRootLayer()
+
+        # Check that the stage is now unshared and the FPS is still 45.
+        self.assertFalse(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
+        self.assertEqual(stage.GetFramesPerSecond(), fps)
+        self.assertEqual(stage.GetRootLayer().framesPerSecond, fps)
+
+        # Re-share the stage
+        cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), True)
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+
+        # Check that the stage is now shared again and the FPS is the same.
+        self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
+        self.assertEqual(stage.GetFramesPerSecond(), fps)
+        self.assertEqual(stage.GetRootLayer().framesPerSecond, fps)
+
     def testShareStagePreserveSession(self):
         '''
         Verify share/unshare stage preserves the data in the session layer
