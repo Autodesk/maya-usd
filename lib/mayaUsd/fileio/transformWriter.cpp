@@ -260,6 +260,34 @@ bool UsdMayaTransformWriter::_GatherAnimChannel(
     return false;
 }
 
+void UsdMayaTransformWriter::_MakeAnimChannelsUnique(const UsdGeomXformable& usdXformable)
+{
+    using OpName = TfToken;
+    std::set<OpName> existingOps;
+    bool             xformReset = false;
+    for (const UsdGeomXformOp& op : usdXformable.GetOrderedXformOps(&xformReset)) {
+        existingOps.emplace(op.GetOpName());
+    }
+
+    if (existingOps.size() == 0)
+        return;
+
+    for (_AnimChannel& channel : _animChannels) {
+        // We will put a upper limit on the number of similar transform operations
+        // that a prim can use. Having 1000 separate translations on a single prim
+        // seems both generous. Having more is highly improbable.
+        for (int suffixIndex = 1; suffixIndex < 1000; ++suffixIndex) {
+            TfToken channelOpName
+                = UsdGeomXformOp::GetOpName(channel.usdOpType, channel.opName, channel.isInverse);
+            if (existingOps.count(channelOpName) == 0)
+                break;
+            std::ostringstream oss;
+            oss << "channel" << suffixIndex;
+            channel.opName = TfToken(oss.str());
+        }
+    }
+}
+
 void UsdMayaTransformWriter::_PushTransformStack(
     const MFnTransform&     iTrans,
     const UsdGeomXformable& usdXformable,
@@ -476,6 +504,8 @@ void UsdMayaTransformWriter::_PushTransformStack(
             _animChannels.erase(_animChannels.begin() + rotPivotINVIdx);
         }
     }
+
+    _MakeAnimChannelsUnique(usdXformable);
 
     // Loop over anim channel vector and create corresponding XFormOps
     // including the inverse ones if needed
