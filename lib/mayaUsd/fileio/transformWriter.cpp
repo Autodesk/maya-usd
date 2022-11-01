@@ -279,8 +279,10 @@ void UsdMayaTransformWriter::_MakeAnimChannelsUnique(const UsdGeomXformable& usd
         for (int suffixIndex = 1; suffixIndex < 1000; ++suffixIndex) {
             TfToken channelOpName
                 = UsdGeomXformOp::GetOpName(channel.usdOpType, channel.opName, channel.isInverse);
-            if (existingOps.count(channelOpName) == 0)
+            if (existingOps.count(channelOpName) == 0) {
+                existingOps.emplace(channelOpName);
                 break;
+            }
             std::ostringstream oss;
             oss << "channel" << suffixIndex;
             channel.opName = TfToken(oss.str());
