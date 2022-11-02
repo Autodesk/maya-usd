@@ -213,6 +213,9 @@ protected:
         MColor _wireframeColorRGBA;
     };
 
+    static void
+    _PopulateDisplayLayerModes(const MString& pathString, DisplayLayerModes& displayLayerModes);
+
     void _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
 
     void _UpdateTransform(
@@ -332,6 +335,9 @@ protected:
 
     //! The string representation of the runtime only path to this object
     MStringArray _PrimSegmentString;
+
+    //! For instanced prim, holds the corresponding path in USD prototype
+    SdfPath _pathInPrototype;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
