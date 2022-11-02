@@ -45,41 +45,6 @@ ProxyShapeSceneSegmentHandler::create(const Ufe::SceneSegmentHandler::Ptr& mayaS
 // Ufe::SceneSegmentHandler overrides
 //------------------------------------------------------------------------------
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4033)
-Ufe::Selection
-ProxyShapeSceneSegmentHandler::findGatewayItems_(const Ufe::Path& path, Ufe::Rtid nestedRtid) const
-{
-    Ufe::Selection result = Ufe::Selection();
-
-    // Handle other gateway node types that MayaUSD is not aware of.
-    // `nestedRtid` is used as a filter. If it matches the MayaUSD runtime ID, MayaUSD is aware of
-    // the requested gateway items so this step can be skipped.
-    if (nestedRtid != g_USDRtid && fMayaSceneSegmentHandler) {
-        result = fMayaSceneSegmentHandler->findGatewayItems_(path, nestedRtid);
-    }
-
-    // Find the MayaUSD proxyShapes.
-    // `nestedRtid` is used as a filter. Only add MayaUSD proxyShapes to the result if the argument
-    // matches the MayaUSD runtime ID or `Ufe::kAllRtid` which is used to refer to all runtimes.
-    if (nestedRtid == g_USDRtid || nestedRtid == Ufe::kAllRtid) {
-        for (const auto& stage : getAllStages()) {
-            Ufe::Path proxyShapePath = stagePath(stage);
-            // recall that findGatewayItems searches for descendants of path that are gateway nodes.
-            // If path itself is a gateway node it should not be included in the results.
-            if (proxyShapePath.startsWith(path) && proxyShapePath != path) {
-                result.append(Ufe::Hierarchy::createItem(proxyShapePath));
-            }
-        }
-    }
-
-    // If there were Usd prims that are gateway items then we'd have an implementation
-    // of UsdSceneSegmentHandler that could find the gateway items and extra code
-    // here to handle the case where isAGatewayType() for path is true. But right now
-    // there are no gateway items in Usd, so I don't have to handle that.
-
-    return result;
-}
-#else
 Ufe::Selection ProxyShapeSceneSegmentHandler::findGatewayItems_(const Ufe::Path& path) const
 {
     // Handle other gateway node types that MayaUSD is not aware of
@@ -90,7 +55,40 @@ Ufe::Selection ProxyShapeSceneSegmentHandler::findGatewayItems_(const Ufe::Path&
     // Find the MayaUSD proxyShapes
     for (const auto& stage : getAllStages()) {
         Ufe::Path proxyShapePath = stagePath(stage);
-        // recall that findGatewayItems searches for descendents of path that are
+        // recall that findGatewayItems searches for descendants of path that are
+        // gateway nodes. If path itself is a gateway node it should not be included
+        // in the results.
+        if (proxyShapePath.startsWith(path) && proxyShapePath != path) {
+            result.append(Ufe::Hierarchy::createItem(proxyShapePath));
+        }
+    }
+
+    // If there were Usd prims that are gateway items then we'd have an implementation
+    // of UsdSceneSegmentHandler that could find the gateway items and extra code
+    // here to handle the case where isAGatewayType() for path is true. But right now
+    // there are no gateway items in Usd, so I don't have to handle that.
+
+    return result;
+}
+
+#if (UFE_PREVIEW_VERSION_NUM >= 4033)
+Ufe::Selection
+ProxyShapeSceneSegmentHandler::findGatewayItems_(const Ufe::Path& path, Ufe::Rtid nestedRtid) const
+{
+    // Handle other gateway node types that MayaUSD is not aware of.
+    if (nestedRtid != g_USDRtid) {
+        // `nestedRtid` is used as a filter. If it doesn't match the MayaUSD runtime ID, the method
+        // can return early.
+        return fMayaSceneSegmentHandler
+            ? fMayaSceneSegmentHandler->findGatewayItems_(path, nestedRtid)
+            : Ufe::Selection();
+    }
+
+    // `nestedRtid` matches the MayaUSD runtime ID. Find the MayaUSD proxyShapes.
+    Ufe::Selection result = Ufe::Selection();
+    for (const auto& stage : getAllStages()) {
+        Ufe::Path proxyShapePath = stagePath(stage);
+        // recall that findGatewayItems searches for descendants of path that are
         // gateway nodes. If path itself is a gateway node it should not be included
         // in the results.
         if (proxyShapePath.startsWith(path) && proxyShapePath != path) {

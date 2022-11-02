@@ -47,11 +47,9 @@ public:
     create(const Ufe::SceneSegmentHandler::Ptr& mayaSceneSegmentHandler);
 
     // Ufe::SceneSegmentHandler overrides
-#if (UFE_PREVIEW_VERSION_NUM >= 4033)
-    Ufe::Selection
-    findGatewayItems_(const Ufe::Path& path, Ufe::Rtid nestedRtid = Ufe::kAllRtid) const override;
-#else
     Ufe::Selection findGatewayItems_(const Ufe::Path& path) const override;
+#if (UFE_PREVIEW_VERSION_NUM >= 4033)
+    Ufe::Selection findGatewayItems_(const Ufe::Path& path, Ufe::Rtid nestedRtid) const override;
 #endif
     bool isGateway_(const Ufe::Path& path) const override;
 
