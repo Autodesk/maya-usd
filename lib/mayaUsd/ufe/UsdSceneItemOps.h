@@ -57,21 +57,21 @@ public:
     // Ufe::SceneItemOps overrides
     Ufe::SceneItem::Ptr       sceneItem() const override;
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4034)
+#if (UFE_PREVIEW_VERSION_NUM >= 4033)
     Ufe::UndoableCommand::Ptr deleteItemCmdNoExecute() override;
 #endif
 #endif
     Ufe::UndoableCommand::Ptr deleteItemCmd() override;
     bool                      deleteItem() override;
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4034)
+#if (UFE_PREVIEW_VERSION_NUM >= 4033)
     Ufe::UndoableCommand::Ptr duplicateItemCmdNoExecute() override;
 #endif
 #endif
     Ufe::Duplicate            duplicateItemCmd() override;
     Ufe::SceneItem::Ptr       duplicateItem() override;
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4034)
+#if (UFE_PREVIEW_VERSION_NUM >= 4033)
     Ufe::UndoableCommand::Ptr renameItemCmdNoExecute(const Ufe::PathComponent& newName) override;
 #endif
 #endif
