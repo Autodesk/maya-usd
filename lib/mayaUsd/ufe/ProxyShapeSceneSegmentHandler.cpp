@@ -54,7 +54,7 @@ Ufe::Selection ProxyShapeSceneSegmentHandler::findGatewayItems_(const Ufe::Path&
 
     // Find the MayaUSD proxyShapes
     for (const auto& stage : getAllStages()) {
-        Ufe::Path proxyShapePath = stagePath(stage);
+        const Ufe::Path proxyShapePath = stagePath(stage);
         // recall that findGatewayItems searches for descendants of path that are
         // gateway nodes. If path itself is a gateway node it should not be included
         // in the results.
@@ -63,7 +63,7 @@ Ufe::Selection ProxyShapeSceneSegmentHandler::findGatewayItems_(const Ufe::Path&
         }
     }
 
-    // If there were Usd prims that are gateway items then we'd have an implementation
+    // TODO: If there were Usd prims that are gateway items then we'd have an implementation
     // of UsdSceneSegmentHandler that could find the gateway items and extra code
     // here to handle the case where isAGatewayType() for path is true. But right now
     // there are no gateway items in Usd, so I don't have to handle that.
@@ -87,7 +87,7 @@ ProxyShapeSceneSegmentHandler::findGatewayItems_(const Ufe::Path& path, Ufe::Rti
     // `nestedRtid` matches the MayaUSD runtime ID. Find the MayaUSD proxyShapes.
     Ufe::Selection result = Ufe::Selection();
     for (const auto& stage : getAllStages()) {
-        Ufe::Path proxyShapePath = stagePath(stage);
+        const Ufe::Path proxyShapePath = stagePath(stage);
         // recall that findGatewayItems searches for descendants of path that are
         // gateway nodes. If path itself is a gateway node it should not be included
         // in the results.
@@ -96,7 +96,7 @@ ProxyShapeSceneSegmentHandler::findGatewayItems_(const Ufe::Path& path, Ufe::Rti
         }
     }
 
-    // If there were Usd prims that are gateway items then we'd have an implementation
+    // TODO: If there were Usd prims that are gateway items then we'd have an implementation
     // of UsdSceneSegmentHandler that could find the gateway items and extra code
     // here to handle the case where isAGatewayType() for path is true. But right now
     // there are no gateway items in Usd, so I don't have to handle that.
