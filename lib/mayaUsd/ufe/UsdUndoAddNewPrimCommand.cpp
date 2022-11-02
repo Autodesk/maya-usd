@@ -24,7 +24,6 @@
 
 #include <ufe/pathString.h>
 
-
 namespace {
 
 Ufe::Path appendToPath(const Ufe::Path& path, const std::string& name)

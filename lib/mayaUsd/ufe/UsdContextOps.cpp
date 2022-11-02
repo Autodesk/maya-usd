@@ -284,7 +284,6 @@ public:
     std::string commandString() const override { return cmdsList().front()->commandString(); }
 #endif
 #endif
-
 };
 
 //! \brief Create a working Material and select it:
@@ -315,7 +314,6 @@ public:
     std::string commandString() const override { return cmdsList().front()->commandString(); }
 #endif
 #endif
-
 };
 #endif
 
