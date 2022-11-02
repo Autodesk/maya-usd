@@ -26,7 +26,11 @@ UsdAddAttributeCommand::UsdAddAttributeCommand(
     const UsdSceneItem::Ptr&    sceneItem,
     const std::string&          name,
     const Ufe::Attribute::Type& type)
+#if (UFE_PREVIEW_VERSION_NUM >= 4033)
     : UsdUndoableCommand<Ufe::AddAttributeUndoableCommand>()
+#else
+    : UsdUndoableCommand<Ufe::AddAttributeCommand>()
+#endif
     , _sceneItemPath(sceneItem->path())
     , _name(name)
     , _type(type)
@@ -96,6 +100,8 @@ void UsdRemoveAttributeCommand::executeUndoBlock()
     UsdAttributes::doRemoveAttribute(sceneItem, _name);
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4033)
 UsdRenameAttributeCommand::UsdRenameAttributeCommand(
     const UsdSceneItem::Ptr& sceneItem,
     const std::string&       originalName,
@@ -143,5 +149,7 @@ Ufe::Attribute::Ptr UsdRenameAttributeCommand::attribute() const
 
 void UsdRenameAttributeCommand::setNewName(const std::string& newName) { _newName = newName; };
 
+#endif
+#endif
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

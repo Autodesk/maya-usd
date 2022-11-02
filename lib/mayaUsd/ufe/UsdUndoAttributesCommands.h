@@ -36,7 +36,13 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Implementation of AddAttributeCommand
-class UsdAddAttributeCommand : public UsdUndoableCommand<Ufe::AddAttributeUndoableCommand>
+class UsdAddAttributeCommand
+    :
+#if (UFE_PREVIEW_VERSION_NUM >= 4033)
+    public UsdUndoableCommand<Ufe::AddAttributeUndoableCommand>
+#else
+    public UsdUndoableCommand<Ufe::AddAttributeCommand>
+#endif
 {
 public:
     typedef std::shared_ptr<UsdAddAttributeCommand> Ptr;
@@ -98,6 +104,8 @@ private:
     const std::string _name;
 }; // UsdRemoveAttributeCommand
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4033)
 //! \brief Implementation of RenameAttributeCommand
 class UsdRenameAttributeCommand : public UsdUndoableCommand<Ufe::RenameAttributeUndoableCommand>
 {
@@ -135,6 +143,8 @@ private:
 
 }; // UsdRenameAttributeCommand
 
+#endif
+#endif
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
 
