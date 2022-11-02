@@ -159,10 +159,20 @@ bool allowedInStrongerLayer(
 
     // If allowed, verify if the target layer is stronger than any existing layer with an opinion.
     auto stage = prim.GetStage();
-    auto rootLayer = stage->GetRootLayer();
     auto targetLayer = stage->GetEditTarget().GetLayer();
     auto topLayer = primStack.front()->GetLayer();
-    return getStrongerLayer(rootLayer, targetLayer, topLayer) == targetLayer;
+    
+    // Session Layer is the strongest in the stage, so check its hierarchy first
+    auto strongerLayer = getStrongerLayer(stage->GetSessionLayer(), targetLayer, topLayer);
+    if (strongerLayer == targetLayer) {
+        return true;
+    } else if (strongerLayer == topLayer) {
+        return false;
+    }
+    
+    // If none of the two layers was found in the Session Layer hierarchy, 
+    // then proceed to the stage's general layer hierarchy  
+    return getStrongerLayer(stage->GetRootLayer(), targetLayer, topLayer) == targetLayer;
 }
 
 } // namespace
