@@ -120,7 +120,8 @@ void UsdUndoAddNewPrimCommand::redo()
 #if (UFE_PREVIEW_VERSION_NUM >= 4032)
 std::string UsdUndoAddNewPrimCommand::commandString() const
 {
-    return std::string("CreatePrim ") + _primToken.GetText() + " " + Ufe::PathString::string(_newUfePath);
+    return std::string("CreatePrim ") + _primToken.GetText() + " "
+        + Ufe::PathString::string(_newUfePath);
 }
 #endif
 #endif

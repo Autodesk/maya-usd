@@ -103,8 +103,8 @@ UsdUndoInsertChildCommand::~UsdUndoInsertChildCommand() { }
 #if (UFE_PREVIEW_VERSION_NUM >= 4032)
 std::string UsdUndoInsertChildCommand::commandString() const
 {
-    return std::string("InsertChild ") + Ufe::PathString::string(_ufeSrcPath)
-           + " " + Ufe::PathString::string(_ufeParentPath);
+    return std::string("InsertChild ") + Ufe::PathString::string(_ufeSrcPath) + " "
+        + Ufe::PathString::string(_ufeParentPath);
 }
 #endif
 #endif

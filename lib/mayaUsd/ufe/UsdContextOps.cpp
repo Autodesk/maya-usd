@@ -281,10 +281,7 @@ public:
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4032)
-    std::string commandString() const override
-    {
-        return cmdsList().front()->commandString();
-    }
+    std::string commandString() const override { return cmdsList().front()->commandString(); }
 #endif
 #endif
 
@@ -315,10 +312,7 @@ public:
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4032)
-    std::string commandString() const override
-    {
-        return cmdsList().front()->commandString();
-    }
+    std::string commandString() const override { return cmdsList().front()->commandString(); }
 #endif
 #endif
 
