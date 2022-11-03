@@ -636,6 +636,13 @@ void reproduceSharedStageState(
         unsharedRootLayer->SetFramesPerSecond(fps);
         stage->SetFramesPerSecond(fps);
     }
+
+    // Transfer the TCPS (timecodes-per-second) for the same reason as above.
+    if (sharedRootLayer->HasTimeCodesPerSecond()) {
+        const double tcps = sharedRootLayer->GetTimeCodesPerSecond();
+        unsharedRootLayer->SetTimeCodesPerSecond(tcps);
+        stage->SetTimeCodesPerSecond(tcps);
+    }
 }
 
 } // namespace
