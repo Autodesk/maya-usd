@@ -44,6 +44,12 @@ public:
     const Ufe::Path& newUfePath() const;
     PXR_NS::UsdPrim  newPrim() const;
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4032)
+    std::string commandString() const override;
+#endif
+#endif
+
     static UsdUndoAddNewPrimCommand::Ptr
     create(const UsdSceneItem::Ptr& usdSceneItem, const std::string& name, const std::string& type);
 
