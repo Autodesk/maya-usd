@@ -201,9 +201,9 @@ MStatus MayaUSDImportCommand::doIt(const MArgList& args)
     for (unsigned int i = 0; i < nbFlags; ++i) {
         MArgList tmpArgList;
         status = argData.getFlagArgumentList(kPrimVariantFlag, i, tmpArgList);
-        PXR_NS::SdfPath primPath{ tmpArgList.asString(0, &status).asChar() };
-        std::string variantName{ tmpArgList.asString(1, &status).asChar() };
-        std::string variantSel{ tmpArgList.asString(2, &status).asChar() };
+        PXR_NS::SdfPath primPath { tmpArgList.asString(0, &status).asChar() };
+        std::string     variantName { tmpArgList.asString(1, &status).asChar() };
+        std::string     variantSel { tmpArgList.asString(2, &status).asChar() };
         primVariants[primPath].emplace(variantName, variantSel);
     }
 
