@@ -27,6 +27,8 @@ import mayaUsd.lib
 from mayaUsd.lib import cacheToUsd
 
 import mayaUtils
+import usdUtils
+import ufeUtils
 import mayaUsd.ufe
 import mayaUsdAddMayaReference
 import mayaUsdMayaReferenceUtils as mayaRefUtils
@@ -41,7 +43,7 @@ import ufe
 
 import unittest
 
-from testUtils import assertVectorAlmostEqual
+from testUtils import assertVectorAlmostEqual, getTestScene
 
 import os
 
@@ -333,6 +335,94 @@ class CacheToUsdTestCase(unittest.TestCase):
 
         self.verifyCacheFileDefaultPrim(cacheFile, cachePrimName)
 
+    def testEditAndMergeRigMayaRef(self):
+        '''
+        Test editing then merge a Maya Reference to a complex animated rig.
+        In particular, the rig generates multiple translation xform on some
+        prim, verify that we do get these multiple translations.
+        '''
+        kDefaultPrimName = mayaRefUtils.defaultMayaReferencePrimName()
+
+        # Since this is a brand new prim, it should not have variant sets.
+        primTestDefault = self.stage.DefinePrim('/Test_Default', 'Xform')
+        primPathStr = self.proxyShapePathStr + ',/Test_Default'
+        self.assertFalse(primTestDefault.HasVariantSets())
+
+        rigScene =  getTestScene("rhino_rig", "anim_001.ma" )
+
+        mayaRefPrim = mayaUsdAddMayaReference.createMayaReferencePrim(
+            primPathStr,
+            rigScene,
+            "",
+            mayaAutoEdit=False)
+
+        mayaRefPrimUfePathStr = primPathStr + "/" + mayaRefPrim.GetName()
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(mayaRefPrimUfePathStr))
+
+        # The prim should not have any variant set.
+        self.assertFalse(primTestDefault.HasVariantSets())
+
+        # Verify that a Maya Reference prim was created.
+        self.assertTrue(mayaRefPrim.IsValid())
+        self.assertEqual(str(mayaRefPrim.GetName()), kDefaultPrimName)
+        self.assertEqual(mayaRefPrim, primTestDefault.GetChild(kDefaultPrimName))
+        self.assertTrue(mayaRefPrim.GetPrimTypeInfo().GetTypeName(), 'MayaReference')
+
+        # Cache to USD, using a payload composition arc.
+        defaultExportOptions = cacheToUsd.getDefaultExportOptions()
+        cacheFile = self.getCacheFileName()
+        cachePrimName = 'cachePrimName'
+        payloadOrReference = 'Payload'
+        listEditType = 'Prepend'
+        variantSetName = None
+        variantName = None
+
+        userArgs = cacheToUsd.createCacheCreationOptions(
+            defaultExportOptions, cacheFile, cachePrimName, payloadOrReference,
+            listEditType, variantSetName, variantName)
+
+        # Merge Maya edits.
+        aMayaItem = ufe.GlobalSelection.get().front()
+        aMayaPath = aMayaItem.path()
+        aMayaPathStr = ufe.PathString.string(aMayaPath)
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(aMayaPathStr, userArgs))
+
+        # Verify a prim deep in the rig got multiple xform ops of the same type
+        # and they got proper suffixes.
+        foot_prim_with_multiple_translate = '/'.join([
+            cachePrimName,
+            'anim_001_rhino_rig_030_rig_grp',
+            'anim_001_rhino_rig_030_world_cnt_001_grp',
+            'anim_001_rhino_rig_030_world_cnt_001_Shift',
+            'anim_001_rhino_rig_030_world_cnt_001',
+            'anim_001_rhino_rig_030_world_cnt_002_grp',
+            'anim_001_rhino_rig_030_world_cnt_002_Shift',
+            'anim_001_rhino_rig_030_world_cnt_002_cnt',
+            'anim_001_rhino_rig_030_rig_setup_grp',
+            'anim_001_rhino_rig_030_cn_legs_grp',
+            'anim_001_rhino_rig_030_rt_ft_leg_grp',
+            'anim_001_rhino_rig_030_control_grp',
+            'anim_001_rhino_rig_030_rt_ft_foot_001_cnt_grp',
+            'anim_001_rhino_rig_030_rt_ft_foot_001_cnt_Shift',
+            'anim_001_rhino_rig_030_rt_ft_foot_001_cnt'
+        ])
+
+        cacheUfePathStr = primPathStr + "/" + foot_prim_with_multiple_translate
+        cacheUfeItem = ufeUtils.createItem(cacheUfePathStr)
+        self.assertIsNotNone(cacheUfeItem)
+        cacheUfeHier = ufe.Hierarchy.hierarchy(cacheUfeItem)
+        cacheUsdPrim = usdUtils.getPrimFromSceneItem(cacheUfeItem)
+        self.assertTrue(cacheUsdPrim.IsValid())
+        xformOp = cacheUsdPrim.GetAttribute('xformOpOrder')
+        self.assertTrue(xformOp.IsValid())
+        value = xformOp.Get()
+        self.assertIn("xformOp:translate", value)
+        self.assertIn("xformOp:rotateXYZ", value)
+        self.assertIn("xformOp:translate:channel1", value)
+        self.assertIn("xformOp:rotateXYZ:channel1", value)
+        
     def runTestMayaRefPrimTransform(self, createMayaRefPrimFn, checkCacheParentFn):
         '''
         Run a test transforming the Maya Reference prim, editing it in Maya,

@@ -118,6 +118,11 @@ private:
         const bool                 isWritingAnimation,
         const bool                 setOpName);
 
+    // Change the channel suffix so that the USD XformOp becomes unique.
+    // This is to deal with complex rigs that can have multiple transforms
+    // affecting the same transform operation on the same UsdGeomXformable.
+    void _MakeAnimChannelsUnique(const UsdGeomXformable& usdXformable);
+
     /// Populates the AnimChannel vector with various ops based on
     /// the Maya transformation logic. If scale and/or rotate pivot are
     /// declared, creates inverse ops in the appropriate order.
