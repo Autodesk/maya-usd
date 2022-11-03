@@ -18,6 +18,7 @@
 #include <mayaUsd/ufe/UsdAttributes.h>
 
 #include <ufe/hierarchy.h>
+#include <ufe/pathString.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -68,6 +69,15 @@ void UsdAddAttributeCommand::executeUndoBlock()
     }
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4032)
+std::string UsdAddAttributeCommand::commandString() const
+{
+    return std::string("AddAttribute ") + _name + " " + Ufe::PathString::string(_sceneItemPath);
+}
+#endif
+#endif
+
 UsdRemoveAttributeCommand::UsdRemoveAttributeCommand(
     const UsdSceneItem::Ptr& sceneItem,
     const std::string&       name)
@@ -95,6 +105,15 @@ void UsdRemoveAttributeCommand::executeUndoBlock()
         = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(_sceneItemPath));
     UsdAttributes::doRemoveAttribute(sceneItem, _name);
 }
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4032)
+std::string UsdRemoveAttributeCommand::commandString() const
+{
+    return std::string("RemoveAttribute ") + _name + " " + Ufe::PathString::string(_sceneItemPath);
+}
+#endif
+#endif
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
