@@ -101,8 +101,15 @@ MSyntax MayaUSDImportCommand::createSyntax()
     syntax.addFlag(kReadAnimDataFlag, kReadAnimDataFlagLong, MSyntax::kBoolean);
     syntax.addFlag(kFrameRangeFlag, kFrameRangeFlagLong, MSyntax::kDouble, MSyntax::kDouble);
     syntax.addFlag(kPrimPathFlag, kPrimPathFlagLong, MSyntax::kString);
-    syntax.addFlag(kVariantFlag, kVariantFlagLong, MSyntax::kString, MSyntax::kString);
-    syntax.makeFlagMultiUse(kVariantFlag);
+    syntax.addFlag(kRootVariantFlag, kRootVariantFlagLong, MSyntax::kString, MSyntax::kString);
+    syntax.makeFlagMultiUse(kRootVariantFlag);
+    syntax.addFlag(
+        kPrimVariantFlag,
+        kPrimVariantFlagLong,
+        MSyntax::kString,
+        MSyntax::kString,
+        MSyntax::kString);
+    syntax.makeFlagMultiUse(kPrimVariantFlag);
 
     syntax.addFlag(kVerboseFlag, kVerboseFlagLong, MSyntax::kNoArg);
 
@@ -176,16 +183,28 @@ MStatus MayaUSDImportCommand::doIt(const MArgList& args)
         mPrimPath = UsdMayaUtil::convert(tmpVal);
     }
 
-    // Add variant (variantSet, variant).  Multi-use
-    SdfVariantSelectionMap mVariants;
-    unsigned int           nbFlags = argData.numberOfFlagUses(kVariantFlag);
+    // Add root prim variant (variantSet, variant).  Multi-use
+    SdfVariantSelectionMap rootVariants;
+    unsigned int           nbFlags = argData.numberOfFlagUses(kRootVariantFlag);
     for (unsigned int i = 0; i < nbFlags; ++i) {
         MArgList tmpArgList;
-        status = argData.getFlagArgumentList(kVariantFlag, i, tmpArgList);
+        status = argData.getFlagArgumentList(kRootVariantFlag, i, tmpArgList);
         // Get the value
         MString tmpKey = tmpArgList.asString(0, &status);
         MString tmpVal = tmpArgList.asString(1, &status);
-        mVariants.emplace(tmpKey.asChar(), tmpVal.asChar());
+        rootVariants.emplace(tmpKey.asChar(), tmpVal.asChar());
+    }
+
+    // Add prim variant (prim path, variant set, variant selection). Multi-use
+    ImportData::PrimVariantSelections primVariants;
+    nbFlags = argData.numberOfFlagUses(kPrimVariantFlag);
+    for (unsigned int i = 0; i < nbFlags; ++i) {
+        MArgList tmpArgList;
+        status = argData.getFlagArgumentList(kPrimVariantFlag, i, tmpArgList);
+        PXR_NS::SdfPath primPath{ tmpArgList.asString(0, &status).asChar() };
+        std::string variantName{ tmpArgList.asString(1, &status).asChar() };
+        std::string variantSel{ tmpArgList.asString(2, &status).asChar() };
+        primVariants[primPath].emplace(variantName, variantSel);
     }
 
     bool readAnimData = false;
@@ -218,7 +237,8 @@ MStatus MayaUSDImportCommand::doIt(const MArgList& args)
         timeInterval);
 
     MayaUsd::ImportData importData(mFileName);
-    importData.setRootVariantSelections(std::move(mVariants));
+    importData.setRootVariantSelections(std::move(rootVariants));
+    importData.setPrimVariantSelections(std::move(primVariants));
     importData.setRootPrimPath(mPrimPath);
 
     _readJob = initializeReadJob(importData, jobArgs);

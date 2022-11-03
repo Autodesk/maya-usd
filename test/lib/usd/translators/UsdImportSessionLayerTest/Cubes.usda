@@ -18,7 +18,12 @@ def Xform "Cubes" (
 
     def Xform "Geom"
     {
-        def Mesh "CubeOne"
+        def Mesh "CubeOne" (
+            variants = {
+                string displacement = "none"
+            }
+            add variantSets = "displacement"
+        )
         {
             float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
             int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
@@ -34,8 +39,18 @@ def Xform "Cubes" (
             texCoord2f[] primvars:st = [(0.375, 0), (0.625, 0), (0.625, 0.25), (0.375, 0.25), (0.375, 0.25), (0.625, 0.25), (0.625, 0.5), (0.375, 0.5), (0.375, 0.5), (0.625, 0.5), (0.625, 0.75), (0.375, 0.75), (0.375, 0.75), (0.625, 0.75), (0.625, 1), (0.375, 1), (0.625, 0), (0.875, 0), (0.875, 0.25), (0.625, 0.25), (0.125, 0), (0.375, 0), (0.375, 0.25), (0.125, 0.25)] (
                 interpolation = "faceVarying"
             )
-            double3 xformOp:translate = (-2, 0, 0.5)
+
             uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            variantSet "displacement" = {
+                "none" {
+                    double3 xformOp:translate = (-2, 0, 0.5)
+                }
+
+                "moved" {
+                    double3 xformOp:translate = (20, 10, 50)
+                }
+            }
         }
 
         def Mesh "CubeTwo"
