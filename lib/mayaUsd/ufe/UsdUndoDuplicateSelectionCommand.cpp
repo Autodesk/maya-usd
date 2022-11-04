@@ -94,7 +94,7 @@ void UsdUndoDuplicateSelectionCommand::execute()
         Ufe::Path stgPath = stagePath(dstPrim.GetStage());
         auto      stageIt = _duplicatesMap.find(stgPath);
         if (stageIt == _duplicatesMap.end()) {
-            stageIt = _duplicatesMap.insert({ stgPath, TDuplicatePathsMap() }).first;
+            stageIt = _duplicatesMap.insert({ stgPath, DuplicatePathsMap() }).first;
         }
 
         // Make sure we are not tracking more than one duplicate per source.
@@ -116,7 +116,7 @@ void UsdUndoDuplicateSelectionCommand::execute()
                         PXR_NS::UsdAttribute attr = prop.As<PXR_NS::UsdAttribute>();
                         SdfPathVector        sources;
                         attr.GetConnections(&sources);
-                        if (_updateSdfPathVector(
+                        if (updateSdfPathVector(
                                 sources, duplicatePair, stageData.second, _copyExternalInputs)) {
                             if (sources.empty()) {
                                 attr.ClearConnections();
@@ -131,7 +131,7 @@ void UsdUndoDuplicateSelectionCommand::execute()
                         UsdRelationship rel = prop.As<UsdRelationship>();
                         SdfPathVector   targets;
                         rel.GetTargets(&targets);
-                        if (_updateSdfPathVector(
+                        if (updateSdfPathVector(
                                 targets, duplicatePair, stageData.second, _copyExternalInputs)) {
                             if (targets.empty()) {
                                 rel.ClearTargets(true);
@@ -148,18 +148,18 @@ void UsdUndoDuplicateSelectionCommand::execute()
 
 Ufe::SceneItem::Ptr UsdUndoDuplicateSelectionCommand::targetItem(const Ufe::Path& sourcePath) const
 {
-    TCommandMap::const_iterator it = _perItemCommands.find(sourcePath);
+    CommandMap::const_iterator it = _perItemCommands.find(sourcePath);
     if (it == _perItemCommands.cend()) {
         return {};
     }
     return it->second->duplicatedItem();
 }
 
-bool UsdUndoDuplicateSelectionCommand::_updateSdfPathVector(
-    SdfPathVector&                        pathVec,
-    const TDuplicatePathsMap::value_type& duplicatePair,
-    const TDuplicatePathsMap&             otherPairs,
-    const bool                            keepExternal)
+bool UsdUndoDuplicateSelectionCommand::updateSdfPathVector(
+    SdfPathVector&                       pathVec,
+    const DuplicatePathsMap::value_type& duplicatePair,
+    const DuplicatePathsMap&             otherPairs,
+    const bool                           keepExternal)
 {
     bool              hasChanged = false;
     std::list<size_t> indicesToRemove;

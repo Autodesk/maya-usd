@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_UFE_USDUNDODUPLICATESELECTIONCOMMAND_H
+#define MAYAUSD_UFE_USDUNDODUPLICATESELECTIONCOMMAND_H
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdUndoDuplicateCommand.h>
@@ -66,20 +67,22 @@ private:
     UsdUndoableItem _undoableItem;
     const bool      _copyExternalInputs;
 
-    typedef std::unordered_map<Ufe::Path, UsdUndoDuplicateCommand::Ptr> TCommandMap;
-    TCommandMap                                                         _perItemCommands;
+    using CommandMap = std::unordered_map<Ufe::Path, UsdUndoDuplicateCommand::Ptr>;
+    CommandMap _perItemCommands;
 
     // Fixup data:
-    typedef std::map<SdfPath, SdfPath>                        TDuplicatePathsMap;
-    typedef std::unordered_map<Ufe::Path, TDuplicatePathsMap> TDuplicatesMap;
-    TDuplicatesMap                                            _duplicatesMap;
+    using DuplicatePathsMap = std::map<SdfPath, SdfPath>;
+    using DuplicatesMap = std::unordered_map<Ufe::Path, DuplicatePathsMap>;
+    DuplicatesMap _duplicatesMap;
 
-    bool _updateSdfPathVector(
-        SdfPathVector&                        pathVec,
-        const TDuplicatePathsMap::value_type& duplicatePair,
-        const TDuplicatePathsMap&             otherPairs,
-        const bool                            keepExternal);
+    bool updateSdfPathVector(
+        SdfPathVector&                       pathVec,
+        const DuplicatePathsMap::value_type& duplicatePair,
+        const DuplicatePathsMap&             otherPairs,
+        const bool                           keepExternal);
 }; // UsdUndoDuplicateSelectionCommand
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif
