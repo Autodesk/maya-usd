@@ -83,11 +83,11 @@ find_library(UFE_LIBRARY
     NO_DEFAULT_PATH
 )
 
-# Can not be FALSE or 0 as this implies "not found" and fails.
-set(UFE_PREVIEW_BATCHOPS_SUPPORT "absent")
+# Gather all preview features that might be there or not into a single list:
+list(APPEND UFE_PREVIEW_FEATURES v4)
+
 if (UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/batchOpsHandler.h")
-    set(UFE_PREVIEW_BATCHOPS_SUPPORT "present")
-    message(STATUS "The BatchOpsHandler API is ${UFE_PREVIEW_BATCHOPS_SUPPORT}")
+    list(APPEND UFE_PREVIEW_FEATURES BatchOps)
 endif()
 
 # Handle the QUIETLY and REQUIRED arguments and set UFE_FOUND to TRUE if
@@ -98,7 +98,7 @@ find_package_handle_standard_args(UFE
     REQUIRED_VARS
         UFE_INCLUDE_DIR
         UFE_LIBRARY
-        UFE_PREVIEW_BATCHOPS_SUPPORT
+        UFE_PREVIEW_FEATURES
     VERSION_VAR
         UFE_VERSION
 )
@@ -107,6 +107,7 @@ if(UFE_FOUND)
     message(STATUS "UFE include dir: ${UFE_INCLUDE_DIR}")
     message(STATUS "UFE library: ${UFE_LIBRARY}")
     message(STATUS "UFE version: ${UFE_VERSION}")
+    message(STATUS "UFE preview features: ${UFE_PREVIEW_FEATURES}")
 endif()
 
 set(UFE_LIGHTS_SUPPORT FALSE CACHE INTERNAL "ufeLights")

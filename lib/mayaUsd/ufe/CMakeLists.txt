@@ -109,8 +109,8 @@ if (UFE_SCENE_SEGMENT_SUPPORT)
     )
 endif()
 
-message(STATUS "UFE_PREVIEW_BATCHOPS_SUPPORT is ${UFE_PREVIEW_BATCHOPS_SUPPORT}")
-if ("${UFE_PREVIEW_BATCHOPS_SUPPORT}" STREQUAL "present")
+if (BatchOps IN_LIST UFE_PREVIEW_FEATURES)
+    message(STATUS "UFE_PREVIEW has BatchOps support")
     target_sources(${PROJECT_NAME}
     PRIVATE
         UsdBatchOpsHandler.cpp
@@ -280,7 +280,7 @@ if (UFE_SCENE_SEGMENT_SUPPORT)
     )
 endif()
 
-if ("${UFE_PREVIEW_BATCHOPS_SUPPORT}" STREQUAL "present")
+if (BatchOps IN_LIST UFE_PREVIEW_FEATURES)
     list(APPEND HEADERS
         UsdBatchOpsHandler.h
         UsdUndoDuplicateSelectionCommand.h
