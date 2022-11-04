@@ -111,7 +111,6 @@ private:
     static bool inGuard;
 };
 
-
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
 

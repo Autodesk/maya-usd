@@ -59,7 +59,7 @@ bool setUsdAttrMetadata(
             PXR_NS::UsdShadeInput input(attr);
             input.SetSdrMetadataByKey(tok, value.get<std::string>());
             return true;
-        } else if(PXR_NS::UsdShadeOutput::IsOutput(attr)) {
+        } else if (PXR_NS::UsdShadeOutput::IsOutput(attr)) {
             PXR_NS::UsdShadeOutput output(attr);
             output.SetSdrMetadataByKey(tok, value.get<std::string>());
             return true;
@@ -188,11 +188,11 @@ Ufe::Value UsdAttributeHolder::getMetadata(const std::string& key) const
         if (PXR_NS::UsdShadeNodeGraph(usdPrim())) {
             if (PXR_NS::UsdShadeInput::IsInput(_usdAttr)) {
                 const PXR_NS::UsdShadeInput input(_usdAttr);
-                const std::string metadata = input.GetSdrMetadataByKey(tok);
+                const std::string           metadata = input.GetSdrMetadataByKey(tok);
                 return Ufe::Value(metadata);
-            } else if(PXR_NS::UsdShadeOutput::IsOutput(_usdAttr)) {
+            } else if (PXR_NS::UsdShadeOutput::IsOutput(_usdAttr)) {
                 const PXR_NS::UsdShadeOutput output(_usdAttr);
-                const std::string metadata = output.GetSdrMetadataByKey(tok);
+                const std::string            metadata = output.GetSdrMetadataByKey(tok);
                 return Ufe::Value(metadata);
             }
         }

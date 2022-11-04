@@ -131,8 +131,10 @@ UsdSetMetadataCommand::UsdSetMetadataCommand(
 UsdSetMetadataCommand::~UsdSetMetadataCommand() { }
 
 //! Create a UsdSetMetadataCommand
-UsdSetMetadataCommand::Ptr
-UsdSetMetadataCommand::create(MayaUsd::ufe::UsdAttribute& attr, const std::string& key, const Ufe::Value& newValue)
+UsdSetMetadataCommand::Ptr UsdSetMetadataCommand::create(
+    MayaUsd::ufe::UsdAttribute& attr,
+    const std::string&          key,
+    const Ufe::Value&           newValue)
 {
     return std::make_shared<UsdSetMetadataCommand>(attr, key, newValue);
 }

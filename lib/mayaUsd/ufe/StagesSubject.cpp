@@ -252,7 +252,8 @@ void processAttributeChanges(
         attributeChanged(ufePath, changedPath.GetNameToken(), AttributeChangeType::kRemoved);
     }
     if (MayaUsd::ufe::InAttributeMetadataChange::inAttributeMetadataChange()) {
-        attributeChanged(ufePath, changedPath.GetNameToken(), AttributeChangeType::kMetadataChanged);
+        attributeChanged(
+            ufePath, changedPath.GetNameToken(), AttributeChangeType::kMetadataChanged);
     }
 #else
     valueChanged(ufePath, changedPath.GetNameToken());

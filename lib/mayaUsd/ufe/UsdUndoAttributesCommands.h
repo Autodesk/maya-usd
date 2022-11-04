@@ -128,10 +128,7 @@ public:
 
     //! Create a UsdSetMetadataCommand
     static UsdSetMetadataCommand::Ptr
-    create(
-        MayaUsd::ufe::UsdAttribute& attr,
-        const std::string&          key,
-        const Ufe::Value&           newValue);
+    create(MayaUsd::ufe::UsdAttribute& attr, const std::string& key, const Ufe::Value& newValue);
 
     void executeUndoBlock() override;
 
