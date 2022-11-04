@@ -19,7 +19,6 @@
 #include "private/Utils.h"
 
 #include <mayaUsd/ufe/StagesSubject.h>
-#include <mayaUsd/ufe/UsdUndoAttributesCommands.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsd/undo/UsdUndoableItem.h>
@@ -35,6 +34,9 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#if (UFE_PREVIEW_VERSION_NUM >= 4038)
+#include <mayaUsd/ufe/UsdUndoAttributesCommands.h>
+#endif
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4010)
 #include "UsdShaderAttributeDef.h"
@@ -293,6 +295,38 @@ private:
     const T               _newValue;
 };
 
+#if (UFE_PREVIEW_VERSION_NUM < 4038)
+#ifdef UFE_V3_FEATURES_AVAILABLE
+class SetUndoableMetadataCommand : public UsdBaseUndoableCommand
+{
+public:
+    SetUndoableMetadataCommand(
+        MayaUsd::ufe::UsdAttribute& attr,
+        const std::string&          key,
+        const Ufe::Value&           newValue)
+        : _attr(attr)
+        , _key(key)
+        , _newValue(newValue)
+    {
+    }
+
+    void executeUndoBlock() override
+    {
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        _attr._setMetadata(_key, _newValue);
+#else
+        _attr.setMetadata(_key, _newValue);
+#endif
+    }
+
+private:
+    MayaUsd::ufe::UsdAttribute& _attr;
+    const std::string           _key;
+    const Ufe::Value            _newValue;
+};
+#endif
+#endif
+
 } // end namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -385,7 +419,11 @@ UsdAttribute::_setMetadataCmd(const std::string& key, const Ufe::Value& value)
 UsdAttribute::setMetadataCmd(const std::string& key, const Ufe::Value& value)
 #endif
 {
+#if (UFE_PREVIEW_VERSION_NUM >= 4038)
     return UsdSetMetadataCommand::create(*this, key, value);
+#else
+    return std::make_shared<SetUndoableMetadataCommand>(*this, key, value);
+#endif
 }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
