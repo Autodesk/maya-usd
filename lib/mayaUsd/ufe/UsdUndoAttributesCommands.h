@@ -38,7 +38,7 @@ namespace ufe {
 //! \brief Implementation of AddAttributeCommand
 class UsdAddAttributeCommand
     :
-#if (UFE_PREVIEW_VERSION_NUM >= 4033)
+#if (UFE_PREVIEW_VERSION_NUM >= 4034)
     public UsdUndoableCommand<Ufe::AddAttributeUndoableCommand>
 #else
     public UsdUndoableCommand<Ufe::AddAttributeCommand>
@@ -117,7 +117,7 @@ private:
 }; // UsdRemoveAttributeCommand
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4033)
+#if (UFE_PREVIEW_VERSION_NUM >= 4034)
 //! \brief Implementation of RenameAttributeCommand
 class UsdRenameAttributeCommand : public UsdUndoableCommand<Ufe::RenameAttributeUndoableCommand>
 {

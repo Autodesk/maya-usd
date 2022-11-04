@@ -218,7 +218,7 @@ class AttributesTestCase(unittest.TestCase):
         attr = ball35Attrs.attribute("MyAttribute1")
         self.assertEqual(repr(attr),"ufe.AttributeString(<|transform1|proxyShape1,/Room_set/Props/Ball_35.MyAttribute1>)")
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4033', 'Test for UFE preview version 0.4.33 and later')
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4034', 'Test for UFE preview version 0.4.34 and later')
     def testRenamingAttribute(self):
         '''Test renaming an attribute'''
 

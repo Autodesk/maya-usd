@@ -309,7 +309,7 @@ bool UsdAttributes::hasAttribute(const std::string& name) const
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4024)
-#if (UFE_PREVIEW_VERSION_NUM >= 4033)
+#if (UFE_PREVIEW_VERSION_NUM >= 4034)
 Ufe::AddAttributeUndoableCommand::Ptr
 UsdAttributes::addAttributeCmd(const std::string& name, const Ufe::Attribute::Type& type)
 {
@@ -328,7 +328,7 @@ Ufe::UndoableCommand::Ptr UsdAttributes::removeAttributeCmd(const std::string& n
     return UsdRemoveAttributeCommand::create(fItem, name);
 }
 #endif
-#if (UFE_PREVIEW_VERSION_NUM >= 4033)
+#if (UFE_PREVIEW_VERSION_NUM >= 4034)
 Ufe::RenameAttributeUndoableCommand::Ptr
 UsdAttributes::renameAttributeCmd(const std::string& originalName, const std::string& newName)
 {
@@ -488,7 +488,7 @@ bool UsdAttributes::doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::
     return false;
 }
 #endif
-#if (UFE_PREVIEW_VERSION_NUM >= 4033)
+#if (UFE_PREVIEW_VERSION_NUM >= 4034)
 bool UsdAttributes::canRenameAttribute(
     const UsdSceneItem::Ptr& sceneItem,
     const std::string&       originalName,
