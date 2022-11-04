@@ -165,6 +165,8 @@ global proc int usdTranslatorExport (string $parent,
 
         checkBox -l "Renderable Only" renderableOnlyCheckBox;
 
+        checkBox -l "Worldspace Roots" worldspaceCheckBox;
+
         textFieldGrp -l "Filtered Node Types"
             -annotation ("Do not export nodes of this type, or their children;\n" +
                          "specify multiple types by separating with comma: 'constraint,place3dTexture'")
@@ -274,6 +276,8 @@ global proc int usdTranslatorExport (string $parent,
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "eulerFilterCheckBox");
                 } else if ($optionBreakDown[0] == "staticSingleSample") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "staticSingleSampleCheckBox");
+                } else if ($optionBreakDown[0] == "worldspace") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "worldspaceCheckBox");
                 } else if ($optionBreakDown[0] == "startTime") {
                     int $startTime=$optionBreakDown[1];
                     intFieldGrp -e -v1 $startTime startTimeField;
@@ -322,6 +326,7 @@ global proc int usdTranslatorExport (string $parent,
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "animation", "animationCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "eulerFilter", "eulerFilterCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "staticSingleSample", "staticSingleSampleCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "worldspace", "worldspaceCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromIntField($currentOptions, "startTime", "startTimeField");
         $currentOptions = usdTranslatorExport_AppendFromIntField($currentOptions, "endTime", "endTimeField");
         $currentOptions = usdTranslatorExport_AppendFromFloatField($currentOptions, "frameStride", "frameStrideField");

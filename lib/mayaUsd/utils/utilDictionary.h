@@ -82,8 +82,8 @@ extractTokenSet(const PXR_NS::VtDictionary& userArgs, const PXR_NS::TfToken& key
 
 // Implementation of the templated function declared above.
 template <typename T>
-MAYAUSD_CORE_PUBLIC std::vector<T>
-                    extractVector(const PXR_NS::VtDictionary& userArgs, const PXR_NS::TfToken& key)
+inline std::vector<T>
+extractVector(const PXR_NS::VtDictionary& userArgs, const PXR_NS::TfToken& key)
 {
     // Using declaration is necessary for the TF_ macros to compile as they assume
     // to be in that namespace.
