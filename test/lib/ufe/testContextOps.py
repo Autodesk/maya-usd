@@ -146,9 +146,9 @@ class ContextOpsTestCase(unittest.TestCase):
             if c.checked:
                 self.assertEqual(c.item, 'Ball_8')
 
-    def testSwitchVariantInWeakerLayer(self):
+    def testSwitchVariantInLayer(self):
         """
-        Test that switching variant in a weaker layer is restricted.
+        Test switching variant in layers: stronger, weaker, session.
         """
         contextItems = self.contextOps.getItems([])
 
@@ -200,7 +200,15 @@ class ContextOpsTestCase(unittest.TestCase):
         # Verify the variant has not switched.
         self.assertEqual(shadingVariant(), 'Cue')
         self.assertEqual(shadingVariantOnPrim(), 'Cue')
-        
+
+        # Verify we can switch variant in Session Layer.
+        stage.SetEditTarget(stage.GetSessionLayer())
+        cmd = self.contextOps.doOpCmd(
+            ['Variant Sets', 'shadingVariant', 'Ball_8'])
+        self.assertIsNotNone(cmd)
+        ufeCmd.execute(cmd)
+        self.assertEqual(shadingVariant(), 'Ball_8')
+        self.assertEqual(shadingVariantOnPrim(), 'Ball_8')
 
     def testDoOp(self):
         # Change visibility, undo / redo.

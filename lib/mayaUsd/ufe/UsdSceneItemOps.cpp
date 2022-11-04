@@ -49,6 +49,15 @@ const Ufe::Path& UsdSceneItemOps::path() const { return fItem->path(); }
 
 Ufe::SceneItem::Ptr UsdSceneItemOps::sceneItem() const { return fItem; }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4033)
+Ufe::UndoableCommand::Ptr UsdSceneItemOps::deleteItemCmdNoExecute()
+{
+    return UsdUndoDeleteCommand::create(prim());
+}
+#endif
+#endif
+
 Ufe::UndoableCommand::Ptr UsdSceneItemOps::deleteItemCmd()
 {
     auto deleteCmd = UsdUndoDeleteCommand::create(prim());
@@ -67,6 +76,15 @@ bool UsdSceneItemOps::deleteItem()
     return false;
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4033)
+Ufe::UndoableCommand::Ptr UsdSceneItemOps::duplicateItemCmdNoExecute()
+{
+    return UsdUndoDuplicateCommand::create(fItem);
+}
+#endif
+#endif
+
 Ufe::Duplicate UsdSceneItemOps::duplicateItemCmd()
 {
     auto duplicateCmd = UsdUndoDuplicateCommand::create(fItem);
@@ -80,18 +98,27 @@ Ufe::SceneItem::Ptr UsdSceneItemOps::duplicateItem()
     return duplicate.item;
 }
 
-Ufe::SceneItem::Ptr UsdSceneItemOps::renameItem(const Ufe::PathComponent& newName)
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4033)
+Ufe::UndoableCommand::Ptr UsdSceneItemOps::renameItemCmdNoExecute(const Ufe::PathComponent& newName)
 {
-    auto renameCmd = UsdUndoRenameCommand::create(fItem, newName);
-    renameCmd->execute();
-    return renameCmd->renamedItem();
+    return UsdUndoRenameCommand::create(fItem, newName);
 }
+#endif
+#endif
 
 Ufe::Rename UsdSceneItemOps::renameItemCmd(const Ufe::PathComponent& newName)
 {
     auto renameCmd = UsdUndoRenameCommand::create(fItem, newName);
     renameCmd->execute();
     return Ufe::Rename(renameCmd->renamedItem(), renameCmd);
+}
+
+Ufe::SceneItem::Ptr UsdSceneItemOps::renameItem(const Ufe::PathComponent& newName)
+{
+    auto renameCmd = UsdUndoRenameCommand::create(fItem, newName);
+    renameCmd->execute();
+    return renameCmd->renamedItem();
 }
 
 } // namespace ufe

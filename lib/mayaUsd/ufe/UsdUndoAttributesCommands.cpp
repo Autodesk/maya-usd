@@ -18,6 +18,7 @@
 #include <mayaUsd/ufe/UsdAttributes.h>
 
 #include <ufe/hierarchy.h>
+#include <ufe/pathString.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -72,6 +73,15 @@ void UsdAddAttributeCommand::executeUndoBlock()
     }
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4032)
+std::string UsdAddAttributeCommand::commandString() const
+{
+    return std::string("AddAttribute ") + _name + " " + Ufe::PathString::string(_sceneItemPath);
+}
+#endif
+#endif
+
 UsdRemoveAttributeCommand::UsdRemoveAttributeCommand(
     const UsdSceneItem::Ptr& sceneItem,
     const std::string&       name)
@@ -101,6 +111,12 @@ void UsdRemoveAttributeCommand::executeUndoBlock()
 }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4032)
+std::string UsdRemoveAttributeCommand::commandString() const
+{
+    return std::string("RemoveAttribute ") + _name + " " + Ufe::PathString::string(_sceneItemPath);
+}
+#endif
 #if (UFE_PREVIEW_VERSION_NUM >= 4033)
 UsdRenameAttributeCommand::UsdRenameAttributeCommand(
     const UsdSceneItem::Ptr& sceneItem,
@@ -151,5 +167,6 @@ void UsdRenameAttributeCommand::setNewName(const std::string& newName) { _newNam
 
 #endif
 #endif
+
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

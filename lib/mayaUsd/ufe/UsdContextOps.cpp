@@ -278,6 +278,12 @@ public:
                 Ufe::GlobalSelection::get(), newSelection));
         }
     }
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4032)
+    std::string commandString() const override { return cmdsList().front()->commandString(); }
+#endif
+#endif
 };
 
 //! \brief Create a working Material and select it:
@@ -302,6 +308,12 @@ public:
                 Ufe::GlobalSelection::get(), newSelection));
         }
     }
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4032)
+    std::string commandString() const override { return cmdsList().front()->commandString(); }
+#endif
+#endif
 };
 #endif
 
