@@ -11,7 +11,7 @@
 # UFE_VERSION         UFE version (major.minor.patch) from ufe.h
 # UFE_LIGHTS_SUPPORT  Presence of UFE lights support
 # UFE_SCENE_SEGMENT_SUPPORT Presence of UFE scene segment support
-# UFE_PREVIEW_BATCHOPS_SUPPORT Presence of UFE batched operations support
+# UFE_PREVIEW_FEATURES List of all features introduced gradually in the UFE preview version
 #
 
 find_path(UFE_INCLUDE_DIR
