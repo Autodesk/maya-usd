@@ -109,6 +109,20 @@ if (UFE_SCENE_SEGMENT_SUPPORT)
     )
 endif()
 
+message(STATUS "UFE_PREVIEW_BATCHOPS_SUPPORT is ${UFE_PREVIEW_BATCHOPS_SUPPORT}")
+if (UFE_PREVIEW_BATCHOPS_SUPPORT)
+    target_sources(${PROJECT_NAME}
+    PRIVATE
+        UsdBatchOpsHandler.cpp
+        UsdUndoDuplicateSelectionCommand.cpp
+    )
+
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_PREVIEW_BATCHOPS_SUPPORT=1
+    )
+endif()
+
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4001)
         target_sources(${PROJECT_NAME}
@@ -161,14 +175,6 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         target_sources(${PROJECT_NAME}
             PRIVATE
                 UsdTransform3dRead.cpp
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4033)
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-                UsdBatchOpsHandler.cpp
-                UsdUndoDuplicateFixupsCommand.cpp
         )
     endif()
 endif()
@@ -274,6 +280,13 @@ if (UFE_SCENE_SEGMENT_SUPPORT)
     )
 endif()
 
+if (UFE_PREVIEW_BATCHOPS_SUPPORT)
+    list(APPEND HEADERS
+        UsdBatchOpsHandler.h
+        UsdUndoDuplicateSelectionCommand.h
+    )
+endif()
+
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4001)
         list(APPEND HEADERS
@@ -319,13 +332,6 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4025)
         list(APPEND HEADERS
             UsdTransform3dRead.h
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4033)
-        list(APPEND HEADERS
-        UsdBatchOpsHandler.h
-        UsdUndoDuplicateFixupsCommand.h
         )
     endif()
 endif()

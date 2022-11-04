@@ -11,6 +11,7 @@
 # UFE_VERSION         UFE version (major.minor.patch) from ufe.h
 # UFE_LIGHTS_SUPPORT  Presence of UFE lights support
 # UFE_SCENE_SEGMENT_SUPPORT Presence of UFE scene segment support
+# UFE_PREVIEW_BATCHOPS_SUPPORT Presence of UFE batched operations support
 #
 
 find_path(UFE_INCLUDE_DIR
@@ -82,6 +83,12 @@ find_library(UFE_LIBRARY
     NO_DEFAULT_PATH
 )
 
+set(UFE_PREVIEW_BATCHOPS_SUPPORT FALSE)
+if (UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/batchOpsHandler.h")
+    set(UFE_PREVIEW_BATCHOPS_SUPPORT TRUE)
+    message(STATUS "Maya has UFE BatchOpsHandler API")
+endif()
+
 # Handle the QUIETLY and REQUIRED arguments and set UFE_FOUND to TRUE if
 # all listed variables are TRUE.
 include(FindPackageHandleStandardArgs)
@@ -90,6 +97,7 @@ find_package_handle_standard_args(UFE
     REQUIRED_VARS
         UFE_INCLUDE_DIR
         UFE_LIBRARY
+        UFE_PREVIEW_BATCHOPS_SUPPORT
     VERSION_VAR
         UFE_VERSION
 )

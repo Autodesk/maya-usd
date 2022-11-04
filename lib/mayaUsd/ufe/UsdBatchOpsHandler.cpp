@@ -15,16 +15,7 @@
 //
 #include "UsdBatchOpsHandler.h"
 
-#include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/Utils.h>
-
-#include <pxr/usd/usd/attribute.h>
-#include <pxr/usd/usd/primRange.h>
-#include <pxr/usd/usd/property.h>
-#include <pxr/usd/usd/relationship.h>
-
-#include <ufe/runTimeMgr.h>
-#include <ufe/value.h>
+#include <mayaUsd/ufe/UsdUndoDuplicateSelectionCommand.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -48,67 +39,11 @@ UsdBatchOpsHandler::Ptr UsdBatchOpsHandler::create()
 // Ufe::BatchOpsHandler overrides
 //------------------------------------------------------------------------------
 
-void UsdBatchOpsHandler::beginDuplicationGuard_(const Ufe::ValueDictionary& duplicateOptions)
+Ufe::SelectionUndoableCommand::Ptr UsdBatchOpsHandler::duplicateSelection_(
+    const Ufe::Selection&       selection,
+    const Ufe::ValueDictionary& duplicateOptions)
 {
-    _clearGuardData();
-    _duplicateOptions = duplicateOptions;
-    _inBatchedDuplicate = true;
-
-    // We currently only understand and support the "inputConnections" option:
-    const auto itInputConnections = _duplicateOptions.find("inputConnections");
-    if (itInputConnections != _duplicateOptions.end() && itInputConnections->second.get<bool>()) {
-        _fixupCommand = UsdUndoDuplicateFixupsCommand::create();
-    }
-}
-
-Ufe::UndoableCommand::Ptr UsdBatchOpsHandler::endDuplicationGuardCmd_()
-{
-    Ufe::UndoableCommand::Ptr retVal = _fixupCommand;
-    _clearGuardData();
-    return retVal;
-}
-
-void UsdBatchOpsHandler::_clearGuardData()
-{
-    _duplicateOptions.clear();
-    _fixupCommand.reset();
-}
-
-void UsdBatchOpsHandler::postProcessDuplicatedItem(
-    const PXR_NS::UsdPrim& srcPrim,
-    const PXR_NS::UsdPrim& dstPrim)
-{
-    UsdBatchOpsHandler::Ptr handler = std::dynamic_pointer_cast<UsdBatchOpsHandler>(
-        Ufe::RunTimeMgr::instance().batchOpsHandler(getUsdRunTimeId()));
-
-    if (!handler->_inBatchedDuplicate) {
-        return;
-    }
-
-    if (handler->_fixupCommand) {
-        // Keep track of the paths and layers because we need to fixup connections later.
-        handler->_fixupCommand->trackDuplicates(srcPrim, dstPrim);
-    } else {
-        // Cleanup relationships and connections directly on the duplicate.
-        // This code is executed under the UsdUndoDuplicateCommand undo block, so will be correctly
-        // tracked for undo/redo purpose.
-        for (auto p : UsdPrimRange(dstPrim)) {
-            for (auto& prop : p.GetProperties()) {
-                if (prop.Is<PXR_NS::UsdAttribute>()) {
-                    PXR_NS::UsdAttribute attr = prop.As<PXR_NS::UsdAttribute>();
-                    attr.ClearConnections();
-                    if (!attr.HasValue()) {
-                        p.RemoveProperty(prop.GetName());
-                    }
-                    // If we wanted to be thorough, we would also make sure all relationships are
-                    // cleared as well, but it does not create a good workflow.
-                    //} else if (prop.Is<UsdRelationship>()) {
-                    //    UsdRelationship rel = prop.As<UsdRelationship>();
-                    //    rel.ClearTargets(true);
-                }
-            }
-        }
-    }
+    return UsdUndoDuplicateSelectionCommand::create(selection, duplicateOptions);
 }
 
 } // namespace ufe

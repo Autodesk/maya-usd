@@ -16,13 +16,16 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdUndoDuplicateCommand.h>
 #include <mayaUsd/undo/UsdUndoableItem.h>
 
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
 
 #include <ufe/path.h>
+#include <ufe/selection.h>
 #include <ufe/undoableCommand.h>
+#include <ufe/value.h>
 
 #include <map>
 #include <unordered_map>
@@ -32,46 +35,51 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-//! \brief UsdUndoDuplicateFixupsCommand
-class MAYAUSD_CORE_PUBLIC UsdUndoDuplicateFixupsCommand : public Ufe::UndoableCommand
+//! \brief UsdUndoDuplicateSelectionCommand
+class MAYAUSD_CORE_PUBLIC UsdUndoDuplicateSelectionCommand : public Ufe::SelectionUndoableCommand
 {
 public:
-    typedef std::shared_ptr<UsdUndoDuplicateFixupsCommand> Ptr;
+    typedef std::shared_ptr<UsdUndoDuplicateSelectionCommand> Ptr;
 
-    UsdUndoDuplicateFixupsCommand();
-    ~UsdUndoDuplicateFixupsCommand() override;
+    UsdUndoDuplicateSelectionCommand(
+        const Ufe::Selection&       selection,
+        const Ufe::ValueDictionary& duplicateOptions);
+    ~UsdUndoDuplicateSelectionCommand() override;
 
     // Delete the copy/move constructors assignment operators.
-    UsdUndoDuplicateFixupsCommand(const UsdUndoDuplicateFixupsCommand&) = delete;
-    UsdUndoDuplicateFixupsCommand& operator=(const UsdUndoDuplicateFixupsCommand&) = delete;
-    UsdUndoDuplicateFixupsCommand(UsdUndoDuplicateFixupsCommand&&) = delete;
-    UsdUndoDuplicateFixupsCommand& operator=(UsdUndoDuplicateFixupsCommand&&) = delete;
+    UsdUndoDuplicateSelectionCommand(const UsdUndoDuplicateSelectionCommand&) = delete;
+    UsdUndoDuplicateSelectionCommand& operator=(const UsdUndoDuplicateSelectionCommand&) = delete;
+    UsdUndoDuplicateSelectionCommand(UsdUndoDuplicateSelectionCommand&&) = delete;
+    UsdUndoDuplicateSelectionCommand& operator=(UsdUndoDuplicateSelectionCommand&&) = delete;
 
-    //! Create a UsdUndoDuplicateFixupsCommand from a USD prim and UFE path.
-    static UsdUndoDuplicateFixupsCommand::Ptr create();
-
-    //! Add a duplication pair to fixup.
-    void trackDuplicates(const UsdPrim& srcPrim, const UsdPrim& dstPrim);
+    //! Create a UsdUndoDuplicateSelectionCommand from a USD prim and UFE path.
+    static Ptr
+    create(const Ufe::Selection& selection, const Ufe::ValueDictionary& duplicateOptions);
 
     void execute() override;
     void undo() override;
     void redo() override;
 
+    Ufe::SceneItem::Ptr targetItem(const Ufe::Path& sourcePath) const override;
+
 private:
     UsdUndoableItem _undoableItem;
+    const bool      _copyExternalInputs;
 
+    typedef std::unordered_map<Ufe::Path, UsdUndoDuplicateCommand::Ptr> TCommandMap;
+    TCommandMap                                                         _perItemCommands;
+
+    // Fixup data:
     typedef std::map<SdfPath, SdfPath>                        TDuplicatePathsMap;
     typedef std::unordered_map<Ufe::Path, TDuplicatePathsMap> TDuplicatesMap;
     TDuplicatesMap                                            _duplicatesMap;
 
-    bool duplicateUndo();
-    bool duplicateRedo();
-
     bool _updateSdfPathVector(
         SdfPathVector&                        pathVec,
         const TDuplicatePathsMap::value_type& duplicatePair,
-        const TDuplicatePathsMap&             otherPairs);
-}; // UsdUndoDuplicateFixupsCommand
+        const TDuplicatePathsMap&             otherPairs,
+        const bool                            keepExternal);
+}; // UsdUndoDuplicateSelectionCommand
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

@@ -18,7 +18,6 @@
 //
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdUndoDuplicateFixupsCommand.h>
 
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/types.h>
@@ -48,20 +47,9 @@ public:
     static UsdBatchOpsHandler::Ptr create();
 
     // Ufe::BatchOpsHandler overrides.
-    void beginDuplicationGuard_(const Ufe::ValueDictionary& duplicateOptions) override;
-    Ufe::UndoableCommand::Ptr endDuplicationGuardCmd_() override;
-
-    // Post-process a duplicated item:
-    static void
-    postProcessDuplicatedItem(const PXR_NS::UsdPrim& srcPrim, const PXR_NS::UsdPrim& dstPrim);
-
-private:
-    Ufe::ValueDictionary               _duplicateOptions;
-    UsdUndoDuplicateFixupsCommand::Ptr _fixupCommand;
-    bool                               _inBatchedDuplicate = false;
-
-    // Clear all guard data.
-    void _clearGuardData();
+    Ufe::SelectionUndoableCommand::Ptr duplicateSelection_(
+        const Ufe::Selection&       selection,
+        const Ufe::ValueDictionary& duplicateOptions) override;
 }; // UsdBatchOpsHandler
 
 } // namespace ufe

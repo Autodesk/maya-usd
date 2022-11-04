@@ -21,9 +21,6 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/editRouter.h>
 #include <mayaUsd/utils/loadRules.h>
-#if (UFE_PREVIEW_VERSION_NUM >= 4033)
-#include <mayaUsd/ufe/UsdBatchOpsHandler.h>
-#endif
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #endif
@@ -92,10 +89,6 @@ void UsdUndoDuplicateCommand::execute()
         "Failed to copy spec data at '%s' to '%s'",
         prim.GetPath().GetText(),
         _usdDstPath.GetText());
-
-#if (UFE_PREVIEW_VERSION_NUM >= 4033)
-    UsdBatchOpsHandler::postProcessDuplicatedItem(prim, stage->GetPrimAtPath(_usdDstPath));
-#endif
 }
 
 void UsdUndoDuplicateCommand::undo()

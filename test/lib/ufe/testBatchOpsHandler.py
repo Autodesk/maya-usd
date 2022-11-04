@@ -45,7 +45,7 @@ class BatchOpsHandlerTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
     def testUfeDuplicateRelationships(self):
-        '''Test that a duplication guard using Ufe API allows relationship fixups.'''
+        '''Test that a batched duplication using Ufe API allows relationship fixups.'''
 
         # Load a scene.
         testFile = testUtils.getTestScene('MaterialX', 'BatchOpsTestScene.usda')
@@ -59,7 +59,7 @@ class BatchOpsHandlerTestCase(unittest.TestCase):
         batchOpsHandler = ufe.RunTimeMgr.instance().batchOpsHandler(matItem.runTimeId())
         self.assertIsNotNone(batchOpsHandler)
 
-        # Duplicating without a guard means the new plane will not see the new material:
+        # Duplicating without batching means the new plane will not see the new material:
         dGeom = ufe.SceneItemOps.sceneItemOps(geomItem).duplicateItemCmd()
         dMat = ufe.SceneItemOps.sceneItemOps(matItem).duplicateItemCmd()
 
@@ -71,21 +71,20 @@ class BatchOpsHandlerTestCase(unittest.TestCase):
         dMat.undoableCommand.undo()
         dGeom.undoableCommand.undo()
 
-        # Setup a guard, with Maya flag to duplicate connections (and properly manage them)
-        batchOpsHandler.beginDuplicationGuard({"inputConnections": True})
+        sel = ufe.Selection()
+        sel.append(geomItem)
+        sel.append(matItem)
 
-        dGeom = ufe.SceneItemOps.sceneItemOps(geomItem).duplicateItemCmd()
-        dMat = ufe.SceneItemOps.sceneItemOps(matItem).duplicateItemCmd()
+        cmd = batchOpsHandler.duplicateSelection(sel, {"inputConnections": True})
+        cmd.execute()
 
-        batchOpsHandler.endDuplicationGuard()
-
-        dGeomPrim = usdUtils.getPrimFromSceneItem(dGeom.item)
+        dGeomPrim = usdUtils.getPrimFromSceneItem(cmd.targetItem(geomItem.path()))
         dGeomBindAPI = UsdShade.MaterialBindingAPI(dGeomPrim)
         # Now seeing and using ss3SG1
         self.assertEqual(dGeomBindAPI.GetDirectBinding().GetMaterialPath(), Sdf.Path("/mtl/ss3SG1"))
 
     def testUfeDuplicateConnections(self):
-        '''Test that a duplication guard using Ufe API allows connection fixups.'''
+        '''Test that a batched duplication using Ufe API allows connection fixups.'''
 
         # Load a scene.
         testFile = testUtils.getTestScene('MaterialX', 'BatchOpsTestScene.usda')
@@ -103,7 +102,7 @@ class BatchOpsHandlerTestCase(unittest.TestCase):
         batchOpsHandler = ufe.RunTimeMgr.instance().batchOpsHandler(f3Item.runTimeId())
         self.assertIsNotNone(batchOpsHandler)
 
-        # Duplicating without a guard means the duplicated nodes will not see each other:
+        # Duplicating without batching: the duplicated nodes will not see each other.
         dF3 = ufe.SceneItemOps.sceneItemOps(f3Item).duplicateItemCmd()
         dF3t = ufe.SceneItemOps.sceneItemOps(f3tItem).duplicateItemCmd()
         dF3p = ufe.SceneItemOps.sceneItemOps(f3pItem).duplicateItemCmd()
@@ -123,46 +122,58 @@ class BatchOpsHandlerTestCase(unittest.TestCase):
         dF3t.undoableCommand.undo()
         dF3.undoableCommand.undo()
 
-        # Setup a guard, with Maya flag to duplicate connections (and properly manage them)
-        batchOpsHandler.beginDuplicationGuard({"inputConnections": True})
+        sel = ufe.Selection()
+        sel.append(f3Item)
+        sel.append(f3tItem)
+        sel.append(f3pItem)
 
-        dF3 = ufe.SceneItemOps.sceneItemOps(f3Item).duplicateItemCmd()
-        dF3t = ufe.SceneItemOps.sceneItemOps(f3tItem).duplicateItemCmd()
-        dF3p = ufe.SceneItemOps.sceneItemOps(f3pItem).duplicateItemCmd()
+        cmd = batchOpsHandler.duplicateSelection(sel, {"inputConnections": True})
+        cmd.execute()
 
-        endCmd = batchOpsHandler.endDuplicationGuardCmd()
-        endCmd.execute()
-
-        connections = connectionHandler.sourceConnections(dF3t.item)
+        connections = connectionHandler.sourceConnections(cmd.targetItem(f3tItem.path()))
         self.assertIsNotNone(connections)
         conn = set(["{}.{} -> {}.{}".format(i.src.path, i.src.name, i.dst.path, i.dst.name) for i in connections.allConnections()])
-        expected = {
+        expectedF3t = {
             # Connections are pointing to the new file4 and place2dTexture4 nodes.
             '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/file4.outputs:out -> |world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/file3_MayafileTexture1.inputs:inColor',
             '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/place2dTexture4.outputs:out -> |world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/file3_MayafileTexture1.inputs:uvCoord'
         }
-        self.assertEqual(conn, expected)
-        self.assertEqual(str(dF3.item.path()), '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/file4')
-        self.assertEqual(str(dF3p.item.path()), '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/place2dTexture4')
+        self.assertEqual(conn, expectedF3t)
+        self.assertEqual(str(cmd.targetItem(f3Item.path()).path()), '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/file4')
+        self.assertEqual(str(cmd.targetItem(f3pItem.path()).path()), '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/place2dTexture4')
 
-        # Last test, but with a guard that will delete connections instead of rearranging them:
-        endCmd.undo()
-        dF3p.undoableCommand.undo()
-        dF3t.undoableCommand.undo()
-        dF3.undoableCommand.undo()
-
-        batchOpsHandler.beginDuplicationGuard({"inputConnections": False})
-
-        dF3 = ufe.SceneItemOps.sceneItemOps(f3Item).duplicateItemCmd()
-        dF3t = ufe.SceneItemOps.sceneItemOps(f3tItem).duplicateItemCmd()
-        dF3p = ufe.SceneItemOps.sceneItemOps(f3pItem).duplicateItemCmd()
-
-        batchOpsHandler.endDuplicationGuard()
-
-        connections = connectionHandler.sourceConnections(dF3t.item)
+        connections = connectionHandler.sourceConnections(cmd.targetItem(f3pItem.path()))
         self.assertIsNotNone(connections)
-        # No connections were duplicated:
+        conn = set(["{}.{} -> {}.{}".format(i.src.path, i.src.name, i.dst.path, i.dst.name) for i in connections.allConnections()])
+        expectedF3p = {
+            # Connection pointing to the original node graph.
+            '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG.inputs:file3:varname -> |world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/place2dTexture4.inputs:geomprop',
+        }
+        self.assertEqual(conn, expectedF3p)
+
+        # Last test, but with options that will also drop connections to SceneItems
+        # outside of the duplicated clique.
+        cmd.undo()
+
+        cmd = batchOpsHandler.duplicateSelection(sel, {"inputConnections": False})
+
+        cmd.execute()
+
+        connections = connectionHandler.sourceConnections(cmd.targetItem(f3tItem.path()))
+        self.assertIsNotNone(connections)
+        conn = set(["{}.{} -> {}.{}".format(i.src.path, i.src.name, i.dst.path, i.dst.name) for i in connections.allConnections()])
+        expectedF3t = {
+            # Connections are pointing to the new file4 and place2dTexture4 nodes.
+            '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/file4.outputs:out -> |world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/file3_MayafileTexture1.inputs:inColor',
+            '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/place2dTexture4.outputs:out -> |world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/file3_MayafileTexture1.inputs:uvCoord'
+        }
+        self.assertEqual(conn, expectedF3t)
+
+        # The connection between the new place2dTexture and the original NodeGraph will be gone.
+        connections = connectionHandler.sourceConnections(cmd.targetItem(f3pItem.path()))
+        self.assertIsNotNone(connections)
         self.assertEqual(len(connections.allConnections()), 0)
+        
 
     def testUfeDuplicateRelationshipsMaya(self):
         '''Test that Maya uses relationship fixups.'''
@@ -213,22 +224,38 @@ class BatchOpsHandlerTestCase(unittest.TestCase):
         connections = connectionHandler.sourceConnections(f3tDupItem)
         self.assertIsNotNone(connections)
         conn = set(["{}.{} -> {}.{}".format(i.src.path, i.src.name, i.dst.path, i.dst.name) for i in connections.allConnections()])
-        expected = {
+        expectedF3t = {
             # Connections are pointing to the new file4 and place2dTexture4 nodes.
             '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/file4.outputs:out -> |world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/file3_MayafileTexture1.inputs:inColor',
             '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/place2dTexture4.outputs:out -> |world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/file3_MayafileTexture1.inputs:uvCoord'
         }
-        self.assertEqual(conn, expected)
+        self.assertEqual(conn, expectedF3t)
         self.assertEqual(str(f3DupItem.path()), '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/file4')
         self.assertEqual(str(f3pDupItem.path()), '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/place2dTexture4')
 
-        # Re-test, but using the default duplicate, that should not copy connections:
+        connections = connectionHandler.sourceConnections(f3pDupItem)
+        self.assertIsNotNone(connections)
+        conn = set(["{}.{} -> {}.{}".format(i.src.path, i.src.name, i.dst.path, i.dst.name) for i in connections.allConnections()])
+        expectedF3p = {
+            # Connection pointing to the original node graph.
+            '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG.inputs:file3:varname -> |world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/place2dTexture4.inputs:geomprop',
+        }
+        self.assertEqual(conn, expectedF3p)
+
+        # Re-test, but using the default duplicate, that should not copy connections
+        # to original SceneItems.
         cmds.undo()
         cmds.duplicate()
 
-        connections = connectionHandler.sourceConnections(ufe.GlobalSelection.get().front())
+        f3tDupItem, f3DupItem, f3pDupItem = tuple(ufe.GlobalSelection.get())
+        connections = connectionHandler.sourceConnections(f3tDupItem)
         self.assertIsNotNone(connections)
-        # No connections were duplicated:
+        conn = set(["{}.{} -> {}.{}".format(i.src.path, i.src.name, i.dst.path, i.dst.name) for i in connections.allConnections()])
+        self.assertEqual(conn, expectedF3t)
+
+        # The connection between the new place2dTexture and the original NodeGraph will be gone.
+        connections = connectionHandler.sourceConnections(f3pDupItem)
+        self.assertIsNotNone(connections)
         self.assertEqual(len(connections.allConnections()), 0)
 
 

@@ -61,6 +61,12 @@ if (UFE_SCENE_SEGMENT_SUPPORT)
     )
 endif()
 
+if (UFE_PREVIEW_BATCHOPS_SUPPORT)
+    list(APPEND TEST_SCRIPT_FILES
+        testBatchOpsHandler.py
+    )
+endif()
+
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
         list(APPEND TEST_SCRIPT_FILES
@@ -72,12 +78,6 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4023)
         list(APPEND TEST_SCRIPT_FILES
             testUINodeGraphNode.py
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4033)
-        list(APPEND TEST_SCRIPT_FILES
-            testBatchOpsHandler.py
         )
     endif()
 
