@@ -326,6 +326,43 @@ class BatchOpsHandlerTestCase(unittest.TestCase):
 
         checkState2(self, expectedF3t)
 
+    def testMeshWithEncapsulatedMaterial(self):
+        """Duplicate is a complex operation. Test an issue that was found out while debugging:
+           Connections on shaders deep in the hierarchy were losing their connections."""
+        # Load a scene.
+        testFile = testUtils.getTestScene('MaterialX', 'BatchOpsTestScene.usda')
+        shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
+
+        geomItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane2')
+        self.assertIsNotNone(geomItem)
+
+        batchOpsHandler = ufe.RunTimeMgr.instance().batchOpsHandler(geomItem.runTimeId())
+        self.assertIsNotNone(batchOpsHandler)
+
+        sel = ufe.Selection()
+        sel.append(geomItem)
+
+        cmd = batchOpsHandler.duplicateSelection(sel, {"inputConnections": False})
+        cmd.execute()
+
+        def checkStatus(self, cmd, feomItem):
+            stage = usdUtils.getPrimFromSceneItem(geomItem).GetStage()
+            ss2 = UsdShade.Shader(stage.GetPrimAtPath(Sdf.Path("/pPlane7/mtl/ss2SG/ss2")))
+            self.assertTrue(ss2.GetPrim().IsValid())
+            base_color = ss2.GetInput("base_color")
+            self.assertEqual(base_color.GetAttr().GetPath(), Sdf.Path("/pPlane7/mtl/ss2SG/ss2.inputs:base_color"))
+            self.assertTrue(base_color.HasConnectedSource())
+            connection = base_color.GetConnectedSources()[0][0]
+            self.assertEqual(connection.sourceName, "baseColor")
+            self.assertEqual(connection.source.GetPath(), Sdf.Path("/pPlane7/mtl/ss2SG/MayaNG_ss2SG"))
+            
+        checkStatus(self, cmd, geomItem)
+
+        cmd.undo()
+        cmd.redo()
+
+        checkStatus(self, cmd, geomItem)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

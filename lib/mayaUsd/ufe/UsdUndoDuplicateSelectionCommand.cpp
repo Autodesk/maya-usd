@@ -180,7 +180,8 @@ bool UsdUndoDuplicateSelectionCommand::updateSdfPathVector(
         for (; itPath != endPath; ++itPath) {
             if (*itPath == duplicatePair) {
                 // That one was correctly processed by USD when duplicating.
-                isExternalPath = !finalPath.HasPrefix(itPath->first);
+                isExternalPath
+                    = !finalPath.HasPrefix(itPath->first) && !finalPath.HasPrefix(itPath->second);
                 continue;
             }
             finalPath = finalPath.ReplacePrefix(itPath->first, itPath->second);
