@@ -20,9 +20,6 @@
 #include <mayaUsd/ufe/UsdUndoDuplicateCommand.h>
 #include <mayaUsd/undo/UsdUndoableItem.h>
 
-#include <pxr/usd/sdf/path.h>
-#include <pxr/usd/usd/prim.h>
-
 #include <ufe/path.h>
 #include <ufe/selection.h>
 #include <ufe/undoableCommand.h>

@@ -54,7 +54,7 @@ UsdUndoDuplicateSelectionCommand::UsdUndoDuplicateSelectionCommand(
     , _copyExternalInputs(shouldConnectExternalInputs(duplicateOptions))
 {
     // TODO: MAYA-125854. If duplicating /a/b and /a/b/c, it would make sense to order the
-    // operations by SdfPath, and always check if the previoulsy processed path is a prefix of the
+    // operations by SdfPath, and always check if the previously processed path is a prefix of the
     // one currently being processed. In that case, a duplicate task is not necessary because the
     // resulting SceneItem should be built by using SdfPath::ReplacePrefix on the current item to
     // get its location in the previously duplicated parent item.
@@ -131,8 +131,11 @@ void UsdUndoDuplicateSelectionCommand::execute()
                         UsdRelationship rel = prop.As<UsdRelationship>();
                         SdfPathVector   targets;
                         rel.GetTargets(&targets);
-                        if (updateSdfPathVector(
-                                targets, duplicatePair, stageData.second, _copyExternalInputs)) {
+                        // Currently always copying external relationships is the right move since
+                        // duplicated geometries will keep their currently assigned material. We
+                        // might need a case by case basis later as we deal with more complex
+                        // relationships.
+                        if (updateSdfPathVector(targets, duplicatePair, stageData.second, true)) {
                             if (targets.empty()) {
                                 rel.ClearTargets(true);
                             } else {
