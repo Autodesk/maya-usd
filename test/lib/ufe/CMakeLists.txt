@@ -61,7 +61,7 @@ if (UFE_SCENE_SEGMENT_SUPPORT)
     )
 endif()
 
-if (UFE_PREVIEW_BATCHOPS_SUPPORT)
+if ("${UFE_PREVIEW_BATCHOPS_SUPPORT}" STREQUAL "present")
     list(APPEND TEST_SCRIPT_FILES
         testBatchOpsHandler.py
     )

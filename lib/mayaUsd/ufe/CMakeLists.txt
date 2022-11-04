@@ -110,7 +110,7 @@ if (UFE_SCENE_SEGMENT_SUPPORT)
 endif()
 
 message(STATUS "UFE_PREVIEW_BATCHOPS_SUPPORT is ${UFE_PREVIEW_BATCHOPS_SUPPORT}")
-if (UFE_PREVIEW_BATCHOPS_SUPPORT)
+if ("${UFE_PREVIEW_BATCHOPS_SUPPORT}" STREQUAL "present")
     target_sources(${PROJECT_NAME}
     PRIVATE
         UsdBatchOpsHandler.cpp
@@ -280,7 +280,7 @@ if (UFE_SCENE_SEGMENT_SUPPORT)
     )
 endif()
 
-if (UFE_PREVIEW_BATCHOPS_SUPPORT)
+if ("${UFE_PREVIEW_BATCHOPS_SUPPORT}" STREQUAL "present")
     list(APPEND HEADERS
         UsdBatchOpsHandler.h
         UsdUndoDuplicateSelectionCommand.h

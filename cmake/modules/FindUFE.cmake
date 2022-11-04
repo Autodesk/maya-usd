@@ -83,10 +83,11 @@ find_library(UFE_LIBRARY
     NO_DEFAULT_PATH
 )
 
-set(UFE_PREVIEW_BATCHOPS_SUPPORT FALSE)
+# Can not be FALSE or 0 as this implies "not found" and fails.
+set(UFE_PREVIEW_BATCHOPS_SUPPORT "absent")
 if (UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/batchOpsHandler.h")
-    set(UFE_PREVIEW_BATCHOPS_SUPPORT TRUE)
-    message(STATUS "Maya has UFE BatchOpsHandler API")
+    set(UFE_PREVIEW_BATCHOPS_SUPPORT "present")
+    message(STATUS "The BatchOpsHandler API is ${UFE_PREVIEW_BATCHOPS_SUPPORT}")
 endif()
 
 # Handle the QUIETLY and REQUIRED arguments and set UFE_FOUND to TRUE if
