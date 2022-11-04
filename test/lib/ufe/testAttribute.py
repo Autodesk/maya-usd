@@ -1952,7 +1952,7 @@ class AttributeTestCase(unittest.TestCase):
 
         self.assertEqual(1, obs.notifications)
 
-        self.assertEqual(attr.getMetadata("uisoftmin").__str__(), value.__str__())
+        self.assertEqual(str(attr.getMetadata("uisoftmin")), str(value))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

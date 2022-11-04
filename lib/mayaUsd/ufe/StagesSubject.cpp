@@ -38,7 +38,6 @@
 
 #include <maya/MMessage.h>
 #include <maya/MSceneMessage.h>
-#include <ufe/attributesNotification.h>
 #include <ufe/hierarchy.h>
 #include <ufe/path.h>
 #include <ufe/scene.h>
@@ -55,6 +54,9 @@
 #include <ufe/object3dNotification.h>
 
 #include <unordered_map>
+#endif
+#if (UFE_PREVIEW_VERSION_NUM >= 4038)
+#include <ufe/attributesNotification.h>
 #endif
 
 PXR_NAMESPACE_USING_DIRECTIVE

@@ -96,8 +96,8 @@ public:
 class InAttributeMetadataChange
 {
 public:
-    InAttributeMetadataChange() { inGuard = true; }
-    ~InAttributeMetadataChange() { inGuard = false; }
+    InAttributeMetadataChange() { ++inGuard; }
+    ~InAttributeMetadataChange() { --inGuard; }
 
     // Delete the copy/move constructors assignment operators.
     InAttributeMetadataChange(const InAttributeMetadataChange&) = delete;
@@ -105,10 +105,10 @@ public:
     InAttributeMetadataChange(InAttributeMetadataChange&&) = delete;
     InAttributeMetadataChange& operator=(InAttributeMetadataChange&&) = delete;
 
-    static bool inAttributeMetadataChange() { return inGuard; }
+    static bool inAttributeMetadataChange() { return inGuard > 0; }
 
 private:
-    static bool inGuard;
+    static unsigned int inGuard;
 };
 
 } // namespace ufe
