@@ -89,6 +89,29 @@ public:
     static bool inTransform3dChange();
 };
 
+//! \brief Helper class to scope when we are in an attribute metadata change operation.
+//
+// This simple guard class can be used within a single scope, but does not have
+// recursive scope capability.
+class InAttributeMetadataChange
+{
+public:
+    InAttributeMetadataChange() { inGuard = true; }
+    ~InAttributeMetadataChange() { inGuard = false; }
+
+    // Delete the copy/move constructors assignment operators.
+    InAttributeMetadataChange(const InAttributeMetadataChange&) = delete;
+    InAttributeMetadataChange& operator=(const InAttributeMetadataChange&) = delete;
+    InAttributeMetadataChange(InAttributeMetadataChange&&) = delete;
+    InAttributeMetadataChange& operator=(InAttributeMetadataChange&&) = delete;
+
+    static bool inAttributeMetadataChange() { return inGuard; }
+
+private:
+    static bool inGuard;
+};
+
+
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
 

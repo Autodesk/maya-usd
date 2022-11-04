@@ -1929,5 +1929,30 @@ class AttributeTestCase(unittest.TestCase):
         # This is as expected as we do not insert space on digit<->alpha transitions:
         self.assertEqual(mayaUsdLib.Util.prettifyName("Dx11Shader"), "Dx11Shader")
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4038', 'Test only available in UFE preview version 0.4.34 and greater')
+    def testAttributeMetadataChanged(self):
+        cmds.file(new=True, force=True)
+        testFile = testUtils.getTestScene("MaterialX", "sin_compound.usda")
+        testDagPath, testStage = mayaUtils.createProxyFromFile(testFile)
+        mayaPathSegment = mayaUtils.createUfePathSegment(testDagPath)
+        usdPathSegment = usdUtils.createUfePathSegment("/Material1/Compound1")
+        nodeGraphPath = ufe.Path([mayaPathSegment, usdPathSegment])
+        nodeGraphItem = ufe.Hierarchy.createItem(nodeGraphPath)
+        attrs = ufe.Attributes.attributes(nodeGraphItem)
+
+        obs = TestObserver()
+        self.assertEqual(0, obs.notifications)
+        attrs.addObserver(nodeGraphItem, obs)
+
+        self.assertTrue(attrs.hasAttribute("inputs:in"))
+        attr = attrs.attribute("inputs:in")
+        value = ufe.Value("-1")
+        cmd = attr.setMetadataCmd("uisoftmin", value)
+        cmd.execute()
+
+        self.assertEqual(1, obs.notifications)
+
+        self.assertEqual(attr.getMetadata("uisoftmin").__str__(), value.__str__())
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -110,6 +110,38 @@ private:
     const std::string _name;
 }; // UsdRemoveAttributeCommand
 
+#ifdef UFE_V3_FEATURES_AVAILABLE
+class UsdSetMetadataCommand : public UsdUndoableCommand<Ufe::UndoableCommand>
+{
+public:
+    UsdSetMetadataCommand(
+        MayaUsd::ufe::UsdAttribute& attr,
+        const std::string&          key,
+        const Ufe::Value&           newValue);
+    ~UsdSetMetadataCommand() override;
+
+    // Delete the copy/move constructors assignment operators.
+    UsdSetMetadataCommand(const UsdSetMetadataCommand&) = delete;
+    UsdSetMetadataCommand& operator=(const UsdSetMetadataCommand&) = delete;
+    UsdSetMetadataCommand(UsdSetMetadataCommand&&) = delete;
+    UsdSetMetadataCommand& operator=(UsdSetMetadataCommand&&) = delete;
+
+    //! Create a UsdSetMetadataCommand
+    static UsdSetMetadataCommand::Ptr
+    create(
+        MayaUsd::ufe::UsdAttribute& attr,
+        const std::string&          key,
+        const Ufe::Value&           newValue);
+
+    void executeUndoBlock() override;
+
+private:
+    MayaUsd::ufe::UsdAttribute& _attr;
+    const std::string           _key;
+    const Ufe::Value            _newValue;
+};
+#endif
+
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
 

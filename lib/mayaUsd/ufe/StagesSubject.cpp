@@ -38,6 +38,7 @@
 
 #include <maya/MMessage.h>
 #include <maya/MSceneMessage.h>
+#include <ufe/attributesNotification.h>
 #include <ufe/hierarchy.h>
 #include <ufe/path.h>
 #include <ufe/scene.h>
@@ -90,7 +91,8 @@ enum class AttributeChangeType
     kAdded,
     kValueChanged,
     kConnectionChanged,
-    kRemoved
+    kRemoved,
+    kMetadataChanged
 };
 
 struct AttributeNotification
@@ -152,6 +154,12 @@ void sendAttributeChanged(
     case AttributeChangeType::kConnectionChanged: {
         notifyWithoutExceptions<Ufe::Attributes>(
             Ufe::AttributeConnectionChanged(ufePath, changedToken.GetString()));
+    } break;
+    case AttributeChangeType::kMetadataChanged: {
+#if (UFE_PREVIEW_VERSION_NUM >= 4038)
+        notifyWithoutExceptions<Ufe::Attributes>(
+            Ufe::AttributeMetadataChanged(ufePath, changedToken.GetString()));
+#endif
     } break;
     }
 #else
@@ -242,6 +250,9 @@ void processAttributeChanges(
     }
     if (sendRemoved) {
         attributeChanged(ufePath, changedPath.GetNameToken(), AttributeChangeType::kRemoved);
+    }
+    if (MayaUsd::ufe::InAttributeMetadataChange::inAttributeMetadataChange()) {
+        attributeChanged(ufePath, changedPath.GetNameToken(), AttributeChangeType::kMetadataChanged);
     }
 #else
     valueChanged(ufePath, changedPath.GetNameToken());

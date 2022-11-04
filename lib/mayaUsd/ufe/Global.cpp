@@ -145,6 +145,7 @@ StagesSubject::Ptr g_StagesSubject;
 
 bool InPathChange::inGuard = false;
 bool InAddOrDeleteOperation::inGuard = false;
+bool InAttributeMetadataChange::inGuard = false;
 
 //------------------------------------------------------------------------------
 // Functions

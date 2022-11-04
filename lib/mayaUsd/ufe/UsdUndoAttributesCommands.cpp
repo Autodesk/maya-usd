@@ -15,6 +15,8 @@
 //
 #include "UsdUndoAttributesCommands.h"
 
+#include "private/UfeNotifGuard.h"
+
 #include <mayaUsd/ufe/UsdAttributes.h>
 
 #include <ufe/hierarchy.h>
@@ -113,6 +115,37 @@ std::string UsdRemoveAttributeCommand::commandString() const
     return std::string("RemoveAttribute ") + _name + " " + Ufe::PathString::string(_sceneItemPath);
 }
 #endif
+#endif
+
+#ifdef UFE_V3_FEATURES_AVAILABLE
+UsdSetMetadataCommand::UsdSetMetadataCommand(
+    MayaUsd::ufe::UsdAttribute& attr,
+    const std::string&          key,
+    const Ufe::Value&           newValue)
+    : _attr(attr)
+    , _key(key)
+    , _newValue(newValue)
+{
+}
+
+UsdSetMetadataCommand::~UsdSetMetadataCommand() { }
+
+//! Create a UsdSetMetadataCommand
+UsdSetMetadataCommand::Ptr
+UsdSetMetadataCommand::create(MayaUsd::ufe::UsdAttribute& attr, const std::string& key, const Ufe::Value& newValue)
+{
+    return std::make_shared<UsdSetMetadataCommand>(attr, key, newValue);
+}
+
+void UsdSetMetadataCommand::executeUndoBlock()
+{
+    const MayaUsd::ufe::InAttributeMetadataChange ad;
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    _attr._setMetadata(_key, _newValue);
+#else
+    _attr.setMetadata(_key, _newValue);
+#endif
+}
 #endif
 
 } // namespace ufe
