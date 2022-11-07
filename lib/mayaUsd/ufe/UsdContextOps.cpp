@@ -1261,10 +1261,26 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         return std::make_shared<UnbindMaterialUndoableCommand>(fItem->prim());
 #if UFE_PREVIEW_VERSION_NUM >= 4010
     } else if (itemPath.size() == 3u && itemPath[0] == kAssignNewMaterialItem) {
+        Ufe::SceneItemList sceneItems;
+        // As per UX wishes, we add the item that was right-clicked,
+        // regardless of its selection state.
         if (fItem) {
             return std::make_shared<InsertChildAndSelectCommand>(
                 UsdUndoAssignNewMaterialCommand::create(fItem, itemPath[2]));
+            sceneItems.push_back(fItem);
         }
+        const Ufe::GlobalSelection::Ptr selection = Ufe::GlobalSelection::get();
+        for (const auto& item : *selection) {
+            const UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+            if (!usdItem || usdItem == fItem) {
+                continue;
+            }
+            sceneItems.push_back(usdItem);
+        }
+
+        return std::make_shared<InsertChildAndSelectCommand>(
+            UsdUndoAssignNewMaterialCommand::create(sceneItems, itemPath[2]));
+
 #endif
     }
 #endif

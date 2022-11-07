@@ -28,6 +28,9 @@
 #include <ufe/selection.h>
 #include <ufe/undoableCommand.h>
 
+#include <map>
+#include <vector>
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -93,6 +96,9 @@ public:
     UsdUndoAssignNewMaterialCommand(
         const UsdSceneItem::Ptr& parentItem,
         const std::string&       sdrShaderIdentifier);
+    UsdUndoAssignNewMaterialCommand(
+        const Ufe::SceneItemList& parentItems,
+        const std::string&        sdrShaderIdentifier);
     ~UsdUndoAssignNewMaterialCommand() override;
 
     // Delete the copy/move constructors assignment operators.
@@ -101,10 +107,14 @@ public:
     UsdUndoAssignNewMaterialCommand(UsdUndoAssignNewMaterialCommand&&) = delete;
     UsdUndoAssignNewMaterialCommand& operator=(UsdUndoAssignNewMaterialCommand&&) = delete;
 
-    //! Create a UsdUndoAssignNewMaterialCommand that creates a new material based on \p
-    //! sdrShaderIdentifier and assigns it to \p parentItem
+    //! Create a UsdUndoAssignNewMaterialCommand that creates a new material based on
+    //! \p sdrShaderIdentifier and assigns it to \p parentItem
     static UsdUndoAssignNewMaterialCommand::Ptr
     create(const UsdSceneItem::Ptr& parentItem, const std::string& sdrShaderIdentifier);
+    //! Create a UsdUndoAssignNewMaterialCommand that creates a new material based on
+    //! \p sdrShaderIdentifier and assigns it to multiple \p parentItems
+    static UsdUndoAssignNewMaterialCommand::Ptr
+    create(const Ufe::SceneItemList& parentItems, const std::string& sdrShaderIdentifier);
 
     Ufe::SceneItem::Ptr insertedChild() const override;
 
@@ -116,8 +126,8 @@ private:
     void connectShaderToMaterial(Ufe::SceneItem::Ptr shaderItem, PXR_NS::UsdPrim materialPrim);
     void markAsFailed();
 
-    const Ufe::Path   _parentPath;
-    const std::string _nodeId;
+    std::map<PXR_NS::UsdStageWeakPtr, std::vector<Ufe::Path>> _stagesAndPaths;
+    const std::string                                         _nodeId;
 
     size_t                                         _createMaterialCmdIdx = -1;
     std::shared_ptr<Ufe::CompositeUndoableCommand> _cmds;
