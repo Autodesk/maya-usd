@@ -138,7 +138,7 @@ void handlePathChange(
     auto trieNode = pulledPrims.node(oldPath);
     if (trieNode) {
         const Ufe::Path& newPath = item->path();
-        // If the only change is the last part of teh UFE path, then
+        // If the only change is the last part of the UFE path, then
         // we are dealing with a rename. Else it is a reparent.
         if (newPath.pop() == oldPath.pop()) {
             trieNode->rename(newPath.back());

@@ -146,7 +146,7 @@ class EditAsMayaTestCase(unittest.TestCase):
 
         validateEditAsMayaMetadata()
 
-        # Note: the parent command changes the selection, to preserve and restore it.
+        # Note: the parent command changes the selection, so preserve and restore it.
         selToPreserve = ufe.GlobalSelection.get().front()
         cmds.parent("stage1", locName)
         ufe.GlobalSelection.get().clear()

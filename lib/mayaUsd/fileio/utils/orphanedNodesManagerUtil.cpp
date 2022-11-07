@@ -103,7 +103,7 @@ void orphanedNodesManagerPullInfoToText(
     if (!trieNode)
         return;
 
-    Ufe::TrieNode<PullVariantInfo>& node = *trieNode;
+    const Ufe::TrieNode<PullVariantInfo>& node = *trieNode;
 
     toText(buffer, "", node.component().string(), indent, eol);
 
