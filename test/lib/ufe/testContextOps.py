@@ -146,9 +146,9 @@ class ContextOpsTestCase(unittest.TestCase):
             if c.checked:
                 self.assertEqual(c.item, 'Ball_8')
 
-    def testSwitchVariantInWeakerLayer(self):
+    def testSwitchVariantInLayer(self):
         """
-        Test that switching variant in a weaker layer is restricted.
+        Test switching variant in layers: stronger, weaker, session.
         """
         contextItems = self.contextOps.getItems([])
 
@@ -200,7 +200,15 @@ class ContextOpsTestCase(unittest.TestCase):
         # Verify the variant has not switched.
         self.assertEqual(shadingVariant(), 'Cue')
         self.assertEqual(shadingVariantOnPrim(), 'Cue')
-        
+
+        # Verify we can switch variant in Session Layer.
+        stage.SetEditTarget(stage.GetSessionLayer())
+        cmd = self.contextOps.doOpCmd(
+            ['Variant Sets', 'shadingVariant', 'Ball_8'])
+        self.assertIsNotNone(cmd)
+        ufeCmd.execute(cmd)
+        self.assertEqual(shadingVariant(), 'Ball_8')
+        self.assertEqual(shadingVariantOnPrim(), 'Ball_8')
 
     def testDoOp(self):
         # Change visibility, undo / redo.
@@ -499,9 +507,9 @@ class ContextOpsTestCase(unittest.TestCase):
 
         # Complex command. We should now have a fully working preview surface material bound to
         # the capsule prim:
-        def checkMaterial(self, rootHier, numMat, idx, matType, context, shaderOutputName):
+        def checkMaterial(self, rootHier, rootHierChildren, numMat, idx, matType, context, shaderOutputName, scope="/mtl"):
             self.assertTrue(rootHier.hasChildren())
-            self.assertEqual(len(rootHier.children()), 2)
+            self.assertEqual(len(rootHier.children()), rootHierChildren)
 
             def checkItem(self, item, type, path):
                 self.assertEqual(item.nodeType(), type)            
@@ -509,19 +517,19 @@ class ContextOpsTestCase(unittest.TestCase):
                 self.assertEqual(prim.GetPath(), Sdf.Path(path))
 
             scopeItem = rootHier.children()[-1]
-            checkItem(self, scopeItem, "Scope", "/mtl")
+            checkItem(self, scopeItem, "Scope", "{0}".format(scope))
 
             scopeHier = ufe.Hierarchy.hierarchy(scopeItem)
             self.assertTrue(scopeHier.hasChildren())
             self.assertEqual(len(scopeHier.children()), numMat)
             materialItem = scopeHier.children()[idx]
-            checkItem(self, materialItem, "Material", "/mtl/{0}1".format(matType))
+            checkItem(self, materialItem, "Material", "{0}/{1}1".format(scope, matType))
 
             # Binding and selection are always on the last item:
             if (numMat - 1 == idx):
                 self.assertTrue(capsulePrim.HasAPI(UsdShade.MaterialBindingAPI))
                 self.assertEqual(UsdShade.MaterialBindingAPI(capsulePrim).GetDirectBinding().GetMaterialPath(),
-                                Sdf.Path("/mtl/{0}1".format(matType)))
+                                Sdf.Path("{0}/{1}1".format(scope, matType)))
                 selection = ufe.GlobalSelection.get()
                 self.assertEqual(len(selection), 1)
                 self.assertEqual(selection.front().nodeName(), "{0}1".format(matType))
@@ -532,7 +540,7 @@ class ContextOpsTestCase(unittest.TestCase):
             self.assertTrue(hier.hasChildren())
             self.assertEqual(len(hier.children()), 1)
             shaderItem = hier.children()[0]
-            checkItem(self, shaderItem, "Shader", "/mtl/{0}1/{0}1".format(matType))
+            checkItem(self, shaderItem, "Shader", "{0}/{1}1/{1}1".format(scope, matType))
 
             materialPrim = UsdShade.Material(usdUtils.getPrimFromSceneItem(materialItem))
             self.assertTrue(materialPrim)
@@ -542,26 +550,26 @@ class ContextOpsTestCase(unittest.TestCase):
 
             sourceInfos, invalidPaths = surfaceOutput.GetConnectedSources()
             self.assertEqual(len(sourceInfos), 1)
-            self.assertEqual(sourceInfos[0].source.GetPath(), Sdf.Path("/mtl/{0}1/{0}1".format(matType)))
+            self.assertEqual(sourceInfos[0].source.GetPath(), Sdf.Path("{0}/{1}1/{1}1".format(scope, matType)))
             self.assertEqual(sourceInfos[0].sourceName, shaderOutputName)
 
-        checkMaterial(self, rootHier, 1, 0, "UsdPreviewSurface", "", "surface")
+        checkMaterial(self, rootHier, 2, 1, 0, "UsdPreviewSurface", "", "surface")
 
         cmdSS = contextOps.doOpCmd(['Assign New Material', 'MaterialX', 'ND_standard_surface_surfaceshader'])
         self.assertIsNotNone(cmdSS)
         ufeCmd.execute(cmdSS)
 
-        checkMaterial(self, rootHier, 2, 0, "UsdPreviewSurface", "", "surface")
-        checkMaterial(self, rootHier, 2, 1, "standard_surface", "mtlx", "out")
+        checkMaterial(self, rootHier, 2, 2, 0, "UsdPreviewSurface", "", "surface")
+        checkMaterial(self, rootHier, 2, 2, 1, "standard_surface", "mtlx", "out")
 
         cmds.undo()
 
-        checkMaterial(self, rootHier, 1, 0, "UsdPreviewSurface", "", "surface")
+        checkMaterial(self, rootHier, 2, 1, 0, "UsdPreviewSurface", "", "surface")
 
         cmds.redo()
 
-        checkMaterial(self, rootHier, 2, 0, "UsdPreviewSurface", "", "surface")
-        checkMaterial(self, rootHier, 2, 1, "standard_surface", "mtlx", "out")
+        checkMaterial(self, rootHier, 2, 2, 0, "UsdPreviewSurface", "", "surface")
+        checkMaterial(self, rootHier, 2, 2, 1, "standard_surface", "mtlx", "out")
 
         cmds.undo()
         cmds.undo()
@@ -572,8 +580,11 @@ class ContextOpsTestCase(unittest.TestCase):
 
         cmds.redo()
 
-        checkMaterial(self, rootHier, 1, 0, "UsdPreviewSurface", "", "surface")
+        checkMaterial(self, rootHier, 2, 1, 0, "UsdPreviewSurface", "", "surface")
 
+        os.putenv("MAYAUSD_MATERIALS_SCOPE_NAME", "test_scope")
+        ufeCmd.execute(cmdSS)
+        checkMaterial(self, rootHier, 3, 1, 0, "standard_surface", "mtlx", "out", "/test_scope")
 
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
