@@ -75,7 +75,7 @@ class BatchOpsHandlerTestCase(unittest.TestCase):
         sel.append(geomItem)
         sel.append(matItem)
 
-        cmd = batchOpsHandler.duplicateSelection(sel, {"inputConnections": True})
+        cmd = batchOpsHandler.duplicateSelectionCmd(sel, {"inputConnections": True})
         cmd.execute()
 
         dGeomPrim = usdUtils.getPrimFromSceneItem(cmd.targetItem(geomItem.path()))
@@ -99,7 +99,7 @@ class BatchOpsHandlerTestCase(unittest.TestCase):
         # assess when we start seeing exclusive relationships.
         sel = ufe.Selection()
         sel.append(geomItem)
-        cmd = batchOpsHandler.duplicateSelection(sel, {"inputConnections": False})
+        cmd = batchOpsHandler.duplicateSelectionCmd(sel, {"inputConnections": False})
         cmd.execute()
 
         dGeomPrim = usdUtils.getPrimFromSceneItem(cmd.targetItem(geomItem.path()))
@@ -159,7 +159,7 @@ class BatchOpsHandlerTestCase(unittest.TestCase):
         sel.append(f3tItem)
         sel.append(f3pItem)
 
-        cmd = batchOpsHandler.duplicateSelection(sel, {"inputConnections": True})
+        cmd = batchOpsHandler.duplicateSelectionCmd(sel, {"inputConnections": True})
         cmd.execute()
 
         expectedF3t = {
@@ -196,7 +196,7 @@ class BatchOpsHandlerTestCase(unittest.TestCase):
 
         # Last test, but with options that will also drop connections to SceneItems
         # outside of the duplicated clique.
-        cmd = batchOpsHandler.duplicateSelection(sel, {"inputConnections": False})
+        cmd = batchOpsHandler.duplicateSelectionCmd(sel, {"inputConnections": False})
 
         cmd.execute()
 
@@ -342,7 +342,7 @@ class BatchOpsHandlerTestCase(unittest.TestCase):
         sel = ufe.Selection()
         sel.append(geomItem)
 
-        cmd = batchOpsHandler.duplicateSelection(sel, {"inputConnections": False})
+        cmd = batchOpsHandler.duplicateSelectionCmd(sel, {"inputConnections": False})
         cmd.execute()
 
         def checkStatus(self, cmd, feomItem):

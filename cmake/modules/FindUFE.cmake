@@ -84,10 +84,10 @@ find_library(UFE_LIBRARY
 )
 
 # Gather all preview features that might be there or not into a single list:
-list(APPEND UFE_PREVIEW_FEATURES v4)
+list(APPEND UFE_PREVIEW_FEATURES ufe)
 
 if (UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/batchOpsHandler.h")
-    list(APPEND UFE_PREVIEW_FEATURES BatchOps)
+    list(APPEND UFE_PREVIEW_FEATURES v4_BatchOps)
 endif()
 
 # Handle the QUIETLY and REQUIRED arguments and set UFE_FOUND to TRUE if

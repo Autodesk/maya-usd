@@ -47,7 +47,7 @@ public:
     static UsdBatchOpsHandler::Ptr create();
 
     // Ufe::BatchOpsHandler overrides.
-    Ufe::SelectionUndoableCommand::Ptr duplicateSelection_(
+    Ufe::SelectionUndoableCommand::Ptr duplicateSelectionCmd_(
         const Ufe::Selection&       selection,
         const Ufe::ValueDictionary& duplicateOptions) override;
 }; // UsdBatchOpsHandler

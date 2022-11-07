@@ -61,7 +61,7 @@ if (UFE_SCENE_SEGMENT_SUPPORT)
     )
 endif()
 
-if (BatchOps IN_LIST UFE_PREVIEW_FEATURES)
+if (v4_BatchOps IN_LIST UFE_PREVIEW_FEATURES)
     list(APPEND TEST_SCRIPT_FILES
         testBatchOpsHandler.py
     )

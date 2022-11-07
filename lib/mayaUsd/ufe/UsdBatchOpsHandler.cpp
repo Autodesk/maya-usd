@@ -39,7 +39,7 @@ UsdBatchOpsHandler::Ptr UsdBatchOpsHandler::create()
 // Ufe::BatchOpsHandler overrides
 //------------------------------------------------------------------------------
 
-Ufe::SelectionUndoableCommand::Ptr UsdBatchOpsHandler::duplicateSelection_(
+Ufe::SelectionUndoableCommand::Ptr UsdBatchOpsHandler::duplicateSelectionCmd_(
     const Ufe::Selection&       selection,
     const Ufe::ValueDictionary& duplicateOptions)
 {
