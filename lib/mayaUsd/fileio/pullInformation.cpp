@@ -32,12 +32,12 @@
 #include <ufe/pathString.h>
 #include <ufe/sceneItem.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
+namespace MAYAUSD_NS_DEF {
 
 namespace {
 
 // Metadata key used to store pull information on a prim
-const TfToken kPullPrimMetadataKey("Maya:Pull:DagPath");
+const PXR_NS::TfToken kPullPrimMetadataKey("Maya:Pull:DagPath");
 
 // Metadata key used to store pull information on a DG node
 const MString kPullDGMetadataKey("Pull_UfePath");
@@ -69,7 +69,10 @@ bool readPullInformation(const PXR_NS::UsdPrim& prim, Ufe::SceneItem::Ptr& dagPa
 
 bool readPullInformation(const Ufe::Path& ufePath, MDagPath& dagPath)
 {
-    auto        prim = MayaUsd::ufe::ufePathToPrim(ufePath);
+    auto prim = MayaUsd::ufe::ufePathToPrim(ufePath);
+    if (!prim.IsValid())
+        return false;
+
     std::string dagPathStr;
     if (readPullInformation(prim, dagPathStr)) {
         MSelectionList sel;
@@ -134,14 +137,14 @@ bool writePulledPrimMetadata(const Ufe::Path& ufePulledPath, const MDagPath& edi
     return writePulledPrimMetadata(pulledPrim, editedAsMayaRoot);
 }
 
-bool writePulledPrimMetadata(UsdPrim& pulledPrim, const MDagPath& editedAsMayaRoot)
+bool writePulledPrimMetadata(PXR_NS::UsdPrim& pulledPrim, const MDagPath& editedAsMayaRoot)
 {
     auto stage = pulledPrim.GetStage();
     if (!stage)
         return false;
 
-    UsdEditContext editContext(stage, stage->GetSessionLayer());
-    VtValue        value(editedAsMayaRoot.fullPathName().asChar());
+    PXR_NS::UsdEditContext editContext(stage, stage->GetSessionLayer());
+    PXR_NS::VtValue        value(editedAsMayaRoot.fullPathName().asChar());
     return pulledPrim.SetMetadataByDictKey(SdfFieldKeys->CustomData, kPullPrimMetadataKey, value);
 }
 
@@ -150,16 +153,19 @@ bool writePulledPrimMetadata(UsdPrim& pulledPrim, const MDagPath& editedAsMayaRo
 
 void removePulledPrimMetadata(const Ufe::Path& ufePulledPath)
 {
-    UsdPrim     prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
-    UsdStagePtr stage = prim.GetStage();
+    PXR_NS::UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
+    if (!prim.IsValid())
+        return;
+
+    PXR_NS::UsdStagePtr stage = prim.GetStage();
     if (!stage)
         return;
     removePulledPrimMetadata(stage, prim);
 }
 
-void removePulledPrimMetadata(const UsdStagePtr& stage, UsdPrim& prim)
+void removePulledPrimMetadata(const PXR_NS::UsdStagePtr& stage, PXR_NS::UsdPrim& prim)
 {
-    UsdEditContext editContext(stage, stage->GetSessionLayer());
+    PXR_NS::UsdEditContext editContext(stage, stage->GetSessionLayer());
     prim.ClearCustomDataByKey(kPullPrimMetadataKey);
 }
 
@@ -168,13 +174,15 @@ void removePulledPrimMetadata(const UsdStagePtr& stage, UsdPrim& prim)
 
 bool addExcludeFromRendering(const Ufe::Path& ufePulledPath)
 {
-    UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
+    PXR_NS::UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
+    if (!prim.IsValid())
+        return false;
 
     auto stage = prim.GetStage();
     if (!stage)
         return false;
 
-    UsdEditContext editContext(stage, stage->GetSessionLayer());
+    PXR_NS::UsdEditContext editContext(stage, stage->GetSessionLayer());
     if (!prim.SetActive(false))
         return false;
 
@@ -186,24 +194,26 @@ bool addExcludeFromRendering(const Ufe::Path& ufePulledPath)
 
 bool removeExcludeFromRendering(const Ufe::Path& ufePulledPath)
 {
-    UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
+    PXR_NS::UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
+    if (!prim.IsValid())
+        return false;
 
     auto stage = prim.GetStage();
     if (!stage)
         return false;
 
-    SdfLayerHandle sessionLayer = stage->GetSessionLayer();
-    UsdEditContext editContext(stage, sessionLayer);
+    PXR_NS::SdfLayerHandle sessionLayer = stage->GetSessionLayer();
+    PXR_NS::UsdEditContext editContext(stage, sessionLayer);
 
     // Cleanup the field and potentially empty over
     if (!prim.ClearActive())
         return false;
 
-    SdfPrimSpecHandle primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
+    PXR_NS::SdfPrimSpecHandle primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
     if (sessionLayer && primSpec)
         sessionLayer->ScheduleRemoveIfInert(primSpec.GetSpec());
 
     return true;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+} // namespace MAYAUSD_NS_DEF

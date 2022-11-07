@@ -26,7 +26,7 @@
 
 UFE_NS_DEF { class Path; }
 
-PXR_NAMESPACE_OPEN_SCOPE
+namespace MAYAUSD_NS_DEF {
 
 MAYAUSD_CORE_PUBLIC
 bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& editedAsMayaRoot);
@@ -48,7 +48,7 @@ bool writePulledPrimMetadata(PXR_NS::UsdPrim& pulledPrim, const MDagPath& edited
 MAYAUSD_CORE_PUBLIC
 void removePulledPrimMetadata(const Ufe::Path& ufePulledPath);
 MAYAUSD_CORE_PUBLIC
-void removePulledPrimMetadata(const UsdStagePtr& stage, UsdPrim& prim);
+void removePulledPrimMetadata(const PXR_NS::UsdStagePtr& stage, PXR_NS::UsdPrim& prim);
 
 MAYAUSD_CORE_PUBLIC
 bool addExcludeFromRendering(const Ufe::Path& ufePulledPath);
@@ -56,6 +56,6 @@ bool addExcludeFromRendering(const Ufe::Path& ufePulledPath);
 MAYAUSD_CORE_PUBLIC
 bool removeExcludeFromRendering(const Ufe::Path& ufePulledPath);
 
-PXR_NAMESPACE_CLOSE_SCOPE
+}
 
 #endif

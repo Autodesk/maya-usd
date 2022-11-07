@@ -39,8 +39,6 @@ namespace {
 //       "/UFE-path-component-1" : {
 //          "/UFE-path-component-2" : {
 //             "pull info": {
-//                "proxyShapePath": "DAG-path-to-proxy-shape",
-//                "pulledParentPath": "DAG-path-of-pulled-object",
 //                "editedAsMayaRoot": "DAG-path-of-root-of-generated-Maya-data"
 //                "variantSetDescriptors": [
 //                   {
@@ -61,8 +59,6 @@ namespace {
 
 static const std::string ufeComponentPrefix = "/";
 static const std::string pullInfoJsonKey = "pull info";
-static const std::string proxyShapePathJsonKey = "proxyShapePath";
-static const std::string pulledParentPathJsonKey = "pulledParentPath";
 static const std::string editedAsMayaRootJsonKey = "editedAsMayaRoot";
 static const std::string variantSetDescriptorsJsonKey = "variantSetDescriptors";
 static const std::string pathJsonKey = "path";
@@ -185,8 +181,6 @@ PXR_NS::JsObject convertToObject(const PullVariantInfo& pullInfo)
 {
     PXR_NS::JsObject pullInfoJson;
 
-    pullInfoJson[proxyShapePathJsonKey] = convertToValue(pullInfo.proxyShapePath);
-    pullInfoJson[pulledParentPathJsonKey] = convertToValue(pullInfo.pulledParentPath);
     pullInfoJson[editedAsMayaRootJsonKey] = convertToValue(pullInfo.editedAsMayaRoot);
     pullInfoJson[variantSetDescriptorsJsonKey] = convertToArray(pullInfo.variantSetDescriptors);
 
@@ -197,10 +191,6 @@ PullVariantInfo convertToPullVariantInfo(const PXR_NS::JsObject& pullInfoJson)
 {
     PullVariantInfo pullInfo;
 
-    pullInfo.proxyShapePath
-        = convertToDagPath(convertJsonKeyToValue(pullInfoJson, proxyShapePathJsonKey));
-    pullInfo.pulledParentPath
-        = convertToDagPath(convertJsonKeyToValue(pullInfoJson, pulledParentPathJsonKey));
     pullInfo.editedAsMayaRoot
         = convertToDagPath(convertJsonKeyToValue(pullInfoJson, editedAsMayaRootJsonKey));
     pullInfo.variantSetDescriptors = convertToVariantSetDescList(
