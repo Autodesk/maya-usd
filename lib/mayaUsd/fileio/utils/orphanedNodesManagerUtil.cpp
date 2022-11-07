@@ -84,8 +84,6 @@ void toText(std::string& buf, const PullVariantInfo& variantInfo, int indent, bo
     indent += 1;
 
     toText(buf, "Edited  Maya  root", variantInfo.editedAsMayaRoot, indent, eol);
-    toText(buf, "proxy  shape  path", variantInfo.proxyShapePath, indent, eol);
-    toText(buf, "pulled parent path", variantInfo.pulledParentPath, indent, eol);
 
     for (const auto& desc : variantInfo.variantSetDescriptors)
         toText(buf, desc, indent, eol);
@@ -96,7 +94,7 @@ void toText(std::string& buf, const PullVariantInfo& variantInfo, int indent, bo
 
 } // namespace
 
-void OrphanedNodesManagerPullInfoToText(
+void orphanedNodesManagerPullInfoToText(
     std::string&                               buffer,
     const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode,
     int                                        indent,
@@ -114,7 +112,7 @@ void OrphanedNodesManagerPullInfoToText(
     }
 
     for (const auto& childComp : node.childrenComponents()) {
-        OrphanedNodesManagerPullInfoToText(buffer, node[childComp], indent + 1, eol);
+        orphanedNodesManagerPullInfoToText(buffer, node[childComp], indent + 1, eol);
     }
 
     if (eol)
@@ -127,7 +125,7 @@ void printOrphanedNodesManagerPullInfo(
     bool                                       eol)
 {
     std::string buffer("Trie ==========================================\n");
-    OrphanedNodesManagerPullInfoToText(buffer, trieNode, indent, eol);
+    orphanedNodesManagerPullInfoToText(buffer, trieNode, indent, eol);
     MGlobal::displayInfo(buffer.c_str());
 }
 

@@ -260,7 +260,7 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
         return reportError(status);
 
     Ufe::Path pulledPath;
-    if (!PXR_NS::readPullInformation(dagPath, pulledPath))
+    if (!readPullInformation(dagPath, pulledPath))
         return reportError(MS::kInvalidParameter);
 
     MArgDatabase argData(syntax(), argList, &status);
@@ -338,7 +338,7 @@ MStatus DiscardEditsCommand::doIt(const MArgList& argList)
 
     MDagPath  dagPath = PXR_NS::UsdMayaUtil::nameToDagPath(nodeName.asChar());
     Ufe::Path pulledPath;
-    if (!PXR_NS::readPullInformation(dagPath, pulledPath))
+    if (!readPullInformation(dagPath, pulledPath))
         return reportError(MS::kInvalidParameter);
 
     // Scope the undo item recording so we can undo on failure.

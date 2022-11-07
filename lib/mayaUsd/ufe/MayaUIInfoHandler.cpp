@@ -58,7 +58,7 @@ MayaUsd::ufe::UsdSceneItem::Ptr pulledUsdAncestorItem(const Ufe::SceneItem::Ptr&
         }
         const auto mayaPathStr = Ufe::PathString::string(mayaPath);
         const auto dagPath = UsdMayaUtil::nameToDagPath(mayaPathStr);
-        if (readPullInformation(dagPath, usdItemPath)) {
+        if (MAYAUSD_NS_DEF::readPullInformation(dagPath, usdItemPath)) {
             found = true;
         } else {
             mayaPath = mayaPath.pop();

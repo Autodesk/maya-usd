@@ -87,19 +87,11 @@ public:
     struct PullVariantInfo
     {
         PullVariantInfo() = default;
-        PullVariantInfo(
-            const MDagPath&                        proxyShape,
-            const MDagPath&                        pulledParent,
-            const MDagPath&                        editedMayaRoot,
-            const std::list<VariantSetDescriptor>& vsd)
-            : proxyShapePath(proxyShape)
-            , pulledParentPath(pulledParent)
-            , editedAsMayaRoot(editedMayaRoot)
+        PullVariantInfo(const MDagPath& editedMayaRoot, const std::list<VariantSetDescriptor>& vsd)
+            : editedAsMayaRoot(editedMayaRoot)
             , variantSetDescriptors(vsd)
         {
         }
-        MDagPath                        proxyShapePath;
-        MDagPath                        pulledParentPath;
         MDagPath                        editedAsMayaRoot;
         std::list<VariantSetDescriptor> variantSetDescriptors;
     };
@@ -138,13 +130,10 @@ public:
     // Notifications handling, part of the Ufe::Observer interface.
     void operator()(const Ufe::Notification&) override;
 
-    // Add the pulled path, its Maya pull parent and the root of the generated
+    // Add the pulled path and the root of the generated
     // Maya nodes to the trie of pulled prims.
     // Asserts that the pulled path is not in the trie.
-    void
-    add(const Ufe::Path& pulledPath,
-        const MDagPath&  pullParentPath,
-        const MDagPath&  editedAsMayaRoot);
+    void add(const Ufe::Path& pulledPath, const MDagPath& editedAsMayaRoot);
 
     // Remove the pulled path from the trie of pulled prims.  Asserts that the
     // path is in the trie.  Returns a memento (see Memento Pattern) for undo

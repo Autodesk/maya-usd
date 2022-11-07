@@ -76,7 +76,7 @@ using PullVariantInfo = OrphanedNodesManager::PullVariantInfo;
 using VariantSetDescriptor = OrphanedNodesManager::VariantSetDescriptor;
 using VariantSelection = OrphanedNodesManager::VariantSelection;
 
-Ufe::Path trieNodeToPullePrimUfePath(Ufe::TrieNode<PullVariantInfo>::Ptr trieNode);
+Ufe::Path trieNodeToPulledPrimUfePath(Ufe::TrieNode<PullVariantInfo>::Ptr trieNode);
 
 void renameVariantDescriptors(
     std::list<VariantSetDescriptor>& descriptors,
@@ -106,7 +106,7 @@ void renameVariantInfo(
     //       hidden by that point. So the node visibility change must be done *first*.
     renameVariantDescriptors(newVariantInfo.variantSetDescriptors, oldPath, newPath);
 
-    Ufe::Path pulledPath = trieNodeToPullePrimUfePath(trieNode);
+    Ufe::Path pulledPath = trieNodeToPulledPrimUfePath(trieNode);
     TF_VERIFY(writePullInformation(pulledPath, newVariantInfo.editedAsMayaRoot));
 
     trieNode->setData(newVariantInfo);
@@ -156,12 +156,9 @@ OrphanedNodesManager::OrphanedNodesManager()
 {
 }
 
-void OrphanedNodesManager::add(
-    const Ufe::Path& pulledPath,
-    const MDagPath&  pullParentPath,
-    const MDagPath&  editedAsMayaRoot)
+void OrphanedNodesManager::add(const Ufe::Path& pulledPath, const MDagPath& editedAsMayaRoot)
 {
-    // Add the pull parent to our pulled prims prefix tree.  Also add the full
+    // Add the edited-as-Maya root to our pulled prims prefix tree.  Also add the full
     // configuration of variant set selections for each ancestor, up to the USD
     // pseudo-root.  Variants on the pulled path itself are ignored, as once
     // pulled into Maya they cannot be changed.
@@ -186,8 +183,7 @@ void OrphanedNodesManager::add(
     //
     //       FIXME: update the proxy shape path when objects are renamed or
     //              reparented. Currently tracked as MAYA-125039.
-    //              This also affects the pulledPath, pullParentPath and
-    //              editedAsMayaRoot.
+    //              This also affects the pulledPath and editedAsMayaRoot.
     MDagPath proxyShapePath;
     if (!MDagPath::getAPathTo(proxyShape->thisMObject(), proxyShapePath))
         return;
@@ -197,8 +193,7 @@ void OrphanedNodesManager::add(
     auto ancestorPath = pulledPath.pop();
     auto vsd = variantSetDescriptors(ancestorPath);
 
-    pulledPrims().add(
-        pulledPath, PullVariantInfo(proxyShapePath, pullParentPath, editedAsMayaRoot, vsd));
+    pulledPrims().add(pulledPath, PullVariantInfo(editedAsMayaRoot, vsd));
 }
 
 OrphanedNodesManager::Memento OrphanedNodesManager::remove(const Ufe::Path& pulledPath)
@@ -397,34 +392,25 @@ bool OrphanedNodesManager::isOrphaned(const Ufe::Path& pulledPath) const
         return false;
     }
 
+    const PullVariantInfo& variantInfo = trieNode->data();
+
     // If the pull parent is visible, the pulled path is not orphaned.
-    const auto& pullParentPath = trieNode->data().pulledParentPath;
-    MFnDagNode  fn(pullParentPath);
-    auto        visibilityPlug = fn.findPlug("visibility", /* tryNetworked */ true);
+    MDagPath pullParentPath = variantInfo.editedAsMayaRoot;
+    pullParentPath.pop();
+
+    MFnDagNode fn(pullParentPath);
+    auto       visibilityPlug = fn.findPlug("visibility", /* tryNetworked */ true);
     return !visibilityPlug.asBool();
 }
 
-namespace ufe {
-
-extern Ufe::Rtid g_MayaRtid;
-extern Ufe::Rtid g_USDRtid;
-
-} // namespace ufe
-
 namespace {
 
-Ufe::Path trieNodeToPullePrimUfePath(Ufe::TrieNode<PullVariantInfo>::Ptr trieNode)
+Ufe::Path
+trieNodeToPulledPrimUfePath(Ufe::TrieNode<OrphanedNodesManager::PullVariantInfo>::Ptr trieNode)
 {
-    const PullVariantInfo& variantInfo = trieNode->data();
-
-    Ufe::Path proxyShapeUfePath = ufe::dagPathToUfe(variantInfo.proxyShapePath);
-    if (proxyShapeUfePath.getSegments().size() < 1)
-        return Ufe::Path();
-
-    UsdStagePtr stage = ufe::getStage(proxyShapeUfePath);
-    if (!stage)
-        return Ufe::Path();
-
+    // Accumulate all UFE path components, in reverse order. We will pop them
+    // from the back while building the pulled prim path.
+    //
     // Note: the trie root node is not really part of the hierarchy, so do not
     //       include it in the components. We detect we are at the root when
     //       the node has no parent.
@@ -433,23 +419,45 @@ Ufe::Path trieNodeToPullePrimUfePath(Ufe::TrieNode<PullVariantInfo>::Ptr trieNod
         pathComponents.push_back(trieNode->component());
         trieNode = trieNode->parent();
     }
-    std::reverse(pathComponents.begin(), pathComponents.end());
 
-    const size_t proxyShapeComponentCount = proxyShapeUfePath.size();
-    if (pathComponents.size() < proxyShapeComponentCount)
-        return Ufe::Path();
+    // We assume the prim path is comosed of two segments: one in Maya, up to the
+    // stage proxy shape, then in USD.
+    Ufe::Path primPath;
+    bool      foundStage = false;
 
-    const Ufe::PathSegment::Components proxyShapeComponents(
-        pathComponents.begin(), pathComponents.begin() + proxyShapeComponentCount);
-    const Ufe::PathSegment proxyShapeSegment(proxyShapeComponents, ufe::g_MayaRtid, '|');
-    if (proxyShapeSegment != proxyShapeUfePath.getSegments()[0])
-        return Ufe::Path();
+    while (pathComponents.size() > 0) {
+        Ufe::PathComponent comp = pathComponents.back();
+        pathComponents.pop_back();
 
-    Ufe::PathSegment::Components primComponents(
-        pathComponents.begin() + proxyShapeComponentCount, pathComponents.end());
-    const Ufe::PathSegment primSegment(primComponents, ufe::g_USDRtid, '/');
-    Ufe::Path              primPath = proxyShapeUfePath + primSegment;
-    return primPath;
+        // If th epath is empty, it means we are starting the Maya path, so create
+        // a Maya UFE segment.
+        //
+        // Note: the reason we don't just create an empty segment right away when
+        //       creating the UFE path is that the + operator refuses to add a
+        //       component if there are zero component in the path. So we create
+        //       the Maya segment when we extract the first component. That avoids
+        //       duplicating the code to check if we found a stage, just below.
+        if (primPath.empty()) {
+            primPath = primPath + Ufe::PathSegment(comp, ufe::getMayaRunTimeId(), '|');
+        } else {
+            primPath = primPath + comp;
+        }
+
+        // If we have net found the stage proxy node in Maya, check if the
+        // path matches any stage and create the USD segment once we do find
+        // a matching stage.
+        if (!foundStage) {
+            UsdStagePtr stage = ufe::getStage(primPath);
+            if (stage) {
+                primPath = primPath + Ufe::PathSegment({}, ufe::getUsdRunTimeId(), '/');
+                foundStage = true;
+            }
+        }
+    }
+
+    // If we did not find a stage, it means the stage was deleted,
+    // so return an empty path instead of a path to nowhere.
+    return foundStage ? primPath : Ufe::Path();
 }
 
 MStatus setNodeVisibility(const MDagPath& dagPath, bool visibility)
@@ -474,16 +482,23 @@ bool OrphanedNodesManager::setOrphaned(
     //       the outliner reacts to UFE notifications received following the USD edits
     //       to rebuild the node tree and the Maya node we want to hide must have been
     //       hidden by that point. So the node visibility change must be done *first*.
-    CHECK_MSTATUS_AND_RETURN(setNodeVisibility(variantInfo.pulledParentPath, !orphaned), false);
+    MDagPath pullParentPath = variantInfo.editedAsMayaRoot;
+    pullParentPath.pop();
+    CHECK_MSTATUS_AND_RETURN(setNodeVisibility(pullParentPath, !orphaned), false);
 
-    const Ufe::Path pulledPrimPath = trieNodeToPullePrimUfePath(trieNode);
+    const Ufe::Path pulledPrimPath = trieNodeToPulledPrimUfePath(trieNode);
 
-    if (orphaned) {
-        removePulledPrimMetadata(pulledPrimPath);
-        removeExcludeFromRendering(pulledPrimPath);
-    } else {
-        TF_VERIFY(writePulledPrimMetadata(pulledPrimPath, variantInfo.editedAsMayaRoot));
-        TF_VERIFY(addExcludeFromRendering(pulledPrimPath));
+    // Note: if we are called due to the user deleting the stage, then the pulled prim
+    //       path will be invalid and trying to add or remove information on it will
+    //       fail, so avoid it.
+    if (!pulledPrimPath.empty()) {
+        if (orphaned) {
+            removePulledPrimMetadata(pulledPrimPath);
+            removeExcludeFromRendering(pulledPrimPath);
+        } else {
+            writePulledPrimMetadata(pulledPrimPath, variantInfo.editedAsMayaRoot);
+            addExcludeFromRendering(pulledPrimPath);
+        }
     }
 
     return true;

@@ -57,7 +57,7 @@ Ufe::Hierarchy::Ptr PulledObjectHierarchyHandler::hierarchy(const Ufe::SceneItem
     Ufe::Path ufePath;
 
     auto dagPath = PXR_NS::UsdMayaUtil::nameToDagPath(path.getSegments()[nbSegs - 1].string());
-    if (PXR_NS::readPullInformation(dagPath, ufePath)) {
+    if (MAYAUSD_NS_DEF::readPullInformation(dagPath, ufePath)) {
         return PulledObjectHierarchy::create(_mayaHierarchyHandler, item, ufePath);
     } else {
         return _mayaHierarchyHandler->hierarchy(item);

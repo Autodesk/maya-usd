@@ -20,7 +20,7 @@
 
 namespace MAYAUSD_NS_DEF {
 
-void OrphanedNodesManagerPullInfoToText(
+void orphanedNodesManagerPullInfoToText(
     std::string&                                                     buffer,
     const Ufe::TrieNode<OrphanedNodesManager::PullVariantInfo>::Ptr& trieNode,
     int                                                              indent = 0,

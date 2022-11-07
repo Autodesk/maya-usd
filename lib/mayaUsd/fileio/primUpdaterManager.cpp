@@ -103,7 +103,7 @@ Ufe::Path usdToMaya(const Ufe::Path& usdPath)
         return Ufe::Path();
     }
     std::string dagPathStr;
-    if (!TF_VERIFY(PXR_NS::readPullInformation(prim, dagPathStr))) {
+    if (!TF_VERIFY(MAYAUSD_NS_DEF::readPullInformation(prim, dagPathStr))) {
         return Ufe::Path();
     }
 
@@ -773,14 +773,13 @@ public:
     static bool execute(
         const std::shared_ptr<OrphanedNodesManager>& orphanedNodesManager,
         const Ufe::Path&                             pulledPath,
-        const MDagPath&                              pullParentPath,
         const MDagPath&                              editedAsMayaRoot)
     {
         // Get the global undo list.
         auto& undoInfo = OpUndoItemList::instance();
 
         auto item = std::make_unique<RecordPullVariantInfoUndoItem>(
-            orphanedNodesManager, pulledPath, pullParentPath, editedAsMayaRoot);
+            orphanedNodesManager, pulledPath, editedAsMayaRoot);
         if (!item->redo()) {
             return false;
         }
@@ -793,14 +792,12 @@ public:
     RecordPullVariantInfoUndoItem(
         const std::shared_ptr<OrphanedNodesManager>& orphanedNodesManager,
         const Ufe::Path&                             pulledPath,
-        const MDagPath&                              pullParentPath,
         const MDagPath&                              editedAsMayaRoot)
         : OpUndoItem(
             std::string("Add to orphaned nodes manager pull path ")
             + Ufe::PathString::string(pulledPath))
         , _orphanedNodesManager(orphanedNodesManager)
         , _pulledPath(pulledPath)
-        , _pullParentPath(pullParentPath)
         , _editedAsMayaRoot(editedAsMayaRoot)
     {
     }
@@ -813,14 +810,13 @@ public:
 
     bool redo() override
     {
-        _orphanedNodesManager->add(_pulledPath, _pullParentPath, _editedAsMayaRoot);
+        _orphanedNodesManager->add(_pulledPath, _editedAsMayaRoot);
         return true;
     }
 
 private:
     const std::shared_ptr<OrphanedNodesManager> _orphanedNodesManager;
     const Ufe::Path                             _pulledPath;
-    const MDagPath                              _pullParentPath;
     const MDagPath                              _editedAsMayaRoot;
 };
 
@@ -1143,7 +1139,7 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
 
 #ifdef HAS_ORPHANED_NODES_MANAGER
     RecordPullVariantInfoUndoItem::execute(
-        _orphanedNodesManager, path, pullParentPath, importedPaths.first[0]);
+        _orphanedNodesManager, path, importedPaths.first[0]);
 #endif
 
     if (!updaterArgs._copyOperation) {

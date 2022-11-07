@@ -67,7 +67,7 @@ bool mergeToUsd(const std::string& nodeName, const VtDictionary& userArgs = VtDi
         return false;
 
     Ufe::Path path;
-    if (!readPullInformation(dagPath, path))
+    if (!MAYAUSD_NS_DEF::readPullInformation(dagPath, path))
         return false;
 
     return PrimUpdaterManager::getInstance().mergeToUsd(dagNode, path, userArgs);
@@ -113,7 +113,7 @@ std::string readPullInformationString(const PXR_NS::UsdPrim& prim)
 {
     std::string dagPathStr;
     // Ignore boolean return value, empty string is the proper error result.
-    readPullInformation(prim, dagPathStr);
+    MAYAUSD_NS_DEF::readPullInformation(prim, dagPathStr);
     return dagPathStr;
 }
 
