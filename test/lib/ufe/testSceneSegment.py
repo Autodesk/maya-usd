@@ -107,7 +107,7 @@ class SceneSegmentTestCase(unittest.TestCase):
         result = handler.findGatewayItems(proxyShapePath, otherRunTimeId)
         self.assertTrue(result.empty())
 
-        # Searching the the parent of a gateway item searches the Maya
+        # Searching from the parent of a gateway item searches the Maya
         # scene segment for gateway nodes without recursing into USD.
         # If no filter is specified or if the USD runtime ID is used as
         # a filter, this should return the proxy shape. If a different
