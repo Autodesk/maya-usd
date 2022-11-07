@@ -64,8 +64,10 @@ public:
     static constexpr auto kFrameRangeFlagLong = "frameRange";
     static constexpr auto kPrimPathFlag = "pp";
     static constexpr auto kPrimPathFlagLong = "primPath";
-    static constexpr auto kVariantFlag = "var";
-    static constexpr auto kVariantFlagLong = "variant";
+    static constexpr auto kRootVariantFlag = "var";
+    static constexpr auto kRootVariantFlagLong = "variant";
+    static constexpr auto kPrimVariantFlag = "pv";
+    static constexpr auto kPrimVariantFlagLong = "primVariant";
     static constexpr auto kVerboseFlag = "v";
     static constexpr auto kVerboseFlagLong = "verbose";
 
