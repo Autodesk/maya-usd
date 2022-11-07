@@ -56,6 +56,6 @@ bool addExcludeFromRendering(const Ufe::Path& ufePulledPath);
 MAYAUSD_CORE_PUBLIC
 bool removeExcludeFromRendering(const Ufe::Path& ufePulledPath);
 
-}
+} // namespace MAYAUSD_NS_DEF
 
 #endif
