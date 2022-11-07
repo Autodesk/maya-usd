@@ -1138,8 +1138,7 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
     progressBar.advance();
 
 #ifdef HAS_ORPHANED_NODES_MANAGER
-    RecordPullVariantInfoUndoItem::execute(
-        _orphanedNodesManager, path, importedPaths.first[0]);
+    RecordPullVariantInfoUndoItem::execute(_orphanedNodesManager, path, importedPaths.first[0]);
 #endif
 
     if (!updaterArgs._copyOperation) {
