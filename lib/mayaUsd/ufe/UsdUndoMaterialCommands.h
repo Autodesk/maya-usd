@@ -97,8 +97,8 @@ public:
         const UsdSceneItem::Ptr& parentItem,
         const std::string&       sdrShaderIdentifier);
     UsdUndoAssignNewMaterialCommand(
-        const Ufe::SceneItemList& parentItems,
-        const std::string&        sdrShaderIdentifier);
+        const Ufe::Selection& parentItems,
+        const std::string&    sdrShaderIdentifier);
     ~UsdUndoAssignNewMaterialCommand() override;
 
     // Delete the copy/move constructors assignment operators.
@@ -114,7 +114,7 @@ public:
     //! Create a UsdUndoAssignNewMaterialCommand that creates a new material based on
     //! \p sdrShaderIdentifier and assigns it to multiple \p parentItems
     static UsdUndoAssignNewMaterialCommand::Ptr
-    create(const Ufe::SceneItemList& parentItems, const std::string& sdrShaderIdentifier);
+    create(const Ufe::Selection& parentItems, const std::string& sdrShaderIdentifier);
 
     Ufe::SceneItem::Ptr insertedChild() const override;
 

@@ -173,8 +173,8 @@ UsdUndoAssignNewMaterialCommand::UsdUndoAssignNewMaterialCommand(
 }
 
 UsdUndoAssignNewMaterialCommand::UsdUndoAssignNewMaterialCommand(
-    const Ufe::SceneItemList& parentItems,
-    const std::string&        nodeId)
+    const Ufe::Selection& parentItems,
+    const std::string&    nodeId)
     : Ufe::InsertChildCommand()
     , _nodeId(nodeId)
     , _cmds(std::make_shared<Ufe::CompositeUndoableCommand>())
@@ -204,8 +204,8 @@ UsdUndoAssignNewMaterialCommand::Ptr UsdUndoAssignNewMaterialCommand::create(
 }
 
 UsdUndoAssignNewMaterialCommand::Ptr UsdUndoAssignNewMaterialCommand::create(
-    const Ufe::SceneItemList& parentItems,
-    const std::string&        nodeId)
+    const Ufe::Selection& parentItems,
+    const std::string&    nodeId)
 {
     return std::make_shared<UsdUndoAssignNewMaterialCommand>(parentItems, nodeId);
 }
