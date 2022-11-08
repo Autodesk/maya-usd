@@ -501,25 +501,58 @@ bool UsdAttributes::canRenameAttribute(
     // Renaming meets the same conditions as attribute removal.
     return canRemoveAttribute(sceneItem, originalName);
 }
+
+static void setConnections(
+    const PXR_NS::UsdPrim& prim,
+    const SdfPath&         OldPropertyPath,
+    const SdfPath&         newPropertyPath)
+{
+    // Update the connections with the new attribute name.
+    for (const auto& node : prim.GetChildren()) {
+        for (auto& attribute : node.GetAttributes()) {
+            PXR_NS::UsdAttribute  attr = attribute.As<PXR_NS::UsdAttribute>();
+            PXR_NS::SdfPathVector sources;
+            attr.GetConnections(&sources);
+            bool hasChanged = false;
+            // Check if the node attribute is connected to the original property path.
+            for (size_t i = 0; i < sources.size(); ++i) {
+                if (sources[i] == OldPropertyPath) {
+                    sources[i] = newPropertyPath;
+                    hasChanged = true;
+                }
+            }
+            // Update the connections with the new property path.
+            if (hasChanged) {
+                attr.SetConnections(sources);
+            }
+        }
+    }
+}
+
 Ufe::Attribute::Ptr UsdAttributes::doRenameAttribute(
     const UsdSceneItem::Ptr& sceneItem,
     const std::string&       originalName,
     const std::string&       newName)
 {
-    // Avoid checks since we have already did them
+    // Avoid checks since we have already did them.
     PXR_NS::TfToken                nameAsToken(originalName);
     auto                           prim = sceneItem->prim();
     auto                           attribute = prim.GetAttribute(nameAsToken);
     PXR_NS::UsdShadeConnectableAPI connectApi(prim);
+    UsdPrim                        primParent = prim.GetParent();
 
     // Ensure the newName is unique.
     const std::string uniqueNewName = UsdAttributes::getUniqueAttrName(sceneItem, newName);
 
     PXR_NS::UsdEditTarget editTarget = prim.GetStage()->GetEditTarget();
+    const PXR_NS::TfToken kOldAttrName = attribute.GetName();
     const SdfPath         kPrimPath = attribute.GetPrim().GetPath();
     const SdfPath         kPropertyPath = kPrimPath.AppendProperty(attribute.GetName());
     auto                  propertyHandle = editTarget.GetPropertySpecForScenePath(kPropertyPath);
     auto                  baseNameAndType = PXR_NS::UsdShadeUtils::GetBaseNameAndType(nameAsToken);
+
+    prim.GetAttributes();
+    PXR_NS::UsdShadeNodeGraph ngPrim(prim);
 
     if (!propertyHandle) {
         return {};
@@ -528,7 +561,7 @@ Ufe::Attribute::Ptr UsdAttributes::doRenameAttribute(
     UsdShadeSourceInfoVector sourcesInfo;
 
     // Save the connected sources since after the renaming we will lose them.
-    if (connectApi && baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Output) {
+    if (connectApi) {
         sourcesInfo = connectApi.GetConnectedSources(attribute);
     }
 
@@ -536,52 +569,33 @@ Ufe::Attribute::Ptr UsdAttributes::doRenameAttribute(
         return {};
     }
 
+    // Get the renamed attribute.
     auto renamedAttr = UsdAttributes(sceneItem).attribute(uniqueNewName);
 
-    if (connectApi) {
+    if (connectApi && ngPrim) {
 
         const PXR_NS::TfToken kNewNameAsToken = PXR_NS::TfToken(uniqueNewName);
+        PXR_NS::UsdAttribute  usdRenamedAttribute = prim.GetAttribute(kNewNameAsToken);
+        const SdfPath         kOldPropertyPath = kPrimPath.AppendProperty(kOldAttrName);
         const SdfPath         kNewPropertyPath = kPrimPath.AppendProperty(kNewNameAsToken);
 
-        // Given the unidirectional nature of connections, we discriminate whether the source is
-        // input or output
-        if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input) {
-
-            // Update the connections with the new attribute name.
-            for (const auto& node : prim.GetChildren()) {
-                for (auto& attribute : node.GetAttributes()) {
-
-                    PXR_NS::UsdAttribute  attr = attribute.As<PXR_NS::UsdAttribute>();
-                    PXR_NS::SdfPathVector sources;
-                    attr.GetConnections(&sources);
-                    bool hasChanged = false;
-                    // Check if the node attribute is connected to the original property path.
-                    for (size_t i = 0; i < sources.size(); ++i) {
-                        if (sources[i] == kPropertyPath) {
-                            sources[i] = kNewPropertyPath;
-                            hasChanged = true;
-                        }
-                    }
-                    // Update the connections with the new property path.
-                    if (hasChanged) {
-                        attr.SetConnections(sources);
-                    }
-                }
-            }
-        } else {
-
-            if (sourcesInfo.empty()) {
-                return renamedAttr;
-            }
-
+        if (!sourcesInfo.empty()) {
             std::vector<UsdShadeConnectionSourceInfo> connectionsInfo;
 
             for (const auto& connectionInfo : sourcesInfo) {
                 connectionsInfo.push_back(connectionInfo);
             }
 
-            auto usdRenamedAttribute = prim.GetAttribute(PXR_NS::TfToken(uniqueNewName));
-            connectApi.SetConnectedSources(usdRenamedAttribute, connectionsInfo);
+            UsdShadeConnectableAPI::SetConnectedSources(usdRenamedAttribute, connectionsInfo);
+        }
+
+        // Given the unidirectional nature of connections, we discriminate whether the source is
+        // input or output
+        if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input) {
+            setConnections(prim, kOldPropertyPath, kNewPropertyPath);
+        }
+        if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Output) {
+            setConnections(prim.GetParent(), kOldPropertyPath, kNewPropertyPath);
         }
     }
 
