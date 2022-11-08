@@ -34,9 +34,6 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4038)
-#include <mayaUsd/ufe/UsdUndoAttributesCommands.h>
-#endif
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4010)
 #include "UsdShaderAttributeDef.h"
@@ -295,7 +292,6 @@ private:
     const T               _newValue;
 };
 
-#if (UFE_PREVIEW_VERSION_NUM < 4038)
 #ifdef UFE_V3_FEATURES_AVAILABLE
 class SetUndoableMetadataCommand : public UsdBaseUndoableCommand
 {
@@ -324,7 +320,6 @@ private:
     const std::string           _key;
     const Ufe::Value            _newValue;
 };
-#endif
 #endif
 
 } // end namespace
@@ -419,11 +414,7 @@ UsdAttribute::_setMetadataCmd(const std::string& key, const Ufe::Value& value)
 UsdAttribute::setMetadataCmd(const std::string& key, const Ufe::Value& value)
 #endif
 {
-#if (UFE_PREVIEW_VERSION_NUM >= 4038)
-    return UsdSetMetadataCommand::create(*this, key, value);
-#else
     return std::make_shared<SetUndoableMetadataCommand>(*this, key, value);
-#endif
 }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE

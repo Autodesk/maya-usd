@@ -117,38 +117,5 @@ std::string UsdRemoveAttributeCommand::commandString() const
 #endif
 #endif
 
-#ifdef UFE_V3_FEATURES_AVAILABLE
-UsdSetMetadataCommand::UsdSetMetadataCommand(
-    MayaUsd::ufe::UsdAttribute& attr,
-    const std::string&          key,
-    const Ufe::Value&           newValue)
-    : _attr(attr)
-    , _key(key)
-    , _newValue(newValue)
-{
-}
-
-UsdSetMetadataCommand::~UsdSetMetadataCommand() { }
-
-//! Create a UsdSetMetadataCommand
-UsdSetMetadataCommand::Ptr UsdSetMetadataCommand::create(
-    MayaUsd::ufe::UsdAttribute& attr,
-    const std::string&          key,
-    const Ufe::Value&           newValue)
-{
-    return std::make_shared<UsdSetMetadataCommand>(attr, key, newValue);
-}
-
-void UsdSetMetadataCommand::executeUndoBlock()
-{
-    const MayaUsd::ufe::InAttributeMetadataChange ad;
-#ifdef UFE_V4_FEATURES_AVAILABLE
-    _attr._setMetadata(_key, _newValue);
-#else
-    _attr.setMetadata(_key, _newValue);
-#endif
-}
-#endif
-
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

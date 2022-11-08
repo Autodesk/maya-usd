@@ -45,6 +45,7 @@ class TestObserver(ufe.Observer):
     def __init__(self):
         super(TestObserver, self).__init__()
         self._notifications = 0
+        self._keys = None
 
     def __call__(self, notification):
         if (ufeUtils.ufeFeatureSetVersion() >= 2):
@@ -53,10 +54,16 @@ class TestObserver(ufe.Observer):
         else:
             if isinstance(notification, ufe.AttributeChanged):
                 self._notifications += 1
+        if isinstance(notification, ufe.AttributeMetadataChanged):
+            self._keys = notification.keys()
 
     @property
     def notifications(self):
         return self._notifications
+
+    @property
+    def keys(self):
+        return self._keys
 
 class TestObserver_4_24(ufe.Observer):
     """This advanced observer listens to notifications that appeared in UFE 0.4.24"""
@@ -1944,15 +1951,17 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(0, obs.notifications)
         attrs.addObserver(nodeGraphItem, obs)
 
+        uisoftminKey = "uisoftmin"
         self.assertTrue(attrs.hasAttribute("inputs:in"))
         attr = attrs.attribute("inputs:in")
         value = ufe.Value("-1")
-        cmd = attr.setMetadataCmd("uisoftmin", value)
+        cmd = attr.setMetadataCmd(uisoftminKey, value)
         cmd.execute()
 
         self.assertEqual(1, obs.notifications)
+        self.assertEqual(obs.keys, set([uisoftminKey]))
 
-        self.assertEqual(str(attr.getMetadata("uisoftmin")), str(value))
+        self.assertEqual(str(attr.getMetadata(uisoftminKey)), str(value))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
