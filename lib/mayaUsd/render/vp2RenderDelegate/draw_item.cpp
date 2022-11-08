@@ -104,6 +104,7 @@ HdVP2DrawItem::AddRenderItem(MHWRender::MRenderItem* item, const HdGeomSubset* g
 
     renderItemData._renderItem = item;
     renderItemData._renderItemName = item->name();
+    renderItemData._enabled = item->isEnabled();
 #if MAYA_API_VERSION >= 20220000
     auto sharingData = HdVP2DrawItemUserDataPtr::dynamic_pointer_cast<>(item->getCustomData());
 #else
