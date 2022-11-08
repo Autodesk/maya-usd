@@ -199,7 +199,7 @@ void sendAttributeChanged(
 #endif
 }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4038)
+#if (UFE_PREVIEW_VERSION_NUM >= 4037)
 void sendAttributeMetadataChanged(
     const Ufe::Path&             ufePath,
     const TfToken&               changedToken,
@@ -255,7 +255,7 @@ void attributeChanged(
 }
 #endif
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4038)
+#if (UFE_PREVIEW_VERSION_NUM >= 4037)
 void attributeMetadataChanged(
     const Ufe::Path&             ufePath,
     const TfToken&               changedToken,
@@ -340,7 +340,7 @@ void processAttributeChanges(
     if (sendRemoved) {
         attributeChanged(ufePath, changedPath.GetNameToken(), AttributeChangeType::kRemoved);
     }
-#if (UFE_PREVIEW_VERSION_NUM >= 4038)
+#if (UFE_PREVIEW_VERSION_NUM >= 4037)
     if (sendMetadataChanged) {
         attributeMetadataChanged(
             ufePath,
