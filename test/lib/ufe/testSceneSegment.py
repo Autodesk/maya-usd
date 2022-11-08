@@ -25,6 +25,7 @@ from maya import standalone
 
 import ufe
 
+import os
 import unittest
 
 class SceneSegmentTestCase(unittest.TestCase):
@@ -82,6 +83,47 @@ class SceneSegmentTestCase(unittest.TestCase):
         # searching for the USD parent of both cameras should find no scene segment handler
         handler = ufe.RunTimeMgr.instance().sceneSegmentHandler(camerasParentPath.runTimeId())
         self.assertEqual(handler, None)
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4035', 'Test for UFE preview version 0.4.35 and later')
+    def testFilteredFindGatewayItems(self):
+        proxyShapePath = ufe.PathString.path('|stage|stageShape')
+        proxyShapeParentPath = ufe.PathString.path('|stage')
+
+        # Searching on a gateway item should give all gateway nodes in
+        # the child segment. USD doesn't have any gateway nodes, so the
+        # result should be empty. When using the filtered version of
+        # `findGatewayItems()`, the result should still be empty.
+        # Filtering can never increase the cardinality of the result.
+        handler = ufe.RunTimeMgr.instance().sceneSegmentHandler(proxyShapePath.runTimeId())
+        
+        result = handler.findGatewayItems(proxyShapePath)
+        self.assertTrue(result.empty())
+
+        usdRunTimeId = ufe.RunTimeMgr.instance().getId('USD')
+        result = handler.findGatewayItems(proxyShapePath, usdRunTimeId)
+        self.assertTrue(result.empty())
+
+        otherRunTimeId = 6174
+        result = handler.findGatewayItems(proxyShapePath, otherRunTimeId)
+        self.assertTrue(result.empty())
+
+        # Searching from the parent of a gateway item searches the Maya
+        # scene segment for gateway nodes without recursing into USD.
+        # If no filter is specified or if the USD runtime ID is used as
+        # a filter, this should return the proxy shape. If a different
+        # runtime ID is used as a filter, the result should be empty.
+        handler = ufe.RunTimeMgr.instance().sceneSegmentHandler(proxyShapeParentPath.runTimeId())
+        
+        result = handler.findGatewayItems(proxyShapeParentPath)
+        self.assertTrue(result.contains(proxyShapePath))
+        self.assertEqual(len(result), 1)
+
+        result = handler.findGatewayItems(proxyShapeParentPath, usdRunTimeId)
+        self.assertTrue(result.contains(proxyShapePath))
+        self.assertTrue(len(result), 1)
+
+        result = handler.findGatewayItems(proxyShapeParentPath, otherRunTimeId)
+        self.assertTrue(result.empty())
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
