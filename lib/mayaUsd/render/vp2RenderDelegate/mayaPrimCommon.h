@@ -213,6 +213,11 @@ protected:
         MColor _wireframeColorRGBA;
     };
 
+    static void
+    _PopulateDisplayLayerModes(const MString& pathString, DisplayLayerModes& displayLayerModes);
+
+    static HdReprSharedPtr _FindRepr(const ReprVector& reprs, const TfToken& reprToken);
+
     void _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
 
     void _UpdateTransform(
@@ -255,7 +260,17 @@ protected:
         ReprVector const&  reprs,
         TfToken const&     renderTag);
 
-    void _SyncDisplayLayerModes(const HdRprim& refThis);
+    void _SyncDisplayLayerModes();
+    void _SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned int instanceCount);
+
+    bool _ShouldSkipInstance(unsigned int usdInstanceId, const TfToken& reprToken) const;
+
+    void _SyncForcedReprs(
+        HdRprim&          refThis,
+        HdSceneDelegate*  delegate,
+        HdRenderParam*    renderParam,
+        HdDirtyBits*      dirtyBits,
+        ReprVector const& reprs);
 
     void _UpdatePrimvarSourcesGeneric(
         HdSceneDelegate*       sceneDelegate,
@@ -321,8 +336,13 @@ protected:
     HdVP2SelectionStatus _selectionStatus { kUnselected };
 
     //! Modes requested by display layer along with the frame they are updated on
-    DisplayLayerModes _displayLayerModes;
-    uint64_t          _displayLayerModesFrame { 0 };
+    DisplayLayerModes              _displayLayerModes;
+    std::vector<DisplayLayerModes> _displayLayerModesInstanced;
+    uint64_t                       _displayLayerModesFrame { 0 };
+
+    // forced representations runtime state
+    bool     _needForcedBBox = false;
+    uint64_t _forcedReprsFrame { 0 };
 
     //! HideOnPlayback status of the Rprim
     bool _hideOnPlayback { false };
@@ -332,6 +352,9 @@ protected:
 
     //! The string representation of the runtime only path to this object
     MStringArray _PrimSegmentString;
+
+    //! For instanced prim, holds the corresponding path in USD prototype
+    SdfPath _pathInPrototype;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
