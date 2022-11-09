@@ -143,9 +143,8 @@ Ufe::UIInfoHandler::Ptr g_MayaUIInfoHandler;
 // Subject singleton for observation of all USD stages.
 StagesSubject::Ptr g_StagesSubject;
 
-bool         InPathChange::inGuard = false;
-bool         InAddOrDeleteOperation::inGuard = false;
-unsigned int InAttributeMetadataChange::inGuard = 0;
+bool InPathChange::inGuard = false;
+bool InAddOrDeleteOperation::inGuard = false;
 
 //------------------------------------------------------------------------------
 // Functions

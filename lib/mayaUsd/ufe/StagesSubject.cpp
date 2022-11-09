@@ -874,13 +874,15 @@ AttributeChangedNotificationGuard::~AttributeChangedNotificationGuard()
     }
 
     for (const auto& notificationInfo : pendingAttributeChangedNotifications) {
-        if (const auto metadataNotificationInfo
-            = dynamic_cast<const AttributeMetadataNotification*>(&notificationInfo)) {
-            sendAttributeMetadataChanged(
-                metadataNotificationInfo->_path,
-                metadataNotificationInfo->_token,
-                metadataNotificationInfo->_type,
-                metadataNotificationInfo->_metadataKeys);
+        if (notificationInfo._type == AttributeChangeType::kMetadataChanged) {
+            if (const auto metadataNotificationInfo
+                = dynamic_cast<const AttributeMetadataNotification*>(&notificationInfo)) {
+                sendAttributeMetadataChanged(
+                    metadataNotificationInfo->_path,
+                    metadataNotificationInfo->_token,
+                    metadataNotificationInfo->_type,
+                    metadataNotificationInfo->_metadataKeys);
+            }
         } else {
             sendAttributeChanged(
                 notificationInfo._path, notificationInfo._token, notificationInfo._type);

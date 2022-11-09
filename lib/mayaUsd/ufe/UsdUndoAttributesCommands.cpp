@@ -15,8 +15,6 @@
 //
 #include "UsdUndoAttributesCommands.h"
 
-#include "private/UfeNotifGuard.h"
-
 #include <mayaUsd/ufe/UsdAttributes.h>
 
 #include <ufe/hierarchy.h>
