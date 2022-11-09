@@ -48,7 +48,10 @@ public:
 
     // Ufe::SceneSegmentHandler overrides
     Ufe::Selection findGatewayItems_(const Ufe::Path& path) const override;
-    bool           isGateway_(const Ufe::Path& path) const override;
+#if (UFE_PREVIEW_VERSION_NUM >= 4035)
+    Ufe::Selection findGatewayItems_(const Ufe::Path& path, Ufe::Rtid nestedRtid) const override;
+#endif
+    bool isGateway_(const Ufe::Path& path) const override;
 
 private:
     Ufe::SceneSegmentHandler::Ptr fMayaSceneSegmentHandler;

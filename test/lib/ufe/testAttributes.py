@@ -20,6 +20,7 @@ import fixturesUtils
 import mayaUtils
 import ufeUtils
 import usdUtils
+import testUtils
 
 from pxr import UsdGeom
 
@@ -218,6 +219,87 @@ class AttributesTestCase(unittest.TestCase):
         attr = ball35Attrs.attribute("MyAttribute1")
         self.assertEqual(repr(attr),"ufe.AttributeString(<|transform1|proxyShape1,/Room_set/Props/Ball_35.MyAttribute1>)")
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4034', 'Test for UFE preview version 0.4.34 and later')
+    def testRenamingAttribute(self):
+        '''Test renaming an attribute'''
+
+        # Load a scene.
+      
+        testFile = testUtils.getTestScene('MaterialX', 'MayaSurfaces.usda')
+        shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
+        ufeItem = ufeUtils.createUfeSceneItem(shapeNode,
+            '/pCube2/Looks/standardSurface2SG/MayaNG_standardSurface2SG')
+        self.assertIsNotNone(ufeItem)
+
+        # Then create the attributes interface for that item.
+        standardSurfaceAttrs = ufe.Attributes.attributes(ufeItem)
+        self.assertIsNotNone(standardSurfaceAttrs)
+
+        # Rename the attribute.
+        cmd = standardSurfaceAttrs.renameAttributeCmd("inputs:file2:varnameStr","inputs:file2:varname")
+        self.assertIsNotNone(cmd)
+
+        ufeCmd.execute(cmd)
+
+        self.assertNotIn("inputs:file2:varnameStr", standardSurfaceAttrs.attributeNames)
+        self.assertIn("inputs:file2:varname", standardSurfaceAttrs.attributeNames)
+
+        # Test the connections.
+
+        ufeItemTexture = ufeUtils.createUfeSceneItem(shapeNode,
+            '/pCube2/Looks/standardSurface2SG/MayaNG_standardSurface2SG/place2dTexture2')
+        self.assertIsNotNone(ufeItemTexture)
+
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(ufeItemTexture.runTimeId())
+        self.assertIsNotNone(connectionHandler)
+        connections = connectionHandler.sourceConnections(ufeItemTexture)
+        self.assertIsNotNone(connectionHandler)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        srcAttr = conns[0].src
+        dstAttr = conns[0].dst
+
+        self.assertEqual(ufe.PathString.string(srcAttr.path),
+            '|stage|stageShape,/pCube2/Looks/standardSurface2SG/MayaNG_standardSurface2SG')
+        self.assertEqual(srcAttr.name, 'inputs:file2:varname')
+
+        self.assertEqual(ufe.PathString.string(dstAttr.path),
+            '|stage|stageShape,/pCube2/Looks/standardSurface2SG/MayaNG_standardSurface2SG/place2dTexture2')
+        self.assertEqual(dstAttr.name, 'inputs:geomprop')
+
+        # Rename the attribute.
+        cmd = standardSurfaceAttrs.renameAttributeCmd("outputs:baseColor","outputs:MyColor")
+        self.assertIsNotNone(cmd)
+
+        ufeCmd.execute(cmd)
+
+        self.assertNotIn("outputs:baseColor", standardSurfaceAttrs.attributeNames)
+        self.assertIn("outputs:MyColor", standardSurfaceAttrs.attributeNames)
+
+         # Test the connections.
+
+        ufeItemStandardSurface = ufeUtils.createUfeSceneItem(shapeNode,
+            '/pCube2/Looks/standardSurface2SG/standardSurface2')
+        self.assertIsNotNone(ufeItemStandardSurface)
+
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(ufeItemStandardSurface.runTimeId())
+        self.assertIsNotNone(connectionHandler)
+        connections = connectionHandler.sourceConnections(ufeItemStandardSurface)
+        self.assertIsNotNone(connectionHandler)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        srcAttr = conns[0].src
+        dstAttr = conns[0].dst
+
+        self.assertEqual(ufe.PathString.string(srcAttr.path),
+            '|stage|stageShape,/pCube2/Looks/standardSurface2SG/MayaNG_standardSurface2SG')
+        self.assertEqual(srcAttr.name, 'outputs:MyColor')
+
+        self.assertEqual(ufe.PathString.string(dstAttr.path),
+            '|stage|stageShape,/pCube2/Looks/standardSurface2SG/standardSurface2')
+        self.assertEqual(dstAttr.name, 'inputs:base_color')
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -36,7 +36,13 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Implementation of AddAttributeCommand
-class UsdAddAttributeCommand : public UsdUndoableCommand<Ufe::AddAttributeCommand>
+class UsdAddAttributeCommand
+    :
+#if (UFE_PREVIEW_VERSION_NUM >= 4034)
+    public UsdUndoableCommand<Ufe::AddAttributeUndoableCommand>
+#else
+    public UsdUndoableCommand<Ufe::AddAttributeCommand>
+#endif
 {
 public:
     typedef std::shared_ptr<UsdAddAttributeCommand> Ptr;
@@ -78,7 +84,7 @@ private:
 
 }; // UsdAddAttributeCommand
 
-//! \brief Implementation of AddAttributeCommand
+//! \brief Implementation of RemoveAttributeCommand
 class UsdRemoveAttributeCommand : public UsdUndoableCommand<Ufe::UndoableCommand>
 {
 public:
@@ -110,6 +116,47 @@ private:
     const std::string _name;
 }; // UsdRemoveAttributeCommand
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4034)
+//! \brief Implementation of RenameAttributeCommand
+class UsdRenameAttributeCommand : public UsdUndoableCommand<Ufe::RenameAttributeUndoableCommand>
+{
+public:
+    typedef std::shared_ptr<UsdRenameAttributeCommand> Ptr;
+
+    UsdRenameAttributeCommand(
+        const UsdSceneItem::Ptr& sceneItem,
+        const std::string&       originalName,
+        const std::string&       newName);
+    ~UsdRenameAttributeCommand() override;
+
+    // Delete the copy/move constructors assignment operators.
+    UsdRenameAttributeCommand(const UsdRenameAttributeCommand&) = delete;
+    UsdRenameAttributeCommand& operator=(const UsdRenameAttributeCommand&) = delete;
+    UsdRenameAttributeCommand(UsdRenameAttributeCommand&&) = delete;
+    UsdRenameAttributeCommand& operator=(UsdRenameAttributeCommand&&) = delete;
+
+    //! Create a UsdRenameAttributeCommand
+    static UsdRenameAttributeCommand::Ptr create(
+        const UsdSceneItem::Ptr& sceneItem,
+        const std::string&       originalName,
+        const std::string&       newName);
+
+    void executeUndoBlock() override;
+
+    Ufe::Attribute::Ptr attribute() const override;
+
+private:
+    const Ufe::Path   _sceneItemPath;
+    const std::string _originalName;
+    std::string       _newName;
+
+    void setNewName(const std::string& newName);
+
+}; // UsdRenameAttributeCommand
+
+#endif
+#endif
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
 
