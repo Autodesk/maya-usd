@@ -59,9 +59,19 @@ public:
     bool                     hasAttribute(const std::string& name) const override;
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4024)
+#if (UFE_PREVIEW_VERSION_NUM >= 4034)
+    Ufe::AddAttributeUndoableCommand::Ptr
+    addAttributeCmd(const std::string& name, const Ufe::Attribute::Type& type) override;
+#else
     Ufe::AddAttributeCommand::Ptr
-                              addAttributeCmd(const std::string& name, const Ufe::Attribute::Type& type) override;
+    addAttributeCmd(const std::string& name, const Ufe::Attribute::Type& type) override;
+#endif
     Ufe::UndoableCommand::Ptr removeAttributeCmd(const std::string& name) override;
+#endif
+
+#if (UFE_PREVIEW_VERSION_NUM >= 4034)
+    Ufe::RenameAttributeUndoableCommand::Ptr
+    renameAttributeCmd(const std::string& originalName, const std::string& newName) override;
 #endif
 
 #if (UFE_PREVIEW_VERSION_NUM >= 4010)
@@ -78,6 +88,16 @@ public:
     static std::string getUniqueAttrName(const UsdSceneItem::Ptr& item, const std::string& name);
     static bool        canRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
     static bool        doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
+#endif
+#if (UFE_PREVIEW_VERSION_NUM >= 4034)
+    static bool canRenameAttribute(
+        const UsdSceneItem::Ptr& sceneItem,
+        const std::string&       originalName,
+        const std::string&       newName);
+    static Ufe::Attribute::Ptr doRenameAttribute(
+        const UsdSceneItem::Ptr& sceneItem,
+        const std::string&       originalName,
+        const std::string&       newName);
 #endif
 #endif
 

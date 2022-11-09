@@ -25,7 +25,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HDVP2_REPR_TOKENS \
     (bbox) \
     (defaultMaterial) \
-    (smoothHullUntextured)
+    (smoothHullUntextured) \
+    (forcedBbox)
 
 #define HDVP2_TOKENS \
     (displayColorAndOpacity) \

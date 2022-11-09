@@ -127,9 +127,13 @@ private:
     /// the Maya transformation logic. If scale and/or rotate pivot are
     /// declared, creates inverse ops in the appropriate order.
     void _PushTransformStack(
+        const MDagPath&         dagPath,
         const MFnTransform&     iTrans,
         const UsdGeomXformable& usdXForm,
-        const bool              writeAnim);
+        const bool              writeAnim,
+        const bool              worldspace);
+
+    void _WriteChannelsXformOps(const UsdGeomXformable& usdXForm);
 
     std::vector<_AnimChannel> _animChannels;
     _TokenRotationMap         _previousRotates;

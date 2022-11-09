@@ -291,6 +291,9 @@ void _ConfigureReprs()
     // Edge desc for bbox display.
     HdMesh::ConfigureRepr(HdVP2ReprTokens->bbox, reprDescEdge);
 
+    // Forced representations are used for instanced geometry with display layer overrides
+    HdMesh::ConfigureRepr(HdVP2ReprTokens->forcedBbox, reprDescEdge);
+
     // smooth hull for untextured display
     HdBasisCurves::ConfigureRepr(
         HdVP2ReprTokens->smoothHullUntextured, HdBasisCurvesGeomStylePatch);

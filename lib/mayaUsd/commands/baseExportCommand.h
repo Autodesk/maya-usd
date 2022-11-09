@@ -88,6 +88,7 @@ public:
     static constexpr auto kGeomSidednessFlag = "gs";
     static constexpr auto kApiSchemaFlag = "api";
     static constexpr auto kJobContextFlag = "jc";
+    static constexpr auto kWorldspaceFlag = "wsp";
 
     // Short and Long forms of flags defined by this command itself:
     static constexpr auto kAppendFlag = "a";
