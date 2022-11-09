@@ -122,6 +122,15 @@ private:
 
     void beginManagePulledPrims();
     void endManagePulledPrims();
+
+    void beginLoadSaveCallbacks();
+    void endLoadSaveCallbacks();
+
+    static void afterNewOrOpenCallback(void* clientData);
+    static void beforeSaveCallback(void* clientData);
+
+    void loadOrphanedNodesManagerData();
+    void saveOrphanedNodesManagerData();
 #endif
 
     friend class TfSingleton<PrimUpdaterManager>;
@@ -136,6 +145,8 @@ private:
 
     // Maya scene observation, to stop UFE scene observation.
     MCallbackIdArray _fileCbs;
+
+    MCallbackIdArray _openSaveCbs;
 #endif
 };
 
