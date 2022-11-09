@@ -28,8 +28,6 @@
 #include <map>
 #include <unordered_map>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -68,12 +66,12 @@ private:
     CommandMap _perItemCommands;
 
     // Fixup data:
-    using DuplicatePathsMap = std::map<SdfPath, SdfPath>;
+    using DuplicatePathsMap = std::map<PXR_NS::SdfPath, PXR_NS::SdfPath>;
     using DuplicatesMap = std::unordered_map<Ufe::Path, DuplicatePathsMap>;
     DuplicatesMap _duplicatesMap;
 
     bool updateSdfPathVector(
-        SdfPathVector&                       pathVec,
+        PXR_NS::SdfPathVector&               pathVec,
         const DuplicatePathsMap::value_type& duplicatePair,
         const DuplicatePathsMap&             otherPairs,
         const bool                           keepExternal);

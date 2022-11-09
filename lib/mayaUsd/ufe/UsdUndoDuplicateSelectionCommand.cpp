@@ -32,8 +32,6 @@
 
 #include <ufe/path.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -87,9 +85,9 @@ void UsdUndoDuplicateSelectionCommand::execute()
     for (auto&& duplicateItem : _perItemCommands) {
         duplicateItem.second->execute();
 
-        auto    dstSceneItem = duplicateItem.second->duplicatedItem();
-        UsdPrim srcPrim = ufePathToPrim(duplicateItem.first);
-        UsdPrim dstPrim = std::dynamic_pointer_cast<UsdSceneItem>(dstSceneItem)->prim();
+        auto            dstSceneItem = duplicateItem.second->duplicatedItem();
+        PXR_NS::UsdPrim srcPrim = ufePathToPrim(duplicateItem.first);
+        PXR_NS::UsdPrim dstPrim = std::dynamic_pointer_cast<UsdSceneItem>(dstSceneItem)->prim();
 
         Ufe::Path stgPath = stagePath(dstPrim.GetStage());
         auto      stageIt = _duplicatesMap.find(stgPath);
@@ -104,7 +102,7 @@ void UsdUndoDuplicateSelectionCommand::execute()
 
     // Fixups were grouped by stage.
     for (const auto& stageData : _duplicatesMap) {
-        UsdStageWeakPtr stage(getStage(stageData.first));
+        PXR_NS::UsdStageWeakPtr stage(getStage(stageData.first));
         if (!stage) {
             continue;
         }
@@ -113,8 +111,8 @@ void UsdUndoDuplicateSelectionCommand::execute()
             for (auto p : UsdPrimRange(stage->GetPrimAtPath(duplicatePair.second))) {
                 for (auto& prop : p.GetProperties()) {
                     if (prop.Is<PXR_NS::UsdAttribute>()) {
-                        PXR_NS::UsdAttribute attr = prop.As<PXR_NS::UsdAttribute>();
-                        SdfPathVector        sources;
+                        PXR_NS::UsdAttribute  attr = prop.As<PXR_NS::UsdAttribute>();
+                        PXR_NS::SdfPathVector sources;
                         attr.GetConnections(&sources);
                         if (updateSdfPathVector(
                                 sources, duplicatePair, stageData.second, _copyExternalInputs)) {
@@ -127,9 +125,9 @@ void UsdUndoDuplicateSelectionCommand::execute()
                                 attr.SetConnections(sources);
                             }
                         }
-                    } else if (prop.Is<UsdRelationship>()) {
-                        UsdRelationship rel = prop.As<UsdRelationship>();
-                        SdfPathVector   targets;
+                    } else if (prop.Is<PXR_NS::UsdRelationship>()) {
+                        PXR_NS::UsdRelationship rel = prop.As<PXR_NS::UsdRelationship>();
+                        PXR_NS::SdfPathVector   targets;
                         rel.GetTargets(&targets);
                         // Currently always copying external relationships is the right move since
                         // duplicated geometries will keep their currently assigned material. We
@@ -159,7 +157,7 @@ Ufe::SceneItem::Ptr UsdUndoDuplicateSelectionCommand::targetItem(const Ufe::Path
 }
 
 bool UsdUndoDuplicateSelectionCommand::updateSdfPathVector(
-    SdfPathVector&                       pathVec,
+    PXR_NS::SdfPathVector&               pathVec,
     const DuplicatePathsMap::value_type& duplicatePair,
     const DuplicatePathsMap&             otherPairs,
     const bool                           keepExternal)
@@ -167,8 +165,8 @@ bool UsdUndoDuplicateSelectionCommand::updateSdfPathVector(
     bool              hasChanged = false;
     std::list<size_t> indicesToRemove;
     for (size_t i = 0; i < pathVec.size(); ++i) {
-        const SdfPath& path = pathVec[i];
-        SdfPath        finalPath = path;
+        const PXR_NS::SdfPath& path = pathVec[i];
+        PXR_NS::SdfPath        finalPath = path;
         // Paths are lexicographically ordered, this means we can search quickly for bounds of
         // candidate paths.
         auto itPath = otherPairs.lower_bound(finalPath);
