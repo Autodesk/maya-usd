@@ -875,6 +875,7 @@ AttributeChangedNotificationGuard::~AttributeChangedNotificationGuard()
 
     for (const auto& notificationInfo : pendingAttributeChangedNotifications) {
         if (notificationInfo._type == AttributeChangeType::kMetadataChanged) {
+#if (UFE_PREVIEW_VERSION_NUM >= 4037)
             if (const auto metadataNotificationInfo
                 = dynamic_cast<const AttributeMetadataNotification*>(&notificationInfo)) {
                 sendAttributeMetadataChanged(
@@ -883,6 +884,7 @@ AttributeChangedNotificationGuard::~AttributeChangedNotificationGuard()
                     metadataNotificationInfo->_type,
                     metadataNotificationInfo->_metadataKeys);
             }
+#endif
         } else {
             sendAttributeChanged(
                 notificationInfo._path, notificationInfo._token, notificationInfo._type);
