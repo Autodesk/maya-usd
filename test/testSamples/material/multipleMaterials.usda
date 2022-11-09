@@ -1,0 +1,94 @@
+#usda 1.0
+(
+)
+
+def Mesh "cube" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+    int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
+    point3f[] points = [(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)]
+    color3f[] primvars:displayColor = [(0.13320851, 0.13320851, 0.13320851), (0.13320851, 0.13320851, 0.13320851)] (
+        customData = {
+            dictionary Maya = {
+                bool generated = 1
+            }
+        }
+        interpolation = "uniform"
+    )
+    int[] primvars:displayColor:indices = [0, 0, 0, 0, 1, 0]
+    float[] primvars:displayOpacity = [1, 1] (
+        customData = {
+            dictionary Maya = {
+                bool generated = 1
+            }
+        }
+        interpolation = "uniform"
+    )
+    int[] primvars:displayOpacity:indices = [0, 0, 0, 0, 1, 0]
+    texCoord2f[] primvars:st = [(0.375, 0), (0.625, 0), (0.375, 0.25), (0.625, 0.25), (0.375, 0.5), (0.625, 0.5), (0.375, 0.75), (0.625, 0.75), (0.375, 1), (0.625, 1), (0.875, 0), (0.875, 0.25), (0.125, 0), (0.125, 0.25)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 9, 8, 1, 10, 11, 3, 12, 0, 2, 13]
+    uniform token subsetFamily:materialBind:familyType = "partition"
+
+    def GeomSubset "usdPreviewSurface1SG" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        uniform token elementType = "face"
+        uniform token familyName = "materialBind"
+        int[] indices = [0, 1, 2, 3, 5]
+        rel material:binding = </mtl/UsdPreviewSurface1>
+    }
+
+    def GeomSubset "usdPreviewSurface2SG" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        uniform token elementType = "face"
+        uniform token familyName = "materialBind"
+        int[] indices = [4]
+        rel material:binding = </mtl/UsdPreviewSurface2>
+    }
+}
+
+def Scope "mtl"
+{
+    def Material "UsdPreviewSurface1"
+    {
+        token outputs:surface.connect = </mtl/UsdPreviewSurface1/UsdPreviewSurface1.outputs:surface>
+
+        def Shader "UsdPreviewSurface1"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0, 0, 1)
+            token outputs:surface
+        }
+    }
+
+    def Material "UsdPreviewSurface2"
+    {
+        token outputs:surface.connect = </mtl/UsdPreviewSurface2/UsdPreviewSurface1.outputs:surface>
+
+        def Shader "UsdPreviewSurface1"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.857, 0, 0)
+            token outputs:surface
+        }
+    }
+}
+
+
+
+

@@ -94,6 +94,11 @@ if (UFE_LIGHTS_SUPPORT)
     )
 endif()
 
+if (UFE_MATERIALS_SUPPORT)
+    list(APPEND TEST_SCRIPT_FILES
+        testMaterial.py
+    )
+endif()
 if (MAYA_API_VERSION VERSION_GREATER_EQUAL 20220100)
     list(APPEND TEST_SCRIPT_FILES
         testCamera.py
