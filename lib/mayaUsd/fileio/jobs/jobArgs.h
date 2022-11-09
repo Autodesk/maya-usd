@@ -106,6 +106,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (verbose) \
     (staticSingleSample) \
     (geomSidedness)   \
+    (worldspace) \
     /* Special "none" token */ \
     (none) \
     /* referenceObjectMode values */ \
@@ -208,6 +209,8 @@ struct UsdMayaJobExportArgs
     const bool normalizeNurbs;
     const bool preserveUVSetNames;
     const bool stripNamespaces;
+    // Export root prims using their worldspace transform instead of local transform.
+    const bool worldspace;
 
     /// This is the path of the USD prim under which *all* prims will be
     /// authored.

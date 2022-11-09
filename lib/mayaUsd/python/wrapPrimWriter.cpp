@@ -582,6 +582,7 @@ void wrapJobExportArgs()
             make_getter(&UsdMayaJobExportArgs::shadingMode, return_value_policy<return_by_value>()))
         .def_readonly("staticSingleSample", &UsdMayaJobExportArgs::staticSingleSample)
         .def_readonly("stripNamespaces", &UsdMayaJobExportArgs::stripNamespaces)
+        .def_readonly("worldspace", &UsdMayaJobExportArgs::worldspace)
         .add_property(
             "timeSamples",
             make_getter(&UsdMayaJobExportArgs::timeSamples, return_value_policy<return_by_value>()))

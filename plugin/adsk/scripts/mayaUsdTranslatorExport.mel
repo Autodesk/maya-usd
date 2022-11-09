@@ -370,6 +370,7 @@ global proc mayaUsdTranslatorExport_EnableAllControls() {
         checkBoxGrp -e -en 1 exportVisibilityCheckBox;
         checkBoxGrp -e -en 1 mergeTransformAndShapeCheckBox;
         checkBoxGrp -e -en 1 includeNamespacesCheckBox;
+        checkBoxGrp -e -en 1 worldspaceCheckBox;
     }
     
     if (stringArrayContains("context", $sectionNames)) {
@@ -454,6 +455,8 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "mergeTransformAndShapeCheckBox");
             } else if ($optionBreakDown[0] == "stripNamespaces") {
                 mayaUsdTranslatorExport_SetOppositeCheckbox($optionBreakDown[1], $enable, "includeNamespacesCheckBox");
+            } else if ($optionBreakDown[0] == "worldspace") {
+                mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "worldspaceCheckBox");
             }
         }
 
@@ -734,6 +737,8 @@ global proc int mayaUsdTranslatorExport (string $parent,
 
                 checkBoxGrp -l `getMayaUsdString("kExportNamespacesLbl")` -annotation `getMayaUsdString("kExportNamespacesAnn")` includeNamespacesCheckBox;
 
+                checkBoxGrp -l `getMayaUsdString("kExportWorldspaceLbl")` -annotation `getMayaUsdString("kExportWorldspaceAnn")` worldspaceCheckBox;
+
                 separator -style "none";
             setParent ..;
         }
@@ -785,6 +790,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportVisibility", "exportVisibilityCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "mergeTransformAndShape", "mergeTransformAndShapeCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendOppositeFromCheckbox($currentOptions, "stripNamespaces", "includeNamespacesCheckBox");
+            $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "worldspace", "worldspaceCheckBox");
         }
 
         if (stringArrayContains("context", $sectionNames)) {
