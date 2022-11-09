@@ -319,6 +319,16 @@ TfToken MayaUsdRPrim::_GetMaterialNetworkToken(const TfToken& reprToken) const
     return _displayLayerModes._texturing ? reprToken : TfToken();
 }
 
+HdReprSharedPtr MayaUsdRPrim::_FindRepr(const ReprVector& reprs, const TfToken& reprToken)
+{
+    ReprVector::const_iterator it
+        = std::find_if(reprs.begin(), reprs.end(), [reprToken](ReprVector::const_reference e) {
+              return reprToken == e.first;
+          });
+
+    return (it != reprs.end() ? it->second : nullptr);
+}
+
 HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
     HdRprim&       refThis,
     TfToken const& reprToken,
@@ -330,23 +340,34 @@ HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
         _FirstInitRepr(dirtyBits, id);
     }
 
-    _SyncDisplayLayerModes(refThis);
+    auto* const param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    auto&       drawScene = param->GetDrawScene();
+
+    // display layers handling
+    if (!drawScene.GetUsdImagingDelegate()->GetInstancerId(id).IsEmpty()) {
+        _displayLayerModes = DisplayLayerModes();
+
+        // Instanced primitives with instances in display layers use 'forced' representations to
+        // draw those specific instances, so the 'forced' representations should be inited alongside
+        if (reprToken != HdVP2ReprTokens->forcedBbox) {
+            refThis.InitRepr(
+                drawScene.GetUsdImagingDelegate(), HdVP2ReprTokens->forcedBbox, dirtyBits);
+        }
+    } else {
+        // Sync display layer modes for non-instanced prims.
+        // For instanced prims, this will be done inside Sync method on a per-instance basis
+        _SyncDisplayLayerModes();
+    }
 
     _UpdateReprOverrides(reprs);
 
-    // Finally we can get to actually init/dirty the repr
-    ReprVector::const_iterator it
-        = std::find_if(reprs.begin(), reprs.end(), [reprToken](ReprVector::const_reference e) {
-              return reprToken == e.first;
-          });
-    HdReprSharedPtr curRepr = (it != reprs.end() ? it->second : nullptr);
+    // Find the current representation in the array of all inited representations
+    HdReprSharedPtr curRepr = _FindRepr(reprs, reprToken);
 
     // In repr override mode, call InitRepr for the representation that overrides.
     if (_reprOverride != kNone) {
         TfToken overrideToken = _GetOverrideToken(reprToken);
         if (!overrideToken.IsEmpty() && (overrideToken != reprToken)) {
-            auto* const param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-            auto&       drawScene = param->GetDrawScene();
             refThis.InitRepr(drawScene.GetUsdImagingDelegate(), overrideToken, dirtyBits);
             if (curRepr) {
                 return nullptr; // if the overriden repr is already created, we can safely exit here
@@ -354,14 +375,14 @@ HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
         }
     }
 
+    // Finalize initialization
+
     if (curRepr) {
         _SetDirtyRepr(curRepr);
         return nullptr;
     }
 
-    // set dirty bit to say we need to sync a new repr
-    *dirtyBits |= HdChangeTracker::NewRepr;
-
+    *dirtyBits |= HdChangeTracker::NewRepr; // set dirty bit to say we need to sync a new repr
     reprs.emplace_back(reprToken, std::make_shared<HdRepr>());
     return reprs.back().second;
 }
@@ -746,7 +767,7 @@ void MayaUsdRPrim::_PopulateDisplayLayerModes(const MString&, DisplayLayerModes&
 }
 #endif
 
-void MayaUsdRPrim::_SyncDisplayLayerModes(const HdRprim& refThis)
+void MayaUsdRPrim::_SyncDisplayLayerModes()
 {
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
@@ -757,14 +778,34 @@ void MayaUsdRPrim::_SyncDisplayLayerModes(const HdRprim& refThis)
     }
 
     _displayLayerModesFrame = drawScene.GetFrameCounter();
+    MString pathString = drawScene.GetUfePathPrefix() + _PrimSegmentString[0];
+    _PopulateDisplayLayerModes(pathString, _displayLayerModes);
+}
 
-    // If the prim is not instanced, populate _displayLayerModes.
-    // Otherwise display layer modes will be handled later, in the instancing loop.
-    if (refThis.GetInstancerId().IsEmpty()) {
-        MString pathString = drawScene.GetUfePathPrefix() + _PrimSegmentString[0];
-        _PopulateDisplayLayerModes(pathString, _displayLayerModes);
-    } else {
-        _displayLayerModes = DisplayLayerModes();
+void MayaUsdRPrim::_SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned int instanceCount)
+{
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+
+    // First check if the status need updating
+    if (drawScene.GetFrameCounter() == _displayLayerModesFrame) {
+        return;
+    }
+
+    _displayLayerModesFrame = drawScene.GetFrameCounter();
+    const MString ufePathPrefix = drawScene.GetUfePathPrefix();
+
+    _needForcedBBox = false;
+    _displayLayerModesInstanced.resize(instanceCount);
+    for (unsigned int usdInstanceId = 0; usdInstanceId < instanceCount; usdInstanceId++) {
+        const MString instancePath
+            = ufePathPrefix + drawScene.GetScenePrimPath(id, usdInstanceId).GetString().c_str();
+        auto& displayLayerModes = _displayLayerModesInstanced[usdInstanceId];
+        _PopulateDisplayLayerModes(instancePath, displayLayerModes);
+
+        if (displayLayerModes._reprOverride == kBBox) {
+            _needForcedBBox = true;
+        }
     }
 }
 
@@ -986,6 +1027,63 @@ bool MayaUsdRPrim::_GetMaterialPrimvars(
     }
 
     return true;
+}
+
+bool MayaUsdRPrim::_ShouldSkipInstance(unsigned int usdInstanceId, const TfToken& reprToken) const
+{
+    const auto& displayLayerModes = _displayLayerModesInstanced[usdInstanceId];
+    if (!displayLayerModes._visibility) {
+        return true;
+    }
+
+    if (reprToken == HdVP2ReprTokens->forcedBbox) {
+        if (displayLayerModes._reprOverride != kBBox) {
+            return true;
+        }
+    } else {
+        if (displayLayerModes._reprOverride == kBBox) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void MayaUsdRPrim::_SyncForcedReprs(
+    HdRprim&          refThis,
+    HdSceneDelegate*  delegate,
+    HdRenderParam*    renderParam,
+    HdDirtyBits*      dirtyBits,
+    ReprVector const& reprs)
+{
+    // Forced representations work only for instanced primitives
+    if (refThis.GetInstancerId().IsEmpty()) {
+        return;
+    }
+
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+
+    // First check if the sync still needs to be performed
+    if (drawScene.GetFrameCounter() == _forcedReprsFrame) {
+        return;
+    }
+
+    _forcedReprsFrame = drawScene.GetFrameCounter();
+
+    RenderItemFunc hideDrawItem = [this](HdVP2DrawItem::RenderItemData& renderItemData) {
+        if (renderItemData._enabled) {
+            renderItemData._enabled = false;
+            _delegate->GetVP2ResourceRegistry().EnqueueCommit(
+                [&renderItemData]() { renderItemData._renderItem->enable(false); });
+        }
+    };
+
+    if (_needForcedBBox) {
+        refThis.Sync(delegate, renderParam, dirtyBits, HdVP2ReprTokens->forcedBbox);
+    } else {
+        _ForEachRenderItemInRepr(_FindRepr(reprs, HdVP2ReprTokens->forcedBbox), hideDrawItem);
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -139,6 +139,8 @@ MSyntax MayaUSDExportCommand::createSyntax()
         kExportRootsFlag, UsdMayaJobExportArgsTokens->exportRoots.GetText(), MSyntax::kString);
     syntax.makeFlagMultiUse(kExportRootsFlag);
     syntax.addFlag(
+        kWorldspaceFlag, UsdMayaJobExportArgsTokens->worldspace.GetText(), MSyntax::kBoolean);
+    syntax.addFlag(
         kExportSkelsFlag, UsdMayaJobExportArgsTokens->exportSkels.GetText(), MSyntax::kString);
     syntax.addFlag(
         kExportSkinFlag, UsdMayaJobExportArgsTokens->exportSkin.GetText(), MSyntax::kString);
