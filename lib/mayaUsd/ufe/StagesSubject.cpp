@@ -188,6 +188,9 @@ void sendAttributeChanged(
         notifyWithoutExceptions<Ufe::Attributes>(
             Ufe::AttributeConnectionChanged(ufePath, changedToken.GetString()));
     } break;
+    default: {
+        // Do nothing (needed to fix build error)
+    }
     }
 #else
     notifyWithoutExceptions<Ufe::Attributes>(
