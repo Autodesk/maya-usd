@@ -340,7 +340,8 @@ trieNodeToPulledPrimUfePath(Ufe::TrieNode<OrphanedNodesManager::PullVariantInfo>
         if (!foundStage) {
             UsdStagePtr stage = ufe::getStage(primPath);
             if (stage) {
-                primPath = primPath + Ufe::PathSegment({}, ufe::getUsdRunTimeId(), '/');
+                primPath = primPath
+                    + Ufe::PathSegment(Ufe::PathSegment::Components(), ufe::getUsdRunTimeId(), '/');
                 foundStage = true;
             }
         }
