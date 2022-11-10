@@ -11,6 +11,7 @@
 # UFE_VERSION         UFE version (major.minor.patch) from ufe.h
 # UFE_LIGHTS_SUPPORT  Presence of UFE lights support
 # UFE_SCENE_SEGMENT_SUPPORT Presence of UFE scene segment support
+# UFE_PREVIEW_FEATURES List of all features introduced gradually in the UFE preview version
 #
 
 find_path(UFE_INCLUDE_DIR
@@ -82,6 +83,13 @@ find_library(UFE_LIBRARY
     NO_DEFAULT_PATH
 )
 
+# Gather all preview features that might be there or not into a single list:
+list(APPEND UFE_PREVIEW_FEATURES ufe)
+
+if (UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/batchOpsHandler.h")
+    list(APPEND UFE_PREVIEW_FEATURES v4_BatchOps)
+endif()
+
 # Handle the QUIETLY and REQUIRED arguments and set UFE_FOUND to TRUE if
 # all listed variables are TRUE.
 include(FindPackageHandleStandardArgs)
@@ -90,6 +98,7 @@ find_package_handle_standard_args(UFE
     REQUIRED_VARS
         UFE_INCLUDE_DIR
         UFE_LIBRARY
+        UFE_PREVIEW_FEATURES
     VERSION_VAR
         UFE_VERSION
 )
@@ -98,6 +107,7 @@ if(UFE_FOUND)
     message(STATUS "UFE include dir: ${UFE_INCLUDE_DIR}")
     message(STATUS "UFE library: ${UFE_LIBRARY}")
     message(STATUS "UFE version: ${UFE_VERSION}")
+    message(STATUS "UFE preview features: ${UFE_PREVIEW_FEATURES}")
 endif()
 
 set(UFE_LIGHTS_SUPPORT FALSE CACHE INTERNAL "ufeLights")
