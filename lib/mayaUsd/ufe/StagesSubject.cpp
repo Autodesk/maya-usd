@@ -291,12 +291,14 @@ void processAttributeChanges(
     const std::vector<const SdfChangeList::Entry*>& UFE_V4_24(entries))
 {
 #if (UFE_PREVIEW_VERSION_NUM >= 4024)
-    bool                  sendValueChanged = true; // Default notification to send.
-    bool                  sendAdded = false;
-    bool                  sendRemoved = false;
-    bool                  sendConnectionChanged = false;
+    bool sendValueChanged = true; // Default notification to send.
+    bool sendAdded = false;
+    bool sendRemoved = false;
+    bool sendConnectionChanged = false;
+#if (UFE_PREVIEW_VERSION_NUM >= 4037)
     bool                  sendMetadataChanged = false;
     std::set<std::string> metadataKeys;
+#endif
     for (const auto& entry : entries) {
         // We can have multiple flags merged into a single entry:
         if (entry->flags.didAddProperty || entry->flags.didAddPropertyWithOnlyRequiredFields) {
@@ -312,6 +314,7 @@ void processAttributeChanges(
             sendConnectionChanged = true;
             sendValueChanged = false;
         }
+#if (UFE_PREVIEW_VERSION_NUM >= 4037)
         for (const auto& infoChanged : entry->infoChanged) {
             if (infoChanged.first == UsdShadeTokens->sdrMetadata) {
                 sendMetadataChanged = true;
@@ -326,6 +329,7 @@ void processAttributeChanges(
                 }
             }
         }
+#endif
     }
     if (sendAdded) {
         attributeChanged(ufePath, changedPath.GetNameToken(), AttributeChangeType::kAdded);

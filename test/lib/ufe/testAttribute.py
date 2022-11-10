@@ -54,7 +54,7 @@ class TestObserver(ufe.Observer):
         else:
             if isinstance(notification, ufe.AttributeChanged):
                 self._notifications += 1
-        if isinstance(notification, ufe.AttributeMetadataChanged):
+        if hasattr(ufe, 'AttributeMetadataChanged') and isinstance(notification, ufe.AttributeMetadataChanged):
             self._keys = notification.keys()
 
     @property
@@ -1936,7 +1936,7 @@ class AttributeTestCase(unittest.TestCase):
         # This is as expected as we do not insert space on digit<->alpha transitions:
         self.assertEqual(mayaUsdLib.Util.prettifyName("Dx11Shader"), "Dx11Shader")
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4037', 'Test only available in UFE preview version 0.4.34 and greater')
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4037', 'Test only available in UFE preview version 0.4.37 and greater')
     def testAttributeMetadataChanged(self):
         cmds.file(new=True, force=True)
         testFile = testUtils.getTestScene("MaterialX", "sin_compound.usda")
