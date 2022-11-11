@@ -165,29 +165,6 @@ void OrphanedNodesManager::add(const Ufe::Path& pulledPath, const MDagPath& edit
     TF_AXIOM(!pulledPrims().containsDescendantInclusive(pulledPath));
     TF_AXIOM(pulledPath.runTimeId() == MayaUsd::ufe::getUsdRunTimeId());
 
-    MayaUsdProxyShapeBase* proxyShape = MayaUsd::ufe::getProxyShape(pulledPath);
-    if (!proxyShape)
-        return;
-
-    // Note: the reason we store the proxy shape path when it would seem we
-    //       could derive it from the pulledPath is exactly the reason we are
-    //       keeping all this information: when we need to use the information,
-    //       the pulled prim might no longer be accessible. For example, the
-    //       pulled prim might not be acccessible because an ancestor has
-    //       switched variant.
-    //
-    //       This is why we keep the proxy shape path.
-    //
-    //       We currently assume the user does not make the path to the proxy
-    //       shape invalid by renaming any ancestor or reparenting an ancestor...
-    //
-    //       FIXME: update the proxy shape path when objects are renamed or
-    //              reparented. Currently tracked as MAYA-125039.
-    //              This also affects the pulledPath and editedAsMayaRoot.
-    MDagPath proxyShapePath;
-    if (!MDagPath::getAPathTo(proxyShape->thisMObject(), proxyShapePath))
-        return;
-
     // We store a list of (path, list of (variant set, variant set selection)),
     // for all ancestors, starting at closest ancestor.
     auto ancestorPath = pulledPath.pop();
@@ -429,14 +406,14 @@ trieNodeToPulledPrimUfePath(Ufe::TrieNode<OrphanedNodesManager::PullVariantInfo>
         Ufe::PathComponent comp = pathComponents.back();
         pathComponents.pop_back();
 
-        // If th epath is empty, it means we are starting the Maya path, so create
+        // If the path is empty, it means we are starting the Maya path, so create
         // a Maya UFE segment.
         //
         // Note: the reason we don't just create an empty segment right away when
         //       creating the UFE path is that the + operator refuses to add a
         //       component if there are zero component in the path. So we create
-        //       the Maya segment when we extract the first component. That avoids
-        //       duplicating the code to check if we found a stage, just below.
+        //       the Maya segment when we extract the first component. That also
+        //       avoids duplicating the code to check if we found a stage, just below.
         if (primPath.empty()) {
             primPath = primPath + Ufe::PathSegment(comp, ufe::getMayaRunTimeId(), '|');
         } else {
@@ -449,7 +426,8 @@ trieNodeToPulledPrimUfePath(Ufe::TrieNode<OrphanedNodesManager::PullVariantInfo>
         if (!foundStage) {
             UsdStagePtr stage = ufe::getStage(primPath);
             if (stage) {
-                primPath = primPath + Ufe::PathSegment({}, ufe::getUsdRunTimeId(), '/');
+                primPath = primPath
+                    + Ufe::PathSegment(Ufe::PathSegment::Components(), ufe::getUsdRunTimeId(), '/');
                 foundStage = true;
             }
         }
@@ -490,7 +468,7 @@ bool OrphanedNodesManager::setOrphaned(
 
     // Note: if we are called due to the user deleting the stage, then the pulled prim
     //       path will be invalid and trying to add or remove information on it will
-    //       fail, so avoid it.
+    //       fail, and cause spurious warnings in the script editor, so avoid it.
     if (!pulledPrimPath.empty()) {
         if (orphaned) {
             removePulledPrimMetadata(pulledPrimPath);

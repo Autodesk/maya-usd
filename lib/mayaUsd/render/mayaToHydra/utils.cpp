@@ -87,7 +87,7 @@ MtohInitializeRenderPlugins()
             // Null it out to make any possible usage later obv, wrong!
             delegate = nullptr;
 
-            std::shared_ptr<pxr::UsdImagingGLEngine> _engine;
+            std::shared_ptr<UsdImagingGLEngine> _engine;
             store.first.emplace_back(
                 renderer,
                 TfToken(TfStringPrintf("%s%s", MTOH_RENDER_OVERRIDE_PREFIX, renderer.GetText())),

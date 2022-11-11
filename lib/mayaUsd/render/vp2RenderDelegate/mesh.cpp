@@ -1039,6 +1039,8 @@ void HdVP2Mesh::Sync(
 
     // Draw item update is controlled by its own dirty bits.
     _UpdateRepr(delegate, reprToken);
+
+    _SyncForcedReprs(*this, delegate, renderParam, dirtyBits, _reprs);
 }
 
 /*! \brief  Returns the minimal set of dirty bits to place in the
@@ -1245,13 +1247,18 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
             }
             // The item is used for bbox display and selection highlight.
-            else if (reprToken == HdVP2ReprTokens->bbox) {
+            else if (
+                reprToken == HdVP2ReprTokens->bbox || reprToken == HdVP2ReprTokens->forcedBbox) {
                 renderItem = _CreateBoundingBoxRenderItem(
                     renderItemName,
                     kOpaqueBlue,
                     MSelectionMask::kSelectMeshes,
                     MHWRender::MFrameContext::kExcludeMeshes);
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
+                if (reprToken == HdVP2ReprTokens->forcedBbox) {
+                    renderItem->enable(false);
+                    renderItem->setDrawMode(MHWRender::MGeometry::kAll);
+                }
             }
             break;
 #ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
@@ -1860,12 +1867,19 @@ void HdVP2Mesh::_UpdateDrawItem(
             }
 #endif
 
+            _SyncDisplayLayerModesInstanced(id, instanceCount);
+
             stateToCommit._instanceTransforms = std::make_shared<MMatrixArray>();
             stateToCommit._instanceColors = std::make_shared<MFloatArray>();
             for (unsigned int usdInstanceId = 0; usdInstanceId < instanceCount; usdInstanceId++) {
                 unsigned char info = instanceInfo[usdInstanceId];
                 if (info == invalid)
                     continue;
+
+                // Check display layer modes of this instance
+                if (_ShouldSkipInstance(usdInstanceId, reprToken))
+                    continue;
+
 #ifndef MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT
                 stateToCommit._ufeIdentifiers.append(
                     drawScene.GetScenePrimPath(GetId(), usdInstanceId).GetString().c_str());

@@ -52,17 +52,26 @@ class testUsdImportSessionLayer(unittest.TestCase):
         modelPrim = stage.GetPrimAtPath(modelPrimPath)
         self.assertTrue(modelPrim)
 
-        variantSet = modelPrim.GetVariantSet('modelingVariant')
-        variantSelection = variantSet.GetVariantSelection()
+        cubesVariantSet = modelPrim.GetVariantSet('modelingVariant')
+        cubesVariantSelection = cubesVariantSet.GetVariantSelection()
+
+        cubeOnePrimPath = '/Cubes/Geom/CubeOne'
+        cubeOnePrim = stage.GetPrimAtPath(cubeOnePrimPath)
+        self.assertTrue(cubeOnePrim)
+
+        cubeOneVariantSet = cubeOnePrim.GetVariantSet('displacement')
+        cubeOneVariantSelection = cubeOneVariantSet.GetVariantSelection()
 
         # This is the default variant.
-        self.assertEqual(variantSelection, 'OneCube')
+        self.assertEqual(cubesVariantSelection, 'OneCube')
+        self.assertEqual(cubeOneVariantSelection, 'none')
 
         # Now do a usdImport of a different variant in a clean Maya scene.
         cmds.file(new=True, force=True)
 
         variants = [('modelingVariant', 'ThreeCubes')]
-        cmds.usdImport(file=usdFile, primPath=modelPrimPath, variant=variants)
+        primVariants = [('/Cubes/Geom/CubeOne', 'displacement', 'moved')]
+        cmds.usdImport(file=usdFile, primPath=modelPrimPath, variant=variants, primVariant=primVariants)
 
         expectedMayaCubeNodesSet = set([
             '|Cubes|Geom|CubeOne',
@@ -71,11 +80,20 @@ class testUsdImportSessionLayer(unittest.TestCase):
         mayaCubeNodesSet = set(cmds.ls('|Cubes|Geom|Cube*', long=True))
         self.assertEqual(expectedMayaCubeNodesSet, mayaCubeNodesSet)
 
+        cubeOneTranslation = cmds.getAttr('|Cubes|Geom|CubeOne.translate')
+        self.assertEqual([(20., 10., 50.)], cubeOneTranslation)
+
         # The import should have made the variant selections in a session layer,
         # so make sure the selection in our open USD stage was not changed.
-        variantSet = modelPrim.GetVariantSet('modelingVariant')
-        variantSelection = variantSet.GetVariantSelection()
-        self.assertEqual(variantSelection, 'OneCube')
+        cubesVariantSet = modelPrim.GetVariantSet('modelingVariant')
+        cubesVariantSelection = cubesVariantSet.GetVariantSelection()
+        self.assertEqual(cubesVariantSelection, 'OneCube')
+
+        cubeOneVariantSet = cubeOnePrim.GetVariantSet('displacement')
+        cubeOneVariantSelection = cubeOneVariantSet.GetVariantSelection()
+        self.assertEqual(cubeOneVariantSelection, 'none')
+        cubeOneTranslation = cubeOnePrim.GetAttribute('xformOp:translate').Get()
+        self.assertEqual([-2, 0, 0.5], cubeOneTranslation)
 
 
 if __name__ == '__main__':
