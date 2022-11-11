@@ -45,6 +45,7 @@ class TestObserver(ufe.Observer):
     def __init__(self):
         super(TestObserver, self).__init__()
         self._notifications = 0
+        self._keys = None
 
     def __call__(self, notification):
         if (ufeUtils.ufeFeatureSetVersion() >= 2):
@@ -53,10 +54,16 @@ class TestObserver(ufe.Observer):
         else:
             if isinstance(notification, ufe.AttributeChanged):
                 self._notifications += 1
+        if hasattr(ufe, 'AttributeMetadataChanged') and isinstance(notification, ufe.AttributeMetadataChanged):
+            self._keys = notification.keys()
 
     @property
     def notifications(self):
         return self._notifications
+
+    @property
+    def keys(self):
+        return self._keys
 
 class TestObserver_4_24(ufe.Observer):
     """This advanced observer listens to notifications that appeared in UFE 0.4.24"""
@@ -1928,6 +1935,33 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(mayaUsdLib.Util.prettifyName("specular_IOR"), "Specular IOR")
         # This is as expected as we do not insert space on digit<->alpha transitions:
         self.assertEqual(mayaUsdLib.Util.prettifyName("Dx11Shader"), "Dx11Shader")
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4037', 'Test only available in UFE preview version 0.4.37 and greater')
+    def testAttributeMetadataChanged(self):
+        cmds.file(new=True, force=True)
+        testFile = testUtils.getTestScene("MaterialX", "sin_compound.usda")
+        testDagPath, testStage = mayaUtils.createProxyFromFile(testFile)
+        mayaPathSegment = mayaUtils.createUfePathSegment(testDagPath)
+        usdPathSegment = usdUtils.createUfePathSegment("/Material1/Compound1")
+        nodeGraphPath = ufe.Path([mayaPathSegment, usdPathSegment])
+        nodeGraphItem = ufe.Hierarchy.createItem(nodeGraphPath)
+        attrs = ufe.Attributes.attributes(nodeGraphItem)
+
+        obs = TestObserver()
+        self.assertEqual(0, obs.notifications)
+        attrs.addObserver(nodeGraphItem, obs)
+
+        uisoftminKey = "uisoftmin"
+        self.assertTrue(attrs.hasAttribute("inputs:in"))
+        attr = attrs.attribute("inputs:in")
+        value = ufe.Value("-1")
+        cmd = attr.setMetadataCmd(uisoftminKey, value)
+        cmd.execute()
+
+        self.assertEqual(1, obs.notifications)
+        self.assertEqual(obs.keys, set([uisoftminKey]))
+
+        self.assertEqual(str(attr.getMetadata(uisoftminKey)), str(value))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
