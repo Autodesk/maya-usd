@@ -53,6 +53,19 @@ bool setUsdAttrMetadata(
         throw std::runtime_error(errMsg);
     }
 
+    PXR_NS::TfToken tok(key);
+    if (PXR_NS::UsdShadeNodeGraph(attr.GetPrim())) {
+        if (PXR_NS::UsdShadeInput::IsInput(attr)) {
+            PXR_NS::UsdShadeInput input(attr);
+            input.SetSdrMetadataByKey(tok, value.get<std::string>());
+            return true;
+        } else if (PXR_NS::UsdShadeOutput::IsOutput(attr)) {
+            PXR_NS::UsdShadeOutput output(attr);
+            output.SetSdrMetadataByKey(tok, value.get<std::string>());
+            return true;
+        }
+    }
+
     // We must convert the Ufe::Value to VtValue for storage in Usd.
     // Figure out the type of the input Ufe Value and create proper Usd VtValue.
     PXR_NS::VtValue usdValue;
@@ -172,6 +185,17 @@ Ufe::Value UsdAttributeHolder::getMetadata(const std::string& key) const
             return Ufe::Value();
         }
         PXR_NS::TfToken tok(key);
+        if (PXR_NS::UsdShadeNodeGraph(usdPrim())) {
+            if (PXR_NS::UsdShadeInput::IsInput(_usdAttr)) {
+                const PXR_NS::UsdShadeInput input(_usdAttr);
+                const std::string           metadata = input.GetSdrMetadataByKey(tok);
+                return Ufe::Value(metadata);
+            } else if (PXR_NS::UsdShadeOutput::IsOutput(_usdAttr)) {
+                const PXR_NS::UsdShadeOutput output(_usdAttr);
+                const std::string            metadata = output.GetSdrMetadataByKey(tok);
+                return Ufe::Value(metadata);
+            }
+        }
         PXR_NS::VtValue v;
         if (_usdAttr.GetMetadata(tok, &v)) {
             if (v.IsHolding<bool>())
