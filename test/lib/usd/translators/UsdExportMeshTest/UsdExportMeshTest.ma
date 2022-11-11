@@ -3,7 +3,6 @@
 //Last modified: Mon, Nov 07, 2022 05:29:01 PM
 //Codeset: UTF-8
 requires maya "2022";
-requires -nodeType "px_renderGlobals" "px_render" "1.0";
 currentUnit -l centimeter -a degree -t film;
 fileInfo "application" "maya";
 fileInfo "product" "Maya 2022";
@@ -434,8 +433,6 @@ createNode creaseSet -n "creasedShape_creaseSet1";
 createNode groupId -n "groupId1";
 	rename -uid "3C1599C0-0000-0CF1-5F06-03ED0000028C";
 	setAttr ".ihi" 0;
-createNode px_renderGlobals -s -n "px_renderGlobals1";
-	rename -uid "38805D80-0000-03BD-6369-B09C0000028C";
 select -ne :time1;
 	setAttr ".o" 1;
 	setAttr ".unw" 1;
@@ -461,10 +458,7 @@ select -ne :initialShadingGroup;
 select -ne :initialParticleSE;
 	setAttr ".ro" yes;
 select -ne :defaultRenderGlobals;
-	addAttr -ci true -h true -sn "dss" -ln "defaultSurfaceShader" -dt "string";
-	setAttr ".ren" -type "string" "px_render";
 	setAttr ".outf" 3;
-	setAttr ".dss" -type "string" "lambert1";
 select -ne :defaultResolution;
 	setAttr ".pa" 1;
 select -ne :defaultColorMgtGlobals;
