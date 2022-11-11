@@ -209,11 +209,9 @@ void sendAttributeMetadataChanged(
     AttributeChangeType          UFE_V4_24(changeType),
     const std::set<std::string>& metadataKeys)
 {
-    switch (changeType) {
-    case AttributeChangeType::kMetadataChanged: {
+    if (changeType == AttributeChangeType::kMetadataChanged) {
         notifyWithoutExceptions<Ufe::Attributes>(
             Ufe::AttributeMetadataChanged(ufePath, changedToken.GetString(), metadataKeys));
-    } break;
     }
 }
 #endif
