@@ -31,10 +31,36 @@ namespace UsdLayerEditor {
 class LayerTreeItem;
 class LayerTreeItemDelegate;
 class LayerTreeModel;
+class LayerTreeView;
 class SessionState;
 
 typedef std::vector<LayerTreeItem*> LayerItemVector;
 typedef void (LayerTreeItem::*simpleLayerMethod)();
+
+/**
+ * @brief State of the layer tree view and layer model.
+ * Used to save and restore the state when the model is rebuilt.
+ *
+ */
+class LayerViewMemento
+{
+public:
+    LayerViewMemento(const LayerTreeView&, const LayerTreeModel&);
+
+    void preserve(const LayerTreeView&, const LayerTreeModel&);
+    void restore(LayerTreeView&, LayerTreeModel&);
+
+    bool empty() const { return itemsState.empty(); }
+
+private:
+    using ItemId = std::string;
+    struct ItemState
+    {
+        bool expanded = false;
+    };
+
+    std::map<ItemId, ItemState> itemsState;
+};
 
 /**
  * @brief Implements the Qt TreeView for USD layers. This widget is owned by the LayerEditorWidget.
@@ -82,6 +108,7 @@ public:
 
 protected:
     // slot:
+    void onModelAboutToBeReset();
     void onModelReset();
     void onItemDoubleClicked(const QModelIndex& index);
     void onMuteLayerButtonPushed();
@@ -92,6 +119,8 @@ protected:
     LayerTreeViewStyle       _treeViewStyle;
     QPointer<LayerTreeModel> _model;
     LayerTreeItemDelegate*   _delegate;
+
+    std::unique_ptr<LayerViewMemento> _cachedModelState;
 
     void handleTooltips(QHelpEvent* event);
 
