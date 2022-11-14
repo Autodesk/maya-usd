@@ -20,6 +20,7 @@ import fixturesUtils
 import mayaUtils
 import usdUtils
 import ufeUtils
+import testUtils
 
 from pxr import UsdGeom
 from pxr import UsdShade
@@ -582,12 +583,9 @@ class ContextOpsTestCase(unittest.TestCase):
 
         checkMaterial(self, rootHier, 2, 1, 0, "UsdPreviewSurface", "", "surface")
 
-        os.putenv("MAYAUSD_MATERIALS_SCOPE_NAME", "test_scope")
-        ufeCmd.execute(cmdSS)
-        checkMaterial(self, rootHier, 3, 1, 0, "standard_surface", "mtlx", "out", "/test_scope")
-
-        # Clear the envvar, otherwise we're affecting the results of following tests.
-        os.putenv("MAYAUSD_MATERIALS_SCOPE_NAME", "")
+        with testUtils.TemporaryEnvironmentVariable("MAYAUSD_MATERIALS_SCOPE_NAME", "test_scope"):
+            ufeCmd.execute(cmdSS)
+            checkMaterial(self, rootHier, 3, 1, 0, "standard_surface", "mtlx", "out", "/test_scope")
 
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
@@ -733,12 +731,9 @@ class ContextOpsTestCase(unittest.TestCase):
 
         checkMaterial(self, rootHier, 4, 1, 1, 0, "UsdPreviewSurface", "", "surface")
 
-        os.putenv("MAYAUSD_MATERIALS_SCOPE_NAME", "test_scope")
-        ufeCmd.execute(cmdSS)
-        checkMaterial(self, rootHier, 5, 1, 1, 0, "standard_surface", "mtlx", "out", "/test_scope")
-
-        # Clear the envvar, otherwise we're affecting the results of following tests.
-        os.putenv("MAYAUSD_MATERIALS_SCOPE_NAME", "")
+        with testUtils.TemporaryEnvironmentVariable("MAYAUSD_MATERIALS_SCOPE_NAME", "test_scope"):
+            ufeCmd.execute(cmdSS)
+            checkMaterial(self, rootHier, 5, 1, 1, 0, "standard_surface", "mtlx", "out", "/test_scope")
 
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')

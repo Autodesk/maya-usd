@@ -78,3 +78,22 @@ class TemporaryDirectory:
         except:
             if not self.ignore_errors:
                 raise
+
+class TemporaryEnvironmentVariable:
+    '''
+    Context manager that creates a temporary environment variable and deletes it on exit,
+    so it's usable with "with" statement.
+    '''
+    def __init__(self, name=None, value=None):
+        self.name = name
+        self.value = value
+
+    def __enter__(self):
+        if self.value is not None:
+            os.environ[self.name] = self.value
+        elif self.name in os.environ:
+            del os.environ[self.name]
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.name in os.environ:
+            del os.environ[self.name]
