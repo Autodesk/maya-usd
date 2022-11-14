@@ -56,7 +56,7 @@ private:
     using ItemId = std::string;
     struct ItemState
     {
-        bool expanded = false;
+        bool _expanded = false;
     };
 
     std::map<ItemId, ItemState> itemsState;

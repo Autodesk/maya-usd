@@ -166,6 +166,8 @@ void LayerViewMemento::restore(LayerTreeView& view, LayerTreeModel& model)
 {
     const LayerItemVector items = model.getAllItems();
 
+    QtDisableRepaintUpdates disableUpdates(view);
+
     for (const LayerTreeItem* item : items) {
         if (!item)
             continue;
@@ -177,7 +179,7 @@ void LayerViewMemento::restore(LayerTreeView& view, LayerTreeModel& model)
             const ItemId id = layer->GetIdentifier();
             const auto   state = itemsState.find(id);
             if (state != itemsState.end()) {
-                expanded = state->second.expanded;
+                expanded = state->second._expanded;
             }
         }
 
