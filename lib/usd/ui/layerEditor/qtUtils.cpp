@@ -63,20 +63,17 @@ QWidget* QtUtils::fixedWidget(QWidget* widget)
 }
 
 QtDisableRepaintUpdates::QtDisableRepaintUpdates(QWidget& widget)
-: _widget(widget)
+    : _widget(widget)
 {
     widget.setUpdatesEnabled(false);
 }
 
 QtDisableRepaintUpdates::~QtDisableRepaintUpdates()
 {
-    try
-    {
+    try {
         // Note: re-enabling updates automatically triggers a repaint.
         _widget.setUpdatesEnabled(true);
-    }
-    catch (std::exception&)
-    {
+    } catch (std::exception&) {
         // Don't let exceptions out of destructor.
     }
 }
