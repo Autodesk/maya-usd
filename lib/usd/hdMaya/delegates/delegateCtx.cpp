@@ -65,7 +65,6 @@ SdfPath _GetRenderItemPrimPath(const SdfPath& base, const MRenderItem& ri)
 		return {};
 	}
 	return base.AppendPath(SdfPath(s));
-	return SdfPath();
 }
 
 SdfPath _GetRenderItemShaderPrimPath(const SdfPath& base, const MRenderItem& ri)

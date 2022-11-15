@@ -268,12 +268,23 @@ void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scen
 	}
 
     //My version, does minimal update
-    // This loop could, in theory, pe parallelized.  Unclear how large the gains would be, but maybe
+    // This loop could, in theory, be parallelized.  Unclear how large the gains would be, but maybe
     // nothing to lose unless there is some internal contention in USD.
     for (size_t i = 0; i < scene.mCount; i++) {
         auto flags = scene.mFlags[i];
-        if (flags == 0)
-            continue;
+        if (_handleCompleteViewportSceneHasNotBeenCalledYet)
+        {
+            //Rebuild everything when we have created the scene delegate whatever the MViewportScene flags are
+            // this is used to handle the case when switching back and forth from VP2 to Hydra. 
+            // Since there are no actual changes in the scene when doing so, the flags are all 0 but we have 
+            // to re-create all hydra data for these render items so we hardcode the flags value.
+            flags = MViewportScene::MVS_ALL | MViewportScene::MVS_visible;
+        }
+        else
+        {
+            if (flags == 0)
+                continue;
+        }
 
 		const auto& ri = *scene.mItems[i];
 		int fastId = scene.mItems[i]->InternalObjectId();
@@ -346,6 +357,7 @@ void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scen
 		}
 	}
 #endif
+    _handleCompleteViewportSceneHasNotBeenCalledYet = false;
 }
 
 void HdMayaSceneDelegate::Populate()
@@ -388,9 +400,6 @@ void HdMayaSceneDelegate::Populate()
     // Adding fallback materials sprim to the render index.
     if (renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->material)) {
         renderIndex.InsertSprim(HdPrimTypeTokens->material, this, _fallbackMaterial);
-		// TODO remove
-		renderIndex.InsertSprim(HdPrimTypeTokens->material, this, _wireframeMaterial);
-		renderIndex.InsertSprim(HdPrimTypeTokens->material, this, _vertexMaterial);
     }
 	
 

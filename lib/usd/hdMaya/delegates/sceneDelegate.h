@@ -300,15 +300,13 @@ private:
     std::vector<SdfPath>                       _materialTagsChanged;
 
     SdfPath _fallbackMaterial;
-	// TODO remove
-	SdfPath _wireframeMaterial;	
-	GfVec3f _wireframeColor = { 0.432f, 1.215f, 8.665f };
-	SdfPath _vertexMaterial;
-	GfVec3f _vertexColor = { 10.0f, 10.0f, 0 };
-
+	
 	//GfVec3f _pointColor = 
 
     bool    _enableMaterials = false;
+    //This is used when we switch back and forth from VP2 to Hydra, since the MViewportScene mFlags were all 0 as no actual change was happening in the scene, 
+    //but we needed to re-create the hydra data for these render items.
+    bool _handleCompleteViewportSceneHasNotBeenCalledYet = true;
 };
 
 typedef std::shared_ptr<HdMayaSceneDelegate> MayaSceneDelegateSharedPtr;

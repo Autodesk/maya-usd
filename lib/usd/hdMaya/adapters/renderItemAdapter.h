@@ -41,7 +41,7 @@ namespace
 
 	static constexpr const char* kPointSize = "pointSize";
 
-	static const SdfPath kInvalidMaterial = SdfPath("");
+	static const SdfPath kInvalidMaterial = SdfPath("InvalidMaterial");
 }
 
 using HdMayaRenderItemAdapterPtr = std::shared_ptr<class HdMayaRenderItemAdapter>;

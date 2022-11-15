@@ -58,8 +58,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     PlugRegistry::GetInstance().GetPluginWithName(\
         TF_PP_STRINGIZE(MFB_PACKAGE_NAME))
 
-static const TfToken sDefaultMaterial = UsdImagingTokens->UsdPreviewSurface;
-
 // Maya to hydra shader parameter conversion
 // See void HdMayaMaterialNetworkConverter::initialize()
 static const std::map<std::string, TfToken> sHdMayaParamNameMap

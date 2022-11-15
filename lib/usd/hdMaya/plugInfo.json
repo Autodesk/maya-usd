@@ -3,11 +3,6 @@
         {
             "Info": {
                 "Types": {
-                    # Discovery
-                    "HdMayaRenderItemDiscoveryPlugin" : {
-                        "bases": ["NdrDiscoveryPlugin"],
-                        "displayName": "USD-based shader definition discovery plugin."
-                    },
                     # Plugin
                     "HdMayaRenderItemRendererPlugin": {
                         "bases": [
