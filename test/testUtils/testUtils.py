@@ -81,19 +81,22 @@ class TemporaryDirectory:
 
 class TemporaryEnvironmentVariable:
     '''
-    Context manager that creates a temporary environment variable and deletes it on exit,
+    Context manager that sets a temporary environment variable and restores its value on exit,
     so it's usable with "with" statement.
     '''
-    def __init__(self, name=None, value=None):
+    def __init__(self, name, value):
         self.name = name
         self.value = value
 
+        # Keep track of the original environent variable, if any.
+        if self.name in os.environ:
+            self.originalValue = os.environ[self.name]
+
     def __enter__(self):
-        if self.value is not None:
-            os.environ[self.name] = self.value
-        elif self.name in os.environ:
-            del os.environ[self.name]
+        os.environ[self.name] = self.value
 
     def __exit__(self, exc_type, exc_value, traceback):
-        if self.name in os.environ:
+        if hasattr(self, "originalValue"):
+            os.environ[self.name] = self.originalValue
+        elif self.name in os.environ:
             del os.environ[self.name]
