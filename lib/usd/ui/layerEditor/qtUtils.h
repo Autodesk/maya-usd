@@ -53,6 +53,20 @@ public:
     }
 };
 
+/**
+ * @brief Disable repaint updates for the given widget until the disabler is destroyed.
+ *
+ */
+class QtDisableRepaintUpdates
+{
+public:
+    QtDisableRepaintUpdates(QWidget& widget);
+    ~QtDisableRepaintUpdates();
+
+private:
+    QWidget& _widget;
+};
+
 #ifdef Q_OS_DARWIN
 const bool IS_MAC_OS = true;
 #else
