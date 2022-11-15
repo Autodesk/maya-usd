@@ -50,7 +50,7 @@ public:
     void preserve(const LayerTreeView&, const LayerTreeModel&);
     void restore(LayerTreeView&, LayerTreeModel&);
 
-    bool empty() const { return itemsState.empty(); }
+    bool empty() const { return _itemsState.empty(); }
 
 private:
     using ItemId = std::string;
@@ -59,7 +59,7 @@ private:
         bool _expanded = false;
     };
 
-    std::map<ItemId, ItemState> itemsState;
+    std::map<ItemId, ItemState> _itemsState;
 };
 
 /**

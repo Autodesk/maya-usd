@@ -54,7 +54,7 @@ public:
 };
 
 /**
- * @brief Disable repaint updates for the given widget until the disabler is destoryed.
+ * @brief Disable repaint updates for the given widget until the disabler is destroyed.
  *
  */
 class QtDisableRepaintUpdates

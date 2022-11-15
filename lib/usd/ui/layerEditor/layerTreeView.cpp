@@ -158,7 +158,7 @@ void LayerViewMemento::preserve(const LayerTreeView& view, const LayerTreeModel&
         const ItemId    id = layer->GetIdentifier();
         const ItemState state = { view.isExpanded(item->index()) };
 
-        itemsState[id] = state;
+        _itemsState[id] = state;
     }
 }
 
@@ -177,8 +177,8 @@ void LayerViewMemento::restore(LayerTreeView& view, LayerTreeModel& model)
         PXR_NS::SdfLayerRefPtr layer = item->layer();
         if (layer) {
             const ItemId id = layer->GetIdentifier();
-            const auto   state = itemsState.find(id);
-            if (state != itemsState.end()) {
+            const auto   state = _itemsState.find(id);
+            if (state != _itemsState.end()) {
                 expanded = state->second._expanded;
             }
         }
