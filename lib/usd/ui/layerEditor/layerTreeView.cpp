@@ -92,6 +92,11 @@ LayerTreeView::LayerTreeView(SessionState* in_sessionState, QWidget* in_parent)
     setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
 
     // updates
+    connect(
+        _model,
+        &QAbstractItemModel::modelAboutToBeReset,
+        this,
+        &LayerTreeView::onModelAboutToBeReset);
     connect(_model, &QAbstractItemModel::modelReset, this, &LayerTreeView::onModelReset);
 
     // signals
@@ -131,7 +136,79 @@ void LayerTreeView::onItemDoubleClicked(const QModelIndex& index)
     }
 }
 
-void LayerTreeView::onModelReset() { expandAll(); }
+LayerViewMemento::LayerViewMemento(const LayerTreeView& view, const LayerTreeModel& model)
+{
+    preserve(view, model);
+}
+
+void LayerViewMemento::preserve(const LayerTreeView& view, const LayerTreeModel& model)
+{
+    const LayerItemVector items = model.getAllItems();
+    if (items.size() == 0)
+        return;
+
+    for (const LayerTreeItem* item : items) {
+        if (!item)
+            continue;
+
+        PXR_NS::SdfLayerRefPtr layer = item->layer();
+        if (!layer)
+            continue;
+
+        const ItemId    id = layer->GetIdentifier();
+        const ItemState state = { view.isExpanded(item->index()) };
+
+        _itemsState[id] = state;
+    }
+}
+
+void LayerViewMemento::restore(LayerTreeView& view, LayerTreeModel& model)
+{
+    const LayerItemVector items = model.getAllItems();
+
+    QtDisableRepaintUpdates disableUpdates(view);
+
+    for (const LayerTreeItem* item : items) {
+        if (!item)
+            continue;
+
+        bool expanded = true;
+
+        PXR_NS::SdfLayerRefPtr layer = item->layer();
+        if (layer) {
+            const ItemId id = layer->GetIdentifier();
+            const auto   state = _itemsState.find(id);
+            if (state != _itemsState.end()) {
+                expanded = state->second._expanded;
+            }
+        }
+
+        view.setExpanded(item->index(), expanded);
+    }
+}
+
+void LayerTreeView::onModelAboutToBeReset()
+{
+    if (!_model)
+        return;
+
+    LayerViewMemento memento(*this, *_model);
+    if (memento.empty())
+        return;
+
+    _cachedModelState = std::make_unique<LayerViewMemento>(std::move(memento));
+}
+
+void LayerTreeView::onModelReset()
+{
+    if (!_model)
+        return;
+
+    if (_cachedModelState)
+        _cachedModelState->restore(*this, *_model);
+    else
+        expandAll();
+}
 
 LayerItemVector LayerTreeView::getSelectedLayerItems() const
 {
