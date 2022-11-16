@@ -20,6 +20,7 @@ import fixturesUtils
 import mayaUtils
 import usdUtils
 import ufeUtils
+import mayaUsd
 
 from pxr import UsdGeom
 from pxr import UsdShade
@@ -401,6 +402,102 @@ class ContextOpsTestCase(unittest.TestCase):
         # Ensure we got the correct UFE notifs.
         self.assertEqual(ufeObs.nbAddNotif(), 2)
         self.assertEqual(ufeObs.nbDeleteNotif(), 2)
+
+    def testAddNewPrimInWeakerLayer(self):
+        cmds.file(new=True, force=True)
+
+        # Create a proxy shape with empty stage to start with.
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        # Create our UFE notification observer
+        ufeObs = TestAddPrimObserver()
+        ufe.Scene.addObserver(ufeObs)
+
+        # Create a ContextOps interface for the proxy shape.
+        proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment(proxyShape)])
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+
+         # Create a sub-layers SubLayerA.
+        stage = mayaUsd.lib.GetPrim(proxyShape).GetStage()
+        rootLayer = stage.GetRootLayer()
+        subLayerA = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=False, addAnonymous="SubLayerA")[0]
+
+        # Add a new prim.
+        cmd = contextOps.doOpCmd(['Add New Prim', 'Xform'])
+        self.assertIsNotNone(cmd)
+        ufeObs.reset()
+        ufeCmd.execute(cmd)
+
+        # Ensure we got the correct UFE notifs.
+        self.assertEqual(ufeObs.nbAddNotif(), 1)
+        self.assertEqual(ufeObs.nbDeleteNotif(), 0)
+
+        # The proxy shape should now have a single UFE child item.
+        proxyShapehier = ufe.Hierarchy.hierarchy(proxyShapeItem)
+        self.assertTrue(proxyShapehier.hasChildren())
+        self.assertEqual(len(proxyShapehier.children()), 1)
+
+        # Add a new prim to the prim we just added.
+        cmds.pickWalk(d='down')
+
+        # Get the scene item from the UFE selection.
+        snIter = iter(ufe.GlobalSelection.get())
+        xformItem = next(snIter)
+
+        # Create a ContextOps interface for it.
+        contextOps = ufe.ContextOps.contextOps(xformItem)
+
+        # Add a new prim.
+        cmd = contextOps.doOpCmd(['Add New Prim', 'Xform'])
+        self.assertIsNotNone(cmd)
+        ufeObs.reset()
+        ufeCmd.execute(cmd)
+
+        # Ensure we got the correct UFE notifs.
+        self.assertEqual(ufeObs.nbAddNotif(), 1)
+        self.assertEqual(ufeObs.nbDeleteNotif(), 0)
+
+        # The xform prim should now have a single UFE child item.
+        xformHier = ufe.Hierarchy.hierarchy(xformItem)
+        self.assertTrue(xformHier.hasChildren())
+        self.assertEqual(len(xformHier.children()), 1)
+
+        # Set target to the weaker sub-layer.
+        cmds.mayaUsdEditTarget(proxyShape, edit=True, editTarget=subLayerA)
+
+        # Add another prim
+        cmd = contextOps.doOpCmd(['Add New Prim', 'Capsule'])
+        self.assertIsNotNone(cmd)
+        ufeObs.reset()
+        ufeCmd.execute(cmd)
+
+        # Ensure we got the correct UFE notifs.
+        self.assertEqual(ufeObs.nbAddNotif(), 1)
+        self.assertEqual(ufeObs.nbDeleteNotif(), 0)
+
+        # The xform prim should now have two UFE child items.
+        self.assertTrue(xformHier.hasChildren())
+        self.assertEqual(len(xformHier.children()), 2)
+
+        # Undo will remove the new prim, meaning one less child.
+        ufeObs.reset()
+        cmds.undo()
+        self.assertTrue(xformHier.hasChildren())
+        self.assertEqual(len(xformHier.children()), 1)
+
+        # Ensure we got the correct UFE notifs.
+        self.assertEqual(ufeObs.nbAddNotif(), 0)
+        self.assertEqual(ufeObs.nbDeleteNotif(), 1)
+
+        cmds.redo()
+        self.assertTrue(xformHier.hasChildren())
+        self.assertEqual(len(xformHier.children()), 2)
+
+        # Ensure we got the correct UFE notifs.
+        self.assertEqual(ufeObs.nbAddNotif(), 1)
+        self.assertEqual(ufeObs.nbDeleteNotif(), 1)
 
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testMaterialBinding(self):

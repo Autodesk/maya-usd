@@ -22,6 +22,7 @@ import usdUtils
 import testUtils
 
 from maya import cmds
+from pxr import Sdr
 
 import os
 import ufe
@@ -493,6 +494,13 @@ class ConnectionTestCase(unittest.TestCase):
 
         shaderAttr = shaderAttrs.attribute("info:id")
         shaderAttr.set("ND_standard_surface_surfaceshader")
+
+        # The native type of the output has changed in recent versions of USD, so we need to
+        # check with Sdr to see what native type we are going to get.
+        ssNodeDef = Sdr.Registry().GetShaderNodeByIdentifier("ND_standard_surface_surfaceshader")
+        ssOutput = ssNodeDef.GetShaderOutput("out")
+        ssOutputType = ssOutput.GetType()
+
         #
         #
         # Then switch to connection code to connect the shader. Since we never created the
@@ -503,7 +511,7 @@ class ConnectionTestCase(unittest.TestCase):
         materialOutput = materialAttrs.attribute("outputs:surface")
 
         self.assertEqual(shaderOutput.type, "Generic")
-        self.assertEqual(shaderOutput.nativeType(), "surfaceshader")
+        self.assertEqual(shaderOutput.nativeType(), ssOutputType)
         self.assertEqual(materialOutput.type, "Generic")
         self.assertEqual(materialOutput.nativeType(), "TfToken")
 
@@ -557,7 +565,7 @@ class ConnectionTestCase(unittest.TestCase):
         shaderAttrs = ufe.Attributes.attributes(shaderItem)
         shaderOutput = shaderAttrs.attribute("outputs:out")
         self.assertEqual(shaderOutput.type, "Generic")
-        self.assertEqual(shaderOutput.nativeType(), "surfaceshader")
+        self.assertEqual(shaderOutput.nativeType(), ssOutputType)
 
         # TODO: Test the undoable versions of these commands. They MUST restore the prims as they
         #       were before connecting, which might require deleting authored attributes.
