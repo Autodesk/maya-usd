@@ -700,7 +700,9 @@ void MayaUsdRPrim::_UpdatePrimvarSourcesGeneric(
 }
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
-void MayaUsdRPrim::_ProcessDisplayLayerModes(const MObject& displayLayerObj, DisplayLayerModes& displayLayerModes)
+void MayaUsdRPrim::_ProcessDisplayLayerModes(
+    const MObject&     displayLayerObj,
+    DisplayLayerModes& displayLayerModes)
 {
     MFnDependencyNode displayLayerNodeFn(displayLayerObj);
     MPlug             layerEnabled = displayLayerNodeFn.findPlug("enabled");
@@ -742,10 +744,10 @@ void MayaUsdRPrim::_ProcessDisplayLayerModes(const MObject& displayLayerObj, Dis
 }
 
 void MayaUsdRPrim::_PopulateDisplayLayerModes(
-    const SdfPath& usdPath,
-    DisplayLayerModes& displayLayerModes,
+    const SdfPath&       usdPath,
+    DisplayLayerModes&   displayLayerModes,
     ProxyRenderDelegate& drawScene)
-{        
+{
     displayLayerModes = DisplayLayerModes();
 
     // First, process the hierarchy of usd paths
@@ -768,7 +770,10 @@ void MayaUsdRPrim::_PopulateDisplayLayerModes(
     }
 }
 #else
-void MayaUsdRPrim::_PopulateDisplayLayerModes(const SdfPath&, DisplayLayerModes& displayLayerModes, ProxyRenderDelegate&)
+void MayaUsdRPrim::_PopulateDisplayLayerModes(
+    const SdfPath&,
+    DisplayLayerModes& displayLayerModes,
+    ProxyRenderDelegate&)
 {
     displayLayerModes = DisplayLayerModes();
 }
@@ -805,7 +810,7 @@ void MayaUsdRPrim::_SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned i
     if (drawScene.SupportPerInstanceDisplayLayers(id)) {
         _displayLayerModesInstanced.resize(instanceCount);
         for (unsigned int usdInstanceId = 0; usdInstanceId < instanceCount; usdInstanceId++) {
-            auto usdPath = drawScene.GetScenePrimPath(id, usdInstanceId);
+            auto  usdPath = drawScene.GetScenePrimPath(id, usdInstanceId);
             auto& displayLayerModes = _displayLayerModesInstanced[usdInstanceId];
             _PopulateDisplayLayerModes(usdPath, displayLayerModes, drawScene);
 

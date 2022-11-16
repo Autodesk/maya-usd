@@ -324,7 +324,8 @@ public:
         // Handle path change notifications here
         if (const auto sceneChanged = dynamic_cast<const Ufe::SceneChanged*>(&notification)) {
             if (Ufe::SceneChanged::SceneCompositeNotification == sceneChanged->opType()) {
-                const auto& compNotification = notification.staticCast<Ufe::SceneCompositeNotification>();
+                const auto& compNotification
+                    = notification.staticCast<Ufe::SceneCompositeNotification>();
                 for (const auto& op : compNotification) {
                     handleSceneOp(op);
                 }
@@ -346,13 +347,14 @@ public:
         }
     }
 
-    void handleSceneOp(const Ufe::SceneCompositeNotification::Op& op) {
+    void handleSceneOp(const Ufe::SceneCompositeNotification::Op& op)
+    {
         if (op.opType == Ufe::SceneChanged::ObjectPathChange) {
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
-          _proxyRenderDelegate.DisplayLayerPathChanged(op.path, op.item->path());  
+            _proxyRenderDelegate.DisplayLayerPathChanged(op.path, op.item->path());
 #endif
         }
-    }    
+    }
 
 private:
     ProxyRenderDelegate& _proxyRenderDelegate;
@@ -1285,7 +1287,7 @@ SdfPath ProxyRenderDelegate::GetScenePrimPath(const SdfPath& rprimId, int instan
 
 bool ProxyRenderDelegate::SupportPerInstanceDisplayLayers(const SdfPath& rprimId) const
 {
-    // For now, per-instance display layers are supported only for native instancing 
+    // For now, per-instance display layers are supported only for native instancing
     HdInstancerContext instancerContext;
     GetScenePrimPath(rprimId, 0, &instancerContext);
     bool nativeInstancing = instancerContext.empty();
@@ -1559,11 +1561,11 @@ void ProxyRenderDelegate::DisplayLayerMembershipChanged(const MString& memberPat
         if (path.startsWith(proxyShapePath) && path.nbSegments() > 1) {
             MFnDisplayLayerManager displayLayerManager(
                 MFnDisplayLayerManager::currentDisplayLayerManager());
-            
+
             SdfPath usdPath(path.getSegments()[1].string());
             MObject displayLayerObj = displayLayerManager.getLayer(memberPath);
-            if (displayLayerObj.hasFn(MFn::kDisplayLayer) && 
-                    MFnDisplayLayer(displayLayerObj).name() != "defaultLayer") {
+            if (displayLayerObj.hasFn(MFn::kDisplayLayer)
+                && MFnDisplayLayer(displayLayerObj).name() != "defaultLayer") {
                 _usdPathToDisplayLayerMap[usdPath] = displayLayerObj;
             } else {
                 _usdPathToDisplayLayerMap.erase(usdPath);
@@ -1606,14 +1608,17 @@ void ProxyRenderDelegate::DisplayLayerDirty(MFnDisplayLayer& displayLayer)
     }
 }
 
-void ProxyRenderDelegate::DisplayLayerPathChanged(const Ufe::Path& oldPath, const Ufe::Path& newPath)
+void ProxyRenderDelegate::DisplayLayerPathChanged(
+    const Ufe::Path& oldPath,
+    const Ufe::Path& newPath)
 {
     Ufe::Path proxyShapePath = MayaUsd::ufe::stagePath(_proxyShapeData->UsdStage());
     if (oldPath.runTimeId() == MayaUsd::ufe::getUsdRunTimeId()) {
-        if (oldPath.startsWith(proxyShapePath) && oldPath.nbSegments() > 1 && newPath.nbSegments() > 1) {
+        if (oldPath.startsWith(proxyShapePath) && oldPath.nbSegments() > 1
+            && newPath.nbSegments() > 1) {
             std::vector<std::pair<SdfPath, MObject>> pathsToUpdate;
             SdfPath oldUsdPrefix(oldPath.getSegments()[1].string());
-            auto it = _usdPathToDisplayLayerMap.lower_bound(oldUsdPrefix);
+            auto    it = _usdPathToDisplayLayerMap.lower_bound(oldUsdPrefix);
             while (it != _usdPathToDisplayLayerMap.end() && it->first.HasPrefix(oldUsdPrefix)) {
                 pathsToUpdate.push_back(*it);
                 _usdPathToDisplayLayerMap.erase(it++);
@@ -1648,10 +1653,10 @@ void ProxyRenderDelegate::AddDisplayLayerToCache(MObject& displayLayerObj)
     if (displayLayer.name() == "defaultLayer") {
         return;
     }
-    
+
     MSelectionList members;
     displayLayer.getMembers(members);
-    auto membersCount = members.length();
+    auto      membersCount = members.length();
     Ufe::Path proxyShapePath = MayaUsd::ufe::stagePath(_proxyShapeData->UsdStage());
     for (unsigned int j = 0; j < membersCount; ++j) {
         // skip maya paths, as they will be updated from UpdateProxyShapeDisplayLayers
@@ -1659,7 +1664,7 @@ void ProxyRenderDelegate::AddDisplayLayerToCache(MObject& displayLayerObj)
         if (members.getDagPath(j, dagPath) == MS::kSuccess) {
             continue;
         }
-        
+
         // add usd paths
         MStringArray selectionStrings;
         members.getSelectionStrings(j, selectionStrings);
@@ -1685,11 +1690,11 @@ void ProxyRenderDelegate::UpdateProxyShapeDisplayLayers()
         return;
     }
 
-    _usdStageDisplayLayersDirty = false;    
+    _usdStageDisplayLayersDirty = false;
     MFnDisplayLayerManager displayLayerManager(
         MFnDisplayLayerManager::currentDisplayLayerManager());
 
-    _usdStageDisplayLayers 
+    _usdStageDisplayLayers
         = displayLayerManager.getAncestorLayersInclusive(GetProxyShapeDagPath().fullPathName());
 }
 

@@ -213,11 +213,13 @@ protected:
         MColor _wireframeColorRGBA;
     };
 
-    static void 
+    static void
     _ProcessDisplayLayerModes(const MObject& displayLayerObj, DisplayLayerModes& displayLayerModes);
 
-    static void
-    _PopulateDisplayLayerModes(const SdfPath& usdPath, DisplayLayerModes& displayLayerModes, ProxyRenderDelegate& drawScene);
+    static void _PopulateDisplayLayerModes(
+        const SdfPath&       usdPath,
+        DisplayLayerModes&   displayLayerModes,
+        ProxyRenderDelegate& drawScene);
 
     static HdReprSharedPtr _FindRepr(const ReprVector& reprs, const TfToken& reprToken);
 
