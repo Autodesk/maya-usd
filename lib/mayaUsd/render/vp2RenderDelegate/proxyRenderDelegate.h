@@ -174,9 +174,6 @@ public:
 #endif
 
     MAYAUSD_CORE_PUBLIC
-    MString GetUfePathPrefix() const;
-
-    MAYAUSD_CORE_PUBLIC
     void SelectionChanged();
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
@@ -191,6 +188,21 @@ public:
 
     MAYAUSD_CORE_PUBLIC
     void DisplayLayerDirty(MFnDisplayLayer& displayLayer);
+
+    MAYAUSD_CORE_PUBLIC
+    void DisplayLayerPathChanged(const Ufe::Path& oldPath, const Ufe::Path& newPath);
+
+    MAYAUSD_CORE_PUBLIC
+    void AddDisplayLayerToCache(MObject& displayLayerObj);
+
+    MAYAUSD_CORE_PUBLIC
+    void UpdateProxyShapeDisplayLayers();
+
+    MAYAUSD_CORE_PUBLIC
+    MObject GetDisplayLayer(const SdfPath& path);
+
+    MAYAUSD_CORE_PUBLIC
+    const MObjectArray& GetProxyShapeDisplayLayers() const { return _usdStageDisplayLayers; }
 #endif
 
     MAYAUSD_CORE_PUBLIC
@@ -280,8 +292,8 @@ private:
         bool          colorCorrection,
         const MColor& defaultColor);
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
-    void _DirtyUfeSubtree(const Ufe::Path& rootPath);
-    void _DirtyUfeSubtree(const MString& rootStr);
+    bool _DirtyUfeSubtree(const Ufe::Path& rootPath);
+    bool _DirtyUfeSubtree(const MString& rootStr);
     void _DirtyUsdSubtree(const UsdPrim& prim);
 #endif
     void _RequestRefresh();
@@ -369,6 +381,11 @@ private:
     MCallbackId               _mayaDisplayLayerRemovedCallbackId { 0 };
     MCallbackId               _mayaDisplayLayerMembersCallbackId { 0 };
     NodeHandleToCallbackIdMap _mayaDisplayLayerDirtyCallbackIds;
+
+    // for performace reasons we need to cache display layers' info
+    bool                       _usdStageDisplayLayersDirty = false;
+    MObjectArray               _usdStageDisplayLayers;
+    std::map<SdfPath, MObject> _usdPathToDisplayLayerMap;
 #endif
 
     std::vector<MCallbackId> _mayaColorPrefsCallbackIds;

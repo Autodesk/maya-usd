@@ -47,8 +47,6 @@ constexpr auto sDrawModeAllButBBox = (MHWRender::MGeometry::DrawMode)(
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
 
 namespace {
-
-std::mutex        sUfePathsMutex;
 MayaUsdCustomData sMayaUsdCustomData;
 } // namespace
 
@@ -356,7 +354,7 @@ HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
     } else {
         // Sync display layer modes for non-instanced prims.
         // For instanced prims, this will be done inside Sync method on a per-instance basis
-        _SyncDisplayLayerModes();
+        _SyncDisplayLayerModes(id);
     }
 
     _UpdateReprOverrides(reprs);
@@ -702,72 +700,81 @@ void MayaUsdRPrim::_UpdatePrimvarSourcesGeneric(
 }
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
-void MayaUsdRPrim::_PopulateDisplayLayerModes(
-    const MString&     pathString,
-    DisplayLayerModes& displayLayerModes)
+void MayaUsdRPrim::_ProcessDisplayLayerModes(const MObject& displayLayerObj, DisplayLayerModes& displayLayerModes)
 {
-    // Fetch display layers for the item and all its ancestors
-    MObjectArray ancestorDisplayLayers;
-    {
-        MFnDisplayLayerManager displayLayerManager(
-            MFnDisplayLayerManager::currentDisplayLayerManager());
-
-        // Function getAncestorLayersInclusive is not multithreadable because of the
-        // use of Ufe::Path inside, so we use a mutex here
-        std::lock_guard<std::mutex> mutexGuard(sUfePathsMutex);
-        ancestorDisplayLayers = displayLayerManager.getAncestorLayersInclusive(pathString);
+    MFnDependencyNode displayLayerNodeFn(displayLayerObj);
+    MPlug             layerEnabled = displayLayerNodeFn.findPlug("enabled");
+    if (!layerEnabled.asBool()) {
+        return;
     }
 
-    // Now populate displayLayerModes
+    MPlug layerVisible = displayLayerNodeFn.findPlug("visibility");
+    MPlug layerHidesOnPlayback = displayLayerNodeFn.findPlug("hideOnPlayback");
+    MPlug layerDisplayType = displayLayerNodeFn.findPlug("displayType");
+    MPlug levelOfDetail = displayLayerNodeFn.findPlug("levelOfDetail");
+    MPlug shading = displayLayerNodeFn.findPlug("shading");
+    MPlug texturing = displayLayerNodeFn.findPlug("texturing");
+    MPlug colorIndex = displayLayerNodeFn.findPlug("color");
+    MPlug useRGBColors = displayLayerNodeFn.findPlug("overrideRGBColors");
+    MPlug colorRGB = displayLayerNodeFn.findPlug("overrideColorRGB");
+    MPlug colorA = displayLayerNodeFn.findPlug("overrideColorA");
+
+    displayLayerModes._visibility &= layerVisible.asBool();
+    displayLayerModes._hideOnPlayback |= layerHidesOnPlayback.asBool();
+    displayLayerModes._texturing = texturing.asBool();
+    if (levelOfDetail.asShort() != 0) {
+        displayLayerModes._reprOverride = kBBox;
+    } else if (shading.asShort() == 0 && displayLayerModes._reprOverride != kBBox) {
+        displayLayerModes._reprOverride = kWire;
+    }
+    if (displayLayerModes._displayType == kNormal) {
+        displayLayerModes._displayType = (DisplayType)layerDisplayType.asShort();
+    }
+
+    if (useRGBColors.asBool()) {
+        const float3& rgbColor = colorRGB.asMDataHandle().asFloat3();
+        displayLayerModes._wireframeColorIndex = -1;
+        displayLayerModes._wireframeColorRGBA
+            = MColor(rgbColor[0], rgbColor[1], rgbColor[2], colorA.asFloat());
+    } else {
+        displayLayerModes._wireframeColorIndex = colorIndex.asInt();
+    }
+}
+
+void MayaUsdRPrim::_PopulateDisplayLayerModes(
+    const SdfPath& usdPath,
+    DisplayLayerModes& displayLayerModes,
+    ProxyRenderDelegate& drawScene)
+{        
     displayLayerModes = DisplayLayerModes();
-    for (unsigned int i = 0; i < ancestorDisplayLayers.length(); i++) {
-        MFnDependencyNode displayLayerNodeFn(ancestorDisplayLayers[i]);
-        MPlug             layerEnabled = displayLayerNodeFn.findPlug("enabled");
-        if (!layerEnabled.asBool()) {
-            continue;
-        }
 
-        MPlug layerVisible = displayLayerNodeFn.findPlug("visibility");
-        MPlug layerHidesOnPlayback = displayLayerNodeFn.findPlug("hideOnPlayback");
-        MPlug layerDisplayType = displayLayerNodeFn.findPlug("displayType");
-        MPlug levelOfDetail = displayLayerNodeFn.findPlug("levelOfDetail");
-        MPlug shading = displayLayerNodeFn.findPlug("shading");
-        MPlug texturing = displayLayerNodeFn.findPlug("texturing");
-        MPlug colorIndex = displayLayerNodeFn.findPlug("color");
-        MPlug useRGBColors = displayLayerNodeFn.findPlug("overrideRGBColors");
-        MPlug colorRGB = displayLayerNodeFn.findPlug("overrideColorRGB");
-        MPlug colorA = displayLayerNodeFn.findPlug("overrideColorA");
-
-        displayLayerModes._visibility &= layerVisible.asBool();
-        displayLayerModes._hideOnPlayback |= layerHidesOnPlayback.asBool();
-        displayLayerModes._texturing = texturing.asBool();
-        if (levelOfDetail.asShort() != 0) {
-            displayLayerModes._reprOverride = kBBox;
-        } else if (shading.asShort() == 0 && displayLayerModes._reprOverride != kBBox) {
-            displayLayerModes._reprOverride = kWire;
+    // First, process the hierarchy of usd paths
+    auto ancestorsRange = usdPath.GetAncestorsRange();
+    for (auto it = ancestorsRange.begin(); it != ancestorsRange.end(); ++it) {
+        auto displayLayerObj = drawScene.GetDisplayLayer(*it);
+        if (displayLayerObj.hasFn(MFn::kDisplayLayer)) {
+            _ProcessDisplayLayerModes(displayLayerObj, displayLayerModes);
         }
-        if (displayLayerModes._displayType == kNormal) {
-            displayLayerModes._displayType = (DisplayType)layerDisplayType.asShort();
-        }
+    }
 
-        if (useRGBColors.asBool()) {
-            const float3& rgbColor = colorRGB.asMDataHandle().asFloat3();
-            displayLayerModes._wireframeColorIndex = -1;
-            displayLayerModes._wireframeColorRGBA
-                = MColor(rgbColor[0], rgbColor[1], rgbColor[2], colorA.asFloat());
-        } else {
-            displayLayerModes._wireframeColorIndex = colorIndex.asInt();
+    // Then, process the hierarchy inside Maya
+    const MObjectArray& proxyShapeDisplayLayers = drawScene.GetProxyShapeDisplayLayers();
+    auto                proxyShapeDisplayLayerCount = proxyShapeDisplayLayers.length();
+    for (unsigned int j = 0; j < proxyShapeDisplayLayerCount; j++) {
+        auto displayLayerObj = proxyShapeDisplayLayers[j];
+        if (displayLayerObj.hasFn(MFn::kDisplayLayer)) {
+            _ProcessDisplayLayerModes(displayLayerObj, displayLayerModes);
         }
     }
 }
 #else
-void MayaUsdRPrim::_PopulateDisplayLayerModes(const MString&, DisplayLayerModes& displayLayerModes)
+void MayaUsdRPrim::_PopulateDisplayLayerModes(const SdfPath&, DisplayLayerModes& displayLayerModes, ProxyRenderDelegate&)
 {
     displayLayerModes = DisplayLayerModes();
 }
 #endif
 
-void MayaUsdRPrim::_SyncDisplayLayerModes()
+void MayaUsdRPrim::_SyncDisplayLayerModes(SdfPath const& id)
 {
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
@@ -778,8 +785,8 @@ void MayaUsdRPrim::_SyncDisplayLayerModes()
     }
 
     _displayLayerModesFrame = drawScene.GetFrameCounter();
-    MString pathString = drawScene.GetUfePathPrefix() + _PrimSegmentString[0];
-    _PopulateDisplayLayerModes(pathString, _displayLayerModes);
+    auto usdPath = drawScene.GetScenePrimPath(id, UsdImagingDelegate::ALL_INSTANCES);
+    _PopulateDisplayLayerModes(usdPath, _displayLayerModes, drawScene);
 }
 
 void MayaUsdRPrim::_SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned int instanceCount)
@@ -793,15 +800,13 @@ void MayaUsdRPrim::_SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned i
     }
 
     _displayLayerModesFrame = drawScene.GetFrameCounter();
-    const MString ufePathPrefix = drawScene.GetUfePathPrefix();
 
     _needForcedBBox = false;
     _displayLayerModesInstanced.resize(instanceCount);
     for (unsigned int usdInstanceId = 0; usdInstanceId < instanceCount; usdInstanceId++) {
-        const MString instancePath
-            = ufePathPrefix + drawScene.GetScenePrimPath(id, usdInstanceId).GetString().c_str();
+        auto usdPath = drawScene.GetScenePrimPath(id, usdInstanceId);
         auto& displayLayerModes = _displayLayerModesInstanced[usdInstanceId];
-        _PopulateDisplayLayerModes(instancePath, displayLayerModes);
+        _PopulateDisplayLayerModes(usdPath, displayLayerModes, drawScene);
 
         if (displayLayerModes._reprOverride == kBBox) {
             _needForcedBBox = true;
