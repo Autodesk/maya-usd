@@ -1283,6 +1283,15 @@ SdfPath ProxyRenderDelegate::GetScenePrimPath(const SdfPath& rprimId, int instan
     return usdPath;
 }
 
+bool ProxyRenderDelegate::SupportPerInstanceDisplayLayers(const SdfPath& rprimId) const
+{
+    // For now, per-instance display layers are supported only for native instancing 
+    HdInstancerContext instancerContext;
+    GetScenePrimPath(rprimId, 0, &instancerContext);
+    bool nativeInstancing = instancerContext.empty();
+    return nativeInstancing;
+}
+
 //! \brief  Selection for both instanced and non-instanced cases.
 bool ProxyRenderDelegate::getInstancedSelectionPath(
     const MHWRender::MRenderItem&   renderItem,

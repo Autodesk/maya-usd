@@ -795,22 +795,26 @@ void MayaUsdRPrim::_SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned i
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
 
     // First check if the status need updating
-    if (drawScene.GetFrameCounter() == _displayLayerModesFrame) {
+    if (drawScene.GetFrameCounter() == _displayLayerModesInstancedFrame) {
         return;
     }
 
-    _displayLayerModesFrame = drawScene.GetFrameCounter();
+    _displayLayerModesInstancedFrame = drawScene.GetFrameCounter();
 
     _needForcedBBox = false;
-    _displayLayerModesInstanced.resize(instanceCount);
-    for (unsigned int usdInstanceId = 0; usdInstanceId < instanceCount; usdInstanceId++) {
-        auto usdPath = drawScene.GetScenePrimPath(id, usdInstanceId);
-        auto& displayLayerModes = _displayLayerModesInstanced[usdInstanceId];
-        _PopulateDisplayLayerModes(usdPath, displayLayerModes, drawScene);
+    if (drawScene.SupportPerInstanceDisplayLayers(id)) {
+        _displayLayerModesInstanced.resize(instanceCount);
+        for (unsigned int usdInstanceId = 0; usdInstanceId < instanceCount; usdInstanceId++) {
+            auto usdPath = drawScene.GetScenePrimPath(id, usdInstanceId);
+            auto& displayLayerModes = _displayLayerModesInstanced[usdInstanceId];
+            _PopulateDisplayLayerModes(usdPath, displayLayerModes, drawScene);
 
-        if (displayLayerModes._reprOverride == kBBox) {
-            _needForcedBBox = true;
+            if (displayLayerModes._reprOverride == kBBox) {
+                _needForcedBBox = true;
+            }
         }
+    } else {
+        _displayLayerModesInstanced.clear();
     }
 }
 
@@ -1036,6 +1040,10 @@ bool MayaUsdRPrim::_GetMaterialPrimvars(
 
 bool MayaUsdRPrim::_ShouldSkipInstance(unsigned int usdInstanceId, const TfToken& reprToken) const
 {
+    if (_displayLayerModesInstanced.size() <= usdInstanceId) {
+        return false;
+    }
+
     const auto& displayLayerModes = _displayLayerModesInstanced[usdInstanceId];
     if (!displayLayerModes._visibility) {
         return true;

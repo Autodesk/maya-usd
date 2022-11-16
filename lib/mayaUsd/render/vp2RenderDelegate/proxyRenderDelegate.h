@@ -174,6 +174,9 @@ public:
 #endif
 
     MAYAUSD_CORE_PUBLIC
+    bool SupportPerInstanceDisplayLayers(const SdfPath& rprimId) const;
+
+    MAYAUSD_CORE_PUBLIC
     void SelectionChanged();
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API

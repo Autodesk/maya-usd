@@ -342,6 +342,7 @@ protected:
     DisplayLayerModes              _displayLayerModes;
     std::vector<DisplayLayerModes> _displayLayerModesInstanced;
     uint64_t                       _displayLayerModesFrame { 0 };
+    uint64_t                       _displayLayerModesInstancedFrame { 0 };
 
     // forced representations runtime state
     bool     _needForcedBBox = false;
