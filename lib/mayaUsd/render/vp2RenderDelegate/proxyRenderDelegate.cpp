@@ -322,6 +322,7 @@ public:
     void operator()(const Ufe::Notification& notification) override
     {
         // Handle path change notifications here
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
         if (const auto sceneChanged = dynamic_cast<const Ufe::SceneChanged*>(&notification)) {
             if (Ufe::SceneChanged::SceneCompositeNotification == sceneChanged->opType()) {
                 const auto& compNotification
@@ -333,7 +334,7 @@ public:
                 handleSceneOp(*sceneChanged);
             }
         }
-
+#endif
         // Handle selection change notifications here
         // During Maya file read, each node will be selected in turn, so we get
         // notified for each node in the scene.  Prune this out.
@@ -347,14 +348,14 @@ public:
         }
     }
 
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
     void handleSceneOp(const Ufe::SceneCompositeNotification::Op& op)
     {
         if (op.opType == Ufe::SceneChanged::ObjectPathChange) {
-#ifdef MAYA_HAS_DISPLAY_LAYER_API
             _proxyRenderDelegate.DisplayLayerPathChanged(op.path, op.item->path());
-#endif
         }
     }
+#endif
 
 private:
     ProxyRenderDelegate& _proxyRenderDelegate;
