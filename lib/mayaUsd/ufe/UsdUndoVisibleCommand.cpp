@@ -24,11 +24,14 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdUndoVisibleCommand::UsdUndoVisibleCommand(const UsdPrim& prim, bool vis)
+UsdUndoVisibleCommand::UsdUndoVisibleCommand(
+    const UsdPrim&                prim,
+    bool                          vis,
+    const PXR_NS::SdfLayerHandle& layer)
     : Ufe::UndoableCommand()
     , _prim(prim)
     , _visible(vis)
-    , _layer(getEditRouterLayer(PXR_NS::TfToken("visibility"), prim))
+    , _layer(layer)
 {
 }
 
@@ -39,18 +42,25 @@ UsdUndoVisibleCommand::Ptr UsdUndoVisibleCommand::create(const UsdPrim& prim, bo
     if (!prim) {
         return nullptr;
     }
-    return std::make_shared<UsdUndoVisibleCommand>(prim, vis);
+
+    auto layer = getEditRouterLayer(PXR_NS::TfToken("visibility"), prim);
+
+    UsdGeomImageable primImageable(prim);
+
+    EditTargetGuard guard(prim, layer);
+
+    std::string errMsg;
+    if (!MayaUsd::ufe::isAttributeEditAllowed(primImageable.GetVisibilityAttr(), &errMsg)) {
+        MGlobal::displayError(errMsg.c_str());
+        return nullptr;
+    }
+
+    return std::make_shared<UsdUndoVisibleCommand>(prim, vis, layer);
 }
 
 void UsdUndoVisibleCommand::execute()
 {
     UsdGeomImageable primImageable(_prim);
-
-    std::string errMsg;
-    if (!MayaUsd::ufe::isAttributeEditAllowed(primImageable.GetVisibilityAttr(), &errMsg)) {
-        MGlobal::displayError(errMsg.c_str());
-        return;
-    }
 
     UsdUndoBlock undoBlock(&_undoableItem);
 
