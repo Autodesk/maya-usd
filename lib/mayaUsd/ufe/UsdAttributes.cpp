@@ -504,28 +504,37 @@ bool UsdAttributes::canRenameAttribute(
 
 static void setConnections(
     const PXR_NS::UsdPrim& prim,
-    const SdfPath&         OldPropertyPath,
+    const SdfPath&         oldPropertyPath,
+    const SdfPath&         newPropertyPath)
+{
+    for (auto& attribute : prim.GetAttributes()) {
+        PXR_NS::UsdAttribute  attr = attribute.As<PXR_NS::UsdAttribute>();
+        PXR_NS::SdfPathVector sources;
+        attr.GetConnections(&sources);
+
+        bool hasChanged = false;
+        // Check if the node attribute is connected to the original property path.
+        for (size_t i = 0; i < sources.size(); ++i) {
+            if (sources[i] == oldPropertyPath) {
+                sources[i] = newPropertyPath;
+                hasChanged = true;
+            }
+        }
+        // Update the connections with the new property path.
+        if (hasChanged) {
+            attr.SetConnections(sources);
+        }
+    }
+}
+
+static void setConnectionsWithChildren(
+    const PXR_NS::UsdPrim& prim,
+    const SdfPath&         oldPropertyPath,
     const SdfPath&         newPropertyPath)
 {
     // Update the connections with the new attribute name.
     for (const auto& node : prim.GetChildren()) {
-        for (auto& attribute : node.GetAttributes()) {
-            PXR_NS::UsdAttribute  attr = attribute.As<PXR_NS::UsdAttribute>();
-            PXR_NS::SdfPathVector sources;
-            attr.GetConnections(&sources);
-            bool hasChanged = false;
-            // Check if the node attribute is connected to the original property path.
-            for (size_t i = 0; i < sources.size(); ++i) {
-                if (sources[i] == OldPropertyPath) {
-                    sources[i] = newPropertyPath;
-                    hasChanged = true;
-                }
-            }
-            // Update the connections with the new property path.
-            if (hasChanged) {
-                attr.SetConnections(sources);
-            }
-        }
+        setConnections(node, oldPropertyPath, newPropertyPath);
     }
 }
 
@@ -592,9 +601,10 @@ Ufe::Attribute::Ptr UsdAttributes::doRenameAttribute(
         // Given the unidirectional nature of connections, we discriminate whether the source is
         // input or output
         if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input) {
-            setConnections(prim, kOldPropertyPath, kNewPropertyPath);
+            setConnectionsWithChildren(prim, kOldPropertyPath, kNewPropertyPath);
         }
         if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Output) {
+            setConnectionsWithChildren(prim.GetParent(), kOldPropertyPath, kNewPropertyPath);
             setConnections(prim.GetParent(), kOldPropertyPath, kNewPropertyPath);
         }
     }
