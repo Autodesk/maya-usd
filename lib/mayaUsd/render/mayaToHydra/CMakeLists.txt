@@ -12,11 +12,17 @@ target_sources(${TARGET_NAME}
         pluginDebugCodes.cpp
         renderGlobals.cpp
         renderOverride.cpp
-        shadingModeExporter.cpp
         tokens.cpp
         utils.cpp
         viewCommand.cpp
 )
+
+if (BUILD_MAYAUSD_LIBRARY)
+    target_sources(${TARGET_NAME} 
+        PRIVATE
+            shadingModeExporter.cpp
+    )
+endif()
 
 set(HEADERS
     utils.h

@@ -1,7 +1,3 @@
-if(BUILD_HDMAYA)
-    add_subdirectory(hdMaya)
-endif()
-
 add_subdirectory(pxrUsdPreviewSurface)
 add_subdirectory(translators)
 add_subdirectory(schemas)

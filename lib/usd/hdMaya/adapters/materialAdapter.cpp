@@ -20,7 +20,6 @@
 #include <hdMaya/adapters/mayaAttrs.h>
 #include <hdMaya/adapters/tokens.h>
 #include <hdMaya/utils.h>
-#include <mayaUsd/utils/hash.h>
 
 #include <pxr/base/tf/stl.h>
 #include <pxr/base/tf/token.h>
@@ -33,10 +32,6 @@
 #include <maya/MNodeMessage.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
-
-#if PXR_VERSION < 2011
-#include <pxr/imaging/hdSt/textureResourceHandle.h>
-#endif // PXR_VERSION < 2011
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -251,21 +246,6 @@ private:
                 = MNodeMessage::addNodeDirtyCallback(_surfaceShader, _DirtyShaderParams, this);
         }
     }
-
-#if PXR_VERSION < 2011
-
-    inline HdTextureResource::ID
-    _GetTextureResourceID(const MObject& fileObj, const TfToken& filePath)
-    {
-        auto       hash = filePath.Hash();
-        const auto wrapping = GetFileTextureWrappingParams(fileObj);
-        MayaUsd::hash_combine(hash, GetDelegate()->GetParams().textureMemoryPerTexture);
-        MayaUsd::hash_combine(hash, std::get<0>(wrapping));
-        MayaUsd::hash_combine(hash, std::get<1>(wrapping));
-        return HdTextureResource::ID(hash);
-    }
-
-#endif // PXR_VERSION < 2011
 
     VtValue GetMaterialResource() override
     {

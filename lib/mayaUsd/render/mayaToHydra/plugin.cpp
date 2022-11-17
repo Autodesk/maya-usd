@@ -18,7 +18,9 @@
 #include "viewCommand.h"
 
 #include <hdMaya/adapters/adapter.h>
-#include <mayaUsd/utils/plugRegistryHelper.h>
+#if defined(MAYAUSD_VERSION)
+    #include <mayaUsd/utils/plugRegistryHelper.h>
+#endif
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
@@ -33,17 +35,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+PXR_NAMESPACE_USING_DIRECTIVE
+
 using MtohRenderOverridePtr = std::unique_ptr<MtohRenderOverride>;
 static std::vector<MtohRenderOverridePtr> gsRenderOverrides;
 
 #if defined(MAYAUSD_VERSION)
-#define STRINGIFY(x) #x
-#define TOSTRING(x)  STRINGIFY(x)
+    #define STRINGIFY(x) #x
+    #define TOSTRING(x)  STRINGIFY(x)
+    #define PLUGIN_VERSION TOSTRING(MAYAUSD_VERSION)
 #else
-#error "MAYAUSD_VERSION is not defined"
+    #pragma message( "MAYAUSD_VERSION is not defined" )
+    #define PLUGIN_VERSION "Maya-Hydra experimental"
 #endif
-
-PXR_NAMESPACE_USING_DIRECTIVE
 
 PLUGIN_EXPORT MStatus initializePlugin(MObject obj)
 {
@@ -52,9 +56,10 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj)
 
     MStatus ret = MS::kSuccess;
 
+#if defined(MAYAUSD_VERSION)
     // Call one time registration of plugins compiled for same USD version as MayaUSD plugin.
     MayaUsd::registerVersionedPlugins();
-
+#endif
     ret = HdMayaAdapter::Initialize();
     if (!ret) {
         return ret;
@@ -69,7 +74,7 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj)
     snprintf(envVarData.data(), envVarSize, "%s", envVarSet);
     putenv(envVarData.data());
 
-    MFnPlugin plugin(obj, "Autodesk", TOSTRING(MAYAUSD_VERSION), "Any");
+    MFnPlugin plugin(obj, "Autodesk", PLUGIN_VERSION, "Any");
 
     if (!plugin.registerCommand(
             MtohViewCmd::name, MtohViewCmd::creator, MtohViewCmd::createSyntax)) {
@@ -94,7 +99,7 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj)
 
 PLUGIN_EXPORT MStatus uninitializePlugin(MObject obj)
 {
-    MFnPlugin plugin(obj, "Autodesk", TOSTRING(MAYAUSD_VERSION), "Any");
+    MFnPlugin plugin(obj, "Autodesk", PLUGIN_VERSION, "Any");
     MStatus   ret = MS::kSuccess;
     if (auto* renderer = MHWRender::MRenderer::theRenderer()) {
         for (unsigned int i = 0; i < gsRenderOverrides.size(); i++) {

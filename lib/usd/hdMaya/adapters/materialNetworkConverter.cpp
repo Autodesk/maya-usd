@@ -20,7 +20,11 @@
 #include <hdMaya/adapters/mayaAttrs.h>
 #include <hdMaya/adapters/tokens.h>
 #include <hdMaya/utils.h>
-#include <mayaUsd/utils/util.h>
+#if defined(MAYAUSD_VERSION)
+    #include <mayaUsd/utils/util.h>
+#else
+    #include <hdMaya/usd/util.h>
+#endif
 
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>

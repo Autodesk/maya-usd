@@ -17,6 +17,22 @@ set(HEADERS
     debugCodes.h
 )
 
+if(NOT BUILD_MAYAUSD_LIBRARY)
+    # Those have been copied from maya-usd and modified to mimic their behaviour
+    target_sources(${TARGET_NAME} 
+        PRIVATE
+            usd/util.cpp
+            usd/proxyShapeNotice.cpp
+            usd/proxyShapeBase.cpp
+    )
+
+    list(APPEND HEADERS
+        usd/util.h
+        usd/proxyShapeNotice.h
+        usd/proxyShapeBase.h
+    )
+endif()
+
 # -----------------------------------------------------------------------------
 # compiler configuration
 # -----------------------------------------------------------------------------
@@ -28,15 +44,90 @@ target_compile_definitions(${TARGET_NAME}
 
 mayaUsd_compile_config(${TARGET_NAME})
 
-# -----------------------------------------------------------------------------
-# link libraries
-# -----------------------------------------------------------------------------
-target_link_libraries(${TARGET_NAME} 
-    PUBLIC 
-        mayaUsd
-    PRIVATE
-        $<$<BOOL:${USD_001905_BUILD}>:hio>
-)
+if(NOT BUILD_MAYAUSD_LIBRARY)
+    # -----------------------------------------------------------------------------
+    # include directories
+    # -----------------------------------------------------------------------------
+    target_include_directories(${TARGET_NAME} 
+        PUBLIC
+            ${MAYA_INCLUDE_DIRS}
+            ${PYTHON_INCLUDE_DIR}
+            ${PXR_INCLUDE_DIRS}
+            ${BOOST_INCLUDE_DIR}
+            ${CMAKE_BINARY_DIR}/include
+    )
+
+    target_compile_definitions(${TARGET_NAME}
+        PUBLIC
+            PXR_PLUGINPATH_NAME=${PXR_OVERRIDE_PLUGINPATH_NAME}
+            $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+            $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+            $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
+        PRIVATE
+            MAYAUSD_MACROS_EXPORT
+            MAYAUSD_CORE_EXPORT
+            MFB_PACKAGE_NAME="${PROJECT_NAME}"
+            MFB_ALT_PACKAGE_NAME="${PROJECT_NAME}"
+            MFB_PACKAGE_MODULE="${PROJECT_NAME}"
+            $<$<BOOL:${IS_MACOSX}>:OSMac_>
+            $<$<BOOL:${IS_LINUX}>:LINUX>
+            $<$<BOOL:${IS_LINUX}>:GL_GLEXT_PROTOTYPES>
+            $<$<BOOL:${IS_LINUX}>:GLX_GLXEXT_PROTOTYPES>
+            $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:WANT_MATERIALX_BUILD>
+            $<$<BOOL:${Qt5_FOUND}>:WANT_QT_BUILD>
+            $<$<BOOL:${BUILD_HDMAYA}>:BUILD_HDMAYA>
+
+            # this flag is needed when building maya-usd in Maya
+            $<$<BOOL:${IS_WINDOWS}>:WIN32>
+    )
+endif()
+
+if(DEFINED MAYAUSD_VERSION)
+    target_compile_definitions(${TARGET_NAME}
+        PRIVATE
+            MAYAUSD_VERSION=${MAYAUSD_VERSION}
+    )
+endif()
+
+    # -----------------------------------------------------------------------------
+    # link libraries
+    # -----------------------------------------------------------------------------
+if(BUILD_MAYAUSD_LIBRARY)
+    target_link_libraries(${TARGET_NAME} 
+        PUBLIC 
+            mayaUsd
+        PRIVATE
+            $<$<BOOL:${USD_001905_BUILD}>:hio>
+    )
+else()    
+    target_link_libraries(${TARGET_NAME} 
+        PUBLIC
+            ar
+            gf
+            hd
+            hdx
+            js
+            kind
+            plug
+            sdf
+            tf
+            trace
+            usd
+            usdGeom
+            usdImaging
+            usdImagingGL
+            usdLux
+            usdRender
+            usdRi
+            usdShade
+            usdSkel
+            usdUtils
+            ${MAYA_LIBRARIES}
+        PRIVATE
+            $<$<BOOL:${USD_001905_BUILD}>:hio>
+            ${PYTHON_LIBRARIES} 
+    )
+endif()
 
 # -----------------------------------------------------------------------------
 # promoted headers

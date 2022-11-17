@@ -312,7 +312,3 @@ if(UFE_FOUND)
 endif()
 add_subdirectory(undo)
 add_subdirectory(utils)
-
-if(BUILD_HDMAYA)
-    add_subdirectory(render/mayaToHydra)
-endif()

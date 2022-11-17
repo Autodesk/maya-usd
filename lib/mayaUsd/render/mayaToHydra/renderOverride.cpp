@@ -13,6 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
+#if !defined(MAYAUSD_VERSION)
+    // GL loading library needs to be included before any other OpenGL headers.
+    #include <pxr/imaging/garch/glApi.h>
+#endif
+
 #include "renderOverride.h"
 
 #include "pluginDebugCodes.h"
@@ -24,8 +30,71 @@
 #include <hdMaya/delegates/sceneDelegate.h>
 #include <hdMaya/renderItemClient/renderDelegate.h>
 #include <hdMaya/utils.h>
-#include <mayaUsd/render/px_vp20/utils.h>
-#include <mayaUsd/utils/hash.h>
+
+#if defined(MAYAUSD_VERSION)
+    #include <mayaUsd/render/px_vp20/utils.h>
+    #include <mayaUsd/utils/hash.h>
+#else
+    namespace MayaUsd {
+        // hash combiner taken from:
+        // http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0814r0.pdf
+
+        // boost::hash implementation also relies on the same algorithm:
+        // https://www.boost.org/doc/libs/1_64_0/boost/functional/hash/hash.hpp
+
+        template <typename T> inline void hash_combine(std::size_t& seed, const T& value)
+        {
+            ::std::hash<T> hasher;
+            seed ^= hasher(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+    }
+
+    /// Simple RAII class to save uniform buffer bindings, to deal with a Maya
+    /// issue.
+    ///
+    /// XXX: When Maya is using OpenGL Core Profile as the rendering engine (in
+    /// either compatibility or strict mode), batch renders like those done in the
+    /// "Render View" window or through the ogsRender command do not properly track
+    /// uniform buffer binding state. This was causing issues where the first batch
+    /// render performed would look correct, but then all subsequent renders done
+    /// in that Maya session would be completely black (no alpha), even if the
+    /// frame contained only Maya-native geometry or if a new scene was
+    /// created/opened.
+    ///
+    /// To avoid this problem, this object can be used to save and restore Maya's
+    /// uniform buffer bindings across Hydra/OpenGL calls. We try not to bog down
+    /// performance by saving and restoring *all* GL_MAX_UNIFORM_BUFFER_BINDINGS
+    /// possible bindings, so instead we only do just enough to avoid issues.
+    /// Empirically, the problematic binding has been the material binding at
+    /// index 4.
+    class GLUniformBufferBindingsSaver
+    {
+    public:
+        GLUniformBufferBindingsSaver();
+
+        ~GLUniformBufferBindingsSaver();
+
+    private:
+        static constexpr size_t UNIFORM_BINDINGS_TO_SAVE = 5u;
+
+        std::array<GLint, UNIFORM_BINDINGS_TO_SAVE> _uniformBufferBindings;
+    };
+
+    GLUniformBufferBindingsSaver::GLUniformBufferBindingsSaver()
+    {
+        for (size_t i = 0u; i < _uniformBufferBindings.size(); ++i) {
+            glGetIntegeri_v(
+                GL_UNIFORM_BUFFER_BINDING, static_cast<GLuint>(i), &_uniformBufferBindings[i]);
+        }
+    }
+
+    GLUniformBufferBindingsSaver::~GLUniformBufferBindingsSaver()
+    {
+        for (size_t i = 0u; i < _uniformBufferBindings.size(); ++i) {
+            glBindBufferBase(GL_UNIFORM_BUFFER, static_cast<GLuint>(i), _uniformBufferBindings[i]);
+        }
+    }
+#endif
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/tf/instantiateSingleton.h>

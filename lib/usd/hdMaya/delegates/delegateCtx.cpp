@@ -15,7 +15,11 @@
 //
 #include "delegateCtx.h"
 
-#include "mayaUsd/utils/util.h"
+#if defined(MAYAUSD_VERSION)
+    #include "mayaUsd/utils/util.h"
+#else
+    #include <hdMaya/usd/util.h>
+#endif
 
 #include <pxr/base/gf/frustum.h>
 #include <pxr/base/gf/plane.h>

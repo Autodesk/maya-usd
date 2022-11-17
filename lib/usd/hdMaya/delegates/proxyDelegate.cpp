@@ -18,7 +18,11 @@
 #include <hdMaya/adapters/proxyAdapter.h>
 #include <hdMaya/debugCodes.h>
 #include <hdMaya/delegates/delegateRegistry.h>
-#include <mayaUsd/nodes/proxyShapeBase.h>
+#if defined(MAYAUSD_VERSION)
+    #include <mayaUsd/nodes/proxyShapeBase.h>
+#else
+    #include <hdMaya/usd/proxyShapeBase.h>
+#endif
 
 #include <pxr/base/tf/envSetting.h>
 #include <pxr/base/tf/type.h>
@@ -84,9 +88,13 @@ std::unordered_set<HdMayaProxyAdapter*> _allAdapters;
 
 bool IsALPluginLoaded()
 {
+#if defined(MAYAUSD_VERSION)
     auto nodeClass = MNodeClass(MayaUsdProxyShapeBase::typeId);
     // if not loaded yet, typeName() will be an empty string
     return nodeClass.typeName() == MayaUsdProxyShapeBase::typeName;
+#else
+    return true;
+#endif
 }
 
 void PluginCallback(const MStringArray& strs, void* clientData)
