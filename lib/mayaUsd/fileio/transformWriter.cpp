@@ -19,6 +19,7 @@
 #include <mayaUsd/fileio/utils/adaptor.h>
 #include <mayaUsd/fileio/utils/xformStack.h>
 #include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/converter.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/gf/matrix4d.h>
@@ -37,6 +38,7 @@
 
 #include <maya/MFn.h>
 #include <maya/MFnDependencyNode.h>
+#include <maya/MFnMatrixData.h>
 #include <maya/MFnTransform.h>
 #include <maya/MString.h>
 
@@ -47,29 +49,28 @@ PXR_NAMESPACE_OPEN_SCOPE
 PXRUSDMAYA_REGISTER_WRITER(transform, UsdMayaTransformWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(transform, UsdGeomXform);
 
-// Given an Op, value and time, set the Op value based on op type and precision
-static void setXformOp(
-    const UsdGeomXformOp&      op,
+void UsdMayaTransformWriter::_AnimChannel::setXformOp(
     const GfVec3d&             value,
+    const GfMatrix4d&          matrix,
     const UsdTimeCode&         usdTime,
-    UsdUtilsSparseValueWriter* valueWriter)
+    UsdUtilsSparseValueWriter* valueWriter) const
 {
     if (!op) {
         TF_CODING_ERROR("Xform op is not valid");
         return;
     }
 
-    if (op.GetOpType() == UsdGeomXformOp::TypeTransform) {
+    VtValue vtValue;
+    if (isMatrix) {
+        vtValue = matrix;
+    } else if (opType == _XformType::Shear) {
         GfMatrix4d shearXForm(1.0);
         shearXForm[1][0] = value[0]; // xyVal
         shearXForm[2][0] = value[1]; // xzVal
         shearXForm[2][1] = value[2]; // yzVal
-        valueWriter->SetAttribute(op.GetAttr(), shearXForm, usdTime);
-        return;
-    }
-
-    VtValue vtValue;
-    if (UsdGeomXformOp::GetPrecisionFromValueTypeName(op.GetAttr().GetTypeName())
+        vtValue = shearXForm;
+    } else if (
+        UsdGeomXformOp::GetPrecisionFromValueTypeName(op.GetAttr().GetTypeName())
         == UsdGeomXformOp::PrecisionDouble) {
         vtValue = VtValue(value);
     } else { // float precision
@@ -98,12 +99,17 @@ void UsdMayaTransformWriter::_ComputeXformOps(
             continue;
         }
 
-        GfVec3d value = animChannel.defValue;
-        bool    hasAnimated = false;
-        bool    hasStatic = false;
+        GfVec3d    value = animChannel.defValue;
+        GfMatrix4d matrix = animChannel.defMatrix;
+        bool       hasAnimated = false;
+        bool       hasStatic = false;
         for (unsigned int i = 0u; i < 3u; ++i) {
             if (animChannel.sampleType[i] == _SampleType::Animated) {
-                value[i] = animChannel.plug[i].asDouble();
+                if (animChannel.isMatrix) {
+                    matrix = animChannel.GetSourceData(i).Get<GfMatrix4d>();
+                } else {
+                    value[i] = animChannel.GetSourceData(i).Get<double>();
+                }
                 hasAnimated = true;
             } else if (animChannel.sampleType[i] == _SampleType::Static) {
                 hasStatic = true;
@@ -151,8 +157,22 @@ void UsdMayaTransformWriter::_ComputeXformOps(
                 }
             }
 
-            setXformOp(animChannel.op, value, usdTime, valueWriter);
+            animChannel.setXformOp(value, matrix, usdTime, valueWriter);
         }
+    }
+}
+
+VtValue UsdMayaTransformWriter::_AnimChannel::GetSourceData(unsigned int i) const
+{
+    if (isMatrix) {
+        const MPlug&  attrPlug = plug[i];
+        MFnMatrixData matrixDataFn(attrPlug.asMObject());
+        MMatrix       mayaMatrix = matrixDataFn.matrix();
+        GfMatrix4d    matrix;
+        MAYAUSD_NS_DEF::TypedConverter<MMatrix, GfMatrix4d>::convert(mayaMatrix, matrix);
+        return VtValue(matrix);
+    } else {
+        return VtValue(plug[i].asDouble());
     }
 }
 
@@ -166,11 +186,13 @@ bool UsdMayaTransformWriter::_GatherAnimChannel(
     const MString&             zName,
     std::vector<_AnimChannel>* oAnimChanList,
     const bool                 isWritingAnimation,
-    const bool                 useSuffix)
+    const bool                 useSuffix,
+    const bool                 isMatrix)
 {
     _AnimChannel chan;
     chan.opType = opType;
     chan.isInverse = false;
+    chan.isMatrix = isMatrix;
     if (useSuffix) {
         chan.suffix = mayaAttrName;
     }
@@ -189,18 +211,22 @@ bool UsdMayaTransformWriter::_GatherAnimChannel(
 
     // Determine what plug are needed based on default value & being
     // connected/animated
-    MStringArray channels;
-    channels.append(mayaAttrNameMStr + xName);
-    channels.append(mayaAttrNameMStr + yName);
-    channels.append(mayaAttrNameMStr + zName);
+    MStringArray suffixes;
+    suffixes.append(xName);
+    suffixes.append(yName);
+    suffixes.append(zName);
 
     GfVec3d nullValue(opType == _XformType::Scale ? 1.0 : 0.0);
     for (unsigned int i = 0; i < 3; i++) {
         // Find the plug and retrieve the data as the channel default value. It
         // won't be updated if the channel is NOT ANIMATED
-        chan.plug[i] = iTrans.findPlug(channels[i]);
-        double plugValue = chan.plug[i].asDouble();
-        chan.defValue[i] = plugValue;
+        if (isMatrix) {
+            chan.plug[i] = iTrans.findPlug(mayaAttrNameMStr);
+            chan.defMatrix = chan.GetSourceData(i).Get<GfMatrix4d>();
+        } else {
+            chan.plug[i] = iTrans.findPlug(mayaAttrNameMStr + suffixes[i]);
+            chan.defValue[i] = chan.GetSourceData(i).Get<double>();
+        }
         chan.sampleType[i] = _SampleType::None;
         // If we allow animation and either the parent sample or local sample is
         // not 0 then we have an Animated sample else we have a scale and the
@@ -209,9 +235,13 @@ bool UsdMayaTransformWriter::_GatherAnimChannel(
             && isWritingAnimation) {
             chan.sampleType[i] = _SampleType::Animated;
             hasValidComponents = true;
-        } else if (!GfIsClose(chan.defValue[i], nullValue[i], 1e-7)) {
-            chan.sampleType[i] = _SampleType::Static;
-            hasValidComponents = true;
+        } else {
+            const bool isNullValue = isMatrix ? GfIsClose(chan.defMatrix, GfMatrix4d(1.0), 1e-7)
+                                              : GfIsClose(chan.defValue[i], nullValue[i], 1e-7);
+            if (!isNullValue) {
+                chan.sampleType[i] = _SampleType::Static;
+                hasValidComponents = true;
+            }
         }
     }
 
@@ -249,6 +279,9 @@ bool UsdMayaTransformWriter::_GatherAnimChannel(
                 }
             }
         } else if (opType == _XformType::Shear) {
+            chan.usdOpType = UsdGeomXformOp::TypeTransform;
+            chan.precision = UsdGeomXformOp::PrecisionDouble;
+        } else if (opType == _XformType::Transform) {
             chan.usdOpType = UsdGeomXformOp::TypeTransform;
             chan.precision = UsdGeomXformOp::PrecisionDouble;
         } else {
@@ -321,6 +354,20 @@ void UsdMayaTransformWriter::_PushTransformStack(
                     parentDagPath, parentTrans, usdXformable, writeAnim, worldspace);
             }
         }
+    }
+
+    if (_GatherAnimChannel(
+            _XformType::Transform,
+            iTrans,
+            UsdMayaXformStackTokens->offsetParentMatrix,
+            "",
+            "",
+            "",
+            &_animChannels,
+            writeAnim,
+            true,
+            true)) {
+        conformsToCommonAPI = false;
     }
 
     // inspect the translate, no suffix to be closer compatibility with common API
@@ -521,9 +568,7 @@ void UsdMayaTransformWriter::_WriteChannelsXformOps(const UsdGeomXformable& usdX
 
     // Loop over anim channel vector and create corresponding XFormOps
     // including the inverse ones if needed
-    TF_FOR_ALL(iter, _animChannels)
-    {
-        _AnimChannel& animChan = *iter;
+    for (_AnimChannel& animChan : _animChannels) {
         animChan.op = usdXformable.AddXformOp(
             animChan.usdOpType, animChan.precision, animChan.suffix, animChan.isInverse);
         if (!animChan.op) {
