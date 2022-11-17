@@ -17,6 +17,7 @@
 #
 
 import fixturesUtils
+import testUtils
 import mayaUsd_createStageWithNewLayer
 
 from usdUtils import createSimpleXformScene
@@ -37,8 +38,6 @@ import mayaUsdDuplicateAsMayaDataOptions
 import ufe
 
 import unittest
-
-from testUtils import assertVectorAlmostEqual
 
 import os
 
@@ -429,6 +428,110 @@ class DuplicateAsTestCase(unittest.TestCase):
 
         # Restore default options
         mayaUsdDuplicateAsMayaDataOptions.setDuplicateAsMayaDataOptionsText(defaultDuplicateAsMayaDataOptions)
+
+    def testDuplicateRigWithOPMAsUsd(self):
+        '''Duplicate a Maya rig using offset-parent-matrix to USD.'''
+
+        # Load Maya scene with the rig.
+        rigFile = testUtils.getTestScene("rig_with_opm", "offset_parent_matrix_rig.ma")
+        cmds.file(rigFile, open=True)
+
+        rigName = "rig_opm"
+        opmCubeName = "pCube3"
+        opmConeName = "pCone1"
+
+        # Create a stage to receive the USD duplicate.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        
+        # Duplicate Maya data as USD data.  As of 17-Nov-2021 no single-segment
+        # path handler registered to UFE for Maya path strings, so use absolute
+        # path.
+        # Duplicate Maya data as USD data using modified default options to export materials
+        defaultDuplicateAsMayaDataOptions = mayaUsdDuplicateAsMayaDataOptions.getDuplicateAsMayaDataOptionsText()
+        modifiedDuplicateAsMayaDataOptions = defaultDuplicateAsMayaDataOptions.replace('animation=0','animation=1')
+        cmds.mayaUsdDuplicate(cmds.ls(rigName, long=True)[0], psPathStr, exportOptions=modifiedDuplicateAsMayaDataOptions)
+
+        # Maya hierarchy should be duplicated in USD.
+        usdRigPathStr = psPathStr + ',/' + rigName
+        usdRigPath = ufe.PathString.path(usdRigPathStr)
+        usdRig = ufe.Hierarchy.createItem(usdRigPath)
+        usdRigHier = ufe.Hierarchy.hierarchy(usdRig)
+
+        usdOpmCubePathStr = usdRigPathStr + '/' + opmCubeName
+        usdOpmCubePath = ufe.PathString.path(usdOpmCubePathStr)
+        usdOpmCube = ufe.Hierarchy.createItem(usdOpmCubePath)
+        usdOpmCubeHier = ufe.Hierarchy.hierarchy(usdOpmCube)
+
+        usdOpmConePathStr = usdOpmCubePathStr + '/' + opmConeName
+        usdOpmConePath = ufe.PathString.path(usdOpmConePathStr)
+        usdOpmCone = ufe.Hierarchy.createItem(usdOpmConePath)
+        usdOpmConeHier = ufe.Hierarchy.hierarchy(usdOpmCone)
+
+        # pCube3 is the child of rig_opm
+        self.assertEqual(usdRig, usdOpmCubeHier.parent())
+        self.assertEqual(len(usdRigHier.children()), 2)
+        self.assertEqual(usdOpmCube, usdRigHier.children()[0])
+
+        # pCone1 is the child of pCube3
+        self.assertEqual(usdOpmCube, usdOpmConeHier.parent())
+        self.assertEqual(len(usdOpmCubeHier.children()), 2)
+        self.assertEqual(usdOpmCone, usdOpmCubeHier.children()[1])
+
+        # Translations have been preserved.
+        usdRigT3d = ufe.Transform3d.transform3d(usdRig)
+        self.assertEqual([0., 0., 0.], usdRigT3d.translation().vector)
+
+        usdOpmCubeT3d = ufe.Transform3d.transform3d(usdOpmCube)
+        self.assertEqual([-2., 2., 0.], usdOpmCubeT3d.translation().vector)
+
+        usdOpmConeT3d = ufe.Transform3d.transform3d(usdOpmCone)
+        self.assertEqual([0., 0., 0.], usdOpmConeT3d.translation().vector)
+
+        # Rig has animated offset-parent-matrix.
+        # Move to frame 30 and check the cube has moved according to OPM.
+        #
+        # Note the value returned by UFE combines all transformations.
+
+        cmds.currentTime(20)
+
+        opmCubePrim = stage.GetPrimAtPath('/rig_opm/pCube3')
+        xformOpOrderAttr = opmCubePrim.GetAttribute('xformOpOrder')
+        self.assertEqual(['xformOp:transform:offsetParentMatrix', 'xformOp:translate'], xformOpOrderAttr.Get())
+        cubeOpmAttr = opmCubePrim.GetAttribute('xformOp:transform:offsetParentMatrix')
+        self.assertEqual(Gf.Matrix4d([
+            [1.1007908605835344, -1.0520685673505412, 0.0, 0.0],
+            [1.0520685673505412, 1.1007908605835344, 0.0, 0.0],
+            [0.0, 0.0, 1.522691298048051, 0.0],
+            [-2.34568013708196, 2.676162714182682, 0.0, 1.0]]),
+            cubeOpmAttr.Get(20.))
+
+        opmConePrim = stage.GetPrimAtPath('/rig_opm/pCube3/pCone1')
+        xformOpOrderAttr = opmConePrim.GetAttribute('xformOpOrder')
+        self.assertEqual(['xformOp:transform:offsetParentMatrix'], xformOpOrderAttr.Get())
+        coneOpmAttr = opmConePrim.GetAttribute('xformOp:transform:offsetParentMatrix')
+        self.assertEqual(Gf.Matrix4d([
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [-0.8148148148148148, 0.7407407407407407, 0.0, 1.0]]),
+            coneOpmAttr.Get(20.))
+
+        usdOpmCubeT3d = ufe.Transform3d.transform3d(usdOpmCube)
+        self.assertEqual([
+            [1.1007908605835344, -1.0520685673505412, 0.0, 0.0],
+            [1.0520685673505412, 1.1007908605835344, 0.0, 0.0],
+            [0.0, 0.0, 1.522691298048051, 0.0],
+            [-2.4431247235479465, 6.981881570050833, 0.0, 1.0]],
+            usdOpmCubeT3d.matrix().matrix)
+
+        usdOpmConeT3d = ufe.Transform3d.transform3d(usdOpmCone)
+        self.assertEqual([
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [-0.8148148148148148, 0.7407407407407407, 0.0, 1.0]],
+            usdOpmConeT3d.matrix().matrix)
 
 
 if __name__ == '__main__':
