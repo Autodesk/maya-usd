@@ -26,6 +26,7 @@
 #include <maya/MSelectionList.h>
 #include <maya/MString.h>
 
+#include <mutex>
 #include <set>
 #include <sstream>
 #include <string>

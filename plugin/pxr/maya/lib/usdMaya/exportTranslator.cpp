@@ -23,6 +23,7 @@
 #include <maya/MSelectionList.h>
 #include <maya/MString.h>
 
+#include <mutex>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
