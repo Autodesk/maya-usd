@@ -19,7 +19,12 @@
 #include <hdMaya/debugCodes.h>
 #include <hdMaya/delegates/proxyDelegate.h>
 #include <hdMaya/delegates/sceneDelegate.h>
-#include <mayaUsd/nodes/proxyShapeBase.h>
+
+#if defined(MAYAUSD_VERSION)
+    #include <mayaUsd/nodes/proxyShapeBase.h>
+#else
+    #include <hdMaya/usd/proxyShapeBase.h>
+#endif
 
 #include <maya/MGlobal.h>
 #include <maya/MTime.h>

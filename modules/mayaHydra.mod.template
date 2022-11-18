@@ -1,0 +1,29 @@
++ USD ${USD_VERSION} ${USD_INSTALL_LOCATION}
+icons: 
+plug-ins: 
+presets: 
+scripts: 
+resources: 
+PYTHONPATH+:=lib/python
+USD_LOCATION:=
+MAYA_USD_VERSION=${USD_VERSION}
+PXR_MTLX_STDLIB_SEARCH_PATHS+:=libraries
+
++ MayaUSD_LIB ${MAYAUSD_VERSION} ${CMAKE_INSTALL_PREFIX}
+icons: lib/icons
+plug-ins: 
+presets: 
+scripts: lib/scripts
+resources: 
+PYTHONPATH+:=lib/python
+${PXR_OVERRIDE_PLUGINPATH_NAME}+:=lib/usd
+MAYAUSD_VERSION=${MAYAUSD_VERSION}
+PXR_MTLX_STDLIB_SEARCH_PATHS+:=libraries
+${MAYAUSD_GTEST_PATH}
+
++ MTOH ${MAYAUSD_VERSION} ${CMAKE_INSTALL_PREFIX}/lib
+icons: 
+plug-ins: maya
+presets: 
+scripts: 
+resources: 

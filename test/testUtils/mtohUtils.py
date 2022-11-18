@@ -26,7 +26,7 @@ class MtohTestCase(ImageDiffingTestCase):
 
         inputPath = fixturesUtils.setUpClass(
             cls._file, suffix=('_' + cls.__name__),
-            initializeStandalone=False, loadPlugin=True)
+            initializeStandalone=False, loadPlugin=False)
         cmds.loadPlugin('mtoh', quiet=True)
 
         if cls._inputDir is None:

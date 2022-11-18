@@ -15,7 +15,11 @@
 //
 #include "adapterRegistry.h"
 
-#include <mayaUsd/nodes/proxyShapeBase.h>
+#if defined(MAYAUSD_VERSION)
+    #include <mayaUsd/nodes/proxyShapeBase.h>
+#else
+    #include <hdMaya/usd/proxyShapeBase.h>
+#endif
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>

@@ -3,7 +3,11 @@
 
 #include <hdMaya/adapters/shapeAdapter.h>
 #include <hdMaya/delegates/proxyUsdImagingDelegate.h>
-#include <mayaUsd/listeners/proxyShapeNotice.h>
+#if defined(MAYAUSD_VERSION)
+    #include <mayaUsd/listeners/proxyShapeNotice.h>
+#else
+    #include <hdMaya/usd/proxyShapeNotice.h>
+#endif
 
 #include <pxr/base/tf/weakBase.h>
 #include <pxr/pxr.h>

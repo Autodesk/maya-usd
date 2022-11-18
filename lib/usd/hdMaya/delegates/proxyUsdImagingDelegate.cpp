@@ -15,7 +15,11 @@
 //
 #include "proxyUsdImagingDelegate.h"
 
-#include <mayaUsd/nodes/proxyShapeBase.h>
+#if defined(MAYAUSD_VERSION)
+    #include <mayaUsd/nodes/proxyShapeBase.h>
+#else
+    #include <hdMaya/usd/proxyShapeBase.h>
+#endif
 
 #include <maya/MMatrix.h>
 
