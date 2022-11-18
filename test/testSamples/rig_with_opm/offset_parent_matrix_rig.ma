@@ -2,11 +2,9 @@
 //Name: offset_parent_examples_adjusted.ma
 //Last modified: Wed, Nov 16, 2022 10:52:00 AM
 //Codeset: 1252
-requires maya "2024ff02";
-requires "stereoCamera" "10.0";
 currentUnit -l centimeter -a degree -t film;
 fileInfo "application" "maya";
-fileInfo "product" "Maya 2023";
+fileInfo "product" "Maya 2020";
 fileInfo "cutIdentifier" "202208302204-000000";
 fileInfo "osv" "Windows 10 Pro v2009 (Build: 19045)";
 fileInfo "UUID" "F37F460D-4110-31E9-4D01-BFB5AC3B2DAD";
