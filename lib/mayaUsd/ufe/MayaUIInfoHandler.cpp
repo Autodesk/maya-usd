@@ -58,7 +58,7 @@ MayaUsd::ufe::UsdSceneItem::Ptr pulledUsdAncestorItem(const Ufe::SceneItem::Ptr&
         }
         const auto mayaPathStr = Ufe::PathString::string(mayaPath);
         const auto dagPath = UsdMayaUtil::nameToDagPath(mayaPathStr);
-        if (PrimUpdaterManager::readPullInformation(dagPath, usdItemPath)) {
+        if (MAYAUSD_NS_DEF::readPullInformation(dagPath, usdItemPath)) {
             found = true;
         } else {
             mayaPath = mayaPath.pop();
@@ -112,7 +112,7 @@ bool MayaUIInfoHandler::treeViewCellInfo(const Ufe::SceneItem::Ptr& mayaItem, Uf
     // hierarchy, set its font to italics.
     auto      dagPath = UsdMayaUtil::nameToDagPath(Ufe::PathString::string(mayaItem->path()));
     Ufe::Path usdItemPath;
-    if (PrimUpdaterManager::readPullInformation(dagPath, usdItemPath)) {
+    if (readPullInformation(dagPath, usdItemPath)) {
         info.fontItalics = true;
         return true;
     }
