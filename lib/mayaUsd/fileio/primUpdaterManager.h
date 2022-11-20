@@ -18,15 +18,15 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/primUpdaterContext.h>
+#include <mayaUsd/fileio/pullInformation.h>
 #include <mayaUsd/listeners/proxyShapeNotice.h>
-#include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/registryManager.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
 
 #include <maya/MCallbackIdArray.h>
-#include <ufe/sceneItem.h>
 
 UFE_NS_DEF { class Path; }
 
@@ -70,15 +70,6 @@ public:
     MAYAUSD_CORE_PUBLIC
     static PrimUpdaterManager& getInstance();
 
-    MAYAUSD_CORE_PUBLIC
-    static bool readPullInformation(const PXR_NS::UsdPrim& prim, std::string& dagPathStr);
-    MAYAUSD_CORE_PUBLIC
-    static bool readPullInformation(const PXR_NS::UsdPrim& prim, Ufe::SceneItem::Ptr& dagPathItem);
-    MAYAUSD_CORE_PUBLIC
-    static bool readPullInformation(const Ufe::Path& ufePath, MDagPath& dagPath);
-    MAYAUSD_CORE_PUBLIC
-    static bool readPullInformation(const MDagPath& dagpath, Ufe::Path& ufePath);
-
     bool hasPulledPrims() const;
 
 private:
@@ -114,8 +105,6 @@ private:
     //! Record pull information for the pulled path, for inspection on
     //! scene changes.
 #ifdef HAS_ORPHANED_NODES_MANAGER
-    void recordPullVariantInfo(const Ufe::Path& pulledPath, const MDagPath& pullParentPath);
-
     // Maya file new or open callback.  Member function to access other private
     // member functions.
     static void beforeNewOrOpenCallback(void* clientData);

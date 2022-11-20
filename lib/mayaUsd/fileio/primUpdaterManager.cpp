@@ -35,12 +35,10 @@
 #include <mayaUsd/utils/dynamicAttribute.h>
 #include <mayaUsd/utils/progressBarScope.h>
 #include <mayaUsd/utils/traverseLayer.h>
-#include <mayaUsdUtils/util.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/instantiateSingleton.h>
 #include <pxr/usd/sdf/copyUtils.h>
-#include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primRange.h>
 
@@ -49,8 +47,6 @@
 #include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnSet.h>
-#include <maya/MFnStringData.h>
-#include <maya/MFnTypedAttribute.h>
 #include <maya/MGlobal.h>
 #include <maya/MItDag.h>
 #include <maya/MObject.h>
@@ -83,12 +79,6 @@ const std::string kPullParentPathKey("Maya:Pull:ParentPath");
 // Set name that will be used to hold all pulled objects
 const MString kPullSetName("usdEditAsMaya");
 
-// Metadata key used to store pull information on a prim
-const TfToken kPullPrimMetadataKey("Maya:Pull:DagPath");
-
-// Metadata key used to store pull information on a DG node
-const MString kPullDGMetadataKey("Pull_UfePath");
-
 // Name of Dag node under which all pulled sub-hierarchies are rooted.
 const MString kPullRootName("__mayaUsd__");
 const MString kPullRootPath("|__mayaUsd__");
@@ -113,7 +103,7 @@ Ufe::Path usdToMaya(const Ufe::Path& usdPath)
         return Ufe::Path();
     }
     std::string dagPathStr;
-    if (!TF_VERIFY(PXR_NS::PrimUpdaterManager::readPullInformation(prim, dagPathStr))) {
+    if (!TF_VERIFY(MAYAUSD_NS_DEF::readPullInformation(prim, dagPathStr))) {
         return Ufe::Path();
     }
 
@@ -145,7 +135,7 @@ bool hasEditedDescendant(const Ufe::Path& ufeQueryPath)
         MDagPath pulledDagPath;
         members.getDagPath(i, pulledDagPath);
         Ufe::Path pulledUfePath;
-        if (!PrimUpdaterManager::readPullInformation(pulledDagPath, pulledUfePath))
+        if (!readPullInformation(pulledDagPath, pulledUfePath))
             continue;
 
         if (pulledUfePath.startsWith(ufeQueryPath))
@@ -159,34 +149,29 @@ bool hasEditedDescendant(const Ufe::Path& ufeQueryPath)
 //
 // The UFE path is to the pulled prim, and the Dag path is the corresponding
 // Maya pulled object.
-bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& path)
+bool writeAllPullInformation(const Ufe::Path& ufePulledPath, const MDagPath& editedAsMayaRoot)
 {
     MayaUsd::ProgressBarScope progressBar(3);
-
-    auto pulledPrim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
-    if (!pulledPrim) {
-        return false;
-    }
 
     // Add to a set, the set should already been created.
     if (!FunctionUndoItem::execute(
             "Add edited item to pull set.",
-            [path]() {
+            [editedAsMayaRoot]() {
                 MObject pullSetObj;
                 auto    status = UsdMayaUtil::GetMObjectByName(kPullSetName, pullSetObj);
                 if (status != MStatus::kSuccess)
                     return false;
                 MFnSet fnPullSet(pullSetObj);
-                fnPullSet.addMember(path);
+                fnPullSet.addMember(editedAsMayaRoot);
                 return true;
             },
-            [path]() {
+            [editedAsMayaRoot]() {
                 MObject pullSetObj;
                 auto    status = UsdMayaUtil::GetMObjectByName(kPullSetName, pullSetObj);
                 if (status != MStatus::kSuccess)
                     return false;
                 MFnSet fnPullSet(pullSetObj);
-                fnPullSet.removeMember(path, MObject::kNullObj);
+                fnPullSet.removeMember(editedAsMayaRoot, MObject::kNullObj);
                 return true;
             })) {
         TF_WARN("Cannot edited object to pulled set.");
@@ -195,34 +180,11 @@ bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& path)
     progressBar.advance();
 
     // Store metadata on the prim in the Session Layer.
-    auto stage = pulledPrim.GetStage();
-    if (!stage)
-        return false;
-    UsdEditContext editContext(stage, stage->GetSessionLayer());
-    VtValue        value(path.fullPathName().asChar());
-    if (!pulledPrim.SetMetadataByDictKey(SdfFieldKeys->CustomData, kPullPrimMetadataKey, value))
-        return false;
+    writePulledPrimMetadata(ufePulledPath, editedAsMayaRoot);
     progressBar.advance();
 
     // Store medata on DG node
-    auto              ufePathString = Ufe::PathString::string(ufePulledPath);
-    MFnDependencyNode depNode(path.node());
-    MStatus           status;
-    MPlug             dgMetadata = depNode.findPlug(kPullDGMetadataKey, &status);
-    if (status != MStatus::kSuccess) {
-        MFnStringData fnStringData;
-        MObject       strAttrObject = fnStringData.create("");
-
-        MFnTypedAttribute attr;
-        MObject           attrObj
-            = attr.create(kPullDGMetadataKey, kPullDGMetadataKey, MFnData::kString, strAttrObject);
-        status = depNode.addAttribute(attrObj);
-        dgMetadata = depNode.findPlug(kPullDGMetadataKey, &status);
-        if (status != MStatus::kSuccess) {
-            return false;
-        }
-    }
-    dgMetadata.setValue(ufePathString.c_str());
+    writePullInformation(ufePulledPath, editedAsMayaRoot);
     progressBar.advance();
 
     return true;
@@ -230,15 +192,15 @@ bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& path)
 
 //------------------------------------------------------------------------------
 //
-void removePullInformation(const Ufe::Path& ufePulledPath)
+void removeAllPullInformation(const Ufe::Path& ufePulledPath)
 {
-    MayaUsd::ProgressBarScope progressBar(1);
-    UsdPrim                   prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
-    auto                      stage = prim.GetStage();
+    UsdPrim     pulledPrim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
+    UsdStagePtr stage = pulledPrim.GetStage();
     if (!stage)
         return;
-    UsdEditContext editContext(stage, stage->GetSessionLayer());
-    prim.ClearCustomDataByKey(kPullPrimMetadataKey);
+
+    MayaUsd::ProgressBarScope progressBar(1);
+    removePulledPrimMetadata(stage, pulledPrim);
     progressBar.advance();
 
     // Session layer cleanup
@@ -248,47 +210,6 @@ void removePullInformation(const Ufe::Path& ufePulledPath)
         stage->GetSessionLayer()->RemovePrimIfInert(rootPrimSpec);
         rootPrimsLoop.loopAdvance();
     }
-}
-
-//------------------------------------------------------------------------------
-//
-bool addExcludeFromRendering(const Ufe::Path& ufePulledPath)
-{
-    UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
-
-    auto stage = prim.GetStage();
-    if (!stage)
-        return false;
-
-    UsdEditContext editContext(stage, stage->GetSessionLayer());
-    if (!prim.SetActive(false))
-        return false;
-
-    return true;
-}
-
-//------------------------------------------------------------------------------
-//
-bool removeExcludeFromRendering(const Ufe::Path& ufePulledPath)
-{
-    UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
-
-    auto stage = prim.GetStage();
-    if (!stage)
-        return false;
-
-    SdfLayerHandle sessionLayer = stage->GetSessionLayer();
-    UsdEditContext editContext(stage, sessionLayer);
-
-    // Cleanup the field and potentially empty over
-    if (!prim.ClearActive())
-        return false;
-
-    SdfPrimSpecHandle primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
-    if (sessionLayer && primSpec)
-        sessionLayer->ScheduleRemoveIfInert(primSpec.GetSpec());
-
-    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -456,10 +377,10 @@ PullImportPaths pullImport(
         if (!FunctionUndoItem::execute(
                 "Pull import pull info writing",
                 [ufePulledPath, addedDagPath]() {
-                    return writePullInformation(ufePulledPath, addedDagPath);
+                    return writeAllPullInformation(ufePulledPath, addedDagPath);
                 },
                 [ufePulledPath]() {
-                    removePullInformation(ufePulledPath);
+                    removeAllPullInformation(ufePulledPath);
                     return true;
                 })) {
             TF_WARN("Cannot write pull information metadata.");
@@ -844,7 +765,7 @@ private:
 };
 
 #ifdef HAS_ORPHANED_NODES_MANAGER
-class AddPullPathUndoItem : public MayaUsd::OpUndoItem
+class RecordPullVariantInfoUndoItem : public MayaUsd::OpUndoItem
 {
 public:
     // Add the path to the orphaned nodes manager, and add an undo entry onto
@@ -852,13 +773,13 @@ public:
     static bool execute(
         const std::shared_ptr<OrphanedNodesManager>& orphanedNodesManager,
         const Ufe::Path&                             pulledPath,
-        const MDagPath&                              pullParentPath)
+        const MDagPath&                              editedAsMayaRoot)
     {
         // Get the global undo list.
         auto& undoInfo = OpUndoItemList::instance();
 
-        auto item = std::make_unique<AddPullPathUndoItem>(
-            orphanedNodesManager, pulledPath, pullParentPath);
+        auto item = std::make_unique<RecordPullVariantInfoUndoItem>(
+            orphanedNodesManager, pulledPath, editedAsMayaRoot);
         if (!item->redo()) {
             return false;
         }
@@ -868,16 +789,16 @@ public:
         return true;
     }
 
-    AddPullPathUndoItem(
+    RecordPullVariantInfoUndoItem(
         const std::shared_ptr<OrphanedNodesManager>& orphanedNodesManager,
         const Ufe::Path&                             pulledPath,
-        const MDagPath&                              pullParentPath)
+        const MDagPath&                              editedAsMayaRoot)
         : OpUndoItem(
             std::string("Add to orphaned nodes manager pull path ")
             + Ufe::PathString::string(pulledPath))
         , _orphanedNodesManager(orphanedNodesManager)
         , _pulledPath(pulledPath)
-        , _pullParentPath(pullParentPath)
+        , _editedAsMayaRoot(editedAsMayaRoot)
     {
     }
 
@@ -889,17 +810,17 @@ public:
 
     bool redo() override
     {
-        _orphanedNodesManager->add(_pulledPath, _pullParentPath);
+        _orphanedNodesManager->add(_pulledPath, _editedAsMayaRoot);
         return true;
     }
 
 private:
     const std::shared_ptr<OrphanedNodesManager> _orphanedNodesManager;
     const Ufe::Path                             _pulledPath;
-    const MDagPath                              _pullParentPath;
+    const MDagPath                              _editedAsMayaRoot;
 };
 
-class RemovePullPathUndoItem : public MayaUsd::OpUndoItem
+class RemovePullVariantInfoUndoItem : public MayaUsd::OpUndoItem
 {
 public:
     // Remove the path from the orphaned nodes manager, and add an entry onto
@@ -911,7 +832,8 @@ public:
         // Get the global undo list.
         auto& undoInfo = OpUndoItemList::instance();
 
-        auto item = std::make_unique<RemovePullPathUndoItem>(orphanedNodesManager, pulledPath);
+        auto item
+            = std::make_unique<RemovePullVariantInfoUndoItem>(orphanedNodesManager, pulledPath);
         if (!item->redo()) {
             return false;
         }
@@ -921,7 +843,7 @@ public:
         return true;
     }
 
-    RemovePullPathUndoItem(
+    RemovePullVariantInfoUndoItem(
         const std::shared_ptr<OrphanedNodesManager>& orphanedNodesManager,
         const Ufe::Path&                             pulledPath)
         : OpUndoItem(std::string("Remove pull path ") + Ufe::PathString::string(pulledPath))
@@ -1103,11 +1025,11 @@ bool PrimUpdaterManager::mergeToUsd(
         if (!FunctionUndoItem::execute(
                 "Merge to Maya pull info removal",
                 [pulledPath]() {
-                    removePullInformation(pulledPath);
+                    removeAllPullInformation(pulledPath);
                     return true;
                 },
                 [pulledPath, mayaDagPath]() {
-                    return writePullInformation(pulledPath, mayaDagPath);
+                    return writeAllPullInformation(pulledPath, mayaDagPath);
                 })) {
             TF_WARN("Cannot remove pull information metadata.");
             return false;
@@ -1214,6 +1136,10 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
         return false;
     }
     progressBar.advance();
+
+#ifdef HAS_ORPHANED_NODES_MANAGER
+    RecordPullVariantInfoUndoItem::execute(_orphanedNodesManager, path, importedPaths.first[0]);
+#endif
 
     if (!updaterArgs._copyOperation) {
         // Lock pulled nodes starting at the pull parent.
@@ -1350,11 +1276,11 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
     if (!FunctionUndoItem::execute(
             "Discard edits pull info removal",
             [pulledPath]() {
-                removePullInformation(pulledPath);
+                removeAllPullInformation(pulledPath);
                 return true;
             },
             [pulledPath, mayaDagPath]() {
-                return writePullInformation(pulledPath, mayaDagPath);
+                return writeAllPullInformation(pulledPath, mayaDagPath);
             })) {
         TF_WARN("Cannot remove pull information metadata.");
         return false;
@@ -1734,7 +1660,7 @@ bool PrimUpdaterManager::removePullParent(
         return false;
     }
 
-    if (!TF_VERIFY(RemovePullPathUndoItem::execute(_orphanedNodesManager, pulledPath))) {
+    if (!TF_VERIFY(RemovePullVariantInfoUndoItem::execute(_orphanedNodesManager, pulledPath))) {
         return false;
     }
 #endif
@@ -1805,81 +1731,12 @@ MDagPath PrimUpdaterManager::setupPullParent(const Ufe::Path& pulledPath, VtDict
         return MDagPath();
     }
 
-#ifdef HAS_ORPHANED_NODES_MANAGER
-    recordPullVariantInfo(pulledPath, pullParentPath);
-#endif
     progressBar.advance();
 
     // Add pull parent path to import args as a string.
     args[kPullParentPathKey] = VtValue(std::string(pullParentPath.fullPathName().asChar()));
 
     return pullParentPath;
-}
-
-#ifdef HAS_ORPHANED_NODES_MANAGER
-void PrimUpdaterManager::recordPullVariantInfo(
-    const Ufe::Path& pulledPath,
-    const MDagPath&  pullParentPath)
-{
-    AddPullPathUndoItem::execute(_orphanedNodesManager, pulledPath, pullParentPath);
-}
-#endif
-
-/* static */
-bool PrimUpdaterManager::readPullInformation(const PXR_NS::UsdPrim& prim, std::string& dagPathStr)
-{
-    auto value = prim.GetCustomDataByKey(kPullPrimMetadataKey);
-    if (!value.IsEmpty() && value.CanCast<std::string>()) {
-        dagPathStr = value.Get<std::string>();
-        return !dagPathStr.empty();
-    }
-    return false;
-}
-
-/* static */
-bool PrimUpdaterManager::readPullInformation(
-    const PXR_NS::UsdPrim& prim,
-    Ufe::SceneItem::Ptr&   dagPathItem)
-{
-    std::string dagPathStr;
-    if (readPullInformation(prim, dagPathStr)) {
-        dagPathItem = Ufe::Hierarchy::createItem(Ufe::PathString::path(dagPathStr));
-        return (bool)dagPathItem;
-    }
-    return false;
-}
-
-/* static */
-bool PrimUpdaterManager::readPullInformation(const Ufe::Path& ufePath, MDagPath& dagPath)
-{
-    auto        prim = MayaUsd::ufe::ufePathToPrim(ufePath);
-    std::string dagPathStr;
-    if (readPullInformation(prim, dagPathStr)) {
-        MSelectionList sel;
-        sel.add(dagPathStr.c_str());
-        sel.getDagPath(0, dagPath);
-        return dagPath.isValid();
-    }
-    return false;
-}
-
-/* static */
-bool PrimUpdaterManager::readPullInformation(const MDagPath& dagPath, Ufe::Path& ufePath)
-{
-    MStatus status;
-
-    MFnDependencyNode depNode(dagPath.node());
-    MPlug             dgMetadata = depNode.findPlug(kPullDGMetadataKey, &status);
-    if (status == MStatus::kSuccess) {
-        MString pulledUfePathStr;
-        status = dgMetadata.getValue(pulledUfePathStr);
-        if (status) {
-            ufePath = Ufe::PathString::path(pulledUfePathStr.asChar());
-            return !ufePath.empty();
-        }
-    }
-
-    return false;
 }
 
 bool PrimUpdaterManager::hasPulledPrims() const
