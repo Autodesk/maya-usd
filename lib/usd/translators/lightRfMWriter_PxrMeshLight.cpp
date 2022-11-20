@@ -26,6 +26,8 @@
 #include <pxr/usd/usdLux/shadowAPI.h>
 #include <pxr/usd/usdLux/shapingAPI.h>
 
+#include <mutex>
+
 // PxrMeshLight gets exported specially.  Rather than resulting in it's own
 // prim, the PxrMeshLight is instead exported as a MeshLightAPI on the mesh
 // prim.  We use the schema API adaptors to handle this.
