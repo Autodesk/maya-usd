@@ -30,17 +30,14 @@ public:
     explicit HdMayaPreRender(const MString& name)
         : MHWRender::MSceneRender(name)
     {
-        auto*      renderer = MHWRender::MRenderer::theRenderer();
-        const auto gradient = renderer->useGradient();
-        const auto color1 = renderer->clearColor();
-        const auto color2 = renderer->clearColor2();
+        // To keep the colors always sync'ed, reuse same clear colors as global ones instead of set the same colors explicitly.
+        mClearOperation.setOverridesColors(false);
+    }
 
-        float c1[4] = { color1[0], color1[1], color1[2], 1.0f };
-        float c2[4] = { color2[0], color2[1], color2[2], 1.0f };
-
-        mClearOperation.setClearColor(c1);
-        mClearOperation.setClearColor2(c2);
-        mClearOperation.setClearGradient(gradient);
+    MUint64 getObjectTypeExclusions() override
+    {
+        // To skip the generation of some unwanted render lists even the kRenderPreSceneUIItems filter is specified.
+        return MFrameContext::kExcludeManipulators | MFrameContext::kExcludeHUD;
     }
 
     MSceneFilterOption renderFilterOverride() override { return kRenderPreSceneUIItems; }
@@ -64,7 +61,7 @@ public:
         //      ...but that means no plugin shapes would be drawn.
         //   2. Curves as controls and curves as a renderitem need to be delineated
         //
-        return MFrameContext::kExcludeMeshes | MFrameContext::kExcludePluginShapes;
+        return MFrameContext::kExcludeMeshes | MFrameContext::kExcludePluginShapes | kExcludeGrid;
     }
 
     MSceneFilterOption renderFilterOverride() override

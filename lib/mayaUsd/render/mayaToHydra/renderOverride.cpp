@@ -1047,27 +1047,15 @@ MStatus MtohRenderOverride::setup(const MString& destination)
     }
 
     if (_operations.empty()) {
-        // Clear and draw the grid
-
-#ifdef HDMAYA_SCENE_RENDER_DATASERVER
-		// TODO: Integrate https://git.autodesk.com/maya3d/maya-usd/commit/634000c3f7d96cd02d9c92bbd32e17fdde12c284
-		// If render item data server is enabled, do not draw full HdMayaPreRender (MSceneRender)
-		// since the wireframes and other UI would be drawn on top of the hydra meshes. 
-		// Instead simply add a clear operation.
-		auto clearOperation = new MClearOperation("HydraRenderOverride_PreScene");
-		static float clearColor[] = { 0.5f, 0.5f, 0.5f, 1.0f };
-		clearOperation->setClearColor(clearColor);
-        _operations.push_back(clearOperation);
-#else
-		// Clear and draw the grid
-		_operations.push_back(new HdMayaPreRender("HydraRenderOverride_PreScene"));
-#endif
+        // TODO: draw pre/post scene elelments with Hydra
+        // Clear and draw pre scene elelments (grid not pushed into hydra)
+        _operations.push_back(new HdMayaPreRender("HydraRenderOverride_PreScene"));
 
         // The main hydra render
         // For the data server, This also invokes scene update then sync scene delegate after scene update
         _operations.push_back(new HdMayaRender("HydraRenderOverride_DataServer", this));
 
-        // Draw scene elements (cameras, CVs, grid, shapes not pushed into hydra)
+        // Draw post scene elements (cameras, CVs, shapes not pushed into hydra)
         _operations.push_back(new HdMayaPostRender("HydraRenderOverride_PostScene"));
 
         // Draw HUD elements
