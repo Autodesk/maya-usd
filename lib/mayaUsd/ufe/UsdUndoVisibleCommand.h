@@ -31,7 +31,11 @@ class MAYAUSD_CORE_PUBLIC UsdUndoVisibleCommand : public Ufe::UndoableCommand
 public:
     typedef std::shared_ptr<UsdUndoVisibleCommand> Ptr;
 
-    UsdUndoVisibleCommand(const PXR_NS::UsdPrim& prim, bool vis);
+    // Public for std::make_shared() access, use create() instead.
+    UsdUndoVisibleCommand(
+        const PXR_NS::UsdPrim&        prim,
+        bool                          vis,
+        const PXR_NS::SdfLayerHandle& layer);
     ~UsdUndoVisibleCommand() override;
 
     // Delete the copy/move constructors assignment operators.

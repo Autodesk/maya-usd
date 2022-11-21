@@ -109,6 +109,20 @@ if (UFE_SCENE_SEGMENT_SUPPORT)
     )
 endif()
 
+if (v4_BatchOps IN_LIST UFE_PREVIEW_FEATURES)
+    message(STATUS "UFE_PREVIEW has V4 BatchOps support")
+    target_sources(${PROJECT_NAME}
+    PRIVATE
+        UsdBatchOpsHandler.cpp
+        UsdUndoDuplicateSelectionCommand.cpp
+    )
+
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_PREVIEW_BATCHOPS_SUPPORT=1
+    )
+endif()
+
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4001)
         target_sources(${PROJECT_NAME}
@@ -263,6 +277,13 @@ endif()
 if (UFE_SCENE_SEGMENT_SUPPORT)
     list(APPEND HEADERS
         ProxyShapeSceneSegmentHandler.h
+    )
+endif()
+
+if (v4_BatchOps IN_LIST UFE_PREVIEW_FEATURES)
+    list(APPEND HEADERS
+        UsdBatchOpsHandler.h
+        UsdUndoDuplicateSelectionCommand.h
     )
 endif()
 

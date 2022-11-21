@@ -313,8 +313,9 @@ const std::set<std::string> _mtlxTopoNodeSet = {
     // Conversion nodes:
     "convert",
     // Constants: they get inlined in the source.
-    "constant"
-
+    "constant",
+    // Switch, unless all inputs are connected.
+    "switch"
 };
 
 // Maps from a known Maya target color space name to the corresponding color correct category.
