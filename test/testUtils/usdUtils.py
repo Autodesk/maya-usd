@@ -164,8 +164,6 @@ def createLayeredStage(layersCount = 3):
     '''
     (psPathStr, psPath, ps) = createSimpleStage()
 
-    import os
-    print(os.environ)
     stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
     layer = stage.GetRootLayer()
     layers = [layer]
