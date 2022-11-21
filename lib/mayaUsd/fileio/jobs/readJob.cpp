@@ -195,8 +195,8 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
             mImportData.stagePopulationMask(),
             mImportData.stageInitialLoadSet());
     } else {
-        UsdStageCacheContext stageCacheContext(UsdMayaStageCache::Get(
-            mImportData.stageInitialLoadSet(), UsdMayaStageCache::ShareMode::Shared));
+        UsdStageCache        stageCache;
+        UsdStageCacheContext stageCacheContext(stageCache);
         if (mArgs.pullImportStage)
             stage = mArgs.pullImportStage;
         else
