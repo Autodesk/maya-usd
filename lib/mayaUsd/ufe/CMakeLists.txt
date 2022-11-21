@@ -82,7 +82,6 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     )
 endif()
 
-message(STATUS "UFE_LIGHTS_SUPPORT is ${UFE_LIGHTS_SUPPORT}")
 if (UFE_LIGHTS_SUPPORT)
     target_sources(${PROJECT_NAME}
         PRIVATE
@@ -96,7 +95,19 @@ if (UFE_LIGHTS_SUPPORT)
     )
 endif()
 
-message(STATUS "UFE_SCENE_SEGMENT_SUPPORT is ${UFE_SCENE_SEGMENT_SUPPORT}")
+if (UFE_MATERIALS_SUPPORT)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            UsdMaterial.cpp
+            UsdMaterialHandler.cpp
+    )
+
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_MATERIALS_SUPPORT=1
+    )
+endif()
+
 if (UFE_SCENE_SEGMENT_SUPPORT)
     target_sources(${PROJECT_NAME}
     PRIVATE
@@ -271,6 +282,13 @@ if (UFE_LIGHTS_SUPPORT)
     list(APPEND HEADERS
         UsdLight.h
         UsdLightHandler.h
+    )
+endif()
+
+if (UFE_MATERIALS_SUPPORT)
+    list(APPEND HEADERS
+        UsdMaterial.h
+        UsdMaterialHandler.h
     )
 endif()
 
