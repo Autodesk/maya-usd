@@ -47,6 +47,7 @@ constexpr auto sDrawModeAllButBBox = (MHWRender::MGeometry::DrawMode)(
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
 
 namespace {
+std::mutex        sMayaMutex;
 MayaUsdCustomData sMayaUsdCustomData;
 } // namespace
 
@@ -704,6 +705,9 @@ void MayaUsdRPrim::_ProcessDisplayLayerModes(
     const MObject&     displayLayerObj,
     DisplayLayerModes& displayLayerModes)
 {
+    // Maya's MPlug API is not multithreadable, so we need the mutex here
+    std::lock_guard<std::mutex> mutexGuard(sMayaMutex);
+
     MFnDependencyNode displayLayerNodeFn(displayLayerObj);
     MPlug             layerEnabled = displayLayerNodeFn.findPlug("enabled");
     if (!layerEnabled.asBool()) {
@@ -754,7 +758,7 @@ void MayaUsdRPrim::_PopulateDisplayLayerModes(
     auto ancestorsRange = usdPath.GetAncestorsRange();
     for (auto it = ancestorsRange.begin(); it != ancestorsRange.end(); ++it) {
         auto displayLayerObj = drawScene.GetDisplayLayer(*it);
-        if (displayLayerObj.hasFn(MFn::kDisplayLayer)) {
+        if (!displayLayerObj.isNull()) {
             _ProcessDisplayLayerModes(displayLayerObj, displayLayerModes);
         }
     }
@@ -764,7 +768,7 @@ void MayaUsdRPrim::_PopulateDisplayLayerModes(
     auto                proxyShapeDisplayLayerCount = proxyShapeDisplayLayers.length();
     for (unsigned int j = 0; j < proxyShapeDisplayLayerCount; j++) {
         auto displayLayerObj = proxyShapeDisplayLayers[j];
-        if (displayLayerObj.hasFn(MFn::kDisplayLayer)) {
+        if (!displayLayerObj.isNull()) {
             _ProcessDisplayLayerModes(displayLayerObj, displayLayerModes);
         }
     }

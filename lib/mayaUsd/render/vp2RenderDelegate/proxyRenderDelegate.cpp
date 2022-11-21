@@ -323,6 +323,7 @@ public:
     {
         // Handle path change notifications here
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
+#ifdef UFE_V4_FEATURES_AVAILABLE
         if (const auto sceneChanged = dynamic_cast<const Ufe::SceneChanged*>(&notification)) {
             if (Ufe::SceneChanged::SceneCompositeNotification == sceneChanged->opType()) {
                 const auto& compNotification
@@ -334,6 +335,23 @@ public:
                 handleSceneOp(*sceneChanged);
             }
         }
+#else
+        if (auto objectRenamed = dynamic_cast<const Ufe::ObjectRename*>(&notification)) {
+            _proxyRenderDelegate.DisplayLayerPathChanged(objectRenamed->previousPath(), objectRenamed->item()->path());
+        }
+        else if (auto objectReparented = dynamic_cast<const Ufe::ObjectReparent*>(&notification)) {
+            _proxyRenderDelegate.DisplayLayerPathChanged(objectReparented->previousPath(), objectReparented->item()->path());
+        }
+        else if (auto compositeNotification = dynamic_cast<const Ufe::SceneCompositeNotification*>(&notification)) {
+            for (const auto &op : compositeNotification->opsList())
+            {
+                if (op.opType == Ufe::SceneCompositeNotification::OpType::ObjectRename || 
+                    op.opType == Ufe::SceneCompositeNotification::OpType::ObjectReparent) {
+                    _proxyRenderDelegate.DisplayLayerPathChanged(op.path, op.item->path());
+                }
+            }
+        }
+#endif
 #endif
         // Handle selection change notifications here
         // During Maya file read, each node will be selected in turn, so we get
@@ -349,12 +367,17 @@ public:
     }
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
+#ifdef UFE_V4_FEATURES_AVAILABLE
     void handleSceneOp(const Ufe::SceneCompositeNotification::Op& op)
     {
         if (op.opType == Ufe::SceneChanged::ObjectPathChange) {
-            _proxyRenderDelegate.DisplayLayerPathChanged(op.path, op.item->path());
+            if (op.subOpType == Ufe::ObjectPathChange::ObjectReparent || 
+                op.subOpType == Ufe::ObjectPathChange::ObjectRename) {
+                _proxyRenderDelegate.DisplayLayerPathChanged(op.path, op.item->path());
+            }
         }
     }
+#endif
 #endif
 
 private:

@@ -147,6 +147,7 @@ class testVP2RenderDelegateDisplayLayers(imageUtils.ImageDiffingTestCase):
         cmds.setAttr('layer1.drawInfo.hideOnPlayback', False)
 
         # templated
+        cmds.displayRGBColor("templateActive", 1.0, 0.69, 0.69)
         cmds.setAttr('layer1.drawInfo.displayType', 1)
         self.assertSnapshotClose('%s_sphere234_templated.png' % self._testName)
         cmds.setAttr('layer1.drawInfo.displayType', 0)
