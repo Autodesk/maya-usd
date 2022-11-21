@@ -337,16 +337,18 @@ public:
         }
 #else
         if (auto objectRenamed = dynamic_cast<const Ufe::ObjectRename*>(&notification)) {
-            _proxyRenderDelegate.DisplayLayerPathChanged(objectRenamed->previousPath(), objectRenamed->item()->path());
-        }
-        else if (auto objectReparented = dynamic_cast<const Ufe::ObjectReparent*>(&notification)) {
-            _proxyRenderDelegate.DisplayLayerPathChanged(objectReparented->previousPath(), objectReparented->item()->path());
-        }
-        else if (auto compositeNotification = dynamic_cast<const Ufe::SceneCompositeNotification*>(&notification)) {
-            for (const auto &op : compositeNotification->opsList())
-            {
-                if (op.opType == Ufe::SceneCompositeNotification::OpType::ObjectRename || 
-                    op.opType == Ufe::SceneCompositeNotification::OpType::ObjectReparent) {
+            _proxyRenderDelegate.DisplayLayerPathChanged(
+                objectRenamed->previousPath(), objectRenamed->item()->path());
+        } else if (
+            auto objectReparented = dynamic_cast<const Ufe::ObjectReparent*>(&notification)) {
+            _proxyRenderDelegate.DisplayLayerPathChanged(
+                objectReparented->previousPath(), objectReparented->item()->path());
+        } else if (
+            auto compositeNotification
+            = dynamic_cast<const Ufe::SceneCompositeNotification*>(&notification)) {
+            for (const auto& op : compositeNotification->opsList()) {
+                if (op.opType == Ufe::SceneCompositeNotification::OpType::ObjectRename
+                    || op.opType == Ufe::SceneCompositeNotification::OpType::ObjectReparent) {
                     _proxyRenderDelegate.DisplayLayerPathChanged(op.path, op.item->path());
                 }
             }
@@ -371,8 +373,8 @@ public:
     void handleSceneOp(const Ufe::SceneCompositeNotification::Op& op)
     {
         if (op.opType == Ufe::SceneChanged::ObjectPathChange) {
-            if (op.subOpType == Ufe::ObjectPathChange::ObjectReparent || 
-                op.subOpType == Ufe::ObjectPathChange::ObjectRename) {
+            if (op.subOpType == Ufe::ObjectPathChange::ObjectReparent
+                || op.subOpType == Ufe::ObjectPathChange::ObjectRename) {
                 _proxyRenderDelegate.DisplayLayerPathChanged(op.path, op.item->path());
             }
         }
