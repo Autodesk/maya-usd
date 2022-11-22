@@ -19,6 +19,7 @@
 import fixturesUtils
 import mayaUtils
 import testUtils
+import ufeUtils
 import usdUtils
 import mayaUsd_createStageWithNewLayer
 
@@ -791,6 +792,91 @@ class RenameTestCase(unittest.TestCase):
         cmds.undo()
 
         testPaths(self, shapeStage, "pCube1")
+
+    def testUfeRenameCommandAPI(self):
+        '''Test that the rename command can be invoked using the 3 known APIs.'''
+
+        testFile = testUtils.getTestScene('MaterialX', 'BatchOpsTestScene.usda')
+        shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
+
+        # Test NoExecute API:
+        geomItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane1')
+        self.assertIsNotNone(geomItem)
+
+        renameCmd = ufe.SceneItemOps.sceneItemOps(geomItem).renameItemCmdNoExecute(ufe.PathComponent("carotte"))
+        self.assertIsNotNone(renameCmd)
+        renameCmd.execute()
+
+        nonExistentItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane1')
+        self.assertIsNone(nonExistentItem)
+
+        carotteItem = ufeUtils.createUfeSceneItem(shapeNode, '/carotte')
+        self.assertIsNotNone(carotteItem)
+        self.assertEqual(carotteItem, renameCmd.sceneItem)
+
+        renameCmd.undo()
+
+        geomItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane1')
+        self.assertIsNotNone(geomItem)
+        nonExistentItem = ufeUtils.createUfeSceneItem(shapeNode, '/carotte')
+        self.assertIsNone(nonExistentItem)
+
+        renameCmd.redo()
+
+        nonExistentItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane1')
+        self.assertIsNone(nonExistentItem)
+
+        carotteItem = ufeUtils.createUfeSceneItem(shapeNode, '/carotte')
+        self.assertIsNotNone(carotteItem)
+        self.assertEqual(carotteItem, renameCmd.sceneItem)
+
+        renameCmd.undo()
+
+        # Test Exec but undoable API:
+        geomItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane1')
+        self.assertIsNotNone(geomItem)
+
+        renameCmd = ufe.SceneItemOps.sceneItemOps(geomItem).renameItemCmd(ufe.PathComponent("carotte"))
+        self.assertIsNotNone(renameCmd)
+
+        nonExistentItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane1')
+        self.assertIsNone(nonExistentItem)
+
+        carotteItem = ufeUtils.createUfeSceneItem(shapeNode, '/carotte')
+        self.assertIsNotNone(carotteItem)
+        self.assertEqual(carotteItem, renameCmd.item)
+
+        renameCmd.undoableCommand.undo()
+
+        geomItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane1')
+        self.assertIsNotNone(geomItem)
+        nonExistentItem = ufeUtils.createUfeSceneItem(shapeNode, '/carotte')
+        self.assertIsNone(nonExistentItem)
+
+        renameCmd.undoableCommand.redo()
+
+        nonExistentItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane1')
+        self.assertIsNone(nonExistentItem)
+
+        carotteItem = ufeUtils.createUfeSceneItem(shapeNode, '/carotte')
+        self.assertIsNotNone(carotteItem)
+        self.assertEqual(carotteItem, renameCmd.item)
+
+        renameCmd.undoableCommand.undo()
+
+        # Test non-undoable API:
+        geomItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane1')
+        self.assertIsNotNone(geomItem)
+
+        renamedItem = ufe.SceneItemOps.sceneItemOps(geomItem).renameItem(ufe.PathComponent("carotte"))
+        self.assertIsNotNone(renameCmd)
+
+        nonExistentItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane1')
+        self.assertIsNone(nonExistentItem)
+
+        carotteItem = ufeUtils.createUfeSceneItem(shapeNode, '/carotte')
+        self.assertIsNotNone(carotteItem)
+        self.assertEqual(carotteItem, renamedItem)
 
 
 if __name__ == '__main__':
