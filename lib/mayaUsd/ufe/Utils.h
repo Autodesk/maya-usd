@@ -150,14 +150,6 @@ PXR_NS::UsdTimeCode getTime(const Ufe::Path& path);
 MAYAUSD_CORE_PUBLIC
 PXR_NS::TfTokenVector getProxyShapePurposes(const Ufe::Path& path);
 
-//! Check if an attribute value is allowed to be changed.
-//! \return True, if the attribute value is allowed to be edited in the stage's local Layer Stack.
-MAYAUSD_CORE_PUBLIC
-bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMsg = nullptr);
-
-MAYAUSD_CORE_PUBLIC
-bool isAttributeEditAllowed(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName);
-
 #ifdef UFE_V2_FEATURES_AVAILABLE
 MAYAUSD_CORE_PUBLIC
 Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::UsdAttribute& usdAttr);
@@ -171,13 +163,6 @@ PXR_NS::SdfValueTypeName ufeTypeToUsd(const Ufe::Attribute::Type ufeType);
 PXR_NS::VtValue
 vtValueFromString(const PXR_NS::SdfValueTypeName& typeName, const std::string& strValue);
 #endif
-
-//! Check if the edit target in the stage is allowed to be changed.
-//! \return True, if the edit target layer in the stage is allowed to be changed
-MAYAUSD_CORE_PUBLIC
-bool isEditTargetLayerModifiable(
-    const PXR_NS::UsdStageWeakPtr stage,
-    std::string*                  errMsg = nullptr);
 
 //! Send notification for data model changes
 template <class T>
@@ -263,6 +248,60 @@ public:
 private:
     mutable std::map<PXR_NS::SdfPath, MObject> _primToLayerMap;
 };
+
+//------------------------------------------------------------------------------
+// Verify edit restrictions.
+//------------------------------------------------------------------------------
+
+//! Check if an attribute value is allowed to be changed.
+//! \return True, if the attribute value is allowed to be edited in the stage's local Layer Stack.
+MAYAUSD_CORE_PUBLIC
+bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMsg = nullptr);
+
+MAYAUSD_CORE_PUBLIC
+bool isAttributeEditAllowed(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName);
+
+//! Check if a prim metadata is allowed to be changed.
+//! Can check a specific key in a metadata dictionary, optionally, if keyPaty is not empty.
+//! \return True, if the metadata value is allowed to be edited in the stage's local Layer Stack.
+MAYAUSD_CORE_PUBLIC
+bool isPrimMetadataEditAllowed(
+    const PXR_NS::UsdPrim& prim,
+    const PXR_NS::TfToken& metadataName,
+    const PXR_NS::TfToken& keyPath,
+    std::string*           errMsg);
+
+//! Check if a property metadata is allowed to be changed.
+//! Can check a specific key in a metadata dictionary, optionally, if keyPaty is not empty.
+//! \return True, if the metadata value is allowed to be edited in the stage's local Layer Stack.
+MAYAUSD_CORE_PUBLIC
+bool isPropertyMetadataEditAllowed(
+    const PXR_NS::UsdPrim& prim,
+    const PXR_NS::TfToken& propName,
+    const PXR_NS::TfToken& metadataName,
+    const PXR_NS::TfToken& keyPath,
+    std::string*           errMsg);
+
+//! Apply restriction rules on the given prim
+MAYAUSD_CORE_PUBLIC
+void applyCommandRestriction(
+    const PXR_NS::UsdPrim& prim,
+    const std::string&     commandName,
+    bool                   allowStronger = false);
+
+//! Apply restriction rules on the given prim
+MAYAUSD_CORE_PUBLIC
+bool applyCommandRestrictionNoThrow(
+    const PXR_NS::UsdPrim& prim,
+    const std::string&     commandName,
+    bool                   allowStronger = false);
+
+//! Check if the edit target in the stage is allowed to be changed.
+//! \return True, if the edit target layer in the stage is allowed to be changed
+MAYAUSD_CORE_PUBLIC
+bool isEditTargetLayerModifiable(
+    const PXR_NS::UsdStageWeakPtr stage,
+    std::string*                  errMsg = nullptr);
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
