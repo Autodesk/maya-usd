@@ -99,10 +99,10 @@ void UsdMayaTransformWriter::_ComputeXformOps(
             continue;
         }
 
-        GfVec3d    value = animChannel.defValue;
-        GfMatrix4d matrix = animChannel.defMatrix;
-        bool       hasAnimated = false;
-        bool       hasStatic = false;
+        GfVec3d            value = animChannel.defValue;
+        GfMatrix4d         matrix = animChannel.defMatrix;
+        bool               hasAnimated = false;
+        bool               hasStatic = false;
         const unsigned int plugCount = animChannel.isMatrix ? 1u : 3u;
         for (unsigned int i = 0u; i < plugCount; ++i) {
             if (animChannel.sampleType[i] == _SampleType::Animated) {
@@ -217,7 +217,7 @@ bool UsdMayaTransformWriter::_GatherAnimChannel(
     suffixes.append(yName);
     suffixes.append(zName);
 
-    GfVec3d nullValue(opType == _XformType::Scale ? 1.0 : 0.0);
+    GfVec3d            nullValue(opType == _XformType::Scale ? 1.0 : 0.0);
     const unsigned int plugCount = isMatrix ? 1u : 3u;
     for (unsigned int i = 0; i < plugCount; i++) {
         // Find the plug and retrieve the data as the channel default value. It
