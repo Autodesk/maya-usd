@@ -64,7 +64,11 @@ namespace ufe {
 UsdUndoRenameCommand::UsdUndoRenameCommand(
     const UsdSceneItem::Ptr&  srcItem,
     const Ufe::PathComponent& newName)
+#if (UFE_PREVIEW_VERSION_NUM >= 4041)
+    : Ufe::SceneItemResultUndoableCommand()
+#else
     : Ufe::UndoableCommand()
+#endif
     , _ufeSrcItem(srcItem)
     , _ufeDstItem(nullptr)
     , _stage(_ufeSrcItem->prim().GetStage())
