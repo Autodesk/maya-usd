@@ -60,21 +60,16 @@ class BatchOpsHandlerTestCase(unittest.TestCase):
         self.assertIsNotNone(batchOpsHandler)
 
         # Duplicating without batching means the new plane will not see the new material:
-        dGeom = ufe.SceneItemOps.sceneItemOps(geomItem).duplicateItemCmdNoExecute()
-        dGeom.execute()
+        dGeom = ufe.SceneItemOps.sceneItemOps(geomItem).duplicateItemCmd()
         dMat = ufe.SceneItemOps.sceneItemOps(matItem).duplicateItemCmd()
 
-        dGeomPrim = usdUtils.getPrimFromSceneItem(dGeom.sceneItem)
-        self.assertEqual(dGeomPrim.GetPath(), Sdf.Path("/pPlane7"))
+        dGeomPrim = usdUtils.getPrimFromSceneItem(dGeom.item)
         dGeomBindAPI = UsdShade.MaterialBindingAPI(dGeomPrim)
         # Points to original ss3SG, we would like ss3SG1
         self.assertEqual(dGeomBindAPI.GetDirectBinding().GetMaterialPath(), Sdf.Path("/mtl/ss3SG"))
 
         dMat.undoableCommand.undo()
-        dGeom.undo()
-
-        undoneGeomItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane7')
-        self.assertIsNone(undoneGeomItem)
+        dGeom.undoableCommand.undo()
 
         sel = ufe.Selection()
         sel.append(geomItem)
