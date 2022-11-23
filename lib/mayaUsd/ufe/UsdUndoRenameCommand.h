@@ -26,7 +26,11 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief UsdUndoRenameCommand
+#if (UFE_PREVIEW_VERSION_NUM >= 4041)
+class MAYAUSD_CORE_PUBLIC UsdUndoRenameCommand : public Ufe::SceneItemResultUndoableCommand
+#else
 class MAYAUSD_CORE_PUBLIC UsdUndoRenameCommand : public Ufe::UndoableCommand
+#endif
 {
 public:
     typedef std::shared_ptr<UsdUndoRenameCommand> Ptr;
@@ -45,6 +49,9 @@ public:
     create(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName);
 
     UsdSceneItem::Ptr renamedItem() const;
+#if (UFE_PREVIEW_VERSION_NUM >= 4041)
+    Ufe::SceneItem::Ptr sceneItem() const override { return renamedItem(); }
+#endif
 
 private:
     bool renameRedo();

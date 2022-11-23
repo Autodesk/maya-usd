@@ -41,7 +41,11 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(const UsdSceneItem::Ptr& srcItem)
+#if (UFE_PREVIEW_VERSION_NUM >= 4041)
+    : Ufe::SceneItemResultUndoableCommand()
+#else
     : Ufe::UndoableCommand()
+#endif
     , _ufeSrcPath(srcItem->path())
 {
     auto srcPrim = srcItem->prim();

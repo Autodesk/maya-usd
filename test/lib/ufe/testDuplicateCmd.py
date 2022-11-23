@@ -33,6 +33,7 @@ import mayaUsd.ufe
 import ufe
 
 import unittest
+import os
 
 def firstSubLayer(context, routingData):
     prim = context.get('prim')
@@ -398,6 +399,71 @@ class DuplicateCmdTestCase(unittest.TestCase):
         sublayer01 = Sdf.Find(subLayerId)
         self.assertIsNotNone(sublayer01)
         self.assertIsNotNone(sublayer01.GetPrimAtPath('/A1/B'))
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4041', 'Test only available in UFE preview version 0.4.41 and greater')
+    def testUfeDuplicateCommandAPI(self):
+        '''Test that the duplicate command can be invoked using the 3 known APIs.'''
+
+        testFile = testUtils.getTestScene('MaterialX', 'BatchOpsTestScene.usda')
+        shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
+
+        geomItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane1')
+        self.assertIsNotNone(geomItem)
+
+        # Test NoExecute API:
+        duplicateCmd = ufe.SceneItemOps.sceneItemOps(geomItem).duplicateItemCmdNoExecute()
+        self.assertIsNotNone(duplicateCmd)
+        duplicateCmd.execute()
+
+        duplicateItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane7')
+        self.assertIsNotNone(duplicateItem)
+        self.assertEqual(duplicateItem, duplicateCmd.sceneItem)
+
+        duplicateCmd.undo()
+
+        nonExistentItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane7')
+        self.assertIsNone(nonExistentItem)
+
+        duplicateCmd.redo()
+
+        duplicateItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane7')
+        self.assertIsNotNone(duplicateItem)
+        self.assertEqual(duplicateItem, duplicateCmd.sceneItem)
+
+        duplicateCmd.undo()
+
+        # Test Exec but undoable API:
+        duplicateCmd = ufe.SceneItemOps.sceneItemOps(geomItem).duplicateItemCmd()
+        self.assertIsNotNone(duplicateCmd)
+
+        duplicateItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane7')
+        self.assertIsNotNone(duplicateItem)
+        self.assertEqual(duplicateItem, duplicateCmd.item)
+
+        duplicateCmd.undoableCommand.undo()
+
+        nonExistentItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane7')
+        self.assertIsNone(nonExistentItem)
+
+        duplicateCmd.undoableCommand.redo()
+
+        duplicateItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane7')
+        self.assertIsNotNone(duplicateItem)
+        self.assertEqual(duplicateItem, duplicateCmd.item)
+
+        duplicateCmd.undoableCommand.undo()
+
+        # Test non-undoable API:
+        geomItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane1')
+        self.assertIsNotNone(geomItem)
+
+        duplicatedItem = ufe.SceneItemOps.sceneItemOps(geomItem).duplicateItem()
+        self.assertIsNotNone(duplicateCmd)
+
+        plane7Item = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane7')
+        self.assertIsNotNone(plane7Item)
+        self.assertEqual(plane7Item, duplicatedItem)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
