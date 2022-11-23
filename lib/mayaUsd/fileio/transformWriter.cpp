@@ -103,7 +103,8 @@ void UsdMayaTransformWriter::_ComputeXformOps(
         GfMatrix4d matrix = animChannel.defMatrix;
         bool       hasAnimated = false;
         bool       hasStatic = false;
-        for (unsigned int i = 0u; i < 3u; ++i) {
+        const unsigned int plugCount = animChannel.isMatrix ? 1u : 3u;
+        for (unsigned int i = 0u; i < plugCount; ++i) {
             if (animChannel.sampleType[i] == _SampleType::Animated) {
                 if (animChannel.isMatrix) {
                     matrix = animChannel.GetSourceData(i).Get<GfMatrix4d>();
@@ -217,7 +218,8 @@ bool UsdMayaTransformWriter::_GatherAnimChannel(
     suffixes.append(zName);
 
     GfVec3d nullValue(opType == _XformType::Scale ? 1.0 : 0.0);
-    for (unsigned int i = 0; i < 3; i++) {
+    const unsigned int plugCount = isMatrix ? 1u : 3u;
+    for (unsigned int i = 0; i < plugCount; i++) {
         // Find the plug and retrieve the data as the channel default value. It
         // won't be updated if the channel is NOT ANIMATED
         if (isMatrix) {

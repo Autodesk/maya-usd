@@ -84,7 +84,7 @@ private:
     struct _AnimChannel
     {
         MPlug       plug[3];
-        _SampleType sampleType[3];
+        _SampleType sampleType[3] = { _SampleType::None, _SampleType::None, _SampleType::None };
         // defValue should always be in "maya" space.  that is, if it's a
         // rotation it should be radians, not degrees. (This is done so we only
         // need to do conversion in one place, and so that, if we need to do
@@ -92,12 +92,12 @@ private:
         // MEulerRotation).
         GfVec3d                   defValue;
         GfMatrix4d                defMatrix;
-        _XformType                opType;
-        UsdGeomXformOp::Type      usdOpType;
-        UsdGeomXformOp::Precision precision;
+        _XformType                opType = _XformType::Transform;
+        UsdGeomXformOp::Type      usdOpType = UsdGeomXformOp::TypeInvalid;
+        UsdGeomXformOp::Precision precision = UsdGeomXformOp::PrecisionFloat;
         TfToken                   suffix;
-        bool                      isInverse;
-        bool                      isMatrix;
+        bool                      isInverse = false;
+        bool                      isMatrix = false;
         UsdGeomXformOp            op;
 
         // Retrieve the value from the Maya attribute based on if it is a matrix.
