@@ -214,7 +214,12 @@ protected:
     };
 
     static void
-    _PopulateDisplayLayerModes(const MString& pathString, DisplayLayerModes& displayLayerModes);
+    _ProcessDisplayLayerModes(const MObject& displayLayerObj, DisplayLayerModes& displayLayerModes);
+
+    static void _PopulateDisplayLayerModes(
+        const SdfPath&       usdPath,
+        DisplayLayerModes&   displayLayerModes,
+        ProxyRenderDelegate& drawScene);
 
     static HdReprSharedPtr _FindRepr(const ReprVector& reprs, const TfToken& reprToken);
 
@@ -260,7 +265,7 @@ protected:
         ReprVector const&  reprs,
         TfToken const&     renderTag);
 
-    void _SyncDisplayLayerModes();
+    void _SyncDisplayLayerModes(SdfPath const& id);
     void _SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned int instanceCount);
 
     bool _ShouldSkipInstance(unsigned int usdInstanceId, const TfToken& reprToken) const;
@@ -339,6 +344,7 @@ protected:
     DisplayLayerModes              _displayLayerModes;
     std::vector<DisplayLayerModes> _displayLayerModesInstanced;
     uint64_t                       _displayLayerModesFrame { 0 };
+    uint64_t                       _displayLayerModesInstancedFrame { 0 };
 
     // forced representations runtime state
     bool     _needForcedBBox = false;
