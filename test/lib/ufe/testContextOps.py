@@ -27,6 +27,7 @@ from pxr import UsdGeom
 from pxr import UsdShade
 from pxr import Sdf
 from pxr import Usd
+from pxr import Vt
 
 from maya import cmds
 from maya import standalone
@@ -157,6 +158,14 @@ class ContextOpsTestCase(unittest.TestCase):
         contextItemStrings = [c.item for c in contextItems]
         self.assertIn('Variant Sets', contextItemStrings)
 
+        # Add an attribute in the session layer to see if it affects
+        # switching variant.
+        stage = self.ball35Prim.GetStage()
+        stage.SetEditTarget(stage.GetSessionLayer())
+        self.ball35Prim.GetAttribute("xformOpOrder").Set(Vt.TokenArray("translate"))
+
+        stage.SetEditTarget(stage.GetRootLayer())
+
         # Initial shadingVariant is "Ball_8"
         contextItems = self.contextOps.getItems(
             ['Variant Sets', 'shadingVariant'])
@@ -187,7 +196,6 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(shadingVariantOnPrim(), 'Cue')
 
         # Add a lower, weaker layer.
-        stage = self.ball35Prim.GetStage()
         rootLayer = stage.GetRootLayer()
         newLayerName = 'Layer_1'
         usdFormat = Sdf.FileFormat.FindByExtension('usd')

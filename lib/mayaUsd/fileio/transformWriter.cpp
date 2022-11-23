@@ -123,9 +123,9 @@ void UsdMayaTransformWriter::_ComputeXformOps(
 
             if (animChannel.opType == _XformType::Rotate) {
                 if (hasAnimated && eulerFilter) {
-                    const TfToken& lookupName = animChannel.opName.IsEmpty()
+                    const TfToken& lookupName = animChannel.suffix.IsEmpty()
                         ? UsdGeomXformOp::GetOpTypeToken(animChannel.usdOpType)
-                        : animChannel.opName;
+                        : animChannel.suffix;
                     auto findResult = previousRotates->find(lookupName);
                     if (findResult == previousRotates->end()) {
                         MEulerRotation::RotationOrder rotOrder
@@ -160,21 +160,21 @@ void UsdMayaTransformWriter::_ComputeXformOps(
 bool UsdMayaTransformWriter::_GatherAnimChannel(
     const _XformType           opType,
     const MFnTransform&        iTrans,
-    const TfToken&             parentName,
+    const TfToken&             mayaAttrName,
     const MString&             xName,
     const MString&             yName,
     const MString&             zName,
     std::vector<_AnimChannel>* oAnimChanList,
     const bool                 isWritingAnimation,
-    const bool                 setOpName)
+    const bool                 useSuffix)
 {
     _AnimChannel chan;
     chan.opType = opType;
     chan.isInverse = false;
-    if (setOpName) {
-        chan.opName = parentName;
+    if (useSuffix) {
+        chan.suffix = mayaAttrName;
     }
-    MString parentNameMStr = parentName.GetText();
+    MString mayaAttrNameMStr = mayaAttrName.GetText();
 
     // We default to single precision (later we set the main translate op and
     // shear to double)
@@ -185,14 +185,14 @@ bool UsdMayaTransformWriter::_GatherAnimChannel(
     // this is to handle the case where there is a connection to the parent
     // plug but not to the child plugs, if the connection is there and you are
     // not forcing static, then all of the children are considered animated
-    int parentSample = UsdMayaUtil::getSampledType(iTrans.findPlug(parentNameMStr), false);
+    int parentSample = UsdMayaUtil::getSampledType(iTrans.findPlug(mayaAttrNameMStr), false);
 
     // Determine what plug are needed based on default value & being
     // connected/animated
     MStringArray channels;
-    channels.append(parentNameMStr + xName);
-    channels.append(parentNameMStr + yName);
-    channels.append(parentNameMStr + zName);
+    channels.append(mayaAttrNameMStr + xName);
+    channels.append(mayaAttrNameMStr + yName);
+    channels.append(mayaAttrNameMStr + zName);
 
     GfVec3d nullValue(opType == _XformType::Scale ? 1.0 : 0.0);
     for (unsigned int i = 0; i < 3; i++) {
@@ -222,13 +222,13 @@ bool UsdMayaTransformWriter::_GatherAnimChannel(
         } else if (opType == _XformType::Translate) {
             chan.usdOpType = UsdGeomXformOp::TypeTranslate;
             // The main translate is set to double precision
-            if (parentName == UsdMayaXformStackTokens->translate) {
+            if (mayaAttrName == UsdMayaXformStackTokens->translate) {
                 chan.precision = UsdGeomXformOp::PrecisionDouble;
             }
         } else if (opType == _XformType::Rotate) {
             chan.usdOpType = UsdGeomXformOp::TypeRotateXYZ;
             // Rotation Order ONLY applies to the "rotate" attribute
-            if (parentName == UsdMayaXformStackTokens->rotate) {
+            if (mayaAttrName == UsdMayaXformStackTokens->rotate) {
                 switch (iTrans.rotationOrder()) {
                 case MTransformationMatrix::kYZX:
                     chan.usdOpType = UsdGeomXformOp::TypeRotateYZX;
@@ -275,14 +275,14 @@ void UsdMayaTransformWriter::_MakeAnimChannelsUnique(const UsdGeomXformable& usd
         // seems both generous. Having more is highly improbable.
         for (int suffixIndex = 1; suffixIndex < 1000; ++suffixIndex) {
             TfToken channelOpName
-                = UsdGeomXformOp::GetOpName(channel.usdOpType, channel.opName, channel.isInverse);
+                = UsdGeomXformOp::GetOpName(channel.usdOpType, channel.suffix, channel.isInverse);
             if (existingOps.count(channelOpName) == 0) {
                 existingOps.emplace(channelOpName);
                 break;
             }
             std::ostringstream oss;
             oss << "channel" << suffixIndex;
-            channel.opName = TfToken(oss.str());
+            channel.suffix = TfToken(oss.str());
         }
     }
 }
@@ -395,7 +395,7 @@ void UsdMayaTransformWriter::_PushTransformStack(
         _AnimChannel chan;
         chan.usdOpType = UsdGeomXformOp::TypeTranslate;
         chan.precision = UsdGeomXformOp::PrecisionFloat;
-        chan.opName = UsdMayaXformStackTokens->rotatePivot;
+        chan.suffix = UsdMayaXformStackTokens->rotatePivot;
         chan.isInverse = true;
         _animChannels.push_back(chan);
         rotPivotINVIdx = _animChannels.size() - 1;
@@ -462,7 +462,7 @@ void UsdMayaTransformWriter::_PushTransformStack(
         _AnimChannel chan;
         chan.usdOpType = UsdGeomXformOp::TypeTranslate;
         chan.precision = UsdGeomXformOp::PrecisionFloat;
-        chan.opName = UsdMayaXformStackTokens->scalePivot;
+        chan.suffix = UsdMayaXformStackTokens->scalePivot;
         chan.isInverse = true;
         _animChannels.push_back(chan);
         scalePivotINVIdx = _animChannels.size() - 1;
@@ -507,8 +507,8 @@ void UsdMayaTransformWriter::_PushTransformStack(
             // since no other ops have been found
             //
             // NOTE: scalePivotIdx > rotPivotINVIdx
-            _animChannels[rotPivotIdx].opName = UsdMayaXformStackTokens->pivot;
-            _animChannels[scalePivotINVIdx].opName = UsdMayaXformStackTokens->pivot;
+            _animChannels[rotPivotIdx].suffix = UsdMayaXformStackTokens->pivot;
+            _animChannels[scalePivotINVIdx].suffix = UsdMayaXformStackTokens->pivot;
             _animChannels.erase(_animChannels.begin() + scalePivotIdx);
             _animChannels.erase(_animChannels.begin() + rotPivotINVIdx);
         }
@@ -525,7 +525,7 @@ void UsdMayaTransformWriter::_WriteChannelsXformOps(const UsdGeomXformable& usdX
     {
         _AnimChannel& animChan = *iter;
         animChan.op = usdXformable.AddXformOp(
-            animChan.usdOpType, animChan.precision, animChan.opName, animChan.isInverse);
+            animChan.usdOpType, animChan.precision, animChan.suffix, animChan.isInverse);
         if (!animChan.op) {
             TF_CODING_ERROR("Could not add xform op");
             animChan.op = UsdGeomXformOp();

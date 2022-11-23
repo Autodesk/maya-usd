@@ -408,11 +408,11 @@ public:
         , _oldSelection(_varSet.GetVariantSelection())
         , _newSelection(itemPath[2])
     {
-        const bool allowStronger = true;
-        MayaUsd::ufe::applyCommandRestriction(
-            prim,
-            "set variant set " + _varSet.GetName() + " to variant " + _newSelection + " on",
-            allowStronger);
+        std::string errMsg;
+        if (!MayaUsd::ufe::isPrimMetadataEditAllowed(
+                prim, SdfFieldKeys->VariantSelection, TfToken(_varSet.GetName()), &errMsg)) {
+            throw std::runtime_error(errMsg.c_str());
+        }
     }
 
     void undo() override

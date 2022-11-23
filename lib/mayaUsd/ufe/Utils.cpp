@@ -23,6 +23,7 @@
 #include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/utils/editability.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsdUtils/util.h>
 
 #include <pxr/base/tf/hashset.h>
 #include <pxr/base/tf/stringUtils.h>
@@ -32,6 +33,8 @@
 #include <pxr/usd/sdf/tokens.h>
 #include <pxr/usd/sdr/shaderProperty.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/primCompositionQuery.h>
+#include <pxr/usd/usd/resolver.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/pointInstancer.h>
 #include <pxr/usd/usdGeom/tokens.h>
@@ -442,6 +445,267 @@ TfTokenVector getProxyShapePurposes(const Ufe::Path& path)
     }
 
     return purposes;
+}
+
+namespace {
+
+SdfLayerHandle getStrongerLayer(
+    const SdfLayerHandle& root,
+    const SdfLayerHandle& layer1,
+    const SdfLayerHandle& layer2)
+{
+    if (layer1 == layer2)
+        return layer1;
+
+    if (root == layer1)
+        return layer1;
+
+    if (root == layer2)
+        return layer2;
+
+    for (auto path : root->GetSubLayerPaths()) {
+        SdfLayerRefPtr subLayer = SdfLayer::FindOrOpen(path);
+        if (subLayer) {
+            SdfLayerHandle stronger = getStrongerLayer(subLayer, layer1, layer2);
+            if (!stronger.IsInvalid()) {
+                return stronger;
+            }
+        }
+    }
+
+    return SdfLayerHandle();
+}
+
+SdfLayerHandle getStrongerLayer(
+    const UsdStagePtr&    stage,
+    const SdfLayerHandle& targetLayer,
+    const SdfLayerHandle& topAuthoredLayer)
+{
+    // Session Layer is the strongest in the stage, so check its hierarchy first
+    auto strongerLayer = getStrongerLayer(stage->GetSessionLayer(), targetLayer, topAuthoredLayer);
+    if (strongerLayer == targetLayer) {
+        return targetLayer;
+    } else if (strongerLayer == topAuthoredLayer) {
+        return topAuthoredLayer;
+    }
+
+    // If none of the two layers was found in the Session Layer hierarchy,
+    // then proceed to the stage's general layer hierarchy
+    return getStrongerLayer(stage->GetRootLayer(), targetLayer, topAuthoredLayer);
+}
+
+bool allowedInStrongerLayer(
+    const UsdPrim&                 prim,
+    const SdfPrimSpecHandleVector& primStack,
+    bool                           allowStronger)
+{
+    // If the flag to allow edits in a stronger layer if off, then it is not allowed.
+    if (!allowStronger)
+        return false;
+
+    // If allowed, verify if the target layer is stronger than any existing layer with an opinion.
+    auto stage = prim.GetStage();
+    auto targetLayer = stage->GetEditTarget().GetLayer();
+    auto topLayer = primStack.front()->GetLayer();
+
+    return getStrongerLayer(stage, targetLayer, topLayer) == targetLayer;
+}
+
+} // namespace
+void applyCommandRestriction(
+    const UsdPrim&     prim,
+    const std::string& commandName,
+    bool               allowStronger)
+{
+    // return early if prim is the pseudo-root.
+    // this is a special case and could happen when one tries to drag a prim under the
+    // proxy shape in outliner. Also note if prim is the pseudo-root, no def primSpec will be found.
+    if (prim.IsPseudoRoot()) {
+        return;
+    }
+
+    auto        primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
+    auto        primStack = prim.GetPrimStack();
+    std::string layerDisplayName;
+    std::string message { "It is defined on another layer" };
+
+    // iterate over the prim stack, starting at the highest-priority layer.
+    for (const auto& spec : primStack) {
+        const auto& layerName = spec->GetLayer()->GetDisplayName();
+
+        // skip if there is no primSpec for the selected prim in the current stage's local layer.
+        if (!primSpec) {
+            // add "," separator for multiple layers
+            if (!layerDisplayName.empty()) {
+                layerDisplayName.append(",");
+            }
+            layerDisplayName.append("[" + layerName + "]");
+            continue;
+        }
+
+        // one reason for skipping the reference is to not clash
+        // with the over that may be created in the stage's sessionLayer.
+        // another reason is that one should be able to edit a referenced prim that
+        // either as over/def as long as it has a primSpec in the selected edit target layer.
+        if (spec->HasReferences()) {
+            break;
+        }
+
+        // if exists a def/over specs
+        if (spec->GetSpecifier() == SdfSpecifierDef || spec->GetSpecifier() == SdfSpecifierOver) {
+            // if spec exists in another layer ( e.g sessionLayer or layer other than stage's local
+            // layers ).
+            if (primSpec->GetLayer() != spec->GetLayer()) {
+                layerDisplayName.append("[" + layerName + "]");
+                message = "It has a stronger opinion on another layer";
+                break;
+            }
+            continue;
+        }
+    }
+
+    // Per design request, we need a more clear message to indicate that renaming a prim inside a
+    // variantset is not allowed. This restriction was already caught in the above loop but the
+    // message was a bit generic.
+    UsdPrimCompositionQuery query(prim);
+    for (const auto& compQueryArc : query.GetCompositionArcs()) {
+        if (!primSpec && PcpArcTypeVariant == compQueryArc.GetArcType()) {
+            if (allowedInStrongerLayer(prim, primStack, allowStronger))
+                return;
+            std::string err = TfStringPrintf(
+                "Cannot %s [%s] because it is defined inside the variant composition arc %s.",
+                commandName.c_str(),
+                prim.GetName().GetString().c_str(),
+                layerDisplayName.c_str());
+            throw std::runtime_error(err.c_str());
+        }
+    }
+
+    if (!layerDisplayName.empty()) {
+        if (allowedInStrongerLayer(prim, primStack, allowStronger))
+            return;
+        std::string err = TfStringPrintf(
+            "Cannot %s [%s]. %s. Please set %s as the target layer to proceed.",
+            commandName.c_str(),
+            prim.GetName().GetString().c_str(),
+            message.c_str(),
+            layerDisplayName.c_str());
+        throw std::runtime_error(err.c_str());
+    }
+}
+
+bool applyCommandRestrictionNoThrow(
+    const UsdPrim&     prim,
+    const std::string& commandName,
+    bool               allowStronger)
+{
+    try {
+        applyCommandRestriction(prim, commandName, allowStronger);
+    } catch (const std::exception& e) {
+        std::string errMsg(e.what());
+        TF_WARN(errMsg);
+        return false;
+    }
+    return true;
+}
+
+bool isPrimMetadataEditAllowed(
+    const UsdPrim&         prim,
+    const TfToken&         metadataName,
+    const PXR_NS::TfToken& keyPath,
+    std::string*           errMsg)
+{
+    return isPropertyMetadataEditAllowed(prim, TfToken(), metadataName, keyPath, errMsg);
+}
+
+bool isPropertyMetadataEditAllowed(
+    const UsdPrim&         prim,
+    const PXR_NS::TfToken& propName,
+    const TfToken&         metadataName,
+    const PXR_NS::TfToken& keyPath,
+    std::string*           errMsg)
+{
+    // If the intended target layer is not modifiable as a whole,
+    // then no metadata edits are allowed at all.
+    const UsdStagePtr& stage = prim.GetStage();
+    if (!isEditTargetLayerModifiable(stage, errMsg))
+        return false;
+
+    // Find the highest layer that has the metadata authored. The prim
+    // expanded PCP index, which contains all locations that contribute
+    // to the prim, is scanned for the first metadata authoring.
+    //
+    // Note: as far as we know, there are no USD API to retrieve the list
+    //       of authored locations for a metadata, unlike properties.
+    //
+    //       The code here is inspired by code from USD, according to
+    //       the following call sequence:
+    //          - UsdObject::GetAllAuthoredMetadata()
+    //          - UsdStage::_GetAllMetadata()
+    //          - UsdStage::_GetMetadataImpl()
+    //          - UsdStage::_GetGeneralMetadataImpl()
+    //          - Usd_Resolver class
+    //          - _ComposeGeneralMetadataImpl()
+    //          - ExistenceComposer::ConsumeAuthored()
+    //          - SdfLayer::HasFieldDictKey()
+    //
+    //          - UsdPrim::GetVariantSets
+    //          - UsdVariantSet::GetVariantSelection()
+    SdfLayerHandle topAuthoredLayer;
+    {
+        const SdfPath       primPath = prim.GetPath();
+        const PcpPrimIndex& primIndex = prim.ComputeExpandedPrimIndex();
+
+        // We need special processing for variant selection.
+        //
+        // Note: we would also need spacial processing for reference and payload,
+        //       but let's postpone them until we actually need it since it would
+        //       add yet more complexities.
+        const bool isVariantSelection = (metadataName == SdfFieldKeys->VariantSelection);
+
+        // Note: specPath is important even if prop name is empty, it then means
+        //       a metadata on the prim itself.
+        Usd_Resolver resolver(&primIndex);
+        SdfPath      specPath = resolver.GetLocalPath(propName);
+
+        for (bool isNewNode = false; resolver.IsValid(); isNewNode = resolver.NextLayer()) {
+            if (isNewNode)
+                specPath = resolver.GetLocalPath(propName);
+
+            // Consume an authored opinion here, if one exists.
+            SdfLayerRefPtr const& layer = resolver.GetLayer();
+            const bool            gotOpinion = keyPath.IsEmpty() || isVariantSelection
+                ? layer->HasField(specPath, metadataName)
+                : layer->HasFieldDictKey(specPath, metadataName, keyPath);
+
+            if (gotOpinion) {
+                if (isVariantSelection) {
+                    using SelMap = SdfVariantSelectionMap;
+                    const SelMap variantSel = layer->GetFieldAs<SelMap>(specPath, metadataName);
+                    if (variantSel.count(keyPath) == 0) {
+                        continue;
+                    }
+                }
+                topAuthoredLayer = layer;
+                break;
+            }
+        }
+    }
+
+    // Get the layer where we intend to author a new opinion.
+    const UsdEditTarget& editTarget = stage->GetEditTarget();
+    const SdfLayerHandle targetLayer = editTarget.GetLayer();
+
+    // Verify that the intended target layer is stronger than existing authored opinions.
+    const auto strongestLayer = getStrongerLayer(stage, targetLayer, topAuthoredLayer);
+    bool       allowed = (strongestLayer == targetLayer);
+    if (!allowed && errMsg) {
+        *errMsg = TfStringPrintf(
+            "Cannot edit [%s] attribute because there is a stronger opinion in [%s].",
+            metadataName.GetText(),
+            strongestLayer ? strongestLayer->GetDisplayName().c_str() : "some layer");
+    }
+    return allowed;
 }
 
 bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMsg)
