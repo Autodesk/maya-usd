@@ -337,8 +337,7 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         const SdfPath& primName = varPrim.first;
         UsdPrim        usdVarPrim = stage->GetPrimAtPath(primName);
         if (!usdVarPrim.IsValid()) {
-            TF_WARN(
-                "Invalid prim specified (%s) for variant selection.", primName.GetText());
+            TF_WARN("Invalid prim specified (%s) for variant selection.", primName.GetText());
             continue;
         }
         ApplyVariantSelections(usdVarPrim, varPrim.second);
