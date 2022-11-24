@@ -55,6 +55,12 @@ void _nodeAdded(MObject& obj, void* clientData)
     delegate->NodeAdded(obj);
 }
 
+void _nodeRemoved(MObject& obj, void* clientData)
+{
+    auto* delegate = reinterpret_cast<HdMayaSceneDelegate*>(clientData);
+    delegate->NodeRemoved(obj);
+}
+
 const MString defaultLightSet("defaultLightSet");
 
 void _connectionChanged(MPlug& srcPlug, MPlug& destPlug, bool made, void* clientData)
@@ -225,6 +231,10 @@ void HdMayaSceneDelegate::Populate()
     }
     MStatus status;
     auto    id = MDGMessage::addNodeAddedCallback(_nodeAdded, "dagNode", this, &status);
+    if (status) {
+        _callbacks.push_back(id);
+    }
+    id = MDGMessage::addNodeRemovedCallback(_nodeRemoved, "dagNode", this, &status);
     if (status) {
         _callbacks.push_back(id);
     }
@@ -594,6 +604,16 @@ void HdMayaSceneDelegate::InsertDag(const MDagPath& dag)
 }
 
 void HdMayaSceneDelegate::NodeAdded(const MObject& obj) { _addedNodes.push_back(obj); }
+
+void HdMayaSceneDelegate::NodeRemoved(const MObject& obj)
+{
+    // Note: remove in backward order to avoid processing items twice.
+    for (size_t i = _addedNodes.size() - 1; i < _addedNodes.size(); ++i) {
+        if (_addedNodes[i] == obj) {
+            _addedNodes.erase(_addedNodes.begin() + i);
+        }
+    }
+}
 
 void HdMayaSceneDelegate::UpdateLightVisibility(const MDagPath& dag)
 {
