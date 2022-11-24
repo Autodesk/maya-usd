@@ -43,6 +43,8 @@
 #include <maya/MObjectHandle.h>
 #include <maya/MString.h>
 
+#include <algorithm>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -607,12 +609,9 @@ void HdMayaSceneDelegate::NodeAdded(const MObject& obj) { _addedNodes.push_back(
 
 void HdMayaSceneDelegate::NodeRemoved(const MObject& obj)
 {
-    // Note: remove in backward order to avoid processing items twice.
-    for (size_t i = _addedNodes.size() - 1; i < _addedNodes.size(); ++i) {
-        if (_addedNodes[i] == obj) {
-            _addedNodes.erase(_addedNodes.begin() + i);
-        }
-    }
+    const auto newEnd = std::remove_if(
+        _addedNodes.begin(), _addedNodes.end(), [&obj](const auto& item) { return item == obj; });
+    _addedNodes.erase(newEnd, _addedNodes.end());
 }
 
 void HdMayaSceneDelegate::UpdateLightVisibility(const MDagPath& dag)
