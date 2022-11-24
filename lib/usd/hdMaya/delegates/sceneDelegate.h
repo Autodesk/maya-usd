@@ -103,6 +103,9 @@ public:
     void NodeAdded(const MObject& obj);
 
     HDMAYA_API
+    void NodeRemoved(const MObject& obj);
+
+    HDMAYA_API
     void UpdateLightVisibility(const MDagPath& dag);
 
     HDMAYA_API
