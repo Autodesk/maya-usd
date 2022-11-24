@@ -16,6 +16,7 @@
 #
 
 import os
+import platform
 import unittest
 
 from pxr import Usd
@@ -24,6 +25,7 @@ from maya import cmds
 from maya import standalone
 
 import fixturesUtils
+import mayaUsd
 
 class testUsdImportSessionLayer(unittest.TestCase):
 
@@ -42,6 +44,15 @@ class testUsdImportSessionLayer(unittest.TestCase):
         other open stages.
         """
         usdFile = os.path.join(self.inputPath, "UsdImportSessionLayerTest", "Cubes.usda")
+
+        # Note: due to a quirk deep inside USD handling of stage caches and layer identifiers,
+        #       the file path on windows must be in lower-case. Otherwise, the stage cache
+        #       can fail to find the stage depending onthe exact USD API used to create the
+        #       stage. The problem is only with the drive letter sometimes being forced to
+        #       lower-case by USD, but as path are case-insensitive on Window, we lower the
+        #       while path, just in case.
+        if platform.system() == 'Windows':
+            usdFile = usdFile.lower()
 
         # Open the asset USD file and make sure the default variant is what we
         # expect it to be.
@@ -94,6 +105,34 @@ class testUsdImportSessionLayer(unittest.TestCase):
         self.assertEqual(cubeOneVariantSelection, 'none')
         cubeOneTranslation = cubeOnePrim.GetAttribute('xformOp:translate').Get()
         self.assertEqual([-2, 0, 0.5], cubeOneTranslation)
+
+        # Open the asset USD file using the MayaUSD proxy shape so that it uses
+        # the MayaUSD stage cache, and make sure the default variant is still
+        # what we expect it to be.
+        shapeNode = cmds.createNode('mayaUsdProxyShape', skipSelect=True, name='stageShape')
+        cmds.setAttr(shapeNode + '.filePath', usdFile, type='string')
+        cmds.connectAttr('time1.outTime', shapeNode+'.time')
+        psPathStr = cmds.ls(shapeNode, long=True)[0]
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        self.assertTrue(stage)
+
+        modelPrimPath = '/Cubes'
+        modelPrim = stage.GetPrimAtPath(modelPrimPath)
+        self.assertTrue(modelPrim)
+
+        cubesVariantSet = modelPrim.GetVariantSet('modelingVariant')
+        cubesVariantSelection = cubesVariantSet.GetVariantSelection()
+
+        cubeOnePrimPath = '/Cubes/Geom/CubeOne'
+        cubeOnePrim = stage.GetPrimAtPath(cubeOnePrimPath)
+        self.assertTrue(cubeOnePrim)
+
+        cubeOneVariantSet = cubeOnePrim.GetVariantSet('displacement')
+        cubeOneVariantSelection = cubeOneVariantSet.GetVariantSelection()
+
+        # This is the default variant.
+        self.assertEqual(cubesVariantSelection, 'OneCube')
+        self.assertEqual(cubeOneVariantSelection, 'none')
 
 
 if __name__ == '__main__':

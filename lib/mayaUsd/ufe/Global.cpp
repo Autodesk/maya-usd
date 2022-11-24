@@ -52,6 +52,9 @@
 #if UFE_LIGHTS_SUPPORT
 #include <mayaUsd/ufe/UsdLightHandler.h>
 #endif
+#if UFE_MATERIALS_SUPPORT
+#include <mayaUsd/ufe/UsdMaterialHandler.h>
+#endif
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4020)
 #include <mayaUsd/ufe/UsdConnectionHandler.h>
@@ -198,6 +201,9 @@ MStatus initialize()
 #if UFE_LIGHTS_SUPPORT
     handlers.lightHandler = UsdLightHandler::create();
 #endif
+#if UFE_MATERIALS_SUPPORT
+    handlers.materialHandler = UsdMaterialHandler::create();
+#endif
 #if (UFE_PREVIEW_VERSION_NUM >= 4020)
     handlers.connectionHandler = UsdConnectionHandler::create();
 #endif
@@ -259,6 +265,9 @@ MStatus initialize()
 #ifndef UFE_V4_FEATURES_AVAILABLE
 #if UFE_LIGHTS_SUPPORT
     runTimeMgr.setLightHandler(g_USDRtid, UsdLightHandler::create());
+#endif
+#if UFE_MATERIALS_SUPPORT
+    runTimeMgr.setMaterialHandler(g_USDRtid, UsdMaterialHandler::create());
 #endif
 #endif
 

@@ -58,6 +58,7 @@ public:
     void Write(const UsdTimeCode& usdTime) override;
 
 private:
+    // Cache of previous rotations.
     using _TokenRotationMap
         = std::unordered_map<const TfToken, MEulerRotation, TfToken::HashFunctor>;
 
@@ -75,7 +76,10 @@ private:
         Animated
     };
 
-    // This may not be the best name here as it isn't necessarily animated.
+    // Describe a data channel (source, destination) for transform operation:
+    // a Maya source attribute and USD destination attribute. This is used to
+    // record which Maya potentially animated attribute will be read and
+    // converted to a USD attribute.
     struct _AnimChannel
     {
         MPlug       plug[3];
@@ -89,7 +93,7 @@ private:
         _XformType                opType;
         UsdGeomXformOp::Type      usdOpType;
         UsdGeomXformOp::Precision precision;
-        TfToken                   opName;
+        TfToken                   suffix;
         bool                      isInverse;
         UsdGeomXformOp            op;
     };
@@ -110,13 +114,13 @@ private:
     static bool _GatherAnimChannel(
         const _XformType           opType,
         const MFnTransform&        iTrans,
-        const TfToken&             parentName,
+        const TfToken&             mayaAttrName,
         const MString&             xName,
         const MString&             yName,
         const MString&             zName,
         std::vector<_AnimChannel>* oAnimChanList,
         const bool                 isWritingAnimation,
-        const bool                 setOpName);
+        const bool                 useSuffix);
 
     // Change the channel suffix so that the USD XformOp becomes unique.
     // This is to deal with complex rigs that can have multiple transforms

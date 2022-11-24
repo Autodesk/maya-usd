@@ -408,11 +408,11 @@ public:
         , _oldSelection(_varSet.GetVariantSelection())
         , _newSelection(itemPath[2])
     {
-        const bool allowStronger = true;
-        MayaUsd::ufe::applyCommandRestriction(
-            prim,
-            "set variant set " + _varSet.GetName() + " to variant " + _newSelection + " on",
-            allowStronger);
+        std::string errMsg;
+        if (!MayaUsd::ufe::isPrimMetadataEditAllowed(
+                prim, SdfFieldKeys->VariantSelection, TfToken(_varSet.GetName()), &errMsg)) {
+            throw std::runtime_error(errMsg.c_str());
+        }
     }
 
     void undo() override
@@ -1261,9 +1261,14 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         return std::make_shared<UnbindMaterialUndoableCommand>(fItem->prim());
 #if UFE_PREVIEW_VERSION_NUM >= 4010
     } else if (itemPath.size() == 3u && itemPath[0] == kAssignNewMaterialItem) {
-        if (fItem) {
+        // Make a copy so that we don't change to user's original selection
+        Ufe::Selection sceneItems(*Ufe::GlobalSelection::get());
+        // As per UX' wishes, we add the item that was right-clicked,
+        // regardless of its selection state.
+        sceneItems.append(fItem);
+        if (sceneItems.size() > 0u) {
             return std::make_shared<InsertChildAndSelectCommand>(
-                UsdUndoAssignNewMaterialCommand::create(fItem, itemPath[2]));
+                UsdUndoAssignNewMaterialCommand::create(sceneItems, itemPath[2]));
         }
 #endif
     }

@@ -15,6 +15,13 @@ target_sources(${PROJECT_NAME}
         xformStack.cpp
 )
 
+if(UFE_TRIE_NODE_HAS_CHILDREN_COMPONENTS_ACCESSOR)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            orphanedNodesManagerUtil.cpp
+    )
+endif()
+
 set(HEADERS
     adaptor.h
     jointWriteUtils.h
@@ -27,6 +34,12 @@ set(HEADERS
     writeUtil.h
     xformStack.h
 )
+
+if(UFE_TRIE_NODE_HAS_CHILDREN_COMPONENTS_ACCESSOR)
+    list(APPEND HEADERS
+        orphanedNodesManagerUtil.h
+    )
+endif()
 
 # -----------------------------------------------------------------------------
 # promoted headers
