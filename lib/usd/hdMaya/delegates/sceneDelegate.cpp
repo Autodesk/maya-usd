@@ -50,6 +50,8 @@
 #include <maya/MShaderManager.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
+#include <maya/MFnMesh.h>
+#include <maya/MFnComponent.h>
 
 #include <pxr/usdImaging/usdImaging/tokens.h>
 #include <pxr/imaging/hdx/renderTask.h>
@@ -727,35 +729,29 @@ AdapterPtr HdMayaSceneDelegate::Create(
 
 namespace
 {
-	static constexpr char kInstObjGroups[] = "instObjGroups";
-
-	bool GetShadingEngineNode(const MObject& meshNode, MObject& shadingEngineNode)
-	{
-		MFnDependencyNode depNode(meshNode);
-		MStatus ms;
-		MPlug instObjGroups = depNode.findPlug(kInstObjGroups, ms);
-
-		if (ms == MS::kSuccess)
-		{
-			unsigned int elemCount = instObjGroups.numElements();
-			for (unsigned int i = 0; i < elemCount; i++)
-			{
-				auto instObjGroup = instObjGroups.elementByLogicalIndex(i);
-
-				MPlugArray destinations;
-				instObjGroup.connectedTo(destinations, false, true);
-				for (auto dest : destinations)
-				{
-					if (dest.node().isNull()) continue;
-					if (dest.node().apiType() != MFn::Type::kShadingEngine) continue;
-					shadingEngineNode = dest.node();
-					return true;
-				}
-			}
-		}
-
-		return false;
-	}
+    bool GetShadingEngineNode(const MRenderItem& ri, MObject& shadingEngineNode)
+    {
+        MDagPath dagPath = ri.sourceDagPath();
+        if (dagPath.isValid()) {
+            MFnDagNode dagNode(dagPath.node());
+            MObjectArray sets, comps;
+            dagNode.getConnectedSetsAndMembers(dagPath.instanceNumber(), sets, comps, true);
+            assert(sets.length() == comps.length());
+            for (uint32_t i = 0; i < sets.length(); ++i) {
+                const MObject& object = sets[i];
+                if (object.apiType() == MFn::kShadingEngine) {
+                    // To support per-face shading, find the shading node matched with the render item
+                    const MObject& comp = comps[i];
+                    MObject shadingComp = ri.shadingComponent();
+                    if (shadingComp.isNull() || comp.isNull() || MFnComponent(comp).isEqual(shadingComp)) {
+                        shadingEngineNode = object;
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
 }
 
 bool HdMayaSceneDelegate::_GetRenderItemMaterial(
@@ -764,8 +760,7 @@ bool HdMayaSceneDelegate::_GetRenderItemMaterial(
 	MObject& shadingEngineNode
 	)
 {
-	MDagPath dagPath = ri.sourceDagPath();
-	if (dagPath.isValid() && GetShadingEngineNode(dagPath.node(), shadingEngineNode))
+	if (GetShadingEngineNode(ri, shadingEngineNode))
 		// Else try to find associated material node if this is a material shader.
 		// NOTE: The existing maya material support in hydra expects a shading engine node
 	{
