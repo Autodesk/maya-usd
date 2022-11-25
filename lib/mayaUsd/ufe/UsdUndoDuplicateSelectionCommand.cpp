@@ -50,18 +50,8 @@ UsdUndoDuplicateSelectionCommand::UsdUndoDuplicateSelectionCommand(
     const Ufe::ValueDictionary& duplicateOptions)
     : Ufe::SelectionUndoableCommand()
     , _copyExternalInputs(shouldConnectExternalInputs(duplicateOptions))
+    , _sourceSelection(selection)
 {
-    // TODO: MAYA-125854. If duplicating /a/b and /a/b/c, it would make sense to order the
-    // operations by SdfPath, and always check if the previously processed path is a prefix of the
-    // one currently being processed. In that case, a duplicate task is not necessary because the
-    // resulting SceneItem should be built by using SdfPath::ReplacePrefix on the current item to
-    // get its location in the previously duplicated parent item.
-    for (auto&& item : selection) {
-        if (UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item)) {
-            // Currently unordered_map since we need to streamline the targetItem override.
-            _perItemCommands[item->path()] = UsdUndoDuplicateCommand::create(usdItem);
-        }
-    }
 }
 
 UsdUndoDuplicateSelectionCommand::~UsdUndoDuplicateSelectionCommand() { }
@@ -70,24 +60,46 @@ UsdUndoDuplicateSelectionCommand::Ptr UsdUndoDuplicateSelectionCommand::create(
     const Ufe::Selection&       selection,
     const Ufe::ValueDictionary& duplicateOptions)
 {
-    auto retVal = std::make_shared<UsdUndoDuplicateSelectionCommand>(selection, duplicateOptions);
-    if (retVal->_perItemCommands.empty()) {
-        // Could not find any item from this runtime in the selection.
-        return {};
+    bool canDuplicate = false;
+    for (auto&& item : selection) {
+        UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+        if (usdItem) {
+            canDuplicate = true;
+            break;
+        }
     }
-    return retVal;
+    if (canDuplicate) {
+        return std::make_shared<UsdUndoDuplicateSelectionCommand>(selection, duplicateOptions);
+    }
+    return {};
 }
 
 void UsdUndoDuplicateSelectionCommand::execute()
 {
     UsdUndoBlock undoBlock(&_undoableItem);
 
-    for (auto&& duplicateItem : _perItemCommands) {
-        duplicateItem.second->execute();
+    // TODO: MAYA-125854. If duplicating /a/b and /a/b/c, it would make sense to order the
+    // operations by SdfPath, and always check if the previously processed path is a prefix of the
+    // one currently being processed. In that case, a duplicate task is not necessary because the
+    // resulting SceneItem should be built by using SdfPath::ReplacePrefix on the current item to
+    // get its location in the previously duplicated parent item.
+    for (auto&& item : _sourceSelection) {
+        UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+        if (!usdItem) {
+            continue;
+        }
 
-        auto            dstSceneItem = duplicateItem.second->duplicatedItem();
-        PXR_NS::UsdPrim srcPrim = ufePathToPrim(duplicateItem.first);
-        PXR_NS::UsdPrim dstPrim = std::dynamic_pointer_cast<UsdSceneItem>(dstSceneItem)->prim();
+        // Need to create and execute. If we create all before executing any, then the collision
+        // resolution on names will merge bob1 and bob2 into a single bob3 instead of creating a
+        // bob3 and a bob4.
+        auto duplicateCmd = UsdUndoDuplicateCommand::create(usdItem);
+        duplicateCmd->execute();
+
+        // Currently unordered_map since we need to streamline the targetItem override.
+        _perItemCommands[item->path()] = duplicateCmd;
+
+        PXR_NS::UsdPrim srcPrim = usdItem->prim();
+        PXR_NS::UsdPrim dstPrim = duplicateCmd->duplicatedItem()->prim();
 
         Ufe::Path stgPath = stagePath(dstPrim.GetStage());
         auto      stageIt = _duplicatesMap.find(stgPath);
@@ -99,6 +111,9 @@ void UsdUndoDuplicateSelectionCommand::execute()
         TF_VERIFY(stageIt->second.count(srcPrim.GetPath()) == 0);
         stageIt->second.insert({ srcPrim.GetPath(), dstPrim.GetPath() });
     }
+
+    // We no longer require the source selection:
+    _sourceSelection.clear();
 
     // Fixups were grouped by stage.
     for (const auto& stageData : _duplicatesMap) {

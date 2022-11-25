@@ -62,6 +62,9 @@ private:
     UsdUndoableItem _undoableItem;
     const bool      _copyExternalInputs;
 
+    // Transient list of items to duplicate. Needed by execute.
+    Ufe::Selection _sourceSelection;
+
     using CommandMap = std::unordered_map<Ufe::Path, UsdUndoDuplicateCommand::Ptr>;
     CommandMap _perItemCommands;
 

@@ -464,6 +464,28 @@ class DuplicateCmdTestCase(unittest.TestCase):
         self.assertIsNotNone(plane7Item)
         self.assertEqual(plane7Item, duplicatedItem)
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4041', 'Test only available in UFE preview version 0.4.41 and greater')
+    def testUfeDuplicateHomonyms(self):
+        '''Test that duplicating two items with similar names end up in two new duplicates.'''
+        testFile = testUtils.getTestScene('MaterialX', 'BatchOpsTestScene.usda')
+        shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
+
+        geomItem1 = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane1')
+        self.assertIsNotNone(geomItem1)
+        geomItem2 = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane2')
+        self.assertIsNotNone(geomItem2)
+
+        batchOpsHandler = ufe.RunTimeMgr.instance().batchOpsHandler(geomItem1.runTimeId())
+        self.assertIsNotNone(batchOpsHandler)
+
+        sel = ufe.Selection()
+        sel.append(geomItem1)
+        sel.append(geomItem2)
+        cmd = batchOpsHandler.duplicateSelectionCmd(sel, {"inputConnections": False})
+        cmd.execute()
+
+        self.assertNotEqual(cmd.targetItem(geomItem1.path()).path(), cmd.targetItem(geomItem2.path()).path())
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
