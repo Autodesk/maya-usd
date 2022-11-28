@@ -66,7 +66,7 @@ public:
 
     MSceneFilterOption renderFilterOverride() override
     {
-        return MSceneFilterOption(kRenderShadedItems | kRenderPostSceneUIItems);
+        return MSceneFilterOption(kRenderPostSceneUIItems);
     }
 
     MHWRender::MClearOperation& clearOperation() override { return mClearOperation; }
