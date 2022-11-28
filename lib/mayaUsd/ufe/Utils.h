@@ -257,8 +257,11 @@ public:
     void initRecursive(const Ufe::SceneItem::Ptr& item) const;
 
     // Finalizes the replication operation to the USD stage defined by 'stagePath'
-    // with a possibility to rename the usd root node name to 'renameRoot'
-    void finalize(const Ufe::Path& stagePath, const std::string* renameRoot = nullptr) const;
+    // with a possibility to rename the old usd prefix to a new one
+    void finalize(
+        const Ufe::Path&       stagePath,
+        const PXR_NS::SdfPath* oldPrefix = nullptr,
+        const PXR_NS::SdfPath* newPrefix = nullptr) const;
 
 private:
     mutable std::map<PXR_NS::SdfPath, MObject> _primToLayerMap;
