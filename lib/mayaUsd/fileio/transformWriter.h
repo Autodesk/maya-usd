@@ -67,7 +67,8 @@ private:
         Translate,
         Rotate,
         Scale,
-        Shear
+        Shear,
+        Transform
     };
     enum class _SampleType
     {
@@ -83,19 +84,31 @@ private:
     struct _AnimChannel
     {
         MPlug       plug[3];
-        _SampleType sampleType[3];
+        _SampleType sampleType[3] = { _SampleType::None, _SampleType::None, _SampleType::None };
         // defValue should always be in "maya" space.  that is, if it's a
         // rotation it should be radians, not degrees. (This is done so we only
         // need to do conversion in one place, and so that, if we need to do
         // euler filtering, we don't do conversions, and then undo them to use
         // MEulerRotation).
         GfVec3d                   defValue;
-        _XformType                opType;
-        UsdGeomXformOp::Type      usdOpType;
-        UsdGeomXformOp::Precision precision;
+        GfMatrix4d                defMatrix;
+        _XformType                opType = _XformType::Transform;
+        UsdGeomXformOp::Type      usdOpType = UsdGeomXformOp::TypeInvalid;
+        UsdGeomXformOp::Precision precision = UsdGeomXformOp::PrecisionFloat;
         TfToken                   suffix;
-        bool                      isInverse;
+        bool                      isInverse = false;
+        bool                      isMatrix = false;
         UsdGeomXformOp            op;
+
+        // Retrieve the value from the Maya attribute based on if it is a matrix.
+        VtValue GetSourceData(unsigned int i) const;
+
+        // Set the value or matrix based on if the opType is Transform at the specified time.
+        void setXformOp(
+            const GfVec3d&             value,
+            const GfMatrix4d&          matrix,
+            const UsdTimeCode&         usdTime,
+            UsdUtilsSparseValueWriter* valueWriter) const;
     };
 
     // For a given array of _AnimChannels and time, compute the xformOp data if
@@ -120,7 +133,8 @@ private:
         const MString&             zName,
         std::vector<_AnimChannel>* oAnimChanList,
         const bool                 isWritingAnimation,
-        const bool                 useSuffix);
+        const bool                 useSuffix,
+        const bool                 isMatrix = false);
 
     // Change the channel suffix so that the USD XformOp becomes unique.
     // This is to deal with complex rigs that can have multiple transforms
