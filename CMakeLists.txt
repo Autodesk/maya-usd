@@ -279,6 +279,7 @@ endif()
 
 if(NOT BUILD_MAYAUSD_LIBRARY)
     if(BUILD_HDMAYA)
+        include(cmake/mayausd_version.info)
         set(MAYAHYDRA_VERSION "${MAYAUSD_MAJOR_VERSION}.${MAYAUSD_MINOR_VERSION}.${MAYAUSD_PATCH_LEVEL}")
         if (IS_WINDOWS)
             configure_file("modules/mayaHydra_Win.mod.template" ${PROJECT_BINARY_DIR}/mayaHydra.mod)
