@@ -507,7 +507,7 @@ static void setConnections(
     const SdfPath&         oldPropertyPath,
     const SdfPath&         newPropertyPath)
 {
-    for (auto& attribute : prim.GetAttributes()) {
+    for (const auto& attribute : prim.GetAttributes()) {
         PXR_NS::UsdAttribute  attr = attribute.As<PXR_NS::UsdAttribute>();
         PXR_NS::SdfPathVector sources;
         attr.GetConnections(&sources);
@@ -527,7 +527,7 @@ static void setConnections(
     }
 }
 
-static void setConnectionsWithChildren(
+static void setConnectionsOfAllChildren(
     const PXR_NS::UsdPrim& prim,
     const SdfPath&         oldPropertyPath,
     const SdfPath&         newPropertyPath)
@@ -601,10 +601,10 @@ Ufe::Attribute::Ptr UsdAttributes::doRenameAttribute(
         // Given the unidirectional nature of connections, we discriminate whether the source is
         // input or output
         if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input) {
-            setConnectionsWithChildren(prim, kOldPropertyPath, kNewPropertyPath);
+            setConnectionsOfAllChildren(prim, kOldPropertyPath, kNewPropertyPath);
         }
         if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Output) {
-            setConnectionsWithChildren(prim.GetParent(), kOldPropertyPath, kNewPropertyPath);
+            setConnectionsOfAllChildren(prim.GetParent(), kOldPropertyPath, kNewPropertyPath);
             setConnections(prim.GetParent(), kOldPropertyPath, kNewPropertyPath);
         }
     }

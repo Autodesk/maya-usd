@@ -311,7 +311,7 @@ class AttributesTestCase(unittest.TestCase):
         self.assertIsNotNone(compoundAttrs)
 
         # Rename the attribute.
-        cmd = compoundAttrs.renameAttributeCmd("outputs:out","outputs:out1")
+        cmd = compoundAttrs.renameAttributeCmd("outputs:out", "outputs:out1")
         self.assertIsNotNone(cmd)
 
         ufeCmd.execute(cmd)
