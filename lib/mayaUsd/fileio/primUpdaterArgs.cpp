@@ -15,6 +15,8 @@
 //
 #include "primUpdaterArgs.h"
 
+#include <mutex>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(UsdMayaPrimUpdaterArgsTokens, PXRUSDMAYA_UPDATER_ARGS_TOKENS);
