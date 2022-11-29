@@ -99,8 +99,7 @@ void UsdUndoDuplicateCommand::execute()
         prim.GetPath().GetText(),
         _usdDstPath.GetText());
 
-    auto duplicatedName = duplicatedItem()->path().back().string();
-    extras.finalize(MayaUsd::ufe::stagePath(prim.GetStage()), &duplicatedName);
+    extras.finalize(MayaUsd::ufe::stagePath(stage), &path, &_usdDstPath);
 }
 
 void UsdUndoDuplicateCommand::undo()
