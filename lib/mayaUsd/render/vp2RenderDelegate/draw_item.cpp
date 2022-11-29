@@ -48,7 +48,7 @@ HdVP2DrawItem::~HdVP2DrawItem()
         MSubSceneContainer* subSceneContainer = param ? param->GetContainer() : nullptr;
         if (subSceneContainer) {
             for (const auto& renderItemData : _renderItems) {
-                const auto& sharedRenderItemCounter = renderItemData._sharedRenderItemCounter; 
+                const auto& sharedRenderItemCounter = renderItemData._sharedRenderItemCounter;
                 if (!sharedRenderItemCounter || (--(*sharedRenderItemCounter)) == 0) {
                     TF_VERIFY(renderItemData._renderItemName == renderItemData._renderItem->name());
                     subSceneContainer->remove(renderItemData._renderItem->name());
