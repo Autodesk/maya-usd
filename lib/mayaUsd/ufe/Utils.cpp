@@ -1280,18 +1280,22 @@ void ReplicateExtrasToUSD::initRecursive(const Ufe::SceneItem::Ptr& item) const
 #endif
 }
 
-void ReplicateExtrasToUSD::finalize(const Ufe::Path& stagePath, const std::string* renameRoot) const
+void ReplicateExtrasToUSD::finalize(
+    const Ufe::Path&       stagePath,
+    const PXR_NS::SdfPath* oldPrefix,
+    const PXR_NS::SdfPath* newPrefix) const
 {
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
     // Replicate display layer membership
     for (const auto& entry : _primToLayerMap) {
         if (entry.second.hasFn(MFn::kDisplayLayer)) {
-            auto rootPath = MayaUsd::ufe::usdPathToUfePathSegment(entry.first);
-            if (renameRoot && !rootPath.empty()) {
-                *rootPath.begin() = Ufe::PathComponent(*renameRoot);
+            auto usdPrimPath = entry.first;
+            if (oldPrefix && newPrefix) {
+                usdPrimPath = usdPrimPath.ReplacePrefix(*oldPrefix, *newPrefix);
             }
 
-            Ufe::Path::Segments segments { stagePath.getSegments()[0], rootPath };
+            auto                primPath = MayaUsd::ufe::usdPathToUfePathSegment(usdPrimPath);
+            Ufe::Path::Segments segments { stagePath.getSegments()[0], primPath };
             Ufe::Path           ufePath(std::move(segments));
 
             MFnDisplayLayer displayLayer(entry.second);
