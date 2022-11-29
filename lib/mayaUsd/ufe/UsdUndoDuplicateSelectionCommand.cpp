@@ -30,6 +30,7 @@
 #include <pxr/usd/usd/relationship.h>
 #include <pxr/usd/usd/stage.h>
 
+#include <ufe/hierarchy.h>
 #include <ufe/path.h>
 
 namespace MAYAUSD_NS_DEF {
@@ -50,8 +51,19 @@ UsdUndoDuplicateSelectionCommand::UsdUndoDuplicateSelectionCommand(
     const Ufe::ValueDictionary& duplicateOptions)
     : Ufe::SelectionUndoableCommand()
     , _copyExternalInputs(shouldConnectExternalInputs(duplicateOptions))
-    , _sourceSelection(selection)
 {
+    _sourceItems.reserve(selection.size());
+    for (auto&& item : selection) {
+        if (selection.containsAncestor(item->path())) {
+            // MAYA-125854: Skip the descendant, it will get duplicated with the ancestor.
+            continue;
+        }
+        UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+        if (!usdItem) {
+            continue;
+        }
+        _sourceItems.push_back(usdItem);
+    }
 }
 
 UsdUndoDuplicateSelectionCommand::~UsdUndoDuplicateSelectionCommand() { }
@@ -60,35 +72,21 @@ UsdUndoDuplicateSelectionCommand::Ptr UsdUndoDuplicateSelectionCommand::create(
     const Ufe::Selection&       selection,
     const Ufe::ValueDictionary& duplicateOptions)
 {
-    bool canDuplicate = false;
-    for (auto&& item : selection) {
-        UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-        if (usdItem) {
-            canDuplicate = true;
-            break;
-        }
+    UsdUndoDuplicateSelectionCommand::Ptr retVal
+        = std::make_shared<UsdUndoDuplicateSelectionCommand>(selection, duplicateOptions);
+
+    if (retVal->_sourceItems.empty()) {
+        return {};
     }
-    if (canDuplicate) {
-        return std::make_shared<UsdUndoDuplicateSelectionCommand>(selection, duplicateOptions);
-    }
-    return {};
+
+    return retVal;
 }
 
 void UsdUndoDuplicateSelectionCommand::execute()
 {
     UsdUndoBlock undoBlock(&_undoableItem);
 
-    // TODO: MAYA-125854. If duplicating /a/b and /a/b/c, it would make sense to order the
-    // operations by SdfPath, and always check if the previously processed path is a prefix of the
-    // one currently being processed. In that case, a duplicate task is not necessary because the
-    // resulting SceneItem should be built by using SdfPath::ReplacePrefix on the current item to
-    // get its location in the previously duplicated parent item.
-    for (auto&& item : _sourceSelection) {
-        UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-        if (!usdItem) {
-            continue;
-        }
-
+    for (auto&& usdItem : _sourceItems) {
         // Need to create and execute. If we create all before executing any, then the collision
         // resolution on names will merge bob1 and bob2 into a single bob3 instead of creating a
         // bob3 and a bob4.
@@ -96,7 +94,7 @@ void UsdUndoDuplicateSelectionCommand::execute()
         duplicateCmd->execute();
 
         // Currently unordered_map since we need to streamline the targetItem override.
-        _perItemCommands[item->path()] = duplicateCmd;
+        _perItemCommands[usdItem->path()] = duplicateCmd;
 
         PXR_NS::UsdPrim srcPrim = usdItem->prim();
         PXR_NS::UsdPrim dstPrim = duplicateCmd->duplicatedItem()->prim();
@@ -113,7 +111,7 @@ void UsdUndoDuplicateSelectionCommand::execute()
     }
 
     // We no longer require the source selection:
-    _sourceSelection.clear();
+    _sourceItems.clear();
 
     // Fixups were grouped by stage.
     for (const auto& stageData : _duplicatesMap) {
@@ -164,11 +162,30 @@ void UsdUndoDuplicateSelectionCommand::execute()
 
 Ufe::SceneItem::Ptr UsdUndoDuplicateSelectionCommand::targetItem(const Ufe::Path& sourcePath) const
 {
+    // Perfect match:
     CommandMap::const_iterator it = _perItemCommands.find(sourcePath);
-    if (it == _perItemCommands.cend()) {
+    if (it != _perItemCommands.cend()) {
+        return it->second->duplicatedItem();
+    }
+
+    // MAYA-125854: If we do not find that exact path, see if it is a descendant of a duplicated
+    // ancestor. We will stop at the segment boundary.
+    Ufe::Path path = sourcePath;
+    size_t    numSegments = sourcePath.getSegments().size();
+    if (!numSegments) {
         return {};
     }
-    return it->second->duplicatedItem();
+
+    while (numSegments == path.getSegments().size()) {
+        CommandMap::const_iterator it = _perItemCommands.find(path);
+        if (it != _perItemCommands.cend() && it->second->duplicatedItem()) {
+            Ufe::Path duplicatedChildPath
+                = sourcePath.reparent(path, it->second->duplicatedItem()->path());
+            return Ufe::Hierarchy::createItem(duplicatedChildPath);
+        }
+        path = path.pop();
+    }
+    return {};
 }
 
 bool UsdUndoDuplicateSelectionCommand::updateSdfPathVector(

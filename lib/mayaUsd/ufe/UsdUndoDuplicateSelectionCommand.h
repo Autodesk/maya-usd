@@ -17,6 +17,7 @@
 #define MAYAUSD_UFE_USDUNDODUPLICATESELECTIONCOMMAND_H
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/UsdUndoDuplicateCommand.h>
 #include <mayaUsd/undo/UsdUndoableItem.h>
 
@@ -63,7 +64,7 @@ private:
     const bool      _copyExternalInputs;
 
     // Transient list of items to duplicate. Needed by execute.
-    Ufe::Selection _sourceSelection;
+    std::vector<UsdSceneItem::Ptr> _sourceItems;
 
     using CommandMap = std::unordered_map<Ufe::Path, UsdUndoDuplicateCommand::Ptr>;
     CommandMap _perItemCommands;
