@@ -785,6 +785,65 @@ static const std::vector<MayaUsd::ufe::SchemaTypeGroup> getConcretePrimTypes(boo
 }
 #endif
 
+#ifdef UFE_V3_FEATURES_AVAILABLE
+
+void executeEditAsMaya(const Ufe::Path& path)
+{
+    MString script;
+    script.format(
+        "^1s \"^2s\"",
+        MAYAUSD_NS_DEF::ufe::EditAsMayaCommand::commandName,
+        Ufe::PathString::string(path).c_str());
+    WaitCursor wait;
+    MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ true);
+}
+
+class EditAsMayaChildrenMayaRefCommand : public Ufe::UndoableCommand
+{
+public:
+    static const std::string commandName;
+    static const MString     cancelRemoval;
+
+    EditAsMayaChildrenMayaRefCommand(const Ufe::Path& path, const PXR_NS::UsdPrim& prim)
+        : _path(path), _prim(prim)
+    {
+    }
+
+    void undo() override { }
+
+    void redo() override
+    {
+        for (const auto& child : _prim.GetAllChildren()) {
+            if (child.GetTypeName() != TfToken("MayaReference"))
+                continue;
+
+            UsdAttribute autoEditAttr = child.GetAttribute(TfToken("mayaAutoEdit"));
+            if (!autoEditAttr.IsValid())
+                continue;
+
+            bool isAutoEdit = false;
+            if (!autoEditAttr.Get<bool>(&isAutoEdit) && isAutoEdit)
+                continue;
+
+            const Ufe::Path childPath = _path + Ufe::PathComponent(child.GetName().GetString());
+
+            // Note: the main case where the Maya reference is not editable is when
+            //       it is already being edited!
+            if (!PrimUpdaterManager::getInstance().canEditAsMaya(childPath))
+                continue;
+
+            executeEditAsMaya(childPath);
+        }
+    }
+
+private:
+    Ufe::Path _path;
+    UsdPrim   _prim;
+};
+const std::string EditAsMayaChildrenMayaRefCommand::commandName("Edit As Maya");
+
+#endif
+
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -1159,8 +1218,19 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         }
 
         // At this point we know we have enough arguments to execute the
-        // operation.
-        return std::make_shared<SetVariantSelectionUndoableCommand>(path(), prim(), itemPath);
+        // operation. If the prim is a Maya reference with auto-edit on,
+        // the edit it instead of switching to the Maya reference.
+        auto compositeCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
+
+        compositeCmd->append(
+            std::make_shared<SetVariantSelectionUndoableCommand>(path(), prim(), itemPath));
+#ifdef UFE_V3_FEATURES_AVAILABLE
+        // Note: we must detect Maya references *after* the variant has changed, otherwise
+        //       the Maya reference node is not accessible, only the cached USD prim is
+        //       accessible before the vriant switch.
+        compositeCmd->append(std::make_shared<EditAsMayaChildrenMayaRefCommand>(path(), prim()));
+#endif
+        return compositeCmd;
     } // Variant sets
     else if (itemPath[0] == kUSDToggleVisibilityItem) {
         auto object3d = UsdObject3d::create(fItem);
@@ -1219,11 +1289,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
     }
 #ifdef UFE_V3_FEATURES_AVAILABLE
     else if (itemPath[0] == kEditAsMayaItem) {
-        MString script;
-        script.format(
-            "^1s \"^2s\"", EditAsMayaCommand::commandName, Ufe::PathString::string(path()).c_str());
-        WaitCursor wait;
-        MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ true);
+        executeEditAsMaya(path());
     } else if (itemPath[0] == kDuplicateAsMayaItem) {
         MString script;
         script.format(
