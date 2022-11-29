@@ -177,7 +177,7 @@ Ufe::SceneItem::Ptr UsdUndoDuplicateSelectionCommand::targetItem(const Ufe::Path
     }
 
     while (numSegments == path.getSegments().size()) {
-        CommandMap::const_iterator it = _perItemCommands.find(path);
+        it = _perItemCommands.find(path);
         if (it != _perItemCommands.cend() && it->second->duplicatedItem()) {
             Ufe::Path duplicatedChildPath
                 = sourcePath.reparent(path, it->second->duplicatedItem()->path());
