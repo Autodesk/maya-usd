@@ -1226,7 +1226,7 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
 #endif
                         if (shDrawItem
                             && shDrawItem->MatchesUsage(HdVP2DrawItem::kSelectionHighlight)) {
-                            drawItem->SetRenderItem(shDrawItem->GetRenderItem());
+                            drawItem->ShareRenderItem(*shDrawItem);
                             foundShared = true;
                             break;
                         }
