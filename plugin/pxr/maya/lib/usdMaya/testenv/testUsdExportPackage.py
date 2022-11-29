@@ -61,7 +61,7 @@ class testUsdExportPackage(unittest.TestCase):
     def _AssertNoTempFiles(self, usdFilePath):
         lsDir = os.listdir(os.path.dirname(usdFilePath))
         for item in lsDir:
-            self.assertNotRegexpMatches(item, "tmp-.*\.usd.?")
+            self.assertNotRegex(item, "tmp-.*\.usd.?")
 
     def testExport(self):
         '''Tests standard usdz package export.'''
