@@ -131,6 +131,12 @@ Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
         return Ufe::Value(it->second);
     }
 
+    const NdrTokenMap& hints = fShaderAttributeDef->GetHints();
+    it = hints.find(TfToken(key));
+    if (it != hints.cend()) {
+        return Ufe::Value(it->second);
+    }
+
     MetadataMap::const_iterator itMapper = _metaMap.find(key);
     if (itMapper != _metaMap.end()) {
         return itMapper->second(*fShaderAttributeDef);
@@ -145,6 +151,12 @@ bool UsdShaderAttributeDef::hasMetadata(const std::string& key) const
     const NdrTokenMap& metadata = fShaderAttributeDef->GetMetadata();
     auto               it = metadata.find(TfToken(key));
     if (it != metadata.cend()) {
+        return true;
+    }
+
+    const NdrTokenMap& hints = fShaderAttributeDef->GetHints();
+    it = hints.find(TfToken(key));
+    if (it != hints.cend()) {
         return true;
     }
 
