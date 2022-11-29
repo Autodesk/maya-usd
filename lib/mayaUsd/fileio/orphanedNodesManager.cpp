@@ -180,6 +180,17 @@ OrphanedNodesManager::Memento OrphanedNodesManager::remove(const Ufe::Path& pull
     return oldPulledPrims;
 }
 
+const PullVariantInfo& OrphanedNodesManager::get(const Ufe::Path& pulledPath) const
+{
+    const auto infoNode = pulledPrims().find(pulledPath);
+    if (!infoNode || !infoNode->hasData()) {
+        static const PullVariantInfo empty;
+        return empty;
+    }
+
+    return infoNode->data();
+}
+
 void OrphanedNodesManager::operator()(const Ufe::Notification& n)
 {
     const auto& sceneNotification = static_cast<const Ufe::SceneChanged&>(n);
@@ -521,9 +532,10 @@ void OrphanedNodesManager::recursiveSwitch(
         // tree state don't match, the pulled node must be made invisible.
         // Inactivation must not be considered, as the USD pulled node is made
         // inactive on pull, to avoid rendering it.
-        const bool variantSetsMatch
-            = (trieNode->data().variantSetDescriptors == variantSetDescriptors(ufePath.pop()));
-        const bool orphaned = (pulledNode && !variantSetsMatch);
+        const auto& originalDesc = trieNode->data().variantSetDescriptors;
+        const auto  currentDesc = variantSetDescriptors(ufePath.pop());
+        const bool  variantSetsMatch = (originalDesc == currentDesc);
+        const bool  orphaned = (pulledNode && !variantSetsMatch);
         TF_VERIFY(setOrphaned(trieNode, orphaned));
     } else {
         const bool isGatewayToUsd = Ufe::SceneSegmentHandler::isGateway(ufePath);

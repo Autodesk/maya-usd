@@ -20,6 +20,7 @@
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/sdf/copyUtils.h>
 #include <pxr/usd/usd/editContext.h>
+#include <pxr/usd/usd/variantSets.h>
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
 
 #include <algorithm>
@@ -383,8 +384,10 @@ bool isDataAtPathsModified(
 {
     DiffResult quickDiff = DiffResult::Same;
 
-    UsdPrim srcPrim = ctx.srcStage->GetPrimAtPath(src.path.GetPrimPath());
-    UsdPrim dstPrim = ctx.dstStage->GetPrimAtPath(dst.path.GetPrimPath());
+    UsdPrim srcPrim
+        = ctx.srcStage->GetPrimAtPath(src.path.GetPrimPath().StripAllVariantSelections());
+    UsdPrim dstPrim
+        = ctx.dstStage->GetPrimAtPath(dst.path.GetPrimPath().StripAllVariantSelections());
     if (!srcPrim.IsValid() || !dstPrim.IsValid()) {
         printInvalidField(ctx, src, "prim", srcPrim.IsValid(), dstPrim.IsValid());
         return srcPrim.IsValid() != dstPrim.IsValid();
@@ -940,6 +943,57 @@ void createMissingParents(const SdfLayerRefPtr& dstLayer, const SdfPath& dstPath
     SdfJustCreatePrimInLayer(dstLayer, dstPath.GetParentPath());
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+// Augment a USD SdfPath with the variants selections currently active at all levels.
+std::pair<SdfPath, UsdEditTarget> augmentPathWithVariants(
+    const UsdStageRefPtr& stage,
+    const SdfLayerRefPtr& layer,
+    const SdfPath&        path)
+{
+    SdfPath       pathWithVariants;
+    UsdEditTarget target = stage->GetEditTarget();
+
+    SdfPathVector rootToLeaf;
+    path.GetPrefixes(&rootToLeaf);
+    for (const SdfPath& prefix : rootToLeaf) {
+        if (pathWithVariants.IsEmpty()) {
+            pathWithVariants = prefix;
+        } else {
+            pathWithVariants = pathWithVariants.AppendChild(prefix.GetNameToken());
+        }
+
+        const UsdPrim prim = stage->GetPrimAtPath(prefix.StripAllVariantSelections());
+        if (prim.IsValid()) {
+            UsdVariantSets variants = prim.GetVariantSets();
+            for (const std::string& setName : variants.GetNames()) {
+                UsdVariantSet varSet = variants.GetVariantSet(setName);
+                pathWithVariants = pathWithVariants.AppendVariantSelection(
+                    varSet.GetName(), varSet.GetVariantSelection());
+            }
+        }
+    }
+
+    // Note: any trailing variant selection must be used to create a UsdEditContext,
+    //       it must not be part of the destination path, otherwise SdfCopySpec()
+    //       will fail: it does not handle destination paths ending with a variant
+    //       selection correctly.
+    //
+    //       If SdfCopySpec() is called with a path ending with a variant selection,
+    //       it assumes that it is inside its own interations, about to add the
+    //       selection name even though what is about to be added is a prim. So
+    //       The GetParentPath() called in CreateSpec() in usd/sdf/childrenUtils.cpp
+    //       around line 108 will strip the vriant selection instead of stripping
+    //       the prim (including variant selection). That will end-up causing an
+    //       error when trying to create a field in SdfData::_GetOrCreateFieldValue
+    //       in usd\sdf\data.cpp around line 260.
+    if (pathWithVariants.IsPrimVariantSelectionPath()) {
+        target = target.ForLocalDirectVariant(layer, pathWithVariants);
+        pathWithVariants = pathWithVariants.GetPrimPath();
+    }
+
+    return std::make_pair(pathWithVariants, target);
+}
+
 } // namespace
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -957,7 +1011,13 @@ bool mergePrims(
     const SdfPath&           dstPath,
     const MergePrimsOptions& options)
 {
-    createMissingParents(dstLayer, dstPath);
+    const auto          pathAndTarget = augmentPathWithVariants(dstStage, dstLayer, dstPath);
+    const SdfPath       variantDstPath = pathAndTarget.first;
+    const UsdEditTarget target = pathAndTarget.second;
+
+    UsdEditContext editCtx(dstStage, target);
+
+    createMissingParents(dstLayer, variantDstPath);
 
     if (options.ignoreUpperLayerOpinions) {
         auto           tempStage = UsdStage::CreateInMemory();
@@ -965,15 +1025,16 @@ bool mergePrims(
 
         tempLayer->TransferContent(dstLayer);
 
-        const bool success
-            = mergeDiffPrims(options, srcStage, srcLayer, srcPath, tempStage, tempLayer, dstPath);
+        const bool success = mergeDiffPrims(
+            options, srcStage, srcLayer, srcPath, tempStage, tempLayer, variantDstPath);
 
         if (success)
             dstLayer->TransferContent(tempLayer);
 
         return success;
     } else {
-        return mergeDiffPrims(options, srcStage, srcLayer, srcPath, dstStage, dstLayer, dstPath);
+        return mergeDiffPrims(
+            options, srcStage, srcLayer, srcPath, dstStage, dstLayer, variantDstPath);
     }
 }
 
