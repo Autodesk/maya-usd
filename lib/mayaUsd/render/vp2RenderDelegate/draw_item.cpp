@@ -19,37 +19,7 @@
 
 #include <pxr/imaging/hd/mesh.h>
 
-#include <maya/MUserData.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
-
-namespace {
-class HdVP2DrawItemUserData : public MUserData
-{
-public:
-#if MAYA_API_VERSION >= 20220000
-    HdVP2DrawItemUserData() { }
-#else
-    HdVP2DrawItemUserData()
-        : MUserData(true)
-    {
-    }
-#endif
-    ~HdVP2DrawItemUserData() override { }
-
-    int increaseUseCount() { return ++_useCount; }
-    int decreaseUseCount() { return --_useCount; }
-
-private:
-    // A render item can be shared between Reprs. We need to track usage so it only gets removed
-    // from the subscene once all references are gone.
-    int _useCount = 0;
-};
-
-#if MAYA_API_VERSION >= 20220000
-using HdVP2DrawItemUserDataPtr = MSharedPtr<HdVP2DrawItemUserData>;
-#endif
-} // namespace
 
 /*! \brief  Constructor.
 
@@ -78,14 +48,8 @@ HdVP2DrawItem::~HdVP2DrawItem()
         MSubSceneContainer* subSceneContainer = param ? param->GetContainer() : nullptr;
         if (subSceneContainer) {
             for (const auto& renderItemData : _renderItems) {
-#if MAYA_API_VERSION >= 20220000
-                auto sharingData = HdVP2DrawItemUserDataPtr::dynamic_pointer_cast<>(
-                    renderItemData._renderItem->getCustomData());
-#else
-                HdVP2DrawItemUserData* sharingData = dynamic_cast<HdVP2DrawItemUserData*>(
-                    renderItemData._renderItem->customData());
-#endif
-                if (!sharingData || sharingData->decreaseUseCount() == 0) {
+                const auto& sharedRenderItemCounter = renderItemData._sharedRenderItemCounter;
+                if (!sharedRenderItemCounter || (--(*sharedRenderItemCounter)) == 0) {
                     TF_VERIFY(renderItemData._renderItemName == renderItemData._renderItem->name());
                     subSceneContainer->remove(renderItemData._renderItem->name());
                 }
@@ -105,22 +69,6 @@ HdVP2DrawItem::AddRenderItem(MHWRender::MRenderItem* item, const HdGeomSubset* g
     renderItemData._renderItem = item;
     renderItemData._renderItemName = item->name();
     renderItemData._enabled = item->isEnabled();
-#if MAYA_API_VERSION >= 20220000
-    auto sharingData = HdVP2DrawItemUserDataPtr::dynamic_pointer_cast<>(item->getCustomData());
-#else
-    HdVP2DrawItemUserData* sharingData
-        = dynamic_cast<HdVP2DrawItemUserData*>(renderItemData._renderItem->customData());
-#endif
-    if (!sharingData) {
-        // create the custom data
-#if MAYA_API_VERSION >= 20220000
-        sharingData = HdVP2DrawItemUserDataPtr(new HdVP2DrawItemUserData());
-#else
-        sharingData = new HdVP2DrawItemUserData();
-#endif
-        item->setCustomData(sharingData);
-    }
-    sharingData->increaseUseCount();
     if (geomSubset) {
         renderItemData._geomSubset = *geomSubset;
     }
@@ -129,6 +77,21 @@ HdVP2DrawItem::AddRenderItem(MHWRender::MRenderItem* item, const HdGeomSubset* g
         new MHWRender::MIndexBuffer(MHWRender::MGeometry::kUnsignedInt32));
 
     return renderItemData;
+}
+
+void HdVP2DrawItem::ShareRenderItem(HdVP2DrawItem& sourceDrawItem)
+{
+    TF_VERIFY(_renderItems.size() == 0);
+    RenderItemData& srcData = sourceDrawItem.GetRenderItemData();
+    AddRenderItem(srcData._renderItem);
+
+    if (!srcData._sharedRenderItemCounter) {
+        srcData._sharedRenderItemCounter = std::make_shared<size_t>(1);
+    }
+
+    RenderItemData& dstData = GetRenderItemData();
+    dstData._sharedRenderItemCounter = srcData._sharedRenderItemCounter;
+    ++(*dstData._sharedRenderItemCounter);
 }
 
 /* static */
