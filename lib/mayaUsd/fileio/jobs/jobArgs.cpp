@@ -47,6 +47,7 @@
 #include <ghc/filesystem.hpp>
 
 #include <mutex>
+#include <cstdlib>
 #include <ostream>
 #include <string>
 
@@ -121,6 +122,116 @@ std::map<std::string, std::string> _UVSetRemaps(const VtDictionary& userArgs, co
         result[from] = to;
     }
     return result;
+}
+
+bool _striequals(const std::string& a, const std::string& b)
+{
+    size_t aSize = a.size();
+    if (b.size() != aSize) {
+        return false;
+    }
+    for (size_t i = 0; i < aSize; ++i)
+        if (std::tolower(a[i]) != std::tolower(b[i])) {
+            return false;
+        }
+    return true;
+}
+
+// The Custom Layer Data is stored as a vector of vectors (as this is
+// how a multi use , multi argument flag is passed in).
+// This function converts it to a VtDictionary.
+// Parsing failures skip the value instead of early returning.
+static VtDictionary _CustomLayerData(const VtDictionary& userArgs, const TfToken& userArgKey)
+{
+    const std::vector<std::vector<VtValue>> keyValueTypes
+        = extractVector<std::vector<VtValue>>(userArgs, userArgKey);
+
+    VtDictionary data = VtDictionary(keyValueTypes.size());
+
+    for (const std::vector<VtValue>& argTriple : keyValueTypes) {
+        if (argTriple.size() != 3) {
+            TF_WARN("Each customLayerData argument must be a triple (key, value, type)");
+            continue;
+        }
+
+        const std::string& key = argTriple[0].Get<std::string>();
+        const std::string& raw_value = argTriple[1].Get<std::string>();
+        const std::string& type = argTriple[2].Get<std::string>();
+
+        VtValue val = VtValue();
+        if (type == "string") {
+            val = raw_value;
+        } else if (type == "int") {
+            char* e = NULL;
+            val = static_cast<int>(std::strtol(raw_value.c_str(), &e, 10));
+            if (e != &raw_value[0] + raw_value.size()) {
+                TF_WARN(
+                    "Could not parse '%s' as an integer; the first invalid digit was: %s",
+                    raw_value.c_str(),
+                    e);
+                continue;
+            } else if (errno == ERANGE) {
+                TF_WARN(
+                    "Could not parse '%s' as an integer; it would have exceeded the valid range.",
+                    raw_value.c_str());
+                continue;
+            }
+        } else if (type == "float") {
+            char* e = NULL;
+            val = static_cast<float>(std::strtof(raw_value.c_str(), &e));
+            if (e != &raw_value[0] + raw_value.size()) {
+                TF_WARN(
+                    "Could not parse '%s' as a float; the first invalid digit was: %s",
+                    raw_value.c_str(),
+                    e);
+                errno = 0;
+                continue;
+            } else if (errno == ERANGE) {
+                TF_WARN(
+                    "Could not parse '%s' as a float; it would have exceeded the valid range.",
+                    raw_value.c_str());
+                errno = 0;
+                continue;
+            }
+        } else if (type == "double") {
+            char* e = NULL;
+            val = static_cast<double>(std::strtod(raw_value.c_str(), &e));
+            if (e != &raw_value[0] + raw_value.size()) {
+                TF_WARN(
+                    "Could not parse '%s' as a double; the first invalid digit was: %s",
+                    raw_value.c_str(),
+                    e);
+                errno = 0;
+                continue;
+            } else if (errno == ERANGE) {
+                TF_WARN(
+                    "Could not parse '%s' as a double; it would have exceeded the valid range.",
+                    raw_value.c_str());
+                errno = 0;
+                continue;
+            }
+        } else if (type == "bool") {
+            if (raw_value == "1") {
+                val = true;
+            } else if (raw_value == "0") {
+                val = false;
+            } else if (_striequals(raw_value, "true")) {
+                val = true;
+            } else if (_striequals(raw_value, "false")) {
+                val = false;
+            } else {
+                TF_WARN("Could not parse '%s' as bool", raw_value.c_str());
+                continue;
+            }
+        } else {
+            TF_WARN("Unsupported customLayerData type '%s' for '%s'", type.c_str(), key.c_str());
+            continue;
+        }
+
+        data.SetValueAtPath(key, val);
+    }
+
+    return data;
 }
 
 // The shadingMode args are stored as vectors of vectors (since this is how you
@@ -514,6 +625,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     , jobContextNames(extractTokenSet(userArgs, UsdMayaJobExportArgsTokens->jobContext))
     , chaserNames(extractVector<std::string>(userArgs, UsdMayaJobExportArgsTokens->chaser))
     , allChaserArgs(_ChaserArgs(userArgs, UsdMayaJobExportArgsTokens->chaserArgs))
+    , customLayerData(_CustomLayerData(userArgs, UsdMayaJobExportArgsTokens->customLayerData))
     , remapUVSetsTo(_UVSetRemaps(userArgs, UsdMayaJobExportArgsTokens->remapUVSetsTo))
     , melPerFrameCallback(extractString(userArgs, UsdMayaJobExportArgsTokens->melPerFrameCallback))
     , melPostCallback(extractString(userArgs, UsdMayaJobExportArgsTokens->melPostCallback))
@@ -851,6 +963,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->staticSingleSample] = false;
         d[UsdMayaJobExportArgsTokens->geomSidedness]
             = UsdMayaJobExportArgsTokens->derived.GetString();
+        d[UsdMayaJobExportArgsTokens->customLayerData] = std::vector<VtValue>();
 
         // plugInfo.json site defaults.
         // The defaults dict should be correctly-typed, so enable
@@ -889,6 +1002,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->chaser] = _stringVector;
         d[UsdMayaJobExportArgsTokens->chaserArgs] = _stringTripletVector;
         d[UsdMayaJobExportArgsTokens->remapUVSetsTo] = _stringPairVector;
+        d[UsdMayaJobExportArgsTokens->customLayerData] = _stringTripletVector;
         d[UsdMayaJobExportArgsTokens->compatibility] = _string;
         d[UsdMayaJobExportArgsTokens->defaultCameras] = _boolean;
         d[UsdMayaJobExportArgsTokens->defaultMeshScheme] = _string;
