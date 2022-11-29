@@ -457,6 +457,12 @@ SdfLayerHandle getStrongerLayer(
     if (layer1 == layer2)
         return layer1;
 
+    if (!layer1)
+        return layer2;
+
+    if (!layer2)
+        return layer1;
+
     if (root == layer1)
         return layer1;
 

@@ -246,6 +246,10 @@ void wrapPrimUpdaterContext()
             "GetArgs",
             &UsdMayaPrimUpdaterContext::GetArgs,
             boost::python::return_internal_reference<>())
+        .def(
+            "GetAdditionalFinalCommands",
+            &UsdMayaPrimUpdaterContext::GetAdditionalFinalCommands,
+            boost::python::return_internal_reference<>())
         .def("MapSdfPathToDagPath", &UsdMayaPrimUpdaterContext::MapSdfPathToDagPath);
 }
 
@@ -289,6 +293,7 @@ void wrapPrimUpdater()
             boost::python::return_value_policy<boost::python::return_by_value>())
         .def("getUfePath", &This::getUfePath, boost::python::return_internal_reference<>())
         .def("getUsdPrim", &This::getUsdPrim)
+        .def("getContext", &This::getContext, boost::python::return_internal_reference<>())
         .def("isAnimated", &This::isAnimated)
         .staticmethod("isAnimated")
         .def("Register", &PrimUpdaterWrapper::Register)
