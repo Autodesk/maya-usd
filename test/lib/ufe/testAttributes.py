@@ -243,7 +243,17 @@ class AttributesTestCase(unittest.TestCase):
 
         self.assertNotIn("inputs:file2:varnameStr", standardSurfaceAttrs.attributeNames)
         self.assertIn("inputs:file2:varname", standardSurfaceAttrs.attributeNames)
-
+        
+        # Test undo.
+        cmds.undo()
+        self.assertIn("inputs:file2:varnameStr", standardSurfaceAttrs.attributeNames)
+        self.assertNotIn("inputs:file2:varname", standardSurfaceAttrs.attributeNames)
+        
+        # Test redo.
+        cmds.redo()
+        self.assertNotIn("inputs:file2:varnameStr", standardSurfaceAttrs.attributeNames)
+        self.assertIn("inputs:file2:varname", standardSurfaceAttrs.attributeNames)
+        
         # Test the connections.
 
         ufeItemTexture = ufeUtils.createUfeSceneItem(shapeNode,
