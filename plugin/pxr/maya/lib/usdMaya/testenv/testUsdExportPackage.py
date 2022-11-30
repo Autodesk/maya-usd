@@ -31,10 +31,10 @@ class testUsdExportPackage(unittest.TestCase):
         standalone.initialize('usd')
         cmds.loadPlugin('pxrUsd')
 
-    # Deprecated since version 3.3: assertNotRegexpMatches has been renamed
-    # to assertNotRegex()
-    if sys.version_info.major < 3 or sys.version_info.minor < 3:
-        cls.assertNotRegex = cls.assertNotRegexpMatches
+        # Deprecated since version 3.3: assertNotRegexpMatches has been renamed
+        # to assertNotRegex()
+        if sys.version_info.major < 3 or sys.version_info.minor < 3:
+            cls.assertNotRegex = cls.assertNotRegexpMatches
 
     @classmethod
     def tearDownClass(cls):
