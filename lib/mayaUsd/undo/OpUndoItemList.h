@@ -52,6 +52,10 @@ public:
     MAYAUSD_CORE_PUBLIC
     virtual ~OpUndoItem() = default;
 
+    /// \brief execute a single sub-operation. By default calls redo.
+    MAYAUSD_CORE_PUBLIC
+    virtual bool execute() { return redo(); }
+
     /// \brief undo a single sub-operation.
     MAYAUSD_CORE_PUBLIC
     virtual bool undo() = 0;

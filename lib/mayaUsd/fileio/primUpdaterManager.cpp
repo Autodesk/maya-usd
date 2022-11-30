@@ -760,6 +760,14 @@ public:
         }
     }
 
+    void end()
+    {
+        if (_controllingFlag) {
+            *_controllingFlag = false;
+            _controllingFlag = nullptr;
+        }
+    }
+
 private:
     bool* _controllingFlag { nullptr };
 };
@@ -873,6 +881,12 @@ private:
 };
 #endif
 
+void executeAdditionalCommands(const UsdMayaPrimUpdaterContext& context)
+{
+    std::shared_ptr<Ufe::CompositeUndoableCommand> cmds = context.GetAdditionalFinalCommands();
+    UfeCommandUndoItem::execute("Additional final commands", cmds);
+}
+
 } // namespace
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -922,7 +936,7 @@ bool PrimUpdaterManager::mergeToUsd(
     MString progStr(
         VtDictionaryIsHolding<std::string>(userArgs, "rn_primName") ? "Caching to USD"
                                                                     : "Merging to USD");
-    MayaUsd::ProgressBarScope progressBar(10, progStr);
+    MayaUsd::ProgressBarScope progressBar(11, progStr);
     PushPullScope             scopeIt(_inPushPull);
 
     auto ctxArgs = VtDictionaryOver(userArgs, UsdMayaJobExportArgs::GetDefaultDictionary());
@@ -996,11 +1010,7 @@ bool PrimUpdaterManager::mergeToUsd(
     // 2) Traverse the in-memory layer, creating a prim updater for each prim,
     // and call Push for each updater.  Build a new context with the USD path
     // to Maya path mapping information.
-    UsdMayaPrimUpdaterContext customizeContext(
-        proxyShape->getTime(),
-        proxyStage,
-        ctxArgs,
-        std::get<UsdPathToDagPathMapPtr>(pushCustomizeSrc));
+    context.SetUsdPathToDagPathMap(std::get<UsdPathToDagPathMapPtr>(pushCustomizeSrc));
 
     if (!isCopy) {
         if (!FunctionUndoItem::execute(
@@ -1016,7 +1026,7 @@ bool PrimUpdaterManager::mergeToUsd(
     }
     progressBar.advance();
 
-    if (!pushCustomize(pulledPath, pushCustomizeSrc, customizeContext)) {
+    if (!pushCustomize(pulledPath, pushCustomizeSrc, context)) {
         return false;
     }
     progressBar.advance();
@@ -1073,6 +1083,10 @@ bool PrimUpdaterManager::mergeToUsd(
     }
     progressBar.advance();
 
+    scopeIt.end();
+    executeAdditionalCommands(context);
+    progressBar.advance();
+
     return true;
 }
 
@@ -1093,7 +1107,7 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
         return false;
     }
 
-    MayaUsd::ProgressBarScope progressBar(6, "Converting to Maya Data");
+    MayaUsd::ProgressBarScope progressBar(7, "Converting to Maya Data");
 
     PushPullScope scopeIt(_inPushPull);
 
@@ -1158,6 +1172,10 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
         scene.notify(Ufe::ObjectAdd(ufeItem));
     progressBar.advance();
 
+    scopeIt.end();
+    executeAdditionalCommands(context);
+    progressBar.advance();
+
     return true;
 }
 
@@ -1218,7 +1236,7 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
         return false;
     }
 
-    MayaUsd::ProgressBarScope progressBar(5);
+    MayaUsd::ProgressBarScope progressBar(6);
     PushPullScope             scopeIt(_inPushPull);
 
     // Record all USD modifications in an undo block and item.
@@ -1310,12 +1328,17 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
         scene.notify(Ufe::SubtreeInvalidate(hier->defaultParent()));
     }
     progressBar.advance();
+
+    scopeIt.end();
+    executeAdditionalCommands(context);
+    progressBar.advance();
+
     return true;
 }
 
 bool PrimUpdaterManager::discardOrphanedEdits(const MDagPath& dagPath, const Ufe::Path& pulledPath)
 {
-    MayaUsd::ProgressBarScope progressBar(2);
+    MayaUsd::ProgressBarScope progressBar(3);
     PushPullScope             scopeIt(_inPushPull);
 
     // Unlock the pulled hierarchy, clear the pull information, and remove the
@@ -1354,6 +1377,10 @@ bool PrimUpdaterManager::discardOrphanedEdits(const MDagPath& dagPath, const Ufe
     if (!TF_VERIFY(removePullParent(pullParent, pulledPath))) {
         return false;
     }
+    progressBar.advance();
+
+    scopeIt.end();
+    executeAdditionalCommands(context);
     progressBar.advance();
 
     return true;
@@ -1401,7 +1428,7 @@ bool PrimUpdaterManager::duplicate(
             return false;
         }
 
-        MayaUsd::ProgressBarScope progressBar(2, "Duplicating to Maya Data");
+        MayaUsd::ProgressBarScope progressBar(3, "Duplicating to Maya Data");
 
         auto ctxArgs = VtDictionaryOver(userArgs, UsdMayaJobImportArgs::GetDefaultDictionary());
 
@@ -1427,6 +1454,11 @@ bool PrimUpdaterManager::duplicate(
 
         pullImport(srcPath, srcPrim, context);
         progressBar.advance();
+
+        scopeIt.end();
+        executeAdditionalCommands(context);
+        progressBar.advance();
+
         return true;
     }
     // Copy from DG to USD
@@ -1437,7 +1469,7 @@ bool PrimUpdaterManager::duplicate(
             return false;
         }
 
-        MayaUsd::ProgressBarScope progressBar(7, "Duplicating to USD");
+        MayaUsd::ProgressBarScope progressBar(8, "Duplicating to USD");
 
         auto ctxArgs = VtDictionaryOver(userArgs, UsdMayaJobExportArgs::GetDefaultDictionary());
 
@@ -1494,6 +1526,11 @@ bool PrimUpdaterManager::duplicate(
             Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(ufeItem));
         }
         progressBar.advance();
+
+        scopeIt.end();
+        executeAdditionalCommands(context);
+        progressBar.advance();
+
         return true;
     }
 
@@ -1573,6 +1610,8 @@ void PrimUpdaterManager::onProxyContentChanged(
             }
         }
     }
+
+    executeAdditionalCommands(context);
 }
 
 PrimUpdaterManager& PrimUpdaterManager::getInstance()

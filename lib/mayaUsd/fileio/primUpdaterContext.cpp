@@ -16,6 +16,8 @@
 //
 #include "primUpdaterContext.h"
 
+#include <memory>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMayaPrimUpdaterContext::UsdMayaPrimUpdaterContext(
@@ -28,6 +30,7 @@ UsdMayaPrimUpdaterContext::UsdMayaPrimUpdaterContext(
     , _pathMap(pathMap)
     , _userArgs(userArgs)
     , _args(UsdMayaPrimUpdaterArgs::createFromDictionary(userArgs))
+    , _additionalCommands(std::make_shared<Ufe::CompositeUndoableCommand>())
 {
 }
 
@@ -39,6 +42,11 @@ MDagPath UsdMayaPrimUpdaterContext::MapSdfPathToDagPath(const SdfPath& sdfPath) 
 
     auto found = _pathMap->find(sdfPath);
     return found == _pathMap->end() ? MDagPath() : found->second;
+}
+
+void UsdMayaPrimUpdaterContext::SetUsdPathToDagPathMap(const UsdPathToDagPathMapPtr& pathMap)
+{
+    _pathMap = pathMap;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

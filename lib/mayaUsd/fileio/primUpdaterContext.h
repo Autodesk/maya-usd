@@ -27,6 +27,7 @@
 #include <pxr/usd/usd/timeCode.h>
 
 #include <maya/MDagPath.h>
+#include <ufe/undoableCommand.h>
 
 #include <memory> // shared_ptr
 
@@ -68,16 +69,29 @@ public:
     MAYAUSD_CORE_PUBLIC
     MDagPath MapSdfPathToDagPath(const SdfPath& sdfPath) const;
 
+    /// \brief Sets the USD path to DAG path map.
+    MAYAUSD_CORE_PUBLIC
+    void SetUsdPathToDagPathMap(const UsdPathToDagPathMapPtr& pathMap);
+
+    /// \brief Returns the UFE composite command that can be extended and will be executed when
+    ///        the pull or push have completed successfully.
+    const std::shared_ptr<Ufe::CompositeUndoableCommand>& GetAdditionalFinalCommands() const
+    {
+        return _additionalCommands;
+    }
+
     const MayaUsd::ufe::ReplicateExtrasFromUSD _pullExtras;
     const MayaUsd::ufe::ReplicateExtrasToUSD   _pushExtras;
 
 private:
-    const UsdTimeCode&           _timeCode;
-    const UsdStageRefPtr         _stage;
-    const UsdPathToDagPathMapPtr _pathMap;
+    const UsdTimeCode&     _timeCode;
+    const UsdStageRefPtr   _stage;
+    UsdPathToDagPathMapPtr _pathMap;
 
     const VtDictionary&          _userArgs;
     const UsdMayaPrimUpdaterArgs _args;
+
+    std::shared_ptr<Ufe::CompositeUndoableCommand> _additionalCommands;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

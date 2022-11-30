@@ -3,10 +3,12 @@
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
+        EditAsMayaCommand.cpp
         Global.cpp
         ProxyShapeHandler.cpp
         ProxyShapeHierarchy.cpp
         ProxyShapeHierarchyHandler.cpp
+        SetVariantSelectionCommand.cpp
         StagesSubject.cpp
         UsdHierarchy.cpp
         UsdHierarchyHandler.cpp
@@ -198,10 +200,12 @@ if(PXR_VERSION GREATER_EQUAL 2108)
 endif()
 
 set(HEADERS
+    EditAsMayaCommand.h
     Global.h
     ProxyShapeHandler.h
     ProxyShapeHierarchy.h
     ProxyShapeHierarchyHandler.h
+    SetVariantSelectionCommand.h
     StagesSubject.h
     UsdHierarchy.h
     UsdHierarchyHandler.h

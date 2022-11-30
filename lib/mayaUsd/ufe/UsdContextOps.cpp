@@ -30,6 +30,7 @@
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/ufe/SetVariantSelectionCommand.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/plug/plugin.h>
@@ -393,53 +394,6 @@ public:
         _stage->Unload(_primPath);
         saveModifiedLoadRules();
     }
-};
-
-//! \brief Undoable command for variant selection change
-class SetVariantSelectionUndoableCommand : public Ufe::UndoableCommand
-{
-public:
-    SetVariantSelectionUndoableCommand(
-        const Ufe::Path&                 path,
-        const UsdPrim&                   prim,
-        const Ufe::ContextOps::ItemPath& itemPath)
-        : _path(path)
-        , _varSet(prim.GetVariantSets().GetVariantSet(itemPath[1]))
-        , _oldSelection(_varSet.GetVariantSelection())
-        , _newSelection(itemPath[2])
-    {
-        std::string errMsg;
-        if (!MayaUsd::ufe::isPrimMetadataEditAllowed(
-                prim, SdfFieldKeys->VariantSelection, TfToken(_varSet.GetName()), &errMsg)) {
-            throw std::runtime_error(errMsg.c_str());
-        }
-    }
-
-    void undo() override
-    {
-        _varSet.SetVariantSelection(_oldSelection);
-        // Restore the saved selection to the global selection.  If a saved
-        // selection item started with the prim's path, re-create it.
-        auto globalSn = Ufe::GlobalSelection::get();
-        globalSn->replaceWith(MayaUsd::ufe::recreateDescendants(_savedSn, _path));
-    }
-
-    void redo() override
-    {
-        // Make a copy of the global selection, to restore it on unmute.
-        auto globalSn = Ufe::GlobalSelection::get();
-        _savedSn.replaceWith(*globalSn);
-        // Filter the global selection, removing items below our prim.
-        globalSn->replaceWith(MayaUsd::ufe::removeDescendants(_savedSn, _path));
-        _varSet.SetVariantSelection(_newSelection);
-    }
-
-private:
-    const Ufe::Path   _path;
-    UsdVariantSet     _varSet;
-    const std::string _oldSelection;
-    const std::string _newSelection;
-    Ufe::Selection    _savedSn; // For global selection save and restore.
 };
 
 //! \brief Undoable command for prim active state change
@@ -1220,17 +1174,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         // At this point we know we have enough arguments to execute the
         // operation. If the prim is a Maya reference with auto-edit on,
         // the edit it instead of switching to the Maya reference.
-        auto compositeCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
-
-        compositeCmd->append(
-            std::make_shared<SetVariantSelectionUndoableCommand>(path(), prim(), itemPath));
-#ifdef UFE_V3_FEATURES_AVAILABLE
-        // Note: we must detect Maya references *after* the variant has changed, otherwise
-        //       the Maya reference node is not accessible, only the cached USD prim is
-        //       accessible before the vriant switch.
-        compositeCmd->append(std::make_shared<EditAsMayaChildrenMayaRefCommand>(path(), prim()));
-#endif
-        return compositeCmd;
+        return std::make_shared<ufe::SetVariantSelectionCommand>(path(), prim(), itemPath[1], itemPath[2]);
     } // Variant sets
     else if (itemPath[0] == kUSDToggleVisibilityItem) {
         auto object3d = UsdObject3d::create(fItem);
