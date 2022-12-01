@@ -59,16 +59,13 @@ SdfPath _GetRenderItemPrimPath(const SdfPath& base, const MRenderItem& ri)
 	if (ri.InternalObjectId() == 0) return {};
 	const auto mayaPath = UsdMayaUtil::RenderItemToUsdPath(ri, false, false);
 	if (mayaPath.IsEmpty()) return {};
-		
-	const auto* chr = mayaPath.GetText();
-	if (chr == nullptr) {
-		return {};
-	};
-	std::string s(chr + 1);
-	if (s.empty()) {
-		return {};
-	}
-	return base.AppendPath(SdfPath(s));
+	
+    const std::string theString = std::string(mayaPath.GetText());
+    if (theString.size() < 2){
+        return {};//Error
+    }
+	
+    return base.AppendPath(mayaPath);
 }
 
 SdfPath _GetRenderItemShaderPrimPath(const SdfPath& base, const MRenderItem& ri)

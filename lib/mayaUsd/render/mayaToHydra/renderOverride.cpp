@@ -601,7 +601,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, c
 				auto sceneDelegate = std::dynamic_pointer_cast<HdMayaSceneDelegate>(it);
 				if (sceneDelegate)
 				{
-					sceneDelegate->HandleCompleteViewportScene(scene);
+					sceneDelegate->HandleCompleteViewportScene(scene, static_cast<MFrameContext::DisplayStyle>(drawContext.getDisplayStyle()));
 					sceneDelegate->ScheduleRenderTasks(tasks);
 				}
 			}

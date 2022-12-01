@@ -29,6 +29,7 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 
+#include <maya/MFrameContext.h>
 #include <maya/MDagPath.h>
 #include <maya/MObject.h>
 
@@ -80,6 +81,9 @@ public:
     HDMAYA_API
     void RebuildAdapterOnIdle(const SdfPath& id, uint32_t flags) override;
 
+    HDMAYA_API
+    void UpdateDisplayStatusMaterial(MHWRender::DisplayStatus displayStatus, const MColor& wireframecolor) override;
+
     /// \brief Notifies the scene delegate when a material tag changes.
     ///
     /// This function is only affects the render index when its using HdSt.
@@ -128,7 +132,7 @@ public:
 
 	// TODO: change management
 	HDMAYA_API
-	void HandleCompleteViewportScene(const MViewportScene& scene);
+	void HandleCompleteViewportScene(const MViewportScene& scene, MFrameContext::DisplayStyle ds);
 
 
 #if MAYA_API_VERSION >= 20210000
@@ -278,6 +282,10 @@ private:
 		HdMayaShaderInstanceData& sd,
 		MObject& shadingEngineNode);
 
+    void UpdateDisplayStatusMaterialColor(const SdfPath& materialPath, HdMaterialNetworkMap& material, const GfVec4f& selCol);
+    void CreateDisplayStatusMaterials();
+    void AddDisplayStatusMaterialsToHydra(HdRenderIndex& renderIndex);
+
     bool _CreateMaterial(const SdfPath& id, const MObject& obj);
     /// \brief Unordered Map storing the shape adapters.
     AdapterMap<HdMayaShapeAdapterPtr> _shapeAdapters;
@@ -300,13 +308,19 @@ private:
     std::vector<SdfPath>                       _materialTagsChanged;
 
     SdfPath _fallbackMaterial;
-	
-	//GfVec3f _pointColor = 
+    
+    struct DisplayStatusMaterialData
+    {
+        DisplayStatusMaterialData(const SdfPath& materialPath,const HdMaterialNetworkMap& materialNetworkMap) :_materialPath(materialPath), _materialNetworkMap(materialNetworkMap)
+        {};
+        SdfPath                 _materialPath;
+        HdMaterialNetworkMap    _materialNetworkMap;
+    };
+    typedef std::unordered_map<MHWRender::DisplayStatus, DisplayStatusMaterialData> DisplayStatusMaterialMap;
+    typedef std::unordered_map<MHWRender::DisplayStatus, DisplayStatusMaterialData>::value_type DisplayStatusMaterialMap_Type;//For using std::find_if
+    DisplayStatusMaterialMap _displayStatusMaterials;
 
     bool    _enableMaterials = false;
-    //This is used when we switch back and forth from VP2 to Hydra, since the MViewportScene mFlags were all 0 as no actual change was happening in the scene, 
-    //but we needed to re-create the hydra data for these render items.
-    bool _handleCompleteViewportSceneHasNotBeenCalledYet = true;
 };
 
 typedef std::shared_ptr<HdMayaSceneDelegate> MayaSceneDelegateSharedPtr;

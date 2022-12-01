@@ -24,6 +24,7 @@
 #include <pxr/usd/sdf/path.h>
 
 #include <maya/MDagPath.h>
+#include <maya/MHWGeometryUtilities.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -59,6 +60,8 @@ public:
     virtual void RecreateAdapter(const SdfPath& id, const MObject& obj) { }
     virtual void RecreateAdapterOnIdle(const SdfPath& id, const MObject& obj) { }
     virtual void RebuildAdapterOnIdle(const SdfPath& id, uint32_t flags) { }
+    virtual void UpdateDisplayStatusMaterial(MHWRender::DisplayStatus displayStatus, const MColor& wireframecolor)  {}
+
     /// \brief Notifies the scene delegate when a material tag changes.
     ///
     /// \param id Id of the Material that changed its tag.

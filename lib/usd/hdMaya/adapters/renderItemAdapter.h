@@ -29,6 +29,7 @@
 #include <pxr/imaging/hdx/renderTask.h>
 
 #include <maya/MMatrix.h>
+#include <maya/MHWGeometryUtilities.h>
 
 #include <functional>
 #include <memory>
@@ -192,6 +193,12 @@ public:
 	HDMAYA_API
 	void SetVisible(bool val) { _visible = val; }
 
+	HDMAYA_API
+	const MColor& GetWireframeColor() const { return _wireframeColor; }
+	
+	HDMAYA_API
+	MHWRender::DisplayStatus GetDisplayStatus() const { return _displayStatus; }
+	
 	// TODO:  move transform to common base class with HdMayaDagAdapter
 	HDMAYA_API
     GfMatrix4d GetTransform() { return _transform[0]; }
@@ -211,8 +218,23 @@ public:
 	HDMAYA_API
 	void UpdateTopology(MRenderItem& ri);
 
+	//Class used to pass data to the UpdateFromDelta method, so we can extend the parameters in the future if needed.
+	class UpdateFromDeltaData
+    {
+    public:
+		UpdateFromDeltaData(MRenderItem& ri, unsigned int flags, const MColor& wireframeColor, MHWRender::DisplayStatus displayStatus) :
+			_ri(ri), _flags(flags), _wireframeColor(wireframeColor), _displayStatus(displayStatus)
+		{
+		}
+
+        MRenderItem&				_ri;
+        unsigned int                _flags;
+        const MColor&               _wireframeColor; 
+        MHWRender::DisplayStatus    _displayStatus;
+    };
+
 	HDMAYA_API
-    void UpdateFromDelta(MRenderItem& ri, unsigned int flags);
+    void UpdateFromDelta(const UpdateFromDeltaData& data);
 
 	HDMAYA_API
 	virtual std::shared_ptr<HdTopology> GetTopology();
@@ -252,7 +274,8 @@ private:
     GfMatrix4d _transform[2];  // TODO:  move transform to common base class with HdMayaDagAdapter
 	int _fastId = 0;
 	bool _visible = false;
-
+	MColor _wireframeColor			= {1.f,1.f,1.f,1.f};
+	MHWRender::DisplayStatus _displayStatus = MHWRender::DisplayStatus::kNoStatus;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

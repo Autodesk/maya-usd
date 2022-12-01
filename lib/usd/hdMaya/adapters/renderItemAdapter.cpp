@@ -355,7 +355,9 @@ void HdMayaRenderItemAdapter::_RemoveRprim()
 	GetDelegate()->RemoveRprim(GetID());
 }
 
-void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flags)
+
+
+void HdMayaRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data)
 { 
     if (_primitive != MHWRender::MGeometry::Primitive::kTriangles
         && _primitive != MHWRender::MGeometry::Primitive::kLines) {
@@ -363,15 +365,25 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
     }
 
     //const bool isNew = flags & MViewportScene::MVS_new;  //not used yet
-	const bool visible = flags & MViewportScene::MVS_visible;
+	const bool visible			= data._flags & MViewportScene::MVS_visible;
+	const bool matrixChanged    = data._flags & MViewportScene::MVS_changedMatrix;
+    const bool geomChanged		= data._flags & MViewportScene::MVS_changedGeometry;
+    const bool topoChanged		= data._flags & MViewportScene::MVS_changedTopo;
+	const bool visibChanged		= data._flags & MViewportScene::MVS_changedVisibility;
+	const bool effectChanged	= data._flags & MViewportScene::MVS_changedEffect;
+	
+	const bool isLinePrimitive	= (MHWRender::MGeometry::Primitive::kLines == _primitive);
 
-    const bool matrixChanged = flags & MViewportScene::MVS_changedMatrix;
-    const bool geomChanged = flags & MViewportScene::MVS_changedGeometry;
-    const bool topoChanged = flags & MViewportScene::MVS_changedTopo;
-	const bool visibChanged = flags & MViewportScene::MVS_changedVisibility;
-	const bool effectChanged = flags & MViewportScene::MVS_changedEffect;
+	_wireframeColor				= data._wireframeColor;
+	_displayStatus				= data._displayStatus;
 
-    HdDirtyBits dirtyBits = 0;
+	//At some point, we will have to handle the dormant color if the user customized the wireframe color of an object
+	//as we use the same color for all dormant objects
+	if (isLinePrimitive){
+		GetDelegate()->UpdateDisplayStatusMaterial(_displayStatus, _wireframeColor);
+	}
+	
+	HdDirtyBits dirtyBits = 0;
 	
 	if (visibChanged)
 	{
@@ -394,7 +406,7 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flag
 
     MGeometry* geom = nullptr;
     if (geomChanged | topoChanged) {
-        geom = ri.geometry();
+        geom = data._ri.geometry();
     }
     VtIntArray vertexIndices;
     VtIntArray vertexCounts;

@@ -193,6 +193,16 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (HdMayaSceneDelegate)
     ((FallbackMaterial, "__fallback_material__"))
+    ((ActiveDisplayStatusMaterial, "__active_selection_material__"))
+    ((LiveDisplayStatusMaterial, "__live_selection_material__"))
+    ((DormantDisplayStatusMaterial, "__dormant_selection_material__"))
+    ((HiliteDisplayStatusMaterial, "__hilite_selection_material__"))
+    ((TemplateDisplayStatusMaterial, "__template_selection_material__"))
+    ((ActiveTemplateDisplayStatusMaterial, "__activetemplate_selection_material__"))
+    ((ActiveComponentDisplayStatusMaterial, "__activecomponent_selection_material__"))
+    ((LeadDisplayStatusMaterial, "__lead_selection_material__"))
+    ((ActiveAffectedDisplayStatusMaterial, "__activeaffected_selection_material__"))
+    (diffuseColor)
 	(HdMayaMeshPoints)
 );
 // clang-format on
@@ -216,6 +226,9 @@ HdMayaSceneDelegate::HdMayaSceneDelegate(const InitData& initData)
     : HdMayaDelegateCtx(initData)
     , _fallbackMaterial(initData.delegateID.AppendChild(_tokens->FallbackMaterial))
 {
+    //TfDebug::Enable(HDMAYA_DELEGATE_GET_MATERIAL_ID);
+
+    CreateDisplayStatusMaterials();
 }
 
 HdMayaSceneDelegate::~HdMayaSceneDelegate()
@@ -238,6 +251,64 @@ HdMayaSceneDelegate::~HdMayaSceneDelegate()
 #endif
 }
 
+void HdMayaSceneDelegate::CreateDisplayStatusMaterials()
+{
+    //Init Display status materials
+    _displayStatusMaterials.insert( {MHWRender::DisplayStatus::kActive,         DisplayStatusMaterialData(SdfPath::AbsoluteRootPath().AppendChild(_tokens->ActiveDisplayStatusMaterial),            HdMaterialNetworkMap())} );
+    _displayStatusMaterials.insert( {MHWRender::DisplayStatus::kLive,           DisplayStatusMaterialData(SdfPath::AbsoluteRootPath().AppendChild(_tokens->LiveDisplayStatusMaterial),              HdMaterialNetworkMap())} );
+    _displayStatusMaterials.insert( {MHWRender::DisplayStatus::kDormant,        DisplayStatusMaterialData(SdfPath::AbsoluteRootPath().AppendChild(_tokens->DormantDisplayStatusMaterial),           HdMaterialNetworkMap())} );//Used when viewport needs wireframe primitives
+    _displayStatusMaterials.insert( {MHWRender::DisplayStatus::kHilite,         DisplayStatusMaterialData(SdfPath::AbsoluteRootPath().AppendChild(_tokens->HiliteDisplayStatusMaterial),            HdMaterialNetworkMap())} );
+    _displayStatusMaterials.insert( {MHWRender::DisplayStatus::kTemplate,       DisplayStatusMaterialData(SdfPath::AbsoluteRootPath().AppendChild(_tokens->TemplateDisplayStatusMaterial),          HdMaterialNetworkMap())} );
+    _displayStatusMaterials.insert( {MHWRender::DisplayStatus::kActiveTemplate, DisplayStatusMaterialData(SdfPath::AbsoluteRootPath().AppendChild(_tokens->ActiveTemplateDisplayStatusMaterial),    HdMaterialNetworkMap())} );
+    _displayStatusMaterials.insert( {MHWRender::DisplayStatus::kActiveComponent,DisplayStatusMaterialData(SdfPath::AbsoluteRootPath().AppendChild(_tokens->ActiveComponentDisplayStatusMaterial),   HdMaterialNetworkMap())} );
+    _displayStatusMaterials.insert( {MHWRender::DisplayStatus::kLead,           DisplayStatusMaterialData(SdfPath::AbsoluteRootPath().AppendChild(_tokens->LeadDisplayStatusMaterial),              HdMaterialNetworkMap())} );
+    _displayStatusMaterials.insert( {MHWRender::DisplayStatus::kActiveAffected, DisplayStatusMaterialData(SdfPath::AbsoluteRootPath().AppendChild(_tokens->ActiveAffectedDisplayStatusMaterial),    HdMaterialNetworkMap())} );
+
+    //Apply a default white color which will be replaced by an actual color value coming from a renderitem which has the related display status.
+    static const VtValue whiteColor = VtValue(GfVec4f(1.f,1.f,1.f,1.f));
+
+    //Init the HdMaterialNetworkMap from each of the display status materials
+    for (auto& displayStatusMat : _displayStatusMaterials){
+        HdMaterialNetwork network;
+        HdMaterialNode node;
+        node.identifier     = UsdImagingTokens->UsdPreviewSurface;
+        node.path           = displayStatusMat.second._materialPath;
+        node.parameters.insert({_tokens->diffuseColor, whiteColor});
+        network.nodes.push_back(std::move(node));
+        displayStatusMat.second._materialNetworkMap.map.insert({HdMaterialTerminalTokens->surface, std::move(network)});
+        displayStatusMat.second._materialNetworkMap.terminals.push_back(node.path);
+    }
+}
+
+void HdMayaSceneDelegate::AddDisplayStatusMaterialsToHydra(HdRenderIndex& renderIndex)
+{
+    for (auto& displayStatusMat : _displayStatusMaterials){
+        renderIndex.InsertSprim(HdPrimTypeTokens->material, this, displayStatusMat.second._materialPath);
+    }
+}
+
+void HdMayaSceneDelegate::UpdateDisplayStatusMaterial(MHWRender::DisplayStatus displayStatus, const MColor& wireframecolor)
+{
+    auto it = _displayStatusMaterials.find(displayStatus);
+    if (it != _displayStatusMaterials.end()){
+        UpdateDisplayStatusMaterialColor(it->second._materialPath, it->second._materialNetworkMap, GfVec4f (wireframecolor[0], wireframecolor[1], wireframecolor[2], wireframecolor[3]));
+    }
+}
+
+void HdMayaSceneDelegate::UpdateDisplayStatusMaterialColor(const SdfPath& materialPath, HdMaterialNetworkMap& material, const GfVec4f& selCol)
+{
+    material.map.clear();
+    HdMaterialNetwork network;
+    HdMaterialNode node;
+    node.identifier     = UsdImagingTokens->UsdPreviewSurface;
+    node.path           = materialPath;
+    node.parameters.insert({_tokens->diffuseColor, VtValue(selCol)});
+    network.nodes.push_back(std::move(node));
+    material.map.insert({HdMaterialTerminalTokens->surface, std::move(network)});
+
+    GetChangeTracker().MarkSprimDirty(materialPath, HdMaterial::DirtyParams);
+}
+
 void HdMayaSceneDelegate::_AddRenderItem(const HdMayaRenderItemAdapterPtr& ria)
 {
 	_renderItemsAdaptersFast.insert({ ria->GetFastID(), ria });
@@ -252,7 +323,7 @@ void HdMayaSceneDelegate::_RemoveRenderItem(
 }
 
 //void HdMayaSceneDelegate::_TransformNodeDirty(MObject& node, MPlug& plug, void* clientData)
-void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scene)
+void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scene, MFrameContext::DisplayStyle displayStyle)
 {
 #if 1
 	// First loop to get rid of removed items
@@ -273,22 +344,22 @@ void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scen
     // This loop could, in theory, be parallelized.  Unclear how large the gains would be, but maybe
     // nothing to lose unless there is some internal contention in USD.
     for (size_t i = 0; i < scene.mCount; i++) {
-        auto flags = scene.mFlags[i];
-        if (_handleCompleteViewportSceneHasNotBeenCalledYet)
-        {
-            //Rebuild everything when we have created the scene delegate whatever the MViewportScene flags are
-            // this is used to handle the case when switching back and forth from VP2 to Hydra. 
-            // Since there are no actual changes in the scene when doing so, the flags are all 0 but we have 
-            // to re-create all hydra data for these render items so we hardcode the flags value.
-            flags = MViewportScene::MVS_ALL | MViewportScene::MVS_visible;
-        }
-        else
-        {
-            if (flags == 0)
-                continue;
-        }
+        auto flags      = scene.mFlags[i];
+        const auto& ri  = *scene.mItems[i];
 
-		const auto& ri = *scene.mItems[i];
+        MColor wireframeColor;
+        MHWRender::DisplayStatus    displayStatus = MHWRender::kNoStatus;
+
+        MDagPath dagPath			= ri.sourceDagPath();
+	    if (dagPath.isValid()){
+		    wireframeColor			= MGeometryUtilities::wireframeColor(dagPath);//This is a color managed VP2 color, it will need to be unmanaged at some point
+		    displayStatus			= MGeometryUtilities::displayStatus(dagPath);
+        }
+	
+        if (flags == 0){
+            continue;
+        }
+        
 		int fastId = scene.mItems[i]->InternalObjectId();
 		HdMayaRenderItemAdapterPtr ria = nullptr;
 		if (!_GetRenderItem(fastId, ria))
@@ -316,7 +387,8 @@ void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scen
         // if (flags & (MViewPortScene::MVS_geometry | MViewPortScene::MVS_topo) {
         // notify transform changed also in UpdateGeometry, so always call if anything changed
         // TODO:  refactor to separate notifications from geometry
-        ria->UpdateFromDelta(*scene.mItems[i], flags);
+        const HdMayaRenderItemAdapter::UpdateFromDeltaData data(*scene.mItems[i], flags, wireframeColor, displayStatus);
+        ria->UpdateFromDelta(data);
         //}
         if (flags & MViewportScene::MVS_changedMatrix) {
 			ria->UpdateTransform(*scene.mItems[i]);
@@ -359,7 +431,6 @@ void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scen
 		}
 	}
 #endif
-    _handleCompleteViewportSceneHasNotBeenCalledYet = false;
 }
 
 void HdMayaSceneDelegate::Populate()
@@ -399,9 +470,10 @@ void HdMayaSceneDelegate::Populate()
 
 
 
-    // Adding fallback materials sprim to the render index.
+    // Adding materials sprim to the render index.
     if (renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->material)) {
         renderIndex.InsertSprim(HdPrimTypeTokens->material, this, _fallbackMaterial);
+        AddDisplayStatusMaterialsToHydra(renderIndex);
     }
 	
 
@@ -1416,17 +1488,16 @@ SdfPath HdMayaSceneDelegate::GetPathForInstanceIndex(
 
 bool HdMayaSceneDelegate::GetVisible(const SdfPath& id)
 {
-#ifdef HDMAYA_SCENE_RENDER_DATASERVER
-	TF_DEBUG(HDMAYA_DELEGATE_GET_VISIBLE)
+    TF_DEBUG(HDMAYA_DELEGATE_GET_VISIBLE)
 		.Msg("HdMayaSceneDelegate::GetVisible(%s)\n", id.GetText());
+
+#ifdef HDMAYA_SCENE_RENDER_DATASERVER
 	return _GetValue<HdMayaRenderItemAdapter, bool>(
 		id,
 		[](HdMayaRenderItemAdapter* a) -> bool { return a->GetVisible(); },
 		_renderItemsAdapters
 		);
 #else
-    TF_DEBUG(HDMAYA_DELEGATE_GET_VISIBLE)
-        .Msg("HdMayaSceneDelegate::GetVisible(%s)\n", id.GetText());
     return _GetValue<HdMayaDagAdapter, bool>(
         id,
         [](HdMayaDagAdapter* a) -> bool { return a->GetVisible(); },
@@ -1478,6 +1549,9 @@ HdDisplayStyle HdMayaSceneDelegate::GetDisplayStyle(const SdfPath& id)
 
 SdfPath HdMayaSceneDelegate::GetMaterialId(const SdfPath& id)
 {
+    TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_ID)
+		.Msg("HdMayaSceneDelegate::GetMaterialId(%s)\n", id.GetText());
+
 #ifdef HDMAYA_SCENE_RENDER_DATASERVER
 	if (!_enableMaterials)
 		return {};
@@ -1487,6 +1561,16 @@ SdfPath HdMayaSceneDelegate::GetMaterialId(const SdfPath& id)
 	}
 
 	auto& renderItemAdapter = *result;
+
+    //Check if this render item is a wireframe primitive
+    if (MHWRender::MGeometry::Primitive::kLines == renderItemAdapter->GetPrimitive()){
+        const MHWRender::DisplayStatus displayStatus    = renderItemAdapter->GetDisplayStatus();
+        auto it = _displayStatusMaterials.find(displayStatus);
+        if (it != _displayStatusMaterials.end()){
+            return it->second._materialPath;
+        }
+    }
+
 	auto& shaderData = renderItemAdapter->GetShaderData();
 	if (renderItemAdapter->GetShaderData().ShapeUIShader)
 	// Do not return material for shape UI,
@@ -1511,8 +1595,6 @@ SdfPath HdMayaSceneDelegate::GetMaterialId(const SdfPath& id)
 	//return _CreateMaterial(materialId, material) ? materialId : _fallbackMaterial;
 	return {};
 #else
-	TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_ID)
-		.Msg("HdMayaSceneDelegate::GetMaterialId(%s)\n", id.GetText());
 	if (!_enableMaterials)
 		return {};
 	auto shapeAdapter = TfMapLookupPtr(_shapeAdapters, id);
@@ -1534,14 +1616,23 @@ SdfPath HdMayaSceneDelegate::GetMaterialId(const SdfPath& id)
 
 VtValue HdMayaSceneDelegate::GetMaterialResource(const SdfPath& id)
 {
-#ifdef HDMAYA_SCENE_RENDER_DATASERVER
-	// TODO this is the same as !HDMAYA_SCENE_RENDER_DATASERVER
-	if (
-		id == _fallbackMaterial
-		)
+    TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_RESOURCE)
+		.Msg("HdMayaSceneDelegate::GetMaterialResource(%s)\n", id.GetText());
+
+    if (id == _fallbackMaterial)
 	{
 		return HdMayaMaterialAdapter::GetPreviewMaterialResource(id);
 	}
+   
+    //Find if this material path is inside our display status map
+    auto itResult = std::find_if(cbegin(_displayStatusMaterials), cend(_displayStatusMaterials), 
+                    [&id](const DisplayStatusMaterialMap_Type& data){ return data.second._materialPath == id; });
+    if (itResult != _displayStatusMaterials.end()){
+        return VtValue(itResult->second._materialNetworkMap);
+    }
+
+#ifdef HDMAYA_SCENE_RENDER_DATASERVER
+	// TODO this is the same as !HDMAYA_SCENE_RENDER_DATASERVER
 	auto ret = _GetValue<HdMayaMaterialAdapter, VtValue>(
 		id,
 		[](HdMayaMaterialAdapter* a) -> VtValue { return a->GetMaterialResource(); },
@@ -1549,14 +1640,6 @@ VtValue HdMayaSceneDelegate::GetMaterialResource(const SdfPath& id)
 	return ret.IsEmpty() ? HdMayaMaterialAdapter::GetPreviewMaterialResource(id) : ret;
 
 #else
-	TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_RESOURCE)
-		.Msg("HdMayaSceneDelegate::GetMaterialResource(%s)\n", id.GetText());
-	if (
-		id == _fallbackMaterial
-		) 
-	{
-		return HdMayaMaterialAdapter::GetPreviewMaterialResource(id);
-	}
 	auto ret = _GetValue<HdMayaMaterialAdapter, VtValue>(
 		id,
 		[](HdMayaMaterialAdapter* a) -> VtValue { return a->GetMaterialResource(); },

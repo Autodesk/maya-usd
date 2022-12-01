@@ -59,7 +59,7 @@ public:
     {
         TF_DEBUG(HDMAYA_ADAPTER_GET)
             .Msg(
-                "Called HdMayaSpotLightAdapter::Get(%s) - %s\n",
+                "Called HdMayaDirectionalLightAdapter::Get(%s) - %s\n",
                 key.GetText(),
                 GetDagPath().partialPathName().asChar());
 
