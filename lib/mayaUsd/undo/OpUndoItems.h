@@ -480,8 +480,10 @@ class UfeCommandUndoItem : public OpUndoItem
 public:
     /// \brief Execute a UFE command and keep track of it.
     MAYAUSD_CORE_PUBLIC
-    static bool
-    execute(const std::string& name, const std::shared_ptr<Ufe::UndoableCommand>& command, OpUndoItemList& undoInfo);
+    static bool execute(
+        const std::string&                           name,
+        const std::shared_ptr<Ufe::UndoableCommand>& command,
+        OpUndoItemList&                              undoInfo);
 
     /// \brief Execute a UFE command and keep track of it in the global list.
     MAYAUSD_CORE_PUBLIC
@@ -490,18 +492,19 @@ public:
 
     /// \brief Keep track of a UFE command.
     MAYAUSD_CORE_PUBLIC
-    static bool add(
-        const std::string&                           name,
+    static bool
+    add(const std::string&                           name,
         const std::shared_ptr<Ufe::UndoableCommand>& command,
         OpUndoItemList&                              undoInfo);
 
     /// \brief Keep track of a UFE command in the global list.
     MAYAUSD_CORE_PUBLIC
-    static bool
-    add(const std::string& name, const std::shared_ptr<Ufe::UndoableCommand>& command);
+    static bool add(const std::string& name, const std::shared_ptr<Ufe::UndoableCommand>& command);
 
     MAYAUSD_CORE_PUBLIC
-    UfeCommandUndoItem(const std::string& name, const std::shared_ptr<Ufe::UndoableCommand>& command);
+    UfeCommandUndoItem(
+        const std::string&                           name,
+        const std::shared_ptr<Ufe::UndoableCommand>& command);
 
     MAYAUSD_CORE_PUBLIC
     ~UfeCommandUndoItem() override;
