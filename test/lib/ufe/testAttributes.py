@@ -243,7 +243,17 @@ class AttributesTestCase(unittest.TestCase):
 
         self.assertNotIn("inputs:file2:varnameStr", standardSurfaceAttrs.attributeNames)
         self.assertIn("inputs:file2:varname", standardSurfaceAttrs.attributeNames)
-
+        
+        # Test undo.
+        cmds.undo()
+        self.assertIn("inputs:file2:varnameStr", standardSurfaceAttrs.attributeNames)
+        self.assertNotIn("inputs:file2:varname", standardSurfaceAttrs.attributeNames)
+        
+        # Test redo.
+        cmds.redo()
+        self.assertNotIn("inputs:file2:varnameStr", standardSurfaceAttrs.attributeNames)
+        self.assertIn("inputs:file2:varname", standardSurfaceAttrs.attributeNames)
+        
         # Test the connections.
 
         ufeItemTexture = ufeUtils.createUfeSceneItem(shapeNode,
@@ -300,6 +310,48 @@ class AttributesTestCase(unittest.TestCase):
         self.assertEqual(ufe.PathString.string(dstAttr.path),
             '|stage|stageShape,/pCube2/Looks/standardSurface2SG/standardSurface2')
         self.assertEqual(dstAttr.name, 'inputs:base_color')
+        
+        # Create the SceneItem for a compound with out connection to the parent.
+        ufeCompoundItem = ufeUtils.createUfeSceneItem(shapeNode,
+            '/pCube2/Looks/standardSurface2SG/NodeGraph1')
+        self.assertIsNotNone(ufeCompoundItem)
+
+        # Then create the attributes interface for that item.
+        compoundAttrs = ufe.Attributes.attributes(ufeCompoundItem)
+        self.assertIsNotNone(compoundAttrs)
+
+        # Rename the attribute.
+        cmd = compoundAttrs.renameAttributeCmd("outputs:out", "outputs:out1")
+        self.assertIsNotNone(cmd)
+
+        ufeCmd.execute(cmd)
+
+        self.assertNotIn("outputs:out", compoundAttrs.attributeNames)
+        self.assertIn("outputs:out1", compoundAttrs.attributeNames)
+
+        # Test the connection.
+
+        ufeParentItem = ufeUtils.createUfeSceneItem(shapeNode,
+            '/pCube2/Looks/standardSurface2SG')
+        self.assertIsNotNone(ufeParentItem)
+
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(ufeParentItem.runTimeId())
+        self.assertIsNotNone(connectionHandler)
+        connections = connectionHandler.sourceConnections(ufeParentItem)
+        self.assertIsNotNone(connectionHandler)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 2)
+
+        srcAttr = conns[1].src
+        dstAttr = conns[1].dst
+
+        self.assertEqual(ufe.PathString.string(srcAttr.path),
+            '|stage|stageShape,/pCube2/Looks/standardSurface2SG/NodeGraph1')
+        self.assertEqual(srcAttr.name, 'outputs:out1')
+
+        self.assertEqual(ufe.PathString.string(dstAttr.path),
+            '|stage|stageShape,/pCube2/Looks/standardSurface2SG')
+        self.assertEqual(dstAttr.name, 'outputs:out')
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
