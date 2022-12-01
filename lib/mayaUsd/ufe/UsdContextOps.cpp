@@ -752,50 +752,6 @@ void executeEditAsMaya(const Ufe::Path& path)
     MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ true);
 }
 
-class EditAsMayaChildrenMayaRefCommand : public Ufe::UndoableCommand
-{
-public:
-    static const std::string commandName;
-    static const MString     cancelRemoval;
-
-    EditAsMayaChildrenMayaRefCommand(const Ufe::Path& path, const PXR_NS::UsdPrim& prim)
-        : _path(path), _prim(prim)
-    {
-    }
-
-    void undo() override { }
-
-    void redo() override
-    {
-        for (const auto& child : _prim.GetAllChildren()) {
-            if (child.GetTypeName() != TfToken("MayaReference"))
-                continue;
-
-            UsdAttribute autoEditAttr = child.GetAttribute(TfToken("mayaAutoEdit"));
-            if (!autoEditAttr.IsValid())
-                continue;
-
-            bool isAutoEdit = false;
-            if (!autoEditAttr.Get<bool>(&isAutoEdit) && isAutoEdit)
-                continue;
-
-            const Ufe::Path childPath = _path + Ufe::PathComponent(child.GetName().GetString());
-
-            // Note: the main case where the Maya reference is not editable is when
-            //       it is already being edited!
-            if (!PrimUpdaterManager::getInstance().canEditAsMaya(childPath))
-                continue;
-
-            executeEditAsMaya(childPath);
-        }
-    }
-
-private:
-    Ufe::Path _path;
-    UsdPrim   _prim;
-};
-const std::string EditAsMayaChildrenMayaRefCommand::commandName("Edit As Maya");
-
 #endif
 
 } // namespace

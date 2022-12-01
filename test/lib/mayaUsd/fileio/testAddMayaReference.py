@@ -31,6 +31,7 @@ from maya.api import OpenMaya as om
 
 import mayaUsdAddMayaReference
 import mayaUsdMayaReferenceUtils as mayaRefUtils
+from mayaUsd.lib import cacheToUsd
 
 import ufe
 
@@ -56,12 +57,28 @@ class AddMayaReferenceTestCase(unittest.TestCase):
     def tearDownClass(cls):
         standalone.uninitialize()
 
+    def getCacheFileName(self):
+        return 'testAddMayaRefCache.usda'
+
+    def removeCacheFile(self):
+        '''
+        Remove the cache file if it exists. Ignore error if it does not exists.
+        '''
+        try:
+            os.remove(self.getCacheFileName())
+        except:
+            pass
+
     def setUp(self):
         # Start each test with a new scene with empty stage.
         cmds.file(new=True, force=True)
         import mayaUsd_createStageWithNewLayer
         self.proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         self.stage = mayaUsd.lib.GetPrim(self.proxyShapePathStr).GetStage()
+        self.removeCacheFile()
+
+    def tearDown(self):
+        self.removeCacheFile()
 
     def testDefault(self):
         '''Test the default options for Add Maya Reference.
@@ -264,6 +281,69 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         #       anymore.
         mayaRefUsdItem = ufeUtils.createItem(mayaRefPrimPathStr)
         mayaRefPrim = usdUtils.getPrimFromSceneItem(mayaRefUsdItem)
+        attr = mayaRefPrim.GetAttribute('mayaAutoEdit')
+        self.assertTrue(attr.IsValid())
+        self.assertEqual(attr.Get(), True)
+        self.assertFalse(mayaRefPrim.IsActive())
+
+
+    def testEditAndMergeMayaRef(self):
+        '''Test editing then merge a Maya Reference.
+
+        Add a Maya Reference using auto-edit, then merge the edits.
+        '''
+        kDefaultPrimName = mayaRefUtils.defaultMayaReferencePrimName()
+
+        # Since this is a brand new prim, it should not have variant sets.
+        primTestDefault = self.stage.DefinePrim('/Test_Default', 'Xform')
+        primPathStr = self.proxyShapePathStr + ',/Test_Default'
+        self.assertFalse(primTestDefault.HasVariantSets())
+
+        variantSetName = 'new_variant_set'
+        variantName =  'new_variant'
+        cacheVariantName = 'new_cache'
+
+        mayaRefPrim = mayaUsdAddMayaReference.createMayaReferencePrim(
+            primPathStr,
+            self.mayaSceneStr,
+            self.kDefaultNamespace,
+            variantSet=(variantSetName, variantName),
+            mayaAutoEdit=True)
+
+        # The prim should have a variant set.
+        self.assertTrue(primTestDefault.HasVariantSets())
+
+        # Verify that a Maya Reference prim was created.
+        self.assertTrue(mayaRefPrim.IsValid())
+        self.assertEqual(str(mayaRefPrim.GetName()), kDefaultPrimName)
+        self.assertEqual(mayaRefPrim, primTestDefault.GetChild(kDefaultPrimName))
+        self.assertTrue(mayaRefPrim.GetPrimTypeInfo().GetTypeName(), 'MayaReference')
+
+        attr = mayaRefPrim.GetAttribute('mayaAutoEdit')
+        self.assertTrue(attr.IsValid())
+        self.assertEqual(attr.Get(), True)
+
+        # Merge Maya edits.
+        # Cache to USD, using a payload composition arc.
+        defaultExportOptions = cacheToUsd.getDefaultExportOptions()
+        cacheFile = self.getCacheFileName()
+        cachePrimName = 'cachePrimName'
+        payloadOrReference = 'Payload'
+        listEditType = 'Prepend'
+        # In the sibling cache case variantSetName and cacheVariantName will be
+        # None.
+        cacheOptions = cacheToUsd.createCacheCreationOptions(
+            defaultExportOptions, cacheFile, cachePrimName,
+            payloadOrReference, listEditType, variantSetName, cacheVariantName)
+
+        aMayaItem = ufe.GlobalSelection.get().front()
+        aMayaPath = aMayaItem.path()
+        aMayaPathStr = ufe.PathString.string(aMayaPath)
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(aMayaPathStr, cacheOptions))
+        
+        # Verify that the auto-edit is still on and the prim
+        # is inactive because it is being edited in Maya.
         attr = mayaRefPrim.GetAttribute('mayaAutoEdit')
         self.assertTrue(attr.IsValid())
         self.assertEqual(attr.Get(), True)
