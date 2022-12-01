@@ -437,7 +437,9 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data)
             // calculate the offset ? The following happens when I try to do it : Invalid Hydra prim
             // - Vertex primvar points has 288 elements, while its topology references only upto
             // element index 24.
-            _positions.assign(vertexPositions, vertexPositions + vertCount);
+            if (TF_VERIFY(vertexPositions)) {
+                _positions.assign(vertexPositions, vertexPositions + vertCount);
+            }
             verts->unmap();
         }
     }
