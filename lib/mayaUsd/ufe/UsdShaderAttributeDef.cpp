@@ -114,6 +114,10 @@ static const MetadataMap _metaMap = {
           }
           return !r.empty() ? r : Ufe::Value();
       } },
+    { "uisoftmin", // Maya has 0-100 sliders. In rendering, sliders are 0-1.
+      [](const PXR_NS::SdrShaderProperty&) {
+          return std::string { "0.0" }; // Will only be returned if the metadata does not exist.
+      } },
     { "uisoftmax", // Maya has 0-100 sliders. In rendering, sliders are 0-1.
       [](const PXR_NS::SdrShaderProperty&) {
           return std::string { "1.0" }; // Will only be returned if the metadata does not exist.
