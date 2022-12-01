@@ -504,7 +504,7 @@ class DuplicateCmdTestCase(unittest.TestCase):
         batchOpsHandler = ufe.RunTimeMgr.instance().batchOpsHandler(geomItem.runTimeId())
         self.assertIsNotNone(batchOpsHandler)
 
-        # Put then in a selection, making sure one child item is first, and that another child item is last.
+        # Put them in a selection, making sure one child item is first, and that another child item is last.
         sel = ufe.Selection()
         sel.append(shaderItem1)
         sel.append(geomItem)
