@@ -326,6 +326,9 @@ bool PxrUsdTranslators_MayaReferenceUpdater::pushEnd()
                 if (!mayaAutoEditAttr.Get<bool>(&autoEdited))
                     continue;
 
+                if (!autoEdited)
+                    continue;
+
                 auto cmd = MayaUsd::ufe::SetVariantSelectionCommand::create(
                     getUfePath().pop(), primWithVariants, variantSetName, variantSelection);
                 getContext()->GetAdditionalFinalCommands()->append(cmd);
