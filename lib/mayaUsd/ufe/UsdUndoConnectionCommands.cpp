@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "UsdUndoConnectionCommands.h"
+
 #include "private/Utils.h"
 
 #include <mayaUsd/ufe/Global.h>
@@ -145,8 +146,9 @@ UsdUndoCreateConnectionCommand::UsdUndoCreateConnectionCommand(
 
 UsdUndoCreateConnectionCommand::~UsdUndoCreateConnectionCommand() { }
 
-UsdUndoCreateConnectionCommand::Ptr
-UsdUndoCreateConnectionCommand::create(const Ufe::Attribute::Ptr& srcAttr, const Ufe::Attribute::Ptr& dstAttr)
+UsdUndoCreateConnectionCommand::Ptr UsdUndoCreateConnectionCommand::create(
+    const Ufe::Attribute::Ptr& srcAttr,
+    const Ufe::Attribute::Ptr& dstAttr)
 {
     return std::make_shared<UsdUndoCreateConnectionCommand>(srcAttr, dstAttr);
 }
@@ -155,9 +157,9 @@ void UsdUndoCreateConnectionCommand::execute()
 {
     UsdUndoBlock undoBlock(&_undoableItem);
 
-    auto srcAttr = attrFromUfeAttrInfo(*_srcInfo);
+    auto          srcAttr = attrFromUfeAttrInfo(*_srcInfo);
     UsdAttribute* srcUsdAttr = usdAttrFromUfeAttr(srcAttr);
-    auto dstAttr = attrFromUfeAttrInfo(*_dstInfo);
+    auto          dstAttr = attrFromUfeAttrInfo(*_dstInfo);
     UsdAttribute* dstUsdAttr = usdAttrFromUfeAttr(dstAttr);
 
     if (!srcUsdAttr || !dstUsdAttr) {
@@ -233,8 +235,10 @@ void UsdUndoCreateConnectionCommand::execute()
                 dstOutput = dstApi.CreateOutput(dstBaseName, dstUsdAttr->usdAttributeType());
             }
             isConnected = UsdShadeConnectableAPI::ConnectToSource(dstOutput, srcOutput);
-            _srcInfo = std::make_unique<Ufe::AttributeInfo>(_srcInfo->path(), srcOutput.GetAttr().GetName());
-            _dstInfo = std::make_unique<Ufe::AttributeInfo>( _dstInfo->path(), dstOutput.GetAttr().GetName());
+            _srcInfo = std::make_unique<Ufe::AttributeInfo>(
+                _srcInfo->path(), srcOutput.GetAttr().GetName());
+            _dstInfo = std::make_unique<Ufe::AttributeInfo>(
+                _dstInfo->path(), dstOutput.GetAttr().GetName());
         }
     }
 
@@ -288,8 +292,9 @@ UsdUndoDeleteConnectionCommand::UsdUndoDeleteConnectionCommand(
 
 UsdUndoDeleteConnectionCommand::~UsdUndoDeleteConnectionCommand() { }
 
-UsdUndoDeleteConnectionCommand::Ptr
-UsdUndoDeleteConnectionCommand::create(const Ufe::Attribute::Ptr& srcAttr, const Ufe::Attribute::Ptr& dstAttr)
+UsdUndoDeleteConnectionCommand::Ptr UsdUndoDeleteConnectionCommand::create(
+    const Ufe::Attribute::Ptr& srcAttr,
+    const Ufe::Attribute::Ptr& dstAttr)
 {
     return std::make_shared<UsdUndoDeleteConnectionCommand>(srcAttr, dstAttr);
 }
@@ -298,9 +303,9 @@ void UsdUndoDeleteConnectionCommand::execute()
 {
     UsdUndoBlock undoBlock(&_undoableItem);
 
-    auto srcAttr = attrFromUfeAttrInfo(*_srcInfo);
+    auto          srcAttr = attrFromUfeAttrInfo(*_srcInfo);
     UsdAttribute* srcUsdAttr = usdAttrFromUfeAttr(srcAttr);
-    auto dstAttr = attrFromUfeAttrInfo(*_dstInfo);
+    auto          dstAttr = attrFromUfeAttrInfo(*_dstInfo);
     UsdAttribute* dstUsdAttr = usdAttrFromUfeAttr(dstAttr);
 
     if (!srcUsdAttr || !dstUsdAttr
