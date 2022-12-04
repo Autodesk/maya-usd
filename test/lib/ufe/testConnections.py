@@ -350,6 +350,7 @@ class ConnectionTestCase(unittest.TestCase):
             '|stage|stageShape,/DisplayColorCube/Looks/usdPreviewSurface1SG')
         self.assertEqual(dstAttr.name, 'outputs:surface')
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '4043', 'Test became invalid in UFE preview version 0.4.43 and greater')
     def testConnectionsHandler(self):
         '''Test create & delete a connection.'''
 
@@ -431,6 +432,109 @@ class ConnectionTestCase(unittest.TestCase):
         # Create a connection with the command.
 
         cmd = ufe.ConnectCommand(src, dst)
+        cmd.execute()
+
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connections)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        cmd.undo()
+
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connections)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 0)
+
+        cmd.redo()
+
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connections)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4043', 'Test only available in UFE preview version 0.4.43 and greater')
+    def testConnectionsHandlerWithCnxCommands(self):
+        '''Test create & delete a connection.'''
+
+        # Load a scene.
+
+        testFile = testUtils.getTestScene('UsdPreviewSurface', 'DisplayColorCube.usda')
+        shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
+        ufeItem = ufeUtils.createUfeSceneItem(shapeNode,
+            '/DisplayColorCube/Looks/usdPreviewSurface1SG/usdPreviewSurface1')
+        self.assertIsNotNone(ufeItem)
+
+        # Find all the existing connections.
+
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(ufeItem.runTimeId())
+        self.assertIsNotNone(connectionHandler)
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connections)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        # Test the connection.
+
+        srcAttr = conns[0].src
+        dstAttr = conns[0].dst
+
+        self.assertEqual(ufe.PathString.string(srcAttr.path),
+            '|stage|stageShape,/DisplayColorCube/Looks/usdPreviewSurface1SG/ColorPrimvar')
+        self.assertEqual(srcAttr.name, 'outputs:result')
+
+        self.assertEqual(ufe.PathString.string(dstAttr.path),
+            '|stage|stageShape,/DisplayColorCube/Looks/usdPreviewSurface1SG/usdPreviewSurface1')
+        self.assertEqual(dstAttr.name, 'inputs:diffuseColor')
+
+        # Delete a connection using the ConnectionsHandler.
+
+        connectionHandler.disconnect(srcAttr, dstAttr)
+
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connections)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 0)
+
+        # Create a connection using the ConnectionsHandler.
+
+        connectionHandler.connect(srcAttr, dstAttr)
+
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connections)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        # Delete the connection with the new API command.
+
+        src = srcAttr.attribute()
+        dst = dstAttr.attribute()
+
+        cmd = connectionHandler.deleteConnectionCmd(src, dst)
+        cmd.execute()
+
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connections)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 0)
+
+        cmd.undo()
+
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connections)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        cmd.redo()
+
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connections)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 0)
+
+        # Create a connection with the new API command.
+
+        cmd = connectionHandler.createConnectionCmd(src, dst)
         cmd.execute()
 
         connections = connectionHandler.sourceConnections(ufeItem)
@@ -570,6 +674,135 @@ class ConnectionTestCase(unittest.TestCase):
         # TODO: Test the undoable versions of these commands. They MUST restore the prims as they
         #       were before connecting, which might require deleting authored attributes.
         #       The undo must also be aware that the connection on the material got redirected.
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4043', 'Test only available in UFE preview version 0.4.43 and greater')
+    def testCreateStandardSurfaceWithCnxCommandUndo(self):
+        '''Test create a working standard surface shader.'''
+        #
+        #
+        # We start with standard code from testContextOps:
+        #
+        # Not testing undo/redo at this point in time.
+        #
+        #
+        cmds.file(new=True, force=True)
+
+        # Create a proxy shape with empty stage to start with.
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        # Create a ContextOps interface for the proxy shape.
+        proxyPathSegment = mayaUtils.createUfePathSegment(proxyShape)
+        proxyShapePath = ufe.Path([proxyPathSegment])
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+
+        cmd = contextOps.doOp(['Add New Prim', 'Capsule'])
+        cmd = contextOps.doOp(['Add New Prim', 'Material'])
+
+        rootHier = ufe.Hierarchy.hierarchy(proxyShapeItem)
+
+        materialItem = rootHier.children()[-1]
+        materialAttrs = ufe.Attributes.attributes(materialItem)
+        contextOps = ufe.ContextOps.contextOps(materialItem)
+
+        cmd = contextOps.doOp(['Add New Prim', 'Shader'])
+
+        materialHier = ufe.Hierarchy.hierarchy(materialItem)
+        materialPrim = usdUtils.getPrimFromSceneItem(materialItem)
+
+
+        shaderItem = materialHier.children()[0]
+        shaderAttrs = ufe.Attributes.attributes(shaderItem)
+        shaderPrim = usdUtils.getPrimFromSceneItem(shaderItem)
+
+        shaderAttr = shaderAttrs.attribute("info:id")
+        shaderAttr.set("ND_standard_surface_surfaceshader")
+
+        # The native type of the output has changed in recent versions of USD, so we need to
+        # check with Sdr to see what native type we are going to get.
+        ssNodeDef = Sdr.Registry().GetShaderNodeByIdentifier("ND_standard_surface_surfaceshader")
+        ssOutput = ssNodeDef.GetShaderOutput("out")
+        ssOutputType = ssOutput.GetType()
+
+        #
+        #
+        # Then switch to connection code to connect the shader. Since we never created the
+        # attributes, we expect the connection code to create them.
+        #
+        #
+        shaderOutput = shaderAttrs.attribute("outputs:out")
+        materialOutput = materialAttrs.attribute("outputs:surface")
+
+        self.assertEqual(shaderOutput.type, "Generic")
+        self.assertEqual(shaderOutput.nativeType(), ssOutputType)
+        self.assertEqual(materialOutput.type, "Generic")
+        self.assertEqual(materialOutput.nativeType(), "TfToken")
+
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(materialItem.runTimeId())
+
+        # The attributes are not created yet:
+        self.assertEqual(len(materialPrim.GetAuthoredProperties()), 0)
+        self.assertEqual(len(shaderPrim.GetAuthoredProperties()), 1)
+        self.assertEqual("info:id", shaderPrim.GetAuthoredProperties()[0].GetName())
+
+        connectionCommand = connectionHandler.createConnectionCmd(shaderOutput, materialOutput)
+        connectionCommand.execute()
+
+        def assertNewConnectionMatchesCommand(self, materialItem):
+            connections = connectionHandler.sourceConnections(materialItem)
+            self.assertIsNotNone(connections)
+            conns = connections.allConnections()
+            self.assertEqual(len(conns), 1)
+            # Check the command result:
+            self.assertEqual(conns[0].src.path, connectionCommand.connection.src.path)
+            self.assertEqual(conns[0].src.name, connectionCommand.connection.src.name)
+            self.assertEqual(conns[0].dst.path, connectionCommand.connection.dst.path)
+            self.assertEqual(conns[0].dst.name, connectionCommand.connection.dst.name)
+            self.assertEqual(connectionCommand.connection.dst.name, "outputs:mtlx:surface")
+        assertNewConnectionMatchesCommand(self, materialItem)
+
+        connectionCommand.undo()
+
+        def assertNoConnection(self, materialItem):
+            connections = connectionHandler.sourceConnections(materialItem)
+            self.assertIsNotNone(connections)
+            conns = connections.allConnections()
+            self.assertEqual(len(conns), 0)
+        assertNoConnection(self, materialItem)
+
+        connectionCommand.redo()
+
+        assertNewConnectionMatchesCommand(self, materialItem)
+
+        disconnectionCommand = connectionHandler.deleteConnectionCmd(connectionCommand.connection.src.attribute(), 
+                                                                     connectionCommand.connection.dst.attribute())
+        disconnectionCommand.execute()
+
+        assertNoConnection(self, materialItem)
+
+        disconnectionCommand.undo()
+
+        def assertMtlxSurfaceConnection(self, materialItem):
+            connections = connectionHandler.sourceConnections(materialItem)
+            self.assertIsNotNone(connections)
+            conns = connections.allConnections()
+            self.assertEqual(len(conns), 1)
+            self.assertEqual(conns[0].dst.name, "outputs:mtlx:surface")
+        assertMtlxSurfaceConnection(self, materialItem)
+
+        connectionCommand.undo()
+
+        assertNoConnection(self, materialItem)
+
+        connectionCommand.redo()
+
+        assertMtlxSurfaceConnection(self, materialItem)
+
+        disconnectionCommand.redo()
+
+        assertNoConnection(self, materialItem)
+
 
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test only available in UFE preview version 0.4.24 and greater')
     def testCreateStandardSurfaceWithAddAttribute(self):
