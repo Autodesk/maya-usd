@@ -979,10 +979,10 @@ std::pair<SdfPath, UsdEditTarget> augmentPathWithVariants(
     //       selection correctly.
     //
     //       If SdfCopySpec() is called with a path ending with a variant selection,
-    //       it assumes that it is inside its own interations, about to add the
+    //       it assumes that it is inside its own iterations, about to add the
     //       selection name even though what is about to be added is a prim. So
     //       The GetParentPath() called in CreateSpec() in usd/sdf/childrenUtils.cpp
-    //       around line 108 will strip the vriant selection instead of stripping
+    //       around line 108 will strip the variant selection instead of stripping
     //       the prim (including variant selection). That will end-up causing an
     //       error when trying to create a field in SdfData::_GetOrCreateFieldValue
     //       in usd\sdf\data.cpp around line 260.
@@ -1011,13 +1011,18 @@ bool mergePrims(
     const SdfPath&           dstPath,
     const MergePrimsOptions& options)
 {
-    const auto          pathAndTarget = augmentPathWithVariants(dstStage, dstLayer, dstPath);
-    const SdfPath       variantDstPath = pathAndTarget.first;
-    const UsdEditTarget target = pathAndTarget.second;
+    SdfPath       augmentedDstPath = dstPath;
+    UsdEditTarget target = dstStage->GetEditTarget();
+
+    if (!options.ignoreVariants) {
+        const auto pathAndTarget = augmentPathWithVariants(dstStage, dstLayer, dstPath);
+        augmentedDstPath = pathAndTarget.first;
+        target = pathAndTarget.second;
+    }
 
     UsdEditContext editCtx(dstStage, target);
 
-    createMissingParents(dstLayer, variantDstPath);
+    createMissingParents(dstLayer, augmentedDstPath);
 
     if (options.ignoreUpperLayerOpinions) {
         auto           tempStage = UsdStage::CreateInMemory();
@@ -1026,7 +1031,7 @@ bool mergePrims(
         tempLayer->TransferContent(dstLayer);
 
         const bool success = mergeDiffPrims(
-            options, srcStage, srcLayer, srcPath, tempStage, tempLayer, variantDstPath);
+            options, srcStage, srcLayer, srcPath, tempStage, tempLayer, augmentedDstPath);
 
         if (success)
             dstLayer->TransferContent(tempLayer);
@@ -1034,7 +1039,7 @@ bool mergePrims(
         return success;
     } else {
         return mergeDiffPrims(
-            options, srcStage, srcLayer, srcPath, dstStage, dstLayer, variantDstPath);
+            options, srcStage, srcLayer, srcPath, dstStage, dstLayer, augmentedDstPath);
     }
 }
 

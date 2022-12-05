@@ -141,7 +141,7 @@ public:
     Memento remove(const Ufe::Path& pulledPath);
 
     // Retrieve the variant information of a pulled prim.
-    // Returns an empty info if the prim ws not tracked by the orphan manager.
+    // Returns an empty info if the prim was not tracked by the orphan manager.
     const PullVariantInfo& get(const Ufe::Path& pulledPath) const;
 
     // Preserve the trie of pulled prims into a memento.
