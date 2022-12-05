@@ -68,7 +68,7 @@ class testUsdExportUVSets(unittest.TestCase):
 
     def setUp(self):
         # Only do this setup once. We don't use the setUpClass method
-        # because we want access to self.assertEquals().
+        # because we want access to self.assertEqual().
         if not testUsdExportUVSets._stage:
             asFloat2 = mayaUsdLib.WriteUtil.WriteUVAsFloat2()
             suffix = ""
