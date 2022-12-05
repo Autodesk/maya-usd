@@ -33,7 +33,7 @@ class testUsdExportPackage(unittest.TestCase):
 
         # Deprecated since version 3.3: assertNotRegexpMatches has been renamed
         # to assertNotRegex()
-        if sys.version_info.major < 3 or sys.version_info.minor < 3:
+        if not hasattr(cls, "assertNotRegex"):
             cls.assertNotRegex = cls.assertNotRegexpMatches
 
     @classmethod
