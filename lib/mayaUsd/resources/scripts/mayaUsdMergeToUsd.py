@@ -30,11 +30,19 @@ from functools import partial
 def createDefaultMenuItem(dagPath, precedingItem):
     # This is the final callable in the chain of responsibility, so it must
     # always return a menu item.
+    _, _, _, prim = mayaUsdUtils.getPulledInfo(dagPath)
+    if prim and prim.IsValid() and mayaUsd.lib.PrimUpdaterManager.readPullInformation(prim):
+        enabled = 1
+    else:
+        enabled = 0
+
     cmd = 'maya.mel.eval("mayaUsdMenu_pushBackToUSD ' + dagPath + '")'
     mergeLabel = getMayaUsdLibString('kMenuMergeMayaEdits')
-    returnedItem = cmds.menuItem(label=mergeLabel, insertAfter=precedingItem, image="merge_to_USD.png", command=cmd)
+    returnedItem = cmds.menuItem(label=mergeLabel, insertAfter=precedingItem, image="merge_to_USD.png", command=cmd, enable=enabled)
+
     cmd = 'maya.mel.eval("mayaUsdMenu_pushBackToUSDOptions ' + dagPath + '")'
-    cmds.menuItem(insertAfter=returnedItem, optionBox=True, command=cmd)
+    cmds.menuItem(insertAfter=returnedItem, optionBox=True, command=cmd, enable=enabled)
+
     return returnedItem
 
 def createMayaReferenceMenuItem(dagPath, precedingItem):
