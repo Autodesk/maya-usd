@@ -13,35 +13,43 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "UsdUndoConnectionCommands.h"
+
+#include "private/Utils.h"
 
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/UsdAttribute.h>
+#include <mayaUsd/ufe/UsdAttributes.h>
 #include <mayaUsd/ufe/UsdConnectionHandler.h>
 #include <mayaUsd/ufe/UsdConnections.h>
 #include <mayaUsd/ufe/UsdHierarchyHandler.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
-#if (UFE_PREVIEW_VERSION_NUM >= 4043)
-#include <mayaUsd/ufe/UsdUndoConnectionCommands.h>
-#endif
+#include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/undo/UsdUndoBlock.h>
+#include <mayaUsdUtils/util.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/sdr/registry.h>
 
+#include <ufe/attributeInfo.h>
+#include <ufe/connection.h>
 #include <ufe/pathString.h>
-#include <ufe/scene.h>
-
-PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-#if (UFE_PREVIEW_VERSION_NUM < 4043)
-
-//
-// For UFE 0.4.43 the connection/disconnection code is moved to UsdUndoConnectionCommands.cpp
-//
-
 namespace {
+
+Ufe::Attribute::Ptr attrFromUfeAttrInfo(const Ufe::AttributeInfo& attrInfo)
+{
+    auto item
+        = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(attrInfo.path()));
+    if (!item) {
+        TF_RUNTIME_ERROR("Invalid scene item.");
+        return nullptr;
+    }
+    return UsdAttributes(item).attribute(attrInfo.name());
+}
 
 UsdAttribute* usdAttrFromUfeAttr(const Ufe::Attribute::Ptr& attr)
 {
@@ -127,57 +135,43 @@ void _SendStrongConnectionChangeNotification(const UsdPrim& usdPrim)
 
 } // namespace
 
-#endif
-
-UsdConnectionHandler::UsdConnectionHandler()
-    : Ufe::ConnectionHandler()
-{
-}
-
-UsdConnectionHandler::~UsdConnectionHandler() { }
-
-UsdConnectionHandler::Ptr UsdConnectionHandler::create()
-{
-    return std::make_shared<UsdConnectionHandler>();
-}
-
-Ufe::Connections::Ptr UsdConnectionHandler::sourceConnections(const Ufe::SceneItem::Ptr& item) const
-{
-    return UsdConnections::create(item);
-}
-
-#if (UFE_PREVIEW_VERSION_NUM >= 4043)
-
-Ufe::ConnectionResultUndoableCommand::Ptr UsdConnectionHandler::createConnectionCmd(
+UsdUndoCreateConnectionCommand::UsdUndoCreateConnectionCommand(
     const Ufe::Attribute::Ptr& srcAttr,
-    const Ufe::Attribute::Ptr& dstAttr) const
+    const Ufe::Attribute::Ptr& dstAttr)
+    : Ufe::ConnectionResultUndoableCommand()
+    , _srcInfo(std::make_unique<Ufe::AttributeInfo>(srcAttr))
+    , _dstInfo(std::make_unique<Ufe::AttributeInfo>(dstAttr))
 {
-    return UsdUndoCreateConnectionCommand::create(srcAttr, dstAttr);
+    // Validation goes here when we find out the right set of business rules. Failure should result
+    // in a exception being thrown.
 }
 
-Ufe::UndoableCommand::Ptr UsdConnectionHandler::deleteConnectionCmd(
+UsdUndoCreateConnectionCommand::~UsdUndoCreateConnectionCommand() { }
+
+UsdUndoCreateConnectionCommand::Ptr UsdUndoCreateConnectionCommand::create(
     const Ufe::Attribute::Ptr& srcAttr,
-    const Ufe::Attribute::Ptr& dstAttr) const
+    const Ufe::Attribute::Ptr& dstAttr)
 {
-    return UsdUndoDeleteConnectionCommand::create(srcAttr, dstAttr);
+    return std::make_shared<UsdUndoCreateConnectionCommand>(srcAttr, dstAttr);
 }
 
-#else
-
-//
-// For UFE 0.4.43 the connection/disconnection code is moved to UsdUndoConnectionCommands.cpp
-//
-
-bool UsdConnectionHandler::createConnection(
-    const Ufe::Attribute::Ptr& srcAttr,
-    const Ufe::Attribute::Ptr& dstAttr) const
+void UsdUndoCreateConnectionCommand::execute()
 {
+    UsdUndoBlock undoBlock(&_undoableItem);
+
+    auto          srcAttr = attrFromUfeAttrInfo(*_srcInfo);
     UsdAttribute* srcUsdAttr = usdAttrFromUfeAttr(srcAttr);
+    auto          dstAttr = attrFromUfeAttrInfo(*_dstInfo);
     UsdAttribute* dstUsdAttr = usdAttrFromUfeAttr(dstAttr);
 
-    if (!srcUsdAttr || !dstUsdAttr
-        || isConnected(srcUsdAttr->usdAttribute(), dstUsdAttr->usdAttribute())) {
-        return false;
+    if (!srcUsdAttr || !dstUsdAttr) {
+        _srcInfo = nullptr;
+        _dstInfo = nullptr;
+        return;
+    }
+
+    if (isConnected(srcUsdAttr->usdAttribute(), dstUsdAttr->usdAttribute())) {
+        return;
     }
 
     // Use the UsdShadeConnectableAPI to create the connections and attributes to make sure the USD
@@ -190,33 +184,33 @@ bool UsdConnectionHandler::createConnection(
     TfToken                srcBaseName;
     UsdShadeAttributeType  srcAttrType;
     std::tie(srcBaseName, srcAttrType)
-        = UsdShadeUtils::GetBaseNameAndType(TfToken(srcAttr->name()));
+        = UsdShadeUtils::GetBaseNameAndType(TfToken(srcUsdAttr->usdAttribute().GetName()));
 
     UsdShadeConnectableAPI dstApi(dstUsdAttr->usdPrim());
     TfToken                dstBaseName;
     UsdShadeAttributeType  dstAttrType;
     std::tie(dstBaseName, dstAttrType)
-        = UsdShadeUtils::GetBaseNameAndType(TfToken(dstAttr->name()));
+        = UsdShadeUtils::GetBaseNameAndType(TfToken(dstUsdAttr->usdAttribute().GetName()));
 
-    bool retVal = false;
+    bool isConnected = false;
 
     if (srcAttrType == UsdShadeAttributeType::Input) {
         UsdShadeInput srcInput = srcApi.CreateInput(srcBaseName, srcUsdAttr->usdAttributeType());
         if (dstAttrType == UsdShadeAttributeType::Input) {
             UsdShadeInput dstInput
                 = dstApi.CreateInput(dstBaseName, dstUsdAttr->usdAttributeType());
-            retVal = UsdShadeConnectableAPI::ConnectToSource(dstInput, srcInput);
+            isConnected = UsdShadeConnectableAPI::ConnectToSource(dstInput, srcInput);
         } else {
             UsdShadeOutput dstOutput
                 = dstApi.CreateOutput(dstBaseName, dstUsdAttr->usdAttributeType());
-            retVal = UsdShadeConnectableAPI::ConnectToSource(dstOutput, srcInput);
+            isConnected = UsdShadeConnectableAPI::ConnectToSource(dstOutput, srcInput);
         }
     } else {
         UsdShadeOutput srcOutput = srcApi.CreateOutput(srcBaseName, srcUsdAttr->usdAttributeType());
         if (dstAttrType == UsdShadeAttributeType::Input) {
             UsdShadeInput dstInput
                 = dstApi.CreateInput(dstBaseName, dstUsdAttr->usdAttributeType());
-            retVal = UsdShadeConnectableAPI::ConnectToSource(dstInput, srcOutput);
+            isConnected = UsdShadeConnectableAPI::ConnectToSource(dstInput, srcOutput);
         } else {
             UsdShadeOutput   dstOutput;
             UsdShadeMaterial dstMaterial(dstUsdAttr->usdPrim());
@@ -242,30 +236,70 @@ bool UsdConnectionHandler::createConnection(
             } else {
                 dstOutput = dstApi.CreateOutput(dstBaseName, dstUsdAttr->usdAttributeType());
             }
-            retVal = UsdShadeConnectableAPI::ConnectToSource(dstOutput, srcOutput);
+            isConnected = UsdShadeConnectableAPI::ConnectToSource(dstOutput, srcOutput);
+            _srcInfo = std::make_unique<Ufe::AttributeInfo>(
+                _srcInfo->path(), srcOutput.GetAttr().GetName());
+            _dstInfo = std::make_unique<Ufe::AttributeInfo>(
+                _dstInfo->path(), dstOutput.GetAttr().GetName());
         }
     }
 
-    if (retVal) {
+    if (isConnected) {
         _SendStrongConnectionChangeNotification(dstApi.GetPrim());
+    } else {
+        _srcInfo = nullptr;
+        _dstInfo = nullptr;
     }
-
-    return retVal;
 }
 
-bool UsdConnectionHandler::deleteConnection(
-    const Ufe::Attribute::Ptr& srcAttr,
-    const Ufe::Attribute::Ptr& dstAttr) const
+Ufe::Connection::Ptr UsdUndoCreateConnectionCommand::connection() const
 {
+    if (_srcInfo && _srcInfo->attribute() && _dstInfo && _dstInfo->attribute()) {
+        return std::make_shared<Ufe::Connection>(*_srcInfo, *_dstInfo);
+    } else {
+        return {};
+    }
+}
+
+void UsdUndoCreateConnectionCommand::undo() { _undoableItem.undo(); }
+
+void UsdUndoCreateConnectionCommand::redo() { _undoableItem.redo(); }
+
+UsdUndoDeleteConnectionCommand::UsdUndoDeleteConnectionCommand(
+    const Ufe::Attribute::Ptr& srcAttr,
+    const Ufe::Attribute::Ptr& dstAttr)
+    : Ufe::UndoableCommand()
+    , _srcInfo(std::make_unique<Ufe::AttributeInfo>(srcAttr))
+    , _dstInfo(std::make_unique<Ufe::AttributeInfo>(dstAttr))
+{
+    // Validation goes here when we find out the right set of business rules. Failure should result
+    // in a exception being thrown.
+}
+
+UsdUndoDeleteConnectionCommand::~UsdUndoDeleteConnectionCommand() { }
+
+UsdUndoDeleteConnectionCommand::Ptr UsdUndoDeleteConnectionCommand::create(
+    const Ufe::Attribute::Ptr& srcAttr,
+    const Ufe::Attribute::Ptr& dstAttr)
+{
+    return std::make_shared<UsdUndoDeleteConnectionCommand>(srcAttr, dstAttr);
+}
+
+void UsdUndoDeleteConnectionCommand::execute()
+{
+    UsdUndoBlock undoBlock(&_undoableItem);
+
+    auto          srcAttr = attrFromUfeAttrInfo(*_srcInfo);
     UsdAttribute* srcUsdAttr = usdAttrFromUfeAttr(srcAttr);
+    auto          dstAttr = attrFromUfeAttrInfo(*_dstInfo);
     UsdAttribute* dstUsdAttr = usdAttrFromUfeAttr(dstAttr);
 
     if (!srcUsdAttr || !dstUsdAttr
         || !isConnected(srcUsdAttr->usdAttribute(), dstUsdAttr->usdAttribute())) {
-        return false;
+        return;
     }
 
-    bool retVal = UsdShadeConnectableAPI::DisconnectSource(
+    bool isDisconnected = UsdShadeConnectableAPI::DisconnectSource(
         dstUsdAttr->usdAttribute(), srcUsdAttr->usdAttribute());
 
     // We need to make sure we cleanup on disconnection. Since having an empty connection array
@@ -295,14 +329,14 @@ bool UsdConnectionHandler::deleteConnection(
         }
     }
 
-    if (retVal) {
+    if (isDisconnected) {
         _SendStrongConnectionChangeNotification(dstUsdAttr->usdPrim());
     }
-
-    return retVal;
 }
 
-#endif
+void UsdUndoDeleteConnectionCommand::undo() { _undoableItem.undo(); }
+
+void UsdUndoDeleteConnectionCommand::redo() { _undoableItem.redo(); }
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
