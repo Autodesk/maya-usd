@@ -139,8 +139,8 @@ UsdUndoCreateConnectionCommand::UsdUndoCreateConnectionCommand(
     const Ufe::Attribute::Ptr& srcAttr,
     const Ufe::Attribute::Ptr& dstAttr)
     : Ufe::ConnectionResultUndoableCommand()
-    , _srcInfo(std::move(std::make_unique<Ufe::AttributeInfo>(srcAttr))
-    , _dstInfo(std::move(std::make_unique<Ufe::AttributeInfo>(dstAttr))
+    , _srcInfo(std::make_unique<Ufe::AttributeInfo>(srcAttr))
+    , _dstInfo(std::make_unique<Ufe::AttributeInfo>(dstAttr))
 {
     // Validation goes here when we find out the right set of business rules. Failure should result
     // in a exception being thrown.
@@ -261,18 +261,16 @@ Ufe::Connection::Ptr UsdUndoCreateConnectionCommand::connection() const
     }
 }
 
-void UsdUndoCreateConnectionCommand::undo() {
-    _undoableItem.undo(); }
+void UsdUndoCreateConnectionCommand::undo() { _undoableItem.undo(); }
 
-void UsdUndoCreateConnectionCommand::redo() {
-    _undoableItem.redo(); }
+void UsdUndoCreateConnectionCommand::redo() { _undoableItem.redo(); }
 
 UsdUndoDeleteConnectionCommand::UsdUndoDeleteConnectionCommand(
     const Ufe::Attribute::Ptr& srcAttr,
     const Ufe::Attribute::Ptr& dstAttr)
     : Ufe::UndoableCommand()
-    , _srcInfo(std::move(std::make_unique<Ufe::AttributeInfo>(srcAttr))
-    , _dstInfo(std::move(std::make_unique<Ufe::AttributeInfo>(dstAttr))
+    , _srcInfo(std::make_unique<Ufe::AttributeInfo>(srcAttr))
+    , _dstInfo(std::make_unique<Ufe::AttributeInfo>(dstAttr))
 {
     // Validation goes here when we find out the right set of business rules. Failure should result
     // in a exception being thrown.
@@ -336,11 +334,9 @@ void UsdUndoDeleteConnectionCommand::execute()
     }
 }
 
-void UsdUndoDeleteConnectionCommand::undo() {
-    _undoableItem.undo(); }
+void UsdUndoDeleteConnectionCommand::undo() { _undoableItem.undo(); }
 
-void UsdUndoDeleteConnectionCommand::redo() {
-    _undoableItem.redo(); }
+void UsdUndoDeleteConnectionCommand::redo() { _undoableItem.redo(); }
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
