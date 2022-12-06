@@ -20,11 +20,15 @@
 #include <mayaUsd/undo/UsdUndoableItem.h>
 
 #include <ufe/attribute.h>
-#include <ufe/connection.h>
-#include <ufe/path.h>
 #include <ufe/undoableCommand.h>
 
 #include <memory>
+
+UFE_NS_DEF
+{
+    class AttributeInfo;
+    class Connection;
+}
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -47,14 +51,14 @@ public:
     UsdUndoCreateConnectionCommand(UsdUndoCreateConnectionCommand&&) = delete;
     UsdUndoCreateConnectionCommand& operator=(UsdUndoCreateConnectionCommand&&) = delete;
 
-    //! Create a UsdUndoCreateConnectionCommand from a USD prim and UFE path.
+    //! Create a UsdUndoCreateConnectionCommand from two attributes.
     static Ptr create(const Ufe::Attribute::Ptr& srcAttr, const Ufe::Attribute::Ptr& dstAttr);
 
     void execute() override;
     void undo() override;
     void redo() override;
 
-    Ufe::Connection::Ptr connection() const override;
+    std::shared_ptr<Ufe::Connection> connection() const override;
 
 private:
     UsdUndoableItem                     _undoableItem;
@@ -79,7 +83,7 @@ public:
     UsdUndoDeleteConnectionCommand(UsdUndoDeleteConnectionCommand&&) = delete;
     UsdUndoDeleteConnectionCommand& operator=(UsdUndoDeleteConnectionCommand&&) = delete;
 
-    //! Create a UsdUndoDeleteConnectionCommand from a USD prim and UFE path.
+    //! Create a UsdUndoDeleteConnectionCommand from two attributes.
     static Ptr create(const Ufe::Attribute::Ptr& srcAttr, const Ufe::Attribute::Ptr& dstAttr);
 
     void execute() override;

@@ -31,6 +31,8 @@
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/sdr/registry.h>
 
+#include <ufe/attributeInfo.h>
+#include <ufe/connection.h>
 #include <ufe/pathString.h>
 
 namespace MAYAUSD_NS_DEF {
