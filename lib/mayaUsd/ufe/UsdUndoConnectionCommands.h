@@ -45,11 +45,13 @@ public:
         const Ufe::Attribute::Ptr& dstAttr);
     ~UsdUndoCreateConnectionCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
+    //@{
+    //! Delete the copy/move constructors assignment operators.
     UsdUndoCreateConnectionCommand(const UsdUndoCreateConnectionCommand&) = delete;
     UsdUndoCreateConnectionCommand& operator=(const UsdUndoCreateConnectionCommand&) = delete;
     UsdUndoCreateConnectionCommand(UsdUndoCreateConnectionCommand&&) = delete;
     UsdUndoCreateConnectionCommand& operator=(UsdUndoCreateConnectionCommand&&) = delete;
+    //@}
 
     //! Create a UsdUndoCreateConnectionCommand from two attributes.
     static Ptr create(const Ufe::Attribute::Ptr& srcAttr, const Ufe::Attribute::Ptr& dstAttr);
@@ -77,11 +79,13 @@ public:
         const Ufe::Attribute::Ptr& dstAttr);
     ~UsdUndoDeleteConnectionCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
+    //@{
+    //! Delete the copy/move constructors assignment operators.
     UsdUndoDeleteConnectionCommand(const UsdUndoDeleteConnectionCommand&) = delete;
     UsdUndoDeleteConnectionCommand& operator=(const UsdUndoDeleteConnectionCommand&) = delete;
     UsdUndoDeleteConnectionCommand(UsdUndoDeleteConnectionCommand&&) = delete;
     UsdUndoDeleteConnectionCommand& operator=(UsdUndoDeleteConnectionCommand&&) = delete;
+    //@}
 
     //! Create a UsdUndoDeleteConnectionCommand from two attributes.
     static Ptr create(const Ufe::Attribute::Ptr& srcAttr, const Ufe::Attribute::Ptr& dstAttr);

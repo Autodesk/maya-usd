@@ -139,8 +139,8 @@ UsdUndoCreateConnectionCommand::UsdUndoCreateConnectionCommand(
     const Ufe::Attribute::Ptr& srcAttr,
     const Ufe::Attribute::Ptr& dstAttr)
     : Ufe::ConnectionResultUndoableCommand()
-    , _srcInfo(new Ufe::AttributeInfo(srcAttr))
-    , _dstInfo(new Ufe::AttributeInfo(dstAttr))
+    , _srcInfo(std::move(std::make_unique<Ufe::AttributeInfo>(srcAttr))
+    , _dstInfo(std::move(std::make_unique<Ufe::AttributeInfo>(dstAttr))
 {
     // Validation goes here when we find out the right set of business rules. Failure should result
     // in a exception being thrown.
@@ -254,39 +254,25 @@ void UsdUndoCreateConnectionCommand::execute()
 
 Ufe::Connection::Ptr UsdUndoCreateConnectionCommand::connection() const
 {
-    auto isValidInfo = [](const auto& info) {
-        if (!info) {
-            return false;
-        }
-        auto item
-            = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(info->path()));
-        if (!item) {
-            return false;
-        }
-        auto attr = UsdAttributes(item).attribute(info->name());
-        if (!attr) {
-            return false;
-        }
-        return true;
-    };
-
-    if (!isValidInfo(_srcInfo) || !isValidInfo(_dstInfo)) {
+    if (_srcInfo && _srcInfo->attribute() && _dstInfo && _dstInfo->attribute()) {
+        return std::make_shared<Ufe::Connection>(*_srcInfo, *_dstInfo);
+    } else {
         return {};
     }
-
-    return std::make_shared<Ufe::Connection>(*_srcInfo, *_dstInfo);
 }
 
-void UsdUndoCreateConnectionCommand::undo() { _undoableItem.undo(); }
+void UsdUndoCreateConnectionCommand::undo() {
+    _undoableItem.undo(); }
 
-void UsdUndoCreateConnectionCommand::redo() { _undoableItem.redo(); }
+void UsdUndoCreateConnectionCommand::redo() {
+    _undoableItem.redo(); }
 
 UsdUndoDeleteConnectionCommand::UsdUndoDeleteConnectionCommand(
     const Ufe::Attribute::Ptr& srcAttr,
     const Ufe::Attribute::Ptr& dstAttr)
     : Ufe::UndoableCommand()
-    , _srcInfo(new Ufe::AttributeInfo(srcAttr))
-    , _dstInfo(new Ufe::AttributeInfo(dstAttr))
+    , _srcInfo(std::move(std::make_unique<Ufe::AttributeInfo>(srcAttr))
+    , _dstInfo(std::move(std::make_unique<Ufe::AttributeInfo>(dstAttr))
 {
     // Validation goes here when we find out the right set of business rules. Failure should result
     // in a exception being thrown.
@@ -350,9 +336,11 @@ void UsdUndoDeleteConnectionCommand::execute()
     }
 }
 
-void UsdUndoDeleteConnectionCommand::undo() { _undoableItem.undo(); }
+void UsdUndoDeleteConnectionCommand::undo() {
+    _undoableItem.undo(); }
 
-void UsdUndoDeleteConnectionCommand::redo() { _undoableItem.redo(); }
+void UsdUndoDeleteConnectionCommand::redo() {
+    _undoableItem.redo(); }
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
