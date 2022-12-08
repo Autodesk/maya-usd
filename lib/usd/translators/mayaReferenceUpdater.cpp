@@ -292,50 +292,6 @@ bool PxrUsdTranslators_MayaReferenceUpdater::pushEnd()
     MayaUsd::LockNodesUndoItem::lock(
         "Maya reference pulled transform unlocking", transformPath, false);
 
-    // Note: we don't know in which variant the Maya reference is, so check
-    //       in all variants to find the MayaReference prim.
-    UsdPrim                primWithVariants = getUsdPrim().GetParent();
-    PXR_NS::UsdStagePtr    stage = primWithVariants.GetStage();
-    PXR_NS::UsdVariantSets variantSets = primWithVariants.GetVariantSets();
-    for (const std::string& variantSetName : variantSets.GetNames()) {
-
-        PXR_NS::UsdVariantSet variantSet = primWithVariants.GetVariantSet(variantSetName);
-
-        // Make sure to restore the current selected variant even in the face
-        // of exceptions.
-        MAYAUSD_NS_DEF::AutoVariantRestore variantRestore(variantSet);
-
-        for (const std::string& variantSelection : variantSet.GetVariantNames()) {
-            if (variantSet.SetVariantSelection(variantSelection)) {
-                PXR_NS::UsdEditTarget target = stage->GetEditTarget();
-
-                PXR_NS::UsdEditContext switchEditContext(
-                    stage, variantSet.GetVariantEditTarget(target.GetLayer()));
-
-                // Note: the prim might not exist in all variants, so check its validity.
-                UsdPrim prim = getUsdPrim();
-                if (!prim.IsValid())
-                    continue;
-
-                UsdAttribute mayaAutoEditAttr
-                    = prim.GetAttribute(MayaUsd_SchemasTokens->mayaAutoEdit);
-                if (!mayaAutoEditAttr.IsValid())
-                    continue;
-
-                bool autoEdited = false;
-                if (!mayaAutoEditAttr.Get<bool>(&autoEdited))
-                    continue;
-
-                if (!autoEdited)
-                    continue;
-
-                auto cmd = MayaUsd::ufe::SetVariantSelectionCommand::create(
-                    getUfePath().pop(), primWithVariants, variantSetName, variantSelection);
-                getContext()->GetAdditionalFinalCommands()->append(cmd);
-            }
-        }
-    }
-
     return true;
 }
 
