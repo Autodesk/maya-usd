@@ -144,6 +144,12 @@ private:
 
     TfToken& _RenderTag() override { return _meshSharedData->_renderTag; }
 
+    void _AddNewRenderItem(
+        HdVP2DrawItem*        drawItem,
+        const HdMeshReprDesc& desc,
+        const TfToken&        reprToken,
+        MSubSceneContainer*   subSceneContainer);
+
     void _UpdateDrawItem(
         HdSceneDelegate*,
         HdVP2DrawItem*,

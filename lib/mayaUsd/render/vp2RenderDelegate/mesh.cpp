@@ -1164,117 +1164,12 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
 
 #if HD_API_VERSION < 35
         auto* drawItem = new HdVP2DrawItem(_delegate, &_sharedData);
+        _AddNewRenderItem(drawItem, desc, reprToken, subSceneContainer);
 #else
         std::unique_ptr<HdVP2DrawItem> drawItem
             = std::make_unique<HdVP2DrawItem>(_delegate, &_sharedData);
+        _AddNewRenderItem(drawItem.get(), desc, reprToken, subSceneContainer);
 #endif
-
-        const MString& renderItemName = drawItem->GetDrawItemName();
-
-        MHWRender::MRenderItem* renderItem = nullptr;
-
-        switch (desc.geomStyle) {
-        case HdMeshGeomStyleHull:
-            // Creating the smoothHull hull render items requires geom subsets from the topology,
-            // and we can't access that here.
-#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
-            if (reprToken == HdVP2ReprTokens->defaultMaterial) {
-                // But default material mode does not use geom subsets, so we create the render item
-                MHWRender::MRenderItem* defaultMaterialItem
-                    = _CreateSmoothHullRenderItem(
-#if HD_API_VERSION < 35
-                          renderItemName, *drawItem, reprToken, *subSceneContainer, nullptr)
-#else
-                          renderItemName, *drawItem.get(), reprToken, *subSceneContainer, nullptr)
-#endif
-                          ._renderItem;
-                defaultMaterialItem->setDefaultMaterialHandling(
-                    MRenderItem::DrawOnlyWhenDefaultMaterialActive);
-                defaultMaterialItem->setShader(_delegate->Get3dDefaultMaterialShader());
-#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-                if (!GetInstancerId().IsEmpty()) {
-                    defaultMaterialItem = _CreateShadedSelectedInstancesItem(
-#if HD_API_VERSION < 35
-                        renderItemName, *drawItem, reprToken, *subSceneContainer, nullptr);
-#else
-                        renderItemName, *drawItem.get(), reprToken, *subSceneContainer, nullptr);
-#endif
-                    defaultMaterialItem->setDefaultMaterialHandling(
-                        MRenderItem::DrawOnlyWhenDefaultMaterialActive);
-                    defaultMaterialItem->setShader(_delegate->Get3dDefaultMaterialShader());
-                }
-#endif
-            }
-#endif
-            break;
-        case HdMeshGeomStyleHullEdgeOnly:
-            // The hull reprs use the wireframe item for selection highlight only.
-            if (reprToken == HdReprTokens->smoothHull
-                || reprToken == HdVP2ReprTokens->smoothHullUntextured
-                || reprToken == HdVP2ReprTokens->defaultMaterial) {
-                // Share selection highlight render item between hull reprs
-                bool foundShared = false;
-                for (auto it = _reprs.begin(); (it != _reprs.end()) && !foundShared; ++it) {
-                    const HdReprSharedPtr& repr = it->second;
-                    const auto&            items = repr->GetDrawItems();
-#if HD_API_VERSION < 35
-                    for (HdDrawItem* item : items) {
-                        HdVP2DrawItem* shDrawItem = static_cast<HdVP2DrawItem*>(item);
-#else
-                    for (const HdRepr::DrawItemUniquePtr& item : items) {
-                        HdVP2DrawItem* const shDrawItem = static_cast<HdVP2DrawItem*>(item.get());
-#endif
-                        if (shDrawItem
-                            && shDrawItem->MatchesUsage(HdVP2DrawItem::kSelectionHighlight)) {
-                            drawItem->ShareRenderItem(*shDrawItem);
-                            foundShared = true;
-                            break;
-                        }
-                    }
-                }
-                if (!foundShared) {
-                    renderItem = _CreateSelectionHighlightRenderItem(renderItemName);
-                }
-                drawItem->SetUsage(HdVP2DrawItem::kSelectionHighlight);
-            }
-            // The item is used for wireframe display and selection highlight.
-            else if (reprToken == HdReprTokens->wire) {
-                renderItem = _CreateWireframeRenderItem(
-                    renderItemName,
-                    kOpaqueBlue,
-                    MSelectionMask::kSelectMeshes,
-                    MHWRender::MFrameContext::kExcludeMeshes);
-                drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
-            }
-            // The item is used for bbox display and selection highlight.
-            else if (
-                reprToken == HdVP2ReprTokens->bbox || reprToken == HdVP2ReprTokens->forcedBbox) {
-                renderItem = _CreateBoundingBoxRenderItem(
-                    renderItemName,
-                    kOpaqueBlue,
-                    MSelectionMask::kSelectMeshes,
-                    MHWRender::MFrameContext::kExcludeMeshes);
-                drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
-                if (reprToken == HdVP2ReprTokens->forcedBbox) {
-                    renderItem->enable(false);
-                    renderItem->setDrawMode(MHWRender::MGeometry::kAll);
-                }
-            }
-            break;
-#ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
-        case HdMeshGeomStylePoints:
-            renderItem = _CreatePointsRenderItem(
-                renderItemName,
-                MSelectionMask::kSelectMeshVerts,
-                MHWRender::MFrameContext::kExcludeMeshes);
-            break;
-#endif
-        default: TF_WARN("Unsupported geomStyle"); break;
-        }
-
-        if (renderItem) {
-            _AddRenderItem(*drawItem, renderItem, *subSceneContainer);
-        }
 
         if (desc.geomStyle == HdMeshGeomStyleHull) {
             if (desc.flatShadingEnabled) {
@@ -1295,6 +1190,111 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
 #else
         repr->AddDrawItem(std::move(drawItem));
 #endif
+    }
+}
+
+void HdVP2Mesh::_AddNewRenderItem(
+    HdVP2DrawItem*        drawItem,
+    const HdMeshReprDesc& desc,
+    const TfToken&        reprToken,
+    MSubSceneContainer*   subSceneContainer)
+{
+    const MString& renderItemName = drawItem->GetDrawItemName();
+
+    MHWRender::MRenderItem* renderItem = nullptr;
+
+    switch (desc.geomStyle) {
+    case HdMeshGeomStyleHull:
+        // Creating the smoothHull hull render items requires geom subsets from the topology,
+        // and we can't access that here.
+#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
+        if (reprToken == HdVP2ReprTokens->defaultMaterial) {
+            // But default material mode does not use geom subsets, so we create the render item
+            MHWRender::MRenderItem* defaultMaterialItem
+                = _CreateSmoothHullRenderItem(
+                      renderItemName, *drawItem, reprToken, *subSceneContainer, nullptr)
+                      ._renderItem;
+            defaultMaterialItem->setDefaultMaterialHandling(
+                MRenderItem::DrawOnlyWhenDefaultMaterialActive);
+            defaultMaterialItem->setShader(_delegate->Get3dDefaultMaterialShader());
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+            if (!GetInstancerId().IsEmpty()) {
+                defaultMaterialItem = _CreateShadedSelectedInstancesItem(
+                    renderItemName, *drawItem, reprToken, *subSceneContainer, nullptr);
+                defaultMaterialItem->setDefaultMaterialHandling(
+                    MRenderItem::DrawOnlyWhenDefaultMaterialActive);
+                defaultMaterialItem->setShader(_delegate->Get3dDefaultMaterialShader());
+            }
+#endif
+        }
+#endif
+        break;
+    case HdMeshGeomStyleHullEdgeOnly:
+        // The hull reprs use the wireframe item for selection highlight only.
+        if (reprToken == HdReprTokens->smoothHull
+            || reprToken == HdVP2ReprTokens->smoothHullUntextured
+            || reprToken == HdVP2ReprTokens->defaultMaterial) {
+            // Share selection highlight render item between hull reprs
+            bool foundShared = false;
+            for (auto it = _reprs.begin(); (it != _reprs.end()) && !foundShared; ++it) {
+                const HdReprSharedPtr& repr = it->second;
+                const auto&            items = repr->GetDrawItems();
+#if HD_API_VERSION < 35
+                for (HdDrawItem* item : items) {
+                    HdVP2DrawItem* shDrawItem = static_cast<HdVP2DrawItem*>(item);
+#else
+                for (const HdRepr::DrawItemUniquePtr& item : items) {
+                    HdVP2DrawItem* const shDrawItem = static_cast<HdVP2DrawItem*>(item.get());
+#endif
+                    if (shDrawItem
+                        && shDrawItem->MatchesUsage(HdVP2DrawItem::kSelectionHighlight)) {
+                        drawItem->ShareRenderItem(*shDrawItem);
+                        foundShared = true;
+                        break;
+                    }
+                }
+            }
+            if (!foundShared) {
+                renderItem = _CreateSelectionHighlightRenderItem(renderItemName);
+            }
+            drawItem->SetUsage(HdVP2DrawItem::kSelectionHighlight);
+        }
+        // The item is used for wireframe display and selection highlight.
+        else if (reprToken == HdReprTokens->wire) {
+            renderItem = _CreateWireframeRenderItem(
+                renderItemName,
+                kOpaqueBlue,
+                MSelectionMask::kSelectMeshes,
+                MHWRender::MFrameContext::kExcludeMeshes);
+            drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
+        }
+        // The item is used for bbox display and selection highlight.
+        else if (reprToken == HdVP2ReprTokens->bbox || reprToken == HdVP2ReprTokens->forcedBbox) {
+            renderItem = _CreateBoundingBoxRenderItem(
+                renderItemName,
+                kOpaqueBlue,
+                MSelectionMask::kSelectMeshes,
+                MHWRender::MFrameContext::kExcludeMeshes);
+            drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
+            if (reprToken == HdVP2ReprTokens->forcedBbox) {
+                renderItem->enable(false);
+                renderItem->setDrawMode(MHWRender::MGeometry::kAll);
+            }
+        }
+        break;
+#ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
+    case HdMeshGeomStylePoints:
+        renderItem = _CreatePointsRenderItem(
+            renderItemName,
+            MSelectionMask::kSelectMeshVerts,
+            MHWRender::MFrameContext::kExcludeMeshes);
+        break;
+#endif
+    default: TF_WARN("Unsupported geomStyle"); break;
+    }
+
+    if (renderItem) {
+        _AddRenderItem(*drawItem, renderItem, *subSceneContainer);
     }
 }
 
