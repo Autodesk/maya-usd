@@ -312,6 +312,9 @@ class AddMayaReferenceTestCase(unittest.TestCase):
 
         # The prim should have a variant set.
         self.assertTrue(primTestDefault.HasVariantSets())
+        vs = primTestDefault.GetVariantSets()
+        variantSet = vs.GetVariantSet(variantSetName)
+        self.assertEqual(variantSet.GetVariantSelection(), variantName)
 
         # Verify that a Maya Reference prim was created.
         self.assertTrue(mayaRefPrim.IsValid())
@@ -341,13 +344,22 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         aMayaPathStr = ufe.PathString.string(aMayaPath)
         with mayaUsd.lib.OpUndoItemList():
             self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(aMayaPathStr, cacheOptions))
-        
-        # Verify that the auto-edit is still on and the prim
-        # is inactive because it is being edited in Maya.
+
+        # Verify the cache variant is active and the prim
+        # is active.
+        self.assertTrue(primTestDefault.HasVariantSets())
+        vs = primTestDefault.GetVariantSets()
+        variantSet = vs.GetVariantSet(variantSetName)
+        self.assertEqual(variantSet.GetVariantSelection(), cacheVariantName)
+        self.assertTrue(mayaRefPrim.IsActive())
+
+        # Switch to Maya Ref variant and verify that the auto-edit is
+        # still on and the prim is now inactive.
+        variantSet.SetVariantSelection(variantName)
+        self.assertFalse(mayaRefPrim.IsActive())
         attr = mayaRefPrim.GetAttribute('mayaAutoEdit')
         self.assertTrue(attr.IsValid())
         self.assertEqual(attr.Get(), True)
-        self.assertFalse(mayaRefPrim.IsActive())
 
 
     def testBadNames(self):
