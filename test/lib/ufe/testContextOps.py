@@ -555,7 +555,7 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertFalse(capsulePrim.HasAPI(UsdShade.MaterialBindingAPI))
 
         contextOps = ufe.ContextOps.contextOps(capsuleItem)
-        cmd = contextOps.doOpCmd(['Bind Material', '/Material1'])
+        cmd = contextOps.doOpCmd(['Assign Material', '/Material1'])
         self.assertTrue(cmd)
         ufeCmd.execute(cmd)
         self.assertTrue(capsulePrim.HasAPI(UsdShade.MaterialBindingAPI))
@@ -568,7 +568,7 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertTrue(capsulePrim.HasAPI(UsdShade.MaterialBindingAPI))
         self.assertEqual(capsuleBindAPI.GetDirectBinding().GetMaterialPath(), Sdf.Path("/Material1"))
 
-        cmd = contextOps.doOpCmd(['Unbind Material'])
+        cmd = contextOps.doOpCmd(['Unassign Material'])
         self.assertTrue(cmd)
         ufeCmd.execute(cmd)
 
@@ -840,6 +840,77 @@ class ContextOpsTestCase(unittest.TestCase):
             ufeCmd.execute(cmdSS)
             checkMaterial(self, rootHier, 5, 1, 1, 0, "standard_surface", "mtlx", "out", "/test_scope")
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4020', 'Test only available in UFE preview version 0.4.20 and greater')
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
+    def testAddMaterialToScope(self):
+        """This test adds a new material to the material scope."""
+        cmds.file(new=True, force=True)
+
+        # Create a proxy shape with empty stage to start with.
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        # Create a ContextOps interface for the proxy shape.
+        proxyPathSegment = mayaUtils.createUfePathSegment(proxyShape)
+        proxyShapePath = ufe.Path([proxyPathSegment])
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+
+        # Create multiple objects to test with. 
+        cmd = contextOps.doOpCmd(['Add New Prim', 'Capsule'])
+        ufeCmd.execute(cmd)
+
+        rootHier = ufe.Hierarchy.hierarchy(proxyShapeItem)
+        self.assertTrue(rootHier.hasChildren())
+        self.assertEqual(len(rootHier.children()), 1)
+
+        capsuleItem = rootHier.children()[0]
+
+        capsulePrim = usdUtils.getPrimFromSceneItem(capsuleItem)
+        self.assertFalse(capsulePrim.HasAPI(UsdShade.MaterialBindingAPI))
+
+        contextOps = ufe.ContextOps.contextOps(capsuleItem)
+
+        # Create a new material and apply it to our cube, sphere and capsule objects.
+        cmdPS = contextOps.doOpCmd(['Assign New Material', 'USD', 'UsdPreviewSurface'])
+        self.assertIsNotNone(cmdPS)
+        ufeCmd.execute(cmdPS)
+
+        scopeItem = rootHier.children()[-1]
+        scopeHier = ufe.Hierarchy.hierarchy(scopeItem)
+        self.assertTrue(scopeHier.hasChildren())
+        self.assertEqual(len(scopeHier.children()), 1)
+
+        scopeOps = ufe.ContextOps.contextOps(scopeItem)
+        cmdAddSS = scopeOps.doOpCmd(['Add New Material', 'MaterialX', 'ND_standard_surface_surfaceshader'])
+        ufeCmd.execute(cmdAddSS)
+
+        # Should now be two materials in the scope.
+        self.assertEqual(len(scopeHier.children()), 2)
+
+        cmds.undo()
+
+        self.assertEqual(len(scopeHier.children()), 1)
+
+        cmds.redo()
+
+        self.assertEqual(len(scopeHier.children()), 2)
+
+        newMatItem = scopeHier.children()[-1]
+
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(newMatItem.runTimeId())
+        self.assertIsNotNone(connectionHandler)
+        connections = connectionHandler.sourceConnections(newMatItem)
+        self.assertIsNotNone(connectionHandler)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        mxConn = conns[0]
+        self.assertEqual(ufe.PathString.string(mxConn.src.path), "|stage1|stageShape1,/mtl/standard_surface1/standard_surface1")
+        self.assertEqual(mxConn.src.name, "outputs:out")
+        self.assertEqual(ufe.PathString.string(mxConn.dst.path), "|stage1|stageShape1,/mtl/standard_surface1")
+        self.assertEqual(mxConn.dst.name, "outputs:mtlx:surface")
+
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testMaterialBindingWithNodeDefHandler(self):
@@ -899,7 +970,7 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertFalse(capsulePrim.HasAPI(UsdShade.MaterialBindingAPI))
 
         contextOps = ufe.ContextOps.contextOps(capsuleItem)
-        cmd = contextOps.doOpCmd(['Bind Material', '/Material1'])
+        cmd = contextOps.doOpCmd(['Assign Material', '/Material1'])
         self.assertTrue(cmd)
         ufeCmd.execute(cmd)
         self.assertTrue(capsulePrim.HasAPI(UsdShade.MaterialBindingAPI))
@@ -912,7 +983,7 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertTrue(capsulePrim.HasAPI(UsdShade.MaterialBindingAPI))
         self.assertEqual(capsuleBindAPI.GetDirectBinding().GetMaterialPath(), Sdf.Path("/Material1"))
 
-        cmd = contextOps.doOpCmd(['Unbind Material'])
+        cmd = contextOps.doOpCmd(['Unassign Material'])
         self.assertTrue(cmd)
         ufeCmd.execute(cmd)
 

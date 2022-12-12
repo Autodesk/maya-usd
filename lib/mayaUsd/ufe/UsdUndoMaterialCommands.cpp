@@ -22,6 +22,7 @@
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usdGeom/scope.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
 #include <ufe/sceneItemOps.h>
@@ -34,6 +35,44 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+namespace {
+// We will not use the value of UsdUtilsGetMaterialsScopeName() for the material scope.
+static const std::string kDefaultMaterialScopeName("mtl");
+
+bool connectShaderToMaterial(
+    Ufe::SceneItem::Ptr shaderItem,
+    UsdPrim             materialPrim,
+    const std::string&  nodeId)
+{
+    auto                 shaderUsdItem = std::dynamic_pointer_cast<UsdSceneItem>(shaderItem);
+    auto                 shaderPrim = UsdShadeShader(shaderUsdItem->prim());
+    UsdShadeOutput       materialOutput;
+    PXR_NS::SdrRegistry& registry = PXR_NS::SdrRegistry::GetInstance();
+    PXR_NS::SdrShaderNodeConstPtr shaderNodeDef
+        = registry.GetShaderNodeByIdentifier(TfToken(nodeId));
+    SdrShaderPropertyConstPtr shaderOutputDef;
+    if (shaderNodeDef->GetSourceType() == "glslfx") {
+        materialOutput = UsdShadeMaterial(materialPrim).CreateSurfaceOutput();
+        shaderOutputDef = shaderNodeDef->GetShaderOutput(TfToken("surface"));
+    } else {
+        if (shaderNodeDef->GetOutputNames().size() != 1) {
+            TF_RUNTIME_ERROR(
+                "Cannot resolve which output of shader %s should be connected to surface",
+                nodeId.c_str());
+            return false;
+        }
+        materialOutput
+            = UsdShadeMaterial(materialPrim).CreateSurfaceOutput(shaderNodeDef->GetSourceType());
+        shaderOutputDef = shaderNodeDef->GetShaderOutput(shaderNodeDef->GetOutputNames()[0]);
+    }
+    UsdShadeOutput shaderOutput = shaderPrim.CreateOutput(
+        shaderOutputDef->GetName(), shaderOutputDef->GetTypeAsSdfType().first);
+    UsdShadeConnectableAPI::ConnectToSource(materialOutput, shaderOutput);
+    return true;
+}
+
+} // namespace
+
 UsdPrim BindMaterialUndoableCommand::CompatiblePrim(const Ufe::SceneItem::Ptr& item)
 {
     auto usdItem = std::dynamic_pointer_cast<const MAYAUSD_NS::ufe::UsdSceneItem>(item);
@@ -44,6 +83,9 @@ UsdPrim BindMaterialUndoableCommand::CompatiblePrim(const Ufe::SceneItem::Ptr& i
     if (UsdShadeNodeGraph(usdPrim) || UsdShadeShader(usdPrim)) {
         // The binding schema can be applied anywhere, but it makes no sense on a
         // material or a shader.
+        return {};
+    }
+    if (UsdGeomScope(usdPrim) && usdPrim.GetName() == kDefaultMaterialScopeName) {
         return {};
     }
     if (PXR_NS::UsdShadeMaterialBindingAPI::CanApply(usdPrim)) {
@@ -106,7 +148,7 @@ void BindMaterialUndoableCommand::redo()
         bindingAPI.Bind(material);
     }
 }
-const std::string BindMaterialUndoableCommand::commandName("Bind Material");
+const std::string BindMaterialUndoableCommand::commandName("Assign Material");
 
 UnbindMaterialUndoableCommand::UnbindMaterialUndoableCommand(const UsdPrim& prim)
     : _stage(prim.GetStage())
@@ -154,7 +196,7 @@ void UnbindMaterialUndoableCommand::redo()
         }
     }
 }
-const std::string UnbindMaterialUndoableCommand::commandName("Unbind Material");
+const std::string UnbindMaterialUndoableCommand::commandName("Unassign Material");
 
 #if (UFE_PREVIEW_VERSION_NUM >= 4010)
 UsdUndoAssignNewMaterialCommand::UsdUndoAssignNewMaterialCommand(
@@ -221,12 +263,7 @@ Ufe::SceneItem::Ptr UsdUndoAssignNewMaterialCommand::insertedChild() const
     return {};
 }
 
-namespace {
-// We will not use the value of UsdUtilsGetMaterialsScopeName() for the material scope.
-static const std::string kDefaultMaterialScopeName("mtl");
-} // namespace
-
-void UsdUndoAssignNewMaterialCommand::execute()
+std::string UsdUndoAssignNewMaterialCommand::resolvedMaterialScopeName()
 {
     std::string materialsScopeName = kDefaultMaterialScopeName;
     if (TfGetEnvSetting(USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME)) {
@@ -238,6 +275,12 @@ void UsdUndoAssignNewMaterialCommand::execute()
             materialsScopeName = mayaUsdDefaultMaterialsScopeName;
         }
     }
+    return materialsScopeName;
+}
+
+void UsdUndoAssignNewMaterialCommand::execute()
+{
+    std::string materialsScopeName = resolvedMaterialScopeName();
 
     // Materials cannot be shared between stages. So we create a unique material per stage,
     // which can then be shared between any number of objects within that stage.
@@ -339,10 +382,9 @@ void UsdUndoAssignNewMaterialCommand::execute()
                 //
                 // 4. Connect the Shader to the material:
                 //
-                connectShaderToMaterial(
-                    createShaderCmd->insertedChild(), createMaterialCmd->newPrim());
-                if (!_cmds) {
-                    // connect has failed.
+                if (!connectShaderToMaterial(
+                        createShaderCmd->insertedChild(), createMaterialCmd->newPrim(), _nodeId)) {
+                    markAsFailed();
                     return;
                 }
             }
@@ -375,43 +417,162 @@ void UsdUndoAssignNewMaterialCommand::redo()
         auto addMaterialCmd
             = std::dynamic_pointer_cast<MAYAUSD_NS::ufe::UsdUndoAddNewPrimCommand>(*cmdsIt++);
         auto addShaderCmd = std::dynamic_pointer_cast<UsdUndoCreateFromNodeDefCommand>(*cmdsIt);
-        connectShaderToMaterial(addShaderCmd->insertedChild(), addMaterialCmd->newPrim());
+        connectShaderToMaterial(addShaderCmd->insertedChild(), addMaterialCmd->newPrim(), _nodeId);
     }
-}
-
-void UsdUndoAssignNewMaterialCommand::connectShaderToMaterial(
-    Ufe::SceneItem::Ptr shaderItem,
-    UsdPrim             materialPrim)
-{
-    auto                 shaderUsdItem = std::dynamic_pointer_cast<UsdSceneItem>(shaderItem);
-    auto                 shaderPrim = UsdShadeShader(shaderUsdItem->prim());
-    UsdShadeOutput       materialOutput;
-    PXR_NS::SdrRegistry& registry = PXR_NS::SdrRegistry::GetInstance();
-    PXR_NS::SdrShaderNodeConstPtr shaderNodeDef
-        = registry.GetShaderNodeByIdentifier(TfToken(_nodeId));
-    SdrShaderPropertyConstPtr shaderOutputDef;
-    if (shaderNodeDef->GetSourceType() == "glslfx") {
-        materialOutput = UsdShadeMaterial(materialPrim).CreateSurfaceOutput();
-        shaderOutputDef = shaderNodeDef->GetShaderOutput(TfToken("surface"));
-    } else {
-        if (shaderNodeDef->GetOutputNames().size() != 1) {
-            TF_RUNTIME_ERROR(
-                "Cannot resolve which output of shader %s should be connected to surface",
-                _nodeId.c_str());
-            markAsFailed();
-            return;
-        }
-        materialOutput
-            = UsdShadeMaterial(materialPrim).CreateSurfaceOutput(shaderNodeDef->GetSourceType());
-        shaderOutputDef = shaderNodeDef->GetShaderOutput(shaderNodeDef->GetOutputNames()[0]);
-    }
-    UsdShadeOutput shaderOutput = shaderPrim.CreateOutput(
-        shaderOutputDef->GetName(), shaderOutputDef->GetTypeAsSdfType().first);
-    UsdShadeConnectableAPI::ConnectToSource(materialOutput, shaderOutput);
-    return;
 }
 
 void UsdUndoAssignNewMaterialCommand::markAsFailed()
+{
+    _cmds->undo();
+    _cmds.reset();
+}
+
+UsdUndoAddNewMaterialCommand::UsdUndoAddNewMaterialCommand(
+    const UsdSceneItem::Ptr& parentItem,
+    const std::string&       nodeId)
+    : Ufe::InsertChildCommand()
+    , _parentPath((parentItem && parentItem->prim().IsActive()) ? parentItem->path() : Ufe::Path())
+    , _nodeId(nodeId)
+    , _cmds(std::make_shared<Ufe::CompositeUndoableCommand>())
+{
+}
+
+UsdUndoAddNewMaterialCommand::~UsdUndoAddNewMaterialCommand() { }
+
+UsdUndoAddNewMaterialCommand::Ptr
+UsdUndoAddNewMaterialCommand::create(const UsdSceneItem::Ptr& parentItem, const std::string& nodeId)
+{
+    // Changing the hierarchy of invalid items is not allowed.
+    if (!parentItem || !parentItem->prim().IsActive())
+        return nullptr;
+
+    return std::make_shared<UsdUndoAddNewMaterialCommand>(parentItem, nodeId);
+}
+
+Ufe::SceneItem::Ptr UsdUndoAddNewMaterialCommand::insertedChild() const
+{
+    if (_cmds) {
+        auto cmdsIt = _cmds->cmdsList().begin();
+        std::advance(cmdsIt, _createMaterialCmdIdx + 1);
+        auto addShaderCmd = std::dynamic_pointer_cast<UsdUndoCreateFromNodeDefCommand>(*cmdsIt);
+        return addShaderCmd->insertedChild();
+    }
+    return {};
+}
+
+bool UsdUndoAddNewMaterialCommand::CompatiblePrim(const Ufe::SceneItem::Ptr& target)
+{
+    if (!target) {
+        return false;
+    }
+
+    // Must be a scope.
+    if (target->nodeType() != "Scope") {
+        return false;
+    }
+
+    // With the magic name.
+    if (target->nodeName() == UsdUndoAssignNewMaterialCommand::resolvedMaterialScopeName()) {
+        return true;
+    }
+
+    // Or with only materials inside
+    auto scopeHierarchy = Ufe::Hierarchy::hierarchy(target);
+    if (scopeHierarchy) {
+        for (auto&& child : scopeHierarchy->children()) {
+            if (child->nodeType() != "Material") {
+                // At least one non material
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+void UsdUndoAddNewMaterialCommand::execute()
+{
+    if (_parentPath.empty()) {
+        markAsFailed();
+        return;
+    }
+
+    //
+    // Create the Material:
+    //
+    PXR_NS::SdrRegistry&          registry = PXR_NS::SdrRegistry::GetInstance();
+    PXR_NS::SdrShaderNodeConstPtr shaderNodeDef
+        = registry.GetShaderNodeByIdentifier(TfToken(_nodeId));
+    if (!shaderNodeDef) {
+        TF_RUNTIME_ERROR("Unknown shader identifier: %s", _nodeId.c_str());
+        markAsFailed();
+        return;
+    }
+    if (shaderNodeDef->GetOutputNames().empty()) {
+        TF_RUNTIME_ERROR("Surface shader %s does not have any outputs", _nodeId.c_str());
+        markAsFailed();
+        return;
+    }
+    auto scopeItem
+        = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(_parentPath));
+    auto createMaterialCmd = UsdUndoAddNewPrimCommand::create(
+        scopeItem, shaderNodeDef->GetFamily().GetString(), "Material");
+    createMaterialCmd->execute();
+    _createMaterialCmdIdx = _cmds->cmdsList().size();
+    _cmds->append(createMaterialCmd);
+    if (!createMaterialCmd->newPrim()) {
+        // The _createMaterialCmd will have emitted errors.
+        markAsFailed();
+        return;
+    }
+
+    //
+    // Create the Shader:
+    //
+    auto materialItem = std::dynamic_pointer_cast<UsdSceneItem>(
+        Ufe::Hierarchy::createItem(createMaterialCmd->newUfePath()));
+    auto createShaderCmd = UsdUndoCreateFromNodeDefCommand::create(
+        shaderNodeDef, materialItem, shaderNodeDef->GetFamily().GetString());
+    createShaderCmd->execute();
+    _cmds->append(createShaderCmd);
+    if (!createShaderCmd->insertedChild()) {
+        // The _createShaderCmd will have emitted errors.
+        markAsFailed();
+        return;
+    }
+
+    //
+    // Connect the Shader to the material:
+    //
+    if (!connectShaderToMaterial(
+            createShaderCmd->insertedChild(), createMaterialCmd->newPrim(), _nodeId)) {
+        markAsFailed();
+        return;
+    }
+}
+
+void UsdUndoAddNewMaterialCommand::undo()
+{
+    if (_cmds) {
+        _cmds->undo();
+    }
+}
+
+void UsdUndoAddNewMaterialCommand::redo()
+{
+    if (_cmds) {
+        _cmds->redo();
+
+        auto cmdsIt = _cmds->cmdsList().begin();
+        std::advance(cmdsIt, _createMaterialCmdIdx);
+        auto addMaterialCmd
+            = std::dynamic_pointer_cast<MAYAUSD_NS::ufe::UsdUndoAddNewPrimCommand>(*cmdsIt++);
+        auto addShaderCmd = std::dynamic_pointer_cast<UsdUndoCreateFromNodeDefCommand>(*cmdsIt);
+        connectShaderToMaterial(addShaderCmd->insertedChild(), addMaterialCmd->newPrim(), _nodeId);
+    }
+}
+
+void UsdUndoAddNewMaterialCommand::markAsFailed()
 {
     _cmds->undo();
     _cmds.reset();
