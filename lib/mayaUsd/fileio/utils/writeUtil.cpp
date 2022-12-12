@@ -127,6 +127,29 @@ bool UsdMayaWriteUtil::WriteUVAsFloat2()
 }
 
 /* static */
+MString UsdMayaWriteUtil::UVSetExportedName(
+    const MStringArray&                       originalNames,
+    bool                                      preserveSetNames,
+    const std::map<std::string, std::string>& uvSetRemaps,
+    unsigned int                              uvIndex)
+{
+    MString setName(originalNames[uvIndex]);
+
+    auto it = uvSetRemaps.find(setName.asChar());
+    if (it != uvSetRemaps.end()) {
+        // Remap the UV set as specified
+        setName = it->second.c_str();
+    } else if (!preserveSetNames) {
+        // UV sets get renamed st, st1, st2 in the order returned by getUVSetNames
+        setName = "st";
+        if (uvIndex) {
+            setName += uvIndex;
+        }
+    }
+    return setName;
+}
+
+/* static */
 UsdAttribute UsdMayaWriteUtil::GetOrCreateUsdAttr(
     const MPlug&       attrPlug,
     const UsdPrim&     usdPrim,
