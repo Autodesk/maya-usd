@@ -157,10 +157,6 @@ public:
      */
     const MString& GetDrawItemName() const { return _drawItemName; }
 
-    /*! \brief  Get render item name
-     */
-    const MString& GetRenderItemName() const { return GetRenderItemData()._renderItemName; }
-
     /*! \brief  Get pointer of the associated render item
      */
     MHWRender::MRenderItem* GetRenderItem() const { return GetRenderItemData()._renderItem; }
@@ -184,10 +180,6 @@ public:
     /*! \brief  Is the render item created for this usage only?
      */
     bool MatchesUsage(RenderItemUsage usage) const { return _renderItemUsage == usage; }
-
-    /*! \brief  Bitwise OR with the input dirty bits.
-     */
-    void SetDirtyBits(HdDirtyBits bits) { GetRenderItemData().SetDirtyBits(bits); }
 
     /*! \brief  Reset the dirty bits to clean.
      */

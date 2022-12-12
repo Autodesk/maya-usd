@@ -295,8 +295,8 @@ protected:
 
     void _HideAllDrawItems(HdReprSharedPtr const& curRepr);
 
-    void _ForEachRenderItemInRepr(const HdReprSharedPtr& curRepr, RenderItemFunc& func);
-    void _ForEachRenderItem(const ReprVector& reprs, RenderItemFunc& func);
+    static void _ForEachRenderItemInRepr(const HdReprSharedPtr& curRepr, RenderItemFunc& func);
+    static void _ForEachRenderItem(const ReprVector& reprs, RenderItemFunc& func);
 
     //! Helper utility function to adapt Maya API changes.
     static void _SetWantConsolidation(MHWRender::MRenderItem& renderItem, bool state);
