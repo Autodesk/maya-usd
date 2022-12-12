@@ -381,10 +381,10 @@ void MtohRenderOverride::UpdateRenderGlobals(
     const MtohRenderGlobals& globals,
     const TfToken&           attrName)
 {
-    // If no attribute or attribute starts with 'mtoh', these setting wil be applied on the next
+    // If no attribute or attribute starts with 'mayaHydra', these setting wil be applied on the next
     // call to MtohRenderOverride::Render, so just force an invalidation
-    // XXX: This will need to change if mtoh settings should ever make it to the delegate itself.
-    if (attrName.GetString().find("mtoh") != 0) {
+    // XXX: This will need to change if mayaHydra settings should ever make it to the delegate itself.
+    if (attrName.GetString().find("mayaHydra") != 0) {
         std::lock_guard<std::mutex> lock(_allInstancesMutex);
         for (auto* instance : _allInstances) {
             const auto& rendererName = instance->_rendererDesc.rendererName;

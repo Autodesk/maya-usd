@@ -1,4 +1,4 @@
-set(TARGET_NAME mtoh)
+set(TARGET_NAME mayaHydra)
 
 add_library(${TARGET_NAME} SHARED)
 

@@ -46,7 +46,7 @@ public:
         const bool filterIsRenderer = false;
         // If creating the attribute for the first time, immediately set to a user default
         const bool fallbackToUserDefaults = true;
-        // TODO: Extend this and mtoh with a setting to ignore scene settings
+        // TODO: Extend this and mayaHydra with a setting to ignore scene settings
 
         GlobalParams() = default;
         GlobalParams(const TfToken f, bool fir, bool ftud)
@@ -63,7 +63,7 @@ public:
     // Returning the settings stored on "defaultRenderGlobals"
     static const MtohRenderGlobals& GetInstance(bool storeUserSettings = false);
 
-    // Inform mtoh one of the settings stored on "defaultRenderGlobals" has changed
+    // Inform mayaHydra one of the settings stored on "defaultRenderGlobals" has changed
     static const MtohRenderGlobals&
     GlobalChanged(const GlobalParams&, bool storeUserSetting = false);
 

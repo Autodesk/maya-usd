@@ -27,7 +27,7 @@ class MtohTestCase(ImageDiffingTestCase):
         inputPath = fixturesUtils.setUpClass(
             cls._file, suffix=('_' + cls.__name__),
             initializeStandalone=False, loadPlugin=False)
-        cmds.loadPlugin('mtoh', quiet=True)
+        cmds.loadPlugin('mayaHydra', quiet=True)
 
         if cls._inputDir is None:
             inputDirName = os.path.splitext(os.path.basename(cls._file))[0]
@@ -55,7 +55,7 @@ class MtohTestCase(ImageDiffingTestCase):
             self.activeEditor, e=1,
             rendererOverrideName=HD_STORM_OVERRIDE)
         cmds.refresh(f=1)
-        self.delegateId = cmds.mtoh(renderer=HD_STORM,
+        self.delegateId = cmds.mayaHydra(renderer=HD_STORM,
                                     sceneDelegateId="HdMayaSceneDelegate")
 
     def setBasicCam(self, dist=DEFAULT_CAM_DIST):
@@ -91,7 +91,7 @@ class MtohTestCase(ImageDiffingTestCase):
                          fullPath.lstrip('|').replace('|', '/')])
 
     def getIndex(self, **kwargs):
-        return cmds.mtoh(renderer=HD_STORM, listRenderIndex=True, **kwargs)
+        return cmds.mayaHydra(renderer=HD_STORM, listRenderIndex=True, **kwargs)
 
     def getVisibleIndex(self, **kwargs):
         kwargs['visibleOnly'] = True

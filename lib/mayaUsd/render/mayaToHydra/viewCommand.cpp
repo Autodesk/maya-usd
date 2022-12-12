@@ -27,7 +27,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-const MString MtohViewCmd::name("mtoh");
+const MString MtohViewCmd::name("mayaHydra");
 
 namespace {
 
@@ -72,7 +72,7 @@ constexpr auto _userDefaultsIdLong = "-userDefaults";
 
 constexpr auto _helpText = R"HELP(
 Maya to Hydra utility function.
-Usage: mtoh [flags]
+Usage: mayaHydra [flags]
 -listDelegates/-ld : Returns the names of available scene delegates.
 -listRenderers/-lr : Returns the names of available render delegates.
 -listActiveRenderers/-lar : Returns the names of render delegates that are in
@@ -157,8 +157,8 @@ MStatus MtohViewCmd::doIt(const MArgList& args)
         MString id;
         CHECK_MSTATUS_AND_RETURN_IT(db.getFlagArgument(_rendererId, 0, id));
 
-        // Passing 'mtoh' as the renderer adresses all renderers
-        if (id != "mtoh") {
+        // Passing 'mayaHydra' as the renderer adresses all renderers
+        if (id != "mayaHydra") {
             renderDelegateName = TfToken(id.asChar());
         }
     }

@@ -49,7 +49,7 @@ public:
         }
 
         // We are not using precomputed attributes here, because we don't have
-        // a guarantee that mtoa will be loaded before mtoh.
+        // a guarantee that mtoa will be loaded before mayaHydra.
         if (paramName == HdLightTokens->color) {
             const auto plug = light.findPlug("color", true);
             MPlugArray conns;

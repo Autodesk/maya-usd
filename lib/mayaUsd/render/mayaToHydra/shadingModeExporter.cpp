@@ -186,10 +186,10 @@ public:
     }
 };
 
-TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShadingModeExportContext, mtoh) {
+TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShadingModeExportContext, mayaHydra) {
     UsdMayaShadingModeRegistry::GetInstance().RegisterExporter(
-        "mtoh",
-        "MtoH",
+        "mayaHydra",
+        "mayaHydra",
         "",
         []() -> UsdMayaShadingModeExporterPtr {
             return UsdMayaShadingModeExporterPtr(new MtohShadingModeExporter());

@@ -51,7 +51,7 @@ static std::vector<MtohRenderOverridePtr> gsRenderOverrides;
 
 PLUGIN_EXPORT MStatus initializePlugin(MObject obj)
 {
-    MString experimental("Maya to Hydra (mtoh) is experimental.");
+    MString experimental("mayaHydra is experimental.");
     MGlobal::displayWarning(experimental);
 
     MStatus ret = MS::kSuccess;
@@ -79,7 +79,7 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj)
     if (!plugin.registerCommand(
             MtohViewCmd::name, MtohViewCmd::creator, MtohViewCmd::createSyntax)) {
         ret = MS::kFailure;
-        ret.perror("Error registering mtoh command!");
+        ret.perror("Error registering mayaHydra command!");
         return ret;
     }
 
@@ -114,11 +114,11 @@ PLUGIN_EXPORT MStatus uninitializePlugin(MObject obj)
     gsRenderOverrides.clear();
 
     // Clear any registered callbacks
-    MGlobal::executeCommand("callbacks -cc mtoh;");
+    MGlobal::executeCommand("callbacks -cc mayaHydra;");
 
     if (!plugin.deregisterCommand(MtohViewCmd::name)) {
         ret = MS::kFailure;
-        ret.perror("Error deregistering mtoh command!");
+        ret.perror("Error deregistering mayaHydra command!");
     }
 
     return ret;

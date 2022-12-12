@@ -35,16 +35,16 @@ USD proxies in Viewport 2.0? Some potential reasons include:
 
 ## Usage
 
-Load the included plugin, mtoh, located at:
+Load the included plugin, mayaHydra, located at:
 
 Windows:
-`[Maya-USD-Root]\lib\maya\mtoh.dll`
+`[Maya-USD-Root]\lib\maya\mayaHydra.dll`
 
 MacOS:
-`[Maya-USD-Root]/lib/maya/mtoh.dylib`
+`[Maya-USD-Root]/lib/maya/mayaHydra.dylib`
 
 Linux:
-`[Maya-USD-Root]/lib/maya/mtoh.so`
+`[Maya-USD-Root]/lib/maya/mayaHydra.so`
 
 Then, using the **Renderer** viewport menu, select **GL (Hydra)** - or, if you have another hydra render delegate installed, select **<Renderer> (Hydra)**
 

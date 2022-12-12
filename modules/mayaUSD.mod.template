@@ -24,7 +24,7 @@ ${MAYAUSD_GTEST_PATH}
 + MayaUSD ${MAYAUSD_VERSION} ${CMAKE_INSTALL_PREFIX}/plugin/adsk
 plug-ins: plugin
 
-+ MTOH ${MAYAUSD_VERSION} ${CMAKE_INSTALL_PREFIX}/lib
++ MAYAHYDRA ${MAYAUSD_VERSION} ${CMAKE_INSTALL_PREFIX}/lib
 icons: 
 plug-ins: maya
 presets: 
