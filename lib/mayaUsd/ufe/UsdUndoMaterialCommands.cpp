@@ -39,6 +39,7 @@ namespace {
 // We will not use the value of UsdUtilsGetMaterialsScopeName() for the material scope.
 static const std::string kDefaultMaterialScopeName("mtl");
 
+#if (UFE_PREVIEW_VERSION_NUM >= 4010)
 bool connectShaderToMaterial(
     Ufe::SceneItem::Ptr shaderItem,
     UsdPrim             materialPrim,
@@ -70,7 +71,7 @@ bool connectShaderToMaterial(
     UsdShadeConnectableAPI::ConnectToSource(materialOutput, shaderOutput);
     return true;
 }
-
+#endif
 } // namespace
 
 UsdPrim BindMaterialUndoableCommand::CompatiblePrim(const Ufe::SceneItem::Ptr& item)
