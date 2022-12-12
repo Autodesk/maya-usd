@@ -364,11 +364,13 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data)
         return;
     }
 
-    //const bool isNew = flags & MViewportScene::MVS_new;  //not used yet
+	const bool positionsHaveBeenReset = (0 == _positions.size());//when positionsHaveBeenReset is true we need to recompute the geometry and topology as our data has been cleared
+
+	//const bool isNew = flags & MViewportScene::MVS_new;  //not used yet
 	const bool visible			= data._flags & MViewportScene::MVS_visible;
 	const bool matrixChanged    = data._flags & MViewportScene::MVS_changedMatrix;
-    const bool geomChanged		= data._flags & MViewportScene::MVS_changedGeometry;
-    const bool topoChanged		= data._flags & MViewportScene::MVS_changedTopo;
+    const bool geomChanged		= (data._flags & MViewportScene::MVS_changedGeometry)	|| positionsHaveBeenReset;
+    const bool topoChanged		= (data._flags & MViewportScene::MVS_changedTopo)		|| positionsHaveBeenReset;
 	const bool visibChanged		= data._flags & MViewportScene::MVS_changedVisibility;
 	const bool effectChanged	= data._flags & MViewportScene::MVS_changedEffect;
 	
@@ -419,12 +421,19 @@ void HdMayaRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data)
         verts = geom->vertexBuffer(0);
         if (verts) {
             int vertCount = 0;
-            if (topoChanged) {
-                vertCount = verts->vertexCount();
+			const unsigned int originalVertexCount = verts->vertexCount();
+            if ( topoChanged) {
+                vertCount = originalVertexCount;
             } else {
                 // Keep the previously-determined vertex count in case it was truncated.
-                vertCount = _positions.size();
+				const size_t positionSize = _positions.size() ;
+				if (positionSize > 0 && positionSize <= originalVertexCount){
+					vertCount = positionSize;
+				}else{
+					vertCount = originalVertexCount;
+				}
             }
+
             _positions.clear();
             //_positions.resize(vertCount);
             // map() is usually just reading from the software copy of the vp2 buffers.  It was also
@@ -572,6 +581,10 @@ VtValue HdMayaRenderItemAdapter::Get(const TfToken& key)
 	{
 		return VtValue(_uvs);
 	}
+	if (key == HdTokens->displayColor)
+	{
+		return VtValue(GfVec4f(_wireframeColor[0],_wireframeColor[1],_wireframeColor[2],_wireframeColor[3]));
+	}
 
 	return {};
 }
@@ -608,6 +621,13 @@ HdPrimvarDescriptorVector HdMayaRenderItemAdapter::GetPrimvarDescriptors(HdInter
 			return { desc };
 		}
 	}
+	else if (interpolation == HdInterpolationConstant) {
+		HdPrimvarDescriptor desc;
+		desc.name = HdTokens->displayColor;
+		desc.interpolation = interpolation;
+		desc.role = HdPrimvarRoleTokens->color;
+		return { desc };
+    }
 
 	return {};
 }

@@ -62,13 +62,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-#ifndef HDMAYA_SCENE_RENDER_DATASERVER
 void _nodeAdded(MObject& obj, void* clientData)
 {
-    // In case of creating new instances, the instance below the
-    // dag will be empty and not initialized properly.
-    auto* delegate = reinterpret_cast<HdMayaSceneDelegate*>(clientData);
-    delegate->NodeAdded(obj);
+    //We care only about lights for this callback, it is used to create a LightAdapter when adding a new light in the scene while being in hydra
+    if (obj.hasFn(MFn::kLight)){
+        // In case of creating new instances, the instance below the
+        // dag will be empty and not initialized properly.
+        auto* delegate = reinterpret_cast<HdMayaSceneDelegate*>(clientData);
+        delegate->NodeAdded(obj);
+    }
 }
 
 const MString defaultLightSet("defaultLightSet");
@@ -109,7 +111,6 @@ void _connectionChanged(MPlug& srcPlug, MPlug& destPlug, bool made, void* client
         delegate->UpdateLightVisibility(dagCopy);
     }
 }
-#endif
 
 template <typename T, typename F> inline bool _FindAdapter(const SdfPath&, F) { return false; }
 
@@ -203,6 +204,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((LeadDisplayStatusMaterial, "__lead_selection_material__"))
     ((ActiveAffectedDisplayStatusMaterial, "__activeaffected_selection_material__"))
     (diffuseColor)
+    (emissiveColor)
 	(HdMayaMeshPoints)
 );
 // clang-format on
@@ -227,6 +229,7 @@ HdMayaSceneDelegate::HdMayaSceneDelegate(const InitData& initData)
     , _fallbackMaterial(initData.delegateID.AppendChild(_tokens->FallbackMaterial))
 {
     //TfDebug::Enable(HDMAYA_DELEGATE_GET_MATERIAL_ID);
+    //TfDebug::Enable(HDMAYA_DELEGATE_GET);
 
     CreateDisplayStatusMaterials();
 }
@@ -297,12 +300,19 @@ void HdMayaSceneDelegate::UpdateDisplayStatusMaterial(MHWRender::DisplayStatus d
 
 void HdMayaSceneDelegate::UpdateDisplayStatusMaterialColor(const SdfPath& materialPath, HdMaterialNetworkMap& material, const GfVec4f& selCol)
 {
+    static const VtValue blackColor (GfVec4f(0.f, 0.f, 0.f, 1.0f));
     material.map.clear();
     HdMaterialNetwork network;
     HdMaterialNode node;
     node.identifier     = UsdImagingTokens->UsdPreviewSurface;
     node.path           = materialPath;
-    node.parameters.insert({_tokens->diffuseColor, VtValue(selCol)});
+    if (IsHdSt()){
+        //In Storm, set diffuse color to black to avoid lighting and emissive color to the color we want
+        node.parameters.insert({_tokens->diffuseColor, blackColor});
+        node.parameters.insert({_tokens->emissiveColor, VtValue(selCol)});
+    }else{
+        node.parameters.insert({_tokens->diffuseColor, VtValue(selCol)});
+    }
     network.nodes.push_back(std::move(node));
     material.map.insert({HdMaterialTerminalTokens->surface, std::move(network)});
 
@@ -311,15 +321,17 @@ void HdMayaSceneDelegate::UpdateDisplayStatusMaterialColor(const SdfPath& materi
 
 void HdMayaSceneDelegate::_AddRenderItem(const HdMayaRenderItemAdapterPtr& ria)
 {
+    const SdfPath& primPath = ria->GetID();
 	_renderItemsAdaptersFast.insert({ ria->GetFastID(), ria });
-	_renderItemsAdapters.insert({ ria->GetID(), ria });
+	_renderItemsAdapters.insert({ primPath, ria });
 }
 
 void HdMayaSceneDelegate::_RemoveRenderItem(
 	const HdMayaRenderItemAdapterPtr& ria)
 {
+    const SdfPath& primPath = ria->GetID();
 	_renderItemsAdaptersFast.erase(ria->GetFastID());
-	_renderItemsAdapters.erase(ria->GetID());
+	_renderItemsAdapters.erase(primPath);
 }
 
 //void HdMayaSceneDelegate::_TransformNodeDirty(MObject& node, MPlug& plug, void* clientData)
@@ -345,7 +357,11 @@ void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scen
     // nothing to lose unless there is some internal contention in USD.
     for (size_t i = 0; i < scene.mCount; i++) {
         auto flags      = scene.mFlags[i];
-        const auto& ri  = *scene.mItems[i];
+        if (flags == 0){
+            continue;
+        }
+        
+        auto& ri  = *scene.mItems[i];
 
         MColor wireframeColor;
         MHWRender::DisplayStatus    displayStatus = MHWRender::kNoStatus;
@@ -356,11 +372,7 @@ void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scen
 		    displayStatus			= MGeometryUtilities::displayStatus(dagPath);
         }
 	
-        if (flags == 0){
-            continue;
-        }
-        
-		int fastId = scene.mItems[i]->InternalObjectId();
+        int fastId = ri.InternalObjectId();
 		HdMayaRenderItemAdapterPtr ria = nullptr;
 		if (!_GetRenderItem(fastId, ria))
 		{
@@ -371,7 +383,7 @@ void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scen
 		
 		HdMayaShaderInstanceData sd;
 		MObject shadingEngineNode;
-		if (!_GetRenderItemMaterial(*scene.mItems[i], sd, shadingEngineNode))
+		if (!_GetRenderItemMaterial(ri, sd, shadingEngineNode))
 		{
 			if (sd.Material != kInvalidMaterial)
 			{
@@ -387,11 +399,11 @@ void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scen
         // if (flags & (MViewPortScene::MVS_geometry | MViewPortScene::MVS_topo) {
         // notify transform changed also in UpdateGeometry, so always call if anything changed
         // TODO:  refactor to separate notifications from geometry
-        const HdMayaRenderItemAdapter::UpdateFromDeltaData data(*scene.mItems[i], flags, wireframeColor, displayStatus);
+        const HdMayaRenderItemAdapter::UpdateFromDeltaData data(ri, flags, wireframeColor, displayStatus);
         ria->UpdateFromDelta(data);
         //}
         if (flags & MViewportScene::MVS_changedMatrix) {
-			ria->UpdateTransform(*scene.mItems[i]);
+			ria->UpdateTransform(ri);
         }
     }
 
@@ -415,7 +427,7 @@ void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scen
 		HdMayaRenderItemAdapterPtr ria;
 		InsertRenderItem(ri, sd, ria);	
 		ria->UpdateTopology(ri);							
-		ria->UpdateTransform(*scene.mItems[i]);
+		ria->UpdateTransform(ri);
 	
 		
 		ria->IsStale(false);
@@ -446,15 +458,6 @@ void HdMayaSceneDelegate::Populate()
         dagIt.getPath(path);
         InsertDag(path);
     }
-    MStatus status;
-    auto    id = MDGMessage::addNodeAddedCallback(_nodeAdded, "dagNode", this, &status);
-    if (status) {
-        _callbacks.push_back(id);
-    }
-    id = MDGMessage::addConnectionCallback(_connectionChanged, this, &status);
-    if (status) {
-        _callbacks.push_back(id);
-    }
 #elif 1
     // Add lights to the scene using HdMayaLightAdapter
     MItDag dagIt(MItDag::kDepthFirst, MFn::kLight);
@@ -464,10 +467,17 @@ void HdMayaSceneDelegate::Populate()
         dagIt.getPath(path);
         InsertDag(path);
     }
-    
-
 #endif
 
+    MStatus status;
+    auto    id = MDGMessage::addNodeAddedCallback(_nodeAdded, "dagNode", this, &status);
+    if (status) {
+        _callbacks.push_back(id);
+    }
+    id = MDGMessage::addConnectionCallback(_connectionChanged, this, &status);
+    if (status) {
+        _callbacks.push_back(id);
+    }
 
 
     // Adding materials sprim to the render index.
@@ -1264,6 +1274,8 @@ bool HdMayaSceneDelegate::IsEnabled(const TfToken& option) const
 
 VtValue HdMayaSceneDelegate::Get(const SdfPath& id, const TfToken& key)
 {
+    TF_DEBUG(HDMAYA_DELEGATE_GET)
+        .Msg("HdMayaSceneDelegate::Get(%s, %s)\n", id.GetText(), key.GetText());
 
 #ifdef HDMAYA_SCENE_RENDER_DATASERVER
 	return _GetValue<HdMayaAdapter, VtValue>(
@@ -1275,8 +1287,6 @@ VtValue HdMayaSceneDelegate::Get(const SdfPath& id, const TfToken& key)
         //,_materialAdapters
 		);
 #else
-    TF_DEBUG(HDMAYA_DELEGATE_GET)
-        .Msg("HdMayaSceneDelegate::Get(%s, %s)\n", id.GetText(), key.GetText());
     if (id.IsPropertyPath()) {
         return _GetValue<HdMayaDagAdapter, VtValue>(
             id.GetPrimPath(),

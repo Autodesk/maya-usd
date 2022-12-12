@@ -182,11 +182,19 @@ VtValue HdMayaLightAdapter::Get(const TfToken& key)
     } else if (key == HdTokens->transform) {
         return VtValue(HdMayaDagAdapter::GetTransform());
     } else if (key == HdLightTokens->shadowCollection) {
-        HdRprimCollection coll(HdTokens->geometry, HdReprSelector(HdReprTokens->refined));
+        //Exclude lines/points primitives from receiving lighting and casting shadows by only taking the primitives whose root path is GetDelegate()->GetSolidPrimsRootPath()
+        const SdfPath rootPathForNonLinesPrimitives = GetDelegate()->GetSolidPrimsRootPath();
+        HdRprimCollection coll(HdTokens->geometry, HdReprSelector(HdReprTokens->refined), rootPathForNonLinesPrimitives);
         return VtValue(coll);
     } else if (key == HdLightTokens->shadowParams) {
         HdxShadowParams shadowParams;
-        shadowParams.enabled = false;
+        MFnLight       mayaLight(GetDagPath());
+        const bool bLightHasShadowsenabled = mayaLight.useRayTraceShadows();
+        if (!bLightHasShadowsenabled) {
+            shadowParams.enabled = false;
+        }else{
+            _CalculateShadowParams(mayaLight, shadowParams);
+        }
         return VtValue(shadowParams);
     }
     return {};

@@ -145,6 +145,7 @@ public:
 #endif
 
 protected:
+    
     HDMAYA_API
     HdMeshTopology GetMeshTopology(const SdfPath& id) override;
 

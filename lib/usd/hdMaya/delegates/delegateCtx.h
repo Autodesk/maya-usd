@@ -75,6 +75,9 @@ public:
     HDMAYA_API
     SdfPath GetMaterialPath(const MObject& obj);
 
+    HDMAYA_API
+    SdfPath GetSolidPrimsRootPath()const;//Get the root path for non lines and non points primitives
+
 private:
     SdfPath _rprimPath;
     SdfPath _sprimPath;
