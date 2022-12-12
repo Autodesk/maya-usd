@@ -798,17 +798,6 @@ bool selectionSupportsShading()
     return false;
 }
 
-bool isShadingType(const Ufe::SceneItem::Ptr& target)
-{
-    if (!target) {
-        return false;
-    }
-    const std::vector<std::string> kSortedShadingTypes
-        = { "NodeGraph", "Material", "Scope", "Shader" };
-    return std::binary_search(
-        kSortedShadingTypes.begin(), kSortedShadingTypes.end(), target->nodeType());
-}
-
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
