@@ -55,6 +55,21 @@ struct UsdMayaWriteUtil
     MAYAUSD_CORE_PUBLIC
     static bool WriteUVAsFloat2();
 
+    /// Returns the exported name of a UV set at \p uvIndex according to the renaming rule and the
+    /// current set of options.
+    ///
+    /// \p originalNames is the full array returned by MFnMesh::getUVSetNames().
+    /// \p preserveSetNames is as defined by the -preserveUVSetNames export option and stored in
+    /// UsdMayaJobExportArgs::preserveUVSetNames.
+    /// \p uvSetRemaps is as defined by the -remapUVSetsTo export option and stored in
+    /// UsdMayaJobExportArgs::remapUVSetsTo.
+    /// \p uvIndex is the index of the name we want to query in originalNames.
+    static MString UVSetExportedName(
+        const MStringArray&                       originalNames,
+        bool                                      preserveSetNames,
+        const std::map<std::string, std::string>& uvSetRemaps,
+        unsigned int                              uvIndex);
+
     /// Given an \p attrPlug, try to create a USD attribute on \p usdPrim with
     /// the name \p attrName. Note, it's value will not be set.
     ///
