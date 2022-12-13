@@ -28,6 +28,7 @@
 #include <maya/MSelectionList.h>
 #ifdef WANT_UFE_BUILD
 #include <ufe/selection.h>
+#include <ufe/undoableCommand.h>
 #endif
 
 #include <memory>
@@ -407,6 +408,7 @@ private:
 };
 
 #ifdef WANT_UFE_BUILD
+
 //------------------------------------------------------------------------------
 // UfeSelectionUndoItem
 //------------------------------------------------------------------------------
@@ -466,6 +468,63 @@ private:
 
     Ufe::Selection _selection;
 };
+
+//------------------------------------------------------------------------------
+// UfeCommandUndoItem
+//------------------------------------------------------------------------------
+
+/// \class UfeCommandUndoItem
+/// \brief Record data needed to undo or redo a UFE command.
+class UfeCommandUndoItem : public OpUndoItem
+{
+public:
+    /// \brief Execute a UFE command and keep track of it.
+    MAYAUSD_CORE_PUBLIC
+    static bool execute(
+        const std::string&                           name,
+        const std::shared_ptr<Ufe::UndoableCommand>& command,
+        OpUndoItemList&                              undoInfo);
+
+    /// \brief Execute a UFE command and keep track of it in the global list.
+    MAYAUSD_CORE_PUBLIC
+    static bool
+    execute(const std::string& name, const std::shared_ptr<Ufe::UndoableCommand>& command);
+
+    /// \brief Keep track of a UFE command.
+    MAYAUSD_CORE_PUBLIC
+    static bool
+    add(const std::string&                           name,
+        const std::shared_ptr<Ufe::UndoableCommand>& command,
+        OpUndoItemList&                              undoInfo);
+
+    /// \brief Keep track of a UFE command in the global list.
+    MAYAUSD_CORE_PUBLIC
+    static bool add(const std::string& name, const std::shared_ptr<Ufe::UndoableCommand>& command);
+
+    MAYAUSD_CORE_PUBLIC
+    UfeCommandUndoItem(
+        const std::string&                           name,
+        const std::shared_ptr<Ufe::UndoableCommand>& command);
+
+    MAYAUSD_CORE_PUBLIC
+    ~UfeCommandUndoItem() override;
+
+    /// \brief execute the UFE command.
+    MAYAUSD_CORE_PUBLIC
+    bool execute() override;
+
+    /// \brief undo the UFE command.
+    MAYAUSD_CORE_PUBLIC
+    bool undo() override;
+
+    /// \brief redo the UFE command.
+    MAYAUSD_CORE_PUBLIC
+    bool redo() override;
+
+private:
+    std::shared_ptr<Ufe::UndoableCommand> _command;
+};
+
 #endif
 
 //------------------------------------------------------------------------------

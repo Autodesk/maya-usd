@@ -205,7 +205,7 @@ class ContextOpsTestCase(unittest.TestCase):
 
         # Verify we cannot switch variant in a weaker layer.
         self.assertRaises(RuntimeError, lambda: self.contextOps.doOpCmd(
-            ['Variant Sets', 'shadingVariant', 'Ball_8']))
+            ['Variant Sets', 'shadingVariant', 'Ball_8']).execute())
 
         # Verify the variant has not switched.
         self.assertEqual(shadingVariant(), 'Cue')
