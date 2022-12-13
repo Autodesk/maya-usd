@@ -648,11 +648,12 @@ bool pushCustomize(
 
     MayaUsd::ProgressBarScope progressBar(2);
 
-    const bool  isCopy = context.GetArgs()._copyOperation;
-    const auto& editTarget = context.GetUsdStage()->GetEditTarget();
-    auto dstRootPath = editTarget.MapToSpecPath(getDstSdfPath(ufePulledPath, srcRootPath, isCopy));
-    auto dstRootParentPath = dstRootPath.GetParentPath();
-    const auto& dstLayer = editTarget.GetLayer();
+    const bool            isCopy = context.GetArgs()._copyOperation;
+    const UsdEditTarget&  editTarget = context.GetUsdStage()->GetEditTarget();
+    const SdfPath         dstPath = getDstSdfPath(ufePulledPath, srcRootPath, isCopy);
+    const SdfPath         dstRootPath = editTarget.MapToSpecPath(dstPath);
+    const SdfPath         dstRootParentPath = dstRootPath.GetParentPath();
+    const SdfLayerHandle& dstLayer = editTarget.GetLayer();
 
     // Traverse the layer, creating a prim updater for each primSpec
     // along the way, and call PushCopySpec on the prim.
@@ -994,6 +995,20 @@ bool PrimUpdaterManager::mergeToUsd(
         scene.notify(Ufe::ObjectPreDelete(ufeMayaItem));
     progressBar.advance();
 
+    // Remove the pulled path from the orphan node manager *before* exporting
+    // and merging into the original USD. Otherwise, the orphan manager can
+    // receive notification mid-way through the merge process, while the variants
+    // have not all been authored and think the variant set has changed back
+    // to the correct variant and thus decide to deactivate the USD prim again,
+    // thinking the Maya data shoudl be shown again...
+#ifdef HAS_ORPHANED_NODES_MANAGER
+    if (_orphanedNodesManager) {
+        if (!TF_VERIFY(RemovePullVariantInfoUndoItem::execute(_orphanedNodesManager, pulledPath))) {
+            return false;
+        }
+    }
+#endif
+
     // Record all USD modifications in an undo block and item.
     UsdUndoBlock undoBlock(
         &UsdUndoableItemUndoItem::create("Merge to Maya USD data modifications"));
@@ -1152,7 +1167,9 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
     progressBar.advance();
 
 #ifdef HAS_ORPHANED_NODES_MANAGER
-    RecordPullVariantInfoUndoItem::execute(_orphanedNodesManager, path, importedPaths.first[0]);
+    if (_orphanedNodesManager) {
+        RecordPullVariantInfoUndoItem::execute(_orphanedNodesManager, path, importedPaths.first[0]);
+    }
 #endif
 
     if (!updaterArgs._copyOperation) {
@@ -1695,16 +1712,6 @@ bool PrimUpdaterManager::removePullParent(
     if (!TF_VERIFY(parentDagPath.isValid())) {
         return false;
     }
-
-#ifdef HAS_ORPHANED_NODES_MANAGER
-    if (!TF_VERIFY(_orphanedNodesManager)) {
-        return false;
-    }
-
-    if (!TF_VERIFY(RemovePullVariantInfoUndoItem::execute(_orphanedNodesManager, pulledPath))) {
-        return false;
-    }
-#endif
 
     MayaUsd::ProgressBarScope progressBar(2);
     MStatus                   status = NodeDeletionUndoItem::deleteNode(

@@ -53,7 +53,7 @@ def createMayaReferenceMenuItem(dagPath, precedingItem):
     # If the pulled prim doesn't exist anymore, we won't delegate the reponsibility to
     # another creator and handle the menu item in here. We already have all the information
     # available.
-    if prim:
+    if prim and prim.IsDefined():
         # If the pulled prim isn't a MayaReference, not our responsibility.
         if prim.GetTypeName() != 'MayaReference':
             return ''
