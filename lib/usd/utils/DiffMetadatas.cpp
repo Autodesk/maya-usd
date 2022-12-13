@@ -39,8 +39,6 @@ std::unordered_set<TfToken, TfToken::HashFunctor>& getIgnoredMetadata()
         PXR_NS::SdfFieldKeys->SubLayers,            // List of sub-layers names, we should not to deal with this when merging.
         PXR_NS::SdfFieldKeys->SubLayerOffsets,      // Time offset and scaling for the sub-layers. We treat animation data at the level it is already applied.
         PXR_NS::SdfFieldKeys->TypeName,             // Property data type. We should not have to copy this over by hand.
-        PXR_NS::SdfFieldKeys->VariantSetNames,      // The merge/copy process will take care of copying the selected variant.
-        PXR_NS::SdfFieldKeys->VariantSelection,     // The merge/copy process will take care of copying the selected variant.
     });
 
     // These other build-in metadata are allowed to be compared and merged:
@@ -92,6 +90,8 @@ std::unordered_set<TfToken, TfToken::HashFunctor>& getIgnoredMetadata()
     // SdfFieldKeys->SymmetryFunction,      // Property symmetry. (No docs)
     // SdfFieldKeys->TimeCodesPerSecond,    // Time code per second for playback (TCPS is advisory)
     // SdfFieldKeys->Variability,           // Control if the property can be animated.
+    // SdfFieldKeys->VariantSetNames,       // The merge/copy process will take care of copying the selected variant.
+    // SdfFieldKeys->VariantSelection,      // The merge/copy process will take care of copying the selected variant.
     // clang-format on
     return ignored;
 }

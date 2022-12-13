@@ -19,8 +19,27 @@
 #include <mayaUsd/fileio/orphanedNodesManager.h>
 
 namespace MAYAUSD_NS_DEF {
+namespace utils {
 
-void orphanedNodesManagerPullInfoToText(
+void toText(
+    std::string&                                  buf,
+    const OrphanedNodesManager::VariantSelection& sel,
+    int                                           indent = 0,
+    bool                                          eol = true);
+
+void toText(
+    std::string&                                      buf,
+    const OrphanedNodesManager::VariantSetDescriptor& descriptor,
+    int                                               indent = 0,
+    bool                                              eol = true);
+
+void toText(
+    std::string&                                 buf,
+    const OrphanedNodesManager::PullVariantInfo& variantInfo,
+    int                                          indent,
+    bool                                         eol);
+
+void toText(
     std::string&                                                     buffer,
     const Ufe::TrieNode<OrphanedNodesManager::PullVariantInfo>::Ptr& trieNode,
     int                                                              indent = 0,
@@ -31,4 +50,5 @@ void printOrphanedNodesManagerPullInfo(
     int                                                              indent = 0,
     bool                                                             eol = true);
 
+} // namespace utils
 } // namespace MAYAUSD_NS_DEF

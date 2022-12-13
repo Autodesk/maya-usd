@@ -103,6 +103,10 @@ struct MergePrimsOptions
     // if true, merges children too, otherwise merge only the given prim.
     bool mergeChildren { false };
 
+    // Ignore variants when building the edit target.
+    // Used when the destination variants have already been set by the caller.
+    bool ignoreVariants { false };
+
     // If true, the merge is done in a temporary layer so to ignore opinions
     // from upper layers (and children of upper layers).
     bool ignoreUpperLayerOpinions { false };

@@ -19,6 +19,7 @@
 #include <ufe/trie.imp.h>
 
 namespace MAYAUSD_NS_DEF {
+namespace utils {
 
 namespace {
 
@@ -59,6 +60,8 @@ void toText(std::string& buf, const char* pfix, const Ufe::Path& ufePath, int in
     toText(buf, pfix, ufePath.string(), indent, eol);
 }
 
+} // namespace
+
 void toText(std::string& buf, const VariantSelection& sel, int indent, bool eol)
 {
     toText(buf, "Variant  ", sel.variantSetName, indent, eol);
@@ -92,9 +95,7 @@ void toText(std::string& buf, const PullVariantInfo& variantInfo, int indent, bo
     toText(buf, "", "}", indent, eol);
 }
 
-} // namespace
-
-void orphanedNodesManagerPullInfoToText(
+void toText(
     std::string&                               buffer,
     const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode,
     int                                        indent,
@@ -112,7 +113,7 @@ void orphanedNodesManagerPullInfoToText(
     }
 
     for (const auto& childComp : node.childrenComponents()) {
-        orphanedNodesManagerPullInfoToText(buffer, node[childComp], indent + 1, eol);
+        toText(buffer, node[childComp], indent + 1, eol);
     }
 
     if (eol)
@@ -125,8 +126,9 @@ void printOrphanedNodesManagerPullInfo(
     bool                                       eol)
 {
     std::string buffer("Trie ==========================================\n");
-    orphanedNodesManagerPullInfoToText(buffer, trieNode, indent, eol);
+    toText(buffer, trieNode, indent, eol);
     MGlobal::displayInfo(buffer.c_str());
 }
 
+} // namespace utils
 } // namespace MAYAUSD_NS_DEF
