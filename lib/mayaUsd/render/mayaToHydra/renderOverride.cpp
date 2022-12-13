@@ -26,10 +26,10 @@
 #include "tokens.h"
 #include "utils.h"
 
-#include <hdMaya/delegates/delegateRegistry.h>
-#include <hdMaya/delegates/sceneDelegate.h>
-#include <hdMaya/renderItemClient/renderDelegate.h>
-#include <hdMaya/utils.h>
+#include <mayaHydraLib/delegates/delegateRegistry.h>
+#include <mayaHydraLib/delegates/sceneDelegate.h>
+#include <mayaHydraLib/renderItemClient/renderDelegate.h>
+#include <mayaHydraLib/utils.h>
 
 #if defined(MAYAUSD_VERSION)
     #include <mayaUsd/render/px_vp20/utils.h>
@@ -178,7 +178,7 @@ public:
             return;
         }
 
-        TF_DEBUG(HDMAYA_RENDEROVERRIDE_SELECTION)
+        TF_DEBUG(MAYAHYDRALIB_RENDEROVERRIDE_SELECTION)
             .Msg("UfeSelectionObserver triggered (ufe selection change "
                  "triggered)\n");
         _mtohRenderOverride.SelectionChanged();
@@ -278,18 +278,18 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
     , _hgiDriver { HgiTokens->renderDriver, VtValue(_hgi.get()) }
     , _selectionTracker(new HdxSelectionTracker)
     , _isUsingHdSt(desc.rendererName == MtohTokens->HdStormRendererPlugin||
-                   desc.rendererName == MtohTokens->HdMayaRenderItemRendererPlugin)
+                   desc.rendererName == MtohTokens->MayaHydraRenderItemRendererPlugin)
 {
-    TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
+    TF_DEBUG(MAYAHYDRALIB_RENDEROVERRIDE_RESOURCES)
         .Msg(
             "MtohRenderOverride created (%s - %s - %s)\n",
             _rendererDesc.rendererName.GetText(),
             _rendererDesc.overrideName.GetText(),
             _rendererDesc.displayName.GetText());
-    HdMayaDelegateRegistry::InstallDelegatesChangedSignal([this]() { _needsClear.store(true); });
-    _ID = SdfPath("/HdMayaViewportRenderer")
+    MayaHydraDelegateRegistry::InstallDelegatesChangedSignal([this]() { _needsClear.store(true); });
+    _ID = SdfPath("/MayaHydraViewportRenderer")
               .AppendChild(
-                  TfToken(TfStringPrintf("_HdMaya_%s_%p", desc.rendererName.GetText(), this)));
+                  TfToken(TfStringPrintf("_MayaHydra_%s_%p", desc.rendererName.GetText(), this)));
 
     MStatus status;
     auto    id
@@ -342,7 +342,7 @@ MtohRenderOverride::~MtohRenderOverride()
     }
 #endif // WANT_UFE_BUILD
 
-    TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
+    TF_DEBUG(MAYAHYDRALIB_RENDEROVERRIDE_RESOURCES)
         .Msg(
             "MtohRenderOverride destroyed (%s - %s - %s)\n",
             _rendererDesc.rendererName.GetText(),
@@ -508,7 +508,7 @@ void MtohRenderOverride::_DetectMayaDefaultLighting(const MHWRender::MDrawContex
         }
     }
 
-    TF_DEBUG(HDMAYA_RENDEROVERRIDE_DEFAULT_LIGHTING)
+    TF_DEBUG(MAYAHYDRALIB_RENDEROVERRIDE_DEFAULT_LIGHTING)
         .Msg(
             "MtohRenderOverride::"
             "_DetectMayaDefaultLighting() "
@@ -518,7 +518,7 @@ void MtohRenderOverride::_DetectMayaDefaultLighting(const MHWRender::MDrawContex
     if (foundMayaDefaultLight != _hasDefaultLighting) {
         _hasDefaultLighting = foundMayaDefaultLight;
         _needsClear.store(true);
-        TF_DEBUG(HDMAYA_RENDEROVERRIDE_DEFAULT_LIGHTING)
+        TF_DEBUG(MAYAHYDRALIB_RENDEROVERRIDE_DEFAULT_LIGHTING)
             .Msg(
                 "MtohRenderOverride::"
                 "_DetectMayaDefaultLighting() clearing! "
@@ -538,7 +538,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, c
     //         override->ClearHydraResources();
     //     }
     // }
-    TF_DEBUG(HDMAYA_RENDEROVERRIDE_RENDER).Msg("MtohRenderOverride::Render()\n");
+    TF_DEBUG(MAYAHYDRALIB_RENDEROVERRIDE_RENDER).Msg("MtohRenderOverride::Render()\n");
     auto renderFrame = [&](bool markTime = false) {
         HdTaskSharedPtrVector tasks = _taskController->GetRenderingTasks();
 
@@ -579,10 +579,10 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, c
         // removed backing, and restoring of GL_FRAMEBUFFER state.
         // At the same time HdxColorizeSelectionTask modifies the frame buffer state
         // Manually backup and restore the state of the frame buffer for now.
-        HdMayaGLBackup backup;
+        MayaHydraGLBackup backup;
         if (_backupFrameBufferWorkaround) {
-            HdTaskSharedPtr backupTask(new HdMayaBackupGLStateTask(backup));
-            HdTaskSharedPtr restoreTask(new HdMayaRestoreGLStateTask(backup));
+            HdTaskSharedPtr backupTask(new MayaHydraBackupGLStateTask(backup));
+            HdTaskSharedPtr restoreTask(new MayaHydraRestoreGLStateTask(backup));
             tasks.reserve(tasks.size() + 2);
             for (auto it = tasks.begin(); it != tasks.end(); it++) {
                 if (std::dynamic_pointer_cast<HdxColorizeSelectionTask>(*it)) {
@@ -598,7 +598,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, c
 		if (scene.changed())
 		{
 			for (auto& it : _delegates) {
-				auto sceneDelegate = std::dynamic_pointer_cast<HdMayaSceneDelegate>(it);
+				auto sceneDelegate = std::dynamic_pointer_cast<MayaHydraSceneDelegate>(it);
 				if (sceneDelegate)
 				{
 					sceneDelegate->HandleCompleteViewportScene(scene, static_cast<MFrameContext::DisplayStyle>(drawContext.getDisplayStyle()));
@@ -643,7 +643,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, c
     _SelectionChanged();
 
     const auto   displayStyle = drawContext.getDisplayStyle();
-    HdMayaParams delegateParams = _globals.delegateParams;
+    MayaHydraParams delegateParams = _globals.delegateParams;
     delegateParams.displaySmoothMeshes = !(displayStyle & MHWRender::MFrameContext::kFlatShaded);
 
     if (_defaultLightDelegate != nullptr) {
@@ -708,8 +708,8 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, c
 #endif
             if (!isUsdCamera) {
                 for (auto& delegate : _delegates) {
-                    if (HdMayaSceneDelegate* mayaScene
-                        = dynamic_cast<HdMayaSceneDelegate*>(delegate.get())) {
+                    if (MayaHydraSceneDelegate* mayaScene
+                        = dynamic_cast<MayaHydraSceneDelegate*>(delegate.get())) {
                         params.camera = mayaScene->SetCameraViewport(camPath, _viewport);
                         if (vpDirty)
 #if HD_API_VERSION >= 43
@@ -773,11 +773,11 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, c
         _taskController->SetEnableShadows(enableShadows);
         _taskController->SetShadowParams(shadowParams);
 
-#ifndef HDMAYA_OIT_ENABLED
+#ifndef MAYAHYDRALIB_OIT_ENABLED
         // This is required for HdStorm to display transparency.
         // We should fix this upstream, so HdStorm can setup
         // all the required states.
-        HdMayaSetRenderGLState state;
+        MayaHydraSetRenderGLState state;
 #endif
         renderFrame(true);
 
@@ -815,7 +815,7 @@ MtohRenderOverride* MtohRenderOverride::_GetByName(TfToken rendererName)
 // TODO: Pass MViewportScene inside here
 void MtohRenderOverride::_InitHydraResources()
 {
-    TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
+    TF_DEBUG(MAYAHYDRALIB_RENDEROVERRIDE_RESOURCES)
         .Msg("MtohRenderOverride::_InitHydraResources(%s)\n", _rendererDesc.rendererName.GetText());
 
     _initializationAttempted = true;
@@ -845,7 +845,7 @@ void MtohRenderOverride::_InitHydraResources()
             this))));
     _taskController->SetEnableShadows(true);
 
-    HdMayaDelegate::InitData delegateInitData(
+    MayaHydraDelegate::InitData delegateInitData(
         TfToken(),
         _engine,
         _renderIndex,
@@ -854,8 +854,8 @@ void MtohRenderOverride::_InitHydraResources()
         SdfPath(),
         _isUsingHdSt);
 
-    auto delegateNames = HdMayaDelegateRegistry::GetDelegateNames();
-    auto creators = HdMayaDelegateRegistry::GetDelegateCreators();
+    auto delegateNames = MayaHydraDelegateRegistry::GetDelegateNames();
+    auto creators = MayaHydraDelegateRegistry::GetDelegateCreators();
     TF_VERIFY(delegateNames.size() == creators.size());
     for (size_t i = 0, n = creators.size(); i < n; ++i) {
         const auto& creator = creators[i];
@@ -915,7 +915,7 @@ void MtohRenderOverride::ClearHydraResources()
         return;
     }
 
-    TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
+    TF_DEBUG(MAYAHYDRALIB_RENDEROVERRIDE_RESOURCES)
         .Msg("MtohRenderOverride::ClearHydraResources(%s)\n", _rendererDesc.rendererName.GetText());
 
     _delegates.clear();
@@ -1002,7 +1002,7 @@ void MtohRenderOverride::_SelectionChanged()
     }
     _selectionCollection.SetRootPaths(selectedPaths);
     _selectionTracker->SetSelection(HdSelectionSharedPtr(selection));
-    TF_DEBUG(HDMAYA_RENDEROVERRIDE_SELECTION)
+    TF_DEBUG(MAYAHYDRALIB_RENDEROVERRIDE_SELECTION)
         .Msg("MtohRenderOverride::_SelectionChanged - num selected: %lu\n", selectedPaths.size());
 }
 
@@ -1049,14 +1049,14 @@ MStatus MtohRenderOverride::setup(const MString& destination)
     if (_operations.empty()) {
         // TODO: draw pre/post scene elelments with Hydra
         // Clear and draw pre scene elelments (grid not pushed into hydra)
-        _operations.push_back(new HdMayaPreRender("HydraRenderOverride_PreScene"));
+        _operations.push_back(new MayaHydraPreRender("HydraRenderOverride_PreScene"));
 
         // The main hydra render
         // For the data server, This also invokes scene update then sync scene delegate after scene update
-        _operations.push_back(new HdMayaRender("HydraRenderOverride_DataServer", this));
+        _operations.push_back(new MayaHydraRender("HydraRenderOverride_DataServer", this));
 
         // Draw post scene elements (cameras, CVs, shapes not pushed into hydra)
-        _operations.push_back(new HdMayaPostRender("HydraRenderOverride_PostScene"));
+        _operations.push_back(new MayaHydraPostRender("HydraRenderOverride_PostScene"));
 
         // Draw HUD elements
         _operations.push_back(new MHWRender::MHUDRender());
@@ -1104,7 +1104,7 @@ bool MtohRenderOverride::select(
     MSelectionList& selectionList,
     MPointArray&    worldSpaceHitPts)
 {
-#ifdef HDMAYA_SCENE_RENDER_DATASERVER
+#ifdef MAYAHYDRALIB_SCENE_RENDER_DATASERVER
 	// Skip override on plugin-side if prototype 2
 	// Rely on VP2 select and simply draw selection items
 	return false;
@@ -1291,7 +1291,7 @@ void MtohRenderOverride::_RenderOverrideChangedCallback(
 
 void MtohRenderOverride::_SelectionChangedCallback(void* data)
 {
-    TF_DEBUG(HDMAYA_RENDEROVERRIDE_SELECTION)
+    TF_DEBUG(MAYAHYDRALIB_RENDEROVERRIDE_SELECTION)
         .Msg("MtohRenderOverride::_SelectionChangedCallback() (normal maya "
              "selection triggered)\n");
     auto* instance = reinterpret_cast<MtohRenderOverride*>(data);

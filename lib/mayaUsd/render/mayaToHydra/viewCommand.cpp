@@ -19,7 +19,7 @@
 #include "renderOverride.h"
 #include "utils.h"
 
-#include <hdMaya/delegates/delegateRegistry.h>
+#include <mayaHydraLib/delegates/delegateRegistry.h>
 
 #include <maya/MArgDatabase.h>
 #include <maya/MGlobal.h>
@@ -190,7 +190,7 @@ MStatus MtohViewCmd::doIt(const MArgList& args)
         const auto dn = MtohGetRendererPluginDisplayName(renderDelegateName);
         setResult(MString(dn.c_str()));
     } else if (db.isFlagSet(_listDelegates)) {
-        for (const auto& delegate : HdMayaDelegateRegistry::GetDelegateNames()) {
+        for (const auto& delegate : MayaHydraDelegateRegistry::GetDelegateNames()) {
             appendToResult(delegate.GetText());
         }
         // Want to return an empty list, not None

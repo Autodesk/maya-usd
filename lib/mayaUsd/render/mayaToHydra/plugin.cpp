@@ -17,7 +17,7 @@
 #include "renderOverride.h"
 #include "viewCommand.h"
 
-#include <hdMaya/adapters/adapter.h>
+#include <mayaHydraLib/adapters/adapter.h>
 #if defined(MAYAUSD_VERSION)
     #include <mayaUsd/utils/plugRegistryHelper.h>
 #endif
@@ -60,7 +60,7 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj)
     // Call one time registration of plugins compiled for same USD version as MayaUSD plugin.
     MayaUsd::registerVersionedPlugins();
 #endif
-    ret = HdMayaAdapter::Initialize();
+    ret = MayaHydraAdapter::Initialize();
     if (!ret) {
         return ret;
     }

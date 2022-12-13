@@ -15,7 +15,7 @@
 //
 #include "defaultLightDelegate.h"
 
-#include <hdMaya/delegates/delegateDebugCodes.h>
+#include <mayaHydraLib/delegates/delegateDebugCodes.h>
 
 #include <pxr/base/gf/rotation.h>
 #include <pxr/base/gf/transform.h>
@@ -35,7 +35,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 MtohDefaultLightDelegate::MtohDefaultLightDelegate(const InitData& initData)
     : HdSceneDelegate(initData.renderIndex, initData.delegateID)
-    , HdMayaDelegate(initData)
+    , MayaHydraDelegate(initData)
     , _lightPath(initData.delegateID.AppendChild(_tokens->DefaultMayaLight))
 {
 }
@@ -83,7 +83,7 @@ GfMatrix4d MtohDefaultLightDelegate::GetTransform(const SdfPath& id)
 {
     TF_UNUSED(id);
 
-    TF_DEBUG(HDMAYA_DELEGATE_GET_TRANSFORM)
+    TF_DEBUG(MAYAHYDRALIB_DELEGATE_GET_TRANSFORM)
         .Msg("MtohDefaultLightDelegate::GetTransform(%s)\n", id.GetText());
 
     // We have to rotate the distant to match the simple light's direction
@@ -103,7 +103,7 @@ VtValue MtohDefaultLightDelegate::Get(const SdfPath& id, const TfToken& key)
 {
     TF_UNUSED(id);
 
-    TF_DEBUG(HDMAYA_DELEGATE_GET)
+    TF_DEBUG(MAYAHYDRALIB_DELEGATE_GET)
         .Msg("MtohDefaultLightDelegate::Get(%s, %s)\n", id.GetText(), key.GetText());
 
     if (key == HdLightTokens->params) {
@@ -127,7 +127,7 @@ VtValue MtohDefaultLightDelegate::GetLightParamValue(const SdfPath& id, const Tf
 {
     TF_UNUSED(id);
 
-    TF_DEBUG(HDMAYA_DELEGATE_GET_LIGHT_PARAM_VALUE)
+    TF_DEBUG(MAYAHYDRALIB_DELEGATE_GET_LIGHT_PARAM_VALUE)
         .Msg(
             "MtohDefaultLightDelegate::GetLightParamValue(%s, %s)\n",
             id.GetText(),
@@ -161,7 +161,7 @@ VtValue MtohDefaultLightDelegate::GetLightParamValue(const SdfPath& id, const Tf
 bool MtohDefaultLightDelegate::GetVisible(const SdfPath& id)
 {
     TF_UNUSED(id);
-    TF_DEBUG(HDMAYA_DELEGATE_GET_VISIBLE)
+    TF_DEBUG(MAYAHYDRALIB_DELEGATE_GET_VISIBLE)
         .Msg("MtohDefaultLightDelegate::GetVisible(%s)\n", id.GetText());
     return true;
 }

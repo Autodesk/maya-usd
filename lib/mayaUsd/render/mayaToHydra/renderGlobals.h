@@ -19,7 +19,7 @@
 #include "tokens.h"
 #include "utils.h"
 
-#include <hdMaya/delegates/params.h>
+#include <mayaHydraLib/delegates/params.h>
 
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/token.h>
@@ -93,7 +93,7 @@ private:
     std::unordered_map<TfToken, RendererSettings, TfToken::HashFunctor> _rendererSettings;
 
 public:
-    HdMayaParams delegateParams;
+    MayaHydraParams delegateParams;
     GfVec4f      colorSelectionHighlightColor = GfVec4f(1.0f, 1.0f, 0.0f, 0.5f);
     bool         colorSelectionHighlight = true;
     bool         wireframeSelectionHighlight = true;

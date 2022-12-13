@@ -44,7 +44,7 @@
 #include <maya/MUserData.h>
 #include <maya/MViewport2Renderer.h>
 
-#if defined(BUILD_HDMAYA)
+#if defined(BUILD_MAYAHYDRALIB)
 #include <mayaUsd/render/mayaToHydra/utils.h>
 #endif
 
@@ -191,7 +191,7 @@ MUserData* UsdMayaProxyDrawOverride::prepareForDraw(
         return nullptr;
     }
 
-#if defined(BUILD_HDMAYA)
+#if defined(BUILD_MAYAHYDRALIB)
     // If the current viewport renderer is an mtoh one, skip this update, as
     // mtoh already has special handling for proxy shapes, and we don't want to
     // build out a render index we don't need

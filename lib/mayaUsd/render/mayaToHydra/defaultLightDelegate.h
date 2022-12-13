@@ -16,7 +16,7 @@
 #ifndef MTOH_DEFAULT_LIGHT_DELEGATE_H
 #define MTOH_DEFAULT_LIGHT_DELEGATE_H
 
-#include <hdMaya/delegates/delegateCtx.h>
+#include <mayaHydraLib/delegates/delegateCtx.h>
 
 #include <pxr/imaging/glf/simpleLight.h>
 #include <pxr/imaging/hd/renderIndex.h>
@@ -29,7 +29,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class MtohDefaultLightDelegate
     : public HdSceneDelegate
-    , public HdMayaDelegate
+    , public MayaHydraDelegate
 {
 public:
     MtohDefaultLightDelegate(const InitData& initData);

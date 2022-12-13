@@ -56,7 +56,7 @@ class MtohTestCase(ImageDiffingTestCase):
             rendererOverrideName=HD_STORM_OVERRIDE)
         cmds.refresh(f=1)
         self.delegateId = cmds.mayaHydra(renderer=HD_STORM,
-                                    sceneDelegateId="HdMayaSceneDelegate")
+                                    sceneDelegateId="MayaHydraSceneDelegate")
 
     def setBasicCam(self, dist=DEFAULT_CAM_DIST):
         cmds.setAttr('persp.rotate', -30, 45, 0, type='float3')

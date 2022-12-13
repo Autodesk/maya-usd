@@ -48,8 +48,8 @@
 #include "renderGlobals.h"
 #include "utils.h"
 
-#include <hdMaya/delegates/delegate.h>
-#include <hdMaya/delegates/params.h>
+#include <mayaHydraLib/delegates/delegate.h>
+#include <mayaHydraLib/delegates/params.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -197,7 +197,7 @@ private:
 
     GlfSimpleLight _defaultLight;
 
-    std::vector<HdMayaDelegatePtr> _delegates;
+    std::vector<MayaHydraDelegatePtr> _delegates;
 
     SdfPath _ID;
 

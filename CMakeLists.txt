@@ -27,7 +27,7 @@ option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." OFF)
 # Default value made dependent on maya + usd version - see below
 #   Convert back to a normal option if we no longer support maya-2019, or
 #   no longer support USD-20.11
-#option(BUILD_HDMAYA "Build the Maya-To-Hydra plugin and scene delegate." ON)
+#option(BUILD_MAYAHYDRALIB "Build the Maya-To-Hydra plugin and scene delegate." ON)
 option(BUILD_RFM_TRANSLATORS "Build translators for RenderMan for Maya shaders." ON)
 option(BUILD_TESTS "Build tests." ON)
 option(BUILD_STRICT_MODE "Enforce all warnings as errors." ON)
@@ -133,9 +133,9 @@ if( MAYA_APP_VERSION LESS 2020 AND PXR_VERSION GREATER 2005 AND PXR_VERSION LESS
     #   will probably need to LD_PRELOAD your glew lib.
     #   See:
     #      https://github.com/Autodesk/maya-usd/discussions/1017
-    option(BUILD_HDMAYA "Build the Maya-To-Hydra plugin and scene delegate." OFF)
+    option(BUILD_MAYAHYDRALIB "Build the Maya-To-Hydra plugin and scene delegate." OFF)
 else()
-    option(BUILD_HDMAYA "Build the Maya-To-Hydra plugin and scene delegate." ON)
+    option(BUILD_MAYAHYDRALIB "Build the Maya-To-Hydra plugin and scene delegate." ON)
 endif()
 
 if(${MAYA_APP_VERSION} STRLESS "2019" AND CMAKE_WANT_UFE_BUILD)
@@ -232,9 +232,9 @@ if (BUILD_ADSK_PLUGIN)
     add_subdirectory(plugin/adsk)
 endif()
 
-if(BUILD_HDMAYA)
+if(BUILD_MAYAHYDRALIB)
     add_subdirectory(lib/mayaUsd/render/mayaToHydra)
-    add_subdirectory(lib/usd/hdMaya)
+    add_subdirectory(lib/usd/mayaHydraLib)
 endif()
 
 #------------------------------------------------------------------------------
@@ -278,7 +278,7 @@ if (BUILD_AL_PLUGIN)
 endif()
 
 if(NOT BUILD_MAYAUSD_LIBRARY)
-    if(BUILD_HDMAYA)
+    if(BUILD_MAYAHYDRALIB)
         include(cmake/mayausd_version.info)
         set(MAYAHYDRA_VERSION "${MAYAUSD_MAJOR_VERSION}.${MAYAUSD_MINOR_VERSION}.${MAYAUSD_PATCH_LEVEL}")
         if (IS_WINDOWS)

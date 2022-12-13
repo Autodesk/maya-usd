@@ -22,21 +22,21 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfDebug)
 {
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_RENDEROVERRIDE_DEFAULT_LIGHTING,
+        MAYAHYDRALIB_RENDEROVERRIDE_DEFAULT_LIGHTING,
         "Print information detection of default lighting for the Maya VP2 "
         "RenderOverride.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_RENDEROVERRIDE_RENDER,
+        MAYAHYDRALIB_RENDEROVERRIDE_RENDER,
         "Print information about Maya VP2 RenderOverride render call.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_RENDEROVERRIDE_RESOURCES,
+        MAYAHYDRALIB_RENDEROVERRIDE_RESOURCES,
         "Print information about Maya VP2 RenderOverride creation, deletion, "
         "and resource usage.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_RENDEROVERRIDE_SELECTION,
+        MAYAHYDRALIB_RENDEROVERRIDE_SELECTION,
         "Print information about selection for the Maya VP2 RenderOverride.");
 }
 

@@ -18,16 +18,16 @@
 
 #include <pxr/pxr.h>
 
-#include <hdMaya/utils.h>
+#include <mayaHydraLib/utils.h>
 
 #include <maya/MViewport2Renderer.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaPreRender : public MHWRender::MSceneRender
+class MayaHydraPreRender : public MHWRender::MSceneRender
 {
 public:
-    explicit HdMayaPreRender(const MString& name)
+    explicit MayaHydraPreRender(const MString& name)
         : MHWRender::MSceneRender(name)
     {
         // To keep the colors always sync'ed, reuse same clear colors as global ones instead of set the same colors explicitly.
@@ -45,10 +45,10 @@ public:
     MHWRender::MClearOperation& clearOperation() override { return mClearOperation; }
 };
 
-class HdMayaPostRender : public MHWRender::MSceneRender
+class MayaHydraPostRender : public MHWRender::MSceneRender
 {
 public:
-    explicit HdMayaPostRender(const MString& name)
+    explicit MayaHydraPostRender(const MString& name)
         : MHWRender::MSceneRender(name)
     {
         mClearOperation.setMask(MHWRender::MClearOperation::kClearNone);
@@ -76,10 +76,10 @@ public:
 //	when requiresSceneUpdate=false, subtype=kDataServerRemovals and after scene update is called
 //  when requiresSceneUpdate=true, subtype=kDataServer
 //
-class HdMayaRender : public MHWRender::MUserRenderOperation
+class MayaHydraRender : public MHWRender::MUserRenderOperation
 {
 public:
-	HdMayaRender(const MString& name, MtohRenderOverride* override)
+	MayaHydraRender(const MString& name, MtohRenderOverride* override)
 	: MUserRenderOperation(name, MUserRenderOperation::DataServerTag())
 	, _override(override)
 	{
@@ -101,26 +101,26 @@ private:
     MtohRenderOverride* _override;
 };
 
-struct HdMayaGLBackup
+struct MayaHydraGLBackup
 {
     GLint RestoreFramebuffer = 0;
     GLint RestoreDrawFramebuffer = 0;
     GLint RestoreReadFramebuffer = 0;
 };
 
-class HdMayaBackupGLStateTask : public HdTask
+class MayaHydraBackupGLStateTask : public HdTask
 {
     using base = HdTask;
     static const SdfPath& _Id()
     {
-        static SdfPath path = SdfPath("HdMayaBackupGLStateTask");
+        static SdfPath path = SdfPath("MayaHydraBackupGLStateTask");
         return path;
     }
 
 public:
-    HdMayaGLBackup& _backup;
+    MayaHydraGLBackup& _backup;
 
-    HdMayaBackupGLStateTask(HdMayaGLBackup& backup)
+    MayaHydraBackupGLStateTask(MayaHydraGLBackup& backup)
         : base(_Id())
         , _backup(backup)
     {
@@ -138,19 +138,19 @@ public:
     virtual void Sync(HdSceneDelegate* del, HdTaskContext* ctx, HdDirtyBits* dirtyBits) override { }
 };
 
-class HdMayaRestoreGLStateTask : public HdTask
+class MayaHydraRestoreGLStateTask : public HdTask
 {
     using base = HdTask;
     static const SdfPath& _Id()
     {
-        static SdfPath path = SdfPath("HdMayaRestoreGLStateTask");
+        static SdfPath path = SdfPath("MayaHydraRestoreGLStateTask");
         return path;
     }
 
 public:
-    HdMayaGLBackup& _backup;
+    MayaHydraGLBackup& _backup;
 
-    HdMayaRestoreGLStateTask(HdMayaGLBackup& backup)
+    MayaHydraRestoreGLStateTask(MayaHydraGLBackup& backup)
         : base(_Id())
         , _backup(backup)
     {
@@ -168,10 +168,10 @@ public:
     virtual void Sync(HdSceneDelegate* del, HdTaskContext* ctx, HdDirtyBits* dirtyBits) override { }
 };
 
-class HdMayaSetRenderGLState
+class MayaHydraSetRenderGLState
 {
 public:
-    HdMayaSetRenderGLState()
+    MayaHydraSetRenderGLState()
     {
         glGetIntegerv(GL_BLEND_SRC_ALPHA, &_oldBlendFunc);
         glGetIntegerv(GL_BLEND_EQUATION_RGB, &_oldBlendEquation);
@@ -195,7 +195,7 @@ public:
         }
     }
 
-    ~HdMayaSetRenderGLState()
+    ~MayaHydraSetRenderGLState()
     {
         if (_oldBlend != BLEND) {
             glDisable(GL_BLEND);

@@ -60,7 +60,7 @@ mayaUsd_compile_config(${TARGET_NAME})
 # -----------------------------------------------------------------------------
 target_link_libraries(${TARGET_NAME} 
     PRIVATE 
-        hdMaya 
+        mayaHydraLib 
 )
 
 # -----------------------------------------------------------------------------

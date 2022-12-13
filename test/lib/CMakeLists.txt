@@ -96,7 +96,7 @@ if(BUILD_MAYAUSD_LIBRARY)
     endif()
 endif()
 
-if(BUILD_HDMAYA)
+if(BUILD_MAYAHYDRALIB)
     add_subdirectory(mayaUsd/render)
 endif()    
 

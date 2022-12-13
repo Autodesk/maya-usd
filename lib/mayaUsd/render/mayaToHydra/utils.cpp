@@ -65,7 +65,7 @@ MtohInitializeRenderPlugins()
             // XXX: As of 22.02, this needs to be called for Storm
 			if (
 				pluginDesc.id == MtohTokens->HdStormRendererPlugin ||
-				pluginDesc.id == MtohTokens->HdMayaRenderItemRendererPlugin
+				pluginDesc.id == MtohTokens->MayaHydraRenderItemRendererPlugin
 				)
 			{
                 GlfContextCaps::InitInstance();

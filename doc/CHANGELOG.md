@@ -586,7 +586,7 @@
 ## [0.12.0] - 2021-08-23
 
 **Build:**
-- Implement HdMayaSceneDelegate::GetInstancerPrototypes [#1604](https://github.com/Autodesk/maya-usd/pull/1604)
+- Implement MayaHydraSceneDelegate::GetInstancerPrototypes [#1604](https://github.com/Autodesk/maya-usd/pull/1604)
 - Fix unit tests to run in Debug builds [#1593](https://github.com/Autodesk/maya-usd/pull/1593)
 
 **Translation Framework:**
@@ -881,7 +881,7 @@ This release changes to highlight:
 * Fixed  a build issue on Linux with maya < 2020 [#1013](https://github.com/Autodesk/maya-usd/pull/1013)
 * Fixed interactive tests to ensure output streams are flushed before quitting [#1009](https://github.com/Autodesk/maya-usd/pull/1009)
 * Added UsdMayaDiagnosticDelegate to adsk plugin to enable Tf errors reporting using Maya's routines [#1003](https://github.com/Autodesk/maya-usd/pull/1003)
-* Added basic tests for HdMaya / mtoh [#915](https://github.com/Autodesk/maya-usd/pull/915) [#1006](https://github.com/Autodesk/maya-usd/pull/1006)
+* Added basic tests for MayaHydra / mtoh [#915](https://github.com/Autodesk/maya-usd/pull/915) [#1006](https://github.com/Autodesk/maya-usd/pull/1006)
 
 **Translation Framework:**
 * Fixed issue where referenced scenes have incorrect UV set attribute name written out. [#1062](https://github.com/Autodesk/maya-usd/pull/1062)
@@ -978,7 +978,7 @@ This release includes many changes, like:
 **Render:**
 * Enabled color consolidation support for UsdPreviewSurface and UsdPrimvarReader_color [#979](https://github.com/Autodesk/maya-usd/pull/979)
 * Fixed broken lighting fragment [#963](https://github.com/Autodesk/maya-usd/pull/963)
-* Removed dependencies on old Hydra texture system from hdMaya for USD releases after 20.11 [#961](https://github.com/Autodesk/maya-usd/pull/961)
+* Removed dependencies on old Hydra texture system from mayaHydraLib for USD releases after 20.11 [#961](https://github.com/Autodesk/maya-usd/pull/961)
 * Improved draw performance for Rprims without extent [#955](https://github.com/Autodesk/maya-usd/pull/955)
 * Reuse shader effect for duplicate material networks [#950](https://github.com/Autodesk/maya-usd/pull/950)
 * Added undo support for viewport selections of USD objects [#940](https://github.com/Autodesk/maya-usd/pull/940)
@@ -1264,7 +1264,7 @@ Made several build improvements, including fixing regression tests execution on 
 * Added support for USD curves in VP2RenderDelegate  [PR #228](https://github.com/Autodesk/maya-usd/pull/228)
 
 * Added Maya-to-Hydra (mtoh) plugin and scene delegate [PR #231](https://github.com/Autodesk/maya-usd/pull/231)
-* Fixed material support in hdMaya with USD 20.2 [Issue #135](https://github.com/Autodesk/maya-usd/issues/135)
+* Fixed material support in mayaHydraLib with USD 20.2 [Issue #135](https://github.com/Autodesk/maya-usd/issues/135)
 * Removed MtohGetDefaultRenderer [PR #311](https://github.com/Autodesk/maya-usd/pull/311)
 * Fixed mtoh initialization to reject invalid delegates. [#292](https://github.com/Autodesk/maya-usd/pull/292)
 

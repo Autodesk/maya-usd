@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <hdMaya/adapters/materialNetworkConverter.h>
+#include <mayaHydraLib/adapters/materialNetworkConverter.h>
 #include <mayaUsd/fileio/shading/shadingModeExporter.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 
@@ -139,7 +139,7 @@ public:
         if (mat != nullptr) { *mat = material; }
 
         HdMaterialNetwork materialNetwork;
-        HdMayaMaterialNetworkConverter converter(
+        MayaHydraMaterialNetworkConverter converter(
             materialNetwork, materialPrim.GetPath());
         auto* hdSurfMat = converter.GetMaterial(context.GetSurfaceShader());
         if(!hdSurfMat) { return; }
