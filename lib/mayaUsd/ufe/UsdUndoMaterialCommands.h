@@ -173,8 +173,8 @@ private:
     Ufe::Path         _parentPath;
     const std::string _nodeId;
 
-    size_t                                         _createMaterialCmdIdx = -1;
-    std::shared_ptr<Ufe::CompositeUndoableCommand> _cmds;
+    UsdUndoAddNewPrimCommand::Ptr        _createMaterialCmd;
+    UsdUndoCreateFromNodeDefCommand::Ptr _createShaderCmd;
 
 }; // UsdUndoAddNewMaterialCommand
 #endif
