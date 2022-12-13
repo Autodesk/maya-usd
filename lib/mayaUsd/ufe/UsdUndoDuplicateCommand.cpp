@@ -31,6 +31,7 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 
+#include <ufe/hierarchy.h>
 #include <ufe/log.h>
 #include <ufe/path.h>
 #include <ufe/scene.h>
@@ -40,7 +41,11 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(const UsdSceneItem::Ptr& srcItem)
+#if (UFE_PREVIEW_VERSION_NUM >= 4041)
+    : Ufe::SceneItemResultUndoableCommand()
+#else
     : Ufe::UndoableCommand()
+#endif
     , _ufeSrcPath(srcItem->path())
 {
     auto srcPrim = srcItem->prim();
@@ -78,6 +83,10 @@ void UsdUndoDuplicateCommand::execute()
     auto path = prim.GetPath();
     auto stage = prim.GetStage();
 
+    auto                               item = Ufe::Hierarchy::createItem(_ufeSrcPath);
+    MayaUsd::ufe::ReplicateExtrasToUSD extras;
+    extras.initRecursive(item);
+
     // The loaded state of a model is controlled by the load rules of the stage.
     // When duplicating a node, we want the new node to be in the same loaded
     // state.
@@ -89,6 +98,8 @@ void UsdUndoDuplicateCommand::execute()
         "Failed to copy spec data at '%s' to '%s'",
         prim.GetPath().GetText(),
         _usdDstPath.GetText());
+
+    extras.finalize(MayaUsd::ufe::stagePath(stage), &path, &_usdDstPath);
 }
 
 void UsdUndoDuplicateCommand::undo()

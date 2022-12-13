@@ -306,6 +306,94 @@ class testProxyShapeBase(unittest.TestCase):
         self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
         self.assertEqual(stage.GetRootLayer().GetDisplayName(), "cylinder.usda")
 
+    def testShareStagePreserveFPS(self):
+        '''
+        Verify share/unshare stage preserve the FPS metadata of the stage.
+        '''
+        # create new stage
+        cmds.file(new=True, force=True)
+
+        # Open usdCylinder.ma scene in testSamples
+        mayaUtils.openCylinderScene()
+
+        # get the stage
+        proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+        proxyShapePath = proxyShapes[0]
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+        stage.GetRootLayer().identifier
+
+        # Set an unusual FPS on the stage.
+        fps = 45.0
+        stage.SetFramesPerSecond(fps)
+        stage.GetRootLayer().framesPerSecond = fps
+
+        # Check that the stage FPS is 45.
+        self.assertEqual(stage.GetFramesPerSecond(), fps)
+        self.assertEqual(stage.GetRootLayer().framesPerSecond, fps)
+
+        # Unshare the stage
+        cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), False)
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+        rootLayer = stage.GetRootLayer()
+
+        # Check that the stage is now unshared and the FPS is still 45.
+        self.assertFalse(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
+        self.assertEqual(stage.GetFramesPerSecond(), fps)
+        self.assertEqual(stage.GetRootLayer().framesPerSecond, fps)
+
+        # Re-share the stage
+        cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), True)
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+
+        # Check that the stage is now shared again and the FPS is the same.
+        self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
+        self.assertEqual(stage.GetFramesPerSecond(), fps)
+        self.assertEqual(stage.GetRootLayer().framesPerSecond, fps)
+
+    def testShareStagePreserveTCPS(self):
+        '''
+        Verify share/unshare stage preserve the TCPS metadata of the stage.
+        '''
+        # create new stage
+        cmds.file(new=True, force=True)
+
+        # Open usdCylinder.ma scene in testSamples
+        mayaUtils.openCylinderScene()
+
+        # get the stage
+        proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+        proxyShapePath = proxyShapes[0]
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+        stage.GetRootLayer().identifier
+
+        # Set an unusual TCPS on the stage.
+        tcps = 35.0
+        stage.SetTimeCodesPerSecond(tcps)
+        stage.GetRootLayer().timeCodesPerSecond = tcps
+
+        # Check that the stage TCPS is 35.
+        self.assertEqual(stage.GetTimeCodesPerSecond(), tcps)
+        self.assertEqual(stage.GetRootLayer().timeCodesPerSecond, tcps)
+
+        # Unshare the stage
+        cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), False)
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+        rootLayer = stage.GetRootLayer()
+
+        # Check that the stage is now unshared and the TCPS is still 35.
+        self.assertFalse(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
+        self.assertEqual(stage.GetTimeCodesPerSecond(), tcps)
+        self.assertEqual(stage.GetRootLayer().timeCodesPerSecond, tcps)
+
+        # Re-share the stage
+        cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), True)
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+
+        # Check that the stage is now shared again and the TCPS is the same.
+        self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
+        self.assertEqual(stage.GetTimeCodesPerSecond(), tcps)
+        self.assertEqual(stage.GetRootLayer().timeCodesPerSecond, tcps)
+
     def testShareStagePreserveSession(self):
         '''
         Verify share/unshare stage preserves the data in the session layer

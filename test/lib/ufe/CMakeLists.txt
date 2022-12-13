@@ -61,6 +61,12 @@ if (UFE_SCENE_SEGMENT_SUPPORT)
     )
 endif()
 
+if (v4_BatchOps IN_LIST UFE_PREVIEW_FEATURES)
+    list(APPEND TEST_SCRIPT_FILES
+        testBatchOpsHandler.py
+    )
+endif()
+
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
         list(APPEND TEST_SCRIPT_FILES
@@ -88,6 +94,11 @@ if (UFE_LIGHTS_SUPPORT)
     )
 endif()
 
+if (UFE_MATERIALS_SUPPORT)
+    list(APPEND TEST_SCRIPT_FILES
+        testMaterial.py
+    )
+endif()
 if (MAYA_API_VERSION VERSION_GREATER_EQUAL 20220100)
     list(APPEND TEST_SCRIPT_FILES
         testCamera.py

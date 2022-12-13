@@ -17,6 +17,7 @@
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
 
+#include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
@@ -30,6 +31,7 @@
 #include <ufe/pathString.h>
 #endif
 
+#include <boost/python.hpp>
 #include <boost/python/def.hpp>
 
 #include <string>
@@ -88,6 +90,17 @@ PXR_NS::UsdStageWeakPtr getStage(const std::string& ufePathString)
     }
     return ufe::getStage(Ufe::Path(Ufe::PathSegment(proxyPath, 1, '|')));
 #endif
+}
+
+std::vector<PXR_NS::UsdStageRefPtr> getAllStages()
+{
+    auto                                allStages = ufe::getAllStages();
+    std::vector<PXR_NS::UsdStageRefPtr> output;
+    for (auto stage : allStages) {
+        PXR_NS::UsdStageRefPtr stageRefPtr { stage };
+        output.push_back(stageRefPtr);
+    }
+    return output;
 }
 
 std::string stagePath(PXR_NS::UsdStageWeakPtr stage)
@@ -236,6 +249,7 @@ void wrapUtils()
     // representation of Ufe::Path as comma-separated segments.  We know that
     // the USD path separator is '/'.  PPT, 8-Dec-2019.
     def("getStage", getStage);
+    def("getAllStages", getAllStages, return_value_policy<PXR_NS::TfPySequenceToList>());
     def("stagePath", stagePath);
     def("usdPathToUfePathSegment",
         usdPathToUfePathSegment,

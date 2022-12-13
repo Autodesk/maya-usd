@@ -27,6 +27,10 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Undoable command for add new prim
+//
+// This command is not restricted: it is always possible to create a new
+// prim even in weaker layer since the new prim, by the fact that it is new
+// cannot have an already-existing opinon that would shadow it.
 class MAYAUSD_CORE_PUBLIC UsdUndoAddNewPrimCommand : public Ufe::UndoableCommand
 {
 public:
@@ -43,6 +47,12 @@ public:
 
     const Ufe::Path& newUfePath() const;
     PXR_NS::UsdPrim  newPrim() const;
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4032)
+    std::string commandString() const override;
+#endif
+#endif
 
     static UsdUndoAddNewPrimCommand::Ptr
     create(const UsdSceneItem::Ptr& usdSceneItem, const std::string& name, const std::string& type);

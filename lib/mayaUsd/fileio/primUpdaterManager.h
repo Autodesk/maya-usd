@@ -18,15 +18,15 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/primUpdaterContext.h>
+#include <mayaUsd/fileio/pullInformation.h>
 #include <mayaUsd/listeners/proxyShapeNotice.h>
-#include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/registryManager.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
 
 #include <maya/MCallbackIdArray.h>
-#include <ufe/sceneItem.h>
 
 UFE_NS_DEF { class Path; }
 
@@ -70,16 +70,7 @@ public:
     MAYAUSD_CORE_PUBLIC
     static PrimUpdaterManager& getInstance();
 
-    MAYAUSD_CORE_PUBLIC
-    static bool readPullInformation(const PXR_NS::UsdPrim& prim, std::string& dagPathStr);
-    MAYAUSD_CORE_PUBLIC
-    static bool readPullInformation(const PXR_NS::UsdPrim& prim, Ufe::SceneItem::Ptr& dagPathItem);
-    MAYAUSD_CORE_PUBLIC
-    static bool readPullInformation(const Ufe::Path& ufePath, MDagPath& dagPath);
-    MAYAUSD_CORE_PUBLIC
-    static bool readPullInformation(const MDagPath& dagpath, Ufe::Path& ufePath);
-
-    bool hasPulledPrims() const { return _hasPulledPrims; }
+    bool hasPulledPrims() const;
 
 private:
     PrimUpdaterManager();
@@ -114,24 +105,26 @@ private:
     //! Record pull information for the pulled path, for inspection on
     //! scene changes.
 #ifdef HAS_ORPHANED_NODES_MANAGER
-    void recordPullVariantInfo(const Ufe::Path& pulledPath, const MDagPath& pullParentPath);
-
     // Maya file new or open callback.  Member function to access other private
     // member functions.
     static void beforeNewOrOpenCallback(void* clientData);
 
     void beginManagePulledPrims();
     void endManagePulledPrims();
+
+    void beginLoadSaveCallbacks();
+    void endLoadSaveCallbacks();
+
+    static void afterNewOrOpenCallback(void* clientData);
+    static void beforeSaveCallback(void* clientData);
+
+    void loadOrphanedNodesManagerData();
+    void saveOrphanedNodesManagerData();
 #endif
 
     friend class TfSingleton<PrimUpdaterManager>;
 
     bool _inPushPull { false };
-
-    // Becomes true when there is at least one pulled prim.
-    // The goal is to let code that can be optimized when there is no pull prim
-    // to check rapidly.
-    bool _hasPulledPrims { false };
 
     // Orphaned nodes manager that observes the scene, to determine when to hide
     // pulled prims that have become orphaned, or to show them again, because
@@ -141,6 +134,8 @@ private:
 
     // Maya scene observation, to stop UFE scene observation.
     MCallbackIdArray _fileCbs;
+
+    MCallbackIdArray _openSaveCbs;
 #endif
 };
 

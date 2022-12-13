@@ -31,6 +31,11 @@ class testUsdExportPackage(unittest.TestCase):
         standalone.initialize('usd')
         cmds.loadPlugin('pxrUsd')
 
+        # Deprecated since version 3.3: assertNotRegexpMatches has been renamed
+        # to assertNotRegex()
+        if not hasattr(cls, "assertNotRegex"):
+            cls.assertNotRegex = cls.assertNotRegexpMatches
+
     @classmethod
     def tearDownClass(cls):
         standalone.uninitialize()
@@ -61,7 +66,7 @@ class testUsdExportPackage(unittest.TestCase):
     def _AssertNoTempFiles(self, usdFilePath):
         lsDir = os.listdir(os.path.dirname(usdFilePath))
         for item in lsDir:
-            self.assertNotRegexpMatches(item, "tmp-.*\.usd.?")
+            self.assertNotRegex(item, "tmp-.*\.usd.?")
 
     def testExport(self):
         '''Tests standard usdz package export.'''

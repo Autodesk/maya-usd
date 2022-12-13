@@ -90,11 +90,21 @@ enum class AttributeChangeType
     kAdded,
     kValueChanged,
     kConnectionChanged,
-    kRemoved
+    kRemoved,
+    kMetadataChanged
 };
 
 struct AttributeNotification
 {
+    AttributeNotification(const Ufe::Path& path, const TfToken& token, AttributeChangeType type)
+        : _path(path)
+        , _token(token)
+        , _type(type)
+    {
+    }
+
+    virtual ~AttributeNotification() { }
+
     Ufe::Path           _path;
     TfToken             _token;
     AttributeChangeType _type;
@@ -105,6 +115,31 @@ struct AttributeNotification
         // done safely so the observer ends up in the right state.
         return other._type == _type && other._token == _token && other._path == _path
             && _type == AttributeChangeType::kValueChanged;
+    }
+};
+
+struct AttributeMetadataNotification : public AttributeNotification
+{
+    AttributeMetadataNotification(
+        const Ufe::Path&             path,
+        const TfToken&               token,
+        AttributeChangeType          type,
+        const std::set<std::string>& metadataKeys)
+        : AttributeNotification(path, token, type)
+        , _metadataKeys(metadataKeys)
+    {
+    }
+
+    ~AttributeMetadataNotification() override { }
+
+    std::set<std::string> _metadataKeys;
+
+    bool operator==(const AttributeMetadataNotification& other)
+    {
+        // Only collapse multiple value changes. Collapsing added/removed notifications needs to be
+        // done safely so the observer ends up in the right state.
+        return other._type == _type && other._token == _token && other._path == _path
+            && _type == AttributeChangeType::kMetadataChanged;
     }
 };
 
@@ -153,6 +188,9 @@ void sendAttributeChanged(
         notifyWithoutExceptions<Ufe::Attributes>(
             Ufe::AttributeConnectionChanged(ufePath, changedToken.GetString()));
     } break;
+    case AttributeChangeType::kMetadataChanged: {
+        // Do nothing (needed to fix build error)
+    } break;
     }
 #else
     notifyWithoutExceptions<Ufe::Attributes>(
@@ -163,6 +201,20 @@ void sendAttributeChanged(
     }
 #endif
 }
+
+#if (UFE_PREVIEW_VERSION_NUM >= 4037)
+void sendAttributeMetadataChanged(
+    const Ufe::Path&             ufePath,
+    const TfToken&               changedToken,
+    AttributeChangeType          UFE_V4_24(changeType),
+    const std::set<std::string>& metadataKeys)
+{
+    if (changeType == AttributeChangeType::kMetadataChanged) {
+        notifyWithoutExceptions<Ufe::Attributes>(
+            Ufe::AttributeMetadataChanged(ufePath, changedToken.GetString(), metadataKeys));
+    }
+}
+#endif
 
 void valueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
 {
@@ -204,6 +256,36 @@ void attributeChanged(
 }
 #endif
 
+#if (UFE_PREVIEW_VERSION_NUM >= 4037)
+void attributeMetadataChanged(
+    const Ufe::Path&             ufePath,
+    const TfToken&               changedToken,
+    AttributeChangeType          changeType,
+    const std::set<std::string>& metadataKeys)
+{
+    if (inAttributeChangedNotificationGuard()) {
+        // Don't add pending notif if one already exists with same path/token.
+        auto p = AttributeMetadataNotification(ufePath, changedToken, changeType, metadataKeys);
+        auto p2 = std::find(
+            pendingAttributeChangedNotifications.begin(),
+            pendingAttributeChangedNotifications.end(),
+            p);
+        if (p2 == pendingAttributeChangedNotifications.end()) {
+            pendingAttributeChangedNotifications.emplace_back(p);
+        } else {
+            auto p2AttributeMetadataNotification
+                = dynamic_cast<AttributeMetadataNotification*>(&(*p2));
+            if (p2AttributeMetadataNotification) {
+                p2AttributeMetadataNotification->_metadataKeys.insert(
+                    metadataKeys.begin(), metadataKeys.end());
+            }
+        }
+    } else {
+        sendAttributeMetadataChanged(ufePath, changedToken, changeType, metadataKeys);
+    }
+}
+#endif
+
 void processAttributeChanges(
     const Ufe::Path&                                ufePath,
     const SdfPath&                                  changedPath,
@@ -214,6 +296,10 @@ void processAttributeChanges(
     bool sendAdded = false;
     bool sendRemoved = false;
     bool sendConnectionChanged = false;
+#if (UFE_PREVIEW_VERSION_NUM >= 4037)
+    bool                  sendMetadataChanged = false;
+    std::set<std::string> metadataKeys;
+#endif
     for (const auto& entry : entries) {
         // We can have multiple flags merged into a single entry:
         if (entry->flags.didAddProperty || entry->flags.didAddPropertyWithOnlyRequiredFields) {
@@ -229,6 +315,22 @@ void processAttributeChanges(
             sendConnectionChanged = true;
             sendValueChanged = false;
         }
+#if (UFE_PREVIEW_VERSION_NUM >= 4037)
+        for (const auto& infoChanged : entry->infoChanged) {
+            if (infoChanged.first == UsdShadeTokens->sdrMetadata) {
+                sendMetadataChanged = true;
+                std::stringstream newMetadataStream;
+                newMetadataStream << infoChanged.second.second;
+                std::string newMetadataKey = newMetadataStream.str();
+                if (!newMetadataKey.empty()) {
+                    // Find the modified key which is between a pair of single quotes.
+                    newMetadataKey = newMetadataKey.substr(
+                        newMetadataKey.find('\'') + 1, newMetadataKey.rfind('\'') - 2);
+                    metadataKeys.insert(newMetadataKey);
+                }
+            }
+        }
+#endif
     }
     if (sendAdded) {
         attributeChanged(ufePath, changedPath.GetNameToken(), AttributeChangeType::kAdded);
@@ -243,6 +345,15 @@ void processAttributeChanges(
     if (sendRemoved) {
         attributeChanged(ufePath, changedPath.GetNameToken(), AttributeChangeType::kRemoved);
     }
+#if (UFE_PREVIEW_VERSION_NUM >= 4037)
+    if (sendMetadataChanged) {
+        attributeMetadataChanged(
+            ufePath,
+            changedPath.GetNameToken(),
+            AttributeChangeType::kMetadataChanged,
+            metadataKeys);
+    }
+#endif
 #else
     valueChanged(ufePath, changedPath.GetNameToken());
 #endif
@@ -768,8 +879,21 @@ AttributeChangedNotificationGuard::~AttributeChangedNotificationGuard()
     }
 
     for (const auto& notificationInfo : pendingAttributeChangedNotifications) {
-        sendAttributeChanged(
-            notificationInfo._path, notificationInfo._token, notificationInfo._type);
+        if (notificationInfo._type == AttributeChangeType::kMetadataChanged) {
+#if (UFE_PREVIEW_VERSION_NUM >= 4037)
+            if (const auto metadataNotificationInfo
+                = dynamic_cast<const AttributeMetadataNotification*>(&notificationInfo)) {
+                sendAttributeMetadataChanged(
+                    metadataNotificationInfo->_path,
+                    metadataNotificationInfo->_token,
+                    metadataNotificationInfo->_type,
+                    metadataNotificationInfo->_metadataKeys);
+            }
+#endif
+        } else {
+            sendAttributeChanged(
+                notificationInfo._path, notificationInfo._token, notificationInfo._type);
+        }
     }
 
     pendingAttributeChangedNotifications.clear();

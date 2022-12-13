@@ -19,12 +19,14 @@
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/jobs/writeJob.h>
 #include <mayaUsd/utils/progressBarScope.h>
+#include <mayaUsd/utils/utilDictionary.h>
 
 #include <maya/MFileObject.h>
 #include <maya/MGlobal.h>
 #include <maya/MSelectionList.h>
 #include <maya/MString.h>
 
+#include <mutex>
 #include <set>
 #include <sstream>
 #include <string>
@@ -59,18 +61,7 @@ MStatus UsdMayaExportTranslator::writer(
 
     MString progStatus, mStrFileName(fileName.c_str());
     progStatus.format("Writing ^1s", mStrFileName);
-    MayaUsd::ProgressBarScope progressBar(3, progStatus);
-
-    MSelectionList           objSelList;
-    UsdMayaUtil::MDagPathSet dagPaths;
-    GetFilteredSelectionToExport(
-        (mode == MPxFileTranslator::kExportActiveAccessMode), objSelList, dagPaths);
-
-    if (dagPaths.empty()) {
-        TF_WARN("No DAG nodes to export. Skipping.");
-        return MS::kSuccess;
-    }
-    progressBar.advance();
+    MayaUsd::ProgressBarScope progressBar(4, progStatus);
 
     VtDictionary userArgs;
     MStatus      status
@@ -80,6 +71,29 @@ MStatus UsdMayaExportTranslator::writer(
 
     std::vector<double> timeSamples;
     UsdMayaJobExportArgs::GetDictionaryTimeSamples(userArgs, timeSamples);
+    progressBar.advance();
+
+    MSelectionList           objSelList;
+    UsdMayaUtil::MDagPathSet dagPaths;
+    const bool               exportSelected = (mode == MPxFileTranslator::kExportActiveAccessMode);
+    if (!exportSelected) {
+        if (userArgs.count(UsdMayaJobExportArgsTokens->exportRoots) > 0) {
+            const auto exportRoots = DictUtils::extractVector<std::string>(
+                userArgs, UsdMayaJobExportArgsTokens->exportRoots);
+            if (exportRoots.size() > 0) {
+                for (const std::string& root : exportRoots) {
+                    objSelList.add(root.c_str());
+                }
+            }
+        }
+    }
+    GetFilteredSelectionToExport(exportSelected, objSelList, dagPaths);
+
+    if (dagPaths.empty()) {
+        TF_WARN("No DAG nodes to export. Skipping.");
+        return MS::kSuccess;
+    }
+    progressBar.advance();
 
     auto jobArgs = UsdMayaJobExportArgs::CreateFromDictionary(userArgs, dagPaths, timeSamples);
     bool append = false;

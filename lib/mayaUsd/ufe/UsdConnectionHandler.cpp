@@ -20,6 +20,9 @@
 #include <mayaUsd/ufe/UsdConnections.h>
 #include <mayaUsd/ufe/UsdHierarchyHandler.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
+#if (UFE_PREVIEW_VERSION_NUM >= 4043)
+#include <mayaUsd/ufe/UsdUndoConnectionCommands.h>
+#endif
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/sdr/registry.h>
@@ -31,6 +34,12 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
+
+#if (UFE_PREVIEW_VERSION_NUM < 4043)
+
+//
+// For UFE 0.4.43 the connection/disconnection code is moved to UsdUndoConnectionCommands.cpp
+//
 
 namespace {
 
@@ -118,6 +127,8 @@ void _SendStrongConnectionChangeNotification(const UsdPrim& usdPrim)
 
 } // namespace
 
+#endif
+
 UsdConnectionHandler::UsdConnectionHandler()
     : Ufe::ConnectionHandler()
 {
@@ -134,6 +145,28 @@ Ufe::Connections::Ptr UsdConnectionHandler::sourceConnections(const Ufe::SceneIt
 {
     return UsdConnections::create(item);
 }
+
+#if (UFE_PREVIEW_VERSION_NUM >= 4043)
+
+Ufe::ConnectionResultUndoableCommand::Ptr UsdConnectionHandler::createConnectionCmd(
+    const Ufe::Attribute::Ptr& srcAttr,
+    const Ufe::Attribute::Ptr& dstAttr) const
+{
+    return UsdUndoCreateConnectionCommand::create(srcAttr, dstAttr);
+}
+
+Ufe::UndoableCommand::Ptr UsdConnectionHandler::deleteConnectionCmd(
+    const Ufe::Attribute::Ptr& srcAttr,
+    const Ufe::Attribute::Ptr& dstAttr) const
+{
+    return UsdUndoDeleteConnectionCommand::create(srcAttr, dstAttr);
+}
+
+#else
+
+//
+// For UFE 0.4.43 the connection/disconnection code is moved to UsdUndoConnectionCommands.cpp
+//
 
 bool UsdConnectionHandler::createConnection(
     const Ufe::Attribute::Ptr& srcAttr,
@@ -268,6 +301,8 @@ bool UsdConnectionHandler::deleteConnection(
 
     return retVal;
 }
+
+#endif
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

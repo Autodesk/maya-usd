@@ -132,6 +132,54 @@ struct AutoTimelineRestore
     const MTime originalMaxTime;
 };
 
+bool IsValidVariant(const UsdVariantSet& varSet)
+{
+    if (!varSet.IsValid())
+        return false;
+
+    if (varSet.GetVariantNames().size() == 0)
+        return false;
+
+    return true;
+}
+
+bool IsValidVariantSelection(const UsdVariantSet& varSet, const std::string& selection)
+{
+    const std::vector<std::string> names = varSet.GetVariantNames();
+    if (std::find(names.begin(), names.end(), selection) == names.end())
+        return false;
+
+    return true;
+}
+
+void ApplyVariantSelections(const UsdPrim& prim, const SdfVariantSelectionMap& selections)
+{
+    for (auto& variant : selections) {
+        const std::string& varSetName = variant.first;
+        const std::string& varSelection = variant.second;
+        UsdVariantSet      varSet = prim.GetVariantSet(varSetName);
+
+        if (!IsValidVariant(varSet)) {
+            TF_WARN(
+                "Invalid variant (%s) for prim (%s).",
+                varSetName.c_str(),
+                prim.GetName().GetText());
+            continue;
+        }
+
+        if (!IsValidVariantSelection(varSet, varSelection)) {
+            TF_WARN(
+                "Invalid variant selection (%s) in variant (%s) for prim (%s).",
+                varSelection.c_str(),
+                varSetName.c_str(),
+                prim.GetName().GetText());
+            continue;
+        }
+
+        varSet.SetVariantSelection(varSelection);
+    }
+}
+
 } // namespace
 
 UsdMaya_ReadJob::UsdMaya_ReadJob(
@@ -195,8 +243,8 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
             mImportData.stagePopulationMask(),
             mImportData.stageInitialLoadSet());
     } else {
-        UsdStageCacheContext stageCacheContext(UsdMayaStageCache::Get(
-            mImportData.stageInitialLoadSet(), UsdMayaStageCache::ShareMode::Shared));
+        UsdStageCache        stageCache;
+        UsdStageCacheContext stageCacheContext(stageCache);
         if (mArgs.pullImportStage)
             stage = mArgs.pullImportStage;
         else
@@ -281,17 +329,18 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     }
 
     // Set the variants on the usdRootPrim
-    for (auto& variant : mImportData.rootVariantSelections()) {
-        usdRootPrim.GetVariantSet(variant.first).SetVariantSelection(variant.second);
-    }
+    ApplyVariantSelections(usdRootPrim, mImportData.rootVariantSelections());
     progressBar.advance();
 
     // Set the variants on all the import data prims.
     for (auto& varPrim : mImportData.primVariantSelections()) {
-        for (auto& variant : varPrim.second) {
-            UsdPrim usdVarPrim = stage->GetPrimAtPath(varPrim.first);
-            usdVarPrim.GetVariantSet(variant.first).SetVariantSelection(variant.second);
+        const SdfPath& primName = varPrim.first;
+        UsdPrim        usdVarPrim = stage->GetPrimAtPath(primName);
+        if (!usdVarPrim.IsValid()) {
+            TF_WARN("Invalid prim specified (%s) for variant selection.", primName.GetText());
+            continue;
         }
+        ApplyVariantSelections(usdVarPrim, varPrim.second);
     }
     progressBar.advance();
 

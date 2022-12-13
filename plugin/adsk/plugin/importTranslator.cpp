@@ -31,6 +31,7 @@
 #include <maya/MStringArray.h>
 
 #include <map>
+#include <mutex>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE

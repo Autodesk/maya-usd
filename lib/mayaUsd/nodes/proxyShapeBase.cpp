@@ -616,6 +616,35 @@ void remapSublayerRecursive(
     }
 }
 
+void reproduceSharedStageState(
+    const UsdStageRefPtr& stage,
+    const SdfLayerRefPtr& sharedRootLayer,
+    const SdfLayerRefPtr& unsharedRootLayer)
+{
+    if (!TF_VERIFY(stage))
+        return;
+    if (!TF_VERIFY(sharedRootLayer))
+        return;
+    if (!TF_VERIFY(unsharedRootLayer))
+        return;
+
+    // Transfer the FPS (frames-per-second) of the original root layer to the new unshared
+    // root layer, so that the animation timeline does not change. We copy both the metadata
+    // on the layer and on the stage object itself.
+    if (sharedRootLayer->HasFramesPerSecond()) {
+        const double fps = sharedRootLayer->GetFramesPerSecond();
+        unsharedRootLayer->SetFramesPerSecond(fps);
+        stage->SetFramesPerSecond(fps);
+    }
+
+    // Transfer the TCPS (timecodes-per-second) for the same reason as above.
+    if (sharedRootLayer->HasTimeCodesPerSecond()) {
+        const double tcps = sharedRootLayer->GetTimeCodesPerSecond();
+        unsharedRootLayer->SetTimeCodesPerSecond(tcps);
+        stage->SetTimeCodesPerSecond(tcps);
+    }
+}
+
 } // namespace
 
 MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
@@ -948,6 +977,12 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
         unsharedUsdStage = getUnsharedStage(loadSet);
         finalUsdStage = unsharedUsdStage;
+
+        // Transfer data of the original root layer to the new unshared root layer,
+        // so that some user-visible state does not change. For example, we need to
+        // transfer the FPS (frames-per-second) metadata so that the animations play
+        // at the same rate.
+        reproduceSharedStageState(finalUsdStage, inRootLayer, _unsharedStageRootLayer);
     }
 
     if (finalUsdStage) {

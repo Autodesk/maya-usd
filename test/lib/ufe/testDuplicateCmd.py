@@ -33,6 +33,7 @@ import mayaUsd.ufe
 import ufe
 
 import unittest
+import os
 
 def firstSubLayer(context, routingData):
     prim = context.get('prim')
@@ -398,6 +399,140 @@ class DuplicateCmdTestCase(unittest.TestCase):
         sublayer01 = Sdf.Find(subLayerId)
         self.assertIsNotNone(sublayer01)
         self.assertIsNotNone(sublayer01.GetPrimAtPath('/A1/B'))
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4041', 'Test only available in UFE preview version 0.4.41 and greater')
+    def testUfeDuplicateCommandAPI(self):
+        '''Test that the duplicate command can be invoked using the 3 known APIs.'''
+
+        testFile = testUtils.getTestScene('MaterialX', 'BatchOpsTestScene.usda')
+        shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
+
+        geomItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane1')
+        self.assertIsNotNone(geomItem)
+
+        # Test NoExecute API:
+        duplicateCmd = ufe.SceneItemOps.sceneItemOps(geomItem).duplicateItemCmdNoExecute()
+        self.assertIsNotNone(duplicateCmd)
+        duplicateCmd.execute()
+
+        duplicateItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane7')
+        self.assertIsNotNone(duplicateItem)
+        self.assertEqual(duplicateItem, duplicateCmd.sceneItem)
+
+        duplicateCmd.undo()
+
+        nonExistentItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane7')
+        self.assertIsNone(nonExistentItem)
+
+        duplicateCmd.redo()
+
+        duplicateItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane7')
+        self.assertIsNotNone(duplicateItem)
+        self.assertEqual(duplicateItem, duplicateCmd.sceneItem)
+
+        duplicateCmd.undo()
+
+        # Test Exec but undoable API:
+        duplicateCmd = ufe.SceneItemOps.sceneItemOps(geomItem).duplicateItemCmd()
+        self.assertIsNotNone(duplicateCmd)
+
+        duplicateItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane7')
+        self.assertIsNotNone(duplicateItem)
+        self.assertEqual(duplicateItem, duplicateCmd.item)
+
+        duplicateCmd.undoableCommand.undo()
+
+        nonExistentItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane7')
+        self.assertIsNone(nonExistentItem)
+
+        duplicateCmd.undoableCommand.redo()
+
+        duplicateItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane7')
+        self.assertIsNotNone(duplicateItem)
+        self.assertEqual(duplicateItem, duplicateCmd.item)
+
+        duplicateCmd.undoableCommand.undo()
+
+        # Test non-undoable API:
+        geomItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane1')
+        self.assertIsNotNone(geomItem)
+
+        duplicatedItem = ufe.SceneItemOps.sceneItemOps(geomItem).duplicateItem()
+        self.assertIsNotNone(duplicateCmd)
+
+        plane7Item = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane7')
+        self.assertIsNotNone(plane7Item)
+        self.assertEqual(plane7Item, duplicatedItem)
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4041', 'Test only available in UFE preview version 0.4.41 and greater')
+    def testUfeDuplicateHomonyms(self):
+        '''Test that duplicating two items with similar names end up in two new duplicates.'''
+        testFile = testUtils.getTestScene('MaterialX', 'BatchOpsTestScene.usda')
+        shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
+
+        geomItem1 = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane1')
+        self.assertIsNotNone(geomItem1)
+        geomItem2 = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane2')
+        self.assertIsNotNone(geomItem2)
+
+        batchOpsHandler = ufe.RunTimeMgr.instance().batchOpsHandler(geomItem1.runTimeId())
+        self.assertIsNotNone(batchOpsHandler)
+
+        sel = ufe.Selection()
+        sel.append(geomItem1)
+        sel.append(geomItem2)
+        cmd = batchOpsHandler.duplicateSelectionCmd(sel, {"inputConnections": False})
+        cmd.execute()
+
+        self.assertNotEqual(cmd.targetItem(geomItem1.path()).path(), cmd.targetItem(geomItem2.path()).path())
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4041', 'Test only available in UFE preview version 0.4.41 and greater')
+    def testUfeDuplicateDescendants(self):
+        '''MAYA-125854: Test that duplicating a descendant of a selected ancestor results in the
+           duplicate from the ancestor.'''
+        testFile = testUtils.getTestScene('MaterialX', 'BatchOpsTestScene.usda')
+        shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
+
+        # Take 3 items that are in a hierarchical relationship.
+        shaderItem1 = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane2/mtl/ss2SG')
+        self.assertIsNotNone(shaderItem1)
+        geomItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane2')
+        self.assertIsNotNone(geomItem)
+        shaderItem2 = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane2/mtl/ss2SG/MayaNG_ss2SG/MayaConvert_file2_MayafileTexture')
+        self.assertIsNotNone(shaderItem2)
+
+        batchOpsHandler = ufe.RunTimeMgr.instance().batchOpsHandler(geomItem.runTimeId())
+        self.assertIsNotNone(batchOpsHandler)
+
+        # Put them in a selection, making sure one child item is first, and that another child item is last.
+        sel = ufe.Selection()
+        sel.append(shaderItem1)
+        sel.append(geomItem)
+        sel.append(shaderItem2)
+        cmd = batchOpsHandler.duplicateSelectionCmd(sel, {"inputConnections": False})
+        cmd.execute()
+
+        duplicatedGeomItem = cmd.targetItem(geomItem.path())
+        self.assertEqual(ufe.PathString.string(duplicatedGeomItem.path()), "|stage|stageShape,/pPlane7" )
+
+        # Make sure the duplicated shader items are descendants of the duplicated geom pPlane7.
+        sel.clear()
+        sel.append(duplicatedGeomItem)
+        duplicatedShaderItem1 = cmd.targetItem(shaderItem1.path())
+        self.assertEqual(ufe.PathString.string(duplicatedShaderItem1.path()),
+                         "|stage|stageShape,/pPlane7/mtl/ss2SG" )
+        self.assertTrue(sel.containsAncestor(duplicatedShaderItem1.path()))
+
+        duplicatedShaderItem2 = cmd.targetItem(shaderItem2.path())
+        self.assertEqual(ufe.PathString.string(duplicatedShaderItem2.path()),
+                         "|stage|stageShape,/pPlane7/mtl/ss2SG/MayaNG_ss2SG/MayaConvert_file2_MayafileTexture" )
+        self.assertTrue(sel.containsAncestor(duplicatedShaderItem2.path()))
+
+        # Test that the ancestor search terminates correctly:
+        nonDuplicatedGeomItem = ufeUtils.createUfeSceneItem(shapeNode, '/pPlane1')
+        self.assertIsNotNone(nonDuplicatedGeomItem)
+        self.assertIsNone(cmd.targetItem(nonDuplicatedGeomItem.path()))
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

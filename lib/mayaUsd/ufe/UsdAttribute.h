@@ -188,7 +188,11 @@ public:
 //! \brief Interface for USD token attributes.
 class UsdAttributeFilename
     : public Ufe::AttributeFilename
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    , public UsdAttribute
+#else
     , private UsdAttribute
+#endif
 {
 public:
     typedef std::shared_ptr<UsdAttributeFilename> Ptr;

@@ -49,7 +49,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (scale) \
     (pivot) \
     (pivotTranslate) \
-    (transform)
+    (transform) \
+    (offsetParentMatrix)
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(

@@ -30,7 +30,7 @@ bool hasDynamicAttribute(const MFnDependencyNode& depNode, const MString& attrNa
 /*! \brief create the named dynamic attribute on the Maya node.
  */
 MAYAUSD_CORE_PUBLIC
-MStatus createDynamicAttribute(const MFnDependencyNode& depNode, const MString& attrName);
+MStatus createDynamicAttribute(MFnDependencyNode& depNode, const MString& attrName);
 
 /*! \brief get the string value of the named dynamic attribute from the Maya node.
  */
@@ -41,10 +41,8 @@ getDynamicAttribute(const MFnDependencyNode& depNode, const MString& attrName, M
 /*! \brief set the named dynamic attribute to the given string value on the Maya node.
  */
 MAYAUSD_CORE_PUBLIC
-MStatus setDynamicAttribute(
-    const MFnDependencyNode& depNode,
-    const MString&           attrName,
-    const MString&           value);
+MStatus
+setDynamicAttribute(MFnDependencyNode& depNode, const MString& attrName, const MString& value);
 
 } // namespace MAYAUSD_NS_DEF
 

@@ -370,6 +370,7 @@ global proc mayaUsdTranslatorExport_EnableAllControls() {
         checkBoxGrp -e -en 1 exportVisibilityCheckBox;
         checkBoxGrp -e -en 1 mergeTransformAndShapeCheckBox;
         checkBoxGrp -e -en 1 includeNamespacesCheckBox;
+        checkBoxGrp -e -en 1 worldspaceCheckBox;
     }
     
     if (stringArrayContains("context", $sectionNames)) {
@@ -392,6 +393,7 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
         tokenize($currentOptions, ";", $optionList);
         int $supportsMultiExport = 1;
         int $exportNurbsCurves = 1;
+        int $contextForcesFilterTypes = 0;
         for ($index = 0; $index < size($optionList); $index++) {
             tokenize($optionList[$index], "=", $optionBreakDown);
             if ($optionBreakDown[0] == "exportUVs") {
@@ -403,6 +405,7 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
             } else if ($optionBreakDown[0] == "exportBlendShapes") {
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportBlendShapesCheckBox");
             } else if ($optionBreakDown[0] == "filterTypes") {
+                $contextForcesFilterTypes = 1;
                 // Negative filter. See if nurbsCurve is in the list:
                 if (mayaUsdTranslatorExport_HasFilteredPrimitive($optionBreakDown[1], "nurbsCurve")) {
                     $exportNurbsCurves = 0;
@@ -452,11 +455,15 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "mergeTransformAndShapeCheckBox");
             } else if ($optionBreakDown[0] == "stripNamespaces") {
                 mayaUsdTranslatorExport_SetOppositeCheckbox($optionBreakDown[1], $enable, "includeNamespacesCheckBox");
+            } else if ($optionBreakDown[0] == "worldspace") {
+                mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "worldspaceCheckBox");
             }
         }
 
-        // We now know if we export nurbs curves or not:
-        checkBoxGrp -e -v1 $exportNurbsCurves -en $enable exportCurvesCheckBox;
+        // We now know if we export nurbs curves or not and if forced by the job context:
+        if ($contextForcesFilterTypes == 1) {
+            checkBoxGrp -e -v1 $exportNurbsCurves -en $enable exportCurvesCheckBox;
+        }
 
         if ($jobContext != "" && $processJobContext == 1) {
             mayaUsdTranslatorExport_SetJobContextDropdown($jobContext);
@@ -730,6 +737,8 @@ global proc int mayaUsdTranslatorExport (string $parent,
 
                 checkBoxGrp -l `getMayaUsdString("kExportNamespacesLbl")` -annotation `getMayaUsdString("kExportNamespacesAnn")` includeNamespacesCheckBox;
 
+                checkBoxGrp -l `getMayaUsdString("kExportWorldspaceLbl")` -annotation `getMayaUsdString("kExportWorldspaceAnn")` worldspaceCheckBox;
+
                 separator -style "none";
             setParent ..;
         }
@@ -781,6 +790,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportVisibility", "exportVisibilityCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "mergeTransformAndShape", "mergeTransformAndShapeCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendOppositeFromCheckbox($currentOptions, "stripNamespaces", "includeNamespacesCheckBox");
+            $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "worldspace", "worldspaceCheckBox");
         }
 
         if (stringArrayContains("context", $sectionNames)) {
