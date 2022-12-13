@@ -19,6 +19,8 @@
 
 #include <ufe/connectionHandler.h>
 
+#include <memory>
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -44,13 +46,27 @@ public:
 
     Ufe::Connections::Ptr sourceConnections(const Ufe::SceneItem::Ptr& item) const override;
 
+#if (UFE_PREVIEW_VERSION_NUM >= 4043)
+    std::shared_ptr<Ufe::ConnectionResultUndoableCommand> createConnectionCmd(
+        const Ufe::Attribute::Ptr& srcAttr,
+        const Ufe::Attribute::Ptr& dstAttr) const override;
+
+    std::shared_ptr<Ufe::UndoableCommand> deleteConnectionCmd(
+        const Ufe::Attribute::Ptr& srcAttr,
+        const Ufe::Attribute::Ptr& dstAttr) const override;
+
+private:
+    Ufe::Connection
+    createConnection(const Ufe::Attribute::Ptr& srcAttr, const Ufe::Attribute::Ptr& dstAttr) const;
+    void
+    deleteConnection(const Ufe::Attribute::Ptr& srcAttr, const Ufe::Attribute::Ptr& dstAttr) const;
+#else
 protected:
     bool createConnection(const Ufe::Attribute::Ptr& srcAttr, const Ufe::Attribute::Ptr& dstAttr)
         const override;
     bool deleteConnection(const Ufe::Attribute::Ptr& srcAttr, const Ufe::Attribute::Ptr& dstAttr)
         const override;
-
+#endif
 }; // UsdConnectionHandler
-
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

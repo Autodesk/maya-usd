@@ -19,6 +19,7 @@
 #include <mayaUsd/fileio/utils/adaptor.h>
 #include <mayaUsd/fileio/utils/xformStack.h>
 #include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/converter.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/gf/matrix4d.h>
@@ -37,6 +38,7 @@
 
 #include <maya/MFn.h>
 #include <maya/MFnDependencyNode.h>
+#include <maya/MFnMatrixData.h>
 #include <maya/MFnTransform.h>
 #include <maya/MString.h>
 
@@ -47,29 +49,28 @@ PXR_NAMESPACE_OPEN_SCOPE
 PXRUSDMAYA_REGISTER_WRITER(transform, UsdMayaTransformWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(transform, UsdGeomXform);
 
-// Given an Op, value and time, set the Op value based on op type and precision
-static void setXformOp(
-    const UsdGeomXformOp&      op,
+void UsdMayaTransformWriter::_AnimChannel::setXformOp(
     const GfVec3d&             value,
+    const GfMatrix4d&          matrix,
     const UsdTimeCode&         usdTime,
-    UsdUtilsSparseValueWriter* valueWriter)
+    UsdUtilsSparseValueWriter* valueWriter) const
 {
     if (!op) {
         TF_CODING_ERROR("Xform op is not valid");
         return;
     }
 
-    if (op.GetOpType() == UsdGeomXformOp::TypeTransform) {
+    VtValue vtValue;
+    if (isMatrix) {
+        vtValue = matrix;
+    } else if (opType == _XformType::Shear) {
         GfMatrix4d shearXForm(1.0);
         shearXForm[1][0] = value[0]; // xyVal
         shearXForm[2][0] = value[1]; // xzVal
         shearXForm[2][1] = value[2]; // yzVal
-        valueWriter->SetAttribute(op.GetAttr(), shearXForm, usdTime);
-        return;
-    }
-
-    VtValue vtValue;
-    if (UsdGeomXformOp::GetPrecisionFromValueTypeName(op.GetAttr().GetTypeName())
+        vtValue = shearXForm;
+    } else if (
+        UsdGeomXformOp::GetPrecisionFromValueTypeName(op.GetAttr().GetTypeName())
         == UsdGeomXformOp::PrecisionDouble) {
         vtValue = VtValue(value);
     } else { // float precision
@@ -98,12 +99,18 @@ void UsdMayaTransformWriter::_ComputeXformOps(
             continue;
         }
 
-        GfVec3d value = animChannel.defValue;
-        bool    hasAnimated = false;
-        bool    hasStatic = false;
-        for (unsigned int i = 0u; i < 3u; ++i) {
+        GfVec3d            value = animChannel.defValue;
+        GfMatrix4d         matrix = animChannel.defMatrix;
+        bool               hasAnimated = false;
+        bool               hasStatic = false;
+        const unsigned int plugCount = animChannel.isMatrix ? 1u : 3u;
+        for (unsigned int i = 0u; i < plugCount; ++i) {
             if (animChannel.sampleType[i] == _SampleType::Animated) {
-                value[i] = animChannel.plug[i].asDouble();
+                if (animChannel.isMatrix) {
+                    matrix = animChannel.GetSourceData(i).Get<GfMatrix4d>();
+                } else {
+                    value[i] = animChannel.GetSourceData(i).Get<double>();
+                }
                 hasAnimated = true;
             } else if (animChannel.sampleType[i] == _SampleType::Static) {
                 hasStatic = true;
@@ -123,9 +130,9 @@ void UsdMayaTransformWriter::_ComputeXformOps(
 
             if (animChannel.opType == _XformType::Rotate) {
                 if (hasAnimated && eulerFilter) {
-                    const TfToken& lookupName = animChannel.opName.IsEmpty()
+                    const TfToken& lookupName = animChannel.suffix.IsEmpty()
                         ? UsdGeomXformOp::GetOpTypeToken(animChannel.usdOpType)
-                        : animChannel.opName;
+                        : animChannel.suffix;
                     auto findResult = previousRotates->find(lookupName);
                     if (findResult == previousRotates->end()) {
                         MEulerRotation::RotationOrder rotOrder
@@ -151,8 +158,22 @@ void UsdMayaTransformWriter::_ComputeXformOps(
                 }
             }
 
-            setXformOp(animChannel.op, value, usdTime, valueWriter);
+            animChannel.setXformOp(value, matrix, usdTime, valueWriter);
         }
+    }
+}
+
+VtValue UsdMayaTransformWriter::_AnimChannel::GetSourceData(unsigned int i) const
+{
+    if (isMatrix) {
+        const MPlug&  attrPlug = plug[i];
+        MFnMatrixData matrixDataFn(attrPlug.asMObject());
+        MMatrix       mayaMatrix = matrixDataFn.matrix();
+        GfMatrix4d    matrix;
+        MAYAUSD_NS_DEF::TypedConverter<MMatrix, GfMatrix4d>::convert(mayaMatrix, matrix);
+        return VtValue(matrix);
+    } else {
+        return VtValue(plug[i].asDouble());
     }
 }
 
@@ -160,21 +181,23 @@ void UsdMayaTransformWriter::_ComputeXformOps(
 bool UsdMayaTransformWriter::_GatherAnimChannel(
     const _XformType           opType,
     const MFnTransform&        iTrans,
-    const TfToken&             parentName,
+    const TfToken&             mayaAttrName,
     const MString&             xName,
     const MString&             yName,
     const MString&             zName,
     std::vector<_AnimChannel>* oAnimChanList,
     const bool                 isWritingAnimation,
-    const bool                 setOpName)
+    const bool                 useSuffix,
+    const bool                 isMatrix)
 {
     _AnimChannel chan;
     chan.opType = opType;
     chan.isInverse = false;
-    if (setOpName) {
-        chan.opName = parentName;
+    chan.isMatrix = isMatrix;
+    if (useSuffix) {
+        chan.suffix = mayaAttrName;
     }
-    MString parentNameMStr = parentName.GetText();
+    MString mayaAttrNameMStr = mayaAttrName.GetText();
 
     // We default to single precision (later we set the main translate op and
     // shear to double)
@@ -185,22 +208,27 @@ bool UsdMayaTransformWriter::_GatherAnimChannel(
     // this is to handle the case where there is a connection to the parent
     // plug but not to the child plugs, if the connection is there and you are
     // not forcing static, then all of the children are considered animated
-    int parentSample = UsdMayaUtil::getSampledType(iTrans.findPlug(parentNameMStr), false);
+    int parentSample = UsdMayaUtil::getSampledType(iTrans.findPlug(mayaAttrNameMStr), false);
 
     // Determine what plug are needed based on default value & being
     // connected/animated
-    MStringArray channels;
-    channels.append(parentNameMStr + xName);
-    channels.append(parentNameMStr + yName);
-    channels.append(parentNameMStr + zName);
+    MStringArray suffixes;
+    suffixes.append(xName);
+    suffixes.append(yName);
+    suffixes.append(zName);
 
-    GfVec3d nullValue(opType == _XformType::Scale ? 1.0 : 0.0);
-    for (unsigned int i = 0; i < 3; i++) {
+    GfVec3d            nullValue(opType == _XformType::Scale ? 1.0 : 0.0);
+    const unsigned int plugCount = isMatrix ? 1u : 3u;
+    for (unsigned int i = 0; i < plugCount; i++) {
         // Find the plug and retrieve the data as the channel default value. It
         // won't be updated if the channel is NOT ANIMATED
-        chan.plug[i] = iTrans.findPlug(channels[i]);
-        double plugValue = chan.plug[i].asDouble();
-        chan.defValue[i] = plugValue;
+        if (isMatrix) {
+            chan.plug[i] = iTrans.findPlug(mayaAttrNameMStr);
+            chan.defMatrix = chan.GetSourceData(i).Get<GfMatrix4d>();
+        } else {
+            chan.plug[i] = iTrans.findPlug(mayaAttrNameMStr + suffixes[i]);
+            chan.defValue[i] = chan.GetSourceData(i).Get<double>();
+        }
         chan.sampleType[i] = _SampleType::None;
         // If we allow animation and either the parent sample or local sample is
         // not 0 then we have an Animated sample else we have a scale and the
@@ -209,9 +237,13 @@ bool UsdMayaTransformWriter::_GatherAnimChannel(
             && isWritingAnimation) {
             chan.sampleType[i] = _SampleType::Animated;
             hasValidComponents = true;
-        } else if (!GfIsClose(chan.defValue[i], nullValue[i], 1e-7)) {
-            chan.sampleType[i] = _SampleType::Static;
-            hasValidComponents = true;
+        } else {
+            const bool isNullValue = isMatrix ? GfIsClose(chan.defMatrix, GfMatrix4d(1.0), 1e-7)
+                                              : GfIsClose(chan.defValue[i], nullValue[i], 1e-7);
+            if (!isNullValue) {
+                chan.sampleType[i] = _SampleType::Static;
+                hasValidComponents = true;
+            }
         }
     }
 
@@ -222,13 +254,13 @@ bool UsdMayaTransformWriter::_GatherAnimChannel(
         } else if (opType == _XformType::Translate) {
             chan.usdOpType = UsdGeomXformOp::TypeTranslate;
             // The main translate is set to double precision
-            if (parentName == UsdMayaXformStackTokens->translate) {
+            if (mayaAttrName == UsdMayaXformStackTokens->translate) {
                 chan.precision = UsdGeomXformOp::PrecisionDouble;
             }
         } else if (opType == _XformType::Rotate) {
             chan.usdOpType = UsdGeomXformOp::TypeRotateXYZ;
             // Rotation Order ONLY applies to the "rotate" attribute
-            if (parentName == UsdMayaXformStackTokens->rotate) {
+            if (mayaAttrName == UsdMayaXformStackTokens->rotate) {
                 switch (iTrans.rotationOrder()) {
                 case MTransformationMatrix::kYZX:
                     chan.usdOpType = UsdGeomXformOp::TypeRotateYZX;
@@ -251,6 +283,9 @@ bool UsdMayaTransformWriter::_GatherAnimChannel(
         } else if (opType == _XformType::Shear) {
             chan.usdOpType = UsdGeomXformOp::TypeTransform;
             chan.precision = UsdGeomXformOp::PrecisionDouble;
+        } else if (opType == _XformType::Transform) {
+            chan.usdOpType = UsdGeomXformOp::TypeTransform;
+            chan.precision = UsdGeomXformOp::PrecisionDouble;
         } else {
             return false;
         }
@@ -260,10 +295,39 @@ bool UsdMayaTransformWriter::_GatherAnimChannel(
     return false;
 }
 
+void UsdMayaTransformWriter::_MakeAnimChannelsUnique(const UsdGeomXformable& usdXformable)
+{
+    using OpName = TfToken;
+    std::set<OpName> existingOps;
+    bool             xformReset = false;
+    for (const UsdGeomXformOp& op : usdXformable.GetOrderedXformOps(&xformReset)) {
+        existingOps.emplace(op.GetOpName());
+    }
+
+    for (_AnimChannel& channel : _animChannels) {
+        // We will put a upper limit on the number of similar transform operations
+        // that a prim can use. Having 1000 separate translations on a single prim
+        // seems both generous. Having more is highly improbable.
+        for (int suffixIndex = 1; suffixIndex < 1000; ++suffixIndex) {
+            TfToken channelOpName
+                = UsdGeomXformOp::GetOpName(channel.usdOpType, channel.suffix, channel.isInverse);
+            if (existingOps.count(channelOpName) == 0) {
+                existingOps.emplace(channelOpName);
+                break;
+            }
+            std::ostringstream oss;
+            oss << "channel" << suffixIndex;
+            channel.suffix = TfToken(oss.str());
+        }
+    }
+}
+
 void UsdMayaTransformWriter::_PushTransformStack(
+    const MDagPath&         dagPath,
     const MFnTransform&     iTrans,
     const UsdGeomXformable& usdXformable,
-    const bool              writeAnim)
+    const bool              writeAnim,
+    const bool              worldspace)
 {
     // NOTE: I think this logic and the logic in MayaTransformReader
     // should be merged so the concept of "CommonAPI" stays centralized.
@@ -278,12 +342,34 @@ void UsdMayaTransformWriter::_PushTransformStack(
     // that we can combine them later if possible
     unsigned int rotPivotIdx = -1, rotPivotINVIdx = -1, scalePivotIdx = -1, scalePivotINVIdx = -1;
 
-    // Check if the Maya prim inheritTransform
+    // Check if the Maya prim inherits-transform or needs world-space positioning.
     MPlug inheritPlug = iTrans.findPlug("inheritsTransform");
-    if (!inheritPlug.isNull()) {
-        if (!inheritPlug.asBool()) {
-            usdXformable.SetResetXformStack(true);
+    if (!inheritPlug.isNull() && !inheritPlug.asBool()) {
+        usdXformable.SetResetXformStack(true);
+    } else if (worldspace) {
+        MDagPath parentDagPath = dagPath;
+        if (parentDagPath.pop() == MStatus::kSuccess && parentDagPath.isValid()) {
+            MObject parentObj = parentDagPath.node();
+            if (parentObj.apiType() != MFn::Type::kWorld) {
+                MFnTransform parentTrans(parentObj);
+                _PushTransformStack(
+                    parentDagPath, parentTrans, usdXformable, writeAnim, worldspace);
+            }
         }
+    }
+
+    if (_GatherAnimChannel(
+            _XformType::Transform,
+            iTrans,
+            UsdMayaXformStackTokens->offsetParentMatrix,
+            "",
+            "",
+            "",
+            &_animChannels,
+            writeAnim,
+            true,
+            true)) {
+        conformsToCommonAPI = false;
     }
 
     // inspect the translate, no suffix to be closer compatibility with common API
@@ -358,7 +444,7 @@ void UsdMayaTransformWriter::_PushTransformStack(
         _AnimChannel chan;
         chan.usdOpType = UsdGeomXformOp::TypeTranslate;
         chan.precision = UsdGeomXformOp::PrecisionFloat;
-        chan.opName = UsdMayaXformStackTokens->rotatePivot;
+        chan.suffix = UsdMayaXformStackTokens->rotatePivot;
         chan.isInverse = true;
         _animChannels.push_back(chan);
         rotPivotINVIdx = _animChannels.size() - 1;
@@ -425,7 +511,7 @@ void UsdMayaTransformWriter::_PushTransformStack(
         _AnimChannel chan;
         chan.usdOpType = UsdGeomXformOp::TypeTranslate;
         chan.precision = UsdGeomXformOp::PrecisionFloat;
-        chan.opName = UsdMayaXformStackTokens->scalePivot;
+        chan.suffix = UsdMayaXformStackTokens->scalePivot;
         chan.isInverse = true;
         _animChannels.push_back(chan);
         scalePivotINVIdx = _animChannels.size() - 1;
@@ -470,25 +556,37 @@ void UsdMayaTransformWriter::_PushTransformStack(
             // since no other ops have been found
             //
             // NOTE: scalePivotIdx > rotPivotINVIdx
-            _animChannels[rotPivotIdx].opName = UsdMayaXformStackTokens->pivot;
-            _animChannels[scalePivotINVIdx].opName = UsdMayaXformStackTokens->pivot;
+            _animChannels[rotPivotIdx].suffix = UsdMayaXformStackTokens->pivot;
+            _animChannels[scalePivotINVIdx].suffix = UsdMayaXformStackTokens->pivot;
             _animChannels.erase(_animChannels.begin() + scalePivotIdx);
             _animChannels.erase(_animChannels.begin() + rotPivotINVIdx);
         }
     }
+}
+
+void UsdMayaTransformWriter::_WriteChannelsXformOps(const UsdGeomXformable& usdXformable)
+{
+    _MakeAnimChannelsUnique(usdXformable);
 
     // Loop over anim channel vector and create corresponding XFormOps
     // including the inverse ones if needed
-    TF_FOR_ALL(iter, _animChannels)
-    {
-        _AnimChannel& animChan = *iter;
+    for (_AnimChannel& animChan : _animChannels) {
         animChan.op = usdXformable.AddXformOp(
-            animChan.usdOpType, animChan.precision, animChan.opName, animChan.isInverse);
+            animChan.usdOpType, animChan.precision, animChan.suffix, animChan.isInverse);
         if (!animChan.op) {
             TF_CODING_ERROR("Could not add xform op");
             animChan.op = UsdGeomXformOp();
         }
     }
+}
+
+static bool
+needsWorldspaceTransform(const UsdMayaJobExportArgs& exportArgs, const MFnTransform& iTrans)
+{
+    if (!exportArgs.worldspace)
+        return false;
+
+    return exportArgs.dagPaths.count(iTrans.dagPath()) > 0;
 }
 
 UsdMayaTransformWriter::UsdMayaTransformWriter(
@@ -510,7 +608,10 @@ UsdMayaTransformWriter::UsdMayaTransformWriter(
         const MFnTransform transFn(GetDagPath());
         // Create a vector of _AnimChannels based on the Maya transformation
         // ordering
-        _PushTransformStack(transFn, primSchema, !_GetExportArgs().timeSamples.empty());
+        const bool worldspace = needsWorldspaceTransform(_writeJobCtx.GetArgs(), transFn);
+        _PushTransformStack(
+            GetDagPath(), transFn, primSchema, !_GetExportArgs().timeSamples.empty(), worldspace);
+        _WriteChannelsXformOps(primSchema);
     }
 }
 

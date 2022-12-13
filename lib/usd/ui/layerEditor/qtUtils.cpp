@@ -62,4 +62,20 @@ QWidget* QtUtils::fixedWidget(QWidget* widget)
     return widget;
 }
 
+QtDisableRepaintUpdates::QtDisableRepaintUpdates(QWidget& widget)
+    : _widget(widget)
+{
+    widget.setUpdatesEnabled(false);
+}
+
+QtDisableRepaintUpdates::~QtDisableRepaintUpdates()
+{
+    try {
+        // Note: re-enabling updates automatically triggers a repaint.
+        _widget.setUpdatesEnabled(true);
+    } catch (std::exception&) {
+        // Don't let exceptions out of destructor.
+    }
+}
+
 } // namespace UsdLayerEditor

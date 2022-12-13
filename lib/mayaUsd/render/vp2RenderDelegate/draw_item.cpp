@@ -48,8 +48,11 @@ HdVP2DrawItem::~HdVP2DrawItem()
         MSubSceneContainer* subSceneContainer = param ? param->GetContainer() : nullptr;
         if (subSceneContainer) {
             for (const auto& renderItemData : _renderItems) {
-                TF_VERIFY(renderItemData._renderItemName == renderItemData._renderItem->name());
-                subSceneContainer->remove(renderItemData._renderItem->name());
+                const auto& sharedRenderItemCounter = renderItemData._sharedRenderItemCounter;
+                if (!sharedRenderItemCounter || (--(*sharedRenderItemCounter)) == 0) {
+                    TF_VERIFY(renderItemData._renderItemName == renderItemData._renderItem->name());
+                    subSceneContainer->remove(renderItemData._renderItem->name());
+                }
             }
         }
     }
@@ -65,6 +68,7 @@ HdVP2DrawItem::AddRenderItem(MHWRender::MRenderItem* item, const HdGeomSubset* g
 
     renderItemData._renderItem = item;
     renderItemData._renderItemName = item->name();
+    renderItemData._enabled = item->isEnabled();
     if (geomSubset) {
         renderItemData._geomSubset = *geomSubset;
     }
@@ -73,6 +77,21 @@ HdVP2DrawItem::AddRenderItem(MHWRender::MRenderItem* item, const HdGeomSubset* g
         new MHWRender::MIndexBuffer(MHWRender::MGeometry::kUnsignedInt32));
 
     return renderItemData;
+}
+
+void HdVP2DrawItem::ShareRenderItem(HdVP2DrawItem& sourceDrawItem)
+{
+    TF_VERIFY(_renderItems.size() == 0);
+    RenderItemData& srcData = sourceDrawItem.GetRenderItemData();
+    AddRenderItem(srcData._renderItem);
+
+    if (!srcData._sharedRenderItemCounter) {
+        srcData._sharedRenderItemCounter = std::make_shared<size_t>(1);
+    }
+
+    RenderItemData& dstData = GetRenderItemData();
+    dstData._sharedRenderItemCounter = srcData._sharedRenderItemCounter;
+    ++(*dstData._sharedRenderItemCounter);
 }
 
 /* static */

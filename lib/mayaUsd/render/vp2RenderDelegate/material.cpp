@@ -184,18 +184,14 @@ TF_DEFINE_PRIVATE_TOKENS(
     (useSpecularWorkflow)
     (st)
     (varname)
-    (result)
-    (cardsUv)
     (sourceColorSpace)
     (sRGB)
     (raw)
-    (glslfx)
     (fallback)
 
     (input)
     (output)
 
-    (diffuseColor)
     (rgb)
     (r)
     (g)
@@ -214,17 +210,25 @@ TF_DEFINE_PRIVATE_TOKENS(
     (Float4ToFloatW)
     (Float4ToFloat3)
 
-    (UsdDrawModeCards)
-    (FallbackShader)
-    (mayaIsBackFacing)
-    (isBackfacing)
-    ((DrawMode, "drawMode.glslfx"))
-
     (UsdPrimvarReader_color)
     (UsdPrimvarReader_vector)
 
     (Unknown)
     (Computed)
+
+    // XXX Deprecated in PXR_VERSION > 2211
+    (result)
+    (cardsUv)
+    (diffuseColor)
+
+    (glslfx)
+
+    (UsdDrawModeCards)
+    ((DrawMode, "drawMode.glslfx"))
+
+    (mayaIsBackFacing)
+    (isBackfacing)
+    (FallbackShader)
 );
 // clang-format on
 
@@ -309,8 +313,9 @@ const std::set<std::string> _mtlxTopoNodeSet = {
     // Conversion nodes:
     "convert",
     // Constants: they get inlined in the source.
-    "constant"
-
+    "constant",
+    // Switch, unless all inputs are connected.
+    "switch"
 };
 
 // Maps from a known Maya target color space name to the corresponding color correct category.
@@ -910,12 +915,19 @@ void _AddMissingTangents(mx::DocumentPtr& mtlxDoc)
 
 #endif // WANT_MATERIALX_BUILD
 
+#if PXR_VERSION <= 2211
 bool _IsUsdDrawModeId(const TfToken& id)
 {
     return id == _tokens->DrawMode || id == _tokens->UsdDrawModeCards;
 }
 
 bool _IsUsdDrawModeNode(const HdMaterialNode& node) { return _IsUsdDrawModeId(node.identifier); }
+
+bool _IsUsdFloat2PrimvarReader(const HdMaterialNode& node)
+{
+    return (node.identifier == UsdImagingTokens->UsdPrimvarReader_float2);
+}
+#endif
 
 //! Helper utility function to test whether a node is a UsdShade primvar reader.
 bool _IsUsdPrimvarReader(const HdMaterialNode& node)
@@ -927,11 +939,6 @@ bool _IsUsdPrimvarReader(const HdMaterialNode& node)
         || id == UsdImagingTokens->UsdPrimvarReader_float3
         || id == UsdImagingTokens->UsdPrimvarReader_float4 || id == _tokens->UsdPrimvarReader_vector
         || id == UsdImagingTokens->UsdPrimvarReader_int);
-}
-
-bool _IsUsdFloat2PrimvarReader(const HdMaterialNode& node)
-{
-    return (node.identifier == UsdImagingTokens->UsdPrimvarReader_float2);
 }
 
 //! Helper utility function to test whether a node is a UsdShade UV texture.
@@ -2061,11 +2068,13 @@ void HdVP2Material::CompiledNetwork::_ApplyVP2Fixes(
     tmpNet.nodes.reserve(numNodes);
     tmpNet.relationships.reserve(numRelationships);
 
+#if PXR_VERSION <= 2211
     // Some material networks require us to add nodes and connections to the base
     // HdMaterialNetwork. Keep track of the existence of some key nodes to help
     // with performance.
     HdMaterialNode* usdDrawModeCardsNode = nullptr;
     HdMaterialNode* cardsUvPrimvarReader = nullptr;
+#endif
 
     // Get the shader registry so I can look up the real names of shading nodes.
     SdrRegistry& shaderReg = SdrRegistry::GetInstance();
@@ -2082,7 +2091,7 @@ void HdVP2Material::CompiledNetwork::_ApplyVP2Fixes(
         tmpNet.nodes.push_back(node);
 
         HdMaterialNode& outNode = tmpNet.nodes.back();
-
+#if PXR_VERSION <= 2211
         // For card draw mode the HdMaterialNode will have an identifier which is the hash of the
         // file path to drawMode.glslfx on disk. Using that value I can get the SdrShaderNode, and
         // then get the actual name of the shader "drawMode.glslfx". For other node names the
@@ -2090,7 +2099,12 @@ void HdVP2Material::CompiledNetwork::_ApplyVP2Fixes(
         // everything to use the SdrShaderNode name.
         SdrShaderNodeConstPtr sdrNode
             = shaderReg.GetShaderNodeByIdentifierAndType(outNode.identifier, _tokens->glslfx);
-
+#else
+        // Ensure that our node identifiers are correct. The HdMaterialNode identifier
+        // and the SdrShaderNode name seem to be the same in most cases, but we
+        // convert everything to use the SdrShaderNode name to be sure.
+        SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifier(outNode.identifier);
+#endif
         if (_IsUsdUVTexture(node)) {
             // We need to rename according to the Maya color working space pref:
             if (!mayaWorkingColorSpace.length()) {
@@ -2108,6 +2122,7 @@ void HdVP2Material::CompiledNetwork::_ApplyVP2Fixes(
             outNode.identifier = TfToken(sdrNode->GetName());
         }
 
+#if PXR_VERSION <= 2211
         if (_IsUsdDrawModeNode(outNode)) {
             // I can't easily name a Maya fragment something with a '.' in it, so pick a different
             // fragment name.
@@ -2121,6 +2136,7 @@ void HdVP2Material::CompiledNetwork::_ApplyVP2Fixes(
             TF_VERIFY(!cardsUvPrimvarReader);
             cardsUvPrimvarReader = &outNode;
         }
+#endif
 
         outNode.path = SdfPath(outNode.identifier.GetString() + std::to_string(++nodeCounter));
 
@@ -2140,6 +2156,7 @@ void HdVP2Material::CompiledNetwork::_ApplyVP2Fixes(
     outNet.relationships.reserve(numRelationships * 2);
     outNet.primvars.reserve(numNodes);
 
+#if PXR_VERSION <= 2211
     // Add additional nodes necessary for Maya's fragment compiler
     // to work that are logical predecessors of node.
     auto addPredecessorNodes = [&](const HdMaterialNode& node) {
@@ -2205,10 +2222,12 @@ void HdVP2Material::CompiledNetwork::_ApplyVP2Fixes(
             outNet.relationships.push_back(newRel);
         }
     };
+#endif
 
     // Add additional nodes necessary for Maya's fragment compiler
     // to work that are logical successors of node.
     auto addSuccessorNodes = [&](const HdMaterialNode& node, const TfToken& primvarToRead) {
+#if PXR_VERSION <= 2211
         // If the node is a DrawModeCardsFragment add the fallback material after it to do
         // the lighting etc.
         if (_IsUsdDrawModeNode(node)) {
@@ -2235,6 +2254,7 @@ void HdVP2Material::CompiledNetwork::_ApplyVP2Fixes(
             // shader.
             return;
         }
+#endif
 
         // Copy outgoing connections and if needed add passthrough node/connection.
         for (const HdMaterialRelationship& rel : tmpNet.relationships) {
@@ -2289,7 +2309,9 @@ void HdVP2Material::CompiledNetwork::_ApplyVP2Fixes(
             }
         }
 
+#if PXR_VERSION <= 2211
         addPredecessorNodes(node);
+#endif
         outNet.nodes.push_back(node);
 
         // If the primvar reader is reading color or opacity, replace it with

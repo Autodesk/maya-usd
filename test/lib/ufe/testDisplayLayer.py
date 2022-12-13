@@ -356,6 +356,39 @@ class DisplayLayerTestCase(unittest.TestCase):
 
         verifyInLayer({ self.CUBE1, self.SPHERE1 }, { self.NEW_SPHERE1 })
 
+    def testDisplayLayerDuplicate(self):
+        # First create Display Layer and add some prims to it.
+        cmds.createDisplayLayer(name=self.LAYER1, number=1, empty=True)
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        stage.DefinePrim('/Cube1', 'Cube')
+        stage.DefinePrim('/Xform1/Cube1', 'Cube')
+
+        # Add the two cube prims (one is a child of xform) to the layer.
+        cmds.editDisplayLayerMembers(self.LAYER1, self.CUBE1, self.XFORM1_CUBE1, noRecurse=True)
+
+        # Verify they are in layer.
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, **self.kwArgsEditDisplayLayerMembers)
+        self.assertTrue(self.CUBE1 in layerObjs)
+        self.assertTrue(self.XFORM1_CUBE1 in layerObjs)
+        self._testLayerFromPath(self.CUBE1, self.LAYER1)
+        self._testLayerFromPath(self.XFORM1_CUBE1, self.LAYER1)
+
+        # Duplicate the top-level cube and xform (which will also duplidate
+        # the child cube).
+        cmds.select(self.CUBE1, self.XFORM1)
+        cmds.duplicate()
+
+        # Verify that the duplicate objects are in the same display layer.
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, **self.kwArgsEditDisplayLayerMembers)
+        CUBE2 = '|stage1|stageShape1,/Cube2'
+        XFORM2_CUBE1 = '|stage1|stageShape1,/Xform2/Cube1'
+
+        self.assertTrue(CUBE2 in layerObjs)
+        self.assertTrue(XFORM2_CUBE1 in layerObjs)
+        self._testLayerFromPath(CUBE2, self.LAYER1)
+        self._testLayerFromPath(XFORM2_CUBE1, self.LAYER1)
+
     def testDisplayLayerClear(self):
         cmdHelp = cmds.help('editDisplayLayerMembers')
         if '-clear' not in cmdHelp:
@@ -392,7 +425,6 @@ class DisplayLayerTestCase(unittest.TestCase):
         self.assertFalse(layer1.contains(self.CUBE1))
         self.assertFalse(layer1.contains(self.INVALID_PRIM))
 
-    @unittest.skip("The feature was temporarily disabled so disable the autotest too")
     def testDisplayLayerEditAsMaya(self):
         '''Display layer membership in Edit As Maya workflow.'''
         

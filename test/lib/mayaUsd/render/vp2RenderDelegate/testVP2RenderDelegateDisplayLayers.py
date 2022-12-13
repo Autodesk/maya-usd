@@ -50,10 +50,10 @@ class testVP2RenderDelegateDisplayLayers(imageUtils.ImageDiffingTestCase):
 
         cls._testDir = os.path.abspath('.')
 
-    def assertSnapshotClose(self, imageName):
+    def assertSnapshotClose(self, imageName, camera=None):
         baselineImage = os.path.join(self._baselineDir, imageName)
         snapshotImage = os.path.join(self._testDir, imageName)
-        imageUtils.snapshot(snapshotImage, width=960, height=540)
+        imageUtils.snapshot(snapshotImage, width=960, height=540, camera=camera)
         return self.assertImagesClose(baselineImage, snapshotImage)
 
     def _StartTest(self, testName):
@@ -69,6 +69,34 @@ class testVP2RenderDelegateDisplayLayers(imageUtils.ImageDiffingTestCase):
         selectionList = OpenMaya.MSelectionList()
         selectionList.add(nodeName)
         return selectionList.getDependNode(0)
+
+    def testDisplayLayersTexturing(self):
+        cmds.file(force=True, new=True)
+        mayaUtils.loadPlugin("mayaUsdPlugin")
+
+        cmds.xform("persp", t=(2, 2, 5.8))
+        cmds.xform("persp", ro=[0, 0, 0], ws=True)
+
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, displayTextures=True)
+
+        testFile = testUtils.getTestScene("multipleMaterialsAssignment",
+                                          "MultipleMaterialsAssignment.usda")
+        proxyDagPath, usdStage = mayaUtils.createProxyFromFile(testFile)
+        cmds.select(cl=True)
+
+        # add the stage to a new display layer
+        cmds.createDisplayLayer(name="layer1", noRecurse=True)
+        displayLayer1 = OpenMaya.MFnDisplayLayer(self._GetMayaNode("layer1"))
+        displayLayer1.add(proxyDagPath + ",/root")
+
+        # verify untextured
+        cmds.setAttr('layer1.drawInfo.texturing', False)
+        self.assertSnapshotClose("displayLayers_untextured.png")
+
+        # verify textured
+        cmds.setAttr('layer1.drawInfo.texturing', True)
+        self.assertSnapshotClose("displayLayers_textured.png")
 
     def testDisplayLayers(self):
         self._StartTest('displayLayers')
@@ -105,10 +133,51 @@ class testVP2RenderDelegateDisplayLayers(imageUtils.ImageDiffingTestCase):
         self.assertTrue(displayLayer1.contains(sphere4))
         self.assertFalse(displayLayer1.contains(sphere5))
 
+        # invisible
         cmds.setAttr('layer1.drawInfo.visibility', False)
         self.assertSnapshotClose('%s_sphere234_hidden.png' % self._testName)
+
+        # visible
         cmds.setAttr('layer1.drawInfo.visibility', True)
         self.assertSnapshotClose('%s_sphere234_visible.png' % self._testName)
+
+        # hide on playback
+        cmds.setAttr('layer1.drawInfo.hideOnPlayback', True)
+        self.assertSnapshotClose('%s_sphere234_hideonplayback.png' % self._testName)
+        cmds.setAttr('layer1.drawInfo.hideOnPlayback', False)
+
+        # templated
+        cmds.displayRGBColor("templateActive", 1.0, 0.69, 0.69)
+        cmds.setAttr('layer1.drawInfo.displayType', 1)
+        self.assertSnapshotClose('%s_sphere234_templated.png' % self._testName)
+        cmds.setAttr('layer1.drawInfo.displayType', 0)
+
+        # bbox
+        cmds.setAttr('layer1.drawInfo.levelOfDetail', 1)
+        self.assertSnapshotClose('%s_sphere234_bbox.png' % self._testName)
+        cmds.setAttr('layer1.drawInfo.levelOfDetail', 0)
+
+        # wireframe
+        cmds.setAttr('layer1.drawInfo.shading', False)
+        self.assertSnapshotClose('%s_sphere234_wireframe.png' % self._testName)
+
+        # reference
+        cmds.setAttr('layer1.drawInfo.displayType', 2)
+        self.assertSnapshotClose('%s_sphere234_reference.png' % self._testName)
+        cmds.setAttr('layer1.drawInfo.displayType', 0)
+
+        # color index
+        cmds.setAttr('layer1.drawInfo.color', 10)
+        self.assertSnapshotClose('%s_sphere234_colored.png' % self._testName)
+        cmds.setAttr('layer1.drawInfo.color', 0)
+
+        # rgb color
+        cmds.setAttr('layer1.drawInfo.overrideRGBColors', True)
+        cmds.setAttr('layer1.drawInfo.overrideColorRGB', 1, 0, 0)
+        cmds.setAttr('layer1.drawInfo.overrideColorA', 0.5)
+        self.assertSnapshotClose('%s_sphere234_rgbcolor.png' % self._testName)
+        cmds.setAttr('layer1.drawInfo.overrideRGBColors', False)
+        cmds.setAttr('layer1.drawInfo.shading', True)
         cmds.setAttr('layer1.drawInfo.visibility', False)
 
         cmds.select(clear=True)
@@ -167,6 +236,35 @@ class testVP2RenderDelegateDisplayLayers(imageUtils.ImageDiffingTestCase):
         self.assertTrue(layer1MemberStrings[0] == group1 or layer1MemberStrings[1] == group1)
         self.assertTrue(layer1MemberStrings[0] == groupedSphere2 or layer1MemberStrings[1] == groupedSphere2)
 
+    def testPrimInTemplatedDisplayLayer(self):
+        cmds.file(force=True, new=True)
+        mayaUtils.loadPlugin("mayaUsdPlugin")
+        self._testName = 'templatedDisplayLayer'
+        x = cmds.polyPlane(width=3.048, height=3.048, sx=4, sy=4, ax=(0, 0, 1))
+        cmds.setAttr('lambert1.color', 0.55, 0.55, 0.55)
+        cmds.select(x)
+        usdFile = os.path.join(self._testDir, 'plane.usd')
+        cmds.mayaUSDExport(file=usdFile, selection=True, shadingMode='none',
+            exportDisplayColor=True)
+        proxyShape = cmds.createNode('mayaUsdProxyShape', name='usdProxyShape')
+        proxyTransform = cmds.listRelatives(proxyShape, parent=True,
+            fullPath=True)[0]
+        cmds.xform(proxyTransform, translation=(3.048, 0, 0))
+        cmds.setAttr('%s.filePath' % proxyShape, usdFile, type='string')
+        cmds.setAttr('%s.primPath' % proxyShape, '/pPlane1', type='string')
+        
+        # Create a display layer with the selected objects.
+        cmds.select([x[0], "|usdProxy|usdProxyShape,/pPlane1"], replace=True)
+        cmds.createDisplayLayer(name="layer1", noRecurse=True)
+
+        # Set the display layer mode to templated.
+        cmds.setAttr("layer1.displayType", 1)
+
+        # Change the active template color and take a snapshot 
+        # to see if it affected the USD object.
+        cmds.displayRGBColor("templateActive", 0.9, 0.3, 0.7)
+
+        self.assertSnapshotClose('%s_active.png' % self._testName, camera='front')
 
 
 if __name__ == '__main__':

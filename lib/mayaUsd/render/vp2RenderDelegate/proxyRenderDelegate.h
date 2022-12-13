@@ -174,6 +174,9 @@ public:
 #endif
 
     MAYAUSD_CORE_PUBLIC
+    bool SupportPerInstanceDisplayLayers(const SdfPath& rprimId) const;
+
+    MAYAUSD_CORE_PUBLIC
     void SelectionChanged();
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
@@ -188,7 +191,25 @@ public:
 
     MAYAUSD_CORE_PUBLIC
     void DisplayLayerDirty(MFnDisplayLayer& displayLayer);
+
+    MAYAUSD_CORE_PUBLIC
+    void DisplayLayerPathChanged(const Ufe::Path& oldPath, const Ufe::Path& newPath);
+
+    MAYAUSD_CORE_PUBLIC
+    void AddDisplayLayerToCache(MObject& displayLayerObj);
+
+    MAYAUSD_CORE_PUBLIC
+    void UpdateProxyShapeDisplayLayers();
+
+    MAYAUSD_CORE_PUBLIC
+    MObject GetDisplayLayer(const SdfPath& path);
+
+    MAYAUSD_CORE_PUBLIC
+    const MObjectArray& GetProxyShapeDisplayLayers() const { return _usdStageDisplayLayers; }
 #endif
+
+    MAYAUSD_CORE_PUBLIC
+    void ColorPrefsChanged();
 
     MAYAUSD_CORE_PUBLIC
     MColor GetWireframeColor();
@@ -231,6 +252,16 @@ public:
     MAYAUSD_CORE_PUBLIC
     MDagPath GetProxyShapeDagPath() const;
 
+    // Takes in a path to instanced rprim and returns a path to the correspoding UsdPrim
+    MAYAUSD_CORE_PUBLIC
+    SdfPath GetPathInPrototype(const SdfPath& id);
+
+    MAYAUSD_CORE_PUBLIC
+    void UpdateInstancingMapEntry(
+        const SdfPath& oldPathInPrototype,
+        const SdfPath& newPathInPrototype,
+        const SdfPath& rprimId);
+
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     MAYAUSD_CORE_PUBLIC
     bool SnapToSelectedObjects() const;
@@ -264,11 +295,11 @@ private:
         bool          colorCorrection,
         const MColor& defaultColor);
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
-    void _DirtyUfeSubtree(const Ufe::Path& rootPath);
-    void _DirtyUfeSubtree(const MString& rootStr);
+    bool _DirtyUfeSubtree(const Ufe::Path& rootPath);
+    bool _DirtyUfeSubtree(const MString& rootStr);
     void _DirtyUsdSubtree(const UsdPrim& prim);
-    void _RequestRefresh();
 #endif
+    void _RequestRefresh();
     SdfPathVector
     _GetFilteredRprims(HdRprimCollection const& collection, TfTokenVector const& renderTags);
 
@@ -336,22 +367,31 @@ private:
     std::map<TfToken, uint64_t>         _combinedDisplayStyles;
     bool                                _needTexturedMaterials = false;
 
+    // maps from a path in USD prototype to the corresponding rprim paths
+    std::multimap<SdfPath, SdfPath> _instancingMap;
+
     bool _isPopulated {
         false
     }; //!< If false, scene delegate wasn't populated yet within render index
-    bool _selectionChanged { true }; //!< Whether there is any selection change or not
+    bool _selectionChanged { true };   //!< Whether there is any selection change or not
+    bool _colorPrefsChanged { false }; //!< Whether there is any color preferences change or not
+    bool _refreshRequested { false };  //!< True when a refresh has been requested.
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
     using NodeHandleToCallbackIdMap = UsdMayaUtil::MObjectHandleUnorderedMap<MCallbackId>;
 
-    bool _refreshRequested {
-        false
-    }; //!< True if the render delegate has already requested a refresh.
     MCallbackId               _mayaDisplayLayerAddedCallbackId { 0 };
     MCallbackId               _mayaDisplayLayerRemovedCallbackId { 0 };
     MCallbackId               _mayaDisplayLayerMembersCallbackId { 0 };
     NodeHandleToCallbackIdMap _mayaDisplayLayerDirtyCallbackIds;
+
+    // for performace reasons we need to cache display layers' info
+    bool                       _usdStageDisplayLayersDirty = false;
+    MObjectArray               _usdStageDisplayLayers;
+    std::map<SdfPath, MObject> _usdPathToDisplayLayerMap;
 #endif
+
+    std::vector<MCallbackId> _mayaColorPrefsCallbackIds;
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     bool _selectionModeChanged { true }; //!< Whether the global selection mode has changed

@@ -31,6 +31,7 @@ from maya.api import OpenMaya as om
  
 import ufe
 
+import os.path
 import unittest
 
 from testUtils import getTestScene
@@ -98,9 +99,19 @@ class HideOrphanedNodesTestCase(unittest.TestCase):
         self.cPathStr = self.ps + ',/A/B/C'
         self.ePathStr = self.ps + ',/D/E'
 
+    def getVisibilityPlugs(self, mayaPaths):
+        visibilityPlugs = {}
+
+        for pathStr, mayaPath in mayaPaths.items():
+            # Get the pull parent from the path.  Pulled node is visible.
+            visibility = visibilityPlug(ufe.PathString.string(mayaPath.pop()))
+            visibilityPlugs[pathStr] = visibility
+
+        return visibilityPlugs
+
     def pullAndGetParentVisibility(self, pathStrings):
 
-        visibilityPlugs = {}
+        mayaPaths = {}
 
         for pathStr in pathStrings:
             # See testEditAsMaya.py comments: PathMappingHandler toHost()
@@ -109,17 +120,18 @@ class HideOrphanedNodesTestCase(unittest.TestCase):
             mayaItem = ufe.GlobalSelection.get().front()
             mayaPath = mayaItem.path()
             self.assertEqual(mayaPath.nbSegments(), 1)
-    
-            # Get the pull parent from the path.  Pulled node is visible.
-            visibility = visibilityPlug(ufe.PathString.string(mayaPath.pop()))
-            visibilityPlugs[pathStr] = visibility
+            mayaPaths[pathStr] = mayaPath
+
+        visibilityPlugs = self.getVisibilityPlugs(mayaPaths)
+
+        for pathStr, visibility in visibilityPlugs.items():
             self.assertTrue(visibility.asBool())
         
-        return visibilityPlugs
+        return visibilityPlugs, mayaPaths
 
     def testHideOnDelete(self):
         # Pull on C and E.
-        pullParentVisibilityPlug = self.pullAndGetParentVisibility(
+        pullParentVisibilityPlug, _ = self.pullAndGetParentVisibility(
             [self.cPathStr, self.ePathStr])
 
         # Delete the proxy shape.  Both pulled nodes should be orphaned and
@@ -137,7 +149,7 @@ class HideOrphanedNodesTestCase(unittest.TestCase):
 
     def testHideOnInactivate(self):
         # Pull on C and E.
-        pullParentVisibilityPlug = self.pullAndGetParentVisibility(
+        pullParentVisibilityPlug, _ = self.pullAndGetParentVisibility(
             [self.cPathStr, self.ePathStr])
 
         # Inactivate B, C's parent.
@@ -156,7 +168,7 @@ class HideOrphanedNodesTestCase(unittest.TestCase):
 
     def testHideOnPayloadUnload(self):
         # Pull on C and E.
-        pullParentVisibilityPlug = self.pullAndGetParentVisibility(
+        pullParentVisibilityPlug, _ = self.pullAndGetParentVisibility(
             [self.cPathStr, self.ePathStr])
 
         # Unload A, C's grandparent.
@@ -176,7 +188,7 @@ class HideOrphanedNodesTestCase(unittest.TestCase):
 
     def testHideOnNestedVariantSwitch(self):
         # Pull on C and E.
-        pullParentVisibilityPlug = self.pullAndGetParentVisibility(
+        pullParentVisibilityPlug, _ = self.pullAndGetParentVisibility(
             [self.cPathStr, self.ePathStr])
 
         # B's variant set cdVariant is set to variant selection c, so Maya
@@ -211,9 +223,77 @@ class HideOrphanedNodesTestCase(unittest.TestCase):
         self.assertTrue(pullParentVisibilityPlug[self.cPathStr].asBool())
         self.assertTrue(pullParentVisibilityPlug[self.ePathStr].asBool())
 
+    def _saveScene(self, filename):
+        cmds.file(rename=filename)
+        cmds.file(save=True, force=True, type="mayaAscii")
+    
+    def _reloadScene(self, filename):
+        cmds.file(new=True, force=True)
+        cmds.file(filename, open=True)
+
+    def testHideOnNestedVariantSwitchOnReload(self):
+        # Pull on C and E.
+        pullParentVisibilityPlug, mayaPaths = self.pullAndGetParentVisibility(
+            [self.cPathStr, self.ePathStr])
+
+        # B's variant set cdVariant is set to variant selection c, so Maya
+        # version of pulled node C has translation (1, 2, 3).
+        variantCXlation = (1, 2, 3)
+        cPrim = mayaUsd.ufe.ufePathToPrim(self.cPathStr)
+        cMayaPathStr = mayaUsd.lib.PrimUpdaterManager.readPullInformation(cPrim)
+        self.assertNotEqual(cMayaPathStr, '')
+        cDagPath = om.MSelectionList().add(cMayaPathStr).getDagPath(0)
+        cFn= om.MFnTransform(cDagPath)
+        self.assertEqual(cFn.translation(om.MSpace.kObject),
+                         om.MVector(*variantCXlation))
+
+        bPrim = cPrim.GetParent()
+        cdVariant = bPrim.GetVariantSet('cdVariant')
+        self.assertEqual(cdVariant.GetVariantSelection(), 'c')
+
+        # Switch B's variant set cdVariant to variant selection d.  The prim in
+        # that variant is also called C, but it is a different prim, with a
+        # different translation, so the pulled node is hidden.
+        cdVariant.SetVariantSelection('d')
+
+        cPrim = mayaUsd.ufe.ufePathToPrim(self.cPathStr)
+        cXformable = UsdGeom.Xformable(cPrim)
+        self.assertEqual(cXformable.GetLocalTransformation().GetRow3(3), [4, 5, 6])
+
+        self.assertFalse(pullParentVisibilityPlug[self.cPathStr].asBool())
+        self.assertTrue(pullParentVisibilityPlug[self.ePathStr].asBool())
+
+        # Also verify that the session layer data has been removed.
+        cMayaPathStr = mayaUsd.lib.PrimUpdaterManager.readPullInformation(cPrim)
+        self.assertEqual(cMayaPathStr, '')
+
+        cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', 2))
+        filename = os.path.abspath("orphaned.ma")
+        self._saveScene(filename)
+        self._reloadScene(filename)
+
+        # # Verify the hidden state of the edited nodes.
+        pullParentVisibilityPlug = self.getVisibilityPlugs(mayaPaths)
+
+        self.assertFalse(pullParentVisibilityPlug[self.cPathStr].asBool())
+        self.assertTrue(pullParentVisibilityPlug[self.ePathStr].asBool())
+
+        # # Revert back to variant selection c, pulled node is shown.
+        cPrim = mayaUsd.ufe.ufePathToPrim(self.cPathStr)
+        bPrim = cPrim.GetParent()
+        cdVariant = bPrim.GetVariantSet('cdVariant')
+        cdVariant.SetVariantSelection('c')
+
+        self.assertTrue(pullParentVisibilityPlug[self.cPathStr].asBool())
+        self.assertTrue(pullParentVisibilityPlug[self.ePathStr].asBool())
+
+        # Also verify that the session layer data has been restored.
+        cMayaPathStr = mayaUsd.lib.PrimUpdaterManager.readPullInformation(cPrim)
+        self.assertNotEqual(cMayaPathStr, '')
+
     def testHideOnNestingVariantSwitch(self):
         # Pull on C and E.
-        pullParentVisibilityPlug = self.pullAndGetParentVisibility(
+        pullParentVisibilityPlug, _ = self.pullAndGetParentVisibility(
             [self.cPathStr, self.ePathStr])
 
         # A's variant set abVariant is set to variant selection a, so Maya
@@ -252,7 +332,7 @@ class HideOrphanedNodesTestCase(unittest.TestCase):
         the deletion. The Maya object should still be deleted.
         '''
         # Pull on C.
-        pullParentVisibilityPlug = self.pullAndGetParentVisibility(
+        pullParentVisibilityPlug, _ = self.pullAndGetParentVisibility(
             [self.cPathStr])
 
         # A's variant set abVariant is set to variant selection a, so Maya
@@ -295,7 +375,7 @@ class HideOrphanedNodesTestCase(unittest.TestCase):
         be visible.
         '''
         # Pull on C.
-        pullParentVisibilityPlug = self.pullAndGetParentVisibility(
+        pullParentVisibilityPlug, _ = self.pullAndGetParentVisibility(
             [self.cPathStr])
 
         # A's variant set abVariant is set to variant selection a, so Maya

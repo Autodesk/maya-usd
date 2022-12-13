@@ -22,6 +22,8 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
 
+#include <ufe/pathString.h>
+
 namespace {
 
 Ufe::Path appendToPath(const Ufe::Path& path, const std::string& name)
@@ -63,12 +65,6 @@ UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(
         if (name != newPrimName) {
             _newUfePath = appendToPath(ufePath, newPrimName);
         }
-
-        const bool allowStronger = true;
-        ufe::applyCommandRestriction(
-            usdSceneItem->prim(),
-            "add new [" + _newUfePath.back().string() + "] under ",
-            allowStronger);
 
         // Build (and store) the usd path for the new prim with the unique name.
         PXR_NS::SdfPath usdItemPath = usdSceneItem->prim().GetPath();
@@ -112,6 +108,16 @@ void UsdUndoAddNewPrimCommand::redo()
 
     _undoableItem.redo();
 }
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4032)
+std::string UsdUndoAddNewPrimCommand::commandString() const
+{
+    return std::string("CreatePrim ") + _primToken.GetText() + " "
+        + Ufe::PathString::string(_newUfePath);
+}
+#endif
+#endif
 
 const Ufe::Path& UsdUndoAddNewPrimCommand::newUfePath() const { return _newUfePath; }
 

@@ -111,12 +111,18 @@ def Mesh "pCube2" (
 
     def Scope "Looks"
     {
-        def Material "standardSurface2SG"
+        def Material "standardSurface2SG" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
         {
             string inputs:file2:varnameStr = "st"
             token outputs:mtlx:surface.connect = </pCube2/Looks/standardSurface2SG/standardSurface2.outputs:surface>
+            token outputs:out.connect = </pCube2/Looks/standardSurface2SG/NodeGraph1.outputs:out>
+            uniform float2 ui:nodegraph:node:pos = (0.055555556, 0.055555556)
 
-            def Shader "standardSurface2"
+            def Shader "standardSurface2" (
+                prepend apiSchemas = ["NodeGraphNodeAPI"]
+            )
             {
                 uniform token info:id = "ND_standard_surface_surfaceshader"
                 float inputs:base = 1
@@ -124,12 +130,16 @@ def Mesh "pCube2" (
                 float inputs:specular = 1
                 float inputs:specular_roughness = 0.4
                 token outputs:surface
+                uniform float2 ui:nodegraph:node:pos = (1.1166667, -0.33888888)
             }
 
-            def NodeGraph "MayaNG_standardSurface2SG"
+            def NodeGraph "MayaNG_standardSurface2SG" (
+                prepend apiSchemas = ["NodeGraphNodeAPI"]
+            )
             {
                 string inputs:file2:varnameStr.connect = </pCube2/Looks/standardSurface2SG.inputs:file2:varnameStr>
                 color3f outputs:baseColor.connect = </pCube2/Looks/standardSurface2SG/MayaNG_standardSurface2SG/MayaSwizzle_file2_rgb.outputs:out>
+                uniform float2 ui:nodegraph:node:pos = (-0.5777778, -0.33888888)
 
                 def Shader "file2"
                 {
@@ -155,6 +165,23 @@ def Mesh "pCube2" (
                     string inputs:channels = "rgb"
                     color4f inputs:in.connect = </pCube2/Looks/standardSurface2SG/MayaNG_standardSurface2SG/file2.outputs:out>
                     color3f outputs:out
+                }
+            }
+
+            def NodeGraph "NodeGraph1" (
+                prepend apiSchemas = ["NodeGraphNodeAPI"]
+            )
+            {
+                token outputs:out.connect = </pCube2/Looks/standardSurface2SG/NodeGraph1/surface1.outputs:out>
+                uniform float2 ui:nodegraph:node:pos = (1.0759555, -1.774011)
+
+                def Shader "surface1" (
+                    prepend apiSchemas = ["NodeGraphNodeAPI"]
+                )
+                {
+                    uniform token info:id = "ND_surface"
+                    token outputs:out
+                    uniform float2 ui:nodegraph:node:pos = (1.0496833, -1.7418168)
                 }
             }
         }
