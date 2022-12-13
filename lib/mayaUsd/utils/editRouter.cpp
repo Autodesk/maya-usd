@@ -107,6 +107,7 @@ void copyTransform(
             // attribute edits over to the Maya reference prim.
             MayaUsdUtils::MergePrimsOptions options;
             options.ignoreUpperLayerOpinions = false;
+            options.ignoreVariants = true;
             TF_VERIFY(MayaUsdUtils::mergePrims(
                 srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPathForMerge, options));
         }

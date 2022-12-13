@@ -969,19 +969,8 @@ bool UsdMayaMeshWriteUtils::writeUVSetsAsVec2fPrimvars(
             continue;
         }
 
-        MString setName(uvSetNames[i]);
-
-        auto it = uvSetRemaps.find(setName.asChar());
-        if (it != uvSetRemaps.end()) {
-            // Remap the UV set as specified
-            setName = it->second.c_str();
-        } else if (!preserveSetNames) {
-            // UV sets get renamed st, st1, st2 in the order returned by getUVSetNames
-            setName = "st";
-            if (i) {
-                setName += i;
-            }
-        }
+        MString setName
+            = UsdMayaWriteUtil::UVSetExportedName(uvSetNames, preserveSetNames, uvSetRemaps, i);
 
         // create UV PrimVar
         UsdGeomPrimvar primVar = createUVPrimVar(

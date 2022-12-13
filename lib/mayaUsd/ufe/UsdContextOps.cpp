@@ -26,6 +26,7 @@
 #include <mayaUsd/ufe/UsdUndoMaterialCommands.h>
 #endif
 #include <mayaUsd/nodes/proxyShapeStageExtraData.h>
+#include <mayaUsd/ufe/SetVariantSelectionCommand.h>
 #include <mayaUsd/ufe/UsdObject3d.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
@@ -395,53 +396,6 @@ public:
     }
 };
 
-//! \brief Undoable command for variant selection change
-class SetVariantSelectionUndoableCommand : public Ufe::UndoableCommand
-{
-public:
-    SetVariantSelectionUndoableCommand(
-        const Ufe::Path&                 path,
-        const UsdPrim&                   prim,
-        const Ufe::ContextOps::ItemPath& itemPath)
-        : _path(path)
-        , _varSet(prim.GetVariantSets().GetVariantSet(itemPath[1]))
-        , _oldSelection(_varSet.GetVariantSelection())
-        , _newSelection(itemPath[2])
-    {
-        std::string errMsg;
-        if (!MayaUsd::ufe::isPrimMetadataEditAllowed(
-                prim, SdfFieldKeys->VariantSelection, TfToken(_varSet.GetName()), &errMsg)) {
-            throw std::runtime_error(errMsg.c_str());
-        }
-    }
-
-    void undo() override
-    {
-        _varSet.SetVariantSelection(_oldSelection);
-        // Restore the saved selection to the global selection.  If a saved
-        // selection item started with the prim's path, re-create it.
-        auto globalSn = Ufe::GlobalSelection::get();
-        globalSn->replaceWith(MayaUsd::ufe::recreateDescendants(_savedSn, _path));
-    }
-
-    void redo() override
-    {
-        // Make a copy of the global selection, to restore it on unmute.
-        auto globalSn = Ufe::GlobalSelection::get();
-        _savedSn.replaceWith(*globalSn);
-        // Filter the global selection, removing items below our prim.
-        globalSn->replaceWith(MayaUsd::ufe::removeDescendants(_savedSn, _path));
-        _varSet.SetVariantSelection(_newSelection);
-    }
-
-private:
-    const Ufe::Path   _path;
-    UsdVariantSet     _varSet;
-    const std::string _oldSelection;
-    const std::string _newSelection;
-    Ufe::Selection    _savedSn; // For global selection save and restore.
-};
-
 //! \brief Undoable command for prim active state change
 class ToggleActiveStateCommand : public Ufe::UndoableCommand
 {
@@ -783,6 +737,21 @@ static const std::vector<MayaUsd::ufe::SchemaTypeGroup> getConcretePrimTypes(boo
 
     return groups;
 }
+#endif
+
+#ifdef UFE_V3_FEATURES_AVAILABLE
+
+void executeEditAsMaya(const Ufe::Path& path)
+{
+    MString script;
+    script.format(
+        "^1s \"^2s\"",
+        MAYAUSD_NS_DEF::ufe::EditAsMayaCommand::commandName,
+        Ufe::PathString::string(path).c_str());
+    WaitCursor wait;
+    MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ true);
+}
+
 #endif
 
 } // namespace
@@ -1159,8 +1128,10 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         }
 
         // At this point we know we have enough arguments to execute the
-        // operation.
-        return std::make_shared<SetVariantSelectionUndoableCommand>(path(), prim(), itemPath);
+        // operation. If the prim is a Maya reference with auto-edit on,
+        // the edit it instead of switching to the Maya reference.
+        return std::make_shared<ufe::SetVariantSelectionCommand>(
+            path(), prim(), itemPath[1], itemPath[2]);
     } // Variant sets
     else if (itemPath[0] == kUSDToggleVisibilityItem) {
         auto object3d = UsdObject3d::create(fItem);
@@ -1219,11 +1190,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
     }
 #ifdef UFE_V3_FEATURES_AVAILABLE
     else if (itemPath[0] == kEditAsMayaItem) {
-        MString script;
-        script.format(
-            "^1s \"^2s\"", EditAsMayaCommand::commandName, Ufe::PathString::string(path()).c_str());
-        WaitCursor wait;
-        MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ true);
+        executeEditAsMaya(path());
     } else if (itemPath[0] == kDuplicateAsMayaItem) {
         MString script;
         script.format(

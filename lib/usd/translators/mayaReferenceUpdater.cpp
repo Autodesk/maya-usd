@@ -20,6 +20,7 @@
 #include <mayaUsd/fileio/translators/translatorMayaReference.h>
 #include <mayaUsd/fileio/utils/adaptor.h>
 #include <mayaUsd/fileio/utils/xformStack.h>
+#include <mayaUsd/ufe/SetVariantSelectionCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/editRouter.h>
@@ -290,9 +291,6 @@ bool PxrUsdTranslators_MayaReferenceUpdater::pushEnd()
 
     MayaUsd::LockNodesUndoItem::lock(
         "Maya reference pulled transform unlocking", transformPath, false);
-
-    // Clear the auto-edit flag.
-    clearAutoEdit(getUsdPrim());
 
     return true;
 }
