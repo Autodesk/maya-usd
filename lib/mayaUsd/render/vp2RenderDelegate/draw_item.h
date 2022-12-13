@@ -191,6 +191,25 @@ public:
 
     static SdfPath RenderItemToPrimPath(const MHWRender::MRenderItem& item);
 
+    /*! Mods are used in instanced primitives to represent particular instances which visual
+        properties were modified by a display layer. Example: instances with hide-on-playback
+        flag enabled will have their own mod. A mod associated with the main draw item may have
+        another mod attached to it and so on, thus forming a linked list of mods.
+     */
+    void SetMod(std::unique_ptr<HdVP2DrawItem>&& mod) { _mod = std::move(mod); }
+
+    /*! \brief Get the mod assotiated with the given draw item.
+     */
+    HdVP2DrawItem* GetMod() { return _mod.get(); }
+
+    /*! \brief Mark this draw item as being a mod for instances with hide-on-playback enabled.
+     */
+    void SetModFlagHideOnPlayback(bool prop) { _modFlagHideOnPlayback = prop; }
+
+    /*! \brief Verify if this draw item is a mod for instances with hide-on-playback enabled.
+     */
+    bool GetModFlagHideOnPlayback() const { return _modFlagHideOnPlayback; }
+
 private:
     /*
         Data stored directly on the HdVP2DrawItem can be shared across all the MRenderItems
@@ -208,6 +227,15 @@ private:
         The list of MRenderItems used to represent *this in VP2.
     */
     RenderItemDataVector _renderItems; //!< VP2 render item data
+
+    /*
+        Mod associated with the given draw item.
+        This mod may have another one attached to it, thus forming a linked list
+    */
+    std::unique_ptr<HdVP2DrawItem> _mod;
+
+    //! flag marking the given draw item as a mod for instances with hide-on-playback enabled.
+    bool _modFlagHideOnPlayback = false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

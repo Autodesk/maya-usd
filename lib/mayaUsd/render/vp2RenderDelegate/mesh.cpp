@@ -1197,7 +1197,8 @@ void HdVP2Mesh::_AddNewRenderItem(
     HdVP2DrawItem*        drawItem,
     const HdMeshReprDesc& desc,
     const TfToken&        reprToken,
-    MSubSceneContainer*   subSceneContainer)
+    MSubSceneContainer*   subSceneContainer,
+    const bool            shareHighlightItem)
 {
     const MString& renderItemName = drawItem->GetDrawItemName();
 
@@ -1236,7 +1237,9 @@ void HdVP2Mesh::_AddNewRenderItem(
             || reprToken == HdVP2ReprTokens->defaultMaterial) {
             // Share selection highlight render item between hull reprs
             bool foundShared = false;
-            for (auto it = _reprs.begin(); (it != _reprs.end()) && !foundShared; ++it) {
+            for (auto it = _reprs.begin();
+                 shareHighlightItem && (it != _reprs.end()) && !foundShared;
+                 ++it) {
                 const HdReprSharedPtr& repr = it->second;
                 const auto&            items = repr->GetDrawItems();
 #if HD_API_VERSION < 35
@@ -1434,6 +1437,62 @@ void HdVP2Mesh::_UpdateRepr(HdSceneDelegate* sceneDelegate, const TfToken& reprT
 
         for (auto& renderItemData : drawItem->GetRenderItems()) {
             _UpdateDrawItem(sceneDelegate, drawItem, renderItemData, desc, reprToken);
+        }
+
+        // Instanced prims may require additional draw items/mods
+        _UpdateMods(*this, drawItem, sceneDelegate, reprToken, desc, subSceneContainer);
+    }
+}
+
+void HdVP2Mesh::_UpdateMods(
+    HdRprim&              refThis,
+    HdVP2DrawItem*        drawItem,
+    HdSceneDelegate*      sceneDelegate,
+    const TfToken&        reprToken,
+    const HdMeshReprDesc& desc,
+    MSubSceneContainer*   subSceneContainer)
+{
+    // Mods are required only for instanced primitives
+    if (refThis.GetInstancerId().IsEmpty()) {
+        return;
+    }
+
+    HdVP2DrawItem* mod = drawItem->GetMod();
+    if (_needHideOnPlaybackMod) {
+        // Create the mod if needed
+        if (!mod) {
+            drawItem->SetMod(std::make_unique<HdVP2DrawItem>(_delegate, &_sharedData));
+            mod = drawItem->GetMod();
+
+            // Add render items to the mod in the same way it is done for the original draw item
+            _AddNewRenderItem(mod, desc, reprToken, subSceneContainer, false);
+            if (desc.geomStyle == HdMeshGeomStyleHull) {
+                if (mod->GetRenderItems().size() == 0) {
+                    _CreateSmoothHullRenderItems(*mod, reprToken, *subSceneContainer);
+                }
+            }
+
+            // Make sure to enable hide-on-playback on the mod
+            mod->SetModFlagHideOnPlayback(true);
+            for (auto& renderItemData : mod->GetRenderItems()) {
+#ifdef MAYA_HAS_RENDER_ITEM_HIDE_ON_PLAYBACK_API
+                renderItemData._renderItem->setHideOnPlayback(true);
+#endif
+            }
+        }
+
+        // Update the mod
+        for (auto& renderItemData : mod->GetRenderItems()) {
+            _UpdateDrawItem(sceneDelegate, mod, renderItemData, desc, reprToken);
+        }
+    } else if (mod) {
+        // Disable the mod
+        for (auto& renderItemData : mod->GetRenderItems()) {
+            if (renderItemData._enabled) {
+                renderItemData._enabled = false;
+                _delegate->GetVP2ResourceRegistry().EnqueueCommit(
+                    [&renderItemData]() { renderItemData._renderItem->enable(false); });
+            }
         }
     }
 }
@@ -1868,6 +1927,7 @@ void HdVP2Mesh::_UpdateDrawItem(
 #endif
 
             _SyncDisplayLayerModesInstanced(id, instanceCount);
+            const bool hideOnPlaybackItem = drawItem->GetModFlagHideOnPlayback();
 
             stateToCommit._instanceTransforms = std::make_shared<MMatrixArray>();
             stateToCommit._instanceColors = std::make_shared<MFloatArray>();
@@ -1877,7 +1937,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                     continue;
 
                 // Check display layer modes of this instance
-                if (_ShouldSkipInstance(usdInstanceId, reprToken))
+                if (_ShouldSkipInstance(usdInstanceId, reprToken, hideOnPlaybackItem))
                     continue;
 
 #ifndef MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT

@@ -148,6 +148,15 @@ private:
         HdVP2DrawItem*        drawItem,
         const HdMeshReprDesc& desc,
         const TfToken&        reprToken,
+        MSubSceneContainer*   subSceneContainer,
+        const bool            shareHighlightItem = true);
+
+    void _UpdateMods(
+        HdRprim&              refThis,
+        HdVP2DrawItem*        drawItem,
+        HdSceneDelegate*      sceneDelegate,
+        const TfToken&        reprToken,
+        const HdMeshReprDesc& desc,
         MSubSceneContainer*   subSceneContainer);
 
     void _UpdateDrawItem(
