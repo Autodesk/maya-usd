@@ -21,83 +21,190 @@
 
 #include <ufe/path.h>
 
+#include <functional>
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-// Templated helper class to factor out common code for undoable commands.
+// Class that captures USD changes using a UsdUndoableItem.
 //
-// Implement the execute, undo and redo of the UFE command interfaces,
-// declaring the UsdUndoBlock during the execution.
+// This class purpose is to handle the capture of USD data changes
+// and undo and redo them. It is not meant to be used directly,
+// but via the template class below. It avoids having every
+// instanciations of the template have a copy of the same code
+// and simplifies debugging by having a central point for all
+// USD commands.
 //
-// Sub-classes only need to implement the executeUndoBlock() function.
+//
+// Sub-classes only need to implement the executeImplementation() function.
 // This function does the real work of modifying values, and these changes
 // will be captured in the UsdUndoableItem via the UsdUndoBlock declared
 // in execute().
-
-// This version wraps Ufe::UndoableCommand and derived classes.
-template <typename Cmd> class UsdUndoableCommand : public Cmd
+class MAYAUSD_CORE_PUBLIC UsdUndoCapture
 {
 public:
-    UsdUndoableCommand() = default;
-
-    // Ufe::UndoableCommand overrides.
-
-    // Declares a UsdUndoBlock and calls executeUndoBlock()
-    void execute() override
-    {
-        UsdUndoBlock undoBlock(&_undoableItem);
-        executeUndoBlock();
-    }
-
-    // Calls undo on the undoable item.
-    void undo() override { _undoableItem.undo(); }
-
-    // Calls redo on the undoable item.
-    void redo() override { _undoableItem.redo(); }
+    UsdUndoCapture();
+    ~UsdUndoCapture();
 
 protected:
-    // Actual implementation of the execution of the command,
-    // executed "within" a UsdUndoBlock to capture undo data,
-    // to be implemented by the sub-class.
-    virtual void executeUndoBlock() = 0;
+    // This is the function sub-classes need to implement as their
+    // command execution. It is called with the necessary setup to
+    // capture all changes made in USD by using a UsdUndoableItem.
+    virtual void executeImplementation() = 0;
+
+    // This is the optional function sub-classes need to implement as their
+    // command set. It is called with the necessary setup to
+    // capture all changes made in USD by using a UsdUndoableItem.
+    //
+    // By default, calls executeImplenentation().
+    virtual bool setImplementation();
+
+    // Calls executeImplementation with the UsdUndoableItem
+    // already setup. Should be called in a UFE command's execute().
+    void executeWithUndoCapture();
+
+    // Calls setImplementation with the UsdUndoableItem
+    // already setup. Should be called in a UFE command's set().
+    bool setWithUndoCapture();
+
+    // Undo all USD changes captured during executeImplementation().
+    // Should be called in a UFE command's undo().
+    void undoUsdChanges();
+
+    // Redo all USD changes captured during executeImplementation().
+    // Should be called in a UFE command's redo().
+    void redoUsdChanges();
 
 private:
     UsdUndoableItem _undoableItem;
 };
 
-// This version wraps Ufe::BaseUndoableCommand and derived classes providing a path to the
-// constructor
-template <typename Cmd> class UsdBaseUndoableCommand : public Cmd
+// Templated helper class to factor out common code for USD undoable commands.
+//
+// Sub-classes only need to implement the executeImplementation() function.
+// This function does the real work of modifying values, and these changes
+// will be captured in the UsdUndoableItem via the UsdUndoBlock declared
+// in execute().
+
+// This version wraps Ufe::UndoableCommand and derived classes.
+template <typename Cmd>
+class UsdUndoableCommand
+    : public UsdUndoCapture
+    , public Cmd
 {
 public:
-    UsdBaseUndoableCommand(const Ufe::Path& path)
-        : Cmd(path)
+    // This constructor allows passing arguments to the command bae class.
+    // The magic of templated function will elide this if not used.
+    template <class ...ARGS>
+    UsdUndoableCommand(const ARGS& ...values)
+        : Cmd(values...)
+    {}
+
+    // Ufe::UndoableCommand overrides.
+    // Implemented by the UsdUndoCapture base class.
+
+    void execute() override
+    {
+        executeWithUndoCapture();
+    }
+    void undo() override { undoUsdChanges(); }
+    void redo() override { redoUsdChanges(); }
+};
+
+// Templated helper class for USD implementations of UFE commands
+// where the implementation is in a function.
+//
+// This avoids having to write a whole class just to implement the
+// single executeImplementation() virtual function.
+template <typename Cmd> class UsdFunctionUndoableCommand : public UsdUndoableCommand<Cmd>
+{
+public:
+    // The function signature that implements the command.
+    using Function = std::function<void()>;
+
+    // This constructor allows passing arguments to the command bae class.
+    // The magic of templated function will elide this if not used.
+    template <class ...ARGS>
+    UsdFunctionUndoableCommand(const ARGS& ...values, Function&& func)
+        : UsdUndoableCommand<Cmd>(values...)
+        , _func(func)
+    {
+    }
+
+    // Implementation of UsdUndoCapture API.
+
+    void executeImplementation() override { _func(); }
+
+private:
+    Function _func;
+};
+
+// Templated helper class to factor out common code for USD undoable commands.
+//
+// Sub-classes only need to implement the executeImplementation() function.
+// This function does the real work of modifying values, and these changes
+// will be captured in the UsdUndoableItem via the UsdUndoBlock declared
+// in execute().
+
+// This version wraps Ufe::UndoableCommand and derived classes.
+template <typename Cmd>
+class UsdUndoableSetCommand
+    : public UsdUndoCapture
+    , public Cmd
+{
+public:
+    using ValueType = typename Cmd::ValueType;
+
+    // This constructor allows passing arguments to the command bae class.
+    // The magic of templated function will elide this if not used.
+    template <class... ARGS>
+    UsdUndoableSetCommand(const ARGS& ...values)
+        : Cmd(values...)
     {
     }
 
     // Ufe::UndoableCommand overrides.
+    // Implemented by the UsdUndoCapture base class.
 
-    // Declares a UsdUndoBlock and calls executeUndoBlock()
-    void execute() override
-    {
-        UsdUndoBlock undoBlock(&_undoableItem);
-        executeUndoBlock();
+    void execute() override { executeWithUndoCapture(); }
+    bool set(ValueType value) override {
+        _value = value;
+         return setWithUndoCapture();
     }
-
-    // Calls undo on the undoable item.
-    void undo() override { _undoableItem.undo(); }
-
-    // Calls redo on the undoable item.
-    void redo() override { _undoableItem.redo(); }
-
-protected:
-    // Actual implementation of the execution of the command,
-    // executed "within" a UsdUndoBlock to capture undo data,
-    // to be implemented by the sub-class.
-    virtual void executeUndoBlock() = 0;
+    void undo() override { undoUsdChanges(); }
+    void redo() override { redoUsdChanges(); }
 
 private:
-    UsdUndoableItem _undoableItem;
+    ValueType _value {};
+};
+
+// Templated helper class for USD implementations of UFE commands
+// where the implementation is in a function.
+//
+// This avoids having to write a whole class just to implement the
+// single executeImplementation() virtual function.
+template <typename Cmd> class UsdFunctionUndoableSetCommand : public UsdUndoableSetCommand<Cmd>
+{
+public:
+    // The function signature that implements the command.
+    using Function = std::function<bool()>;
+
+    // This constructor allows passing arguments to the command bae class.
+    // The magic of templated function will elide this if not used.
+    template <class... ARGS>
+    UsdFunctionUndoableSetCommand(Function&& func, const ARGS&... values)
+        : UsdUndoableSetCommand<Cmd>(values...)
+        , _func(func)
+    {
+    }
+
+    // Implementations of UsdUndoCapture API.
+
+    void executeImplementation() override { _func(); }
+    bool setImplementation() override { return _func(); }
+
+private:
+    Function _func;
 };
 
 } // namespace ufe

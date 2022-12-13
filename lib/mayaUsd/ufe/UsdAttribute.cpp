@@ -19,9 +19,8 @@
 #include "private/Utils.h"
 
 #include <mayaUsd/ufe/StagesSubject.h>
+#include <mayaUsd/ufe/UsdUndoableCommand.h>
 #include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/undo/UsdUndoBlock.h>
-#include <mayaUsd/undo/UsdUndoableItem.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
@@ -253,30 +252,8 @@ void setUsdAttributeMatrixFromUfe(
 }
 #endif
 
-class UsdBaseUndoableCommand : public Ufe::UndoableCommand
-{
-public:
-    void execute() override
-    {
-        MayaUsd::UsdUndoBlock undoBlock(&_undoableItem);
-        executeUndoBlock();
-    }
-
-    void undo() override { _undoableItem.undo(); }
-    void redo() override { _undoableItem.redo(); }
-
-protected:
-    // Actual implementation of the execution of the command,
-    // executed "within" a UsdUndoBlock to capture undo data,
-    // to be implemented by the sub-class.
-    virtual void executeUndoBlock() = 0;
-
-private:
-    MayaUsd::UsdUndoableItem _undoableItem;
-};
-
 template <typename T, typename A = MayaUsd::ufe::TypedUsdAttribute<T>>
-class SetUndoableCommand : public UsdBaseUndoableCommand
+class SetUndoableCommand : public MayaUsd::ufe::UsdUndoableCommand<Ufe::UndoableCommand>
 {
 public:
     SetUndoableCommand(const typename A::Ptr& attr, const T& newValue)
@@ -285,7 +262,8 @@ public:
     {
     }
 
-    void executeUndoBlock() override { _attr->set(_newValue); }
+protected:
+    void executeImplementation() override { _attr->set(_newValue); }
 
 private:
     const typename A::Ptr _attr;
@@ -293,7 +271,7 @@ private:
 };
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
-class SetUndoableMetadataCommand : public UsdBaseUndoableCommand
+class SetUndoableMetadataCommand : public MayaUsd::ufe::UsdUndoableCommand<Ufe::UndoableCommand>
 {
 public:
     SetUndoableMetadataCommand(
@@ -306,7 +284,8 @@ public:
     {
     }
 
-    void executeUndoBlock() override
+protected:
+    void executeImplementation() override
     {
 #ifdef UFE_V4_FEATURES_AVAILABLE
         _attr._setMetadata(_key, _newValue);

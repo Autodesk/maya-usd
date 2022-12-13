@@ -60,6 +60,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdTransform3dUndoableCommands.cpp
             UsdUIInfoHandler.cpp
             UsdUIUfeObserver.cpp
+            UsdUndoableCommand.cpp
             UsdUndoAddNewPrimCommand.cpp
             UsdUndoCreateGroupCommand.cpp
             UsdUndoInsertChildCommand.cpp
