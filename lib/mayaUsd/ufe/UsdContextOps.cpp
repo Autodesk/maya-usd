@@ -743,11 +743,11 @@ static const std::vector<MayaUsd::ufe::SchemaTypeGroup> getConcretePrimTypes(boo
 bool sceneItemSupportsShading(const Ufe::SceneItem::Ptr& sceneItem)
 {
 #if PXR_VERSION >= 2108
-    if (MAYAUSD_NS_DEF::ufe::BindMaterialUndoableCommand::CompatiblePrim(sceneItem).IsValid()) {
+    if (MayaUsd::ufe::BindMaterialUndoableCommand::CompatiblePrim(sceneItem).IsValid()) {
         return true;
     }
 #else
-    auto usdItem = std::dynamic_pointer_cast<MAYAUSD_NS_DEF::ufe::UsdSceneItem>(sceneItem);
+    auto usdItem = std::dynamic_pointer_cast<MayaUsd::ufe::UsdSceneItem>(sceneItem);
     if (!usdItem) {
         return false;
     }
@@ -777,7 +777,7 @@ void executeEditAsMaya(const Ufe::Path& path)
     MString script;
     script.format(
         "^1s \"^2s\"",
-        MAYAUSD_NS_DEF::ufe::EditAsMayaCommand::commandName,
+        MayaUsd::ufe::EditAsMayaCommand::commandName,
         Ufe::PathString::string(path).c_str());
     WaitCursor wait;
     MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ true);
