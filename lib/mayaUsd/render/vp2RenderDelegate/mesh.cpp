@@ -1474,11 +1474,11 @@ void HdVP2Mesh::_UpdateMods(
 
             // Make sure to enable hide-on-playback on the mod
             mod->SetModFlagHideOnPlayback(true);
-            for (auto& renderItemData : mod->GetRenderItems()) {
 #ifdef MAYA_HAS_RENDER_ITEM_HIDE_ON_PLAYBACK_API
+            for (auto& renderItemData : mod->GetRenderItems()) {
                 renderItemData._renderItem->setHideOnPlayback(true);
-#endif
             }
+#endif
         }
 
         // Update the mod
