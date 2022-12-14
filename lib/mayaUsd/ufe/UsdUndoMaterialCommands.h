@@ -122,8 +122,10 @@ public:
     void undo() override;
     void redo() override;
 
+    // Returns the name of the material scope in this Maya session.
+    static std::string resolvedMaterialScopeName();
+
 private:
-    void connectShaderToMaterial(Ufe::SceneItem::Ptr shaderItem, PXR_NS::UsdPrim materialPrim);
     void markAsFailed();
 
     std::map<PXR_NS::UsdStageWeakPtr, std::vector<Ufe::Path>> _stagesAndPaths;
@@ -133,6 +135,48 @@ private:
     std::shared_ptr<Ufe::CompositeUndoableCommand> _cmds;
 
 }; // UsdUndoAssignNewMaterialCommand
+
+//! \brief UsdUndoAddNewMaterialCommand
+class MAYAUSD_CORE_PUBLIC UsdUndoAddNewMaterialCommand : public Ufe::InsertChildCommand
+{
+public:
+    typedef std::shared_ptr<UsdUndoAddNewMaterialCommand> Ptr;
+
+    UsdUndoAddNewMaterialCommand(
+        const UsdSceneItem::Ptr& parentItem,
+        const std::string&       sdrShaderIdentifier);
+    ~UsdUndoAddNewMaterialCommand() override;
+
+    // Delete the copy/move constructors assignment operators.
+    UsdUndoAddNewMaterialCommand(const UsdUndoAddNewMaterialCommand&) = delete;
+    UsdUndoAddNewMaterialCommand& operator=(const UsdUndoAddNewMaterialCommand&) = delete;
+    UsdUndoAddNewMaterialCommand(UsdUndoAddNewMaterialCommand&&) = delete;
+    UsdUndoAddNewMaterialCommand& operator=(UsdUndoAddNewMaterialCommand&&) = delete;
+
+    //! Create a UsdUndoAddNewMaterialCommand that creates a new material based on
+    //! \p sdrShaderIdentifier and adds it as child of \p parentItem
+    static UsdUndoAddNewMaterialCommand::Ptr
+    create(const UsdSceneItem::Ptr& parentItem, const std::string& sdrShaderIdentifier);
+
+    Ufe::SceneItem::Ptr insertedChild() const override;
+
+    void execute() override;
+    void undo() override;
+    void redo() override;
+
+    // Can we add a material to this item.
+    static bool CompatiblePrim(const Ufe::SceneItem::Ptr& target);
+
+private:
+    void markAsFailed();
+
+    Ufe::Path         _parentPath;
+    const std::string _nodeId;
+
+    UsdUndoAddNewPrimCommand::Ptr        _createMaterialCmd;
+    UsdUndoCreateFromNodeDefCommand::Ptr _createShaderCmd;
+
+}; // UsdUndoAddNewMaterialCommand
 #endif
 
 } // namespace ufe

@@ -140,6 +140,8 @@ static constexpr char kBindMaterialToSelectionLabel[] = "Assign Material to Sele
 #if UFE_PREVIEW_VERSION_NUM >= 4010
 static constexpr char kAssignNewMaterialItem[] = "Assign New Material";
 static constexpr char kAssignNewMaterialLabel[] = "Assign New Material";
+static constexpr char kAddNewMaterialItem[] = "Add New Material";
+static constexpr char kAddNewMaterialLabel[] = "Add New Material";
 static constexpr char kAssignNewUsdMaterialItem[] = "USD Material";
 static constexpr char kAssignNewUsdMaterialLabel[] = "USD";
 static constexpr char kAssignNewMaterialXMaterialItem[] = "MaterialX Material";
@@ -147,7 +149,7 @@ static constexpr char kAssignNewMaterialXMaterialLabel[] = "MaterialX";
 static constexpr char kAssignNewArnoldMaterialItem[] = "Arnold Material";
 static constexpr char kAssignNewArnoldMaterialLabel[] = "Arnold";
 static constexpr char kAssignNewUsdPreviewSurfaceMaterialItem[] = "UsdPreviewSurface";
-static constexpr char kAssignNewUsdPreviewSurfaceMaterialLabel[] = "Usd Preview Surface";
+static constexpr char kAssignNewUsdPreviewSurfaceMaterialLabel[] = "USD Preview Surface";
 static constexpr char kAssignNewAIStandardSurfaceMaterialItem[] = "arnold:standard_surface";
 static constexpr char kAssignNewAIStandardSurfaceMaterialLabel[] = "AI Standard Surface";
 #endif
@@ -237,17 +239,16 @@ const MxShaderMenuEntryVec& getMaterialXSurfaceShaders()
         //   - utility nodes like ND_add_surfaceshader
         //   - basic building blocks like ND_thin_surface
         //   - shaders that exist only as pure definitions like ND_disney_bsdf_2015_surface
-        static const std::vector<std::string> vettedSurfaces
-            = { "ND_standard_surface_surfaceshader",
-                "ND_gltf_pbr_surfaceshader",
-                "ND_UsdPreviewSurface_surfaceshader" };
-        for (auto&& identifier : vettedSurfaces) {
-            auto shaderDef = sdrRegistry.GetShaderNodeByIdentifier(TfToken(identifier));
+        static const std::vector<std::pair<std::string, std::string>> vettedSurfaces
+            = { { "ND_standard_surface_surfaceshader", "Standard Surface" },
+                { "ND_gltf_pbr_surfaceshader", "glTF PBR" },
+                { "ND_UsdPreviewSurface_surfaceshader", "USD Preview Surface" } };
+        for (auto&& info : vettedSurfaces) {
+            auto shaderDef = sdrRegistry.GetShaderNodeByIdentifier(TfToken(info.first));
             if (!shaderDef) {
                 continue;
             }
-            const std::string label = UsdMayaUtil::prettifyName(shaderDef->GetFamily().GetString());
-            mxSurfaceShaders.emplace_back(label, shaderDef->GetIdentifier().GetString());
+            mxSurfaceShaders.emplace_back(info.second, info.first);
         }
         initialized = true;
     }
@@ -739,6 +740,18 @@ static const std::vector<MayaUsd::ufe::SchemaTypeGroup> getConcretePrimTypes(boo
 }
 #endif
 
+bool selectionSupportsShading()
+{
+    if (auto globalSn = Ufe::GlobalSelection::get()) {
+        for (auto&& selItem : *globalSn) {
+            if (MAYAUSD_NS_DEF::ufe::BindMaterialUndoableCommand::CompatiblePrim(selItem)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 #ifdef UFE_V3_FEATURES_AVAILABLE
 
 void executeEditAsMaya(const Ufe::Path& path)
@@ -792,21 +805,8 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
     Ufe::ContextOps::Items items;
     if (itemPath.empty()) {
 #if PXR_VERSION >= 2108
-        if (fItem->prim().IsA<UsdShadeMaterial>()) {
+        if (fItem->prim().IsA<UsdShadeMaterial>() && selectionSupportsShading()) {
             items.emplace_back(kBindMaterialToSelectionItem, kBindMaterialToSelectionLabel);
-            bool enable = false;
-            if (auto globalSn = Ufe::GlobalSelection::get()) {
-                for (auto&& selItem : *globalSn) {
-                    if (BindMaterialUndoableCommand::CompatiblePrim(selItem)) {
-                        enable = true;
-                        break;
-                    }
-                }
-            }
-            // I did not see any support for disabling items in Maya Ufe outliner code, but let's
-            // still mark it as disabled if nothing is selected or if the selection does not contain
-            // imageable primitives.
-            items.back().enabled = enable;
             items.emplace_back(Ufe::ContextItem::kSeparator);
         }
 #endif
@@ -880,7 +880,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
         if (!fIsAGatewayType) {
             // Top level item - Bind/unbind existing materials
             bool materialSeparatorsAdded = false;
-            if (PXR_NS::UsdShadeMaterialBindingAPI::CanApply(fItem->prim())) {
+            if (BindMaterialUndoableCommand::CompatiblePrim(fItem).IsValid()) {
                 // Show bind menu if there is at least one bindable material in the stage.
                 //
                 // TODO: Show only materials that are inside of the asset's namespace otherwise
@@ -931,13 +931,19 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                             Ufe::ContextItem::kHasChildren);
                     }
                 }
+            }
 #if UFE_PREVIEW_VERSION_NUM >= 4010
+            if (BindMaterialUndoableCommand::CompatiblePrim(fItem).IsValid()) {
+                if (!materialSeparatorsAdded) {
+                    items.emplace_back(Ufe::ContextItem::kSeparator);
+                    materialSeparatorsAdded = true;
+                }
                 items.emplace_back(
                     kAssignNewMaterialItem,
                     kAssignNewMaterialLabel,
                     Ufe::ContextItem::kHasChildren);
-#endif
             }
+#endif
             if (fItem->prim().HasAPI<UsdShadeMaterialBindingAPI>()) {
                 UsdShadeMaterialBindingAPI bindingAPI(fItem->prim());
                 // Show unbind menu item if there is a direct binding relationship:
@@ -952,6 +958,16 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                         UnbindMaterialUndoableCommand::commandName);
                 }
             }
+#if UFE_PREVIEW_VERSION_NUM >= 4010
+            if (UsdUndoAddNewMaterialCommand::CompatiblePrim(fItem)) {
+                if (!materialSeparatorsAdded) {
+                    items.emplace_back(Ufe::ContextItem::kSeparator);
+                    materialSeparatorsAdded = true;
+                }
+                items.emplace_back(
+                    kAddNewMaterialItem, kAddNewMaterialLabel, Ufe::ContextItem::kHasChildren);
+            }
+#endif
         }
 #endif
     } else {
@@ -1071,7 +1087,9 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                 }
             }
 #if UFE_PREVIEW_VERSION_NUM >= 4010
-        } else if (itemPath.size() == 1u && itemPath[0] == kAssignNewMaterialItem) {
+        } else if (
+            itemPath.size() == 1u
+            && (itemPath[0] == kAssignNewMaterialItem || itemPath[0] == kAddNewMaterialItem)) {
             items.emplace_back(
                 kAssignNewUsdMaterialItem,
                 kAssignNewUsdMaterialLabel,
@@ -1237,6 +1255,9 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
             return std::make_shared<InsertChildAndSelectCommand>(
                 UsdUndoAssignNewMaterialCommand::create(sceneItems, itemPath[2]));
         }
+    } else if (itemPath.size() == 3u && itemPath[0] == kAddNewMaterialItem) {
+        return std::make_shared<InsertChildAndSelectCommand>(
+            UsdUndoAddNewMaterialCommand::create(fItem, itemPath[2]));
 #endif
     }
 #endif
