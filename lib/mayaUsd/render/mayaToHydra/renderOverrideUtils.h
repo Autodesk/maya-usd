@@ -76,25 +76,19 @@ public:
 //	when requiresSceneUpdate=false, subtype=kDataServerRemovals and after scene update is called
 //  when requiresSceneUpdate=true, subtype=kDataServer
 //
-class MayaHydraRender : public MHWRender::MUserRenderOperation
+
+class MayaHydraRender : public MHWRender::MDataServerOperation
 {
 public:
 	MayaHydraRender(const MString& name, MtohRenderOverride* override)
-	: MUserRenderOperation(name, MUserRenderOperation::DataServerTag())
+	: MDataServerOperation(name)
 	, _override(override)
 	{
 	}
-
-    MStatus execute(const MHWRender::MDrawContext& drawContext) override
-    {
-		return MS::kFailure;
-    }
     
-    MStatus execute2(const MDrawContext & drawContext, const MHWRender::MViewportScene& scene) override
+    MStatus execute(const MDrawContext & drawContext, const MHWRender::MDataServerOperation::MViewportScene& scene) override
     {
-		if (requiresDataServer())
-			return _override->Render(drawContext, scene);
-		return MS::kFailure;
+		return _override->Render(drawContext, scene);
     }
 
 private:

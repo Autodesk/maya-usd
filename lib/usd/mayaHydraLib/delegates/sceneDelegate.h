@@ -132,8 +132,7 @@ public:
 
 	// TODO: change management
 	MAYAHYDRALIB_API
-	void HandleCompleteViewportScene(const MViewportScene& scene, MFrameContext::DisplayStyle ds);
-
+	void HandleCompleteViewportScene(const MDataServerOperation::MViewportScene& scene, MFrameContext::DisplayStyle ds);
 
 #if MAYA_API_VERSION >= 20210000
     MAYAHYDRALIB_API

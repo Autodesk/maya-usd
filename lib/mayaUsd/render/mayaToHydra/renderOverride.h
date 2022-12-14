@@ -51,6 +51,8 @@
 #include <mayaHydraLib/delegates/delegate.h>
 #include <mayaHydraLib/delegates/params.h>
 
+#include <maya/MViewport2Renderer.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 using HgiUniquePtr = std::unique_ptr<class Hgi>;
@@ -82,7 +84,7 @@ public:
 
 	MStatus Render(
         const MHWRender::MDrawContext& drawContext, 
-        const MHWRender::MViewportScene& scene);
+        const MHWRender::MDataServerOperation::MViewportScene& scene);
 
     void ClearHydraResources();
     void SelectionChanged();

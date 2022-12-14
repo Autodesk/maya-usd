@@ -335,7 +335,7 @@ void MayaHydraSceneDelegate::_RemoveRenderItem(
 }
 
 //void MayaHydraSceneDelegate::_TransformNodeDirty(MObject& node, MPlug& plug, void* clientData)
-void MayaHydraSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scene, MFrameContext::DisplayStyle displayStyle)
+void MayaHydraSceneDelegate::HandleCompleteViewportScene(const MDataServerOperation::MViewportScene& scene, MFrameContext::DisplayStyle displayStyle)
 {
 #if 1
 	// First loop to get rid of removed items
@@ -391,18 +391,18 @@ void MayaHydraSceneDelegate::HandleCompleteViewportScene(const MViewportScene& s
 			}
 		}
 
-		if (flags & MViewportScene::MVS_changedEffect)
+		if (flags & MDataServerOperation::MViewportScene::MVS_changedEffect)
 		{
 			ria->SetShaderData(sd);
 		}
 
-        // if (flags & (MViewPortScene::MVS_geometry | MViewPortScene::MVS_topo) {
+        // if (flags & (MDataServerOperation::MViewportScene::MVS_geometry | MDataServerOperation::MViewportScene::MVS_topo) {
         // notify transform changed also in UpdateGeometry, so always call if anything changed
         // TODO:  refactor to separate notifications from geometry
         const MayaHydraRenderItemAdapter::UpdateFromDeltaData data(ri, flags, wireframeColor, displayStatus);
         ria->UpdateFromDelta(data);
         //}
-        if (flags & MViewportScene::MVS_changedMatrix) {
+        if (flags & MDataServerOperation::MViewportScene::MVS_changedMatrix) {
 			ria->UpdateTransform(ri);
         }
     }

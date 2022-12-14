@@ -527,7 +527,7 @@ void MtohRenderOverride::_DetectMayaDefaultLighting(const MHWRender::MDrawContex
     }
 }
 
-MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, const MHWRender::MViewportScene& scene)
+MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, const MHWRender::MDataServerOperation::MViewportScene& scene)
 {
     // It would be good to clear the resources of the overrides that are
     // not in active use, but I'm not sure if we have a better way than

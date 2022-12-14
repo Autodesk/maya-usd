@@ -365,14 +365,14 @@ void MayaHydraRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data
     }
 
 	const bool positionsHaveBeenReset = (0 == _positions.size());//when positionsHaveBeenReset is true we need to recompute the geometry and topology as our data has been cleared
-
+	using MVS = MDataServerOperation::MViewportScene;
 	//const bool isNew = flags & MViewportScene::MVS_new;  //not used yet
-	const bool visible			= data._flags & MViewportScene::MVS_visible;
-	const bool matrixChanged    = data._flags & MViewportScene::MVS_changedMatrix;
-    const bool geomChanged		= (data._flags & MViewportScene::MVS_changedGeometry)	|| positionsHaveBeenReset;
-    const bool topoChanged		= (data._flags & MViewportScene::MVS_changedTopo)		|| positionsHaveBeenReset;
-	const bool visibChanged		= data._flags & MViewportScene::MVS_changedVisibility;
-	const bool effectChanged	= data._flags & MViewportScene::MVS_changedEffect;
+	const bool visible			= data._flags & MVS::MVS_visible;
+	const bool matrixChanged    = data._flags & MVS::MVS_changedMatrix;
+    const bool geomChanged		= (data._flags & MVS::MVS_changedGeometry)	|| positionsHaveBeenReset;
+    const bool topoChanged		= (data._flags & MVS::MVS_changedTopo)		|| positionsHaveBeenReset;
+	const bool visibChanged		= data._flags & MVS::MVS_changedVisibility;
+	const bool effectChanged	= data._flags & MVS::MVS_changedEffect;
 	
 	const bool isLinePrimitive	= (MHWRender::MGeometry::Primitive::kLines == _primitive);
 
