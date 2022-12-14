@@ -605,7 +605,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
 
     if (sdScheme == UsdGeomTokens->none) {
         // Polygonal mesh - export normals.
-        bool emitNormals = false; // Skip writing normals if no tagging.
+        bool emitNormals = true; // Write mesh normals if USD_EmitNormals is not present
         UsdMayaMeshReadUtils::getEmitNormalsTag(finalMesh, &emitNormals);
         if (emitNormals) {
             UsdMayaMeshWriteUtils::writeNormalsData(
