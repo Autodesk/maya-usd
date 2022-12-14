@@ -751,7 +751,7 @@ bool sceneItemSupportsShading(const Ufe::SceneItem::Ptr& sceneItem)
     if (!usdItem) {
         return false;
     }
-    if (PXR_NS::UsdShadeMaterialBindingAPI::CanApply(usdItem->prim())) {
+    if (PXR_NS::UsdShadeMaterialBindingAPI(usdItem->prim())) {
         return true;
     }
 #endif
