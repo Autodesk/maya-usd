@@ -740,11 +740,29 @@ static const std::vector<MayaUsd::ufe::SchemaTypeGroup> getConcretePrimTypes(boo
 }
 #endif
 
+bool sceneItemSupportsShading(const Ufe::SceneItem::Ptr& sceneItem)
+{
+#if PXR_VERSION >= 2108
+    if (MayaUsd::ufe::BindMaterialUndoableCommand::CompatiblePrim(sceneItem).IsValid()) {
+        return true;
+    }
+#else
+    auto usdItem = std::dynamic_pointer_cast<MayaUsd::ufe::UsdSceneItem>(sceneItem);
+    if (!usdItem) {
+        return false;
+    }
+    if (PXR_NS::UsdShadeMaterialBindingAPI(usdItem->prim())) {
+        return true;
+    }
+#endif
+    return false;
+}
+
 bool selectionSupportsShading()
 {
     if (auto globalSn = Ufe::GlobalSelection::get()) {
         for (auto&& selItem : *globalSn) {
-            if (MAYAUSD_NS_DEF::ufe::BindMaterialUndoableCommand::CompatiblePrim(selItem)) {
+            if (sceneItemSupportsShading(selItem)) {
                 return true;
             }
         }
@@ -759,7 +777,7 @@ void executeEditAsMaya(const Ufe::Path& path)
     MString script;
     script.format(
         "^1s \"^2s\"",
-        MAYAUSD_NS_DEF::ufe::EditAsMayaCommand::commandName,
+        MayaUsd::ufe::EditAsMayaCommand::commandName,
         Ufe::PathString::string(path).c_str());
     WaitCursor wait;
     MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ true);
@@ -880,7 +898,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
         if (!fIsAGatewayType) {
             // Top level item - Bind/unbind existing materials
             bool materialSeparatorsAdded = false;
-            if (BindMaterialUndoableCommand::CompatiblePrim(fItem).IsValid()) {
+            if (sceneItemSupportsShading(fItem)) {
                 // Show bind menu if there is at least one bindable material in the stage.
                 //
                 // TODO: Show only materials that are inside of the asset's namespace otherwise
@@ -933,7 +951,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                 }
             }
 #if UFE_PREVIEW_VERSION_NUM >= 4010
-            if (BindMaterialUndoableCommand::CompatiblePrim(fItem).IsValid()) {
+            if (sceneItemSupportsShading(fItem)) {
                 if (!materialSeparatorsAdded) {
                     items.emplace_back(Ufe::ContextItem::kSeparator);
                     materialSeparatorsAdded = true;
