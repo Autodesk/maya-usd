@@ -848,13 +848,13 @@ class ContextOpsTestCase(unittest.TestCase):
 
         # Helper function to create a new proxy shape.
         import mayaUsd_createStageWithNewLayer
-        def createProxyShape() -> ufe.SceneItem:
+        def createProxyShape():
             proxyShapePathString = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
             proxyShapePath = ufe.PathString.path(proxyShapePathString)
             return ufe.Hierarchy.createItem(proxyShapePath)
 
         # Helper function to add a named new prim to a proxy shape.
-        def addNewPrim(proxyShape: ufe.SceneItem, primType: str, name: str = None) -> ufe.SceneItem:
+        def addNewPrim(proxyShape, primType, name = None):
             ufe.ContextOps.contextOps(proxyShape).doOp(["Add New Prim", primType])
             primItem = ufe.Hierarchy.hierarchy(proxyShape).children()[-1]
             assert primItem
@@ -867,7 +867,7 @@ class ContextOpsTestCase(unittest.TestCase):
             return primItem
 
         # Helper function that adds a sphere prim to a proxy shape and assigns it a new material.
-        def createMaterial(proxyShape: ufe.SceneItem) -> None:
+        def createMaterial(proxyShape):
             ufe.ContextOps.contextOps(proxyShape).doOp(['Add New Prim', 'Sphere'])
             sphereItem = ufe.Hierarchy.hierarchy(proxyShape).children()[-1]
             ufe.ContextOps.contextOps(sphereItem).doOp(['Assign New Material', 'USD', 'UsdPreviewSurface'])
