@@ -91,6 +91,12 @@ public:
 		return _override->Render(drawContext, scene);
     }
 
+    bool requiresResetDeviceStates() const override
+    { 
+        // Reset maya graphics device states (MAYA-126735)
+        return true;
+    }
+
 private:
     MtohRenderOverride* _override;
 };
