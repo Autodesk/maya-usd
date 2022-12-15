@@ -840,6 +840,197 @@ class ContextOpsTestCase(unittest.TestCase):
             ufeCmd.execute(cmdSS)
             checkMaterial(self, rootHier, 5, 1, 1, 0, "standard_surface", "mtlx", "out", "/test_scope")
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
+    def testMaterialCreationScopeName(self):
+        """This test verifies that materials get created in the correct scope."""
+        cmds.file(new=True, force=True)
+
+        # Helper function to create a new proxy shape.
+        import mayaUsd_createStageWithNewLayer
+        def createProxyShape() -> ufe.SceneItem:
+            proxyShapePathString = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+            proxyShapePath = ufe.PathString.path(proxyShapePathString)
+            return ufe.Hierarchy.createItem(proxyShapePath)
+
+        # Helper function to add a named new prim to a proxy shape.
+        def addNewPrim(proxyShape: ufe.SceneItem, primType: str, name: str = None) -> ufe.SceneItem:
+            ufe.ContextOps.contextOps(proxyShape).doOp(["Add New Prim", primType])
+            primItem = ufe.Hierarchy.hierarchy(proxyShape).children()[-1]
+            assert primItem
+
+            if name != None:
+                primItem = ufe.SceneItemOps.sceneItemOps(primItem).renameItem(ufe.PathComponent(name))
+                assert primItem
+                assert ufe.PathString.string(primItem.path()) == ufe.PathString.string(proxyShape.path()) + ",/" + name
+            
+            return primItem
+
+        # Helper function that adds a sphere prim to a proxy shape and assigns it a new material.
+        def createMaterial(proxyShape: ufe.SceneItem) -> None:
+            ufe.ContextOps.contextOps(proxyShape).doOp(['Add New Prim', 'Sphere'])
+            sphereItem = ufe.Hierarchy.hierarchy(proxyShape).children()[-1]
+            ufe.ContextOps.contextOps(sphereItem).doOp(['Assign New Material', 'USD', 'UsdPreviewSurface'])
+
+        # Default names.
+        materialsScopeName = "mtl"
+        materialName = "UsdPreviewSurface1"
+
+        # Case 1: Empty stage.
+        # The new material should get created in a new scope named "mtl".
+        proxyShape = createProxyShape()
+        proxyShapePath = ufe.PathString.string(proxyShape.path())
+        createMaterial(proxyShape)
+        expectedPath = proxyShapePath + ",/" + materialsScopeName + "/" + materialName
+        assert ufe.Hierarchy.createItem(ufe.PathString.path(expectedPath))
+
+        # Case 2: A scope named "mtl" exists.
+        # The new material should get created in the already existing scope named "mtl".
+        proxyShape = createProxyShape()
+        proxyShapePath = ufe.PathString.string(proxyShape.path())
+        addNewPrim(proxyShape, "Scope", materialsScopeName)
+        createMaterial(proxyShape)
+        expectedPath = proxyShapePath + ",/" + materialsScopeName + "/" + materialName
+        assert ufe.Hierarchy.createItem(ufe.PathString.path(expectedPath))
+
+        # Case 3: A scope named "mtl1" exists.
+        # The new material should get created in a new scope named "mtl".
+        proxyShape = createProxyShape()
+        proxyShapePath = ufe.PathString.string(proxyShape.path())
+        addNewPrim(proxyShape, "Scope", materialsScopeName + "1")
+        createMaterial(proxyShape)
+        expectedPath = proxyShapePath + ",/" + materialsScopeName + "/" + materialName
+        assert ufe.Hierarchy.createItem(ufe.PathString.path(expectedPath))
+
+        # Case 4: A non-scope object named "mtl" exists.
+        # The new material should get created in a new scope named "mtl1".
+        proxyShape = createProxyShape()
+        proxyShapePath = ufe.PathString.string(proxyShape.path())
+        addNewPrim(proxyShape, "Def", materialsScopeName)
+        createMaterial(proxyShape)
+        expectedPath = proxyShapePath + ",/" + materialsScopeName + "1/" + materialName
+        assert ufe.Hierarchy.createItem(ufe.PathString.path(expectedPath))
+
+        # Case 5: A non-scope object named "mtl" exists and a scope named "mtl1" exists.
+        # The new material should get created in the existing scope named "mtl1".
+        proxyShape = createProxyShape()
+        proxyShapePath = ufe.PathString.string(proxyShape.path())
+        addNewPrim(proxyShape, "Def", materialsScopeName)
+        addNewPrim(proxyShape, "Scope", materialsScopeName +"1")
+        createMaterial(proxyShape)
+        expectedPath = proxyShapePath + ",/" + materialsScopeName + "1/" + materialName
+        assert ufe.Hierarchy.createItem(ufe.PathString.path(expectedPath))
+
+        # Case 6: A non-scope object named "mtl" exists and a scope named "mtl2" exists.
+        # The new material should get created in a new scope named "mtl1".
+        proxyShape = createProxyShape()
+        proxyShapePath = ufe.PathString.string(proxyShape.path())
+        addNewPrim(proxyShape, "Def", materialsScopeName)
+        addNewPrim(proxyShape, "Scope", materialsScopeName + "2")
+        createMaterial(proxyShape)
+        expectedPath = proxyShapePath + ",/" + materialsScopeName + "1/" + materialName
+        assert ufe.Hierarchy.createItem(ufe.PathString.path(expectedPath))
+
+        # Case 7: A non-scope object named "mtl" exists and a scope named "mtlBingBong" exists.
+        # The new material should get created in a new scope named "mtl1".
+        proxyShape = createProxyShape()
+        proxyShapePath = ufe.PathString.string(proxyShape.path())
+        addNewPrim(proxyShape, "Def", materialsScopeName)
+        addNewPrim(proxyShape, "Scope", materialsScopeName + "BingBong")
+        createMaterial(proxyShape)
+        expectedPath = proxyShapePath + ",/" + materialsScopeName + "1/" + materialName
+        assert ufe.Hierarchy.createItem(ufe.PathString.path(expectedPath))
+
+        # Case 8: A non-scope object named "mtl" exists and multiple scopes starting in "mtl" exist.
+        # The new material should get created in a scope named "mtl1".
+        proxyShape = createProxyShape()
+        proxyShapePath = ufe.PathString.string(proxyShape.path())
+        addNewPrim(proxyShape, "Def", materialsScopeName)
+        
+        scopeNamePostfixes = ["BingBong", "XingXong", "Arnold", "1337"]
+        for scopeNamePostfix in scopeNamePostfixes:
+            addNewPrim(proxyShape, "Scope", materialsScopeName + scopeNamePostfix)
+
+        createMaterial(proxyShape)
+        expectedPath = proxyShapePath + ",/" + materialsScopeName + "1/" + materialName
+        assert ufe.Hierarchy.createItem(ufe.PathString.path(expectedPath))
+
+        # Case 9: Multiple non-scope object named "mtl", "mtl1", ..., "mtl3" exists and multiple 
+        #         scopes starting in "mtl" exist. An object named "mtl4" does not exist.
+        # The new material should get created in a new scope named "mtl4".
+        proxyShape = createProxyShape()
+        proxyShapePath = ufe.PathString.string(proxyShape.path())
+        
+        defNamePostfixes = ["", "1", "2", "3"]
+        for defNamePostfix in defNamePostfixes:
+            addNewPrim(proxyShape, "Def", materialsScopeName + defNamePostfix)
+
+        scopeNamePostfixes = ["BingBong", "XingXong", "Arnold", "1337"]
+        for scopeNamePostfix in scopeNamePostfixes:
+            addNewPrim(proxyShape, "Scope", materialsScopeName + scopeNamePostfix)
+
+        createMaterial(proxyShape)
+        expectedPath = proxyShapePath + ",/" + materialsScopeName + "4/" + materialName
+        assert ufe.Hierarchy.createItem(ufe.PathString.path(expectedPath))
+
+        # Case 10: Multiple non-scope object named "mtl", "mtl1", ..., "mtl3" exists and multiple 
+        #          scopes starting in "mtl" exist. A scope named "mtl4" exists.
+        # The new material should get created in the existing scope named "mtl4".
+        proxyShape = createProxyShape()
+        proxyShapePath = ufe.PathString.string(proxyShape.path())
+        
+        defNamePostfixes = ["", "1", "2", "3"]
+        for defNamePostfix in defNamePostfixes:
+            addNewPrim(proxyShape, "Def", materialsScopeName + defNamePostfix)
+
+        scopeNamePostfixes = ["BingBong", "XingXong", "Arnold", "1337", "4", "5"]
+        for scopeNamePostfix in scopeNamePostfixes:
+            addNewPrim(proxyShape, "Scope", materialsScopeName + scopeNamePostfix)
+
+        createMaterial(proxyShape)
+        expectedPath = proxyShapePath + ",/" + materialsScopeName + "4/" + materialName
+        assert ufe.Hierarchy.createItem(ufe.PathString.path(expectedPath))
+
+        # Case 11: A material got created in a scope called "mtl". Afterwards  the scope was renamed
+        #          to "mtl4". Now a new material gets created.
+        # The new material should get created in a new scope named "mtl".
+        proxyShape = createProxyShape()
+        proxyShapePath = ufe.PathString.string(proxyShape.path())
+
+        createMaterial(proxyShape)
+        expectedPath = proxyShapePath + ",/" + materialsScopeName + "/" + materialName
+        assert ufe.Hierarchy.createItem(ufe.PathString.path(expectedPath))
+
+        scopeItem = ufe.Hierarchy.createItem(ufe.PathString.path(expectedPath).pop())
+        scopeItem = ufe.SceneItemOps.sceneItemOps(scopeItem).renameItem(ufe.PathComponent(materialsScopeName + "4"))
+        assert scopeItem
+        assert ufe.PathString.string(scopeItem.path()) == proxyShapePath + ",/" + materialsScopeName + "4"
+        assert not ufe.Hierarchy.createItem(ufe.PathString.path(proxyShapePath + ",/" + materialsScopeName))
+
+        createMaterial(proxyShape)
+        expectedPath = proxyShapePath + ",/" + materialsScopeName + "/" + materialName
+        assert ufe.Hierarchy.createItem(ufe.PathString.path(expectedPath))
+
+        # Case 12: A material got created in a scope called "mtl". Afterwards  the scope was renamed
+        #          to "mtlBingBong". Now a new material gets created.
+        # The new material should get created in a new scope named "mtl".
+        proxyShape = createProxyShape()
+        proxyShapePath = ufe.PathString.string(proxyShape.path())
+
+        createMaterial(proxyShape)
+        expectedPath = proxyShapePath + ",/" + materialsScopeName + "/" + materialName
+        assert ufe.Hierarchy.createItem(ufe.PathString.path(expectedPath))
+
+        scopeItem = ufe.Hierarchy.createItem(ufe.PathString.path(expectedPath).pop())
+        scopeItem = ufe.SceneItemOps.sceneItemOps(scopeItem).renameItem(ufe.PathComponent(materialsScopeName + "BingBong"))
+        assert scopeItem
+        assert ufe.PathString.string(scopeItem.path()) == proxyShapePath + ",/" + materialsScopeName + "BingBong"
+        assert not ufe.Hierarchy.createItem(ufe.PathString.path(proxyShapePath + ",/" + materialsScopeName))
+
+        createMaterial(proxyShape)
+        expectedPath = proxyShapePath + ",/" + materialsScopeName + "/" + materialName
+        assert ufe.Hierarchy.createItem(ufe.PathString.path(expectedPath))
+
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4020', 'Test only available in UFE preview version 0.4.20 and greater')
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testAddMaterialToScope(self):
