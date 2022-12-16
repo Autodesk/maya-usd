@@ -72,6 +72,7 @@ class testVP2RenderDelegatePrimPath(imageUtils.ImageDiffingTestCase):
             self.assertSnapshotClose('%s.png' % imageName)
 
             globalSelection = ufe.GlobalSelection.get()
+            globalSelection.clear()
             sceneItem = testVP2RenderDelegatePrimPath._GetSceneItem(primPath)
             globalSelection.append(sceneItem)
 
@@ -88,11 +89,13 @@ class testVP2RenderDelegatePrimPath(imageUtils.ImageDiffingTestCase):
         testSinglePrim("/Cube1/Cube2", "Cube2")
         testSinglePrim("/Cube1/Cube2/Cube3", "Cube3")
 
+        globalSelection.clear()
         cmds.setAttr( 'stageShape1.primPath', "", type="string")
         self.assertSnapshotClose('final.png')
 
         # Test with a invalid prime path
         # Nothing should change in the viewport
+        globalSelection.clear()
         cmds.setAttr( 'stageShape1.primPath', "/invalidPrim", type="string")
         self.assertSnapshotClose('final.png')
 
