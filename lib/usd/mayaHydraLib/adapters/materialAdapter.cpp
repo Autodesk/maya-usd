@@ -40,7 +40,6 @@ namespace {
 const VtValue       _emptyValue;
 const TfToken       _emptyToken;
 const TfTokenVector _stSamplerCoords = { TfToken("st") };
-// const TfTokenVector _stSamplerCoords;
 
 } // namespace
 

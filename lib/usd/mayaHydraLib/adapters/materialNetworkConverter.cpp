@@ -41,6 +41,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
+const TfToken       _useSpecularWorkflowToken ("useSpecularWorkflow");
+const TfToken       _specularColorToken ("specularColor");
+
 constexpr float defaultTextureMemoryLimit = 1e8f;
 
 // Lists of preferred shader output names, from SdfValueTypeName to list of
@@ -516,6 +519,8 @@ void MayaHydraMaterialNetworkConverter::initialize()
         MayaHydraAdapterTokens->specularIOR, SdfValueTypeNames->Float);
     auto specularRoughnessConverter = std::make_shared<MayaHydraRemappingMaterialAttrConverter>(
         MayaHydraAdapterTokens->specularRoughness, SdfValueTypeNames->Float);
+    auto metallicConverter = std::make_shared<MayaHydraRemappingMaterialAttrConverter>(
+        MayaHydraAdapterTokens->metalness, SdfValueTypeNames->Float);
     auto coatConverter = std::make_shared<MayaHydraRemappingMaterialAttrConverter>(
         MayaHydraAdapterTokens->coat, SdfValueTypeNames->Float);
     auto coatRoughnessConverter = std::make_shared<MayaHydraRemappingMaterialAttrConverter>(
@@ -580,7 +585,7 @@ void MayaHydraMaterialNetworkConverter::initialize()
                 { MayaHydraAdapterTokens->clearcoat, coatConverter },
                 { MayaHydraAdapterTokens->clearcoatRoughness, coatRoughnessConverter },
                 { MayaHydraAdapterTokens->opacity, transmissionToOpacity },
-                { MayaHydraAdapterTokens->metallic, fixedZeroFloat },
+                { MayaHydraAdapterTokens->metallic, metallicConverter },
             } } },
         { MayaHydraAdapterTokens->file,
           { UsdImagingTokens->UsdUVTexture,
@@ -682,6 +687,16 @@ HdMaterialNode* MayaHydraMaterialNetworkConverter::GetMaterial(const MObject& ma
         for (const auto& param : MayaHydraMaterialNetworkConverter::GetPreviewShaderParams()) {
             this->ConvertParameter(
                 node, *nodeConverter, material, param.name, param.type, &param.fallbackValue);
+        }
+
+        //If we are using a specular color which is not white, the UsdPreviewsurface specular workflow must be enabled to use the specular color
+        //which is done by setting the UsdPreviewSurface param "useSpecularWork" to 1
+        const auto it = material.parameters.find(_specularColorToken);
+        if(it != material.parameters.cend()){
+            const VtValue& specColorVal = it->second;
+            if (! specColorVal.IsEmpty() && specColorVal.UncheckedGet<GfVec3f>() != GfVec3f(1,1,1)){
+                material.parameters[_useSpecularWorkflowToken] = VtValue(1);
+            }
         }
     } else {
         for (auto& nameAttrConverterPair : nodeConverter->GetAttrConverters()) {
