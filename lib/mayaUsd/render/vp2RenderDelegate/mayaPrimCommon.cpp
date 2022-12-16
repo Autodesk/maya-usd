@@ -226,25 +226,16 @@ void MayaUsdRPrim::_FirstInitRepr(HdDirtyBits* dirtyBits, SdfPath const& id)
 
 void MayaUsdRPrim::_SetDirtyRepr(const HdReprSharedPtr& repr)
 {
-    const auto& items = repr->GetDrawItems();
-#if HD_API_VERSION < 35
-    for (HdDrawItem* item : items) {
-        HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item);
-#else
-    for (const HdRepr::DrawItemUniquePtr& item : items) {
-        HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get());
-#endif
-        if (drawItem) {
-            for (auto& renderItemData : drawItem->GetRenderItems()) {
-                if (renderItemData.GetDirtyBits() & HdChangeTracker::AllDirty) {
-                    // About to be drawn, but the Repr is dirty. Add DirtyRepr so we know in
-                    // _PropagateDirtyBits that we need to propagate the dirty bits of this draw
-                    // items to ensure proper Sync
-                    renderItemData.SetDirtyBits(HdChangeTracker::DirtyRepr);
-                }
-            }
+    RenderItemFunc setDirtyRepr = [](HdVP2DrawItem::RenderItemData& renderItemData) {
+        if (renderItemData.GetDirtyBits() & HdChangeTracker::AllDirty) {
+            // About to be drawn, but the Repr is dirty. Add DirtyRepr so we know in
+            // _PropagateDirtyBits that we need to propagate the dirty bits of this draw
+            // items to ensure proper Sync
+            renderItemData.SetDirtyBits(HdChangeTracker::DirtyRepr);
         }
-    }
+    };
+
+    _ForEachRenderItemInRepr(repr, setDirtyRepr);
 }
 
 void DisableRenderItem(HdVP2DrawItem::RenderItemData& renderItemData, HdVP2RenderDelegate* delegate)
@@ -390,43 +381,21 @@ void MayaUsdRPrim::_PropagateDirtyBitsCommon(HdDirtyBits& bits, const ReprVector
 {
     if (bits & HdChangeTracker::AllDirty) {
         // RPrim is dirty, propagate dirty bits to all draw items.
-        for (const std::pair<TfToken, HdReprSharedPtr>& pair : reprs) {
-            const HdReprSharedPtr& repr = pair.second;
-            const auto&            items = repr->GetDrawItems();
-#if HD_API_VERSION < 35
-            for (HdDrawItem* item : items) {
-                if (HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item)) {
-#else
-            for (const HdRepr::DrawItemUniquePtr& item : items) {
-                if (HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
-#endif
-                    for (auto& renderItemData : drawItem->GetRenderItems()) {
-                        renderItemData.SetDirtyBits(bits);
-                    }
-                }
-            }
-        }
+        RenderItemFunc setDirtyBitsToItem = [bits](HdVP2DrawItem::RenderItemData& renderItemData) {
+            renderItemData.SetDirtyBits(bits);
+        };
+
+        _ForEachRenderItem(reprs, setDirtyBitsToItem);
     } else {
         // RPrim is clean, find out if any drawItem about to be shown is dirty:
-        for (const std::pair<TfToken, HdReprSharedPtr>& pair : reprs) {
-            const HdReprSharedPtr& repr = pair.second;
-            const auto&            items = repr->GetDrawItems();
-#if HD_API_VERSION < 35
-            for (const HdDrawItem* item : items) {
-                if (const HdVP2DrawItem* drawItem = static_cast<const HdVP2DrawItem*>(item)) {
-#else
-            for (const HdRepr::DrawItemUniquePtr& item : items) {
-                if (const HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
-#endif
-                    // Is this Repr dirty and in need of a Sync?
-                    for (auto& renderItemData : drawItem->GetRenderItems()) {
-                        if (renderItemData.GetDirtyBits() & HdChangeTracker::DirtyRepr) {
-                            bits |= (renderItemData.GetDirtyBits() & ~HdChangeTracker::DirtyRepr);
-                        }
-                    }
-                }
-            }
-        }
+        RenderItemFunc setDirtyBitsFromItem
+            = [&bits](HdVP2DrawItem::RenderItemData& renderItemData) {
+                  if (renderItemData.GetDirtyBits() & HdChangeTracker::DirtyRepr) {
+                      bits |= (renderItemData.GetDirtyBits() & ~HdChangeTracker::DirtyRepr);
+                  }
+              };
+
+        _ForEachRenderItem(reprs, setDirtyBitsFromItem);
     }
 }
 
@@ -576,27 +545,16 @@ void MayaUsdRPrim::_MakeOtherReprRenderItemsInvisible(
     const TfToken&    reprToken,
     const ReprVector& reprs)
 {
+    RenderItemFunc disableRenderItem = [this](HdVP2DrawItem::RenderItemData& renderItemData) {
+        _delegate->GetVP2ResourceRegistry().EnqueueCommit([&renderItemData]() {
+            renderItemData._enabled = false;
+            renderItemData._renderItem->enable(false);
+        });
+    };
+
     for (const std::pair<TfToken, HdReprSharedPtr>& pair : reprs) {
         if (pair.first != reprToken) {
-            // For each relevant draw item, update dirty buffer sources.
-            const HdReprSharedPtr& repr = pair.second;
-            const auto&            items = repr->GetDrawItems();
-
-#if HD_API_VERSION < 35
-            for (HdDrawItem* item : items) {
-                if (HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item)) {
-#else
-            for (const HdRepr::DrawItemUniquePtr& item : items) {
-                if (HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
-#endif
-                    for (auto& renderItemData : drawItem->GetRenderItems()) {
-                        _delegate->GetVP2ResourceRegistry().EnqueueCommit([&renderItemData]() {
-                            renderItemData._enabled = false;
-                            renderItemData._renderItem->enable(false);
-                        });
-                    }
-                }
-            }
+            _ForEachRenderItemInRepr(pair.second, disableRenderItem);
         }
     }
 }
@@ -622,11 +580,12 @@ void MayaUsdRPrim::_ForEachRenderItemInRepr(const HdReprSharedPtr& curRepr, Rend
 
 #if HD_API_VERSION < 35
     for (HdDrawItem* item : items) {
-        if (HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item)) {
+        HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item);
 #else
     for (const HdRepr::DrawItemUniquePtr& item : items) {
-        if (HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
+        HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item.get());
 #endif
+        for (; drawItem; drawItem = drawItem->GetMod()) {
             for (auto& renderItemData : drawItem->GetRenderItems()) {
                 func(renderItemData);
             }
@@ -811,6 +770,7 @@ void MayaUsdRPrim::_SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned i
     _displayLayerModesInstancedFrame = drawScene.GetFrameCounter();
 
     _needForcedBBox = false;
+    _needHideOnPlaybackMod = false;
     if (drawScene.SupportPerInstanceDisplayLayers(id)) {
         _displayLayerModesInstanced.resize(instanceCount);
         for (unsigned int usdInstanceId = 0; usdInstanceId < instanceCount; usdInstanceId++) {
@@ -820,6 +780,10 @@ void MayaUsdRPrim::_SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned i
 
             if (displayLayerModes._reprOverride == kBBox) {
                 _needForcedBBox = true;
+            }
+
+            if (displayLayerModes._hideOnPlayback) {
+                _needHideOnPlaybackMod = true;
             }
         }
     } else {
@@ -1047,7 +1011,10 @@ bool MayaUsdRPrim::_GetMaterialPrimvars(
     return true;
 }
 
-bool MayaUsdRPrim::_ShouldSkipInstance(unsigned int usdInstanceId, const TfToken& reprToken) const
+bool MayaUsdRPrim::_ShouldSkipInstance(
+    unsigned int   usdInstanceId,
+    const TfToken& reprToken,
+    bool           hideOnPlaybackItem) const
 {
     if (_displayLayerModesInstanced.size() <= usdInstanceId) {
         return false;
@@ -1066,6 +1033,10 @@ bool MayaUsdRPrim::_ShouldSkipInstance(unsigned int usdInstanceId, const TfToken
         if (displayLayerModes._reprOverride == kBBox) {
             return true;
         }
+    }
+
+    if (displayLayerModes._hideOnPlayback != hideOnPlaybackItem) {
+        return true;
     }
 
     return false;

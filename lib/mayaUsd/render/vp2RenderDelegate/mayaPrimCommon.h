@@ -268,7 +268,10 @@ protected:
     void _SyncDisplayLayerModes(SdfPath const& id);
     void _SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned int instanceCount);
 
-    bool _ShouldSkipInstance(unsigned int usdInstanceId, const TfToken& reprToken) const;
+    bool _ShouldSkipInstance(
+        unsigned int   usdInstanceId,
+        const TfToken& reprToken,
+        bool           hideOnPlaybackItem) const;
 
     void _SyncForcedReprs(
         HdRprim&          refThis,
@@ -295,8 +298,8 @@ protected:
 
     void _HideAllDrawItems(HdReprSharedPtr const& curRepr);
 
-    void _ForEachRenderItemInRepr(const HdReprSharedPtr& curRepr, RenderItemFunc& func);
-    void _ForEachRenderItem(const ReprVector& reprs, RenderItemFunc& func);
+    static void _ForEachRenderItemInRepr(const HdReprSharedPtr& curRepr, RenderItemFunc& func);
+    static void _ForEachRenderItem(const ReprVector& reprs, RenderItemFunc& func);
 
     //! Helper utility function to adapt Maya API changes.
     static void _SetWantConsolidation(MHWRender::MRenderItem& renderItem, bool state);
@@ -345,6 +348,9 @@ protected:
     std::vector<DisplayLayerModes> _displayLayerModesInstanced;
     uint64_t                       _displayLayerModesFrame { 0 };
     uint64_t                       _displayLayerModesInstancedFrame { 0 };
+
+    // For instanced primitives, specifies if at least one istance has to be hidden on playback
+    bool _needHideOnPlaybackMod = false;
 
     // forced representations runtime state
     bool     _needForcedBBox = false;
