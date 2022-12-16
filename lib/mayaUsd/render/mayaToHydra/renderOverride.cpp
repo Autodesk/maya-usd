@@ -452,6 +452,8 @@ void MtohRenderOverride::_DetectMayaDefaultLighting(const MHWRender::MDrawContex
                 considerAllSceneLights);
 
             if (hasDirection && !hasPosition) {
+                //Note for devs : if you update more parameters in the default light, don't forget to update MtohDefaultLightDelegate::SetDefaultLight
+                //currently there are only 3 : position, diffuse, specular
                 _defaultLight.SetPosition({ -direction.x, -direction.y, -direction.z, 0.0f });
                 _defaultLight.SetDiffuse(
                     { intensity * color.r, intensity * color.g, intensity * color.b, 1.0f });

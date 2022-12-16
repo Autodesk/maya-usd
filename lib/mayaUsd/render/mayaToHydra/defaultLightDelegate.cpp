@@ -25,6 +25,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace
+{
+    bool AreLightsParamsWeUseDifferent(const GlfSimpleLight& light1, const GlfSimpleLight& light2)
+    {
+        //We only update 3 parameters in the default light : position, diffuse and specular. We don't use the primitive's transform.
+        return  (light1.GetPosition()   != light2.GetPosition())    || //Position (in which we actually store a direction, updated when rotating the view for example)
+                (light1.GetDiffuse()    != light2.GetDiffuse())     ||
+                (light1.GetSpecular()   != light2.GetSpecular());
+    }
+}
+
 // clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -72,10 +83,16 @@ void MtohDefaultLightDelegate::SetDefaultLight(const GlfSimpleLight& light)
     if (ARCH_UNLIKELY(!_isSupported)) {
         return;
     }
-    if (_light != light) {
-        _light = light;
-        GetRenderIndex().GetChangeTracker().MarkSprimDirty(
-            _lightPath, HdLight::DirtyParams | HdLight::DirtyTransform);
+    
+    //We only update 3 parameters in the default light : position (in which we store a direction), diffuse and specular
+    // We don't never update the transform for the default light
+    const bool lightsParamsWeUseAreDifferent = AreLightsParamsWeUseDifferent(_light, light);
+    if (lightsParamsWeUseAreDifferent){
+        //Update our light
+        _light.SetDiffuse(light.GetDiffuse());
+        _light.SetSpecular(light.GetSpecular());
+        _light.SetPosition(light.GetPosition());
+        GetRenderIndex().GetChangeTracker().MarkSprimDirty(_lightPath, HdLight::DirtyParams);
     }
 }
 
@@ -109,8 +126,7 @@ VtValue MtohDefaultLightDelegate::Get(const SdfPath& id, const TfToken& key)
     if (key == HdLightTokens->params) {
         return VtValue(_light);
     } else if (key == HdTokens->transform) {
-        // return VtValue(MtohDefaultLightDelegate::GetTransform(id));
-        return VtValue(GfMatrix4d(1.0));
+        return VtValue(GfMatrix4d(1.0));//We don't use the transform but use the position param of the GlfsimpleLight
         // Hydra might crash when this is an empty VtValue.
     } else if (key == HdLightTokens->shadowCollection) {
         HdRprimCollection coll(HdTokens->geometry, HdReprSelector(HdReprTokens->refined));
