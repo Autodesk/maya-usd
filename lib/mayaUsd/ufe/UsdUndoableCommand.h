@@ -95,18 +95,16 @@ class UsdUndoableCommand
 public:
     // This constructor allows passing arguments to the command bae class.
     // The magic of templated function will elide this if not used.
-    template <class ...ARGS>
-    UsdUndoableCommand(const ARGS& ...values)
+    template <class... ARGS>
+    UsdUndoableCommand(const ARGS&... values)
         : Cmd(values...)
-    {}
+    {
+    }
 
     // Ufe::UndoableCommand overrides.
     // Implemented by the UsdUndoCapture base class.
 
-    void execute() override
-    {
-        executeWithUndoCapture();
-    }
+    void execute() override { executeWithUndoCapture(); }
     void undo() override { undoUsdChanges(); }
     void redo() override { redoUsdChanges(); }
 };
@@ -124,8 +122,8 @@ public:
 
     // This constructor allows passing arguments to the command bae class.
     // The magic of templated function will elide this if not used.
-    template <class ...ARGS>
-    UsdFunctionUndoableCommand(const ARGS& ...values, Function&& func)
+    template <class... ARGS>
+    UsdFunctionUndoableCommand(const ARGS&... values, Function&& func)
         : UsdUndoableCommand<Cmd>(values...)
         , _func(func)
     {
@@ -158,7 +156,7 @@ public:
     // This constructor allows passing arguments to the command bae class.
     // The magic of templated function will elide this if not used.
     template <class... ARGS>
-    UsdUndoableSetCommand(const ARGS& ...values)
+    UsdUndoableSetCommand(const ARGS&... values)
         : Cmd(values...)
     {
     }
@@ -167,9 +165,10 @@ public:
     // Implemented by the UsdUndoCapture base class.
 
     void execute() override { executeWithUndoCapture(); }
-    bool set(ValueType value) override {
+    bool set(ValueType value) override
+    {
         _value = value;
-         return setWithUndoCapture();
+        return setWithUndoCapture();
     }
     void undo() override { undoUsdChanges(); }
     void redo() override { redoUsdChanges(); }
