@@ -18,6 +18,7 @@
 
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsdUtils/util.h>
+#include <mayaUsd/utils/primActivation.h>
 
 #include <pxr/usd/usd/editContext.h>
 
@@ -174,6 +175,9 @@ void removePulledPrimMetadata(const PXR_NS::UsdStagePtr& stage, PXR_NS::UsdPrim&
 
 bool addExcludeFromRendering(const Ufe::Path& ufePulledPath)
 {
+    // Note: must make sure the prim is accessible by activating all its ancestors.
+    PrimActivation activation(ufePulledPath);
+
     PXR_NS::UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
     if (!prim.IsValid())
         return false;
@@ -194,9 +198,17 @@ bool addExcludeFromRendering(const Ufe::Path& ufePulledPath)
 
 bool removeExcludeFromRendering(const Ufe::Path& ufePulledPath)
 {
+    // Note: must make sure the prim is accessible by activating all its ancestors.
+    PrimActivation activation(ufePulledPath);
+
     PXR_NS::UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
     if (!prim.IsValid())
         return false;
+
+    // If already active, nothing to do. This happens in some recursive
+    // notification situations.
+    if (prim.IsActive())
+        return true;
 
     auto stage = prim.GetStage();
     if (!stage)

@@ -17,6 +17,7 @@ target_sources(${PROJECT_NAME}
         loadRulesAttribute.cpp
         query.cpp
         plugRegistryHelper.cpp
+        primActivation.cpp
         progressBarScope.cpp
         selectability.cpp
         stageCache.cpp
@@ -50,6 +51,7 @@ set(HEADERS
     loadRules.h
     query.h
     plugRegistryHelper.h
+    primActivation.h
     progressBarScope.h
     selectability.h
     stageCache.h
