@@ -121,7 +121,7 @@ class DiscardEditsTestCase(unittest.TestCase):
 
     @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testDiscardEditsWhenParentIsDeactivated(self):
-        '''Discard edits on a USD transform when its parent is deactivated shoudl fail but not crash.'''
+        '''Discard edits on a USD transform when its parent is deactivated should not fail and not crash.'''
 
         # Edit as Maya the B item.
         (ps,
@@ -162,17 +162,10 @@ class DiscardEditsTestCase(unittest.TestCase):
         aUsdPrim = usdUtils.getPrimFromSceneItem(aUsdItem)
         aUsdPrim.SetActive(True)
 
-        # The B item is still inactive.
+        # The B item is still active, because we forced it to be ditable through teh session layer.
         # Recreate the UFE item since the USD Prim was temporarily deactive
         bUsdItem = ufeUtils.createItem(bUsdUfePath)
         bUsdPrim = usdUtils.getPrimFromSceneItem(bUsdItem)
-        self.assertFalse(bUsdPrim.IsActive())
-
-        # Activate the B item. Need to target the session layer since edit-as-Maya
-        # had deactivated the prim in the session layer.
-        stage = bUsdPrim.GetStage()
-        with Usd.EditContext(stage, Usd.EditTarget(stage.GetSessionLayer())):
-            bUsdPrim.SetActive(True)
         self.assertTrue(bUsdPrim.IsActive())
 
         # Hierarchy is restored: USD item is child of proxy shape, Maya item is
