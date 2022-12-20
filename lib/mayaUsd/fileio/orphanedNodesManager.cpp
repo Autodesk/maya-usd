@@ -253,7 +253,7 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
 {
     if (_inOrphaning > 0)
         return;
-        
+
     Orphaning orphaning(_inOrphaning);
 
     switch (op.opType) {

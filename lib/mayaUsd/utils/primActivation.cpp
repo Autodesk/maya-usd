@@ -96,7 +96,7 @@ PrimActivation::PrimActivation(const UsdStagePtr& stage, const SdfPath& path)
 {
     if (!_stage)
         throw std::runtime_error("Cannot find stage to activate prims.");
-    
+
     activate(stage, path, _previouslyInactive, _forcedActive);
 }
 
