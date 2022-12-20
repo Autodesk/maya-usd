@@ -116,6 +116,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (arnold)
     (shader)
+    (glslfx)
 );
 // clang-format on
 
@@ -192,6 +193,10 @@ std::string UsdShaderNodeDef::classification(std::size_t level) const
         }
     }
     case 2: {
+        // MAYA-126533: GLSLFX to go inside of USD
+        if (fShaderNodeDef->GetSourceType() == _tokens->glslfx) {
+            return "USD";
+        }
         return fShaderNodeDef->GetSourceType().GetString();
     }
     }
