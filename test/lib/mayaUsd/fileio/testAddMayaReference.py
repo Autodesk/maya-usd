@@ -283,7 +283,9 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         attr = mayaRefPrim.GetAttribute('mayaAutoEdit')
         self.assertTrue(attr.IsValid())
         self.assertEqual(attr.Get(), False)
-        self.assertTrue(mayaRefPrim.IsActive())
+        # This functionality requires the orphaned nodes manager.
+        if os.getenv('HAS_ORPHANED_NODES_MANAGER', '0') >= '1':
+            self.assertTrue(mayaRefPrim.IsActive())
 
 
     def testEditAndMergeMayaRef(self):

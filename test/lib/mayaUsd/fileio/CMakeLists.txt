@@ -19,7 +19,6 @@ endif()
 
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     list(APPEND TEST_SCRIPT_FILES
-        testAddMayaReference.py
         testEditAsMaya.py
         testMergeToUsd.py
         testDuplicateAs.py
@@ -93,6 +92,27 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
             ENV
                 "HAS_ORPHANED_NODES_MANAGER=1"
+        )
+    else()
+        mayaUsd_add_test(${target}
+            PYTHON_MODULE ${target}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        )
+    endif()
+
+    # Add a ctest label for easy filtering.
+    set_property(TEST ${target} APPEND PROPERTY LABELS fileio)
+endif()
+
+if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
+    mayaUsd_get_unittest_target(target testAddMayaReference.py)
+
+    if(UFE_TRIE_NODE_HAS_CHILDREN_COMPONENTS_ACCESSOR)
+        mayaUsd_add_test(${target}
+            PYTHON_MODULE ${target}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            ENV
+            "HAS_ORPHANED_NODES_MANAGER=1"
         )
     else()
         mayaUsd_add_test(${target}
