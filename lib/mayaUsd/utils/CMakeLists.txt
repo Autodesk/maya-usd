@@ -17,7 +17,6 @@ target_sources(${PROJECT_NAME}
         loadRulesAttribute.cpp
         query.cpp
         plugRegistryHelper.cpp
-        primActivation.cpp
         progressBarScope.cpp
         selectability.cpp
         stageCache.cpp
@@ -34,6 +33,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
             json.cpp
+            primActivation.cpp
     )
 endif()
 
@@ -51,7 +51,6 @@ set(HEADERS
     loadRules.h
     query.h
     plugRegistryHelper.h
-    primActivation.h
     progressBarScope.h
     selectability.h
     stageCache.h
@@ -66,6 +65,7 @@ set(HEADERS
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND HEADERS
         json.h
+        primActivation.h
     )
 endif()
 
