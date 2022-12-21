@@ -162,17 +162,20 @@ class DiscardEditsTestCase(unittest.TestCase):
         aUsdPrim = usdUtils.getPrimFromSceneItem(aUsdItem)
         aUsdPrim.SetActive(True)
 
-        # The B item is still active, because we forced it to be ditable through teh session layer.
         # Recreate the UFE item since the USD Prim was temporarily deactive
         bUsdItem = ufeUtils.createItem(bUsdUfePath)
         bUsdPrim = usdUtils.getPrimFromSceneItem(bUsdItem)
-        self.assertTrue(bUsdPrim.IsActive())
 
-        # Hierarchy is restored: USD item is child of proxy shape, Maya item is
-        # not.  Be careful to use the Maya path rather than the Maya item, which
-        # should no longer exist.
-        self.assertIn(bUsdItem, aHier.children())
-        self.assertNotIn(bMayaPath, [child.path() for child in aHier.children()])
+        # The B item is still active, because we forced it to be editable through the session layer.
+        # This functionality requires the orphaned nodes manager.
+        if os.getenv('HAS_ORPHANED_NODES_MANAGER', '0') >= '1':
+            self.assertTrue(bUsdPrim.IsActive())
+
+            # Hierarchy is restored: USD item is child of proxy shape, Maya item is
+            # not.  Be careful to use the Maya path rather than the Maya item, which
+            # should no longer exist.
+            self.assertIn(bUsdItem, aHier.children())
+            self.assertNotIn(bMayaPath, [child.path() for child in aHier.children()])
 
         # Maya node is removed.
         with self.assertRaises(RuntimeError):
