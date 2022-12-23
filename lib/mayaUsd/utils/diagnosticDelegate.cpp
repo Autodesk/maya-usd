@@ -54,11 +54,20 @@ namespace {
 class _StatusOnlyDelegate : public UsdUtilsCoalescingDiagnosticDelegate
 {
     void IssueWarning(const TfWarning&) override { }
+    void IssueError(const TfError&) override { }
     void IssueFatalError(const TfCallContext&, const std::string&) override { }
 };
 
 class _WarningOnlyDelegate : public UsdUtilsCoalescingDiagnosticDelegate
 {
+    void IssueStatus(const TfStatus&) override { }
+    void IssueError(const TfError&) override { }
+    void IssueFatalError(const TfCallContext&, const std::string&) override { }
+};
+
+class _ErrorOnlyDelegate : public UsdUtilsCoalescingDiagnosticDelegate
+{
+    void IssueWarning(const TfWarning&) override { }
     void IssueStatus(const TfStatus&) override { }
     void IssueFatalError(const TfCallContext&, const std::string&) override { }
 };
@@ -112,8 +121,9 @@ UsdMayaDiagnosticDelegate::~UsdMayaDiagnosticDelegate()
 
 void UsdMayaDiagnosticDelegate::IssueError(const TfError& err)
 {
-    // Errors are never batched. They should be rare, and in those cases, we
-    // want to see them separately.
+    if (_batchCount.load() > 0) {
+        return; // Batched.
+    }
 
     const auto diagnosticMessage = _FormatDiagnostic(err);
 
@@ -171,7 +181,11 @@ void UsdMayaDiagnosticDelegate::IssueFatalError(
 void UsdMayaDiagnosticDelegate::InstallDelegate()
 {
     if (!ArchIsMainThread()) {
-        TF_FATAL_CODING_ERROR("Cannot install delegate from secondary thread");
+        // Don't crash, but inform user about failure to install
+        // the USD diagnostic message handler.
+        TF_RUNTIME_ERROR(
+            "Cannot install the USD diagnostic message printer from a secondary thread");
+        return;
     }
 
     if (_installationCount++ > 0) {
@@ -185,7 +199,11 @@ void UsdMayaDiagnosticDelegate::InstallDelegate()
 void UsdMayaDiagnosticDelegate::RemoveDelegate()
 {
     if (!ArchIsMainThread()) {
-        TF_FATAL_CODING_ERROR("Cannot remove delegate from secondary thread");
+        // Don't crash, but inform user about failure to remove
+        // the USD diagnostic message handler.
+        TF_RUNTIME_ERROR(
+            "Cannot remove the USD diagnostic message printer from a secondary thread");
+        return;
     }
 
     if (_installationCount == 0 || _installationCount-- > 1) {
@@ -208,28 +226,44 @@ int UsdMayaDiagnosticDelegate::GetBatchCount()
 
 void UsdMayaDiagnosticDelegate::_StartBatch()
 {
-    TF_AXIOM(ArchIsMainThread());
+    if (!ArchIsMainThread())
+        return;
 
     if (_batchCount.fetch_add(1) == 0) {
         // This is the first _StartBatch; add the batching delegates.
         _batchedStatuses.reset(new _StatusOnlyDelegate());
         _batchedWarnings.reset(new _WarningOnlyDelegate());
+        _batchedErrors.reset(new _ErrorOnlyDelegate());
     }
 }
 
 void UsdMayaDiagnosticDelegate::_EndBatch()
 {
-    TF_AXIOM(ArchIsMainThread());
+    if (!ArchIsMainThread())
+        return;
 
     const int prevValue = _batchCount.fetch_sub(1);
     if (prevValue <= 0) {
-        TF_FATAL_ERROR("_EndBatch invoked before _StartBatch");
+        TF_RUNTIME_ERROR("_EndBatch invoked before _StartBatch");
     } else if (prevValue == 1) {
         // This is the last _EndBatch; print the diagnostic messages.
         // and remove the batching delegates.
         _FlushBatch();
         _batchedStatuses.reset();
         _batchedWarnings.reset();
+        _batchedErrors.reset();
+    }
+}
+
+static void flushDiagnostics(
+    const std::unique_ptr<UsdUtilsCoalescingDiagnosticDelegate>& delegate,
+    const std::function<void(const MString&)>&                   printer)
+{
+    const UsdUtilsCoalescingDiagnosticDelegateVector messages = delegate
+        ? delegate->TakeCoalescedDiagnostics()
+        : UsdUtilsCoalescingDiagnosticDelegateVector();
+    for (const UsdUtilsCoalescingDiagnosticDelegateItem& item : messages) {
+        printer(_FormatCoalescedDiagnostic(item));
     }
 }
 
@@ -237,43 +271,31 @@ void UsdMayaDiagnosticDelegate::_FlushBatch()
 {
     TF_AXIOM(ArchIsMainThread());
 
-    const UsdUtilsCoalescingDiagnosticDelegateVector statuses = _batchedStatuses
-        ? _batchedStatuses->TakeCoalescedDiagnostics()
-        : UsdUtilsCoalescingDiagnosticDelegateVector();
-    const UsdUtilsCoalescingDiagnosticDelegateVector warnings = _batchedWarnings
-        ? _batchedWarnings->TakeCoalescedDiagnostics()
-        : UsdUtilsCoalescingDiagnosticDelegateVector();
-
     // Note that we must be in the main thread here, so it's safe to call
     // displayInfo/displayWarning.
-    for (const UsdUtilsCoalescingDiagnosticDelegateItem& item : statuses) {
-        MGlobal::displayInfo(_FormatCoalescedDiagnostic(item));
-    }
-    for (const UsdUtilsCoalescingDiagnosticDelegateItem& item : warnings) {
-        MGlobal::displayWarning(_FormatCoalescedDiagnostic(item));
-    }
+    flushDiagnostics(_batchedStatuses, MGlobal::displayInfo);
+    flushDiagnostics(_batchedWarnings, MGlobal::displayWarning);
+    flushDiagnostics(_batchedErrors, MGlobal::displayError);
 }
 
 UsdMayaDiagnosticBatchContext::UsdMayaDiagnosticBatchContext()
     : _delegate(_IsDiagnosticBatchingEnabled() ? _sharedDelegate : nullptr)
 {
-    TF_DEBUG(PXRUSDMAYA_DIAGNOSTICS).Msg(">> Entering batch context\n");
-    if (!ArchIsMainThread()) {
-        TF_FATAL_CODING_ERROR("Cannot construct context on secondary thread");
-    }
-    if (std::shared_ptr<UsdMayaDiagnosticDelegate> ptr = _delegate.lock()) {
-        ptr->_StartBatch();
+    if (ArchIsMainThread()) {
+        TF_DEBUG(PXRUSDMAYA_DIAGNOSTICS).Msg(">> Entering batch context\n");
+        if (std::shared_ptr<UsdMayaDiagnosticDelegate> ptr = _delegate.lock()) {
+            ptr->_StartBatch();
+        }
     }
 }
 
 UsdMayaDiagnosticBatchContext::~UsdMayaDiagnosticBatchContext()
 {
-    TF_DEBUG(PXRUSDMAYA_DIAGNOSTICS).Msg("!! Exiting batch context\n");
-    if (!ArchIsMainThread()) {
-        TF_FATAL_CODING_ERROR("Cannot destruct context on secondary thread");
-    }
-    if (std::shared_ptr<UsdMayaDiagnosticDelegate> ptr = _delegate.lock()) {
-        ptr->_EndBatch();
+    if (ArchIsMainThread()) {
+        TF_DEBUG(PXRUSDMAYA_DIAGNOSTICS).Msg("!! Exiting batch context\n");
+        if (std::shared_ptr<UsdMayaDiagnosticDelegate> ptr = _delegate.lock()) {
+            ptr->_EndBatch();
+        }
     }
 }
 
