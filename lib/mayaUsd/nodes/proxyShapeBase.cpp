@@ -23,6 +23,7 @@
 #include <mayaUsd/nodes/proxyShapeStageExtraData.h>
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/utils/customLayerData.h>
+#include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/layerMuting.h>
 #include <mayaUsd/utils/loadRules.h>
 #include <mayaUsd/utils/query.h>
@@ -509,6 +510,8 @@ void MayaUsdProxyShapeBase::postConstructor()
 /* virtual */
 MStatus MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
 {
+    UsdMayaDiagnosticBatchContext batchDiagnosticMessages;
+
     if (plug == outTimeAttr || plug.isDynamic())
         ProxyAccessor::compute(_usdAccessor, plug, dataBlock);
 

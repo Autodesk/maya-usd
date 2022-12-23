@@ -81,6 +81,7 @@ private:
     std::atomic_int                                       _batchCount;
     std::unique_ptr<UsdUtilsCoalescingDiagnosticDelegate> _batchedStatuses;
     std::unique_ptr<UsdUtilsCoalescingDiagnosticDelegate> _batchedWarnings;
+    std::unique_ptr<UsdUtilsCoalescingDiagnosticDelegate> _batchedErrors;
 
     UsdMayaDiagnosticDelegate();
 
@@ -96,8 +97,7 @@ private:
 ///
 /// Batch contexts must only exist on the main thread (though they will apply
 /// to any diagnostics issued on secondary threads while they're alive). If
-/// they're constructed on secondary threads, they will issue a fatal coding
-/// error.
+/// they're constructed on secondary threads, they will do nothing.
 ///
 /// Batch contexts can be constructed and destructed out of "scope" order, e.g.,
 /// this is allowed:

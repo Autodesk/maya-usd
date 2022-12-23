@@ -23,6 +23,7 @@
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/selectability.h>
 
 #include <pxr/base/tf/diagnostic.h>
@@ -1189,6 +1190,8 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
         HdVP2RenderDelegate::sProfilerCategory,
         MProfiler::kColorD_L1,
         "ProxyRenderDelegate::update");
+
+    UsdMayaDiagnosticBatchContext batchDiagnosticMessages;
 
     // Without a proxy shape we can't do anything
     if (_proxyShapeData->ProxyShape() == nullptr)
