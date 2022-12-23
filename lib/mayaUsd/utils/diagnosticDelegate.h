@@ -22,14 +22,7 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/usdUtils/coalescingDiagnosticDelegate.h>
 
-#include <maya/MGlobal.h>
-
-#include <atomic>
-#include <memory>
-
 PXR_NAMESPACE_OPEN_SCOPE
-
-class UsdMayaDiagnosticBatchContext;
 
 /// Converts Tf diagnostics into native Maya infos, warnings, and errors.
 ///
@@ -46,21 +39,9 @@ class UsdMayaDiagnosticBatchContext;
 ///
 /// Installing and removing this diagnostic delegate is not thread-safe, and
 /// must be done only on the main thread.
-class UsdMayaDiagnosticDelegate : TfDiagnosticMgr::Delegate
+class UsdMayaDiagnosticDelegate
 {
 public:
-    MAYAUSD_CORE_PUBLIC
-    ~UsdMayaDiagnosticDelegate() override;
-
-    MAYAUSD_CORE_PUBLIC
-    void IssueError(const TfError& err) override;
-    MAYAUSD_CORE_PUBLIC
-    void IssueStatus(const TfStatus& status) override;
-    MAYAUSD_CORE_PUBLIC
-    void IssueWarning(const TfWarning& warning) override;
-    MAYAUSD_CORE_PUBLIC
-    void IssueFatalError(const TfCallContext& context, const std::string& msg) override;
-
     /// Installs a shared delegate globally.
     /// If this is invoked on a secondary thread, issues a fatal coding error.
     MAYAUSD_CORE_PUBLIC
@@ -69,61 +50,10 @@ public:
     /// If this is invoked on a secondary thread, issues a fatal coding error.
     MAYAUSD_CORE_PUBLIC
     static void RemoveDelegate();
-    /// Returns the number of active batch contexts associated with the global
-    /// delegate. 0 means no batching; 1 or more means diagnostics are batched.
-    /// If there is no delegate installed, issues a runtime error and returns 0.
+
+    /// @brief Write all accumulated diagnostic messages.
     MAYAUSD_CORE_PUBLIC
-    static int GetBatchCount();
-
-private:
-    friend class UsdMayaDiagnosticBatchContext;
-
-    std::atomic_int                                       _batchCount;
-    std::unique_ptr<UsdUtilsCoalescingDiagnosticDelegate> _batchedStatuses;
-    std::unique_ptr<UsdUtilsCoalescingDiagnosticDelegate> _batchedWarnings;
-    std::unique_ptr<UsdUtilsCoalescingDiagnosticDelegate> _batchedErrors;
-
-    UsdMayaDiagnosticDelegate();
-
-    void _StartBatch();
-    void _EndBatch();
-    void _FlushBatch();
-};
-
-/// As long as a batch context remains alive (process-wide), the
-/// UsdMayaDiagnosticDelegate will save diagnostic messages, only emitting
-/// them when the last batch context is destructed. Note that errors are never
-/// batched.
-///
-/// Batch contexts must only exist on the main thread (though they will apply
-/// to any diagnostics issued on secondary threads while they're alive). If
-/// they're constructed on secondary threads, they will do nothing.
-///
-/// Batch contexts can be constructed and destructed out of "scope" order, e.g.,
-/// this is allowed:
-///   1. Context A constructed
-///   2. Context B constructed
-///   3. Context A destructed
-///   4. Context B destructed
-class UsdMayaDiagnosticBatchContext
-{
-public:
-    /// Constructs a batch context, causing all subsequent diagnostic messages
-    /// to be batched on all threads.
-    /// If this is invoked on a secondary thread, issues a fatal coding error.
-    MAYAUSD_CORE_PUBLIC
-    UsdMayaDiagnosticBatchContext();
-    MAYAUSD_CORE_PUBLIC
-    ~UsdMayaDiagnosticBatchContext();
-
-    UsdMayaDiagnosticBatchContext(const UsdMayaDiagnosticBatchContext&) = delete;
-    UsdMayaDiagnosticBatchContext& operator=(const UsdMayaDiagnosticBatchContext&) = delete;
-
-private:
-    /// This pointer is used to "bind" this context to a specific delegate in
-    /// case the global delegate is removed (and possibly re-installed) while
-    /// this batch context is alive.
-    std::weak_ptr<UsdMayaDiagnosticDelegate> _delegate;
+    static void Flush();
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -66,6 +66,7 @@ class testDiagnosticDelegate(unittest.TestCase):
         self.messageLog = []
 
     def _StopRecording(self):
+        mayaUsdLib.DiagnosticDelegate.Flush()
         OM.MMessage.removeCallback(self.callback)
         self.callback = None
         return list(self.messageLog)
@@ -185,15 +186,6 @@ class testDiagnosticDelegate(unittest.TestCase):
             ("this status won't be lost", OM.MCommandMessage.kInfo),
         ])
 
-    def testBatching_BatchCount(self):
-        """Tests the GetBatchCount() debugging function."""
-        count = -1
-        with mayaUsdLib.DiagnosticBatchContext():
-            with mayaUsdLib.DiagnosticBatchContext():
-                count = mayaUsdLib.DiagnosticDelegate.GetBatchCount()
-        self.assertEqual(count, 2)
-        count = mayaUsdLib.DiagnosticDelegate.GetBatchCount()
-        self.assertEqual(count, 0)
 
 
 if __name__ == '__main__':

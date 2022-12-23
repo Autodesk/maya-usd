@@ -1191,8 +1191,6 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
         MProfiler::kColorD_L1,
         "ProxyRenderDelegate::update");
 
-    UsdMayaDiagnosticBatchContext batchDiagnosticMessages;
-
     // Without a proxy shape we can't do anything
     if (_proxyShapeData->ProxyShape() == nullptr)
         return;

@@ -28,16 +28,14 @@ PXR_NAMESPACE_USING_DIRECTIVE;
 
 namespace {
 
-// This exposes UsdMayaDiagnosticBatchContext as a Python "context manager"
-// object that can be used with the "with"-statement.
+// This exposes a DiagnosticBatchContext as a Python "context manager"
+// object that can be used with the "with"-statement to flush diagostic
+// messages
 class _PyDiagnosticBatchContext
 {
 public:
-    void __enter__() { _context.reset(new UsdMayaDiagnosticBatchContext()); }
-    void __exit__(object, object, object) { _context.reset(); }
-
-private:
-    std::unique_ptr<UsdMayaDiagnosticBatchContext> _context;
+    void __enter__() { }
+    void __exit__(object, object, object) { UsdMayaDiagnosticDelegate::Flush(); }
 };
 
 } // anonymous namespace
@@ -46,8 +44,8 @@ void wrapDiagnosticDelegate()
 {
     typedef UsdMayaDiagnosticDelegate This;
     class_<This, boost::noncopyable>("DiagnosticDelegate", no_init)
-        .def("GetBatchCount", &This::GetBatchCount)
-        .staticmethod("GetBatchCount");
+        .def("Flush", &This::Flush)
+        .staticmethod("Flush");
 
     typedef _PyDiagnosticBatchContext Context;
     class_<Context, boost::noncopyable>("DiagnosticBatchContext")

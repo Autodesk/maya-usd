@@ -1374,21 +1374,11 @@ bool UsdMayaGLBatchRenderer::_UpdateIsSelectionPending(const bool isPending)
     return true;
 }
 
-void UsdMayaGLBatchRenderer::StartBatchingFrameDiagnostics()
-{
-    if (!_sharedDiagBatchCtx) {
-        _sharedDiagBatchCtx.reset(new UsdMayaDiagnosticBatchContext());
-    }
-}
-
 void UsdMayaGLBatchRenderer::_MayaRenderDidEnd(const MHWRender::MDrawContext* /* context */)
 {
     // Completing a viewport render invalidates any previous selection
     // computation we may have done, so mark a new one as pending.
     _UpdateIsSelectionPending(true);
-
-    // End any diagnostics batching.
-    _sharedDiagBatchCtx.reset();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
