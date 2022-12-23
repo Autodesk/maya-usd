@@ -183,7 +183,8 @@ void UsdMayaDiagnosticDelegate::InstallDelegate()
     if (!ArchIsMainThread()) {
         // Don't crash, but inform user about failure to install
         // the USD diagnostic message handler.
-        TF_ERROR("Cannot install the USD diagnostic message printer from a secondary thread");
+        TF_RUNTIME_ERROR(
+            "Cannot install the USD diagnostic message printer from a secondary thread");
         return;
     }
 
@@ -200,7 +201,8 @@ void UsdMayaDiagnosticDelegate::RemoveDelegate()
     if (!ArchIsMainThread()) {
         // Don't crash, but inform user about failure to remove
         // the USD diagnostic message handler.
-        TF_ERROR("Cannot remove the USD diagnostic message printer from a secondary thread");
+        TF_RUNTIME_ERROR(
+            "Cannot remove the USD diagnostic message printer from a secondary thread");
         return;
     }
 
@@ -242,7 +244,7 @@ void UsdMayaDiagnosticDelegate::_EndBatch()
 
     const int prevValue = _batchCount.fetch_sub(1);
     if (prevValue <= 0) {
-        TF_ERROR("_EndBatch invoked before _StartBatch");
+        TF_RUNTIME_ERROR("_EndBatch invoked before _StartBatch");
     } else if (prevValue == 1) {
         // This is the last _EndBatch; print the diagnostic messages.
         // and remove the batching delegates.
