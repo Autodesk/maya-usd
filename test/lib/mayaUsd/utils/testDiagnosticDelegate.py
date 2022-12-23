@@ -54,6 +54,8 @@ class testDiagnosticDelegate(unittest.TestCase):
         if sys.version_info[0] >= 3:
             self.assertItemsEqual = self.assertCountEqual
 
+        mayaUsdLib.DiagnosticDelegate.Flush()
+
     def _OnCommandOutput(self, message, messageType, _):
         if (messageType == OM.MCommandMessage.kInfo
                 or messageType == OM.MCommandMessage.kWarning
@@ -66,6 +68,7 @@ class testDiagnosticDelegate(unittest.TestCase):
         self.messageLog = []
 
     def _StopRecording(self):
+        mayaUsdLib.DiagnosticDelegate.Flush()
         OM.MMessage.removeCallback(self.callback)
         self.callback = None
         return list(self.messageLog)
@@ -162,6 +165,41 @@ class testDiagnosticDelegate(unittest.TestCase):
             ("spam warning 0 -- and 2 similar", OM.MCommandMessage.kWarning)
         ])
 
+    def testBatchingWithLimit(self):
+        self._StartRecording()
+
+        with mayaUsdLib.DiagnosticBatchContext(2):
+            for i in range(5):
+                Tf.Status("repeated status %d" % i)
+
+        log = self._StopRecording()
+
+        # Note: we use assertItemsEqual because coalescing may re-order the
+        # diagnostic messages.
+        self.assertItemsEqual(log, [
+            ("repeated status 0", OM.MCommandMessage.kInfo),
+            ("repeated status 1", OM.MCommandMessage.kInfo),
+            ("repeated status 2 -- and 2 similar", OM.MCommandMessage.kInfo),
+        ])
+
+    def testMaximumUnbatched(self):
+        self._StartRecording()
+        mayaUsdLib.DiagnosticDelegate.SetMaximumUnbatchedDiagnostics(2)
+
+        for i in range(5):
+            Tf.Status("repeated status %d" % i)
+
+        log = self._StopRecording()
+        mayaUsdLib.DiagnosticDelegate.SetMaximumUnbatchedDiagnostics(100)
+
+        # Note: we use assertItemsEqual because coalescing may re-order the
+        # diagnostic messages.
+        self.assertItemsEqual(log, [
+            ("repeated status 0", OM.MCommandMessage.kInfo),
+            ("repeated status 1", OM.MCommandMessage.kInfo),
+            ("repeated status 2 -- and 2 similar", OM.MCommandMessage.kInfo),
+        ])
+
     # Note: giving the test a name starting with Z so it is run last because unloading the plugin
     #       can break other tests when they try to reload the plugin.
     def testZZZBatching_DelegateRemoved(self):
@@ -185,15 +223,6 @@ class testDiagnosticDelegate(unittest.TestCase):
             ("this status won't be lost", OM.MCommandMessage.kInfo),
         ])
 
-    def testBatching_BatchCount(self):
-        """Tests the GetBatchCount() debugging function."""
-        count = -1
-        with mayaUsdLib.DiagnosticBatchContext():
-            with mayaUsdLib.DiagnosticBatchContext():
-                count = mayaUsdLib.DiagnosticDelegate.GetBatchCount()
-        self.assertEqual(count, 2)
-        count = mayaUsdLib.DiagnosticDelegate.GetBatchCount()
-        self.assertEqual(count, 0)
 
 
 if __name__ == '__main__':

@@ -271,12 +271,6 @@ public:
     MAYAUSD_CORE_PUBLIC
     inline bool GetObjectSoftSelectEnabled() { return _objectSoftSelectEnabled; }
 
-    /// Starts batching all diagnostics until the end of the current frame draw.
-    /// The batch renderer will automatically release the diagnostics when Maya
-    /// is done rendering the frame.
-    MAYAUSD_CORE_PUBLIC
-    void StartBatchingFrameDiagnostics();
-
 private:
     friend class TfSingleton<UsdMayaGLBatchRenderer>;
 
@@ -479,12 +473,6 @@ private:
     HdxSelectionTrackerSharedPtr _selectionTracker;
 
     UsdMayaGLSoftSelectHelper _softSelectHelper;
-
-    /// Shared diagnostic batch context. Used for cases where we want to batch
-    /// diagnostics across multiple function calls, e.g., batching all of the
-    /// Sync() diagnostics across all prepareForDraw() callbacks in a single
-    /// frame.
-    std::unique_ptr<UsdMayaDiagnosticBatchContext> _sharedDiagBatchCtx;
 };
 
 MAYAUSD_TEMPLATE_CLASS(TfSingleton<UsdMayaGLBatchRenderer>);

@@ -1749,22 +1749,19 @@ class AttributeTestCase(unittest.TestCase):
         pathStr = '|transform1|proxyShape1,/Room_set/Props/Ball_35'
 
         # No attribute was specified.
-        self.assertRaisesRegex(RuntimeError,
-                               'No attribute was specified\.$',
-                               cmds.getAttr, pathStr)
+        with self.assertRaisesRegex(RuntimeError, 'No attribute was specified\.$') as cm:
+            with mayaUsdLib.DiagnosticBatchContext(1000) as bc:
+                cmds.getAttr(pathStr)
 
         # Cannot evaluate more than one attribute.
-        self.assertRaisesRegex(RuntimeError,
-                               'Cannot evaluate more than one attribute\.$',
-                               cmds.getAttr,
-                               pathStr+'.xformOp:translate',
-                               pathStr+'.xformOpOrder')
+        with self.assertRaisesRegex(RuntimeError, 'Cannot evaluate more than one attribute\.$') as cm:
+            with mayaUsdLib.DiagnosticBatchContext(1000) as bc:
+                cmds.getAttr(pathStr+'.xformOp:translate', pathStr+'.xformOpOrder')
 
         # Mixing Maya and non-Maya attributes is an error.
-        self.assertRaisesRegex(RuntimeError,
-                               'Cannot evaluate more than one attribute\.$',
-                               cmds.getAttr,
-                               'proxyShape1.shareStage',pathStr+'.xformOp:translate')
+        with self.assertRaisesRegex(RuntimeError, 'Cannot evaluate more than one attribute\.$') as cm:
+            with mayaUsdLib.DiagnosticBatchContext(1000) as bc:
+                cmds.getAttr('proxyShape1.shareStage',pathStr+'.xformOp:translate')
 
     def createAndTestAttribute(self, materialItem, shaderDefName, shaderName, origValue, newValue, validation):
         surfDef = ufe.NodeDef.definition(materialItem.runTimeId(), shaderDefName)

@@ -28,16 +28,26 @@ PXR_NAMESPACE_USING_DIRECTIVE;
 
 namespace {
 
-// This exposes UsdMayaDiagnosticBatchContext as a Python "context manager"
-// object that can be used with the "with"-statement.
+// This exposes a DiagnosticBatchContext as a Python "context manager"
+// object that can be used with the "with"-statement to flush diagostic
+// messages
 class _PyDiagnosticBatchContext
 {
 public:
-    void __enter__() { _context.reset(new UsdMayaDiagnosticBatchContext()); }
-    void __exit__(object, object, object) { _context.reset(); }
+    _PyDiagnosticBatchContext() { }
+    _PyDiagnosticBatchContext(int c)
+        : count(c)
+    {
+    }
+    void __enter__() { UsdMayaDiagnosticDelegate::SetMaximumUnbatchedDiagnostics(count); }
+    void __exit__(object, object, object)
+    {
+        UsdMayaDiagnosticDelegate::Flush();
+        UsdMayaDiagnosticDelegate::SetMaximumUnbatchedDiagnostics(100);
+    }
 
 private:
-    std::unique_ptr<UsdMayaDiagnosticBatchContext> _context;
+    int count = 0;
 };
 
 } // anonymous namespace
@@ -46,11 +56,14 @@ void wrapDiagnosticDelegate()
 {
     typedef UsdMayaDiagnosticDelegate This;
     class_<This, boost::noncopyable>("DiagnosticDelegate", no_init)
-        .def("GetBatchCount", &This::GetBatchCount)
-        .staticmethod("GetBatchCount");
+        .def("Flush", &This::Flush)
+        .staticmethod("Flush")
+        .def("SetMaximumUnbatchedDiagnostics", &This::SetMaximumUnbatchedDiagnostics)
+        .staticmethod("SetMaximumUnbatchedDiagnostics");
 
     typedef _PyDiagnosticBatchContext Context;
     class_<Context, boost::noncopyable>("DiagnosticBatchContext")
+        .def(init<int>())
         .def("__enter__", &Context::__enter__, return_self<>())
         .def("__exit__", &Context::__exit__);
 }
