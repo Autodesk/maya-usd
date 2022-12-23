@@ -510,8 +510,6 @@ void MayaUsdProxyShapeBase::postConstructor()
 /* virtual */
 MStatus MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
 {
-    UsdMayaDiagnosticBatchContext batchDiagnosticMessages;
-
     if (plug == outTimeAttr || plug.isDynamic())
         ProxyAccessor::compute(_usdAccessor, plug, dataBlock);
 

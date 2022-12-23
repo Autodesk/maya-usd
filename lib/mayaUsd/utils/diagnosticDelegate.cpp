@@ -25,14 +25,13 @@
 
 #include <ghc/filesystem.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include <atomic>
+#include <chrono>
+#include <memory>
+#include <thread>
+#include <condition_variable>
 
-TF_DEFINE_ENV_SETTING(
-    PIXMAYA_DIAGNOSTICS_BATCH,
-    true,
-    "Whether to batch diagnostics coming from the same call site. "
-    "If batching is off, all secondary threads' diagnostics will be "
-    "printed to stderr.");
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(
     MAYAUSD_SHOW_FULL_DIAGNOSTICS,
@@ -40,144 +39,316 @@ TF_DEFINE_ENV_SETTING(
     "This env flag controls the granularity of TF error/warning/status messages "
     "being displayed in Maya.");
 
-// Globally-shared delegate. Uses shared_ptr so we can have weak ptrs.
-static std::shared_ptr<UsdMayaDiagnosticDelegate> _sharedDelegate;
+TF_DEFINE_ENV_SETTING(
+    MAYAUSD_MAXIMUM_UNBATCHED_DIAGNOSTICS,
+    100,
+    "This env flag controls the maximum number of diagnostic messages that can "
+    "be emitted in one second before automatic batching of messages is used.");
+
+namespace {
+
+class DiagnosticFlusher;
+
+std::unique_ptr<UsdUtilsCoalescingDiagnosticDelegate> _batchedStatuses;
+std::unique_ptr<UsdUtilsCoalescingDiagnosticDelegate> _batchedWarnings;
+std::unique_ptr<UsdUtilsCoalescingDiagnosticDelegate> _batchedErrors;
+std::unique_ptr<TfDiagnosticMgr::Delegate>            _waker;
+std::unique_ptr<DiagnosticFlusher>                    _flusher;
 
 // The delegate can be installed by multiple plugins (e.g. pxrUsd and
 // mayaUsdPlugin), so keep track of installations to ensure that we only add
 // the delegate for the first installation call, and that we only remove it for
 // the last removal call.
-static int _installationCount = 0;
+std::atomic<int> _installationCount;
 
-namespace {
-
-class _StatusOnlyDelegate : public UsdUtilsCoalescingDiagnosticDelegate
+/// @brief USD diagnostic delegate that accumulates all status messages.
+class StatusOnlyDelegate : public UsdUtilsCoalescingDiagnosticDelegate
 {
     void IssueWarning(const TfWarning&) override { }
     void IssueError(const TfError&) override { }
     void IssueFatalError(const TfCallContext&, const std::string&) override { }
 };
 
-class _WarningOnlyDelegate : public UsdUtilsCoalescingDiagnosticDelegate
+/// @brief USD diagnostic delegate that accumulates all warning messages.
+class WarningOnlyDelegate : public UsdUtilsCoalescingDiagnosticDelegate
 {
     void IssueStatus(const TfStatus&) override { }
     void IssueError(const TfError&) override { }
     void IssueFatalError(const TfCallContext&, const std::string&) override { }
 };
 
-class _ErrorOnlyDelegate : public UsdUtilsCoalescingDiagnosticDelegate
+/// @brief USD diagnostic delegate that accumulates all error messages.
+class ErrorOnlyDelegate : public UsdUtilsCoalescingDiagnosticDelegate
 {
     void IssueWarning(const TfWarning&) override { }
     void IssueStatus(const TfStatus&) override { }
+    void IssueError(const TfError& err) override
+    {
+        // Note: UsdUtilsCoalescingDiagnosticDelegate does not coalesces errors!
+        //       So, the only way to make it keep errors is to convert the error
+        //       into a warning.
+        //
+        // Note: USD warnings and errors have the exact same layout, only a different concrete type.
+        //       More-over, USD made all its diagnostic classes have private constructors! So
+        //       the only way to convert an error into a warning is through a rei-interpret cast.
+        const TfWarning& warning = reinterpret_cast<const TfWarning&>(err);
+        UsdUtilsCoalescingDiagnosticDelegate ::IssueWarning(warning);
+    }
+    void IssueFatalError(const TfCallContext& context, const std::string& msg) override
+    {
+        UsdMayaDiagnosticDelegate::Flush();
+
+        TfLogCrash(
+            "FATAL ERROR",
+            msg,
+            /*additionalInfo*/ std::string(),
+            context,
+            /*logToDb*/ true);
+        _UnhandledAbort();
+    }
+};
+
+/// @brief Periodically flushes the accumulated messages.
+///
+/// The design goes like this:
+///
+///     - All messages are accumulated by the above delegates.
+///     - A thread, periodicFlusher, wakes up every second to conditionally flush
+///       pending messages.
+///     - The condition for flushing are that a forced flush is requested or some messages
+//        have been received and one second has elapsed.
+///     - Requesting a flushing of accumulated messages is done by queuing a task to be
+///       run on idle in the main thread. If a task is already queued, nothing is done.
+///     - The main-thread task takes (extract and removes) all accumulted messages and
+///       prints them in the script console via MGlobal.
+///     - This can only be done in the main thread because that is what MGlobal supports.
+class DiagnosticFlusher
+{
+public:
+    DiagnosticFlusher()
+    {
+        // Note: the periodic thread access member variables, so it must be initialized
+        //       after all members are initialized. That is why we create it in the
+        //       constructor body and not the initialization list.
+        _periodicThread = std::make_unique<std::thread>([this]() { periodicFlusher(); });
+    }
+
+    ~DiagnosticFlusher()
+    {
+        try {
+            if (_periodicThread) {
+                _periodicThread->join();
+                _periodicThread.reset();
+            }
+        } catch (const std::exception&) {
+        }
+    }
+
+    void forceFlush()
+    {
+        ElapsedTimePoint elapsed;
+        {
+            std::unique_lock<std::mutex> lock(_pendingDiagnosticsMutex);
+            elapsed = getElapsedSeconds();
+            elapsed.second = TimePoint<Clock::duration>();
+            _burstDiagnosticCount = 0;
+        }
+        triggerFlushInMainThread(elapsed);
+    }
+
+    void setMaximumUnbatchedDiagnostics(int count) { _maximumUnbatchedDiagnostics = count; }
+
+    void receivedDiagnostic()
+    {
+        // On the first diagnostic message, check how long since we flushed the diagnostics.
+        // If it is less than a minimum, we assume we are in a burst of messages and delay
+        // writing messages.
+        //
+        // If it is the first message in a long time, we flush it immediately.
+        if (_pendingDiagnosticCount.fetch_add(1) >= _maximumUnbatchedDiagnostics)
+            return;
+
+        ElapsedTimePoint elapsed;
+        {
+            std::unique_lock<std::mutex> lock(_pendingDiagnosticsMutex);
+            elapsed = getElapsedSeconds();
+            if (elapsed.first < _flushingPeriod) {
+                // Note: because the first of a burst was outside of the flushinh period,
+                //       we must take the maximum minus one to account for that unaccounted
+                //       diagnostic.
+                if (_burstDiagnosticCount.fetch_add(1) >= _maximumUnbatchedDiagnostics - 1) {
+                    return;
+                }
+            } else {
+                _burstDiagnosticCount = 0;
+            }
+        }
+
+        triggerFlushInMainThread(elapsed);
+    }
+
+private:
+    using Clock = std::chrono::steady_clock;
+    template <class Duration> using TimePoint = std::chrono::time_point<Clock, Duration>;
+    using Sec = std::chrono::seconds;
+    using ElapsedTimePoint = std::pair<double, Clock::time_point>;
+
+    static MString formatCoalescedDiagnostic(const UsdUtilsCoalescingDiagnosticDelegateItem& item)
+    {
+        const size_t      numItems = item.unsharedItems.size();
+        const std::string suffix
+            = numItems == 1 ? std::string() : TfStringPrintf(" -- and %zu similar", numItems - 1);
+        const std::string message
+            = TfStringPrintf("%s%s", item.unsharedItems[0].commentary.c_str(), suffix.c_str());
+
+        return message.c_str();
+    }
+
+    static MString formatDiagnostic(const std::unique_ptr<TfDiagnosticBase>& item)
+    {
+        if (!item)
+            return MString();
+        if (!TfGetEnvSetting(MAYAUSD_SHOW_FULL_DIAGNOSTICS)) {
+            return item->GetCommentary().c_str();
+        } else {
+            const std::string msg = TfStringPrintf(
+                "%s -- %s in %s at line %zu of %s",
+                item->GetCommentary().c_str(),
+                TfDiagnosticMgr::GetCodeName(item->GetDiagnosticCode()).c_str(),
+                item->GetContext().GetFunction(),
+                item->GetContext().GetLine(),
+                ghc::filesystem::path(item->GetContext().GetFile())
+                    .relative_path()
+                    .string()
+                    .c_str());
+            return msg.c_str();
+        }
+    }
+
+    static void flushDiagnostics(
+        const std::unique_ptr<UsdUtilsCoalescingDiagnosticDelegate>& delegate,
+        const bool                                                   printBatched,
+        const std::function<void(const MString&)>&                   printer)
+    {
+        if (!delegate)
+            return;
+
+        if (printBatched) {
+            const UsdUtilsCoalescingDiagnosticDelegateVector messages
+                = delegate->TakeCoalescedDiagnostics();
+            for (const UsdUtilsCoalescingDiagnosticDelegateItem& item : messages) {
+                printer(formatCoalescedDiagnostic(item));
+            }
+        } else {
+            std::vector<std::unique_ptr<TfDiagnosticBase>> messages
+                = delegate->TakeUncoalescedDiagnostics();
+            for (const std::unique_ptr<TfDiagnosticBase>& item : messages) {
+                printer(formatDiagnostic(item));
+            }
+        }
+    }
+
+    void flushPerformedInMainThread()
+    {
+        TF_AXIOM(ArchIsMainThread());
+
+        bool printBatched = false;
+        {
+            std::unique_lock<std::mutex> lock(_pendingDiagnosticsMutex);
+            _triggeredFlush = false;
+            printBatched = _pendingDiagnosticCount > _maximumUnbatchedDiagnostics;
+            _pendingDiagnosticCount = 0;
+        }
+
+        // Note that we must be in the main thread here, so it's safe to call
+        // displayInfo/displayWarning.
+        flushDiagnostics(_batchedStatuses, printBatched, MGlobal::displayInfo);
+        flushDiagnostics(_batchedWarnings, printBatched, MGlobal::displayWarning);
+        flushDiagnostics(_batchedErrors, printBatched, MGlobal::displayError);
+    }
+
+    static void flushPerformedInMainThreadCallback(void* data)
+    {
+        DiagnosticFlusher* self = static_cast<DiagnosticFlusher*>(data);
+        self->flushPerformedInMainThread();
+    }
+
+    void triggerFlushInMainThread(const ElapsedTimePoint& elapsed)
+    {
+        _lastFlushTime = elapsed.second;
+        if (ArchIsMainThread()) {
+            flushPerformedInMainThread();
+        } else {
+            if (_triggeredFlush)
+                return;
+            _triggeredFlush = true;
+            MGlobal::executeTaskOnIdle(flushPerformedInMainThreadCallback, this);
+        }
+    }
+
+    ElapsedTimePoint getElapsedSeconds() const
+    {
+        const auto now = Clock::now();
+        const auto elapsed = std::chrono::duration<double>(now - _lastFlushTime);
+        return std::make_pair(elapsed.count(), now);
+    }
+
+    void periodicFlusher()
+    {
+        using namespace std::chrono_literals;
+
+        while (_installationCount > 0) {
+            try {
+                std::unique_lock<std::mutex> lock(_pendingDiagnosticsMutex);
+                _pendingDiagnosticCond.wait_for(lock, 1s);
+
+                if (_pendingDiagnosticCount == 0)
+                    continue;
+
+                const ElapsedTimePoint elapsed = getElapsedSeconds();
+                if (elapsed.first >= _flushingPeriod) {
+                    triggerFlushInMainThread(elapsed);
+                }
+            } catch (const std::exception&) {
+                // Do nothing.
+            }
+        }
+    }
+
+    std::unique_ptr<std::thread> _periodicThread;
+
+    std::mutex              _pendingDiagnosticsMutex;
+    std::condition_variable _pendingDiagnosticCond;
+    Clock::time_point       _lastFlushTime = Clock::now();
+    std::atomic<bool>       _triggeredFlush;
+    std::atomic<int>        _pendingDiagnosticCount;
+    std::atomic<int>        _burstDiagnosticCount;
+    int _maximumUnbatchedDiagnostics = TfGetEnvSetting<int>(MAYAUSD_MAXIMUM_UNBATCHED_DIAGNOSTICS);
+
+    static constexpr double _flushingPeriod = 1.;
+};
+
+/// @brief USD diagnostic delegate that wakes up the flushing thread.
+class WakeUpDelegate : public TfDiagnosticMgr::Delegate
+{
+public:
+    WakeUpDelegate() { TfDiagnosticMgr::GetInstance().AddDelegate(this); }
+    ~WakeUpDelegate()
+    {
+        try {
+            TfDiagnosticMgr::GetInstance().RemoveDelegate(this);
+        } catch (const std::exception&) {
+        }
+    }
+
+    void IssueError(const TfError&) override { _flusher->receivedDiagnostic(); }
+    void IssueWarning(const TfWarning&) override { _flusher->receivedDiagnostic(); }
+    void IssueStatus(const TfStatus&) override { _flusher->receivedDiagnostic(); }
     void IssueFatalError(const TfCallContext&, const std::string&) override { }
 };
 
 } // anonymous namespace
 
-static MString _FormatDiagnostic(const TfDiagnosticBase& d)
-{
-    if (!TfGetEnvSetting(MAYAUSD_SHOW_FULL_DIAGNOSTICS)) {
-        return d.GetCommentary().c_str();
-    } else {
-        const std::string msg = TfStringPrintf(
-            "%s -- %s in %s at line %zu of %s",
-            d.GetCommentary().c_str(),
-            TfDiagnosticMgr::GetCodeName(d.GetDiagnosticCode()).c_str(),
-            d.GetContext().GetFunction(),
-            d.GetContext().GetLine(),
-            ghc::filesystem::path(d.GetContext().GetFile()).relative_path().string().c_str());
-        return msg.c_str();
-    }
-}
-
-static MString _FormatCoalescedDiagnostic(const UsdUtilsCoalescingDiagnosticDelegateItem& item)
-{
-    const size_t      numItems = item.unsharedItems.size();
-    const std::string suffix
-        = numItems == 1 ? std::string() : TfStringPrintf(" -- and %zu similar", numItems - 1);
-    const std::string message
-        = TfStringPrintf("%s%s", item.unsharedItems[0].commentary.c_str(), suffix.c_str());
-
-    return message.c_str();
-}
-
-static bool _IsDiagnosticBatchingEnabled() { return TfGetEnvSetting(PIXMAYA_DIAGNOSTICS_BATCH); }
-
-UsdMayaDiagnosticDelegate::UsdMayaDiagnosticDelegate()
-    : _batchCount(0)
-{
-    TfDiagnosticMgr::GetInstance().AddDelegate(this);
-}
-
-UsdMayaDiagnosticDelegate::~UsdMayaDiagnosticDelegate()
-{
-    // If a batch context was open when the delegate is removed, we need to
-    // flush all the batched diagnostics in order to avoid losing any.
-    // The batch context should know how to clean itself up when the delegate
-    // is gone.
-    _FlushBatch();
-    TfDiagnosticMgr::GetInstance().RemoveDelegate(this);
-}
-
-void UsdMayaDiagnosticDelegate::IssueError(const TfError& err)
-{
-    if (_batchCount.load() > 0) {
-        return; // Batched.
-    }
-
-    const auto diagnosticMessage = _FormatDiagnostic(err);
-
-    if (ArchIsMainThread()) {
-        MGlobal::displayError(diagnosticMessage);
-    } else {
-        std::cerr << diagnosticMessage << std::endl;
-    }
-}
-
-void UsdMayaDiagnosticDelegate::IssueStatus(const TfStatus& status)
-{
-    if (_batchCount.load() > 0) {
-        return; // Batched.
-    }
-
-    const auto diagnosticMessage = _FormatDiagnostic(status);
-
-    if (ArchIsMainThread()) {
-        MGlobal::displayInfo(diagnosticMessage);
-    } else {
-        std::cerr << diagnosticMessage << std::endl;
-    }
-}
-
-void UsdMayaDiagnosticDelegate::IssueWarning(const TfWarning& warning)
-{
-    if (_batchCount.load() > 0) {
-        return; // Batched.
-    }
-
-    const auto diagnosticMessage = _FormatDiagnostic(warning);
-
-    if (ArchIsMainThread()) {
-        MGlobal::displayWarning(diagnosticMessage);
-    } else {
-        std::cerr << diagnosticMessage << std::endl;
-    }
-}
-
-void UsdMayaDiagnosticDelegate::IssueFatalError(
-    const TfCallContext& context,
-    const std::string&   msg)
-{
-    TfLogCrash(
-        "FATAL ERROR",
-        msg,
-        /*additionalInfo*/ std::string(),
-        context,
-        /*logToDb*/ true);
-    _UnhandledAbort();
-}
-
-/* static */
 void UsdMayaDiagnosticDelegate::InstallDelegate()
 {
     if (!ArchIsMainThread()) {
@@ -192,10 +363,19 @@ void UsdMayaDiagnosticDelegate::InstallDelegate()
         return;
     }
 
-    _sharedDelegate.reset(new UsdMayaDiagnosticDelegate());
+    _batchedStatuses = std::make_unique<StatusOnlyDelegate>();
+    _batchedWarnings = std::make_unique<WarningOnlyDelegate>();
+    _batchedErrors = std::make_unique<ErrorOnlyDelegate>();
+
+    // Note: flusher accesses the batched status, so the flusher must be created
+    //       after the batcher.
+    _flusher = std::make_unique<DiagnosticFlusher>();
+
+    // Note: waker accesses the flusher, so the waker must be created
+    //       after the flusher.
+    _waker = std::make_unique<WakeUpDelegate>();
 }
 
-/* static */
 void UsdMayaDiagnosticDelegate::RemoveDelegate()
 {
     if (!ArchIsMainThread()) {
@@ -210,93 +390,31 @@ void UsdMayaDiagnosticDelegate::RemoveDelegate()
         return;
     }
 
-    _sharedDelegate.reset();
+    Flush();
+
+    // Note: waker accesses the flusher, so the waker must be destroyed
+    //       before the flusher.
+    _waker.reset();
+
+    // Note: flusher accesses the batched status, so the flusher must be destroyed
+    //       before the batcher.
+    _flusher.reset();
+
+    _batchedStatuses.reset();
+    _batchedWarnings.reset();
+    _batchedErrors.reset();
 }
 
-/* static */
-int UsdMayaDiagnosticDelegate::GetBatchCount()
+void UsdMayaDiagnosticDelegate::Flush()
 {
-    if (std::shared_ptr<UsdMayaDiagnosticDelegate> ptr = _sharedDelegate) {
-        return ptr->_batchCount.load();
-    }
-
-    TF_RUNTIME_ERROR("Delegate is not installed");
-    return 0;
+    if (_flusher)
+        _flusher->forceFlush();
 }
 
-void UsdMayaDiagnosticDelegate::_StartBatch()
+void UsdMayaDiagnosticDelegate::SetMaximumUnbatchedDiagnostics(int count)
 {
-    if (!ArchIsMainThread())
-        return;
-
-    if (_batchCount.fetch_add(1) == 0) {
-        // This is the first _StartBatch; add the batching delegates.
-        _batchedStatuses.reset(new _StatusOnlyDelegate());
-        _batchedWarnings.reset(new _WarningOnlyDelegate());
-        _batchedErrors.reset(new _ErrorOnlyDelegate());
-    }
-}
-
-void UsdMayaDiagnosticDelegate::_EndBatch()
-{
-    if (!ArchIsMainThread())
-        return;
-
-    const int prevValue = _batchCount.fetch_sub(1);
-    if (prevValue <= 0) {
-        TF_RUNTIME_ERROR("_EndBatch invoked before _StartBatch");
-    } else if (prevValue == 1) {
-        // This is the last _EndBatch; print the diagnostic messages.
-        // and remove the batching delegates.
-        _FlushBatch();
-        _batchedStatuses.reset();
-        _batchedWarnings.reset();
-        _batchedErrors.reset();
-    }
-}
-
-static void flushDiagnostics(
-    const std::unique_ptr<UsdUtilsCoalescingDiagnosticDelegate>& delegate,
-    const std::function<void(const MString&)>&                   printer)
-{
-    const UsdUtilsCoalescingDiagnosticDelegateVector messages = delegate
-        ? delegate->TakeCoalescedDiagnostics()
-        : UsdUtilsCoalescingDiagnosticDelegateVector();
-    for (const UsdUtilsCoalescingDiagnosticDelegateItem& item : messages) {
-        printer(_FormatCoalescedDiagnostic(item));
-    }
-}
-
-void UsdMayaDiagnosticDelegate::_FlushBatch()
-{
-    TF_AXIOM(ArchIsMainThread());
-
-    // Note that we must be in the main thread here, so it's safe to call
-    // displayInfo/displayWarning.
-    flushDiagnostics(_batchedStatuses, MGlobal::displayInfo);
-    flushDiagnostics(_batchedWarnings, MGlobal::displayWarning);
-    flushDiagnostics(_batchedErrors, MGlobal::displayError);
-}
-
-UsdMayaDiagnosticBatchContext::UsdMayaDiagnosticBatchContext()
-    : _delegate(_IsDiagnosticBatchingEnabled() ? _sharedDelegate : nullptr)
-{
-    if (ArchIsMainThread()) {
-        TF_DEBUG(PXRUSDMAYA_DIAGNOSTICS).Msg(">> Entering batch context\n");
-        if (std::shared_ptr<UsdMayaDiagnosticDelegate> ptr = _delegate.lock()) {
-            ptr->_StartBatch();
-        }
-    }
-}
-
-UsdMayaDiagnosticBatchContext::~UsdMayaDiagnosticBatchContext()
-{
-    if (ArchIsMainThread()) {
-        TF_DEBUG(PXRUSDMAYA_DIAGNOSTICS).Msg("!! Exiting batch context\n");
-        if (std::shared_ptr<UsdMayaDiagnosticDelegate> ptr = _delegate.lock()) {
-            ptr->_EndBatch();
-        }
-    }
+    if (_flusher)
+        _flusher->setMaximumUnbatchedDiagnostics(count);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
