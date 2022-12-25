@@ -34,8 +34,12 @@ namespace {
 class _PyDiagnosticBatchContext
 {
 public:
-    void __enter__() { }
-    void __exit__(object, object, object) { UsdMayaDiagnosticDelegate::Flush(); }
+    void __enter__() { UsdMayaDiagnosticDelegate::SetMaximumUnbatchedDiagnostics(0); }
+    void __exit__(object, object, object)
+    {
+        UsdMayaDiagnosticDelegate::Flush();
+        UsdMayaDiagnosticDelegate::SetMaximumUnbatchedDiagnostics(100);
+    }
 };
 
 } // anonymous namespace
