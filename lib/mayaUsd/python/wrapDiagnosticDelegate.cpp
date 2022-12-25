@@ -49,7 +49,9 @@ void wrapDiagnosticDelegate()
     typedef UsdMayaDiagnosticDelegate This;
     class_<This, boost::noncopyable>("DiagnosticDelegate", no_init)
         .def("Flush", &This::Flush)
-        .staticmethod("Flush");
+        .staticmethod("Flush")
+        .def("SetMaximumUnbatchedDiagnostics", &This::SetMaximumUnbatchedDiagnostics)
+        .staticmethod("SetMaximumUnbatchedDiagnostics");
 
     typedef _PyDiagnosticBatchContext Context;
     class_<Context, boost::noncopyable>("DiagnosticBatchContext")

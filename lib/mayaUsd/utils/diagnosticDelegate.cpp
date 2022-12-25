@@ -75,6 +75,18 @@ class ErrorOnlyDelegate : public UsdUtilsCoalescingDiagnosticDelegate
 {
     void IssueWarning(const TfWarning&) override { }
     void IssueStatus(const TfStatus&) override { }
+    void IssueError(const TfError& err) override
+    {
+        // Note: UsdUtilsCoalescingDiagnosticDelegate does not coalesces errors!
+        //       So, the only way to make it keep errors is to convert the error
+        //       into a warning.
+        //
+        // Note: USD warnings and errors have the exact same layout, only a different concrete type.
+        //       More-over, USD made all its diagnostic classes have private constructors! So
+        //       the only way to convert an error into a warning is through a rei-interpret cast.
+        const TfWarning& warning = reinterpret_cast<const TfWarning&>(err);
+        UsdUtilsCoalescingDiagnosticDelegate ::IssueWarning(warning);
+    }
     void IssueFatalError(const TfCallContext& context, const std::string& msg) override
     {
         UsdMayaDiagnosticDelegate::Flush();
@@ -127,7 +139,12 @@ public:
 
     void forceFlush()
     {
-        triggerFlushInMainThread();
+        ElapsedTimePoint elapsed;
+        {
+            std::unique_lock<std::mutex> lock(_pendingDiagnosticsMutex);
+            elapsed = getElapsedSeconds();
+        }
+        triggerFlushInMainThread(elapsed);
     }
 
     void setMaximumUnbatchedDiagnostics(unsigned count) { _maximumUnbatchedDiagnostics = count; }
@@ -139,15 +156,26 @@ public:
         // writing messages.
         //
         // If it is the first message in a long time, we flush it immediately.
-        if (_pendingDiagnosticCount.fetch_add(1) > _maximumUnbatchedDiagnostics)
+        if (_pendingDiagnosticCount.fetch_add(1) >= _maximumUnbatchedDiagnostics)
             return;
+
+        ElapsedTimePoint elapsed;
         {
             std::unique_lock<std::mutex> lock(_pendingDiagnosticsMutex);
-            ElapsedTimePoint             elapsed = getElapsedSeconds();
-            if (elapsed.first < _flushingPeriod)
-                return;
+            elapsed = getElapsedSeconds();
+            if (elapsed.first < _flushingPeriod) {
+                // Note: because the first of a burst was outside of the flushinh period,
+                //       we must take the maximum minus one to account for that unaccounted
+                //       diagnostic.
+                if (_burstDiagnosticCount.fetch_add(1) >= _maximumUnbatchedDiagnostics - 1) {
+                    return;
+                }
+            } else {
+                _burstDiagnosticCount = 0;
+            }
         }
-        triggerFlushInMainThread();
+
+        triggerFlushInMainThread(elapsed);
     }
 
 private:
@@ -236,8 +264,9 @@ private:
         self->flushPerformedInMainThread();
     }
 
-    void triggerFlushInMainThread()
+    void triggerFlushInMainThread(const ElapsedTimePoint& elapsed)
     {
+        _lastFlushTime = elapsed.second;
         if (ArchIsMainThread()) {
             flushPerformedInMainThread();
         } else {
@@ -269,8 +298,7 @@ private:
 
                 const ElapsedTimePoint elapsed = getElapsedSeconds();
                 if (elapsed.first >= _flushingPeriod) {
-                    _lastFlushTime = elapsed.second;
-                    triggerFlushInMainThread();
+                    triggerFlushInMainThread(elapsed);
                 }
             } catch (const std::exception&) {
                 // Do nothing.
@@ -285,9 +313,10 @@ private:
     Clock::time_point       _lastFlushTime = Clock::now();
     std::atomic<bool>       _triggeredFlush = false;
     std::atomic<unsigned>   _pendingDiagnosticCount = 0;
+    std::atomic<unsigned>   _burstDiagnosticCount = 0;
     unsigned                _maximumUnbatchedDiagnostics = 100;
 
-    static constexpr double   _flushingPeriod = 1.;
+    static constexpr double _flushingPeriod = 1.;
 };
 
 /// @brief USD diagnostic delegate that wakes up the flushing thread.
