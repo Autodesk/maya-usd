@@ -54,6 +54,8 @@ class testDiagnosticDelegate(unittest.TestCase):
         if sys.version_info[0] >= 3:
             self.assertItemsEqual = self.assertCountEqual
 
+        mayaUsdLib.DiagnosticDelegate.Flush()
+
     def _OnCommandOutput(self, message, messageType, _):
         if (messageType == OM.MCommandMessage.kInfo
                 or messageType == OM.MCommandMessage.kWarning
@@ -161,6 +163,23 @@ class testDiagnosticDelegate(unittest.TestCase):
             ("informative status", OM.MCommandMessage.kInfo),
             ("repeated status 0 -- and 4 similar", OM.MCommandMessage.kInfo),
             ("spam warning 0 -- and 2 similar", OM.MCommandMessage.kWarning)
+        ])
+
+    def testMaximumUnbatched(self):
+        self._StartRecording()
+        mayaUsdLib.DiagnosticDelegate.SetMaximumUnbatchedDiagnostics(2)
+
+        for i in range(5):
+            Tf.Status("repeated status %d" % i)
+
+        log = self._StopRecording()
+
+        # Note: we use assertItemsEqual because coalescing may re-order the
+        # diagnostic messages.
+        self.assertItemsEqual(log, [
+            ("repeated status 0", OM.MCommandMessage.kInfo),
+            ("repeated status 1", OM.MCommandMessage.kInfo),
+            ("repeated status 2 -- and 2 similar", OM.MCommandMessage.kInfo),
         ])
 
     # Note: giving the test a name starting with Z so it is run last because unloading the plugin

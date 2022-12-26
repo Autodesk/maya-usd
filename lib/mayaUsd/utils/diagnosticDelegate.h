@@ -58,7 +58,7 @@ public:
     /// @brief Sets the maximum number of diagnostics messages that can be emitted in
     ///        one second before we start to batch messages. Default is 100.
     MAYAUSD_CORE_PUBLIC
-    static void SetMaximumUnbatchedDiagnostics(unsigned count);
+    static void SetMaximumUnbatchedDiagnostics(int count);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

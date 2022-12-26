@@ -38,6 +38,12 @@ TF_DEFINE_ENV_SETTING(
     "This env flag controls the granularity of TF error/warning/status messages "
     "being displayed in Maya.");
 
+TF_DEFINE_ENV_SETTING(
+    MAYAUSD_MAXIMUM_UNBATCHED_DIAGNOSTICS,
+    100,
+    "This env flag controls the maximum number of diagnostic messages that can "
+    "be emitted in one second before automatic batching of messages is used.");
+
 namespace {
 
 class DiagnosticFlusher;
@@ -143,11 +149,13 @@ public:
         {
             std::unique_lock<std::mutex> lock(_pendingDiagnosticsMutex);
             elapsed = getElapsedSeconds();
+            elapsed.second = TimePoint<Clock::duration>();
+            _burstDiagnosticCount = 0;
         }
         triggerFlushInMainThread(elapsed);
     }
 
-    void setMaximumUnbatchedDiagnostics(unsigned count) { _maximumUnbatchedDiagnostics = count; }
+    void setMaximumUnbatchedDiagnostics(int count) { _maximumUnbatchedDiagnostics = count; }
 
     void receivedDiagnostic()
     {
@@ -311,10 +319,10 @@ private:
     std::mutex              _pendingDiagnosticsMutex;
     std::condition_variable _pendingDiagnosticCond;
     Clock::time_point       _lastFlushTime = Clock::now();
-    std::atomic<bool>       _triggeredFlush = false;
-    std::atomic<unsigned>   _pendingDiagnosticCount = 0;
-    std::atomic<unsigned>   _burstDiagnosticCount = 0;
-    unsigned                _maximumUnbatchedDiagnostics = 100;
+    std::atomic<bool>       _triggeredFlush;
+    std::atomic<int>        _pendingDiagnosticCount;
+    std::atomic<int>        _burstDiagnosticCount;
+    int _maximumUnbatchedDiagnostics = TfGetEnvSetting<int>(MAYAUSD_MAXIMUM_UNBATCHED_DIAGNOSTICS);
 
     static constexpr double _flushingPeriod = 1.;
 };
@@ -402,7 +410,7 @@ void UsdMayaDiagnosticDelegate::Flush()
         _flusher->forceFlush();
 }
 
-void UsdMayaDiagnosticDelegate::SetMaximumUnbatchedDiagnostics(unsigned count)
+void UsdMayaDiagnosticDelegate::SetMaximumUnbatchedDiagnostics(int count)
 {
     if (_flusher)
         _flusher->setMaximumUnbatchedDiagnostics(count);
