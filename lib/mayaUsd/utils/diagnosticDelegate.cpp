@@ -27,9 +27,9 @@
 
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <memory>
 #include <thread>
-#include <condition_variable>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
