@@ -55,7 +55,6 @@ std::unique_ptr<UsdUtilsCoalescingDiagnosticDelegate> _batchedWarnings;
 std::unique_ptr<UsdUtilsCoalescingDiagnosticDelegate> _batchedErrors;
 std::unique_ptr<TfDiagnosticMgr::Delegate>            _waker;
 std::unique_ptr<DiagnosticFlusher>                    _flusher;
-MCallbackId                                           _beforeExitCallbackId = 0;
 
 // The delegate can be installed by multiple plugins (e.g. pxrUsd and
 // mayaUsdPlugin), so keep track of installations to ensure that we only add
@@ -153,11 +152,15 @@ public:
 
         const double elapsed = getElapsedSecondsSinceLastFlush();
         if (elapsed < _flushingPeriod) {
-            if (burstCount >= _maximumUnbatchedDiagnostics - 1) {
+            if (burstCount >= _maximumUnbatchedDiagnostics) {
                 return triggerFlushInMainThreadLaterIfNeeded();
             }
         } else {
-            _burstDiagnosticCount = 0;
+            // Note: clear the burst count since the time elapsed since the last
+            //       diagnostic is greater than the flushing period. We reset to
+            //       one instead of zero since this message is part of the new
+            //       potential burst of diagnostic messages.
+            _burstDiagnosticCount = 1;
         }
 
         triggerFlushInMainThreadIfNeeded();
@@ -331,13 +334,6 @@ public:
     void IssueFatalError(const TfCallContext&, const std::string&) override { }
 };
 
-void onMayaExitCallback(void*)
-{
-    // In case the plugin does no get explicitly unloaded,
-    // we cleanup in a Maya callback.
-    UsdMayaDiagnosticDelegate::RemoveDelegate();
-}
-
 } // anonymous namespace
 
 void UsdMayaDiagnosticDelegate::InstallDelegate()
@@ -352,11 +348,6 @@ void UsdMayaDiagnosticDelegate::InstallDelegate()
 
     if (_installationCount++ > 0) {
         return;
-    }
-
-    if (_beforeExitCallbackId == 0) {
-        _beforeExitCallbackId
-            = MSceneMessage::addCallback(MSceneMessage::kMayaExiting, onMayaExitCallback);
     }
 
     _batchedStatuses = std::make_unique<StatusOnlyDelegate>();
@@ -387,11 +378,6 @@ void UsdMayaDiagnosticDelegate::RemoveDelegate()
     }
 
     Flush();
-
-    if (_beforeExitCallbackId != 0) {
-        MMessage::removeCallback(_beforeExitCallbackId);
-        _beforeExitCallbackId = 0;
-    }
 
     // Note: waker accesses the flusher, so the waker must be destroyed
     //       before the flusher.

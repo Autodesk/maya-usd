@@ -173,6 +173,7 @@ class testDiagnosticDelegate(unittest.TestCase):
             Tf.Status("repeated status %d" % i)
 
         log = self._StopRecording()
+        mayaUsdLib.DiagnosticDelegate.SetMaximumUnbatchedDiagnostics(100)
 
         # Note: we use assertItemsEqual because coalescing may re-order the
         # diagnostic messages.
