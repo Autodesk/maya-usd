@@ -135,9 +135,15 @@ public:
 
     ~DiagnosticFlusher()
     {
+        _pendingDiagnosticCond.notify_all();
         try {
             if (_periodicThread) {
                 _periodicThread->join();
+            }
+        } catch (const std::exception&) {
+        }
+        try {
+            if (_periodicThread) {
                 _periodicThread.reset();
             }
         } catch (const std::exception&) {
@@ -299,13 +305,17 @@ private:
 
         while (_installationCount > 0) {
             try {
-                std::unique_lock<std::mutex> lock(_pendingDiagnosticsMutex);
-                _pendingDiagnosticCond.wait_for(lock, 1s);
+                ElapsedTimePoint elapsed;
+                {
+                    std::unique_lock<std::mutex> lock(_pendingDiagnosticsMutex);
+                    _pendingDiagnosticCond.wait_for(lock, 1s);
 
-                if (_pendingDiagnosticCount == 0)
-                    continue;
+                    if (_pendingDiagnosticCount == 0)
+                        continue;
 
-                const ElapsedTimePoint elapsed = getElapsedSeconds();
+                    elapsed = getElapsedSeconds();
+                }
+
                 if (elapsed.first >= _flushingPeriod) {
                     triggerFlushInMainThread(elapsed);
                 }
