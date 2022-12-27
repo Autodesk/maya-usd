@@ -127,41 +127,15 @@ class ErrorOnlyDelegate : public UsdUtilsCoalescingDiagnosticDelegate
 class DiagnosticFlusher
 {
 public:
-    DiagnosticFlusher()
-    {
-        // Note: the periodic thread access member variables, so it must be initialized
-        //       after all members are initialized. That is why we create it in the
-        //       constructor body and not the initialization list.
-        _periodicThread = std::make_unique<std::thread>([this]() { periodicFlusher(); });
-    }
+    DiagnosticFlusher() { }
 
-    ~DiagnosticFlusher()
-    {
-        _pendingDiagnosticCond.notify_all();
-        try {
-            if (_periodicThread) {
-                _periodicThread->join();
-            }
-        } catch (const std::exception&) {
-        }
-        try {
-            if (_periodicThread) {
-                _periodicThread.reset();
-            }
-        } catch (const std::exception&) {
-        }
-    }
+    ~DiagnosticFlusher() { }
 
     void forceFlush()
     {
-        ElapsedTimePoint elapsed;
-        {
-            std::unique_lock<std::mutex> lock(_pendingDiagnosticsMutex);
-            elapsed = getElapsedSeconds();
-            elapsed.second = TimePoint<Clock::duration>();
-            _burstDiagnosticCount = 0;
-        }
-        triggerFlushInMainThread(elapsed);
+        _burstDiagnosticCount = 0;
+        resetLastFlushTime();
+        triggerFlushInMainThread();
     }
 
     void setMaximumUnbatchedDiagnostics(int count) { _maximumUnbatchedDiagnostics = count; }
@@ -173,33 +147,26 @@ public:
         // writing messages.
         //
         // If it is the first message in a long time, we flush it immediately.
+        const int burstCount = _burstDiagnosticCount.fetch_add(1);
         if (_pendingDiagnosticCount.fetch_add(1) >= _maximumUnbatchedDiagnostics)
-            return;
+            return triggerFlushInMainThreadLaterIfNeeded();
 
-        ElapsedTimePoint elapsed;
-        {
-            std::unique_lock<std::mutex> lock(_pendingDiagnosticsMutex);
-            elapsed = getElapsedSeconds();
-            if (elapsed.first < _flushingPeriod) {
-                // Note: because the first of a burst was outside of the flushinh period,
-                //       we must take the maximum minus one to account for that unaccounted
-                //       diagnostic.
-                if (_burstDiagnosticCount.fetch_add(1) >= _maximumUnbatchedDiagnostics - 1) {
-                    return;
-                }
-            } else {
-                _burstDiagnosticCount = 0;
+        const double elapsed = getElapsedSecondsSinceLastFlush();
+        if (elapsed < _flushingPeriod) {
+            if (burstCount >= _maximumUnbatchedDiagnostics - 1) {
+                return triggerFlushInMainThreadLaterIfNeeded();
             }
+        } else {
+            _burstDiagnosticCount = 0;
         }
 
-        triggerFlushInMainThread(elapsed);
+        triggerFlushInMainThreadIfNeeded();
     }
 
 private:
     using Clock = std::chrono::steady_clock;
-    template <class Duration> using TimePoint = std::chrono::time_point<Clock, Duration>;
+    using TimePoint = Clock::time_point;
     using Sec = std::chrono::seconds;
-    using ElapsedTimePoint = std::pair<double, Clock::time_point>;
 
     static MString formatCoalescedDiagnostic(const UsdUtilsCoalescingDiagnosticDelegateItem& item)
     {
@@ -260,13 +227,11 @@ private:
     {
         TF_AXIOM(ArchIsMainThread());
 
-        bool printBatched = false;
-        {
-            std::unique_lock<std::mutex> lock(_pendingDiagnosticsMutex);
-            _triggeredFlush = false;
-            printBatched = _pendingDiagnosticCount > _maximumUnbatchedDiagnostics;
-            _pendingDiagnosticCount = 0;
-        }
+        _triggeredFlush = false;
+        const bool printBatched
+            = _pendingDiagnosticCount.fetch_and(0) > _maximumUnbatchedDiagnostics;
+
+        updateLastFlushTime();
 
         // Note that we must be in the main thread here, so it's safe to call
         // displayInfo/displayWarning.
@@ -281,60 +246,67 @@ private:
         self->flushPerformedInMainThread();
     }
 
-    void triggerFlushInMainThread(const ElapsedTimePoint& elapsed)
+    void triggerFlushInMainThreadLaterIfNeeded()
     {
-        _lastFlushTime = elapsed.second;
+        if (_triggeredFlush)
+            return;
+        _triggeredFlush = true;
+
+        // Note: the periodic thread access member variables, so it must be initialized
+        //       after all members are initialized. That is why we create it in the
+        //       constructor body and not the initialization list.
+        std::thread([this]() {
+            using namespace std::chrono_literals;
+            std::this_thread::sleep_for(1s);
+            triggerFlushInMainThread();
+        }).detach();
+    }
+
+    void triggerFlushInMainThreadIfNeeded()
+    {
+        if (_triggeredFlush)
+            return;
+        _triggeredFlush = true;
+        triggerFlushInMainThread();
+    }
+
+    void triggerFlushInMainThread()
+    {
         if (ArchIsMainThread()) {
             flushPerformedInMainThread();
         } else {
-            if (_triggeredFlush)
-                return;
-            _triggeredFlush = true;
             MGlobal::executeTaskOnIdle(flushPerformedInMainThreadCallback, this);
         }
     }
 
-    ElapsedTimePoint getElapsedSeconds() const
+    static TimePoint getElapsedTimePoint() { return Clock::now(); }
+
+    void updateLastFlushTime()
     {
-        const auto now = Clock::now();
-        const auto elapsed = std::chrono::duration<double>(now - _lastFlushTime);
-        return std::make_pair(elapsed.count(), now);
+        const TimePoint              now = getElapsedTimePoint();
+        std::unique_lock<std::mutex> lock(_pendingDiagnosticsMutex);
+        _lastFlushTime = now;
     }
 
-    void periodicFlusher()
+    void resetLastFlushTime()
     {
-        using namespace std::chrono_literals;
-
-        while (_installationCount > 0) {
-            try {
-                ElapsedTimePoint elapsed;
-                {
-                    std::unique_lock<std::mutex> lock(_pendingDiagnosticsMutex);
-                    _pendingDiagnosticCond.wait_for(lock, 1s);
-
-                    if (_pendingDiagnosticCount == 0)
-                        continue;
-
-                    elapsed = getElapsedSeconds();
-                }
-
-                if (elapsed.first >= _flushingPeriod) {
-                    triggerFlushInMainThread(elapsed);
-                }
-            } catch (const std::exception&) {
-                // Do nothing.
-            }
-        }
+        std::unique_lock<std::mutex> lock(_pendingDiagnosticsMutex);
+        _lastFlushTime = TimePoint();
     }
 
-    std::unique_ptr<std::thread> _periodicThread;
+    double getElapsedSecondsSinceLastFlush()
+    {
+        const auto                   now = getElapsedTimePoint();
+        std::unique_lock<std::mutex> lock(_pendingDiagnosticsMutex);
+        return std::chrono::duration<double>(now - _lastFlushTime).count();
+    }
 
-    std::mutex              _pendingDiagnosticsMutex;
-    std::condition_variable _pendingDiagnosticCond;
-    Clock::time_point       _lastFlushTime = Clock::now();
-    std::atomic<bool>       _triggeredFlush;
-    std::atomic<int>        _pendingDiagnosticCount;
-    std::atomic<int>        _burstDiagnosticCount;
+    std::mutex        _pendingDiagnosticsMutex;
+    TimePoint         _lastFlushTime = Clock::now();
+    std::atomic<bool> _triggeredFlush;
+    std::atomic<int>  _pendingDiagnosticCount;
+    std::atomic<int>  _burstDiagnosticCount;
+
     int _maximumUnbatchedDiagnostics = TfGetEnvSetting<int>(MAYAUSD_MAXIMUM_UNBATCHED_DIAGNOSTICS);
 
     static constexpr double _flushingPeriod = 1.;

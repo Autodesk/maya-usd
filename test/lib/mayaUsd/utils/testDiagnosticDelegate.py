@@ -178,8 +178,7 @@ class testDiagnosticDelegate(unittest.TestCase):
         # diagnostic messages.
         self.assertItemsEqual(log, [
             ("repeated status 0", OM.MCommandMessage.kInfo),
-            ("repeated status 1", OM.MCommandMessage.kInfo),
-            ("repeated status 2 -- and 2 similar", OM.MCommandMessage.kInfo),
+            ("repeated status 1 -- and 3 similar", OM.MCommandMessage.kInfo),
         ])
 
     # Note: giving the test a name starting with Z so it is run last because unloading the plugin
