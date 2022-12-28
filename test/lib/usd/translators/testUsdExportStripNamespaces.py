@@ -57,11 +57,11 @@ class testUsdExportStripNamespaces(unittest.TestCase):
 
         usdFilePath = os.path.abspath('UsdExportStripNamespaces_EXPORTED.usda')
 
-        errorRegexp = "Multiple dag nodes map to the same prim path" \
-            ".+|cube1 - |foo:cube1.*"
+        errorRegexp = "(Multiple dag nodes map to the same prim path" \
+            ".+|cube1 - |foo:cube1.*)|(Maya command error)"
 
         with self.assertRaisesRegex(RuntimeError, errorRegexp) as cm:
-            with mayaUsdLib.DiagnosticBatchContext(1000) as bc:
+            with mayaUsdLib.DiagnosticBatchContext(0) as bc:
                 cmds.usdExport(mergeTransformAndShape=True,
                             selection=False,
                             stripNamespaces=True,

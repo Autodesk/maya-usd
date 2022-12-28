@@ -349,7 +349,7 @@ private:
     }
 
     std::mutex        _pendingDiagnosticsMutex;
-    TimePoint         _lastFlushTime = Clock::now();
+    TimePoint         _lastFlushTime = TimePoint();
     std::atomic<bool> _triggeredFlush;
     std::atomic<int>  _pendingDiagnosticCount;
     std::atomic<int>  _burstDiagnosticCount;
