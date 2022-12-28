@@ -165,6 +165,23 @@ class testDiagnosticDelegate(unittest.TestCase):
             ("spam warning 0 -- and 2 similar", OM.MCommandMessage.kWarning)
         ])
 
+    def testBatchingWithLimit(self):
+        self._StartRecording()
+
+        with mayaUsdLib.DiagnosticBatchContext(2):
+            for i in range(5):
+                Tf.Status("repeated status %d" % i)
+
+        log = self._StopRecording()
+
+        # Note: we use assertItemsEqual because coalescing may re-order the
+        # diagnostic messages.
+        self.assertItemsEqual(log, [
+            ("repeated status 0", OM.MCommandMessage.kInfo),
+            ("repeated status 1", OM.MCommandMessage.kInfo),
+            ("repeated status 2 -- and 2 similar", OM.MCommandMessage.kInfo),
+        ])
+
     def testMaximumUnbatched(self):
         self._StartRecording()
         mayaUsdLib.DiagnosticDelegate.SetMaximumUnbatchedDiagnostics(2)

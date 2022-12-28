@@ -59,6 +59,41 @@ public:
     ///        one second before we start to batch messages. Default is 100.
     MAYAUSD_CORE_PUBLIC
     static void SetMaximumUnbatchedDiagnostics(int count);
+
+    /// @brief Gets the maximum number of diagnostics messages that can be emitted in
+    ///        one second before we start to batch messages. Default is 100.
+    MAYAUSD_CORE_PUBLIC
+    static int GetMaximumUnbatchedDiagnostics();
+};
+
+/// As long as a batch context remains alive (process-wide), the
+/// UsdMayaDiagnosticDelegate will save diagnostic messages that exceed the given
+/// maximum count, which defaults to 0.
+///
+/// The messages will be emmited when the last batch context is destructed.
+///
+/// Batch contexts can be constructed and destructed out of "scope" order, e.g.,
+/// this is allowed:
+///   1. Context A constructed
+///   2. Context B constructed
+///   3. Context A destructed
+///   4. Context B destructed
+class UsdMayaDiagnosticBatchContext
+{
+public:
+    /// Constructs a batch context, causing all subsequent diagnostic messages
+    /// to be batched on all threads.
+    /// If this is invoked on a secondary thread, issues a fatal coding error.
+    MAYAUSD_CORE_PUBLIC
+    UsdMayaDiagnosticBatchContext(int maximumUnbatchedCount = 0);
+    MAYAUSD_CORE_PUBLIC
+    ~UsdMayaDiagnosticBatchContext();
+
+    UsdMayaDiagnosticBatchContext(const UsdMayaDiagnosticBatchContext&) = delete;
+    UsdMayaDiagnosticBatchContext& operator=(const UsdMayaDiagnosticBatchContext&) = delete;
+
+private:
+    int previousCount = 0;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

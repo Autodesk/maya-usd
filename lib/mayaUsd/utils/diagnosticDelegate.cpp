@@ -68,6 +68,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 //         only print a sample of the message followed by "and X similar".
 
 TF_DEFINE_ENV_SETTING(
+    PIXMAYA_DIAGNOSTICS_BATCH,
+    true,
+    "Whether to batch diagnostics coming from the same call site.");
+
+TF_DEFINE_ENV_SETTING(
     MAYAUSD_SHOW_FULL_DIAGNOSTICS,
     false,
     "This env flag controls the granularity of TF error/warning/status messages "
@@ -75,7 +80,7 @@ TF_DEFINE_ENV_SETTING(
 
 TF_DEFINE_ENV_SETTING(
     MAYAUSD_MAXIMUM_UNBATCHED_DIAGNOSTICS,
-    100,
+    10,
     "This env flag controls the maximum number of diagnostic messages that can "
     "be emitted in one second before automatic batching of messages is used.");
 
@@ -94,6 +99,10 @@ std::unique_ptr<DiagnosticFlusher>                    _flusher;
 // the delegate for the first installation call, and that we only remove it for
 // the last removal call.
 std::atomic<int> _installationCount;
+
+std::atomic<int> _batchedContextCount;
+
+bool IsDiagnosticBatchingEnabled() { return TfGetEnvSetting(PIXMAYA_DIAGNOSTICS_BATCH); }
 
 /// @brief USD diagnostic delegate that accumulates all status messages.
 class StatusOnlyDelegate : public UsdUtilsCoalescingDiagnosticDelegate
@@ -161,6 +170,17 @@ public:
     /// @brief Sets the maximum number of consecutive messages before they
     ///        are considered a burst.
     void setMaximumUnbatchedDiagnostics(int count) { _maximumUnbatchedDiagnostics = count; }
+
+    /// @brief Gets the maximum number of consecutive messages before they
+    ///        are considered a burst.
+    int getMaximumUnbatchedDiagnostics() const { return _maximumUnbatchedDiagnostics; }
+
+    /// @brief Gets the default maximum number of consecutive messages
+    ///        before they are considered a burst.
+    static int getDefaultMaximumUnbatchedDiagnostics()
+    {
+        return TfGetEnvSetting<int>(MAYAUSD_MAXIMUM_UNBATCHED_DIAGNOSTICS);
+    }
 
     /// @brief Called when a diagnostic message is created to be printed.
     void receivedDiagnostic()
@@ -334,7 +354,7 @@ private:
     std::atomic<int>  _pendingDiagnosticCount;
     std::atomic<int>  _burstDiagnosticCount;
 
-    int _maximumUnbatchedDiagnostics = TfGetEnvSetting<int>(MAYAUSD_MAXIMUM_UNBATCHED_DIAGNOSTICS);
+    int _maximumUnbatchedDiagnostics = getDefaultMaximumUnbatchedDiagnostics();
 
     static constexpr double _flushingPeriod = 1.;
 };
@@ -426,6 +446,40 @@ void UsdMayaDiagnosticDelegate::SetMaximumUnbatchedDiagnostics(int count)
 {
     if (_flusher)
         _flusher->setMaximumUnbatchedDiagnostics(count);
+}
+
+int UsdMayaDiagnosticDelegate::GetMaximumUnbatchedDiagnostics()
+{
+    if (_flusher)
+        return _flusher->getMaximumUnbatchedDiagnostics();
+    else
+        return DiagnosticFlusher::getDefaultMaximumUnbatchedDiagnostics();
+}
+
+UsdMayaDiagnosticBatchContext::UsdMayaDiagnosticBatchContext(int maximumUnbatchedCount)
+    : previousCount(UsdMayaDiagnosticDelegate::GetMaximumUnbatchedDiagnostics())
+{
+    if (!IsDiagnosticBatchingEnabled())
+        return;
+
+    TF_DEBUG(PXRUSDMAYA_DIAGNOSTICS).Msg(">> Entering batch context\n");
+
+    UsdMayaDiagnosticDelegate::SetMaximumUnbatchedDiagnostics(maximumUnbatchedCount);
+
+    _batchedContextCount.fetch_add(1);
+}
+
+UsdMayaDiagnosticBatchContext::~UsdMayaDiagnosticBatchContext()
+{
+    if (!IsDiagnosticBatchingEnabled())
+        return;
+
+    TF_DEBUG(PXRUSDMAYA_DIAGNOSTICS).Msg("!! Exiting batch context\n");
+
+    UsdMayaDiagnosticDelegate::SetMaximumUnbatchedDiagnostics(previousCount);
+
+    if (_batchedContextCount.fetch_sub(1) <= 1)
+        UsdMayaDiagnosticDelegate::Flush();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

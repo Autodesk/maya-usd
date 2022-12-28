@@ -34,12 +34,17 @@ namespace {
 class _PyDiagnosticBatchContext
 {
 public:
-    void __enter__() { UsdMayaDiagnosticDelegate::SetMaximumUnbatchedDiagnostics(0); }
+    _PyDiagnosticBatchContext() {}
+    _PyDiagnosticBatchContext(int c) : count(c) {}
+    void __enter__() { UsdMayaDiagnosticDelegate::SetMaximumUnbatchedDiagnostics(count); }
     void __exit__(object, object, object)
     {
         UsdMayaDiagnosticDelegate::Flush();
         UsdMayaDiagnosticDelegate::SetMaximumUnbatchedDiagnostics(100);
     }
+
+private:
+    int count = 0;
 };
 
 } // anonymous namespace
@@ -55,6 +60,7 @@ void wrapDiagnosticDelegate()
 
     typedef _PyDiagnosticBatchContext Context;
     class_<Context, boost::noncopyable>("DiagnosticBatchContext")
+        .def(init<int>())
         .def("__enter__", &Context::__enter__, return_self<>())
         .def("__exit__", &Context::__exit__);
 }
