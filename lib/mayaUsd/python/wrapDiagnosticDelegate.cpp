@@ -34,8 +34,11 @@ namespace {
 class _PyDiagnosticBatchContext
 {
 public:
-    _PyDiagnosticBatchContext() {}
-    _PyDiagnosticBatchContext(int c) : count(c) {}
+    _PyDiagnosticBatchContext() { }
+    _PyDiagnosticBatchContext(int c)
+        : count(c)
+    {
+    }
     void __enter__() { UsdMayaDiagnosticDelegate::SetMaximumUnbatchedDiagnostics(count); }
     void __exit__(object, object, object)
     {
