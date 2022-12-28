@@ -168,11 +168,15 @@ class testDiagnosticDelegate(unittest.TestCase):
     def testBatchingWithLimit(self):
         self._StartRecording()
 
+        previousMax = mayaUsdLib.DiagnosticDelegate.GetMaximumUnbatchedDiagnostics()
+
         with mayaUsdLib.DiagnosticBatchContext(2):
             for i in range(5):
                 Tf.Status("repeated status %d" % i)
 
         log = self._StopRecording()
+
+        self.assertEqual(previousMax, mayaUsdLib.DiagnosticDelegate.GetMaximumUnbatchedDiagnostics())
 
         # Note: we use assertItemsEqual because coalescing may re-order the
         # diagnostic messages.

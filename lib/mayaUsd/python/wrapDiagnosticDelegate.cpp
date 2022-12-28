@@ -36,18 +36,19 @@ class _PyDiagnosticBatchContext
 public:
     _PyDiagnosticBatchContext() { }
     _PyDiagnosticBatchContext(int c)
-        : count(c)
+        : _count(c)
     {
     }
-    void __enter__() { UsdMayaDiagnosticDelegate::SetMaximumUnbatchedDiagnostics(count); }
+    void __enter__() { UsdMayaDiagnosticDelegate::SetMaximumUnbatchedDiagnostics(_count); }
     void __exit__(object, object, object)
     {
         UsdMayaDiagnosticDelegate::Flush();
-        UsdMayaDiagnosticDelegate::SetMaximumUnbatchedDiagnostics(100);
+        UsdMayaDiagnosticDelegate::SetMaximumUnbatchedDiagnostics(_previousCount);
     }
 
 private:
-    int count = 0;
+    int _count = 0;
+    int _previousCount = UsdMayaDiagnosticDelegate::GetMaximumUnbatchedDiagnostics();
 };
 
 } // anonymous namespace
@@ -59,7 +60,9 @@ void wrapDiagnosticDelegate()
         .def("Flush", &This::Flush)
         .staticmethod("Flush")
         .def("SetMaximumUnbatchedDiagnostics", &This::SetMaximumUnbatchedDiagnostics)
-        .staticmethod("SetMaximumUnbatchedDiagnostics");
+        .staticmethod("SetMaximumUnbatchedDiagnostics")
+        .def("GetMaximumUnbatchedDiagnostics", &This::GetMaximumUnbatchedDiagnostics)
+        .staticmethod("GetMaximumUnbatchedDiagnostics");
 
     typedef _PyDiagnosticBatchContext Context;
     class_<Context, boost::noncopyable>("DiagnosticBatchContext")
