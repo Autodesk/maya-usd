@@ -41,9 +41,6 @@ def _setUpClass(modulePathName, initializeStandalone, loadPlugin, pluginName):
             cmds.usdExport = cmds.mayaUSDExport
             cmds.usdImport = cmds.mayaUSDImport
 
-            import mayaUsd.lib as mayaUsdLib
-            mayaUsdLib.DiagnosticDelegate.SetMaximumUnbatchedDiagnostics(10000)
-
     realPath = os.path.realpath(modulePathName)
     return os.path.split(realPath)
 

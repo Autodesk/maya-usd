@@ -23,6 +23,8 @@ import unittest
 from maya import cmds
 from maya import standalone
 
+import mayaUsd.lib as mayaUsdLib
+
 from pxr import Usd
 
 import fixturesUtils
@@ -57,6 +59,8 @@ class testUsdExportStripNamespaces(unittest.TestCase):
 
         errorRegexp = "Multiple dag nodes map to the same prim path" \
             ".+|cube1 - |foo:cube1.*"
+
+        mayaUsdLib.DiagnosticDelegate.SetMaximumUnbatchedDiagnostics(100)
 
         with self.assertRaisesRegex(RuntimeError, errorRegexp) as cm:
             cmds.usdExport(mergeTransformAndShape=True,
