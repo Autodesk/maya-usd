@@ -301,138 +301,158 @@ std::string UsdUndoAssignNewMaterialCommand::resolvedMaterialScopeName()
 
 void UsdUndoAssignNewMaterialCommand::execute()
 {
-    std::string materialsScopeName = resolvedMaterialScopeName();
+    std::string materialsScopeNamePrefix = resolvedMaterialScopeName();
 
     // Materials cannot be shared between stages. So we create a unique material per stage,
     // which can then be shared between any number of objects within that stage.
-    for (const auto& stage : _stagesAndPaths) {
-        UsdSceneItem::Ptr materialItem;
-        for (const auto& parentPath : stage.second) {
-            //
-            // 1. Create the Scope "materials" if it does not exist:
-            //
+    for (const auto& selectedInStage : _stagesAndPaths) {
+        const auto& stage = selectedInStage.first;
+        const auto& selectedPaths = selectedInStage.second;
+        if (!stage) {
+            markAsFailed();
+            return;
+        }
+        if (selectedPaths.empty()) {
+            markAsFailed();
+            return;
+        }
+
+        //
+        // 1. Create the Scope "materials" if it does not exist:
+        //
+        auto stagePath = selectedPaths[0].popSegment();
+        auto stageHierarchy = Ufe::Hierarchy::hierarchy(Ufe::Hierarchy::createItem(stagePath));
+        if (!stageHierarchy) {
+            markAsFailed();
+            return;
+        }
+
+        // Find an available materials scope name.
+        // Usually the materials scope will simply have the default name (e.g. "mtl"). However, if
+        // that name is used by a non-scope object, a number should be appended (e.g. "mtl1"). If
+        // this name is not available either, increment the number until an available name is found.
+        Ufe::SceneItem::Ptr materialsScope = nullptr;
+        std::string         materialsScopeName = materialsScopeNamePrefix;
+        Ufe::SceneItemList  children = stageHierarchy->children();
+        for (size_t i = 1;; ++i) {
+            auto hasName = [&materialsScopeName](const Ufe::SceneItem::Ptr& item) {
+                return item->nodeName() == materialsScopeName;
+            };
+            auto childrenIterator = std::find_if(children.begin(), children.end(), hasName);
+            if (childrenIterator == children.end()) {
+                break;
+            }
+            if ((*childrenIterator)->nodeType() == "Scope") {
+                materialsScope = *childrenIterator;
+                break;
+            }
+
+            // Name is already used by something that is not a scope. Try the next name.
+            materialsScopeName = materialsScopeNamePrefix + std::to_string(i);
+        }
+
+        if (!materialsScope) {
+            auto createScopeCmd = UsdUndoAddNewPrimCommand::create(
+                UsdSceneItem::create(MayaUsd::ufe::stagePath(stage), stage->GetPseudoRoot()),
+                materialsScopeName,
+                "Scope");
+            if (!createScopeCmd) {
+                markAsFailed();
+                return;
+            }
+            createScopeCmd->execute();
+            _cmds->append(createScopeCmd);
+            auto scopePath = createScopeCmd->newUfePath();
+            // The code automatically appends a "1". We need to rename:
+            auto itemOps = Ufe::SceneItemOps::sceneItemOps(Ufe::Hierarchy::createItem(scopePath));
+            if (!itemOps) {
+                markAsFailed();
+                return;
+            }
+            auto rename = itemOps->renameItemCmd(Ufe::PathComponent(materialsScopeName));
+            if (!rename.undoableCommand) {
+                markAsFailed();
+                return;
+            }
+            _cmds->append(rename.undoableCommand);
+            materialsScope = rename.item;
+        }
+        if (!materialsScope || materialsScope->path().empty()) {
+            // The _createScopeCmd and/or _renameScopeCmd will have emitted errors.
+            markAsFailed();
+            return;
+        }
+
+        //
+        // 2. Create the Material:
+        //
+        PXR_NS::SdrRegistry&          registry = PXR_NS::SdrRegistry::GetInstance();
+        PXR_NS::SdrShaderNodeConstPtr shaderNodeDef
+            = registry.GetShaderNodeByIdentifier(TfToken(_nodeId));
+        if (!shaderNodeDef) {
+            TF_RUNTIME_ERROR("Unknown shader identifier: %s", _nodeId.c_str());
+            markAsFailed();
+            return;
+        }
+        if (shaderNodeDef->GetOutputNames().empty()) {
+            TF_RUNTIME_ERROR("Surface shader %s does not have any outputs", _nodeId.c_str());
+            markAsFailed();
+            return;
+        }
+        auto scopeItem = std::dynamic_pointer_cast<UsdSceneItem>(materialsScope);
+        auto createMaterialCmd = UsdUndoAddNewPrimCommand::create(
+            scopeItem, shaderNodeDef->GetFamily().GetString(), "Material");
+        if (!createMaterialCmd) {
+            markAsFailed();
+            return;
+        }
+        createMaterialCmd->execute();
+        _createMaterialCmdIdx = _cmds->cmdsList().size();
+        _cmds->append(createMaterialCmd);
+        if (!createMaterialCmd->newPrim()) {
+            // The _createMaterialCmd will have emitted errors.
+            markAsFailed();
+            return;
+        }
+
+        //
+        // 3. Create the Shader:
+        //
+        UsdSceneItem::Ptr materialItem = std::dynamic_pointer_cast<UsdSceneItem>(
+            Ufe::Hierarchy::createItem(createMaterialCmd->newUfePath()));
+        auto createShaderCmd = UsdUndoCreateFromNodeDefCommand::create(
+            shaderNodeDef, materialItem, shaderNodeDef->GetFamily().GetString());
+        if (!createShaderCmd) {
+            markAsFailed();
+            return;
+        }
+        createShaderCmd->execute();
+        _cmds->append(createShaderCmd);
+        if (!createShaderCmd->insertedChild()) {
+            // The _createShaderCmd will have emitted errors.
+            markAsFailed();
+            return;
+        }
+
+        //
+        // 4. Connect the Shader to the material:
+        //
+        if (!connectShaderToMaterial(
+                createShaderCmd->insertedChild(), createMaterialCmd->newPrim(), _nodeId)) {
+            markAsFailed();
+            return;
+        }
+
+        //
+        // 5. Bind the material to all selected primitives in the stage:
+        //
+        for (const auto& parentPath : selectedPaths) {
             auto parentItem
                 = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(parentPath));
             if (!parentItem) {
                 markAsFailed();
                 return;
             }
-            Ufe::Path               scopePath;
-            PXR_NS::UsdStageWeakPtr stage = getStage(parentItem->path());
-            if (stage) {
-                auto stageHierarchy = Ufe::Hierarchy::hierarchy(
-                    Ufe::Hierarchy::createItem(parentPath.popSegment()));
-                if (stageHierarchy) {
-                    for (auto&& child : stageHierarchy->children()) {
-                        // Could be "mtl1" if there is already something named mtl which is not a
-                        // scope.
-                        if (child->nodeName().rfind(materialsScopeName, 0) == 0
-                            && child->nodeType() == "Scope") {
-                            scopePath = child->path();
-                            break;
-                        }
-                    }
-                }
-                if (scopePath.empty()) {
-                    auto createScopeCmd = UsdUndoAddNewPrimCommand::create(
-                        UsdSceneItem::create(
-                            MayaUsd::ufe::stagePath(stage), stage->GetPseudoRoot()),
-                        materialsScopeName,
-                        "Scope");
-                    if (!createScopeCmd) {
-                        markAsFailed();
-                        return;
-                    }
-                    createScopeCmd->execute();
-                    _cmds->append(createScopeCmd);
-                    scopePath = createScopeCmd->newUfePath();
-                    // The code automatically appends a "1". We need to rename:
-                    auto itemOps
-                        = Ufe::SceneItemOps::sceneItemOps(Ufe::Hierarchy::createItem(scopePath));
-                    auto rename = itemOps->renameItemCmd(Ufe::PathComponent(materialsScopeName));
-                    if (!rename.undoableCommand) {
-                        markAsFailed();
-                        return;
-                    }
-                    _cmds->append(rename.undoableCommand);
-                    scopePath = rename.item->path();
-                }
-            }
-            if (scopePath.empty()) {
-                // The _createScopeCmd and/or _renameScopeCmd will have emitted errors.
-                markAsFailed();
-                return;
-            }
-
-            // We only create the material once, so that we can assign the same material to all
-            // selected objects in this stage.
-            if (!materialItem) {
-                //
-                // 2. Create the Material if it does not exist:
-                //
-                PXR_NS::SdrRegistry&          registry = PXR_NS::SdrRegistry::GetInstance();
-                PXR_NS::SdrShaderNodeConstPtr shaderNodeDef
-                    = registry.GetShaderNodeByIdentifier(TfToken(_nodeId));
-                if (!shaderNodeDef) {
-                    TF_RUNTIME_ERROR("Unknown shader identifier: %s", _nodeId.c_str());
-                    markAsFailed();
-                    return;
-                }
-                if (shaderNodeDef->GetOutputNames().empty()) {
-                    TF_RUNTIME_ERROR(
-                        "Surface shader %s does not have any outputs", _nodeId.c_str());
-                    markAsFailed();
-                    return;
-                }
-                auto scopeItem = std::dynamic_pointer_cast<UsdSceneItem>(
-                    Ufe::Hierarchy::createItem(scopePath));
-                auto createMaterialCmd = UsdUndoAddNewPrimCommand::create(
-                    scopeItem, shaderNodeDef->GetFamily().GetString(), "Material");
-                if (!createMaterialCmd) {
-                    markAsFailed();
-                    return;
-                }
-                createMaterialCmd->execute();
-                _createMaterialCmdIdx = _cmds->cmdsList().size();
-                _cmds->append(createMaterialCmd);
-                if (!createMaterialCmd->newPrim()) {
-                    // The _createMaterialCmd will have emitted errors.
-                    markAsFailed();
-                    return;
-                }
-
-                //
-                // 3. Create the Shader if it does not exist:
-                //
-                materialItem = std::dynamic_pointer_cast<UsdSceneItem>(
-                    Ufe::Hierarchy::createItem(createMaterialCmd->newUfePath()));
-                auto createShaderCmd = UsdUndoCreateFromNodeDefCommand::create(
-                    shaderNodeDef, materialItem, shaderNodeDef->GetFamily().GetString());
-                if (!createShaderCmd) {
-                    markAsFailed();
-                    return;
-                }
-                createShaderCmd->execute();
-                _cmds->append(createShaderCmd);
-                if (!createShaderCmd->insertedChild()) {
-                    // The _createShaderCmd will have emitted errors.
-                    markAsFailed();
-                    return;
-                }
-
-                //
-                // 4. Connect the Shader to the material:
-                //
-                if (!connectShaderToMaterial(
-                        createShaderCmd->insertedChild(), createMaterialCmd->newPrim(), _nodeId)) {
-                    markAsFailed();
-                    return;
-                }
-            }
-
-            //
-            // 5. Bind the material to the parent primitive:
-            //
             auto bindCmd = std::make_shared<BindMaterialUndoableCommand>(
                 parentItem->prim(), materialItem->prim().GetPath());
             if (!bindCmd) {
