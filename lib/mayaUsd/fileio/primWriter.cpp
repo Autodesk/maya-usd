@@ -195,7 +195,11 @@ void UsdMayaPrimWriter::Write(const UsdTimeCode& usdTime)
             // Currently only purpose, which is uniform, so only export at
             // default time.
             UsdMayaWriteUtil::WriteSchemaAttributesToPrim<UsdGeomImageable>(
-                GetMayaObject(), _usdPrim, { UsdGeomTokens->purpose }, usdTime, &_valueWriter);
+                GetMayaObject(),
+                _usdPrim,
+                { UsdGeomTokens->purpose },
+                usdTime,
+                _GetSparseValueWriter());
         }
 
         // Write API schema attributes and strongly-typed metadata.
@@ -255,7 +259,12 @@ const UsdMayaJobExportArgs& UsdMayaPrimWriter::_GetExportArgs() const
     return _writeJobCtx.GetArgs();
 }
 
-UsdUtilsSparseValueWriter* UsdMayaPrimWriter::_GetSparseValueWriter() { return &_valueWriter; }
+UsdUtilsSparseValueWriter* UsdMayaPrimWriter::_GetSparseValueWriter()
+{
+    if (_writeJobCtx.GetArgs().disableSparseSamples)
+        return nullptr;
+    return &_valueWriter;
+}
 
 void UsdMayaPrimWriter::MakeSingleSamplesStatic()
 {
