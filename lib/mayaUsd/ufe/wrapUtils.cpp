@@ -105,9 +105,9 @@ std::vector<PXR_NS::UsdStageRefPtr> getAllStages()
 
 std::string stagePath(PXR_NS::UsdStageWeakPtr stage)
 {
-    // Proxy shape node's UFE path is a single segment, so no need to separate
-    // segments with commas.
-    return ufe::stagePath(stage).string();
+    // Even though the Proxy shape node's UFE path is a single segment, we always
+    // need to return as a Ufe::PathString (to remove |world).
+    return Ufe::PathString::string(ufe::stagePath(stage));
 }
 
 std::string usdPathToUfePathSegment(
