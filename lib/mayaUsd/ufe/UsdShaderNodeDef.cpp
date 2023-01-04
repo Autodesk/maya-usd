@@ -16,6 +16,7 @@
 
 #include "UsdShaderNodeDef.h"
 
+#include <mayaUsd/ufe/Utils.h>
 #if (UFE_PREVIEW_VERSION_NUM >= 4010)
 #include <mayaUsd/ufe/UsdShaderAttributeDef.h>
 #include <mayaUsd/ufe/UsdUndoCreateFromNodeDefCommand.h>
@@ -116,6 +117,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (arnold)
     (shader)
+    (glslfx)
 );
 // clang-format on
 
@@ -153,11 +155,15 @@ std::size_t UsdShaderNodeDef::nbClassifications() const
         // This might change in some future and fallback to the last case below.
     }
 
-    // Regular shader nodes provide 3 classification levels:
+    // We have a client that stores Maya shader classifications in the Role. Let's split that into
+    // subclassifications:
+    auto splitRoles = splitString(fShaderNodeDef->GetRole(), "/");
+
+    // Regular shader nodes provide at least 3 classification levels:
     //    - family
-    //    - role
+    //    - role (which might be splittable at / boundaries)
     //    - sourceType
-    return 3;
+    return 2 + splitRoles.size();
 }
 
 std::string UsdShaderNodeDef::classification(std::size_t level) const
@@ -177,24 +183,32 @@ std::string UsdShaderNodeDef::classification(std::size_t level) const
         case 1: return fShaderNodeDef->GetSourceType().GetString();
         }
     }
-    switch (level) {
-    // UsdShade: These work with MaterialX and Preview surface. Need to recheck against
-    // third-party renderers as we discover their shading nodes.
-    case 0: {
+
+    if (level == 0) {
         return fShaderNodeDef->GetFamily().GetString();
     }
-    case 1: {
-        if (fShaderNodeDef->GetRole() == fShaderNodeDef->GetName()) {
-            // See https://github.com/AcademySoftwareFoundation/MaterialX/issues/921
-            return "other";
-        } else {
-            return fShaderNodeDef->GetRole();
-        }
+
+    if (level == 1 && fShaderNodeDef->GetRole() == fShaderNodeDef->GetName()) {
+        // See https://github.com/AcademySoftwareFoundation/MaterialX/issues/921
+        return "other";
     }
-    case 2: {
+
+    // We have a client that stores Maya shader classifications in the Role. Let's split that into
+    // subclassifications:
+    auto splitRoles = splitString(fShaderNodeDef->GetRole(), "/");
+
+    if (level - 1 < splitRoles.size()) {
+        return UsdMayaUtil::prettifyName(splitRoles[splitRoles.size() - level]);
+    }
+
+    if (level - 1 == splitRoles.size()) {
+        // MAYA-126533: GLSLFX to go inside of USD
+        if (fShaderNodeDef->GetSourceType() == _tokens->glslfx) {
+            return "USD";
+        }
         return fShaderNodeDef->GetSourceType().GetString();
     }
-    }
+
     return {};
 }
 
