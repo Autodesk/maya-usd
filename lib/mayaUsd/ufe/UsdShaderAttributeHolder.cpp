@@ -131,11 +131,18 @@ std::string UsdShaderAttributeHolder::documentation() const { return _sdrProp->G
 #ifdef UFE_V3_FEATURES_AVAILABLE
 Ufe::Value UsdShaderAttributeHolder::getMetadata(const std::string& key) const
 {
-    Ufe::Value retVal = _Base::getMetadata(key);
+    Ufe::Value retVal;
+    if (key == "uiname") {
+        retVal = UsdShaderAttributeDef(_sdrProp).getMetadata(key);
+        if (!retVal.empty()) {
+            return retVal;
+        }
+    }
+    retVal = _Base::getMetadata(key);
     if (retVal.empty()) {
         return UsdShaderAttributeDef(_sdrProp).getMetadata(key);
     }
-    return Ufe::Value();
+    return retVal;
 }
 
 bool UsdShaderAttributeHolder::setMetadata(const std::string& key, const Ufe::Value& value)

@@ -336,13 +336,17 @@ class ConnectionsCustomControl(object):
         attr = self.prim.GetAttribute(self.attrName)
         attrLabel = self.attrName
         if self.useNiceName:
+            attrLabel = mayaUsdLib.Util.prettifyName(self.attrName)
             ufeItem = ufe.SceneItem(self.path)
-            ufeAttrS = ufe.Attributes.attributes(ufeItem)
-            ufeAttr = ufeAttrS.attribute(self.attrName)
-            attrLabel = str(ufeAttr.getMetadata("uiname"))
+            if ufeItem:
+                try:
+                    ufeAttrS = ufe.Attributes.attributes(ufeItem)
+                    ufeAttr = ufeAttrS.attribute(self.attrName)
+                    if ufeAttr.hasMetadata("uiname"):
+                        attrLabel = str(ufeAttr.getMetadata("uiname"))
+                except:
+                    pass
 
-            if not attrLabel:
-                attrLabel = mayaUsdLib.Util.prettifyName(self.attrName)
         attrType = attr.GetMetadata('typeName')
 
         singleWidgetWidth = mel.eval('global int $gAttributeEditorTemplateSingleWidgetWidth; $gAttributeEditorTemplateSingleWidgetWidth += 0')
@@ -431,6 +435,8 @@ class AEShaderLayout(object):
     _AttributeInfo = collections.namedtuple("_AttributeInfo", ["uiorder", "name", "uifolder"])
     # A string splitter for the most commonly used separators:
     _groupSplitter = re.compile(r"[/|\;:]")
+    # Valid uiorder:
+    _isDecimal = re.compile("^[0-9]+$")
 
     class Group(object):
         """Base class to return layout information. The list of items can contain subgroups."""
@@ -494,7 +500,7 @@ class AEShaderLayout(object):
                 metadata = input.GetHints()
                 metadata.update(input.GetMetadata())
                 uiorder = metadata.get("uiorder", "").strip()
-                if uiorder.isdecimal():
+                if AEShaderLayout._isDecimal.match(uiorder):
                     uiorder = int(uiorder)
                 else:
                     uiorder = unorderedIndex
@@ -541,7 +547,7 @@ class AEShaderLayout(object):
         unorderedIndex = 10000
         for input in nodegraph.GetInputs():
             uiorder = input.GetSdrMetadataByKey("uiorder").strip()
-            if uiorder.isdecimal():
+            if AEShaderLayout._isDecimal.match(uiorder):
                 uiorder = int(uiorder)
             else:
                 uiorder = unorderedIndex

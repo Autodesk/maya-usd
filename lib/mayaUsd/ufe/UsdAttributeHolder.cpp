@@ -205,6 +205,18 @@ Ufe::Value UsdAttributeHolder::getMetadata(const std::string& key) const
                 return Ufe::Value(metadata);
             }
         }
+        if (key == "uiname") {
+            // Non-shader case, but we still have light inputs and outputs to deal with:
+            if (PXR_NS::UsdShadeInput::IsInput(_usdAttr)) {
+                const PXR_NS::UsdShadeInput input(_usdAttr);
+                return Ufe::Value(UsdMayaUtil::prettifyName(input.GetBaseName().GetString()));
+            } else if (PXR_NS::UsdShadeOutput::IsOutput(_usdAttr)) {
+                const PXR_NS::UsdShadeOutput output(_usdAttr);
+                return Ufe::Value(UsdMayaUtil::prettifyName(output.GetBaseName().GetString()));
+            } else {
+                return Ufe::Value(UsdMayaUtil::prettifyName(_usdAttr.GetName().GetString()));
+            }
+        }
         PXR_NS::VtValue v;
         if (_usdAttr.GetMetadata(tok, &v)) {
             if (v.IsHolding<bool>())
@@ -264,19 +276,17 @@ bool UsdAttributeHolder::hasMetadata(const std::string& key) const
             if (result) {
                 return true;
             }
+        } else if (key == "uiname") {
+            return true;
         }
+
         PXR_NS::TfToken tok(key);
         // Special cases for NodeGraphs:
         if (PXR_NS::UsdShadeNodeGraph(usdPrim())) {
-            if (key == "uiname") {
-                return PXR_NS::UsdShadeInput::IsInput(_usdAttr)
-                    || PXR_NS::UsdShadeOutput::IsOutput(_usdAttr);
-            } else {
-                if (PXR_NS::UsdShadeInput::IsInput(_usdAttr)) {
-                    return PXR_NS::UsdShadeInput(_usdAttr).HasSdrMetadataByKey(tok);
-                } else if (PXR_NS::UsdShadeOutput::IsOutput(_usdAttr)) {
-                    return PXR_NS::UsdShadeOutput(_usdAttr).HasSdrMetadataByKey(tok);
-                }
+            if (PXR_NS::UsdShadeInput::IsInput(_usdAttr)) {
+                return PXR_NS::UsdShadeInput(_usdAttr).HasSdrMetadataByKey(tok);
+            } else if (PXR_NS::UsdShadeOutput::IsOutput(_usdAttr)) {
+                return PXR_NS::UsdShadeOutput(_usdAttr).HasSdrMetadataByKey(tok);
             }
         }
         result = _usdAttr.HasMetadata(tok);
