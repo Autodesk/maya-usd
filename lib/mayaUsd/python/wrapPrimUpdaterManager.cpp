@@ -117,6 +117,11 @@ std::string readPullInformationString(const PXR_NS::UsdPrim& prim)
     return dagPathStr;
 }
 
+bool isEditedPrimOrphaned(const PXR_NS::UsdPrim& prim)
+{
+    return MAYAUSD_NS_DEF::isEditedAsMayaOrphaned(prim);
+}
+
 } // namespace
 
 void wrapPrimUpdaterManager()
@@ -128,5 +133,6 @@ void wrapPrimUpdaterManager()
         .def("canEditAsMaya", canEditAsMaya)
         .def("discardEdits", discardEdits)
         .def("duplicate", duplicate, duplicate_overloads())
+        .def("isEditedAsMayaOrphaned", isEditedPrimOrphaned)
         .def("readPullInformation", readPullInformationString);
 }

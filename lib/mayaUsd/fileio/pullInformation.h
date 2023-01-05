@@ -28,9 +28,13 @@ UFE_NS_DEF { class Path; }
 
 namespace MAYAUSD_NS_DEF {
 
+/// @brief Write on the Maya node the information necessary later-on to merge
+///        the USD prim that is edited as Maya.
 MAYAUSD_CORE_PUBLIC
 bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& editedAsMayaRoot);
 
+/// @brief Read on the Maya node the information necessary to merge the USD prim
+///        that is edited as Maya.
 MAYAUSD_CORE_PUBLIC
 bool readPullInformation(const PXR_NS::UsdPrim& prim, std::string& dagPathStr);
 MAYAUSD_CORE_PUBLIC
@@ -40,21 +44,37 @@ bool readPullInformation(const Ufe::Path& ufePath, MDagPath& dagPath);
 MAYAUSD_CORE_PUBLIC
 bool readPullInformation(const MDagPath& dagpath, Ufe::Path& ufePath);
 
+/// @brief Write on the USD prim the information necessary later-on to merge
+///        the USD prim that is edited as Maya.
 MAYAUSD_CORE_PUBLIC
 bool writePulledPrimMetadata(const Ufe::Path& ufePulledPath, const MDagPath& editedRoot);
 MAYAUSD_CORE_PUBLIC
 bool writePulledPrimMetadata(PXR_NS::UsdPrim& pulledPrim, const MDagPath& editedRoot);
 
+/// @brief Remove from the USD prim the information necessary to merge the USD prim
+///        that was edited as Maya.
 MAYAUSD_CORE_PUBLIC
 void removePulledPrimMetadata(const Ufe::Path& ufePulledPath);
 MAYAUSD_CORE_PUBLIC
 void removePulledPrimMetadata(const PXR_NS::UsdStagePtr& stage, PXR_NS::UsdPrim& prim);
 
+/// @brief Hide the USD prim that is edited as Maya.
+///        This is done so that the USD prim and edited Maya data are not superposed
+///        in the viewport.
 MAYAUSD_CORE_PUBLIC
 bool addExcludeFromRendering(const Ufe::Path& ufePulledPath);
 
+/// @brief Show again the USD prim that was edited as Maya.
+///        This is done once the Maya data is meged into USD and removed from the scene.
 MAYAUSD_CORE_PUBLIC
 bool removeExcludeFromRendering(const Ufe::Path& ufePulledPath);
+
+/// @brief Verify if the edited as Maya nodes corresponding to the given prim is orphaned.
+MAYAUSD_CORE_PUBLIC
+bool isEditedAsMayaOrphaned(const PXR_NS::UsdPrim& prim);
+
+MAYAUSD_CORE_PUBLIC
+bool isEditedAsMayaOrphaned(const Ufe::Path& editedUsdPrim);
 
 } // namespace MAYAUSD_NS_DEF
 

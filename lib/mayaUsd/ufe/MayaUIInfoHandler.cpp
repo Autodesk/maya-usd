@@ -52,8 +52,10 @@ MayaUsd::ufe::UsdSceneItem::Ptr pulledUsdAncestorItem(const Ufe::SceneItem::Ptr&
     Ufe::Path usdItemPath;
     while (!found) {
         // A pulled node either has the pull information itself, or has a
-        // pulled ancestor that does.
-        if (!TF_VERIFY(!mayaPath.empty())) {
+        // pulled ancestor that does. Not finding it is not an error but a
+        // possible consequence of being orphaned: for example if the stage
+        // proxy shape was deleted.
+        if (mayaPath.empty()) {
             return nullptr;
         }
         const auto mayaPathStr = Ufe::PathString::string(mayaPath);
@@ -64,6 +66,13 @@ MayaUsd::ufe::UsdSceneItem::Ptr pulledUsdAncestorItem(const Ufe::SceneItem::Ptr&
             mayaPath = mayaPath.pop();
         }
     }
+
+    // Validate that the prim pointed to by the UFE path really is the
+    // pulled node and not some node that just happens to have the same
+    // name. This can happen, for example, when two variants each contain
+    // a child with the same name, one pulled, one not.
+    if (MAYAUSD_NS_DEF::isEditedAsMayaOrphaned(usdItemPath))
+        return nullptr;
 
     // Try to create a USD scene item (and its underlying prim) from the pulled
     // ancestor USD path.  If no such USD prim exists, our argument Maya node
