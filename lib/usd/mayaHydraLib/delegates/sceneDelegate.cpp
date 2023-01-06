@@ -230,6 +230,9 @@ MayaHydraSceneDelegate::MayaHydraSceneDelegate(const InitData& initData)
 {
     //TfDebug::Enable(MAYAHYDRALIB_DELEGATE_GET_MATERIAL_ID);
     //TfDebug::Enable(MAYAHYDRALIB_DELEGATE_GET);
+    
+    //Enable MAYAHYDRALIB_ADAPTER_MATERIALS_PARAMS to print to the output window the materials parameters type and values when there is a change in one of them.
+    //TfDebug::Enable(MAYAHYDRALIB_ADAPTER_MATERIALS_PARAMS);
 
     CreateDisplayStatusMaterials();
 }

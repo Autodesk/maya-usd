@@ -81,7 +81,7 @@ public:
         const TfToken&          paramName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr)
+        MPlugArray*             outPlug = nullptr)//Some parameters have more than one MPlug to look at such as transmission, specular etc. which have a weight and a color
         = 0;
 };
 
@@ -149,7 +149,7 @@ public:
         const MString&          plugName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr);
+        MPlugArray*             outPlug = nullptr);
 
     MAYAHYDRALIB_API static VtValue ConvertMayaAttrToScaledValue(
         MFnDependencyNode&      node,
@@ -157,7 +157,7 @@ public:
         const MString&          scaleName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr);
+        MPlugArray*             outPlug = nullptr);
 
     MAYAHYDRALIB_API
     static void initialize();

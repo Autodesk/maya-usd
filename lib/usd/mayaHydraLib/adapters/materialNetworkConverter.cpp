@@ -36,10 +36,80 @@
 #include <maya/MStatus.h>
 
 #include <mutex>
+#include <sstream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
+
+//Commenting this debug code as when it's not actually used, it produces an error due to a warning in Linux/OSX builds.
+//Return in the std::string outValueAsString the VtValue type and value written as text for debugging purpose
+/*void DebugPrintVtValue(const VtValue& val, std::string& outValueAsString)
+{
+    if (val.IsEmpty()){
+        outValueAsString = "No Value!";
+        return;
+    }
+
+    std::ostringstream ss;
+    if (val.IsHolding<float>()){
+        const float v       = val.UncheckedGet<float>();
+        ss << "float : ";
+        ss << v;
+    }
+
+    if (val.IsHolding<int>()){
+        const int v         = val.UncheckedGet<int>();
+        ss << "int : ";
+        ss << v;
+    }
+
+    if (val.IsHolding<GfVec2f>()){
+        const GfVec2f v     = val.UncheckedGet<GfVec2f>();
+        ss << "GfVec2f : ";
+        ss << v[0];
+        ss << " ";
+        ss << v[1];
+    }
+
+    if (val.IsHolding<GfVec3f>()){
+        const GfVec3f v     = val.UncheckedGet<GfVec3f>();
+        ss << "GfVec3f : (";
+        ss << v[0];
+        ss << " , ";
+        ss << v[1];
+        ss << " , ";
+        ss << v[2];
+        ss << ")";
+    }
+
+    outValueAsString = ss.str();
+    if (outValueAsString.size() > 0){
+        return;
+    }
+
+    //Unknown
+    outValueAsString = " * Unknown *";
+}
+
+//Print to the output window the std::map which is usually an hydra material parameters array
+//This prints the type and value of each parameter, but it only outputs something if TfDebug::Enable(MAYAHYDRALIB_ADAPTER_MATERIALS_PARAMS); 
+//is set somewhere in the code
+void DebugPrintParameters(const std::map<TfToken, VtValue>& params)
+{
+    TF_DEBUG(MAYAHYDRALIB_ADAPTER_MATERIALS_PARAMS).Msg("\n");//Add a line
+    //Print all parameters types and values
+    for(auto param : params){
+        std::string valueAsString;
+        DebugPrintVtValue(param.second, valueAsString);
+        TF_DEBUG(MAYAHYDRALIB_ADAPTER_MATERIALS_PARAMS)
+        .Msg(
+            "Material parameters : (%s - %s)\n",
+            param.first.GetText(),
+            valueAsString.c_str());
+    }
+}
+*/
 
 const TfToken       _useSpecularWorkflowToken ("useSpecularWorkflow");
 const TfToken       _specularColorToken ("specularColor");
@@ -198,7 +268,7 @@ public:
         const TfToken&          paramName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr) override
+        MPlugArray*             outPlug = nullptr) override
     {
         return MayaHydraMaterialNetworkConverter::ConvertMayaAttrToValue(
             node, paramName.GetText(), type, fallback, outPlug);
@@ -223,7 +293,7 @@ public:
         const TfToken&          paramName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr) override
+        MPlugArray*             outPlug = nullptr) override
     {
         return MayaHydraMaterialNetworkConverter::ConvertMayaAttrToValue(
             node, paramName.GetText(), type, &_defaultValue, outPlug);
@@ -250,7 +320,7 @@ public:
         const TfToken&          paramName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr) override
+        MPlugArray*             outPlug = nullptr) override
     {
         return MayaHydraMaterialNetworkConverter::ConvertMayaAttrToValue(
             node, _remappedName.GetText(), type, fallback, outPlug);
@@ -278,7 +348,7 @@ public:
         const TfToken&          paramName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr) override
+        MPlugArray*             outPlug = nullptr) override
     {
         return MayaHydraMaterialNetworkConverter::ConvertMayaAttrToScaledValue(
             node, _remappedName.GetText(), _scaleName.GetText(), type, fallback, outPlug);
@@ -313,7 +383,7 @@ public:
         const TfToken&          paramName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr) override
+        MPlugArray*             outPlug = nullptr) override
     {
         return _value;
     }
@@ -339,7 +409,7 @@ public:
         const TfToken&          paramName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr) override
+        MPlugArray*             outPlug = nullptr) override
     {
         if (outPlug) {
             // TODO: create a UsdPrimvarReader_float2 even if there's no
@@ -358,7 +428,7 @@ public:
                         continue;
                     }
                     if (source.node().hasFn(MFn::kPlace2dTexture)) {
-                        *outPlug = connections[i];
+                        outPlug->append(connections[i]);
                         break;
                     }
                 }
@@ -381,10 +451,10 @@ public:
         const TfToken&          paramName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr) override
+        MPlugArray*             outPlug = nullptr) override
     {
         VtValue cosinePower = MayaHydraMaterialNetworkConverter::ConvertMayaAttrToValue(
-            node, "cosinePower", type, nullptr);
+            node, "cosinePower", type, nullptr, outPlug);
         if (!cosinePower.IsHolding<float>()) {
             if (fallback) {
                 return *fallback;
@@ -414,10 +484,10 @@ public:
         const TfToken&          paramName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr) override
+        MPlugArray*             outPlug = nullptr) override
     {
         VtValue transmission = MayaHydraMaterialNetworkConverter::ConvertMayaAttrToValue(
-            node, "transmission", type, nullptr);
+            node, "transmission", type, nullptr, outPlug);
         if (!transmission.IsHolding<float>()) {
             if (fallback) {
                 return *fallback;
@@ -428,7 +498,13 @@ public:
                      "fallback given");
             return VtValue();
         } else {
-            return VtValue(1.0f - transmission.UncheckedGet<float>());
+            float val = 1.0f - transmission.UncheckedGet<float>();
+            if (val < 1.0e-4f){ 
+                //Clamp lower value as an opacity of 0.0 in hydra makes the object fully transparent, 
+                //but in VP2 we still see the specular highlight if any, avoiding 0.0 leads to the same effect in hydra.
+                val = 1.0e-4f;
+            }
+            return VtValue(val);
         }
     }
 };
@@ -443,7 +519,7 @@ public:
         const TfToken&          paramName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr) override
+        MPlugArray*             outPlug = nullptr) override
     {
         auto path = GetFileTexturePath(node);
         return VtValue(SdfAssetPath(path.GetText(), path.GetText()));
@@ -466,7 +542,7 @@ public:
         const TfToken&          paramName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr) override
+        MPlugArray*             outPlug = nullptr) override
     {
         if (node.findPlug(_wrapAttr, true).asBool()) {
             if (node.findPlug(_mirrorAttr, true).asBool()) {
@@ -698,6 +774,11 @@ HdMaterialNode* MayaHydraMaterialNetworkConverter::GetMaterial(const MObject& ma
                 material.parameters[_useSpecularWorkflowToken] = VtValue(1);
             }
         }
+
+        //DEBUG to print material parameters type and value to the output window
+        // You also have to uncomment the DebugPrintParameters and DebugPrintVtValue functions to make this work.
+        //DebugPrintParameters(material.parameters);
+
     } else {
         for (auto& nameAttrConverterPair : nodeConverter->GetAttrConverters()) {
             auto& name = nameAttrConverterPair.first;
@@ -743,13 +824,16 @@ void MayaHydraMaterialNetworkConverter::ConvertParameter(
     const SdfValueTypeName&      type,
     const VtValue*               fallback)
 {
-    MPlug   plug;
+    MPlugArray   plugArray;
     VtValue val;
     TF_DEBUG(MAYAHYDRALIB_ADAPTER_MATERIALS).Msg("ConvertParameter(%s)\n", paramName.GetText());
 
     auto attrConverter = nodeConverter.GetAttrConverter(paramName);
     if (attrConverter) {
-        val = attrConverter->GetValue(node, paramName, type, fallback, &plug);
+        //Using an array of MPlug in plugArray, as some settings may have 2 attributes that should be taken into consideration for connections.
+        //For example : specular has a specular color and specular weight attributes, both should be considered.
+        //So after calling attrConverter->GetValue, the plugArray will contain all dependents MPlug for connections.
+        val = attrConverter->GetValue(node, paramName, type, fallback, &plugArray); 
     } else if (fallback) {
         val = *fallback;
     } else {
@@ -763,25 +847,38 @@ void MayaHydraMaterialNetworkConverter::ConvertParameter(
     }
 
     material.parameters[paramName] = val;
-    if (plug.isNull()) {
-        return;
-    }
-    MPlug source = plug.source();
-    if (!source.isNull()) {
-        auto* sourceMat = GetMaterial(source.node());
-        if (!sourceMat) {
+
+    /*plugArray contains all dependents MPlug we should consider for connections.
+    Usually it contains 1 or 2 MPlug (2 is when dealing with a weighted attribute)
+    But a limitation we have at this time is that if both the color and the weight attributes have a connection, 
+    one of both connections will be ignored by hydra as we have only one parameter in the UsdPreviewSurface 
+    which will have both connections and hydra only considers the last connection added. There is no blending 
+    node we could use with the UsdPreviewSurface. We would need the StandardSurface to be in hydra or use MaterialX to 
+    build a shading network to handle this case with a multiply node for example.
+    */
+    for (auto plug : plugArray)
+    {
+        if (plug.isNull()) {
             return;
         }
-        const auto& sourceMatPath = sourceMat->path;
-        if (sourceMatPath.IsEmpty()) {
-            return;
+     
+        MPlug source = plug.source();
+        if (!source.isNull()) {
+            auto* sourceMat = GetMaterial(source.node());
+            if (!sourceMat) {
+                return;
+            }
+            const auto& sourceMatPath = sourceMat->path;
+            if (sourceMatPath.IsEmpty()) {
+                return;
+            }
+            HdMaterialRelationship rel;
+            rel.inputId = sourceMatPath;
+            rel.inputName = GetOutputName(*sourceMat, type);
+            rel.outputId = material.path;
+            rel.outputName = paramName;
+            _network.relationships.push_back(rel);
         }
-        HdMaterialRelationship rel;
-        rel.inputId = sourceMatPath;
-        rel.inputName = GetOutputName(*sourceMat, type);
-        rel.outputId = material.path;
-        rel.outputName = paramName;
-        _network.relationships.push_back(rel);
     }
 }
 
@@ -790,14 +887,14 @@ VtValue MayaHydraMaterialNetworkConverter::ConvertMayaAttrToValue(
     const MString&          plugName,
     const SdfValueTypeName& type,
     const VtValue*          fallback,
-    MPlug*                  outPlug)
+    MPlugArray*             outPlug)
 {
     MStatus status;
     auto    p = node.findPlug(plugName, true, &status);
     VtValue val;
     if (status) {
         if (outPlug) {
-            *outPlug = p;
+            outPlug->append(p);
         }
         val = ConvertPlugToValue(p, type, fallback);
     } else if (fallback) {
@@ -819,12 +916,15 @@ VtValue MayaHydraMaterialNetworkConverter::ConvertMayaAttrToScaledValue(
     const MString&          scaleName,
     const SdfValueTypeName& type,
     const VtValue*          fallback,
-    MPlug*                  outPlug)
+    MPlugArray*             outPlug)
 {
     VtValue val = ConvertMayaAttrToValue(node, plugName, type, fallback, outPlug);
     MStatus status;
     auto    p = node.findPlug(scaleName, true, &status);
     if (status) {
+        if( ! p.isNull() && outPlug){
+            outPlug->append(p);
+        }
         if (type.GetType() == SdfValueTypeNames->Vector3f.GetType()) {
             val = val.UncheckedGet<GfVec3f>() * p.asFloat();
         } else if (type == SdfValueTypeNames->Float) {
