@@ -1547,7 +1547,9 @@ HdCullStyle MayaHydraSceneDelegate::GetCullStyle(const SdfPath& id)
 {
     TF_DEBUG(MAYAHYDRALIB_DELEGATE_GET_CULL_STYLE)
         .Msg("MayaHydraSceneDelegate::GetCullStyle(%s)\n", id.GetText());
-    return HdCullStyleDontCare;
+    //HdCullStyleNothing means no culling, HdCullStyledontCare means : let the renderer choose between back or front faces culling.
+    //We don't want culling, since we want to see the backfaces being unlit with MayaHydraSceneDelegate::GetDoubleSided returning false.
+    return HdCullStyleNothing;
 }
 
 HdDisplayStyle MayaHydraSceneDelegate::GetDisplayStyle(const SdfPath& id)

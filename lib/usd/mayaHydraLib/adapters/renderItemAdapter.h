@@ -169,7 +169,7 @@ public:
 	virtual bool IsSupported() const override;
 
 	MAYAHYDRALIB_API
-	virtual bool GetDoubleSided() const { return true; };
+	virtual bool GetDoubleSided() const { return false; };
 
 	
 
