@@ -337,6 +337,18 @@ void MayaHydraSceneDelegate::_RemoveRenderItem(
 //void MayaHydraSceneDelegate::_TransformNodeDirty(MObject& node, MPlug& plug, void* clientData)
 void MayaHydraSceneDelegate::HandleCompleteViewportScene(const MDataServerOperation::MViewportScene& scene, MFrameContext::DisplayStyle displayStyle)
 {
+    const bool playbackRunning = MAnimControl::isPlaying();
+
+    if (_isPlaybackRunning != playbackRunning){
+        //The value has changed, we are calling SetPlaybackChanged so that every render item that 
+        //has its visibility dependent on the playback should dirty its hydra visibility flag so its gets recomputed.
+        for (auto it = _renderItemsAdapters.begin();it != _renderItemsAdapters.end(); it++){
+            it->second->SetPlaybackChanged();
+        }
+
+        _isPlaybackRunning = playbackRunning;
+    }
+    
 #if 1
 	// First loop to get rid of removed items
 	constexpr int kInvalidId = 0;
@@ -1504,7 +1516,7 @@ bool MayaHydraSceneDelegate::GetVisible(const SdfPath& id)
 #ifdef MAYAHYDRALIB_SCENE_RENDER_DATASERVER
 	return _GetValue<MayaHydraRenderItemAdapter, bool>(
 		id,
-		[](MayaHydraRenderItemAdapter* a) -> bool { return a->GetVisible(); },
+		[this](MayaHydraRenderItemAdapter* a) -> bool { return a->GetVisible(_isPlaybackRunning); },
 		_renderItemsAdapters
 		);
 #else

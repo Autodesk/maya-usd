@@ -188,7 +188,10 @@ public:
 	VtValue GetMaterialResource();
 
 	MAYAHYDRALIB_API
-	bool GetVisible() { return _visible; }
+	void SetPlaybackChanged();
+
+	MAYAHYDRALIB_API
+	bool GetVisible(bool isPlaybackRunning);
 	
 	MAYAHYDRALIB_API
 	void SetVisible(bool val) { _visible = val; }
@@ -275,6 +278,7 @@ private:
 	int _fastId = 0;
 	bool _visible = false;
 	MColor _wireframeColor			= {1.f,1.f,1.f,1.f};
+	bool _isHideOnPlayback = false;
 	MHWRender::DisplayStatus _displayStatus = MHWRender::DisplayStatus::kNoStatus;
 };
 

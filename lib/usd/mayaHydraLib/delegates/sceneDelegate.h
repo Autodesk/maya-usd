@@ -321,6 +321,7 @@ private:
     DisplayStatusMaterialMap _displayStatusMaterials;
 
     bool    _enableMaterials = false;
+    bool    _isPlaybackRunning = false;
 };
 
 typedef std::shared_ptr<MayaHydraSceneDelegate> MayaSceneDelegateSharedPtr;

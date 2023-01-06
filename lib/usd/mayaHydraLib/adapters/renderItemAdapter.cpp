@@ -376,17 +376,23 @@ void MayaHydraRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data
 	
 	const bool isLinePrimitive	= (MHWRender::MGeometry::Primitive::kLines == _primitive);
 
+	HdDirtyBits dirtyBits = 0;
+
 	_wireframeColor				= data._wireframeColor;
 	_displayStatus				= data._displayStatus;
-
+	const bool hideOnPlayback	= data._ri.isHideOnPlayback();
+	if (hideOnPlayback != _isHideOnPlayback){
+		_isHideOnPlayback	= hideOnPlayback;
+		dirtyBits			|= HdChangeTracker::DirtyVisibility;
+	}
+	
 	//At some point, we will have to handle the dormant color if the user customized the wireframe color of an object
 	//as we use the same color for all dormant objects
 	if (isLinePrimitive){
 		GetDelegate()->UpdateDisplayStatusMaterial(_displayStatus, _wireframeColor);
 	}
 	
-	HdDirtyBits dirtyBits = 0;
-	
+
 	if (visibChanged)
 	{
 		SetVisible(visible);
@@ -664,7 +670,25 @@ VtValue MayaHydraRenderItemAdapter::GetMaterialResource()
 	}
 
 	return {};
-};
+}
+
+bool MayaHydraRenderItemAdapter::GetVisible(bool isPlaybackRunning) 
+{ 
+	//Assuming that, if the playback is in the active view only (MAnimControl::kPlaybackViewActive), we are called because we are in the active view
+	if (_isHideOnPlayback && isPlaybackRunning ){
+		return false;
+	}
+	
+	return _visible; 
+}
+
+void MayaHydraRenderItemAdapter::SetPlaybackChanged()
+{
+	//There was a change in the playblack state, it started or stopped running so update any primitive that is dependent on this
+	if (_isHideOnPlayback){
+		MarkDirty(HdChangeTracker::DirtyVisibility);
+	}
+}
 
 ///////////////////////////////////////////////////////////////////////
 // TF_REGISTRY
