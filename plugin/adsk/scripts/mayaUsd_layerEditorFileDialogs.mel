@@ -48,7 +48,7 @@ global proc string[] UsdLayerEditor_LoadLayersFileDialog(string $title, string $
             -caption $title
             -fileMode 4
             -okCaption $okCaption
-            -fileFilter $fileFilter -dialogStyle 2
+            -fileFilter $fileFilter
             -optionsUICreate "UsdLayerEditor_LoadLayersFileDialogOptions_Create"
             -startingDirectory $folder
             `;
