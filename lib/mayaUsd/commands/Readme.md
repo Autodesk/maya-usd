@@ -253,6 +253,22 @@ Currently, for Mesh export (and similarly for NurbsPatch, also),
 the UV set names will be renamed st, st1, st2,... based on ordering of the
 primitive. The original name will be preserved in custom data for roundtripping.
 
+#### Material Scopes
+
+The default material scope when exporting materials is named `mtl`. Users can
+change this default material scope name by setting the environment variable
+named `MAYAUSD_MATERIALS_SCOPE_NAME`.
+
+This environment variable was added in part to support legacy user of mayaUSD:
+in past versions of the plugin, the material scope was named `Looks`. The change
+to the new default `mtl` was done to be aligned with other tools generating USD.
+As such, the envrionment variable provides the possibility to use the old `Looks`
+name by setting `MAYAUSD_MATERIALS_SCOPE_NAME=Looks`.
+
+Note that if a user sets both `MAYAUSD_MATERIALS_SCOPE_NAME` and the Pixar
+`USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME` environment variable, then the
+Pixar environment variable is used.
+
 
 ### Custom Attributes and Tagging for USD
 
