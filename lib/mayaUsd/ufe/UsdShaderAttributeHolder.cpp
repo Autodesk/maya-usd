@@ -132,7 +132,7 @@ std::string UsdShaderAttributeHolder::documentation() const { return _sdrProp->G
 Ufe::Value UsdShaderAttributeHolder::getMetadata(const std::string& key) const
 {
     Ufe::Value retVal;
-    if (key == "uiname") {
+    if (key == MayaUsdMetadata->UIName) {
         retVal = UsdShaderAttributeDef(_sdrProp).getMetadata(key);
         if (!retVal.empty()) {
             return retVal;

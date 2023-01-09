@@ -269,7 +269,7 @@ typedef std::unordered_map<std::string, std::function<Ufe::Value(const PXR_NS::S
     MetadataMap;
 static const MetadataMap _metaMap = {
     // Conversion map between known USD metadata and its MaterialX equivalent:
-    { "uiname",
+    { MayaUsdMetadata->UIName,
       [](const PXR_NS::SdrShaderNode& n) {
           std::string uiname;
           if (!n.GetLabel().IsEmpty()) {

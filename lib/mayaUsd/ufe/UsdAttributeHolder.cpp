@@ -190,7 +190,7 @@ Ufe::Value UsdAttributeHolder::getMetadata(const std::string& key) const
             if (PXR_NS::UsdShadeInput::IsInput(_usdAttr)) {
                 const PXR_NS::UsdShadeInput input(_usdAttr);
                 std::string                 metadata = input.GetSdrMetadataByKey(tok);
-                if (metadata.empty() && key == "uiname") {
+                if (metadata.empty() && key == MayaUsdMetadata->UIName) {
                     // Strip and prettify:
                     metadata = UsdMayaUtil::prettifyName(input.GetBaseName().GetString());
                 }
@@ -198,14 +198,14 @@ Ufe::Value UsdAttributeHolder::getMetadata(const std::string& key) const
             } else if (PXR_NS::UsdShadeOutput::IsOutput(_usdAttr)) {
                 const PXR_NS::UsdShadeOutput output(_usdAttr);
                 std::string                  metadata = output.GetSdrMetadataByKey(tok);
-                if (metadata.empty() && key == "uiname") {
+                if (metadata.empty() && key == MayaUsdMetadata->UIName) {
                     // Strip and prettify:
                     metadata = UsdMayaUtil::prettifyName(output.GetBaseName().GetString());
                 }
                 return Ufe::Value(metadata);
             }
         }
-        if (key == "uiname") {
+        if (key == MayaUsdMetadata->UIName) {
             // Non-shader case, but we still have light inputs and outputs to deal with:
             if (PXR_NS::UsdShadeInput::IsInput(_usdAttr)) {
                 const PXR_NS::UsdShadeInput input(_usdAttr);
@@ -276,7 +276,7 @@ bool UsdAttributeHolder::hasMetadata(const std::string& key) const
             if (result) {
                 return true;
             }
-        } else if (key == "uiname") {
+        } else if (key == MayaUsdMetadata->UIName) {
             return true;
         }
 
