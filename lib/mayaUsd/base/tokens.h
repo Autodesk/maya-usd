@@ -92,7 +92,7 @@ TF_DECLARE_PUBLIC_TOKENS(MayaUsdOptionVars, MAYAUSD_CORE_PUBLIC, MAYA_USD_OPTION
     ((ReferencedLayers, "mayaSharedLayers"))             \
     /* Export file path.                              */ \
     ((ExportFilePathToken, "mayaExportFilePath"))        \
-    /* Metadata for UI queries  names                 */ \
+    /* Metadata for UI queries                        */ \
     ((UIName, "uiname"))                                 \
     ((UIFolder, "uifolder"))                             \
     ((UIMin, "uimin"))                                   \
