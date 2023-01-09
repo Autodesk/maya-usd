@@ -60,7 +60,7 @@ MayaUsd::ufe::UsdSceneItem::Ptr pulledUsdAncestorItem(const Ufe::SceneItem::Ptr&
         }
         const auto mayaPathStr = Ufe::PathString::string(mayaPath);
         const auto dagPath = UsdMayaUtil::nameToDagPath(mayaPathStr);
-        if (MAYAUSD_NS_DEF::readPullInformation(dagPath, usdItemPath)) {
+        if (MayaUsd::readPullInformation(dagPath, usdItemPath)) {
             found = true;
         } else {
             mayaPath = mayaPath.pop();
@@ -71,7 +71,7 @@ MayaUsd::ufe::UsdSceneItem::Ptr pulledUsdAncestorItem(const Ufe::SceneItem::Ptr&
     // pulled node and not some node that just happens to have the same
     // name. This can happen, for example, when two variants each contain
     // a child with the same name, one pulled, one not.
-    if (MAYAUSD_NS_DEF::isEditedAsMayaOrphaned(usdItemPath))
+    if (MayaUsd::isEditedAsMayaOrphaned(usdItemPath))
         return nullptr;
 
     // Try to create a USD scene item (and its underlying prim) from the pulled
