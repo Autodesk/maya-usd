@@ -262,7 +262,7 @@ named `MAYAUSD_MATERIALS_SCOPE_NAME`.
 This environment variable was added in part to support legacy user of mayaUSD:
 in past versions of the plugin, the material scope was named `Looks`. The change
 to the new default `mtl` was done to be aligned with other tools generating USD.
-As such, the envrionment variable provides the possibility to use the old `Looks`
+As such, the environment variable provides the possibility to use the old `Looks`
 name by setting `MAYAUSD_MATERIALS_SCOPE_NAME=Looks`.
 
 Note that if a user sets both `MAYAUSD_MATERIALS_SCOPE_NAME` and the Pixar
