@@ -24,6 +24,7 @@
 #include "Global.h"
 #include "Utils.h"
 
+#include <mayaUsd/base/tokens.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/token.h>
@@ -269,7 +270,7 @@ typedef std::unordered_map<std::string, std::function<Ufe::Value(const PXR_NS::S
     MetadataMap;
 static const MetadataMap _metaMap = {
     // Conversion map between known USD metadata and its MaterialX equivalent:
-    { MayaUsdMetadata->UIName,
+    { MayaUsdMetadata->UIName.GetString(),
       [](const PXR_NS::SdrShaderNode& n) {
           std::string uiname;
           if (!n.GetLabel().IsEmpty()) {

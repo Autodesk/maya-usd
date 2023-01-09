@@ -77,7 +77,7 @@ typedef std::unordered_map<std::string, std::function<Ufe::Value(const PXR_NS::S
                          MetadataMap;
 static const MetadataMap _metaMap = {
     // Conversion map between known USD metadata and its MaterialX equivalent:
-    { MayaUsdMetadata->UIName,
+    { MayaUsdMetadata->UIName.GetString(),
       [](const PXR_NS::SdrShaderProperty& p) {
           return !p.GetLabel().IsEmpty() ? p.GetLabel().GetString()
                                          : UsdMayaUtil::prettifyName(p.GetName().GetString());
@@ -86,7 +86,7 @@ static const MetadataMap _metaMap = {
       [](const PXR_NS::SdrShaderProperty& p) {
           return !p.GetHelp().empty() ? p.GetHelp() : Ufe::Value();
       } },
-    { MayaUsdMetadata->UIName,
+    { MayaUsdMetadata->UIFolder.GetString(),
       [](const PXR_NS::SdrShaderProperty& p) {
           return !p.GetPage().IsEmpty() ? p.GetPage().GetString() : Ufe::Value();
       } },
@@ -115,11 +115,13 @@ static const MetadataMap _metaMap = {
           }
           return !r.empty() ? r : Ufe::Value();
       } },
-    { MayaUsdMetadata->UISoftMin, // Maya has 0-100 sliders. In rendering, sliders are 0-1.
+    { MayaUsdMetadata->UISoftMin
+          .GetString(), // Maya has 0-100 sliders. In rendering, sliders are 0-1.
       [](const PXR_NS::SdrShaderProperty&) {
           return std::string { "0.0" }; // Will only be returned if the metadata does not exist.
       } },
-    { MayaUsdMetadata->UISoftMax, // Maya has 0-100 sliders. In rendering, sliders are 0-1.
+    { MayaUsdMetadata->UISoftMax
+          .GetString(), // Maya has 0-100 sliders. In rendering, sliders are 0-1.
       [](const PXR_NS::SdrShaderProperty&) {
           return std::string { "1.0" }; // Will only be returned if the metadata does not exist.
       } },
