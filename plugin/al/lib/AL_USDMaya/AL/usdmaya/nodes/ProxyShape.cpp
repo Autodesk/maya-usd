@@ -601,8 +601,8 @@ MStatus ProxyShape::initialise()
         m_serializedTrCtx
             = addStringAttr("serializedTrCtx", "srtc", kReadable | kWritable | kStorable | kHidden);
 
-        m_sleepTranslation = addBoolAttr(
-            "sleepTranslation", "slp", false, kReadable | kWritable | kStorable);
+        m_sleepTranslation
+            = addBoolAttr("sleepTranslation", "slp", false, kReadable | kWritable | kStorable);
 
         addFrame("USD Timing Information");
         inheritTimeAttr(
@@ -775,8 +775,8 @@ void ProxyShape::onPrimResync(SdfPath primPath, SdfPathVector& previousPrims)
 {
     // Check if the proxy shape is in translation sleep mode before attempting resync operations
     if (translationSleeping()) {
-        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg(
-            "ProxyShape::onPrimResync ignoring resync; translation sleeping\n");
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS)
+            .Msg("ProxyShape::onPrimResync ignoring resync; translation sleeping\n");
         return;
     }
 
@@ -2210,7 +2210,7 @@ bool ProxyShape::isPrimLocked(const UsdPrim& prim, LockPrimCache& cache) const
 //----------------------------------------------------------------------------------------------------------------------
 bool ProxyShape::translationSleeping() const
 {
-    bool value;
+    bool    value;
     MStatus status = sleepTranslationPlug().getValue(value);
     return status && value;
 }
