@@ -808,6 +808,8 @@ void MtohRenderOverride::_InitHydraResources()
         SdfPath(),
         _isUsingHdSt);
 
+    SdfPathVector solidPrimsRootPaths;
+
     auto delegateNames = MayaHydraDelegateRegistry::GetDelegateNames();
     auto creators = MayaHydraDelegateRegistry::GetDelegateCreators();
     TF_VERIFY(delegateNames.size() == creators.size());
@@ -823,13 +825,19 @@ void MtohRenderOverride::_InitHydraResources()
         if (newDelegate) {
             // Call SetLightsEnabled before the delegate is populated
             newDelegate->SetLightsEnabled(!_hasDefaultLighting);
+            if (auto mayaSceneDelegate = std::dynamic_pointer_cast<MayaHydraSceneDelegate>(newDelegate)) {
+                solidPrimsRootPaths.push_back(mayaSceneDelegate->GetSolidPrimsRootPath());
+            }
             _delegates.emplace_back(std::move(newDelegate));
         }
     }
+		
     if (_hasDefaultLighting) {
         delegateInitData.delegateID
             = _ID.AppendChild(TfToken(TfStringPrintf("_DefaultLightDelegate_%p", this)));
         _defaultLightDelegate.reset(new MtohDefaultLightDelegate(delegateInitData));
+        // Set the scene delegate SolidPrimitivesRootPaths for the lines and points primitives to be ignored by the default light
+        _defaultLightDelegate->SetSolidPrimitivesRootPaths(solidPrimsRootPaths);
     }
     VtValue selectionTrackerValue(_selectionTracker);
     _engine.SetTaskContextData(HdxTokens->selectionState, selectionTrackerValue);

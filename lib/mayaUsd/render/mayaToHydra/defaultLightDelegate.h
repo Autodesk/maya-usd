@@ -38,6 +38,7 @@ public:
 
     void Populate() override;
     void SetDefaultLight(const GlfSimpleLight& light);
+    void SetSolidPrimitivesRootPaths(const SdfPathVector& solidPrimitivesPaths) {_solidPrimitivesRootPaths = solidPrimitivesPaths;}
 
 protected:
     GfMatrix4d GetTransform(const SdfPath& id) override;
@@ -49,6 +50,7 @@ private:
     GlfSimpleLight _light;
     SdfPath        _lightPath;
     bool           _isSupported = false;
+    SdfPathVector        _solidPrimitivesRootPaths;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

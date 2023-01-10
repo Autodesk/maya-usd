@@ -129,8 +129,16 @@ VtValue MtohDefaultLightDelegate::Get(const SdfPath& id, const TfToken& key)
         return VtValue(GfMatrix4d(1.0));//We don't use the transform but use the position param of the GlfsimpleLight
         // Hydra might crash when this is an empty VtValue.
     } else if (key == HdLightTokens->shadowCollection) {
-        HdRprimCollection coll(HdTokens->geometry, HdReprSelector(HdReprTokens->refined));
-        return VtValue(coll);
+        if (!_solidPrimitivesRootPaths.empty()){
+            //Exclude lines/points primitives from casting shadows by only taking the primitives whose root path belongs to _solidPrimitivesRootPaths
+            HdRprimCollection coll(HdTokens->geometry, HdReprSelector(HdReprTokens->refined));
+            coll.SetRootPaths(_solidPrimitivesRootPaths);
+            return VtValue(coll);
+        }
+        else{
+            HdRprimCollection coll(HdTokens->geometry, HdReprSelector(HdReprTokens->refined));
+            return VtValue(coll);
+        }
     } else if (key == HdLightTokens->shadowParams) {
         HdxShadowParams shadowParams;
         shadowParams.enabled = false;

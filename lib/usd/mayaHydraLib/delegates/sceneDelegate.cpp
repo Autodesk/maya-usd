@@ -205,7 +205,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((ActiveAffectedDisplayStatusMaterial, "__activeaffected_selection_material__"))
     (diffuseColor)
     (emissiveColor)
-	(MayaHydraMeshPoints)
+    (roughness)
+    (MayaHydraMeshPoints)
 );
 // clang-format on
 
@@ -310,8 +311,10 @@ void MayaHydraSceneDelegate::UpdateDisplayStatusMaterialColor(const SdfPath& mat
     node.identifier     = UsdImagingTokens->UsdPreviewSurface;
     node.path           = materialPath;
     if (IsHdSt()){
-        //In Storm, set diffuse color to black to avoid lighting and emissive color to the color we want
-        node.parameters.insert({_tokens->diffuseColor, blackColor});
+        //In Storm, set diffuse color to black and specular roughness to 1.0f to avoid lighting and emissive color to the color we want
+        //TODO: use constantColor ShadingStyle to aviod lighting for better performance
+        node.parameters.insert({_tokens->diffuseColor, blackColor}); // get rid of diffuse color part
+        node.parameters.insert({_tokens->roughness, VtValue(1.0f)}); // get rid of specular color part
         node.parameters.insert({_tokens->emissiveColor, VtValue(selCol)});
     }else{
         node.parameters.insert({_tokens->diffuseColor, VtValue(selCol)});
