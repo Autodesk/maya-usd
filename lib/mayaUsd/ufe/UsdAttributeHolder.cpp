@@ -17,6 +17,7 @@
 
 #include "Utils.h"
 
+#include <mayaUsd/utils/util.h>
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #include <mayaUsd/base/tokens.h>
 #endif
@@ -188,12 +189,32 @@ Ufe::Value UsdAttributeHolder::getMetadata(const std::string& key) const
         if (PXR_NS::UsdShadeNodeGraph(usdPrim())) {
             if (PXR_NS::UsdShadeInput::IsInput(_usdAttr)) {
                 const PXR_NS::UsdShadeInput input(_usdAttr);
-                const std::string           metadata = input.GetSdrMetadataByKey(tok);
+                std::string                 metadata = input.GetSdrMetadataByKey(tok);
+                if (metadata.empty() && key == MayaUsdMetadata->UIName) {
+                    // Strip and prettify:
+                    metadata = UsdMayaUtil::prettifyName(input.GetBaseName().GetString());
+                }
                 return Ufe::Value(metadata);
             } else if (PXR_NS::UsdShadeOutput::IsOutput(_usdAttr)) {
                 const PXR_NS::UsdShadeOutput output(_usdAttr);
-                const std::string            metadata = output.GetSdrMetadataByKey(tok);
+                std::string                  metadata = output.GetSdrMetadataByKey(tok);
+                if (metadata.empty() && key == MayaUsdMetadata->UIName) {
+                    // Strip and prettify:
+                    metadata = UsdMayaUtil::prettifyName(output.GetBaseName().GetString());
+                }
                 return Ufe::Value(metadata);
+            }
+        }
+        if (key == MayaUsdMetadata->UIName) {
+            // Non-shader case, but we still have light inputs and outputs to deal with:
+            if (PXR_NS::UsdShadeInput::IsInput(_usdAttr)) {
+                const PXR_NS::UsdShadeInput input(_usdAttr);
+                return Ufe::Value(UsdMayaUtil::prettifyName(input.GetBaseName().GetString()));
+            } else if (PXR_NS::UsdShadeOutput::IsOutput(_usdAttr)) {
+                const PXR_NS::UsdShadeOutput output(_usdAttr);
+                return Ufe::Value(UsdMayaUtil::prettifyName(output.GetBaseName().GetString()));
+            } else {
+                return Ufe::Value(UsdMayaUtil::prettifyName(_usdAttr.GetName().GetString()));
             }
         }
         PXR_NS::VtValue v;
@@ -255,8 +276,19 @@ bool UsdAttributeHolder::hasMetadata(const std::string& key) const
             if (result) {
                 return true;
             }
+        } else if (key == MayaUsdMetadata->UIName) {
+            return true;
         }
+
         PXR_NS::TfToken tok(key);
+        // Special cases for NodeGraphs:
+        if (PXR_NS::UsdShadeNodeGraph(usdPrim())) {
+            if (PXR_NS::UsdShadeInput::IsInput(_usdAttr)) {
+                return PXR_NS::UsdShadeInput(_usdAttr).HasSdrMetadataByKey(tok);
+            } else if (PXR_NS::UsdShadeOutput::IsOutput(_usdAttr)) {
+                return PXR_NS::UsdShadeOutput(_usdAttr).HasSdrMetadataByKey(tok);
+            }
+        }
         result = _usdAttr.HasMetadata(tok);
         if (result) {
             return true;

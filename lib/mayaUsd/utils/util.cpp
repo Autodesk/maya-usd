@@ -740,7 +740,7 @@ std::string UsdMayaUtil::prettifyName(const std::string& name)
                 prettyName += ' ';
             }
             prettyName += nextLetter;
-        } else if (name[i] == '_') {
+        } else if (name[i] == '_' || name[i] == ':') {
             prettyName += " ";
             capitalizeNext = true;
         } else {
