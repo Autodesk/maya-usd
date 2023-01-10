@@ -76,7 +76,7 @@ bool isValidBezier(const MFnNurbsCurve& curveFn)
 
     // Knots must always increase.
     for (size_t i = 1; i < knots.length(); ++i) {
-        if (knots[i] < knots[i-1])
+        if (knots[i] < knots[i - 1])
             return false;
     }
 
@@ -289,7 +289,6 @@ bool PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
             "for standard interpolation metadata: %s",
             GetDagPath().fullPathName().asChar());
     }
-
 
     if (isValidBezier(curveFn)) {
         UsdGeomBasisCurves primSchemaBasis(_usdPrim);
