@@ -92,6 +92,13 @@ TF_DECLARE_PUBLIC_TOKENS(MayaUsdOptionVars, MAYAUSD_CORE_PUBLIC, MAYA_USD_OPTION
     ((ReferencedLayers, "mayaSharedLayers"))             \
     /* Export file path.                              */ \
     ((ExportFilePathToken, "mayaExportFilePath"))        \
+    /* Metadata for UI queries                        */ \
+    ((UIName, "uiname"))                                 \
+    ((UIFolder, "uifolder"))                             \
+    ((UIMin, "uimin"))                                   \
+    ((UIMax, "uimax"))                                   \
+    ((UISoftMin, "uisoftmin"))                           \
+    ((UISoftMax, "uisoftmax"))                           \
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(MayaUsdMetadata, MAYAUSD_CORE_PUBLIC, MAYA_USD_METADATA_TOKENS);

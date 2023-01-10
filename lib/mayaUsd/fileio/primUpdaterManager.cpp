@@ -1308,6 +1308,14 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
         toApplyOnLoop.loopAdvance();
     }
 
+#ifdef HAS_ORPHANED_NODES_MANAGER
+    if (_orphanedNodesManager) {
+        if (!TF_VERIFY(RemovePullVariantInfoUndoItem::execute(_orphanedNodesManager, pulledPath))) {
+            return false;
+        }
+    }
+#endif
+
     if (!FunctionUndoItem::execute(
             "Discard edits pull info removal",
             [pulledPath]() {
@@ -1390,6 +1398,14 @@ bool PrimUpdaterManager::discardOrphanedEdits(const MDagPath& dagPath, const Ufe
         updater->discardEdits();
         toApplyOnLoop.loopAdvance();
     }
+
+#ifdef HAS_ORPHANED_NODES_MANAGER
+    if (_orphanedNodesManager) {
+        if (!TF_VERIFY(RemovePullVariantInfoUndoItem::execute(_orphanedNodesManager, pulledPath))) {
+            return false;
+        }
+    }
+#endif
 
     if (!TF_VERIFY(removePullParent(pullParent, pulledPath))) {
         return false;

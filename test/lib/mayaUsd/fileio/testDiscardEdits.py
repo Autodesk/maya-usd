@@ -19,7 +19,7 @@
 import fixturesUtils
 
 from mayaUtils import setMayaTranslation
-from usdUtils import createSimpleXformScene
+from usdUtils import createSimpleXformScene, createDuoXformScene
 from ufeUtils import ufeFeatureSetVersion
 
 import mayaUsd.lib
@@ -118,6 +118,37 @@ class DiscardEditsTestCase(unittest.TestCase):
         # Maya node is removed.
         with self.assertRaises(RuntimeError):
             om.MSelectionList().add(aMayaPathStr)
+
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
+    def testDiscardEditsDuo(self):
+        '''
+        Discard edits and re-edit on a USD transform when multiple separate edits are active.
+        It should not crash.
+        '''
+
+        # Edit as Maya first.
+        (ps,
+         aXlateOp, aUsdXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
+         bXlateOp, bUsdXlation, bUsdUfePathStr, bUsdUfePath, bUsdItem) = createDuoXformScene()
+
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(bUsdUfePathStr))
+
+        bMayaItem = ufe.GlobalSelection.get().front()
+        bMayaXlation = om.MVector(4, 5, 6)
+        (bMayaPath, bMayaPathStr, bFn, mayaMatrix) = \
+            setMayaTranslation(bMayaItem, bMayaXlation)
+
+        # Discard Maya edits of B.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.discardEdits(bMayaPathStr))
+
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(bUsdUfePathStr))
+
 
     @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testDiscardEditsWhenParentIsDeactivated(self):
