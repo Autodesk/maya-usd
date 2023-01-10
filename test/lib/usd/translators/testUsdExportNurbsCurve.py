@@ -136,6 +136,36 @@ class testUsdExportNurbsCurve(unittest.TestCase):
         nc = UsdGeom.NurbsCurves.Get(stage, '/curve1')
         self.assertFalse(nc)
 
+    def testZZZExportAbnormalBezier(self):
+        '''
+        Export invalid bezier curves. Will be exported as nurbs.
+        The test name must start with ZZZ to be run last because it clears the scene.
+        '''
+        cmds.file(new=True, force=True)
+        # Invalid because the initial and final knots are not repeated
+        c1 = cmds.curve(bezier=True, degree=3, point=[(0, 0, 0), (1, 1, 0), (2, 1, 0), (3, 0, 0) ], knot=[ 0, 1, 2, 3, 4, 5])
+        # Invalid because the degree is grester than 3.
+        c2 = cmds.curve(bezier=True, degree=5, point=[(0, 0, 0), (1, 1, 0), (2, 1, 0), (3, 1, 0), (4, 1, 0), (5, 0, 0) ], knot=[ 0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
+
+        usdFile = os.path.abspath('UsdExportAbnormalBezierTest.usda')
+        cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
+            shadingMode='none')
+
+        stage = Usd.Stage.Open(usdFile)
+        
+        nc = UsdGeom.NurbsCurves.Get(stage, '/bezier1')
+        self.assertEqual(nc.GetWidthsAttr().Get(), Vt.FloatArray([1.0]))
+        self.assertEqual(nc.GetWidthsInterpolation(), UsdGeom.Tokens.constant)
+        self.assertEqual(nc.GetKnotsAttr().Get(), Vt.DoubleArray([0, 0, 1, 2, 3, 4, 5, 5]))
+        self.assertEqual(nc.GetOrderAttr().Get(), Vt.IntArray([4]))
+        self.assertEqual(nc.GetCurveVertexCountsAttr().Get(), Vt.IntArray([4]))
+
+        nc = UsdGeom.NurbsCurves.Get(stage, '/bezier2')
+        self.assertEqual(nc.GetWidthsAttr().Get(), Vt.FloatArray([1.0]))
+        self.assertEqual(nc.GetWidthsInterpolation(), UsdGeom.Tokens.constant)
+        self.assertEqual(nc.GetKnotsAttr().Get(), Vt.DoubleArray([0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1]))
+        self.assertEqual(nc.GetOrderAttr().Get(), Vt.IntArray([6]))
+        self.assertEqual(nc.GetCurveVertexCountsAttr().Get(), Vt.IntArray([6]))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
