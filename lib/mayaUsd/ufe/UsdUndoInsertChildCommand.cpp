@@ -29,6 +29,9 @@
 #include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/gprim.h>
+#include <pxr/usd/usdShade/material.h>
+#include <pxr/usd/usdShade/nodeGraph.h>
+#include <pxr/usd/usdShade/shader.h>
 
 #include <ufe/log.h>
 #include <ufe/pathString.h>
@@ -76,6 +79,40 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
             "Parenting geometric prim [%s] under geometric prim [%s] is not allowed "
             "Please parent geometric prims under separate XForms and reparent between XForms.",
             childPrim.GetName().GetString().c_str(),
+            parentPrim.GetName().GetString().c_str());
+        throw std::runtime_error(err.c_str());
+    }
+
+    // UsdShadeShader can only have UsdShadeNodeGraph and UsdShadeMaterial as parent.
+    if (childPrim.IsA<UsdShadeShader>() && !parentPrim.IsA<UsdShadeNodeGraph>()) {
+        std::string err = TfStringPrintf(
+            "Parenting Shader prim [%s] under %s prim [%s] is not allowed. "
+            "Shader prims can only be parented under NodeGraphs and Materials.",
+            childPrim.GetName().GetString().c_str(),
+            parentPrim.GetTypeName().GetString().c_str(),
+            parentPrim.GetName().GetString().c_str());
+        throw std::runtime_error(err.c_str());
+    }
+
+    // UsdShadeNodeGraph can only have a UsdShadeNodeGraph and UsdShadeMaterial as parent.
+    if (childPrim.IsA<UsdShadeNodeGraph>() && !childPrim.IsA<UsdShadeMaterial>()
+        && !parentPrim.IsA<UsdShadeNodeGraph>()) {
+        std::string err = TfStringPrintf(
+            "Parenting NodeGraph prim [%s] under %s prim [%s] is not allowed. "
+            "NodeGraph prims can only be parented under NodeGraphs and Materials.",
+            childPrim.GetName().GetString().c_str(),
+            parentPrim.GetTypeName().GetString().c_str(),
+            parentPrim.GetName().GetString().c_str());
+        throw std::runtime_error(err.c_str());
+    }
+
+    // UsdShadeMaterial cannot have UsdShadeShader, UsdShadeNodeGraph or UsdShadeMaterial as parent.
+    if (childPrim.IsA<UsdShadeMaterial>()
+        && (parentPrim.IsA<UsdShadeShader>() || parentPrim.IsA<UsdShadeNodeGraph>())) {
+        std::string err = TfStringPrintf(
+            "Parenting Material prim [%s] under %s prim [%s] is not allowed.",
+            childPrim.GetName().GetString().c_str(),
+            parentPrim.GetTypeName().GetString().c_str(),
             parentPrim.GetName().GetString().c_str());
         throw std::runtime_error(err.c_str());
     }
