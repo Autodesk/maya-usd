@@ -455,7 +455,7 @@ bool UsdAttributes::canRemoveAttribute(const UsdSceneItem::Ptr& item, const std:
     }
     return false;
 }
-static void removeConnections(const PXR_NS::UsdPrim& prim, const SdfPath& srcPropertyPath)
+static void removeConnections(const PXR_NS::UsdPrim& prim, const PXR_NS::SdfPath& srcPropertyPath)
 {
     // Remove the connections with source srcPropertyPath.
     for (const auto& node : prim.GetChildren()) {

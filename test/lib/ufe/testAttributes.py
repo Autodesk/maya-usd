@@ -183,7 +183,7 @@ class AttributesTestCase(unittest.TestCase):
         with self.assertRaisesRegex(KeyError, "Attribute 'MyAttribute' does not exist") as cm:
             attr = ball35Attrs.attribute("MyAttribute")
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test for UFE preview version 0.4.24 and later')
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test requires remove attribute and its connections feature only available on Ufe 0.4.24 and later')
     def testRemoveCompoundAttribute(self):
         '''Test removing compound attributes'''
 
