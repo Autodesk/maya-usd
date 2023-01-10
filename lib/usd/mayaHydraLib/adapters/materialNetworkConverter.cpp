@@ -488,6 +488,14 @@ public:
     {
         VtValue transmission = MayaHydraMaterialNetworkConverter::ConvertMayaAttrToValue(
             node, "transmission", type, nullptr, outPlug);
+        //Combine transmission and Geometry-->Opacity R,G and B attributes
+        VtValue geometryOpacityR = MayaHydraMaterialNetworkConverter::ConvertMayaAttrToValue(
+            node, "opacityR", type, nullptr, outPlug);
+        VtValue geometryOpacityG = MayaHydraMaterialNetworkConverter::ConvertMayaAttrToValue(
+            node, "opacityG", type, nullptr, outPlug);
+        VtValue geometryOpacityB = MayaHydraMaterialNetworkConverter::ConvertMayaAttrToValue(
+            node, "opacityB", type, nullptr, outPlug);
+        
         if (!transmission.IsHolding<float>()) {
             if (fallback) {
                 return *fallback;
@@ -497,15 +505,24 @@ public:
                      "No float plug found with name: transmission and no "
                      "fallback given");
             return VtValue();
-        } else {
-            float val = 1.0f - transmission.UncheckedGet<float>();
-            if (val < 1.0e-4f){ 
-                //Clamp lower value as an opacity of 0.0 in hydra makes the object fully transparent, 
-                //but in VP2 we still see the specular highlight if any, avoiding 0.0 leads to the same effect in hydra.
-                val = 1.0e-4f;
-            }
-            return VtValue(val);
+        } 
+
+        float val   = 1.0f - transmission.UncheckedGet<float>();
+        if (val < 1.0e-4f){ 
+            //Clamp lower value as an opacity of 0.0 in hydra makes the object fully transparent, 
+            //but in VP2 we still see the specular highlight if any, avoiding 0.0 leads to the same effect in hydra.
+            val = 1.0e-4f;
         }
+
+        float fGeometryOpacity = 1.0f;
+        if (geometryOpacityR.IsHolding<float>() && geometryOpacityG.IsHolding<float>() && geometryOpacityB.IsHolding<float>()) {
+            //Take the average
+            fGeometryOpacity = (1.0f/3.0f)*(geometryOpacityR.UncheckedGet<float>() + geometryOpacityG.UncheckedGet<float>() + geometryOpacityB.UncheckedGet<float>());
+        }
+
+        val *= fGeometryOpacity;
+        
+        return VtValue(val);
     }
 };
 
@@ -830,7 +847,7 @@ void MayaHydraMaterialNetworkConverter::ConvertParameter(
 
     auto attrConverter = nodeConverter.GetAttrConverter(paramName);
     if (attrConverter) {
-        //Using an array of MPlug in plugArray, as some settings may have 2 attributes that should be taken into consideration for connections.
+        //Using an array of MPlug in plugArray, as some settings may have 2 or more attributes that should be taken into consideration for connections.
         //For example : specular has a specular color and specular weight attributes, both should be considered.
         //So after calling attrConverter->GetValue, the plugArray will contain all dependents MPlug for connections.
         val = attrConverter->GetValue(node, paramName, type, fallback, &plugArray); 
@@ -849,7 +866,8 @@ void MayaHydraMaterialNetworkConverter::ConvertParameter(
     material.parameters[paramName] = val;
 
     /*plugArray contains all dependents MPlug we should consider for connections.
-    Usually it contains 1 or 2 MPlug (2 is when dealing with a weighted attribute)
+    Usually it contains 1 or 2 MPlug (2 is when dealing with a weighted attribute), 
+    it can have more than 2 when dealing with the transmission which is combined with opacityR, opacityG and opacityB attributes.
     But a limitation we have at this time is that if both the color and the weight attributes have a connection, 
     one of both connections will be ignored by hydra as we have only one parameter in the UsdPreviewSurface 
     which will have both connections and hydra only considers the last connection added. There is no blending 
