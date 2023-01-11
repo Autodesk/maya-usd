@@ -377,7 +377,9 @@ UsdTransform3dMayaXformStack::UsdTransform3dMayaXformStack(const UsdSceneItem::P
     : UsdTransform3dBase(item)
     , _xformable(prim())
 {
-    TF_AXIOM(_xformable);
+    if (!TF_VERIFY(_xformable)) {
+        throw std::runtime_error("Invalid scene item for transform stack");
+    }
 }
 
 /* static */

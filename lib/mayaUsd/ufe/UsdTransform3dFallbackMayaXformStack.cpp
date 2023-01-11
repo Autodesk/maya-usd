@@ -120,7 +120,6 @@ bool setXformOpOrder(const UsdGeomXformable& xformable)
     bool resetsXformStack = false;
     auto oldOrder = xformable.GetOrderedXformOps(&resetsXformStack);
     auto i = findFirstFallbackOp(oldOrder);
-    TF_AXIOM(i != oldOrder.end());
 
     // Copy ops before the Maya sub-stack unchanged.
     std::vector<UsdGeomXformOp> newOrder;
@@ -172,10 +171,6 @@ Ufe::Transform3d::Ptr createEditTransform3dImp(
     }
     bool resetsXformStack = false;
     xformOps = xformSchema.GetOrderedXformOps(&resetsXformStack);
-
-    // We are the fallback Transform3d handler: there must be transform ops to
-    // match.
-    TF_AXIOM(!xformOps.empty());
 
     // We find the first transform op in the vector that has our fallback
     // component token in its attribute name.  From that point on, all

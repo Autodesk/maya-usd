@@ -1171,7 +1171,8 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
     } // Variant sets
     else if (itemPath[0] == kUSDToggleVisibilityItem) {
         auto object3d = UsdObject3d::create(fItem);
-        TF_AXIOM(object3d);
+        if (!TF_VERIFY(object3d))
+            return nullptr;
         auto current = object3d->visibility();
         return object3d->setVisibleCmd(!current);
     } // Visibility
