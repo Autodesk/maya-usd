@@ -1714,7 +1714,6 @@ void HdVP2Mesh::_UpdateDrawItem(
                 }
             } else {
                 drawItemData._shaderIsFallback = true;
-                TF_WARN("Could not resolve material <%s>\n", materialId.GetText());
             }
         }
 
