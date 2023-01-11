@@ -281,7 +281,7 @@ PullImportPaths pullImport(
     }
     progressBar.advance();
 
-    std::vector<MDagPath>  addedDagPaths;
+    std::vector<MDagPath> addedDagPaths;
 
     // Execute the command, which can succeed but import nothing.
     bool success = readJob->Read(&addedDagPaths);

@@ -74,8 +74,8 @@ computeLocalTransformWithOp(const UsdPrim& prim, const UsdGeomXformOp& op, const
 #endif
 
     if (i == ops.end()) {
-        std::string msg = TfStringPrintf(
-            "Matrix op %s not found in transform ops.", op.GetOpName().GetText());
+        std::string msg
+            = TfStringPrintf("Matrix op %s not found in transform ops.", op.GetOpName().GetText());
         throw std::runtime_error(msg.c_str());
     }
 

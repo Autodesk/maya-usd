@@ -485,7 +485,7 @@ UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
                 // Use notification guard, otherwise will generate one notification
                 // for the xform op add, and another for the reorder.
                 InTransform3dChange guard(cmd.path());
-                UsdGeomXformable xformable(usdSceneItem.item().prim());
+                UsdGeomXformable    xformable(usdSceneItem.item().prim());
 
                 auto r = xformable.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, opSuffix);
                 if (!r) {
@@ -532,7 +532,7 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMayaXformStack::scaleCmd(double x, 
             } else {
 
                 InTransform3dChange guard(cmd.path());
-                UsdGeomXformable xformable(usdSceneItem.item().prim());
+                UsdGeomXformable    xformable(usdSceneItem.item().prim());
 
                 auto s = xformable.AddScaleOp(UsdGeomXformOp::PrecisionFloat, opSuffix);
                 if (!s) {
@@ -692,7 +692,7 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
             // stack.  Use of SdfChangeBlock is discouraged when calling USD
             // APIs above Sdf, so use our own guard.
             InTransform3dChange guard(cmd.path());
-            UsdGeomXformable xformable(usdSceneItem.item().prim());
+            UsdGeomXformable    xformable(usdSceneItem.item().prim());
             auto p = xformable.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, pvtOpSuffix);
 
             auto pInv = xformable.AddTranslateOp(
