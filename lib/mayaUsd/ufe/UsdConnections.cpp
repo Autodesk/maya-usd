@@ -41,9 +41,8 @@ UsdConnections::UsdConnections(const Ufe::SceneItem::Ptr& item)
     , _sceneItem(std::dynamic_pointer_cast<UsdSceneItem>(item))
 #endif
 {
-    if (!TF_VERIFY(_sceneItem)) {
-        TF_FATAL_ERROR("Invalid scene item.");
-    }
+    // Note: TF_VERIFY emits a TF_CODING_ERROR.
+    TF_VERIFY(_sceneItem);
 }
 
 UsdConnections::~UsdConnections() { }
@@ -55,7 +54,8 @@ UsdConnections::Ptr UsdConnections::create(const Ufe::SceneItem::Ptr& item)
 
 std::vector<Ufe::Connection::Ptr> UsdConnections::allConnections() const
 {
-    TF_AXIOM(_sceneItem);
+    if (!TF_VERIFY(_sceneItem))
+        return {};
 
     std::vector<Ufe::Connection::Ptr> result;
 

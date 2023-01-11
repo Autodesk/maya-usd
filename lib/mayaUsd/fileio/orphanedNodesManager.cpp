@@ -174,12 +174,19 @@ OrphanedNodesManager::OrphanedNodesManager()
 
 void OrphanedNodesManager::add(const Ufe::Path& pulledPath, const MDagPath& editedAsMayaRoot)
 {
+    // Adding a node twice to the orphan manager is idem-potent. The manager was already
+    // racking that node.
+    if (pulledPrims().containsDescendantInclusive(pulledPath))
+        return;
+
     // Add the edited-as-Maya root to our pulled prims prefix tree.  Also add the full
     // configuration of variant set selections for each ancestor, up to the USD
     // pseudo-root.  Variants on the pulled path itself are ignored, as once
     // pulled into Maya they cannot be changed.
-    TF_AXIOM(!pulledPrims().containsDescendantInclusive(pulledPath));
-    TF_AXIOM(pulledPath.runTimeId() == MayaUsd::ufe::getUsdRunTimeId());
+    if (pulledPath.runTimeId() != MayaUsd::ufe::getUsdRunTimeId()) {
+        TF_WARN("Trying to monitor a non-USD node for edit-as-Maya orphaning.");
+        return;
+    }
 
     // We store a list of (path, list of (variant set, variant set selection)),
     // for all ancestors, starting at closest ancestor.
@@ -192,7 +199,7 @@ void OrphanedNodesManager::add(const Ufe::Path& pulledPath, const MDagPath& edit
 OrphanedNodesManager::Memento OrphanedNodesManager::remove(const Ufe::Path& pulledPath)
 {
     Memento oldPulledPrims(preserve());
-    TF_AXIOM(pulledPrims().remove(pulledPath) != nullptr);
+    TF_VERIFY(pulledPrims().remove(pulledPath) != nullptr);
     return oldPulledPrims;
 }
 
@@ -323,7 +330,7 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
                 // USD sends resync changes (UFE subtree invalidate) on the
                 // pseudo-root itself.  Since the pseudo-root has no payload or
                 // variant, ignore these.
-                TF_AXIOM(parentItem->path().nbSegments() == 1);
+                TF_VERIFY(parentItem->path().nbSegments() == 1);
                 return;
             }
             auto parentPrim = parentUsdItem->prim();

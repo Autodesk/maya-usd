@@ -109,7 +109,7 @@ Ufe::Path UsdPathMappingHandler::toHost(const Ufe::Path& runTimePath) const { re
 
 Ufe::Path UsdPathMappingHandler::fromHost(const Ufe::Path& hostPath) const
 {
-    TF_AXIOM(hostPath.nbSegments() == 1);
+    TF_VERIFY(hostPath.nbSegments() == 1);
 
     // First look in our cache to see if we've already computed a mapping for the input.
     auto found = fromHostCache.find(hostPath);
@@ -134,7 +134,9 @@ Ufe::Path UsdPathMappingHandler::fromHost(const Ufe::Path& hostPath) const
     Ufe::Path                    mayaMappedPath;
     Ufe::PathSegment::Components mayaComps;
     while (dagPath.isValid() && (dagPath.length() > 0)) {
-        TF_AXIOM(!mayaHostPath.empty());
+        if (!TF_VERIFY(!mayaHostPath.empty())) {
+            return {};
+        }
         mayaComps.emplace_back(mayaHostPath.back());
         mayaHostPath = mayaHostPath.pop();
         Ufe::Path ufePath;
@@ -143,7 +145,9 @@ Ufe::Path UsdPathMappingHandler::fromHost(const Ufe::Path& hostPath) const
             // append the Maya component array.
             std::reverse(mayaComps.begin(), mayaComps.end());
 
-            TF_AXIOM(ufePath.nbSegments() == 2);
+            if (!TF_VERIFY(ufePath.nbSegments() == 2)) {
+                return {};
+            }
             const auto& usdSegment = ufePath.getSegments()[1];
             mayaMappedPath = ufePath.popSegment() + replaceLastComponent(usdSegment, mayaComps);
 
