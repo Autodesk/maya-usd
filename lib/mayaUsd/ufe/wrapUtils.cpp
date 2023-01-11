@@ -105,9 +105,14 @@ std::vector<PXR_NS::UsdStageRefPtr> getAllStages()
 
 std::string stagePath(PXR_NS::UsdStageWeakPtr stage)
 {
+#ifdef UFE_V2_FEATURES_AVAILABLE
     // Even though the Proxy shape node's UFE path is a single segment, we always
     // need to return as a Ufe::PathString (to remove |world).
     return Ufe::PathString::string(ufe::stagePath(stage));
+#else
+    // Remove the leading '|world' component.
+    return ufe::stagePath(stage).popHead().string();
+#endif
 }
 
 std::string usdPathToUfePathSegment(
