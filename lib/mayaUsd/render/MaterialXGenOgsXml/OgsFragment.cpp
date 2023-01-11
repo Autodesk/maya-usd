@@ -145,7 +145,8 @@ protected:
 
         // Maya images require a texture coordinates to be flipped in V.
         genOptions.fileTextureVerticalFlip = true;
-        genOptions.hwTransparency = mx::isTransparentSurface(_element, generator.getTarget());
+        // Enabling hwTransparency to ensure a vec4 output with correct alpha value.
+        genOptions.hwTransparency = true;
 
         // Maya viewport uses texture atlas for tile image so enabled
         // texture coordinate transform to go from original UDIM range to

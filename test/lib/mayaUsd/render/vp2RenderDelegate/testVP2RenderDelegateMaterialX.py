@@ -29,6 +29,7 @@ from maya import cmds
 import ufe
 
 import os
+import unittest
 
 
 class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
@@ -87,6 +88,21 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
             cmds.modelEditor(panel, edit=True, displayLights="flat")
             self._StartTest('MayaSurfaces_flat')
             cmds.modelEditor(panel, edit=True, displayLights="default")
+
+    @unittest.skipIf(os.getenv('MATERIALX_VERSION', '1.38.0') < '1.38.4', 'Test has a glTf PBR surface only found in MaterialX 1.38.4 and later.')
+    def testTransparency(self):
+        mayaUtils.loadPlugin("mayaUsdPlugin")
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, displayTextures=True)
+
+        # Too much differences between Linux and Windows otherwise
+        cmds.setAttr("hardwareRenderingGlobals.multiSampleEnable", True)
+
+        testFile = testUtils.getTestScene("MaterialX", "transparencyScene.ma")
+        cmds.file(testFile, force=True, open=True)
+        cmds.move(0, 7, -1.5, 'persp')
+        cmds.rotate(-90, 0, 0, 'persp')        
+        self.assertSnapshotClose('transparencyScene.png', 960, 960)
 
     def testMayaPlace2dTexture(self):
         mayaUtils.loadPlugin("mayaUsdPlugin")
