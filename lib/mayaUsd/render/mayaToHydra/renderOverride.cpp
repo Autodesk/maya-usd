@@ -616,9 +616,8 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, c
     }
 
     HdxRenderTaskParams params;
-    params.enableLighting = true;
-    params.enableSceneMaterials
-        = !(drawContext.getDisplayStyle() & MHWRender::MFrameContext::kDefaultMaterial);
+    params.enableLighting       = true;
+    params.enableSceneMaterials = true;
 
     /* TODO: Find replacement
      * if (displayStyle & MHWRender::MFrameContext::kBoundingBox) {

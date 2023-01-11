@@ -286,6 +286,8 @@ private:
     void CreateDisplayStatusMaterials();
     void AddDisplayStatusMaterialsToHydra(HdRenderIndex& renderIndex);
 
+    static VtValue CreateMayaDefaultMaterial();
+
     bool _CreateMaterial(const SdfPath& id, const MObject& obj);
     /// \brief Unordered Map storing the shape adapters.
     AdapterMap<MayaHydraShapeAdapterPtr> _shapeAdapters;
@@ -308,6 +310,8 @@ private:
     std::vector<SdfPath>                       _materialTagsChanged;
 
     SdfPath _fallbackMaterial;
+    static SdfPath _mayaDefaultMaterialPath;//Common to all scene delegates
+    static VtValue _mayaDefaultMaterial;
     
     struct DisplayStatusMaterialData
     {
@@ -320,7 +324,7 @@ private:
     typedef std::unordered_map<MHWRender::DisplayStatus, DisplayStatusMaterialData>::value_type DisplayStatusMaterialMap_Type;//For using std::find_if
     DisplayStatusMaterialMap _displayStatusMaterials;
 
-    bool    _enableMaterials = false;
+    bool    _useDefaultMaterial = false;
     bool    _isPlaybackRunning = false;
 };
 

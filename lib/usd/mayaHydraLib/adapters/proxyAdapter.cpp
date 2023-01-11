@@ -181,8 +181,7 @@ void MayaHydraProxyAdapter::CreateUsdImagingDelegate()
 
 void MayaHydraProxyAdapter::PreFrame(const MHWRender::MDrawContext& context)
 {
-    _usdDelegate->SetSceneMaterialsEnabled(
-        !(context.getDisplayStyle() & MHWRender::MFrameContext::kDefaultMaterial));
+    _usdDelegate->SetSceneMaterialsEnabled(true);
     _usdDelegate->ApplyPendingUpdates();
     // TODO: set this only when time is actually changed
     _usdDelegate->SetTime(_proxy->getTime());

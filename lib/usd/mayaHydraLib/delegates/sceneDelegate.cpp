@@ -60,6 +60,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+SdfPath MayaHydraSceneDelegate::_mayaDefaultMaterialPath;//Common to all scene delegates
+VtValue MayaHydraSceneDelegate::_mayaDefaultMaterial;
+
 namespace {
 
 void _nodeAdded(MObject& obj, void* clientData)
@@ -194,6 +197,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (MayaHydraSceneDelegate)
     ((FallbackMaterial, "__fallback_material__"))
+    ((MayaDefaultMaterial, "__maya_default_material__"))
     ((ActiveDisplayStatusMaterial, "__active_selection_material__"))
     ((LiveDisplayStatusMaterial, "__live_selection_material__"))
     ((DormantDisplayStatusMaterial, "__dormant_selection_material__"))
@@ -236,6 +240,10 @@ MayaHydraSceneDelegate::MayaHydraSceneDelegate(const InitData& initData)
     //TfDebug::Enable(MAYAHYDRALIB_ADAPTER_MATERIALS_PARAMS);
 
     CreateDisplayStatusMaterials();
+    if (_mayaDefaultMaterialPath.IsEmpty()){
+        _mayaDefaultMaterialPath    = SdfPath::AbsoluteRootPath().AppendChild(_tokens->MayaDefaultMaterial);//Is an absolute path, not linked to a scene delegate
+        _mayaDefaultMaterial        = MayaHydraSceneDelegate::CreateMayaDefaultMaterial();
+    }
 }
 
 MayaHydraSceneDelegate::~MayaHydraSceneDelegate()
@@ -323,6 +331,22 @@ void MayaHydraSceneDelegate::UpdateDisplayStatusMaterialColor(const SdfPath& mat
     material.map.insert({HdMaterialTerminalTokens->surface, std::move(network)});
 
     GetChangeTracker().MarkSprimDirty(materialPath, HdMaterial::DirtyParams);
+}
+
+VtValue MayaHydraSceneDelegate::CreateMayaDefaultMaterial()
+{
+    static const MColor kDefaultGrayColor = MColor(0.5f, 0.5f, 0.5f) * 0.8f;
+
+    HdMaterialNetworkMap networkMap;
+    HdMaterialNetwork network;
+    HdMaterialNode node;
+    node.identifier     = UsdImagingTokens->UsdPreviewSurface;
+    node.path           = _mayaDefaultMaterialPath;
+    node.parameters.insert({_tokens->diffuseColor,          VtValue(GfVec3f(kDefaultGrayColor[0] ,  kDefaultGrayColor[1],  kDefaultGrayColor[2]))});
+    network.nodes.push_back(std::move(node));
+    networkMap.map.insert({HdMaterialTerminalTokens->surface, std::move(network)});
+    networkMap.terminals.push_back(_mayaDefaultMaterialPath);
+    return VtValue(networkMap);
 }
 
 void MayaHydraSceneDelegate::_AddRenderItem(const MayaHydraRenderItemAdapterPtr& ria)
@@ -501,6 +525,7 @@ void MayaHydraSceneDelegate::Populate()
     // Adding materials sprim to the render index.
     if (renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->material)) {
         renderIndex.InsertSprim(HdPrimTypeTokens->material, this, _fallbackMaterial);
+        renderIndex.InsertSprim(HdPrimTypeTokens->material, this, _mayaDefaultMaterialPath);//TODO check when we have multiple scene delegates if this is still correct to add it per scene delegate.
         AddDisplayStatusMaterialsToHydra(renderIndex);
     }
 	
@@ -519,10 +544,10 @@ void MayaHydraSceneDelegate::Populate()
 // 
 void MayaHydraSceneDelegate::PreFrame(const MHWRender::MDrawContext& context)
 {
-    bool enableMaterials
-        = !(context.getDisplayStyle() & MHWRender::MFrameContext::kDefaultMaterial);
-    if (enableMaterials != _enableMaterials) {
-        _enableMaterials = enableMaterials;
+    bool useDefaultMaterial
+        = (context.getDisplayStyle() & MHWRender::MFrameContext::kDefaultMaterial);
+    if (useDefaultMaterial != _useDefaultMaterial) {
+        _useDefaultMaterial = useDefaultMaterial;
         for (const auto& shape : _shapeAdapters)
             shape.second->MarkDirty(HdChangeTracker::DirtyMaterialId);
     }
@@ -1583,8 +1608,6 @@ SdfPath MayaHydraSceneDelegate::GetMaterialId(const SdfPath& id)
 		.Msg("MayaHydraSceneDelegate::GetMaterialId(%s)\n", id.GetText());
 
 #ifdef MAYAHYDRALIB_SCENE_RENDER_DATASERVER
-	if (!_enableMaterials)
-		return {};
 	auto result = TfMapLookupPtr(_renderItemsAdapters, id);
 	if (result == nullptr) {
 		return _fallbackMaterial;
@@ -1599,6 +1622,11 @@ SdfPath MayaHydraSceneDelegate::GetMaterialId(const SdfPath& id)
         if (it != _displayStatusMaterials.end()){
             return it->second._materialPath;
         }
+    }
+
+    if (_useDefaultMaterial)
+    {
+        return _mayaDefaultMaterialPath;
     }
 
 	auto& shaderData = renderItemAdapter->GetShaderData();
@@ -1625,8 +1653,11 @@ SdfPath MayaHydraSceneDelegate::GetMaterialId(const SdfPath& id)
 	//return _CreateMaterial(materialId, material) ? materialId : _fallbackMaterial;
 	return {};
 #else
-	if (!_enableMaterials)
-		return {};
+	if (_useDefaultMaterial)
+    {
+		return _mayaDefaultMaterialPath;
+    }
+
 	auto shapeAdapter = TfMapLookupPtr(_shapeAdapters, id);
 	if (shapeAdapter == nullptr) {
 		return _fallbackMaterial;
@@ -1648,6 +1679,11 @@ VtValue MayaHydraSceneDelegate::GetMaterialResource(const SdfPath& id)
 {
     TF_DEBUG(MAYAHYDRALIB_DELEGATE_GET_MATERIAL_RESOURCE)
 		.Msg("MayaHydraSceneDelegate::GetMaterialResource(%s)\n", id.GetText());
+
+    if (id == _mayaDefaultMaterialPath)
+    {
+        return _mayaDefaultMaterial;
+    }
 
     if (id == _fallbackMaterial)
 	{
