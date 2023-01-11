@@ -183,6 +183,64 @@ class AttributesTestCase(unittest.TestCase):
         with self.assertRaisesRegex(KeyError, "Attribute 'MyAttribute' does not exist") as cm:
             attr = ball35Attrs.attribute("MyAttribute")
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test requires remove attribute and its connections feature only available on Ufe 0.4.24 and later')
+    def testRemoveCompoundAttribute(self):
+        '''Test removing compound attributes'''
+
+        # Load a scene with a compound.
+      
+        testFile = testUtils.getTestScene("MaterialX", "MayaSurfaces.usda")
+        shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
+        ufeItem = ufeUtils.createUfeSceneItem(shapeNode,
+            "/pCube2/Looks/standardSurface2SG/MayaNG_standardSurface2SG")
+        self.assertIsNotNone(ufeItem)
+
+        # Then create the attributes interface for that item.
+        compoundAttrs = ufe.Attributes.attributes(ufeItem)
+        self.assertIsNotNone(compoundAttrs)
+
+        # Remove an output compound attribute.
+        cmd = compoundAttrs.removeAttributeCmd("outputs:baseColor")
+        self.assertIsNotNone(cmd)
+
+        ufeCmd.execute(cmd)
+        
+        self.assertNotIn("outputs:baseColor", compoundAttrs.attributeNames)
+
+        # Test we removed the connection.
+
+        ufeItemStandardSurface2 = ufeUtils.createUfeSceneItem(shapeNode,
+            "/pCube2/Looks/standardSurface2SG/standardSurface2")
+        self.assertIsNotNone(ufeItemStandardSurface2)
+
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(ufeItemStandardSurface2.runTimeId())
+        self.assertIsNotNone(connectionHandler)
+        connections = connectionHandler.sourceConnections(ufeItemStandardSurface2)
+        self.assertIsNotNone(connectionHandler)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 0)
+
+        # Remove an input compound attribute.
+        cmd = compoundAttrs.removeAttributeCmd("inputs:file2:varnameStr")
+        self.assertIsNotNone(cmd)
+
+        ufeCmd.execute(cmd)
+        
+        self.assertNotIn("inputs:file2:varnameStr", compoundAttrs.attributeNames)
+
+        # Test we removed the connection.
+
+        ufeItemTexture = ufeUtils.createUfeSceneItem(shapeNode,
+            "/pCube2/Looks/standardSurface2SG/MayaNG_standardSurface2SG/place2dTexture2")
+        self.assertIsNotNone(ufeItemTexture)
+
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(ufeItemTexture.runTimeId())
+        self.assertIsNotNone(connectionHandler)
+        connections = connectionHandler.sourceConnections(ufeItemTexture)
+        self.assertIsNotNone(connectionHandler)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 0)
+
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test for UFE preview version 0.4.24 and later')
     def testUniqueNameAttribute(self):
         '''Test unique name attribute'''
