@@ -1183,8 +1183,6 @@ MHWRender::MSamplerStateDesc _GetSamplerStateDesc(const HdMaterialNode& node)
                 } else if (token == _mtlxTokens->cubic) {
                     desc.filter = MHWRender::MSamplerState::kAnisotropic;
                     desc.maxAnisotropy = 16;
-                    desc.maxLOD = 1000;
-                    desc.minLOD = -1000;
                 }
             }
         }
