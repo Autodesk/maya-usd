@@ -23,6 +23,7 @@
 #include <mayaUsd/ufe/UsdTranslateUndoableCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/usdGeom/xformCache.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -231,8 +232,9 @@ Ufe::Matrix4d UsdTransform3d::matrix() const
 
     // 4x4 local affine transformation matrix. 4th column of matrix is [0 0 0 1]
     if (!UsdGeomXformable::GetLocalTransformation(&m, ops, getTime(path()))) {
-        TF_FATAL_ERROR(
+        std::string msg = TfStringPrintf(
             "Local transformation computation for prim %s failed.", prim().GetPath().GetText());
+        throw std::runtime_error(msg.c_str());
     }
 
     return convertFromUsd(m);

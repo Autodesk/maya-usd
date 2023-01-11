@@ -35,7 +35,8 @@ bool hasLayersMuted(const PXR_NS::UsdPrim& prim)
 
     for (const PXR_NS::PcpNodeRef node : primIndex.GetNodeRange()) {
 
-        TF_AXIOM(node);
+        if (!node)
+            continue;
 
         const PXR_NS::PcpLayerStackSite&   site = node.GetSite();
         const PXR_NS::PcpLayerStackRefPtr& layerStack = site.layerStack;

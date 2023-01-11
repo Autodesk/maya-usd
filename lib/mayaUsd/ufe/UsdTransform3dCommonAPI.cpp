@@ -19,6 +19,7 @@
 #include <mayaUsd/ufe/UsdTransform3dUndoableCommands.h>
 #include <mayaUsd/ufe/Utils.h>
 
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/usdGeom/xformCache.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -137,8 +138,9 @@ Ufe::Vector3d UsdTransform3dCommonAPI::translation() const
     UsdGeomXformCommonAPI::RotationOrder rotOrder;
 
     if (!_commonAPI.GetXformVectorsByAccumulation(&t, &r, &s, &pvt, &rotOrder, getTime(path()))) {
-        TF_FATAL_ERROR(
+        std::string msg = TfStringPrintf(
             "Cannot read common API transform values for prim %s", prim().GetPath().GetText());
+        throw std::runtime_error(msg.c_str());
     }
 
     return toUfe(t);
@@ -151,8 +153,9 @@ Ufe::Vector3d UsdTransform3dCommonAPI::rotation() const
     UsdGeomXformCommonAPI::RotationOrder rotOrder;
 
     if (!_commonAPI.GetXformVectorsByAccumulation(&t, &r, &s, &pvt, &rotOrder, getTime(path()))) {
-        TF_FATAL_ERROR(
+        std::string msg = TfStringPrintf(
             "Cannot read common API transform values for prim %s", prim().GetPath().GetText());
+        throw std::runtime_error(msg.c_str());
     }
 
     return toUfe(r);
@@ -165,8 +168,9 @@ Ufe::Vector3d UsdTransform3dCommonAPI::scale() const
     UsdGeomXformCommonAPI::RotationOrder rotOrder;
 
     if (!_commonAPI.GetXformVectorsByAccumulation(&t, &r, &s, &pvt, &rotOrder, getTime(path()))) {
-        TF_FATAL_ERROR(
+        std::string msg = TfStringPrintf(
             "Cannot read common API transform values for prim %s", prim().GetPath().GetText());
+        throw std::runtime_error(msg.c_str());
     }
 
     return toUfe(s);
@@ -238,8 +242,9 @@ Ufe::Vector3d UsdTransform3dCommonAPI::rotatePivot() const
     UsdGeomXformCommonAPI::RotationOrder rotOrder;
 
     if (!_commonAPI.GetXformVectorsByAccumulation(&t, &r, &s, &pvt, &rotOrder, getTime(path()))) {
-        TF_FATAL_ERROR(
+        std::string msg = TfStringPrintf(
             "Cannot read common API transform values for prim %s", prim().GetPath().GetText());
+        throw std::runtime_error(msg.c_str());
     }
 
     return toUfe(pvt);

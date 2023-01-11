@@ -136,7 +136,6 @@ void UsdUndoStateDelegate::invertDeleteSpec(
     CreateSpec(path, deletedSpecType, inert);
 
     auto layerDataPtr = get_pointer(_GetLayerData());
-    TF_AXIOM(layerDataPtr);
 
     // copy back every spec(s) with the given visitor
     SpecCopier specCopier(layerDataPtr);

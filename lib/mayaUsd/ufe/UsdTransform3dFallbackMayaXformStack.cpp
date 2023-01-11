@@ -20,6 +20,7 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/ufe/XformOpUtils.h>
 
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/usdGeom/xformCache.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -219,8 +220,9 @@ Ufe::Transform3d::Ptr createTransform3d(const Ufe::SceneItem::Ptr& item)
 
     GfMatrix4d ml { 1 };
     if (!UsdGeomXformable::GetLocalTransformation(&ml, mlOps, getTime(item->path()))) {
-        TF_FATAL_ERROR(
+        std::string msg = TfStringPrintf(
             "Local transformation computation for item %s failed.", item->path().string().c_str());
+        throw std::runtime_error(msg.c_str());
     }
 
     // The Maya fallback transform stack is the last group of transform ops in

@@ -98,7 +98,8 @@ uint32_t findLayerIndex(const UsdPrim& prim, const SdfLayerHandle& layer)
     // iterate through the expanded primIndex
     for (PcpNodeRef node : primIndex.GetNodeRange()) {
 
-        TF_AXIOM(node);
+        if (!node)
+            continue;
 
         const PcpLayerStackSite&   site = node.GetSite();
         const PcpLayerStackRefPtr& layerStack = site.layerStack;
@@ -772,10 +773,13 @@ bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMs
 
 bool isAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName)
 {
-    std::string errMsg;
+    if (!prim)
+        return false;
 
-    TF_AXIOM(prim);
-    TF_AXIOM(!attrName.IsEmpty());
+    if (attrName.IsEmpty())
+        return false;
+
+    std::string errMsg;
 
     UsdGeomXformable xformable(prim);
     if (xformable) {
@@ -1147,8 +1151,8 @@ Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& f
             dst.append(item);
         } else {
             auto recreatedItem = Ufe::Hierarchy::createItem(item->path());
-            TF_AXIOM(recreatedItem);
-            dst.append(recreatedItem);
+            if (recreatedItem)
+                dst.append(recreatedItem);
         }
     }
     return dst;

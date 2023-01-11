@@ -107,7 +107,7 @@ UsdGeomXformCommonAPI convertToCompatibleCommonAPI(const UsdPrim& prim)
         else {
             // Restore old
             auto result = xformable.SetXformOpOrder(xformOps);
-            TF_AXIOM(result);
+            TF_VERIFY(result);
             std::string err
                 = TfStringPrintf("Incompatible xform op %s:", op.GetOpName().GetString().c_str());
             throw std::runtime_error(err.c_str());
