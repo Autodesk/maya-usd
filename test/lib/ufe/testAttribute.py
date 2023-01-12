@@ -22,7 +22,7 @@ import ufeUtils
 import testUtils
 import usdUtils
 
-from pxr import Usd, UsdGeom, Vt, Gf
+from pxr import Usd, UsdGeom, Vt, Gf, UsdLux, UsdUI
 from pxr import UsdShade
 
 from maya import cmds
@@ -1962,6 +1962,46 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(obs.keys, set([uisoftminKey]))
 
         self.assertEqual(str(attr.getMetadata(uisoftminKey)), str(value))
+
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 22, 8), 'Requires a recent UsdLux API')
+    def testAttributeNiceNames(self):
+        cmds.file(new=True, force=True)
+
+        # Create a proxy shape with empty stage to start with.
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        # Create a ContextOps interface for the proxy shape.
+        proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment(proxyShape)])
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+
+        # Add a sphere light prim:
+        ufeCmd.execute(contextOps.doOpCmd(['Add New Prim', 'SphereLight']))
+
+        proxyShapehier = ufe.Hierarchy.hierarchy(proxyShapeItem)
+        lightItem = proxyShapehier.children()[0]
+        lightPrim = usdUtils.getPrimFromSceneItem(lightItem)
+        UsdLux.ShadowAPI.Apply(lightPrim)
+        UsdLux.ShapingAPI.Apply(lightPrim)
+        UsdUI.NodeGraphNodeAPI.Apply(lightPrim)
+
+        ufeAttrs = ufe.Attributes.attributes(lightItem)
+
+        testCases = (
+            ("inputs:radius", "Radius"),
+            ("inputs:shadow:falloffGamma", "Falloff Gamma"),
+            ("collection:shadowLink:expansionRule", "Expansion Rule"),
+            ("collection:lightLink:expansionRule", "Expansion Rule"),
+            ("inputs:shaping:cone:angle", "Cone Angle"),
+            ("ui:nodegraph:node:pos", "Ui Pos")
+        )
+
+        for attrName, niceName in testCases:
+            attr = ufeAttrs.attribute(attrName)
+            self.assertIsNotNone(attr)
+            self.assertEqual(attr.getMetadata("uiname"), niceName)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
