@@ -290,7 +290,7 @@ Ufe::Value UsdAttributeHolder::getMetadata(const std::string& key) const
                     prefix = prefix.substr(0, dunderPos) + typeNameAndInstance.second.GetString()
                         + ":";
 
-                    // If the parameter name does not start with the templte, it does not belong to
+                    // If the parameter name does not start with the template, it does not belong to
                     // this API:
                     if (_usdAttr.GetName().GetString().rfind(prefix, 0) == std::string::npos) {
                         continue;

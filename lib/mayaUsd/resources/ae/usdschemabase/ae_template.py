@@ -789,7 +789,7 @@ class AETemplate(object):
         # so we can later display them into the same UI section.
         #
         # We do not group the collections API. We rather create a section that
-        # includes the instance in the title. This allows up to optimally trim
+        # includes the instance in the title. This allows us to optimally trim
         # the type name and the namespace when generating the attribute nice names.
         #
         # By example, on a UsdLux light, we have two UsdCollectionAPI applied.
