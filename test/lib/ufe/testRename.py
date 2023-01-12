@@ -122,9 +122,8 @@ class RenameTestCase(unittest.TestCase):
         # Boost Python for mayaUsd and USD), need to pass in strings to
         # mayaUsd functions.  Multi-segment UFE paths need to have
         # comma-separated segments.
-        def assertStageAndPrimAccess(
-                proxyShapeSegment, primUfePathStr, primSegment):
-            proxyShapePathStr = str(proxyShapeSegment)
+        def assertStageAndPrimAccess(proxyShapeSegment, primUfePathStr, primSegment):
+            proxyShapePathStr = ufe.PathString.string(ufe.Path(proxyShapeSegment))
 
             stage     = mayaUsd.ufe.getStage(proxyShapePathStr)
             prim      = mayaUsd.ufe.ufePathToPrim(primUfePathStr)
