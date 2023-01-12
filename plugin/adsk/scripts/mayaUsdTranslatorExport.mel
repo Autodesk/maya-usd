@@ -393,7 +393,7 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
         tokenize($currentOptions, ";", $optionList);
         int $supportsMultiExport = 1;
         int $exportNurbsCurves = 1;
-        int $contextForcesFilterTypes = 0;
+        int $contextForcesFilterTypes = $enable;
         for ($index = 0; $index < size($optionList); $index++) {
             tokenize($optionList[$index], "=", $optionBreakDown);
             if ($optionBreakDown[0] == "exportUVs") {
