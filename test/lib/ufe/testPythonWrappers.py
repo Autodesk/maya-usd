@@ -76,9 +76,8 @@ class PythonWrappersTestCase(unittest.TestCase):
         stagePath = mayaUsd.ufe.stagePath(mayaUsdStage)
         self.assertIsNotNone(stagePath)
 
-        # It should also be the same as the shape node string
-        # (minus the extra |world at front).
-        self.assertEqual(shapeNode, stagePath.replace('|world', ''))
+        # It should also be the same as the shape node string.
+        self.assertEqual(shapeNode, stagePath)
 
         # Test the maya-usd ufePathToPrim() wrapper.
         mayaUsdStage.DefinePrim("/Capsule1", "Capsule")
