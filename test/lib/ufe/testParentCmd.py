@@ -1049,6 +1049,7 @@ class ParentCmdTestCase(unittest.TestCase):
             cmds.parent("|Tree_usd|Tree_usdShape,/TreeBase/trunk",
                         "|Tree_usd|Tree_usdShape,/TreeBase/leavesXform/leaves")
 
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
     def testParentShader(self):
         '''Shaders can only have NodeGraphs and Materials as parent.'''
         
@@ -1096,6 +1097,7 @@ class ParentCmdTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             cmds.parent(nodeGraphPathStr + "/Shader1", world=True)
 
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
     def testParentNodeGraph(self):
         '''NodeGraphs can only have a NodeGraphs and Materials as parent.'''
         
@@ -1143,6 +1145,7 @@ class ParentCmdTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             cmds.parent(nodeGraphPathStr + "/NodeGraph2", world=True)
 
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
     def testParentMaterial(self):
         '''Materials cannot have Shaders, NodeGraphs or Materials as parent.'''
         
