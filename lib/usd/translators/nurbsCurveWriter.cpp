@@ -42,6 +42,48 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace {
+bool isValidBezier(const MFnNurbsCurve& curveFn)
+{
+    // Linear curve are always compatible.
+    if (curveFn.degree() == 1)
+        return true;
+
+    // The curve type must be bezier and have degree 3 or less.
+    if (curveFn.typeName() != "bezierCurve")
+        return false;
+
+    if (curveFn.degree() > 3)
+        return false;
+
+    // The initial and final knots must repeat as many times as the degree.
+    // For example, for degree 3, it must lookk like: N, N, N .... M, M, M
+    MDoubleArray knots;
+    curveFn.getKnots(knots);
+
+    if (knots.length() < size_t(curveFn.degree() * 2))
+        return false;
+
+    const int firstIndex = 0;
+    const int lastIndex = int(knots.length()) - 1;
+
+    for (int i = 1; i < curveFn.degree(); ++i) {
+        if (knots[firstIndex + i] != knots[firstIndex])
+            return false;
+        if (knots[lastIndex - i] != knots[lastIndex])
+            return false;
+    }
+
+    // Knots must always increase.
+    for (size_t i = 1; i < knots.length(); ++i) {
+        if (knots[i] < knots[i - 1])
+            return false;
+    }
+
+    return true;
+}
+} // namespace
+
 PXRUSDMAYA_REGISTER_WRITER(nurbsCurve, PxrUsdTranslators_NurbsCurveWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(nurbsCurve, UsdGeomNurbsCurves);
 
@@ -56,11 +98,10 @@ PxrUsdTranslators_NurbsCurveWriter::PxrUsdTranslators_NurbsCurveWriter(
     }
     MStatus       status = MS::kSuccess;
     MFnNurbsCurve curveFn(GetDagPath(), &status);
-    MString       type = curveFn.typeName();
 
     isLinear = curveFn.degree() == 1;
 
-    if (type == "bezierCurve" || isLinear) {
+    if (isValidBezier(curveFn)) {
         UsdGeomBasisCurves primSchema = UsdGeomBasisCurves::Define(GetUsdStage(), GetUsdPath());
         if (!TF_VERIFY(
                 primSchema,
@@ -249,7 +290,7 @@ bool PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
             GetDagPath().fullPathName().asChar());
     }
 
-    if (curveFn.typeName() == "bezierCurve" || isLinear) {
+    if (isValidBezier(curveFn)) {
         UsdGeomBasisCurves primSchemaBasis(_usdPrim);
         size_t             pntCnt = points.size();
         VtVec3fArray       linearArray;

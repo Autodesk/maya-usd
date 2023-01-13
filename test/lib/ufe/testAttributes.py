@@ -22,6 +22,8 @@ import ufeUtils
 import usdUtils
 import testUtils
 
+import mayaUsd.lib as mayaUsdLib
+
 from pxr import UsdGeom
 
 from maya import cmds
@@ -150,7 +152,8 @@ class AttributesTestCase(unittest.TestCase):
 
         self.assertNotIn("MyAttribute", ball35Attrs.attributeNames)
         with self.assertRaisesRegex(KeyError, "Attribute 'MyAttribute' does not exist") as cm:
-            attr = ball35Attrs.attribute("MyAttribute")
+            with mayaUsdLib.DiagnosticBatchContext(1000) as bc:
+                attr = ball35Attrs.attribute("MyAttribute")
 
         cmds.redo()
         ballObserver.assertNotificationCount(self, numAdded = 2, numRemoved = 1)
@@ -166,9 +169,11 @@ class AttributesTestCase(unittest.TestCase):
 
         self.assertNotIn("MyAttribute", ball35Attrs.attributeNames)
         with self.assertRaisesRegex(KeyError, "Attribute 'MyAttribute' does not exist") as cm:
-            attr = ball35Attrs.attribute("MyAttribute")
+            with mayaUsdLib.DiagnosticBatchContext(1000) as bc:
+                attr = ball35Attrs.attribute("MyAttribute")
         with self.assertRaisesRegex(ValueError, "Requested attribute with empty name") as cm:
-            attr = ball35Attrs.attribute("")
+            with mayaUsdLib.DiagnosticBatchContext(1000) as bc:
+                attr = ball35Attrs.attribute("")
 
         cmds.undo()
         ballObserver.assertNotificationCount(self, numAdded = 3, numRemoved = 2)
@@ -181,7 +186,8 @@ class AttributesTestCase(unittest.TestCase):
 
         self.assertNotIn("MyAttribute", ball35Attrs.attributeNames)
         with self.assertRaisesRegex(KeyError, "Attribute 'MyAttribute' does not exist") as cm:
-            attr = ball35Attrs.attribute("MyAttribute")
+            with mayaUsdLib.DiagnosticBatchContext(1000) as bc:
+                attr = ball35Attrs.attribute("MyAttribute")
 
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test requires remove attribute and its connections feature only available on Ufe 0.4.24 and later')
     def testRemoveCompoundAttribute(self):

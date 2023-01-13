@@ -21,6 +21,8 @@ import ufeUtils
 import usdUtils
 import testUtils
 
+import mayaUsd.lib as mayaUsdLib
+
 from maya import cmds
 from pxr import Sdr
 
@@ -649,7 +651,8 @@ class ConnectionTestCase(unittest.TestCase):
 
         # Cleanup on disconnection should remove the MaterialX surface output.
         with self.assertRaisesRegex(KeyError, "Attribute 'outputs:mtlx:surface' does not exist") as cm:
-            materialAttrs.attribute("outputs:mtlx:surface")
+            with mayaUsdLib.DiagnosticBatchContext(1000) as bc:
+                materialAttrs.attribute("outputs:mtlx:surface")
 
         connections = connectionHandler.sourceConnections(materialItem)
         self.assertIsNotNone(connections)

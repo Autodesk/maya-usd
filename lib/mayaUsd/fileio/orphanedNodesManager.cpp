@@ -149,6 +149,22 @@ void handlePathChange(
     }
 }
 
+// Control the orphaned nodes manager in-orphaning flag.
+class Orphaning
+{
+public:
+    Orphaning(int& orphaning)
+        : _orphaning(orphaning)
+    {
+        ++_orphaning;
+    }
+
+    ~Orphaning() { --_orphaning; }
+
+private:
+    int& _orphaning;
+};
+
 } // namespace
 
 OrphanedNodesManager::OrphanedNodesManager()
@@ -235,6 +251,11 @@ void OrphanedNodesManager::operator()(const Ufe::Notification& n)
 
 void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& op)
 {
+    if (_inOrphaning > 0)
+        return;
+
+    Orphaning orphaning(_inOrphaning);
+
     switch (op.opType) {
     case Ufe::SceneCompositeNotification::OpType::ObjectAdd: {
         // Restoring a previously-deleted scene item may restore an orphaned

@@ -31,7 +31,7 @@ def createDefaultMenuItem(dagPath, precedingItem):
     # This is the final callable in the chain of responsibility, so it must
     # always return a menu item.
     _, _, _, prim = mayaUsdUtils.getPulledInfo(dagPath)
-    if prim and prim.IsValid() and mayaUsd.lib.PrimUpdaterManager.readPullInformation(prim):
+    if prim and prim.IsValid() and not mayaUsd.lib.PrimUpdaterManager.isEditedAsMayaOrphaned(prim):
         enabled = 1
     else:
         enabled = 0

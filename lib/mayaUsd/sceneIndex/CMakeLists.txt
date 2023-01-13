@@ -36,7 +36,6 @@ elseif(IS_LINUX)
 endif()
 
 set(PLUG_INFO_DIR ${CMAKE_INSTALL_PREFIX}/lib/usd/sceneIndex/resources)
-set(PLUG_INFO_ROOT ${CMAKE_INSTALL_PREFIX}/lib)
 
 configure_file(
     plugInfo.json

@@ -694,11 +694,9 @@ class AETemplate(object):
 
         schemaTypeName = mayaUsdLib.Util.prettifyName(schemaTypeName)
 
-        # if the schema name ends with "api", replace it with
-        # "API" and make sure to only replace the last occurence.
-        # Example: "Shaping api" which contains "api" twice most become "Shaping API"
-        if schemaTypeName.endswith("api"): 
-            schemaTypeName = " API".join(schemaTypeName.rsplit("api", 1))
+        # if the schema name ends with "api" or "API", trim it.
+        if schemaTypeName.endswith("api") or schemaTypeName.endswith("API"):
+            schemaTypeName = schemaTypeName[:-3]
 
         return schemaTypeName
 
@@ -790,9 +788,17 @@ class AETemplate(object):
         # group all instances of a MultipleApply schema together
         # so we can later display them into the same UI section.
         #
-        # By example, if UsdCollectionAPI is applied twice, UsdPrim.GetAppliedSchemas()
-        # will return ["CollectionAPI:instance1","CollectionAPI:instance2"] but we want to group
-        # both instance inside a "CollectionAPI" section.
+        # We do not group the collections API. We rather create a section that
+        # includes the instance in the title. This allows us to optimally trim
+        # the type name and the namespace when generating the attribute nice names.
+        #
+        # By example, on a UsdLux light, we have two UsdCollectionAPI applied.
+        # UsdPrim.GetAppliedSchemas() will return ["CollectionAPI:lightLink",
+        # "CollectionAPI:shadowLink"] and we will create two sections named
+        # "Light Link Collection" and "Shadow Link Collection". An attribute
+        # named "collection:lightLink:includeRoot" will get the base nice name
+        # "Collection Light Link Include Root" and a comparison with the schema nice name
+        # "Collection Light Link" will allow of to trim the nice name to "Include Root"
         #
         schemaAttrsDict = {}
         appliedSchemas = self.prim.GetAppliedSchemas()
@@ -819,10 +825,7 @@ class AETemplate(object):
                         prefix = namespace + ":" + instanceName + ":"
                         attrList = [prefix + i for i in attrList]
 
-                    if typeName in schemaAttrsDict:
-                        schemaAttrsDict[typeName] += attrList
-                    else:
-                        schemaAttrsDict[typeName] = attrList
+                    schemaAttrsDict[instanceName + typeName] = attrList
                 else:
                     attrList = schemaType.pythonClass.GetSchemaAttributeNames(False)
                     schemaAttrsDict[typeName] = attrList

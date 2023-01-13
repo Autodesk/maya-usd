@@ -23,6 +23,7 @@
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/selectability.h>
 
 #include <pxr/base/tf/diagnostic.h>

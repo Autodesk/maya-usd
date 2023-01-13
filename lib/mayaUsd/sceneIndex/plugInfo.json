@@ -14,7 +14,7 @@
             "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
             "Name": "mayaUsd",
             "ResourcePath": "resources",
-            "Root": "@PLUG_INFO_ROOT@",
+            "Root": "../../..",
             "Type": "library"
         }
     ]

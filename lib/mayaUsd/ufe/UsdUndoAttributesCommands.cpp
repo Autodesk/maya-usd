@@ -60,7 +60,7 @@ Ufe::Attribute::Ptr UsdAddAttributeCommand::attribute() const
 
 void UsdAddAttributeCommand::setName(const std::string& newName) { _name = newName; }
 
-void UsdAddAttributeCommand::executeUndoBlock()
+void UsdAddAttributeCommand::executeImplementation()
 {
     // Validation has already been done. Just create the attribute.
     auto sceneItem
@@ -102,7 +102,7 @@ UsdRemoveAttributeCommand::create(const UsdSceneItem::Ptr& sceneItem, const std:
     return nullptr;
 }
 
-void UsdRemoveAttributeCommand::executeUndoBlock()
+void UsdRemoveAttributeCommand::executeImplementation()
 {
     // Validation has already been done. Just remove the attribute.
     auto sceneItem
@@ -143,7 +143,7 @@ UsdRenameAttributeCommand::Ptr UsdRenameAttributeCommand::create(
     return nullptr;
 }
 
-void UsdRenameAttributeCommand::executeUndoBlock()
+void UsdRenameAttributeCommand::executeImplementation()
 {
     // Validation has already been done. Just rename the attribute.
     auto sceneItem

@@ -67,7 +67,7 @@ bool mergeToUsd(const std::string& nodeName, const VtDictionary& userArgs = VtDi
         return false;
 
     Ufe::Path path;
-    if (!MAYAUSD_NS_DEF::readPullInformation(dagPath, path))
+    if (!MayaUsd::readPullInformation(dagPath, path))
         return false;
 
     return PrimUpdaterManager::getInstance().mergeToUsd(dagNode, path, userArgs);
@@ -113,8 +113,13 @@ std::string readPullInformationString(const PXR_NS::UsdPrim& prim)
 {
     std::string dagPathStr;
     // Ignore boolean return value, empty string is the proper error result.
-    MAYAUSD_NS_DEF::readPullInformation(prim, dagPathStr);
+    MayaUsd::readPullInformation(prim, dagPathStr);
     return dagPathStr;
+}
+
+bool isEditedPrimOrphaned(const PXR_NS::UsdPrim& prim)
+{
+    return MayaUsd::isEditedAsMayaOrphaned(prim);
 }
 
 } // namespace
@@ -128,5 +133,6 @@ void wrapPrimUpdaterManager()
         .def("canEditAsMaya", canEditAsMaya)
         .def("discardEdits", discardEdits)
         .def("duplicate", duplicate, duplicate_overloads())
+        .def("isEditedAsMayaOrphaned", isEditedPrimOrphaned)
         .def("readPullInformation", readPullInformationString);
 }
