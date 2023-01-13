@@ -185,6 +185,10 @@ private:
     // UFE pulled path, and the Trie value is the corresponding Dag pull parent
     // and all ancestor variant set selections.
     Ufe::Trie<PullVariantInfo> _pulledPrims;
+
+    // Flag to tell that the orphaned nodes manager is currently orphaning
+    // nodes and should not react to its own actions.
+    int _inOrphaning = 0;
 };
 
 } // namespace MAYAUSD_NS_DEF

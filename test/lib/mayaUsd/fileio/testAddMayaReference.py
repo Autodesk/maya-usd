@@ -272,9 +272,8 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         primTestDefault.SetActive(True)
         self.assertTrue(primTestDefault.IsActive())
 
-        # Verify that the auto-edit has *not* been turned off since it could not
-        # be edited when discarding edits since the prim was not accessible since
-        # its parent prim was deactivated.
+        # Verify that the auto-edit has been turned off even though its parent prim
+        # was deactivated.
         #
         # Note: we have to retrieved the Maya ref prim again because when its parent
         #       was deactivated, the UsdPrim object became invalid and cannot be used
@@ -283,8 +282,10 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         mayaRefPrim = usdUtils.getPrimFromSceneItem(mayaRefUsdItem)
         attr = mayaRefPrim.GetAttribute('mayaAutoEdit')
         self.assertTrue(attr.IsValid())
-        self.assertEqual(attr.Get(), True)
-        self.assertFalse(mayaRefPrim.IsActive())
+        self.assertEqual(attr.Get(), False)
+        # This functionality requires the orphaned nodes manager.
+        if os.getenv('HAS_ORPHANED_NODES_MANAGER', '0') >= '1':
+            self.assertTrue(mayaRefPrim.IsActive())
 
 
     def testEditAndMergeMayaRef(self):
