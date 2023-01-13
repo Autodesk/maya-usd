@@ -122,7 +122,7 @@ bool checkPluginVersions(
     const JsObject&    plugInfo,
     const std::string& pythonVersion,
     const std::string& usdVersion,
-    const std::string& mayaUsdVersion,
+    const std::string& mayaHydraVersion,
     const std::string& debugLocation)
 {
     JsObject::const_iterator checkIt = plugInfo.find(_Tokens->VersionCheckKey);
@@ -187,7 +187,7 @@ bool checkPluginVersions(
         return false;
     }
 
-    if (!checkFn(_Tokens->CheckMayaUsdKey, mayaUsdVersion)) {
+    if (!checkFn(_Tokens->CheckMayaUsdKey, mayaHydraVersion)) {
         return false;
     }
 
@@ -234,7 +234,7 @@ void registerVersionedPlugins()
     std::call_once(once, []() {
         const std::string pythonVersion = TOSTRING(MAYA_PY_VERSION);
         const std::string usdVersion = TOSTRING(MAYA_USD_VERSION);
-        const std::string mayaUsdVersion = TOSTRING(MAYAUSD_VERSION);
+        const std::string mayaHydraVersion = TOSTRING(MAYAHYDRA_VERSION);
 
         std::vector<std::string> pluginsToRegister;
 
@@ -287,7 +287,7 @@ void registerVersionedPlugins()
                         topPluginObject,
                         pythonVersion,
                         usdVersion,
-                        mayaUsdVersion,
+                        mayaHydraVersion,
                         debugLocation)) {
                     // skipping plugin because it didn't pass version check
                     continue;

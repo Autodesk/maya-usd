@@ -44,8 +44,12 @@ static std::vector<MtohRenderOverridePtr> gsRenderOverrides;
     #define STRINGIFY(x) #x
     #define TOSTRING(x)  STRINGIFY(x)
     #define PLUGIN_VERSION TOSTRING(MAYAUSD_VERSION)
+#elif defined(MAYAHYDRA_VERSION)
+    #define STRINGIFY(x) #x
+    #define TOSTRING(x)  STRINGIFY(x)
+    #define PLUGIN_VERSION TOSTRING(MAYAHYDRA_VERSION)
 #else
-    #pragma message( "MAYAUSD_VERSION is not defined" )
+    #pragma message( "MAYAHYDRA_VERSION is not defined" )
     #define PLUGIN_VERSION "Maya-Hydra experimental"
 #endif
 

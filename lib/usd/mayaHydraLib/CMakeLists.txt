@@ -88,6 +88,12 @@ if(DEFINED MAYAUSD_VERSION)
             MAYAUSD_VERSION=${MAYAUSD_VERSION}
     )
 endif()
+if(DEFINED MAYAHYDRA_VERSION)
+    target_compile_definitions(${TARGET_NAME}
+        PRIVATE
+            MAYAHYDRA_VERSION=${MAYAHYDRA_VERSION}
+    )
+endif()
 
     # -----------------------------------------------------------------------------
     # link libraries
