@@ -17,9 +17,8 @@
 
 #include "private/Utils.h"
 
+#include <mayaUsd/ufe/UsdUndoableCommand.h>
 #include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/undo/UsdUndoBlock.h>
-#include <mayaUsd/undo/UsdUndoableItem.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/usd/usdLux/distantLight.h>
@@ -37,7 +36,8 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 template <typename ValueTypeIn>
-class SetValueUndoableCommandImpl : public Ufe::SetValueUndoableCommand<ValueTypeIn>
+class SetValueUndoableCommandImpl
+    : public UsdUndoableCommand<Ufe::SetValueUndoableCommand<ValueTypeIn>>
 {
 public:
     using ValueTypeNonRef = typename std::remove_reference<ValueTypeIn>::type;
@@ -47,7 +47,7 @@ public:
     typedef std::function<void(const UsdPrim& prim, ValueTypeIn)> SetterFunc;
 
     SetValueUndoableCommandImpl(const Ufe::Path& path, const SetterFunc& sf)
-        : Ufe::SetValueUndoableCommand<ValueTypeIn>(path)
+        : UsdUndoableCommand<Ufe::SetValueUndoableCommand<ValueTypeIn>>(path)
         , _setterFunc(sf)
     {
     }
@@ -60,22 +60,17 @@ public:
         return true;
     }
 
-    void execute() override
+    void executeImplementation() override
     {
-        UsdUndoBlock undoBlock(&_undoableItem);
         if (auto pItem
             = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::BaseUndoableCommand::sceneItem())) {
             _setterFunc(pItem->prim(), _value);
         }
     }
 
-    void undo() override { _undoableItem.undo(); }
-    void redo() override { _undoableItem.redo(); }
-
 private:
-    SetterFunc      _setterFunc;
-    ValueTypeOut    _value;
-    UsdUndoableItem _undoableItem;
+    SetterFunc   _setterFunc;
+    ValueTypeOut _value;
 };
 
 UsdLight::UsdLight()

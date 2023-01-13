@@ -27,7 +27,7 @@ namespace ufe {
 UsdSetMatrix4dUndoableCommand::UsdSetMatrix4dUndoableCommand(
     const Ufe::Path&     path,
     const Ufe::Matrix4d& newM)
-    : UsdBaseUndoableCommand<Ufe::SetMatrix4dUndoableCommand>(path)
+    : UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>(path)
 {
     // Decompose new matrix to extract TRS.  Neither GfMatrix4d::Factor
     // nor GfTransform decomposition provide results that match Maya,
@@ -57,7 +57,7 @@ bool UsdSetMatrix4dUndoableCommand::set(const Ufe::Matrix4d&)
     return true;
 }
 
-void UsdSetMatrix4dUndoableCommand::executeUndoBlock()
+void UsdSetMatrix4dUndoableCommand::executeImplementation()
 {
     // transform3d() and editTransform3d() are equivalent for a normal Maya
     // transform stack, but not for a fallback Maya transform stack, and

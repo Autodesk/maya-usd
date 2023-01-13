@@ -67,7 +67,7 @@ public:
 
     Ufe::Attribute::Ptr attribute() const override;
 
-    void executeUndoBlock() override;
+    void executeImplementation() override;
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4032)
@@ -103,7 +103,7 @@ public:
     static UsdRemoveAttributeCommand::Ptr
     create(const UsdSceneItem::Ptr& sceneItem, const std::string& name);
 
-    void executeUndoBlock() override;
+    void executeImplementation() override;
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4032)
@@ -142,7 +142,7 @@ public:
         const std::string&       originalName,
         const std::string&       newName);
 
-    void executeUndoBlock() override;
+    void executeImplementation() override;
 
     Ufe::Attribute::Ptr attribute() const override;
 
