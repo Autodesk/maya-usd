@@ -325,6 +325,7 @@ private:
     DisplayStatusMaterialMap _displayStatusMaterials;
 
     bool    _useDefaultMaterial = false;
+    bool    _xRayEnabled        = false;
     bool    _isPlaybackRunning = false;
 };
 

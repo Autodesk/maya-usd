@@ -123,11 +123,25 @@ class MayaHydraMaterialNetworkConverter
 public:
     typedef std::unordered_map<SdfPath, MObject, SdfPath::Hash> PathToMobjMap;
 
+    struct MayaHydraMaterialNetworkConverterInit
+    {
+        MayaHydraMaterialNetworkConverterInit(
+            const SdfPath&     prefix,
+            bool enableXRayShadingMode,
+            PathToMobjMap*     pathToMobj)
+            : _prefix(prefix), _enableXRayShadingMode(enableXRayShadingMode), _pathToMobj(pathToMobj)
+        {
+        }
+        MayaHydraMaterialNetworkConverterInit() = delete;
+
+        HdMaterialNetwork   _materialNetwork;
+        const SdfPath&      _prefix;
+        bool                _enableXRayShadingMode;
+        PathToMobjMap*      _pathToMobj;//Can be a nullptr
+    };
+
     MAYAHYDRALIB_API
-    MayaHydraMaterialNetworkConverter(
-        HdMaterialNetwork& network,
-        const SdfPath&     prefix,
-        PathToMobjMap*     pathToMobj = nullptr);
+    MayaHydraMaterialNetworkConverter(MayaHydraMaterialNetworkConverterInit& init);
 
     MAYAHYDRALIB_API
     HdMaterialNode* GetMaterial(const MObject& mayaNode);
@@ -178,6 +192,7 @@ private:
     HdMaterialNetwork& _network;
     const SdfPath&     _prefix;
     PathToMobjMap*     _pathToMobj;
+    bool               _enableXRayShadingMode = false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -43,6 +43,9 @@ public:
     MAYAHYDRALIB_API
     void Populate() override;
 
+    MAYAHYDRALIB_API
+    void EnableXRayShadingMode(bool enable);
+
 #if PXR_VERSION < 2011
 
     MAYAHYDRALIB_API
@@ -62,6 +65,9 @@ public:
 
     MAYAHYDRALIB_API
     static VtValue GetPreviewMaterialResource(const SdfPath& materialID);
+
+protected:
+    bool _enableXRayShadingMode = false;// Are we in viewport XRay shading mode ?
 };
 
 using MayaHydraMaterialAdapterPtr = std::shared_ptr<MayaHydraMaterialAdapter>;

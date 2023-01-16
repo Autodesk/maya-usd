@@ -85,6 +85,12 @@ void MayaHydraMaterialAdapter::Populate()
     _isPopulated = true;
 }
 
+void MayaHydraMaterialAdapter::EnableXRayShadingMode(bool enable)
+{
+    _enableXRayShadingMode = enable;
+    MarkDirty(HdMaterial::DirtyParams);
+}
+
 #if PXR_VERSION < 2011
 
 HdTextureResource::ID MayaHydraMaterialAdapter::GetTextureResourceID(const TfToken& paramName)
@@ -250,16 +256,17 @@ private:
     {
         TF_DEBUG(MAYAHYDRALIB_ADAPTER_MATERIALS)
             .Msg("MayaHydraShadingEngineAdapter::GetMaterialResource(): %s\n", GetID().GetText());
-        HdMaterialNetwork              materialNetwork;
-        MayaHydraMaterialNetworkConverter converter(materialNetwork, GetID(), &_materialPathToMobj);
+        MayaHydraMaterialNetworkConverter::MayaHydraMaterialNetworkConverterInit initStruct(GetID(), _enableXRayShadingMode, &_materialPathToMobj);
+        
+        MayaHydraMaterialNetworkConverter converter(initStruct);
         if (!converter.GetMaterial(_surfaceShader)) {
             return GetPreviewMaterialResource(GetID());
         }
 
         HdMaterialNetworkMap materialNetworkMap;
-        materialNetworkMap.map[HdMaterialTerminalTokens->surface] = materialNetwork;
-        if (!materialNetwork.nodes.empty()) {
-            materialNetworkMap.terminals.push_back(materialNetwork.nodes.back().path);
+        materialNetworkMap.map[HdMaterialTerminalTokens->surface] = initStruct._materialNetwork;
+        if (!initStruct._materialNetwork.nodes.empty()) {
+            materialNetworkMap.terminals.push_back(initStruct._materialNetwork.nodes.back().path);
         }
 
         // HdMaterialNetwork displacementNetwork;

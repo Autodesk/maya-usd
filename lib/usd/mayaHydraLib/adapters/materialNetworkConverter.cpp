@@ -113,8 +113,10 @@ void DebugPrintParameters(const std::map<TfToken, VtValue>& params)
 
 const TfToken       _useSpecularWorkflowToken ("useSpecularWorkflow");
 const TfToken       _specularColorToken ("specularColor");
+const TfToken       _opacityToken ("opacity");
 
-constexpr float defaultTextureMemoryLimit = 1e8f;
+constexpr float defaultTextureMemoryLimit   = 1e8f;
+constexpr float xRayOpacityValue            = 0.3f;//Hardcoded value taken from OGSMayaRenderItem::UpdateExtraOpacityParam
 
 // Lists of preferred shader output names, from SdfValueTypeName to list of
 // preferred output names for that type.  The list that has an empty token for
@@ -734,13 +736,11 @@ MayaHydraShaderParam::MayaHydraShaderParam(
 {
 }
 
-MayaHydraMaterialNetworkConverter::MayaHydraMaterialNetworkConverter(
-    HdMaterialNetwork& network,
-    const SdfPath&     prefix,
-    PathToMobjMap*     pathToMobj)
-    : _network(network)
-    , _prefix(prefix)
-    , _pathToMobj(pathToMobj)
+MayaHydraMaterialNetworkConverter::MayaHydraMaterialNetworkConverter(MayaHydraMaterialNetworkConverterInit& init)
+    : _network(init._materialNetwork)
+    , _prefix(init._prefix)
+    , _pathToMobj(init._pathToMobj)
+    , _enableXRayShadingMode(init._enableXRayShadingMode)
 {
 }
 
@@ -784,11 +784,25 @@ HdMaterialNode* MayaHydraMaterialNetworkConverter::GetMaterial(const MObject& ma
 
         //If we are using a specular color which is not white, the UsdPreviewsurface specular workflow must be enabled to use the specular color
         //which is done by setting the UsdPreviewSurface param "useSpecularWork" to 1
-        const auto it = material.parameters.find(_specularColorToken);
-        if(it != material.parameters.cend()){
-            const VtValue& specColorVal = it->second;
-            if (! specColorVal.IsEmpty() && specColorVal.UncheckedGet<GfVec3f>() != GfVec3f(1,1,1)){
-                material.parameters[_useSpecularWorkflowToken] = VtValue(1);
+        {
+            const auto it = material.parameters.find(_specularColorToken);
+            if(it != material.parameters.cend()){
+                const VtValue& specColorVal = it->second;
+                if (! specColorVal.IsEmpty() && specColorVal.UncheckedGet<GfVec3f>() != GfVec3f(1,1,1)){
+                    material.parameters[_useSpecularWorkflowToken] = VtValue(1);
+                }
+            }
+        }
+
+        if (_enableXRayShadingMode)
+        {
+            //Multiply current opacity by hardcoded xRayOpacityValue
+            const auto it = material.parameters.find(_opacityToken);
+            if(it != material.parameters.cend()){
+                const VtValue& opacityVal = it->second;
+                if (! opacityVal.IsEmpty()){
+                    material.parameters[_opacityToken] = VtValue(opacityVal.UncheckedGet<float>() * xRayOpacityValue);
+                }
             }
         }
 

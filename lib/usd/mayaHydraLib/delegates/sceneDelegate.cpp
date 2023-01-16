@@ -552,6 +552,13 @@ void MayaHydraSceneDelegate::PreFrame(const MHWRender::MDrawContext& context)
             shape.second->MarkDirty(HdChangeTracker::DirtyMaterialId);
     }
 
+    const bool xRayEnabled = (context.getDisplayStyle() & MHWRender::MFrameContext::kXray);
+    if (xRayEnabled != _xRayEnabled) {
+        _xRayEnabled    = xRayEnabled;
+        for (auto& matAdapter : _materialAdapters)
+            matAdapter.second->EnableXRayShadingMode(_xRayEnabled);
+    }
+    
     if (!_materialTagsChanged.empty()) {
         if (IsHdSt()) {
             for (const auto& id : _materialTagsChanged) {
@@ -1779,6 +1786,9 @@ bool MayaHydraSceneDelegate::_CreateMaterial(const SdfPath& id, const MObject& o
         return false;
     }
 
+    if (_xRayEnabled){
+        materialAdapter->EnableXRayShadingMode(_xRayEnabled);//Enable XRay shading mode
+    }
     materialAdapter->Populate();
     materialAdapter->CreateCallbacks();
     _materialAdapters.emplace(id, std::move(materialAdapter));
