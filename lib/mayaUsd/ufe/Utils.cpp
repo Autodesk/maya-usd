@@ -1007,11 +1007,17 @@ VtValue vtValueFromString(const SdfValueTypeName& typeName, const std::string& s
             { SdfValueTypeNames->Bool.GetCPPTypeName(),
               [](const std::string& s) { return VtValue("true" == s ? true : false); } },
             { SdfValueTypeNames->Int.GetCPPTypeName(),
-              [](const std::string& s) { return VtValue(std::stoi(s.c_str())); } },
+              [](const std::string& s) {
+                  return s.empty() ? VtValue() : VtValue(std::stoi(s.c_str()));
+              } },
             { SdfValueTypeNames->Float.GetCPPTypeName(),
-              [](const std::string& s) { return VtValue(std::stof(s.c_str())); } },
+              [](const std::string& s) {
+                  return s.empty() ? VtValue() : VtValue(std::stof(s.c_str()));
+              } },
             { SdfValueTypeNames->Double.GetCPPTypeName(),
-              [](const std::string& s) { return VtValue(std::stod(s.c_str())); } },
+              [](const std::string& s) {
+                  return s.empty() ? VtValue() : VtValue(std::stod(s.c_str()));
+              } },
             { SdfValueTypeNames->String.GetCPPTypeName(),
               [](const std::string& s) { return VtValue(s); } },
             { SdfValueTypeNames->Token.GetCPPTypeName(),
