@@ -191,7 +191,7 @@ public:
 	void SetPlaybackChanged();
 
 	MAYAHYDRALIB_API
-	bool GetVisible(bool isPlaybackRunning);
+	bool GetVisible() override;
 	
 	MAYAHYDRALIB_API
 	void SetVisible(bool val) { _visible = val; }

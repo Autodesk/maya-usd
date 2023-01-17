@@ -49,7 +49,7 @@ public:
     MAYAHYDRALIB_API
     virtual ~MayaHydraDagAdapter() = default;
     MAYAHYDRALIB_API
-    virtual bool GetVisible() { return IsVisible(); }
+    virtual bool GetVisible() override { return IsVisible(); }
     MAYAHYDRALIB_API
     virtual void CreateCallbacks() override;
     MAYAHYDRALIB_API

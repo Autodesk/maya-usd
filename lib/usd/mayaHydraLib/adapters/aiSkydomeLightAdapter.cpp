@@ -61,6 +61,17 @@ public:
                         plug.child(0).asFloat(), plug.child(1).asFloat(), plug.child(2).asFloat()));
         } else if (paramName == HdLightTokens->intensity) {
             return VtValue(light.findPlug("intensity", true).asFloat());
+        } else if (paramName == HdLightTokens->diffuse) {
+            MPlug aiDiffuse = light.findPlug("aiDiffuse", true, &status);
+            if (status == MS::kSuccess) {
+                return VtValue(aiDiffuse.asFloat());
+            }
+        }
+        else if (paramName == HdLightTokens->specular) {
+            MPlug aiSpecular = light.findPlug("aiSpecular", true, &status);
+            if (status == MS::kSuccess) {
+                return VtValue(aiSpecular.asFloat());
+            }
         } else if (paramName == HdLightTokens->exposure) {
             return VtValue(light.findPlug("aiExposure", true).asFloat());
         } else if (paramName == HdLightTokens->normalize) {
@@ -93,8 +104,10 @@ public:
                 return VtValue(SdfAssetPath());
             }
 
-            return VtValue(SdfAssetPath(
-                file.findPlug(MayaAttrs::file::fileTextureName, true).asString().asChar()));
+            const char* fileTextureName = file.findPlug(MayaAttrs::file::fileTextureName, true).asString().asChar();
+            // SdfAssetPath requires both "path" "resolvedPath"
+            return VtValue(SdfAssetPath(fileTextureName, fileTextureName));
+
         } else if (paramName == HdLightTokens->enableColorTemperature) {
             return VtValue(false);
 #if PXR_VERSION < 2011

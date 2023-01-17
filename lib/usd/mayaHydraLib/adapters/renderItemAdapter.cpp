@@ -12,6 +12,7 @@
 
 #include "renderItemAdapter.h"
 
+#include <mayaHydraLib/delegates/sceneDelegate.h>
 #include <mayaHydraLib/adapters/adapterRegistry.h>
 #include <mayaHydraLib/adapters/adapterDebugCodes.h>
 #include <mayaHydraLib/adapters/mayaAttrs.h>
@@ -672,11 +673,13 @@ VtValue MayaHydraRenderItemAdapter::GetMaterialResource()
 	return {};
 }
 
-bool MayaHydraRenderItemAdapter::GetVisible(bool isPlaybackRunning) 
+bool MayaHydraRenderItemAdapter::GetVisible()
 { 
 	//Assuming that, if the playback is in the active view only (MAnimControl::kPlaybackViewActive), we are called because we are in the active view
-	if (_isHideOnPlayback && isPlaybackRunning ){
-		return false;
+	if (_isHideOnPlayback){
+		// MAYA-127216: Remove dependency on parent class MayaHydraAdapter. This will let us use MayaHydraSceneDelegate directly
+		auto sceneDelegate = static_cast<MayaHydraSceneDelegate*>(GetDelegate());
+		return !sceneDelegate->GetPlaybackRunning();
 	}
 	
 	return _visible; 

@@ -65,15 +65,14 @@ VtValue MayaHydraSceneDelegate::_mayaDefaultMaterial;
 
 namespace {
 
-void _nodeAdded(MObject& obj, void* clientData)
+void _onDagNodeAdded(MObject& obj, void* clientData)
 {
-    //We care only about lights for this callback, it is used to create a LightAdapter when adding a new light in the scene while being in hydra
-    if (obj.hasFn(MFn::kLight)){
-        // In case of creating new instances, the instance below the
-        // dag will be empty and not initialized properly.
-        auto* delegate = reinterpret_cast<MayaHydraSceneDelegate*>(clientData);
-        delegate->NodeAdded(obj);
-    }
+    reinterpret_cast<MayaHydraSceneDelegate*>(clientData)->OnDagNodeAdded(obj);
+}
+
+void _onDagNodeRemoved(MObject& obj, void* clientData)
+{
+    reinterpret_cast<MayaHydraSceneDelegate*>(clientData)->OnDagNodeRemoved(obj);
 }
 
 const MString defaultLightSet("defaultLightSet");
@@ -492,6 +491,7 @@ void MayaHydraSceneDelegate::Populate()
     MayaHydraAdapterRegistry::LoadAllPlugin();
     auto&  renderIndex = GetRenderIndex();
 
+    MStatus status;
 #ifndef MAYAHYDRALIB_SCENE_RENDER_DATASERVER
     MItDag dagIt(MItDag::kDepthFirst, MFn::kInvalid);
     dagIt.traverseUnderWorld(true);
@@ -501,18 +501,21 @@ void MayaHydraSceneDelegate::Populate()
         InsertDag(path);
     }
 #elif 1
-    // Add lights to the scene using MayaHydraLightAdapter
-    MItDag dagIt(MItDag::kDepthFirst, MFn::kLight);
+    MItDag dagIt(MItDag::kDepthFirst);
     dagIt.traverseUnderWorld(true);
     for (; !dagIt.isDone(); dagIt.next()) {
         MDagPath path;
-        dagIt.getPath(path);
-        InsertDag(path);
+        MObject node = dagIt.currentItem(&status);
+        if (status != MS::kSuccess) continue;
+        OnDagNodeAdded(node);
     }
 #endif
 
-    MStatus status;
-    auto    id = MDGMessage::addNodeAddedCallback(_nodeAdded, "dagNode", this, &status);
+    auto    id = MDGMessage::addNodeAddedCallback(_onDagNodeAdded, "dagNode", this, &status);
+    if (status) {
+        _callbacks.push_back(id);
+    }
+    id = MDGMessage::addNodeRemovedCallback(_onDagNodeRemoved, "dagNode", this, &status);
     if (status) {
         _callbacks.push_back(id);
     }
@@ -579,6 +582,20 @@ void MayaHydraSceneDelegate::PreFrame(const MHWRender::MDrawContext& context)
         }
         _materialTagsChanged.clear();
     }
+
+#ifdef MAYAHYDRALIB_SCENE_RENDER_DATASERVER
+    if (!_lightsToAdd.empty()) {
+        for (auto& lightToAdd : _lightsToAdd) {
+            MDagPath dag;
+            MStatus  status = MDagPath::getAPathTo(lightToAdd.first, dag);
+            if (!status) {
+                return;
+            }
+            MayaHydraSceneDelegate::Create(dag, lightToAdd.second, _lightAdapters, true);
+        }
+        _lightsToAdd.clear();
+    }
+#else
     if (!_addedNodes.empty()) {
         for (const auto& obj : _addedNodes) {
             if (obj.isNull()) {
@@ -606,6 +623,7 @@ void MayaHydraSceneDelegate::PreFrame(const MHWRender::MDrawContext& context)
         }
         _addedNodes.clear();
     }
+#endif
     // We don't need to rebuild something that's already being recreated.
     // Since we have a few elements, linear search over vectors is going to
     // be okay.
@@ -744,6 +762,28 @@ void MayaHydraSceneDelegate::RebuildAdapterOnIdle(const SdfPath& id, uint32_t fl
 
 void MayaHydraSceneDelegate::RecreateAdapter(const SdfPath& id, const MObject& obj)
 {
+#ifdef MAYAHYDRALIB_SCENE_RENDER_DATASERVER
+    if (_RemoveAdapter<MayaHydraAdapter>(
+    id,
+    [](MayaHydraAdapter* a) {
+        a->RemoveCallbacks();
+        a->RemovePrim();
+    },
+    _lightAdapters)) 
+    {
+        if (MObjectHandle(obj).isValid()) {
+            OnDagNodeAdded(obj);
+        }
+        else {
+            TF_DEBUG(MAYAHYDRALIB_DELEGATE_RECREATE_ADAPTER)
+                .Msg(
+                    "Shape/light prim (%s) not re-created because node no "
+                    "longer valid\n",
+                    id.GetText());
+        }
+        return;
+    }
+#else
     if (_RemoveAdapter<MayaHydraAdapter>(
             id,
             [](MayaHydraAdapter* a) {
@@ -771,6 +811,7 @@ void MayaHydraSceneDelegate::RecreateAdapter(const SdfPath& id, const MObject& o
         }
         return;
     }
+#endif
     if (_RemoveAdapter<MayaHydraMaterialAdapter>(
             id,
             [](MayaHydraMaterialAdapter* a) {
@@ -930,6 +971,24 @@ bool MayaHydraSceneDelegate::_GetRenderItem(
 	return false;
 }
 
+void MayaHydraSceneDelegate::OnDagNodeAdded(const MObject& obj)
+{    
+    if (obj.isNull()) return;
+ 
+    //We care only about lights for this callback, it is used to create a LightAdapter when adding a new light in the scene while being in hydra
+    if (auto lightFn = MayaHydraAdapterRegistry::GetLightAdapterCreator(obj))
+    {
+        _lightsToAdd.push_back({ obj, lightFn });
+    }
+}
+
+void MayaHydraSceneDelegate::OnDagNodeRemoved(const MObject& obj)
+{
+    const auto newEnd = std::remove_if(
+        _lightsToAdd.begin(), _lightsToAdd.end(), [&obj](const auto& item) { return item.first == obj; });
+    _lightsToAdd.erase(newEnd, _lightsToAdd.end());
+}
+
 void MayaHydraSceneDelegate::InsertDag(const MDagPath& dag)
 {
     TF_DEBUG(MAYAHYDRALIB_DELEGATE_INSERTDAG)
@@ -987,8 +1046,6 @@ void MayaHydraSceneDelegate::InsertDag(const MDagPath& dag)
         }
     }
 }
-
-void MayaHydraSceneDelegate::NodeAdded(const MObject& obj) { _addedNodes.push_back(obj); }
 
 void MayaHydraSceneDelegate::UpdateLightVisibility(const MDagPath& dag)
 {
@@ -1396,6 +1453,7 @@ TfTokenVector MayaHydraSceneDelegate::GetTaskRenderTags(SdfPath const& taskId)
 		_renderItemShaderAdapters);
 }
 
+// MAYA-127217: remove unused render item shader code
 void MayaHydraSceneDelegate::ScheduleRenderTasks(HdTaskSharedPtrVector& tasks)
 {
 	for (auto shader : _renderItemShaderAdapters)
@@ -1552,10 +1610,11 @@ bool MayaHydraSceneDelegate::GetVisible(const SdfPath& id)
 		.Msg("MayaHydraSceneDelegate::GetVisible(%s)\n", id.GetText());
 
 #ifdef MAYAHYDRALIB_SCENE_RENDER_DATASERVER
-	return _GetValue<MayaHydraRenderItemAdapter, bool>(
+	return _GetValue<MayaHydraAdapter, bool>(
 		id,
-		[this](MayaHydraRenderItemAdapter* a) -> bool { return a->GetVisible(_isPlaybackRunning); },
-		_renderItemsAdapters
+		[](MayaHydraAdapter* a) -> bool { return a->GetVisible(); },
+		_renderItemsAdapters,
+        _lightAdapters
 		);
 #else
     return _GetValue<MayaHydraDagAdapter, bool>(

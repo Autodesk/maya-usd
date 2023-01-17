@@ -103,15 +103,18 @@ public:
     MAYAHYDRALIB_API
     MayaHydraMaterialAdapterPtr GetMaterialAdapter(const SdfPath& id);
 
+    // MAYA-127209: remove inconsistent MAYAHYDRALIB_SCENE_RENDER_DATASERVER
     MAYAHYDRALIB_API
     void InsertDag(const MDagPath& dag);
 
+    // MAYA-127217: remove unused render item shader code
 	MAYAHYDRALIB_API
-		void ScheduleRenderTasks(HdTaskSharedPtrVector& tasks);
+	void ScheduleRenderTasks(HdTaskSharedPtrVector& tasks);
 
-    MAYAHYDRALIB_API
-    void NodeAdded(const MObject& obj);
+    void OnDagNodeAdded(const MObject& obj);
 
+    void OnDagNodeRemoved(const MObject& obj);
+    
     MAYAHYDRALIB_API
     void UpdateLightVisibility(const MDagPath& dag);
 
@@ -142,6 +145,8 @@ public:
         MSelectionList&                  selectionList,
         MPointArray&                     worldSpaceHitPts) override;
 #endif
+
+    bool GetPlaybackRunning() const { return _isPlaybackRunning; }
 
 protected:
     
@@ -264,7 +269,6 @@ private:
         Map&                                                                  adapterMap,
         bool                                                                  isSprim = false);
 
-
 	MAYAHYDRALIB_API
 	bool _GetRenderItem(
 		int fastId,
@@ -306,7 +310,12 @@ private:
     std::vector<MCallbackId>                   _callbacks;
     std::vector<std::tuple<SdfPath, MObject>>  _adaptersToRecreate;
     std::vector<std::tuple<SdfPath, uint32_t>> _adaptersToRebuild;
+    // MAYA-127209: remove inconsistent MAYAHYDRALIB_SCENE_RENDER_DATASERVER
     std::vector<MObject>                       _addedNodes;
+
+    using LightAdapterCreator = std::function<MayaHydraLightAdapterPtr(MayaHydraDelegateCtx*, const MDagPath&)>;
+    std::vector<std::pair<MObject, LightAdapterCreator>> _lightsToAdd;
+    
     std::vector<SdfPath>                       _materialTagsChanged;
 
     SdfPath _fallbackMaterial;

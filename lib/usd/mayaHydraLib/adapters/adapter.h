@@ -49,6 +49,8 @@ public:
     virtual bool IsSupported() const = 0;
     MAYAHYDRALIB_API
     virtual bool HasType(const TfToken& typeId) const;
+    MAYAHYDRALIB_API
+    virtual bool GetVisible() { return true; }
 
     MAYAHYDRALIB_API
     virtual void CreateCallbacks();

@@ -73,7 +73,13 @@ void MayaHydraAdapterRegistry::RegisterLightAdapter(const TfToken& type, LightAd
 MayaHydraAdapterRegistry::LightAdapterCreator
 MayaHydraAdapterRegistry::GetLightAdapterCreator(const MDagPath& dag)
 {
-    MFnDependencyNode   depNode(dag.node());
+    return GetLightAdapterCreator(dag.node());
+}
+
+MayaHydraAdapterRegistry::LightAdapterCreator
+MayaHydraAdapterRegistry::GetLightAdapterCreator(const MObject& node)
+{
+    MFnDependencyNode   depNode(node);
     LightAdapterCreator ret = nullptr;
     TfMapLookup(GetInstance()._lightAdapters, TfToken(depNode.typeName().asChar()), &ret);
     return ret;

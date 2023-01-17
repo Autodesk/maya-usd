@@ -60,6 +60,9 @@ public:
     MAYAHYDRALIB_API
     static LightAdapterCreator GetLightAdapterCreator(const MDagPath& dag);
 
+    MAYAHYDRALIB_API
+    static LightAdapterCreator GetLightAdapterCreator(const MObject& dag);
+
     using MaterialAdapterCreator = std::function<
         MayaHydraMaterialAdapterPtr(const SdfPath&, MayaHydraDelegateCtx*, const MObject&)>;
     MAYAHYDRALIB_API
