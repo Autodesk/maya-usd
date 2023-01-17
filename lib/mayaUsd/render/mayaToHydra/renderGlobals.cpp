@@ -45,11 +45,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (defaultRenderGlobals)
     (mtohTextureMemoryPerTexture)
-    (mtohColorSelectionHighlight)
-    (mtohColorSelectionHighlightColor)
-    (mtohWireframeSelectionHighlight)
-    (mtohColorQuantization)
-    (mtohSelectionOutline)
     (mtohMotionSampleStart)
     (mtohMotionSampleEnd)
 );
@@ -65,33 +60,19 @@ global proc mtohRenderOverride_ApplySetting(string $renderer, string $attr, stri
     mayaHydra -r $renderer -updateRenderGlobals $attr;
     refresh -f;
 }
-global proc mtohRenderOverride_AddAttribute(string $renderer, string $label, string $attr, int $fromAE) {
+global proc mtohRenderOverride_AddAttribute(string $renderer, string $description, string $attr, string $label, int $fromAE) {
     string $command = "mtohRenderOverride_ApplySetting " + $renderer + " " + $attr;
     if (!$fromAE) {
         $command = $command + " defaultRenderGlobals";
-        attrControlGrp -label $label -attribute ("defaultRenderGlobals." + $attr) -changeCommand $command;
+        attrControlGrp -label $label -attribute ("defaultRenderGlobals." + $attr) -changeCommand $command -annotation $description;
     } else {
-        editorTemplate -label $label -adc $attr $command;
+        editorTemplate -label $label -adc $attr $command -annotation $description;
     }
 }
 global proc mtohRenderOverride_AddMTOHAttributes(int $fromAE) {
-    mtohRenderOverride_AddAttribute("mayaHydra", "Motion Sample Start", "mtohMotionSampleStart", $fromAE);
-    mtohRenderOverride_AddAttribute("mayaHydra", "Motion Samples End", "mtohMotionSampleEnd", $fromAE);
-    mtohRenderOverride_AddAttribute("mayaHydra", "Texture Memory Per Texture (KB)", "mtohTextureMemoryPerTexture", $fromAE);
-    mtohRenderOverride_AddAttribute("mayaHydra", "Show Wireframe on Selected Objects", "mtohWireframeSelectionHighlight", $fromAE);
-    mtohRenderOverride_AddAttribute("mayaHydra", "Highlight Selected Objects", "mtohColorSelectionHighlight", $fromAE);
-    mtohRenderOverride_AddAttribute("mayaHydra", "Highlight Color for Selected Objects", "mtohColorSelectionHighlightColor", $fromAE);
+    mtohRenderOverride_AddAttribute("mayaHydra", "Motion Sample Start", "mtohMotionSampleStart", "mtohMotionSampleStart", $fromAE);
+    mtohRenderOverride_AddAttribute("mayaHydra", "Motion Samples End", "mtohMotionSampleEnd", "mtohMotionSampleEnd", $fromAE);
 )mel"
-#if PXR_VERSION >= 2005
-                                          R"mel(
-    mtohRenderOverride_AddAttribute("mayaHydra", "Highlight outline (in pixels, 0 to disable)", "mtohSelectionOutline", $fromAE);
-)mel"
-#endif
-#if PXR_VERSION <= 2005
-                                          R"mel(
-    mtohRenderOverride_AddAttribute("mayaHydra", "Enable color quantization", "mtohColorQuantization", $fromAE);
-)mel"
-#endif
 
                                           R"mel(
 }
@@ -700,14 +681,15 @@ void MtohRenderGlobals::BuildOptionsMenu(
     const MtohRendererDescription&       rendererDesc,
     const HdRenderSettingDescriptorList& rendererSettingDescriptors)
 {
-    // FIXME: Horribly in-effecient, 3 parse/replace calls
-    //
     auto optionBoxCommand = TfStringReplace(
         _renderOverrideOptionBoxTemplate, "{{override}}", rendererDesc.overrideName.GetText());
     optionBoxCommand
         = TfStringReplace(optionBoxCommand, "{{hydraplugin}}", rendererDesc.rendererName);
     optionBoxCommand
         = TfStringReplace(optionBoxCommand, "{{hydraDisplayName}}", rendererDesc.displayName);
+    optionBoxCommand
+        = TfStringReplace(optionBoxCommand, "{{hydraRenderDelegateName}}", rendererDesc.rendererName);//Is the name of the render delegate since we are displaying its settings
+    
 
     auto status = MGlobal::executeCommand(optionBoxCommand.c_str());
     if (!status) {
@@ -729,15 +711,17 @@ void MtohRenderGlobals::BuildOptionsMenu(
             continue;
         }
 
-        ss << "\tmtohRenderOverride_AddAttribute(" << quote(rendererDesc.rendererName.GetString())
-           << ',' << quote(desc.name) << ','
-           << quote(_MangleName(desc.key, rendererDesc.rendererName).GetString())
+        ss << "\tmtohRenderOverride_AddAttribute(" << quote(rendererDesc.rendererName.GetString())//Renderer name
+           << ',' << quote(desc.name) << ','//Description
+           << quote(_MangleName(desc.key, rendererDesc.rendererName).GetString())<< ','//Attribute name
+           << quote(desc.key.GetText())//Label
            << ", $fromAE);\n";
     }
     if (rendererDesc.rendererName == MtohTokens->HdStormRendererPlugin) {
         ss << "\tmtohRenderOverride_AddAttribute(" << quote(rendererDesc.rendererName.GetString())
-           << ',' << quote("Maximum shadow map size") << ','
-           << quote(_MangleName(MtohTokens->mtohMaximumShadowMapResolution).GetString())
+           << ',' << quote("Maximum shadow map size") << ','//Description
+           << quote(_MangleName(MtohTokens->mtohMaximumShadowMapResolution).GetString())<< ','//Attribute name
+           << quote(MtohTokens->mtohMaximumShadowMapResolution.GetText())//Label
            << ", $fromAE);\n";
     }
     ss << "}\n";
@@ -869,42 +853,7 @@ MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params)
             return mayaObject;
         }
     }
-    if (filter(_tokens->mtohWireframeSelectionHighlight)) {
-        _CreateBoolAttribute(
-            node, filter.mayaString(), defGlobals.wireframeSelectionHighlight, userDefaults);
-        if (filter.attributeFilter()) {
-            return mayaObject;
-        }
-    }
-    if (filter(_tokens->mtohColorSelectionHighlight)) {
-        _CreateBoolAttribute(
-            node, filter.mayaString(), defGlobals.colorSelectionHighlight, userDefaults);
-        if (filter.attributeFilter()) {
-            return mayaObject;
-        }
-    }
-    if (filter(_tokens->mtohColorSelectionHighlightColor)) {
-        _CreateColorAttribute(
-            node, filter.mayaString(), defGlobals.colorSelectionHighlightColor, userDefaults);
-        if (filter.attributeFilter()) {
-            return mayaObject;
-        }
-    }
-#if PXR_VERSION >= 2005
-    if (filter(_tokens->mtohSelectionOutline)) {
-        _CreateFloatAttribute(
-            node, filter.mayaString(), defGlobals.outlineSelectionWidth, userDefaults);
-    }
-#endif
-#if PXR_VERSION <= 2005
-    if (filter(_tokens->mtohColorQuantization)) {
-        _CreateBoolAttribute(
-            node, filter.mayaString(), defGlobals.enableColorQuantization, userDefaults);
-        if (filter.attributeFilter()) {
-            return mayaObject;
-        }
-    }
-#endif
+    
     // TODO: Move this to an external function and add support for more types,
     //  and improve code quality/reuse.
     for (const auto& rit : MtohGetRendererSettings()) {
@@ -1063,43 +1012,7 @@ MtohRenderGlobals::GetInstance(const GlobalParams& params, bool storeUserSetting
             return globals;
         }
     }
-    if (filter(_tokens->mtohWireframeSelectionHighlight)) {
-        _GetAttribute(
-            node, filter.mayaString(), globals.wireframeSelectionHighlight, storeUserSetting);
-        if (filter.attributeFilter()) {
-            return globals;
-        }
-    }
-    if (filter(_tokens->mtohColorSelectionHighlight)) {
-        _GetAttribute(node, filter.mayaString(), globals.colorSelectionHighlight, storeUserSetting);
-        if (filter.attributeFilter()) {
-            return globals;
-        }
-    }
-    if (filter(_tokens->mtohColorSelectionHighlightColor)) {
-        _GetColorAttribute(
-            node, filter.mayaString(), globals.colorSelectionHighlightColor, storeUserSetting);
-        if (filter.attributeFilter()) {
-            return globals;
-        }
-    }
-#if PXR_VERSION >= 2005
-    if (filter(_tokens->mtohSelectionOutline)) {
-        _GetAttribute(node, filter.mayaString(), globals.outlineSelectionWidth, storeUserSetting);
-        if (filter.attributeFilter()) {
-            return globals;
-        }
-    }
-#endif
-#if PXR_VERSION <= 2005
-    if (filter(_tokens->mtohColorQuantization)) {
-        _GetAttribute(node, filter.mayaString(), globals.enableColorQuantization, storeUserSetting);
-        if (filter.attributeFilter()) {
-            return globals;
-        }
-    }
-#endif
-
+    
     // TODO: Move this to an external function and add support for more types,
     //  and improve code quality/reuse.
     for (const auto& rit : MtohGetRendererSettings()) {

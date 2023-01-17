@@ -28,7 +28,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// Register the embree plugin with the renderer plugin system.
+// Register the HdStorm plugin with the renderer plugin system.
 TF_REGISTRY_FUNCTION(TfType)
 {
     HdRendererPluginRegistry::Define<MayaHydraRenderItemRendererPlugin, HdRendererPlugin>();
