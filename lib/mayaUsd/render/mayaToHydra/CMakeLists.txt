@@ -109,3 +109,11 @@ if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${TARGET_NAME}> 
             DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/maya OPTIONAL)
 endif()
+
+# install top level plugInfo.json that includes the configured plugInfo.json
+install(CODE
+    "file(WRITE \"${CMAKE_CURRENT_BINARY_DIR}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib/usd/plugInfo.json
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd
+)

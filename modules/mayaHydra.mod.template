@@ -14,4 +14,5 @@ icons:
 plug-ins: lib/maya
 presets: 
 scripts: 
-resources: 
+resources:
+${PXR_OVERRIDE_PLUGINPATH_NAME}+:=lib/usd
