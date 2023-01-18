@@ -59,4 +59,6 @@ void wrapMayaUsd_SchemasTokens()
     _AddToken(cls, "mayaAutoEdit", MayaUsd_SchemasTokens->mayaAutoEdit);
     _AddToken(cls, "mayaNamespace", MayaUsd_SchemasTokens->mayaNamespace);
     _AddToken(cls, "mayaReference", MayaUsd_SchemasTokens->mayaReference);
+    _AddToken(cls, "ALMayaReference", MayaUsd_SchemasTokens->ALMayaReference);
+    _AddToken(cls, "MayaReference", MayaUsd_SchemasTokens->MayaReference);
 }
