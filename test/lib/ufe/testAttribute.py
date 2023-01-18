@@ -1927,6 +1927,7 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(mayaUsdLib.Util.prettifyName("standardSurface"), "Standard Surface")
         self.assertEqual(mayaUsdLib.Util.prettifyName("UsdPreviewSurface"), "Usd Preview Surface")
         self.assertEqual(mayaUsdLib.Util.prettifyName("USDPreviewSurface"), "USD Preview Surface")
+        self.assertEqual(mayaUsdLib.Util.prettifyName("xformOp:rotateXYZ"), "Xform Op Rotate XYZ")
         self.assertEqual(mayaUsdLib.Util.prettifyName("ior"), "Ior")
         self.assertEqual(mayaUsdLib.Util.prettifyName("IOR"), "IOR")
         self.assertEqual(mayaUsdLib.Util.prettifyName("specular_IOR"), "Specular IOR")
