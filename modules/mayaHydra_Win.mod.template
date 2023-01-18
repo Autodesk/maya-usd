@@ -1,0 +1,7 @@
++ MAYAHYDRA ${MAYAHYDRA_VERSION} ${CMAKE_INSTALL_PREFIX}
+icons: 
+plug-ins: lib/maya
+presets: 
+scripts: 
+resources: 
+PATH+:=lib
