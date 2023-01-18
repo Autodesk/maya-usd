@@ -24,7 +24,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 // clang-format off
 #define MTOH_TOKENS \
     (HdStormRendererPlugin) \
-    (MayaHydraRenderItemRendererPlugin) \
     (mtohMaximumShadowMapResolution)
 // clang-format on
 

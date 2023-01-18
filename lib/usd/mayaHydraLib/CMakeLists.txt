@@ -203,4 +203,3 @@ endif()
 # -----------------------------------------------------------------------------
 add_subdirectory(adapters)
 add_subdirectory(delegates)
-add_subdirectory(renderItemClient)

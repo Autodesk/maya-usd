@@ -28,7 +28,6 @@
 
 #include <mayaHydraLib/delegates/delegateRegistry.h>
 #include <mayaHydraLib/delegates/sceneDelegate.h>
-#include <mayaHydraLib/renderItemClient/renderDelegate.h>
 #include <mayaHydraLib/utils.h>
 
 #include <pxr/base/tf/type.h>
@@ -242,8 +241,7 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
 #endif
     , _hgiDriver { HgiTokens->renderDriver, VtValue(_hgi.get()) }
     , _selectionTracker(new HdxSelectionTracker)
-    , _isUsingHdSt(desc.rendererName == MtohTokens->HdStormRendererPlugin||
-                   desc.rendererName == MtohTokens->MayaHydraRenderItemRendererPlugin)
+    , _isUsingHdSt(desc.rendererName == MtohTokens->HdStormRendererPlugin)
 {
     TF_DEBUG(MAYAHYDRALIB_RENDEROVERRIDE_RESOURCES)
         .Msg(

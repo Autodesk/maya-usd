@@ -3,14 +3,6 @@
         {
             "Info": {
                 "Types": {
-                    # Plugin
-                    "MayaHydraRenderItemRendererPlugin": {
-                        "bases": [
-                            "HdRendererPlugin"
-                        ],
-                        "displayName": "MayaHydraRenderItemRendererPlugin",
-                        "priority": 99
-                    },
                     # Delegates
                     "MayaHydraDelegate": {
                         "displayName": "Base type for all scene delegates in Hydra for Maya."

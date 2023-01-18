@@ -1,4 +1,0 @@
-
-
-transfer renderItemAdapter here?
-    * Do we even need one adapter per item, can't we just have the rprim?
