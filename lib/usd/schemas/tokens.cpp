@@ -21,7 +21,9 @@ MayaUsd_SchemasTokensType::MayaUsd_SchemasTokensType()
     : mayaAutoEdit("mayaAutoEdit", TfToken::Immortal)
     , mayaNamespace("mayaNamespace", TfToken::Immortal)
     , mayaReference("mayaReference", TfToken::Immortal)
-    , allTokens({ mayaAutoEdit, mayaNamespace, mayaReference })
+    , ALMayaReference("ALMayaReference", TfToken::Immortal)
+    , MayaReference("MayaReference", TfToken::Immortal)
+    , allTokens({ mayaAutoEdit, mayaNamespace, mayaReference, ALMayaReference, MayaReference })
 {
 }
 
