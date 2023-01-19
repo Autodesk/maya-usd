@@ -85,24 +85,23 @@ bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttrib
 PXR_NS::SdrShaderNodeConstPtr
 _GetShaderNodeDef(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName)
 {
-    UsdPrim           targetPrim = prim;
-    TfToken           targetName = attrName;
-    UsdShadeNodeGraph ngTarget(targetPrim);
+    UsdPrim               targetPrim = prim;
+    TfToken               targetName = attrName;
+    UsdShadeAttributeType targetType = UsdShadeAttributeType::Output;
+    UsdShadeNodeGraph     ngTarget(targetPrim);
     while (ngTarget) {
         // Dig inside, following the connection on targetName until we find a shader.
-        UsdShadeOutput graphOutput = ngTarget.GetOutput(targetName);
-        if (!graphOutput) {
+        PXR_NS::UsdAttribute targetAttr
+            = targetPrim.GetAttribute(UsdShadeUtils::GetFullName(targetName, targetType));
+        if (!targetAttr) {
             // Not a NodeGraph we recognize.
             return {};
         }
         UsdShadeConnectableAPI source;
-        TfToken                sourceOutputName;
-        UsdShadeAttributeType  sourceType;
         if (UsdShadeConnectableAPI::GetConnectedSource(
-                graphOutput, &source, &sourceOutputName, &sourceType)) {
+                targetAttr, &source, &targetName, &targetType)) {
             targetPrim = source.GetPrim();
             ngTarget = UsdShadeNodeGraph(targetPrim);
-            targetName = sourceOutputName;
         } else {
             // Could not find a shader source connected to this nodegraph.
             return {};
