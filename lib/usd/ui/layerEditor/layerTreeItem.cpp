@@ -10,6 +10,7 @@
 #include "warningDialogs.h"
 
 #include <mayaUsd/base/tokens.h>
+#include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
 #include <pxr/usd/sdf/fileFormat.h>
@@ -22,6 +23,10 @@
 #include <algorithm>
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
+const MString MAKE_PATH_RELATIVE_TO_SCENE_FILE = "mayaUsd_MakePathRelativeToSceneFile";
+} // namespace
 
 namespace UsdLayerEditor {
 
@@ -370,7 +375,14 @@ void LayerTreeItem::saveAnonymousLayer()
 
             // now replace the layer in the parent
             if (isRootLayer()) {
-                sessionState->rootLayerPathChanged(fileName);
+                const bool makePathRelative
+                    = MGlobal::optionVarExists(MAKE_PATH_RELATIVE_TO_SCENE_FILE)
+                    && MGlobal::optionVarIntValue(MAKE_PATH_RELATIVE_TO_SCENE_FILE);
+
+                sessionState->rootLayerPathChanged(
+                    makePathRelative
+                        ? UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(fileName)
+                        : fileName);
             } else {
                 // now replace the layer in the parent
                 auto parentItem = parentLayerItem();

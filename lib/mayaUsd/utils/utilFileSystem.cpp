@@ -117,6 +117,14 @@ std::string UsdMayaUtilFileSystem::getMayaSceneFileDir()
     return std::string();
 }
 
+std::string UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(const std::string& fileName)
+{
+    ghc::filesystem::path absolutePath(fileName);
+    ghc::filesystem::path basePath(getMayaSceneFileDir());
+    ghc::filesystem::path relativePath = absolutePath.lexically_relative(basePath);
+    return relativePath.generic_string();
+}
+
 const char* getScenesFolderScript = R"(
 global proc string UsdMayaUtilFileSystem_GetScenesFolder()
 {
