@@ -67,12 +67,19 @@ bool isValidBezier(const MFnNurbsCurve& curveFn)
     const int firstIndex = 0;
     const int lastIndex = int(knots.length()) - 1;
 
-    for (int i = 1; i < curveFn.degree(); ++i) {
-        if (knots[firstIndex + i] != knots[firstIndex])
-            return false;
-        if (knots[lastIndex - i] != knots[lastIndex])
-            return false;
+    // The range must be the full range.
+    double minKnot = knots[0];
+    double maxKnot = knots[0];
+    for (double knot : knots) {
+        minKnot = std::min(minKnot, knot);
+        maxKnot = std::max(maxKnot, knot);
     }
+
+    double mayaKnotDomainMin = minKnot;
+    double mayaKnotDomainMax = maxKnot;
+    curveFn.getKnotDomain(mayaKnotDomainMin, mayaKnotDomainMax);
+    if (round(mayaKnotDomainMin) > round(minKnot) || round(mayaKnotDomainMax) < round(maxKnot))
+        return false;
 
     // Knots must always increase.
     for (size_t i = 1; i < knots.length(); ++i) {
