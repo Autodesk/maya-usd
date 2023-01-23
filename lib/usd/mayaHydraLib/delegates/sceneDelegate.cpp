@@ -1011,6 +1011,7 @@ void MayaHydraSceneDelegate::OnDagNodeRemoved(const MObject& obj)
     _lightsToAdd.erase(newEnd, _lightsToAdd.end());
 }
 
+#ifndef MAYAHYDRALIB_SCENE_RENDER_DATASERVER
 void MayaHydraSceneDelegate::InsertDag(const MDagPath& dag)
 {
     TF_DEBUG(MAYAHYDRALIB_DELEGATE_INSERTDAG)
@@ -1068,6 +1069,7 @@ void MayaHydraSceneDelegate::InsertDag(const MDagPath& dag)
         }
     }
 }
+#endif
 
 void MayaHydraSceneDelegate::UpdateLightVisibility(const MDagPath& dag)
 {

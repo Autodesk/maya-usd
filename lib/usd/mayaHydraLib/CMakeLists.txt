@@ -18,18 +18,14 @@ set(HEADERS
 )
 
 if(NOT BUILD_MAYAUSD_LIBRARY)
-    # Those have been copied from maya-usd and modified to mimic their behaviour
+    # Copied from maya-usd and reduced to minimal interface.
     target_sources(${TARGET_NAME} 
         PRIVATE
             usd/util.cpp
-            usd/proxyShapeNotice.cpp
-            usd/proxyShapeBase.cpp
     )
 
     list(APPEND HEADERS
         usd/util.h
-        usd/proxyShapeNotice.h
-        usd/proxyShapeBase.h
     )
 endif()
 

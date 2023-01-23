@@ -104,8 +104,10 @@ public:
     MayaHydraMaterialAdapterPtr GetMaterialAdapter(const SdfPath& id);
 
     // MAYA-127209: remove inconsistent MAYAHYDRALIB_SCENE_RENDER_DATASERVER
+#ifndef MAYAHYDRALIB_SCENE_RENDER_DATASERVER
     MAYAHYDRALIB_API
     void InsertDag(const MDagPath& dag);
+#endif
 
     // MAYA-127217: remove unused render item shader code
 	MAYAHYDRALIB_API

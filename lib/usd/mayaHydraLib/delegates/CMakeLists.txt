@@ -7,8 +7,6 @@ target_sources(${TARGET_NAME}
         delegateCtx.cpp
         delegateDebugCodes.cpp
         delegateRegistry.cpp
-        proxyDelegate.cpp
-        proxyUsdImagingDelegate.cpp
         sceneDelegate.cpp
         testDelegate.cpp
 )
@@ -19,8 +17,6 @@ set(HEADERS
     delegateDebugCodes.h
     delegateRegistry.h
     params.h
-    proxyDelegate.h
-    proxyUsdImagingDelegate.h
     sceneDelegate.h
     testDelegate.h
 )

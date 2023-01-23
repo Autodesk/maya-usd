@@ -17,8 +17,6 @@
 
 #if defined(MAYAUSD_VERSION)
     #include <mayaUsd/nodes/proxyShapeBase.h>
-#else
-    #include <mayaHydraLib/usd/proxyShapeBase.h>
 #endif
 
 #include <pxr/base/plug/plugin.h>
@@ -45,22 +43,6 @@ MayaHydraAdapterRegistry::GetShapeAdapterCreator(const MDagPath& dag)
     MFnDependencyNode   depNode(dag.node());
     ShapeAdapterCreator ret = nullptr;
     TfMapLookup(GetInstance()._dagAdapters, TfToken(depNode.typeName().asChar()), &ret);
-
-    return ret;
-}
-
-MayaHydraAdapterRegistry::ShapeAdapterCreator
-MayaHydraAdapterRegistry::GetProxyShapeAdapterCreator(const MDagPath& dag)
-{
-    MFnDependencyNode   depNode(dag.node());
-    ShapeAdapterCreator ret = nullptr;
-
-    // Temporary workaround for proxy shapes which may not have exact matching type in registration
-    auto* proxyBase = dynamic_cast<MayaUsdProxyShapeBase*>(depNode.userNode());
-    if (proxyBase) {
-        TfMapLookup(
-            GetInstance()._dagAdapters, TfToken(MayaUsdProxyShapeBase::typeName.asChar()), &ret);
-    }
 
     return ret;
 }

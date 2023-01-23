@@ -13,7 +13,6 @@ target_sources(${TARGET_NAME}
         renderItemAdapter.cpp
         directionalLightAdapter.cpp
         lightAdapter.cpp
-        proxyAdapter.cpp
         materialAdapter.cpp
         materialNetworkConverter.cpp
         mayaAttrs.cpp
@@ -34,7 +33,6 @@ set(HEADERS
     dagAdapter.h
     renderItemAdapter.h
     lightAdapter.h
-    proxyAdapter.h
     materialAdapter.h
     materialNetworkConverter.h
     mayaAttrs.h

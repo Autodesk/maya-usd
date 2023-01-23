@@ -49,8 +49,6 @@ public:
 
     MAYAHYDRALIB_API
     static ShapeAdapterCreator GetShapeAdapterCreator(const MDagPath& dag);
-    MAYAHYDRALIB_API
-    static ShapeAdapterCreator GetProxyShapeAdapterCreator(const MDagPath& dag);
 
     using LightAdapterCreator
         = std::function<MayaHydraLightAdapterPtr(MayaHydraDelegateCtx*, const MDagPath&)>;
