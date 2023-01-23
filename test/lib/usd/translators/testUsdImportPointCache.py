@@ -1,7 +1,6 @@
-#!/pxrpythonsubst
-
+#!/usr/bin/env mayapy
 #
-# Copyright 2020 Apple
+# Copyright 2023 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,15 +15,10 @@
 # limitations under the License.
 #
 
-from __future__ import division
-
 import fixturesUtils
-import logging
 import os
 import unittest
 from maya import cmds, standalone
-from maya.api import OpenMaya as om
-from pxr import Usd
 
 
 class testUsdImportPointCache(unittest.TestCase):
