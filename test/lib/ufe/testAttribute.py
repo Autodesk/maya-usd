@@ -1961,7 +1961,8 @@ class AttributeTestCase(unittest.TestCase):
 
         self.assertEqual(str(attr.getMetadata(uisoftminKey)), str(value))
 
-    @unittest.skipUnless(Usd.GetVersion() >= (0, 22, 8), 'Requires a recent UsdLux API')
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 22, 8) and ufeUtils.ufeFeatureSetVersion() >= 3, 
+        'Requires a recent UsdLux API and UFE attribute metadata API')
     def testAttributeNiceNames(self):
         cmds.file(new=True, force=True)
 
