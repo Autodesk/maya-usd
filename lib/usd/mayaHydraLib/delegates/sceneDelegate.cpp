@@ -662,12 +662,15 @@ void MayaHydraSceneDelegate::PreFrame(const MHWRender::MDrawContext& context)
     if (!IsHdSt()) {
         return;
     }
+
     constexpr auto considerAllSceneLights = MHWRender::MDrawContext::kFilteredIgnoreLightLimit;
     MStatus        status;
     const auto     numLights = context.numberOfActiveLights(considerAllSceneLights, &status);
     if (!status || numLights == 0) {
+        _MapAdapter<MayaHydraLightAdapter>([](MayaHydraLightAdapter* a) { a->SetLightingOn(false); }, _lightAdapters); // Turn off all lights
         return;
     }
+    std::vector<MDagPath> activelightPaths;
     MIntArray intVals;
     MMatrix   matrixVal;
     for (auto i = decltype(numLights) { 0 }; i < numLights; ++i) {
@@ -679,10 +682,13 @@ void MayaHydraSceneDelegate::PreFrame(const MHWRender::MDrawContext& context)
         if (!lightPath.isValid()) {
             continue;
         }
+        activelightPaths.push_back(lightPath);
+
         if (!lightParam->getParameter(MHWRender::MLightParameterInformation::kShadowOn, intVals)
             || intVals.length() < 1 || intVals[0] != 1) {
             continue;
         }
+
         if (lightParam->getParameter(
                 MHWRender::MLightParameterInformation::kShadowViewProj, matrixVal)) {
             _FindAdapter<MayaHydraLightAdapter>(
@@ -693,6 +699,22 @@ void MayaHydraSceneDelegate::PreFrame(const MHWRender::MDrawContext& context)
                 },
                 _lightAdapters);
         }
+    }
+
+    // Turn on active lights, turn off non-active lights, and add non-created active lights.
+    _MapAdapter<MayaHydraLightAdapter>([&](MayaHydraLightAdapter* a) {
+            auto it = std::find(activelightPaths.begin(), activelightPaths.end(), a->GetDagPath());
+            if (it != activelightPaths.end()) {
+                a->SetLightingOn(true);
+                activelightPaths.erase(it);
+            }
+            else {
+                a->SetLightingOn(false);
+            }
+        },
+        _lightAdapters);
+    for (const auto& lightPath : activelightPaths) {
+        Create(lightPath, MayaHydraAdapterRegistry::GetLightAdapterCreator(lightPath), _lightAdapters, true);
     }
 }
 

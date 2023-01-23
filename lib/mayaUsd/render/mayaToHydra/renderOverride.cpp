@@ -478,7 +478,6 @@ void MtohRenderOverride::_DetectMayaDefaultLighting(const MHWRender::MDrawContex
 
     if (foundMayaDefaultLight != _hasDefaultLighting) {
         _hasDefaultLighting = foundMayaDefaultLight;
-        _needsClear.store(true);
         TF_DEBUG(MAYAHYDRALIB_RENDEROVERRIDE_DEFAULT_LIGHTING)
             .Msg(
                 "MtohRenderOverride::"
@@ -606,6 +605,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, c
     delegateParams.displaySmoothMeshes = !(displayStyle & MHWRender::MFrameContext::kFlatShaded);
 
     if (_defaultLightDelegate != nullptr) {
+        _defaultLightDelegate->SetLightingOn(_hasDefaultLighting);
         _defaultLightDelegate->SetDefaultLight(_defaultLight);
     }
     for (auto& it : _delegates) {
@@ -974,20 +974,19 @@ void MtohRenderOverride::_InitHydraResources()
             _delegates.emplace_back(std::move(newDelegate));
         }
     }
-		
-    if (_hasDefaultLighting) {
-        delegateInitData.delegateID
-            = _ID.AppendChild(TfToken(TfStringPrintf("_DefaultLightDelegate_%p", this)));
-        _defaultLightDelegate.reset(new MtohDefaultLightDelegate(delegateInitData));
-        // Set the scene delegate SolidPrimitivesRootPaths for the lines and points primitives to be ignored by the default light
-        _defaultLightDelegate->SetSolidPrimitivesRootPaths(solidPrimsRootPaths);
-    }
+
+    delegateInitData.delegateID
+        = _ID.AppendChild(TfToken(TfStringPrintf("_DefaultLightDelegate_%p", this)));
+    _defaultLightDelegate.reset(new MtohDefaultLightDelegate(delegateInitData));
+    // Set the scene delegate SolidPrimitivesRootPaths for the lines and points primitives to be ignored by the default light
+    _defaultLightDelegate->SetSolidPrimitivesRootPaths(solidPrimsRootPaths);
+
     VtValue selectionTrackerValue(_selectionTracker);
     _engine.SetTaskContextData(HdxTokens->selectionState, selectionTrackerValue);
     for (auto& it : _delegates) {
         it->Populate();
     }
-    if (_defaultLightDelegate) {
+    if (_defaultLightDelegate && _hasDefaultLighting) {
         _defaultLightDelegate->Populate();
     }
 

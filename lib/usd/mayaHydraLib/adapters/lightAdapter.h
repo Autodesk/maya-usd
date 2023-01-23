@@ -61,6 +61,8 @@ public:
     virtual void CreateCallbacks() override;
     MAYAHYDRALIB_API
     void SetShadowProjectionMatrix(const GfMatrix4d& matrix);
+    MAYAHYDRALIB_API
+    void SetLightingOn(bool isLightingOn);
 
 protected:
     MAYAHYDRALIB_API
@@ -71,6 +73,7 @@ protected:
     bool _GetVisibility() const override;
 
     GfMatrix4d _shadowProjectionMatrix;
+    bool _isLightingOn = true;
 };
 
 using MayaHydraLightAdapterPtr = std::shared_ptr<MayaHydraLightAdapter>;

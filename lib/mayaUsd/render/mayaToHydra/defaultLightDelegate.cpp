@@ -53,18 +53,17 @@ MtohDefaultLightDelegate::MtohDefaultLightDelegate(const InitData& initData)
 
 MtohDefaultLightDelegate::~MtohDefaultLightDelegate()
 {
-    if (ARCH_UNLIKELY(!_isSupported)) {
-        return;
-    }
-    if (IsHdSt()) {
-        GetRenderIndex().RemoveSprim(HdPrimTypeTokens->simpleLight, _lightPath);
-    } else {
-        GetRenderIndex().RemoveSprim(HdPrimTypeTokens->distantLight, _lightPath);
-    }
+    RemovePrim();
 }
 
 void MtohDefaultLightDelegate::Populate()
 {
+    if (_isPopulated) {
+        return;
+    }
+    if (!_isLightingOn) {
+        return;
+    }
     _isSupported = IsHdSt() ? GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)
                             : GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->distantLight);
     if (ARCH_UNLIKELY(!_isSupported)) {
@@ -76,14 +75,35 @@ void MtohDefaultLightDelegate::Populate()
         GetRenderIndex().InsertSprim(HdPrimTypeTokens->distantLight, this, _lightPath);
     }
     GetRenderIndex().GetChangeTracker().SprimInserted(_lightPath, HdLight::AllDirty);
+    _isPopulated = true;
+}
+
+void MtohDefaultLightDelegate::RemovePrim()
+{
+    if (!_isPopulated) {
+        return;
+    }
+    if (ARCH_UNLIKELY(!_isSupported)) {
+        return;
+    }
+    if (IsHdSt()) {
+        GetRenderIndex().RemoveSprim(HdPrimTypeTokens->simpleLight, _lightPath);
+    }
+    else {
+        GetRenderIndex().RemoveSprim(HdPrimTypeTokens->distantLight, _lightPath);
+    }
+    _isPopulated = false;
 }
 
 void MtohDefaultLightDelegate::SetDefaultLight(const GlfSimpleLight& light)
 {
+    if (!_isPopulated) {
+        return;
+    }
     if (ARCH_UNLIKELY(!_isSupported)) {
         return;
     }
-    
+
     //We only update 3 parameters in the default light : position (in which we store a direction), diffuse and specular
     // We don't never update the transform for the default light
     const bool lightsParamsWeUseAreDifferent = AreLightsParamsWeUseDifferent(_light, light);
@@ -188,6 +208,16 @@ bool MtohDefaultLightDelegate::GetVisible(const SdfPath& id)
     TF_DEBUG(MAYAHYDRALIB_DELEGATE_GET_VISIBLE)
         .Msg("MtohDefaultLightDelegate::GetVisible(%s)\n", id.GetText());
     return true;
+}
+
+void MtohDefaultLightDelegate::SetLightingOn(bool isLightingOn)
+{
+    if (_isLightingOn != isLightingOn) {
+        _isLightingOn = isLightingOn;
+
+        RemovePrim();
+        Populate();
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
