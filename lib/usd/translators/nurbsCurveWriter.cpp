@@ -64,9 +64,6 @@ bool isValidBezier(const MFnNurbsCurve& curveFn)
     if (knots.length() < size_t(curveFn.degree() * 2))
         return false;
 
-    const int firstIndex = 0;
-    const int lastIndex = int(knots.length()) - 1;
-
     // The range must be the full range.
     double minKnot = knots[0];
     double maxKnot = knots[0];
