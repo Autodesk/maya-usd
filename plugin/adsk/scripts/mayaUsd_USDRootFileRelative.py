@@ -26,12 +26,12 @@ class usdRootFileRelative(object):
         
         topForm = cmds.columnLayout('actionOptionsForm', rowSpacing=5)
 
-        kFileParticularsStr = getMayaUsdString("kFileParticulars")
+        kFileOptionsStr = getMayaUsdString("kFileOptions")
         kMakePathRelativeStr = getMayaUsdString("kMakePathRelativeToSceneFile")
  
         optBoxMarginWidth = mel.eval('global int $gOptionBoxTemplateDescriptionMarginWidth; $gOptionBoxTemplateDescriptionMarginWidth += 0')
         cmds.setParent(topForm)
-        cmds.frameLayout(label=kFileParticularsStr, collapsable=False)
+        cmds.frameLayout(label=kFileOptionsStr, collapsable=False)
         widgetColumn = cmds.columnLayout()
         cmds.checkBox(cls.kMakePathRelativeCheckBox, label=kMakePathRelativeStr)
 
