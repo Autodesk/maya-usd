@@ -455,11 +455,14 @@ bool UsdAttributes::canRemoveAttribute(const UsdSceneItem::Ptr& item, const std:
     }
     return false;
 }
-static void removeConnections(const PXR_NS::UsdPrim& prim, const PXR_NS::SdfPath& srcPropertyPath)
+
+void UsdAttributes::removeConnections(
+    const PXR_NS::UsdPrim& parentPrim,
+    const PXR_NS::SdfPath& srcPropertyPath)
 {
     // Remove the connections with source srcPropertyPath.
-    for (const auto& node : prim.GetChildren()) {
-        for (const auto& attribute : node.GetAttributes()) {
+    auto removeConnectionsWithPrim = [&srcPropertyPath](const PXR_NS::UsdPrim& prim) {
+        for (const auto& attribute : prim.GetAttributes()) {
             PXR_NS::UsdAttribute  attr = attribute.As<PXR_NS::UsdAttribute>();
             PXR_NS::SdfPathVector sources;
             attr.GetConnections(&sources);
@@ -470,6 +473,39 @@ static void removeConnections(const PXR_NS::UsdPrim& prim, const PXR_NS::SdfPath
                     break;
                 }
             }
+        }
+    };
+
+    // Remove the connections to the prims with the same parent.
+    for (const auto& node : parentPrim.GetChildren()) {
+        removeConnectionsWithPrim(node);
+    }
+
+    // Remove the connections to the parent prim.
+    removeConnectionsWithPrim(parentPrim);
+}
+
+void UsdAttributes::removeAttributesConnections(const PXR_NS::UsdPrim& prim)
+{
+    const auto primParent = prim.GetParent();
+
+    if (!primParent) {
+        return;
+    }
+
+    const PXR_NS::SdfPath kPrimPath = prim.GetPath();
+    const auto            kPrimAttrs = prim.GetAttributes();
+
+    for (const auto& attr : kPrimAttrs) {
+        const PXR_NS::SdfPath kPropertyPath = kPrimPath.AppendProperty(attr.GetName());
+        const auto            kBaseNameAndType
+            = PXR_NS::UsdShadeUtils::GetBaseNameAndType(PXR_NS::TfToken(attr.GetName()));
+
+        if (kBaseNameAndType.second == PXR_NS::UsdShadeAttributeType::Output) {
+            removeConnections(primParent, kPropertyPath);
+        }
+        if (kBaseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input) {
+            removeConnections(prim, kPropertyPath);
         }
     }
 }

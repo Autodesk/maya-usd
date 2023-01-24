@@ -361,5 +361,60 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertTrue(stage.GetPrimAtPath('/TreeBase/trunk'))
         self.assertTrue(stage.GetPrimAtPath('/TreeBase/newChild'))
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test requires delete command with connections feature only available on Ufe 0.4.24 and later')
+    def testDeleteAndRemoveConnections(self):
+        '''Test deleting a prim and its connections'''
+        
+        # Load a scene with a compound.
+      
+        mayaUtils.openTestScene("MaterialX", "multiple_connections.ma" )
+      
+        deleteItemPath         = ufe.PathString.path('|multiple_connections|multiple_connectionsShape,/Material1/UsdPreviewSurface1')
+        previewItemPath = ufe.PathString.path('|multiple_connections|multiple_connectionsShape,/Material1/UsdPreviewSurface2')
+        fracItemPath = ufe.PathString.path('|multiple_connections|multiple_connectionsShape,/Material1/fractal3d1')
+        parentItemPath = ufe.PathString.path('|multiple_connections|multiple_connectionsShape,/Material1')
+
+        ufeItem        = ufe.Hierarchy.createItem(deleteItemPath)
+        ufeItemFractal         = ufe.Hierarchy.createItem(fracItemPath)
+        ufeItemPreview = ufe.Hierarchy.createItem(previewItemPath)
+        ufeItemMaterial = ufe.Hierarchy.createItem(parentItemPath)
+
+        self.assertIsNotNone(ufeItem)
+        self.assertIsNotNone(ufeItemFractal)
+        self.assertIsNotNone(ufeItemPreview)
+        self.assertIsNotNone(ufeItemMaterial)
+
+        # Test the connections before deleting the node.
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(ufeItemFractal.runTimeId())
+        self.assertIsNotNone(connectionHandler)
+
+        connections = connectionHandler.sourceConnections(ufeItemFractal)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        connections = connectionHandler.sourceConnections(ufeItemPreview)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        connections = connectionHandler.sourceConnections(ufeItemMaterial)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        # Delete the node.
+        cmds.delete('|multiple_connections|multiple_connectionsShape,/Material1/UsdPreviewSurface1')
+        
+        # Test the connections after deleting the node.
+        connections = connectionHandler.sourceConnections(ufeItemFractal)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 0)
+
+        connections = connectionHandler.sourceConnections(ufeItemPreview)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 0)
+
+        connections = connectionHandler.sourceConnections(ufeItemMaterial)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 0)
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

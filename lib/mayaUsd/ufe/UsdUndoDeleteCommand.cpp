@@ -24,6 +24,7 @@
 #include <pxr/usd/sdf/layer.h>
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
+#include <mayaUsd/ufe/UsdAttributes.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #endif
 
@@ -86,6 +87,10 @@ void UsdUndoDeleteCommand::execute()
     }
 
     if (MayaUsd::ufe::applyCommandRestrictionNoThrow(_prim, "delete")) {
+#if (UFE_PREVIEW_VERSION_NUM >= 4024)
+        // Remove all the connections.
+        UsdAttributes::removeAttributesConnections(_prim);
+#endif
         auto retVal = stage->RemovePrim(_prim.GetPath());
         if (!retVal) {
             TF_VERIFY(retVal, "Failed to delete '%s'", _prim.GetPath().GetText());

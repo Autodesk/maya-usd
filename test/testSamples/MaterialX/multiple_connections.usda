@@ -1,0 +1,39 @@
+#usda 1.0
+
+def Material "Material1" (
+    prepend apiSchemas = ["NodeGraphNodeAPI"]
+)
+{
+    token outputs:displacement
+    token outputs:displacement1.connect = </Material1/UsdPreviewSurface1.outputs:displacement>
+    uniform float2 ui:nodegraph:node:pos = (0, 0)
+
+    def Shader "UsdPreviewSurface1" (
+        prepend apiSchemas = ["NodeGraphNodeAPI"]
+    )
+    {
+        uniform token info:id = "UsdPreviewSurface"
+        token outputs:displacement
+        token outputs:surface
+        uniform float2 ui:nodegraph:node:pos = (-1.5952611, -0.7242111)
+    }
+
+    def Shader "fractal3d1" (
+        prepend apiSchemas = ["NodeGraphNodeAPI"]
+    )
+    {
+        uniform token info:id = "ND_fractal3d_color3"
+        float3 inputs:amplitude.connect = </Material1/UsdPreviewSurface1.outputs:surface>
+        uniform float2 ui:nodegraph:node:pos = (1.5226444, 1.6160333)
+    }
+
+    def Shader "UsdPreviewSurface2" (
+        prepend apiSchemas = ["NodeGraphNodeAPI"]
+    )
+    {
+        uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+        color3f inputs:diffuseColor.connect = </Material1/UsdPreviewSurface1.outputs:surface>
+        uniform float2 ui:nodegraph:node:pos = (0.07141444, 2.1442223)
+    }
+}
+
