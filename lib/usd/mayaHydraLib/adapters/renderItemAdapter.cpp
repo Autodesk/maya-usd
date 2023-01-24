@@ -59,91 +59,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     PlugRegistry::GetInstance().GetPluginWithName(\
         TF_PP_STRINGIZE(MFB_PACKAGE_NAME))
 
-// Maya to hydra shader parameter conversion
-// See void MayaHydraMaterialNetworkConverter::initialize()
-static const std::map<std::string, TfToken> sMayaHydraParamNameMap
-{
-	{"solidColor", TfToken("diffuseColor") },
-	{"lambert_1color", TfToken("diffuseColor") },
-	{"phong_1color", TfToken("diffuseColor") },
-	{"blinn_1color", TfToken("diffuseColor") }
-};
-
-// clang-format off
-TF_DEFINE_PRIVATE_TOKENS(
-	_shaderTokens,
-	(mayaLambertSurface)
-	(mayaStippleShader)
-	(mayaSolidColorShader)
-	(mayaInvalidShader)
-);
-// clang-format on
-
-static const std::map<TfToken, MayaHydraShaderData> sMayaHydraSupportedShaders
-{
-	{ 
-		_shaderTokens->mayaStippleShader,
-		{
-			_shaderTokens->mayaStippleShader,
-			HdReprTokens->refined			
-		}
-	}
-};
-
-///////////////////////////////////////////////////////////////////////
-// MayaHydraShaderAdapter
-///////////////////////////////////////////////////////////////////////
-
-// TODO remove unused class
-MayaHydraShapeUIShaderAdapter::MayaHydraShapeUIShaderAdapter(	
-	MayaHydraDelegateCtx* del,
-	const MayaHydraShaderData& shader
-	)
-	: MayaHydraAdapter(MObject(), SdfPath(shader.Name), del)
-	, _shader(shader)
-	, _rprimCollection(shader.Name, HdReprSelector(shader.ReprSelector))
-{
-	_isPopulated = true;
-	GetDelegate()->GetRenderIndex().InsertTask<HdxRenderTask>(GetDelegate(), GetID());
-}
-
-MayaHydraShapeUIShaderAdapter::~MayaHydraShapeUIShaderAdapter()
-{
-}
-
-void MayaHydraShapeUIShaderAdapter::MarkDirty(HdDirtyBits dirtyBits)
-{
-	GetDelegate()->GetRenderIndex().GetChangeTracker().MarkTaskDirty(GetID(), dirtyBits);
-}
-
-VtValue MayaHydraShapeUIShaderAdapter::Get(const TfToken& key)
-{
-	if (key == HdTokens->collection)
-	{
-		return VtValue(_rprimCollection);
-	}
-	// TODO: Customize shader uniforms per render item..
-	//else if (key == HdTokens->params)
-	//	/*
-	//		Rendering state management can be handled two ways: 
-	//		1.) An application can create an HdxRenderTask and pass it the HdxRenderTaskParams struct as "params". 
-	//		2.) An application can create an HdxRenderSetupTask and an HdxRenderTask, and pass params to the setup task. In this case the setup task must run first.	
-	//		
-	//		Parameter unpacking is handled by HdxRenderSetupTask; in case #1, HdxRenderTask creates a dummy setup task internally to manage the sync process.
-	//		Case #2 introduces complexity; the benefit is that by changing which setup task you run before the render task, you can change the render parameters 
-	//		without incurring a hydra sync or rebuilding any resources. 
-	//		https://graphics.pixar.com/usd/docs/api/class_hdx_render_task.html
-	//	*/
-	//{
-	//	HdxRenderTaskParams params;
-	//	params.pointColor = GfVec4f(1, 0, 0, 1);
-	//	params.overrideColor = GfVec4f(0, 1, 0, 1);
-	//	params.wireframeColor = GfVec4f(0, 0, 1, 1);
-	//	return VtValue(params);
-	//}
-
-	return {};
-}
 
 
 ///////////////////////////////////////////////////////////////////////
@@ -171,11 +86,7 @@ MayaHydraRenderItemAdapter::~MayaHydraRenderItemAdapter()
 
 TfToken MayaHydraRenderItemAdapter::GetRenderTag() const
 {
-	return _shaderInstance.ShapeUIShader ?
-		// Opt-in to the render pass which corresponds to this shader
-		_shaderInstance.ShapeUIShader->Name :
-		// Otherwise opt-in the default beauty pass
-		HdRenderTagTokens->geometry;
+	return HdRenderTagTokens->geometry;
 }
 
 void MayaHydraRenderItemAdapter::UpdateTransform(MRenderItem& ri)
@@ -209,127 +120,6 @@ bool MayaHydraRenderItemAdapter::IsSupported() const
 		default:
 			return false;
 	}
-}
-
-void MayaHydraRenderItemAdapter::UpdateTopology(MRenderItem& ri)
-{
-	MGeometry* geom = ri.geometry();
-	if (!geom) return;
-	if (geom->vertexBufferCount() <= 0) return;
-
-	int itemCount;
-	VtIntArray vertexIndices;
-	VtIntArray vertexCounts;		
-	MVertexBuffer* mvb = nullptr;
-
-	// Vertices	
-	/////////////////////
-	// for now assume first stream is position
-	if (!(mvb = geom->vertexBuffer(0))) return;
-	
-	itemCount = mvb->vertexCount();
-	_positions.clear();
-	_positions.resize(itemCount);
-	const auto* vertexPositions = reinterpret_cast<const GfVec3f*>(mvb->map());
-	// NOTE: Looking at MayaHydraMeshAdapter::GetPoints notice assign(vertexPositions, vertexPositions + vertCount)
-	// Why are we not multiplying with sizeof(GfVec3f) to calculate the offset ? 
-	// The following happens when I try to do it :
-	// Invalid Hydra prim - Vertex primvar points has 288 elements, while its topology references only upto element index 24.
-	_positions.assign(vertexPositions, vertexPositions + itemCount);
-	mvb->unmap();
-
-	// Indices
-	/////////////////////
-	MIndexBuffer* mib = nullptr;
-	if (!(mib = geom->indexBuffer(0))) return;
-	
-	itemCount = mib->size();
-	vertexIndices.resize(itemCount);
-	int* indicesData = (int*)mib->map();
-	for (int i = 0; i < itemCount; i++)
-	{
-		vertexIndices[i] = indicesData[i];
-	}
-
-	switch (_primitive)
-	{
-	case MGeometry::Primitive::kTriangles:
-		vertexCounts.resize(itemCount / 3);
-		for (int i = 0; i < itemCount / 3; i++)
-		{
-			vertexCounts[i] = 3;
-		}
-
-		{
-			// UVs
-			/////////////////////
-			for (int vbIdx = 0; vbIdx < geom->vertexBufferCount(); vbIdx++)
-			{
-				mvb = geom->vertexBuffer(vbIdx);
-				if (!mvb) continue;
-
-				const MVertexBufferDescriptor& desc = mvb->descriptor();
-				if (desc.dimension() != 2) continue;
-
-				if (desc.semantic() != MGeometry::Semantic::kTexture) continue;
-
-				// Hydra expects a uv coordinate for each face-index (total of 36), not 1 per vertex.
-				// not for every vertex. e.g. a cube expects 36 uvs not 24.
-				// Note that ASSERT(mvb->vertexCount() == 24)
-				// See HdStMesh::_PopulateFaceVaryingPrimvars
-				_uvs.clear();
-				_uvs.resize(itemCount);
-				const auto* uvs = reinterpret_cast<const GfVec2f*>(mvb->map());
-				for (int i = 0; i < itemCount; i++)
-				{
-					_uvs[i] = uvs[indicesData[i]];
-				}
-				mvb->unmap();
-				break;
-			}
-		}
-		break;
-	case MGeometry::Primitive::kPoints:
-	case MGeometry::Primitive::kLines:
-		vertexCounts.resize(1);
-		vertexCounts[0] = vertexIndices.size();
-		break;
-    default:
-		assert(false);  //unexpected/unsupported primitive type
-		break;
-	}
-	mib->unmap();
-	
-	switch (_primitive)
-	{
-		case MGeometry::Primitive::kTriangles:
-			// TODO: Maybe we could use the flat shading of the display style?
-			_topology.reset(new HdMeshTopology(
-				(GetDelegate()->GetParams().displaySmoothMeshes || GetDisplayStyle().refineLevel > 0)
-				? PxOsdOpenSubdivTokens->catmullClark
-				: PxOsdOpenSubdivTokens->none,
-				UsdGeomTokens->rightHanded,
-				vertexCounts,
-				vertexIndices));
-			MarkDirty(HdChangeTracker::AllDirty);
-			break;
-		case MGeometry::Primitive::kLines:
-		case MHWRender::MGeometry::Primitive::kPoints:
-			// This will allow us to output geometry to the effect of GL_LINES
-			_topology.reset(new HdBasisCurvesTopology(
-				HdTokens->linear,
-				// basis type is ignored, due to linear curve type
-				{},
-				HdTokens->segmented,
-				vertexCounts,
-				vertexIndices));
-			MarkDirty(HdChangeTracker::AllDirty);
-			break;
-
-		default:
-			assert(false); // unexpected/unsupported primitive type
-			break;
-	}	
 }
 
 void MayaHydraRenderItemAdapter::_InsertRprim()
@@ -640,36 +430,7 @@ HdPrimvarDescriptorVector MayaHydraRenderItemAdapter::GetPrimvarDescriptors(HdIn
 }
 
 VtValue MayaHydraRenderItemAdapter::GetMaterialResource()
-{	
-	if (_shaderInstance.ShapeUIShader)
-	{
-
-		HdMaterialNetworkMap map;
-		HdMaterialNetwork    network;
-		// Describes a material node which is made of a path, an identifier and a list of parameters. More...
-		// This corresponds to a material instance
-		HdMaterialNode       node;
-		node.path = GetID();
-		node.identifier = _shaderInstance.ShapeUIShader->Name;
-		map.terminals.push_back(node.path);
-
-		for (const auto& it : MayaHydraMaterialNetworkConverter::GetShaderParams(_shaderInstance.ShapeUIShader->Name))
-		{
-			auto param = _shaderInstance.Params.find(it.name);
-			node.parameters.emplace(it.name, param == _shaderInstance.Params.end() ?
-				it.fallbackValue :
-				param->second.value);
-		}
-
-		network.nodes.push_back(node);
-		if (_shaderInstance.ShapeUIShader->Name == UsdImagingTokens->UsdPreviewSurface)
-		{
-			map.map.emplace(HdMaterialTerminalTokens->surface, network);
-		}
-
-		return VtValue(map);
-	}
-
+{
 	return {};
 }
 

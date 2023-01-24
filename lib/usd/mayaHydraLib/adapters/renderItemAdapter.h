@@ -46,93 +46,6 @@ namespace
 }
 
 using MayaHydraRenderItemAdapterPtr = std::shared_ptr<class MayaHydraRenderItemAdapter>;
-using MayaHydraShaderAdapterPtr = std::shared_ptr<class MayaHydraShapeUIShaderAdapter>;
-using MayaHydraMaterialShaderAdapterPtr = std::shared_ptr<class MayaHydraMaterialShaderAdapter>;
-
-///////////////////////////////////////////////////////////////////////
-// MayaHydraShaderInstanceData
-///////////////////////////////////////////////////////////////////////
-
-struct MayaHydraRenderItemShaderParam
-{
-	TfToken name = TfToken("");
-	VtValue value;
-	SdfValueTypeName type;	
-};
-
-struct MayaHydraShaderData
-{	
-	TfToken Name = TfToken("");
-	TfToken ReprSelector = TfToken("");	
-};
-
-struct MayaHydraShaderInstanceData
-{	
-	const MayaHydraShaderData* ShapeUIShader = nullptr;
-	
-	SdfPath Material = kInvalidMaterial;
-	
-	std::map<TfToken, MayaHydraRenderItemShaderParam> Params;
-};
-
-/*
-class MayaHydraRenderItemShaderConverter
-{
-public:
-	static bool ExtractShapeUIShaderData(
-		const MRenderItem& renderItem,		
-		MayaHydraShaderInstanceData& shaderData);
-};
-*/
-
-// TODO: Remove, currently unused.
-class MayaHydraShapeUIShaderAdapter : public MayaHydraAdapter
-{
-public:
-	MAYAHYDRALIB_API
-		MayaHydraShapeUIShaderAdapter(
-			MayaHydraDelegateCtx* del,
-			const MayaHydraShaderData& shader
-		);
-
-	MAYAHYDRALIB_API
-		virtual ~MayaHydraShapeUIShaderAdapter();
-
-	// override
-	/////////////
-
-	MAYAHYDRALIB_API
-		VtValue Get(const TfToken& key) override;
-
-	MAYAHYDRALIB_API
-		bool HasType(const TfToken& typeId) const override { return typeId == HdPrimTypeTokens->mesh; }
-
-	MAYAHYDRALIB_API
-		virtual bool IsSupported() const override { return true; }
-
-	MAYAHYDRALIB_API
-		virtual bool GetDoubleSided() const { return true; };
-
-
-
-	MAYAHYDRALIB_API
-		virtual void MarkDirty(HdDirtyBits dirtyBits) override;
-
-	// TODO: maybe this should not be an adapter??
-	// no rprim, sprim, instead a render task!
-	MAYAHYDRALIB_API
-		virtual void RemovePrim() override {}
-	MAYAHYDRALIB_API
-		virtual void Populate() override {}
-
-	const MayaHydraShaderData& GetShaderData() { return _shader; }
-
-private:
-	const MayaHydraShaderData& _shader;
-	HdRprimCollection _rprimCollection;
-
-};
-
 
 ///////////////////////////////////////////////////////////////////////
 // MayaHydraRenderItemAdapter
@@ -218,9 +131,6 @@ public:
 	MAYAHYDRALIB_API
 	void UpdateTransform(MRenderItem& ri);
 
-	MAYAHYDRALIB_API
-	void UpdateTopology(MRenderItem& ri);
-
 	//Class used to pass data to the UpdateFromDelta method, so we can extend the parameters in the future if needed.
 	class UpdateFromDeltaData
     {
@@ -250,10 +160,10 @@ public:
 	virtual TfToken GetRenderTag() const;
 
 	MAYAHYDRALIB_API
-	MayaHydraShaderInstanceData& GetShaderData() { return _shaderInstance; }
+	SdfPath& GetMaterial() { return _material; }
 	
 	MAYAHYDRALIB_API
-	void SetShaderData(const MayaHydraShaderInstanceData& val) { _shaderInstance = val; }
+	void SetMaterial(const SdfPath& val) { _material = val; }
 
 	MAYAHYDRALIB_API
 	int GetFastID() const { return _fastId; }
@@ -268,7 +178,7 @@ private:
 	MAYAHYDRALIB_API
 	void _InsertRprim();
 
-	MayaHydraShaderInstanceData _shaderInstance;
+	SdfPath _material;
 	std::shared_ptr<HdTopology> _topology = nullptr;
 	VtVec3fArray _positions = {};
 	VtVec2fArray _uvs = {};

@@ -109,10 +109,6 @@ public:
     void InsertDag(const MDagPath& dag);
 #endif
 
-    // MAYA-127217: remove unused render item shader code
-	MAYAHYDRALIB_API
-	void ScheduleRenderTasks(HdTaskSharedPtrVector& tasks);
-
     void OnDagNodeAdded(const MObject& obj);
 
     void OnDagNodeRemoved(const MObject& obj);
@@ -200,9 +196,6 @@ protected:
         float*         times,
         VtValue*       samples) override;
 
-	MAYAHYDRALIB_API
-	TfTokenVector GetTaskRenderTags(SdfPath const& taskId) override;
-
     MAYAHYDRALIB_API
     TfToken GetRenderTag(SdfPath const& id) override;
 
@@ -285,7 +278,7 @@ private:
 	MAYAHYDRALIB_API
 	bool _GetRenderItemMaterial(
 		const MRenderItem& ri,
-		MayaHydraShaderInstanceData& sd,
+		SdfPath& material,
 		MObject& shadingEngineNode);
 
     void UpdateDisplayStatusMaterialColor(const SdfPath& materialPath, HdMaterialNetworkMap& material, const GfVec4f& selCol);
@@ -301,8 +294,6 @@ private:
     AdapterMap<MayaHydraRenderItemAdapterPtr>              _renderItemsAdapters;
     std::unordered_map<int, MayaHydraRenderItemAdapterPtr> _renderItemsAdaptersFast;
 
-	/// \brief Unordered Map storing the shape adapters.
-	AdapterMap<MayaHydraShaderAdapterPtr> _renderItemShaderAdapters;
     /// \brief Unordered Map storing the light adapters.
     AdapterMap<MayaHydraLightAdapterPtr> _lightAdapters;
     /// \brief Unordered Map storing the camera adapters.

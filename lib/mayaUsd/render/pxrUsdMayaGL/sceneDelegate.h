@@ -78,9 +78,6 @@ public:
     GfMatrix4d GetTransform(SdfPath const& id) override;
 
     MAYAUSD_CORE_PUBLIC
-    TfTokenVector GetTaskRenderTags(SdfPath const& taskId) override;
-
-    MAYAUSD_CORE_PUBLIC
     void SetCameraState(
         const GfMatrix4d& worldToViewMatrix,
         const GfMatrix4d& projectionMatrix,

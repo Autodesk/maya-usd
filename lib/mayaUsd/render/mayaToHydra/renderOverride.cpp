@@ -562,7 +562,6 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, c
 				if (sceneDelegate)
 				{
 					sceneDelegate->HandleCompleteViewportScene(scene, static_cast<MFrameContext::DisplayStyle>(drawContext.getDisplayStyle()));
-					sceneDelegate->ScheduleRenderTasks(tasks);
 				}
 			}
 		}

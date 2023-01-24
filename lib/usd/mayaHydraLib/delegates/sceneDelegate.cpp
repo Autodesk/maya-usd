@@ -378,7 +378,6 @@ void MayaHydraSceneDelegate::HandleCompleteViewportScene(const MDataServerOperat
         _isPlaybackRunning = playbackRunning;
     }
     
-#if 1
 	// First loop to get rid of removed items
 	constexpr int kInvalidId = 0;
 	for (size_t i = 0; i < scene.mRemovalCount; i++)
@@ -422,19 +421,19 @@ void MayaHydraSceneDelegate::HandleCompleteViewportScene(const MDataServerOperat
 			_AddRenderItem(ria);
 		}
 		
-		MayaHydraShaderInstanceData sd;
+		SdfPath material;
 		MObject shadingEngineNode;
-		if (!_GetRenderItemMaterial(ri, sd, shadingEngineNode))
+		if (!_GetRenderItemMaterial(ri, material, shadingEngineNode))
 		{
-			if (sd.Material != kInvalidMaterial)
+			if (material != kInvalidMaterial)
 			{
-				_CreateMaterial(sd.Material, shadingEngineNode);
+				_CreateMaterial(material, shadingEngineNode);
 			}
 		}
 
 		if (flags & MDataServerOperation::MViewportScene::MVS_changedEffect)
 		{
-			ria->SetShaderData(sd);
+			ria->SetMaterial(material);
 		}
 
         // if (flags & (MDataServerOperation::MViewportScene::MVS_geometry | MDataServerOperation::MViewportScene::MVS_topo) {
@@ -447,43 +446,6 @@ void MayaHydraSceneDelegate::HandleCompleteViewportScene(const MDataServerOperat
 			ria->UpdateTransform(ri);
         }
     }
-
-#else
-
-
-	for (auto it : _renderItemsAdapters)
-	// Mark all render items as stale
-	{
-		auto ria = it.second;
-		ria->IsStale(true);		
-	}
-
-	for (int i = 0; i < scene.mCount; i++)
-	{
-		MRenderItem& ri = *scene.mItems[i];
-
-		MayaHydraShaderInstanceData sd;
-		InsertRenderItemMaterial(ri, sd);
-
-		MayaHydraRenderItemAdapterPtr ria;
-		InsertRenderItem(ri, sd, ria);	
-		ria->UpdateTopology(ri);							
-		ria->UpdateTransform(ri);
-	
-		
-		ria->IsStale(false);
-	}
-
-	for (auto it : _renderItemsAdapters)
-	// Remove all stale render items
-	{
-		auto ria = it.second;
-		if (ria->IsStale())
-		{
-			RemoveAdapter(ria->GetID());
-		}
-	}
-#endif
 }
 
 void MayaHydraSceneDelegate::Populate()
@@ -951,7 +913,7 @@ namespace
 
 bool MayaHydraSceneDelegate::_GetRenderItemMaterial(
 	const MRenderItem& ri,
-	MayaHydraShaderInstanceData& sd,
+	SdfPath& material,
 	MObject& shadingEngineNode
 	)
 {
@@ -959,9 +921,8 @@ bool MayaHydraSceneDelegate::_GetRenderItemMaterial(
 		// Else try to find associated material node if this is a material shader.
 		// NOTE: The existing maya material support in hydra expects a shading engine node
 	{
-		sd.ShapeUIShader = nullptr;
-		sd.Material = GetMaterialPath(shadingEngineNode);
-		if (TfMapLookupPtr(_materialAdapters, sd.Material) != nullptr)
+		material = GetMaterialPath(shadingEngineNode);
+		if (TfMapLookupPtr(_materialAdapters, material) != nullptr)
 		{
 			return true;
 		}
@@ -1413,7 +1374,6 @@ VtValue MayaHydraSceneDelegate::Get(const SdfPath& id, const TfToken& key)
 		id,
 		[&key](MayaHydraAdapter* a) -> VtValue { return a->Get(key); },
 		_renderItemsAdapters,
-		_renderItemShaderAdapters,
         _lightAdapters
         //,_materialAdapters
 		);
@@ -1466,24 +1426,6 @@ size_t MayaHydraSceneDelegate::SamplePrimvar(
             },
             _shapeAdapters);
     }
-}
-
-//virtual
-TfTokenVector MayaHydraSceneDelegate::GetTaskRenderTags(SdfPath const& taskId)
-{
-	return _GetValue<MayaHydraShapeUIShaderAdapter, TfTokenVector>(
-		taskId,
-		[](MayaHydraShapeUIShaderAdapter* a) -> TfTokenVector	{ return TfTokenVector{ a->GetShaderData().Name }; },
-		_renderItemShaderAdapters);
-}
-
-// MAYA-127217: remove unused render item shader code
-void MayaHydraSceneDelegate::ScheduleRenderTasks(HdTaskSharedPtrVector& tasks)
-{
-	for (auto shader : _renderItemShaderAdapters)
-	{
-		tasks.push_back(GetRenderIndex().GetTask(shader.first));
-	}
 }
 
 TfToken MayaHydraSceneDelegate::GetRenderTag(const SdfPath& id)
@@ -1719,23 +1661,16 @@ SdfPath MayaHydraSceneDelegate::GetMaterialId(const SdfPath& id)
         return _mayaDefaultMaterialPath;
     }
 
-	auto& shaderData = renderItemAdapter->GetShaderData();
-	if (renderItemAdapter->GetShaderData().ShapeUIShader)
-	// Do not return material for shape UI,
-	// we do not want those drawn in the beauty pass,
-	// these are handled via a separate draw pass
-	{
-		return {};
-	}
+	auto& material = renderItemAdapter->GetMaterial();
 	
-	if (shaderData.Material ==  kInvalidMaterial) 
+	if (material == kInvalidMaterial) 
 	{
 		return _fallbackMaterial;
 	}
 	
-	if (TfMapLookupPtr(_materialAdapters, shaderData.Material) != nullptr) 
+	if (TfMapLookupPtr(_materialAdapters, material) != nullptr) 
 	{
-		return shaderData.Material;
+		return material;
 	}
 
 	// TODO
