@@ -157,7 +157,7 @@ bool UsdMayaTranslatorCurves::Create(
         if (UsdGeomNurbsCurves nurbsSchema = UsdGeomNurbsCurves(prim)) {
             if (curveKnots.empty()) {
                 nurbsSchema.GetOrderAttr().Get(&curveOrders); // not animatable
-                nurbsSchema.GetKnotsAttr().Get(&curveKnots); // not animatable
+                nurbsSchema.GetKnotsAttr().Get(&curveKnots);  // not animatable
                 nurbsSchema.GetRangesAttr().Get(
                     &curveRanges); // not animatable or actually used....
             }
