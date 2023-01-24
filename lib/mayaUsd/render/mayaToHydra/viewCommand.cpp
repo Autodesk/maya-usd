@@ -25,6 +25,15 @@
 #include <maya/MGlobal.h>
 #include <maya/MSyntax.h>
 
+#if defined(MAYAHYDRA_CUT_ID)
+    #define STRINGIFY(x) #x
+    #define TOSTRING(x)  STRINGIFY(x)
+    #define PLUGIN_CUT_ID TOSTRING(MAYAHYDRA_CUT_ID)
+#else
+    #pragma message( "MAYAHYDRA_CUT_ID is not defined" )
+    #define PLUGIN_CUT_ID "Maya-Hydra unknown cut"
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 const MString MtohViewCmd::name("mayaHydra");
@@ -63,6 +72,10 @@ constexpr auto _visibleOnlyLong = "-visibleOnly";
 
 constexpr auto _sceneDelegateId = "-sid";
 constexpr auto _sceneDelegateIdLong = "-sceneDelegateId";
+
+// MAYA-127221: We will need to replace this with a flag inside of the pluginInfo command in an upcoming release.
+constexpr auto _pluginInfoCutId = "-cid";
+constexpr auto _pluginInfoCutIdLong = "-pluginInfoCut";
 
 constexpr auto _rendererId = "-r";
 constexpr auto _rendererIdLong = "-renderer";
@@ -139,6 +152,8 @@ MSyntax MtohViewCmd::createSyntax()
     syntax.addFlag(_visibleOnly, _visibleOnlyLong);
 
     syntax.addFlag(_sceneDelegateId, _sceneDelegateIdLong, MSyntax::kString);
+
+    syntax.addFlag(_pluginInfoCutId, _pluginInfoCutIdLong);
 
     return syntax;
 }
@@ -252,6 +267,13 @@ MStatus MtohViewCmd::doIt(const MArgList& args)
         SdfPath delegateId = MtohRenderOverride::RendererSceneDelegateId(
             renderDelegateName, TfToken(sceneDelegateName.asChar()));
         setResult(MString(delegateId.GetText()));
+    } else if (db.isFlagSet(_pluginInfoCutId)) {
+#ifdef MAYAHYDRA_CUT_ID
+    setResult(MString(PLUGIN_CUT_ID));
+#else
+    MGlobal::displayError(MString("MayaHydra cut id is not available"));
+    return MS::kInvalidParameter;
+#endif
     }
     return MS::kSuccess;
 }
