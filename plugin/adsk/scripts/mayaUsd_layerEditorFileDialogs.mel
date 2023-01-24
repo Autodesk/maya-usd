@@ -15,7 +15,11 @@
 
 global proc mayaUsd_USDRootFileRelative_UICreate(string $parent)
 {
-    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdRootFileRelative.uiCreate('" + $parent + "')");
+    // First create the scroll layout here and then call the python
+    // helper to add the rest of the UI.
+    setParent $parent;
+    string $layout = `scrollLayout -childResizable true`;
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdRootFileRelative.uiCreate('" + $layout + "')");
 }
 
 global proc mayaUsd_USDRootFileRelative_UIInit(string $parent, string $filterType)

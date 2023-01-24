@@ -125,7 +125,17 @@ def ProxyShapeFilePathChanged(filePathAttr, newFilePath=None):
             title = getMayaUsdString("kLoadUSDFile")
             okCaption = getMayaUsdString("kLoad")
             fileFilter = getUSDDialogFileFilters()
-            res = cmds.fileDialog2(caption=title, fileMode=1, ff=fileFilter, okc=okCaption)
+
+            startDir = ''
+            if cmds.file(q=True, exists=True):
+                fullPath = cmds.file(q=True, loc=True)
+                startDir = os.path.dirname(fullPath)
+
+            res = cmds.fileDialog2(caption=title, fileMode=1, ff=fileFilter, okc=okCaption,
+                                   optionsUICreate='mayaUsd_USDRootFileRelative_UICreate',
+                                   optionsUIInit='mayaUsd_USDRootFileRelative_UIInit',
+                                   optionsUICommit2='mayaUsd_USDRootFileRelative_UICommit',
+                                   startingDirectory=startDir)
             if res and len(res) == 1:
                 debugMessage('    User picked USD file, setting file path attribute')
                 # Simply set the file path attribute. The proxy shape will load the file.
