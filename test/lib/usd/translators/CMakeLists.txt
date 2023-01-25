@@ -51,6 +51,7 @@ set(TEST_SCRIPT_FILES
     testUsdImportBasisCurves.py
     testUsdImportBatchNurbsCurves.py
     testUsdImportLinearCurves.py
+    testUsdImportHighDegreeNurbsCurves.py
     testUsdImportNurbsCurves.py
     testUsdImportBatchBezierCurves.py
     testUsdImportColorSets.py
