@@ -16,6 +16,7 @@
 #include "utilSerialization.h"
 
 #include <mayaUsd/base/tokens.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
@@ -278,10 +279,20 @@ SdfLayerRefPtr saveAnonymousLayer(
     if (!anonLayer || !anonLayer->IsAnonymous()) {
         return nullptr;
     }
+    
+    std::string        filePath(path);
+    const std::string& extension = SdfFileFormat::GetFileExtension(filePath);
+    const std::string  defaultExt(UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
+    const std::string  usdCrateExt(UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText());
+    const std::string  usdASCIIExt(UsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText());
+    if (extension != defaultExt && extension != usdCrateExt && extension != usdASCIIExt) {
+        filePath.append(".");
+        filePath.append(defaultExt.c_str()); 
+    }
+    
+    saveLayerWithFormat(anonLayer, filePath, formatArg);
 
-    saveLayerWithFormat(anonLayer, path, formatArg);
-
-    SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(path);
+    SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(filePath);
     if (newLayer) {
         if (parent._layerParent) {
             parent._layerParent->GetSubLayerPaths().Replace(
