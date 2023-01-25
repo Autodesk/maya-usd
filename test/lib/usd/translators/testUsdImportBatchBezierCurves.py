@@ -29,7 +29,7 @@ from pxr import Vt
 
 import fixturesUtils
 
-class testUsdExportBatchCurves(unittest.TestCase):
+class testUsdImportBatchCurves(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -42,7 +42,7 @@ class testUsdExportBatchCurves(unittest.TestCase):
     def tearDownClass(cls):
         standalone.uninitialize()
 
-    def testExport(self):
+    def testImport(self):
         #Check the imported Usd.
         selectionList = OpenMaya.MSelectionList()
         selectionList.add('NurbsBatchShape')
