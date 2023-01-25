@@ -147,7 +147,7 @@ class testUsdExportUVSetMappings(unittest.TestCase):
             ("/pPlane6", "/blinn1SG_st1_st2_st", "st1", "st2", "st"),
             ("/pPlane7", "/blinn1SG_st2_st_st1", "st2", "st", "st1"),
         ]
-        self.baseExportUVSetMappings({"preserveUVSetNames": False, "remapUVSetsTo": []}, expected)
+        self.baseExportUVSetMappings({"preserveUVSetNames": False, "remapUVSetsTo": [['','']]}, expected)
 
     def testExportAndPreserveUVSetMappings(self):
         '''
@@ -162,7 +162,7 @@ class testUsdExportUVSetMappings(unittest.TestCase):
             ("/pPlane6", '/blinn1SG_p62_p63_p61', 'p62', 'p63', 'p61'),
             ("/pPlane7", '/blinn1SG_p7r_p7p_p7q', 'p7r', 'p7p', 'p7q'),
         ]
-        self.baseExportUVSetMappings({"preserveUVSetNames": True, "remapUVSetsTo": []}, expected)
+        self.baseExportUVSetMappings({"preserveUVSetNames": True, "remapUVSetsTo": [['','']]}, expected)
 
     def testExportAndRemapUVSetMappings(self):
         '''
