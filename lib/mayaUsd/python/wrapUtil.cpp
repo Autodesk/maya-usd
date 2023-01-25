@@ -15,6 +15,7 @@
 //
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilFileSystem.h>
 
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/pxr.h>
@@ -51,5 +52,6 @@ void wrapUtil()
                   .def("IsAuthored", UsdMayaUtil::IsAuthored)
                   .def("prettifyName", &UsdMayaUtil::prettifyName)
                   .staticmethod("prettifyName")
-                  .def("getDictionaryFromEncodedOptions", getDictionaryFromEncodedOptions);
+                  .def("getDictionaryFromEncodedOptions", getDictionaryFromEncodedOptions)
+                  .def("getPathRelativeToMayaSceneFile", &UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile);
 }
