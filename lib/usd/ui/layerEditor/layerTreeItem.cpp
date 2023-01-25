@@ -24,10 +24,6 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
-const MString MAKE_PATH_RELATIVE_TO_SCENE_FILE = "mayaUsd_MakePathRelativeToSceneFile";
-} // namespace
-
 namespace UsdLayerEditor {
 
 // delegate Action API for command buttons
@@ -375,12 +371,8 @@ void LayerTreeItem::saveAnonymousLayer()
 
             // now replace the layer in the parent
             if (isRootLayer()) {
-                const bool makePathRelative
-                    = MGlobal::optionVarExists(MAKE_PATH_RELATIVE_TO_SCENE_FILE)
-                    && MGlobal::optionVarIntValue(MAKE_PATH_RELATIVE_TO_SCENE_FILE);
-
                 sessionState->rootLayerPathChanged(
-                    makePathRelative
+                    UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile()
                         ? UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(fileName)
                         : fileName);
             } else {
