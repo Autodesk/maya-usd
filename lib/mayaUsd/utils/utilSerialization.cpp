@@ -279,7 +279,7 @@ SdfLayerRefPtr saveAnonymousLayer(
     if (!anonLayer || !anonLayer->IsAnonymous()) {
         return nullptr;
     }
-    
+
     std::string        filePath(path);
     const std::string& extension = SdfFileFormat::GetFileExtension(filePath);
     const std::string  defaultExt(UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
@@ -287,9 +287,9 @@ SdfLayerRefPtr saveAnonymousLayer(
     const std::string  usdASCIIExt(UsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText());
     if (extension != defaultExt && extension != usdCrateExt && extension != usdASCIIExt) {
         filePath.append(".");
-        filePath.append(defaultExt.c_str()); 
+        filePath.append(defaultExt.c_str());
     }
-    
+
     saveLayerWithFormat(anonLayer, filePath, formatArg);
 
     SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(filePath);
