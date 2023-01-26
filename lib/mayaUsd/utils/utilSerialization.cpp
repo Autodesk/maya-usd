@@ -16,6 +16,7 @@
 #include "utilSerialization.h"
 
 #include <mayaUsd/base/tokens.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
@@ -105,6 +106,10 @@ bool saveRootLayer(SdfLayerRefPtr layer, const std::string& proxy)
 void updateAllCachedStageWithLayer(SdfLayerRefPtr originalLayer, const std::string& newFilePath)
 {
     SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(newFilePath);
+    if (!newLayer) {
+        TF_WARN("The filename %s is an invalid file name for a layer.", newFilePath.c_str());
+        return;
+    }
     for (UsdStageCache& cache : UsdMayaStageCache::GetAllCaches()) {
         UsdStageCacheContext        ctx(cache);
         std::vector<UsdStageRefPtr> stages = cache.FindAllMatching(originalLayer);
@@ -279,9 +284,19 @@ SdfLayerRefPtr saveAnonymousLayer(
         return nullptr;
     }
 
-    saveLayerWithFormat(anonLayer, path, formatArg);
+    std::string        filePath(path);
+    const std::string& extension = SdfFileFormat::GetFileExtension(filePath);
+    const std::string  defaultExt(UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
+    const std::string  usdCrateExt(UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText());
+    const std::string  usdASCIIExt(UsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText());
+    if (extension != defaultExt && extension != usdCrateExt && extension != usdASCIIExt) {
+        filePath.append(".");
+        filePath.append(defaultExt.c_str());
+    }
 
-    SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(path);
+    saveLayerWithFormat(anonLayer, filePath, formatArg);
+
+    SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(filePath);
     if (newLayer) {
         if (parent._layerParent) {
             parent._layerParent->GetSubLayerPaths().Replace(
