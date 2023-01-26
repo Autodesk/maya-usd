@@ -85,7 +85,7 @@ void populateChildren(
     recursionDetector->pop();
 }
 
-bool saveRootLayer(SdfLayerRefPtr layer, const std::string& proxy)
+bool saveRootLayer(SdfLayerRefPtr layer, const std::string& proxy, bool savePathAsRelative)
 {
     if (!layer || proxy.empty() || layer->IsAnonymous()) {
         return false;
@@ -97,6 +97,10 @@ bool saveRootLayer(SdfLayerRefPtr layer, const std::string& proxy)
     // can be problematic, easier to just switch the path separator.
     fp = TfStringReplace(fp, "\\", "/");
 #endif
+
+    if (savePathAsRelative) {
+        fp = UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(fp);
+    }
 
     MayaUsd::utils::setNewProxyPath(MString(proxy.c_str()), MString(fp.c_str()));
 
@@ -271,12 +275,13 @@ SdfLayerRefPtr saveAnonymousLayer(
     std::string        formatArg)
 {
     std::string newFileName = generateUniqueFileName(basename);
-    return saveAnonymousLayer(anonLayer, newFileName, parent, formatArg);
+    return saveAnonymousLayer(anonLayer, newFileName, false, parent, formatArg);
 }
 
 SdfLayerRefPtr saveAnonymousLayer(
     SdfLayerRefPtr     anonLayer,
     const std::string& path,
+    bool               savePathAsRelative,
     LayerParent        parent,
     std::string        formatArg)
 {
@@ -302,7 +307,7 @@ SdfLayerRefPtr saveAnonymousLayer(
             parent._layerParent->GetSubLayerPaths().Replace(
                 anonLayer->GetIdentifier(), newLayer->GetIdentifier());
         } else if (!parent._proxyPath.empty()) {
-            saveRootLayer(newLayer, parent._proxyPath);
+            saveRootLayer(newLayer, parent._proxyPath, savePathAsRelative);
         }
     }
     return newLayer;

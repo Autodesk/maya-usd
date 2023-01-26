@@ -10,6 +10,7 @@
 #include "warningDialogs.h"
 
 #include <mayaUsd/base/tokens.h>
+#include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
 #include <pxr/usd/sdf/fileFormat.h>
@@ -370,7 +371,10 @@ void LayerTreeItem::saveAnonymousLayer()
 
             // now replace the layer in the parent
             if (isRootLayer()) {
-                sessionState->rootLayerPathChanged(fileName);
+                sessionState->rootLayerPathChanged(
+                    UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile()
+                        ? UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(fileName)
+                        : fileName);
             } else {
                 // now replace the layer in the parent
                 auto parentItem = parentLayerItem();
