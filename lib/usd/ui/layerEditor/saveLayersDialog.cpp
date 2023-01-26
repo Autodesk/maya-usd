@@ -39,8 +39,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-const MString MAKE_PATH_RELATIVE_TO_SCENE_FILE = "mayaUsd_MakePathRelativeToSceneFile";
-
 template <typename T> void moveAppendVector(std::vector<T>& src, std::vector<T>& dst)
 {
     if (dst.empty()) {
@@ -180,8 +178,7 @@ void SaveLayerPathRow::onOpenBrowser()
 {
     std::string fileName;
     if (SaveLayersDialog::saveLayerFilePathUI(fileName)) {
-        if (MGlobal::optionVarExists(MAKE_PATH_RELATIVE_TO_SCENE_FILE)
-            && MGlobal::optionVarIntValue(MAKE_PATH_RELATIVE_TO_SCENE_FILE)) {
+        if (UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile()) {
             fileName = UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(fileName);
         }
 

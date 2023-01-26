@@ -122,7 +122,23 @@ std::string UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(const std::str
     ghc::filesystem::path absolutePath(fileName);
     ghc::filesystem::path basePath(getMayaSceneFileDir());
     ghc::filesystem::path relativePath = absolutePath.lexically_relative(basePath);
+
+    if (relativePath.empty()) {
+        TF_RUNTIME_ERROR(
+            "File name (%s) cannot be resolved as relative to the Maya scene file, using the "
+            "absolute path.",
+            fileName.c_str());
+        return fileName;
+    }
+
     return relativePath.generic_string();
+}
+
+bool UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile()
+{
+    static const MString MAKE_PATH_RELATIVE_TO_SCENE_FILE = "mayaUsd_MakePathRelativeToSceneFile";
+    return MGlobal::optionVarExists(MAKE_PATH_RELATIVE_TO_SCENE_FILE)
+        && MGlobal::optionVarIntValue(MAKE_PATH_RELATIVE_TO_SCENE_FILE);
 }
 
 const char* getScenesFolderScript = R"(
