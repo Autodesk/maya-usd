@@ -34,3 +34,5 @@ def mayaUSDRegisterStrings():
     register("kDiscardStageEditsLoadMsg", "Are you sure you want to load in a new file as the stage source?\n\nAll edits on your layers in ^1s will be discarded.")
     register("kDiscardStageEditsReloadMsg", "Are you sure you want to reload ^1s as the stage source?\n\nAll edits on your layers (except the session layer) in ^2s will be discarded.")
     register("kLoadUSDFile", "Load USD File")
+    register("kFileOptions", "File Options")
+    register("kMakePathRelativeToSceneFile", "Make Path Relative to Scene File Directory")

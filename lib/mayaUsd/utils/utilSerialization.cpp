@@ -16,6 +16,7 @@
 #include "utilSerialization.h"
 
 #include <mayaUsd/base/tokens.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
@@ -84,7 +85,7 @@ void populateChildren(
     recursionDetector->pop();
 }
 
-bool saveRootLayer(SdfLayerRefPtr layer, const std::string& proxy)
+bool saveRootLayer(SdfLayerRefPtr layer, const std::string& proxy, bool savePathAsRelative)
 {
     if (!layer || proxy.empty() || layer->IsAnonymous()) {
         return false;
@@ -96,6 +97,10 @@ bool saveRootLayer(SdfLayerRefPtr layer, const std::string& proxy)
     // can be problematic, easier to just switch the path separator.
     fp = TfStringReplace(fp, "\\", "/");
 #endif
+
+    if (savePathAsRelative) {
+        fp = UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(fp);
+    }
 
     MayaUsd::utils::setNewProxyPath(MString(proxy.c_str()), MString(fp.c_str()));
 
@@ -270,12 +275,13 @@ SdfLayerRefPtr saveAnonymousLayer(
     std::string        formatArg)
 {
     std::string newFileName = generateUniqueFileName(basename);
-    return saveAnonymousLayer(anonLayer, newFileName, parent, formatArg);
+    return saveAnonymousLayer(anonLayer, newFileName, false, parent, formatArg);
 }
 
 SdfLayerRefPtr saveAnonymousLayer(
     SdfLayerRefPtr     anonLayer,
     const std::string& path,
+    bool               savePathAsRelative,
     LayerParent        parent,
     std::string        formatArg)
 {
@@ -283,15 +289,25 @@ SdfLayerRefPtr saveAnonymousLayer(
         return nullptr;
     }
 
-    saveLayerWithFormat(anonLayer, path, formatArg);
+    std::string        filePath(path);
+    const std::string& extension = SdfFileFormat::GetFileExtension(filePath);
+    const std::string  defaultExt(UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
+    const std::string  usdCrateExt(UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText());
+    const std::string  usdASCIIExt(UsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText());
+    if (extension != defaultExt && extension != usdCrateExt && extension != usdASCIIExt) {
+        filePath.append(".");
+        filePath.append(defaultExt.c_str());
+    }
 
-    SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(path);
+    saveLayerWithFormat(anonLayer, filePath, formatArg);
+
+    SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(filePath);
     if (newLayer) {
         if (parent._layerParent) {
             parent._layerParent->GetSubLayerPaths().Replace(
                 anonLayer->GetIdentifier(), newLayer->GetIdentifier());
         } else if (!parent._proxyPath.empty()) {
-            saveRootLayer(newLayer, parent._proxyPath);
+            saveRootLayer(newLayer, parent._proxyPath, savePathAsRelative);
         }
     }
     return newLayer;

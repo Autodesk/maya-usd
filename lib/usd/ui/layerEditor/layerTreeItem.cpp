@@ -11,6 +11,7 @@
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
 #include <pxr/usd/sdf/fileFormat.h>
@@ -383,6 +384,10 @@ void LayerTreeItem::saveAnonymousLayer()
             // now replace the layer in the parent
             if (isRootLayer()) {
                 sessionState->rootLayerPathChanged(filePath);
+                sessionState->rootLayerPathChanged(
+                    UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile()
+                        ? UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(filePath)
+                        : filePath);
             } else {
                 // now replace the layer in the parent
                 auto parentItem = parentLayerItem();
