@@ -365,33 +365,24 @@ void LayerTreeItem::saveAnonymousLayer()
     std::string fileName;
     if (sessionState->saveLayerUI(nullptr, &fileName)) {
 
-        std::string        filePath(fileName);
-        const std::string& extension = SdfFileFormat::GetFileExtension(filePath);
-        const std::string  defaultExt(UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
-        const std::string  usdCrateExt(UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText());
-        const std::string  usdASCIIExt(UsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText());
-        if (extension != defaultExt && extension != usdCrateExt && extension != usdASCIIExt) {
-            filePath.append(".");
-            filePath.append(defaultExt.c_str());
-        }
+        MayaUsd::utils::ensureUSDFileExtension(fileName);
 
-        // the path we has is an absolute path
+        // the path we have is an absolute path
         const QString dialogTitle = StringResources::getAsQString(StringResources::kSaveLayer);
         std::string   formatTag = MayaUsd::utils::usdFormatArgOption();
-        if (saveSubLayer(dialogTitle, parentLayerItem(), layer(), filePath, formatTag)) {
-            printf("USD Layer written to %s\n", filePath.c_str());
+        if (saveSubLayer(dialogTitle, parentLayerItem(), layer(), fileName, formatTag)) {
+            printf("USD Layer written to %s\n", fileName.c_str());
 
             // now replace the layer in the parent
             if (isRootLayer()) {
-                sessionState->rootLayerPathChanged(filePath);
                 sessionState->rootLayerPathChanged(
                     UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile()
-                        ? UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(filePath)
-                        : filePath);
+                        ? UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(fileName)
+                        : fileName);
             } else {
                 // now replace the layer in the parent
                 auto parentItem = parentLayerItem();
-                auto newLayer = SdfLayer::FindOrOpen(filePath);
+                auto newLayer = SdfLayer::FindOrOpen(fileName);
                 if (newLayer) {
                     bool setTarget = _isTargetLayer;
                     auto model = parentModel();
