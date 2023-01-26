@@ -53,5 +53,7 @@ void wrapUtil()
                   .def("prettifyName", &UsdMayaUtil::prettifyName)
                   .staticmethod("prettifyName")
                   .def("getDictionaryFromEncodedOptions", getDictionaryFromEncodedOptions)
-                  .def("getPathRelativeToMayaSceneFile", &UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile);
+                  .def(
+                      "getPathRelativeToMayaSceneFile",
+                      &UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile);
 }

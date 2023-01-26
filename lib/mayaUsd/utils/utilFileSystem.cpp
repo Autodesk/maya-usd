@@ -122,7 +122,7 @@ std::string UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(const std::str
     ghc::filesystem::path absolutePath(fileName);
     ghc::filesystem::path basePath(getMayaSceneFileDir());
 
-    // If Maya scene file doesn't exist yet, use the absolute path 
+    // If Maya scene file doesn't exist yet, use the absolute path
     if (basePath.empty()) {
         return fileName;
     }
