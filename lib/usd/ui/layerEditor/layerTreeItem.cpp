@@ -10,7 +10,6 @@
 #include "warningDialogs.h"
 
 #include <mayaUsd/base/tokens.h>
-#include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
