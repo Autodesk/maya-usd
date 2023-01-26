@@ -106,6 +106,10 @@ bool saveRootLayer(SdfLayerRefPtr layer, const std::string& proxy)
 void updateAllCachedStageWithLayer(SdfLayerRefPtr originalLayer, const std::string& newFilePath)
 {
     SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(newFilePath);
+    if (!newLayer) {
+        TF_WARN("The filename %s is an invalid file name for a layer.", newFilePath.c_str());
+        return;
+    }
     for (UsdStageCache& cache : UsdMayaStageCache::GetAllCaches()) {
         UsdStageCacheContext        ctx(cache);
         std::vector<UsdStageRefPtr> stages = cache.FindAllMatching(originalLayer);
