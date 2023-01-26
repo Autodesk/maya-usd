@@ -13,13 +13,39 @@
 // limitations under the License.
 //
 
-global proc string UsdLayerEditor_SaveLayerFileDialog() {
+global proc mayaUsd_USDRootFileRelative_UICreate(string $parent)
+{
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdRootFileRelative.uiCreate('" + $parent + "')");
+}
+
+global proc mayaUsd_USDRootFileRelative_UIInit(string $parent, string $filterType)
+{
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdRootFileRelative.uiInit('" + $parent + "', '" + $filterType + "')");
+}
+
+global proc mayaUsd_USDRootFileRelative_UICommit(string $parent, string $selectedFile)
+{
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdRootFileRelative.uiCommit('" + $parent + "', '" + $selectedFile + "')");
+}
+
+global proc string UsdLayerEditor_SaveLayerFileDialog()
+{
     string $fileFilter = python("from mayaUsdUtils import getUSDDialogFileFilters; getUSDDialogFileFilters(False)");
 
+    string $startDir = "";
+    if (`file -q -exists`) {
+        string $fullPath = `file -q -loc`;
+        $startDir = dirname($fullPath);
+    }
+
     string $result[] = `fileDialog2 
-            -fileMode 0
-            -fileFilter $fileFilter
-            `;
+        -fileMode 0
+        -fileFilter $fileFilter
+        -optionsUICreate "mayaUsd_USDRootFileRelative_UICreate"
+        -optionsUIInit "mayaUsd_USDRootFileRelative_UIInit"
+        -optionsUICommit2 "mayaUsd_USDRootFileRelative_UICommit"
+        -startingDirectory $startDir
+    `;
 
     if (size($result) > 0) {
         return $result[0];
@@ -28,7 +54,8 @@ global proc string UsdLayerEditor_SaveLayerFileDialog() {
     }
 }
 
-global proc string UsdLayerEditor_LoadLayersFileDialogOptions_Create(string $parent) {
+global proc string UsdLayerEditor_LoadLayersFileDialogOptions_Create(string $parent)
+{
     setParent $parent;
 
     string $layout = `scrollLayout -childResizable true`;
@@ -39,11 +66,11 @@ global proc string UsdLayerEditor_LoadLayersFileDialogOptions_Create(string $par
     return $layout;
 }
 
-
-global proc string[] UsdLayerEditor_LoadLayersFileDialog(string $title, string $folder) {
+global proc string[] UsdLayerEditor_LoadLayersFileDialog(string $title, string $folder)
+{
     string $fileFilter = python("from mayaUsdUtils import getUSDDialogFileFilters; getUSDDialogFileFilters(False)");
     $okCaption = getMayaUsdString("kLoad");
-    
+
     string $result[] = `fileDialog2 
             -caption $title
             -fileMode 4

@@ -110,6 +110,7 @@ MAYAUSD_CORE_PUBLIC
 PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
     PXR_NS::SdfLayerRefPtr anonLayer,
     const std::string&     path,
+    bool                   savePathAsRelative,
     LayerParent            parent,
     std::string            formatArg = "");
 
