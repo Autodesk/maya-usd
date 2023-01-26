@@ -49,7 +49,8 @@ std::string getMayaSceneFileDir();
 MAYAUSD_CORE_PUBLIC
 std::string getMayaWorkspaceScenesDir();
 
-/*! \brief takes in an absolute file path and returns the path relative to maya scene file
+/*! \brief takes in an absolute file path and returns the path relative to maya scene file.
+When there is no scene file, the absolute (input) path will be returned.
  */
 MAYAUSD_CORE_PUBLIC
 std::string getPathRelativeToMayaSceneFile(const std::string& fileName);

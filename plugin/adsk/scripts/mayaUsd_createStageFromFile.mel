@@ -64,10 +64,18 @@ proc string getLatestLoadStageFolder()
 
 // stageFromFile_UISetup
 // creates the options of the stageFromFile dialog
-global proc string stageFromFile_UISetup(string $parent) {
+global proc string stageFromFile_UISetup(string $parent)
+{
+    // First create the scroll layout here and then call the python
+    // helper to add the rest of the UI.
     setParent $parent;
     string $layout = `scrollLayout -childResizable true`;
 
+    // Add the USD root file relative section.
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdRootFileRelative.uiCreate('" + $layout + "')");
+
+    // Then add the stage from file specific section.
+    setParent $layout;
     $title = `getMayaUsdString("kUsdFileOptions")`;
     $frame = `frameLayout -label $title -collapsable false`;
     checkBoxGrp -l `getMayaUsdString("kLoadPayloads")` 
@@ -90,8 +98,12 @@ global proc string stageFromFile_UISetup(string $parent) {
 
 // stageFromFile_UIInit
 // init defaults values for the options of the stageFromFile dialog
-global proc stageFromFile_UIInit(string $parent, string $filterType) {
+global proc stageFromFile_UIInit(string $parent, string $filterType)
+{
     setOptionVars(false);
+
+    // Init the USD root file relative section.
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdRootFileRelative.uiInit('" + $parent + "', '" + $filterType + "')");
 
     string $ppath = `optionVar -q stageFromFile_primPath`;
     string $exppath = `optionVar -q stageFromFile_excludePrimPath`;
@@ -103,8 +115,12 @@ global proc stageFromFile_UIInit(string $parent, string $filterType) {
     checkBoxGrp -e -value1 $loadp loadPayloadsCheckBox;
 }
 
-global proc stageFromFile_UICommit(string $parent) {
+global proc stageFromFile_UICommit(string $parent)
+{
     setParent $parent;
+
+    // Commit the USD root file relative section.
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdRootFileRelative.uiCommit('" + $parent + "')");
 
     // fetch values
     optionVar -stringValue stageFromFile_primPath
@@ -115,7 +131,8 @@ global proc stageFromFile_UICommit(string $parent) {
         (`checkBoxGrp -q -value1 loadPayloadsCheckBox`);
 }
 
-proc string doCreateStage(string $fileName) {
+proc string doCreateStage(string $fileName)
+{
     // actually load the file
     string $baseName = basenameEx($fileName);
     if( ! isValidObjectName($baseName) )
@@ -125,8 +142,13 @@ proc string doCreateStage(string $fileName) {
     string $exppath = `optionVar -q stageFromFile_excludePrimPath`;
     int $loadp = `optionVar -q stageFromFile_loadPayloads`;
 
+    string $fileNameToSave = $fileName;
+    if (`optionVar -exists mayaUsd_MakePathRelativeToSceneFile` && `optionVar -query mayaUsd_MakePathRelativeToSceneFile`) {
+        $fileNameToSave = `python("import mayaUsd.lib as mayaUsdLib; mayaUsdLib.Util.getPathRelativeToMayaSceneFile('" + $fileName + "')")`;
+    }
+
     string $shapeNode = `createNode "mayaUsdProxyShape" -skipSelect -name ($baseName+"Shape")`;
-    setAttr -type "string" ($shapeNode+".filePath") $fileName;
+    setAttr -type "string" ($shapeNode+".filePath") $fileNameToSave;
     setAttr -type "string" ($shapeNode+".primPath") $ppath;
     setAttr -type "string" ($shapeNode+".excludePrimPaths") $exppath;
     setAttr ($shapeNode+".loadPayloads") $loadp;
@@ -216,7 +238,8 @@ global proc mayaUsd_createStageFromFileOptions()
     showOptionBox();
 }
 
-global proc mayaUsd_createStageFromFile() {
+global proc mayaUsd_createStageFromFile()
+{
     setOptionVars(false);
     
     $caption = getMayaUsdString("kCreateUsdStageFromFile");

@@ -10,9 +10,14 @@ class usdRootFileRelative(object):
 
     @classmethod
     def uiCreate(cls, parentLayout):
+        """
+        Helper method to create the UI layout for the USD root file relative actions.
+
+        Input parentLayout arg is expected to the a scroll layout into which controls
+        can be added.
+        """
         pushOptionsUITemplate()
         cmds.setParent(parentLayout)
-        parent = cmds.scrollLayout(childResizable=True)
 
         optBoxForm = cmds.formLayout('optionsBoxForm')
         topFrame = cmds.frameLayout(
@@ -49,7 +54,7 @@ class usdRootFileRelative(object):
         cmds.checkBox(cls.kMakePathRelativeCheckBox, edit=True, enable=haveSceneFile)
 
     @classmethod
-    def uiCommit(cls, parentLayout, selectedFile):
+    def uiCommit(cls, parentLayout, selectedFile=None):
         cmds.setParent(parentLayout)
 
         # Get the current checkbox state and save to optionVar.
