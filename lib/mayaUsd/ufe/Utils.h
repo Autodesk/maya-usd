@@ -216,6 +216,13 @@ Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& f
 MAYAUSD_CORE_PUBLIC
 std::vector<std::string> splitString(const std::string& str, const std::string& separators);
 
+//! Gets the sub strings surrounded by separators.
+MAYAUSD_CORE_PUBLIC
+std::vector<std::string> getSubStrings(
+    const std::string& str,
+    const std::string& startSeparator,
+    const std::string& endSeparator);
+
 std::string pathSegmentSeparator();
 
 class ReplicateExtrasFromUSD

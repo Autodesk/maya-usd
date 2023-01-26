@@ -1185,6 +1185,30 @@ std::vector<std::string> splitString(const std::string& str, const std::string& 
     return split;
 }
 
+std::vector<std::string> getSubStrings(
+    const std::string& str,
+    const std::string& startSeparator,
+    const std::string& endSeparator)
+{
+    std::vector<std::string> subStrings;
+    const std::string rgxString = "(" + startSeparator + ")" + "([^ ]*)" + "(" + endSeparator + ")";
+    const std::regex  rgx(rgxString);
+    std::string       subString;
+
+    for (std::sregex_iterator it(str.begin(), str.end(), rgx), it_end; it != it_end; ++it) {
+        if (it->empty()) {
+            continue;
+        }
+        subString = std::string((*it)[0]);
+        // Remove the separators.
+        subString = subString.substr(
+            subString.find(startSeparator.back()) + 1, subString.rfind(endSeparator.front()) - 1);
+        subStrings.push_back(subString);
+    }
+
+    return subStrings;
+}
+
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
 template <typename PathType>
 void handleDisplayLayer(

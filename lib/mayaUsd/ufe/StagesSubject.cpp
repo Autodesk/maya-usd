@@ -321,12 +321,15 @@ void processAttributeChanges(
                 sendMetadataChanged = true;
                 std::stringstream newMetadataStream;
                 newMetadataStream << infoChanged.second.second;
-                std::string newMetadataKey = newMetadataStream.str();
-                if (!newMetadataKey.empty()) {
+                std::string newMetadataKeys = newMetadataStream.str();
+                // e.g. newMetadataKeys string format:
+                // "'uifolder':,'uisoftmin':0.0, 'uihide':1, 'uiorder':0"
+                if (!newMetadataKeys.empty()) {
                     // Find the modified key which is between a pair of single quotes.
-                    newMetadataKey = newMetadataKey.substr(
-                        newMetadataKey.find('\'') + 1, newMetadataKey.rfind('\'') - 2);
-                    metadataKeys.insert(newMetadataKey);
+                    for (const auto& newMetadataKey :
+                         MayaUsd::ufe::getSubStrings(newMetadataKeys, "'", "':")) {
+                        metadataKeys.insert(newMetadataKey);
+                    }
                 }
             }
         }
