@@ -121,10 +121,16 @@ std::string UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(const std::str
 {
     ghc::filesystem::path absolutePath(fileName);
     ghc::filesystem::path basePath(getMayaSceneFileDir());
+
+    // If Maya scene file doesn't exist yet, use the absolute path
+    if (basePath.empty()) {
+        return fileName;
+    }
+
     ghc::filesystem::path relativePath = absolutePath.lexically_relative(basePath);
 
     if (relativePath.empty()) {
-        TF_RUNTIME_ERROR(
+        TF_WARN(
             "File name (%s) cannot be resolved as relative to the Maya scene file, using the "
             "absolute path.",
             fileName.c_str());
