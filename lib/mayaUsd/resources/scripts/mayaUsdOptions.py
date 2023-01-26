@@ -38,14 +38,14 @@ def setAnimateOption(nodeName, textOptions):
 
 def _cleanupOptionsText(text):
     """
-    The saved options variable can have been polluted by forced value from
-    environment variables saved in previous run of Maya. If these forced
-    values are no longer forced, becaue they were saved, they would still
-    be forced... so, since all code paths that use MayaUSD export-like options,
-    like duplicate-to-USD, merge-to-USD, cache-to-USD, go through here,
+    The saved option variables can have been polluted by forced values from
+    environment variables saved in a previous run of Maya. If these forced
+    values are no longer forced, because they were saved, they would still
+    be forced. Since all code paths that use MayaUSD export-like options like
+    duplicate-to-USD, merge-to-USD and cache-to-USD go through here
     we do the cleanup here.
 
-    Note that this kind of cleanup is only correct to do for options that have
+    Note: this kind of cleanup is only correct to do for options that have
     no UI at all and are intended to only be controlled by such an environment
     variable. Currently, only "materialsScopeName" is set like this, through
     the env var "MAYAUSD_MATERIALS_SCOPE_NAME".
