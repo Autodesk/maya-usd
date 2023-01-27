@@ -17,9 +17,6 @@
 #define MTOH_VIEW_OVERRIDE_H
 
 #include <pxr/pxr.h>
-#if PXR_VERSION < 2102
-#include <pxr/imaging/glf/glew.h>
-#endif
 
 #include <pxr/base/tf/singleton.h>
 #include <pxr/imaging/hd/driver.h>
@@ -102,14 +99,12 @@ public:
     MHWRender::MRenderOperation* renderOperation() override;
     bool                         nextRenderOperation() override;
 
-#if MAYA_API_VERSION >= 20210000
     bool select(
         const MHWRender::MFrameContext&  frameContext,
         const MHWRender::MSelectionInfo& selectInfo,
         bool                             useDepth,
         MSelectionList&                  selectionList,
         MPointArray&                     worldSpaceHitPts) override;
-#endif
 
 private:
     typedef std::pair<MString, MCallbackIdArray> PanelCallbacks;
@@ -180,25 +175,17 @@ private:
     HdRprimCollection                         _renderCollection
     {
         HdTokens->geometry,
-            HdReprSelector(
-#if MAYA_APP_VERSION >= 2019
-                HdReprTokens->refined
-#else
-                HdReprTokens->smoothHull
-#endif
-                ),
+            HdReprSelector(HdReprTokens->refined),
             SdfPath::AbsoluteRootPath()
     };
     HdRprimCollection _selectionCollection { HdReprTokens->wire,
                                              HdReprSelector(HdReprTokens->wire) };
 
-#if MAYA_API_VERSION >= 20210000
     HdRprimCollection _pointSnappingCollection {
         HdTokens->geometry,
         HdReprSelector(HdReprTokens->refined, TfToken(), HdReprTokens->points),
         SdfPath::AbsoluteRootPath()
     };
-#endif
 
     GlfSimpleLight _defaultLight;
 

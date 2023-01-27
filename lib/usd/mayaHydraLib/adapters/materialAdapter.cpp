@@ -91,20 +91,6 @@ void MayaHydraMaterialAdapter::EnableXRayShadingMode(bool enable)
     MarkDirty(HdMaterial::DirtyParams);
 }
 
-#if PXR_VERSION < 2011
-
-HdTextureResource::ID MayaHydraMaterialAdapter::GetTextureResourceID(const TfToken& paramName)
-{
-    return {};
-}
-
-HdTextureResourceSharedPtr MayaHydraMaterialAdapter::GetTextureResource(const SdfPath& textureShaderId)
-{
-    return {};
-}
-
-#endif // PXR_VERSION < 2011
-
 VtValue MayaHydraMaterialAdapter::GetMaterialResource()
 {
     TF_DEBUG(MAYAHYDRALIB_ADAPTER_MATERIALS).Msg("MayaHydraMaterialAdapter::GetMaterialResource()\n");
@@ -214,30 +200,6 @@ private:
         }
     }
 
-#if PXR_VERSION < 2011
-
-    HdTextureResourceSharedPtr GetTextureResource(const SdfPath& textureShaderId) override
-    {
-        TF_DEBUG(MAYAHYDRALIB_ADAPTER_MATERIALS)
-            .Msg(
-                "MayaHydraShadingEngineAdapter::GetTextureResource(%s): %s\n",
-                textureShaderId.GetText(),
-                GetID().GetText());
-        if (GetDelegate()->IsHdSt()) {
-            auto* mObjPtr = TfMapLookupPtr(_materialPathToMobj, textureShaderId);
-            if (!mObjPtr || (*mObjPtr) == MObject::kNullObj) {
-                return {};
-            }
-            return GetFileTextureResource(
-                *mObjPtr,
-                GetFileTexturePath(MFnDependencyNode(*mObjPtr)),
-                GetDelegate()->GetParams().textureMemoryPerTexture);
-        }
-        return {};
-    }
-
-#endif // PXR_VERSION < 2011
-
     void _CreateSurfaceMaterialCallback()
     {
         _CacheNodeAndTypes();
@@ -306,13 +268,6 @@ private:
     MObject _surfaceShader;
     TfToken _surfaceShaderType;
     // So they live long enough
-
-#if PXR_VERSION < 2011
-
-    std::unordered_map<TfToken, HdStTextureResourceHandleSharedPtr, TfToken::HashFunctor>
-        _textureResourceHandles;
-
-#endif // PXR_VERSION < 2011
 
     MCallbackId _surfaceShaderCallback;
 #ifdef MAYAHYDRALIB_OIT_ENABLED

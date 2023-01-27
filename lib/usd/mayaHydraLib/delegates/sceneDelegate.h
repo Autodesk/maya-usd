@@ -135,14 +135,12 @@ public:
 	MAYAHYDRALIB_API
 	void HandleCompleteViewportScene(const MDataServerOperation::MViewportScene& scene, MFrameContext::DisplayStyle ds);
 
-#if MAYA_API_VERSION >= 20210000
     MAYAHYDRALIB_API
     void PopulateSelectionList(
         const HdxPickHitVector&          hits,
         const MHWRender::MSelectionInfo& selectInfo,
         MSelectionList&                  selectionList,
         MPointArray&                     worldSpaceHitPts) override;
-#endif
 
     bool GetPlaybackRunning() const { return _isPlaybackRunning; }
 
@@ -212,49 +210,26 @@ protected:
     MAYAHYDRALIB_API
     VtIntArray GetInstanceIndices(const SdfPath& instancerId, const SdfPath& prototypeId) override;
 
-#if defined(HD_API_VERSION) && HD_API_VERSION >= 39
     MAYAHYDRALIB_API
     SdfPathVector GetInstancerPrototypes(SdfPath const& instancerId) override;
-#endif
 
-#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
     MAYAHYDRALIB_API
     SdfPath GetInstancerId(const SdfPath& primId) override;
-#endif
 
     MAYAHYDRALIB_API
     GfMatrix4d GetInstancerTransform(SdfPath const& instancerId) override;
 
     MAYAHYDRALIB_API
-#if defined(HD_API_VERSION) && HD_API_VERSION >= 34
     SdfPath GetScenePrimPath(
         const SdfPath&      rprimPath,
         int                 instanceIndex,
         HdInstancerContext* instancerContext) override;
-#elif defined(HD_API_VERSION) && HD_API_VERSION >= 33
-    SdfPath GetScenePrimPath(const SdfPath& rprimPath, int instanceIndex) override;
-#else
-    SdfPath GetPathForInstanceIndex(
-        const SdfPath& protoPrimPath,
-        int            instanceIndex,
-        int*           absoluteInstanceIndex,
-        SdfPath*       rprimPath,
-        SdfPathVector* instanceContext) override;
-#endif
 
     MAYAHYDRALIB_API
     SdfPath GetMaterialId(const SdfPath& id) override;
 
     MAYAHYDRALIB_API
     VtValue GetMaterialResource(const SdfPath& id) override;
-
-#if PXR_VERSION < 2011
-    MAYAHYDRALIB_API
-    HdTextureResource::ID GetTextureResourceID(const SdfPath& textureId) override;
-
-    MAYAHYDRALIB_API
-    HdTextureResourceSharedPtr GetTextureResource(const SdfPath& textureId) override;
-#endif // PXR_VERSION < 2011
 
 private:
     template <typename AdapterPtr, typename Map>

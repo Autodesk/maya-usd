@@ -46,15 +46,6 @@ public:
     MAYAHYDRALIB_API
     void EnableXRayShadingMode(bool enable);
 
-#if PXR_VERSION < 2011
-
-    MAYAHYDRALIB_API
-    virtual HdTextureResourceSharedPtr GetTextureResource(const SdfPath& textureShaderId);
-    MAYAHYDRALIB_API
-    virtual HdTextureResource::ID GetTextureResourceID(const TfToken& paramName);
-
-#endif // PXR_VERSION < 2011
-
     MAYAHYDRALIB_API
     virtual VtValue GetMaterialResource();
 

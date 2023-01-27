@@ -113,19 +113,6 @@ TF_REGISTRY_FUNCTION(TfDebug)
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         MAYAHYDRALIB_DELEGATE_SELECTION, "Print information about mayaHydraLib delegate selection.");
-
-#if PXR_VERSION < 2011
-
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
-        MAYAHYDRALIB_DELEGATE_GET_TEXTURE_RESOURCE,
-        "Print information about 'GetTextureResource' calls to the delegates.");
-
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
-        MAYAHYDRALIB_DELEGATE_GET_TEXTURE_RESOURCE_ID,
-        "Print information about 'GetTextureResourceID' calls to the "
-        "delegates.");
-
-#endif // PXR_VERSION < 2011
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -233,14 +233,9 @@ public:
 
         // TODO: Maybe we could use the flat shading of the display style?
         return HdMeshTopology(
-#if MAYA_APP_VERSION >= 2019
             (GetDelegate()->GetParams().displaySmoothMeshes || GetDisplayStyle().refineLevel > 0)
                 ? PxOsdOpenSubdivTokens->catmullClark
                 : PxOsdOpenSubdivTokens->none,
-#else
-            GetDelegate()->GetParams().displaySmoothMeshes ? PxOsdOpenSubdivTokens->catmullClark
-                                                           : PxOsdOpenSubdivTokens->none,
-#endif
 
             UsdGeomTokens->rightHanded,
             faceVertexCounts,
@@ -249,7 +244,6 @@ public:
 
     HdDisplayStyle GetDisplayStyle() override
     {
-#if MAYA_APP_VERSION >= 2019
         MStatus           status;
         MFnDependencyNode node(GetNode(), &status);
         if (ARCH_UNLIKELY(!status)) {
@@ -263,14 +257,10 @@ public:
         const auto smoothLevel
             = std::max(0, node.findPlug(MayaAttrs::mesh::smoothLevel, true).asInt());
         return { smoothLevel, false, false };
-#else
-        return { 0, false, false };
-#endif
     }
 
     PxOsdSubdivTags GetSubdivTags() override
     {
-#if MAYA_APP_VERSION >= 2019
         PxOsdSubdivTags tags;
         if (GetDisplayStyle().refineLevel < 1) {
             return tags;
@@ -332,9 +322,6 @@ public:
         tags.SetTriangleSubdivision(UsdGeomTokens->catmullClark);
 
         return tags;
-#else
-        return {};
-#endif
     }
 
     HdPrimvarDescriptorVector GetPrimvarDescriptors(HdInterpolation interpolation) override

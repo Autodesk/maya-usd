@@ -58,6 +58,14 @@
 
 #include <cassert>
 
+#if PXR_VERSION < 2211
+#error USD version v0.22.11+ required
+#endif
+
+#if MAYA_API_VERSION < 20240000
+#error Maya API version 2024+ required
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 SdfPath MayaHydraSceneDelegate::_mayaDefaultMaterialPath;//Common to all scene delegates
@@ -144,17 +152,6 @@ inline bool _RemoveAdapter(const SdfPath& id, F f, M0& m0, M&... m)
 }
 
 template <typename R> inline R _GetDefaultValue() { return {}; }
-
-#if PXR_VERSION < 2011
-
-// Default return value for HdTextureResource::ID, if not found, should be
-// -1, not {} - which would be 0
-template <> inline HdTextureResource::ID _GetDefaultValue<HdTextureResource::ID>()
-{
-    return HdTextureResource::ID(-1);
-}
-
-#endif // PXR_VERSION < 2011
 
 // This will be nicer to use with automatic parameter deduction for lambdas in
 // C++14.
@@ -1199,7 +1196,6 @@ void MayaHydraSceneDelegate::PopulateSelectedPaths(
         MFn::kShape);
 }
 
-#if MAYA_API_VERSION >= 20210000
 void MayaHydraSceneDelegate::PopulateSelectionList(
     const HdxPickHitVector&          hits,
     const MHWRender::MSelectionInfo& selectInfo,
@@ -1233,7 +1229,6 @@ void MayaHydraSceneDelegate::PopulateSelectionList(
             _shapeAdapters);
     }
 }
-#endif
 
 HdMeshTopology MayaHydraSceneDelegate::GetMeshTopology(const SdfPath& id)
 {
@@ -1516,14 +1511,11 @@ MayaHydraSceneDelegate::GetInstanceIndices(const SdfPath& instancerId, const Sdf
         _shapeAdapters);
 }
 
-#if defined(HD_API_VERSION) && HD_API_VERSION >= 39
 SdfPathVector MayaHydraSceneDelegate::GetInstancerPrototypes(SdfPath const& instancerId)
 {
     return { instancerId.GetPrimPath() };
 }
-#endif
 
-#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
 SdfPath MayaHydraSceneDelegate::GetInstancerId(const SdfPath& primId)
 {
     TF_DEBUG(MAYAHYDRALIB_DELEGATE_GET_INSTANCER_ID)
@@ -1535,14 +1527,12 @@ SdfPath MayaHydraSceneDelegate::GetInstancerId(const SdfPath& primId)
     return _GetValue<MayaHydraDagAdapter, SdfPath>(
         primId, [](MayaHydraDagAdapter* a) -> SdfPath { return a->GetInstancerID(); }, _shapeAdapters);
 }
-#endif
 
 GfMatrix4d MayaHydraSceneDelegate::GetInstancerTransform(SdfPath const& instancerId)
 {
     return GfMatrix4d(1.0);
 }
 
-#if defined(HD_API_VERSION) && HD_API_VERSION >= 34
 SdfPath MayaHydraSceneDelegate::GetScenePrimPath(
     const SdfPath&      rprimPath,
     int                 instanceIndex,
@@ -1550,25 +1540,6 @@ SdfPath MayaHydraSceneDelegate::GetScenePrimPath(
 {
     return rprimPath;
 }
-#elif defined(HD_API_VERSION) && HD_API_VERSION >= 33
-SdfPath MayaHydraSceneDelegate::GetScenePrimPath(const SdfPath& rprimPath, int instanceIndex)
-{
-    return rprimPath;
-}
-#else
-SdfPath MayaHydraSceneDelegate::GetPathForInstanceIndex(
-    const SdfPath& protoPrimPath,
-    int            instanceIndex,
-    int*           absoluteInstanceIndex,
-    SdfPath*       rprimPath,
-    SdfPathVector* instanceContext)
-{
-    if (absoluteInstanceIndex != nullptr) {
-        *absoluteInstanceIndex = instanceIndex;
-    }
-    return {};
-}
-#endif
 
 bool MayaHydraSceneDelegate::GetVisible(const SdfPath& id)
 {
@@ -1738,57 +1709,6 @@ VtValue MayaHydraSceneDelegate::GetMaterialResource(const SdfPath& id)
 	return ret.IsEmpty() ? MayaHydraMaterialAdapter::GetPreviewMaterialResource(id) : ret;
 #endif
 }
-
-#if PXR_VERSION < 2011
-
-HdTextureResource::ID MayaHydraSceneDelegate::GetTextureResourceID(const SdfPath& textureId)
-{
-    TF_DEBUG(MAYAHYDRALIB_DELEGATE_GET_TEXTURE_RESOURCE_ID)
-        .Msg("MayaHydraSceneDelegate::GetTextureResourceID(%s)\n", textureId.GetText());
-    return _GetValue<MayaHydraMaterialAdapter, HdTextureResource::ID>(
-        textureId.GetPrimPath(),
-        [&textureId](MayaHydraMaterialAdapter* a) -> HdTextureResource::ID {
-            return a->GetTextureResourceID(textureId.GetNameToken());
-        },
-        _materialAdapters);
-}
-
-HdTextureResourceSharedPtr MayaHydraSceneDelegate::GetTextureResource(const SdfPath& textureId)
-{
-    TF_DEBUG(MAYAHYDRALIB_DELEGATE_GET_TEXTURE_RESOURCE)
-        .Msg("MayaHydraSceneDelegate::GetTextureResource(%s)\n", textureId.GetText());
-
-    auto* adapterPtr = TfMapLookupPtr(_materialAdapters, textureId);
-
-    if (!adapterPtr) {
-        // For texture nodes we may have only inserted an adapter for the material
-        // not for the texture itself.
-        //
-        // UsdShade has the rule that a UsdShade node must be nested inside the
-        // UsdMaterial scope. We traverse the parent paths to find the material.
-        //
-        // Example for texture prim:
-        //    /Materials/Woody/BootMaterial/UsdShadeNodeGraph/Tex
-        // We want to find Sprim:
-        //    /Materials/Woody/BootMaterial
-
-        // While-loop to account for nesting of UsdNodeGraphs and DrawMode
-        // adapter with prototypes.
-        SdfPath parentPath = textureId;
-        while (!adapterPtr && !parentPath.IsRootPrimPath()) {
-            parentPath = parentPath.GetParentPath();
-            adapterPtr = TfMapLookupPtr(_materialAdapters, parentPath);
-        }
-    }
-
-    if (adapterPtr) {
-        return adapterPtr->get()->GetTextureResource(textureId);
-    }
-
-    return nullptr;
-}
-
-#endif // PXR_VERSION < 2011
 
 bool MayaHydraSceneDelegate::_CreateMaterial(const SdfPath& id, const MObject& obj)
 {

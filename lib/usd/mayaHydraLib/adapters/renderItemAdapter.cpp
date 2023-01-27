@@ -335,16 +335,10 @@ void MayaHydraRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data
 
                 // TODO: Maybe we could use the flat shading of the display style?
                 _topology.reset(new HdMeshTopology(
-#if MAYA_APP_VERSION >= 2019
                     (GetDelegate()->GetParams().displaySmoothMeshes
                      || GetDisplayStyle().refineLevel > 0)
                         ? PxOsdOpenSubdivTokens->catmullClark
                         : PxOsdOpenSubdivTokens->none,
-#else
-                    GetDelegate()->GetParams().displaySmoothMeshes
-                        ? PxOsdOpenSubdivTokens->catmullClark
-                        : PxOsdOpenSubdivTokens->none,
-#endif
                     UsdGeomTokens->rightHanded,
                     vertexCounts,
                     vertexIndices));

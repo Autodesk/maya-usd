@@ -151,8 +151,6 @@ private:
 
 #endif // WANT_UFE_BUILD
 
-#if MAYA_API_VERSION >= 20210000
-
 //! \brief  Get the index of the hit nearest to a given cursor point.
 int GetNearestHitIndex(
     const MHWRender::MFrameContext& frameContext,
@@ -223,8 +221,6 @@ void ResolveUniqueHits_Workaround(const HdxPickHitVector& inHits, HdxPickHitVect
     }
 }
 
-#endif
-
 } // namespace
 
 MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
@@ -232,11 +228,7 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
     , _rendererDesc(desc)
     , _sceneIndexRegistration(nullptr)
     , _globals(MtohRenderGlobals::GetInstance())
-#if PXR_VERSION > 2005
     , _hgi(Hgi::CreatePlatformDefaultHgi())
-#else
-    , _hgi(Hgi::GetPlatformDefaultHgi())
-#endif
     , _hgiDriver { HgiTokens->renderDriver, VtValue(_hgi.get()) }
     , _selectionTracker(new HdxSelectionTracker)
     , _isUsingHdSt(desc.rendererName == MtohTokens->HdStormRendererPlugin)
@@ -512,13 +504,8 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, c
         if (_playBlasting && !_isUsingHdSt && !tasks.empty()) {
             // XXX: Is this better as user-configurable ?
             constexpr auto msWait = std::chrono::duration<float, std::milli>(100);
-#if PXR_VERSION >= 2005
             std::shared_ptr<HdxRenderTask> renderTask
                 = std::dynamic_pointer_cast<HdxRenderTask>(tasks.front());
-#else
-            boost::shared_ptr<HdxRenderTask> renderTask
-                = boost::dynamic_pointer_cast<HdxRenderTask>(tasks.front());
-#endif
             if (renderTask) {
                 HdTaskSharedPtrVector renderOnly = { renderTask };
                 _engine.Execute(_renderIndex, &renderOnly);
@@ -667,13 +654,8 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, c
                         = dynamic_cast<MayaHydraSceneDelegate*>(delegate.get())) {
                         params.camera = mayaScene->SetCameraViewport(camPath, _viewport);
                         if (vpDirty)
-#if HD_API_VERSION >= 43
                             mayaScene->GetChangeTracker().MarkSprimDirty(
                                 params.camera, HdCamera::DirtyParams);
-#else
-                            mayaScene->GetChangeTracker().MarkSprimDirty(
-                                params.camera, HdCamera::DirtyParams | HdCamera::DirtyProjMatrix);
-#endif
                         break;
                     }
                 }
@@ -695,16 +677,11 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, c
     _taskController->SetSelectionColor(_globals.colorSelectionHighlightColor);
     _taskController->SetEnableSelection(_globals.colorSelectionHighlight);
 
-#if PXR_VERSION >= 2005
     if (_globals.outlineSelectionWidth != 0.f) {
         _taskController->SetSelectionOutlineRadius(_globals.outlineSelectionWidth);
         _taskController->SetSelectionEnableOutline(true);
     } else
         _taskController->SetSelectionEnableOutline(false);
-#endif
-#if PXR_VERSION <= 2005
-    _taskController->SetColorizeQuantizationEnabled(_globals.enableColorQuantization);
-#endif
 
     _taskController->SetCollection(_renderCollection);
     if (_isUsingHdSt) {
@@ -775,9 +752,6 @@ void MtohRenderOverride::_InitHydraResources()
 
     _initializationAttempted = true;
 
-#if PXR_VERSION < 2102
-    GlfGlewInit();
-#endif
     GlfContextCaps::InitInstance();
     _rendererPlugin
         = HdRendererPluginRegistry::GetInstance().GetRendererPlugin(_rendererDesc.rendererName);
@@ -892,12 +866,7 @@ void MtohRenderOverride::ClearHydraResources()
 
     // Cleanup internal context data that keep references to data that is now
     // invalid.
-#if PXR_VERSION >= 2108
     _engine.ClearTaskContextData();
-#else
-    for (const auto& token : HdxTokens->allTokens)
-        _engine.RemoveTaskContextData(token);
-#endif
 
     if (_taskController != nullptr) {
         delete _taskController;
@@ -1067,7 +1036,6 @@ bool MtohRenderOverride::nextRenderOperation()
     return ++_currentOperation < static_cast<int>(_operations.size());
 }
 
-#if MAYA_API_VERSION >= 20210000
 bool MtohRenderOverride::select(
     const MHWRender::MFrameContext&  frameContext,
     const MHWRender::MSelectionInfo& selectInfo,
@@ -1176,7 +1144,6 @@ bool MtohRenderOverride::select(
 
     return true;
 }
-#endif
 
 void MtohRenderOverride::_ClearHydraCallback(void* data)
 {

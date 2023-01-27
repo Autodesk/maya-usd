@@ -49,18 +49,6 @@ TF_DEBUG_CODES(
     MAYAHYDRALIB_DELEGATE_SELECTION);
 // clang-format on
 
-// Debug codes for Hydra API that was deprecated with USD 20.11.
-// These are declared in a separate block to avoid using a preprocessor
-// directive inside the TF_DEBUG_CODES() macro invocation, which breaks
-// compilation on Windows.
-#if PXR_VERSION < 2011
-// clang-format off
-TF_DEBUG_CODES(
-    MAYAHYDRALIB_DELEGATE_GET_TEXTURE_RESOURCE,
-    MAYAHYDRALIB_DELEGATE_GET_TEXTURE_RESOURCE_ID);
-// clang-format on
-#endif // PXR_VERSION < 2011
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // MAYAHYDRALIB_DELEGATE_DEBUG_CODES_H

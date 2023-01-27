@@ -35,6 +35,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#if PXR_VERSION < 2211
+#error USD version v0.22.11+ required
+#endif
+
+#if MAYA_API_VERSION < 20240000
+#error Maya API version 2024+ required
+#endif
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 using MtohRenderOverridePtr = std::unique_ptr<MtohRenderOverride>;

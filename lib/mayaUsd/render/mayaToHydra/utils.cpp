@@ -20,9 +20,6 @@
 // to recognize that "utils.h" is the related header.
 // clang-format off
 #include <pxr/pxr.h>
-#if PXR_VERSION < 2102
-#include <pxr/imaging/glf/glew.h>
-#endif
 // clang-format on
 
 #include "utils.h"
