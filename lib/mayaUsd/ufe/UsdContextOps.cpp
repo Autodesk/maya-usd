@@ -32,10 +32,12 @@
 #include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilFileSystem.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/path.h>
@@ -473,56 +475,106 @@ private:
     bool                    _instanceable;
 };
 
-const char* selectUSDFileScriptPre = R"mel(
-global proc string SelectUSDFileForAddReference()
+const std::string getTargetLayerFilePath(const UsdPrim& prim)
 {
-    string $result[] = `fileDialog2
-        -fileMode 1
-        -caption "Add Reference to USD Prim"
-        -fileFilter "USD Files )mel";
+    auto stage = prim.GetStage();
+    if (!stage)
+        return {};
 
-const char* selectUSDFileScriptPost = R"mel("`;
+    auto layer = stage->GetEditTarget().GetLayer();
+    if (!layer)
+        return {};
 
-    if (0 == size($result))
-        return "";
-    else
-        return $result[0];
+    return layer->GetRealPath();
 }
-SelectUSDFileForAddReference();
-)mel";
+
+bool _prepareUSDReferenceTargetLayer(const UsdPrim& prim)
+{
+    const char* script = R"mel(
+    setUSDReferenceRelativeFilePathRoot("%s");
+    )mel";
+
+    const std::string commandString = TfStringPrintf(script, getTargetLayerFilePath(prim).c_str());
+    return MGlobal::executeCommand(commandString.c_str());
+}
 
 // Ask SDF for all supported extensions:
 const char* _selectUSDFileScript()
 {
-
     static std::string commandString;
 
     if (commandString.empty()) {
         // This is an interactive call from the main UI thread. No need for SMP protections.
-        commandString = selectUSDFileScriptPre;
 
-        std::string usdUiString = "(";
-        std::string usdSelector = "";
-        std::string otherUiString = "";
-        std::string otherSelector = "";
+        // The goal of the following loop is to build a first file filter that allow any
+        // USD-compatible file format, then a serie of file filters, one per particular
+        // file format. So for N different file formats, we will have N+1 filters.
+
+        std::vector<std::string> usdUiStrings;
+        std::vector<std::string> usdSelectors;
+        std::vector<std::string> otherUiStrings;
+        std::vector<std::string> otherSelectors;
 
         for (auto&& extension : SdfFileFormat::FindAllFileFormatExtensions()) {
             // Put USD first
             if (extension.rfind("usd", 0) == 0) {
-                if (!usdSelector.empty()) {
-                    usdUiString += " ";
-                }
-                usdUiString += "*." + extension;
-                usdSelector += ";;*." + extension;
+                usdUiStrings.push_back("*." + extension);
+                usdSelectors.push_back("*." + extension);
             } else {
-                otherUiString += " *." + extension;
-                otherSelector += ";;*." + extension;
+                otherUiStrings.push_back("*." + extension);
+                otherSelectors.push_back("*." + extension);
             }
         }
-        commandString += usdUiString + otherUiString + ")" + usdSelector + otherSelector
-            + selectUSDFileScriptPost;
+
+        usdUiStrings.insert(usdUiStrings.end(), otherUiStrings.begin(), otherUiStrings.end());
+        usdSelectors.insert(usdSelectors.end(), otherSelectors.begin(), otherSelectors.end());
+
+        const char* script = R"mel(
+        global proc string SelectUSDFileForAddReference()
+        {
+            string $result[] = `fileDialog2
+                -fileMode 1
+                -caption "Add Reference to USD Prim"
+                -fileFilter "USD Files (%s);;%s"
+                -optionsUICreate addUSDReferenceCreateUi
+                -optionsUIInit addUSDReferenceInitUi
+                -selectionChanged addUSDReferenceSelectionChanged
+                -optionsUICommit2 addUSDReferenceToUsdCommitUi`;
+
+            if (0 == size($result))
+                return "";
+            else
+                return $result[0];
+        }
+        SelectUSDFileForAddReference();
+        )mel";
+
+        commandString = TfStringPrintf(
+            script,
+            TfStringJoin(usdUiStrings).c_str(),
+            TfStringJoin(usdSelectors, ";;").c_str());
     }
+
     return commandString.c_str();
+}
+
+std::string makeUSDReferenceFilePathRelativeIfRequested(const std::string& filePath, const UsdPrim& prim)
+{
+    if (!UsdMayaUtilFileSystem::requireUsdPathsRelativeToEditTargetLayer())
+        return filePath;
+
+    const std::string layerDirPath = UsdMayaUtilFileSystem::getDir(getTargetLayerFilePath(prim));
+
+    auto relativePathAndSuccess = UsdMayaUtilFileSystem::makePathRelativeTo(filePath, layerDirPath);
+
+    if (!relativePathAndSuccess.second) {
+        TF_WARN(
+            "File name (%s) cannot be resolved as relative to the current edit target layer, "
+            "using the absolute path.",
+            filePath.c_str());
+    }
+
+    return relativePathAndSuccess.first;
 }
 
 const char* clearAllReferencesConfirmScript = R"(
@@ -1210,9 +1262,12 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         return nullptr;
 #endif
     } else if (itemPath[0] == AddUsdReferenceUndoableCommand::commandName) {
+        if (!_prepareUSDReferenceTargetLayer(prim()))
+            return nullptr;
+
         MString fileRef = MGlobal::executeCommandStringResult(_selectUSDFileScript());
 
-        std::string path = UsdMayaUtil::convert(fileRef);
+        const std::string path = makeUSDReferenceFilePathRelativeIfRequested(UsdMayaUtil::convert(fileRef), prim());
         if (path.empty())
             return nullptr;
 

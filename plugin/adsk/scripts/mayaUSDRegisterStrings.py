@@ -36,3 +36,4 @@ def mayaUSDRegisterStrings():
     register("kLoadUSDFile", "Load USD File")
     register("kFileOptions", "File Options")
     register("kMakePathRelativeToSceneFile", "Make Path Relative to Scene File Directory")
+    register("kMakePathRelativeToEditTargetLayer", "Make Path Relative to Edit Target Layer Directory")
