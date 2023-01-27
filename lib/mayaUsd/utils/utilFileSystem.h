@@ -37,12 +37,13 @@ std::string getDir(const std::string& fullFilePath);
 /*! \brief takes in two absolute file paths and returns the first one to second one.
            Also return a boolean: true if the path was successfully made relative,
            false otherwise.
-           
+
            If the second path is not absolute or is not reachable from the first,
            then the returned path will still be absolute.
  */
 MAYAUSD_CORE_PUBLIC
-std::pair<std::string, bool> makePathRelativeTo(const std::string& fileName, const std::string& relativeToDir);
+std::pair<std::string, bool>
+makePathRelativeTo(const std::string& fileName, const std::string& relativeToDir);
 
 /*! \brief returns parent directory of a maya scene file opened by reference
  */

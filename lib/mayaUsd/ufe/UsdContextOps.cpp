@@ -550,15 +550,14 @@ const char* _selectUSDFileScript()
         )mel";
 
         commandString = TfStringPrintf(
-            script,
-            TfStringJoin(usdUiStrings).c_str(),
-            TfStringJoin(usdSelectors, ";;").c_str());
+            script, TfStringJoin(usdUiStrings).c_str(), TfStringJoin(usdSelectors, ";;").c_str());
     }
 
     return commandString.c_str();
 }
 
-std::string makeUSDReferenceFilePathRelativeIfRequested(const std::string& filePath, const UsdPrim& prim)
+std::string
+makeUSDReferenceFilePathRelativeIfRequested(const std::string& filePath, const UsdPrim& prim)
 {
     if (!UsdMayaUtilFileSystem::requireUsdPathsRelativeToEditTargetLayer())
         return filePath;
@@ -1267,7 +1266,8 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
 
         MString fileRef = MGlobal::executeCommandStringResult(_selectUSDFileScript());
 
-        const std::string path = makeUSDReferenceFilePathRelativeIfRequested(UsdMayaUtil::convert(fileRef), prim());
+        const std::string path
+            = makeUSDReferenceFilePathRelativeIfRequested(UsdMayaUtil::convert(fileRef), prim());
         if (path.empty())
             return nullptr;
 
