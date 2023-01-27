@@ -117,27 +117,42 @@ std::string UsdMayaUtilFileSystem::getMayaSceneFileDir()
     return std::string();
 }
 
-std::string UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(const std::string& fileName)
+std::pair<std::string, bool> UsdMayaUtilFileSystem::makePathRelativeTo(
+    const std::string& fileName,
+    const std::string& relativeToDir)
 {
     ghc::filesystem::path absolutePath(fileName);
-    ghc::filesystem::path basePath(getMayaSceneFileDir());
 
-    // If Maya scene file doesn't exist yet, use the absolute path
-    if (basePath.empty()) {
-        return fileName;
+    // If the anchor relative-to-directory doesn't exist yet, use the unchanged path,
+    // but don't return a failure. The anchor path being empty is not considered
+    // a failure. If the caller needs to detect this, they can verify that the
+    // anchor path is empty themselves before calling this function.
+    if (relativeToDir.empty()) {
+        return std::make_pair(fileName, true);
     }
 
-    ghc::filesystem::path relativePath = absolutePath.lexically_relative(basePath);
+    ghc::filesystem::path relativePath = absolutePath.lexically_relative(relativeToDir);
 
     if (relativePath.empty()) {
+        return std::make_pair(fileName, false);
+        ;
+    }
+
+    return std::make_pair(relativePath.generic_string(), true);
+}
+
+std::string UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(const std::string& fileName)
+{
+    auto relativePathAndSuccess = makePathRelativeTo(fileName, getMayaSceneFileDir());
+
+    if (!relativePathAndSuccess.second) {
         TF_WARN(
             "File name (%s) cannot be resolved as relative to the Maya scene file, using the "
             "absolute path.",
             fileName.c_str());
-        return fileName;
     }
 
-    return relativePath.generic_string();
+    return relativePathAndSuccess.first;
 }
 
 bool UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile()
@@ -145,6 +160,14 @@ bool UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile()
     static const MString MAKE_PATH_RELATIVE_TO_SCENE_FILE = "mayaUsd_MakePathRelativeToSceneFile";
     return MGlobal::optionVarExists(MAKE_PATH_RELATIVE_TO_SCENE_FILE)
         && MGlobal::optionVarIntValue(MAKE_PATH_RELATIVE_TO_SCENE_FILE);
+}
+
+bool UsdMayaUtilFileSystem::requireUsdPathsRelativeToEditTargetLayer()
+{
+    static const MString MAKE_PATH_RELATIVE_TO_EDIT_TARGET_LAYER_FILE
+        = "mayaUsd_MakePathRelativeToEditTargetLayer";
+    return MGlobal::optionVarExists(MAKE_PATH_RELATIVE_TO_EDIT_TARGET_LAYER_FILE)
+        && MGlobal::optionVarIntValue(MAKE_PATH_RELATIVE_TO_EDIT_TARGET_LAYER_FILE);
 }
 
 const char* getScenesFolderScript = R"(

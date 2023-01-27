@@ -34,6 +34,27 @@ std::string resolvePath(const std::string& filePath);
 MAYAUSD_CORE_PUBLIC
 std::string getDir(const std::string& fullFilePath);
 
+/*! \brief takes in two absolute file paths and returns the first one to second one.
+
+           Also return a boolean that indicates if the attempt to make the file name
+           relative to the valid anchor path failed.
+
+           If the anchor relative-to-directory is empty, then the original file name
+           is returned but no failure is returned. If the caller needs to detect
+           this as a failure case, they can verify that the relative-to directory
+           name is empty themselves before calling this function.
+
+           The rationale for this is that, for example, we don't want to flag as
+           an error when the user tries to make a path relative to the scene when
+           the scene has not yet been saved.
+
+           If the second path is not absolute or is not reachable from the first,
+           then the returned path will still be absolute.
+ */
+MAYAUSD_CORE_PUBLIC
+std::pair<std::string, bool>
+makePathRelativeTo(const std::string& fileName, const std::string& relativeToDir);
+
 /*! \brief returns parent directory of a maya scene file opened by reference
  */
 MAYAUSD_CORE_PUBLIC
@@ -55,11 +76,17 @@ When there is no scene file, the absolute (input) path will be returned.
 MAYAUSD_CORE_PUBLIC
 std::string getPathRelativeToMayaSceneFile(const std::string& fileName);
 
-/*! \brief returns the flag specifying whether Usd file paths should be saevd as relative to Maya
+/*! \brief returns the flag specifying whether USD file paths should be saved as relative to Maya
  * scene file
  */
 MAYAUSD_CORE_PUBLIC
 bool requireUsdPathsRelativeToMayaSceneFile();
+
+/*! \brief returns the flag specifying whether USD file paths should be saved
+ *         as relative to the current edit target layer.
+ */
+MAYAUSD_CORE_PUBLIC
+bool requireUsdPathsRelativeToEditTargetLayer();
 
 /*! \brief returns a unique file name
  */

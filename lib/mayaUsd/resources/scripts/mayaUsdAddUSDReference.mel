@@ -1,0 +1,46 @@
+// Copyright 2022 Autodesk
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+// Unfortunate MEL to Python shims because of fileDialog2 requirements that
+// optionsUICreate, optionsUIInit and optionsUICommit2 arguments be MEL
+// procedures.
+
+global proc setUSDReferenceRelativeFilePathRoot(string $filePath)
+{
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdFileRelativeToEditTargetLayer.setRelativeFilePathRoot(r'''" + $filePath + "''')");
+}
+
+global proc addUSDReferenceCreateUi(string $parent)
+{
+    setParent $parent;
+    string $layout = `scrollLayout -childResizable true`;
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdFileRelativeToEditTargetLayer.uiCreate(r'''" + $layout + "''')");
+}
+
+global proc addUSDReferenceInitUi(string $parent, string $filterType)
+{
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdFileRelativeToEditTargetLayer.uiInit(r'''" + $parent + "''', r'''" + $filterType + "''')");
+}
+
+global proc addUSDReferenceSelectionChanged(string $parent, string $selection)
+{
+    // For now, nothing.
+}
+
+global proc addUSDReferenceToUsdCommitUi(string $parent, string $selectedFile)
+{
+    setParent $parent;
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdFileRelativeToEditTargetLayer.uiCommit(r'''" + $parent + "''', r'''" + $selectedFile + "''')");
+}

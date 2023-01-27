@@ -37,3 +37,5 @@ def mayaUSDRegisterStrings():
     register("kFileOptions", "File Options")
     register("kMakePathRelativeToSceneFile", "Make Path Relative to Scene File")
     register("kMakePathRelativeToSceneFileAnn", "If enabled, path will be relative to your Maya scene file. If this option is disabled, there is no Maya scene file and the path will be absolute. Save your Maya scene file to disk to make this option available.")
+    register("kMakePathRelativeToEditTargetLayer", "Make Path Relative to Edit Target Layer Directory")
+    register("kMakePathRelativeToEditTargetLayerAnn", "If enabled, path will be relative to the currently targeted layer. If this option is disabled, the target layer has not yet been saved and the path will be absolute. Save the target layer to disk to make this option available.")
