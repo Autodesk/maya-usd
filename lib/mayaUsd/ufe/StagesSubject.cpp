@@ -46,6 +46,7 @@
 
 #include <atomic>
 #include <limits>
+#include <regex>
 #include <vector>
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -286,6 +287,25 @@ void attributeMetadataChanged(
 }
 #endif
 
+std::vector<std::string> getMetadataKeys(const std::string& strMetadata)
+{
+    std::vector<std::string> metadataKeys;
+    const std::regex         rgx("(')([^ ]*)(':)");
+    std::string              metadataKey;
+
+    for (std::sregex_iterator it(strMetadata.begin(), strMetadata.end(), rgx), it_end; it != it_end;
+         ++it) {
+        if (it->empty()) {
+            continue;
+        }
+        metadataKey = std::string((*it)[0]);
+        metadataKey = metadataKey.substr(metadataKey.find('\'') + 1, metadataKey.rfind('\'') - 1);
+        metadataKeys.push_back(metadataKey);
+    }
+
+    return metadataKeys;
+}
+
 void processAttributeChanges(
     const Ufe::Path&                                ufePath,
     const SdfPath&                                  changedPath,
@@ -321,13 +341,12 @@ void processAttributeChanges(
                 sendMetadataChanged = true;
                 std::stringstream newMetadataStream;
                 newMetadataStream << infoChanged.second.second;
-                std::string newMetadataKeys = newMetadataStream.str();
+                const std::string newMetadataKeys = newMetadataStream.str();
                 // e.g. newMetadataKeys string format:
                 // "'uifolder':,'uisoftmin':0.0, 'uihide':1, 'uiorder':0"
                 if (!newMetadataKeys.empty()) {
                     // Find the modified key which is between a pair of single quotes.
-                    for (const auto& newMetadataKey :
-                         MayaUsd::ufe::getSubStrings(newMetadataKeys, "'", "':")) {
+                    for (const auto& newMetadataKey : getMetadataKeys(newMetadataKeys)) {
                         metadataKeys.insert(newMetadataKey);
                     }
                 }
