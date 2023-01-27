@@ -15,45 +15,39 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-class SetPositionCommand : public Ufe::UndoableCommand
+UsdUINodeGraphNode::SetPosOrSizeCommand::SetPosOrSizeCommand(
+    CoordType              coordType,
+    const PXR_NS::UsdPrim& prim,
+    const Ufe::Vector2f&   newValue)
+    : Ufe::UndoableCommand()
+    , _coordType(coordType)
+    , _stage(prim.GetStage())
+    , _primPath(prim.GetPath())
+    , _newValue(PXR_NS::GfVec2f(newValue.x(), newValue.y()))
 {
-public:
-    SetPositionCommand(const PXR_NS::UsdPrim& prim, const Ufe::Vector2f& newPos)
-        : Ufe::UndoableCommand()
-        , _stage(prim.GetStage())
-        , _primPath(prim.GetPath())
-        , _newPos(PXR_NS::GfVec2f(newPos.x(), newPos.y()))
-    {
-    }
+}
 
-    void execute() override
-    {
-        PXR_NAMESPACE_USING_DIRECTIVE
-        if (_stage) {
-            const UsdPrim prim = _stage->GetPrimAtPath(_primPath);
-            if (!prim.HasAPI<UsdUINodeGraphNodeAPI>()) {
-                UsdUINodeGraphNodeAPI::Apply(prim);
+void UsdUINodeGraphNode::SetPosOrSizeCommand::execute()
+{
+    PXR_NAMESPACE_USING_DIRECTIVE
+    if (_stage) {
+        const UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+        if (!prim.HasAPI<UsdUINodeGraphNodeAPI>()) {
+            UsdUINodeGraphNodeAPI::Apply(prim);
+        }
+        if (prim.HasAPI<UsdUINodeGraphNodeAPI>()) {
+            UsdUINodeGraphNodeAPI posApi(prim);
+            TF_VERIFY(posApi);
+            UsdAttribute attr
+                = _coordType == CoordType::Position ? posApi.GetPosAttr() : posApi.GetSizeAttr();
+            if (!attr) {
+                attr = _coordType == CoordType::Position ? posApi.CreatePosAttr()
+                                                         : posApi.CreateSizeAttr();
             }
-            if (prim.HasAPI<UsdUINodeGraphNodeAPI>()) {
-                UsdUINodeGraphNodeAPI posApi(prim);
-                TF_VERIFY(posApi);
-                UsdAttribute attr = posApi.GetPosAttr();
-                if (!attr) {
-                    attr = posApi.CreatePosAttr();
-                }
-                attr.Set(_newPos);
-            }
+            attr.Set(_newValue);
         }
     }
-
-    void undo() override { }
-    void redo() override { }
-
-private:
-    const PXR_NS::UsdStageWeakPtr _stage;
-    const PXR_NS::SdfPath         _primPath;
-    const PXR_NS::VtValue         _newPos;
-};
+}
 
 UsdUINodeGraphNode::UsdUINodeGraphNode(const UsdSceneItem::Ptr& item)
     : Ufe::UINodeGraphNode()
@@ -68,7 +62,27 @@ UsdUINodeGraphNode::Ptr UsdUINodeGraphNode::create(const UsdSceneItem::Ptr& item
 
 Ufe::SceneItem::Ptr UsdUINodeGraphNode::sceneItem() const { return fItem; }
 
-bool UsdUINodeGraphNode::hasPosition() const
+bool UsdUINodeGraphNode::hasPosition() const { return hasPosOrSize(CoordType::Position); }
+
+bool UsdUINodeGraphNode::hasSize() const { return hasPosOrSize(CoordType::Size); }
+
+Ufe::Vector2f UsdUINodeGraphNode::getPosition() const { return getPosOrSize(CoordType::Position); }
+
+Ufe::Vector2f UsdUINodeGraphNode::getSize() const { return getPosOrSize(CoordType::Size); }
+
+Ufe::UndoableCommand::Ptr UsdUINodeGraphNode::setPositionCmd(const Ufe::Vector2f& pos)
+{
+    return std::make_shared<SetPosOrSizeCommand>(
+        CoordType::Position, fItem ? fItem->prim() : PXR_NS::UsdPrim(), pos);
+}
+
+Ufe::UndoableCommand::Ptr UsdUINodeGraphNode::setSizeCmd(const Ufe::Vector2f& size)
+{
+    return std::make_shared<SetPosOrSizeCommand>(
+        CoordType::Size, fItem ? fItem->prim() : PXR_NS::UsdPrim(), size);
+}
+
+bool UsdUINodeGraphNode::hasPosOrSize(CoordType coordType) const
 {
     PXR_NAMESPACE_USING_DIRECTIVE
     const UsdPrim         prim = fItem->prim();
@@ -76,28 +90,25 @@ bool UsdUINodeGraphNode::hasPosition() const
     if (!posApi) {
         return false;
     }
-    UsdAttribute attr = posApi.GetPosAttr();
+    UsdAttribute attr
+        = coordType == CoordType::Position ? posApi.GetPosAttr() : posApi.GetSizeAttr();
     return attr.IsValid();
 }
 
-Ufe::Vector2f UsdUINodeGraphNode::getPosition() const
+Ufe::Vector2f UsdUINodeGraphNode::getPosOrSize(CoordType coordType) const
 {
-    if (hasPosition()) {
+    if (hasPosOrSize(coordType)) {
         const PXR_NS::UsdPrim               prim = fItem->prim();
         const PXR_NS::UsdUINodeGraphNodeAPI posApi(prim);
-        const PXR_NS::UsdAttribute          attr = posApi.GetPosAttr();
-        PXR_NS::VtValue                     v;
+        const PXR_NS::UsdAttribute          attr
+            = coordType == CoordType::Position ? posApi.GetPosAttr() : posApi.GetSizeAttr();
+        PXR_NS::VtValue v;
         attr.Get(&v);
-        const PXR_NS::GfVec2f pos = v.Get<PXR_NS::GfVec2f>();
-        return Ufe::Vector2f(pos[0], pos[1]);
+        const PXR_NS::GfVec2f val = v.Get<PXR_NS::GfVec2f>();
+        return Ufe::Vector2f(val[0], val[1]);
     } else {
         return Ufe::Vector2f(0.0f, 0.0f);
     }
-}
-
-Ufe::UndoableCommand::Ptr UsdUINodeGraphNode::setPositionCmd(const Ufe::Vector2f& pos)
-{
-    return std::make_shared<SetPositionCommand>(fItem ? fItem->prim() : PXR_NS::UsdPrim(), pos);
 }
 
 } // namespace ufe

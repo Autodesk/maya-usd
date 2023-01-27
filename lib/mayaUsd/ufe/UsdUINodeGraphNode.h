@@ -40,11 +40,42 @@ public:
     // Ufe::UsdUINodeGraphNode overrides
     Ufe::SceneItem::Ptr       sceneItem() const override;
     bool                      hasPosition() const override;
+    bool                      hasSize() const override;
     Ufe::Vector2f             getPosition() const override;
+    Ufe::Vector2f             getSize() const override;
     Ufe::UndoableCommand::Ptr setPositionCmd(const Ufe::Vector2f& pos) override;
+    Ufe::UndoableCommand::Ptr setSizeCmd(const Ufe::Vector2f& size) override;
 
 private:
+    enum class CoordType
+    {
+        Position,
+        Size
+    };
+
+    class SetPosOrSizeCommand : public Ufe::UndoableCommand
+    {
+    public:
+        SetPosOrSizeCommand(
+            CoordType              coordType,
+            const PXR_NS::UsdPrim& prim,
+            const Ufe::Vector2f&   newValue);
+
+        void execute() override;
+        void undo() override { }
+        void redo() override { }
+
+    private:
+        const CoordType               _coordType;
+        const PXR_NS::UsdStageWeakPtr _stage;
+        const PXR_NS::SdfPath         _primPath;
+        const PXR_NS::VtValue         _newValue;
+    };
+
     UsdSceneItem::Ptr fItem;
+
+    bool          hasPosOrSize(CoordType coordType) const;
+    Ufe::Vector2f getPosOrSize(CoordType coordType) const;
 };
 
 } // namespace ufe
