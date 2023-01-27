@@ -341,12 +341,12 @@ void processAttributeChanges(
                 sendMetadataChanged = true;
                 std::stringstream newMetadataStream;
                 newMetadataStream << infoChanged.second.second;
-                const std::string newMetadataKeys = newMetadataStream.str();
-                // e.g. newMetadataKeys string format:
+                const std::string strMetadata = newMetadataStream.str();
+                // e.g. strMetadata string format:
                 // "'uifolder':,'uisoftmin':0.0, 'uihide':1, 'uiorder':0"
-                if (!newMetadataKeys.empty()) {
+                if (!strMetadata.empty()) {
                     // Find the modified key which is between a pair of single quotes.
-                    for (const auto& newMetadataKey : getMetadataKeys(newMetadataKeys)) {
+                    for (const auto& newMetadataKey : getMetadataKeys(strMetadata)) {
                         metadataKeys.insert(newMetadataKey);
                     }
                 }
