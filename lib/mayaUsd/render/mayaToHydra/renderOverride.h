@@ -57,6 +57,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 using HgiUniquePtr = std::unique_ptr<class Hgi>;
+class MayaHydraSceneIndexRegistration;
 
 class MtohRenderOverride : public MHWRender::MRenderOverride
 {
@@ -116,12 +117,6 @@ private:
 
     static MtohRenderOverride* _GetByName(TfToken rendererName);
 
-    void              _InitCustomSceneIndices();
-    void              _ClearCustomSceneIndices();
-    void              _AddCustomSceneIndexForNode(MObject& dagNode); // dagNode non-const because of callback registration
-    bool              _RemoveCustomSceneIndexForNode(const MObject& dagNode);
-    static void       _CustomSceneIndexNodeAddedCallback(MObject& obj, void* clientData);
-    static void       _CustomSceneIndexNodeRemovedCallback(MObject& obj, void* clientData);
     void              _InitHydraResources();
     void              _RemovePanel(MString panelName);
     void              _SelectionChanged();
@@ -158,6 +153,7 @@ private:
 
     MtohRendererDescription _rendererDesc;
 
+    std::unique_ptr<MayaHydraSceneIndexRegistration> _sceneIndexRegistration;
     std::vector<MHWRender::MRenderOperation*> _operations;
     std::vector<MCallbackId>                  _callbacks;
     MCallbackId                               _timerCallback = 0;
@@ -213,17 +209,6 @@ private:
     GfVec4d _viewport;
 
     int _currentOperation = -1;
-
-    std::atomic_bool _customSceneIndicesInitialized;
-    MCallbackIdArray _customSceneIndexAddedCallbacks;
-    struct _HashObjectHandle
-    {
-        unsigned long operator()(const MObjectHandle& handle) const { return handle.hashCode(); }
-    };
-    // MObjectHandle only used as opposed to MObject here because of their hashCode function.
-    std::unordered_map<MObjectHandle, MCallbackId, _HashObjectHandle>
-        _customSceneIndexNodePreRemovalCallbacks;
-    std::unordered_map<MObjectHandle, HdSceneIndexBasePtr, _HashObjectHandle> _customSceneIndices;
 
     const bool _isUsingHdSt = false;
     bool       _initializationAttempted = false;

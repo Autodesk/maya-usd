@@ -28,15 +28,12 @@
 
 #include <mayaHydraLib/delegates/delegateRegistry.h>
 #include <mayaHydraLib/delegates/sceneDelegate.h>
+#include <mayaHydraLib/sceneIndex/registration.h>
 #include <mayaHydraLib/utils.h>
 
 #include <pxr/base/tf/type.h>
 #include <pxr/base/plug/plugin.h>
 #include "pxr/base/plug/registry.h"
-
-#include <pxr/imaging/hd/dataSourceTypeDefs.h>
-#include <pxr/imaging/hd/retainedDataSource.h>
-#include <pxr/imaging/hd/sceneIndexPlugin.h>
 
 #if defined(MAYAUSD_VERSION)
     #include <mayaUsd/render/px_vp20/utils.h>
@@ -233,6 +230,7 @@ void ResolveUniqueHits_Workaround(const HdxPickHitVector& inHits, HdxPickHitVect
 MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
     : MHWRender::MRenderOverride(desc.overrideName.GetText())
     , _rendererDesc(desc)
+    , _sceneIndexRegistration(nullptr)
     , _globals(MtohRenderGlobals::GetInstance())
 #if PXR_VERSION > 2005
     , _hgi(Hgi::CreatePlatformDefaultHgi())
@@ -769,141 +767,6 @@ MtohRenderOverride* MtohRenderOverride::_GetByName(TfToken rendererName)
     return nullptr;
 }
 
-namespace {
-constexpr char kDataSourceEntryName[] = { "object" };
-constexpr char kSceneIndexPluginSuffix[] = {
-    "MayaNodeSceneIndexPlugin"
-}; // every scene index plugin compatible with the hydra viewport require this suffix
-constexpr char kDagNodeMessageName[] = { "dagNode" };
-} // namespace
-
-bool MtohRenderOverride::_RemoveCustomSceneIndexForNode(const MObject& dagNode)
-{
-    MObjectHandle dagNodeHandle(dagNode);
-    auto          customSceneIndex = _customSceneIndices.find(dagNodeHandle);
-    if (customSceneIndex != _customSceneIndices.end()) {
-        _renderIndex->RemoveSceneIndex(customSceneIndex->second);
-        _customSceneIndices.erase(dagNodeHandle);
-        auto preRemovalCallback = _customSceneIndexNodePreRemovalCallbacks.find(dagNodeHandle);
-        if (TF_VERIFY(preRemovalCallback != _customSceneIndexNodePreRemovalCallbacks.end())) {
-            MNodeMessage::removeCallback(preRemovalCallback->second);
-            _customSceneIndexNodePreRemovalCallbacks.erase(dagNodeHandle);
-        }
-        return true;
-    }
-    return false;
-}
-
-void MtohRenderOverride::_AddCustomSceneIndexForNode(MObject& dagNode)
-{
-    MFnDependencyNode dependNodeFn(dagNode);
-    // Name must match Plugin TfType registration thus must begin with upper case
-    std::string pluginName(dependNodeFn.typeName().asChar());
-    pluginName[0] = toupper(pluginName[0]);
-    pluginName += kSceneIndexPluginSuffix;
-    TfToken pluginId(pluginName);
-
-    static HdSceneIndexPluginRegistry& sceneIndexPluginRegistry
-        = HdSceneIndexPluginRegistry::GetInstance();
-    if (sceneIndexPluginRegistry.IsRegisteredPlugin(pluginId)) {
-        using HdMObjectDataSource = HdRetainedTypedSampledDataSource<MObject>;
-        TfToken                names[1] { TfToken(kDataSourceEntryName) };
-        HdDataSourceBaseHandle values[1] { HdMObjectDataSource::New(dagNode) };
-        HdSceneIndexBaseRefPtr sceneIndex = sceneIndexPluginRegistry.AppendSceneIndex(
-            pluginId, nullptr, HdRetainedContainerDataSource::New(1, names, values));
-        if (TF_VERIFY(
-                sceneIndex,
-                "HdSceneIndexBase::AppendSceneIndex failed to create %s scene index from given "
-                "node type.",
-                pluginName.c_str())) {
-            MStatus     status;
-            MCallbackId preRemovalCallback = MNodeMessage::addNodePreRemovalCallback(
-                dagNode, _CustomSceneIndexNodeRemovedCallback, this, &status);
-            if (TF_VERIFY(
-                    status != MS::kFailure, "MNodeMessage::addNodePreRemovalCallback failed")) {
-                _renderIndex->InsertSceneIndex(sceneIndex, SdfPath::AbsoluteRootPath());
-                // MAYA-126790 TODO: properly resolve missing PrimsAdded notification issue
-                // https://github.com/PixarAnimationStudios/USD/blob/dev/pxr/imaging/hd/sceneIndex.cpp#L38
-                // Pixar has discussed adding a missing overridable virtual function when an
-                // observer is registered For now GetPrim called with magic string populates the
-                // scene index
-                static SdfPath maya126790Workaround("maya126790Workaround");
-                sceneIndex->GetPrim(maya126790Workaround);
-                MObjectHandle dagNodeHandle(dagNode);
-                _customSceneIndices.insert({ dagNodeHandle, sceneIndex });
-                _customSceneIndexNodePreRemovalCallbacks.insert(
-                    { dagNodeHandle, preRemovalCallback });
-            }
-        }
-    }
-}
-
-void MtohRenderOverride::_CustomSceneIndexNodeAddedCallback(MObject& dagNode, void* clientData)
-{
-    if (dagNode.isNull() || dagNode.apiType() != MFn::kPluginShape)
-        return;
-    auto renderOverride = static_cast<MtohRenderOverride*>(clientData);
-    renderOverride->_AddCustomSceneIndexForNode(dagNode);
-}
-
-void MtohRenderOverride::_CustomSceneIndexNodeRemovedCallback(MObject& dagNode, void* clientData)
-{
-    if (dagNode.isNull() || dagNode.apiType() != MFn::kPluginShape)
-        return;
-    auto renderOverride = static_cast<MtohRenderOverride*>(clientData);
-    renderOverride->_RemoveCustomSceneIndexForNode(dagNode);
-}
-
-void MtohRenderOverride::_InitCustomSceneIndices()
-{
-    // Begin registering of custom scene indices for given node types
-    if (!_customSceneIndicesInitialized) {
-        HdSceneIndexPluginRegistry& sceneIndexPluginRegistry
-            = HdSceneIndexPluginRegistry::GetInstance();
-        // Ensure scene index plugin registration
-        std::vector<HfPluginDesc> customSceneIndexDescs;
-        sceneIndexPluginRegistry.GetPluginDescs(&customSceneIndexDescs);
-        if (customSceneIndexDescs.size() != 0) {
-            MCallbackId id;
-            MStatus     status;
-            id = MDGMessage::addNodeAddedCallback(
-                _CustomSceneIndexNodeAddedCallback, kDagNodeMessageName, this, &status);
-            if (status == MS::kSuccess)
-                _customSceneIndexAddedCallbacks.append(id);
-
-            // Iterate over scene to find out existing node which will miss eventual dagNode added
-            // callbacks
-            // TODO: This is traversing the whole Dag hierarchy looking for appropriate nodes. This
-            // won't scale to large scenes; perhaps something like what the MEL command "ls -type"
-            // is doing would be more appropriate. We can save this for later.
-            MItDag nodesDagIt(MItDag::kDepthFirst, MFn::kInvalid);
-            for (; !nodesDagIt.isDone(); nodesDagIt.next()) {
-                MStatus status;
-                MObject dagNode(nodesDagIt.item(&status));
-                if (TF_VERIFY(status == MS::kSuccess)) {
-                    _AddCustomSceneIndexForNode(dagNode);
-                }
-            }
-            _customSceneIndicesInitialized = true;
-        }
-    }
-}
-
-void MtohRenderOverride::_ClearCustomSceneIndices()
-{
-    if (_customSceneIndicesInitialized) {
-        MDGMessage::removeCallbacks(_customSceneIndexAddedCallbacks);
-        for (auto it : _customSceneIndexNodePreRemovalCallbacks) {
-            MNodeMessage::removeCallback(it.second);
-        }
-        _customSceneIndexAddedCallbacks.clear();
-        _customSceneIndexNodePreRemovalCallbacks.clear();
-        // Since render index is deleted above, scene indices must be recreated.
-        _customSceneIndices.clear();
-        _customSceneIndicesInitialized = false;
-    }
-}
-
 // TODO: Pass MViewportScene inside here
 void MtohRenderOverride::_InitHydraResources()
 {
@@ -1009,8 +872,8 @@ void MtohRenderOverride::_InitHydraResources()
             break;
         }
     }
-
-    _InitCustomSceneIndices();
+    if(!_sceneIndexRegistration)
+        _sceneIndexRegistration.reset(new MayaHydraSceneIndexRegistration(_renderIndex));
 
     _initializationSucceeded = true;
 }
@@ -1056,7 +919,7 @@ void MtohRenderOverride::ClearHydraResources()
         _rendererPlugin = nullptr;
     }
 
-    _ClearCustomSceneIndices();
+    _sceneIndexRegistration.reset(nullptr);
 
     _viewport = GfVec4d(0, 0, 0, 0);
     _initializationSucceeded = false;
