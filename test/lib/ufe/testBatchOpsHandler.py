@@ -363,6 +363,28 @@ class BatchOpsHandlerTestCase(unittest.TestCase):
 
         checkStatus(self, cmd, geomItem)
 
+    def testDuplicatedNodeGraph(self):
+        """When cleaning the incoming connections of a duplicated NodeGraph, we want to keep the
+           unconnected attributes since they are not intrinsic (like for shader nodes)."""
+        testFile = testUtils.getTestScene('MaterialX', 'BatchOpsTestScene.usda')
+        shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
+
+        ngItem = ufeUtils.createUfeSceneItem(shapeNode, '/mtl/ss4SG/MayaNG_ss4SG')
+        self.assertIsNotNone(ngItem)
+
+        batchOpsHandler = ufe.RunTimeMgr.instance().batchOpsHandler(ngItem.runTimeId())
+        self.assertIsNotNone(batchOpsHandler)
+
+        sel = ufe.Selection()
+        sel.append(ngItem)
+
+        cmd = batchOpsHandler.duplicateSelectionCmd(sel, {"inputConnections": False})
+        cmd.execute()
+
+        dNgPrim = usdUtils.getPrimFromSceneItem(cmd.targetItem(ngItem.path()))
+        self.assertTrue(dNgPrim.HasProperty("inputs:file4:varname"))
+        self.assertTrue(dNgPrim.HasProperty("outputs:baseColor"))
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

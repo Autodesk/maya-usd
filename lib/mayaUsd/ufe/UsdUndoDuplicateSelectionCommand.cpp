@@ -131,7 +131,7 @@ void UsdUndoDuplicateSelectionCommand::execute()
                                 sources, duplicatePair, stageData.second, _copyExternalInputs)) {
                             if (sources.empty()) {
                                 attr.ClearConnections();
-                                if (!attr.HasValue()) {
+                                if (!attr.HasValue() && !UsdShadeNodeGraph(attr.GetPrim())) {
                                     p.RemoveProperty(prop.GetName());
                                 }
                             } else {

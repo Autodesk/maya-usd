@@ -99,29 +99,12 @@ void MayaUsdProxyShapeSceneIndex::ObjectsChanged(
     _usdImagingStageSceneIndex->ApplyPendingUpdates();
 }
 
-namespace {
-bool IsEmptyStage(UsdStageRefPtr stage)
-{
-    // Check whether the pseudo-root has children
-    UsdPrimSiblingRange range(stage->GetPseudoRoot().GetChildren());
-    for (UsdPrim prim : range) {
-        if (prim.IsInstance()) {
-            // XXX(USD-7119): Add native instancing support...
-            continue;
-        }
-
-        return false;
-    }
-
-    return true;
-}
-} // namespace
-
 void MayaUsdProxyShapeSceneIndex::Populate()
 {
     if (!_populated) {
         if (auto stage = _proxyShape->getUsdStage()) {
-            if (!IsEmptyStage(stage))
+            // Check whether the pseudo-root has children
+            if (!stage->GetPseudoRoot().GetChildren().empty())
             // MAYA-126641: Upon first call to MayaUsdProxyShapeBase::getUsdStage, the stage may be
             // empty. Do not mark the scene index as _populated, until stage is full. This is taken
             // care of inside MayaUsdProxyShapeSceneIndex::_StageSet callback.
