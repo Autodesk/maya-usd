@@ -289,15 +289,8 @@ SdfLayerRefPtr saveAnonymousLayer(
         return nullptr;
     }
 
-    std::string        filePath(path);
-    const std::string& extension = SdfFileFormat::GetFileExtension(filePath);
-    const std::string  defaultExt(UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
-    const std::string  usdCrateExt(UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText());
-    const std::string  usdASCIIExt(UsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText());
-    if (extension != defaultExt && extension != usdCrateExt && extension != usdASCIIExt) {
-        filePath.append(".");
-        filePath.append(defaultExt.c_str());
-    }
+    std::string filePath(path);
+    ensureUSDFileExtension(filePath);
 
     saveLayerWithFormat(anonLayer, filePath, formatArg);
 
@@ -311,6 +304,18 @@ SdfLayerRefPtr saveAnonymousLayer(
         }
     }
     return newLayer;
+}
+
+void ensureUSDFileExtension(std::string& filePath)
+{
+    const std::string& extension = SdfFileFormat::GetFileExtension(filePath);
+    const std::string  defaultExt(UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
+    const std::string  usdCrateExt(UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText());
+    const std::string  usdASCIIExt(UsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText());
+    if (extension != defaultExt && extension != usdCrateExt && extension != usdASCIIExt) {
+        filePath.append(".");
+        filePath.append(defaultExt.c_str());
+    }
 }
 
 void getLayersToSaveFromProxy(const std::string& proxyPath, stageLayersToSave& layersInfo)
