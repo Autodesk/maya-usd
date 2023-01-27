@@ -88,8 +88,10 @@ void UsdUndoDeleteCommand::execute()
 
     if (MayaUsd::ufe::applyCommandRestrictionNoThrow(_prim, "delete")) {
 #if (UFE_PREVIEW_VERSION_NUM >= 4024)
-        // Remove all the connections.
-        UsdAttributes::removeAttributesConnections(_prim);
+        // Remove all the attributes connections.
+        for (const auto& attr : _prim.GetAttributes()) {
+            UsdAttributes::removeAttrConnections(attr);
+        }
 #endif
         auto retVal = stage->RemovePrim(_prim.GetPath());
         if (!retVal) {
