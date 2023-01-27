@@ -56,34 +56,46 @@ class UINodeGraphNodeTestCase(unittest.TestCase):
         # Clear selection to start off
         cmds.select(clear=True)
 
-    def testUIInfo(self):
+    # Helper to avoid copy-pasting the entire test
+    def doPosAndSizeTests(self, hasFunc, setFunc, getFunc, cmdFunc):
+        self.assertFalse(hasFunc())
+        pos0 = getFunc()
+        self.assertEqual(pos0.x(), 0)
+        self.assertEqual(pos0.y(), 0)
+        pos1 = ufe.Vector2f(10, 20)
+        setFunc(pos1)
+        self.assertTrue(hasFunc())
+        pos2 = getFunc()
+        self.assertEqual(pos1.x(), pos2.x())
+        self.assertEqual(pos1.y(), pos2.y())
+        setFunc(13, 41)
+        self.assertTrue(hasFunc())
+        pos3 = getFunc()
+        self.assertEqual(pos3.x(), 13)
+        self.assertEqual(pos3.y(), 41)
+        pos4 = ufe.Vector2f(21, 20)
+        cmd = cmdFunc(pos4)
+        cmd.execute()
+        self.assertTrue(hasFunc())
+        pos5 = getFunc()
+        self.assertEqual(pos4.x(), pos5.x())
+        self.assertEqual(pos4.y(), pos5.y())
+
+    def testPosition(self):
         ball3Path = ufe.PathString.path('|transform1|proxyShape1,/Ball_set/Props/Ball_3')
         ball3SceneItem = ufe.Hierarchy.createItem(ball3Path)
 
         uiNodeGraphNode = ufe.UINodeGraphNode.uiNodeGraphNode(ball3SceneItem)
+        self.doPosAndSizeTests(uiNodeGraphNode.hasPosition, uiNodeGraphNode.setPosition,
+            uiNodeGraphNode.getPosition, uiNodeGraphNode.setPositionCmd)
 
-        self.assertFalse(uiNodeGraphNode.hasPosition())
-        pos0 = uiNodeGraphNode.getPosition()
-        self.assertEqual(pos0.x(), 0)
-        self.assertEqual(pos0.y(), 0)
-        pos1 = ufe.Vector2f(10, 20)
-        uiNodeGraphNode.setPosition(pos1)
-        self.assertTrue(uiNodeGraphNode.hasPosition())
-        pos2 = uiNodeGraphNode.getPosition()
-        self.assertEqual(pos1.x(), pos2.x())
-        self.assertEqual(pos1.y(), pos2.y())
-        uiNodeGraphNode.setPosition(13, 41)
-        self.assertTrue(uiNodeGraphNode.hasPosition())
-        pos3 = uiNodeGraphNode.getPosition()
-        self.assertEqual(pos3.x(), 13)
-        self.assertEqual(pos3.y(), 41)
-        pos4 = ufe.Vector2f(21, 20)
-        cmd = uiNodeGraphNode.setPositionCmd(pos4)
-        cmd.execute()
-        self.assertTrue(uiNodeGraphNode.hasPosition())
-        pos5 = uiNodeGraphNode.getPosition()
-        self.assertEqual(pos4.x(), pos5.x())
-        self.assertEqual(pos4.y(), pos5.y())
+    def testSize(self):
+        ball3Path = ufe.PathString.path('|transform1|proxyShape1,/Ball_set/Props/Ball_3')
+        ball3SceneItem = ufe.Hierarchy.createItem(ball3Path)
+
+        uiNodeGraphNode = ufe.UINodeGraphNode.uiNodeGraphNode(ball3SceneItem)
+        self.doPosAndSizeTests(uiNodeGraphNode.hasSize, uiNodeGraphNode.setSize,
+            uiNodeGraphNode.getSize, uiNodeGraphNode.setSizeCmd)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
