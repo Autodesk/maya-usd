@@ -985,7 +985,7 @@ class ConnectionTestCase(unittest.TestCase):
 
         # Load a scene.
 
-        testFile = testUtils.getTestScene('properties', 'properties.usd')
+        testFile = testUtils.getTestScene('properties', 'properties.usda')
         shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
 
         ufeParentItem = ufeUtils.createUfeSceneItem(shapeNode,
