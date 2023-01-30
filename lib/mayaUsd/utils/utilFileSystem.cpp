@@ -135,7 +135,6 @@ std::pair<std::string, bool> UsdMayaUtilFileSystem::makePathRelativeTo(
 
     if (relativePath.empty()) {
         return std::make_pair(fileName, false);
-        ;
     }
 
     return std::make_pair(relativePath.generic_string(), true);
