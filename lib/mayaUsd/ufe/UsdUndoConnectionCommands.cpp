@@ -258,7 +258,6 @@ void UsdUndoCreateConnectionCommand::execute()
         _dstInfo = nullptr;
     }
 #endif
-
 }
 
 Ufe::Connection::Ptr UsdUndoCreateConnectionCommand::connection() const
