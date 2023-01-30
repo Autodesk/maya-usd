@@ -17,11 +17,6 @@
 // optionsUICreate, optionsUIInit and optionsUICommit2 arguments be MEL
 // procedures.
 
-global proc setUSDReferenceRelativeFilePathRoot(string $filePath)
-{
-    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdFileRelativeToEditTargetLayer.setRelativeFilePathRoot(r'''" + $filePath + "''')");
-}
-
 global proc addUSDReferenceCreateUi(string $parent)
 {
     setParent $parent;
@@ -32,11 +27,6 @@ global proc addUSDReferenceCreateUi(string $parent)
 global proc addUSDReferenceInitUi(string $parent, string $filterType)
 {
     python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdFileRelativeToEditTargetLayer.uiInit(r'''" + $parent + "''', r'''" + $filterType + "''')");
-}
-
-global proc addUSDReferenceSelectionChanged(string $parent, string $selection)
-{
-    // For now, nothing.
 }
 
 global proc addUSDReferenceToUsdCommitUi(string $parent, string $selectedFile)

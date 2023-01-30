@@ -34,10 +34,11 @@ std::string resolvePath(const std::string& filePath);
 MAYAUSD_CORE_PUBLIC
 std::string getDir(const std::string& fullFilePath);
 
-/*! \brief takes in two absolute file paths and returns the first one to second one.
+/*! \brief Takes in two absolute file paths and computes a relative path of the first one
+           to second one.
 
-           Also return a boolean that indicates if the attempt to make the file name
-           relative to the valid anchor path failed.
+    \return A pair with the path and a boolean that indicates if the attempt to make the
+            file name relative to the valid anchor path failed.
 
            If the anchor relative-to-directory is empty, then the original file name
            is returned but no failure is returned. If the caller needs to detect

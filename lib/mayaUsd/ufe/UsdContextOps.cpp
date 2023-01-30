@@ -490,12 +490,11 @@ const std::string getTargetLayerFilePath(const UsdPrim& prim)
 
 bool _prepareUSDReferenceTargetLayer(const UsdPrim& prim)
 {
-    const char* script = R"mel(
-    setUSDReferenceRelativeFilePathRoot("%s");
-    )mel";
+    const char* script = "import mayaUsd_USDRootFileRelative as murel\n"
+                         "murel.usdFileRelative.setRelativeFilePathRoot(r'''%s''')";
 
     const std::string commandString = TfStringPrintf(script, getTargetLayerFilePath(prim).c_str());
-    return MGlobal::executeCommand(commandString.c_str());
+    return MGlobal::executePythonCommand(commandString.c_str());
 }
 
 // Ask SDF for all supported extensions:
@@ -507,7 +506,7 @@ const char* _selectUSDFileScript()
         // This is an interactive call from the main UI thread. No need for SMP protections.
 
         // The goal of the following loop is to build a first file filter that allow any
-        // USD-compatible file format, then a serie of file filters, one per particular
+        // USD-compatible file format, then a series of file filters, one per particular
         // file format. So for N different file formats, we will have N+1 filters.
 
         std::vector<std::string> usdUiStrings;
@@ -538,7 +537,6 @@ const char* _selectUSDFileScript()
                 -fileFilter "USD Files (%s);;%s"
                 -optionsUICreate addUSDReferenceCreateUi
                 -optionsUIInit addUSDReferenceInitUi
-                -selectionChanged addUSDReferenceSelectionChanged
                 -optionsUICommit2 addUSDReferenceToUsdCommitUi`;
 
             if (0 == size($result))
@@ -1265,6 +1263,8 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
             return nullptr;
 
         MString fileRef = MGlobal::executeCommandStringResult(_selectUSDFileScript());
+        if (fileRef.isEmpty())
+            return nullptr;
 
         const std::string path
             = makeUSDReferenceFilePathRelativeIfRequested(UsdMayaUtil::convert(fileRef), prim());

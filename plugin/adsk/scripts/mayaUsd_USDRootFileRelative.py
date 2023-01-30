@@ -8,13 +8,14 @@ class usdFileRelative(object):
     Helper class to create the UI for load/save dialog boxes that need to make the
     selected file name optionally relative.
 
-    The caller must tell each function to what the file should be made relative.
-    The 'what' is used to select the correct UI element, UI label and to read
-    and write the correct option var.
+    The caller must tell each function to what the file should be made relative to.
+    The 'what' is used to select the correct UI element, UI label, UI tool-tip and
+    to read and write the correct option var.
 
     For example by passing 'SceneFile', the functions will use:
         UI element:           MakePathRelativeToSceneFile
         UI label:            kMakePathRelativeToSceneFile
+        UI tool-tip:      kMakePathRelativeToSceneFileAnn
         option var:   mayaUsd_MakePathRelativeToSceneFile
     '''
 
@@ -78,7 +79,7 @@ class usdFileRelative(object):
         """
         Helper method to initialize the UI layout for the file relative actions.
 
-        Input parentLayout arg is expected to the a scroll layout into which controls
+        Input parentLayout arg is expected to be a scroll layout into which controls
         can be added.
 
         Input canBeRelative tells if the file can be made relative at all. If false,
@@ -163,8 +164,7 @@ class usdFileRelativeToEditTargetLayer(usdFileRelative):
         Note: the function takes an unused filterType argument to be compatible
               with the dialog2 command API.
         '''
-        # If there is no Maya scene file saved, then the checkbox and label should be disabled.
-        print(usdFileRelative.getRelativeFilePathRoot())
+        # If there is no target layer saved, then the checkbox and label should be disabled.
         canBeRelative = bool(usdFileRelative.getRelativeFilePathRoot())
         usdFileRelative.uiInit(parentLayout, canBeRelative, cls.kRelativeToWhat)
 
