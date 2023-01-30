@@ -284,6 +284,139 @@ UsdUndoDeleteConnectionCommand::Ptr UsdUndoDeleteConnectionCommand::create(
     return std::make_shared<UsdUndoDeleteConnectionCommand>(srcAttr, dstAttr);
 }
 
+bool canRemoveSrcProperty(const PXR_NS::UsdAttribute& srcAttr)
+{
+
+    // Do not remove if it has a value.
+    if (srcAttr.HasValue()) {
+        return false;
+    }
+
+    PXR_NS::SdfPathVector connectedAttrs;
+    srcAttr.GetConnections(&connectedAttrs);
+
+    // Do not remove if it has connections.
+    if (!connectedAttrs.empty()) {
+        return false;
+    }
+
+    const auto prim = srcAttr.GetPrim();
+
+    if (!prim) {
+        return false;
+    }
+
+    const auto primParent = prim.GetParent();
+
+    if (!primParent) {
+        return false;
+    }
+
+    // Do not remove if there is a connection with a prim.
+    for (const auto& childPrim : primParent.GetChildren()) {
+        if (childPrim != prim) {
+            for (const auto& attribute : childPrim.GetAttributes()) {
+                const PXR_NS::UsdAttribute dstUsdAttr = attribute.As<PXR_NS::UsdAttribute>();
+                if (isConnected(srcAttr, dstUsdAttr)) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    // Do not remove if there is a connection with the parent prim.
+    for (const auto& attribute : primParent.GetAttributes()) {
+        const PXR_NS::UsdAttribute dstUsdAttr = attribute.As<PXR_NS::UsdAttribute>();
+        if (isConnected(srcAttr, dstUsdAttr)) {
+            return false;
+        }
+    }
+
+    PXR_NS::UsdShadeNodeGraph ngPrim(prim);
+
+    if (!ngPrim) {
+        return true;
+    }
+
+    // Do not remove if there is a connection with a child prim.
+    for (const auto& childPrim : prim.GetChildren()) {
+        for (const auto& attribute : childPrim.GetAttributes()) {
+            const PXR_NS::UsdAttribute dstUsdAttr = attribute.As<PXR_NS::UsdAttribute>();
+            if (isConnected(srcAttr, dstUsdAttr)) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+bool canRemoveDstProperty(const PXR_NS::UsdAttribute& srcAttr)
+{
+    // Do not remove if it has a value.
+    if (srcAttr.HasValue()) {
+        return false;
+    }
+
+    PXR_NS::SdfPathVector connectedAttrs;
+    srcAttr.GetConnections(&connectedAttrs);
+
+    // Do not remove if it has connections.
+    if (!connectedAttrs.empty()) {
+        return false;
+    }
+
+    const auto prim = srcAttr.GetPrim();
+
+    if (!prim) {
+        return false;
+    }
+
+    PXR_NS::UsdShadeNodeGraph ngPrim(prim);
+
+    if (!ngPrim) {
+        return true;
+    }
+
+    // Do not remove if there is a connection with a child prim.
+    for (const auto& childPrim : prim.GetChildren()) {
+        for (const auto& attribute : childPrim.GetAttributes()) {
+            const PXR_NS::UsdAttribute dstUsdAttr = attribute.As<PXR_NS::UsdAttribute>();
+            if (isConnected(srcAttr, dstUsdAttr)) {
+                return false;
+            }
+        }
+    }
+
+    const auto primParent = prim.GetParent();
+
+    if (!primParent) {
+        return false;
+    }
+
+    // Do not remove if there is a connection with the parent prim.
+    for (const auto& attribute : primParent.GetAttributes()) {
+        const PXR_NS::UsdAttribute dstUsdAttr = attribute.As<PXR_NS::UsdAttribute>();
+        if (isConnected(srcAttr, dstUsdAttr)) {
+            return false;
+        }
+    }
+
+    // Do not remove if there is a connection with a prim.
+    for (const auto& childPrim : primParent.GetChildren()) {
+        if (childPrim != prim) {
+            for (const auto& attribute : childPrim.GetAttributes()) {
+                const PXR_NS::UsdAttribute dstUsdAttr = attribute.As<PXR_NS::UsdAttribute>();
+                if (isConnected(srcAttr, dstUsdAttr)) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
 void UsdUndoDeleteConnectionCommand::execute()
 {
     UsdUndoBlock undoBlock(&_undoableItem);
@@ -312,19 +445,12 @@ void UsdUndoDeleteConnectionCommand::execute()
         // Remove attribute if it does not have a value, default value, or time samples. We do this
         // on Shader nodes and on the Material outputs since they are re-created automatically.
         // Other NodeGraph inputs and outputs require explicit removal.
-        if (!dstUsdAttr->usdAttribute().HasValue()) {
-            UsdShadeShader asShader(dstUsdAttr->usdPrim());
-            if (asShader) {
-                dstUsdAttr->usdPrim().RemoveProperty(dstUsdAttr->usdAttribute().GetName());
-            }
-            UsdShadeMaterial asMaterial(dstUsdAttr->usdPrim());
-            if (asMaterial) {
-                const TfToken baseName = dstUsdAttr->usdAttribute().GetBaseName();
-                if (baseName == UsdShadeTokens->surface || baseName == UsdShadeTokens->volume
-                    || baseName == UsdShadeTokens->displacement) {
-                    dstUsdAttr->usdPrim().RemoveProperty(dstUsdAttr->usdAttribute().GetName());
-                }
-            }
+        if (canRemoveDstProperty(dstUsdAttr->usdAttribute())) {
+            dstUsdAttr->usdPrim().RemoveProperty(dstUsdAttr->usdAttribute().GetName());
+        }
+
+        if (canRemoveSrcProperty(srcUsdAttr->usdAttribute())) {
+            srcUsdAttr->usdPrim().RemoveProperty(srcUsdAttr->usdAttribute().GetName());
         }
     }
 
