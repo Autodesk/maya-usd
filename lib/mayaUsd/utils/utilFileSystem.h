@@ -35,8 +35,18 @@ MAYAUSD_CORE_PUBLIC
 std::string getDir(const std::string& fullFilePath);
 
 /*! \brief takes in two absolute file paths and returns the first one to second one.
-           Also return a boolean: true if the path was successfully made relative,
-           false otherwise.
+
+           Also return a boolean that indicates if the attempt to make the file name
+           relative to the valid anchor path failed.
+
+           If the anchor relative-to-directory is empty, then the original file name
+           is returned but no failure is returned. If the caller needs to detect
+           this as a failure case, they can verify that the relative-to directory
+           name is empty themselves before calling this function.
+
+           The rationale for this is that, for example, we don't want to flag as
+           an error when the user tries to make a path relative to the scene when
+           the scene has not yet been saved.
 
            If the second path is not absolute or is not reachable from the first,
            then the returned path will still be absolute.

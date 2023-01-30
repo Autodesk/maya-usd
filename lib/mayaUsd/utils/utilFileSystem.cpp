@@ -123,9 +123,12 @@ std::pair<std::string, bool> UsdMayaUtilFileSystem::makePathRelativeTo(
 {
     ghc::filesystem::path absolutePath(fileName);
 
-    // If Maya scene file doesn't exist yet, use the unchanged path
+    // If the anchor relative-to-directory doesn't exist yet, use the unchanged path,
+    // but don't return a failure. The anchor path being empty is not considered
+    // a failure. If the caller needs to detect this, they can verify that the
+    // anchor path is empty themselves before calling this function.
     if (relativeToDir.empty()) {
-        return std::make_pair(fileName, false);
+        return std::make_pair(fileName, true);
     }
 
     ghc::filesystem::path relativePath = absolutePath.lexically_relative(relativeToDir);
