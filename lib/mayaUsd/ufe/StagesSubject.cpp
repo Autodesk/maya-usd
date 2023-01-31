@@ -285,7 +285,6 @@ void attributeMetadataChanged(
         sendAttributeMetadataChanged(ufePath, changedToken, changeType, metadataKeys);
     }
 }
-#endif
 
 std::vector<std::string> getMetadataKeys(const std::string& strMetadata)
 {
@@ -305,6 +304,7 @@ std::vector<std::string> getMetadataKeys(const std::string& strMetadata)
 
     return metadataKeys;
 }
+#endif
 
 void processAttributeChanges(
     const Ufe::Path&                                ufePath,
