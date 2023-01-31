@@ -248,16 +248,16 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
     auto    id
         = MSceneMessage::addCallback(MSceneMessage::kBeforeNew, _ClearHydraCallback, this, &status);
     if (status) {
-        _callbacks.push_back(id);
+        _callbacks.append(id);
     }
     id = MSceneMessage::addCallback(MSceneMessage::kBeforeOpen, _ClearHydraCallback, this, &status);
     if (status) {
-        _callbacks.push_back(id);
+        _callbacks.append(id);
     }
     id = MEventMessage::addEventCallback(
         MString("SelectionChanged"), _SelectionChangedCallback, this, &status);
     if (status) {
-        _callbacks.push_back(id);
+        _callbacks.append(id);
     }
 
     // Setup the playblast watch.
@@ -310,6 +310,8 @@ MtohRenderOverride::~MtohRenderOverride()
     for (auto operation : _operations) {
         delete operation;
     }
+    MMessage::removeCallbacks(_callbacks);
+    _callbacks.clear();
     for (auto& panelAndCallbacks : _renderPanelCallbacks) {
         MMessage::removeCallbacks(panelAndCallbacks.second);
     }

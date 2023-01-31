@@ -150,7 +150,7 @@ private:
 
     std::unique_ptr<MayaHydraSceneIndexRegistration> _sceneIndexRegistration;
     std::vector<MHWRender::MRenderOperation*> _operations;
-    std::vector<MCallbackId>                  _callbacks;
+    MCallbackIdArray                          _callbacks;
     MCallbackId                               _timerCallback = 0;
     PanelCallbacksList                        _renderPanelCallbacks;
     const MtohRenderGlobals&                  _globals;
