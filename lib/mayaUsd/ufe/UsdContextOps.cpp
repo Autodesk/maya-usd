@@ -1263,7 +1263,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
             return nullptr;
 
         MString fileRef = MGlobal::executeCommandStringResult(_selectUSDFileScript());
-        if (fileRef.isEmpty())
+        if (fileRef.length() == 0)
             return nullptr;
 
         const std::string path
