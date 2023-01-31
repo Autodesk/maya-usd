@@ -1051,7 +1051,7 @@ class ConnectionTestCase(unittest.TestCase):
 
         # The property has been deleted since there are no more connections.
         self.assertFalse(previewPrim.HasProperty('outputs:surface'))
-        # Material outputs displacement-surface-volume properties are re-created automatically.
+        # Property kept since it is on the boundary.
         self.assertTrue(parentPrim.HasProperty('outputs:surface'))
 
         # 1.3 Delete the connection between the node and its parent (inputs).
@@ -1060,7 +1060,7 @@ class ConnectionTestCase(unittest.TestCase):
 
         # The property has been deleted since there are no more connections.
         self.assertFalse(previewPrim.HasProperty('inputs:clearcoat'))
-        # Property kept since it has values.
+        # Property kept since it is on the boundary.
         self.assertTrue(parentPrim.HasProperty('inputs:clearcoat'))
 
         # 2. Delete compound connections.
@@ -1079,16 +1079,15 @@ class ConnectionTestCase(unittest.TestCase):
         cmd = connectionHandler.deleteConnectionCmd(compoundPort, parentPort)
         cmd.execute()
 
-        # The property has been deleted since there are no more connections.
-        self.assertFalse(compoundPrim.HasProperty('outputs:port'))
-        self.assertFalse(parentPrim.HasProperty('outputs:port'))
+        # Properties kept since they are on the boundary.
+        self.assertTrue(compoundPrim.HasProperty('outputs:port'))
+        self.assertTrue(parentPrim.HasProperty('outputs:port'))
 
         cmd = connectionHandler.deleteConnectionCmd(compoundDisplacement, parentDisplacement)
         cmd.execute()
 
-        # Property kept since there is a connection with child compound.
+        # Properties kept since they are on the boundary.
         self.assertTrue(compoundPrim.HasProperty('outputs:displacement'))
-        # Material outputs displacement-surface-volume properties are re-created automatically.
         self.assertTrue(parentPrim.HasProperty('outputs:displacement'))
 
         # 2.2 Delete compound connections from the parent.
@@ -1105,17 +1104,15 @@ class ConnectionTestCase(unittest.TestCase):
         cmd = connectionHandler.deleteConnectionCmd(parentPort, compoundPort)
         cmd.execute()
 
-        # The property has been deleted since there are no more connections.
-        self.assertFalse(compoundPrim.HasProperty('inputs:port'))
-        # Property kept since it has metadata values.
+        # Properties kept since they are on the boundary.
+        self.assertTrue(compoundPrim.HasProperty('inputs:port'))
         self.assertTrue(parentPrim.HasProperty('inputs:port'))
 
         cmd = connectionHandler.deleteConnectionCmd(parentClearcoatRoughness, compoundClearcoatRoughness)
         cmd.execute()
 
-        # Property kept since there is a connection with child compound.
+        # Properties kept since they are on the boundary.
         self.assertTrue(compoundPrim.HasProperty('inputs:clearcoatRoughness'))
-        # Property kept since it has metadata values.
         self.assertTrue(parentPrim.HasProperty('inputs:clearcoatRoughness'))
 
         # 3. Delete connections inside the compound.
@@ -1134,22 +1131,24 @@ class ConnectionTestCase(unittest.TestCase):
         cmd = connectionHandler.deleteConnectionCmd(childDisplacement, compoundDisplacement)
         cmd.execute()
 
+        # Property kept since it is on the boundary.
+        self.assertTrue(compoundPrim.HasProperty('outputs:displacement'))
         # The property has been deleted since there are no more connections.
-        self.assertFalse(compoundPrim.HasProperty('outputs:displacement'))
         self.assertFalse(childCompoundPrim.HasProperty('outputs:displacement'))
 
         # 3.2 Delete child compound connections from the parent.
         cmd = connectionHandler.deleteConnectionCmd(compoundClearcoatRoughness, childClearcoatRoughness)
         cmd.execute()
 
+        # Property kept since it is on the boundary.
+        self.assertTrue(compoundPrim.HasProperty('inputs:clearcoatRoughness'))
         # The property has been deleted since there are no more connections.
-        self.assertFalse(compoundPrim.HasProperty('inputs:clearcoatRoughness'))
         self.assertFalse(childCompoundPrim.HasProperty('inputs:clearcoatRoughness'))
 
         cmd = connectionHandler.deleteConnectionCmd(compoundClearcoat, childClearcoat)
         cmd.execute()
 
-        # Property kept since it has values.
+        # Property kept since it is on the boundary.
         self.assertTrue(compoundPrim.HasProperty('inputs:clearcoat'))
         # The property has been deleted since there are no more connections.
         self.assertFalse(childCompoundPrim.HasProperty('inputs:clearcoat'))
