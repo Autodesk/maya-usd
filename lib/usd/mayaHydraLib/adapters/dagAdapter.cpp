@@ -144,7 +144,7 @@ GfMatrix4d MayaHydraDagAdapter::GetTransform()
         if (IsInstanced()) {
             _transform.SetIdentity();
         } else {
-            _transform = GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
+            _transform = MAYAHYDRA_NS::GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
         }
         _invalidTransform = false;
     }
@@ -155,7 +155,7 @@ GfMatrix4d MayaHydraDagAdapter::GetTransform()
 size_t MayaHydraDagAdapter::SampleTransform(size_t maxSampleCount, float* times, GfMatrix4d* samples)
 {
     return GetDelegate()->SampleValues(maxSampleCount, times, samples, [&]() -> GfMatrix4d {
-        return GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
+        return MAYAHYDRA_NS::GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
     });
 }
 
@@ -317,7 +317,7 @@ VtValue MayaHydraDagAdapter::GetInstancePrimvar(const TfToken& key)
         ret.reserve(numDags);
         for (auto i = decltype(numDags) { 0 }; i < numDags; ++i) {
             if (dags[i].isValid() && dags[i].isVisible()) {
-                ret.push_back(GetGfMatrixFromMaya(dags[i].inclusiveMatrix()));
+                ret.push_back(MAYAHYDRA_NS::GetGfMatrixFromMaya(dags[i].inclusiveMatrix()));
             }
         }
         return VtValue(ret);

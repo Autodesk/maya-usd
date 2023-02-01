@@ -633,8 +633,8 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, c
     }
 
     _taskController->SetFreeCameraMatrices(
-        GetGfMatrixFromMaya(drawContext.getMatrix(MHWRender::MFrameContext::kViewMtx)),
-        GetGfMatrixFromMaya(drawContext.getMatrix(MHWRender::MFrameContext::kProjectionMtx)));
+        MAYAHYDRA_NS::GetGfMatrixFromMaya(drawContext.getMatrix(MHWRender::MFrameContext::kViewMtx)),
+        MAYAHYDRA_NS::GetGfMatrixFromMaya(drawContext.getMatrix(MHWRender::MFrameContext::kProjectionMtx)));
 
     if (delegateParams.motionSamplesEnabled()) {
         MStatus  status;

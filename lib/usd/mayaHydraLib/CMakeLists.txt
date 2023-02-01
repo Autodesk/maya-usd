@@ -17,18 +17,6 @@ set(HEADERS
     debugCodes.h
 )
 
-if(NOT BUILD_MAYAUSD_LIBRARY)
-    # Copied from maya-usd and reduced to minimal interface.
-    target_sources(${TARGET_NAME} 
-        PRIVATE
-            usd/util.cpp
-    )
-
-    list(APPEND HEADERS
-        usd/util.h
-    )
-endif()
-
 # -----------------------------------------------------------------------------
 # compiler configuration
 # -----------------------------------------------------------------------------
@@ -140,6 +128,10 @@ endif()
 # -----------------------------------------------------------------------------
 # promoted headers
 # -----------------------------------------------------------------------------
+set(SRCFILE ${CMAKE_CURRENT_SOURCE_DIR}/mayaHydra.h.src)
+set(DSTFILE ${CMAKE_BINARY_DIR}/include/mayaHydraLib/mayaHydra.h)
+configure_file(${SRCFILE} ${DSTFILE})
+
 mayaUsd_promoteHeaderList( 
     HEADERS
         ${HEADERS}

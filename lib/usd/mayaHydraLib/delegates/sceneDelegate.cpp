@@ -578,7 +578,7 @@ void MayaHydraSceneDelegate::PreFrame(const MHWRender::MDrawContext& context)
                 GetPrimPath(lightPath, true),
                 [&matrixVal](MayaHydraLightAdapter* a) {
                     // TODO: Mark Dirty?
-                    a->SetShadowProjectionMatrix(GetGfMatrixFromMaya(matrixVal));
+                    a->SetShadowProjectionMatrix(MAYAHYDRA_NS::GetGfMatrixFromMaya(matrixVal));
                 },
                 _lightAdapters);
         }
@@ -1096,7 +1096,7 @@ void MayaHydraSceneDelegate::PopulateSelectedPaths(
     // be a huge number of different types of instances, so tracking this
     // won't be too bad...
     std::unordered_set<SdfPath, SdfPath::Hash> selectedMasters;
-    MapSelectionDescendents(
+    MAYAHYDRA_NS::MapSelectionDescendents(
         mayaSelection,
         [this, &selectedSdfPaths, &selectedMasters, &selection](const MDagPath& dagPath) {
             SdfPath primId;

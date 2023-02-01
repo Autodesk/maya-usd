@@ -20,11 +20,6 @@
 #include <mayaHydraLib/adapters/mayaAttrs.h>
 #include <mayaHydraLib/adapters/tokens.h>
 #include <mayaHydraLib/utils.h>
-#if defined(MAYAUSD_VERSION)
-    #include <mayaUsd/utils/util.h>
-#else
-    #include <mayaHydraLib/usd/util.h>
-#endif
 
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>
@@ -540,7 +535,7 @@ public:
         const VtValue*          fallback = nullptr,
         MPlugArray*             outPlug = nullptr) override
     {
-        auto path = GetFileTexturePath(node);
+        auto path = MAYAHYDRA_NS::GetFileTexturePath(node);
         return VtValue(SdfAssetPath(path.GetText(), path.GetText()));
     }
 };
@@ -757,7 +752,7 @@ HdMaterialNode* MayaHydraMaterialNetworkConverter::GetMaterial(const MObject& ma
     }
     TF_DEBUG(MAYAHYDRALIB_ADAPTER_MATERIALS)
         .Msg("MayaHydraMaterialNetworkConverter::GetMaterial(node=%s)\n", chr);
-    std::string usdNameStr = UsdMayaUtil::SanitizeName(chr);
+    std::string usdNameStr = MAYAHYDRA_NS::SanitizeName(chr);
     const auto  materialPath = _prefix.AppendChild(TfToken(usdNameStr));
 
     auto findResult = std::find_if(

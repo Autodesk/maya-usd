@@ -15,11 +15,7 @@
 //
 #include "delegateCtx.h"
 
-#if defined(MAYAUSD_VERSION)
-    #include "mayaUsd/utils/util.h"
-#else
-    #include <mayaHydraLib/usd/util.h>
-#endif
+#include <mayaHydraLib/utils.h>
 
 #include <pxr/base/gf/frustum.h>
 #include <pxr/base/gf/plane.h>
@@ -43,7 +39,7 @@ SdfPath _GetRenderItemMayaPrimPath(const MRenderItem& ri)
 {
     if (ri.InternalObjectId() == 0) return {};
 	
-    SdfPath mayaPath = UsdMayaUtil::RenderItemToUsdPath(ri, false, false);
+    SdfPath mayaPath = MAYAHYDRA_NS::RenderItemToSdfPath(ri, false, false);
 	if (mayaPath.IsEmpty()) return {};
 	
     const std::string theString = std::string(mayaPath.GetText());
@@ -66,7 +62,7 @@ SdfPath _GetRenderItemMayaPrimPath(const MRenderItem& ri)
 
 SdfPath _GetPrimPath(const SdfPath& base, const MDagPath& dg)
 {
-    SdfPath mayaPath = UsdMayaUtil::MDagPathToUsdPath(dg, false, false);
+    SdfPath mayaPath = MAYAHYDRA_NS::DagPathToSdfPath(dg, false, false);
     if (mayaPath.IsEmpty()) {
         return {};
     }

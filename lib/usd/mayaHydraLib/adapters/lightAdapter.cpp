@@ -171,7 +171,7 @@ VtValue MayaHydraLightAdapter::Get(const TfToken& key)
         } else if (decayRate == 2) {
             light.SetAttenuation(GfVec3f(0.0f, 0.0f, 1.0f));
         }
-        light.SetTransform(GetGfMatrixFromMaya(GetDagPath().inclusiveMatrixInverse()));
+        light.SetTransform(MAYAHYDRA_NS::GetGfMatrixFromMaya(GetDagPath().inclusiveMatrixInverse()));
         _CalculateLightParams(light);
         return VtValue(light);
     } else if (key == HdTokens->transform) {

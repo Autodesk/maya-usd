@@ -51,7 +51,6 @@ TODO:
 
 */
 
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -94,11 +93,11 @@ void MayaHydraRenderItemAdapter::UpdateTransform(MRenderItem& ri)
 	MMatrix matrix;
 	if (ri.getMatrix(matrix) == MStatus::kSuccess)
 	{
-		_transform[0] = GetGfMatrixFromMaya(matrix);
+		_transform[0] = MAYAHYDRA_NS::GetGfMatrixFromMaya(matrix);
 		if (GetDelegate()->GetParams().motionSamplesEnabled())
 		{
 			MDGContextGuard guard(MAnimControl::currentTime() + 1.0);
-			_transform[1] = GetGfMatrixFromMaya(matrix);
+			_transform[1] = MAYAHYDRA_NS::GetGfMatrixFromMaya(matrix);
 		}
 		else 
 		{

@@ -21,10 +21,12 @@
 
 #include <mayaHydraLib/adapters/mayaAttrs.h>
 #include <mayaHydraLib/api.h>
+#include <mayaHydraLib/mayaHydra.h>
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
 
 #include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
@@ -37,9 +39,16 @@
 #include <maya/MRenderUtil.h>
 #include <maya/MSelectionList.h>
 
+#include <string>
+
 #define MAYAHYDRALIB_SCENE_RENDER_DATASERVER
 
-PXR_NAMESPACE_OPEN_SCOPE
+namespace MAYAHYDRA_NS_DEF {
+
+using GfMatrix4d = PXR_NS::GfMatrix4d;
+using TfToken = PXR_NS::TfToken;
+using SdfPath = PXR_NS::SdfPath;
+using TfCallContext = PXR_NS::TfCallContext;
 
 /// \brief Converts a Maya matrix to a double precision GfMatrix.
 /// \param mayaMat Maya `MMatrix` to be converted.
@@ -144,6 +153,39 @@ MapSelectionDescendents(const MSelectionList& sel, FUNC func, MFn::Type filterTy
     }
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+MAYAHYDRALIB_API
+std::string SanitizeName(const std::string& name);
+
+/// Converts the given Maya MDagPath \p dagPath into an SdfPath.
+///
+/// If \p mergeTransformAndShape and the dagPath is a shapeNode, it will return
+/// the same value as MDagPathToUsdPath(transformPath) where transformPath is
+/// the MDagPath for \p dagPath's transform node.
+///
+/// Elements of the path will be sanitized such that it is a valid SdfPath.
+/// This means it will replace Maya's namespace delimiter (':') with
+/// underscores ('_').
+MAYAHYDRALIB_API
+SdfPath DagPathToSdfPath(
+    const MDagPath& dagPath,
+    const bool      mergeTransformAndShape,
+    const bool      stripNamespaces);
+
+/// Converts the given Maya MDagPath \p dagPath into an SdfPath.
+///
+/// If \p mergeTransformAndShape and the dagPath is a shapeNode, it will return
+/// the same value as MDagPathToUsdPath(transformPath) where transformPath is
+/// the MDagPath for \p dagPath's transform node.
+///
+/// Elements of the path will be sanitized such that it is a valid SdfPath.
+/// This means it will replace Maya's namespace delimiter (':') with
+/// underscores ('_').
+MAYAHYDRALIB_API
+SdfPath RenderItemToSdfPath(
+    const MRenderItem& ri,
+    const bool         mergeTransformAndShape,
+    const bool         stripNamespaces);
+
+} // namespace MAYAHYDRA_NS_DEF
 
 #endif // MAYAHYDRALIB_UTILS_H
