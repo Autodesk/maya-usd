@@ -86,6 +86,10 @@ struct stageLayersToSave
     If the file path is empty then use the current file path of the layer.
     If the format is empty then use the current user-selected USD format option
     as defined by the usdFormatArgOption() function. (See above.)
+
+    If the file path is relative, then it be made relative to either the scene
+    file (for the root layer) or its parent layer (for sub-layers). We assume the
+    caller volontarily made the path relative.
  */
 MAYAUSD_CORE_PUBLIC
 bool saveLayerWithFormat(
@@ -113,6 +117,18 @@ PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
     bool                   savePathAsRelative,
     LayerParent            parent,
     std::string            formatArg = "");
+
+/*! \brief Update the list of sub-layers with a new layer identity.
+ *         The new sub-layer is identified by its path explicitly,
+ *         because a given layer might get referenced through multiple
+ *         different relative paths, so we cannot interrogate it about
+ *         what its path is.
+ */
+MAYAUSD_CORE_PUBLIC
+void updateSubLayer(
+    const SdfLayerRefPtr& parentLayer,
+    const SdfLayerRefPtr& oldSubLayer,
+    const std::string&    newSubLayerPath);
 
 /*! \brief Ensures that the filepath contains a valid USD extension.
  */

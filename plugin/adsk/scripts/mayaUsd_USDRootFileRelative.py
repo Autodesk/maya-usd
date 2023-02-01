@@ -146,6 +146,36 @@ class usdRootFileRelative(usdFileRelative):
         usdFileRelative.uiCommit(parentLayout, cls.kRelativeToWhat)
 
 
+class usdSubLayerFileRelative(usdFileRelative):
+    '''
+    Helper class to create the UI for load/save dialog boxes that need to make the
+    selected file name optionally relative to a parent layer.
+    '''
+
+    kRelativeToWhat = 'ParentLayer'
+
+    @classmethod
+    def uiCreate(cls, parentLayout):
+        usdFileRelative.uiCreate(parentLayout, cls.kRelativeToWhat)
+
+    @classmethod
+    def uiInit(cls, parentLayout, filterType):
+        '''
+        Note: the function takes an unused filterType argument to be compatible
+              with the dialog2 command API.
+        '''
+        canBeRelative = bool(usdFileRelative.getRelativeFilePathRoot())
+        usdFileRelative.uiInit(parentLayout, canBeRelative, cls.kRelativeToWhat)
+
+    @classmethod
+    def uiCommit(cls, parentLayout, selectedFile=None):
+        '''
+        Note: the function takes an unused selectedFile argument to be compatible
+              with the dialog2 command API.
+        '''
+        usdFileRelative.uiCommit(parentLayout, cls.kRelativeToWhat)
+
+
 class usdFileRelativeToEditTargetLayer(usdFileRelative):
     '''
     Helper class to create the UI for load/save dialog boxes that need to make the
