@@ -362,7 +362,7 @@ void LayerTreeItem::saveAnonymousLayer()
     auto sessionState = parentModel()->sessionState();
 
     std::string fileName;
-    if (sessionState->saveLayerUI(nullptr, &fileName)) {
+    if (sessionState->saveLayerUI(nullptr, &fileName, parentLayer())) {
 
         MayaUsd::utils::ensureUSDFileExtension(fileName);
 
@@ -370,17 +370,22 @@ void LayerTreeItem::saveAnonymousLayer()
         const QString dialogTitle = StringResources::getAsQString(StringResources::kSaveLayer);
         std::string   formatTag = MayaUsd::utils::usdFormatArgOption();
         if (saveSubLayer(dialogTitle, parentLayerItem(), layer(), fileName, formatTag)) {
-            printf("USD Layer written to %s\n", fileName.c_str());
 
             // now replace the layer in the parent
             if (isRootLayer()) {
-                sessionState->rootLayerPathChanged(
-                    UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile()
-                        ? UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(fileName)
-                        : fileName);
+                if (UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile()) {
+                    fileName = UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(fileName);
+                }
+                sessionState->rootLayerPathChanged(fileName);
             } else {
-                // now replace the layer in the parent
                 auto parentItem = parentLayerItem();
+
+                if (parentItem && UsdMayaUtilFileSystem::requireUsdPathsRelativeToParentLayer()) {
+                    fileName = UsdMayaUtilFileSystem::getPathRelativeToLayerFile(
+                        fileName, parentItem->layer());
+                }
+
+                // now replace the layer in the parent
                 auto newLayer = SdfLayer::FindOrOpen(fileName);
                 if (newLayer) {
                     bool setTarget = _isTargetLayer;

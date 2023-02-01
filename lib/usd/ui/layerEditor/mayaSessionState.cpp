@@ -272,9 +272,12 @@ void MayaSessionState::sceneClosingCB(void* clientData)
     Q_EMIT THIS->clearUIOnSceneResetSignal();
 }
 
-bool MayaSessionState::saveLayerUI(QWidget* in_parent, std::string* out_filePath) const
+bool MayaSessionState::saveLayerUI(
+    QWidget*                      in_parent,
+    std::string*                  out_filePath,
+    const PXR_NS::SdfLayerRefPtr& parentLayer) const
 {
-    return SaveLayersDialog::saveLayerFilePathUI(*out_filePath);
+    return SaveLayersDialog::saveLayerFilePathUI(*out_filePath, parentLayer);
 }
 
 std::vector<std::string>

@@ -294,9 +294,29 @@ SdfLayerRefPtr saveAnonymousLayer(
 
     saveLayerWithFormat(anonLayer, filePath, formatArg);
 
+    const bool isSubLayer = (parent._layerParent != nullptr);
+    std::string relativePathAnchor;
+
+    if (savePathAsRelative) {
+        if (isSubLayer) {
+            filePath
+                = UsdMayaUtilFileSystem::getPathRelativeToLayerFile(filePath, parent._layerParent);
+            relativePathAnchor = UsdMayaUtilFileSystem::getLayerFileDir(parent._layerParent);
+        } else {
+            filePath = UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(filePath);
+            relativePathAnchor = UsdMayaUtilFileSystem::getMayaSceneFileDir();
+        }
+    }
+
+    // When the filePath was made relative, we need to help FindOrOpen to locate
+    //      the sub-layers when using relative paths. We temporarily chande the
+    //      current directory to the location the file path is relative to.
+    UsdMayaUtilFileSystem::TemporaryCurrentDir tempCurDir(relativePathAnchor);
     SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(filePath);
+    tempCurDir.restore();
+
     if (newLayer) {
-        if (parent._layerParent) {
+        if (isSubLayer) {
             parent._layerParent->GetSubLayerPaths().Replace(
                 anonLayer->GetIdentifier(), newLayer->GetIdentifier());
         } else if (!parent._proxyPath.empty()) {

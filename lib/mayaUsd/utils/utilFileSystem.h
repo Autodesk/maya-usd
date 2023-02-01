@@ -16,6 +16,7 @@
 #include <mayaUsd/base/api.h>
 
 #include <pxr/pxr.h>
+#include <pxr/usd/sdf/layer.h>
 
 #include <maya/MObject.h>
 
@@ -33,6 +34,22 @@ std::string resolvePath(const std::string& filePath);
  */
 MAYAUSD_CORE_PUBLIC
 std::string getDir(const std::string& fullFilePath);
+
+/*! \brief Temporarily change the process current directory.
+ *         If built with an empty string, the current directory will not be changed.
+ */
+class TemporaryCurrentDir
+{
+public:
+    TemporaryCurrentDir(const std::string& newCurDir);
+    ~TemporaryCurrentDir();
+
+    // Restore the previous current directory immediately.
+    void restore();
+
+private:
+    std::string _previousCurDir;
+};
 
 /*! \brief Takes in two absolute file paths and computes a relative path of the first one
            to second one.
@@ -66,10 +83,14 @@ std::string getMayaReferencedFileDir(const MObject& proxyShapeNode);
 MAYAUSD_CORE_PUBLIC
 std::string getMayaSceneFileDir();
 
-/*! \brief returns the Maya workspace file rule entry for scenes
+/*! \brief returns parent directory of the given layer.
  */
 MAYAUSD_CORE_PUBLIC
-std::string getMayaWorkspaceScenesDir();
+std::string getLayerFileDir(const PXR_NS::SdfLayerHandle& layer);
+
+/*! \brief returns the Maya workspace file rule entry for scenes
+ */
+MAYAUSD_CORE_PUBLIC std::string getMayaWorkspaceScenesDir();
 
 /*! \brief takes in an absolute file path and returns the path relative to maya scene file.
 When there is no scene file, the absolute (input) path will be returned.
@@ -77,11 +98,32 @@ When there is no scene file, the absolute (input) path will be returned.
 MAYAUSD_CORE_PUBLIC
 std::string getPathRelativeToMayaSceneFile(const std::string& fileName);
 
+/*! \brief takes in an absolute file path and returns the path relative to a USD layer.
+           When there is no layer or the layer has never been saved, then the absolute
+           (input) path will be returned.
+ */
+MAYAUSD_CORE_PUBLIC
+std::string
+getPathRelativeToLayerFile(const std::string& fileName, const PXR_NS::SdfLayerHandle& layer);
+
 /*! \brief returns the flag specifying whether USD file paths should be saved as relative to Maya
  * scene file
  */
 MAYAUSD_CORE_PUBLIC
 bool requireUsdPathsRelativeToMayaSceneFile();
+
+/*! \brief prepares the UI used to save layers with the given layer file path, so that the UI
+           can potentially make the selected file name relative to that layer. If the layer is
+           null, the UI can either use the scene file or not make the file relative.
+ */
+MAYAUSD_CORE_PUBLIC
+bool prepareLayerSaveUILayer(const PXR_NS::SdfLayerHandle& layer, bool useSceneFileForRoot);
+
+/*! \brief returns the flag specifying whether USD file paths should be saved
+ *         as relative to the given parent layer.
+ */
+MAYAUSD_CORE_PUBLIC
+bool requireUsdPathsRelativeToParentLayer();
 
 /*! \brief returns the flag specifying whether USD file paths should be saved
  *         as relative to the current edit target layer.

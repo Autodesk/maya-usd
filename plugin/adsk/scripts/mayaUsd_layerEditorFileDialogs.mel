@@ -32,7 +32,26 @@ global proc mayaUsd_USDRootFileRelative_UICommit(string $parent, string $selecte
     python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdRootFileRelative.uiCommit('" + $parent + "', '" + $selectedFile + "')");
 }
 
-global proc string UsdLayerEditor_SaveLayerFileDialog()
+global proc mayaUsd_USDSubLayerFileRelative_UICreate(string $parent)
+{
+    // First create the scroll layout here and then call the python
+    // helper to add the rest of the UI.
+    setParent $parent;
+    string $layout = `scrollLayout -childResizable true`;
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdSubLayerFileRelative.uiCreate('" + $layout + "')");
+}
+
+global proc mayaUsd_USDSubLayerFileRelative_UIInit(string $parent, string $filterType)
+{
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdSubLayerFileRelative.uiInit('" + $parent + "', '" + $filterType + "')");
+}
+
+global proc mayaUsd_USDSubLayerFileRelative_UICommit(string $parent, string $selectedFile)
+{
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdSubLayerFileRelative.uiCommit('" + $parent + "', '" + $selectedFile + "')");
+}
+
+global proc string UsdLayerEditor_SaveLayerFileDialog(int $isRootLayer)
 {
     string $fileFilter = python("from mayaUsdUtils import getUSDDialogFileFilters; getUSDDialogFileFilters(False)");
 
@@ -42,12 +61,25 @@ global proc string UsdLayerEditor_SaveLayerFileDialog()
         $startDir = dirname($fullPath);
     }
 
+    string $createCallback;
+    string $initCallback;
+    string $commitCallback;
+    if ($isRootLayer) {
+        $createCallback = "mayaUsd_USDRootFileRelative_UICreate";
+        $initCallback   = "mayaUsd_USDRootFileRelative_UIInit";
+        $commitCallback = "mayaUsd_USDRootFileRelative_UICommit";
+    } else {
+        $createCallback = "mayaUsd_USDSubLayerFileRelative_UICreate";
+        $initCallback   = "mayaUsd_USDSubLayerFileRelative_UIInit";
+        $commitCallback = "mayaUsd_USDSubLayerFileRelative_UICommit";
+    }
+
     string $result[] = `fileDialog2 
         -fileMode 0
         -fileFilter $fileFilter
-        -optionsUICreate "mayaUsd_USDRootFileRelative_UICreate"
-        -optionsUIInit "mayaUsd_USDRootFileRelative_UIInit"
-        -optionsUICommit2 "mayaUsd_USDRootFileRelative_UICommit"
+        -optionsUICreate $createCallback
+        -optionsUIInit $initCallback
+        -optionsUICommit2 $commitCallback
         -startingDirectory $startDir
     `;
 

@@ -784,6 +784,9 @@ void LayerDatabase::convertAnonymousLayers(
     if (root->IsAnonymous()) {
         PXR_NS::SdfFileFormat::FileFormatArguments args;
         std::string newFileName = MayaUsd::utils::generateUniqueFileName(proxyName);
+        if (UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile()) {
+            newFileName = UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(newFileName);
+        }
         MayaUsd::utils::saveLayerWithFormat(root, newFileName);
 
         MayaUsd::utils::setNewProxyPath(pShape->name(), UsdMayaUtil::convert(newFileName));

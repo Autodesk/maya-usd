@@ -177,9 +177,16 @@ void SaveLayerPathRow::setPathToSaveAs(const std::string& path)
 void SaveLayerPathRow::onOpenBrowser()
 {
     std::string fileName;
-    if (SaveLayersDialog::saveLayerFilePathUI(fileName)) {
-        if (UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile()) {
-            fileName = UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(fileName);
+    if (SaveLayersDialog::saveLayerFilePathUI(fileName, _layerPair.second._layerParent)) {
+        if (_layerPair.second._layerParent) {
+            if (UsdMayaUtilFileSystem::requireUsdPathsRelativeToParentLayer()) {
+                fileName = UsdMayaUtilFileSystem::getPathRelativeToLayerFile(
+                    fileName, _layerPair.second._layerParent);
+            }
+        } else {
+            if (UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile()) {
+                fileName = UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(fileName);
+            }
         }
 
         setPathToSaveAs(fileName);
@@ -582,11 +589,19 @@ bool SaveLayersDialog::okToSave()
 }
 
 /*static*/
-bool SaveLayersDialog::saveLayerFilePathUI(std::string& out_filePath)
+bool SaveLayersDialog::saveLayerFilePathUI(
+    std::string&                  out_filePath,
+    const PXR_NS::SdfLayerRefPtr& parentLayer)
 {
+    const bool useSceneFileForRoot = true;
+    UsdMayaUtilFileSystem::prepareLayerSaveUILayer(parentLayer, useSceneFileForRoot);
+
+    MString cmd;
+    cmd.format("UsdLayerEditor_SaveLayerFileDialog(^1s)", parentLayer ? "0" : "1");
+
     MString fileSelected;
     MGlobal::executeCommand(
-        MString("UsdLayerEditor_SaveLayerFileDialog"),
+        cmd,
         fileSelected,
         /*display*/ true,
         /*undo*/ false);
