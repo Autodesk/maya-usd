@@ -337,8 +337,6 @@ UsdAttributes::renameAttributeCmd(const std::string& originalName, const std::st
 #endif
 #endif
 
-#ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4024)
 // Helpers for validation and execution:
 bool UsdAttributes::canAddAttribute(const UsdSceneItem::Ptr& item, const Ufe::Attribute::Type& type)
 {
@@ -455,22 +453,99 @@ bool UsdAttributes::canRemoveAttribute(const UsdSceneItem::Ptr& item, const std:
     }
     return false;
 }
+
 static void removeConnections(const PXR_NS::UsdPrim& prim, const PXR_NS::SdfPath& srcPropertyPath)
 {
     // Remove the connections with source srcPropertyPath.
-    for (const auto& node : prim.GetChildren()) {
-        for (const auto& attribute : node.GetAttributes()) {
-            PXR_NS::UsdAttribute  attr = attribute.As<PXR_NS::UsdAttribute>();
-            PXR_NS::SdfPathVector sources;
-            attr.GetConnections(&sources);
+    for (const auto& attribute : prim.GetAttributes()) {
+        PXR_NS::UsdAttribute  attr = attribute.As<PXR_NS::UsdAttribute>();
+        PXR_NS::SdfPathVector sources;
+        attr.GetConnections(&sources);
 
-            for (size_t i = 0; i < sources.size(); ++i) {
-                if (sources[i] == srcPropertyPath) {
-                    attr.RemoveConnection(srcPropertyPath);
-                    break;
-                }
+        for (size_t i = 0; i < sources.size(); ++i) {
+            if (sources[i] == srcPropertyPath) {
+                attr.RemoveConnection(srcPropertyPath);
+                // Check if we can remove also the property.
+                // Remove the property.
+                break;
             }
         }
+    }
+}
+
+static void
+removeAllChildrenConnections(const PXR_NS::UsdPrim& prim, const PXR_NS::SdfPath& srcPropertyPath)
+{
+    // Remove the connections with source srcPropertyPath for all the children.
+    for (const auto& childPrim : prim.GetChildren()) {
+        removeConnections(childPrim, srcPropertyPath);
+    }
+}
+
+static void removeShadeNodeGraphConnections(const PXR_NS::UsdAttribute& attr)
+{
+    const auto prim = attr.GetPrim();
+
+    if (!prim) {
+        return;
+    }
+
+    PXR_NS::UsdShadeNodeGraph      ngPrim(prim);
+    PXR_NS::UsdShadeConnectableAPI connectApi(prim);
+
+    if (!ngPrim || !connectApi) {
+        return;
+    }
+
+    const auto primParent = prim.GetParent();
+
+    if (!primParent) {
+        return;
+    }
+
+    const auto baseNameAndType
+        = PXR_NS::UsdShadeUtils::GetBaseNameAndType(PXR_NS::TfToken(attr.GetName()));
+
+    if (baseNameAndType.second != PXR_NS::UsdShadeAttributeType::Output
+        && baseNameAndType.second != PXR_NS::UsdShadeAttributeType::Input) {
+        return;
+    }
+
+    UsdShadeSourceInfoVector sourcesInfo = connectApi.GetConnectedSources(attr);
+
+    if (!sourcesInfo.empty()) {
+        // The attribute is the connection destination.
+        const PXR_NS::UsdPrim connectedPrim = sourcesInfo[0].source.GetPrim();
+
+        if (connectedPrim) {
+            const std::string prefix = connectedPrim == primParent
+                ? PXR_NS::UsdShadeUtils::GetPrefixForAttributeType(
+                    PXR_NS::UsdShadeAttributeType::Input)
+                : PXR_NS::UsdShadeUtils::GetPrefixForAttributeType(
+                    PXR_NS::UsdShadeAttributeType::Output);
+
+            const std::string sourceName = prefix + sourcesInfo[0].sourceName.GetString();
+
+            auto srcAttr = connectedPrim.GetAttribute(PXR_NS::TfToken(sourceName));
+
+            if (srcAttr) {
+                UsdShadeConnectableAPI::DisconnectSource(attr, srcAttr);
+                // Check if we can remove also the property.
+                // Remove the property.
+            }
+        }
+    }
+
+    const SdfPath kPrimPath = prim.GetPath();
+    const SdfPath kPropertyPath = kPrimPath.AppendProperty(attr.GetName());
+
+    if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Output) {
+        removeAllChildrenConnections(primParent, kPropertyPath);
+        removeConnections(primParent, kPropertyPath);
+    }
+
+    if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input) {
+        removeAllChildrenConnections(prim, kPropertyPath);
     }
 }
 
@@ -488,23 +563,18 @@ bool UsdAttributes::doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::
     PXR_NS::UsdShadeNodeGraph      ngPrim(prim);
     PXR_NS::UsdShadeConnectableAPI connectApi(prim);
     if (ngPrim && connectApi) {
-        const SdfPath kPrimPath = prim.GetPath();
-        const SdfPath kPropertyPath = kPrimPath.AppendProperty(attribute.GetName());
-        auto          baseNameAndType = PXR_NS::UsdShadeUtils::GetBaseNameAndType(nameAsToken);
+        auto baseNameAndType = PXR_NS::UsdShadeUtils::GetBaseNameAndType(nameAsToken);
         if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Output) {
             auto output = connectApi.GetOutput(baseNameAndType.first);
             if (output) {
-                auto parent = prim.GetParent();
-                if (parent) {
-                    removeConnections(parent, kPropertyPath);
-                }
+                removeShadeNodeGraphConnections(attribute);
                 connectApi.ClearSources(output);
                 return prim.RemoveProperty(nameAsToken);
             }
         } else if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input) {
             auto input = connectApi.GetInput(baseNameAndType.first);
             if (input) {
-                removeConnections(prim, kPropertyPath);
+                removeShadeNodeGraphConnections(attribute);
                 connectApi.ClearSources(input);
                 return prim.RemoveProperty(nameAsToken);
             }
@@ -512,8 +582,7 @@ bool UsdAttributes::doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::
     }
     return false;
 }
-#endif
-#if (UFE_PREVIEW_VERSION_NUM >= 4034)
+
 bool UsdAttributes::canRenameAttribute(
     const UsdSceneItem::Ptr& sceneItem,
     const std::string&       originalName,
@@ -635,7 +704,6 @@ Ufe::Attribute::Ptr UsdAttributes::doRenameAttribute(
 
     return renamedAttr;
 }
-#endif
-#endif
+
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
