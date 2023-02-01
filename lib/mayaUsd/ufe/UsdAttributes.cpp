@@ -337,6 +337,8 @@ UsdAttributes::renameAttributeCmd(const std::string& originalName, const std::st
 #endif
 #endif
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4024)
 // Helpers for validation and execution:
 bool UsdAttributes::canAddAttribute(const UsdSceneItem::Ptr& item, const Ufe::Attribute::Type& type)
 {
@@ -582,7 +584,8 @@ bool UsdAttributes::doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::
     }
     return false;
 }
-
+#endif
+#if (UFE_PREVIEW_VERSION_NUM >= 4034)
 bool UsdAttributes::canRenameAttribute(
     const UsdSceneItem::Ptr& sceneItem,
     const std::string&       originalName,
@@ -704,6 +707,7 @@ Ufe::Attribute::Ptr UsdAttributes::doRenameAttribute(
 
     return renamedAttr;
 }
-
+#endif
+#endif
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
