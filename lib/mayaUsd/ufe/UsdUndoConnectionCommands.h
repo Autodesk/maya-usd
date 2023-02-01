@@ -19,8 +19,6 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/undo/UsdUndoableItem.h>
 
-#include <pxr/usd/usd/attribute.h>
-
 #include <ufe/attribute.h>
 #include <ufe/undoableCommand.h>
 
@@ -95,10 +93,6 @@ public:
     void execute() override;
     void undo() override;
     void redo() override;
-
-    static void deleteConnection(
-        const PXR_NS::UsdAttribute& srcUsdAttr,
-        const PXR_NS::UsdAttribute& dstUsdAttr);
 
 private:
     UsdUndoableItem                     _undoableItem;

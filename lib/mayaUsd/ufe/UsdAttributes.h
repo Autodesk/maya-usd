@@ -88,7 +88,6 @@ public:
     static std::string getUniqueAttrName(const UsdSceneItem::Ptr& item, const std::string& name);
     static bool        canRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
     static bool        doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
-    static void        removeAttrConnections(const PXR_NS::UsdAttribute& attr);
 #endif
 #if (UFE_PREVIEW_VERSION_NUM >= 4034)
     static bool canRenameAttribute(

@@ -19,7 +19,6 @@
 #include "Utils.h"
 
 #include <mayaUsd/ufe/UsdAttributeHolder.h>
-#include <mayaUsd/ufe/UsdUndoConnectionCommands.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
@@ -456,80 +455,22 @@ bool UsdAttributes::canRemoveAttribute(const UsdSceneItem::Ptr& item, const std:
     }
     return false;
 }
-
-void UsdAttributes::removeAttrConnections(const PXR_NS::UsdAttribute& attr)
+static void removeConnections(const PXR_NS::UsdPrim& prim, const PXR_NS::SdfPath& srcPropertyPath)
 {
-    const auto kPrim = attr.GetPrim();
+    // Remove the connections with source srcPropertyPath.
+    for (const auto& node : prim.GetChildren()) {
+        for (const auto& attribute : node.GetAttributes()) {
+            PXR_NS::UsdAttribute  attr = attribute.As<PXR_NS::UsdAttribute>();
+            PXR_NS::SdfPathVector sources;
+            attr.GetConnections(&sources);
 
-    if (!kPrim) {
-        return;
-    }
-
-    const auto kPrimParent = kPrim.GetParent();
-
-    if (!kPrimParent) {
-        return;
-    }
-
-    PXR_NS::UsdShadeConnectableAPI connectApi(kPrim);
-
-    if (!connectApi) {
-        return;
-    }
-
-    auto deleteAttrsConnections = [&attr](const PXR_NS::UsdPrim& prim) {
-        for (const auto& dstAttr : prim.GetAttributes()) {
-            // If there is a connection, delete it.
-            UsdUndoDeleteConnectionCommand::deleteConnection(attr, dstAttr);
-        }
-    };
-
-    // The attribute could be the connection source.
-
-    const auto kBaseNameAndType
-        = PXR_NS::UsdShadeUtils::GetBaseNameAndType(PXR_NS::TfToken(attr.GetName()));
-
-    if (kBaseNameAndType.second == PXR_NS::UsdShadeAttributeType::Output) {
-        for (const auto& kPrimChild : kPrimParent.GetChildren()) {
-            if (kPrimChild == kPrim) {
-                continue;
+            for (size_t i = 0; i < sources.size(); ++i) {
+                if (sources[i] == srcPropertyPath) {
+                    attr.RemoveConnection(srcPropertyPath);
+                    break;
+                }
             }
-            deleteAttrsConnections(kPrimChild);
         }
-
-        // Check also connections to the parent.
-        deleteAttrsConnections(kPrimParent);
-    }
-
-    if (kBaseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input) {
-        for (const auto& kPrimChild : kPrim.GetChildren()) {
-            deleteAttrsConnections(kPrimChild);
-        }
-    }
-
-    UsdShadeSourceInfoVector sourcesInfo = connectApi.GetConnectedSources(attr);
-
-    if (sourcesInfo.empty()) {
-        return;
-    }
-
-    // The attribute is the connection destination.
-    const PXR_NS::UsdPrim connectedPrim = sourcesInfo[0].source.GetPrim();
-
-    if (!connectedPrim) {
-        return;
-    }
-
-    const std::string prefix = connectedPrim == kPrimParent
-        ? PXR_NS::UsdShadeUtils::GetPrefixForAttributeType(PXR_NS::UsdShadeAttributeType::Input)
-        : PXR_NS::UsdShadeUtils::GetPrefixForAttributeType(PXR_NS::UsdShadeAttributeType::Output);
-
-    const std::string sourceName = prefix + sourcesInfo[0].sourceName.GetString();
-
-    auto srcAttr = connectedPrim.GetAttribute(PXR_NS::TfToken(sourceName));
-
-    if (srcAttr) {
-        UsdUndoDeleteConnectionCommand::deleteConnection(srcAttr, attr);
     }
 }
 
@@ -553,14 +494,17 @@ bool UsdAttributes::doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::
         if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Output) {
             auto output = connectApi.GetOutput(baseNameAndType.first);
             if (output) {
-                removeAttrConnections(attribute);
+                auto parent = prim.GetParent();
+                if (parent) {
+                    removeConnections(parent, kPropertyPath);
+                }
                 connectApi.ClearSources(output);
                 return prim.RemoveProperty(nameAsToken);
             }
         } else if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input) {
             auto input = connectApi.GetInput(baseNameAndType.first);
             if (input) {
-                removeAttrConnections(attribute);
+                removeConnections(prim, kPropertyPath);
                 connectApi.ClearSources(input);
                 return prim.RemoveProperty(nameAsToken);
             }

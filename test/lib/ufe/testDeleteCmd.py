@@ -361,7 +361,6 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertTrue(stage.GetPrimAtPath('/TreeBase/trunk'))
         self.assertTrue(stage.GetPrimAtPath('/TreeBase/newChild'))
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test requires delete command with connections feature only available on Ufe 0.4.24 and later')
     def testDeleteAndRemoveConnections(self):
         '''Test deleting a prim and its connections'''
         
@@ -369,20 +368,32 @@ class DeleteCmdTestCase(unittest.TestCase):
       
         mayaUtils.openTestScene("MaterialX", "multiple_connections.ma" )
       
-        deleteItemPath         = ufe.PathString.path('|multiple_connections|multiple_connectionsShape,/Material1/UsdPreviewSurface1')
+        deleteItemPath = ufe.PathString.path('|multiple_connections|multiple_connectionsShape,/Material1/UsdPreviewSurface1')
         previewItemPath = ufe.PathString.path('|multiple_connections|multiple_connectionsShape,/Material1/UsdPreviewSurface2')
         fracItemPath = ufe.PathString.path('|multiple_connections|multiple_connectionsShape,/Material1/fractal3d1')
         parentItemPath = ufe.PathString.path('|multiple_connections|multiple_connectionsShape,/Material1')
+        surface1ItemPath = ufe.PathString.path('|multiple_connections|multiple_connectionsShape,/Material1/surface1')
+        surface2ItemPath = ufe.PathString.path('|multiple_connections|multiple_connectionsShape,/Material1/surface2')
+        surface3ItemPath = ufe.PathString.path('|multiple_connections|multiple_connectionsShape,/Material1/surface3')
+        compoundItemPath = ufe.PathString.path('|multiple_connections|multiple_connectionsShape,/Material1/compound')
 
-        ufeItem        = ufe.Hierarchy.createItem(deleteItemPath)
-        ufeItemFractal         = ufe.Hierarchy.createItem(fracItemPath)
+        ufeItem = ufe.Hierarchy.createItem(deleteItemPath)
+        ufeItemFractal = ufe.Hierarchy.createItem(fracItemPath)
         ufeItemPreview = ufe.Hierarchy.createItem(previewItemPath)
         ufeItemMaterial = ufe.Hierarchy.createItem(parentItemPath)
+        ufeItemSurface1 = ufe.Hierarchy.createItem(surface1ItemPath)
+        ufeItemSurface2 = ufe.Hierarchy.createItem(surface2ItemPath)
+        ufeItemSurface3 = ufe.Hierarchy.createItem(surface3ItemPath)
+        ufeItemCompound = ufe.Hierarchy.createItem(compoundItemPath)
 
         self.assertIsNotNone(ufeItem)
         self.assertIsNotNone(ufeItemFractal)
         self.assertIsNotNone(ufeItemPreview)
         self.assertIsNotNone(ufeItemMaterial)
+        self.assertIsNotNone(ufeItemSurface1)
+        self.assertIsNotNone(ufeItemSurface2)
+        self.assertIsNotNone(ufeItemSurface3)
+        self.assertIsNotNone(ufeItemCompound)
 
         # Test the connections before deleting the node.
         connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(ufeItemFractal.runTimeId())
@@ -397,6 +408,10 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertEqual(len(conns), 1)
 
         connections = connectionHandler.sourceConnections(ufeItemMaterial)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 2)
+
+        connections = connectionHandler.sourceConnections(ufeItemSurface3)
         conns = connections.allConnections()
         self.assertEqual(len(conns), 1)
 
@@ -413,6 +428,21 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertEqual(len(conns), 0)
 
         connections = connectionHandler.sourceConnections(ufeItemMaterial)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        connections = connectionHandler.sourceConnections(ufeItemSurface3)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        # Delete the compound.
+        cmds.delete('|multiple_connections|multiple_connectionsShape,/Material1/compound')
+
+        connections = connectionHandler.sourceConnections(ufeItemMaterial)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 0)
+
+        connections = connectionHandler.sourceConnections(ufeItemSurface3)
         conns = connections.allConnections()
         self.assertEqual(len(conns), 0)
 

@@ -68,6 +68,86 @@ UsdUndoDeleteCommand::Ptr UsdUndoDeleteCommand::create(const PXR_NS::UsdPrim& pr
 }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
+
+void removeAttributesConnections(const PXR_NS::UsdPrim& prim)
+{
+
+    PXR_NS::UsdShadeConnectableAPI connectApi(prim);
+    const auto                     kPrimParent = prim.GetParent();
+
+    if (!connectApi || !kPrimParent) {
+        return;
+    }
+
+    const PXR_NS::SdfPath kPrimPath = prim.GetPath();
+    const auto            kPrimAttrs = prim.GetAttributes();
+
+    for (const auto& attr : kPrimAttrs) {
+        const PXR_NS::SdfPath kPropertyPath = kPrimPath.AppendProperty(attr.GetName());
+        const auto            kBaseNameAndType
+            = PXR_NS::UsdShadeUtils::GetBaseNameAndType(PXR_NS::TfToken(attr.GetName()));
+
+        if (kBaseNameAndType.second != PXR_NS::UsdShadeAttributeType::Output
+            && kBaseNameAndType.second != PXR_NS::UsdShadeAttributeType::Input) {
+            continue;
+        }
+
+        if (kBaseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input) {
+            UsdShadeSourceInfoVector sourcesInfo = connectApi.GetConnectedSources(attr);
+
+            if (!sourcesInfo.empty()) {
+                // The attribute is the connection destination.
+                const PXR_NS::UsdPrim connectedPrim = sourcesInfo[0].source.GetPrim();
+
+                if (connectedPrim) {
+                    const std::string prefix = connectedPrim == kPrimParent
+                        ? PXR_NS::UsdShadeUtils::GetPrefixForAttributeType(
+                            PXR_NS::UsdShadeAttributeType::Input)
+                        : PXR_NS::UsdShadeUtils::GetPrefixForAttributeType(
+                            PXR_NS::UsdShadeAttributeType::Output);
+
+                    const std::string sourceName = prefix + sourcesInfo[0].sourceName.GetString();
+
+                    auto srcAttr = connectedPrim.GetAttribute(PXR_NS::TfToken(sourceName));
+
+                    if (srcAttr) {
+                        UsdShadeConnectableAPI::DisconnectSource(attr, srcAttr);
+                        // Check if we can remove also the property.
+                        // Remove the property.
+                    }
+                }
+            }
+        }
+
+        auto removeConnections
+            = [](const PXR_NS::UsdPrim& prim, const PXR_NS::SdfPath& srcPropertyPath) {
+                  for (const auto& attribute : prim.GetAttributes()) {
+                      PXR_NS::UsdAttribute  attr = attribute.As<PXR_NS::UsdAttribute>();
+                      PXR_NS::SdfPathVector sources;
+                      attr.GetConnections(&sources);
+
+                      for (size_t i = 0; i < sources.size(); ++i) {
+                          if (sources[i] == srcPropertyPath) {
+                              attr.RemoveConnection(srcPropertyPath);
+                              // Check if we can remove also the property.
+                              // Remove the property.
+                              break;
+                          }
+                      }
+                  }
+              };
+
+        if (kBaseNameAndType.second == PXR_NS::UsdShadeAttributeType::Output) {
+            removeConnections(kPrimParent, kPropertyPath);
+            for (const auto& kChildPrim : kPrimParent.GetChildren()) {
+                if (kChildPrim != prim) {
+                    removeConnections(kChildPrim, kPropertyPath);
+                }
+            }
+        }
+    }
+}
+
 void UsdUndoDeleteCommand::execute()
 {
     if (!_prim.IsValid())
@@ -87,12 +167,7 @@ void UsdUndoDeleteCommand::execute()
     }
 
     if (MayaUsd::ufe::applyCommandRestrictionNoThrow(_prim, "delete")) {
-#if (UFE_PREVIEW_VERSION_NUM >= 4024)
-        // Remove all the attributes connections.
-        for (const auto& attr : _prim.GetAttributes()) {
-            UsdAttributes::removeAttrConnections(attr);
-        }
-#endif
+        removeAttributesConnections(_prim);
         auto retVal = stage->RemovePrim(_prim.GetPath());
         if (!retVal) {
             TF_VERIFY(retVal, "Failed to delete '%s'", _prim.GetPath().GetText());

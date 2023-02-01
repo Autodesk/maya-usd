@@ -82,23 +82,6 @@ bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttrib
     return false;
 }
 
-bool isAttrConnected(const PXR_NS::UsdPrim& prim, const PXR_NS::UsdAttribute& srcUsdAttr)
-{
-    for (const auto& childPrim : prim.GetChildren()) {
-        for (const auto& attribute : childPrim.GetAttributes()) {
-            PXR_NS::UsdAttribute dstUsdAttr = attribute.As<PXR_NS::UsdAttribute>();
-            if (isConnected(srcUsdAttr, dstUsdAttr)) {
-                return true;
-            }
-        }
-    }
-
-    PXR_NS::SdfPathVector connectedAttrs;
-    srcUsdAttr.GetConnections(&connectedAttrs);
-
-    return !connectedAttrs.empty();
-}
-
 PXR_NS::SdrShaderNodeConstPtr
 _GetShaderNodeDef(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName)
 {
@@ -310,54 +293,49 @@ void UsdUndoDeleteConnectionCommand::execute()
     auto          dstAttr = attrFromUfeAttrInfo(*_dstInfo);
     UsdAttribute* dstUsdAttr = usdAttrFromUfeAttr(dstAttr);
 
-    if (!srcUsdAttr || !dstUsdAttr) {
+    if (!srcUsdAttr || !dstUsdAttr
+        || !isConnected(srcUsdAttr->usdAttribute(), dstUsdAttr->usdAttribute())) {
         return;
     }
 
-    deleteConnection(srcUsdAttr->usdAttribute(), dstUsdAttr->usdAttribute());
+    bool isDisconnected = UsdShadeConnectableAPI::DisconnectSource(
+        dstUsdAttr->usdAttribute(), srcUsdAttr->usdAttribute());
+
+    // We need to make sure we cleanup on disconnection. Since having an empty connection array
+    // counts as having connections, we need to get the array and see if it is empty.
+    PXR_NS::SdfPathVector connectedAttrs;
+    dstUsdAttr->usdAttribute().GetConnections(&connectedAttrs);
+    if (connectedAttrs.empty()) {
+        // Remove empty connection array
+        UsdShadeConnectableAPI::ClearSources(dstUsdAttr->usdAttribute());
+
+        // Remove attribute if it does not have a value, default value, or time samples. We do this
+        // on Shader nodes and on the Material outputs since they are re-created automatically.
+        // Other NodeGraph inputs and outputs require explicit removal.
+        if (!dstUsdAttr->usdAttribute().HasValue()) {
+            UsdShadeShader asShader(dstUsdAttr->usdPrim());
+            if (asShader) {
+                dstUsdAttr->usdPrim().RemoveProperty(dstUsdAttr->usdAttribute().GetName());
+            }
+            UsdShadeMaterial asMaterial(dstUsdAttr->usdPrim());
+            if (asMaterial) {
+                const TfToken baseName = dstUsdAttr->usdAttribute().GetBaseName();
+                if (baseName == UsdShadeTokens->surface || baseName == UsdShadeTokens->volume
+                    || baseName == UsdShadeTokens->displacement) {
+                    dstUsdAttr->usdPrim().RemoveProperty(dstUsdAttr->usdAttribute().GetName());
+                }
+            }
+        }
+    }
+
+    if (isDisconnected) {
+        _SendStrongConnectionChangeNotification(dstUsdAttr->usdPrim());
+    }
 }
 
 void UsdUndoDeleteConnectionCommand::undo() { _undoableItem.undo(); }
 
 void UsdUndoDeleteConnectionCommand::redo() { _undoableItem.redo(); }
-
-void UsdUndoDeleteConnectionCommand::deleteConnection(
-    const PXR_NS::UsdAttribute& srcUsdAttr,
-    const PXR_NS::UsdAttribute& dstUsdAttr)
-{
-    if (!srcUsdAttr || !dstUsdAttr || !isConnected(srcUsdAttr, dstUsdAttr)) {
-        return;
-    }
-
-    bool isDisconnected = UsdShadeConnectableAPI::DisconnectSource(dstUsdAttr, srcUsdAttr);
-
-    // We need to make sure we cleanup on disconnection. Since having an empty connection array
-    // counts as having connections, we need to get the array and see if it is empty.
-    PXR_NS::SdfPathVector connectedAttrs;
-    dstUsdAttr.GetConnections(&connectedAttrs);
-    if (connectedAttrs.empty()) {
-        // Remove empty connection array
-        UsdShadeConnectableAPI::ClearSources(dstUsdAttr);
-
-        // Remove attribute if it does not have a value, default value, or time samples.
-        // Note: the dstUsdAttr could be a connection source in the parent prim level.
-        if (!dstUsdAttr.HasValue()
-            && !isAttrConnected(dstUsdAttr.GetPrim().GetParent(), dstUsdAttr)) {
-            dstUsdAttr.GetPrim().RemoveProperty(dstUsdAttr.GetName());
-        }
-        // Remove the src property only if it is not connected anymore and has no value.
-        if (!srcUsdAttr.HasValue()
-            && !(
-                isAttrConnected(srcUsdAttr.GetPrim(), srcUsdAttr)
-                || isAttrConnected(srcUsdAttr.GetPrim().GetParent(), srcUsdAttr))) {
-            srcUsdAttr.GetPrim().RemoveProperty(srcUsdAttr.GetName());
-        }
-    }
-
-    if (isDisconnected) {
-        _SendStrongConnectionChangeNotification(dstUsdAttr.GetPrim());
-    }
-}
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
