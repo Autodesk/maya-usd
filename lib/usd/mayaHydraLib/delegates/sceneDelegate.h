@@ -81,9 +81,6 @@ public:
     MAYAHYDRALIB_API
     void RebuildAdapterOnIdle(const SdfPath& id, uint32_t flags) override;
 
-    MAYAHYDRALIB_API
-    void UpdateDisplayStatusMaterial(MHWRender::DisplayStatus displayStatus, const MColor& wireframecolor) override;
-
     /// \brief Notifies the scene delegate when a material tag changes.
     ///
     /// This function is only affects the render index when its using HdSt.
@@ -177,7 +174,9 @@ protected:
 
     MAYAHYDRALIB_API
     HdCullStyle GetCullStyle(const SdfPath& id) override;
-    // VtValue GetShadingStyle(const SdfPath& id) override;
+
+    MAYAHYDRALIB_API
+    VtValue GetShadingStyle(const SdfPath& id) override;
 
     MAYAHYDRALIB_API
     HdDisplayStyle GetDisplayStyle(const SdfPath& id) override;
@@ -256,10 +255,6 @@ private:
 		SdfPath& material,
 		MObject& shadingEngineNode);
 
-    void UpdateDisplayStatusMaterialColor(const SdfPath& materialPath, HdMaterialNetworkMap& material, const GfVec4f& selCol);
-    void CreateDisplayStatusMaterials();
-    void AddDisplayStatusMaterialsToHydra(HdRenderIndex& renderIndex);
-
     static VtValue CreateMayaDefaultMaterial();
 
     bool _CreateMaterial(const SdfPath& id, const MObject& obj);
@@ -286,20 +281,9 @@ private:
     
     std::vector<SdfPath>                       _materialTagsChanged;
 
-    SdfPath _fallbackMaterial;
+    static SdfPath _fallbackMaterial; //Hydra fallbackMaterial
     static SdfPath _mayaDefaultMaterialPath;//Common to all scene delegates
     static VtValue _mayaDefaultMaterial;
-    
-    struct DisplayStatusMaterialData
-    {
-        DisplayStatusMaterialData(const SdfPath& materialPath,const HdMaterialNetworkMap& materialNetworkMap) :_materialPath(materialPath), _materialNetworkMap(materialNetworkMap)
-        {};
-        SdfPath                 _materialPath;
-        HdMaterialNetworkMap    _materialNetworkMap;
-    };
-    typedef std::unordered_map<MHWRender::DisplayStatus, DisplayStatusMaterialData> DisplayStatusMaterialMap;
-    typedef std::unordered_map<MHWRender::DisplayStatus, DisplayStatusMaterialData>::value_type DisplayStatusMaterialMap_Type;//For using std::find_if
-    DisplayStatusMaterialMap _displayStatusMaterials;
 
     bool    _useDefaultMaterial = false;
     bool    _xRayEnabled        = false;

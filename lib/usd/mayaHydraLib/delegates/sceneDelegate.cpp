@@ -68,6 +68,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+SdfPath MayaHydraSceneDelegate::_fallbackMaterial;
 SdfPath MayaHydraSceneDelegate::_mayaDefaultMaterialPath;//Common to all scene delegates
 VtValue MayaHydraSceneDelegate::_mayaDefaultMaterial;
 
@@ -192,21 +193,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     (MayaHydraSceneDelegate)
-    ((FallbackMaterial, "__fallback_material__"))
+    ((FallbackMaterial, "")) // Empty path for hydra fallback material
     ((MayaDefaultMaterial, "__maya_default_material__"))
-    ((ActiveDisplayStatusMaterial, "__active_selection_material__"))
-    ((LiveDisplayStatusMaterial, "__live_selection_material__"))
-    ((DormantDisplayStatusMaterial, "__dormant_selection_material__"))
-    ((HiliteDisplayStatusMaterial, "__hilite_selection_material__"))
-    ((TemplateDisplayStatusMaterial, "__template_selection_material__"))
-    ((ActiveTemplateDisplayStatusMaterial, "__activetemplate_selection_material__"))
-    ((ActiveComponentDisplayStatusMaterial, "__activecomponent_selection_material__"))
-    ((LeadDisplayStatusMaterial, "__lead_selection_material__"))
-    ((ActiveAffectedDisplayStatusMaterial, "__activeaffected_selection_material__"))
     (diffuseColor)
     (emissiveColor)
     (roughness)
     (MayaHydraMeshPoints)
+    (constantLighting)
 );
 // clang-format on
 
@@ -227,7 +220,6 @@ TF_REGISTRY_FUNCTION_WITH_TAG(MayaHydraDelegateRegistry, MayaHydraSceneDelegate)
 
 MayaHydraSceneDelegate::MayaHydraSceneDelegate(const InitData& initData)
     : MayaHydraDelegateCtx(initData)
-    , _fallbackMaterial(initData.delegateID.AppendChild(_tokens->FallbackMaterial))
 {
     //TfDebug::Enable(MAYAHYDRALIB_DELEGATE_GET_MATERIAL_ID);
     //TfDebug::Enable(MAYAHYDRALIB_DELEGATE_GET);
@@ -235,11 +227,12 @@ MayaHydraSceneDelegate::MayaHydraSceneDelegate(const InitData& initData)
     //Enable MAYAHYDRALIB_ADAPTER_MATERIALS_PARAMS to print to the output window the materials parameters type and values when there is a change in one of them.
     //TfDebug::Enable(MAYAHYDRALIB_ADAPTER_MATERIALS_PARAMS);
 
-    CreateDisplayStatusMaterials();
-    if (_mayaDefaultMaterialPath.IsEmpty()){
-        _mayaDefaultMaterialPath    = SdfPath::AbsoluteRootPath().AppendChild(_tokens->MayaDefaultMaterial);//Is an absolute path, not linked to a scene delegate
-        _mayaDefaultMaterial        = MayaHydraSceneDelegate::CreateMayaDefaultMaterial();
-    }
+    static std::once_flag once;
+    std::call_once(once, []() {
+        _mayaDefaultMaterialPath = SdfPath::AbsoluteRootPath().AppendChild(_tokens->MayaDefaultMaterial);//Is an absolute path, not linked to a scene delegate
+        _mayaDefaultMaterial = MayaHydraSceneDelegate::CreateMayaDefaultMaterial();
+        _fallbackMaterial = SdfPath(_tokens->FallbackMaterial);
+    });
 }
 
 MayaHydraSceneDelegate::~MayaHydraSceneDelegate()
@@ -262,72 +255,6 @@ MayaHydraSceneDelegate::~MayaHydraSceneDelegate()
 #endif
 }
 
-void MayaHydraSceneDelegate::CreateDisplayStatusMaterials()
-{
-    //Init Display status materials
-    _displayStatusMaterials.insert( {MHWRender::DisplayStatus::kActive,         DisplayStatusMaterialData(SdfPath::AbsoluteRootPath().AppendChild(_tokens->ActiveDisplayStatusMaterial),            HdMaterialNetworkMap())} );
-    _displayStatusMaterials.insert( {MHWRender::DisplayStatus::kLive,           DisplayStatusMaterialData(SdfPath::AbsoluteRootPath().AppendChild(_tokens->LiveDisplayStatusMaterial),              HdMaterialNetworkMap())} );
-    _displayStatusMaterials.insert( {MHWRender::DisplayStatus::kDormant,        DisplayStatusMaterialData(SdfPath::AbsoluteRootPath().AppendChild(_tokens->DormantDisplayStatusMaterial),           HdMaterialNetworkMap())} );//Used when viewport needs wireframe primitives
-    _displayStatusMaterials.insert( {MHWRender::DisplayStatus::kHilite,         DisplayStatusMaterialData(SdfPath::AbsoluteRootPath().AppendChild(_tokens->HiliteDisplayStatusMaterial),            HdMaterialNetworkMap())} );
-    _displayStatusMaterials.insert( {MHWRender::DisplayStatus::kTemplate,       DisplayStatusMaterialData(SdfPath::AbsoluteRootPath().AppendChild(_tokens->TemplateDisplayStatusMaterial),          HdMaterialNetworkMap())} );
-    _displayStatusMaterials.insert( {MHWRender::DisplayStatus::kActiveTemplate, DisplayStatusMaterialData(SdfPath::AbsoluteRootPath().AppendChild(_tokens->ActiveTemplateDisplayStatusMaterial),    HdMaterialNetworkMap())} );
-    _displayStatusMaterials.insert( {MHWRender::DisplayStatus::kActiveComponent,DisplayStatusMaterialData(SdfPath::AbsoluteRootPath().AppendChild(_tokens->ActiveComponentDisplayStatusMaterial),   HdMaterialNetworkMap())} );
-    _displayStatusMaterials.insert( {MHWRender::DisplayStatus::kLead,           DisplayStatusMaterialData(SdfPath::AbsoluteRootPath().AppendChild(_tokens->LeadDisplayStatusMaterial),              HdMaterialNetworkMap())} );
-    _displayStatusMaterials.insert( {MHWRender::DisplayStatus::kActiveAffected, DisplayStatusMaterialData(SdfPath::AbsoluteRootPath().AppendChild(_tokens->ActiveAffectedDisplayStatusMaterial),    HdMaterialNetworkMap())} );
-
-    //Apply a default white color which will be replaced by an actual color value coming from a renderitem which has the related display status.
-    static const VtValue whiteColor = VtValue(GfVec4f(1.f,1.f,1.f,1.f));
-
-    //Init the HdMaterialNetworkMap from each of the display status materials
-    for (auto& displayStatusMat : _displayStatusMaterials){
-        HdMaterialNetwork network;
-        HdMaterialNode node;
-        node.identifier     = UsdImagingTokens->UsdPreviewSurface;
-        node.path           = displayStatusMat.second._materialPath;
-        node.parameters.insert({_tokens->diffuseColor, whiteColor});
-        network.nodes.push_back(std::move(node));
-        displayStatusMat.second._materialNetworkMap.map.insert({HdMaterialTerminalTokens->surface, std::move(network)});
-        displayStatusMat.second._materialNetworkMap.terminals.push_back(node.path);
-    }
-}
-
-void MayaHydraSceneDelegate::AddDisplayStatusMaterialsToHydra(HdRenderIndex& renderIndex)
-{
-    for (auto& displayStatusMat : _displayStatusMaterials){
-        renderIndex.InsertSprim(HdPrimTypeTokens->material, this, displayStatusMat.second._materialPath);
-    }
-}
-
-void MayaHydraSceneDelegate::UpdateDisplayStatusMaterial(MHWRender::DisplayStatus displayStatus, const MColor& wireframecolor)
-{
-    auto it = _displayStatusMaterials.find(displayStatus);
-    if (it != _displayStatusMaterials.end()){
-        UpdateDisplayStatusMaterialColor(it->second._materialPath, it->second._materialNetworkMap, GfVec4f (wireframecolor[0], wireframecolor[1], wireframecolor[2], wireframecolor[3]));
-    }
-}
-
-void MayaHydraSceneDelegate::UpdateDisplayStatusMaterialColor(const SdfPath& materialPath, HdMaterialNetworkMap& material, const GfVec4f& selCol)
-{
-    static const VtValue blackColor (GfVec4f(0.f, 0.f, 0.f, 1.0f));
-    material.map.clear();
-    HdMaterialNetwork network;
-    HdMaterialNode node;
-    node.identifier     = UsdImagingTokens->UsdPreviewSurface;
-    node.path           = materialPath;
-    if (IsHdSt()){
-        //In Storm, set diffuse color to black and specular roughness to 1.0f to avoid lighting and emissive color to the color we want
-        //TODO: use constantColor ShadingStyle to aviod lighting for better performance
-        node.parameters.insert({_tokens->diffuseColor, blackColor}); // get rid of diffuse color part
-        node.parameters.insert({_tokens->roughness, VtValue(1.0f)}); // get rid of specular color part
-        node.parameters.insert({_tokens->emissiveColor, VtValue(selCol)});
-    }else{
-        node.parameters.insert({_tokens->diffuseColor, VtValue(selCol)});
-    }
-    network.nodes.push_back(std::move(node));
-    material.map.insert({HdMaterialTerminalTokens->surface, std::move(network)});
-
-    GetChangeTracker().MarkSprimDirty(materialPath, HdMaterial::DirtyParams);
-}
 
 VtValue MayaHydraSceneDelegate::CreateMayaDefaultMaterial()
 {
@@ -486,11 +413,8 @@ void MayaHydraSceneDelegate::Populate()
 
     // Adding materials sprim to the render index.
     if (renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->material)) {
-        renderIndex.InsertSprim(HdPrimTypeTokens->material, this, _fallbackMaterial);
         renderIndex.InsertSprim(HdPrimTypeTokens->material, this, _mayaDefaultMaterialPath);//TODO check when we have multiple scene delegates if this is still correct to add it per scene delegate.
-        AddDisplayStatusMaterialsToHydra(renderIndex);
     }
-	
 
 	// Add a meshPoints repr since it isn't populated in 
 	// HdRenderIndex::_ConfigureReprs
@@ -914,6 +838,11 @@ bool MayaHydraSceneDelegate::_GetRenderItemMaterial(
 	MObject& shadingEngineNode
 	)
 {
+    if (MHWRender::MGeometry::Primitive::kLines == ri.primitive()) {
+        material = _fallbackMaterial; // Use fallbackMaterial + constantLighting + displayColor
+        return true;
+    }
+
 	if (GetShadingEngineNode(ri, shadingEngineNode))
 		// Else try to find associated material node if this is a material shader.
 		// NOTE: The existing maya material support in hydra expects a shading engine node
@@ -1620,11 +1549,7 @@ SdfPath MayaHydraSceneDelegate::GetMaterialId(const SdfPath& id)
 
     //Check if this render item is a wireframe primitive
     if (MHWRender::MGeometry::Primitive::kLines == renderItemAdapter->GetPrimitive()){
-        const MHWRender::DisplayStatus displayStatus    = renderItemAdapter->GetDisplayStatus();
-        auto it = _displayStatusMaterials.find(displayStatus);
-        if (it != _displayStatusMaterials.end()){
-            return it->second._materialPath;
-        }
+        return _fallbackMaterial;
     }
 
     if (_useDefaultMaterial)
@@ -1685,13 +1610,6 @@ VtValue MayaHydraSceneDelegate::GetMaterialResource(const SdfPath& id)
 	{
 		return MayaHydraMaterialAdapter::GetPreviewMaterialResource(id);
 	}
-   
-    //Find if this material path is inside our display status map
-    auto itResult = std::find_if(cbegin(_displayStatusMaterials), cend(_displayStatusMaterials), 
-                    [&id](const DisplayStatusMaterialMap_Type& data){ return data.second._materialPath == id; });
-    if (itResult != _displayStatusMaterials.end()){
-        return VtValue(itResult->second._materialNetworkMap);
-    }
 
 #ifdef MAYAHYDRALIB_SCENE_RENDER_DATASERVER
 	// TODO this is the same as !MAYAHYDRALIB_SCENE_RENDER_DATASERVER
@@ -1742,6 +1660,16 @@ SdfPath MayaHydraSceneDelegate::SetCameraViewport(const MDagPath& camPath, const
         return camID;
     }
     return {};
+}
+
+VtValue MayaHydraSceneDelegate::GetShadingStyle(SdfPath const& id)
+{
+    if (auto&& ri = TfMapLookupPtr(_renderItemsAdapters, id)) {
+        if (MHWRender::MGeometry::Primitive::kLines == (*ri)->GetPrimitive()) {
+            return VtValue(_tokens->constantLighting); // Use fallbackMaterial + constantLighting + displayColor
+        }
+    }
+    return MayaHydraDelegateCtx::GetShadingStyle(id);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

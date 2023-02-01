@@ -165,24 +165,19 @@ void MayaHydraRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data
 	const bool visibChanged		= data._flags & MVS::MVS_changedVisibility;
 	const bool effectChanged	= data._flags & MVS::MVS_changedEffect;
 	
-	const bool isLinePrimitive	= (MHWRender::MGeometry::Primitive::kLines == _primitive);
-
 	HdDirtyBits dirtyBits = 0;
 
-	_wireframeColor				= data._wireframeColor;
+	if (data._wireframeColor != _wireframeColor) {
+		_wireframeColor = data._wireframeColor;
+		dirtyBits |= HdChangeTracker::DirtyPrimvar; // displayColor primVar
+	}
+	
 	_displayStatus				= data._displayStatus;
 	const bool hideOnPlayback	= data._ri.isHideOnPlayback();
 	if (hideOnPlayback != _isHideOnPlayback){
 		_isHideOnPlayback	= hideOnPlayback;
 		dirtyBits			|= HdChangeTracker::DirtyVisibility;
 	}
-	
-	//At some point, we will have to handle the dormant color if the user customized the wireframe color of an object
-	//as we use the same color for all dormant objects
-	if (isLinePrimitive){
-		GetDelegate()->UpdateDisplayStatusMaterial(_displayStatus, _wireframeColor);
-	}
-	
 
 	if (visibChanged)
 	{
