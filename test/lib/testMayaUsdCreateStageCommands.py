@@ -84,7 +84,7 @@ class MayaUsdCreateStageCommandsTestCase(unittest.TestCase):
         # Create the same stage and verify that now it's open as relative
         shapeNodeRel = mel.eval('mayaUsd_createStageFromFilePath(\"'+ballFilePath+'\")')
         filePathAttrRel = cmds.getAttr(shapeNodeRel+'.filePath')
-        self.assertTrue(self.samefile(filePathAttrRel, 'top_layer.usda'))
+        self.assertEqual(filePathAttrRel, 'top_layer.usda')
         
         # Restore mayaUsd_MakePathRelativeToSceneFile
         cmds.optionVar(iv=('mayaUsd_MakePathRelativeToSceneFile', 0))
