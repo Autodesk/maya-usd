@@ -17,6 +17,7 @@
 #
 
 import os
+import mayaUtils
 import platform
 import unittest
 
@@ -53,6 +54,10 @@ class MayaUsdCreateStageCommandsTestCase(unittest.TestCase):
         self.assertTrue(cmds.isConnected('time1.outTime', shapeNode+'.time'))
 
     def testCreateStageFromFile(self):
+        # Open top_layer.ma and make sure to have USD stage paths as absolute
+        mayaUtils.openTopLayerScene()
+        cmds.optionVar(iv=('mayaUsd_MakePathRelativeToSceneFile', 0))
+
         # We cannot directly call the 'mayaUsdCreateStageFromFile'
         # as it opens a file dialog to choose the scene. So instead
         # we can call what it does once the file is choose.
@@ -72,3 +77,14 @@ class MayaUsdCreateStageCommandsTestCase(unittest.TestCase):
 
         # Verify that the shape node is connected to time.
         self.assertTrue(cmds.isConnected('time1.outTime', shapeNode+'.time'))
+
+        # Now switch to having USD stage paths as relative to Maya scene file
+        cmds.optionVar(iv=('mayaUsd_MakePathRelativeToSceneFile', 1))
+        
+        # Create the same stage and verify that now it's open as relative
+        shapeNodeRel = mel.eval('mayaUsd_createStageFromFilePath(\"'+ballFilePath+'\")')
+        filePathAttrRel = cmds.getAttr(shapeNodeRel+'.filePath')
+        self.assertTrue(self.samefile(filePathAttrRel, 'top_layer.usda'))
+        
+        # Restore mayaUsd_MakePathRelativeToSceneFile
+        cmds.optionVar(iv=('mayaUsd_MakePathRelativeToSceneFile', 0))
