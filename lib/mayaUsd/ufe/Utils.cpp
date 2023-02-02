@@ -447,6 +447,120 @@ TfTokenVector getProxyShapePurposes(const Ufe::Path& path)
     return purposes;
 }
 
+bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttribute& dstUsdAttr)
+{
+    PXR_NS::SdfPathVector connectedAttrs;
+    dstUsdAttr.GetConnections(&connectedAttrs);
+
+    for (PXR_NS::SdfPath path : connectedAttrs) {
+        if (path == srcUsdAttr.GetPath()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool canRemoveSrcProperty(const PXR_NS::UsdAttribute& srcAttr)
+{
+
+    // Do not remove if it has a value.
+    if (srcAttr.HasValue()) {
+        return false;
+    }
+
+    PXR_NS::SdfPathVector connectedAttrs;
+    srcAttr.GetConnections(&connectedAttrs);
+
+    // Do not remove if it has connections.
+    if (!connectedAttrs.empty()) {
+        return false;
+    }
+
+    const auto prim = srcAttr.GetPrim();
+
+    if (!prim) {
+        return false;
+    }
+
+    PXR_NS::UsdShadeNodeGraph ngPrim(prim);
+
+    if (!ngPrim) {
+        const auto primParent = prim.GetParent();
+
+        if (!primParent) {
+            return false;
+        }
+
+        // Do not remove if there is a connection with a prim.
+        for (const auto& childPrim : primParent.GetChildren()) {
+            if (childPrim != prim) {
+                for (const auto& attribute : childPrim.GetAttributes()) {
+                    const PXR_NS::UsdAttribute dstUsdAttr = attribute.As<PXR_NS::UsdAttribute>();
+                    if (isConnected(srcAttr, dstUsdAttr)) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        // Do not remove if there is a connection with the parent prim.
+        for (const auto& attribute : primParent.GetAttributes()) {
+            const PXR_NS::UsdAttribute dstUsdAttr = attribute.As<PXR_NS::UsdAttribute>();
+            if (isConnected(srcAttr, dstUsdAttr)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // Do not remove boundary properties even if there are connections.
+    return false;
+}
+
+bool canRemoveDstProperty(const PXR_NS::UsdAttribute& dstAttr)
+{
+
+    // Do not remove if it has a value.
+    if (dstAttr.HasValue()) {
+        return false;
+    }
+
+    PXR_NS::SdfPathVector connectedAttrs;
+    dstAttr.GetConnections(&connectedAttrs);
+
+    // Do not remove if it has connections.
+    if (!connectedAttrs.empty()) {
+        return false;
+    }
+
+    const auto prim = dstAttr.GetPrim();
+
+    if (!prim) {
+        return false;
+    }
+
+    PXR_NS::UsdShadeNodeGraph ngPrim(prim);
+
+    if (!ngPrim) {
+        return true;
+    }
+
+    UsdShadeMaterial asMaterial(prim);
+    if (asMaterial) {
+        const TfToken baseName = dstAttr.GetBaseName();
+        // Remove Material intrinsic outputs since they are re-created automatically.
+        if (baseName == UsdShadeTokens->surface || baseName == UsdShadeTokens->volume
+            || baseName == UsdShadeTokens->displacement) {
+            return true;
+        }
+    }
+
+    // Do not remove boundary properties even if there are connections.
+    return false;
+}
+
 namespace {
 
 SdfLayerHandle getStrongerLayer(

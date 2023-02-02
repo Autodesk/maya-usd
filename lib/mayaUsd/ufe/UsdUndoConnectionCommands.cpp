@@ -68,20 +68,6 @@ UsdAttribute* usdAttrFromUfeAttr(const Ufe::Attribute::Ptr& attr)
     return dynamic_cast<UsdAttribute*>(attr.get());
 }
 
-bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttribute& dstUsdAttr)
-{
-    PXR_NS::SdfPathVector connectedAttrs;
-    dstUsdAttr.GetConnections(&connectedAttrs);
-
-    for (PXR_NS::SdfPath path : connectedAttrs) {
-        if (path == srcUsdAttr.GetPath()) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 PXR_NS::SdrShaderNodeConstPtr
 _GetShaderNodeDef(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName)
 {
@@ -169,7 +155,7 @@ void UsdUndoCreateConnectionCommand::execute()
         return;
     }
 
-    if (isConnected(srcUsdAttr->usdAttribute(), dstUsdAttr->usdAttribute())) {
+    if (MayaUsd::ufe::isConnected(srcUsdAttr->usdAttribute(), dstUsdAttr->usdAttribute())) {
         return;
     }
 
@@ -284,104 +270,6 @@ UsdUndoDeleteConnectionCommand::Ptr UsdUndoDeleteConnectionCommand::create(
     return std::make_shared<UsdUndoDeleteConnectionCommand>(srcAttr, dstAttr);
 }
 
-bool canRemoveSrcProperty(const PXR_NS::UsdAttribute& srcAttr)
-{
-    // Do not remove if it has a value.
-    if (srcAttr.HasValue()) {
-        return false;
-    }
-
-    PXR_NS::SdfPathVector connectedAttrs;
-    srcAttr.GetConnections(&connectedAttrs);
-
-    // Do not remove if it has connections.
-    if (!connectedAttrs.empty()) {
-        return false;
-    }
-
-    const auto prim = srcAttr.GetPrim();
-
-    if (!prim) {
-        return false;
-    }
-
-    PXR_NS::UsdShadeNodeGraph ngPrim(prim);
-
-    if (!ngPrim) {
-        const auto primParent = prim.GetParent();
-
-        if (!primParent) {
-            return false;
-        }
-
-        // Do not remove if there is a connection with a prim.
-        for (const auto& childPrim : primParent.GetChildren()) {
-            if (childPrim != prim) {
-                for (const auto& attribute : childPrim.GetAttributes()) {
-                    const PXR_NS::UsdAttribute dstUsdAttr = attribute.As<PXR_NS::UsdAttribute>();
-                    if (isConnected(srcAttr, dstUsdAttr)) {
-                        return false;
-                    }
-                }
-            }
-        }
-
-        // Do not remove if there is a connection with the parent prim.
-        for (const auto& attribute : primParent.GetAttributes()) {
-            const PXR_NS::UsdAttribute dstUsdAttr = attribute.As<PXR_NS::UsdAttribute>();
-            if (isConnected(srcAttr, dstUsdAttr)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    // Do not remove boundary properties even if there are connections.
-    return false;
-}
-
-bool canRemoveDstProperty(const PXR_NS::UsdAttribute& dstAttr)
-{
-    // Do not remove if it has a value.
-    if (dstAttr.HasValue()) {
-        return false;
-    }
-
-    PXR_NS::SdfPathVector connectedAttrs;
-    dstAttr.GetConnections(&connectedAttrs);
-
-    // Do not remove if it has connections.
-    if (!connectedAttrs.empty()) {
-        return false;
-    }
-
-    const auto prim = dstAttr.GetPrim();
-
-    if (!prim) {
-        return false;
-    }
-
-    PXR_NS::UsdShadeNodeGraph ngPrim(prim);
-
-    if (!ngPrim) {
-        return true;
-    }
-
-    UsdShadeMaterial asMaterial(prim);
-    if (asMaterial) {
-        const TfToken baseName = dstAttr.GetBaseName();
-        // Remove Material intrinsic outputs since they are re-created automatically.
-        if (baseName == UsdShadeTokens->surface || baseName == UsdShadeTokens->volume
-            || baseName == UsdShadeTokens->displacement) {
-            return true;
-        }
-    }
-
-    // Do not remove boundary properties even if there are connections.
-    return false;
-}
-
 void UsdUndoDeleteConnectionCommand::execute()
 {
     UsdUndoBlock undoBlock(&_undoableItem);
@@ -392,7 +280,7 @@ void UsdUndoDeleteConnectionCommand::execute()
     UsdAttribute* dstUsdAttr = usdAttrFromUfeAttr(dstAttr);
 
     if (!srcUsdAttr || !dstUsdAttr
-        || !isConnected(srcUsdAttr->usdAttribute(), dstUsdAttr->usdAttribute())) {
+        || !MayaUsd::ufe::isConnected(srcUsdAttr->usdAttribute(), dstUsdAttr->usdAttribute())) {
         return;
     }
 
@@ -410,11 +298,11 @@ void UsdUndoDeleteConnectionCommand::execute()
         // Remove attribute if it does not have a value, default value, or time samples. We do this
         // on Shader nodes and on the Material outputs since they are re-created automatically.
         // Other NodeGraph inputs and outputs require explicit removal.
-        if (canRemoveDstProperty(dstUsdAttr->usdAttribute())) {
+        if (MayaUsd::ufe::canRemoveDstProperty(dstUsdAttr->usdAttribute())) {
             dstUsdAttr->usdPrim().RemoveProperty(dstUsdAttr->usdAttribute().GetName());
         }
 
-        if (canRemoveSrcProperty(srcUsdAttr->usdAttribute())) {
+        if (MayaUsd::ufe::canRemoveSrcProperty(srcUsdAttr->usdAttribute())) {
             srcUsdAttr->usdPrim().RemoveProperty(srcUsdAttr->usdAttribute().GetName());
         }
     }
