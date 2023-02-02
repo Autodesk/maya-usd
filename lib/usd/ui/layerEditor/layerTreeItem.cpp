@@ -380,18 +380,27 @@ void LayerTreeItem::saveAnonymousLayer()
             } else {
                 auto parentItem = parentLayerItem();
 
+                std::string relativePathAnchor;
                 if (parentItem && UsdMayaUtilFileSystem::requireUsdPathsRelativeToParentLayer()) {
                     fileName = UsdMayaUtilFileSystem::getPathRelativeToLayerFile(
                         fileName, parentItem->layer());
+                    relativePathAnchor
+                        = UsdMayaUtilFileSystem::getLayerFileDir(parentItem->layer());
                 }
 
-                // now replace the layer in the parent
+                // Now replace the layer in the parent
+                //
+                // When the filePath was made relative, we need to help FindOrOpen to locate
+                //      the sub-layers when using relative paths. We temporarily chande the
+                //      current directory to the location the file path is relative to.
+                UsdMayaUtilFileSystem::TemporaryCurrentDir tempCurDir(relativePathAnchor);
                 auto newLayer = SdfLayer::FindOrOpen(fileName);
+                tempCurDir.restore();
+
                 if (newLayer) {
                     bool setTarget = _isTargetLayer;
                     auto model = parentModel();
-                    parentItem->layer()->GetSubLayerPaths().Replace(
-                        layer()->GetIdentifier(), newLayer->GetIdentifier());
+                    MayaUsd::utils::updateSubLayer(parentItem->layer(), layer(), fileName);
                     if (setTarget) {
                         sessionState->stage()->SetEditTarget(newLayer);
                     }

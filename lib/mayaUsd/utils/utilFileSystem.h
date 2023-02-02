@@ -41,10 +41,14 @@ std::string getDir(const std::string& fullFilePath);
 class TemporaryCurrentDir
 {
 public:
+    MAYAUSD_CORE_PUBLIC
     TemporaryCurrentDir(const std::string& newCurDir);
+
+    MAYAUSD_CORE_PUBLIC
     ~TemporaryCurrentDir();
 
     // Restore the previous current directory immediately.
+    MAYAUSD_CORE_PUBLIC
     void restore();
 
 private:

@@ -118,6 +118,18 @@ PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
     LayerParent            parent,
     std::string            formatArg = "");
 
+/*! \brief Update the list of sub-layers with a new layer identity.
+ *         The new sub-layer is identified by its path explicitly,
+ *         because a given layer might get referenced through multiple
+ *         different relative paths, so we cannot interrogate it about
+ *         what its path is.
+ */
+MAYAUSD_CORE_PUBLIC
+void updateSubLayer(
+    const SdfLayerRefPtr& parentLayer,
+    const SdfLayerRefPtr& oldSubLayer,
+    const std::string&    newSubLayerPath);
+
 /*! \brief Ensures that the filepath contains a valid USD extension.
  */
 MAYAUSD_CORE_PUBLIC
