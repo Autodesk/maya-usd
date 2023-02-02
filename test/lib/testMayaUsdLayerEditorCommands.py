@@ -23,7 +23,6 @@ from os import path
 from maya import cmds, mel
 import mayaUsd_createStageWithNewLayer
 import mayaUsd
-from mayaUtils import openTopLayerScene
 from pxr import Sdf, Usd
 
 CLEAR = "-clear"
@@ -574,6 +573,7 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         self.assertEqual(filePathAbs, ballFilePath)
 
         # With Maya scene file, the relative path is returned
-        openTopLayerScene()
+        mayaSceneFilePath = testUtils.getTestScene("ballset", "StandaloneScene", "top_layer.ma")
+        cmds.file(mayaSceneFilePath, force=True, open=True)
         filePathRel = mayaUsd.lib.Util.getPathRelativeToMayaSceneFile(ballFilePath)
         self.assertEqual(filePathRel, 'top_layer.usda')
