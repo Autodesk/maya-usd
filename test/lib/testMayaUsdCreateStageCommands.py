@@ -17,7 +17,7 @@
 #
 
 import os
-import mayaUtils
+from mayaUtils import openTopLayerScene
 import platform
 import unittest
 
@@ -55,7 +55,7 @@ class MayaUsdCreateStageCommandsTestCase(unittest.TestCase):
 
     def testCreateStageFromFile(self):
         # Open top_layer.ma and make sure to have USD stage paths as absolute
-        mayaUtils.openTopLayerScene()
+        openTopLayerScene()
         cmds.optionVar(iv=('mayaUsd_MakePathRelativeToSceneFile', 0))
 
         # We cannot directly call the 'mayaUsdCreateStageFromFile'
