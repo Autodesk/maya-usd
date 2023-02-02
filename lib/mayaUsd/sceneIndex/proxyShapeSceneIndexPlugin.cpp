@@ -18,10 +18,10 @@
 
 #if PXR_VERSION >= 2211
 
+#include <pxr/imaging/hd/flatteningSceneIndex.h>
 #include <pxr/imaging/hd/retainedDataSource.h>
 #include <pxr/imaging/hd/sceneIndexPlugin.h>
 #include <pxr/imaging/hd/sceneIndexPluginRegistry.h>
-#include <pxr/imaging/hd/flatteningSceneIndex.h>
 #include <pxr/usd/usd/primFlags.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
