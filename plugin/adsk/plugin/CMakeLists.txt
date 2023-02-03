@@ -27,6 +27,7 @@ target_sources(${TARGET_NAME}
         adskExportCommand.cpp
         adskListJobContextsCommand.cpp
         adskListShadingModesCommand.cpp
+        adskMaterialCommands.cpp
         adskStageLoadUnloadCommands.cpp
         geomNode.cpp
         importTranslator.cpp

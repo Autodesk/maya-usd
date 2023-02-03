@@ -5,6 +5,7 @@
 set(TEST_SCRIPT_FILES
     testBlockSceneModificationContext.py
     testDiagnosticDelegate.py
+    testMaterialCommands.py
 )
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
