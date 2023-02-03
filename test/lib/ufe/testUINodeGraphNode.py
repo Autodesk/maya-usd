@@ -58,21 +58,28 @@ class UINodeGraphNodeTestCase(unittest.TestCase):
 
     # Helper to avoid copy-pasting the entire test
     def doPosAndSizeTests(self, hasFunc, setFunc, getFunc, cmdFunc):
+        # Test hasFunc and getFunc
         self.assertFalse(hasFunc())
         pos0 = getFunc()
         self.assertEqual(pos0.x(), 0)
         self.assertEqual(pos0.y(), 0)
+
+        # Test setFunc with vector
         pos1 = ufe.Vector2f(10, 20)
         setFunc(pos1)
         self.assertTrue(hasFunc())
         pos2 = getFunc()
         self.assertEqual(pos1.x(), pos2.x())
         self.assertEqual(pos1.y(), pos2.y())
+
+        # Test setFunc with scalars
         setFunc(13, 41)
         self.assertTrue(hasFunc())
         pos3 = getFunc()
         self.assertEqual(pos3.x(), 13)
         self.assertEqual(pos3.y(), 41)
+
+        # Test cmdFunc
         pos4 = ufe.Vector2f(21, 20)
         cmd = cmdFunc(pos4)
         cmd.execute()

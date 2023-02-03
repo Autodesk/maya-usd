@@ -19,15 +19,14 @@ UsdUINodeGraphNode::SetPosOrSizeCommand::SetPosOrSizeCommand(
     CoordType              coordType,
     const PXR_NS::UsdPrim& prim,
     const Ufe::Vector2f&   newValue)
-    : Ufe::UndoableCommand()
-    , _coordType(coordType)
+    : _coordType(coordType)
     , _stage(prim.GetStage())
     , _primPath(prim.GetPath())
     , _newValue(PXR_NS::GfVec2f(newValue.x(), newValue.y()))
 {
 }
 
-void UsdUINodeGraphNode::SetPosOrSizeCommand::execute()
+void UsdUINodeGraphNode::SetPosOrSizeCommand::executeImplementation()
 {
     PXR_NAMESPACE_USING_DIRECTIVE
     if (_stage) {

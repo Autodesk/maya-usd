@@ -14,6 +14,7 @@
 #include "UsdSceneItem.h"
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdUndoableCommand.h>
 
 #include <ufe/uiNodeGraphNode.h>
 
@@ -55,7 +56,7 @@ private:
         Size
     };
 
-    class SetPosOrSizeCommand : public Ufe::UndoableCommand
+    class SetPosOrSizeCommand : public UsdUndoableCommand<Ufe::UndoableCommand>
     {
     public:
         SetPosOrSizeCommand(
@@ -63,9 +64,7 @@ private:
             const PXR_NS::UsdPrim& prim,
             const Ufe::Vector2f&   newValue);
 
-        void execute() override;
-        void undo() override { }
-        void redo() override { }
+        void executeImplementation() override;
 
     private:
         const CoordType               _coordType;
