@@ -346,7 +346,7 @@ public:
         return {};
     }
 
-    bool GetDoubleSided() override
+    bool GetDoubleSided() const override
     {
         MFnMesh mesh(GetDagPath());
         auto    p = mesh.findPlug(MayaAttrs::mesh::doubleSided, true);

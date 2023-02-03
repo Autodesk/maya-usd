@@ -57,7 +57,7 @@ public:
     MAYAHYDRALIB_API
     virtual void RemovePrim() override;
     MAYAHYDRALIB_API
-    GfMatrix4d GetTransform();
+    GfMatrix4d GetTransform() override;
     MAYAHYDRALIB_API
     size_t SampleTransform(size_t maxSampleCount, float* times, GfMatrix4d* samples);
     MAYAHYDRALIB_API

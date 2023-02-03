@@ -36,15 +36,15 @@ public:
     virtual size_t
     SamplePrimvar(const TfToken& key, size_t maxSampleCount, float* times, VtValue* samples);
     MAYAHYDRALIB_API
-    virtual HdMeshTopology GetMeshTopology();
+    virtual HdMeshTopology GetMeshTopology() override;
     MAYAHYDRALIB_API
-    virtual HdBasisCurvesTopology GetBasisCurvesTopology();
+    virtual HdBasisCurvesTopology GetBasisCurvesTopology() override;
     MAYAHYDRALIB_API
-    virtual HdDisplayStyle GetDisplayStyle();
+    virtual HdDisplayStyle GetDisplayStyle() override;
     MAYAHYDRALIB_API
     virtual PxOsdSubdivTags GetSubdivTags();
     MAYAHYDRALIB_API
-    virtual HdPrimvarDescriptorVector GetPrimvarDescriptors(HdInterpolation interpolation)
+    virtual HdPrimvarDescriptorVector GetPrimvarDescriptors(HdInterpolation interpolation) override
     {
         return {};
     }
@@ -54,13 +54,13 @@ public:
     MAYAHYDRALIB_API
     virtual MObject GetMaterial();
     MAYAHYDRALIB_API
-    virtual bool GetDoubleSided() { return true; };
+    virtual bool GetDoubleSided() const override { return true; };
 
     MAYAHYDRALIB_API
     const GfRange3d& GetExtent();
 
     MAYAHYDRALIB_API
-    virtual TfToken GetRenderTag() const;
+    virtual TfToken GetRenderTag() const override;
 
     MAYAHYDRALIB_API
     virtual void PopulateSelectedPaths(

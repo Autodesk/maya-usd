@@ -100,8 +100,7 @@ public:
     MAYAHYDRALIB_API
     MayaHydraMaterialAdapterPtr GetMaterialAdapter(const SdfPath& id);
 
-    // MAYA-127209: remove inconsistent MAYAHYDRALIB_SCENE_RENDER_DATASERVER
-#ifndef MAYAHYDRALIB_SCENE_RENDER_DATASERVER
+#ifdef MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
     MAYAHYDRALIB_API
     void InsertDag(const MDagPath& dag);
 #endif
@@ -128,7 +127,6 @@ public:
         SdfPathVector&              selectedSdfPaths,
         const HdSelectionSharedPtr& selection) override;
 
-	// TODO: change management
 	MAYAHYDRALIB_API
 	void HandleCompleteViewportScene(const MDataServerOperation::MViewportScene& scene, MFrameContext::DisplayStyle ds);
 
@@ -258,8 +256,10 @@ private:
     static VtValue CreateMayaDefaultMaterial();
 
     bool _CreateMaterial(const SdfPath& id, const MObject& obj);
+#ifdef MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
     /// \brief Unordered Map storing the shape adapters.
     AdapterMap<MayaHydraShapeAdapterPtr> _shapeAdapters;
+#endif
 	/// \brief Unordered Map storing the shape adapters.
     AdapterMap<MayaHydraRenderItemAdapterPtr>              _renderItemsAdapters;
     std::unordered_map<int, MayaHydraRenderItemAdapterPtr> _renderItemsAdaptersFast;
@@ -273,8 +273,9 @@ private:
     std::vector<MCallbackId>                   _callbacks;
     std::vector<std::tuple<SdfPath, MObject>>  _adaptersToRecreate;
     std::vector<std::tuple<SdfPath, uint32_t>> _adaptersToRebuild;
-    // MAYA-127209: remove inconsistent MAYAHYDRALIB_SCENE_RENDER_DATASERVER
+#ifdef MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
     std::vector<MObject>                       _addedNodes;
+#endif
 
     using LightAdapterCreator = std::function<MayaHydraLightAdapterPtr(MayaHydraDelegateCtx*, const MDagPath&)>;
     std::vector<std::pair<MObject, LightAdapterCreator>> _lightsToAdd;

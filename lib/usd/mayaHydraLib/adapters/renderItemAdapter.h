@@ -51,8 +51,6 @@ using MayaHydraRenderItemAdapterPtr = std::shared_ptr<class MayaHydraRenderItemA
 // MayaHydraRenderItemAdapter
 ///////////////////////////////////////////////////////////////////////
 
-// TODO: Remove dependency on MayaHydraAdapter.
-//  None of it is used apart from cast inside generic method called in the scene delegate.
 class MayaHydraRenderItemAdapter : public MayaHydraAdapter
 {
 public:
@@ -67,13 +65,11 @@ public:
 	MAYAHYDRALIB_API
 	virtual ~MayaHydraRenderItemAdapter();
 
-	// override
-	/////////////
+	MAYAHYDRALIB_API
+	virtual void RemovePrim() override {}
 
 	MAYAHYDRALIB_API
-		virtual void RemovePrim() override {}
-	MAYAHYDRALIB_API
-		virtual void Populate() override {}
+	virtual void Populate() override {}
 
 	MAYAHYDRALIB_API
 	bool HasType(const TfToken& typeId) const override { return typeId == HdPrimTypeTokens->mesh; }
@@ -82,20 +78,13 @@ public:
 	virtual bool IsSupported() const override;
 
 	MAYAHYDRALIB_API
-	virtual bool GetDoubleSided() const { return false; };
-
-	
+	bool GetDoubleSided() const override { return false; };	
 
 	MAYAHYDRALIB_API
 	virtual void MarkDirty(HdDirtyBits dirtyBits) override;
-	
-
 
 	MAYAHYDRALIB_API
 	VtValue Get(const TfToken& key) override;
-
-	// this
-	///////////
 
 	MAYAHYDRALIB_API
 	VtValue GetMaterialResource();
@@ -115,9 +104,8 @@ public:
 	MAYAHYDRALIB_API
 	MHWRender::DisplayStatus GetDisplayStatus() const { return _displayStatus; }
 	
-	// TODO:  move transform to common base class with MayaHydraDagAdapter
 	MAYAHYDRALIB_API
-    GfMatrix4d GetTransform() { return _transform[0]; }
+    GfMatrix4d GetTransform() override { return _transform[0]; }
     
 	MAYAHYDRALIB_API
     void InvalidateTransform() { }
@@ -126,7 +114,7 @@ public:
 	bool IsInstanced() const { return false; }
 	
 	MAYAHYDRALIB_API
-	HdPrimvarDescriptorVector GetPrimvarDescriptors(HdInterpolation interpolation);
+	HdPrimvarDescriptorVector GetPrimvarDescriptors(HdInterpolation interpolation) override;
 
 	MAYAHYDRALIB_API
 	void UpdateTransform(MRenderItem& ri);
@@ -150,14 +138,13 @@ public:
     void UpdateFromDelta(const UpdateFromDeltaData& data);
 
 	MAYAHYDRALIB_API
-	virtual std::shared_ptr<HdTopology> GetTopology();
-
-	// TODO : Different smooth levels
-	MAYAHYDRALIB_API
-	HdDisplayStyle GetDisplayStyle() { return { 0, false, false }; }
+	HdMeshTopology GetMeshTopology() override;
 
 	MAYAHYDRALIB_API
-	virtual TfToken GetRenderTag() const;
+	HdBasisCurvesTopology GetBasisCurvesTopology() override;
+
+	MAYAHYDRALIB_API
+	virtual TfToken GetRenderTag() const override;
 
 	MAYAHYDRALIB_API
 	SdfPath& GetMaterial() { return _material; }
@@ -179,12 +166,12 @@ private:
 	void _InsertRprim();
 
 	SdfPath _material;
-	std::shared_ptr<HdTopology> _topology = nullptr;
+	std::unique_ptr<HdTopology> _topology = nullptr;
 	VtVec3fArray _positions = {};
 	VtVec2fArray _uvs = {};
 	MGeometry::Primitive _primitive;
 	MString _name;
-    GfMatrix4d _transform[2];  // TODO:  move transform to common base class with MayaHydraDagAdapter
+    GfMatrix4d _transform[2];
 	int _fastId = 0;
 	bool _visible = false;
 	MColor _wireframeColor			= {1.f,1.f,1.f,1.f};

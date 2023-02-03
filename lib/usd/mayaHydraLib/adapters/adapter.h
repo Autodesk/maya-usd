@@ -62,7 +62,21 @@ public:
     static MStatus Initialize();
 
     bool IsPopulated() const { return _isPopulated; }
-
+    
+    MAYAHYDRALIB_API
+    virtual HdMeshTopology GetMeshTopology() { return {}; }    
+    MAYAHYDRALIB_API
+    virtual HdBasisCurvesTopology GetBasisCurvesTopology() { return {}; }
+	MAYAHYDRALIB_API
+	virtual TfToken GetRenderTag() const { return TfToken(); }
+    MAYAHYDRALIB_API
+    virtual GfMatrix4d GetTransform() { return GfMatrix4d(); }
+    MAYAHYDRALIB_API
+    virtual HdPrimvarDescriptorVector GetPrimvarDescriptors(HdInterpolation interpolation) { return HdPrimvarDescriptorVector(); }
+    MAYAHYDRALIB_API
+    virtual bool GetDoubleSided() const { return true; }
+    MAYAHYDRALIB_API
+    virtual HdDisplayStyle GetDisplayStyle() { return { 0, false, false }; }
 protected:
     SdfPath                  _id;
     std::vector<MCallbackId> _callbacks;

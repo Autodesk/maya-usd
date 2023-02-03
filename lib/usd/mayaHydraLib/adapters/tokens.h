@@ -78,9 +78,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (MayaHydraBlinnShader)                       \
 	(MayaHydraStippleShader)                     \
     (MayaHydraSolidColorShader)                 
-    
-// TODO:
-// Stippled line, point shader
 
 // clang-format on
 

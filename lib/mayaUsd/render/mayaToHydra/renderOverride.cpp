@@ -1045,7 +1045,7 @@ bool MtohRenderOverride::select(
     MSelectionList& selectionList,
     MPointArray&    worldSpaceHitPts)
 {
-#ifdef MAYAHYDRALIB_SCENE_RENDER_DATASERVER
+#ifdef MAYAHYDRA_DEVELOPMENTAL_NATIVE_SELECTION
 	// Skip override on plugin-side if prototype 2
 	// Rely on VP2 select and simply draw selection items
 	return false;

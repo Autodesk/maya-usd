@@ -41,7 +41,10 @@
 
 #include <string>
 
-#define MAYAHYDRALIB_SCENE_RENDER_DATASERVER
+// We would like to preserve additional pathway for dag items similarly 
+// to what was done inside InsertData from mtoh. Disabled for now
+// #define MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
+// #define MAYAHYDRA_DEVELOPMENTAL_NATIVE_SELECTION
 
 namespace MAYAHYDRA_NS_DEF {
 

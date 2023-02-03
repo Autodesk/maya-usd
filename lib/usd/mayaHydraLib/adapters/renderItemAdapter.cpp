@@ -39,18 +39,6 @@
 
 #include <functional>
 
-
-/*
-TODO:
----------------------------------
-
-* Stipple lines (dotted lines)
-* materials
-* Depth priority
-
-
-*/
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -326,8 +314,6 @@ void MayaHydraRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data
     if (indices && verts) {
         if (topoChanged) {
             if (_primitive == MHWRender::MGeometry::Primitive::kTriangles) {
-
-                // TODO: Maybe we could use the flat shading of the display style?
                 _topology.reset(new HdMeshTopology(
                     (GetDelegate()->GetParams().displaySmoothMeshes
                      || GetDisplayStyle().refineLevel > 0)
@@ -351,9 +337,14 @@ void MayaHydraRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data
     MarkDirty(dirtyBits);
 }
 
-std::shared_ptr<HdTopology> MayaHydraRenderItemAdapter::GetTopology()
+HdMeshTopology MayaHydraRenderItemAdapter::GetMeshTopology()
 {
-	return _topology;
+	return _topology ? *static_cast<HdMeshTopology*>(_topology.get()) : HdMeshTopology();
+}
+
+HdBasisCurvesTopology MayaHydraRenderItemAdapter::GetBasisCurvesTopology()
+{
+	return _topology ? *static_cast<HdBasisCurvesTopology*>(_topology.get()) : HdBasisCurvesTopology();
 }
 
 VtValue MayaHydraRenderItemAdapter::Get(const TfToken& key)
