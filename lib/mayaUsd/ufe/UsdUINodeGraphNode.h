@@ -40,11 +40,13 @@ public:
     // Ufe::UsdUINodeGraphNode overrides
     Ufe::SceneItem::Ptr       sceneItem() const override;
     bool                      hasPosition() const override;
-    bool                      hasSize() const override;
     Ufe::Vector2f             getPosition() const override;
-    Ufe::Vector2f             getSize() const override;
     Ufe::UndoableCommand::Ptr setPositionCmd(const Ufe::Vector2f& pos) override;
+#ifdef UFE_V5_FEATURES_AVAILABLE
+    bool                      hasSize() const override;
+    Ufe::Vector2f             getSize() const override;
     Ufe::UndoableCommand::Ptr setSizeCmd(const Ufe::Vector2f& size) override;
+#endif
 
 private:
     enum class CoordType

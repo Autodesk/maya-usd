@@ -64,11 +64,7 @@ Ufe::SceneItem::Ptr UsdUINodeGraphNode::sceneItem() const { return fItem; }
 
 bool UsdUINodeGraphNode::hasPosition() const { return hasPosOrSize(CoordType::Position); }
 
-bool UsdUINodeGraphNode::hasSize() const { return hasPosOrSize(CoordType::Size); }
-
 Ufe::Vector2f UsdUINodeGraphNode::getPosition() const { return getPosOrSize(CoordType::Position); }
-
-Ufe::Vector2f UsdUINodeGraphNode::getSize() const { return getPosOrSize(CoordType::Size); }
 
 Ufe::UndoableCommand::Ptr UsdUINodeGraphNode::setPositionCmd(const Ufe::Vector2f& pos)
 {
@@ -76,11 +72,17 @@ Ufe::UndoableCommand::Ptr UsdUINodeGraphNode::setPositionCmd(const Ufe::Vector2f
         CoordType::Position, fItem ? fItem->prim() : PXR_NS::UsdPrim(), pos);
 }
 
+#ifdef UFE_V5_FEATURES_AVAILABLE
+bool UsdUINodeGraphNode::hasSize() const { return hasPosOrSize(CoordType::Size); }
+
+Ufe::Vector2f UsdUINodeGraphNode::getSize() const { return getPosOrSize(CoordType::Size); }
+
 Ufe::UndoableCommand::Ptr UsdUINodeGraphNode::setSizeCmd(const Ufe::Vector2f& size)
 {
     return std::make_shared<SetPosOrSizeCommand>(
         CoordType::Size, fItem ? fItem->prim() : PXR_NS::UsdPrim(), size);
 }
+#endif
 
 bool UsdUINodeGraphNode::hasPosOrSize(CoordType coordType) const
 {

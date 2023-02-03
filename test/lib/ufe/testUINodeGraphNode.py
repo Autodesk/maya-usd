@@ -89,6 +89,7 @@ class UINodeGraphNodeTestCase(unittest.TestCase):
         self.doPosAndSizeTests(uiNodeGraphNode.hasPosition, uiNodeGraphNode.setPosition,
             uiNodeGraphNode.getPosition, uiNodeGraphNode.setPositionCmd)
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '5000', 'Test for preview version 0.5.0 and later')
     def testSize(self):
         ball3Path = ufe.PathString.path('|transform1|proxyShape1,/Ball_set/Props/Ball_3')
         ball3SceneItem = ufe.Hierarchy.createItem(ball3Path)
