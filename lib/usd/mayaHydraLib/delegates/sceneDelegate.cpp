@@ -193,7 +193,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     (MayaHydraSceneDelegate)
-    ((FallbackMaterial, "")) // Empty path for hydra fallback material
     ((MayaDefaultMaterial, "__maya_default_material__"))
     (diffuseColor)
     (emissiveColor)
@@ -231,7 +230,7 @@ MayaHydraSceneDelegate::MayaHydraSceneDelegate(const InitData& initData)
     std::call_once(once, []() {
         _mayaDefaultMaterialPath = SdfPath::AbsoluteRootPath().AppendChild(_tokens->MayaDefaultMaterial);//Is an absolute path, not linked to a scene delegate
         _mayaDefaultMaterial = MayaHydraSceneDelegate::CreateMayaDefaultMaterial();
-        _fallbackMaterial = SdfPath(_tokens->FallbackMaterial);
+        _fallbackMaterial = SdfPath::EmptyPath();// Empty path for hydra fallback material
     });
 }
 
