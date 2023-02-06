@@ -847,7 +847,8 @@ bool MayaHydraSceneDelegate::_GetRenderItemMaterial(
     SdfPath&           material,
     MObject&           shadingEngineNode)
 {
-    if (MHWRender::MGeometry::Primitive::kLines == ri.primitive()) {
+    if (MHWRender::MGeometry::Primitive::kLines == ri.primitive()
+        || MHWRender::MGeometry::Primitive::kLineStrip == ri.primitive()) {
         material = _fallbackMaterial; // Use fallbackMaterial + constantLighting + displayColor
         return true;
     }
@@ -1533,7 +1534,8 @@ SdfPath MayaHydraSceneDelegate::GetMaterialId(const SdfPath& id)
         auto& renderItemAdapter = *result;
 
         // Check if this render item is a wireframe primitive
-        if (MHWRender::MGeometry::Primitive::kLines == renderItemAdapter->GetPrimitive()) {
+        if (MHWRender::MGeometry::Primitive::kLines == renderItemAdapter->GetPrimitive()
+            || MHWRender::MGeometry::Primitive::kLineStrip == renderItemAdapter->GetPrimitive()) {
             return _fallbackMaterial;
         }
 
@@ -1638,7 +1640,9 @@ void MayaHydraSceneDelegate::RemoveArnoldLight(const MDagPath& dag)
 VtValue MayaHydraSceneDelegate::GetShadingStyle(SdfPath const& id)
 {
     if (auto&& ri = TfMapLookupPtr(_renderItemsAdapters, id)) {
-        if (MHWRender::MGeometry::Primitive::kLines == (*ri)->GetPrimitive()) {
+        auto primitive = (*ri)->GetPrimitive();
+        if (MHWRender::MGeometry::Primitive::kLines == primitive
+            || MHWRender::MGeometry::Primitive::kLineStrip == primitive) {
             return VtValue(
                 _tokens
                     ->constantLighting); // Use fallbackMaterial + constantLighting + displayColor

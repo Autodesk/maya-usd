@@ -55,6 +55,7 @@ SdfPath _GetRenderItemMayaPrimPath(const MRenderItem& ri)
     }
 
     if (MHWRender::MGeometry::Primitive::kLines != ri.primitive()
+        && MHWRender::MGeometry::Primitive::kLineStrip != ri.primitive()
         && MHWRender::MGeometry::Primitive::kPoints != ri.primitive()) {
         // Prefix with "Solid" when it's not a line/points primitive to be able to use only solid
         // primitives in lighting/shadowing by their root path
