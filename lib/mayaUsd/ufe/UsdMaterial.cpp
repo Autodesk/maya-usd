@@ -17,7 +17,6 @@
 
 #include <mayaUsd/ufe/Utils.h>
 
-#include <ufe/log.h>
 #include <ufe/types.h>
 
 #include <stdexcept>
@@ -25,6 +24,28 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
+
+PXR_NS::UsdPrim getAncestorMaterial(const PXR_NS::UsdPrim& prim)
+{
+    // Make sure we're returning a Material, which is the (grand)parent of a Shader or NodeGraph.
+
+    if (prim.GetTypeName() == "Material")
+    {
+        return prim;
+    }
+
+    auto iterPrim = prim;
+    while (iterPrim.GetTypeName() == "Shader" || iterPrim.GetTypeName() == "NodeGraph")
+    {
+        iterPrim = iterPrim.GetParent();
+    }
+    if (iterPrim)
+    {
+        return iterPrim;
+    }
+
+    return PXR_NS::UsdPrim();
+}
 
 std::vector<PXR_NS::UsdPrim> getConnectedShaders(const PXR_NS::UsdShadeOutput& port)
 {
@@ -74,7 +95,7 @@ std::vector<Ufe::SceneItem::Ptr> UsdMaterial::getMaterials() const
         return materials;
     }
 
-    std::vector<PXR_NS::UsdPrim> materialPrims;
+    std::vector<PXR_NS::UsdPrim> shaderPrims;
 
     const PXR_NS::UsdPrim&                            prim = _item->prim();
     PXR_NS::UsdShadeMaterialBindingAPI                bindingApi(prim);
@@ -85,7 +106,7 @@ std::vector<Ufe::SceneItem::Ptr> UsdMaterial::getMaterials() const
     if (material) {
         for (const auto& output : material.GetSurfaceOutputs()) {
             for (const auto& shader : getConnectedShaders(output)) {
-                materialPrims.push_back(shader);
+                shaderPrims.push_back(shader);
             }
         }
     }
@@ -98,14 +119,20 @@ std::vector<Ufe::SceneItem::Ptr> UsdMaterial::getMaterials() const
         if (material) {
             for (const auto& output : material.GetSurfaceOutputs()) {
                 for (const auto& shader : getConnectedShaders(output)) {
-                    materialPrims.push_back(shader);
+                    shaderPrims.push_back(shader);
                 }
             }
         }
     }
 
     // 3. Find the associated Ufe::SceneItem for each material attached to our object.
-    for (const auto& materialPrim : materialPrims) {
+    for (auto& shaderPrim : shaderPrims) {
+        if (!shaderPrim) {
+            continue;
+        }
+
+        // Make sure we're working with the material, not an internal shader.
+        const auto& materialPrim = getAncestorMaterial(shaderPrim);
         if (!materialPrim) {
             continue;
         }
@@ -122,7 +149,7 @@ std::vector<Ufe::SceneItem::Ptr> UsdMaterial::getMaterials() const
             continue;
         const auto ufePath = Ufe::Path({ stagePathSegments[0], materialPathSegments[0] });
 
-        // Now we have the full path to the material's SceneItem
+        // Now we have the full path to the material's SceneItem.
         materials.push_back(UsdSceneItem::create(ufePath, materialPrim));
     }
 
