@@ -35,76 +35,21 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
 namespace {
 
-//Commenting this debug code as when it's not actually used, it produces an error due to a warning in Linux/OSX builds.
-//Return in the std::string outValueAsString the VtValue type and value written as text for debugging purpose
-/*void DebugPrintVtValue(const VtValue& val, std::string& outValueAsString)
-{
-    if (val.IsEmpty()){
-        outValueAsString = "No Value!";
-        return;
-    }
 
-    std::ostringstream ss;
-    if (val.IsHolding<float>()){
-        const float v       = val.UncheckedGet<float>();
-        ss << "float : ";
-        ss << v;
-    }
-
-    if (val.IsHolding<int>()){
-        const int v         = val.UncheckedGet<int>();
-        ss << "int : ";
-        ss << v;
-    }
-
-    if (val.IsHolding<GfVec2f>()){
-        const GfVec2f v     = val.UncheckedGet<GfVec2f>();
-        ss << "GfVec2f : ";
-        ss << v[0];
-        ss << " ";
-        ss << v[1];
-    }
-
-    if (val.IsHolding<GfVec3f>()){
-        const GfVec3f v     = val.UncheckedGet<GfVec3f>();
-        ss << "GfVec3f : (";
-        ss << v[0];
-        ss << " , ";
-        ss << v[1];
-        ss << " , ";
-        ss << v[2];
-        ss << ")";
-    }
-
-    outValueAsString = ss.str();
-    if (outValueAsString.size() > 0){
-        return;
-    }
-
-    //Unknown
-    outValueAsString = " * Unknown *";
-}
-
-//Print to the output window the std::map which is usually an hydra material parameters array
-//This prints the type and value of each parameter, but it only outputs something if TfDebug::Enable(MAYAHYDRALIB_ADAPTER_MATERIALS_PARAMS); 
-//is set somewhere in the code
+//Print to the output window the type and value of each parameter from the std::map
 void DebugPrintParameters(const std::map<TfToken, VtValue>& params)
 {
-    TF_DEBUG(MAYAHYDRALIB_ADAPTER_MATERIALS_PARAMS).Msg("\n");//Add a line
+    cout << "\n";//Add a line
     //Print all parameters types and values
     for(auto param : params){
         std::string valueAsString;
-        DebugPrintVtValue(param.second, valueAsString);
-        TF_DEBUG(MAYAHYDRALIB_ADAPTER_MATERIALS_PARAMS)
-        .Msg(
-            "Material parameters : (%s - %s)\n",
-            param.first.GetText(),
-            valueAsString.c_str());
+        MAYAHYDRA_NS_DEF::ConvertVtValueAsText(param.second, valueAsString);
+        cout << "Material parameters : (" << param.first.GetText() <<" - " << valueAsString.c_str() << ")\n";
     }
 }
-*/
 
 const TfToken       _useSpecularWorkflowToken ("useSpecularWorkflow");
 const TfToken       _specularColorToken ("specularColor");
@@ -801,9 +746,10 @@ HdMaterialNode* MayaHydraMaterialNetworkConverter::GetMaterial(const MObject& ma
             }
         }
 
-        //DEBUG to print material parameters type and value to the output window
-        // You also have to uncomment the DebugPrintParameters and DebugPrintVtValue functions to make this work.
-        //DebugPrintParameters(material.parameters);
+        if (TfDebug::IsEnabled(MAYAHYDRALIB_ADAPTER_MATERIALS_PRINT_PARAMETERS_VALUES)){
+            //DEBUG to print material parameters type and value to the output window
+            DebugPrintParameters(material.parameters);
+        }
 
     } else {
         for (auto& nameAttrConverterPair : nodeConverter->GetAttrConverters()) {

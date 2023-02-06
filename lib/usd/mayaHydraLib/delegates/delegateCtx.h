@@ -61,6 +61,8 @@ public:
     virtual void RecreateAdapterOnIdle(const SdfPath& id, const MObject& obj) { }
     virtual void RebuildAdapterOnIdle(const SdfPath& id, uint32_t flags) { }
     virtual void UpdateDisplayStatusMaterial(MHWRender::DisplayStatus displayStatus, const MColor& wireframecolor)  {}
+    virtual void AddArnoldLight(const MDagPath& dag) {}
+    virtual void RemoveArnoldLight(const MDagPath& dag) {}
 
     /// \brief Notifies the scene delegate when a material tag changes.
     ///

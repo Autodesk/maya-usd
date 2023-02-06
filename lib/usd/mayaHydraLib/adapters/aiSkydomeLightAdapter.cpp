@@ -92,11 +92,15 @@ public:
             MPlugArray conns;
             light.findPlug("color", true).connectedTo(conns, true, false);
             if (conns.length() < 1) {
+                //Be aware that dome lights in HdStorm always need a texture to work correctly, 
+                //the color is not used if no texture is present. This is in USD 22.11.
                 return VtValue(SdfAssetPath());
             }
             MFnDependencyNode file(conns[0].node(), &status);
             if (ARCH_UNLIKELY(
                     !status || (file.typeName() != MayaHydraAdapterTokens->file.GetText()))) {
+                //Be aware that dome lights in HdStorm always need a texture to work correctly, 
+                //the color is not used if no texture is present. This is in USD 22.11.
                 return VtValue(SdfAssetPath());
             }
 

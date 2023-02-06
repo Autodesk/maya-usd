@@ -39,6 +39,8 @@
 #include <pxr/usd/usdGeom/tokens.h>
 
 #include <pxr/imaging/hd/basisCurves.h>
+#include <pxr/usdImaging/usdImaging/tokens.h>
+#include <pxr/imaging/hdx/renderTask.h>
 
 #include <maya/MDGMessage.h>
 #include <maya/MDagPath.h>
@@ -52,9 +54,6 @@
 #include <maya/MPlugArray.h>
 #include <maya/MFnMesh.h>
 #include <maya/MFnComponent.h>
-
-#include <pxr/usdImaging/usdImaging/tokens.h>
-#include <pxr/imaging/hdx/renderTask.h>
 
 #include <cassert>
 
@@ -220,11 +219,14 @@ TF_REGISTRY_FUNCTION_WITH_TAG(MayaHydraDelegateRegistry, MayaHydraSceneDelegate)
 MayaHydraSceneDelegate::MayaHydraSceneDelegate(const InitData& initData)
     : MayaHydraDelegateCtx(initData)
 {
-    //TfDebug::Enable(MAYAHYDRALIB_DELEGATE_GET_MATERIAL_ID);
-    //TfDebug::Enable(MAYAHYDRALIB_DELEGATE_GET);
+    //TfDebug::Enable(MAYAHYDRALIB_DELEGATE_GET_MATERIAL_ID);//Enable this line to print to the output window all SceneDelegate::GetMaterialID(...) calls
+    //TfDebug::Enable(MAYAHYDRALIB_DELEGATE_GET); //Enable this line to print to the output window all SceneDelegate::Get(...) calls
     
-    //Enable MAYAHYDRALIB_ADAPTER_MATERIALS_PARAMS to print to the output window the materials parameters type and values when there is a change in one of them.
-    //TfDebug::Enable(MAYAHYDRALIB_ADAPTER_MATERIALS_PARAMS);
+    //Enable the following line to print to the output window the materials parameters type and values when there is a change in one of them.
+    //TfDebug::Enable(MAYAHYDRALIB_ADAPTER_MATERIALS_PRINT_PARAMETERS_VALUES);
+
+    //Enable the following line to print to the output window the lights parameters type and values.
+    //TfDebug::Enable(MAYAHYDRALIB_DELEGATE_PRINT_LIGHTS_PARAMETERS_VALUES);
 
     static std::once_flag once;
     std::call_once(once, []() {
@@ -376,7 +378,6 @@ void MayaHydraSceneDelegate::Populate()
     MItDag dagIt(MItDag::kDepthFirst);
     dagIt.traverseUnderWorld(true);
     for (; !dagIt.isDone(); dagIt.next()) {
-        MDagPath path;
         MObject node = dagIt.currentItem(&status);
         if (status != MS::kSuccess) continue;
         OnDagNodeAdded(node);
@@ -543,14 +544,18 @@ void MayaHydraSceneDelegate::PreFrame(const MHWRender::MDrawContext& context)
         return;
     }
 
+    // Some 3rd parties lights may be ignored by the call to MHWRender::MDrawContext::numberOfActiveLights (like the Arnold lights which are seen by Maya as locators)
+    std::vector<MDagPath> activelightPaths = _arnoldLightPaths;//We suppose the Arnold lights are always active
+    
     constexpr auto considerAllSceneLights = MHWRender::MDrawContext::kFilteredIgnoreLightLimit;
     MStatus        status;
     const auto     numLights = context.numberOfActiveLights(considerAllSceneLights, &status);
-    if (!status || numLights == 0) {
+    
+    if ((!status || numLights == 0) && (0 == activelightPaths.size()) ) {
         _MapAdapter<MayaHydraLightAdapter>([](MayaHydraLightAdapter* a) { a->SetLightingOn(false); }, _lightAdapters); // Turn off all lights
         return;
     }
-    std::vector<MDagPath> activelightPaths;
+    
     MIntArray intVals;
     MMatrix   matrixVal;
     for (auto i = decltype(numLights) { 0 }; i < numLights; ++i) {
@@ -562,6 +567,7 @@ void MayaHydraSceneDelegate::PreFrame(const MHWRender::MDrawContext& context)
         if (!lightPath.isValid()) {
             continue;
         }
+        
         activelightPaths.push_back(lightPath);
 
         if (!lightParam->getParameter(MHWRender::MLightParameterInformation::kShadowOn, intVals)
@@ -882,9 +888,12 @@ void MayaHydraSceneDelegate::OnDagNodeAdded(const MObject& obj)
 
 void MayaHydraSceneDelegate::OnDagNodeRemoved(const MObject& obj)
 {
-    const auto newEnd = std::remove_if(
+    const auto it = std::remove_if(
         _lightsToAdd.begin(), _lightsToAdd.end(), [&obj](const auto& item) { return item.first == obj; });
-    _lightsToAdd.erase(newEnd, _lightsToAdd.end());
+
+    if (it != _lightsToAdd.end()){
+        _lightsToAdd.erase(it, _lightsToAdd.end());
+    }
 }
 
 #ifdef MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
@@ -1363,10 +1372,20 @@ VtValue MayaHydraSceneDelegate::GetLightParamValue(const SdfPath& id, const TfTo
     TF_DEBUG(MAYAHYDRALIB_DELEGATE_GET_LIGHT_PARAM_VALUE)
         .Msg(
             "MayaHydraSceneDelegate::GetLightParamValue(%s, %s)\n", id.GetText(), paramName.GetText());
-    return _GetValue<MayaHydraLightAdapter, VtValue>(
+
+    const VtValue val = _GetValue<MayaHydraLightAdapter, VtValue>(
         id,
         [&paramName](MayaHydraLightAdapter* a) -> VtValue { return a->GetLightParamValue(paramName); },
         _lightAdapters);
+
+    if (TfDebug::IsEnabled(MAYAHYDRALIB_DELEGATE_PRINT_LIGHTS_PARAMETERS_VALUES)){
+        //Print the lights parameters to the output window
+        std::string valueAsString;
+        MAYAHYDRA_NS_DEF::ConvertVtValueAsText(val, valueAsString);
+        cout << "Light : " << id.GetText() << " Parameter : " << paramName.GetText() << " Value : " << valueAsString << endl;
+    }
+    
+    return val;
 }
 
 VtValue MayaHydraSceneDelegate::GetCameraParamValue(const SdfPath& cameraId, const TfToken& paramName)
@@ -1592,6 +1611,19 @@ SdfPath MayaHydraSceneDelegate::SetCameraViewport(const MDagPath& camPath, const
         return camID;
     }
     return {};
+}
+
+void MayaHydraSceneDelegate::AddArnoldLight(const MDagPath& dag)
+{
+    _arnoldLightPaths.push_back(dag);
+}    
+
+void MayaHydraSceneDelegate::RemoveArnoldLight(const MDagPath& dag)
+{
+    const auto it = std::find(_arnoldLightPaths.begin(), _arnoldLightPaths.end(), dag);
+    if (it != _arnoldLightPaths.end()){
+        _arnoldLightPaths.erase(it);
+    }
 }
 
 VtValue MayaHydraSceneDelegate::GetShadingStyle(SdfPath const& id)

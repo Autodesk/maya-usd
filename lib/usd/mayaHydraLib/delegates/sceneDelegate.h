@@ -34,6 +34,7 @@
 #include <maya/MObject.h>
 
 #include <memory>
+#include <vector>
 
 /*
  * Notes.
@@ -80,6 +81,12 @@ public:
 
     MAYAHYDRALIB_API
     void RebuildAdapterOnIdle(const SdfPath& id, uint32_t flags) override;
+
+    MAYAHYDRALIB_API
+    void AddArnoldLight(const MDagPath& dag)override;
+    
+    MAYAHYDRALIB_API
+    void RemoveArnoldLight(const MDagPath& dag)override;
 
     /// \brief Notifies the scene delegate when a material tag changes.
     ///
@@ -279,6 +286,9 @@ private:
 
     using LightAdapterCreator = std::function<MayaHydraLightAdapterPtr(MayaHydraDelegateCtx*, const MDagPath&)>;
     std::vector<std::pair<MObject, LightAdapterCreator>> _lightsToAdd;
+    
+    //Is used to maintain a list of Arnold lights, they are not seen as lights by Maya but as locators
+    std::vector<MDagPath>   _arnoldLightPaths;
     
     std::vector<SdfPath>                       _materialTagsChanged;
 

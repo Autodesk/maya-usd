@@ -40,7 +40,7 @@ public:
     MAYAHYDRALIB_API
     MayaHydraLightAdapter(MayaHydraDelegateCtx* delegate, const MDagPath& dag);
     MAYAHYDRALIB_API
-    virtual ~MayaHydraLightAdapter() = default;
+    virtual ~MayaHydraLightAdapter();
     MAYAHYDRALIB_API
     virtual const TfToken& LightType() const = 0;
     MAYAHYDRALIB_API
@@ -71,6 +71,8 @@ protected:
     void _CalculateShadowParams(MFnLight& light, HdxShadowParams& params);
     MAYAHYDRALIB_API
     bool _GetVisibility() const override;
+    MAYAHYDRALIB_API
+    bool IsAnArnoldSkyDomeLight(const MDagPath& dag) const;
 
     GfMatrix4d _shadowProjectionMatrix;
     bool _isLightingOn = true;

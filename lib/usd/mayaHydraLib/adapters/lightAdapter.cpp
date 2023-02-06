@@ -92,6 +92,28 @@ MayaHydraLightAdapter::MayaHydraLightAdapter(MayaHydraDelegateCtx* delegate, con
     // directly or indirectly in a constructor.
     UpdateVisibility();
     _shadowProjectionMatrix.SetIdentity();
+
+    //Special case for Arnold lights which are seen as locators
+    if (IsAnArnoldSkyDomeLight(dag)){
+        GetDelegate()->AddArnoldLight(dag);
+    }
+}
+
+MayaHydraLightAdapter::~MayaHydraLightAdapter()
+{
+    //Special case for Arnold lights which are seen as locators
+    const MDagPath& dag = GetDagPath();
+    if (IsAnArnoldSkyDomeLight(dag)){
+        GetDelegate()->RemoveArnoldLight(dag);
+    }
+}
+
+bool MayaHydraLightAdapter::IsAnArnoldSkyDomeLight(const MDagPath& dag) const
+{
+    static const MString aiSkyDomeLightString ("aiSkyDomeLight");
+
+    MFnDependencyNode depNode(dag.node());
+    return dag.hasFn(MFn::kLocator) && (aiSkyDomeLightString == depNode.typeName());
 }
 
 bool MayaHydraLightAdapter::IsSupported() const

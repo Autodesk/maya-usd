@@ -25,6 +25,7 @@
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/base/vt/value.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 
@@ -102,6 +103,12 @@ MObject GetConnectedFileNode(const MFnDependencyNode& node, const TfToken& param
 ///  tags are kept intact.
 MAYAHYDRALIB_API
 TfToken GetFileTexturePath(const MFnDependencyNode& fileNode);
+
+/// \brief Return in the std::string outValueAsString the VtValue type and value written as text for debugging purpose
+/// \param val the VtValue to be converted.
+/// \param outValueAsString the std::string that will contain the text from the VtValue.
+MAYAHYDRALIB_API
+void ConvertVtValueAsText(const PXR_INTERNAL_NS::VtValue& val, std::string& outValueAsString);
 
 /// \brief Runs a function on all recursive descendents of a selection list
 ///  May optionally filter by node type. The items in the list are also included

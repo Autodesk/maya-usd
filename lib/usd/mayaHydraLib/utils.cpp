@@ -18,6 +18,12 @@
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/base/gf/vec2f.h>
+#include <pxr/base/gf/quath.h>
+
+#include <pxr/usd/sdf/assetPath.h>
+#include <pxr/usd/sdf/path.h>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MHWGeometry.h>
@@ -31,6 +37,156 @@
 namespace MAYAHYDRA_NS_DEF {
 
 namespace MayaAttrs = PXR_NS::MayaAttrs;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+//Commenting this debug code as when it's not actually used, it produces an error due to a warning in Linux/OSX builds.
+//Return in the std::string outValueAsString the VtValue type and value written as text for debugging purpose
+void ConvertVtValueAsText(const VtValue& val, std::string& outValueAsString)
+{
+    if (val.IsEmpty()){
+        outValueAsString = "No Value!";
+        return;
+    }
+
+    std::ostringstream ss;
+    if (val.IsHolding<bool>()){
+        const bool v       = val.UncheckedGet<bool>();
+        ss << "bool : ";
+        ss << v;
+    }
+    else if (val.IsHolding<TfToken>()) {
+        const TfToken elem = val.UncheckedGet<TfToken>();
+        ss << "TfToken : " << elem.GetText();
+    }
+    else if (val.IsHolding<VtArray<int>>()) {
+        auto arrayType = val.UncheckedGet<VtArray<int>>();
+        ss << "VtArray<int> : (";
+        for (auto elem : arrayType) {
+            ss << std::to_string(elem) << " , ";
+        }
+        ss << ")";
+    }
+    else if (val.IsHolding<VtArray<float>>()) {
+        auto arrayType = val.UncheckedGet<VtArray<float>>();
+        ss << "VtArray<float> : (";
+        for (auto elem : arrayType) {
+            ss << std::to_string(elem) << " , ";
+        }
+        ss << ")";
+    }
+    else if (val.IsHolding<float>()){
+        const float v       = val.UncheckedGet<float>();
+        ss << "float : ";
+        ss << v;
+    }
+    else if (val.IsHolding<int>()){
+        const int v         = val.UncheckedGet<int>();
+        ss << "int : ";
+        ss << v;
+    }
+    else if (val.IsHolding<GfVec2f>()){
+        const GfVec2f v     = val.UncheckedGet<GfVec2f>();
+        ss << "GfVec2f : (" << v[0] << " , " << v[1] << ")";
+    }
+    else if (val.IsHolding<GfVec3f>()){
+        const GfVec3f v     = val.UncheckedGet<GfVec3f>();
+        ss << "GfVec3f : (" << v[0] << " , " << v[1] << " , " << v[2] << ")";
+    }
+    else if (val.IsHolding<GfVec3d>()){
+        const auto v     = val.UncheckedGet<GfVec3d>();
+        ss << "GfVec3d : (" << v[0] << " , " << v[1] << " , " << v[2] << ")";
+    }
+    else if (val.IsHolding<SdfAssetPath>()){
+        const SdfAssetPath v        = val.UncheckedGet<SdfAssetPath>();
+        const std::string assetPath = v.GetAssetPath();
+        ss << "SdfAssetPath : \"" << assetPath << "\"";
+    }
+    else if (val.IsHolding<VtArray<SdfPath>>()) {
+        auto arrayType = val.UncheckedGet<VtArray<SdfPath>>();
+        ss << "VtArray<SdfPath> : (";
+        for (auto elem : arrayType) {
+            ss << elem.GetText() << " , ";
+        }
+        ss << ")";
+    }
+    else if (val.IsHolding<VtArray<GfVec3f>>()) {
+        auto arrayType = val.UncheckedGet<VtArray<GfVec3f>>();
+        ss << "VtArray<GfVec3f> : (";
+        for (auto elem : arrayType) {
+            auto strVec3f = "(" + std::to_string(elem[0]) + ", " +
+                            std::to_string(elem[1]) + ", " +
+                            std::to_string(elem[2]) + ")";
+             ss << strVec3f + " , ";
+        }
+        ss << ")";
+    }
+    else if (val.IsHolding<VtArray<GfVec3d>>()) {
+        auto arrayType = val.UncheckedGet<VtArray<GfVec3d>>();
+        ss << "VtArray<GfVec3d> : (";
+        for (auto elem : arrayType) {
+            auto strVec3f = "(" + std::to_string(elem[0]) + ", " +
+                            std::to_string(elem[1]) + ", " +
+                            std::to_string(elem[2]) + ")";
+             ss << strVec3f + " , ";
+        }
+        ss << ")";
+    }
+    else if (val.IsHolding<VtArray<GfQuath>>()) {
+        auto arrayType = val.UncheckedGet<VtArray<GfQuath>>();
+        ss << "VtArray<GfQuath> : (";
+        for (auto elem : arrayType) {
+            auto quathh =
+                "(" + std::to_string(elem.GetReal()) + ", " +
+                std::to_string(elem.GetImaginary()[0]) + ", " +
+                std::to_string(elem.GetImaginary()[1]) + ", " +
+                std::to_string(elem.GetImaginary()[2]) + ")";
+             ss << quathh + " , ";
+        }
+        ss << ")";
+    }
+    else if (val.IsHolding<GfQuath>()) {
+        auto elem = val.UncheckedGet<GfQuath>();
+        auto quathh =
+            "(" + std::to_string(elem.GetReal()) + ", " +
+            std::to_string(elem.GetImaginary()[0]) + ", " +
+            std::to_string(elem.GetImaginary()[1]) + ", " +
+            std::to_string(elem.GetImaginary()[2]) + ")";
+            ss << "GfQuath : " << quathh;
+    }
+    else if (val.IsHolding<GfMatrix4d>()) {
+        auto mat4d = val.UncheckedGet<GfMatrix4d>();
+
+        double data[4][4];
+        mat4d.Get(data);
+        auto strMat4d = std::string("(") + "{" +
+                        std::to_string(data[0][0]) + ", " +
+                        std::to_string(data[0][1]) + ", " +
+                        std::to_string(data[0][2]) + ", " +
+                        std::to_string(data[0][3]) + "}, " + "{" +
+                        std::to_string(data[1][0]) + ", " +
+                        std::to_string(data[1][1]) + ", " +
+                        std::to_string(data[1][2]) + ", " +
+                        std::to_string(data[1][3]) + "}, " + "{" +
+                        std::to_string(data[2][0]) + ", " +
+                        std::to_string(data[2][1]) + ", " +
+                        std::to_string(data[2][2]) + ", " +
+                        std::to_string(data[2][3]) + "}, " + "{" +
+                        std::to_string(data[3][0]) + ", " +
+                        std::to_string(data[3][1]) + ", " +
+                        std::to_string(data[3][2]) + ", " +
+                        std::to_string(data[3][3]) + "}" + ")";
+        ss << "GfMatrix4d : " << strMat4d;
+    }
+
+    outValueAsString = ss.str();
+    if (outValueAsString.size() > 0){
+        return;
+    }
+
+    //Unknown
+    outValueAsString = " * Unknown Type *";
+}
 
 MObject GetConnectedFileNode(const MObject& obj, const TfToken& paramName)
 {
