@@ -101,6 +101,7 @@ bool MayaHydraRenderItemAdapter::IsSupported() const
 		case MHWRender::MGeometry::Primitive::kTriangles:
 			return GetDelegate()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->mesh);			
 		case MHWRender::MGeometry::Primitive::kLines:
+		case MHWRender::MGeometry::Primitive::kLineStrip:
 			return GetDelegate()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->basisCurves);	
 		case MHWRender::MGeometry::Primitive::kPoints:
 			return GetDelegate()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->points);
@@ -117,6 +118,7 @@ void MayaHydraRenderItemAdapter::_InsertRprim()
 		GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), {});
 		break;
 	case MHWRender::MGeometry::Primitive::kLines:
+	case MHWRender::MGeometry::Primitive::kLineStrip:
 		GetDelegate()->InsertRprim(HdPrimTypeTokens->basisCurves, GetID(), {});
 		break;
 	case MHWRender::MGeometry::Primitive::kPoints:
@@ -138,7 +140,8 @@ void MayaHydraRenderItemAdapter::_RemoveRprim()
 void MayaHydraRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data)
 { 
     if (_primitive != MHWRender::MGeometry::Primitive::kTriangles
-        && _primitive != MHWRender::MGeometry::Primitive::kLines) {
+        && _primitive != MHWRender::MGeometry::Primitive::kLines
+		&& _primitive != MHWRender::MGeometry::Primitive::kLineStrip) {
         return;
     }
 
@@ -233,8 +236,10 @@ void MayaHydraRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data
     }
 
     // Indices
+    // Note that a Primitive::kLineStrip index buffer is unavailable. The following section is skipped.
+    // In such case, indices are implicitly defined below.
     MIndexBuffer* indices = nullptr;
-    if (topoChanged && geom && geom->vertexBufferCount() > 0) {
+    if (topoChanged && geom && geom->indexBufferCount() > 0) {
         indices = geom->indexBuffer(0);
         if (indices) {
             int indexCount = indices->size();
@@ -260,10 +265,9 @@ void MayaHydraRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data
                 _positions.resize(maxIndex + 1);
             }
 
-            switch (_primitive) {
+            switch (GetPrimitive()) {
             case MHWRender::MGeometry::Primitive::kTriangles:
                 vertexCounts.resize(indexCount / 3);
-                // for (int i = 0; i < indexCount / 3; i++) vertexCounts[i] = 3;
                 vertexCounts.assign(indexCount / 3, 3);
 
 
@@ -289,17 +293,15 @@ void MayaHydraRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data
 						float* uvs = (float*)mvb->map();
 						for (int i = 0; i < indexCount; i++)
 						{
-							_uvs[i].Set(&uvs[indicesData[i]*2]);
+							_uvs[i].Set(&uvs[indicesData[i] * 2]);
 						}
 						mvb->unmap();
 						break;
 					}
 				}
                 break;
-
             case MHWRender::MGeometry::Primitive::kLines:
                 vertexCounts.resize(indexCount);
-                // for (int i = 0; i < indexCount; i++) vertexCounts[i] = 1;
                 vertexCounts.assign(indexCount / 2, 2);
                 break;
 
@@ -311,25 +313,41 @@ void MayaHydraRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data
         }
     }
 
-    if (indices && verts) {
-        if (topoChanged) {
-            if (_primitive == MHWRender::MGeometry::Primitive::kTriangles) {
+    if (topoChanged) {
+        switch(GetPrimitive())
+        {
+            case MGeometry::Primitive::kTriangles:
                 _topology.reset(new HdMeshTopology(
                     (GetDelegate()->GetParams().displaySmoothMeshes
-                     || GetDisplayStyle().refineLevel > 0)
+                        || GetDisplayStyle().refineLevel > 0)
                         ? PxOsdOpenSubdivTokens->catmullClark
                         : PxOsdOpenSubdivTokens->none,
                     UsdGeomTokens->rightHanded,
                     vertexCounts,
                     vertexIndices));
-            } else if (_primitive == MHWRender::MGeometry::Primitive::kLines) {
+                break;
+            case MGeometry::Primitive::kLines:
+            case MGeometry::Primitive::kLineStrip:
+            {
+                TfToken curveTopoType(HdTokens->segmented);
+                if (GetPrimitive() == MGeometry::Primitive::kLineStrip)
+                {
+                    // Line strips indices are implicitly defined:
+                    // When using line strips, the GPU will draw a connected series of lines between the vertices specified by the indices.
+                    // When specifying indices for a line strip, you only need to specify the order of the vertices that you want connected.
+                    // This is implicit in Hydra when specifying an empty index buffer.
+                    curveTopoType = HdTokens->nonperiodic;
+                    vertexCounts.assign(1, _positions.size());
+                    vertexIndices = VtIntArray();
+                }
                 _topology.reset(new HdBasisCurvesTopology(
                     HdTokens->linear,
                     // basis type is ignored, due to linear curve type
                     {},
-                    HdTokens->segmented,
+                    curveTopoType,
                     vertexCounts,
                     vertexIndices));
+                break;
             }
         }
     }

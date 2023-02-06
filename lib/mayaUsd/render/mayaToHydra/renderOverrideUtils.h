@@ -56,12 +56,17 @@ public:
 
     MUint64 getObjectTypeExclusions() override
     {
-        // FIXME:
-        //   1. kExcludePluginShapes is here so as to not re-draw UsdProxy shapes
-        //      ...but that means no plugin shapes would be drawn.
-        //   2. Curves as controls and curves as a renderitem need to be delineated
-        //
-        return MFrameContext::kExcludeMeshes | MFrameContext::kExcludePluginShapes | kExcludeGrid;
+        static MUint64 sObjectTypeExclusions = []() -> MUint64
+        {
+            // Exclude everything as a baseline. Restore grease pencils, hud, and grid.
+            MUint64 flags = MFrameContext::kExcludeAll;
+            flags &= ~MFrameContext::kExcludeGreasePencils;
+            flags &= ~MFrameContext::kExcludeHUD;
+            flags &= ~MFrameContext::kExcludeDimensions;
+            flags &= ~MFrameContext::kExcludeManipulators;
+            return flags;
+        }();
+        return sObjectTypeExclusions;
     }
 
     MSceneFilterOption renderFilterOverride() override
