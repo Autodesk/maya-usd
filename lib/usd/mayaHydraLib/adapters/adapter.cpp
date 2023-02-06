@@ -51,7 +51,10 @@ void _nameChanged(MObject& node, const MString& str, void* clientData)
 
 } // namespace
 
-MayaHydraAdapter::MayaHydraAdapter(const MObject& node, const SdfPath& id, MayaHydraDelegateCtx* delegate)
+MayaHydraAdapter::MayaHydraAdapter(
+    const MObject&        node,
+    const SdfPath&        id,
+    MayaHydraDelegateCtx* delegate)
     : _id(id)
     , _delegate(delegate)
     , _node(node)

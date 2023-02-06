@@ -77,7 +77,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (MayaHydraPhongShader)                       \
     (MayaHydraBlinnShader)                       \
 	(MayaHydraStippleShader)                     \
-    (MayaHydraSolidColorShader)                 
+    (MayaHydraSolidColorShader)
 
 // clang-format on
 

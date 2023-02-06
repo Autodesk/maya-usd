@@ -81,7 +81,9 @@ public:
         const TfToken&          paramName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlugArray*             outPlug = nullptr)//Some parameters have more than one MPlug to look at such as transmission, specular etc. which have a weight and a color
+        MPlugArray*             outPlug
+        = nullptr) // Some parameters have more than one MPlug to look at such as transmission,
+                   // specular etc. which have a weight and a color
         = 0;
 };
 
@@ -91,8 +93,9 @@ public:
 class MayaHydraMaterialNodeConverter
 {
 public:
-    typedef std::unordered_map<TfToken, MayaHydraMaterialAttrConverter::RefPtr, TfToken::HashFunctor>
-        NameToAttrConverterMap;
+    typedef std::
+        unordered_map<TfToken, MayaHydraMaterialAttrConverter::RefPtr, TfToken::HashFunctor>
+            NameToAttrConverterMap;
 
     MAYAHYDRALIB_API
     MayaHydraMaterialNodeConverter(
@@ -126,18 +129,20 @@ public:
     struct MayaHydraMaterialNetworkConverterInit
     {
         MayaHydraMaterialNetworkConverterInit(
-            const SdfPath&     prefix,
-            bool enableXRayShadingMode,
-            PathToMobjMap*     pathToMobj)
-            : _prefix(prefix), _enableXRayShadingMode(enableXRayShadingMode), _pathToMobj(pathToMobj)
+            const SdfPath& prefix,
+            bool           enableXRayShadingMode,
+            PathToMobjMap* pathToMobj)
+            : _prefix(prefix)
+            , _enableXRayShadingMode(enableXRayShadingMode)
+            , _pathToMobj(pathToMobj)
         {
         }
         MayaHydraMaterialNetworkConverterInit() = delete;
 
-        HdMaterialNetwork   _materialNetwork;
-        const SdfPath&      _prefix;
-        bool                _enableXRayShadingMode;
-        PathToMobjMap*      _pathToMobj;//Can be a nullptr
+        HdMaterialNetwork _materialNetwork;
+        const SdfPath&    _prefix;
+        bool              _enableXRayShadingMode;
+        PathToMobjMap*    _pathToMobj; // Can be a nullptr
     };
 
     MAYAHYDRALIB_API
@@ -151,12 +156,12 @@ public:
 
     MAYAHYDRALIB_API
     void ConvertParameter(
-        MFnDependencyNode&           node,
+        MFnDependencyNode&              node,
         MayaHydraMaterialNodeConverter& nodeConverter,
-        HdMaterialNode&              material,
-        const TfToken&               paramName,
-        const SdfValueTypeName&      type,
-        const VtValue*               fallback = nullptr);
+        HdMaterialNode&                 material,
+        const TfToken&                  paramName,
+        const SdfValueTypeName&         type,
+        const VtValue*                  fallback = nullptr);
 
     MAYAHYDRALIB_API static VtValue ConvertMayaAttrToValue(
         MFnDependencyNode&      node,
@@ -185,8 +190,8 @@ public:
     MAYAHYDRALIB_API
     static const MayaHydraShaderParams& GetPreviewShaderParams();
 
-	MAYAHYDRALIB_API
-	static const MayaHydraShaderParams& GetShaderParams(const TfToken& shaderIdentifier);
+    MAYAHYDRALIB_API
+    static const MayaHydraShaderParams& GetShaderParams(const TfToken& shaderIdentifier);
 
 private:
     HdMaterialNetwork& _network;

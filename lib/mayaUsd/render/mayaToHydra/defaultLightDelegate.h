@@ -39,7 +39,10 @@ public:
     void Populate() override;
     void SetDefaultLight(const GlfSimpleLight& light);
     void SetLightingOn(bool isLightingOn);
-    void SetSolidPrimitivesRootPaths(const SdfPathVector& solidPrimitivesPaths) {_solidPrimitivesRootPaths = solidPrimitivesPaths;}
+    void SetSolidPrimitivesRootPaths(const SdfPathVector& solidPrimitivesPaths)
+    {
+        _solidPrimitivesRootPaths = solidPrimitivesPaths;
+    }
     void RemovePrim();
 
 protected:

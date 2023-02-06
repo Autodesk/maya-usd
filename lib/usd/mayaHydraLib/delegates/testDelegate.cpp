@@ -21,7 +21,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_ENV_SETTING(MAYAHYDRALIB_TEST_DELEGATE_FILE, "", "Path for MayaHydraTestDelegate to load");
+TF_DEFINE_ENV_SETTING(
+    MAYAHYDRALIB_TEST_DELEGATE_FILE,
+    "",
+    "Path for MayaHydraTestDelegate to load");
 
 // clang-format off
 TF_DEFINE_PRIVATE_TOKENS(

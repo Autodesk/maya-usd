@@ -59,10 +59,11 @@ std::vector<TfToken> MayaHydraDelegateRegistry::GetDelegateNames()
     return ret;
 }
 
-std::vector<MayaHydraDelegateRegistry::DelegateCreator> MayaHydraDelegateRegistry::GetDelegateCreators()
+std::vector<MayaHydraDelegateRegistry::DelegateCreator>
+MayaHydraDelegateRegistry::GetDelegateCreators()
 {
     LoadAllDelegates();
-    const auto&                                          instance = GetInstance();
+    const auto&                                             instance = GetInstance();
     std::vector<MayaHydraDelegateRegistry::DelegateCreator> ret;
     ret.reserve(instance._delegates.size());
     for (auto it : instance._delegates) {
@@ -91,7 +92,8 @@ void MayaHydraDelegateRegistry::InstallDelegatesChangedSignal(DelegatesChangedSi
 
 void MayaHydraDelegateRegistry::_LoadAllDelegates()
 {
-    TF_DEBUG(MAYAHYDRALIB_DELEGATE_REGISTRY).Msg("MayaHydraDelegateRegistry::_LoadAllDelegates()\n");
+    TF_DEBUG(MAYAHYDRALIB_DELEGATE_REGISTRY)
+        .Msg("MayaHydraDelegateRegistry::_LoadAllDelegates()\n");
 
     TfRegistryManager::GetInstance().SubscribeTo<MayaHydraDelegateRegistry>();
 

@@ -44,9 +44,9 @@ const TfTokenVector _stSamplerCoords = { TfToken("st") };
 } // namespace
 
 MayaHydraMaterialAdapter::MayaHydraMaterialAdapter(
-    const SdfPath&     id,
+    const SdfPath&        id,
     MayaHydraDelegateCtx* delegate,
-    const MObject&     node)
+    const MObject&        node)
     : MayaHydraAdapter(node, id, delegate)
 {
 }
@@ -77,7 +77,8 @@ void MayaHydraMaterialAdapter::RemovePrim()
 
 void MayaHydraMaterialAdapter::Populate()
 {
-    TF_DEBUG(MAYAHYDRALIB_ADAPTER_GET).Msg("MayaHydraMaterialAdapter::Populate() - %s\n", GetID().GetText());
+    TF_DEBUG(MAYAHYDRALIB_ADAPTER_GET)
+        .Msg("MayaHydraMaterialAdapter::Populate() - %s\n", GetID().GetText());
     if (_isPopulated) {
         return;
     }
@@ -93,7 +94,8 @@ void MayaHydraMaterialAdapter::EnableXRayShadingMode(bool enable)
 
 VtValue MayaHydraMaterialAdapter::GetMaterialResource()
 {
-    TF_DEBUG(MAYAHYDRALIB_ADAPTER_MATERIALS).Msg("MayaHydraMaterialAdapter::GetMaterialResource()\n");
+    TF_DEBUG(MAYAHYDRALIB_ADAPTER_MATERIALS)
+        .Msg("MayaHydraMaterialAdapter::GetMaterialResource()\n");
     return GetPreviewMaterialResource(GetID());
 }
 
@@ -118,7 +120,10 @@ class MayaHydraShadingEngineAdapter : public MayaHydraMaterialAdapter
 public:
     typedef MayaHydraMaterialNetworkConverter::PathToMobjMap PathToMobjMap;
 
-    MayaHydraShadingEngineAdapter(const SdfPath& id, MayaHydraDelegateCtx* delegate, const MObject& obj)
+    MayaHydraShadingEngineAdapter(
+        const SdfPath&        id,
+        MayaHydraDelegateCtx* delegate,
+        const MObject&        obj)
         : MayaHydraMaterialAdapter(id, delegate, obj)
         , _surfaceShaderCallback(0)
     {
@@ -218,8 +223,9 @@ private:
     {
         TF_DEBUG(MAYAHYDRALIB_ADAPTER_MATERIALS)
             .Msg("MayaHydraShadingEngineAdapter::GetMaterialResource(): %s\n", GetID().GetText());
-        MayaHydraMaterialNetworkConverter::MayaHydraMaterialNetworkConverterInit initStruct(GetID(), _enableXRayShadingMode, &_materialPathToMobj);
-        
+        MayaHydraMaterialNetworkConverter::MayaHydraMaterialNetworkConverterInit initStruct(
+            GetID(), _enableXRayShadingMode, &_materialPathToMobj);
+
         MayaHydraMaterialNetworkConverter converter(initStruct);
         if (!converter.GetMaterial(_surfaceShader)) {
             return GetPreviewMaterialResource(GetID());
@@ -285,10 +291,11 @@ TF_REGISTRY_FUNCTION_WITH_TAG(MayaHydraAdapterRegistry, shadingEngine)
 {
     MayaHydraAdapterRegistry::RegisterMaterialAdapter(
         TfToken("shadingEngine"),
-        [](const SdfPath&     id,
+        [](const SdfPath&        id,
            MayaHydraDelegateCtx* delegate,
-           const MObject&     obj) -> MayaHydraMaterialAdapterPtr {
-            return MayaHydraMaterialAdapterPtr(new MayaHydraShadingEngineAdapter(id, delegate, obj));
+           const MObject&        obj) -> MayaHydraMaterialAdapterPtr {
+            return MayaHydraMaterialAdapterPtr(
+                new MayaHydraShadingEngineAdapter(id, delegate, obj));
         });
 }
 

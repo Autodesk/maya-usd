@@ -33,7 +33,10 @@ MayaHydraDelegate::MayaHydraDelegate(const InitData& initData)
 
 void MayaHydraDelegate::SetParams(const MayaHydraParams& params) { _params = params; }
 
-void MayaHydraDelegate::SetCameraForSampling(SdfPath const& camID) { _cameraPathForSampling = camID; }
+void MayaHydraDelegate::SetCameraForSampling(SdfPath const& camID)
+{
+    _cameraPathForSampling = camID;
+}
 
 GfInterval MayaHydraDelegate::GetCurrentTimeSamplingInterval() const
 {

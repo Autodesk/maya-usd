@@ -26,7 +26,10 @@ class MayaHydraMaterialAdapter : public MayaHydraAdapter
 {
 public:
     MAYAHYDRALIB_API
-    MayaHydraMaterialAdapter(const SdfPath& id, MayaHydraDelegateCtx* delegate, const MObject& node);
+    MayaHydraMaterialAdapter(
+        const SdfPath&        id,
+        MayaHydraDelegateCtx* delegate,
+        const MObject&        node);
     MAYAHYDRALIB_API
     virtual ~MayaHydraMaterialAdapter() = default;
 
@@ -58,7 +61,7 @@ public:
     static VtValue GetPreviewMaterialResource(const SdfPath& materialID);
 
 protected:
-    bool _enableXRayShadingMode = false;// Are we in viewport XRay shading mode ?
+    bool _enableXRayShadingMode = false; // Are we in viewport XRay shading mode ?
 };
 
 using MayaHydraMaterialAdapterPtr = std::shared_ptr<MayaHydraMaterialAdapter>;

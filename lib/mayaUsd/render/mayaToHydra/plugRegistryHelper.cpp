@@ -30,11 +30,11 @@
 #include <string>
 
 #if !defined(MAYAUSD_VERSION)
-//y #error "MAYAUSD_VERSION is not defined"
+// y #error "MAYAUSD_VERSION is not defined"
 #endif
 
 #if !defined(MAYA_PY_VERSION)
-//y #error "MAYA_PY_VERSION is not defined"
+// y #error "MAYA_PY_VERSION is not defined"
 #endif
 
 #define STRINGIFY(x) #x

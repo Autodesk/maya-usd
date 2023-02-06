@@ -37,26 +37,30 @@ static const SdfPath solidPath = SdfPath(std::string("Solid"));
 
 SdfPath _GetRenderItemMayaPrimPath(const MRenderItem& ri)
 {
-    if (ri.InternalObjectId() == 0) return {};
-	
+    if (ri.InternalObjectId() == 0)
+        return {};
+
     SdfPath mayaPath = MAYAHYDRA_NS::RenderItemToSdfPath(ri, false, false);
-	if (mayaPath.IsEmpty()) return {};
-	
+    if (mayaPath.IsEmpty())
+        return {};
+
     const std::string theString = std::string(mayaPath.GetText());
-    if (theString.size() < 2){
-        return {};//Error
+    if (theString.size() < 2) {
+        return {}; // Error
     }
 
-    //We cannot apppend an absolute path (I.e : starting with "/")
-    if (mayaPath.IsAbsolutePath()){
+    // We cannot apppend an absolute path (I.e : starting with "/")
+    if (mayaPath.IsAbsolutePath()) {
         mayaPath = mayaPath.MakeRelativePath(SdfPath::AbsoluteRootPath());
     }
 
-    if (MHWRender::MGeometry::Primitive::kLines != ri.primitive() && MHWRender::MGeometry::Primitive::kPoints != ri.primitive()){
-        //Prefix with "Solid" when it's not a line/points primitive to be able to use only solid primitives in lighting/shadowing by their root path
+    if (MHWRender::MGeometry::Primitive::kLines != ri.primitive()
+        && MHWRender::MGeometry::Primitive::kPoints != ri.primitive()) {
+        // Prefix with "Solid" when it's not a line/points primitive to be able to use only solid
+        // primitives in lighting/shadowing by their root path
         mayaPath = solidPath.AppendPath(mayaPath);
     }
-    
+
     return mayaPath;
 }
 
@@ -67,12 +71,12 @@ SdfPath _GetPrimPath(const SdfPath& base, const MDagPath& dg)
         return {};
     }
     const std::string theString = std::string(mayaPath.GetText());
-    if (theString.size() < 2){
-        return {};//Error
+    if (theString.size() < 2) {
+        return {}; // Error
     }
 
-    //We cannot apppend an absolute path (I.e : starting with "/")
-    if (mayaPath.IsAbsolutePath()){
+    // We cannot apppend an absolute path (I.e : starting with "/")
+    if (mayaPath.IsAbsolutePath()) {
         mayaPath = mayaPath.MakeRelativePath(SdfPath::AbsoluteRootPath());
     }
 
@@ -83,7 +87,6 @@ SdfPath _GetRenderItemPrimPath(const SdfPath& base, const MRenderItem& ri)
 {
     return base.AppendPath(_GetRenderItemMayaPrimPath(ri));
 }
-
 
 SdfPath _GetRenderItemShaderPrimPath(const SdfPath& base, const MRenderItem& ri)
 {
@@ -146,7 +149,10 @@ void MayaHydraDelegateCtx::RemoveSprim(const TfToken& typeId, const SdfPath& id)
     GetRenderIndex().RemoveSprim(typeId, id);
 }
 
-void MayaHydraDelegateCtx::RemoveInstancer(const SdfPath& id) { GetRenderIndex().RemoveInstancer(id); }
+void MayaHydraDelegateCtx::RemoveInstancer(const SdfPath& id)
+{
+    GetRenderIndex().RemoveInstancer(id);
+}
 
 SdfPath MayaHydraDelegateCtx::GetPrimPath(const MDagPath& dg, bool isSprim)
 {
@@ -159,12 +165,12 @@ SdfPath MayaHydraDelegateCtx::GetPrimPath(const MDagPath& dg, bool isSprim)
 
 SdfPath MayaHydraDelegateCtx::GetRenderItemPrimPath(const MRenderItem& ri)
 {
-	return _GetRenderItemPrimPath(_rprimPath, ri);
+    return _GetRenderItemPrimPath(_rprimPath, ri);
 }
 
 SdfPath MayaHydraDelegateCtx::GetRenderItemShaderPrimPath(const MRenderItem& ri)
 {
-	return _GetRenderItemShaderPrimPath(_rprimPath, ri);
+    return _GetRenderItemShaderPrimPath(_rprimPath, ri);
 }
 
 SdfPath MayaHydraDelegateCtx::GetMaterialPath(const MObject& obj)
@@ -172,7 +178,7 @@ SdfPath MayaHydraDelegateCtx::GetMaterialPath(const MObject& obj)
     return _GetMaterialPath(_materialPath, obj);
 }
 
-SdfPath MayaHydraDelegateCtx::GetSolidPrimsRootPath()const
+SdfPath MayaHydraDelegateCtx::GetSolidPrimsRootPath() const
 {
     return _rprimPath.AppendPath(solidPath);
 }

@@ -32,7 +32,8 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "Print misc info about (ie, creation / destruction) of the delegate "
         "object");
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        MAYAHYDRALIB_AL_SELECTION, "Print info about selecting AL objects in the maya-to-hydra viewport");
+        MAYAHYDRALIB_AL_SELECTION,
+        "Print info about selecting AL objects in the maya-to-hydra viewport");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

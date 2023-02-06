@@ -34,7 +34,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION(TfType) { TfType::Define<MayaHydraDagAdapter, TfType::Bases<MayaHydraAdapter>>(); }
+TF_REGISTRY_FUNCTION(TfType)
+{
+    TfType::Define<MayaHydraDagAdapter, TfType::Bases<MayaHydraAdapter>>();
+}
 
 // clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
@@ -123,9 +126,9 @@ const auto _instancePrimvarDescriptors = HdPrimvarDescriptorVector {
 } // namespace
 
 MayaHydraDagAdapter::MayaHydraDagAdapter(
-    const SdfPath&     id,
+    const SdfPath&        id,
     MayaHydraDelegateCtx* delegate,
-    const MDagPath&    dagPath)
+    const MDagPath&       dagPath)
     : MayaHydraAdapter(dagPath.node(), id, delegate)
     , _dagPath(dagPath)
 {
@@ -138,7 +141,9 @@ MayaHydraDagAdapter::MayaHydraDagAdapter(
 GfMatrix4d MayaHydraDagAdapter::GetTransform()
 {
     TF_DEBUG(MAYAHYDRALIB_ADAPTER_GET)
-        .Msg("Called MayaHydraDagAdapter::GetTransform() - %s\n", _dagPath.partialPathName().asChar());
+        .Msg(
+            "Called MayaHydraDagAdapter::GetTransform() - %s\n",
+            _dagPath.partialPathName().asChar());
 
     if (_invalidTransform) {
         if (IsInstanced()) {
@@ -152,7 +157,8 @@ GfMatrix4d MayaHydraDagAdapter::GetTransform()
     return _transform;
 }
 
-size_t MayaHydraDagAdapter::SampleTransform(size_t maxSampleCount, float* times, GfMatrix4d* samples)
+size_t
+MayaHydraDagAdapter::SampleTransform(size_t maxSampleCount, float* times, GfMatrix4d* samples)
 {
     return GetDelegate()->SampleValues(maxSampleCount, times, samples, [&]() -> GfMatrix4d {
         return MAYAHYDRA_NS::GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());

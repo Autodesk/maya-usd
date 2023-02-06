@@ -22,7 +22,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfDebug)
 {
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        MAYAHYDRALIB_ADAPTER_CALLBACKS, "Print information adding and removal of adapter callbacks.");
+        MAYAHYDRALIB_ADAPTER_CALLBACKS,
+        "Print information adding and removal of adapter callbacks.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         MAYAHYDRALIB_ADAPTER_CURVE_PLUG_DIRTY,
@@ -58,7 +59,8 @@ TF_REGISTRY_FUNCTION(TfDebug)
         MAYAHYDRALIB_ADAPTER_MATERIALS, "Print information about converting materials.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        MAYAHYDRALIB_ADAPTER_MESH_PLUG_DIRTY, "Print information about the mesh plug dirtying handled.");
+        MAYAHYDRALIB_ADAPTER_MESH_PLUG_DIRTY,
+        "Print information about the mesh plug dirtying handled.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         MAYAHYDRALIB_ADAPTER_MESH_UNHANDLED_PLUG_DIRTY,

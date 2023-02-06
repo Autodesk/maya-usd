@@ -31,9 +31,9 @@ TF_REGISTRY_FUNCTION(TfType)
 }
 
 MayaHydraShapeAdapter::MayaHydraShapeAdapter(
-    const SdfPath&     id,
+    const SdfPath&        id,
     MayaHydraDelegateCtx* delegate,
-    const MDagPath&    dagPath)
+    const MDagPath&       dagPath)
     : MayaHydraDagAdapter(id, delegate, dagPath)
 {
     _CalculateExtent();

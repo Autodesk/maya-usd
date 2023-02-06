@@ -16,7 +16,7 @@
 #include "adapterRegistry.h"
 
 #if defined(MAYAUSD_VERSION)
-    #include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
 #endif
 
 #include <pxr/base/plug/plugin.h>
@@ -32,7 +32,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(MayaHydraAdapterRegistry);
 
-void MayaHydraAdapterRegistry::RegisterShapeAdapter(const TfToken& type, ShapeAdapterCreator creator)
+void MayaHydraAdapterRegistry::RegisterShapeAdapter(
+    const TfToken&      type,
+    ShapeAdapterCreator creator)
 {
     GetInstance()._dagAdapters.insert({ type, creator });
 }
@@ -47,7 +49,9 @@ MayaHydraAdapterRegistry::GetShapeAdapterCreator(const MDagPath& dag)
     return ret;
 }
 
-void MayaHydraAdapterRegistry::RegisterLightAdapter(const TfToken& type, LightAdapterCreator creator)
+void MayaHydraAdapterRegistry::RegisterLightAdapter(
+    const TfToken&      type,
+    LightAdapterCreator creator)
 {
     GetInstance()._lightAdapters.insert({ type, creator });
 }
@@ -67,7 +71,9 @@ MayaHydraAdapterRegistry::GetLightAdapterCreator(const MObject& node)
     return ret;
 }
 
-void MayaHydraAdapterRegistry::RegisterCameraAdapter(const TfToken& type, CameraAdapterCreator creator)
+void MayaHydraAdapterRegistry::RegisterCameraAdapter(
+    const TfToken&       type,
+    CameraAdapterCreator creator)
 {
     GetInstance()._cameraAdapters.insert({ type, creator });
 }

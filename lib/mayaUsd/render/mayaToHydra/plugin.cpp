@@ -19,7 +19,7 @@
 
 #include <mayaHydraLib/adapters/adapter.h>
 #if defined(MAYAUSD_VERSION)
-    #include <mayaUsd/utils/plugRegistryHelper.h>
+#include <mayaUsd/utils/plugRegistryHelper.h>
 #endif
 
 #include <pxr/base/plug/plugin.h>
@@ -49,16 +49,16 @@ using MtohRenderOverridePtr = std::unique_ptr<MtohRenderOverride>;
 static std::vector<MtohRenderOverridePtr> gsRenderOverrides;
 
 #if defined(MAYAUSD_VERSION)
-    #define STRINGIFY(x) #x
-    #define TOSTRING(x)  STRINGIFY(x)
-    #define PLUGIN_VERSION TOSTRING(MAYAUSD_VERSION)
+#define STRINGIFY(x)   #x
+#define TOSTRING(x)    STRINGIFY(x)
+#define PLUGIN_VERSION TOSTRING(MAYAUSD_VERSION)
 #elif defined(MAYAHYDRA_VERSION)
-    #define STRINGIFY(x) #x
-    #define TOSTRING(x)  STRINGIFY(x)
-    #define PLUGIN_VERSION TOSTRING(MAYAHYDRA_VERSION)
+#define STRINGIFY(x)   #x
+#define TOSTRING(x)    STRINGIFY(x)
+#define PLUGIN_VERSION TOSTRING(MAYAHYDRA_VERSION)
 #else
-    #pragma message( "MAYAHYDRA_VERSION is not defined" )
-    #define PLUGIN_VERSION "Maya-Hydra experimental"
+#pragma message("MAYAHYDRA_VERSION is not defined")
+#define PLUGIN_VERSION "Maya-Hydra experimental"
 #endif
 
 PLUGIN_EXPORT MStatus initializePlugin(MObject obj)

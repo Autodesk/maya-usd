@@ -15,13 +15,12 @@
 //
 
 #if !defined(MAYAUSD_VERSION)
-    // GL loading library needs to be included before any other OpenGL headers.
-    #include <pxr/imaging/garch/glApi.h>
+// GL loading library needs to be included before any other OpenGL headers.
+#include <pxr/imaging/garch/glApi.h>
 #endif
 
-#include "renderOverride.h"
-
 #include "pluginDebugCodes.h"
+#include "renderOverride.h"
 #include "renderOverrideUtils.h"
 #include "tokens.h"
 #include "utils.h"
@@ -31,27 +30,28 @@
 #include <mayaHydraLib/sceneIndex/registration.h>
 #include <mayaHydraLib/utils.h>
 
-#include <pxr/base/tf/type.h>
 #include <pxr/base/plug/plugin.h>
-#include "pxr/base/plug/registry.h"
+#include <pxr/base/plug/registry.h>
+#include <pxr/base/tf/type.h>
+
 
 #if defined(MAYAUSD_VERSION)
-    #include <mayaUsd/render/px_vp20/utils.h>
-    #include <mayaUsd/utils/hash.h>
+#include <mayaUsd/render/px_vp20/utils.h>
+#include <mayaUsd/utils/hash.h>
 #else
-    namespace MayaUsd {
-        // hash combiner taken from:
-        // http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0814r0.pdf
+namespace MayaUsd {
+// hash combiner taken from:
+// http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0814r0.pdf
 
-        // boost::hash implementation also relies on the same algorithm:
-        // https://www.boost.org/doc/libs/1_64_0/boost/functional/hash/hash.hpp
+// boost::hash implementation also relies on the same algorithm:
+// https://www.boost.org/doc/libs/1_64_0/boost/functional/hash/hash.hpp
 
-        template <typename T> inline void hash_combine(std::size_t& seed, const T& value)
-        {
-            ::std::hash<T> hasher;
-            seed ^= hasher(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        }
-    }
+template <typename T> inline void hash_combine(std::size_t& seed, const T& value)
+{
+    ::std::hash<T> hasher;
+    seed ^= hasher(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+} // namespace MayaUsd
 #endif
 
 #include <pxr/base/gf/matrix4d.h>
@@ -60,8 +60,8 @@
 #include <pxr/imaging/glf/contextCaps.h>
 #include <pxr/imaging/hd/camera.h>
 #include <pxr/imaging/hd/rendererPluginRegistry.h>
-#include <pxr/imaging/hd/sceneIndexPluginRegistry.h>
 #include <pxr/imaging/hd/rprim.h>
+#include <pxr/imaging/hd/sceneIndexPluginRegistry.h>
 #include <pxr/imaging/hdx/colorizeSelectionTask.h>
 #include <pxr/imaging/hdx/pickTask.h>
 #include <pxr/imaging/hdx/renderTask.h>
@@ -72,16 +72,16 @@
 
 #include <maya/M3dView.h>
 #include <maya/MConditionMessage.h>
+#include <maya/MDGMessage.h>
 #include <maya/MDrawContext.h>
 #include <maya/MEventMessage.h>
 #include <maya/MGlobal.h>
 #include <maya/MNodeMessage.h>
+#include <maya/MObjectHandle.h>
 #include <maya/MSceneMessage.h>
 #include <maya/MSelectionList.h>
 #include <maya/MTimerMessage.h>
 #include <maya/MUiMessage.h>
-#include <maya/MDGMessage.h>
-#include <maya/MObjectHandle.h>
 
 #include <atomic>
 #include <chrono>
@@ -332,9 +332,10 @@ void MtohRenderOverride::UpdateRenderGlobals(
     const MtohRenderGlobals& globals,
     const TfToken&           attrName)
 {
-    // If no attribute or attribute starts with 'mayaHydra', these setting wil be applied on the next
-    // call to MtohRenderOverride::Render, so just force an invalidation
-    // XXX: This will need to change if mayaHydra settings should ever make it to the delegate itself.
+    // If no attribute or attribute starts with 'mayaHydra', these setting wil be applied on the
+    // next call to MtohRenderOverride::Render, so just force an invalidation
+    // XXX: This will need to change if mayaHydra settings should ever make it to the delegate
+    // itself.
     if (attrName.GetString().find("mayaHydra") != 0) {
         std::lock_guard<std::mutex> lock(_allInstancesMutex);
         for (auto* instance : _allInstances) {
@@ -449,8 +450,9 @@ void MtohRenderOverride::_DetectMayaDefaultLighting(const MHWRender::MDrawContex
                 considerAllSceneLights);
 
             if (hasDirection && !hasPosition) {
-                //Note for devs : if you update more parameters in the default light, don't forget to update MtohDefaultLightDelegate::SetDefaultLight
-                //currently there are only 3 : position, diffuse, specular
+                // Note for devs : if you update more parameters in the default light, don't forget
+                // to update MtohDefaultLightDelegate::SetDefaultLight currently there are only 3 :
+                // position, diffuse, specular
                 _defaultLight.SetPosition({ -direction.x, -direction.y, -direction.z, 0.0f });
                 _defaultLight.SetDiffuse(
                     { intensity * color.r, intensity * color.g, intensity * color.b, 1.0f });
@@ -479,7 +481,9 @@ void MtohRenderOverride::_DetectMayaDefaultLighting(const MHWRender::MDrawContex
     }
 }
 
-MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, const MHWRender::MDataServerOperation::MViewportScene& scene)
+MStatus MtohRenderOverride::Render(
+    const MHWRender::MDrawContext&                         drawContext,
+    const MHWRender::MDataServerOperation::MViewportScene& scene)
 {
     // It would be good to clear the resources of the overrides that are
     // not in active use, but I'm not sure if we have a better way than
@@ -505,7 +509,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, c
         //
         if (_playBlasting && !_isUsingHdSt && !tasks.empty()) {
             // XXX: Is this better as user-configurable ?
-            constexpr auto msWait = std::chrono::duration<float, std::milli>(100);
+            constexpr auto                 msWait = std::chrono::duration<float, std::milli>(100);
             std::shared_ptr<HdxRenderTask> renderTask
                 = std::dynamic_pointer_cast<HdxRenderTask>(tasks.front());
             if (renderTask) {
@@ -540,18 +544,18 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, c
             }
         }
 
-		// TODO: Change management
-		// Every frame update everything
-		if (scene.changed())
-		{
-			for (auto& it : _delegates) {
-				auto sceneDelegate = std::dynamic_pointer_cast<MayaHydraSceneDelegate>(it);
-				if (sceneDelegate)
-				{
-					sceneDelegate->HandleCompleteViewportScene(scene, static_cast<MFrameContext::DisplayStyle>(drawContext.getDisplayStyle()));
-				}
-			}
-		}
+        // TODO: Change management
+        // Every frame update everything
+        if (scene.changed()) {
+            for (auto& it : _delegates) {
+                auto sceneDelegate = std::dynamic_pointer_cast<MayaHydraSceneDelegate>(it);
+                if (sceneDelegate) {
+                    sceneDelegate->HandleCompleteViewportScene(
+                        scene,
+                        static_cast<MFrameContext::DisplayStyle>(drawContext.getDisplayStyle()));
+                }
+            }
+        }
 
         _engine.Execute(_renderIndex, &tasks);
 
@@ -575,9 +579,9 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, c
     }
 
     if (!_initializationAttempted) {
-		// TODO: First time viewport scene update here
+        // TODO: First time viewport scene update here
         // Anything special ? Dag items populate called here before
-       _InitHydraResources();
+        _InitHydraResources();
 
         if (!_initializationSucceeded) {
             return MStatus::kFailure;
@@ -586,7 +590,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, c
 
     _SelectionChanged();
 
-    const auto   displayStyle = drawContext.getDisplayStyle();
+    const auto      displayStyle = drawContext.getDisplayStyle();
     MayaHydraParams delegateParams = _globals.delegateParams;
     delegateParams.displaySmoothMeshes = !(displayStyle & MHWRender::MFrameContext::kFlatShaded);
 
@@ -600,7 +604,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, c
     }
 
     HdxRenderTaskParams params;
-    params.enableLighting       = true;
+    params.enableLighting = true;
     params.enableSceneMaterials = true;
 
     /* TODO: Find replacement
@@ -633,8 +637,10 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, c
     }
 
     _taskController->SetFreeCameraMatrices(
-        MAYAHYDRA_NS::GetGfMatrixFromMaya(drawContext.getMatrix(MHWRender::MFrameContext::kViewMtx)),
-        MAYAHYDRA_NS::GetGfMatrixFromMaya(drawContext.getMatrix(MHWRender::MFrameContext::kProjectionMtx)));
+        MAYAHYDRA_NS::GetGfMatrixFromMaya(
+            drawContext.getMatrix(MHWRender::MFrameContext::kViewMtx)),
+        MAYAHYDRA_NS::GetGfMatrixFromMaya(
+            drawContext.getMatrix(MHWRender::MFrameContext::kProjectionMtx)));
 
     if (delegateParams.motionSamplesEnabled()) {
         MStatus  status;
@@ -763,7 +769,7 @@ void MtohRenderOverride::_InitHydraResources()
     // TODO: Must create render delegate via HdRenderPluginRegistry, otherwise display name isn't
     // assigned
     //_renderDelegate =
-    //HdRendererPluginRegistry::GetInstance().CreateRenderDelegate(_rendererDesc.rendererName);
+    // HdRendererPluginRegistry::GetInstance().CreateRenderDelegate(_rendererDesc.rendererName);
     auto* renderDelegate = _rendererPlugin->CreateRenderDelegate();
     if (!renderDelegate)
         return;
@@ -806,7 +812,8 @@ void MtohRenderOverride::_InitHydraResources()
         if (newDelegate) {
             // Call SetLightsEnabled before the delegate is populated
             newDelegate->SetLightsEnabled(!_hasDefaultLighting);
-            if (auto mayaSceneDelegate = std::dynamic_pointer_cast<MayaHydraSceneDelegate>(newDelegate)) {
+            if (auto mayaSceneDelegate
+                = std::dynamic_pointer_cast<MayaHydraSceneDelegate>(newDelegate)) {
                 solidPrimsRootPaths.push_back(mayaSceneDelegate->GetSolidPrimsRootPath());
             }
             _delegates.emplace_back(std::move(newDelegate));
@@ -816,7 +823,8 @@ void MtohRenderOverride::_InitHydraResources()
     delegateInitData.delegateID
         = _ID.AppendChild(TfToken(TfStringPrintf("_DefaultLightDelegate_%p", this)));
     _defaultLightDelegate.reset(new MtohDefaultLightDelegate(delegateInitData));
-    // Set the scene delegate SolidPrimitivesRootPaths for the lines and points primitives to be ignored by the default light
+    // Set the scene delegate SolidPrimitivesRootPaths for the lines and points primitives to be
+    // ignored by the default light
     _defaultLightDelegate->SetSolidPrimitivesRootPaths(solidPrimsRootPaths);
 
     VtValue selectionTrackerValue(_selectionTracker);
@@ -848,7 +856,7 @@ void MtohRenderOverride::_InitHydraResources()
             break;
         }
     }
-    if(!_sceneIndexRegistration)
+    if (!_sceneIndexRegistration)
         _sceneIndexRegistration.reset(new MayaHydraSceneIndexRegistration(_renderIndex));
 
     _initializationSucceeded = true;
@@ -994,7 +1002,8 @@ MStatus MtohRenderOverride::setup(const MString& destination)
         _operations.push_back(new MayaHydraPreRender("HydraRenderOverride_PreScene"));
 
         // The main hydra render
-        // For the data server, This also invokes scene update then sync scene delegate after scene update
+        // For the data server, This also invokes scene update then sync scene delegate after scene
+        // update
         _operations.push_back(new MayaHydraRender("HydraRenderOverride_DataServer", this));
 
         // Draw post scene elements (cameras, CVs, shapes not pushed into hydra)
@@ -1046,9 +1055,9 @@ bool MtohRenderOverride::select(
     MPointArray&    worldSpaceHitPts)
 {
 #ifdef MAYAHYDRA_DEVELOPMENTAL_NATIVE_SELECTION
-	// Skip override on plugin-side if prototype 2
-	// Rely on VP2 select and simply draw selection items
-	return false;
+    // Skip override on plugin-side if prototype 2
+    // Rely on VP2 select and simply draw selection items
+    return false;
 #endif
 
     MStatus status = MStatus::kFailure;

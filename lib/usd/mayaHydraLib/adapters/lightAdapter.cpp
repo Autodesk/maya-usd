@@ -93,24 +93,24 @@ MayaHydraLightAdapter::MayaHydraLightAdapter(MayaHydraDelegateCtx* delegate, con
     UpdateVisibility();
     _shadowProjectionMatrix.SetIdentity();
 
-    //Special case for Arnold lights which are seen as locators
-    if (IsAnArnoldSkyDomeLight(dag)){
+    // Special case for Arnold lights which are seen as locators
+    if (IsAnArnoldSkyDomeLight(dag)) {
         GetDelegate()->AddArnoldLight(dag);
     }
 }
 
 MayaHydraLightAdapter::~MayaHydraLightAdapter()
 {
-    //Special case for Arnold lights which are seen as locators
+    // Special case for Arnold lights which are seen as locators
     const MDagPath& dag = GetDagPath();
-    if (IsAnArnoldSkyDomeLight(dag)){
+    if (IsAnArnoldSkyDomeLight(dag)) {
         GetDelegate()->RemoveArnoldLight(dag);
     }
 }
 
 bool MayaHydraLightAdapter::IsAnArnoldSkyDomeLight(const MDagPath& dag) const
 {
-    static const MString aiSkyDomeLightString ("aiSkyDomeLight");
+    static const MString aiSkyDomeLightString("aiSkyDomeLight");
 
     MFnDependencyNode depNode(dag.node());
     return dag.hasFn(MFn::kLocator) && (aiSkyDomeLightString == depNode.typeName());
@@ -193,23 +193,28 @@ VtValue MayaHydraLightAdapter::Get(const TfToken& key)
         } else if (decayRate == 2) {
             light.SetAttenuation(GfVec3f(0.0f, 0.0f, 1.0f));
         }
-        light.SetTransform(MAYAHYDRA_NS::GetGfMatrixFromMaya(GetDagPath().inclusiveMatrixInverse()));
+        light.SetTransform(
+            MAYAHYDRA_NS::GetGfMatrixFromMaya(GetDagPath().inclusiveMatrixInverse()));
         _CalculateLightParams(light);
         return VtValue(light);
     } else if (key == HdTokens->transform) {
         return VtValue(MayaHydraDagAdapter::GetTransform());
     } else if (key == HdLightTokens->shadowCollection) {
-        //Exclude lines/points primitives from receiving lighting and casting shadows by only taking the primitives whose root path is GetDelegate()->GetSolidPrimsRootPath()
-        const SdfPath rootPathForNonLinesPrimitives = GetDelegate()->GetSolidPrimsRootPath();
-        HdRprimCollection coll(HdTokens->geometry, HdReprSelector(HdReprTokens->refined), rootPathForNonLinesPrimitives);
+        // Exclude lines/points primitives from receiving lighting and casting shadows by only
+        // taking the primitives whose root path is GetDelegate()->GetSolidPrimsRootPath()
+        const SdfPath     rootPathForNonLinesPrimitives = GetDelegate()->GetSolidPrimsRootPath();
+        HdRprimCollection coll(
+            HdTokens->geometry,
+            HdReprSelector(HdReprTokens->refined),
+            rootPathForNonLinesPrimitives);
         return VtValue(coll);
     } else if (key == HdLightTokens->shadowParams) {
         HdxShadowParams shadowParams;
-        MFnLight       mayaLight(GetDagPath());
-        const bool bLightHasShadowsenabled = mayaLight.useRayTraceShadows();
+        MFnLight        mayaLight(GetDagPath());
+        const bool      bLightHasShadowsenabled = mayaLight.useRayTraceShadows();
         if (!bLightHasShadowsenabled) {
             shadowParams.enabled = false;
-        }else{
+        } else {
             _CalculateShadowParams(mayaLight, shadowParams);
         }
         return VtValue(shadowParams);
@@ -304,8 +309,8 @@ void MayaHydraLightAdapter::_CalculateShadowParams(MFnLight& light, HdxShadowPar
         : std::min(
             GetDelegate()->GetParams().maximumShadowMapResolution, dmapResolutionPlug.asInt());
 
-    params.shadowMatrix =
-        std::make_shared<MayaHydraConstantShadowMatrix>(GetTransform() * _shadowProjectionMatrix);
+    params.shadowMatrix
+        = std::make_shared<MayaHydraConstantShadowMatrix>(GetTransform() * _shadowProjectionMatrix);
     params.bias = dmapBiasPlug.isNull() ? -0.001 : -dmapBiasPlug.asFloat();
     params.blur = dmapFilterSizePlug.isNull() ? 0.0
                                               : (static_cast<double>(dmapFilterSizePlug.asInt()))

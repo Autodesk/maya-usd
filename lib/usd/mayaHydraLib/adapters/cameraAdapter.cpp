@@ -87,7 +87,7 @@ void MayaHydraCameraAdapter::CreateCallbacks()
         obj,
         +[](MObject& obj, void* clientData) {
             auto* adapter = reinterpret_cast<MayaHydraCameraAdapter*>(clientData);
-        // Dirty everything rather than track complex param and fit to projection dependencies.
+            // Dirty everything rather than track complex param and fit to projection dependencies.
             adapter->MarkDirty(HdCamera::DirtyParams | HdCamera::DirtyWindowPolicy);
         },
         reinterpret_cast<void*>(this),
@@ -286,7 +286,6 @@ VtValue MayaHydraCameraAdapter::GetCameraParamValue(const TfToken& paramName)
             return VtValue(HdCamera::Perspective);
         }
     }
-
 
     return {};
 }

@@ -35,28 +35,28 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 namespace {
 
-
-//Print to the output window the type and value of each parameter from the std::map
+// Print to the output window the type and value of each parameter from the std::map
 void DebugPrintParameters(const std::map<TfToken, VtValue>& params)
 {
-    cout << "\n";//Add a line
-    //Print all parameters types and values
-    for(auto param : params){
+    cout << "\n"; // Add a line
+    // Print all parameters types and values
+    for (auto param : params) {
         std::string valueAsString;
         MAYAHYDRA_NS_DEF::ConvertVtValueAsText(param.second, valueAsString);
-        cout << "Material parameters : (" << param.first.GetText() <<" - " << valueAsString.c_str() << ")\n";
+        cout << "Material parameters : (" << param.first.GetText() << " - " << valueAsString.c_str()
+             << ")\n";
     }
 }
 
-const TfToken       _useSpecularWorkflowToken ("useSpecularWorkflow");
-const TfToken       _specularColorToken ("specularColor");
-const TfToken       _opacityToken ("opacity");
+const TfToken _useSpecularWorkflowToken("useSpecularWorkflow");
+const TfToken _specularColorToken("specularColor");
+const TfToken _opacityToken("opacity");
 
-constexpr float defaultTextureMemoryLimit   = 1e8f;
-constexpr float xRayOpacityValue            = 0.3f;//Hardcoded value taken from OGSMayaRenderItem::UpdateExtraOpacityParam
+constexpr float defaultTextureMemoryLimit = 1e8f;
+constexpr float xRayOpacityValue
+    = 0.3f; // Hardcoded value taken from OGSMayaRenderItem::UpdateExtraOpacityParam
 
 // Lists of preferred shader output names, from SdfValueTypeName to list of
 // preferred output names for that type.  The list that has an empty token for
@@ -247,7 +247,9 @@ public:
 class MayaHydraRemappingMaterialAttrConverter : public MayaHydraMaterialAttrConverter
 {
 public:
-    MayaHydraRemappingMaterialAttrConverter(const TfToken& remappedName, const SdfValueTypeName& type)
+    MayaHydraRemappingMaterialAttrConverter(
+        const TfToken&          remappedName,
+        const SdfValueTypeName& type)
         : _remappedName(remappedName)
         , _type(type)
     {
@@ -430,14 +432,14 @@ public:
     {
         VtValue transmission = MayaHydraMaterialNetworkConverter::ConvertMayaAttrToValue(
             node, "transmission", type, nullptr, outPlug);
-        //Combine transmission and Geometry-->Opacity R,G and B attributes
+        // Combine transmission and Geometry-->Opacity R,G and B attributes
         VtValue geometryOpacityR = MayaHydraMaterialNetworkConverter::ConvertMayaAttrToValue(
             node, "opacityR", type, nullptr, outPlug);
         VtValue geometryOpacityG = MayaHydraMaterialNetworkConverter::ConvertMayaAttrToValue(
             node, "opacityG", type, nullptr, outPlug);
         VtValue geometryOpacityB = MayaHydraMaterialNetworkConverter::ConvertMayaAttrToValue(
             node, "opacityB", type, nullptr, outPlug);
-        
+
         if (!transmission.IsHolding<float>()) {
             if (fallback) {
                 return *fallback;
@@ -447,23 +449,27 @@ public:
                      "No float plug found with name: transmission and no "
                      "fallback given");
             return VtValue();
-        } 
+        }
 
-        float val   = 1.0f - transmission.UncheckedGet<float>();
-        if (val < 1.0e-4f){ 
-            //Clamp lower value as an opacity of 0.0 in hydra makes the object fully transparent, 
-            //but in VP2 we still see the specular highlight if any, avoiding 0.0 leads to the same effect in hydra.
+        float val = 1.0f - transmission.UncheckedGet<float>();
+        if (val < 1.0e-4f) {
+            // Clamp lower value as an opacity of 0.0 in hydra makes the object fully transparent,
+            // but in VP2 we still see the specular highlight if any, avoiding 0.0 leads to the same
+            // effect in hydra.
             val = 1.0e-4f;
         }
 
         float fGeometryOpacity = 1.0f;
-        if (geometryOpacityR.IsHolding<float>() && geometryOpacityG.IsHolding<float>() && geometryOpacityB.IsHolding<float>()) {
-            //Take the average
-            fGeometryOpacity = (1.0f/3.0f)*(geometryOpacityR.UncheckedGet<float>() + geometryOpacityG.UncheckedGet<float>() + geometryOpacityB.UncheckedGet<float>());
+        if (geometryOpacityR.IsHolding<float>() && geometryOpacityG.IsHolding<float>()
+            && geometryOpacityB.IsHolding<float>()) {
+            // Take the average
+            fGeometryOpacity = (1.0f / 3.0f)
+                * (geometryOpacityR.UncheckedGet<float>() + geometryOpacityG.UncheckedGet<float>()
+                   + geometryOpacityB.UncheckedGet<float>());
         }
 
         val *= fGeometryOpacity;
-        
+
         return VtValue(val);
     }
 };
@@ -532,7 +538,9 @@ NameToNodeConverterMap _nodeConverters;
 void MayaHydraMaterialNetworkConverter::initialize()
 {
     auto colorConverter = std::make_shared<MayaHydraScaledRemappingMaterialAttrConverter>(
-        MayaHydraAdapterTokens->color, MayaHydraAdapterTokens->diffuse, SdfValueTypeNames->Vector3f);
+        MayaHydraAdapterTokens->color,
+        MayaHydraAdapterTokens->diffuse,
+        SdfValueTypeNames->Vector3f);
     auto incandescenceConverter = std::make_shared<MayaHydraRemappingMaterialAttrConverter>(
         MayaHydraAdapterTokens->incandescence, SdfValueTypeNames->Vector3f);
     auto eccentricityConverter = std::make_shared<MayaHydraRemappingMaterialAttrConverter>(
@@ -541,7 +549,9 @@ void MayaHydraMaterialNetworkConverter::initialize()
 
     // Standard surface:
     auto baseColorConverter = std::make_shared<MayaHydraScaledRemappingMaterialAttrConverter>(
-        MayaHydraAdapterTokens->baseColor, MayaHydraAdapterTokens->base, SdfValueTypeNames->Vector3f);
+        MayaHydraAdapterTokens->baseColor,
+        MayaHydraAdapterTokens->base,
+        SdfValueTypeNames->Vector3f);
     auto emissionColorConverter = std::make_shared<MayaHydraScaledRemappingMaterialAttrConverter>(
         MayaHydraAdapterTokens->emissionColor,
         MayaHydraAdapterTokens->emission,
@@ -566,7 +576,8 @@ void MayaHydraMaterialNetworkConverter::initialize()
     auto fixedOneFloat = std::make_shared<MayaHydraFixedMaterialAttrConverter>(1.0f);
     auto fixedZeroInt = std::make_shared<MayaHydraFixedMaterialAttrConverter>(0);
     auto fixedOneInt = std::make_shared<MayaHydraFixedMaterialAttrConverter>(1);
-    auto fixedStToken = std::make_shared<MayaHydraFixedMaterialAttrConverter>(MayaHydraAdapterTokens->st);
+    auto fixedStToken
+        = std::make_shared<MayaHydraFixedMaterialAttrConverter>(MayaHydraAdapterTokens->st);
 
     auto cosinePowerToRoughness = std::make_shared<MayaHydraCosinePowerMaterialAttrConverter>();
     auto filenameConverter = std::make_shared<MayaHydraFilenameMaterialAttrConverter>();
@@ -581,7 +592,8 @@ void MayaHydraMaterialNetworkConverter::initialize()
 
     _nodeConverters = {
         { MayaHydraAdapterTokens->usdPreviewSurface, { UsdImagingTokens->UsdPreviewSurface, {} } },
-        { MayaHydraAdapterTokens->pxrUsdPreviewSurface, { UsdImagingTokens->UsdPreviewSurface, {} } },
+        { MayaHydraAdapterTokens->pxrUsdPreviewSurface,
+          { UsdImagingTokens->UsdPreviewSurface, {} } },
         { MayaHydraAdapterTokens->lambert,
           { UsdImagingTokens->UsdPreviewSurface,
             {
@@ -657,7 +669,8 @@ MayaHydraMaterialNodeConverter::GetAttrConverter(const TfToken& paramName)
     return it->second;
 }
 
-MayaHydraMaterialNodeConverter* MayaHydraMaterialNodeConverter::GetNodeConverter(const TfToken& nodeType)
+MayaHydraMaterialNodeConverter*
+MayaHydraMaterialNodeConverter::GetNodeConverter(const TfToken& nodeType)
 {
     auto it = _nodeConverters.find(nodeType);
     if (it == _nodeConverters.end()) {
@@ -676,7 +689,8 @@ MayaHydraShaderParam::MayaHydraShaderParam(
 {
 }
 
-MayaHydraMaterialNetworkConverter::MayaHydraMaterialNetworkConverter(MayaHydraMaterialNetworkConverterInit& init)
+MayaHydraMaterialNetworkConverter::MayaHydraMaterialNetworkConverter(
+    MayaHydraMaterialNetworkConverterInit& init)
     : _network(init._materialNetwork)
     , _prefix(init._prefix)
     , _pathToMobj(init._pathToMobj)
@@ -722,32 +736,34 @@ HdMaterialNode* MayaHydraMaterialNetworkConverter::GetMaterial(const MObject& ma
                 node, *nodeConverter, material, param.name, param.type, &param.fallbackValue);
         }
 
-        //If we are using a specular color which is not white, the UsdPreviewsurface specular workflow must be enabled to use the specular color
-        //which is done by setting the UsdPreviewSurface param "useSpecularWork" to 1
+        // If we are using a specular color which is not white, the UsdPreviewsurface specular
+        // workflow must be enabled to use the specular color which is done by setting the
+        // UsdPreviewSurface param "useSpecularWork" to 1
         {
             const auto it = material.parameters.find(_specularColorToken);
-            if(it != material.parameters.cend()){
+            if (it != material.parameters.cend()) {
                 const VtValue& specColorVal = it->second;
-                if (! specColorVal.IsEmpty() && specColorVal.UncheckedGet<GfVec3f>() != GfVec3f(1,1,1)){
+                if (!specColorVal.IsEmpty()
+                    && specColorVal.UncheckedGet<GfVec3f>() != GfVec3f(1, 1, 1)) {
                     material.parameters[_useSpecularWorkflowToken] = VtValue(1);
                 }
             }
         }
 
-        if (_enableXRayShadingMode)
-        {
-            //Multiply current opacity by hardcoded xRayOpacityValue
+        if (_enableXRayShadingMode) {
+            // Multiply current opacity by hardcoded xRayOpacityValue
             const auto it = material.parameters.find(_opacityToken);
-            if(it != material.parameters.cend()){
+            if (it != material.parameters.cend()) {
                 const VtValue& opacityVal = it->second;
-                if (! opacityVal.IsEmpty()){
-                    material.parameters[_opacityToken] = VtValue(opacityVal.UncheckedGet<float>() * xRayOpacityValue);
+                if (!opacityVal.IsEmpty()) {
+                    material.parameters[_opacityToken]
+                        = VtValue(opacityVal.UncheckedGet<float>() * xRayOpacityValue);
                 }
             }
         }
 
-        if (TfDebug::IsEnabled(MAYAHYDRALIB_ADAPTER_MATERIALS_PRINT_PARAMETERS_VALUES)){
-            //DEBUG to print material parameters type and value to the output window
+        if (TfDebug::IsEnabled(MAYAHYDRALIB_ADAPTER_MATERIALS_PRINT_PARAMETERS_VALUES)) {
+            // DEBUG to print material parameters type and value to the output window
             DebugPrintParameters(material.parameters);
         }
 
@@ -789,23 +805,24 @@ void MayaHydraMaterialNetworkConverter::AddPrimvar(const TfToken& primvar)
 }
 
 void MayaHydraMaterialNetworkConverter::ConvertParameter(
-    MFnDependencyNode&           node,
+    MFnDependencyNode&              node,
     MayaHydraMaterialNodeConverter& nodeConverter,
-    HdMaterialNode&              material,
-    const TfToken&               paramName,
-    const SdfValueTypeName&      type,
-    const VtValue*               fallback)
+    HdMaterialNode&                 material,
+    const TfToken&                  paramName,
+    const SdfValueTypeName&         type,
+    const VtValue*                  fallback)
 {
-    MPlugArray   plugArray;
-    VtValue val;
+    MPlugArray plugArray;
+    VtValue    val;
     TF_DEBUG(MAYAHYDRALIB_ADAPTER_MATERIALS).Msg("ConvertParameter(%s)\n", paramName.GetText());
 
     auto attrConverter = nodeConverter.GetAttrConverter(paramName);
     if (attrConverter) {
-        //Using an array of MPlug in plugArray, as some settings may have 2 or more attributes that should be taken into consideration for connections.
-        //For example : specular has a specular color and specular weight attributes, both should be considered.
-        //So after calling attrConverter->GetValue, the plugArray will contain all dependents MPlug for connections.
-        val = attrConverter->GetValue(node, paramName, type, fallback, &plugArray); 
+        // Using an array of MPlug in plugArray, as some settings may have 2 or more attributes that
+        // should be taken into consideration for connections. For example : specular has a specular
+        // color and specular weight attributes, both should be considered. So after calling
+        // attrConverter->GetValue, the plugArray will contain all dependents MPlug for connections.
+        val = attrConverter->GetValue(node, paramName, type, fallback, &plugArray);
     } else if (fallback) {
         val = *fallback;
     } else {
@@ -821,20 +838,20 @@ void MayaHydraMaterialNetworkConverter::ConvertParameter(
     material.parameters[paramName] = val;
 
     /*plugArray contains all dependents MPlug we should consider for connections.
-    Usually it contains 1 or 2 MPlug (2 is when dealing with a weighted attribute), 
-    it can have more than 2 when dealing with the transmission which is combined with opacityR, opacityG and opacityB attributes.
-    But a limitation we have at this time is that if both the color and the weight attributes have a connection, 
-    one of both connections will be ignored by hydra as we have only one parameter in the UsdPreviewSurface 
-    which will have both connections and hydra only considers the last connection added. There is no blending 
-    node we could use with the UsdPreviewSurface. We would need the StandardSurface to be in hydra or use MaterialX to 
+    Usually it contains 1 or 2 MPlug (2 is when dealing with a weighted attribute),
+    it can have more than 2 when dealing with the transmission which is combined with opacityR,
+    opacityG and opacityB attributes. But a limitation we have at this time is that if both the
+    color and the weight attributes have a connection, one of both connections will be ignored by
+    hydra as we have only one parameter in the UsdPreviewSurface which will have both connections
+    and hydra only considers the last connection added. There is no blending node we could use with
+    the UsdPreviewSurface. We would need the StandardSurface to be in hydra or use MaterialX to
     build a shading network to handle this case with a multiply node for example.
     */
-    for (auto plug : plugArray)
-    {
+    for (auto plug : plugArray) {
         if (plug.isNull()) {
             return;
         }
-     
+
         MPlug source = plug.source();
         if (!source.isNull()) {
             auto* sourceMat = GetMaterial(source.node());
@@ -895,7 +912,7 @@ VtValue MayaHydraMaterialNetworkConverter::ConvertMayaAttrToScaledValue(
     MStatus status;
     auto    p = node.findPlug(scaleName, true, &status);
     if (status) {
-        if( ! p.isNull() && outPlug){
+        if (!p.isNull() && outPlug) {
             outPlug->append(p);
         }
         if (type.GetType() == SdfValueTypeNames->Vector3f.GetType()) {
@@ -942,9 +959,9 @@ VtValue MayaHydraMaterialNetworkConverter::ConvertPlugToValue(
     return {};
 };
 
-std::mutex         _previewShaderParams_mutex;
-bool               _previewShaderParams_initialized = false;
-MayaHydraShaderParams _previewShaderParams;
+std::mutex                                      _previewShaderParams_mutex;
+bool                                            _previewShaderParams_initialized = false;
+MayaHydraShaderParams                           _previewShaderParams;
 static std::map<TfToken, MayaHydraShaderParams> _defaultShaderParams;
 
 const MayaHydraShaderParams& MayaHydraMaterialNetworkConverter::GetPreviewShaderParams()
@@ -982,54 +999,51 @@ const MayaHydraShaderParams& MayaHydraMaterialNetworkConverter::GetPreviewShader
     return _previewShaderParams;
 }
 
-const MayaHydraShaderParams& MayaHydraMaterialNetworkConverter::GetShaderParams(const TfToken& shaderNodeIdentifier)
+const MayaHydraShaderParams&
+MayaHydraMaterialNetworkConverter::GetShaderParams(const TfToken& shaderNodeIdentifier)
 {
-	if(shaderNodeIdentifier == UsdImagingTokens->UsdPreviewSurface)
+    if (shaderNodeIdentifier == UsdImagingTokens->UsdPreviewSurface)
         return GetPreviewShaderParams();
 
-	auto it = _defaultShaderParams.find(shaderNodeIdentifier);
-	if (it == _defaultShaderParams.end()) 
-	{
-		MayaHydraShaderParams params;
+    auto it = _defaultShaderParams.find(shaderNodeIdentifier);
+    if (it == _defaultShaderParams.end()) {
+        MayaHydraShaderParams params;
 
-		// TODO: Handle mutual exclusion
-		// Once we have the lock, recheck to make sure it's still
-		// uninitialized...
-		auto& shaderReg = SdrRegistry::GetInstance();
-		SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifier(shaderNodeIdentifier);
-		assert(TF_VERIFY(sdrNode));
+        // TODO: Handle mutual exclusion
+        // Once we have the lock, recheck to make sure it's still
+        // uninitialized...
+        auto&                 shaderReg = SdrRegistry::GetInstance();
+        SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifier(shaderNodeIdentifier);
+        assert(TF_VERIFY(sdrNode));
 
-		auto inputNames = sdrNode->GetInputNames();
-		params.reserve(inputNames.size());
+        auto inputNames = sdrNode->GetInputNames();
+        params.reserve(inputNames.size());
 
-		std::string inputNameStr;
-		std::vector<std::string> inputNameStrs;
-		for (auto& inputName : inputNames)
-		{
-			inputNameStr = inputName.GetString();
-			inputNameStrs.push_back(inputNameStr);
-			auto property = sdrNode->GetInput(inputName);
-			if (!TF_VERIFY(property)) {
-				continue;
-			}
+        std::string              inputNameStr;
+        std::vector<std::string> inputNameStrs;
+        for (auto& inputName : inputNames) {
+            inputNameStr = inputName.GetString();
+            inputNameStrs.push_back(inputNameStr);
+            auto property = sdrNode->GetInput(inputName);
+            if (!TF_VERIFY(property)) {
+                continue;
+            }
 
-			params.emplace_back(
-				inputName,
-				property->GetDefaultValue(),
-				property->GetTypeAsSdfType().first);
-		}
+            params.emplace_back(
+                inputName, property->GetDefaultValue(), property->GetTypeAsSdfType().first);
+        }
 
-		std::sort(
-			params.begin(),
-			params.end(),
-			[](const MayaHydraShaderParam& a, const MayaHydraShaderParam& b) -> bool {
-			return a.name < b.name;
-		});
+        std::sort(
+            params.begin(),
+            params.end(),
+            [](const MayaHydraShaderParam& a, const MayaHydraShaderParam& b) -> bool {
+                return a.name < b.name;
+            });
 
-		return _defaultShaderParams.insert({ shaderNodeIdentifier, params }).first->second;			
-	}
+        return _defaultShaderParams.insert({ shaderNodeIdentifier, params }).first->second;
+    }
 
-	return it->second;
+    return it->second;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

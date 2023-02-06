@@ -26,7 +26,10 @@ class MayaHydraShapeAdapter : public MayaHydraDagAdapter
 {
 protected:
     MAYAHYDRALIB_API
-    MayaHydraShapeAdapter(const SdfPath& id, MayaHydraDelegateCtx* delegate, const MDagPath& dagPath);
+    MayaHydraShapeAdapter(
+        const SdfPath&        id,
+        MayaHydraDelegateCtx* delegate,
+        const MDagPath&       dagPath);
 
 public:
     MAYAHYDRALIB_API

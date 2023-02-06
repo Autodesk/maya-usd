@@ -687,9 +687,11 @@ void MtohRenderGlobals::BuildOptionsMenu(
         = TfStringReplace(optionBoxCommand, "{{hydraplugin}}", rendererDesc.rendererName);
     optionBoxCommand
         = TfStringReplace(optionBoxCommand, "{{hydraDisplayName}}", rendererDesc.displayName);
-    optionBoxCommand
-        = TfStringReplace(optionBoxCommand, "{{hydraRenderDelegateName}}", rendererDesc.rendererName);//Is the name of the render delegate since we are displaying its settings
-    
+    optionBoxCommand = TfStringReplace(
+        optionBoxCommand,
+        "{{hydraRenderDelegateName}}",
+        rendererDesc.rendererName); // Is the name of the render delegate since we are displaying
+                                    // its settings
 
     auto status = MGlobal::executeCommand(optionBoxCommand.c_str());
     if (!status) {
@@ -711,17 +713,20 @@ void MtohRenderGlobals::BuildOptionsMenu(
             continue;
         }
 
-        ss << "\tmtohRenderOverride_AddAttribute(" << quote(rendererDesc.rendererName.GetString())//Renderer name
-           << ',' << quote(desc.name) << ','//Description
-           << quote(_MangleName(desc.key, rendererDesc.rendererName).GetString())<< ','//Attribute name
-           << quote(desc.key.GetText())//Label
+        ss << "\tmtohRenderOverride_AddAttribute("
+           << quote(rendererDesc.rendererName.GetString()) // Renderer name
+           << ',' << quote(desc.name) << ','               // Description
+           << quote(_MangleName(desc.key, rendererDesc.rendererName).GetString())
+           << ','                       // Attribute name
+           << quote(desc.key.GetText()) // Label
            << ", $fromAE);\n";
     }
     if (rendererDesc.rendererName == MtohTokens->HdStormRendererPlugin) {
         ss << "\tmtohRenderOverride_AddAttribute(" << quote(rendererDesc.rendererName.GetString())
-           << ',' << quote("Maximum shadow map size") << ','//Description
-           << quote(_MangleName(MtohTokens->mtohMaximumShadowMapResolution).GetString())<< ','//Attribute name
-           << quote(MtohTokens->mtohMaximumShadowMapResolution.GetText())//Label
+           << ',' << quote("Maximum shadow map size") << ',' // Description
+           << quote(_MangleName(MtohTokens->mtohMaximumShadowMapResolution).GetString())
+           << ','                                                         // Attribute name
+           << quote(MtohTokens->mtohMaximumShadowMapResolution.GetText()) // Label
            << ", $fromAE);\n";
     }
     ss << "}\n";
@@ -853,7 +858,7 @@ MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params)
             return mayaObject;
         }
     }
-    
+
     // TODO: Move this to an external function and add support for more types,
     //  and improve code quality/reuse.
     for (const auto& rit : MtohGetRendererSettings()) {
@@ -1012,7 +1017,7 @@ MtohRenderGlobals::GetInstance(const GlobalParams& params, bool storeUserSetting
             return globals;
         }
     }
-    
+
     // TODO: Move this to an external function and add support for more types,
     //  and improve code quality/reuse.
     for (const auto& rit : MtohGetRendererSettings()) {

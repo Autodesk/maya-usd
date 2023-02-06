@@ -60,8 +60,7 @@ MtohInitializeRenderPlugins()
             }
 
             // XXX: As of 22.02, this needs to be called for Storm
-			if (pluginDesc.id == MtohTokens->HdStormRendererPlugin)
-			{
+            if (pluginDesc.id == MtohTokens->HdStormRendererPlugin) {
                 GlfContextCaps::InitInstance();
             }
 

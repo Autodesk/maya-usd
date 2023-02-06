@@ -16,9 +16,9 @@
 #ifndef MTOH_VIEW_OVERRIDE_UTILS_H
 #define MTOH_VIEW_OVERRIDE_UTILS_H
 
-#include <pxr/pxr.h>
-
 #include <mayaHydraLib/utils.h>
+
+#include <pxr/pxr.h>
 
 #include <maya/MViewport2Renderer.h>
 
@@ -30,13 +30,15 @@ public:
     explicit MayaHydraPreRender(const MString& name)
         : MHWRender::MSceneRender(name)
     {
-        // To keep the colors always sync'ed, reuse same clear colors as global ones instead of set the same colors explicitly.
+        // To keep the colors always sync'ed, reuse same clear colors as global ones instead of set
+        // the same colors explicitly.
         mClearOperation.setOverridesColors(false);
     }
 
     MUint64 getObjectTypeExclusions() override
     {
-        // To skip the generation of some unwanted render lists even the kRenderPreSceneUIItems filter is specified.
+        // To skip the generation of some unwanted render lists even the kRenderPreSceneUIItems
+        // filter is specified.
         return MFrameContext::kExcludeManipulators | MFrameContext::kExcludeHUD;
     }
 
@@ -56,8 +58,7 @@ public:
 
     MUint64 getObjectTypeExclusions() override
     {
-        static MUint64 sObjectTypeExclusions = []() -> MUint64
-        {
+        static MUint64 sObjectTypeExclusions = []() -> MUint64 {
             // Exclude everything as a baseline. Restore grease pencils, hud, and grid.
             MUint64 flags = MFrameContext::kExcludeAll;
             flags &= ~MFrameContext::kExcludeGreasePencils;
@@ -77,7 +78,8 @@ public:
     MHWRender::MClearOperation& clearOperation() override { return mClearOperation; }
 };
 
-//! \brief Serves to synchronize maya viewport data with the scene delegate before scene update is called
+//! \brief Serves to synchronize maya viewport data with the scene delegate before scene update is
+//! called
 //	when requiresSceneUpdate=false, subtype=kDataServerRemovals and after scene update is called
 //  when requiresSceneUpdate=true, subtype=kDataServer
 //
@@ -85,19 +87,21 @@ public:
 class MayaHydraRender : public MHWRender::MDataServerOperation
 {
 public:
-	MayaHydraRender(const MString& name, MtohRenderOverride* override)
-	: MDataServerOperation(name)
-	, _override(override)
-	{
-	}
-    
-    MStatus execute(const MDrawContext & drawContext, const MHWRender::MDataServerOperation::MViewportScene& scene) override
+    MayaHydraRender(const MString& name, MtohRenderOverride* override)
+        : MDataServerOperation(name)
+        , _override(override)
     {
-		return _override->Render(drawContext, scene);
+    }
+
+    MStatus execute(
+        const MDrawContext&                                    drawContext,
+        const MHWRender::MDataServerOperation::MViewportScene& scene) override
+    {
+        return _override->Render(drawContext, scene);
     }
 
     bool requiresResetDeviceStates() const override
-    { 
+    {
         // Reset maya graphics device states (MAYA-126735)
         return true;
     }

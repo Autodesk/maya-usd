@@ -25,16 +25,18 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace
+namespace {
+bool AreLightsParamsWeUseDifferent(const GlfSimpleLight& light1, const GlfSimpleLight& light2)
 {
-    bool AreLightsParamsWeUseDifferent(const GlfSimpleLight& light1, const GlfSimpleLight& light2)
-    {
-        //We only update 3 parameters in the default light : position, diffuse and specular. We don't use the primitive's transform.
-        return  (light1.GetPosition()   != light2.GetPosition())    || //Position (in which we actually store a direction, updated when rotating the view for example)
-                (light1.GetDiffuse()    != light2.GetDiffuse())     ||
-                (light1.GetSpecular()   != light2.GetSpecular());
-    }
+    // We only update 3 parameters in the default light : position, diffuse and specular. We don't
+    // use the primitive's transform.
+    return (light1.GetPosition() != light2.GetPosition())
+        || // Position (in which we actually store a direction, updated when rotating the view for
+           // example)
+        (light1.GetDiffuse() != light2.GetDiffuse())
+        || (light1.GetSpecular() != light2.GetSpecular());
 }
+} // namespace
 
 // clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
@@ -51,10 +53,7 @@ MtohDefaultLightDelegate::MtohDefaultLightDelegate(const InitData& initData)
 {
 }
 
-MtohDefaultLightDelegate::~MtohDefaultLightDelegate()
-{
-    RemovePrim();
-}
+MtohDefaultLightDelegate::~MtohDefaultLightDelegate() { RemovePrim(); }
 
 void MtohDefaultLightDelegate::Populate()
 {
@@ -88,8 +87,7 @@ void MtohDefaultLightDelegate::RemovePrim()
     }
     if (IsHdSt()) {
         GetRenderIndex().RemoveSprim(HdPrimTypeTokens->simpleLight, _lightPath);
-    }
-    else {
+    } else {
         GetRenderIndex().RemoveSprim(HdPrimTypeTokens->distantLight, _lightPath);
     }
     _isPopulated = false;
@@ -104,11 +102,12 @@ void MtohDefaultLightDelegate::SetDefaultLight(const GlfSimpleLight& light)
         return;
     }
 
-    //We only update 3 parameters in the default light : position (in which we store a direction), diffuse and specular
+    // We only update 3 parameters in the default light : position (in which we store a direction),
+    // diffuse and specular
     // We don't never update the transform for the default light
     const bool lightsParamsWeUseAreDifferent = AreLightsParamsWeUseDifferent(_light, light);
-    if (lightsParamsWeUseAreDifferent){
-        //Update our light
+    if (lightsParamsWeUseAreDifferent) {
+        // Update our light
         _light.SetDiffuse(light.GetDiffuse());
         _light.SetSpecular(light.GetSpecular());
         _light.SetPosition(light.GetPosition());
@@ -146,16 +145,17 @@ VtValue MtohDefaultLightDelegate::Get(const SdfPath& id, const TfToken& key)
     if (key == HdLightTokens->params) {
         return VtValue(_light);
     } else if (key == HdTokens->transform) {
-        return VtValue(GfMatrix4d(1.0));//We don't use the transform but use the position param of the GlfsimpleLight
+        return VtValue(GfMatrix4d(
+            1.0)); // We don't use the transform but use the position param of the GlfsimpleLight
         // Hydra might crash when this is an empty VtValue.
     } else if (key == HdLightTokens->shadowCollection) {
-        if (!_solidPrimitivesRootPaths.empty()){
-            //Exclude lines/points primitives from casting shadows by only taking the primitives whose root path belongs to _solidPrimitivesRootPaths
+        if (!_solidPrimitivesRootPaths.empty()) {
+            // Exclude lines/points primitives from casting shadows by only taking the primitives
+            // whose root path belongs to _solidPrimitivesRootPaths
             HdRprimCollection coll(HdTokens->geometry, HdReprSelector(HdReprTokens->refined));
             coll.SetRootPaths(_solidPrimitivesRootPaths);
             return VtValue(coll);
-        }
-        else{
+        } else {
             HdRprimCollection coll(HdTokens->geometry, HdReprSelector(HdReprTokens->refined));
             return VtValue(coll);
         }

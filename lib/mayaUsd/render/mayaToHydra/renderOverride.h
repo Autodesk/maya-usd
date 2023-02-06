@@ -16,8 +16,6 @@
 #ifndef MTOH_VIEW_OVERRIDE_H
 #define MTOH_VIEW_OVERRIDE_H
 
-#include <pxr/pxr.h>
-
 #include <pxr/base/tf/singleton.h>
 #include <pxr/imaging/hd/driver.h>
 #include <pxr/imaging/hd/engine.h>
@@ -26,12 +24,13 @@
 #include <pxr/imaging/hd/rprimCollection.h>
 #include <pxr/imaging/hdSt/renderDelegate.h>
 #include <pxr/imaging/hdx/taskController.h>
+#include <pxr/pxr.h>
 
 #include <maya/MCallbackIdArray.h>
 #include <maya/MMessage.h>
+#include <maya/MObjectHandle.h>
 #include <maya/MString.h>
 #include <maya/MViewport2Renderer.h>
-#include <maya/MObjectHandle.h>
 
 #include <atomic>
 #include <chrono>
@@ -81,8 +80,8 @@ public:
     /// Intended mostly for use in debugging and testing.
     static SdfPath RendererSceneDelegateId(TfToken rendererName, TfToken sceneDelegateName);
 
-	MStatus Render(
-        const MHWRender::MDrawContext& drawContext, 
+    MStatus Render(
+        const MHWRender::MDrawContext&                         drawContext,
         const MHWRender::MDataServerOperation::MViewportScene& scene);
 
     void ClearHydraResources();
@@ -149,11 +148,11 @@ private:
     MtohRendererDescription _rendererDesc;
 
     std::unique_ptr<MayaHydraSceneIndexRegistration> _sceneIndexRegistration;
-    std::vector<MHWRender::MRenderOperation*> _operations;
-    MCallbackIdArray                          _callbacks;
-    MCallbackId                               _timerCallback = 0;
-    PanelCallbacksList                        _renderPanelCallbacks;
-    const MtohRenderGlobals&                  _globals;
+    std::vector<MHWRender::MRenderOperation*>        _operations;
+    MCallbackIdArray                                 _callbacks;
+    MCallbackId                                      _timerCallback = 0;
+    PanelCallbacksList                               _renderPanelCallbacks;
+    const MtohRenderGlobals&                         _globals;
 
     std::mutex                            _lastRenderTimeMutex;
     std::chrono::system_clock::time_point _lastRenderTime;
@@ -172,13 +171,10 @@ private:
     HdRenderIndex*                            _renderIndex = nullptr;
     std::unique_ptr<MtohDefaultLightDelegate> _defaultLightDelegate = nullptr;
     HdxSelectionTrackerSharedPtr              _selectionTracker;
-    HdRprimCollection                         _renderCollection
-    {
-        HdTokens->geometry,
-            HdReprSelector(HdReprTokens->refined),
-            SdfPath::AbsoluteRootPath()
-    };
-    HdRprimCollection _selectionCollection { HdReprTokens->wire,
+    HdRprimCollection                         _renderCollection { HdTokens->geometry,
+                                          HdReprSelector(HdReprTokens->refined),
+                                          SdfPath::AbsoluteRootPath() };
+    HdRprimCollection                         _selectionCollection { HdReprTokens->wire,
                                              HdReprSelector(HdReprTokens->wire) };
 
     HdRprimCollection _pointSnappingCollection {

@@ -19,8 +19,8 @@
 #include <mayaHydraLib/adapters/cameraAdapter.h>
 #include <mayaHydraLib/adapters/lightAdapter.h>
 #include <mayaHydraLib/adapters/materialAdapter.h>
-#include <mayaHydraLib/adapters/shapeAdapter.h>
 #include <mayaHydraLib/adapters/renderItemAdapter.h>
+#include <mayaHydraLib/adapters/shapeAdapter.h>
 #include <mayaHydraLib/delegates/delegateCtx.h>
 
 #include <pxr/base/gf/vec4d.h>
@@ -29,8 +29,8 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 
-#include <maya/MFrameContext.h>
 #include <maya/MDagPath.h>
+#include <maya/MFrameContext.h>
 #include <maya/MObject.h>
 
 #include <memory>
@@ -56,7 +56,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class MayaHydraSceneDelegate : public MayaHydraDelegateCtx
 {
 public:
-	template <typename T> using AdapterMap = std::unordered_map<SdfPath, T, SdfPath::Hash>;
+    template <typename T> using AdapterMap = std::unordered_map<SdfPath, T, SdfPath::Hash>;
 
     MAYAHYDRALIB_API
     MayaHydraSceneDelegate(const InitData& initData);
@@ -83,10 +83,10 @@ public:
     void RebuildAdapterOnIdle(const SdfPath& id, uint32_t flags) override;
 
     MAYAHYDRALIB_API
-    void AddArnoldLight(const MDagPath& dag)override;
-    
+    void AddArnoldLight(const MDagPath& dag) override;
+
     MAYAHYDRALIB_API
-    void RemoveArnoldLight(const MDagPath& dag)override;
+    void RemoveArnoldLight(const MDagPath& dag) override;
 
     /// \brief Notifies the scene delegate when a material tag changes.
     ///
@@ -115,7 +115,7 @@ public:
     void OnDagNodeAdded(const MObject& obj);
 
     void OnDagNodeRemoved(const MObject& obj);
-    
+
     MAYAHYDRALIB_API
     void UpdateLightVisibility(const MDagPath& dag);
 
@@ -134,8 +134,10 @@ public:
         SdfPathVector&              selectedSdfPaths,
         const HdSelectionSharedPtr& selection) override;
 
-	MAYAHYDRALIB_API
-	void HandleCompleteViewportScene(const MDataServerOperation::MViewportScene& scene, MFrameContext::DisplayStyle ds);
+    MAYAHYDRALIB_API
+    void HandleCompleteViewportScene(
+        const MDataServerOperation::MViewportScene& scene,
+        MFrameContext::DisplayStyle                 ds);
 
     MAYAHYDRALIB_API
     void PopulateSelectionList(
@@ -147,7 +149,6 @@ public:
     bool GetPlaybackRunning() const { return _isPlaybackRunning; }
 
 protected:
-    
     MAYAHYDRALIB_API
     HdMeshTopology GetMeshTopology(const SdfPath& id) override;
 
@@ -238,27 +239,23 @@ protected:
 private:
     template <typename AdapterPtr, typename Map>
     AdapterPtr Create(
-        const MDagPath&                                                       dag,
+        const MDagPath&                                                          dag,
         const std::function<AdapterPtr(MayaHydraDelegateCtx*, const MDagPath&)>& adapterCreator,
-        Map&                                                                  adapterMap,
-        bool                                                                  isSprim = false);
+        Map&                                                                     adapterMap,
+        bool                                                                     isSprim = false);
 
-	MAYAHYDRALIB_API
-	bool _GetRenderItem(
-		int fastId,
-		MayaHydraRenderItemAdapterPtr& adapter);
+    MAYAHYDRALIB_API
+    bool _GetRenderItem(int fastId, MayaHydraRenderItemAdapterPtr& adapter);
 
-	MAYAHYDRALIB_API
-	void _AddRenderItem(const MayaHydraRenderItemAdapterPtr& ria);
+    MAYAHYDRALIB_API
+    void _AddRenderItem(const MayaHydraRenderItemAdapterPtr& ria);
 
-	MAYAHYDRALIB_API
-	void _RemoveRenderItem(const MayaHydraRenderItemAdapterPtr& ria);
+    MAYAHYDRALIB_API
+    void _RemoveRenderItem(const MayaHydraRenderItemAdapterPtr& ria);
 
-	MAYAHYDRALIB_API
-	bool _GetRenderItemMaterial(
-		const MRenderItem& ri,
-		SdfPath& material,
-		MObject& shadingEngineNode);
+    MAYAHYDRALIB_API
+    bool
+    _GetRenderItemMaterial(const MRenderItem& ri, SdfPath& material, MObject& shadingEngineNode);
 
     static VtValue CreateMayaDefaultMaterial();
 
@@ -267,7 +264,7 @@ private:
     /// \brief Unordered Map storing the shape adapters.
     AdapterMap<MayaHydraShapeAdapterPtr> _shapeAdapters;
 #endif
-	/// \brief Unordered Map storing the shape adapters.
+    /// \brief Unordered Map storing the shape adapters.
     AdapterMap<MayaHydraRenderItemAdapterPtr>              _renderItemsAdapters;
     std::unordered_map<int, MayaHydraRenderItemAdapterPtr> _renderItemsAdaptersFast;
 
@@ -276,29 +273,31 @@ private:
     /// \brief Unordered Map storing the camera adapters.
     AdapterMap<MayaHydraCameraAdapterPtr> _cameraAdapters;
     /// \brief Unordered Map storing the material adapters.
-    AdapterMap<MayaHydraMaterialAdapterPtr>       _materialAdapters;
+    AdapterMap<MayaHydraMaterialAdapterPtr>    _materialAdapters;
     std::vector<MCallbackId>                   _callbacks;
     std::vector<std::tuple<SdfPath, MObject>>  _adaptersToRecreate;
     std::vector<std::tuple<SdfPath, uint32_t>> _adaptersToRebuild;
 #ifdef MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
-    std::vector<MObject>                       _addedNodes;
+    std::vector<MObject> _addedNodes;
 #endif
 
-    using LightAdapterCreator = std::function<MayaHydraLightAdapterPtr(MayaHydraDelegateCtx*, const MDagPath&)>;
+    using LightAdapterCreator
+        = std::function<MayaHydraLightAdapterPtr(MayaHydraDelegateCtx*, const MDagPath&)>;
     std::vector<std::pair<MObject, LightAdapterCreator>> _lightsToAdd;
-    
-    //Is used to maintain a list of Arnold lights, they are not seen as lights by Maya but as locators
-    std::vector<MDagPath>   _arnoldLightPaths;
-    
-    std::vector<SdfPath>                       _materialTagsChanged;
 
-    static SdfPath _fallbackMaterial; //Hydra fallbackMaterial
-    static SdfPath _mayaDefaultMaterialPath;//Common to all scene delegates
+    // Is used to maintain a list of Arnold lights, they are not seen as lights by Maya but as
+    // locators
+    std::vector<MDagPath> _arnoldLightPaths;
+
+    std::vector<SdfPath> _materialTagsChanged;
+
+    static SdfPath _fallbackMaterial;        // Hydra fallbackMaterial
+    static SdfPath _mayaDefaultMaterialPath; // Common to all scene delegates
     static VtValue _mayaDefaultMaterial;
 
-    bool    _useDefaultMaterial = false;
-    bool    _xRayEnabled        = false;
-    bool    _isPlaybackRunning = false;
+    bool _useDefaultMaterial = false;
+    bool _xRayEnabled = false;
+    bool _isPlaybackRunning = false;
 };
 
 typedef std::shared_ptr<MayaHydraSceneDelegate> MayaSceneDelegateSharedPtr;

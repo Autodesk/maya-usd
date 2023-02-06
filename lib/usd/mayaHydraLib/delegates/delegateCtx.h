@@ -60,9 +60,13 @@ public:
     virtual void RecreateAdapter(const SdfPath& id, const MObject& obj) { }
     virtual void RecreateAdapterOnIdle(const SdfPath& id, const MObject& obj) { }
     virtual void RebuildAdapterOnIdle(const SdfPath& id, uint32_t flags) { }
-    virtual void UpdateDisplayStatusMaterial(MHWRender::DisplayStatus displayStatus, const MColor& wireframecolor)  {}
-    virtual void AddArnoldLight(const MDagPath& dag) {}
-    virtual void RemoveArnoldLight(const MDagPath& dag) {}
+    virtual void UpdateDisplayStatusMaterial(
+        MHWRender::DisplayStatus displayStatus,
+        const MColor&            wireframecolor)
+    {
+    }
+    virtual void AddArnoldLight(const MDagPath& dag) { }
+    virtual void RemoveArnoldLight(const MDagPath& dag) { }
 
     /// \brief Notifies the scene delegate when a material tag changes.
     ///
@@ -70,15 +74,16 @@ public:
     virtual void MaterialTagChanged(const SdfPath& id) { }
     MAYAHYDRALIB_API
     SdfPath GetPrimPath(const MDagPath& dg, bool isSprim);
-	MAYAHYDRALIB_API
-	SdfPath GetRenderItemPrimPath(const MRenderItem& ri);
-	MAYAHYDRALIB_API
-	SdfPath GetRenderItemShaderPrimPath(const MRenderItem& ri);
+    MAYAHYDRALIB_API
+    SdfPath GetRenderItemPrimPath(const MRenderItem& ri);
+    MAYAHYDRALIB_API
+    SdfPath GetRenderItemShaderPrimPath(const MRenderItem& ri);
     MAYAHYDRALIB_API
     SdfPath GetMaterialPath(const MObject& obj);
 
     MAYAHYDRALIB_API
-    SdfPath GetSolidPrimsRootPath()const;//Get the root path for non lines and non points primitives
+    SdfPath
+    GetSolidPrimsRootPath() const; // Get the root path for non lines and non points primitives
 
 private:
     SdfPath _rprimPath;

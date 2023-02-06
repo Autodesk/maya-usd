@@ -75,7 +75,7 @@ protected:
     bool IsAnArnoldSkyDomeLight(const MDagPath& dag) const;
 
     GfMatrix4d _shadowProjectionMatrix;
-    bool _isLightingOn = true;
+    bool       _isLightingOn = true;
 };
 
 using MayaHydraLightAdapterPtr = std::shared_ptr<MayaHydraLightAdapter>;

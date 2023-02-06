@@ -87,7 +87,7 @@ public:
     virtual void PostFrame() { }
 
     MAYAHYDRALIB_API
-    virtual void        SetParams(const MayaHydraParams& params);
+    virtual void           SetParams(const MayaHydraParams& params);
     const MayaHydraParams& GetParams() const { return _params; }
 
     const SdfPath& GetMayaDelegateID() { return _mayaDelegateID; }

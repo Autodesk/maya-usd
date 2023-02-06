@@ -42,7 +42,8 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "Print information about 'GetDoubleSided' calls to the delegates.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        MAYAHYDRALIB_DELEGATE_GET_EXTENT, "Print information about 'GetExtent' calls to the delegates.");
+        MAYAHYDRALIB_DELEGATE_GET_EXTENT,
+        "Print information about 'GetExtent' calls to the delegates.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         MAYAHYDRALIB_DELEGATE_GET_INSTANCER_ID,
@@ -91,17 +92,20 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "Print information about 'GetVisible' calls to the delegates.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        MAYAHYDRALIB_DELEGATE_INSERTDAG, "Print information about 'InsertDag' calls to the delegates.");
+        MAYAHYDRALIB_DELEGATE_INSERTDAG,
+        "Print information about 'InsertDag' calls to the delegates.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        MAYAHYDRALIB_DELEGATE_IS_ENABLED, "Print information about 'IsEnabled' calls to the delegates.");
+        MAYAHYDRALIB_DELEGATE_IS_ENABLED,
+        "Print information about 'IsEnabled' calls to the delegates.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         MAYAHYDRALIB_DELEGATE_RECREATE_ADAPTER,
         "Print information when the delegate recreates adapters.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        MAYAHYDRALIB_DELEGATE_REGISTRY, "Print information about registration of MayaHydraDelegates.");
+        MAYAHYDRALIB_DELEGATE_REGISTRY,
+        "Print information about registration of MayaHydraDelegates.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         MAYAHYDRALIB_DELEGATE_SAMPLE_PRIMVAR,
@@ -112,7 +116,8 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "Print information about 'SampleTransform' calls to the delegates.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        MAYAHYDRALIB_DELEGATE_SELECTION, "Print information about mayaHydraLib delegate selection.");
+        MAYAHYDRALIB_DELEGATE_SELECTION,
+        "Print information about mayaHydraLib delegate selection.");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

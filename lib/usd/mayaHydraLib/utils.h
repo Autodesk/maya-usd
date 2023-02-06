@@ -42,7 +42,7 @@
 
 #include <string>
 
-// We would like to preserve additional pathway for dag items similarly 
+// We would like to preserve additional pathway for dag items similarly
 // to what was done inside InsertData from mtoh. Disabled for now
 // #define MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
 // #define MAYAHYDRA_DEVELOPMENTAL_NATIVE_SELECTION
@@ -104,9 +104,9 @@ MObject GetConnectedFileNode(const MFnDependencyNode& node, const TfToken& param
 MAYAHYDRALIB_API
 TfToken GetFileTexturePath(const MFnDependencyNode& fileNode);
 
-/// \brief Return in the std::string outValueAsString the VtValue type and value written as text for debugging purpose
-/// \param val the VtValue to be converted.
-/// \param outValueAsString the std::string that will contain the text from the VtValue.
+/// \brief Return in the std::string outValueAsString the VtValue type and value written as text for
+/// debugging purpose \param val the VtValue to be converted. \param outValueAsString the
+/// std::string that will contain the text from the VtValue.
 MAYAHYDRALIB_API
 void ConvertVtValueAsText(const PXR_INTERNAL_NS::VtValue& val, std::string& outValueAsString);
 

@@ -26,12 +26,12 @@
 #include <maya/MSyntax.h>
 
 #if defined(MAYAHYDRA_CUT_ID)
-    #define STRINGIFY(x) #x
-    #define TOSTRING(x)  STRINGIFY(x)
-    #define PLUGIN_CUT_ID TOSTRING(MAYAHYDRA_CUT_ID)
+#define STRINGIFY(x)  #x
+#define TOSTRING(x)   STRINGIFY(x)
+#define PLUGIN_CUT_ID TOSTRING(MAYAHYDRA_CUT_ID)
 #else
-    #pragma message( "MAYAHYDRA_CUT_ID is not defined" )
-    #define PLUGIN_CUT_ID "Maya-Hydra unknown cut"
+#pragma message("MAYAHYDRA_CUT_ID is not defined")
+#define PLUGIN_CUT_ID "Maya-Hydra unknown cut"
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -73,7 +73,8 @@ constexpr auto _visibleOnlyLong = "-visibleOnly";
 constexpr auto _sceneDelegateId = "-sid";
 constexpr auto _sceneDelegateIdLong = "-sceneDelegateId";
 
-// MAYA-127221: We will need to replace this with a flag inside of the pluginInfo command in an upcoming release.
+// MAYA-127221: We will need to replace this with a flag inside of the pluginInfo command in an
+// upcoming release.
 constexpr auto _pluginInfoCutId = "-cid";
 constexpr auto _pluginInfoCutIdLong = "-pluginInfoCut";
 
@@ -269,10 +270,10 @@ MStatus MtohViewCmd::doIt(const MArgList& args)
         setResult(MString(delegateId.GetText()));
     } else if (db.isFlagSet(_pluginInfoCutId)) {
 #ifdef MAYAHYDRA_CUT_ID
-    setResult(MString(PLUGIN_CUT_ID));
+        setResult(MString(PLUGIN_CUT_ID));
 #else
-    MGlobal::displayError(MString("MayaHydra cut id is not available"));
-    return MS::kInvalidParameter;
+        MGlobal::displayError(MString("MayaHydra cut id is not available"));
+        return MS::kInvalidParameter;
 #endif
     }
     return MS::kSuccess;

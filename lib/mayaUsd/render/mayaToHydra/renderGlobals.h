@@ -94,10 +94,10 @@ private:
 
 public:
     MayaHydraParams delegateParams;
-    GfVec4f      colorSelectionHighlightColor = GfVec4f(1.0f, 1.0f, 0.0f, 0.5f);
-    bool         colorSelectionHighlight = true;
-    bool         wireframeSelectionHighlight = true;
-    float outlineSelectionWidth = 4.f;
+    GfVec4f         colorSelectionHighlightColor = GfVec4f(1.0f, 1.0f, 0.0f, 0.5f);
+    bool            colorSelectionHighlight = true;
+    bool            wireframeSelectionHighlight = true;
+    float           outlineSelectionWidth = 4.f;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
