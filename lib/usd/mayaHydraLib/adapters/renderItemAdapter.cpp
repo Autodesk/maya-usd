@@ -349,6 +349,8 @@ void MayaHydraRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data
                     vertexIndices));
                 break;
             }
+			default:
+				break;
         }
     }
 
