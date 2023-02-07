@@ -356,9 +356,6 @@ public:
         MPlugArray*             outPlug = nullptr) override
     {
         if (outPlug) {
-            // TODO: create a UsdPrimvarReader_float2 even if there's no
-            // connected maya place2dTexture node
-
             // Find a connected place2dTexture node, and set that as the
             // outPlug, so that the place2dTexture node will trigger
             // creation of a UsdPrimvarReader_float2
@@ -1009,9 +1006,6 @@ MayaHydraMaterialNetworkConverter::GetShaderParams(const TfToken& shaderNodeIden
     if (it == _defaultShaderParams.end()) {
         MayaHydraShaderParams params;
 
-        // TODO: Handle mutual exclusion
-        // Once we have the lock, recheck to make sure it's still
-        // uninitialized...
         auto&                 shaderReg = SdrRegistry::GetInstance();
         SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifier(shaderNodeIdentifier);
         assert(TF_VERIFY(sdrNode));

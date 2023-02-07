@@ -231,7 +231,6 @@ public:
             }
         }
 
-        // TODO: Maybe we could use the flat shading of the display style?
         return HdMeshTopology(
             (GetDelegate()->GetParams().displaySmoothMeshes || GetDisplayStyle().refineLevel > 0)
                 ? PxOsdOpenSubdivTokens->catmullClark
@@ -299,8 +298,6 @@ public:
             tags.SetCornerWeights(cornerWeights);
         }
 
-        // TODO: Do a similar compression to usdMaya:
-        //  meshWrite_Subdiv.cpp:_CompressCreases.
         if (creaseEdgeIdCount > 0) {
             VtIntArray   edgeIndices(creaseEdgeIdCount * 2);
             VtFloatArray edgeWeights(creaseEdgeIdCount);
@@ -427,7 +424,6 @@ private:
         MPolyMessage::MessageType type,
         void*                     clientData)
     {
-        // TODO: Only track the uvset we care about.
         auto* adapter = reinterpret_cast<MayaHydraMeshAdapter*>(clientData);
         adapter->MarkDirty(HdChangeTracker::DirtyPrimvar);
     }

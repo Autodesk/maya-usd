@@ -37,7 +37,6 @@
 
 #include <functional>
 
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 #define PLUG_THIS_PLUGIN \
@@ -171,12 +170,11 @@ void MayaHydraRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data
     }
     VtIntArray vertexIndices;
     VtIntArray vertexCounts;
-    // TODO : Multiple streams
-    // for now assume first is position
 
     // Vertices
     MVertexBuffer* verts = nullptr;
     if (geomChanged && geom && geom->vertexBufferCount() > 0) {
+        // Assume first stream contains the positions. We do not handle multiple streams for now.
         verts = geom->vertexBuffer(0);
         if (verts) {
             int                vertCount = 0;
@@ -217,6 +215,7 @@ void MayaHydraRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data
     // skipped. In such case, indices are implicitly defined below.
     MIndexBuffer* indices = nullptr;
     if (topoChanged && geom && geom->indexBufferCount() > 0) {
+        // Assume first stream contains the positions.
         indices = geom->indexBuffer(0);
         if (indices) {
             int indexCount = indices->size();
@@ -375,9 +374,7 @@ MayaHydraRenderItemAdapter::GetPrimvarDescriptors(HdInterpolation interpolation)
         return { desc };
     } else if (interpolation == HdInterpolationFaceVarying) {
         // UVs are face varying in maya.
-        if (_primitive == MGeometry::Primitive::kTriangles)
-        // TODO: Check that we indeed have UVs on the given mesh
-        {
+        if (_primitive == MGeometry::Primitive::kTriangles) {
             HdPrimvarDescriptor desc;
             desc.name = MayaHydraAdapterTokens->st;
             desc.interpolation = interpolation;

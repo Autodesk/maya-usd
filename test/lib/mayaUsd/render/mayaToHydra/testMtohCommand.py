@@ -96,9 +96,7 @@ class TestCommand(unittest.TestCase):
             self.assertTrue(cmds.objExists(
                 "defaultRenderGlobals.mtohMotionSampleStart"))
             self.assertFalse(cmds.getAttr(
-                "defaultRenderGlobals.mtohMotionSampleStart"))
-
-    # TODO: test_updateRenderGlobals
+                "defaultRenderGlobals.mtohMotionSampleStart"))            
 
 
 if __name__ == '__main__':

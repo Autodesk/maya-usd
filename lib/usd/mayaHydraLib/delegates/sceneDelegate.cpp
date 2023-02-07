@@ -285,7 +285,6 @@ void MayaHydraSceneDelegate::_RemoveRenderItem(const MayaHydraRenderItemAdapterP
     _renderItemsAdapters.erase(primPath);
 }
 
-// void MayaHydraSceneDelegate::_TransformNodeDirty(MObject& node, MPlug& plug, void* clientData)
 void MayaHydraSceneDelegate::HandleCompleteViewportScene(
     const MDataServerOperation::MViewportScene& scene,
     MFrameContext::DisplayStyle                 displayStyle)
@@ -358,14 +357,9 @@ void MayaHydraSceneDelegate::HandleCompleteViewportScene(
             ria->SetMaterial(material);
         }
 
-        // if (flags & (MDataServerOperation::MViewportScene::MVS_geometry |
-        // MDataServerOperation::MViewportScene::MVS_topo) { notify transform changed also in
-        // UpdateGeometry, so always call if anything changed
-        // TODO:  refactor to separate notifications from geometry
         const MayaHydraRenderItemAdapter::UpdateFromDeltaData data(
             ri, flags, wireframeColor, displayStatus);
         ria->UpdateFromDelta(data);
-        //}
         if (flags & MDataServerOperation::MViewportScene::MVS_changedMatrix) {
             ria->UpdateTransform(ri);
         }
@@ -411,22 +405,8 @@ void MayaHydraSceneDelegate::Populate()
 
     // Adding materials sprim to the render index.
     if (renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->material)) {
-        renderIndex.InsertSprim(
-            HdPrimTypeTokens->material,
-            this,
-            _mayaDefaultMaterialPath); // TODO check when we have multiple scene delegates if this
-                                       // is still correct to add it per scene delegate.
+        renderIndex.InsertSprim(HdPrimTypeTokens->material, this, _mayaDefaultMaterialPath);
     }
-
-    // Add a meshPoints repr since it isn't populated in
-    // HdRenderIndex::_ConfigureReprs
-    // HdMesh::ConfigureRepr(_tokens->MayaHydraMeshPoints,
-    //	HdMeshReprDesc(
-    //		HdMeshGeomStylePoints,
-    //		HdCullStyleNothing,
-    //		HdMeshReprDescTokens->pointColor,
-    //		/*flatShadingEnabled=*/true,
-    //		/*blendWireframeColor=*/false));
 }
 
 //
@@ -592,7 +572,6 @@ void MayaHydraSceneDelegate::PreFrame(const MHWRender::MDrawContext& context)
             _FindAdapter<MayaHydraLightAdapter>(
                 GetPrimPath(lightPath, true),
                 [&matrixVal](MayaHydraLightAdapter* a) {
-                    // TODO: Mark Dirty?
                     a->SetShadowProjectionMatrix(MAYAHYDRA_NS::GetGfMatrixFromMaya(matrixVal));
                 },
                 _lightAdapters);
@@ -641,7 +620,6 @@ void MayaHydraSceneDelegate::RemoveAdapter(const SdfPath& id)
 
 void MayaHydraSceneDelegate::RecreateAdapterOnIdle(const SdfPath& id, const MObject& obj)
 {
-    // TODO: Thread safety?
     // We expect this to be a small number of objects, so using a simple linear
     // search and a vector is generally a good choice.
     for (auto& it : _adaptersToRecreate) {

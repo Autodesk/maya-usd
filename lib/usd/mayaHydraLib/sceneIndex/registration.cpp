@@ -50,11 +50,7 @@ MayaHydraSceneIndexRegistration::MayaHydraSceneIndexRegistration(HdRenderIndex* 
         if (status == MS::kSuccess)
             _customSceneIndexAddedCallbacks.append(id);
 
-        // Iterate over scene to find out existing node which will miss eventual dagNode added
-        // callbacks
-        // TODO: This is traversing the whole Dag hierarchy looking for appropriate nodes. This
-        // won't scale to large scenes; perhaps something like what the MEL command "ls -type"
-        // is doing would be more appropriate. We can save this for later.
+        // Iterate over scene to find out existing node which will miss eventual dagNode added callbacks
         MItDag nodesDagIt(MItDag::kDepthFirst, MFn::kInvalid);
         for (; !nodesDagIt.isDone(); nodesDagIt.next()) {
             MStatus status;
@@ -123,11 +119,6 @@ void MayaHydraSceneIndexRegistration::_AddCustomSceneIndexForNode(MObject& dagNo
             if (TF_VERIFY(
                     status != MS::kFailure, "MNodeMessage::addNodePreRemovalCallback failed")) {
                 _renderIndex->InsertSceneIndex(sceneIndex, SdfPath::AbsoluteRootPath());
-                // MAYA-126790 TODO: properly resolve missing PrimsAdded notification issue
-                // https://github.com/PixarAnimationStudios/USD/blob/dev/pxr/imaging/hd/sceneIndex.cpp#L38
-                // Pixar has discussed adding a missing overridable virtual function when an
-                // observer is registered For now GetPrim called with magic string populates the
-                // scene index
                 static SdfPath maya126790Workaround("maya126790Workaround");
                 sceneIndex->GetPrim(maya126790Workaround);
                 MObjectHandle dagNodeHandle(dagNode);

@@ -102,7 +102,6 @@ MObject MayaHydraShapeAdapter::GetMaterial()
     }
 
     MPlugArray conns;
-    // TODO: deal with instancing properly.
     instObjGroups.elementByLogicalIndex(0).connectedTo(conns, false, true);
 
     const auto numConnections = conns.length();

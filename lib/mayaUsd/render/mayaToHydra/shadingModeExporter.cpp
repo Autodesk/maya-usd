@@ -63,11 +63,6 @@ protected:
 
     bool _ExportRelationship(
         UsdStagePtr& stage, HdMaterialRelationship& relationship) {
-        // TODO: come up with a better way for determining type rather than
-        // relying on the input or output to already be set, so we can read it's
-        // type...
-        // probably use the shader registry (?), though I don't think the
-        // PreviewSurface is actually registered there yet
         SdfValueTypeName typeName;
 
         // The following segment can be confusing at first. Output and input
@@ -144,11 +139,6 @@ public:
         auto* hdSurfMat = converter.GetMaterial(context.GetSurfaceShader());
         if(!hdSurfMat) { return; }
         SdfPath hdSurfPath = hdSurfMat->path;
-
-        // TODO: add support for volume / displacement
-        // SdfPath hdVol = converter.GetMaterial(context.GetVolumeShader()).path;
-        // SdfPath hdDisp =
-        // converter.GetMaterial(context.GetDisplacementShader()).path;
 
         if (hdSurfPath.IsEmpty()) { return; }
 

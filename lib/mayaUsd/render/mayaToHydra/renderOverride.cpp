@@ -544,8 +544,6 @@ MStatus MtohRenderOverride::Render(
             }
         }
 
-        // TODO: Change management
-        // Every frame update everything
         if (scene.changed()) {
             for (auto& it : _delegates) {
                 auto sceneDelegate = std::dynamic_pointer_cast<MayaHydraSceneDelegate>(it);
@@ -579,8 +577,6 @@ MStatus MtohRenderOverride::Render(
     }
 
     if (!_initializationAttempted) {
-        // TODO: First time viewport scene update here
-        // Anything special ? Dag items populate called here before
         _InitHydraResources();
 
         if (!_initializationSucceeded) {
@@ -607,20 +603,6 @@ MStatus MtohRenderOverride::Render(
     params.enableLighting = true;
     params.enableSceneMaterials = true;
 
-    /* TODO: Find replacement
-     * if (displayStyle & MHWRender::MFrameContext::kBoundingBox) {
-        params.complexity = HdComplexityBoundingBox;
-    } else {
-        params.complexity = HdComplexityVeryHigh;
-    }
-
-    if (displayStyle & MHWRender::MFrameContext::kWireFrame) {
-        params.geomStyle = HdGeomStyleLines;
-    } else {
-        params.geomStyle = HdGeomStylePolygons;
-    }*/
-
-    // TODO: separate color for normal wireframe / selected
     MColor colour = M3dView::leadColor();
     params.wireframeColor = GfVec4f(colour.r, colour.g, colour.b, 1.0f);
 
@@ -693,7 +675,6 @@ MStatus MtohRenderOverride::Render(
 
     _taskController->SetCollection(_renderCollection);
     if (_isUsingHdSt) {
-        // TODO: Is there a way to improve this? Quite silly.
         auto  enableShadows = true;
         auto* lightParam = drawContext.getLightParameterInformation(
             0, MHWRender::MDrawContext::kFilteredIgnoreLightLimit);
@@ -752,7 +733,6 @@ MtohRenderOverride* MtohRenderOverride::_GetByName(TfToken rendererName)
     return nullptr;
 }
 
-// TODO: Pass MViewportScene inside here
 void MtohRenderOverride::_InitHydraResources()
 {
     TF_DEBUG(MAYAHYDRALIB_RENDEROVERRIDE_RESOURCES)
@@ -766,10 +746,6 @@ void MtohRenderOverride::_InitHydraResources()
     if (!_rendererPlugin)
         return;
 
-    // TODO: Must create render delegate via HdRenderPluginRegistry, otherwise display name isn't
-    // assigned
-    //_renderDelegate =
-    // HdRendererPluginRegistry::GetInstance().CreateRenderDelegate(_rendererDesc.rendererName);
     auto* renderDelegate = _rendererPlugin->CreateRenderDelegate();
     if (!renderDelegate)
         return;
@@ -997,7 +973,6 @@ MStatus MtohRenderOverride::setup(const MString& destination)
     }
 
     if (_operations.empty()) {
-        // TODO: draw pre/post scene elelments with Hydra
         // Clear and draw pre scene elelments (grid not pushed into hydra)
         _operations.push_back(new MayaHydraPreRender("HydraRenderOverride_PreScene"));
 

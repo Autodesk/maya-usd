@@ -46,7 +46,6 @@ public:
         const bool filterIsRenderer = false;
         // If creating the attribute for the first time, immediately set to a user default
         const bool fallbackToUserDefaults = true;
-        // TODO: Extend this and mayaHydra with a setting to ignore scene settings
 
         GlobalParams() = default;
         GlobalParams(const TfToken f, bool fir, bool ftud)

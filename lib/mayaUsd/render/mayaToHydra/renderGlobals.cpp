@@ -787,10 +787,6 @@ public:
     const MString& mayaString() const { return _mayaString; }
 };
 
-// TODO : MtohRenderGlobals::CreateNode && MtohRenderGlobals::GetInstance
-//        are extrmely redundant in logic, with most divergance occurring
-//        at the leaf operation (_CreatXXXAttr vs. _GetAttribute)
-//
 MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params)
 {
     MSelectionList slist;
@@ -859,8 +855,6 @@ MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params)
         }
     }
 
-    // TODO: Move this to an external function and add support for more types,
-    //  and improve code quality/reuse.
     for (const auto& rit : MtohGetRendererSettings()) {
         const auto rendererName = rit.first;
         // Skip over all the settings for this renderer if it doesn't match
@@ -1018,8 +1012,6 @@ MtohRenderGlobals::GetInstance(const GlobalParams& params, bool storeUserSetting
         }
     }
 
-    // TODO: Move this to an external function and add support for more types,
-    //  and improve code quality/reuse.
     for (const auto& rit : MtohGetRendererSettings()) {
         const auto rendererName = rit.first;
         // Skip over all the settings for this renderer if it doesn't match
