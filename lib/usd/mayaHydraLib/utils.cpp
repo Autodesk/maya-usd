@@ -349,7 +349,7 @@ SdfPath RenderItemToSdfPath(
     }
 
     SdfPath sdfPath(name);
-    if (sdfPath == SdfPath()) {
+    if (!TF_VERIFY(!sdfPath.IsEmpty(), "Render item using invalid SdfPath '%s'. Using item's id instead.", name.c_str())) {
         // If failed to include render item's name as an SdfPath simply use the item id.
         return SdfPath(internalObjectId);
     }
