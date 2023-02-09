@@ -125,6 +125,16 @@ public:
         kSelectionHighlight = kRegular << 1 //!< Selection highlight.
     };
 
+    //! Flags specifying mod properties
+    enum ModFlags
+    {
+        kHideOnPlayback = 1 << 0,
+        kUnselectable = 1 << 1,
+
+        kNumModFlags = 2,
+        kModFlagsBitsetSize = 1 << kNumModFlags
+    };
+
 public:
     HdVP2DrawItem(HdVP2RenderDelegate* delegate, const HdRprimSharedData* sharedData);
 
@@ -202,13 +212,21 @@ public:
      */
     HdVP2DrawItem* GetMod() { return _mod.get(); }
 
-    /*! \brief Mark this draw item as being a mod for instances with hide-on-playback enabled.
+    /*! \brief Marks this draw item as being a mod for instances with particular mod flags.
      */
-    void SetModFlagHideOnPlayback(bool prop) { _modFlagHideOnPlayback = prop; }
+    void SetModFlags(int modFlags) { _modFlags = modFlags; }
 
-    /*! \brief Verify if this draw item is a mod for instances with hide-on-playback enabled.
+    /*! \brief Returns mod flags for this mod.
      */
-    bool GetModFlagHideOnPlayback() const { return _modFlagHideOnPlayback; }
+    int GetModFlags() const { return _modFlags; }
+
+    /*! \brief Marks this mod as disabled/enabled.
+     */
+    void SetModDisabled(bool flag) { _modDisabled = flag; }
+
+    /*! \brief Verifies if this mod is disabled.
+     */
+    bool GetModDisabled() const { return _modDisabled; }
 
 private:
     /*
@@ -234,8 +252,13 @@ private:
     */
     std::unique_ptr<HdVP2DrawItem> _mod;
 
-    //! flag marking the given draw item as a mod for instances with hide-on-playback enabled.
-    bool _modFlagHideOnPlayback = false;
+    /*
+        _modFlags equal to zero specifies the main draw item, otherwise it stores a combination
+        of flags defining the drawing characteristics of this mod
+    */
+    int _modFlags = 0;
+    //! Defines if this mod is disabled (due to absense of instances that require it)
+    bool _modDisabled = false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
