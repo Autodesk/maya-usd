@@ -30,6 +30,7 @@
 #include <maya/MPlugArray.h>
 #include <maya/MStatus.h>
 
+#include <cctype>
 #include <sstream>
 
 namespace MAYAHYDRA_NS_DEF {
@@ -294,10 +295,12 @@ static bool _IsShape(const MDagPath& dagPath)
 /// Elements of the path will be sanitized such that it is a valid SdfPath.
 /// This means it will replace Maya's namespace delimiter (':') with
 /// underscores ('_').
-SdfPath NodeNameToSdfPath(const std::string& nodeName, const bool doStripNamespaces)
+/// A SdfPath in Pixar USD is considered invalid if it does not conform to the rules for path names.
+/// Some common issues that can make a path invalid include: Starting with a number : Path names
+/// must start with a letter, not a number. Including spaces or special characters : Path names can
+/// only contain letters, numbers, and the characters _, -, and : .
+const std::string& SanitizeNameForSdfPath(std::string& pathString, const bool doStripNamespaces)
 {
-    std::string pathString = nodeName;
-
     if (doStripNamespaces) {
         // Drop namespaces instead of making them part of the path.
         pathString = stripNamespaces(pathString);
@@ -310,7 +313,7 @@ SdfPath NodeNameToSdfPath(const std::string& nodeName, const bool doStripNamespa
         PXR_NS::SdfPathTokens->childDelimiter.GetString()[0]);
     std::replace(pathString.begin(), pathString.end(), MayaNamespaceDelimiter[0], '_');
 
-    return SdfPath(pathString);
+    return pathString;
 }
 
 SdfPath DagPathToSdfPath(
@@ -318,7 +321,8 @@ SdfPath DagPathToSdfPath(
     const bool      mergeTransformAndShape,
     const bool      stripNamespaces)
 {
-    SdfPath usdPath = NodeNameToSdfPath(dagPath.fullPathName().asChar(), stripNamespaces);
+    std::string name = dagPath.fullPathName().asChar();
+    SdfPath     usdPath(SanitizeNameForSdfPath(name, stripNamespaces));
 
     if (mergeTransformAndShape && _IsShape(dagPath)) {
         usdPath = usdPath.GetParentPath();
@@ -332,8 +336,23 @@ SdfPath RenderItemToSdfPath(
     const bool         mergeTransformAndShape,
     const bool         stripNamespaces)
 {
-    // auto path = ri.sourceDagPath().fullPathName();
-    return NodeNameToSdfPath(
-        (ri.name() + std::to_string(ri.InternalObjectId()).c_str()).asChar(), stripNamespaces);
+    std::string internalObjectId(
+        "_" + std::to_string(ri.InternalObjectId())); // preventively prepend item id by underscore
+    std::string name(ri.name().asChar() + internalObjectId);
+    // Try to sanitize maya path to be used as an sdf path.
+    SanitizeNameForSdfPath(name, stripNamespaces);
+    // Path names must start with a letter, not a number
+    // If a number is found, prepend the path with an underscore
+    char digit = name[0];
+    if (std::isdigit(digit)) {
+        name.insert(0, "_");
+    }
+
+    SdfPath sdfPath(name);
+    if (sdfPath == SdfPath()) {
+        // If failed to include render item's name as an SdfPath simply use the item id.
+        return SdfPath(internalObjectId);
+    }
+    return sdfPath;
 }
 } // namespace MAYAHYDRA_NS_DEF
