@@ -549,7 +549,8 @@ bool canRemoveDstProperty(const PXR_NS::UsdAttribute& dstAttr)
 
     UsdShadeMaterial asMaterial(prim);
     if (asMaterial) {
-        const TfToken baseName = dstAttr.GetBaseName();
+        const auto baseNameAndType = PXR_NS::UsdShadeUtils::GetBaseNameAndType(dstAttr.GetName());
+        const TfToken baseName = baseNameAndType.first;
         // Remove Material intrinsic outputs since they are re-created automatically.
         if (baseName == UsdShadeTokens->surface || baseName == UsdShadeTokens->volume
             || baseName == UsdShadeTokens->displacement) {
