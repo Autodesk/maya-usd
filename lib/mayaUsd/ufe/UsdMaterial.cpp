@@ -23,51 +23,6 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
-
-PXR_NS::UsdPrim getAncestorMaterial(const PXR_NS::UsdPrim& prim)
-{
-    // Make sure we're returning a Material, which is the (grand)parent of a Shader or NodeGraph.
-
-    if (prim.GetTypeName() == "Material")
-    {
-        return prim;
-    }
-
-    auto iterPrim = prim;
-    while (iterPrim.GetTypeName() == "Shader" || iterPrim.GetTypeName() == "NodeGraph")
-    {
-        iterPrim = iterPrim.GetParent();
-    }
-    if (iterPrim)
-    {
-        return iterPrim;
-    }
-
-    return PXR_NS::UsdPrim();
-}
-
-std::vector<PXR_NS::UsdPrim> getConnectedShaders(const PXR_NS::UsdShadeOutput& port)
-{
-    // Dig down across NodeGraph boundaries until a surface shader is found.
-    std::vector<PXR_NS::UsdPrim> shaders;
-    for (const auto& sourceInfo : port.GetConnectedSources()) {
-        if (sourceInfo.source.GetPrim().GetTypeName() != "Shader") {
-            if (sourceInfo.sourceType == UsdShadeAttributeType::Output) {
-                const std::vector<PXR_NS::UsdPrim> connectedShaders
-                    = getConnectedShaders(sourceInfo.source.GetOutput(sourceInfo.sourceName));
-                shaders.insert(
-                    std::end(shaders), std::begin(connectedShaders), std::end(connectedShaders));
-            }
-        } else {
-            shaders.push_back(sourceInfo.source.GetPrim());
-        }
-    }
-    return shaders;
-}
-
-} // namespace
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -95,7 +50,7 @@ std::vector<Ufe::SceneItem::Ptr> UsdMaterial::getMaterials() const
         return materials;
     }
 
-    std::vector<PXR_NS::UsdPrim> shaderPrims;
+    std::vector<PXR_NS::UsdPrim> materialPrims;
 
     const PXR_NS::UsdPrim&                            prim = _item->prim();
     PXR_NS::UsdShadeMaterialBindingAPI                bindingApi(prim);
@@ -104,11 +59,7 @@ std::vector<Ufe::SceneItem::Ptr> UsdMaterial::getMaterials() const
     // 1. Simple case: A material is directly attached to our object.
     const PXR_NS::UsdShadeMaterial material = directBinding.GetMaterial();
     if (material) {
-        for (const auto& output : material.GetSurfaceOutputs()) {
-            for (const auto& shader : getConnectedShaders(output)) {
-                shaderPrims.push_back(shader);
-            }
-        }
+        materialPrims.push_back(material.GetPrim());
     }
 
     // 2. Check whether multiple materials are attached to this object via geometry subsets.
@@ -117,26 +68,12 @@ std::vector<Ufe::SceneItem::Ptr> UsdMaterial::getMaterials() const
         const UsdShadeMaterial           material
             = subsetBindingAPI.ComputeBoundMaterial(UsdShadeTokens->surface);
         if (material) {
-            for (const auto& output : material.GetSurfaceOutputs()) {
-                for (const auto& shader : getConnectedShaders(output)) {
-                    shaderPrims.push_back(shader);
-                }
-            }
+            materialPrims.push_back(material.GetPrim());
         }
     }
 
     // 3. Find the associated Ufe::SceneItem for each material attached to our object.
-    for (auto& shaderPrim : shaderPrims) {
-        if (!shaderPrim) {
-            continue;
-        }
-
-        // Make sure we're working with the material, not an internal shader.
-        const auto& materialPrim = getAncestorMaterial(shaderPrim);
-        if (!materialPrim) {
-            continue;
-        }
-
+    for (auto& materialPrim : materialPrims) {
         const PXR_NS::SdfPath& materialSdfPath = materialPrim.GetPath();
         const Ufe::Path        materialUfePath = usdPathToUfePathSegment(materialSdfPath);
 
