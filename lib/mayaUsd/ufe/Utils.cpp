@@ -533,7 +533,15 @@ void applyCommandRestriction(
     auto        primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
     auto        primStack = prim.GetPrimStack();
     std::string layerDisplayName;
-    std::string message { "It is defined on another layer" };
+
+    // When the command is forbidden even for the strongest layer, that means
+    // that the operation is a multi-layers operation and there is no target
+    // layer that would allow it to proceed. In that case, do not suggest changing
+    // the target.
+    std::string message = allowStronger ? "It is defined on another layer. " : "";
+    std::string instructions = allowStronger
+        ? "Please set [%s] as the target layer to proceed."
+        : "It would orphan opinions on the layer [%s].";
 
     // iterate over the prim stack, starting at the highest-priority layer.
     for (const auto& spec : primStack) {
@@ -563,7 +571,9 @@ void applyCommandRestriction(
             // layers ).
             if (primSpec->GetLayer() != spec->GetLayer()) {
                 layerDisplayName.append("[" + layerName + "]");
-                message = "It has a stronger opinion on another layer";
+                if (allowStronger) {
+                    message = "It has a stronger opinion on another layer. ";
+                }
                 break;
             }
             continue;
@@ -590,12 +600,14 @@ void applyCommandRestriction(
     if (!layerDisplayName.empty()) {
         if (allowedInStrongerLayer(prim, primStack, allowStronger))
             return;
+        std::string formattedInstructions
+            = TfStringPrintf(instructions.c_str(), layerDisplayName.c_str());
         std::string err = TfStringPrintf(
-            "Cannot %s [%s]. %s. Please set %s as the target layer to proceed.",
+            "Cannot %s [%s]. %s%s",
             commandName.c_str(),
             prim.GetName().GetString().c_str(),
             message.c_str(),
-            layerDisplayName.c_str());
+            formattedInstructions.c_str());
         throw std::runtime_error(err.c_str());
     }
 }
