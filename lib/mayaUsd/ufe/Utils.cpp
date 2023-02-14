@@ -539,9 +539,8 @@ void applyCommandRestriction(
     // layer that would allow it to proceed. In that case, do not suggest changing
     // the target.
     std::string message = allowStronger ? "It is defined on another layer. " : "";
-    std::string instructions = allowStronger
-        ? "Please set [%s] as the target layer to proceed."
-        : "It would orphan opinions on the layer [%s].";
+    std::string instructions = allowStronger ? "Please set [%s] as the target layer to proceed."
+                                             : "It would orphan opinions on the layer [%s].";
 
     // iterate over the prim stack, starting at the highest-priority layer.
     for (const auto& spec : primStack) {
