@@ -390,6 +390,7 @@ private:
     void _OnStageContentsChanged(const UsdNotice::StageContentsChanged& notice);
     void _OnStageObjectsChanged(const UsdNotice::ObjectsChanged& notice);
     void _OnLayerMutingChanged(const UsdNotice::LayerMutingChanged& notice);
+    void _OnStageEditTargetChanged(const UsdNotice::StageEditTargetChanged& notice);
 
     UsdMayaStageNoticeListener _stageNoticeListener;
 

@@ -28,6 +28,7 @@
 #include <mayaUsd/utils/loadRules.h>
 #include <mayaUsd/utils/query.h>
 #include <mayaUsd/utils/stageCache.h>
+#include <mayaUsd/utils/targetLayer.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
@@ -990,6 +991,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         primPath = finalUsdStage->GetPseudoRoot().GetPath();
         copyLoadRulesFromAttribute(*this, *finalUsdStage);
         copyLayerMutingFromAttribute(*this, *finalUsdStage);
+        copyTargetLayerFromAttribute(*this, *finalUsdStage);
         updateShareMode(sharedUsdStage, unsharedUsdStage, loadSet);
     }
 
@@ -1191,6 +1193,11 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
         _stageNoticeListener.SetStageLayerMutingChangedCallback(
             [this](const UsdNotice::LayerMutingChanged& notice) {
                 return _OnLayerMutingChanged(notice);
+            });
+
+        _stageNoticeListener.SetStageEditTargetChangedCallback(
+            [this](const UsdNotice::StageEditTargetChanged& notice) {
+                return _OnStageEditTargetChanged(notice);
             });
 
         MayaUsdProxyStageSetNotice(*this).Send();
@@ -1872,6 +1879,37 @@ void MayaUsdProxyShapeBase::_OnLayerMutingChanged(const UsdNotice::LayerMutingCh
         return;
 
     copyLayerMutingToAttribute(*stage, *this);
+}
+
+static void copyTargetLayerOnIdle(void* data)
+{
+    MayaUsdProxyShapeBase* proxy = reinterpret_cast<MayaUsdProxyShapeBase*>(data);
+    if (!proxy)
+        return;
+
+    const auto stage = proxy->getUsdStage();
+    if (!stage)
+        return;
+
+    copyTargetLayerToAttribute(*stage, *proxy);
+}
+
+void MayaUsdProxyShapeBase::_OnStageEditTargetChanged(
+    const UsdNotice::StageEditTargetChanged& notice)
+{
+    const auto stage = notice.GetStage();
+    if (!stage)
+        return;
+
+    // Note: copying the target layer into an attribute when the edit target
+    //       changes can cause DG evaluation loops because the stage computation
+    //       sets the edit target.
+    //
+    //       Defer saving the edit target to be done later, on idle.
+    //
+    //       One symptom of creating a compute loop is that the unit test named
+    //       'testMayaUsdProxyAccessor' fails because computation did not finish.
+    MGlobal::executeTaskOnIdle(copyTargetLayerOnIdle, this);
 }
 
 void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChanged& notice)
