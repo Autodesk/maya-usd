@@ -93,8 +93,8 @@ private:
     TfNotice::Key                   _stageLayerMutingChangedKey {};
     StageLayerMutingChangedCallback _stageLayerMutingChangedCallback {};
 
-    TfNotice::Key                   _stageEditTargetChangedKey {};
-    StageEditTargetChangedCallback  _stageEditTargetChangedCallback {};
+    TfNotice::Key                  _stageEditTargetChangedKey {};
+    StageEditTargetChangedCallback _stageEditTargetChangedCallback {};
 
     void _UpdateStageContentsChangedRegistration();
     void _OnStageContentsChanged(const UsdNotice::StageContentsChanged& notice) const;

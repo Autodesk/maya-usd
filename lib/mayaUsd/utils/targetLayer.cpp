@@ -35,7 +35,7 @@ MString convertTargetLayerToText(const PXR_NS::UsdStage& stage)
 {
     MString text;
 
-    const PXR_NS::UsdEditTarget   target = stage.GetEditTarget();
+    const PXR_NS::UsdEditTarget target = stage.GetEditTarget();
     if (!target.IsValid())
         return text;
 

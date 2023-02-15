@@ -1881,7 +1881,8 @@ void MayaUsdProxyShapeBase::_OnLayerMutingChanged(const UsdNotice::LayerMutingCh
     copyLayerMutingToAttribute(*stage, *this);
 }
 
-void  MayaUsdProxyShapeBase::_OnStageEditTargetChanged(const UsdNotice::StageEditTargetChanged& notice)
+void MayaUsdProxyShapeBase::_OnStageEditTargetChanged(
+    const UsdNotice::StageEditTargetChanged& notice)
 {
     const auto stage = getUsdStage();
     if (!stage)
