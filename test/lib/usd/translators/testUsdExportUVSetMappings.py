@@ -34,48 +34,36 @@ class testUsdExportUVSetMappings(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        inputPath = fixturesUtils.setUpClass(__file__)
-
-        mayaFile = os.path.join(inputPath, 'UsdExportUVSetMappingsTest',
-            'UsdExportUVSetMappingsTest.ma')
-        cmds.file(mayaFile, force=True, open=True)
-
-        # Export to USD.
-        cls._usdFilePath = os.path.abspath('UsdExportUVSetMappingsTest.usda')
-        cmds.mayaUSDExport(mergeTransformAndShape=True, file=cls._usdFilePath,
-            shadingMode='useRegistry', convertMaterialsTo=['UsdPreviewSurface'],
-            materialsScopeName='Materials', preserveUVSetNames=False,
-            remapUVSetsTo=['',''])
-
-        cls._stage = Usd.Stage.Open(cls._usdFilePath)
+        cls._inputPath = fixturesUtils.setUpClass(__file__)
 
     @classmethod
     def tearDownClass(cls):
         standalone.uninitialize()
 
-    def testStageOpens(self):
-        '''
-        Tests that the USD stage was opened successfully.
-        '''
-        self.assertTrue(self._stage)
-
-    def testExportUVSetMappings(self):
+    def baseExportUVSetMappings(self, extraOptions, expected):
         '''
         Tests that exporting multiple Maya planes with varying UV mappings
         setups results in USD data with material specializations:
         '''
-        expected = [
-            ("/pPlane1", "/blinn1SG", "st", "st", "st"),
-            ("/pPlane2", "/blinn1SG", "st", "st", "st"),
-            ("/pPlane3", "/blinn1SG", "st", "st", "st"),
-            ("/pPlane4", "/blinn1SG", "st", "st", "st"),
-            ("/pPlane5", "/blinn1SG_st_st1_st2", "st", "st1", "st2"),
-            ("/pPlane6", "/blinn1SG_st1_st2_st", "st1", "st2", "st"),
-            ("/pPlane7", "/blinn1SG_st2_st_st1", "st2", "st", "st1"),
-        ]
+        mayaFile = os.path.join(self._inputPath, 'UsdExportUVSetMappingsTest',
+            'UsdExportUVSetMappingsTest.ma')
+        cmds.file(mayaFile, force=True, open=True)
+
+        # Export to USD.
+        usdFilePath = os.path.abspath('UsdExportUVSetMappingsTest')
+        if extraOptions["preserveUVSetNames"]:
+            usdFilePath += "_preserved"
+        if len(extraOptions["remapUVSetsTo"]) > 1:
+            usdFilePath += "_remapped"
+        usdFilePath += ".usda"
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
+            shadingMode='useRegistry', convertMaterialsTo=['UsdPreviewSurface'],
+            materialsScopeName='Materials', **extraOptions)
+
+        stage = Usd.Stage.Open(usdFilePath)
 
         for mesh_name, mat_name, f1_name, f2_name, f3_name in expected:
-            plane_prim = self._stage.GetPrimAtPath(mesh_name)
+            plane_prim = stage.GetPrimAtPath(mesh_name)
             binding_api = UsdShade.MaterialBindingAPI(plane_prim)
             mat = binding_api.ComputeBoundMaterial()[0]
             self.assertEqual(mat.GetPath(), mat_name)
@@ -86,7 +74,7 @@ class testUsdExportUVSetMappings(unittest.TestCase):
 
         # Initial code had a bug where a material with no UV mappings would
         # specialize itself. Make sure it stays fixed:
-        plane_prim = self._stage.GetPrimAtPath("/pPlane8")
+        plane_prim = stage.GetPrimAtPath("/pPlane8")
         binding_api = UsdShade.MaterialBindingAPI(plane_prim)
         mat = binding_api.ComputeBoundMaterial()[0]
         self.assertEqual(mat.GetPath(), "/pPlane8/Materials/blinn2SG")
@@ -126,7 +114,7 @@ class testUsdExportUVSetMappings(unittest.TestCase):
         # Import back:
         options = ["shadingMode=[[useRegistry,UsdPreviewSurface]]",
                    "primPath=/"]
-        cmds.file(self._usdFilePath, i=True, type="USD Import",
+        cmds.file(usdFilePath, i=True, type="USD Import",
                   ignoreVersion=True, ra=True, mergeNamespacesOnClash=False,
                   namespace="Test", pr=True, importTimeRange="combine",
                   options=";".join(options))
@@ -144,6 +132,52 @@ class testUsdExportUVSetMappings(unittest.TestCase):
         # All links correctly restored:
         for file_name, links in expected_links:
             self.assertEqual(set(cmds.uvLink(texture='Test:'+file_name)), links)
+
+    def testExportRenamedUVSetMappings(self):
+        '''
+        Tests that exporting multiple Maya planes with varying UV mappings
+        setups results in USD data with material specializations:
+        '''
+        expected = [
+            ("/pPlane1", "/blinn1SG", "st", "st", "st"),
+            ("/pPlane2", "/blinn1SG", "st", "st", "st"),
+            ("/pPlane3", "/blinn1SG", "st", "st", "st"),
+            ("/pPlane4", "/blinn1SG", "st", "st", "st"),
+            ("/pPlane5", "/blinn1SG_st_st1_st2", "st", "st1", "st2"),
+            ("/pPlane6", "/blinn1SG_st1_st2_st", "st1", "st2", "st"),
+            ("/pPlane7", "/blinn1SG_st2_st_st1", "st2", "st", "st1"),
+        ]
+        self.baseExportUVSetMappings({"preserveUVSetNames": False, "remapUVSetsTo": [['','']]}, expected)
+
+    def testExportAndPreserveUVSetMappings(self):
+        '''
+        Tests those material specializations when we preserve the UV set names:
+        '''
+        expected = [
+            ("/pPlane1", '/blinn1SG_map1_map1_map1', 'map1', 'map1', 'map1'),
+            ("/pPlane2", '/blinn1SG', 'st1', 'st1', 'st1'),
+            ("/pPlane3", '/blinn1SG', 'st1', 'st1', 'st1'),
+            ("/pPlane4", '/blinn1SG_st2_st2_st2', 'st2', 'st2', 'st2'),
+            ("/pPlane5", '/blinn1SG_p5a_p5b_p5c', 'p5a', 'p5b', 'p5c'),
+            ("/pPlane6", '/blinn1SG_p62_p63_p61', 'p62', 'p63', 'p61'),
+            ("/pPlane7", '/blinn1SG_p7r_p7p_p7q', 'p7r', 'p7p', 'p7q'),
+        ]
+        self.baseExportUVSetMappings({"preserveUVSetNames": True, "remapUVSetsTo": [['','']]}, expected)
+
+    def testExportAndRemapUVSetMappings(self):
+        '''
+        Tests when remapping a few names:
+        '''
+        expected = [
+            ['/pPlane1', '/blinn1SG_mmap1_mmap1_mmap1', 'mmap1', 'mmap1', 'mmap1'],
+            ['/pPlane2', '/blinn1SG', 'sst1', 'sst1', 'sst1'],
+            ['/pPlane3', '/blinn1SG', 'sst1', 'sst1', 'sst1'],
+            ['/pPlane4', '/blinn1SG_st_st_st', 'st', 'st', 'st'],
+            ['/pPlane5', '/blinn1SG_st_st1_st2', 'st', 'st1', 'st2'],
+            ['/pPlane6', '/blinn1SG_st1_st2_st', 'st1', 'st2', 'st'],
+            ['/pPlane7', '/blinn1SG_st2_st_st1', 'st2', 'st', 'st1'],            
+        ]
+        self.baseExportUVSetMappings({"preserveUVSetNames": False, "remapUVSetsTo": [['map1','mmap1'], ["st1", "sst1"]]}, expected)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

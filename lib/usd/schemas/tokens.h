@@ -68,6 +68,14 @@ struct MayaUsd_SchemasTokensType
     ///
     /// MayaUsd_SchemasMayaReference
     const TfToken mayaReference;
+    /// \brief "ALMayaReference"
+    ///
+    /// Schema identifer and family for MayaUsd_SchemasALMayaReference
+    const TfToken ALMayaReference;
+    /// \brief "MayaReference"
+    ///
+    /// Schema identifer and family for MayaUsd_SchemasMayaReference
+    const TfToken MayaReference;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

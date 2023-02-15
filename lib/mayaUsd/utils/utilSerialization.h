@@ -110,10 +110,16 @@ MAYAUSD_CORE_PUBLIC
 PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
     PXR_NS::SdfLayerRefPtr anonLayer,
     const std::string&     path,
+    bool                   savePathAsRelative,
     LayerParent            parent,
     std::string            formatArg = "");
 
-/*! \brief Check the sublayer stack of the stage looking for any anonymnous
+/*! \brief Ensures that the filepath contains a valid USD extension.
+ */
+MAYAUSD_CORE_PUBLIC
+void ensureUSDFileExtension(std::string& filePath);
+
+/*! \brief Check the sublayer stack of the stage looking for any anonymous
     layers that will need to be saved.
  */
 MAYAUSD_CORE_PUBLIC

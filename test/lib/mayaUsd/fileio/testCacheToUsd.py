@@ -328,10 +328,10 @@ class CacheToUsdTestCase(unittest.TestCase):
         with mayaUsd.lib.OpUndoItemList():
             self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(aMayaPathStr, userArgs))
         
-        # Verify that the auto-edit has been turned off
+        # Verify that the auto-edit is still on.
         attr = mayaRefPrim.GetAttribute('mayaAutoEdit')
         self.assertTrue(attr.IsValid())
-        self.assertEqual(attr.Get(), False)
+        self.assertEqual(attr.Get(), True)
 
         self.verifyCacheFileDefaultPrim(cacheFile, cachePrimName)
 

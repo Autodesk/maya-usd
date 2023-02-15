@@ -33,6 +33,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
             json.cpp
+            primActivation.cpp
     )
 endif()
 
@@ -64,6 +65,7 @@ set(HEADERS
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND HEADERS
         json.h
+        primActivation.h
     )
 endif()
 

@@ -455,6 +455,24 @@ bool UsdAttributes::canRemoveAttribute(const UsdSceneItem::Ptr& item, const std:
     }
     return false;
 }
+static void removeConnections(const PXR_NS::UsdPrim& prim, const PXR_NS::SdfPath& srcPropertyPath)
+{
+    // Remove the connections with source srcPropertyPath.
+    for (const auto& node : prim.GetChildren()) {
+        for (const auto& attribute : node.GetAttributes()) {
+            PXR_NS::UsdAttribute  attr = attribute.As<PXR_NS::UsdAttribute>();
+            PXR_NS::SdfPathVector sources;
+            attr.GetConnections(&sources);
+
+            for (size_t i = 0; i < sources.size(); ++i) {
+                if (sources[i] == srcPropertyPath) {
+                    attr.RemoveConnection(srcPropertyPath);
+                    break;
+                }
+            }
+        }
+    }
+}
 
 bool UsdAttributes::doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name)
 {
@@ -470,16 +488,23 @@ bool UsdAttributes::doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::
     PXR_NS::UsdShadeNodeGraph      ngPrim(prim);
     PXR_NS::UsdShadeConnectableAPI connectApi(prim);
     if (ngPrim && connectApi) {
-        auto baseNameAndType = PXR_NS::UsdShadeUtils::GetBaseNameAndType(nameAsToken);
+        const SdfPath kPrimPath = prim.GetPath();
+        const SdfPath kPropertyPath = kPrimPath.AppendProperty(attribute.GetName());
+        auto          baseNameAndType = PXR_NS::UsdShadeUtils::GetBaseNameAndType(nameAsToken);
         if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Output) {
             auto output = connectApi.GetOutput(baseNameAndType.first);
             if (output) {
+                auto parent = prim.GetParent();
+                if (parent) {
+                    removeConnections(parent, kPropertyPath);
+                }
                 connectApi.ClearSources(output);
                 return prim.RemoveProperty(nameAsToken);
             }
         } else if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input) {
             auto input = connectApi.GetInput(baseNameAndType.first);
             if (input) {
+                removeConnections(prim, kPropertyPath);
                 connectApi.ClearSources(input);
                 return prim.RemoveProperty(nameAsToken);
             }
@@ -560,7 +585,6 @@ Ufe::Attribute::Ptr UsdAttributes::doRenameAttribute(
     auto                  propertyHandle = editTarget.GetPropertySpecForScenePath(kPropertyPath);
     auto                  baseNameAndType = PXR_NS::UsdShadeUtils::GetBaseNameAndType(nameAsToken);
 
-    prim.GetAttributes();
     PXR_NS::UsdShadeNodeGraph ngPrim(prim);
 
     if (!propertyHandle) {

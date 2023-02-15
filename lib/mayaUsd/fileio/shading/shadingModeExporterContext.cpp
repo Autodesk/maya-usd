@@ -506,8 +506,10 @@ class _UVMappingManager
 public:
     _UVMappingManager(
         const UsdShadeMaterial&                                  material,
-        const UsdMayaShadingModeExportContext::AssignmentVector& assignmentsToBind)
+        const UsdMayaShadingModeExportContext::AssignmentVector& assignmentsToBind,
+        const UsdMayaJobExportArgs&                              exportArgs)
         : _material(material)
+        , _exportArgs(exportArgs)
     {
         // Find out the nodes requiring mapping:
         //
@@ -582,15 +584,13 @@ public:
 
                 MString uvSetName = uvNamePlug.asString();
 
-                // All UV sets now get renamed st, st1, st2 in the order returned by getUVSetNames
+                // UV set renaming still exists. See if the UV was renamed:
                 MStringArray uvSets;
                 meshFn.getUVSetNames(uvSets);
                 for (unsigned int i = 0; i < uvSets.length(); i++) {
                     if (uvSets[i] == uvSetName) {
-                        uvSetName = "st";
-                        if (i) {
-                            uvSetName += i;
-                        }
+                        uvSetName = UsdMayaWriteUtil::UVSetExportedName(
+                            uvSets, _exportArgs.preserveUVSetNames, _exportArgs.remapUVSetsTo, i);
                         break;
                     }
                 }
@@ -704,6 +704,8 @@ public:
 private:
     /// The original material:
     const UsdShadeMaterial& _material;
+    /// The export args (for UV set remapping)
+    const UsdMayaJobExportArgs& _exportArgs;
     /// Helper structures for UV set mappings:
     TfTokenVector _nodesWithUVInput;
     using ShapeToStreams = std::map<TfToken, TfTokenVector>;
@@ -724,7 +726,7 @@ void UsdMayaShadingModeExportContext::BindStandardMaterialPrim(
         return;
     }
 
-    _UVMappingManager uvMappingManager(material, assignmentsToBind);
+    _UVMappingManager uvMappingManager(material, assignmentsToBind, GetExportArgs());
 
     UsdStageRefPtr stage = GetUsdStage();
     TfToken        materialNameToken(materialPrim.GetName());

@@ -736,11 +736,11 @@ std::string UsdMayaUtil::prettifyName(const std::string& name)
             capitalizeNext = false;
         }
         if (std::isupper(name[i]) && !std::isdigit(name[i - 1])) {
-            if ((i < (nbChars - 1)) && !std::isupper(name[i + 1])) {
+            if (((i < (nbChars - 1)) && !std::isupper(name[i + 1])) || std::islower(name[i - 1])) {
                 prettyName += ' ';
             }
             prettyName += nextLetter;
-        } else if (name[i] == '_') {
+        } else if (name[i] == '_' || name[i] == ':') {
             prettyName += " ";
             capitalizeNext = true;
         } else {

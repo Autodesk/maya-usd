@@ -474,5 +474,111 @@ class MergeToUsdTestCase(unittest.TestCase):
         cylLooksPrim = stage.GetPrimAtPath("/pCylinder1/Looks")
         self.assertFalse(cylLooksPrim.IsValid())
 
+    def testMergeInSubVariant(self):
+        '''Merge edits on data that is inside a variant of a parent prim and contains variants.'''
+
+        # Create a stage from a file.
+        testFile = getTestScene("multiVariants", "multi_variants.usda")
+        testDagPath, stage = mayaUtils.createProxyFromFile(testFile)
+
+        # UFE path to interesting prims in the USD file.
+        #
+        #    /RootPrim
+        #      /PrimWithVariant {modelingVariant = A or B or C}
+        #        /ModelA
+        #          /ConeA { extraStuff = Cube or Cylinder}
+        #            /ExtraCube
+
+        # Root prim
+        rootSdfPath = "/RootPrim"
+
+        # This prim has "modelingVariant" variant set with variants "A", "B" and "C"
+        parentWithVariantSdfPath = rootSdfPath + "/PrimWithVariant"
+        parentWithVariantSetName = "modelingVariant"
+        parentWithVariantName = "A"
+
+        # This prim is in variant A. This is the prim that will be edited
+        editedSdfPath = parentWithVariantSdfPath + "/ModelA"
+
+        # This is a sub-prim of the edited prim and has "extraStuff" variant set
+        # with variants "Cube" and "Cylinder"
+        subWithVariantSdfPath = editedSdfPath + "/ConeA"
+        subWithVariantSetName = "extraStuff"
+        subWithVariantName = "Cube"
+
+        # This is a sub-sub-prim in the sub-prim with variant,
+        # inside its "Cube" variant.
+        subsubSdfPath = subWithVariantSdfPath + "/ExtraCube"
+
+        # Verify that the original scene has the correct variants selected.
+        rootPrim = stage.GetPrimAtPath(rootSdfPath)
+        self.assertIsNotNone(rootPrim)
+        self.assertTrue(rootPrim.IsValid())
+        
+        def verifyParentVariant():
+            parentWithVariantPrim = stage.GetPrimAtPath(parentWithVariantSdfPath)
+            self.assertIsNotNone(parentWithVariantPrim)
+            self.assertTrue(parentWithVariantPrim.IsValid())
+            self.assertTrue(parentWithVariantPrim.HasVariantSets())
+            parentWithVariantVariantSet = parentWithVariantPrim.GetVariantSets().GetVariantSet(parentWithVariantSetName)
+            self.assertIsNotNone(parentWithVariantVariantSet)
+            self.assertEqual(parentWithVariantName, parentWithVariantVariantSet.GetVariantSelection())
+
+        def verifySubVariant():
+            subWithVariantPrim = stage.GetPrimAtPath(subWithVariantSdfPath)
+            self.assertIsNotNone(subWithVariantPrim)
+            self.assertTrue(subWithVariantPrim.IsValid())
+            self.assertTrue(subWithVariantPrim.HasVariantSets())
+            subWithVariantVariantSet = subWithVariantPrim.GetVariantSets().GetVariantSet(subWithVariantSetName)
+            self.assertIsNotNone(subWithVariantVariantSet)
+            self.assertEqual(subWithVariantName, subWithVariantVariantSet.GetVariantSelection())
+
+        verifyParentVariant()
+        verifySubVariant()
+
+        # Edit as maya and move the ConeA and ExtraCube.
+        cmds.mayaUsdEditAsMaya(testDagPath + "," + editedSdfPath)
+
+        editedMayaItem = ufe.GlobalSelection.get().front()
+        editedMayaPath = editedMayaItem.path()
+        editedMayaPathStr = ufe.PathString.string(editedMayaPath)
+
+        subWithVariantMayaPathStr = editedMayaPathStr + "|ConeA"
+        subWithVariantMayaPath = ufe.PathString.path(subWithVariantMayaPathStr)
+        subWithVariantMayaItem = ufe.Hierarchy.createItem(subWithVariantMayaPath)
+        (subWithVariantMayaPath, subWithVariantMayaPathStr, _, subWithVariantMayaMatrix) = \
+            setMayaTranslation(subWithVariantMayaItem, om.MVector(2, 3, 4))
+
+        subsubMayaPathStr = subWithVariantMayaPathStr + "|ExtraCube"
+        subsubMayaPath = ufe.PathString.path(subsubMayaPathStr)
+        subsubMayaItem = ufe.Hierarchy.createItem(subsubMayaPath)
+        (subsubMayaPath, subsubMayaPathStr, _, subsubMayaMatrix) = \
+            setMayaTranslation(subsubMayaItem, om.MVector(-4, -5, -6))
+
+        # Merge back to USD.
+        cmds.mayaUsdMergeToUsd(editedMayaPathStr)
+
+        verifyParentVariant()
+        verifySubVariant()
+
+        # Switch parent with variant to variant "B" and verify
+        # that the subWithVariant and subsub are gone.
+
+        def switchParentWithVariant(newVariantName):
+            parentWithVariantPrim = stage.GetPrimAtPath(parentWithVariantSdfPath)
+            parentWithVariantVariantSets = parentWithVariantPrim.GetVariantSets()
+            parentWithVariantVariantSets.SetSelection(parentWithVariantSetName, newVariantName)
+
+        def verifySwitch():
+            editedPrim = stage.GetPrimAtPath(editedSdfPath)
+            self.assertFalse(editedPrim.IsValid())
+            subWithVariantPrim = stage.GetPrimAtPath(subWithVariantSdfPath)
+            self.assertFalse(subWithVariantPrim.IsValid())
+            subsubPrim = stage.GetPrimAtPath(subsubSdfPath)
+            self.assertFalse(subsubPrim.IsValid())
+
+        switchParentWithVariant("B")
+        verifySwitch()
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

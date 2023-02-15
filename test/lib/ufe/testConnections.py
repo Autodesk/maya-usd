@@ -21,6 +21,8 @@ import ufeUtils
 import usdUtils
 import testUtils
 
+import mayaUsd.lib as mayaUsdLib
+
 from maya import cmds
 from pxr import Sdr
 
@@ -649,7 +651,8 @@ class ConnectionTestCase(unittest.TestCase):
 
         # Cleanup on disconnection should remove the MaterialX surface output.
         with self.assertRaisesRegex(KeyError, "Attribute 'outputs:mtlx:surface' does not exist") as cm:
-            materialAttrs.attribute("outputs:mtlx:surface")
+            with mayaUsdLib.DiagnosticBatchContext(1000) as bc:
+                materialAttrs.attribute("outputs:mtlx:surface")
 
         connections = connectionHandler.sourceConnections(materialItem)
         self.assertIsNotNone(connections)
@@ -952,6 +955,29 @@ class ConnectionTestCase(unittest.TestCase):
             testObserver.assertNotificationCount(self, numAdded = 2, numRemoved = 1)
             testAttrs.removeAttribute("outputs:bar")
             testObserver.assertNotificationCount(self, numAdded = 2, numRemoved = 2)
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test only available in UFE preview version 0.4.24 and greater')
+    def testCompoundDisplacementPassthrough(self):
+        # Creating the connection in this test scene was causing an infinite loop that should now be fixed.
+        testFile = testUtils.getTestScene('MaterialX', 'compound_displacement_passthrough.usda')
+        shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
+        mayaPathSegment = mayaUtils.createUfePathSegment(shapeNode)
+
+        materialPathSegment = usdUtils.createUfePathSegment("/Material1")
+        materialPath = ufe.Path([mayaPathSegment, materialPathSegment])
+        materialSceneItem = ufe.Hierarchy.createItem(materialPath)
+        materialAttrs = ufe.Attributes.attributes(materialSceneItem)
+        materialDisplacementAttr = materialAttrs.attribute("outputs:displacement")
+
+        compoundPathSegment = usdUtils.createUfePathSegment("/Material1/compound")
+        compoundPath = ufe.Path([mayaPathSegment, compoundPathSegment])
+        compoundSceneItem = ufe.Hierarchy.createItem(compoundPath)
+        compoundAttrs = ufe.Attributes.attributes(compoundSceneItem)
+        compoundDisplacementAttr = compoundAttrs.attribute("outputs:displacement")
+
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(materialSceneItem.runTimeId())
+        cmd = connectionHandler.createConnectionCmd(compoundDisplacementAttr, materialDisplacementAttr)
+        cmd.execute()
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

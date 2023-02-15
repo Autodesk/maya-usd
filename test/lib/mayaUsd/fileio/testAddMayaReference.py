@@ -31,6 +31,7 @@ from maya.api import OpenMaya as om
 
 import mayaUsdAddMayaReference
 import mayaUsdMayaReferenceUtils as mayaRefUtils
+from mayaUsd.lib import cacheToUsd
 
 import ufe
 
@@ -56,12 +57,28 @@ class AddMayaReferenceTestCase(unittest.TestCase):
     def tearDownClass(cls):
         standalone.uninitialize()
 
+    def getCacheFileName(self):
+        return 'testAddMayaRefCache.usda'
+
+    def removeCacheFile(self):
+        '''
+        Remove the cache file if it exists. Ignore error if it does not exists.
+        '''
+        try:
+            os.remove(self.getCacheFileName())
+        except:
+            pass
+
     def setUp(self):
         # Start each test with a new scene with empty stage.
         cmds.file(new=True, force=True)
         import mayaUsd_createStageWithNewLayer
         self.proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         self.stage = mayaUsd.lib.GetPrim(self.proxyShapePathStr).GetStage()
+        self.removeCacheFile()
+
+    def tearDown(self):
+        self.removeCacheFile()
 
     def testDefault(self):
         '''Test the default options for Add Maya Reference.
@@ -255,9 +272,8 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         primTestDefault.SetActive(True)
         self.assertTrue(primTestDefault.IsActive())
 
-        # Verify that the auto-edit has *not* been turned off since it could not
-        # be edited when discarding edits since the prim was not accessible since
-        # its parent prim was deactivated.
+        # Verify that the auto-edit has been turned off even though its parent prim
+        # was deactivated.
         #
         # Note: we have to retrieved the Maya ref prim again because when its parent
         #       was deactivated, the UsdPrim object became invalid and cannot be used
@@ -266,8 +282,85 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         mayaRefPrim = usdUtils.getPrimFromSceneItem(mayaRefUsdItem)
         attr = mayaRefPrim.GetAttribute('mayaAutoEdit')
         self.assertTrue(attr.IsValid())
+        self.assertEqual(attr.Get(), False)
+        # This functionality requires the orphaned nodes manager.
+        if os.getenv('HAS_ORPHANED_NODES_MANAGER', '0') >= '1':
+            self.assertTrue(mayaRefPrim.IsActive())
+
+
+    def testEditAndMergeMayaRef(self):
+        '''Test editing then merge a Maya Reference.
+
+        Add a Maya Reference using auto-edit, then merge the edits.
+        '''
+        kDefaultPrimName = mayaRefUtils.defaultMayaReferencePrimName()
+
+        # Since this is a brand new prim, it should not have variant sets.
+        primTestDefault = self.stage.DefinePrim('/Test_Default', 'Xform')
+        primPathStr = self.proxyShapePathStr + ',/Test_Default'
+        self.assertFalse(primTestDefault.HasVariantSets())
+
+        variantSetName = 'new_variant_set'
+        variantName =  'new_variant'
+        cacheVariantName = 'new_cache'
+
+        mayaRefPrim = mayaUsdAddMayaReference.createMayaReferencePrim(
+            primPathStr,
+            self.mayaSceneStr,
+            self.kDefaultNamespace,
+            variantSet=(variantSetName, variantName),
+            mayaAutoEdit=True)
+
+        # The prim should have a variant set.
+        self.assertTrue(primTestDefault.HasVariantSets())
+        vs = primTestDefault.GetVariantSets()
+        variantSet = vs.GetVariantSet(variantSetName)
+        self.assertEqual(variantSet.GetVariantSelection(), variantName)
+
+        # Verify that a Maya Reference prim was created.
+        self.assertTrue(mayaRefPrim.IsValid())
+        self.assertEqual(str(mayaRefPrim.GetName()), kDefaultPrimName)
+        self.assertEqual(mayaRefPrim, primTestDefault.GetChild(kDefaultPrimName))
+        self.assertTrue(mayaRefPrim.GetPrimTypeInfo().GetTypeName(), 'MayaReference')
+
+        attr = mayaRefPrim.GetAttribute('mayaAutoEdit')
+        self.assertTrue(attr.IsValid())
         self.assertEqual(attr.Get(), True)
+
+        # Merge Maya edits.
+        # Cache to USD, using a payload composition arc.
+        defaultExportOptions = cacheToUsd.getDefaultExportOptions()
+        cacheFile = self.getCacheFileName()
+        cachePrimName = 'cachePrimName'
+        payloadOrReference = 'Payload'
+        listEditType = 'Prepend'
+        # In the sibling cache case variantSetName and cacheVariantName will be
+        # None.
+        cacheOptions = cacheToUsd.createCacheCreationOptions(
+            defaultExportOptions, cacheFile, cachePrimName,
+            payloadOrReference, listEditType, variantSetName, cacheVariantName)
+
+        aMayaItem = ufe.GlobalSelection.get().front()
+        aMayaPath = aMayaItem.path()
+        aMayaPathStr = ufe.PathString.string(aMayaPath)
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(aMayaPathStr, cacheOptions))
+
+        # Verify the cache variant is active and the prim
+        # is active.
+        self.assertTrue(primTestDefault.HasVariantSets())
+        vs = primTestDefault.GetVariantSets()
+        variantSet = vs.GetVariantSet(variantSetName)
+        self.assertEqual(variantSet.GetVariantSelection(), cacheVariantName)
+        self.assertTrue(mayaRefPrim.IsActive())
+
+        # Switch to Maya Ref variant and verify that the auto-edit is
+        # still on and the prim is now inactive.
+        variantSet.SetVariantSelection(variantName)
         self.assertFalse(mayaRefPrim.IsActive())
+        attr = mayaRefPrim.GetAttribute('mayaAutoEdit')
+        self.assertTrue(attr.IsValid())
+        self.assertEqual(attr.Get(), True)
 
 
     def testBadNames(self):

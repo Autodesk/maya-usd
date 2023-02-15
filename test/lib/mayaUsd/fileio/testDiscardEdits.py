@@ -19,7 +19,7 @@
 import fixturesUtils
 
 from mayaUtils import setMayaTranslation
-from usdUtils import createSimpleXformScene
+from usdUtils import createSimpleXformScene, createDuoXformScene
 from ufeUtils import ufeFeatureSetVersion
 
 import mayaUsd.lib
@@ -120,8 +120,39 @@ class DiscardEditsTestCase(unittest.TestCase):
             om.MSelectionList().add(aMayaPathStr)
 
     @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
+    def testDiscardEditsDuo(self):
+        '''
+        Discard edits and re-edit on a USD transform when multiple separate edits are active.
+        It should not crash.
+        '''
+
+        # Edit as Maya first.
+        (ps,
+         aXlateOp, aUsdXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
+         bXlateOp, bUsdXlation, bUsdUfePathStr, bUsdUfePath, bUsdItem) = createDuoXformScene()
+
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(bUsdUfePathStr))
+
+        bMayaItem = ufe.GlobalSelection.get().front()
+        bMayaXlation = om.MVector(4, 5, 6)
+        (bMayaPath, bMayaPathStr, bFn, mayaMatrix) = \
+            setMayaTranslation(bMayaItem, bMayaXlation)
+
+        # Discard Maya edits of B.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.discardEdits(bMayaPathStr))
+
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(bUsdUfePathStr))
+
+
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testDiscardEditsWhenParentIsDeactivated(self):
-        '''Discard edits on a USD transform when its parent is deactivated shoudl fail but not crash.'''
+        '''Discard edits on a USD transform when its parent is deactivated should not fail and not crash.'''
 
         # Edit as Maya the B item.
         (ps,
@@ -162,24 +193,20 @@ class DiscardEditsTestCase(unittest.TestCase):
         aUsdPrim = usdUtils.getPrimFromSceneItem(aUsdItem)
         aUsdPrim.SetActive(True)
 
-        # The B item is still inactive.
         # Recreate the UFE item since the USD Prim was temporarily deactive
         bUsdItem = ufeUtils.createItem(bUsdUfePath)
         bUsdPrim = usdUtils.getPrimFromSceneItem(bUsdItem)
-        self.assertFalse(bUsdPrim.IsActive())
 
-        # Activate the B item. Need to target the session layer since edit-as-Maya
-        # had deactivated the prim in the session layer.
-        stage = bUsdPrim.GetStage()
-        with Usd.EditContext(stage, Usd.EditTarget(stage.GetSessionLayer())):
-            bUsdPrim.SetActive(True)
-        self.assertTrue(bUsdPrim.IsActive())
+        # The B item is still active, because we forced it to be editable through the session layer.
+        # This functionality requires the orphaned nodes manager.
+        if os.getenv('HAS_ORPHANED_NODES_MANAGER', '0') >= '1':
+            self.assertTrue(bUsdPrim.IsActive())
 
-        # Hierarchy is restored: USD item is child of proxy shape, Maya item is
-        # not.  Be careful to use the Maya path rather than the Maya item, which
-        # should no longer exist.
-        self.assertIn(bUsdItem, aHier.children())
-        self.assertNotIn(bMayaPath, [child.path() for child in aHier.children()])
+            # Hierarchy is restored: USD item is child of proxy shape, Maya item is
+            # not.  Be careful to use the Maya path rather than the Maya item, which
+            # should no longer exist.
+            self.assertIn(bUsdItem, aHier.children())
+            self.assertNotIn(bMayaPath, [child.path() for child in aHier.children()])
 
         # Maya node is removed.
         with self.assertRaises(RuntimeError):

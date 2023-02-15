@@ -22,7 +22,7 @@ import ufeUtils
 import testUtils
 import usdUtils
 
-from pxr import Usd, UsdGeom, Vt, Gf
+from pxr import Usd, UsdGeom, Vt, Gf, UsdLux, UsdUI
 from pxr import UsdShade
 
 from maya import cmds
@@ -1749,22 +1749,19 @@ class AttributeTestCase(unittest.TestCase):
         pathStr = '|transform1|proxyShape1,/Room_set/Props/Ball_35'
 
         # No attribute was specified.
-        self.assertRaisesRegex(RuntimeError,
-                               'No attribute was specified\.$',
-                               cmds.getAttr, pathStr)
+        with self.assertRaisesRegex(RuntimeError, 'No attribute was specified\.$') as cm:
+            with mayaUsdLib.DiagnosticBatchContext(1000) as bc:
+                cmds.getAttr(pathStr)
 
         # Cannot evaluate more than one attribute.
-        self.assertRaisesRegex(RuntimeError,
-                               'Cannot evaluate more than one attribute\.$',
-                               cmds.getAttr,
-                               pathStr+'.xformOp:translate',
-                               pathStr+'.xformOpOrder')
+        with self.assertRaisesRegex(RuntimeError, 'Cannot evaluate more than one attribute\.$') as cm:
+            with mayaUsdLib.DiagnosticBatchContext(1000) as bc:
+                cmds.getAttr(pathStr+'.xformOp:translate', pathStr+'.xformOpOrder')
 
         # Mixing Maya and non-Maya attributes is an error.
-        self.assertRaisesRegex(RuntimeError,
-                               'Cannot evaluate more than one attribute\.$',
-                               cmds.getAttr,
-                               'proxyShape1.shareStage',pathStr+'.xformOp:translate')
+        with self.assertRaisesRegex(RuntimeError, 'Cannot evaluate more than one attribute\.$') as cm:
+            with mayaUsdLib.DiagnosticBatchContext(1000) as bc:
+                cmds.getAttr('proxyShape1.shareStage',pathStr+'.xformOp:translate')
 
     def createAndTestAttribute(self, materialItem, shaderDefName, shaderName, origValue, newValue, validation):
         surfDef = ufe.NodeDef.definition(materialItem.runTimeId(), shaderDefName)
@@ -1930,6 +1927,7 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(mayaUsdLib.Util.prettifyName("standardSurface"), "Standard Surface")
         self.assertEqual(mayaUsdLib.Util.prettifyName("UsdPreviewSurface"), "Usd Preview Surface")
         self.assertEqual(mayaUsdLib.Util.prettifyName("USDPreviewSurface"), "USD Preview Surface")
+        self.assertEqual(mayaUsdLib.Util.prettifyName("xformOp:rotateXYZ"), "Xform Op Rotate XYZ")
         self.assertEqual(mayaUsdLib.Util.prettifyName("ior"), "Ior")
         self.assertEqual(mayaUsdLib.Util.prettifyName("IOR"), "IOR")
         self.assertEqual(mayaUsdLib.Util.prettifyName("specular_IOR"), "Specular IOR")
@@ -1962,6 +1960,47 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(obs.keys, set([uisoftminKey]))
 
         self.assertEqual(str(attr.getMetadata(uisoftminKey)), str(value))
+
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 22, 8) and ufeUtils.ufeFeatureSetVersion() >= 3, 
+        'Requires a recent UsdLux API and UFE attribute metadata API')
+    def testAttributeNiceNames(self):
+        cmds.file(new=True, force=True)
+
+        # Create a proxy shape with empty stage to start with.
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        # Create a ContextOps interface for the proxy shape.
+        proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment(proxyShape)])
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+
+        # Add a sphere light prim:
+        ufeCmd.execute(contextOps.doOpCmd(['Add New Prim', 'SphereLight']))
+
+        proxyShapehier = ufe.Hierarchy.hierarchy(proxyShapeItem)
+        lightItem = proxyShapehier.children()[0]
+        lightPrim = usdUtils.getPrimFromSceneItem(lightItem)
+        UsdLux.ShadowAPI.Apply(lightPrim)
+        UsdLux.ShapingAPI.Apply(lightPrim)
+        UsdUI.NodeGraphNodeAPI.Apply(lightPrim)
+
+        ufeAttrs = ufe.Attributes.attributes(lightItem)
+
+        testCases = (
+            ("inputs:radius", "Radius"),
+            ("inputs:shadow:falloffGamma", "Falloff Gamma"),
+            ("collection:shadowLink:expansionRule", "Expansion Rule"),
+            ("collection:lightLink:expansionRule", "Expansion Rule"),
+            ("inputs:shaping:cone:angle", "Cone Angle"),
+            ("ui:nodegraph:node:pos", "Ui Pos")
+        )
+
+        for attrName, niceName in testCases:
+            attr = ufeAttrs.attribute(attrName)
+            self.assertIsNotNone(attr)
+            self.assertEqual(attr.getMetadata("uiname"), niceName)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

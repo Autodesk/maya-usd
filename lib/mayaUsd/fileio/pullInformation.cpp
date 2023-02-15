@@ -17,6 +17,7 @@
 #include "pullInformation.h"
 
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/utils/primActivation.h>
 #include <mayaUsdUtils/util.h>
 
 #include <pxr/usd/usd/editContext.h>
@@ -46,6 +47,8 @@ const MString kPullDGMetadataKey("Pull_UfePath");
 
 //------------------------------------------------------------------------------
 //
+// Read on the Maya node the information necessary to merge the USD prim
+// that is edited as Maya.
 
 bool readPullInformation(const PXR_NS::UsdPrim& prim, std::string& dagPathStr)
 {
@@ -103,6 +106,8 @@ bool readPullInformation(const MDagPath& dagPath, Ufe::Path& ufePath)
 
 //------------------------------------------------------------------------------
 //
+// Write on the Maya node the information necessary later-on to merge
+// the USD prim that is edited as Maya.
 
 bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& editedAsMayaRoot)
 {
@@ -128,6 +133,8 @@ bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& edited
 
 //------------------------------------------------------------------------------
 //
+// Write on the USD prim the information necessary later-on to merge
+// the USD prim that is edited as Maya.
 
 bool writePulledPrimMetadata(const Ufe::Path& ufePulledPath, const MDagPath& editedAsMayaRoot)
 {
@@ -150,6 +157,8 @@ bool writePulledPrimMetadata(PXR_NS::UsdPrim& pulledPrim, const MDagPath& edited
 
 //------------------------------------------------------------------------------
 //
+// Remove from the USD prim the information necessary to merge the USD prim
+// that was edited as Maya.
 
 void removePulledPrimMetadata(const Ufe::Path& ufePulledPath)
 {
@@ -171,9 +180,15 @@ void removePulledPrimMetadata(const PXR_NS::UsdStagePtr& stage, PXR_NS::UsdPrim&
 
 //------------------------------------------------------------------------------
 //
+// Hide the USD prim that is edited as Maya.
+// This is done so that the USD prim and edited Maya data are not superposed
+// in the viewport.
 
 bool addExcludeFromRendering(const Ufe::Path& ufePulledPath)
 {
+    // Note: must make sure the prim is accessible by activating all its ancestors.
+    PrimActivation activation(ufePulledPath);
+
     PXR_NS::UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
     if (!prim.IsValid())
         return false;
@@ -191,12 +206,22 @@ bool addExcludeFromRendering(const Ufe::Path& ufePulledPath)
 
 //------------------------------------------------------------------------------
 //
+// Show again the USD prim that was edited as Maya.
+// This is done once the Maya data is meged into USD and removed from the scene.
 
 bool removeExcludeFromRendering(const Ufe::Path& ufePulledPath)
 {
+    // Note: must make sure the prim is accessible by activating all its ancestors.
+    PrimActivation activation(ufePulledPath);
+
     PXR_NS::UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
     if (!prim.IsValid())
         return false;
+
+    // If already active, nothing to do. This happens in some recursive
+    // notification situations.
+    if (prim.IsActive())
+        return true;
 
     auto stage = prim.GetStage();
     if (!stage)
@@ -214,6 +239,23 @@ bool removeExcludeFromRendering(const Ufe::Path& ufePulledPath)
         sessionLayer->ScheduleRemoveIfInert(primSpec.GetSpec());
 
     return true;
+}
+
+//------------------------------------------------------------------------------
+//
+// Verify if the edited as Maya nodes corresponding to the given prim is orphaned.
+
+bool isEditedAsMayaOrphaned(const PXR_NS::UsdPrim& prim)
+{
+    std::string dagPathStr;
+    return !readPullInformation(prim, dagPathStr);
+}
+
+MAYAUSD_CORE_PUBLIC
+bool isEditedAsMayaOrphaned(const Ufe::Path& editedUsdPrim)
+{
+    MDagPath dagPath;
+    return !readPullInformation(editedUsdPrim, dagPath);
 }
 
 } // namespace MAYAUSD_NS_DEF

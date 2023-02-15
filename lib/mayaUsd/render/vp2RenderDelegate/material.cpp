@@ -85,6 +85,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #if PXR_VERSION >= 2102
 #include <pxr/imaging/hdSt/udimTextureObject.h>
@@ -181,6 +182,10 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (file)
     (opacity)
+    (existence)
+    (transmission)
+    (transparency)
+    (alpha)
     (useSpecularWorkflow)
     (st)
     (varname)
@@ -1043,21 +1048,57 @@ std::string _GenerateXMLString(const HdMaterialNetwork& materialNetwork, bool in
     return result;
 }
 
-//! Return true if the surface shader has its opacity attribute connected to a node which isn't
-//! a USD primvar reader.
+//! Return true if the surface shader needs to be rendered in a transparency pass.
 bool _IsTransparent(const HdMaterialNetwork& network)
 {
+    using OpaqueTestPair = std::pair<TfToken, float>;
+    using OpaqueTestPairList = std::vector<OpaqueTestPair>;
+    const OpaqueTestPairList inputPairList = { { _tokens->opacity, 1.0f },
+                                               { _tokens->existence, 1.0f },
+                                               { _tokens->alpha, 1.0f },
+                                               { _tokens->transmission, 0.0f },
+                                               { _tokens->transparency, 0.0f } };
+
     const HdMaterialNode& surfaceShader = network.nodes.back();
 
-    for (const HdMaterialRelationship& rel : network.relationships) {
-        if (rel.outputName == _tokens->opacity && rel.outputId == surfaceShader.path) {
-            for (const HdMaterialNode& node : network.nodes) {
-                if (node.path == rel.inputId) {
-                    return !_IsUsdPrimvarReader(node);
+    // Check for explicitly set value:
+    for (auto&& inputPair : inputPairList) {
+        auto paramIt = surfaceShader.parameters.find(inputPair.first);
+        if (paramIt != surfaceShader.parameters.end()) {
+            if (paramIt->second.IsHolding<float>()) {
+                if (paramIt->second.Get<float>() != inputPair.second) {
+                    return true;
+                }
+            } else if (paramIt->second.IsHolding<GfVec3f>()) {
+                const GfVec3f& value = paramIt->second.Get<GfVec3f>();
+                if (value != GfVec3f(inputPair.second, inputPair.second, inputPair.second)) {
+                    return true;
+                }
+            } else if (paramIt->second.IsHolding<GfVec3d>()) {
+                const GfVec3d& value = paramIt->second.Get<GfVec3d>();
+                if (value != GfVec3d(inputPair.second, inputPair.second, inputPair.second)) {
+                    return true;
                 }
             }
         }
     }
+
+    // Check for any connection on a parameter affecting transparency. It is quite possible that the
+    // output value of the connected subtree is constant and opaque, but discovery is complex. Let's
+    // assume there is at least one semi-transparent pixel if that parameter is connected.
+    for (const HdMaterialRelationship& rel : network.relationships) {
+        if (rel.outputId == surfaceShader.path) {
+            for (auto&& inputPair : inputPairList) {
+                if (inputPair.first == rel.outputName) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    // Not the most efficient code, but the upgrade to HdMaterialConnection2 should improve things
+    // a lot since we will not have to traverse the whole list of connections, only the ones found
+    // on the surface node.
 
     return false;
 }
@@ -1142,8 +1183,6 @@ MHWRender::MSamplerStateDesc _GetSamplerStateDesc(const HdMaterialNode& node)
                 } else if (token == _mtlxTokens->cubic) {
                     desc.filter = MHWRender::MSamplerState::kAnisotropic;
                     desc.maxAnisotropy = 16;
-                    desc.maxLOD = 1000;
-                    desc.minLOD = -1000;
                 }
             }
         }
@@ -2022,16 +2061,6 @@ void HdVP2Material::CompiledNetwork::Sync(
             // The token is saved and will be used to determine whether a new shader
             // instance is needed during the next sync.
             _surfaceNetworkToken = token;
-
-            // If the surface shader has its opacity attribute connected to a node which
-            // isn't a primvar reader, it is set as transparent. If the opacity attr is
-            // connected to a primvar reader, the Rprim side will determine the transparency
-            // state according to the primvars:displayOpacity data. If the opacity attr
-            // isn't connected, the transparency state will be set in
-            // _UpdateShaderInstance() according to the opacity value.
-            if (shader) {
-                shader->setIsTransparent(_IsTransparent(bxdfNet));
-            }
         }
 
         _UpdateShaderInstance(sceneDelegate, bxdfNet);
@@ -2700,9 +2729,6 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
                 }
             }
         }
-
-        shaderInstance->setIsTransparent(ogsFragment.isTransparent());
-
     } catch (mx::Exception& e) {
         TF_RUNTIME_ERROR(
             "Caught exception '%s' while processing '%s'", e.what(), materialId.GetText());
@@ -2942,6 +2968,11 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
     MProfilingScope profilingScope(
         HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L2, "UpdateShaderInstance");
 
+    const bool matIsTransparent = _IsTransparent(mat);
+    if (matIsTransparent != _surfaceShader->isTransparent()) {
+        _surfaceShader->setIsTransparent(matIsTransparent);
+    }
+
     for (const HdMaterialNode& node : mat.nodes) {
         MString nodeName = "";
 #ifdef WANT_MATERIALX_BUILD
@@ -3014,12 +3045,6 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
                     status = _SetFAParameter(_surfaceShader.get(), node, paramName, val);
                 }
 #endif
-                // The opacity parameter can be found and updated only when it
-                // has no connection. In this case, transparency of the shader
-                // is solely determined by the opacity value.
-                if (status && nodeName.length() == 0 && token == _tokens->opacity) {
-                    _surfaceShader->setIsTransparent(val < 0.999f);
-                }
             } else if (value.IsHolding<GfVec2f>()) {
                 const float* val = value.UncheckedGet<GfVec2f>().data();
                 status = _surfaceShader->setParameter(paramName, val);

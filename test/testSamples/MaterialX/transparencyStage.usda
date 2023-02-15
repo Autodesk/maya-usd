@@ -1,0 +1,201 @@
+#usda 1.0
+(
+    defaultPrim = "pTorus1"
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
+
+def Sphere "Sphere1" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </mtl/UsdPreviewSurface1>
+    double3 xformOp:translate = (-2, 0, -4)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Scope "mtl"
+{
+    def Material "UsdPreviewSurface1"
+    {
+        token outputs:surface.connect = </mtl/UsdPreviewSurface1/UsdPreviewSurface1.outputs:surface>
+
+        def Shader "UsdPreviewSurface1"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            float inputs:opacity = 0.4
+            token outputs:surface
+        }
+    }
+
+    def Material "standard_surface1"
+    {
+        token outputs:mtlx:surface.connect = </mtl/standard_surface1/standard_surface1.outputs:out>
+
+        def Shader "standard_surface1"
+        {
+            uniform token info:id = "ND_standard_surface_surfaceshader"
+            float inputs:transmission = 0.6
+            token outputs:out
+        }
+    }
+
+    def Material "standard_surface2"
+    {
+        token outputs:mtlx:surface.connect = </mtl/standard_surface2/standard_surface1.outputs:out>
+
+        def Shader "standard_surface1"
+        {
+            uniform token info:id = "ND_standard_surface_surfaceshader"
+            color3f inputs:opacity = (0.4, 0.4, 0.4)
+            token outputs:out
+        }
+    }
+
+    def Material "gltf_pbr1"
+    {
+        token outputs:mtlx:surface.connect = </mtl/gltf_pbr1/gltf_pbr1.outputs:out>
+
+        def Shader "gltf_pbr1"
+        {
+            uniform token info:id = "ND_gltf_pbr_surfaceshader"
+            float inputs:metallic = 0
+            float inputs:transmission = 0.6
+            token outputs:out
+        }
+    }
+
+    def Material "gltf_pbr2"
+    {
+        token outputs:mtlx:surface.connect = </mtl/gltf_pbr2/gltf_pbr1.outputs:out>
+
+        def Shader "gltf_pbr1"
+        {
+            uniform token info:id = "ND_gltf_pbr_surfaceshader"
+            float inputs:alpha = 0.4
+            int inputs:alpha_mode = 2
+            token outputs:out
+        }
+    }
+
+    def Material "UsdPreviewSurface2"
+    {
+        token outputs:mtlx:surface.connect = </mtl/UsdPreviewSurface2/UsdPreviewSurface1.outputs:out>
+
+        def Shader "UsdPreviewSurface1"
+        {
+            uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+            float inputs:opacity = 0.6
+            token outputs:out
+        }
+    }
+
+    def Material "lambert1"
+    {
+        token outputs:mtlx:surface.connect = </mtl/lambert1/MayaLambert1.outputs:outColor>
+
+        def Shader "MayaLambert1"
+        {
+            uniform token info:id = "MayaND_lambert_surfaceshader"
+            color3f inputs:transparency = (0.6, 0.6, 0.6)
+            token outputs:outColor
+        }
+    }
+
+    def Material "phong1"
+    {
+        token outputs:mtlx:surface.connect = </mtl/phong1/MayaPhong2.outputs:outColor>
+
+        def Shader "MayaPhong2"
+        {
+            uniform token info:id = "MayaND_phong_surfaceshader"
+            color3f inputs:transparency = (0.6, 0.6, 0.6)
+            token outputs:outColor
+        }
+    }
+
+    def Material "blinn1"
+    {
+        token outputs:mtlx:surface.connect = </mtl/blinn1/MayaBlinn2.outputs:outColor>
+
+        def Shader "MayaBlinn2"
+        {
+            uniform token info:id = "MayaND_blinn_surfaceshader"
+            color3f inputs:transparency = (0.6, 0.6, 0.6)
+            token outputs:outColor
+        }
+    }
+}
+
+def Sphere "Sphere2" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </mtl/standard_surface1>
+    double3 xformOp:translate = (0, 0, -4)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Sphere "Sphere3" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </mtl/standard_surface2>
+    double3 xformOp:translate = (2, 0, -4)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Sphere "Sphere4" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </mtl/gltf_pbr1>
+    double3 xformOp:translate = (-2, 0, -2)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Sphere "Sphere5" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </mtl/gltf_pbr2>
+    double3 xformOp:translate = (0, 0, -2)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Sphere "Sphere6" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </mtl/UsdPreviewSurface2>
+    double3 xformOp:translate = (2, 0, -2)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Sphere "Sphere7" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </mtl/lambert1>
+    double3 xformOp:translate = (-2, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Sphere "Sphere8" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </mtl/phong1>
+    double3 xformOp:translate = (0, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Sphere "Sphere9" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </mtl/blinn1>
+    double3 xformOp:translate = (2, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+

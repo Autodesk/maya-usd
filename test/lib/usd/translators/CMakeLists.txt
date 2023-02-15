@@ -51,6 +51,7 @@ set(TEST_SCRIPT_FILES
     testUsdImportBasisCurves.py
     testUsdImportBatchNurbsCurves.py
     testUsdImportLinearCurves.py
+    testUsdImportHighDegreeNurbsCurves.py
     testUsdImportNurbsCurves.py
     testUsdImportBatchBezierCurves.py
     testUsdImportColorSets.py
@@ -65,6 +66,7 @@ set(TEST_SCRIPT_FILES
     testUsdImportLight.py
     testUsdImportMayaReference.py
     testUsdImportMesh.py
+    testUsdImportPointCache.py
     testUsdImportPreviewSurface.py
     # XXX: This test is disabled by default since it requires the RenderMan for Maya plugin.
     # testUsdImportRfMLight.py

@@ -91,11 +91,11 @@ GfMatrix4d xformInv(
 }
 
 // Class for setMatrixCmd() implementation.
-class UsdSetMatrix4dUndoableCmd : public UsdBaseUndoableCommand<Ufe::SetMatrix4dUndoableCommand>
+class UsdSetMatrix4dUndoableCmd : public UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>
 {
 public:
     UsdSetMatrix4dUndoableCmd(const Ufe::Path& path, const Ufe::Matrix4d& newM)
-        : UsdBaseUndoableCommand<Ufe::SetMatrix4dUndoableCommand>(path)
+        : UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>(path)
         , _newM(newM)
     {
     }
@@ -109,7 +109,7 @@ public:
         return true;
     }
 
-    void executeUndoBlock() override
+    void executeImplementation() override
     {
         // Use editTransform3d() to set a single matrix transform op.
         // transform3d() returns a whole-object interface, which may include
