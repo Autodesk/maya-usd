@@ -33,11 +33,29 @@ import fixturesUtils, os
 
 import unittest
 
+class primUpdaterAdditionalCommand(ufe.UndoableCommand):
+    def __init__(self):
+        self.executeCalled = False
+        self.undoCalled = False
+        self.redoCalled = False
+
+    def execute(self):
+        self.executeCalled = True
+
+    def undo(self):
+        self.undoCalled = True
+
+    def redo(self):
+        self.redoCalled = True
+
+
 class primUpdaterTest(mayaUsdLib.PrimUpdater):
     pushCopySpecsCalled = False
     discardEditsCalled = False
     editAsMayaCalled = False
     pushEndCalled = False
+    gotValidContext = False
+    additionalCmd = None
 
     def __init__(self, *args, **kwargs):
         super(primUpdaterTest, self).__init__(*args, **kwargs)
@@ -48,6 +66,14 @@ class primUpdaterTest(mayaUsdLib.PrimUpdater):
 
     def editAsMaya(self):
         primUpdaterTest.editAsMayaCalled = True
+        context = self.getContext()
+        if context:
+            primUpdaterTest.gotValidContext = True
+            # TODO: UFE does not expose CompositeUndoableCommand to Python yet.
+            # compositeCmd = context.GetAdditionalFinalCommands()
+            # if compositeCmd:
+            #     primUpdaterTest.additionalCmd = primUpdaterAdditionalCommand()
+            #     compositeCmd.append(primUpdaterTest.additionalCmd)
         return super(primUpdaterTest, self).editAsMaya()
 
     def discardEdits(self):
@@ -104,6 +130,12 @@ class testPrimUpdater(unittest.TestCase):
         self.assertTrue(primUpdaterTest.discardEditsCalled)
         self.assertTrue(primUpdaterTest.pushCopySpecsCalled)
         self.assertTrue(primUpdaterTest.pushEndCalled)
+        self.assertTrue(primUpdaterTest.gotValidContext)
+        # TODO: UFE does not expose CompositeUndoableCommand yet.
+        # self.assertIsNotNone(primUpdaterTest.additionalCmd)
+        # self.assertTrue(primUpdaterTest.additionalCmd.executeCalled)
+        # self.assertFalse(primUpdaterTest.additionalCmd.undoCalled)
+        # self.assertFalse(primUpdaterTest.additionalCmd.redoCalled)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

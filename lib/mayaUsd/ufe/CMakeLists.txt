@@ -7,6 +7,7 @@ target_sources(${PROJECT_NAME}
         ProxyShapeHandler.cpp
         ProxyShapeHierarchy.cpp
         ProxyShapeHierarchyHandler.cpp
+        SetVariantSelectionCommand.cpp
         StagesSubject.cpp
         UsdHierarchy.cpp
         UsdHierarchyHandler.cpp
@@ -59,6 +60,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdTransform3dUndoableCommands.cpp
             UsdUIInfoHandler.cpp
             UsdUIUfeObserver.cpp
+            UsdUndoableCommand.cpp
             UsdUndoAddNewPrimCommand.cpp
             UsdUndoCreateGroupCommand.cpp
             UsdUndoInsertChildCommand.cpp
@@ -74,6 +76,7 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
             # See MayaUIInfoHandler.h comments.
+            EditAsMayaCommand.cpp
             MayaUIInfoHandler.cpp
             PulledObjectHierarchy.cpp
             PulledObjectHierarchyHandler.cpp
@@ -209,6 +212,7 @@ set(HEADERS
     ProxyShapeHandler.h
     ProxyShapeHierarchy.h
     ProxyShapeHierarchyHandler.h
+    SetVariantSelectionCommand.h
     StagesSubject.h
     UsdHierarchy.h
     UsdHierarchyHandler.h
@@ -277,6 +281,7 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     list(APPEND HEADERS
         # Not dependent on UFE v3, but used to draw orphaned pulled Maya nodes
         # in the Outliner, which is a UFE v3 feature.
+        EditAsMayaCommand.h
         MayaUIInfoHandler.h
         PulledObjectHierarchy.h
         PulledObjectHierarchyHandler.h

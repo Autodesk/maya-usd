@@ -127,12 +127,12 @@ class CameraTestCase(unittest.TestCase):
         self.assertAlmostEqual(ufeCamera.nearClipPlane(), clippingRange[0])
         self.assertAlmostEqual(ufeCamera.farClipPlane(), clippingRange[1])
 
-        # setting camera values through Ufe is not yet implemented in MayaUSD
-        # ufeCamera.nearClipPlane(10)
-        # ufeCamera.farClipPlane(20)
-        # clippingRange = clippingAttr.Get()
-        # self.assertAlmostEqual(10, clippingRange[0])
-        # self.assertAlmostEqual(20, clippingRange[1])
+        # set the clipping planes using UFE
+        ufeCamera.nearClipPlane(10)
+        ufeCamera.farClipPlane(20)
+        clippingRange = clippingAttr.Get()
+        self.assertAlmostEqual(10, clippingRange[0])
+        self.assertAlmostEqual(20, clippingRange[1])
 
         # set the clipping planes using USD
         clippingAttr.Set(Gf.Vec2f(1, 50))
@@ -149,8 +149,11 @@ class CameraTestCase(unittest.TestCase):
         # the ufeCamera gives us inches
         self.assertAlmostEqual(self.mmToCm * horizontalAperture, self.inchesToCm * ufeCamera.horizontalAperture())
 
-        # setting camera values through Ufe is not yet implemented in MayaUSD
+        # set the horizontal aperture using UFE
+        ufeCamera.horizontalAperture(0.9)
+        self.assertAlmostEqual(0.9, ufeCamera.horizontalAperture())
 
+        # set the horizontal aperture using USD
         usdAttr.Set(0.5)
         self.assertAlmostEqual(self.mmToCm * 0.5, self.inchesToCm * ufeCamera.horizontalAperture())
     
@@ -160,8 +163,11 @@ class CameraTestCase(unittest.TestCase):
 
         self.assertAlmostEqual(self.mmToCm * verticalAperture, self.inchesToCm * ufeCamera.verticalAperture())
 
-        # setting camera values through Ufe is not yet implemented in MayaUSD
+        # set the vertical aperture using UFE
+        ufeCamera.verticalAperture(0.3)
+        self.assertAlmostEqual(0.3, ufeCamera.verticalAperture())
 
+        # set the vertical aperture using UFE
         usdAttr.Set(0.5)
         self.assertAlmostEqual(self.mmToCm * 0.5, self.inchesToCm * ufeCamera.verticalAperture())
 
@@ -171,8 +177,11 @@ class CameraTestCase(unittest.TestCase):
 
         self.assertAlmostEqual(self.mmToCm * horizontalApertureOffset, self.inchesToCm * ufeCamera.horizontalApertureOffset())
 
-        # setting camera values through Ufe is not yet implemented in MayaUSD
+        # set the horizontal aperture offset using UFE
+        ufeCamera.horizontalApertureOffset(0.2)
+        self.assertAlmostEqual(0.2, ufeCamera.horizontalApertureOffset())
 
+        # set the horizontal aperture offset using USD
         usdAttr.Set(0.5)
         self.assertAlmostEqual(self.mmToCm * 0.5, self.inchesToCm * ufeCamera.horizontalApertureOffset())
     
@@ -182,8 +191,11 @@ class CameraTestCase(unittest.TestCase):
 
         self.assertAlmostEqual(self.mmToCm * verticalApertureOffset, self.inchesToCm * ufeCamera.verticalApertureOffset())
 
-        # setting camera values through Ufe is not yet implemented in MayaUSD
+        # set the vertical aperture offset using UFE
+        ufeCamera.verticalApertureOffset(0.1)
+        self.assertAlmostEqual(0.1, ufeCamera.verticalApertureOffset())
 
+        # set the vertical aperture offset using USD
         usdAttr.Set(0.5)
         self.assertAlmostEqual(self.mmToCm * 0.5, self.inchesToCm * ufeCamera.verticalApertureOffset())
     
@@ -194,8 +206,11 @@ class CameraTestCase(unittest.TestCase):
         # precision error here from converting units so use a less precise comparison, 6 digits instead of 7
         self.assertAlmostEqual(fStop, self.mmToCm * ufeCamera.fStop(), 6)
 
-        # setting camera values through Ufe is not yet implemented in MayaUSD
+        # set the f-stop offset using UFE
+        ufeCamera.fStop(8.)
+        self.assertAlmostEqual(8., ufeCamera.fStop())
 
+        # set the f-stop offset using USD
         usdAttr.Set(0.5)
         self.assertAlmostEqual(0.5, self.mmToCm * ufeCamera.fStop(), 6)
 
@@ -205,8 +220,11 @@ class CameraTestCase(unittest.TestCase):
 
         self.assertAlmostEqual(self.mmToCm * focalLength, self.mmToCm * ufeCamera.focalLength())
 
-        # setting camera values through Ufe is not yet implemented in MayaUSD
+        # set the focal length offset using UFE
+        ufeCamera.focalLength(12.)
+        self.assertAlmostEqual(12., ufeCamera.focalLength())
 
+        # set the focal length offset using USD
         usdAttr.Set(0.5)
         self.assertAlmostEqual(self.mmToCm * 0.5, self.mmToCm * ufeCamera.focalLength())
 
@@ -216,8 +234,11 @@ class CameraTestCase(unittest.TestCase):
 
         self.assertAlmostEqual(self.mmToCm * focusDistance, self.mmToCm * ufeCamera.focusDistance())
 
-        # setting camera values through Ufe is not yet implemented in MayaUSD
+        # set the focus distance offset using UFE
+        ufeCamera.focusDistance(9.)
+        self.assertAlmostEqual(9., ufeCamera.focusDistance())
 
+        # set the focus distance offset using USD
         usdAttr.Set(0.5)
         self.assertAlmostEqual(self.mmToCm * 0.5, self.mmToCm * ufeCamera.focusDistance())
 
@@ -227,10 +248,13 @@ class CameraTestCase(unittest.TestCase):
 
         self.assertEqual(ufe.Camera.Perspective, ufeCamera.projection())
 
-        # setting camera values through Ufe is not yet implemented in MayaUSD
-
-        usdAttr.Set("orthographic")
+        # set the projection offset using UFE
+        ufeCamera.projection(ufe.Camera.Orthographic)
         self.assertAlmostEqual(ufe.Camera.Orthographic, ufeCamera.projection())
+
+        # set the projection offset using USD
+        usdAttr.Set("perspective")
+        self.assertAlmostEqual(ufe.Camera.Perspective, ufeCamera.projection())
 
     @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Python API only available in Maya 2023 or greater.')
     def testUsdCamera(self):

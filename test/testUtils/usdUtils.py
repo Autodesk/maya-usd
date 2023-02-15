@@ -153,6 +153,63 @@ def createSimpleXformScene():
             aXlateOp, aXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
             bXlateOp, bXlation, bUsdUfePathStr, bUsdUfePath, bUsdItem)
 
+def createDuoXformSceneInCurrentLayer(psPathStr, ps):
+    '''Create a simple scene in the current stage and layer with a trivial hierarchy:
+
+    A    translation (1, 2, 3)
+    B    translation (7, 8, 9)
+
+    Returns a tuple of:
+        - A translation op, A translation vector
+        - A UFE path string, A UFE path, A UFE item
+        - B translation op, B translation vector
+        - B UFE path string, B UFE path, B UFE item
+    '''
+
+    stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+    aPrim = stage.DefinePrim('/A', 'Xform')
+    aXformable = UsdGeom.Xformable(aPrim)
+    aXlateOp = aXformable.AddTranslateOp()
+    aXlation = Gf.Vec3d(1, 2, 3)
+    aXlateOp.Set(aXlation)
+    aUsdUfePathStr = psPathStr + ',/A'
+    aUsdUfePath = ufe.PathString.path(aUsdUfePathStr)
+    aUsdItem = ufe.Hierarchy.createItem(aUsdUfePath)
+
+    bPrim = stage.DefinePrim('/B', 'Xform')
+    bXformable = UsdGeom.Xformable(bPrim)
+    bXlateOp = bXformable.AddTranslateOp()
+    bXlation = Gf.Vec3d(7, 8, 9)
+    bXlateOp.Set(bXlation)
+    bUsdUfePathStr = psPathStr + ',/B'
+    bUsdUfePath = ufe.PathString.path(bUsdUfePathStr)
+    bUsdItem = ufe.Hierarchy.createItem(bUsdUfePath)
+
+    return (aXlateOp, aXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
+            bXlateOp, bXlation, bUsdUfePathStr, bUsdUfePath, bUsdItem)
+
+def createDuoXformScene():
+    '''Create a simple scene with a trivial hierarchy:
+
+    A    translation (1, 2, 3)
+    B    translation (7, 8, 9)
+
+    Returns a tuple of:
+        - proxy shape UFE item
+        - A translation op, A translation vector
+        - A UFE path string, A UFE path, A UFE item
+        - B translation op, B translation vector
+        - B UFE path string, B UFE path, B UFE item
+
+    Note: the proxy shape path and path string are not returned for compatibility with existing tests.
+    '''
+    (psPathStr, psPath, ps) = createSimpleStage()
+    (aXlateOp, aXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
+     bXlateOp, bXlation, bUsdUfePathStr, bUsdUfePath, bUsdItem) = createDuoXformSceneInCurrentLayer(psPathStr, ps)
+    return (ps,
+            aXlateOp, aXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
+            bXlateOp, bXlation, bUsdUfePathStr, bUsdUfePath, bUsdItem)
+
 def createLayeredStage(layersCount = 3):
     '''Create a stage with multiple layers, by default 3 extra layers:
 

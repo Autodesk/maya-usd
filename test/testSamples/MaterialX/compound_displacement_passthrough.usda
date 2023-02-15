@@ -1,0 +1,17 @@
+#usda 1.0
+
+def Material "Material1" (
+    prepend apiSchemas = ["NodeGraphNodeAPI"]
+)
+{
+    token outputs:displacement
+
+    def NodeGraph "compound" (
+        prepend apiSchemas = ["NodeGraphNodeAPI"]
+    )
+    {
+        token inputs:displacement
+        token outputs:displacement.connect = </Material1/compound.inputs:displacement>
+    }
+}
+

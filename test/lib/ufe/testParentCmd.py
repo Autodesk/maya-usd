@@ -997,43 +997,40 @@ class ParentCmdTestCase(unittest.TestCase):
                 "parentCmd", "simpleSceneUSD_TRS.ma")
             cmds.file(filePath, i=True)
 
-            # Unparent a USD node in each stage.  Unparenting Lambert node is
-            # nonsensical, but demonstrates the functionality.
-            cubePathStr1 = '|mayaUsdProxy1|mayaUsdProxyShape1,/pCylinder1/pCube1'
-            lambertPathStr2 = '|simpleSceneUSD_TRS_mayaUsdProxy1|simpleSceneUSD_TRS_mayaUsdProxyShape1,/initialShadingGroup/initialShadingGroup_lambert'
+            # Unparent a USD node in each stage.
+            stage1ItemPath = '|mayaUsdProxy1|mayaUsdProxyShape1,/pCylinder1/pCube1'
+            stage2ItemPath = '|simpleSceneUSD_TRS_mayaUsdProxy1|simpleSceneUSD_TRS_mayaUsdProxyShape1,/cylinderXform/pCylinder1'
 
-            cylinderItem1 = ufe.Hierarchy.createItem(ufe.PathString.path(
+            stage1ParentItem = ufe.Hierarchy.createItem(ufe.PathString.path(
                 '|mayaUsdProxy1|mayaUsdProxyShape1,/pCylinder1'))
-            shadingGroupItem2 = ufe.Hierarchy.createItem(
-                ufe.PathString.path('|simpleSceneUSD_TRS_mayaUsdProxy1|simpleSceneUSD_TRS_mayaUsdProxyShape1,/initialShadingGroup'))
-            proxyShapeItem1 = ufe.Hierarchy.createItem(ufe.PathString.path(
+            stage2ParentItem = ufe.Hierarchy.createItem(
+                ufe.PathString.path('|simpleSceneUSD_TRS_mayaUsdProxy1|simpleSceneUSD_TRS_mayaUsdProxyShape1,/cylinderXform'))
+            stage1ProxyShapeItem = ufe.Hierarchy.createItem(ufe.PathString.path(
                 '|mayaUsdProxy1|mayaUsdProxyShape1'))
-            proxyShapeItem2 = ufe.Hierarchy.createItem(ufe.PathString.path(
+            stage2ProxyShapeItem = ufe.Hierarchy.createItem(ufe.PathString.path(
                 '|simpleSceneUSD_TRS_mayaUsdProxy1|simpleSceneUSD_TRS_mayaUsdProxyShape1'))
-            cylinder1 = ufe.Hierarchy.hierarchy(cylinderItem1)
-            shadingGroup2 = ufe.Hierarchy.hierarchy(shadingGroupItem2)
-            proxyShape1 = ufe.Hierarchy.hierarchy(proxyShapeItem1)
-            proxyShape2 = ufe.Hierarchy.hierarchy(proxyShapeItem2)
+            stage1ParentHierarchy = ufe.Hierarchy.hierarchy(stage1ParentItem)
+            stage2ParentHierarchy = ufe.Hierarchy.hierarchy(stage2ParentItem)
+            stage1ProxyShapeHierarchy = ufe.Hierarchy.hierarchy(stage1ProxyShapeItem)
+            stage2ProxyShapeHierarchy = ufe.Hierarchy.hierarchy(stage2ProxyShapeItem)
 
             def checkUnparent(done):
-                proxyShape1Children = proxyShape1.children()
-                proxyShape2Children = proxyShape2.children()
-                cylinder1Children = cylinder1.children()
-                shadingGroup2Children = shadingGroup2.children()
+                stage1ProxyShapeChildren = stage1ProxyShapeHierarchy.children()
+                stage2ProxyShapeChildren = stage2ProxyShapeHierarchy.children()
+                stage1ParentChildren = stage1ParentHierarchy.children()
+                stage2ParentChildren = stage2ParentHierarchy.children()
                 self.assertEqual(
-                    'pCube1' in childrenNames(proxyShape1Children), done)
+                    'pCube1' in childrenNames(stage1ProxyShapeChildren), done)
                 self.assertEqual(
-                    'pCube1' in childrenNames(cylinder1Children), not done)
+                    'pCube1' in childrenNames(stage1ParentChildren), not done)
                 self.assertEqual(
-                    'initialShadingGroup_lambert' in childrenNames(proxyShape2Children), done)
+                    'pCylinder1' in childrenNames(stage2ProxyShapeChildren), done)
                 self.assertEqual(
-                    'initialShadingGroup_lambert' in childrenNames(shadingGroup2Children), not done)
+                    'pCylinder1' in childrenNames(stage2ParentChildren), not done)
 
             checkUnparent(done=False)
 
-            # Use relative parenting, else trying to keep absolute world
-            # position of Lambert node fails (of course).
-            cmds.parent(cubePathStr1, lambertPathStr2, w=True, r=True)
+            cmds.parent(stage1ItemPath, stage2ItemPath, w=True)
             checkUnparent(done=True)
 
             cmds.undo()
@@ -1051,6 +1048,157 @@ class ParentCmdTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             cmds.parent("|Tree_usd|Tree_usdShape,/TreeBase/trunk",
                         "|Tree_usd|Tree_usdShape,/TreeBase/leavesXform/leaves")
+
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
+    def testParentShader(self):
+        '''Shaders can only have NodeGraphs and Materials as parent.'''
+        
+        # Create a new scene with an empty stage.
+        cmds.file(new=True, force=True)
+        import mayaUsd_createStageWithNewLayer
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePathStr = '|stage1|stageShape1'
+        stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+
+        # Create a simple hierarchy.
+        scopePrim = stage.DefinePrim('/mtl', 'Scope')
+        scopePathStr = proxyShapePathStr + ",/mtl"
+        self.assertIsNotNone(scopePrim)
+        materialPrim = stage.DefinePrim('/mtl/Material1', 'Material')
+        materialPathStr = scopePathStr + "/Material1"
+        self.assertIsNotNone(materialPrim)
+        nodeGraphPrim = stage.DefinePrim('/mtl/Material1/NodeGraph1', 'NodeGraph')
+        nodeGraphPathStr = materialPathStr + "/NodeGraph1"
+        self.assertIsNotNone(nodeGraphPrim)
+        shaderPrim = stage.DefinePrim('/mtl/Material1/NodeGraph1/Shader1', 'Shader')
+        self.assertIsNotNone(shaderPrim)
+
+        # Get UFE hierarchy objects.
+        materialItem = ufe.Hierarchy.createItem(ufe.PathString.path(materialPathStr))
+        materialHierarchy = ufe.Hierarchy.hierarchy(materialItem)
+        nodeGraphItem = ufe.Hierarchy.createItem(ufe.PathString.path(nodeGraphPathStr))
+        nodeGraphHierarchy = ufe.Hierarchy.hierarchy(nodeGraphItem)
+
+        # Parenting a Shader to a Material is allowed.
+        cmds.parent(nodeGraphPathStr + "/Shader1", materialPathStr)
+        self.assertEqual('Shader1' in childrenNames(materialHierarchy.children()), True)
+        self.assertEqual('Shader1' in childrenNames(nodeGraphHierarchy.children()), False)
+        
+        # Parenting a Shader to a NodeGraph is allowed.
+        cmds.parent(materialPathStr + "/Shader1", nodeGraphPathStr)
+        self.assertEqual('Shader1' in childrenNames(materialHierarchy.children()), False)
+        self.assertEqual('Shader1' in childrenNames(nodeGraphHierarchy.children()), True)
+
+        # Parenting a Shader to a Scope is not allowed.
+        with self.assertRaises(RuntimeError):
+            cmds.parent(nodeGraphPathStr + "/Shader1", scopePathStr)
+
+        # Parenting a Shader to a ProxyShape is not allowed.
+        with self.assertRaises(RuntimeError):
+            cmds.parent(nodeGraphPathStr + "/Shader1", world=True)
+
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
+    def testParentNodeGraph(self):
+        '''NodeGraphs can only have a NodeGraphs and Materials as parent.'''
+        
+        # Create a new scene with an empty stage.
+        cmds.file(new=True, force=True)
+        import mayaUsd_createStageWithNewLayer
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePathStr = '|stage1|stageShape1'
+        stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+
+        # Create a simple hierarchy.
+        scopePrim = stage.DefinePrim('/mtl', 'Scope')
+        scopePathStr = proxyShapePathStr + ",/mtl"
+        self.assertIsNotNone(scopePrim)
+        materialPrim = stage.DefinePrim('/mtl/Material1', 'Material')
+        materialPathStr = scopePathStr + "/Material1"
+        self.assertIsNotNone(materialPrim)
+        nodeGraphPrim = stage.DefinePrim('/mtl/Material1/NodeGraph1', 'NodeGraph')
+        nodeGraphPathStr = materialPathStr + "/NodeGraph1"
+        self.assertIsNotNone(nodeGraphPrim)
+        nodeGraphPrim2 = stage.DefinePrim('/mtl/Material1/NodeGraph1/NodeGraph2', 'NodeGraph')
+        self.assertIsNotNone(nodeGraphPrim2)
+
+        # Get UFE hierarchy objects.
+        materialItem = ufe.Hierarchy.createItem(ufe.PathString.path(materialPathStr))
+        materialHierarchy = ufe.Hierarchy.hierarchy(materialItem)
+        nodeGraphItem = ufe.Hierarchy.createItem(ufe.PathString.path(nodeGraphPathStr))
+        nodeGraphHierarchy = ufe.Hierarchy.hierarchy(nodeGraphItem)
+
+        # Parenting a NodeGraph to a Material is allowed.
+        cmds.parent(nodeGraphPathStr + "/NodeGraph2", materialPathStr)
+        self.assertEqual('NodeGraph2' in childrenNames(materialHierarchy.children()), True)
+        self.assertEqual('NodeGraph2' in childrenNames(nodeGraphHierarchy.children()), False)
+        
+        # Parenting a NodeGraph to a NodeGraph is allowed.
+        cmds.parent(materialPathStr + "/NodeGraph2", nodeGraphPathStr)
+        self.assertEqual('NodeGraph2' in childrenNames(materialHierarchy.children()), False)
+        self.assertEqual('NodeGraph2' in childrenNames(nodeGraphHierarchy.children()), True)
+
+        # Parenting a NodeGraph to a Scope is not allowed.
+        with self.assertRaises(RuntimeError):
+            cmds.parent(nodeGraphPathStr + "/NodeGraph2", scopePathStr)
+
+        # Parenting a NodeGraph to a ProxyShape is not allowed.
+        with self.assertRaises(RuntimeError):
+            cmds.parent(nodeGraphPathStr + "/NodeGraph2", world=True)
+
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
+    def testParentMaterial(self):
+        '''Materials cannot have Shaders, NodeGraphs or Materials as parent.'''
+        
+        # Create a new scene with an empty stage.
+        cmds.file(new=True, force=True)
+        import mayaUsd_createStageWithNewLayer
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePathStr = '|stage1|stageShape1'
+        stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+
+        # Create a simple hierarchy.
+        scopePrim = stage.DefinePrim('/mtl', 'Scope')
+        scopePathStr = proxyShapePathStr + ",/mtl"
+        self.assertIsNotNone(scopePrim)
+        materialPrim = stage.DefinePrim('/mtl/Material1', 'Material')
+        materialPathStr = scopePathStr + "/Material1"
+        self.assertIsNotNone(materialPrim)
+        nodeGraphPrim = stage.DefinePrim('/mtl/Material1/NodeGraph1', 'NodeGraph')
+        nodeGraphPathStr = materialPathStr + "/NodeGraph1"
+        self.assertIsNotNone(nodeGraphPrim)
+        shaderPrim = stage.DefinePrim('/mtl/Material1/NodeGraph1/Shader1', 'Shader')
+        shaderPathStr = nodeGraphPathStr + "/Shader1"
+        self.assertIsNotNone(shaderPrim)
+        materialPrim2 = stage.DefinePrim('/mtl/Material2', 'Material')
+        self.assertIsNotNone(materialPrim2)
+
+        # Get UFE hierarchy objects.
+        scopeItem = ufe.Hierarchy.createItem(ufe.PathString.path(scopePathStr))
+        scopeHierarchy = ufe.Hierarchy.hierarchy(scopeItem)
+        proxyShapeItem = ufe.Hierarchy.createItem(ufe.PathString.path(proxyShapePathStr))
+        proxyShapeHierarchy = ufe.Hierarchy.hierarchy(proxyShapeItem)
+
+        # Parenting a Material to a ProxyShape is allowed.
+        cmds.parent(scopePathStr + "/Material2", world=True)
+        self.assertEqual('Material2' in childrenNames(proxyShapeHierarchy.children()), True)
+        self.assertEqual('Material2' in childrenNames(scopeHierarchy.children()), False)
+
+        # Parenting a Material to a Scope is allowed.
+        cmds.parent(proxyShapePathStr + ",/Material2", scopePathStr)
+        self.assertEqual('Material2' in childrenNames(proxyShapeHierarchy.children()), False)
+        self.assertEqual('Material2' in childrenNames(scopeHierarchy.children()), True)
+
+        # Parenting a Material to a Material is not allowed.
+        with self.assertRaises(RuntimeError):
+            cmds.parent(scopePathStr + "/Material2", materialPathStr)
+        
+        # Parenting a Material to a NodeGraph is not allowed.
+        with self.assertRaises(RuntimeError):
+            cmds.parent(scopePathStr + "/Material2", nodeGraphPathStr)
+
+        # Parenting a Material to a Shader is not allowed.
+        with self.assertRaises(RuntimeError):
+            cmds.parent(scopePathStr + "/Material2", shaderPathStr)
 
     @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
     def testParentHierarchy(self):

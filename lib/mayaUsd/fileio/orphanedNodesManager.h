@@ -140,6 +140,10 @@ public:
     // purposes, to be used as argument to restore().
     Memento remove(const Ufe::Path& pulledPath);
 
+    // Retrieve the variant information of a pulled prim.
+    // Returns an empty info if the prim was not tracked by the orphan manager.
+    const PullVariantInfo& get(const Ufe::Path& pulledPath) const;
+
     // Preserve the trie of pulled prims into a memento.
     Memento preserve() const;
 
@@ -181,6 +185,10 @@ private:
     // UFE pulled path, and the Trie value is the corresponding Dag pull parent
     // and all ancestor variant set selections.
     Ufe::Trie<PullVariantInfo> _pulledPrims;
+
+    // Flag to tell that the orphaned nodes manager is currently orphaning
+    // nodes and should not react to its own actions.
+    int _inOrphaning = 0;
 };
 
 } // namespace MAYAUSD_NS_DEF

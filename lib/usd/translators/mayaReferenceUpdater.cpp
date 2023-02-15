@@ -20,9 +20,11 @@
 #include <mayaUsd/fileio/translators/translatorMayaReference.h>
 #include <mayaUsd/fileio/utils/adaptor.h>
 #include <mayaUsd/fileio/utils/xformStack.h>
+#include <mayaUsd/ufe/SetVariantSelectionCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/editRouter.h>
+#include <mayaUsd/utils/primActivation.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilSerialization.h>
 #include <mayaUsd/utils/variants.h>
@@ -51,10 +53,13 @@ namespace {
 // Clear the auto-edit flag on a USD Maya Reference so that it does not
 // get edited immediately again. Clear in all variants, since each
 // variant has its own copy of the flag.
-void clearAutoEdit(const UsdPrim& prim)
+void clearAutoEdit(const Ufe::Path& pulledPath)
 {
+    MAYAUSD_NS::PrimActivation activation(pulledPath);
+
     // The given prim can be invalid. This happens for example if an
     // ancestor was deactivated.
+    UsdPrim prim = MayaUsd::ufe::ufePathToPrim(pulledPath);
     if (!prim.IsValid())
         return;
 
@@ -268,8 +273,7 @@ bool PxrUsdTranslators_MayaReferenceUpdater::discardEdits()
         Ufe::Path pulledPath;
         if (MAYAUSD_NS_DEF::readPullInformation(dagPath, pulledPath)) {
             // Reset the auto-edit when discarding the edit.
-            UsdPrim prim = MayaUsd::ufe::ufePathToPrim(pulledPath);
-            clearAutoEdit(prim);
+            clearAutoEdit(pulledPath);
         }
     }
 
@@ -290,9 +294,6 @@ bool PxrUsdTranslators_MayaReferenceUpdater::pushEnd()
 
     MayaUsd::LockNodesUndoItem::lock(
         "Maya reference pulled transform unlocking", transformPath, false);
-
-    // Clear the auto-edit flag.
-    clearAutoEdit(getUsdPrim());
 
     return true;
 }

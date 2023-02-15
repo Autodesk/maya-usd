@@ -23,6 +23,8 @@ import unittest
 from maya import cmds
 from maya import standalone
 
+import mayaUsd.lib as mayaUsdLib
+
 from pxr import Usd
 
 import fixturesUtils
@@ -55,22 +57,24 @@ class testUsdExportStripNamespaces(unittest.TestCase):
 
         usdFilePath = os.path.abspath('UsdExportStripNamespaces_EXPORTED.usda')
 
-        errorRegexp = "Multiple dag nodes map to the same prim path" \
-            ".+|cube1 - |foo:cube1.*"
+        errorRegexp = "(Multiple dag nodes map to the same prim path" \
+            ".+|cube1 - |foo:cube1.*)|(Maya command error)"
 
         with self.assertRaisesRegex(RuntimeError, errorRegexp) as cm:
-            cmds.usdExport(mergeTransformAndShape=True,
-                           selection=False,
-                           stripNamespaces=True,
-                           file=usdFilePath,
-                           shadingMode='none')
+            with mayaUsdLib.DiagnosticBatchContext(0) as bc:
+                cmds.usdExport(mergeTransformAndShape=True,
+                            selection=False,
+                            stripNamespaces=True,
+                            file=usdFilePath,
+                            shadingMode='none')
 
         with self.assertRaisesRegex(RuntimeError,errorRegexp) as cm:
-            cmds.usdExport(mergeTransformAndShape=False,
-                           selection=False,
-                           stripNamespaces=True,
-                           file=usdFilePath,
-                           shadingMode='none')
+            with mayaUsdLib.DiagnosticBatchContext(1000) as bc:
+                cmds.usdExport(mergeTransformAndShape=False,
+                            selection=False,
+                            stripNamespaces=True,
+                            file=usdFilePath,
+                            shadingMode='none')
 
     def testExportWithStripAndMerge(self):
         mayaFilePath = os.path.abspath('UsdExportStripNamespaces.ma')

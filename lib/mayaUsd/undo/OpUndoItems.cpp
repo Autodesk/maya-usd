@@ -58,9 +58,9 @@ MString formatCommand(const MString& commandName, const MObject& commandArg)
     return cmd;
 }
 
-bool redoAndAdd(std::unique_ptr<OpUndoItem>&& item, OpUndoItemList& undoInfo)
+bool executeAndAdd(std::unique_ptr<OpUndoItem>&& item, OpUndoItemList& undoInfo)
 {
-    if (!item->redo())
+    if (!item->execute())
         return false;
     undoInfo.addItem(std::move(item));
     return true;
@@ -210,7 +210,7 @@ bool PythonUndoItem::execute(
 {
     auto item = std::make_unique<PythonUndoItem>(
         std::move(name), std::move(pythonDo), std::move(pythonUndo));
-    return redoAndAdd(std::move(item), undoInfo);
+    return executeAndAdd(std::move(item), undoInfo);
 }
 
 bool PythonUndoItem::execute(const std::string name, MString pythonDo, MString pythonUndo)
@@ -275,7 +275,7 @@ bool FunctionUndoItem::execute(
 {
     auto item
         = std::make_unique<FunctionUndoItem>(std::move(name), std::move(redo), std::move(undo));
-    return redoAndAdd(std::move(item), undoInfo);
+    return executeAndAdd(std::move(item), undoInfo);
 }
 
 bool FunctionUndoItem::execute(
@@ -325,7 +325,7 @@ bool SelectionUndoItem::select(
     OpUndoItemList&         undoInfo)
 {
     auto item = std::make_unique<SelectionUndoItem>(std::move(name), selection, selMode);
-    return redoAndAdd(std::move(item), undoInfo);
+    return executeAndAdd(std::move(item), undoInfo);
 }
 
 bool SelectionUndoItem::select(
@@ -369,6 +369,7 @@ bool SelectionUndoItem::redo()
 }
 
 #ifdef WANT_UFE_BUILD
+
 //------------------------------------------------------------------------------
 // UfeSelectionUndoItem
 //------------------------------------------------------------------------------
@@ -387,7 +388,7 @@ bool UfeSelectionUndoItem::select(
     OpUndoItemList&       undoInfo)
 {
     auto item = std::make_unique<UfeSelectionUndoItem>(name, selection);
-    return redoAndAdd(std::move(item), undoInfo);
+    return executeAndAdd(std::move(item), undoInfo);
 }
 
 bool UfeSelectionUndoItem::select(const std::string& name, const Ufe::Selection& selection)
@@ -439,6 +440,72 @@ void UfeSelectionUndoItem::invert()
     globalSn->replaceWith(_selection);
     _selection = std::move(previousSelection);
 }
+
+//------------------------------------------------------------------------------
+// UfeCommandUndoItem
+//------------------------------------------------------------------------------
+
+UfeCommandUndoItem::UfeCommandUndoItem(
+    const std::string&                           name,
+    const std::shared_ptr<Ufe::UndoableCommand>& command)
+    : OpUndoItem(name)
+    , _command(command)
+{
+}
+
+UfeCommandUndoItem::~UfeCommandUndoItem() { }
+
+bool UfeCommandUndoItem::execute(
+    const std::string&                           name,
+    const std::shared_ptr<Ufe::UndoableCommand>& command,
+    OpUndoItemList&                              undoInfo)
+{
+    auto item = std::make_unique<UfeCommandUndoItem>(name, command);
+    return executeAndAdd(std::move(item), undoInfo);
+}
+
+bool UfeCommandUndoItem::execute(
+    const std::string&                           name,
+    const std::shared_ptr<Ufe::UndoableCommand>& command)
+{
+    return execute(name, command, OpUndoItemList::instance());
+}
+
+bool UfeCommandUndoItem::add(
+    const std::string&                           name,
+    const std::shared_ptr<Ufe::UndoableCommand>& command,
+    OpUndoItemList&                              undoInfo)
+{
+    auto item = std::make_unique<UfeCommandUndoItem>(name, command);
+    undoInfo.addItem(std::move(item));
+    return true;
+}
+
+bool UfeCommandUndoItem::add(
+    const std::string&                           name,
+    const std::shared_ptr<Ufe::UndoableCommand>& command)
+{
+    return add(name, command, OpUndoItemList::instance());
+}
+
+bool UfeCommandUndoItem::execute()
+{
+    _command->execute();
+    return true;
+}
+
+bool UfeCommandUndoItem::undo()
+{
+    _command->undo();
+    return true;
+}
+
+bool UfeCommandUndoItem::redo()
+{
+    _command->redo();
+    return true;
+}
+
 #endif
 
 //------------------------------------------------------------------------------
@@ -480,7 +547,7 @@ bool LockNodesUndoItem::lock(
     OpUndoItemList&   undoInfo)
 {
     auto item = std::make_unique<LockNodesUndoItem>(std::move(name), root, dolock);
-    return redoAndAdd(std::move(item), undoInfo);
+    return executeAndAdd(std::move(item), undoInfo);
 }
 
 bool LockNodesUndoItem::lock(const std::string name, const MDagPath& root, bool dolock)

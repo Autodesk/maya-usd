@@ -253,6 +253,22 @@ Currently, for Mesh export (and similarly for NurbsPatch, also),
 the UV set names will be renamed st, st1, st2,... based on ordering of the
 primitive. The original name will be preserved in custom data for roundtripping.
 
+#### Material Scopes
+
+The default material scope when exporting materials is named `mtl`. Users can
+change this default material scope name by setting the environment variable
+named `MAYAUSD_MATERIALS_SCOPE_NAME`.
+
+This environment variable was added in part to support legacy user of mayaUSD:
+in past versions of the plugin, the material scope was named `Looks`. The change
+to the new default `mtl` was done to be aligned with other tools generating USD.
+As such, the environment variable provides the possibility to use the old `Looks`
+name by setting `MAYAUSD_MATERIALS_SCOPE_NAME=Looks`.
+
+Note that if a user sets both `MAYAUSD_MATERIALS_SCOPE_NAME` and the Pixar
+`USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME` environment variable, then the
+Pixar environment variable is used.
+
 
 ### Custom Attributes and Tagging for USD
 
@@ -279,7 +295,7 @@ using the Python "adaptor" helper; see the section on
 | **All DAG nodes (UsdGeomImageable attributes)**: These attributes get converted into attributes of the UsdGeomImageable schema. You can use UsdMaya adaptors to author them. Note that these are only the common imageable attributes; you can export any known schema attribute using UsdMaya adaptors. |
 | `USD_ATTR_purpose`                        | string | `default`, `render`, `proxy`, `guide` | Directly corresponds to UsdGeomImageable's purpose attribute for specifying context-sensitive and selectable scenegraph visibility. This attribute will be populated from an imported USD scene wherever it is explicitly authored, and wherever authored on a Maya dag node, will be exported to USD. |
 | **Mesh nodes (internal for UsdMaya)**: Internal to Maya; cannot be set using adaptors. |
-| `USD_EmitNormals`                         | bool   | true/false      | UsdMaya uses this attribute to determine if mesh normals should be emitted; by default, without the tag, UsdMaya won't export mesh normals to USD. **Note**: Currently Maya reads/writes face varying normals. This is only valid when the mesh's subdivision scheme is `none` (regular poly mesh), and is ignored otherwise. |
+| `USD_EmitNormals`                         | bool   | true/false      | UsdMaya uses this attribute to determine if mesh normals should be emitted; by default, without the tag, UsdMaya will export mesh normals to USD. **Note**: Currently Maya reads/writes face varying normals. This is only valid when the mesh's subdivision scheme is `none` (regular poly mesh), and is ignored otherwise. |
 | **Mesh nodes (UsdGeomMesh attributes)**: These attributes get converted into attributes of the UsdGeomMesh schema. You can use UsdMaya adaptors to author them. Note that these are only the common mesh attributes; you can export any known schema attribute using UsdMaya adaptors. |
 | `USD_ATTR_faceVaryingLinearInterpolation` | string | `none`, `cornersOnly`, `cornersPlus1`, `cornersPlus2`, `boundaries`, `all` | Determines the Face-Varying Interpolation rule. Used for texture mapping/shading purpose. Defaults to `cornersPlus1`. See the [OpenSubdiv documentation](http://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#face-varying-interpolation-rules) for more detail. |
 | `USD_ATTR_interpolateBoundary`            | string | `none`, `edgeAndCorner`, `edgeOnly` | Determines the Boundary Interpolation rule. Valid for Catmull-Clark and Loop subdivision surfaces. Defaults to `edgeAndCorner`. |

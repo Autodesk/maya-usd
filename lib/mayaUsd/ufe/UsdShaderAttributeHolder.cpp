@@ -29,6 +29,8 @@
 #include <pxr/base/vt/value.h>
 #include <pxr/pxr.h>
 
+#include <ufe/log.h>
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -89,6 +91,10 @@ std::string UsdShaderAttributeHolder::defaultValue() const
 
 std::string UsdShaderAttributeHolder::nativeType() const { return _sdrProp->GetType(); }
 
+//! A List of {info:id|property_name} of the properties that lack the default value, to avoid
+//! repeating the warnings on console.
+static std::unordered_set<std::string> s_ListPropertiesWithoutDefaultValue {};
+
 bool UsdShaderAttributeHolder::get(PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time) const
 {
     if (isAuthored()) {
@@ -96,6 +102,23 @@ bool UsdShaderAttributeHolder::get(PXR_NS::VtValue& value, PXR_NS::UsdTimeCode t
     }
     // No prim check is required as we can get the value from the attribute definition
     value = vtValueFromString(usdAttributeType(), defaultValue());
+
+    if (defaultValue().empty()) {
+        PXR_NS::VtValue infoIdVariant;
+        usdPrim().GetAttribute(PXR_NS::TfToken("info:id")).Get(&infoIdVariant);
+        const auto shaderInfoId = infoIdVariant.Get<PXR_NS::TfToken>().GetString();
+        const auto propertyName = _sdrProp->GetName().GetString();
+        const auto listElement = shaderInfoId + "/" + propertyName;
+        const auto warningAlreadySpawn = s_ListPropertiesWithoutDefaultValue.find(listElement)
+            != s_ListPropertiesWithoutDefaultValue.end();
+        if (!warningAlreadySpawn) {
+            s_ListPropertiesWithoutDefaultValue.insert(listElement);
+            const std::string msg = "Warning: Shader property '" + propertyName
+                + "' does not have a default value. (Shader info:id: " + shaderInfoId + ").";
+            UFE_LOG(msg.c_str());
+        }
+    }
+
     return !value.IsEmpty();
 }
 
@@ -131,11 +154,18 @@ std::string UsdShaderAttributeHolder::documentation() const { return _sdrProp->G
 #ifdef UFE_V3_FEATURES_AVAILABLE
 Ufe::Value UsdShaderAttributeHolder::getMetadata(const std::string& key) const
 {
-    Ufe::Value retVal = _Base::getMetadata(key);
+    Ufe::Value retVal;
+    if (key == PXR_NS::MayaUsdMetadata->UIName) {
+        retVal = UsdShaderAttributeDef(_sdrProp).getMetadata(key);
+        if (!retVal.empty()) {
+            return retVal;
+        }
+    }
+    retVal = _Base::getMetadata(key);
     if (retVal.empty()) {
         return UsdShaderAttributeDef(_sdrProp).getMetadata(key);
     }
-    return Ufe::Value();
+    return retVal;
 }
 
 bool UsdShaderAttributeHolder::setMetadata(const std::string& key, const Ufe::Value& value)
