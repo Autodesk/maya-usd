@@ -28,6 +28,7 @@
 #include <mayaUsd/utils/loadRules.h>
 #include <mayaUsd/utils/query.h>
 #include <mayaUsd/utils/stageCache.h>
+#include <mayaUsd/utils/targetLayer.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
@@ -990,6 +991,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         primPath = finalUsdStage->GetPseudoRoot().GetPath();
         copyLoadRulesFromAttribute(*this, *finalUsdStage);
         copyLayerMutingFromAttribute(*this, *finalUsdStage);
+        copyTargetLayerFromAttribute(*this, *finalUsdStage);
         updateShareMode(sharedUsdStage, unsharedUsdStage, loadSet);
     }
 
