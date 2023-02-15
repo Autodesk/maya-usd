@@ -54,6 +54,8 @@ public:
         = std::function<void(const UsdNotice::ObjectsChanged& notice)>;
     using StageLayerMutingChangedCallback
         = std::function<void(const UsdNotice::LayerMutingChanged& notice)>;
+    using StageEditTargetChangedCallback
+        = std::function<void(const UsdNotice::StageEditTargetChanged& notice)>;
 
     /// Sets the callback to be invoked when the listener receives a
     /// StageContentsChanged notice.
@@ -66,9 +68,14 @@ public:
     void SetStageObjectsChangedCallback(const StageObjectsChangedCallback& callback);
 
     /// Sets the callback to be invoked when the listener receives a
-    /// ObjectsChanged notice.
+    /// LayerMutingChanged notice.
     MAYAUSD_CORE_PUBLIC
     void SetStageLayerMutingChangedCallback(const StageLayerMutingChangedCallback& callback);
+
+    /// Sets the callback to be invoked when the listener receives a
+    /// EditTargetChanged notice.
+    MAYAUSD_CORE_PUBLIC
+    void SetStageEditTargetChangedCallback(const StageEditTargetChangedCallback& callback);
 
 private:
     UsdMayaStageNoticeListener(const UsdMayaStageNoticeListener&) = delete;
@@ -86,12 +93,16 @@ private:
     TfNotice::Key                   _stageLayerMutingChangedKey {};
     StageLayerMutingChangedCallback _stageLayerMutingChangedCallback {};
 
+    TfNotice::Key                   _stageEditTargetChangedKey {};
+    StageEditTargetChangedCallback  _stageEditTargetChangedCallback {};
+
     void _UpdateStageContentsChangedRegistration();
     void _OnStageContentsChanged(const UsdNotice::StageContentsChanged& notice) const;
     void _OnStageLayerMutingChanged(const UsdNotice::LayerMutingChanged& notice) const;
     void _OnStageObjectsChanged(
         const UsdNotice::ObjectsChanged& notice,
         const UsdStageWeakPtr&           sender) const;
+    void _OnStageEditTargetChanged(const UsdNotice::StageEditTargetChanged& notice) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

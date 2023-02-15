@@ -1195,6 +1195,11 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
                 return _OnLayerMutingChanged(notice);
             });
 
+        _stageNoticeListener.SetStageEditTargetChangedCallback(
+            [this](const UsdNotice::StageEditTargetChanged& notice) {
+                return _OnStageEditTargetChanged(notice);
+            });
+
         MayaUsdProxyStageSetNotice(*this).Send();
     }
 
@@ -1874,6 +1879,15 @@ void MayaUsdProxyShapeBase::_OnLayerMutingChanged(const UsdNotice::LayerMutingCh
         return;
 
     copyLayerMutingToAttribute(*stage, *this);
+}
+
+void  MayaUsdProxyShapeBase::_OnStageEditTargetChanged(const UsdNotice::StageEditTargetChanged& notice)
+{
+    const auto stage = getUsdStage();
+    if (!stage)
+        return;
+
+    copyTargetLayerToAttribute(*stage, *this);
 }
 
 void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChanged& notice)

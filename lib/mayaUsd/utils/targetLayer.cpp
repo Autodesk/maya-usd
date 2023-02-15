@@ -75,9 +75,9 @@ MStatus copyTargetLayerToAttribute(const PXR_NS::UsdStage& stage, MayaUsdProxySh
     if (!hasDynamicAttribute(depNode, targetLayerAttrName))
         createDynamicAttribute(depNode, targetLayerAttrName);
 
-    MString loadRulesText = convertTargetLayerToText(stage);
+    MString targetLayerText = convertTargetLayerToText(stage);
 
-    MStatus status = setDynamicAttribute(depNode, targetLayerAttrName, loadRulesText);
+    MStatus status = setDynamicAttribute(depNode, targetLayerAttrName, targetLayerText);
 
     return status;
 }
@@ -93,10 +93,10 @@ copyTargetLayerFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_NS::Us
     if (!hasDynamicAttribute(depNode, targetLayerAttrName))
         return MS::kNotFound;
 
-    MString loadRulesText;
-    MStatus status = getDynamicAttribute(depNode, targetLayerAttrName, loadRulesText);
+    MString targetLayerText;
+    MStatus status = getDynamicAttribute(depNode, targetLayerAttrName, targetLayerText);
     if (status == MS::kSuccess)
-        setTargetLayerFromText(stage, loadRulesText);
+        setTargetLayerFromText(stage, targetLayerText);
 
     return status;
 }
