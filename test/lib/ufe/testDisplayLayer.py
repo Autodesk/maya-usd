@@ -389,6 +389,16 @@ class DisplayLayerTestCase(unittest.TestCase):
         self._testLayerFromPath(CUBE2, self.LAYER1)
         self._testLayerFromPath(XFORM2_CUBE1, self.LAYER1)
 
+        # Let's also test duplicating a node that is not the root child: XFORM1_CUBE1.
+        cmds.select(self.XFORM1_CUBE1)
+        cmds.duplicate()
+
+        # Verify that the duplicate object is in the same display layer.
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, **self.kwArgsEditDisplayLayerMembers)
+        XFORM1_CUBE2 = '|stage1|stageShape1,/Xform1/Cube2'
+        self.assertTrue(XFORM1_CUBE2 in layerObjs)
+        self._testLayerFromPath(XFORM1_CUBE2, self.LAYER1)    
+
     def testDisplayLayerClear(self):
         cmdHelp = cmds.help('editDisplayLayerMembers')
         if '-clear' not in cmdHelp:
