@@ -389,7 +389,7 @@ class DisplayLayerTestCase(unittest.TestCase):
         self._testLayerFromPath(CUBE2, self.LAYER1)
         self._testLayerFromPath(XFORM2_CUBE1, self.LAYER1)
 
-        # Now duplicate XFORM1_CUBE1 itself.
+        # Let's also test duplicating a node that is not the root child: XFORM1_CUBE1.
         cmds.select(self.XFORM1_CUBE1)
         cmds.duplicate()
 
