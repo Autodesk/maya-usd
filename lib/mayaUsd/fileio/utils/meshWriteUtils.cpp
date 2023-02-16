@@ -1443,6 +1443,7 @@ MStatus UsdMayaMeshWriteUtils::exportComponentTags(UsdGeomMesh& primSchema, MObj
             }
         }
     }
+    outShp.destructHandle(geomDataHandle);
 
     return status;
 }
