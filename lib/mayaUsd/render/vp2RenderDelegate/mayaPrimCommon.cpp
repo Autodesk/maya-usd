@@ -770,7 +770,7 @@ void MayaUsdRPrim::_SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned i
     _displayLayerModesInstancedFrame = drawScene.GetFrameCounter();
 
     _needForcedBBox = false;
-    _needHideOnPlaybackMod = false;
+    _requiredModFlagsBitset.reset();
     if (drawScene.SupportPerInstanceDisplayLayers(id)) {
         _displayLayerModesInstanced.resize(instanceCount);
         for (unsigned int usdInstanceId = 0; usdInstanceId < instanceCount; usdInstanceId++) {
@@ -782,9 +782,14 @@ void MayaUsdRPrim::_SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned i
                 _needForcedBBox = true;
             }
 
+            int requiredModFlags = 0;
             if (displayLayerModes._hideOnPlayback) {
-                _needHideOnPlaybackMod = true;
+                requiredModFlags |= HdVP2DrawItem::kHideOnPlayback;
             }
+            if (displayLayerModes._displayType != kNormal) {
+                requiredModFlags |= HdVP2DrawItem::kUnselectable;
+            }
+            _requiredModFlagsBitset.set(requiredModFlags);
         }
     } else {
         _displayLayerModesInstanced.clear();
@@ -1011,32 +1016,62 @@ bool MayaUsdRPrim::_GetMaterialPrimvars(
     return true;
 }
 
-bool MayaUsdRPrim::_ShouldSkipInstance(
-    unsigned int   usdInstanceId,
-    const TfToken& reprToken,
-    bool           hideOnPlaybackItem) const
+bool MayaUsdRPrim::_FilterInstanceByDisplayLayer(
+    unsigned int          usdInstanceId,
+    BasicWireframeColors& instanceColor,
+    const TfToken&        reprToken,
+    int                   modFlags,
+    bool                  isHighlightItem,
+    bool                  isDedicatedHighlightItem) const
 {
     if (_displayLayerModesInstanced.size() <= usdInstanceId) {
         return false;
     }
 
+    // Verify display layer visibility
     const auto& displayLayerModes = _displayLayerModesInstanced[usdInstanceId];
     if (!displayLayerModes._visibility) {
         return true;
     }
 
-    if (reprToken == HdVP2ReprTokens->forcedBbox) {
-        if (displayLayerModes._reprOverride != kBBox) {
-            return true;
-        }
-    } else {
-        if (displayLayerModes._reprOverride == kBBox) {
-            return true;
-        }
+    // Match item's bbox mode against instance's bbox mode
+    const bool forcedBboxItem = (reprToken == HdVP2ReprTokens->forcedBbox);
+    const bool overrideBboxInstance = displayLayerModes._reprOverride == kBBox;
+    if (forcedBboxItem != overrideBboxInstance) {
+        return true;
     }
 
+    // Match item's hide-on-playback mode against that of the instance
+    const bool hideOnPlaybackItem = (modFlags & HdVP2DrawItem::kHideOnPlayback);
     if (displayLayerModes._hideOnPlayback != hideOnPlaybackItem) {
         return true;
+    }
+
+    // Match item's 'unselectable' mode against that of the instance
+    const bool unselectableItem = (modFlags & HdVP2DrawItem::kUnselectable);
+    const bool unselectableInstance = displayLayerModes._displayType != kNormal;
+    if (unselectableInstance != unselectableItem) {
+        return true;
+    }
+
+    // Template and reference modes may affect visibility and wireframe color of items
+    if (displayLayerModes._displayType == kTemplate) {
+        if (!isHighlightItem) {
+            return true; // Solid geometry is not drawn in the template mode
+        } else {
+            instanceColor = (instanceColor == kDormant) ? kTemplateDormat : kTemplateActive;
+        }
+    } else if (displayLayerModes._displayType == kReference) {
+        if (instanceColor == kDormant) {
+            if (isDedicatedHighlightItem) {
+                // Hide dedicated highlight items when unselected. Since 'template' and
+                // 'reference' modes share the same mod, we have to keep dedicated highlight
+                //  item generally enabled, and thus we have a special case here
+                return true;
+            } else {
+                instanceColor = kReferenceDormat;
+            }
+        }
     }
 
     return false;
