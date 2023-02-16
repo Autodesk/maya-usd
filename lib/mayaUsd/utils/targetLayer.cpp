@@ -50,7 +50,7 @@ MString convertTargetLayerToText(const PXR_NS::UsdStage& stage)
 
 void setTargetLayerFromText(PXR_NS::UsdStage& stage, const MString& text)
 {
-    if (text.isEmpty())
+    if (text.length() == 0)
         return;
 
     const std::string layerId(text.asChar());
