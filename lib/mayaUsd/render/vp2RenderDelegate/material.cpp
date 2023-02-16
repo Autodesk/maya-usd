@@ -245,6 +245,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (USD_Mtlx_VP2_Material)
     (NG_Maya)
+    (ND_surface)
+    (ND_standard_surface_surfaceshader)
     (image)
     (tiledimage)
     (i_geomprop_)
@@ -1860,6 +1862,16 @@ void ConvertNetworkMapToUntextured(HdMaterialNetworkMap& networkMap)
         auto eraseBegin = std::remove_if(network.nodes.begin(), network.nodes.end(), isInputNode);
         network.nodes.erase(eraseBegin, network.nodes.end());
         network.relationships.clear();
+#ifdef WANT_MATERIALX_BUILD
+        // Raw MaterialX surface constructor node does not render. Replace with default
+        // standard_surface:
+        for (auto& node : network.nodes) {
+            if (node.identifier == _mtlxTokens->ND_surface) {
+                node.identifier = _mtlxTokens->ND_standard_surface_surfaceshader;
+                node.parameters.clear();
+            }
+        }
+#endif
     }
 }
 
