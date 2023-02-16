@@ -1263,13 +1263,19 @@ void HdVP2Mesh::_AddNewRenderItem(
             drawItem->SetUsage(HdVP2DrawItem::kSelectionHighlight);
         }
         // The item is used for wireframe display and selection highlight.
-        else if (reprToken == HdReprTokens->wire) {
+        else if (reprToken == HdReprTokens->wire || reprToken == HdVP2ReprTokens->forcedWire) {
             renderItem = _CreateWireframeRenderItem(
                 renderItemName,
                 kOpaqueBlue,
                 MSelectionMask::kSelectMeshes,
                 MHWRender::MFrameContext::kExcludeMeshes);
             drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
+            if (reprToken == HdVP2ReprTokens->forcedWire) {
+                renderItem->enable(false);
+                constexpr int sDrawModeAllButBBox
+                    = MHWRender::MGeometry::kAll & ~MHWRender::MGeometry::kBoundingBox;
+                renderItem->setDrawMode((MHWRender::MGeometry::DrawMode)sDrawModeAllButBBox);
+            }
         }
         // The item is used for bbox display and selection highlight.
         else if (reprToken == HdVP2ReprTokens->bbox || reprToken == HdVP2ReprTokens->forcedBbox) {
