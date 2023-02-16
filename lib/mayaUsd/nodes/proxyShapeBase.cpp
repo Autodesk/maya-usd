@@ -215,6 +215,21 @@ const int _shapeBaseProfilerCategory = MProfiler::addCategory(
     "ProxyShapeBase"
 #endif
 );
+
+struct InComputeGuard
+{
+    InComputeGuard(MayaUsdProxyShapeBase& proxy)
+        : _proxy(proxy)
+    {
+        _proxy.in_compute++;
+    }
+
+    ~InComputeGuard() { _proxy.in_compute--; }
+
+private:
+    MayaUsdProxyShapeBase& _proxy;
+};
+
 } // namespace
 
 /* static */
@@ -511,6 +526,8 @@ void MayaUsdProxyShapeBase::postConstructor()
 /* virtual */
 MStatus MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
 {
+    InComputeGuard inComputeGuard(*this);
+
     if (plug == outTimeAttr || plug.isDynamic())
         ProxyAccessor::compute(_usdAccessor, plug, dataBlock);
 
@@ -1091,12 +1108,6 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
     MProfilingScope computeOutStageDatacomputeOutStageData(
         _shapeBaseProfilerCategory, MProfiler::kColorE_L3, "Compute outStageData plug");
 
-    struct in_computeGuard
-    {
-        in_computeGuard() { in_compute++; }
-        ~in_computeGuard() { in_compute--; }
-    } in_computeGuard;
-
     MStatus retValue = MS::kSuccess;
 
     const bool isNormalContext = dataBlock.context().isNormal();
@@ -1535,6 +1546,8 @@ MStatus MayaUsdProxyShapeBase::postEvaluation(
     // setGeometryDrawDirty, or no calls to setGeometryDrawDirty.
     // MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
 
+    InComputeGuard inComputeGuard(*this);
+
     if (context.isNormal() && evalType == PostEvaluationEnum::kEvaluatedDirectly) {
         MDataBlock dataBlock = forceCache();
         ProxyAccessor::syncCache(_usdAccessor, thisMObject(), dataBlock);
@@ -1897,6 +1910,11 @@ static void copyTargetLayerOnIdle(void* data)
 void MayaUsdProxyShapeBase::_OnStageEditTargetChanged(
     const UsdNotice::StageEditTargetChanged& notice)
 {
+    if (in_compute) {
+        MGlobal::executeTaskOnIdle(copyTargetLayerOnIdle, this);
+        return;
+    }
+
     const auto stage = notice.GetStage();
     if (!stage)
         return;
@@ -1909,7 +1927,7 @@ void MayaUsdProxyShapeBase::_OnStageEditTargetChanged(
     //
     //       One symptom of creating a compute loop is that the unit test named
     //       'testMayaUsdProxyAccessor' fails because computation did not finish.
-    MGlobal::executeTaskOnIdle(copyTargetLayerOnIdle, this);
+    copyTargetLayerToAttribute(*stage, *this);
 }
 
 void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChanged& notice)
