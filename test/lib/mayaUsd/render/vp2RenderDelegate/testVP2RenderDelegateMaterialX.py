@@ -57,10 +57,10 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         imageUtils.snapshot(snapshotImage, width=w, height=h)
         return self.assertImagesClose(baselineImage, snapshotImage)
 
-    def _StartTest(self, testName):
+    def _StartTest(self, testName, textured=True):
         mayaUtils.loadPlugin("mayaUsdPlugin")
         panel = mayaUtils.activeModelPanel()
-        cmds.modelEditor(panel, edit=True, displayTextures=True)
+        cmds.modelEditor(panel, edit=True, displayTextures=textured)
 
         self._testName = testName
         testFile = testUtils.getTestScene("MaterialX", self._testName + ".usda")
@@ -88,6 +88,8 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
             cmds.modelEditor(panel, edit=True, displayLights="flat")
             self._StartTest('MayaSurfaces_flat')
             cmds.modelEditor(panel, edit=True, displayLights="default")
+
+        self._StartTest('MayaSurfaces_untextured', False)
 
     @unittest.skipIf(os.getenv('MATERIALX_VERSION', '1.38.0') < '1.38.4', 'Test has a glTf PBR surface only found in MaterialX 1.38.4 and later.')
     def testTransparency(self):

@@ -18,6 +18,7 @@
 
 #if PXR_VERSION >= 2211
 
+#include <pxr/imaging/hd/flatteningSceneIndex.h>
 #include <pxr/imaging/hd/retainedDataSource.h>
 #include <pxr/imaging/hd/sceneIndexPlugin.h>
 #include <pxr/imaging/hd/sceneIndexPluginRegistry.h>
@@ -60,7 +61,10 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
 
         auto proxyShape = dynamic_cast<MayaUsdProxyShapeBase*>(dependNodeFn.userNode());
         if (TF_VERIFY(proxyShape, "Error getting MayaUsdProxyShapeBase")) {
-            return MayaUsd::MayaUsdProxyShapeSceneIndex::New(proxyShape);
+            auto psSceneIndex = MayaUsd::MayaUsdProxyShapeSceneIndex::New(proxyShape);
+            // Flatten transforms, visibility, purpose, model, and material
+            // bindings over hierarchies.
+            return HdFlatteningSceneIndex::New(psSceneIndex);
         }
     }
 
