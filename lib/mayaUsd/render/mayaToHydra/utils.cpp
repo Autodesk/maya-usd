@@ -86,7 +86,7 @@ MtohInitializeRenderPlugins()
                 renderer,
                 TfToken(TfStringPrintf("%s%s", MTOH_RENDER_OVERRIDE_PREFIX, renderer.GetText())),
                 TfToken(TfStringPrintf(
-                    "(mayaHydra Experimental) Hydra %s",
+                    "(Technology Preview) Hydra %s",
                     _engine->GetRendererDisplayName(pluginDesc.id).c_str())));
             MtohRenderGlobals::BuildOptionsMenu(store.first.back(), rendererSettingDescriptors);
         }
