@@ -23,6 +23,7 @@
 #include <maya/MFileObject.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnStringData.h>
+#include <maya/MGlobal.h>
 #include <maya/MQtUtil.h>
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
@@ -60,6 +61,17 @@ constexpr auto kPrimCountFlag = "-pc";
 constexpr auto kPrimCountFlagLong = "-primCount";
 constexpr auto kSwitchedVariantCountFlag = "-swc";
 constexpr auto kSwitchedVariantCountFlagLong = "-switchedVariantCount";
+
+constexpr auto kParentWindowFlag = "-pw";
+constexpr auto kParentWindowFlagLong = "-parentWindow";
+
+MString parseTextArg(const MArgDatabase& argData, const char* flag, const MString& defaultValue)
+{
+    MString value = defaultValue;
+    if (argData.isFlagSet(flag))
+        argData.getFlagArgument(flag, 0, value);
+    return value;
+}
 
 } // namespace
 
@@ -206,8 +218,23 @@ MStatus USDImportDialogCmd::doIt(const MArgList& args)
             // toggle the wait cursor to show that it's working.
             QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
-            std::unique_ptr<USDImportDialog> usdImportDialog(new USDImportDialog(
-                assetPath.asChar(), &importData, usdQtUtil, MQtUtil::mainWindow()));
+            QWidget*      parentWindow = MQtUtil::mainWindow();
+            const MString parentWindowName = parseTextArg(MArgDatabase(syntax(), args), kParentWindowFlag, "");
+            if (parentWindowName.length() > 0) {
+                QWidget* potentialParent = MQtUtil::findWindow(parentWindowName);
+                if (potentialParent) {
+                    parentWindow = potentialParent;
+                } else {
+                    MString warning;
+                    warning.format(
+                        "Could not find parent window named ^1s, using Maya main window instead.",
+                        parentWindowName);
+                    MGlobal::displayWarning(warning);
+                }
+            }
+
+            std::unique_ptr<USDImportDialog> usdImportDialog(
+                new USDImportDialog(assetPath.asChar(), &importData, usdQtUtil, parentWindow));
 
             QApplication::restoreOverrideCursor();
 
@@ -244,6 +271,7 @@ MSyntax USDImportDialogCmd::createSyntax()
     syntax.addFlag(kApplyToProxyFlag, kApplyToProxyFlagLong);
     syntax.addFlag(kPrimCountFlag, kPrimCountFlagLong);
     syntax.addFlag(kSwitchedVariantCountFlag, kSwitchedVariantCountFlagLong);
+    syntax.addFlag(kParentWindowFlag, kParentWindowFlagLong, MSyntax::kString);
 
     syntax.setObjectType(MSyntax::kStringObjects, 0, 1);
     return syntax;
