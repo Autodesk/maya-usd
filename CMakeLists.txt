@@ -241,8 +241,7 @@ if (BUILD_ADSK_PLUGIN)
 endif()
 
 if(BUILD_MAYAHYDRALIB)
-    add_subdirectory(lib/mayaUsd/render/mayaToHydra)
-    add_subdirectory(lib/usd/mayaHydraLib)
+    add_subdirectory(lib/mayaHydra)
 endif()
 
 #------------------------------------------------------------------------------

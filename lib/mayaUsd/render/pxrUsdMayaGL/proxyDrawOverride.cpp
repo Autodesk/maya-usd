@@ -45,7 +45,7 @@
 #include <maya/MViewport2Renderer.h>
 
 #if defined(BUILD_MAYAHYDRALIB)
-#include <mayaUsd/render/mayaToHydra/utils.h>
+#include <mayaHydra/plugin/utils.h>
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
