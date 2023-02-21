@@ -339,9 +339,11 @@ HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
 
         // Instanced primitives with instances in display layers use 'forced' representations to
         // draw those specific instances, so the 'forced' representations should be inited alongside
-        if (reprToken != HdVP2ReprTokens->forcedBbox) {
+        if (reprToken != HdVP2ReprTokens->forcedBbox && reprToken != HdVP2ReprTokens->forcedWire) {
             refThis.InitRepr(
                 drawScene.GetUsdImagingDelegate(), HdVP2ReprTokens->forcedBbox, dirtyBits);
+            refThis.InitRepr(
+                drawScene.GetUsdImagingDelegate(), HdVP2ReprTokens->forcedWire, dirtyBits);
         }
     } else {
         // Sync display layer modes for non-instanced prims.
@@ -769,7 +771,7 @@ void MayaUsdRPrim::_SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned i
 
     _displayLayerModesInstancedFrame = drawScene.GetFrameCounter();
 
-    _needForcedBBox = false;
+    _forcedReprFlags = 0;
     _requiredModFlagsBitset.reset();
     if (drawScene.SupportPerInstanceDisplayLayers(id)) {
         _displayLayerModesInstanced.resize(instanceCount);
@@ -779,7 +781,9 @@ void MayaUsdRPrim::_SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned i
             _PopulateDisplayLayerModes(usdPath, displayLayerModes, drawScene);
 
             if (displayLayerModes._reprOverride == kBBox) {
-                _needForcedBBox = true;
+                _forcedReprFlags |= kForcedBBox;
+            } else if (displayLayerModes._reprOverride == kWire) {
+                _forcedReprFlags |= kForcedWire;
             }
 
             int requiredModFlags = 0;
@@ -1041,6 +1045,13 @@ bool MayaUsdRPrim::_FilterInstanceByDisplayLayer(
         return true;
     }
 
+    // Match item's wire mode against instance's wire mode
+    const bool forcedWireItem = (reprToken == HdVP2ReprTokens->forcedWire);
+    const bool overrideWireInstance = displayLayerModes._reprOverride == kWire;
+    if (forcedWireItem != overrideWireInstance) {
+        return true;
+    }
+
     // Match item's hide-on-playback mode against that of the instance
     const bool hideOnPlaybackItem = (modFlags & HdVP2DrawItem::kHideOnPlayback);
     if (displayLayerModes._hideOnPlayback != hideOnPlaybackItem) {
@@ -1107,10 +1118,16 @@ void MayaUsdRPrim::_SyncForcedReprs(
         }
     };
 
-    if (_needForcedBBox) {
+    if (_forcedReprFlags & kForcedBBox) {
         refThis.Sync(delegate, renderParam, dirtyBits, HdVP2ReprTokens->forcedBbox);
     } else {
         _ForEachRenderItemInRepr(_FindRepr(reprs, HdVP2ReprTokens->forcedBbox), hideDrawItem);
+    }
+
+    if (_forcedReprFlags & kForcedWire) {
+        refThis.Sync(delegate, renderParam, dirtyBits, HdVP2ReprTokens->forcedWire);
+    } else {
+        _ForEachRenderItemInRepr(_FindRepr(reprs, HdVP2ReprTokens->forcedWire), hideDrawItem);
     }
 }
 
