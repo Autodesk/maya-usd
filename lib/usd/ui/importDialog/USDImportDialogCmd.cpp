@@ -65,7 +65,7 @@ constexpr auto kSwitchedVariantCountFlagLong = "-switchedVariantCount";
 constexpr auto kParentWindowFlag = "-pw";
 constexpr auto kParentWindowFlagLong = "-parentWindow";
 
-MString parseTextArg(const MArgDatabase& argData, const char* flag, const MString& defaultValue)
+MString parseTextArg(const MArgParser& argData, const char* flag, const MString& defaultValue)
 {
     MString value = defaultValue;
     if (argData.isFlagSet(flag))
@@ -220,7 +220,7 @@ MStatus USDImportDialogCmd::doIt(const MArgList& args)
 
             QWidget*      parentWindow = MQtUtil::mainWindow();
             const MString parentWindowName
-                = parseTextArg(MArgDatabase(syntax(), args), kParentWindowFlag, "");
+                = parseTextArg(argData, kParentWindowFlag, "");
             if (parentWindowName.length() > 0) {
                 QWidget* potentialParent = MQtUtil::findWindow(parentWindowName);
                 if (potentialParent) {
