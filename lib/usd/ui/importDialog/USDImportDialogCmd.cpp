@@ -219,8 +219,7 @@ MStatus USDImportDialogCmd::doIt(const MArgList& args)
             QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
             QWidget*      parentWindow = MQtUtil::mainWindow();
-            const MString parentWindowName
-                = parseTextArg(argData, kParentWindowFlag, "");
+            const MString parentWindowName = parseTextArg(argData, kParentWindowFlag, "");
             if (parentWindowName.length() > 0) {
                 QWidget* potentialParent = MQtUtil::findWindow(parentWindowName);
                 if (potentialParent) {
