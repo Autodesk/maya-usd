@@ -247,8 +247,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (NG_Maya)
     (ND_surface)
     (ND_standard_surface_surfaceshader)
-    (image)
-    (tiledimage)
+    (filename)
     (i_geomprop_)
     (geomprop)
     (uaddressmode)
@@ -920,6 +919,16 @@ void _AddMissingTangents(mx::DocumentPtr& mtlxDoc)
     }
 }
 
+bool _MxHasFilenameInput(const mx::NodeDefPtr nodeDef)
+{
+    for (const auto& input : nodeDef->getActiveInputs()) {
+        if (input->getType() == _mtlxTokens->filename.GetString()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 #endif // WANT_MATERIALX_BUILD
 
 #if PXR_VERSION <= 2211
@@ -959,10 +968,30 @@ bool _IsUsdUVTexture(const HdMaterialNode& node)
     if (_IsMaterialX(node)) {
         mx::NodeDefPtr nodeDef
             = _GetMaterialXData()._mtlxLibrary->getNodeDef(node.identifier.GetString());
-        if (nodeDef
-            && (nodeDef->getNodeString() == _mtlxTokens->image.GetString()
-                || nodeDef->getNodeString() == _mtlxTokens->tiledimage.GetString())) {
-            return true;
+        return nodeDef && _MxHasFilenameInput(nodeDef);
+    }
+#endif
+
+    return false;
+}
+
+bool _IsTextureFilenameAttribute(const HdMaterialNode& node, const TfToken& token)
+{
+
+    if (node.identifier.GetString().rfind(UsdImagingTokens->UsdUVTexture.GetString(), 0) == 0
+        && token == _tokens->file) {
+        return true;
+    }
+
+#ifdef WANT_MATERIALX_BUILD
+    if (_IsMaterialX(node)) {
+        mx::NodeDefPtr nodeDef
+            = _GetMaterialXData()._mtlxLibrary->getNodeDef(node.identifier.GetString());
+        if (nodeDef) {
+            const auto input = nodeDef->getActiveInput(token.GetString());
+            if (input && input->getType() == _mtlxTokens->filename.GetString()) {
+                return true;
+            }
         }
     }
 #endif
@@ -2404,12 +2433,18 @@ TfToken _RequiresColorManagement(
         return {};
     }
 
-    const std::string& upstreamCategory = upstreamDef->getNodeString();
-    if (upstreamCategory != _mtlxTokens->image.GetString()
-        && upstreamCategory != _mtlxTokens->tiledimage.GetString()) {
-        // upstream is not an image
+    if (!_MxHasFilenameInput(upstreamDef)) {
+        // upstream is not a texture
         return {};
     }
+
+    std::vector<TfToken> fileInputs;
+    for (const auto& input : upstreamDef->getActiveInputs()) {
+        if (input->getType() == _mtlxTokens->filename.GetString()) {
+            fileInputs.push_back(TfToken(input->getName()));
+        }
+    }
+
     mx::OutputPtr colorOutput = upstreamDef->getActiveOutput(_mtlxTokens->out.GetString());
     if (!colorOutput) {
         return {};
@@ -2421,17 +2456,22 @@ TfToken _RequiresColorManagement(
         return {};
     }
 
-    auto itFileParam = upstream.parameters.find(_tokens->file);
-    if (itFileParam == upstream.parameters.end()
-        || !itFileParam->second.IsHolding<SdfAssetPath>()) {
-        // No file name to check:
-        return {};
+    SdfAssetPath filenameVal;
+    for (const auto& inputName : fileInputs) {
+        auto itFileParam = upstream.parameters.find(inputName);
+        if (itFileParam != upstream.parameters.end()
+            && itFileParam->second.IsHolding<SdfAssetPath>()) {
+            filenameVal = itFileParam->second.Get<SdfAssetPath>();
+            break;
+        }
     }
 
-    const SdfAssetPath& val = itFileParam->second.Get<SdfAssetPath>();
-    const std::string&  resolvedPath = val.GetResolvedPath();
-    const std::string&  assetPath = val.GetAssetPath();
-    MString             colorRuleCmd;
+    const std::string& resolvedPath = filenameVal.GetResolvedPath();
+    if (resolvedPath.empty()) {
+        return {};
+    }
+    const std::string& assetPath = filenameVal.GetAssetPath();
+    MString            colorRuleCmd;
     colorRuleCmd.format(
         "colorManagementFileRules -evaluate \"^1s\";",
         (!resolvedPath.empty() ? resolvedPath : assetPath).c_str());
@@ -3080,7 +3120,7 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
                 const SdfAssetPath& val = value.UncheckedGet<SdfAssetPath>();
                 const std::string&  resolvedPath = val.GetResolvedPath();
                 const std::string&  assetPath = val.GetAssetPath();
-                if (_IsUsdUVTexture(node) && token == _tokens->file) {
+                if (_IsTextureFilenameAttribute(node, token)) {
                     const HdVP2TextureInfo& info = _owner->_AcquireTexture(
                         sceneDelegate, !resolvedPath.empty() ? resolvedPath : assetPath, node);
 

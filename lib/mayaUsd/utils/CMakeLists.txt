@@ -20,6 +20,7 @@ target_sources(${PROJECT_NAME}
         progressBarScope.cpp
         selectability.cpp
         stageCache.cpp
+        targetLayer.cpp
         traverseLayer.cpp
         undoHelperCommand.cpp
         util.cpp
@@ -54,6 +55,7 @@ set(HEADERS
     progressBarScope.h
     selectability.h
     stageCache.h
+    targetLayer.h
     traverseLayer.h
     undoHelperCommand.h
     util.h

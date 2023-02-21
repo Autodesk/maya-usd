@@ -150,6 +150,21 @@ PXR_NS::UsdTimeCode getTime(const Ufe::Path& path);
 MAYAUSD_CORE_PUBLIC
 PXR_NS::TfTokenVector getProxyShapePurposes(const Ufe::Path& path);
 
+//! Check if the src and dst attributes are connected.
+//! \return True, if they are connected.
+MAYAUSD_CORE_PUBLIC
+bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttribute& dstUsdAttr);
+
+//! Check if a source connection property is allowed to be removed.
+//! \return True, if the property can be removed.
+MAYAUSD_CORE_PUBLIC
+bool canRemoveSrcProperty(const PXR_NS::UsdAttribute& srcAttr);
+
+//! Check if a destination connection property is allowed to be removed.
+//! \return True, if the property can be removed.
+MAYAUSD_CORE_PUBLIC
+bool canRemoveDstProperty(const PXR_NS::UsdAttribute& dstAttr);
+
 #ifdef UFE_V2_FEATURES_AVAILABLE
 MAYAUSD_CORE_PUBLIC
 Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::UsdAttribute& usdAttr);
