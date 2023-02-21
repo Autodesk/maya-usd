@@ -453,19 +453,8 @@ global proc string mayaUsdTranslatorImport_AppendFromDialog(string $currentOptio
 
 global proc mayaUsdTranslatorImport_ViewHierCB(string $parent)
 {
-    string $parentWindow = "";
-    {
-        string $result[];
-        string $windows = `window -parent $parent`;
-        tokenize $windows "|" $result;
-        if (size($result) > 0)
-        {
-            $parentWindow = $result[0];
-        }
-    }
-
     string $usdFile = currentFileDialogSelection(); 
-    string $result = `usdImportDialog -parentWindow $parentWindow $usdFile`;
+    string $result = `usdImportDialog -parentWindow $parent $usdFile`;
     if ("" != $result)
     {
         mayaUsdTranslatorImport_showInfo();

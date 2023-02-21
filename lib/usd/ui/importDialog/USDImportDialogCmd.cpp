@@ -73,6 +73,21 @@ MString parseTextArg(const MArgParser& argData, const char* flag, const MString&
     return value;
 }
 
+QWidget* findParentWindow(const MString& controlName)
+{
+    QWidget* originalWidget = MQtUtil::findControl(controlName);
+    for (QWidget* widget = originalWidget; widget; widget = widget->parentWidget()) {
+        if (widget->isWindow()) {
+            return widget;
+        }
+    }
+    MString warning;
+    warning.format(
+        "Could not find parent window named ^1s, using Maya main window instead.", controlName);
+    MGlobal::displayWarning(warning);
+    return MQtUtil::mainWindow();
+}
+
 } // namespace
 
 /*static*/
@@ -218,20 +233,8 @@ MStatus USDImportDialogCmd::doIt(const MArgList& args)
             // toggle the wait cursor to show that it's working.
             QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
-            QWidget*      parentWindow = MQtUtil::mainWindow();
             const MString parentWindowName = parseTextArg(argData, kParentWindowFlag, "");
-            if (parentWindowName.length() > 0) {
-                QWidget* potentialParent = MQtUtil::findWindow(parentWindowName);
-                if (potentialParent) {
-                    parentWindow = potentialParent;
-                } else {
-                    MString warning;
-                    warning.format(
-                        "Could not find parent window named ^1s, using Maya main window instead.",
-                        parentWindowName);
-                    MGlobal::displayWarning(warning);
-                }
-            }
+            QWidget*      parentWindow = findParentWindow(parentWindowName);
 
             std::unique_ptr<USDImportDialog> usdImportDialog(
                 new USDImportDialog(assetPath.asChar(), &importData, usdQtUtil, parentWindow));
