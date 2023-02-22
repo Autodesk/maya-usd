@@ -453,10 +453,10 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
     // so the user can choose where to save the anonymous layers.
     if (!showConfirmDgl) {
         // Get the layers to save for this stage.
-        MayaUsd::utils::stageLayersToSave stageLayersToSave;
+        MayaUsd::utils::StageLayersToSave StageLayersToSave;
         auto&                             stageEntry = _sessionState->stageEntry();
-        MayaUsd::utils::getLayersToSaveFromProxy(stageEntry._proxyShapePath, stageLayersToSave);
-        showConfirmDgl = !stageLayersToSave._anonLayers.empty();
+        MayaUsd::utils::getLayersToSaveFromProxy(stageEntry._proxyShapePath, StageLayersToSave);
+        showConfirmDgl = !StageLayersToSave._anonLayers.empty();
     }
 
     if (showConfirmDgl) {

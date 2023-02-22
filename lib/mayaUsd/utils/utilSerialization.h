@@ -76,10 +76,19 @@ struct LayerParent
     std::string    _proxyPath;
 };
 
-struct stageLayersToSave
+struct LayerInfo
 {
-    std::vector<std::pair<SdfLayerRefPtr, LayerParent>> _anonLayers;
-    std::vector<SdfLayerRefPtr>                         _dirtyFileBackedLayers;
+    UsdStageRefPtr              stage;
+    SdfLayerRefPtr              layer;
+    MayaUsd::utils::LayerParent parent;
+};
+
+using LayerInfos = std::vector<LayerInfo>;
+
+struct StageLayersToSave
+{
+    LayerInfos                  _anonLayers;
+    std::vector<SdfLayerRefPtr> _dirtyFileBackedLayers;
 };
 
 /*! \brief Save an layer to disk to the given file path and using the given format.
@@ -98,6 +107,7 @@ bool saveLayerWithFormat(
  */
 MAYAUSD_CORE_PUBLIC
 PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
+    PXR_NS::UsdStageRefPtr stage,
     PXR_NS::SdfLayerRefPtr anonLayer,
     LayerParent            parent,
     const std::string&     basename,
@@ -108,6 +118,7 @@ PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
  */
 MAYAUSD_CORE_PUBLIC
 PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
+    PXR_NS::UsdStageRefPtr stage,
     PXR_NS::SdfLayerRefPtr anonLayer,
     const std::string&     path,
     bool                   savePathAsRelative,
@@ -123,7 +134,7 @@ void ensureUSDFileExtension(std::string& filePath);
     layers that will need to be saved.
  */
 MAYAUSD_CORE_PUBLIC
-void getLayersToSaveFromProxy(const std::string& proxyPath, stageLayersToSave& layersInfo);
+void getLayersToSaveFromProxy(const std::string& proxyPath, StageLayersToSave& layersInfo);
 
 } // namespace utils
 } // namespace MAYAUSD_NS_DEF
