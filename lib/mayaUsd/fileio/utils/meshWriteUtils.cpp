@@ -1408,7 +1408,8 @@ MStatus UsdMayaMeshWriteUtils::exportComponentTags(UsdGeomMesh& primSchema, MObj
     MPlug outShp = depNodeFn.findPlug("outMesh", &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
-    MDataHandle geomDataHandle = outShp.asMDataHandle();
+    auto outShpHolder = UsdMayaUtil::GetPlugDataHandle(outShp);
+    MDataHandle geomDataHandle = outShpHolder->GetDataHandle();
     MObject     geomObj = geomDataHandle.data();
     if (geomObj.hasFn(MFn::kGeometryData)) {
         TfToken         componentTagFamilyName("componentTag");
@@ -1443,7 +1444,6 @@ MStatus UsdMayaMeshWriteUtils::exportComponentTags(UsdGeomMesh& primSchema, MObj
             }
         }
     }
-    outShp.destructHandle(geomDataHandle);
 
     return status;
 }
