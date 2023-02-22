@@ -6,6 +6,7 @@ set(TEST_SCRIPT_FILES
     testImportWithNamespace.py
     testJobContextRegistry.py
     testDisplayLayerSaveRestore.py
+    testDisableSparseSamples.py
 
     # Once of the tests in this file requires UsdMaya (from the Pixar plugin). That test
     # will be skipped if not found (probably because BUILD_PXR_PLUGIN is off).

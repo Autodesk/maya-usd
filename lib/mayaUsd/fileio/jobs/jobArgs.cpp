@@ -514,6 +514,8 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     , jobContextNames(extractTokenSet(userArgs, UsdMayaJobExportArgsTokens->jobContext))
     , chaserNames(extractVector<std::string>(userArgs, UsdMayaJobExportArgsTokens->chaser))
     , allChaserArgs(_ChaserArgs(userArgs, UsdMayaJobExportArgsTokens->chaserArgs))
+    , disableSparseSamples(
+          extractBoolean(userArgs, UsdMayaJobExportArgsTokens->disableSparseSamples))
     , remapUVSetsTo(_UVSetRemaps(userArgs, UsdMayaJobExportArgsTokens->remapUVSetsTo))
     , melPerFrameCallback(extractString(userArgs, UsdMayaJobExportArgsTokens->melPerFrameCallback))
     , melPostCallback(extractString(userArgs, UsdMayaJobExportArgsTokens->melPostCallback))
@@ -851,6 +853,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->staticSingleSample] = false;
         d[UsdMayaJobExportArgsTokens->geomSidedness]
             = UsdMayaJobExportArgsTokens->derived.GetString();
+        d[UsdMayaJobExportArgsTokens->disableSparseSamples] = false;
 
         // plugInfo.json site defaults.
         // The defaults dict should be correctly-typed, so enable
@@ -889,6 +892,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->chaser] = _stringVector;
         d[UsdMayaJobExportArgsTokens->chaserArgs] = _stringTripletVector;
         d[UsdMayaJobExportArgsTokens->remapUVSetsTo] = _stringPairVector;
+        d[UsdMayaJobExportArgsTokens->disableSparseSamples] = _boolean;
         d[UsdMayaJobExportArgsTokens->compatibility] = _string;
         d[UsdMayaJobExportArgsTokens->defaultCameras] = _boolean;
         d[UsdMayaJobExportArgsTokens->defaultMeshScheme] = _string;

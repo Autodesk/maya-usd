@@ -107,6 +107,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (staticSingleSample) \
     (geomSidedness)   \
     (worldspace) \
+    (disableSparseSamples) \
     /* Special "none" token */ \
     (none) \
     /* referenceObjectMode values */ \
@@ -230,6 +231,7 @@ struct UsdMayaJobExportArgs
     using ChaserArgs = std::map<std::string, std::string>;
     const std::vector<std::string>          chaserNames;
     const std::map<std::string, ChaserArgs> allChaserArgs;
+    const bool                              disableSparseSamples;
 
     const std::map<std::string, std::string> remapUVSetsTo;
 

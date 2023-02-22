@@ -76,7 +76,10 @@ void UsdMayaTransformWriter::_AnimChannel::setXformOp(
     } else { // float precision
         vtValue = VtValue(GfVec3f(value));
     }
-    valueWriter->SetAttribute(op.GetAttr(), vtValue, usdTime);
+    if (valueWriter)
+        valueWriter->SetAttribute(op.GetAttr(), vtValue, usdTime);
+    else
+        op.GetAttr().Set(vtValue, usdTime);
 }
 
 /* static */
