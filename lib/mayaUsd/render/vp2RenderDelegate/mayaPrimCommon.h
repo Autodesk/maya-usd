@@ -186,6 +186,12 @@ protected:
         kWire = 2
     };
 
+    enum ForcedReprFlags
+    {
+        kForcedBBox = 1 << 0,
+        kForcedWire = 1 << 1
+    };
+
     struct DisplayLayerModes
     {
         //! Requested display layer visibility
@@ -211,6 +217,18 @@ protected:
 
         //! Wireframe color override
         MColor _wireframeColorRGBA;
+    };
+
+    enum BasicWireframeColors : unsigned char
+    {
+        kDormant = 0,
+        kActive = 1,
+        kLead = 2,
+        kTemplateDormat = 3,
+        kTemplateActive = 4,
+        kReferenceDormat = 5,
+
+        kInvalid = 255
     };
 
     static void
@@ -268,10 +286,13 @@ protected:
     void _SyncDisplayLayerModes(SdfPath const& id);
     void _SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned int instanceCount);
 
-    bool _ShouldSkipInstance(
-        unsigned int   usdInstanceId,
-        const TfToken& reprToken,
-        bool           hideOnPlaybackItem) const;
+    bool _FilterInstanceByDisplayLayer(
+        unsigned int          usdInstanceId,
+        BasicWireframeColors& instanceColor,
+        const TfToken&        reprToken,
+        int                   modFlags,
+        bool                  isHighlightItem,
+        bool                  isDedicatedHighlightItem) const;
 
     void _SyncForcedReprs(
         HdRprim&          refThis,
@@ -349,11 +370,11 @@ protected:
     uint64_t                       _displayLayerModesFrame { 0 };
     uint64_t                       _displayLayerModesInstancedFrame { 0 };
 
-    // For instanced primitives, specifies if at least one istance has to be hidden on playback
-    bool _needHideOnPlaybackMod = false;
+    // For instanced primitives, specifies which mods are required
+    std::bitset<HdVP2DrawItem::kModFlagsBitsetSize> _requiredModFlagsBitset;
 
     // forced representations runtime state
-    bool     _needForcedBBox = false;
+    int      _forcedReprFlags { 0 };
     uint64_t _forcedReprsFrame { 0 };
 
     //! HideOnPlayback status of the Rprim

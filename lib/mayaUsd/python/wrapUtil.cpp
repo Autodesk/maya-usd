@@ -55,5 +55,6 @@ void wrapUtil()
                   .def("getDictionaryFromEncodedOptions", getDictionaryFromEncodedOptions)
                   .def(
                       "getPathRelativeToMayaSceneFile",
-                      &UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile);
+                      UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile)
+                  .staticmethod("getPathRelativeToMayaSceneFile");
 }

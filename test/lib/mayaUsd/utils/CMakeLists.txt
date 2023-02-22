@@ -103,6 +103,10 @@ if(IS_WINDOWS)
         testLoadRules.cpp
     )
     add_mayaUsdLibUtils_test(
+        testTargetLayer
+        testTargetLayer.cpp
+    )
+    add_mayaUsdLibUtils_test(
         testSplitString
         testSplitString.cpp
     )
