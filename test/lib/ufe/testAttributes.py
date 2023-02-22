@@ -215,6 +215,7 @@ class AttributesTestCase(unittest.TestCase):
         # 1. Remove an output compound attribute.
 
         # 1.1 Remove an output compound attribute connected to prim and child prim.
+
         cmd = compound1Attrs.removeAttributeCmd("outputs:baseColor")
         self.assertIsNotNone(cmd)
 
@@ -241,7 +242,16 @@ class AttributesTestCase(unittest.TestCase):
         conns = connections.allConnections()
         self.assertEqual(len(conns), 1)
 
+        # Test we removed the properties.
+        mayaSwizzlePrim = usdUtils.getPrimFromSceneItem(ufeItemMayaSwizzle)
+        self.assertIsNotNone(mayaSwizzlePrim)
+        self.assertFalse(mayaSwizzlePrim.HasProperty('outputs:out'))
+        standardSurface2Prim = usdUtils.getPrimFromSceneItem(ufeItemStandardSurface2)
+        self.assertIsNotNone(standardSurface2Prim)
+        self.assertFalse(standardSurface2Prim.HasProperty('inputs:base_color'))
+
         # 1.2 Remove an output compound attribute connected to parent prim.
+
         cmd = compound2Attrs.removeAttributeCmd("outputs:out")
         self.assertIsNotNone(cmd)
 
@@ -253,13 +263,26 @@ class AttributesTestCase(unittest.TestCase):
         ufeItemParent = ufeUtils.createUfeSceneItem(shapeNode,
             "/pCube2/Looks/standardSurface2SG")
         self.assertIsNotNone(ufeItemParent)
+        ufeItemSurface = ufeUtils.createUfeSceneItem(shapeNode,
+            "/pCube2/Looks/standardSurface2SG/NodeGraph1/surface1")
+        self.assertIsNotNone(ufeItemSurface)
 
         connections = connectionHandler.sourceConnections(ufeItemParent)
         conns = connections.allConnections()
         self.assertEqual(len(conns), 1)
 
+        # Test we removed the properties.
+        surfacePrim = usdUtils.getPrimFromSceneItem(ufeItemSurface)
+        self.assertIsNotNone(surfacePrim)
+        self.assertFalse(surfacePrim.HasProperty('outputs:out'))
+        parentPrim = usdUtils.getPrimFromSceneItem(ufeItemParent)
+        self.assertIsNotNone(parentPrim)
+        self.assertTrue(parentPrim.HasProperty('outputs:out'))
+
         # 2. Remove an input compound attribute.
+
         # 2.1 Remove an input compound attribute connected to parent and child prim.
+
         cmd = compound1Attrs.removeAttributeCmd("inputs:file2:varnameStr")
         self.assertIsNotNone(cmd)
 
@@ -268,7 +291,6 @@ class AttributesTestCase(unittest.TestCase):
         self.assertNotIn("inputs:file2:varnameStr", compound1Attrs.attributeNames)
 
         # Test we removed the connection.
-
         ufeItemTexture = ufeUtils.createUfeSceneItem(shapeNode,
             "/pCube2/Looks/standardSurface2SG/MayaNG_standardSurface2SG/place2dTexture2")
         self.assertIsNotNone(ufeItemTexture)
@@ -280,6 +302,12 @@ class AttributesTestCase(unittest.TestCase):
         connections = connectionHandler.sourceConnections(ufeItemParent)
         conns = connections.allConnections()
         self.assertEqual(len(conns), 1)
+
+        # Test we removed the properties.
+        texturePrim = usdUtils.getPrimFromSceneItem(ufeItemTexture)
+        self.assertIsNotNone(texturePrim)
+        self.assertFalse(texturePrim.HasProperty('inputs:geomprop'))
+        self.assertTrue(parentPrim.HasProperty('inputs:file2:varnameStr'))
 
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test for UFE preview version 0.4.24 and later')
     def testUniqueNameAttribute(self):
