@@ -24,10 +24,11 @@
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
+#include <mayaUsd/utils/util.h>
+
 #include <maya/MFnDisplayLayer.h>
 #include <maya/MFnDisplayLayerManager.h>
 #include <maya/MObjectArray.h>
-#include <mayaUsd/utils/util.h>
 #endif
 #include <maya/M3dView.h>
 #include <maya/MProfiler.h>
@@ -698,7 +699,7 @@ void MayaUsdRPrim::_ProcessDisplayLayerModes(
     }
 
     if (useRGBColors.asBool()) {
-        auto colorRGBHolder = UsdMayaUtil::GetPlugDataHandle(colorRGB);
+        auto          colorRGBHolder = UsdMayaUtil::GetPlugDataHandle(colorRGB);
         const float3& rgbColor = colorRGBHolder->GetDataHandle().asFloat3();
         displayLayerModes._wireframeColorIndex = -1;
         displayLayerModes._wireframeColorRGBA
