@@ -176,7 +176,8 @@ void convertAnonymousLayersRecursive(
             convertAnonymousLayersRecursive(subL, basename, stage);
 
             if (subL->IsAnonymous()) {
-                auto newLayer = MayaUsd::utils::saveAnonymousLayer(subL, parentPtr, basename);
+                auto newLayer
+                    = MayaUsd::utils::saveAnonymousLayer(stage, subL, parentPtr, basename);
                 if (subL == currentTarget) {
                     stage->SetEditTarget(newLayer);
                 }
