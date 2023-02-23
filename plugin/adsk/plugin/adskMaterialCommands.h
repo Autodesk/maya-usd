@@ -45,7 +45,7 @@ struct MxShaderMenuEntry
 typedef std::vector<MxShaderMenuEntry> MxShaderMenuEntryVec;
 
 //! \brief Fills the currently active menu with submenus listing available materials from different
-//! renderers. 
+//! renderers.
 //! \todo: The list of materials and renderers is currently hard-coded. We need to make
 //! it dynamic so that third-party renderers can hook in to provide their own materials.
 class MAYAUSD_CORE_PUBLIC ADSKMayaUSDGetMaterialsForRenderersCommand : public MPxCommand
@@ -57,14 +57,11 @@ public:
     static MSyntax    createSyntax();
 
     MStatus doIt(const MArgList& argList) override;
-    bool isUndoable() const override
-    {
-        return false;
-    }
+    bool    isUndoable() const override { return false; }
 
 private:
     MStatus parseArgs(const MArgList& argList);
-    
+
     void appendMaterialXMaterials() const;
     void appendArnoldMaterials() const;
     void appendUsdMaterials() const;
@@ -84,10 +81,7 @@ public:
     static MSyntax    createSyntax();
 
     MStatus doIt(const MArgList& argList) override;
-    bool isUndoable() const override
-    {
-        return false;
-    }
+    bool    isUndoable() const override { return false; }
 
 private:
     MStatus parseArgs(const MArgList& argList);

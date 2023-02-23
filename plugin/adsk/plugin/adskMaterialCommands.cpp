@@ -37,7 +37,8 @@ namespace MAYAUSD_NS_DEF {
 // ADSKMayaUSDGetMaterialsForRenderersCommand
 */
 
-const char ADSKMayaUSDGetMaterialsForRenderersCommand::commandName[] = "mayaUsdGetMaterialsFromRenderers";
+const char ADSKMayaUSDGetMaterialsForRenderersCommand::commandName[]
+    = "mayaUsdGetMaterialsFromRenderers";
 
 // plug-in callback to create the command object
 void* ADSKMayaUSDGetMaterialsForRenderersCommand::creator()
@@ -46,7 +47,10 @@ void* ADSKMayaUSDGetMaterialsForRenderersCommand::creator()
 }
 
 // private argument parsing helper
-MStatus ADSKMayaUSDGetMaterialsForRenderersCommand::parseArgs(const MArgList& argList) { return MS::kSuccess; }
+MStatus ADSKMayaUSDGetMaterialsForRenderersCommand::parseArgs(const MArgList& argList)
+{
+    return MS::kSuccess;
+}
 
 void ADSKMayaUSDGetMaterialsForRenderersCommand::appendMaterialXMaterials() const
 {
@@ -69,9 +73,9 @@ void ADSKMayaUSDGetMaterialsForRenderersCommand::appendMaterialXMaterials() cons
 
 void ADSKMayaUSDGetMaterialsForRenderersCommand::appendArnoldMaterials() const
 {
-    auto& sdrRegistry = PXR_NS::SdrRegistry::GetInstance();
-    const auto  sourceTypes = sdrRegistry.GetAllNodeSourceTypes();
-    const bool  hasArnoldMaterials
+    auto&      sdrRegistry = PXR_NS::SdrRegistry::GetInstance();
+    const auto sourceTypes = sdrRegistry.GetAllNodeSourceTypes();
+    const bool hasArnoldMaterials
         = std::find(sourceTypes.cbegin(), sourceTypes.cend(), TfToken("arnold"))
         != sourceTypes.cend();
 
@@ -96,7 +100,7 @@ MStatus ADSKMayaUSDGetMaterialsForRenderersCommand::doIt(const MArgList& argList
 {
     clearResult();
 
-    MStatus      status;
+    MStatus status;
     if (!status)
         return status;
 
@@ -131,7 +135,10 @@ void* ADSKMayaUSDGetMaterialsInStageCommand::creator()
 }
 
 // private argument parsing helper
-MStatus ADSKMayaUSDGetMaterialsInStageCommand::parseArgs(const MArgList& argList) { return MS::kSuccess; }
+MStatus ADSKMayaUSDGetMaterialsInStageCommand::parseArgs(const MArgList& argList)
+{
+    return MS::kSuccess;
+}
 
 // main MPxCommand execution point
 MStatus ADSKMayaUSDGetMaterialsInStageCommand::doIt(const MArgList& argList)
@@ -146,8 +153,8 @@ MStatus ADSKMayaUSDGetMaterialsInStageCommand::doIt(const MArgList& argList)
     MString ufePathString;
     args.getFlagArgument(kSceneItem, 0, ufePathString);
     if (ufePathString.isEmpty()) {
-         MGlobal::displayError("Missing argument 'sceneItem'.");
-         return MS::kFailure;
+        MGlobal::displayError("Missing argument 'sceneItem'.");
+        return MS::kFailure;
     }
 
     const auto  ufePath = Ufe::PathString::path(ufePathString.asChar());
@@ -159,7 +166,7 @@ MStatus ADSKMayaUSDGetMaterialsInStageCommand::doIt(const MArgList& argList)
             }
         }
     }
-    
+
     return MS::kSuccess;
 }
 
