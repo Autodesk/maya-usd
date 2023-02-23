@@ -119,7 +119,7 @@ void UsdUndoDuplicateCommand::execute()
             result,
             "Failed to copy the USD prim at '%s' in layer '%s' to '%s'",
             path.GetText(),
-            layer->GetDisplayName(),
+            layer->GetDisplayName().c_str(),
             _usdDstPath.GetText());
 
         isFirst = false;
