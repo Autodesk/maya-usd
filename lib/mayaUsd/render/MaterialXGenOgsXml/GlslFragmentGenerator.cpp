@@ -385,8 +385,55 @@ ShaderPtr GlslFragmentGenerator::generate(
                 true);
         }
 
-        // Add all function calls
+        // Add all function calls (varies greatly by MaterialX version)
+#if MX_COMBINED_VERSION >= 13805
+        // Surface shaders need special handling.
+        if (graph.hasClassification(
+                ShaderNode::Classification::SHADER | ShaderNode::Classification::SURFACE)) {
+            // Emit all texturing nodes. These are inputs to any
+            // closure/shader nodes and need to be emitted first.
+            emitFunctionCalls(graph, context, pixelStage, ShaderNode::Classification::TEXTURE);
+
+            // Emit function calls for "root" closure/shader nodes.
+            // These will internally emit function calls for any dependent closure nodes upstream.
+            for (ShaderGraphOutputSocket* socket : graph.getOutputSockets()) {
+                if (socket->getConnection()) {
+                    const ShaderNode* upstream = socket->getConnection()->getNode();
+                    if (upstream->getParent() == &graph
+                        && (upstream->hasClassification(ShaderNode::Classification::CLOSURE)
+                            || upstream->hasClassification(ShaderNode::Classification::SHADER))) {
+                        emitFunctionCall(*upstream, context, pixelStage);
+                    }
+                }
+            }
+        } else {
+            // No surface shader graph so just generate all
+            // function calls in order.
+            emitFunctionCalls(graph, context, pixelStage);
+        }
+#elif MX_COMBINED_VERSION >= 13803
+        // Surface shaders need special handling.
+        if (graph.hasClassification(
+                ShaderNode::Classification::SHADER | ShaderNode::Classification::SURFACE)) {
+            // Emit all texturing nodes. These are inputs to any
+            // closure/shader nodes and need to be emitted first.
+            emitFunctionCalls(graph, context, pixelStage, ShaderNode::Classification::TEXTURE);
+
+            // Emit function calls for all surface shader nodes.
+            // These will internally emit their closure function calls.
+            emitFunctionCalls(
+                graph,
+                context,
+                pixelStage,
+                ShaderNode::Classification::SHADER | ShaderNode::Classification::SURFACE);
+        } else {
+            // No surface shader graph so just generate all
+            // function calls in order.
+            emitFunctionCalls(graph, context, pixelStage);
+        }
+#else
         emitFunctionCalls(graph, context, pixelStage);
+#endif
 
         // Emit final result
         //

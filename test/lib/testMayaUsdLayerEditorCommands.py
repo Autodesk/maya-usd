@@ -18,6 +18,7 @@
 
 import unittest
 import tempfile
+import testUtils
 from os import path
 from maya import cmds, mel
 import mayaUsd_createStageWithNewLayer
@@ -557,3 +558,22 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         testMuteLayerImpl(addAnonymousLayer)
         testMuteLayerImpl(addFileBakedLayer)
         testMuteLayerImpl(addFileBakedLayerByPath)
+
+    def testPathRelativeToMayaSceneFile(self):
+        # Function mayaUsdLib.Util.getPathRelativeToMayaSceneFile is used during 
+        # USD root layer saving/loading, and since we cannot test the full workflow
+        # as it opens a file dialog and requires user input, we make sure to test 
+        # the function itself here.
+        
+        ballFilePath = path.normpath(testUtils.getTestScene('ballset', 'StandaloneScene', 'top_layer.usda')).replace('\\', '/')
+
+        # Without Maya scene file, the absolute path is returned
+        cmds.file(newFile=True, force=True)
+        filePathAbs = mayaUsd.lib.Util.getPathRelativeToMayaSceneFile(ballFilePath)
+        self.assertEqual(filePathAbs, ballFilePath)
+
+        # With Maya scene file, the relative path is returned
+        mayaSceneFilePath = testUtils.getTestScene("ballset", "StandaloneScene", "top_layer.ma")
+        cmds.file(mayaSceneFilePath, force=True, open=True)
+        filePathRel = mayaUsd.lib.Util.getPathRelativeToMayaSceneFile(ballFilePath)
+        self.assertEqual(filePathRel, 'top_layer.usda')
