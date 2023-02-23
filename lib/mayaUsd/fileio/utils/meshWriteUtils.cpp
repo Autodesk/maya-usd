@@ -1409,8 +1409,7 @@ MStatus UsdMayaMeshWriteUtils::exportComponentTags(UsdGeomMesh& primSchema, MObj
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     auto        outShpHolder = UsdMayaUtil::GetPlugDataHandle(outShp);
-    MDataHandle geomDataHandle = outShpHolder->GetDataHandle();
-    MObject     geomObj = geomDataHandle.data();
+    MObject     geomObj = outShpHolder->GetDataHandle().data();
     if (geomObj.hasFn(MFn::kGeometryData)) {
         TfToken         componentTagFamilyName("componentTag");
         MFnGeometryData fnGeomData(geomObj);
