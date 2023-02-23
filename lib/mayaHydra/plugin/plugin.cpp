@@ -45,8 +45,12 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using MtohRenderOverridePtr = std::unique_ptr<MtohRenderOverride>;
-static std::vector<MtohRenderOverridePtr> gsRenderOverrides;
+// Don't use smart pointers in the static vector: when Maya is doing its
+// default "quick exit" that does not uninitialize plugins, the atexit
+// destruction of the overrides in the vector will crash on destruction,
+// because Hydra has already destroyed structures these rely on.  Simply leak
+// the render overrides in this case.
+static std::vector<MtohRenderOverride*> gsRenderOverrides;
 
 #if defined(MAYAUSD_VERSION)
 #define STRINGIFY(x)   #x
@@ -97,12 +101,11 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj)
 
     if (auto* renderer = MHWRender::MRenderer::theRenderer()) {
         for (const auto& desc : MtohGetRendererDescriptions()) {
-            MtohRenderOverridePtr mtohRenderer(new MtohRenderOverride(desc));
-            MStatus               status = renderer->registerOverride(mtohRenderer.get());
+            auto mtohRenderer = std::make_unique<MtohRenderOverride>(desc);
+            MStatus    status = renderer->registerOverride(mtohRenderer.get());
             if (status == MS::kSuccess) {
-                gsRenderOverrides.push_back(std::move(mtohRenderer));
-            } else
-                mtohRenderer = nullptr;
+                gsRenderOverrides.push_back(mtohRenderer.release());
+            }
         }
     }
 
@@ -115,14 +118,11 @@ PLUGIN_EXPORT MStatus uninitializePlugin(MObject obj)
     MStatus   ret = MS::kSuccess;
     if (auto* renderer = MHWRender::MRenderer::theRenderer()) {
         for (unsigned int i = 0; i < gsRenderOverrides.size(); i++) {
-            renderer->deregisterOverride(gsRenderOverrides[i].get());
-            gsRenderOverrides[i] = nullptr;
+            renderer->deregisterOverride(gsRenderOverrides[i]);
+            delete gsRenderOverrides[i];
         }
     }
 
-    // Note: when Maya is doing its default "quick exit" that does not uninitialize plugins,
-    //       these overrides crash on destruction because Hydra ha already destroyed things
-    //       these rely on. There is not much we can do about it...
     gsRenderOverrides.clear();
 
     // Clear any registered callbacks
