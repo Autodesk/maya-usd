@@ -189,7 +189,8 @@ protected:
     enum ForcedReprFlags
     {
         kForcedBBox = 1 << 0,
-        kForcedWire = 1 << 1
+        kForcedWire = 1 << 1,
+        kForcedUntextured = 1 << 2
     };
 
     struct DisplayLayerModes
