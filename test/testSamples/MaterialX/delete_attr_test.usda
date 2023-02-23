@@ -61,7 +61,7 @@ def Scope "mtl"
         )
         {
             uniform token info:id = "ND_image_color3"
-            asset inputs:file = @C:/ws/MayaUSD/ecg-maya-usd/maya-usd/test/testSamples/MaterialX/textures/RGB.png@
+            asset inputs:file = @textures/RGB.png@
             string inputs:filtertype = "closest"
             float2 inputs:texcoord.connect = </mtl/standard_surface1/place2d1.outputs:out>
             color3f outputs:out
@@ -94,7 +94,7 @@ def Scope "mtl"
         )
         {
             uniform token info:id = "ND_image_color3"
-            asset inputs:file = @C:/ws/MayaUSD/ecg-maya-usd/maya-usd/test/testSamples/MaterialX/textures/Mono.png@
+            asset inputs:file = @textures/Mono.png@
             string inputs:filtertype = "closest"
             float2 inputs:texcoord.connect = </mtl/standard_surface1/place2d2.outputs:out>
             color3f outputs:out
