@@ -361,6 +361,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertTrue(stage.GetPrimAtPath('/TreeBase/trunk'))
         self.assertTrue(stage.GetPrimAtPath('/TreeBase/newChild'))
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test requires delete prim, its connections and connected properties feature only available on Ufe 0.4.24 and later')
     def testDeleteAndRemoveConnections(self):
         '''Test deleting a prim and its connections'''
         
