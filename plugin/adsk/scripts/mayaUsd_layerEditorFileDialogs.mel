@@ -90,8 +90,10 @@ global proc string UsdLayerEditor_SaveLayerFileDialog(int $isRootLayer)
     }
 }
 
-global proc string UsdLayerEditor_LoadLayersFileDialogOptions_Create(string $parent)
+global proc UsdLayerEditor_LoadLayersFileDialogOptions_UICreate(string $parent)
 {
+    // First create the scroll layout here and then call the python
+    // helper to add the rest of the UI.
     setParent $parent;
 
     string $layout = `scrollLayout -childResizable true`;
@@ -99,7 +101,19 @@ global proc string UsdLayerEditor_LoadLayersFileDialogOptions_Create(string $par
     frameLayout -collapsable false -labelVisible false -marginHeight 20 -marginWidth 20;
 
     text -label `getMayaUsdString("kTipYouCanChooseMultipleFiles")` -align "left";
-    return $layout;
+
+    string $layout = `scrollLayout -childResizable true`;
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdSubLayerFileRelative.uiCreate('" + $layout + "')");
+}
+
+global proc UsdLayerEditor_LoadLayersFileDialogOptions_UIInit(string $parent, string $filterType)
+{
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdSubLayerFileRelative.uiInit('" + $parent + "', '" + $filterType + "')");
+}
+
+global proc UsdLayerEditor_LoadLayersFileDialogOptions_UICommit(string $parent, string $selectedFile)
+{
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdSubLayerFileRelative.uiCommit('" + $parent + "', '" + $selectedFile + "')");
 }
 
 global proc string[] UsdLayerEditor_LoadLayersFileDialog(string $title, string $folder)
@@ -112,7 +126,9 @@ global proc string[] UsdLayerEditor_LoadLayersFileDialog(string $title, string $
             -fileMode 4
             -okCaption $okCaption
             -fileFilter $fileFilter
-            -optionsUICreate "UsdLayerEditor_LoadLayersFileDialogOptions_Create"
+            -optionsUICreate "UsdLayerEditor_LoadLayersFileDialogOptions_UICreate"
+            -optionsUIInit "UsdLayerEditor_LoadLayersFileDialogOptions_UIInit"
+            -optionsUICommit2 "UsdLayerEditor_LoadLayersFileDialogOptions_UICommit"
             -startingDirectory $folder
             `;
 
