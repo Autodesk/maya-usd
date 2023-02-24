@@ -28,6 +28,32 @@ namespace MayaUsdUtils {
 MAYA_USD_UTILS_PUBLIC
 SdfLayerHandle defPrimSpecLayer(const UsdPrim& prim);
 
+//! Hold a layer a path relative to that layer.
+struct LayerAndPath
+{
+    SdfLayerHandle layer;
+    SdfPath        path;
+
+    LayerAndPath() = default;
+    LayerAndPath(const LayerAndPath&) = default;
+    LayerAndPath(const SdfLayerHandle& a_layer, const SdfPath& a_path)
+        : layer(a_layer)
+        , path(a_path)
+    {
+    }
+};
+
+//! Return all layers where the prim has opinions and the paths relative to that layer.
+//  The strongest layer is the first in the list.
+//  When the prim is in a reference, that path will not be equal to the path of the input prim.
+MAYA_USD_UTILS_PUBLIC
+std::vector<LayerAndPath> getAuthoredLayerAndPaths(const UsdPrim& prim);
+
+//! Return the layer where the prim is defined and the path relative to that layer.
+//  When the prim is in a reference, that path will not be equal to the path of the input prim.
+MAYA_USD_UTILS_PUBLIC
+LayerAndPath getDefiningLayerAndPath(const UsdPrim& prim);
+
 //! Return a PrimSpec for the argument prim in the layer containing the stage's current edit target.
 MAYA_USD_UTILS_PUBLIC
 SdfPrimSpecHandle getPrimSpecAtEditTarget(const UsdPrim& prim);
