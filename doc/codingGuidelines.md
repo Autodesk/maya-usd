@@ -165,7 +165,7 @@ In general, macros should be avoided (see [Modern C++](https://docs.google.com/d
 inline PXR_NS::UsdPrim prim() const
 {
     PXR_NAMESPACE_USING_DIRECTIVE
-    TF_CODING_ERROR(fItem != nullptr);
+    TF_VERIFY(fItem != nullptr);
     return fItem->prim();
 }
 ```
