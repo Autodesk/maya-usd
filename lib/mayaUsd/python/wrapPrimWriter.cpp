@@ -592,7 +592,9 @@ void wrapJobExportArgs()
                 &UsdMayaJobExportArgs::usdModelRootOverridePath,
                 return_value_policy<return_by_value>()))
         .def_readonly("verbose", &UsdMayaJobExportArgs::verbose)
-        .def("GetResolvedFileName", &UsdMayaJobExportArgs::GetResolvedFileName);
+        .def("GetResolvedFileName", &UsdMayaJobExportArgs::GetResolvedFileName)
+        .def("GetDefaultMaterialsScopeName", &UsdMayaJobExportArgs::GetDefaultMaterialsScopeName)
+        .staticmethod("GetDefaultMaterialsScopeName");
 }
 
 void wrapPrimWriter()

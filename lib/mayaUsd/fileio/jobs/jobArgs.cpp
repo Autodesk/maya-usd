@@ -26,6 +26,7 @@
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/envSetting.h>
 #include <pxr/base/tf/fileUtils.h>
+#include <pxr/base/tf/getenv.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
@@ -77,6 +78,10 @@ TF_DEFINE_PRIVATE_TOKENS(
 // clang-format on
 
 namespace {
+
+// Default material scope name as defined by USD Assets working group.
+// See https://wiki.aswf.io/display/WGUSD/Guidelines+for+Structuring+USD+Assets
+static constexpr auto kDefaultMaterialScopeName = "mtl";
 
 using namespace MayaUsd::DictUtils;
 
@@ -176,6 +181,12 @@ TfToken _GetMaterialsScopeName(const std::string& materialsScopeName)
         // If the env setting is set, make sure we don't allow the materials
         // scope name to be overridden by a parameter value.
         return defaultMaterialsScopeName;
+    } else {
+        const std::string mayaUsdDefaultMaterialsScopeName
+            = TfGetenv("MAYAUSD_MATERIALS_SCOPE_NAME");
+        if (!mayaUsdDefaultMaterialsScopeName.empty()) {
+            return TfToken(mayaUsdDefaultMaterialsScopeName);
+        }
     }
 
     if (SdfPath::IsValidIdentifier(materialsScopeName)) {
@@ -826,8 +837,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->kind] = std::string();
         d[UsdMayaJobExportArgsTokens->disableModelKindProcessor] = false;
         d[UsdMayaJobExportArgsTokens->materialCollectionsPath] = std::string();
-        d[UsdMayaJobExportArgsTokens->materialsScopeName]
-            = UsdUtilsGetMaterialsScopeName().GetString();
+        d[UsdMayaJobExportArgsTokens->materialsScopeName] = kDefaultMaterialScopeName;
         d[UsdMayaJobExportArgsTokens->melPerFrameCallback] = std::string();
         d[UsdMayaJobExportArgsTokens->melPostCallback] = std::string();
         d[UsdMayaJobExportArgsTokens->mergeTransformAndShape] = true;
@@ -938,6 +948,11 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
     });
 
     return d;
+}
+
+const std::string UsdMayaJobExportArgs::GetDefaultMaterialsScopeName()
+{
+    return _GetMaterialsScopeName(kDefaultMaterialScopeName);
 }
 
 std::string UsdMayaJobExportArgs::GetResolvedFileName() const

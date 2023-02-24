@@ -6,7 +6,6 @@ set(TEST_SCRIPT_FILES
     testUsdExportCamera.py
     testUsdExportColorSets.py
     testUsdExportConnected.py
-    testUsdExportDisplacement.py
     testUsdExportDisplayColor.py
     testUsdExportEulerFilter.py
     testUsdExportFileFormat.py
@@ -39,8 +38,6 @@ set(TEST_SCRIPT_FILES
     testUsdExportRootsAndParentScope.py
     testUsdExportSelection.py
     testUsdExportSelectionHierarchy.py
-    testUsdExportShadingInstanced.py
-    testUsdExportShadingModePxrRis.py
     testUsdExportSkeleton.py
     testUsdExportStripNamespaces.py
     testUsdExportStroke.py
@@ -76,7 +73,6 @@ set(TEST_SCRIPT_FILES
     testUsdImportUVSetMappings.py
     testUsdImportUSDZTextures.py
     testUsdExportImportRoundtripPreviewSurface.py
-    testUsdExportImportUDIM.py
     testUsdImportSkeleton.py
     testUsdImportXforms.py
     testUsdImportXformAnim.py
@@ -104,12 +100,40 @@ endif()
 
 if (BUILD_RFM_TRANSLATORS)
     list(APPEND TEST_SCRIPT_FILES
-        testUsdExportRfMShaders.py
         testUsdImportRfMShaders.py
     )
 endif()
 
 foreach(script ${TEST_SCRIPT_FILES})
+    mayaUsd_get_unittest_target(target ${script})
+    mayaUsd_add_test(${target}
+        PYTHON_MODULE ${target}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        ENV
+            "USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME=1"
+    )
+
+    # Add a ctest label to these tests for easy filtering.
+    set_property(TEST ${target} APPEND PROPERTY LABELS translators)
+endforeach()
+
+# These tests use custom material scope names and must not use
+# the USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME env var because
+# it takes precedence over the provided material scope name.
+set(TEST_SCRIPT_FILES_WITH_MATERIAL_SCOPE
+    testUsdExportDisplacement.py
+    testUsdExportShadingInstanced.py
+    testUsdExportShadingModePxrRis.py
+    testUsdExportImportUDIM.py
+)
+
+if (BUILD_RFM_TRANSLATORS)
+    list(APPEND TEST_SCRIPT_FILES_WITH_MATERIAL_SCOPE
+        testUsdExportRfMShaders.py
+    )
+endif()
+
+foreach(script ${TEST_SCRIPT_FILES_WITH_MATERIAL_SCOPE})
     mayaUsd_get_unittest_target(target ${script})
     mayaUsd_add_test(${target}
         PYTHON_MODULE ${target}
@@ -202,7 +226,8 @@ if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2020)
                     "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_BINARY_DIR}/../plugin/${plugin_type}"
                     "INPUT_PATH=${CMAKE_CURRENT_SOURCE_DIR}"
                     "PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}"
-            )
+                    "USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME=1"
+                    )
             set_property(TEST ${target} APPEND PROPERTY LABELS translators)
         endforeach()
     endforeach()
