@@ -335,24 +335,20 @@ protected:
     LoadUnloadBaseUndoableCommand(const UsdPrim& prim)
         : _stage(prim.GetStage())
         , _primPath(prim.GetPath())
-        , _policy(getCurrentPolicy())
-    {
-    }
-
-    UsdLoadPolicy getCurrentPolicy() const
+        , _policy(UsdLoadPolicy::UsdLoadWithoutDescendants)
     {
         if (!_stage)
-            return UsdLoadPolicy::UsdLoadWithoutDescendants;
+            return;
 
         // When not provided with the load policy, we need to figure out
         // what the current policy is.
         UsdStageLoadRules loadRules = _stage->GetLoadRules();
-        return loadRules.GetEffectiveRuleForPath(_primPath) == UsdStageLoadRules::Rule::AllRule
-            ? UsdLoadPolicy::UsdLoadWithDescendants
-            : UsdLoadPolicy::UsdLoadWithoutDescendants;
+        _policy = loadRules.GetEffectiveRuleForPath(_primPath) == UsdStageLoadRules::Rule::AllRule
+                ? UsdLoadPolicy::UsdLoadWithDescendants
+                : UsdLoadPolicy::UsdLoadWithoutDescendants;
     }
 
-    void doLoad()
+    void doLoad() const
     {
         if (!_stage)
             return;
@@ -361,7 +357,7 @@ protected:
         saveModifiedLoadRules();
     }
 
-    void doUnload()
+    void doUnload() const
     {
         if (!_stage)
             return;
@@ -370,16 +366,17 @@ protected:
         saveModifiedLoadRules();
     }
 
-    void saveModifiedLoadRules()
+    void saveModifiedLoadRules() const
     {
         // Save the load rules so that switching the stage settings will be able to preserve the
         // load rules.
         MAYAUSD_NS::MayaUsdProxyShapeStageExtraData::saveLoadRules(_stage);
     }
 
+private:
     const UsdStageWeakPtr _stage;
     const SdfPath         _primPath;
-    const UsdLoadPolicy   _policy;
+    UsdLoadPolicy         _policy;
 };
 
 //! \brief Undoable command for loading a USD prim.
