@@ -365,8 +365,12 @@ class DeleteCmdTestCase(unittest.TestCase):
         '''Test deleting a prim and its connections'''
         
         # Load a scene with a compound.
-      
-        mayaUtils.openTestScene("MaterialX", "multiple_connections.ma" )
+        mayaUtils.openTestScene("MaterialX", "multiple_connections.ma")
+
+        # Get the stage.
+        mayaPathSegment = mayaUtils.createUfePathSegment('|multiple_connections|multiple_connectionsShape')
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        self.assertTrue(stage)
       
         deleteItemPath = ufe.PathString.path('|multiple_connections|multiple_connectionsShape,/Material1/UsdPreviewSurface1')
         previewItemPath = ufe.PathString.path('|multiple_connections|multiple_connectionsShape,/Material1/UsdPreviewSurface2')
@@ -435,6 +439,21 @@ class DeleteCmdTestCase(unittest.TestCase):
         conns = connections.allConnections()
         self.assertEqual(len(conns), 1)
 
+        # Test the properties.
+        parentPrim = stage.GetPrimAtPath('/Material1')
+        surface1Prim = stage.GetPrimAtPath('/Material1/surface1')
+        previewSurface2Prim = stage.GetPrimAtPath('/Material1/UsdPreviewSurface2')
+        fractal3d1Prim = stage.GetPrimAtPath('/Material1/fractal3d1')
+        self.assertTrue(parentPrim)
+        self.assertTrue(surface1Prim)
+        self.assertTrue(previewSurface2Prim)
+        self.assertTrue(fractal3d1Prim)
+        self.assertTrue(parentPrim.HasProperty('inputs:clearcoat'))
+        self.assertTrue(parentPrim.HasProperty('outputs:displacement1'))
+        self.assertFalse(surface1Prim.HasProperty('outputs:out'))
+        self.assertFalse(fractal3d1Prim.HasProperty('inputs:amplitude'))
+        self.assertFalse(previewSurface2Prim.HasProperty('inputs:diffuseColor'))
+
         # Delete the compound.
         cmds.delete('|multiple_connections|multiple_connectionsShape,/Material1/compound')
 
@@ -445,6 +464,16 @@ class DeleteCmdTestCase(unittest.TestCase):
         connections = connectionHandler.sourceConnections(ufeItemSurface3)
         conns = connections.allConnections()
         self.assertEqual(len(conns), 0)
+
+        # Test the properties.
+        surface2Prim = stage.GetPrimAtPath('/Material1/surface2')
+        surface3Prim = stage.GetPrimAtPath('/Material1/surface3')
+        self.assertTrue(surface2Prim)
+        self.assertTrue(surface3Prim)
+        self.assertTrue(parentPrim.HasProperty('inputs:clearcoat1'))
+        self.assertTrue(parentPrim.HasProperty('outputs:displacement'))
+        self.assertFalse(surface2Prim.HasProperty('outputs:out'))
+        self.assertFalse(surface3Prim.HasProperty('inputs:bsdf'))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
