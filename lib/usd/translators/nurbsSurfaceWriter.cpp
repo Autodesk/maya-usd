@@ -415,7 +415,6 @@ bool PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
     VtArray<GfVec2d> trimRange;
     VtArray<GfVec3d> trimPoint;
 
-    int numLoops = 0;
     for (unsigned int i = 0; i < numRegions; i++) {
         MTrimBoundaryArray result;
 
@@ -438,7 +437,6 @@ bool PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
             MObjectArray boundary = result[j];
             unsigned int numTrimCurve = boundary.length();
             trimNumCurves.push_back(numTrimCurve);
-            numLoops++;
             for (unsigned int k = 0; k < numTrimCurve; k++) {
                 MObject curveObj = boundary[k];
                 if (curveObj.hasFn(MFn::kNurbsCurve)) {
