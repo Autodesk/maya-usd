@@ -344,8 +344,8 @@ protected:
         // what the current policy is.
         UsdStageLoadRules loadRules = _stage->GetLoadRules();
         _policy = loadRules.GetEffectiveRuleForPath(_primPath) == UsdStageLoadRules::Rule::AllRule
-                ? UsdLoadPolicy::UsdLoadWithDescendants
-                : UsdLoadPolicy::UsdLoadWithoutDescendants;
+            ? UsdLoadPolicy::UsdLoadWithDescendants
+            : UsdLoadPolicy::UsdLoadWithoutDescendants;
     }
 
     void doLoad() const
