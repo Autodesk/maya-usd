@@ -28,7 +28,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-constexpr auto MTOH_RENDER_OVERRIDE_PREFIX = "mtohRenderOverride_";
+constexpr auto MTOH_RENDER_OVERRIDE_PREFIX = "mayaHydraRenderOverride_";
 
 struct MtohRendererDescription
 {

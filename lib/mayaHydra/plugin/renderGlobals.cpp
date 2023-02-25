@@ -69,13 +69,6 @@ global proc mtohRenderOverride_AddAttribute(string $renderer, string $descriptio
         editorTemplate -label $label -adc $attr $command -annotation $description;
     }
 }
-global proc mtohRenderOverride_AddMTOHAttributes(int $fromAE) {
-    mtohRenderOverride_AddAttribute("mayaHydra", "Motion Sample Start", "mtohMotionSampleStart", "mtohMotionSampleStart", $fromAE);
-    mtohRenderOverride_AddAttribute("mayaHydra", "Motion Samples End", "mtohMotionSampleEnd", "mtohMotionSampleEnd", $fromAE);
-)mel"
-
-                                          R"mel(
-}
 
 global proc mtohRenderOverride_AEAttributesCallback(string $nodeName) {
     if (`nodeType $nodeName` != "renderGlobals") {
@@ -112,11 +105,6 @@ global proc {{override}}OptionBox() {
 
     window -title "Maya to Hydra Settings" "{{override}}OptionsWindow";
     scrollLayout;
-    frameLayout -label "Hydra Settings";
-    columnLayout;
-    mtohRenderOverride_AddMTOHAttributes(0);
-    setParent ..;
-    setParent ..;
 
     frameLayout -label "{{hydraDisplayName}}" -collapsable true;
     columnLayout;
