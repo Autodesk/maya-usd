@@ -9,7 +9,7 @@ import testUtils
 from imageUtils import ImageDiffingTestCase
 
 HD_STORM = "HdStormRendererPlugin"
-HD_STORM_OVERRIDE = "mtohRenderOverride_" + HD_STORM
+HD_STORM_OVERRIDE = "mayaHydraRenderOverride_" + HD_STORM
 
 
 class MtohTestCase(ImageDiffingTestCase):

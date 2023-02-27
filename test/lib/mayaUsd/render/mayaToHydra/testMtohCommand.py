@@ -13,7 +13,9 @@ class TestCommand(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cmds.loadPlugin('mayaHydra', quiet=True)
+        loaded = cmds.loadPlugin('mayaHydra', quiet=True)
+        if loaded != ['mayaHydra']:
+            raise RuntimeError('mayaHydra plugin load failed.')
 
     @classmethod
     def has_embree(cls):
