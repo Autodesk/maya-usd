@@ -39,9 +39,9 @@ namespace MayaAttrs = PXR_NS::MayaAttrs;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-// Commenting this debug code as when it's not actually used, it produces an error due to a warning
-// in Linux/OSX builds. Return in the std::string outValueAsString the VtValue type and value
-// written as text for debugging purpose
+/*  Return in the std::string outValueAsString the VtValue type and value
+ *  written as text for debugging purpose.
+ */
 void ConvertVtValueAsText(const VtValue& val, std::string& outValueAsString)
 {
     if (val.IsEmpty()) {
@@ -204,19 +204,19 @@ TfToken GetFileTexturePath(const MFnDependencyNode& fileNode)
     }
 }
 
-/// This is the delimiter that Maya uses to identify levels of hierarchy in the
-/// Maya DAG.
+// This is the delimiter that Maya uses to identify levels of hierarchy in the
+// Maya DAG.
 constexpr char MayaDagDelimiter[] = "|";
 
-/// This is the delimiter that Maya uses to separate levels of namespace in
-/// Maya node names.
+// This is the delimiter that Maya uses to separate levels of namespace in
+// Maya node names.
 constexpr char MayaNamespaceDelimiter[] = ":";
 
-/// Strip \p nsDepth namespaces from \p nodeName.
-///
-/// This will turn "taco:foo:bar" into "foo:bar" for \p nsDepth == 1, or
-/// "taco:foo:bar" into "bar" for \p nsDepth > 1.
-/// If \p nsDepth is -1, all namespaces are stripped.
+// Strip \p nsDepth namespaces from \p nodeName.
+//
+// This will turn "taco:foo:bar" into "foo:bar" for \p nsDepth == 1, or
+// "taco:foo:bar" into "bar" for \p nsDepth > 1.
+// If \p nsDepth is -1, all namespaces are stripped.
 static std::string stripNamespaces(const std::string& nodeName, const int nsDepth = -1)
 {
     if (nodeName.empty() || nsDepth == 0) {
@@ -290,15 +290,15 @@ static bool _IsShape(const MDagPath& dagPath)
     return (numberOfShapesDirectlyBelow == 1);
 }
 
-/// Converts the given Maya node name \p nodeName into an SdfPath.
-///
-/// Elements of the path will be sanitized such that it is a valid SdfPath.
-/// This means it will replace Maya's namespace delimiter (':') with
-/// underscores ('_').
-/// A SdfPath in Pixar USD is considered invalid if it does not conform to the rules for path names.
-/// Some common issues that can make a path invalid include: Starting with a number : Path names
-/// must start with a letter, not a number. Including spaces or special characters : Path names can
-/// only contain letters, numbers, and the characters _, -, and : .
+// Converts the given Maya node name \p nodeName into an SdfPath.
+//
+// Elements of the path will be sanitized such that it is a valid SdfPath.
+// This means it will replace Maya's namespace delimiter (':') with
+// underscores ('_').
+// A SdfPath in Pixar USD is considered invalid if it does not conform to the rules for path names.
+// Some common issues that can make a path invalid include: Starting with a number : Path names
+// must start with a letter, not a number. Including spaces or special characters : Path names can
+// only contain letters, numbers, and the characters _, -, and : .
 const std::string& SanitizeNameForSdfPath(std::string& pathString, const bool doStripNamespaces)
 {
     if (doStripNamespaces) {

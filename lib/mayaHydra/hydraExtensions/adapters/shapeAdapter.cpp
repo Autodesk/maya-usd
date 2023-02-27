@@ -30,6 +30,10 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<MayaHydraShapeAdapter, TfType::Bases<MayaHydraDagAdapter>>();
 }
 
+/*
+ * MayaHydraShapeAdapter is an adapter to translate from Maya shapes to hydra
+ * Please note that, at this time, this is not used by the hydra plug-in, we translate from a renderitem to hydra using the MayaHydraRenderItemAdapter class.
+ */
 MayaHydraShapeAdapter::MayaHydraShapeAdapter(
     const SdfPath&        id,
     MayaHydraDelegateCtx* delegate,

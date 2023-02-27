@@ -42,10 +42,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define PLUG_THIS_PLUGIN \
     PlugRegistry::GetInstance().GetPluginWithName(TF_PP_STRINGIZE(MFB_PACKAGE_NAME))
 
-///////////////////////////////////////////////////////////////////////
-// MayaHydraRenderItemAdapter
-///////////////////////////////////////////////////////////////////////
-
+/*
+ * MayaHydraRenderItemAdapter is used to translate from a render item to hydra.
+ * This is where we translate from Maya shapes (such as meshes) to hydra using their vertex and index buffers, look for "MVertexBuffer" and "MIndexBuffer" in this file to get more information.
+ */
 MayaHydraRenderItemAdapter::MayaHydraRenderItemAdapter(
     const SdfPath&        slowId,
     int                   fastId,
@@ -112,6 +112,7 @@ void MayaHydraRenderItemAdapter::_InsertRprim()
 
 void MayaHydraRenderItemAdapter::_RemoveRprim() { GetDelegate()->RemoveRprim(GetID()); }
 
+//We receive in that function the changes made in the Maya viewport between the last frame rendered and the current frame 
 void MayaHydraRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data)
 {
     if (_primitive != MHWRender::MGeometry::Primitive::kTriangles

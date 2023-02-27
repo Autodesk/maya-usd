@@ -27,6 +27,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/**
+ * \brief MayaHydraDelegateRegistry is a singleton class to handle hydra delegates
+ */
 class MayaHydraDelegateRegistry : public TfSingleton<MayaHydraDelegateRegistry>
 {
     friend class TfSingleton<MayaHydraDelegateRegistry>;
@@ -34,8 +37,8 @@ class MayaHydraDelegateRegistry : public TfSingleton<MayaHydraDelegateRegistry>
     MayaHydraDelegateRegistry() = default;
 
 public:
-    // function creates and returns a pointer to a MayaHydraDelegate - may return
-    // a nullptr indicate failure, or that the delegate is currently disabled
+    /// function creates and returns a pointer to a MayaHydraDelegate - may return
+    /// a nullptr indicate failure, or that the delegate is currently disabled
     using DelegateCreator = std::function<MayaHydraDelegatePtr(const MayaHydraDelegate::InitData&)>;
 
     MAYAHYDRALIB_API
@@ -45,14 +48,14 @@ public:
     MAYAHYDRALIB_API
     static std::vector<DelegateCreator> GetDelegateCreators();
 
-    // Signal that some delegate types are now either valid or invalid.
-    // ie, say some delegate type is only useful / works when a certain maya
-    // plugin is loaded - you would call this every time that plugin was loaded
-    // or unloaded.
+    /// Signal that some delegate types are now either valid or invalid.
+    /// ie, say some delegate type is only useful / works when a certain maya
+    /// plug-in is loaded - you would call this every time that plugin was loaded
+    /// or unloaded.
     MAYAHYDRALIB_API
     static void SignalDelegatesChanged();
 
-    // Find all MayaHydraDelegate plugins, and load them all
+    /// Find all MayaHydraDelegate plug-ins, and load them all
     MAYAHYDRALIB_API
     static void LoadAllDelegates();
 

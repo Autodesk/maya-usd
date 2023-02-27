@@ -23,8 +23,11 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+/*! \brief This was added as part of the mtoh original plug-in and is not used any more now, but left here for history.
+*/
+
 namespace MAYAUSD_NS_DEF {
-/*! \brief  Register USD plugins with USD / MayaUsd / Python version checks
+/* Register USD plugins with USD / MayaUsd / Python version checks
 
     Plug registry plugins (either pure USD, like render delegates or MayaUsd ones like translators)
     should never be used with a mismatched version of shared libraries.

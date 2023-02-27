@@ -125,6 +125,7 @@ const auto _instancePrimvarDescriptors = HdPrimvarDescriptorVector {
 
 } // namespace
 
+//MayaHydraDagAdapter is the adapter base class for any dag object.
 MayaHydraDagAdapter::MayaHydraDagAdapter(
     const SdfPath&        id,
     MayaHydraDelegateCtx* delegate,

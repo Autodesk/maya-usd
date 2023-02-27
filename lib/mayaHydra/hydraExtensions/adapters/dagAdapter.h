@@ -39,6 +39,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/**
+ * \brief MayaHydraDagAdapter is the adapter base class for any dag object.
+ */
 class MayaHydraDagAdapter : public MayaHydraAdapter
 {
 protected:

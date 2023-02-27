@@ -35,6 +35,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// Maya plugin init/uninit functions
+
 #if PXR_VERSION < 2211
 #error USD version v0.22.11+ required
 #endif

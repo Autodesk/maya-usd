@@ -19,6 +19,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+//Some variables to enable debug printing information
 TF_REGISTRY_FUNCTION(TfDebug)
 {
     TF_DEBUG_ENVIRONMENT_SYMBOL(

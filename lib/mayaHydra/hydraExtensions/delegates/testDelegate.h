@@ -28,6 +28,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/**
+ * \brief MayaHydraTestDelegate could be used as a test scene delegate, it is not used any more.
+ */
 class MayaHydraTestDelegate : public MayaHydraDelegate
 {
 public:

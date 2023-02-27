@@ -85,6 +85,8 @@ const MString defaultLightSet("defaultLightSet");
 
 } // namespace
 
+//MayaHydraLightAdapter is the base class for any light adapter used to handle the translation from a light to hydra.
+
 MayaHydraLightAdapter::MayaHydraLightAdapter(MayaHydraDelegateCtx* delegate, const MDagPath& dag)
     : MayaHydraDagAdapter(delegate->GetPrimPath(dag, true), delegate, dag)
 {

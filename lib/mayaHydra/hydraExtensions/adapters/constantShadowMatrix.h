@@ -24,6 +24,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/**
+ * \brief MayaHydraConstantShadowMatrix is used to provide a constant shadow matrix for hydra.
+ */
 class MayaHydraConstantShadowMatrix : public HdxShadowMatrixComputation
 {
 public:

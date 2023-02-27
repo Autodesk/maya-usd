@@ -23,6 +23,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/**
+ * \brief MayaHydraCameraAdapter is used to handle the translation from a Maya camera to hydra.
+ */
 class MayaHydraCameraAdapter : public MayaHydraShapeAdapter
 {
 public:
@@ -62,10 +65,10 @@ public:
 protected:
     static TfToken CameraType();
 
-    // The use of a pointer here helps us track whether this camera is (or has ever been)
-    // the active viewport camera.  NOTE: it's possile that _viewport will be out of date
-    // after switching to a new camera and resizing the viewport, but _viewport will eventually
-    // be re-synched before any output/pixels of the stale size is requested.
+    /// The use of a pointer here helps us track whether this camera is (or has ever been)
+    /// the active viewport camera.  NOTE: it's possible that _viewport will be out of date
+    /// after switching to a new camera and resizing the viewport, but _viewport will eventually
+    /// be re-synched before any output/pixels of the stale size is requested.
     std::unique_ptr<GfVec4d> _viewport;
 };
 

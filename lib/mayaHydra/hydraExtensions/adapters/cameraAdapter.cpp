@@ -46,6 +46,7 @@ TF_REGISTRY_FUNCTION_WITH_TAG(MayaHydraAdapterRegistry, camera)
 
 } // namespace
 
+//MayaHydraCameraAdapter is used to handle the translation from a Maya camera to hydra.
 MayaHydraCameraAdapter::MayaHydraCameraAdapter(MayaHydraDelegateCtx* delegate, const MDagPath& dag)
     : MayaHydraShapeAdapter(delegate->GetPrimPath(dag, true), delegate, dag)
 {

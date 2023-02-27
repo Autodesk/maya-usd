@@ -55,6 +55,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 using HgiUniquePtr = std::unique_ptr<class Hgi>;
 class MayaHydraSceneIndexRegistration;
 
+/*! \brief MtohRenderOverride is a rendering override class for the viewport to use Hydra instead of VP2.0.
+*/
 class MtohRenderOverride : public MHWRender::MRenderOverride
 {
 public:

@@ -31,6 +31,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/**
+ * The MayaHydraMaterialNetworkConverter class contains how we translate the Maya shaders to hydra and how we do the parameters mapping, 
+ * please see MayaHydraMaterialNetworkConverter::initialize() for that purpose.
+ */
+
 struct MayaHydraShaderParam
 {
     TfToken name;

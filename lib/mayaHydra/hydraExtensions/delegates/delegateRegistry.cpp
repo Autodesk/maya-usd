@@ -28,6 +28,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(MayaHydraDelegateRegistry);
 
+//MayaHydraDelegateRegistry is a singleton class to handle hydra delegates
+
 void MayaHydraDelegateRegistry::RegisterDelegate(const TfToken& name, DelegateCreator creator)
 {
     auto& instance = GetInstance();

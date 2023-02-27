@@ -32,6 +32,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(MayaHydraAdapterRegistry);
 
+//An adapter is used to translate from Maya data to hydra data. MayaHydraAdapterRegistry is used to register/retrieve the adapters.
 void MayaHydraAdapterRegistry::RegisterShapeAdapter(
     const TfToken&      type,
     ShapeAdapterCreator creator)

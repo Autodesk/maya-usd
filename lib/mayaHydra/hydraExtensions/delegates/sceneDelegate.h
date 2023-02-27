@@ -53,6 +53,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/**
+ * \brief MayaHydraSceneDelegate is an Hydra custom scene delegate used to translate from a Maya scene to hydra.
+ * 
+ * If you want to know how to add a custom scene index to this plug-in, then please see the registration.cpp file.
+ */
 class MayaHydraSceneDelegate : public MayaHydraDelegateCtx
 {
 public:
@@ -285,14 +290,17 @@ private:
         = std::function<MayaHydraLightAdapterPtr(MayaHydraDelegateCtx*, const MDagPath&)>;
     std::vector<std::pair<MObject, LightAdapterCreator>> _lightsToAdd;
 
-    // Is used to maintain a list of Arnold lights, they are not seen as lights by Maya but as
-    // locators
+    /// Is used to maintain a list of Arnold lights, they are not seen as lights by Maya but as
+    /// locators
     std::vector<MDagPath> _arnoldLightPaths;
 
     std::vector<SdfPath> _materialTagsChanged;
 
-    static SdfPath _fallbackMaterial;        // Hydra fallbackMaterial
-    static SdfPath _mayaDefaultMaterialPath; // Common to all scene delegates
+    /// _fallbackMaterial is an SdfPath used when there is no material assigned to a Maya object
+    static SdfPath _fallbackMaterial;        
+    /// _mayaDefaultMaterialPath is common to all scene delegates, it's the SdfPath of _mayaDefaultMaterial
+    static SdfPath _mayaDefaultMaterialPath; 
+    /// _mayaDefaultMaterial is an hydra material used to override all materials from the scene when _useDefaultMaterial is true
     static VtValue _mayaDefaultMaterial;
 
     bool _useDefaultMaterial = false;

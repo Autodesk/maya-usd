@@ -51,6 +51,7 @@ void _nameChanged(MObject& node, const MString& str, void* clientData)
 
 } // namespace
 
+//MayaHydraAdapter is the base class for all adapters. An adapter is used to translate from Maya data to hydra data.
 MayaHydraAdapter::MayaHydraAdapter(
     const MObject&        node,
     const SdfPath&        id,

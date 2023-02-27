@@ -25,6 +25,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/**
+ * \brief MayaHydraSceneIndexRegistration is used to register a scene index for a given dag node type.
+ * 
+ * To add a custom scene index, a customer plugin must :
+ *  1. Define a Maya dag node via the MPxNode interface, and register it MFnPlugin::registerNode. This is typically node inside a Maya pluging initialize function.
+ *  2. Define a HdSceneIndexPlugin which contains an _AppendSceneIndex method. The _AppendSceneIndex method will be called for every Maya node added into the scene. 
+ *      A customer is responsible for type checking the node for the one defined and also instantiate the corresponding scene index inside _AppendSceneIndex.
+ *      The scene index returned by _AppendSceneIndex is then added to the render index by Maya.
+ * 
+ * See registration.cpp file for a code snippet.
+ */
 class MayaHydraSceneIndexRegistration
 {
 public:

@@ -38,6 +38,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/**
+ * This file contains the MayaHydraMeshAdapter class to translate from a Maya mesh to hydra.
+ * Please note that, as of Feb 2023, this is not used by the hydra plugin, we translate from a renderitem to hydra using the MayaHydraRenderItemAdapter class.
+ */
+
+
 namespace {
 
 const std::pair<MObject&, HdDirtyBits> _dirtyBits[] {
@@ -61,6 +67,10 @@ const std::pair<MObject&, HdDirtyBits> _dirtyBits[] {
 
 } // namespace
 
+/**
+ * \brief MayaHydraMeshAdapter is used to handle the translation from a Maya mesh to hydra.
+ * Please note that, at this time, this is not used by the hydra plugin, we translate from a renderitem to hydra using the MayaHydraRenderItemAdapter class.
+ */
 class MayaHydraMeshAdapter : public MayaHydraShapeAdapter
 {
 public:

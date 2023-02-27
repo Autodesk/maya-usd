@@ -33,6 +33,53 @@ constexpr char kSceneIndexPluginSuffix[] = {
 constexpr char kDagNodeMessageName[] = { "dagNode" };
 } // namespace
 
+/* To add a custom scene index, a customer plugin must:
+ 1. Define a Maya dag node via the MPxNode interface, and register it MFnPlugin::registerNode. This is typically done inside a Maya plug-in initialize function.
+ 2. Define a HdSceneIndexPlugin which contains an _AppendSceneIndex method. The _AppendSceneIndex method will be called for every Maya node added into the scene. 
+      A customer is responsible for type checking the node for the one defined and also instantiate the corresponding scene index inside _AppendSceneIndex.
+      The scene index returned by _AppendSceneIndex is then added to the render index by Maya.
+
+For example here is how we do that process in the Maya USD plug-in :
+// Some context :
+// MayaUsdProxyShapeMayaNodeSceneIndexPlugin is a subclass of HdSceneIndexPlugin.
+// MayaUsdProxyShapeBase is the base class for our Maya USD node.
+// MayaUsd::MayaUsdProxyShapeSceneIndex is the scene index class for Maya USD where we load the stages.
+
+HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIndex(
+    const HdSceneIndexBaseRefPtr&      inputScene,
+    const HdContainerDataSourceHandle& inputArgs)
+{
+    using HdMObjectDataSource = HdRetainedTypedSampledDataSource<MObject>;
+    using HdMObjectDataSourceHandle = HdRetainedTypedSampledDataSource<MObject>::Handle;
+    static TfToken         dataSourceNodePathEntry("object");
+    HdDataSourceBaseHandle dataSourceEntryPathHandle = inputArgs->Get(dataSourceNodePathEntry);
+    if (HdMObjectDataSourceHandle dataSourceEntryPath
+        = HdMObjectDataSource::Cast(dataSourceEntryPathHandle)) {
+        MObject           dagNode = dataSourceEntryPath->GetTypedValue(0.0f);
+        MStatus           status;
+        MFnDependencyNode dependNodeFn(dagNode, &status);
+        if (!TF_VERIFY(status, "Error getting MFnDependencyNode")) {
+            return nullptr;
+        }
+
+        //Check that this node is a MayaUsdProxyShapeBase which is the base class for our Maya USD node
+        auto proxyShape = dynamic_cast<MayaUsdProxyShapeBase*>(dependNodeFn.userNode());
+        if (TF_VERIFY(proxyShape, "Error getting MayaUsdProxyShapeBase")) {
+            auto psSceneIndex = MayaUsd::MayaUsdProxyShapeSceneIndex::New(proxyShape);
+            // Flatten transforms, visibility, purpose, model, and material
+            // bindings over hierarchies.
+            return HdFlatteningSceneIndex::New(psSceneIndex);
+        }
+    }
+
+    return nullptr;
+}
+
+You may want to see the full source code in the Maya USD open source repository :
+https://github.com/Autodesk/maya-usd/tree/dev/lib/mayaUsd/sceneIndex
+*/
+
+//MayaHydraSceneIndexRegistration is used to register a scene index for a given dag node type.
 MayaHydraSceneIndexRegistration::MayaHydraSceneIndexRegistration(HdRenderIndex* renderIndex)
     : _renderIndex(renderIndex)
 {

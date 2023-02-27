@@ -43,6 +43,10 @@ const TfTokenVector _stSamplerCoords = { TfToken("st") };
 
 } // namespace
 
+/* MayaHydraMaterialAdapter is used to handle the translation from a Maya material to hydra.
+    If you are looking for how we translate the Maya shaders to hydra and how we do the parameters mapping, please see MayaHydraMaterialNetworkConverter::initialize().
+*/
+
 MayaHydraMaterialAdapter::MayaHydraMaterialAdapter(
     const SdfPath&        id,
     MayaHydraDelegateCtx* delegate,
@@ -105,7 +109,7 @@ VtValue MayaHydraMaterialAdapter::GetPreviewMaterialResource(const SdfPath& mate
     HdMaterialNetwork    network;
     HdMaterialNode       node;
     node.path = materialID;
-    node.identifier = UsdImagingTokens->UsdPreviewSurface;
+    node.identifier = UsdImagingTokens->UsdPreviewSurface;//We translate to a USD preview surface material
     map.terminals.push_back(node.path);
     for (const auto& it : MayaHydraMaterialNetworkConverter::GetPreviewShaderParams()) {
         node.parameters.emplace(it.name, it.fallbackValue);
@@ -115,6 +119,9 @@ VtValue MayaHydraMaterialAdapter::GetPreviewMaterialResource(const SdfPath& mate
     return VtValue(map);
 }
 
+/**
+ * \brief MayaHydraShadingEngineAdapter is used to handle the translation from a Maya shading engine to hydra.
+ */
 class MayaHydraShadingEngineAdapter : public MayaHydraMaterialAdapter
 {
 public:

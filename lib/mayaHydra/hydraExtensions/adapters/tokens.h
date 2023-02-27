@@ -23,8 +23,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/**
+ * \brief MayaHydraAdapterTokens contains all the hydra tokens used by this plug-in.
+ */
+
 // clang-format off
-#define MAYAHYDRALIB_ADAPTER_TOKENS                 \
+#define MAYAHYDRALIB_ADAPTER_TOKENS           \
     (roughness)                               \
     (clearcoat)                               \
     (clearcoatRoughness)                      \
@@ -73,10 +77,10 @@ PXR_NAMESPACE_OPEN_SCOPE
     (eccentricity)                            \
     (usdPreviewSurface)                       \
     (pxrUsdPreviewSurface)                    \
-    (MayaHydraLambertShader)                     \
-    (MayaHydraPhongShader)                       \
-    (MayaHydraBlinnShader)                       \
-	(MayaHydraStippleShader)                     \
+    (MayaHydraLambertShader)                  \
+    (MayaHydraPhongShader)                    \
+    (MayaHydraBlinnShader)                    \
+	(MayaHydraStippleShader)                  \
     (MayaHydraSolidColorShader)
 
 // clang-format on

@@ -37,6 +37,9 @@
 #include <functional>
 #include <sstream>
 
+//This file is where we build the UI and expose to MEL the global parameters from this plug-in and the parameters from the chosen render delegate.
+
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // clang-format off

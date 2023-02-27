@@ -22,6 +22,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/**
+ * \brief MayaHydraParams are the global parameters for this plug-in.
+ * Please note that we add to these parameters the parameters read from the chosen hydra render delegate and expose them in our UI with the MEL function mtohRenderOverride_AddAttribute
+ * see renderGlobals.cpp.
+  */
 struct MayaHydraParams
 {
     int   textureMemoryPerTexture = 4 * 1024 * 1024;

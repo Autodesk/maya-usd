@@ -214,6 +214,8 @@ TF_REGISTRY_FUNCTION_WITH_TAG(MayaHydraDelegateRegistry, MayaHydraSceneDelegate)
         });
 }
 
+//MayaHydraSceneDelegate is an Hydra custom scene delegate used to translate from a Maya scene to hydra.
+//If you want to know how to add a custom scene index to this plug-in, then please see the registration.cpp file.
 MayaHydraSceneDelegate::MayaHydraSceneDelegate(const InitData& initData)
     : MayaHydraDelegateCtx(initData)
 {
@@ -851,7 +853,7 @@ bool MayaHydraSceneDelegate::_GetRenderItem(int fastId, MayaHydraRenderItemAdapt
     // which would depend on MdagPath, which is a wrapper on TdagPath.  TdagPath is a very slow
     // class and best to avoid in any performance- critical area. Simply workaround for the
     // prototype is an additional lookup index based on InternalObjectID.  Long term goal would be
-    // that the plugin rarely, if ever, deals with TdagPath.
+    // that the plug-in rarely, if ever, deals with TdagPath.
     MayaHydraRenderItemAdapterPtr* result = TfMapLookupPtr(_renderItemsAdaptersFast, fastId);
 
     if (result != nullptr) {
@@ -906,6 +908,7 @@ void MayaHydraSceneDelegate::InsertDag(const MDagPath& dag)
     }
 
     // Skip UFE nodes coming from USD runtime
+    // UFE stands for Universal Front End : the goal of the Universal Front End is to create a DCC-agnostic component that will allow a DCC to browse and edit data in multiple data models. 
     // Those will be handled by USD Imaging delegate
     MStatus              status;
     static const MString ufeRuntimeStr = "ufeRuntime";

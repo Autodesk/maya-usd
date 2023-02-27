@@ -21,6 +21,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+//! \brief  Some variables to enable debug printing information for adapters
+
 // clang-format off
 TF_DEBUG_CODES(
     MAYAHYDRALIB_ADAPTER_CALLBACKS,

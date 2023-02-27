@@ -46,6 +46,9 @@ TF_REGISTRY_FUNCTION_WITH_TAG(MayaHydraDelegateRegistry, MayaHydraTestDelegate)
     }
 }
 
+/*
+ * MayaHydraTestDelegate could be used as a test scene delegate, it is not used any more.
+ */
 MayaHydraTestDelegate::MayaHydraTestDelegate(const InitData& initData)
     : MayaHydraDelegate(initData)
 {

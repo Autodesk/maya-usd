@@ -63,6 +63,9 @@ float GetSpotSoftness(MFnSpotLight& mayaLight)
 float GetSpotFalloff(MFnSpotLight& mayaLight) { return static_cast<float>(mayaLight.dropOff()); }
 } // namespace
 
+/**
+ * \brief MayaHydraSpotLightAdapter is used to handle the translation from a Maya spot light to hydra.
+ */
 class MayaHydraSpotLightAdapter : public MayaHydraLightAdapter
 {
 public:
