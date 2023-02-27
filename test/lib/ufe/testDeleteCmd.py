@@ -20,6 +20,7 @@ import fixturesUtils
 import mayaUtils
 import ufeUtils
 import usdUtils
+import testUtils
 
 import mayaUsd.ufe
 
@@ -365,31 +366,20 @@ class DeleteCmdTestCase(unittest.TestCase):
     def testDeleteAndRemoveConnections(self):
         '''Test deleting a prim and its connections'''
         
-        # Load a scene with a compound.
-        mayaUtils.openTestScene("MaterialX", "multiple_connections.ma")
-
-        # Get the stage.
-        mayaPathSegment = mayaUtils.createUfePathSegment('|multiple_connections|multiple_connectionsShape')
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
-        self.assertTrue(stage)
+        # Load a stage with a compound.
+        testFile = testUtils.getTestScene('MaterialX', 'multiple_connections.usda')
+        testPath,shapeStage = mayaUtils.createProxyFromFile(testFile)
+        self.assertTrue(shapeStage)
+        self.assertTrue(testPath)
       
-        deleteItemPath = ufe.PathString.path('|multiple_connections|multiple_connectionsShape,/Material1/UsdPreviewSurface1')
-        previewItemPath = ufe.PathString.path('|multiple_connections|multiple_connectionsShape,/Material1/UsdPreviewSurface2')
-        fracItemPath = ufe.PathString.path('|multiple_connections|multiple_connectionsShape,/Material1/fractal3d1')
-        parentItemPath = ufe.PathString.path('|multiple_connections|multiple_connectionsShape,/Material1')
-        surface1ItemPath = ufe.PathString.path('|multiple_connections|multiple_connectionsShape,/Material1/surface1')
-        surface2ItemPath = ufe.PathString.path('|multiple_connections|multiple_connectionsShape,/Material1/surface2')
-        surface3ItemPath = ufe.PathString.path('|multiple_connections|multiple_connectionsShape,/Material1/surface3')
-        compoundItemPath = ufe.PathString.path('|multiple_connections|multiple_connectionsShape,/Material1/compound')
-
-        ufeItem = ufe.Hierarchy.createItem(deleteItemPath)
-        ufeItemFractal = ufe.Hierarchy.createItem(fracItemPath)
-        ufeItemPreview = ufe.Hierarchy.createItem(previewItemPath)
-        ufeItemMaterial = ufe.Hierarchy.createItem(parentItemPath)
-        ufeItemSurface1 = ufe.Hierarchy.createItem(surface1ItemPath)
-        ufeItemSurface2 = ufe.Hierarchy.createItem(surface2ItemPath)
-        ufeItemSurface3 = ufe.Hierarchy.createItem(surface3ItemPath)
-        ufeItemCompound = ufe.Hierarchy.createItem(compoundItemPath)
+        ufeItem = ufeUtils.createUfeSceneItem(testPath,'/Material1/UsdPreviewSurface1')
+        ufeItemFractal = ufeUtils.createUfeSceneItem(testPath,'/Material1/fractal3d1')
+        ufeItemPreview = ufeUtils.createUfeSceneItem(testPath,'/Material1/UsdPreviewSurface2')
+        ufeItemMaterial = ufeUtils.createUfeSceneItem(testPath,'/Material1')
+        ufeItemSurface1 = ufeUtils.createUfeSceneItem(testPath,'/Material1/surface1')
+        ufeItemSurface2 = ufeUtils.createUfeSceneItem(testPath,'/Material1/surface2')
+        ufeItemSurface3 = ufeUtils.createUfeSceneItem(testPath,'/Material1/surface3')
+        ufeItemCompound = ufeUtils.createUfeSceneItem(testPath,'/Material1/compound')
 
         self.assertIsNotNone(ufeItem)
         self.assertIsNotNone(ufeItemFractal)
@@ -421,7 +411,8 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertEqual(len(conns), 1)
 
         # Delete the node.
-        cmds.delete('|multiple_connections|multiple_connectionsShape,/Material1/UsdPreviewSurface1')
+        usdItemToDeletePathString = testPath + ',/Material1/UsdPreviewSurface1'
+        cmds.delete(usdItemToDeletePathString)
         
         # Test the connections after deleting the node.
         connections = connectionHandler.sourceConnections(ufeItemFractal)
@@ -441,10 +432,10 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertEqual(len(conns), 1)
 
         # Test the properties.
-        parentPrim = stage.GetPrimAtPath('/Material1')
-        surface1Prim = stage.GetPrimAtPath('/Material1/surface1')
-        previewSurface2Prim = stage.GetPrimAtPath('/Material1/UsdPreviewSurface2')
-        fractal3d1Prim = stage.GetPrimAtPath('/Material1/fractal3d1')
+        parentPrim = shapeStage.GetPrimAtPath('/Material1')
+        surface1Prim = shapeStage.GetPrimAtPath('/Material1/surface1')
+        previewSurface2Prim = shapeStage.GetPrimAtPath('/Material1/UsdPreviewSurface2')
+        fractal3d1Prim = shapeStage.GetPrimAtPath('/Material1/fractal3d1')
         self.assertTrue(parentPrim)
         self.assertTrue(surface1Prim)
         self.assertTrue(previewSurface2Prim)
@@ -456,7 +447,8 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertFalse(previewSurface2Prim.HasProperty('inputs:diffuseColor'))
 
         # Delete the compound.
-        cmds.delete('|multiple_connections|multiple_connectionsShape,/Material1/compound')
+        usdItemToDeletePathString = testPath + ',/Material1/compound'
+        cmds.delete(usdItemToDeletePathString)
 
         connections = connectionHandler.sourceConnections(ufeItemMaterial)
         conns = connections.allConnections()
@@ -467,8 +459,8 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertEqual(len(conns), 0)
 
         # Test the properties.
-        surface2Prim = stage.GetPrimAtPath('/Material1/surface2')
-        surface3Prim = stage.GetPrimAtPath('/Material1/surface3')
+        surface2Prim = shapeStage.GetPrimAtPath('/Material1/surface2')
+        surface3Prim = shapeStage.GetPrimAtPath('/Material1/surface3')
         self.assertTrue(surface2Prim)
         self.assertTrue(surface3Prim)
         self.assertTrue(parentPrim.HasProperty('inputs:clearcoat1'))
