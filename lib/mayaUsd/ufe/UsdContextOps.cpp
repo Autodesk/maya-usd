@@ -324,35 +324,59 @@ public:
 //! \brief Undoable command for loading a USD prim.
 class LoadUnloadBaseUndoableCommand : public Ufe::UndoableCommand
 {
-public:
+protected:
+    LoadUnloadBaseUndoableCommand(const UsdPrim& prim, UsdLoadPolicy policy)
+        : _stage(prim.GetStage())
+        , _primPath(prim.GetPath())
+        , _policy(policy)
+    {
+    }
+
     LoadUnloadBaseUndoableCommand(const UsdPrim& prim)
         : _stage(prim.GetStage())
         , _primPath(prim.GetPath())
-        , _oldLoadRules(prim.GetStage()->GetLoadRules())
+        , _policy(UsdLoadPolicy::UsdLoadWithoutDescendants)
     {
+        if (!_stage)
+            return;
+
+        // When not provided with the load policy, we need to figure out
+        // what the current policy is.
+        UsdStageLoadRules loadRules = _stage->GetLoadRules();
+        _policy = loadRules.GetEffectiveRuleForPath(_primPath) == UsdStageLoadRules::Rule::AllRule
+            ? UsdLoadPolicy::UsdLoadWithDescendants
+            : UsdLoadPolicy::UsdLoadWithoutDescendants;
     }
 
-    void undo() override
+    void doLoad() const
     {
-        if (!_stage) {
+        if (!_stage)
             return;
-        }
 
-        _stage->SetLoadRules(_oldLoadRules);
+        _stage->Load(_primPath, _policy);
         saveModifiedLoadRules();
     }
 
-protected:
-    void saveModifiedLoadRules()
+    void doUnload() const
+    {
+        if (!_stage)
+            return;
+
+        _stage->Unload(_primPath);
+        saveModifiedLoadRules();
+    }
+
+    void saveModifiedLoadRules() const
     {
         // Save the load rules so that switching the stage settings will be able to preserve the
         // load rules.
         MAYAUSD_NS::MayaUsdProxyShapeStageExtraData::saveLoadRules(_stage);
     }
 
-    const UsdStageWeakPtr   _stage;
-    const SdfPath           _primPath;
-    const UsdStageLoadRules _oldLoadRules;
+private:
+    const UsdStageWeakPtr _stage;
+    const SdfPath         _primPath;
+    UsdLoadPolicy         _policy;
 };
 
 //! \brief Undoable command for loading a USD prim.
@@ -360,23 +384,12 @@ class LoadUndoableCommand : public LoadUnloadBaseUndoableCommand
 {
 public:
     LoadUndoableCommand(const UsdPrim& prim, UsdLoadPolicy policy)
-        : LoadUnloadBaseUndoableCommand(prim)
-        , _policy(policy)
+        : LoadUnloadBaseUndoableCommand(prim, policy)
     {
     }
 
-    void redo() override
-    {
-        if (!_stage) {
-            return;
-        }
-
-        _stage->Load(_primPath, _policy);
-        saveModifiedLoadRules();
-    }
-
-private:
-    const UsdLoadPolicy _policy;
+    void redo() override { doLoad(); }
+    void undo() override { doUnload(); }
 };
 
 //! \brief Undoable command for unloading a USD prim.
@@ -388,15 +401,8 @@ public:
     {
     }
 
-    void redo() override
-    {
-        if (!_stage) {
-            return;
-        }
-
-        _stage->Unload(_primPath);
-        saveModifiedLoadRules();
-    }
+    void redo() override { doUnload(); }
+    void undo() override { doLoad(); }
 };
 
 //! \brief Undoable command for prim active state change
