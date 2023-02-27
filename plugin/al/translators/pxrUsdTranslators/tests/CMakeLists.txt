@@ -1,9 +1,0 @@
-set(TEST_NAME TestPxrUsdTranslators)
-
-mayaUsd_add_test(${TEST_NAME}
-    PYTHON_MODULE testPxrTranslators
-    ENV
-        "TEST_DIR=${CMAKE_CURRENT_SOURCE_DIR}"
-        "${PXR_OVERRIDE_PLUGINPATH_NAME}=${ADDITIONAL_PXR_PLUGINPATH_NAME}"
-        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
-)
