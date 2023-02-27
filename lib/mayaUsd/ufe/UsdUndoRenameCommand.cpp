@@ -188,7 +188,10 @@ bool UsdUndoRenameCommand::renameRedo()
 
     const Ufe::Path srcPath = _ufeSrcItem->path();
     const Ufe::Path dstPath = srcPath.sibling(Ufe::PathComponent(_newName));
-    const UsdPrim&  prim = _ufeSrcItem->prim();
+    // Note: must fetch prim again from its path because undo/redo of composite commands
+    //       (or doing multiple undo and then multiple redo) can make the cached prim
+    //       stale.
+    const UsdPrim prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
 
     if (!doUsdRename(_stage, prim, _newName, srcPath, dstPath))
         return false;
@@ -217,9 +220,12 @@ bool UsdUndoRenameCommand::renameUndo()
     // get the stage's default prim path
     auto defaultPrimPath = _stage->GetDefaultPrim().GetPath();
 
-    const Ufe::Path   srcPath = _ufeDstItem->path();
-    const Ufe::Path   dstPath = _ufeSrcItem->path();
-    const UsdPrim&    prim = _ufeDstItem->prim();
+    const Ufe::Path srcPath = _ufeDstItem->path();
+    const Ufe::Path dstPath = _ufeSrcItem->path();
+    // Note: must fetch prim again from its path because undo/redo of composite commands
+    //       (or doing multiple undo and then multiple redo) can make the cached prim
+    //       stale.
+    const UsdPrim     prim = _stage->GetPrimAtPath(_ufeDstItem->prim().GetPath());
     const std::string newName = _ufeSrcItem->prim().GetName();
 
     if (!doUsdRename(_stage, prim, newName, srcPath, dstPath))
