@@ -13,8 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
-
 #ifndef ADSK_MAYA_MATERIAL_COMMANDS_H
 #define ADSK_MAYA_MATERIAL_COMMANDS_H
 
@@ -32,22 +30,12 @@ namespace MAYAUSD_NS_DEF {
 // GetMaterialXMaterialsCommand
 //------------------------------------------------------------------------------
 
-struct MxShaderMenuEntry
-{
-    MxShaderMenuEntry(const std::string& label, const std::string& identifier)
-        : _label(label)
-        , _identifier(identifier)
-    {
-    }
-    const std::string  _label;
-    const std::string& _identifier;
-};
-typedef std::vector<MxShaderMenuEntry> MxShaderMenuEntryVec;
-
-//! \brief Fills the currently active menu with submenus listing available materials from different
-//! renderers.
-//! \todo: The list of materials and renderers is currently hard-coded. We need to make
-//! it dynamic so that third-party renderers can hook in to provide their own materials.
+//! \brief Returns an array of strings containing materials associated with a given renderer.The
+//! strings are in the format: "Renderer Name/Material Label|MaterialIdentifier" e.g. "Arnold/AI
+//! Standard Surface|arnold:standard_surface" The main intention is for the returned strings to be
+//! split in order to populate menu entries. \todo: The list of materials and renderers is currently
+//! hard-coded. We need to make it dynamic so that third-party renderers can hook in to provide
+//! their own materials.
 class MAYAUSD_CORE_PUBLIC ADSKMayaUSDGetMaterialsForRenderersCommand : public MPxCommand
 {
 public:
@@ -67,13 +55,10 @@ private:
     void appendUsdMaterials() const;
 };
 
-//! \brief Fills the currently active menu with the available materials existing in the given
-//! object's stage.
+//! \brief Returns an array of materials in the same stage as the object passed in via argument.
+//! The returned strings are simply paths to a material.
 class MAYAUSD_CORE_PUBLIC ADSKMayaUSDGetMaterialsInStageCommand : public MPxCommand
 {
-    static constexpr auto kSceneItem = "si";
-    static constexpr auto kSceneItemLong = "sceneItem";
-
 public:
     // plugin registration requirements
     static const char commandName[];

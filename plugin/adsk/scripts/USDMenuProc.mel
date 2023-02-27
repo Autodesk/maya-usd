@@ -65,7 +65,7 @@ global proc mayaUsdMenu_assignNewMaterial(string $ufePath, string $material)
                                 ufePath = ufe.PathString.path('" + $ufePath + "');\
                                 item = ufe.Hierarchy.createItem(ufePath);\
                                 contextOps = ufe.ContextOps.contextOps(item);\
-                                cmd = contextOps.doOpCmd(['Assign New Material', 'USD', '" + $material + "']);\
+                                cmd = contextOps.doOpCmd(['Assign New Material', '', '" + $material + "']);\
                                 cmd.execute();")`;
     }
 }
@@ -80,14 +80,14 @@ global proc mayaUsdMenu_assignExistingMaterial(string $ufePath, string $material
                                 ufePath = ufe.PathString.path('" + $ufePath + "');\
                                 item = ufe.Hierarchy.createItem(ufePath);\
                                 contextOps = ufe.ContextOps.contextOps(item);\
-                                cmd = contextOps.doOpCmd(['Assign Existing Material', '" + $material + "']);\
+                                cmd = contextOps.doOpCmd(['Assign Existing Material', '', '" + $material + "']);\
                                 cmd.execute();")`;
     }
 }
 
-global proc MayaUsdMenuAddNewMaterialsForRenderers(string $ufePath)
+global proc mayaUsdMenu_addNewMaterials(string $ufePath)
 {
-    string $materials[] = `mayaUsdGetMaterialsFromRenderers -si $ufePath`;
+    string $materials[] = `mayaUsdGetMaterialsFromRenderers`;
     string $previousRendererString;
     string $menuItem;
     for ($material in $materials)
@@ -131,9 +131,9 @@ global proc MayaUsdMenuAddNewMaterialsForRenderers(string $ufePath)
     setParent -menu ..;
 }
 
-global proc MayaUsdMenuAddExistingMaterials(string $ufePath)
+global proc mayaUsdMenu_addExistingMaterials(string $ufePath)
 {
-    string $materials[] = `mayaUsdGetMaterialsInScene -si $ufePath`;
+    string $materials[] = `mayaUsdGetMaterialsInStage $ufePath`;
     string $previousPathString;
     string $menuItem;
     for ($material in $materials)
@@ -192,14 +192,14 @@ global proc USDMenuProc(string $parent, string $obj)
         // "Assign New Material" from a list of materials provided by the renderers.
         menuItem -subMenu true -tearOff false -label "Assign New Material";
         {
-            MayaUsdMenuAddNewMaterialsForRenderers($obj);
+            mayaUsdMenu_addNewMaterials($obj);
         }
         setParent -menu ..;
 
         // "Assign Existing Material" from a list of materials in the selected item's stage.
         menuItem -subMenu true -tearOff false -label "Assign Existing Material";
         {
-            MayaUsdMenuAddExistingMaterials($obj);
+            mayaUsdMenu_addExistingMaterials($obj);
         }
         setParent -menu ..;
     }

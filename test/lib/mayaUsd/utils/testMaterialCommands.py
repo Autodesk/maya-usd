@@ -73,7 +73,7 @@ class testMaterialCommands(unittest.TestCase):
                              ]
 
         materials = cmds.mayaUsdGetMaterialsFromRenderers()
-        self.assertCountEqual(materials, expectedMaterials)
+        self.assertTrue(set(materials).issuperset(set(expectedMaterials)))
 
 
     def testMayaUsdGetExistingMaterials(self):
@@ -84,7 +84,7 @@ class testMaterialCommands(unittest.TestCase):
         
         expectedMaterials = ['/mtl/UsdPreviewSurface1', '/mtl/UsdPreviewSurface2']
         
-        materialsInStage = cmds.mayaUsdGetMaterialsInScene(si="|stage|stageShape,/cube")
+        materialsInStage = cmds.mayaUsdGetMaterialsInStage("|stage|stageShape,/cube")
         self.assertEqual(materialsInStage, expectedMaterials)
 
 

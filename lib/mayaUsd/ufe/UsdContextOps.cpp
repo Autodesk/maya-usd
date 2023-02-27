@@ -66,6 +66,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <map>
 #include <utility>
 #include <vector>
 
@@ -1041,20 +1042,78 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                 }
             }
 #if UFE_PREVIEW_VERSION_NUM >= 4010
-        } else if (
-            itemPath.size() == 1u
-            && (itemPath[0] == kAssignNewMaterialItem || itemPath[0] == kAddNewMaterialItem)) {
-            MString script;
+        } else if (itemPath[0] == kAssignNewMaterialItem || itemPath[0] == kAddNewMaterialItem) {
+            std::multimap<std::string, MString> renderersAndMaterials;
+            MStringArray                        materials;
+            MGlobal::executeCommand("mayaUsdGetMaterialsFromRenderers", materials);
+
+            for (const auto& materials : materials) {
+                // Expects a string in the format "renderer/Material Name|Material Identifier".
+                MStringArray rendererAndMaterial;
+                MStatus      status = materials.split('/', rendererAndMaterial);
+                if (status == MS::kSuccess && rendererAndMaterial.length() == 2) {
+                    renderersAndMaterials.emplace(
+                        std::string(rendererAndMaterial[0].asChar()), rendererAndMaterial[1]);
+                }
+            }
+
+            if (itemPath.size() == 1u) {
+                // Populate list of known renderers (first menu level).
+                for (auto it = renderersAndMaterials.begin(), end = renderersAndMaterials.end();
+                     it != end;
+                     it = renderersAndMaterials.upper_bound(it->first)) {
+                    items.emplace_back(it->first, it->first, Ufe::ContextItem::kHasChildren);
+                }
+            } else if (itemPath.size() == 2u) {
+                // Populate list of materials for a given renderer (second menu level).
+                const auto range = renderersAndMaterials.equal_range(itemPath[1]);
+                for (auto it = range.first; it != range.second; ++it) {
+                    MStringArray materialAndIdentifier;
+                    // Expects a string in the format "Material Name|MaterialIdentifer".
+                    MStatus status = it->second.split('|', materialAndIdentifier);
+                    if (status == MS::kSuccess && materialAndIdentifier.length() == 2) {
+                        items.emplace_back(
+                            materialAndIdentifier[1].asChar(), materialAndIdentifier[0].asChar());
+                    }
+                }
+            }
+        } else if (itemPath[0] == kAssignExistingMaterialItem) {
+            std::multimap<std::string, MString> pathsAndMaterials;
+            MStringArray                        materials;
+            MString                             script;
             script.format(
-                "MayaUsdMenuAddNewMaterialsForRenderers \"^1s\"",
+                "mayaUsdGetMaterialsInStage \"^1s\"",
                 Ufe::PathString::string(fItem->path()).c_str());
-            MString result = MGlobal::executeCommandStringResult(script, false, false);
-        } else if (itemPath.size() == 1u && itemPath[0] == kAssignExistingMaterialItem) {
-            MString script;
-            script.format(
-                "MayaUsdMenuAddExistingMaterials \"^1s\"",
-                Ufe::PathString::string(fItem->path()).c_str());
-            MString result = MGlobal::executeCommandStringResult(script, false, false);
+            MGlobal::executeCommand(script, materials);
+
+            for (const auto& material : materials) {
+                MStringArray pathAndMaterial;
+                MStatus      status = material.split('/', pathAndMaterial);
+                // Expects a string in the format "/path1/path2|Material".
+                if (status == MS::kFailure || pathAndMaterial.length() < 2) {
+                    continue;
+                }
+
+                MString pathToMaterial = "";
+                for (int i = 0; i < pathAndMaterial.length() - 1; i++) {
+                    pathToMaterial += "/" + pathAndMaterial[i];
+                }
+                pathsAndMaterials.emplace(std::string(pathToMaterial.asChar()), material);
+            }
+
+            if (itemPath.size() == 1u) {
+                // Populate list of paths to materials (first menu level).
+                for (auto it = pathsAndMaterials.begin(), end = pathsAndMaterials.end(); it != end;
+                     it = pathsAndMaterials.upper_bound(it->first)) {
+                    items.emplace_back(it->first, it->first, Ufe::ContextItem::kHasChildren);
+                }
+            } else if (itemPath.size() == 2u) {
+                // Populate list of to materials for given path (second  menu level).
+                const auto range = pathsAndMaterials.equal_range(itemPath[1]);
+                for (auto it = range.first; it != range.second; ++it) {
+                    items.emplace_back(it->second.asChar(), it->second.asChar());
+                }
+            }
 #endif
         }
 #endif
@@ -1205,7 +1264,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
     } else if (itemPath.size() == 3u && itemPath[0] == kAddNewMaterialItem) {
         return std::make_shared<InsertChildAndSelectCommand>(
             UsdUndoAddNewMaterialCommand::create(fItem, itemPath[2]));
-    } else if (itemPath.size() == 2u && itemPath[0] == kAssignExistingMaterialItem) {
+    } else if (itemPath.size() == 3u && itemPath[0] == kAssignExistingMaterialItem) {
         std::shared_ptr<Ufe::CompositeUndoableCommand> compositeCmd;
         Ufe::Selection                                 sceneItems(*Ufe::GlobalSelection::get());
         sceneItems.append(fItem);
@@ -1216,7 +1275,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
                     compositeCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
                 }
                 compositeCmd->append(std::make_shared<BindMaterialUndoableCommand>(
-                    compatiblePrim, SdfPath(itemPath[1])));
+                    compatiblePrim, SdfPath(itemPath[2])));
             }
         }
         return compositeCmd;

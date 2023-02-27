@@ -89,7 +89,6 @@ void ADSKMayaUSDGetMaterialsForRenderersCommand::appendArnoldMaterials() const
 
 void ADSKMayaUSDGetMaterialsForRenderersCommand::appendUsdMaterials() const
 {
-    // TODO: Replace hard-coded materials with dynamically generated list.
     const MString label = "USD Preview Surface";
     const MString identifier = "UsdPreviewSurface";
     appendToResult("USD/" + label + "|" + identifier);
@@ -124,7 +123,7 @@ MSyntax ADSKMayaUSDGetMaterialsForRenderersCommand::createSyntax()
 // ADSKMayaUSDGetMaterialsInStageCommand
 */
 
-const char ADSKMayaUSDGetMaterialsInStageCommand::commandName[] = "mayaUsdGetMaterialsInScene";
+const char ADSKMayaUSDGetMaterialsInStageCommand::commandName[] = "mayaUsdGetMaterialsInStage";
 
 static const TfToken materialType("Material");
 
@@ -150,18 +149,17 @@ MStatus ADSKMayaUSDGetMaterialsInStageCommand::doIt(const MArgList& argList)
     if (!status)
         return status;
 
-    MString ufePathString;
-    args.getFlagArgument(kSceneItem, 0, ufePathString);
-    if (ufePathString.isEmpty()) {
-        MGlobal::displayError("Missing argument 'sceneItem'.");
-        return MS::kFailure;
+    MString ufePathString = args.commandArgumentString(0);
+    if (ufePathString.length() == 0) {
+        MGlobal::displayError("Missing argument 'UFE Path'.");
+        throw MS::kFailure;
     }
 
     const auto  ufePath = Ufe::PathString::path(ufePathString.asChar());
     UsdStagePtr stage = ufe::getStage(ufePath);
     if (stage) {
         for (auto prim : stage->Traverse()) {
-            if (prim.GetTypeName() == materialType) {
+            if (UsdShadeMaterial(prim)) {
                 appendToResult(MString(prim.GetPath().GetString().c_str()));
             }
         }
@@ -173,7 +171,9 @@ MStatus ADSKMayaUSDGetMaterialsInStageCommand::doIt(const MArgList& argList)
 MSyntax ADSKMayaUSDGetMaterialsInStageCommand::createSyntax()
 {
     MSyntax syntax;
-    syntax.addFlag("-si", "-sceneItem", MSyntax::kString);
+    syntax.addArg(MSyntax::kString);
+    syntax.enableQuery(false);
+    syntax.enableEdit(false);
     return syntax;
 }
 
