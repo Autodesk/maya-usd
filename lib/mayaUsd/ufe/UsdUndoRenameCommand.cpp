@@ -18,6 +18,8 @@
 #include "private/UfeNotifGuard.h"
 #include "private/Utils.h"
 
+#include <mayaUsd/ufe/Global.h>
+#include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/loadRules.h>
 #include <mayaUsdUtils/util.h>
@@ -32,6 +34,8 @@
 #include <pxr/usd/usd/stage.h>
 
 #include <ufe/log.h>
+#include <ufe/path.h>
+#include <ufe/pathSegment.h>
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 
@@ -108,6 +112,70 @@ UsdUndoRenameCommand::create(const UsdSceneItem::Ptr& srcItem, const Ufe::PathCo
 
 UsdSceneItem::Ptr UsdUndoRenameCommand::renamedItem() const { return _ufeDstItem; }
 
+static void sendNotificationToAllStageProxies(
+    const UsdStagePtr& stage,
+    const UsdPrim&     prim,
+    const Ufe::Path&   srcPath,
+    const Ufe::Path&   dstPath)
+{
+    const Ufe::Rtid mayaId = getMayaRunTimeId();
+    for (const std::string& proxyName : ProxyShapeHandler::getAllNames()) {
+        UsdStagePtr proxyStage = ProxyShapeHandler::dagPathToStage(proxyName);
+        if (proxyStage != stage)
+            continue;
+
+        const Ufe::PathSegment proxySegment(std::string("|world") + proxyName, mayaId, '|');
+
+        const Ufe::PathSegment& srcUsdSegment = srcPath.getSegments()[1];
+        const Ufe::Path adjustedSrcPath(Ufe::Path::Segments({ proxySegment, srcUsdSegment }));
+
+        const Ufe::PathSegment& dstUsdSegment = dstPath.getSegments()[1];
+        const Ufe::Path adjustedDstPath(Ufe::Path::Segments({ proxySegment, dstUsdSegment }));
+
+        UsdSceneItem::Ptr newItem = UsdSceneItem::create(adjustedDstPath, prim);
+
+        sendNotification<Ufe::ObjectRename>(newItem, adjustedSrcPath);
+    }
+}
+
+static bool doUsdRename(
+    const UsdStagePtr& stage,
+    const UsdPrim&     prim,
+    std::string        newName,
+    const Ufe::Path    srcPath,
+    const Ufe::Path    dstPath)
+{
+    // 1- open a changeblock to delay sending notifications.
+    // 2- update the Internal References paths (if any) first
+    // 3- set the new name
+    // Note: during the changeBlock scope we are still working with old items/paths/prims.
+    // it's only after the scope ends that we start working with new items/paths/prims
+    SdfChangeBlock changeBlock;
+
+    bool status
+        = MayaUsdUtils::updateReferencedPath(prim, SdfPath(dstPath.getSegments()[1].string()));
+    if (!status)
+        return false;
+
+    // Make sure the load state of the renamed prim will be preserved.
+    // We copy all rules that applied to it specifically and remove the rules
+    // that applied to it specifically.
+    {
+        auto fromPath = SdfPath(srcPath.getSegments()[1].string());
+        auto destPath = SdfPath(dstPath.getSegments()[1].string());
+        duplicateLoadRules(*stage, fromPath, destPath);
+        removeRulesForPath(*stage, fromPath);
+    }
+
+    // set the new name
+    auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
+    status = primSpec->SetName(newName);
+    if (!status)
+        return false;
+
+    return true;
+}
+
 bool UsdUndoRenameCommand::renameRedo()
 {
     // If the new name is the same as the current name, do nothing.
@@ -118,43 +186,15 @@ bool UsdUndoRenameCommand::renameRedo()
     // get the stage's default prim path
     auto defaultPrimPath = _stage->GetDefaultPrim().GetPath();
 
-    // 1- open a changeblock to delay sending notifications.
-    // 2- update the Internal References paths (if any) first
-    // 3- set the new name
-    // Note: during the changeBlock scope we are still working with old items/paths/prims.
-    // it's only after the scope ends that we start working with new items/paths/prims
-    {
-        SdfChangeBlock changeBlock;
+    const Ufe::Path srcPath = _ufeSrcItem->path();
+    const Ufe::Path dstPath = srcPath.sibling(Ufe::PathComponent(_newName));
+    const UsdPrim&  prim = _ufeSrcItem->prim();
 
-        const UsdPrim& prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
-
-        auto ufeSiblingPath = _ufeSrcItem->path().sibling(Ufe::PathComponent(_newName));
-        bool status = MayaUsdUtils::updateReferencedPath(
-            prim, SdfPath(ufeSiblingPath.getSegments()[1].string()));
-        if (!status) {
-            return false;
-        }
-
-        // Make sure the load state of the renamed prim will be preserved.
-        // We copy all rules that applied to it specifically and remove the rules
-        // that applied to it specifically.
-        {
-            auto fromPath = SdfPath(_ufeSrcItem->path().getSegments()[1].string());
-            auto destPath = SdfPath(ufeSiblingPath.getSegments()[1].string());
-            duplicateLoadRules(*_stage, fromPath, destPath);
-            removeRulesForPath(*_stage, fromPath);
-        }
-
-        // set the new name
-        auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
-        status = primSpec->SetName(_newName);
-        if (!status) {
-            return false;
-        }
-    }
+    if (!doUsdRename(_stage, prim, _newName, srcPath, dstPath))
+        return false;
 
     // the renamed scene item is a "sibling" of its original name.
-    _ufeDstItem = createSiblingSceneItem(_ufeSrcItem->path(), _newName);
+    _ufeDstItem = createSiblingSceneItem(srcPath, _newName);
 
     // update stage's default prim
     if (_ufeSrcItem->prim().GetPath() == defaultPrimPath) {
@@ -162,7 +202,7 @@ bool UsdUndoRenameCommand::renameRedo()
     }
 
     // send notification to update UFE data model
-    sendNotification<Ufe::ObjectRename>(_ufeDstItem, _ufeSrcItem->path());
+    sendNotificationToAllStageProxies(_stage, prim, srcPath, dstPath);
 
     return true;
 }
@@ -177,40 +217,13 @@ bool UsdUndoRenameCommand::renameUndo()
     // get the stage's default prim path
     auto defaultPrimPath = _stage->GetDefaultPrim().GetPath();
 
-    // 1- open a changeblock to delay sending notifications.
-    // 2- update the Internal References paths (if any) first
-    // 3- set the new name
-    // Note: during the changeBlock scope we are still working with old items/paths/prims.
-    // it's only after the scope ends that we start working with new items/paths/prims
-    {
-        SdfChangeBlock changeBlock;
+    const Ufe::Path   srcPath = _ufeDstItem->path();
+    const Ufe::Path   dstPath = _ufeSrcItem->path();
+    const UsdPrim&    prim = _ufeDstItem->prim();
+    const std::string newName = _ufeSrcItem->prim().GetName();
 
-        const UsdPrim& prim = _stage->GetPrimAtPath(_ufeDstItem->prim().GetPath());
-
-        auto ufeSiblingPath
-            = _ufeSrcItem->path().sibling(Ufe::PathComponent(_ufeSrcItem->prim().GetName()));
-        bool status = MayaUsdUtils::updateReferencedPath(
-            prim, SdfPath(ufeSiblingPath.getSegments()[1].string()));
-        if (!status) {
-            return false;
-        }
-
-        // Make sure the load state of the renamed prim will be preserved.
-        // We copy all rules that applied to it specifically and remove the rules
-        // that applied to it specifically.
-        {
-            auto fromPath = SdfPath(_ufeDstItem->path().getSegments()[1].string());
-            auto destPath = SdfPath(ufeSiblingPath.getSegments()[1].string());
-            duplicateLoadRules(*_stage, fromPath, destPath);
-            removeRulesForPath(*_stage, fromPath);
-        }
-
-        auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
-        status = primSpec->SetName(_ufeSrcItem->prim().GetName());
-        if (!status) {
-            return false;
-        }
-    }
+    if (!doUsdRename(_stage, prim, newName, srcPath, dstPath))
+        return false;
 
     // the renamed scene item is a "sibling" of its original name.
     _ufeSrcItem = createSiblingSceneItem(_ufeDstItem->path(), _ufeSrcItem->prim().GetName());
@@ -221,7 +234,7 @@ bool UsdUndoRenameCommand::renameUndo()
     }
 
     // send notification to update UFE data model
-    sendNotification<Ufe::ObjectRename>(_ufeSrcItem, _ufeDstItem->path());
+    sendNotificationToAllStageProxies(_stage, prim, srcPath, dstPath);
 
     return true;
 }
