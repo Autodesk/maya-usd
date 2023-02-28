@@ -473,7 +473,7 @@ UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
                 UsdGeomXformable xformable(usdSceneItem->prim());
 
                 auto r = xformable.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, opSuffix);
-                TF_AXIOM(r);
+                TF_VERIFY(r);
                 r.Set(v);
                 auto result = setXformOpOrderFn(xformable);
                 TF_AXIOM(result);
@@ -520,7 +520,7 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMayaXformStack::scaleCmd(double x, 
                 UsdGeomXformable xformable(usdSceneItem->prim());
 
                 auto s = xformable.AddScaleOp(UsdGeomXformOp::PrecisionFloat, opSuffix);
-                TF_AXIOM(s);
+                TF_VERIFY(s);
                 s.Set(v);
                 auto result = setXformOpOrderFn(xformable);
                 TF_AXIOM(result);
@@ -633,7 +633,7 @@ Ufe::SetVector3dUndoableCommand::Ptr UsdTransform3dMayaXformStack::setVector3dCm
                 InTransform3dChange guard(cmd.path());
                 UsdGeomXformable    xformable(usdSceneItem->prim());
                 auto op = xformable.AddTranslateOp(OpPrecision<V>::precision, opSuffix);
-                TF_AXIOM(op);
+                TF_VERIFY(op);
                 op.Set(v);
                 auto result = setXformOpOrderFn(xformable);
                 TF_AXIOM(result);
