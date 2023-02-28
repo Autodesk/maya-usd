@@ -27,6 +27,10 @@
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #endif
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#include <mayaUsd/ufe/UsdAttributes.h>
+#endif
+
 namespace {
 #ifdef MAYA_ENABLE_NEW_PRIM_DELETE
 bool hasLayersMuted(const PXR_NS::UsdPrim& prim)
@@ -86,6 +90,11 @@ void UsdUndoDeleteCommand::execute()
     }
 
     if (MayaUsd::ufe::applyCommandRestrictionNoThrow(_prim, "delete")) {
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4024)
+        UsdAttributes::removeAttributesConnections(_prim);
+#endif
+#endif
         auto retVal = stage->RemovePrim(_prim.GetPath());
         if (!retVal) {
             TF_VERIFY(retVal, "Failed to delete '%s'", _prim.GetPath().GetText());
