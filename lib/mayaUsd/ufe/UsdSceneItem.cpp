@@ -47,12 +47,15 @@ UsdSceneItem::create(const Ufe::Path& path, const UsdPrim& prim, int instanceInd
 // Ufe::SceneItem overrides
 //------------------------------------------------------------------------------
 
-std::string UsdSceneItem::nodeType() const { return fPrim.GetTypeName(); }
+std::string UsdSceneItem::nodeType() const { return fPrim ? fPrim.GetTypeName() : std::string(); }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 std::vector<std::string> UsdSceneItem::ancestorNodeTypes() const
 {
     std::vector<std::string> strAncestorTypes;
+
+    if (!fPrim)
+        return strAncestorTypes;
 
 #if PXR_VERSION < 2008
     static const TfType schemaBaseType = TfType::Find<UsdSchemaBase>();
