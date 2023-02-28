@@ -57,7 +57,7 @@ Ufe::Camera::Ptr ProxyShapeCameraHandler::camera(const Ufe::SceneItem::Ptr& item
 Ufe::Selection ProxyShapeCameraHandler::find_(const Ufe::Path& path) const
 {
     Ufe::SceneItem::Ptr item = Ufe::Hierarchy::createItem(path);
-    if (isAGatewayType(item->nodeType())) {
+    if (item && isAGatewayType(item->nodeType())) {
         // path is a path to a proxyShape node.
         // Get the UsdStage for this proxy shape node and search it for cameras
         PXR_NS::UsdStageWeakPtr stage = getStage(path);
