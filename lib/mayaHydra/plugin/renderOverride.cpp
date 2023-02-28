@@ -89,8 +89,6 @@ template <typename T> inline void hash_combine(std::size_t& seed, const T& value
 #include <limits>
 
 #if WANT_UFE_BUILD
-#include <mayaUsd/ufe/Global.h>
-
 #include <maya/MFileIO.h>
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>

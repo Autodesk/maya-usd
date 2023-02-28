@@ -24,6 +24,8 @@ target_compile_definitions(${TARGET_NAME}
     PRIVATE 
         MAYAHYDRALIB_EXPORT
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
+        # Copy-pasted from lib/mayaUsd/CMakeLists.txt
+        $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
 )
 
 mayaUsd_compile_config(${TARGET_NAME})
@@ -39,6 +41,8 @@ if(NOT BUILD_MAYAUSD_LIBRARY)
             ${PXR_INCLUDE_DIRS}
             ${BOOST_INCLUDE_DIR}
             ${CMAKE_BINARY_DIR}/include
+        PRIVATE
+            $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
     )
 
     target_compile_definitions(${TARGET_NAME}
@@ -122,6 +126,7 @@ else()
         PRIVATE
             $<$<BOOL:${USD_001905_BUILD}>:hio>
             ${PYTHON_LIBRARIES} 
+            $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
     )
 endif()
 
