@@ -1026,12 +1026,13 @@ bool MayaUsdRPrim::_GetMaterialPrimvars(
 }
 
 bool MayaUsdRPrim::_FilterInstanceByDisplayLayer(
-    unsigned int          usdInstanceId,
-    BasicWireframeColors& instanceColor,
-    const TfToken&        reprToken,
-    int                   modFlags,
-    bool                  isHighlightItem,
-    bool                  isDedicatedHighlightItem) const
+    unsigned int           usdInstanceId,
+    BasicWireframeColors&  instanceColor,
+    const TfToken&         reprToken,
+    int                    modFlags,
+    bool                   isHighlightItem,
+    bool                   isDedicatedHighlightItem,
+    InstanceColorOverride& colorOverride) const
 {
     if (_displayLayerModesInstanced.size() <= usdInstanceId) {
         return false;
@@ -1109,6 +1110,18 @@ bool MayaUsdRPrim::_FilterInstanceByDisplayLayer(
             } else {
                 instanceColor = kReferenceDormat;
             }
+        }
+    }
+
+    // Now that we know that this instance will be rendered, let's check for color override.
+    if (colorOverride._allowed && instanceColor == kDormant) {
+        if (displayLayerModes._wireframeColorIndex > 0) {
+            colorOverride._enabled = true;
+            colorOverride._color = MColor(M3dView::active3dView().colorAtIndex(
+                displayLayerModes._wireframeColorIndex - 1, M3dView::kDormantColors));
+        } else if (displayLayerModes._wireframeColorIndex < 0) {
+            colorOverride._enabled = true;
+            colorOverride._color = displayLayerModes._wireframeColorRGBA;
         }
     }
 

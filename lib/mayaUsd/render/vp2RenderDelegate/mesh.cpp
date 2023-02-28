@@ -1960,7 +1960,8 @@ void HdVP2Mesh::_UpdateDrawItem(
 #endif
 
             _SyncDisplayLayerModesInstanced(id, instanceCount);
-            const int modFlags = drawItem->GetModFlags();
+            const int             modFlags = drawItem->GetModFlags();
+            InstanceColorOverride colorOverride(useWireframeColors);
 
             stateToCommit._instanceTransforms = std::make_shared<MMatrixArray>();
             stateToCommit._instanceColors = std::make_shared<MFloatArray>();
@@ -1970,13 +1971,15 @@ void HdVP2Mesh::_UpdateDrawItem(
                     continue;
 
                 // Check display layer modes of this instance
+                colorOverride.Reset();
                 if (_FilterInstanceByDisplayLayer(
                         usdInstanceId,
                         info,
                         reprToken,
                         modFlags,
                         isHighlightItem,
-                        isDedicatedHighlightItem))
+                        isDedicatedHighlightItem,
+                        colorOverride))
                     continue;
 
 #ifndef MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT
@@ -1989,7 +1992,8 @@ void HdVP2Mesh::_UpdateDrawItem(
                 mayaToUsd.push_back(usdInstanceId);
 #endif
                 if (useWireframeColors) {
-                    const MColor& color = wireframeColors[info];
+                    const MColor& color
+                        = colorOverride._enabled ? colorOverride._color : wireframeColors[info];
                     for (unsigned int j = 0; j < kNumColorChannels; j++) {
                         stateToCommit._instanceColors->append(color[j]);
                     }
