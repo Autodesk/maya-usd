@@ -255,9 +255,16 @@ primitive. The original name will be preserved in custom data for roundtripping.
 
 #### Material Scopes
 
-The default material scope when exporting materials is named `mtl`. Users can
-change this default material scope name by setting the environment variable
-named `MAYAUSD_MATERIALS_SCOPE_NAME`.
+The recommended way of selecting a global scope name for materials is to use the
+materialsScopeName argument of MayaUSDExportCommand.
+
+If that argument is not specified, we will use "mtl" as a globally defined default.
+This follows the [Guidelines for Structuring USD Assets](https://wiki.aswf.io/display/WGUSD/Guidelines+for+Structuring+USD+Assets)
+as defined by the USD Assets WG.
+
+The `MAYAUSD_MATERIALS_SCOPE_NAME` environment variable can be used to change
+that default on a global level. The value defined in that env var will take
+precedence over any value passed in the materialsScopeName argument.
 
 This environment variable was added in part to support legacy user of mayaUSD:
 in past versions of the plugin, the material scope was named `Looks`. The change
