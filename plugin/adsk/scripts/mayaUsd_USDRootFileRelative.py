@@ -156,7 +156,7 @@ class usdSubLayerFileRelative(usdFileRelative):
 
     @classmethod
     def uiCreate(cls, parentLayout):
-        usdFileRelative.uiCreate(parentLayout, cls.kRelativeToWhat)
+        super(usdSubLayerFileRelative, cls).uiCreate(parentLayout, cls.kRelativeToWhat)
 
     @classmethod
     def uiInit(cls, parentLayout, filterType):
@@ -165,7 +165,7 @@ class usdSubLayerFileRelative(usdFileRelative):
               with the dialog2 command API.
         '''
         canBeRelative = bool(usdFileRelative.getRelativeFilePathRoot())
-        usdFileRelative.uiInit(parentLayout, canBeRelative, cls.kRelativeToWhat)
+        super(usdSubLayerFileRelative, cls).uiInit(parentLayout, canBeRelative, cls.kRelativeToWhat)
 
     @classmethod
     def uiCommit(cls, parentLayout, selectedFile=None):
@@ -173,7 +173,7 @@ class usdSubLayerFileRelative(usdFileRelative):
         Note: the function takes an unused selectedFile argument to be compatible
               with the dialog2 command API.
         '''
-        usdFileRelative.uiCommit(parentLayout, cls.kRelativeToWhat)
+        super(usdSubLayerFileRelative, cls).uiCommit(parentLayout, cls.kRelativeToWhat)
 
 
 class usdFileRelativeToEditTargetLayer(usdFileRelative):
