@@ -87,9 +87,9 @@ struct stageLayersToSave
     If the format is empty then use the current user-selected USD format option
     as defined by the usdFormatArgOption() function. (See above.)
 
-    If the file path is relative, then it be made relative to either the scene
+    If the file path is relative, then it can be made relative to either the scene
     file (for the root layer) or its parent layer (for sub-layers). We assume the
-    caller volontarily made the path relative.
+    caller voluntarily made the path relative.
  */
 MAYAUSD_CORE_PUBLIC
 bool saveLayerWithFormat(
