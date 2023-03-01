@@ -186,6 +186,13 @@ protected:
         kWire = 2
     };
 
+    enum ForcedReprFlags
+    {
+        kForcedBBox = 1 << 0,
+        kForcedWire = 1 << 1,
+        kForcedUntextured = 1 << 2
+    };
+
     struct DisplayLayerModes
     {
         //! Requested display layer visibility
@@ -368,7 +375,7 @@ protected:
     std::bitset<HdVP2DrawItem::kModFlagsBitsetSize> _requiredModFlagsBitset;
 
     // forced representations runtime state
-    bool     _needForcedBBox = false;
+    int      _forcedReprFlags { 0 };
     uint64_t _forcedReprsFrame { 0 };
 
     //! HideOnPlayback status of the Rprim

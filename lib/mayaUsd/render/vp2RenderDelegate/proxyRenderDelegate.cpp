@@ -279,6 +279,13 @@ void _ConfigureReprs()
         /*flatShadingEnabled=*/false,
         /*blendWireframeColor=*/false);
 
+    const HdMeshReprDesc reprDescWire(
+        HdMeshGeomStyleHullEdgeOnly,
+        HdCullStyleDontCare,
+        HdMeshReprDescTokens->surfaceShader,
+        /*flatShadingEnabled=*/false,
+        /*blendWireframeColor=*/true);
+
     // Hull desc for shaded display, edge desc for selection highlight.
     HdMesh::ConfigureRepr(HdReprTokens->smoothHull, reprDescHull, reprDescEdge);
     HdMesh::ConfigureRepr(HdVP2ReprTokens->smoothHullUntextured, reprDescHull, reprDescEdge);
@@ -294,6 +301,10 @@ void _ConfigureReprs()
 
     // Forced representations are used for instanced geometry with display layer overrides
     HdMesh::ConfigureRepr(HdVP2ReprTokens->forcedBbox, reprDescEdge);
+    HdMesh::ConfigureRepr(HdVP2ReprTokens->forcedWire, reprDescWire);
+    // forcedUntextured repr doesn't use reprDescEdge descriptor because
+    // its selection highlight will be drawn through a non-forced repr
+    HdMesh::ConfigureRepr(HdVP2ReprTokens->forcedUntextured, reprDescHull);
 
     // smooth hull for untextured display
     HdBasisCurves::ConfigureRepr(

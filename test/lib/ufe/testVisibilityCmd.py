@@ -78,7 +78,7 @@ class VisibilityCmdTestCase(unittest.TestCase):
         # Restore default edit router.
         mayaUsd.lib.restoreDefaultEditRouter('visibility')
 
-    def _testEditRouter(self):
+    def testEditRouter(self):
         '''Test edit router functionality.'''
 
         # Select /A

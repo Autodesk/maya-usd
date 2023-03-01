@@ -1,0 +1,14 @@
+#usda 1.0
+(
+    defaultPrim = "RootPrim"
+    upAxis = "Z"
+)
+
+def Xform "RootPrim"
+{
+    def Xform "PrimWithRef" (
+        prepend references = @cube.usda@
+    )
+    {
+    }
+}

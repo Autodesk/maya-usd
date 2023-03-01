@@ -52,10 +52,11 @@ public:
 };
 
 void populateChildren(
-    SdfLayerRefPtr                                                       layer,
-    RecursionDetector*                                                   recursionDetector,
-    std::vector<std::pair<SdfLayerRefPtr, MayaUsd::utils::LayerParent>>& anonLayersToSave,
-    std::vector<SdfLayerRefPtr>&                                         dirtyLayersToSave)
+    const UsdStageRefPtr&        stage,
+    SdfLayerRefPtr               layer,
+    RecursionDetector*           recursionDetector,
+    MayaUsd::utils::LayerInfos&  anonLayersToSave,
+    std::vector<SdfLayerRefPtr>& dirtyLayersToSave)
 {
     auto subPaths = layer->GetSubLayerPaths();
 
@@ -69,13 +70,16 @@ void populateChildren(
         std::string actualPath = PXR_NS::SdfComputeAssetPathRelativeToLayer(layer, path);
         auto        subLayer = PXR_NS::SdfLayer::FindOrOpen(actualPath);
         if (subLayer && !recursionDetector->contains(subLayer->GetRealPath())) {
-            populateChildren(subLayer, recursionDetector, anonLayersToSave, dirtyLayersToSave);
+            populateChildren(
+                stage, subLayer, recursionDetector, anonLayersToSave, dirtyLayersToSave);
 
             if (subLayer->IsAnonymous()) {
-                MayaUsd::utils::LayerParent p;
-                p._proxyPath.clear();
-                p._layerParent = layer;
-                anonLayersToSave.push_back(std::make_pair(subLayer, p));
+                MayaUsd::utils::LayerInfo info;
+                info.stage = stage;
+                info.layer = subLayer;
+                info.parent._proxyPath.clear();
+                info.parent._layerParent = layer;
+                anonLayersToSave.push_back(info);
             } else if (subLayer->IsDirty()) {
                 dirtyLayersToSave.push_back(subLayer);
             }
@@ -269,16 +273,18 @@ bool saveLayerWithFormat(
 }
 
 SdfLayerRefPtr saveAnonymousLayer(
+    UsdStageRefPtr     stage,
     SdfLayerRefPtr     anonLayer,
     LayerParent        parent,
     const std::string& basename,
     std::string        formatArg)
 {
     std::string newFileName = generateUniqueFileName(basename);
-    return saveAnonymousLayer(anonLayer, newFileName, false, parent, formatArg);
+    return saveAnonymousLayer(stage, anonLayer, newFileName, false, parent, formatArg);
 }
 
 SdfLayerRefPtr saveAnonymousLayer(
+    UsdStageRefPtr     stage,
     SdfLayerRefPtr     anonLayer,
     const std::string& path,
     bool               savePathAsRelative,
@@ -291,6 +297,8 @@ SdfLayerRefPtr saveAnonymousLayer(
 
     std::string filePath(path);
     ensureUSDFileExtension(filePath);
+
+    const bool wasTargetLayer = (stage->GetEditTarget().GetLayer() == anonLayer);
 
     saveLayerWithFormat(anonLayer, filePath, formatArg);
 
@@ -322,6 +330,10 @@ SdfLayerRefPtr saveAnonymousLayer(
             saveRootLayer(newLayer, parent._proxyPath, savePathAsRelative);
         }
     }
+
+    if (wasTargetLayer)
+        stage->SetEditTarget(newLayer);
+
     return newLayer;
 }
 
@@ -362,7 +374,7 @@ void ensureUSDFileExtension(std::string& filePath)
     }
 }
 
-void getLayersToSaveFromProxy(const std::string& proxyPath, stageLayersToSave& layersInfo)
+void getLayersToSaveFromProxy(const std::string& proxyPath, StageLayersToSave& layersInfo)
 {
     auto stage = UsdMayaUtil::GetStageByProxyName(proxyPath);
     if (!stage) {
@@ -370,18 +382,22 @@ void getLayersToSaveFromProxy(const std::string& proxyPath, stageLayersToSave& l
     }
 
     auto root = stage->GetRootLayer();
-    populateChildren(root, nullptr, layersInfo._anonLayers, layersInfo._dirtyFileBackedLayers);
+    populateChildren(
+        stage, root, nullptr, layersInfo._anonLayers, layersInfo._dirtyFileBackedLayers);
     if (root->IsAnonymous()) {
-        LayerParent p;
-        p._proxyPath = proxyPath;
-        p._layerParent = nullptr;
-        layersInfo._anonLayers.push_back(std::make_pair(root, p));
+        LayerInfo info;
+        info.stage = stage;
+        info.layer = root;
+        info.parent._proxyPath = proxyPath;
+        info.parent._layerParent = nullptr;
+        layersInfo._anonLayers.push_back(info);
     } else if (root->IsDirty()) {
         layersInfo._dirtyFileBackedLayers.push_back(root);
     }
 
     auto session = stage->GetSessionLayer();
-    populateChildren(session, nullptr, layersInfo._anonLayers, layersInfo._dirtyFileBackedLayers);
+    populateChildren(
+        stage, session, nullptr, layersInfo._anonLayers, layersInfo._dirtyFileBackedLayers);
 }
 
 } // namespace utils

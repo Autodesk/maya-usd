@@ -339,9 +339,14 @@ HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
 
         // Instanced primitives with instances in display layers use 'forced' representations to
         // draw those specific instances, so the 'forced' representations should be inited alongside
-        if (reprToken != HdVP2ReprTokens->forcedBbox) {
+        if (reprToken != HdVP2ReprTokens->forcedBbox && reprToken != HdVP2ReprTokens->forcedWire
+            && reprToken != HdVP2ReprTokens->forcedUntextured) {
             refThis.InitRepr(
                 drawScene.GetUsdImagingDelegate(), HdVP2ReprTokens->forcedBbox, dirtyBits);
+            refThis.InitRepr(
+                drawScene.GetUsdImagingDelegate(), HdVP2ReprTokens->forcedWire, dirtyBits);
+            refThis.InitRepr(
+                drawScene.GetUsdImagingDelegate(), HdVP2ReprTokens->forcedUntextured, dirtyBits);
         }
     } else {
         // Sync display layer modes for non-instanced prims.
@@ -769,7 +774,7 @@ void MayaUsdRPrim::_SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned i
 
     _displayLayerModesInstancedFrame = drawScene.GetFrameCounter();
 
-    _needForcedBBox = false;
+    _forcedReprFlags = 0;
     _requiredModFlagsBitset.reset();
     if (drawScene.SupportPerInstanceDisplayLayers(id)) {
         _displayLayerModesInstanced.resize(instanceCount);
@@ -779,7 +784,11 @@ void MayaUsdRPrim::_SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned i
             _PopulateDisplayLayerModes(usdPath, displayLayerModes, drawScene);
 
             if (displayLayerModes._reprOverride == kBBox) {
-                _needForcedBBox = true;
+                _forcedReprFlags |= kForcedBBox;
+            } else if (displayLayerModes._reprOverride == kWire) {
+                _forcedReprFlags |= kForcedWire;
+            } else if (!displayLayerModes._texturing) {
+                _forcedReprFlags |= kForcedUntextured;
             }
 
             int requiredModFlags = 0;
@@ -1034,11 +1043,40 @@ bool MayaUsdRPrim::_FilterInstanceByDisplayLayer(
         return true;
     }
 
-    // Match item's bbox mode against instance's bbox mode
+    // Process draw mode overrides
     const bool forcedBboxItem = (reprToken == HdVP2ReprTokens->forcedBbox);
-    const bool overrideBboxInstance = displayLayerModes._reprOverride == kBBox;
-    if (forcedBboxItem != overrideBboxInstance) {
-        return true;
+    const bool forcedWireItem = (reprToken == HdVP2ReprTokens->forcedWire);
+    const bool forcedUntexturedItem = (reprToken == HdVP2ReprTokens->forcedUntextured);
+    if (displayLayerModes._reprOverride == kNone) {
+        if (displayLayerModes._texturing) {
+            // In no-override mode, an instance should be drawn only by
+            // the non-forced reprs, so skip the forced ones.
+            if (forcedBboxItem || forcedWireItem || forcedUntexturedItem) {
+                return true;
+            }
+        } else {
+            // Untextured override cannot affect bbox and wire modes, so keep
+            // those reprs along with the forcedUntextured one.
+            // Also, since forcedUntextured repr doesn't have a dedicated highlight
+            // draw item, it is drawn by non-forced reprs.
+            bool bboxItem = reprToken == HdVP2ReprTokens->bbox;
+            bool wireItem = reprToken == HdReprTokens->wire;
+            if (!isDedicatedHighlightItem && !forcedUntexturedItem && !bboxItem && !wireItem) {
+                return true;
+            }
+        }
+    } else if (displayLayerModes._reprOverride == kWire) {
+        // Wire override cannot affect bbox mode so keep this repr
+        // along with the forcedWire one.
+        bool bboxItem = reprToken == HdVP2ReprTokens->bbox;
+        if (!forcedWireItem && !bboxItem) {
+            return true;
+        }
+    } else if (displayLayerModes._reprOverride == kBBox) {
+        // Bbox override affects all draw modes.
+        if (!forcedBboxItem) {
+            return true;
+        }
     }
 
     // Match item's hide-on-playback mode against that of the instance
@@ -1107,10 +1145,22 @@ void MayaUsdRPrim::_SyncForcedReprs(
         }
     };
 
-    if (_needForcedBBox) {
+    if (_forcedReprFlags & kForcedBBox) {
         refThis.Sync(delegate, renderParam, dirtyBits, HdVP2ReprTokens->forcedBbox);
     } else {
         _ForEachRenderItemInRepr(_FindRepr(reprs, HdVP2ReprTokens->forcedBbox), hideDrawItem);
+    }
+
+    if (_forcedReprFlags & kForcedWire) {
+        refThis.Sync(delegate, renderParam, dirtyBits, HdVP2ReprTokens->forcedWire);
+    } else {
+        _ForEachRenderItemInRepr(_FindRepr(reprs, HdVP2ReprTokens->forcedWire), hideDrawItem);
+    }
+
+    if (_forcedReprFlags & kForcedUntextured) {
+        refThis.Sync(delegate, renderParam, dirtyBits, HdVP2ReprTokens->forcedUntextured);
+    } else {
+        _ForEachRenderItemInRepr(_FindRepr(reprs, HdVP2ReprTokens->forcedUntextured), hideDrawItem);
     }
 }
 

@@ -15,10 +15,9 @@
 //
 #include "UsdUndoMaterialCommands.h"
 
+#include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/ufe/Utils.h>
 
-#include <pxr/base/tf/envSetting.h>
-#include <pxr/base/tf/getenv.h>
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>
 #include <pxr/usd/usd/prim.h>
@@ -286,17 +285,7 @@ Ufe::SceneItem::Ptr UsdUndoAssignNewMaterialCommand::insertedChild() const
 
 std::string UsdUndoAssignNewMaterialCommand::resolvedMaterialScopeName()
 {
-    std::string materialsScopeName = kDefaultMaterialScopeName;
-    if (TfGetEnvSetting(USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME)) {
-        materialsScopeName = UsdUtilsGetMaterialsScopeName().GetString();
-    } else {
-        const std::string mayaUsdDefaultMaterialsScopeName
-            = TfGetenv("MAYAUSD_MATERIALS_SCOPE_NAME");
-        if (!mayaUsdDefaultMaterialsScopeName.empty()) {
-            materialsScopeName = mayaUsdDefaultMaterialsScopeName;
-        }
-    }
-    return materialsScopeName;
+    return UsdMayaJobExportArgs::GetDefaultMaterialsScopeName();
 }
 
 void UsdUndoAssignNewMaterialCommand::execute()
