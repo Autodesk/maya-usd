@@ -81,8 +81,8 @@ def mayaUsdLibRegisterStrings():
     register('kHelpMergeToUSDOptionsMenuItem', 'Help on Merge Maya Edits to USD Options')
 
     # mayaUsdDuplicateAsUsdDataOptions.py
-    register('kDuplicateAsUsdDataOptionsTitle', 'Duplicate As Usd Data Options')
-    register('kHelpDuplicateAsUsdDataOptionsMenuItem', 'Help on Duplicate As Usd Data Options')
+    register('kDuplicateAsUsdDataOptionsTitle', 'Duplicate As USD Data Options')
+    register('kHelpDuplicateAsUsdDataOptionsMenuItem', 'Help on Duplicate As USD Data Options')
 
     # mayaUsdMergeToUsd.py
     register('kErrorMergeToUsdMenuItem', 'Could not create menu item for merge to USD')
