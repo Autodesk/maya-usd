@@ -236,6 +236,78 @@ class testVP2RenderDelegateDisplayLayers(imageUtils.ImageDiffingTestCase):
         self.assertTrue(layer1MemberStrings[0] == group1 or layer1MemberStrings[1] == group1)
         self.assertTrue(layer1MemberStrings[0] == groupedSphere2 or layer1MemberStrings[1] == groupedSphere2)
 
+    def testDisplayLayersOnInstancedMeshes(self):
+        cmds.file(force=True, new=True)
+        mayaUtils.loadPlugin("mayaUsdPlugin")
+        self._testName = 'displayLayersOnInstancedMeshes'
+        testFile = testUtils.getTestScene("instances", "instancedTexturedBalls.usda")
+        self._proxyDagPath, sphereStage = mayaUtils.createProxyFromFile(testFile)
+        globalSelection = ufe.GlobalSelection.get()
+        globalSelection.clear()
+
+        cmds.modelEditor('modelPanel4', edit=True, grid=False)
+        cmds.modelEditor('modelPanel4', edit=True, displayTextures=True)
+
+        sphere0 = self._proxyDagPath + ",/Scene/Instance0"
+        sphere1 = self._proxyDagPath + ",/Scene/Instance1"
+        sphere2 = self._proxyDagPath + ",/Scene/Instance2"
+
+        cmds.createDisplayLayer(name="layer1", noRecurse=True)
+        displayLayer1 = OpenMaya.MFnDisplayLayer(self._GetMayaNode("layer1"))
+        displayLayer1.add(sphere0)
+        displayLayer1.add(sphere1)
+
+        # invisible
+        cmds.setAttr('layer1.drawInfo.visibility', False)
+        self.assertSnapshotClose('%s_balls01_hidden.png' % self._testName)
+
+        # visible
+        cmds.setAttr('layer1.drawInfo.visibility', True)
+        self.assertSnapshotClose('%s_balls012_visible.png' % self._testName)
+
+        # untextured
+        cmds.setAttr('layer1.drawInfo.texturing', False)
+        self.assertSnapshotClose('%s_balls01_untextured.png' % self._testName)
+
+        # hide on playback
+        cmds.setAttr('layer1.drawInfo.hideOnPlayback', True)
+        self.assertSnapshotClose('%s_balls01_hideonplayback.png' % self._testName)
+        cmds.setAttr('layer1.drawInfo.hideOnPlayback', False)
+
+        # templated
+        cmds.displayRGBColor("templateActive", 1.0, 0.69, 0.69)
+        cmds.setAttr('layer1.drawInfo.displayType', 1)
+        self.assertSnapshotClose('%s_balls01_templated.png' % self._testName)
+        cmds.setAttr('layer1.drawInfo.displayType', 0)
+
+        # bbox
+        cmds.setAttr('layer1.drawInfo.levelOfDetail', 1)
+        self.assertSnapshotClose('%s_balls01_bbox.png' % self._testName)
+        cmds.setAttr('layer1.drawInfo.levelOfDetail', 0)
+
+        # wireframe
+        cmds.setAttr('layer1.drawInfo.shading', False)
+        self.assertSnapshotClose('%s_balls01_wireframe.png' % self._testName)
+
+        # reference
+        cmds.setAttr('layer1.drawInfo.displayType', 2)
+        self.assertSnapshotClose('%s_balls01_reference.png' % self._testName)
+        cmds.setAttr('layer1.drawInfo.displayType', 0)
+
+        # color index
+        cmds.setAttr('layer1.drawInfo.color', 10)
+        self.assertSnapshotClose('%s_balls01_colored.png' % self._testName)
+        cmds.setAttr('layer1.drawInfo.color', 0)
+
+        # rgb color
+        cmds.setAttr('layer1.drawInfo.overrideRGBColors', True)
+        cmds.setAttr('layer1.drawInfo.overrideColorRGB', 1, 0, 0)
+        cmds.setAttr('layer1.drawInfo.overrideColorA', 0.5)
+        self.assertSnapshotClose('%s_balls01_rgbcolor.png' % self._testName)
+        cmds.setAttr('layer1.drawInfo.overrideRGBColors', False)
+        cmds.setAttr('layer1.drawInfo.shading', True)
+        cmds.setAttr('layer1.drawInfo.visibility', False)
+
     def testPrimInTemplatedDisplayLayer(self):
         cmds.file(force=True, new=True)
         mayaUtils.loadPlugin("mayaUsdPlugin")
