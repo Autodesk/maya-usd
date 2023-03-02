@@ -479,5 +479,29 @@ class AttributesTestCase(unittest.TestCase):
             '|stage|stageShape,/pCube2/Looks/standardSurface2SG')
         self.assertEqual(dstAttr.name, 'outputs:out')
 
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 3, 'clearMetadata is only available in UFE v3 or greater.')
+    def testClearNodeGraphAttributeMetadata(self):
+        '''Test cleaning a node graph attribute metadata'''
+
+        # Load a scene.
+      
+        testFile = testUtils.getTestScene('MaterialX', 'MayaSurfaces.usda')
+        shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
+        ufeItem = ufeUtils.createUfeSceneItem(shapeNode,
+            '/pCube2/Looks/standardSurface2SG/MayaNG_standardSurface2SG')
+        self.assertIsNotNone(ufeItem)
+
+        # Then create the attributes interface for that item.
+        attrs = ufe.Attributes.attributes(ufeItem)
+        self.assertIsNotNone(attrs)
+        attr = attrs.attribute('inputs:file2:varnameStr')
+        self.assertIsNotNone(attr)
+
+        # Set a metadata for the attribute.
+        self.assertTrue(attr.setMetadata('TestMetadata', 'test value'))
+
+        # Clear the metadata for the attribute.
+        self.assertTrue(attr.clearMetadata('TestMetadata'))
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
