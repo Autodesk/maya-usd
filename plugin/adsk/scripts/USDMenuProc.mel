@@ -57,9 +57,6 @@ global proc mayaUsdMenu_duplicate(string $ufePath)
 
 global proc mayaUsdMenu_unassignMaterial(string $ufePath)
 {
-    if (!hasPrimUpdater())
-        return;
-
     if (size($ufePath) != 0) {
         string $temp = `python("import ufe;\
                                 ufePath = ufe.PathString.path('" + $ufePath + "');\
