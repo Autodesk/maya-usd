@@ -232,6 +232,20 @@ protected:
         kInvalid = 255
     };
 
+    struct InstanceColorOverride
+    {
+        MColor     _color;
+        bool       _enabled { false };
+        const bool _allowed;
+
+        InstanceColorOverride(bool allowed)
+            : _allowed(allowed)
+        {
+        }
+
+        void Reset() { _enabled = false; }
+    };
+
     static void
     _ProcessDisplayLayerModes(const MObject& displayLayerObj, DisplayLayerModes& displayLayerModes);
 
@@ -288,12 +302,13 @@ protected:
     void _SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned int instanceCount);
 
     bool _FilterInstanceByDisplayLayer(
-        unsigned int          usdInstanceId,
-        BasicWireframeColors& instanceColor,
-        const TfToken&        reprToken,
-        int                   modFlags,
-        bool                  isHighlightItem,
-        bool                  isDedicatedHighlightItem) const;
+        unsigned int           usdInstanceId,
+        BasicWireframeColors&  instanceColor,
+        const TfToken&         reprToken,
+        int                    modFlags,
+        bool                   isHighlightItem,
+        bool                   isDedicatedHighlightItem,
+        InstanceColorOverride& colorOverride) const;
 
     void _SyncForcedReprs(
         HdRprim&          refThis,
