@@ -18,9 +18,9 @@
 //
 // All the following MEL proceduces serves to redirect to Python.
 
-global proc receiveDuplicateAsMayaDataOptionsTextFromDialog(string $exportOptions)
+global proc receiveDuplicateAsUsdDataOptionsTextFromDialog(string $exportOptions)
 {
     // Note: use raw triple-quoted string in case there are backslash in file paths on Windows.
-    python("import mayaUsdDuplicateAsMayaDataOptions; mayaUsdDuplicateAsMayaDataOptions.setDuplicateAsMayaDataOptionsText(r'''" + $exportOptions + "''')");
+    python("import mayaUsdDuplicateAsUsdDataOptions; mayaUsdDuplicateAsUsdDataOptions.setDuplicateAsUsdDataOptionsText(r'''" + $exportOptions + "''')");
 }
 
