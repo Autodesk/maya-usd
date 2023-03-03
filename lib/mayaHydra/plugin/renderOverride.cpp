@@ -82,6 +82,7 @@ template <typename T> inline void hash_combine(std::size_t& seed, const T& value
 #include <maya/MSelectionList.h>
 #include <maya/MTimerMessage.h>
 #include <maya/MUiMessage.h>
+#include <maya/MProfiler.h>
 
 #include <atomic>
 #include <chrono>
@@ -98,6 +99,8 @@ template <typename T> inline void hash_combine(std::size_t& seed, const T& value
 #endif
 #include <ufe/selectionNotification.h>
 #endif // WANT_UFE_BUILD
+
+int _profilerCategory = MProfiler::addCategory("MtohRenderOverride (mayaHydra)", "Events from mayaHydra render override");
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -909,20 +912,7 @@ void MtohRenderOverride::_SelectionChanged()
     SdfPathVector selectedPaths;
     auto          selection = std::make_shared<HdSelection>();
 
-#if WANT_UFE_BUILD
-    const UFE_NS::GlobalSelection::Ptr& ufeSelection = UFE_NS::GlobalSelection::get();
-#endif // WANT_UFE_BUILD
-
     for (auto& it : _delegates) {
-#if WANT_UFE_BUILD
-        if (it->SupportsUfeSelection()) {
-            if (ufeSelection) {
-                it->PopulateSelectedPaths(*ufeSelection, selectedPaths, selection);
-            }
-            // skip non-ufe PopulateSelectedPaths call
-            continue;
-        }
-#endif // WANT_UFE_BUILD
         it->PopulateSelectedPaths(sel, selectedPaths, selection);
     }
     _selectionCollection.SetRootPaths(selectedPaths);
@@ -1028,12 +1018,9 @@ bool MtohRenderOverride::select(
     MSelectionList& selectionList,
     MPointArray&    worldSpaceHitPts)
 {
-#ifndef MAYAHYDRA_DEVELOPMENTAL_NATIVE_SELECTION
-    // Skip override on plugin-side if prototype 2
-    // Rely on VP2 select and simply draw selection items
-    return false;
+#ifdef MAYAHYDRA_PROFILERS_ENABLED
+    MProfilingScope profilingScopeForEval(_profilerCategory, MProfiler::kColorD_L1, "MtohRenderOverride::select", "MtohRenderOverride::select");
 #endif
-
     MStatus status = MStatus::kFailure;
 
     MMatrix viewMatrix = frameContext.getMatrix(MHWRender::MFrameContext::kViewMtx, &status);

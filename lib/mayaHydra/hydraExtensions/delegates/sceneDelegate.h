@@ -32,6 +32,7 @@
 #include <maya/MDagPath.h>
 #include <maya/MFrameContext.h>
 #include <maya/MObject.h>
+#include <maya/MSelectionList.h>
 
 #include <memory>
 #include <vector>
@@ -132,12 +133,6 @@ public:
 
     MAYAHYDRALIB_API
     SdfPath SetCameraViewport(const MDagPath& camPath, const GfVec4d& viewport);
-
-    MAYAHYDRALIB_API
-    void PopulateSelectedPaths(
-        const MSelectionList&       mayaSelection,
-        SdfPathVector&              selectedSdfPaths,
-        const HdSelectionSharedPtr& selection) override;
 
     MAYAHYDRALIB_API
     void HandleCompleteViewportScene(

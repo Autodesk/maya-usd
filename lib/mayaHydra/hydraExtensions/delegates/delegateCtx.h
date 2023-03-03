@@ -88,6 +88,9 @@ public:
     SdfPath
     GetSolidPrimsRootPath() const; // Get the root path for non lines and non points primitives
 
+    MAYAHYDRALIB_API
+    SdfPath GetRprimPath() const;
+
 private:
     SdfPath _rprimPath;
     SdfPath _sprimPath;

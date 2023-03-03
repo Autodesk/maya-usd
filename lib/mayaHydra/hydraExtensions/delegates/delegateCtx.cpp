@@ -156,6 +156,8 @@ void MayaHydraDelegateCtx::RemoveInstancer(const SdfPath& id)
     GetRenderIndex().RemoveInstancer(id);
 }
 
+SdfPath MayaHydraDelegateCtx::GetRprimPath() const { return _rprimPath; }
+
 SdfPath MayaHydraDelegateCtx::GetPrimPath(const MDagPath& dg, bool isSprim)
 {
     if (isSprim) {

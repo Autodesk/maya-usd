@@ -47,11 +47,13 @@ PXR_NAMESPACE_OPEN_SCOPE
  * This is where we translate from Maya shapes (such as meshes) to hydra using their vertex and index buffers, look for "MVertexBuffer" and "MIndexBuffer" in this file to get more information.
  */
 MayaHydraRenderItemAdapter::MayaHydraRenderItemAdapter(
+    const MDagPath&        dagPath,
     const SdfPath&        slowId,
     int                   fastId,
     MayaHydraDelegateCtx* del,
     const MRenderItem&    ri)
     : MayaHydraAdapter(MObject(), slowId, del)
+    , _dagPath(dagPath)
     , _primitive(ri.primitive())
     , _name(ri.name())
     , _fastId(fastId)

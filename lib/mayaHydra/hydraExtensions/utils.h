@@ -46,6 +46,7 @@
 // to what was done inside InsertData from mtoh. Disabled for now
 // #define MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
 // #define MAYAHYDRA_DEVELOPMENTAL_NATIVE_SELECTION
+// #define MAYAHYDRA_PROFILERS_ENABLED
 
 namespace MAYAHYDRA_NS_DEF {
 

@@ -39,12 +39,6 @@
 
 #include <memory>
 
-///UFE stands for Universal Front End : the goal of the Universal Front End is to create a DCC-agnostic component that will allow a DCC to browse and edit data in multiple data models. 
-///This will allow the DCC to edit "pipeline data", however that pipeline data is defined.
-#if WANT_UFE_BUILD
-#include <ufe/selection.h>
-#endif // WANT_UFE_BUILD
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 /**
@@ -106,17 +100,6 @@ public:
         const HdSelectionSharedPtr& selection)
     {
     }
-
-#if WANT_UFE_BUILD
-    virtual void PopulateSelectedPaths(
-        const UFE_NS::Selection&    ufeSelection,
-        SdfPathVector&              selectedSdfPaths,
-        const HdSelectionSharedPtr& selection)
-    {
-    }
-
-    virtual bool SupportsUfeSelection() { return false; }
-#endif // WANT_UFE_BUILD
 
     virtual void PopulateSelectionList(
         const HdxPickHitVector&          hits,
