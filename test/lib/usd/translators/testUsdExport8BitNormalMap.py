@@ -69,7 +69,7 @@ def build_scene():
     return file_node
 
 def build_test_scene(out_dir):
-    """damn"""
+    """Build test scene with reference"""
     fnode = build_scene()
     out_file = os.path.join(out_dir, 'test_scene.mb')
     out_tex = os.path.join(out_dir, 'test_tex.png')
