@@ -25,6 +25,7 @@
 #include <mayaUsd/utils/customLayerData.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/layerMuting.h>
+#include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/loadRules.h>
 #include <mayaUsd/utils/query.h>
 #include <mayaUsd/utils/stageCache.h>
@@ -929,7 +930,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
     if (isIncomingStage) {
         std::vector<std::string> incomingLayers { sharedUsdStage->GetRootLayer()->GetIdentifier() };
-        _incomingLayers = UsdMayaUtil::getAllSublayers(incomingLayers, true);
+        _incomingLayers = getAllSublayers(incomingLayers, true);
     } else {
         _incomingLayers.clear();
     }
@@ -940,14 +941,9 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         // they get the same state they were in, but in order to this we have to keep the layers in
         // the heirharchy alive since the stage is gone and so they will get removed
         if (_unsharedStageRootLayer) {
-            auto subLayerIds = UsdMayaUtil::getAllSublayers(_unsharedStageRootLayer);
             _unsharedStageRootSublayers.clear();
-            for (const auto& identifier : subLayerIds) {
-                SdfLayerRefPtr sublayer = SdfLayer::Find(identifier);
-                if (sublayer) {
-                    _unsharedStageRootSublayers.push_back(sublayer);
-                }
-            }
+            auto subLayers = getAllSublayerRefs(_unsharedStageRootLayer);
+            _unsharedStageRootSublayers.insert(_unsharedStageRootSublayers.begin(), subLayers.begin(), subLayers.end());
         }
         finalUsdStage = sharedUsdStage;
     }
@@ -980,7 +976,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             }
 
             // If its a new layer (or wasn't remapped properly)
-            auto sublayerIds = UsdMayaUtil::getAllSublayers(_unsharedStageRootLayer);
+            auto sublayerIds = getAllSublayers(_unsharedStageRootLayer);
             if (sublayerIds.find(inRootLayer->GetIdentifier()) == sublayerIds.end()) {
                 // Add new layer to subpaths
                 auto subLayers = _unsharedStageRootLayer->GetSubLayerPaths();

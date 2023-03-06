@@ -528,6 +528,100 @@ class GroupCmdTestCase(unittest.TestCase):
             stage.GetPrimAtPath("/group1/Sphere3")])
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 3, 'testGroupUndoRedo is only available in UFE v3 or greater.')
+    def testGroupRestrictionsAllowSession(self):
+        '''
+        Verify that grouping is allowed even ifthe prim as opinions in the session layer.
+        '''
+        cmds.file(new=True, force=True)
+
+        # Create a stage
+        (stage, proxyShapePathStr, proxyShapeItem, contextOp) = createStage()
+
+        # Some helper functions used during the test
+        def getItem(name):
+            proxySegment = mayaUtils.createUfePathSegment(proxyShapePathStr)
+            self.assertIsNotNone(proxySegment)
+            itemPathSegment = usdUtils.createUfePathSegment(name)
+            self.assertIsNotNone(itemPathSegment)
+            itemPath = ufe.Path([proxySegment, itemPathSegment])
+            item = ufe.Hierarchy.createItem(itemPath)
+            self.assertIsNotNone(item)
+            return item
+
+        def applyRotation(item, rotation):
+            itemTrf = ufe.Transform3d.transform3d(item)
+            itemTrf.rotate(*rotation)
+            itemTrf = None
+
+        def verifyRotation(item, rotation):
+            itemTrf = ufe.Transform3d.transform3d(item)
+            self.assertEqual(itemTrf.rotation(), ufe.PyUfe.Vector3d(*rotation))
+
+        # Some values used during the test
+        rotation = [30., 20., 10.]
+        oldSphere1Name = '/Sphere1'
+        newSphere1Name = '/group1/Sphere1'
+
+        # Create a sphere generator and geerate 3 spheres
+        sphereGen = SphereGenerator(3, contextOp, proxyShapePathStr)
+
+        sphere1Path = sphereGen.createSphere()
+        sphere1Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere1Path))
+
+        sphere2Path = sphereGen.createSphere()
+        sphere2Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere2Path))
+
+        sphere3Path = sphereGen.createSphere()
+        sphere3Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere3Path))
+
+        # Add an opinion about one sphere in the session layer
+        stage.SetEditTarget(stage.GetSessionLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
+
+        applyRotation(getItem(oldSphere1Name), rotation)
+        verifyRotation(getItem(oldSphere1Name), rotation)
+
+        # Group Sphere1, Sphere2, and Sphere3 in the root layer
+        stage.SetEditTarget(stage.GetRootLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+
+        groupName = cmds.group(ufe.PathString.string(sphere1Path),
+                               ufe.PathString.string(sphere2Path),
+                               ufe.PathString.string(sphere3Path))
+
+        # Verify that groupItem has 3 children
+        groupItem = ufe.GlobalSelection.get().front()
+        groupHierarchy = ufe.Hierarchy.hierarchy(groupItem)
+        self.assertEqual(len(groupHierarchy.children()), 3)
+
+        self.assertEqual([item for item in stage.Traverse()],
+            [stage.GetPrimAtPath("/group1"),
+            stage.GetPrimAtPath("/group1/Sphere1"), 
+            stage.GetPrimAtPath("/group1/Sphere2"),
+            stage.GetPrimAtPath("/group1/Sphere3")])
+        
+        verifyRotation(getItem(newSphere1Name), rotation)
+
+        cmds.undo()
+
+        self.assertEqual([item for item in stage.Traverse()],
+            [stage.GetPrimAtPath("/Sphere3"), 
+            stage.GetPrimAtPath("/Sphere2"),
+            stage.GetPrimAtPath("/Sphere1")])
+
+        verifyRotation(getItem(oldSphere1Name), rotation)
+
+        cmds.redo()
+
+        self.assertEqual([item for item in stage.Traverse()],
+            [stage.GetPrimAtPath("/group1"),
+            stage.GetPrimAtPath("/group1/Sphere1"), 
+            stage.GetPrimAtPath("/group1/Sphere2"),
+            stage.GetPrimAtPath("/group1/Sphere3")])
+
+        verifyRotation(getItem(newSphere1Name), rotation)
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 3, 'testGroupUndoRedo is only available in UFE v3 or greater.')
     def testGroupPreserveLoadRules(self):
         '''Verify load rules are preserved when grouping.'''
         cmds.file(new=True, force=True)

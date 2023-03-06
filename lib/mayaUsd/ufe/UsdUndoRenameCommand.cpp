@@ -21,6 +21,7 @@
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/loadRules.h>
 #include <mayaUsdUtils/util.h>
 
@@ -167,9 +168,14 @@ static bool doUsdRename(
         removeRulesForPath(*stage, fromPath);
     }
 
-    // set the new name
-    auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
-    status = primSpec->SetName(newName);
+    // Do the renaming in the target layer and all other applicable layers,
+    // which, due to command restrictions that have been verified when the
+    // command was created, should only be session layers.
+    PrimSpecFunc renameFunc
+        = [&newName, &status](const UsdPrim&, const SdfPrimSpecHandle& primSpec) -> void {
+        status = status && primSpec->SetName(newName);
+    };
+    applyToAllPrimSpecs(prim, renameFunc);
     if (!status)
         return false;
 

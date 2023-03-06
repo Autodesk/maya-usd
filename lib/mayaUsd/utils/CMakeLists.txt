@@ -12,6 +12,7 @@ target_sources(${PROJECT_NAME}
         editability.cpp
         editRouter.cpp
         layerMuting.cpp
+        layers.cpp
         loadRules.cpp
         loadRulesText.cpp
         loadRulesAttribute.cpp
@@ -49,6 +50,7 @@ set(HEADERS
     editRouter.h
     hash.h
     layerMuting.h
+    layers.h
     loadRules.h
     query.h
     plugRegistryHelper.h

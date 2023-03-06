@@ -21,6 +21,7 @@
 #include "private/Utils.h"
 
 #include <mayaUsd/utils/editRouter.h>
+#include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/loadRules.h>
 #include <mayaUsdUtils/util.h>
 
@@ -164,6 +165,76 @@ UsdUndoInsertChildCommand::Ptr UsdUndoInsertChildCommand::create(
     return std::make_shared<MakeSharedEnabler<UsdUndoInsertChildCommand>>(parent, child, pos);
 }
 
+static bool doUsdInsertion(
+    const UsdStagePtr&    stage,
+    const SdfLayerHandle& srcLayer,
+    const SdfPath&        srcUsdPath,
+    const SdfLayerHandle& dstLayer,
+    const SdfPath&        dstUsdPath)
+{
+    if (!SdfCopySpec(srcLayer, srcUsdPath, dstLayer, dstUsdPath)) {
+        TF_WARN("Moving prim \"%s\" with SdfCopySpec() failed.", srcUsdPath.GetString().c_str());
+        return false;
+    }
+
+    return true;
+}
+
+static UsdSceneItem::Ptr doInsertion(
+    const SdfLayerHandle& srcLayer,
+    const SdfPath&        srcUsdPath,
+    const Ufe::Path&      srcUfePath,
+    const SdfLayerHandle& dstLayer,
+    const SdfPath&        dstUsdPath,
+    const Ufe::Path&      dstUfePath)
+{
+    // We must retrieve the item every time we are called since it could be stale.
+    // We need to get the USD prim from the UFE path.
+    const UsdPrim     srcPrim = ufePathToPrim(srcUfePath);
+    const UsdStagePtr stage = srcPrim.GetStage();
+
+    // Make sure the load state of the reparented prim will be preserved.
+    // We copy all rules that applied to it specifically and remove the rules
+    // that applied to it specifically.
+    duplicateLoadRules(*stage, srcUsdPath, dstUsdPath);
+    removeRulesForPath(*stage, srcUsdPath);
+
+    // Do the insertion fro, the soufce layer to the target layer.
+    bool success = doUsdInsertion(stage, srcLayer, srcUsdPath, dstLayer, dstUsdPath);
+    if (!success)
+        return {};
+
+    // Do the insertion in all other applicable layers, which, due to the command
+    // restrictions that have been verified when the command was created, should
+    // only be session layers.
+    PrimLayerFunc insertionFunc
+        = [&success, stage, srcUsdPath, dstUsdPath](
+              const UsdPrim& prim, const PXR_NS::SdfLayerRefPtr& layer) -> void {
+        success = success && doUsdInsertion(stage, layer, srcUsdPath, layer, dstUsdPath);
+    };
+
+    const bool includeTopLayer = true;
+    const auto sessionLayers = getAllSublayerRefs(stage->GetSessionLayer(), includeTopLayer);
+    applyToSomeLayersWithOpinions(srcPrim, sessionLayers, insertionFunc);
+
+    if (!success)
+        return {};
+
+    // Remove all scene descriptions for the source path and its subtree in the source layer.
+    // Note: is the layer targeting really needed? We are removing the prim entirely.
+    {
+        UsdEditContext ctx(stage, srcLayer);
+        if (!stage->RemovePrim(srcUsdPath)) {
+            TF_WARN("Removing prim \"%s\" failed.", srcUsdPath.GetString().c_str());
+            return {};
+        }
+    }
+
+    UsdSceneItem::Ptr dstItem = UsdSceneItem::create(dstUfePath, ufePathToPrim(dstUfePath));
+    sendNotification<Ufe::ObjectReparent>(dstItem, srcUfePath);
+    return dstItem;
+}
+
 bool UsdUndoInsertChildCommand::insertChildRedo()
 {
     if (_usdDstPath.IsEmpty()) {
@@ -185,72 +256,22 @@ bool UsdUndoInsertChildCommand::insertChildRedo()
         _usdDstPath = parentPrim.GetPath().AppendChild(TfToken(childName));
     }
 
-    // we shouldn't rely on UsdSceneItem to access the UsdPrim since
-    // it could be stale. Instead we should get the USDPrim from the Ufe::Path
-    const auto& usdSrcPrim = ufePathToPrim(_ufeSrcPath);
-    auto        stage = usdSrcPrim.GetStage();
+    // We need to keep the generated item to be able to return it to the caller
+    // via the insertedChild() member function.
+    _ufeDstItem = doInsertion(
+        _childLayer, _usdSrcPath, _ufeSrcPath, _parentLayer, _usdDstPath, _ufeDstPath);
 
-    // Make sure the load state of the reparented prim will be preserved.
-    // We copy all rules that applied to it specifically and remove the rules
-    // that applied to it specifically.
-    duplicateLoadRules(*stage, _usdSrcPath, _usdDstPath);
-    removeRulesForPath(*stage, _usdSrcPath);
-
-    bool status = SdfCopySpec(_childLayer, _usdSrcPath, _parentLayer, _usdDstPath);
-    if (status) {
-        // remove all scene description for the given path and
-        // its subtree in the current UsdEditTarget
-        {
-            UsdEditContext ctx(stage, _childLayer);
-            status = stage->RemovePrim(_usdSrcPath);
-        }
-
-        if (status) {
-            _ufeDstItem = UsdSceneItem::create(_ufeDstPath, ufePathToPrim(_ufeDstPath));
-            sendNotification<Ufe::ObjectReparent>(_ufeDstItem, _ufeSrcPath);
-        }
-    } else {
-        UFE_LOG(
-            std::string("Warning: SdfCopySpec(") + _usdSrcPath.GetString()
-            + std::string(") failed."));
-    }
-
-    return status;
+    return _ufeDstItem != nullptr;
 }
 
 bool UsdUndoInsertChildCommand::insertChildUndo()
 {
-    // we shouldn't rely on UsdSceneItem to access the UsdPrim since
-    // it could be stale. Instead we should get the USDPrim from the Ufe::Path
-    const auto& usdDstPrim = ufePathToPrim(_ufeDstPath);
-    auto        stage = usdDstPrim.GetStage();
+    // Note: we don't need to keep the source item, we only need it to validate
+    //       that the operation worked.
+    auto srcItem = doInsertion(
+        _parentLayer, _usdDstPath, _ufeDstPath, _childLayer, _usdSrcPath, _ufeSrcPath);
 
-    // Make sure the load state of the reparented prim will be preserved.
-    // We copy all rules that applied to it specifically and remove the rules
-    // that applied to it specifically.
-    duplicateLoadRules(*stage, _usdDstPath, _usdSrcPath);
-    removeRulesForPath(*stage, _usdDstPath);
-
-    bool status = SdfCopySpec(_parentLayer, _usdDstPath, _childLayer, _usdSrcPath);
-    if (status) {
-        // remove all scene description for the given path and
-        // its subtree in the current UsdEditTarget
-        {
-            UsdEditContext ctx(stage, _parentLayer);
-            status = stage->RemovePrim(_usdDstPath);
-        }
-
-        if (status) {
-            auto ufeSrcItem = UsdSceneItem::create(_ufeSrcPath, ufePathToPrim(_ufeSrcPath));
-            sendNotification<Ufe::ObjectReparent>(ufeSrcItem, _ufeDstPath);
-        }
-    } else {
-        UFE_LOG(
-            std::string("Warning: RemovePrim(") + _usdDstPath.GetString()
-            + std::string(") failed."));
-    }
-
-    return status;
+    return srcItem != nullptr;
 }
 
 void UsdUndoInsertChildCommand::undo()

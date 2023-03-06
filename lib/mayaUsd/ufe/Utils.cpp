@@ -23,6 +23,7 @@
 #include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/utils/editability.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/layers.h>
 #include <mayaUsdUtils/util.h>
 
 #include <pxr/base/tf/hashset.h>
@@ -563,57 +564,6 @@ bool canRemoveDstProperty(const PXR_NS::UsdAttribute& dstAttr)
 
 namespace {
 
-SdfLayerHandle getStrongerLayer(
-    const SdfLayerHandle& root,
-    const SdfLayerHandle& layer1,
-    const SdfLayerHandle& layer2)
-{
-    if (layer1 == layer2)
-        return layer1;
-
-    if (!layer1)
-        return layer2;
-
-    if (!layer2)
-        return layer1;
-
-    if (root == layer1)
-        return layer1;
-
-    if (root == layer2)
-        return layer2;
-
-    for (auto path : root->GetSubLayerPaths()) {
-        SdfLayerRefPtr subLayer = SdfLayer::FindOrOpen(path);
-        if (subLayer) {
-            SdfLayerHandle stronger = getStrongerLayer(subLayer, layer1, layer2);
-            if (!stronger.IsInvalid()) {
-                return stronger;
-            }
-        }
-    }
-
-    return SdfLayerHandle();
-}
-
-SdfLayerHandle getStrongerLayer(
-    const UsdStagePtr&    stage,
-    const SdfLayerHandle& targetLayer,
-    const SdfLayerHandle& topAuthoredLayer)
-{
-    // Session Layer is the strongest in the stage, so check its hierarchy first
-    auto strongerLayer = getStrongerLayer(stage->GetSessionLayer(), targetLayer, topAuthoredLayer);
-    if (strongerLayer == targetLayer) {
-        return targetLayer;
-    } else if (strongerLayer == topAuthoredLayer) {
-        return topAuthoredLayer;
-    }
-
-    // If none of the two layers was found in the Session Layer hierarchy,
-    // then proceed to the stage's general layer hierarchy
-    return getStrongerLayer(stage->GetRootLayer(), targetLayer, topAuthoredLayer);
-}
-
 bool allowedInStrongerLayer(
     const UsdPrim&                 prim,
     const SdfPrimSpecHandleVector& primStack,
@@ -632,6 +582,7 @@ bool allowedInStrongerLayer(
 }
 
 } // namespace
+
 void applyCommandRestriction(
     const UsdPrim&     prim,
     const std::string& commandName,
@@ -643,6 +594,10 @@ void applyCommandRestriction(
     if (prim.IsPseudoRoot()) {
         return;
     }
+
+    const auto stage = prim.GetStage();
+    const bool includeTopLayer = true;
+    const auto sessionLayers = getAllSublayerRefs(stage->GetSessionLayer(), includeTopLayer);
 
     auto        primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
     auto        primStack = prim.GetPrimStack();
@@ -658,7 +613,14 @@ void applyCommandRestriction(
 
     // iterate over the prim stack, starting at the highest-priority layer.
     for (const auto& spec : primStack) {
-        const auto& layerName = spec->GetLayer()->GetDisplayName();
+        // Do not take session layers opinions into consideration because these
+        // opinions are owned by the application and we don't want to block the
+        // user commands due to them.
+        const auto  layer = spec->GetLayer();
+        if (isSessionLayer(layer, sessionLayers))
+            continue;
+
+        const auto& layerName = layer->GetDisplayName();
 
         // skip if there is no primSpec for the selected prim in the current stage's local layer.
         if (!primSpec) {
