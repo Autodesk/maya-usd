@@ -284,6 +284,20 @@ bool _SetTransformAnim(
                     transformNode, _MayaTokens->scales[c], scales[c], times, context, discard)) {
                 return false;
             }
+            if (!rotCurve.isNull())
+                curves.append(rotCurve);
+        }
+        // This feels hacky, but I couldn't find a C++ api method for running the
+        if (applyEulerFilter && curves.length() == 3) {
+            std::ostringstream cmd;
+            cmd << "filterCurve";
+            for (unsigned i = 0; i < 3; ++i) {
+                MFnDependencyNode fn(curves[i]);
+                cmd << " " << fn.name();
+            }
+            cmd << ";";
+            // MGlobal::displayWarning(cmd.str().c_str());
+            MGlobal::executeCommand(cmd.str().c_str(), false);
         }
     } else {
         const auto& xform = xforms.front();
