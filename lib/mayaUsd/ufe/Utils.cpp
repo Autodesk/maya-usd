@@ -565,9 +565,10 @@ bool canRemoveDstProperty(const PXR_NS::UsdAttribute& dstAttr)
 namespace {
 
 bool allowedInStrongerLayer(
-    const UsdPrim&                 prim,
-    const SdfPrimSpecHandleVector& primStack,
-    bool                           allowStronger)
+    const UsdPrim&                          prim,
+    const SdfPrimSpecHandleVector&          primStack,
+    const std::set<PXR_NS::SdfLayerRefPtr>& sessionLayers,
+    bool                                    allowStronger)
 {
     // If the flag to allow edits in a stronger layer if off, then it is not allowed.
     if (!allowStronger)
@@ -578,7 +579,11 @@ bool allowedInStrongerLayer(
     auto targetLayer = stage->GetEditTarget().GetLayer();
     auto topLayer = primStack.front()->GetLayer();
 
-    return getStrongerLayer(stage, targetLayer, topLayer) == targetLayer;
+    const SdfLayerHandle searchRoot = isSessionLayer(targetLayer, sessionLayers)
+        ? stage->GetSessionLayer()
+        : stage->GetRootLayer();
+
+    return getStrongerLayer(searchRoot, targetLayer, topLayer) == targetLayer;
 }
 
 } // namespace
@@ -596,8 +601,11 @@ void applyCommandRestriction(
     }
 
     const auto stage = prim.GetStage();
+    auto       targetLayer = stage->GetEditTarget().GetLayer();
+
     const bool includeTopLayer = true;
     const auto sessionLayers = getAllSublayerRefs(stage->GetSessionLayer(), includeTopLayer);
+    const bool isTargetingSession = isSessionLayer(targetLayer, sessionLayers);
 
     auto        primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
     auto        primStack = prim.GetPrimStack();
@@ -613,11 +621,14 @@ void applyCommandRestriction(
 
     // iterate over the prim stack, starting at the highest-priority layer.
     for (const auto& spec : primStack) {
-        // Do not take session layers opinions into consideration because these
-        // opinions are owned by the application and we don't want to block the
-        // user commands due to them.
+        // Only take session layers opinions into consideration when the target itself
+        // is a session layer (top a sub-layer of session).
+        //
+        // We isolate session / non-session this way because these opinions
+        // are owned by the application and we don't want to block the user
+        // commands and user data due to them.
         const auto layer = spec->GetLayer();
-        if (isSessionLayer(layer, sessionLayers))
+        if (isSessionLayer(layer, sessionLayers) != isTargetingSession)
             continue;
 
         const auto& layerName = layer->GetDisplayName();
@@ -661,7 +672,7 @@ void applyCommandRestriction(
     UsdPrimCompositionQuery query(prim);
     for (const auto& compQueryArc : query.GetCompositionArcs()) {
         if (!primSpec && PcpArcTypeVariant == compQueryArc.GetArcType()) {
-            if (allowedInStrongerLayer(prim, primStack, allowStronger))
+            if (allowedInStrongerLayer(prim, primStack, sessionLayers, allowStronger))
                 return;
             std::string err = TfStringPrintf(
                 "Cannot %s [%s] because it is defined inside the variant composition arc %s.",
@@ -673,7 +684,7 @@ void applyCommandRestriction(
     }
 
     if (!layerDisplayName.empty()) {
-        if (allowedInStrongerLayer(prim, primStack, allowStronger))
+        if (allowedInStrongerLayer(prim, primStack, sessionLayers, allowStronger))
             return;
         std::string formattedInstructions
             = TfStringPrintf(instructions.c_str(), layerDisplayName.c_str());
@@ -790,7 +801,7 @@ bool isPropertyMetadataEditAllowed(
     const SdfLayerHandle targetLayer = editTarget.GetLayer();
 
     // Verify that the intended target layer is stronger than existing authored opinions.
-    const auto strongestLayer = getStrongerLayer(stage, targetLayer, topAuthoredLayer);
+    const auto strongestLayer = getStrongerLayer(stage, targetLayer, topAuthoredLayer, true);
     bool       allowed = (strongestLayer == targetLayer);
     if (!allowed && errMsg) {
         *errMsg = TfStringPrintf(

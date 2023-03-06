@@ -19,9 +19,11 @@
 #include "private/Utils.h"
 
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/utils/layers.h>
 
 #include <pxr/usd/pcp/layerStack.h>
 #include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/usd/editContext.h>
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/undo/UsdUndoBlock.h>
@@ -95,10 +97,16 @@ void UsdUndoDeleteCommand::execute()
         UsdAttributes::removeAttributesConnections(_prim);
 #endif
 #endif
-        auto retVal = stage->RemovePrim(_prim.GetPath());
-        if (!retVal) {
-            TF_VERIFY(retVal, "Failed to delete '%s'", _prim.GetPath().GetText());
-        }
+        bool success = true;
+
+        PrimSpecFunc deleteFunc
+            = [&success, stage](const UsdPrim& prim, const SdfPrimSpecHandle& primSpec) -> void {
+            PXR_NS::UsdEditContext ctx(stage, primSpec->GetLayer());
+            success = success && stage->RemovePrim(prim.GetPath());
+        };
+        applyToAllPrimSpecs(_prim, deleteFunc);
+
+        TF_VERIFY(success, "Failed to delete '%s'", _prim.GetPath().GetText());
     }
 #else
     _prim.SetActive(false);
