@@ -35,7 +35,9 @@
 #include <maya/MFnAnimCurve.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnTransform.h>
+#include <maya/MGlobal.h>
 #include <maya/MMatrix.h>
+#include <maya/MObjectArray.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
@@ -120,7 +122,7 @@ _getXformOpAsVec3d(const UsdGeomXformOp& xformOp, GfVec3d& value, const UsdTimeC
 }
 
 // Sets the animation curve (a knot per frame) for a given plug/attribute
-static void _setAnimPlugData(
+static MObject _setAnimPlugData(
     MPlug                           plg,
     std::vector<double>&            value,
     MTimeArray&                     timeArray,
@@ -144,6 +146,8 @@ static void _setAnimPlugData(
         TF_RUNTIME_ERROR(
             "Failed to create animation object for attribute: %s", mayaPlgName.asChar());
     }
+
+    return animObj;
 }
 
 // Returns true if the array is not constant
@@ -172,31 +176,57 @@ static void _setMayaAttribute(
     const MString&                  x,
     const MString&                  y,
     const MString&                  z,
-    const UsdMayaPrimReaderContext* context)
+    const UsdMayaPrimReaderContext* context,
+    bool                            applyEulerFilter = false)
 {
+
+    // if have multiple values, and applyEulerFilter, filter the values
+    //
+    if (applyEulerFilter && opName == "rotate") {
+        if (xVal.size() == static_cast<size_t>(timeArray.length()) && xVal.size() == yVal.size()
+            && xVal.size() == zVal.size()) {
+            MPlug                         rotOrder = depFn.findPlug("rotateOrder");
+            MEulerRotation::RotationOrder order
+                = static_cast<MEulerRotation::RotationOrder>(rotOrder.asInt());
+
+            MEulerRotation last(xVal[0], yVal[0], zVal[0], order);
+            for (size_t i = 1; i < xVal.size(); ++i) {
+                MEulerRotation current(xVal[i], yVal[i], zVal[i], order);
+                current.setToClosestSolution(last);
+                xVal[i] = current[0];
+                yVal[i] = current[1];
+                zVal[i] = current[2];
+                last = current;
+            }
+        }
+    }
+
     MPlug plg;
     if (x != "" && !xVal.empty()) {
         plg = depFn.findPlug(opName + x);
         if (!plg.isNull()) {
             plg.setDouble(xVal[0]);
-            if (xVal.size() > 1 && _isArrayVarying(xVal))
-                _setAnimPlugData(plg, xVal, timeArray, context);
+            if (xVal.size() > 1 && (applyEulerFilter || _isArrayVarying(xVal))) {
+                MObject curve = _setAnimPlugData(plg, xVal, timeArray, context);
+            }
         }
     }
     if (y != "" && !yVal.empty()) {
         plg = depFn.findPlug(opName + y);
         if (!plg.isNull()) {
             plg.setDouble(yVal[0]);
-            if (yVal.size() > 1 && _isArrayVarying(yVal))
-                _setAnimPlugData(plg, yVal, timeArray, context);
+            if (yVal.size() > 1 && (applyEulerFilter || _isArrayVarying(yVal))) {
+                MObject curve = _setAnimPlugData(plg, yVal, timeArray, context);
+            }
         }
     }
     if (z != "" && !zVal.empty()) {
         plg = depFn.findPlug(opName + z);
         if (!plg.isNull()) {
             plg.setDouble(zVal[0]);
-            if (zVal.size() > 1 && _isArrayVarying(zVal))
-                _setAnimPlugData(plg, zVal, timeArray, context);
+            if (zVal.size() > 1 && (applyEulerFilter || _isArrayVarying(zVal))) {
+                MObject curve = _setAnimPlugData(plg, zVal, timeArray, context);
+            }
         }
     }
 }
@@ -218,6 +248,9 @@ static bool _pushUSDXformOpToMayaXform(
     std::vector<double> zValue;
     GfVec3d             value;
     std::vector<double> timeSamples;
+
+    bool applyEulerFilter = args.GetJobArguments().applyEulerFilter;
+
     if (!args.GetTimeInterval().IsEmpty()) {
         xformop.GetTimeSamplesInInterval(args.GetTimeInterval(), &timeSamples);
     }
@@ -352,7 +385,8 @@ static bool _pushUSDXformOpToMayaXform(
                 "X",
                 "Y",
                 "Z",
-                context);
+                context,
+                applyEulerFilter && opName == UsdMayaXformStackTokens->rotate);
         }
         return true;
     }

@@ -95,6 +95,11 @@ MSyntax MayaUSDImportCommand::createSyntax()
         MSyntax::kString);
     syntax.makeFlagMultiUse(kImportChaserArgsFlag);
 
+    syntax.addFlag(
+        kApplyEulerFilterFlag,
+        UsdMayaJobImportArgsTokens->applyEulerFilter.GetText(),
+        MSyntax::kBoolean);
+
     // These are additional flags under our control.
     syntax.addFlag(kFileFlag, kFileFlagLong, MSyntax::kString);
     syntax.addFlag(kParentFlag, kParentFlagLong, MSyntax::kString);

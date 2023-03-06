@@ -1112,6 +1112,7 @@ UsdMayaJobImportArgs::UsdMayaJobImportArgs(
     , useAsAnimationCache(extractBoolean(userArgs, UsdMayaJobImportArgsTokens->useAsAnimationCache))
     , importWithProxyShapes(importWithProxyShapes)
     , preserveTimeline(extractBoolean(userArgs, UsdMayaJobImportArgsTokens->preserveTimeline))
+    , applyEulerFilter(extractBoolean(userArgs, UsdMayaJobImportArgsTokens->applyEulerFilter))
     , pullImportStage(extractUsdStageRefPtr(userArgs, UsdMayaJobImportArgsTokens->pullImportStage))
     , timeInterval(timeInterval)
     , chaserNames(extractVector<std::string>(userArgs, UsdMayaJobImportArgsTokens->chaser))
@@ -1169,6 +1170,7 @@ const VtDictionary& UsdMayaJobImportArgs::GetDefaultDictionary()
         d[UsdMayaJobImportArgsTokens->preserveTimeline] = false;
         d[UsdMayaJobExportArgsTokens->chaser] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->chaserArgs] = std::vector<VtValue>();
+        d[UsdMayaJobImportArgsTokens->applyEulerFilter] = false;
 
         // plugInfo.json site defaults.
         // The defaults dict should be correctly-typed, so enable
@@ -1247,6 +1249,7 @@ const VtDictionary& UsdMayaJobImportArgs::GetGuideDictionary()
         d[UsdMayaJobImportArgsTokens->preserveTimeline] = _boolean;
         d[UsdMayaJobExportArgsTokens->chaser] = _stringVector;
         d[UsdMayaJobExportArgsTokens->chaserArgs] = _stringTripletVector;
+        d[UsdMayaJobImportArgsTokens->applyEulerFilter] = _boolean;
     });
 
     return d;
@@ -1333,8 +1336,8 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobImportArgs& importAr
         << std::endl
         << "timeInterval: " << importArgs.timeInterval << std::endl
         << "useAsAnimationCache: " << TfStringify(importArgs.useAsAnimationCache) << std::endl
-        << "preserveTimeline: " << TfStringify(importArgs.preserveTimeline) << std::endl
-        << "importWithProxyShapes: " << TfStringify(importArgs.importWithProxyShapes) << std::endl;
+        << "importWithProxyShapes: " << TfStringify(importArgs.importWithProxyShapes) << std::endl
+        << "applyEulerFilter: " << importArgs.applyEulerFilter << std::endl;
 
     out << "jobContextNames (" << importArgs.jobContextNames.size() << ")" << std::endl;
     for (const std::string& jobContextName : importArgs.jobContextNames) {

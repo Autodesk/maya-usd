@@ -76,6 +76,7 @@ set(TEST_SCRIPT_FILES
     testUsdImportSkeleton.py
     testUsdImportXforms.py
     testUsdImportXformAnim.py
+    testUsdImportEulerFilter.py
     testUsdMayaAdaptor.py
     testUsdMayaAdaptorGeom.py
     testUsdMayaAdaptorMetadata.py
