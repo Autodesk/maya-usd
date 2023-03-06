@@ -154,6 +154,86 @@ class ReorderCmdTestCase(unittest.TestCase):
         self.assertEqual(findIndex(coneItem),    2) 
         self.assertEqual(findIndex(cubeItem),    3)
 
+    def testReorderWithSessionOpinions(self):
+        ''' 
+        Verify reorder is allowed when there are opinions in the session layer.
+        '''
+        # Get the USD stage
+        mayaPathSegment = mayaUtils.createUfePathSegment('|Primitives_usd|Primitives_usdShape')
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+
+        # Some helper functions used during the test
+        def getItem(name):
+            itemPathSegment = usdUtils.createUfePathSegment(name)
+            itemPath = ufe.Path([mayaPathSegment, itemPathSegment])
+            item = ufe.Hierarchy.createItem(itemPath)
+            self.assertIsNotNone(item)
+            return item
+
+        def applyRotation(item, rotation):
+            itemTrf = ufe.Transform3d.transform3d(item)
+            itemTrf.rotate(*rotation)
+            itemTrf = None
+
+        def verifyRotation(item, rotation):
+            itemTrf = ufe.Transform3d.transform3d(item)
+            self.assertEqual(itemTrf.rotation(), ufe.PyUfe.Vector3d(*rotation))
+
+        # Some values used during the test
+        rotation = [30., 20., 10.]
+        coneName = '/Xform1/Cone1'
+
+        # create multiple item
+        capsulePath = ufe.PathString.path("|Primitives_usd|Primitives_usdShape,/Xform1/Capsule1")
+        capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+        
+        conePath = ufe.PathString.path("|Primitives_usd|Primitives_usdShape,/Xform1/Cone1")
+        coneItem = ufe.Hierarchy.createItem(conePath)
+        
+        cubePath = ufe.PathString.path("|Primitives_usd|Primitives_usdShape,/Xform1/Cube1")
+        cubeItem = ufe.Hierarchy.createItem(cubePath)
+
+        # Add an opinion about one sphere in the session layer
+        stage.SetEditTarget(stage.GetSessionLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
+
+        applyRotation(getItem(coneName), rotation)
+        verifyRotation(getItem(coneName), rotation)
+
+        stage.SetEditTarget(stage.GetRootLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+
+        # move items forward ( + )
+        cmds.reorder(ufe.PathString.string(capsulePath), r=3)
+        cmds.reorder(ufe.PathString.string(conePath),    r=3)
+        cmds.reorder(ufe.PathString.string(cubePath),    r=3)
+
+        # check positions
+        self.assertEqual(findIndex(capsuleItem), 1)
+        self.assertEqual(findIndex(coneItem),    2) 
+        self.assertEqual(findIndex(cubeItem),    3)
+        verifyRotation(getItem(coneName), rotation)
+
+        # undo
+        for _ in range(3):
+            cmds.undo()
+
+        # check positions
+        self.assertEqual(findIndex(capsuleItem), 0)
+        self.assertEqual(findIndex(coneItem),    1) 
+        self.assertEqual(findIndex(cubeItem),    2)
+        verifyRotation(getItem(coneName), rotation)
+
+        # redo
+        for _ in range(3):
+            cmds.redo()
+
+        # check positions
+        self.assertEqual(findIndex(capsuleItem), 1)
+        self.assertEqual(findIndex(coneItem),    2) 
+        self.assertEqual(findIndex(cubeItem),    3)
+        verifyRotation(getItem(coneName), rotation)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

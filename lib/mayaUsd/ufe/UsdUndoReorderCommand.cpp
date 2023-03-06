@@ -18,6 +18,7 @@
 #include "Utils.h"
 
 #include <mayaUsd/undo/UsdUndoBlock.h>
+#include <mayaUsd/utils/layers.h>
 #include <mayaUsdUtils/util.h>
 
 #include <ufe/log.h>
@@ -54,8 +55,15 @@ void UsdUndoReorderCommand::execute()
 {
     UsdUndoBlock undoBlock(&_undoableItem);
 
-    const auto& parentPrimSpec = MayaUsdUtils::getPrimSpecAtEditTarget(_parentPrim);
-    parentPrimSpec->SetNameChildrenOrder(_orderedTokens);
+    // Do the reordering in the target layer and all other applicable layers,
+    // which, due to command restrictions that have been verified when the
+    // command was created, should only be session layers.
+    const auto   newOrder = _orderedTokens;
+    PrimSpecFunc reorderFunc
+        = [newOrder](const UsdPrim&, const SdfPrimSpecHandle& primSpec) -> void {
+        primSpec->SetNameChildrenOrder(newOrder);
+    };
+    applyToAllPrimSpecs(_parentPrim, reorderFunc);
 }
 
 void UsdUndoReorderCommand::undo() { _undoableItem.undo(); }
