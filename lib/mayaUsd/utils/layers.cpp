@@ -102,9 +102,9 @@ void applyToAllLayersWithOpinions(const UsdPrim& prim, PrimLayerFunc& func)
 }
 
 void applyToSomeLayersWithOpinions(
-    const UsdPrim&                 prim,
+    const UsdPrim&                  prim,
     const std::set<SdfLayerRefPtr>& layers,
-    PrimLayerFunc& func)
+    PrimLayerFunc&                  func)
 {
     const SdfPrimSpecHandleVector primStack = prim.GetPrimStack();
     for (const SdfPrimSpecHandle& spec : primStack) {

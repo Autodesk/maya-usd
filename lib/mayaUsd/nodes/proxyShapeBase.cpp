@@ -943,7 +943,8 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         if (_unsharedStageRootLayer) {
             _unsharedStageRootSublayers.clear();
             auto subLayers = getAllSublayerRefs(_unsharedStageRootLayer);
-            _unsharedStageRootSublayers.insert(_unsharedStageRootSublayers.begin(), subLayers.begin(), subLayers.end());
+            _unsharedStageRootSublayers.insert(
+                _unsharedStageRootSublayers.begin(), subLayers.begin(), subLayers.end());
         }
         finalUsdStage = sharedUsdStage;
     }

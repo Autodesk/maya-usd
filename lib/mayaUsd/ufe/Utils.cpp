@@ -22,8 +22,8 @@
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/utils/editability.h>
-#include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/layers.h>
+#include <mayaUsd/utils/util.h>
 #include <mayaUsdUtils/util.h>
 
 #include <pxr/base/tf/hashset.h>
@@ -616,7 +616,7 @@ void applyCommandRestriction(
         // Do not take session layers opinions into consideration because these
         // opinions are owned by the application and we don't want to block the
         // user commands due to them.
-        const auto  layer = spec->GetLayer();
+        const auto layer = spec->GetLayer();
         if (isSessionLayer(layer, sessionLayers))
             continue;
 
