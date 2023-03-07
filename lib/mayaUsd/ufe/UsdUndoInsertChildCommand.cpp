@@ -81,7 +81,7 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
             "Please parent geometric prims under separate XForms and reparent between XForms.",
             childPrim.GetName().GetString().c_str(),
             parentPrim.GetName().GetString().c_str());
-        throw std::runtime_error(err.c_str());
+        throw std::runtime_error(err);
     }
 
     // UsdShadeShader can only have UsdShadeNodeGraph and UsdShadeMaterial as parent.
@@ -92,7 +92,7 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
             childPrim.GetName().GetString().c_str(),
             parentPrim.GetTypeName().GetString().c_str(),
             parentPrim.GetName().GetString().c_str());
-        throw std::runtime_error(err.c_str());
+        throw std::runtime_error(err);
     }
 
     // UsdShadeNodeGraph can only have a UsdShadeNodeGraph and UsdShadeMaterial as parent.
@@ -104,7 +104,7 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
             childPrim.GetName().GetString().c_str(),
             parentPrim.GetTypeName().GetString().c_str(),
             parentPrim.GetName().GetString().c_str());
-        throw std::runtime_error(err.c_str());
+        throw std::runtime_error(err);
     }
 
     // UsdShadeMaterial cannot have UsdShadeShader, UsdShadeNodeGraph or UsdShadeMaterial as parent.
@@ -115,7 +115,7 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
             childPrim.GetName().GetString().c_str(),
             parentPrim.GetTypeName().GetString().c_str(),
             parentPrim.GetName().GetString().c_str());
-        throw std::runtime_error(err.c_str());
+        throw std::runtime_error(err);
     }
 
     // Reparenting directly under an instance prim is disallowed
@@ -124,7 +124,7 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
             "Parenting geometric prim [%s] under instance prim [%s] is not allowed.",
             childPrim.GetName().GetString().c_str(),
             parentPrim.GetName().GetString().c_str());
-        throw std::runtime_error(err.c_str());
+        throw std::runtime_error(err);
     }
 
     // Apply restriction rules
@@ -165,19 +165,22 @@ UsdUndoInsertChildCommand::Ptr UsdUndoInsertChildCommand::create(
     return std::make_shared<MakeSharedEnabler<UsdUndoInsertChildCommand>>(parent, child, pos);
 }
 
-static bool doUsdInsertion(
+static void doUsdInsertion(
     const UsdStagePtr&    stage,
     const SdfLayerHandle& srcLayer,
     const SdfPath&        srcUsdPath,
     const SdfLayerHandle& dstLayer,
     const SdfPath&        dstUsdPath)
 {
+    SdfJustCreatePrimInLayer(dstLayer, dstUsdPath.GetParentPath());
     if (!SdfCopySpec(srcLayer, srcUsdPath, dstLayer, dstUsdPath)) {
-        TF_WARN("Moving prim \"%s\" with SdfCopySpec() failed.", srcUsdPath.GetString().c_str());
-        return false;
+        const std::string error = TfStringPrintf(
+            "Insert child command: moving prim \"%s\" to \"%s\" with SdfCopySpec() failed.",
+            srcUsdPath.GetString().c_str(),
+            dstUsdPath.GetString().c_str());
+        TF_WARN("%s", error.c_str());
+        throw std::runtime_error(error);
     }
-
-    return true;
 }
 
 static UsdSceneItem::Ptr doInsertion(
@@ -200,42 +203,43 @@ static UsdSceneItem::Ptr doInsertion(
     removeRulesForPath(*stage, srcUsdPath);
 
     // Do the insertion fro, the soufce layer to the target layer.
-    bool success = doUsdInsertion(stage, srcLayer, srcUsdPath, dstLayer, dstUsdPath);
-    if (!success)
-        return {};
+    doUsdInsertion(stage, srcLayer, srcUsdPath, dstLayer, dstUsdPath);
 
     // Do the insertion in all other applicable layers, which, due to the command
     // restrictions that have been verified when the command was created, should
     // only be session layers.
-    PrimLayerFunc insertionFunc
-        = [&success, stage, srcUsdPath, dstUsdPath](
-              const UsdPrim& prim, const PXR_NS::SdfLayerRefPtr& layer) -> void {
-        success = success && doUsdInsertion(stage, layer, srcUsdPath, layer, dstUsdPath);
-    };
+    PrimLayerFunc insertionFunc =
+        [stage, srcUsdPath, dstUsdPath](const UsdPrim& prim, const PXR_NS::SdfLayerRefPtr& layer) {
+            doUsdInsertion(stage, layer, srcUsdPath, layer, dstUsdPath);
+        };
 
     const bool includeTopLayer = true;
     const auto sessionLayers = getAllSublayerRefs(stage->GetSessionLayer(), includeTopLayer);
     applyToSomeLayersWithOpinions(srcPrim, sessionLayers, insertionFunc);
 
-    if (!success)
-        return {};
-
     // Remove all scene descriptions for the source path and its subtree in the source layer.
     // Note: is the layer targeting really needed? We are removing the prim entirely.
-    {
-        UsdEditContext ctx(stage, srcLayer);
-        if (!stage->RemovePrim(srcUsdPath)) {
-            TF_WARN("Removing prim \"%s\" failed.", srcUsdPath.GetString().c_str());
-            return {};
-        }
-    }
+    PrimLayerFunc removeFunc
+        = [stage, srcUsdPath](const UsdPrim& prim, const PXR_NS::SdfLayerRefPtr& layer) {
+              UsdEditContext ctx(stage, layer);
+              if (!stage->RemovePrim(srcUsdPath)) {
+                  const std::string error = TfStringPrintf(
+                      "Insert child command: removing prim \"%s\" in layer \"%s\" failed.",
+                      srcUsdPath.GetString().c_str(),
+                      layer->GetDisplayName().c_str());
+                  TF_WARN("%s", error.c_str());
+                  throw std::runtime_error(error);
+              }
+          };
+
+    applyToAllLayersWithOpinions(srcPrim, removeFunc);
 
     UsdSceneItem::Ptr dstItem = UsdSceneItem::create(dstUfePath, ufePathToPrim(dstUfePath));
     sendNotification<Ufe::ObjectReparent>(dstItem, srcUfePath);
     return dstItem;
 }
 
-bool UsdUndoInsertChildCommand::insertChildRedo()
+void UsdUndoInsertChildCommand::insertChildRedo()
 {
     if (_usdDstPath.IsEmpty()) {
         const auto& parentPrim = ufePathToPrim(_ufeParentPath);
@@ -260,39 +264,25 @@ bool UsdUndoInsertChildCommand::insertChildRedo()
     // via the insertedChild() member function.
     _ufeDstItem = doInsertion(
         _childLayer, _usdSrcPath, _ufeSrcPath, _parentLayer, _usdDstPath, _ufeDstPath);
-
-    return _ufeDstItem != nullptr;
 }
 
-bool UsdUndoInsertChildCommand::insertChildUndo()
+void UsdUndoInsertChildCommand::insertChildUndo()
 {
     // Note: we don't need to keep the source item, we only need it to validate
     //       that the operation worked.
-    auto srcItem = doInsertion(
-        _parentLayer, _usdDstPath, _ufeDstPath, _childLayer, _usdSrcPath, _ufeSrcPath);
-
-    return srcItem != nullptr;
+    doInsertion(_parentLayer, _usdDstPath, _ufeDstPath, _childLayer, _usdSrcPath, _ufeSrcPath);
 }
 
 void UsdUndoInsertChildCommand::undo()
 {
-    try {
-        InPathChange pc;
-        if (!insertChildUndo()) {
-            UFE_LOG("insert child undo failed");
-        }
-    } catch (const std::exception& e) {
-        UFE_LOG(e.what());
-        throw; // re-throw the same exception
-    }
+    InPathChange pc;
+    insertChildUndo();
 }
 
 void UsdUndoInsertChildCommand::redo()
 {
     InPathChange pc;
-    if (!insertChildRedo()) {
-        UFE_LOG("insert child redo failed");
-    }
+    insertChildRedo();
 }
 
 } // namespace ufe

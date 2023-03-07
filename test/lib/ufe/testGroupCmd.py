@@ -25,7 +25,7 @@ import usdUtils
 
 import mayaUsd.ufe
 
-from pxr import Kind, Usd, UsdGeom, Vt
+from pxr import Kind, Usd, UsdGeom, Vt, Sdf
 
 from maya import cmds, mel
 from maya import standalone
@@ -325,8 +325,14 @@ class GroupCmdTestCase(unittest.TestCase):
         # get the USD stage
         stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
 
-        # set the edit target to the session layer
-        stage.SetEditTarget(stage.GetSessionLayer())
+        # set the edit target to a new layer
+        newLayerName = 'Layer_1'
+        usdFormat = Sdf.FileFormat.FindByExtension('usd')
+        newLayer = Sdf.Layer.New(usdFormat, newLayerName)
+        stage.GetRootLayer().subLayerPaths.append(newLayer.identifier)
+
+        stage.SetEditTarget(newLayer)
+        self.assertEqual(stage.GetEditTarget().GetLayer(), newLayer)
 
         # expect the exception happens
         with self.assertRaises(RuntimeError):
@@ -346,7 +352,7 @@ class GroupCmdTestCase(unittest.TestCase):
         ufeSelection.append(sphereItem)
 
         # set the edit target to the session layer
-        stage.SetEditTarget(stage.GetSessionLayer())
+        stage.SetEditTarget(newLayer)
 
         # expect the exception happens.
         with self.assertRaises(RuntimeError):
