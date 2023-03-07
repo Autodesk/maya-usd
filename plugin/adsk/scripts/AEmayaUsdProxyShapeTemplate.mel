@@ -1,5 +1,0 @@
-global proc AEmayaUsdProxyShapeTemplate( string $nodeName )
-{
-	// Just include our base template - it has all the attributes.
-	AEmayaUsdProxyShapeBaseTemplate $nodeName;
-}
