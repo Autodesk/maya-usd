@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef HDMAYA_DELEGATE_BASE_H
-#define HDMAYA_DELEGATE_BASE_H
+#ifndef MAYAHYDRALIB_DELEGATE_BASE_H
+#define MAYAHYDRALIB_DELEGATE_BASE_H
 
-#include <hdMaya/delegates/delegate.h>
+#include <mayaHydraLib/delegates/delegate.h>
 
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
@@ -24,16 +24,21 @@
 #include <pxr/usd/sdf/path.h>
 
 #include <maya/MDagPath.h>
+#include <maya/MHWGeometryUtilities.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaDelegateCtx
+/**
+ * \brief MayaHydraDelegateCtx is a set of common functions, and it is the aggregation of our
+ * MayaHydraDelegate base class and the hydra custom scene delegate class : HdSceneDelegate.
+ */
+class MayaHydraDelegateCtx
     : public HdSceneDelegate
-    , public HdMayaDelegate
+    , public MayaHydraDelegate
 {
 protected:
-    HDMAYA_API
-    HdMayaDelegateCtx(const InitData& initData);
+    MAYAHYDRALIB_API
+    MayaHydraDelegateCtx(const InitData& initData);
 
 public:
     enum RebuildFlags : uint32_t
@@ -45,28 +50,44 @@ public:
     using HdSceneDelegate::GetRenderIndex;
     HdChangeTracker& GetChangeTracker() { return GetRenderIndex().GetChangeTracker(); }
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void InsertRprim(const TfToken& typeId, const SdfPath& id, const SdfPath& instancerId = {});
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void InsertSprim(const TfToken& typeId, const SdfPath& id, HdDirtyBits initialBits);
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void RemoveRprim(const SdfPath& id);
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void RemoveSprim(const TfToken& typeId, const SdfPath& id);
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void         RemoveInstancer(const SdfPath& id);
     virtual void RemoveAdapter(const SdfPath& id) { }
     virtual void RecreateAdapter(const SdfPath& id, const MObject& obj) { }
     virtual void RecreateAdapterOnIdle(const SdfPath& id, const MObject& obj) { }
     virtual void RebuildAdapterOnIdle(const SdfPath& id, uint32_t flags) { }
+    virtual void UpdateDisplayStatusMaterial(
+        MHWRender::DisplayStatus displayStatus,
+        const MColor&            wireframecolor)
+    {
+    }
+    virtual void AddArnoldLight(const MDagPath& dag) { }
+    virtual void RemoveArnoldLight(const MDagPath& dag) { }
+
     /// \brief Notifies the scene delegate when a material tag changes.
     ///
     /// \param id Id of the Material that changed its tag.
     virtual void MaterialTagChanged(const SdfPath& id) { }
-    HDMAYA_API
+    MAYAHYDRALIB_API
     SdfPath GetPrimPath(const MDagPath& dg, bool isSprim);
-    HDMAYA_API
+    MAYAHYDRALIB_API
+    SdfPath GetRenderItemPrimPath(const MRenderItem& ri);
+    MAYAHYDRALIB_API
+    SdfPath GetRenderItemShaderPrimPath(const MRenderItem& ri);
+    MAYAHYDRALIB_API
     SdfPath GetMaterialPath(const MObject& obj);
+
+    MAYAHYDRALIB_API
+    SdfPath
+    GetSolidPrimsRootPath() const; // Get the root path for non lines and non points primitives
 
 private:
     SdfPath _rprimPath;
@@ -76,4 +97,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDMAYA_DELEGATE_BASE_H
+#endif // MAYAHYDRALIB_DELEGATE_BASE_H

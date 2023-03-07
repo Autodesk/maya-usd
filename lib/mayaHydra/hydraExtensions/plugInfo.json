@@ -4,119 +4,125 @@
             "Info": {
                 "Types": {
                     # Delegates
-                    "HdMayaDelegate": {
+                    "MayaHydraDelegate": {
                         "displayName": "Base type for all scene delegates in Hydra for Maya."
                     },
-                    "HdMayaSceneDelegate": {
+                    "MayaHydraSceneDelegate": {
                         "bases": [
-                            "HdMayaDelegate"
+                            "MayaHydraDelegate"
                         ],
                         "displayName": "Maya Shapes in Hydra for Maya."
                     },
-                    "HdMayaProxyDelegate": {
+                    "MayaHydraProxyDelegate": {
                         "bases": [
-                            "HdMayaDelegate"
+                            "MayaHydraDelegate"
                         ],
                         "displayName": "Proxy Shapes in Hydra for Maya"
                     },
                     # Adapters
-                    "HdMayaAdapter": {
+                    "MayaHydraAdapter": {
                         "displayName": "Base type for all node adapters in Hydra for Maya."
                     },
-                    "HdMayaDagAdapter": {
+                    "MayaHydraRenderItemAdapter": {
                         "bases": [
-                            "HdMayaAdapter"
+                            "MayaHydraAdapter"
+                        ],
+                        "displayName": "Render item in Hydra for Maya."
+                    },
+                    "MayaHydraDagAdapter": {
+                        "bases": [
+                            "MayaHydraAdapter"
                         ],
                         "displayName": "Dag nodes in Hydra for Maya."
                     },
-                    "HdMayaLightAdapter": {
+                    "MayaHydraLightAdapter": {
                         "bases": [
-                            "HdMayaDagAdapter"
+                            "MayaHydraDagAdapter"
                         ],
                         "displayName": "Lights in Hydra for Maya."
                     },
-                    "HdMayaAreaLightAdapter": {
+                    "MayaHydraAreaLightAdapter": {
                         "bases": [
-                            "HdMayaLightAdapter"
+                            "MayaHydraLightAdapter"
                         ],
                         "displayName": "Area lights in Hydra for Maya."
                     },
-                    "HdMayaPointLightAdapter": {
+                    "MayaHydraPointLightAdapter": {
                         "bases": [
-                            "HdMayaLightAdapter"
+                            "MayaHydraLightAdapter"
                         ],
                         "displayName": "Point lights in Hydra for Maya."
                     },
-                    "HdMayaSpotLightAdapter": {
+                    "MayaHydraSpotLightAdapter": {
                         "bases": [
-                            "HdMayaLightAdapter"
+                            "MayaHydraLightAdapter"
                         ],
                         "displayName": "Spot lights in Hydra for Maya."
                     },
-                    "HdMayaDirectionalLightAdapter": {
+                    "MayaHydraDirectionalLightAdapter": {
                         "bases": [
-                            "HdMayaLightAdapter"
+                            "MayaHydraLightAdapter"
                         ],
                         "displayName": "Directional lights in Hydra for Maya."
                     },
-                    "HdMayaShapeAdapter": {
+                    "MayaHydraShapeAdapter": {
                         "bases": [
-                            "HdMayaDagAdapter"
+                            "MayaHydraDagAdapter"
                         ],
                         "displayName": "Shapes in Hydra for Maya."
                     },
-                    "HdMayaCameraAdapter": {
+                    "MayaHydraCameraAdapter": {
                         "bases": [
-                            "HdMayaShapeAdapter"
+                            "MayaHydraShapeAdapter"
                         ],
                         "displayName": "Cameras in Hydra for Maya."
                     },
-                    "HdMayaMeshAdapter": {
+                    "MayaHydraMeshAdapter": {
                         "bases": [
-                            "HdMayaShapeAdapter"
+                            "MayaHydraShapeAdapter"
                         ],
                         "displayName": "Meshes in Hydra for Maya."
                     },
-                    "HdMayaNurbsCurveAdapter": {
+                    "MayaHydraNurbsCurveAdapter": {
                         "bases": [
-                            "HdMayaShapeAdapter"
+                            "MayaHydraShapeAdapter"
                         ],
                         "displayName": "Nurbs Curves in Hydra for Maya."
                     },
-                    "HdMayaImagePlaneAdapter": {
+                    "MayaHydraImagePlaneAdapter": {
                         "bases": [
-                            "HdMayaShapeAdapter"
+                            "MayaHydraShapeAdapter"
                         ],
                         "displayName": "ImagePlanes in Hydra for Maya."
                     },
-                    "HdMayaAiSkyDomeLightAdapter": {
+                    "MayaHydraAiSkyDomeLightAdapter": {
                         "bases": [
-                            "HdMayaLightAdapter"
+                            "MayaHydraLightAdapter"
                         ],
                         "displayName": "Ai SkyDome Light in Hydra for Maya."
                     },
-                    "HdMayaProxyAdapter": {
+                    "MayaHydraProxyAdapter": {
                         "bases": [
-                            "HdMayaDagAdapter"
+                            "MayaHydraDagAdapter"
                         ],
                         "displayName": "Proxy Shapes in Hydra for Maya."
                     },
                     # Materials
-                    "HdMayaMaterialAdapter": {
+                    "MayaHydraMaterialAdapter": {
                         "bases": [
-                            "HdMayaAdapter"
+                            "MayaHydraAdapter"
                         ],
                         "displayName": "Base adapter for materials."
                     },
-                    "HdMayaShadingEngineAdapter": {
+                    "MayaHydraShadingEngineAdapter": {
                         "bases": [
-                            "HdMayaMaterialAdapter"
+                            "MayaHydraMaterialAdapter"
                         ],
                         "displayName": "Adapter for the shading engine that translates everything to a Preview Surface."
                     },
-                    "HdMayaImagePlaneMaterialAdapter": {
+                    "MayaHydraImagePlaneMaterialAdapter": {
                         "bases": [
-                            "HdMayaMaterialAdapter"
+                            "MayaHydraMaterialAdapter"
                         ],
                         "displayName": "Adapter for the image plane texture."
                     }

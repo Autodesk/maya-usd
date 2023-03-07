@@ -28,7 +28,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-constexpr auto MTOH_RENDER_OVERRIDE_PREFIX = "mtohRenderOverride_";
+constexpr auto MTOH_RENDER_OVERRIDE_PREFIX = "mayaHydraRenderOverride_";
 
 struct MtohRendererDescription
 {
@@ -46,14 +46,14 @@ struct MtohRendererDescription
 
 using MtohRendererDescriptionVector = std::vector<MtohRendererDescription>;
 
-// Map from MtohRendererDescription::rendererName to it's a HdRenderSettingDescriptorList
+/// Map from MtohRendererDescription::rendererName to it's a HdRenderSettingDescriptorList
 using MtohRendererSettings
     = std::unordered_map<TfToken, HdRenderSettingDescriptorList, TfToken::HashFunctor>;
 
-// Defining these in header so don't need to link to use
+/// Defining these in header so don't need to link to use
 inline bool IsMtohRenderOverrideName(const MString& overrideName)
 {
-    // See if the override is an mtoh one - ie, it starts with the right prefix
+    // See if the override is an mayaHydra one - ie, it starts with the right prefix
 
     // VS2017 msvc didn't accept this as a constexpr
     const auto prefixLen = strlen(MTOH_RENDER_OVERRIDE_PREFIX);

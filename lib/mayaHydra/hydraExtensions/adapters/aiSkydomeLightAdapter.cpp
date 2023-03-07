@@ -13,12 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <hdMaya/adapters/adapterDebugCodes.h>
-#include <hdMaya/adapters/adapterRegistry.h>
-#include <hdMaya/adapters/lightAdapter.h>
-#include <hdMaya/adapters/mayaAttrs.h>
-#include <hdMaya/adapters/tokens.h>
-#include <hdMaya/utils.h>
+// Copyright 2023 Autodesk, Inc. All rights reserved.
+//
+#include <mayaHydraLib/adapters/adapterDebugCodes.h>
+#include <mayaHydraLib/adapters/adapterRegistry.h>
+#include <mayaHydraLib/adapters/lightAdapter.h>
+#include <mayaHydraLib/adapters/mayaAttrs.h>
+#include <mayaHydraLib/adapters/tokens.h>
+#include <mayaHydraLib/utils.h>
 
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/light.h>
@@ -30,11 +32,15 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaAiSkyDomeLightAdapter : public HdMayaLightAdapter
+/**
+ * \brief MayaHydraAiSkyDomeLightAdapter is used to handle the translation from an Arnold skydome
+ * light to hydra.
+ */
+class MayaHydraAiSkyDomeLightAdapter : public MayaHydraLightAdapter
 {
 public:
-    HdMayaAiSkyDomeLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
-        : HdMayaLightAdapter(delegate, dag)
+    MayaHydraAiSkyDomeLightAdapter(MayaHydraDelegateCtx* delegate, const MDagPath& dag)
+        : MayaHydraLightAdapter(delegate, dag)
     {
     }
 
@@ -49,7 +55,7 @@ public:
         }
 
         // We are not using precomputed attributes here, because we don't have
-        // a guarantee that mtoa will be loaded before mtoh.
+        // a guarantee that mtoa will be loaded before mayaHydra.
         if (paramName == HdLightTokens->color) {
             const auto plug = light.findPlug("color", true);
             MPlugArray conns;
@@ -61,15 +67,21 @@ public:
                         plug.child(0).asFloat(), plug.child(1).asFloat(), plug.child(2).asFloat()));
         } else if (paramName == HdLightTokens->intensity) {
             return VtValue(light.findPlug("intensity", true).asFloat());
+        } else if (paramName == HdLightTokens->diffuse) {
+            MPlug aiDiffuse = light.findPlug("aiDiffuse", true, &status);
+            if (status == MS::kSuccess) {
+                return VtValue(aiDiffuse.asFloat());
+            }
+        } else if (paramName == HdLightTokens->specular) {
+            MPlug aiSpecular = light.findPlug("aiSpecular", true, &status);
+            if (status == MS::kSuccess) {
+                return VtValue(aiSpecular.asFloat());
+            }
         } else if (paramName == HdLightTokens->exposure) {
             return VtValue(light.findPlug("aiExposure", true).asFloat());
         } else if (paramName == HdLightTokens->normalize) {
             return VtValue(light.findPlug("aiNormalize", true).asBool());
-#if PXR_VERSION >= 2102
         } else if (paramName == HdLightTokens->textureFormat) {
-#else
-        } else if (paramName == UsdLuxTokens->textureFormat) {
-#endif
             const auto format = light.findPlug("format", true).asShort();
             // mirrored_ball : 0
             // angular : 1
@@ -85,32 +97,25 @@ public:
             MPlugArray conns;
             light.findPlug("color", true).connectedTo(conns, true, false);
             if (conns.length() < 1) {
+                // Be aware that dome lights in HdStorm always need a texture to work correctly,
+                // the color is not used if no texture is present. This is in USD 22.11.
                 return VtValue(SdfAssetPath());
             }
             MFnDependencyNode file(conns[0].node(), &status);
             if (ARCH_UNLIKELY(
-                    !status || (file.typeName() != HdMayaAdapterTokens->file.GetText()))) {
+                    !status || (file.typeName() != MayaHydraAdapterTokens->file.GetText()))) {
+                // Be aware that dome lights in HdStorm always need a texture to work correctly,
+                // the color is not used if no texture is present. This is in USD 22.11.
                 return VtValue(SdfAssetPath());
             }
 
-            return VtValue(SdfAssetPath(
-                file.findPlug(MayaAttrs::file::fileTextureName, true).asString().asChar()));
+            const char* fileTextureName
+                = file.findPlug(MayaAttrs::file::fileTextureName, true).asString().asChar();
+            // SdfAssetPath requires both "path" "resolvedPath"
+            return VtValue(SdfAssetPath(fileTextureName, fileTextureName));
+
         } else if (paramName == HdLightTokens->enableColorTemperature) {
             return VtValue(false);
-#if PXR_VERSION < 2011
-        } else if (paramName == HdLightTokens->textureResource) {
-            auto fileObj = GetConnectedFileNode(GetNode(), HdMayaAdapterTokens->color);
-            // TODO: Return a default, white texture?
-            // Ideally we would want to return a custom texture resource based
-            // on the color, but not sure how easy that would be.
-            if (fileObj == MObject::kNullObj) {
-                return {};
-            }
-            return VtValue { GetFileTextureResource(
-                fileObj,
-                GetFileTexturePath(MFnDependencyNode(fileObj)),
-                GetDelegate()->GetParams().textureMemoryPerTexture) };
-#endif // PXR_VERSION < 2011
         }
         return {};
     }
@@ -118,15 +123,15 @@ public:
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<HdMayaAiSkyDomeLightAdapter, TfType::Bases<HdMayaLightAdapter>>();
+    TfType::Define<MayaHydraAiSkyDomeLightAdapter, TfType::Bases<MayaHydraLightAdapter>>();
 }
 
-TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, domeLight)
+TF_REGISTRY_FUNCTION_WITH_TAG(MayaHydraAdapterRegistry, domeLight)
 {
-    HdMayaAdapterRegistry::RegisterLightAdapter(
+    MayaHydraAdapterRegistry::RegisterLightAdapter(
         TfToken("aiSkyDomeLight"),
-        [](HdMayaDelegateCtx* delegate, const MDagPath& dag) -> HdMayaLightAdapterPtr {
-            return HdMayaLightAdapterPtr(new HdMayaAiSkyDomeLightAdapter(delegate, dag));
+        [](MayaHydraDelegateCtx* delegate, const MDagPath& dag) -> MayaHydraLightAdapterPtr {
+            return MayaHydraLightAdapterPtr(new MayaHydraAiSkyDomeLightAdapter(delegate, dag));
         });
 }
 

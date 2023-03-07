@@ -19,7 +19,7 @@
 #include "tokens.h"
 #include "utils.h"
 
-#include <hdMaya/delegates/params.h>
+#include <mayaHydraLib/delegates/params.h>
 
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/token.h>
@@ -33,6 +33,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/*! \brief MtohRenderGlobals is where we build the UI and expose to MEL the global parameters from
+ * this plug-in and the parameters from the chosen render delegate.
+ */
 class MtohRenderGlobals
 {
 public:
@@ -46,7 +49,6 @@ public:
         const bool filterIsRenderer = false;
         // If creating the attribute for the first time, immediately set to a user default
         const bool fallbackToUserDefaults = true;
-        // TODO: Extend this and mtoh with a setting to ignore scene settings
 
         GlobalParams() = default;
         GlobalParams(const TfToken f, bool fir, bool ftud)
@@ -63,7 +65,7 @@ public:
     // Returning the settings stored on "defaultRenderGlobals"
     static const MtohRenderGlobals& GetInstance(bool storeUserSettings = false);
 
-    // Inform mtoh one of the settings stored on "defaultRenderGlobals" has changed
+    // Inform mayaHydra one of the settings stored on "defaultRenderGlobals" has changed
     static const MtohRenderGlobals&
     GlobalChanged(const GlobalParams&, bool storeUserSetting = false);
 
@@ -93,16 +95,11 @@ private:
     std::unordered_map<TfToken, RendererSettings, TfToken::HashFunctor> _rendererSettings;
 
 public:
-    HdMayaParams delegateParams;
-    GfVec4f      colorSelectionHighlightColor = GfVec4f(1.0f, 1.0f, 0.0f, 0.5f);
-    bool         colorSelectionHighlight = true;
-    bool         wireframeSelectionHighlight = true;
-#if PXR_VERSION >= 2005
-    float outlineSelectionWidth = 4.f;
-#endif
-#if PXR_VERSION <= 2005
-    float enableColorQuantization = false;
-#endif
+    MayaHydraParams delegateParams;
+    GfVec4f         colorSelectionHighlightColor = GfVec4f(1.0f, 1.0f, 0.0f, 0.5f);
+    bool            colorSelectionHighlight = true;
+    bool            wireframeSelectionHighlight = true;
+    float           outlineSelectionWidth = 4.f;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -16,11 +16,6 @@
 #ifndef MTOH_VIEW_OVERRIDE_H
 #define MTOH_VIEW_OVERRIDE_H
 
-#include <pxr/pxr.h>
-#if PXR_VERSION < 2102
-#include <pxr/imaging/glf/glew.h>
-#endif
-
 #include <pxr/base/tf/singleton.h>
 #include <pxr/imaging/hd/driver.h>
 #include <pxr/imaging/hd/engine.h>
@@ -29,9 +24,11 @@
 #include <pxr/imaging/hd/rprimCollection.h>
 #include <pxr/imaging/hdSt/renderDelegate.h>
 #include <pxr/imaging/hdx/taskController.h>
+#include <pxr/pxr.h>
 
 #include <maya/MCallbackIdArray.h>
 #include <maya/MMessage.h>
+#include <maya/MObjectHandle.h>
 #include <maya/MString.h>
 #include <maya/MViewport2Renderer.h>
 
@@ -48,13 +45,19 @@
 #include "renderGlobals.h"
 #include "utils.h"
 
-#include <hdMaya/delegates/delegate.h>
-#include <hdMaya/delegates/params.h>
+#include <mayaHydraLib/delegates/delegate.h>
+#include <mayaHydraLib/delegates/params.h>
+
+#include <maya/MViewport2Renderer.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 using HgiUniquePtr = std::unique_ptr<class Hgi>;
+class MayaHydraSceneIndexRegistration;
 
+/*! \brief MtohRenderOverride is a rendering override class for the viewport to use Hydra instead of
+ * VP2.0.
+ */
 class MtohRenderOverride : public MHWRender::MRenderOverride
 {
 public:
@@ -80,7 +83,9 @@ public:
     /// Intended mostly for use in debugging and testing.
     static SdfPath RendererSceneDelegateId(TfToken rendererName, TfToken sceneDelegateName);
 
-    MStatus Render(const MHWRender::MDrawContext& drawContext);
+    MStatus Render(
+        const MHWRender::MDrawContext&                         drawContext,
+        const MHWRender::MDataServerOperation::MViewportScene& scene);
 
     void ClearHydraResources();
     void SelectionChanged();
@@ -96,14 +101,12 @@ public:
     MHWRender::MRenderOperation* renderOperation() override;
     bool                         nextRenderOperation() override;
 
-#if MAYA_API_VERSION >= 20210000
     bool select(
         const MHWRender::MFrameContext&  frameContext,
         const MHWRender::MSelectionInfo& selectInfo,
         bool                             useDepth,
         MSelectionList&                  selectionList,
         MPointArray&                     worldSpaceHitPts) override;
-#endif
 
 private:
     typedef std::pair<MString, MCallbackIdArray> PanelCallbacks;
@@ -147,11 +150,12 @@ private:
 
     MtohRendererDescription _rendererDesc;
 
-    std::vector<MHWRender::MRenderOperation*> _operations;
-    std::vector<MCallbackId>                  _callbacks;
-    MCallbackId                               _timerCallback = 0;
-    PanelCallbacksList                        _renderPanelCallbacks;
-    const MtohRenderGlobals&                  _globals;
+    std::unique_ptr<MayaHydraSceneIndexRegistration> _sceneIndexRegistration;
+    std::vector<MHWRender::MRenderOperation*>        _operations;
+    MCallbackIdArray                                 _callbacks;
+    MCallbackId                                      _timerCallback = 0;
+    PanelCallbacksList                               _renderPanelCallbacks;
+    const MtohRenderGlobals&                         _globals;
 
     std::mutex                            _lastRenderTimeMutex;
     std::chrono::system_clock::time_point _lastRenderTime;
@@ -170,32 +174,21 @@ private:
     HdRenderIndex*                            _renderIndex = nullptr;
     std::unique_ptr<MtohDefaultLightDelegate> _defaultLightDelegate = nullptr;
     HdxSelectionTrackerSharedPtr              _selectionTracker;
-    HdRprimCollection                         _renderCollection
-    {
-        HdTokens->geometry,
-            HdReprSelector(
-#if MAYA_APP_VERSION >= 2019
-                HdReprTokens->refined
-#else
-                HdReprTokens->smoothHull
-#endif
-                ),
-            SdfPath::AbsoluteRootPath()
-    };
-    HdRprimCollection _selectionCollection { HdReprTokens->wire,
+    HdRprimCollection                         _renderCollection { HdTokens->geometry,
+                                          HdReprSelector(HdReprTokens->refined),
+                                          SdfPath::AbsoluteRootPath() };
+    HdRprimCollection                         _selectionCollection { HdReprTokens->wire,
                                              HdReprSelector(HdReprTokens->wire) };
 
-#if MAYA_API_VERSION >= 20210000
     HdRprimCollection _pointSnappingCollection {
         HdTokens->geometry,
         HdReprSelector(HdReprTokens->refined, TfToken(), HdReprTokens->points),
         SdfPath::AbsoluteRootPath()
     };
-#endif
 
     GlfSimpleLight _defaultLight;
 
-    std::vector<HdMayaDelegatePtr> _delegates;
+    std::vector<MayaHydraDelegatePtr> _delegates;
 
     SdfPath _ID;
 

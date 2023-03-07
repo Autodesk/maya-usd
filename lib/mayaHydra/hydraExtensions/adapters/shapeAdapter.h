@@ -13,56 +13,64 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef HDMAYA_SHAPE_ADAPTER_H
-#define HDMAYA_SHAPE_ADAPTER_H
+#ifndef MAYAHYDRALIB_SHAPE_ADAPTER_H
+#define MAYAHYDRALIB_SHAPE_ADAPTER_H
 
-#include <hdMaya/adapters/dagAdapter.h>
+#include <mayaHydraLib/adapters/dagAdapter.h>
 
 #include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaShapeAdapter : public HdMayaDagAdapter
+/**
+ * \brief MayaHydraShapeAdapter is an adapter to translate from Maya shapes to hydra
+ * Please note that, at this time, this is not used by the hydra plug-in, we translate from a
+ * renderitem to hydra using the MayaHydraRenderItemAdapter class.
+ */
+class MayaHydraShapeAdapter : public MayaHydraDagAdapter
 {
 protected:
-    HDMAYA_API
-    HdMayaShapeAdapter(const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath);
+    MAYAHYDRALIB_API
+    MayaHydraShapeAdapter(
+        const SdfPath&        id,
+        MayaHydraDelegateCtx* delegate,
+        const MDagPath&       dagPath);
 
 public:
-    HDMAYA_API
-    virtual ~HdMayaShapeAdapter() = default;
+    MAYAHYDRALIB_API
+    virtual ~MayaHydraShapeAdapter() = default;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     virtual size_t
     SamplePrimvar(const TfToken& key, size_t maxSampleCount, float* times, VtValue* samples);
-    HDMAYA_API
-    virtual HdMeshTopology GetMeshTopology();
-    HDMAYA_API
-    virtual HdBasisCurvesTopology GetBasisCurvesTopology();
-    HDMAYA_API
-    virtual HdDisplayStyle GetDisplayStyle();
-    HDMAYA_API
+    MAYAHYDRALIB_API
+    virtual HdMeshTopology GetMeshTopology() override;
+    MAYAHYDRALIB_API
+    virtual HdBasisCurvesTopology GetBasisCurvesTopology() override;
+    MAYAHYDRALIB_API
+    virtual HdDisplayStyle GetDisplayStyle() override;
+    MAYAHYDRALIB_API
     virtual PxOsdSubdivTags GetSubdivTags();
-    HDMAYA_API
-    virtual HdPrimvarDescriptorVector GetPrimvarDescriptors(HdInterpolation interpolation)
+    MAYAHYDRALIB_API
+    virtual HdPrimvarDescriptorVector GetPrimvarDescriptors(HdInterpolation interpolation) override
     {
         return {};
     }
-    HDMAYA_API
+    MAYAHYDRALIB_API
     virtual void MarkDirty(HdDirtyBits dirtyBits) override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     virtual MObject GetMaterial();
-    HDMAYA_API
-    virtual bool GetDoubleSided() { return true; };
+    MAYAHYDRALIB_API
+    virtual bool GetDoubleSided() const override { return true; };
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     const GfRange3d& GetExtent();
 
-    HDMAYA_API
-    virtual TfToken GetRenderTag() const;
+    MAYAHYDRALIB_API
+    virtual TfToken GetRenderTag() const override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     virtual void PopulateSelectedPaths(
         const MDagPath&                             selectedDag,
         SdfPathVector&                              selectedSdfPaths,
@@ -70,7 +78,7 @@ public:
         const HdSelectionSharedPtr&                 selection);
 
 protected:
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void _CalculateExtent();
 
 private:
@@ -78,8 +86,8 @@ private:
     bool      _extentDirty;
 };
 
-using HdMayaShapeAdapterPtr = std::shared_ptr<HdMayaShapeAdapter>;
+using MayaHydraShapeAdapterPtr = std::shared_ptr<MayaHydraShapeAdapter>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDMAYA_SHAPE_ADAPTER_H
+#endif // MAYAHYDRALIB_SHAPE_ADAPTER_H

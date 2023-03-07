@@ -15,8 +15,8 @@
 //
 #include "shapeAdapter.h"
 
-#include <hdMaya/adapters/adapterDebugCodes.h>
-#include <hdMaya/adapters/mayaAttrs.h>
+#include <mayaHydraLib/adapters/adapterDebugCodes.h>
+#include <mayaHydraLib/adapters/mayaAttrs.h>
 
 #include <pxr/base/tf/type.h>
 
@@ -27,19 +27,24 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<HdMayaShapeAdapter, TfType::Bases<HdMayaDagAdapter>>();
+    TfType::Define<MayaHydraShapeAdapter, TfType::Bases<MayaHydraDagAdapter>>();
 }
 
-HdMayaShapeAdapter::HdMayaShapeAdapter(
-    const SdfPath&     id,
-    HdMayaDelegateCtx* delegate,
-    const MDagPath&    dagPath)
-    : HdMayaDagAdapter(id, delegate, dagPath)
+/*
+ * MayaHydraShapeAdapter is an adapter to translate from Maya shapes to hydra
+ * Please note that, at this time, this is not used by the hydra plug-in, we translate from a
+ * renderitem to hydra using the MayaHydraRenderItemAdapter class.
+ */
+MayaHydraShapeAdapter::MayaHydraShapeAdapter(
+    const SdfPath&        id,
+    MayaHydraDelegateCtx* delegate,
+    const MDagPath&       dagPath)
+    : MayaHydraDagAdapter(id, delegate, dagPath)
 {
     _CalculateExtent();
 }
 
-void HdMayaShapeAdapter::_CalculateExtent()
+void MayaHydraShapeAdapter::_CalculateExtent()
 {
     MStatus    status;
     MFnDagNode dagNode(GetDagPath(), &status);
@@ -53,7 +58,7 @@ void HdMayaShapeAdapter::_CalculateExtent()
     }
 };
 
-size_t HdMayaShapeAdapter::SamplePrimvar(
+size_t MayaHydraShapeAdapter::SamplePrimvar(
     const TfToken& key,
     size_t         maxSampleCount,
     float*         times,
@@ -67,27 +72,27 @@ size_t HdMayaShapeAdapter::SamplePrimvar(
     return 1;
 }
 
-HdMeshTopology HdMayaShapeAdapter::GetMeshTopology() { return {}; };
+HdMeshTopology MayaHydraShapeAdapter::GetMeshTopology() { return {}; };
 
-HdBasisCurvesTopology HdMayaShapeAdapter::GetBasisCurvesTopology() { return {}; };
+HdBasisCurvesTopology MayaHydraShapeAdapter::GetBasisCurvesTopology() { return {}; };
 
-HdDisplayStyle HdMayaShapeAdapter::GetDisplayStyle() { return { 0, false, false }; }
+HdDisplayStyle MayaHydraShapeAdapter::GetDisplayStyle() { return { 0, false, false }; }
 
-PxOsdSubdivTags HdMayaShapeAdapter::GetSubdivTags() { return {}; }
+PxOsdSubdivTags MayaHydraShapeAdapter::GetSubdivTags() { return {}; }
 
-void HdMayaShapeAdapter::MarkDirty(HdDirtyBits dirtyBits)
+void MayaHydraShapeAdapter::MarkDirty(HdDirtyBits dirtyBits)
 {
-    HdMayaDagAdapter::MarkDirty(dirtyBits);
+    MayaHydraDagAdapter::MarkDirty(dirtyBits);
     if (dirtyBits & HdChangeTracker::DirtyPoints) {
         _extentDirty = true;
     }
 }
 
-MObject HdMayaShapeAdapter::GetMaterial()
+MObject MayaHydraShapeAdapter::GetMaterial()
 {
-    TF_DEBUG(HDMAYA_ADAPTER_GET)
+    TF_DEBUG(MAYAHYDRALIB_ADAPTER_GET)
         .Msg(
-            "Called HdMayaShapeAdapter::GetMaterial() - %s\n",
+            "Called MayaHydraShapeAdapter::GetMaterial() - %s\n",
             GetDagPath().partialPathName().asChar());
 
     MStatus    status;
@@ -102,7 +107,6 @@ MObject HdMayaShapeAdapter::GetMaterial()
     }
 
     MPlugArray conns;
-    // TODO: deal with instancing properly.
     instObjGroups.elementByLogicalIndex(0).connectedTo(conns, false, true);
 
     const auto numConnections = conns.length();
@@ -119,7 +123,7 @@ MObject HdMayaShapeAdapter::GetMaterial()
     return MObject::kNullObj;
 }
 
-const GfRange3d& HdMayaShapeAdapter::GetExtent()
+const GfRange3d& MayaHydraShapeAdapter::GetExtent()
 {
     if (_extentDirty) {
         _CalculateExtent();
@@ -127,9 +131,9 @@ const GfRange3d& HdMayaShapeAdapter::GetExtent()
     return _extent;
 }
 
-TfToken HdMayaShapeAdapter::GetRenderTag() const { return HdTokens->geometry; }
+TfToken MayaHydraShapeAdapter::GetRenderTag() const { return HdTokens->geometry; }
 
-void HdMayaShapeAdapter::PopulateSelectedPaths(
+void MayaHydraShapeAdapter::PopulateSelectedPaths(
     const MDagPath&                             selectedDag,
     SdfPathVector&                              selectedSdfPaths,
     std::unordered_set<SdfPath, SdfPath::Hash>& selectedMasters,

@@ -13,11 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef HDMAYA_ADAPTER_H
-#define HDMAYA_ADAPTER_H
+// Copyright 2023 Autodesk, Inc. All rights reserved.
+//
+#ifndef MAYAHYDRALIB_ADAPTER_H
+#define MAYAHYDRALIB_ADAPTER_H
 
-#include <hdMaya/api.h>
-#include <hdMaya/delegates/delegateCtx.h>
+#include <mayaHydraLib/api.h>
+#include <mayaHydraLib/delegates/delegateCtx.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
@@ -28,43 +30,68 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaAdapter
+/**
+ * \brief MayaHydraAdapter is the base class for all adapters. An adapter is used to translate from
+ * Maya data to hydra data.
+ */
+
+class MayaHydraAdapter
 {
 public:
-    HDMAYA_API
-    HdMayaAdapter(const MObject& node, const SdfPath& id, HdMayaDelegateCtx* delegate);
-    HDMAYA_API
-    virtual ~HdMayaAdapter();
+    MAYAHYDRALIB_API
+    MayaHydraAdapter(const MObject& node, const SdfPath& id, MayaHydraDelegateCtx* delegate);
+    MAYAHYDRALIB_API
+    virtual ~MayaHydraAdapter();
 
-    const SdfPath&     GetID() const { return _id; }
-    HdMayaDelegateCtx* GetDelegate() const { return _delegate; }
-    HDMAYA_API
+    const SdfPath&        GetID() const { return _id; }
+    MayaHydraDelegateCtx* GetDelegate() const { return _delegate; }
+    MAYAHYDRALIB_API
     void AddCallback(MCallbackId callbackId);
-    HDMAYA_API
+    MAYAHYDRALIB_API
     virtual void RemoveCallbacks();
-    HDMAYA_API
+    MAYAHYDRALIB_API
     virtual VtValue Get(const TfToken& key);
     const MObject&  GetNode() const { return _node; }
-    HDMAYA_API
+    MAYAHYDRALIB_API
     virtual bool IsSupported() const = 0;
-    HDMAYA_API
+    MAYAHYDRALIB_API
     virtual bool HasType(const TfToken& typeId) const;
+    MAYAHYDRALIB_API
+    virtual bool GetVisible() { return true; }
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     virtual void CreateCallbacks();
     virtual void MarkDirty(HdDirtyBits dirtyBits) = 0;
     virtual void RemovePrim() = 0;
     virtual void Populate() = 0;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     static MStatus Initialize();
 
     bool IsPopulated() const { return _isPopulated; }
 
+    MAYAHYDRALIB_API
+    virtual HdMeshTopology GetMeshTopology() { return {}; }
+    MAYAHYDRALIB_API
+    virtual HdBasisCurvesTopology GetBasisCurvesTopology() { return {}; }
+    MAYAHYDRALIB_API
+    virtual TfToken GetRenderTag() const { return TfToken(); }
+    MAYAHYDRALIB_API
+    virtual GfMatrix4d GetTransform() { return GfMatrix4d(); }
+    MAYAHYDRALIB_API
+    virtual HdPrimvarDescriptorVector GetPrimvarDescriptors(HdInterpolation interpolation)
+    {
+        return HdPrimvarDescriptorVector();
+    }
+    MAYAHYDRALIB_API
+    virtual bool GetDoubleSided() const { return true; }
+    MAYAHYDRALIB_API
+    virtual HdDisplayStyle GetDisplayStyle() { return { 0, false, false }; }
+
 protected:
     SdfPath                  _id;
     std::vector<MCallbackId> _callbacks;
-    HdMayaDelegateCtx*       _delegate;
+    MayaHydraDelegateCtx*    _delegate;
     MObject                  _node;
 
     bool _isPopulated = false;
@@ -72,4 +99,4 @@ protected:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDMAYA_ADAPTER_H
+#endif // MAYAHYDRALIB_ADAPTER_H

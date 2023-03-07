@@ -15,9 +15,9 @@
 //
 #include "lightAdapter.h"
 
-#include <hdMaya/adapters/adapterDebugCodes.h>
-#include <hdMaya/adapters/constantShadowMatrix.h>
-#include <hdMaya/adapters/mayaAttrs.h>
+#include <mayaHydraLib/adapters/adapterDebugCodes.h>
+#include <mayaHydraLib/adapters/constantShadowMatrix.h>
+#include <mayaHydraLib/adapters/mayaAttrs.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/type.h>
@@ -33,16 +33,11 @@
 
 #include <iostream>
 
-#if HDX_API_VERSION < 7
-#include <boost/make_shared.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<HdMayaLightAdapter, TfType::Bases<HdMayaDagAdapter>>();
+    TfType::Define<MayaHydraLightAdapter, TfType::Bases<MayaHydraDagAdapter>>();
 }
 
 namespace {
@@ -56,7 +51,7 @@ void _changeVisibility(
     TF_UNUSED(msg);
     TF_UNUSED(otherPlug);
     if (plug == MayaAttrs::dagNode::visibility) {
-        auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
+        auto* adapter = reinterpret_cast<MayaHydraDagAdapter*>(clientData);
         if (adapter->UpdateVisibility()) {
             adapter->RemovePrim();
             adapter->Populate();
@@ -68,7 +63,7 @@ void _changeVisibility(
 void _dirtyTransform(MObject& node, void* clientData)
 {
     TF_UNUSED(node);
-    auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
+    auto* adapter = reinterpret_cast<MayaHydraDagAdapter*>(clientData);
     if (adapter->IsVisible()) {
         adapter->MarkDirty(
             HdLight::DirtyTransform | HdLight::DirtyParams | HdLight::DirtyShadowParams);
@@ -79,7 +74,7 @@ void _dirtyTransform(MObject& node, void* clientData)
 void _dirtyParams(MObject& node, void* clientData)
 {
     TF_UNUSED(node);
-    auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
+    auto* adapter = reinterpret_cast<MayaHydraDagAdapter*>(clientData);
     if (adapter->IsVisible()) {
         adapter->MarkDirty(HdLight::DirtyParams | HdLight::DirtyShadowParams);
         adapter->InvalidateTransform();
@@ -90,39 +85,64 @@ const MString defaultLightSet("defaultLightSet");
 
 } // namespace
 
-HdMayaLightAdapter::HdMayaLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
-    : HdMayaDagAdapter(delegate->GetPrimPath(dag, true), delegate, dag)
+// MayaHydraLightAdapter is the base class for any light adapter used to handle the translation from
+// a light to hydra.
+
+MayaHydraLightAdapter::MayaHydraLightAdapter(MayaHydraDelegateCtx* delegate, const MDagPath& dag)
+    : MayaHydraDagAdapter(delegate->GetPrimPath(dag, true), delegate, dag)
 {
     // This should be avoided, not a good idea to call virtual functions
     // directly or indirectly in a constructor.
     UpdateVisibility();
     _shadowProjectionMatrix.SetIdentity();
+
+    // Special case for Arnold lights which are seen as locators
+    if (IsAnArnoldSkyDomeLight(dag)) {
+        GetDelegate()->AddArnoldLight(dag);
+    }
 }
 
-bool HdMayaLightAdapter::IsSupported() const
+MayaHydraLightAdapter::~MayaHydraLightAdapter()
+{
+    // Special case for Arnold lights which are seen as locators
+    const MDagPath& dag = GetDagPath();
+    if (IsAnArnoldSkyDomeLight(dag)) {
+        GetDelegate()->RemoveArnoldLight(dag);
+    }
+}
+
+bool MayaHydraLightAdapter::IsAnArnoldSkyDomeLight(const MDagPath& dag) const
+{
+    static const MString aiSkyDomeLightString("aiSkyDomeLight");
+
+    MFnDependencyNode depNode(dag.node());
+    return dag.hasFn(MFn::kLocator) && (aiSkyDomeLightString == depNode.typeName());
+}
+
+bool MayaHydraLightAdapter::IsSupported() const
 {
     return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(LightType());
 }
 
-void HdMayaLightAdapter::Populate()
+void MayaHydraLightAdapter::Populate()
 {
     if (_isPopulated) {
         return;
     }
-    if (IsVisible()) {
+    if (IsVisible() && _isLightingOn) {
         GetDelegate()->InsertSprim(LightType(), GetID(), HdLight::AllDirty);
         _isPopulated = true;
     }
 }
 
-void HdMayaLightAdapter::MarkDirty(HdDirtyBits dirtyBits)
+void MayaHydraLightAdapter::MarkDirty(HdDirtyBits dirtyBits)
 {
     if (_isPopulated && dirtyBits != 0) {
         GetDelegate()->GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits);
     }
 }
 
-void HdMayaLightAdapter::RemovePrim()
+void MayaHydraLightAdapter::RemovePrim()
 {
     if (!_isPopulated) {
         return;
@@ -131,13 +151,13 @@ void HdMayaLightAdapter::RemovePrim()
     _isPopulated = false;
 }
 
-bool HdMayaLightAdapter::HasType(const TfToken& typeId) const { return typeId == LightType(); }
+bool MayaHydraLightAdapter::HasType(const TfToken& typeId) const { return typeId == LightType(); }
 
-VtValue HdMayaLightAdapter::Get(const TfToken& key)
+VtValue MayaHydraLightAdapter::Get(const TfToken& key)
 {
-    TF_DEBUG(HDMAYA_ADAPTER_GET)
+    TF_DEBUG(MAYAHYDRALIB_ADAPTER_GET)
         .Msg(
-            "Called HdMayaLightAdapter::Get(%s) - %s\n",
+            "Called MayaHydraLightAdapter::Get(%s) - %s\n",
             key.GetText(),
             GetDagPath().partialPathName().asChar());
 
@@ -176,27 +196,40 @@ VtValue HdMayaLightAdapter::Get(const TfToken& key)
         } else if (decayRate == 2) {
             light.SetAttenuation(GfVec3f(0.0f, 0.0f, 1.0f));
         }
-        light.SetTransform(GetGfMatrixFromMaya(GetDagPath().inclusiveMatrixInverse()));
+        light.SetTransform(
+            MAYAHYDRA_NS::GetGfMatrixFromMaya(GetDagPath().inclusiveMatrixInverse()));
         _CalculateLightParams(light);
         return VtValue(light);
     } else if (key == HdTokens->transform) {
-        return VtValue(HdMayaDagAdapter::GetTransform());
+        return VtValue(MayaHydraDagAdapter::GetTransform());
     } else if (key == HdLightTokens->shadowCollection) {
-        HdRprimCollection coll(HdTokens->geometry, HdReprSelector(HdReprTokens->refined));
+        // Exclude lines/points primitives from receiving lighting and casting shadows by only
+        // taking the primitives whose root path is GetDelegate()->GetSolidPrimsRootPath()
+        const SdfPath     rootPathForNonLinesPrimitives = GetDelegate()->GetSolidPrimsRootPath();
+        HdRprimCollection coll(
+            HdTokens->geometry,
+            HdReprSelector(HdReprTokens->refined),
+            rootPathForNonLinesPrimitives);
         return VtValue(coll);
     } else if (key == HdLightTokens->shadowParams) {
         HdxShadowParams shadowParams;
-        shadowParams.enabled = false;
+        MFnLight        mayaLight(GetDagPath());
+        const bool      bLightHasShadowsenabled = mayaLight.useRayTraceShadows();
+        if (!bLightHasShadowsenabled) {
+            shadowParams.enabled = false;
+        } else {
+            _CalculateShadowParams(mayaLight, shadowParams);
+        }
         return VtValue(shadowParams);
     }
     return {};
 }
 
-VtValue HdMayaLightAdapter::GetLightParamValue(const TfToken& paramName)
+VtValue MayaHydraLightAdapter::GetLightParamValue(const TfToken& paramName)
 {
-    TF_DEBUG(HDMAYA_ADAPTER_GET_LIGHT_PARAM_VALUE)
+    TF_DEBUG(MAYAHYDRALIB_ADAPTER_GET_LIGHT_PARAM_VALUE)
         .Msg(
-            "Called HdMayaLightAdapter::GetLightParamValue(%s) - %s\n",
+            "Called MayaHydraLightAdapter::GetLightParamValue(%s) - %s\n",
             paramName.GetText(),
             GetDagPath().partialPathName().asChar());
 
@@ -220,9 +253,9 @@ VtValue HdMayaLightAdapter::GetLightParamValue(const TfToken& paramName)
     return {};
 }
 
-void HdMayaLightAdapter::CreateCallbacks()
+void MayaHydraLightAdapter::CreateCallbacks()
 {
-    TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+    TF_DEBUG(MAYAHYDRALIB_ADAPTER_CALLBACKS)
         .Msg("Creating light adapter callbacks for prim (%s).\n", GetID().GetText());
 
     MStatus status;
@@ -249,10 +282,10 @@ void HdMayaLightAdapter::CreateCallbacks()
             _AddHierarchyChangedCallbacks(dag);
         }
     }
-    HdMayaAdapter::CreateCallbacks();
+    MayaHydraAdapter::CreateCallbacks();
 }
 
-void HdMayaLightAdapter::SetShadowProjectionMatrix(const GfMatrix4d& matrix)
+void MayaHydraLightAdapter::SetShadowProjectionMatrix(const GfMatrix4d& matrix)
 {
     if (!GfIsClose(_shadowProjectionMatrix, matrix, 0.0001)) {
         MarkDirty(HdLight::DirtyShadowParams);
@@ -260,11 +293,11 @@ void HdMayaLightAdapter::SetShadowProjectionMatrix(const GfMatrix4d& matrix)
     }
 }
 
-void HdMayaLightAdapter::_CalculateShadowParams(MFnLight& light, HdxShadowParams& params)
+void MayaHydraLightAdapter::_CalculateShadowParams(MFnLight& light, HdxShadowParams& params)
 {
-    TF_DEBUG(HDMAYA_ADAPTER_LIGHT_SHADOWS)
+    TF_DEBUG(MAYAHYDRALIB_ADAPTER_LIGHT_SHADOWS)
         .Msg(
-            "Called HdMayaLightAdapter::_CalculateShadowParams - %s\n",
+            "Called MayaHydraLightAdapter::_CalculateShadowParams - %s\n",
             GetDagPath().partialPathName().asChar());
 
     const auto dmapResolutionPlug
@@ -279,26 +312,20 @@ void HdMayaLightAdapter::_CalculateShadowParams(MFnLight& light, HdxShadowParams
         : std::min(
             GetDelegate()->GetParams().maximumShadowMapResolution, dmapResolutionPlug.asInt());
 
-    params.shadowMatrix =
-#if HDX_API_VERSION >= 7
-        std::make_shared<HdMayaConstantShadowMatrix>(GetTransform() * _shadowProjectionMatrix);
-#else
-        boost::static_pointer_cast<HdxShadowMatrixComputation>(
-            boost::make_shared<HdMayaConstantShadowMatrix>(
-                GetTransform() * _shadowProjectionMatrix));
-#endif
+    params.shadowMatrix
+        = std::make_shared<MayaHydraConstantShadowMatrix>(GetTransform() * _shadowProjectionMatrix);
     params.bias = dmapBiasPlug.isNull() ? -0.001 : -dmapBiasPlug.asFloat();
     params.blur = dmapFilterSizePlug.isNull() ? 0.0
                                               : (static_cast<double>(dmapFilterSizePlug.asInt()))
             / static_cast<double>(params.resolution);
 
-    if (TfDebug::IsEnabled(HDMAYA_ADAPTER_LIGHT_SHADOWS)) {
+    if (TfDebug::IsEnabled(MAYAHYDRALIB_ADAPTER_LIGHT_SHADOWS)) {
         std::cout << "Resulting HdxShadowParams:\n";
         std::cout << params << "\n";
     }
 }
 
-bool HdMayaLightAdapter::_GetVisibility() const
+bool MayaHydraLightAdapter::_GetVisibility() const
 {
     if (!GetDagPath().isVisible()) {
         return false;
@@ -335,6 +362,16 @@ bool HdMayaLightAdapter::_GetVisibility() const
         }
     }
     return false;
+}
+
+void MayaHydraLightAdapter::SetLightingOn(bool isLightingOn)
+{
+    if (_isLightingOn != isLightingOn) {
+        _isLightingOn = isLightingOn;
+
+        RemovePrim();
+        Populate();
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -37,6 +37,9 @@
 #include <functional>
 #include <sstream>
 
+// This file is where we build the UI and expose to MEL the global parameters from this plug-in and
+// the parameters from the chosen render delegate.
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // clang-format off
@@ -45,11 +48,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (defaultRenderGlobals)
     (mtohTextureMemoryPerTexture)
-    (mtohColorSelectionHighlight)
-    (mtohColorSelectionHighlightColor)
-    (mtohWireframeSelectionHighlight)
-    (mtohColorQuantization)
-    (mtohSelectionOutline)
     (mtohMotionSampleStart)
     (mtohMotionSampleEnd)
 );
@@ -62,38 +60,17 @@ namespace {
 constexpr auto _renderOverride_PreAmble = R"mel(
 global proc mtohRenderOverride_ApplySetting(string $renderer, string $attr, string $node) {
     // This exists as a global function for the difference in how it is invoked from editorTemplate/AE or option-boxes
-    mtoh -r $renderer -updateRenderGlobals $attr;
+    mayaHydra -r $renderer -updateRenderGlobals $attr;
     refresh -f;
 }
-global proc mtohRenderOverride_AddAttribute(string $renderer, string $label, string $attr, int $fromAE) {
+global proc mtohRenderOverride_AddAttribute(string $renderer, string $description, string $attr, string $label, int $fromAE) {
     string $command = "mtohRenderOverride_ApplySetting " + $renderer + " " + $attr;
     if (!$fromAE) {
         $command = $command + " defaultRenderGlobals";
-        attrControlGrp -label $label -attribute ("defaultRenderGlobals." + $attr) -changeCommand $command;
+        attrControlGrp -label $label -attribute ("defaultRenderGlobals." + $attr) -changeCommand $command -annotation $description;
     } else {
-        editorTemplate -label $label -adc $attr $command;
+        editorTemplate -label $label -adc $attr $command -annotation $description;
     }
-}
-global proc mtohRenderOverride_AddMTOHAttributes(int $fromAE) {
-    mtohRenderOverride_AddAttribute("mtoh", "Motion Sample Start", "mtohMotionSampleStart", $fromAE);
-    mtohRenderOverride_AddAttribute("mtoh", "Motion Samples End", "mtohMotionSampleEnd", $fromAE);
-    mtohRenderOverride_AddAttribute("mtoh", "Texture Memory Per Texture (KB)", "mtohTextureMemoryPerTexture", $fromAE);
-    mtohRenderOverride_AddAttribute("mtoh", "Show Wireframe on Selected Objects", "mtohWireframeSelectionHighlight", $fromAE);
-    mtohRenderOverride_AddAttribute("mtoh", "Highlight Selected Objects", "mtohColorSelectionHighlight", $fromAE);
-    mtohRenderOverride_AddAttribute("mtoh", "Highlight Color for Selected Objects", "mtohColorSelectionHighlightColor", $fromAE);
-)mel"
-#if PXR_VERSION >= 2005
-                                          R"mel(
-    mtohRenderOverride_AddAttribute("mtoh", "Highlight outline (in pixels, 0 to disable)", "mtohSelectionOutline", $fromAE);
-)mel"
-#endif
-#if PXR_VERSION <= 2005
-                                          R"mel(
-    mtohRenderOverride_AddAttribute("mtoh", "Enable color quantization", "mtohColorQuantization", $fromAE);
-)mel"
-#endif
-
-                                          R"mel(
 }
 
 global proc mtohRenderOverride_AEAttributesCallback(string $nodeName) {
@@ -103,8 +80,8 @@ global proc mtohRenderOverride_AEAttributesCallback(string $nodeName) {
 
     editorTemplate -beginLayout "Hydra Settings" -collapse 1;
         mtohRenderOverride_AddMTOHAttributes(1);
-        for ($renderer in `mtoh -lr`) {
-            string $displayName = `mtoh -getRendererDisplayName -r $renderer`;
+        for ($renderer in `mayaHydra -lr`) {
+            string $displayName = `mayaHydra -getRendererDisplayName -r $renderer`;
             editorTemplate -beginLayout $displayName -collapse 1;
                 string $optionsCmd = "mtohRenderOverride_" + $renderer + "Options(1);";
                 eval($optionsCmd);
@@ -114,7 +91,7 @@ global proc mtohRenderOverride_AEAttributesCallback(string $nodeName) {
 }
 
 // Make our attributes look nice and get sent from the AttributeEditor
-callbacks -o mtoh -hook AETemplateCustomContent -addCallback mtohRenderOverride_AEAttributesCallback;
+callbacks -o mayaHydra -hook AETemplateCustomContent -addCallback mtohRenderOverride_AEAttributesCallback;
 )mel";
 
 constexpr auto _renderOverrideOptionBoxTemplate = R"mel(
@@ -127,15 +104,10 @@ global proc {{override}}OptionBox() {
 
     // XXX: Could have an optionVar controlling -userDefaults flag
     //
-    mtoh -createRenderGlobals -r "{{hydraplugin}}" -userDefaults;
+    mayaHydra -createRenderGlobals -r "{{hydraplugin}}" -userDefaults;
 
     window -title "Maya to Hydra Settings" "{{override}}OptionsWindow";
     scrollLayout;
-    frameLayout -label "Hydra Settings";
-    columnLayout;
-    mtohRenderOverride_AddMTOHAttributes(0);
-    setParent ..;
-    setParent ..;
 
     frameLayout -label "{{hydraDisplayName}}" -collapsable true;
     columnLayout;
@@ -160,7 +132,7 @@ static MString _MangleColorAttribute(const MString& attrName, unsigned i)
         return attrName + kMtohCmptToken + kColorComponents[i];
     }
 
-    TF_CODING_ERROR("[mtoh] Cannot mangle component: %u", i);
+    TF_CODING_ERROR("[mayaHydra] Cannot mangle component: %u", i);
     return attrName + kMtohCmptToken + MString("INVALID");
 }
 
@@ -244,7 +216,7 @@ void _CreateEnumAttribute(
             return;
         }
     }
-    TF_WARN("[mtoh] Cannot restore enum '%s'", mayaPref.GetText());
+    TF_WARN("[mayaHydra] Cannot restore enum '%s'", mayaPref.GetText());
 }
 
 void _CreateEnumAttribute(
@@ -578,7 +550,7 @@ void _GetColorAttribute(
         node, attrName, color3, storeUserSetting, [&](GfVec3f& color3, bool storeUserSetting) {
             const auto plugA = node.findPlug(_AlphaAttribute(attrName), true);
             if (plugA.isNull()) {
-                TF_WARN("[mtoh] No Alpha plug for GfVec4f");
+                TF_WARN("[mayaHydra] No Alpha plug for GfVec4f");
                 return;
             }
             out[0] = color3[0];
@@ -693,26 +665,29 @@ void MtohRenderGlobals::OptionsPreamble()
     if (status) {
         return;
     }
-    TF_WARN("[mtoh] Error executing preamble:\n%s", _renderOverride_PreAmble);
+    TF_WARN("[mayaHydra] Error executing preamble:\n%s", _renderOverride_PreAmble);
 }
 
 void MtohRenderGlobals::BuildOptionsMenu(
     const MtohRendererDescription&       rendererDesc,
     const HdRenderSettingDescriptorList& rendererSettingDescriptors)
 {
-    // FIXME: Horribly in-effecient, 3 parse/replace calls
-    //
     auto optionBoxCommand = TfStringReplace(
         _renderOverrideOptionBoxTemplate, "{{override}}", rendererDesc.overrideName.GetText());
     optionBoxCommand
         = TfStringReplace(optionBoxCommand, "{{hydraplugin}}", rendererDesc.rendererName);
     optionBoxCommand
         = TfStringReplace(optionBoxCommand, "{{hydraDisplayName}}", rendererDesc.displayName);
+    optionBoxCommand = TfStringReplace(
+        optionBoxCommand,
+        "{{hydraRenderDelegateName}}",
+        rendererDesc.rendererName); // Is the name of the render delegate since we are displaying
+                                    // its settings
 
     auto status = MGlobal::executeCommand(optionBoxCommand.c_str());
     if (!status) {
         TF_WARN(
-            "[mtoh] Error in render override option box command function: \n%s",
+            "[mayaHydra] Error in render override option box command function: \n%s",
             status.errorString().asChar());
     }
 
@@ -729,15 +704,20 @@ void MtohRenderGlobals::BuildOptionsMenu(
             continue;
         }
 
-        ss << "\tmtohRenderOverride_AddAttribute(" << quote(rendererDesc.rendererName.GetString())
-           << ',' << quote(desc.name) << ','
+        ss << "\tmtohRenderOverride_AddAttribute("
+           << quote(rendererDesc.rendererName.GetString()) // Renderer name
+           << ',' << quote(desc.name) << ','               // Description
            << quote(_MangleName(desc.key, rendererDesc.rendererName).GetString())
+           << ','                       // Attribute name
+           << quote(desc.key.GetText()) // Label
            << ", $fromAE);\n";
     }
     if (rendererDesc.rendererName == MtohTokens->HdStormRendererPlugin) {
         ss << "\tmtohRenderOverride_AddAttribute(" << quote(rendererDesc.rendererName.GetString())
-           << ',' << quote("Maximum shadow map size") << ','
+           << ',' << quote("Maximum shadow map size") << ',' // Description
            << quote(_MangleName(MtohTokens->mtohMaximumShadowMapResolution).GetString())
+           << ','                                                         // Attribute name
+           << quote(MtohTokens->mtohMaximumShadowMapResolution.GetText()) // Label
            << ", $fromAE);\n";
     }
     ss << "}\n";
@@ -746,7 +726,7 @@ void MtohRenderGlobals::BuildOptionsMenu(
     status = MGlobal::executeCommand(optionsCommand.c_str());
     if (!status) {
         TF_WARN(
-            "[mtoh] Error in render delegate options function: \n%s",
+            "[mayaHydra] Error in render delegate options function: \n%s",
             status.errorString().asChar());
     }
 }
@@ -798,10 +778,6 @@ public:
     const MString& mayaString() const { return _mayaString; }
 };
 
-// TODO : MtohRenderGlobals::CreateNode && MtohRenderGlobals::GetInstance
-//        are extrmely redundant in logic, with most divergance occurring
-//        at the leaf operation (_CreatXXXAttr vs. _GetAttribute)
-//
 MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params)
 {
     MSelectionList slist;
@@ -869,44 +845,7 @@ MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params)
             return mayaObject;
         }
     }
-    if (filter(_tokens->mtohWireframeSelectionHighlight)) {
-        _CreateBoolAttribute(
-            node, filter.mayaString(), defGlobals.wireframeSelectionHighlight, userDefaults);
-        if (filter.attributeFilter()) {
-            return mayaObject;
-        }
-    }
-    if (filter(_tokens->mtohColorSelectionHighlight)) {
-        _CreateBoolAttribute(
-            node, filter.mayaString(), defGlobals.colorSelectionHighlight, userDefaults);
-        if (filter.attributeFilter()) {
-            return mayaObject;
-        }
-    }
-    if (filter(_tokens->mtohColorSelectionHighlightColor)) {
-        _CreateColorAttribute(
-            node, filter.mayaString(), defGlobals.colorSelectionHighlightColor, userDefaults);
-        if (filter.attributeFilter()) {
-            return mayaObject;
-        }
-    }
-#if PXR_VERSION >= 2005
-    if (filter(_tokens->mtohSelectionOutline)) {
-        _CreateFloatAttribute(
-            node, filter.mayaString(), defGlobals.outlineSelectionWidth, userDefaults);
-    }
-#endif
-#if PXR_VERSION <= 2005
-    if (filter(_tokens->mtohColorQuantization)) {
-        _CreateBoolAttribute(
-            node, filter.mayaString(), defGlobals.enableColorQuantization, userDefaults);
-        if (filter.attributeFilter()) {
-            return mayaObject;
-        }
-    }
-#endif
-    // TODO: Move this to an external function and add support for more types,
-    //  and improve code quality/reuse.
+
     for (const auto& rit : MtohGetRendererSettings()) {
         const auto rendererName = rit.first;
         // Skip over all the settings for this renderer if it doesn't match
@@ -999,7 +938,7 @@ MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params)
                     && "_IsSupportedAttribute out of synch");
 
                 TF_WARN(
-                    "[mtoh] Ignoring setting: '%s' for %s",
+                    "[mayaHydra] Ignoring setting: '%s' for %s",
                     attr.key.GetText(),
                     rendererName.GetText());
             }
@@ -1063,45 +1002,7 @@ MtohRenderGlobals::GetInstance(const GlobalParams& params, bool storeUserSetting
             return globals;
         }
     }
-    if (filter(_tokens->mtohWireframeSelectionHighlight)) {
-        _GetAttribute(
-            node, filter.mayaString(), globals.wireframeSelectionHighlight, storeUserSetting);
-        if (filter.attributeFilter()) {
-            return globals;
-        }
-    }
-    if (filter(_tokens->mtohColorSelectionHighlight)) {
-        _GetAttribute(node, filter.mayaString(), globals.colorSelectionHighlight, storeUserSetting);
-        if (filter.attributeFilter()) {
-            return globals;
-        }
-    }
-    if (filter(_tokens->mtohColorSelectionHighlightColor)) {
-        _GetColorAttribute(
-            node, filter.mayaString(), globals.colorSelectionHighlightColor, storeUserSetting);
-        if (filter.attributeFilter()) {
-            return globals;
-        }
-    }
-#if PXR_VERSION >= 2005
-    if (filter(_tokens->mtohSelectionOutline)) {
-        _GetAttribute(node, filter.mayaString(), globals.outlineSelectionWidth, storeUserSetting);
-        if (filter.attributeFilter()) {
-            return globals;
-        }
-    }
-#endif
-#if PXR_VERSION <= 2005
-    if (filter(_tokens->mtohColorQuantization)) {
-        _GetAttribute(node, filter.mayaString(), globals.enableColorQuantization, storeUserSetting);
-        if (filter.attributeFilter()) {
-            return globals;
-        }
-    }
-#endif
 
-    // TODO: Move this to an external function and add support for more types,
-    //  and improve code quality/reuse.
     for (const auto& rit : MtohGetRendererSettings()) {
         const auto rendererName = rit.first;
         // Skip over all the settings for this renderer if it doesn't match
@@ -1158,7 +1059,7 @@ MtohRenderGlobals::GetInstance(const GlobalParams& params, bool storeUserSetting
                     && "_IsSupportedAttribute out of synch");
 
                 TF_WARN(
-                    "[mtoh] Can't get setting: '%s' for %s",
+                    "[mayaHydra] Can't get setting: '%s' for %s",
                     attr.key.GetText(),
                     rendererName.GetText());
             }

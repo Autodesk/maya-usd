@@ -1,4 +1,4 @@
-set(TARGET_NAME mtoh)
+set(TARGET_NAME mayaHydra)
 
 add_library(${TARGET_NAME} SHARED)
 
@@ -12,11 +12,17 @@ target_sources(${TARGET_NAME}
         pluginDebugCodes.cpp
         renderGlobals.cpp
         renderOverride.cpp
-        shadingModeExporter.cpp
         tokens.cpp
         utils.cpp
         viewCommand.cpp
 )
+
+if (BUILD_MAYAUSD_LIBRARY)
+    target_sources(${TARGET_NAME} 
+        PRIVATE
+            shadingModeExporter.cpp
+    )
+endif()
 
 set(HEADERS
     utils.h
@@ -38,12 +44,35 @@ target_compile_definitions(${TARGET_NAME}
         $<$<BOOL:${IS_LINUX}>:LINUX>
         # Not sure if msvcc sets this automatically, but won't hurt to redefine
         $<$<BOOL:${IS_WINDOWS}>:_WIN32>
+        # Copy-pasted from lib/mayaUsd/CMakeLists.txt
+        $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
+)
+
+# -----------------------------------------------------------------------------
+# include directories
+# -----------------------------------------------------------------------------
+target_include_directories(${TARGET_NAME} 
+    PRIVATE
+        $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
 )
 
 if(DEFINED MAYAUSD_VERSION)
     target_compile_definitions(${TARGET_NAME}
         PRIVATE
             MAYAUSD_VERSION=${MAYAUSD_VERSION}
+    )
+endif()
+
+if(DEFINED MAYAHYDRA_VERSION)
+    target_compile_definitions(${TARGET_NAME}
+        PRIVATE
+            MAYAHYDRA_VERSION=${MAYAHYDRA_VERSION}
+    )
+endif()
+if(DEFINED MAYAHYDRA_CUT_ID)
+    target_compile_definitions(${TARGET_NAME}
+        PRIVATE
+            MAYAHYDRA_CUT_ID=${MAYAHYDRA_CUT_ID}
     )
 endif()
 
@@ -54,7 +83,8 @@ mayaUsd_compile_config(${TARGET_NAME})
 # -----------------------------------------------------------------------------
 target_link_libraries(${TARGET_NAME} 
     PRIVATE 
-        hdMaya 
+        mayaHydraLib 
+        $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
 )
 
 # -----------------------------------------------------------------------------
@@ -96,3 +126,11 @@ if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${TARGET_NAME}> 
             DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/maya OPTIONAL)
 endif()
+
+# install top level plugInfo.json that includes the configured plugInfo.json
+install(CODE
+    "file(WRITE \"${CMAKE_CURRENT_BINARY_DIR}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib/usd/plugInfo.json
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd
+)

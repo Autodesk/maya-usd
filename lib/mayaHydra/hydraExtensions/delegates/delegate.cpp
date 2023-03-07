@@ -20,9 +20,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION(TfType) { TfType::Define<HdMayaDelegate>(); }
+TF_REGISTRY_FUNCTION(TfType) { TfType::Define<MayaHydraDelegate>(); }
 
-HdMayaDelegate::HdMayaDelegate(const InitData& initData)
+MayaHydraDelegate::MayaHydraDelegate(const InitData& initData)
     : _mayaDelegateID(initData.delegateID)
     , _name(initData.name)
     , _engine(initData.engine)
@@ -31,11 +31,14 @@ HdMayaDelegate::HdMayaDelegate(const InitData& initData)
 {
 }
 
-void HdMayaDelegate::SetParams(const HdMayaParams& params) { _params = params; }
+void MayaHydraDelegate::SetParams(const MayaHydraParams& params) { _params = params; }
 
-void HdMayaDelegate::SetCameraForSampling(SdfPath const& camID) { _cameraPathForSampling = camID; }
+void MayaHydraDelegate::SetCameraForSampling(SdfPath const& camID)
+{
+    _cameraPathForSampling = camID;
+}
 
-GfInterval HdMayaDelegate::GetCurrentTimeSamplingInterval() const
+GfInterval MayaHydraDelegate::GetCurrentTimeSamplingInterval() const
 {
     return GfInterval(_params.motionSampleStart, _params.motionSampleEnd);
 }

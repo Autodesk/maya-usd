@@ -13,28 +13,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef HDMAYA_API_H
-#define HDMAYA_API_H
+#ifndef MAYAHYDRALIB_API_H
+#define MAYAHYDRALIB_API_H
 
 #ifdef __GNUC__
-#define HDMAYA_API_EXPORT __attribute__((visibility("default")))
-#define HDMAYA_API_IMPORT
+#define MAYAHYDRALIB_API_EXPORT __attribute__((visibility("default")))
+#define MAYAHYDRALIB_API_IMPORT
 #elif defined(_WIN32) || defined(_WIN64)
-#define HDMAYA_API_EXPORT __declspec(dllexport)
-#define HDMAYA_API_IMPORT __declspec(dllimport)
+#define MAYAHYDRALIB_API_EXPORT __declspec(dllexport)
+#define MAYAHYDRALIB_API_IMPORT __declspec(dllimport)
 #else
-#define HDMAYA_API_EXPORT
-#define HDMAYA_API_IMPORT
+#define MAYAHYDRALIB_API_EXPORT
+#define MAYAHYDRALIB_API_IMPORT
 #endif
 
-#if defined(HDMAYA_STATIC)
-#define HDMAYA_API
+#if defined(MAYAHYDRALIB_STATIC)
+#define MAYAHYDRALIB_API
 #else
-#if defined(HDMAYA_EXPORT)
-#define HDMAYA_API HDMAYA_API_EXPORT
+#if defined(MAYAHYDRALIB_EXPORT)
+#define MAYAHYDRALIB_API MAYAHYDRALIB_API_EXPORT
 #else
-#define HDMAYA_API HDMAYA_API_IMPORT
+#define MAYAHYDRALIB_API MAYAHYDRALIB_API_IMPORT
 #endif
 #endif
 
-#endif // HDMAYA_API_H
+#endif // MAYAHYDRALIB_API_H

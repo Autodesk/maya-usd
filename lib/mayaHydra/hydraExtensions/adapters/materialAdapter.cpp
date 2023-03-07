@@ -13,14 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+// Copyright 2023 Autodesk, Inc. All rights reserved.
+//
 #include "materialAdapter.h"
 
-#include <hdMaya/adapters/adapterRegistry.h>
-#include <hdMaya/adapters/materialNetworkConverter.h>
-#include <hdMaya/adapters/mayaAttrs.h>
-#include <hdMaya/adapters/tokens.h>
-#include <hdMaya/utils.h>
-#include <mayaUsd/utils/hash.h>
+#include <mayaHydraLib/adapters/adapterRegistry.h>
+#include <mayaHydraLib/adapters/materialNetworkConverter.h>
+#include <mayaHydraLib/adapters/mayaAttrs.h>
+#include <mayaHydraLib/adapters/tokens.h>
+#include <mayaHydraLib/utils.h>
 
 #include <pxr/base/tf/stl.h>
 #include <pxr/base/tf/token.h>
@@ -34,10 +35,6 @@
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 
-#if PXR_VERSION < 2011
-#include <pxr/imaging/hdSt/textureResourceHandle.h>
-#endif // PXR_VERSION < 2011
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -45,34 +42,38 @@ namespace {
 const VtValue       _emptyValue;
 const TfToken       _emptyToken;
 const TfTokenVector _stSamplerCoords = { TfToken("st") };
-// const TfTokenVector _stSamplerCoords;
 
 } // namespace
 
-HdMayaMaterialAdapter::HdMayaMaterialAdapter(
-    const SdfPath&     id,
-    HdMayaDelegateCtx* delegate,
-    const MObject&     node)
-    : HdMayaAdapter(node, id, delegate)
+/* MayaHydraMaterialAdapter is used to handle the translation from a Maya material to hydra.
+    If you are looking for how we translate the Maya shaders to hydra and how we do the parameters
+   mapping, please see MayaHydraMaterialNetworkConverter::initialize().
+*/
+
+MayaHydraMaterialAdapter::MayaHydraMaterialAdapter(
+    const SdfPath&        id,
+    MayaHydraDelegateCtx* delegate,
+    const MObject&        node)
+    : MayaHydraAdapter(node, id, delegate)
 {
 }
 
-bool HdMayaMaterialAdapter::IsSupported() const
+bool MayaHydraMaterialAdapter::IsSupported() const
 {
     return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->material);
 }
 
-bool HdMayaMaterialAdapter::HasType(const TfToken& typeId) const
+bool MayaHydraMaterialAdapter::HasType(const TfToken& typeId) const
 {
     return typeId == HdPrimTypeTokens->material;
 }
 
-void HdMayaMaterialAdapter::MarkDirty(HdDirtyBits dirtyBits)
+void MayaHydraMaterialAdapter::MarkDirty(HdDirtyBits dirtyBits)
 {
     GetDelegate()->GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits);
 }
 
-void HdMayaMaterialAdapter::RemovePrim()
+void MayaHydraMaterialAdapter::RemovePrim()
 {
     if (!_isPopulated) {
         return;
@@ -81,9 +82,10 @@ void HdMayaMaterialAdapter::RemovePrim()
     _isPopulated = false;
 }
 
-void HdMayaMaterialAdapter::Populate()
+void MayaHydraMaterialAdapter::Populate()
 {
-    TF_DEBUG(HDMAYA_ADAPTER_GET).Msg("HdMayaMaterialAdapter::Populate() - %s\n", GetID().GetText());
+    TF_DEBUG(MAYAHYDRALIB_ADAPTER_GET)
+        .Msg("MayaHydraMaterialAdapter::Populate() - %s\n", GetID().GetText());
     if (_isPopulated) {
         return;
     }
@@ -91,35 +93,29 @@ void HdMayaMaterialAdapter::Populate()
     _isPopulated = true;
 }
 
-#if PXR_VERSION < 2011
-
-HdTextureResource::ID HdMayaMaterialAdapter::GetTextureResourceID(const TfToken& paramName)
+void MayaHydraMaterialAdapter::EnableXRayShadingMode(bool enable)
 {
-    return {};
+    _enableXRayShadingMode = enable;
+    MarkDirty(HdMaterial::DirtyParams);
 }
 
-HdTextureResourceSharedPtr HdMayaMaterialAdapter::GetTextureResource(const SdfPath& textureShaderId)
+VtValue MayaHydraMaterialAdapter::GetMaterialResource()
 {
-    return {};
-}
-
-#endif // PXR_VERSION < 2011
-
-VtValue HdMayaMaterialAdapter::GetMaterialResource()
-{
-    TF_DEBUG(HDMAYA_ADAPTER_MATERIALS).Msg("HdMayaMaterialAdapter::GetMaterialResource()\n");
+    TF_DEBUG(MAYAHYDRALIB_ADAPTER_MATERIALS)
+        .Msg("MayaHydraMaterialAdapter::GetMaterialResource()\n");
     return GetPreviewMaterialResource(GetID());
 }
 
-VtValue HdMayaMaterialAdapter::GetPreviewMaterialResource(const SdfPath& materialID)
+VtValue MayaHydraMaterialAdapter::GetPreviewMaterialResource(const SdfPath& materialID)
 {
     HdMaterialNetworkMap map;
     HdMaterialNetwork    network;
     HdMaterialNode       node;
     node.path = materialID;
-    node.identifier = UsdImagingTokens->UsdPreviewSurface;
+    node.identifier
+        = UsdImagingTokens->UsdPreviewSurface; // We translate to a USD preview surface material
     map.terminals.push_back(node.path);
-    for (const auto& it : HdMayaMaterialNetworkConverter::GetPreviewShaderParams()) {
+    for (const auto& it : MayaHydraMaterialNetworkConverter::GetPreviewShaderParams()) {
         node.parameters.emplace(it.name, it.fallbackValue);
     }
     network.nodes.push_back(node);
@@ -127,19 +123,26 @@ VtValue HdMayaMaterialAdapter::GetPreviewMaterialResource(const SdfPath& materia
     return VtValue(map);
 }
 
-class HdMayaShadingEngineAdapter : public HdMayaMaterialAdapter
+/**
+ * \brief MayaHydraShadingEngineAdapter is used to handle the translation from a Maya shading engine
+ * to hydra.
+ */
+class MayaHydraShadingEngineAdapter : public MayaHydraMaterialAdapter
 {
 public:
-    typedef HdMayaMaterialNetworkConverter::PathToMobjMap PathToMobjMap;
+    typedef MayaHydraMaterialNetworkConverter::PathToMobjMap PathToMobjMap;
 
-    HdMayaShadingEngineAdapter(const SdfPath& id, HdMayaDelegateCtx* delegate, const MObject& obj)
-        : HdMayaMaterialAdapter(id, delegate, obj)
+    MayaHydraShadingEngineAdapter(
+        const SdfPath&        id,
+        MayaHydraDelegateCtx* delegate,
+        const MObject&        obj)
+        : MayaHydraMaterialAdapter(id, delegate, obj)
         , _surfaceShaderCallback(0)
     {
         _CacheNodeAndTypes();
     }
 
-    ~HdMayaShadingEngineAdapter() override
+    ~MayaHydraShadingEngineAdapter() override
     {
         if (_surfaceShaderCallback != 0) {
             MNodeMessage::removeCallback(_surfaceShaderCallback);
@@ -148,7 +151,7 @@ public:
 
     void CreateCallbacks() override
     {
-        TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+        TF_DEBUG(MAYAHYDRALIB_ADAPTER_CALLBACKS)
             .Msg("Creating shading engine adapter callbacks for prim (%s).\n", GetID().GetText());
 
         MStatus status;
@@ -158,13 +161,13 @@ public:
             AddCallback(id);
         }
         _CreateSurfaceMaterialCallback();
-        HdMayaAdapter::CreateCallbacks();
+        MayaHydraAdapter::CreateCallbacks();
     }
 
     void Populate() override
     {
-        HdMayaMaterialAdapter::Populate();
-#ifdef HDMAYA_OIT_ENABLED
+        MayaHydraMaterialAdapter::Populate();
+#ifdef MAYAHYDRALIB_OIT_ENABLED
         _isTranslucent = IsTranslucent();
 #endif
     }
@@ -172,14 +175,14 @@ public:
 private:
     static void _DirtyMaterialParams(MObject& /*node*/, void* clientData)
     {
-        auto* adapter = reinterpret_cast<HdMayaShadingEngineAdapter*>(clientData);
+        auto* adapter = reinterpret_cast<MayaHydraShadingEngineAdapter*>(clientData);
         adapter->_CreateSurfaceMaterialCallback();
         adapter->MarkDirty(HdMaterial::AllDirty);
     }
 
     static void _DirtyShaderParams(MObject& /*node*/, void* clientData)
     {
-        auto* adapter = reinterpret_cast<HdMayaShadingEngineAdapter*>(clientData);
+        auto* adapter = reinterpret_cast<MayaHydraShadingEngineAdapter*>(clientData);
         adapter->MarkDirty(HdMaterial::AllDirty);
         if (adapter->GetDelegate()->IsHdSt()) {
             adapter->GetDelegate()->MaterialTagChanged(adapter->GetID());
@@ -206,37 +209,13 @@ private:
                 return;
             }
             _surfaceShaderType = TfToken(surfaceNode.typeName().asChar());
-            TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+            TF_DEBUG(MAYAHYDRALIB_ADAPTER_MATERIALS)
                 .Msg(
                     "Found surfaceShader %s[%s]\n",
                     surfaceNode.name().asChar(),
                     _surfaceShaderType.GetText());
         }
     }
-
-#if PXR_VERSION < 2011
-
-    HdTextureResourceSharedPtr GetTextureResource(const SdfPath& textureShaderId) override
-    {
-        TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
-            .Msg(
-                "HdMayaShadingEngineAdapter::GetTextureResource(%s): %s\n",
-                textureShaderId.GetText(),
-                GetID().GetText());
-        if (GetDelegate()->IsHdSt()) {
-            auto* mObjPtr = TfMapLookupPtr(_materialPathToMobj, textureShaderId);
-            if (!mObjPtr || (*mObjPtr) == MObject::kNullObj) {
-                return {};
-            }
-            return GetFileTextureResource(
-                *mObjPtr,
-                GetFileTexturePath(MFnDependencyNode(*mObjPtr)),
-                GetDelegate()->GetParams().textureMemoryPerTexture);
-        }
-        return {};
-    }
-
-#endif // PXR_VERSION < 2011
 
     void _CreateSurfaceMaterialCallback()
     {
@@ -252,35 +231,22 @@ private:
         }
     }
 
-#if PXR_VERSION < 2011
-
-    inline HdTextureResource::ID
-    _GetTextureResourceID(const MObject& fileObj, const TfToken& filePath)
-    {
-        auto       hash = filePath.Hash();
-        const auto wrapping = GetFileTextureWrappingParams(fileObj);
-        MayaUsd::hash_combine(hash, GetDelegate()->GetParams().textureMemoryPerTexture);
-        MayaUsd::hash_combine(hash, std::get<0>(wrapping));
-        MayaUsd::hash_combine(hash, std::get<1>(wrapping));
-        return HdTextureResource::ID(hash);
-    }
-
-#endif // PXR_VERSION < 2011
-
     VtValue GetMaterialResource() override
     {
-        TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
-            .Msg("HdMayaShadingEngineAdapter::GetMaterialResource(): %s\n", GetID().GetText());
-        HdMaterialNetwork              materialNetwork;
-        HdMayaMaterialNetworkConverter converter(materialNetwork, GetID(), &_materialPathToMobj);
+        TF_DEBUG(MAYAHYDRALIB_ADAPTER_MATERIALS)
+            .Msg("MayaHydraShadingEngineAdapter::GetMaterialResource(): %s\n", GetID().GetText());
+        MayaHydraMaterialNetworkConverter::MayaHydraMaterialNetworkConverterInit initStruct(
+            GetID(), _enableXRayShadingMode, &_materialPathToMobj);
+
+        MayaHydraMaterialNetworkConverter converter(initStruct);
         if (!converter.GetMaterial(_surfaceShader)) {
             return GetPreviewMaterialResource(GetID());
         }
 
         HdMaterialNetworkMap materialNetworkMap;
-        materialNetworkMap.map[HdMaterialTerminalTokens->surface] = materialNetwork;
-        if (!materialNetwork.nodes.empty()) {
-            materialNetworkMap.terminals.push_back(materialNetwork.nodes.back().path);
+        materialNetworkMap.map[HdMaterialTerminalTokens->surface] = initStruct._materialNetwork;
+        if (!initStruct._materialNetwork.nodes.empty()) {
+            materialNetworkMap.terminals.push_back(initStruct._materialNetwork.nodes.back().path);
         }
 
         // HdMaterialNetwork displacementNetwork;
@@ -290,7 +256,7 @@ private:
         return VtValue(materialNetworkMap);
     };
 
-#ifdef HDMAYA_OIT_ENABLED
+#ifdef MAYAHYDRALIB_OIT_ENABLED
     bool UpdateMaterialTag() override
     {
         if (IsTranslucent() != _isTranslucent) {
@@ -302,10 +268,10 @@ private:
 
     bool IsTranslucent()
     {
-        if (_surfaceShaderType == HdMayaAdapterTokens->usdPreviewSurface
-            || _surfaceShaderType == HdMayaAdapterTokens->pxrUsdPreviewSurface) {
+        if (_surfaceShaderType == MayaHydraAdapterTokens->usdPreviewSurface
+            || _surfaceShaderType == MayaHydraAdapterTokens->pxrUsdPreviewSurface) {
             MFnDependencyNode node(_surfaceShader);
-            const auto        plug = node.findPlug(HdMayaAdapterTokens->opacity.GetText(), true);
+            const auto        plug = node.findPlug(MayaHydraAdapterTokens->opacity.GetText(), true);
             if (!plug.isNull() && (plug.asFloat() < 1.0f || plug.isConnected())) {
                 return true;
             }
@@ -313,7 +279,7 @@ private:
         return false;
     }
 
-#endif // HDMAYA_OIT_ENABLED
+#endif // MAYAHYDRALIB_OIT_ENABLED
 
     PathToMobjMap _materialPathToMobj;
 
@@ -321,33 +287,27 @@ private:
     TfToken _surfaceShaderType;
     // So they live long enough
 
-#if PXR_VERSION < 2011
-
-    std::unordered_map<TfToken, HdStTextureResourceHandleSharedPtr, TfToken::HashFunctor>
-        _textureResourceHandles;
-
-#endif // PXR_VERSION < 2011
-
     MCallbackId _surfaceShaderCallback;
-#ifdef HDMAYA_OIT_ENABLED
+#ifdef MAYAHYDRALIB_OIT_ENABLED
     bool _isTranslucent = false;
 #endif
 };
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<HdMayaMaterialAdapter, TfType::Bases<HdMayaAdapter>>();
-    TfType::Define<HdMayaShadingEngineAdapter, TfType::Bases<HdMayaMaterialAdapter>>();
+    TfType::Define<MayaHydraMaterialAdapter, TfType::Bases<MayaHydraAdapter>>();
+    TfType::Define<MayaHydraShadingEngineAdapter, TfType::Bases<MayaHydraMaterialAdapter>>();
 }
 
-TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, shadingEngine)
+TF_REGISTRY_FUNCTION_WITH_TAG(MayaHydraAdapterRegistry, shadingEngine)
 {
-    HdMayaAdapterRegistry::RegisterMaterialAdapter(
+    MayaHydraAdapterRegistry::RegisterMaterialAdapter(
         TfToken("shadingEngine"),
-        [](const SdfPath&     id,
-           HdMayaDelegateCtx* delegate,
-           const MObject&     obj) -> HdMayaMaterialAdapterPtr {
-            return HdMayaMaterialAdapterPtr(new HdMayaShadingEngineAdapter(id, delegate, obj));
+        [](const SdfPath&        id,
+           MayaHydraDelegateCtx* delegate,
+           const MObject&        obj) -> MayaHydraMaterialAdapterPtr {
+            return MayaHydraMaterialAdapterPtr(
+                new MayaHydraShadingEngineAdapter(id, delegate, obj));
         });
 }
 

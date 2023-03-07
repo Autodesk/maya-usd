@@ -13,18 +13,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+// Copyright 2023 Autodesk, Inc. All rights reserved.
+
 /// \file hdmaya/utils.h
 ///
 /// Utilities for Maya to Hydra, including for adapters and delegates.
-#ifndef HDMAYA_UTILS_H
-#define HDMAYA_UTILS_H
+#ifndef MAYAHYDRALIB_UTILS_H
+#define MAYAHYDRALIB_UTILS_H
 
-#include <hdMaya/adapters/mayaAttrs.h>
-#include <hdMaya/api.h>
+#include <mayaHydraLib/adapters/mayaAttrs.h>
+#include <mayaHydraLib/api.h>
+#include <mayaHydraLib/mayaHydra.h>
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/base/vt/value.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
 
 #include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
@@ -37,14 +42,19 @@
 #include <maya/MRenderUtil.h>
 #include <maya/MSelectionList.h>
 
-#if PXR_VERSION < 2011
-#include <pxr/imaging/hd/textureResource.h>
-#include <pxr/imaging/hd/types.h>
+#include <string>
 
-#include <tuple>
-#endif // PXR_VERSION < 2011
+// We would like to preserve additional pathway for dag items similarly
+// to what was done inside InsertData from mtoh. Disabled for now
+// #define MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
+// #define MAYAHYDRA_DEVELOPMENTAL_NATIVE_SELECTION
 
-PXR_NAMESPACE_OPEN_SCOPE
+namespace MAYAHYDRA_NS_DEF {
+
+using GfMatrix4d = PXR_NS::GfMatrix4d;
+using TfToken = PXR_NS::TfToken;
+using SdfPath = PXR_NS::SdfPath;
+using TfCallContext = PXR_NS::TfCallContext;
 
 /// \brief Converts a Maya matrix to a double precision GfMatrix.
 /// \param mayaMat Maya `MMatrix` to be converted.
@@ -76,7 +86,7 @@ inline GfMatrix4d GetGfMatrixFromMaya(const MFloatMatrix& mayaMat)
 ///  \p node shader object.
 /// \return Maya object to a "file" shader node, `MObject::kNullObj` if there is
 ///  no valid connection.
-HDMAYA_API
+MAYAHYDRALIB_API
 MObject GetConnectedFileNode(const MObject& obj, const TfToken& paramName);
 
 /// \brief Returns a connected "file" shader node to another shader node's
@@ -86,40 +96,21 @@ MObject GetConnectedFileNode(const MObject& obj, const TfToken& paramName);
 ///  \p node shader node.
 /// \return Maya object to a "file" shader node, `MObject::kNullObj` if there is
 ///  no valid connection.
-HDMAYA_API
+MAYAHYDRALIB_API
 MObject GetConnectedFileNode(const MFnDependencyNode& node, const TfToken& paramName);
 
 /// \brief Returns the texture file path from a "file" shader node.
 /// \param fileNode "file" shader node.
 /// \return Full path to the texture pointed used by the file node. `<UDIM>`
 ///  tags are kept intact.
-HDMAYA_API
+MAYAHYDRALIB_API
 TfToken GetFileTexturePath(const MFnDependencyNode& fileNode);
 
-#if PXR_VERSION < 2011
-
-/// \brief Returns the texture resource from a "file" shader node.
-/// \param fileObj "file" shader object.
-/// \param filePath Path to the texture file held by "file" shader node.
-/// \param maxTextureMemory Maximum texture memory in bytes available for
-///  loading the texture. If the texture requires more memory
-///  than \p maxTextureMemory, higher mip-map levels are discarded until the
-///  memory required is less than \p maxTextureMemory.
-/// \return Pointer to the Hydra Texture resource.
-HDMAYA_API
-HdTextureResourceSharedPtr GetFileTextureResource(
-    const MObject& fileObj,
-    const TfToken& filePath,
-    int            maxTextureMemory = 4 * 1024 * 1024);
-
-/// \brief Returns the texture wrapping parameters from a "file" shader node.
-/// \param fileObj "file" shader object.
-/// \return A `std::tuple<HdWrap, HdWrap>` holding the wrapping parameters
-///  for s and t axis.
-HDMAYA_API
-std::tuple<HdWrap, HdWrap> GetFileTextureWrappingParams(const MObject& fileObj);
-
-#endif // PXR_VERSION < 2011
+/// \brief Return in the std::string outValueAsString the VtValue type and value written as text for
+/// debugging purpose \param val the VtValue to be converted.
+/// \param outValueAsString the std::string that will contain the text from the VtValue.
+MAYAHYDRALIB_API
+void ConvertVtValueAsText(const PXR_INTERNAL_NS::VtValue& val, std::string& outValueAsString);
 
 /// \brief Runs a function on all recursive descendents of a selection list
 ///  May optionally filter by node type. The items in the list are also included
@@ -174,6 +165,39 @@ MapSelectionDescendents(const MSelectionList& sel, FUNC func, MFn::Type filterTy
     }
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+MAYAHYDRALIB_API
+std::string SanitizeName(const std::string& name);
 
-#endif // HDMAYA_UTILS_H
+/// Converts the given Maya MDagPath \p dagPath into an SdfPath.
+///
+/// If \p mergeTransformAndShape and the dagPath is a shapeNode, it will return
+/// the same value as MDagPathToUsdPath(transformPath) where transformPath is
+/// the MDagPath for \p dagPath's transform node.
+///
+/// Elements of the path will be sanitized such that it is a valid SdfPath.
+/// This means it will replace Maya's namespace delimiter (':') with
+/// underscores ('_').
+MAYAHYDRALIB_API
+SdfPath DagPathToSdfPath(
+    const MDagPath& dagPath,
+    const bool      mergeTransformAndShape,
+    const bool      stripNamespaces);
+
+/// Converts the given Maya MDagPath \p dagPath into an SdfPath.
+///
+/// If \p mergeTransformAndShape and the dagPath is a shapeNode, it will return
+/// the same value as MDagPathToUsdPath(transformPath) where transformPath is
+/// the MDagPath for \p dagPath's transform node.
+///
+/// Elements of the path will be sanitized such that it is a valid SdfPath.
+/// This means it will replace Maya's namespace delimiter (':') with
+/// underscores ('_').
+MAYAHYDRALIB_API
+SdfPath RenderItemToSdfPath(
+    const MRenderItem& ri,
+    const bool         mergeTransformAndShape,
+    const bool         stripNamespaces);
+
+} // namespace MAYAHYDRA_NS_DEF
+
+#endif // MAYAHYDRALIB_UTILS_H

@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef HDMAYA_AL_DEBUG_CODES_H
-#define HDMAYA_AL_DEBUG_CODES_H
+#ifndef MAYAHYDRALIB_AL_DEBUG_CODES_H
+#define MAYAHYDRALIB_AL_DEBUG_CODES_H
 
 #include <pxr/base/tf/debug.h>
 #include <pxr/pxr.h>
@@ -23,14 +23,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // clang-format off
 TF_DEBUG_CODES(
-    HDMAYA_AL_CALLBACKS,
-    HDMAYA_AL_PLUGIN,
-    HDMAYA_AL_POPULATE,
-    HDMAYA_AL_PROXY_DELEGATE,
-    HDMAYA_AL_SELECTION
+    MAYAHYDRALIB_AL_CALLBACKS,
+    MAYAHYDRALIB_AL_PLUGIN,
+    MAYAHYDRALIB_AL_POPULATE,
+    MAYAHYDRALIB_AL_PROXY_DELEGATE,
+    MAYAHYDRALIB_AL_SELECTION
 );
 // clang-format on
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDMAYA_AL_DEBUG_CODES_H
+#endif // MAYAHYDRALIB_AL_DEBUG_CODES_H

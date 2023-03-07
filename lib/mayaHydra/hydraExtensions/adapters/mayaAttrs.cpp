@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <hdMaya/adapters/mayaAttrs.h>
+#include <mayaHydraLib/adapters/mayaAttrs.h>
 
 #include <pxr/base/tf/diagnostic.h>
 

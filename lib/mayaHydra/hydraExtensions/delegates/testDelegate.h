@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef HDMAYA_TEST_DELEGATE_H
-#define HDMAYA_TEST_DELEGATE_H
+#ifndef MAYAHYDRALIB_TEST_DELEGATE_H
+#define MAYAHYDRALIB_TEST_DELEGATE_H
 
-#include <hdMaya/delegates/delegate.h>
+#include <mayaHydraLib/delegates/delegate.h>
 
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/pxr.h>
@@ -28,10 +28,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaTestDelegate : public HdMayaDelegate
+/**
+ * \brief MayaHydraTestDelegate could be used as a test scene delegate, it is not used any more.
+ */
+class MayaHydraTestDelegate : public MayaHydraDelegate
 {
 public:
-    HdMayaTestDelegate(const InitData& initData);
+    MayaHydraTestDelegate(const InitData& initData);
 
     void Populate() override;
 
@@ -42,4 +45,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDMAYA_TEST_DELEGATE_H
+#endif // MAYAHYDRALIB_TEST_DELEGATE_H

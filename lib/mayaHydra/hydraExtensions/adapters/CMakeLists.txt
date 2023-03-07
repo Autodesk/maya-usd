@@ -10,9 +10,9 @@ target_sources(${TARGET_NAME}
         areaLightAdapter.cpp
         cameraAdapter.cpp
         dagAdapter.cpp
+        renderItemAdapter.cpp
         directionalLightAdapter.cpp
         lightAdapter.cpp
-        proxyAdapter.cpp
         materialAdapter.cpp
         materialNetworkConverter.cpp
         mayaAttrs.cpp
@@ -31,8 +31,8 @@ set(HEADERS
     cameraAdapter.h
     constantShadowMatrix.h
     dagAdapter.h
+    renderItemAdapter.h
     lightAdapter.h
-    proxyAdapter.h
     materialAdapter.h
     materialNetworkConverter.h
     mayaAttrs.h
@@ -55,5 +55,5 @@ mayaUsd_promoteHeaderList(
 # -----------------------------------------------------------------------------
 install(FILES ${HEADERS}
     DESTINATION 
-        ${CMAKE_INSTALL_PREFIX}/include/hdMaya/adapters
+        ${CMAKE_INSTALL_PREFIX}/include/mayaHydraLib/adapters
 )

@@ -13,11 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <hdMaya/adapters/adapterDebugCodes.h>
-#include <hdMaya/adapters/adapterRegistry.h>
-#include <hdMaya/adapters/mayaAttrs.h>
-#include <hdMaya/adapters/shapeAdapter.h>
-#include <hdMaya/adapters/tokens.h>
+#include <mayaHydraLib/adapters/adapterDebugCodes.h>
+#include <mayaHydraLib/adapters/adapterRegistry.h>
+#include <mayaHydraLib/adapters/mayaAttrs.h>
+#include <mayaHydraLib/adapters/shapeAdapter.h>
+#include <mayaHydraLib/adapters/tokens.h>
 
 #include <pxr/base/gf/interval.h>
 #include <pxr/base/tf/type.h>
@@ -37,6 +37,12 @@
 #include <maya/MPolyMessage.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+/**
+ * This file contains the MayaHydraMeshAdapter class to translate from a Maya mesh to hydra.
+ * Please note that, as of Feb 2023, this is not used by the hydra plugin, we translate from a
+ * renderitem to hydra using the MayaHydraRenderItemAdapter class.
+ */
 
 namespace {
 
@@ -61,15 +67,20 @@ const std::pair<MObject&, HdDirtyBits> _dirtyBits[] {
 
 } // namespace
 
-class HdMayaMeshAdapter : public HdMayaShapeAdapter
+/**
+ * \brief MayaHydraMeshAdapter is used to handle the translation from a Maya mesh to hydra.
+ * Please note that, at this time, this is not used by the hydra plugin, we translate from a
+ * renderitem to hydra using the MayaHydraRenderItemAdapter class.
+ */
+class MayaHydraMeshAdapter : public MayaHydraShapeAdapter
 {
 public:
-    HdMayaMeshAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
-        : HdMayaShapeAdapter(delegate->GetPrimPath(dag, false), delegate, dag)
+    MayaHydraMeshAdapter(MayaHydraDelegateCtx* delegate, const MDagPath& dag)
+        : MayaHydraShapeAdapter(delegate->GetPrimPath(dag, false), delegate, dag)
     {
     }
 
-    ~HdMayaMeshAdapter() = default;
+    ~MayaHydraMeshAdapter() = default;
 
     void Populate() override
     {
@@ -87,7 +98,7 @@ public:
         MStatus status;
         auto    obj = GetNode();
         if (obj != MObject::kNullObj) {
-            TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+            TF_DEBUG(MAYAHYDRALIB_ADAPTER_CALLBACKS)
                 .Msg("Creating mesh adapter callbacks for prim (%s).\n", GetID().GetText());
 
             auto id
@@ -116,21 +127,21 @@ public:
                 AddBuggyCallback(id);
             }
         }
-        HdMayaDagAdapter::CreateCallbacks();
+        MayaHydraDagAdapter::CreateCallbacks();
     }
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void RemoveCallbacks() override
     {
         if (_buggyCallbacks.length() > 0) {
-            TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+            TF_DEBUG(MAYAHYDRALIB_ADAPTER_CALLBACKS)
                 .Msg("Removing buggy PolyComponentIdChangedCallbacks\n");
             if (_node != MObject::kNullObj && MObjectHandle(_node).isValid()) {
                 MMessage::removeCallbacks(_buggyCallbacks);
             }
             _buggyCallbacks.clear();
         }
-        HdMayaAdapter::RemoveCallbacks();
+        MayaHydraAdapter::RemoveCallbacks();
     }
 
     bool IsSupported() const override
@@ -173,9 +184,9 @@ public:
 
     VtValue Get(const TfToken& key) override
     {
-        TF_DEBUG(HDMAYA_ADAPTER_GET)
+        TF_DEBUG(MAYAHYDRALIB_ADAPTER_GET)
             .Msg(
-                "Called HdMayaMeshAdapter::Get(%s) - %s\n",
+                "Called MayaHydraMeshAdapter::Get(%s) - %s\n",
                 key.GetText(),
                 GetDagPath().partialPathName().asChar());
 
@@ -186,7 +197,7 @@ public:
                 return {};
             }
             return GetPoints(mesh);
-        } else if (key == HdMayaAdapterTokens->st) {
+        } else if (key == MayaHydraAdapterTokens->st) {
             return GetUVs();
         }
         return {};
@@ -207,7 +218,7 @@ public:
             }
             return GetDelegate()->SampleValues(
                 maxSampleCount, times, samples, [&]() -> VtValue { return GetPoints(mesh); });
-        } else if (key == HdMayaAdapterTokens->st) {
+        } else if (key == MayaHydraAdapterTokens->st) {
             times[0] = 0.0f;
             samples[0] = GetUVs();
             return 1;
@@ -231,16 +242,10 @@ public:
             }
         }
 
-        // TODO: Maybe we could use the flat shading of the display style?
         return HdMeshTopology(
-#if MAYA_APP_VERSION >= 2019
             (GetDelegate()->GetParams().displaySmoothMeshes || GetDisplayStyle().refineLevel > 0)
                 ? PxOsdOpenSubdivTokens->catmullClark
                 : PxOsdOpenSubdivTokens->none,
-#else
-            GetDelegate()->GetParams().displaySmoothMeshes ? PxOsdOpenSubdivTokens->catmullClark
-                                                           : PxOsdOpenSubdivTokens->none,
-#endif
 
             UsdGeomTokens->rightHanded,
             faceVertexCounts,
@@ -249,7 +254,6 @@ public:
 
     HdDisplayStyle GetDisplayStyle() override
     {
-#if MAYA_APP_VERSION >= 2019
         MStatus           status;
         MFnDependencyNode node(GetNode(), &status);
         if (ARCH_UNLIKELY(!status)) {
@@ -263,14 +267,10 @@ public:
         const auto smoothLevel
             = std::max(0, node.findPlug(MayaAttrs::mesh::smoothLevel, true).asInt());
         return { smoothLevel, false, false };
-#else
-        return { 0, false, false };
-#endif
     }
 
     PxOsdSubdivTags GetSubdivTags() override
     {
-#if MAYA_APP_VERSION >= 2019
         PxOsdSubdivTags tags;
         if (GetDisplayStyle().refineLevel < 1) {
             return tags;
@@ -309,8 +309,6 @@ public:
             tags.SetCornerWeights(cornerWeights);
         }
 
-        // TODO: Do a similar compression to usdMaya:
-        //  meshWrite_Subdiv.cpp:_CompressCreases.
         if (creaseEdgeIdCount > 0) {
             VtIntArray   edgeIndices(creaseEdgeIdCount * 2);
             VtFloatArray edgeWeights(creaseEdgeIdCount);
@@ -332,9 +330,6 @@ public:
         tags.SetTriangleSubdivision(UsdGeomTokens->catmullClark);
 
         return tags;
-#else
-        return {};
-#endif
     }
 
     HdPrimvarDescriptorVector GetPrimvarDescriptors(HdInterpolation interpolation) override
@@ -350,7 +345,7 @@ public:
             MFnMesh mesh(GetDagPath());
             if (mesh.numUVs() > 0) {
                 HdPrimvarDescriptor desc;
-                desc.name = HdMayaAdapterTokens->st;
+                desc.name = MayaHydraAdapterTokens->st;
                 desc.interpolation = interpolation;
                 desc.role = HdPrimvarRoleTokens->textureCoordinate;
                 return { desc };
@@ -359,7 +354,7 @@ public:
         return {};
     }
 
-    bool GetDoubleSided() override
+    bool GetDoubleSided() const override
     {
         MFnMesh mesh(GetDagPath());
         auto    p = mesh.findPlug(MayaAttrs::mesh::doubleSided, true);
@@ -376,11 +371,11 @@ public:
 private:
     static void NodeDirtiedCallback(MObject& node, MPlug& plug, void* clientData)
     {
-        auto* adapter = reinterpret_cast<HdMayaMeshAdapter*>(clientData);
+        auto* adapter = reinterpret_cast<MayaHydraMeshAdapter*>(clientData);
         for (const auto& it : _dirtyBits) {
             if (it.first == plug) {
                 adapter->MarkDirty(it.second);
-                TF_DEBUG(HDMAYA_ADAPTER_MESH_PLUG_DIRTY)
+                TF_DEBUG(MAYAHYDRALIB_ADAPTER_MESH_PLUG_DIRTY)
                     .Msg(
                         "Marking prim dirty with bits %u because %s plug was "
                         "dirtied.\n",
@@ -390,10 +385,10 @@ private:
             }
         }
 
-        TF_DEBUG(HDMAYA_ADAPTER_MESH_UNHANDLED_PLUG_DIRTY)
+        TF_DEBUG(MAYAHYDRALIB_ADAPTER_MESH_UNHANDLED_PLUG_DIRTY)
             .Msg(
                 "%s (%s) plug dirtying was not handled by "
-                "HdMayaMeshAdapter::NodeDirtiedCallback.\n",
+                "MayaHydraMeshAdapter::NodeDirtiedCallback.\n",
                 plug.name().asChar(),
                 plug.partialName().asChar());
     }
@@ -405,14 +400,14 @@ private:
         MPlug&                         otherPlug,
         void*                          clientData)
     {
-        auto* adapter = reinterpret_cast<HdMayaMeshAdapter*>(clientData);
+        auto* adapter = reinterpret_cast<MayaHydraMeshAdapter*>(clientData);
         if (plug == MayaAttrs::mesh::instObjGroups) {
             adapter->MarkDirty(HdChangeTracker::DirtyMaterialId);
         } else {
-            TF_DEBUG(HDMAYA_ADAPTER_MESH_UNHANDLED_PLUG_DIRTY)
+            TF_DEBUG(MAYAHYDRALIB_ADAPTER_MESH_UNHANDLED_PLUG_DIRTY)
                 .Msg(
                     "%s (%s) plug dirtying was not handled by "
-                    "HdMayaMeshAdapter::attributeChangedCallback.\n",
+                    "MayaHydraMeshAdapter::attributeChangedCallback.\n",
                     plug.name().asChar(),
                     plug.name().asChar());
         }
@@ -420,7 +415,7 @@ private:
 
     static void TopologyChangedCallback(MObject& node, void* clientData)
     {
-        auto* adapter = reinterpret_cast<HdMayaMeshAdapter*>(clientData);
+        auto* adapter = reinterpret_cast<MayaHydraMeshAdapter*>(clientData);
         adapter->MarkDirty(
             HdChangeTracker::DirtyTopology | HdChangeTracker::DirtyPrimvar
             | HdChangeTracker::DirtyPoints);
@@ -428,7 +423,7 @@ private:
 
     static void ComponentIdChanged(MUintArray componentIds[], unsigned int count, void* clientData)
     {
-        auto* adapter = reinterpret_cast<HdMayaMeshAdapter*>(clientData);
+        auto* adapter = reinterpret_cast<MayaHydraMeshAdapter*>(clientData);
         adapter->MarkDirty(
             HdChangeTracker::DirtyTopology | HdChangeTracker::DirtyPrimvar
             | HdChangeTracker::DirtyPoints);
@@ -440,8 +435,7 @@ private:
         MPolyMessage::MessageType type,
         void*                     clientData)
     {
-        // TODO: Only track the uvset we care about.
-        auto* adapter = reinterpret_cast<HdMayaMeshAdapter*>(clientData);
+        auto* adapter = reinterpret_cast<MayaHydraMeshAdapter*>(clientData);
         adapter->MarkDirty(HdChangeTracker::DirtyPrimvar);
     }
 
@@ -458,15 +452,15 @@ private:
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<HdMayaMeshAdapter, TfType::Bases<HdMayaShapeAdapter>>();
+    TfType::Define<MayaHydraMeshAdapter, TfType::Bases<MayaHydraShapeAdapter>>();
 }
 
-TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, mesh)
+TF_REGISTRY_FUNCTION_WITH_TAG(MayaHydraAdapterRegistry, mesh)
 {
-    HdMayaAdapterRegistry::RegisterShapeAdapter(
+    MayaHydraAdapterRegistry::RegisterShapeAdapter(
         TfToken("mesh"),
-        [](HdMayaDelegateCtx* delegate, const MDagPath& dag) -> HdMayaShapeAdapterPtr {
-            return HdMayaShapeAdapterPtr(new HdMayaMeshAdapter(delegate, dag));
+        [](MayaHydraDelegateCtx* delegate, const MDagPath& dag) -> MayaHydraShapeAdapterPtr {
+            return MayaHydraShapeAdapterPtr(new MayaHydraMeshAdapter(delegate, dag));
         });
 }
 

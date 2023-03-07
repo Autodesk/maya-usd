@@ -13,14 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+// Copyright 2023 Autodesk, Inc. All rights reserved.
+//
 #include "materialNetworkConverter.h"
 
-#include <hdMaya/adapters/adapterDebugCodes.h>
-#include <hdMaya/adapters/materialAdapter.h>
-#include <hdMaya/adapters/mayaAttrs.h>
-#include <hdMaya/adapters/tokens.h>
-#include <hdMaya/utils.h>
-#include <mayaUsd/utils/util.h>
+#include <mayaHydraLib/adapters/adapterDebugCodes.h>
+#include <mayaHydraLib/adapters/materialAdapter.h>
+#include <mayaHydraLib/adapters/mayaAttrs.h>
+#include <mayaHydraLib/adapters/tokens.h>
+#include <mayaHydraLib/utils.h>
 
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>
@@ -32,42 +33,67 @@
 #include <maya/MStatus.h>
 
 #include <mutex>
+#include <sstream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/* This file contains how we translate the Maya shaders (Blinn, Lambert, Standard Surface etc.) to
+   hydra and how we do the parameters mapping. See MayaHydraMaterialNetworkConverter::initialize()
+   for that purpose.
+*/
+
 namespace {
 
+// Print to the output window the type and value of each parameter from the std::map
+void DebugPrintParameters(const std::map<TfToken, VtValue>& params)
+{
+    cout << "\n"; // Add a line
+    // Print all parameters types and values
+    for (auto param : params) {
+        std::string valueAsString;
+        MAYAHYDRA_NS_DEF::ConvertVtValueAsText(param.second, valueAsString);
+        cout << "Material parameters : (" << param.first.GetText() << " - " << valueAsString.c_str()
+             << ")\n";
+    }
+}
+
+const TfToken _useSpecularWorkflowToken("useSpecularWorkflow");
+const TfToken _specularColorToken("specularColor");
+const TfToken _opacityToken("opacity");
+
 constexpr float defaultTextureMemoryLimit = 1e8f;
+constexpr float xRayOpacityValue
+    = 0.3f; // Hardcoded value taken from OGSMayaRenderItem::UpdateExtraOpacityParam
 
 // Lists of preferred shader output names, from SdfValueTypeName to list of
 // preferred output names for that type.  The list that has an empty token for
 // SdfValueTypeName is used as a default.
 const std::vector<std::pair<SdfValueTypeName, std::vector<TfToken>>> preferredOutputNamesByType {
     { SdfValueTypeNames->Float3,
-      { HdMayaAdapterTokens->result,
-        HdMayaAdapterTokens->out,
-        HdMayaAdapterTokens->output,
-        HdMayaAdapterTokens->rgb,
-        HdMayaAdapterTokens->xyz } },
+      { MayaHydraAdapterTokens->result,
+        MayaHydraAdapterTokens->out,
+        MayaHydraAdapterTokens->output,
+        MayaHydraAdapterTokens->rgb,
+        MayaHydraAdapterTokens->xyz } },
     { SdfValueTypeNames->Float2,
-      { HdMayaAdapterTokens->result,
-        HdMayaAdapterTokens->out,
-        HdMayaAdapterTokens->output,
-        HdMayaAdapterTokens->st,
-        HdMayaAdapterTokens->uv } },
+      { MayaHydraAdapterTokens->result,
+        MayaHydraAdapterTokens->out,
+        MayaHydraAdapterTokens->output,
+        MayaHydraAdapterTokens->st,
+        MayaHydraAdapterTokens->uv } },
     { SdfValueTypeNames->Float,
-      { HdMayaAdapterTokens->result,
-        HdMayaAdapterTokens->out,
-        HdMayaAdapterTokens->output,
-        HdMayaAdapterTokens->r,
-        HdMayaAdapterTokens->x } }
+      { MayaHydraAdapterTokens->result,
+        MayaHydraAdapterTokens->out,
+        MayaHydraAdapterTokens->output,
+        MayaHydraAdapterTokens->r,
+        MayaHydraAdapterTokens->x } }
 };
 
 // Default set of preferred output names, if type not in
 // preferredOutputNamesByType
-const std::vector<TfToken> defaultPreferredOutputNames { HdMayaAdapterTokens->result,
-                                                         HdMayaAdapterTokens->out,
-                                                         HdMayaAdapterTokens->output };
+const std::vector<TfToken> defaultPreferredOutputNames { MayaHydraAdapterTokens->result,
+                                                         MayaHydraAdapterTokens->out,
+                                                         MayaHydraAdapterTokens->output };
 
 SdfValueTypeName GetStandardTypeName(SdfValueTypeName type)
 {
@@ -97,7 +123,7 @@ GetPreferredOutputNames(SdfValueTypeName type, bool useStandardType = true)
 
 TfToken GetOutputName(const HdMaterialNode& material, SdfValueTypeName type)
 {
-    TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+    TF_DEBUG(MAYAHYDRALIB_ADAPTER_MATERIALS)
         .Msg(
             "GetOutputName(%s - %s, %s)\n",
             material.path.GetText(),
@@ -128,7 +154,7 @@ TfToken GetOutputName(const HdMaterialNode& material, SdfValueTypeName type)
 
         // If there's only one, use that
         if (validOutputs.size() == 1) {
-            TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+            TF_DEBUG(MAYAHYDRALIB_ADAPTER_MATERIALS)
                 .Msg(
                     "  found exactly one output of correct type in "
                     "registry: "
@@ -143,7 +169,7 @@ TfToken GetOutputName(const HdMaterialNode& material, SdfValueTypeName type)
             for (const auto& preferredName : preferredNames) {
                 if (std::find(validOutputs.begin(), validOutputs.end(), preferredName)
                     != validOutputs.end()) {
-                    TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+                    TF_DEBUG(MAYAHYDRALIB_ADAPTER_MATERIALS)
                         .Msg(
                             "  found preferred name of correct type in "
                             "registry: %s\n",
@@ -152,7 +178,7 @@ TfToken GetOutputName(const HdMaterialNode& material, SdfValueTypeName type)
                 }
             }
             // No preferred names were found, use the first valid name
-            TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+            TF_DEBUG(MAYAHYDRALIB_ADAPTER_MATERIALS)
                 .Msg(
                     "  found no preferred names of correct type in "
                     "registry, returning first valid name: %s\n",
@@ -166,7 +192,7 @@ TfToken GetOutputName(const HdMaterialNode& material, SdfValueTypeName type)
     // name
     const auto& preferredNames = GetPreferredOutputNames(type);
     if (TF_VERIFY(!preferredNames.empty())) {
-        TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+        TF_DEBUG(MAYAHYDRALIB_ADAPTER_MATERIALS)
             .Msg(
                 "  found no valid entries in registry, returning guess: "
                 "%s\n",
@@ -175,10 +201,10 @@ TfToken GetOutputName(const HdMaterialNode& material, SdfValueTypeName type)
     }
 
     // We should never get here - preferredNames should never be empty!
-    return HdMayaAdapterTokens->result;
+    return MayaHydraAdapterTokens->result;
 }
 
-class HdMayaGenericMaterialAttrConverter : public HdMayaMaterialAttrConverter
+class MayaHydraGenericMaterialAttrConverter : public MayaHydraMaterialAttrConverter
 {
 public:
     /// Generic attr converter has no fixed type
@@ -191,18 +217,18 @@ public:
         const TfToken&          paramName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr) override
+        MPlugArray*             outPlug = nullptr) override
     {
-        return HdMayaMaterialNetworkConverter::ConvertMayaAttrToValue(
+        return MayaHydraMaterialNetworkConverter::ConvertMayaAttrToValue(
             node, paramName.GetText(), type, fallback, outPlug);
     }
 };
 
-class HdMayaNewDefaultMaterialAttrConverter : public HdMayaMaterialAttrConverter
+class MayaHydraNewDefaultMaterialAttrConverter : public MayaHydraMaterialAttrConverter
 {
 public:
     template <typename T>
-    HdMayaNewDefaultMaterialAttrConverter(const T& defaultValue)
+    MayaHydraNewDefaultMaterialAttrConverter(const T& defaultValue)
         : _defaultValue(defaultValue)
     {
     }
@@ -216,19 +242,21 @@ public:
         const TfToken&          paramName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr) override
+        MPlugArray*             outPlug = nullptr) override
     {
-        return HdMayaMaterialNetworkConverter::ConvertMayaAttrToValue(
+        return MayaHydraMaterialNetworkConverter::ConvertMayaAttrToValue(
             node, paramName.GetText(), type, &_defaultValue, outPlug);
     }
 
     const VtValue _defaultValue;
 };
 
-class HdMayaRemappingMaterialAttrConverter : public HdMayaMaterialAttrConverter
+class MayaHydraRemappingMaterialAttrConverter : public MayaHydraMaterialAttrConverter
 {
 public:
-    HdMayaRemappingMaterialAttrConverter(const TfToken& remappedName, const SdfValueTypeName& type)
+    MayaHydraRemappingMaterialAttrConverter(
+        const TfToken&          remappedName,
+        const SdfValueTypeName& type)
         : _remappedName(remappedName)
         , _type(type)
     {
@@ -243,9 +271,9 @@ public:
         const TfToken&          paramName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr) override
+        MPlugArray*             outPlug = nullptr) override
     {
-        return HdMayaMaterialNetworkConverter::ConvertMayaAttrToValue(
+        return MayaHydraMaterialNetworkConverter::ConvertMayaAttrToValue(
             node, _remappedName.GetText(), type, fallback, outPlug);
     }
 
@@ -254,14 +282,14 @@ protected:
     const SdfValueTypeName& _type;
 };
 
-class HdMayaScaledRemappingMaterialAttrConverter : public HdMayaRemappingMaterialAttrConverter
+class MayaHydraScaledRemappingMaterialAttrConverter : public MayaHydraRemappingMaterialAttrConverter
 {
 public:
-    HdMayaScaledRemappingMaterialAttrConverter(
+    MayaHydraScaledRemappingMaterialAttrConverter(
         const TfToken&          remappedName,
         const TfToken&          scaleName,
         const SdfValueTypeName& type)
-        : HdMayaRemappingMaterialAttrConverter(remappedName, type)
+        : MayaHydraRemappingMaterialAttrConverter(remappedName, type)
         , _scaleName(scaleName)
     {
     }
@@ -271,9 +299,9 @@ public:
         const TfToken&          paramName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr) override
+        MPlugArray*             outPlug = nullptr) override
     {
-        return HdMayaMaterialNetworkConverter::ConvertMayaAttrToScaledValue(
+        return MayaHydraMaterialNetworkConverter::ConvertMayaAttrToScaledValue(
             node, _remappedName.GetText(), _scaleName.GetText(), type, fallback, outPlug);
     }
 
@@ -281,7 +309,7 @@ private:
     const TfToken& _scaleName;
 };
 
-class HdMayaComputedMaterialAttrConverter : public HdMayaMaterialAttrConverter
+class MayaHydraComputedMaterialAttrConverter : public MayaHydraMaterialAttrConverter
 {
 public:
     /// Classes which derive from this use some sort of calculation to get
@@ -290,11 +318,11 @@ public:
     TfToken GetPlugName(const TfToken& usdName) override { return TfToken(); }
 };
 
-class HdMayaFixedMaterialAttrConverter : public HdMayaComputedMaterialAttrConverter
+class MayaHydraFixedMaterialAttrConverter : public MayaHydraComputedMaterialAttrConverter
 {
 public:
     template <typename T>
-    HdMayaFixedMaterialAttrConverter(const T& value)
+    MayaHydraFixedMaterialAttrConverter(const T& value)
         : _value(value)
     {
     }
@@ -306,7 +334,7 @@ public:
         const TfToken&          paramName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr) override
+        MPlugArray*             outPlug = nullptr) override
     {
         return _value;
     }
@@ -315,29 +343,26 @@ private:
     const VtValue _value;
 };
 
-class HdMayaUvAttrConverter : public HdMayaMaterialAttrConverter
+class MayaHydraUvAttrConverter : public MayaHydraMaterialAttrConverter
 {
 public:
-    HdMayaUvAttrConverter()
+    MayaHydraUvAttrConverter()
         : _value(GfVec2f(0.0f, 0.0f))
     {
     }
 
     SdfValueTypeName GetType() override { return SdfValueTypeNames->TexCoord2f; }
 
-    TfToken GetPlugName(const TfToken& usdName) override { return HdMayaAdapterTokens->uvCoord; }
+    TfToken GetPlugName(const TfToken& usdName) override { return MayaHydraAdapterTokens->uvCoord; }
 
     VtValue GetValue(
         MFnDependencyNode&      node,
         const TfToken&          paramName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr) override
+        MPlugArray*             outPlug = nullptr) override
     {
         if (outPlug) {
-            // TODO: create a UsdPrimvarReader_float2 even if there's no
-            // connected maya place2dTexture node
-
             // Find a connected place2dTexture node, and set that as the
             // outPlug, so that the place2dTexture node will trigger
             // creation of a UsdPrimvarReader_float2
@@ -351,7 +376,7 @@ public:
                         continue;
                     }
                     if (source.node().hasFn(MFn::kPlace2dTexture)) {
-                        *outPlug = connections[i];
+                        outPlug->append(connections[i]);
                         break;
                     }
                 }
@@ -364,7 +389,7 @@ private:
     const VtValue _value;
 }; // namespace
 
-class HdMayaCosinePowerMaterialAttrConverter : public HdMayaComputedMaterialAttrConverter
+class MayaHydraCosinePowerMaterialAttrConverter : public MayaHydraComputedMaterialAttrConverter
 {
 public:
     SdfValueTypeName GetType() override { return SdfValueTypeNames->Float; }
@@ -374,16 +399,16 @@ public:
         const TfToken&          paramName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr) override
+        MPlugArray*             outPlug = nullptr) override
     {
-        VtValue cosinePower = HdMayaMaterialNetworkConverter::ConvertMayaAttrToValue(
-            node, "cosinePower", type, nullptr);
+        VtValue cosinePower = MayaHydraMaterialNetworkConverter::ConvertMayaAttrToValue(
+            node, "cosinePower", type, nullptr, outPlug);
         if (!cosinePower.IsHolding<float>()) {
             if (fallback) {
                 return *fallback;
             }
-            TF_DEBUG(HDMAYA_ADAPTER_GET)
-                .Msg("HdMayaCosinePowerMaterialAttrConverter::GetValue(): "
+            TF_DEBUG(MAYAHYDRALIB_ADAPTER_GET)
+                .Msg("MayaHydraCosinePowerMaterialAttrConverter::GetValue(): "
                      "No float plug found with name: cosinePower and no "
                      "fallback given");
             return VtValue();
@@ -397,7 +422,7 @@ public:
     }
 };
 
-class HdMayaTransmissionMaterialAttrConverter : public HdMayaComputedMaterialAttrConverter
+class MayaHydraTransmissionMaterialAttrConverter : public MayaHydraComputedMaterialAttrConverter
 {
 public:
     SdfValueTypeName GetType() override { return SdfValueTypeNames->Float; }
@@ -407,26 +432,53 @@ public:
         const TfToken&          paramName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr) override
+        MPlugArray*             outPlug = nullptr) override
     {
-        VtValue transmission = HdMayaMaterialNetworkConverter::ConvertMayaAttrToValue(
-            node, "transmission", type, nullptr);
+        VtValue transmission = MayaHydraMaterialNetworkConverter::ConvertMayaAttrToValue(
+            node, "transmission", type, nullptr, outPlug);
+        // Combine transmission and Geometry-->Opacity R,G and B attributes
+        VtValue geometryOpacityR = MayaHydraMaterialNetworkConverter::ConvertMayaAttrToValue(
+            node, "opacityR", type, nullptr, outPlug);
+        VtValue geometryOpacityG = MayaHydraMaterialNetworkConverter::ConvertMayaAttrToValue(
+            node, "opacityG", type, nullptr, outPlug);
+        VtValue geometryOpacityB = MayaHydraMaterialNetworkConverter::ConvertMayaAttrToValue(
+            node, "opacityB", type, nullptr, outPlug);
+
         if (!transmission.IsHolding<float>()) {
             if (fallback) {
                 return *fallback;
             }
-            TF_DEBUG(HDMAYA_ADAPTER_GET)
-                .Msg("HdMayaTransmissionMaterialAttrConverter::GetValue(): "
+            TF_DEBUG(MAYAHYDRALIB_ADAPTER_GET)
+                .Msg("MayaHydraTransmissionMaterialAttrConverter::GetValue(): "
                      "No float plug found with name: transmission and no "
                      "fallback given");
             return VtValue();
-        } else {
-            return VtValue(1.0f - transmission.UncheckedGet<float>());
         }
+
+        float val = 1.0f - transmission.UncheckedGet<float>();
+        if (val < 1.0e-4f) {
+            // Clamp lower value as an opacity of 0.0 in hydra makes the object fully transparent,
+            // but in VP2 we still see the specular highlight if any, avoiding 0.0 leads to the same
+            // effect in hydra.
+            val = 1.0e-4f;
+        }
+
+        float fGeometryOpacity = 1.0f;
+        if (geometryOpacityR.IsHolding<float>() && geometryOpacityG.IsHolding<float>()
+            && geometryOpacityB.IsHolding<float>()) {
+            // Take the average as there is only 1 parameter in hydra
+            fGeometryOpacity = (1.0f / 3.0f)
+                * (geometryOpacityR.UncheckedGet<float>() + geometryOpacityG.UncheckedGet<float>()
+                   + geometryOpacityB.UncheckedGet<float>());
+        }
+
+        val *= fGeometryOpacity;
+
+        return VtValue(val);
     }
 };
 
-class HdMayaFilenameMaterialAttrConverter : public HdMayaComputedMaterialAttrConverter
+class MayaHydraFilenameMaterialAttrConverter : public MayaHydraComputedMaterialAttrConverter
 {
 public:
     SdfValueTypeName GetType() override { return SdfValueTypeNames->Asset; }
@@ -436,17 +488,17 @@ public:
         const TfToken&          paramName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr) override
+        MPlugArray*             outPlug = nullptr) override
     {
-        auto path = GetFileTexturePath(node);
+        auto path = MAYAHYDRA_NS::GetFileTexturePath(node);
         return VtValue(SdfAssetPath(path.GetText(), path.GetText()));
     }
 };
 
-class HdMayaWrapMaterialAttrConverter : public HdMayaComputedMaterialAttrConverter
+class MayaHydraWrapMaterialAttrConverter : public MayaHydraComputedMaterialAttrConverter
 {
 public:
-    HdMayaWrapMaterialAttrConverter(MObject& wrapAttr, MObject& mirrorAttr)
+    MayaHydraWrapMaterialAttrConverter(MObject& wrapAttr, MObject& mirrorAttr)
         : _wrapAttr(wrapAttr)
         , _mirrorAttr(mirrorAttr)
     {
@@ -459,7 +511,7 @@ public:
         const TfToken&          paramName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr) override
+        MPlugArray*             outPlug = nullptr) override
     {
         if (node.findPlug(_wrapAttr, true).asBool()) {
             if (node.findPlug(_mirrorAttr, true).asBool()) {
@@ -477,125 +529,149 @@ private:
     MObject _mirrorAttr;
 };
 
-auto _genericAttrConverter = std::make_shared<HdMayaGenericMaterialAttrConverter>();
+auto _genericAttrConverter = std::make_shared<MayaHydraGenericMaterialAttrConverter>();
 
-typedef std::unordered_map<TfToken, HdMayaMaterialNodeConverter, TfToken::HashFunctor>
+typedef std::unordered_map<TfToken, MayaHydraMaterialNodeConverter, TfToken::HashFunctor>
     NameToNodeConverterMap;
 
+/// _nodeConverters contains how we translate from a Maya shader to hydra and the parameters mapping
+/// we use.
 NameToNodeConverterMap _nodeConverters;
 
 } // namespace
 
 /*static*/
-void HdMayaMaterialNetworkConverter::initialize()
+void MayaHydraMaterialNetworkConverter::initialize()
 {
-    auto colorConverter = std::make_shared<HdMayaScaledRemappingMaterialAttrConverter>(
-        HdMayaAdapterTokens->color, HdMayaAdapterTokens->diffuse, SdfValueTypeNames->Vector3f);
-    auto incandescenceConverter = std::make_shared<HdMayaRemappingMaterialAttrConverter>(
-        HdMayaAdapterTokens->incandescence, SdfValueTypeNames->Vector3f);
-    auto eccentricityConverter = std::make_shared<HdMayaRemappingMaterialAttrConverter>(
-        HdMayaAdapterTokens->eccentricity, SdfValueTypeNames->Float);
-    auto uvConverter = std::make_shared<HdMayaUvAttrConverter>();
+    // Define different converters for translating from specific Maya attributes types to hydra
+    auto colorConverter = std::make_shared<MayaHydraScaledRemappingMaterialAttrConverter>(
+        MayaHydraAdapterTokens->color,
+        MayaHydraAdapterTokens->diffuse,
+        SdfValueTypeNames->Vector3f);
+    auto incandescenceConverter = std::make_shared<MayaHydraRemappingMaterialAttrConverter>(
+        MayaHydraAdapterTokens->incandescence, SdfValueTypeNames->Vector3f);
+    auto eccentricityConverter = std::make_shared<MayaHydraRemappingMaterialAttrConverter>(
+        MayaHydraAdapterTokens->eccentricity, SdfValueTypeNames->Float);
+    auto uvConverter = std::make_shared<MayaHydraUvAttrConverter>();
 
     // Standard surface:
-    auto baseColorConverter = std::make_shared<HdMayaScaledRemappingMaterialAttrConverter>(
-        HdMayaAdapterTokens->baseColor, HdMayaAdapterTokens->base, SdfValueTypeNames->Vector3f);
-    auto emissionColorConverter = std::make_shared<HdMayaScaledRemappingMaterialAttrConverter>(
-        HdMayaAdapterTokens->emissionColor,
-        HdMayaAdapterTokens->emission,
+    auto baseColorConverter = std::make_shared<MayaHydraScaledRemappingMaterialAttrConverter>(
+        MayaHydraAdapterTokens->baseColor,
+        MayaHydraAdapterTokens->base,
         SdfValueTypeNames->Vector3f);
-    auto specularColorConverter = std::make_shared<HdMayaScaledRemappingMaterialAttrConverter>(
-        HdMayaAdapterTokens->specularColor,
-        HdMayaAdapterTokens->specular,
+    auto emissionColorConverter = std::make_shared<MayaHydraScaledRemappingMaterialAttrConverter>(
+        MayaHydraAdapterTokens->emissionColor,
+        MayaHydraAdapterTokens->emission,
         SdfValueTypeNames->Vector3f);
-    auto specularIORConverter = std::make_shared<HdMayaRemappingMaterialAttrConverter>(
-        HdMayaAdapterTokens->specularIOR, SdfValueTypeNames->Float);
-    auto specularRoughnessConverter = std::make_shared<HdMayaRemappingMaterialAttrConverter>(
-        HdMayaAdapterTokens->specularRoughness, SdfValueTypeNames->Float);
-    auto coatConverter = std::make_shared<HdMayaRemappingMaterialAttrConverter>(
-        HdMayaAdapterTokens->coat, SdfValueTypeNames->Float);
-    auto coatRoughnessConverter = std::make_shared<HdMayaRemappingMaterialAttrConverter>(
-        HdMayaAdapterTokens->coatRoughness, SdfValueTypeNames->Float);
-    auto transmissionToOpacity = std::make_shared<HdMayaTransmissionMaterialAttrConverter>();
+    auto specularColorConverter = std::make_shared<MayaHydraScaledRemappingMaterialAttrConverter>(
+        MayaHydraAdapterTokens->specularColor,
+        MayaHydraAdapterTokens->specular,
+        SdfValueTypeNames->Vector3f);
+    auto specularIORConverter = std::make_shared<MayaHydraRemappingMaterialAttrConverter>(
+        MayaHydraAdapterTokens->specularIOR, SdfValueTypeNames->Float);
+    auto specularRoughnessConverter = std::make_shared<MayaHydraRemappingMaterialAttrConverter>(
+        MayaHydraAdapterTokens->specularRoughness, SdfValueTypeNames->Float);
+    auto metallicConverter = std::make_shared<MayaHydraRemappingMaterialAttrConverter>(
+        MayaHydraAdapterTokens->metalness, SdfValueTypeNames->Float);
+    auto coatConverter = std::make_shared<MayaHydraRemappingMaterialAttrConverter>(
+        MayaHydraAdapterTokens->coat, SdfValueTypeNames->Float);
+    auto coatRoughnessConverter = std::make_shared<MayaHydraRemappingMaterialAttrConverter>(
+        MayaHydraAdapterTokens->coatRoughness, SdfValueTypeNames->Float);
+    auto transmissionToOpacity = std::make_shared<MayaHydraTransmissionMaterialAttrConverter>();
 
-    auto fixedZeroFloat = std::make_shared<HdMayaFixedMaterialAttrConverter>(0.0f);
-    auto fixedOneFloat = std::make_shared<HdMayaFixedMaterialAttrConverter>(1.0f);
-    auto fixedZeroInt = std::make_shared<HdMayaFixedMaterialAttrConverter>(0);
-    auto fixedOneInt = std::make_shared<HdMayaFixedMaterialAttrConverter>(1);
-    auto fixedStToken = std::make_shared<HdMayaFixedMaterialAttrConverter>(HdMayaAdapterTokens->st);
+    auto fixedZeroFloat = std::make_shared<MayaHydraFixedMaterialAttrConverter>(0.0f);
+    auto fixedOneFloat = std::make_shared<MayaHydraFixedMaterialAttrConverter>(1.0f);
+    auto fixedZeroInt = std::make_shared<MayaHydraFixedMaterialAttrConverter>(0);
+    auto fixedOneInt = std::make_shared<MayaHydraFixedMaterialAttrConverter>(1);
+    auto fixedStToken
+        = std::make_shared<MayaHydraFixedMaterialAttrConverter>(MayaHydraAdapterTokens->st);
 
-    auto cosinePowerToRoughness = std::make_shared<HdMayaCosinePowerMaterialAttrConverter>();
-    auto filenameConverter = std::make_shared<HdMayaFilenameMaterialAttrConverter>();
+    auto cosinePowerToRoughness = std::make_shared<MayaHydraCosinePowerMaterialAttrConverter>();
+    auto filenameConverter = std::make_shared<MayaHydraFilenameMaterialAttrConverter>();
 
-    auto wrapUConverter = std::make_shared<HdMayaWrapMaterialAttrConverter>(
+    auto wrapUConverter = std::make_shared<MayaHydraWrapMaterialAttrConverter>(
         MayaAttrs::file::wrapU, MayaAttrs::file::mirrorU);
-    auto wrapVConverter = std::make_shared<HdMayaWrapMaterialAttrConverter>(
+    auto wrapVConverter = std::make_shared<MayaHydraWrapMaterialAttrConverter>(
         MayaAttrs::file::wrapV, MayaAttrs::file::mirrorV);
 
     auto textureMemoryConverter
-        = std::make_shared<HdMayaNewDefaultMaterialAttrConverter>(defaultTextureMemoryLimit);
+        = std::make_shared<MayaHydraNewDefaultMaterialAttrConverter>(defaultTextureMemoryLimit);
 
+    // In the following code we define how we translate from a Maya shader to hydra and how we do
+    // the parameters mapping
     _nodeConverters = {
-        { HdMayaAdapterTokens->usdPreviewSurface, { UsdImagingTokens->UsdPreviewSurface, {} } },
-        { HdMayaAdapterTokens->pxrUsdPreviewSurface, { UsdImagingTokens->UsdPreviewSurface, {} } },
-        { HdMayaAdapterTokens->lambert,
-          { UsdImagingTokens->UsdPreviewSurface,
+        { MayaHydraAdapterTokens->usdPreviewSurface, { UsdImagingTokens->UsdPreviewSurface, {} } },
+        { MayaHydraAdapterTokens->pxrUsdPreviewSurface,
+          { UsdImagingTokens->UsdPreviewSurface, {} } },
+        { MayaHydraAdapterTokens->lambert,
+          { UsdImagingTokens
+                ->UsdPreviewSurface, // Maya Lambert shader translated to a UsdPreviewSurface with
+                                     // the following UsdPreviewSurface parameters mapped
             {
-                { HdMayaAdapterTokens->diffuseColor, colorConverter },
-                { HdMayaAdapterTokens->emissiveColor, incandescenceConverter },
-                { HdMayaAdapterTokens->roughness, fixedOneFloat },
-                { HdMayaAdapterTokens->metallic, fixedZeroFloat },
-                { HdMayaAdapterTokens->useSpecularWorkflow, fixedZeroInt },
+                { MayaHydraAdapterTokens->diffuseColor, colorConverter },
+                { MayaHydraAdapterTokens->emissiveColor, incandescenceConverter },
+                { MayaHydraAdapterTokens->roughness, fixedOneFloat },
+                { MayaHydraAdapterTokens->metallic, fixedZeroFloat },
+                { MayaHydraAdapterTokens->useSpecularWorkflow, fixedZeroInt },
             } } },
-        { HdMayaAdapterTokens->blinn,
-          { UsdImagingTokens->UsdPreviewSurface,
+        { MayaHydraAdapterTokens->blinn,
+          { UsdImagingTokens
+                ->UsdPreviewSurface, // Maya Blinn shader translated to a UsdPreviewSurface with the
+                                     // following UsdPreviewSurface parameters mapped
             {
-                { HdMayaAdapterTokens->diffuseColor, colorConverter },
-                { HdMayaAdapterTokens->emissiveColor, incandescenceConverter },
-                { HdMayaAdapterTokens->roughness, eccentricityConverter },
-                { HdMayaAdapterTokens->metallic, fixedZeroFloat },
-                { HdMayaAdapterTokens->useSpecularWorkflow, fixedOneInt },
+                { MayaHydraAdapterTokens->diffuseColor, colorConverter },
+                { MayaHydraAdapterTokens->emissiveColor, incandescenceConverter },
+                { MayaHydraAdapterTokens->roughness, eccentricityConverter },
+                { MayaHydraAdapterTokens->metallic, fixedZeroFloat },
+                { MayaHydraAdapterTokens->useSpecularWorkflow, fixedOneInt },
             } } },
-        { HdMayaAdapterTokens->phong,
-          { UsdImagingTokens->UsdPreviewSurface,
+        { MayaHydraAdapterTokens->phong,
+          { UsdImagingTokens
+                ->UsdPreviewSurface, // Maya Phong shader translated to a UsdPreviewSurface with the
+                                     // following UsdPreviewSurface parameters mapped
             {
-                { HdMayaAdapterTokens->diffuseColor, colorConverter },
-                { HdMayaAdapterTokens->emissiveColor, incandescenceConverter },
-                { HdMayaAdapterTokens->roughness, cosinePowerToRoughness },
-                { HdMayaAdapterTokens->metallic, fixedZeroFloat },
-                { HdMayaAdapterTokens->useSpecularWorkflow, fixedOneInt },
+                { MayaHydraAdapterTokens->diffuseColor, colorConverter },
+                { MayaHydraAdapterTokens->emissiveColor, incandescenceConverter },
+                { MayaHydraAdapterTokens->roughness, cosinePowerToRoughness },
+                { MayaHydraAdapterTokens->metallic, fixedZeroFloat },
+                { MayaHydraAdapterTokens->useSpecularWorkflow, fixedOneInt },
             } } },
-        { HdMayaAdapterTokens->standardSurface,
-          { UsdImagingTokens->UsdPreviewSurface,
+        { MayaHydraAdapterTokens->standardSurface,
+          { UsdImagingTokens->UsdPreviewSurface, // Maya Standard surface shader translated to a
+                                                 // UsdPreviewSurface with the following
+                                                 // UsdPreviewSurface parameters mapped
             {
-                { HdMayaAdapterTokens->diffuseColor, baseColorConverter },
-                { HdMayaAdapterTokens->emissiveColor, emissionColorConverter },
-                { HdMayaAdapterTokens->specularColor, specularColorConverter },
-                { HdMayaAdapterTokens->ior, specularIORConverter },
-                { HdMayaAdapterTokens->roughness, specularRoughnessConverter },
-                { HdMayaAdapterTokens->clearcoat, coatConverter },
-                { HdMayaAdapterTokens->clearcoatRoughness, coatRoughnessConverter },
-                { HdMayaAdapterTokens->opacity, transmissionToOpacity },
-                { HdMayaAdapterTokens->metallic, fixedZeroFloat },
+                { MayaHydraAdapterTokens->diffuseColor, baseColorConverter },
+                { MayaHydraAdapterTokens->emissiveColor, emissionColorConverter },
+                { MayaHydraAdapterTokens->specularColor, specularColorConverter },
+                { MayaHydraAdapterTokens->ior, specularIORConverter },
+                { MayaHydraAdapterTokens->roughness, specularRoughnessConverter },
+                { MayaHydraAdapterTokens->clearcoat, coatConverter },
+                { MayaHydraAdapterTokens->clearcoatRoughness, coatRoughnessConverter },
+                { MayaHydraAdapterTokens->opacity, transmissionToOpacity },
+                { MayaHydraAdapterTokens->metallic, metallicConverter },
             } } },
-        { HdMayaAdapterTokens->file,
-          { UsdImagingTokens->UsdUVTexture,
+        { MayaHydraAdapterTokens->file,
+          { UsdImagingTokens->UsdUVTexture, // Maya file translated to a UsdUVTexture with the
+                                            // following UsdUVTexture parameters mapped
             {
-                { HdMayaAdapterTokens->file, filenameConverter },
-                { HdMayaAdapterTokens->st, uvConverter },
+                { MayaHydraAdapterTokens->file, filenameConverter },
+                { MayaHydraAdapterTokens->st, uvConverter },
                 { UsdHydraTokens->wrapS, wrapUConverter },
                 { UsdHydraTokens->wrapT, wrapVConverter },
                 { UsdHydraTokens->textureMemory, textureMemoryConverter },
             } } },
-        { HdMayaAdapterTokens->place2dTexture,
+        { MayaHydraAdapterTokens
+              ->place2dTexture, // Maya place2dTexture translated to a UsdPrimvarReader_float2 with
+                                // the following UsdPrimvarReader_float2 parameters mapped
           { UsdImagingTokens->UsdPrimvarReader_float2,
             {
-                { HdMayaAdapterTokens->varname, fixedStToken },
+                { MayaHydraAdapterTokens->varname, fixedStToken },
             } } },
     };
 }
 
-HdMayaMaterialNodeConverter::HdMayaMaterialNodeConverter(
+MayaHydraMaterialNodeConverter::MayaHydraMaterialNodeConverter(
     const TfToken&                identifier,
     const NameToAttrConverterMap& attrConverters)
     : _attrConverters(attrConverters)
@@ -603,8 +679,8 @@ HdMayaMaterialNodeConverter::HdMayaMaterialNodeConverter(
 {
 }
 
-HdMayaMaterialAttrConverter::RefPtr
-HdMayaMaterialNodeConverter::GetAttrConverter(const TfToken& paramName)
+MayaHydraMaterialAttrConverter::RefPtr
+MayaHydraMaterialNodeConverter::GetAttrConverter(const TfToken& paramName)
 {
     auto it = _attrConverters.find(paramName);
     if (it == _attrConverters.end()) {
@@ -613,7 +689,8 @@ HdMayaMaterialNodeConverter::GetAttrConverter(const TfToken& paramName)
     return it->second;
 }
 
-HdMayaMaterialNodeConverter* HdMayaMaterialNodeConverter::GetNodeConverter(const TfToken& nodeType)
+MayaHydraMaterialNodeConverter*
+MayaHydraMaterialNodeConverter::GetNodeConverter(const TfToken& nodeType)
 {
     auto it = _nodeConverters.find(nodeType);
     if (it == _nodeConverters.end()) {
@@ -622,7 +699,7 @@ HdMayaMaterialNodeConverter* HdMayaMaterialNodeConverter::GetNodeConverter(const
     return &(it->second);
 }
 
-HdMayaShaderParam::HdMayaShaderParam(
+MayaHydraShaderParam::MayaHydraShaderParam(
     const TfToken&          name,
     const VtValue&          value,
     const SdfValueTypeName& type)
@@ -632,17 +709,16 @@ HdMayaShaderParam::HdMayaShaderParam(
 {
 }
 
-HdMayaMaterialNetworkConverter::HdMayaMaterialNetworkConverter(
-    HdMaterialNetwork& network,
-    const SdfPath&     prefix,
-    PathToMobjMap*     pathToMobj)
-    : _network(network)
-    , _prefix(prefix)
-    , _pathToMobj(pathToMobj)
+MayaHydraMaterialNetworkConverter::MayaHydraMaterialNetworkConverter(
+    MayaHydraMaterialNetworkConverterInit& init)
+    : _network(init._materialNetwork)
+    , _prefix(init._prefix)
+    , _pathToMobj(init._pathToMobj)
+    , _enableXRayShadingMode(init._enableXRayShadingMode)
 {
 }
 
-HdMaterialNode* HdMayaMaterialNetworkConverter::GetMaterial(const MObject& mayaNode)
+HdMaterialNode* MayaHydraMaterialNetworkConverter::GetMaterial(const MObject& mayaNode)
 {
     MStatus           status;
     MFnDependencyNode node(mayaNode, &status);
@@ -653,9 +729,9 @@ HdMaterialNode* HdMayaMaterialNetworkConverter::GetMaterial(const MObject& mayaN
     if (chr == nullptr || chr[0] == '\0') {
         return nullptr;
     }
-    TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
-        .Msg("HdMayaMaterialNetworkConverter::GetMaterial(node=%s)\n", chr);
-    std::string usdNameStr = UsdMayaUtil::SanitizeName(chr);
+    TF_DEBUG(MAYAHYDRALIB_ADAPTER_MATERIALS)
+        .Msg("MayaHydraMaterialNetworkConverter::GetMaterial(node=%s)\n", chr);
+    std::string usdNameStr = MAYAHYDRA_NS::SanitizeName(chr);
     const auto  materialPath = _prefix.AppendChild(TfToken(usdNameStr));
 
     auto findResult = std::find_if(
@@ -667,7 +743,7 @@ HdMaterialNode* HdMayaMaterialNetworkConverter::GetMaterial(const MObject& mayaN
     }
 
     auto* nodeConverter
-        = HdMayaMaterialNodeConverter::GetNodeConverter(TfToken(node.typeName().asChar()));
+        = MayaHydraMaterialNodeConverter::GetNodeConverter(TfToken(node.typeName().asChar()));
     if (!nodeConverter) {
         return nullptr;
     }
@@ -675,17 +751,49 @@ HdMaterialNode* HdMayaMaterialNetworkConverter::GetMaterial(const MObject& mayaN
     material.path = materialPath;
     material.identifier = nodeConverter->GetIdentifier();
     if (material.identifier == UsdImagingTokens->UsdPreviewSurface) {
-        for (const auto& param : HdMayaMaterialNetworkConverter::GetPreviewShaderParams()) {
+        for (const auto& param : MayaHydraMaterialNetworkConverter::GetPreviewShaderParams()) {
             this->ConvertParameter(
                 node, *nodeConverter, material, param.name, param.type, &param.fallbackValue);
         }
+
+        // If we are using a specular color which is not white, the UsdPreviewsurface specular
+        // workflow must be enabled to use the specular color which is done by setting the
+        // UsdPreviewSurface param "useSpecularWork" to 1
+        {
+            const auto it = material.parameters.find(_specularColorToken);
+            if (it != material.parameters.cend()) {
+                const VtValue& specColorVal = it->second;
+                if (!specColorVal.IsEmpty()
+                    && specColorVal.UncheckedGet<GfVec3f>() != GfVec3f(1, 1, 1)) {
+                    material.parameters[_useSpecularWorkflowToken] = VtValue(1);
+                }
+            }
+        }
+
+        if (_enableXRayShadingMode) {
+            // Multiply current opacity by hardcoded xRayOpacityValue
+            const auto it = material.parameters.find(_opacityToken);
+            if (it != material.parameters.cend()) {
+                const VtValue& opacityVal = it->second;
+                if (!opacityVal.IsEmpty()) {
+                    material.parameters[_opacityToken]
+                        = VtValue(opacityVal.UncheckedGet<float>() * xRayOpacityValue);
+                }
+            }
+        }
+
+        if (TfDebug::IsEnabled(MAYAHYDRALIB_ADAPTER_MATERIALS_PRINT_PARAMETERS_VALUES)) {
+            // DEBUG to print material parameters type and value to the output window
+            DebugPrintParameters(material.parameters);
+        }
+
     } else {
         for (auto& nameAttrConverterPair : nodeConverter->GetAttrConverters()) {
             auto& name = nameAttrConverterPair.first;
             auto& attrConverter = nameAttrConverterPair.second;
             this->ConvertParameter(node, *nodeConverter, material, name, attrConverter->GetType());
 
-            if (name == HdMayaAdapterTokens->varname
+            if (name == MayaHydraAdapterTokens->varname
                 && (material.identifier == UsdImagingTokens->UsdPrimvarReader_float
                     || material.identifier == UsdImagingTokens->UsdPrimvarReader_float2
                     || material.identifier == UsdImagingTokens->UsdPrimvarReader_float3
@@ -708,7 +816,7 @@ HdMaterialNode* HdMayaMaterialNetworkConverter::GetMaterial(const MObject& mayaN
     return &_network.nodes.back();
 }
 
-void HdMayaMaterialNetworkConverter::AddPrimvar(const TfToken& primvar)
+void MayaHydraMaterialNetworkConverter::AddPrimvar(const TfToken& primvar)
 {
     if (std::find(_network.primvars.begin(), _network.primvars.end(), primvar)
         == _network.primvars.end()) {
@@ -716,27 +824,31 @@ void HdMayaMaterialNetworkConverter::AddPrimvar(const TfToken& primvar)
     }
 }
 
-void HdMayaMaterialNetworkConverter::ConvertParameter(
-    MFnDependencyNode&           node,
-    HdMayaMaterialNodeConverter& nodeConverter,
-    HdMaterialNode&              material,
-    const TfToken&               paramName,
-    const SdfValueTypeName&      type,
-    const VtValue*               fallback)
+void MayaHydraMaterialNetworkConverter::ConvertParameter(
+    MFnDependencyNode&              node,
+    MayaHydraMaterialNodeConverter& nodeConverter,
+    HdMaterialNode&                 material,
+    const TfToken&                  paramName,
+    const SdfValueTypeName&         type,
+    const VtValue*                  fallback)
 {
-    MPlug   plug;
-    VtValue val;
-    TF_DEBUG(HDMAYA_ADAPTER_MATERIALS).Msg("ConvertParameter(%s)\n", paramName.GetText());
+    MPlugArray plugArray;
+    VtValue    val;
+    TF_DEBUG(MAYAHYDRALIB_ADAPTER_MATERIALS).Msg("ConvertParameter(%s)\n", paramName.GetText());
 
     auto attrConverter = nodeConverter.GetAttrConverter(paramName);
     if (attrConverter) {
-        val = attrConverter->GetValue(node, paramName, type, fallback, &plug);
+        // Using an array of MPlug in plugArray, as some settings may have 2 or more attributes that
+        // should be taken into consideration for connections. For example : specular has a specular
+        // color and specular weight attributes, both should be considered. So after calling
+        // attrConverter->GetValue, the plugArray will contain all dependents MPlug for connections.
+        val = attrConverter->GetValue(node, paramName, type, fallback, &plugArray);
     } else if (fallback) {
         val = *fallback;
     } else {
-        TF_DEBUG(HDMAYA_ADAPTER_GET)
+        TF_DEBUG(MAYAHYDRALIB_ADAPTER_GET)
             .Msg(
-                "HdMayaMaterialNetworkConverter::ConvertParameter(): "
+                "MayaHydraMaterialNetworkConverter::ConvertParameter(): "
                 "No attrConverter found with name: %s and no fallback "
                 "given",
                 paramName.GetText());
@@ -744,49 +856,63 @@ void HdMayaMaterialNetworkConverter::ConvertParameter(
     }
 
     material.parameters[paramName] = val;
-    if (plug.isNull()) {
-        return;
-    }
-    MPlug source = plug.source();
-    if (!source.isNull()) {
-        auto* sourceMat = GetMaterial(source.node());
-        if (!sourceMat) {
+
+    /*plugArray contains all dependents MPlug we should consider for connections.
+    Usually it contains 1 or 2 MPlug (2 is when dealing with a weighted attribute),
+    it can have more than 2 when dealing with the transmission which is combined with opacityR,
+    opacityG and opacityB attributes. But a limitation we have at this time is that if both the
+    color and the weight attributes have a connection, one of both connections will be ignored by
+    hydra as we have only one parameter in the UsdPreviewSurface which will have both connections
+    and hydra only considers the last connection added. There is no blending node we could use with
+    the UsdPreviewSurface. We would need the StandardSurface to be in hydra or use MaterialX to
+    build a shading network to handle this case with a multiply node for example.
+    */
+    for (auto plug : plugArray) {
+        if (plug.isNull()) {
             return;
         }
-        const auto& sourceMatPath = sourceMat->path;
-        if (sourceMatPath.IsEmpty()) {
-            return;
+
+        MPlug source = plug.source();
+        if (!source.isNull()) {
+            auto* sourceMat = GetMaterial(source.node());
+            if (!sourceMat) {
+                return;
+            }
+            const auto& sourceMatPath = sourceMat->path;
+            if (sourceMatPath.IsEmpty()) {
+                return;
+            }
+            HdMaterialRelationship rel;
+            rel.inputId = sourceMatPath;
+            rel.inputName = GetOutputName(*sourceMat, type);
+            rel.outputId = material.path;
+            rel.outputName = paramName;
+            _network.relationships.push_back(rel);
         }
-        HdMaterialRelationship rel;
-        rel.inputId = sourceMatPath;
-        rel.inputName = GetOutputName(*sourceMat, type);
-        rel.outputId = material.path;
-        rel.outputName = paramName;
-        _network.relationships.push_back(rel);
     }
 }
 
-VtValue HdMayaMaterialNetworkConverter::ConvertMayaAttrToValue(
+VtValue MayaHydraMaterialNetworkConverter::ConvertMayaAttrToValue(
     MFnDependencyNode&      node,
     const MString&          plugName,
     const SdfValueTypeName& type,
     const VtValue*          fallback,
-    MPlug*                  outPlug)
+    MPlugArray*             outPlug)
 {
     MStatus status;
     auto    p = node.findPlug(plugName, true, &status);
     VtValue val;
     if (status) {
         if (outPlug) {
-            *outPlug = p;
+            outPlug->append(p);
         }
         val = ConvertPlugToValue(p, type, fallback);
     } else if (fallback) {
         val = *fallback;
     } else {
-        TF_DEBUG(HDMAYA_ADAPTER_GET)
+        TF_DEBUG(MAYAHYDRALIB_ADAPTER_GET)
             .Msg(
-                "HdMayaMaterialNetworkConverter::ConvertMayaAttrToValue(): "
+                "MayaHydraMaterialNetworkConverter::ConvertMayaAttrToValue(): "
                 "No plug found with name: %s and no fallback given",
                 plugName.asChar());
         val = VtValue();
@@ -794,18 +920,21 @@ VtValue HdMayaMaterialNetworkConverter::ConvertMayaAttrToValue(
     return val;
 }
 
-VtValue HdMayaMaterialNetworkConverter::ConvertMayaAttrToScaledValue(
+VtValue MayaHydraMaterialNetworkConverter::ConvertMayaAttrToScaledValue(
     MFnDependencyNode&      node,
     const MString&          plugName,
     const MString&          scaleName,
     const SdfValueTypeName& type,
     const VtValue*          fallback,
-    MPlug*                  outPlug)
+    MPlugArray*             outPlug)
 {
     VtValue val = ConvertMayaAttrToValue(node, plugName, type, fallback, outPlug);
     MStatus status;
     auto    p = node.findPlug(scaleName, true, &status);
     if (status) {
+        if (!p.isNull() && outPlug) {
+            outPlug->append(p);
+        }
         if (type.GetType() == SdfValueTypeNames->Vector3f.GetType()) {
             val = val.UncheckedGet<GfVec3f>() * p.asFloat();
         } else if (type == SdfValueTypeNames->Float) {
@@ -814,16 +943,16 @@ VtValue HdMayaMaterialNetworkConverter::ConvertMayaAttrToScaledValue(
             val = val.UncheckedGet<GfVec2f>() * p.asFloat();
         }
     } else {
-        TF_DEBUG(HDMAYA_ADAPTER_GET)
+        TF_DEBUG(MAYAHYDRALIB_ADAPTER_GET)
             .Msg(
-                "HdMayaMaterialNetworkConverter::ConvertMayaAttrToScaledValue(): "
+                "MayaHydraMaterialNetworkConverter::ConvertMayaAttrToScaledValue(): "
                 "No scaling plug found with name: %s",
                 scaleName.asChar());
     }
     return val;
 }
 
-VtValue HdMayaMaterialNetworkConverter::ConvertPlugToValue(
+VtValue MayaHydraMaterialNetworkConverter::ConvertPlugToValue(
     const MPlug&            plug,
     const SdfValueTypeName& type,
     const VtValue*          fallback)
@@ -838,9 +967,9 @@ VtValue HdMayaMaterialNetworkConverter::ConvertPlugToValue(
     } else if (type == SdfValueTypeNames->Int) {
         return VtValue(plug.asInt());
     }
-    TF_DEBUG(HDMAYA_ADAPTER_GET)
+    TF_DEBUG(MAYAHYDRALIB_ADAPTER_GET)
         .Msg(
-            "HdMayaMaterialNetworkConverter::ConvertPlugToValue(): do not "
+            "MayaHydraMaterialNetworkConverter::ConvertPlugToValue(): do not "
             "know how to handle type: %s (cpp type: %s)\n",
             type.GetAsToken().GetText(),
             type.GetCPPTypeName().c_str());
@@ -850,11 +979,12 @@ VtValue HdMayaMaterialNetworkConverter::ConvertPlugToValue(
     return {};
 };
 
-std::mutex         _previewShaderParams_mutex;
-bool               _previewShaderParams_initialized = false;
-HdMayaShaderParams _previewShaderParams;
+std::mutex                                      _previewShaderParams_mutex;
+bool                                            _previewShaderParams_initialized = false;
+MayaHydraShaderParams                           _previewShaderParams;
+static std::map<TfToken, MayaHydraShaderParams> _defaultShaderParams;
 
-const HdMayaShaderParams& HdMayaMaterialNetworkConverter::GetPreviewShaderParams()
+const MayaHydraShaderParams& MayaHydraMaterialNetworkConverter::GetPreviewShaderParams()
 {
     if (!_previewShaderParams_initialized) {
         std::lock_guard<std::mutex> lock(_previewShaderParams_mutex);
@@ -879,7 +1009,7 @@ const HdMayaShaderParams& HdMayaMaterialNetworkConverter::GetPreviewShaderParams
                 std::sort(
                     _previewShaderParams.begin(),
                     _previewShaderParams.end(),
-                    [](const HdMayaShaderParam& a, const HdMayaShaderParam& b) -> bool {
+                    [](const MayaHydraShaderParam& a, const MayaHydraShaderParam& b) -> bool {
                         return a.name < b.name;
                     });
                 _previewShaderParams_initialized = true;
@@ -887,6 +1017,50 @@ const HdMayaShaderParams& HdMayaMaterialNetworkConverter::GetPreviewShaderParams
         }
     }
     return _previewShaderParams;
+}
+
+const MayaHydraShaderParams&
+MayaHydraMaterialNetworkConverter::GetShaderParams(const TfToken& shaderNodeIdentifier)
+{
+    if (shaderNodeIdentifier == UsdImagingTokens->UsdPreviewSurface)
+        return GetPreviewShaderParams();
+
+    auto it = _defaultShaderParams.find(shaderNodeIdentifier);
+    if (it == _defaultShaderParams.end()) {
+        MayaHydraShaderParams params;
+
+        auto&                 shaderReg = SdrRegistry::GetInstance();
+        SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifier(shaderNodeIdentifier);
+        assert(TF_VERIFY(sdrNode));
+
+        auto inputNames = sdrNode->GetInputNames();
+        params.reserve(inputNames.size());
+
+        std::string              inputNameStr;
+        std::vector<std::string> inputNameStrs;
+        for (auto& inputName : inputNames) {
+            inputNameStr = inputName.GetString();
+            inputNameStrs.push_back(inputNameStr);
+            auto property = sdrNode->GetInput(inputName);
+            if (!TF_VERIFY(property)) {
+                continue;
+            }
+
+            params.emplace_back(
+                inputName, property->GetDefaultValue(), property->GetTypeAsSdfType().first);
+        }
+
+        std::sort(
+            params.begin(),
+            params.end(),
+            [](const MayaHydraShaderParam& a, const MayaHydraShaderParam& b) -> bool {
+                return a.name < b.name;
+            });
+
+        return _defaultShaderParams.insert({ shaderNodeIdentifier, params }).first->second;
+    }
+
+    return it->second;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -13,14 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef HDMAYA_SCENE_DELEGATE_H
-#define HDMAYA_SCENE_DELEGATE_H
+// Copyright 2023 Autodesk, Inc. All rights reserved.
+//
+#ifndef MAYAHYDRALIB_SCENE_DELEGATE_H
+#define MAYAHYDRALIB_SCENE_DELEGATE_H
 
-#include <hdMaya/adapters/cameraAdapter.h>
-#include <hdMaya/adapters/lightAdapter.h>
-#include <hdMaya/adapters/materialAdapter.h>
-#include <hdMaya/adapters/shapeAdapter.h>
-#include <hdMaya/delegates/delegateCtx.h>
+#include <mayaHydraLib/adapters/cameraAdapter.h>
+#include <mayaHydraLib/adapters/lightAdapter.h>
+#include <mayaHydraLib/adapters/materialAdapter.h>
+#include <mayaHydraLib/adapters/renderItemAdapter.h>
+#include <mayaHydraLib/adapters/shapeAdapter.h>
+#include <mayaHydraLib/delegates/delegateCtx.h>
 
 #include <pxr/base/gf/vec4d.h>
 #include <pxr/imaging/hd/meshTopology.h>
@@ -29,9 +32,11 @@
 #include <pxr/usd/sdf/path.h>
 
 #include <maya/MDagPath.h>
+#include <maya/MFrameContext.h>
 #include <maya/MObject.h>
 
 #include <memory>
+#include <vector>
 
 /*
  * Notes.
@@ -50,32 +55,47 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaSceneDelegate : public HdMayaDelegateCtx
+/**
+ * \brief MayaHydraSceneDelegate is an Hydra custom scene delegate used to translate from a Maya
+ * scene to hydra.
+ *
+ * If you want to know how to add a custom scene index to this plug-in, then please see the
+ * registration.cpp file.
+ */
+class MayaHydraSceneDelegate : public MayaHydraDelegateCtx
 {
 public:
-    HDMAYA_API
-    HdMayaSceneDelegate(const InitData& initData);
+    template <typename T> using AdapterMap = std::unordered_map<SdfPath, T, SdfPath::Hash>;
 
-    HDMAYA_API
-    ~HdMayaSceneDelegate() override;
+    MAYAHYDRALIB_API
+    MayaHydraSceneDelegate(const InitData& initData);
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
+    ~MayaHydraSceneDelegate() override;
+
+    MAYAHYDRALIB_API
     void Populate() override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void PreFrame(const MHWRender::MDrawContext& context) override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void RemoveAdapter(const SdfPath& id) override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void RecreateAdapter(const SdfPath& id, const MObject& obj) override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void RecreateAdapterOnIdle(const SdfPath& id, const MObject& obj) override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void RebuildAdapterOnIdle(const SdfPath& id, uint32_t flags) override;
+
+    MAYAHYDRALIB_API
+    void AddArnoldLight(const MDagPath& dag) override;
+
+    MAYAHYDRALIB_API
+    void RemoveArnoldLight(const MDagPath& dag) override;
 
     /// \brief Notifies the scene delegate when a material tag changes.
     ///
@@ -84,96 +104,103 @@ public:
     /// translucency change.
     ///
     /// \param id Id of the Material that changed its tag.
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void MaterialTagChanged(const SdfPath& id) override;
 
-    HDMAYA_API
-    HdMayaShapeAdapterPtr GetShapeAdapter(const SdfPath& id);
+    MAYAHYDRALIB_API
+    MayaHydraShapeAdapterPtr GetShapeAdapter(const SdfPath& id);
 
-    HDMAYA_API
-    HdMayaLightAdapterPtr GetLightAdapter(const SdfPath& id);
+    MAYAHYDRALIB_API
+    MayaHydraLightAdapterPtr GetLightAdapter(const SdfPath& id);
 
-    HDMAYA_API
-    HdMayaMaterialAdapterPtr GetMaterialAdapter(const SdfPath& id);
+    MAYAHYDRALIB_API
+    MayaHydraMaterialAdapterPtr GetMaterialAdapter(const SdfPath& id);
 
-    HDMAYA_API
+#ifdef MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
+    MAYAHYDRALIB_API
     void InsertDag(const MDagPath& dag);
+#endif
 
-    HDMAYA_API
-    void NodeAdded(const MObject& obj);
+    void OnDagNodeAdded(const MObject& obj);
 
-    HDMAYA_API
-    void NodeRemoved(const MObject& obj);
+    void OnDagNodeRemoved(const MObject& obj);
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void UpdateLightVisibility(const MDagPath& dag);
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void AddNewInstance(const MDagPath& dag);
 
-    HDMAYA_API
-    void SetParams(const HdMayaParams& params) override;
+    MAYAHYDRALIB_API
+    void SetParams(const MayaHydraParams& params) override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     SdfPath SetCameraViewport(const MDagPath& camPath, const GfVec4d& viewport);
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void PopulateSelectedPaths(
         const MSelectionList&       mayaSelection,
         SdfPathVector&              selectedSdfPaths,
         const HdSelectionSharedPtr& selection) override;
 
-#if MAYA_API_VERSION >= 20210000
-    HDMAYA_API
+    MAYAHYDRALIB_API
+    void HandleCompleteViewportScene(
+        const MDataServerOperation::MViewportScene& scene,
+        MFrameContext::DisplayStyle                 ds);
+
+    MAYAHYDRALIB_API
     void PopulateSelectionList(
         const HdxPickHitVector&          hits,
         const MHWRender::MSelectionInfo& selectInfo,
         MSelectionList&                  selectionList,
         MPointArray&                     worldSpaceHitPts) override;
-#endif
+
+    bool GetPlaybackRunning() const { return _isPlaybackRunning; }
 
 protected:
-    HDMAYA_API
+    MAYAHYDRALIB_API
     HdMeshTopology GetMeshTopology(const SdfPath& id) override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     HdBasisCurvesTopology GetBasisCurvesTopology(const SdfPath& id) override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     PxOsdSubdivTags GetSubdivTags(const SdfPath& id) override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     GfRange3d GetExtent(const SdfPath& id) override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     GfMatrix4d GetTransform(const SdfPath& id) override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     size_t
     SampleTransform(const SdfPath& id, size_t maxSampleCount, float* times, GfMatrix4d* samples)
         override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     bool GetVisible(const SdfPath& id) override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     bool IsEnabled(const TfToken& option) const override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     bool GetDoubleSided(const SdfPath& id) override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     HdCullStyle GetCullStyle(const SdfPath& id) override;
-    // VtValue GetShadingStyle(const SdfPath& id) override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
+    VtValue GetShadingStyle(const SdfPath& id) override;
+
+    MAYAHYDRALIB_API
     HdDisplayStyle GetDisplayStyle(const SdfPath& id) override;
     // TfToken GetReprName(const SdfPath& id) override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     VtValue Get(const SdfPath& id, const TfToken& key) override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     size_t SamplePrimvar(
         const SdfPath& id,
         const TfToken& key,
@@ -181,97 +208,114 @@ protected:
         float*         times,
         VtValue*       samples) override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     TfToken GetRenderTag(SdfPath const& id) override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     HdPrimvarDescriptorVector
     GetPrimvarDescriptors(const SdfPath& id, HdInterpolation interpolation) override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     VtValue GetLightParamValue(const SdfPath& id, const TfToken& paramName) override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     VtValue GetCameraParamValue(const SdfPath& cameraId, const TfToken& paramName) override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     VtIntArray GetInstanceIndices(const SdfPath& instancerId, const SdfPath& prototypeId) override;
 
-#if defined(HD_API_VERSION) && HD_API_VERSION >= 39
-    HDMAYA_API
+    MAYAHYDRALIB_API
     SdfPathVector GetInstancerPrototypes(SdfPath const& instancerId) override;
-#endif
 
-#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
-    HDMAYA_API
+    MAYAHYDRALIB_API
     SdfPath GetInstancerId(const SdfPath& primId) override;
-#endif
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     GfMatrix4d GetInstancerTransform(SdfPath const& instancerId) override;
 
-    HDMAYA_API
-#if defined(HD_API_VERSION) && HD_API_VERSION >= 34
+    MAYAHYDRALIB_API
     SdfPath GetScenePrimPath(
         const SdfPath&      rprimPath,
         int                 instanceIndex,
         HdInstancerContext* instancerContext) override;
-#elif defined(HD_API_VERSION) && HD_API_VERSION >= 33
-    SdfPath GetScenePrimPath(const SdfPath& rprimPath, int instanceIndex) override;
-#else
-    SdfPath GetPathForInstanceIndex(
-        const SdfPath& protoPrimPath,
-        int            instanceIndex,
-        int*           absoluteInstanceIndex,
-        SdfPath*       rprimPath,
-        SdfPathVector* instanceContext) override;
-#endif
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     SdfPath GetMaterialId(const SdfPath& id) override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     VtValue GetMaterialResource(const SdfPath& id) override;
-
-#if PXR_VERSION < 2011
-    HDMAYA_API
-    HdTextureResource::ID GetTextureResourceID(const SdfPath& textureId) override;
-
-    HDMAYA_API
-    HdTextureResourceSharedPtr GetTextureResource(const SdfPath& textureId) override;
-#endif // PXR_VERSION < 2011
 
 private:
     template <typename AdapterPtr, typename Map>
     AdapterPtr Create(
-        const MDagPath&                                                       dag,
-        const std::function<AdapterPtr(HdMayaDelegateCtx*, const MDagPath&)>& adapterCreator,
-        Map&                                                                  adapterMap,
-        bool                                                                  isSprim = false);
+        const MDagPath&                                                          dag,
+        const std::function<AdapterPtr(MayaHydraDelegateCtx*, const MDagPath&)>& adapterCreator,
+        Map&                                                                     adapterMap,
+        bool                                                                     isSprim = false);
+
+    MAYAHYDRALIB_API
+    bool _GetRenderItem(int fastId, MayaHydraRenderItemAdapterPtr& adapter);
+
+    MAYAHYDRALIB_API
+    void _AddRenderItem(const MayaHydraRenderItemAdapterPtr& ria);
+
+    MAYAHYDRALIB_API
+    void _RemoveRenderItem(const MayaHydraRenderItemAdapterPtr& ria);
+
+    MAYAHYDRALIB_API
+    bool
+    _GetRenderItemMaterial(const MRenderItem& ri, SdfPath& material, MObject& shadingEngineNode);
+
+    static VtValue CreateMayaDefaultMaterial();
 
     bool _CreateMaterial(const SdfPath& id, const MObject& obj);
-
-    template <typename T> using AdapterMap = std::unordered_map<SdfPath, T, SdfPath::Hash>;
+#ifdef MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
     /// \brief Unordered Map storing the shape adapters.
-    AdapterMap<HdMayaShapeAdapterPtr> _shapeAdapters;
+    AdapterMap<MayaHydraShapeAdapterPtr> _shapeAdapters;
+#endif
+    /// \brief Unordered Map storing the shape adapters.
+    AdapterMap<MayaHydraRenderItemAdapterPtr>              _renderItemsAdapters;
+    std::unordered_map<int, MayaHydraRenderItemAdapterPtr> _renderItemsAdaptersFast;
+
     /// \brief Unordered Map storing the light adapters.
-    AdapterMap<HdMayaLightAdapterPtr> _lightAdapters;
+    AdapterMap<MayaHydraLightAdapterPtr> _lightAdapters;
     /// \brief Unordered Map storing the camera adapters.
-    AdapterMap<HdMayaCameraAdapterPtr> _cameraAdapters;
+    AdapterMap<MayaHydraCameraAdapterPtr> _cameraAdapters;
     /// \brief Unordered Map storing the material adapters.
-    AdapterMap<HdMayaMaterialAdapterPtr>       _materialAdapters;
+    AdapterMap<MayaHydraMaterialAdapterPtr>    _materialAdapters;
     std::vector<MCallbackId>                   _callbacks;
     std::vector<std::tuple<SdfPath, MObject>>  _adaptersToRecreate;
     std::vector<std::tuple<SdfPath, uint32_t>> _adaptersToRebuild;
-    std::vector<MObject>                       _addedNodes;
-    std::vector<SdfPath>                       _materialTagsChanged;
+#ifdef MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
+    std::vector<MObject> _addedNodes;
+#endif
 
-    SdfPath _fallbackMaterial;
-    bool    _enableMaterials = false;
+    using LightAdapterCreator
+        = std::function<MayaHydraLightAdapterPtr(MayaHydraDelegateCtx*, const MDagPath&)>;
+    std::vector<std::pair<MObject, LightAdapterCreator>> _lightsToAdd;
+
+    /// Is used to maintain a list of Arnold lights, they are not seen as lights by Maya but as
+    /// locators
+    std::vector<MDagPath> _arnoldLightPaths;
+
+    std::vector<SdfPath> _materialTagsChanged;
+
+    /// _fallbackMaterial is an SdfPath used when there is no material assigned to a Maya object
+    static SdfPath _fallbackMaterial;
+    /// _mayaDefaultMaterialPath is common to all scene delegates, it's the SdfPath of
+    /// _mayaDefaultMaterial
+    static SdfPath _mayaDefaultMaterialPath;
+    /// _mayaDefaultMaterial is an hydra material used to override all materials from the scene when
+    /// _useDefaultMaterial is true
+    static VtValue _mayaDefaultMaterial;
+
+    bool _useDefaultMaterial = false;
+    bool _xRayEnabled = false;
+    bool _isPlaybackRunning = false;
 };
 
-typedef std::shared_ptr<HdMayaSceneDelegate> MayaSceneDelegateSharedPtr;
+typedef std::shared_ptr<MayaHydraSceneDelegate> MayaSceneDelegateSharedPtr;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDMAYA_SCENE_DELEGATE_H
+#endif // MAYAHYDRALIB_SCENE_DELEGATE_H

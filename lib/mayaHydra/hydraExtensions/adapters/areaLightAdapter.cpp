@@ -13,9 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <hdMaya/adapters/adapterDebugCodes.h>
-#include <hdMaya/adapters/adapterRegistry.h>
-#include <hdMaya/adapters/lightAdapter.h>
+#include <mayaHydraLib/adapters/adapterDebugCodes.h>
+#include <mayaHydraLib/adapters/adapterRegistry.h>
+#include <mayaHydraLib/adapters/lightAdapter.h>
 
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/light.h>
@@ -23,11 +23,15 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaAreaLightAdapter : public HdMayaLightAdapter
+/**
+ * \brief MayaHydraAreaLightAdapter is used to handle the translation from a Maya area light to
+ * hydra.
+ */
+class MayaHydraAreaLightAdapter : public MayaHydraLightAdapter
 {
 public:
-    HdMayaAreaLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
-        : HdMayaLightAdapter(delegate, dag)
+    MayaHydraAreaLightAdapter(MayaHydraDelegateCtx* delegate, const MDagPath& dag)
+        : MayaHydraLightAdapter(delegate, dag)
     {
     }
 
@@ -44,9 +48,9 @@ public:
 
     VtValue GetLightParamValue(const TfToken& paramName) override
     {
-        TF_DEBUG(HDMAYA_ADAPTER_GET_LIGHT_PARAM_VALUE)
+        TF_DEBUG(MAYAHYDRALIB_ADAPTER_GET_LIGHT_PARAM_VALUE)
             .Msg(
-                "Called HdMayaAreaLightAdapter::GetLightParamValue(%s) - %s\n",
+                "Called MayaHydraAreaLightAdapter::GetLightParamValue(%s) - %s\n",
                 paramName.GetText(),
                 GetDagPath().partialPathName().asChar());
 
@@ -55,21 +59,21 @@ public:
         } else if (paramName == HdLightTokens->height) {
             return VtValue(2.0f);
         }
-        return HdMayaLightAdapter::GetLightParamValue(paramName);
+        return MayaHydraLightAdapter::GetLightParamValue(paramName);
     }
 };
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<HdMayaAreaLightAdapter, TfType::Bases<HdMayaLightAdapter>>();
+    TfType::Define<MayaHydraAreaLightAdapter, TfType::Bases<MayaHydraLightAdapter>>();
 }
 
-TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, pointLight)
+TF_REGISTRY_FUNCTION_WITH_TAG(MayaHydraAdapterRegistry, pointLight)
 {
-    HdMayaAdapterRegistry::RegisterLightAdapter(
+    MayaHydraAdapterRegistry::RegisterLightAdapter(
         TfToken("areaLight"),
-        [](HdMayaDelegateCtx* delegate, const MDagPath& dag) -> HdMayaLightAdapterPtr {
-            return HdMayaLightAdapterPtr(new HdMayaAreaLightAdapter(delegate, dag));
+        [](MayaHydraDelegateCtx* delegate, const MDagPath& dag) -> MayaHydraLightAdapterPtr {
+            return MayaHydraLightAdapterPtr(new MayaHydraAreaLightAdapter(delegate, dag));
         });
 }
 

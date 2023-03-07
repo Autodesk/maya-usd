@@ -13,11 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <hdMaya/adapters/adapterDebugCodes.h>
-#include <hdMaya/adapters/adapterRegistry.h>
-#include <hdMaya/adapters/lightAdapter.h>
-#include <hdMaya/adapters/mayaAttrs.h>
-#include <hdMaya/utils.h>
+#include <mayaHydraLib/adapters/adapterDebugCodes.h>
+#include <mayaHydraLib/adapters/adapterRegistry.h>
+#include <mayaHydraLib/adapters/lightAdapter.h>
+#include <mayaHydraLib/adapters/mayaAttrs.h>
+#include <mayaHydraLib/utils.h>
 
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/glf/simpleLight.h>
@@ -63,11 +63,15 @@ float GetSpotSoftness(MFnSpotLight& mayaLight)
 float GetSpotFalloff(MFnSpotLight& mayaLight) { return static_cast<float>(mayaLight.dropOff()); }
 } // namespace
 
-class HdMayaSpotLightAdapter : public HdMayaLightAdapter
+/**
+ * \brief MayaHydraSpotLightAdapter is used to handle the translation from a Maya spot light to
+ * hydra.
+ */
+class MayaHydraSpotLightAdapter : public MayaHydraLightAdapter
 {
 public:
-    HdMayaSpotLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
-        : HdMayaLightAdapter(delegate, dag)
+    MayaHydraSpotLightAdapter(MayaHydraDelegateCtx* delegate, const MDagPath& dag)
+        : MayaHydraLightAdapter(delegate, dag)
     {
     }
 
@@ -94,9 +98,9 @@ protected:
 
     VtValue Get(const TfToken& key) override
     {
-        TF_DEBUG(HDMAYA_ADAPTER_GET)
+        TF_DEBUG(MAYAHYDRALIB_ADAPTER_GET)
             .Msg(
-                "Called HdMayaSpotLightAdapter::Get(%s) - %s\n",
+                "Called MayaHydraSpotLightAdapter::Get(%s) - %s\n",
                 key.GetText(),
                 GetDagPath().partialPathName().asChar());
 
@@ -114,14 +118,14 @@ protected:
             return VtValue(shadowParams);
         }
 
-        return HdMayaLightAdapter::Get(key);
+        return MayaHydraLightAdapter::Get(key);
     }
 
     VtValue GetLightParamValue(const TfToken& paramName) override
     {
-        TF_DEBUG(HDMAYA_ADAPTER_GET_LIGHT_PARAM_VALUE)
+        TF_DEBUG(MAYAHYDRALIB_ADAPTER_GET_LIGHT_PARAM_VALUE)
             .Msg(
-                "Called HdMayaSpotLightAdapter::GetLightParamValue(%s) - %s\n",
+                "Called MayaHydraSpotLightAdapter::GetLightParamValue(%s) - %s\n",
                 paramName.GetText(),
                 GetDagPath().partialPathName().asChar());
 
@@ -134,41 +138,29 @@ protected:
             } else if (paramName == UsdLuxTokens->treatAsPoint) {
                 const bool treatAsPoint = (light.shadowRadius() == 0.0);
                 return VtValue(treatAsPoint);
-#if PXR_VERSION >= 2105
             } else if (paramName == UsdLuxTokens->inputsShapingConeAngle) {
-#else
-            } else if (paramName == HdLightTokens->shapingConeAngle) {
-#endif
                 return VtValue(GetSpotCutoff(light));
-#if PXR_VERSION >= 2105
             } else if (paramName == UsdLuxTokens->inputsShapingConeSoftness) {
-#else
-            } else if (paramName == HdLightTokens->shapingConeSoftness) {
-#endif
                 return VtValue(GetSpotSoftness(light));
-#if PXR_VERSION >= 2105
             } else if (paramName == UsdLuxTokens->inputsShapingFocus) {
-#else
-            } else if (paramName == HdLightTokens->shapingFocus) {
-#endif
                 return VtValue(GetSpotFalloff(light));
             }
         }
-        return HdMayaLightAdapter::GetLightParamValue(paramName);
+        return MayaHydraLightAdapter::GetLightParamValue(paramName);
     }
 };
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<HdMayaSpotLightAdapter, TfType::Bases<HdMayaLightAdapter>>();
+    TfType::Define<MayaHydraSpotLightAdapter, TfType::Bases<MayaHydraLightAdapter>>();
 }
 
-TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, pointLight)
+TF_REGISTRY_FUNCTION_WITH_TAG(MayaHydraAdapterRegistry, pointLight)
 {
-    HdMayaAdapterRegistry::RegisterLightAdapter(
+    MayaHydraAdapterRegistry::RegisterLightAdapter(
         TfToken("spotLight"),
-        [](HdMayaDelegateCtx* delegate, const MDagPath& dag) -> HdMayaLightAdapterPtr {
-            return HdMayaLightAdapterPtr(new HdMayaSpotLightAdapter(delegate, dag));
+        [](MayaHydraDelegateCtx* delegate, const MDagPath& dag) -> MayaHydraLightAdapterPtr {
+            return MayaHydraLightAdapterPtr(new MayaHydraSpotLightAdapter(delegate, dag));
         });
 }
 

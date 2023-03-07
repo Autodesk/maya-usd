@@ -51,7 +51,7 @@ class TestSnapshot(mtohUtils.MtohTestCase):
         self.assertSnapshotClose("flat_orange_bad.png", None, 17515 / 163200000.0)
 
 
-class TestHdMayaRender(mtohUtils.MtohTestCase):
+class TestMayaHydraRender(mtohUtils.MtohTestCase):
     _file = __file__
 
     def test_cube(self):

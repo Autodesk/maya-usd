@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef HDMAYA_LIGHT_ADAPTER_H
-#define HDMAYA_LIGHT_ADAPTER_H
+#ifndef MAYAHYDRALIB_LIGHT_ADAPTER_H
+#define MAYAHYDRALIB_LIGHT_ADAPTER_H
 
-#include <hdMaya/adapters/dagAdapter.h>
+#include <mayaHydraLib/adapters/dagAdapter.h>
 
 #include <pxr/base/gf/frustum.h>
 #include <pxr/imaging/glf/simpleLight.h>
@@ -29,7 +29,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaLightAdapter : public HdMayaDagAdapter
+/**
+ * \brief MayaHydraLightAdapter is the base class for any light adapter used to handle the
+ * translation from a light to hydra.
+ */
+class MayaHydraLightAdapter : public MayaHydraDagAdapter
 {
 public:
     inline bool GetShadowsEnabled(MFnNonExtendedLight& light)
@@ -37,44 +41,49 @@ public:
         return light.useDepthMapShadows() || light.useRayTraceShadows();
     }
 
-    HDMAYA_API
-    HdMayaLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag);
-    HDMAYA_API
-    virtual ~HdMayaLightAdapter() = default;
-    HDMAYA_API
+    MAYAHYDRALIB_API
+    MayaHydraLightAdapter(MayaHydraDelegateCtx* delegate, const MDagPath& dag);
+    MAYAHYDRALIB_API
+    virtual ~MayaHydraLightAdapter();
+    MAYAHYDRALIB_API
     virtual const TfToken& LightType() const = 0;
-    HDMAYA_API
+    MAYAHYDRALIB_API
     bool IsSupported() const override;
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void Populate() override;
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void MarkDirty(HdDirtyBits dirtyBits) override;
-    HDMAYA_API
+    MAYAHYDRALIB_API
     virtual void RemovePrim() override;
-    HDMAYA_API
+    MAYAHYDRALIB_API
     bool HasType(const TfToken& typeId) const override;
-    HDMAYA_API
+    MAYAHYDRALIB_API
     virtual VtValue GetLightParamValue(const TfToken& paramName);
-    HDMAYA_API
+    MAYAHYDRALIB_API
     VtValue Get(const TfToken& key) override;
-    HDMAYA_API
+    MAYAHYDRALIB_API
     virtual void CreateCallbacks() override;
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void SetShadowProjectionMatrix(const GfMatrix4d& matrix);
+    MAYAHYDRALIB_API
+    void SetLightingOn(bool isLightingOn);
 
 protected:
-    HDMAYA_API
+    MAYAHYDRALIB_API
     virtual void _CalculateLightParams(GlfSimpleLight& light) { }
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void _CalculateShadowParams(MFnLight& light, HdxShadowParams& params);
-    HDMAYA_API
+    MAYAHYDRALIB_API
     bool _GetVisibility() const override;
+    MAYAHYDRALIB_API
+    bool IsAnArnoldSkyDomeLight(const MDagPath& dag) const;
 
     GfMatrix4d _shadowProjectionMatrix;
+    bool       _isLightingOn = true;
 };
 
-using HdMayaLightAdapterPtr = std::shared_ptr<HdMayaLightAdapter>;
+using MayaHydraLightAdapterPtr = std::shared_ptr<MayaHydraLightAdapter>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDMAYA_LIGHT_ADAPTER_H
+#endif // MAYAHYDRALIB_LIGHT_ADAPTER_H

@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef HDMAYA_PARAMS_H
-#define HDMAYA_PARAMS_H
+#ifndef MAYAHYDRALIB_PARAMS_H
+#define MAYAHYDRALIB_PARAMS_H
 
 #include <pxr/pxr.h>
 
@@ -22,7 +22,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct HdMayaParams
+/**
+ * \brief MayaHydraParams are the global parameters for this plug-in.
+ * Please note that we add to these parameters the parameters read from the chosen hydra render
+ * delegate and expose them in our UI with the MEL function mtohRenderOverride_AddAttribute see
+ * renderGlobals.cpp.
+ */
+struct MayaHydraParams
 {
     int   textureMemoryPerTexture = 4 * 1024 * 1024;
     int   maximumShadowMapResolution = 2048;
@@ -35,4 +41,4 @@ struct HdMayaParams
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDMAYA_PARAMS_H
+#endif // MAYAHYDRALIB_PARAMS_H

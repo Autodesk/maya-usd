@@ -13,12 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef HDMAYA_DG_ADAPTER_H
-#define HDMAYA_DG_ADAPTER_H
+#ifndef MAYAHYDRALIB_DG_ADAPTER_H
+#define MAYAHYDRALIB_DG_ADAPTER_H
 
-#include <hdMaya/adapters/adapter.h>
-#include <hdMaya/adapters/adapterDebugCodes.h>
-#include <hdMaya/utils.h>
+#include <mayaHydraLib/adapters/adapter.h>
+#include <mayaHydraLib/adapters/adapterDebugCodes.h>
+#include <mayaHydraLib/utils.h>
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/range3d.h>
@@ -39,46 +39,49 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaDagAdapter : public HdMayaAdapter
+/**
+ * \brief MayaHydraDagAdapter is the adapter base class for any dag object.
+ */
+class MayaHydraDagAdapter : public MayaHydraAdapter
 {
 protected:
-    HDMAYA_API
-    HdMayaDagAdapter(const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath);
+    MAYAHYDRALIB_API
+    MayaHydraDagAdapter(const SdfPath& id, MayaHydraDelegateCtx* delegate, const MDagPath& dagPath);
 
 public:
-    HDMAYA_API
-    virtual ~HdMayaDagAdapter() = default;
-    HDMAYA_API
-    virtual bool GetVisible() { return IsVisible(); }
-    HDMAYA_API
+    MAYAHYDRALIB_API
+    virtual ~MayaHydraDagAdapter() = default;
+    MAYAHYDRALIB_API
+    virtual bool GetVisible() override { return IsVisible(); }
+    MAYAHYDRALIB_API
     virtual void CreateCallbacks() override;
-    HDMAYA_API
+    MAYAHYDRALIB_API
     virtual void MarkDirty(HdDirtyBits dirtyBits) override;
-    HDMAYA_API
+    MAYAHYDRALIB_API
     virtual void RemovePrim() override;
-    HDMAYA_API
-    GfMatrix4d GetTransform();
-    HDMAYA_API
+    MAYAHYDRALIB_API
+    GfMatrix4d GetTransform() override;
+    MAYAHYDRALIB_API
     size_t SampleTransform(size_t maxSampleCount, float* times, GfMatrix4d* samples);
-    HDMAYA_API
+    MAYAHYDRALIB_API
     bool            UpdateVisibility();
     bool            IsVisible(bool checkDirty = true);
     const MDagPath& GetDagPath() const { return _dagPath; }
     void            InvalidateTransform() { _invalidTransform = true; }
     bool            IsInstanced() const { return _isInstanced; }
-    HDMAYA_API
+    MAYAHYDRALIB_API
     SdfPath GetInstancerID() const;
-    HDMAYA_API
+    MAYAHYDRALIB_API
     virtual VtIntArray GetInstanceIndices(const SdfPath& prototypeId);
-    HDMAYA_API
+    MAYAHYDRALIB_API
     HdPrimvarDescriptorVector GetInstancePrimvarDescriptors(HdInterpolation interpolation) const;
-    HDMAYA_API
+    MAYAHYDRALIB_API
     VtValue GetInstancePrimvar(const TfToken& key);
 
 protected:
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void _AddHierarchyChangedCallbacks(MDagPath& dag);
-    HDMAYA_API
+    MAYAHYDRALIB_API
     virtual bool _GetVisibility() const;
 
 private:
@@ -92,4 +95,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDMAYA_DG_ADAPTER_H
+#endif // MAYAHYDRALIB_DG_ADAPTER_H

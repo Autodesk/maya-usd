@@ -13,12 +13,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+// Copyright 2023 Autodesk, Inc. All rights reserved.
+//
 #include "renderGlobals.h"
 #include "renderOverride.h"
 #include "viewCommand.h"
 
-#include <hdMaya/adapters/adapter.h>
+#include <mayaHydraLib/adapters/adapter.h>
+#if defined(MAYAUSD_VERSION)
 #include <mayaUsd/utils/plugRegistryHelper.h>
+#endif
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
@@ -33,29 +37,50 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-using MtohRenderOverridePtr = std::unique_ptr<MtohRenderOverride>;
-static std::vector<MtohRenderOverridePtr> gsRenderOverrides;
+// Maya plugin init/uninit functions
 
-#if defined(MAYAUSD_VERSION)
-#define STRINGIFY(x) #x
-#define TOSTRING(x)  STRINGIFY(x)
-#else
-#error "MAYAUSD_VERSION is not defined"
+#if PXR_VERSION < 2211
+#error USD version v0.22.11+ required
+#endif
+
+#if MAYA_API_VERSION < 20240000
+#error Maya API version 2024+ required
 #endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+// Don't use smart pointers in the static vector: when Maya is doing its
+// default "quick exit" that does not uninitialize plugins, the atexit
+// destruction of the overrides in the vector will crash on destruction,
+// because Hydra has already destroyed structures these rely on.  Simply leak
+// the render overrides in this case.
+static std::vector<MtohRenderOverride*> gsRenderOverrides;
+
+#if defined(MAYAUSD_VERSION)
+#define STRINGIFY(x)   #x
+#define TOSTRING(x)    STRINGIFY(x)
+#define PLUGIN_VERSION TOSTRING(MAYAUSD_VERSION)
+#elif defined(MAYAHYDRA_VERSION)
+#define STRINGIFY(x)   #x
+#define TOSTRING(x)    STRINGIFY(x)
+#define PLUGIN_VERSION TOSTRING(MAYAHYDRA_VERSION)
+#else
+#pragma message("MAYAHYDRA_VERSION is not defined")
+#define PLUGIN_VERSION "Maya-Hydra experimental"
+#endif
+
 PLUGIN_EXPORT MStatus initializePlugin(MObject obj)
 {
-    MString experimental("Maya to Hydra (mtoh) is experimental.");
+    MString experimental("mayaHydra is experimental.");
     MGlobal::displayWarning(experimental);
 
     MStatus ret = MS::kSuccess;
 
+#if defined(MAYAUSD_VERSION)
     // Call one time registration of plugins compiled for same USD version as MayaUSD plugin.
     MayaUsd::registerVersionedPlugins();
-
-    ret = HdMayaAdapter::Initialize();
+#endif
+    ret = MayaHydraAdapter::Initialize();
     if (!ret) {
         return ret;
     }
@@ -69,23 +94,22 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj)
     snprintf(envVarData.data(), envVarSize, "%s", envVarSet);
     putenv(envVarData.data());
 
-    MFnPlugin plugin(obj, "Autodesk", TOSTRING(MAYAUSD_VERSION), "Any");
+    MFnPlugin plugin(obj, "Autodesk", PLUGIN_VERSION, "Any");
 
     if (!plugin.registerCommand(
             MtohViewCmd::name, MtohViewCmd::creator, MtohViewCmd::createSyntax)) {
         ret = MS::kFailure;
-        ret.perror("Error registering mtoh command!");
+        ret.perror("Error registering mayaHydra command!");
         return ret;
     }
 
     if (auto* renderer = MHWRender::MRenderer::theRenderer()) {
         for (const auto& desc : MtohGetRendererDescriptions()) {
-            MtohRenderOverridePtr mtohRenderer(new MtohRenderOverride(desc));
-            MStatus               status = renderer->registerOverride(mtohRenderer.get());
+            auto    mtohRenderer = std::make_unique<MtohRenderOverride>(desc);
+            MStatus status = renderer->registerOverride(mtohRenderer.get());
             if (status == MS::kSuccess) {
-                gsRenderOverrides.push_back(std::move(mtohRenderer));
-            } else
-                mtohRenderer = nullptr;
+                gsRenderOverrides.push_back(mtohRenderer.release());
+            }
         }
     }
 
@@ -94,26 +118,23 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj)
 
 PLUGIN_EXPORT MStatus uninitializePlugin(MObject obj)
 {
-    MFnPlugin plugin(obj, "Autodesk", TOSTRING(MAYAUSD_VERSION), "Any");
+    MFnPlugin plugin(obj, "Autodesk", PLUGIN_VERSION, "Any");
     MStatus   ret = MS::kSuccess;
     if (auto* renderer = MHWRender::MRenderer::theRenderer()) {
         for (unsigned int i = 0; i < gsRenderOverrides.size(); i++) {
-            renderer->deregisterOverride(gsRenderOverrides[i].get());
-            gsRenderOverrides[i] = nullptr;
+            renderer->deregisterOverride(gsRenderOverrides[i]);
+            delete gsRenderOverrides[i];
         }
     }
 
-    // Note: when Maya is doing its default "quick exit" that does not uninitialize plugins,
-    //       these overrides crash on destruction because Hydra ha already destroyed things
-    //       these rely on. There is not much we can do about it...
     gsRenderOverrides.clear();
 
     // Clear any registered callbacks
-    MGlobal::executeCommand("callbacks -cc mtoh;");
+    MGlobal::executeCommand("callbacks -cc mayaHydra;");
 
     if (!plugin.deregisterCommand(MtohViewCmd::name)) {
         ret = MS::kFailure;
-        ret.perror("Error deregistering mtoh command!");
+        ret.perror("Error deregistering mayaHydra command!");
     }
 
     return ret;

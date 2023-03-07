@@ -21,8 +21,12 @@
 """
 
 from math import radians
-from mayaUsd import lib as mayaUsdLib
-from mayaUsd import ufe as mayaUsdUfe
+
+try:
+    from mayaUsd import lib as mayaUsdLib
+    from mayaUsd import ufe as mayaUsdUfe
+except:
+    pass
 
 from maya import cmds
 from maya.api import OpenMaya as om

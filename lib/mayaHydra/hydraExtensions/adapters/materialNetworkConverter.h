@@ -13,10 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef HDMAYA_MATERIAL_NETWORK_CONVERTER_H
-#define HDMAYA_MATERIAL_NETWORK_CONVERTER_H
+// Copyright 2023 Autodesk, Inc. All rights reserved.
+//
+#ifndef MAYAHYDRALIB_MATERIAL_NETWORK_CONVERTER_H
+#define MAYAHYDRALIB_MATERIAL_NETWORK_CONVERTER_H
 
-#include <hdMaya/api.h>
+#include <mayaHydraLib/api.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/imaging/hd/material.h>
@@ -25,33 +27,40 @@
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
+#include <maya/MShaderManager.h>
 
 #include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct HdMayaShaderParam
+/**
+ * The MayaHydraMaterialNetworkConverter class contains how we translate the Maya shaders to hydra
+ * and how we do the parameters mapping, please see MayaHydraMaterialNetworkConverter::initialize()
+ * for that purpose.
+ */
+
+struct MayaHydraShaderParam
 {
     TfToken name;
     VtValue fallbackValue;
 
     SdfValueTypeName type;
 
-    HDMAYA_API
-    HdMayaShaderParam(const TfToken& name, const VtValue& value, const SdfValueTypeName& type);
+    MAYAHYDRALIB_API
+    MayaHydraShaderParam(const TfToken& name, const VtValue& value, const SdfValueTypeName& type);
 };
 
-using HdMayaShaderParams = std::vector<HdMayaShaderParam>;
+using MayaHydraShaderParams = std::vector<MayaHydraShaderParam>;
 
 /// Class which provides basic name and value translation for an attribute.
-/// Used by both HdMayaMaterialNetworkConverter (for to-usd file export
-/// translation) and HdMayaMaterialAdapter (for translation to Hydra).
-class HdMayaMaterialAttrConverter
+/// Used by both MayaHydraMaterialNetworkConverter (for to-usd file export
+/// translation) and MayaHydraMaterialAdapter (for translation to Hydra).
+class MayaHydraMaterialAttrConverter
 {
 public:
-    typedef std::shared_ptr<HdMayaMaterialAttrConverter> RefPtr;
+    typedef std::shared_ptr<MayaHydraMaterialAttrConverter> RefPtr;
 
-    virtual ~HdMayaMaterialAttrConverter() {};
+    virtual ~MayaHydraMaterialAttrConverter() {};
 
     /// Returns the default type for this attr converter - if an
     /// implementation returns an invalid type, this indicates the attr
@@ -65,36 +74,39 @@ public:
     /// By returning an empty token, we indicate that we want to set a value,
     /// but that we don't wish to set up any network connections (ie, textures,
     /// etc.)
-    HDMAYA_API
+    MAYAHYDRALIB_API
     virtual TfToken GetPlugName(const TfToken& usdName) = 0;
 
     /// Returns the value computed from maya for the usd/hydra attribute
-    //    HDMAYA_API
+    //    MAYAHYDRALIB_API
     //    virtual VtValue GetValue(
-    //        const HdMayaShaderParam& destParam, MFnDependencyNode& node,
+    //        const MayaHydraShaderParam& destParam, MFnDependencyNode& node,
     //        MPlug* outPlug = nullptr) = 0;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     virtual VtValue GetValue(
         MFnDependencyNode&      node,
         const TfToken&          paramName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr)
+        MPlugArray*             outPlug
+        = nullptr) // Some parameters have more than one MPlug to look at such as transmission,
+                   // specular etc. which have a weight and a color
         = 0;
 };
 
 /// Class which provides basic name and value translation for a maya node
-/// type. Used by both HdMayaMaterialNetworkConverter (for to-usd file
-/// export translation) and HdMayaMaterialAdapter (for translation to Hydra).
-class HdMayaMaterialNodeConverter
+/// type. Used by both MayaHydraMaterialNetworkConverter (for to-usd file
+/// export translation) and MayaHydraMaterialAdapter (for translation to Hydra).
+class MayaHydraMaterialNodeConverter
 {
 public:
-    typedef std::unordered_map<TfToken, HdMayaMaterialAttrConverter::RefPtr, TfToken::HashFunctor>
-        NameToAttrConverterMap;
+    typedef std::
+        unordered_map<TfToken, MayaHydraMaterialAttrConverter::RefPtr, TfToken::HashFunctor>
+            NameToAttrConverterMap;
 
-    HDMAYA_API
-    HdMayaMaterialNodeConverter(
+    MAYAHYDRALIB_API
+    MayaHydraMaterialNodeConverter(
         const TfToken&                identifier,
         const NameToAttrConverterMap& attrConverters);
 
@@ -104,78 +116,98 @@ public:
     /// param; if nothing is found, will usually return a generic converter,
     /// that will look for an attribute on the maya node with the same name, and
     /// use that if possible.
-    HDMAYA_API
-    HdMayaMaterialAttrConverter::RefPtr GetAttrConverter(const TfToken& paramName);
+    MAYAHYDRALIB_API
+    MayaHydraMaterialAttrConverter::RefPtr GetAttrConverter(const TfToken& paramName);
 
     inline NameToAttrConverterMap& GetAttrConverters() { return _attrConverters; }
 
-    HDMAYA_API
-    static HdMayaMaterialNodeConverter* GetNodeConverter(const TfToken& nodeType);
+    MAYAHYDRALIB_API
+    static MayaHydraMaterialNodeConverter* GetNodeConverter(const TfToken& nodeType);
 
 private:
     NameToAttrConverterMap _attrConverters;
     mutable TfToken        _identifier;
 };
 
-class HdMayaMaterialNetworkConverter
+class MayaHydraMaterialNetworkConverter
 {
 public:
     typedef std::unordered_map<SdfPath, MObject, SdfPath::Hash> PathToMobjMap;
 
-    HDMAYA_API
-    HdMayaMaterialNetworkConverter(
-        HdMaterialNetwork& network,
-        const SdfPath&     prefix,
-        PathToMobjMap*     pathToMobj = nullptr);
+    struct MayaHydraMaterialNetworkConverterInit
+    {
+        MayaHydraMaterialNetworkConverterInit(
+            const SdfPath& prefix,
+            bool           enableXRayShadingMode,
+            PathToMobjMap* pathToMobj)
+            : _prefix(prefix)
+            , _enableXRayShadingMode(enableXRayShadingMode)
+            , _pathToMobj(pathToMobj)
+        {
+        }
+        MayaHydraMaterialNetworkConverterInit() = delete;
 
-    HDMAYA_API
+        HdMaterialNetwork _materialNetwork;
+        const SdfPath&    _prefix;
+        bool              _enableXRayShadingMode;
+        PathToMobjMap*    _pathToMobj; // Can be a nullptr
+    };
+
+    MAYAHYDRALIB_API
+    MayaHydraMaterialNetworkConverter(MayaHydraMaterialNetworkConverterInit& init);
+
+    MAYAHYDRALIB_API
     HdMaterialNode* GetMaterial(const MObject& mayaNode);
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void AddPrimvar(const TfToken& primvar);
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void ConvertParameter(
-        MFnDependencyNode&           node,
-        HdMayaMaterialNodeConverter& nodeConverter,
-        HdMaterialNode&              material,
-        const TfToken&               paramName,
-        const SdfValueTypeName&      type,
-        const VtValue*               fallback = nullptr);
+        MFnDependencyNode&              node,
+        MayaHydraMaterialNodeConverter& nodeConverter,
+        HdMaterialNode&                 material,
+        const TfToken&                  paramName,
+        const SdfValueTypeName&         type,
+        const VtValue*                  fallback = nullptr);
 
-    HDMAYA_API static VtValue ConvertMayaAttrToValue(
+    MAYAHYDRALIB_API static VtValue ConvertMayaAttrToValue(
         MFnDependencyNode&      node,
         const MString&          plugName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr);
+        MPlugArray*             outPlug = nullptr);
 
-    HDMAYA_API static VtValue ConvertMayaAttrToScaledValue(
+    MAYAHYDRALIB_API static VtValue ConvertMayaAttrToScaledValue(
         MFnDependencyNode&      node,
         const MString&          plugName,
         const MString&          scaleName,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr,
-        MPlug*                  outPlug = nullptr);
+        MPlugArray*             outPlug = nullptr);
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     static void initialize();
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     static VtValue ConvertPlugToValue(
         const MPlug&            plug,
         const SdfValueTypeName& type,
         const VtValue*          fallback = nullptr);
 
-    HDMAYA_API
-    static const HdMayaShaderParams& GetPreviewShaderParams();
+    MAYAHYDRALIB_API
+    static const MayaHydraShaderParams& GetPreviewShaderParams();
+
+    MAYAHYDRALIB_API
+    static const MayaHydraShaderParams& GetShaderParams(const TfToken& shaderIdentifier);
 
 private:
     HdMaterialNetwork& _network;
     const SdfPath&     _prefix;
     PathToMobjMap*     _pathToMobj;
+    bool               _enableXRayShadingMode = false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDMAYA_MATERIAL_NETWORK_CONVERTER_H
+#endif // MAYAHYDRALIB_MATERIAL_NETWORK_CONVERTER_H

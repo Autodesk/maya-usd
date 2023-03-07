@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <hdMaya/adapters/materialNetworkConverter.h>
+#include <mayaHydraLib/adapters/materialNetworkConverter.h>
 #include <mayaUsd/fileio/shading/shadingModeExporter.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 
@@ -63,11 +63,6 @@ protected:
 
     bool _ExportRelationship(
         UsdStagePtr& stage, HdMaterialRelationship& relationship) {
-        // TODO: come up with a better way for determining type rather than
-        // relying on the input or output to already be set, so we can read it's
-        // type...
-        // probably use the shader registry (?), though I don't think the
-        // PreviewSurface is actually registered there yet
         SdfValueTypeName typeName;
 
         // The following segment can be confusing at first. Output and input
@@ -139,16 +134,11 @@ public:
         if (mat != nullptr) { *mat = material; }
 
         HdMaterialNetwork materialNetwork;
-        HdMayaMaterialNetworkConverter converter(
+        MayaHydraMaterialNetworkConverter converter(
             materialNetwork, materialPrim.GetPath());
         auto* hdSurfMat = converter.GetMaterial(context.GetSurfaceShader());
         if(!hdSurfMat) { return; }
         SdfPath hdSurfPath = hdSurfMat->path;
-
-        // TODO: add support for volume / displacement
-        // SdfPath hdVol = converter.GetMaterial(context.GetVolumeShader()).path;
-        // SdfPath hdDisp =
-        // converter.GetMaterial(context.GetDisplacementShader()).path;
 
         if (hdSurfPath.IsEmpty()) { return; }
 
@@ -186,10 +176,10 @@ public:
     }
 };
 
-TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShadingModeExportContext, mtoh) {
+TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShadingModeExportContext, mayaHydra) {
     UsdMayaShadingModeRegistry::GetInstance().RegisterExporter(
-        "mtoh",
-        "MtoH",
+        "mayaHydra",
+        "mayaHydra",
         "",
         []() -> UsdMayaShadingModeExporterPtr {
             return UsdMayaShadingModeExporterPtr(new MtohShadingModeExporter());

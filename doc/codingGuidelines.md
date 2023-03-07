@@ -361,7 +361,7 @@ ${CMAKE_INSTALL_PREFIX}
 # e.g for options names
 option(BUILD_USDMAYA_SCHEMAS "Build optional schemas." ON)
 option(BUILD_TESTS "Build tests." ON)
-option(BUILD_HDMAYA "Build the Maya-To-Hydra plugin and scene delegate." ON)
+option(BUILD_MAYAHYDRALIB "Build the Maya-To-Hydra plugin and scene delegate." ON)
 ```
 
 3.  Use upper_case for Custom variables

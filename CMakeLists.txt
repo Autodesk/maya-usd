@@ -20,14 +20,14 @@ project(maya-usd)
 #------------------------------------------------------------------------------
 # options
 #------------------------------------------------------------------------------
-option(BUILD_MAYAUSD_LIBRARY "Build Core USD libraries." ON)
-option(BUILD_ADSK_PLUGIN "Build Autodesk USD plugin." ON)
-option(BUILD_PXR_PLUGIN "Build the Pixar USD plugin and libraries." ON)
-option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." ON)
+option(BUILD_MAYAUSD_LIBRARY "Build Core USD libraries." OFF)
+option(BUILD_ADSK_PLUGIN "Build Autodesk USD plugin." OFF)
+option(BUILD_PXR_PLUGIN "Build the Pixar USD plugin and libraries." OFF)
+option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." OFF)
 # Default value made dependent on maya + usd version - see below
 #   Convert back to a normal option if we no longer support maya-2019, or
 #   no longer support USD-20.11
-#option(BUILD_HDMAYA "Build the Maya-To-Hydra plugin and scene delegate." ON)
+#option(BUILD_MAYAHYDRALIB "Build the Maya-To-Hydra plugin and scene delegate." ON)
 option(BUILD_RFM_TRANSLATORS "Build translators for RenderMan for Maya shaders." ON)
 option(BUILD_TESTS "Build tests." ON)
 option(BUILD_STRICT_MODE "Enforce all warnings as errors." ON)
@@ -37,7 +37,7 @@ if(APPLE)
     option(BUILD_UB2 "Build Universal Binary 2 (UB2) Intel64+arm64" OFF)
 endif()
 set(BUILD_WITH_PYTHON_3_VERSION 3.7 CACHE STRING "The version of Python 3 to build with")
-option(CMAKE_WANT_UFE_BUILD "Enable building with UFE (if found)." ON)
+option(CMAKE_WANT_UFE_BUILD "Enable building with UFE (if found)." OFF)
 option(CMAKE_WANT_MATERIALX_BUILD "Enable building with MaterialX (experimental)." OFF)
 
 set(PXR_OVERRIDE_PLUGINPATH_NAME PXR_PLUGINPATH_NAME
@@ -94,6 +94,14 @@ if (BUILD_MAYAUSD_LIBRARY)
     set(MAYAUSD_VERSION "${MAYAUSD_MAJOR_VERSION}.${MAYAUSD_MINOR_VERSION}.${MAYAUSD_PATCH_LEVEL}")
 endif()
 
+if(NOT BUILD_MAYAUSD_LIBRARY)
+    include(cmake/mayahydra_version.info)
+    set(MAYAHYDRA_VERSION "${MAYAHYDRA_MAJOR_VERSION}.${MAYAHYDRA_MINOR_VERSION}.${MAYAHYDRA_PATCH_LEVEL}")
+    if(DEFINED ENV{PLUGIN_CUT_ID})
+        set(MAYAHYDRA_CUT_ID $ENV{PLUGIN_CUT_ID})
+    endif()
+endif()
+
 if (DEFINED PYTHON_INCLUDE_DIR AND DEFINED PYTHON_LIBRARIES AND DEFINED Python_EXECUTABLE)
     SET(PYTHON_INCLUDE_DIRS "${PYTHON_INCLUDE_DIR}")
     SET(PYTHONLIBS_FOUND TRUE)
@@ -133,9 +141,9 @@ if( MAYA_APP_VERSION LESS 2020 AND PXR_VERSION GREATER 2005 AND PXR_VERSION LESS
     #   will probably need to LD_PRELOAD your glew lib.
     #   See:
     #      https://github.com/Autodesk/maya-usd/discussions/1017
-    option(BUILD_HDMAYA "Build the Maya-To-Hydra plugin and scene delegate." OFF)
+    option(BUILD_MAYAHYDRALIB "Build the Maya-To-Hydra plugin and scene delegate." OFF)
 else()
-    option(BUILD_HDMAYA "Build the Maya-To-Hydra plugin and scene delegate." ON)
+    option(BUILD_MAYAHYDRALIB "Build the Maya-To-Hydra plugin and scene delegate." ON)
 endif()
 
 if(${MAYA_APP_VERSION} STRLESS "2019" AND CMAKE_WANT_UFE_BUILD)
@@ -232,6 +240,10 @@ if (BUILD_ADSK_PLUGIN)
     add_subdirectory(plugin/adsk)
 endif()
 
+if(BUILD_MAYAHYDRALIB)
+    add_subdirectory(lib/mayaHydra)
+endif()
+
 #------------------------------------------------------------------------------
 # install
 #------------------------------------------------------------------------------
@@ -270,4 +282,15 @@ if (BUILD_AL_PLUGIN)
         configure_file("modules/alUSD.mod.template" ${PROJECT_BINARY_DIR}/alUSD.mod)
     endif()
     install(FILES ${PROJECT_BINARY_DIR}/alUSD.mod DESTINATION ${CMAKE_INSTALL_PREFIX})
+endif()
+
+if(NOT BUILD_MAYAUSD_LIBRARY)
+    if(BUILD_MAYAHYDRALIB)
+        if (IS_WINDOWS)
+            configure_file("modules/mayaHydra_Win.mod.template" ${PROJECT_BINARY_DIR}/mayaHydra.mod)
+        else()
+            configure_file("modules/mayaHydra.mod.template" ${PROJECT_BINARY_DIR}/mayaHydra.mod)
+        endif()
+        install(FILES ${PROJECT_BINARY_DIR}/mayaHydra.mod DESTINATION ${CMAKE_INSTALL_PREFIX})
+    endif()
 endif()

@@ -15,7 +15,7 @@
 //
 #include "delegateRegistry.h"
 
-#include <hdMaya/delegates/delegateDebugCodes.h>
+#include <mayaHydraLib/delegates/delegateDebugCodes.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
@@ -26,28 +26,30 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_INSTANTIATE_SINGLETON(HdMayaDelegateRegistry);
+TF_INSTANTIATE_SINGLETON(MayaHydraDelegateRegistry);
 
-void HdMayaDelegateRegistry::RegisterDelegate(const TfToken& name, DelegateCreator creator)
+// MayaHydraDelegateRegistry is a singleton class to handle hydra delegates
+
+void MayaHydraDelegateRegistry::RegisterDelegate(const TfToken& name, DelegateCreator creator)
 {
     auto& instance = GetInstance();
     for (auto it : instance._delegates) {
         if (name == std::get<0>(it)) {
-            TF_DEBUG(HDMAYA_DELEGATE_REGISTRY)
+            TF_DEBUG(MAYAHYDRALIB_DELEGATE_REGISTRY)
                 .Msg(
-                    "HdMayaDelegateRegistry::RegisterDelegate(%s) - existing "
+                    "MayaHydraDelegateRegistry::RegisterDelegate(%s) - existing "
                     "delegate\n",
                     name.GetText());
             return;
         }
     }
 
-    TF_DEBUG(HDMAYA_DELEGATE_REGISTRY)
-        .Msg("HdMayaDelegateRegistry::RegisterDelegate(%s) - new delegate\n", name.GetText());
+    TF_DEBUG(MAYAHYDRALIB_DELEGATE_REGISTRY)
+        .Msg("MayaHydraDelegateRegistry::RegisterDelegate(%s) - new delegate\n", name.GetText());
     instance._delegates.emplace_back(name, creator);
 }
 
-std::vector<TfToken> HdMayaDelegateRegistry::GetDelegateNames()
+std::vector<TfToken> MayaHydraDelegateRegistry::GetDelegateNames()
 {
     LoadAllDelegates();
     const auto&          instance = GetInstance();
@@ -59,11 +61,12 @@ std::vector<TfToken> HdMayaDelegateRegistry::GetDelegateNames()
     return ret;
 }
 
-std::vector<HdMayaDelegateRegistry::DelegateCreator> HdMayaDelegateRegistry::GetDelegateCreators()
+std::vector<MayaHydraDelegateRegistry::DelegateCreator>
+MayaHydraDelegateRegistry::GetDelegateCreators()
 {
     LoadAllDelegates();
-    const auto&                                          instance = GetInstance();
-    std::vector<HdMayaDelegateRegistry::DelegateCreator> ret;
+    const auto&                                             instance = GetInstance();
+    std::vector<MayaHydraDelegateRegistry::DelegateCreator> ret;
     ret.reserve(instance._delegates.size());
     for (auto it : instance._delegates) {
         ret.push_back(std::get<1>(it));
@@ -71,33 +74,34 @@ std::vector<HdMayaDelegateRegistry::DelegateCreator> HdMayaDelegateRegistry::Get
     return ret;
 }
 
-void HdMayaDelegateRegistry::SignalDelegatesChanged()
+void MayaHydraDelegateRegistry::SignalDelegatesChanged()
 {
     for (const auto& s : GetInstance()._signals) {
         s();
     }
 }
 
-void HdMayaDelegateRegistry::LoadAllDelegates()
+void MayaHydraDelegateRegistry::LoadAllDelegates()
 {
     static std::once_flag loadAllOnce;
     std::call_once(loadAllOnce, _LoadAllDelegates);
 }
 
-void HdMayaDelegateRegistry::InstallDelegatesChangedSignal(DelegatesChangedSignal signal)
+void MayaHydraDelegateRegistry::InstallDelegatesChangedSignal(DelegatesChangedSignal signal)
 {
     GetInstance()._signals.emplace_back(signal);
 }
 
-void HdMayaDelegateRegistry::_LoadAllDelegates()
+void MayaHydraDelegateRegistry::_LoadAllDelegates()
 {
-    TF_DEBUG(HDMAYA_DELEGATE_REGISTRY).Msg("HdMayaDelegateRegistry::_LoadAllDelegates()\n");
+    TF_DEBUG(MAYAHYDRALIB_DELEGATE_REGISTRY)
+        .Msg("MayaHydraDelegateRegistry::_LoadAllDelegates()\n");
 
-    TfRegistryManager::GetInstance().SubscribeTo<HdMayaDelegateRegistry>();
+    TfRegistryManager::GetInstance().SubscribeTo<MayaHydraDelegateRegistry>();
 
-    const TfType& delegateType = TfType::Find<HdMayaDelegate>();
+    const TfType& delegateType = TfType::Find<MayaHydraDelegate>();
     if (delegateType.IsUnknown()) {
-        TF_CODING_ERROR("Could not find HdMayaDelegate type");
+        TF_CODING_ERROR("Could not find MayaHydraDelegate type");
         return;
     }
 

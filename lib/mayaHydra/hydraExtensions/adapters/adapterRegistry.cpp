@@ -15,7 +15,9 @@
 //
 #include "adapterRegistry.h"
 
+#if defined(MAYAUSD_VERSION)
 #include <mayaUsd/nodes/proxyShapeBase.h>
+#endif
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
@@ -28,15 +30,19 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_INSTANTIATE_SINGLETON(HdMayaAdapterRegistry);
+TF_INSTANTIATE_SINGLETON(MayaHydraAdapterRegistry);
 
-void HdMayaAdapterRegistry::RegisterShapeAdapter(const TfToken& type, ShapeAdapterCreator creator)
+// An adapter is used to translate from Maya data to hydra data. MayaHydraAdapterRegistry is used to
+// register/retrieve the adapters.
+void MayaHydraAdapterRegistry::RegisterShapeAdapter(
+    const TfToken&      type,
+    ShapeAdapterCreator creator)
 {
     GetInstance()._dagAdapters.insert({ type, creator });
 }
 
-HdMayaAdapterRegistry::ShapeAdapterCreator
-HdMayaAdapterRegistry::GetShapeAdapterCreator(const MDagPath& dag)
+MayaHydraAdapterRegistry::ShapeAdapterCreator
+MayaHydraAdapterRegistry::GetShapeAdapterCreator(const MDagPath& dag)
 {
     MFnDependencyNode   depNode(dag.node());
     ShapeAdapterCreator ret = nullptr;
@@ -45,43 +51,37 @@ HdMayaAdapterRegistry::GetShapeAdapterCreator(const MDagPath& dag)
     return ret;
 }
 
-HdMayaAdapterRegistry::ShapeAdapterCreator
-HdMayaAdapterRegistry::GetProxyShapeAdapterCreator(const MDagPath& dag)
-{
-    MFnDependencyNode   depNode(dag.node());
-    ShapeAdapterCreator ret = nullptr;
-
-    // Temporary workaround for proxy shapes which may not have exact matching type in registration
-    auto* proxyBase = dynamic_cast<MayaUsdProxyShapeBase*>(depNode.userNode());
-    if (proxyBase) {
-        TfMapLookup(
-            GetInstance()._dagAdapters, TfToken(MayaUsdProxyShapeBase::typeName.asChar()), &ret);
-    }
-
-    return ret;
-}
-
-void HdMayaAdapterRegistry::RegisterLightAdapter(const TfToken& type, LightAdapterCreator creator)
+void MayaHydraAdapterRegistry::RegisterLightAdapter(
+    const TfToken&      type,
+    LightAdapterCreator creator)
 {
     GetInstance()._lightAdapters.insert({ type, creator });
 }
 
-HdMayaAdapterRegistry::LightAdapterCreator
-HdMayaAdapterRegistry::GetLightAdapterCreator(const MDagPath& dag)
+MayaHydraAdapterRegistry::LightAdapterCreator
+MayaHydraAdapterRegistry::GetLightAdapterCreator(const MDagPath& dag)
 {
-    MFnDependencyNode   depNode(dag.node());
+    return GetLightAdapterCreator(dag.node());
+}
+
+MayaHydraAdapterRegistry::LightAdapterCreator
+MayaHydraAdapterRegistry::GetLightAdapterCreator(const MObject& node)
+{
+    MFnDependencyNode   depNode(node);
     LightAdapterCreator ret = nullptr;
     TfMapLookup(GetInstance()._lightAdapters, TfToken(depNode.typeName().asChar()), &ret);
     return ret;
 }
 
-void HdMayaAdapterRegistry::RegisterCameraAdapter(const TfToken& type, CameraAdapterCreator creator)
+void MayaHydraAdapterRegistry::RegisterCameraAdapter(
+    const TfToken&       type,
+    CameraAdapterCreator creator)
 {
     GetInstance()._cameraAdapters.insert({ type, creator });
 }
 
-HdMayaAdapterRegistry::CameraAdapterCreator
-HdMayaAdapterRegistry::GetCameraAdapterCreator(const MDagPath& dag)
+MayaHydraAdapterRegistry::CameraAdapterCreator
+MayaHydraAdapterRegistry::GetCameraAdapterCreator(const MDagPath& dag)
 {
     MFnDependencyNode    depNode(dag.node());
     CameraAdapterCreator ret = nullptr;
@@ -89,15 +89,15 @@ HdMayaAdapterRegistry::GetCameraAdapterCreator(const MDagPath& dag)
     return ret;
 }
 
-void HdMayaAdapterRegistry::RegisterMaterialAdapter(
+void MayaHydraAdapterRegistry::RegisterMaterialAdapter(
     const TfToken&         type,
     MaterialAdapterCreator creator)
 {
     GetInstance()._materialAdapters.insert({ type, creator });
 }
 
-HdMayaAdapterRegistry::MaterialAdapterCreator
-HdMayaAdapterRegistry::GetMaterialAdapterCreator(const MObject& node)
+MayaHydraAdapterRegistry::MaterialAdapterCreator
+MayaHydraAdapterRegistry::GetMaterialAdapterCreator(const MObject& node)
 {
     MFnDependencyNode      depNode(node);
     MaterialAdapterCreator ret = nullptr;
@@ -105,15 +105,15 @@ HdMayaAdapterRegistry::GetMaterialAdapterCreator(const MObject& node)
     return ret;
 }
 
-void HdMayaAdapterRegistry::LoadAllPlugin()
+void MayaHydraAdapterRegistry::LoadAllPlugin()
 {
     static std::once_flag loadAllOnce;
     std::call_once(loadAllOnce, []() {
-        TfRegistryManager::GetInstance().SubscribeTo<HdMayaAdapterRegistry>();
+        TfRegistryManager::GetInstance().SubscribeTo<MayaHydraAdapterRegistry>();
 
-        const TfType& adapterType = TfType::Find<HdMayaAdapter>();
+        const TfType& adapterType = TfType::Find<MayaHydraAdapter>();
         if (adapterType.IsUnknown()) {
-            TF_CODING_ERROR("Could not find HdMayaAdapter type");
+            TF_CODING_ERROR("Could not find MayaHydraAdapter type");
             return;
         }
 

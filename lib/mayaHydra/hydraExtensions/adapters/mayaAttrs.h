@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef HDMAYA_ATTRS_H
-#define HDMAYA_ATTRS_H
+#ifndef MAYAHYDRALIB_ATTRS_H
+#define MAYAHYDRALIB_ATTRS_H
 
-#include <hdMaya/api.h>
+#include <mayaHydraLib/api.h>
 
 #include <pxr/pxr.h>
 
@@ -155,7 +155,7 @@ extern MObject imageCenter;
 
 } // namespace imagePlane
 
-HDMAYA_API
+MAYAHYDRALIB_API
 MStatus initialize();
 
 } // namespace MayaAttrs
@@ -166,4 +166,4 @@ MStatus initialize();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDMAYA_ATTRS_H
+#endif // MAYAHYDRALIB_ATTRS_H

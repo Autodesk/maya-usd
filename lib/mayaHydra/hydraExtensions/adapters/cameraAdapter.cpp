@@ -15,9 +15,9 @@
 //
 #include "cameraAdapter.h"
 
-#include <hdMaya/adapters/adapterDebugCodes.h>
-#include <hdMaya/adapters/adapterRegistry.h>
-#include <hdMaya/adapters/mayaAttrs.h>
+#include <mayaHydraLib/adapters/adapterDebugCodes.h>
+#include <mayaHydraLib/adapters/adapterRegistry.h>
+#include <mayaHydraLib/adapters/mayaAttrs.h>
 
 #include <pxr/base/gf/interval.h>
 #include <pxr/imaging/hd/camera.h>
@@ -32,35 +32,36 @@ namespace {
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<HdMayaCameraAdapter, TfType::Bases<HdMayaShapeAdapter>>();
+    TfType::Define<MayaHydraCameraAdapter, TfType::Bases<MayaHydraShapeAdapter>>();
 }
 
-TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, camera)
+TF_REGISTRY_FUNCTION_WITH_TAG(MayaHydraAdapterRegistry, camera)
 {
-    HdMayaAdapterRegistry::RegisterCameraAdapter(
+    MayaHydraAdapterRegistry::RegisterCameraAdapter(
         HdPrimTypeTokens->camera,
-        [](HdMayaDelegateCtx* delegate, const MDagPath& dag) -> HdMayaCameraAdapterPtr {
-            return HdMayaCameraAdapterPtr(new HdMayaCameraAdapter(delegate, dag));
+        [](MayaHydraDelegateCtx* delegate, const MDagPath& dag) -> MayaHydraCameraAdapterPtr {
+            return MayaHydraCameraAdapterPtr(new MayaHydraCameraAdapter(delegate, dag));
         });
 }
 
 } // namespace
 
-HdMayaCameraAdapter::HdMayaCameraAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
-    : HdMayaShapeAdapter(delegate->GetPrimPath(dag, true), delegate, dag)
+// MayaHydraCameraAdapter is used to handle the translation from a Maya camera to hydra.
+MayaHydraCameraAdapter::MayaHydraCameraAdapter(MayaHydraDelegateCtx* delegate, const MDagPath& dag)
+    : MayaHydraShapeAdapter(delegate->GetPrimPath(dag, true), delegate, dag)
 {
 }
 
-HdMayaCameraAdapter::~HdMayaCameraAdapter() { }
+MayaHydraCameraAdapter::~MayaHydraCameraAdapter() { }
 
-TfToken HdMayaCameraAdapter::CameraType() { return HdPrimTypeTokens->camera; }
+TfToken MayaHydraCameraAdapter::CameraType() { return HdPrimTypeTokens->camera; }
 
-bool HdMayaCameraAdapter::IsSupported() const
+bool MayaHydraCameraAdapter::IsSupported() const
 {
     return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(CameraType());
 }
 
-void HdMayaCameraAdapter::Populate()
+void MayaHydraCameraAdapter::Populate()
 {
     if (_isPopulated) {
         return;
@@ -69,20 +70,15 @@ void HdMayaCameraAdapter::Populate()
     _isPopulated = true;
 }
 
-void HdMayaCameraAdapter::MarkDirty(HdDirtyBits dirtyBits)
+void MayaHydraCameraAdapter::MarkDirty(HdDirtyBits dirtyBits)
 {
     if (_isPopulated && dirtyBits != 0) {
-#if PXR_VERSION < 2102
-        if (dirtyBits & HdChangeTracker::DirtyTransform) {
-            dirtyBits |= HdCamera::DirtyViewMatrix;
-        }
-#endif
         dirtyBits = dirtyBits & HdCamera::AllDirty;
         GetDelegate()->GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits);
     }
 }
 
-void HdMayaCameraAdapter::CreateCallbacks()
+void MayaHydraCameraAdapter::CreateCallbacks()
 {
     MStatus status;
     auto    dag = GetDagPath();
@@ -91,14 +87,9 @@ void HdMayaCameraAdapter::CreateCallbacks()
     auto paramsChanged = MNodeMessage::addNodeDirtyCallback(
         obj,
         +[](MObject& obj, void* clientData) {
-            auto* adapter = reinterpret_cast<HdMayaCameraAdapter*>(clientData);
-        // Dirty everything rather than track complex param and fit to projection dependencies.
-#if HD_API_VERSION >= 43
+            auto* adapter = reinterpret_cast<MayaHydraCameraAdapter*>(clientData);
+            // Dirty everything rather than track complex param and fit to projection dependencies.
             adapter->MarkDirty(HdCamera::DirtyParams | HdCamera::DirtyWindowPolicy);
-#else
-            adapter->MarkDirty(
-                HdCamera::DirtyParams | HdCamera::DirtyProjMatrix | HdCamera::DirtyWindowPolicy);
-#endif
         },
         reinterpret_cast<void*>(this),
         &status);
@@ -109,12 +100,8 @@ void HdMayaCameraAdapter::CreateCallbacks()
     auto xformChanged = MDagMessage::addWorldMatrixModifiedCallback(
         dag,
         +[](MObject& transformNode, MDagMessage::MatrixModifiedFlags& modified, void* clientData) {
-            auto* adapter = reinterpret_cast<HdMayaCameraAdapter*>(clientData);
-#if PXR_VERSION < 2102
-            adapter->MarkDirty(HdCamera::DirtyViewMatrix);
-#else
+            auto* adapter = reinterpret_cast<MayaHydraCameraAdapter*>(clientData);
             adapter->MarkDirty(HdCamera::DirtyTransform);
-#endif
             adapter->InvalidateTransform();
         },
         reinterpret_cast<void*>(this),
@@ -123,11 +110,11 @@ void HdMayaCameraAdapter::CreateCallbacks()
         AddCallback(xformChanged);
     }
 
-    // Skip over HdMayaShapeAdapter's CreateCallbacks
-    HdMayaAdapter::CreateCallbacks();
+    // Skip over MayaHydraShapeAdapter's CreateCallbacks
+    MayaHydraAdapter::CreateCallbacks();
 }
 
-void HdMayaCameraAdapter::RemovePrim()
+void MayaHydraCameraAdapter::RemovePrim()
 {
     if (!_isPopulated) {
         return;
@@ -136,11 +123,11 @@ void HdMayaCameraAdapter::RemovePrim()
     _isPopulated = false;
 }
 
-bool HdMayaCameraAdapter::HasType(const TfToken& typeId) const { return typeId == CameraType(); }
+bool MayaHydraCameraAdapter::HasType(const TfToken& typeId) const { return typeId == CameraType(); }
 
-VtValue HdMayaCameraAdapter::Get(const TfToken& key) { return HdMayaShapeAdapter::Get(key); }
+VtValue MayaHydraCameraAdapter::Get(const TfToken& key) { return MayaHydraShapeAdapter::Get(key); }
 
-VtValue HdMayaCameraAdapter::GetCameraParamValue(const TfToken& paramName)
+VtValue MayaHydraCameraAdapter::GetCameraParamValue(const TfToken& paramName)
 {
     constexpr double mayaInchToHydraCentimeter = 0.254;
     constexpr double mayaInchToHydraMillimeter = 0.0254;
@@ -186,105 +173,11 @@ VtValue HdMayaCameraAdapter::GetCameraParamValue(const TfToken& paramName)
             aspectRatio, apertureX, apertureY, offsetX, offsetY, true, false, true);
     };
 
-#if PXR_VERSION < 2102
-
-    auto projectionMatrix
-        = [&](const MFnCamera& camera, bool isOrtho, const GfVec4d* viewport) -> GfMatrix4d {
-        double left, right, bottom, top, cameraNear = camera.nearClippingPlane(),
-                                         cameraFar = camera.farClippingPlane(),
-                                         cameraFarMinusNear = cameraFar - cameraNear,
-                                         aspectRatio = viewport
-            ? (((*viewport)[2] - (*viewport)[0]) / ((*viewport)[3] - (*viewport)[1]))
-            : camera.aspectRatio();
-
-        status = camera.getViewingFrustum(aspectRatio, left, right, bottom, top, true, false, true);
-
-        if (isOrtho) {
-            // Skip over extraneous double-precision math in the common symmetric case
-            if (right == -left && top == -bottom)
-                return GfMatrix4d(
-                    1.0 / right,
-                    0,
-                    0,
-                    0,
-                    0,
-                    1.0 / top,
-                    0,
-                    0,
-                    0,
-                    0,
-                    -2.0 / cameraFarMinusNear,
-                    0,
-                    0,
-                    0,
-                    -(cameraFar + cameraNear) / cameraFarMinusNear,
-                    1);
-
-            return GfMatrix4d(
-                2.0 / (right - left),
-                0,
-                0,
-                0,
-                0,
-                2.0 / (top - bottom),
-                0,
-                0,
-                0,
-                0,
-                -2.0 / cameraFarMinusNear,
-                0,
-                -(right + left) / (right - left),
-                -(top + bottom) / (top - bottom),
-                -(cameraFar + cameraNear) / cameraFarMinusNear,
-                1);
-        }
-
-        // Skip over extraneous double-precision math in the common symmetric case
-        if (right == -left && top == -bottom)
-            return GfMatrix4d(
-                cameraNear / right,
-                0,
-                0,
-                0,
-                0,
-                cameraNear / top,
-                0,
-                0,
-                0,
-                0,
-                -(cameraFar + cameraNear) / cameraFarMinusNear,
-                -1,
-                0,
-                0,
-                (-2.0 * cameraFar * cameraNear) / cameraFarMinusNear,
-                0);
-
-        return GfMatrix4d(
-            (2.0 * cameraNear) / (right - left),
-            0,
-            0,
-            0,
-            0,
-            (2.0 * cameraNear) / (top - bottom),
-            0,
-            0,
-            (right + left) / (right - left),
-            (top + bottom) / (top - bottom),
-            -(cameraFar + cameraNear) / cameraFarMinusNear,
-            -1,
-            0,
-            0,
-            (2.0 * cameraNear * -cameraFar) / cameraFarMinusNear,
-            0);
-    };
-
-#endif
-
     auto hadError = [&](MStatus& status) -> bool {
         if (ARCH_LIKELY(status))
             return false;
         TF_WARN(
-            "Error in HdMayaCameraAdapter::GetCameraParamValue(%s): %s",
+            "Error in MayaHydraCameraAdapter::GetCameraParamValue(%s): %s",
             paramName.GetText(),
             status.errorString().asChar());
         return false;
@@ -298,18 +191,6 @@ VtValue HdMayaCameraAdapter::GetCameraParamValue(const TfToken& paramName)
     if (hadError(status)) {
         return {};
     }
-
-#if PXR_VERSION < 2102
-    if (paramName == HdCameraTokens->projectionMatrix) {
-        const auto projMatrix = projectionMatrix(camera, isOrtho, _viewport.get());
-        if (hadError(status))
-            return {};
-        return VtValue(projMatrix);
-    }
-    if (paramName == HdCameraTokens->worldToViewMatrix) {
-        return VtValue(GetTransform().GetInverse());
-    }
-#endif
 
     if (paramName == HdCameraTokens->shutterOpen) {
         // No motion samples, instantaneous shutter
@@ -399,7 +280,6 @@ VtValue HdMayaCameraAdapter::GetCameraParamValue(const TfToken& paramName)
             return {};
         return VtValue(windowPolicy);
     }
-#if PXR_VERSION >= 2102
     if (paramName == HdCameraTokens->projection) {
         if (isOrtho) {
             return VtValue(HdCamera::Orthographic);
@@ -408,12 +288,10 @@ VtValue HdMayaCameraAdapter::GetCameraParamValue(const TfToken& paramName)
         }
     }
 
-#endif
-
     return {};
 }
 
-void HdMayaCameraAdapter::SetViewport(const GfVec4d& viewport)
+void MayaHydraCameraAdapter::SetViewport(const GfVec4d& viewport)
 {
     if (!_viewport) {
         _viewport.reset(new GfVec4d);

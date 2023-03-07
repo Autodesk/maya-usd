@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <hdMaya/adapters/adapterDebugCodes.h>
-#include <hdMaya/adapters/adapterRegistry.h>
-#include <hdMaya/adapters/mayaAttrs.h>
-#include <hdMaya/adapters/shapeAdapter.h>
+#include <mayaHydraLib/adapters/adapterDebugCodes.h>
+#include <mayaHydraLib/adapters/adapterRegistry.h>
+#include <mayaHydraLib/adapters/mayaAttrs.h>
+#include <mayaHydraLib/adapters/shapeAdapter.h>
 
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/tokens.h>
@@ -32,6 +32,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/**
+ * This file contains the MayaHydraNurbsCurveAdapter class to translate from a Maya NURBS curve to
+ * hydra. Please note that, at this time, this is not used by the hydra plugin, we translate from a
+ * renderitem to hydra using the MayaHydraRenderItemAdapter class.
+ */
+
 namespace {
 
 const std::array<std::pair<MObject&, HdDirtyBits>, 4> _dirtyBits { {
@@ -44,15 +50,20 @@ const std::array<std::pair<MObject&, HdDirtyBits>, 4> _dirtyBits { {
 
 } // namespace
 
-class HdMayaNurbsCurveAdapter : public HdMayaShapeAdapter
+/**
+ * \brief MayaHydraNurbsCurveAdapter is used to handle the translation from a Maya NURBS curve to
+ * hydra. Please note that, at this time, this is not used by the hydra plugin, we translate from a
+ * renderitem to hydra using the MayaHydraRenderItemAdapter class.
+ */
+class MayaHydraNurbsCurveAdapter : public MayaHydraShapeAdapter
 {
 public:
-    HdMayaNurbsCurveAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
-        : HdMayaShapeAdapter(delegate->GetPrimPath(dag, false), delegate, dag)
+    MayaHydraNurbsCurveAdapter(MayaHydraDelegateCtx* delegate, const MDagPath& dag)
+        : MayaHydraShapeAdapter(delegate->GetPrimPath(dag, false), delegate, dag)
     {
     }
 
-    ~HdMayaNurbsCurveAdapter() = default;
+    ~MayaHydraNurbsCurveAdapter() = default;
 
     bool IsSupported() const override
     {
@@ -66,7 +77,7 @@ public:
         MStatus status;
         auto    obj = GetNode();
         if (obj != MObject::kNullObj) {
-            TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+            TF_DEBUG(MAYAHYDRALIB_ADAPTER_CALLBACKS)
                 .Msg("Creating nurbs curve adapter callbacks for prim (%s).\n", GetID().GetText());
 
             auto id
@@ -91,14 +102,14 @@ public:
                 AddCallback(id);
             }
         }
-        HdMayaDagAdapter::CreateCallbacks();
+        MayaHydraDagAdapter::CreateCallbacks();
     }
 
     VtValue Get(const TfToken& key) override
     {
-        TF_DEBUG(HDMAYA_ADAPTER_GET)
+        TF_DEBUG(MAYAHYDRALIB_ADAPTER_GET)
             .Msg(
-                "Called HdMayaNurbsCurveAdapter::Get(%s) - %s\n",
+                "Called MayaHydraNurbsCurveAdapter::Get(%s) - %s\n",
                 key.GetText(),
                 GetDagPath().partialPathName().asChar());
 
@@ -161,11 +172,11 @@ public:
 private:
     static void NodeDirtiedCallback(MObject& node, MPlug& plug, void* clientData)
     {
-        auto* adapter = reinterpret_cast<HdMayaNurbsCurveAdapter*>(clientData);
+        auto* adapter = reinterpret_cast<MayaHydraNurbsCurveAdapter*>(clientData);
         for (const auto& it : _dirtyBits) {
             if (it.first == plug) {
                 adapter->MarkDirty(it.second);
-                TF_DEBUG(HDMAYA_ADAPTER_CURVE_PLUG_DIRTY)
+                TF_DEBUG(MAYAHYDRALIB_ADAPTER_CURVE_PLUG_DIRTY)
                     .Msg(
                         "Marking prim dirty with bits %u because %s plug was "
                         "dirtied.\n",
@@ -175,10 +186,10 @@ private:
             }
         }
 
-        TF_DEBUG(HDMAYA_ADAPTER_CURVE_UNHANDLED_PLUG_DIRTY)
+        TF_DEBUG(MAYAHYDRALIB_ADAPTER_CURVE_UNHANDLED_PLUG_DIRTY)
             .Msg(
                 "%s (%s) plug dirtying was not handled by "
-                "HdMayaNurbsCurveAdapter::NodeDirtiedCallback.\n",
+                "MayaHydraNurbsCurveAdapter::NodeDirtiedCallback.\n",
                 plug.name().asChar(),
                 plug.partialName().asChar());
     }
@@ -190,14 +201,14 @@ private:
         MPlug&                         otherPlug,
         void*                          clientData)
     {
-        auto* adapter = reinterpret_cast<HdMayaNurbsCurveAdapter*>(clientData);
+        auto* adapter = reinterpret_cast<MayaHydraNurbsCurveAdapter*>(clientData);
         if (plug == MayaAttrs::mesh::instObjGroups) {
             adapter->MarkDirty(HdChangeTracker::DirtyMaterialId);
         } else {
-            TF_DEBUG(HDMAYA_ADAPTER_CURVE_UNHANDLED_PLUG_DIRTY)
+            TF_DEBUG(MAYAHYDRALIB_ADAPTER_CURVE_UNHANDLED_PLUG_DIRTY)
                 .Msg(
                     "%s (%s) plug dirtying was not handled by "
-                    "HdMayaNurbsCurveAdapter::attributeChangedCallback.\n",
+                    "MayaHydraNurbsCurveAdapter::attributeChangedCallback.\n",
                     plug.name().asChar(),
                     plug.name().asChar());
         }
@@ -205,7 +216,7 @@ private:
 
     static void TopologyChangedCallback(MObject& node, void* clientData)
     {
-        auto* adapter = reinterpret_cast<HdMayaNurbsCurveAdapter*>(clientData);
+        auto* adapter = reinterpret_cast<MayaHydraNurbsCurveAdapter*>(clientData);
         adapter->MarkDirty(
             HdChangeTracker::DirtyTopology | HdChangeTracker::DirtyPrimvar
             | HdChangeTracker::DirtyPoints);
@@ -213,7 +224,7 @@ private:
 
     static void ComponentIdChanged(MUintArray componentIds[], unsigned int count, void* clientData)
     {
-        auto* adapter = reinterpret_cast<HdMayaNurbsCurveAdapter*>(clientData);
+        auto* adapter = reinterpret_cast<MayaHydraNurbsCurveAdapter*>(clientData);
         adapter->MarkDirty(
             HdChangeTracker::DirtyTopology | HdChangeTracker::DirtyPrimvar
             | HdChangeTracker::DirtyPoints);
@@ -222,15 +233,15 @@ private:
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<HdMayaNurbsCurveAdapter, TfType::Bases<HdMayaShapeAdapter>>();
+    TfType::Define<MayaHydraNurbsCurveAdapter, TfType::Bases<MayaHydraShapeAdapter>>();
 }
 
-TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, mesh)
+TF_REGISTRY_FUNCTION_WITH_TAG(MayaHydraAdapterRegistry, mesh)
 {
-    HdMayaAdapterRegistry::RegisterShapeAdapter(
+    MayaHydraAdapterRegistry::RegisterShapeAdapter(
         TfToken("nurbsCurve"),
-        [](HdMayaDelegateCtx* delegate, const MDagPath& dag) -> HdMayaShapeAdapterPtr {
-            return HdMayaShapeAdapterPtr(new HdMayaNurbsCurveAdapter(delegate, dag));
+        [](MayaHydraDelegateCtx* delegate, const MDagPath& dag) -> MayaHydraShapeAdapterPtr {
+            return MayaHydraShapeAdapterPtr(new MayaHydraNurbsCurveAdapter(delegate, dag));
         });
 }
 

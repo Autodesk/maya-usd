@@ -13,9 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+// Copyright 2023 Autodesk, Inc. All rights reserved.
+//
 #include "delegateCtx.h"
 
-#include "mayaUsd/utils/util.h"
+#include <mayaHydraLib/utils.h>
 
 #include <pxr/base/gf/frustum.h>
 #include <pxr/base/gf/plane.h>
@@ -25,6 +27,7 @@
 #include <pxr/imaging/hio/glslfx.h>
 
 #include <maya/MFnLight.h>
+#include <maya/MShaderManager.h>
 
 #include <array>
 
@@ -32,21 +35,65 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
+static const SdfPath solidPath = SdfPath(std::string("Solid"));
+
+SdfPath _GetRenderItemMayaPrimPath(const MRenderItem& ri)
+{
+    if (ri.InternalObjectId() == 0)
+        return {};
+
+    SdfPath mayaPath = MAYAHYDRA_NS::RenderItemToSdfPath(ri, false, false);
+    if (mayaPath.IsEmpty())
+        return {};
+
+    const std::string theString = std::string(mayaPath.GetText());
+    if (theString.size() < 2) {
+        return {}; // Error
+    }
+
+    // We cannot apppend an absolute path (I.e : starting with "/")
+    if (mayaPath.IsAbsolutePath()) {
+        mayaPath = mayaPath.MakeRelativePath(SdfPath::AbsoluteRootPath());
+    }
+
+    if (MHWRender::MGeometry::Primitive::kLines != ri.primitive()
+        && MHWRender::MGeometry::Primitive::kLineStrip != ri.primitive()
+        && MHWRender::MGeometry::Primitive::kPoints != ri.primitive()) {
+        // Prefix with "Solid" when it's not a line/points primitive to be able to use only solid
+        // primitives in lighting/shadowing by their root path
+        mayaPath = solidPath.AppendPath(mayaPath);
+    }
+
+    return mayaPath;
+}
+
 SdfPath _GetPrimPath(const SdfPath& base, const MDagPath& dg)
 {
-    const auto mayaPath = UsdMayaUtil::MDagPathToUsdPath(dg, false, false);
+    SdfPath mayaPath = MAYAHYDRA_NS::DagPathToSdfPath(dg, false, false);
     if (mayaPath.IsEmpty()) {
         return {};
     }
-    const auto* chr = mayaPath.GetText();
-    if (chr == nullptr) {
-        return {};
-    };
-    std::string s(chr + 1);
-    if (s.empty()) {
-        return {};
+    const std::string theString = std::string(mayaPath.GetText());
+    if (theString.size() < 2) {
+        return {}; // Error
     }
-    return base.AppendPath(SdfPath(s));
+
+    // We cannot apppend an absolute path (I.e : starting with "/")
+    if (mayaPath.IsAbsolutePath()) {
+        mayaPath = mayaPath.MakeRelativePath(SdfPath::AbsoluteRootPath());
+    }
+
+    return base.AppendPath(mayaPath);
+}
+
+SdfPath _GetRenderItemPrimPath(const SdfPath& base, const MRenderItem& ri)
+{
+    return base.AppendPath(_GetRenderItemMayaPrimPath(ri));
+}
+
+SdfPath _GetRenderItemShaderPrimPath(const SdfPath& base, const MRenderItem& ri)
+{
+    return _GetRenderItemPrimPath(base, ri);
 }
 
 SdfPath _GetMaterialPath(const SdfPath& base, const MObject& obj)
@@ -68,9 +115,11 @@ SdfPath _GetMaterialPath(const SdfPath& base, const MObject& obj)
 
 } // namespace
 
-HdMayaDelegateCtx::HdMayaDelegateCtx(const InitData& initData)
+// MayaHydraDelegateCtx is a set of common functions, and it is the aggregation of our
+// MayaHydraDelegate base class and the hydra custom scene delegate class : HdSceneDelegate.
+MayaHydraDelegateCtx::MayaHydraDelegateCtx(const InitData& initData)
     : HdSceneDelegate(initData.renderIndex, initData.delegateID)
-    , HdMayaDelegate(initData)
+    , MayaHydraDelegate(initData)
     , _rprimPath(initData.delegateID.AppendPath(SdfPath(std::string("rprims"))))
     , _sprimPath(initData.delegateID.AppendPath(SdfPath(std::string("sprims"))))
     , _materialPath(initData.delegateID.AppendPath(SdfPath(std::string("materials"))))
@@ -78,7 +127,7 @@ HdMayaDelegateCtx::HdMayaDelegateCtx(const InitData& initData)
     GetChangeTracker().AddCollection(TfToken("visible"));
 }
 
-void HdMayaDelegateCtx::InsertRprim(
+void MayaHydraDelegateCtx::InsertRprim(
     const TfToken& typeId,
     const SdfPath& id,
     const SdfPath& instancerId)
@@ -86,14 +135,10 @@ void HdMayaDelegateCtx::InsertRprim(
     if (!instancerId.IsEmpty()) {
         GetRenderIndex().InsertInstancer(this, instancerId);
     }
-#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
     GetRenderIndex().InsertRprim(typeId, this, id);
-#else
-    GetRenderIndex().InsertRprim(typeId, this, id, instancerId);
-#endif
 }
 
-void HdMayaDelegateCtx::InsertSprim(
+void MayaHydraDelegateCtx::InsertSprim(
     const TfToken& typeId,
     const SdfPath& id,
     HdDirtyBits    initialBits)
@@ -102,16 +147,19 @@ void HdMayaDelegateCtx::InsertSprim(
     GetChangeTracker().SprimInserted(id, initialBits);
 }
 
-void HdMayaDelegateCtx::RemoveRprim(const SdfPath& id) { GetRenderIndex().RemoveRprim(id); }
+void MayaHydraDelegateCtx::RemoveRprim(const SdfPath& id) { GetRenderIndex().RemoveRprim(id); }
 
-void HdMayaDelegateCtx::RemoveSprim(const TfToken& typeId, const SdfPath& id)
+void MayaHydraDelegateCtx::RemoveSprim(const TfToken& typeId, const SdfPath& id)
 {
     GetRenderIndex().RemoveSprim(typeId, id);
 }
 
-void HdMayaDelegateCtx::RemoveInstancer(const SdfPath& id) { GetRenderIndex().RemoveInstancer(id); }
+void MayaHydraDelegateCtx::RemoveInstancer(const SdfPath& id)
+{
+    GetRenderIndex().RemoveInstancer(id);
+}
 
-SdfPath HdMayaDelegateCtx::GetPrimPath(const MDagPath& dg, bool isSprim)
+SdfPath MayaHydraDelegateCtx::GetPrimPath(const MDagPath& dg, bool isSprim)
 {
     if (isSprim) {
         return _GetPrimPath(_sprimPath, dg);
@@ -120,9 +168,24 @@ SdfPath HdMayaDelegateCtx::GetPrimPath(const MDagPath& dg, bool isSprim)
     }
 }
 
-SdfPath HdMayaDelegateCtx::GetMaterialPath(const MObject& obj)
+SdfPath MayaHydraDelegateCtx::GetRenderItemPrimPath(const MRenderItem& ri)
+{
+    return _GetRenderItemPrimPath(_rprimPath, ri);
+}
+
+SdfPath MayaHydraDelegateCtx::GetRenderItemShaderPrimPath(const MRenderItem& ri)
+{
+    return _GetRenderItemShaderPrimPath(_rprimPath, ri);
+}
+
+SdfPath MayaHydraDelegateCtx::GetMaterialPath(const MObject& obj)
 {
     return _GetMaterialPath(_materialPath, obj);
+}
+
+SdfPath MayaHydraDelegateCtx::GetSolidPrimsRootPath() const
+{
+    return _rprimPath.AppendPath(solidPath);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

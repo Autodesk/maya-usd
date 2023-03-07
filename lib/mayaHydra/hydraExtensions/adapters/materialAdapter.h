@@ -13,59 +13,64 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef HDMAYA_MATERIAL_ADAPTER_H
-#define HDMAYA_MATERIAL_ADAPTER_H
+#ifndef MAYAHYDRALIB_MATERIAL_ADAPTER_H
+#define MAYAHYDRALIB_MATERIAL_ADAPTER_H
 
-#include <hdMaya/adapters/adapter.h>
+#include <mayaHydraLib/adapters/adapter.h>
 
 #include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaMaterialAdapter : public HdMayaAdapter
+/**
+ * \brief MayaHydraMaterialAdapter is used to handle the translation from a Maya material to hydra.
+ * If you are looking for how we translate the Maya shaders to hydra and how we do the parameters
+ * mapping, please see MayaHydraMaterialNetworkConverter::initialize().
+ */
+class MayaHydraMaterialAdapter : public MayaHydraAdapter
 {
 public:
-    HDMAYA_API
-    HdMayaMaterialAdapter(const SdfPath& id, HdMayaDelegateCtx* delegate, const MObject& node);
-    HDMAYA_API
-    virtual ~HdMayaMaterialAdapter() = default;
+    MAYAHYDRALIB_API
+    MayaHydraMaterialAdapter(
+        const SdfPath&        id,
+        MayaHydraDelegateCtx* delegate,
+        const MObject&        node);
+    MAYAHYDRALIB_API
+    virtual ~MayaHydraMaterialAdapter() = default;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     bool IsSupported() const override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     bool HasType(const TfToken& typeId) const override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void MarkDirty(HdDirtyBits dirtyBits) override;
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void RemovePrim() override;
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void Populate() override;
 
-#if PXR_VERSION < 2011
+    MAYAHYDRALIB_API
+    void EnableXRayShadingMode(bool enable);
 
-    HDMAYA_API
-    virtual HdTextureResourceSharedPtr GetTextureResource(const SdfPath& textureShaderId);
-    HDMAYA_API
-    virtual HdTextureResource::ID GetTextureResourceID(const TfToken& paramName);
-
-#endif // PXR_VERSION < 2011
-
-    HDMAYA_API
+    MAYAHYDRALIB_API
     virtual VtValue GetMaterialResource();
 
     /// \brief Updates the material tag for the material.
-    ///
     /// \return True if the material tag have changed, false otherwise.
     virtual bool UpdateMaterialTag() { return false; }
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     static VtValue GetPreviewMaterialResource(const SdfPath& materialID);
+
+protected:
+    /// Are we in viewport XRay shading mode ?
+    bool _enableXRayShadingMode = false;
 };
 
-using HdMayaMaterialAdapterPtr = std::shared_ptr<HdMayaMaterialAdapter>;
+using MayaHydraMaterialAdapterPtr = std::shared_ptr<MayaHydraMaterialAdapter>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDMAYA_MATERIAL_ADAPTER_H
+#endif // MAYAHYDRALIB_MATERIAL_ADAPTER_H

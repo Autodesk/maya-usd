@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef HDMAYA_DELEGATE_REGISTRY_H
-#define HDMAYA_DELEGATE_REGISTRY_H
+#ifndef MAYAHYDRALIB_DELEGATE_REGISTRY_H
+#define MAYAHYDRALIB_DELEGATE_REGISTRY_H
 
-#include <hdMaya/delegates/delegate.h>
+#include <mayaHydraLib/delegates/delegate.h>
 
 #include <pxr/base/tf/singleton.h>
 #include <pxr/pxr.h>
@@ -27,38 +27,41 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaDelegateRegistry : public TfSingleton<HdMayaDelegateRegistry>
+/**
+ * \brief MayaHydraDelegateRegistry is a singleton class to handle hydra delegates
+ */
+class MayaHydraDelegateRegistry : public TfSingleton<MayaHydraDelegateRegistry>
 {
-    friend class TfSingleton<HdMayaDelegateRegistry>;
-    HDMAYA_API
-    HdMayaDelegateRegistry() = default;
+    friend class TfSingleton<MayaHydraDelegateRegistry>;
+    MAYAHYDRALIB_API
+    MayaHydraDelegateRegistry() = default;
 
 public:
-    // function creates and returns a pointer to a HdMayaDelegate - may return
-    // a nullptr indicate failure, or that the delegate is currently disabled
-    using DelegateCreator = std::function<HdMayaDelegatePtr(const HdMayaDelegate::InitData&)>;
+    /// function creates and returns a pointer to a MayaHydraDelegate - may return
+    /// a nullptr indicate failure, or that the delegate is currently disabled
+    using DelegateCreator = std::function<MayaHydraDelegatePtr(const MayaHydraDelegate::InitData&)>;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     static void RegisterDelegate(const TfToken& name, DelegateCreator creator);
-    HDMAYA_API
+    MAYAHYDRALIB_API
     static std::vector<TfToken> GetDelegateNames();
-    HDMAYA_API
+    MAYAHYDRALIB_API
     static std::vector<DelegateCreator> GetDelegateCreators();
 
-    // Signal that some delegate types are now either valid or invalid.
-    // ie, say some delegate type is only useful / works when a certain maya
-    // plugin is loaded - you would call this every time that plugin was loaded
-    // or unloaded.
-    HDMAYA_API
+    /// Signal that some delegate types are now either valid or invalid.
+    /// ie, say some delegate type is only useful / works when a certain maya
+    /// plug-in is loaded - you would call this every time that plugin was loaded
+    /// or unloaded.
+    MAYAHYDRALIB_API
     static void SignalDelegatesChanged();
 
-    // Find all HdMayaDelegate plugins, and load them all
-    HDMAYA_API
+    /// Find all MayaHydraDelegate plug-ins, and load them all
+    MAYAHYDRALIB_API
     static void LoadAllDelegates();
 
     using DelegatesChangedSignal = std::function<void()>;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     static void InstallDelegatesChangedSignal(DelegatesChangedSignal signal);
 
 private:
@@ -70,4 +73,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDMAYA_DELEGATE_REGISTRY_H
+#endif // MAYAHYDRALIB_DELEGATE_REGISTRY_H

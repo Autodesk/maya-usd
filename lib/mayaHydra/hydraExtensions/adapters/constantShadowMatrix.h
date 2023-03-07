@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef HDMAYA_SHADOW_MATRIX_H
-#define HDMAYA_SHADOW_MATRIX_H
+#ifndef MAYAHYDRALIB_SHADOW_MATRIX_H
+#define MAYAHYDRALIB_SHADOW_MATRIX_H
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/imaging/hdx/shadowMatrixComputation.h>
@@ -24,36 +24,28 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaConstantShadowMatrix : public HdxShadowMatrixComputation
+/**
+ * \brief MayaHydraConstantShadowMatrix is used to provide a constant shadow matrix for hydra.
+ */
+class MayaHydraConstantShadowMatrix : public HdxShadowMatrixComputation
 {
 public:
-    explicit HdMayaConstantShadowMatrix(const GfMatrix4d& mat)
+    explicit MayaHydraConstantShadowMatrix(const GfMatrix4d& mat)
         : _shadowMatrix(mat)
     {
     }
 
-#if HDX_API_VERSION >= 6
-
-#if HDX_API_VERSION >= 8
     inline std::vector<GfMatrix4d>
     Compute(const CameraUtilFraming& framing, CameraUtilConformWindowPolicy policy) override
     {
         return { _shadowMatrix };
     }
-#endif
 
     inline std::vector<GfMatrix4d>
     Compute(const GfVec4f& viewport, CameraUtilConformWindowPolicy policy) override
     {
         return { _shadowMatrix };
     }
-#else
-    inline GfMatrix4d
-    Compute(const GfVec4f& viewport, CameraUtilConformWindowPolicy policy) override
-    {
-        return _shadowMatrix;
-    }
-#endif
 
 private:
     GfMatrix4d _shadowMatrix;
@@ -61,4 +53,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDMAYA_SHADOW_MATRIX_H
+#endif // MAYAHYDRALIB_SHADOW_MATRIX_H

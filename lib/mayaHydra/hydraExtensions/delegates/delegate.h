@@ -13,11 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef HDMAYA_DELEGATE_H
-#define HDMAYA_DELEGATE_H
+#ifndef MAYAHYDRALIB_DELEGATE_H
+#define MAYAHYDRALIB_DELEGATE_H
 
-#include <hdMaya/api.h>
-#include <hdMaya/delegates/params.h>
+#include <mayaHydraLib/api.h>
+#include <mayaHydraLib/delegates/params.h>
 
 #include <pxr/base/arch/hints.h>
 #include <pxr/base/gf/interval.h>
@@ -39,15 +39,22 @@
 
 #include <memory>
 
+/// UFE stands for Universal Front End : the goal of the Universal Front End is to create a
+/// DCC-agnostic component that will allow a DCC to browse and edit data in multiple data models.
+/// This will allow the DCC to edit "pipeline data", however that pipeline data is defined.
 #if WANT_UFE_BUILD
 #include <ufe/selection.h>
 #endif // WANT_UFE_BUILD
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaDelegate
+/**
+ * \brief MayaHydraDelegate is the base class for delegate classes.
+ */
+class MayaHydraDelegate
 {
 public:
+    /// Structure passed to initialize this class
     struct InitData
     {
         inline InitData(
@@ -77,18 +84,18 @@ public:
         bool               isHdSt;
     };
 
-    HDMAYA_API
-    HdMayaDelegate(const InitData& initData);
-    HDMAYA_API
-    virtual ~HdMayaDelegate() = default;
+    MAYAHYDRALIB_API
+    MayaHydraDelegate(const InitData& initData);
+    MAYAHYDRALIB_API
+    virtual ~MayaHydraDelegate() = default;
 
     virtual void Populate() = 0;
     virtual void PreFrame(const MHWRender::MDrawContext& context) { }
     virtual void PostFrame() { }
 
-    HDMAYA_API
-    virtual void        SetParams(const HdMayaParams& params);
-    const HdMayaParams& GetParams() const { return _params; }
+    MAYAHYDRALIB_API
+    virtual void           SetParams(const MayaHydraParams& params);
+    const MayaHydraParams& GetParams() const { return _params; }
 
     const SdfPath& GetMayaDelegateID() { return _mayaDelegateID; }
     TfToken        GetName() { return _name; }
@@ -112,7 +119,6 @@ public:
     virtual bool SupportsUfeSelection() { return false; }
 #endif // WANT_UFE_BUILD
 
-#if MAYA_API_VERSION >= 20210000
     virtual void PopulateSelectionList(
         const HdxPickHitVector&          hits,
         const MHWRender::MSelectionInfo& selectInfo,
@@ -120,7 +126,6 @@ public:
         MPointArray&                     worldSpaceHitPts)
     {
     }
-#endif
 
     void SetLightsEnabled(const bool enabled) { _lightsEnabled = enabled; }
     bool GetLightsEnabled() { return _lightsEnabled; }
@@ -131,12 +136,12 @@ public:
     /// Calls that mirror UsdImagingDelegate
 
     /// Setup for the shutter open and close to be used for motion sampling.
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void SetCameraForSampling(SdfPath const& id);
 
     /// Returns the current interval that will be used when using the
     /// sample* API in the scene delegate.
-    HDMAYA_API
+    MAYAHYDRALIB_API
     GfInterval GetCurrentTimeSamplingInterval() const;
 
     /// Common function to return templated sample types
@@ -182,14 +187,14 @@ public:
     }
 
 private:
-    HdMayaParams _params;
+    MayaHydraParams _params;
 
     // Note that because there may not be a 1-to-1 relationship between
-    // a HdMayaDelegate and a HdSceneDelegate, this may be different than
-    // "the" scene delegate id.  In the case of HdMayaSceneDelegate,
+    // a MayaHydraDelegate and a HdSceneDelegate, this may be different than
+    // "the" scene delegate id.  In the case of MayaHydraSceneDelegate,
     // which inherits from HdSceneDelegate, they are the same; but for, ie,
-    // HdMayaALProxyDelegate, for which there are multiple HdSceneDelegates
-    // for each HdMayaDelegate, the _mayaDelegateID is different from each
+    // MayaHydraALProxyDelegate, for which there are multiple HdSceneDelegates
+    // for each MayaHydraDelegate, the _mayaDelegateID is different from each
     // HdSceneDelegate's id.
     const SdfPath      _mayaDelegateID;
     SdfPath            _cameraPathForSampling;
@@ -200,8 +205,8 @@ private:
     bool               _lightsEnabled = true;
 };
 
-using HdMayaDelegatePtr = std::shared_ptr<HdMayaDelegate>;
+using MayaHydraDelegatePtr = std::shared_ptr<MayaHydraDelegate>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDMAYA_DELEGATE_H
+#endif // MAYAHYDRALIB_DELEGATE_H

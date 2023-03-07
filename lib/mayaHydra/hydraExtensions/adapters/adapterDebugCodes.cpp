@@ -19,49 +19,53 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// Some variables to enable debug printing information
+
 TF_REGISTRY_FUNCTION(TfDebug)
 {
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_ADAPTER_CALLBACKS, "Print information adding and removal of adapter callbacks.");
+        MAYAHYDRALIB_ADAPTER_CALLBACKS,
+        "Print information adding and removal of adapter callbacks.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_ADAPTER_CURVE_PLUG_DIRTY,
+        MAYAHYDRALIB_ADAPTER_CURVE_PLUG_DIRTY,
         "Print information when a nurbs curve prim is dirtied due to a plug "
         "being dirtied.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_ADAPTER_CURVE_UNHANDLED_PLUG_DIRTY,
+        MAYAHYDRALIB_ADAPTER_CURVE_UNHANDLED_PLUG_DIRTY,
         "Print information when a nurbs curve prim is NOT dirtied, even though "
         "a plug was dirtied.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_ADAPTER_DAG_HIERARCHY, "Print information related to dag hierarchy changes.");
+        MAYAHYDRALIB_ADAPTER_DAG_HIERARCHY, "Print information related to dag hierarchy changes.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_ADAPTER_DAG_PLUG_DIRTY, "Print information about the dag node plug dirtying.");
+        MAYAHYDRALIB_ADAPTER_DAG_PLUG_DIRTY, "Print information about the dag node plug dirtying.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_ADAPTER_GET, "Print information about 'Get' calls to the adapter.");
+        MAYAHYDRALIB_ADAPTER_GET, "Print information about 'Get' calls to the adapter.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_ADAPTER_GET_LIGHT_PARAM_VALUE,
+        MAYAHYDRALIB_ADAPTER_GET_LIGHT_PARAM_VALUE,
         "Print information about 'LightParamValue' "
         "calls to the light adapters.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_ADAPTER_IMAGEPLANES, "Print information about drawing image planes.");
+        MAYAHYDRALIB_ADAPTER_IMAGEPLANES, "Print information about drawing image planes.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_ADAPTER_LIGHT_SHADOWS, "Print information about shadow rendering.");
+        MAYAHYDRALIB_ADAPTER_LIGHT_SHADOWS, "Print information about shadow rendering.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_ADAPTER_MATERIALS, "Print information about converting materials.");
+        MAYAHYDRALIB_ADAPTER_MATERIALS, "Print information about converting materials.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_ADAPTER_MESH_PLUG_DIRTY, "Print information about the mesh plug dirtying handled.");
+        MAYAHYDRALIB_ADAPTER_MESH_PLUG_DIRTY,
+        "Print information about the mesh plug dirtying handled.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_ADAPTER_MESH_UNHANDLED_PLUG_DIRTY,
+        MAYAHYDRALIB_ADAPTER_MESH_UNHANDLED_PLUG_DIRTY,
         "Print information about unhandled mesh plug dirtying.");
 }
 

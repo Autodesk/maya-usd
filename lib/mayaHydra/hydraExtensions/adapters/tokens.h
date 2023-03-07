@@ -13,18 +13,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef HDMAYA_ADAPTER_TOKENS_H
-#define HDMAYA_ADAPTER_TOKENS_H
+#ifndef MAYAHYDRALIB_ADAPTER_TOKENS_H
+#define MAYAHYDRALIB_ADAPTER_TOKENS_H
 
-#include <hdMaya/api.h>
+#include <mayaHydraLib/api.h>
 
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/**
+ * \brief MayaHydraAdapterTokens contains all the hydra tokens used by this plug-in.
+ */
+
 // clang-format off
-#define HDMAYA_ADAPTER_TOKENS                 \
+#define MAYAHYDRALIB_ADAPTER_TOKENS           \
     (roughness)                               \
     (clearcoat)                               \
     (clearcoatRoughness)                      \
@@ -72,11 +76,17 @@ PXR_NAMESPACE_OPEN_SCOPE
     (result)                                  \
     (eccentricity)                            \
     (usdPreviewSurface)                       \
-    (pxrUsdPreviewSurface)
+    (pxrUsdPreviewSurface)                    \
+    (MayaHydraLambertShader)                  \
+    (MayaHydraPhongShader)                    \
+    (MayaHydraBlinnShader)                    \
+	(MayaHydraStippleShader)                  \
+    (MayaHydraSolidColorShader)
+
 // clang-format on
 
-TF_DECLARE_PUBLIC_TOKENS(HdMayaAdapterTokens, HDMAYA_API, HDMAYA_ADAPTER_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(MayaHydraAdapterTokens, MAYAHYDRALIB_API, MAYAHYDRALIB_ADAPTER_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDMAYA_ADAPTER_TOKENS_H
+#endif // MAYAHYDRALIB_ADAPTER_TOKENS_H

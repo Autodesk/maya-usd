@@ -19,15 +19,24 @@
 #include "renderOverride.h"
 #include "utils.h"
 
-#include <hdMaya/delegates/delegateRegistry.h>
+#include <mayaHydraLib/delegates/delegateRegistry.h>
 
 #include <maya/MArgDatabase.h>
 #include <maya/MGlobal.h>
 #include <maya/MSyntax.h>
 
+#if defined(MAYAHYDRA_CUT_ID)
+#define STRINGIFY(x)  #x
+#define TOSTRING(x)   STRINGIFY(x)
+#define PLUGIN_CUT_ID TOSTRING(MAYAHYDRA_CUT_ID)
+#else
+#pragma message("MAYAHYDRA_CUT_ID is not defined")
+#define PLUGIN_CUT_ID "Maya-Hydra unknown cut"
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-const MString MtohViewCmd::name("mtoh");
+const MString MtohViewCmd::name("mayaHydra");
 
 namespace {
 
@@ -64,6 +73,11 @@ constexpr auto _visibleOnlyLong = "-visibleOnly";
 constexpr auto _sceneDelegateId = "-sid";
 constexpr auto _sceneDelegateIdLong = "-sceneDelegateId";
 
+// MAYA-127221: We will need to replace this with a flag inside of the pluginInfo command in an
+// upcoming release.
+constexpr auto _pluginInfoCutId = "-cid";
+constexpr auto _pluginInfoCutIdLong = "-pluginInfoCut";
+
 constexpr auto _rendererId = "-r";
 constexpr auto _rendererIdLong = "-renderer";
 
@@ -72,7 +86,7 @@ constexpr auto _userDefaultsIdLong = "-userDefaults";
 
 constexpr auto _helpText = R"HELP(
 Maya to Hydra utility function.
-Usage: mtoh [flags]
+Usage: mayaHydra [flags]
 -listDelegates/-ld : Returns the names of available scene delegates.
 -listRenderers/-lr : Returns the names of available render delegates.
 -listActiveRenderers/-lar : Returns the names of render delegates that are in
@@ -140,6 +154,8 @@ MSyntax MtohViewCmd::createSyntax()
 
     syntax.addFlag(_sceneDelegateId, _sceneDelegateIdLong, MSyntax::kString);
 
+    syntax.addFlag(_pluginInfoCutId, _pluginInfoCutIdLong);
+
     return syntax;
 }
 
@@ -157,8 +173,8 @@ MStatus MtohViewCmd::doIt(const MArgList& args)
         MString id;
         CHECK_MSTATUS_AND_RETURN_IT(db.getFlagArgument(_rendererId, 0, id));
 
-        // Passing 'mtoh' as the renderer adresses all renderers
-        if (id != "mtoh") {
+        // Passing 'mayaHydra' as the renderer adresses all renderers
+        if (id != "mayaHydra") {
             renderDelegateName = TfToken(id.asChar());
         }
     }
@@ -190,7 +206,7 @@ MStatus MtohViewCmd::doIt(const MArgList& args)
         const auto dn = MtohGetRendererPluginDisplayName(renderDelegateName);
         setResult(MString(dn.c_str()));
     } else if (db.isFlagSet(_listDelegates)) {
-        for (const auto& delegate : HdMayaDelegateRegistry::GetDelegateNames()) {
+        for (const auto& delegate : MayaHydraDelegateRegistry::GetDelegateNames()) {
             appendToResult(delegate.GetText());
         }
         // Want to return an empty list, not None
@@ -252,6 +268,13 @@ MStatus MtohViewCmd::doIt(const MArgList& args)
         SdfPath delegateId = MtohRenderOverride::RendererSceneDelegateId(
             renderDelegateName, TfToken(sceneDelegateName.asChar()));
         setResult(MString(delegateId.GetText()));
+    } else if (db.isFlagSet(_pluginInfoCutId)) {
+#ifdef MAYAHYDRA_CUT_ID
+        setResult(MString(PLUGIN_CUT_ID));
+#else
+        MGlobal::displayError(MString("MayaHydra cut id is not available"));
+        return MS::kInvalidParameter;
+#endif
     }
     return MS::kSuccess;
 }

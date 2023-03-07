@@ -15,9 +15,9 @@
 //
 #include "adapter.h"
 
-#include <hdMaya/adapters/adapterDebugCodes.h>
-#include <hdMaya/adapters/materialNetworkConverter.h>
-#include <hdMaya/adapters/mayaAttrs.h>
+#include <mayaHydraLib/adapters/adapterDebugCodes.h>
+#include <mayaHydraLib/adapters/materialNetworkConverter.h>
+#include <mayaHydraLib/adapters/mayaAttrs.h>
 
 #include <pxr/base/tf/type.h>
 
@@ -25,15 +25,15 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION(TfType) { TfType::Define<HdMayaAdapter>(); }
+TF_REGISTRY_FUNCTION(TfType) { TfType::Define<MayaHydraAdapter>(); }
 
 namespace {
 
 void _preRemoval(MObject& node, void* clientData)
 {
     TF_UNUSED(node);
-    auto* adapter = reinterpret_cast<HdMayaAdapter*>(clientData);
-    TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+    auto* adapter = reinterpret_cast<MayaHydraAdapter*>(clientData);
+    TF_DEBUG(MAYAHYDRALIB_ADAPTER_CALLBACKS)
         .Msg("Pre-removal callback triggered for prim (%s)\n", adapter->GetID().GetText());
     adapter->GetDelegate()->RemoveAdapter(adapter->GetID());
 }
@@ -42,8 +42,8 @@ void _nameChanged(MObject& node, const MString& str, void* clientData)
 {
     TF_UNUSED(node);
     TF_UNUSED(str);
-    auto* adapter = reinterpret_cast<HdMayaAdapter*>(clientData);
-    TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+    auto* adapter = reinterpret_cast<MayaHydraAdapter*>(clientData);
+    TF_DEBUG(MAYAHYDRALIB_ADAPTER_CALLBACKS)
         .Msg("Name-changed callback triggered for prim (%s)\n", adapter->GetID().GetText());
     adapter->RemoveCallbacks();
     adapter->GetDelegate()->RecreateAdapterOnIdle(adapter->GetID(), adapter->GetNode());
@@ -51,24 +51,29 @@ void _nameChanged(MObject& node, const MString& str, void* clientData)
 
 } // namespace
 
-HdMayaAdapter::HdMayaAdapter(const MObject& node, const SdfPath& id, HdMayaDelegateCtx* delegate)
+// MayaHydraAdapter is the base class for all adapters. An adapter is used to translate from Maya
+// data to hydra data.
+MayaHydraAdapter::MayaHydraAdapter(
+    const MObject&        node,
+    const SdfPath&        id,
+    MayaHydraDelegateCtx* delegate)
     : _id(id)
     , _delegate(delegate)
     , _node(node)
 {
 }
 
-HdMayaAdapter::~HdMayaAdapter() { RemoveCallbacks(); }
+MayaHydraAdapter::~MayaHydraAdapter() { RemoveCallbacks(); }
 
-void HdMayaAdapter::AddCallback(MCallbackId callbackId) { _callbacks.push_back(callbackId); }
+void MayaHydraAdapter::AddCallback(MCallbackId callbackId) { _callbacks.push_back(callbackId); }
 
-void HdMayaAdapter::RemoveCallbacks()
+void MayaHydraAdapter::RemoveCallbacks()
 {
     if (_callbacks.empty()) {
         return;
     }
 
-    TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+    TF_DEBUG(MAYAHYDRALIB_ADAPTER_CALLBACKS)
         .Msg("Removing all adapter callbacks for prim (%s).\n", GetID().GetText());
     for (auto c : _callbacks) {
         MMessage::removeCallback(c);
@@ -76,22 +81,22 @@ void HdMayaAdapter::RemoveCallbacks()
     std::vector<MCallbackId>().swap(_callbacks);
 }
 
-VtValue HdMayaAdapter::Get(const TfToken& key)
+VtValue MayaHydraAdapter::Get(const TfToken& key)
 {
     TF_UNUSED(key);
     return {};
 };
 
-bool HdMayaAdapter::HasType(const TfToken& typeId) const
+bool MayaHydraAdapter::HasType(const TfToken& typeId) const
 {
     TF_UNUSED(typeId);
     return false;
 }
 
-void HdMayaAdapter::CreateCallbacks()
+void MayaHydraAdapter::CreateCallbacks()
 {
     if (_node != MObject::kNullObj) {
-        TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+        TF_DEBUG(MAYAHYDRALIB_ADAPTER_CALLBACKS)
             .Msg("Creating generic adapter callbacks for prim (%s).\n", GetID().GetText());
 
         MStatus status;
@@ -106,11 +111,11 @@ void HdMayaAdapter::CreateCallbacks()
     }
 }
 
-MStatus HdMayaAdapter::Initialize()
+MStatus MayaHydraAdapter::Initialize()
 {
     auto status = MayaAttrs::initialize();
     if (status) {
-        HdMayaMaterialNetworkConverter::initialize();
+        MayaHydraMaterialNetworkConverter::initialize();
     }
     return status;
 }

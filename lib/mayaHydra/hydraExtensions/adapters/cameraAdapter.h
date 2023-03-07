@@ -13,64 +13,67 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef HDMAYA_CAMERA_ADAPTER_H
-#define HDMAYA_CAMERA_ADAPTER_H
+#ifndef MAYAHYDRALIB_CAMERA_ADAPTER_H
+#define MAYAHYDRALIB_CAMERA_ADAPTER_H
 
-#include <hdMaya/adapters/dagAdapter.h>
-#include <hdMaya/adapters/shapeAdapter.h>
+#include <mayaHydraLib/adapters/dagAdapter.h>
+#include <mayaHydraLib/adapters/shapeAdapter.h>
 
 #include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaCameraAdapter : public HdMayaShapeAdapter
+/**
+ * \brief MayaHydraCameraAdapter is used to handle the translation from a Maya camera to hydra.
+ */
+class MayaHydraCameraAdapter : public MayaHydraShapeAdapter
 {
 public:
-    HDMAYA_API
-    HdMayaCameraAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag);
+    MAYAHYDRALIB_API
+    MayaHydraCameraAdapter(MayaHydraDelegateCtx* delegate, const MDagPath& dag);
 
-    HDMAYA_API
-    virtual ~HdMayaCameraAdapter();
+    MAYAHYDRALIB_API
+    virtual ~MayaHydraCameraAdapter();
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     bool IsSupported() const override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void MarkDirty(HdDirtyBits dirtyBits) override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void Populate() override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void RemovePrim() override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     bool HasType(const TfToken& typeId) const override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     VtValue Get(const TfToken& key) override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     VtValue GetCameraParamValue(const TfToken& paramName);
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void CreateCallbacks() override;
 
-    HDMAYA_API
+    MAYAHYDRALIB_API
     void SetViewport(const GfVec4d& viewport);
 
 protected:
     static TfToken CameraType();
 
-    // The use of a pointer here helps us track whether this camera is (or has ever been)
-    // the active viewport camera.  NOTE: it's possile that _viewport will be out of date
-    // after switching to a new camera and resizing the viewport, but _viewport will eventually
-    // be re-synched before any output/pixels of the stale size is requested.
+    /// The use of a pointer here helps us track whether this camera is (or has ever been)
+    /// the active viewport camera.  NOTE: it's possible that _viewport will be out of date
+    /// after switching to a new camera and resizing the viewport, but _viewport will eventually
+    /// be re-synched before any output/pixels of the stale size is requested.
     std::unique_ptr<GfVec4d> _viewport;
 };
 
-using HdMayaCameraAdapterPtr = std::shared_ptr<HdMayaCameraAdapter>;
+using MayaHydraCameraAdapterPtr = std::shared_ptr<MayaHydraCameraAdapter>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDMAYA_CAMERA_ADAPTER_H
+#endif // MAYAHYDRALIB_CAMERA_ADAPTER_H

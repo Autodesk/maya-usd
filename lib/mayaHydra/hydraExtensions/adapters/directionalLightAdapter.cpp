@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <hdMaya/adapters/adapterDebugCodes.h>
-#include <hdMaya/adapters/adapterRegistry.h>
-#include <hdMaya/adapters/lightAdapter.h>
-#include <hdMaya/adapters/mayaAttrs.h>
+#include <mayaHydraLib/adapters/adapterDebugCodes.h>
+#include <mayaHydraLib/adapters/adapterRegistry.h>
+#include <mayaHydraLib/adapters/lightAdapter.h>
+#include <mayaHydraLib/adapters/mayaAttrs.h>
 
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/light.h>
@@ -29,11 +29,15 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaDirectionalLightAdapter : public HdMayaLightAdapter
+/**
+ * \brief MayaHydraDirectionalLightAdapter is used to handle the translation from a Maya directional
+ * light to hydra.
+ */
+class MayaHydraDirectionalLightAdapter : public MayaHydraLightAdapter
 {
 public:
-    HdMayaDirectionalLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
-        : HdMayaLightAdapter(delegate, dag)
+    MayaHydraDirectionalLightAdapter(MayaHydraDelegateCtx* delegate, const MDagPath& dag)
+        : MayaHydraLightAdapter(delegate, dag)
     {
     }
 
@@ -57,9 +61,9 @@ public:
 
     VtValue Get(const TfToken& key) override
     {
-        TF_DEBUG(HDMAYA_ADAPTER_GET)
+        TF_DEBUG(MAYAHYDRALIB_ADAPTER_GET)
             .Msg(
-                "Called HdMayaSpotLightAdapter::Get(%s) - %s\n",
+                "Called MayaHydraDirectionalLightAdapter::Get(%s) - %s\n",
                 key.GetText(),
                 GetDagPath().partialPathName().asChar());
 
@@ -77,7 +81,7 @@ public:
             return VtValue(shadowParams);
         }
 
-        return HdMayaLightAdapter::Get(key);
+        return MayaHydraLightAdapter::Get(key);
     }
 
     VtValue GetLightParamValue(const TfToken& paramName) override
@@ -91,22 +95,22 @@ public:
             return VtValue(
                 lightNode.findPlug(MayaAttrs::directionalLight::lightAngle, true).asFloat());
         } else {
-            return HdMayaLightAdapter::GetLightParamValue(paramName);
+            return MayaHydraLightAdapter::GetLightParamValue(paramName);
         }
     }
 };
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<HdMayaDirectionalLightAdapter, TfType::Bases<HdMayaLightAdapter>>();
+    TfType::Define<MayaHydraDirectionalLightAdapter, TfType::Bases<MayaHydraLightAdapter>>();
 }
 
-TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, pointLight)
+TF_REGISTRY_FUNCTION_WITH_TAG(MayaHydraAdapterRegistry, pointLight)
 {
-    HdMayaAdapterRegistry::RegisterLightAdapter(
+    MayaHydraAdapterRegistry::RegisterLightAdapter(
         TfToken("directionalLight"),
-        [](HdMayaDelegateCtx* delegate, const MDagPath& dag) -> HdMayaLightAdapterPtr {
-            return HdMayaLightAdapterPtr(new HdMayaDirectionalLightAdapter(delegate, dag));
+        [](MayaHydraDelegateCtx* delegate, const MDagPath& dag) -> MayaHydraLightAdapterPtr {
+            return MayaHydraLightAdapterPtr(new MayaHydraDirectionalLightAdapter(delegate, dag));
         });
 }
 

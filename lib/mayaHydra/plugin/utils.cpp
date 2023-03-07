@@ -20,9 +20,6 @@
 // to recognize that "utils.h" is the related header.
 // clang-format off
 #include <pxr/pxr.h>
-#if PXR_VERSION < 2102
-#include <pxr/imaging/glf/glew.h>
-#endif
 // clang-format on
 
 #include "utils.h"
@@ -34,6 +31,7 @@
 #include <pxr/imaging/hd/rendererPlugin.h>
 #include <pxr/imaging/hd/rendererPluginRegistry.h>
 #include <pxr/usdImaging/usdImagingGL/engine.h>
+
 #include <maya/MGlobal.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -64,9 +62,6 @@ MtohInitializeRenderPlugins()
 
             // XXX: As of 22.02, this needs to be called for Storm
             if (pluginDesc.id == MtohTokens->HdStormRendererPlugin) {
-#if PXR_VERSION < 2102
-                GlfGlewInit();
-#endif
                 GlfContextCaps::InitInstance();
             }
 
@@ -87,12 +82,12 @@ MtohInitializeRenderPlugins()
             // Null it out to make any possible usage later obv, wrong!
             delegate = nullptr;
 
-            std::shared_ptr<UsdImagingGLEngine> _engine;
+            std::shared_ptr<pxr::UsdImagingGLEngine> _engine;
             store.first.emplace_back(
                 renderer,
                 TfToken(TfStringPrintf("%s%s", MTOH_RENDER_OVERRIDE_PREFIX, renderer.GetText())),
                 TfToken(TfStringPrintf(
-                    "(Mtoh Experimental) Hydra %s",
+                    "(Technology Preview) Hydra %s",
                     _engine->GetRendererDisplayName(pluginDesc.id).c_str())));
             MtohRenderGlobals::BuildOptionsMenu(store.first.back(), rendererSettingDescriptors);
         }

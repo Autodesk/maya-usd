@@ -13,15 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <hdMaya/adapters/tokens.h>
+#include <mayaHydraLib/adapters/tokens.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 // clang-format off
 TF_DEFINE_PUBLIC_TOKENS(
-    HdMayaAdapterTokens,
+    MayaHydraAdapterTokens,
 
-    HDMAYA_ADAPTER_TOKENS
+    MAYAHYDRALIB_ADAPTER_TOKENS
 );
 // clang-format on
 

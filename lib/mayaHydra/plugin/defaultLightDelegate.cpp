@@ -15,7 +15,7 @@
 //
 #include "defaultLightDelegate.h"
 
-#include <hdMaya/delegates/delegateDebugCodes.h>
+#include <mayaHydraLib/delegates/delegateDebugCodes.h>
 
 #include <pxr/base/gf/rotation.h>
 #include <pxr/base/gf/transform.h>
@@ -25,6 +25,19 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace {
+bool AreLightsParamsWeUseDifferent(const GlfSimpleLight& light1, const GlfSimpleLight& light2)
+{
+    // We only update 3 parameters in the default light : position, diffuse and specular. We don't
+    // use the primitive's transform.
+    return (light1.GetPosition() != light2.GetPosition())
+        || // Position (in which we actually store a direction, updated when rotating the view for
+           // example)
+        (light1.GetDiffuse() != light2.GetDiffuse())
+        || (light1.GetSpecular() != light2.GetSpecular());
+}
+} // namespace
+
 // clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -33,27 +46,28 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 // clang-format on
 
+// MtohDefaultLightDelegate is a separate Hydra custom scene delegate to handle the default lighting
+// from Maya. We use another Hydra custom scene delegate to handle the other parts of the Maya
+// scene. See sceneDelegate.h in the mayaHydraLib project. If you want to know how to add a custom
+// scene index to this plug-in, then please see the registration.cpp file in the mayaHydraLib
+// project.
 MtohDefaultLightDelegate::MtohDefaultLightDelegate(const InitData& initData)
     : HdSceneDelegate(initData.renderIndex, initData.delegateID)
-    , HdMayaDelegate(initData)
+    , MayaHydraDelegate(initData)
     , _lightPath(initData.delegateID.AppendChild(_tokens->DefaultMayaLight))
 {
 }
 
-MtohDefaultLightDelegate::~MtohDefaultLightDelegate()
-{
-    if (ARCH_UNLIKELY(!_isSupported)) {
-        return;
-    }
-    if (IsHdSt()) {
-        GetRenderIndex().RemoveSprim(HdPrimTypeTokens->simpleLight, _lightPath);
-    } else {
-        GetRenderIndex().RemoveSprim(HdPrimTypeTokens->distantLight, _lightPath);
-    }
-}
+MtohDefaultLightDelegate::~MtohDefaultLightDelegate() { RemovePrim(); }
 
 void MtohDefaultLightDelegate::Populate()
 {
+    if (_isPopulated) {
+        return;
+    }
+    if (!_isLightingOn) {
+        return;
+    }
     _isSupported = IsHdSt() ? GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)
                             : GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->distantLight);
     if (ARCH_UNLIKELY(!_isSupported)) {
@@ -65,17 +79,44 @@ void MtohDefaultLightDelegate::Populate()
         GetRenderIndex().InsertSprim(HdPrimTypeTokens->distantLight, this, _lightPath);
     }
     GetRenderIndex().GetChangeTracker().SprimInserted(_lightPath, HdLight::AllDirty);
+    _isPopulated = true;
+}
+
+void MtohDefaultLightDelegate::RemovePrim()
+{
+    if (!_isPopulated) {
+        return;
+    }
+    if (ARCH_UNLIKELY(!_isSupported)) {
+        return;
+    }
+    if (IsHdSt()) {
+        GetRenderIndex().RemoveSprim(HdPrimTypeTokens->simpleLight, _lightPath);
+    } else {
+        GetRenderIndex().RemoveSprim(HdPrimTypeTokens->distantLight, _lightPath);
+    }
+    _isPopulated = false;
 }
 
 void MtohDefaultLightDelegate::SetDefaultLight(const GlfSimpleLight& light)
 {
+    if (!_isPopulated) {
+        return;
+    }
     if (ARCH_UNLIKELY(!_isSupported)) {
         return;
     }
-    if (_light != light) {
-        _light = light;
-        GetRenderIndex().GetChangeTracker().MarkSprimDirty(
-            _lightPath, HdLight::DirtyParams | HdLight::DirtyTransform);
+
+    // We only update 3 parameters in the default light : position (in which we store a direction),
+    // diffuse and specular
+    // We don't never update the transform for the default light
+    const bool lightsParamsWeUseAreDifferent = AreLightsParamsWeUseDifferent(_light, light);
+    if (lightsParamsWeUseAreDifferent) {
+        // Update our light
+        _light.SetDiffuse(light.GetDiffuse());
+        _light.SetSpecular(light.GetSpecular());
+        _light.SetPosition(light.GetPosition());
+        GetRenderIndex().GetChangeTracker().MarkSprimDirty(_lightPath, HdLight::DirtyParams);
     }
 }
 
@@ -83,7 +124,7 @@ GfMatrix4d MtohDefaultLightDelegate::GetTransform(const SdfPath& id)
 {
     TF_UNUSED(id);
 
-    TF_DEBUG(HDMAYA_DELEGATE_GET_TRANSFORM)
+    TF_DEBUG(MAYAHYDRALIB_DELEGATE_GET_TRANSFORM)
         .Msg("MtohDefaultLightDelegate::GetTransform(%s)\n", id.GetText());
 
     // We have to rotate the distant to match the simple light's direction
@@ -103,18 +144,26 @@ VtValue MtohDefaultLightDelegate::Get(const SdfPath& id, const TfToken& key)
 {
     TF_UNUSED(id);
 
-    TF_DEBUG(HDMAYA_DELEGATE_GET)
+    TF_DEBUG(MAYAHYDRALIB_DELEGATE_GET)
         .Msg("MtohDefaultLightDelegate::Get(%s, %s)\n", id.GetText(), key.GetText());
 
     if (key == HdLightTokens->params) {
         return VtValue(_light);
     } else if (key == HdTokens->transform) {
-        // return VtValue(MtohDefaultLightDelegate::GetTransform(id));
-        return VtValue(GfMatrix4d(1.0));
+        return VtValue(GfMatrix4d(
+            1.0)); // We don't use the transform but use the position param of the GlfsimpleLight
         // Hydra might crash when this is an empty VtValue.
     } else if (key == HdLightTokens->shadowCollection) {
-        HdRprimCollection coll(HdTokens->geometry, HdReprSelector(HdReprTokens->refined));
-        return VtValue(coll);
+        if (!_solidPrimitivesRootPaths.empty()) {
+            // Exclude lines/points primitives from casting shadows by only taking the primitives
+            // whose root path belongs to _solidPrimitivesRootPaths
+            HdRprimCollection coll(HdTokens->geometry, HdReprSelector(HdReprTokens->refined));
+            coll.SetRootPaths(_solidPrimitivesRootPaths);
+            return VtValue(coll);
+        } else {
+            HdRprimCollection coll(HdTokens->geometry, HdReprSelector(HdReprTokens->refined));
+            return VtValue(coll);
+        }
     } else if (key == HdLightTokens->shadowParams) {
         HdxShadowParams shadowParams;
         shadowParams.enabled = false;
@@ -127,7 +176,7 @@ VtValue MtohDefaultLightDelegate::GetLightParamValue(const SdfPath& id, const Tf
 {
     TF_UNUSED(id);
 
-    TF_DEBUG(HDMAYA_DELEGATE_GET_LIGHT_PARAM_VALUE)
+    TF_DEBUG(MAYAHYDRALIB_DELEGATE_GET_LIGHT_PARAM_VALUE)
         .Msg(
             "MtohDefaultLightDelegate::GetLightParamValue(%s, %s)\n",
             id.GetText(),
@@ -161,9 +210,19 @@ VtValue MtohDefaultLightDelegate::GetLightParamValue(const SdfPath& id, const Tf
 bool MtohDefaultLightDelegate::GetVisible(const SdfPath& id)
 {
     TF_UNUSED(id);
-    TF_DEBUG(HDMAYA_DELEGATE_GET_VISIBLE)
+    TF_DEBUG(MAYAHYDRALIB_DELEGATE_GET_VISIBLE)
         .Msg("MtohDefaultLightDelegate::GetVisible(%s)\n", id.GetText());
     return true;
+}
+
+void MtohDefaultLightDelegate::SetLightingOn(bool isLightingOn)
+{
+    if (_isLightingOn != isLightingOn) {
+        _isLightingOn = isLightingOn;
+
+        RemovePrim();
+        Populate();
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
