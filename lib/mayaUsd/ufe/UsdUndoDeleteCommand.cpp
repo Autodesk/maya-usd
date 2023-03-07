@@ -99,10 +99,8 @@ void UsdUndoDeleteCommand::execute()
         UsdAttributes::removeAttributesConnections(_prim);
 #endif
 #endif
-        bool success = true;
-
         PrimSpecFunc deleteFunc
-            = [&success, stage](const UsdPrim& prim, const SdfPrimSpecHandle& primSpec) -> void {
+            = [stage](const UsdPrim& prim, const SdfPrimSpecHandle& primSpec) -> void {
             PXR_NS::UsdEditContext ctx(stage, primSpec->GetLayer());
             if (!stage->RemovePrim(prim.GetPath())) {
                 const std::string error
