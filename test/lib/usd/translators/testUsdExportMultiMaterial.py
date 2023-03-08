@@ -70,6 +70,21 @@ class testUsdExportMultiMaterial(unittest.TestCase):
         '''
         self.assertTrue(self._stage)
 
+    def testMaterialScopeResolution(self):
+        # New default value as per USD Asset WG:
+        self.assertEqual(mayaUsdLib.JobExportArgs.GetDefaultMaterialsScopeName(), "mtl")
+
+        # This override is low-priority
+        os.environ["MAYAUSD_MATERIALS_SCOPE_NAME"] = "MyMaterialScope"
+        self.assertEqual(mayaUsdLib.JobExportArgs.GetDefaultMaterialsScopeName(), "MyMaterialScope")
+
+        # The USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME override has higher priority, but is read
+        # at startup and can not be turned on/off for this test. It was used on all tests that
+        # relied on "Looks" being the default name instead of "mtl"
+
+        os.environ.pop("MAYAUSD_MATERIALS_SCOPE_NAME")
+        self.assertEqual(mayaUsdLib.JobExportArgs.GetDefaultMaterialsScopeName(), "mtl")
+
     def testExportedUsdShadeNodeTypes(self):
         '''
         Tests that all node ids are what we expect:
@@ -154,7 +169,8 @@ class testUsdExportMultiMaterial(unittest.TestCase):
         cmds.usdExport(mergeTransformAndShape=True,
             file=usd_path,
             shadingMode='useRegistry',
-            convertMaterialsTo=['MaterialX', 'UsdPreviewSurface'])
+            convertMaterialsTo=['MaterialX', 'UsdPreviewSurface'],
+            materialsScopeName='Looks')
 
         # We expect 2 primvar readers, and 2 st transforms:
         stage = Usd.Stage.Open(usd_path)

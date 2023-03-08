@@ -245,6 +245,8 @@ Ufe::Vector3d UsdTransform3dCommonAPI::rotatePivot() const
     return toUfe(pvt);
 }
 
+Ufe::Vector3d UsdTransform3dCommonAPI::scalePivot() const { return rotatePivot(); }
+
 Ufe::SetMatrix4dUndoableCommand::Ptr UsdTransform3dCommonAPI::setMatrixCmd(const Ufe::Matrix4d& m)
 {
     if (!isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))

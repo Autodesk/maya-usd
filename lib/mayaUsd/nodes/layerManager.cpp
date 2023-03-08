@@ -176,7 +176,8 @@ void convertAnonymousLayersRecursive(
             convertAnonymousLayersRecursive(subL, basename, stage);
 
             if (subL->IsAnonymous()) {
-                auto newLayer = MayaUsd::utils::saveAnonymousLayer(subL, parentPtr, basename);
+                auto newLayer
+                    = MayaUsd::utils::saveAnonymousLayer(stage, subL, parentPtr, basename);
                 if (subL == currentTarget) {
                     stage->SetEditTarget(newLayer);
                 }
@@ -248,6 +249,7 @@ private:
     void saveUsdLayerToMayaFile(SdfLayerRefPtr layer, bool asAnonymous);
     void clearProxies();
     bool hasDirtyLayer() const;
+    void refreshProxiesToSave();
 
     std::map<std::string, SdfLayerRefPtr> _idToLayer;
     TfNotice::Key                         _onStageSetKey;
@@ -520,6 +522,27 @@ bool LayerDatabase::getProxiesToSave(bool isExport)
 
 bool LayerDatabase::saveInteractionRequired() { return _proxiesToSave.size() > 0; }
 
+static void refreshSavingInfo(StageSavingInfo& info)
+{
+    MFnDependencyNode fn;
+    MObject           mobj = info.dagPath.node();
+    fn.setObject(mobj);
+    if (!fn.isFromReferencedFile() && LayerDatabase::instance().supportedNodeType(fn.typeId())) {
+        MayaUsdProxyShapeBase* pShape = static_cast<MayaUsdProxyShapeBase*>(fn.userNode());
+        info.stage = pShape ? pShape->getUsdStage() : nullptr;
+    }
+}
+
+void LayerDatabase::refreshProxiesToSave()
+{
+    for (StageSavingInfo& info : _proxiesToSave) {
+        refreshSavingInfo(info);
+    }
+    for (StageSavingInfo& info : _internalProxiesToSave) {
+        refreshSavingInfo(info);
+    }
+}
+
 bool LayerDatabase::saveUsd(bool isExport)
 {
     BatchSaveResult result = MayaUsd::kNotHandled;
@@ -554,6 +577,12 @@ bool LayerDatabase::saveUsd(bool isExport)
         } else if (result == kPartiallyCompleted && !hasDirtyLayer()) {
             return true;
         }
+
+        // After the potentially partial save, we need to refresh the stages
+        // to be saved because the saving might have modified the proxy shape
+        // attributes and we need to re-evaluate these nodes so that the stages
+        // are re-created with the new attribute values if needed.
+        refreshProxiesToSave();
 
         if (MayaUsd::utils::kSaveToUSDFiles == opt) {
             result = saveUsdToUsdFiles();
@@ -781,6 +810,9 @@ void LayerDatabase::convertAnonymousLayers(
 
     convertAnonymousLayersRecursive(root, proxyName, stage);
 
+    // Note: retrieve root again since it may have been changed by the call
+    //       to convertAnonymousLayersRecursive
+    root = stage->GetRootLayer();
     if (root->IsAnonymous()) {
         PXR_NS::SdfFileFormat::FileFormatArguments args;
         std::string newFileName = MayaUsd::utils::generateUniqueFileName(proxyName);

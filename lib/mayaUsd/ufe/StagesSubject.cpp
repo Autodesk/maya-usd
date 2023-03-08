@@ -46,6 +46,7 @@
 
 #include <atomic>
 #include <limits>
+#include <regex>
 #include <vector>
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -284,6 +285,25 @@ void attributeMetadataChanged(
         sendAttributeMetadataChanged(ufePath, changedToken, changeType, metadataKeys);
     }
 }
+
+std::vector<std::string> getMetadataKeys(const std::string& strMetadata)
+{
+    std::vector<std::string> metadataKeys;
+    const std::regex         rgx("(')([^ ]*)(':)");
+    std::string              metadataKey;
+
+    for (std::sregex_iterator it(strMetadata.begin(), strMetadata.end(), rgx), it_end; it != it_end;
+         ++it) {
+        if (it->empty()) {
+            continue;
+        }
+        metadataKey = std::string((*it)[0]);
+        metadataKey = metadataKey.substr(metadataKey.find('\'') + 1, metadataKey.rfind('\'') - 1);
+        metadataKeys.push_back(metadataKey);
+    }
+
+    return metadataKeys;
+}
 #endif
 
 void processAttributeChanges(
@@ -321,12 +341,14 @@ void processAttributeChanges(
                 sendMetadataChanged = true;
                 std::stringstream newMetadataStream;
                 newMetadataStream << infoChanged.second.second;
-                std::string newMetadataKey = newMetadataStream.str();
-                if (!newMetadataKey.empty()) {
+                const std::string strMetadata = newMetadataStream.str();
+                // e.g. strMetadata string format:
+                // "'uifolder':,'uisoftmin':0.0, 'uihide':1, 'uiorder':0"
+                if (!strMetadata.empty()) {
                     // Find the modified key which is between a pair of single quotes.
-                    newMetadataKey = newMetadataKey.substr(
-                        newMetadataKey.find('\'') + 1, newMetadataKey.rfind('\'') - 2);
-                    metadataKeys.insert(newMetadataKey);
+                    for (const auto& newMetadataKey : getMetadataKeys(strMetadata)) {
+                        metadataKeys.insert(newMetadataKey);
+                    }
                 }
             }
         }

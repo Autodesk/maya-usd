@@ -48,10 +48,10 @@ UsdLayerEditor::batchSaveLayersUIDelegate(const std::vector<MayaUsd::StageSaving
             // so the user can choose where to save the anonymous layers.
             if (!showConfirmDgl) {
                 for (const auto& info : infos) {
-                    MayaUsd::utils::stageLayersToSave stageLayersToSave;
+                    MayaUsd::utils::StageLayersToSave StageLayersToSave;
                     MayaUsd::utils::getLayersToSaveFromProxy(
-                        info.dagPath.fullPathName().asChar(), stageLayersToSave);
-                    if (!stageLayersToSave._anonLayers.empty()) {
+                        info.dagPath.fullPathName().asChar(), StageLayersToSave);
+                    if (!StageLayersToSave._anonLayers.empty()) {
                         showConfirmDgl = true;
                         break;
                     }

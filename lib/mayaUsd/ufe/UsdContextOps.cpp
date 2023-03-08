@@ -32,10 +32,12 @@
 #include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilFileSystem.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/path.h>
@@ -322,35 +324,59 @@ public:
 //! \brief Undoable command for loading a USD prim.
 class LoadUnloadBaseUndoableCommand : public Ufe::UndoableCommand
 {
-public:
+protected:
+    LoadUnloadBaseUndoableCommand(const UsdPrim& prim, UsdLoadPolicy policy)
+        : _stage(prim.GetStage())
+        , _primPath(prim.GetPath())
+        , _policy(policy)
+    {
+    }
+
     LoadUnloadBaseUndoableCommand(const UsdPrim& prim)
         : _stage(prim.GetStage())
         , _primPath(prim.GetPath())
-        , _oldLoadRules(prim.GetStage()->GetLoadRules())
+        , _policy(UsdLoadPolicy::UsdLoadWithoutDescendants)
     {
+        if (!_stage)
+            return;
+
+        // When not provided with the load policy, we need to figure out
+        // what the current policy is.
+        UsdStageLoadRules loadRules = _stage->GetLoadRules();
+        _policy = loadRules.GetEffectiveRuleForPath(_primPath) == UsdStageLoadRules::Rule::AllRule
+            ? UsdLoadPolicy::UsdLoadWithDescendants
+            : UsdLoadPolicy::UsdLoadWithoutDescendants;
     }
 
-    void undo() override
+    void doLoad() const
     {
-        if (!_stage) {
+        if (!_stage)
             return;
-        }
 
-        _stage->SetLoadRules(_oldLoadRules);
+        _stage->Load(_primPath, _policy);
         saveModifiedLoadRules();
     }
 
-protected:
-    void saveModifiedLoadRules()
+    void doUnload() const
+    {
+        if (!_stage)
+            return;
+
+        _stage->Unload(_primPath);
+        saveModifiedLoadRules();
+    }
+
+    void saveModifiedLoadRules() const
     {
         // Save the load rules so that switching the stage settings will be able to preserve the
         // load rules.
         MAYAUSD_NS::MayaUsdProxyShapeStageExtraData::saveLoadRules(_stage);
     }
 
-    const UsdStageWeakPtr   _stage;
-    const SdfPath           _primPath;
-    const UsdStageLoadRules _oldLoadRules;
+private:
+    const UsdStageWeakPtr _stage;
+    const SdfPath         _primPath;
+    UsdLoadPolicy         _policy;
 };
 
 //! \brief Undoable command for loading a USD prim.
@@ -358,23 +384,12 @@ class LoadUndoableCommand : public LoadUnloadBaseUndoableCommand
 {
 public:
     LoadUndoableCommand(const UsdPrim& prim, UsdLoadPolicy policy)
-        : LoadUnloadBaseUndoableCommand(prim)
-        , _policy(policy)
+        : LoadUnloadBaseUndoableCommand(prim, policy)
     {
     }
 
-    void redo() override
-    {
-        if (!_stage) {
-            return;
-        }
-
-        _stage->Load(_primPath, _policy);
-        saveModifiedLoadRules();
-    }
-
-private:
-    const UsdLoadPolicy _policy;
+    void redo() override { doLoad(); }
+    void undo() override { doUnload(); }
 };
 
 //! \brief Undoable command for unloading a USD prim.
@@ -386,15 +401,8 @@ public:
     {
     }
 
-    void redo() override
-    {
-        if (!_stage) {
-            return;
-        }
-
-        _stage->Unload(_primPath);
-        saveModifiedLoadRules();
-    }
+    void redo() override { doUnload(); }
+    void undo() override { doLoad(); }
 };
 
 //! \brief Undoable command for prim active state change
@@ -473,56 +481,103 @@ private:
     bool                    _instanceable;
 };
 
-const char* selectUSDFileScriptPre = R"mel(
-global proc string SelectUSDFileForAddReference()
+const std::string getTargetLayerFilePath(const UsdPrim& prim)
 {
-    string $result[] = `fileDialog2
-        -fileMode 1
-        -caption "Add Reference to USD Prim"
-        -fileFilter "USD Files )mel";
+    auto stage = prim.GetStage();
+    if (!stage)
+        return {};
 
-const char* selectUSDFileScriptPost = R"mel("`;
+    auto layer = stage->GetEditTarget().GetLayer();
+    if (!layer)
+        return {};
 
-    if (0 == size($result))
-        return "";
-    else
-        return $result[0];
+    return layer->GetRealPath();
 }
-SelectUSDFileForAddReference();
-)mel";
+
+bool _prepareUSDReferenceTargetLayer(const UsdPrim& prim)
+{
+    const char* script = "import mayaUsd_USDRootFileRelative as murel\n"
+                         "murel.usdFileRelative.setRelativeFilePathRoot(r'''%s''')";
+
+    const std::string commandString = TfStringPrintf(script, getTargetLayerFilePath(prim).c_str());
+    return MGlobal::executePythonCommand(commandString.c_str());
+}
 
 // Ask SDF for all supported extensions:
 const char* _selectUSDFileScript()
 {
-
     static std::string commandString;
 
     if (commandString.empty()) {
         // This is an interactive call from the main UI thread. No need for SMP protections.
-        commandString = selectUSDFileScriptPre;
 
-        std::string usdUiString = "(";
-        std::string usdSelector = "";
-        std::string otherUiString = "";
-        std::string otherSelector = "";
+        // The goal of the following loop is to build a first file filter that allow any
+        // USD-compatible file format, then a series of file filters, one per particular
+        // file format. So for N different file formats, we will have N+1 filters.
+
+        std::vector<std::string> usdUiStrings;
+        std::vector<std::string> usdSelectors;
+        std::vector<std::string> otherUiStrings;
+        std::vector<std::string> otherSelectors;
 
         for (auto&& extension : SdfFileFormat::FindAllFileFormatExtensions()) {
             // Put USD first
             if (extension.rfind("usd", 0) == 0) {
-                if (!usdSelector.empty()) {
-                    usdUiString += " ";
-                }
-                usdUiString += "*." + extension;
-                usdSelector += ";;*." + extension;
+                usdUiStrings.push_back("*." + extension);
+                usdSelectors.push_back("*." + extension);
             } else {
-                otherUiString += " *." + extension;
-                otherSelector += ";;*." + extension;
+                otherUiStrings.push_back("*." + extension);
+                otherSelectors.push_back("*." + extension);
             }
         }
-        commandString += usdUiString + otherUiString + ")" + usdSelector + otherSelector
-            + selectUSDFileScriptPost;
+
+        usdUiStrings.insert(usdUiStrings.end(), otherUiStrings.begin(), otherUiStrings.end());
+        usdSelectors.insert(usdSelectors.end(), otherSelectors.begin(), otherSelectors.end());
+
+        const char* script = R"mel(
+        global proc string SelectUSDFileForAddReference()
+        {
+            string $result[] = `fileDialog2
+                -fileMode 1
+                -caption "Add Reference to USD Prim"
+                -fileFilter "USD Files (%s);;%s"
+                -optionsUICreate addUSDReferenceCreateUi
+                -optionsUIInit addUSDReferenceInitUi
+                -optionsUICommit2 addUSDReferenceToUsdCommitUi`;
+
+            if (0 == size($result))
+                return "";
+            else
+                return $result[0];
+        }
+        SelectUSDFileForAddReference();
+        )mel";
+
+        commandString = TfStringPrintf(
+            script, TfStringJoin(usdUiStrings).c_str(), TfStringJoin(usdSelectors, ";;").c_str());
     }
+
     return commandString.c_str();
+}
+
+std::string
+makeUSDReferenceFilePathRelativeIfRequested(const std::string& filePath, const UsdPrim& prim)
+{
+    if (!UsdMayaUtilFileSystem::requireUsdPathsRelativeToEditTargetLayer())
+        return filePath;
+
+    const std::string layerDirPath = UsdMayaUtilFileSystem::getDir(getTargetLayerFilePath(prim));
+
+    auto relativePathAndSuccess = UsdMayaUtilFileSystem::makePathRelativeTo(filePath, layerDirPath);
+
+    if (!relativePathAndSuccess.second) {
+        TF_WARN(
+            "File name (%s) cannot be resolved as relative to the current edit target layer, "
+            "using the absolute path.",
+            filePath.c_str());
+    }
+
+    return relativePathAndSuccess.first;
 }
 
 const char* clearAllReferencesConfirmScript = R"(
@@ -1210,9 +1265,15 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         return nullptr;
 #endif
     } else if (itemPath[0] == AddUsdReferenceUndoableCommand::commandName) {
-        MString fileRef = MGlobal::executeCommandStringResult(_selectUSDFileScript());
+        if (!_prepareUSDReferenceTargetLayer(prim()))
+            return nullptr;
 
-        std::string path = UsdMayaUtil::convert(fileRef);
+        MString fileRef = MGlobal::executeCommandStringResult(_selectUSDFileScript());
+        if (fileRef.length() == 0)
+            return nullptr;
+
+        const std::string path
+            = makeUSDReferenceFilePathRelativeIfRequested(UsdMayaUtil::convert(fileRef), prim());
         if (path.empty())
             return nullptr;
 

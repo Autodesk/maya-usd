@@ -219,14 +219,6 @@ proc string mayaUsdTranslatorExport_AppendFromTextField(string $currentOptions, 
     return $currentOptions + ";" + $arg + "=" + $value;
 }
 
-proc string mayaUsdTranslatorExport_AppendFromEnvElseDefault(string $currentOptions, string $arg, string $envVarName, string $defaultValue) {
-    string $value = `getenv $envVarName`;
-    if ($value == "") {
-        $value = $defaultValue;
-    }
-    return $currentOptions + ";" + $arg + "=" + $value;
-}
-
 global proc mayaUsdTranslatorExport_AnimationCB() {
     if (`checkBoxGrp -exists animationCheckBox` == 0)
         return;
@@ -796,8 +788,6 @@ global proc int mayaUsdTranslatorExport (string $parent,
         if (stringArrayContains("context", $sectionNames)) {
             $currentOptions = mayaUsdTranslatorExport_AppendJobContexts($currentOptions, "jobContext");
         }
-
-        $currentOptions = mayaUsdTranslatorExport_AppendFromEnvElseDefault($currentOptions, "materialsScopeName", "MAYAUSD_MATERIALS_SCOPE_NAME", `getMayaUsdString("kExportMaterialsDefaultScopeName")`);
 
         eval($resultCallback+" \""+$currentOptions+"\"");
         $bResult = 1;
