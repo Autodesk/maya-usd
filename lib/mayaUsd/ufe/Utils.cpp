@@ -868,10 +868,8 @@ bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMs
     return true;
 }
 
-bool isAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName)
+bool isAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName, std::string* errMsg)
 {
-    std::string errMsg;
-
     TF_AXIOM(prim);
     TF_AXIOM(!attrName.IsEmpty());
 
@@ -879,19 +877,46 @@ bool isAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName)
     if (xformable) {
         if (UsdGeomXformOp::IsXformOp(attrName)) {
             // check for the attribute in XformOpOrderAttr first
-            if (!isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
-                MGlobal::displayError(errMsg.c_str());
+            if (!isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), errMsg)) {
                 return false;
             }
         }
     }
     // check the attribute itself
-    if (!isAttributeEditAllowed(prim.GetAttribute(attrName), &errMsg)) {
+    if (!isAttributeEditAllowed(prim.GetAttribute(attrName), errMsg)) {
+        return false;
+    }
+
+    return true;
+}
+
+bool isAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName)
+{
+    std::string errMsg;
+    if (!isAttributeEditAllowed(prim, attrName, &errMsg)) {
         MGlobal::displayError(errMsg.c_str());
         return false;
     }
 
     return true;
+}
+
+void enforceAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
+{
+    std::string errMsg;
+    if (!isAttributeEditAllowed(attr, &errMsg)) {
+        MGlobal::displayError(errMsg.c_str());
+        throw std::runtime_error(errMsg);
+    }
+}
+
+void enforceAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName)
+{
+    std::string errMsg;
+    if (!isAttributeEditAllowed(prim, attrName, &errMsg)) {
+        MGlobal::displayError(errMsg.c_str());
+        throw std::runtime_error(errMsg);
+    }
 }
 
 bool isEditTargetLayerModifiable(const UsdStageWeakPtr stage, std::string* errMsg)
