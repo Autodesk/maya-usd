@@ -75,6 +75,10 @@ class testMaterialCommands(unittest.TestCase):
 
         materials = cmds.mayaUsdGetMaterialsFromRenderers()
 
+        # TODO: Remove after debugging
+        print(materials)
+        print(expectedMaterials)
+
         self.assertTrue(set(materials).issuperset(set(expectedMaterials)))
 
 
