@@ -773,7 +773,49 @@ class TestTranslator(unittest.TestCase):
         # When a prim is within a translated hierarchy, deactivating it's parent should not crash Maya or clear the children of proxyShapeTransform.
         self._performDisablePrimTest('./testTranslatedPrimDisableCrashIssue.usda')
         
+    def testMultipleColorSetsExportImport(self):
+        """Testing static export/import multiple color sets"""
+        tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="tempTestMultiColorSetsExport", delete=True)
+        tempPath = tempFile.name
+        tempFile.close()
+
+        cube = mc.polyCube()
+        mc.polyColorSet(create=True, clamped=False, representation='RGBA', colorSet='green')
+        mc.polyColorSet(currentColorSet=True, colorSet='green')
+        mc.polyColorPerVertex(r=0, g=1, b=0, a=1, cdo=True)
+
+        mc.polyColorSet(create=True, clamped=False, representation='RGBA', colorSet='red')
+        mc.polyColorSet(currentColorSet=True, colorSet='red')
+        mc.polyColorPerVertex(r=1, g=0, b=0, a=1, cdo=True)
+
+        mc.file(tempPath, exportSelected=True, force=True, type="AL usdmaya export", 
+            options="Dynamic_Attributes=1;Duplicate_Instances=1;Merge_Transforms=1;Merge_Offset_Parent_Matrix=0;Animation=0;Use_Timeline_Range=0;Frame_Min=0;Frame_Max=1;Sub_Samples=1;Filter_Sample=0;Export_At_Which_Time=0;Export_In_World_Space=0;Activate_all_Plugin_Translators=1;Active_Translator_List=;Inactive_Translator_List=;Nurbs_Curves=1;Meshes=1;Mesh_Face_Connects=1;Mesh_Points=1;Mesh_Extents=1;Mesh_Normals=1;Mesh_Vertex_Creases=1;Mesh_Edge_Creases=1;Mesh_UVs=1;Mesh_UV_Only=0;Mesh_Points_as_PRef=0;Mesh_Colours=1;Default_RGB=0.18;Default_Alpha=1;Custom_Colour_Threshold=1;Colour_Threshold_Value=1e-05;Mesh_Holes=1;Write_Normals_as_Primvars=1;Reverse_Opposite_Normals=1;Subdivision_scheme=0;Compaction_Level=3;"
+        )
         
+        mc.file(f=True, new=True)
+        mc.file(tempPath, i=True, force=True, type="AL usdmaya import",  ignoreVersion=True, ra=True, 
+            options="Parent_Path=;Prim_Path=;Import_Animations=1;Import_Dynamic_Attributes=1;Load_None=0;Read_Default_Values=1;Activate_all_Plugin_Translators=1;Active_Translator_List=;Inactive_Translator_List=;Import_Curves=1;Import_Meshes=1;", 
+            pr=True, importFrameRate=True, importTimeRange='override'
+        )
+
+        mc.select(cube[0], r=True)
+        colorSets = mc.polyColorSet( query=True, allColorSets=True)
+        self.assertEqual(colorSets, ['green', 'red'])
+
+        for colorSet in colorSets:
+            mc.polyColorSet(currentColorSet=True, colorSet=colorSet)
+            mc.select('{}.vtx[0]'.format(cube[0]), r=True) 
+            colorValues = mc.polyColorPerVertex( query=True, r=True, g=True, b=True, a=True )
+            if colorSet == 'green':
+                self.assertEqual(colorValues, [0.0, 1.0, 0.0, 1.0])
+            elif colorSet == 'red':
+                self.assertEqual(colorValues, [1.0, 0.0, 0.0, 1.0])
+
+            mc.select(cube[0], r=True)
+
+        os.remove(tempPath)
+
+
 tests = unittest.TestLoader().loadTestsFromTestCase(TestTranslator)
 result = unittest.TextTestRunner(verbosity=2).run(tests)
 
