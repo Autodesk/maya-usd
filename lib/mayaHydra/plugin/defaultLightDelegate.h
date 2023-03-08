@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+// Copyright 2023 Autodesk, Inc. All rights reserved.
+//
 #ifndef MTOH_DEFAULT_LIGHT_DELEGATE_H
 #define MTOH_DEFAULT_LIGHT_DELEGATE_H
 

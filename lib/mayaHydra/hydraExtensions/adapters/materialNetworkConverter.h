@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+// Copyright 2023 Autodesk, Inc. All rights reserved.
+//
 #ifndef MAYAHYDRALIB_MATERIAL_NETWORK_CONVERTER_H
 #define MAYAHYDRALIB_MATERIAL_NETWORK_CONVERTER_H
 

@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+// Copyright 2023 Autodesk, Inc. All rights reserved.
+//
 
 #if !defined(MAYAUSD_VERSION)
 // GL loading library needs to be included before any other OpenGL headers.
