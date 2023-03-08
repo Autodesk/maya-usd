@@ -5,8 +5,13 @@
 set(TEST_SCRIPT_FILES
     testBlockSceneModificationContext.py
     testDiagnosticDelegate.py
-    testMaterialCommands.py
 )
+
+if(CMAKE_WANT_MATERIALX_BUILD)
+    list(APPEND TEST_SCRIPT_FILES
+        testMaterialCommands.py
+    )
+endif()
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND TEST_SCRIPT_FILES
