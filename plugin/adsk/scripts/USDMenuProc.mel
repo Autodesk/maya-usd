@@ -63,7 +63,7 @@ global proc mayaUsdMenu_unassignMaterial(string $ufePath)
                                 item = ufe.Hierarchy.createItem(ufePath);\
                                 contextOps = ufe.ContextOps.contextOps(item);\
                                 cmd = contextOps.doOpCmd(['Unassign Material']);\
-                                cmd.execute();")`;
+                                ufe.UndoableCommandMgr.instance().executeCmd(cmd);")`;
     }
 }
 
