@@ -163,7 +163,7 @@ public:
     static const MString kSolidColorStr;
 
     MayaUsdRPrim(HdVP2RenderDelegate* delegate, const SdfPath& id);
-    virtual ~MayaUsdRPrim() = default;
+    virtual ~MayaUsdRPrim();
 
 protected:
     using ReprVector = std::vector<std::pair<TfToken, HdReprSharedPtr>>;
@@ -298,7 +298,7 @@ protected:
         ReprVector const&  reprs,
         TfToken const&     renderTag);
 
-    void _SyncDisplayLayerModes(SdfPath const& id);
+    void _SyncDisplayLayerModes(SdfPath const& id, bool instancedPrim);
     void _SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned int instanceCount);
 
     bool _FilterInstanceByDisplayLayer(
@@ -327,6 +327,7 @@ protected:
 
     SdfPath _GetUpdatedMaterialId(HdRprim* rprim, HdSceneDelegate* delegate);
     MColor  _GetHighlightColor(const TfToken& className);
+    MColor  _GetHighlightColor(const TfToken& className, HdVP2SelectionStatus selectionStatus);
     MColor  _GetWireframeColor();
 
     void _PropagateDirtyBitsCommon(HdDirtyBits& bits, const ReprVector& reprs) const;
@@ -374,6 +375,9 @@ protected:
     //! VP2 render delegate for which this prim was created
     HdVP2RenderDelegate* _delegate { nullptr };
 
+    //! Rprim id in Hydra
+    const SdfPath _hydraId;
+
     //! Rprim id cached as a maya string for easier debugging and profiling
     const MString _rprimId;
 
@@ -381,6 +385,7 @@ protected:
     HdVP2SelectionStatus _selectionStatus { kUnselected };
 
     //! Modes requested by display layer along with the frame they are updated on
+    bool                           _useInstancedDisplayLayerModes { false };
     DisplayLayerModes              _displayLayerModes;
     std::vector<DisplayLayerModes> _displayLayerModesInstanced;
     uint64_t                       _displayLayerModesFrame { 0 };
@@ -403,7 +408,7 @@ protected:
     MStringArray _PrimSegmentString;
 
     //! For instanced prim, holds the corresponding path in USD prototype
-    SdfPath _pathInPrototype;
+    InstancePrototypePath _pathInPrototype { SdfPath(), kNativeInstancing };
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

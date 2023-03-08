@@ -1913,9 +1913,9 @@ void HdVP2Mesh::_UpdateDrawItem(
 
             // Set up the source color buffers.
             const MColor wireframeColors[]
-                = { drawScene.GetWireframeColor(),
-                    drawScene.GetSelectionHighlightColor(HdPrimTypeTokens->mesh),
-                    drawScene.GetSelectionHighlightColor(),
+                = { _GetHighlightColor(HdPrimTypeTokens->mesh, kUnselected),
+                    _GetHighlightColor(HdPrimTypeTokens->mesh, kFullyActive),
+                    _GetHighlightColor(HdPrimTypeTokens->mesh, kFullyLead),
                     drawScene.GetTemplateColor(false),
                     drawScene.GetTemplateColor(true),
                     drawScene.GetReferenceColor() };
