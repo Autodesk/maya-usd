@@ -46,12 +46,13 @@ const MString MayaUsdRPrim::kSolidColorStr("solidColor");
 constexpr auto sDrawModeAllButBBox = (MHWRender::MGeometry::DrawMode)(
     MHWRender::MGeometry::kAll & ~MHWRender::MGeometry::kBoundingBox);
 
+static const InstancePrototypePath sVoidInstancePrototypePath { SdfPath(), kNativeInstancing };
+
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
 
 namespace {
-std::mutex                  sMayaMutex;
-MayaUsdCustomData           sMayaUsdCustomData;
-const InstancePrototypePath sVoidInstancePrototypePath { SdfPath(), kNativeInstancing };
+std::mutex        sMayaMutex;
+MayaUsdCustomData sMayaUsdCustomData;
 } // namespace
 
 /* static */
