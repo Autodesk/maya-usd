@@ -16,9 +16,10 @@
 #ifndef ADSK_MAYA_MATERIAL_COMMANDS_H
 #define ADSK_MAYA_MATERIAL_COMMANDS_H
 
+#include "base/api.h"
+
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/mayaUsd.h>
-#include <mayaUsd/undo/OpUndoItemList.h>
 
 #include <maya/MPxCommand.h>
 #include <ufe/path.h>
@@ -36,13 +37,13 @@ namespace MAYAUSD_NS_DEF {
 //! split in order to populate menu entries. \todo: The list of materials and renderers is currently
 //! hard-coded. We need to make it dynamic so that third-party renderers can hook in to provide
 //! their own materials.
-class MAYAUSD_CORE_PUBLIC ADSKMayaUSDGetMaterialsForRenderersCommand : public MPxCommand
+class MAYAUSD_PLUGIN_PUBLIC ADSKMayaUSDGetMaterialsForRenderersCommand : public MPxCommand
 {
 public:
     // plugin registration requirements
-    static const char commandName[];
-    static void*      creator();
-    static MSyntax    createSyntax();
+    static const MString commandName;
+    static void*         creator();
+    static MSyntax       createSyntax();
 
     MStatus doIt(const MArgList& argList) override;
     bool    isUndoable() const override { return false; }
@@ -57,13 +58,13 @@ private:
 
 //! \brief Returns an array of materials in the same stage as the object passed in via argument.
 //! The returned strings are simply paths to a material.
-class MAYAUSD_CORE_PUBLIC ADSKMayaUSDGetMaterialsInStageCommand : public MPxCommand
+class MAYAUSD_PLUGIN_PUBLIC ADSKMayaUSDGetMaterialsInStageCommand : public MPxCommand
 {
 public:
     // plugin registration requirements
-    static const char commandName[];
-    static void*      creator();
-    static MSyntax    createSyntax();
+    static const MString commandName;
+    static void*         creator();
+    static MSyntax       createSyntax();
 
     MStatus doIt(const MArgList& argList) override;
     bool    isUndoable() const override { return false; }

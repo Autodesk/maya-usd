@@ -20,6 +20,7 @@
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/usd/sdr/registry.h>
+#include <pxr/usd/usd/stage.h>
 
 #include <maya/MArgParser.h>
 #include <maya/MFnDagNode.h>
@@ -33,12 +34,13 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
 
+const MString
+    ADSKMayaUSDGetMaterialsForRenderersCommand::commandName("mayaUsdGetMaterialsFromRenderers");
+const MString ADSKMayaUSDGetMaterialsInStageCommand::commandName("mayaUsdGetMaterialsInStage");
+
 /*
 // ADSKMayaUSDGetMaterialsForRenderersCommand
 */
-
-const char ADSKMayaUSDGetMaterialsForRenderersCommand::commandName[]
-    = "mayaUsdGetMaterialsFromRenderers";
 
 // plug-in callback to create the command object
 void* ADSKMayaUSDGetMaterialsForRenderersCommand::creator()
@@ -122,8 +124,6 @@ MSyntax ADSKMayaUSDGetMaterialsForRenderersCommand::createSyntax()
 /*
 // ADSKMayaUSDGetMaterialsInStageCommand
 */
-
-const char ADSKMayaUSDGetMaterialsInStageCommand::commandName[] = "mayaUsdGetMaterialsInStage";
 
 static const TfToken materialType("Material");
 
