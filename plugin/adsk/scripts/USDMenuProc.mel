@@ -66,7 +66,7 @@ global proc mayaUsdMenu_assignNewMaterial(string $ufePath, string $material)
                                 item = ufe.Hierarchy.createItem(ufePath);\
                                 contextOps = ufe.ContextOps.contextOps(item);\
                                 cmd = contextOps.doOpCmd(['Assign New Material', '', '" + $material + "']);\
-                                cmd.execute();")`;
+                                ufe.UndoableCommandMgr.instance().executeCmd(cmd);")`;
     }
 }
 
@@ -81,8 +81,8 @@ global proc mayaUsdMenu_assignExistingMaterial(string $ufePath, string $material
                                 item = ufe.Hierarchy.createItem(ufePath);\
                                 contextOps = ufe.ContextOps.contextOps(item);\
                                 cmd = contextOps.doOpCmd(['Assign Existing Material', '', '" + $material + "']);\
-                                cmd.execute();")`;
-    }
+                                ufe.UndoableCommandMgr.instance().executeCmd(cmd);")`;
+   }
 }
 
 global proc mayaUsdMenu_addNewMaterials(string $ufePath)

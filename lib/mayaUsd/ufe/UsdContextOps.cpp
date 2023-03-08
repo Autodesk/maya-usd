@@ -1088,17 +1088,12 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
 
             for (const auto& material : materials) {
                 MStringArray pathAndMaterial;
-                MStatus      status = material.split('/', pathAndMaterial);
-                // Expects a string in the format "/path1/path2|Material".
-                if (status == MS::kFailure || pathAndMaterial.length() < 2) {
-                    continue;
+                // Expects a string in the format "/path1/path2/Material".
+                const int lastSlash = material.rindex('/');
+                if (lastSlash >= 0) {
+                    MString pathToMaterial = material.substring(0, lastSlash);
+                    pathsAndMaterials.emplace(std::string(pathToMaterial.asChar()), material);
                 }
-
-                MString pathToMaterial = "";
-                for (int i = 0; i < pathAndMaterial.length() - 1; i++) {
-                    pathToMaterial += "/" + pathAndMaterial[i];
-                }
-                pathsAndMaterials.emplace(std::string(pathToMaterial.asChar()), material);
             }
 
             if (itemPath.size() == 1u) {
@@ -1111,7 +1106,12 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                 // Populate list of to materials for given path (second  menu level).
                 const auto range = pathsAndMaterials.equal_range(itemPath[1]);
                 for (auto it = range.first; it != range.second; ++it) {
-                    items.emplace_back(it->second.asChar(), it->second.asChar());
+                    const int lastSlash = it->second.rindex('/');
+                    if (lastSlash >= 0) {
+                        MString materialName
+                            = it->second.substring(lastSlash + 1, it->second.length() - 1);
+                        items.emplace_back(it->second.asChar(), materialName.asChar());
+                    }
                 }
             }
 #endif
