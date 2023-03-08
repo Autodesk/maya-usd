@@ -27,13 +27,19 @@ target_sources(${TARGET_NAME}
         adskExportCommand.cpp
         adskListJobContextsCommand.cpp
         adskListShadingModesCommand.cpp
-        adskMaterialCommands.cpp
         adskStageLoadUnloadCommands.cpp
         geomNode.cpp
         importTranslator.cpp
         exportTranslator.cpp
         ProxyShape.cpp
 )
+
+if (UFE_FOUND)
+    target_sources(${TARGET_NAME} 
+        PRIVATE
+            adskMaterialCommands.cpp
+    )
+endif()
 
 # -----------------------------------------------------------------------------
 # compile configuration
