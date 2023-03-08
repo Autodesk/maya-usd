@@ -68,15 +68,12 @@ class testMaterialCommands(unittest.TestCase):
 
         expectedMaterials = ['USD/USD Preview Surface|UsdPreviewSurface',
                              'MaterialX/Standard Surface|ND_standard_surface_surfaceshader',
-                             'MaterialX/glTF PBR|ND_gltf_pbr_surfaceshader',
+                             # Not available in earlier versions of USD
+                             # 'MaterialX/glTF PBR|ND_gltf_pbr_surfaceshader',
                              'MaterialX/USD Preview Surface|ND_UsdPreviewSurface_surfaceshader'
                              ]
 
         materials = cmds.mayaUsdGetMaterialsFromRenderers()
-
-        # TODO: Remove after debugging
-        print(materials)
-        print(expectedMaterials)
 
         self.assertTrue(set(materials).issuperset(set(expectedMaterials)))
 
