@@ -152,21 +152,19 @@ createTransform3d(const Ufe::SceneItem::Ptr& item, NextTransform3dFn nextTransfo
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
 
     if (!usdItem) {
-        const std::string error = TfStringPrintf(
+        TF_WARN(
             "Cannot create 3D transform for non-USD item \"%s\".", item->path().string().c_str());
-        TF_WARN("%s", error.c_str());
-        throw std::runtime_error(error);
+        return nullptr;
     }
 
     // If the prim isn't transformable, can't create a Transform3d interface
     // for it.
     UsdGeomXformable xformSchema(usdItem->prim());
     if (!xformSchema) {
-        const std::string error = TfStringPrintf(
+        TF_WARN(
             "Cannot create 3D transform for non-transformable item \"%s\".",
             item->path().string().c_str());
-        TF_WARN("%s", error.c_str());
-        throw std::runtime_error(error);
+        return nullptr;
     }
     bool resetsXformStack = false;
     auto xformOps = xformSchema.GetOrderedXformOps(&resetsXformStack);
