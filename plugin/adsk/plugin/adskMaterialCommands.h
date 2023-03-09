@@ -22,8 +22,7 @@
 #include <mayaUsd/mayaUsd.h>
 
 #include <maya/MPxCommand.h>
-#include <ufe/path.h>
-#include <ufe/undoableCommand.h>
+
 
 namespace MAYAUSD_NS_DEF {
 
