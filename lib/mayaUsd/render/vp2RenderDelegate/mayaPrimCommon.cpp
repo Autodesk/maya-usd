@@ -46,6 +46,8 @@ const MString MayaUsdRPrim::kSolidColorStr("solidColor");
 constexpr auto sDrawModeAllButBBox = (MHWRender::MGeometry::DrawMode)(
     MHWRender::MGeometry::kAll & ~MHWRender::MGeometry::kBoundingBox);
 
+static const InstancePrototypePath sVoidInstancePrototypePath { SdfPath(), kNativeInstancing };
+
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
 
 namespace {
@@ -99,6 +101,7 @@ void MayaUsdCustomData::RemoveInstancePrimPaths(const SdfPath& prim)
 
 MayaUsdRPrim::MayaUsdRPrim(HdVP2RenderDelegate* delegate, const SdfPath& id)
     : _delegate(delegate)
+    , _hydraId(id)
     , _rprimId(id.GetText())
 {
     // Store a string version of the Cache Path to be used to tag MRenderItems. The CachePath is
@@ -107,6 +110,16 @@ MayaUsdRPrim::MayaUsdRPrim(HdVP2RenderDelegate* delegate, const SdfPath& id)
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
     _PrimSegmentString.append(
         drawScene.GetScenePrimPath(id, UsdImagingDelegate::ALL_INSTANCES).GetString().c_str());
+}
+
+MayaUsdRPrim::~MayaUsdRPrim()
+{
+    if (!_pathInPrototype.first.IsEmpty()) {
+        // Clear my entry from the instancing map
+        auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+        ProxyRenderDelegate& drawScene = param->GetDrawScene();
+        drawScene.UpdateInstancingMapEntry(_pathInPrototype, sVoidInstancePrototypePath, _hydraId);
+    }
 }
 
 void MayaUsdRPrim::_CommitMVertexBuffer(MHWRender::MVertexBuffer* const buffer, void* bufferData)
@@ -337,11 +350,15 @@ HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
 
     // display layers handling
     if (!drawScene.GetUsdImagingDelegate()->GetInstancerId(id).IsEmpty()) {
-        _displayLayerModes = DisplayLayerModes();
+        // Sync display layer modes for instanced prims.
+        // This also sets the value of '_useInstancedDisplayLayerModes' that identifies whether
+        // display layer modes will be handled on per-primitive or per-instance basis
+        _SyncDisplayLayerModes(id, true);
 
         // Instanced primitives with instances in display layers use 'forced' representations to
         // draw those specific instances, so the 'forced' representations should be inited alongside
-        if (reprToken != HdVP2ReprTokens->forcedBbox && reprToken != HdVP2ReprTokens->forcedWire
+        if (_useInstancedDisplayLayerModes && reprToken != HdVP2ReprTokens->forcedBbox
+            && reprToken != HdVP2ReprTokens->forcedWire
             && reprToken != HdVP2ReprTokens->forcedUntextured) {
             refThis.InitRepr(
                 drawScene.GetUsdImagingDelegate(), HdVP2ReprTokens->forcedBbox, dirtyBits);
@@ -352,8 +369,7 @@ HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
         }
     } else {
         // Sync display layer modes for non-instanced prims.
-        // For instanced prims, this will be done inside Sync method on a per-instance basis
-        _SyncDisplayLayerModes(id);
+        _SyncDisplayLayerModes(id, false);
     }
 
     _UpdateReprOverrides(reprs);
@@ -750,7 +766,7 @@ void MayaUsdRPrim::_PopulateDisplayLayerModes(
 }
 #endif
 
-void MayaUsdRPrim::_SyncDisplayLayerModes(SdfPath const& id)
+void MayaUsdRPrim::_SyncDisplayLayerModes(SdfPath const& id, bool instancedPrim)
 {
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
@@ -761,7 +777,21 @@ void MayaUsdRPrim::_SyncDisplayLayerModes(SdfPath const& id)
     }
 
     _displayLayerModesFrame = drawScene.GetFrameCounter();
-    auto usdPath = drawScene.GetScenePrimPath(id, UsdImagingDelegate::ALL_INSTANCES);
+
+    // Obtain scene prim path
+    HdInstancerContext instancerContext;
+    int                instanceIndex = instancedPrim ? 0 : UsdImagingDelegate::ALL_INSTANCES;
+    auto               usdPath = drawScene.GetScenePrimPath(id, instanceIndex, &instancerContext);
+
+    // Native instances use per-instance _displayLayerModes
+    if (instancedPrim && instancerContext.empty()) {
+        _useInstancedDisplayLayerModes = true;
+        _displayLayerModes = DisplayLayerModes();
+        return;
+    }
+
+    // Otherwise, populate display layer modes
+    _useInstancedDisplayLayerModes = false;
     _PopulateDisplayLayerModes(usdPath, _displayLayerModes, drawScene);
 }
 
@@ -779,7 +809,7 @@ void MayaUsdRPrim::_SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned i
 
     _forcedReprFlags = 0;
     _requiredModFlagsBitset.reset();
-    if (drawScene.SupportPerInstanceDisplayLayers(id)) {
+    if (_useInstancedDisplayLayerModes) {
         _displayLayerModesInstanced.resize(instanceCount);
         for (unsigned int usdInstanceId = 0; usdInstanceId < instanceCount; usdInstanceId++) {
             auto  usdPath = drawScene.GetScenePrimPath(id, usdInstanceId);
@@ -860,7 +890,8 @@ void MayaUsdRPrim::_SyncSharedData(
             auto* const param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
             auto&       drawScene = param->GetDrawScene();
 
-            SdfPath newPathInPrototype = instanced ? drawScene.GetPathInPrototype(id) : SdfPath();
+            InstancePrototypePath newPathInPrototype
+                = instanced ? drawScene.GetPathInPrototype(id) : sVoidInstancePrototypePath;
             drawScene.UpdateInstancingMapEntry(_pathInPrototype, newPathInPrototype, id);
             _pathInPrototype = newPathInPrototype;
         });
@@ -929,23 +960,29 @@ bool MayaUsdRPrim::_SyncCommon(
     return true;
 }
 
-MColor MayaUsdRPrim::_GetHighlightColor(const TfToken& className)
+MColor
+MayaUsdRPrim::_GetHighlightColor(const TfToken& className, HdVP2SelectionStatus selectionStatus)
 {
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
 
     if (_displayLayerModes._displayType == MayaUsdRPrim::kTemplate) {
-        return drawScene.GetTemplateColor(_selectionStatus != kUnselected);
+        return drawScene.GetTemplateColor(selectionStatus != kUnselected);
     } else if (
         _displayLayerModes._displayType == MayaUsdRPrim::kReference
-        && _selectionStatus == kUnselected) {
+        && selectionStatus == kUnselected) {
         return drawScene.GetReferenceColor();
     } else {
         return (
-            _selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
-                _selectionStatus == kFullyLead ? TfToken() : className)
-                                            : _GetWireframeColor());
+            selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
+                selectionStatus == kFullyLead ? TfToken() : className)
+                                           : _GetWireframeColor());
     }
+}
+
+MColor MayaUsdRPrim::_GetHighlightColor(const TfToken& className)
+{
+    return _GetHighlightColor(className, _selectionStatus);
 }
 
 MColor MayaUsdRPrim::_GetWireframeColor()
