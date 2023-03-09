@@ -200,7 +200,10 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
     }
     auto stage = getStage(Ufe::Path(segments[0]));
     if (!stage) {
-        TF_WARN(kIllegalUFEPath, path.string().c_str());
+        // Do not output any TF message here (such as TF_WARN). A low-level function
+        // like this should not be outputting any warnings messages. It is allowed to
+        // call this method with a properly composed Ufe path, but one that doesn't
+        // actually point to any valid prim.
         return UsdPrim();
     }
 
