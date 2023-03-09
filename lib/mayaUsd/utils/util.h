@@ -682,29 +682,6 @@ MString GetCurrentMayaWorkspacePath();
 MAYAUSD_CORE_PUBLIC
 MString GetCurrentSceneFilePath();
 
-/**
- * Returns all the sublayers recursively for a given layer
- *
- * @param layer   The layer to start from and get the sublayers
- *
- * @return The list of identifiers for all the sublayers
- */
-MAYAUSD_CORE_PUBLIC
-std::set<std::string> getAllSublayers(const PXR_NS::SdfLayerRefPtr& layer);
-
-/**
- * Returns all the sublayers recursively for a list of layers
- *
- * @param parentLayerPaths   The list of the parent layer paths to traverse recursively
- * @param includeParents   This will add the parents passed in to the output
- *
- * @return The list of identifiers for all the sublayers for each parent (plus the parents
- * potentially)
- */
-MAYAUSD_CORE_PUBLIC
-std::set<std::string>
-getAllSublayers(const std::vector<std::string>& parentLayerPaths, bool includeParents = false);
-
 /// Takes the supplied bounding box and adds to it Maya-specific extents
 /// that come from the nodes originating from the supplied root node
 MAYAUSD_CORE_PUBLIC
