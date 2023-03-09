@@ -29,6 +29,8 @@ from maya import standalone
 
 import ufe
 
+from pxr import Sdf
+
 import os
 import unittest
 
@@ -228,8 +230,19 @@ class DeleteCmdTestCase(unittest.TestCase):
         mayaPathSegment = mayaUtils.createUfePathSegment('|Tree_usd|Tree_usdShape')
         stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
         self.assertTrue(stage)
-        stage.SetEditTarget(stage.GetSessionLayer())
-        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
+
+        # add child defined on a new layer
+        mayaPathSegment = mayaUtils.createUfePathSegment('|Tree_usd|Tree_usdShape')
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        self.assertTrue(stage)
+
+        newLayerName = 'Layer_1'
+        usdFormat = Sdf.FileFormat.FindByExtension('usd')
+        newLayer = Sdf.Layer.New(usdFormat, newLayerName)
+        stage.GetRootLayer().subLayerPaths.append(newLayer.identifier)
+
+        stage.SetEditTarget(newLayer)
+        self.assertEqual(stage.GetEditTarget().GetLayer(), newLayer)
         
         # delete two USD prims and Maya's shape
         ufeObs.reset()
@@ -327,12 +340,17 @@ class DeleteCmdTestCase(unittest.TestCase):
         ufeObs = TestObserver()
         ufe.Scene.addObserver(ufeObs)
 
-        # add child defined on session layer
+        # add child defined on a new layer
         mayaPathSegment = mayaUtils.createUfePathSegment('|Tree_usd|Tree_usdShape')
         stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
         self.assertTrue(stage)
-        
-        stage.SetEditTarget(stage.GetSessionLayer())
+
+        newLayerName = 'Layer_1'
+        usdFormat = Sdf.FileFormat.FindByExtension('usd')
+        newLayer = Sdf.Layer.New(usdFormat, newLayerName)
+        stage.GetRootLayer().subLayerPaths.append(newLayer.identifier)
+
+        stage.SetEditTarget(newLayer)
         stage.DefinePrim('/TreeBase/newChild', 'Xform')
         stage.SetEditTarget(stage.GetRootLayer())
         
@@ -361,6 +379,51 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertTrue(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
         self.assertTrue(stage.GetPrimAtPath('/TreeBase/trunk'))
         self.assertTrue(stage.GetPrimAtPath('/TreeBase/newChild'))
+
+    def testDeleteRestrictionHierarchyWithChildrenInSessionLayer(self):
+        '''Test delete restriction - we *do* allow removal of a prim with child/children defined in the session layer'''
+
+        # open tree.ma scene in testSamples
+        mayaUtils.openTreeScene()
+
+        # create our UFE notification observer
+        ufeObs = TestObserver()
+        ufe.Scene.addObserver(ufeObs)
+
+        # add child defined on session layer
+        mayaPathSegment = mayaUtils.createUfePathSegment('|Tree_usd|Tree_usdShape')
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        self.assertTrue(stage)
+        
+        stage.SetEditTarget(stage.GetSessionLayer())
+        stage.DefinePrim('/TreeBase/newChild', 'Xform')
+        stage.SetEditTarget(stage.GetRootLayer())
+        
+        # delete two USD prims and Maya's shape
+        ufeObs.reset()
+        cmds.delete('|Tree_usd|Tree_usdShape,/TreeBase')
+        self.assertEqual(ufeObs.nbDeleteNotif() , 2)
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase'))
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/trunk'))
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/newChild'))
+        
+        # validate undo
+        ufeObs.reset()
+        cmds.undo()
+        self.assertEqual(ufeObs.nbAddNotif() , 1)
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase'))
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/trunk'))
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/newChild'))
+        
+        # validate redo
+        cmds.redo()
+        self.assertEqual(ufeObs.nbDeleteNotif() , 1)
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase'))
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/trunk'))
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/newChild'))
 
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test requires delete prim, its connections and connected properties feature only available on Ufe 0.4.24 and later')
     def testDeleteAndRemoveConnections(self):

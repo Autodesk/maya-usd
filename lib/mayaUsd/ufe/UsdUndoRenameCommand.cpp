@@ -21,6 +21,7 @@
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/loadRules.h>
 #include <mayaUsdUtils/util.h>
 
@@ -138,7 +139,7 @@ static void sendNotificationToAllStageProxies(
     }
 }
 
-static bool doUsdRename(
+static void doUsdRename(
     const UsdStagePtr& stage,
     const UsdPrim&     prim,
     std::string        newName,
@@ -152,10 +153,12 @@ static bool doUsdRename(
     // it's only after the scope ends that we start working with new items/paths/prims
     SdfChangeBlock changeBlock;
 
-    bool status
-        = MayaUsdUtils::updateReferencedPath(prim, SdfPath(dstPath.getSegments()[1].string()));
-    if (!status)
-        return false;
+    if (!MayaUsdUtils::updateReferencedPath(prim, SdfPath(dstPath.getSegments()[1].string()))) {
+        const std::string error = TfStringPrintf(
+            "Failed to update references to prim \"%s\".", prim.GetPath().GetText());
+        TF_WARN("%s", error.c_str());
+        throw std::runtime_error(error);
+    }
 
     // Make sure the load state of the renamed prim will be preserved.
     // We copy all rules that applied to it specifically and remove the rules
@@ -167,21 +170,28 @@ static bool doUsdRename(
         removeRulesForPath(*stage, fromPath);
     }
 
-    // set the new name
-    auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
-    status = primSpec->SetName(newName);
-    if (!status)
-        return false;
+    // Do the renaming in the target layer and all other applicable layers,
+    // which, due to command restrictions that have been verified when the
+    // command was created, should only be session layers.
+    PrimSpecFunc renameFunc
+        = [&newName](const UsdPrim& prim, const SdfPrimSpecHandle& primSpec) -> void {
+        if (!primSpec->SetName(newName)) {
+            const std::string error
+                = TfStringPrintf("Failed to rename \"%s\".", prim.GetPath().GetText());
+            TF_WARN("%s", error.c_str());
+            throw std::runtime_error(error);
+        }
+    };
 
-    return true;
+    applyToAllPrimSpecs(prim, renameFunc);
 }
 
-bool UsdUndoRenameCommand::renameRedo()
+void UsdUndoRenameCommand::renameRedo()
 {
     // If the new name is the same as the current name, do nothing.
     // This is the same behavior as the Maya rename command for Maya nodes.
     if (_newName.empty())
-        return true;
+        return;
 
     // get the stage's default prim path
     auto defaultPrimPath = _stage->GetDefaultPrim().GetPath();
@@ -193,8 +203,7 @@ bool UsdUndoRenameCommand::renameRedo()
     //       stale.
     const UsdPrim prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
 
-    if (!doUsdRename(_stage, prim, _newName, srcPath, dstPath))
-        return false;
+    doUsdRename(_stage, prim, _newName, srcPath, dstPath);
 
     // the renamed scene item is a "sibling" of its original name.
     _ufeDstItem = createSiblingSceneItem(srcPath, _newName);
@@ -206,16 +215,14 @@ bool UsdUndoRenameCommand::renameRedo()
 
     // send notification to update UFE data model
     sendNotificationToAllStageProxies(_stage, prim, srcPath, dstPath);
-
-    return true;
 }
 
-bool UsdUndoRenameCommand::renameUndo()
+void UsdUndoRenameCommand::renameUndo()
 {
     // If the new name is the same as the current name, do nothing.
     // This is the same behavior as the Maya rename command for Maya nodes.
     if (_newName.empty())
-        return true;
+        return;
 
     // get the stage's default prim path
     auto defaultPrimPath = _stage->GetDefaultPrim().GetPath();
@@ -228,8 +235,7 @@ bool UsdUndoRenameCommand::renameUndo()
     const UsdPrim     prim = _stage->GetPrimAtPath(_ufeDstItem->prim().GetPath());
     const std::string newName = _ufeSrcItem->prim().GetName();
 
-    if (!doUsdRename(_stage, prim, newName, srcPath, dstPath))
-        return false;
+    doUsdRename(_stage, prim, newName, srcPath, dstPath);
 
     // the renamed scene item is a "sibling" of its original name.
     _ufeSrcItem = createSiblingSceneItem(_ufeDstItem->path(), _ufeSrcItem->prim().GetName());
@@ -241,29 +247,18 @@ bool UsdUndoRenameCommand::renameUndo()
 
     // send notification to update UFE data model
     sendNotificationToAllStageProxies(_stage, prim, srcPath, dstPath);
-
-    return true;
 }
 
 void UsdUndoRenameCommand::undo()
 {
-    try {
-        InPathChange pc;
-        if (!renameUndo()) {
-            UFE_LOG("rename undo failed");
-        }
-    } catch (const std::exception& e) {
-        UFE_LOG(e.what());
-        throw; // re-throw the same exception
-    }
+    InPathChange pc;
+    renameUndo();
 }
 
 void UsdUndoRenameCommand::redo()
 {
     InPathChange pc;
-    if (!renameRedo()) {
-        UFE_LOG("rename redo failed");
-    }
+    renameRedo();
 }
 
 } // namespace ufe

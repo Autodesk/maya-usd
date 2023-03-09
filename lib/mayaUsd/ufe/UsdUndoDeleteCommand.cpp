@@ -19,9 +19,11 @@
 #include "private/Utils.h"
 
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/utils/layers.h>
 
 #include <pxr/usd/pcp/layerStack.h>
 #include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/usd/editContext.h>
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/undo/UsdUndoBlock.h>
@@ -85,8 +87,10 @@ void UsdUndoDeleteCommand::execute()
     auto        targetPrimSpec = stage->GetEditTarget().GetPrimSpecForScenePath(_prim.GetPath());
 
     if (hasLayersMuted(_prim)) {
-        TF_WARN("Cannot remove prim because there are muted layers.");
-        return;
+        const std::string error = TfStringPrintf(
+            "Cannot remove prim \"%s\" because there are muted layers.", _prim.GetPath().GetText());
+        TF_WARN("%s", error.c_str());
+        throw std::runtime_error(error);
     }
 
     if (MayaUsd::ufe::applyCommandRestrictionNoThrow(_prim, "delete")) {
@@ -95,10 +99,17 @@ void UsdUndoDeleteCommand::execute()
         UsdAttributes::removeAttributesConnections(_prim);
 #endif
 #endif
-        auto retVal = stage->RemovePrim(_prim.GetPath());
-        if (!retVal) {
-            TF_VERIFY(retVal, "Failed to delete '%s'", _prim.GetPath().GetText());
-        }
+        PrimSpecFunc deleteFunc
+            = [stage](const UsdPrim& prim, const SdfPrimSpecHandle& primSpec) -> void {
+            PXR_NS::UsdEditContext ctx(stage, primSpec->GetLayer());
+            if (!stage->RemovePrim(prim.GetPath())) {
+                const std::string error
+                    = TfStringPrintf("Failed to delete prim \"%s\".", prim.GetPath().GetText());
+                TF_WARN("%s", error.c_str());
+                throw std::runtime_error(error);
+            }
+        };
+        applyToAllPrimSpecs(_prim, deleteFunc);
     }
 #else
     _prim.SetActive(false);
