@@ -158,7 +158,8 @@ TF_DECLARE_PUBLIC_TOKENS(TrUsdTokens, , TR_USD_COMMON TR_USD_TEXTURE TR_USD_PRIM
     (filterType) \
     (invert) \
     ((UDIMTag, "<UDIM>")) \
-    (uvTilingMode) \
+    (uvTilingMode)   \
+    ((utilityRaw, "Utility - Raw"))  \
     (Raw) \
     (sRGB)
 

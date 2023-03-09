@@ -289,7 +289,8 @@ void PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
         // Set the sourceColorSpace as well. The color space metadata will not be transmitted via
         // Hydra, so we need to set this attribute as well if we want hdStorm and the VP2 render
         // delegate to look correct
-        if (colorSpace == TrMayaTokens->Raw.GetText()) {
+        if (colorSpace == TrMayaTokens->Raw.GetText()
+            || colorSpace == TrMayaTokens->utilityRaw.GetText()) {
             shaderSchema.CreateInput(TrUsdTokens->sourceColorSpace, SdfValueTypeNames->Token)
                 .Set(TrUsdTokens->raw);
         } else if (colorSpace == TrMayaTokens->sRGB.GetText()) {

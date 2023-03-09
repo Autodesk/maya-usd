@@ -1193,12 +1193,23 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
     }
 }
 
+HdVP2DrawItem* _FindMod(HdVP2DrawItem* baseItem, const int modFlags)
+{
+    for (auto mod = baseItem; mod; mod = mod->GetMod()) {
+        if (mod->GetModFlags() == modFlags) {
+            return mod;
+        }
+    }
+
+    return nullptr;
+}
+
 void HdVP2Mesh::_AddNewRenderItem(
     HdVP2DrawItem*        drawItem,
     const HdMeshReprDesc& desc,
     const TfToken&        reprToken,
     MSubSceneContainer*   subSceneContainer,
-    const bool            shareHighlightItem)
+    const int             modFlags)
 {
     const MString& renderItemName = drawItem->GetDrawItemName();
 
@@ -1237,9 +1248,7 @@ void HdVP2Mesh::_AddNewRenderItem(
             || reprToken == HdVP2ReprTokens->defaultMaterial) {
             // Share selection highlight render item between hull reprs
             bool foundShared = false;
-            for (auto it = _reprs.begin();
-                 shareHighlightItem && (it != _reprs.end()) && !foundShared;
-                 ++it) {
+            for (auto it = _reprs.begin(); (it != _reprs.end()) && !foundShared; ++it) {
                 const HdReprSharedPtr& repr = it->second;
                 const auto&            items = repr->GetDrawItems();
 #if HD_API_VERSION < 35
@@ -1251,9 +1260,14 @@ void HdVP2Mesh::_AddNewRenderItem(
 #endif
                     if (shDrawItem
                         && shDrawItem->MatchesUsage(HdVP2DrawItem::kSelectionHighlight)) {
-                        drawItem->ShareRenderItem(*shDrawItem);
-                        foundShared = true;
-                        break;
+                        // We may only share items which properties correspond exactly,
+                        // including 'hide-on-playback' and 'selectability'.
+                        // Therefore, we must use only the corresponding mod.
+                        if (auto sharedItem = _FindMod(shDrawItem, modFlags)) {
+                            drawItem->ShareRenderItem(*sharedItem);
+                            foundShared = true;
+                            break;
+                        }
                     }
                 }
             }
@@ -1478,7 +1492,7 @@ void HdVP2Mesh::_UpdateMods(
             newMod->SetModFlags(bitsetIndex);
 
             // Add render items to the mod in the same way it is done for the original draw item
-            _AddNewRenderItem(newMod.get(), desc, reprToken, subSceneContainer, false);
+            _AddNewRenderItem(newMod.get(), desc, reprToken, subSceneContainer, bitsetIndex);
             if (desc.geomStyle == HdMeshGeomStyleHull) {
                 if (newMod->GetRenderItems().size() == 0) {
                     _CreateSmoothHullRenderItems(*newMod, reprToken, *subSceneContainer);
@@ -1946,7 +1960,8 @@ void HdVP2Mesh::_UpdateDrawItem(
 #endif
 
             _SyncDisplayLayerModesInstanced(id, instanceCount);
-            const int modFlags = drawItem->GetModFlags();
+            const int             modFlags = drawItem->GetModFlags();
+            InstanceColorOverride colorOverride(useWireframeColors);
 
             stateToCommit._instanceTransforms = std::make_shared<MMatrixArray>();
             stateToCommit._instanceColors = std::make_shared<MFloatArray>();
@@ -1956,13 +1971,15 @@ void HdVP2Mesh::_UpdateDrawItem(
                     continue;
 
                 // Check display layer modes of this instance
+                colorOverride.Reset();
                 if (_FilterInstanceByDisplayLayer(
                         usdInstanceId,
                         info,
                         reprToken,
                         modFlags,
                         isHighlightItem,
-                        isDedicatedHighlightItem))
+                        isDedicatedHighlightItem,
+                        colorOverride))
                     continue;
 
 #ifndef MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT
@@ -1975,7 +1992,8 @@ void HdVP2Mesh::_UpdateDrawItem(
                 mayaToUsd.push_back(usdInstanceId);
 #endif
                 if (useWireframeColors) {
-                    const MColor& color = wireframeColors[info];
+                    const MColor& color
+                        = colorOverride._enabled ? colorOverride._color : wireframeColors[info];
                     for (unsigned int j = 0; j < kNumColorChannels; j++) {
                         stateToCommit._instanceColors->append(color[j]);
                     }

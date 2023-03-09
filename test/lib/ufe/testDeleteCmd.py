@@ -20,6 +20,7 @@ import fixturesUtils
 import mayaUtils
 import ufeUtils
 import usdUtils
+import testUtils
 
 import mayaUsd.ufe
 
@@ -27,6 +28,8 @@ from maya import cmds
 from maya import standalone
 
 import ufe
+
+from pxr import Sdf
 
 import os
 import unittest
@@ -227,8 +230,19 @@ class DeleteCmdTestCase(unittest.TestCase):
         mayaPathSegment = mayaUtils.createUfePathSegment('|Tree_usd|Tree_usdShape')
         stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
         self.assertTrue(stage)
-        stage.SetEditTarget(stage.GetSessionLayer())
-        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
+
+        # add child defined on a new layer
+        mayaPathSegment = mayaUtils.createUfePathSegment('|Tree_usd|Tree_usdShape')
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        self.assertTrue(stage)
+
+        newLayerName = 'Layer_1'
+        usdFormat = Sdf.FileFormat.FindByExtension('usd')
+        newLayer = Sdf.Layer.New(usdFormat, newLayerName)
+        stage.GetRootLayer().subLayerPaths.append(newLayer.identifier)
+
+        stage.SetEditTarget(newLayer)
+        self.assertEqual(stage.GetEditTarget().GetLayer(), newLayer)
         
         # delete two USD prims and Maya's shape
         ufeObs.reset()
@@ -326,12 +340,17 @@ class DeleteCmdTestCase(unittest.TestCase):
         ufeObs = TestObserver()
         ufe.Scene.addObserver(ufeObs)
 
-        # add child defined on session layer
+        # add child defined on a new layer
         mayaPathSegment = mayaUtils.createUfePathSegment('|Tree_usd|Tree_usdShape')
         stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
         self.assertTrue(stage)
-        
-        stage.SetEditTarget(stage.GetSessionLayer())
+
+        newLayerName = 'Layer_1'
+        usdFormat = Sdf.FileFormat.FindByExtension('usd')
+        newLayer = Sdf.Layer.New(usdFormat, newLayerName)
+        stage.GetRootLayer().subLayerPaths.append(newLayer.identifier)
+
+        stage.SetEditTarget(newLayer)
         stage.DefinePrim('/TreeBase/newChild', 'Xform')
         stage.SetEditTarget(stage.GetRootLayer())
         
@@ -360,6 +379,157 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertTrue(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
         self.assertTrue(stage.GetPrimAtPath('/TreeBase/trunk'))
         self.assertTrue(stage.GetPrimAtPath('/TreeBase/newChild'))
+
+    def testDeleteRestrictionHierarchyWithChildrenInSessionLayer(self):
+        '''Test delete restriction - we *do* allow removal of a prim with child/children defined in the session layer'''
+
+        # open tree.ma scene in testSamples
+        mayaUtils.openTreeScene()
+
+        # create our UFE notification observer
+        ufeObs = TestObserver()
+        ufe.Scene.addObserver(ufeObs)
+
+        # add child defined on session layer
+        mayaPathSegment = mayaUtils.createUfePathSegment('|Tree_usd|Tree_usdShape')
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        self.assertTrue(stage)
+        
+        stage.SetEditTarget(stage.GetSessionLayer())
+        stage.DefinePrim('/TreeBase/newChild', 'Xform')
+        stage.SetEditTarget(stage.GetRootLayer())
+        
+        # delete two USD prims and Maya's shape
+        ufeObs.reset()
+        cmds.delete('|Tree_usd|Tree_usdShape,/TreeBase')
+        self.assertEqual(ufeObs.nbDeleteNotif() , 2)
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase'))
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/trunk'))
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/newChild'))
+        
+        # validate undo
+        ufeObs.reset()
+        cmds.undo()
+        self.assertEqual(ufeObs.nbAddNotif() , 1)
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase'))
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/trunk'))
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/newChild'))
+        
+        # validate redo
+        cmds.redo()
+        self.assertEqual(ufeObs.nbDeleteNotif() , 1)
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase'))
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/trunk'))
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/newChild'))
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test requires delete prim, its connections and connected properties feature only available on Ufe 0.4.24 and later')
+    def testDeleteAndRemoveConnections(self):
+        '''Test deleting a prim and its connections'''
+        
+        # Load a stage with a compound.
+        testFile = testUtils.getTestScene('MaterialX', 'multiple_connections.usda')
+        testPath,shapeStage = mayaUtils.createProxyFromFile(testFile)
+        self.assertTrue(shapeStage)
+        self.assertTrue(testPath)
+      
+        ufeItem = ufeUtils.createUfeSceneItem(testPath,'/Material1/UsdPreviewSurface1')
+        ufeItemFractal = ufeUtils.createUfeSceneItem(testPath,'/Material1/fractal3d1')
+        ufeItemPreview = ufeUtils.createUfeSceneItem(testPath,'/Material1/UsdPreviewSurface2')
+        ufeItemMaterial = ufeUtils.createUfeSceneItem(testPath,'/Material1')
+        ufeItemSurface1 = ufeUtils.createUfeSceneItem(testPath,'/Material1/surface1')
+        ufeItemSurface2 = ufeUtils.createUfeSceneItem(testPath,'/Material1/surface2')
+        ufeItemSurface3 = ufeUtils.createUfeSceneItem(testPath,'/Material1/surface3')
+        ufeItemCompound = ufeUtils.createUfeSceneItem(testPath,'/Material1/compound')
+
+        self.assertIsNotNone(ufeItem)
+        self.assertIsNotNone(ufeItemFractal)
+        self.assertIsNotNone(ufeItemPreview)
+        self.assertIsNotNone(ufeItemMaterial)
+        self.assertIsNotNone(ufeItemSurface1)
+        self.assertIsNotNone(ufeItemSurface2)
+        self.assertIsNotNone(ufeItemSurface3)
+        self.assertIsNotNone(ufeItemCompound)
+
+        # Test the connections before deleting the node.
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(ufeItemFractal.runTimeId())
+        self.assertIsNotNone(connectionHandler)
+
+        connections = connectionHandler.sourceConnections(ufeItemFractal)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        connections = connectionHandler.sourceConnections(ufeItemPreview)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        connections = connectionHandler.sourceConnections(ufeItemMaterial)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 2)
+
+        connections = connectionHandler.sourceConnections(ufeItemSurface3)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        # Delete the node.
+        usdItemToDeletePathString = testPath + ',/Material1/UsdPreviewSurface1'
+        cmds.delete(usdItemToDeletePathString)
+        
+        # Test the connections after deleting the node.
+        connections = connectionHandler.sourceConnections(ufeItemFractal)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 0)
+
+        connections = connectionHandler.sourceConnections(ufeItemPreview)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 0)
+
+        connections = connectionHandler.sourceConnections(ufeItemMaterial)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        connections = connectionHandler.sourceConnections(ufeItemSurface3)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        # Test the properties.
+        parentPrim = shapeStage.GetPrimAtPath('/Material1')
+        surface1Prim = shapeStage.GetPrimAtPath('/Material1/surface1')
+        previewSurface2Prim = shapeStage.GetPrimAtPath('/Material1/UsdPreviewSurface2')
+        fractal3d1Prim = shapeStage.GetPrimAtPath('/Material1/fractal3d1')
+        self.assertTrue(parentPrim)
+        self.assertTrue(surface1Prim)
+        self.assertTrue(previewSurface2Prim)
+        self.assertTrue(fractal3d1Prim)
+        self.assertTrue(parentPrim.HasProperty('inputs:clearcoat'))
+        self.assertTrue(parentPrim.HasProperty('outputs:displacement1'))
+        self.assertFalse(surface1Prim.HasProperty('outputs:out'))
+        self.assertFalse(fractal3d1Prim.HasProperty('inputs:amplitude'))
+        self.assertFalse(previewSurface2Prim.HasProperty('inputs:diffuseColor'))
+
+        # Delete the compound.
+        usdItemToDeletePathString = testPath + ',/Material1/compound'
+        cmds.delete(usdItemToDeletePathString)
+
+        connections = connectionHandler.sourceConnections(ufeItemMaterial)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 0)
+
+        connections = connectionHandler.sourceConnections(ufeItemSurface3)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 0)
+
+        # Test the properties.
+        surface2Prim = shapeStage.GetPrimAtPath('/Material1/surface2')
+        surface3Prim = shapeStage.GetPrimAtPath('/Material1/surface3')
+        self.assertTrue(surface2Prim)
+        self.assertTrue(surface3Prim)
+        self.assertTrue(parentPrim.HasProperty('inputs:clearcoat1'))
+        self.assertTrue(parentPrim.HasProperty('outputs:displacement'))
+        self.assertFalse(surface2Prim.HasProperty('outputs:out'))
+        self.assertFalse(surface3Prim.HasProperty('inputs:bsdf'))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

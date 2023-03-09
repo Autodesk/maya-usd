@@ -30,6 +30,17 @@ def mayaUsdLibRegisterStrings():
 
     # Any python strings from MayaUsd lib go here.
 
+    # ae_template.py
+    register('kKindMetadataAnn', 'Kind is a type of metadata (a pre-loaded string value) used to classify prims in USD. Set the classification value from the dropdown to assign a kind category to a prim. Set a kind value to activate selection by kind.')
+    register('kActiveMetadataAnn', "If selected, the prim is set to active and contributes to the composition of a stage. If a prim is set to inactive, it doesn't contribute to the composition of a stage (it gets striked out in the Outliner and is deactivated from the Viewport).")
+    register('kInstanceableMetadataAnn', 'If selected, instanceable is set to true for the prim and the prim is considered a candidate for instancing. If deselected, instanceable is set to false.')
+    register('kErrorAttributeMustBeArray', '"^1s" must be an array!')
+    register('kMenuCopyValue', 'Copy Attribute Value')
+    register('kMenuPrintValue', 'Print to Script Editor')
+    register('kLabelUnusedTransformAttrs', 'Unused')
+    register('kLabelMetadata', 'Metadata')
+    register('kLabelAppliedSchemas', 'Applied Schemas')
+
     # mayaUsdAddMayaReference.py
     register('kErrorGroupPrimExists', 'Group prim "^1s" already exists under "^2s". Choose prim name other than "^1s" to proceed.')
     register('kErrorCannotAddToProxyShape', 'Cannot add Maya Reference node to ProxyShape with Variant Set unless grouped. Enable Group checkbox to proceed.')
@@ -69,9 +80,9 @@ def mayaUsdLibRegisterStrings():
     register('kHelpMenu', 'Help')
     register('kHelpMergeToUSDOptionsMenuItem', 'Help on Merge Maya Edits to USD Options')
 
-    # mayaUsdDuplicateAsMayaDataOptions.py
-    register('kDuplicateAsMayaDataOptionsTitle', 'Duplicate As Maya Data Options')
-    register('kHelpDuplicateAsMayaDataOptionsMenuItem', 'Help on Duplicate As Maya Data Options')
+    # mayaUsdDuplicateAsUsdDataOptions.py
+    register('kDuplicateAsUsdDataOptionsTitle', 'Duplicate As USD Data Options')
+    register('kHelpDuplicateAsUsdDataOptionsMenuItem', 'Help on Duplicate As USD Data Options')
 
     # mayaUsdMergeToUsd.py
     register('kErrorMergeToUsdMenuItem', 'Could not create menu item for merge to USD')

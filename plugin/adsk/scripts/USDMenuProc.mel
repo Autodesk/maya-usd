@@ -166,6 +166,18 @@ global proc mayaUsdMenu_addExistingMaterials(string $ufePath)
     setParent -menu ..;
 }
 
+global proc mayaUsdMenu_unassignMaterial(string $ufePath)
+{
+    if (size($ufePath) != 0) {
+        string $temp = `python("import ufe;\
+                                ufePath = ufe.PathString.path('" + $ufePath + "');\
+                                item = ufe.Hierarchy.createItem(ufePath);\
+                                contextOps = ufe.ContextOps.contextOps(item);\
+                                cmd = contextOps.doOpCmd(['Unassign Material']);\
+                                ufe.UndoableCommandMgr.instance().executeCmd(cmd);")`;
+    }
+}
+
 // On right click in the viewport, either through selection or through a pick
 // hit, Maya will look for a procedure called $runTimeName + "MenuProc".
 // and call it.  When the selection or pick hit is a USD prim, this calls the
@@ -202,6 +214,9 @@ global proc USDMenuProc(string $parent, string $obj)
             mayaUsdMenu_addExistingMaterials($obj);
         }
         setParent -menu ..;
+
+        // Unassign (aka "unbind") the material from the selected object.
+        menuItem -label "Unassign Material" -command ("{waitCursor -state 1; mayaUsdMenu_unassignMaterial \"" + $obj + "\"; waitCursor -state 0;}");
     }
 
     // Allow the user to define a proc with additional menu items

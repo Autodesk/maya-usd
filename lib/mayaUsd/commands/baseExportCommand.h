@@ -89,6 +89,7 @@ public:
     static constexpr auto kApiSchemaFlag = "api";
     static constexpr auto kJobContextFlag = "jc";
     static constexpr auto kWorldspaceFlag = "wsp";
+    static constexpr auto kCustomLayerData = "cld";
 
     // Short and Long forms of flags defined by this command itself:
     static constexpr auto kAppendFlag = "a";

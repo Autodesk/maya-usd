@@ -23,6 +23,7 @@
 #include <mayaUsd/utils/loadRules.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/undo/UsdUndoBlock.h>
+#include <mayaUsdUtils/MergePrims.h>
 #endif
 #include <mayaUsdUtils/util.h>
 
@@ -36,6 +37,8 @@
 #include <ufe/path.h>
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
+
+#include <algorithm>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -51,12 +54,10 @@ UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(const UsdSceneItem::Ptr& srcIte
     auto srcPrim = srcItem->prim();
     auto parentPrim = srcPrim.GetParent();
 
-    ufe::applyCommandRestriction(srcPrim, "duplicate");
-
     auto newName = uniqueChildName(parentPrim, srcPrim.GetName());
     _usdDstPath = parentPrim.GetPath().AppendChild(TfToken(newName));
 
-    _srcLayer = srcPrim.GetStage()->GetEditTarget().GetLayer();
+    _srcLayer = MayaUsdUtils::getDefiningLayerAndPath(srcPrim).layer;
     _dstLayer = getEditRouterLayer(PXR_NS::TfToken("duplicate"), srcPrim);
 }
 
@@ -92,12 +93,37 @@ void UsdUndoDuplicateCommand::execute()
     // state.
     duplicateLoadRules(*stage, path, _usdDstPath);
 
-    bool retVal = PXR_NS::SdfCopySpec(_srcLayer, path, _dstLayer, _usdDstPath);
-    TF_VERIFY(
-        retVal,
-        "Failed to copy spec data at '%s' to '%s'",
-        prim.GetPath().GetText(),
-        _usdDstPath.GetText());
+    // Make sure all necessary parent exists in the target layer, at least as over,
+    // otherwise SdfCopySepc will fail.
+    SdfJustCreatePrimInLayer(_dstLayer, _usdDstPath.GetParentPath());
+
+    // Retrieve the layers where there are opinion and order them from weak
+    // to strong. We will copy the weakest opinions first, so that they will
+    // get over-written by the stronger opinions.
+    using namespace MayaUsdUtils;
+    std::vector<LayerAndPath> authLayerAndPaths = getAuthoredLayerAndPaths(prim);
+    std::reverse(authLayerAndPaths.begin(), authLayerAndPaths.end());
+
+    MergePrimsOptions options;
+    options.verbosity = MergeVerbosity::None;
+    bool isFirst = true;
+
+    for (const LayerAndPath& layerAndPath : authLayerAndPaths) {
+        const auto layer = layerAndPath.layer;
+        const auto path = layerAndPath.path;
+        const bool result = isFirst
+            ? SdfCopySpec(layer, path, _dstLayer, _usdDstPath)
+            : mergePrims(stage, layer, path, stage, _dstLayer, _usdDstPath, options);
+
+        TF_VERIFY(
+            result,
+            "Failed to copy the USD prim at '%s' in layer '%s' to '%s'",
+            path.GetText(),
+            layer->GetDisplayName().c_str(),
+            _usdDstPath.GetText());
+
+        isFirst = false;
+    }
 
     extras.finalize(MayaUsd::ufe::stagePath(stage), &path, &_usdDstPath);
 }
@@ -140,6 +166,7 @@ bool UsdUndoDuplicateCommand::duplicateUndo()
 bool UsdUndoDuplicateCommand::duplicateRedo()
 {
     auto prim = ufePathToPrim(_ufeSrcPath);
+    SdfJustCreatePrimInLayer(_dstLayer, _usdDstPath.GetParentPath());
     return SdfCopySpec(_srcLayer, prim.GetPath(), _dstLayer, _usdDstPath);
 }
 

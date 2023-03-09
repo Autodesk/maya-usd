@@ -69,6 +69,13 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         globalSelection.clear()
         self.assertSnapshotClose('%s_render.png' % self._testName)
 
+    def _GetPrim(self, mayaPathString, usdPathString):
+        mayaPathSegment = mayaUtils.createUfePathSegment(mayaPathString)
+        usdPathSegment = usdUtils.createUfePathSegment(usdPathString)
+        ufePath = ufe.Path([mayaPathSegment, usdPathSegment])
+        ufeItem = ufe.Hierarchy.createItem(ufePath)
+        return usdUtils.getPrimFromSceneItem(ufeItem)
+
     def testUVStreamManagement(self):
         """Test that a scene without primvar readers renders correctly if it
            uses indexed UV streams"""
@@ -90,6 +97,31 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
             cmds.modelEditor(panel, edit=True, displayLights="default")
 
         self._StartTest('MayaSurfaces_untextured', False)
+
+    def testResetToDefaultValues(self):
+        """When deleting an authored attribute, make sure the shader reverts to the default unauthored value."""
+        cmds.file(force=True, new=True)
+
+        light = cmds.directionalLight(rgb=(1, 1, 1))
+        transform = cmds.listRelatives(light, parent=True)[0]
+        cmds.xform(transform, ro=(-30, -6, -75), ws=True)
+        cmds.setAttr(light+".intensity", 10)
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, lights=False, displayLights="all", displayTextures=True)
+
+        self._StartTest('delete_attr_test')
+
+        toDelete = [
+            ("/mtl/standard_surface1/standard_surface1", "inputs:base"),
+            ("/mtl/standard_surface1/standard_surface1", "inputs:specular_color"),
+            ("/mtl/standard_surface1/ifequal1", "inputs:value1"),
+            ("/mtl/standard_surface1/place2d1", "inputs:scale"),
+            ("/mtl/standard_surface1/image1", "inputs:file"),
+        ]
+        for primPath, attrName in toDelete:
+            prim = self._GetPrim('|stage|stageShape', primPath)
+            prim.RemoveProperty(attrName)
+            self.assertSnapshotClose('delete_attr_test_%s.png' % attrName.split(":")[1])
 
     @unittest.skipIf(os.getenv('MATERIALX_VERSION', '1.38.0') < '1.38.4', 'Test has a glTf PBR surface only found in MaterialX 1.38.4 and later.')
     def testTransparency(self):

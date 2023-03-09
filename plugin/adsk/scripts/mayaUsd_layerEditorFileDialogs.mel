@@ -13,6 +13,10 @@
 // limitations under the License.
 //
 
+///////////////////////////////////////////////////////////
+//
+// Root-relative callbacks
+
 global proc mayaUsd_USDRootFileRelative_UICreate(string $parent)
 {
     // First create the scroll layout here and then call the python
@@ -32,7 +36,54 @@ global proc mayaUsd_USDRootFileRelative_UICommit(string $parent, string $selecte
     python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdRootFileRelative.uiCommit('" + $parent + "', '" + $selectedFile + "')");
 }
 
-global proc string UsdLayerEditor_SaveLayerFileDialog()
+global proc mayaUsd_USDRootFileRelative_SelectionChanged(string $parent, string $selection)
+{
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdRootFileRelative.selectionChanged('" + $parent + "', '" + $selection + "')");
+}
+
+global proc mayaUsd_USDRootFileRelative_FileTypeChanged(string $parent, string $newType)
+{
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdRootFileRelative.fileTypeChanged('" + $parent + "', '" + $newType + "')");
+}
+
+///////////////////////////////////////////////////////////
+//
+// Sub-layer-relative callbacks
+
+global proc mayaUsd_USDSubLayerFileRelative_UICreate(string $parent)
+{
+    // First create the scroll layout here and then call the python
+    // helper to add the rest of the UI.
+    setParent $parent;
+    string $layout = `scrollLayout -childResizable true`;
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdSubLayerFileRelative.uiCreate('" + $layout + "')");
+}
+
+global proc mayaUsd_USDSubLayerFileRelative_UIInit(string $parent, string $filterType)
+{
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdSubLayerFileRelative.uiInit('" + $parent + "', '" + $filterType + "')");
+}
+
+global proc mayaUsd_USDSubLayerFileRelative_UICommit(string $parent, string $selectedFile)
+{
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdSubLayerFileRelative.uiCommit('" + $parent + "', '" + $selectedFile + "')");
+}
+
+global proc mayaUsd_USDSubLayerFileRelative_SelectionChanged(string $parent, string $selection)
+{
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdSubLayerFileRelative.selectionChanged('" + $parent + "', '" + $selection + "')");
+}
+
+global proc mayaUsd_USDSubLayerFileRelative_FileTypeChanged(string $parent, string $newType)
+{
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdSubLayerFileRelative.fileTypeChanged('" + $parent + "', '" + $newType + "')");
+}
+
+///////////////////////////////////////////////////////////
+//
+// File dialog
+
+global proc string UsdLayerEditor_SaveLayerFileDialog(int $isRootLayer)
 {
     string $fileFilter = python("from mayaUsdUtils import getUSDDialogFileFilters; getUSDDialogFileFilters(False)");
 
@@ -42,12 +93,33 @@ global proc string UsdLayerEditor_SaveLayerFileDialog()
         $startDir = dirname($fullPath);
     }
 
+    string $createCallback;
+    string $initCallback;
+    string $commitCallback;
+    string $fileTypeCallback;
+    string $selectionCallback;
+    if ($isRootLayer) {
+        $createCallback = "mayaUsd_USDRootFileRelative_UICreate";
+        $initCallback   = "mayaUsd_USDRootFileRelative_UIInit";
+        $commitCallback = "mayaUsd_USDRootFileRelative_UICommit";
+        $fileTypeCallback = "mayaUsd_USDRootFileRelative_FileTypeChanged";
+        $selectionCallback = "mayaUsd_USDRootFileRelative_SelectionChanged";
+    } else {
+        $createCallback = "mayaUsd_USDSubLayerFileRelative_UICreate";
+        $initCallback   = "mayaUsd_USDSubLayerFileRelative_UIInit";
+        $commitCallback = "mayaUsd_USDSubLayerFileRelative_UICommit";
+        $fileTypeCallback = "mayaUsd_USDSubLayerFileRelative_FileTypeChanged";
+        $selectionCallback = "mayaUsd_USDSubLayerFileRelative_SelectionChanged";
+    }
+
     string $result[] = `fileDialog2 
         -fileMode 0
         -fileFilter $fileFilter
-        -optionsUICreate "mayaUsd_USDRootFileRelative_UICreate"
-        -optionsUIInit "mayaUsd_USDRootFileRelative_UIInit"
-        -optionsUICommit2 "mayaUsd_USDRootFileRelative_UICommit"
+        -optionsUICreate $createCallback
+        -optionsUIInit $initCallback
+        -optionsUICommit2 $commitCallback
+        -fileTypeChanged $fileTypeCallback
+        -selectionChanged $selectionCallback
         -startingDirectory $startDir
     `;
 

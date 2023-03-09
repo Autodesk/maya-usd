@@ -279,6 +279,29 @@ class testUsdImportSkeleton(unittest.TestCase):
             usdSkelQuery=skelQuery,
             usdSkinningQuery=skinningQuery)
 
+    def test_SkelImportStaticTimeSampledMesh(self):
+        """
+        Test that an import of skinned geometry with a single, static time sample uses the same code path
+        as non-timesampled geometry.
+        """
+
+        cmds.file(new=True, force=True)
+
+        path = os.path.join(
+            self.inputPath, "UsdImportSkeleton", "skelStaticTimeSampledMesh.usda"
+        )
+        cmds.mayaUSDImport(
+            file=path,
+            readAnimData=True,
+            primPath="/Root",
+            shadingMode=[
+                ["none", "default"],
+            ],
+        )
+
+        blendshapes = cmds.ls(typ="blendShape")
+        self.assertFalse(blendshapes, "Single sample wasn't treated as a static item")
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

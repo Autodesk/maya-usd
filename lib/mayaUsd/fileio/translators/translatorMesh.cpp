@@ -264,7 +264,8 @@ TranslatorMeshRead::TranslatorMeshRead(
     // ==================================================
     // Code below this point is for handling deforming meshes, so if we don't
     // have time samples to deal with, we're done.
-    if (m_pointsNumTimeSamples == 0u) {
+    // A single sample can be treated as static
+    if (m_pointsNumTimeSamples < 2u) {
         return;
     }
 

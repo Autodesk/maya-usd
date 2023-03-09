@@ -302,6 +302,9 @@ void _ConfigureReprs()
     // Forced representations are used for instanced geometry with display layer overrides
     HdMesh::ConfigureRepr(HdVP2ReprTokens->forcedBbox, reprDescEdge);
     HdMesh::ConfigureRepr(HdVP2ReprTokens->forcedWire, reprDescWire);
+    // forcedUntextured repr doesn't use reprDescEdge descriptor because
+    // its selection highlight will be drawn through a non-forced repr
+    HdMesh::ConfigureRepr(HdVP2ReprTokens->forcedUntextured, reprDescHull);
 
     // smooth hull for untextured display
     HdBasisCurves::ConfigureRepr(

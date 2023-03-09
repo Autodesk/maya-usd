@@ -24,6 +24,8 @@
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
+#include <mayaUsd/utils/util.h>
+
 #include <maya/MFnDisplayLayer.h>
 #include <maya/MFnDisplayLayerManager.h>
 #include <maya/MObjectArray.h>
@@ -339,11 +341,14 @@ HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
 
         // Instanced primitives with instances in display layers use 'forced' representations to
         // draw those specific instances, so the 'forced' representations should be inited alongside
-        if (reprToken != HdVP2ReprTokens->forcedBbox && reprToken != HdVP2ReprTokens->forcedWire) {
+        if (reprToken != HdVP2ReprTokens->forcedBbox && reprToken != HdVP2ReprTokens->forcedWire
+            && reprToken != HdVP2ReprTokens->forcedUntextured) {
             refThis.InitRepr(
                 drawScene.GetUsdImagingDelegate(), HdVP2ReprTokens->forcedBbox, dirtyBits);
             refThis.InitRepr(
                 drawScene.GetUsdImagingDelegate(), HdVP2ReprTokens->forcedWire, dirtyBits);
+            refThis.InitRepr(
+                drawScene.GetUsdImagingDelegate(), HdVP2ReprTokens->forcedUntextured, dirtyBits);
         }
     } else {
         // Sync display layer modes for non-instanced prims.
@@ -699,7 +704,8 @@ void MayaUsdRPrim::_ProcessDisplayLayerModes(
     }
 
     if (useRGBColors.asBool()) {
-        const float3& rgbColor = colorRGB.asMDataHandle().asFloat3();
+        auto          colorRGBHolder = UsdMayaUtil::GetPlugDataHandle(colorRGB);
+        const float3& rgbColor = colorRGBHolder->GetDataHandle().asFloat3();
         displayLayerModes._wireframeColorIndex = -1;
         displayLayerModes._wireframeColorRGBA
             = MColor(rgbColor[0], rgbColor[1], rgbColor[2], colorA.asFloat());
@@ -784,6 +790,8 @@ void MayaUsdRPrim::_SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned i
                 _forcedReprFlags |= kForcedBBox;
             } else if (displayLayerModes._reprOverride == kWire) {
                 _forcedReprFlags |= kForcedWire;
+            } else if (!displayLayerModes._texturing) {
+                _forcedReprFlags |= kForcedUntextured;
             }
 
             int requiredModFlags = 0;
@@ -1021,12 +1029,13 @@ bool MayaUsdRPrim::_GetMaterialPrimvars(
 }
 
 bool MayaUsdRPrim::_FilterInstanceByDisplayLayer(
-    unsigned int          usdInstanceId,
-    BasicWireframeColors& instanceColor,
-    const TfToken&        reprToken,
-    int                   modFlags,
-    bool                  isHighlightItem,
-    bool                  isDedicatedHighlightItem) const
+    unsigned int           usdInstanceId,
+    BasicWireframeColors&  instanceColor,
+    const TfToken&         reprToken,
+    int                    modFlags,
+    bool                   isHighlightItem,
+    bool                   isDedicatedHighlightItem,
+    InstanceColorOverride& colorOverride) const
 {
     if (_displayLayerModesInstanced.size() <= usdInstanceId) {
         return false;
@@ -1038,18 +1047,40 @@ bool MayaUsdRPrim::_FilterInstanceByDisplayLayer(
         return true;
     }
 
-    // Match item's bbox mode against instance's bbox mode
+    // Process draw mode overrides
     const bool forcedBboxItem = (reprToken == HdVP2ReprTokens->forcedBbox);
-    const bool overrideBboxInstance = displayLayerModes._reprOverride == kBBox;
-    if (forcedBboxItem != overrideBboxInstance) {
-        return true;
-    }
-
-    // Match item's wire mode against instance's wire mode
     const bool forcedWireItem = (reprToken == HdVP2ReprTokens->forcedWire);
-    const bool overrideWireInstance = displayLayerModes._reprOverride == kWire;
-    if (forcedWireItem != overrideWireInstance) {
-        return true;
+    const bool forcedUntexturedItem = (reprToken == HdVP2ReprTokens->forcedUntextured);
+    if (displayLayerModes._reprOverride == kNone) {
+        if (displayLayerModes._texturing) {
+            // In no-override mode, an instance should be drawn only by
+            // the non-forced reprs, so skip the forced ones.
+            if (forcedBboxItem || forcedWireItem || forcedUntexturedItem) {
+                return true;
+            }
+        } else {
+            // Untextured override cannot affect bbox and wire modes, so keep
+            // those reprs along with the forcedUntextured one.
+            // Also, since forcedUntextured repr doesn't have a dedicated highlight
+            // draw item, it is drawn by non-forced reprs.
+            bool bboxItem = reprToken == HdVP2ReprTokens->bbox;
+            bool wireItem = reprToken == HdReprTokens->wire;
+            if (!isDedicatedHighlightItem && !forcedUntexturedItem && !bboxItem && !wireItem) {
+                return true;
+            }
+        }
+    } else if (displayLayerModes._reprOverride == kWire) {
+        // Wire override cannot affect bbox mode so keep this repr
+        // along with the forcedWire one.
+        bool bboxItem = reprToken == HdVP2ReprTokens->bbox;
+        if (!forcedWireItem && !bboxItem) {
+            return true;
+        }
+    } else if (displayLayerModes._reprOverride == kBBox) {
+        // Bbox override affects all draw modes.
+        if (!forcedBboxItem) {
+            return true;
+        }
     }
 
     // Match item's hide-on-playback mode against that of the instance
@@ -1082,6 +1113,18 @@ bool MayaUsdRPrim::_FilterInstanceByDisplayLayer(
             } else {
                 instanceColor = kReferenceDormat;
             }
+        }
+    }
+
+    // Now that we know that this instance will be rendered, let's check for color override.
+    if (colorOverride._allowed && instanceColor == kDormant) {
+        if (displayLayerModes._wireframeColorIndex > 0) {
+            colorOverride._enabled = true;
+            colorOverride._color = MColor(M3dView::active3dView().colorAtIndex(
+                displayLayerModes._wireframeColorIndex - 1, M3dView::kDormantColors));
+        } else if (displayLayerModes._wireframeColorIndex < 0) {
+            colorOverride._enabled = true;
+            colorOverride._color = displayLayerModes._wireframeColorRGBA;
         }
     }
 
@@ -1128,6 +1171,12 @@ void MayaUsdRPrim::_SyncForcedReprs(
         refThis.Sync(delegate, renderParam, dirtyBits, HdVP2ReprTokens->forcedWire);
     } else {
         _ForEachRenderItemInRepr(_FindRepr(reprs, HdVP2ReprTokens->forcedWire), hideDrawItem);
+    }
+
+    if (_forcedReprFlags & kForcedUntextured) {
+        refThis.Sync(delegate, renderParam, dirtyBits, HdVP2ReprTokens->forcedUntextured);
+    } else {
+        _ForEachRenderItemInRepr(_FindRepr(reprs, HdVP2ReprTokens->forcedUntextured), hideDrawItem);
     }
 }
 

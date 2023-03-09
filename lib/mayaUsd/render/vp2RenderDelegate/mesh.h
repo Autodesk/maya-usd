@@ -149,7 +149,7 @@ private:
         const HdMeshReprDesc& desc,
         const TfToken&        reprToken,
         MSubSceneContainer*   subSceneContainer,
-        const bool            shareHighlightItem = true);
+        const int             modFlags = 0);
 
     void _UpdateMods(
         HdRprim&              refThis,

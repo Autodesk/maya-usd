@@ -17,6 +17,8 @@ foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_add_test(${target}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         PYTHON_MODULE ${target}
+        ENV
+            "USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME=1"
     )
     set_property(TEST ${target} APPEND PROPERTY LABELS usdPreviewSurface)
 endforeach()

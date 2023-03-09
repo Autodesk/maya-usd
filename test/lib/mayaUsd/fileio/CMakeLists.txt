@@ -49,6 +49,7 @@ foreach(script ${TEST_SCRIPT_FILES})
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         ENV
             "UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}"
+            "USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME=1"
     )
 
     # Add a ctest label to these tests for easy filtering.
