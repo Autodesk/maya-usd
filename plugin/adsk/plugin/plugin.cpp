@@ -73,9 +73,10 @@
 #endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
+#include "adskMaterialCommands.h"
+
 #include <mayaUsd/commands/PullPushCommands.h>
 #include <mayaUsd/fileio/primUpdaterManager.h>
-#include "adskMaterialCommands.h"
 #endif
 
 #if defined(WANT_QT_BUILD)
