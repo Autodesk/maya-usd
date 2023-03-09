@@ -351,16 +351,13 @@ void MayaHydraSceneDelegate::HandleCompleteViewportScene(
             const SdfPath   slowId = GetRenderItemPrimPath(ri);
             // MAYA-128021: We do not currently support maya instances.
             MDagPath dagPath(ri.sourceDagPath());
-            if (TF_VERIFY(dagPath.isValid()))
-            {
-                ria = std::make_shared<MayaHydraRenderItemAdapter>(
-                    dagPath,
-                    slowId,
-                    fastId,
-                    this,
-                    ri);
-                _AddRenderItem(ria);
-            }
+            ria = std::make_shared<MayaHydraRenderItemAdapter>(
+                dagPath,
+                slowId,
+                fastId,
+                this,
+                ri);
+            _AddRenderItem(ria);
         }
 
         SdfPath material;
@@ -1090,11 +1087,13 @@ void MayaHydraSceneDelegate::PopulateSelectionList(
             _FindAdapter<MayaHydraRenderItemAdapter>(
                 hitId,
                 [&selectionList, &worldSpaceHitPts, &hit](MayaHydraRenderItemAdapter* a) {
-                    selectionList.add(a->GetDagPath());
-                    worldSpaceHitPts.append(
-                        hit.worldSpaceHitPoint[0],
-                        hit.worldSpaceHitPoint[1],
-                        hit.worldSpaceHitPoint[2]);
+                    if (a->GetDagPath().isValid()) {
+                        selectionList.add(a->GetDagPath());
+                        worldSpaceHitPts.append(
+                            hit.worldSpaceHitPoint[0],
+                            hit.worldSpaceHitPoint[1],
+                            hit.worldSpaceHitPoint[2]);
+                    }
                 },
                 _renderItemsAdapters);
         }
