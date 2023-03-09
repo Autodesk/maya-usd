@@ -24,7 +24,7 @@
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/utils/customLayerData.h>
-#include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
 #include <pxr/base/tf/notice.h>
@@ -273,7 +273,7 @@ void LayerTreeModel::rebuildModel()
                 rootLayer, MayaUsdMetadata->ReferencedLayers);
             std::vector<std::string> layerIds;
             std::move(layers.begin(), layers.end(), inserter(layerIds, layerIds.begin()));
-            sharedLayers = UsdMayaUtil::getAllSublayers(layerIds, true);
+            sharedLayers = MAYAUSD_NS_DEF::getAllSublayers(layerIds, true);
         }
 
         std::set<std::string> incomingLayers;
@@ -284,7 +284,7 @@ void LayerTreeModel::rebuildModel()
             } else {
                 std::vector<std::string> layerIds;
                 layerIds.push_back(rootLayer->GetIdentifier());
-                incomingLayers = UsdMayaUtil::getAllSublayers(layerIds, true);
+                incomingLayers = MAYAUSD_NS_DEF::getAllSublayers(layerIds, true);
             }
         }
 

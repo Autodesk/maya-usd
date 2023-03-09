@@ -425,11 +425,20 @@ bool UsdAttributeHolder::clearMetadata(const std::string& key)
 {
     PXR_NAMESPACE_USING_DIRECTIVE
     if (isValid()) {
+        PXR_NS::TfToken tok(key);
+        // Special cases for NodeGraphs:
+        if (PXR_NS::UsdShadeNodeGraph(usdPrim())) {
+            if (PXR_NS::UsdShadeInput::IsInput(_usdAttr)) {
+                PXR_NS::UsdShadeInput(_usdAttr).ClearSdrMetadataByKey(tok);
+            } else if (PXR_NS::UsdShadeOutput::IsOutput(_usdAttr)) {
+                PXR_NS::UsdShadeOutput(_usdAttr).ClearSdrMetadataByKey(tok);
+            }
+            return !hasMetadata(key);
+        }
         // Special cases for known Ufe metadata keys.
         if (key == Ufe::Attribute::kLocked) {
             return _usdAttr.ClearMetadata(MayaUsdMetadata->Lock);
         }
-        PXR_NS::TfToken tok(key);
         return _usdAttr.ClearMetadata(tok);
     } else {
         return true;

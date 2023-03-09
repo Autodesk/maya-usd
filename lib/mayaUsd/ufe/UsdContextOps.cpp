@@ -481,13 +481,18 @@ private:
     bool                    _instanceable;
 };
 
-const std::string getTargetLayerFilePath(const UsdPrim& prim)
+const PXR_NS::SdfLayerHandle getCurrentTargetLayer(const UsdPrim& prim)
 {
     auto stage = prim.GetStage();
     if (!stage)
         return {};
 
-    auto layer = stage->GetEditTarget().GetLayer();
+    return stage->GetEditTarget().GetLayer();
+}
+
+const std::string getTargetLayerFilePath(const UsdPrim& prim)
+{
+    auto layer = getCurrentTargetLayer(prim);
     if (!layer)
         return {};
 
@@ -496,11 +501,7 @@ const std::string getTargetLayerFilePath(const UsdPrim& prim)
 
 bool _prepareUSDReferenceTargetLayer(const UsdPrim& prim)
 {
-    const char* script = "import mayaUsd_USDRootFileRelative as murel\n"
-                         "murel.usdFileRelative.setRelativeFilePathRoot(r'''%s''')";
-
-    const std::string commandString = TfStringPrintf(script, getTargetLayerFilePath(prim).c_str());
-    return MGlobal::executePythonCommand(commandString.c_str());
+    return UsdMayaUtilFileSystem::prepareLayerSaveUILayer(getCurrentTargetLayer(prim), false);
 }
 
 // Ask SDF for all supported extensions:

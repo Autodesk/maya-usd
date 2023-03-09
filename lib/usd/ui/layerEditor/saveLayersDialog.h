@@ -42,7 +42,8 @@ public:
 
     // UI to get a file path to save a layer.
     // As output returns the path.
-    static bool saveLayerFilePathUI(std::string& out_filePath);
+    static bool
+    saveLayerFilePathUI(std::string& out_filePath, const PXR_NS::SdfLayerRefPtr& parentLayer);
 
 protected:
     void onSaveAll();

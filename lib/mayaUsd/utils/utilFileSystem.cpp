@@ -66,6 +66,31 @@ std::string UsdMayaUtilFileSystem::getDir(const std::string& fullFilePath)
     return ghc::filesystem::path(fullFilePath).parent_path().string();
 }
 
+UsdMayaUtilFileSystem::TemporaryCurrentDir::TemporaryCurrentDir(const std::string& newCurDir)
+{
+    if (newCurDir.size() > 0) {
+        _previousCurDir = ghc::filesystem::current_path().string();
+        ghc::filesystem::current_path(newCurDir);
+    }
+}
+
+UsdMayaUtilFileSystem::TemporaryCurrentDir::~TemporaryCurrentDir()
+{
+    try {
+        restore();
+    } catch (const std::exception&) {
+        // Ignore exception in destructor.
+    }
+}
+
+void UsdMayaUtilFileSystem::TemporaryCurrentDir::restore()
+{
+    if (_previousCurDir.size() > 0) {
+        ghc::filesystem::current_path(_previousCurDir);
+        _previousCurDir.clear();
+    }
+}
+
 std::string UsdMayaUtilFileSystem::getMayaReferencedFileDir(const MObject& proxyShapeNode)
 {
     // Can not use MFnDependencyNode(proxyShapeNode).isFromReferencedFile() to test if it is
@@ -117,6 +142,15 @@ std::string UsdMayaUtilFileSystem::getMayaSceneFileDir()
     return std::string();
 }
 
+std::string UsdMayaUtilFileSystem::getLayerFileDir(const PXR_NS::SdfLayerHandle& layer)
+{
+    if (!layer)
+        return std::string();
+
+    const std::string layerFileName = layer->GetRealPath();
+    return UsdMayaUtilFileSystem::getDir(layerFileName);
+}
+
 std::pair<std::string, bool> UsdMayaUtilFileSystem::makePathRelativeTo(
     const std::string& fileName,
     const std::string& relativeToDir)
@@ -154,11 +188,58 @@ std::string UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(const std::str
     return relativePathAndSuccess.first;
 }
 
+std::string UsdMayaUtilFileSystem::getPathRelativeToLayerFile(
+    const std::string&            fileName,
+    const PXR_NS::SdfLayerHandle& layer)
+{
+    if (!layer)
+        return fileName;
+
+    const std::string layerDirPath = getLayerFileDir(layer);
+    auto              relativePathAndSuccess = makePathRelativeTo(fileName, layerDirPath);
+
+    if (!relativePathAndSuccess.second) {
+        TF_WARN(
+            "File name (%s) cannot be resolved as relative to its parent layer directory (%s), "
+            "using the absolute path.",
+            fileName.c_str(),
+            layerDirPath.c_str());
+    }
+
+    return relativePathAndSuccess.first;
+}
+
+bool UsdMayaUtilFileSystem::prepareLayerSaveUILayer(
+    const PXR_NS::SdfLayerHandle& layer,
+    bool                          useSceneFileForRoot)
+{
+    std::string layerFileDir;
+    if (layer) {
+        layerFileDir = getLayerFileDir(layer);
+    } else if (useSceneFileForRoot) {
+        layerFileDir = getMayaSceneFileDir();
+    }
+
+    const char* script = "import mayaUsd_USDRootFileRelative as murel\n"
+                         "murel.usdFileRelative.setRelativeFilePathRoot(r'''%s''')";
+
+    const std::string commandString = TfStringPrintf(script, layerFileDir.c_str());
+    return MGlobal::executePythonCommand(commandString.c_str());
+}
+
 bool UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile()
 {
     static const MString MAKE_PATH_RELATIVE_TO_SCENE_FILE = "mayaUsd_MakePathRelativeToSceneFile";
     return MGlobal::optionVarExists(MAKE_PATH_RELATIVE_TO_SCENE_FILE)
         && MGlobal::optionVarIntValue(MAKE_PATH_RELATIVE_TO_SCENE_FILE);
+}
+
+bool UsdMayaUtilFileSystem::requireUsdPathsRelativeToParentLayer()
+{
+    static const MString MAKE_PATH_RELATIVE_TO_PARENT_LAYER_FILE
+        = "mayaUsd_MakePathRelativeToParentLayer";
+    return MGlobal::optionVarExists(MAKE_PATH_RELATIVE_TO_PARENT_LAYER_FILE)
+        && MGlobal::optionVarIntValue(MAKE_PATH_RELATIVE_TO_PARENT_LAYER_FILE);
 }
 
 bool UsdMayaUtilFileSystem::requireUsdPathsRelativeToEditTargetLayer()
