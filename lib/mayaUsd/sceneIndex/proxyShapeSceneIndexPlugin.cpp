@@ -30,7 +30,52 @@
 #include <maya/MSelectionList.h>
 #include <maya/MString.h>
 
+#if WANT_UFE_BUILD
+#include <maya/MFileIO.h>
+#include <ufe/globalSelection.h>
+#include <ufe/observableSelection.h>
+
+// Observe UFE scene items for transformation changed only when they are
+// selected.
+class UfeSelectionObserver : public Ufe::Observer
+{
+public:
+    UfeSelectionObserver(MayaUsd::MayaUsdProxyShapeSceneIndex& proxyShapeSceneIndex)
+        : Ufe::Observer()
+        , _proxyShapeSceneIndex(proxyShapeSceneIndex)
+    {
+    }
+
+    void operator()(const Ufe::Notification& notification) override
+    {
+        // During Maya file read, each node will be selected in turn, so we get
+        // notified for each node in the scene.  Prune this out.
+        if (MFileIO::isOpeningFile()) {
+            return;
+        }
+
+        // auto selectionChanged = static_cast<const Ufe::SelectionChanged*>(&notification);
+
+        TF_DEBUG(MAYAUSD_SCENEINDEX_SELECTION)
+            .Msg("UfeSelectionObserver triggered by UFE selection change.\n");
+    }
+
+private:
+    MayaUsd::MayaUsdProxyShapeSceneIndex& _proxyShapeSceneIndex;
+};
+
+#endif // WANT_UFE_BUILD
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+#ifdef WANT_UFE_BUILD
+TF_REGISTRY_FUNCTION(TfDebug)
+{
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        MAYAUSD_SCENEINDEX_SELECTION,
+        "Print information about selection for the mayaUsd Hydra scene index.");
+}
+#endif
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -83,10 +128,20 @@ MayaUsdProxyShapeSceneIndex::MayaUsdProxyShapeSceneIndex(
     : ParentClass(inputSceneIndex)
     , _usdImagingStageSceneIndex(inputSceneIndex)
     , _proxyShape(proxyShape)
+#ifdef WANT_UFE_BUILD
+    , _selectionObserver(std::make_shared<UfeSelectionObserver>(*this))
+#endif
 {
     TfWeakPtr<MayaUsdProxyShapeSceneIndex> ptr(this);
     TfNotice::Register(ptr, &MayaUsdProxyShapeSceneIndex::StageSet);
     TfNotice::Register(ptr, &MayaUsdProxyShapeSceneIndex::ObjectsChanged);
+
+#ifdef WANT_UFE_BUILD
+    auto ufeSelection = Ufe::GlobalSelection::get();
+    if (TF_VERIFY(ufeSelection)) {
+        ufeSelection->addObserver(_selectionObserver);
+    }
+#endif // WANT_UFE_BUILD
 }
 
 MayaUsdProxyShapeSceneIndex::~MayaUsdProxyShapeSceneIndex() { }

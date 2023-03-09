@@ -31,11 +31,27 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usdImaging/usdImaging/stageSceneIndex.h>
 
+#if defined(WANT_UFE_BUILD)
+#include <pxr/base/tf/debug.h>
+
+#include <ufe/observer.h>
+#endif
+
 #include <memory>
 
 //////////////////////////////////////////////////////////////// MayaUsdProxyShapeSceneIndexPlugin
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+#if defined(WANT_UFE_BUILD)
+//! \brief  Some variables to enable TF_DEBUG printing information
+
+// clang-format off
+TF_DEBUG_CODES(
+    MAYAUSD_SCENEINDEX_SELECTION
+);
+// clang-format on
+#endif
 
 // The plugin class must be present in the pixar scope otherwise the factory method registered by
 // HdSceneIndexPluginRegistry::Define will not be available from the string constructed from the
@@ -111,6 +127,9 @@ private:
     UsdImagingStageSceneIndexRefPtr _usdImagingStageSceneIndex;
     MayaUsdProxyShapeBase*          _proxyShape { nullptr };
     std::atomic_bool                _populated { false };
+#if defined(WANT_UFE_BUILD)
+    Ufe::Observer::Ptr _selectionObserver {};
+#endif
 };
 } // namespace MAYAUSD_NS_DEF
 
