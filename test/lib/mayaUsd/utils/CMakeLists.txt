@@ -7,7 +7,7 @@ set(TEST_SCRIPT_FILES
     testDiagnosticDelegate.py
 )
 
-if(CMAKE_WANT_MATERIALX_BUILD)
+if(CMAKE_WANT_MATERIALX_BUILD AND CMAKE_UFE_V3_FEATURES_AVAILABLE)
     list(APPEND TEST_SCRIPT_FILES
         testMaterialCommands.py
     )
