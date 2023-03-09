@@ -18,7 +18,6 @@
 #include "adskImportCommand.h"
 #include "adskListJobContextsCommand.h"
 #include "adskListShadingModesCommand.h"
-#include "adskMaterialCommands.h"
 #include "adskStageLoadUnloadCommands.h"
 #include "base/api.h"
 #include "exportTranslator.h"
@@ -76,6 +75,7 @@
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #include <mayaUsd/commands/PullPushCommands.h>
 #include <mayaUsd/fileio/primUpdaterManager.h>
+#include "adskMaterialCommands.h"
 #endif
 
 #if defined(WANT_QT_BUILD)
@@ -221,8 +221,6 @@ MStatus initializePlugin(MObject obj)
     registerCommandCheck<MayaUsd::ADSKMayaUSDImportCommand>(plugin);
     registerCommandCheck<MayaUsd::EditTargetCommand>(plugin);
     registerCommandCheck<MayaUsd::LayerEditorCommand>(plugin);
-    registerCommandCheck<MayaUsd::ADSKMayaUSDGetMaterialsForRenderersCommand>(plugin);
-    registerCommandCheck<MayaUsd::ADSKMayaUSDGetMaterialsInStageCommand>(plugin);
 #if defined(WANT_QT_BUILD)
     registerCommandCheck<MayaUsd::LayerEditorWindowCommand>(plugin);
 #endif
@@ -232,6 +230,8 @@ MStatus initializePlugin(MObject obj)
     registerCommandCheck<MayaUsd::ufe::MergeToUsdCommand>(plugin);
     registerCommandCheck<MayaUsd::ufe::DiscardEditsCommand>(plugin);
     registerCommandCheck<MayaUsd::ufe::DuplicateCommand>(plugin);
+    registerCommandCheck<MayaUsd::ADSKMayaUSDGetMaterialsForRenderersCommand>(plugin);
+    registerCommandCheck<MayaUsd::ADSKMayaUSDGetMaterialsInStageCommand>(plugin);
 #endif
 
     status = plugin.registerCommand(
@@ -403,8 +403,6 @@ MStatus uninitializePlugin(MObject obj)
     deregisterCommandCheck<MayaUsd::ADSKMayaUSDImportCommand>(plugin);
     deregisterCommandCheck<MayaUsd::EditTargetCommand>(plugin);
     deregisterCommandCheck<MayaUsd::LayerEditorCommand>(plugin);
-    deregisterCommandCheck<MayaUsd::ADSKMayaUSDGetMaterialsForRenderersCommand>(plugin);
-    deregisterCommandCheck<MayaUsd::ADSKMayaUSDGetMaterialsInStageCommand>(plugin);
 #if defined(WANT_QT_BUILD)
     deregisterCommandCheck<MayaUsd::LayerEditorWindowCommand>(plugin);
     MayaUsd::LayerEditorWindowCommand::cleanupOnPluginUnload();
@@ -415,6 +413,8 @@ MStatus uninitializePlugin(MObject obj)
     deregisterCommandCheck<MayaUsd::ufe::MergeToUsdCommand>(plugin);
     deregisterCommandCheck<MayaUsd::ufe::DiscardEditsCommand>(plugin);
     deregisterCommandCheck<MayaUsd::ufe::DuplicateCommand>(plugin);
+    deregisterCommandCheck<MayaUsd::ADSKMayaUSDGetMaterialsForRenderersCommand>(plugin);
+    deregisterCommandCheck<MayaUsd::ADSKMayaUSDGetMaterialsInStageCommand>(plugin);
 #endif
 
     status = plugin.deregisterNode(MayaUsd::ProxyShape::typeId);

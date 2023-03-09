@@ -34,7 +34,7 @@ target_sources(${TARGET_NAME}
         ProxyShape.cpp
 )
 
-if (UFE_FOUND)
+if (CMAKE_UFE_V3_FEATURES_AVAILABLE)
     target_sources(${TARGET_NAME} 
         PRIVATE
             adskMaterialCommands.cpp
