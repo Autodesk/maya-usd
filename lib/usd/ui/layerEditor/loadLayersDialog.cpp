@@ -43,12 +43,6 @@
 namespace {
 using namespace UsdLayerEditor;
 
-bool isAbsolutePath(const std::string& in_path)
-{
-    QFileInfo fileInfo(QString::fromStdString(in_path));
-    return fileInfo.isAbsolute();
-}
-
 class MyLineEdit : public QLineEdit
 {
 public:
