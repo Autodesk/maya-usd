@@ -103,11 +103,11 @@ class usdFileRelative(object):
         cmds.frameLayout(label=kFileOptionsStr, collapsable=False)
         widgetColumn = cmds.columnLayout()
         cmds.checkBox(cls.kMakePathRelativeCheckBox, label=kMakePathRelativeStr, ann=kMakePathRelativeAnnStr)
-        if relativeToWhat == 'SceneFile':
-            cmds.checkBox(cls.kMakePathRelativeCheckBox, edit=True, changeCommand=cls.onMakePathRelativeChanged)
-            cmds.textFieldGrp(cls.kUnresolvedPathTextField, label=kUnresolvedPathStr, ann=kUnresolvedPathAnnStr, editable=False)
-            cmds.textFieldGrp(cls.kResolvedPathTextField, label=kResolvedPathStr, ann=kResolvedPathAnnStr , editable=False)
-            cls._haveRelativePathFields = True
+        
+        cmds.checkBox(cls.kMakePathRelativeCheckBox, edit=True, changeCommand=cls.onMakePathRelativeChanged)
+        cmds.textFieldGrp(cls.kUnresolvedPathTextField, label=kUnresolvedPathStr, ann=kUnresolvedPathAnnStr, editable=False)
+        cmds.textFieldGrp(cls.kResolvedPathTextField, label=kResolvedPathStr, ann=kResolvedPathAnnStr , editable=False)
+        cls._haveRelativePathFields = True
 
     @classmethod
     def uiInit(cls, parentLayout, canBeRelative, relativeToWhat):
@@ -286,6 +286,36 @@ class usdRootFileRelative(usdFileRelative):
               with the dialog2 command API.
         '''
         super(usdRootFileRelative, cls).uiCommit(parentLayout, cls.kRelativeToWhat)
+
+
+class usdSubLayerFileRelative(usdFileRelative):
+    '''
+    Helper class to create the UI for load/save dialog boxes that need to make the
+    selected file name optionally relative to a parent layer.
+    '''
+
+    kRelativeToWhat = 'ParentLayer'
+
+    @classmethod
+    def uiCreate(cls, parentLayout):
+        super(usdSubLayerFileRelative, cls).uiCreate(parentLayout, cls.kRelativeToWhat)
+
+    @classmethod
+    def uiInit(cls, parentLayout, filterType):
+        '''
+        Note: the function takes an unused filterType argument to be compatible
+              with the dialog2 command API.
+        '''
+        canBeRelative = bool(usdFileRelative.getRelativeFilePathRoot())
+        super(usdSubLayerFileRelative, cls).uiInit(parentLayout, canBeRelative, cls.kRelativeToWhat)
+
+    @classmethod
+    def uiCommit(cls, parentLayout, selectedFile=None):
+        '''
+        Note: the function takes an unused selectedFile argument to be compatible
+              with the dialog2 command API.
+        '''
+        super(usdSubLayerFileRelative, cls).uiCommit(parentLayout, cls.kRelativeToWhat)
 
 
 class usdFileRelativeToEditTargetLayer(usdFileRelative):
