@@ -55,6 +55,117 @@ global proc mayaUsdMenu_duplicate(string $ufePath)
     }
 }
 
+global proc mayaUsdMenu_assignNewMaterial(string $ufePath, string $material)
+{
+    if (!hasPrimUpdater())
+        return;
+
+    if (size($ufePath) != 0 && size($material) != 0) {
+        string $temp = `python("import ufe;\
+                                ufePath = ufe.PathString.path('" + $ufePath + "');\
+                                item = ufe.Hierarchy.createItem(ufePath);\
+                                contextOps = ufe.ContextOps.contextOps(item);\
+                                cmd = contextOps.doOpCmd(['Assign New Material', '', '" + $material + "']);\
+                                ufe.UndoableCommandMgr.instance().executeCmd(cmd);")`;
+    }
+}
+
+global proc mayaUsdMenu_assignExistingMaterial(string $ufePath, string $material)
+{
+    if (!hasPrimUpdater())
+        return;
+
+    if (size($ufePath) != 0 && size($material) != 0) {
+        string $temp = `python("import ufe;\
+                                ufePath = ufe.PathString.path('" + $ufePath + "');\
+                                item = ufe.Hierarchy.createItem(ufePath);\
+                                contextOps = ufe.ContextOps.contextOps(item);\
+                                cmd = contextOps.doOpCmd(['Assign Existing Material', '', '" + $material + "']);\
+                                ufe.UndoableCommandMgr.instance().executeCmd(cmd);")`;
+   }
+}
+
+global proc mayaUsdMenu_addNewMaterials(string $ufePath)
+{
+    string $materials[] = `mayaUsdGetMaterialsFromRenderers`;
+    string $previousRendererString;
+    string $menuItem;
+    for ($material in $materials)
+    {
+        // We want our materials grouped into submenus according to their path in the hierarchy.
+        string $rendererAndMaterial[];
+        $numTokens = `tokenize $material "/" $rendererAndMaterial`;
+
+        // Expects tokenized string in the form "RendererName/Material Name|MaterialIdentifer"
+        if ($numTokens != 2)
+            continue;
+
+        string $materialName = $rendererAndMaterial[$numTokens - 1];
+
+        // Get a string containing the path to the material without the name of the material itself.
+        string $renderer[] = $rendererAndMaterial;
+        stringArrayRemoveAtIndex($numTokens - 1, $renderer);
+        string $rendererString = stringArrayToString($renderer, "/");
+
+        // Create a new submenu for each path.
+        if ($previousRendererString != $rendererString)
+        {
+            if ($menuItem != "")
+            {
+                setParent -menu ..;
+            }
+
+            $previousRendererString = $rendererString;
+            $menuItem = `menuItem -subMenu true -tearOff false -label $rendererString`;
+        }
+
+        string $labelAndIdentifier[];
+        $numTokens = `tokenize $materialName "|" $labelAndIdentifier`;
+
+        // Expects tokenized string in the form "Material Name|MaterialIdentifer"
+        if ($numTokens != 2)
+            continue;
+
+        menuItem -label $labelAndIdentifier[0] -command ("mayaUsdMenu_assignNewMaterial \"" + $ufePath + "\" \"" + $labelAndIdentifier[1] + "\"");
+    }
+    setParent -menu ..;
+}
+
+global proc mayaUsdMenu_addExistingMaterials(string $ufePath)
+{
+    string $materials[] = `mayaUsdGetMaterialsInStage $ufePath`;
+    string $previousPathString;
+    string $menuItem;
+    for ($material in $materials)
+    {
+        // We want our materials grouped into submenus according to their path in the hierarchy.
+        string $pathAndMaterial[];
+        $numTokens = `tokenize $material "/" $pathAndMaterial`;
+
+        string $materialName = $pathAndMaterial[$numTokens - 1];
+
+        // Get a string containing the path to the material without the name of the material itself.
+        string $path[] = $pathAndMaterial;
+        stringArrayRemoveAtIndex($numTokens - 1, $path);
+        string $pathString = stringArrayToString($path, "/");
+
+        // Create a new submenu for each path.
+        if ($previousPathString != $pathString)
+        {
+            if ($menuItem != "")
+            {
+                setParent -menu ..;
+            }
+
+            $previousPathString = $pathString;
+            $menuItem = `menuItem -subMenu true -tearOff false -label $pathString`;
+        }
+
+        menuItem -label $materialName -parent $menuItem -command ("mayaUsdMenu_assignExistingMaterial \"" + $ufePath + "\" \"" + $material + "\"");
+    }
+    setParent -menu ..;
+}
+
 global proc mayaUsdMenu_unassignMaterial(string $ufePath)
 {
     if (size($ufePath) != 0) {
@@ -87,8 +198,22 @@ global proc USDMenuProc(string $parent, string $obj)
             menuItem -label "Edit As Maya Data" -image "edit_as_Maya.png" -command ("{waitCursor -state 1; mayaUsdMenu_editAsMaya \"" + $obj + "\"; waitCursor -state 0;}");
         }
         menuItem -label "Duplicate As Maya Data" -command ("{waitCursor -state 1; mayaUsdMenu_duplicate \"" + $obj + "\"; waitCursor -state 0;}");
-    
+
         menuItem -divider true;
+
+        // "Assign New Material" from a list of materials provided by the renderers.
+        menuItem -subMenu true -tearOff false -label "Assign New Material";
+        {
+            mayaUsdMenu_addNewMaterials($obj);
+        }
+        setParent -menu ..;
+
+        // "Assign Existing Material" from a list of materials in the selected item's stage.
+        menuItem -subMenu true -tearOff false -label "Assign Existing Material";
+        {
+            mayaUsdMenu_addExistingMaterials($obj);
+        }
+        setParent -menu ..;
 
         // Unassign (aka "unbind") the material from the selected object.
         menuItem -label "Unassign Material" -command ("{waitCursor -state 1; mayaUsdMenu_unassignMaterial \"" + $obj + "\"; waitCursor -state 0;}");
