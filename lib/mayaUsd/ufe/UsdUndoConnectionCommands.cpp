@@ -292,9 +292,11 @@ void UsdUndoDeleteConnectionCommand::execute()
         || !MayaUsd::ufe::isConnected(srcUsdAttr->usdAttribute(), dstUsdAttr->usdAttribute())) {
         return;
     }
-
-    bool isDisconnected = UsdShadeConnectableAPI::DisconnectSource(
-        dstUsdAttr->usdAttribute(), srcUsdAttr->usdAttribute());
+#if PXR_VERSION < 2302
+    bool isDisconnected =
+#endif
+        UsdShadeConnectableAPI::DisconnectSource(
+            dstUsdAttr->usdAttribute(), srcUsdAttr->usdAttribute());
 
     // We need to make sure we cleanup on disconnection. Since having an empty connection array
     // counts as having connections, we need to get the array and see if it is empty.
