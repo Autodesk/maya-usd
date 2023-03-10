@@ -4,4 +4,5 @@ plug-ins: maya/plugin
 scripts: maya/lib/usd/usdMaya/resources
 PYTHONPATH+:=lib/python
 PATH+:=maya/lib
+PXR_USD_WINDOWS_DLL_PATH+:=maya/lib
 ${PXR_OVERRIDE_PLUGINPATH_NAME}+:=lib/usd
