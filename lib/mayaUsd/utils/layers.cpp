@@ -85,6 +85,37 @@ getAllSublayers(const std::vector<std::string>& layerPaths, bool includeParents)
     return layers;
 }
 
+bool hasMutedLayer(const PXR_NS::UsdPrim& prim)
+{
+    const PXR_NS::PcpPrimIndex& primIndex = prim.GetPrimIndex();
+
+    for (const PXR_NS::PcpNodeRef node : primIndex.GetNodeRange()) {
+        if (!node)
+            continue;
+
+        const PXR_NS::PcpLayerStackRefPtr& layerStack = node.GetSite().layerStack;
+        if (!layerStack)
+            continue;
+
+        const std::set<std::string>& mutedLayers = layerStack->GetMutedLayers();
+        if (mutedLayers.size() > 0)
+            return true;
+    }
+    return false;
+}
+
+void enforceMutedLayer(const PXR_NS::UsdPrim& prim, const char* command)
+{
+    if (hasMutedLayer(prim)) {
+        const std::string error = TfStringPrintf(
+            "Cannot %s prim \"%s\" because there is at least one muted layer.",
+            command && command[0] ? command : "modify",
+            prim.GetPath().GetText());
+        TF_WARN("%s", error.c_str());
+        throw std::runtime_error(error);
+    }
+}
+
 void applyToAllPrimSpecs(const UsdPrim& prim, const PrimSpecFunc& func)
 {
     const SdfPrimSpecHandleVector primStack = prim.GetPrimStack();

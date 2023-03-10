@@ -226,12 +226,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         ufeObs = TestObserver()
         ufe.Scene.addObserver(ufeObs)
 
-        # validate the default edit target to be the Rootlayer.
-        mayaPathSegment = mayaUtils.createUfePathSegment('|Tree_usd|Tree_usdShape')
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
-        self.assertTrue(stage)
-
-        # add child defined on a new layer
+        # retrieve the stage
         mayaPathSegment = mayaUtils.createUfePathSegment('|Tree_usd|Tree_usdShape')
         stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
         self.assertTrue(stage)
@@ -531,5 +526,51 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertFalse(surface2Prim.HasProperty('outputs:out'))
         self.assertFalse(surface3Prim.HasProperty('inputs:bsdf'))
 
+    def testDeleteRestrictionMutedLayer(self):
+        '''
+        Test delete restriction - we don't allow removal of a prim
+        when there are opinions on a muted layer.
+        '''
+        
+        # Create a stage with a xform prim named A
+        cmds.file(new=True, force=True)
+        import mayaUsd_createStageWithNewLayer
+
+        proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+        self.assertTrue(stage)
+        stage.DefinePrim('/A', 'Xform')
+
+        # Add two new layers
+        usdFormat = Sdf.FileFormat.FindByExtension('usd')
+        topLayer = Sdf.Layer.New(usdFormat, 'Layer_1')
+        stage.GetRootLayer().subLayerPaths.append(topLayer.identifier)
+
+        usdFormat = Sdf.FileFormat.FindByExtension('usd')
+        bottomLayer = Sdf.Layer.New(usdFormat, 'Layer_2')
+        stage.GetRootLayer().subLayerPaths.append(bottomLayer.identifier)
+
+        # Create a sphere on the bottom layer
+        stage.SetEditTarget(bottomLayer)
+        self.assertEqual(stage.GetEditTarget().GetLayer(), bottomLayer)
+        spherePrim = stage.DefinePrim('/A/ball', 'Sphere')
+        self.assertIsNotNone(spherePrim)
+
+        # Author an opinion on the top layer
+        stage.SetEditTarget(topLayer)
+        self.assertEqual(stage.GetEditTarget().GetLayer(), topLayer)
+        spherePrim.GetAttribute('radius').Set(4.)
+        
+        # Set target to bottom layer and mute the top layer
+        stage.SetEditTarget(bottomLayer)
+        self.assertEqual(stage.GetEditTarget().GetLayer(), bottomLayer)
+        # Note: mute by passing through the stage, otherwise the stage won't get recomposed
+        stage.MuteLayer(topLayer.identifier)
+
+        # Try to delete the prim with muted opinion: it should fail
+        with self.assertRaises(RuntimeError):
+            cmds.delete('%s,/A/ball' % proxyShapePathStr)
+        self.assertTrue(stage.GetPrimAtPath('/A/ball'))
+        
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -196,6 +196,8 @@ static UsdSceneItem::Ptr doInsertion(
     const UsdPrim     srcPrim = ufePathToPrim(srcUfePath);
     const UsdStagePtr stage = srcPrim.GetStage();
 
+    enforceMutedLayer(srcPrim, "reparent");
+
     // Make sure the load state of the reparented prim will be preserved.
     // We copy all rules that applied to it specifically and remove the rules
     // that applied to it specifically.
