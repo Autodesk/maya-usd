@@ -31,7 +31,6 @@
 #include <maya/MString.h>
 #include <ufe/rtid.h>
 
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
