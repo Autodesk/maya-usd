@@ -7,6 +7,12 @@ set(TEST_SCRIPT_FILES
     testDiagnosticDelegate.py
 )
 
+if(CMAKE_WANT_MATERIALX_BUILD AND CMAKE_UFE_V3_FEATURES_AVAILABLE)
+    list(APPEND TEST_SCRIPT_FILES
+        testMaterialCommands.py
+    )
+endif()
+
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND TEST_SCRIPT_FILES
         testUtilsEditability.py
