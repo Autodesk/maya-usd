@@ -18,6 +18,8 @@
 
 #if PXR_VERSION >= 2211
 
+#include <mayaUsd/ufe/Global.h>
+
 #include <pxr/imaging/hd/flatteningSceneIndex.h>
 #include <pxr/imaging/hd/retainedDataSource.h>
 #include <pxr/imaging/hd/sceneIndexPlugin.h>
