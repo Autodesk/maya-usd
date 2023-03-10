@@ -554,17 +554,16 @@ class GroupCmdTestCase(unittest.TestCase):
             self.assertIsNotNone(item)
             return item
 
-        def applyRotation(item, rotation):
-            itemTrf = ufe.Transform3d.transform3d(item)
-            itemTrf.rotate(*rotation)
-            itemTrf = None
+        def applyRadius(item, radius):
+            radAttr = ufe.Attributes.attributes(item).attribute('radius')
+            radAttr.set(radius)
 
-        def verifyRotation(item, rotation):
-            itemTrf = ufe.Transform3d.transform3d(item)
-            self.assertEqual(itemTrf.rotation(), ufe.PyUfe.Vector3d(*rotation))
+        def verifyRadius(item, radius):
+            radAttr = ufe.Attributes.attributes(item).attribute('radius')
+            self.assertEqual(radAttr.get(), radius)
 
         # Some values used during the test
-        rotation = [30., 20., 10.]
+        radius = 30.
         oldSphere1Name = '/Sphere1'
         newSphere1Name = '/group1/Sphere1'
 
@@ -584,8 +583,8 @@ class GroupCmdTestCase(unittest.TestCase):
         stage.SetEditTarget(stage.GetSessionLayer())
         self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
 
-        applyRotation(getItem(oldSphere1Name), rotation)
-        verifyRotation(getItem(oldSphere1Name), rotation)
+        applyRadius(getItem(oldSphere1Name), radius)
+        verifyRadius(getItem(oldSphere1Name), radius)
 
         # Group Sphere1, Sphere2, and Sphere3 in the root layer
         stage.SetEditTarget(stage.GetRootLayer())
@@ -606,7 +605,7 @@ class GroupCmdTestCase(unittest.TestCase):
             stage.GetPrimAtPath("/group1/Sphere2"),
             stage.GetPrimAtPath("/group1/Sphere3")])
         
-        verifyRotation(getItem(newSphere1Name), rotation)
+        verifyRadius(getItem(newSphere1Name), radius)
 
         cmds.undo()
 
@@ -615,7 +614,7 @@ class GroupCmdTestCase(unittest.TestCase):
             stage.GetPrimAtPath("/Sphere2"),
             stage.GetPrimAtPath("/Sphere1")])
 
-        verifyRotation(getItem(oldSphere1Name), rotation)
+        verifyRadius(getItem(oldSphere1Name), radius)
 
         cmds.redo()
 
@@ -625,7 +624,7 @@ class GroupCmdTestCase(unittest.TestCase):
             stage.GetPrimAtPath("/group1/Sphere2"),
             stage.GetPrimAtPath("/group1/Sphere3")])
 
-        verifyRotation(getItem(newSphere1Name), rotation)
+        verifyRadius(getItem(newSphere1Name), radius)
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 3, 'testGroupUndoRedo is only available in UFE v3 or greater.')
     def testGroupPreserveLoadRules(self):
