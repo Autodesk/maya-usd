@@ -100,8 +100,12 @@ class BlockedLayerEditTestCase(unittest.TestCase):
         cylinderItem = ufe.Hierarchy.createItem(cylinderPath)
 
         cylinderT3d = ufe.Transform3d.transform3d(cylinderItem)
-        if cylinderT3d is not None:
-            cylinderT3d.translate(5.0, 6.0, 7.0)
+        # Note: pre-UFE v2, no exception is raised.
+        try:
+            if cylinderT3d is not None:
+                cylinderT3d.translate(5.0, 6.0, 7.0)
+        except RuntimeError:
+            pass
 
         # check that the translate operation didn't change anything
         tranlateAfterEdit = translateAttr.Get()
@@ -154,8 +158,12 @@ class BlockedLayerEditTestCase(unittest.TestCase):
         cylinderItem = ufe.Hierarchy.createItem(cylinderPath)
 
         cylinderT3d = ufe.Transform3d.transform3d(cylinderItem)
-        if cylinderT3d is not None:
-            cylinderT3d.translate(5.0, 6.0, 7.0)
+        # Note: pre-UFE v2, no exception is raised.
+        try:
+            if cylinderT3d is not None:
+                cylinderT3d.translate(5.0, 6.0, 7.0)
+        except RuntimeError:
+            pass
 
         # check that the translate operation didn't change anything
         tranlateAfterEdit = translateAttr.Get()
