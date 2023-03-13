@@ -1033,6 +1033,7 @@ class GroupCmdTestCase(unittest.TestCase):
         # With group pivot origin the group pivot is at the origin.
         self.runTestGroupPivotOptions("doGroup 0 1 1", [0, 0, 0])
 
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
     def testGroupRestrictionMutedLayer(self):
         '''
         Test group restriction - we don't allow grouping of a prim
