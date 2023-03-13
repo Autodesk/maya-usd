@@ -12,14 +12,14 @@ Many of the C++ coding guidelines below are validated and enforced through the u
 ### License notice
 Every file should start with the Apache 2.0 licensing statement:
 ```cpp
-// Licensed under the Apache License, Version 2.0 (the “License”);
+// Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
 //   http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an “AS IS” BASIS,
+// distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
@@ -61,7 +61,7 @@ Never use reserved identifiers, like underscore followed immediately by an upper
 
 ### Naming (file, type, variable, constant, function, namespace, macro, template parameters, schema names)
 **General Naming Rules**
-MayaUsd strives to use “camel case” naming. That is, each word is capitalized, except possibly the first word:
+MayaUsd strives to use "camel case" naming. That is, each word is capitalized, except possibly the first word:
 * UpperCamelCase
 * lowerCamelCase
 
@@ -95,7 +95,7 @@ bool* drawRenderPurpose
 ```
 
 **Class/Struct Data Members**
-Non-static data members of classes/structs are named like ordinary non-member variables with leading “_”. For example:
+Non-static data members of classes/structs are named like ordinary non-member variables with leading "_". For example:
 ```cpp
 UsdMayaStageNoticeListener _stageNoticeListener;
 std::map<UsdTimeCode, MBoundingBox> _boundingBoxCache;
@@ -107,7 +107,7 @@ static const MTypeId typeId;
 ```
 
 **Constant Names**
-Variables declared constexpr or const, whose value is fixed for the duration of the program, should be named with a leading “k” followed by UpperCamelCase. For example:
+Variables declared constexpr or const, whose value is fixed for the duration of the program, should be named with a leading "k" followed by UpperCamelCase. For example:
 ```cpp
 const int kDaysInAWeek = 7;
 const int kMyMagicNumber = 42;
