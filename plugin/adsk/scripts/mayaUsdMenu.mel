@@ -456,29 +456,26 @@ global proc mayaUsdMenu_selectMenuCallback() {
 // mayaUsdMenu_windowMenuCallback
 // setup the items in Maya's "Window" menu
 global proc mayaUsdMenu_windowMenuCallback() {
-    global string $gMainWindowMenu;
-    string $GeneralEditorSubMenu = findMenuByName($gMainWindowMenu, uiRes("m_WindowMenu.kGeneralEditorsLabel"));
-    addMenuCallback($GeneralEditorSubMenu, "mayaUsdMenu_generalEditorsMenuCallback");
-    
-    removeMenuCallback(`setParent -q -menu`, "mayaUsdMenu_windowMenuCallback");
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// mayaUsdMenu_windowMenuCallback
-// setup the items in Maya's "Window->General Editors" menu
-global proc mayaUsdMenu_generalEditorsMenuCallback() {
     if (`exists mayaUsdLayerEditorWindow` && !(`menuItem -query -exists wmUsdLayerEditorMenuitem`))
     {
+        // Add Layer Editor menu item.
+        // Insert it after Playblast if it exists, otherwise after Content Browser 
+        string $insertAfterItem = "playblastItem";
+        if (!(`menuItem -query -exists playblastItem`))
+        {
+            $insertAfterItem = "wmContentBrowser";
+        }
+
         string $mayaVersion = getMayaMajorVersion();
         global string $gMayaUsdOpenUsdLayerEditorMenuItem;
         $gMayaUsdOpenUsdLayerEditorMenuItem = `menuItem
-            -insertAfter wmNamespaceEditor 
+            -insertAfter $insertAfterItem 
             -enableCommandRepeat false
             -version $mayaVersion
             -runTimeCommand mayaUsdOpenUsdLayerEditor
             wmUsdLayerEditorMenuitem`;
     }
-    removeMenuCallback(`setParent -q -menu`, "mayaUsdMenu_generalEditorsMenuCallback");
+    removeMenuCallback(`setParent -q -menu`, "mayaUsdMenu_windowMenuCallback");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
