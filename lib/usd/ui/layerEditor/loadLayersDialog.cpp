@@ -24,6 +24,8 @@
 #include "qtUtils.h"
 #include "stringResources.h"
 
+#include <mayaUsd/utils/utilFileSystem.h>
+
 #include <maya/MQtUtil.h>
 
 #include <QtCore/QDir>
@@ -40,12 +42,6 @@
 
 namespace {
 using namespace UsdLayerEditor;
-
-bool isAbsolutePath(const std::string& in_path)
-{
-    QFileInfo fileInfo(QString::fromStdString(in_path));
-    return fileInfo.isAbsolute();
-}
 
 class MyLineEdit : public QLineEdit
 {
@@ -72,14 +68,12 @@ LayerPathRow::LayerPathRow(LoadLayersDialog* in_parent)
 {
     auto gridLayout = new QGridLayout();
     QtUtils::initLayoutMargins(gridLayout);
-    _absolutePath = "";
     _parentPath = _parent->findDirectoryToUse("");
 
     _label = new QLabel(StringResources::getAsQString(StringResources::kLayerPath));
     gridLayout->addWidget(_label, 0, 0);
 
     _pathEdit = new MyLineEdit(this);
-    connect(_pathEdit, &QLineEdit::textChanged, this, &LayerPathRow::onTextChanged);
     gridLayout->addWidget(_pathEdit, 0, 1);
 
     QIcon icon;
@@ -102,56 +96,17 @@ LayerPathRow::LayerPathRow(LoadLayersDialog* in_parent)
     connect(_addPathIcon, &QAbstractButton::clicked, in_parent, &LoadLayersDialog::onAddRow);
     gridLayout->addWidget(_addPathIcon, 0, 3);
 
-    _convertToRel
-        = new QCheckBox(StringResources::getAsQString(StringResources::kConvertToRelativePath));
-    connect(_convertToRel, &QAbstractButton::clicked, this, &LayerPathRow::onRelativeButtonChecked);
-    _convertToRel->setEnabled(false);
-    gridLayout->addWidget(_convertToRel, 1, 1);
-
     setLayout(gridLayout);
 
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
 }
 
-void LayerPathRow::onTextChanged(const QString& text)
+std::string LayerPathRow::pathToUse() const { return _pathEdit->text().toStdString(); }
+
+void LayerPathRow::setPathToUse(const std::string& path)
 {
-    if (!_convertToRel->isChecked()) {
-        _absolutePath = text.toStdString();
-        _convertToRel->setEnabled(isAbsolutePath(_absolutePath));
-    }
-}
-
-void LayerPathRow::onRelativeButtonChecked(bool checked)
-{
-    if (checked) {
-        QDir dir(_parentPath.c_str());
-
-        QString relativePath = dir.relativeFilePath(_absolutePath.c_str());
-        _pathEdit->setText(relativePath);
-        _pathEdit->setEnabled(false);
-    } else {
-        _pathEdit->setEnabled(true);
-        _pathEdit->setText(_absolutePath.c_str());
-    }
-}
-
-std::string LayerPathRow::pathToUse() const
-{
-    if (_convertToRel->isChecked())
-        return _pathEdit->text().toStdString();
-    else
-        return _absolutePath;
-}
-
-void LayerPathRow::setAbsolutePath(const std::string& path)
-{
-
-    _absolutePath = path;
     _pathEdit->setText(path.c_str());
     _pathEdit->setEnabled(true);
-
-    _convertToRel->setChecked(false);
-    _convertToRel->setEnabled(isAbsolutePath(_absolutePath));
 }
 
 void LayerPathRow::setAsRowInserter(bool setIt)
@@ -160,7 +115,6 @@ void LayerPathRow::setAsRowInserter(bool setIt)
     _label->setEnabled(enabled);
     _pathEdit->setEnabled(enabled);
     _openBrowser->setEnabled(enabled);
-    _convertToRel->setEnabled(enabled);
 
     _trashIcon->setVisible(!setIt);
     _addPathIcon->setVisible(setIt);
@@ -334,14 +288,27 @@ std::string LoadLayersDialog::findDirectoryToUse(const std::string& rowText) con
 
 void LoadLayersDialog::onOpenBrowser()
 {
-    auto row = dynamic_cast<LayerPathRow*>(sender()->parent());
-    auto defaultPath = findDirectoryToUse(row->absolutePath());
+    using namespace PXR_NS::UsdMayaUtilFileSystem;
+
+    const bool useSceneFileForRoot = false;
+    const auto parentLayer = _treeItem->layer();
+    prepareLayerSaveUILayer(parentLayer, useSceneFileForRoot);
+
+    LayerPathRow*     row = dynamic_cast<LayerPathRow*>(sender()->parent());
+    const std::string defaultPath = findDirectoryToUse(row->pathToUse());
 
     auto files = _treeItem->parentModel()->sessionState()->loadLayersUI(windowTitle(), defaultPath);
     if (files.size() == 0)
         return;
 
-    row->setAbsolutePath(files[0]);
+    // Replace selected filenames with relative ones if enabled.
+    if (requireUsdPathsRelativeToParentLayer()) {
+        for (std::string& fileName : files) {
+            fileName = getPathRelativeToLayerFile(fileName, parentLayer);
+        }
+    }
+
+    row->setPathToUse(files[0]);
 
     // insert new rows if more than one file selected
     if (files.size() > 1) {
@@ -361,7 +328,7 @@ void LoadLayersDialog::onOpenBrowser()
         for (size_t i = 1; i < files.size(); i++) {
             auto newRow = new LayerPathRow(this);
             _rowsLayout->insertWidget(index, newRow);
-            newRow->setAbsolutePath(files[i]);
+            newRow->setPathToUse(files[i]);
             ++index;
         }
 
