@@ -101,12 +101,13 @@ public:
     {
     }
 
-    virtual void PopulateSelectionList(
-        const HdxPickHitVector&          hits,
+    virtual bool AddPickHitToSelectionList(
+        const HdxPickHit&                hit,
         const MHWRender::MSelectionInfo& selectInfo,
         MSelectionList&                  mayaSelection,
         MPointArray&                     worldSpaceHitPts)
     {
+        return false;
     }
 
     void SetLightsEnabled(const bool enabled) { _lightsEnabled = enabled; }

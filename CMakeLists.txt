@@ -37,7 +37,7 @@ if(APPLE)
     option(BUILD_UB2 "Build Universal Binary 2 (UB2) Intel64+arm64" OFF)
 endif()
 set(BUILD_WITH_PYTHON_3_VERSION 3.7 CACHE STRING "The version of Python 3 to build with")
-option(CMAKE_WANT_UFE_BUILD "Enable building with UFE (if found)." OFF)
+option(CMAKE_WANT_UFE_BUILD "Enable building with UFE (if found)." ON)
 option(CMAKE_WANT_MATERIALX_BUILD "Enable building with MaterialX (experimental)." OFF)
 
 set(PXR_OVERRIDE_PLUGINPATH_NAME PXR_PLUGINPATH_NAME

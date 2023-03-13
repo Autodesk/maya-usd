@@ -32,10 +32,18 @@
 #include <mayaHydraLib/sceneIndex/registration.h>
 #include <mayaHydraLib/utils.h>
 
+#include <ufeExtensions/Global.h>
+
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/type.h>
 
+#include <ufe/selection.h>
+#include <ufe/namedSelection.h>
+#include <ufe/path.h>
+#include <ufe/pathSegment.h>
+#include <ufe/rtid.h>
+#include <ufe/hierarchy.h>
 
 #if defined(MAYAUSD_VERSION)
 #include <mayaUsd/render/px_vp20/utils.h>
@@ -91,17 +99,6 @@ template <typename T> inline void hash_combine(std::size_t& seed, const T& value
 #include <exception>
 #include <limits>
 
-#if WANT_UFE_BUILD
-#include <maya/MFileIO.h>
-#include <ufe/globalSelection.h>
-#include <ufe/observableSelection.h>
-#include <ufe/path.h>
-#ifdef UFE_V2_FEATURES_AVAILABLE
-#include <ufe/pathString.h>
-#endif
-#include <ufe/selectionNotification.h>
-#endif // WANT_UFE_BUILD
-
 int _profilerCategory = MProfiler::addCategory("MtohRenderOverride (mayaHydra)", "Events from mayaHydra render override");
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -113,46 +110,6 @@ namespace {
 // extra speed loss should be fine, and I'd rather be safe.
 std::mutex                       _allInstancesMutex;
 std::vector<MtohRenderOverride*> _allInstances;
-
-#if WANT_UFE_BUILD
-
-// Observe UFE scene items for transformation changed only when they are
-// selected.
-class UfeSelectionObserver : public UFE_NS::Observer
-{
-public:
-    UfeSelectionObserver(MtohRenderOverride& mtohRenderOverride)
-        : UFE_NS::Observer()
-        , _mtohRenderOverride(mtohRenderOverride)
-    {
-    }
-
-    //~UfeSelectionObserver() override {}
-
-    void operator()(const UFE_NS::Notification& notification) override
-    {
-        // During Maya file read, each node will be selected in turn, so we get
-        // notified for each node in the scene.  Prune this out.
-        if (MFileIO::isOpeningFile()) {
-            return;
-        }
-
-        auto selectionChanged = dynamic_cast<const UFE_NS::SelectionChanged*>(&notification);
-        if (selectionChanged == nullptr) {
-            return;
-        }
-
-        TF_DEBUG(MAYAHYDRALIB_RENDEROVERRIDE_SELECTION)
-            .Msg("UfeSelectionObserver triggered (ufe selection change "
-                 "triggered)\n");
-        _mtohRenderOverride.SelectionChanged();
-    }
-
-private:
-    MtohRenderOverride& _mtohRenderOverride;
-};
-
-#endif // WANT_UFE_BUILD
 
 //! \brief  Get the index of the hit nearest to a given cursor point.
 int GetNearestHitIndex(
@@ -230,7 +187,7 @@ void ResolveUniqueHits_Workaround(const HdxPickHitVector& inHits, HdxPickHitVect
 MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
     : MHWRender::MRenderOverride(desc.overrideName.GetText())
     , _rendererDesc(desc)
-    , _sceneIndexRegistration(nullptr)
+    , _sceneIndexRegistry(nullptr)
     , _globals(MtohRenderGlobals::GetInstance())
     , _hgi(Hgi::CreatePlatformDefaultHgi())
     , _hgiDriver { HgiTokens->renderDriver, VtValue(_hgi.get()) }
@@ -279,26 +236,10 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
         std::lock_guard<std::mutex> lock(_allInstancesMutex);
         _allInstances.push_back(this);
     }
-
-#if WANT_UFE_BUILD
-    const UFE_NS::GlobalSelection::Ptr& ufeSelection = UFE_NS::GlobalSelection::get();
-    if (ufeSelection) {
-        _ufeSelectionObserver = std::make_shared<UfeSelectionObserver>(*this);
-        ufeSelection->addObserver(_ufeSelectionObserver);
-    }
-#endif // WANT_UFE_BUILD
 }
 
 MtohRenderOverride::~MtohRenderOverride()
 {
-#if WANT_UFE_BUILD
-    const Ufe::GlobalSelection::Ptr& ufeSelection = Ufe::GlobalSelection::get();
-    if (ufeSelection) {
-        ufeSelection->removeObserver(_ufeSelectionObserver);
-        _ufeSelectionObserver = nullptr;
-    }
-#endif // WANT_UFE_BUILD
-
     TF_DEBUG(MAYAHYDRALIB_RENDEROVERRIDE_RESOURCES)
         .Msg(
             "MtohRenderOverride destroyed (%s - %s - %s)\n",
@@ -549,13 +490,9 @@ MStatus MtohRenderOverride::Render(
         }
 
         if (scene.changed()) {
-            for (auto& it : _delegates) {
-                auto sceneDelegate = std::dynamic_pointer_cast<MayaHydraSceneDelegate>(it);
-                if (sceneDelegate) {
-                    sceneDelegate->HandleCompleteViewportScene(
-                        scene,
-                        static_cast<MFrameContext::DisplayStyle>(drawContext.getDisplayStyle()));
-                }
+            if (_mayaHydraSceneDelegate) {
+                _mayaHydraSceneDelegate->HandleCompleteViewportScene(
+                    scene, static_cast<MFrameContext::DisplayStyle>(drawContext.getDisplayStyle()));
             }
         }
 
@@ -643,15 +580,11 @@ MStatus MtohRenderOverride::Render(
             bool isUsdCamera = defaultUfeProxyCameraShape == camPath.fullPathName();
 #endif
             if (!isUsdCamera) {
-                for (auto& delegate : _delegates) {
-                    if (MayaHydraSceneDelegate* mayaScene
-                        = dynamic_cast<MayaHydraSceneDelegate*>(delegate.get())) {
-                        params.camera = mayaScene->SetCameraViewport(camPath, _viewport);
-                        if (vpDirty)
-                            mayaScene->GetChangeTracker().MarkSprimDirty(
-                                params.camera, HdCamera::DirtyParams);
-                        break;
-                    }
+                if (_mayaHydraSceneDelegate) {
+                    params.camera = _mayaHydraSceneDelegate->SetCameraViewport(camPath, _viewport);
+                    if (vpDirty)
+                        _mayaHydraSceneDelegate->GetChangeTracker().MarkSprimDirty(
+                            params.camera, HdCamera::DirtyParams);
                 }
             }
         } else {
@@ -782,6 +715,7 @@ void MtohRenderOverride::_InitHydraResources()
 
     SdfPathVector solidPrimsRootPaths;
 
+    _mayaHydraSceneDelegate = nullptr;
     auto delegateNames = MayaHydraDelegateRegistry::GetDelegateNames();
     auto creators = MayaHydraDelegateRegistry::GetDelegateCreators();
     TF_VERIFY(delegateNames.size() == creators.size());
@@ -797,9 +731,12 @@ void MtohRenderOverride::_InitHydraResources()
         if (newDelegate) {
             // Call SetLightsEnabled before the delegate is populated
             newDelegate->SetLightsEnabled(!_hasDefaultLighting);
-            if (auto mayaSceneDelegate
-                = std::dynamic_pointer_cast<MayaHydraSceneDelegate>(newDelegate)) {
-                solidPrimsRootPaths.push_back(mayaSceneDelegate->GetSolidPrimsRootPath());
+            _mayaHydraSceneDelegate
+                = std::dynamic_pointer_cast<MayaHydraSceneDelegate>(newDelegate);
+            if (TF_VERIFY(
+                    _mayaHydraSceneDelegate,
+                    "Maya Hydra scene delegate not found, check mayaHydra plugin installation.")) {
+                solidPrimsRootPaths.push_back(_mayaHydraSceneDelegate->GetSolidPrimsRootPath());
             }
             _delegates.emplace_back(std::move(newDelegate));
         }
@@ -841,8 +778,9 @@ void MtohRenderOverride::_InitHydraResources()
             break;
         }
     }
-    if (!_sceneIndexRegistration)
-        _sceneIndexRegistration.reset(new MayaHydraSceneIndexRegistration(_renderIndex));
+    if (!_sceneIndexRegistry) {
+        _sceneIndexRegistry.reset(new MayaHydraSceneIndexRegistry(_renderIndex));
+    }
 
     _initializationSucceeded = true;
 }
@@ -883,7 +821,7 @@ void MtohRenderOverride::ClearHydraResources()
         _rendererPlugin = nullptr;
     }
 
-    _sceneIndexRegistration.reset(nullptr);
+    _sceneIndexRegistry = nullptr;
 
     _viewport = GfVec4d(0, 0, 0, 0);
     _initializationSucceeded = false;
@@ -1018,6 +956,51 @@ bool MtohRenderOverride::nextRenderOperation()
     return ++_currentOperation < static_cast<int>(_operations.size());
 }
 
+constexpr char      kNamedSelection[] = "MayaSelectTool";
+
+void MtohRenderOverride::_PopulateSelectionList(
+    const HdxPickHitVector&          hits,
+    const MHWRender::MSelectionInfo& selectInfo,
+    MSelectionList&                  selectionList,
+    MPointArray&                     worldSpaceHitPts)
+{
+    if (hits.empty())
+        return;
+
+    if (_mayaHydraSceneDelegate) {
+
+        MStatus status;
+        if (auto ufeSel = Ufe::NamedSelection::get(kNamedSelection)) {
+            for (const HdxPickHit& hit : hits) {
+                if (_mayaHydraSceneDelegate->AddPickHitToSelectionList(
+                        hit, selectInfo, selectionList, worldSpaceHitPts)) {
+                    continue;
+                }
+                SdfPath                                hitId = hit.objectId;
+                const MayaHydraSceneIndexRegistration& registration
+                    = _sceneIndexRegistry->GetSceneIndexRegistrationForRprim(hitId);
+                // Scene index is incompatible with UFE. Skip
+                if (registration.ufeRtid != MayaHydraSceneIndexRegistry::kInvalidUfeRtid) {
+
+                    // First segment describing path to the proxy shape node
+                    MDagPath dagPath(MDagPath::getAPathTo(registration.dagNode.object(), &status));
+                    // Second segment describing path to the rprim
+                    SdfPath secondSegmentPath(
+                        // Remove scene index plugin path prefix
+                        hitId.ReplacePrefix(registration.sceneIndexPathPrefix, SdfPath("/")));
+
+                    Ufe::Path ufePath({ UfeExtensions::dagPathToUfePathSegment(dagPath),
+                                        UfeExtensions::usdPathToUfePathSegment(
+                                            secondSegmentPath, registration.ufeRtid) });
+                    if (auto si = Ufe::Hierarchy::createItem(ufePath)) {
+                        ufeSel->append(si);
+                    }
+                }
+            }
+        }
+    }
+}
+
 bool MtohRenderOverride::select(
     const MHWRender::MFrameContext&  frameContext,
     const MHWRender::MSelectionInfo& selectInfo,
@@ -1026,7 +1009,7 @@ bool MtohRenderOverride::select(
     MPointArray&    worldSpaceHitPts)
 {
 #ifdef MAYAHYDRA_PROFILERS_ENABLED
-    MProfilingScope profilingScopeForEval(_profilerCategory, MProfiler::kColorD_L1, "MtohRenderOverride::select", "MtohRenderOverride::select");
+        MProfilingScope profilingScopeForEval(_profilerCategory, MProfiler::kColorD_L1, "MtohRenderOverride::select", "MtohRenderOverride::select");
 #endif
     MStatus status = MStatus::kFailure;
 
@@ -1115,12 +1098,7 @@ bool MtohRenderOverride::select(
         outHits.swap(uniqueHits);
     }
 
-    if (!outHits.empty()) {
-        for (auto& it : _delegates) {
-            it->PopulateSelectionList(outHits, selectInfo, selectionList, worldSpaceHitPts);
-        }
-    }
-
+    _PopulateSelectionList(outHits, selectInfo, selectionList, worldSpaceHitPts);
     return true;
 }
 

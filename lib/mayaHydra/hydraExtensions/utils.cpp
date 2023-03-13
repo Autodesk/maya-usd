@@ -33,6 +33,8 @@
 #include <cctype>
 #include <sstream>
 
+#include <ufe/runTimeMgr.h>
+
 namespace MAYAHYDRA_NS_DEF {
 
 namespace MayaAttrs = PXR_NS::MayaAttrs;
@@ -349,10 +351,14 @@ SdfPath RenderItemToSdfPath(
     }
 
     SdfPath sdfPath(name);
-    if (!TF_VERIFY(!sdfPath.IsEmpty(), "Render item using invalid SdfPath '%s'. Using item's id instead.", name.c_str())) {
+    if (!TF_VERIFY(
+            !sdfPath.IsEmpty(),
+            "Render item using invalid SdfPath '%s'. Using item's id instead.",
+            name.c_str())) {
         // If failed to include render item's name as an SdfPath simply use the item id.
         return SdfPath(internalObjectId);
     }
     return sdfPath;
 }
+
 } // namespace MAYAHYDRA_NS_DEF

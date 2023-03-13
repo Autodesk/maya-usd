@@ -83,7 +83,8 @@ mayaUsd_compile_config(${TARGET_NAME})
 # -----------------------------------------------------------------------------
 target_link_libraries(${TARGET_NAME} 
     PRIVATE 
-        mayaHydraLib 
+        mayaHydraLib
+        ufeExtensions
         $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
 )
 

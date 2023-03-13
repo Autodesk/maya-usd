@@ -1073,31 +1073,32 @@ void MayaHydraSceneDelegate::SetParams(const MayaHydraParams& params)
     MayaHydraDelegate::SetParams(params);
 }
 
-void MayaHydraSceneDelegate::PopulateSelectionList(
-    const HdxPickHitVector&          hits,
+//! \brief  Try to obtain maya object corresponding to HdxPickHit and add it to a maya selection list
+//! \return whether the conversion was a success
+bool MayaHydraSceneDelegate::AddPickHitToSelectionList(
+    const HdxPickHit&                hit,
     const MHWRender::MSelectionInfo& selectInfo,
     MSelectionList&                  selectionList,
     MPointArray&                     worldSpaceHitPts)
 {
-    for (const HdxPickHit& hit : hits) {
-        SdfPath hitId = hit.objectId;
-        // validate that hit is indeed a maya item. Alternatively, the rprim hit could be an rprim
-        // defined by a scene index such as maya usd.
-        if (hitId.HasPrefix(GetRprimPath())) {
-            _FindAdapter<MayaHydraRenderItemAdapter>(
-                hitId,
-                [&selectionList, &worldSpaceHitPts, &hit](MayaHydraRenderItemAdapter* a) {
-                    if (a->GetDagPath().isValid()) {
-                        selectionList.add(a->GetDagPath());
-                        worldSpaceHitPts.append(
-                            hit.worldSpaceHitPoint[0],
-                            hit.worldSpaceHitPoint[1],
-                            hit.worldSpaceHitPoint[2]);
-                    }
-                },
-                _renderItemsAdapters);
-        }
+    SdfPath hitId = hit.objectId;
+    // validate that hit is indeed a maya item. Alternatively, the rprim hit could be an rprim
+    // defined by a scene index such as maya usd.
+    if (hitId.HasPrefix(GetRprimPath())) {
+        _FindAdapter<MayaHydraRenderItemAdapter>(
+            hitId,
+            [&selectionList, &worldSpaceHitPts, &hit](MayaHydraRenderItemAdapter* a) {
+                selectionList.add(a->GetDagPath());
+                worldSpaceHitPts.append(
+                    hit.worldSpaceHitPoint[0],
+                    hit.worldSpaceHitPoint[1],
+                    hit.worldSpaceHitPoint[2]);
+            },
+            _renderItemsAdapters);
+        return true;
     }
+
+    return false;
 }
 
 HdMeshTopology MayaHydraSceneDelegate::GetMeshTopology(const SdfPath& id)

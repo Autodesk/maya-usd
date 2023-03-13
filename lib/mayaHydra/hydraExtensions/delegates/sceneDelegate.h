@@ -142,8 +142,8 @@ public:
         MFrameContext::DisplayStyle                 ds);
 
     MAYAHYDRALIB_API
-    void PopulateSelectionList(
-        const HdxPickHitVector&          hits,
+    bool AddPickHitToSelectionList(
+        const HdxPickHit&                hit,
         const MHWRender::MSelectionInfo& selectInfo,
         MSelectionList&                  selectionList,
         MPointArray&                     worldSpaceHitPts) override;
