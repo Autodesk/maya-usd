@@ -500,7 +500,7 @@ global proc mayaUsdMenu_aeShowMenuCallback(string $aeShowMenu)
 
 ///////////////////////////////////////////////////////////////////////////////
 // initCreateMenu
-// setup the items in Maya's "Create" menu
+// setup the items in Maya's "Create" and "Window" menus
 proc initCreateMenu() {
     global string $gMainCreateMenu; // maya's create menu
     addMenuCallback($gMainCreateMenu, "mayaUsdMenu_createMenuCallback()");
@@ -510,7 +510,7 @@ proc initCreateMenu() {
 
 ///////////////////////////////////////////////////////////////////////////////
 // termCreateMenu
-// destroys the items in Maya's "Create" menu
+// destroys the items in Maya's "Create" and "Window" menus
 proc termCreateMenu() {
     global string $gMainCreateMenu; // maya's create menu
     global string $gMayaUsdCreateSubMenu;
