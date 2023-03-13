@@ -890,8 +890,15 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
         if (!fIsAGatewayType) {
             // Top level item - Bind/unbind existing materials
             bool materialSeparatorsAdded = false;
+            int  allowMaterialFunctions = 0;
 #if UFE_PREVIEW_VERSION_NUM >= 4010
-            if (sceneItemSupportsShading(fItem)) {
+            MString script;
+            script.format(
+                "mayaUsdMaterialBindings \"^1s\" -canAssignMaterialToNodeType true",
+                Ufe::PathString::string(fItem->path()).c_str());
+            MGlobal::executeCommand(script, allowMaterialFunctions);
+
+            if (allowMaterialFunctions && sceneItemSupportsShading(fItem)) {
                 if (!materialSeparatorsAdded) {
                     items.emplace_back(Ufe::ContextItem::kSeparator);
                     materialSeparatorsAdded = true;
@@ -900,13 +907,22 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                     kAssignNewMaterialItem,
                     kAssignNewMaterialLabel,
                     Ufe::ContextItem::kHasChildren);
-                items.emplace_back(
-                    kAssignExistingMaterialItem,
-                    kAssignExistingMaterialLabel,
-                    Ufe::ContextItem::kHasChildren);
+
+                // Only show this option if we actually have materials in the stage.
+                MStringArray materials;
+                script.format(
+                    "mayaUsdGetMaterialsInStage \"^1s\"",
+                    Ufe::PathString::string(fItem->path()).c_str());
+                MGlobal::executeCommand(script, materials);
+                if (materials.length() > 0) {
+                    items.emplace_back(
+                        kAssignExistingMaterialItem,
+                        kAssignExistingMaterialLabel,
+                        Ufe::ContextItem::kHasChildren);
+                }
             }
 #endif
-            if (fItem->prim().HasAPI<UsdShadeMaterialBindingAPI>()) {
+            if (allowMaterialFunctions && fItem->prim().HasAPI<UsdShadeMaterialBindingAPI>()) {
                 UsdShadeMaterialBindingAPI bindingAPI(fItem->prim());
                 // Show unbind menu item if there is a direct binding relationship:
                 auto directBinding = bindingAPI.GetDirectBinding();

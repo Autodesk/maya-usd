@@ -89,6 +89,119 @@ class testMaterialCommands(unittest.TestCase):
         materialsInStage = cmds.mayaUsdGetMaterialsInStage("|stage|stageShape,/cube")
         self.assertEqual(materialsInStage, expectedMaterials)
 
+    def testmayaUsdMaterialBindings(self):
+        """
+        Tests various material-binding attributes.
+        """
+
+        self._StartTest('materialAssignment')
+
+        # Check for material bindings
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/CubeWithMaterial", hasMaterialBinding=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/CubeWithoutMaterial", hasMaterialBinding=True), False)
+
+        # Geometry
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/BasisCurves1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Camera1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Capsule1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Cone1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Cube1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Cylinder1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/GeomSubset1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/HermiteCurves1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Imageable1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Mesh1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/NurbsCurves1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/NurbsPatch1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Plane1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/PointInstancer1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Points1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Scope1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Sphere1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Xform1", canAssignMaterialToNodeType=True), True)
+
+        # Volumes
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Field3DAsset1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/FieldAsset1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/FieldBase1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/OpenVDBAsset1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Volume1", canAssignMaterialToNodeType=True), True)
+
+        # Lights
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/CylinderLight1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/DiskLight1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/DistantLight1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/DomeLight1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/GeometryLight1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/LightFilter1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/PluginLight1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/PluginLightFilter1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/PortalLight1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/RectLight1", canAssignMaterialToNodeType=True), True)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/SphereLight1", canAssignMaterialToNodeType=True), True)
+
+        # Skeleton
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/SkelAnimation1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/SkelBindingAPI1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/SkelBlendShape1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/SkelPackedJointAnimation1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/SkelRoot1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Skeleton1", canAssignMaterialToNodeType=True), False)
+
+        # Audio
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/SpatialAudio1", canAssignMaterialToNodeType=True), False)
+
+        # Physics
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/ArticulationRootAPI1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/CollisionAPI1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/CollisionGroup1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/DistanceJoint1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/DriveAPI1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/FilteredPairsAPI1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/FixedJoint1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Joint1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/LimitAPI1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/MassAPI1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/MaterialAPI1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/MeshCollisionAPI1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/PrismaticJoint1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/RevoluteJoint1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/RigidBodyAPI1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Scene1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/SphericalJoint1", canAssignMaterialToNodeType=True), False)
+
+        # Material
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Material1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/MaterialBindingAPI1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/NodeDefAPI1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/NodeGraph1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Shader1", canAssignMaterialToNodeType=True), False)
+
+        # Render Utilities
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/RenderDenoisePass1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/RenderPass1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/RenderProduct1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/RenderSettings1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/RenderSettingsBase1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/RenderVar1", canAssignMaterialToNodeType=True), False)
+
+        # Procedurals
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/GenerativeProcedural1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/UsdHydraGenerativeProceduralAPI1", canAssignMaterialToNodeType=True), False)
+
+        # UI
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Backdrop1", canAssignMaterialToNodeType=True), False)
+
+        # References
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/ALMayaReference1", canAssignMaterialToNodeType=True), False)
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/MayaReference1", canAssignMaterialToNodeType=True), False)
+
+        # Unknown object type
+        self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Foo1", canAssignMaterialToNodeType=True), False)
+
+        # Path to non-existent object
+        self.assertRaises(RuntimeError, cmds.mayaUsdMaterialBindings, "|stage|stageShape,/Bar1")
+
 
 if __name__ == '__main__':
     unittest.main(globals())

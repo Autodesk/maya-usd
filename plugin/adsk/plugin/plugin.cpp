@@ -233,6 +233,7 @@ MStatus initializePlugin(MObject obj)
     registerCommandCheck<MayaUsd::ufe::DuplicateCommand>(plugin);
     registerCommandCheck<MayaUsd::ADSKMayaUSDGetMaterialsForRenderersCommand>(plugin);
     registerCommandCheck<MayaUsd::ADSKMayaUSDGetMaterialsInStageCommand>(plugin);
+    registerCommandCheck<MayaUsd::ADSKMayaUSDMaterialBindingsCommand>(plugin);
 #endif
 
     status = plugin.registerCommand(
@@ -416,6 +417,7 @@ MStatus uninitializePlugin(MObject obj)
     deregisterCommandCheck<MayaUsd::ufe::DuplicateCommand>(plugin);
     deregisterCommandCheck<MayaUsd::ADSKMayaUSDGetMaterialsForRenderersCommand>(plugin);
     deregisterCommandCheck<MayaUsd::ADSKMayaUSDGetMaterialsInStageCommand>(plugin);
+    deregisterCommandCheck<MayaUsd::ADSKMayaUSDMaterialBindingsCommand>(plugin);
 #endif
 
     status = plugin.deregisterNode(MayaUsd::ProxyShape::typeId);
