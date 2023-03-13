@@ -54,11 +54,11 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
     const HdContainerDataSourceHandle& inputArgs)
 {
     using HdMObjectDataSource = HdRetainedTypedSampledDataSource<MObject>;
-    static TfToken dataSourceNodePathEntry("object");
+    static TfToken         dataSourceNodePathEntry("object");
     HdDataSourceBaseHandle dataSourceEntryPathHandle = inputArgs->Get(dataSourceNodePathEntry);
 #if WANT_UFE_BUILD
     using HdRtidRefDataSource = HdRetainedTypedSampledDataSource<Ufe::Rtid&>;
-    static TfToken dataSourceRuntimeEntry("runtime");
+    static TfToken         dataSourceRuntimeEntry("runtime");
     HdDataSourceBaseHandle dataSourceEntryRuntimeHandle = inputArgs->Get(dataSourceRuntimeEntry);
 #endif
 
