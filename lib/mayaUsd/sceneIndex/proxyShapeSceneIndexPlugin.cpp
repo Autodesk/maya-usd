@@ -18,7 +18,9 @@
 
 #if PXR_VERSION >= 2211
 
+#if WANT_UFE_BUILD
 #include <mayaUsd/ufe/Global.h>
+#endif
 
 #include <pxr/imaging/hd/flatteningSceneIndex.h>
 #include <pxr/imaging/hd/retainedDataSource.h>
