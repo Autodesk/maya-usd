@@ -48,11 +48,7 @@ bool setUsdAttrMetadata(
     }
 
     // If attribute is locked don't allow setting Metadata.
-    std::string errMsg;
-    const bool  isSetAttrAllowed = MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg);
-    if (!isSetAttrAllowed) {
-        throw std::runtime_error(errMsg);
-    }
+    MayaUsd::ufe::enforceAttributeEditAllowed(attr);
 
     PXR_NS::TfToken tok(key);
     if (PXR_NS::UsdShadeNodeGraph(attr.GetPrim())) {
