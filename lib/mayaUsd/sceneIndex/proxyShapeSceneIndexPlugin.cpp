@@ -31,7 +31,9 @@
 #include <maya/MObjectHandle.h>
 #include <maya/MSelectionList.h>
 #include <maya/MString.h>
+#if WANT_UFE_BUILD
 #include <ufe/rtid.h>
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -50,20 +52,25 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
     const HdContainerDataSourceHandle& inputArgs)
 {
     using HdMObjectDataSource = HdRetainedTypedSampledDataSource<MObject>;
-    using HdRtidRefDataSource = HdRetainedTypedSampledDataSource<Ufe::Rtid&>;
-
     static TfToken dataSourceNodePathEntry("object");
+#if WANT_UFE_BUILD
+    using HdRtidRefDataSource = HdRetainedTypedSampledDataSource<Ufe::Rtid&>;
     static TfToken dataSourceRuntimeEntry("runtime");
+#endif
 
     HdDataSourceBaseHandle dataSourceEntryPathHandle = inputArgs->Get(dataSourceNodePathEntry);
+#if WANT_UFE_BUILD
     HdDataSourceBaseHandle dataSourceEntryRuntimeHandle = inputArgs->Get(dataSourceRuntimeEntry);
+#endif
     if (auto dataSourceEntryNodePath = HdMObjectDataSource::Cast(dataSourceEntryPathHandle)) {
+#if WANT_UFE_BUILD
         auto dataSourceEntryRuntime = HdRtidRefDataSource::Cast(dataSourceEntryRuntimeHandle);
         if (TF_VERIFY(dataSourceEntryRuntime, "Error UFE runtime id data source not found")) {
             Ufe::Rtid& id = dataSourceEntryRuntime->GetTypedValue(0.0f);
             id = MayaUsd::ufe::getUsdRunTimeId();
             TF_VERIFY(id != 0, "Invalid UFE runtime id");
         }
+#endif
         MObject           dagNode = dataSourceEntryNodePath->GetTypedValue(0.0f);
         MStatus           status;
         MFnDependencyNode dependNodeFn(dagNode, &status);
