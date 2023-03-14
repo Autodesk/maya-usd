@@ -125,6 +125,8 @@ static void sendNotificationToAllStageProxies(
         if (proxyStage != stage)
             continue;
 
+        // For all the proxy shapes that are mapping the same stage, we need to fixup the
+        // Ufe path since they have different Ufe Paths because it contains proxy shape name.
         const Ufe::PathSegment proxySegment(std::string("|world") + proxyName, mayaId, '|');
 
         const Ufe::PathSegment& srcUsdSegment = srcPath.getSegments()[1];
@@ -201,9 +203,9 @@ void UsdUndoRenameCommand::renameRedo()
     // Note: must fetch prim again from its path because undo/redo of composite commands
     //       (or doing multiple undo and then multiple redo) can make the cached prim
     //       stale.
-    const UsdPrim prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
+    const UsdPrim srcPrim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
 
-    doUsdRename(_stage, prim, _newName, srcPath, dstPath);
+    doUsdRename(_stage, srcPrim, _newName, srcPath, dstPath);
 
     // the renamed scene item is a "sibling" of its original name.
     _ufeDstItem = createSiblingSceneItem(srcPath, _newName);
@@ -214,7 +216,7 @@ void UsdUndoRenameCommand::renameRedo()
     }
 
     // send notification to update UFE data model
-    sendNotificationToAllStageProxies(_stage, prim, srcPath, dstPath);
+    sendNotificationToAllStageProxies(_stage, _ufeDstItem->prim(), srcPath, dstPath);
 }
 
 void UsdUndoRenameCommand::renameUndo()
