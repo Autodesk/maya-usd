@@ -85,7 +85,8 @@ void UsdMayaTransformWriter::_ComputeXformOps(
     const UsdTimeCode&                         usdTime,
     const bool                                 eulerFilter,
     UsdMayaTransformWriter::_TokenRotationMap* previousRotates,
-    UsdUtilsSparseValueWriter*                 valueWriter)
+    UsdUtilsSparseValueWriter*                 valueWriter,
+    double                                     distanceConversionScalar)
 {
     if (!TF_VERIFY(previousRotates)) {
         return;
@@ -155,6 +156,11 @@ void UsdMayaTransformWriter::_ComputeXformOps(
                 }
                 for (unsigned int i = 0; i < 3; i++) {
                     value[i] = GfRadiansToDegrees(value[i]);
+                }
+            } else if (animChannel.opType == _XformType::Translate) {
+                // Scale the translate as needed to fit the desired metersPerUnit
+                if (distanceConversionScalar != 1.0) {
+                    value = value * distanceConversionScalar;
                 }
             }
 
@@ -595,7 +601,7 @@ UsdMayaTransformWriter::UsdMayaTransformWriter(
     UsdMayaWriteJobContext&  jobCtx)
     : UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
 {
-    // Even though we define an Xform here, it's OK for subclassers to
+    // Even though we define an Xform here, it's OK for subclasses to
     // re-define the prim as another type.
     UsdGeomXform primSchema = UsdGeomXform::Define(GetUsdStage(), GetUsdPath());
     _usdPrim = primSchema.GetPrim();
@@ -603,7 +609,7 @@ UsdMayaTransformWriter::UsdMayaTransformWriter(
 
     // There are special cases where you might subclass UsdMayaTransformWriter
     // without actually having a transform (e.g. the internal
-    // UsdMaya_FunctorPrimWriter), so accomodate those here.
+    // UsdMaya_FunctorPrimWriter), so accommodate those here.
     if (GetMayaObject().hasFn(MFn::kTransform)) {
         const MFnTransform transFn(GetDagPath());
         // Create a vector of _AnimChannels based on the Maya transformation
@@ -613,6 +619,9 @@ UsdMayaTransformWriter::UsdMayaTransformWriter(
             GetDagPath(), transFn, primSchema, !_GetExportArgs().timeSamples.empty(), worldspace);
         _WriteChannelsXformOps(primSchema);
     }
+
+    _distanceConversionScalar
+        = UsdMayaUtil::GetExportDistanceConversionScalar(jobCtx.GetArgs().metersPerUnit);
 }
 
 /* virtual */
@@ -632,7 +641,8 @@ void UsdMayaTransformWriter::Write(const UsdTimeCode& usdTime)
                 usdTime,
                 _GetExportArgs().eulerFilter,
                 &_previousRotates,
-                _GetSparseValueWriter());
+                _GetSparseValueWriter(),
+                _distanceConversionScalar);
         }
     }
 }
