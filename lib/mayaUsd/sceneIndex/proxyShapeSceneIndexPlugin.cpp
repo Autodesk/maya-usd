@@ -42,7 +42,8 @@ class UfeSelectionObserver : public Ufe::Observer
 public:
     UfeSelectionObserver(MayaUsd::MayaUsdProxyShapeSceneIndex& proxyShapeSceneIndex)
         : Ufe::Observer()
-        , _proxyShapeSceneIndex(proxyShapeSceneIndex)
+    // Avoid clang unused private data member warning as error.
+    // , _proxyShapeSceneIndex(proxyShapeSceneIndex)
     {
     }
 
@@ -61,7 +62,8 @@ public:
     }
 
 private:
-    MayaUsd::MayaUsdProxyShapeSceneIndex& _proxyShapeSceneIndex;
+    // Avoid clang unused private data member warning as error.
+    // MayaUsd::MayaUsdProxyShapeSceneIndex& _proxyShapeSceneIndex;
 };
 
 #endif // WANT_UFE_BUILD
