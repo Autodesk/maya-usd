@@ -15,6 +15,7 @@
 //
 #include "editRouter.h"
 
+#include <mayaUsd/base/tokens.h>
 #include <mayaUsdUtils/MergePrims.h>
 
 #include <pxr/base/tf/callContext.h>
@@ -36,7 +37,7 @@ MayaUsd::EditRouters editRouters;
 void editTargetLayer(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionary& routingData)
 {
     // We expect a prim in the context.
-    auto found = context.find("prim");
+    auto found = context.find(PXR_NS::MayaUsdEditRoutingTokens->Prim);
     if (found == context.end()) {
         return;
     }
@@ -46,12 +47,12 @@ void editTargetLayer(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionary& 
         return;
     }
     auto layer = prim.GetStage()->GetEditTarget().GetLayer();
-    routingData["layer"] = PXR_NS::VtValue(layer);
+    routingData[PXR_NS::MayaUsdEditRoutingTokens->Layer] = PXR_NS::VtValue(layer);
 }
 
 PXR_NS::UsdStageRefPtr getMayaReferenceStage(const PXR_NS::VtDictionary& context)
 {
-    auto foundStage = context.find("stage");
+    auto foundStage = context.find(PXR_NS::MayaUsdEditRoutingTokens->Stage);
     if (foundStage == context.end())
         return nullptr;
 
@@ -59,7 +60,8 @@ PXR_NS::UsdStageRefPtr getMayaReferenceStage(const PXR_NS::VtDictionary& context
 }
 
 // Retrieve a value from a USD dictionary, with a default value.
-template <class T> T getDictValue(const PXR_NS::VtDictionary& dict, const char* key, T defaultValue)
+template <class T>
+T getDictValue(const PXR_NS::VtDictionary& dict, const PXR_NS::TfToken& key, T defaultValue)
 {
     return PXR_NS::VtDictionaryGet<T>(dict, key, PXR_NS::VtDefault = defaultValue);
 }
@@ -67,8 +69,10 @@ template <class T> T getDictValue(const PXR_NS::VtDictionary& dict, const char* 
 // Retrieve a string from a USD dictionary, with a default value.
 // This variation allows specifying the default with a string literal while
 // still having a std::string return value.
-std::string
-getDictString(const PXR_NS::VtDictionary& dict, const char* key, const char* defaultValue = "")
+std::string getDictString(
+    const PXR_NS::VtDictionary& dict,
+    const PXR_NS::TfToken&      key,
+    const char*                 defaultValue = "")
 {
     return getDictValue(dict, key, std::string(defaultValue));
 }
@@ -123,7 +127,8 @@ void createCachePrim(
     bool                          asReference,
     bool                          append)
 {
-    PXR_NS::UsdPrim cachePrim = stage->DefinePrim(primPath, PXR_NS::TfToken("Xform"));
+    PXR_NS::UsdPrim cachePrim
+        = stage->DefinePrim(primPath, PXR_NS::MayaUsdEditRoutingTokens->Xform);
 
     auto position = append ? PXR_NS::UsdListPositionFrontOfAppendList
                            : PXR_NS::UsdListPositionBackOfPrependList;
@@ -148,15 +153,23 @@ void cacheMayaReference(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionar
 
     // Read user arguments provide in the context dictionary.
     // TODO: document all arguments for plugin users.
-    auto pulledPathStr = getDictString(context, "prim");
-    auto fileFormatExtension = getDictString(context, "defaultUSDFormat");
-    auto dstLayerPath = getDictString(context, "rn_layer");
-    auto dstPrimName = getDictString(context, "rn_primName");
-    bool appendListEdit = (getDictString(context, "rn_listEditType", "Append") == "Append");
-    bool asReference = (getDictString(context, "rn_payloadOrReference", "") == "Reference");
-    bool dstIsVariant = (getDictValue(context, "rn_defineInVariant", 1) == 1);
-    auto dstVariantSet = getDictString(context, "rn_variantSetName");
-    auto dstVariant = getDictString(context, "rn_variantName");
+    auto pulledPathStr = getDictString(context, PXR_NS::MayaUsdEditRoutingTokens->Prim);
+    auto fileFormatExtension
+        = getDictString(context, PXR_NS::MayaUsdEditRoutingTokens->DefaultUSDFormat);
+    auto dstLayerPath
+        = getDictString(context, PXR_NS::MayaUsdEditRoutingTokens->DestinationLayerPath);
+    auto dstPrimName
+        = getDictString(context, PXR_NS::MayaUsdEditRoutingTokens->DestinationPrimName);
+    bool appendListEdit
+        = (getDictString(context, PXR_NS::MayaUsdEditRoutingTokens->ListEditType, "Append")
+           == "Append");
+    bool asReference
+        = (getDictString(context, PXR_NS::MayaUsdEditRoutingTokens->PayloadOrReference, "")
+           == "Reference");
+    bool dstIsVariant
+        = (getDictValue(context, PXR_NS::MayaUsdEditRoutingTokens->DefineInVariant, 1) == 1);
+    auto dstVariantSet = getDictString(context, PXR_NS::MayaUsdEditRoutingTokens->VariantSetName);
+    auto dstVariant = getDictString(context, PXR_NS::MayaUsdEditRoutingTokens->VariantName);
 
     if (!PXR_NS::SdfPath::IsValidPathString(pulledPathStr))
         return;
@@ -193,12 +206,18 @@ void cacheMayaReference(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionar
 
     // Copy the transform to the Maya reference prim under the Maya reference variant.
     {
-        auto srcStage = getDictValue(context, "src_stage", PXR_NS::UsdStageRefPtr());
-        auto srcLayer = getDictValue(context, "src_layer", PXR_NS::SdfLayerRefPtr());
-        auto srcSdfPath = getDictValue(context, "src_path", PXR_NS::SdfPath());
-        auto dstStage = getDictValue(context, "dst_stage", PXR_NS::UsdStageRefPtr());
-        auto dstLayer = getDictValue(context, "dst_layer", PXR_NS::SdfLayerRefPtr());
-        auto dstSdfPath = getDictValue(context, "dst_path", PXR_NS::SdfPath());
+        auto srcStage = getDictValue(
+            context, PXR_NS::MayaUsdEditRoutingTokens->SrcStage, PXR_NS::UsdStageRefPtr());
+        auto srcLayer = getDictValue(
+            context, PXR_NS::MayaUsdEditRoutingTokens->SrcLayer, PXR_NS::SdfLayerRefPtr());
+        auto srcSdfPath
+            = getDictValue(context, PXR_NS::MayaUsdEditRoutingTokens->SrcPath, PXR_NS::SdfPath());
+        auto dstStage = getDictValue(
+            context, PXR_NS::MayaUsdEditRoutingTokens->DstStage, PXR_NS::UsdStageRefPtr());
+        auto dstLayer = getDictValue(
+            context, PXR_NS::MayaUsdEditRoutingTokens->DstLayer, PXR_NS::SdfLayerRefPtr());
+        auto dstSdfPath
+            = getDictValue(context, PXR_NS::MayaUsdEditRoutingTokens->DstPath, PXR_NS::SdfPath());
 
         // Prepare destination path for merge, incorporating the destination variant
         // if caching into a variant.
@@ -240,9 +259,9 @@ void cacheMayaReference(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionar
     }
 
     // Fill routing info
-    routingData["layer"] = PXR_NS::VtValue(dstLayerPath);
-    routingData["save_layer"] = PXR_NS::VtValue("yes");
-    routingData["path"] = PXR_NS::VtValue(dstPrimPath.GetString());
+    routingData[PXR_NS::MayaUsdEditRoutingTokens->Layer] = PXR_NS::VtValue(dstLayerPath);
+    routingData[PXR_NS::MayaUsdEditRoutingTokens->SaveLayer] = PXR_NS::VtValue("yes");
+    routingData[PXR_NS::MayaUsdEditRoutingTokens->Path] = PXR_NS::VtValue(dstPrimPath.GetString());
 }
 
 } // namespace
@@ -265,13 +284,14 @@ EditRouters defaultEditRouters()
     PXR_NAMESPACE_USING_DIRECTIVE
 
     EditRouters   defaultRouters;
-    TfTokenVector defaultOperations
-        = { TfToken("parent"), TfToken("duplicate"), TfToken("visibility") };
+    TfTokenVector defaultOperations = { PXR_NS::MayaUsdEditRoutingTokens->RouteParent,
+                                        PXR_NS::MayaUsdEditRoutingTokens->RouteDuplicate,
+                                        PXR_NS::MayaUsdEditRoutingTokens->RouteVisibility };
     for (const auto& o : defaultOperations) {
         defaultRouters[o] = std::make_shared<CxxEditRouter>(editTargetLayer);
     }
 
-    defaultRouters[TfToken("mayaReferencePush")]
+    defaultRouters[PXR_NS::MayaUsdEditRoutingTokens->RouteCacheToUSD]
         = std::make_shared<CxxEditRouter>(cacheMayaReference);
 
     return defaultRouters;
@@ -291,6 +311,14 @@ bool restoreDefaultEditRouter(const PXR_NS::TfToken& operation)
     }
     registerEditRouter(operation, found->second);
     return true;
+}
+
+void restoreAllDefaultEditRouters()
+{
+    auto defaults = defaultEditRouters();
+    for (const auto& entry : defaults) {
+        registerEditRouter(entry.first, entry.second);
+    }
 }
 
 static void setEditTarget(const PXR_NS::UsdPrim& prim, const PXR_NS::UsdEditTarget& editTarget)
@@ -330,10 +358,11 @@ getEditRouterLayer(const PXR_NS::TfToken& operation, const PXR_NS::UsdPrim& prim
 
     PXR_NS::VtDictionary context;
     PXR_NS::VtDictionary routingData;
-    context["prim"] = PXR_NS::VtValue(prim);
+    context[PXR_NS::MayaUsdEditRoutingTokens->Prim] = PXR_NS::VtValue(prim);
+    context[PXR_NS::MayaUsdEditRoutingTokens->Operation] = operation;
     (*dstEditRouter)(context, routingData);
     // Try to retrieve the layer from the routing data.
-    auto found = routingData.find("layer");
+    auto found = routingData.find(PXR_NS::MayaUsdEditRoutingTokens->Layer);
     if (found != routingData.end()) {
         const auto& value = found->second;
         if (value.IsHolding<std::string>()) {
@@ -349,6 +378,39 @@ getEditRouterLayer(const PXR_NS::TfToken& operation, const PXR_NS::UsdPrim& prim
         }
     }
     return prim.GetStage()->GetEditTarget().GetLayer();
+}
+
+PXR_NS::SdfLayerHandle
+getAttrEditRouterLayer(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName)
+{
+    PXR_NS::SdfLayerHandle layer = prim.GetStage()->GetEditTarget().GetLayer();
+
+    static const PXR_NS::TfToken operation(PXR_NS::MayaUsdEditRoutingTokens->RouteAttribute);
+    const EditRouter::Ptr        dstEditRouter = getEditRouter(operation);
+    if (!dstEditRouter) {
+        return layer;
+    }
+
+    PXR_NS::VtDictionary context;
+    PXR_NS::VtDictionary routingData;
+    context[PXR_NS::MayaUsdEditRoutingTokens->Prim] = PXR_NS::VtValue(prim);
+    context[PXR_NS::MayaUsdEditRoutingTokens->Operation] = operation;
+    context[operation] = PXR_NS::VtValue(attrName);
+    (*dstEditRouter)(context, routingData);
+
+    // Try to retrieve the layer from the routing data.
+    const auto found = routingData.find(PXR_NS::MayaUsdEditRoutingTokens->Layer);
+    if (found != routingData.end()) {
+        const auto& value = found->second;
+        if (value.IsHolding<std::string>()) {
+            std::string layerName = value.Get<std::string>();
+            layer = prim.GetStage()->GetRootLayer()->Find(layerName);
+        } else if (value.IsHolding<PXR_NS::SdfLayerHandle>()) {
+            layer = value.Get<PXR_NS::SdfLayerHandle>();
+        }
+    }
+
+    return layer;
 }
 
 } // namespace MAYAUSD_NS_DEF

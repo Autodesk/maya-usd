@@ -17,6 +17,7 @@
 
 #include "Utils.h"
 
+#include <mayaUsd/utils/editRouter.h>
 #include <mayaUsd/utils/util.h>
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #include <mayaUsd/base/tokens.h>
@@ -26,6 +27,11 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/usd/editContext.h>
+#include <pxr/usd/usd/stage.h>
+
+namespace MAYAUSD_NS_DEF {
+namespace ufe {
 
 namespace {
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -48,7 +54,11 @@ bool setUsdAttrMetadata(
     }
 
     // If attribute is locked don't allow setting Metadata.
-    MayaUsd::ufe::enforceAttributeEditAllowed(attr);
+    enforceAttributeEditAllowed(attr);
+
+    PXR_NS::UsdPrim        prim = attr.GetPrim();
+    PXR_NS::SdfLayerHandle layer = getAttrEditRouterLayer(prim, attr.GetName());
+    PXR_NS::UsdEditContext ctx(prim.GetStage(), layer);
 
     PXR_NS::TfToken tok(key);
     if (PXR_NS::UsdShadeNodeGraph(attr.GetPrim())) {
@@ -89,9 +99,6 @@ bool setUsdAttrMetadata(
 
 } // namespace
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
-
 //------------------------------------------------------------------------------
 // UsdAttributeHolder:
 //------------------------------------------------------------------------------
@@ -109,6 +116,10 @@ UsdAttributeHolder::UPtr UsdAttributeHolder::create(const PXR_NS::UsdAttribute& 
 std::string UsdAttributeHolder::isEditAllowedMsg() const
 {
     if (isValid()) {
+        PXR_NS::UsdPrim        prim = _usdAttr.GetPrim();
+        PXR_NS::SdfLayerHandle layer = getAttrEditRouterLayer(prim, _usdAttr.GetName());
+        PXR_NS::UsdEditContext ctx(prim.GetStage(), layer);
+
         std::string errMsg;
         isAttributeEditAllowed(_usdAttr, &errMsg);
         return errMsg;
@@ -144,6 +155,10 @@ bool UsdAttributeHolder::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode t
             return false;
         }
     }
+
+    PXR_NS::UsdPrim        prim = _usdAttr.GetPrim();
+    PXR_NS::SdfLayerHandle layer = getAttrEditRouterLayer(prim, _usdAttr.GetName());
+    PXR_NS::UsdEditContext ctx(prim.GetStage(), layer);
 
     return _usdAttr.Set(value, time);
 }
@@ -421,6 +436,10 @@ bool UsdAttributeHolder::clearMetadata(const std::string& key)
 {
     PXR_NAMESPACE_USING_DIRECTIVE
     if (isValid()) {
+        PXR_NS::UsdPrim        prim = _usdAttr.GetPrim();
+        PXR_NS::SdfLayerHandle layer = getAttrEditRouterLayer(prim, _usdAttr.GetName());
+        PXR_NS::UsdEditContext ctx(prim.GetStage(), layer);
+
         PXR_NS::TfToken tok(key);
         // Special cases for NodeGraphs:
         if (PXR_NS::UsdShadeNodeGraph(usdPrim())) {
@@ -431,6 +450,7 @@ bool UsdAttributeHolder::clearMetadata(const std::string& key)
             }
             return !hasMetadata(key);
         }
+
         // Special cases for known Ufe metadata keys.
         if (key == Ufe::Attribute::kLocked) {
             return _usdAttr.ClearMetadata(MayaUsdMetadata->Lock);

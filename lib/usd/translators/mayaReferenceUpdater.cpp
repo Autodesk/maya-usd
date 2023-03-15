@@ -15,6 +15,7 @@
 //
 #include "mayaReferenceUpdater.h"
 
+#include <mayaUsd/base/tokens.h>
 #include <mayaUsd/fileio/primUpdaterManager.h>
 #include <mayaUsd/fileio/primUpdaterRegistry.h>
 #include <mayaUsd/fileio/translators/translatorMayaReference.h>
@@ -187,11 +188,11 @@ bool PxrUsdTranslators_MayaReferenceUpdater::editAsMaya()
 }
 
 bool callEditRouter(
-    const char*                 routerName,
+    const TfToken&              routerName,
     const PXR_NS::VtDictionary& routerContext,
     PXR_NS::VtDictionary&       routingData)
 {
-    MayaUsd::EditRouter::Ptr dstEditRouter = MayaUsd::getEditRouter(TfToken(routerName));
+    MayaUsd::EditRouter::Ptr dstEditRouter = MayaUsd::getEditRouter(routerName);
     if (!dstEditRouter)
         return false;
 
@@ -216,29 +217,29 @@ UsdMayaPrimUpdater::PushCopySpecs PxrUsdTranslators_MayaReferenceUpdater::pushCo
     PXR_NS::VtDictionary routerContext = getContext()->GetUserArgs();
 
     // Pass the source and destination stage, layer and path to routers.
-    routerContext["src_stage"] = PXR_NS::VtValue(srcStage);
-    routerContext["src_layer"] = PXR_NS::VtValue(srcLayer);
-    routerContext["src_path"] = PXR_NS::VtValue(srcSdfPath);
+    routerContext[MayaUsdEditRoutingTokens->SrcStage] = PXR_NS::VtValue(srcStage);
+    routerContext[MayaUsdEditRoutingTokens->SrcLayer] = PXR_NS::VtValue(srcLayer);
+    routerContext[MayaUsdEditRoutingTokens->SrcPath] = PXR_NS::VtValue(srcSdfPath);
 
-    routerContext["dst_stage"] = PXR_NS::VtValue(dstStage);
-    routerContext["dst_layer"] = PXR_NS::VtValue(dstLayer);
-    routerContext["dst_path"] = PXR_NS::VtValue(dstSdfPath);
+    routerContext[MayaUsdEditRoutingTokens->DstStage] = PXR_NS::VtValue(dstStage);
+    routerContext[MayaUsdEditRoutingTokens->DstLayer] = PXR_NS::VtValue(dstLayer);
+    routerContext[MayaUsdEditRoutingTokens->DstPath] = PXR_NS::VtValue(dstSdfPath);
 
     // Use the edit router to find the destination layer and path.
-    routerContext["stage"] = PXR_NS::VtValue(getContext()->GetUsdStage());
-    routerContext["prim"] = PXR_NS::VtValue(dstSdfPath.GetString());
+    routerContext[MayaUsdEditRoutingTokens->Stage] = PXR_NS::VtValue(getContext()->GetUsdStage());
+    routerContext[MayaUsdEditRoutingTokens->Prim] = PXR_NS::VtValue(dstSdfPath.GetString());
 
     PXR_NS::VtDictionary routingData;
 
-    if (!callEditRouter("mayaReferencePush", routerContext, routingData))
+    if (!callEditRouter(MayaUsdEditRoutingTokens->RouteCacheToUSD, routerContext, routingData))
         return PushCopySpecs::Failed;
 
     // Retrieve the destination layer and prim path from the routing data.
-    auto cacheDstLayerStr = findValue(routingData, TfToken("layer"));
+    auto cacheDstLayerStr = findValue(routingData, MayaUsdEditRoutingTokens->Layer);
     if (!TF_VERIFY(!cacheDstLayerStr.empty()))
         return PushCopySpecs::Failed;
 
-    auto cacheDstPathStr = findValue(routingData, TfToken("path"));
+    auto cacheDstPathStr = findValue(routingData, MayaUsdEditRoutingTokens->Path);
     if (!TF_VERIFY(!cacheDstPathStr.empty()))
         return PushCopySpecs::Failed;
 
@@ -254,7 +255,7 @@ UsdMayaPrimUpdater::PushCopySpecs PxrUsdTranslators_MayaReferenceUpdater::pushCo
     const MObject& parentNode = getMayaObject();
     UsdMayaTranslatorMayaReference::UnloadMayaReference(parentNode);
 
-    auto saveLayer = findValue(routingData, TfToken("save_layer"));
+    auto saveLayer = findValue(routingData, MayaUsdEditRoutingTokens->SaveLayer);
     if (saveLayer == "yes")
         cacheDstLayer->Save();
 
