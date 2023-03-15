@@ -974,6 +974,64 @@ class RenameTestCase(unittest.TestCase):
         self.assertIsNotNone(carotteItem)
         self.assertEqual(carotteItem, renamedItem)
 
+    def testRenameRestrictionMutedLayer(self):
+        '''
+        Test rename restriction - we don't allow renaming a prim
+        when there are opinions on a muted layer.
+        '''
+        
+        # Create a stage
+        cmds.file(new=True, force=True)
+        import mayaUsd_createStageWithNewLayer
+
+        proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+        self.assertTrue(stage)
+
+        # Helpers
+        def createLayer(index):
+            layer = Sdf.Layer.CreateAnonymous()
+            stage.GetRootLayer().subLayerPaths.append(layer.identifier)
+            return layer
+
+        def targetSubLayer(layer):
+            stage.SetEditTarget(layer)
+            self.assertEqual(stage.GetEditTarget().GetLayer(), layer)
+            layer = None
+
+        def muteSubLayer(layer):
+            # Note: mute by passing through the stage, otherwise the stage won't get recomposed
+            stage.MuteLayer(layer.identifier)
+
+        def setSphereRadius(radius):
+            spherePrim = stage.GetPrimAtPath('/A/ball')
+            spherePrim.GetAttribute('radius').Set(radius)
+            spherePrim = None
+
+        # Add two new layers
+        topLayer = createLayer(0)
+        bottomLayer = createLayer(1)
+
+        # Create a xform prim named A and a sphere on the bottom layer
+        targetSubLayer(bottomLayer)
+        stage.DefinePrim('/A', 'Xform')
+        stage.DefinePrim('/A/ball', 'Sphere')
+        setSphereRadius(7.12)
+
+        targetSubLayer(topLayer)
+        setSphereRadius(4.32)
+        
+        # Set target to bottom layer and mute the top layer
+        targetSubLayer(bottomLayer)
+        muteSubLayer(topLayer)
+
+        # Try to rename the prim with muted opinion: it should fail
+        with self.assertRaises(RuntimeError):
+            cmds.rename('%s,/A/ball' % proxyShapePathStr, 'ball2')
+
+        self.assertTrue(stage.GetPrimAtPath('/A/ball'))
+        self.assertFalse(stage.GetPrimAtPath('/A/group1/ball'))
+        
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
