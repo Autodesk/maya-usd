@@ -64,6 +64,26 @@ std::set<PXR_NS::SdfLayerRefPtr>
 getAllSublayerRefs(const PXR_NS::SdfLayerRefPtr& layer, bool includeTopLayer = false);
 
 /**
+ * Verify if the given prim has opinions on a muted layer.
+ *
+ * @param prim The prim to be verified.
+ *
+ * @return true if there is at least one muted layer.
+ */
+
+bool hasMutedLayer(const PXR_NS::UsdPrim& prim);
+
+/**
+ * Enforce that command cannot operate if the given prim has opinions on a muted layer by throwing
+ * an exception.
+ *
+ * @param prim The prim to be verified.
+ * @param command The name of the command. Will use "modify" if null or empty.
+ */
+
+void enforceMutedLayer(const PXR_NS::UsdPrim& prim, const char* command);
+
+/**
  * Apply the given function to all the opinions about the given prim.
  *
  * @param prim The prim to be modified.

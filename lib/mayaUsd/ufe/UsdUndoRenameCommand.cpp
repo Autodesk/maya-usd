@@ -148,6 +148,8 @@ static void doUsdRename(
     const Ufe::Path    srcPath,
     const Ufe::Path    dstPath)
 {
+    enforceMutedLayer(prim, "rename");
+
     // 1- open a changeblock to delay sending notifications.
     // 2- update the Internal References paths (if any) first
     // 3- set the new name
