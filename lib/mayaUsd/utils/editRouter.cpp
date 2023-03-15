@@ -351,4 +351,36 @@ getEditRouterLayer(const PXR_NS::TfToken& operation, const PXR_NS::UsdPrim& prim
     return prim.GetStage()->GetEditTarget().GetLayer();
 }
 
+PXR_NS::SdfLayerHandle
+getAttrEditRouterLayer(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName)
+{
+    PXR_NS::SdfLayerHandle layer = prim.GetStage()->GetEditTarget().GetLayer();
+
+    static const PXR_NS::TfToken operation("attribute");
+    const EditRouter::Ptr        dstEditRouter = getEditRouter(operation);
+    if (!dstEditRouter) {
+        return layer;
+    }
+
+    PXR_NS::VtDictionary context;
+    PXR_NS::VtDictionary routingData;
+    context["prim"] = PXR_NS::VtValue(prim);
+    context["attribute"] = PXR_NS::VtValue(attrName);
+    (*dstEditRouter)(context, routingData);
+
+    // Try to retrieve the layer from the routing data.
+    const auto found = routingData.find("layer");
+    if (found != routingData.end()) {
+        const auto& value = found->second;
+        if (value.IsHolding<std::string>()) {
+            std::string layerName = value.Get<std::string>();
+            layer = prim.GetStage()->GetRootLayer()->Find(layerName);
+        } else if (value.IsHolding<PXR_NS::SdfLayerHandle>()) {
+            layer = value.Get<PXR_NS::SdfLayerHandle>();
+        }
+    }
+
+    return layer;
+}
+
 } // namespace MAYAUSD_NS_DEF

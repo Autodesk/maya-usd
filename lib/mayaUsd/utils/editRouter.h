@@ -97,6 +97,12 @@ getEditRouterLayer(const PXR_NS::TfToken& operation, const PXR_NS::UsdPrim& prim
 MAYAUSD_CORE_PUBLIC
 EditRouter::Ptr getEditRouter(const PXR_NS::TfToken& operation);
 
+// Retrieve the edit router for the "attribute" operation for teh given attribute.  If no such edit
+// router exist, the current edit target layer is returned.
+MAYAUSD_CORE_PUBLIC
+PXR_NS::SdfLayerHandle
+getAttrEditRouterLayer(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName);
+
 // Register an edit router for the argument operation.
 MAYAUSD_CORE_PUBLIC
 void registerEditRouter(const PXR_NS::TfToken& operation, const EditRouter::Ptr& editRouter);
