@@ -184,7 +184,7 @@ endif()
 
 target_compile_definitions(${PROJECT_NAME}
     PRIVATE
-        MAYA_USD_VERSION=${USD_VERSION}
+        ADSK_USD_VERSION=${ADSK_USD_VERSION}
         MAYAUSD_VERSION=${MAYAUSD_VERSION}
         MAYA_PY_VERSION=${MAYA_PY_VERSION}
 )
