@@ -38,15 +38,8 @@ struct MayaHydraSceneIndexRegistration
 {
     HdSceneIndexBasePtr sceneIndex;
     SdfPath             sceneIndexPathPrefix;
-    MCallbackId         preRemovalCallback = 0;
     MObjectHandle       dagNode;
     Ufe::Rtid           ufeRtid = 0;
-
-    ~MayaHydraSceneIndexRegistration()
-    {
-        if (preRemovalCallback != 0)
-            MNodeMessage::removeCallback(preRemovalCallback);
-    }
 };
 
 using MayaHydraSceneIndexRegistrationPtr = std::shared_ptr<MayaHydraSceneIndexRegistration>;
@@ -89,7 +82,7 @@ private:
 
     HdRenderIndex* _renderIndex = nullptr;
 
-    MCallbackIdArray _sceneIndexAddedCallbacks;
+    MCallbackIdArray _sceneIndexDagNodeMessageCallbacks;
 
     std::unordered_map<SdfPath, MayaHydraSceneIndexRegistrationPtr, SdfPath::Hash> _registrations;
     // Maintain alternative way to retrieve registration based on MObjectHandle. This is faster to

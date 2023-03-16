@@ -102,8 +102,12 @@ MayaHydraSceneIndexRegistry::MayaHydraSceneIndexRegistry(HdRenderIndex* renderIn
         MStatus     status;
         id = MDGMessage::addNodeAddedCallback(
             _SceneIndexNodeAddedCallback, kDagNodeMessageName, this, &status);
-        if (status == MS::kSuccess)
-            _sceneIndexAddedCallbacks.append(id);
+        if (TF_VERIFY(status == MS::kSuccess, "NodeAdded callback registration failed."))
+            _sceneIndexDagNodeMessageCallbacks.append(id);
+        id = MDGMessage::addNodeRemovedCallback(
+            _SceneIndexNodeRemovedCallback, kDagNodeMessageName, this, &status);
+        if (TF_VERIFY(status == MS::kSuccess, "NodeRemoved callback registration failed."))
+            _sceneIndexDagNodeMessageCallbacks.append(id);
 
         // Iterate over scene to find out existing node which will miss eventual dagNode added callbacks
         MItDag nodesDagIt(MItDag::kDepthFirst, MFn::kInvalid);
@@ -140,8 +144,8 @@ MayaHydraSceneIndexRegistry::GetSceneIndexRegistrationForRprim(const SdfPath& rp
 
 MayaHydraSceneIndexRegistry::~MayaHydraSceneIndexRegistry()
 {
-    MDGMessage::removeCallbacks(_sceneIndexAddedCallbacks);
-    _sceneIndexAddedCallbacks.clear();
+    MDGMessage::removeCallbacks(_sceneIndexDagNodeMessageCallbacks);
+    _sceneIndexDagNodeMessageCallbacks.clear();
     _registrationsByObjectHandle.clear();
     _registrations.clear();
 }
@@ -190,39 +194,29 @@ void MayaHydraSceneIndexRegistry::_AddSceneIndexForNode(MObject& dagNode)
                 "HdSceneIndexBase::AppendSceneIndex failed to create %s scene index from given "
                 "node type.",
                 sceneIndexPluginName.c_str())) {
-            MStatus     status;
-            MCallbackId preRemovalCallback = MNodeMessage::addNodePreRemovalCallback(
-                dagNode, _SceneIndexNodeRemovedCallback, this, &status);
-            if (TF_VERIFY(
-                    status != MS::kFailure, "MNodeMessage::addNodePreRemovalCallback failed")) {
+            MStatus       status;
+            MObjectHandle dagNodeHandle(dagNode);
+            // Construct the scene index path prefix appended to each rprim created by it. It is
+            // composed of the "scene index plugin's name" + "dag node name" + "disambiguator"
+            // The dag node name disambiguator is necessary in situation where node name isn't
+            // unique and may clash with other node defined by the same plugin.
+            SdfPath sceneIndexPathPrefix(
+                SdfPath::AbsoluteRootPath()
+                    .AppendPath(SdfPath(sceneIndexPluginName))
+                    .AppendPath(SdfPath(
+                        std::string(dependNodeFn.name().asChar())
+                        + (dependNodeFn.hasUniqueName()
+                               ? ""
+                               : "__" + std::to_string(_incrementedCounterDisambiguator++)))));
 
-                MObjectHandle dagNodeHandle(dagNode);
-                // Construct the scene index path prefix appended to each rprim created by it. It is
-                // composed of the "scene index plugin's name" + "dag node name" + "disambiguator"
-                // The dag node name disambiguator is necessary in situation where node name isn't
-                // unique and may clash with other node defined by the same plugin.
-                SdfPath sceneIndexPathPrefix(
-                    SdfPath::AbsoluteRootPath()
-                        .AppendPath(SdfPath(sceneIndexPluginName))
-                        .AppendPath(SdfPath(
-                            std::string(dependNodeFn.name().asChar())
-                            + (dependNodeFn.hasUniqueName()
-                                   ? ""
-                                   : "__" + std::to_string(_incrementedCounterDisambiguator++)))));
+            _renderIndex->InsertSceneIndex(sceneIndex, sceneIndexPathPrefix);
+            static SdfPath maya126790Workaround("maya126790Workaround");
+            sceneIndex->GetPrim(maya126790Workaround);
 
-                _renderIndex->InsertSceneIndex(sceneIndex, sceneIndexPathPrefix);
-                static SdfPath maya126790Workaround("maya126790Workaround");
-                sceneIndex->GetPrim(maya126790Workaround);
-
-                MayaHydraSceneIndexRegistrationPtr registration(
-                    new MayaHydraSceneIndexRegistration { sceneIndex,
-                                                          sceneIndexPathPrefix,
-                                                          preRemovalCallback,
-                                                          dagNodeHandle,
-                                                          ufeRtid });
-                _registrations.insert({ sceneIndexPathPrefix, registration });
-                _registrationsByObjectHandle.insert({ dagNodeHandle, registration });
-            }
+            MayaHydraSceneIndexRegistrationPtr registration(new MayaHydraSceneIndexRegistration {
+                sceneIndex, sceneIndexPathPrefix, dagNodeHandle, ufeRtid });
+            _registrations.insert({ sceneIndexPathPrefix, registration });
+            _registrationsByObjectHandle.insert({ dagNodeHandle, registration });
         }
     }
 }
