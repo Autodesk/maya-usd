@@ -229,6 +229,13 @@ class VisibilityCmdTestCase(unittest.TestCase):
         # Check that correct visibility changes were written to the session layer
         self.assertEqual(filterUsdStr(sessionLayer.ExportToString()),
                          'over "B"\n{\n    token visibility = "invisible"\n}')
+        
+        # Check we are still allowed to set the attribute without
+        # explicitly changing the edit target.
+        try:
+            self.assertIsNotNone(visibilityAttr.setCmd(UsdGeom.Tokens.invisible))
+        except Exception:
+            self.assertFalse(True,"Should have been able to create a command")
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -116,6 +116,10 @@ UsdAttributeHolder::UPtr UsdAttributeHolder::create(const PXR_NS::UsdAttribute& 
 std::string UsdAttributeHolder::isEditAllowedMsg() const
 {
     if (isValid()) {
+        PXR_NS::UsdPrim        prim = _usdAttr.GetPrim();
+        PXR_NS::SdfLayerHandle layer = getAttrEditRouterLayer(prim, _usdAttr.GetName());
+        PXR_NS::UsdEditContext ctx(prim.GetStage(), layer);
+
         std::string errMsg;
         isAttributeEditAllowed(_usdAttr, &errMsg);
         return errMsg;
