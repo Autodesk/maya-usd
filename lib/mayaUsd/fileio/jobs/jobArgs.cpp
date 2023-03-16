@@ -1336,6 +1336,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobImportArgs& importAr
         << std::endl
         << "timeInterval: " << importArgs.timeInterval << std::endl
         << "useAsAnimationCache: " << TfStringify(importArgs.useAsAnimationCache) << std::endl
+        << "preserveTimeline: " << TfStringify(importArgs.preserveTimeline) << std::endl
         << "importWithProxyShapes: " << TfStringify(importArgs.importWithProxyShapes) << std::endl
         << "applyEulerFilter: " << importArgs.applyEulerFilter << std::endl;
 
