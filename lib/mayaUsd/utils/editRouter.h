@@ -113,6 +113,10 @@ void registerEditRouter(const PXR_NS::TfToken& operation, const EditRouter::Ptr&
 MAYAUSD_CORE_PUBLIC
 bool restoreDefaultEditRouter(const PXR_NS::TfToken& operation);
 
+// Restore all the default edit router, overwriting the currently-registered edit routers.
+MAYAUSD_CORE_PUBLIC
+void restoreAllDefaultEditRouters();
+
 // Return built-in default edit routers.
 EditRouters defaultEditRouters();
 

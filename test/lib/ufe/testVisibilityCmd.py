@@ -24,6 +24,10 @@ def getSessionLayer(context, routingData):
     
     routingData['layer'] = prim.GetStage().GetSessionLayer().identifier
     
+def preventCommandRouter(context, routingData):
+    opName = context.get('operation') or 'operation'
+    raise Exception('Sorry, %s is not permitted' % opName)
+    
 def routerForVisibilityAttribute(context, routingData):
     prim = context.get('prim')
     if prim is None:
@@ -236,6 +240,44 @@ class VisibilityCmdTestCase(unittest.TestCase):
             self.assertIsNotNone(visibilityAttr.setCmd(UsdGeom.Tokens.invisible))
         except Exception:
             self.assertFalse(True,"Should have been able to create a command")
+
+    def testEditRouterPreventingCmd(self):
+        '''
+        Test edit router preventing a command by raising an exception.
+        '''
+
+        # Select /A
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(self.a)
+ 
+        # Get the session layer
+        prim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A")
+        stage = prim.GetStage()
+        sessionLayer = stage.GetSessionLayer()
+ 
+        # Check that the session layer is empty
+        self.assertTrue(sessionLayer.empty)
+ 
+        # Prevent visibility edits.
+        mayaUsd.lib.registerEditRouter('visibility', preventCommandRouter)
+ 
+        # Select /B
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(self.b)
+ 
+        # Hide B
+        with self.assertRaises(RuntimeError):
+            cmds.hide()
+ 
+        # Check that nothing was written to the session layer
+        self.assertIsNotNone(sessionLayer)
+        self.assertIsNone(sessionLayer.GetPrimAtPath('/B'))
+ 
+        # Check that no visibility changes were done in any layer
+        self.assertFalse(stage.GetAttributeAtPath('/B.visibility').HasAuthoredValue())
+ 
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -293,6 +293,14 @@ bool restoreDefaultEditRouter(const PXR_NS::TfToken& operation)
     return true;
 }
 
+void restoreAllDefaultEditRouters()
+{
+    auto defaults = defaultEditRouters();
+    for (const auto& entry : defaults) {
+        registerEditRouter(entry.first, entry.second);
+    }
+}
+
 static void setEditTarget(const PXR_NS::UsdPrim& prim, const PXR_NS::UsdEditTarget& editTarget)
 {
     prim.GetStage()->SetEditTarget(editTarget);
@@ -331,6 +339,7 @@ getEditRouterLayer(const PXR_NS::TfToken& operation, const PXR_NS::UsdPrim& prim
     PXR_NS::VtDictionary context;
     PXR_NS::VtDictionary routingData;
     context["prim"] = PXR_NS::VtValue(prim);
+    context["operation"] = operation;
     (*dstEditRouter)(context, routingData);
     // Try to retrieve the layer from the routing data.
     auto found = routingData.find("layer");
@@ -365,7 +374,8 @@ getAttrEditRouterLayer(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrN
     PXR_NS::VtDictionary context;
     PXR_NS::VtDictionary routingData;
     context["prim"] = PXR_NS::VtValue(prim);
-    context["attribute"] = PXR_NS::VtValue(attrName);
+    context["operation"] = operation;
+    context[operation] = PXR_NS::VtValue(attrName);
     (*dstEditRouter)(context, routingData);
 
     // Try to retrieve the layer from the routing data.

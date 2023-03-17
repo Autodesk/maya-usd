@@ -103,4 +103,6 @@ void wrapEditRouter()
         });
 
     def("restoreDefaultEditRouter", &MayaUsd::restoreDefaultEditRouter);
+
+    def("restoreAllDefaultEditRouters", &MayaUsd::restoreAllDefaultEditRouters);
 }
