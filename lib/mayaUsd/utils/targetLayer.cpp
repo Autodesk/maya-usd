@@ -100,8 +100,7 @@ MStatus copyTargetLayerToAttribute(const PXR_NS::UsdStage& stage, MayaUsdProxySh
     return status;
 }
 
-MString
-getTargetLayerFromAttribute(const MayaUsdProxyShapeBase& proxyShape)
+MString getTargetLayerFromAttribute(const MayaUsdProxyShapeBase& proxyShape)
 {
     MString targetLayerText;
 
