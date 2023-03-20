@@ -1488,24 +1488,107 @@ MHWRender::MTexture* _LoadTexture(
 #endif
     switch (specFormat) {
     // Single Channel
-    case HioFormatFloat32:
-        desc.fFormat = MHWRender::kR32_FLOAT;
-        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
-        break;
-    case HioFormatFloat16:
-        desc.fFormat = MHWRender::kR16_FLOAT;
-        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
-        break;
-    case HioFormatUNorm8:
-        desc.fFormat = MHWRender::kR8_UNORM;
-        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
-        break;
+    case HioFormatFloat32: {
+        // We want white instead or red when expanding to RGB, so convert to kR32G32B32_FLOAT
+        constexpr int bpp_RGB32 = 3 * 4;
+
+        desc.fFormat = MHWRender::kR32G32B32_FLOAT;
+        desc.fBytesPerRow = spec.width * bpp_RGB32;
+        desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+        std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+        for (int y = 0; y < spec.height; y++) {
+            for (int x = 0; x < spec.width; x++) {
+                const int t = spec.width * y + x;
+                for (int b = 0; b < bpp_RGB32; b++) {
+                    texels[t * bpp_RGB32 + b] = storage[t * bpp + (b % 4)];
+                }
+            }
+        }
+
+        texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+    } break;
+    case HioFormatFloat16: {
+        // We want white instead or red when expanding to RGB, so convert to kR16G16B16A16_FLOAT
+        constexpr int bpp_8 = 8;
+
+        desc.fFormat = MHWRender::kR16G16B16A16_FLOAT;
+        desc.fBytesPerRow = spec.width * bpp_8;
+        desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+        std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+        GfHalf               opaqueAlpha(1.0f);
+        const unsigned short alphaBits = opaqueAlpha.bits();
+        const unsigned char  lowAlpha = reinterpret_cast<const unsigned char*>(&alphaBits)[0];
+        const unsigned char  highAlpha = reinterpret_cast<const unsigned char*>(&alphaBits)[1];
+
+        for (int y = 0; y < spec.height; y++) {
+            for (int x = 0; x < spec.width; x++) {
+                const int t = spec.width * y + x;
+                texels[t * bpp_8 + 0] = storage[t * bpp + 0];
+                texels[t * bpp_8 + 1] = storage[t * bpp + 1];
+                texels[t * bpp_8 + 2] = storage[t * bpp + 0];
+                texels[t * bpp_8 + 3] = storage[t * bpp + 1];
+                texels[t * bpp_8 + 4] = storage[t * bpp + 0];
+                texels[t * bpp_8 + 5] = storage[t * bpp + 1];
+                texels[t * bpp_8 + 6] = lowAlpha;
+                texels[t * bpp_8 + 7] = highAlpha;
+            }
+        }
+
+        texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+    } break;
+    case HioFormatUNorm8: {
+        // We want white instead or red when expanding to RGB, so convert to kR8G8B8A8_UNORM
+        constexpr int bpp_4 = 4;
+
+        desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
+        desc.fBytesPerRow = spec.width * bpp_4;
+        desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+        std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+        for (int y = 0; y < spec.height; y++) {
+            for (int x = 0; x < spec.width; x++) {
+                const int t = spec.width * y + x;
+                texels[t * bpp_4] = storage[t * bpp];
+                texels[t * bpp_4 + 1] = storage[t * bpp];
+                texels[t * bpp_4 + 2] = storage[t * bpp];
+                texels[t * bpp_4 + 3] = 0xFF;
+            }
+        }
+
+        texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+        isColorSpaceSRGB = image->IsColorSpaceSRGB();
+    } break;
 
     // Dual channel (quite rare, but seen with mono + alpha files)
-    case HioFormatFloat32Vec2:
-        desc.fFormat = MHWRender::kR32G32_FLOAT;
-        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
-        break;
+    case HioFormatFloat32Vec2: {
+        // R32G32 is supported by VP2. But we want black and white, so R32G32B32A32.
+        constexpr int bpp_RGBA32 = 4 * 4;
+
+        desc.fFormat = MHWRender::kR32G32B32A32_FLOAT;
+        desc.fBytesPerRow = spec.width * bpp_RGBA32;
+        desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+        std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+        for (int y = 0; y < spec.height; y++) {
+            for (int x = 0; x < spec.width; x++) {
+                const int t = spec.width * y + x;
+                for (int b = 0; b < 12; b++) {
+                    texels[t * bpp_RGBA32 + b] = storage[t * bpp + (b % 4)];
+                }
+                for (int b = 0; b < 4; b++) {
+                    texels[t * bpp_RGBA32 + (12 + b)] = storage[t * bpp + (4 + b)];
+                }
+            }
+        }
+
+        texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+    } break;
     case HioFormatFloat16Vec2: {
         // R16G16 is not supported by VP2. Converted to R16G16B16A16.
         constexpr int bpp_8 = 8;
