@@ -416,6 +416,11 @@ private:
     SdfLayerRefPtr _unsharedStageSessionLayer;
     SdfLayerRefPtr _unsharedStageRootLayer;
 
+    // Current edit target for the stage. Kept in a dynamic attribute for save/load,
+    // transferred to this variable on the first compute. Afterward, when the edit
+    // target is changed, this gets updated via a notification listener.
+    SdfLayerRefPtr _targetLayer;
+
     // We need to keep track of unshared sublayers (otherwise they get removed)
     std::vector<SdfLayerRefPtr> _unsharedStageRootSublayers;
 

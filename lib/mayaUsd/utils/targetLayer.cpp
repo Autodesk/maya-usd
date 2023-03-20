@@ -18,7 +18,6 @@
 
 #include "dynamicAttribute.h"
 
-#include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/editTarget.h>
 
 #include <maya/MCommandResult.h>
@@ -48,15 +47,27 @@ MString convertTargetLayerToText(const PXR_NS::UsdStage& stage)
     return text;
 }
 
-void setTargetLayerFromText(PXR_NS::UsdStage& stage, const MString& text)
+PXR_NS::SdfLayerHandle getTargetLayerFromText(PXR_NS::UsdStage& stage, const MString& text)
 {
     if (text.length() == 0)
-        return;
+        return {};
 
     const std::string layerId(text.asChar());
     for (const auto& layer : stage.GetLayerStack())
         if (layer->GetIdentifier() == layerId)
-            stage.SetEditTarget(layer);
+            return layer;
+
+    return {};
+}
+
+bool setTargetLayerFromText(PXR_NS::UsdStage& stage, const MString& text)
+{
+    PXR_NS::SdfLayerHandle layer = getTargetLayerFromText(stage, text);
+    if (!layer)
+        return false;
+
+    stage.SetEditTarget(layer);
+    return true;
 }
 
 namespace {
@@ -89,23 +100,35 @@ MStatus copyTargetLayerToAttribute(const PXR_NS::UsdStage& stage, MayaUsdProxySh
     return status;
 }
 
-MStatus
-copyTargetLayerFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_NS::UsdStage& stage)
+MString
+getTargetLayerFromAttribute(const MayaUsdProxyShapeBase& proxyShape)
 {
+    MString targetLayerText;
+
     MObject proxyObj = proxyShape.thisMObject();
     if (proxyObj.isNull())
-        return MS::kFailure;
+        return targetLayerText;
 
     MFnDependencyNode depNode(proxyObj);
     if (!hasDynamicAttribute(depNode, targetLayerAttrName))
-        return MS::kNotFound;
+        return targetLayerText;
 
-    MString targetLayerText;
-    MStatus status = getDynamicAttribute(depNode, targetLayerAttrName, targetLayerText);
-    if (status == MS::kSuccess)
-        setTargetLayerFromText(stage, targetLayerText);
+    getDynamicAttribute(depNode, targetLayerAttrName, targetLayerText);
+    return targetLayerText;
+}
 
-    return status;
+PXR_NS::SdfLayerHandle
+getTargetLayerFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_NS::UsdStage& stage)
+{
+    const MString layerId = getTargetLayerFromAttribute(proxyShape);
+    return getTargetLayerFromText(stage, layerId);
+}
+
+MStatus
+copyTargetLayerFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_NS::UsdStage& stage)
+{
+    const MString targetLayerText = getTargetLayerFromAttribute(proxyShape);
+    return setTargetLayerFromText(stage, targetLayerText) ? MS::kSuccess : MS::kNotFound;
 }
 
 } // namespace MAYAUSD_NS_DEF
