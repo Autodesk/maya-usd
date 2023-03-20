@@ -529,9 +529,6 @@ MStatus MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
 {
     InComputeGuard inComputeGuard(*this);
 
-    if (plug == outTimeAttr || plug.isDynamic())
-        ProxyAccessor::compute(_usdAccessor, plug, dataBlock);
-
     if (plug == excludePrimPathsAttr || plug == timeAttr || plug == complexityAttr
         || plug == drawRenderPurposeAttr || plug == drawProxyPurposeAttr
         || plug == drawGuidePurposeAttr) {
