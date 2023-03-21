@@ -1520,7 +1520,7 @@ MHWRender::MTexture* _LoadTexture(
 
         std::vector<unsigned char> texels(desc.fBytesPerSlice);
 
-        GfHalf               opaqueAlpha(1.0f);
+        GfHalf         opaqueAlpha(1.0f);
         const uint16_t alphaBits = opaqueAlpha.bits();
 
         uint16_t* texels16 = (uint16_t*)texels.data();
