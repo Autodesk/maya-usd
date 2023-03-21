@@ -1490,7 +1490,9 @@ MHWRender::MTexture* _LoadTexture(
     // Single Channel
     case HioFormatFloat32: {
         // We want white instead or red when expanding to RGB, so convert to kR32G32B32_FLOAT
-        constexpr int bpp_RGB32 = 3 * 4;
+        constexpr int bits_RGB32 = 4;
+        constexpr int chan_RGB32 = 3;
+        constexpr int bpp_RGB32 = chan_RGB32 * bits_RGB32;
 
         desc.fFormat = MHWRender::kR32G32B32_FLOAT;
         desc.fBytesPerRow = spec.width * bpp_RGB32;
@@ -1501,8 +1503,11 @@ MHWRender::MTexture* _LoadTexture(
         for (int y = 0; y < spec.height; y++) {
             for (int x = 0; x < spec.width; x++) {
                 const int t = spec.width * y + x;
-                for (int b = 0; b < bpp_RGB32; b++) {
-                    texels[t * bpp_RGB32 + b] = storage[t * bpp + (b % 4)];
+                for (int b = 0; b < bits_RGB32; b++) {
+                    const unsigned char bits = storage[t * bpp + b];
+                    for (int c = 0; c < chan_RGB32; c++) {
+                        texels[t * bpp_RGB32 + c * bits_RGB32 + b ] = bits;
+                    }
                 }
             }
         }
@@ -1527,12 +1532,14 @@ MHWRender::MTexture* _LoadTexture(
         for (int y = 0; y < spec.height; y++) {
             for (int x = 0; x < spec.width; x++) {
                 const int t = spec.width * y + x;
-                texels[t * bpp_8 + 0] = storage[t * bpp + 0];
-                texels[t * bpp_8 + 1] = storage[t * bpp + 1];
-                texels[t * bpp_8 + 2] = storage[t * bpp + 0];
-                texels[t * bpp_8 + 3] = storage[t * bpp + 1];
-                texels[t * bpp_8 + 4] = storage[t * bpp + 0];
-                texels[t * bpp_8 + 5] = storage[t * bpp + 1];
+                const unsigned char bits0 = storage[t * bpp + 0];
+                const unsigned char bits1 = storage[t * bpp + 1];
+                texels[t * bpp_8 + 0] = bits0;
+                texels[t * bpp_8 + 1] = bits1;
+                texels[t * bpp_8 + 2] = bits0;
+                texels[t * bpp_8 + 3] = bits1;
+                texels[t * bpp_8 + 4] = bits0;
+                texels[t * bpp_8 + 5] = bits1;
                 texels[t * bpp_8 + 6] = lowAlpha;
                 texels[t * bpp_8 + 7] = highAlpha;
             }
@@ -1553,9 +1560,10 @@ MHWRender::MTexture* _LoadTexture(
         for (int y = 0; y < spec.height; y++) {
             for (int x = 0; x < spec.width; x++) {
                 const int t = spec.width * y + x;
-                texels[t * bpp_4] = storage[t * bpp];
-                texels[t * bpp_4 + 1] = storage[t * bpp];
-                texels[t * bpp_4 + 2] = storage[t * bpp];
+                const unsigned char bits = storage[t * bpp];
+                texels[t * bpp_4] = bits;
+                texels[t * bpp_4 + 1] = bits;
+                texels[t * bpp_4 + 2] = bits;
                 texels[t * bpp_4 + 3] = 0xFF;
             }
         }
@@ -1567,6 +1575,8 @@ MHWRender::MTexture* _LoadTexture(
     // Dual channel (quite rare, but seen with mono + alpha files)
     case HioFormatFloat32Vec2: {
         // R32G32 is supported by VP2. But we want black and white, so R32G32B32A32.
+        constexpr int bits_RGB32 = 4;
+        constexpr int chan_RGB32 = 3;
         constexpr int bpp_RGBA32 = 4 * 4;
 
         desc.fFormat = MHWRender::kR32G32B32A32_FLOAT;
@@ -1578,8 +1588,11 @@ MHWRender::MTexture* _LoadTexture(
         for (int y = 0; y < spec.height; y++) {
             for (int x = 0; x < spec.width; x++) {
                 const int t = spec.width * y + x;
-                for (int b = 0; b < 12; b++) {
-                    texels[t * bpp_RGBA32 + b] = storage[t * bpp + (b % 4)];
+                for (int b = 0; b < bits_RGB32; b++) {
+                    const unsigned char bits = storage[t * bpp + b];
+                    for (int c = 0; c < chan_RGB32; c++) {
+                        texels[t * bpp_RGBA32 + c * bits_RGB32 + b ] = bits;
+                    }
                 }
                 for (int b = 0; b < 4; b++) {
                     texels[t * bpp_RGBA32 + (12 + b)] = storage[t * bpp + (4 + b)];
@@ -1602,12 +1615,14 @@ MHWRender::MTexture* _LoadTexture(
         for (int y = 0; y < spec.height; y++) {
             for (int x = 0; x < spec.width; x++) {
                 const int t = spec.width * y + x;
-                texels[t * bpp_8 + 0] = storage[t * bpp + 0];
-                texels[t * bpp_8 + 1] = storage[t * bpp + 1];
-                texels[t * bpp_8 + 2] = storage[t * bpp + 0];
-                texels[t * bpp_8 + 3] = storage[t * bpp + 1];
-                texels[t * bpp_8 + 4] = storage[t * bpp + 0];
-                texels[t * bpp_8 + 5] = storage[t * bpp + 1];
+                const unsigned char bits0 = storage[t * bpp + 0];
+                const unsigned char bits1 = storage[t * bpp + 1];
+                texels[t * bpp_8 + 0] = bits0;
+                texels[t * bpp_8 + 1] = bits1;
+                texels[t * bpp_8 + 2] = bits0;
+                texels[t * bpp_8 + 3] = bits1;
+                texels[t * bpp_8 + 4] = bits0;
+                texels[t * bpp_8 + 5] = bits1;
                 texels[t * bpp_8 + 6] = storage[t * bpp + 2];
                 texels[t * bpp_8 + 7] = storage[t * bpp + 3];
             }
@@ -1630,9 +1645,10 @@ MHWRender::MTexture* _LoadTexture(
         for (int y = 0; y < spec.height; y++) {
             for (int x = 0; x < spec.width; x++) {
                 const int t = spec.width * y + x;
-                texels[t * bpp_4] = storage[t * bpp];
-                texels[t * bpp_4 + 1] = storage[t * bpp];
-                texels[t * bpp_4 + 2] = storage[t * bpp];
+                const unsigned char bits = storage[t * bpp];
+                texels[t * bpp_4] = bits;
+                texels[t * bpp_4 + 1] = bits;
+                texels[t * bpp_4 + 2] = bits;
                 texels[t * bpp_4 + 3] = storage[t * bpp + 1];
             }
         }
