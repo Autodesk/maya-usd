@@ -1490,9 +1490,7 @@ MHWRender::MTexture* _LoadTexture(
     // Single Channel
     case HioFormatFloat32: {
         // We want white instead or red when expanding to RGB, so convert to kR32G32B32_FLOAT
-        constexpr int bits_RGB32 = 4;
-        constexpr int chan_RGB32 = 3;
-        constexpr int bpp_RGB32 = chan_RGB32 * bits_RGB32;
+        constexpr int bpp_RGB32 = 3 * 4;
 
         desc.fFormat = MHWRender::kR32G32B32_FLOAT;
         desc.fBytesPerRow = spec.width * bpp_RGB32;
@@ -1500,16 +1498,14 @@ MHWRender::MTexture* _LoadTexture(
 
         std::vector<unsigned char> texels(desc.fBytesPerSlice);
 
-        for (int y = 0; y < spec.height; y++) {
-            for (int x = 0; x < spec.width; x++) {
-                const int t = spec.width * y + x;
-                for (int b = 0; b < bits_RGB32; b++) {
-                    const unsigned char bits = storage[t * bpp + b];
-                    for (int c = 0; c < chan_RGB32; c++) {
-                        texels[t * bpp_RGB32 + c * bits_RGB32 + b ] = bits;
-                    }
-                }
-            }
+        uint32_t* texels32 = (uint32_t*)texels.data();
+        uint32_t* storage32 = (uint32_t*)storage.data();
+
+        for (int p = 0; p < spec.height * spec.width; p++) {
+            const uint32_t pixel = *storage32++;
+            *texels32++ = pixel;
+            *texels32++ = pixel;
+            *texels32++ = pixel;
         }
 
         texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
@@ -1525,24 +1521,17 @@ MHWRender::MTexture* _LoadTexture(
         std::vector<unsigned char> texels(desc.fBytesPerSlice);
 
         GfHalf               opaqueAlpha(1.0f);
-        const unsigned short alphaBits = opaqueAlpha.bits();
-        const unsigned char  lowAlpha = reinterpret_cast<const unsigned char*>(&alphaBits)[0];
-        const unsigned char  highAlpha = reinterpret_cast<const unsigned char*>(&alphaBits)[1];
+        const uint16_t alphaBits = opaqueAlpha.bits();
 
-        for (int y = 0; y < spec.height; y++) {
-            for (int x = 0; x < spec.width; x++) {
-                const int t = spec.width * y + x;
-                const unsigned char bits0 = storage[t * bpp + 0];
-                const unsigned char bits1 = storage[t * bpp + 1];
-                texels[t * bpp_8 + 0] = bits0;
-                texels[t * bpp_8 + 1] = bits1;
-                texels[t * bpp_8 + 2] = bits0;
-                texels[t * bpp_8 + 3] = bits1;
-                texels[t * bpp_8 + 4] = bits0;
-                texels[t * bpp_8 + 5] = bits1;
-                texels[t * bpp_8 + 6] = lowAlpha;
-                texels[t * bpp_8 + 7] = highAlpha;
-            }
+        uint16_t* texels16 = (uint16_t*)texels.data();
+        uint16_t* storage16 = (uint16_t*)storage.data();
+
+        for (int p = 0; p < spec.height * spec.width; p++) {
+            const uint32_t pixel = *storage16++;
+            *texels16++ = pixel;
+            *texels16++ = pixel;
+            *texels16++ = pixel;
+            *texels16++ = alphaBits;
         }
 
         texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
@@ -1557,15 +1546,15 @@ MHWRender::MTexture* _LoadTexture(
 
         std::vector<unsigned char> texels(desc.fBytesPerSlice);
 
-        for (int y = 0; y < spec.height; y++) {
-            for (int x = 0; x < spec.width; x++) {
-                const int t = spec.width * y + x;
-                const unsigned char bits = storage[t * bpp];
-                texels[t * bpp_4] = bits;
-                texels[t * bpp_4 + 1] = bits;
-                texels[t * bpp_4 + 2] = bits;
-                texels[t * bpp_4 + 3] = 0xFF;
-            }
+        uint8_t* texels8 = (uint8_t*)texels.data();
+        uint8_t* storage8 = (uint8_t*)storage.data();
+
+        for (int p = 0; p < spec.height * spec.width; p++) {
+            const uint32_t pixel = *storage8++;
+            *texels8++ = pixel;
+            *texels8++ = pixel;
+            *texels8++ = pixel;
+            *texels8++ = 0xFF;
         }
 
         texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
@@ -1575,8 +1564,6 @@ MHWRender::MTexture* _LoadTexture(
     // Dual channel (quite rare, but seen with mono + alpha files)
     case HioFormatFloat32Vec2: {
         // R32G32 is supported by VP2. But we want black and white, so R32G32B32A32.
-        constexpr int bits_RGB32 = 4;
-        constexpr int chan_RGB32 = 3;
         constexpr int bpp_RGBA32 = 4 * 4;
 
         desc.fFormat = MHWRender::kR32G32B32A32_FLOAT;
@@ -1585,19 +1572,15 @@ MHWRender::MTexture* _LoadTexture(
 
         std::vector<unsigned char> texels(desc.fBytesPerSlice);
 
-        for (int y = 0; y < spec.height; y++) {
-            for (int x = 0; x < spec.width; x++) {
-                const int t = spec.width * y + x;
-                for (int b = 0; b < bits_RGB32; b++) {
-                    const unsigned char bits = storage[t * bpp + b];
-                    for (int c = 0; c < chan_RGB32; c++) {
-                        texels[t * bpp_RGBA32 + c * bits_RGB32 + b ] = bits;
-                    }
-                }
-                for (int b = 0; b < 4; b++) {
-                    texels[t * bpp_RGBA32 + (12 + b)] = storage[t * bpp + (4 + b)];
-                }
-            }
+        uint32_t* texels32 = (uint32_t*)texels.data();
+        uint32_t* storage32 = (uint32_t*)storage.data();
+
+        for (int p = 0; p < spec.height * spec.width; p++) {
+            const uint32_t pixel = *storage32++;
+            *texels32++ = pixel;
+            *texels32++ = pixel;
+            *texels32++ = pixel;
+            *texels32++ = *storage32++;
         }
 
         texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
@@ -1612,20 +1595,15 @@ MHWRender::MTexture* _LoadTexture(
 
         std::vector<unsigned char> texels(desc.fBytesPerSlice);
 
-        for (int y = 0; y < spec.height; y++) {
-            for (int x = 0; x < spec.width; x++) {
-                const int t = spec.width * y + x;
-                const unsigned char bits0 = storage[t * bpp + 0];
-                const unsigned char bits1 = storage[t * bpp + 1];
-                texels[t * bpp_8 + 0] = bits0;
-                texels[t * bpp_8 + 1] = bits1;
-                texels[t * bpp_8 + 2] = bits0;
-                texels[t * bpp_8 + 3] = bits1;
-                texels[t * bpp_8 + 4] = bits0;
-                texels[t * bpp_8 + 5] = bits1;
-                texels[t * bpp_8 + 6] = storage[t * bpp + 2];
-                texels[t * bpp_8 + 7] = storage[t * bpp + 3];
-            }
+        uint16_t* texels16 = (uint16_t*)texels.data();
+        uint16_t* storage16 = (uint16_t*)storage.data();
+
+        for (int p = 0; p < spec.height * spec.width; p++) {
+            const uint32_t pixel = *storage16++;
+            *texels16++ = pixel;
+            *texels16++ = pixel;
+            *texels16++ = pixel;
+            *texels16++ = *storage16++;
         }
 
         texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
@@ -1642,15 +1620,15 @@ MHWRender::MTexture* _LoadTexture(
 
         std::vector<unsigned char> texels(desc.fBytesPerSlice);
 
-        for (int y = 0; y < spec.height; y++) {
-            for (int x = 0; x < spec.width; x++) {
-                const int t = spec.width * y + x;
-                const unsigned char bits = storage[t * bpp];
-                texels[t * bpp_4] = bits;
-                texels[t * bpp_4 + 1] = bits;
-                texels[t * bpp_4 + 2] = bits;
-                texels[t * bpp_4 + 3] = storage[t * bpp + 1];
-            }
+        uint8_t* texels8 = (uint8_t*)texels.data();
+        uint8_t* storage8 = (uint8_t*)storage.data();
+
+        for (int p = 0; p < spec.height * spec.width; p++) {
+            const uint32_t pixel = *storage8++;
+            *texels8++ = pixel;
+            *texels8++ = pixel;
+            *texels8++ = pixel;
+            *texels8++ = *storage8++;
         }
 
         texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
