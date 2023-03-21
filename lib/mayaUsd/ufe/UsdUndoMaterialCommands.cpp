@@ -17,6 +17,7 @@
 
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/undo/UsdUndoBlock.h>
 
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>
@@ -87,126 +88,100 @@ bool connectShaderToMaterial(
 #endif
 } // namespace
 
-UsdPrim BindMaterialUndoableCommand::CompatiblePrim(const Ufe::SceneItem::Ptr& item)
+bool BindMaterialUndoableCommand::CompatiblePrim(const Ufe::SceneItem::Ptr& item)
 {
     auto usdItem = std::dynamic_pointer_cast<const MAYAUSD_NS::ufe::UsdSceneItem>(item);
     if (!usdItem) {
-        return {};
+        return false;
     }
     UsdPrim usdPrim = usdItem->prim();
     if (UsdShadeNodeGraph(usdPrim) || UsdShadeShader(usdPrim)) {
         // The binding schema can be applied anywhere, but it makes no sense on a
         // material or a shader.
-        return {};
+        return false;
     }
     if (UsdGeomScope(usdPrim) && usdPrim.GetName() == kDefaultMaterialScopeName) {
-        return {};
+        return false;
+    }
+    if (auto subset = UsdGeomSubset(usdPrim)) {
+        TfToken elementType;
+        subset.GetElementTypeAttr().Get(&elementType);
+        if (elementType != UsdGeomTokens->face) {
+            return false;
+        }
     }
     if (PXR_NS::UsdShadeMaterialBindingAPI::CanApply(usdPrim)) {
-        return usdPrim;
+        return true;
     }
-    return {};
+    return false;
 }
 
 BindMaterialUndoableCommand::BindMaterialUndoableCommand(
-    const UsdPrim& prim,
+    Ufe::Path      primPath,
     const SdfPath& materialPath)
-    : _stage(prim.GetStage())
-    , _primPath(prim.GetPath())
+    : _primPath(std::move(primPath))
     , _materialPath(materialPath)
 {
 }
 
 BindMaterialUndoableCommand::~BindMaterialUndoableCommand() { }
 
-void BindMaterialUndoableCommand::undo()
+void BindMaterialUndoableCommand::undo() { _undoableItem.undo(); }
+
+void BindMaterialUndoableCommand::redo() { _undoableItem.redo(); }
+
+void BindMaterialUndoableCommand::execute()
 {
-    if (!_stage || _primPath.IsEmpty() || _materialPath.IsEmpty()) {
+    if (_primPath.empty() || _materialPath.IsEmpty()) {
         return;
     }
 
-    UsdPrim prim = _stage->GetPrimAtPath(_primPath);
-    if (prim.IsValid()) {
-        auto bindingAPI = UsdShadeMaterialBindingAPI(prim);
-        if (bindingAPI) {
-            if (_previousMaterialPath.IsEmpty()) {
-                bindingAPI.UnbindDirectBinding();
-            } else {
-                UsdShadeMaterial material(_stage->GetPrimAtPath(_previousMaterialPath));
-                bindingAPI.Bind(material);
-            }
-        }
-        if (_appliedBindingAPI) {
-            prim.RemoveAPI<UsdShadeMaterialBindingAPI>();
-        }
-    }
-}
+    UsdUndoBlock undoBlock(&_undoableItem);
 
-void BindMaterialUndoableCommand::redo()
-{
-    if (!_stage || _primPath.IsEmpty() || _materialPath.IsEmpty()) {
+    auto prim = ufePathToPrim(_primPath);
+    if (!prim.IsValid()) {
         return;
     }
 
-    UsdPrim          prim = _stage->GetPrimAtPath(_primPath);
-    UsdShadeMaterial material(_stage->GetPrimAtPath(_materialPath));
-    if (prim.IsValid() && material) {
-        UsdShadeMaterialBindingAPI bindingAPI;
-        if (prim.HasAPI<UsdShadeMaterialBindingAPI>()) {
-            bindingAPI = UsdShadeMaterialBindingAPI(prim);
-            _previousMaterialPath = bindingAPI.GetDirectBinding().GetMaterialPath();
-        } else {
-            bindingAPI = UsdShadeMaterialBindingAPI::Apply(prim);
-            _appliedBindingAPI = true;
-        }
-        bindingAPI.Bind(material);
+    UsdShadeMaterial material(prim.GetStage()->GetPrimAtPath(_materialPath));
+    if (!material) {
+        return;
     }
+
+    if (auto subset = UsdGeomSubset(prim)) {
+        subset.GetFamilyNameAttr().Set(UsdShadeTokens->materialBind);
+    }
+
+    auto bindingAPI = UsdShadeMaterialBindingAPI::Apply(prim);
+    bindingAPI.Bind(material);
 }
+
 const std::string BindMaterialUndoableCommand::commandName("Assign Material");
 
-UnbindMaterialUndoableCommand::UnbindMaterialUndoableCommand(const UsdPrim& prim)
-    : _stage(prim.GetStage())
-    , _primPath(prim.GetPath())
+UnbindMaterialUndoableCommand::UnbindMaterialUndoableCommand(Ufe::Path primPath)
+    : _primPath(std::move(primPath))
 {
 }
 
 UnbindMaterialUndoableCommand::~UnbindMaterialUndoableCommand() { }
 
-void UnbindMaterialUndoableCommand::undo()
+void UnbindMaterialUndoableCommand::undo() { _undoableItem.undo(); }
+
+void UnbindMaterialUndoableCommand::redo() { _undoableItem.redo(); }
+
+void UnbindMaterialUndoableCommand::execute()
 {
-    if (!_stage || _primPath.IsEmpty() || _materialPath.IsEmpty()) {
+    if (_primPath.empty()) {
         return;
     }
 
-    UsdPrim          prim = _stage->GetPrimAtPath(_primPath);
-    UsdShadeMaterial material(_stage->GetPrimAtPath(_materialPath));
-    if (prim.IsValid() && material) {
-        // BindingAPI is still there since we did not remove it.
-        auto             bindingAPI = UsdShadeMaterialBindingAPI(prim);
-        UsdShadeMaterial material(_stage->GetPrimAtPath(_materialPath));
-        if (bindingAPI && material) {
-            bindingAPI.Bind(material);
-        }
-    }
-}
+    UsdUndoBlock undoBlock(&_undoableItem);
 
-void UnbindMaterialUndoableCommand::redo()
-{
-    if (!_stage || _primPath.IsEmpty()) {
-        return;
-    }
-
-    UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+    auto prim = ufePathToPrim(_primPath);
     if (prim.IsValid()) {
         auto bindingAPI = UsdShadeMaterialBindingAPI(prim);
         if (bindingAPI) {
-            auto materialBinding = bindingAPI.GetDirectBinding();
-            _materialPath = materialBinding.GetMaterialPath();
-            if (!_materialPath.IsEmpty()) {
-                bindingAPI.UnbindDirectBinding();
-                // TODO: Can we remove the BindingAPI at this point?
-                //       Not easy to know for sure.
-            }
+            bindingAPI.UnbindDirectBinding();
         }
     }
 }
@@ -443,7 +418,7 @@ void UsdUndoAssignNewMaterialCommand::execute()
                 return;
             }
             auto bindCmd = std::make_shared<BindMaterialUndoableCommand>(
-                parentItem->prim(), materialItem->prim().GetPath());
+                parentItem->path(), materialItem->prim().GetPath());
             if (!bindCmd) {
                 markAsFailed();
                 return;

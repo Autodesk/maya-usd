@@ -17,6 +17,7 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
+#include <mayaUsd/undo/UsdUndoableItem.h>
 #if (UFE_PREVIEW_VERSION_NUM >= 4010)
 #include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
 #include <mayaUsd/ufe/UsdUndoCreateFromNodeDefCommand.h>
@@ -24,6 +25,7 @@
 
 #include <pxr/usd/usd/prim.h>
 
+#include <ufe/path.h>
 #include <ufe/pathComponent.h>
 #include <ufe/selection.h>
 #include <ufe/undoableCommand.h>
@@ -40,9 +42,9 @@ class MAYAUSD_CORE_PUBLIC BindMaterialUndoableCommand : public Ufe::UndoableComm
 public:
     static const std::string commandName;
 
-    static PXR_NS::UsdPrim CompatiblePrim(const Ufe::SceneItem::Ptr& item);
+    static bool CompatiblePrim(const Ufe::SceneItem::Ptr& item);
 
-    BindMaterialUndoableCommand(const PXR_NS::UsdPrim& prim, const PXR_NS::SdfPath& materialPath);
+    BindMaterialUndoableCommand(Ufe::Path primPath, const PXR_NS::SdfPath& materialPath);
     ~BindMaterialUndoableCommand() override;
 
     // Delete the copy/move constructors assignment operators.
@@ -51,15 +53,14 @@ public:
     BindMaterialUndoableCommand(BindMaterialUndoableCommand&&) = delete;
     BindMaterialUndoableCommand& operator=(BindMaterialUndoableCommand&&) = delete;
 
+    void execute() override;
     void undo() override;
     void redo() override;
 
 private:
-    PXR_NS::UsdStageWeakPtr _stage;
-    PXR_NS::SdfPath         _primPath;
-    PXR_NS::SdfPath         _materialPath;
-    PXR_NS::SdfPath         _previousMaterialPath;
-    bool                    _appliedBindingAPI = false;
+    Ufe::Path       _primPath;
+    PXR_NS::SdfPath _materialPath;
+    UsdUndoableItem _undoableItem;
 };
 
 //! \brief UnbindMaterialUndoableCommand
@@ -68,7 +69,7 @@ class MAYAUSD_CORE_PUBLIC UnbindMaterialUndoableCommand : public Ufe::UndoableCo
 public:
     static const std::string commandName;
 
-    UnbindMaterialUndoableCommand(const PXR_NS::UsdPrim& prim);
+    UnbindMaterialUndoableCommand(Ufe::Path primPath);
     ~UnbindMaterialUndoableCommand() override;
 
     // Delete the copy/move constructors assignment operators.
@@ -77,13 +78,13 @@ public:
     UnbindMaterialUndoableCommand(UnbindMaterialUndoableCommand&&) = delete;
     UnbindMaterialUndoableCommand& operator=(UnbindMaterialUndoableCommand&&) = delete;
 
+    void execute() override;
     void undo() override;
     void redo() override;
 
 private:
-    PXR_NS::UsdStageWeakPtr _stage;
-    PXR_NS::SdfPath         _primPath;
-    PXR_NS::SdfPath         _materialPath;
+    Ufe::Path       _primPath;
+    UsdUndoableItem _undoableItem;
 };
 
 #if (UFE_PREVIEW_VERSION_NUM >= 4010)
