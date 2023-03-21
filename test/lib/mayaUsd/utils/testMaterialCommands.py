@@ -20,6 +20,8 @@ import fixturesUtils
 import mayaUtils
 import testUtils
 
+from pxr import Usd
+
 from maya import cmds
 from maya import standalone
 
@@ -94,6 +96,8 @@ class testMaterialCommands(unittest.TestCase):
         Tests various material-binding attributes.
         """
 
+        usdVersion = Usd.GetVersion()
+
         self._StartTest('materialAssignment')
 
         # Check for material bindings
@@ -113,8 +117,8 @@ class testMaterialCommands(unittest.TestCase):
         self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Mesh1", canAssignMaterialToNodeType=True), True)
         self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/NurbsCurves1", canAssignMaterialToNodeType=True), True)
         self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/NurbsPatch1", canAssignMaterialToNodeType=True), True)
-        # TODO: Why does the test fail for planes fail in Maya 2023?
-        # self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Plane1", canAssignMaterialToNodeType=True), True)
+        if usdVersion >= (0, 22, 8):
+            self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Plane1", canAssignMaterialToNodeType=True), True)
         self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/PointInstancer1", canAssignMaterialToNodeType=True), True)
         self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Points1", canAssignMaterialToNodeType=True), True)
         self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Scope1", canAssignMaterialToNodeType=True), True)
