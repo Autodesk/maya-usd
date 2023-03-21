@@ -19,6 +19,7 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 
+#include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <maya/MApiNamespace.h>
@@ -41,10 +42,27 @@ namespace MAYAUSD_NS_DEF {
 MAYAUSD_CORE_PUBLIC
 MString convertTargetLayerToText(const PXR_NS::UsdStage& stage);
 
+/*! \brief get the target layer from a text format if it exists on the given stage.
+ */
+MAYAUSD_CORE_PUBLIC
+PXR_NS::SdfLayerHandle getTargetLayerFromText(PXR_NS::UsdStage& stage, const MString& text);
+
 /*! \brief set the stage target layer from a text format.
  */
 MAYAUSD_CORE_PUBLIC
-void setTargetLayerFromText(PXR_NS::UsdStage& stage, const MString& text);
+bool setTargetLayerFromText(PXR_NS::UsdStage& stage, const MString& text);
+
+/*! \brief get the target layer ID from data in the corresponding attribute of the proxy shape.
+ */
+MAYAUSD_CORE_PUBLIC
+MString getTargetLayerFromAttribute(const MayaUsdProxyShapeBase& proxyShape);
+
+/*! \brief get the target layer from data in the corresponding attribute of the proxy shape if it
+ * exists on the given stage.
+ */
+MAYAUSD_CORE_PUBLIC
+PXR_NS::SdfLayerHandle
+getTargetLayerFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_NS::UsdStage& stage);
 
 /*! \brief copy the stage target layer in the corresponding attribute of the proxy shape.
  */

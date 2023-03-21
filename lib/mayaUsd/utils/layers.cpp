@@ -146,6 +146,14 @@ void applyToSomeLayersWithOpinions(
     }
 }
 
+bool isLayerInStage(const PXR_NS::SdfLayerHandle& layer, const PXR_NS::UsdStage& stage)
+{
+    for (const auto& stageLayer : stage.GetLayerStack())
+        if (stageLayer == layer)
+            return true;
+    return false;
+}
+
 bool isSessionLayer(const SdfLayerHandle& layer, const std::set<SdfLayerRefPtr>& sessionLayers)
 {
     return sessionLayers.count(layer) > 0;
