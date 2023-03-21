@@ -1527,7 +1527,7 @@ MHWRender::MTexture* _LoadTexture(
         uint16_t* storage16 = (uint16_t*)storage.data();
 
         for (int p = 0; p < spec.height * spec.width; p++) {
-            const uint32_t pixel = *storage16++;
+            const uint16_t pixel = *storage16++;
             *texels16++ = pixel;
             *texels16++ = pixel;
             *texels16++ = pixel;
@@ -1550,7 +1550,7 @@ MHWRender::MTexture* _LoadTexture(
         uint8_t* storage8 = (uint8_t*)storage.data();
 
         for (int p = 0; p < spec.height * spec.width; p++) {
-            const uint32_t pixel = *storage8++;
+            const uint8_t pixel = *storage8++;
             *texels8++ = pixel;
             *texels8++ = pixel;
             *texels8++ = pixel;
@@ -1599,7 +1599,7 @@ MHWRender::MTexture* _LoadTexture(
         uint16_t* storage16 = (uint16_t*)storage.data();
 
         for (int p = 0; p < spec.height * spec.width; p++) {
-            const uint32_t pixel = *storage16++;
+            const uint16_t pixel = *storage16++;
             *texels16++ = pixel;
             *texels16++ = pixel;
             *texels16++ = pixel;
@@ -1624,7 +1624,7 @@ MHWRender::MTexture* _LoadTexture(
         uint8_t* storage8 = (uint8_t*)storage.data();
 
         for (int p = 0; p < spec.height * spec.width; p++) {
-            const uint32_t pixel = *storage8++;
+            const uint8_t pixel = *storage8++;
             *texels8++ = pixel;
             *texels8++ = pixel;
             *texels8++ = pixel;
