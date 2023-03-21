@@ -123,6 +123,16 @@ void applyToSomeLayersWithOpinions(
     PrimLayerFunc&                          func);
 
 /**
+ * Verify if a layer is in the given stage.
+ *
+ * @param layer the layer to verify.
+ * @param stage the stage to verify.
+ */
+
+MAYAUSD_CORE_PUBLIC
+bool isLayerInStage(const PXR_NS::SdfLayerHandle& layer, const PXR_NS::UsdStage& stage);
+
+/**
  * Verify if a layer is in the given set of session layers.
  *
  * @param layer the layer to verify.
