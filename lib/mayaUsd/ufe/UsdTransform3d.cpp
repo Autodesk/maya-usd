@@ -96,7 +96,10 @@ Ufe::SceneItem::Ptr UsdTransform3d::sceneItem() const { return fItem; }
 #ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd(double x, double y, double z)
 {
-    enforceAttributeEditAllowed(prim(), TfToken("xformOp:translate"));
+    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))) {
+        return nullptr;
+    }
+
     return UsdTranslateUndoableCommand::create(path(), x, y, z);
 }
 #endif
@@ -157,7 +160,10 @@ Ufe::Vector3d UsdTransform3d::scale() const
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd(double x, double y, double z)
 {
-    enforceAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"));
+    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"))) {
+        return nullptr;
+    }
+
     return UsdRotateUndoableCommand::create(path(), x, y, z);
 }
 #endif
@@ -170,26 +176,38 @@ void UsdTransform3d::rotate(double x, double y, double z)
 #ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd(double x, double y, double z)
 {
-    enforceAttributeEditAllowed(prim(), TfToken("xformOp:scale"));
+    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
+        return nullptr;
+    }
+
     return UsdScaleUndoableCommand::create(path(), x, y, z);
 }
 
 #else
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd()
 {
-    enforceAttributeEditAllowed(prim(), TfToken("xformOp:translate"));
+    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))) {
+        return nullptr;
+    }
+
     return UsdTranslateUndoableCommand::create(fItem, 0, 0, 0);
 }
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd()
 {
-    enforceAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"));
+    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"))) {
+        return nullptr;
+    }
+
     return UsdRotateUndoableCommand::create(fItem, 0, 0, 0);
 }
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd()
 {
-    enforceAttributeEditAllowed(prim(), TfToken("xformOp:scale"));
+    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
+        return nullptr;
+    }
+
     return UsdScaleUndoableCommand::create(fItem, 1, 1, 1);
 }
 #endif
@@ -233,7 +251,9 @@ UsdTransform3d::rotatePivotCmd(double, double, double)
 UsdTransform3d::rotatePivotTranslateCmd()
 #endif
 {
-    enforceAttributeEditAllowed(prim(), TfToken("xformOp:translate:pivot"));
+    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:translate:pivot"))) {
+        return nullptr;
+    }
 
     // As of 12-Oct-2020, setting rotate pivot on command creation
     // unsupported.  Use translate() method on returned command.
