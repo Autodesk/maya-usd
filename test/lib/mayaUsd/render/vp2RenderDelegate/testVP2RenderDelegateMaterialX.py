@@ -135,8 +135,19 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         testFile = testUtils.getTestScene("MaterialX", "transparencyScene.ma")
         cmds.file(testFile, force=True, open=True)
         cmds.move(0, 7, -1.5, 'persp')
-        cmds.rotate(-90, 0, 0, 'persp')        
+        cmds.rotate(-90, 0, 0, 'persp')
         self.assertSnapshotClose('transparencyScene.png', 960, 960)
+
+    def testDemoQuads(self):
+        cmds.file(force=True, new=True)
+
+        cmds.move(0, 8, 0, 'persp')
+        cmds.rotate(-90, 0, 0, 'persp')
+
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, displayTextures=True)
+
+        self._StartTest('DemoQuads')
 
     def testMayaPlace2dTexture(self):
         mayaUtils.loadPlugin("mayaUsdPlugin")
@@ -149,7 +160,7 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         testFile = testUtils.getTestScene("MaterialX", "place2dTextureShowcase.ma")
         cmds.file(testFile, force=True, open=True)
         cmds.move(0, 7, -1.5, 'persp')
-        cmds.rotate(-90, 0, 0, 'persp')        
+        cmds.rotate(-90, 0, 0, 'persp')
         self.assertSnapshotClose('place2dTextureShowcase_Maya_render.png', 960, 960)
         usdFilePath = os.path.join(self._testDir, "place2dTextureShowcase.usda")
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
@@ -178,7 +189,7 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         testFile = testUtils.getTestScene("MaterialX", "mtlxNodesShowcase.ma")
         cmds.file(testFile, force=True, open=True)
         cmds.move(0, 7, -1.5, 'persp')
-        cmds.rotate(-90, 0, 0, 'persp')        
+        cmds.rotate(-90, 0, 0, 'persp')
         self.assertSnapshotClose('mtlxNodesShowcase_Maya_render.png', 960, 960)
         usdFilePath = os.path.join(self._testDir, "mtlxNodesShowcase.usda")
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
