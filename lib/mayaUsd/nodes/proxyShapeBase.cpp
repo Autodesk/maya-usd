@@ -529,9 +529,6 @@ MStatus MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
 {
     InComputeGuard inComputeGuard(*this);
 
-    if (plug == outTimeAttr || plug.isDynamic())
-        ProxyAccessor::compute(_usdAccessor, plug, dataBlock);
-
     if (plug == excludePrimPathsAttr || plug == timeAttr || plug == complexityAttr
         || plug == drawRenderPurposeAttr || plug == drawProxyPurposeAttr
         || plug == drawGuidePurposeAttr) {
@@ -1005,8 +1002,21 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         primPath = finalUsdStage->GetPseudoRoot().GetPath();
         copyLoadRulesFromAttribute(*this, *finalUsdStage);
         copyLayerMutingFromAttribute(*this, *finalUsdStage);
-        copyTargetLayerFromAttribute(*this, *finalUsdStage);
+        if (!_targetLayer)
+            _targetLayer = getTargetLayerFromAttribute(*this, *finalUsdStage);
         updateShareMode(sharedUsdStage, unsharedUsdStage, loadSet);
+        // Note: setting the target layer must be done after updateShareMode()
+        //       because the session layer changes when switching between shared
+        //       and ushared and if the edit target was on the session layer,
+        //      then the edit target is also updated by updateShareMode().
+        if (_targetLayer) {
+            // Note: it is possible the cached edit target layer is no longer valid,
+            //       for example if it was deleted. Tryig to set an invalid layer would
+            //       throw an exception.
+            if (isLayerInStage(_targetLayer, *finalUsdStage)) {
+                finalUsdStage->SetEditTarget(_targetLayer);
+            }
+        }
     }
 
     // Set the outUsdStageData
@@ -1095,8 +1105,12 @@ void MayaUsdProxyShapeBase::transferSessionLayer(
 
     if (currentMode == ShareMode::Shared) {
         sharedSession->TransferContent(unsharedSession);
+        if (unsharedSession == _targetLayer)
+            _targetLayer = sharedSession;
     } else {
         unsharedSession->TransferContent(sharedSession);
+        if (sharedSession == _targetLayer)
+            _targetLayer = unsharedSession;
     }
 }
 
@@ -1891,40 +1905,22 @@ void MayaUsdProxyShapeBase::_OnLayerMutingChanged(const UsdNotice::LayerMutingCh
     copyLayerMutingToAttribute(*stage, *this);
 }
 
-static void copyTargetLayerOnIdle(void* data)
-{
-    MayaUsdProxyShapeBase* proxy = reinterpret_cast<MayaUsdProxyShapeBase*>(data);
-    if (!proxy)
-        return;
-
-    const auto stage = proxy->getUsdStage();
-    if (!stage)
-        return;
-
-    copyTargetLayerToAttribute(*stage, *proxy);
-}
-
 void MayaUsdProxyShapeBase::_OnStageEditTargetChanged(
     const UsdNotice::StageEditTargetChanged& notice)
 {
-    if (in_compute) {
-        MGlobal::executeTaskOnIdle(copyTargetLayerOnIdle, this);
-        return;
-    }
-
     const auto stage = notice.GetStage();
     if (!stage)
         return;
 
-    // Note: copying the target layer into an attribute when the edit target
-    //       changes can cause DG evaluation loops because the stage computation
-    //       sets the edit target.
-    //
-    //       Defer saving the edit target to be done later, on idle.
-    //
-    //       One symptom of creating a compute loop is that the unit test named
-    //       'testMayaUsdProxyAccessor' fails because computation did not finish.
-    copyTargetLayerToAttribute(*stage, *this);
+    const PXR_NS::UsdEditTarget target = stage->GetEditTarget();
+    if (!target.IsValid())
+        return;
+
+    const PXR_NS::SdfLayerHandle& layer = target.GetLayer();
+    if (!layer)
+        return;
+
+    _targetLayer = layer;
 }
 
 void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChanged& notice)

@@ -1488,24 +1488,103 @@ MHWRender::MTexture* _LoadTexture(
 #endif
     switch (specFormat) {
     // Single Channel
-    case HioFormatFloat32:
-        desc.fFormat = MHWRender::kR32_FLOAT;
-        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
-        break;
-    case HioFormatFloat16:
-        desc.fFormat = MHWRender::kR16_FLOAT;
-        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
-        break;
-    case HioFormatUNorm8:
-        desc.fFormat = MHWRender::kR8_UNORM;
-        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
-        break;
+    case HioFormatFloat32: {
+        // We want white instead or red when expanding to RGB, so convert to kR32G32B32_FLOAT
+        constexpr int bpp_RGB32 = 3 * 4;
+
+        desc.fFormat = MHWRender::kR32G32B32_FLOAT;
+        desc.fBytesPerRow = spec.width * bpp_RGB32;
+        desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+        std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+        uint32_t* texels32 = (uint32_t*)texels.data();
+        uint32_t* storage32 = (uint32_t*)storage.data();
+
+        for (int p = 0; p < spec.height * spec.width; p++) {
+            const uint32_t pixel = *storage32++;
+            *texels32++ = pixel;
+            *texels32++ = pixel;
+            *texels32++ = pixel;
+        }
+
+        texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+    } break;
+    case HioFormatFloat16: {
+        // We want white instead or red when expanding to RGB, so convert to kR16G16B16A16_FLOAT
+        constexpr int bpp_8 = 8;
+
+        desc.fFormat = MHWRender::kR16G16B16A16_FLOAT;
+        desc.fBytesPerRow = spec.width * bpp_8;
+        desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+        std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+        GfHalf         opaqueAlpha(1.0f);
+        const uint16_t alphaBits = opaqueAlpha.bits();
+
+        uint16_t* texels16 = (uint16_t*)texels.data();
+        uint16_t* storage16 = (uint16_t*)storage.data();
+
+        for (int p = 0; p < spec.height * spec.width; p++) {
+            const uint16_t pixel = *storage16++;
+            *texels16++ = pixel;
+            *texels16++ = pixel;
+            *texels16++ = pixel;
+            *texels16++ = alphaBits;
+        }
+
+        texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+    } break;
+    case HioFormatUNorm8: {
+        // We want white instead or red when expanding to RGB, so convert to kR8G8B8A8_UNORM
+        constexpr int bpp_4 = 4;
+
+        desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
+        desc.fBytesPerRow = spec.width * bpp_4;
+        desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+        std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+        uint8_t* texels8 = (uint8_t*)texels.data();
+        uint8_t* storage8 = (uint8_t*)storage.data();
+
+        for (int p = 0; p < spec.height * spec.width; p++) {
+            const uint8_t pixel = *storage8++;
+            *texels8++ = pixel;
+            *texels8++ = pixel;
+            *texels8++ = pixel;
+            *texels8++ = 0xFF;
+        }
+
+        texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+        isColorSpaceSRGB = image->IsColorSpaceSRGB();
+    } break;
 
     // Dual channel (quite rare, but seen with mono + alpha files)
-    case HioFormatFloat32Vec2:
-        desc.fFormat = MHWRender::kR32G32_FLOAT;
-        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
-        break;
+    case HioFormatFloat32Vec2: {
+        // R32G32 is supported by VP2. But we want black and white, so R32G32B32A32.
+        constexpr int bpp_RGBA32 = 4 * 4;
+
+        desc.fFormat = MHWRender::kR32G32B32A32_FLOAT;
+        desc.fBytesPerRow = spec.width * bpp_RGBA32;
+        desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+        std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+        uint32_t* texels32 = (uint32_t*)texels.data();
+        uint32_t* storage32 = (uint32_t*)storage.data();
+
+        for (int p = 0; p < spec.height * spec.width; p++) {
+            const uint32_t pixel = *storage32++;
+            *texels32++ = pixel;
+            *texels32++ = pixel;
+            *texels32++ = pixel;
+            *texels32++ = *storage32++;
+        }
+
+        texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+    } break;
     case HioFormatFloat16Vec2: {
         // R16G16 is not supported by VP2. Converted to R16G16B16A16.
         constexpr int bpp_8 = 8;
@@ -1516,18 +1595,15 @@ MHWRender::MTexture* _LoadTexture(
 
         std::vector<unsigned char> texels(desc.fBytesPerSlice);
 
-        for (int y = 0; y < spec.height; y++) {
-            for (int x = 0; x < spec.width; x++) {
-                const int t = spec.width * y + x;
-                texels[t * bpp_8 + 0] = storage[t * bpp + 0];
-                texels[t * bpp_8 + 1] = storage[t * bpp + 1];
-                texels[t * bpp_8 + 2] = storage[t * bpp + 0];
-                texels[t * bpp_8 + 3] = storage[t * bpp + 1];
-                texels[t * bpp_8 + 4] = storage[t * bpp + 0];
-                texels[t * bpp_8 + 5] = storage[t * bpp + 1];
-                texels[t * bpp_8 + 6] = storage[t * bpp + 2];
-                texels[t * bpp_8 + 7] = storage[t * bpp + 3];
-            }
+        uint16_t* texels16 = (uint16_t*)texels.data();
+        uint16_t* storage16 = (uint16_t*)storage.data();
+
+        for (int p = 0; p < spec.height * spec.width; p++) {
+            const uint16_t pixel = *storage16++;
+            *texels16++ = pixel;
+            *texels16++ = pixel;
+            *texels16++ = pixel;
+            *texels16++ = *storage16++;
         }
 
         texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
@@ -1544,14 +1620,15 @@ MHWRender::MTexture* _LoadTexture(
 
         std::vector<unsigned char> texels(desc.fBytesPerSlice);
 
-        for (int y = 0; y < spec.height; y++) {
-            for (int x = 0; x < spec.width; x++) {
-                const int t = spec.width * y + x;
-                texels[t * bpp_4] = storage[t * bpp];
-                texels[t * bpp_4 + 1] = storage[t * bpp];
-                texels[t * bpp_4 + 2] = storage[t * bpp];
-                texels[t * bpp_4 + 3] = storage[t * bpp + 1];
-            }
+        uint8_t* texels8 = (uint8_t*)texels.data();
+        uint8_t* storage8 = (uint8_t*)storage.data();
+
+        for (int p = 0; p < spec.height * spec.width; p++) {
+            const uint8_t pixel = *storage8++;
+            *texels8++ = pixel;
+            *texels8++ = pixel;
+            *texels8++ = pixel;
+            *texels8++ = *storage8++;
         }
 
         texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());

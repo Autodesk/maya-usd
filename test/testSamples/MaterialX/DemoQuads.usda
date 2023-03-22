@@ -1,0 +1,479 @@
+#usda 1.0
+
+def Mesh "pPlane1" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.5), (0.5, 0, 0.5)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </mtl/imageR8U>
+    point3f[] points = [(-0.5, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, -0.5), (0.5, 0, -0.5)]
+    color3f[] primvars:displayColor = [(0.13320851, 0.13320851, 0.13320851)] (
+        customData = {
+            dictionary Maya = {
+                bool generated = 1
+            }
+        }
+    )
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+    double3 xformOp:translate = (-1.1, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Mesh "pPlane2" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.5), (0.5, 0, 0.5)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </mtl/imageR16F>
+    point3f[] points = [(-0.5, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, -0.5), (0.5, 0, -0.5)]
+    color3f[] primvars:displayColor = [(0.13320851, 0.13320851, 0.13320851)] (
+        customData = {
+            dictionary Maya = {
+                bool generated = 1
+            }
+        }
+    )
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+}
+
+def Mesh "pPlane3" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.5), (0.5, 0, 0.5)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </mtl/imageR32F>
+    point3f[] points = [(-0.5, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, -0.5), (0.5, 0, -0.5)]
+    color3f[] primvars:displayColor = [(0.13320851, 0.13320851, 0.13320851)] (
+        customData = {
+            dictionary Maya = {
+                bool generated = 1
+            }
+        }
+    )
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+    double3 xformOp:translate = (1.1, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Mesh "pPlane4" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.5), (0.5, 0, 0.5)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </mtl/imageRG8U>
+    point3f[] points = [(-0.5, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, -0.5), (0.5, 0, -0.5)]
+    color3f[] primvars:displayColor = [(0.13320851, 0.13320851, 0.13320851)] (
+        customData = {
+            dictionary Maya = {
+                bool generated = 1
+            }
+        }
+    )
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+    double3 xformOp:translate = (-1.1, 0, -1.1)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Mesh "pPlane5" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.5), (0.5, 0, 0.5)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </mtl/imageRG16F>
+    point3f[] points = [(-0.5, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, -0.5), (0.5, 0, -0.5)]
+    color3f[] primvars:displayColor = [(0.13320851, 0.13320851, 0.13320851)] (
+        customData = {
+            dictionary Maya = {
+                bool generated = 1
+            }
+        }
+    )
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+    double3 xformOp:translate = (0, 0, -1.1)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Mesh "pPlane6" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.5), (0.5, 0, 0.5)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </mtl/imageRG32F>
+    point3f[] points = [(-0.5, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, -0.5), (0.5, 0, -0.5)]
+    color3f[] primvars:displayColor = [(0.13320851, 0.13320851, 0.13320851)] (
+        customData = {
+            dictionary Maya = {
+                bool generated = 1
+            }
+        }
+    )
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+    double3 xformOp:translate = (1.1, 0, -1.1)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Scope "mtl"
+{
+    def Material "imageR8U"
+    {
+        token outputs:mtlx:surface.connect = </mtl/imageR8U/imageR8U.outputs:out>
+
+        def Shader "imageR8U"
+        {
+            uniform token info:id = "ND_standard_surface_surfaceshader"
+            color3f inputs:base_color.connect = </mtl/imageR8U/image1.outputs:out>
+            float inputs:specular = 0.0
+            token outputs:out
+        }
+
+        def Shader "image1"
+        {
+            uniform token info:id = "ND_image_color3"
+            asset inputs:file = @textures/R8U.png@
+            color3f outputs:out
+        }
+    }
+
+    def Material "imageR16F"
+    {
+        token outputs:mtlx:surface.connect = </mtl/imageR16F/imageR16F.outputs:out>
+
+        def Shader "imageR16F"
+        {
+            uniform token info:id = "ND_standard_surface_surfaceshader"
+            color3f inputs:base_color.connect = </mtl/imageR16F/image1.outputs:out>
+            float inputs:specular = 0.0
+            token outputs:out
+        }
+
+        def Shader "image1"
+        {
+            uniform token info:id = "ND_image_color3"
+            asset inputs:file = @textures/R16F.exr@
+            color3f outputs:out
+        }
+    }
+
+    def Material "imageR32F"
+    {
+        token outputs:mtlx:surface.connect = </mtl/imageR32F/imageR32F.outputs:out>
+
+        def Shader "imageR32F"
+        {
+            uniform token info:id = "ND_standard_surface_surfaceshader"
+            color3f inputs:base_color.connect = </mtl/imageR32F/image1.outputs:out>
+            float inputs:specular = 0.0
+            token outputs:out
+        }
+
+        def Shader "image1"
+        {
+            uniform token info:id = "ND_image_color3"
+            asset inputs:file = @textures/R32F.exr@
+            color3f outputs:out
+        }
+    }
+
+    def Material "imageRG8U"
+    {
+        token outputs:mtlx:surface.connect = </mtl/imageRG8U/imageRG8U.outputs:out>
+
+        def Shader "imageRG8U"
+        {
+            uniform token info:id = "ND_standard_surface_surfaceshader"
+            color3f inputs:base_color.connect = </mtl/imageRG8U/combine31.outputs:out>
+            float inputs:specular = 0.0
+            color3f inputs:opacity.connect = </mtl/imageRG8U/combine32.outputs:out>
+            token outputs:out
+        }
+
+        def Shader "image1"
+        {
+            uniform token info:id = "ND_image_color4"
+            asset inputs:file = @textures/RG8U.png@
+            color3f outputs:out
+        }
+
+        def Shader "separate41"
+        {
+            uniform token info:id = "ND_separate4_color4"
+            color4f inputs:in.connect = </mtl/imageRG8U/image1.outputs:out>
+            float outputs:outa
+            float outputs:outb
+            float outputs:outg
+            float outputs:outr
+        }
+
+        def Shader "combine31"
+        {
+            uniform token info:id = "ND_combine3_color3"
+            float inputs:in1.connect = </mtl/imageRG8U/separate41.outputs:outr>
+            float inputs:in2.connect = </mtl/imageRG8U/separate41.outputs:outg>
+            float inputs:in3.connect = </mtl/imageRG8U/separate41.outputs:outb>
+            color3f outputs:out
+        }
+
+        def Shader "combine32"
+        {
+            uniform token info:id = "ND_combine3_color3"
+            float inputs:in1.connect = </mtl/imageRG8U/separate41.outputs:outa>
+            float inputs:in2.connect = </mtl/imageRG8U/separate41.outputs:outa>
+            float inputs:in3.connect = </mtl/imageRG8U/separate41.outputs:outa>
+            color3f outputs:out
+        }
+    }
+
+    def Material "imageRG16F"
+    {
+        token outputs:mtlx:surface.connect = </mtl/imageRG16F/imageRG16F.outputs:out>
+
+        def Shader "imageRG16F"
+        {
+            uniform token info:id = "ND_standard_surface_surfaceshader"
+            color3f inputs:base_color.connect = </mtl/imageRG16F/combine31.outputs:out>
+            float inputs:specular = 0.0
+            color3f inputs:opacity.connect = </mtl/imageRG16F/combine32.outputs:out>
+            token outputs:out
+        }
+
+        def Shader "image1"
+        {
+            uniform token info:id = "ND_image_color4"
+            asset inputs:file = @textures/RG16F.exr@
+            color3f outputs:out
+        }
+
+        def Shader "separate41"
+        {
+            uniform token info:id = "ND_separate4_color4"
+            color4f inputs:in.connect = </mtl/imageRG16F/image1.outputs:out>
+            float outputs:outa
+            float outputs:outb
+            float outputs:outg
+            float outputs:outr
+        }
+
+        def Shader "combine31"
+        {
+            uniform token info:id = "ND_combine3_color3"
+            float inputs:in1.connect = </mtl/imageRG16F/separate41.outputs:outr>
+            float inputs:in2.connect = </mtl/imageRG16F/separate41.outputs:outg>
+            float inputs:in3.connect = </mtl/imageRG16F/separate41.outputs:outb>
+            color3f outputs:out
+        }
+
+        def Shader "combine32"
+        {
+            uniform token info:id = "ND_combine3_color3"
+            float inputs:in1.connect = </mtl/imageRG16F/separate41.outputs:outa>
+            float inputs:in2.connect = </mtl/imageRG16F/separate41.outputs:outa>
+            float inputs:in3.connect = </mtl/imageRG16F/separate41.outputs:outa>
+            color3f outputs:out
+        }
+    }
+ 
+    def Material "imageRG32F"
+    {
+        token outputs:mtlx:surface.connect = </mtl/imageRG32F/imageRG32F.outputs:out>
+
+        def Shader "imageRG32F"
+        {
+            uniform token info:id = "ND_standard_surface_surfaceshader"
+            color3f inputs:base_color.connect = </mtl/imageRG32F/combine31.outputs:out>
+            float inputs:specular = 0.0
+            color3f inputs:opacity.connect = </mtl/imageRG32F/combine32.outputs:out>
+            token outputs:out
+        }
+
+        def Shader "image1"
+        {
+            uniform token info:id = "ND_image_color4"
+            asset inputs:file = @textures/RG32F.exr@
+            color3f outputs:out
+        }
+
+        def Shader "separate41"
+        {
+            uniform token info:id = "ND_separate4_color4"
+            color4f inputs:in.connect = </mtl/imageRG32F/image1.outputs:out>
+            float outputs:outa
+            float outputs:outb
+            float outputs:outg
+            float outputs:outr
+        }
+
+        def Shader "combine31"
+        {
+            uniform token info:id = "ND_combine3_color3"
+            float inputs:in1.connect = </mtl/imageRG32F/separate41.outputs:outr>
+            float inputs:in2.connect = </mtl/imageRG32F/separate41.outputs:outg>
+            float inputs:in3.connect = </mtl/imageRG32F/separate41.outputs:outb>
+            color3f outputs:out
+        }
+
+        def Shader "combine32"
+        {
+            uniform token info:id = "ND_combine3_color3"
+            float inputs:in1.connect = </mtl/imageRG32F/separate41.outputs:outa>
+            float inputs:in2.connect = </mtl/imageRG32F/separate41.outputs:outa>
+            float inputs:in3.connect = </mtl/imageRG32F/separate41.outputs:outa>
+            color3f outputs:out
+        }
+    }
+
+   def Material "Background" (
+        prepend apiSchemas = ["NodeGraphNodeAPI"]
+    )
+    {
+        token outputs:mtlx:surface.connect = </mtl/Background/ss1.outputs:out>
+        uniform float2 ui:nodegraph:node:pos = (5.514378, 1.9555556)
+
+        def Shader "ss1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_standard_surface_surfaceshader"
+            color3f inputs:base_color.connect = </mtl/Background/image1.outputs:out>
+            float inputs:specular = 0.0
+            token outputs:out
+            uniform float2 ui:nodegraph:node:pos = (1.2722223, -0.2)
+        }
+
+        def Shader "image1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_image_color3"
+            asset inputs:file = @textures/normalSpiral.png@
+            float2 inputs:texcoord.connect = </mtl/Background/place2d1.outputs:out>
+            color3f outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-0.75555557, -0.4888889)
+        }
+
+        def Shader "geompropvalue1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_geompropvalue_vector2"
+            string inputs:geomprop = "st"
+            float2 outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-4.05, 0.46666667)
+        }
+
+        def Shader "place2d1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_place2d_vector2"
+            float2 inputs:scale = (0.2, 0.2)
+            float2 inputs:texcoord.connect = </mtl/Background/geompropvalue1.outputs:out>
+            float2 outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-2.538889, 0.92777777)
+        }
+    }
+}
+
+def Mesh "Background" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.5), (0.5, 0, 0.5)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </mtl/Background>
+    point3f[] points = [(-0.5, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, -0.5), (0.5, 0, -0.5)]
+    color3f[] primvars:displayColor = [(0.13320851, 0.13320851, 0.13320851)] (
+        customData = {
+            dictionary Maya = {
+                bool generated = 1
+            }
+        }
+    )
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+    float3 xformOp:scale = (10, 1, 10)
+    double3 xformOp:translate = (0, -1, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+}
+

@@ -132,6 +132,9 @@ public:
         MPointArray&                     worldSpaceHitPts) override;
 #endif
 
+    bool GetEnableMaterials() const { return _enableMaterials; }
+    void SetEnableMaterials(bool enable) { _enableMaterials = enable; }
+
 protected:
     HDMAYA_API
     HdMeshTopology GetMeshTopology(const SdfPath& id) override;
