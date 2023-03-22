@@ -116,8 +116,18 @@ UsdAttributeHolder::UPtr UsdAttributeHolder::create(const PXR_NS::UsdAttribute& 
 std::string UsdAttributeHolder::isEditAllowedMsg() const
 {
     if (isValid()) {
-        PXR_NS::UsdPrim        prim = _usdAttr.GetPrim();
-        PXR_NS::SdfLayerHandle layer = getAttrEditRouterLayer(prim, _usdAttr.GetName());
+        PXR_NS::UsdPrim prim = _usdAttr.GetPrim();
+
+        // Edit routing is done by a user-provided implementation that can raise exceptions.
+        // In particular, they can raise an exception to prevent the execution of the associated
+        // command. This is directly relevant for this check of allowed edits.
+        PXR_NS::SdfLayerHandle layer;
+        try {
+            layer = getAttrEditRouterLayer(prim, _usdAttr.GetName());
+        } catch (std::exception&) {
+            return "Editing has been prevented by edit router.";
+        }
+
         PXR_NS::UsdEditContext ctx(prim.GetStage(), layer);
 
         std::string errMsg;
