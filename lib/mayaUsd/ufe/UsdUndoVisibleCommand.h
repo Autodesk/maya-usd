@@ -34,8 +34,7 @@ public:
     // Public for std::make_shared() access, use create() instead.
     UsdUndoVisibleCommand(
         const PXR_NS::UsdPrim&        prim,
-        bool                          vis,
-        const PXR_NS::SdfLayerHandle& layer);
+        bool                          vis);
     ~UsdUndoVisibleCommand() override;
 
     // Delete the copy/move constructors assignment operators.
