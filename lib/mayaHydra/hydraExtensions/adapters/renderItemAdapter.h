@@ -30,9 +30,9 @@
 #include <pxr/imaging/hdx/renderTask.h>
 #include <pxr/pxr.h>
 
+#include <maya/MDagPath.h>
 #include <maya/MHWGeometryUtilities.h>
 #include <maya/MMatrix.h>
-#include <maya/MDagPath.h>
 
 #include <functional>
 #include <memory>
@@ -121,8 +121,8 @@ public:
     MAYAHYDRALIB_API
     void UpdateTransform(MRenderItem& ri);
 
-    /// Class used to pass data to the UpdateFromDelta method, so we can extend the parameters in the
-    /// future if needed.
+    /// Class used to pass data to the UpdateFromDelta method, so we can extend the parameters in
+    /// the future if needed.
     class UpdateFromDeltaData
     {
     public:
@@ -144,7 +144,8 @@ public:
         MHWRender::DisplayStatus _displayStatus;
     };
 
-    ///We receive in that function the changes made in the Maya viewport between the last frame rendered and the current frame 
+    /// We receive in that function the changes made in the Maya viewport between the last frame
+    /// rendered and the current frame
     MAYAHYDRALIB_API
     void UpdateFromDelta(const UpdateFromDeltaData& data);
 

@@ -29,7 +29,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 /**
- * \brief MayaHydraDelegateCtx is a set of common functions, and it is the aggregation of our MayaHydraDelegate base class and the hydra custom scene delegate class : HdSceneDelegate.
+ * \brief MayaHydraDelegateCtx is a set of common functions, and it is the aggregation of our
+ * MayaHydraDelegate base class and the hydra custom scene delegate class : HdSceneDelegate.
  */
 class MayaHydraDelegateCtx
     : public HdSceneDelegate

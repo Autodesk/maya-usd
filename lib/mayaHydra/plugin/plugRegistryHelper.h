@@ -23,8 +23,9 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-/*! \brief This was added as part of the mtoh original plug-in and is not used any more now, but left here for history.
-*/
+/*! \brief This was added as part of the mtoh original plug-in and is not used any more now, but
+ * left here for history.
+ */
 
 namespace MAYAUSD_NS_DEF {
 /* Register USD plugins with USD / MayaUsd / Python version checks

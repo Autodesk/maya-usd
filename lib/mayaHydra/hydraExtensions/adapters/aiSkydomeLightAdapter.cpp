@@ -33,7 +33,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 /**
- * \brief MayaHydraAiSkyDomeLightAdapter is used to handle the translation from an Arnold skydome light to hydra.
+ * \brief MayaHydraAiSkyDomeLightAdapter is used to handle the translation from an Arnold skydome
+ * light to hydra.
  */
 class MayaHydraAiSkyDomeLightAdapter : public MayaHydraLightAdapter
 {

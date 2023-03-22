@@ -33,8 +33,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/*! \brief MtohRenderGlobals is where we build the UI and expose to MEL the global parameters from this plug-in and the parameters from the chosen render delegate.
-*/
+/*! \brief MtohRenderGlobals is where we build the UI and expose to MEL the global parameters from
+ * this plug-in and the parameters from the chosen render delegate.
+ */
 class MtohRenderGlobals
 {
 public:

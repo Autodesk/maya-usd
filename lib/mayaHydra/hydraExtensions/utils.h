@@ -108,7 +108,7 @@ MAYAHYDRALIB_API
 TfToken GetFileTexturePath(const MFnDependencyNode& fileNode);
 
 /// \brief Return in the std::string outValueAsString the VtValue type and value written as text for
-/// debugging purpose \param val the VtValue to be converted. 
+/// debugging purpose \param val the VtValue to be converted.
 /// \param outValueAsString the std::string that will contain the text from the VtValue.
 MAYAHYDRALIB_API
 void ConvertVtValueAsText(const PXR_INTERNAL_NS::VtValue& val, std::string& outValueAsString);

@@ -115,7 +115,8 @@ SdfPath _GetMaterialPath(const SdfPath& base, const MObject& obj)
 
 } // namespace
 
-//MayaHydraDelegateCtx is a set of common functions, and it is the aggregation of our MayaHydraDelegate base class and the hydra custom scene delegate class : HdSceneDelegate.
+// MayaHydraDelegateCtx is a set of common functions, and it is the aggregation of our
+// MayaHydraDelegate base class and the hydra custom scene delegate class : HdSceneDelegate.
 MayaHydraDelegateCtx::MayaHydraDelegateCtx(const InitData& initData)
     : HdSceneDelegate(initData.renderIndex, initData.delegateID)
     , MayaHydraDelegate(initData)

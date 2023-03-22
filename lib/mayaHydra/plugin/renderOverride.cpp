@@ -32,18 +32,18 @@
 #include <mayaHydraLib/sceneIndex/registration.h>
 #include <mayaHydraLib/utils.h>
 
-#include <ufeExtensions/Global.h>
-
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/type.h>
 
-#include <ufe/selection.h>
+#include <ufe/hierarchy.h>
 #include <ufe/namedSelection.h>
 #include <ufe/path.h>
 #include <ufe/pathSegment.h>
 #include <ufe/rtid.h>
-#include <ufe/hierarchy.h>
+#include <ufe/selection.h>
+
+#include <ufeExtensions/Global.h>
 
 #if defined(MAYAUSD_VERSION)
 #include <mayaUsd/render/px_vp20/utils.h>
@@ -88,18 +88,20 @@ template <typename T> inline void hash_combine(std::size_t& seed, const T& value
 #include <maya/MGlobal.h>
 #include <maya/MNodeMessage.h>
 #include <maya/MObjectHandle.h>
+#include <maya/MProfiler.h>
 #include <maya/MSceneMessage.h>
 #include <maya/MSelectionList.h>
 #include <maya/MTimerMessage.h>
 #include <maya/MUiMessage.h>
-#include <maya/MProfiler.h>
 
 #include <atomic>
 #include <chrono>
 #include <exception>
 #include <limits>
 
-int _profilerCategory = MProfiler::addCategory("MtohRenderOverride (mayaHydra)", "Events from mayaHydra render override");
+int _profilerCategory = MProfiler::addCategory(
+    "MtohRenderOverride (mayaHydra)",
+    "Events from mayaHydra render override");
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -183,7 +185,7 @@ void ResolveUniqueHits_Workaround(const HdxPickHitVector& inHits, HdxPickHitVect
 
 } // namespace
 
-//MtohRenderOverride is a rendering override class for the viewport to use Hydra instead of VP2.0.
+// MtohRenderOverride is a rendering override class for the viewport to use Hydra instead of VP2.0.
 MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
     : MHWRender::MRenderOverride(desc.overrideName.GetText())
     , _rendererDesc(desc)
@@ -698,9 +700,10 @@ void MtohRenderOverride::_InitHydraResources()
             TfMakeValidIdentifier(_rendererDesc.rendererName.GetText()).c_str(),
             this))));
     _taskController->SetEnableShadows(true);
-    // Initialize the AOV system to render color for Storm, so the Metal/Vulkan backend can present to OpenGL view
-    if (_isUsingHdSt && (_hgi->GetAPIName() == HgiTokens->Metal || _hgi->GetAPIName() == HgiTokens->Vulkan))
-    {
+    // Initialize the AOV system to render color for Storm, so the Metal/Vulkan backend can present
+    // to OpenGL view
+    if (_isUsingHdSt
+        && (_hgi->GetAPIName() == HgiTokens->Metal || _hgi->GetAPIName() == HgiTokens->Vulkan)) {
         _taskController->SetRenderOutputs({ HdAovTokens->color });
     }
 
@@ -956,7 +959,7 @@ bool MtohRenderOverride::nextRenderOperation()
     return ++_currentOperation < static_cast<int>(_operations.size());
 }
 
-constexpr char      kNamedSelection[] = "MayaSelectTool";
+constexpr char kNamedSelection[] = "MayaSelectTool";
 
 void MtohRenderOverride::_PopulateSelectionList(
     const HdxPickHitVector&          hits,
@@ -1009,7 +1012,11 @@ bool MtohRenderOverride::select(
     MPointArray&    worldSpaceHitPts)
 {
 #ifdef MAYAHYDRA_PROFILERS_ENABLED
-        MProfilingScope profilingScopeForEval(_profilerCategory, MProfiler::kColorD_L1, "MtohRenderOverride::select", "MtohRenderOverride::select");
+    MProfilingScope profilingScopeForEval(
+        _profilerCategory,
+        MProfiler::kColorD_L1,
+        "MtohRenderOverride::select",
+        "MtohRenderOverride::select");
 #endif
     MStatus status = MStatus::kFailure;
 

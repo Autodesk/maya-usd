@@ -64,7 +64,8 @@ float GetSpotFalloff(MFnSpotLight& mayaLight) { return static_cast<float>(mayaLi
 } // namespace
 
 /**
- * \brief MayaHydraSpotLightAdapter is used to handle the translation from a Maya spot light to hydra.
+ * \brief MayaHydraSpotLightAdapter is used to handle the translation from a Maya spot light to
+ * hydra.
  */
 class MayaHydraSpotLightAdapter : public MayaHydraLightAdapter
 {

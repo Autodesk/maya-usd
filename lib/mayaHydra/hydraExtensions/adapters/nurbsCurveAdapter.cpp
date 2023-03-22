@@ -33,8 +33,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 /**
- * This file contains the MayaHydraNurbsCurveAdapter class to translate from a Maya NURBS curve to hydra.
- * Please note that, at this time, this is not used by the hydra plugin, we translate from a renderitem to hydra using the MayaHydraRenderItemAdapter class.
+ * This file contains the MayaHydraNurbsCurveAdapter class to translate from a Maya NURBS curve to
+ * hydra. Please note that, at this time, this is not used by the hydra plugin, we translate from a
+ * renderitem to hydra using the MayaHydraRenderItemAdapter class.
  */
 
 namespace {
@@ -50,8 +51,9 @@ const std::array<std::pair<MObject&, HdDirtyBits>, 4> _dirtyBits { {
 } // namespace
 
 /**
- * \brief MayaHydraNurbsCurveAdapter is used to handle the translation from a Maya NURBS curve to hydra.
- * Please note that, at this time, this is not used by the hydra plugin, we translate from a renderitem to hydra using the MayaHydraRenderItemAdapter class.
+ * \brief MayaHydraNurbsCurveAdapter is used to handle the translation from a Maya NURBS curve to
+ * hydra. Please note that, at this time, this is not used by the hydra plugin, we translate from a
+ * renderitem to hydra using the MayaHydraRenderItemAdapter class.
  */
 class MayaHydraNurbsCurveAdapter : public MayaHydraShapeAdapter
 {

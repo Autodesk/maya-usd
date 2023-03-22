@@ -16,6 +16,13 @@
 #ifndef MTOH_VIEW_OVERRIDE_H
 #define MTOH_VIEW_OVERRIDE_H
 
+#include "defaultLightDelegate.h"
+#include "renderGlobals.h"
+#include "utils.h"
+
+#include <mayaHydraLib/delegates/delegate.h>
+#include <mayaHydraLib/delegates/params.h>
+
 #include <pxr/base/tf/singleton.h>
 #include <pxr/imaging/hd/driver.h>
 #include <pxr/imaging/hd/engine.h>
@@ -37,15 +44,6 @@
 #include <memory>
 #include <mutex>
 
-#include "defaultLightDelegate.h"
-#include "renderGlobals.h"
-#include "utils.h"
-
-#include <mayaHydraLib/delegates/delegate.h>
-#include <mayaHydraLib/delegates/params.h>
-
-#include <maya/MViewport2Renderer.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 using HgiUniquePtr = std::unique_ptr<class Hgi>;
@@ -53,8 +51,9 @@ class MayaHydraSceneIndexRegistry;
 class MayaHydraSceneDelegate;
 using HdxPickHitVector = std::vector<struct HdxPickHit>;
 
-/*! \brief MtohRenderOverride is a rendering override class for the viewport to use Hydra instead of VP2.0.
-*/
+/*! \brief MtohRenderOverride is a rendering override class for the viewport to use Hydra instead of
+ * VP2.0.
+ */
 class MtohRenderOverride : public MHWRender::MRenderOverride
 {
 public:
@@ -192,7 +191,7 @@ private:
 
     GlfSimpleLight _defaultLight;
 
-    std::vector<MayaHydraDelegatePtr> _delegates;
+    std::vector<MayaHydraDelegatePtr>       _delegates;
     std::shared_ptr<MayaHydraSceneDelegate> _mayaHydraSceneDelegate;
 
     SdfPath _ID;

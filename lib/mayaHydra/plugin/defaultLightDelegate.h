@@ -29,9 +29,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-//! \brief  MtohDefaultLightDelegate is a separate Hydra custom scene delegate to handle the default lighting from Maya.
-//! We use another Hydra custom scene delegate to handle the other parts of the Maya scene. See sceneDelegate.h in the mayaHydraLib project.
-//! If you want to know how to add a custom scene index to this plug-in, then please see the registration.cpp file in the mayaHydraLib project.
+//! \brief  MtohDefaultLightDelegate is a separate Hydra custom scene delegate to handle the default
+//! lighting from Maya. We use another Hydra custom scene delegate to handle the other parts of the
+//! Maya scene. See sceneDelegate.h in the mayaHydraLib project. If you want to know how to add a
+//! custom scene index to this plug-in, then please see the registration.cpp file in the
+//! mayaHydraLib project.
 
 class MtohDefaultLightDelegate
     : public HdSceneDelegate
@@ -61,10 +63,10 @@ private:
     GlfSimpleLight _light;
     SdfPath        _lightPath;
     bool           _isSupported = false;
-    ///Is used to avoid lighting any non solid wireframe prim (such as line/points prims)
-    SdfPathVector  _solidPrimitivesRootPaths; 
-    bool           _isPopulated = false;
-    bool           _isLightingOn = true;
+    /// Is used to avoid lighting any non solid wireframe prim (such as line/points prims)
+    SdfPathVector _solidPrimitivesRootPaths;
+    bool          _isPopulated = false;
+    bool          _isLightingOn = true;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -30,7 +30,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 /**
- * \brief MayaHydraLightAdapter is the base class for any light adapter used to handle the translation from a light to hydra.
+ * \brief MayaHydraLightAdapter is the base class for any light adapter used to handle the
+ * translation from a light to hydra.
  */
 class MayaHydraLightAdapter : public MayaHydraDagAdapter
 {

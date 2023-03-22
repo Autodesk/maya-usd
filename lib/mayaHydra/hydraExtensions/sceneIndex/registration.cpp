@@ -27,7 +27,6 @@
 #include <maya/MItDag.h>
 #include <maya/MMessage.h>
 #include <maya/MNodeMessage.h>
-
 #include <ufe/rtid.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -42,16 +41,20 @@ constexpr char kDagNodeMessageName[] = { "dagNode" };
 } // namespace
 
 /* To add a custom scene index, a customer plugin must:
- 1. Define a Maya dag node via the MPxNode interface, and register it MFnPlugin::registerNode. This is typically done inside a Maya plug-in initialize function.
- 2. Define a HdSceneIndexPlugin which contains an _AppendSceneIndex method. The _AppendSceneIndex method will be called for every Maya node added into the scene. 
-      A customer is responsible for type checking the node for the one defined and also instantiate the corresponding scene index inside _AppendSceneIndex.
-      The scene index returned by _AppendSceneIndex is then added to the render index by Maya.
+ 1. Define a Maya dag node via the MPxNode interface, and register it MFnPlugin::registerNode. This
+is typically done inside a Maya plug-in initialize function.
+ 2. Define a HdSceneIndexPlugin which contains an _AppendSceneIndex method. The _AppendSceneIndex
+method will be called for every Maya node added into the scene. A customer is responsible for type
+checking the node for the one defined and also instantiate the corresponding scene index inside
+_AppendSceneIndex. The scene index returned by _AppendSceneIndex is then added to the render index
+by Maya.
 
 For example here is how we do that process in the Maya USD plug-in :
 // Some context :
 // MayaUsdProxyShapeMayaNodeSceneIndexPlugin is a subclass of HdSceneIndexPlugin.
 // MayaUsdProxyShapeBase is the base class for our Maya USD node.
-// MayaUsd::MayaUsdProxyShapeSceneIndex is the scene index class for Maya USD where we load the stages.
+// MayaUsd::MayaUsdProxyShapeSceneIndex is the scene index class for Maya USD where we load the
+// stages.
 
 HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIndex(
     const HdSceneIndexBaseRefPtr&      inputScene,
@@ -70,7 +73,8 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
             return nullptr;
         }
 
-        //Check that this node is a MayaUsdProxyShapeBase which is the base class for our Maya USD node
+        // Check that this node is a MayaUsdProxyShapeBase which is the base class for our Maya USD
+        // node
         auto proxyShape = dynamic_cast<MayaUsdProxyShapeBase*>(dependNodeFn.userNode());
         if (TF_VERIFY(proxyShape, "Error getting MayaUsdProxyShapeBase")) {
             auto psSceneIndex = MayaUsd::MayaUsdProxyShapeSceneIndex::New(proxyShape);
@@ -87,7 +91,7 @@ You may want to see the full source code in the Maya USD open source repository 
 https://github.com/Autodesk/maya-usd/tree/dev/lib/mayaUsd/sceneIndex
 */
 
-//MayaHydraSceneIndexRegistration is used to register a scene index for a given dag node type.
+// MayaHydraSceneIndexRegistration is used to register a scene index for a given dag node type.
 MayaHydraSceneIndexRegistry::MayaHydraSceneIndexRegistry(HdRenderIndex* renderIndex)
     : _renderIndex(renderIndex)
 {
@@ -109,7 +113,8 @@ MayaHydraSceneIndexRegistry::MayaHydraSceneIndexRegistry(HdRenderIndex* renderIn
         if (TF_VERIFY(status == MS::kSuccess, "NodeRemoved callback registration failed."))
             _sceneIndexDagNodeMessageCallbacks.append(id);
 
-        // Iterate over scene to find out existing node which will miss eventual dagNode added callbacks
+        // Iterate over scene to find out existing node which will miss eventual dagNode added
+        // callbacks
         MItDag nodesDagIt(MItDag::kDepthFirst, MFn::kInvalid);
         for (; !nodesDagIt.isDone(); nodesDagIt.next()) {
             MStatus status;
@@ -221,9 +226,7 @@ void MayaHydraSceneIndexRegistry::_AddSceneIndexForNode(MObject& dagNode)
     }
 }
 
-void MayaHydraSceneIndexRegistry::_SceneIndexNodeAddedCallback(
-    MObject& dagNode,
-    void*    clientData)
+void MayaHydraSceneIndexRegistry::_SceneIndexNodeAddedCallback(MObject& dagNode, void* clientData)
 {
     if (dagNode.isNull() || dagNode.apiType() != MFn::kPluginShape)
         return;
@@ -231,9 +234,7 @@ void MayaHydraSceneIndexRegistry::_SceneIndexNodeAddedCallback(
     renderOverride->_AddSceneIndexForNode(dagNode);
 }
 
-void MayaHydraSceneIndexRegistry::_SceneIndexNodeRemovedCallback(
-    MObject& dagNode,
-    void*    clientData)
+void MayaHydraSceneIndexRegistry::_SceneIndexNodeRemovedCallback(MObject& dagNode, void* clientData)
 {
     if (dagNode.isNull() || dagNode.apiType() != MFn::kPluginShape)
         return;

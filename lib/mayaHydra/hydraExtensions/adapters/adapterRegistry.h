@@ -33,7 +33,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 /**
- * \brief An adapter is used to translate from Maya data to hydra data. MayaHydraAdapterRegistry is used to register/retrieve the adapters.
+ * \brief An adapter is used to translate from Maya data to hydra data. MayaHydraAdapterRegistry is
+ * used to register/retrieve the adapters.
  */
 
 class MayaHydraAdapterRegistry : public TfSingleton<MayaHydraAdapterRegistry>
@@ -43,7 +44,6 @@ class MayaHydraAdapterRegistry : public TfSingleton<MayaHydraAdapterRegistry>
     MayaHydraAdapterRegistry() = default;
 
 public:
-    
     using ShapeAdapterCreator
         = std::function<MayaHydraShapeAdapterPtr(MayaHydraDelegateCtx*, const MDagPath&)>;
     MAYAHYDRALIB_API

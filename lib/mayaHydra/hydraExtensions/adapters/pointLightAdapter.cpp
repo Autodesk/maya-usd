@@ -29,7 +29,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 /**
- * \brief MayaHydraPointLightAdapter is used to handle the translation from a Maya point light to hydra.
+ * \brief MayaHydraPointLightAdapter is used to handle the translation from a Maya point light to
+ * hydra.
  */
 class MayaHydraPointLightAdapter : public MayaHydraLightAdapter
 {

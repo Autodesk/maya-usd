@@ -81,11 +81,11 @@ public:
 };
 
 /**
-* \brief Serves to synchronize maya viewport data with the scene delegate before scene update is
-*  called
-*   when requiresSceneUpdate=false, subtype=kDataServerRemovals and after scene update is called
-*   when requiresSceneUpdate=true, subtype=kDataServer
-*/
+ * \brief Serves to synchronize maya viewport data with the scene delegate before scene update is
+ *  called
+ *   when requiresSceneUpdate=false, subtype=kDataServerRemovals and after scene update is called
+ *   when requiresSceneUpdate=true, subtype=kDataServer
+ */
 
 class MayaHydraRender : public MHWRender::MDataServerOperation
 {

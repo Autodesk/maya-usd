@@ -1,4 +1,5 @@
 //
+//
 // Copyright 2023 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,11 +30,10 @@
 #include <maya/MObject.h>
 #include <maya/MPlugArray.h>
 #include <maya/MStatus.h>
+#include <ufe/runTimeMgr.h>
 
 #include <cctype>
 #include <sstream>
-
-#include <ufe/runTimeMgr.h>
 
 namespace MAYAHYDRA_NS_DEF {
 

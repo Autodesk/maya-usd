@@ -52,14 +52,16 @@
 #include <maya/MObjectHandle.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
+#include <maya/MProfiler.h>
+#include <maya/MSelectionList.h>
 #include <maya/MShaderManager.h>
 #include <maya/MString.h>
-#include <maya/MSelectionList.h>
-#include <maya/MProfiler.h>
 
 #include <cassert>
 
-int _profilerCategory = MProfiler::addCategory("MayaHydraSceneDelegate (mayaHydra)", "Events for MayaHydraSceneDelegate");
+int _profilerCategory = MProfiler::addCategory(
+    "MayaHydraSceneDelegate (mayaHydra)",
+    "Events for MayaHydraSceneDelegate");
 
 #if PXR_VERSION < 2211
 #error USD version v0.22.11+ required
@@ -220,8 +222,9 @@ TF_REGISTRY_FUNCTION_WITH_TAG(MayaHydraDelegateRegistry, MayaHydraSceneDelegate)
         });
 }
 
-//MayaHydraSceneDelegate is an Hydra custom scene delegate used to translate from a Maya scene to hydra.
-//If you want to know how to add a custom scene index to this plug-in, then please see the registration.cpp file.
+// MayaHydraSceneDelegate is an Hydra custom scene delegate used to translate from a Maya scene to
+// hydra. If you want to know how to add a custom scene index to this plug-in, then please see the
+// registration.cpp file.
 MayaHydraSceneDelegate::MayaHydraSceneDelegate(const InitData& initData)
     : MayaHydraDelegateCtx(initData)
 {
@@ -348,15 +351,10 @@ void MayaHydraSceneDelegate::HandleCompleteViewportScene(
         int                           fastId = ri.InternalObjectId();
         MayaHydraRenderItemAdapterPtr ria = nullptr;
         if (!_GetRenderItem(fastId, ria)) {
-            const SdfPath   slowId = GetRenderItemPrimPath(ri);
+            const SdfPath slowId = GetRenderItemPrimPath(ri);
             // MAYA-128021: We do not currently support maya instances.
             MDagPath dagPath(ri.sourceDagPath());
-            ria = std::make_shared<MayaHydraRenderItemAdapter>(
-                dagPath,
-                slowId,
-                fastId,
-                this,
-                ri);
+            ria = std::make_shared<MayaHydraRenderItemAdapter>(dagPath, slowId, fastId, this, ri);
             _AddRenderItem(ria);
         }
 
@@ -921,7 +919,8 @@ void MayaHydraSceneDelegate::InsertDag(const MDagPath& dag)
     }
 
     // Skip UFE nodes coming from USD runtime
-    // UFE stands for Universal Front End : the goal of the Universal Front End is to create a DCC-agnostic component that will allow a DCC to browse and edit data in multiple data models. 
+    // UFE stands for Universal Front End : the goal of the Universal Front End is to create a
+    // DCC-agnostic component that will allow a DCC to browse and edit data in multiple data models.
     // Those will be handled by USD Imaging delegate
     MStatus              status;
     static const MString ufeRuntimeStr = "ufeRuntime";
@@ -1073,8 +1072,8 @@ void MayaHydraSceneDelegate::SetParams(const MayaHydraParams& params)
     MayaHydraDelegate::SetParams(params);
 }
 
-//! \brief  Try to obtain maya object corresponding to HdxPickHit and add it to a maya selection list
-//! \return whether the conversion was a success
+//! \brief  Try to obtain maya object corresponding to HdxPickHit and add it to a maya selection
+//! list \return whether the conversion was a success
 bool MayaHydraSceneDelegate::AddPickHitToSelectionList(
     const HdxPickHit&                hit,
     const MHWRender::MSelectionInfo& selectInfo,

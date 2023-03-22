@@ -31,6 +31,7 @@
 #include <pxr/imaging/hd/rendererPlugin.h>
 #include <pxr/imaging/hd/rendererPluginRegistry.h>
 #include <pxr/usdImaging/usdImagingGL/engine.h>
+
 #include <maya/MGlobal.h>
 
 PXR_NAMESPACE_OPEN_SCOPE

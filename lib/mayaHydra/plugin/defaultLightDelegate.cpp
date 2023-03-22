@@ -46,9 +46,11 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 // clang-format on
 
-// MtohDefaultLightDelegate is a separate Hydra custom scene delegate to handle the default lighting from Maya.
-// We use another Hydra custom scene delegate to handle the other parts of the Maya scene. See sceneDelegate.h in the mayaHydraLib project.
-// If you want to know how to add a custom scene index to this plug-in, then please see the registration.cpp file in the mayaHydraLib project.
+// MtohDefaultLightDelegate is a separate Hydra custom scene delegate to handle the default lighting
+// from Maya. We use another Hydra custom scene delegate to handle the other parts of the Maya
+// scene. See sceneDelegate.h in the mayaHydraLib project. If you want to know how to add a custom
+// scene index to this plug-in, then please see the registration.cpp file in the mayaHydraLib
+// project.
 MtohDefaultLightDelegate::MtohDefaultLightDelegate(const InitData& initData)
     : HdSceneDelegate(initData.renderIndex, initData.delegateID)
     , MayaHydraDelegate(initData)

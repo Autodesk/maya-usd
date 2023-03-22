@@ -105,8 +105,8 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj)
 
     if (auto* renderer = MHWRender::MRenderer::theRenderer()) {
         for (const auto& desc : MtohGetRendererDescriptions()) {
-            auto mtohRenderer = std::make_unique<MtohRenderOverride>(desc);
-            MStatus    status = renderer->registerOverride(mtohRenderer.get());
+            auto    mtohRenderer = std::make_unique<MtohRenderOverride>(desc);
+            MStatus status = renderer->registerOverride(mtohRenderer.get());
             if (status == MS::kSuccess) {
                 gsRenderOverrides.push_back(mtohRenderer.release());
             }

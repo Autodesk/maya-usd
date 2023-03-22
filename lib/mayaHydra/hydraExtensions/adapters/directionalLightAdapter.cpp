@@ -30,7 +30,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 /**
- * \brief MayaHydraDirectionalLightAdapter is used to handle the translation from a Maya directional light to hydra.
+ * \brief MayaHydraDirectionalLightAdapter is used to handle the translation from a Maya directional
+ * light to hydra.
  */
 class MayaHydraDirectionalLightAdapter : public MayaHydraLightAdapter
 {

@@ -24,7 +24,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 /**
- * \brief MayaHydraAreaLightAdapter is used to handle the translation from a Maya area light to hydra.
+ * \brief MayaHydraAreaLightAdapter is used to handle the translation from a Maya area light to
+ * hydra.
  */
 class MayaHydraAreaLightAdapter : public MayaHydraLightAdapter
 {

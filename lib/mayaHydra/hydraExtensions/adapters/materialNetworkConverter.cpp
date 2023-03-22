@@ -37,10 +37,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/* This file contains how we translate the Maya shaders (Blinn, Lambert, Standard Surface etc.) to hydra and how we do the parameters mapping.
-    See MayaHydraMaterialNetworkConverter::initialize() for that purpose.
+/* This file contains how we translate the Maya shaders (Blinn, Lambert, Standard Surface etc.) to
+   hydra and how we do the parameters mapping. See MayaHydraMaterialNetworkConverter::initialize()
+   for that purpose.
 */
-
 
 namespace {
 
@@ -534,7 +534,8 @@ auto _genericAttrConverter = std::make_shared<MayaHydraGenericMaterialAttrConver
 typedef std::unordered_map<TfToken, MayaHydraMaterialNodeConverter, TfToken::HashFunctor>
     NameToNodeConverterMap;
 
-/// _nodeConverters contains how we translate from a Maya shader to hydra and the parameters mapping we use.
+/// _nodeConverters contains how we translate from a Maya shader to hydra and the parameters mapping
+/// we use.
 NameToNodeConverterMap _nodeConverters;
 
 } // namespace
@@ -542,7 +543,7 @@ NameToNodeConverterMap _nodeConverters;
 /*static*/
 void MayaHydraMaterialNetworkConverter::initialize()
 {
-    //Define different converters for translating from specific Maya attributes types to hydra
+    // Define different converters for translating from specific Maya attributes types to hydra
     auto colorConverter = std::make_shared<MayaHydraScaledRemappingMaterialAttrConverter>(
         MayaHydraAdapterTokens->color,
         MayaHydraAdapterTokens->diffuse,
@@ -596,13 +597,16 @@ void MayaHydraMaterialNetworkConverter::initialize()
     auto textureMemoryConverter
         = std::make_shared<MayaHydraNewDefaultMaterialAttrConverter>(defaultTextureMemoryLimit);
 
-    //In the following code we define how we translate from a Maya shader to hydra and how we do the parameters mapping
+    // In the following code we define how we translate from a Maya shader to hydra and how we do
+    // the parameters mapping
     _nodeConverters = {
         { MayaHydraAdapterTokens->usdPreviewSurface, { UsdImagingTokens->UsdPreviewSurface, {} } },
         { MayaHydraAdapterTokens->pxrUsdPreviewSurface,
           { UsdImagingTokens->UsdPreviewSurface, {} } },
         { MayaHydraAdapterTokens->lambert,
-          { UsdImagingTokens->UsdPreviewSurface, //Maya Lambert shader translated to a UsdPreviewSurface with the following UsdPreviewSurface parameters mapped
+          { UsdImagingTokens
+                ->UsdPreviewSurface, // Maya Lambert shader translated to a UsdPreviewSurface with
+                                     // the following UsdPreviewSurface parameters mapped
             {
                 { MayaHydraAdapterTokens->diffuseColor, colorConverter },
                 { MayaHydraAdapterTokens->emissiveColor, incandescenceConverter },
@@ -611,7 +615,9 @@ void MayaHydraMaterialNetworkConverter::initialize()
                 { MayaHydraAdapterTokens->useSpecularWorkflow, fixedZeroInt },
             } } },
         { MayaHydraAdapterTokens->blinn,
-          { UsdImagingTokens->UsdPreviewSurface,//Maya Blinn shader translated to a UsdPreviewSurface with the following UsdPreviewSurface parameters mapped
+          { UsdImagingTokens
+                ->UsdPreviewSurface, // Maya Blinn shader translated to a UsdPreviewSurface with the
+                                     // following UsdPreviewSurface parameters mapped
             {
                 { MayaHydraAdapterTokens->diffuseColor, colorConverter },
                 { MayaHydraAdapterTokens->emissiveColor, incandescenceConverter },
@@ -620,7 +626,9 @@ void MayaHydraMaterialNetworkConverter::initialize()
                 { MayaHydraAdapterTokens->useSpecularWorkflow, fixedOneInt },
             } } },
         { MayaHydraAdapterTokens->phong,
-          { UsdImagingTokens->UsdPreviewSurface,//Maya Phong shader translated to a UsdPreviewSurface with the following UsdPreviewSurface parameters mapped
+          { UsdImagingTokens
+                ->UsdPreviewSurface, // Maya Phong shader translated to a UsdPreviewSurface with the
+                                     // following UsdPreviewSurface parameters mapped
             {
                 { MayaHydraAdapterTokens->diffuseColor, colorConverter },
                 { MayaHydraAdapterTokens->emissiveColor, incandescenceConverter },
@@ -629,7 +637,9 @@ void MayaHydraMaterialNetworkConverter::initialize()
                 { MayaHydraAdapterTokens->useSpecularWorkflow, fixedOneInt },
             } } },
         { MayaHydraAdapterTokens->standardSurface,
-          { UsdImagingTokens->UsdPreviewSurface,//Maya Standard surface shader translated to a UsdPreviewSurface with the following UsdPreviewSurface parameters mapped
+          { UsdImagingTokens->UsdPreviewSurface, // Maya Standard surface shader translated to a
+                                                 // UsdPreviewSurface with the following
+                                                 // UsdPreviewSurface parameters mapped
             {
                 { MayaHydraAdapterTokens->diffuseColor, baseColorConverter },
                 { MayaHydraAdapterTokens->emissiveColor, emissionColorConverter },
@@ -642,7 +652,8 @@ void MayaHydraMaterialNetworkConverter::initialize()
                 { MayaHydraAdapterTokens->metallic, metallicConverter },
             } } },
         { MayaHydraAdapterTokens->file,
-          { UsdImagingTokens->UsdUVTexture,//Maya file translated to a UsdUVTexture with the following UsdUVTexture parameters mapped
+          { UsdImagingTokens->UsdUVTexture, // Maya file translated to a UsdUVTexture with the
+                                            // following UsdUVTexture parameters mapped
             {
                 { MayaHydraAdapterTokens->file, filenameConverter },
                 { MayaHydraAdapterTokens->st, uvConverter },
@@ -650,7 +661,9 @@ void MayaHydraMaterialNetworkConverter::initialize()
                 { UsdHydraTokens->wrapT, wrapVConverter },
                 { UsdHydraTokens->textureMemory, textureMemoryConverter },
             } } },
-        { MayaHydraAdapterTokens->place2dTexture,//Maya place2dTexture translated to a UsdPrimvarReader_float2 with the following UsdPrimvarReader_float2 parameters mapped
+        { MayaHydraAdapterTokens
+              ->place2dTexture, // Maya place2dTexture translated to a UsdPrimvarReader_float2 with
+                                // the following UsdPrimvarReader_float2 parameters mapped
           { UsdImagingTokens->UsdPrimvarReader_float2,
             {
                 { MayaHydraAdapterTokens->varname, fixedStToken },

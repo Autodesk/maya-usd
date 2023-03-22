@@ -20,7 +20,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-//Some variables to enable debug printing information for our custom scene delegate
+// Some variables to enable debug printing information for our custom scene delegate
 
 TF_REGISTRY_FUNCTION(TfDebug)
 {

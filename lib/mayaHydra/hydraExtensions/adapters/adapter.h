@@ -31,7 +31,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 /**
- * \brief MayaHydraAdapter is the base class for all adapters. An adapter is used to translate from Maya data to hydra data.
+ * \brief MayaHydraAdapter is the base class for all adapters. An adapter is used to translate from
+ * Maya data to hydra data.
  */
 
 class MayaHydraAdapter

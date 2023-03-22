@@ -24,7 +24,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /**
  * \brief MayaHydraMaterialAdapter is used to handle the translation from a Maya material to hydra.
- * If you are looking for how we translate the Maya shaders to hydra and how we do the parameters mapping, please see MayaHydraMaterialNetworkConverter::initialize().
+ * If you are looking for how we translate the Maya shaders to hydra and how we do the parameters
+ * mapping, please see MayaHydraMaterialNetworkConverter::initialize().
  */
 class MayaHydraMaterialAdapter : public MayaHydraAdapter
 {
@@ -65,7 +66,7 @@ public:
 
 protected:
     /// Are we in viewport XRay shading mode ?
-    bool _enableXRayShadingMode = false; 
+    bool _enableXRayShadingMode = false;
 };
 
 using MayaHydraMaterialAdapterPtr = std::shared_ptr<MayaHydraMaterialAdapter>;

@@ -74,8 +74,8 @@ public:
     GetSceneIndexRegistrationForRprim(const SdfPath& rprimPath) const;
 
 private:
-    void _AddSceneIndexForNode(
-        MObject& dagNode); // dagNode non-const because of callback registration
+    void
+                _AddSceneIndexForNode(MObject& dagNode); // dagNode non-const because of callback registration
     bool        _RemoveSceneIndexForNode(const MObject& dagNode);
     static void _SceneIndexNodeAddedCallback(MObject& obj, void* clientData);
     static void _SceneIndexNodeRemovedCallback(MObject& obj, void* clientData);
