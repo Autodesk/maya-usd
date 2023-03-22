@@ -123,6 +123,13 @@ if (UFE_SCENE_SEGMENT_SUPPORT)
     )
 endif()
 
+if (UFE_UINODEGRAPHNODE_HAS_SIZE)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_UINODEGRAPHNODE_HAS_SIZE=1
+    )
+endif()
+
 if (v4_BatchOps IN_LIST UFE_PREVIEW_FEATURES)
     message(STATUS "UFE_PREVIEW has V4 BatchOps support")
     target_sources(${PROJECT_NAME}

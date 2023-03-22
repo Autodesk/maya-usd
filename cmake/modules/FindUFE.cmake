@@ -48,20 +48,31 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/ufe.h")
     endforeach()
     set(UFE_VERSION ${UFE_MAJOR_VERSION}.${UFE_MINOR_VERSION}.${UFE_PATCH_LEVEL})
 
-    if("${UFE_MAJOR_VERSION}" STREQUAL "0")
+    if(UFE_MAJOR_VERSION VERSION_EQUAL "0")
         math(EXPR UFE_PREVIEW_VERSION_NUM "${UFE_MINOR_VERSION} * 1000 + ${UFE_PATCH_LEVEL}")
-    elseif("${UFE_VERSION}" STREQUAL "4.0.0")
+    elseif(UFE_VERSION VERSION_EQUAL "4.0.0")
         # Temporary. Once next Maya PR is released with UFE v4.0.0 this should
         # be removed (along with all the UFE_PREVIEW_VERSION_NUM checks).
         set(UFE_PREVIEW_VERSION_NUM 4045)
+    elseif(UFE_VERSION VERSION_EQUAL "4.1.0")
+        # Temporary. Once next Maya PR is released with UFE v4.1.0 this should
+        # be removed (along with all the UFE_PREVIEW_VERSION_NUM checks).
+        # TODO - YY needs to be replaced with the "last" patch value before the bump
+        #        to 4.1.0.
+        #set(UFE_PREVIEW_VERSION_NUM 41YY)
+        message(FATAL_ERROR "Modification required to set UFE_PREVIEW_VERSION_NUM for Ufe v4.1")
+    elseif((UFE_VERSION VERSION_GREATER_EQUAL "4.0.100") AND (UFE_VERSION VERSION_LESS "5.0.0"))
+        # Temporary. Once next Maya PR is released with UFE v4.X.0 this should
+        # be changed into UFE_PREVIEW_VERSION_NUM of 4XYY, where YY is the last value from "4.0.YY"
+        math(EXPR UFE_PREVIEW_VERSION_NUM "4 * 1000 + ${UFE_MINOR_VERSION} * 100 + ${UFE_PATCH_LEVEL}")
     endif()
 
     file(STRINGS
         "${UFE_INCLUDE_DIR}/ufe/ufe.h"
         _ufe_features
-        REGEX "#define UFE_V[0-9]+_FEATURES_AVAILABLE$")
+        REGEX "#define UFE_V[0-9]+(_[0-9]+)?_FEATURES_AVAILABLE$")
     foreach(_ufe_tmp ${_ufe_features})
-        if(_ufe_tmp MATCHES "#define UFE_V([0-9]+)_FEATURES_AVAILABLE$")
+        if(_ufe_tmp MATCHES "#define UFE_V([0-9]+(_[0-9]+)?)_FEATURES_AVAILABLE$")
             set(CMAKE_UFE_V${CMAKE_MATCH_1}_FEATURES_AVAILABLE ON)
         endif()
     endforeach()
@@ -139,5 +150,14 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/trie.h")
     if(UFE_HAS_API)
         set(UFE_TRIE_NODE_HAS_CHILDREN_COMPONENTS_ACCESSOR TRUE CACHE INTERNAL "ufeTrieNodeHasChildrenComponentsAccessor")
         message(STATUS "Maya has UFE TrieNode childrenComponents accessor")
+    endif()
+endif()
+
+set(UFE_UINODEGRAPHNODE_HAS_SIZE FALSE CACHE INTERNAL "ufeUINodeGraphNodeHasSize")
+if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/uiNodeGraphNode.h")
+    file(STRINGS ${UFE_INCLUDE_DIR}/ufe/uiNodeGraphNode.h UFE_HAS_API REGEX "getSize")
+    if(UFE_HAS_API)
+        set(UFE_UINODEGRAPHNODE_HAS_SIZE TRUE CACHE INTERNAL "ufeUINodeGraphNodeHasSize")
+        message(STATUS "Maya has UFE UINodeGraphNode size interface")
     endif()
 endif()

@@ -49,8 +49,7 @@ void UsdUINodeGraphNode::SetPosOrSizeCommand::executeImplementation()
 }
 
 UsdUINodeGraphNode::UsdUINodeGraphNode(const UsdSceneItem::Ptr& item)
-    : Ufe::UINodeGraphNode()
-    , fItem(item)
+    : fItem(item)
 {
 }
 
@@ -71,7 +70,7 @@ Ufe::UndoableCommand::Ptr UsdUINodeGraphNode::setPositionCmd(const Ufe::Vector2f
         CoordType::Position, fItem ? fItem->prim() : PXR_NS::UsdPrim(), pos);
 }
 
-#ifdef UFE_V5_FEATURES_AVAILABLE
+#ifdef UFE_UINODEGRAPHNODE_HAS_SIZE
 bool UsdUINodeGraphNode::hasSize() const { return hasPosOrSize(CoordType::Size); }
 
 Ufe::Vector2f UsdUINodeGraphNode::getSize() const { return getPosOrSize(CoordType::Size); }

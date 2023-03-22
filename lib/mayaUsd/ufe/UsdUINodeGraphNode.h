@@ -22,7 +22,13 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Implementation of Ufe::UINodeGraphNode interface for USD objects.
-class MAYAUSD_CORE_PUBLIC UsdUINodeGraphNode : public Ufe::UINodeGraphNode
+class MAYAUSD_CORE_PUBLIC UsdUINodeGraphNode
+    : public
+#ifdef UFE_V4_1_FEATURES_AVAILABLE
+      Ufe::UINodeGraphNode_v41
+#else
+      Ufe::UINodeGraphNode
+#endif
 {
 public:
     typedef std::shared_ptr<UsdUINodeGraphNode> Ptr;
@@ -43,7 +49,7 @@ public:
     bool                      hasPosition() const override;
     Ufe::Vector2f             getPosition() const override;
     Ufe::UndoableCommand::Ptr setPositionCmd(const Ufe::Vector2f& pos) override;
-#ifdef UFE_V5_FEATURES_AVAILABLE
+#ifdef UFE_UINODEGRAPHNODE_HAS_SIZE
     bool                      hasSize() const override;
     Ufe::Vector2f             getSize() const override;
     Ufe::UndoableCommand::Ptr setSizeCmd(const Ufe::Vector2f& size) override;
