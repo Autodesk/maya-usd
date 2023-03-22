@@ -25,6 +25,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         testComboCmd.py
         testContextOps.py
         testDuplicateCmd.py
+        testEditRouting.py
         testGroupCmd.py
         testMoveCmd.py
         testObject3d.py

@@ -15,6 +15,7 @@
 //
 #include "UsdUndoVisibleCommand.h"
 
+#include <mayaUsd/base/tokens.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsd/utils/editRouter.h>
@@ -24,15 +25,15 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdUndoVisibleCommand::UsdUndoVisibleCommand(
-    const UsdPrim&                prim,
-    bool                          vis,
-    const PXR_NS::SdfLayerHandle& layer)
+UsdUndoVisibleCommand::UsdUndoVisibleCommand(const UsdPrim& prim, bool vis)
     : Ufe::UndoableCommand()
     , _prim(prim)
     , _visible(vis)
-    , _layer(layer)
+    , _layer(getEditRouterLayer(MayaUsdEditRoutingTokens->RouteVisibility, prim))
 {
+    EditTargetGuard  guard(prim, _layer);
+    UsdGeomImageable primImageable(prim);
+    enforceAttributeEditAllowed(primImageable.GetVisibilityAttr());
 }
 
 UsdUndoVisibleCommand::~UsdUndoVisibleCommand() { }
@@ -43,15 +44,7 @@ UsdUndoVisibleCommand::Ptr UsdUndoVisibleCommand::create(const UsdPrim& prim, bo
         return nullptr;
     }
 
-    auto layer = getEditRouterLayer(PXR_NS::TfToken("visibility"), prim);
-
-    UsdGeomImageable primImageable(prim);
-
-    EditTargetGuard guard(prim, layer);
-
-    enforceAttributeEditAllowed(primImageable.GetVisibilityAttr());
-
-    return std::make_shared<UsdUndoVisibleCommand>(prim, vis, layer);
+    return std::make_shared<UsdUndoVisibleCommand>(prim, vis);
 }
 
 void UsdUndoVisibleCommand::execute()
