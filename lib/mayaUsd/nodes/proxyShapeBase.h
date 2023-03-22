@@ -289,6 +289,9 @@ public:
     MAYAUSD_CORE_PUBLIC
     bool isIncomingLayer(const std::string& layerIdentifier) const;
 
+    MAYAUSD_CORE_PUBLIC
+    void onAncestorDirty();
+
 protected:
     MAYAUSD_CORE_PUBLIC
     MayaUsdProxyShapeBase(
@@ -364,6 +367,9 @@ private:
     MStatus computeOutStageData(MDataBlock& dataBlock);
     MStatus computeOutStageCacheId(MDataBlock& dataBlock);
 
+    void clearAncestorCallbacks();
+    void updateAncestorCallbacks();
+
     void updateShareMode(
         const UsdStageRefPtr&    sharedUsdStage,
         const UsdStageRefPtr&    unsharedUsdStage,
@@ -426,6 +432,12 @@ private:
 
     // Keep track of the incoming layers
     std::set<std::string> _incomingLayers;
+
+    // Callbacks for listening to ancestor dirty messages.
+    // That includes the proxy shape itself.
+    std::vector<MCallbackId> _ancestorCallbacks;
+    MString                  _ancestorCallbacksPath;
+    bool                     _inAncestorCallback { false };
 
 public:
     // Counter for the number of times compute is re-entered

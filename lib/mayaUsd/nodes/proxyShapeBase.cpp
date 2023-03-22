@@ -85,6 +85,7 @@
 #include <maya/MFnUnitAttribute.h>
 #include <maya/MGlobal.h>
 #include <maya/MItDependencyNodes.h>
+#include <maya/MNodeMessage.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
@@ -522,6 +523,8 @@ void MayaUsdProxyShapeBase::postConstructor()
     setRenderable(true);
 
     MayaUsdProxyStageInvalidateNotice(*this).Send();
+
+    updateAncestorCallbacks();
 }
 
 /* virtual */
@@ -1855,6 +1858,8 @@ MayaUsdProxyShapeBase::MayaUsdProxyShapeBase(
 /* virtual */
 MayaUsdProxyShapeBase::~MayaUsdProxyShapeBase()
 {
+    clearAncestorCallbacks();
+
     // Deregister from the load-rules handling used to transfer load rules
     // between the USD stage and a dynamic attribute on the proxy shape.
     MayaUsdProxyShapeStageExtraData::removeProxyShape(*this);
@@ -2023,6 +2028,68 @@ bool MayaUsdProxyShapeBase::closestPoint(
 }
 
 bool MayaUsdProxyShapeBase::canMakeLive() const { return (bool)_sharedClosestPointDelegate; }
+
+void _proxyShapeAncestorDirty(MObject& node, void* clientData)
+{
+    auto proxyShape = static_cast<MayaUsdProxyShapeBase*>(clientData);
+    if (proxyShape) {
+        proxyShape->onAncestorDirty();
+    }
+}
+
+void MayaUsdProxyShapeBase::clearAncestorCallbacks()
+{
+    for (auto cb : _ancestorCallbacks) {
+        MMessage::removeCallback(cb);
+    }
+
+    _ancestorCallbacks.clear();
+}
+
+void MayaUsdProxyShapeBase::updateAncestorCallbacks()
+{
+    clearAncestorCallbacks();
+
+    // Add our own callback
+    MObject obj = thisMObject();
+    _ancestorCallbacks.push_back(
+        MNodeMessage::addNodeDirtyCallback(obj, _proxyShapeAncestorDirty, this));
+
+    // Remember the path for which we are accumulating the callbacks
+    MDagPath ancestorPath;
+    MDagPath::getAPathTo(obj, ancestorPath);
+    _ancestorCallbacksPath = ancestorPath.fullPathName();
+
+    // Add callbacks for all the ancestors
+    for (ancestorPath.pop(); ancestorPath.isValid() && ancestorPath.length() > 0;
+         ancestorPath.pop()) {
+        MObject ancestorObj = ancestorPath.node();
+        _ancestorCallbacks.push_back(
+            MNodeMessage::addNodeDirtyCallback(ancestorObj, _proxyShapeAncestorDirty, this));
+    }
+}
+
+void MayaUsdProxyShapeBase::onAncestorDirty()
+{
+    if (_inAncestorCallback) {
+        return;
+    }
+    _inAncestorCallback = true;
+
+    // If the proxy shape's path has changed, update ancestor callbacks
+    const MObject obj = thisMObject();
+    MDagPath      proxyShapePath;
+    MDagPath::getAPathTo(obj, proxyShapePath);
+    if (proxyShapePath.fullPathName() != _ancestorCallbacksPath) {
+        updateAncestorCallbacks();
+    }
+
+    // Some plugs (for example 'combinedVisibility') may need updating.
+    // Initialize recomputation of those.
+    ProxyAccessor::forceCompute(_usdAccessor, obj);
+
+    _inAncestorCallback = false;
+}
 
 #if defined(WANT_UFE_BUILD)
 Ufe::Path MayaUsdProxyShapeBase::ufePath() const

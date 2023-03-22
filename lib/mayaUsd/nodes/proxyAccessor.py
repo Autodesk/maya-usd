@@ -144,6 +144,10 @@ def createWorldSpaceAccessPlug(proxyDagPath, sdfPath):
     cmds.setAttr('{}.{}[0]'.format(proxyDagPath,plugNameValueAttr), [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0], type='matrix')
 
 def getSdfValueType(ufeObject, usdAttrName):
+    # 'combinedVisibility' is not a usd prim property, so we define its type manually
+    if usdAttrName == 'combinedVisibility':
+        return Sdf.ValueTypeNames.Int
+
     proxyDagPath, usdPrimPath = getDagAndPrimFromUfe(ufeObject)
 
     stage = mayaUsdLib.GetPrim(proxyDagPath).GetStage()
@@ -223,6 +227,8 @@ def parentItems(ufeChildren, ufeParent, connect=True):
     parentDagPath, parentUsdPrimPath = getDagAndPrimFromUfe(ufeParent)
     parentValueAttr = getOrCreateAccessPlug(ufeParent, '', Sdf.ValueTypeNames.Matrix4d )
     parentConnectionAttr = parentDagPath+'.'+parentValueAttr+'[0]'
+    parentVisibilityAttr = getOrCreateAccessPlug(ufeParent, 'combinedVisibility' )
+    parentVisibilityAttr = parentDagPath+'.'+parentVisibilityAttr
     
     for ufeChild in ufeChildren:
         if isUfeUsdPath(ufeChild):
@@ -238,10 +244,16 @@ def parentItems(ufeChildren, ufeParent, connect=True):
         print('{} "{}" to "{}"'.format(
             ["Disconnecting", "Connecting"][connect],
             parentConnectionAttr, childConnectionAttr))
+        childVisibilityAttr = childDagPath+'.visibility'
+        print('{} "{}" to "{}"'.format(
+            ["Disconnecting", "Connecting"][connect],
+            parentVisibilityAttr, childVisibilityAttr))
         if connect:
             cmds.connectAttr(parentConnectionAttr, childConnectionAttr)
+            cmds.connectAttr(parentVisibilityAttr, childVisibilityAttr)
         else:
             cmds.disconnectAttr(parentConnectionAttr, childConnectionAttr)
+            cmds.disconnectAttr(parentVisibilityAttr, childVisibilityAttr)
 
 def __parent(doParenting):
    ufeSelection = iter(ufe.GlobalSelection.get())
