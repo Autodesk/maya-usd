@@ -113,7 +113,9 @@ UsdUndoRenameCommand::create(const UsdSceneItem::Ptr& srcItem, const Ufe::PathCo
 
 UsdSceneItem::Ptr UsdUndoRenameCommand::renamedItem() const { return _ufeDstItem; }
 
-static void sendNotificationToAllStageProxies(
+namespace {
+
+void sendNotificationToAllStageProxies(
     const UsdStagePtr& stage,
     const UsdPrim&     prim,
     const Ufe::Path&   srcPath,
@@ -141,7 +143,7 @@ static void sendNotificationToAllStageProxies(
     }
 }
 
-static void doUsdRename(
+void doUsdRename(
     const UsdStagePtr& stage,
     const UsdPrim&     prim,
     std::string        newName,
@@ -190,6 +192,38 @@ static void doUsdRename(
     applyToAllPrimSpecs(prim, renameFunc);
 }
 
+void renameHelper(
+    PXR_NS::UsdStageWeakPtr  stage,
+    const UsdSceneItem::Ptr& ufeSrcItem,
+    const Ufe::Path&         srcPath,
+    UsdSceneItem::Ptr&       ufeDstItem,
+    const Ufe::Path&         dstPath,
+    const std::string&       newName)
+{
+    // get the stage's default prim path
+    auto defaultPrimPath = stage->GetDefaultPrim().GetPath();
+
+    // Note: must fetch prim again from its path because undo/redo of composite commands
+    //       (or doing multiple undo and then multiple redo) can make the cached prim
+    //       stale.
+    const UsdPrim srcPrim = stage->GetPrimAtPath(ufeSrcItem->prim().GetPath());
+
+    doUsdRename(stage, srcPrim, newName, srcPath, dstPath);
+
+    // the renamed scene item is a "sibling" of its original name.
+    ufeDstItem = createSiblingSceneItem(srcPath, newName);
+
+    // update stage's default prim
+    if (ufeSrcItem->prim().GetPath() == defaultPrimPath) {
+        stage->SetDefaultPrim(ufeDstItem->prim());
+    }
+
+    // send notification to update UFE data model
+    sendNotificationToAllStageProxies(stage, ufeDstItem->prim(), srcPath, dstPath);
+}
+
+} // namespace 
+
 void UsdUndoRenameCommand::renameRedo()
 {
     // If the new name is the same as the current name, do nothing.
@@ -197,28 +231,10 @@ void UsdUndoRenameCommand::renameRedo()
     if (_newName.empty())
         return;
 
-    // get the stage's default prim path
-    auto defaultPrimPath = _stage->GetDefaultPrim().GetPath();
-
     const Ufe::Path srcPath = _ufeSrcItem->path();
     const Ufe::Path dstPath = srcPath.sibling(Ufe::PathComponent(_newName));
-    // Note: must fetch prim again from its path because undo/redo of composite commands
-    //       (or doing multiple undo and then multiple redo) can make the cached prim
-    //       stale.
-    const UsdPrim srcPrim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
 
-    doUsdRename(_stage, srcPrim, _newName, srcPath, dstPath);
-
-    // the renamed scene item is a "sibling" of its original name.
-    _ufeDstItem = createSiblingSceneItem(srcPath, _newName);
-
-    // update stage's default prim
-    if (_ufeSrcItem->prim().GetPath() == defaultPrimPath) {
-        _stage->SetDefaultPrim(_ufeDstItem->prim());
-    }
-
-    // send notification to update UFE data model
-    sendNotificationToAllStageProxies(_stage, _ufeDstItem->prim(), srcPath, dstPath);
+    renameHelper(_stage, _ufeSrcItem, srcPath, _ufeDstItem, dstPath, _newName);
 }
 
 void UsdUndoRenameCommand::renameUndo()
@@ -228,29 +244,11 @@ void UsdUndoRenameCommand::renameUndo()
     if (_newName.empty())
         return;
 
-    // get the stage's default prim path
-    auto defaultPrimPath = _stage->GetDefaultPrim().GetPath();
-
-    const Ufe::Path srcPath = _ufeDstItem->path();
-    const Ufe::Path dstPath = _ufeSrcItem->path();
-    // Note: must fetch prim again from its path because undo/redo of composite commands
-    //       (or doing multiple undo and then multiple redo) can make the cached prim
-    //       stale.
-    const UsdPrim     prim = _stage->GetPrimAtPath(_ufeDstItem->prim().GetPath());
+    const Ufe::Path   srcPath = _ufeDstItem->path();
+    const Ufe::Path   dstPath = _ufeSrcItem->path();
     const std::string newName = _ufeSrcItem->prim().GetName();
 
-    doUsdRename(_stage, prim, newName, srcPath, dstPath);
-
-    // the renamed scene item is a "sibling" of its original name.
-    _ufeSrcItem = createSiblingSceneItem(_ufeDstItem->path(), _ufeSrcItem->prim().GetName());
-
-    // update stage's default prim
-    if (_ufeDstItem->prim().GetPath() == defaultPrimPath) {
-        _stage->SetDefaultPrim(_ufeSrcItem->prim());
-    }
-
-    // send notification to update UFE data model
-    sendNotificationToAllStageProxies(_stage, prim, srcPath, dstPath);
+    renameHelper(_stage, _ufeDstItem, srcPath, _ufeSrcItem, dstPath, newName);
 }
 
 void UsdUndoRenameCommand::undo()
