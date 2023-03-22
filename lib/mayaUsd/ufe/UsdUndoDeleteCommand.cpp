@@ -19,36 +19,18 @@
 #include "private/Utils.h"
 
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/utils/layers.h>
 
-#include <pxr/usd/pcp/layerStack.h>
 #include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/usd/editContext.h>
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #endif
 
-namespace {
-#ifdef MAYA_ENABLE_NEW_PRIM_DELETE
-bool hasLayersMuted(const PXR_NS::UsdPrim& prim)
-{
-    const PXR_NS::PcpPrimIndex& primIndex = prim.GetPrimIndex();
-
-    for (const PXR_NS::PcpNodeRef node : primIndex.GetNodeRange()) {
-
-        TF_AXIOM(node);
-
-        const PXR_NS::PcpLayerStackSite&   site = node.GetSite();
-        const PXR_NS::PcpLayerStackRefPtr& layerStack = site.layerStack;
-
-        const std::set<std::string>& mutedLayers = layerStack->GetMutedLayers();
-        if (mutedLayers.size() > 0) {
-            return true;
-        }
-    }
-    return false;
-}
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#include <mayaUsd/ufe/UsdAttributes.h>
 #endif
-} // anonymous namespace
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -72,6 +54,8 @@ void UsdUndoDeleteCommand::execute()
     if (!_prim.IsValid())
         return;
 
+    enforceMutedLayer(_prim, "remove");
+
     MayaUsd::ufe::InAddOrDeleteOperation ad;
 
     UsdUndoBlock undoBlock(&_undoableItem);
@@ -80,16 +64,23 @@ void UsdUndoDeleteCommand::execute()
     const auto& stage = _prim.GetStage();
     auto        targetPrimSpec = stage->GetEditTarget().GetPrimSpecForScenePath(_prim.GetPath());
 
-    if (hasLayersMuted(_prim)) {
-        TF_WARN("Cannot remove prim because there are muted layers.");
-        return;
-    }
-
     if (MayaUsd::ufe::applyCommandRestrictionNoThrow(_prim, "delete")) {
-        auto retVal = stage->RemovePrim(_prim.GetPath());
-        if (!retVal) {
-            TF_VERIFY(retVal, "Failed to delete '%s'", _prim.GetPath().GetText());
-        }
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4024)
+        UsdAttributes::removeAttributesConnections(_prim);
+#endif
+#endif
+        PrimSpecFunc deleteFunc
+            = [stage](const UsdPrim& prim, const SdfPrimSpecHandle& primSpec) -> void {
+            PXR_NS::UsdEditContext ctx(stage, primSpec->GetLayer());
+            if (!stage->RemovePrim(prim.GetPath())) {
+                const std::string error
+                    = TfStringPrintf("Failed to delete prim \"%s\".", prim.GetPath().GetText());
+                TF_WARN("%s", error.c_str());
+                throw std::runtime_error(error);
+            }
+        };
+        applyToAllPrimSpecs(_prim, deleteFunc);
     }
 #else
     _prim.SetActive(false);

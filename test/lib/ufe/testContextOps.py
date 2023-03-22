@@ -1416,5 +1416,65 @@ class ContextOpsTestCase(unittest.TestCase):
         _validateLoadAndUnloadItems(ball15Item, ['Load', 'Load with Descendants'])
 
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
+    def testAssignExistingMaterialToSingleObject(self):
+        """This test assigns an existing material from the stage via ContextOps capabilities."""
+        cmds.file(new=True, force=True)
+
+        # Create a proxy shape with empty stage to start with.
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        # Create a ContextOps interface for the proxy shape.
+        proxyPathSegment = mayaUtils.createUfePathSegment(proxyShape)
+        proxyShapePath = ufe.Path([proxyPathSegment])
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+
+        rootHier = ufe.Hierarchy.hierarchy(proxyShapeItem)
+
+        # Create a single object in our stage to test with.
+        cmd = contextOps.doOpCmd(['Add New Prim', 'Capsule'])
+        self.assertIsNotNone(cmd)
+        ufeCmd.execute(cmd)
+        capsuleItem = rootHier.children()[0]
+        capsulePrim = usdUtils.getPrimFromSceneItem(capsuleItem)
+        contextOps = ufe.ContextOps.contextOps(capsuleItem)
+
+        # We should have no material assigned after creating an object.
+        capsulePrim = usdUtils.getPrimFromSceneItem(capsuleItem)
+        self.assertFalse(capsulePrim.HasAPI(UsdShade.MaterialBindingAPI))
+
+        # Add a new material to the stage (but don't assign it just yet).
+        cmd = contextOps.doOpCmd(['Add New Material', 'USD', 'UsdPreviewSurface'])
+        self.assertIsNotNone(cmd)
+        ufeCmd.execute(cmd)
+
+        # We created a new material, but it should not have been assigned to our Capsule.
+        capsulePrim = usdUtils.getPrimFromSceneItem(capsuleItem)
+        self.assertFalse(capsulePrim.HasAPI(UsdShade.MaterialBindingAPI))
+        
+        # Now we explictly assign the material to our Capsule.
+        cmd = contextOps.doOpCmd(['Assign Existing Material', '', '/Capsule1/UsdPreviewSurface1' ])
+        self.assertIsNotNone(cmd)
+        ufeCmd.execute(cmd)
+
+        # Confirm the material is assigned.
+        capsuleBindAPI = UsdShade.MaterialBindingAPI(capsulePrim)
+        self.assertTrue(capsuleBindAPI)
+        self.assertEqual(capsuleBindAPI.GetDirectBinding().GetMaterialPath(), Sdf.Path("/Capsule1/UsdPreviewSurface1"))
+
+        # Make sure the command plays nice with undo/redo.
+        cmds.undo()
+        self.assertFalse(capsulePrim.HasAPI(UsdShade.MaterialBindingAPI))
+
+        cmds.redo()
+        self.assertTrue(capsulePrim.HasAPI(UsdShade.MaterialBindingAPI))
+        self.assertEqual(capsuleBindAPI.GetDirectBinding().GetMaterialPath(), Sdf.Path("/Capsule1/UsdPreviewSurface1"))
+
+        cmds.undo()
+        self.assertFalse(capsulePrim.HasAPI(UsdShade.MaterialBindingAPI))
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

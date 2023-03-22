@@ -390,6 +390,7 @@ private:
     void _OnStageContentsChanged(const UsdNotice::StageContentsChanged& notice);
     void _OnStageObjectsChanged(const UsdNotice::ObjectsChanged& notice);
     void _OnLayerMutingChanged(const UsdNotice::LayerMutingChanged& notice);
+    void _OnStageEditTargetChanged(const UsdNotice::StageEditTargetChanged& notice);
 
     UsdMayaStageNoticeListener _stageNoticeListener;
 
@@ -414,6 +415,11 @@ private:
     // For unshared composition
     SdfLayerRefPtr _unsharedStageSessionLayer;
     SdfLayerRefPtr _unsharedStageRootLayer;
+
+    // Current edit target for the stage. Kept in a dynamic attribute for save/load,
+    // transferred to this variable on the first compute. Afterward, when the edit
+    // target is changed, this gets updated via a notification listener.
+    SdfLayerRefPtr _targetLayer;
 
     // We need to keep track of unshared sublayers (otherwise they get removed)
     std::vector<SdfLayerRefPtr> _unsharedStageRootSublayers;

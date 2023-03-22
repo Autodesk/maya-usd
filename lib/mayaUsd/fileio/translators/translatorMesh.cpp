@@ -264,7 +264,8 @@ TranslatorMeshRead::TranslatorMeshRead(
     // ==================================================
     // Code below this point is for handling deforming meshes, so if we don't
     // have time samples to deal with, we're done.
-    if (m_pointsNumTimeSamples == 0u) {
+    // A single sample can be treated as static
+    if (m_pointsNumTimeSamples < 2u) {
         return;
     }
 
@@ -394,6 +395,14 @@ MStatus TranslatorMeshRead::setPointBasedDeformerForMayaNode(
     status = MGlobal::clearSelectionList();
     CHECK_MSTATUS(status);
 
+    const MFnDagNode dagNodeFn(mayaObj, &status);
+    CHECK_MSTATUS(status);
+
+#if MAYA_API_VERSION >= 20220000
+    status = MGlobal::selectByName(dagNodeFn.fullPathName().asChar());
+    CHECK_MSTATUS(status);
+#endif
+
     // Create the point based deformer node for this prim.
     const std::string pointBasedDeformerNodeName = TfStringPrintf(
         "usdPointBasedDeformerNode%s",
@@ -443,6 +452,10 @@ MStatus TranslatorMeshRead::setPointBasedDeformerForMayaNode(
     status = dgMod.doIt();
     CHECK_MSTATUS(status);
 
+    // The deformer command changed in Maya 2022 to no longer add a tweak,
+    // so only modify the tweak when in Maya 2020 or earlier.
+#if MAYA_API_VERSION < 20220000
+
     // Add the Maya object to the point based deformer node's set.
     const MFnGeometryFilter geomFilterFn(m_pointBasedDeformerNode, &status);
     CHECK_MSTATUS(status);
@@ -464,8 +477,6 @@ MStatus TranslatorMeshRead::setPointBasedDeformerForMayaNode(
     // *after* the point based deformer. To do this, we need to dig for the
     // name of the tweak deformer node that Maya created to be able to pass it
     // to the reorderDeformers command.
-    const MFnDagNode dagNodeFn(mayaObj, &status);
-    CHECK_MSTATUS(status);
 
     // XXX: This seems to be the "most sane" way of finding the tweak deformer
     // node's name...
@@ -486,6 +497,7 @@ MStatus TranslatorMeshRead::setPointBasedDeformerForMayaNode(
         dagNodeFn.fullPathName().asChar());
     status = MGlobal::executePythonCommand(reorderDeformersCmd.c_str());
     CHECK_MSTATUS(status);
+#endif
 
     return status;
 }

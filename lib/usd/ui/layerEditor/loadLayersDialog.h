@@ -80,17 +80,10 @@ public:
 
     // returns the path to store, either the rel or abs path
     std::string pathToUse() const;
-    // returns the absolute path, always
-    std::string absolutePath() const { return _absolutePath; }
     // sets the absolute path
-    void setAbsolutePath(const std::string& path);
+    void setPathToUse(const std::string& path);
 
 protected:
-    void onTextChanged(const QString& text);
-    void onRelativeButtonChecked(bool checked);
-
-protected:
-    std::string       _absolutePath;
     std::string       _parentPath;
     LoadLayersDialog* _parent;
     QLabel*           _label;
@@ -98,7 +91,6 @@ protected:
     QAbstractButton*  _openBrowser;
     QAbstractButton*  _trashIcon;
     QAbstractButton*  _addPathIcon;
-    QCheckBox*        _convertToRel;
 };
 
 }; // namespace UsdLayerEditor

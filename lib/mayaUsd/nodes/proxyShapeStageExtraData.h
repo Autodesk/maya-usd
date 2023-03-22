@@ -34,7 +34,7 @@ namespace MAYAUSD_NS_DEF {
 /// triggered before a scene is saved to copy the current proxy shape extra data from the stage
 /// to the proxy shape.
 ///
-/// The extra data saved this way currently are: payload load rules.
+/// The extra data saved this way currently are: payload load rules and current target layer.
 
 class MayaUsdProxyShapeStageExtraData
 {
@@ -67,6 +67,14 @@ public:
     /// \brief save load rules of the tracked proxy shape corresponding to the given stage.
     MAYAUSD_CORE_PUBLIC
     static void saveLoadRules(const UsdStageRefPtr& stage);
+
+    /// \brief save the target layers of tracked proxy shapes.
+    MAYAUSD_CORE_PUBLIC
+    static void saveAllTargetLayers();
+
+    /// \brief save the target layer of the tracked proxy shape corresponding to the given stage.
+    MAYAUSD_CORE_PUBLIC
+    static void saveTargetLayer(const UsdStageRefPtr& stage);
 };
 
 } // namespace MAYAUSD_NS_DEF

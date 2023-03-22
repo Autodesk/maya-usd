@@ -27,14 +27,7 @@ install(FILES ${HEADERS}
 # plugInfo
 # -----------------------------------------------------------------------------
 
-if(IS_WINDOWS)
-    set(PLUG_INFO_LIBRARY_PATH "mayaUsd.dll")
-elseif(IS_MACOSX)
-    set(PLUG_INFO_LIBRARY_PATH "mayaUsd.dylib")
-elseif(IS_LINUX)
-    set(PLUG_INFO_LIBRARY_PATH "mayaUsd.so")
-endif()
-
+set(PLUG_INFO_LIBRARY_PATH ${CMAKE_SHARED_LIBRARY_PREFIX}${PROJECT_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
 set(PLUG_INFO_DIR ${CMAKE_INSTALL_PREFIX}/lib/usd/sceneIndex/resources)
 
 configure_file(

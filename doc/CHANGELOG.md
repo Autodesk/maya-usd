@@ -1,5 +1,67 @@
 # Changelog
 
+## [v0.22.0] - 2023-02-15
+
+**Build:**
+* Skip test if UFE attribute metadata not available [#2834](https://github.com/Autodesk/maya-usd/pull/2834)
+* Use the PXR namespace directive [#2827](https://github.com/Autodesk/maya-usd/pull/2827)
+* Bump UFE version to 4.0 [#2819](https://github.com/Autodesk/maya-usd/pull/2819)
+* Fix VP2 test [#2787](https://github.com/Autodesk/maya-usd/pull/2787)
+* Fix empty values for remapUVSetsTo [#2784](https://github.com/Autodesk/maya-usd/pull/2784)
+* Fix USD Min build after outliner rework [#2781](https://github.com/Autodesk/maya-usd/pull/2781)
+
+**Translation Framework:**
+* Improve NURBS export [#2835](https://github.com/Autodesk/maya-usd/pull/2835)
+* Import as anim cache [#2829](https://github.com/Autodesk/maya-usd/pull/2829)
+* Token updates in preparation for Schema Versioning [#2826](https://github.com/Autodesk/maya-usd/pull/2826)
+* Invalid beziers [#2813](https://github.com/Autodesk/maya-usd/pull/2813)
+* Fix material export when preserving UVset names [#2776](https://github.com/Autodesk/maya-usd/pull/2776)
+* Export Normals by default and modify docs to match code behaviour [#2768](https://github.com/Autodesk/maya-usd/pull/2768)
+
+**Workflow:**
+* Relative File Paths:
+  * Save USD root file relative to scene file [#2854](https://github.com/Autodesk/maya-usd/pull/2854) [#2839](https://github.com/Autodesk/maya-usd/pull/2839)
+  * Load my USD root file as relative to the scene file [#2848](https://github.com/Autodesk/maya-usd/pull/2848)
+* Invalid extension in Layer editor would cause crash [#2847](https://github.com/Autodesk/maya-usd/pull/2847) [#2845](https://github.com/Autodesk/maya-usd/pull/2845)
+* Clean options of materials scope name [#2840](https://github.com/Autodesk/maya-usd/pull/2840)
+* Preserve NodeGraph boundaries on duplicate [#2836](https://github.com/Autodesk/maya-usd/pull/2836)
+* Prevents a hang that can occur when forming certain connections [#2828](https://github.com/Autodesk/maya-usd/pull/2828)
+* Prettify: Add space on lower to upper transition [#2824](https://github.com/Autodesk/maya-usd/pull/2824)
+* Add Ufe log on console to notify shader attribute without default value [#2823](https://github.com/Autodesk/maya-usd/pull/2823)
+* Prevent string conversions to throw exceptions with empty value [#2822](https://github.com/Autodesk/maya-usd/pull/2822)
+* Fix plugInfo to use relative path [#2821](https://github.com/Autodesk/maya-usd/pull/2821)
+* Fix USD export curve options [#2820](https://github.com/Autodesk/maya-usd/pull/2820)
+* Shorten nice names by trimming schema name [#2818](https://github.com/Autodesk/maya-usd/pull/2818)
+* Add reparenting rules for Shaders, NodeGraphs and Materials [#2811](https://github.com/Autodesk/maya-usd/pull/2811)
+* Allow native file dialog when loading layers [#2807](https://github.com/Autodesk/maya-usd/pull/2807)
+* Fix crash when editing two prims [#2806](https://github.com/Autodesk/maya-usd/pull/2806)
+* Add scene index plugin code [#2805](https://github.com/Autodesk/maya-usd/pull/2805)
+* Correctly identify orphaned edited prims [#2803](https://github.com/Autodesk/maya-usd/pull/2803)
+* mayaUsd.ufe.stagePath() returns incorrect value [#2801](https://github.com/Autodesk/maya-usd/pull/2801)
+* Delete compound attributes does not remove their connections [#2800](https://github.com/Autodesk/maya-usd/pull/2800)
+* Improve diagnostics [#2799](https://github.com/Autodesk/maya-usd/pull/2799)
+* Interaction between deactivation and cancel edit [#2794](https://github.com/Autodesk/maya-usd/pull/2794)
+* Merge top UFE classification for glsfx and USD shader [#2791](https://github.com/Autodesk/maya-usd/pull/2791)
+* UFE USD camera commands [#2789](https://github.com/Autodesk/maya-usd/pull/2789)
+* Correctly expose Material and NodeGraph attributes in Maya Attribute Editor [#2788](https://github.com/Autodesk/maya-usd/pull/2788)
+* Fix a bug where materials got created in the wrong scope [#2783](https://github.com/Autodesk/maya-usd/pull/2783)
+* Outliner rework of Material items [#2775](https://github.com/Autodesk/maya-usd/pull/2775)
+* Correctly disable merge to USD [#2769](https://github.com/Autodesk/maya-usd/pull/2769)
+* merge-to-USD into variants [#2764](https://github.com/Autodesk/maya-usd/pull/2764)
+* Auto re-edit when merging a Maya Reference [#2762](https://github.com/Autodesk/maya-usd/pull/2762)
+
+**Render:**
+* Adding a MaterialX v1.38.5 update for closures [#2858](https://github.com/Autodesk/maya-usd/pull/2858)
+* Enable instances to determine non empty stage in preparation for USD v0.23.02 [#2844](https://github.com/Autodesk/maya-usd/pull/2844)
+* UDIM: Use default LOD values in anisotropic mode [#2816](https://github.com/Autodesk/maya-usd/pull/2816)
+* Remove frequent warning in Arnold/RenderMan shading workflows [#2814](https://github.com/Autodesk/maya-usd/pull/2814)
+* Fix opacity computations for MaterialX and USD materials [#2790](https://github.com/Autodesk/maya-usd/pull/2790)
+* Implement display layer's hide-on-playback flag for instanced geometry [#2780](https://github.com/Autodesk/maya-usd/pull/2780)
+
+**Documentation:**
+* Update documentation of the export command [#2808](https://github.com/Autodesk/maya-usd/pull/2808)
+
+
 ## [v0.21.0] - 2022-12-13
 
 **Build:**
@@ -620,7 +682,7 @@
   - Avoid opening duplicated usd stages on Maya file load [#1727](https://github.com/Autodesk/maya-usd/pull/1727)
   - Fix excluded prim paths [#1726](https://github.com/Autodesk/maya-usd/pull/1726)
   - Add duplicate check during translator context deserialise based on prim path match [#1710](https://github.com/Autodesk/maya-usd/pull/1710)
-  - Ignored setting playback range if no time code found from USD [\#1686](https://github.com/Autodesk/maya-usd/pull/1686)
+  - Ignored setting playback range if no time code found from USD [#1686](https://github.com/Autodesk/maya-usd/pull/1686)
 - Use the API schema class UsdLuxLightAPI in place of USD typed class [#1701](https://github.com/Autodesk/maya-usd/pull/1701)
 - Adopt use of references when passing ReaderContext when reading RfM [#1653](https://github.com/Autodesk/maya-usd/pull/1653)
 - Update RfMLight translators to use codeless schemas [#1648](https://github.com/Autodesk/maya-usd/pull/1648)

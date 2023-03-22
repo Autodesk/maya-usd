@@ -279,6 +279,13 @@ void _ConfigureReprs()
         /*flatShadingEnabled=*/false,
         /*blendWireframeColor=*/false);
 
+    const HdMeshReprDesc reprDescWire(
+        HdMeshGeomStyleHullEdgeOnly,
+        HdCullStyleDontCare,
+        HdMeshReprDescTokens->surfaceShader,
+        /*flatShadingEnabled=*/false,
+        /*blendWireframeColor=*/true);
+
     // Hull desc for shaded display, edge desc for selection highlight.
     HdMesh::ConfigureRepr(HdReprTokens->smoothHull, reprDescHull, reprDescEdge);
     HdMesh::ConfigureRepr(HdVP2ReprTokens->smoothHullUntextured, reprDescHull, reprDescEdge);
@@ -294,6 +301,10 @@ void _ConfigureReprs()
 
     // Forced representations are used for instanced geometry with display layer overrides
     HdMesh::ConfigureRepr(HdVP2ReprTokens->forcedBbox, reprDescEdge);
+    HdMesh::ConfigureRepr(HdVP2ReprTokens->forcedWire, reprDescWire);
+    // forcedUntextured repr doesn't use reprDescEdge descriptor because
+    // its selection highlight will be drawn through a non-forced repr
+    HdMesh::ConfigureRepr(HdVP2ReprTokens->forcedUntextured, reprDescHull);
 
     // smooth hull for untextured display
     HdBasisCurves::ConfigureRepr(
@@ -880,33 +891,42 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
     }
 }
 
-SdfPath ProxyRenderDelegate::GetPathInPrototype(const SdfPath& id)
+InstancePrototypePath ProxyRenderDelegate::GetPathInPrototype(const SdfPath& id)
 {
-    auto usdInstancePath = GetScenePrimPath(id, 0);
+    HdInstancerContext instancerContext;
+    auto               usdInstancePath = GetScenePrimPath(id, 0, &instancerContext);
+
+    // In case of point instancer, we already have the path in prototype, return it.
+    if (!instancerContext.empty()) {
+        return InstancePrototypePath(usdInstancePath, kPointInstancing);
+    }
+
+    // In case of a native instance, obtain the path in prototype and return it.
     auto usdInstancePrim = _proxyShapeData->UsdStage()->GetPrimAtPath(usdInstancePath);
-    return usdInstancePrim.GetPrimInPrototype().GetPath();
+    auto usdPrototypePath = usdInstancePrim.GetPrimInPrototype().GetPath();
+    return InstancePrototypePath(usdPrototypePath, kNativeInstancing);
 }
 
 void ProxyRenderDelegate::UpdateInstancingMapEntry(
-    const SdfPath& oldPathInPrototype,
-    const SdfPath& newPathInPrototype,
-    const SdfPath& rprimId)
+    const InstancePrototypePath& oldPathInPrototype,
+    const InstancePrototypePath& newPathInPrototype,
+    const SdfPath&               rprimId)
 {
     if (oldPathInPrototype != newPathInPrototype) {
         // remove the old entry from the map
-        if (!oldPathInPrototype.IsEmpty()) {
+        if (!oldPathInPrototype.first.IsEmpty()) {
             auto range = _instancingMap.equal_range(oldPathInPrototype);
             auto it = std::find(
                 range.first,
                 range.second,
-                std::pair<const SdfPath, SdfPath>(oldPathInPrototype, rprimId));
+                std::pair<const InstancePrototypePath, SdfPath>(oldPathInPrototype, rprimId));
             if (it != range.second) {
                 _instancingMap.erase(it);
             }
         }
 
         // add new entry to the map
-        if (!newPathInPrototype.IsEmpty()) {
+        if (!newPathInPrototype.first.IsEmpty()) {
             _instancingMap.insert(std::make_pair(newPathInPrototype, rprimId));
         }
     }
@@ -926,14 +946,26 @@ void ProxyRenderDelegate::_DirtyUsdSubtree(const UsdPrim& prim)
             | MayaUsdRPrim::DirtySelectionHighlight | HdChangeTracker::DirtyMaterialId;
 
         if (prim.IsA<UsdGeomGprim>()) {
-            if (prim.IsInstanceProxy()) {
-                auto range = _instancingMap.equal_range(prim.GetPrimInPrototype().GetPath());
+            auto range = _instancingMap.equal_range(
+                InstancePrototypePath(prim.GetPath(), kPointInstancing));
+            if (range.first != range.second) {
+                // Point instancing prim
+                for (auto it = range.first; it != range.second; ++it) {
+                    if (_renderIndex->HasRprim(it->second)) {
+                        changeTracker.MarkRprimDirty(it->second, dirtyBits);
+                    }
+                }
+            } else if (prim.IsInstanceProxy()) {
+                // Native instancing prim
+                range = _instancingMap.equal_range(
+                    InstancePrototypePath(prim.GetPrimInPrototype().GetPath(), kNativeInstancing));
                 for (auto it = range.first; it != range.second; ++it) {
                     if (_renderIndex->HasRprim(it->second)) {
                         changeTracker.MarkRprimDirty(it->second, dirtyBits);
                     }
                 }
             } else {
+                // Non-instanced prim
                 auto indexPath = _sceneDelegate->ConvertCachePathToIndexPath(prim.GetPath());
                 if (_renderIndex->HasRprim(indexPath)) {
                     changeTracker.MarkRprimDirty(indexPath, dirtyBits);
@@ -1310,15 +1342,6 @@ SdfPath ProxyRenderDelegate::GetScenePrimPath(const SdfPath& rprimId, int instan
 #endif
 
     return usdPath;
-}
-
-bool ProxyRenderDelegate::SupportPerInstanceDisplayLayers(const SdfPath& rprimId) const
-{
-    // For now, per-instance display layers are supported only for native instancing
-    HdInstancerContext instancerContext;
-    GetScenePrimPath(rprimId, 0, &instancerContext);
-    bool nativeInstancing = instancerContext.empty();
-    return nativeInstancing;
 }
 
 //! \brief  Selection for both instanced and non-instanced cases.

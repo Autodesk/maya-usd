@@ -105,6 +105,14 @@ enum class UsdPointInstancesPickMode
     Prototypes
 };
 
+enum InstancingType
+{
+    kNativeInstancing,
+    kPointInstancing
+};
+
+using InstancePrototypePath = std::pair<SdfPath, InstancingType>;
+
 /*! \brief  USD Proxy rendering routine via VP2 MPxSubSceneOverride
 
     This drawing routine leverages HdVP2RenderDelegate for synchronization
@@ -172,9 +180,6 @@ public:
     MAYAUSD_CORE_PUBLIC
     SdfPath GetScenePrimPath(const SdfPath& rprimId, int instanceIndex) const;
 #endif
-
-    MAYAUSD_CORE_PUBLIC
-    bool SupportPerInstanceDisplayLayers(const SdfPath& rprimId) const;
 
     MAYAUSD_CORE_PUBLIC
     void SelectionChanged();
@@ -254,13 +259,13 @@ public:
 
     // Takes in a path to instanced rprim and returns a path to the correspoding UsdPrim
     MAYAUSD_CORE_PUBLIC
-    SdfPath GetPathInPrototype(const SdfPath& id);
+    InstancePrototypePath GetPathInPrototype(const SdfPath& id);
 
     MAYAUSD_CORE_PUBLIC
     void UpdateInstancingMapEntry(
-        const SdfPath& oldPathInPrototype,
-        const SdfPath& newPathInPrototype,
-        const SdfPath& rprimId);
+        const InstancePrototypePath& oldPathInPrototype,
+        const InstancePrototypePath& newPathInPrototype,
+        const SdfPath&               rprimId);
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     MAYAUSD_CORE_PUBLIC
@@ -368,7 +373,7 @@ private:
     bool                                _needTexturedMaterials = false;
 
     // maps from a path in USD prototype to the corresponding rprim paths
-    std::multimap<SdfPath, SdfPath> _instancingMap;
+    std::multimap<InstancePrototypePath, SdfPath> _instancingMap;
 
     bool _isPopulated {
         false

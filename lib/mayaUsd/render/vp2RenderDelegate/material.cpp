@@ -85,6 +85,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #if PXR_VERSION >= 2102
@@ -245,8 +246,9 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (USD_Mtlx_VP2_Material)
     (NG_Maya)
-    (image)
-    (tiledimage)
+    (ND_surface)
+    (ND_standard_surface_surfaceshader)
+    (filename)
     (i_geomprop_)
     (geomprop)
     (uaddressmode)
@@ -918,6 +920,16 @@ void _AddMissingTangents(mx::DocumentPtr& mtlxDoc)
     }
 }
 
+bool _MxHasFilenameInput(const mx::NodeDefPtr nodeDef)
+{
+    for (const auto& input : nodeDef->getActiveInputs()) {
+        if (input->getType() == _mtlxTokens->filename.GetString()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 #endif // WANT_MATERIALX_BUILD
 
 #if PXR_VERSION <= 2211
@@ -957,10 +969,30 @@ bool _IsUsdUVTexture(const HdMaterialNode& node)
     if (_IsMaterialX(node)) {
         mx::NodeDefPtr nodeDef
             = _GetMaterialXData()._mtlxLibrary->getNodeDef(node.identifier.GetString());
-        if (nodeDef
-            && (nodeDef->getNodeString() == _mtlxTokens->image.GetString()
-                || nodeDef->getNodeString() == _mtlxTokens->tiledimage.GetString())) {
-            return true;
+        return nodeDef && _MxHasFilenameInput(nodeDef);
+    }
+#endif
+
+    return false;
+}
+
+bool _IsTextureFilenameAttribute(const HdMaterialNode& node, const TfToken& token)
+{
+
+    if (node.identifier.GetString().rfind(UsdImagingTokens->UsdUVTexture.GetString(), 0) == 0
+        && token == _tokens->file) {
+        return true;
+    }
+
+#ifdef WANT_MATERIALX_BUILD
+    if (_IsMaterialX(node)) {
+        mx::NodeDefPtr nodeDef
+            = _GetMaterialXData()._mtlxLibrary->getNodeDef(node.identifier.GetString());
+        if (nodeDef) {
+            const auto input = nodeDef->getActiveInput(token.GetString());
+            if (input && input->getType() == _mtlxTokens->filename.GetString()) {
+                return true;
+            }
         }
     }
 #endif
@@ -1456,24 +1488,103 @@ MHWRender::MTexture* _LoadTexture(
 #endif
     switch (specFormat) {
     // Single Channel
-    case HioFormatFloat32:
-        desc.fFormat = MHWRender::kR32_FLOAT;
-        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
-        break;
-    case HioFormatFloat16:
-        desc.fFormat = MHWRender::kR16_FLOAT;
-        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
-        break;
-    case HioFormatUNorm8:
-        desc.fFormat = MHWRender::kR8_UNORM;
-        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
-        break;
+    case HioFormatFloat32: {
+        // We want white instead or red when expanding to RGB, so convert to kR32G32B32_FLOAT
+        constexpr int bpp_RGB32 = 3 * 4;
+
+        desc.fFormat = MHWRender::kR32G32B32_FLOAT;
+        desc.fBytesPerRow = spec.width * bpp_RGB32;
+        desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+        std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+        uint32_t* texels32 = (uint32_t*)texels.data();
+        uint32_t* storage32 = (uint32_t*)storage.data();
+
+        for (int p = 0; p < spec.height * spec.width; p++) {
+            const uint32_t pixel = *storage32++;
+            *texels32++ = pixel;
+            *texels32++ = pixel;
+            *texels32++ = pixel;
+        }
+
+        texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+    } break;
+    case HioFormatFloat16: {
+        // We want white instead or red when expanding to RGB, so convert to kR16G16B16A16_FLOAT
+        constexpr int bpp_8 = 8;
+
+        desc.fFormat = MHWRender::kR16G16B16A16_FLOAT;
+        desc.fBytesPerRow = spec.width * bpp_8;
+        desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+        std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+        GfHalf         opaqueAlpha(1.0f);
+        const uint16_t alphaBits = opaqueAlpha.bits();
+
+        uint16_t* texels16 = (uint16_t*)texels.data();
+        uint16_t* storage16 = (uint16_t*)storage.data();
+
+        for (int p = 0; p < spec.height * spec.width; p++) {
+            const uint16_t pixel = *storage16++;
+            *texels16++ = pixel;
+            *texels16++ = pixel;
+            *texels16++ = pixel;
+            *texels16++ = alphaBits;
+        }
+
+        texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+    } break;
+    case HioFormatUNorm8: {
+        // We want white instead or red when expanding to RGB, so convert to kR8G8B8A8_UNORM
+        constexpr int bpp_4 = 4;
+
+        desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
+        desc.fBytesPerRow = spec.width * bpp_4;
+        desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+        std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+        uint8_t* texels8 = (uint8_t*)texels.data();
+        uint8_t* storage8 = (uint8_t*)storage.data();
+
+        for (int p = 0; p < spec.height * spec.width; p++) {
+            const uint8_t pixel = *storage8++;
+            *texels8++ = pixel;
+            *texels8++ = pixel;
+            *texels8++ = pixel;
+            *texels8++ = 0xFF;
+        }
+
+        texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+        isColorSpaceSRGB = image->IsColorSpaceSRGB();
+    } break;
 
     // Dual channel (quite rare, but seen with mono + alpha files)
-    case HioFormatFloat32Vec2:
-        desc.fFormat = MHWRender::kR32G32_FLOAT;
-        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
-        break;
+    case HioFormatFloat32Vec2: {
+        // R32G32 is supported by VP2. But we want black and white, so R32G32B32A32.
+        constexpr int bpp_RGBA32 = 4 * 4;
+
+        desc.fFormat = MHWRender::kR32G32B32A32_FLOAT;
+        desc.fBytesPerRow = spec.width * bpp_RGBA32;
+        desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+        std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+        uint32_t* texels32 = (uint32_t*)texels.data();
+        uint32_t* storage32 = (uint32_t*)storage.data();
+
+        for (int p = 0; p < spec.height * spec.width; p++) {
+            const uint32_t pixel = *storage32++;
+            *texels32++ = pixel;
+            *texels32++ = pixel;
+            *texels32++ = pixel;
+            *texels32++ = *storage32++;
+        }
+
+        texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+    } break;
     case HioFormatFloat16Vec2: {
         // R16G16 is not supported by VP2. Converted to R16G16B16A16.
         constexpr int bpp_8 = 8;
@@ -1484,18 +1595,15 @@ MHWRender::MTexture* _LoadTexture(
 
         std::vector<unsigned char> texels(desc.fBytesPerSlice);
 
-        for (int y = 0; y < spec.height; y++) {
-            for (int x = 0; x < spec.width; x++) {
-                const int t = spec.width * y + x;
-                texels[t * bpp_8 + 0] = storage[t * bpp + 0];
-                texels[t * bpp_8 + 1] = storage[t * bpp + 1];
-                texels[t * bpp_8 + 2] = storage[t * bpp + 0];
-                texels[t * bpp_8 + 3] = storage[t * bpp + 1];
-                texels[t * bpp_8 + 4] = storage[t * bpp + 0];
-                texels[t * bpp_8 + 5] = storage[t * bpp + 1];
-                texels[t * bpp_8 + 6] = storage[t * bpp + 2];
-                texels[t * bpp_8 + 7] = storage[t * bpp + 3];
-            }
+        uint16_t* texels16 = (uint16_t*)texels.data();
+        uint16_t* storage16 = (uint16_t*)storage.data();
+
+        for (int p = 0; p < spec.height * spec.width; p++) {
+            const uint16_t pixel = *storage16++;
+            *texels16++ = pixel;
+            *texels16++ = pixel;
+            *texels16++ = pixel;
+            *texels16++ = *storage16++;
         }
 
         texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
@@ -1512,14 +1620,15 @@ MHWRender::MTexture* _LoadTexture(
 
         std::vector<unsigned char> texels(desc.fBytesPerSlice);
 
-        for (int y = 0; y < spec.height; y++) {
-            for (int x = 0; x < spec.width; x++) {
-                const int t = spec.width * y + x;
-                texels[t * bpp_4] = storage[t * bpp];
-                texels[t * bpp_4 + 1] = storage[t * bpp];
-                texels[t * bpp_4 + 2] = storage[t * bpp];
-                texels[t * bpp_4 + 3] = storage[t * bpp + 1];
-            }
+        uint8_t* texels8 = (uint8_t*)texels.data();
+        uint8_t* storage8 = (uint8_t*)storage.data();
+
+        for (int p = 0; p < spec.height * spec.width; p++) {
+            const uint8_t pixel = *storage8++;
+            *texels8++ = pixel;
+            *texels8++ = pixel;
+            *texels8++ = pixel;
+            *texels8++ = *storage8++;
         }
 
         texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
@@ -1720,6 +1829,16 @@ TfToken MayaDescriptorToToken(const MVertexBufferDescriptor& descriptor)
     return token;
 }
 
+struct MStringHash
+{
+    std::size_t operator()(const MString& s) const
+    {
+        // To get rid of boost here, switch to C++17 compatible implementation:
+        //     return std::hash(std::string_view(s.asChar(), s.length()))();
+        return boost::hash_range(s.asChar(), s.asChar() + s.length());
+    }
+};
+
 } // anonymous namespace
 
 class HdVP2Material::TextureLoadingTask
@@ -1860,6 +1979,16 @@ void ConvertNetworkMapToUntextured(HdMaterialNetworkMap& networkMap)
         auto eraseBegin = std::remove_if(network.nodes.begin(), network.nodes.end(), isInputNode);
         network.nodes.erase(eraseBegin, network.nodes.end());
         network.relationships.clear();
+#ifdef WANT_MATERIALX_BUILD
+        // Raw MaterialX surface constructor node does not render. Replace with default
+        // standard_surface:
+        for (auto& node : network.nodes) {
+            if (node.identifier == _mtlxTokens->ND_surface) {
+                node.identifier = _mtlxTokens->ND_standard_surface_surfaceshader;
+                node.parameters.clear();
+            }
+        }
+#endif
     }
 }
 
@@ -2392,12 +2521,18 @@ TfToken _RequiresColorManagement(
         return {};
     }
 
-    const std::string& upstreamCategory = upstreamDef->getNodeString();
-    if (upstreamCategory != _mtlxTokens->image.GetString()
-        && upstreamCategory != _mtlxTokens->tiledimage.GetString()) {
-        // upstream is not an image
+    if (!_MxHasFilenameInput(upstreamDef)) {
+        // upstream is not a texture
         return {};
     }
+
+    std::vector<TfToken> fileInputs;
+    for (const auto& input : upstreamDef->getActiveInputs()) {
+        if (input->getType() == _mtlxTokens->filename.GetString()) {
+            fileInputs.push_back(TfToken(input->getName()));
+        }
+    }
+
     mx::OutputPtr colorOutput = upstreamDef->getActiveOutput(_mtlxTokens->out.GetString());
     if (!colorOutput) {
         return {};
@@ -2409,17 +2544,22 @@ TfToken _RequiresColorManagement(
         return {};
     }
 
-    auto itFileParam = upstream.parameters.find(_tokens->file);
-    if (itFileParam == upstream.parameters.end()
-        || !itFileParam->second.IsHolding<SdfAssetPath>()) {
-        // No file name to check:
-        return {};
+    SdfAssetPath filenameVal;
+    for (const auto& inputName : fileInputs) {
+        auto itFileParam = upstream.parameters.find(inputName);
+        if (itFileParam != upstream.parameters.end()
+            && itFileParam->second.IsHolding<SdfAssetPath>()) {
+            filenameVal = itFileParam->second.Get<SdfAssetPath>();
+            break;
+        }
     }
 
-    const SdfAssetPath& val = itFileParam->second.Get<SdfAssetPath>();
-    const std::string&  resolvedPath = val.GetResolvedPath();
-    const std::string&  assetPath = val.GetAssetPath();
-    MString             colorRuleCmd;
+    const std::string& resolvedPath = filenameVal.GetResolvedPath();
+    if (resolvedPath.empty()) {
+        return {};
+    }
+    const std::string& assetPath = filenameVal.GetAssetPath();
+    MString            colorRuleCmd;
     colorRuleCmd.format(
         "colorManagementFileRules -evaluate \"^1s\";",
         (!resolvedPath.empty() ? resolvedPath : assetPath).c_str());
@@ -2968,6 +3108,8 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
     MProfilingScope profilingScope(
         HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L2, "UpdateShaderInstance");
 
+    std::unordered_set<MString, MStringHash> updatedAttributes;
+
     const bool matIsTransparent = _IsTransparent(mat);
     if (matIsTransparent != _surfaceShader->isTransparent()) {
         _surfaceShader->setIsTransparent(matIsTransparent);
@@ -3033,6 +3175,7 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
             const VtValue& value = entry.second;
 
             MString paramName = nodeName + token.GetText();
+            updatedAttributes.insert(paramName);
 
             MStatus status = MStatus::kFailure;
 
@@ -3068,7 +3211,7 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
                 const SdfAssetPath& val = value.UncheckedGet<SdfAssetPath>();
                 const std::string&  resolvedPath = val.GetResolvedPath();
                 const std::string&  assetPath = val.GetAssetPath();
-                if (_IsUsdUVTexture(node) && token == _tokens->file) {
+                if (_IsTextureFilenameAttribute(node, token)) {
                     const HdVP2TextureInfo& info = _owner->_AcquireTexture(
                         sceneDelegate, !resolvedPath.empty() ? resolvedPath : assetPath, node);
 
@@ -3158,6 +3301,59 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
                 TF_DEBUG(HDVP2_DEBUG_MATERIAL)
                     .Msg("Failed to set shader parameter %s\n", paramName.asChar());
             }
+        }
+    }
+
+    // Now that we have updated all parameters that were driven by Hydra, we must make sure all the
+    // non-hydra-controlled parameters are at their default values. This fixes missing refresh when
+    // deleting an authored attribute. The shader must not remember the value it had when the
+    // attribute was authored.
+    MStringArray parameterList;
+    _surfaceShader->parameterList(parameterList);
+    for (unsigned int i = 0; i < parameterList.length(); ++i) {
+        const auto& parameterName = parameterList[i];
+        if (updatedAttributes.count(parameterName)
+            || _surfaceShader->isVaryingParameter(parameterName)) {
+            continue;
+        }
+
+        switch (_surfaceShader->parameterType(parameterName)) {
+        case MHWRender::MShaderInstance::kInvalid:
+        case MHWRender::MShaderInstance::kSampler: continue;
+        case MHWRender::MShaderInstance::kBoolean: {
+            MStatus status;
+            void*   defaultValue = _surfaceShader->parameterDefaultValue(parameterName, status);
+            if (status) {
+                _surfaceShader->setParameter(parameterName, static_cast<bool*>(defaultValue)[0]);
+            }
+        } break;
+        case MHWRender::MShaderInstance::kInteger: {
+            MStatus status;
+            void*   defaultValue = _surfaceShader->parameterDefaultValue(parameterName, status);
+            if (status) {
+                _surfaceShader->setParameter(parameterName, static_cast<int*>(defaultValue)[0]);
+            }
+        } break;
+        case MHWRender::MShaderInstance::kFloat:
+        case MHWRender::MShaderInstance::kFloat2:
+        case MHWRender::MShaderInstance::kFloat3:
+        case MHWRender::MShaderInstance::kFloat4:
+        case MHWRender::MShaderInstance::kFloat4x4Row:
+        case MHWRender::MShaderInstance::kFloat4x4Col: {
+            MStatus status;
+            void*   defaultValue = _surfaceShader->parameterDefaultValue(parameterName, status);
+            if (status) {
+                _surfaceShader->setParameter(parameterName, static_cast<float*>(defaultValue));
+            }
+        } break;
+        case MHWRender::MShaderInstance::kTexture1:
+        case MHWRender::MShaderInstance::kTexture2:
+        case MHWRender::MShaderInstance::kTexture3:
+        case MHWRender::MShaderInstance::kTextureCube:
+            MHWRender::MTextureAssignment assignment;
+            assignment.texture = nullptr;
+            _surfaceShader->setParameter(parameterName, assignment);
+            break;
         }
     }
 }

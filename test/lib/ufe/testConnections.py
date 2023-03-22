@@ -979,5 +979,179 @@ class ConnectionTestCase(unittest.TestCase):
         cmd = connectionHandler.createConnectionCmd(compoundDisplacementAttr, materialDisplacementAttr)
         cmd.execute()
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4043', 'Test only available in UFE preview version 0.4.43 and greater since it uses the UsdUndoDeleteConnectionCommand')
+    def testRemovePropertiesWithConnections(self):
+        '''Test delete connections and properties.'''
+
+        # Load a scene.
+
+        testFile = testUtils.getTestScene('properties', 'properties.usda')
+        shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
+
+        ufeParentItem = ufeUtils.createUfeSceneItem(shapeNode,
+            '/mtl/UsdPreviewSurface1')
+        ufePreviewItem = ufeUtils.createUfeSceneItem(shapeNode,
+            '/mtl/UsdPreviewSurface1/UsdPreviewSurface1')
+        ufeSurfaceItem = ufeUtils.createUfeSceneItem(shapeNode,
+            '/mtl/UsdPreviewSurface1/surface1')
+        ufeCompoundItem = ufeUtils.createUfeSceneItem(shapeNode,
+            '/mtl/UsdPreviewSurface1/compound')
+        ufeChildCompoundItem = ufeUtils.createUfeSceneItem(shapeNode,
+            '/mtl/UsdPreviewSurface1/compound/UsdPreviewSurface2')
+
+        self.assertIsNotNone(ufeParentItem)
+        self.assertIsNotNone(ufePreviewItem)
+        self.assertIsNotNone(ufeSurfaceItem)
+        self.assertIsNotNone(ufeCompoundItem)
+        self.assertIsNotNone(ufeChildCompoundItem)
+
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(ufeParentItem.runTimeId())
+        self.assertIsNotNone(connectionHandler)
+
+        # Get the prims.
+        parentPrim = usdUtils.getPrimFromSceneItem(ufeParentItem)
+        previewPrim = usdUtils.getPrimFromSceneItem(ufePreviewItem)
+        surfacePrim = usdUtils.getPrimFromSceneItem(ufeSurfaceItem)
+        compoundPrim = usdUtils.getPrimFromSceneItem(ufeCompoundItem)
+        childCompoundPrim = usdUtils.getPrimFromSceneItem(ufeChildCompoundItem)
+
+        # Get the attributes.
+        parentAttrs = ufe.Attributes.attributes(ufeParentItem)
+        previewAttrs = ufe.Attributes.attributes(ufePreviewItem)
+        surfaceAttrs = ufe.Attributes.attributes(ufeSurfaceItem)
+        compoundAttrs = ufe.Attributes.attributes(ufeCompoundItem)
+        childCompoundAttrs = ufe.Attributes.attributes(ufeChildCompoundItem)
+
+        # 1. Delete node (not compound) connections.
+
+        previewClearcoat = previewAttrs.attribute('inputs:clearcoat')
+        previewSurface = previewAttrs.attribute('outputs:surface')
+        parentClearcoat = parentAttrs.attribute('inputs:clearcoat')
+        parentSurface = parentAttrs.attribute('outputs:surface')
+        surfaceBsdf = surfaceAttrs.attribute('inputs:bsdf')
+
+        self.assertIsNotNone(previewClearcoat)
+        self.assertIsNotNone(previewSurface)
+        self.assertIsNotNone(parentClearcoat)
+        self.assertIsNotNone(parentSurface)
+        self.assertIsNotNone(surfaceBsdf)
+
+        # 1.1 Delete the connection between two nodes (not compounds).
+        cmd = connectionHandler.deleteConnectionCmd(previewSurface, surfaceBsdf)
+        cmd.execute()
+
+        # Property kept since there is a connection to the parent.
+        self.assertTrue(previewPrim.HasProperty('outputs:surface'))
+        # The property has been deleted since there are no more connections.
+        self.assertFalse(surfacePrim.HasProperty('outputs:surface'))
+
+        # 1.2 Delete the connection between the node and its parent (outputs).
+        cmd = connectionHandler.deleteConnectionCmd(previewSurface, parentSurface)
+        cmd.execute()
+
+        # The property has been deleted since there are no more connections.
+        self.assertFalse(previewPrim.HasProperty('outputs:surface'))
+        # Property kept since it is on the boundary.
+        self.assertTrue(parentPrim.HasProperty('outputs:surface'))
+
+        # 1.3 Delete the connection between the node and its parent (inputs).
+        cmd = connectionHandler.deleteConnectionCmd(parentClearcoat, previewClearcoat)
+        cmd.execute()
+
+        # The property has been deleted since there are no more connections.
+        self.assertFalse(previewPrim.HasProperty('inputs:clearcoat'))
+        # Property kept since it is on the boundary.
+        self.assertTrue(parentPrim.HasProperty('inputs:clearcoat'))
+
+        # 2. Delete compound connections.
+
+        compoundDisplacement = compoundAttrs.attribute('outputs:displacement')
+        compoundPort = compoundAttrs.attribute('outputs:port')
+        parentDisplacement = parentAttrs.attribute('outputs:displacement')
+        parentPort = parentAttrs.attribute('outputs:port')
+
+        self.assertIsNotNone(compoundDisplacement)
+        self.assertIsNotNone(compoundPort)
+        self.assertIsNotNone(parentDisplacement)
+        self.assertIsNotNone(parentPort)
+
+        # 2.1 Delete compound connections to the parent.
+        cmd = connectionHandler.deleteConnectionCmd(compoundPort, parentPort)
+        cmd.execute()
+
+        # Properties kept since they are on the boundary.
+        self.assertTrue(compoundPrim.HasProperty('outputs:port'))
+        self.assertTrue(parentPrim.HasProperty('outputs:port'))
+
+        cmd = connectionHandler.deleteConnectionCmd(compoundDisplacement, parentDisplacement)
+        cmd.execute()
+
+        # Properties kept since they are on the boundary.
+        self.assertTrue(compoundPrim.HasProperty('outputs:displacement'))
+        self.assertTrue(parentPrim.HasProperty('outputs:displacement'))
+
+        # 2.2 Delete compound connections from the parent.
+        compoundClearcoatRoughness = compoundAttrs.attribute('inputs:clearcoatRoughness')
+        compoundPort = compoundAttrs.attribute('inputs:port')
+        parentClearcoatRoughness = parentAttrs.attribute('inputs:clearcoatRoughness')
+        parentPort = parentAttrs.attribute('inputs:port')
+
+        self.assertIsNotNone(compoundClearcoatRoughness)
+        self.assertIsNotNone(compoundPort)
+        self.assertIsNotNone(parentClearcoatRoughness)
+        self.assertIsNotNone(parentPort)
+
+        cmd = connectionHandler.deleteConnectionCmd(parentPort, compoundPort)
+        cmd.execute()
+
+        # Properties kept since they are on the boundary.
+        self.assertTrue(compoundPrim.HasProperty('inputs:port'))
+        self.assertTrue(parentPrim.HasProperty('inputs:port'))
+
+        cmd = connectionHandler.deleteConnectionCmd(parentClearcoatRoughness, compoundClearcoatRoughness)
+        cmd.execute()
+
+        # Properties kept since they are on the boundary.
+        self.assertTrue(compoundPrim.HasProperty('inputs:clearcoatRoughness'))
+        self.assertTrue(parentPrim.HasProperty('inputs:clearcoatRoughness'))
+
+        # 3. Delete connections inside the compound.
+
+        childDisplacement = childCompoundAttrs.attribute('outputs:displacement')
+        childClearcoatRoughness = childCompoundAttrs.attribute('inputs:clearcoatRoughness')
+        childClearcoat = childCompoundAttrs.attribute('inputs:clearcoat')
+        compoundClearcoat = compoundAttrs.attribute('inputs:clearcoat')
+       
+        self.assertIsNotNone(childDisplacement)
+        self.assertIsNotNone(childClearcoatRoughness)
+        self.assertIsNotNone(childClearcoat)
+        self.assertIsNotNone(compoundClearcoat)
+
+        # 3.1 Delete child compound connections to the parent.
+        cmd = connectionHandler.deleteConnectionCmd(childDisplacement, compoundDisplacement)
+        cmd.execute()
+
+        # Property kept since it is on the boundary.
+        self.assertTrue(compoundPrim.HasProperty('outputs:displacement'))
+        # The property has been deleted since there are no more connections.
+        self.assertFalse(childCompoundPrim.HasProperty('outputs:displacement'))
+
+        # 3.2 Delete child compound connections from the parent.
+        cmd = connectionHandler.deleteConnectionCmd(compoundClearcoatRoughness, childClearcoatRoughness)
+        cmd.execute()
+
+        # Property kept since it is on the boundary.
+        self.assertTrue(compoundPrim.HasProperty('inputs:clearcoatRoughness'))
+        # The property has been deleted since there are no more connections.
+        self.assertFalse(childCompoundPrim.HasProperty('inputs:clearcoatRoughness'))
+
+        cmd = connectionHandler.deleteConnectionCmd(compoundClearcoat, childClearcoat)
+        cmd.execute()
+
+        # Property kept since it is on the boundary.
+        self.assertTrue(compoundPrim.HasProperty('inputs:clearcoat'))
+        # The property has been deleted since there are no more connections.
+        self.assertFalse(childCompoundPrim.HasProperty('inputs:clearcoat'))
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

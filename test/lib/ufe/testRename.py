@@ -416,6 +416,102 @@ class RenameTestCase(unittest.TestCase):
             newName = 'Ball_35_Renamed'
             cmds.rename(newName)
 
+    def testRenameRestrictionSessionLayer(self):
+        '''
+        Verify that having an opinion in the session layer does *not* prevent
+        renaming a prim defined on another layer.
+        '''
+        # Open usdCylinder.ma scene in testSamples
+        mayaUtils.openCylinderScene()
+
+        # clear the selection to start off
+        cmds.select(clear=True)
+
+        # Some values used during the test
+        oldName = 'pCylinder1'
+        newName = 'pCylinder1_Renamed'
+        rotation = [30., 20., 10.]
+        mayaPathSegment = mayaUtils.createUfePathSegment('|mayaUsdTransform|shape')
+
+        # Some helper functions used during the test
+        def getItem(name):
+            itemPathSegment = usdUtils.createUfePathSegment('/' + name)
+            itemPath = ufe.Path([mayaPathSegment, itemPathSegment])
+            return ufe.Hierarchy.createItem(itemPath)
+
+        def applyRotation(item, rotation):
+            itemTrf = ufe.Transform3d.transform3d(item)
+            itemTrf.rotate(*rotation)
+            itemTrf = None
+
+        def verifyRotation(item, rotation):
+            itemTrf = ufe.Transform3d.transform3d(item)
+            self.assertEqual(itemTrf.rotation(), ufe.PyUfe.Vector3d(*rotation))
+
+        def applyRename(name):
+            cmds.rename(newName)
+
+        def verifyName(expectedName, expectedType, badName):
+            # The renamed item is in the selection and has the correct name and type
+            snIter = iter(ufe.GlobalSelection.get())
+            item = next(snIter)
+            itemName = str(item.path().back())
+
+            self.assertEqual(itemName, expectedName)
+            self.assertEqual(item.nodeType(), expectedType)
+
+            # The renamed item is a child of its parent
+            propsChildren = propsHierarchy.children()
+            propsChildrenNames = [str(child.path().back()) for child in propsChildren]
+
+            self.assertEqual(len(propsChildren), len(propsChildrenPre))
+            self.assertIn(item, propsChildren)
+
+            self.assertNotIn(badName, propsChildrenNames)
+            self.assertIn(expectedName, propsChildrenNames)
+
+        # Select a the USD cylinder object
+        self.assertIsNotNone(getItem(oldName))
+        cylinderItemType = getItem(oldName).nodeType()
+
+        propsItem = ufe.Hierarchy.hierarchy(getItem(oldName)).parent()
+        propsHierarchy = ufe.Hierarchy.hierarchy(propsItem)
+        propsChildrenPre = propsHierarchy.children()
+
+        ufe.GlobalSelection.get().append(getItem(oldName))
+
+        # Get the USD stage
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+
+        # Add an opinion about the cylinder in the session layer
+        stage.SetEditTarget(stage.GetSessionLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
+
+        applyRotation(getItem(oldName), rotation)
+        verifyRotation(getItem(oldName), rotation)
+
+        # Verify the cylinder name and hierarchy before we do anything.
+        verifyName(oldName, cylinderItemType, newName)
+
+        # Rename the cylinder in the root layer
+        stage.SetEditTarget(stage.GetRootLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+
+        applyRename(newName)
+        verifyName(newName, cylinderItemType, oldName)
+        verifyRotation(getItem(newName), rotation)
+
+        # Undo the rename and verify that the name and hierarchy are back to what they were
+        cmds.undo()
+        verifyName(oldName, cylinderItemType, newName)
+        verifyRotation(getItem(oldName), rotation)
+
+        # Redo the rename and verify that the name and hierarchy are changed again
+        cmds.redo()
+        verifyName(newName, cylinderItemType, oldName)
+        verifyRotation(getItem(newName), rotation)
+
+
     def testRenameRestrictionHasSpecs(self):
         '''Restrict renaming USD node. Cannot rename a node that doesn't contribute to the final composed prim'''
 
@@ -878,6 +974,64 @@ class RenameTestCase(unittest.TestCase):
         self.assertIsNotNone(carotteItem)
         self.assertEqual(carotteItem, renamedItem)
 
+    def testRenameRestrictionMutedLayer(self):
+        '''
+        Test rename restriction - we don't allow renaming a prim
+        when there are opinions on a muted layer.
+        '''
+        
+        # Create a stage
+        cmds.file(new=True, force=True)
+        import mayaUsd_createStageWithNewLayer
+
+        proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+        self.assertTrue(stage)
+
+        # Helpers
+        def createLayer(index):
+            layer = Sdf.Layer.CreateAnonymous()
+            stage.GetRootLayer().subLayerPaths.append(layer.identifier)
+            return layer
+
+        def targetSubLayer(layer):
+            stage.SetEditTarget(layer)
+            self.assertEqual(stage.GetEditTarget().GetLayer(), layer)
+            layer = None
+
+        def muteSubLayer(layer):
+            # Note: mute by passing through the stage, otherwise the stage won't get recomposed
+            stage.MuteLayer(layer.identifier)
+
+        def setSphereRadius(radius):
+            spherePrim = stage.GetPrimAtPath('/A/ball')
+            spherePrim.GetAttribute('radius').Set(radius)
+            spherePrim = None
+
+        # Add two new layers
+        topLayer = createLayer(0)
+        bottomLayer = createLayer(1)
+
+        # Create a xform prim named A and a sphere on the bottom layer
+        targetSubLayer(bottomLayer)
+        stage.DefinePrim('/A', 'Xform')
+        stage.DefinePrim('/A/ball', 'Sphere')
+        setSphereRadius(7.12)
+
+        targetSubLayer(topLayer)
+        setSphereRadius(4.32)
+        
+        # Set target to bottom layer and mute the top layer
+        targetSubLayer(bottomLayer)
+        muteSubLayer(topLayer)
+
+        # Try to rename the prim with muted opinion: it should fail
+        with self.assertRaises(RuntimeError):
+            cmds.rename('%s,/A/ball' % proxyShapePathStr, 'ball2')
+
+        self.assertTrue(stage.GetPrimAtPath('/A/ball'))
+        self.assertFalse(stage.GetPrimAtPath('/A/group1/ball'))
+        
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

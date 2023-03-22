@@ -192,17 +192,49 @@ SdfLayerHandle defPrimSpecLayer(const UsdPrim& prim)
     // The source layer is the one in which there exists a def primSpec, not
     // an over.
 
-    SdfLayerHandle defLayer;
-    auto           layerStack = prim.GetStage()->GetLayerStack();
-
+    auto layerStack = prim.GetStage()->GetLayerStack();
     for (auto layer : layerStack) {
-        auto primSpec = layer->GetPrimAtPath(prim.GetPath());
-        if (primSpec && (primSpec->GetSpecifier() == SdfSpecifierDef)) {
-            defLayer = layer;
-            break;
-        }
+        SdfPrimSpecHandle primSpec = layer->GetPrimAtPath(prim.GetPath());
+        if (!primSpec)
+            continue;
+
+        const SdfSpecifier spec = primSpec->GetSpecifier();
+        if (spec != SdfSpecifierDef)
+            continue;
+
+        return layer;
     }
-    return defLayer;
+    return {};
+}
+
+std::vector<LayerAndPath> getAuthoredLayerAndPaths(const UsdPrim& prim)
+{
+    std::vector<LayerAndPath> layerAndPaths;
+
+    for (SdfPrimSpecHandle primSpec : prim.GetPrimStack()) {
+        if (!primSpec)
+            continue;
+        layerAndPaths.emplace_back(primSpec->GetLayer(), primSpec->GetPath());
+    }
+
+    return layerAndPaths;
+}
+
+LayerAndPath getDefiningLayerAndPath(const UsdPrim& prim)
+{
+    SdfPrimSpecHandleVector primSpecs = prim.GetPrimStack();
+    for (SdfPrimSpecHandle primSpec : primSpecs) {
+        if (!primSpec)
+            continue;
+
+        const SdfSpecifier spec = primSpec->GetSpecifier();
+        if (spec != SdfSpecifierDef)
+            continue;
+
+        return LayerAndPath(primSpec->GetLayer(), primSpec->GetPath());
+    }
+
+    return LayerAndPath();
 }
 
 SdfPrimSpecHandle getPrimSpecAtEditTarget(const UsdPrim& prim)

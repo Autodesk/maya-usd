@@ -26,7 +26,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (bbox) \
     (defaultMaterial) \
     (smoothHullUntextured) \
-    (forcedBbox)
+    (forcedBbox) \
+    (forcedWire) \
+    (forcedUntextured)
 
 #define HDVP2_TOKENS \
     (displayColorAndOpacity) \

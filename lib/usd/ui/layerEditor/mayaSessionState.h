@@ -60,7 +60,10 @@ public:
     std::vector<std::string>
     loadLayersUI(const QString& title, const std::string& default_path) const override;
     // ui to save a layer. returns the path
-    bool saveLayerUI(QWidget* in_parent, std::string* out_filePath) const override;
+    bool saveLayerUI(
+        QWidget*                      in_parent,
+        std::string*                  out_filePath,
+        const PXR_NS::SdfLayerRefPtr& parentLayer) const override;
     void printLayer(const PXR_NS::SdfLayerRefPtr& layer) const override;
 
     // main API

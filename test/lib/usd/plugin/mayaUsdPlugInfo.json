@@ -4,7 +4,7 @@
          "PlugPath":"testPlugModule1",
          "VersionCheck":{
             "Python":"@MAYA_PY_VERSION@",
-            "USD":"@USD_VERSION@"
+            "USD":"@ADSK_USD_VERSION@"
          }
       },
       {
