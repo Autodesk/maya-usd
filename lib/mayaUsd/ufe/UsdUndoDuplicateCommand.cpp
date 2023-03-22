@@ -18,6 +18,7 @@
 #include "private/UfeNotifGuard.h"
 #include "private/Utils.h"
 
+#include <mayaUsd/base/tokens.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/editRouter.h>
 #include <mayaUsd/utils/loadRules.h>
@@ -58,7 +59,7 @@ UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(const UsdSceneItem::Ptr& srcIte
     _usdDstPath = parentPrim.GetPath().AppendChild(TfToken(newName));
 
     _srcLayer = MayaUsdUtils::getDefiningLayerAndPath(srcPrim).layer;
-    _dstLayer = getEditRouterLayer(PXR_NS::TfToken("duplicate"), srcPrim);
+    _dstLayer = getEditRouterLayer(MayaUsdEditRoutingTokens->RouteDuplicate, srcPrim);
 }
 
 UsdUndoDuplicateCommand::~UsdUndoDuplicateCommand() { }
