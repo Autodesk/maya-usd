@@ -30,6 +30,7 @@
 #include <maya/MDGModifier.h>
 #include <maya/MDagModifier.h>
 #include <maya/MDoubleArray.h>
+#include <maya/MEulerRotation.h>
 #include <maya/MFnAnimCurve.h>
 #include <maya/MFnComponentListData.h>
 #include <maya/MFnDependencyNode.h>
@@ -44,7 +45,6 @@
 #include <maya/MObjectHandle.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
-#include <maya/MEulerRotation.h>
 
 using namespace MAYAUSD_NS_DEF;
 
@@ -181,8 +181,8 @@ bool _SetAnimPlugData(
     const MString&                  attr,
     MDoubleArray&                   values,
     MTimeArray&                     times,
-    const UsdMayaPrimReaderContext* context,
-    MObject&                        result)
+    const UsdMayaPrimReaderContext* context
+    )
 {
     MStatus status;
 
@@ -195,7 +195,7 @@ bool _SetAnimPlugData(
     }
 
     MFnAnimCurve animFn;
-    result = animFn.create(plug, nullptr, &status);
+    MObject animObj = animFn.create(plug, nullptr, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     // XXX: Why do the input arrays need to be mutable here?
@@ -204,7 +204,7 @@ bool _SetAnimPlugData(
 
     if (context) {
         // Register node for undo/redo
-        context->RegisterNewMayaNode(animFn.name().asChar(), result);
+        context->RegisterNewMayaNode(animFn.name().asChar(), animObj);
     }
     return true;
 }
@@ -252,13 +252,13 @@ bool _SetTransformAnim(
             }
         }
 
-        if(applyEulerFilter) {
-            MPlug rotOrder = transformNode.findPlug("rotateOrder");
+        if (applyEulerFilter) {
+            MPlug                         rotOrder = transformNode.findPlug("rotateOrder");
             MEulerRotation::RotationOrder order
                 = static_cast<MEulerRotation::RotationOrder>(rotOrder.asInt());
 
             MEulerRotation last(rotates[0][0], rotates[1][0], rotates[2][0], order);
-            for( unsigned int i = 1; i < rotates[0].length(); ++i) {
+            for (unsigned int i = 1; i < rotates[0].length(); ++i) {
                 MEulerRotation current(rotates[0][i], rotates[1][i], rotates[2][i], order);
                 current.setToClosestSolution(last);
                 rotates[0][i] = current[0];
@@ -269,35 +269,18 @@ bool _SetTransformAnim(
         }
 
         for (int c = 0; c < 3; ++c) {
-            MObject discard;
-            MObject rotCurve;
             if (!_SetAnimPlugData(
                     transformNode,
                     _MayaTokens->translates[c],
                     translates[c],
                     times,
-                    context,
-                    discard)
+                    context)
                 || !_SetAnimPlugData(
-                    transformNode, _MayaTokens->rotates[c], rotates[c], times, context, rotCurve)
+                    transformNode, _MayaTokens->rotates[c], rotates[c], times, context)
                 || !_SetAnimPlugData(
-                    transformNode, _MayaTokens->scales[c], scales[c], times, context, discard)) {
+                    transformNode, _MayaTokens->scales[c], scales[c], times, context)) {
                 return false;
             }
-            if (!rotCurve.isNull())
-                curves.append(rotCurve);
-        }
-        // This feels hacky, but I couldn't find a C++ api method for running the
-        if (applyEulerFilter && curves.length() == 3) {
-            std::ostringstream cmd;
-            cmd << "filterCurve";
-            for (unsigned i = 0; i < 3; ++i) {
-                MFnDependencyNode fn(curves[i]);
-                cmd << " " << fn.name();
-            }
-            cmd << ";";
-            // MGlobal::displayWarning(cmd.str().c_str());
-            MGlobal::executeCommand(cmd.str().c_str(), false);
         }
     } else {
         const auto& xform = xforms.front();

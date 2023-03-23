@@ -207,7 +207,7 @@ static void _setMayaAttribute(
         if (!plg.isNull()) {
             plg.setDouble(xVal[0]);
             if (xVal.size() > 1 && (applyEulerFilter || _isArrayVarying(xVal))) {
-                MObject curve = _setAnimPlugData(plg, xVal, timeArray, context);
+                _setAnimPlugData(plg, xVal, timeArray, context);
             }
         }
     }
@@ -216,7 +216,7 @@ static void _setMayaAttribute(
         if (!plg.isNull()) {
             plg.setDouble(yVal[0]);
             if (yVal.size() > 1 && (applyEulerFilter || _isArrayVarying(yVal))) {
-                MObject curve = _setAnimPlugData(plg, yVal, timeArray, context);
+                _setAnimPlugData(plg, yVal, timeArray, context);
             }
         }
     }
@@ -225,7 +225,7 @@ static void _setMayaAttribute(
         if (!plg.isNull()) {
             plg.setDouble(zVal[0]);
             if (zVal.size() > 1 && (applyEulerFilter || _isArrayVarying(zVal))) {
-                MObject curve = _setAnimPlugData(plg, zVal, timeArray, context);
+                _setAnimPlugData(plg, zVal, timeArray, context);
             }
         }
     }
