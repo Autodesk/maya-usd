@@ -30,9 +30,6 @@
 #include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usd/stage.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
-
 namespace {
 #ifdef UFE_V3_FEATURES_AVAILABLE
 
@@ -54,10 +51,11 @@ bool setUsdAttrMetadata(
     }
 
     // If attribute is locked don't allow setting Metadata.
-    enforceAttributeEditAllowed(attr);
+    MAYAUSD_NS_DEF::ufe::enforceAttributeEditAllowed(attr);
 
     PXR_NS::UsdPrim        prim = attr.GetPrim();
-    PXR_NS::SdfLayerHandle layer = getAttrEditRouterLayer(prim, attr.GetName());
+    PXR_NS::SdfLayerHandle layer
+        = MAYAUSD_NS_DEF::getAttrEditRouterLayer(prim, attr.GetName());
     PXR_NS::UsdEditContext ctx(prim.GetStage(), layer);
 
     PXR_NS::TfToken tok(key);
@@ -98,6 +96,9 @@ bool setUsdAttrMetadata(
 #endif
 
 } // namespace
+
+namespace MAYAUSD_NS_DEF {
+namespace ufe {
 
 //------------------------------------------------------------------------------
 // UsdAttributeHolder:
