@@ -193,7 +193,7 @@ void doUsdRename(
 }
 
 void renameHelper(
-    PXR_NS::UsdStageWeakPtr  stage,
+    const UsdStagePtr&       stage,
     const UsdSceneItem::Ptr& ufeSrcItem,
     const Ufe::Path&         srcPath,
     UsdSceneItem::Ptr&       ufeDstItem,
@@ -231,8 +231,8 @@ void UsdUndoRenameCommand::renameRedo()
     if (_newName.empty())
         return;
 
-    const Ufe::Path srcPath = _ufeSrcItem->path();
-    const Ufe::Path dstPath = srcPath.sibling(Ufe::PathComponent(_newName));
+    auto srcPath = _ufeSrcItem->path();
+    auto dstPath = srcPath.sibling(Ufe::PathComponent(_newName));
 
     renameHelper(_stage, _ufeSrcItem, srcPath, _ufeDstItem, dstPath, _newName);
 }
@@ -244,8 +244,8 @@ void UsdUndoRenameCommand::renameUndo()
     if (_newName.empty())
         return;
 
-    const Ufe::Path   srcPath = _ufeDstItem->path();
-    const Ufe::Path   dstPath = _ufeSrcItem->path();
+    auto              srcPath = _ufeDstItem->path();
+    auto              dstPath = _ufeSrcItem->path();
     const std::string newName = _ufeSrcItem->prim().GetName();
 
     renameHelper(_stage, _ufeDstItem, srcPath, _ufeSrcItem, dstPath, newName);
