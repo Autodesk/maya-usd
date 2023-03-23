@@ -122,6 +122,7 @@ class EditRoutingTestCase(unittest.TestCase):
         # Check that something was written to the session layer
         self.assertIsNotNone(sessionLayer)
 
+        # Verify the command was routed.
         verifyFunc(sessionLayer)
 
     def testEditRouterForVisibilityCmd(self):
@@ -256,11 +257,12 @@ class EditRoutingTestCase(unittest.TestCase):
         except Exception:
             self.assertFalse(True, "Should have been able to create a command")
 
-    def testEditRouterPreventingCmd(self):
+    def _verifyEditRouterPreventingCmd(self, operationName, cmdFunc, verifyFunc):
         '''
-        Test edit router preventing a command by raising an exception.
+        Test that an edit router can prevent a command for the given operation name,
+        using the given command and verifier.
+        The B xform will be in the global selection and is assumed to be affected by the command.
         '''
-
         # Get the session layer
         prim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A")
         stage = prim.GetStage()
@@ -269,24 +271,66 @@ class EditRoutingTestCase(unittest.TestCase):
         # Check that the session layer is empty
         self.assertTrue(sessionLayer.empty)
  
-        # Prevent visibility edits.
-        mayaUsd.lib.registerEditRouter('visibility', preventCommandRouter)
+        # Prevent edits.
+        mayaUsd.lib.registerEditRouter(operationName, preventCommandRouter)
  
         # Select /B
         sn = ufe.GlobalSelection.get()
         sn.clear()
         sn.append(self.b)
  
-        # Hide B
+        # try to affect B via the command, should be prevented
         with self.assertRaises(RuntimeError):
-            cmds.hide()
+            cmdFunc()
  
         # Check that nothing was written to the session layer
         self.assertIsNotNone(sessionLayer)
         self.assertIsNone(sessionLayer.GetPrimAtPath('/B'))
  
-        # Check that no visibility changes were done in any layer
-        self.assertFalse(stage.GetAttributeAtPath('/B.visibility').HasAuthoredValue())
+        # Check that no changes were done in any layer
+        verifyFunc(stage)
+
+    def testPreventVisibilityCmd(self):
+        '''
+        Test edit router preventing a the visibility command by raising an exception.
+        '''
+
+        def hide():
+            cmds.hide()
+
+        def verifyNoHide(stage):
+            # Check that the visibility attribute was not created.
+            self.assertFalse(stage.GetAttributeAtPath('/B.visibility').HasAuthoredValue())
+
+        self._verifyEditRouterPreventingCmd('visibility', hide, verifyNoHide)
+ 
+    def testPreventDuplicateCmd(self):
+        '''
+        Test edit router preventing the duplicate command by raising an exception.
+        '''
+
+        def duplicate():
+            cmds.duplicate()
+
+        def verifyNoDuplicate(stage):
+            # Check that the duplicated prim was not created
+            self.assertFalse(stage.GetPrimAtPath('/B1'))
+ 
+        self._verifyEditRouterPreventingCmd('duplicate', duplicate, verifyNoDuplicate)
+ 
+    def testPreventParentingCmd(self):
+        '''
+        Test edit router preventing the parent operation by raising an exception.
+        '''
+
+        def group():
+            cmds.group()
+
+        def verifyNoGroup(stage):
+            # Check that the grouped prim was not created.
+            self.assertFalse(stage.GetPrimAtPath('/group1'))
+ 
+        self._verifyEditRouterPreventingCmd('parent', group, verifyNoGroup)
  
 
 if __name__ == '__main__':
