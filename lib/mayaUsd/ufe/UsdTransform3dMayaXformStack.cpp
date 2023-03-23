@@ -152,8 +152,6 @@ createTransform3d(const Ufe::SceneItem::Ptr& item, NextTransform3dFn nextTransfo
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
 
     if (!usdItem) {
-        TF_WARN(
-            "Cannot create 3D transform for non-USD item \"%s\".", item->path().string().c_str());
         return nullptr;
     }
 
@@ -161,9 +159,6 @@ createTransform3d(const Ufe::SceneItem::Ptr& item, NextTransform3dFn nextTransfo
     // for it.
     UsdGeomXformable xformSchema(usdItem->prim());
     if (!xformSchema) {
-        TF_WARN(
-            "Cannot create 3D transform for non-transformable item \"%s\".",
-            item->path().string().c_str());
         return nullptr;
     }
     bool resetsXformStack = false;
@@ -449,8 +444,12 @@ UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
         attrName = op.GetOpName();
     }
 
-    // Enforce failure if the attribute edit is not allowed.
-    enforceAttributeEditAllowed(attrName);
+    // Return null command if the attribute edit is not allowed.
+    std::string errMsg;
+    if (!isAttributeEditAllowed(attrName, errMsg)) {
+        MGlobal::displayError(errMsg.c_str());
+        return nullptr;
+    }
 
     // If there is no rotate transform op, we will create a RotXYZ.
     GfVec3f           v(x, y, z);
@@ -496,8 +495,12 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMayaXformStack::scaleCmd(double x, 
         attrName = op.GetOpName();
     }
 
-    // Enforce failure if the attribute edit is not allowed.
-    enforceAttributeEditAllowed(attrName);
+    // Return null command if the attribute edit is not allowed.
+    std::string errMsg;
+    if (!isAttributeEditAllowed(attrName, errMsg)) {
+        MGlobal::displayError(errMsg.c_str());
+        return nullptr;
+    }
 
     GfVec3f v(x, y, z);
     auto    f = OpFunc(
@@ -605,8 +608,12 @@ Ufe::SetVector3dUndoableCommand::Ptr UsdTransform3dMayaXformStack::setVector3dCm
     const TfToken& attrName,
     const TfToken& opSuffix)
 {
-    // Enforce failure if the attribute edit is not allowed.
-    enforceAttributeEditAllowed(attrName);
+    // Return null command if the attribute edit is not allowed.
+    std::string errMsg;
+    if (!isAttributeEditAllowed(attrName, errMsg)) {
+        MGlobal::displayError(errMsg.c_str());
+        return nullptr;
+    }
 
     auto setXformOpOrderFn = getXformOpOrderFn();
     auto f = OpFunc(
@@ -644,8 +651,12 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
 {
     auto pvtAttrName = UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, pvtOpSuffix);
 
-    // Enforce failure if the attribute edit is not allowed.
-    enforceAttributeEditAllowed(pvtAttrName);
+    // Return null command if the attribute edit is not allowed.
+    std::string errMsg;
+    if (!isAttributeEditAllowed(pvtAttrName, errMsg)) {
+        MGlobal::displayError(errMsg.c_str());
+        return nullptr;
+    }
 
     GfVec3f v(x, y, z);
     auto    f = OpFunc([pvtAttrName, pvtOpSuffix, setXformOpOrderFn = getXformOpOrderFn(), v](
@@ -764,17 +775,22 @@ UsdTransform3dMayaXformStack::getCvtRotXYZToAttrFn(const TfToken& opName) const
     return cvt.at(opName);
 }
 
-void UsdTransform3dMayaXformStack::enforceAttributeEditAllowed(const PXR_NS::TfToken attrName) const
+bool UsdTransform3dMayaXformStack::isAttributeEditAllowed(
+    const PXR_NS::TfToken attrName,
+    std::string&          errMsg) const
 {
     PXR_NS::UsdAttribute attr;
     if (!attrName.IsEmpty())
         attr = prim().GetAttribute(attrName);
-    if (attr) {
-        MayaUsd::ufe::enforceAttributeEditAllowed(attr);
-    } else {
+    if (attr && !MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg)) {
+        return false;
+    } else if (!attr) {
         UsdGeomXformable xformable(prim());
-        MayaUsd::ufe::enforceAttributeEditAllowed(xformable.GetXformOpOrderAttr());
+        if (!MayaUsd::ufe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
+            return false;
+        }
     }
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -815,18 +831,17 @@ Ufe::Transform3d::Ptr UsdTransform3dMayaXformStackHandler::editTransform3d(
     // https://graphics.pixar.com/usd/docs/api/_usd__page__scenegraph_instancing.html#Usd_ScenegraphInstancing_InstanceProxies
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
     if (usdItem->prim().IsInstanceProxy()) {
-        const std::string error = TfStringPrintf(
-            "Authoring to the descendant of an instance \"%s\" is not allowed. "
-            "Please mark 'instanceable=false' to author edits to instance proxies.",
-            usdItem->prim().GetName().GetString().c_str());
-        TF_WARN("%s", error.c_str());
-        throw std::runtime_error(error);
+        MGlobal::displayError(
+            MString("Authoring to the descendant of an instance [")
+            + MString(usdItem->prim().GetName().GetString().c_str()) + MString("] is not allowed. ")
+            + MString("Please mark 'instanceable=false' to author edits to instance proxies."));
+        return nullptr;
     }
 
     std::string errMsg;
     if (!MayaUsd::ufe::isEditTargetLayerModifiable(usdItem->prim().GetStage(), &errMsg)) {
-        TF_WARN("%s", errMsg.c_str());
-        throw std::runtime_error(errMsg);
+        MGlobal::displayError(errMsg.c_str());
+        return nullptr;
     }
 
     return createTransform3d(

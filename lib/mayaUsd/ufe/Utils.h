@@ -280,7 +280,7 @@ MAYAUSD_CORE_PUBLIC
 bool isAttributeEditAllowed(
     const PXR_NS::UsdPrim& prim,
     const PXR_NS::TfToken& attrName,
-    std::string*           errMsg = nullptr);
+    std::string*           errMsg);
 
 MAYAUSD_CORE_PUBLIC
 bool isAttributeEditAllowed(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName);
