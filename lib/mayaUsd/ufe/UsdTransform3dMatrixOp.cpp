@@ -279,19 +279,28 @@ Ufe::Vector3d UsdTransform3dMatrixOp::scale() const { return getScale(matrix());
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dMatrixOp::translateCmd(double x, double y, double z)
 {
-    enforceAttributeEditAllowed(prim(), TfToken("xformOp:translate"));
+    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))) {
+        return nullptr;
+    }
+
     return std::make_shared<MatrixOpTranslateUndoableCmd>(path(), _op, UsdTimeCode::Default());
 }
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3dMatrixOp::rotateCmd(double x, double y, double z)
 {
-    enforceAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"));
-    return nullptr;
+    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"))) {
+        return nullptr;
+    }
+
+    return std::make_shared<MatrixOpRotateUndoableCmd>(path(), _op, UsdTimeCode::Default());
 }
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMatrixOp::scaleCmd(double x, double y, double z)
 {
-    enforceAttributeEditAllowed(prim(), TfToken("xformOp:scale"));
+    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
+        return nullptr;
+    }
+
     return std::make_shared<MatrixOpScaleUndoableCmd>(path(), _op, UsdTimeCode::Default());
 }
 
