@@ -17,6 +17,7 @@
 
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/undo/UsdUndoBlock.h>
 
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>
@@ -24,6 +25,7 @@
 #include <pxr/usd/usdGeom/scope.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
+#include <ufe/pathString.h>
 #include <ufe/sceneItemOps.h>
 #include <ufe/selection.h>
 
@@ -85,129 +87,119 @@ bool connectShaderToMaterial(
     return true;
 }
 #endif
-} // namespace
 
-UsdPrim BindMaterialUndoableCommand::CompatiblePrim(const Ufe::SceneItem::Ptr& item)
+bool _BindMaterialCompatiblePrim(const UsdPrim& usdPrim)
 {
-    auto usdItem = std::dynamic_pointer_cast<const MAYAUSD_NS::ufe::UsdSceneItem>(item);
-    if (!usdItem) {
-        return {};
-    }
-    UsdPrim usdPrim = usdItem->prim();
     if (UsdShadeNodeGraph(usdPrim) || UsdShadeShader(usdPrim)) {
         // The binding schema can be applied anywhere, but it makes no sense on a
         // material or a shader.
-        return {};
+        return false;
     }
     if (UsdGeomScope(usdPrim) && usdPrim.GetName() == kDefaultMaterialScopeName) {
-        return {};
+        return false;
+    }
+    if (auto subset = UsdGeomSubset(usdPrim)) {
+        TfToken elementType;
+        subset.GetElementTypeAttr().Get(&elementType);
+        if (elementType != UsdGeomTokens->face) {
+            return false;
+        }
     }
     if (PXR_NS::UsdShadeMaterialBindingAPI::CanApply(usdPrim)) {
-        return usdPrim;
+        return true;
     }
-    return {};
+    return false;
+}
+
+} // namespace
+
+bool BindMaterialUndoableCommand::CompatiblePrim(const Ufe::SceneItem::Ptr& item)
+{
+    auto usdItem = std::dynamic_pointer_cast<const MAYAUSD_NS::ufe::UsdSceneItem>(item);
+    if (!usdItem) {
+        return false;
+    }
+    return _BindMaterialCompatiblePrim(usdItem->prim());
 }
 
 BindMaterialUndoableCommand::BindMaterialUndoableCommand(
-    const UsdPrim& prim,
+    Ufe::Path      primPath,
     const SdfPath& materialPath)
-    : _stage(prim.GetStage())
-    , _primPath(prim.GetPath())
+    : _primPath(std::move(primPath))
     , _materialPath(materialPath)
 {
+    auto prim = ufePathToPrim(_primPath);
+    if (!prim.IsValid()) {
+        std::string err = TfStringPrintf(
+            "Invalid primitive path [%s]. Can not bind material.",
+            Ufe::PathString::string(_primPath).c_str());
+        throw std::runtime_error(err);
+    }
+    if (!_BindMaterialCompatiblePrim(prim)) {
+        std::string err = TfStringPrintf(
+            "Invalid primitive type for binding [%s]. Can not bind material.",
+            Ufe::PathString::string(_primPath).c_str());
+        throw std::runtime_error(err);
+    }
+    if (_materialPath.IsEmpty()
+        || !UsdShadeMaterial(prim.GetStage()->GetPrimAtPath(_materialPath))) {
+        std::string err = TfStringPrintf(
+            "Invalid material path [%s]. Can not bind material.",
+            _materialPath.GetAsString().c_str());
+        throw std::runtime_error(err);
+    }
 }
 
 BindMaterialUndoableCommand::~BindMaterialUndoableCommand() { }
 
-void BindMaterialUndoableCommand::undo()
+void BindMaterialUndoableCommand::undo() { _undoableItem.undo(); }
+
+void BindMaterialUndoableCommand::redo() { _undoableItem.redo(); }
+
+void BindMaterialUndoableCommand::execute()
 {
-    if (!_stage || _primPath.IsEmpty() || _materialPath.IsEmpty()) {
-        return;
+    // All validations were done in the CTOR: proceed.
+
+    UsdUndoBlock undoBlock(&_undoableItem);
+
+    auto             prim = ufePathToPrim(_primPath);
+    UsdShadeMaterial material(prim.GetStage()->GetPrimAtPath(_materialPath));
+
+    if (auto subset = UsdGeomSubset(prim)) {
+        subset.GetFamilyNameAttr().Set(UsdShadeTokens->materialBind);
     }
 
-    UsdPrim prim = _stage->GetPrimAtPath(_primPath);
-    if (prim.IsValid()) {
-        auto bindingAPI = UsdShadeMaterialBindingAPI(prim);
-        if (bindingAPI) {
-            if (_previousMaterialPath.IsEmpty()) {
-                bindingAPI.UnbindDirectBinding();
-            } else {
-                UsdShadeMaterial material(_stage->GetPrimAtPath(_previousMaterialPath));
-                bindingAPI.Bind(material);
-            }
-        }
-        if (_appliedBindingAPI) {
-            prim.RemoveAPI<UsdShadeMaterialBindingAPI>();
-        }
-    }
+    auto bindingAPI = UsdShadeMaterialBindingAPI::Apply(prim);
+    bindingAPI.Bind(material);
 }
 
-void BindMaterialUndoableCommand::redo()
-{
-    if (!_stage || _primPath.IsEmpty() || _materialPath.IsEmpty()) {
-        return;
-    }
-
-    UsdPrim          prim = _stage->GetPrimAtPath(_primPath);
-    UsdShadeMaterial material(_stage->GetPrimAtPath(_materialPath));
-    if (prim.IsValid() && material) {
-        UsdShadeMaterialBindingAPI bindingAPI;
-        if (prim.HasAPI<UsdShadeMaterialBindingAPI>()) {
-            bindingAPI = UsdShadeMaterialBindingAPI(prim);
-            _previousMaterialPath = bindingAPI.GetDirectBinding().GetMaterialPath();
-        } else {
-            bindingAPI = UsdShadeMaterialBindingAPI::Apply(prim);
-            _appliedBindingAPI = true;
-        }
-        bindingAPI.Bind(material);
-    }
-}
 const std::string BindMaterialUndoableCommand::commandName("Assign Material");
 
-UnbindMaterialUndoableCommand::UnbindMaterialUndoableCommand(const UsdPrim& prim)
-    : _stage(prim.GetStage())
-    , _primPath(prim.GetPath())
+UnbindMaterialUndoableCommand::UnbindMaterialUndoableCommand(Ufe::Path primPath)
+    : _primPath(std::move(primPath))
 {
+    if (_primPath.empty() || !ufePathToPrim(_primPath).IsValid()) {
+        std::string err = TfStringPrintf(
+            "Invalid primitive path [%s]. Can not unbind material.",
+            Ufe::PathString::string(_primPath).c_str());
+        throw std::runtime_error(err);
+    }
 }
 
 UnbindMaterialUndoableCommand::~UnbindMaterialUndoableCommand() { }
 
-void UnbindMaterialUndoableCommand::undo()
+void UnbindMaterialUndoableCommand::undo() { _undoableItem.undo(); }
+
+void UnbindMaterialUndoableCommand::redo() { _undoableItem.redo(); }
+
+void UnbindMaterialUndoableCommand::execute()
 {
-    if (!_stage || _primPath.IsEmpty() || _materialPath.IsEmpty()) {
-        return;
-    }
+    UsdUndoBlock undoBlock(&_undoableItem);
 
-    UsdPrim          prim = _stage->GetPrimAtPath(_primPath);
-    UsdShadeMaterial material(_stage->GetPrimAtPath(_materialPath));
-    if (prim.IsValid() && material) {
-        // BindingAPI is still there since we did not remove it.
-        auto             bindingAPI = UsdShadeMaterialBindingAPI(prim);
-        UsdShadeMaterial material(_stage->GetPrimAtPath(_materialPath));
-        if (bindingAPI && material) {
-            bindingAPI.Bind(material);
-        }
-    }
-}
-
-void UnbindMaterialUndoableCommand::redo()
-{
-    if (!_stage || _primPath.IsEmpty()) {
-        return;
-    }
-
-    UsdPrim prim = _stage->GetPrimAtPath(_primPath);
-    if (prim.IsValid()) {
-        auto bindingAPI = UsdShadeMaterialBindingAPI(prim);
-        if (bindingAPI) {
-            auto materialBinding = bindingAPI.GetDirectBinding();
-            _materialPath = materialBinding.GetMaterialPath();
-            if (!_materialPath.IsEmpty()) {
-                bindingAPI.UnbindDirectBinding();
-                // TODO: Can we remove the BindingAPI at this point?
-                //       Not easy to know for sure.
-            }
-        }
+    auto prim = ufePathToPrim(_primPath);
+    auto bindingAPI = UsdShadeMaterialBindingAPI(prim);
+    if (bindingAPI) {
+        bindingAPI.UnbindDirectBinding();
     }
 }
 const std::string UnbindMaterialUndoableCommand::commandName("Unassign Material");
@@ -442,8 +434,17 @@ void UsdUndoAssignNewMaterialCommand::execute()
                 markAsFailed();
                 return;
             }
+            // There might be some unassignable items in the selection list. Skip and warn.
+            // We know there is at least one assignable item found in the ContextOps resolver.
+            if (!BindMaterialUndoableCommand::CompatiblePrim(parentItem)) {
+                const std::string error = TfStringPrintf(
+                    "Assign new material: Skipping incompatible prim [%s] found in selection.",
+                    Ufe::PathString::string(parentItem->path()).c_str());
+                TF_WARN("%s", error.c_str());
+                continue;
+            }
             auto bindCmd = std::make_shared<BindMaterialUndoableCommand>(
-                parentItem->prim(), materialItem->prim().GetPath());
+                parentItem->path(), materialItem->prim().GetPath());
             if (!bindCmd) {
                 markAsFailed();
                 return;
