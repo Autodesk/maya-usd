@@ -10,11 +10,20 @@ import unittest
 import usdUtils
 from pxr import UsdGeom
 
+#####################################################################
+#
+# Helper to compare strings.
+
 def filterUsdStr(usdSceneStr):
     '''Remove empty lines and lines starting with pound character.'''
     nonBlankLines = filter(None, [l.rstrip() for l in usdSceneStr.splitlines()])
     finalLines = [l for l in nonBlankLines if not l.startswith('#')]
     return '\n'.join(finalLines)
+
+
+#####################################################################
+#
+# Edit routers used in test
 
 def routeCmdToSessionLayer(context, routingData):
     '''
@@ -26,6 +35,17 @@ def routeCmdToSessionLayer(context, routingData):
         return
     
     routingData['layer'] = prim.GetStage().GetSessionLayer().identifier
+    
+def routeCmdToRootLayer(context, routingData):
+    '''
+    Edit router for commands, routing to the root layer.
+    '''
+    prim = context.get('prim')
+    if prim is None:
+        print('Prim not in context')
+        return
+    
+    routingData['layer'] = prim.GetStage().GetRootLayer().identifier
     
 def routeVisibilityAttribute(context, routingData):
     '''
@@ -48,7 +68,51 @@ def preventCommandRouter(context, routingData):
     '''
     opName = context.get('operation') or 'operation'
     raise Exception('Sorry, %s is not permitted' % opName)
-    
+
+class CustomCompositeCmd(ufe.CompositeUndoableCommand):
+    '''
+    Custom composite command that route using the 'custom' operation.
+    '''
+
+    # The name of the composite operation. Used for edit routing.
+    # Registering an edit router for this operation will affect this
+    # composite command and its sub-commands.
+    customOpName = 'custom'
+
+    def __init__(self, prim, sceneItem):
+        super().__init__()
+        self._prim = prim
+        # Note: the edit router must be kept alive in a variable to affect
+        #       subsequent code, in particular the creation of sub-commands.
+        ctx = mayaUsd.lib.OperationEditRouterContext(self.customOpName, self._prim)
+        o3d = ufe.Object3d.object3d(sceneItem)
+        self.append(o3d.setVisibleCmd(False))
+
+    def execute(self):
+        # Note: the edit router must be kept alive in a variable to affect
+        #       the call to the base class implementation where sub-commands
+        #       are executed.
+        ctx = mayaUsd.lib.OperationEditRouterContext(self.customOpName, self._prim)
+        super().execute()
+
+    def undo(self):
+        # Note: the edit router must be kept alive in a variable to affect
+        #       the call to the base class implementation where sub-commands
+        #       are undone.
+        ctx = mayaUsd.lib.OperationEditRouterContext(self.customOpName, self._prim)
+        super().undo()
+
+    def redo(self):
+        # Note: the edit router must be kept alive in a variable to affect
+        #       the call to the base class implementation where sub-commands
+        #       are redone.
+        ctx = mayaUsd.lib.OperationEditRouterContext('custom', self._prim)
+        super().redo()
+
+
+#####################################################################
+#
+# Tests
 
 class EditRoutingTestCase(unittest.TestCase):
     '''Verify the Maya Edit Router for visibility.'''
@@ -333,6 +397,87 @@ class EditRoutingTestCase(unittest.TestCase):
  
         self._verifyEditRouterPreventingCmd('parent', group, verifyNoGroup)
  
+    def testRoutingCompositeCmd(self):
+        '''
+        Test that an edit router for a composite command prevent routing of sub-commands.
+        The B xform will be in the global selection and is assumed to be affected by the command.
+        '''
+        # Get the session layer
+        prim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A")
+        stage = prim.GetStage()
+        sessionLayer = stage.GetSessionLayer()
+ 
+        # Check that the session layer is empty
+        self.assertTrue(sessionLayer.empty)
+
+        # Check to root layer only contains bare A and B xforms.
+        rootLayer = stage.GetRootLayer()
+        self.assertEqual(filterUsdStr(rootLayer.ExportToString()),
+                         'def Xform "A"\n{\n}\ndef Xform "B"\n{\n}')
+ 
+        # Route the visibility command to the session layer.
+        # Route the custom composite command to the root layer.
+        # The composite command routing shoud win.
+        mayaUsd.lib.registerEditRouter('visibility', routeCmdToSessionLayer)
+        mayaUsd.lib.registerEditRouter('custom', routeCmdToRootLayer)
+ 
+        # Select /B
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(self.b)
+ 
+        # try to affect B via the command, should be prevented
+        compCmd = CustomCompositeCmd(prim, self.b)
+        compCmd.execute()
+ 
+        # Check that nothing was written to the session layer
+        self.assertIsNotNone(sessionLayer)
+        self.assertEqual(filterUsdStr(sessionLayer.ExportToString()),
+                         '')
+        self.assertTrue(sessionLayer.empty)
+ 
+        # Check that visibility was written to the root layer
+        rootLayer = stage.GetRootLayer()
+        self.assertEqual(filterUsdStr(rootLayer.ExportToString()),
+                         'def Xform "A"\n{\n}\ndef Xform "B"\n{\n    token visibility = "invisible"\n}')
+
+    def testNotRoutingCompositeCmd(self):
+        '''
+        Test that a composite command with not edit router registered works as expected.
+        '''
+        # Get the session layer
+        prim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A")
+        stage = prim.GetStage()
+        sessionLayer = stage.GetSessionLayer()
+ 
+        # Check that the session layer is empty
+        self.assertTrue(sessionLayer.empty)
+
+        # Check to root layer only contains bare A and B xforms.
+        rootLayer = stage.GetRootLayer()
+        self.assertEqual(filterUsdStr(rootLayer.ExportToString()),
+                         'def Xform "A"\n{\n}\ndef Xform "B"\n{\n}')
+ 
+        # Select /B
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(self.b)
+ 
+        # try to affect B via the command, should be prevented
+        compCmd = CustomCompositeCmd(prim, self.b)
+        compCmd.execute()
+ 
+        # Check that nothing was written to the session layer
+        self.assertIsNotNone(sessionLayer)
+        self.assertEqual(filterUsdStr(sessionLayer.ExportToString()),
+                         '')
+        self.assertTrue(sessionLayer.empty)
+ 
+        # Check that visibility was written to the root layer
+        rootLayer = stage.GetRootLayer()
+        self.assertEqual(filterUsdStr(rootLayer.ExportToString()),
+                         'def Xform "A"\n{\n}\ndef Xform "B"\n{\n    token visibility = "invisible"\n}')
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

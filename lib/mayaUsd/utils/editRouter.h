@@ -64,23 +64,6 @@ private:
     EditRouterCb _cb;
 };
 
-// Guard class that holds previous edit target
-// Note : _prevEditTarget is a by-value copy rather than reference
-// since a reference does not change the edit target upon destruction
-class MAYAUSD_CORE_PUBLIC EditTargetGuard
-{
-public:
-    EditTargetGuard(const PXR_NS::UsdPrim& prim, const PXR_NS::UsdEditTarget& editTarget);
-
-    ~EditTargetGuard();
-
-private:
-    const PXR_NS::UsdPrim& _prim;
-
-    // The previous edit target, as a by-value copy.
-    const PXR_NS::UsdEditTarget _prevEditTarget;
-};
-
 using EditRouters
     = PXR_NS::TfHashMap<PXR_NS::TfToken, EditRouter::Ptr, PXR_NS::TfToken::HashFunctor>;
 
@@ -97,8 +80,8 @@ getEditRouterLayer(const PXR_NS::TfToken& operation, const PXR_NS::UsdPrim& prim
 MAYAUSD_CORE_PUBLIC
 EditRouter::Ptr getEditRouter(const PXR_NS::TfToken& operation);
 
-// Retrieve the edit router for the "attribute" operation for teh given attribute.  If no such edit
-// router exist, the current edit target layer is returned.
+// Retrieve the layer for the attribute operation. If no edit router for the
+// "attribute" operationis found, a nullptr is returned.
 MAYAUSD_CORE_PUBLIC
 PXR_NS::SdfLayerHandle
 getAttrEditRouterLayer(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName);
@@ -108,12 +91,13 @@ MAYAUSD_CORE_PUBLIC
 void registerEditRouter(const PXR_NS::TfToken& operation, const EditRouter::Ptr& editRouter);
 
 // Restore the default edit router for the argument operation, overwriting
-// the currently-registered edit router.  Returns false if no such default
-// exists.
+// the currently-registered edit router.  Returns false if no such operation
+// exists among the registered edit routers.
 MAYAUSD_CORE_PUBLIC
 bool restoreDefaultEditRouter(const PXR_NS::TfToken& operation);
 
-// Restore all the default edit router, overwriting the currently-registered edit routers.
+// Restore all the default edit routers, overwriting the currently-registered edit routers.
+// Also remove all routers that have no default.
 MAYAUSD_CORE_PUBLIC
 void restoreAllDefaultEditRouters();
 
