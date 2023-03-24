@@ -237,6 +237,16 @@ int UsdMayaJointUtil::getCompressedSkinWeights(
     unsigned int numInfluences;
     skinCluster.getWeights(outputDagPath, components.object(), weights, numInfluences);
 
+    if(weights.length() < numVertices * numInfluences) {
+        MString msg("Number of weights (");
+        msg += weights.length();
+        msg += ") exceeds number of influences * number of vertices (";
+        msg += numInfluences * numVertices;
+        msg += ") - skin binding will not be written";
+        MGlobal::displayError(msg);
+        throw std::runtime_error(msg.asChar());
+    }
+
     // Determine how many influence/weight "slots" we actually need per point.
     // For example, if there are the joints /a, /a/b, and /a/c, but each point
     // only has non-zero weighting for a single joint, then we only need one
