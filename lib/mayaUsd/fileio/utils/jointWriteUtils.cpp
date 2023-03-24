@@ -237,7 +237,7 @@ int UsdMayaJointUtil::getCompressedSkinWeights(
     unsigned int numInfluences;
     skinCluster.getWeights(outputDagPath, components.object(), weights, numInfluences);
 
-    if(weights.length() < numVertices * numInfluences) {
+    if (weights.length() < numVertices * numInfluences) {
         MString msg("Number of weights (");
         msg += weights.length();
         msg += ") exceeds number of influences * number of vertices (";
