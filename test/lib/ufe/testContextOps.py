@@ -1483,13 +1483,70 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(topSubset.GetFamilyNameAttr().Get(), "componentTag")
         self.assertFalse(topSubset.GetPrim().HasAPI(UsdShade.MaterialBindingAPI))
 
+        currentResyncCount = cmds.getAttr(psPathStr + '.resyncid')
+
         contextOps = ufe.ContextOps.contextOps(topItem)
         cmd = contextOps.doOpCmd(['Assign New Material', 'USD', 'UsdPreviewSurface'])
         self.assertIsNotNone(cmd)
         ufeCmd.execute(cmd)
 
+        snIter = iter(ufe.GlobalSelection.get())
+        shaderItem = next(snIter)
+
         self.assertEqual(topSubset.GetFamilyNameAttr().Get(), "materialBind")
         self.assertTrue(topSubset.GetPrim().HasAPI(UsdShade.MaterialBindingAPI))
+
+        # We expect a resync after this assignment:
+        self.assertGreater(cmds.getAttr(psPathStr + '.resyncid'), currentResyncCount)
+
+        # setting a value the first time is a resync due to the creation of the attribute:
+        attrs = ufe.Attributes.attributes(shaderItem)
+        metallicAttr = attrs.attribute("inputs:metallic")
+        currentResyncCount = cmds.getAttr(psPathStr + '.resyncid')
+        ufeCmd.execute(metallicAttr.setCmd(0.5))
+        self.assertGreater(cmds.getAttr(psPathStr + '.resyncid'), currentResyncCount)
+
+        # Subsequent changes are updates:
+        currentResyncCount = cmds.getAttr(psPathStr + '.resyncid')
+        currentUpdateCount = cmds.getAttr(psPathStr + '.updateid')
+        ufeCmd.execute(metallicAttr.setCmd(0.7))
+        self.assertEqual(cmds.getAttr(psPathStr + '.resyncid'), currentResyncCount)
+        self.assertGreater(cmds.getAttr(psPathStr + '.updateid'), currentUpdateCount)
+
+        # First undo is an update:
+        currentResyncCount = cmds.getAttr(psPathStr + '.resyncid')
+        currentUpdateCount = cmds.getAttr(psPathStr + '.updateid')
+        cmds.undo()
+        self.assertEqual(cmds.getAttr(psPathStr + '.resyncid'), currentResyncCount)
+        self.assertGreater(cmds.getAttr(psPathStr + '.updateid'), currentUpdateCount)
+
+        # Second undo is a resync:
+        currentResyncCount = cmds.getAttr(psPathStr + '.resyncid')
+        cmds.undo()
+        self.assertGreater(cmds.getAttr(psPathStr + '.resyncid'), currentResyncCount)
+
+        # Third undo is also resync:
+        currentResyncCount = cmds.getAttr(psPathStr + '.resyncid')
+        cmds.undo()
+        self.assertGreater(cmds.getAttr(psPathStr + '.resyncid'), currentResyncCount)
+
+        # First redo is resync:
+        currentResyncCount = cmds.getAttr(psPathStr + '.resyncid')
+        cmds.redo()
+        self.assertGreater(cmds.getAttr(psPathStr + '.resyncid'), currentResyncCount)
+
+        # Second redo is resync:
+        currentResyncCount = cmds.getAttr(psPathStr + '.resyncid')
+        cmds.redo()
+        self.assertGreater(cmds.getAttr(psPathStr + '.resyncid'), currentResyncCount)
+
+        # Third redo is update:
+        currentResyncCount = cmds.getAttr(psPathStr + '.resyncid')
+        currentUpdateCount = cmds.getAttr(psPathStr + '.updateid')
+        cmds.redo()
+        self.assertEqual(cmds.getAttr(psPathStr + '.resyncid'), currentResyncCount)
+        self.assertGreater(cmds.getAttr(psPathStr + '.updateid'), currentUpdateCount)
+
 
 
 if __name__ == '__main__':
