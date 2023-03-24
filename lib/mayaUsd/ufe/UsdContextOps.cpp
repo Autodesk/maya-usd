@@ -735,7 +735,7 @@ static const std::vector<MayaUsd::ufe::SchemaTypeGroup> getConcretePrimTypes(boo
 bool sceneItemSupportsShading(const Ufe::SceneItem::Ptr& sceneItem)
 {
 #if PXR_VERSION >= 2108
-    if (MayaUsd::ufe::BindMaterialUndoableCommand::CompatiblePrim(sceneItem).IsValid()) {
+    if (MayaUsd::ufe::BindMaterialUndoableCommand::CompatiblePrim(sceneItem)) {
         return true;
     }
 #else
@@ -1239,24 +1239,23 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
 #endif
 #if PXR_VERSION >= 2108
     else if (itemPath[0] == BindMaterialUndoableCommand::commandName) {
-        return std::make_shared<BindMaterialUndoableCommand>(fItem->prim(), SdfPath(itemPath[1]));
+        return std::make_shared<BindMaterialUndoableCommand>(fItem->path(), SdfPath(itemPath[1]));
     } else if (itemPath[0] == kBindMaterialToSelectionItem) {
         std::shared_ptr<Ufe::CompositeUndoableCommand> compositeCmd;
         if (auto globalSn = Ufe::GlobalSelection::get()) {
             for (auto&& selItem : *globalSn) {
-                UsdPrim compatiblePrim = BindMaterialUndoableCommand::CompatiblePrim(selItem);
-                if (compatiblePrim) {
+                if (BindMaterialUndoableCommand::CompatiblePrim(selItem)) {
                     if (!compositeCmd) {
                         compositeCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
                     }
                     compositeCmd->append(std::make_shared<BindMaterialUndoableCommand>(
-                        compatiblePrim, fItem->prim().GetPath()));
+                        selItem->path(), fItem->prim().GetPath()));
                 }
             }
         }
         return compositeCmd;
     } else if (itemPath[0] == UnbindMaterialUndoableCommand::commandName) {
-        return std::make_shared<UnbindMaterialUndoableCommand>(fItem->prim());
+        return std::make_shared<UnbindMaterialUndoableCommand>(fItem->path());
 #if UFE_PREVIEW_VERSION_NUM >= 4010
     } else if (itemPath.size() == 3u && itemPath[0] == kAssignNewMaterialItem) {
         // Make a copy so that we don't change the user's original selection.
@@ -1276,13 +1275,12 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         Ufe::Selection                                 sceneItems(*Ufe::GlobalSelection::get());
         sceneItems.append(fItem);
         for (auto& sceneItem : sceneItems) {
-            UsdPrim compatiblePrim = BindMaterialUndoableCommand::CompatiblePrim(sceneItem);
-            if (compatiblePrim) {
+            if (BindMaterialUndoableCommand::CompatiblePrim(sceneItem)) {
                 if (!compositeCmd) {
                     compositeCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
                 }
                 compositeCmd->append(std::make_shared<BindMaterialUndoableCommand>(
-                    compatiblePrim, SdfPath(itemPath[2])));
+                    sceneItem->path(), SdfPath(itemPath[2])));
             }
         }
         return compositeCmd;

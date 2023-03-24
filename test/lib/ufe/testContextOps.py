@@ -22,6 +22,7 @@ import usdUtils
 import ufeUtils
 import testUtils
 import mayaUsd
+import mayaUsd_createStageWithNewLayer
 
 from pxr import UsdGeom
 from pxr import UsdShade
@@ -312,7 +313,6 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         # Create a proxy shape with empty stage to start with.
-        import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Create our UFE notification observer
@@ -416,7 +416,6 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         # Create a proxy shape with empty stage to start with.
-        import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Create our UFE notification observer
@@ -514,7 +513,6 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         # Create a proxy shape with empty stage to start with.
-        import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Create a ContextOps interface for the proxy shape.
@@ -585,7 +583,6 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         # Create a proxy shape with empty stage to start with.
-        import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Create a ContextOps interface for the proxy shape.
@@ -699,7 +696,6 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         # Create a proxy shape with empty stage to start with.
-        import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Create a ContextOps interface for the proxy shape.
@@ -847,7 +843,6 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         # Helper function to create a new proxy shape.
-        import mayaUsd_createStageWithNewLayer
         def createProxyShape():
             proxyShapePathString = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
             proxyShapePath = ufe.PathString.path(proxyShapePathString)
@@ -1038,7 +1033,6 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         # Create a proxy shape with empty stage to start with.
-        import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Create a ContextOps interface for the proxy shape.
@@ -1111,7 +1105,6 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         # Create a proxy shape with empty stage to start with.
-        import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Create a ContextOps interface for the proxy shape.
@@ -1191,7 +1184,6 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         # Create a proxy shape with empty stage to start with.
-        import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Create a ContextOps interface for the proxy shape.
@@ -1250,7 +1242,6 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         # Create a proxy shape with empty stage to start with.
-        import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Create a ContextOps interface for the proxy shape.
@@ -1423,7 +1414,6 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         # Create a proxy shape with empty stage to start with.
-        import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Create a ContextOps interface for the proxy shape.
@@ -1475,6 +1465,32 @@ class ContextOpsTestCase(unittest.TestCase):
 
         cmds.undo()
         self.assertFalse(capsulePrim.HasAPI(UsdShade.MaterialBindingAPI))
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
+    def testGeomCoponentAssignment(self):
+        '''Duplicate a Maya cube to USD and then assign a material on a face.'''
+
+        cubeXForm, _ = cmds.polyCube(name='MyCube')
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        mayaUsd.lib.PrimUpdaterManager.duplicate(cmds.ls(cubeXForm, long=True)[0], psPathStr)
+
+        topPath = ufe.PathString.path(psPathStr + ',/' + cubeXForm + "/" + "top")
+        topItem = ufe.Hierarchy.createItem(topPath)
+        topSubset = UsdGeom.Subset(usdUtils.getPrimFromSceneItem(topItem))
+
+        self.assertEqual(topSubset.GetFamilyNameAttr().Get(), "componentTag")
+        self.assertFalse(topSubset.GetPrim().HasAPI(UsdShade.MaterialBindingAPI))
+
+        contextOps = ufe.ContextOps.contextOps(topItem)
+        cmd = contextOps.doOpCmd(['Assign New Material', 'USD', 'UsdPreviewSurface'])
+        self.assertIsNotNone(cmd)
+        ufeCmd.execute(cmd)
+
+        self.assertEqual(topSubset.GetFamilyNameAttr().Get(), "materialBind")
+        self.assertTrue(topSubset.GetPrim().HasAPI(UsdShade.MaterialBindingAPI))
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
