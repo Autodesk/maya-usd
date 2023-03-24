@@ -222,7 +222,7 @@ void renameHelper(
     sendNotificationToAllStageProxies(stage, ufeDstItem->prim(), srcPath, dstPath);
 }
 
-} // namespace 
+} // namespace
 
 void UsdUndoRenameCommand::renameRedo()
 {
