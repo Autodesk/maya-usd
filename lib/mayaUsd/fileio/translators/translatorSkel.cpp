@@ -269,8 +269,7 @@ bool _SetTransformAnim(
 
         for (int c = 0; c < 3; ++c) {
             if (!_SetAnimPlugData(
-                    transformNode, _MayaTokens->translates[c],
-  translates[c], times, context)
+                    transformNode, _MayaTokens->translates[c], translates[c], times, context)
                 || !_SetAnimPlugData(
                     transformNode, _MayaTokens->rotates[c], rotates[c], times, context)
                 || !_SetAnimPlugData(
@@ -521,8 +520,12 @@ bool _CopyAnimFromSkel(
         MFnDependencyNode skelXformDep(jointContainer, &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
 
-        if (!_SetTransformAnim(skelXformDep, skelLocalXforms,
-  mayaTimes, context, args.GetJobArguments().applyEulerFilter)) {
+        if (!_SetTransformAnim(
+                skelXformDep,
+                skelLocalXforms,
+                mayaTimes,
+                context,
+                args.GetJobArguments().applyEulerFilter)) {
             return false;
         }
     }
@@ -560,8 +563,8 @@ bool _CopyAnimFromSkel(
             xforms[i] = samples[i][jointIdx];
         }
 
-        if (!_SetTransformAnim(jointDep, xforms, mayaTimes, 
-  context, args.GetJobArguments().applyEulerFilter))
+        if (!_SetTransformAnim(
+                jointDep, xforms, mayaTimes, context, args.GetJobArguments().applyEulerFilter))
             return false;
     }
     return true;
