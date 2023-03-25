@@ -51,10 +51,10 @@ bool setUsdAttrMetadata(
     }
 
     // If attribute is locked don't allow setting Metadata.
-    MAYAUSD_NS_DEF::ufe::enforceAttributeEditAllowed(attr);
+    MayaUsd::ufe::enforceAttributeEditAllowed(attr);
 
     PXR_NS::UsdPrim        prim = attr.GetPrim();
-    PXR_NS::SdfLayerHandle layer = MAYAUSD_NS_DEF::getAttrEditRouterLayer(prim, attr.GetName());
+    PXR_NS::SdfLayerHandle layer = MayaUsd::getAttrEditRouterLayer(prim, attr.GetName());
     PXR_NS::UsdEditContext ctx(prim.GetStage(), layer);
 
     PXR_NS::TfToken tok(key);
