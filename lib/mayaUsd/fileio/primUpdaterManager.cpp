@@ -103,7 +103,7 @@ Ufe::Path usdToMaya(const Ufe::Path& usdPath)
         return Ufe::Path();
     }
     std::string dagPathStr;
-    if (!TF_VERIFY(MAYAUSD_NS_DEF::readPullInformation(prim, dagPathStr))) {
+    if (!TF_VERIFY(MayaUsd::readPullInformation(prim, dagPathStr))) {
         return Ufe::Path();
     }
 

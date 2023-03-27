@@ -45,8 +45,6 @@
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 
-using namespace MAYAUSD_NS_DEF;
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 // There are a lot of nodes and connections that go into a basic skinning rig.
@@ -726,7 +724,7 @@ bool _CreateDagPose(
     MObject*                  dagPoseNode)
 {
     MStatus      status;
-    MDGModifier& dgMod = MDGModifierUndoItem::create("Skeleton DAG pose creation");
+    MDGModifier& dgMod = MayaUsd::MDGModifierUndoItem::create("Skeleton DAG pose creation");
 
     *dagPoseNode = dgMod.createNode(_MayaTokens->dagPoseType, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
@@ -1004,7 +1002,7 @@ bool _CreateRestMesh(const MObject& inputMesh, const MObject& parent, MObject* r
     // Determine a new name for the rest mesh, and rename the copy.
     static const MString restSuffix("_rest");
     MString              restMeshName = meshFn.name() + restSuffix;
-    MDGModifier&         dgMod = MDGModifierUndoItem::create("Rename deformer input mesh");
+    MDGModifier&         dgMod = MayaUsd::MDGModifierUndoItem::create("Rename deformer input mesh");
     status = dgMod.renameNode(*restMesh, restMeshName);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
@@ -1020,7 +1018,7 @@ bool _ClearIncomingConnections(MPlug& plug)
     MPlugArray connections;
     if (plug.connectedTo(connections, /*asDst*/ true, /*asSrc*/ false)) {
         MStatus      status;
-        MDGModifier& dgMod = MDGModifierUndoItem::create("Clear deformer connections");
+        MDGModifier& dgMod = MayaUsd::MDGModifierUndoItem::create("Clear deformer connections");
         for (unsigned int i = 0; i < connections.length(); ++i) {
             status = dgMod.disconnect(plug, connections[i]);
             CHECK_MSTATUS_AND_RETURN(status, false);
@@ -1140,7 +1138,7 @@ bool UsdMayaTranslatorSkel::CreateSkinCluster(
         return false;
     }
 
-    MDGModifier& dgMod = MDGModifierUndoItem::create("Skin cluster creation");
+    MDGModifier& dgMod = MayaUsd::MDGModifierUndoItem::create("Skin cluster creation");
 
     MObject skinCluster = dgMod.createNode(_MayaTokens->skinClusterType, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);

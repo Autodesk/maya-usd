@@ -37,7 +37,7 @@
 
 #include <basePxrUsdPreviewSurface/usdPreviewSurface.h>
 
-using namespace MAYAUSD_NS;
+using namespace MayaUsd;
 
 PXR_NAMESPACE_OPEN_SCOPE
 

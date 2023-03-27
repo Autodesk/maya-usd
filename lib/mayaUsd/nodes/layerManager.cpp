@@ -59,8 +59,6 @@
 #include <iostream>
 #include <set>
 
-using namespace MAYAUSD_NS_DEF;
-
 namespace {
 static std::recursive_mutex findNodeMutex;
 static MObjectHandle        layerManagerHandle;
@@ -75,7 +73,7 @@ MStatus disconnectCompoundArrayPlug(MPlug arrayPlug)
     MPlug        elemPlug;
     MPlug        srcPlug;
     MPlugArray   destPlugs;
-    MDGModifier& dgmod = MDGModifierUndoItem::create("Compound array plug disconnection");
+    MDGModifier& dgmod = MayaUsd::MDGModifierUndoItem::create("Compound array plug disconnection");
 
     auto disconnectPlug = [&](MPlug plug) -> MStatus {
         MStatus status;
@@ -140,7 +138,7 @@ MayaUsd::LayerManager* findOrCreateNode()
 {
     MayaUsd::LayerManager* lm = findNode();
     if (!lm) {
-        MDGModifier& modifier = MDGModifierUndoItem::create("Node find or creation");
+        MDGModifier& modifier = MayaUsd::MDGModifierUndoItem::create("Node find or creation");
         MObject      manager = modifier.createNode(MayaUsd::LayerManager::typeId);
         modifier.doIt();
 

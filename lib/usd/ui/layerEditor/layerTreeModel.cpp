@@ -273,7 +273,7 @@ void LayerTreeModel::rebuildModel()
                 rootLayer, MayaUsdMetadata->ReferencedLayers);
             std::vector<std::string> layerIds;
             std::move(layers.begin(), layers.end(), inserter(layerIds, layerIds.begin()));
-            sharedLayers = MAYAUSD_NS_DEF::getAllSublayers(layerIds, true);
+            sharedLayers = MayaUsd::getAllSublayers(layerIds, true);
         }
 
         std::set<std::string> incomingLayers;
@@ -284,7 +284,7 @@ void LayerTreeModel::rebuildModel()
             } else {
                 std::vector<std::string> layerIds;
                 layerIds.push_back(rootLayer->GetIdentifier());
-                incomingLayers = MAYAUSD_NS_DEF::getAllSublayers(layerIds, true);
+                incomingLayers = MayaUsd::getAllSublayers(layerIds, true);
             }
         }
 

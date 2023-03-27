@@ -49,8 +49,6 @@
 
 #include <cmath>
 
-using namespace MAYAUSD_NS_DEF;
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMayaShaderWriter::ContextSupport
@@ -148,7 +146,7 @@ bool PxrUsdTranslators_MaterialWriter::AuthorShaderInputFromScaledShadingNodeAtt
     }
 
     const SdfValueTypeName shaderInputTypeName
-        = bool(inputTypeName) ? inputTypeName : Converter::getUsdTypeName(shadingNodePlug);
+        = bool(inputTypeName) ? inputTypeName : MayaUsd::Converter::getUsdTypeName(shadingNodePlug);
 
     // Are color values are all linear on the shader?
     // Do we need to re-linearize them?

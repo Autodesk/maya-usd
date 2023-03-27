@@ -425,7 +425,7 @@ MStatus UsdMayaTranslatorMayaReference::connectReferenceAssociatedNode(
 
     result = MS::kFailure;
     if (!srcPlug.isNull() && !destPlug.isNull()) {
-        MDGModifier& dgMod = MAYAUSD_NS_DEF::MDGModifierUndoItem::create("Connect reference node");
+        MDGModifier& dgMod = MayaUsd::MDGModifierUndoItem::create("Connect reference node");
         result = dgMod.connect(srcPlug, destPlug);
         CHECK_MSTATUS_AND_RETURN_IT(result);
         result = dgMod.doIt();
