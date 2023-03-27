@@ -55,6 +55,7 @@ constexpr char USD_UFE_SEPARATOR = '/';
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/listeners/stageNoticeListener.h>
 #include <mayaUsd/nodes/proxyAccessor.h>
+#include <mayaUsd/nodes/proxyShapeUpdateManager.h>
 #include <mayaUsd/nodes/proxyStageProvider.h>
 #include <mayaUsd/nodes/usdPrimProvider.h>
 
@@ -405,8 +406,9 @@ private:
     std::map<UsdTimeCode, MBoundingBox> _boundingBoxCache;
     size_t                              _excludePrimPathsVersion { 1 };
     size_t                              _UsdStageVersion { 1 };
-    MInt64                              _UsdStageUpdateCounter { 1 };
-    MInt64                              _UsdStageResyncCounter { 1 };
+
+    // This helper class keeps track of the notification counters:
+    MayaUsdProxyShapeUpdateManager _shapeUpdateManager;
 
     MayaUsd::ProxyAccessor::Owner _usdAccessor;
 

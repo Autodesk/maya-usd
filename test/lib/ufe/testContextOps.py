@@ -1483,20 +1483,20 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(topSubset.GetFamilyNameAttr().Get(), "componentTag")
         self.assertFalse(topSubset.GetPrim().HasAPI(UsdShade.MaterialBindingAPI))
 
-        counters= { "resync": cmds.getAttr(psPathStr + '.resyncid'),
+        counters= { "resync": cmds.getAttr(psPathStr + '.resyncId'),
                     "update" : cmds.getAttr(psPathStr + '.upid')}
 
         def assertIsOnlyUpdate(self, counters, shapePathStr):
-            resyncCounter = cmds.getAttr(shapePathStr + '.resyncid')
-            updateCounter = cmds.getAttr(shapePathStr + '.updateid')
+            resyncCounter = cmds.getAttr(shapePathStr + '.resyncId')
+            updateCounter = cmds.getAttr(shapePathStr + '.updateId')
             self.assertEqual(resyncCounter, counters["resync"])
             self.assertGreater(updateCounter, counters["update"])
             counters["resync"] = resyncCounter
             counters["update"] = updateCounter
 
         def assertIsResync(self, counters, shapePathStr):
-            resyncCounter = cmds.getAttr(shapePathStr + '.resyncid')
-            updateCounter = cmds.getAttr(shapePathStr + '.updateid')
+            resyncCounter = cmds.getAttr(shapePathStr + '.resyncId')
+            updateCounter = cmds.getAttr(shapePathStr + '.updateId')
             self.assertGreater(resyncCounter, counters["resync"])
             self.assertGreater(updateCounter, counters["update"])
             counters["resync"] = resyncCounter

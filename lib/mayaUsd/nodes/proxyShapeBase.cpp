@@ -50,20 +50,17 @@
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/sdf/layer.h>
-#include <pxr/usd/sdf/listOp.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/stageCacheContext.h>
 #include <pxr/usd/usd/timeCode.h>
-#include <pxr/usd/usd/tokens.h>
 #include <pxr/usd/usdGeom/bboxCache.h>
 #include <pxr/usd/usdGeom/boundable.h>
 #include <pxr/usd/usdGeom/gprim.h>
 #include <pxr/usd/usdGeom/imageable.h>
 #include <pxr/usd/usdGeom/tokens.h>
-#include <pxr/usd/usdUI/tokens.h>
 #include <pxr/usd/usdUtils/stageCache.h>
 
 #include <maya/MBoundingBox.h>
@@ -395,7 +392,7 @@ MStatus MayaUsdProxyShapeBase::initialize()
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     updateCounterAttr
-        = numericAttrFn.create("updateid", "upid", MFnNumericData::kInt64, -1, &retValue);
+        = numericAttrFn.create("updateId", "upid", MFnNumericData::kInt64, -1, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     numericAttrFn.setStorable(false);
     numericAttrFn.setWritable(false);
@@ -405,7 +402,7 @@ MStatus MayaUsdProxyShapeBase::initialize()
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     resyncCounterAttr
-        = numericAttrFn.create("resyncid", "rsid", MFnNumericData::kInt64, -1, &retValue);
+        = numericAttrFn.create("resyncId", "rsid", MFnNumericData::kInt64, -1, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     numericAttrFn.setStorable(false);
     numericAttrFn.setWritable(false);
@@ -556,9 +553,9 @@ bool MayaUsdProxyShapeBase::getInternalValue(const MPlug& plug, MDataHandle& han
     bool retVal = true;
 
     if (plug == updateCounterAttr) {
-        handle.set(_UsdStageUpdateCounter);
+        handle.set(_shapeUpdateManager.GetUpdateCount());
     } else if (plug == resyncCounterAttr) {
-        handle.set(_UsdStageResyncCounter);
+        handle.set(_shapeUpdateManager.GetResyncCount());
     } else {
         retVal = MPxSurfaceShape::getInternalValue(plug, handle);
     }
@@ -1965,118 +1962,6 @@ void MayaUsdProxyShapeBase::_OnStageEditTargetChanged(
     _targetLayer = layer;
 }
 
-namespace {
-
-// We have incoming changes that USD will consider either requiring an
-// update (meaning the render delegate needs to refresh and redraw) or
-// a resync (meaning the scene delegate needs to fetch new datum). We
-// want external clients to be aware of these classes of updates in case
-// they do not use the Hydra system for refreshing and drawing the scene.
-enum class _UsdChangeType
-{
-    kIgnored, // Change does not require redraw: UI change, metadata change.
-    kUpdate,  // Change requires redraw after refreshing parameter values
-    kResync   // Change requires refreshing cached buffers
-};
-
-// If the notification is about prepending a UI schema, we don't want a refresh. These structures
-// are quite large to inspect, but they hash easily, so let's compare known hashes.
-bool _IsUiSchemaPrepend(const VtValue& v)
-{
-    static std::set<size_t> UiSchemaPrependHashes;
-    std::once_flag          hasHashes;
-    std::call_once(hasHashes, [&]() {
-        SdfTokenListOp op;
-        op.SetPrependedItems(TfTokenVector { TfToken("NodeGraphNodeAPI") });
-        UiSchemaPrependHashes.insert(hash_value(op));
-    });
-
-    if (v.IsHolding<SdfTokenListOp>()) {
-        const size_t hash = hash_value(v.UncheckedGet<SdfTokenListOp>());
-        if (UiSchemaPrependHashes.count(hash)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-// This is a stripped down copy of UsdImagingDelegate::_OnUsdObjectsChanged which is the main USD
-// notification handler where paths to refresh and paths to update are compiled for the next Hydra
-// refresh. We do not gather paths as there is no simple way to know when tho flush these maps.
-//
-// This needs to stay as quick as possible since it is stuck in the middle of the notification code
-// path.
-//
-// This is a work in progress. Some improvements might be necessary in the future. The following
-// potential issues are already visible:
-//
-//  - Changing a parameter value for the first time creates the attribute, which is a kResync
-_UsdChangeType _ClassifyUsdObjectsChanged(UsdNotice::ObjectsChanged const& notice)
-{
-    using PathRange = UsdNotice::ObjectsChanged::PathRange;
-
-    auto range = notice.GetResyncedPaths();
-    if (!range.empty()) {
-        size_t ignoredCount = 0;
-        size_t resyncCount = 0;
-        for (auto it = range.begin(); it != range.end(); ++it) {
-            if (it->IsPropertyPath()) {
-                // We have a bunch of UI properties to ignore. Especially anything that comes from
-                // UI schemas.
-                if (it->GetName().rfind("ui:", 0) == 0) {
-                    ++ignoredCount;
-                    continue;
-                }
-            }
-            for (const SdfChangeList::Entry* entry : it.base()->second) {
-                for (auto&& infoChanged : entry->infoChanged) {
-                    if (infoChanged.first == UsdTokens->apiSchemas
-                        && _IsUiSchemaPrepend(infoChanged.second.second)) {
-                        ++ignoredCount;
-                    } else {
-                        ++resyncCount;
-                    }
-                }
-            }
-        }
-
-        if (ignoredCount) {
-            return resyncCount ? _UsdChangeType::kResync : _UsdChangeType::kIgnored;
-        } else {
-            return _UsdChangeType::kResync;
-        }
-    }
-
-    auto retVal = _UsdChangeType::kIgnored;
-
-    const PathRange pathsToUpdate = notice.GetChangedInfoOnlyPaths();
-    for (PathRange::const_iterator it = pathsToUpdate.begin(); it != pathsToUpdate.end(); ++it) {
-        if (it->IsAbsoluteRootOrPrimPath()) {
-            const TfTokenVector changedFields = it.GetChangedFields();
-            if (!changedFields.empty()) {
-                retVal = _UsdChangeType::kUpdate;
-            }
-        } else if (it->IsPropertyPath()) {
-            // We have a bunch of UI properties to ignore. Especially anything that comes from UI
-            // schemas.
-            if (it->GetName().rfind("ui:", 0) == 0) {
-                continue;
-            }
-            retVal = _UsdChangeType::kUpdate;
-            for (const auto& entry : it.base()->second) {
-                if (entry->flags.didChangeAttributeConnection) {
-                    retVal = _UsdChangeType::kResync;
-                    break;
-                }
-            }
-        }
-    }
-
-    return retVal;
-}
-
-} // namespace
-
 void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChanged& notice)
 {
     MProfilingScope profilingScope(
@@ -2090,11 +1975,9 @@ void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChang
     ProxyAccessor::stageChanged(_usdAccessor, thisMObject(), notice);
     MayaUsdProxyStageObjectsChangedNotice(*this, notice).Send();
 
-    switch (_ClassifyUsdObjectsChanged(notice)) {
-    case _UsdChangeType::kIgnored: return;
-    case _UsdChangeType::kResync: ++_UsdStageResyncCounter;
-    // [[fallthrough]]; // We want that fallthrough to have the update always triggered.
-    case _UsdChangeType::kUpdate: ++_UsdStageUpdateCounter; break;
+    // Also keeps track of the notification counters:
+    if (_shapeUpdateManager.CanIgnoreObjectsChanged(notice)) {
+        return;
     }
 
     // Recompute the extents of any UsdGeomBoundable that has authored extents
