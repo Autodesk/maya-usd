@@ -237,12 +237,23 @@ int UsdMayaJointUtil::getCompressedSkinWeights(
     unsigned int numInfluences;
     skinCluster.getWeights(outputDagPath, components.object(), weights, numInfluences);
 
+    if (numInfluences <= 0) {
+        MString msg("No influences found for skinCluster ");
+        msg += skinCluster.name();
+        MGlobal::displayError(msg);
+        throw std::runtime_error(msg.asChar());
+    }
+
     if (weights.length() < numVertices * numInfluences) {
-        MString msg("Number of weights (");
-        msg += weights.length();
-        msg += ") exceeds number of influences * number of vertices (";
-        msg += numInfluences * numVertices;
-        msg += ") - skin binding will not be written";
+        MString msg("The number of vertices on the exported mesh ");
+        msg += outputDagPath.partialPathName();
+        msg += "(";
+        msg += numVertices;
+
+        msg += ") do not match the number of vertices where the skinCluster was applied (";
+        msg += weights.length() / numInfluences;
+        msg += "). Remove any nodes that change mesh topology after the skinCluster.";
+
         MGlobal::displayError(msg);
         throw std::runtime_error(msg.asChar());
     }
