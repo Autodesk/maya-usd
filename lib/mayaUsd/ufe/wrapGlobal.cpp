@@ -17,12 +17,11 @@
 
 #include <boost/python/def.hpp>
 
-using namespace MayaUsd;
 using namespace boost::python;
 
 // clang-format off
 void wrapGlobal()
 {
-    def("getMayaRunTimeId", ufe::getMayaRunTimeId);
+    def("getMayaRunTimeId", MayaUsd::ufe::getMayaRunTimeId);
 }
 // clang-format on

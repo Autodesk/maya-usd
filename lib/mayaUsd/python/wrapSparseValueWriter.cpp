@@ -20,7 +20,7 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_USING_DIRECTIVE;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapSparseValueWriter()
 {

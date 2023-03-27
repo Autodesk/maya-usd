@@ -167,7 +167,7 @@ MStatus MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
         PxrMayaHdImagingShapeDrawOverride::creator);
     CHECK_MSTATUS(status);
 
-    status = MAYAUSD_NS::MayaUsdProxyShapeStageExtraData::initialize();
+    status = MayaUsd::MayaUsdProxyShapeStageExtraData::initialize();
     CHECK_MSTATUS(status);
 
     return status;
@@ -194,7 +194,7 @@ MStatus MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
     MStatus status = HdVP2ShaderFragments::deregisterFragments();
     CHECK_MSTATUS(status);
 
-    status = MAYAUSD_NS::MayaUsdProxyShapeStageExtraData::finalize();
+    status = MayaUsd::MayaUsdProxyShapeStageExtraData::finalize();
     CHECK_MSTATUS(status);
 
     status = MHWRender::MDrawRegistry::deregisterDrawOverrideCreator(

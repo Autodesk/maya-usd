@@ -347,7 +347,7 @@ MStatus initializePlugin(MObject obj)
     }
 
 #if defined(WANT_UFE_BUILD)
-    MayaUsd::LayerManager::addSupportForNodeType(MAYAUSD_NS::ProxyShape::typeId);
+    MayaUsd::LayerManager::addSupportForNodeType(MayaUsd::ProxyShape::typeId);
 #if defined(WANT_QT_BUILD)
     UsdLayerEditor::initialize();
     MayaUsd::LayerManager::SetBatchSaveDelegate(UsdLayerEditor::batchSaveLayersUIDelegate);
@@ -465,7 +465,7 @@ MStatus uninitializePlugin(MObject obj)
 #endif
 
 #if defined(WANT_UFE_BUILD)
-    MayaUsd::LayerManager::removeSupportForNodeType(MAYAUSD_NS::ProxyShape::typeId);
+    MayaUsd::LayerManager::removeSupportForNodeType(MayaUsd::ProxyShape::typeId);
 #if defined(WANT_QT_BUILD)
     MayaUsd::LayerManager::SetBatchSaveDelegate(nullptr);
 #endif
