@@ -2092,8 +2092,9 @@ void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChang
 
     switch (_ClassifyUsdObjectsChanged(notice)) {
     case _UsdChangeType::kIgnored: return;
+    case _UsdChangeType::kResync: ++_UsdStageResyncCounter;
+    // [[fallthrough]]; // We want that fallthrough to have the update always triggered.
     case _UsdChangeType::kUpdate: ++_UsdStageUpdateCounter; break;
-    case _UsdChangeType::kResync: ++_UsdStageResyncCounter; break;
     }
 
     // Recompute the extents of any UsdGeomBoundable that has authored extents
