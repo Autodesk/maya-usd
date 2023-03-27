@@ -1,42 +1,43 @@
 # Hydra for Maya (Technology Preview)
 
-_Hydra for Maya_ introduces Hydra as a viewport framework for Maya and it allows extending the viewport render engine through Hydra render delegates. Unlike _MtoH_ it utilizes a new API for efficient translation of Maya or USD data.
-To ensure Autodesk builds the right foundation, this API is subject to change. Because of this _Hydra for Maya_ is currently a Technology Preview and not feature complete. In addition there are also current limitations in the Hydra framework which are under consideration.
+The _Hydra for Maya_ project creates a Maya plugin that replaces the main Maya viewport with a Hydra viewer. _Hydra for Maya_ is developed and maintained by Autodesk. The project and this documentation are a work-in-progress and under active development. The contents of this repository are fully open source and open to contributions under the [Apache license](../../doc/LICENSE.md)!
 
-## What it can do?
-- Use Storm as the default render delegate for Maya's viewport
-- Render and interact with most of Maya's node types
-- Use different render delegates using USD/Hydra's plugin system
-- Natively view USD data with USD Extension for Maya through SceneIndex rather than SceneDelegates
-- Use it side-by-side with Maya's current Viewport 2.0
+Hydra is the rendering API inside [Pixar's USD](http://openusd.org/).
 
-## Maya DAG node scene index registration
+## Motivation
 
-DAG node scene index registration enables the use of custom scene indices for drawing of custom Maya shapes via Hydra prims. Internally, we are using this technology to enable maya-usd with the new Hydra viewport with no dependencies on maya-usd from maya-hydra and vice-versa.
+The goal for _Hydra for Maya_ is to introduce Hydra as an open source viewport framework for Maya to extend the viewport render engine through Hydra render delegates. _Hydra for Maya_ uses the previous Maya to Hydra (MtoH) code, which is part of MayaUSD, as a foundation to build on. You can find more details on what changed from MtoH [here](./doc/mayaHydraDetails.md). _Hydra for Maya_ is currently a Technology Preview; we are just laying the foundation and there is still work ahead. As the plugin evolves and the Hydra technology matures, you can expect changes to API and to face limitations.
 
-The registration code is called on the first, render override frame, when Hydra resources are initialized (MtohRenderOverride::_InitHydraResources). Upon first initialization, or when a node is added, a scene index is created. In the case of MayaUsd the nodes in question are MayaUsdProxyShapeBase. The scene index defined by the MayaUsdProxyShapeMayaNodeSceneIndex simply wraps UsdImagingSceneIndex which knows how to draw Usd data.
+## What can it do?
 
+With the _Hydra for Maya_ plugin, you can:
+
+- Use Storm as the default render delegate for Maya's viewport.
+- Render and interact with most of Maya's node types.
+- Use different render delegates using USD/Hydra's plugin system.
+- Natively view USD data with USD Extension for Maya through HdSceneIndex.
+- Use Hydra side-by-side with Maya's current Viewport 2.0.
 
 ## Current Limitations
-This is a list of known issues and limitations.
 
-- USD stage viewable only. Interactive transform edits are not working with the chosen v22.11 USD release (Fixed by https://github.com/PixarAnimationStudios/USD/commit/9516b96e90).
-- UsdGeomCapsule, UsdGeomCone, UsdGeomCube, UsdGeomCylinder, and UsdGeomSphere are not supported. Use the supported UsdGeomMesh to create such geometries.
-- MaterialX is not supported
-- Basic support for Maya materials (only direct texture inputs)
-- Hypershade nodes are not supported except texture inputs
-- Drawing issues with selection and highlighting
-- Shading differences with Maya's Viewport 2.0
-- Blue Pencil is not supported
-- Screen space effects like depth of field and motion blur are not supported through Storm
-- Following Maya node types are not viewable:
-    - Bifrost
-    - nParticles
-    - Fluid
-- Arnold lights are not supported with Storm
-- Animation Ghosting has wrong shading
+The _Hydra for Maya_ plugin has the following isses and limitations:.
 
+- The USD stage is only viewable. Interactive transform edits are not working with the v22.11 USD release (Fixed by https://github.com/PixarAnimationStudios/USD/commit/9516b96e90).
+- UsdGeomCapsule, UsdGeomCone, UsdGeomCube, UsdGeomCylinder, and UsdGeomSphere are not supported. UsdGeomMesh can be used as an alternative.
+- MaterialX is not supported.
+- Only direct texture inputs are supported for Maya materials.
+- Limited support for Maya shader networks.
+- Drawing issues with selection and highlighting.
+- Hydra shading differs from Maya's Viewport 2.0.
+- Blue Pencil is not supported.
+- Screen space effects like depth of field and motion blur are not supported through Storm.
+- The following Maya node types are not viewable:
+  - Bifrost
+  - nParticles
+  - Fluid
+- Arnold lights are not supported with Storm.
+- Animation Ghosting has the wrong shading.
 
 ## Detailed Documentation
 + [Building the mayaHydra.mll plugin](./doc/mayaHydraBuild.md)
-+ [Differences between MayaHydra and Mtoh (Luma Pictures)](./doc/mayaHydraVsMtoh.md)
++ [Technical details of MayaHydra](./doc/mayaHydraDetails.md)
