@@ -25,7 +25,7 @@ namespace ufe {
 class MAYAUSD_CORE_PUBLIC UsdUINodeGraphNode
     : public
 #ifdef UFE_V4_1_FEATURES_AVAILABLE
-      Ufe::UINodeGraphNode_v41
+      Ufe::UINodeGraphNode_v4_1
 #else
       Ufe::UINodeGraphNode
 #endif

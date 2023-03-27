@@ -102,8 +102,8 @@ class UINodeGraphNodeTestCase(unittest.TestCase):
         ball3Path = ufe.PathString.path('|transform1|proxyShape1,/Ball_set/Props/Ball_3')
         ball3SceneItem = ufe.Hierarchy.createItem(ball3Path)
 
-        if(hasattr(ufe, "UINodeGraphNode_v41")):
-            uiNodeGraphNode = ufe.UINodeGraphNode_v41.uiNodeGraphNode(ball3SceneItem)
+        if(hasattr(ufe, "UINodeGraphNode_v4_1")):
+            uiNodeGraphNode = ufe.UINodeGraphNode_v4_1.uiNodeGraphNode(ball3SceneItem)
         else:
             uiNodeGraphNode = ufe.UINodeGraphNode.uiNodeGraphNode(ball3SceneItem)
         
