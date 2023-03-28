@@ -2087,7 +2087,7 @@ void MayaUsdProxyShapeBase::onAncestorPlugDirty(MPlug& plug)
 
     // Some ancestor plugs affect proxy accessor plugs connected to EditAsMaya primitives
     // (like 'combinedVisibility'). Filter those and trigger proxy accessor recomputation.
-    // Also make sure the stage is clean to prevent its wrong validation 
+    // Also make sure the stage is clean to prevent its wrong validation
     // inside ProxyAccessor::collectAccessorItems
     const auto plugName = plug.partialName();
     const bool isAffecting = (plugName == "v" || plugName == "lodv");

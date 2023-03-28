@@ -612,7 +612,7 @@ MStatus ProxyAccessor::computeOutput(
         MDagPath  proxyShapeDagPath = MayaUsd::ufe::ufeToDagPath(proxyShapeUfePath);
         bool      visible = proxyShapeDagPath.isVisible();
 #else
-        bool      visible = true;
+        bool visible = true;
 #endif
         // Next, verify visibility of the usd prim
         UsdGeomImageable imageable(itemPrim);
