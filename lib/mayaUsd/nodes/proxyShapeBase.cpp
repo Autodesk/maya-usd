@@ -1598,14 +1598,10 @@ MStatus MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray&
     retValue = MPxSurfaceShape::setDependentsDirty(plug, plugArray);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    // Add proxy accessor's dirty dependents.
-    // If the stage is dirty at this point, we cannot access it because
-    // we are in the dirtying phase and so its validation will be incorrect.
-    const bool isStageClean = forceCache().isClean(outStageDataAttr);
-    if (isStageClean && (plug == timeAttr || plug.isDynamic())) {
-        // If accessor returns success when adding dirty plugs we have to get renderer to
-        // trigger compute. We achieve it by adding timeAttr to dirty plugArray. This will
-        // guarantee we don't render something that requires inputs evaluted by DG.
+    // If accessor returns success when adding dirty plugs we have to get renderer to
+    // trigger compute. We achieve it by adding timeAttr to dirty plugArray. This will guarantee
+    // we don't render something that requires inputs evaluted by DG.
+    if (plug == timeAttr || plug.isDynamic()) {
         if (ProxyAccessor::addDependentsDirty(_usdAccessor, plug, plugArray) == MS::kSuccess) {
             MPlug outTimePlug(thisMObject(), outTimeAttr);
             plugArray.append(outTimePlug);
@@ -2091,9 +2087,11 @@ void MayaUsdProxyShapeBase::onAncestorPlugDirty(MPlug& plug)
 
     // Some ancestor plugs affect proxy accessor plugs connected to EditAsMaya primitives
     // (like 'combinedVisibility'). Filter those and trigger proxy accessor recomputation.
+    // Also make sure the stage is clean to prevent its wrong validation 
+    // inside ProxyAccessor::collectAccessorItems
     const auto plugName = plug.partialName();
     const bool isAffecting = (plugName == "v" || plugName == "lodv");
-    if (pathChanged || isAffecting) {
+    if ((pathChanged || isAffecting) && forceCache().isClean(outStageDataAttr)) {
         ProxyAccessor::forceCompute(_usdAccessor, obj);
     }
 

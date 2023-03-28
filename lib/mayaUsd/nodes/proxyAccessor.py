@@ -244,7 +244,7 @@ def parentItems(ufeChildren, ufeParent, connect=True):
         print('{} "{}" to "{}"'.format(
             ["Disconnecting", "Connecting"][connect],
             parentConnectionAttr, childConnectionAttr))
-        childVisibilityAttr = childDagPath+'.visibility'
+        childVisibilityAttr = childDagPath+'.lodVisibility' # cannot use 'visibility' here because it's already used by orphan manager
         print('{} "{}" to "{}"'.format(
             ["Disconnecting", "Connecting"][connect],
             parentVisibilityAttr, childVisibilityAttr))
