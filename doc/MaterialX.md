@@ -84,7 +84,7 @@ The same spheres exported with MaterialX shading and loaded as a USD stage: ![al
 
 Two options:
 - Install MayaUSD v0.16.0 on top of Maya 2022.3 or PR132
-- Rebuild tip of MayaUSD repo using a MaterialX-enabled build of USD and a supported Maya version
+- Rebuild tip of MayaUSD repo using a MaterialX-enabled build of USD and a supported Maya version using the `--materialx` option to enable MaterialX in MayaUSD.
 
 Once the updated plugin is in use, the viewport will automatically select MaterialX shading over UsdPreviewSurface shading if the referenced USD stage contains MaterialX shading networks.
 

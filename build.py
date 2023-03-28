@@ -375,6 +375,11 @@ def BuildAndInstall(context, buildArgs, stages):
             extraArgs.append('-DMAYA_DEVKIT_LOCATION="{devkitLocation}"'
                              .format(devkitLocation=context.devkitLocation))
 
+        if context.materialxEnabled and context.pxrUsdLocation:
+            extraArgs.append('-DCMAKE_WANT_MATERIALX_BUILD=ON')
+            extraArgs.append('-DCMAKE_PREFIX_PATH="{materialxLocation}"'
+                             .format(materialxLocation=context.pxrUsdLocation))
+
         # Many people on Windows may not have python with the 
         # debugging symbol (python27_d.lib) installed, this is the common case.
         if context.buildDebug and context.debugPython:
@@ -450,6 +455,9 @@ parser.add_argument("--pxrusd-location", type=str,
 
 parser.add_argument("--devkit-location", type=str,
                     help="Directory where Maya Devkit is installed.")
+
+parser.add_argument("--materialx", dest="build_materialx", action="store_true",
+                    help="Build with MaterialX features enabled. Must provide a USD location built with MaterialX support.")
 
 varGroup = parser.add_mutually_exclusive_group()
 varGroup.add_argument("--build-debug", dest="build_debug", action="store_true",
@@ -541,6 +549,9 @@ class InstallContext:
         # Qt Location
         self.qtLocation = (os.path.abspath(args.qt_location)
                            if args.qt_location else None)
+
+        # MaterialX
+        self.materialxEnabled = args.build_materialx
 
         # Log File Name
         logFileName="build_log.txt"
