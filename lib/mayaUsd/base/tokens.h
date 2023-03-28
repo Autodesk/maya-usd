@@ -103,7 +103,7 @@ TF_DECLARE_PUBLIC_TOKENS(MayaUsdOptionVars, MAYAUSD_CORE_PUBLIC, MAYA_USD_OPTION
 
 TF_DECLARE_PUBLIC_TOKENS(MayaUsdMetadata, MAYAUSD_CORE_PUBLIC, MAYA_USD_METADATA_TOKENS);
 
-// geeric tokens in MayaUSD
+// generic tokens in MayaUSD
 //
 // clang-format off
 #define MAYA_USD_GENERIC_TOKENS                          \
@@ -117,6 +117,70 @@ TF_DECLARE_PUBLIC_TOKENS(MayaUsdMetadata, MAYAUSD_CORE_PUBLIC, MAYA_USD_METADATA
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(MayaUsdTokens, MAYAUSD_CORE_PUBLIC, MAYA_USD_GENERIC_TOKENS);
+
+// Tokens for edit routing in MayaUSD
+//
+// clang-format off
+#define MAYA_USD_EDIT_ROUTING_TOKENS                    \
+    /* Tokens shared by multiple edit routers        */ \
+                                                        \
+    /* Prim received in the context                  */ \
+    ((Prim, "prim"))                                    \
+    /* Layer received in the context                 */ \
+    ((Layer, "layer"))                                  \
+    /* Routing operation                             */ \
+    ((Operation, "operation"))                          \
+    /* Stage received in the context of some router  */ \
+    ((Stage, "stage"))                                  \
+                                                        \
+    /* Routing operations                            */ \
+                                                        \
+    ((RouteCacheToUSD, "mayaReferencePush"))            \
+    ((RouteParent, "parent"))                           \
+    ((RouteDuplicate, "duplicate"))                     \
+    ((RouteVisibility, "visibility"))                   \
+    ((RouteAttribute, "attribute"))                     \
+                                                        \
+    /* Tokens for cache-to-USD routing               */ \
+                                                        \
+    /* Prim type under which the cache is created    */ \
+    ((Xform, "Xform"))                                  \
+    /* Default USD file format for cache             */ \
+    ((DefaultUSDFormat, "defaultUSDFormat"))            \
+    /* Destination layer for caching                 */ \
+    ((DestinationLayerPath, "rn_layer"))                \
+    /* Destination prim for caching                  */ \
+    ((DestinationPrimName, "rn_primName"))              \
+    /* If reference added as an append or preprend   */ \
+    ((ListEditType, "rn_listEditType"))                 \
+    /* Is cache a reference or payload               */ \
+    ((PayloadOrReference, "rn_payloadOrReference"))     \
+    /* Is cache defined in a variant                 */ \
+    ((DefineInVariant, "rn_defineInVariant"))           \
+    /* Name of variant set for the cache             */ \
+    ((VariantSetName, "rn_variantSetName"))             \
+    /* Name of the variant for the cache             */ \
+    ((VariantName, "rn_variantName"))                   \
+    /* Source stage for copying the transform        */ \
+    ((SrcStage, "src_stage"))                           \
+    /* Source layer for copying the transform        */ \
+    ((SrcLayer, "src_layer"))                           \
+    /* Source prim  for copying the transform        */ \
+    ((SrcPath, "src_path"))                             \
+    /* Destination stage for copying the transform   */ \
+    ((DstStage, "dst_stage"))                           \
+    /* Destination layer for copying the transform   */ \
+    ((DstLayer, "dst_layer"))                           \
+    /* Destination prim for copying the transform    */ \
+    ((DstPath, "dst_path"))                             \
+    /* Flag if the layer was saved (yes/no)          */ \
+    ((SaveLayer, "save_layer"))                         \
+    /* Final path to the cache                       */ \
+    ((Path, "path"))                                    \
+                                                        \
+// clang-format on
+
+TF_DECLARE_PUBLIC_TOKENS(MayaUsdEditRoutingTokens, MAYAUSD_CORE_PUBLIC, MAYA_USD_EDIT_ROUTING_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

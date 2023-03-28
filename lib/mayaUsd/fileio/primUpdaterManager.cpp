@@ -15,6 +15,7 @@
 //
 #include "primUpdaterManager.h"
 
+#include <mayaUsd/base/tokens.h>
 #include <mayaUsd/fileio/fallbackPrimUpdater.h>
 #include <mayaUsd/fileio/importData.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
@@ -935,8 +936,9 @@ bool PrimUpdaterManager::mergeToUsd(
 
     // Are we doing a merge or cache?
     MString progStr(
-        VtDictionaryIsHolding<std::string>(userArgs, "rn_primName") ? "Caching to USD"
-                                                                    : "Merging to USD");
+        VtDictionaryIsHolding<std::string>(userArgs, MayaUsdEditRoutingTokens->DestinationPrimName)
+            ? "Caching to USD"
+            : "Merging to USD");
     MayaUsd::ProgressBarScope progressBar(11, progStr);
     PushPullScope             scopeIt(_inPushPull);
 
