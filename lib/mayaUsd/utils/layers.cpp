@@ -116,16 +116,33 @@ void enforceMutedLayer(const PXR_NS::UsdPrim& prim, const char* command)
     }
 }
 
+static SdfPrimSpecHandleVector _GetLocalPrimStack(const UsdPrim& prim)
+{
+    SdfPrimSpecHandleVector primSpecs;
+
+    UsdStagePtr stage = prim.GetStage();
+    if (!stage)
+        return primSpecs;
+
+    for (const SdfLayerHandle& layer : stage->GetLayerStack()) {
+        const SdfPrimSpecHandle primSpec = layer->GetPrimAtPath(prim.GetPath());
+        if (primSpec)
+            primSpecs.push_back(primSpec);
+    }
+
+    return primSpecs;
+}
+
 void applyToAllPrimSpecs(const UsdPrim& prim, const PrimSpecFunc& func)
 {
-    const SdfPrimSpecHandleVector primStack = prim.GetPrimStack();
+    const SdfPrimSpecHandleVector primStack = _GetLocalPrimStack(prim);
     for (const SdfPrimSpecHandle& spec : primStack)
         func(prim, spec);
 }
 
 void applyToAllLayersWithOpinions(const UsdPrim& prim, PrimLayerFunc& func)
 {
-    const SdfPrimSpecHandleVector primStack = prim.GetPrimStack();
+    const SdfPrimSpecHandleVector primStack = _GetLocalPrimStack(prim);
     for (const SdfPrimSpecHandle& spec : primStack) {
         const auto layer = spec->GetLayer();
         func(prim, layer);
@@ -137,7 +154,7 @@ void applyToSomeLayersWithOpinions(
     const std::set<SdfLayerRefPtr>& layers,
     PrimLayerFunc&                  func)
 {
-    const SdfPrimSpecHandleVector primStack = prim.GetPrimStack();
+    const SdfPrimSpecHandleVector primStack = _GetLocalPrimStack(prim);
     for (const SdfPrimSpecHandle& spec : primStack) {
         const auto layer = spec->GetLayer();
         if (layers.count(layer) == 0)
