@@ -20,6 +20,8 @@
 #include <pxr/usd/usd/tokens.h>
 #include <pxr/usd/usdUI/tokens.h>
 
+#include <mutex>
+
 using namespace MAYAUSD_NS_DEF;
 
 PXR_NAMESPACE_OPEN_SCOPE
