@@ -133,7 +133,9 @@ void MayaUsdProxyShapeSceneIndex::Populate()
             // care of inside MayaUsdProxyShapeSceneIndex::_StageSet callback.
             {
                 _usdImagingStageSceneIndex->SetStage(stage);
+#if PXR_VERSION <= 2302
                 _usdImagingStageSceneIndex->Populate();
+#endif
                 _populated = true;
             }
         }
