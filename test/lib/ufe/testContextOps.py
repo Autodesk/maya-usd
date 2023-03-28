@@ -1483,13 +1483,72 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(topSubset.GetFamilyNameAttr().Get(), "componentTag")
         self.assertFalse(topSubset.GetPrim().HasAPI(UsdShade.MaterialBindingAPI))
 
+        counters= { "resync": cmds.getAttr(psPathStr + '.resyncId'),
+                    "update" : cmds.getAttr(psPathStr + '.upid')}
+
+        def assertIsOnlyUpdate(self, counters, shapePathStr):
+            resyncCounter = cmds.getAttr(shapePathStr + '.resyncId')
+            updateCounter = cmds.getAttr(shapePathStr + '.updateId')
+            self.assertEqual(resyncCounter, counters["resync"])
+            self.assertGreater(updateCounter, counters["update"])
+            counters["resync"] = resyncCounter
+            counters["update"] = updateCounter
+
+        def assertIsResync(self, counters, shapePathStr):
+            resyncCounter = cmds.getAttr(shapePathStr + '.resyncId')
+            updateCounter = cmds.getAttr(shapePathStr + '.updateId')
+            self.assertGreater(resyncCounter, counters["resync"])
+            self.assertGreater(updateCounter, counters["update"])
+            counters["resync"] = resyncCounter
+            counters["update"] = updateCounter
+
         contextOps = ufe.ContextOps.contextOps(topItem)
         cmd = contextOps.doOpCmd(['Assign New Material', 'USD', 'UsdPreviewSurface'])
         self.assertIsNotNone(cmd)
         ufeCmd.execute(cmd)
 
+        snIter = iter(ufe.GlobalSelection.get())
+        shaderItem = next(snIter)
+
         self.assertEqual(topSubset.GetFamilyNameAttr().Get(), "materialBind")
         self.assertTrue(topSubset.GetPrim().HasAPI(UsdShade.MaterialBindingAPI))
+
+        # We expect a resync after this assignment:
+        assertIsResync(self, counters, psPathStr)
+
+        # setting a value the first time is a resync due to the creation of the attribute:
+        attrs = ufe.Attributes.attributes(shaderItem)
+        metallicAttr = attrs.attribute("inputs:metallic")
+        ufeCmd.execute(metallicAttr.setCmd(0.5))
+        assertIsResync(self, counters, psPathStr)
+
+        # Subsequent changes are updates:
+        ufeCmd.execute(metallicAttr.setCmd(0.7))
+        assertIsOnlyUpdate(self, counters, psPathStr)
+
+        # First undo is an update:
+        cmds.undo()
+        assertIsOnlyUpdate(self, counters, psPathStr)
+
+        # Second undo is a resync:
+        cmds.undo()
+        assertIsResync(self, counters, psPathStr)
+
+        # Third undo is also resync:
+        cmds.undo()
+        assertIsResync(self, counters, psPathStr)
+
+        # First redo is resync:
+        cmds.redo()
+        assertIsResync(self, counters, psPathStr)
+
+        # Second redo is resync:
+        cmds.redo()
+        assertIsResync(self, counters, psPathStr)
+
+        # Third redo is update:
+        cmds.redo()
+        assertIsOnlyUpdate(self, counters, psPathStr)
 
 
 if __name__ == '__main__':
