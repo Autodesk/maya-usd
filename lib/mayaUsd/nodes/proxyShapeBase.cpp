@@ -1599,7 +1599,7 @@ MStatus MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray&
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     // Add proxy accessor's dirty dependents.
-    // If the stage is dirty at this point, we cannot access it because 
+    // If the stage is dirty at this point, we cannot access it because
     // we are in the dirtying phase and so its validation will be incorrect.
     const bool isStageClean = forceCache().isClean(outStageDataAttr);
     if (isStageClean && (plug == timeAttr || plug.isDynamic())) {
@@ -2068,8 +2068,8 @@ void MayaUsdProxyShapeBase::updateAncestorCallbacks()
     for (ancestorPath.pop(); ancestorPath.isValid() && ancestorPath.length() > 0;
          ancestorPath.pop()) {
         MObject ancestorObj = ancestorPath.node();
-        _ancestorCallbacks.push_back(
-            MNodeMessage::addNodeDirtyPlugCallback(ancestorObj, _proxyShapeAncestorPlugDirty, this));
+        _ancestorCallbacks.push_back(MNodeMessage::addNodeDirtyPlugCallback(
+            ancestorObj, _proxyShapeAncestorPlugDirty, this));
     }
 }
 
@@ -2084,13 +2084,13 @@ void MayaUsdProxyShapeBase::onAncestorPlugDirty(MPlug& plug)
     const MObject obj = thisMObject();
     MDagPath      proxyShapePath;
     MDagPath::getAPathTo(obj, proxyShapePath);
-    const bool pathChanged = (proxyShapePath.fullPathName() != _ancestorCallbacksPath); 
+    const bool pathChanged = (proxyShapePath.fullPathName() != _ancestorCallbacksPath);
     if (pathChanged) {
         updateAncestorCallbacks();
     }
 
     // Some ancestor plugs affect proxy accessor plugs connected to EditAsMaya primitives
-    // (like 'combinedVisibility'). Filter those and trigger proxy accessor recomputation. 
+    // (like 'combinedVisibility'). Filter those and trigger proxy accessor recomputation.
     const auto plugName = plug.partialName();
     const bool isAffecting = (plugName == "v" || plugName == "lodv");
     if (pathChanged || isAffecting) {
