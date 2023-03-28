@@ -1598,10 +1598,14 @@ MStatus MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray&
     retValue = MPxSurfaceShape::setDependentsDirty(plug, plugArray);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    // If accessor returns success when adding dirty plugs we have to get renderer to
-    // trigger compute. We achieve it by adding timeAttr to dirty plugArray. This will guarantee
-    // we don't render something that requires inputs evaluted by DG.
-    if (plug == timeAttr || plug.isDynamic()) {
+    // Add proxy accessor's dirty dependents.
+    // If the stage is dirty at this point, we cannot access it because 
+    // we are in the dirtying phase and so its validation will be incorrect.
+    const bool isStageClean = forceCache().isClean(outStageDataAttr);
+    if (isStageClean && (plug == timeAttr || plug.isDynamic())) {
+        // If accessor returns success when adding dirty plugs we have to get renderer to
+        // trigger compute. We achieve it by adding timeAttr to dirty plugArray. This will
+        // guarantee we don't render something that requires inputs evaluted by DG.
         if (ProxyAccessor::addDependentsDirty(_usdAccessor, plug, plugArray) == MS::kSuccess) {
             MPlug outTimePlug(thisMObject(), outTimeAttr);
             plugArray.append(outTimePlug);
@@ -2029,11 +2033,11 @@ bool MayaUsdProxyShapeBase::closestPoint(
 
 bool MayaUsdProxyShapeBase::canMakeLive() const { return (bool)_sharedClosestPointDelegate; }
 
-void _proxyShapeAncestorDirty(MObject& node, void* clientData)
+void _proxyShapeAncestorPlugDirty(MObject& node, MPlug& plug, void* clientData)
 {
     auto proxyShape = static_cast<MayaUsdProxyShapeBase*>(clientData);
     if (proxyShape) {
-        proxyShape->onAncestorDirty();
+        proxyShape->onAncestorPlugDirty(plug);
     }
 }
 
@@ -2053,7 +2057,7 @@ void MayaUsdProxyShapeBase::updateAncestorCallbacks()
     // Add our own callback
     MObject obj = thisMObject();
     _ancestorCallbacks.push_back(
-        MNodeMessage::addNodeDirtyCallback(obj, _proxyShapeAncestorDirty, this));
+        MNodeMessage::addNodeDirtyPlugCallback(obj, _proxyShapeAncestorPlugDirty, this));
 
     // Remember the path for which we are accumulating the callbacks
     MDagPath ancestorPath;
@@ -2065,11 +2069,11 @@ void MayaUsdProxyShapeBase::updateAncestorCallbacks()
          ancestorPath.pop()) {
         MObject ancestorObj = ancestorPath.node();
         _ancestorCallbacks.push_back(
-            MNodeMessage::addNodeDirtyCallback(ancestorObj, _proxyShapeAncestorDirty, this));
+            MNodeMessage::addNodeDirtyPlugCallback(ancestorObj, _proxyShapeAncestorPlugDirty, this));
     }
 }
 
-void MayaUsdProxyShapeBase::onAncestorDirty()
+void MayaUsdProxyShapeBase::onAncestorPlugDirty(MPlug& plug)
 {
     if (_inAncestorCallback) {
         return;
@@ -2080,13 +2084,18 @@ void MayaUsdProxyShapeBase::onAncestorDirty()
     const MObject obj = thisMObject();
     MDagPath      proxyShapePath;
     MDagPath::getAPathTo(obj, proxyShapePath);
-    if (proxyShapePath.fullPathName() != _ancestorCallbacksPath) {
+    const bool pathChanged = (proxyShapePath.fullPathName() != _ancestorCallbacksPath); 
+    if (pathChanged) {
         updateAncestorCallbacks();
     }
 
-    // Some plugs (for example 'combinedVisibility') may need updating.
-    // Initialize recomputation of those.
-    ProxyAccessor::forceCompute(_usdAccessor, obj);
+    // Some ancestor plugs affect proxy accessor plugs connected to EditAsMaya primitives
+    // (like 'combinedVisibility'). Filter those and trigger proxy accessor recomputation. 
+    const auto plugName = plug.partialName();
+    const bool isAffecting = (plugName == "v" || plugName == "lodv");
+    if (pathChanged || isAffecting) {
+        ProxyAccessor::forceCompute(_usdAccessor, obj);
+    }
 
     _inAncestorCallback = false;
 }

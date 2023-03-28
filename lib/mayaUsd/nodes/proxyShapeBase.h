@@ -290,7 +290,7 @@ public:
     bool isIncomingLayer(const std::string& layerIdentifier) const;
 
     MAYAUSD_CORE_PUBLIC
-    void onAncestorDirty();
+    void onAncestorPlugDirty(MPlug& plug);
 
 protected:
     MAYAUSD_CORE_PUBLIC
