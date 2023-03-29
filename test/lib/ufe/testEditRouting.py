@@ -304,6 +304,7 @@ class EditRoutingTestCase(unittest.TestCase):
 
         self._verifyEditRouterPreventingCmd('visibility', hide, verifyNoHide)
  
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2024, 'Requires Maya fixes for duplicate command error messages only available in Maya 2024 or greater.')
     def testPreventDuplicateCmd(self):
         '''
         Test edit router preventing the duplicate command by raising an exception.
