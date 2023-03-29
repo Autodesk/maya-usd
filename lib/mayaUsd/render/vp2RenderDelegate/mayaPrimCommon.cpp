@@ -24,6 +24,8 @@
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
+#include <mayaUsd/utils/util.h>
+
 #include <maya/MFnDisplayLayer.h>
 #include <maya/MFnDisplayLayerManager.h>
 #include <maya/MObjectArray.h>
@@ -43,6 +45,8 @@ const MString MayaUsdRPrim::kSolidColorStr("solidColor");
 
 constexpr auto sDrawModeAllButBBox = (MHWRender::MGeometry::DrawMode)(
     MHWRender::MGeometry::kAll & ~MHWRender::MGeometry::kBoundingBox);
+
+static const InstancePrototypePath sVoidInstancePrototypePath { SdfPath(), kNativeInstancing };
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
 
@@ -97,6 +101,7 @@ void MayaUsdCustomData::RemoveInstancePrimPaths(const SdfPath& prim)
 
 MayaUsdRPrim::MayaUsdRPrim(HdVP2RenderDelegate* delegate, const SdfPath& id)
     : _delegate(delegate)
+    , _hydraId(id)
     , _rprimId(id.GetText())
 {
     // Store a string version of the Cache Path to be used to tag MRenderItems. The CachePath is
@@ -105,6 +110,16 @@ MayaUsdRPrim::MayaUsdRPrim(HdVP2RenderDelegate* delegate, const SdfPath& id)
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
     _PrimSegmentString.append(
         drawScene.GetScenePrimPath(id, UsdImagingDelegate::ALL_INSTANCES).GetString().c_str());
+}
+
+MayaUsdRPrim::~MayaUsdRPrim()
+{
+    if (!_pathInPrototype.first.IsEmpty()) {
+        // Clear my entry from the instancing map
+        auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+        ProxyRenderDelegate& drawScene = param->GetDrawScene();
+        drawScene.UpdateInstancingMapEntry(_pathInPrototype, sVoidInstancePrototypePath, _hydraId);
+    }
 }
 
 void MayaUsdRPrim::_CommitMVertexBuffer(MHWRender::MVertexBuffer* const buffer, void* bufferData)
@@ -335,18 +350,26 @@ HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
 
     // display layers handling
     if (!drawScene.GetUsdImagingDelegate()->GetInstancerId(id).IsEmpty()) {
-        _displayLayerModes = DisplayLayerModes();
+        // Sync display layer modes for instanced prims.
+        // This also sets the value of '_useInstancedDisplayLayerModes' that identifies whether
+        // display layer modes will be handled on per-primitive or per-instance basis
+        _SyncDisplayLayerModes(id, true);
 
         // Instanced primitives with instances in display layers use 'forced' representations to
         // draw those specific instances, so the 'forced' representations should be inited alongside
-        if (reprToken != HdVP2ReprTokens->forcedBbox) {
+        if (_useInstancedDisplayLayerModes && reprToken != HdVP2ReprTokens->forcedBbox
+            && reprToken != HdVP2ReprTokens->forcedWire
+            && reprToken != HdVP2ReprTokens->forcedUntextured) {
             refThis.InitRepr(
                 drawScene.GetUsdImagingDelegate(), HdVP2ReprTokens->forcedBbox, dirtyBits);
+            refThis.InitRepr(
+                drawScene.GetUsdImagingDelegate(), HdVP2ReprTokens->forcedWire, dirtyBits);
+            refThis.InitRepr(
+                drawScene.GetUsdImagingDelegate(), HdVP2ReprTokens->forcedUntextured, dirtyBits);
         }
     } else {
         // Sync display layer modes for non-instanced prims.
-        // For instanced prims, this will be done inside Sync method on a per-instance basis
-        _SyncDisplayLayerModes(id);
+        _SyncDisplayLayerModes(id, false);
     }
 
     _UpdateReprOverrides(reprs);
@@ -697,7 +720,8 @@ void MayaUsdRPrim::_ProcessDisplayLayerModes(
     }
 
     if (useRGBColors.asBool()) {
-        const float3& rgbColor = colorRGB.asMDataHandle().asFloat3();
+        auto          colorRGBHolder = UsdMayaUtil::GetPlugDataHandle(colorRGB);
+        const float3& rgbColor = colorRGBHolder->GetDataHandle().asFloat3();
         displayLayerModes._wireframeColorIndex = -1;
         displayLayerModes._wireframeColorRGBA
             = MColor(rgbColor[0], rgbColor[1], rgbColor[2], colorA.asFloat());
@@ -742,7 +766,7 @@ void MayaUsdRPrim::_PopulateDisplayLayerModes(
 }
 #endif
 
-void MayaUsdRPrim::_SyncDisplayLayerModes(SdfPath const& id)
+void MayaUsdRPrim::_SyncDisplayLayerModes(SdfPath const& id, bool instancedPrim)
 {
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
@@ -753,7 +777,21 @@ void MayaUsdRPrim::_SyncDisplayLayerModes(SdfPath const& id)
     }
 
     _displayLayerModesFrame = drawScene.GetFrameCounter();
-    auto usdPath = drawScene.GetScenePrimPath(id, UsdImagingDelegate::ALL_INSTANCES);
+
+    // Obtain scene prim path
+    HdInstancerContext instancerContext;
+    int                instanceIndex = instancedPrim ? 0 : UsdImagingDelegate::ALL_INSTANCES;
+    auto               usdPath = drawScene.GetScenePrimPath(id, instanceIndex, &instancerContext);
+
+    // Native instances use per-instance _displayLayerModes
+    if (instancedPrim && instancerContext.empty()) {
+        _useInstancedDisplayLayerModes = true;
+        _displayLayerModes = DisplayLayerModes();
+        return;
+    }
+
+    // Otherwise, populate display layer modes
+    _useInstancedDisplayLayerModes = false;
     _PopulateDisplayLayerModes(usdPath, _displayLayerModes, drawScene);
 }
 
@@ -769,9 +807,9 @@ void MayaUsdRPrim::_SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned i
 
     _displayLayerModesInstancedFrame = drawScene.GetFrameCounter();
 
-    _needForcedBBox = false;
-    _needHideOnPlaybackMod = false;
-    if (drawScene.SupportPerInstanceDisplayLayers(id)) {
+    _forcedReprFlags = 0;
+    _requiredModFlagsBitset.reset();
+    if (_useInstancedDisplayLayerModes) {
         _displayLayerModesInstanced.resize(instanceCount);
         for (unsigned int usdInstanceId = 0; usdInstanceId < instanceCount; usdInstanceId++) {
             auto  usdPath = drawScene.GetScenePrimPath(id, usdInstanceId);
@@ -779,12 +817,21 @@ void MayaUsdRPrim::_SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned i
             _PopulateDisplayLayerModes(usdPath, displayLayerModes, drawScene);
 
             if (displayLayerModes._reprOverride == kBBox) {
-                _needForcedBBox = true;
+                _forcedReprFlags |= kForcedBBox;
+            } else if (displayLayerModes._reprOverride == kWire) {
+                _forcedReprFlags |= kForcedWire;
+            } else if (!displayLayerModes._texturing) {
+                _forcedReprFlags |= kForcedUntextured;
             }
 
+            int requiredModFlags = 0;
             if (displayLayerModes._hideOnPlayback) {
-                _needHideOnPlaybackMod = true;
+                requiredModFlags |= HdVP2DrawItem::kHideOnPlayback;
             }
+            if (displayLayerModes._displayType != kNormal) {
+                requiredModFlags |= HdVP2DrawItem::kUnselectable;
+            }
+            _requiredModFlagsBitset.set(requiredModFlags);
         }
     } else {
         _displayLayerModesInstanced.clear();
@@ -843,7 +890,8 @@ void MayaUsdRPrim::_SyncSharedData(
             auto* const param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
             auto&       drawScene = param->GetDrawScene();
 
-            SdfPath newPathInPrototype = instanced ? drawScene.GetPathInPrototype(id) : SdfPath();
+            InstancePrototypePath newPathInPrototype
+                = instanced ? drawScene.GetPathInPrototype(id) : sVoidInstancePrototypePath;
             drawScene.UpdateInstancingMapEntry(_pathInPrototype, newPathInPrototype, id);
             _pathInPrototype = newPathInPrototype;
         });
@@ -912,23 +960,29 @@ bool MayaUsdRPrim::_SyncCommon(
     return true;
 }
 
-MColor MayaUsdRPrim::_GetHighlightColor(const TfToken& className)
+MColor
+MayaUsdRPrim::_GetHighlightColor(const TfToken& className, HdVP2SelectionStatus selectionStatus)
 {
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
 
     if (_displayLayerModes._displayType == MayaUsdRPrim::kTemplate) {
-        return drawScene.GetTemplateColor(_selectionStatus != kUnselected);
+        return drawScene.GetTemplateColor(selectionStatus != kUnselected);
     } else if (
         _displayLayerModes._displayType == MayaUsdRPrim::kReference
-        && _selectionStatus == kUnselected) {
+        && selectionStatus == kUnselected) {
         return drawScene.GetReferenceColor();
     } else {
         return (
-            _selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
-                _selectionStatus == kFullyLead ? TfToken() : className)
-                                            : _GetWireframeColor());
+            selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
+                selectionStatus == kFullyLead ? TfToken() : className)
+                                           : _GetWireframeColor());
     }
+}
+
+MColor MayaUsdRPrim::_GetHighlightColor(const TfToken& className)
+{
+    return _GetHighlightColor(className, _selectionStatus);
 }
 
 MColor MayaUsdRPrim::_GetWireframeColor()
@@ -1011,32 +1065,104 @@ bool MayaUsdRPrim::_GetMaterialPrimvars(
     return true;
 }
 
-bool MayaUsdRPrim::_ShouldSkipInstance(
-    unsigned int   usdInstanceId,
-    const TfToken& reprToken,
-    bool           hideOnPlaybackItem) const
+bool MayaUsdRPrim::_FilterInstanceByDisplayLayer(
+    unsigned int           usdInstanceId,
+    BasicWireframeColors&  instanceColor,
+    const TfToken&         reprToken,
+    int                    modFlags,
+    bool                   isHighlightItem,
+    bool                   isDedicatedHighlightItem,
+    InstanceColorOverride& colorOverride) const
 {
     if (_displayLayerModesInstanced.size() <= usdInstanceId) {
         return false;
     }
 
+    // Verify display layer visibility
     const auto& displayLayerModes = _displayLayerModesInstanced[usdInstanceId];
     if (!displayLayerModes._visibility) {
         return true;
     }
 
-    if (reprToken == HdVP2ReprTokens->forcedBbox) {
-        if (displayLayerModes._reprOverride != kBBox) {
+    // Process draw mode overrides
+    const bool forcedBboxItem = (reprToken == HdVP2ReprTokens->forcedBbox);
+    const bool forcedWireItem = (reprToken == HdVP2ReprTokens->forcedWire);
+    const bool forcedUntexturedItem = (reprToken == HdVP2ReprTokens->forcedUntextured);
+    if (displayLayerModes._reprOverride == kNone) {
+        if (displayLayerModes._texturing) {
+            // In no-override mode, an instance should be drawn only by
+            // the non-forced reprs, so skip the forced ones.
+            if (forcedBboxItem || forcedWireItem || forcedUntexturedItem) {
+                return true;
+            }
+        } else {
+            // Untextured override cannot affect bbox and wire modes, so keep
+            // those reprs along with the forcedUntextured one.
+            // Also, since forcedUntextured repr doesn't have a dedicated highlight
+            // draw item, it is drawn by non-forced reprs.
+            bool bboxItem = reprToken == HdVP2ReprTokens->bbox;
+            bool wireItem = reprToken == HdReprTokens->wire;
+            if (!isDedicatedHighlightItem && !forcedUntexturedItem && !bboxItem && !wireItem) {
+                return true;
+            }
+        }
+    } else if (displayLayerModes._reprOverride == kWire) {
+        // Wire override cannot affect bbox mode so keep this repr
+        // along with the forcedWire one.
+        bool bboxItem = reprToken == HdVP2ReprTokens->bbox;
+        if (!forcedWireItem && !bboxItem) {
             return true;
         }
-    } else {
-        if (displayLayerModes._reprOverride == kBBox) {
+    } else if (displayLayerModes._reprOverride == kBBox) {
+        // Bbox override affects all draw modes.
+        if (!forcedBboxItem) {
             return true;
         }
     }
 
+    // Match item's hide-on-playback mode against that of the instance
+    const bool hideOnPlaybackItem = (modFlags & HdVP2DrawItem::kHideOnPlayback);
     if (displayLayerModes._hideOnPlayback != hideOnPlaybackItem) {
         return true;
+    }
+
+    // Match item's 'unselectable' mode against that of the instance
+    const bool unselectableItem = (modFlags & HdVP2DrawItem::kUnselectable);
+    const bool unselectableInstance = displayLayerModes._displayType != kNormal;
+    if (unselectableInstance != unselectableItem) {
+        return true;
+    }
+
+    // Template and reference modes may affect visibility and wireframe color of items
+    if (displayLayerModes._displayType == kTemplate) {
+        if (!isHighlightItem) {
+            return true; // Solid geometry is not drawn in the template mode
+        } else {
+            instanceColor = (instanceColor == kDormant) ? kTemplateDormat : kTemplateActive;
+        }
+    } else if (displayLayerModes._displayType == kReference) {
+        if (instanceColor == kDormant) {
+            if (isDedicatedHighlightItem) {
+                // Hide dedicated highlight items when unselected. Since 'template' and
+                // 'reference' modes share the same mod, we have to keep dedicated highlight
+                //  item generally enabled, and thus we have a special case here
+                return true;
+            } else {
+                instanceColor = kReferenceDormat;
+            }
+        }
+    }
+
+    // Now that we know that this instance will be rendered, let's check for color override.
+    if (colorOverride._allowed && instanceColor == kDormant) {
+        if (displayLayerModes._wireframeColorIndex > 0) {
+            colorOverride._enabled = true;
+            colorOverride._color = MColor(M3dView::active3dView().colorAtIndex(
+                displayLayerModes._wireframeColorIndex - 1, M3dView::kDormantColors));
+        } else if (displayLayerModes._wireframeColorIndex < 0) {
+            colorOverride._enabled = true;
+            colorOverride._color = displayLayerModes._wireframeColorRGBA;
+        }
     }
 
     return false;
@@ -1072,10 +1198,22 @@ void MayaUsdRPrim::_SyncForcedReprs(
         }
     };
 
-    if (_needForcedBBox) {
+    if (_forcedReprFlags & kForcedBBox) {
         refThis.Sync(delegate, renderParam, dirtyBits, HdVP2ReprTokens->forcedBbox);
     } else {
         _ForEachRenderItemInRepr(_FindRepr(reprs, HdVP2ReprTokens->forcedBbox), hideDrawItem);
+    }
+
+    if (_forcedReprFlags & kForcedWire) {
+        refThis.Sync(delegate, renderParam, dirtyBits, HdVP2ReprTokens->forcedWire);
+    } else {
+        _ForEachRenderItemInRepr(_FindRepr(reprs, HdVP2ReprTokens->forcedWire), hideDrawItem);
+    }
+
+    if (_forcedReprFlags & kForcedUntextured) {
+        refThis.Sync(delegate, renderParam, dirtyBits, HdVP2ReprTokens->forcedUntextured);
+    } else {
+        _ForEachRenderItemInRepr(_FindRepr(reprs, HdVP2ReprTokens->forcedUntextured), hideDrawItem);
     }
 }
 

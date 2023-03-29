@@ -16,6 +16,7 @@
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
+#include <mayaUsd/utils/utilSerialization.h>
 
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/pxr.h>
@@ -44,6 +45,13 @@ VtDictionary getDictionaryFromEncodedOptions(const std::string& textOptions)
     return dictOptions;
 }
 
+std::string ensureUSDFileExtension(const std::string& fileToCheck)
+{
+    std::string ret(fileToCheck);
+    MayaUsd::utils::ensureUSDFileExtension(ret);
+    return ret;
+}
+
 } // namespace
 
 void wrapUtil()
@@ -55,5 +63,7 @@ void wrapUtil()
                   .def("getDictionaryFromEncodedOptions", getDictionaryFromEncodedOptions)
                   .def(
                       "getPathRelativeToMayaSceneFile",
-                      &UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile);
+                      UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile)
+                  .def("ensureUSDFileExtension", ensureUSDFileExtension)
+                  .staticmethod("getPathRelativeToMayaSceneFile");
 }

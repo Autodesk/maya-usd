@@ -66,6 +66,21 @@ elseif(USD_INCLUDE_DIR AND EXISTS "${USD_INCLUDE_DIR}/pxr/pxr.h")
     math(EXPR PXR_VERSION "${USD_MAJOR_VERSION} * 10000 + ${USD_MINOR_VERSION} * 100 + ${USD_PATCH_VERSION}")
 endif()
 
+# Set special Autodesk USD version. We use this to communicate whether or not
+# there are extra patches on-top of the normal USD build.
+set(ADSK_USD_VERSION ${USD_VERSION})
+if (USD_VERSION VERSION_LESS_EQUAL "0.23.02")
+    # In the security fix there was a new inline method "max_size" added so we
+    # can use that to determine if this USD build has the security fix.
+    if (USD_INCLUDE_DIR AND EXISTS "${USD_INCLUDE_DIR}/pxr/base/vt/array.h")
+        file(STRINGS ${USD_INCLUDE_DIR}/pxr/base/vt/array.h USD_HAS_SECURITY_PATCH REGEX "constexpr size_t max_size\(\)")
+        if (USD_HAS_SECURITY_PATCH)
+            set(ADSK_USD_VERSION "${ADSK_USD_VERSION}-ad1")
+            message(STATUS "USD v${USD_VERSION} has security patches.")
+        endif()
+    endif()
+endif()
+
 # Note that on Windows with USD <= 0.19.11, USD_LIB_PREFIX should be left at
 # default (or set to empty string), even if PXR_LIB_PREFIX was specified when
 # building core USD, due to a bug.
@@ -149,6 +164,7 @@ endif()
 message(STATUS "USD include dir: ${USD_INCLUDE_DIR}")
 message(STATUS "USD library dir: ${USD_LIBRARY_DIR}")
 message(STATUS "USD version: ${USD_VERSION}")
+message(STATUS "Autodesk USD version: ${ADSK_USD_VERSION}")
 if(DEFINED USD_BOOST_VERSION)
     message(STATUS "USD Boost::boost version: ${USD_BOOST_VERSION}")
 endif()
@@ -163,6 +179,7 @@ find_package_handle_standard_args(USD
         USD_GENSCHEMA
         USD_CONFIG_FILE
         USD_VERSION
+        ADSK_USD_VERSION
         PXR_VERSION
     VERSION_VAR
         USD_VERSION

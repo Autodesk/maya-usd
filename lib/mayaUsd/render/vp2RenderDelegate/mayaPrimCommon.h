@@ -163,7 +163,7 @@ public:
     static const MString kSolidColorStr;
 
     MayaUsdRPrim(HdVP2RenderDelegate* delegate, const SdfPath& id);
-    virtual ~MayaUsdRPrim() = default;
+    virtual ~MayaUsdRPrim();
 
 protected:
     using ReprVector = std::vector<std::pair<TfToken, HdReprSharedPtr>>;
@@ -184,6 +184,13 @@ protected:
         kNone = 0,
         kBBox = 1,
         kWire = 2
+    };
+
+    enum ForcedReprFlags
+    {
+        kForcedBBox = 1 << 0,
+        kForcedWire = 1 << 1,
+        kForcedUntextured = 1 << 2
     };
 
     struct DisplayLayerModes
@@ -211,6 +218,32 @@ protected:
 
         //! Wireframe color override
         MColor _wireframeColorRGBA;
+    };
+
+    enum BasicWireframeColors : unsigned char
+    {
+        kDormant = 0,
+        kActive = 1,
+        kLead = 2,
+        kTemplateDormat = 3,
+        kTemplateActive = 4,
+        kReferenceDormat = 5,
+
+        kInvalid = 255
+    };
+
+    struct InstanceColorOverride
+    {
+        MColor     _color;
+        bool       _enabled { false };
+        const bool _allowed;
+
+        InstanceColorOverride(bool allowed)
+            : _allowed(allowed)
+        {
+        }
+
+        void Reset() { _enabled = false; }
     };
 
     static void
@@ -265,13 +298,17 @@ protected:
         ReprVector const&  reprs,
         TfToken const&     renderTag);
 
-    void _SyncDisplayLayerModes(SdfPath const& id);
+    void _SyncDisplayLayerModes(SdfPath const& id, bool instancedPrim);
     void _SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned int instanceCount);
 
-    bool _ShouldSkipInstance(
-        unsigned int   usdInstanceId,
-        const TfToken& reprToken,
-        bool           hideOnPlaybackItem) const;
+    bool _FilterInstanceByDisplayLayer(
+        unsigned int           usdInstanceId,
+        BasicWireframeColors&  instanceColor,
+        const TfToken&         reprToken,
+        int                    modFlags,
+        bool                   isHighlightItem,
+        bool                   isDedicatedHighlightItem,
+        InstanceColorOverride& colorOverride) const;
 
     void _SyncForcedReprs(
         HdRprim&          refThis,
@@ -290,6 +327,7 @@ protected:
 
     SdfPath _GetUpdatedMaterialId(HdRprim* rprim, HdSceneDelegate* delegate);
     MColor  _GetHighlightColor(const TfToken& className);
+    MColor  _GetHighlightColor(const TfToken& className, HdVP2SelectionStatus selectionStatus);
     MColor  _GetWireframeColor();
 
     void _PropagateDirtyBitsCommon(HdDirtyBits& bits, const ReprVector& reprs) const;
@@ -337,6 +375,9 @@ protected:
     //! VP2 render delegate for which this prim was created
     HdVP2RenderDelegate* _delegate { nullptr };
 
+    //! Rprim id in Hydra
+    const SdfPath _hydraId;
+
     //! Rprim id cached as a maya string for easier debugging and profiling
     const MString _rprimId;
 
@@ -344,16 +385,17 @@ protected:
     HdVP2SelectionStatus _selectionStatus { kUnselected };
 
     //! Modes requested by display layer along with the frame they are updated on
+    bool                           _useInstancedDisplayLayerModes { false };
     DisplayLayerModes              _displayLayerModes;
     std::vector<DisplayLayerModes> _displayLayerModesInstanced;
     uint64_t                       _displayLayerModesFrame { 0 };
     uint64_t                       _displayLayerModesInstancedFrame { 0 };
 
-    // For instanced primitives, specifies if at least one istance has to be hidden on playback
-    bool _needHideOnPlaybackMod = false;
+    // For instanced primitives, specifies which mods are required
+    std::bitset<HdVP2DrawItem::kModFlagsBitsetSize> _requiredModFlagsBitset;
 
     // forced representations runtime state
-    bool     _needForcedBBox = false;
+    int      _forcedReprFlags { 0 };
     uint64_t _forcedReprsFrame { 0 };
 
     //! HideOnPlayback status of the Rprim
@@ -366,7 +408,7 @@ protected:
     MStringArray _PrimSegmentString;
 
     //! For instanced prim, holds the corresponding path in USD prototype
-    SdfPath _pathInPrototype;
+    InstancePrototypePath _pathInPrototype { SdfPath(), kNativeInstancing };
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

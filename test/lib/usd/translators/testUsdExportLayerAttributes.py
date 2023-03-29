@@ -19,6 +19,7 @@
 
 import os
 import unittest
+import math
 
 import fixturesUtils
 from maya import cmds
@@ -57,6 +58,39 @@ class testMayaUsdExportLayerAttributes(unittest.TestCase):
             stage = Usd.Stage.Open(temp_file)
             self.assertEqual(stage.GetTimeCodesPerSecond(), fps)
             self.assertEqual(stage.GetFramesPerSecond(), fps)
+
+    def test_customLayerData(self):
+        temp_file = os.path.join(self.temp_dir, 'test_customLayerData.usda')
+        cmds.mayaUSDExport(f=temp_file,
+                           customLayerData=[
+                               # These should be successful
+                               ["foo", "spam", "string"],
+                               ["age", 10, "int"],
+                               ["floaty", 0.1, "float"],
+                               ["pi", math.pi, "double"],
+                               ["works", 1, "bool"],
+                               ["fail", False, "bool"],
+                               # These should fail but continue
+                               ["a", "0", "unknown"],
+                               ["b", "b", "int"],
+                               ["c", "c", "float"],
+                               ["d", "d", "double"],
+                               ["e", "e", "bool"]
+                           ])
+
+        stage = Usd.Stage.Open(temp_file)
+        data = stage.GetRootLayer().customLayerData
+
+        self.assertEqual(data['foo'], 'spam')
+        self.assertEqual(data['age'], 10)
+        self.assertAlmostEqual(data['floaty'], 0.1)
+        self.assertAlmostEqual(data['pi'], math.pi)
+        self.assertTrue(data['works'])
+        self.assertFalse(data['fail'])
+
+        invalid = ('a', 'b', 'c', 'd', 'e')
+        for i in invalid:
+            self.assertNotIn(i, data)
 
 
 if __name__ == '__main__':

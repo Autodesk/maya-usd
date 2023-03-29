@@ -17,7 +17,6 @@ endif()
 # Interactive Unit test scripts.
 set(INTERACTIVE_TEST_SCRIPT_FILES
     testMayaUsdInteractiveLayerEditorCommands.py
-    testMayaUsdInteractiveMaterialsScopeName.py
 )
 
 foreach(script ${TEST_SCRIPT_FILES})

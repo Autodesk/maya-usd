@@ -233,7 +233,7 @@ void registerVersionedPlugins()
     static std::once_flag once;
     std::call_once(once, []() {
         const std::string pythonVersion = TOSTRING(MAYA_PY_VERSION);
-        const std::string usdVersion = TOSTRING(MAYA_USD_VERSION);
+        const std::string usdVersion = TOSTRING(ADSK_USD_VERSION);
         const std::string mayaUsdVersion = TOSTRING(MAYAUSD_VERSION);
 
         std::vector<std::string> pluginsToRegister;

@@ -197,55 +197,117 @@ class AttributesTestCase(unittest.TestCase):
       
         testFile = testUtils.getTestScene("MaterialX", "MayaSurfaces.usda")
         shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
-        ufeItem = ufeUtils.createUfeSceneItem(shapeNode,
+
+        # Compounds scene item.
+        ufeCompound1Item = ufeUtils.createUfeSceneItem(shapeNode,
             "/pCube2/Looks/standardSurface2SG/MayaNG_standardSurface2SG")
-        self.assertIsNotNone(ufeItem)
+        self.assertIsNotNone(ufeCompound1Item)
+        ufeCompound2Item = ufeUtils.createUfeSceneItem(shapeNode,
+            "/pCube2/Looks/standardSurface2SG/NodeGraph1")
+        self.assertIsNotNone(ufeCompound2Item)
 
         # Then create the attributes interface for that item.
-        compoundAttrs = ufe.Attributes.attributes(ufeItem)
-        self.assertIsNotNone(compoundAttrs)
+        compound1Attrs = ufe.Attributes.attributes(ufeCompound1Item)
+        self.assertIsNotNone(compound1Attrs)
+        compound2Attrs = ufe.Attributes.attributes(ufeCompound2Item)
+        self.assertIsNotNone(compound2Attrs)
 
-        # Remove an output compound attribute.
-        cmd = compoundAttrs.removeAttributeCmd("outputs:baseColor")
+        # 1. Remove an output compound attribute.
+
+        # 1.1 Remove an output compound attribute connected to prim and child prim.
+
+        cmd = compound1Attrs.removeAttributeCmd("outputs:baseColor")
         self.assertIsNotNone(cmd)
 
         ufeCmd.execute(cmd)
         
-        self.assertNotIn("outputs:baseColor", compoundAttrs.attributeNames)
+        self.assertNotIn("outputs:baseColor", compound1Attrs.attributeNames)
 
-        # Test we removed the connection.
-
+        # Test we removed the connections.
         ufeItemStandardSurface2 = ufeUtils.createUfeSceneItem(shapeNode,
             "/pCube2/Looks/standardSurface2SG/standardSurface2")
         self.assertIsNotNone(ufeItemStandardSurface2)
+        ufeItemMayaSwizzle = ufeUtils.createUfeSceneItem(shapeNode,
+            "/pCube2/Looks/standardSurface2SG/MayaNG_standardSurface2SG/MayaSwizzle_file2_rgb")
+        self.assertIsNotNone(ufeItemMayaSwizzle)
 
         connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(ufeItemStandardSurface2.runTimeId())
         self.assertIsNotNone(connectionHandler)
+
         connections = connectionHandler.sourceConnections(ufeItemStandardSurface2)
-        self.assertIsNotNone(connectionHandler)
         conns = connections.allConnections()
         self.assertEqual(len(conns), 0)
 
-        # Remove an input compound attribute.
-        cmd = compoundAttrs.removeAttributeCmd("inputs:file2:varnameStr")
+        connections = connectionHandler.sourceConnections(ufeItemMayaSwizzle)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        # Test we removed the properties.
+        mayaSwizzlePrim = usdUtils.getPrimFromSceneItem(ufeItemMayaSwizzle)
+        self.assertIsNotNone(mayaSwizzlePrim)
+        self.assertFalse(mayaSwizzlePrim.HasProperty('outputs:out'))
+        standardSurface2Prim = usdUtils.getPrimFromSceneItem(ufeItemStandardSurface2)
+        self.assertIsNotNone(standardSurface2Prim)
+        self.assertFalse(standardSurface2Prim.HasProperty('inputs:base_color'))
+
+        # 1.2 Remove an output compound attribute connected to parent prim.
+
+        cmd = compound2Attrs.removeAttributeCmd("outputs:out")
         self.assertIsNotNone(cmd)
 
         ufeCmd.execute(cmd)
         
-        self.assertNotIn("inputs:file2:varnameStr", compoundAttrs.attributeNames)
+        self.assertNotIn("outputs:out", compound2Attrs.attributeNames)
+
+        # Test we removed the connections.
+        ufeItemParent = ufeUtils.createUfeSceneItem(shapeNode,
+            "/pCube2/Looks/standardSurface2SG")
+        self.assertIsNotNone(ufeItemParent)
+        ufeItemSurface = ufeUtils.createUfeSceneItem(shapeNode,
+            "/pCube2/Looks/standardSurface2SG/NodeGraph1/surface1")
+        self.assertIsNotNone(ufeItemSurface)
+
+        connections = connectionHandler.sourceConnections(ufeItemParent)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        # Test we removed the properties.
+        surfacePrim = usdUtils.getPrimFromSceneItem(ufeItemSurface)
+        self.assertIsNotNone(surfacePrim)
+        self.assertFalse(surfacePrim.HasProperty('outputs:out'))
+        parentPrim = usdUtils.getPrimFromSceneItem(ufeItemParent)
+        self.assertIsNotNone(parentPrim)
+        self.assertTrue(parentPrim.HasProperty('outputs:out'))
+
+        # 2. Remove an input compound attribute.
+
+        # 2.1 Remove an input compound attribute connected to parent and child prim.
+
+        cmd = compound1Attrs.removeAttributeCmd("inputs:file2:varnameStr")
+        self.assertIsNotNone(cmd)
+
+        ufeCmd.execute(cmd)
+        
+        self.assertNotIn("inputs:file2:varnameStr", compound1Attrs.attributeNames)
 
         # Test we removed the connection.
-
         ufeItemTexture = ufeUtils.createUfeSceneItem(shapeNode,
             "/pCube2/Looks/standardSurface2SG/MayaNG_standardSurface2SG/place2dTexture2")
         self.assertIsNotNone(ufeItemTexture)
 
-        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(ufeItemTexture.runTimeId())
-        self.assertIsNotNone(connectionHandler)
         connections = connectionHandler.sourceConnections(ufeItemTexture)
-        self.assertIsNotNone(connectionHandler)
         conns = connections.allConnections()
         self.assertEqual(len(conns), 0)
+
+        connections = connectionHandler.sourceConnections(ufeItemParent)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        # Test we removed the properties.
+        texturePrim = usdUtils.getPrimFromSceneItem(ufeItemTexture)
+        self.assertIsNotNone(texturePrim)
+        self.assertFalse(texturePrim.HasProperty('inputs:geomprop'))
+        self.assertTrue(parentPrim.HasProperty('inputs:file2:varnameStr'))
 
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test for UFE preview version 0.4.24 and later')
     def testUniqueNameAttribute(self):
@@ -416,6 +478,30 @@ class AttributesTestCase(unittest.TestCase):
         self.assertEqual(ufe.PathString.string(dstAttr.path),
             '|stage|stageShape,/pCube2/Looks/standardSurface2SG')
         self.assertEqual(dstAttr.name, 'outputs:out')
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 3, 'clearMetadata is only available in UFE v3 or greater.')
+    def testClearNodeGraphAttributeMetadata(self):
+        '''Test cleaning a node graph attribute metadata'''
+
+        # Load a scene.
+      
+        testFile = testUtils.getTestScene('MaterialX', 'MayaSurfaces.usda')
+        shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
+        ufeItem = ufeUtils.createUfeSceneItem(shapeNode,
+            '/pCube2/Looks/standardSurface2SG/MayaNG_standardSurface2SG')
+        self.assertIsNotNone(ufeItem)
+
+        # Then create the attributes interface for that item.
+        attrs = ufe.Attributes.attributes(ufeItem)
+        self.assertIsNotNone(attrs)
+        attr = attrs.attribute('inputs:file2:varnameStr')
+        self.assertIsNotNone(attr)
+
+        # Set a metadata for the attribute.
+        self.assertTrue(attr.setMetadata('TestMetadata', 'test value'))
+
+        # Clear the metadata for the attribute.
+        self.assertTrue(attr.clearMetadata('TestMetadata'))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

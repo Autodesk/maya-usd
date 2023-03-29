@@ -48,11 +48,7 @@ bool setUsdAttrMetadata(
     }
 
     // If attribute is locked don't allow setting Metadata.
-    std::string errMsg;
-    const bool  isSetAttrAllowed = MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg);
-    if (!isSetAttrAllowed) {
-        throw std::runtime_error(errMsg);
-    }
+    MayaUsd::ufe::enforceAttributeEditAllowed(attr);
 
     PXR_NS::TfToken tok(key);
     if (PXR_NS::UsdShadeNodeGraph(attr.GetPrim())) {
@@ -425,11 +421,20 @@ bool UsdAttributeHolder::clearMetadata(const std::string& key)
 {
     PXR_NAMESPACE_USING_DIRECTIVE
     if (isValid()) {
+        PXR_NS::TfToken tok(key);
+        // Special cases for NodeGraphs:
+        if (PXR_NS::UsdShadeNodeGraph(usdPrim())) {
+            if (PXR_NS::UsdShadeInput::IsInput(_usdAttr)) {
+                PXR_NS::UsdShadeInput(_usdAttr).ClearSdrMetadataByKey(tok);
+            } else if (PXR_NS::UsdShadeOutput::IsOutput(_usdAttr)) {
+                PXR_NS::UsdShadeOutput(_usdAttr).ClearSdrMetadataByKey(tok);
+            }
+            return !hasMetadata(key);
+        }
         // Special cases for known Ufe metadata keys.
         if (key == Ufe::Attribute::kLocked) {
             return _usdAttr.ClearMetadata(MayaUsdMetadata->Lock);
         }
-        PXR_NS::TfToken tok(key);
         return _usdAttr.ClearMetadata(tok);
     } else {
         return true;

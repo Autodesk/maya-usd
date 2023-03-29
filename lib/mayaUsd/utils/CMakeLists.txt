@@ -12,6 +12,7 @@ target_sources(${PROJECT_NAME}
         editability.cpp
         editRouter.cpp
         layerMuting.cpp
+        layers.cpp
         loadRules.cpp
         loadRulesText.cpp
         loadRulesAttribute.cpp
@@ -20,6 +21,7 @@ target_sources(${PROJECT_NAME}
         progressBarScope.cpp
         selectability.cpp
         stageCache.cpp
+        targetLayer.cpp
         traverseLayer.cpp
         undoHelperCommand.cpp
         util.cpp
@@ -48,12 +50,14 @@ set(HEADERS
     editRouter.h
     hash.h
     layerMuting.h
+    layers.h
     loadRules.h
     query.h
     plugRegistryHelper.h
     progressBarScope.h
     selectability.h
     stageCache.h
+    targetLayer.h
     traverseLayer.h
     undoHelperCommand.h
     util.h

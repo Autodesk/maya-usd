@@ -25,9 +25,11 @@
 #include <mayaUsd/utils/customLayerData.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/layerMuting.h>
+#include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/loadRules.h>
 #include <mayaUsd/utils/query.h>
 #include <mayaUsd/utils/stageCache.h>
+#include <mayaUsd/utils/targetLayer.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
@@ -214,6 +216,21 @@ const int _shapeBaseProfilerCategory = MProfiler::addCategory(
     "ProxyShapeBase"
 #endif
 );
+
+struct InComputeGuard
+{
+    InComputeGuard(MayaUsdProxyShapeBase& proxy)
+        : _proxy(proxy)
+    {
+        _proxy.in_compute++;
+    }
+
+    ~InComputeGuard() { _proxy.in_compute--; }
+
+private:
+    MayaUsdProxyShapeBase& _proxy;
+};
+
 } // namespace
 
 /* static */
@@ -510,6 +527,8 @@ void MayaUsdProxyShapeBase::postConstructor()
 /* virtual */
 MStatus MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
 {
+    InComputeGuard inComputeGuard(*this);
+
     if (plug == outTimeAttr || plug.isDynamic())
         ProxyAccessor::compute(_usdAccessor, plug, dataBlock);
 
@@ -911,7 +930,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
     if (isIncomingStage) {
         std::vector<std::string> incomingLayers { sharedUsdStage->GetRootLayer()->GetIdentifier() };
-        _incomingLayers = UsdMayaUtil::getAllSublayers(incomingLayers, true);
+        _incomingLayers = getAllSublayers(incomingLayers, true);
     } else {
         _incomingLayers.clear();
     }
@@ -922,14 +941,10 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         // they get the same state they were in, but in order to this we have to keep the layers in
         // the heirharchy alive since the stage is gone and so they will get removed
         if (_unsharedStageRootLayer) {
-            auto subLayerIds = UsdMayaUtil::getAllSublayers(_unsharedStageRootLayer);
             _unsharedStageRootSublayers.clear();
-            for (const auto& identifier : subLayerIds) {
-                SdfLayerRefPtr sublayer = SdfLayer::Find(identifier);
-                if (sublayer) {
-                    _unsharedStageRootSublayers.push_back(sublayer);
-                }
-            }
+            auto subLayers = getAllSublayerRefs(_unsharedStageRootLayer);
+            _unsharedStageRootSublayers.insert(
+                _unsharedStageRootSublayers.begin(), subLayers.begin(), subLayers.end());
         }
         finalUsdStage = sharedUsdStage;
     }
@@ -962,7 +977,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             }
 
             // If its a new layer (or wasn't remapped properly)
-            auto sublayerIds = UsdMayaUtil::getAllSublayers(_unsharedStageRootLayer);
+            auto sublayerIds = getAllSublayers(_unsharedStageRootLayer);
             if (sublayerIds.find(inRootLayer->GetIdentifier()) == sublayerIds.end()) {
                 // Add new layer to subpaths
                 auto subLayers = _unsharedStageRootLayer->GetSubLayerPaths();
@@ -990,6 +1005,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         primPath = finalUsdStage->GetPseudoRoot().GetPath();
         copyLoadRulesFromAttribute(*this, *finalUsdStage);
         copyLayerMutingFromAttribute(*this, *finalUsdStage);
+        copyTargetLayerFromAttribute(*this, *finalUsdStage);
         updateShareMode(sharedUsdStage, unsharedUsdStage, loadSet);
     }
 
@@ -1089,12 +1105,6 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
     MProfilingScope computeOutStageDatacomputeOutStageData(
         _shapeBaseProfilerCategory, MProfiler::kColorE_L3, "Compute outStageData plug");
 
-    struct in_computeGuard
-    {
-        in_computeGuard() { in_compute++; }
-        ~in_computeGuard() { in_compute--; }
-    } in_computeGuard;
-
     MStatus retValue = MS::kSuccess;
 
     const bool isNormalContext = dataBlock.context().isNormal();
@@ -1191,6 +1201,11 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
         _stageNoticeListener.SetStageLayerMutingChangedCallback(
             [this](const UsdNotice::LayerMutingChanged& notice) {
                 return _OnLayerMutingChanged(notice);
+            });
+
+        _stageNoticeListener.SetStageEditTargetChangedCallback(
+            [this](const UsdNotice::StageEditTargetChanged& notice) {
+                return _OnStageEditTargetChanged(notice);
             });
 
         MayaUsdProxyStageSetNotice(*this).Send();
@@ -1527,6 +1542,8 @@ MStatus MayaUsdProxyShapeBase::postEvaluation(
     // leaving this here commented out as a reminder that we should either have both calls to
     // setGeometryDrawDirty, or no calls to setGeometryDrawDirty.
     // MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
+
+    InComputeGuard inComputeGuard(*this);
 
     if (context.isNormal() && evalType == PostEvaluationEnum::kEvaluatedDirectly) {
         MDataBlock dataBlock = forceCache();
@@ -1872,6 +1889,42 @@ void MayaUsdProxyShapeBase::_OnLayerMutingChanged(const UsdNotice::LayerMutingCh
         return;
 
     copyLayerMutingToAttribute(*stage, *this);
+}
+
+static void copyTargetLayerOnIdle(void* data)
+{
+    MayaUsdProxyShapeBase* proxy = reinterpret_cast<MayaUsdProxyShapeBase*>(data);
+    if (!proxy)
+        return;
+
+    const auto stage = proxy->getUsdStage();
+    if (!stage)
+        return;
+
+    copyTargetLayerToAttribute(*stage, *proxy);
+}
+
+void MayaUsdProxyShapeBase::_OnStageEditTargetChanged(
+    const UsdNotice::StageEditTargetChanged& notice)
+{
+    if (in_compute) {
+        MGlobal::executeTaskOnIdle(copyTargetLayerOnIdle, this);
+        return;
+    }
+
+    const auto stage = notice.GetStage();
+    if (!stage)
+        return;
+
+    // Note: copying the target layer into an attribute when the edit target
+    //       changes can cause DG evaluation loops because the stage computation
+    //       sets the edit target.
+    //
+    //       Defer saving the edit target to be done later, on idle.
+    //
+    //       One symptom of creating a compute loop is that the unit test named
+    //       'testMayaUsdProxyAccessor' fails because computation did not finish.
+    copyTargetLayerToAttribute(*stage, *this);
 }
 
 void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChanged& notice)

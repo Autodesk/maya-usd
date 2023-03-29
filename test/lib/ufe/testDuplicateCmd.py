@@ -533,6 +533,71 @@ class DuplicateCmdTestCase(unittest.TestCase):
         self.assertIsNotNone(nonDuplicatedGeomItem)
         self.assertIsNone(cmd.targetItem(nonDuplicatedGeomItem.path()))
 
+    def testMultiLayerOpinions(self):
+        '''
+        Test duplicating a prim that has opinion on multile layers.
+        '''
+
+        cmds.file(new=True, force=True)
+        import mayaUsd_createStageWithNewLayer
+
+        # Create a stage with two layer
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        subLayerId = cmds.mayaUsdLayerEditor(stage.GetRootLayer().identifier, edit=True, addAnonymous="aSubLayer")[0]
+        self.assertIsNotNone(subLayerId)
+
+        topLayer, bottomLayer = stage.GetLayerStack()[1:]
+        self.assertIsNotNone(topLayer)
+        self.assertIsNotNone(bottomLayer)
+
+        # Create an xform with opinions in both layers.
+        stage.SetEditTarget(bottomLayer)
+        stage.DefinePrim('/A', 'Xform')
+
+        psPath = ufe.PathString.path(psPathStr)
+        psPathSegment = psPath.segments[0]
+        aPath = ufe.Path([psPathSegment, usdUtils.createUfePathSegment('/A')])
+        aItem = ufe.Hierarchy.createItem(aPath)
+
+        stage.SetEditTarget(topLayer)
+        aTrf = ufe.Transform3d.transform3d(aItem)
+        aTrf.translate(1., 2., 3.)
+        self.assertEqual(ufe.Vector3d(1., 2., 3.), aTrf.translation())
+
+        # Select the item and duplicate it.
+
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(aItem)
+        cmds.duplicate()
+
+        a1Prim = stage.GetPrimAtPath('/A1')
+        self.assertIsNotNone(a1Prim)
+
+        a1Path = ufe.Path([psPathSegment, usdUtils.createUfePathSegment('/A1')])
+        a1Item = ufe.Hierarchy.createItem(a1Path)
+        a1Trf = ufe.Transform3d.transform3d(a1Item)
+        self.assertEqual(ufe.Vector3d(1., 2., 3.), a1Trf.translation())
+
+    def testReferencedPrim(self):
+        '''
+        Test duplicating a prim that is in a referenced file.
+        '''
+
+        cmds.file(new=True, force=True)
+        cubeRefFile = testUtils.getTestScene("cubeRef", "cube-root.usda")
+        cubeRefDagPath, cubeRefStage = mayaUtils.createProxyFromFile(cubeRefFile)
+        cubeUfePathString = ','.join([cubeRefDagPath, "/RootPrim/PrimWithRef/CubeMesh"])
+
+        cmds.duplicate(cubeUfePathString)
+
+        dupItem = ufeUtils.createUfeSceneItem(cubeRefDagPath, '/RootPrim/PrimWithRef/CubeMesh1')
+        self.assertIsNotNone(dupItem)
+        dupTrf = ufe.Transform3d.transform3d(dupItem)
+        self.assertEqual(ufe.Vector3d(2., 0., -2.), dupTrf.translation())
+    
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -90,6 +90,7 @@ public:
     }
 
     const SdfPath& GetUsdDelegateID() const { return _usdDelegate->GetDelegateID(); }
+    HdMayaProxyUsdImagingDelegate* GetUsdImagingDelegate() { return _usdDelegate.get(); }
 
 private:
     /// Notice listener method for proxy stage set

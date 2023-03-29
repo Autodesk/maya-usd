@@ -42,6 +42,7 @@ class testUsdExportPackage(unittest.TestCase):
 
     def setUp(self):
         cmds.file(os.path.abspath('PackageTest.ma'), open=True, force=True)
+        self._existingTempFiles = set()
 
     def _AssertExpectedStage(self, stage, cardPngRefPath):
         self.assertTrue(stage)
@@ -63,14 +64,24 @@ class testUsdExportPackage(unittest.TestCase):
         self.assertEqual(modelAPI.GetModelCardTextureXNegAttr().Get().path,
                 cardPngRefPath)
 
+    def _listOfTempFiles(self, usdFilePath):
+        return os.listdir(os.path.dirname(usdFilePath))
+    
+    def _recordExistingTempFiles(self, usdFilePath):
+        self._existingTempFiles = set(self._listOfTempFiles(usdFilePath))
+
     def _AssertNoTempFiles(self, usdFilePath):
-        lsDir = os.listdir(os.path.dirname(usdFilePath))
+        lsDir = self._listOfTempFiles(usdFilePath)
+        lsDir = [file for file in lsDir if file not in self._existingTempFiles]
         for item in lsDir:
             self.assertNotRegex(item, "tmp-.*\.usd.?")
 
     def testExport(self):
         '''Tests standard usdz package export.'''
         usdFile = os.path.abspath('MyAwesomePackage.usdz')
+
+        self._recordExistingTempFiles(usdFile)
+
         cmds.usdExport(
                 file=usdFile,
                 mergeTransformAndShape=True,
@@ -101,6 +112,8 @@ class testUsdExportPackage(unittest.TestCase):
         '''Tests usdz package export with ARKit compatibility profile.'''
         usdFile = os.path.abspath('MyAwesomeArKitCompatibleFile.usdz')
         usdFileNoExt = os.path.abspath('MyAwesomeArKitCompatibleFile')
+
+        self._recordExistingTempFiles(usdFile)
 
         # The usdExport command should automatically add "usdz" extension since
         # we're requestion appleArKit compatibility.

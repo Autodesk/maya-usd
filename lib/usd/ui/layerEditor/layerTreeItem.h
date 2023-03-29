@@ -124,6 +124,11 @@ public:
     bool                   isAnonymous() const { return _layer ? _layer->IsAnonymous() : false; }
     bool                   isRootLayer() const { return _layerType == LayerType::RootLayer; }
     PXR_NS::SdfLayerRefPtr layer() const { return _layer; }
+    PXR_NS::SdfLayerRefPtr parentLayer() const
+    {
+        auto parentItem = parentLayerItem();
+        return parentItem ? parentItem->layer() : nullptr;
+    }
 
     // allows c++ iteration of children
     LayerItemVector childrenVector() const;

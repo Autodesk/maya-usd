@@ -22,6 +22,7 @@
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/utils/editability.h>
+#include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsdUtils/util.h>
 
@@ -199,7 +200,10 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
     }
     auto stage = getStage(Ufe::Path(segments[0]));
     if (!stage) {
-        TF_WARN(kIllegalUFEPath, path.string().c_str());
+        // Do not output any TF message here (such as TF_WARN). A low-level function
+        // like this should not be outputting any warnings messages. It is allowed to
+        // call this method with a properly composed Ufe path, but one that doesn't
+        // actually point to any valid prim.
         return UsdPrim();
     }
 
@@ -447,63 +451,127 @@ TfTokenVector getProxyShapePurposes(const Ufe::Path& path)
     return purposes;
 }
 
-namespace {
-
-SdfLayerHandle getStrongerLayer(
-    const SdfLayerHandle& root,
-    const SdfLayerHandle& layer1,
-    const SdfLayerHandle& layer2)
+bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttribute& dstUsdAttr)
 {
-    if (layer1 == layer2)
-        return layer1;
+    PXR_NS::SdfPathVector connectedAttrs;
+    dstUsdAttr.GetConnections(&connectedAttrs);
 
-    if (!layer1)
-        return layer2;
-
-    if (!layer2)
-        return layer1;
-
-    if (root == layer1)
-        return layer1;
-
-    if (root == layer2)
-        return layer2;
-
-    for (auto path : root->GetSubLayerPaths()) {
-        SdfLayerRefPtr subLayer = SdfLayer::FindOrOpen(path);
-        if (subLayer) {
-            SdfLayerHandle stronger = getStrongerLayer(subLayer, layer1, layer2);
-            if (!stronger.IsInvalid()) {
-                return stronger;
-            }
+    for (PXR_NS::SdfPath path : connectedAttrs) {
+        if (path == srcUsdAttr.GetPath()) {
+            return true;
         }
     }
 
-    return SdfLayerHandle();
+    return false;
 }
 
-SdfLayerHandle getStrongerLayer(
-    const UsdStagePtr&    stage,
-    const SdfLayerHandle& targetLayer,
-    const SdfLayerHandle& topAuthoredLayer)
+bool canRemoveSrcProperty(const PXR_NS::UsdAttribute& srcAttr)
 {
-    // Session Layer is the strongest in the stage, so check its hierarchy first
-    auto strongerLayer = getStrongerLayer(stage->GetSessionLayer(), targetLayer, topAuthoredLayer);
-    if (strongerLayer == targetLayer) {
-        return targetLayer;
-    } else if (strongerLayer == topAuthoredLayer) {
-        return topAuthoredLayer;
+
+    // Do not remove if it has a value.
+    if (srcAttr.HasValue()) {
+        return false;
     }
 
-    // If none of the two layers was found in the Session Layer hierarchy,
-    // then proceed to the stage's general layer hierarchy
-    return getStrongerLayer(stage->GetRootLayer(), targetLayer, topAuthoredLayer);
+    PXR_NS::SdfPathVector connectedAttrs;
+    srcAttr.GetConnections(&connectedAttrs);
+
+    // Do not remove if it has connections.
+    if (!connectedAttrs.empty()) {
+        return false;
+    }
+
+    const auto prim = srcAttr.GetPrim();
+
+    if (!prim) {
+        return false;
+    }
+
+    PXR_NS::UsdShadeNodeGraph ngPrim(prim);
+
+    if (!ngPrim) {
+        const auto primParent = prim.GetParent();
+
+        if (!primParent) {
+            return false;
+        }
+
+        // Do not remove if there is a connection with a prim.
+        for (const auto& childPrim : primParent.GetChildren()) {
+            if (childPrim != prim) {
+                for (const auto& attribute : childPrim.GetAttributes()) {
+                    const PXR_NS::UsdAttribute dstUsdAttr = attribute.As<PXR_NS::UsdAttribute>();
+                    if (isConnected(srcAttr, dstUsdAttr)) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        // Do not remove if there is a connection with the parent prim.
+        for (const auto& attribute : primParent.GetAttributes()) {
+            const PXR_NS::UsdAttribute dstUsdAttr = attribute.As<PXR_NS::UsdAttribute>();
+            if (isConnected(srcAttr, dstUsdAttr)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // Do not remove boundary properties even if there are connections.
+    return false;
 }
 
+bool canRemoveDstProperty(const PXR_NS::UsdAttribute& dstAttr)
+{
+
+    // Do not remove if it has a value.
+    if (dstAttr.HasValue()) {
+        return false;
+    }
+
+    PXR_NS::SdfPathVector connectedAttrs;
+    dstAttr.GetConnections(&connectedAttrs);
+
+    // Do not remove if it has connections.
+    if (!connectedAttrs.empty()) {
+        return false;
+    }
+
+    const auto prim = dstAttr.GetPrim();
+
+    if (!prim) {
+        return false;
+    }
+
+    PXR_NS::UsdShadeNodeGraph ngPrim(prim);
+
+    if (!ngPrim) {
+        return true;
+    }
+
+    UsdShadeMaterial asMaterial(prim);
+    if (asMaterial) {
+        const TfToken baseName = dstAttr.GetBaseName();
+        // Remove Material intrinsic outputs since they are re-created automatically.
+        if (baseName == UsdShadeTokens->surface || baseName == UsdShadeTokens->volume
+            || baseName == UsdShadeTokens->displacement) {
+            return true;
+        }
+    }
+
+    // Do not remove boundary properties even if there are connections.
+    return false;
+}
+
+namespace {
+
 bool allowedInStrongerLayer(
-    const UsdPrim&                 prim,
-    const SdfPrimSpecHandleVector& primStack,
-    bool                           allowStronger)
+    const UsdPrim&                          prim,
+    const SdfPrimSpecHandleVector&          primStack,
+    const std::set<PXR_NS::SdfLayerRefPtr>& sessionLayers,
+    bool                                    allowStronger)
 {
     // If the flag to allow edits in a stronger layer if off, then it is not allowed.
     if (!allowStronger)
@@ -514,10 +582,15 @@ bool allowedInStrongerLayer(
     auto targetLayer = stage->GetEditTarget().GetLayer();
     auto topLayer = primStack.front()->GetLayer();
 
-    return getStrongerLayer(stage, targetLayer, topLayer) == targetLayer;
+    const SdfLayerHandle searchRoot = isSessionLayer(targetLayer, sessionLayers)
+        ? stage->GetSessionLayer()
+        : stage->GetRootLayer();
+
+    return getStrongerLayer(searchRoot, targetLayer, topLayer) == targetLayer;
 }
 
 } // namespace
+
 void applyCommandRestriction(
     const UsdPrim&     prim,
     const std::string& commandName,
@@ -530,14 +603,38 @@ void applyCommandRestriction(
         return;
     }
 
+    const auto stage = prim.GetStage();
+    auto       targetLayer = stage->GetEditTarget().GetLayer();
+
+    const bool includeTopLayer = true;
+    const auto sessionLayers = getAllSublayerRefs(stage->GetSessionLayer(), includeTopLayer);
+    const bool isTargetingSession = isSessionLayer(targetLayer, sessionLayers);
+
     auto        primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
     auto        primStack = prim.GetPrimStack();
     std::string layerDisplayName;
-    std::string message { "It is defined on another layer" };
+
+    // When the command is forbidden even for the strongest layer, that means
+    // that the operation is a multi-layers operation and there is no target
+    // layer that would allow it to proceed. In that case, do not suggest changing
+    // the target.
+    std::string message = allowStronger ? "It is defined on another layer. " : "";
+    std::string instructions = allowStronger ? "Please set %s as the target layer to proceed."
+                                             : "It would orphan opinions on the layer %s.";
 
     // iterate over the prim stack, starting at the highest-priority layer.
     for (const auto& spec : primStack) {
-        const auto& layerName = spec->GetLayer()->GetDisplayName();
+        // Only take session layers opinions into consideration when the target itself
+        // is a session layer (top a sub-layer of session).
+        //
+        // We isolate session / non-session this way because these opinions
+        // are owned by the application and we don't want to block the user
+        // commands and user data due to them.
+        const auto layer = spec->GetLayer();
+        if (isSessionLayer(layer, sessionLayers) != isTargetingSession)
+            continue;
+
+        const auto& layerName = layer->GetDisplayName();
 
         // skip if there is no primSpec for the selected prim in the current stage's local layer.
         if (!primSpec) {
@@ -563,7 +660,9 @@ void applyCommandRestriction(
             // layers ).
             if (primSpec->GetLayer() != spec->GetLayer()) {
                 layerDisplayName.append("[" + layerName + "]");
-                message = "It has a stronger opinion on another layer";
+                if (allowStronger) {
+                    message = "It has a stronger opinion on another layer. ";
+                }
                 break;
             }
             continue;
@@ -576,7 +675,7 @@ void applyCommandRestriction(
     UsdPrimCompositionQuery query(prim);
     for (const auto& compQueryArc : query.GetCompositionArcs()) {
         if (!primSpec && PcpArcTypeVariant == compQueryArc.GetArcType()) {
-            if (allowedInStrongerLayer(prim, primStack, allowStronger))
+            if (allowedInStrongerLayer(prim, primStack, sessionLayers, allowStronger))
                 return;
             std::string err = TfStringPrintf(
                 "Cannot %s [%s] because it is defined inside the variant composition arc %s.",
@@ -588,14 +687,16 @@ void applyCommandRestriction(
     }
 
     if (!layerDisplayName.empty()) {
-        if (allowedInStrongerLayer(prim, primStack, allowStronger))
+        if (allowedInStrongerLayer(prim, primStack, sessionLayers, allowStronger))
             return;
+        std::string formattedInstructions
+            = TfStringPrintf(instructions.c_str(), layerDisplayName.c_str());
         std::string err = TfStringPrintf(
-            "Cannot %s [%s]. %s. Please set %s as the target layer to proceed.",
+            "Cannot %s [%s]. %s%s",
             commandName.c_str(),
             prim.GetName().GetString().c_str(),
             message.c_str(),
-            layerDisplayName.c_str());
+            formattedInstructions.c_str());
         throw std::runtime_error(err.c_str());
     }
 }
@@ -703,7 +804,7 @@ bool isPropertyMetadataEditAllowed(
     const SdfLayerHandle targetLayer = editTarget.GetLayer();
 
     // Verify that the intended target layer is stronger than existing authored opinions.
-    const auto strongestLayer = getStrongerLayer(stage, targetLayer, topAuthoredLayer);
+    const auto strongestLayer = getStrongerLayer(stage, targetLayer, topAuthoredLayer, true);
     bool       allowed = (strongestLayer == targetLayer);
     if (!allowed && errMsg) {
         *errMsg = TfStringPrintf(
@@ -770,10 +871,8 @@ bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMs
     return true;
 }
 
-bool isAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName)
+bool isAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName, std::string* errMsg)
 {
-    std::string errMsg;
-
     TF_AXIOM(prim);
     TF_AXIOM(!attrName.IsEmpty());
 
@@ -781,19 +880,46 @@ bool isAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName)
     if (xformable) {
         if (UsdGeomXformOp::IsXformOp(attrName)) {
             // check for the attribute in XformOpOrderAttr first
-            if (!isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
-                MGlobal::displayError(errMsg.c_str());
+            if (!isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), errMsg)) {
                 return false;
             }
         }
     }
     // check the attribute itself
-    if (!isAttributeEditAllowed(prim.GetAttribute(attrName), &errMsg)) {
+    if (!isAttributeEditAllowed(prim.GetAttribute(attrName), errMsg)) {
+        return false;
+    }
+
+    return true;
+}
+
+bool isAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName)
+{
+    std::string errMsg;
+    if (!isAttributeEditAllowed(prim, attrName, &errMsg)) {
         MGlobal::displayError(errMsg.c_str());
         return false;
     }
 
     return true;
+}
+
+void enforceAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
+{
+    std::string errMsg;
+    if (!isAttributeEditAllowed(attr, &errMsg)) {
+        MGlobal::displayError(errMsg.c_str());
+        throw std::runtime_error(errMsg);
+    }
+}
+
+void enforceAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName)
+{
+    std::string errMsg;
+    if (!isAttributeEditAllowed(prim, attrName, &errMsg)) {
+        MGlobal::displayError(errMsg.c_str());
+        throw std::runtime_error(errMsg);
+    }
 }
 
 bool isEditTargetLayerModifiable(const UsdStageWeakPtr stage, std::string* errMsg)

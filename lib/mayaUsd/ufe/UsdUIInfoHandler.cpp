@@ -141,7 +141,7 @@ bool UsdUIInfoHandler::treeViewCellInfo(const Ufe::SceneItem::Ptr& item, Ufe::Ce
 #if !defined(NDEBUG)
     assert(usdItem);
 #endif
-    if (usdItem) {
+    if (usdItem && usdItem->prim()) {
         if (!usdItem->prim().IsActive()) {
             changed = true;
             info.fontStrikeout = true;
@@ -204,7 +204,7 @@ Ufe::UIInfoHandler::Icon UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Pt
 
     // Check if we have any composition meta data - if yes we display a special badge.
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-    if (usdItem) {
+    if (usdItem && usdItem->prim()) {
         // Variants
         if (!usdItem->prim().GetVariantSets().GetNames().empty()) {
             icon.badgeIcon = "out_USD_CompArcBadgeV.png";
@@ -234,7 +234,7 @@ std::string UsdUIInfoHandler::treeViewTooltip(const Ufe::SceneItem::Ptr& item) c
     std::string tooltip;
 
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-    if (usdItem) {
+    if (usdItem && usdItem->prim()) {
         // Composition related metadata.
         bool                       needComma = false;
         PXR_NS::SdfReferenceListOp referenceOp;

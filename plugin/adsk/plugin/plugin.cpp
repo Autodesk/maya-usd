@@ -73,6 +73,8 @@
 #endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
+#include "adskMaterialCommands.h"
+
 #include <mayaUsd/commands/PullPushCommands.h>
 #include <mayaUsd/fileio/primUpdaterManager.h>
 #endif
@@ -229,6 +231,8 @@ MStatus initializePlugin(MObject obj)
     registerCommandCheck<MayaUsd::ufe::MergeToUsdCommand>(plugin);
     registerCommandCheck<MayaUsd::ufe::DiscardEditsCommand>(plugin);
     registerCommandCheck<MayaUsd::ufe::DuplicateCommand>(plugin);
+    registerCommandCheck<MayaUsd::ADSKMayaUSDGetMaterialsForRenderersCommand>(plugin);
+    registerCommandCheck<MayaUsd::ADSKMayaUSDGetMaterialsInStageCommand>(plugin);
 #endif
 
     status = plugin.registerCommand(
@@ -410,6 +414,8 @@ MStatus uninitializePlugin(MObject obj)
     deregisterCommandCheck<MayaUsd::ufe::MergeToUsdCommand>(plugin);
     deregisterCommandCheck<MayaUsd::ufe::DiscardEditsCommand>(plugin);
     deregisterCommandCheck<MayaUsd::ufe::DuplicateCommand>(plugin);
+    deregisterCommandCheck<MayaUsd::ADSKMayaUSDGetMaterialsForRenderersCommand>(plugin);
+    deregisterCommandCheck<MayaUsd::ADSKMayaUSDGetMaterialsInStageCommand>(plugin);
 #endif
 
     status = plugin.deregisterNode(MayaUsd::ProxyShape::typeId);

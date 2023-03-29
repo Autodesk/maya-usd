@@ -1,0 +1,49 @@
+#usda 1.0
+
+def Xform "Group"
+{
+    def Xform "Geom"
+    {
+		def Sphere "sphere"
+		{
+			double radius = 4
+			rel material:binding = </Group/Materials/MainMaterial_1>
+			float2 primvars:st = (0, 0)
+		}
+    }
+
+    def Xform "Materials"
+    {
+		def Material "MainMaterial_1"
+		{
+			token inputs:coords = "st"
+			token outputs:surface.connect = </Group/Materials/MainMaterial_1/PbrPreview.outputs:surface>
+
+			def Shader "PbrPreview"
+			{
+				uniform token info:id = "UsdPreviewSurface"
+				color3f inputs:diffuseColor = (1.0,1.0,1.0)
+				color3f inputs:diffuseColor.connect  = </Group/Materials/MainMaterial_1/Diffuse.outputs:rgb>
+				token outputs:surface
+			}
+
+			def Shader "Diffuse"
+			{
+				uniform token info:id = "UsdUVTexture"
+				asset inputs:file = @green_A.png@
+				float2 inputs:st.connect = </Group/Materials/MainMaterial_1/Primvar.outputs:result>
+				float3 outputs:rgb
+				token inputs:wrapS = "clamp"
+				token inputs:wrapT = "clamp"			
+			}
+
+			def Shader "Primvar"
+			{
+				uniform token info:id = "UsdPrimvarReader_float2"
+				token inputs:varname.connect = </Group/Materials/MainMaterial_1.inputs:coords>
+				float2 outputs:result
+			}
+		}		
+    }
+}
+

@@ -1193,12 +1193,23 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
     }
 }
 
+HdVP2DrawItem* _FindMod(HdVP2DrawItem* baseItem, const int modFlags)
+{
+    for (auto mod = baseItem; mod; mod = mod->GetMod()) {
+        if (mod->GetModFlags() == modFlags) {
+            return mod;
+        }
+    }
+
+    return nullptr;
+}
+
 void HdVP2Mesh::_AddNewRenderItem(
     HdVP2DrawItem*        drawItem,
     const HdMeshReprDesc& desc,
     const TfToken&        reprToken,
     MSubSceneContainer*   subSceneContainer,
-    const bool            shareHighlightItem)
+    const int             modFlags)
 {
     const MString& renderItemName = drawItem->GetDrawItemName();
 
@@ -1237,9 +1248,7 @@ void HdVP2Mesh::_AddNewRenderItem(
             || reprToken == HdVP2ReprTokens->defaultMaterial) {
             // Share selection highlight render item between hull reprs
             bool foundShared = false;
-            for (auto it = _reprs.begin();
-                 shareHighlightItem && (it != _reprs.end()) && !foundShared;
-                 ++it) {
+            for (auto it = _reprs.begin(); (it != _reprs.end()) && !foundShared; ++it) {
                 const HdReprSharedPtr& repr = it->second;
                 const auto&            items = repr->GetDrawItems();
 #if HD_API_VERSION < 35
@@ -1251,9 +1260,14 @@ void HdVP2Mesh::_AddNewRenderItem(
 #endif
                     if (shDrawItem
                         && shDrawItem->MatchesUsage(HdVP2DrawItem::kSelectionHighlight)) {
-                        drawItem->ShareRenderItem(*shDrawItem);
-                        foundShared = true;
-                        break;
+                        // We may only share items which properties correspond exactly,
+                        // including 'hide-on-playback' and 'selectability'.
+                        // Therefore, we must use only the corresponding mod.
+                        if (auto sharedItem = _FindMod(shDrawItem, modFlags)) {
+                            drawItem->ShareRenderItem(*sharedItem);
+                            foundShared = true;
+                            break;
+                        }
                     }
                 }
             }
@@ -1263,13 +1277,19 @@ void HdVP2Mesh::_AddNewRenderItem(
             drawItem->SetUsage(HdVP2DrawItem::kSelectionHighlight);
         }
         // The item is used for wireframe display and selection highlight.
-        else if (reprToken == HdReprTokens->wire) {
+        else if (reprToken == HdReprTokens->wire || reprToken == HdVP2ReprTokens->forcedWire) {
             renderItem = _CreateWireframeRenderItem(
                 renderItemName,
                 kOpaqueBlue,
                 MSelectionMask::kSelectMeshes,
                 MHWRender::MFrameContext::kExcludeMeshes);
             drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
+            if (reprToken == HdVP2ReprTokens->forcedWire) {
+                renderItem->enable(false);
+                constexpr int sDrawModeAllButBBox
+                    = MHWRender::MGeometry::kAll & ~MHWRender::MGeometry::kBoundingBox;
+                renderItem->setDrawMode((MHWRender::MGeometry::DrawMode)sDrawModeAllButBBox);
+            }
         }
         // The item is used for bbox display and selection highlight.
         else if (reprToken == HdVP2ReprTokens->bbox || reprToken == HdVP2ReprTokens->forcedBbox) {
@@ -1457,38 +1477,52 @@ void HdVP2Mesh::_UpdateMods(
         return;
     }
 
-    HdVP2DrawItem* mod = drawItem->GetMod();
-    if (_needHideOnPlaybackMod) {
-        // Create the mod if needed
-        if (!mod) {
-            drawItem->SetMod(std::make_unique<HdVP2DrawItem>(_delegate, &_sharedData));
-            mod = drawItem->GetMod();
+    // First, collect all existing mods in a bitset.
+    std::bitset<HdVP2DrawItem::kModFlagsBitsetSize> _existingModsBitset;
+    HdVP2DrawItem*                                  lastNode = drawItem;
+    for (auto mod = drawItem; mod; mod = mod->GetMod()) {
+        _existingModsBitset.set(mod->GetModFlags());
+        lastNode = mod;
+    }
+
+    // Then, create missing mods. Skip 0 because it's the main draw item, which always exists
+    for (int bitsetIndex = 1; bitsetIndex < HdVP2DrawItem::kModFlagsBitsetSize; ++bitsetIndex) {
+        if (_requiredModFlagsBitset.test(bitsetIndex) && !_existingModsBitset.test(bitsetIndex)) {
+            auto newMod = std::make_unique<HdVP2DrawItem>(_delegate, &_sharedData);
+            newMod->SetModFlags(bitsetIndex);
 
             // Add render items to the mod in the same way it is done for the original draw item
-            _AddNewRenderItem(mod, desc, reprToken, subSceneContainer, false);
+            _AddNewRenderItem(newMod.get(), desc, reprToken, subSceneContainer, bitsetIndex);
             if (desc.geomStyle == HdMeshGeomStyleHull) {
-                if (mod->GetRenderItems().size() == 0) {
-                    _CreateSmoothHullRenderItems(*mod, reprToken, *subSceneContainer);
+                if (newMod->GetRenderItems().size() == 0) {
+                    _CreateSmoothHullRenderItems(*newMod, reprToken, *subSceneContainer);
                 }
             }
 
-            // Make sure to enable hide-on-playback on the mod
-            mod->SetModFlagHideOnPlayback(true);
+            // Set this mod's specific properties
+            if (bitsetIndex & HdVP2DrawItem::kHideOnPlayback) {
 #ifdef MAYA_HAS_RENDER_ITEM_HIDE_ON_PLAYBACK_API
-            for (auto& renderItemData : mod->GetRenderItems()) {
-                renderItemData._renderItem->setHideOnPlayback(true);
-            }
+                for (auto& renderItemData : newMod->GetRenderItems()) {
+                    renderItemData._renderItem->setHideOnPlayback(true);
+                }
 #endif
-        }
+            }
 
-        // Update the mod
-        for (auto& renderItemData : mod->GetRenderItems()) {
-            _UpdateDrawItem(sceneDelegate, mod, renderItemData, desc, reprToken);
+            lastNode->SetMod(std::move(newMod));
+            lastNode = lastNode->GetMod();
         }
-    } else if (mod) {
-        // Disable the mod
-        for (auto& renderItemData : mod->GetRenderItems()) {
-            if (renderItemData._enabled) {
+    }
+
+    // Finally, update/disable mods
+    for (auto mod = drawItem->GetMod(); mod; mod = mod->GetMod()) {
+        if (_requiredModFlagsBitset.test(mod->GetModFlags())) {
+            mod->SetModDisabled(false);
+            for (auto& renderItemData : mod->GetRenderItems()) {
+                _UpdateDrawItem(sceneDelegate, mod, renderItemData, desc, reprToken);
+            }
+        } else if (!mod->GetModDisabled()) {
+            mod->SetModDisabled(true);
+            for (auto& renderItemData : mod->GetRenderItems()) {
                 renderItemData._enabled = false;
                 _delegate->GetVP2ResourceRegistry().EnqueueCommit(
                     [&renderItemData]() { renderItemData._renderItem->enable(false); });
@@ -1538,7 +1572,9 @@ void HdVP2Mesh::_UpdateDrawItem(
     const bool isHighlightItem = drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight);
     const bool inTemplateMode = _displayLayerModes._displayType == MayaUsdRPrim::kTemplate;
     const bool inReferenceMode = _displayLayerModes._displayType == MayaUsdRPrim::kReference;
-    const bool inPureSelectionHighlightMode = isDedicatedHighlightItem && !inTemplateMode;
+    const bool unselectableItem = (drawItem->GetModFlags() & HdVP2DrawItem::kUnselectable);
+    const bool inPureSelectionHighlightMode
+        = isDedicatedHighlightItem && !inTemplateMode && !unselectableItem;
 
     // We don't need to update the selection-highlight-only item when there is no selection
     // highlight change and the mesh is not selected. Render item stores its own
@@ -1792,49 +1828,44 @@ void HdVP2Mesh::_UpdateDrawItem(
             // render item, and which colors should be used to draw those instances.
 
             // Store info per instance
-            const unsigned char dormant = 0;
-            const unsigned char active = 1;
-            const unsigned char lead = 2;
-            const unsigned char invalid = 255;
-
-            std::vector<unsigned char> instanceInfo;
+            std::vector<BasicWireframeColors> instanceInfo;
 
             // depending on the type of render item we want to set different values
             // into instanceInfo;
-            unsigned char modeDormant = invalid;
-            unsigned char modeActive = invalid;
-            unsigned char modeLead = invalid;
+            BasicWireframeColors modeDormant = kInvalid;
+            BasicWireframeColors modeActive = kInvalid;
+            BasicWireframeColors modeLead = kInvalid;
 
             if (!isHighlightItem) {
                 stateToCommit._instanceColorParam = kDiffuseColorStr;
                 if (!usingShadedSelectedInstanceItem) {
                     if (isShadedSelectedInstanceItem) {
-                        modeDormant = invalid;
-                        modeActive = invalid;
-                        modeLead = invalid;
+                        modeDormant = kInvalid;
+                        modeActive = kInvalid;
+                        modeLead = kInvalid;
                     } else {
-                        modeDormant = active;
-                        modeActive = active;
-                        modeLead = active;
+                        modeDormant = kActive;
+                        modeActive = kActive;
+                        modeLead = kActive;
                     }
                 } else {
                     if (isShadedSelectedInstanceItem) {
-                        modeDormant = invalid;
-                        modeActive = active;
-                        modeLead = active;
+                        modeDormant = kInvalid;
+                        modeActive = kActive;
+                        modeLead = kActive;
                     } else {
-                        modeDormant = active;
-                        modeActive = invalid;
-                        modeLead = invalid;
+                        modeDormant = kActive;
+                        modeActive = kInvalid;
+                        modeLead = kInvalid;
                     }
                 }
             } else if (_selectionStatus == kFullyLead || _selectionStatus == kFullyActive) {
-                modeDormant = _selectionStatus == kFullyLead ? lead : active;
+                modeDormant = _selectionStatus == kFullyLead ? kLead : kActive;
                 stateToCommit._instanceColorParam = kSolidColorStr;
             } else {
-                modeDormant = inPureSelectionHighlightMode ? invalid : dormant;
-                modeActive = active;
-                modeLead = lead;
+                modeDormant = inPureSelectionHighlightMode ? kInvalid : kDormant;
+                modeActive = kActive;
+                modeLead = kLead;
                 stateToCommit._instanceColorParam = kSolidColorStr;
             }
 
@@ -1882,9 +1913,12 @@ void HdVP2Mesh::_UpdateDrawItem(
 
             // Set up the source color buffers.
             const MColor wireframeColors[]
-                = { drawScene.GetWireframeColor(),
-                    drawScene.GetSelectionHighlightColor(HdPrimTypeTokens->mesh),
-                    drawScene.GetSelectionHighlightColor() };
+                = { _GetHighlightColor(HdPrimTypeTokens->mesh, kUnselected),
+                    _GetHighlightColor(HdPrimTypeTokens->mesh, kFullyActive),
+                    _GetHighlightColor(HdPrimTypeTokens->mesh, kFullyLead),
+                    drawScene.GetTemplateColor(false),
+                    drawScene.GetTemplateColor(true),
+                    drawScene.GetReferenceColor() };
             bool useWireframeColors = stateToCommit._instanceColorParam == kSolidColorStr;
 
             MFloatArray*    shadedColors = nullptr;
@@ -1926,17 +1960,26 @@ void HdVP2Mesh::_UpdateDrawItem(
 #endif
 
             _SyncDisplayLayerModesInstanced(id, instanceCount);
-            const bool hideOnPlaybackItem = drawItem->GetModFlagHideOnPlayback();
+            const int             modFlags = drawItem->GetModFlags();
+            InstanceColorOverride colorOverride(useWireframeColors);
 
             stateToCommit._instanceTransforms = std::make_shared<MMatrixArray>();
             stateToCommit._instanceColors = std::make_shared<MFloatArray>();
             for (unsigned int usdInstanceId = 0; usdInstanceId < instanceCount; usdInstanceId++) {
-                unsigned char info = instanceInfo[usdInstanceId];
-                if (info == invalid)
+                auto info = instanceInfo[usdInstanceId];
+                if (info == kInvalid)
                     continue;
 
                 // Check display layer modes of this instance
-                if (_ShouldSkipInstance(usdInstanceId, reprToken, hideOnPlaybackItem))
+                colorOverride.Reset();
+                if (_FilterInstanceByDisplayLayer(
+                        usdInstanceId,
+                        info,
+                        reprToken,
+                        modFlags,
+                        isHighlightItem,
+                        isDedicatedHighlightItem,
+                        colorOverride))
                     continue;
 
 #ifndef MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT
@@ -1949,7 +1992,8 @@ void HdVP2Mesh::_UpdateDrawItem(
                 mayaToUsd.push_back(usdInstanceId);
 #endif
                 if (useWireframeColors) {
-                    const MColor& color = wireframeColors[info];
+                    const MColor& color
+                        = colorOverride._enabled ? colorOverride._color : wireframeColors[info];
                     for (unsigned int j = 0; j < kNumColorChannels; j++) {
                         stateToCommit._instanceColors->append(color[j]);
                     }
@@ -2107,8 +2151,9 @@ void HdVP2Mesh::_UpdateDrawItem(
             }
         }
 #endif
-        // In template and reference modes, items should have no selection
-        if (inTemplateMode || inReferenceMode) {
+        // In template and reference modes, items should have no selection.
+        // Unselectable mods have no selection as well.
+        if (inTemplateMode || inReferenceMode || unselectableItem) {
             selectionMask = MSelectionMask();
         }
 
