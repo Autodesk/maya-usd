@@ -124,6 +124,17 @@ static SdfPrimSpecHandleVector _GetLocalPrimStack(const UsdPrim& prim)
     if (!stage)
         return primSpecs;
 
+    // The goal is to avoid editing non-local layers. This issue is,
+    // for example, that a rename operation would fail when applied
+    // to a prim that references a show asset because the rename operation
+    // would be attempted on the reference and classes it inherits.
+    //
+    // Concrete example:
+    //     - Create a test asset that inherits from one or more classes
+    //     - Create a prim within a Maya Usd scene that references this asset
+    //     - Attempt to rename the prim
+    //     - Observe the failure due to Sdf policy
+
     for (const SdfLayerHandle& layer : stage->GetLayerStack()) {
         const SdfPrimSpecHandle primSpec = layer->GetPrimAtPath(prim.GetPath());
         if (primSpec)
