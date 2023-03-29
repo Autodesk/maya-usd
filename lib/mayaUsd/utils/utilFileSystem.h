@@ -77,6 +77,12 @@ MAYAUSD_CORE_PUBLIC
 std::pair<std::string, bool>
 makePathRelativeTo(const std::string& fileName, const std::string& relativeToDir);
 
+/*! \brief returns relative path of a layer file to its parent layer's directory
+ */
+MAYAUSD_CORE_PUBLIC
+std::string
+getPathRelativeToDirectory(const std::string& fileName, const std::string& relativeToDir);
+
 /*! \brief returns parent directory of a maya scene file opened by reference
  */
 MAYAUSD_CORE_PUBLIC

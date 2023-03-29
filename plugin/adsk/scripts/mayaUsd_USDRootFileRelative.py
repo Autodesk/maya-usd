@@ -46,6 +46,7 @@ class usdFileRelative(object):
     # Note: are initialized in the uiInit() method.
     _canBeRelative = False
     _haveRelativePathFields = False
+    _parentLayerPath = ""
 
     @staticmethod
     def setRelativeFilePathRoot(filePath):
@@ -240,7 +241,12 @@ class usdFileRelative(object):
             # the user is free to enter any extension they want. The layer editor code will then verify
             # (and fix if needed) the file path before saving. We do the same here for preview.
             unresolvedPath = mayaUsdLib.Util.ensureUSDFileExtension(selectedFile) if selectedFile else ''
-            relativePath = mayaUsdLib.Util.getPathRelativeToMayaSceneFile(unresolvedPath) if unresolvedPath else ''
+            """relativePath = mayaUsdLib.Util.getPathRelativeToDirectory(unresolvedPath, cls._parentLayerPath) if unresolvedPath and cls._parentLayerPath != "" else ''"""
+            relativePath = ''
+            if unresolvedPath and cls._parentLayerPath:
+                relativePath = mayaUsdLib.Util.getPathRelativeToDirectory(unresolvedPath, cls._parentLayerPath)
+            elif unresolvedPath:
+                relativePath = mayaUsdLib.Util.getPathRelativeToMayaSceneFile(unresolvedPath)
             cmds.textFieldGrp(cls.kUnresolvedPathTextField, edit=True, text=relativePath)
             cmds.textFieldGrp(cls.kResolvedPathTextField, edit=True, text=unresolvedPath)
 
@@ -301,11 +307,13 @@ class usdSubLayerFileRelative(usdFileRelative):
         super(usdSubLayerFileRelative, cls).uiCreate(parentLayout, cls.kRelativeToWhat)
 
     @classmethod
-    def uiInit(cls, parentLayout, filterType):
+    def uiInit(cls, parentLayout, filterType, parentLayerPath = ""):
         '''
         Note: the function takes an unused filterType argument to be compatible
               with the dialog2 command API.
         '''
+
+        cls._parentLayerPath = parentLayerPath
         canBeRelative = bool(usdFileRelative.getRelativeFilePathRoot())
         super(usdSubLayerFileRelative, cls).uiInit(parentLayout, canBeRelative, cls.kRelativeToWhat)
 
