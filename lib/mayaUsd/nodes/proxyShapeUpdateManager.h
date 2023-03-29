@@ -1,5 +1,5 @@
 //
-// Copyright 2020 Autodesk
+// Copyright 2023 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,13 +13,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "tokens.h"
+#ifndef PXRUSDMAYA_PROXY_SHAPE_UPDATE_MANAGER_H
+#define PXRUSDMAYA_PROXY_SHAPE_UPDATE_MANAGER_H
+
+#include <mayaUsd/base/api.h>
+
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/notice.h>
+
+#include <maya/MStatus.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(MayaUsdOptionVars, MAYA_USD_OPTIONVAR_TOKENS);
-TF_DEFINE_PUBLIC_TOKENS(MayaUsdMetadata, MAYA_USD_METADATA_TOKENS);
-TF_DEFINE_PUBLIC_TOKENS(MayaUsdTokens, MAYA_USD_GENERIC_TOKENS);
-TF_DEFINE_PUBLIC_TOKENS(MayaUsdEditRoutingTokens, MAYA_USD_EDIT_ROUTING_TOKENS);
+class MayaUsdProxyShapeUpdateManager
+{
+public:
+    MAYAUSD_CORE_PUBLIC
+    bool CanIgnoreObjectsChanged(const UsdNotice::ObjectsChanged& notice);
+
+    MAYAUSD_CORE_PUBLIC
+    MInt64 GetUpdateCount();
+
+    MAYAUSD_CORE_PUBLIC
+    MInt64 GetResyncCount();
+
+private:
+    MInt64 _UsdStageUpdateCounter { 1 };
+    MInt64 _UsdStageResyncCounter { 1 };
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif
