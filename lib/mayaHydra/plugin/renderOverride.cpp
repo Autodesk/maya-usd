@@ -797,6 +797,8 @@ void MtohRenderOverride::ClearHydraResources()
     TF_DEBUG(MAYAHYDRALIB_RENDEROVERRIDE_RESOURCES)
         .Msg("MtohRenderOverride::ClearHydraResources(%s)\n", _rendererDesc.rendererName.GetText());
 
+    _mayaHydraSceneDelegate = nullptr;
+    
     _delegates.clear();
     _defaultLightDelegate.reset();
 
