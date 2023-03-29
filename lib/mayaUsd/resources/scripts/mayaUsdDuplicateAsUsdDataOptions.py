@@ -24,14 +24,14 @@ import mayaUsdOptions
 from functools import partial
 
 
-_kDuplicateAsMayaDataOptionsHelpContentId = 'UsdEditDuplicateAsMaya'
+_kDuplicateAsUsdDataOptionsHelpContentId = 'UsdEditDuplicateAsMaya'
 
-def showDuplicateAsMayaDataOptions():
+def showDuplicateAsUsdDataOptions():
     """
-    Shows the duplicate-as-Maya-data options dialog.
+    Shows the duplicate-as-Usd-data options dialog.
     """
 
-    windowName = "DuplicateAsMayaDataOptionsDialog"
+    windowName = "DuplicateAsUsdDataOptionsDialog"
     if cmds.window(windowName, query=True, exists=True):
         if cmds.window(windowName, query=True, visible=True):
             return
@@ -39,13 +39,13 @@ def showDuplicateAsMayaDataOptions():
         # Delete the window and recreate it.
         cmds.deleteUI(windowName)
 
-    window = cmds.window(windowName, title=getMayaUsdLibString("kDuplicateAsMayaDataOptionsTitle"), widthHeight=mayaUsdOptions.defaultOptionBoxSize())
-    _createDuplicateAsMayaDataOptionsDialog(window)
+    window = cmds.window(windowName, title=getMayaUsdLibString("kDuplicateAsUsdDataOptionsTitle"), widthHeight=mayaUsdOptions.defaultOptionBoxSize())
+    _createDuplicateAsUsdDataOptionsDialog(window)
 
 
-def _createDuplicateAsMayaDataOptionsDialog(window):
+def _createDuplicateAsUsdDataOptionsDialog(window):
     """
-    Creates the duplicate-as-Maya-data dialog.
+    Creates the duplicate-as-Usd-data dialog.
     """
 
     windowLayout = cmds.setParent(query=True)
@@ -55,34 +55,34 @@ def _createDuplicateAsMayaDataOptionsDialog(window):
     windowFormLayout = cmds.formLayout(parent=windowLayout)
 
     subFormLayout = cmds.formLayout(parent=windowFormLayout)
-    subScrollLayout = cmds.scrollLayout('DuplicateAsMayaDataOptionsDialogSubScrollLayout', cr=True, bv=True)
+    subScrollLayout = cmds.scrollLayout('DuplicateAsUsdDataOptionsDialogSubScrollLayout', cr=True, bv=True)
     cmds.formLayout(subFormLayout, edit=True,
         attachForm=[
             (subScrollLayout,       "top",      0),
             (subScrollLayout,       "bottom",   0),
             (subScrollLayout,       "left",     0),
             (subScrollLayout,       "right",    0)]);
-    subLayout = cmds.columnLayout("DuplicateAsMayaDataOptionsDialogSubLayout", adjustableColumn=True)
+    subLayout = cmds.columnLayout("DuplicateAsUsdDataOptionsDialogSubLayout", adjustableColumn=True)
 
-    optionsText = getDuplicateAsMayaDataOptionsText()
-    _fillDuplicateAsMayaDataOptionsDialog(subLayout, optionsText, "post")
+    optionsText = getDuplicateAsUsdDataOptionsText()
+    _fillDuplicateAsUsdDataOptionsDialog(subLayout, optionsText, "post")
 
     menu = cmds.menu(label=getMayaUsdLibString("kEditMenu"), parent=menuBarLayout)
-    cmds.menuItem(label=getMayaUsdLibString("kSaveSettingsMenuItem"), command=_saveDuplicateAsMayaDataOptions)
-    cmds.menuItem(label=getMayaUsdLibString("kResetSettingsMenuItem"), command=partial(_resetDuplicateAsMayaDataOptions, subLayout))
+    cmds.menuItem(label=getMayaUsdLibString("kSaveSettingsMenuItem"), command=_saveDuplicateAsUsdDataOptions)
+    cmds.menuItem(label=getMayaUsdLibString("kResetSettingsMenuItem"), command=partial(_resetDuplicateAsUsdDataOptions, subLayout))
 
     cmds.setParent(menuBarLayout)
-    if _hasDuplicateAsMayaDataOptionsHelp():
+    if _hasDuplicateAsUsdDataOptionsHelp():
         menu = cmds.menu(label=getMayaUsdLibString("kHelpMenu"), parent=menuBarLayout)
-        cmds.menuItem(label=getMayaUsdLibString("kHelpDuplicateAsMayaDataOptionsMenuItem"), command=_helpDuplicateAsMayaDataOptions)
+        cmds.menuItem(label=getMayaUsdLibString("kHelpDuplicateAsUsdDataOptionsMenuItem"), command=_helpDuplicateAsUsdDataOptions)
 
     buttonsLayout = cmds.formLayout(parent=windowFormLayout)
 
     applyText  = getMayaUsdLibString("kApplyButton")
     closeText = getMayaUsdLibString("kCloseButton")
     # Use same height for buttons as in Maya option boxes.
-    bApply     = cmds.button(label=applyText, width=100, height=26, command=_saveDuplicateAsMayaDataOptions)
-    bClose     = cmds.button(label=closeText, width=100, height=26, command=partial(_closeDuplicateAsMayaDataOptionsDialog, window))
+    bApply     = cmds.button(label=applyText, width=100, height=26, command=_saveDuplicateAsUsdDataOptions)
+    bClose     = cmds.button(label=closeText, width=100, height=26, command=partial(_closeDuplicateAsUsdDataOptionsDialog, window))
 
     spacer = 8      # Same spacing as Maya option boxes.
     edge   = 6
@@ -117,32 +117,32 @@ def _createDuplicateAsMayaDataOptionsDialog(window):
     cmds.showWindow()
 
 
-def _closeDuplicateAsMayaDataOptionsDialog(window, data=None):
+def _closeDuplicateAsUsdDataOptionsDialog(window, data=None):
     """
-    Reacts to the duplicate-as-Maya-data options dialog being closed by the user.
+    Reacts to the duplicate-as-Usd-data options dialog being closed by the user.
     """
     cmds.deleteUI(window)
 
 
-def _saveDuplicateAsMayaDataOptions(data=None):
+def _saveDuplicateAsUsdDataOptions(data=None):
     """
-    Saves the duplicate-as-Maya-data options as currently set in the dialog.
-    The MEL receiveDuplicateAsMayaDataOptionsTextFromDialog will call setDuplicateAsMayaDataOptionsText.
+    Saves the duplicate-as-Usd-data options as currently set in the dialog.
+    The MEL receiveDuplicateAsUsdDataOptionsTextFromDialog will call setDuplicateAsUsdDataOptionsText.
     """
-    mel.eval('''mayaUsdTranslatorExport("", "query=all;!output", "", "receiveDuplicateAsMayaDataOptionsTextFromDialog");''')
+    mel.eval('''mayaUsdTranslatorExport("", "query=all;!output", "", "receiveDuplicateAsUsdDataOptionsTextFromDialog");''')
 
 
-def _resetDuplicateAsMayaDataOptions(subLayout, data=None):
+def _resetDuplicateAsUsdDataOptions(subLayout, data=None):
     """
-    Resets the duplicate-as-Maya-data options in the dialog.
+    Resets the duplicate-as-Usd-data options in the dialog.
     """
-    optionsText = mayaUsdOptions.convertOptionsDictToText(getDefaultDuplicateAsMayaDataOptionsDict())
-    _fillDuplicateAsMayaDataOptionsDialog(subLayout, optionsText, "fill")
+    optionsText = mayaUsdOptions.convertOptionsDictToText(getDefaultDuplicateAsUsdDataOptionsDict())
+    _fillDuplicateAsUsdDataOptionsDialog(subLayout, optionsText, "fill")
 
 
-def _fillDuplicateAsMayaDataOptionsDialog(subLayout, optionsText, action):
+def _fillDuplicateAsUsdDataOptionsDialog(subLayout, optionsText, action):
     """
-    Fills the duplicate-as-Maya-data options dialog UI elements with the given options.
+    Fills the duplicate-as-Usd-data options dialog UI elements with the given options.
     """
     cmds.setParent(subLayout)
     mel.eval(
@@ -151,50 +151,50 @@ def _fillDuplicateAsMayaDataOptionsDialog(subLayout, optionsText, action):
         '''.format(optionsText=optionsText, subLayout=subLayout, action=action))
 
 
-def _hasDuplicateAsMayaDataOptionsHelp():
+def _hasDuplicateAsUsdDataOptionsHelp():
     """
     Returns True if the help topic for the options is available in Maya.
     """
     # Note: catchQuiet returns 0 or 1, not the value, so we use a dummy assignment
     #       to produce the value to be returned by eval().
-    url = mel.eval('''catchQuiet($url = `showHelp -q "''' + _kDuplicateAsMayaDataOptionsHelpContentId + '''"`); $a = $url;''')
+    url = mel.eval('''catchQuiet($url = `showHelp -q "''' + _kDuplicateAsUsdDataOptionsHelpContentId + '''"`); $a = $url;''')
     return bool(url)
 
-def _helpDuplicateAsMayaDataOptions(data=None):
+def _helpDuplicateAsUsdDataOptions(data=None):
     """
-    Shows help on the duplicate-as-Maya-data options dialog.
+    Shows help on the duplicate-as-Usd-data options dialog.
     """
-    cmds.showHelp(_kDuplicateAsMayaDataOptionsHelpContentId)
+    cmds.showHelp(_kDuplicateAsUsdDataOptionsHelpContentId)
 
 
-def _getDuplicateAsMayaDataOptionsVarName():
+def _getDuplicateAsUsdDataOptionsVarName():
     """
-    Retrieves the option var name under which the duplicate-as-Maya-data options are kept.
+    Retrieves the option var name under which the duplicate-as-Usd-data options are kept.
     """
-    return "mayaUsd_DuplicateAsMayaDataOptions"
+    return "mayaUsd_DuplicateAsUsdDataOptions"
 
 
-def getDuplicateAsMayaDataOptionsText():
+def getDuplicateAsUsdDataOptionsText():
     """
-    Retrieves the current duplicate-as-Maya-data options as text with column-spearated key/value pairs.
+    Retrieves the current duplicate-as-Usd-data options as text with column-spearated key/value pairs.
     """
     return mayaUsdOptions.getOptionsText(
-        _getDuplicateAsMayaDataOptionsVarName(),
-        getDefaultDuplicateAsMayaDataOptionsDict())
+        _getDuplicateAsUsdDataOptionsVarName(),
+        getDefaultDuplicateAsUsdDataOptionsDict())
     
 
-def setDuplicateAsMayaDataOptionsText(optionsText):
+def setDuplicateAsUsdDataOptionsText(optionsText):
     """
-    Sets the current duplicate-as-Maya-data options as text with column-spearated key/value pairs.
-    Called via receiveDuplicateAsMayaDataOptionsTextFromDialog in MEL, which gets called via
+    Sets the current duplicate-as-Usd-data options as text with column-spearated key/value pairs.
+    Called via receiveDuplicateAsUsdDataOptionsTextFromDialog in MEL, which gets called via
     mayaUsdTranslatorExport in query mode.
     """
-    mayaUsdOptions.setOptionsText(_getDuplicateAsMayaDataOptionsVarName(), optionsText)
+    mayaUsdOptions.setOptionsText(_getDuplicateAsUsdDataOptionsVarName(), optionsText)
 
 
-def getDefaultDuplicateAsMayaDataOptionsDict():
+def getDefaultDuplicateAsUsdDataOptionsDict():
     """
-    Retrieves the default duplicate-as-Maya-data options.
+    Retrieves the default duplicate-as-Usd-data options.
     """
     # For now, the duplicate and merge options defaults are the same.
     return getDefaultMergeToUSDOptionsDict()

@@ -111,6 +111,7 @@ _GetShaderNodeDef(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName)
     return registry.GetShaderNodeByIdentifier(srcInfoId);
 }
 
+#if PXR_VERSION < 2302
 void _SendStrongConnectionChangeNotification(const UsdPrim& usdPrim)
 {
     // See https://github.com/PixarAnimationStudios/USD/issues/2013 for details.
@@ -124,6 +125,7 @@ void _SendStrongConnectionChangeNotification(const UsdPrim& usdPrim)
     usdPrim.GetStage()->DefinePrim(waPath);
     usdPrim.GetStage()->RemovePrim(waPath);
 }
+#endif
 
 } // namespace
 
@@ -246,9 +248,11 @@ bool UsdConnectionHandler::createConnection(
         }
     }
 
+#if PXR_VERSION < 2302
     if (retVal) {
         _SendStrongConnectionChangeNotification(dstApi.GetPrim());
     }
+#endif
 
     return retVal;
 }
@@ -295,9 +299,11 @@ bool UsdConnectionHandler::deleteConnection(
         }
     }
 
+#if PXR_VERSION < 2302
     if (retVal) {
         _SendStrongConnectionChangeNotification(dstUsdAttr->usdPrim());
     }
+#endif
 
     return retVal;
 }

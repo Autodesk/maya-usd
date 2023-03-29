@@ -49,11 +49,7 @@ UsdUndoVisibleCommand::Ptr UsdUndoVisibleCommand::create(const UsdPrim& prim, bo
 
     EditTargetGuard guard(prim, layer);
 
-    std::string errMsg;
-    if (!MayaUsd::ufe::isAttributeEditAllowed(primImageable.GetVisibilityAttr(), &errMsg)) {
-        MGlobal::displayError(errMsg.c_str());
-        return nullptr;
-    }
+    enforceAttributeEditAllowed(primImageable.GetVisibilityAttr());
 
     return std::make_shared<UsdUndoVisibleCommand>(prim, vis, layer);
 }

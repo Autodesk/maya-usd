@@ -23,6 +23,7 @@ import maya.cmds as cmds
 import mayaUsd.ufe as mayaUsdUfe
 import mayaUsd.lib as mayaUsdLib
 import maya.internal.common.ufe_ae.template as ufeAeTemplate
+from mayaUsdLibRegisterStrings import getMayaUsdLibString
 
 try:
     # This helper class was only added recently to Maya.
@@ -146,7 +147,7 @@ class MetaDataCustomControl(object):
 
         self.kind = cmds.optionMenuGrp(label='Kind',
                                        cc=self._onKindChanged,
-                                       ann='Kind is a type of metadata (a pre-loaded string value) used to classify prims in USD. Set the classification value from the dropdown to assign a kind category to a prim. Set a kind value to activate selection by kind.')
+                                       ann=getMayaUsdLibString('kKindMetadataAnn'))
 
         for ele in knownKinds:
             cmds.menuItem(label=ele)
@@ -155,13 +156,13 @@ class MetaDataCustomControl(object):
         self.active = cmds.checkBoxGrp(label='Active',
                                        ncb=1,
                                        cc1=self._onActiveChanged,
-                                       ann="If selected, the prim is set to active and contributes to the composition of a stage. If a prim is set to inactive, it doesn't contribute to the composition of a stage (it gets striked out in the Outliner and is deactivated from the Viewport).")
+                                       ann=getMayaUsdLibString('kActiveMetadataAnn'))
 
         # Metadata: Instanceable
         self.instan = cmds.checkBoxGrp(label='Instanceable',
                                        ncb=1,
                                        cc1=self._onInstanceableChanged,
-                                       ann='If selected, instanceable is set to true for the prim and the prim is considered a candidate for instancing. If deselected, instanceable is set to false.')
+                                       ann=getMayaUsdLibString('kInstanceableMetadataAnn'))
 
         # Get all the other Metadata and remove the ones above, as well as a few
         # we don't ever want to show.
@@ -242,8 +243,8 @@ class ArrayCustomControl(object):
             def _printToScriptEditor(self):
                 MGlobal.displayInfo(str(self.values))
 
-            COPY_ACTION  = ('Copy Attribute Value', _copyAttributeValue, [])
-            PRINT_ACTION = ('Print to Script Editor', _printToScriptEditor, [])
+            COPY_ACTION  = (getMayaUsdLibString('kMenuCopyValue'), _copyAttributeValue, [])
+            PRINT_ACTION = (getMayaUsdLibString('kMenuPrintValue'), _printToScriptEditor, [])
 
             HAS_VALUE_MENU = [COPY_ACTION, PRINT_ACTION]
 
@@ -288,11 +289,13 @@ class ArrayCustomControl(object):
                 else:
                     if hasValue:
                         cmds.popupMenu()
-                        cmds.menuItem( label="Copy Attribute Value",   command=lambda *args: setClipboardData(str(values)) )
-                        cmds.menuItem( label="Print to Script Editor", command=lambda *args: MGlobal.displayInfo(str(values)) )
+                        cmds.menuItem( label=getMayaUsdLibString('kMenuCopyValue'), command=lambda *args: setClipboardData(str(values)) )
+                        cmds.menuItem( label=getMayaUsdLibString('kMenuPrintValue'), command=lambda *args: MGlobal.displayInfo(str(values)) )
 
         else:
-            cmds.error(self.attrName + " must be an array!")
+            errorMsgFormat = getMayaUsdLibString('kErrorAttributeMustBeArray')
+            errorMsg = cmds.format(errorMsgFormat, stringArg=(self.attrName))
+            cmds.error(errorMsg)
 
     def onReplace(self, *args):
         pass
@@ -415,6 +418,10 @@ def connectionsCustomControlCreator(aeTemplate, c):
         return None
 
 def arrayCustomControlCreator(aeTemplate, c):
+    # Note: UsdGeom.Tokens.xformOpOrder is a exception we want it to display normally.
+    if c == UsdGeom.Tokens.xformOpOrder:
+        return None
+
     if aeTemplate.isArrayAttribute(c):
         ufeAttr = aeTemplate.attrS.attribute(c)
         return ArrayCustomControl(ufeAttr, aeTemplate.prim, c, aeTemplate.useNiceName)
@@ -527,7 +534,7 @@ class AEShaderLayout(object):
             pageLabel = page
             if not page:
                 pageLabel = 'Extra Shader Attributes'
-            group = AEShaderLayout.Group(page)
+            group = AEShaderLayout.Group(pageLabel)
             for name in nodeDef.GetPropertyNamesForPage(page):
                 if nodeDef.GetInput(name):
                     name = UsdShade.Utils.GetFullName(name, UsdShade.AttributeType.Input)
@@ -735,14 +742,13 @@ class AETemplate(object):
 
         # Don't use createSection because we want a sub-sections.
         with ufeAeTemplate.Layout(self, sectionName):
-            with ufeAeTemplate.Layout(self, 'Transform Attributes'):
-                attrsToAdd.remove(UsdGeom.Tokens.xformOpOrder)
-                self.addControls(xformOpOrderNames)
+            attrsToAdd.remove(UsdGeom.Tokens.xformOpOrder)
+            self.addControls(xformOpOrderNames)
 
-                # Get the remainder of the xformOps and add them in an Unused section.
-                xformOpUnusedNames = fnmatch.filter(allAttrs, 'xformOp:*')
-                xformOpUnusedNames = [ele for ele in xformOpUnusedNames if ele not in xformOpOrderNames]
-                self.createSection('Unused Transform Attributes', xformOpUnusedNames, collapse=True)
+            # Get the remainder of the xformOps and add them in an Unused section.
+            xformOpUnusedNames = fnmatch.filter(allAttrs, 'xformOp:*')
+            xformOpUnusedNames = [ele for ele in xformOpUnusedNames if ele not in xformOpOrderNames]
+            self.createSection(getMayaUsdLibString('kLabelUnusedTransformAttrs'), xformOpUnusedNames, collapse=True)
 
             # Then add any reamining Xformable attributes
             self.addControls(attrsToAdd)
@@ -753,7 +759,7 @@ class AETemplate(object):
 
     def createMetadataSection(self):
         # We don't use createSection() because these are metadata (not attributes).
-        with ufeAeTemplate.Layout(self, 'Metadata', collapse=True):
+        with ufeAeTemplate.Layout(self, getMayaUsdLibString('kLabelMetadata'), collapse=True):
             metaDataControl = MetaDataCustomControl(self.item, self.prim, self.useNiceName)
             usdNoticeControl = NoticeListener(self.prim, [metaDataControl])
             self.defineCustom(metaDataControl)
@@ -841,7 +847,7 @@ class AETemplate(object):
         # Create the "Applied Schemas" section
         # with all the applied schemas
         if showAppliedSchemasSection:
-            with ufeAeTemplate.Layout(self, 'Applied Schemas', collapse=True):
+            with ufeAeTemplate.Layout(self, getMayaUsdLibString('kLabelAppliedSchemas'), collapse=True):
                 for typeName, attrs in schemaAttrsDict.items():
                     typeName = self.sectionNameFromSchema(typeName)
                     self.createSection(typeName, attrs, False)
@@ -878,17 +884,14 @@ class AETemplate(object):
                     self.createSection(sectionName, attrsToAdd, collapse)
 
     def suppressArrayAttribute(self):
-        # Suppress all array attributes except UsdGeom.Tokens.xformOpOrder
+        # Suppress all array attributes.
         if not self.showArrayAttributes:
             for attrName in self.attrS.attributeNames:
                 if self.isArrayAttribute(attrName):
                     self.suppress(attrName)
 
     def isArrayAttribute(self, attrName):
-        # Note: UsdGeom.Tokens.xformOpOrder is a exception,
-        #       we are not considering this attribute as an array.
-        if self.attrS.attributeType(attrName) == ufe.Attribute.kGeneric and \
-           attrName != UsdGeom.Tokens.xformOpOrder:
+        if self.attrS.attributeType(attrName) == ufe.Attribute.kGeneric:
             attr = self.prim.GetAttribute(attrName)
             typeName = attr.GetTypeName()
             return typeName.isArray

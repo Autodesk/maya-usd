@@ -1,0 +1,83 @@
+#usda 1.0
+(
+    defaultPrim = "pPyramid1"
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
+
+def Mesh "pPyramid1" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.70710677, -0.35355338, -0.70710677), (0.70710677, 0.35355338, 0.70710677)]
+    int[] faceVertexCounts = [4, 3, 3, 3, 3]
+    int[] faceVertexIndices = [0, 3, 2, 1, 0, 1, 4, 1, 2, 4, 2, 3, 4, 3, 0, 4]
+    rel material:binding = </pPyramid1/mtl/standardSurface2SG>
+    point3f[] points = [(9.272585e-8, -0.35355338, -0.70710677), (-0.70710677, -0.35355338, -6.181724e-8), (-3.090862e-8, -0.35355338, 0.70710677), (0.70710677, -0.35355338, 0), (0, 0.35355338, 0)]
+    color3f[] primvars:displayColor = [(0, 0, 1)] (
+        customData = {
+            dictionary Maya = {
+                bool generated = 1
+            }
+        }
+    )
+    texCoord2f[] primvars:st = [(0.50000006, 0), (0.25, 0.24999999), (0.5, 0.5), (0.75, 0.25), (0.25, 0.5), (0.375, 0.5), (0.5, 0.5), (0.625, 0.5), (0.75, 0.5), (0.5, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 3, 2, 1, 4, 5, 9, 5, 6, 9, 6, 7, 9, 7, 8, 9]
+    float3 xformOp:scale = (10, 10, 10)
+    uniform token[] xformOpOrder = ["xformOp:scale"]
+
+    def Scope "mtl"
+    {
+        def Material "standardSurface2SG"
+        {
+            token outputs:mtlx:surface.connect = </pPyramid1/mtl/standardSurface2SG/MaterialX.outputs:surface>
+            token outputs:surface.connect = </pPyramid1/mtl/standardSurface2SG/UsdPreviewSurface.outputs:surface>
+
+            def NodeGraph "UsdPreviewSurface"
+            {
+                token outputs:surface.connect = </pPyramid1/mtl/standardSurface2SG/UsdPreviewSurface/standardSurface2.outputs:surface>
+
+                def Shader "standardSurface2"
+                {
+                    uniform token info:id = "UsdPreviewSurface"
+                    float inputs:clearcoat = 0
+                    float inputs:clearcoatRoughness = 0.1
+                    color3f inputs:diffuseColor = (1, 0, 0)
+                    color3f inputs:emissiveColor = (0, 0, 0)
+                    float inputs:ior = 1.5
+                    float inputs:metallic = 0
+                    normal3f inputs:normal = (1, 1, 1)
+                    float inputs:roughness = 0.2
+                    color3f inputs:specularColor = (1, 1, 1)
+                    token outputs:displacement
+                    token outputs:surface
+                }
+            }
+
+            def NodeGraph "MaterialX"
+            {
+                token outputs:surface.connect = </pPyramid1/mtl/standardSurface2SG/MaterialX/standardSurface2.outputs:out>
+
+                def Shader "standardSurface2"
+                {
+                    uniform token info:id = "ND_standard_surface_surfaceshader"
+                    float inputs:base = 1
+                    color3f inputs:base_color = (0, 1, 0)
+                    float inputs:specular = 1
+                    float inputs:specular_roughness = 0.2
+                    token outputs:out
+                }
+            }
+        }
+    }
+}
+

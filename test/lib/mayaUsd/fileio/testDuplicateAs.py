@@ -33,7 +33,7 @@ from maya import cmds
 from maya import standalone
 from maya.api import OpenMaya as om
 
-import mayaUsdDuplicateAsMayaDataOptions
+import mayaUsdDuplicateAsUsdDataOptions
 
 import ufe
 
@@ -395,9 +395,9 @@ class DuplicateAsTestCase(unittest.TestCase):
         stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
         
         # Duplicate Maya data as USD data using modified default options to export materials
-        defaultDuplicateAsMayaDataOptions = mayaUsdDuplicateAsMayaDataOptions.getDuplicateAsMayaDataOptionsText()
-        modifiedDuplicateAsMayaDataOptions = defaultDuplicateAsMayaDataOptions.replace('shadingMode=useRegistry','shadingMode=none')
-        cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr, exportOptions=modifiedDuplicateAsMayaDataOptions)
+        defaultDuplicateAsUsdDataOptions = mayaUsdDuplicateAsUsdDataOptions.getDuplicateAsUsdDataOptionsText()
+        modifiedDuplicateAsUsdDataOptions = defaultDuplicateAsUsdDataOptions.replace('shadingMode=useRegistry','shadingMode=none')
+        cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr, exportOptions=modifiedDuplicateAsUsdDataOptions)
 
         # Verify that the copied sphere does not have a look (material) prim.
         looksPrim = stage.GetPrimAtPath("/pSphere1/Looks")
@@ -408,8 +408,8 @@ class DuplicateAsTestCase(unittest.TestCase):
 
         # Duplicate Maya data as USD data using default options. The default do not specify any
         # material conversion option, so we still get no material.
-        modifiedDuplicateAsMayaDataOptions = defaultDuplicateAsMayaDataOptions[:]
-        cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr, exportOptions=modifiedDuplicateAsMayaDataOptions)
+        modifiedDuplicateAsUsdDataOptions = defaultDuplicateAsUsdDataOptions[:]
+        cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr, exportOptions=modifiedDuplicateAsUsdDataOptions)
 
         # Verify that the copied sphere does not have a look (material) prim.
         looksPrim = stage.GetPrimAtPath("/pSphere1/Looks")
@@ -419,15 +419,15 @@ class DuplicateAsTestCase(unittest.TestCase):
         cmds.undo()
 
         # Duplicate Maya data as USD data using default options that are with materials.
-        modifiedDuplicateAsMayaDataOptions = defaultDuplicateAsMayaDataOptions.replace("convertMaterialsTo=[]", "convertMaterialsTo=[UsdPreviewSurface]")
-        cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr, exportOptions=modifiedDuplicateAsMayaDataOptions)
+        modifiedDuplicateAsUsdDataOptions = defaultDuplicateAsUsdDataOptions.replace("convertMaterialsTo=[]", "convertMaterialsTo=[UsdPreviewSurface]")
+        cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr, exportOptions=modifiedDuplicateAsUsdDataOptions)
 
         # Verify that the copied sphere has a look (material) prim.
         looksPrim = stage.GetPrimAtPath("/pSphere1/Looks")
         self.assertTrue(looksPrim.IsValid())
 
         # Restore default options
-        mayaUsdDuplicateAsMayaDataOptions.setDuplicateAsMayaDataOptionsText(defaultDuplicateAsMayaDataOptions)
+        mayaUsdDuplicateAsUsdDataOptions.setDuplicateAsUsdDataOptionsText(defaultDuplicateAsUsdDataOptions)
 
     def testDuplicateRigWithOPMAsUsd(self):
         '''Duplicate a Maya rig using offset-parent-matrix to USD.'''
@@ -448,9 +448,9 @@ class DuplicateAsTestCase(unittest.TestCase):
         # path handler registered to UFE for Maya path strings, so use absolute
         # path.
         # Duplicate Maya data as USD data using modified default options to export materials
-        defaultDuplicateAsMayaDataOptions = mayaUsdDuplicateAsMayaDataOptions.getDuplicateAsMayaDataOptionsText()
-        modifiedDuplicateAsMayaDataOptions = defaultDuplicateAsMayaDataOptions.replace('animation=0','animation=1')
-        cmds.mayaUsdDuplicate(cmds.ls(rigName, long=True)[0], psPathStr, exportOptions=modifiedDuplicateAsMayaDataOptions)
+        defaultDuplicateAsUsdDataOptions = mayaUsdDuplicateAsUsdDataOptions.getDuplicateAsUsdDataOptionsText()
+        modifiedDuplicateAsUsdDataOptions = defaultDuplicateAsUsdDataOptions.replace('animation=0','animation=1')
+        cmds.mayaUsdDuplicate(cmds.ls(rigName, long=True)[0], psPathStr, exportOptions=modifiedDuplicateAsUsdDataOptions)
 
         # Maya hierarchy should be duplicated in USD.
         usdRigPathStr = psPathStr + ',/' + rigName

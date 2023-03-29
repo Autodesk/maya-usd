@@ -29,6 +29,7 @@
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <limits>
 #include <memory>
 #include <thread>
 
@@ -93,6 +94,7 @@ std::unique_ptr<UsdUtilsCoalescingDiagnosticDelegate> _batchedWarnings;
 std::unique_ptr<UsdUtilsCoalescingDiagnosticDelegate> _batchedErrors;
 std::unique_ptr<TfDiagnosticMgr::Delegate>            _waker;
 std::unique_ptr<DiagnosticFlusher>                    _flusher;
+MCallbackId                                           _exitCallback;
 
 // The delegate can be installed by multiple plugins (e.g. pxrUsd and
 // mayaUsdPlugin), so keep track of installations to ensure that we only add
@@ -155,7 +157,12 @@ class ErrorOnlyDelegate : public UsdUtilsCoalescingDiagnosticDelegate
 class DiagnosticFlusher
 {
 public:
-    DiagnosticFlusher() { }
+    DiagnosticFlusher()
+    {
+        if (!IsDiagnosticBatchingEnabled()) {
+            _maximumUnbatchedDiagnostics = std::numeric_limits<int>::max();
+        }
+    }
 
     ~DiagnosticFlusher() { }
 
@@ -378,6 +385,12 @@ public:
     void IssueFatalError(const TfCallContext&, const std::string&) override { }
 };
 
+void beforeExitCallback(void* /*clientData*/)
+{
+    // Make sure the diagnostic messages are flushed when Maya exits.
+    UsdMayaDiagnosticDelegate::Flush();
+}
+
 } // anonymous namespace
 
 void UsdMayaDiagnosticDelegate::InstallDelegate()
@@ -405,6 +418,8 @@ void UsdMayaDiagnosticDelegate::InstallDelegate()
     // Note: waker accesses the flusher, so the waker must be created
     //       after the flusher.
     _waker = std::make_unique<WakeUpDelegate>();
+
+    _exitCallback = MSceneMessage::addCallback(MSceneMessage::kMayaExiting, beforeExitCallback);
 }
 
 void UsdMayaDiagnosticDelegate::RemoveDelegate()
@@ -422,6 +437,8 @@ void UsdMayaDiagnosticDelegate::RemoveDelegate()
     }
 
     Flush();
+
+    MMessage::removeCallback(_exitCallback);
 
     // Note: waker accesses the flusher, so the waker must be destroyed
     //       before the flusher.

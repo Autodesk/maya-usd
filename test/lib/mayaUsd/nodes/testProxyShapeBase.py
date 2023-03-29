@@ -44,10 +44,13 @@ class testProxyShapeBase(unittest.TestCase):
     def tearDownClass(cls):
         standalone.uninitialize()
 
+    def getTempFileName(self, filename):
+        return os.path.join(
+            self._currentTestDir, filename)
+
     def setupEmptyScene(self):
         self._currentTestDir = tempfile.mkdtemp(prefix='ProxyShapeBaseTest')
-        tempMayaFile = os.path.join(
-            self._currentTestDir, 'ProxyShapeBaseScene.ma')
+        tempMayaFile = self.getTempFileName('ProxyShapeBaseScene.ma')
         cmds.file(new=True, force=True)
         cmds.file(rename=tempMayaFile)
         return tempMayaFile
@@ -633,7 +636,7 @@ class testProxyShapeBase(unittest.TestCase):
         # Verify there are no muted layers by default.
         self.assertListEqual([], stage.GetMutedLayers())
 
-        # select the room and get its context menu.
+        # Change the muted layers.
         stage.MuteLayer("abc")
         stage.MuteLayer("def")
 
@@ -651,6 +654,42 @@ class testProxyShapeBase(unittest.TestCase):
 
         stage = mayaUsd.lib.GetPrim('|stage1|stageShape1').GetStage()
         verifyMuting(stage)
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testStageTargetLayer only available in UFE v2 or greater.')
+    def testStageTargetLayer(self):
+        '''
+        Verify that stage preserve the target layer of the stage when a scene is reloaded.
+        '''
+        # create new scene
+        tempMayaFile = self.setupEmptyScene()
+
+        # create an empty scene
+        shapePath = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(shapePath).GetStage()
+
+        # Add a sub-layer and target it.
+        subLayerFileName = self.getTempFileName('targetSubLayer.usd')
+        usdFormat = Sdf.FileFormat.FindByExtension('usd')
+        subLayer = Sdf.Layer.New(usdFormat, subLayerFileName)
+        subLayer.Save()
+        stage.GetRootLayer().subLayerPaths.append(subLayer.identifier)
+        stage.SetEditTarget(subLayer)
+
+        def verifyTargetLayer(stage):
+            self.assertNotEqual(stage.GetRootLayer().identifier, stage.GetEditTarget().GetLayer().identifier)
+
+        verifyTargetLayer(stage)
+
+        # Save the Maya scene.
+        cmds.file(save=True, force=True)
+
+        # Reload the scene and verify the target layer is not the root layer.
+        cmds.file(new=True, force=True)
+        cmds.file(tempMayaFile, open=True)
+
+        stage = mayaUsd.lib.GetPrim('|stage1|stageShape1').GetStage()
+        self.assertListEqual(list(stage.GetRootLayer().subLayerPaths), [subLayer.identifier])
+        verifyTargetLayer(stage)
 
     def testSerializationShareStage(self):
         '''

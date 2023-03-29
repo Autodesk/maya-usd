@@ -54,8 +54,8 @@ public:
 #endif
 
 private:
-    bool renameRedo();
-    bool renameUndo();
+    void renameRedo();
+    void renameUndo();
 
     void undo() override;
     void redo() override;

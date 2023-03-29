@@ -25,7 +25,7 @@ import usdUtils
 
 import mayaUsd.ufe
 
-from pxr import Kind, Usd, UsdGeom, Vt
+from pxr import Kind, Usd, UsdGeom, Vt, Sdf
 
 from maya import cmds, mel
 from maya import standalone
@@ -325,8 +325,14 @@ class GroupCmdTestCase(unittest.TestCase):
         # get the USD stage
         stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
 
-        # set the edit target to the session layer
-        stage.SetEditTarget(stage.GetSessionLayer())
+        # set the edit target to a new layer
+        newLayerName = 'Layer_1'
+        usdFormat = Sdf.FileFormat.FindByExtension('usd')
+        newLayer = Sdf.Layer.New(usdFormat, newLayerName)
+        stage.GetRootLayer().subLayerPaths.append(newLayer.identifier)
+
+        stage.SetEditTarget(newLayer)
+        self.assertEqual(stage.GetEditTarget().GetLayer(), newLayer)
 
         # expect the exception happens
         with self.assertRaises(RuntimeError):
@@ -346,7 +352,7 @@ class GroupCmdTestCase(unittest.TestCase):
         ufeSelection.append(sphereItem)
 
         # set the edit target to the session layer
-        stage.SetEditTarget(stage.GetSessionLayer())
+        stage.SetEditTarget(newLayer)
 
         # expect the exception happens.
         with self.assertRaises(RuntimeError):
@@ -526,6 +532,99 @@ class GroupCmdTestCase(unittest.TestCase):
             stage.GetPrimAtPath("/group1/Sphere1"), 
             stage.GetPrimAtPath("/group1/Sphere2"),
             stage.GetPrimAtPath("/group1/Sphere3")])
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 3, 'testGroupUndoRedo is only available in UFE v3 or greater.')
+    def testGroupRestrictionsAllowSession(self):
+        '''
+        Verify that grouping is allowed even ifthe prim as opinions in the session layer.
+        '''
+        cmds.file(new=True, force=True)
+
+        # Create a stage
+        (stage, proxyShapePathStr, proxyShapeItem, contextOp) = createStage()
+
+        # Some helper functions used during the test
+        def getItem(name):
+            proxySegment = mayaUtils.createUfePathSegment(proxyShapePathStr)
+            self.assertIsNotNone(proxySegment)
+            itemPathSegment = usdUtils.createUfePathSegment(name)
+            self.assertIsNotNone(itemPathSegment)
+            itemPath = ufe.Path([proxySegment, itemPathSegment])
+            item = ufe.Hierarchy.createItem(itemPath)
+            self.assertIsNotNone(item)
+            return item
+
+        def applyRadius(item, radius):
+            radAttr = ufe.Attributes.attributes(item).attribute('radius')
+            radAttr.set(radius)
+
+        def verifyRadius(item, radius):
+            radAttr = ufe.Attributes.attributes(item).attribute('radius')
+            self.assertEqual(radAttr.get(), radius)
+
+        # Some values used during the test
+        radius = 30.
+        oldSphere1Name = '/Sphere1'
+        newSphere1Name = '/group1/Sphere1'
+
+        # Create a sphere generator and geerate 3 spheres
+        sphereGen = SphereGenerator(3, contextOp, proxyShapePathStr)
+
+        sphere1Path = sphereGen.createSphere()
+        sphere1Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere1Path))
+
+        sphere2Path = sphereGen.createSphere()
+        sphere2Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere2Path))
+
+        sphere3Path = sphereGen.createSphere()
+        sphere3Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere3Path))
+
+        # Add an opinion about one sphere in the session layer
+        stage.SetEditTarget(stage.GetSessionLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
+
+        applyRadius(getItem(oldSphere1Name), radius)
+        verifyRadius(getItem(oldSphere1Name), radius)
+
+        # Group Sphere1, Sphere2, and Sphere3 in the root layer
+        stage.SetEditTarget(stage.GetRootLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+
+        groupName = cmds.group(ufe.PathString.string(sphere1Path),
+                               ufe.PathString.string(sphere2Path),
+                               ufe.PathString.string(sphere3Path))
+
+        # Verify that groupItem has 3 children
+        groupItem = ufe.GlobalSelection.get().front()
+        groupHierarchy = ufe.Hierarchy.hierarchy(groupItem)
+        self.assertEqual(len(groupHierarchy.children()), 3)
+
+        self.assertEqual([item for item in stage.Traverse()],
+            [stage.GetPrimAtPath("/group1"),
+            stage.GetPrimAtPath("/group1/Sphere1"), 
+            stage.GetPrimAtPath("/group1/Sphere2"),
+            stage.GetPrimAtPath("/group1/Sphere3")])
+        
+        verifyRadius(getItem(newSphere1Name), radius)
+
+        cmds.undo()
+
+        self.assertEqual([item for item in stage.Traverse()],
+            [stage.GetPrimAtPath("/Sphere3"), 
+            stage.GetPrimAtPath("/Sphere2"),
+            stage.GetPrimAtPath("/Sphere1")])
+
+        verifyRadius(getItem(oldSphere1Name), radius)
+
+        cmds.redo()
+
+        self.assertEqual([item for item in stage.Traverse()],
+            [stage.GetPrimAtPath("/group1"),
+            stage.GetPrimAtPath("/group1/Sphere1"), 
+            stage.GetPrimAtPath("/group1/Sphere2"),
+            stage.GetPrimAtPath("/group1/Sphere3")])
+
+        verifyRadius(getItem(newSphere1Name), radius)
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 3, 'testGroupUndoRedo is only available in UFE v3 or greater.')
     def testGroupPreserveLoadRules(self):
@@ -932,6 +1031,66 @@ class GroupCmdTestCase(unittest.TestCase):
     def testGroupPivotOrigin(self):
         # With group pivot origin the group pivot is at the origin.
         self.runTestGroupPivotOptions("doGroup 0 1 1", [0, 0, 0])
+
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
+    def testGroupRestrictionMutedLayer(self):
+        '''
+        Test group restriction - we don't allow grouping of a prim
+        when there are opinions on a muted layer.
+        '''
+        
+        # Create a stage
+        cmds.file(new=True, force=True)
+        import mayaUsd_createStageWithNewLayer
+
+        proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+        self.assertTrue(stage)
+
+        # Helpers
+        def createLayer(index):
+            layer = Sdf.Layer.CreateAnonymous()
+            stage.GetRootLayer().subLayerPaths.append(layer.identifier)
+            return layer
+
+        def targetSubLayer(layer):
+            stage.SetEditTarget(layer)
+            self.assertEqual(stage.GetEditTarget().GetLayer(), layer)
+            layer = None
+
+        def muteSubLayer(layer):
+            # Note: mute by passing through the stage, otherwise the stage won't get recomposed
+            stage.MuteLayer(layer.identifier)
+
+        def setSphereRadius(radius):
+            spherePrim = stage.GetPrimAtPath('/A/ball')
+            spherePrim.GetAttribute('radius').Set(radius)
+            spherePrim = None
+
+        # Add two new layers
+        topLayer = createLayer(0)
+        bottomLayer = createLayer(1)
+
+        # Create a xform prim named A and a sphere on the bottom layer
+        targetSubLayer(bottomLayer)
+        stage.DefinePrim('/A', 'Xform')
+        stage.DefinePrim('/A/ball', 'Sphere')
+        setSphereRadius(7.12)
+
+        targetSubLayer(topLayer)
+        setSphereRadius(4.32)
+        
+        # Set target to bottom layer and mute the top layer
+        targetSubLayer(bottomLayer)
+        muteSubLayer(topLayer)
+
+        # Try to group the prim with muted opinion: it should fail
+        with self.assertRaises(RuntimeError):
+            cmds.group('%s,/A/ball' % proxyShapePathStr)
+
+        self.assertTrue(stage.GetPrimAtPath('/A/ball'))
+        self.assertFalse(stage.GetPrimAtPath('/A/group1/ball'))
+        
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -34,6 +34,13 @@ target_sources(${TARGET_NAME}
         ProxyShape.cpp
 )
 
+if (CMAKE_UFE_V3_FEATURES_AVAILABLE)
+    target_sources(${TARGET_NAME} 
+        PRIVATE
+            adskMaterialCommands.cpp
+    )
+endif()
+
 # -----------------------------------------------------------------------------
 # compile configuration
 # -----------------------------------------------------------------------------

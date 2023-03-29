@@ -66,8 +66,8 @@ private:
     void undo() override;
     void redo() override;
 
-    bool insertChildRedo();
-    bool insertChildUndo();
+    void insertChildRedo();
+    void insertChildUndo();
 
     UsdSceneItem::Ptr _ufeDstItem;
 

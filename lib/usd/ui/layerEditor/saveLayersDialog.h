@@ -42,7 +42,8 @@ public:
 
     // UI to get a file path to save a layer.
     // As output returns the path.
-    static bool saveLayerFilePathUI(std::string& out_filePath);
+    static bool
+    saveLayerFilePathUI(std::string& out_filePath, const PXR_NS::SdfLayerRefPtr& parentLayer);
 
 protected:
     void onSaveAll();
@@ -60,18 +61,21 @@ public:
 
 private:
     void buildDialog(const QString& msg1, const QString& msg2);
-    void getLayersToSave(const std::string& proxyPath, const std::string& stageName);
+    void getLayersToSave(
+        const UsdStageRefPtr& stage,
+        const std::string&    proxyPath,
+        const std::string&    stageName);
 
 private:
-    typedef std::vector<std::pair<SdfLayerRefPtr, MayaUsd::utils::LayerParent>> layerPairs;
-    typedef std::unordered_set<SdfLayerRefPtr, TfHash>                          layerSet;
+    typedef std::unordered_set<SdfLayerRefPtr, TfHash> layerSet;
+    using LayerInfos = MayaUsd::utils::LayerInfos;
 
     QStringList   _newPaths;
     QStringList   _problemLayers;
     QStringList   _emptyLayers;
     QWidget*      _anonLayersWidget { nullptr };
     QWidget*      _fileLayersWidget { nullptr };
-    layerPairs    _anonLayerPairs;
+    LayerInfos    _anonLayerInfos;
     layerSet      _dirtyFileBackedLayers;
     stageLayerMap _stageLayerMap;
     SessionState* _sessionState;

@@ -107,6 +107,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (staticSingleSample) \
     (geomSidedness)   \
     (worldspace) \
+    (customLayerData) \
     /* Special "none" token */ \
     (none) \
     /* referenceObjectMode values */ \
@@ -124,7 +125,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     /* geomSidedness values */ \
     (derived)                             \
     (single)                              \
-    ((double_, "double"))                                          \
+    ((double_, "double"))
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
@@ -230,6 +231,7 @@ struct UsdMayaJobExportArgs
     using ChaserArgs = std::map<std::string, std::string>;
     const std::vector<std::string>          chaserNames;
     const std::map<std::string, ChaserArgs> allChaserArgs;
+    const VtDictionary                      customLayerData;
 
     const std::map<std::string, std::string> remapUVSetsTo;
 
@@ -293,6 +295,12 @@ struct UsdMayaJobExportArgs
     /// Used in GetDictionaryFromArgDatabase() to deduce the type of an argument.
     MAYAUSD_CORE_PUBLIC
     static const VtDictionary& GetGuideDictionary();
+
+    /// Gets the resolved default material scope name.
+    ///
+    /// Accounts for all env vars that can affect the scope name.
+    MAYAUSD_CORE_PUBLIC
+    static const std::string GetDefaultMaterialsScopeName();
 
     /// Returns the resolved file name of the final export location
     MAYAUSD_CORE_PUBLIC
