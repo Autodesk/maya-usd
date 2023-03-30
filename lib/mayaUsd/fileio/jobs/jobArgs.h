@@ -155,7 +155,8 @@ TF_DECLARE_PUBLIC_TOKENS(
     (Import) \
     ((Unloaded, "")) \
     (chaser) \
-    (chaserArgs)
+    (chaserArgs) \
+    (applyEulerFilter)
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
@@ -338,6 +339,7 @@ struct UsdMayaJobImportArgs
     const bool           useAsAnimationCache;
     const bool           importWithProxyShapes;
     const bool           preserveTimeline;
+    const bool           applyEulerFilter;
     const UsdStageRefPtr pullImportStage;
     /// The interval over which to import animated data.
     /// An empty interval (<tt>GfInterval::IsEmpty()</tt>) means that no

@@ -30,6 +30,7 @@ ImportData::ImportData()
     , fRootPrimPath(kRootPrimPath)
     , fPrimsInScopeCount(0)
     , fSwitchedVariantCount(0)
+    , fApplyEulerFilter(false)
 {
 }
 
@@ -39,6 +40,7 @@ ImportData::ImportData(const std::string& f)
     , fFilename(f)
     , fPrimsInScopeCount(0)
     , fSwitchedVariantCount(0)
+    , fApplyEulerFilter(false)
 {
 }
 
@@ -87,6 +89,10 @@ const std::string& ImportData::rootPrimPath() const { return fRootPrimPath; }
 void ImportData::setRootPrimPath(const std::string& primPath) { fRootPrimPath = primPath; }
 
 bool ImportData::hasPopulationMask() const { return !fPopMask.IsEmpty(); }
+
+void ImportData::setApplyEulerFilter(bool value) { fApplyEulerFilter = value; }
+
+bool ImportData::applyEulerFilter() const { return fApplyEulerFilter; }
 
 const UsdStagePopulationMask& ImportData::stagePopulationMask() const { return fPopMask; }
 

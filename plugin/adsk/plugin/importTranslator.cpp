@@ -97,6 +97,8 @@ MStatus UsdMayaImportTranslator::reader(
                 timeInterval.SetMax(theOption[1].asDouble());
             } else if (argName == "primPath") {
                 importData.setRootPrimPath(theOption[1].asChar());
+            } else if (argName == "applyEulerFilter") {
+                importData.setApplyEulerFilter(theOption[1].asInt() != 0);
             } else {
                 userArgs[argName] = UsdMayaUtil::ParseArgumentValue(
                     argName, theOption[1].asChar(), UsdMayaJobImportArgs::GetGuideDictionary());

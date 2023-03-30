@@ -30,6 +30,7 @@
 #include <maya/MDGModifier.h>
 #include <maya/MDagModifier.h>
 #include <maya/MDoubleArray.h>
+#include <maya/MEulerRotation.h>
 #include <maya/MFnAnimCurve.h>
 #include <maya/MFnComponentListData.h>
 #include <maya/MFnDependencyNode.h>
@@ -214,7 +215,8 @@ bool _SetTransformAnim(
     MFnDependencyNode&              transformNode,
     const std::vector<GfMatrix4d>&  xforms,
     MTimeArray&                     times,
-    const UsdMayaPrimReaderContext* context)
+    const UsdMayaPrimReaderContext* context,
+    bool                            applyEulerFilter)
 {
     if (xforms.size() != times.length()) {
         TF_WARN("xforms size [%zu] != times size [%du].", xforms.size(), times.length());
@@ -246,6 +248,22 @@ bool _SetTransformAnim(
                     rotates[c][i] = r[c];
                     scales[c][i] = s[c];
                 }
+            }
+        }
+
+        if (applyEulerFilter) {
+            MPlug                         rotOrder = transformNode.findPlug("rotateOrder");
+            MEulerRotation::RotationOrder order
+                = static_cast<MEulerRotation::RotationOrder>(rotOrder.asInt());
+
+            MEulerRotation last(rotates[0][0], rotates[1][0], rotates[2][0], order);
+            for (unsigned int i = 1; i < rotates[0].length(); ++i) {
+                MEulerRotation current(rotates[0][i], rotates[1][i], rotates[2][i], order);
+                current.setToClosestSolution(last);
+                rotates[0][i] = current[0];
+                rotates[1][i] = current[1];
+                rotates[2][i] = current[2];
+                last = current;
             }
         }
 
@@ -502,7 +520,12 @@ bool _CopyAnimFromSkel(
         MFnDependencyNode skelXformDep(jointContainer, &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
 
-        if (!_SetTransformAnim(skelXformDep, skelLocalXforms, mayaTimes, context)) {
+        if (!_SetTransformAnim(
+                skelXformDep,
+                skelLocalXforms,
+                mayaTimes,
+                context,
+                args.GetJobArguments().applyEulerFilter)) {
             return false;
         }
     }
@@ -540,7 +563,8 @@ bool _CopyAnimFromSkel(
             xforms[i] = samples[i][jointIdx];
         }
 
-        if (!_SetTransformAnim(jointDep, xforms, mayaTimes, context))
+        if (!_SetTransformAnim(
+                jointDep, xforms, mayaTimes, context, args.GetJobArguments().applyEulerFilter))
             return false;
     }
     return true;
