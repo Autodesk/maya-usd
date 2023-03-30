@@ -186,7 +186,6 @@ VtValue _BuildCubicIndexArray(const HdBasisCurvesTopology& topology)
     }
 
     int vertexIndex = 0;
-    int curveIndex = 0;
     TF_FOR_ALL(itCounts, vertexCounts)
     {
         int count = *itCounts;
@@ -216,7 +215,6 @@ VtValue _BuildCubicIndexArray(const HdBasisCurvesTopology& topology)
             indices.push_back(seg);
         }
         vertexIndex += count;
-        curveIndex++;
     }
 
     VtVec4iArray      finalIndices(indices.size());
@@ -256,14 +254,12 @@ VtValue _BuildLinesIndexArray(const HdBasisCurvesTopology& topology)
     VtArray<int>         vertexCounts = topology.GetCurveVertexCounts();
 
     int vertexIndex = 0;
-    int curveIndex = 0;
     TF_FOR_ALL(itCounts, vertexCounts)
     {
         for (int i = 0; i < *itCounts; i += 2) {
             indices.push_back(GfVec2i(vertexIndex, vertexIndex + 1));
             vertexIndex += 2;
         }
-        curveIndex++;
     }
 
     VtVec2iArray      finalIndices(indices.size());
@@ -302,7 +298,6 @@ VtValue _BuildLineSegmentIndexArray(const HdBasisCurvesTopology& topology)
     const VtArray<int>   vertexCounts = topology.GetCurveVertexCounts();
     bool                 wrap = topology.GetCurveWrap() == HdTokens->periodic;
     int                  vertexIndex = 0; // Index of next vertex to emit
-    int                  curveIndex = 0;  // Index of next curve to emit
     // For each curve
     TF_FOR_ALL(itCounts, vertexCounts)
     {
@@ -322,7 +317,6 @@ VtValue _BuildLineSegmentIndexArray(const HdBasisCurvesTopology& topology)
         if (wrap) {
             indices.push_back(GfVec2i(v0, firstVert));
         }
-        ++curveIndex;
     }
 
     VtVec2iArray      finalIndices(indices.size());
