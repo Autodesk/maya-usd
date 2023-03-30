@@ -241,7 +241,6 @@ class usdFileRelative(object):
             # the user is free to enter any extension they want. The layer editor code will then verify
             # (and fix if needed) the file path before saving. We do the same here for preview.
             unresolvedPath = mayaUsdLib.Util.ensureUSDFileExtension(selectedFile) if selectedFile else ''
-            """relativePath = mayaUsdLib.Util.getPathRelativeToDirectory(unresolvedPath, cls._parentLayerPath) if unresolvedPath and cls._parentLayerPath != "" else ''"""
             relativePath = ''
             if unresolvedPath and cls._parentLayerPath:
                 relativePath = mayaUsdLib.Util.getPathRelativeToDirectory(unresolvedPath, cls._parentLayerPath)
