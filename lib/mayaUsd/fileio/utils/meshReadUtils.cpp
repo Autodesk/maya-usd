@@ -577,7 +577,11 @@ void UsdMayaMeshReadUtils::setEmitNormalsTag(MFnMesh& meshFn, const bool emitNor
     MStatus             status { MS::kSuccess };
     MFnNumericAttribute nAttr;
     MObject             attr = nAttr.create(
-        _meshTokens->USD_EmitNormals.GetText(), "", MFnNumericData::kBoolean, 0, &status);
+        _meshTokens->USD_EmitNormals.GetText(),
+        _meshTokens->USD_EmitNormals.GetText(),
+        MFnNumericData::kBoolean,
+        0,
+        &status);
     if (status == MS::kSuccess) {
         meshFn.addAttribute(attr);
         MPlug plug = meshFn.findPlug(attr);
