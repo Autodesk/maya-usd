@@ -456,8 +456,10 @@ parser.add_argument("--pxrusd-location", type=str,
 parser.add_argument("--devkit-location", type=str,
                     help="Directory where Maya Devkit is installed.")
 
-parser.add_argument("--materialx", dest="build_materialx", action="store_true",
+parser.add_argument("--materialx", dest="build_materialx", action="store_true", default=True,
                     help="Build with MaterialX features enabled. Must provide a USD location built with MaterialX support.")
+parser.add_argument("--no-materialx", dest="build_materialx", action="store_false",
+                    help="Build with MaterialX features disabled.")
 
 varGroup = parser.add_mutually_exclusive_group()
 varGroup.add_argument("--build-debug", dest="build_debug", action="store_true",
