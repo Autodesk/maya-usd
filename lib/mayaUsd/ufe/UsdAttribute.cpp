@@ -492,7 +492,7 @@ std::string UsdAttributeFilename::get() const
 
 void UsdAttributeFilename::set(const std::string& value)
 {
-    if (UsdAttribute::nativeType() == SdfValueTypeNames->String.GetAsToken().GetString()) {
+    if (UsdAttribute::usdAttributeType() == SdfValueTypeNames->String) {
         setUsdAttr<std::string>(*this, value);
     } else {
         SdfAssetPath path(value);
