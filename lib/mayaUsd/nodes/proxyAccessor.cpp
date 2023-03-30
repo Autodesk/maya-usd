@@ -18,6 +18,10 @@
 #include <mayaUsd/base/debugCodes.h>
 #include <mayaUsd/utils/converter.h>
 
+#if defined(WANT_UFE_BUILD)
+#include <mayaUsd/ufe/Utils.h>
+#endif
+
 #include <pxr/pxr.h>
 #include <pxr/usd/ar/resolverScopedCache.h>
 #include <pxr/usd/sdf/path.h>
@@ -150,6 +154,8 @@ const int _accessorProfilerCategory = MProfiler::addCategory(
     "ProxyAccessor"
 #endif
 );
+
+static const TfToken combinedVisibilityToken("combinedVisibility");
 
 //! \brief  Test if given plug name is matching the convention used by accessor plugs
 bool isAccessorPlugName(const char* plugName) { return (strncmp(plugName, "AP_", 3) == 0); }
@@ -317,9 +323,11 @@ void ProxyAccessor::collectAccessorItems(MObject node)
         const UsdPrim& prim = stage->GetPrimAtPath(primPath);
 
         const Converter* converter = nullptr;
-        if (!path.IsPrimPropertyPath()) {
+        if (!path.IsPrimPropertyPath() || path.GetNameToken() == combinedVisibilityToken) {
             SdfValueTypeName typeName = Converter::getUsdTypeName(valuePlug, false);
-            if (typeName != SdfValueTypeNames->Matrix4d) {
+            SdfValueTypeName expectedType
+                = path.IsPrimPropertyPath() ? SdfValueTypeNames->Int : SdfValueTypeNames->Matrix4d;
+            if (typeName != expectedType) {
                 TF_DEBUG(USDMAYA_PROXYACCESSOR)
                     .Msg(
                         "Prim path found, but value plug is not a supported data type '%s' "
@@ -597,6 +605,22 @@ MStatus ProxyAccessor::computeOutput(
 
         dstArray.set(dstArrayBuilder);
         dstArray.setAllClean();
+    } else if (itemPath.GetNameToken() == combinedVisibilityToken) {
+        // First, verify visibility of the proxy shape
+#if defined(WANT_UFE_BUILD)
+        Ufe::Path proxyShapeUfePath = MayaUsd::ufe::stagePath(stage);
+        MDagPath  proxyShapeDagPath = MayaUsd::ufe::ufeToDagPath(proxyShapeUfePath);
+        bool      visible = proxyShapeDagPath.isVisible();
+#else
+        bool visible = true;
+#endif
+        // Next, verify visibility of the usd prim
+        UsdGeomImageable imageable(itemPrim);
+        if (visible && imageable) {
+            visible = (imageable.ComputeVisibility() == UsdGeomTokens->inherited);
+        }
+
+        itemDataHandle.set(visible ? 1 : 0);
     } else if (itemConverter) {
         const TfToken& itemPropertyToken = itemPath.GetNameToken();
         UsdAttribute   itemAttribute = itemPrim.GetAttribute(itemPropertyToken);

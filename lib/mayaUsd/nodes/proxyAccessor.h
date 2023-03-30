@@ -141,6 +141,15 @@ public:
             return MStatus::kFailure;
     }
 
+    //! \brief  Initializes recomputation of accessor plugs
+    static MStatus forceCompute(const Owner& accessor, const MObject& node)
+    {
+        if (accessor)
+            return accessor->forceCompute(node);
+        else
+            return MStatus::kFailure;
+    }
+
     /*! \brief  Proxy accessor is creating acceleration structure to avoid the discovery of
      accessor plugs at each compute. This accelleration structure has to be invalidate when
      stage changes.
