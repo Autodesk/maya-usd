@@ -46,7 +46,7 @@ public:
 
     MayaUsd::AbstractLayerEditorWindow* createWindow(const char* panelName) override;
     MayaUsd::AbstractLayerEditorWindow* getWindow(const char* panelName) const override;
-    std::vector<std::string>   getAllPanelNames() const override;
+    std::vector<std::string>            getAllPanelNames() const override;
 
 private:
     // it's very important that this be a QPointer, so that it gets
