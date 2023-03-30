@@ -116,16 +116,44 @@ void enforceMutedLayer(const PXR_NS::UsdPrim& prim, const char* command)
     }
 }
 
+static SdfPrimSpecHandleVector _GetLocalPrimStack(const UsdPrim& prim)
+{
+    SdfPrimSpecHandleVector primSpecs;
+
+    UsdStagePtr stage = prim.GetStage();
+    if (!stage)
+        return primSpecs;
+
+    // The goal is to avoid editing non-local layers. This issue is,
+    // for example, that a rename operation would fail when applied
+    // to a prim that references a show asset because the rename operation
+    // would be attempted on the reference and classes it inherits.
+    //
+    // Concrete example:
+    //     - Create a test asset that inherits from one or more classes
+    //     - Create a prim within a Maya Usd scene that references this asset
+    //     - Attempt to rename the prim
+    //     - Observe the failure due to Sdf policy
+
+    for (const SdfLayerHandle& layer : stage->GetLayerStack()) {
+        const SdfPrimSpecHandle primSpec = layer->GetPrimAtPath(prim.GetPath());
+        if (primSpec)
+            primSpecs.push_back(primSpec);
+    }
+
+    return primSpecs;
+}
+
 void applyToAllPrimSpecs(const UsdPrim& prim, const PrimSpecFunc& func)
 {
-    const SdfPrimSpecHandleVector primStack = prim.GetPrimStack();
+    const SdfPrimSpecHandleVector primStack = _GetLocalPrimStack(prim);
     for (const SdfPrimSpecHandle& spec : primStack)
         func(prim, spec);
 }
 
 void applyToAllLayersWithOpinions(const UsdPrim& prim, PrimLayerFunc& func)
 {
-    const SdfPrimSpecHandleVector primStack = prim.GetPrimStack();
+    const SdfPrimSpecHandleVector primStack = _GetLocalPrimStack(prim);
     for (const SdfPrimSpecHandle& spec : primStack) {
         const auto layer = spec->GetLayer();
         func(prim, layer);
@@ -137,7 +165,7 @@ void applyToSomeLayersWithOpinions(
     const std::set<SdfLayerRefPtr>& layers,
     PrimLayerFunc&                  func)
 {
-    const SdfPrimSpecHandleVector primStack = prim.GetPrimStack();
+    const SdfPrimSpecHandleVector primStack = _GetLocalPrimStack(prim);
     for (const SdfPrimSpecHandle& spec : primStack) {
         const auto layer = spec->GetLayer();
         if (layers.count(layer) == 0)
