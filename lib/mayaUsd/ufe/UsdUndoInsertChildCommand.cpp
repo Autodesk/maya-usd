@@ -20,6 +20,7 @@
 #include "private/UfeNotifGuard.h"
 #include "private/Utils.h"
 
+#include <mayaUsd/base/tokens.h>
 #include <mayaUsd/utils/editRouter.h>
 #include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/loadRules.h>
@@ -132,7 +133,7 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
     ufe::applyCommandRestriction(parentPrim, "reparent");
 
     _childLayer = childPrim.GetStage()->GetEditTarget().GetLayer();
-    _parentLayer = getEditRouterLayer(PXR_NS::TfToken("parent"), parentPrim);
+    _parentLayer = getEditRouterLayer(MayaUsdEditRoutingTokens->RouteParent, parentPrim);
 }
 
 UsdUndoInsertChildCommand::~UsdUndoInsertChildCommand() { }
