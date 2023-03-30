@@ -14,6 +14,7 @@
 #include "UsdSceneItem.h"
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdUndoableCommand.h>
 
 #include <ufe/uiNodeGraphNode.h>
 
@@ -21,7 +22,13 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Implementation of Ufe::UINodeGraphNode interface for USD objects.
-class MAYAUSD_CORE_PUBLIC UsdUINodeGraphNode : public Ufe::UINodeGraphNode
+class MAYAUSD_CORE_PUBLIC UsdUINodeGraphNode
+    : public
+#ifdef UFE_V4_1_FEATURES_AVAILABLE
+      Ufe::UINodeGraphNode_v4_1
+#else
+      Ufe::UINodeGraphNode
+#endif
 {
 public:
     typedef std::shared_ptr<UsdUINodeGraphNode> Ptr;
@@ -42,9 +49,40 @@ public:
     bool                      hasPosition() const override;
     Ufe::Vector2f             getPosition() const override;
     Ufe::UndoableCommand::Ptr setPositionCmd(const Ufe::Vector2f& pos) override;
+#ifdef UFE_UINODEGRAPHNODE_HAS_SIZE
+    bool                      hasSize() const override;
+    Ufe::Vector2f             getSize() const override;
+    Ufe::UndoableCommand::Ptr setSizeCmd(const Ufe::Vector2f& size) override;
+#endif
 
 private:
+    enum class CoordType
+    {
+        Position,
+        Size
+    };
+
+    class SetPosOrSizeCommand : public UsdUndoableCommand<Ufe::UndoableCommand>
+    {
+    public:
+        SetPosOrSizeCommand(
+            CoordType              coordType,
+            const PXR_NS::UsdPrim& prim,
+            const Ufe::Vector2f&   newValue);
+
+        void executeImplementation() override;
+
+    private:
+        const CoordType               _coordType;
+        const PXR_NS::UsdStageWeakPtr _stage;
+        const PXR_NS::SdfPath         _primPath;
+        const PXR_NS::VtValue         _newValue;
+    };
+
     UsdSceneItem::Ptr fItem;
+
+    bool          hasPosOrSize(CoordType coordType) const;
+    Ufe::Vector2f getPosOrSize(CoordType coordType) const;
 };
 
 } // namespace ufe
