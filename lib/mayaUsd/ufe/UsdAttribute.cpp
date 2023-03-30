@@ -26,6 +26,7 @@
 #include <pxr/base/vt/value.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/attributeSpec.h>
+#include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/schemaRegistry.h>
 #include <pxr/usd/usdShade/utils.h>
 
@@ -491,7 +492,7 @@ std::string UsdAttributeFilename::get() const
 
 void UsdAttributeFilename::set(const std::string& value)
 {
-    if (UsdAttribute::nativeType() == "string") {
+    if (UsdAttribute::nativeType() == SdfValueTypeNames->String.GetAsToken().GetString()) {
         setUsdAttr<std::string>(*this, value);
     } else {
         SdfAssetPath path(value);
