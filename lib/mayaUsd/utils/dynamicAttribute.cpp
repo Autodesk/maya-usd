@@ -34,7 +34,8 @@ MStatus createDynamicAttribute(MFnDependencyNode& depNode, const MString& attrNa
     MStatus status;
 
     MFnTypedAttribute typedAttrFn;
-    MObject attr = typedAttrFn.create(attrName, attrName, MFnData::kString, MObject::kNullObj, &status);
+    MObject           attr
+        = typedAttrFn.create(attrName, attrName, MFnData::kString, MObject::kNullObj, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     typedAttrFn.setReadable(true);
