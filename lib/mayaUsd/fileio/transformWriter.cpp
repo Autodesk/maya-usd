@@ -170,7 +170,7 @@ VtValue UsdMayaTransformWriter::_AnimChannel::GetSourceData(unsigned int i) cons
         MFnMatrixData matrixDataFn(attrPlug.asMObject());
         MMatrix       mayaMatrix = matrixDataFn.matrix();
         GfMatrix4d    matrix;
-        MAYAUSD_NS_DEF::TypedConverter<MMatrix, GfMatrix4d>::convert(mayaMatrix, matrix);
+        MayaUsd::TypedConverter<MMatrix, GfMatrix4d>::convert(mayaMatrix, matrix);
         return VtValue(matrix);
     } else {
         return VtValue(plug[i].asDouble());

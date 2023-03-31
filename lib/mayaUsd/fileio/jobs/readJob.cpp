@@ -67,8 +67,6 @@
 #include <utility>
 #include <vector>
 
-using namespace MAYAUSD_NS_DEF;
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -204,7 +202,7 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
 
     // Do not use the global undo info recording system.
     // The read job Undo() / redo() functions will handle all operations.
-    OpUndoItemMuting undoMuting;
+    MayaUsd::OpUndoItemMuting undoMuting;
 
     MStatus status;
 
@@ -694,7 +692,7 @@ bool UsdMaya_ReadJob::Redo()
 {
     // Do not use the global undo info recording system.
     // The read job Undo() / redo() functions will handle all operations.
-    OpUndoItemMuting undoMuting;
+    MayaUsd::OpUndoItemMuting undoMuting;
 
     // Undo the undo
     MStatus status = mDagModifierUndo.undoIt();
@@ -715,7 +713,7 @@ bool UsdMaya_ReadJob::Undo()
 {
     // Do not use the global undo info recording system.
     // The read job Undo() / redo() functions will handle all operations.
-    OpUndoItemMuting undoMuting;
+    MayaUsd::OpUndoItemMuting undoMuting;
 
     // NOTE: (yliangsiew) All chasers need to have their Undo run as well.
     for (const UsdMayaImportChaserRefPtr& chaser : this->mImportChasers) {

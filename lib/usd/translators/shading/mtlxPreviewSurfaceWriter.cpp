@@ -40,7 +40,7 @@
 
 #include <unordered_map>
 
-using namespace MAYAUSD_NS;
+using namespace MayaUsd;
 
 PXR_NAMESPACE_OPEN_SCOPE
 

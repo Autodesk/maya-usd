@@ -70,8 +70,6 @@
 #include <string>
 #include <vector>
 
-using namespace MAYAUSD_NS_DEF;
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(
@@ -181,7 +179,7 @@ UsdAttribute UsdMayaWriteUtil::GetOrCreateUsdAttr(
     }
 
     const SdfValueTypeName& typeName
-        = Converter::getUsdTypeName(attrPlug, translateMayaDoubleToUsdSinglePrecision);
+        = MayaUsd::Converter::getUsdTypeName(attrPlug, translateMayaDoubleToUsdSinglePrecision);
     if (typeName) {
         usdAttr = usdPrim.CreateAttribute(usdAttrNameToken, typeName, custom);
     }
@@ -223,7 +221,7 @@ UsdGeomPrimvar UsdMayaWriteUtil::GetOrCreatePrimvar(
     }
 
     const SdfValueTypeName& typeName
-        = Converter::getUsdTypeName(attrPlug, translateMayaDoubleToUsdSinglePrecision);
+        = MayaUsd::Converter::getUsdTypeName(attrPlug, translateMayaDoubleToUsdSinglePrecision);
     if (typeName) {
         primvar = pvAPI.CreatePrimvar(primvarNameToken, typeName, interpolation, elementSize);
     }
@@ -272,7 +270,7 @@ UsdAttribute UsdMayaWriteUtil::GetOrCreateUsdRiAttribute(
     }
 
     const SdfValueTypeName& typeName
-        = Converter::getUsdTypeName(attrPlug, translateMayaDoubleToUsdSinglePrecision);
+        = MayaUsd::Converter::getUsdTypeName(attrPlug, translateMayaDoubleToUsdSinglePrecision);
     if (typeName) {
         riStatements = UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<UsdRiStatementsAPI>(usdPrim);
         usdAttr = riStatements.CreateRiAttribute(riAttrNameToken, typeName.GetType(), nameSpace);
