@@ -71,6 +71,27 @@ private:
     MStatus parseArgs(const MArgList& argList);
 };
 
+//! \brief Checks a SceneItem for various material-binding related attributes.
+class MAYAUSD_PLUGIN_PUBLIC ADSKMayaUSDMaterialBindingsCommand : public MPxCommand
+{
+public:
+    static constexpr auto kCanAssignMaterialToNodeType = "ca";
+    static constexpr auto kCanAssignMaterialToNodeTypeLong = "canAssignMaterialToNodeType";
+    static constexpr auto kHasMaterialBindingFlag = "mb";
+    static constexpr auto kHasMaterialBindingFlagLong = "hasMaterialBinding";
+
+    // plugin registration requirements
+    static const MString commandName;
+    static void*         creator();
+    static MSyntax       createSyntax();
+
+    MStatus doIt(const MArgList& argList) override;
+    bool    isUndoable() const override { return false; }
+
+private:
+    MStatus parseArgs(const MArgList& argList);
+};
+
 } // namespace MAYAUSD_NS_DEF
 
 #endif /* ADSK_MAYA_MATERIAL_COMMANDS_H */
