@@ -88,8 +88,6 @@
 
 #include <cctype>
 
-using namespace MAYAUSD_NS_DEF;
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
@@ -1285,7 +1283,7 @@ MPlug UsdMayaUtil::GetConnected(const MPlug& plug)
 
 void UsdMayaUtil::Connect(const MPlug& srcPlug, const MPlug& dstPlug, const bool clearDstPlug)
 {
-    MDGModifier& dgMod = MDGModifierUndoItem::create("Generic plug connection");
+    MDGModifier& dgMod = MayaUsd::MDGModifierUndoItem::create("Generic plug connection");
     Connect(srcPlug, dstPlug, clearDstPlug, dgMod);
 }
 

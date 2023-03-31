@@ -56,8 +56,6 @@
 
 #include <vector>
 
-using namespace MAYAUSD_NS_DEF;
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 // clang-format off
@@ -220,7 +218,7 @@ private:
                 continue;
             }
 
-            const SdfValueTypeName attrTypeName = Converter::getUsdTypeName(attrPlug);
+            const SdfValueTypeName attrTypeName = MayaUsd::Converter::getUsdTypeName(attrPlug);
             if (!attrTypeName) {
                 continue;
             }

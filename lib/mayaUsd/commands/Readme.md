@@ -494,6 +494,53 @@ The purpose of this command is to find the names and annotations for registered 
 | `-importArguments`     | `-ig`      | string         | Retrieve the import arguments affected by the import job context nice name passed as parameter |
 | `-jobContext`          | `-jc`      | string         | Retrieve the job context name associated with a nice name. |
 
+## `mayaUsdGetMaterialsFromRenderers`
+
+The purpose of this command is to return the names of USD-compatible materials associated with the currently loaded renderers.  
+As of this writing, the returned names are largely hard-coded, as is the selection of renderers: 
+
+*  MaterialX
+*  USDPreviewSurface
+*  Arnold (if installed and loaded)
+
+### Return Value
+
+The command returns an array of strings in the format `Renderer Name/Material Label|MaterialIdentifier`, where the `MaterialIdentifier` is the internal name that may be used to instantiate the given material. 
+
+## `mayaUsdGetMaterialsInStage`
+
+The purpose of this command is to get a list of all materials contained in the USD stage of the given object.
+
+### Arguments
+
+Pass the path of the USD object to query for materials as an argument.
+
+### Return Value
+
+Returns an array of strings containing paths pointing to the materials in the given object's USD stage.
+
+## `mayaUsdMaterialBindings`
+
+The purpose of this command is to determine various material-related attributes of a given USD object. This includes:
+
+*  Determining whether an object has a material assigned.
+*  Determining whether an object is of a type where allowing material assignment would be sensible in a GUI context.  
+Technically, USD allows binding of materials to any object type. This function however contains hard-coded filters intended to prevent material assignments in cases where it does not make sense from a usability perspective: For example, the function will return `false` for objects such as `UsdMediaSpatialAudio` or `UsdPhysicsScene`, as it may be reasonably assumed that the user does not intend to assign a material to these object types.
+
+### Arguments
+
+Pass the path of the USD object to query for materials as an argument.
+
+### Command Flags
+
+| Long flag      | Short flag | Type            | Default | Description |
+| -------------- | ---------- | --------------- | --------| ----------- |
+| `-canAssignMaterialToNodeType`  | `-ca` | bool | false | Determines whether the given object is of a type that accepts material assignments in a GUI context. |
+| `-hasMaterialBinding `  | `-mb` | bool | false | Determines whether the given object is bound to a material. |
+
+### Return Value
+
+Returns `true` or `false` in response to the given query.
 
 ## `EditTargetCommand`
 

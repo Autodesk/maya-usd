@@ -27,8 +27,6 @@
 #include <maya/MMatrix.h>
 #include <maya/MObject.h>
 
-using namespace MAYAUSD_NS_DEF;
-
 namespace {
 void convertMatrix(const GfMatrix4d& inMatrix, MMatrix& outMatrix, MObject& outMatrixObj)
 {

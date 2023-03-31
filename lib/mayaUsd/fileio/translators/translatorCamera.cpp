@@ -43,8 +43,6 @@
 #include <string>
 #include <vector>
 
-using namespace MAYAUSD_NS_DEF;
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 static bool _ReadToCamera(
@@ -330,7 +328,7 @@ bool UsdMayaTranslatorCamera::Read(
     }
 
     // Create the camera shape node.
-    MDagModifier& dagMod = MDagModifierUndoItem::create("Camera creation");
+    MDagModifier& dagMod = MayaUsd::MDagModifierUndoItem::create("Camera creation");
     MObject       cameraObj
         = dagMod.createNode(_tokens->MayaCameraTypeName.GetText(), transformObj, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);

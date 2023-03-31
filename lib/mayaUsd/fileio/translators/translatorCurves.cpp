@@ -32,8 +32,6 @@
 #include <maya/MTime.h>
 #include <maya/MTimeArray.h>
 
-using namespace MAYAUSD_NS_DEF;
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 /* static */
@@ -54,7 +52,7 @@ bool convertToBezier(MFnNurbsCurve& nurbsCurveFn, MObject& mayaNodeTransformObj,
     MPlug        convOut = convFn.findPlug("outputCurve", false);
     MPlug        nurbsOut = nurbsCurveFn.findPlug("local", false);
     MPlug        bezIn = dagFn.findPlug("create", false);
-    MDGModifier& dgm = MDGModifierUndoItem::create("Nurbs curve connections");
+    MDGModifier& dgm = MayaUsd::MDGModifierUndoItem::create("Nurbs curve connections");
     dgm.connect(nurbsOut, convIn);
     dgm.connect(convOut, bezIn);
     dgm.doIt();
@@ -62,7 +60,7 @@ bool convertToBezier(MFnNurbsCurve& nurbsCurveFn, MObject& mayaNodeTransformObj,
     MPlug   bezOut = dagFn.findPlug("local", false);
     MObject val = bezOut.asMObject();
     // Remove the nurbs and converter:
-    MDGModifier& dagm = MDGModifierUndoItem::create("Nurbs curve deletion");
+    MDGModifier& dagm = MayaUsd::MDGModifierUndoItem::create("Nurbs curve deletion");
     dagm.deleteNode(convFn.object());
 #if MAYA_API_VERSION >= 20200300
     dagm.deleteNode(nurbsCurveFn.object(), false);

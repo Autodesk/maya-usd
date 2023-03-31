@@ -225,7 +225,7 @@ UsdHierarchy::createUFEChildList(const UsdPrimSiblingRange& range, bool filterIn
     UFE_V3(std::string dagPathStr;)
     for (const auto& child : range) {
 #ifdef UFE_V3_FEATURES_AVAILABLE
-        if (MAYAUSD_NS_DEF::readPullInformation(child, dagPathStr)) {
+        if (MayaUsd::readPullInformation(child, dagPathStr)) {
             auto item = Ufe::Hierarchy::createItem(Ufe::PathString::path(dagPathStr));
             // if we mapped to a valid object, insert it. it's possible that we got stale object
             // so in this case simply fallback to the usual processing of items

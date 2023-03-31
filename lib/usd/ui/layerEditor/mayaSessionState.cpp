@@ -46,7 +46,6 @@ MString AUTO_HIDE_OPTION_VAR = "MayaUSDLayerEditor_AutoHideSessionLayer";
 } // namespace
 
 namespace UsdLayerEditor {
-using namespace MAYAUSD_NS_DEF;
 
 MayaSessionState::MayaSessionState()
     : _mayaCommandHook(this)

@@ -26,7 +26,6 @@
 #include <QtCore/QPointer>
 #include <QtWidgets/QMainWindow>
 
-using namespace MAYAUSD_NS_DEF;
 namespace UsdLayerEditor {
 
 class LayerEditorWidget;

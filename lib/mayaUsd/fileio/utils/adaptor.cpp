@@ -35,8 +35,6 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MPlug.h>
 
-using namespace MAYAUSD_NS_DEF;
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 const UsdPrimDefinition*
@@ -315,7 +313,7 @@ UsdMayaSchemaAdaptorPtr UsdMayaAdaptor::GetSchemaOrInheritedSchema(const TfType&
 
 UsdMayaSchemaAdaptorPtr UsdMayaAdaptor::ApplySchema(const TfType& ty)
 {
-    return ApplySchema(ty, MDGModifierUndoItem::create("Adaptor schema application"));
+    return ApplySchema(ty, MayaUsd::MDGModifierUndoItem::create("Adaptor schema application"));
 }
 
 UsdMayaSchemaAdaptorPtr UsdMayaAdaptor::ApplySchema(const TfType& ty, MDGModifier& modifier)
@@ -332,7 +330,7 @@ UsdMayaSchemaAdaptorPtr UsdMayaAdaptor::ApplySchema(const TfType& ty, MDGModifie
 UsdMayaSchemaAdaptorPtr UsdMayaAdaptor::ApplySchemaByName(const TfToken& schemaName)
 {
     return ApplySchemaByName(
-        schemaName, MDGModifierUndoItem::create("Adaptor schema application by name"));
+        schemaName, MayaUsd::MDGModifierUndoItem::create("Adaptor schema application by name"));
 }
 
 UsdMayaSchemaAdaptorPtr
@@ -415,7 +413,7 @@ UsdMayaAdaptor::ApplySchemaByName(const TfToken& schemaName, MDGModifier& modifi
 
 void UsdMayaAdaptor::UnapplySchema(const TfType& ty)
 {
-    UnapplySchema(ty, MDGModifierUndoItem::create("Adaptor schema removal"));
+    UnapplySchema(ty, MayaUsd::MDGModifierUndoItem::create("Adaptor schema removal"));
 }
 
 void UsdMayaAdaptor::UnapplySchema(const TfType& ty, MDGModifier& modifier)
@@ -431,7 +429,8 @@ void UsdMayaAdaptor::UnapplySchema(const TfType& ty, MDGModifier& modifier)
 
 void UsdMayaAdaptor::UnapplySchemaByName(const TfToken& schemaName)
 {
-    UnapplySchemaByName(schemaName, MDGModifierUndoItem::create("Adaptor schema removal by name"));
+    UnapplySchemaByName(
+        schemaName, MayaUsd::MDGModifierUndoItem::create("Adaptor schema removal by name"));
 }
 
 void UsdMayaAdaptor::UnapplySchemaByName(const TfToken& schemaName, MDGModifier& modifier)
@@ -533,7 +532,8 @@ bool UsdMayaAdaptor::GetMetadata(const TfToken& key, VtValue* value) const
 
 bool UsdMayaAdaptor::SetMetadata(const TfToken& key, const VtValue& value)
 {
-    return SetMetadata(key, value, MDGModifierUndoItem::create("Adaptor metadata modification"));
+    return SetMetadata(
+        key, value, MayaUsd::MDGModifierUndoItem::create("Adaptor metadata modification"));
 }
 
 bool UsdMayaAdaptor::SetMetadata(const TfToken& key, const VtValue& value, MDGModifier& modifier)
@@ -579,7 +579,7 @@ bool UsdMayaAdaptor::SetMetadata(const TfToken& key, const VtValue& value, MDGMo
 
 void UsdMayaAdaptor::ClearMetadata(const TfToken& key)
 {
-    ClearMetadata(key, MDGModifierUndoItem::create("Adaptor metadata clearing"));
+    ClearMetadata(key, MayaUsd::MDGModifierUndoItem::create("Adaptor metadata clearing"));
 }
 
 void UsdMayaAdaptor::ClearMetadata(const TfToken& key, MDGModifier& modifier)
@@ -794,7 +794,8 @@ UsdMayaAttributeAdaptor UsdMayaSchemaAdaptor::GetAttribute(const TfToken& attrNa
 
 UsdMayaAttributeAdaptor UsdMayaSchemaAdaptor::CreateAttribute(const TfToken& attrName)
 {
-    return CreateAttribute(attrName, MDGModifierUndoItem::create("Adaptor attribute creation"));
+    return CreateAttribute(
+        attrName, MayaUsd::MDGModifierUndoItem::create("Adaptor attribute creation"));
 }
 
 UsdMayaAttributeAdaptor
@@ -843,7 +844,7 @@ UsdMayaSchemaAdaptor::CreateAttribute(const TfToken& attrName, MDGModifier& modi
 
 void UsdMayaSchemaAdaptor::RemoveAttribute(const TfToken& attrName)
 {
-    RemoveAttribute(attrName, MDGModifierUndoItem::create("Adaptor attribute removal"));
+    RemoveAttribute(attrName, MayaUsd::MDGModifierUndoItem::create("Adaptor attribute removal"));
 }
 
 void UsdMayaSchemaAdaptor::RemoveAttribute(const TfToken& attrName, MDGModifier& modifier)
@@ -989,7 +990,7 @@ bool UsdMayaAttributeAdaptor::Get(VtValue* value) const
 
 bool UsdMayaAttributeAdaptor::Set(const VtValue& newValue)
 {
-    return Set(newValue, MDGModifierUndoItem::create("Adaptor attribute modification"));
+    return Set(newValue, MayaUsd::MDGModifierUndoItem::create("Adaptor attribute modification"));
 }
 
 bool UsdMayaAttributeAdaptor::Set(const VtValue& newValue, MDGModifier& modifier)

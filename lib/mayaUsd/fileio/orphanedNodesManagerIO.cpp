@@ -82,9 +82,9 @@ using Memento = OrphanedNodesManager::Memento;
 //
 // Conversion functions to and from JSON for orphaned nodes types.
 
-using MAYAUSD_NS_DEF::convertToArray;
-using MAYAUSD_NS_DEF::convertToObject;
-using MAYAUSD_NS_DEF::convertToValue;
+using MayaUsd::convertToArray;
+using MayaUsd::convertToObject;
+using MayaUsd::convertToValue;
 
 PXR_NS::JsArray  convertToArray(const VariantSelection& variantSel);
 PXR_NS::JsObject convertToObject(const VariantSetDesc& variantDesc);
@@ -268,7 +268,7 @@ std::string Memento::convertToJson(const Memento& memento)
         return PXR_NS::JsWriteToString(convertToObject(memento._pulledPrims));
     } catch (const std::exception& e) {
         // Note: the TF_RUNTIME_ERROR macro needs to be used within the PXR_NS.
-        using namespace PXR_NS;
+        PXR_NAMESPACE_USING_DIRECTIVE
         TF_RUNTIME_ERROR(
             "Unable to convert the orphaned nodes manager state to JSON: %s", e.what());
     }
@@ -284,7 +284,7 @@ Memento Memento::convertFromJson(const std::string& json)
         memento._pulledPrims = convertToPullInfoTrie(convertToObject(PXR_NS::JsParseString(json)));
     } catch (const std::exception& e) {
         // Note: the TF_RUNTIME_ERROR macro needs to be used within the PXR_NS.
-        using namespace PXR_NS;
+        PXR_NAMESPACE_USING_DIRECTIVE
         TF_RUNTIME_ERROR(
             "Unable to convert the JSON text to the orphaned nodes manager state: %s", e.what());
     }

@@ -114,7 +114,7 @@
 #endif
 #endif
 
-using namespace MAYAUSD_NS_DEF;
+using namespace MayaUsd;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
