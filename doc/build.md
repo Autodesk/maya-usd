@@ -46,7 +46,7 @@ The Universal Front End (UFE) is a DCC-agnostic component that allows Maya to br
 | v1.0.0                     | Maya 2019.x                                            | |
 | v1.0.0                     | Maya 2020.x                                            | |
 | v2.0.0<br>v2.0.3<br>v2.1.0 | Maya 2022 <br>Maya 2022.1/2022.2/2022.3<br>Maya 2022.4 | https://help.autodesk.com/view/MAYAUL/2022/ENU/?guid=Maya_SDK_ufe_ref_index_html |
-| v3.0.0<br>v3.2.0           | Maya 2023/2023.1<br>Maya 2023.2                        | https://help.autodesk.com/view/MAYAUL/2023/ENU/?guid=MAYA_API_REF_ufe_ref_index_html |
+| v3.0.0<br>v3.2.0           | Maya 2023/2023.1<br>Maya 2023.2/2023.3                        | https://help.autodesk.com/view/MAYAUL/2023/ENU/?guid=MAYA_API_REF_ufe_ref_index_html |
 | v4.0.0                     | Maya 2024                                              | https://help.autodesk.com/view/MAYAUL/2024/ENU/?guid=MAYA_API_REF_ufe_ref_index_html |
 | v0.5.x                     | Maya PR                                                | |
 
