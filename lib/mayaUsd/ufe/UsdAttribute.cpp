@@ -26,6 +26,7 @@
 #include <pxr/base/vt/value.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/attributeSpec.h>
+#include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/schemaRegistry.h>
 #include <pxr/usd/usdShade/utils.h>
 
@@ -477,9 +478,13 @@ std::string UsdAttributeFilename::get() const
         return std::string();
 
     PXR_NS::VtValue vt;
-    if (UsdAttribute::get(vt, getCurrentTime(sceneItem())) && vt.IsHolding<SdfAssetPath>()) {
-        SdfAssetPath path = vt.UncheckedGet<SdfAssetPath>();
-        return path.GetAssetPath();
+    if (UsdAttribute::get(vt, getCurrentTime(sceneItem()))) {
+        if (vt.IsHolding<SdfAssetPath>()) {
+            SdfAssetPath path = vt.UncheckedGet<SdfAssetPath>();
+            return path.GetAssetPath();
+        } else if (vt.IsHolding<std::string>()) {
+            return vt.UncheckedGet<std::string>();
+        }
     }
 
     return std::string();
@@ -487,8 +492,12 @@ std::string UsdAttributeFilename::get() const
 
 void UsdAttributeFilename::set(const std::string& value)
 {
-    SdfAssetPath path(value);
-    setUsdAttr<PXR_NS::SdfAssetPath>(*this, path);
+    if (UsdAttribute::usdAttributeType() == SdfValueTypeNames->String) {
+        setUsdAttr<std::string>(*this, value);
+    } else {
+        SdfAssetPath path(value);
+        setUsdAttr<PXR_NS::SdfAssetPath>(*this, path);
+    }
 }
 
 Ufe::UndoableCommand::Ptr UsdAttributeFilename::setCmd(const std::string& value)

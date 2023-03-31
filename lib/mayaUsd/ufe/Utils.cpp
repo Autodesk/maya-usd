@@ -1052,8 +1052,15 @@ Ufe::Attribute::Type usdTypeToUfe(const SdrShaderPropertyConstPtr& shaderPropert
         retVal = _UsdTypeToUfe(typeName);
     }
 
-    if (retVal == Ufe::Attribute::kString && !shaderProperty->GetOptions().empty()) {
-        retVal = Ufe::Attribute::kEnumString;
+    if (retVal == Ufe::Attribute::kString) {
+        if (!shaderProperty->GetOptions().empty()) {
+            retVal = Ufe::Attribute::kEnumString;
+        }
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+        else if (shaderProperty->IsAssetIdentifier()) {
+            retVal = Ufe::Attribute::kFilename;
+        }
+#endif
     }
 
     return retVal;
