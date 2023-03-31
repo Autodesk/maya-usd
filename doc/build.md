@@ -96,11 +96,18 @@ Windows:
 c:\maya-usd> python build.py --maya-location "C:\Program Files\Autodesk\Maya2020" --pxrusd-location C:\USD-Release --devkit-location C:\devkitBase C:\workspace
 ```
 
-##### Build Arguments
+##### Default Build Arguments
+
+| Flag                  | Description                                                                           |
+|--------------------   |---------------------------------------------------------------------------------------|
+|   --materialx         | build with MaterialX features enabled                                                 |
+
+##### Optional Build Arguments
 
 | Flag                  | Description                                                                           |
 |--------------------   |---------------------------------------------------------------------------------------|
 |   --build-args        | comma-separated list of cmake variables can be also passed to build system.           |
+|   --no-materialx      | do not build MaterialX support in MayaUSD.                                            |
 
 ```
 --build-args="-DBUILD_ADSK_PLUGIN=ON,-DBUILD_PXR_PLUGIN=OFF,-DBUILD_TESTS=OFF"
