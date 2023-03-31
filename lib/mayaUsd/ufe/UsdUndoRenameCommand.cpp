@@ -16,14 +16,15 @@
 #include "UsdUndoRenameCommand.h"
 
 #include "private/UfeNotifGuard.h"
-#include "private/Utils.h"
 
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/utils/layers.h>
-#include <mayaUsd/utils/loadRules.h>
-#include <mayaUsdUtils/util.h>
+
+#include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/layers.h>
+#include <usdUfe/utils/loadRules.h>
+#include <usdUfe/utils/usdUtils.h>
 
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
@@ -80,7 +81,7 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(
 {
     const UsdPrim prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
 
-    ufe::applyCommandRestriction(prim, "rename");
+    UsdUfe::applyCommandRestriction(prim, "rename");
 
     // Handle trailing #: convert it to a number which will be increased as needed.
     // Increasing the number to make it unique is handled in the function uniqueChildName
@@ -159,7 +160,7 @@ void doUsdRename(
     // it's only after the scope ends that we start working with new items/paths/prims
     SdfChangeBlock changeBlock;
 
-    if (!MayaUsdUtils::updateReferencedPath(prim, SdfPath(dstPath.getSegments()[1].string()))) {
+    if (!UsdUfe::updateReferencedPath(prim, SdfPath(dstPath.getSegments()[1].string()))) {
         const std::string error = TfStringPrintf(
             "Failed to update references to prim \"%s\".", prim.GetPath().GetText());
         TF_WARN("%s", error.c_str());

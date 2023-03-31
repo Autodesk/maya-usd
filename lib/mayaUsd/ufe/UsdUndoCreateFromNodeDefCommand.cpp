@@ -15,8 +15,6 @@
 //
 #include "UsdUndoCreateFromNodeDefCommand.h"
 
-#include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
-
 #include <pxr/usd/kind/registry.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdShade/shader.h>

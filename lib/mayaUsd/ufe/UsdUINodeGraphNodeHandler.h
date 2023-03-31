@@ -9,9 +9,9 @@
 // otherwise accompanies this software in either electronic or hard copy form.
 // ===========================================================================
 
-#include "UsdSceneItem.h"
-
 #include <mayaUsd/base/api.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <ufe/uiNodeGraphNodeHandler.h>
 

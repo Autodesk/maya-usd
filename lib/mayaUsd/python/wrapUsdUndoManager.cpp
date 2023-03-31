@@ -14,8 +14,9 @@
 // limitations under the License.
 //
 
-#include <mayaUsd/undo/UsdUndoBlock.h>
-#include <mayaUsd/undo/UsdUndoManager.h>
+#include <mayaUsd/undo/MayaUsdUndoBlock.h>
+
+#include <usdUfe/undo/UsdUndoManager.h>
 
 #include <pxr/base/tf/pyContainerConversions.h>
 #include <pxr/base/tf/pyNoticeWrapper.h>
@@ -47,7 +48,7 @@ public:
         if (!TF_VERIFY(_block == nullptr)) {
             return;
         }
-        _block = std::make_unique<MayaUsd::UsdUndoBlock>();
+        _block = std::make_unique<MayaUsd::MayaUsdUndoBlock>();
     }
 
     void exit(object, object, object)
@@ -59,12 +60,12 @@ public:
     }
 
 private:
-    std::unique_ptr<MayaUsd::UsdUndoBlock> _block;
+    std::unique_ptr<MayaUsd::MayaUsdUndoBlock> _block;
 };
 
 void _trackLayerStates(const SdfLayerHandle& layer)
 {
-    MayaUsd::UsdUndoManager::instance().trackLayerStates(layer);
+    UsdUfe::UsdUndoManager::instance().trackLayerStates(layer);
 }
 
 } // namespace
@@ -73,7 +74,7 @@ void wrapUsdUndoManager()
 {
     // UsdUndoManager
     {
-        typedef MayaUsd::UsdUndoManager This;
+        typedef UsdUfe::UsdUndoManager This;
         class_<This, boost::noncopyable>("UsdUndoManager", no_init)
             .def("trackLayerStates", &_trackLayerStates)
             .staticmethod("trackLayerStates");

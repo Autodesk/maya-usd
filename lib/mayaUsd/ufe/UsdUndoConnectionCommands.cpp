@@ -15,18 +15,16 @@
 //
 #include "UsdUndoConnectionCommands.h"
 
-#include "private/Utils.h"
-
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/UsdAttribute.h>
 #include <mayaUsd/ufe/UsdAttributes.h>
 #include <mayaUsd/ufe/UsdConnectionHandler.h>
 #include <mayaUsd/ufe/UsdConnections.h>
-#include <mayaUsd/ufe/UsdHierarchyHandler.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/undo/UsdUndoBlock.h>
-#include <mayaUsdUtils/util.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/undo/UsdUndoBlock.h>
+#include <usdUfe/utils/usdUtils.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/sdr/registry.h>

@@ -723,58 +723,6 @@ std::string UsdMayaUtil::stripNamespaces(const std::string& nodeName, const int 
     return ss.str();
 }
 
-std::string UsdMayaUtil::SanitizeName(const std::string& name)
-{
-    return TfStringReplace(name, ":", "_");
-}
-
-std::string UsdMayaUtil::prettifyName(const std::string& name)
-{
-    std::string prettyName(1, std::toupper(name[0]));
-    size_t      nbChars = name.size();
-    bool        capitalizeNext = false;
-    for (size_t i = 1; i < nbChars; ++i) {
-        unsigned char nextLetter = name[i];
-        if (capitalizeNext) {
-            nextLetter = std::toupper(nextLetter);
-            capitalizeNext = false;
-        }
-        if (std::isupper(name[i]) && !std::isdigit(name[i - 1])) {
-            if (((i < (nbChars - 1)) && !std::isupper(name[i + 1])) || std::islower(name[i - 1])) {
-                prettyName += ' ';
-            }
-            prettyName += nextLetter;
-        } else if (name[i] == '_' || name[i] == ':') {
-            prettyName += " ";
-            capitalizeNext = true;
-        } else {
-            prettyName += nextLetter;
-        }
-    }
-    // Manual substitutions for custom capitalisations. Will be searched as case-insensitive.
-    static const std::unordered_map<std::string, std::string> subs = {
-        { "usd", "USD" },
-        { "mtlx", "MaterialX" },
-        { "gltf pbr", "glTF PBR" },
-    };
-
-    static const auto subRegexes = []() {
-        std::vector<std::pair<std::regex, std::string>> regexes;
-        regexes.reserve(subs.size());
-        for (auto&& kv : subs) {
-            regexes.emplace_back(
-                std::regex { "\\b" + kv.first + "\\b", std::regex_constants::icase }, kv.second);
-        }
-        return regexes;
-    }();
-
-    for (auto&& re : subRegexes) {
-        prettyName = regex_replace(prettyName, re.first, re.second);
-    }
-
-    return prettyName;
-}
-
 // This to allow various pipeline to sanitize the colorset name for output
 std::string UsdMayaUtil::SanitizeColorSetName(const std::string& name)
 {

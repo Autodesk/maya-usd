@@ -17,11 +17,13 @@
 
 #include <mayaUsd/base/api.h>
 
+#include <usdUfe/ufe/Utils.h>
+
 #include <ufe/ufe.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdAttribute.h>
 #endif
-#include <mayaUsd/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/base/tf/hashset.h>
 #include <pxr/base/tf/token.h>
@@ -80,40 +82,23 @@ Ufe::PathSegment usdPathToUfePathSegment(
     const PXR_NS::SdfPath& usdPath,
     int                    instanceIndex = PXR_NS::UsdImagingDelegate::ALL_INSTANCES);
 
-//! Get the UFE path representing just the USD prim for the argument UFE path.
-//! Any instance index component at the tail of the given path is removed from
-//! the returned path.
-MAYAUSD_CORE_PUBLIC
-Ufe::Path stripInstanceIndexFromUfePath(const Ufe::Path& path);
-
 //! Return the USD prim corresponding to the argument UFE path.
 MAYAUSD_CORE_PUBLIC
 PXR_NS::UsdPrim ufePathToPrim(const Ufe::Path& path);
-
-//! Return the instance index corresponding to the argument UFE path if it
-//! represents a point instance.
-//! If the given path does not represent a point instance,
-//! UsdImagingDelegate::ALL_INSTANCES (-1) will be returned.
-//! If the optional argument prim pointer is non-null, the USD prim
-//! corresponding to the argument UFE path is returned, as per ufePathToPrim().
-MAYAUSD_CORE_PUBLIC
-int ufePathToInstanceIndex(const Ufe::Path& path, PXR_NS::UsdPrim* prim = nullptr);
-
-MAYAUSD_CORE_PUBLIC
-bool isRootChild(const Ufe::Path& path);
 
 MAYAUSD_CORE_PUBLIC
 UsdSceneItem::Ptr
 createSiblingSceneItem(const Ufe::Path& ufeSrcPath, const std::string& siblingName);
 
-//! Split the source name into a base name and a numerical suffix (set to
-//! 1 if absent).  Increment the numerical suffix until name is unique.
-MAYAUSD_CORE_PUBLIC
-std::string uniqueName(const PXR_NS::TfToken::HashSet& existingNames, std::string srcName);
+inline std::string uniqueName(const PXR_NS::TfToken::HashSet& existingNames, std::string srcName)
+{
+    return UsdUfe::uniqueName(existingNames, srcName);
+}
 
-//! Return a unique child name.
-MAYAUSD_CORE_PUBLIC
-std::string uniqueChildName(const PXR_NS::UsdPrim& parent, const std::string& name);
+inline std::string uniqueChildName(const PXR_NS::UsdPrim& parent, const std::string& name)
+{
+    return UsdUfe::uniqueChildName(parent, name);
+}
 
 //! Return if a Maya node type is derived from the gateway node type.
 MAYAUSD_CORE_PUBLIC
@@ -179,18 +164,6 @@ PXR_NS::VtValue
 vtValueFromString(const PXR_NS::SdfValueTypeName& typeName, const std::string& strValue);
 #endif
 
-//! Send notification for data model changes
-template <class T>
-void sendNotification(const Ufe::SceneItem::Ptr& item, const Ufe::Path& previousPath)
-{
-    T notification(item, previousPath);
-#ifdef UFE_V2_FEATURES_AVAILABLE
-    Ufe::Scene::instance().notify(notification);
-#else
-    Ufe::Scene::notifyObjectPathChange(notification);
-#endif
-}
-
 //! Readability function to downcast a SceneItem::Ptr to a UsdSceneItem::Ptr.
 inline UsdSceneItem::Ptr downcast(const Ufe::SceneItem::Ptr& item)
 {
@@ -230,8 +203,6 @@ Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& f
 //! Splits a string by each specified separator.
 MAYAUSD_CORE_PUBLIC
 std::vector<std::string> splitString(const std::string& str, const std::string& separators);
-
-std::string pathSegmentSeparator();
 
 class ReplicateExtrasFromUSD
 {
@@ -312,27 +283,6 @@ bool isPropertyMetadataEditAllowed(
     const PXR_NS::TfToken& metadataName,
     const PXR_NS::TfToken& keyPath,
     std::string*           errMsg);
-
-//! Apply restriction rules on the given prim
-MAYAUSD_CORE_PUBLIC
-void applyCommandRestriction(
-    const PXR_NS::UsdPrim& prim,
-    const std::string&     commandName,
-    bool                   allowStronger = false);
-
-//! Apply restriction rules on the given prim
-MAYAUSD_CORE_PUBLIC
-bool applyCommandRestrictionNoThrow(
-    const PXR_NS::UsdPrim& prim,
-    const std::string&     commandName,
-    bool                   allowStronger = false);
-
-//! Check if the edit target in the stage is allowed to be changed.
-//! \return True, if the edit target layer in the stage is allowed to be changed
-MAYAUSD_CORE_PUBLIC
-bool isEditTargetLayerModifiable(
-    const PXR_NS::UsdStageWeakPtr stage,
-    std::string*                  errMsg = nullptr);
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

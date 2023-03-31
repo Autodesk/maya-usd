@@ -17,7 +17,8 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdAttribute.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/usd/prim.h>
 

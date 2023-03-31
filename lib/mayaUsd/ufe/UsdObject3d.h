@@ -8,7 +8,8 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <ufe/object3d.h>
 

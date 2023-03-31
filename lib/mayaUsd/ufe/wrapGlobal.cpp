@@ -20,9 +20,9 @@
 using namespace MayaUsd;
 using namespace boost::python;
 
+// clang-format off
 void wrapGlobal()
 {
     def("getMayaRunTimeId", ufe::getMayaRunTimeId);
-
-    def("getUsdRunTimeId", ufe::getUsdRunTimeId);
 }
+// clang-format on

@@ -15,16 +15,16 @@
 //
 #include "Utils.h"
 
-#include "private/Utils.h"
-
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/utils/editability.h>
-#include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/util.h>
-#include <mayaUsdUtils/util.h>
+
+#include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/layers.h>
+#include <usdUfe/utils/usdUtils.h>
 
 #include <pxr/base/tf/hashset.h>
 #include <pxr/base/tf/stringUtils.h>
@@ -73,20 +73,6 @@ namespace {
 constexpr auto kIllegalUFEPath = "Illegal UFE run-time path %s.";
 
 typedef std::unordered_map<TfToken, SdfValueTypeName, TfToken::HashFunctor> TokenToSdfTypeMap;
-
-bool stringBeginsWithDigit(const std::string& inputString)
-{
-    if (inputString.empty()) {
-        return false;
-    }
-
-    const char& firstChar = inputString.front();
-    if (std::isdigit(static_cast<unsigned char>(firstChar))) {
-        return true;
-    }
-
-    return false;
-}
 
 // This function calculates the position index for a given layer across all
 // the site's local LayerStacks
@@ -168,31 +154,12 @@ Ufe::PathSegment usdPathToUfePathSegment(const SdfPath& usdPath, int instanceInd
     return Ufe::PathSegment(pathString, usdRuntimeId, separator);
 }
 
-Ufe::Path stripInstanceIndexFromUfePath(const Ufe::Path& path)
-{
-    if (path.empty()) {
-        return path;
-    }
-
-    // As with usdPathToUfePathSegment() above, we're taking advantage of the
-    // fact that identifiers in SdfPaths must be C/Python identifiers; that is,
-    // they must *not* begin with a digit. This means that when we see a path
-    // component at the end of a USD path segment that does begin with a digit,
-    // we can be sure that it represents an instance index and not a prim or
-    // other USD entity.
-    if (stringBeginsWithDigit(path.back().string())) {
-        return path.pop();
-    }
-
-    return path;
-}
-
 UsdPrim ufePathToPrim(const Ufe::Path& path)
 {
     // When called we do not make any assumption on whether or not the
     // input path is valid.
 
-    const Ufe::Path ufePrimPath = stripInstanceIndexFromUfePath(path);
+    const Ufe::Path ufePrimPath = UsdUfe::stripInstanceIndexFromUfePath(path);
 
     const Ufe::Path::Segments& segments = ufePrimPath.getSegments();
     if (!TF_VERIFY(!segments.empty(), kIllegalUFEPath, path.string().c_str())) {
@@ -215,94 +182,11 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
         : stage->GetPrimAtPath(SdfPath(segments[1].string()).GetPrimPath());
 }
 
-int ufePathToInstanceIndex(const Ufe::Path& path, UsdPrim* prim)
-{
-    int instanceIndex = UsdImagingDelegate::ALL_INSTANCES;
-
-    const UsdPrim usdPrim = ufePathToPrim(path);
-    if (prim) {
-        *prim = usdPrim;
-    }
-    if (!usdPrim || !usdPrim.IsA<UsdGeomPointInstancer>()) {
-        return instanceIndex;
-    }
-
-    // Once more as above in usdPathToUfePathSegment() and
-    // stripInstanceIndexFromUfePath(), a path component at the tail of the
-    // path that begins with a digit is assumed to represent an instance index.
-    const std::string& tailComponentString = path.back().string();
-    if (stringBeginsWithDigit(path.back().string())) {
-        instanceIndex = std::stoi(tailComponentString);
-    }
-
-    return instanceIndex;
-}
-
-bool isRootChild(const Ufe::Path& path)
-{
-    // When called we make the assumption that we are given a valid
-    // path and we are only testing whether or not we are a root child.
-    auto segments = path.getSegments();
-    if (segments.size() != 2) {
-        TF_RUNTIME_ERROR(kIllegalUFEPath, path.string().c_str());
-    }
-    return (segments[1].size() == 1);
-}
-
 UsdSceneItem::Ptr
 createSiblingSceneItem(const Ufe::Path& ufeSrcPath, const std::string& siblingName)
 {
     auto ufeSiblingPath = ufeSrcPath.sibling(Ufe::PathComponent(siblingName));
     return UsdSceneItem::create(ufeSiblingPath, ufePathToPrim(ufeSiblingPath));
-}
-
-std::string uniqueName(const TfToken::HashSet& existingNames, std::string srcName)
-{
-    // Compiled regular expression to find a numerical suffix to a path component.
-    // It searches for any number of characters followed by a single non-numeric,
-    // then one or more digits at end of string.
-    std::regex  re("(.*)([^0-9])([0-9]+)$");
-    std::string base { srcName };
-    int         suffix { 1 };
-    std::smatch match;
-    if (std::regex_match(srcName, match, re)) {
-        base = match[1].str() + match[2].str();
-        suffix = std::stoi(match[3].str()) + 1;
-    }
-    std::string dstName = base + std::to_string(suffix);
-    while (existingNames.count(TfToken(dstName)) > 0) {
-        dstName = base + std::to_string(++suffix);
-    }
-    return dstName;
-}
-
-std::string uniqueChildName(const UsdPrim& usdParent, const std::string& name)
-{
-    if (!usdParent.IsValid())
-        return std::string();
-
-    TfToken::HashSet childrenNames;
-
-    // The prim GetChildren method used the UsdPrimDefaultPredicate which includes
-    // active prims. We also need the inactive ones.
-    //
-    // const Usd_PrimFlagsConjunction UsdPrimDefaultPredicate =
-    //			UsdPrimIsActive && UsdPrimIsDefined &&
-    //			UsdPrimIsLoaded && !UsdPrimIsAbstract;
-    // Note: removed 'UsdPrimIsLoaded' from the predicate. When it is present the
-    //		 filter doesn't properly return the inactive prims. UsdView doesn't
-    //		 use loaded either in _computeDisplayPredicate().
-    //
-    // Note: our UsdHierarchy uses instance proxies, so we also use them here.
-    for (auto child : usdParent.GetFilteredChildren(
-             UsdTraverseInstanceProxies(UsdPrimIsDefined && !UsdPrimIsAbstract))) {
-        childrenNames.insert(child.GetName());
-    }
-    std::string childName { name };
-    if (childrenNames.find(TfToken(childName)) != childrenNames.end()) {
-        childName = uniqueName(childrenNames, childName);
-    }
-    return childName;
 }
 
 bool isAGatewayType(const std::string& mayaNodeType)
@@ -565,157 +449,6 @@ bool canRemoveDstProperty(const PXR_NS::UsdAttribute& dstAttr)
     return false;
 }
 
-namespace {
-
-bool allowedInStrongerLayer(
-    const UsdPrim&                          prim,
-    const SdfPrimSpecHandleVector&          primStack,
-    const std::set<PXR_NS::SdfLayerRefPtr>& sessionLayers,
-    bool                                    allowStronger)
-{
-    // If the flag to allow edits in a stronger layer if off, then it is not allowed.
-    if (!allowStronger)
-        return false;
-
-    // If allowed, verify if the target layer is stronger than any existing layer with an opinion.
-    auto stage = prim.GetStage();
-    auto targetLayer = stage->GetEditTarget().GetLayer();
-    auto topLayer = primStack.front()->GetLayer();
-
-    const SdfLayerHandle searchRoot = isSessionLayer(targetLayer, sessionLayers)
-        ? stage->GetSessionLayer()
-        : stage->GetRootLayer();
-
-    return getStrongerLayer(searchRoot, targetLayer, topLayer) == targetLayer;
-}
-
-} // namespace
-
-void applyCommandRestriction(
-    const UsdPrim&     prim,
-    const std::string& commandName,
-    bool               allowStronger)
-{
-    // return early if prim is the pseudo-root.
-    // this is a special case and could happen when one tries to drag a prim under the
-    // proxy shape in outliner. Also note if prim is the pseudo-root, no def primSpec will be found.
-    if (prim.IsPseudoRoot()) {
-        return;
-    }
-
-    const auto stage = prim.GetStage();
-    auto       targetLayer = stage->GetEditTarget().GetLayer();
-
-    const bool includeTopLayer = true;
-    const auto sessionLayers = getAllSublayerRefs(stage->GetSessionLayer(), includeTopLayer);
-    const bool isTargetingSession = isSessionLayer(targetLayer, sessionLayers);
-
-    auto        primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
-    auto        primStack = prim.GetPrimStack();
-    std::string layerDisplayName;
-
-    // When the command is forbidden even for the strongest layer, that means
-    // that the operation is a multi-layers operation and there is no target
-    // layer that would allow it to proceed. In that case, do not suggest changing
-    // the target.
-    std::string message = allowStronger ? "It is defined on another layer. " : "";
-    std::string instructions = allowStronger ? "Please set %s as the target layer to proceed."
-                                             : "It would orphan opinions on the layer %s.";
-
-    // iterate over the prim stack, starting at the highest-priority layer.
-    for (const auto& spec : primStack) {
-        // Only take session layers opinions into consideration when the target itself
-        // is a session layer (top a sub-layer of session).
-        //
-        // We isolate session / non-session this way because these opinions
-        // are owned by the application and we don't want to block the user
-        // commands and user data due to them.
-        const auto layer = spec->GetLayer();
-        if (isSessionLayer(layer, sessionLayers) != isTargetingSession)
-            continue;
-
-        const auto& layerName = layer->GetDisplayName();
-
-        // skip if there is no primSpec for the selected prim in the current stage's local layer.
-        if (!primSpec) {
-            // add "," separator for multiple layers
-            if (!layerDisplayName.empty()) {
-                layerDisplayName.append(",");
-            }
-            layerDisplayName.append("[" + layerName + "]");
-            continue;
-        }
-
-        // one reason for skipping the reference is to not clash
-        // with the over that may be created in the stage's sessionLayer.
-        // another reason is that one should be able to edit a referenced prim that
-        // either as over/def as long as it has a primSpec in the selected edit target layer.
-        if (spec->HasReferences()) {
-            break;
-        }
-
-        // if exists a def/over specs
-        if (spec->GetSpecifier() == SdfSpecifierDef || spec->GetSpecifier() == SdfSpecifierOver) {
-            // if spec exists in another layer ( e.g sessionLayer or layer other than stage's local
-            // layers ).
-            if (primSpec->GetLayer() != spec->GetLayer()) {
-                layerDisplayName.append("[" + layerName + "]");
-                if (allowStronger) {
-                    message = "It has a stronger opinion on another layer. ";
-                }
-                break;
-            }
-            continue;
-        }
-    }
-
-    // Per design request, we need a more clear message to indicate that renaming a prim inside a
-    // variantset is not allowed. This restriction was already caught in the above loop but the
-    // message was a bit generic.
-    UsdPrimCompositionQuery query(prim);
-    for (const auto& compQueryArc : query.GetCompositionArcs()) {
-        if (!primSpec && PcpArcTypeVariant == compQueryArc.GetArcType()) {
-            if (allowedInStrongerLayer(prim, primStack, sessionLayers, allowStronger))
-                return;
-            std::string err = TfStringPrintf(
-                "Cannot %s [%s] because it is defined inside the variant composition arc %s.",
-                commandName.c_str(),
-                prim.GetName().GetString().c_str(),
-                layerDisplayName.c_str());
-            throw std::runtime_error(err.c_str());
-        }
-    }
-
-    if (!layerDisplayName.empty()) {
-        if (allowedInStrongerLayer(prim, primStack, sessionLayers, allowStronger))
-            return;
-        std::string formattedInstructions
-            = TfStringPrintf(instructions.c_str(), layerDisplayName.c_str());
-        std::string err = TfStringPrintf(
-            "Cannot %s [%s]. %s%s",
-            commandName.c_str(),
-            prim.GetName().GetString().c_str(),
-            message.c_str(),
-            formattedInstructions.c_str());
-        throw std::runtime_error(err.c_str());
-    }
-}
-
-bool applyCommandRestrictionNoThrow(
-    const UsdPrim&     prim,
-    const std::string& commandName,
-    bool               allowStronger)
-{
-    try {
-        applyCommandRestriction(prim, commandName, allowStronger);
-    } catch (const std::exception& e) {
-        std::string errMsg(e.what());
-        TF_WARN(errMsg);
-        return false;
-    }
-    return true;
-}
-
 bool isPrimMetadataEditAllowed(
     const UsdPrim&         prim,
     const TfToken&         metadataName,
@@ -735,7 +468,7 @@ bool isPropertyMetadataEditAllowed(
     // If the intended target layer is not modifiable as a whole,
     // then no metadata edits are allowed at all.
     const UsdStagePtr& stage = prim.GetStage();
-    if (!isEditTargetLayerModifiable(stage, errMsg))
+    if (!UsdUfe::isEditTargetLayerModifiable(stage, errMsg))
         return false;
 
     // Find the highest layer that has the metadata authored. The prim
@@ -804,8 +537,9 @@ bool isPropertyMetadataEditAllowed(
     const SdfLayerHandle targetLayer = editTarget.GetLayer();
 
     // Verify that the intended target layer is stronger than existing authored opinions.
-    const auto strongestLayer = getStrongerLayer(stage, targetLayer, topAuthoredLayer, true);
-    bool       allowed = (strongestLayer == targetLayer);
+    const auto strongestLayer
+        = UsdUfe::getStrongerLayer(stage, targetLayer, topAuthoredLayer, true);
+    bool allowed = (strongestLayer == targetLayer);
     if (!allowed && errMsg) {
         *errMsg = TfStringPrintf(
             "Cannot edit [%s] attribute because there is a stronger opinion in [%s].",
@@ -831,7 +565,7 @@ bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMs
     const auto& stage = prim.GetStage();
     const auto& editTarget = stage->GetEditTarget();
 
-    if (!isEditTargetLayerModifiable(stage, errMsg)) {
+    if (!UsdUfe::isEditTargetLayerModifiable(stage, errMsg)) {
         return false;
     }
 
@@ -920,38 +654,6 @@ void enforceAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName)
         MGlobal::displayError(errMsg.c_str());
         throw std::runtime_error(errMsg);
     }
-}
-
-bool isEditTargetLayerModifiable(const UsdStageWeakPtr stage, std::string* errMsg)
-{
-    const auto editTarget = stage->GetEditTarget();
-    const auto editLayer = editTarget.GetLayer();
-
-    if (editLayer && !editLayer->PermissionToEdit()) {
-        if (errMsg) {
-            std::string err = TfStringPrintf(
-                "Cannot edit [%s] because it is read-only. Set PermissionToEdit = true to proceed.",
-                editLayer->GetDisplayName().c_str());
-
-            *errMsg = err;
-        }
-
-        return false;
-    }
-
-    if (stage->IsLayerMuted(editLayer->GetIdentifier())) {
-        if (errMsg) {
-            std::string err = TfStringPrintf(
-                "Cannot edit [%s] because it is muted. Unmute [%s] to proceed.",
-                editLayer->GetDisplayName().c_str(),
-                editLayer->GetDisplayName().c_str());
-            *errMsg = err;
-        }
-
-        return false;
-    }
-
-    return true;
 }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -1288,15 +990,6 @@ Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& f
         }
     }
     return dst;
-}
-
-std::string pathSegmentSeparator()
-{
-#ifdef UFE_V2_FEATURES_AVAILABLE
-    return Ufe::PathString::pathSegmentSeparator();
-#else
-    return ",";
-#endif
 }
 
 std::vector<std::string> splitString(const std::string& str, const std::string& separators)

@@ -17,7 +17,7 @@
 
 #include "UsdAttributeHolder.h"
 
-#include <mayaUsd/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/attribute.h>

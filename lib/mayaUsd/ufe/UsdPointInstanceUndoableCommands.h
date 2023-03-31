@@ -22,8 +22,9 @@
 #include <mayaUsd/ufe/UsdPointInstanceOrientationModifier.h>
 #include <mayaUsd/ufe/UsdPointInstancePositionModifier.h>
 #include <mayaUsd/ufe/UsdPointInstanceScaleModifier.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/base/gf/quath.h>
 #include <pxr/base/gf/vec3f.h>
@@ -76,7 +77,7 @@ public:
         // Block the USD change notice handling from running in response to the
         // USD authoring we're about to do. We notify afterwards only on the
         // specific point instance scene item being manipulated.
-        InTransform3dChange guard(this->path());
+        UsdUfe::InTransform3dChange guard(this->path());
         _modifier.setValue(_prevValue, _writeTime);
         Ufe::Transform3d::notify(this->path());
     }
@@ -86,7 +87,7 @@ public:
         // Block the USD change notice handling from running in response to the
         // USD authoring we're about to do. We notify afterwards only on the
         // specific point instance scene item being manipulated.
-        InTransform3dChange guard(this->path());
+        UsdUfe::InTransform3dChange guard(this->path());
         _modifier.setValue(_newValue, _writeTime);
         Ufe::Transform3d::notify(this->path());
     }

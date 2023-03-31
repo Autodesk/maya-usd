@@ -15,7 +15,9 @@
 //
 #pragma once
 
-#include <mayaUsd/undo/UsdUndoableItem.h>
+#include <mayaUsd/base/api.h>
+
+#include <usdUfe/undo/UsdUndoableItem.h>
 
 #include <pxr/usd/usd/timeCode.h>
 
@@ -44,7 +46,7 @@ class UsdSetXformOpUndoableCommandBase : public Ufe::SetVector3dUndoableCommand
 {
     const PXR_NS::UsdTimeCode _readTime;
     const PXR_NS::UsdTimeCode _writeTime;
-    MayaUsd::UsdUndoableItem  _undoableItem;
+    UsdUfe::UsdUndoableItem   _undoableItem;
     enum State
     {
         kInitial,

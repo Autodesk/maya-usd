@@ -11,10 +11,10 @@
 // prior written consent of Autodesk, Inc.
 // =======================================================================
 
-#include "UsdSceneItem.h"
-
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdUndoableCommand.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/UsdUndoableCommand.h>
 
 #include <ufe/uiNodeGraphNode.h>
 

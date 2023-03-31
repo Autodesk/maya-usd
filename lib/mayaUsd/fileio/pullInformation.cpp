@@ -18,7 +18,8 @@
 
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/primActivation.h>
-#include <mayaUsdUtils/util.h>
+
+#include <usdUfe/utils/usdUtils.h>
 
 #include <pxr/usd/usd/editContext.h>
 
@@ -234,7 +235,7 @@ bool removeExcludeFromRendering(const Ufe::Path& ufePulledPath)
     if (!prim.ClearActive())
         return false;
 
-    PXR_NS::SdfPrimSpecHandle primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
+    PXR_NS::SdfPrimSpecHandle primSpec = UsdUfe::getPrimSpecAtEditTarget(prim);
     if (sessionLayer && primSpec)
         sessionLayer->ScheduleRemoveIfInert(primSpec.GetSpec());
 

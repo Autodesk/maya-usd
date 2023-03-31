@@ -17,9 +17,10 @@
 #define MAYAUSD_UFE_USDUNDODUPLICATESELECTIONCOMMAND_H
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/UsdUndoDuplicateCommand.h>
-#include <mayaUsd/undo/UsdUndoableItem.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/undo/UsdUndoableItem.h>
 
 #include <ufe/path.h>
 #include <ufe/selection.h>

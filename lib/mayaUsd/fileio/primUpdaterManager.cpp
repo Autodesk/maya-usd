@@ -28,14 +28,15 @@
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/OpUndoItemMuting.h>
 #include <mayaUsd/undo/OpUndoItems.h>
-#include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsd/utils/dynamicAttribute.h>
 #include <mayaUsd/utils/progressBarScope.h>
 #include <mayaUsd/utils/traverseLayer.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/undo/UsdUndoBlock.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/instantiateSingleton.h>
@@ -463,7 +464,7 @@ bool pullCustomize(const PullImportPaths& importedPaths, const UsdMayaPrimUpdate
     MayaUsd::ProgressBarScope progressBar(importedPaths.first.size());
 
     // Record all USD modifications in an undo block and item.
-    UsdUndoBlock undoBlock(
+    UsdUfe::UsdUndoBlock undoBlock(
         &UsdUndoableItemUndoItem::create("Pull customize USD data modifications"));
 
     TF_AXIOM(importedPaths.first.size() == importedPaths.second.size());
@@ -1012,7 +1013,7 @@ bool PrimUpdaterManager::mergeToUsd(
 #endif
 
     // Record all USD modifications in an undo block and item.
-    UsdUndoBlock undoBlock(
+    UsdUfe::UsdUndoBlock undoBlock(
         &UsdUndoableItemUndoItem::create("Merge to Maya USD data modifications"));
 
     // The push is done in two stages:
@@ -1259,7 +1260,7 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
     PushPullScope             scopeIt(_inPushPull);
 
     // Record all USD modifications in an undo block and item.
-    UsdUndoBlock undoBlock(
+    UsdUfe::UsdUndoBlock undoBlock(
         &UsdUndoableItemUndoItem::create("Discard edits USD data modifications"));
 
     auto mayaPath = usdToMaya(pulledPath);
@@ -1509,7 +1510,7 @@ bool PrimUpdaterManager::duplicate(
         auto ctxArgs = VtDictionaryOver(userArgs, UsdMayaJobExportArgs::GetDefaultDictionary());
 
         // Record all USD modifications in an undo block and item.
-        MAYAUSD_NS::UsdUndoBlock undoBlock(
+        UsdUfe::UsdUndoBlock undoBlock(
             &UsdUndoableItemUndoItem::create("Duplicate USD data modifications"));
         progressBar.advance();
 
@@ -1776,7 +1777,7 @@ MDagPath PrimUpdaterManager::setupPullParent(const Ufe::Path& pulledPath, VtDict
     MayaUsd::ProgressBarScope progressBar(3);
 
     // Record all USD modifications in an undo block and item.
-    UsdUndoBlock undoBlock(
+    UsdUfe::UsdUndoBlock undoBlock(
         &UsdUndoableItemUndoItem::create("Setup pull parent USD data modification"));
 
     MObject pullRoot = findOrCreatePullRoot();
