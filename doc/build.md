@@ -31,7 +31,7 @@ See Pixar's official github page for instructions on how to build USD: https://g
 
 |               |      ![](images/pxr.png)          |        
 |:------------: |:---------------:                  |
-|  CommitID/Tags | release: [v21.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v21.02) or [v21.05](https://github.com/PixarAnimationStudios/USD/releases/tag/v21.05) or [v21.08](https://github.com/PixarAnimationStudios/USD/releases/tag/v21.08) or [v21.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v21.11) or [v22.05b](https://github.com/PixarAnimationStudios/USD/releases/tag/v22.05b) or [v22.08](https://github.com/PixarAnimationStudios/USD/releases/tag/v22.08) <br> dev: [48460d1 (tag v22.08)](https://github.com/PixarAnimationStudios/USD/commit/48460d145f8665f233234ae2f6e6f0e16914faa8) |
+|  CommitID/Tags | release: [v21.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v21.02) or [v21.05](https://github.com/PixarAnimationStudios/USD/releases/tag/v21.05) or [v21.08](https://github.com/PixarAnimationStudios/USD/releases/tag/v21.08) or [v21.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v21.11) or [v22.05b](https://github.com/PixarAnimationStudios/USD/releases/tag/v22.05b) or [v22.08](https://github.com/PixarAnimationStudios/USD/releases/tag/v22.08) or [v22.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v22.11)<br> dev: [97d2ba3 (tag v23.02)](https://github.com/PixarAnimationStudios/USD/commit/97d2ba37cc8749b147694d0dd5f9e7127e1b6919) |
 
 For additional information on building Pixar USD, see the ***Additional Build Instruction*** section below.
 
@@ -46,7 +46,7 @@ The Universal Front End (UFE) is a DCC-agnostic component that allows Maya to br
 | v1.0.0                     | Maya 2019.x                                            | |
 | v1.0.0                     | Maya 2020.x                                            | |
 | v2.0.0<br>v2.0.3<br>v2.1.0 | Maya 2022 <br>Maya 2022.1/2022.2/2022.3<br>Maya 2022.4 | https://help.autodesk.com/view/MAYAUL/2022/ENU/?guid=Maya_SDK_ufe_ref_index_html |
-| v3.0.0<br>v3.2.0           | Maya 2023/2023.1<br>Maya 2023.2/2023.3                        | https://help.autodesk.com/view/MAYAUL/2023/ENU/?guid=MAYA_API_REF_ufe_ref_index_html |
+| v3.0.0<br>v3.2.0<br>v3.3.0 | Maya 2023/2023.1<br>Maya 2023.2<br>Maya 2023.3         | https://help.autodesk.com/view/MAYAUL/2023/ENU/?guid=MAYA_API_REF_ufe_ref_index_html |
 | v4.0.0                     | Maya 2024                                              | https://help.autodesk.com/view/MAYAUL/2024/ENU/?guid=MAYA_API_REF_ufe_ref_index_html |
 | v0.5.x                     | Maya PR                                                | |
 
