@@ -5,6 +5,7 @@ from maya import cmds
 from maya import standalone
 import mayaUsd.ufe
 import mayaUtils
+import ufeUtils
 import ufe
 import unittest
 import usdUtils
@@ -383,6 +384,7 @@ class EditRoutingTestCase(unittest.TestCase):
  
         self._verifyEditRouterPreventingCmd('duplicate', duplicate, verifyNoDuplicate)
  
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2024, 'Requires fixes in Maya only from 2024 onward.')
     def testPreventParentingCmd(self):
         '''
         Test edit router preventing the parent operation by raising an exception.
@@ -397,6 +399,7 @@ class EditRoutingTestCase(unittest.TestCase):
  
         self._verifyEditRouterPreventingCmd('parent', group, verifyNoGroup)
  
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'UFE composite commands only available in Python from UFE v4.')
     def testRoutingCompositeCmd(self):
         '''
         Test that an edit router for a composite command prevent routing of sub-commands.
@@ -441,6 +444,7 @@ class EditRoutingTestCase(unittest.TestCase):
         self.assertEqual(filterUsdStr(rootLayer.ExportToString()),
                          'def Xform "A"\n{\n}\ndef Xform "B"\n{\n    token visibility = "invisible"\n}')
 
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'UFE composite commands only available in Python from UFE v4.')
     def testNotRoutingCompositeCmd(self):
         '''
         Test that a composite command with not edit router registered works as expected.
