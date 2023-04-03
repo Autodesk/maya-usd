@@ -240,18 +240,22 @@ MStatus UsdMayaUtil::GetMObjectByName(const std::string& nodeName, MObject& mObj
     return GetMObjectByName(MString(nodeName.c_str()), mObj);
 }
 
-UsdStageRefPtr UsdMayaUtil::GetStageByProxyName(const std::string& proxyPath)
+MayaUsdProxyShapeBase* UsdMayaUtil::GetProxyShapeByProxyName(const std::string& proxyPath)
 {
     MObject mobj;
     MStatus status = UsdMayaUtil::GetMObjectByName(proxyPath, mobj);
-    if (status == MStatus::kSuccess) {
-        MFnDependencyNode fn;
-        fn.setObject(mobj);
-        MayaUsdProxyShapeBase* pShape = static_cast<MayaUsdProxyShapeBase*>(fn.userNode());
-        return pShape ? pShape->getUsdStage() : nullptr;
-    }
+    if (status != MStatus::kSuccess)
+        return nullptr;
 
-    return nullptr;
+    MFnDependencyNode fn;
+    fn.setObject(mobj);
+    return static_cast<MayaUsdProxyShapeBase*>(fn.userNode());
+}
+
+UsdStageRefPtr UsdMayaUtil::GetStageByProxyName(const std::string& proxyPath)
+{
+    MayaUsdProxyShapeBase* pShape = UsdMayaUtil::GetProxyShapeByProxyName(proxyPath);
+    return pShape ? pShape->getUsdStage() : nullptr;
 }
 
 MStatus UsdMayaUtil::GetPlugByName(const std::string& attrPath, MPlug& plug)

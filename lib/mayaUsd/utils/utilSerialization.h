@@ -62,10 +62,15 @@ MAYAUSD_CORE_PUBLIC
 USDUnsavedEditsOption serializeUsdEditsLocationOption();
 
 /*! \brief Utility function to update the file path attribute on the proxy shape
-    when an anonymous root layer gets exported to disk.
+    when an anonymous root layer gets exported to disk. Also optionally updates
+    the target layer if the anonymous layer was the target layer.
  */
 MAYAUSD_CORE_PUBLIC
-void setNewProxyPath(const MString& proxyNodeName, const MString& newValue);
+void setNewProxyPath(
+    const MString&        proxyNodeName,
+    const MString&        newValue,
+    const SdfLayerRefPtr& layer,
+    bool                  isTargetLayer);
 
 struct LayerParent
 {

@@ -17,6 +17,7 @@
 #define PXRUSDMAYA_UTIL_H
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
 
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/gf/vec3f.h>
@@ -184,6 +185,10 @@ MStatus GetMObjectByName(const std::string& nodeName, MObject& mObj);
 /// Gets the Maya MObject for the node named \p nodeName.
 MAYAUSD_CORE_PUBLIC
 MStatus GetMObjectByName(const MString& nodeName, MObject& mObj);
+
+/// Gets the proxy shape node named \p nodeName.
+MAYAUSD_CORE_PUBLIC
+MayaUsdProxyShapeBase* GetProxyShapeByProxyName(const std::string& nodeName);
 
 /// Gets the UsdStage for the proxy shape  node named \p nodeName.
 MAYAUSD_CORE_PUBLIC
