@@ -384,7 +384,7 @@ class EditRoutingTestCase(unittest.TestCase):
  
         self._verifyEditRouterPreventingCmd('duplicate', duplicate, verifyNoDuplicate)
  
-    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2024, 'Requires fixes in Maya only from 2024 onward.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2025, 'Requires fixes in Maya only from 2025 onward.')
     def testPreventParentingCmd(self):
         '''
         Test edit router preventing the parent operation by raising an exception.
