@@ -13,6 +13,9 @@
 // limitations under the License.
 //
 
+// global used to store parent layer's directory to be used in usdRootFileRelative.uiInit
+global string $gLayerParentPathUsdLayerEditorSaveFileDialog = "";
+
 ///////////////////////////////////////////////////////////
 //
 // Root-relative callbacks
@@ -61,7 +64,8 @@ global proc mayaUsd_USDSubLayerFileRelative_UICreate(string $parent)
 
 global proc mayaUsd_USDSubLayerFileRelative_UIInit(string $parent, string $filterType)
 {
-    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdSubLayerFileRelative.uiInit('" + $parent + "', '" + $filterType + "')");
+    global string $gLayerParentPathUsdLayerEditorSaveFileDialog;
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdSubLayerFileRelative.uiInit('" + $parent + "', '" + $filterType + "',  '" + $gLayerParentPathUsdLayerEditorSaveFileDialog + "')");
 }
 
 global proc mayaUsd_USDSubLayerFileRelative_UICommit(string $parent, string $selectedFile)
@@ -82,9 +86,10 @@ global proc mayaUsd_USDSubLayerFileRelative_FileTypeChanged(string $parent, stri
 ///////////////////////////////////////////////////////////
 //
 // File dialog
-
-global proc string UsdLayerEditor_SaveLayerFileDialog(int $isRootLayer)
+global proc string UsdLayerEditor_SaveLayerFileDialog(int $isRootLayer, string $parentLayerPath)
 {
+    global string $gLayerParentPathUsdLayerEditorSaveFileDialog;
+    $gLayerParentPathUsdLayerEditorSaveFileDialog = $parentLayerPath;
     string $fileFilter = python("from mayaUsdUtils import getUSDDialogFileFilters; getUSDDialogFileFilters(False)");
 
     string $startDir = "";

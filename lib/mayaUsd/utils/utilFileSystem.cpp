@@ -174,6 +174,23 @@ std::pair<std::string, bool> UsdMayaUtilFileSystem::makePathRelativeTo(
     return std::make_pair(relativePath.generic_string(), true);
 }
 
+std::string UsdMayaUtilFileSystem::getPathRelativeToDirectory(
+    const std::string& fileName,
+    const std::string& relativeToDir)
+{
+    auto relativePathAndSuccess = makePathRelativeTo(fileName, relativeToDir);
+
+    if (!relativePathAndSuccess.second) {
+        TF_WARN(
+            "File name (%s) cannot be resolved as relative to its parent layer directory (%s), "
+            "using the absolute path.",
+            fileName.c_str(),
+            relativeToDir.c_str());
+    }
+
+    return relativePathAndSuccess.first;
+}
+
 std::string UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(const std::string& fileName)
 {
     auto relativePathAndSuccess = makePathRelativeTo(fileName, getMayaSceneFileDir());

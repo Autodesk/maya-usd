@@ -28,6 +28,7 @@
 #include <QtGui/QFontMetrics>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QBoxLayout>
+#include <ghc/filesystem.hpp>
 
 #include <string>
 
@@ -601,8 +602,17 @@ bool SaveLayersDialog::saveLayerFilePathUI(
     const bool useSceneFileForRoot = true;
     UsdMayaUtilFileSystem::prepareLayerSaveUILayer(parentLayer, useSceneFileForRoot);
 
+    std::string parentLayerPath = "\"\"";
+    if (parentLayer) {
+        ghc::filesystem::path parentPath(parentLayer->GetRealPath());
+        parentLayerPath = "\"" + parentPath.parent_path().generic_string() + "\"";
+    }
+
     MString cmd;
-    cmd.format("UsdLayerEditor_SaveLayerFileDialog(^1s)", parentLayer ? "0" : "1");
+    cmd.format(
+        "UsdLayerEditor_SaveLayerFileDialog(^1s,^2s)",
+        parentLayer ? "0" : "1",
+        parentLayerPath.c_str());
 
     MString fileSelected;
     MGlobal::executeCommand(
