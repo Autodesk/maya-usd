@@ -87,7 +87,9 @@ class TestCommand(mtohUtils.MtohTestCase):
         cmds.select(clear=1)
         cmds.refresh()
 
-        self.cubeRprim = self.rprimPath(self.cubeShape)
+        # Hierarchy changes (like grouping above) cause the render index to be
+        # rebuilt, so re-read our cubeRprim from the render index.
+        self.cubeRprim = self.getIndex()[0]
         visIndex = [self.cubeRprim]
         self.assertEqual(self.getVisibleIndex(), visIndex)
 
@@ -153,7 +155,6 @@ class TestCommand(mtohUtils.MtohTestCase):
             cmds.setAttr("{}.overrideVisibility".format(obj), True)
 
         self.doHierarchicalVisibilityTest(makeNodeVis, makeNodeInvis, prep=prep)
-
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())

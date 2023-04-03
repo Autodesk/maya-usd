@@ -173,6 +173,9 @@ public:
     MAYAHYDRALIB_API
     MGeometry::Primitive GetPrimitive() const { return _primitive; }
 
+    MAYAHYDRALIB_API
+    const char* Name() const { return _name.asChar(); }
+
 private:
     MAYAHYDRALIB_API
     void _RemoveRprim();
