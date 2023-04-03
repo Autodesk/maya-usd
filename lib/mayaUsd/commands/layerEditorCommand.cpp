@@ -379,7 +379,7 @@ public:
                 std::string absolutePath
                     = ghc::filesystem::canonical(oldLayerDir / filePath).generic_string();
                 auto result = UsdMayaUtilFileSystem::makePathRelativeTo(
-                    absolutePath, newLayerDir.generic_string());
+                    absolutePath, ghc::filesystem::canonical(newLayerDir).generic_string());
 
                 if (result.second) {
                     newPath = result.first;
