@@ -118,7 +118,8 @@ void updateRootLayer(
     const std::string& fp = layerPath;
 #endif
 
-    MayaUsd::utils::setNewProxyPath(MString(proxy.c_str()), MString(fp.c_str()), layer, isTargetLayer);
+    MayaUsd::utils::setNewProxyPath(
+        MString(proxy.c_str()), MString(fp.c_str()), layer, isTargetLayer);
 }
 
 void updateAllCachedStageWithLayer(SdfLayerRefPtr originalLayer, const std::string& newFilePath)
