@@ -497,9 +497,10 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
 
         # Create a temporary directory in the current diretory
         myDir = testUtils.TemporaryDirectory(suffix="testMoveRelativeSubPathDir")
+        myDir_path, myDir_name = path.split(myDir.name)
 
         # Create a new usda file in the current diretory and add it to the root layer through absolute path
-        absLayer1File = tempfile.NamedTemporaryFile(suffix=".usda", prefix="absLayer1", delete=False, mode="w")
+        absLayer1File = tempfile.NamedTemporaryFile(suffix=".usda", prefix="absLayer1", dir=myDir_path, delete=False, mode="w")
         absLayer1File.write("#usda 1.0")
         absLayer1File.close()
         absLayer1Id = path.normpath(absLayer1File.name)
@@ -524,8 +525,10 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         # Now move the relative sublayer from absLayer2 to absLayer1
         cmds.mayaUsdLayerEditor(absLayer2.identifier, edit=True, moveSubPath=[relLayerFileId, absLayer1.identifier, 0])
         
+        print(rootLayer.subLayerPaths[0])
+        print(rootLayer.subLayerPaths[1])
+
         # The relative sublayer's path should change now to include the directory name
-        myDir_path, myDir_name = path.split(myDir.name)
         relLayerNewFileId = myDir_name + "/" + relLayerFileId
         self.assertTrue(len(absLayer1.subLayerPaths) == 1)
         self.assertEqual(absLayer1.subLayerPaths[0], relLayerNewFileId)
