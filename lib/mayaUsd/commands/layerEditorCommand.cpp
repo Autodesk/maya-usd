@@ -17,6 +17,7 @@
 #include "layerEditorCommand.h"
 
 #include <mayaUsd/utils/query.h>
+#include <mayaUsd/utils/utilFileSystem.h>
 
 #include <pxr/base/tf/diagnostic.h>
 
@@ -32,6 +33,8 @@
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
 #endif
+
+#include <ghc/filesystem.hpp>
 
 #include <cstddef>
 #include <string>
@@ -333,6 +336,7 @@ public:
         _oldIndex = subPathIndex; // save for undo
 
         SdfLayerHandle newParentLayer;
+        std::string    newPath = _path;
 
         if (layer->GetIdentifier() == _newParentLayer) {
 
@@ -359,11 +363,41 @@ public:
                 return false;
             }
 
+            // See if the path should be reparented
+            ghc::filesystem::path filePath(_path);
+            bool                  needsRepathing = !SdfLayer::IsAnonymousLayerIdentifier(_path);
+            needsRepathing &= filePath.is_relative();
+            needsRepathing &= !layer->GetRealPath().empty();
+            needsRepathing &= !newParentLayer->GetRealPath().empty();
+
+            // Reparent the path if needed
+            if (needsRepathing) {
+                auto oldLayerDir = ghc::filesystem::path(layer->GetRealPath()).remove_filename();
+                auto newLayerDir
+                    = ghc::filesystem::path(newParentLayer->GetRealPath()).remove_filename();
+
+                std::string absolutePath
+                    = ghc::filesystem::canonical(oldLayerDir / filePath).generic_string();
+                auto result = UsdMayaUtilFileSystem::makePathRelativeTo(
+                    absolutePath, newLayerDir.generic_string());
+
+                if (result.second) {
+                    newPath = result.first;
+                } else {
+                    newPath = absolutePath;
+                    TF_WARN(
+                        "File name (%s) cannot be resolved as relative to the layer %s, "
+                        "using the absolute path.",
+                        absolutePath.c_str(),
+                        newParentLayer->GetIdentifier());
+                }
+            }
+
             // make sure the subpath is not already in the new parent layer.
             // Otherwise, the SdfLayer::InsertSubLayerPath() below will do nothing
             // and the subpath will be removed from it's current parent.
-            if (newParentLayer->GetSubLayerPaths().Find(_path) != size_t(-1)) {
-                std::string message = std::string("SubPath ") + _path
+            if (newParentLayer->GetSubLayerPaths().Find(newPath) != size_t(-1)) {
+                std::string message = std::string("SubPath ") + newPath
                     + std::string(" already exist in layer ") + newParentLayer->GetIdentifier();
                 MPxCommand::displayError(message.c_str());
                 return false;
@@ -376,7 +410,7 @@ public:
         // oterwise InsertSubLayerPath() will fail because the subLayer
         // already exists.
         layer->RemoveSubLayerPath(subPathIndex);
-        newParentLayer->InsertSubLayerPath(_path, _newIndex);
+        newParentLayer->InsertSubLayerPath(newPath, _newIndex);
 
         return true;
     }
