@@ -25,8 +25,8 @@ If applicable, add screenshots, sample files, etc to help explain your problem.
 
 **Specs (if applicable):**
  - OS & version [e.g. Windows 10]
- - Compiler & version [e.g. gcc 6.3.1]
- - Maya version [e.g. Maya 2020]
+ - Compiler & version [e.g. gcc 11.2.1]
+ - Maya version [e.g. Maya 2024]
  - Maya USD commit SHA [e.g. dev at caa921c1]
  - Pixar USD commit SHA [e.g. dev at b85ddac2]
 
