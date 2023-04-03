@@ -496,7 +496,7 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         rootLayer = stage.GetRootLayer()
 
         # Create a temporary directory in the current diretory
-        myDir = tempfile.TemporaryDirectory(suffix="testMoveRelativeSubPathDir")
+        myDir = testUtils.TemporaryDirectory(suffix="testMoveRelativeSubPathDir")
 
         # Create a new usda file in the current diretory and add it to the root layer through absolute path
         absLayer1File = tempfile.NamedTemporaryFile(suffix=".usda", prefix="absLayer1", delete=False, mode="w")
@@ -527,7 +527,8 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         # The relative sublayer's path should change now to include the directory name
         myDir_path, myDir_name = path.split(myDir.name)
         relLayerNewFileId = myDir_name + "/" + relLayerFileId
-        self.assertEqual(absLayer1.subLayerPaths, [relLayerNewFileId])
+        self.assertTrue(len(absLayer1.subLayerPaths) == 1)
+        self.assertEqual(absLayer1.subLayerPaths[0], relLayerNewFileId)
 
     def testMuteLayer(self):
         """ test 'mayaUsdLayerEditor' command 'muteLayer' paramater """
