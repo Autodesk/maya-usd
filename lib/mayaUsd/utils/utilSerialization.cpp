@@ -17,8 +17,6 @@
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
-#include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/targetLayer.h>
 #include <mayaUsd/utils/util.h>
