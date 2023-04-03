@@ -389,7 +389,7 @@ public:
                         "File name (%s) cannot be resolved as relative to the layer %s, "
                         "using the absolute path.",
                         absolutePath.c_str(),
-                        newParentLayer->GetIdentifier());
+                        newParentLayer->GetIdentifier().c_str());
                 }
             }
 
