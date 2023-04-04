@@ -352,7 +352,12 @@ void LayerTreeItem::saveEditsNoPrompt()
         if (!isSessionLayer())
             saveAnonymousLayer();
     } else {
-        MayaUsd::utils::saveLayerWithFormat(layer());
+        if (!MayaUsd::utils::saveLayerWithFormat(layer())) {
+            MString errMsg;
+            MString layerName(layer()->GetDisplayName().c_str());
+            errMsg.format("Could not save layer ^1s.", layerName);
+            MGlobal::displayError(errMsg);
+        }
     }
 }
 
