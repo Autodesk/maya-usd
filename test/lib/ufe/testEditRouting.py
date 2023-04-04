@@ -369,7 +369,7 @@ class EditRoutingTestCase(unittest.TestCase):
 
         self._verifyEditRouterPreventingCmd('visibility', hide, verifyNoHide)
  
-    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2025, 'Requires Maya fixes for duplicate command error messages only available in Maya 2025 or greater.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() > 2024, 'Requires Maya fixes for duplicate command error messages only available in versions of Maya greater than 2024.')
     def testPreventDuplicateCmd(self):
         '''
         Test edit router preventing the duplicate command by raising an exception.
@@ -384,7 +384,7 @@ class EditRoutingTestCase(unittest.TestCase):
  
         self._verifyEditRouterPreventingCmd('duplicate', duplicate, verifyNoDuplicate)
  
-    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2025, 'Requires fixes in Maya only from 2025 onward.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() > 2024, 'Requires fixes in versions of Maya greater than 2024.')
     def testPreventParentingCmd(self):
         '''
         Test edit router preventing the parent operation by raising an exception.
