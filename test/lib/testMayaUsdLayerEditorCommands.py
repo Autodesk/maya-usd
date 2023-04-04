@@ -524,10 +524,6 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
 
         # Now move the relative sublayer from absLayer2 to absLayer1
         cmds.mayaUsdLayerEditor(absLayer2.identifier, edit=True, moveSubPath=[relLayerFileId, absLayer1.identifier, 0])
-        
-        print(relLayerFileId)
-        print(rootLayer.subLayerPaths[0])
-        print(rootLayer.subLayerPaths[1])
 
         # The relative sublayer's path should change now to include the directory name
         relLayerNewFileId = myDir_name + "/" + relLayerFileId
