@@ -49,9 +49,11 @@ public:
 private:
     MStatus parseArgs(const MArgList& argList);
 
+#if (UFE_PREVIEW_VERSION_NUM < 4001)
     void appendMaterialXMaterials() const;
     void appendArnoldMaterials() const;
     void appendUsdMaterials() const;
+#endif
 };
 
 //! \brief Returns an array of materials in the same stage as the object passed in via argument.
