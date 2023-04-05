@@ -17,7 +17,7 @@
 
 from maya import cmds
 from maya import standalone
-from pxr import Usd, Sdf
+from pxr import Usd, Sdf, UsdUtils
 
 import fixturesUtils
 import mayaUsd_createStageWithNewLayer
@@ -563,6 +563,49 @@ class testProxyShapeBase(unittest.TestCase):
 
         # Verify that we did not lose the data on the root layer.
         verifyPrim()
+
+    def testSettingStageViaIdPreservedWhenSaved(self):
+        '''
+        Verify that setting the stage via the stageCacheId on the proxy shape can be reloaded.
+        '''
+        cmds.file(new=True, force=True)
+
+        # Create a USD stage directly using USD.
+        filePath = testUtils.getTestScene('cylinder', 'cylinder.usda')
+        stageCache = UsdUtils.StageCache.Get()
+        with Usd.StageCacheContext(stageCache):
+            cachedStage = Usd.Stage.Open(filePath)
+
+        # Create a proxy shape and sets its stage ID attribute.           
+        stageId = stageCache.GetId(cachedStage).ToLongInt()
+        cmds.createNode('mayaUsdProxyShape')
+        shapeNode = cmds.ls(sl=True,l=True)[0]
+        cmds.setAttr('{}.stageCacheId'.format(shapeNode), stageId)
+
+        # Verify we can access the stage.
+        def verify():
+            item = ufeUtils.createUfeSceneItem(shapeNode,'/pCylinder1')
+            self.assertIsNotNone(item)
+
+        verify()
+
+        # Save the maya file
+        with testUtils.TemporaryDirectory(prefix='ProxyShapeBase', ignore_errors=True) as testDir:
+            # Make sure layers are saved to the desired location
+            # when the Maya scene is saved.
+            saveInUSD = 1
+            cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', saveInUSD))
+
+            # Save the stage.
+            tempMayaFile = os.path.join(testDir, 'StageViaIdPreservedWhenSaved')
+            cmds.file(rename=tempMayaFile)
+            cmds.file(save=True, force=True, type='mayaAscii')
+        
+            cmds.file(new=True, force=True)
+            cmds.file(tempMayaFile, force=True, open=True)
+
+            verify()
+
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testShareStageLoadRules only available in UFE v2 or greater.')
     def testShareStageLoadRules(self):
