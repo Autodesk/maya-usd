@@ -147,7 +147,6 @@ global proc UsdLayerEditor_LoadLayersFileDialogOptions_UICreate(string $parent)
 
     text -label `getMayaUsdString("kTipYouCanChooseMultipleFiles")` -align "left";
 
-    string $layout = `scrollLayout -childResizable true`;
     python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdSubLayerFileRelative.uiCreate('" + $layout + "')");
 }
 
