@@ -564,6 +564,7 @@ class testProxyShapeBase(unittest.TestCase):
         # Verify that we did not lose the data on the root layer.
         verifyPrim()
 
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testSettingStageViaIdPreservedWhenSaved only available in UFE v2 or greater.')
     def testSettingStageViaIdPreservedWhenSaved(self):
         '''
         Verify that setting the stage via the stageCacheId on the proxy shape can be reloaded.
