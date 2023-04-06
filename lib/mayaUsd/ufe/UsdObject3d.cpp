@@ -18,9 +18,9 @@
 #include <mayaUsd/ufe/UsdUndoVisibleCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/editRouter.h>
+#include <mayaUsd/utils/editRouterContext.h>
 #include <mayaUsd/utils/util.h>
 
-#include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/bboxCache.h>
 #include <pxr/usd/usdGeom/tokens.h>
@@ -98,8 +98,7 @@ bool UsdObject3d::visibility() const
 
 void UsdObject3d::setVisibility(bool vis)
 {
-    PXR_NS::SdfLayerHandle layer = getAttrEditRouterLayer(fPrim, UsdGeomTokens->visibility);
-    PXR_NS::UsdEditContext ctx(fPrim.GetStage(), layer);
+    AttributeEditRouterContext ctx(fPrim, UsdGeomTokens->visibility);
 
     vis ? UsdGeomImageable(fPrim).MakeVisible() : UsdGeomImageable(fPrim).MakeInvisible();
 }

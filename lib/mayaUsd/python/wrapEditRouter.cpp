@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include <mayaUsd/utils/editRouter.h>
+#include <mayaUsd/utils/editRouterContext.h>
 
 #include <pxr/base/tf/pyError.h>
 #include <pxr/base/tf/pyLock.h>
@@ -86,6 +87,18 @@ private:
     PyObject* _pyCb;
 };
 
+MayaUsd::OperationEditRouterContext*
+OperationEditRouterContextInit(const PXR_NS::TfToken& operationName, const PXR_NS::UsdPrim& prim)
+{
+    return new MayaUsd::OperationEditRouterContext(operationName, prim);
+}
+
+MayaUsd::AttributeEditRouterContext*
+AttributeEditRouterContextInit(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attributeName)
+{
+    return new MayaUsd::AttributeEditRouterContext(prim, attributeName);
+}
+
 } // namespace
 
 void wrapEditRouter()
@@ -105,4 +118,12 @@ void wrapEditRouter()
     def("restoreDefaultEditRouter", &MayaUsd::restoreDefaultEditRouter);
 
     def("restoreAllDefaultEditRouters", &MayaUsd::restoreAllDefaultEditRouters);
+
+    using OpThis = MayaUsd::OperationEditRouterContext;
+    class_<OpThis, boost::noncopyable>("OperationEditRouterContext", no_init)
+        .def("__init__", make_constructor(OperationEditRouterContextInit));
+
+    using AttrThis = MayaUsd::AttributeEditRouterContext;
+    class_<AttrThis, boost::noncopyable>("AttributeEditRouterContextInit", no_init)
+        .def("__init__", make_constructor(AttributeEditRouterContextInit));
 }

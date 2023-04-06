@@ -53,8 +53,6 @@ private:
 
     bool _visible;
 
-    PXR_NS::SdfLayerHandle _layer;
-
     UsdUndoableItem _undoableItem;
 
 }; // UsdUndoVisibleCommand
