@@ -52,7 +52,7 @@ PulledObjectHierarchy::Ptr PulledObjectHierarchy::create(
 
 Ufe::SceneItem::Ptr PulledObjectHierarchy::sceneItem() const { return _mayaHierarchy->sceneItem(); }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4004)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 bool PulledObjectHierarchy::hasFilteredChildren(const ChildFilter& childFilter) const
 {
     return _mayaHierarchy->hasFilteredChildren(childFilter);

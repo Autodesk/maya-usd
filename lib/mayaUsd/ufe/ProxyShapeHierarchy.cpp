@@ -133,7 +133,7 @@ const UsdPrim& ProxyShapeHierarchy::getUsdRootPrim() const
 
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::sceneItem() const { return fItem; }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4004)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 
 bool ProxyShapeHierarchy::hasChildren() const
 {

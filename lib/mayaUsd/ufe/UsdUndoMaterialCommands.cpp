@@ -42,7 +42,7 @@ namespace {
 // use "mtl" instead. So we will go with the WG recommendation when creating new material scopes.
 static const std::string kDefaultMaterialScopeName("mtl");
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 bool connectShaderToMaterial(
     Ufe::SceneItem::Ptr shaderItem,
     UsdPrim             materialPrim,
@@ -204,7 +204,7 @@ void UnbindMaterialUndoableCommand::execute()
 }
 const std::string UnbindMaterialUndoableCommand::commandName("Unassign Material");
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 UsdUndoAssignNewMaterialCommand::UsdUndoAssignNewMaterialCommand(
     const UsdSceneItem::Ptr& parentItem,
     const std::string&       nodeId)

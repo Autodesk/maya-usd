@@ -18,7 +18,7 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/undo/UsdUndoableItem.h>
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
 #include <mayaUsd/ufe/UsdUndoCreateFromNodeDefCommand.h>
 #endif
@@ -87,7 +87,7 @@ private:
     UsdUndoableItem _undoableItem;
 };
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 //! \brief UsdUndoAssignNewMaterialCommand
 class MAYAUSD_CORE_PUBLIC UsdUndoAssignNewMaterialCommand : public Ufe::InsertChildCommand
 {

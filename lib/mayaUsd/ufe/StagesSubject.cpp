@@ -156,7 +156,7 @@ bool inAttributeChangedNotificationGuard()
     return attributeChangedNotificationGuardCount.load() > 0;
 }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4024)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 #define UFE_V4_24(...) __VA_ARGS__
 #else
 #define UFE_V4_24(...)
@@ -167,7 +167,7 @@ void sendAttributeChanged(
     const TfToken&      changedToken,
     AttributeChangeType UFE_V4_24(changeType))
 {
-#if (UFE_PREVIEW_VERSION_NUM >= 4024)
+#ifdef UFE_V4_FEATURES_AVAILABLE
     switch (changeType) {
     case AttributeChangeType::kValueChanged: {
         notifyWithoutExceptions<Ufe::Attributes>(
@@ -203,7 +203,7 @@ void sendAttributeChanged(
 #endif
 }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4037)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 void sendAttributeMetadataChanged(
     const Ufe::Path&             ufePath,
     const TfToken&               changedToken,
@@ -235,7 +235,7 @@ void valueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
     }
 }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4024)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 void attributeChanged(
     const Ufe::Path&    ufePath,
     const TfToken&      changedToken,
@@ -257,7 +257,7 @@ void attributeChanged(
 }
 #endif
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4037)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 void attributeMetadataChanged(
     const Ufe::Path&             ufePath,
     const TfToken&               changedToken,
@@ -311,15 +311,13 @@ void processAttributeChanges(
     const SdfPath&                                  changedPath,
     const std::vector<const SdfChangeList::Entry*>& UFE_V4_24(entries))
 {
-#if (UFE_PREVIEW_VERSION_NUM >= 4024)
-    bool sendValueChanged = true; // Default notification to send.
-    bool sendAdded = false;
-    bool sendRemoved = false;
-    bool sendConnectionChanged = false;
-#if (UFE_PREVIEW_VERSION_NUM >= 4037)
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    bool                  sendValueChanged = true; // Default notification to send.
+    bool                  sendAdded = false;
+    bool                  sendRemoved = false;
+    bool                  sendConnectionChanged = false;
     bool                  sendMetadataChanged = false;
     std::set<std::string> metadataKeys;
-#endif
     for (const auto& entry : entries) {
         // We can have multiple flags merged into a single entry:
         if (entry->flags.didAddProperty || entry->flags.didAddPropertyWithOnlyRequiredFields) {
@@ -335,7 +333,6 @@ void processAttributeChanges(
             sendConnectionChanged = true;
             sendValueChanged = false;
         }
-#if (UFE_PREVIEW_VERSION_NUM >= 4037)
         for (const auto& infoChanged : entry->infoChanged) {
             if (infoChanged.first == UsdShadeTokens->sdrMetadata) {
                 sendMetadataChanged = true;
@@ -352,7 +349,6 @@ void processAttributeChanges(
                 }
             }
         }
-#endif
     }
     if (sendAdded) {
         attributeChanged(ufePath, changedPath.GetNameToken(), AttributeChangeType::kAdded);
@@ -367,7 +363,6 @@ void processAttributeChanges(
     if (sendRemoved) {
         attributeChanged(ufePath, changedPath.GetNameToken(), AttributeChangeType::kRemoved);
     }
-#if (UFE_PREVIEW_VERSION_NUM >= 4037)
     if (sendMetadataChanged) {
         attributeMetadataChanged(
             ufePath,
@@ -375,7 +370,6 @@ void processAttributeChanges(
             AttributeChangeType::kMetadataChanged,
             metadataKeys);
     }
-#endif
 #else
     valueChanged(ufePath, changedPath.GetNameToken());
 #endif
@@ -902,7 +896,7 @@ AttributeChangedNotificationGuard::~AttributeChangedNotificationGuard()
 
     for (const auto& notificationInfo : pendingAttributeChangedNotifications) {
         if (notificationInfo._type == AttributeChangeType::kMetadataChanged) {
-#if (UFE_PREVIEW_VERSION_NUM >= 4037)
+#ifdef UFE_V4_FEATURES_AVAILABLE
             if (const auto metadataNotificationInfo
                 = dynamic_cast<const AttributeMetadataNotification*>(&notificationInfo)) {
                 sendAttributeMetadataChanged(

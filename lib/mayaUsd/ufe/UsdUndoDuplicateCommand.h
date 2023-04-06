@@ -32,7 +32,7 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief UsdUndoDuplicateCommand
-#if (UFE_PREVIEW_VERSION_NUM >= 4041)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 class MAYAUSD_CORE_PUBLIC UsdUndoDuplicateCommand : public Ufe::SceneItemResultUndoableCommand
 #else
 class MAYAUSD_CORE_PUBLIC UsdUndoDuplicateCommand : public Ufe::UndoableCommand
@@ -54,7 +54,7 @@ public:
     static UsdUndoDuplicateCommand::Ptr create(const UsdSceneItem::Ptr& srcItem);
 
     UsdSceneItem::Ptr duplicatedItem() const;
-#if (UFE_PREVIEW_VERSION_NUM >= 4041)
+#ifdef UFE_V4_FEATURES_AVAILABLE
     Ufe::SceneItem::Ptr sceneItem() const override { return duplicatedItem(); }
 #endif
 

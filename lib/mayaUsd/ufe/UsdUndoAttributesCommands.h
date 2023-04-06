@@ -25,9 +25,7 @@
 
 #include <ufe/attributes.h>
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
 #include <ufe/nodeDef.h>
-#endif
 #endif
 
 #include <unordered_map>
@@ -38,7 +36,7 @@ namespace ufe {
 //! \brief Implementation of AddAttributeCommand
 class UsdAddAttributeCommand
     :
-#if (UFE_PREVIEW_VERSION_NUM >= 4034)
+#ifdef UFE_V4_FEATURES_AVAILABLE
     public UsdUndoableCommand<Ufe::AddAttributeUndoableCommand>
 #else
     public UsdUndoableCommand<Ufe::AddAttributeCommand>
@@ -70,9 +68,7 @@ public:
     void executeImplementation() override;
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4032)
     std::string commandString() const override;
-#endif
 #endif
 
 private:
@@ -106,9 +102,7 @@ public:
     void executeImplementation() override;
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4032)
     std::string commandString() const override;
-#endif
 #endif
 
 private:
@@ -117,7 +111,6 @@ private:
 }; // UsdRemoveAttributeCommand
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4034)
 //! \brief Implementation of RenameAttributeCommand
 class UsdRenameAttributeCommand : public UsdUndoableCommand<Ufe::RenameAttributeUndoableCommand>
 {
@@ -155,7 +148,6 @@ private:
 
 }; // UsdRenameAttributeCommand
 
-#endif
 #endif
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

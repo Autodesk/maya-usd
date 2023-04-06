@@ -80,13 +80,11 @@ void UsdUIUfeObserver::operator()(const Ufe::Notification& notification)
             }
         }
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4024)
         else if (auto aa = dynamic_cast<const Ufe::AttributeAdded*>(&notification)) {
             pathToRefresh = aa->path();
         } else if (auto ar = dynamic_cast<const Ufe::AttributeRemoved*>(&notification)) {
             pathToRefresh = ar->path();
         }
-#endif
 #endif
 
         if (!pathToRefresh.empty()) {

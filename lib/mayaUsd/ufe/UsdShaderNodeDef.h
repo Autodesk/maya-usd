@@ -41,7 +41,7 @@ public:
     UsdShaderNodeDef(UsdShaderNodeDef&&) = delete;
     UsdShaderNodeDef& operator=(UsdShaderNodeDef&&) = delete;
 
-#if (UFE_PREVIEW_VERSION_NUM < 4010)
+#ifndef UFE_V4_FEATURES_AVAILABLE
     //! \return The type of the shader node definition.
     const std::string& type() const override;
 
@@ -147,11 +147,11 @@ public:
     static Ufe::NodeDefs definitions(const std::string& category);
 
 private:
-#if (UFE_PREVIEW_VERSION_NUM < 4010)
+#ifndef UFE_V4_FEATURES_AVAILABLE
     const std::string fType;
 #endif
     const PXR_NS::SdrShaderNodeConstPtr fShaderNodeDef;
-#if (UFE_PREVIEW_VERSION_NUM < 4010)
+#ifndef UFE_V4_FEATURES_AVAILABLE
     const Ufe::ConstAttributeDefs fInputs;
     const Ufe::ConstAttributeDefs fOutputs;
 #endif

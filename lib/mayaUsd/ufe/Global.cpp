@@ -36,9 +36,7 @@
 #include <mayaUsd/ufe/UsdTransform3dMayaXformStack.h>
 #include <mayaUsd/ufe/UsdTransform3dPointInstance.h>
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4025)
 #include <mayaUsd/ufe/UsdTransform3dRead.h>
-#endif
 #endif
 #include <mayaUsd/ufe/UsdUIInfoHandler.h>
 #include <mayaUsd/ufe/UsdUIUfeObserver.h>
@@ -56,21 +54,13 @@
 #include <mayaUsd/ufe/UsdMaterialHandler.h>
 #endif
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4020)
 #include <mayaUsd/ufe/UsdConnectionHandler.h>
-#endif
-#if (UFE_PREVIEW_VERSION_NUM >= 4023)
 #include <mayaUsd/ufe/UsdUINodeGraphNodeHandler.h>
-#endif
 #if UFE_PREVIEW_BATCHOPS_SUPPORT
 #include <mayaUsd/ufe/UsdBatchOpsHandler.h>
 #endif
-#if (UFE_PREVIEW_VERSION_NUM >= 4001)
-#include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
-#endif
-#endif
-#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4013)
 #include <mayaUsd/ufe/ProxyShapeCameraHandler.h>
+#include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
 #endif
 #if UFE_SCENE_SEGMENT_SUPPORT
 #include <mayaUsd/ufe/ProxyShapeSceneSegmentHandler.h>
@@ -204,18 +194,12 @@ MStatus initialize()
 #if UFE_MATERIALS_SUPPORT
     handlers.materialHandler = UsdMaterialHandler::create();
 #endif
-#if (UFE_PREVIEW_VERSION_NUM >= 4020)
     handlers.connectionHandler = UsdConnectionHandler::create();
-#endif
-#if (UFE_PREVIEW_VERSION_NUM >= 4023)
     handlers.uiNodeGraphNodeHandler = UsdUINodeGraphNodeHandler::create();
-#endif
 #if UFE_PREVIEW_BATCHOPS_SUPPORT
     handlers.batchOpsHandler = UsdBatchOpsHandler::create();
 #endif
-#if (UFE_PREVIEW_VERSION_NUM >= 4001)
     handlers.nodeDefHandler = UsdShaderNodeDefHandler::create();
-#endif
 #endif
 
 #if UFE_SCENE_SEGMENT_SUPPORT
@@ -225,7 +209,7 @@ MStatus initialize()
         = ProxyShapeSceneSegmentHandler::create(g_MayaSceneSegmentHandler);
     Ufe::RunTimeMgr::instance().setSceneSegmentHandler(g_MayaRtid, proxyShapeSceneSegmentHandler);
 #endif
-#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4013)
+#ifdef UFE_V4_FEATURES_AVAILABLE
     // set up the ProxyShapeCameraHandler
     g_MayaCameraHandler = Ufe::RunTimeMgr::instance().cameraHandler(g_MayaRtid);
     auto proxyShapeCameraHandler = ProxyShapeCameraHandler::create(g_MayaCameraHandler);
@@ -253,9 +237,7 @@ MStatus initialize()
     lastHandler = MayaUsd::ufe::UsdTransform3dMayaXformStackHandler::create(lastHandler);
     lastHandler = MayaUsd::ufe::UsdTransform3dPointInstanceHandler::create(lastHandler);
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4025)
     lastHandler = MayaUsd::ufe::UsdTransform3dReadHandler::create(lastHandler);
-#endif
 #endif
     handlers.transform3dHandler = lastHandler;
 
