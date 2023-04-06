@@ -32,7 +32,11 @@
 
 namespace {
 
-MayaUsd::EditRouters editRouters;
+MayaUsd::EditRouters& getRegisteredEditRouters()
+{
+    static MayaUsd::EditRouters registeredEditRouters;
+    return registeredEditRouters;
+}
 
 void editTargetLayer(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionary& routingData)
 {
@@ -299,51 +303,47 @@ EditRouters defaultEditRouters()
 
 void registerEditRouter(const PXR_NS::TfToken& operation, const EditRouter::Ptr& editRouter)
 {
-    editRouters[operation] = editRouter;
+    getRegisteredEditRouters()[operation] = editRouter;
 }
 
 bool restoreDefaultEditRouter(const PXR_NS::TfToken& operation)
 {
+    // For built-in commands that have a default router, register that
+    // router again.
     auto defaults = defaultEditRouters();
-    auto found = defaults.find(operation);
-    if (found == defaults.end()) {
-        return false;
+    auto opAndRouter = defaults.find(operation);
+    if (opAndRouter != defaults.end()) {
+        registerEditRouter(operation, opAndRouter->second);
+        return true;
     }
-    registerEditRouter(operation, found->second);
+
+    // For commands without built-in router, for example custom composite
+    // commands, remove the edit router. That will make the command no longer
+    // routed.
+    MayaUsd::EditRouters& editRouters = getRegisteredEditRouters();
+
+    auto pos = editRouters.find(operation);
+    if (pos == editRouters.end())
+        return false;
+
+    editRouters.erase(pos);
     return true;
 }
 
 void restoreAllDefaultEditRouters()
 {
+    getRegisteredEditRouters().clear();
+
     auto defaults = defaultEditRouters();
     for (const auto& entry : defaults) {
         registerEditRouter(entry.first, entry.second);
     }
 }
 
-static void setEditTarget(const PXR_NS::UsdPrim& prim, const PXR_NS::UsdEditTarget& editTarget)
-{
-    prim.GetStage()->SetEditTarget(editTarget);
-}
-
-EditTargetGuard::EditTargetGuard(
-    const PXR_NS::UsdPrim&       prim,
-    const PXR_NS::UsdEditTarget& editTarget)
-    : _prim(prim)
-    , _prevEditTarget(_prim.GetStage()->GetEditTarget())
-{
-    // Set editTarget as the edit target
-    setEditTarget(_prim, editTarget);
-}
-
-EditTargetGuard::~EditTargetGuard()
-{
-    // Restore editTarget to the stage's previous edit target
-    setEditTarget(_prim, _prevEditTarget);
-}
-
 EditRouter::Ptr getEditRouter(const PXR_NS::TfToken& operation)
 {
+    MayaUsd::EditRouters& editRouters = getRegisteredEditRouters();
+
     auto foundRouter = editRouters.find(operation);
     return (foundRouter == editRouters.end()) ? nullptr : foundRouter->second;
 }
@@ -351,66 +351,67 @@ EditRouter::Ptr getEditRouter(const PXR_NS::TfToken& operation)
 PXR_NS::SdfLayerHandle
 getEditRouterLayer(const PXR_NS::TfToken& operation, const PXR_NS::UsdPrim& prim)
 {
-    auto dstEditRouter = getEditRouter(operation);
-    if (!dstEditRouter) {
+    const auto dstEditRouter = getEditRouter(operation);
+    if (!dstEditRouter)
         return nullptr;
-    }
 
     PXR_NS::VtDictionary context;
     PXR_NS::VtDictionary routingData;
     context[PXR_NS::MayaUsdEditRoutingTokens->Prim] = PXR_NS::VtValue(prim);
     context[PXR_NS::MayaUsdEditRoutingTokens->Operation] = operation;
     (*dstEditRouter)(context, routingData);
+
     // Try to retrieve the layer from the routing data.
-    auto found = routingData.find(PXR_NS::MayaUsdEditRoutingTokens->Layer);
-    if (found != routingData.end()) {
-        const auto& value = found->second;
-        if (value.IsHolding<std::string>()) {
-            std::string            layerName = value.Get<std::string>();
-            PXR_NS::SdfLayerRefPtr layer = prim.GetStage()->GetRootLayer()->Find(layerName);
-            return layer;
-            // FIXME  We should always be using a string layer identifier, for
-            // Python and C++ compatibility, so the following code should be
-            // removed, and client code using edit routing should be adjusted
-            // accordingly.  PPT, 27-Jan-2022.
-        } else if (value.IsHolding<PXR_NS::SdfLayerHandle>()) {
-            return value.Get<PXR_NS::SdfLayerHandle>();
-        }
+    const auto found = routingData.find(PXR_NS::MayaUsdEditRoutingTokens->Layer);
+    if (found == routingData.end())
+        return nullptr;
+
+    const auto& value = found->second;
+    if (value.IsHolding<std::string>()) {
+        std::string            layerName = value.Get<std::string>();
+        PXR_NS::SdfLayerRefPtr layer = prim.GetStage()->GetRootLayer()->Find(layerName);
+        return layer;
+        // FIXME  We should always be using a string layer identifier, for
+        // Python and C++ compatibility, so the following code should be
+        // removed, and client code using edit routing should be adjusted
+        // accordingly.  PPT, 27-Jan-2022.
+    } else if (value.IsHolding<PXR_NS::SdfLayerHandle>()) {
+        return value.Get<PXR_NS::SdfLayerHandle>();
+    } else {
+        return nullptr;
     }
-    return prim.GetStage()->GetEditTarget().GetLayer();
 }
 
 PXR_NS::SdfLayerHandle
 getAttrEditRouterLayer(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName)
 {
-    PXR_NS::SdfLayerHandle layer = prim.GetStage()->GetEditTarget().GetLayer();
+    static const PXR_NS::TfToken attrOp(PXR_NS::MayaUsdEditRoutingTokens->RouteAttribute);
 
-    static const PXR_NS::TfToken operation(PXR_NS::MayaUsdEditRoutingTokens->RouteAttribute);
-    const EditRouter::Ptr        dstEditRouter = getEditRouter(operation);
-    if (!dstEditRouter) {
-        return layer;
-    }
+    const EditRouter::Ptr dstEditRouter = getEditRouter(attrOp);
+    if (!dstEditRouter)
+        return nullptr;
 
     PXR_NS::VtDictionary context;
     PXR_NS::VtDictionary routingData;
     context[PXR_NS::MayaUsdEditRoutingTokens->Prim] = PXR_NS::VtValue(prim);
-    context[PXR_NS::MayaUsdEditRoutingTokens->Operation] = operation;
-    context[operation] = PXR_NS::VtValue(attrName);
+    context[PXR_NS::MayaUsdEditRoutingTokens->Operation] = attrOp;
+    context[attrOp] = PXR_NS::VtValue(attrName);
     (*dstEditRouter)(context, routingData);
 
     // Try to retrieve the layer from the routing data.
     const auto found = routingData.find(PXR_NS::MayaUsdEditRoutingTokens->Layer);
-    if (found != routingData.end()) {
-        const auto& value = found->second;
-        if (value.IsHolding<std::string>()) {
-            std::string layerName = value.Get<std::string>();
-            layer = prim.GetStage()->GetRootLayer()->Find(layerName);
-        } else if (value.IsHolding<PXR_NS::SdfLayerHandle>()) {
-            layer = value.Get<PXR_NS::SdfLayerHandle>();
-        }
-    }
+    if (found == routingData.end())
+        return nullptr;
 
-    return layer;
+    const auto& value = found->second;
+    if (value.IsHolding<std::string>()) {
+        std::string layerName = value.Get<std::string>();
+        return prim.GetStage()->GetRootLayer()->Find(layerName);
+    } else if (value.IsHolding<PXR_NS::SdfLayerHandle>()) {
+        return value.Get<PXR_NS::SdfLayerHandle>();
+    } else {
+        return nullptr;
+    }
 }
 
 } // namespace MAYAUSD_NS_DEF

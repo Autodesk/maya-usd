@@ -18,6 +18,7 @@
 #include "Utils.h"
 
 #include <mayaUsd/utils/editRouter.h>
+#include <mayaUsd/utils/editRouterContext.h>
 #include <mayaUsd/utils/util.h>
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #include <mayaUsd/base/tokens.h>
@@ -27,7 +28,6 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
 #include <pxr/pxr.h>
-#include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usd/stage.h>
 
 namespace {
@@ -53,9 +53,7 @@ bool setUsdAttrMetadata(
     // If attribute is locked don't allow setting Metadata.
     MayaUsd::ufe::enforceAttributeEditAllowed(attr);
 
-    PXR_NS::UsdPrim        prim = attr.GetPrim();
-    PXR_NS::SdfLayerHandle layer = MayaUsd::getAttrEditRouterLayer(prim, attr.GetName());
-    PXR_NS::UsdEditContext ctx(prim.GetStage(), layer);
+    MAYAUSD_NS_DEF::AttributeEditRouterContext ctx(attr.GetPrim(), attr.GetName());
 
     PXR_NS::TfToken tok(key);
     if (PXR_NS::UsdShadeNodeGraph(attr.GetPrim())) {
@@ -121,18 +119,14 @@ std::string UsdAttributeHolder::isEditAllowedMsg() const
         // Edit routing is done by a user-provided implementation that can raise exceptions.
         // In particular, they can raise an exception to prevent the execution of the associated
         // command. This is directly relevant for this check of allowed edits.
-        PXR_NS::SdfLayerHandle layer;
         try {
-            layer = getAttrEditRouterLayer(prim, _usdAttr.GetName());
+            std::string                errMsg;
+            AttributeEditRouterContext ctx(prim, _usdAttr.GetName());
+            isAttributeEditAllowed(_usdAttr, &errMsg);
+            return errMsg;
         } catch (std::exception&) {
             return "Editing has been prevented by edit router.";
         }
-
-        PXR_NS::UsdEditContext ctx(prim.GetStage(), layer);
-
-        std::string errMsg;
-        isAttributeEditAllowed(_usdAttr, &errMsg);
-        return errMsg;
     } else {
         return "Editing is not allowed.";
     }
@@ -166,9 +160,7 @@ bool UsdAttributeHolder::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode t
         }
     }
 
-    PXR_NS::UsdPrim        prim = _usdAttr.GetPrim();
-    PXR_NS::SdfLayerHandle layer = getAttrEditRouterLayer(prim, _usdAttr.GetName());
-    PXR_NS::UsdEditContext ctx(prim.GetStage(), layer);
+    AttributeEditRouterContext ctx(_usdAttr.GetPrim(), _usdAttr.GetName());
 
     return _usdAttr.Set(value, time);
 }
@@ -446,9 +438,7 @@ bool UsdAttributeHolder::clearMetadata(const std::string& key)
 {
     PXR_NAMESPACE_USING_DIRECTIVE
     if (isValid()) {
-        PXR_NS::UsdPrim        prim = _usdAttr.GetPrim();
-        PXR_NS::SdfLayerHandle layer = getAttrEditRouterLayer(prim, _usdAttr.GetName());
-        PXR_NS::UsdEditContext ctx(prim.GetStage(), layer);
+        AttributeEditRouterContext ctx(_usdAttr.GetPrim(), _usdAttr.GetName());
 
         PXR_NS::TfToken tok(key);
         // Special cases for NodeGraphs:

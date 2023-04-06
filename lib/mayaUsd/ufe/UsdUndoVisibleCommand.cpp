@@ -19,6 +19,7 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsd/utils/editRouter.h>
+#include <mayaUsd/utils/editRouterContext.h>
 
 #include <pxr/usd/usdGeom/imageable.h>
 
@@ -29,10 +30,9 @@ UsdUndoVisibleCommand::UsdUndoVisibleCommand(const UsdPrim& prim, bool vis)
     : Ufe::UndoableCommand()
     , _prim(prim)
     , _visible(vis)
-    , _layer(getEditRouterLayer(MayaUsdEditRoutingTokens->RouteVisibility, prim))
 {
-    EditTargetGuard  guard(prim, _layer);
-    UsdGeomImageable primImageable(prim);
+    OperationEditRouterContext ctx(MayaUsdEditRoutingTokens->RouteVisibility, prim);
+    UsdGeomImageable           primImageable(prim);
     enforceAttributeEditAllowed(primImageable.GetVisibilityAttr());
 }
 
@@ -53,7 +53,7 @@ void UsdUndoVisibleCommand::execute()
 
     UsdUndoBlock undoBlock(&_undoableItem);
 
-    EditTargetGuard guard(_prim, _layer);
+    OperationEditRouterContext ctx(MayaUsdEditRoutingTokens->RouteVisibility, _prim);
 
     _visible ? primImageable.MakeVisible() : primImageable.MakeInvisible();
 }
