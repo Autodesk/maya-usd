@@ -4,7 +4,7 @@
 
 By default, when a Maya user modifies USD data, the modifications are written
 to the current edit target. That is, to the current targeted layer. The current
-layer is selected in the Layer Manager window in Maya.
+layer is selected in the Layer Editor window in Maya.
 
 Edit routing is a mechanism to select which USD layer will receive edits.
 When a routable edit is about to happen, the Maya USD plugin can temporarily
@@ -25,7 +25,7 @@ current targeted layer will be used.
 
 Currently, edit routing is divided in two categories: commands and attributes.
 
-For commands, the edit routing is called it receives an operation name that
+For commands, when the edit routing is called it receives an operation name that
 corresponds to the specific command to be routed. Only a subset of commands can
 be routed, but this subset is expected to grow. The operations that can be
 routed are named:
