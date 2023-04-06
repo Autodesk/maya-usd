@@ -94,7 +94,7 @@ def routeToSessionLayer(context, routingData):
 
 Inputs:
 - prim: the USD prim (UsdPrim) that is being affected.
-- operation: the operation name (TfToken). Either visibility, duplicate or parent.
+- operation: the operation name (TfToken). Always attribute.
 - attribute: the attribute name, including its namespace, if any (TfToken).
 
 Outputs:
@@ -126,17 +126,35 @@ def routeAttrToSessionLayer(context, routingData):
 The maya reference edit routing is more complex than the other ones. It is
 described in the following documentation: [Maya Reference Edit Router](lib/usd/translators/mayaReferenceEditRouter.md).
 
-## API to register edit routing
+## Managing edit routers
 
-The Maya USD plugin provides C++ and Python functions to register edit routers.
-The function is called `registerEditRouter` and takes as arguments the name of
-the operation to be routed, as a USD token (TfToken) and the function that will
-do the routing. For example, the following Python script routes the `visibility`
-operation using a function called `routeToSessionLayer`:
+The Maya USD plugin provides C++ and Python functions to register edit routers
+and to remove them. The function to register an edit router is called
+`registerEditRouter` and takes as arguments the name of the operation to be
+routed, as a USD token (TfToken) and the function that will do the routing.
+For example, the following Python script routes the `visibility` operation
+using a function called `routeToSessionLayer`:
 
 ```Python
 import mayaUsd.lib
 mayaUsd.lib.registerEditRouter('visibility', routeToSessionLayer)
+```
+
+The function to turn off an edit router for a given operation is called
+`restoreDefaultEditRouter`. It restores the default edit router for that
+operation. For example, to turn off the edit router for `visibility`:
+
+```Python
+import mayaUsd.lib
+mayaUsd.lib.restoreDefaultEditRouter('visibility')
+```
+
+There is also a function to turn off all edit routing for all operations,
+called `restoreAllDefaultEditRouters`. It takes no argument. For example:
+
+```Python
+import mayaUsd.lib
+mayaUsd.lib.restoreAllDefaultEditRouters()
 ```
 
 ## Canceling commands
