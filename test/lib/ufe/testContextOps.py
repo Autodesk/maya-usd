@@ -34,6 +34,8 @@ from maya import cmds
 from maya import standalone
 from maya.internal.ufeSupport import ufeCmdWrapper as ufeCmd
 
+import maya.api.OpenMaya as om
+
 import ufe
 
 import os
@@ -61,6 +63,26 @@ class TestAddPrimObserver(ufe.Observer):
     def reset(self):
         self.addNotif = 0
         self.deleteNotif = 0
+
+class TestNodeMessageHandler:
+    def __init__(self, node):
+        self.nodeDirtyCbId = om.MNodeMessage.addNodeDirtyPlugCallback(node, self.nodeDirty, None)
+        self.nodeDirtyReceived = {}
+        self.attributeChangedCbId = om.MNodeMessage.addAttributeChangedCallback(node, self.attributeChanged, None)
+        self.attributeChangedReceived = {}
+
+    def terminate(self):
+        om.MMessage.removeCallback(self.nodeDirtyCbId)
+        om.MMessage.removeCallback(self.attributeChangedCbId)
+
+    def nodeDirty(self, node, plug, listeners):
+        name = plug.partialName(False, False, False, False, False, True)
+        self.nodeDirtyReceived.setdefault(name, [0,])[0] += 1
+    
+    def attributeChanged(self, message, plug, otherPlug, clientData):
+        if message & om.MNodeMessage.kAttributeSet:
+            name = plug.partialName(False, False, False, False, False, True)
+            self.attributeChangedReceived.setdefault(name, [0,])[0] += 1
 
 class ContextOpsTestCase(unittest.TestCase):
     '''Verify the ContextOps interface for the USD runtime.'''
@@ -1474,6 +1496,13 @@ class ContextOpsTestCase(unittest.TestCase):
         cubeXForm, _ = cmds.polyCube(name='MyCube')
         psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
+        sl = om.MSelectionList()
+        sl.add(psPathStr)
+        dagPath = sl.getDagPath(0)
+        dagPath.extendToShape()
+
+        proxyShapeNode = dagPath.node()
+
         mayaUsd.lib.PrimUpdaterManager.duplicate(cmds.ls(cubeXForm, long=True)[0], psPathStr)
 
         topPath = ufe.PathString.path(psPathStr + ',/' + cubeXForm + "/" + "top")
@@ -1482,6 +1511,12 @@ class ContextOpsTestCase(unittest.TestCase):
 
         self.assertEqual(topSubset.GetFamilyNameAttr().Get(), "componentTag")
         self.assertFalse(topSubset.GetPrim().HasAPI(UsdShade.MaterialBindingAPI))
+
+        messageHandler = TestNodeMessageHandler(proxyShapeNode)
+
+        # Check the state of the update and resync outputs:
+        self.assertEqual(cmds.getAttr(psPathStr + '.outUpdateId'), cmds.getAttr(psPathStr + '.updateId'))
+        self.assertEqual(cmds.getAttr(psPathStr + '.outResyncId'), cmds.getAttr(psPathStr + '.resyncId'))
 
         counters= { "resync": cmds.getAttr(psPathStr + '.resyncId'),
                     "update" : cmds.getAttr(psPathStr + '.upid')}
@@ -1549,6 +1584,18 @@ class ContextOpsTestCase(unittest.TestCase):
         # Third redo is update:
         cmds.redo()
         assertIsOnlyUpdate(self, counters, psPathStr)
+
+        messageHandler.terminate()
+
+        # Test that the MNodeMessage handler has received all messages:
+        self.assertEqual(messageHandler.attributeChangedReceived["updateId"][0], counters["update"] - 1)
+        self.assertEqual(messageHandler.nodeDirtyReceived["updateId"][0], counters["update"] - 1)
+        self.assertEqual(messageHandler.attributeChangedReceived["resyncId"][0], counters["resync"] - 1)
+        self.assertEqual(messageHandler.nodeDirtyReceived["resyncId"][0], counters["resync"] - 1)
+
+        # Check the state of the update and resync outputs:
+        self.assertEqual(cmds.getAttr(psPathStr + '.outUpdateId'), cmds.getAttr(psPathStr + '.updateId'))
+        self.assertEqual(cmds.getAttr(psPathStr + '.outResyncId'), cmds.getAttr(psPathStr + '.resyncId'))
 
 
 if __name__ == '__main__':

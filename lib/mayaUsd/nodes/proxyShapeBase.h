@@ -129,7 +129,11 @@ public:
     MAYAUSD_CORE_PUBLIC
     static MObject updateCounterAttr;
     MAYAUSD_CORE_PUBLIC
+    static MObject outUpdateCounterAttr;
+    MAYAUSD_CORE_PUBLIC
     static MObject resyncCounterAttr;
+    MAYAUSD_CORE_PUBLIC
+    static MObject outResyncCounterAttr;
 
     // Output attributes
     MAYAUSD_CORE_PUBLIC
@@ -176,8 +180,6 @@ public:
 
     MAYAUSD_CORE_PUBLIC
     void postConstructor() override;
-    MAYAUSD_CORE_PUBLIC
-    bool getInternalValue(const MPlug&, MDataHandle&) override;
     MAYAUSD_CORE_PUBLIC
     MStatus compute(const MPlug& plug, MDataBlock& dataBlock) override;
     MAYAUSD_CORE_PUBLIC

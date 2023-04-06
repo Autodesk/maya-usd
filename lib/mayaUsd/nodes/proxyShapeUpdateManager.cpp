@@ -138,21 +138,23 @@ _UsdChangeType _ClassifyUsdObjectsChanged(UsdNotice::ObjectsChanged const& notic
 
 } // namespace
 
+void MayaUsdProxyShapeUpdateManager::SetPlugs(MPlug updatePlug, MPlug resyncPlug)
+{
+    _updatePlug = updatePlug;
+    _resyncPlug = resyncPlug;
+}
+
 bool MayaUsdProxyShapeUpdateManager::CanIgnoreObjectsChanged(
     const UsdNotice::ObjectsChanged& notice)
 {
     switch (_ClassifyUsdObjectsChanged(notice)) {
     case _UsdChangeType::kIgnored: return true;
-    case _UsdChangeType::kResync: ++_UsdStageResyncCounter;
+    case _UsdChangeType::kResync: _resyncPlug.setInt64(_resyncPlug.asInt64() + 1);
     // [[fallthrough]]; // We want that fallthrough to have the update always triggered.
-    case _UsdChangeType::kUpdate: ++_UsdStageUpdateCounter; break;
+    case _UsdChangeType::kUpdate: _updatePlug.setInt64(_updatePlug.asInt64() + 1); break;
     }
 
     return false;
 }
-
-MInt64 MayaUsdProxyShapeUpdateManager::GetUpdateCount() { return _UsdStageUpdateCounter; }
-
-MInt64 MayaUsdProxyShapeUpdateManager::GetResyncCount() { return _UsdStageResyncCounter; }
 
 PXR_NAMESPACE_CLOSE_SCOPE

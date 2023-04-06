@@ -21,6 +21,7 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/notice.h>
 
+#include <maya/MPlug.h>
 #include <maya/MStatus.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -29,17 +30,14 @@ class MayaUsdProxyShapeUpdateManager
 {
 public:
     MAYAUSD_CORE_PUBLIC
+    void SetPlugs(MPlug updatePlug, MPlug resyncPlug);
+
+    MAYAUSD_CORE_PUBLIC
     bool CanIgnoreObjectsChanged(const UsdNotice::ObjectsChanged& notice);
 
-    MAYAUSD_CORE_PUBLIC
-    MInt64 GetUpdateCount();
-
-    MAYAUSD_CORE_PUBLIC
-    MInt64 GetResyncCount();
-
 private:
-    MInt64 _UsdStageUpdateCounter { 1 };
-    MInt64 _UsdStageResyncCounter { 1 };
+    MPlug _updatePlug;
+    MPlug _resyncPlug;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
