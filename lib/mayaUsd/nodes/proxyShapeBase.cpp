@@ -828,6 +828,15 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         if (stageCached) {
             sharedUsdStage = UsdUtilsStageCache::Get().Find(cacheId);
             isIncomingStage = true;
+            // If the stage set by stage ID is not anonymous, set the filePath
+            // attribute to it so that it can be reloaded when teh Maya scene
+            // is re-opened.
+            SdfLayerHandle rootLayer = sharedUsdStage->GetRootLayer();
+            if (rootLayer && !rootLayer->IsAnonymous()) {
+                MDataHandle outDataHandle = dataBlock.outputValue(filePathAttr, &retValue);
+                CHECK_MSTATUS_AND_RETURN_IT(retValue);
+                outDataHandle.set(MString(rootLayer->GetIdentifier().c_str()));
+            }
         } else {
             //
             // Calculate from USD filepath and primPath and variantKey
