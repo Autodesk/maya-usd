@@ -155,11 +155,6 @@ MObject MayaUsdProxyShapeBase::drawGuidePurposeAttr;
 MObject MayaUsdProxyShapeBase::sessionLayerNameAttr;
 MObject MayaUsdProxyShapeBase::rootLayerNameAttr;
 MObject MayaUsdProxyShapeBase::mutedLayersAttr;
-// Change counter attributes
-MObject MayaUsdProxyShapeBase::updateCounterAttr;
-MObject MayaUsdProxyShapeBase::outUpdateCounterAttr;
-MObject MayaUsdProxyShapeBase::resyncCounterAttr;
-MObject MayaUsdProxyShapeBase::outResyncCounterAttr;
 // Output attributes
 MObject MayaUsdProxyShapeBase::outTimeAttr;
 MObject MayaUsdProxyShapeBase::outStageDataAttr;
@@ -428,45 +423,6 @@ MStatus MayaUsdProxyShapeBase::initialize()
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     //
-    // Smart signaling attributes:
-    //
-    updateCounterAttr
-        = numericAttrFn.create("updateId", "upid", MFnNumericData::kInt64, 0, &retValue);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    numericAttrFn.setStorable(false);
-    numericAttrFn.setHidden(true);
-    numericAttrFn.setConnectable(false);
-    retValue = addAttribute(updateCounterAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-
-    resyncCounterAttr
-        = numericAttrFn.create("resyncId", "rsid", MFnNumericData::kInt64, 0, &retValue);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    numericAttrFn.setStorable(false);
-    numericAttrFn.setHidden(true);
-    numericAttrFn.setConnectable(false);
-    retValue = addAttribute(resyncCounterAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-
-    outUpdateCounterAttr
-        = numericAttrFn.create("outUpdateId", "oupid", MFnNumericData::kInt64, 0, &retValue);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    numericAttrFn.setStorable(false);
-    numericAttrFn.setHidden(true);
-    numericAttrFn.setConnectable(false);
-    retValue = addAttribute(outUpdateCounterAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-
-    outResyncCounterAttr
-        = numericAttrFn.create("outResyncId", "orsid", MFnNumericData::kInt64, 0, &retValue);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    numericAttrFn.setStorable(false);
-    numericAttrFn.setHidden(true);
-    numericAttrFn.setConnectable(false);
-    retValue = addAttribute(outResyncCounterAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-
-    //
     // add attribute dependencies
     //
     retValue = attributeAffects(timeAttr, outTimeAttr);
@@ -514,11 +470,6 @@ MStatus MayaUsdProxyShapeBase::initialize()
     retValue = attributeAffects(inStageDataCachedAttr, outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = attributeAffects(inStageDataCachedAttr, outStageCacheIdAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-
-    retValue = attributeAffects(updateCounterAttr, outUpdateCounterAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = attributeAffects(resyncCounterAttr, outResyncCounterAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     return retValue;
@@ -574,10 +525,6 @@ void MayaUsdProxyShapeBase::postConstructor()
     MayaUsdProxyStageInvalidateNotice(*this).Send();
 
     updateAncestorCallbacks();
-
-    MFnDependencyNode depNode(thisMObject());
-    _shapeUpdateManager.SetPlugs(
-        depNode.findPlug(updateCounterAttr), depNode.findPlug(resyncCounterAttr));
 }
 
 /* virtual */
@@ -613,22 +560,6 @@ MStatus MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
         return ret;
     } else if (plug == outStageCacheIdAttr) {
         return computeOutStageCacheId(dataBlock);
-    } else if (plug == outUpdateCounterAttr || plug == outResyncCounterAttr) {
-        auto copyValue = [&](const auto& inAttr, const auto& outAttr) {
-            MStatus retValue = MS::kSuccess;
-            auto    inData = dataBlock.inputValue(inAttr, &retValue);
-            CHECK_MSTATUS_AND_RETURN_IT(retValue);
-            auto outData = dataBlock.outputValue(outAttr, &retValue);
-            CHECK_MSTATUS_AND_RETURN_IT(retValue);
-            outData.setInt64(inData.asInt64());
-            outData.setClean();
-            return retValue;
-        };
-        MStatus retValue = copyValue(updateCounterAttr, outUpdateCounterAttr);
-        CHECK_MSTATUS_AND_RETURN_IT(retValue);
-        retValue = copyValue(resyncCounterAttr, outResyncCounterAttr);
-        CHECK_MSTATUS_AND_RETURN_IT(retValue);
-        return retValue;
     } else if (plug.isDynamic()) {
         return ProxyAccessor::compute(_usdAccessor, plug, dataBlock);
     }
@@ -2011,6 +1942,11 @@ void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChang
     MProfilingScope profilingScope(
         _shapeBaseProfilerCategory, MProfiler::kColorB_L1, "Process USD objects changed");
 
+    if (UsdMayaStageNoticeListener::ClassifyObjectsChanged(notice)
+        == UsdMayaStageNoticeListener::ChangeType::kIgnored) {
+        return;
+    }
+
     // This will definitely force a BBox recomputation on "Frame All" or when framing a selected
     // stage. Computing bounds in USD is expensive, so if it pops up in other frequently used
     // scenarios we will have to investigate ways to make this cache clearing less expensive.
@@ -2018,11 +1954,6 @@ void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChang
 
     ProxyAccessor::stageChanged(_usdAccessor, thisMObject(), notice);
     MayaUsdProxyStageObjectsChangedNotice(*this, notice).Send();
-
-    // Also keeps track of the notification counters:
-    if (_shapeUpdateManager.CanIgnoreObjectsChanged(notice)) {
-        return;
-    }
 
     // Recompute the extents of any UsdGeomBoundable that has authored extents
     const auto& stage = notice.GetStage();

@@ -18,6 +18,7 @@
 #include <mayaUsd/nodes/hdImagingShape.h>
 #include <mayaUsd/nodes/pointBasedDeformerNode.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/nodes/proxyShapeListenerBase.h>
 #include <mayaUsd/nodes/proxyShapeStageExtraData.h>
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/nodes/stageNode.h>
@@ -117,6 +118,13 @@ MStatus MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
     CHECK_MSTATUS(status);
 #endif
 
+    status = plugin.registerNode(
+        MayaUsdProxyShapeListenerBase::typeName,
+        MayaUsdProxyShapeListenerBase::typeId,
+        MayaUsdProxyShapeListenerBase::creator,
+        MayaUsdProxyShapeListenerBase::initialize);
+    CHECK_MSTATUS(status);
+
     // Hybrid Hydra / VP2 rendering uses a draw override to draw the proxy
     // shape.  The Pixar and MayaUsd plugins use the UsdMayaProxyDrawOverride,
     // so register it here.  Native USD VP2 rendering uses a sub-scene override.
@@ -210,6 +218,9 @@ MStatus MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
     }
 
     status = plugin.deregisterNode(UsdMayaPointBasedDeformerNode::typeId);
+    CHECK_MSTATUS(status);
+
+    status = plugin.deregisterNode(MayaUsdProxyShapeListenerBase::typeId);
     CHECK_MSTATUS(status);
 
 #if defined(WANT_UFE_BUILD)

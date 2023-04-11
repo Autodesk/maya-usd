@@ -67,9 +67,11 @@ class TestAddPrimObserver(ufe.Observer):
 class TestNodeMessageHandler:
     def __init__(self, node):
         self.nodeDirtyCbId = om.MNodeMessage.addNodeDirtyPlugCallback(node, self.nodeDirty, None)
-        self.nodeDirtyReceived = {}
+        self.updateIdDirty = 0
+        self.resyncIdDirty = 0
         self.attributeChangedCbId = om.MNodeMessage.addAttributeChangedCallback(node, self.attributeChanged, None)
-        self.attributeChangedReceived = {}
+        self.updateIdChanged = 0
+        self.resyncIdChanged = 0
 
     def terminate(self):
         om.MMessage.removeCallback(self.nodeDirtyCbId)
@@ -77,12 +79,18 @@ class TestNodeMessageHandler:
 
     def nodeDirty(self, node, plug, listeners):
         name = plug.partialName(False, False, False, False, False, True)
-        self.nodeDirtyReceived.setdefault(name, [0,])[0] += 1
+        if name == "updateId":
+            self.updateIdDirty += 1
+        elif name == "resyncId":
+            self.resyncIdDirty += 1
     
     def attributeChanged(self, message, plug, otherPlug, clientData):
         if message & om.MNodeMessage.kAttributeSet:
             name = plug.partialName(False, False, False, False, False, True)
-            self.attributeChangedReceived.setdefault(name, [0,])[0] += 1
+            if name == "updateId":
+                self.updateIdChanged += 1
+            elif name == "resyncId":
+                self.resyncIdChanged += 1
 
 class ContextOpsTestCase(unittest.TestCase):
     '''Verify the ContextOps interface for the USD runtime.'''
@@ -1512,26 +1520,40 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(topSubset.GetFamilyNameAttr().Get(), "componentTag")
         self.assertFalse(topSubset.GetPrim().HasAPI(UsdShade.MaterialBindingAPI))
 
-        messageHandler = TestNodeMessageHandler(proxyShapeNode)
+        # Create a proxy shape listener node to track changes happening to the UsdStage:
+        mod = om.MDGModifier()
+        listener = mod.createNode("mayaUsdProxyShapeListener")
+        proxyDepNode = om.MFnDependencyNode(proxyShapeNode)
+        listenerDepNode = om.MFnDependencyNode(listener)
+        mod.connect(proxyDepNode.findPlug("outStageCacheId", True),
+                    listenerDepNode.findPlug("stageCacheId", True))
+        mod.doIt()
+        updatePlug = listenerDepNode.findPlug("updateId", True)
+        resyncPlug = listenerDepNode.findPlug("resyncId", True)
+        cacheIdPlug = listenerDepNode.findPlug("outStageCacheId", True)
 
-        # Check the state of the update and resync outputs:
-        self.assertEqual(cmds.getAttr(psPathStr + '.outUpdateId'), cmds.getAttr(psPathStr + '.updateId'))
-        self.assertEqual(cmds.getAttr(psPathStr + '.outResyncId'), cmds.getAttr(psPathStr + '.resyncId'))
+        # Pulling the plug registers the update notifier and gets everything ready. When
+        # using this to track changes, make sure to pull to get the latest cacheId since
+        # the proxy shape might have moved to another stage which needs to be fetched
+        # from the USD stage cache.
+        self.assertEqual(cacheIdPlug.asInt(), cmds.getAttr(psPathStr + '.outStageCacheId'))
 
-        counters= { "resync": cmds.getAttr(psPathStr + '.resyncId'),
-                    "update" : cmds.getAttr(psPathStr + '.upid')}
+        messageHandler = TestNodeMessageHandler(listener)
 
-        def assertIsOnlyUpdate(self, counters, shapePathStr):
-            resyncCounter = cmds.getAttr(shapePathStr + '.resyncId')
-            updateCounter = cmds.getAttr(shapePathStr + '.updateId')
+        counters= { "resync": resyncPlug.asInt(),
+                    "update" : updatePlug.asInt()}
+
+        def assertIsOnlyUpdate(self, counters, updatePlug, resyncPlug):
+            resyncCounter = resyncPlug.asInt()
+            updateCounter = updatePlug.asInt()
             self.assertEqual(resyncCounter, counters["resync"])
             self.assertGreater(updateCounter, counters["update"])
             counters["resync"] = resyncCounter
             counters["update"] = updateCounter
 
-        def assertIsResync(self, counters, shapePathStr):
-            resyncCounter = cmds.getAttr(shapePathStr + '.resyncId')
-            updateCounter = cmds.getAttr(shapePathStr + '.updateId')
+        def assertIsResync(self, counters, updatePlug, resyncPlug):
+            resyncCounter = resyncPlug.asInt()
+            updateCounter = updatePlug.asInt()
             self.assertGreater(resyncCounter, counters["resync"])
             self.assertGreater(updateCounter, counters["update"])
             counters["resync"] = resyncCounter
@@ -1549,53 +1571,49 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertTrue(topSubset.GetPrim().HasAPI(UsdShade.MaterialBindingAPI))
 
         # We expect a resync after this assignment:
-        assertIsResync(self, counters, psPathStr)
+        assertIsResync(self, counters, updatePlug, resyncPlug)
 
         # setting a value the first time is a resync due to the creation of the attribute:
         attrs = ufe.Attributes.attributes(shaderItem)
         metallicAttr = attrs.attribute("inputs:metallic")
         ufeCmd.execute(metallicAttr.setCmd(0.5))
-        assertIsResync(self, counters, psPathStr)
+        assertIsResync(self, counters, updatePlug, resyncPlug)
 
         # Subsequent changes are updates:
         ufeCmd.execute(metallicAttr.setCmd(0.7))
-        assertIsOnlyUpdate(self, counters, psPathStr)
+        assertIsOnlyUpdate(self, counters, updatePlug, resyncPlug)
 
         # First undo is an update:
         cmds.undo()
-        assertIsOnlyUpdate(self, counters, psPathStr)
+        assertIsOnlyUpdate(self, counters, updatePlug, resyncPlug)
 
         # Second undo is a resync:
         cmds.undo()
-        assertIsResync(self, counters, psPathStr)
+        assertIsResync(self, counters, updatePlug, resyncPlug)
 
         # Third undo is also resync:
         cmds.undo()
-        assertIsResync(self, counters, psPathStr)
+        assertIsResync(self, counters, updatePlug, resyncPlug)
 
         # First redo is resync:
         cmds.redo()
-        assertIsResync(self, counters, psPathStr)
+        assertIsResync(self, counters, updatePlug, resyncPlug)
 
         # Second redo is resync:
         cmds.redo()
-        assertIsResync(self, counters, psPathStr)
+        assertIsResync(self, counters, updatePlug, resyncPlug)
 
         # Third redo is update:
         cmds.redo()
-        assertIsOnlyUpdate(self, counters, psPathStr)
+        assertIsOnlyUpdate(self, counters, updatePlug, resyncPlug)
 
         messageHandler.terminate()
 
         # Test that the MNodeMessage handler has received all messages:
-        self.assertEqual(messageHandler.attributeChangedReceived["updateId"][0], counters["update"] - 1)
-        self.assertEqual(messageHandler.nodeDirtyReceived["updateId"][0], counters["update"] - 1)
-        self.assertEqual(messageHandler.attributeChangedReceived["resyncId"][0], counters["resync"] - 1)
-        self.assertEqual(messageHandler.nodeDirtyReceived["resyncId"][0], counters["resync"] - 1)
-
-        # Check the state of the update and resync outputs:
-        self.assertEqual(cmds.getAttr(psPathStr + '.outUpdateId'), cmds.getAttr(psPathStr + '.updateId'))
-        self.assertEqual(cmds.getAttr(psPathStr + '.outResyncId'), cmds.getAttr(psPathStr + '.resyncId'))
+        self.assertEqual(messageHandler.updateIdChanged, counters["update"] - 2)
+        self.assertEqual(messageHandler.updateIdDirty, counters["update"] - 2)
+        self.assertEqual(messageHandler.resyncIdChanged, counters["resync"] - 2)
+        self.assertEqual(messageHandler.resyncIdDirty, counters["resync"] - 2)
 
 
 if __name__ == '__main__':

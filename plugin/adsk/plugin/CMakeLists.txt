@@ -32,6 +32,7 @@ target_sources(${TARGET_NAME}
         importTranslator.cpp
         exportTranslator.cpp
         ProxyShape.cpp
+        ProxyShapeListener.cpp
 )
 
 if (CMAKE_UFE_V3_FEATURES_AVAILABLE)

@@ -55,7 +55,6 @@ constexpr char USD_UFE_SEPARATOR = '/';
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/listeners/stageNoticeListener.h>
 #include <mayaUsd/nodes/proxyAccessor.h>
-#include <mayaUsd/nodes/proxyShapeUpdateManager.h>
 #include <mayaUsd/nodes/proxyStageProvider.h>
 #include <mayaUsd/nodes/usdPrimProvider.h>
 
@@ -124,16 +123,6 @@ public:
     static MObject rootLayerNameAttr;
     MAYAUSD_CORE_PUBLIC
     static MObject mutedLayersAttr;
-
-    // Change counter attributes
-    MAYAUSD_CORE_PUBLIC
-    static MObject updateCounterAttr;
-    MAYAUSD_CORE_PUBLIC
-    static MObject outUpdateCounterAttr;
-    MAYAUSD_CORE_PUBLIC
-    static MObject resyncCounterAttr;
-    MAYAUSD_CORE_PUBLIC
-    static MObject outResyncCounterAttr;
 
     // Output attributes
     MAYAUSD_CORE_PUBLIC
@@ -414,9 +403,6 @@ private:
     std::map<UsdTimeCode, MBoundingBox> _boundingBoxCache;
     size_t                              _excludePrimPathsVersion { 1 };
     size_t                              _UsdStageVersion { 1 };
-
-    // This helper class keeps track of the notification counters:
-    MayaUsdProxyShapeUpdateManager _shapeUpdateManager;
 
     MayaUsd::ProxyAccessor::Owner _usdAccessor;
 
