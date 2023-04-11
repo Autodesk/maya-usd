@@ -1,0 +1,3 @@
+from .ae_template import AETemplate
+from .custom_enum_control import customEnumControlCreator
+AETemplate.prependControlCreator(customEnumControlCreator)

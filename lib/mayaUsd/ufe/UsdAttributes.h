@@ -28,11 +28,17 @@
 
 #include <unordered_map>
 
+#ifdef UFE_V4_2_FEATURES_AVAILABLE
+#define UFE_ATTRIBUTES_BASE Ufe::Attributes_v4_2
+#else
+#define UFE_ATTRIBUTES_BASE Ufe::Attributes
+#endif
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Interface for USD Attributes.
-class UsdAttributes : public Ufe::Attributes
+class UsdAttributes : public UFE_ATTRIBUTES_BASE
 {
 public:
     typedef std::shared_ptr<UsdAttributes> Ptr;
@@ -83,6 +89,11 @@ public:
         const UsdSceneItem::Ptr& sceneItem,
         const std::string&       originalName,
         const std::string&       newName);
+#endif
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#ifdef UFE_ATTRIBUTES_GET_ENUMS
+    UFE_ATTRIBUTES_BASE::Enums getEnums(const std::string& attrName) const override;
+#endif
 #endif
 
 private:

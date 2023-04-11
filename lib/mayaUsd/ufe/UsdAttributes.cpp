@@ -71,7 +71,7 @@ _GetSdrPropertyAndType(const Ufe::SceneItem::Ptr& item, const std::string& tokNa
 } // namespace
 
 UsdAttributes::UsdAttributes(const UsdSceneItem::Ptr& item)
-    : Ufe::Attributes()
+    : UFE_ATTRIBUTES_BASE()
     , fItem(item)
 {
     PXR_NAMESPACE_USING_DIRECTIVE
@@ -728,6 +728,22 @@ Ufe::Attribute::Ptr UsdAttributes::doRenameAttribute(
 
     return renamedAttr;
 }
+#endif
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#ifdef UFE_ATTRIBUTES_GET_ENUMS
+UFE_ATTRIBUTES_BASE::Enums UsdAttributes::getEnums(const std::string& attrName) const
+{
+    UFE_ATTRIBUTES_BASE::Enums        result;
+    PXR_NS::SdrShaderPropertyConstPtr shaderProp = _GetSdrPropertyAndType(fItem, attrName).first;
+    if (shaderProp) {
+        for (const auto& option : shaderProp->GetOptions()) {
+            result.emplace_back(option.first.GetString(), option.second.GetString());
+        }
+    }
+    return result;
+}
+#endif
 #endif
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

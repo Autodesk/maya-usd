@@ -532,6 +532,35 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4200',
+                     'getEnums interface only available in Ufe preview version greater equal to 4.1.200, or 0.5.4.')
+    def testAttributeIntEnum(self):
+        '''Test the Int attribute type when it is an enum.'''
+        cmds.file(new=True, force=True)
+        testFile = testUtils.getTestScene("MaterialX", "int_enum.usda")
+        testDagPath, testStage = mayaUtils.createProxyFromFile(testFile)
+        mayaPathSegment = mayaUtils.createUfePathSegment(testDagPath)
+        usdPathSegment = usdUtils.createUfePathSegment("/Material1/gltf_pbr1")
+        gltfPbrPath = ufe.Path([mayaPathSegment, usdPathSegment])
+        gltfPbrItem = ufe.Hierarchy.createItem(gltfPbrPath)
+        attrs = ufe.Attributes.attributes(gltfPbrItem)
+
+        self.assertTrue(attrs.hasAttribute("inputs:alpha_mode"))
+        attr = attrs.attribute("inputs:alpha_mode")
+        if hasattr(attrs, "getEnums"):
+            enums = attrs.getEnums("inputs:alpha_mode")
+            self.assertEqual(len(enums), 3)
+            self.assertEqual(len(enums[0]), 2)
+            self.assertEqual(enums[0][0], "OPAQUE")
+            self.assertEqual(enums[0][1], "0")
+            self.assertEqual(len(enums[1]), 2)
+            self.assertEqual(enums[1][0], "MASK")
+            self.assertEqual(enums[1][1], "1")
+            self.assertEqual(len(enums[2]), 2)
+            self.assertEqual(enums[2][0], "BLEND")
+            self.assertEqual(enums[2][1], "2")
+            self.assertEqual(attr.get(), 1)
+
     def testAttributeFloat(self):
         '''Test the Float attribute type.'''
 

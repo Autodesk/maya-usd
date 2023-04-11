@@ -154,3 +154,13 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/uiNodeGraphNode.h")
         message(STATUS "Maya has UFE UINodeGraphNode size interface")
     endif()
 endif()
+
+set(UFE_ATTRIBUTES_GET_ENUMS FALSE CACHE INTERNAL "ufeAttributesGetEnums")
+if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/attributes.h")
+    file(STRINGS ${UFE_INCLUDE_DIR}/ufe/attributes.h UFE_HAS_API REGEX "getEnums")
+    if(UFE_HAS_API)
+        set(UFE_ATTRIBUTES_GET_ENUMS TRUE CACHE INTERNAL "ufeAttributesGetEnums")
+        message(STATUS "Maya has UFE Attribute's getEnums interface")
+    endif()
+endif()
+
