@@ -207,8 +207,12 @@ USDUnsavedEditsOption serializeUsdEditsLocationOption()
 
 void setNewProxyPath(const MString& proxyNodeName, const MString& newValue)
 {
+    const bool  needRelativePath = UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile();
+    const char* filePathCmd = "setAttr -type \"string\" ^1s.filePath \"^2s\"; "
+                              "setAttr ^1s.filePathRelative ^3s; ";
+
     MString script;
-    script.format("setAttr -type \"string\" ^1s.filePath \"^2s\"", proxyNodeName, newValue);
+    script.format(filePathCmd, proxyNodeName, newValue, needRelativePath ? "1" : "0");
     MGlobal::executeCommand(
         script,
         /*display*/ true,
