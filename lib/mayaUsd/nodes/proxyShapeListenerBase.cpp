@@ -40,17 +40,19 @@ MObject MayaUsdProxyShapeListenerBase::resyncCounterAttr;
 MObject MayaUsdProxyShapeListenerBase::stageCacheIdAttr;
 MObject MayaUsdProxyShapeListenerBase::outStageCacheIdAttr;
 
+MayaUsdProxyShapeListenerBase::~MayaUsdProxyShapeListenerBase()
+{
+    _stageNoticeListener.SetStage(UsdStageWeakPtr());
+    _stageNoticeListener.SetStageObjectsChangedCallback(nullptr);
+}
+
 void MayaUsdProxyShapeListenerBase::_ReInit()
 {
     _lastKnownStageCacheId = -1;
-    _stageNoticeListener.SetStage(nullptr);
+    _stageNoticeListener.SetStage(UsdStageWeakPtr());
+    _stageNoticeListener.SetStageObjectsChangedCallback(nullptr);
     _IncrementCounter(resyncCounterAttr);
     _IncrementCounter(updateCounterAttr);
-}
-
-void MayaUsdProxyShapeListenerBase::_OnStageContentsChanged(const UsdNotice::StageContentsChanged&)
-{
-    _ReInit();
 }
 
 void MayaUsdProxyShapeListenerBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChanged& notice)
@@ -138,12 +140,7 @@ MStatus MayaUsdProxyShapeListenerBase::initialize()
     return retValue;
 }
 
-void MayaUsdProxyShapeListenerBase::postConstructor()
-{
-    _stageNoticeListener.SetStageObjectsChangedCallback(
-        [this](const UsdNotice::ObjectsChanged& notice) { return _OnStageObjectsChanged(notice); });
-    setExistWithoutInConnections(false);
-}
+void MayaUsdProxyShapeListenerBase::postConstructor() { setExistWithoutInConnections(false); }
 
 MStatus MayaUsdProxyShapeListenerBase::compute(const MPlug& plug, MDataBlock& dataBlock)
 {
@@ -162,8 +159,13 @@ MStatus MayaUsdProxyShapeListenerBase::compute(const MPlug& plug, MDataBlock& da
             if (stageCached) {
                 auto usdStage = UsdUtilsStageCache::Get().Find(cacheId);
                 _stageNoticeListener.SetStage(usdStage);
+                _stageNoticeListener.SetStageObjectsChangedCallback(
+                    [this](const UsdNotice::ObjectsChanged& notice) {
+                        return _OnStageObjectsChanged(notice);
+                    });
             } else {
                 _stageNoticeListener.SetStage(nullptr);
+                _stageNoticeListener.SetStageObjectsChangedCallback(nullptr);
             }
             auto increment = [](MDataBlock& dataBlock, MObject attr) -> MStatus {
                 MStatus     retStatus = MS::kSuccess;

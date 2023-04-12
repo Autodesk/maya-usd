@@ -42,6 +42,9 @@ class MayaUsdProxyShapeListenerBase : public MPxNode
 {
 public:
     MAYAUSD_CORE_PUBLIC
+    ~MayaUsdProxyShapeListenerBase();
+
+    MAYAUSD_CORE_PUBLIC
     static const MTypeId typeId;
     MAYAUSD_CORE_PUBLIC
     static const MString typeName;

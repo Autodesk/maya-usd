@@ -109,7 +109,7 @@ class UINodeGraphNodeTestCase(unittest.TestCase):
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4100',
                      'Size interface only available in Ufe preview version greater equal to 4.0.100, or 0.5.0.')
     def testSize(self):
-        ball3Path = ufe.PathString.path('|transform1|proxyShape1,/Ball_set/Props/Ball_3')
+        ball3Path = ufe.PathString.path('|transform1|proxyShape1,/Ball_set/Props/Ball_4')
         ball3SceneItem = ufe.Hierarchy.createItem(ball3Path)
 
         if(hasattr(ufe, "UINodeGraphNode_v4_1")):
