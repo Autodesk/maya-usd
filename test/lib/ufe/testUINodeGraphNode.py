@@ -18,6 +18,7 @@
 
 import fixturesUtils
 import mayaUtils
+import testUtils
 
 from maya import cmds
 from maya import standalone
@@ -26,57 +27,6 @@ import ufe
 
 import os
 import unittest
-
-import maya.api.OpenMaya as om
-
-class TestNodeMessageHandler:
-    def __init__(self, node):
-        mod = om.MDGModifier()
-        listener = mod.createNode("mayaUsdProxyShapeListener")
-        proxyDepNode = om.MFnDependencyNode(node)
-        listenerDepNode = om.MFnDependencyNode(listener)
-        mod.connect(proxyDepNode.findPlug("outStageCacheId", True),
-                    listenerDepNode.findPlug("stageCacheId", True))
-        mod.doIt()
-        listenerDepNode.findPlug("outStageCacheId", True).asInt()
-
-        self.nodeDirtyCbId = om.MNodeMessage.addNodeDirtyPlugCallback(listener, self.nodeDirty, None)
-        self.updateIdDirty = 0
-        self.resyncIdDirty = 0
-        self.attributeChangedCbId = om.MNodeMessage.addAttributeChangedCallback(listener, self.attributeChanged, None)
-        self.updateIdChanged = 0
-        self.resyncIdChanged = 0
-
-    def terminate(self):
-        om.MMessage.removeCallback(self.nodeDirtyCbId)
-        om.MMessage.removeCallback(self.attributeChangedCbId)
-
-    def mark(self):
-        self.updateIdDirtySaved = self.updateIdDirty
-        self.resyncIdDirtySaved = self.resyncIdDirty
-        self.updateIdChangedSaved = self.updateIdChanged
-        self.resyncIdChangedSaved = self.resyncIdChanged
-
-    def hasChangedSinceMark(self):
-        return not (self.updateIdDirtySaved == self.updateIdDirty and
-                    self.resyncIdDirtySaved == self.resyncIdDirty and
-                    self.updateIdChangedSaved == self.updateIdChanged and
-                    self.resyncIdChangedSaved == self.resyncIdChanged)
-
-    def nodeDirty(self, node, plug, listeners):
-        name = plug.partialName(False, False, False, False, False, True)
-        if name == "updateId":
-            self.updateIdDirty += 1
-        elif name == "resyncId":
-            self.resyncIdDirty += 1
-    
-    def attributeChanged(self, message, plug, otherPlug, clientData):
-        if message & om.MNodeMessage.kAttributeSet:
-            name = plug.partialName(False, False, False, False, False, True)
-            if name == "updateId":
-                self.updateIdChanged += 1
-            elif name == "resyncId":
-                self.resyncIdChanged += 1
 
 class UINodeGraphNodeTestCase(unittest.TestCase):
     '''Verify the UINodeGraphNode USD implementation.
@@ -103,12 +53,7 @@ class UINodeGraphNodeTestCase(unittest.TestCase):
         # Open ballset.ma scene in testSamples
         mayaUtils.openGroupBallsScene()
 
-        sl = om.MSelectionList()
-        sl.add('|transform1|proxyShape1')
-        dagPath = sl.getDagPath(0)
-        dagPath.extendToShape()
-
-        self.messageHandler = TestNodeMessageHandler(dagPath.node())
+        self.messageHandler = mayaUtils.TestProxyShapeUpdateHandler('|transform1|proxyShape1')
 
         # Clear selection to start off
         cmds.select(clear=True)
@@ -118,9 +63,8 @@ class UINodeGraphNodeTestCase(unittest.TestCase):
 
     # Helper to avoid copy-pasting the entire test
     def doPosAndSizeTests(self, hasFunc, setFunc, getFunc, cmdFunc):
-        initialUpdateCount = cmds.getAttr('|transform1|proxyShape1.updateId')
-        initialResyncCount = cmds.getAttr('|transform1|proxyShape1.resyncId')
-    
+        self.messageHandler.snapshot()
+                                          
         # Test hasFunc and getFunc
         self.assertFalse(hasFunc())
         pos0 = getFunc()
@@ -152,29 +96,15 @@ class UINodeGraphNodeTestCase(unittest.TestCase):
         self.assertEqual(pos4.y(), pos5.y())
 
         # None of these changes should force a render refresh:
-        self.assertEqual(initialUpdateCount, cmds.getAttr('|transform1|proxyShape1.updateId'))
-        self.assertEqual(initialResyncCount, cmds.getAttr('|transform1|proxyShape1.resyncId'))
+        self.assertTrue(self.messageHandler.isUnchanged())
 
     def testPosition(self):
         ball3Path = ufe.PathString.path('|transform1|proxyShape1,/Ball_set/Props/Ball_3')
         ball3SceneItem = ufe.Hierarchy.createItem(ball3Path)
 
-        self.messageHandler.mark()
-                                          
         uiNodeGraphNode = ufe.UINodeGraphNode.uiNodeGraphNode(ball3SceneItem)
         self.doPosAndSizeTests(uiNodeGraphNode.hasPosition, uiNodeGraphNode.setPosition,
             uiNodeGraphNode.getPosition, uiNodeGraphNode.setPositionCmd)
-
-        # None of these changes should force a render refresh:
-        self.assertFalse(self.messageHandler.hasChangedSinceMark())
-
-        # Make sure we see a refresh:
-        cmds.select(clear=True)
-        ufe.GlobalSelection.get().append(ball3SceneItem)
-        cmds.rename("Ball_Renamed_33")
-
-        self.assertTrue(self.messageHandler.hasChangedSinceMark())
-
 
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4100',
                      'Size interface only available in Ufe preview version greater equal to 4.0.100, or 0.5.0.')
@@ -187,13 +117,8 @@ class UINodeGraphNodeTestCase(unittest.TestCase):
         else:
             uiNodeGraphNode = ufe.UINodeGraphNode.uiNodeGraphNode(ball3SceneItem)
 
-        self.messageHandler.mark()
-        
         self.doPosAndSizeTests(uiNodeGraphNode.hasSize, uiNodeGraphNode.setSize,
             uiNodeGraphNode.getSize, uiNodeGraphNode.setSizeCmd)
-
-        # None of these changes should force a render refresh:
-        self.assertFalse(self.messageHandler.hasChangedSinceMark())
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

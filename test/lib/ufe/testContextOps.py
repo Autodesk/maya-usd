@@ -64,34 +64,6 @@ class TestAddPrimObserver(ufe.Observer):
         self.addNotif = 0
         self.deleteNotif = 0
 
-class TestNodeMessageHandler:
-    def __init__(self, node):
-        self.nodeDirtyCbId = om.MNodeMessage.addNodeDirtyPlugCallback(node, self.nodeDirty, None)
-        self.updateIdDirty = 0
-        self.resyncIdDirty = 0
-        self.attributeChangedCbId = om.MNodeMessage.addAttributeChangedCallback(node, self.attributeChanged, None)
-        self.updateIdChanged = 0
-        self.resyncIdChanged = 0
-
-    def terminate(self):
-        om.MMessage.removeCallback(self.nodeDirtyCbId)
-        om.MMessage.removeCallback(self.attributeChangedCbId)
-
-    def nodeDirty(self, node, plug, listeners):
-        name = plug.partialName(False, False, False, False, False, True)
-        if name == "updateId":
-            self.updateIdDirty += 1
-        elif name == "resyncId":
-            self.resyncIdDirty += 1
-    
-    def attributeChanged(self, message, plug, otherPlug, clientData):
-        if message & om.MNodeMessage.kAttributeSet:
-            name = plug.partialName(False, False, False, False, False, True)
-            if name == "updateId":
-                self.updateIdChanged += 1
-            elif name == "resyncId":
-                self.resyncIdChanged += 1
-
 class ContextOpsTestCase(unittest.TestCase):
     '''Verify the ContextOps interface for the USD runtime.'''
 
@@ -1520,44 +1492,8 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(topSubset.GetFamilyNameAttr().Get(), "componentTag")
         self.assertFalse(topSubset.GetPrim().HasAPI(UsdShade.MaterialBindingAPI))
 
-        # Create a proxy shape listener node to track changes happening to the UsdStage:
-        mod = om.MDGModifier()
-        listener = mod.createNode("mayaUsdProxyShapeListener")
-        proxyDepNode = om.MFnDependencyNode(proxyShapeNode)
-        listenerDepNode = om.MFnDependencyNode(listener)
-        mod.connect(proxyDepNode.findPlug("outStageCacheId", True),
-                    listenerDepNode.findPlug("stageCacheId", True))
-        mod.doIt()
-        updatePlug = listenerDepNode.findPlug("updateId", True)
-        resyncPlug = listenerDepNode.findPlug("resyncId", True)
-        cacheIdPlug = listenerDepNode.findPlug("outStageCacheId", True)
-
-        # Pulling the plug registers the update notifier and gets everything ready. When
-        # using this to track changes, make sure to pull to get the latest cacheId since
-        # the proxy shape might have moved to another stage which needs to be fetched
-        # from the USD stage cache.
-        self.assertEqual(cacheIdPlug.asInt(), cmds.getAttr(psPathStr + '.outStageCacheId'))
-
-        messageHandler = TestNodeMessageHandler(listener)
-
-        counters= { "resync": resyncPlug.asInt(),
-                    "update" : updatePlug.asInt()}
-
-        def assertIsOnlyUpdate(self, counters, updatePlug, resyncPlug):
-            resyncCounter = resyncPlug.asInt()
-            updateCounter = updatePlug.asInt()
-            self.assertEqual(resyncCounter, counters["resync"])
-            self.assertGreater(updateCounter, counters["update"])
-            counters["resync"] = resyncCounter
-            counters["update"] = updateCounter
-
-        def assertIsResync(self, counters, updatePlug, resyncPlug):
-            resyncCounter = resyncPlug.asInt()
-            updateCounter = updatePlug.asInt()
-            self.assertGreater(resyncCounter, counters["resync"])
-            self.assertGreater(updateCounter, counters["update"])
-            counters["resync"] = resyncCounter
-            counters["update"] = updateCounter
+        messageHandler = mayaUtils.TestProxyShapeUpdateHandler(psPathStr)
+        messageHandler.snapshot()
 
         contextOps = ufe.ContextOps.contextOps(topItem)
         cmd = contextOps.doOpCmd(['Assign New Material', 'USD', 'UsdPreviewSurface'])
@@ -1571,49 +1507,65 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertTrue(topSubset.GetPrim().HasAPI(UsdShade.MaterialBindingAPI))
 
         # We expect a resync after this assignment:
-        assertIsResync(self, counters, updatePlug, resyncPlug)
+        self.assertTrue(messageHandler.isResync())
 
         # setting a value the first time is a resync due to the creation of the attribute:
         attrs = ufe.Attributes.attributes(shaderItem)
         metallicAttr = attrs.attribute("inputs:metallic")
         ufeCmd.execute(metallicAttr.setCmd(0.5))
-        assertIsResync(self, counters, updatePlug, resyncPlug)
+        self.assertTrue(messageHandler.isResync())
 
         # Subsequent changes are updates:
         ufeCmd.execute(metallicAttr.setCmd(0.7))
-        assertIsOnlyUpdate(self, counters, updatePlug, resyncPlug)
+        self.assertTrue(messageHandler.isUpdate())
 
         # First undo is an update:
         cmds.undo()
-        assertIsOnlyUpdate(self, counters, updatePlug, resyncPlug)
+        self.assertTrue(messageHandler.isUpdate())
 
         # Second undo is a resync:
         cmds.undo()
-        assertIsResync(self, counters, updatePlug, resyncPlug)
+        self.assertTrue(messageHandler.isResync())
 
         # Third undo is also resync:
         cmds.undo()
-        assertIsResync(self, counters, updatePlug, resyncPlug)
+        self.assertTrue(messageHandler.isResync())
 
         # First redo is resync:
         cmds.redo()
-        assertIsResync(self, counters, updatePlug, resyncPlug)
+        self.assertTrue(messageHandler.isResync())
 
         # Second redo is resync:
         cmds.redo()
-        assertIsResync(self, counters, updatePlug, resyncPlug)
+        self.assertTrue(messageHandler.isResync())
 
         # Third redo is update:
         cmds.redo()
-        assertIsOnlyUpdate(self, counters, updatePlug, resyncPlug)
+        self.assertTrue(messageHandler.isUpdate())
+        currentCacheId = messageHandler.getStageCacheId()
+
+        # Changing the whole stage is a resync:
+        testFile = testUtils.getTestScene("MaterialX", "MtlxValueTypes.usda")
+        cmds.setAttr('{}.filePath'.format(psPathStr), testFile, type='string')
+
+        self.assertTrue(messageHandler.isResync())
+
+        # But that will be the last resync:
+        testFile = testUtils.getTestScene("MaterialX", "sin_compound.usda")
+        cmds.setAttr('{}.filePath'.format(psPathStr), testFile, type='string')
+
+        self.assertTrue(messageHandler.isUnchanged())
+
+        # Until we pull on the node to get the current stage cache id, which resets
+        # the stage listener to the new stage:
+        self.assertNotEqual(messageHandler.getStageCacheId(), currentCacheId)
+
+        testFile = testUtils.getTestScene("MaterialX", "MtlxUVStreamTest.usda")
+        cmds.setAttr('{}.filePath'.format(psPathStr), testFile, type='string')
+
+        self.assertTrue(messageHandler.isResync())
 
         messageHandler.terminate()
-
-        # Test that the MNodeMessage handler has received all messages:
-        self.assertEqual(messageHandler.updateIdChanged, counters["update"] - 2)
-        self.assertEqual(messageHandler.updateIdDirty, counters["update"] - 2)
-        self.assertEqual(messageHandler.resyncIdChanged, counters["resync"] - 2)
-        self.assertEqual(messageHandler.resyncIdDirty, counters["resync"] - 2)
 
 
 if __name__ == '__main__':

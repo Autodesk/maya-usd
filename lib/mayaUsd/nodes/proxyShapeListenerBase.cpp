@@ -214,7 +214,12 @@ MayaUsdProxyShapeListenerBase::connectionBroken(const MPlug& plug1, const MPlug&
     return MPxNode::connectionMade(plug1, plug2, asSrc);
 }
 
-// Ancillary: updateId, resyncId
-//        react to USD events and update counters as required.
+MStatus MayaUsdProxyShapeListenerBase::setDependentsDirty(const MPlug& plug, MPlugArray& plugArray)
+{
+    if (plug == stageCacheIdAttr) {
+        _ReInit();
+    }
+    return MPxNode::setDependentsDirty(plug, plugArray);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

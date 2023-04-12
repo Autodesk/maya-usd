@@ -75,6 +75,8 @@ public:
     MStatus connectionMade(const MPlug&, const MPlug&, bool asSrc) override;
     MAYAUSD_CORE_PUBLIC
     MStatus connectionBroken(const MPlug&, const MPlug&, bool asSrc) override;
+    MAYAUSD_CORE_PUBLIC
+    MStatus setDependentsDirty(const MPlug& plug, MPlugArray& plugArray) override;
 
 private:
     UsdMayaStageNoticeListener _stageNoticeListener;
