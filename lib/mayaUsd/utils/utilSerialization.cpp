@@ -224,8 +224,12 @@ void setNewProxyPath(
     const SdfLayerRefPtr& layer,
     bool                  isTargetLayer)
 {
+    const bool  needRelativePath = UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile();
+    const char* filePathCmd = "setAttr -type \"string\" ^1s.filePath \"^2s\"; "
+                              "setAttr ^1s.filePathRelative ^3s; ";
+
     MString script;
-    script.format("setAttr -type \"string\" ^1s.filePath \"^2s\"", proxyNodeName, newRootLayerPath);
+    script.format(filePathCmd, proxyNodeName, newRootLayerPath, needRelativePath ? "1" : "0");
     MGlobal::executeCommand(
         script,
         /*display*/ true,
