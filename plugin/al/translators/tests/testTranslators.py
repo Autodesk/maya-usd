@@ -836,7 +836,7 @@ class TestTranslator(unittest.TestCase):
         stage = Usd.Stage.Open(tempFile.name)
         prim = stage.GetPrimAtPath('/nurbsCircle1')
         knotValues = prim.GetAttribute('knots').Get()
-        self.assertEqual(len(knotValues), usdnotCount)
+        self.assertEqual(len(knotValues), usdknotCount)
 
         # Import exported USD curve back to Maya.
         mc.file(f=True, new=True)
