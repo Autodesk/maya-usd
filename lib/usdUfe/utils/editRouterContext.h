@@ -33,12 +33,18 @@ namespace USDUFE_NS_DEF {
 
 class USDUFE_PUBLIC StackedEditRouterContext : public PXR_NS::TfStacked<StackedEditRouterContext>
 {
-protected:
+public:
     /*! \brief Retrieve the current targeted layer.
      * \return The targeted layer. Null if the edit target was not changed.
      */
     const PXR_NS::SdfLayerHandle& getLayer() const;
 
+    /*! \brief Retrieve the routed stage.
+     * \return The stage that is being routed. Null if the edit target was not changed.
+     */
+    const PXR_NS::UsdStagePtr& getStage() const;
+
+protected:
     /*! \brief Check if an edit context higher-up in the call-stack of this
      *         thread already routed the edits to a specific layer.
      */
@@ -76,6 +82,13 @@ public:
      */
     OperationEditRouterContext(const PXR_NS::TfToken& operationName, const PXR_NS::UsdPrim& prim);
 
+    /*! \brief Route to the given stage and layer.
+     *  Should be used in undo to ensure the same target is used as in the initial execution.
+     */
+    OperationEditRouterContext(
+        const PXR_NS::UsdStagePtr&    stage,
+        const PXR_NS::SdfLayerHandle& layer);
+
 private:
     PXR_NS::SdfLayerHandle
     getOperationLayer(const PXR_NS::TfToken& operationName, const PXR_NS::UsdPrim& prim);
@@ -99,6 +112,13 @@ public:
     /*! \brief Route an attribute operation on a prim for the given attribute.
      */
     AttributeEditRouterContext(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attributeName);
+
+    /*! \brief Route to the given stage and layer.
+     *  Should be used in undo to ensure the same target is used as in the initial execution.
+     */
+    AttributeEditRouterContext(
+        const PXR_NS::UsdStagePtr&    stage,
+        const PXR_NS::SdfLayerHandle& layer);
 
 private:
     PXR_NS::SdfLayerHandle

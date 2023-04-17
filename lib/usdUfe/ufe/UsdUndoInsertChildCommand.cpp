@@ -18,8 +18,11 @@
 
 #include "private/UfeNotifGuard.h"
 
+#include <mayaUsd/utils/layers.h>
+
 #include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/utils/editRouter.h>
 #include <usdUfe/utils/editRouterContext.h>
 #include <usdUfe/utils/layers.h>
@@ -130,8 +133,6 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
     // Apply restriction rules
     UsdUfe::applyCommandRestriction(childPrim, "reparent");
     UsdUfe::applyCommandRestriction(parentPrim, "reparent");
-
-    _childLayer = childPrim.GetStage()->GetEditTarget().GetLayer();
 }
 
 UsdUndoInsertChildCommand::~UsdUndoInsertChildCommand() { }
@@ -180,41 +181,52 @@ static void doUsdInsertion(
     }
 }
 
-static UsdSceneItem::Ptr doInsertion(
-    const SdfLayerHandle& srcLayer,
-    const SdfPath&        srcUsdPath,
-    const Ufe::Path&      srcUfePath,
-    const SdfLayerHandle& dstLayer,
-    const SdfPath&        dstUsdPath,
-    const Ufe::Path&      dstUfePath)
+static void doInsertion(
+    const SdfPath&   srcUsdPath,
+    const Ufe::Path& srcUfePath,
+    const SdfPath&   dstUsdPath,
+    const Ufe::Path& dstUfePath)
 {
     // We must retrieve the item every time we are called since it could be stale.
     // We need to get the USD prim from the UFE path.
     const UsdPrim     srcPrim = ufePathToPrim(srcUfePath);
     const UsdStagePtr stage = srcPrim.GetStage();
 
+    // Enforce the edit routing for the insert-child command in order to find
+    // the target layer. The edit router context sets the edit target of the
+    // stage of the given prim, if it gets routed.
+    OperationEditRouterContext ctx(UsdUfe::EditRoutingTokens->RouteParent, srcPrim);
+    const SdfLayerHandle&      dstLayer = srcPrim.GetStage()->GetEditTarget().GetLayer();
+
     enforceMutedLayer(srcPrim, "reparent");
 
-    // Make sure the load state of the reparented prim will be preserved.
-    // We copy all rules that applied to it specifically and remove the rules
-    // that applied to it specifically.
-    duplicateLoadRules(*stage, srcUsdPath, dstUsdPath);
-    removeRulesForPath(*stage, srcUsdPath);
+    // Do the insertion from the source layer to the target layer.
+    {
+        PrimLayerFunc insertionFunc
+            = [stage, srcUsdPath, dstLayer, dstUsdPath](
+                  const UsdPrim& prim, const PXR_NS::SdfLayerRefPtr& layer) {
+                  doUsdInsertion(stage, layer, srcUsdPath, dstLayer, dstUsdPath);
+              };
 
-    // Do the insertion fro, the soufce layer to the target layer.
-    doUsdInsertion(stage, srcLayer, srcUsdPath, dstLayer, dstUsdPath);
+        const bool includeTopLayer = true;
+        const auto rootLayers = getAllSublayerRefs(stage->GetRootLayer(), includeTopLayer);
+        applyToSomeLayersWithOpinions(srcPrim, rootLayers, insertionFunc);
+    }
 
     // Do the insertion in all other applicable layers, which, due to the command
     // restrictions that have been verified when the command was created, should
     // only be session layers.
-    PrimLayerFunc insertionFunc =
-        [stage, srcUsdPath, dstUsdPath](const UsdPrim& prim, const PXR_NS::SdfLayerRefPtr& layer) {
-            doUsdInsertion(stage, layer, srcUsdPath, layer, dstUsdPath);
-        };
+    {
+        PrimLayerFunc insertionFunc
+            = [stage, srcUsdPath, dstUsdPath](
+                  const UsdPrim& prim, const PXR_NS::SdfLayerRefPtr& layer) {
+                  doUsdInsertion(stage, layer, srcUsdPath, layer, dstUsdPath);
+              };
 
-    const bool includeTopLayer = true;
-    const auto sessionLayers = getAllSublayerRefs(stage->GetSessionLayer(), includeTopLayer);
-    applyToSomeLayersWithOpinions(srcPrim, sessionLayers, insertionFunc);
+        const bool includeTopLayer = true;
+        const auto sessionLayers = getAllSublayerRefs(stage->GetSessionLayer(), includeTopLayer);
+        applyToSomeLayersWithOpinions(srcPrim, sessionLayers, insertionFunc);
+    }
 
     // Remove all scene descriptions for the source path and its subtree in the source layer.
     // Note: is the layer targeting really needed? We are removing the prim entirely.
@@ -232,22 +244,38 @@ static UsdSceneItem::Ptr doInsertion(
           };
 
     applyToAllLayersWithOpinions(srcPrim, removeFunc);
-
-    UsdSceneItem::Ptr dstItem = UsdSceneItem::create(dstUfePath, ufePathToPrim(dstUfePath));
-    sendNotification<Ufe::ObjectReparent>(dstItem, srcUfePath);
-    return dstItem;
 }
 
-void UsdUndoInsertChildCommand::insertChildRedo()
+static void
+preserveLoadRules(const Ufe::Path& srcUfePath, const SdfPath& srcUsdPath, const SdfPath& dstUsdPath)
 {
+    UsdPrim           srcPrim = ufePathToPrim(srcUfePath);
+    const UsdStagePtr stage = srcPrim.GetStage();
+
+    // Make sure the load state of the reparented prim will be preserved.
+    // We copy all rules that applied to it specifically and remove the rules
+    // that applied to it specifically.
+    duplicateLoadRules(*stage, srcUsdPath, dstUsdPath);
+    removeRulesForPath(*stage, srcUsdPath);
+}
+
+static const UsdSceneItem::Ptr
+sendReparentNotification(const Ufe::Path& srcUfePath, const Ufe::Path& dstUfePath)
+{
+    UsdPrim                 dstPrim = ufePathToPrim(dstUfePath);
+    const UsdSceneItem::Ptr ufeDstItem = UsdSceneItem::create(dstUfePath, dstPrim);
+
+    sendNotification<Ufe::ObjectReparent>(ufeDstItem, srcUfePath);
+
+    return ufeDstItem;
+}
+
+void UsdUndoInsertChildCommand::execute()
+{
+    InPathChange pc;
+
     if (_usdDstPath.IsEmpty()) {
         const auto& parentPrim = ufePathToPrim(_ufeParentPath);
-
-        // Enforce the edit routing for the insert-child command in order to find
-        // the target layer. The edit router context sets the edit target of the
-        // stage of the given prim, if it gets routed.
-        OperationEditRouterContext ctx(UsdUfe::EditRoutingTokens->RouteParent, parentPrim);
-        _parentLayer = parentPrim.GetStage()->GetEditTarget().GetLayer();
 
         // First, check if we need to rename the child.
         const auto childName = uniqueChildName(parentPrim, _ufeSrcPath.back().string());
@@ -265,29 +293,46 @@ void UsdUndoInsertChildCommand::insertChildRedo()
         _usdDstPath = parentPrim.GetPath().AppendChild(TfToken(childName));
     }
 
+    // Load rules must be duplicated before the prim is moved to be able
+    // to access the existing rules.
+    preserveLoadRules(_ufeSrcPath, _usdSrcPath, _usdDstPath);
+
     // We need to keep the generated item to be able to return it to the caller
     // via the insertedChild() member function.
-    _ufeDstItem = doInsertion(
-        _childLayer, _usdSrcPath, _ufeSrcPath, _parentLayer, _usdDstPath, _ufeDstPath);
-}
+    {
+        UsdUndoBlock undoBlock(&_undoableItem);
+        doInsertion(_usdSrcPath, _ufeSrcPath, _usdDstPath, _ufeDstPath);
+    }
 
-void UsdUndoInsertChildCommand::insertChildUndo()
-{
-    // Note: we don't need to keep the source item, we only need it to validate
-    //       that the operation worked.
-    doInsertion(_parentLayer, _usdDstPath, _ufeDstPath, _childLayer, _usdSrcPath, _ufeSrcPath);
+    _ufeDstItem = sendReparentNotification(_ufeSrcPath, _ufeDstPath);
 }
 
 void UsdUndoInsertChildCommand::undo()
 {
     InPathChange pc;
-    insertChildUndo();
+
+    // Load rules must be duplicated before the prim is moved to be able
+    // to access the existing rules.
+    // Note: the arguments passed are the opposite of those in execute and redo().
+    preserveLoadRules(_ufeDstPath, _usdDstPath, _usdSrcPath);
+
+    _undoableItem.undo();
+
+    // Note: the arguments passed are the opposite of those in execute and redo().
+    sendReparentNotification(_ufeDstPath, _ufeSrcPath);
 }
 
 void UsdUndoInsertChildCommand::redo()
 {
     InPathChange pc;
-    insertChildRedo();
+
+    // Load rules must be duplicated before the prim is moved to be able
+    // to access the existing rules.
+    preserveLoadRules(_ufeSrcPath, _usdSrcPath, _usdDstPath);
+
+    _undoableItem.redo();
+
+    _ufeDstItem = sendReparentNotification(_ufeSrcPath, _ufeDstPath);
 }
 
 } // namespace USDUFE_NS_DEF
