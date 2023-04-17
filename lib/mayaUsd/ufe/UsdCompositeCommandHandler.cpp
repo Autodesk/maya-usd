@@ -36,7 +36,15 @@ public:
 
     void preCall() override
     {
-        _editRouterContext = std::make_unique<OperationEditRouterContext>(_operationName, _prim);
+        if (_alreadyRouted) {
+            _editRouterContext = std::make_unique<OperationEditRouterContext>(_stage, _layer);
+        } else {
+            _editRouterContext
+                = std::make_unique<OperationEditRouterContext>(_operationName, _prim);
+            _stage = _editRouterContext->getStage();
+            _layer = _editRouterContext->getLayer();
+            _alreadyRouted = true;
+        }
     }
 
     void postCall() override { _editRouterContext.reset(); }
@@ -56,6 +64,9 @@ private:
 
     PXR_NS::UsdPrim                             _prim;
     PXR_NS::TfToken                             _operationName;
+    bool                                        _alreadyRouted = false;
+    PXR_NS::UsdStagePtr                         _stage;
+    PXR_NS::SdfLayerHandle                      _layer;
     std::unique_ptr<OperationEditRouterContext> _editRouterContext;
 };
 
