@@ -35,9 +35,6 @@
 #include <mayaUsd/ufe/UsdTransform3dMatrixOp.h>
 #include <mayaUsd/ufe/UsdTransform3dMayaXformStack.h>
 #include <mayaUsd/ufe/UsdTransform3dPointInstance.h>
-#ifdef UFE_V4_FEATURES_AVAILABLE
-#include <mayaUsd/ufe/UsdTransform3dRead.h>
-#endif
 #include <mayaUsd/ufe/UsdUIInfoHandler.h>
 #include <mayaUsd/ufe/UsdUIUfeObserver.h>
 #endif
@@ -54,6 +51,7 @@
 #include <mayaUsd/ufe/UsdMaterialHandler.h>
 #endif
 #ifdef UFE_V4_FEATURES_AVAILABLE
+#include <mayaUsd/ufe/UsdTransform3dRead.h>
 #include <mayaUsd/ufe/UsdConnectionHandler.h>
 #include <mayaUsd/ufe/UsdUINodeGraphNodeHandler.h>
 #if UFE_PREVIEW_BATCHOPS_SUPPORT

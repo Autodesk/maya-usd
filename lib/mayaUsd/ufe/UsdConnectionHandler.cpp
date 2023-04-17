@@ -38,7 +38,7 @@ namespace ufe {
 #ifndef UFE_V4_FEATURES_AVAILABLE
 
 //
-// For UFE 0.4.43 the connection/disconnection code is moved to UsdUndoConnectionCommands.cpp
+// For UFE v4 the connection/disconnection code is moved to UsdUndoConnectionCommands.cpp
 //
 
 namespace {

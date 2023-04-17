@@ -57,9 +57,7 @@ public:
     Ufe::SceneItem::Ptr sceneItem() const override;
     bool                hasChildren() const override;
     Ufe::SceneItemList  children() const override;
-#ifdef UFE_V4_FEATURES_AVAILABLE
-    bool hasFilteredChildren(const ChildFilter&) const override;
-#endif
+    UFE_V4(bool hasFilteredChildren(const ChildFilter&) const override;)
     UFE_V2(Ufe::SceneItemList filteredChildren(const ChildFilter&) const override;)
     Ufe::SceneItem::Ptr parent() const override;
 #ifndef UFE_V2_FEATURES_AVAILABLE

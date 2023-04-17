@@ -156,16 +156,10 @@ bool inAttributeChangedNotificationGuard()
     return attributeChangedNotificationGuardCount.load() > 0;
 }
 
-#ifdef UFE_V4_FEATURES_AVAILABLE
-#define UFE_V4_24(...) __VA_ARGS__
-#else
-#define UFE_V4_24(...)
-#endif
-
 void sendAttributeChanged(
     const Ufe::Path&    ufePath,
     const TfToken&      changedToken,
-    AttributeChangeType UFE_V4_24(changeType))
+    AttributeChangeType UFE_V4(changeType))
 {
 #ifdef UFE_V4_FEATURES_AVAILABLE
     switch (changeType) {
@@ -207,7 +201,7 @@ void sendAttributeChanged(
 void sendAttributeMetadataChanged(
     const Ufe::Path&             ufePath,
     const TfToken&               changedToken,
-    AttributeChangeType          UFE_V4_24(changeType),
+    AttributeChangeType          UFE_V4(changeType),
     const std::set<std::string>& metadataKeys)
 {
     if (changeType == AttributeChangeType::kMetadataChanged) {
@@ -309,7 +303,7 @@ std::vector<std::string> getMetadataKeys(const std::string& strMetadata)
 void processAttributeChanges(
     const Ufe::Path&                                ufePath,
     const SdfPath&                                  changedPath,
-    const std::vector<const SdfChangeList::Entry*>& UFE_V4_24(entries))
+    const std::vector<const SdfChangeList::Entry*>& UFE_V4(entries))
 {
 #ifdef UFE_V4_FEATURES_AVAILABLE
     bool                  sendValueChanged = true; // Default notification to send.

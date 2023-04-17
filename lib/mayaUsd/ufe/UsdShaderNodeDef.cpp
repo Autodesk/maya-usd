@@ -76,11 +76,9 @@ Ufe::ConstAttributeDefs getAttrs(const SdrShaderNodeConstPtr& shaderNodeDef)
 
 UsdShaderNodeDef::UsdShaderNodeDef(const SdrShaderNodeConstPtr& shaderNodeDef)
     : Ufe::NodeDef()
-#ifndef UFE_V4_FEATURES_AVAILABLE
-    , fType(shaderNodeDef ? shaderNodeDef->GetName() : "")
-#endif
     , fShaderNodeDef(shaderNodeDef)
 #ifndef UFE_V4_FEATURES_AVAILABLE
+    , fType(shaderNodeDef ? shaderNodeDef->GetName() : "")
     , fInputs(
           shaderNodeDef ? getAttrs<Ufe::AttributeDef::INPUT_ATTR>(shaderNodeDef)
                         : Ufe::ConstAttributeDefs())
