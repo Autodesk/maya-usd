@@ -65,6 +65,9 @@
 #if UFE_PREVIEW_BATCHOPS_SUPPORT
 #include <mayaUsd/ufe/UsdBatchOpsHandler.h>
 #endif
+#if UFE_PREVIEW_COMPOSITE_COMMAND_HANDLER_SUPPORT
+#include <mayaUsd/ufe/UsdCompositeCommandHandler.h>
+#endif
 #if (UFE_PREVIEW_VERSION_NUM >= 4001)
 #include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
 #endif
@@ -210,9 +213,13 @@ MStatus initialize()
 #if (UFE_PREVIEW_VERSION_NUM >= 4023)
     handlers.uiNodeGraphNodeHandler = UsdUINodeGraphNodeHandler::create();
 #endif
-#if UFE_PREVIEW_BATCHOPS_SUPPORT
+
+#if UFE_PREVIEW_COMPOSITE_COMMAND_HANDLER_SUPPORT
+    handlers.batchOpsHandler = UsdCompositeCommandHandler::create();
+#elif UFE_PREVIEW_BATCHOPS_SUPPORT
     handlers.batchOpsHandler = UsdBatchOpsHandler::create();
 #endif
+
 #if (UFE_PREVIEW_VERSION_NUM >= 4001)
     handlers.nodeDefHandler = UsdShaderNodeDefHandler::create();
 #endif

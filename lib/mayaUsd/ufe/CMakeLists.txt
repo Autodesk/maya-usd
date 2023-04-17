@@ -144,6 +144,19 @@ if (v4_BatchOps IN_LIST UFE_PREVIEW_FEATURES)
     )
 endif()
 
+if(CompositeCommandHandler IN_LIST UFE_PREVIEW_FEATURES)
+    message(STATUS "UFE_PREVIEW has composite command handler support")
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+        UsdCompositeCommandHandler.cpp
+    )
+
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+        UFE_PREVIEW_COMPOSITE_COMMAND_HANDLER_SUPPORT=1
+    )
+endif()
+
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4001)
         target_sources(${PROJECT_NAME}
@@ -321,6 +334,12 @@ if (v4_BatchOps IN_LIST UFE_PREVIEW_FEATURES)
     list(APPEND HEADERS
         UsdBatchOpsHandler.h
         UsdUndoDuplicateSelectionCommand.h
+    )
+endif()
+
+if(v5_CompositeCommandHandler IN_LIST UFE_PREVIEW_FEATURES)
+    list(APPEND HEADERS
+        UsdCompositeCommandHandler.h
     )
 endif()
 

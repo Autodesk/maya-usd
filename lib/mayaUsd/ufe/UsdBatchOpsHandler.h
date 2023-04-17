@@ -23,13 +23,21 @@
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/stage.h>
 
+#if UFE_PREVIEW_COMPOSITE_COMMAND_HANDLER_SUPPORT
+#include <ufe/compositeCommandHandler.h>
+#else
 #include <ufe/batchOpsHandler.h>
+#endif
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Interface to create a UsdBatchOpsHandler interface object.
+#if UFE_PREVIEW_COMPOSITE_COMMAND_HANDLER_SUPPORT
+class MAYAUSD_CORE_PUBLIC UsdBatchOpsHandler : public Ufe::CompositeCommandHandler
+#else
 class MAYAUSD_CORE_PUBLIC UsdBatchOpsHandler : public Ufe::BatchOpsHandler
+#endif
 {
 public:
     typedef std::shared_ptr<UsdBatchOpsHandler> Ptr;
