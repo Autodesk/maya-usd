@@ -18,6 +18,7 @@
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>
@@ -606,12 +607,15 @@ void UsdUndoAddNewMaterialCommand::execute()
     }
 
     //
-    // Connect the Shader to the material:
+    // Connect the Shader to the material, only for surfaces:
     //
-    if (!connectShaderToMaterial(
-            _createShaderCmd->insertedChild(), _createMaterialCmd->newPrim(), _nodeId)) {
-        markAsFailed();
-        return;
+    auto surfaces = UsdMayaUtil::GetSurfaceShaderNodeDefs();
+    if (std::find(surfaces.begin(), surfaces.end(), shaderNodeDef) != surfaces.end()) {
+        if (!connectShaderToMaterial(
+                _createShaderCmd->insertedChild(), _createMaterialCmd->newPrim(), _nodeId)) {
+            markAsFailed();
+            return;
+        }
     }
 }
 
