@@ -59,6 +59,18 @@ const PXR_NS::SdfLayerHandle& StackedEditRouterContext::getLayer() const
     return empty;
 }
 
+const PXR_NS::UsdStagePtr& StackedEditRouterContext::getStage() const
+{
+    if (_stage)
+        return _stage;
+
+    if (const StackedEditRouterContext* ctx = GetStackPrevious())
+        return ctx->getStage();
+
+    static const PXR_NS::UsdStagePtr empty;
+    return empty;
+}
+
 bool StackedEditRouterContext::isTargetAlreadySet() const
 {
     // Use the edit target of a edit router context higher-up in the call
@@ -88,6 +100,13 @@ OperationEditRouterContext::OperationEditRouterContext(
 {
 }
 
+OperationEditRouterContext::OperationEditRouterContext(
+    const PXR_NS::UsdStagePtr&    stage,
+    const PXR_NS::SdfLayerHandle& layer)
+    : StackedEditRouterContext(stage, layer)
+{
+}
+
 PXR_NS::SdfLayerHandle AttributeEditRouterContext::getAttributeLayer(
     const PXR_NS::UsdPrim& prim,
     const PXR_NS::TfToken& attributeName)
@@ -102,6 +121,13 @@ AttributeEditRouterContext::AttributeEditRouterContext(
     const PXR_NS::UsdPrim& prim,
     const PXR_NS::TfToken& attributeName)
     : StackedEditRouterContext(prim.GetStage(), getAttributeLayer(prim, attributeName))
+{
+}
+
+AttributeEditRouterContext::AttributeEditRouterContext(
+    const PXR_NS::UsdStagePtr&    stage,
+    const PXR_NS::SdfLayerHandle& layer)
+    : StackedEditRouterContext(stage, layer)
 {
 }
 

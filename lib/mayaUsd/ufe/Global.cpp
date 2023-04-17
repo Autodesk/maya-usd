@@ -57,6 +57,14 @@
 #if UFE_PREVIEW_BATCHOPS_SUPPORT
 #include <mayaUsd/ufe/UsdBatchOpsHandler.h>
 #endif
+#if UFE_PREVIEW_COMPOSITE_COMMAND_HANDLER_SUPPORT
+#include <mayaUsd/ufe/UsdCodeWrapperHandler.h>
+#endif
+#if (UFE_PREVIEW_VERSION_NUM >= 4001)
+#include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
+#endif
+#endif
+#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4013)
 #include <mayaUsd/ufe/ProxyShapeCameraHandler.h>
 #include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
 #endif
@@ -195,9 +203,14 @@ MStatus initialize()
 #endif
     handlers.connectionHandler = UsdConnectionHandler::create();
     handlers.uiNodeGraphNodeHandler = UsdUINodeGraphNodeHandler::create();
-#if UFE_PREVIEW_BATCHOPS_SUPPORT
+
+#if UFE_PREVIEW_COMPOSITE_COMMAND_HANDLER_SUPPORT
+    handlers.batchOpsHandler = UsdCodeWrapperHandler::create();
+#elif UFE_PREVIEW_BATCHOPS_SUPPORT
     handlers.batchOpsHandler = UsdBatchOpsHandler::create();
 #endif
+
+#if (UFE_PREVIEW_VERSION_NUM >= 4001)
     handlers.nodeDefHandler = UsdShaderNodeDefHandler::create();
 #endif
 
