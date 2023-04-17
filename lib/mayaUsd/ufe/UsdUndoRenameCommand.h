@@ -16,6 +16,7 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UfeVersionCompat.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
 #include <ufe/path.h>
@@ -49,9 +50,7 @@ public:
     create(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName);
 
     UsdSceneItem::Ptr renamedItem() const;
-#ifdef UFE_V4_FEATURES_AVAILABLE
-    Ufe::SceneItem::Ptr sceneItem() const override { return renamedItem(); }
-#endif
+    UFE_V4(Ufe::SceneItem::Ptr sceneItem() const override { return renamedItem(); })
 
 private:
     void renameRedo();

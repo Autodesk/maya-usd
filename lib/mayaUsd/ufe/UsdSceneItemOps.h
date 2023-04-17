@@ -55,18 +55,14 @@ public:
 
     //@{
     // Ufe::SceneItemOps overrides
-    Ufe::SceneItem::Ptr sceneItem() const override;
-#ifdef UFE_V4_FEATURES_AVAILABLE
-    Ufe::UndoableCommand::Ptr deleteItemCmdNoExecute() override;
-#endif
+    Ufe::SceneItem::Ptr       sceneItem() const override;
     Ufe::UndoableCommand::Ptr deleteItemCmd() override;
     bool                      deleteItem() override;
+    Ufe::Duplicate            duplicateItemCmd() override;
+    Ufe::SceneItem::Ptr       duplicateItem() override;
 #ifdef UFE_V4_FEATURES_AVAILABLE
+    Ufe::UndoableCommand::Ptr                deleteItemCmdNoExecute() override;
     Ufe::SceneItemResultUndoableCommand::Ptr duplicateItemCmdNoExecute() override;
-#endif
-    Ufe::Duplicate      duplicateItemCmd() override;
-    Ufe::SceneItem::Ptr duplicateItem() override;
-#ifdef UFE_V4_FEATURES_AVAILABLE
     Ufe::SceneItemResultUndoableCommand::Ptr
     renameItemCmdNoExecute(const Ufe::PathComponent& newName) override;
 #endif

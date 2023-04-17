@@ -17,6 +17,7 @@
 #define USD_ATTRIBUTES_COMMANDS
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UfeVersionCompat.h>
 #include <mayaUsd/ufe/UsdAttribute.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/UsdUndoableCommand.h>
@@ -67,9 +68,7 @@ public:
 
     void executeImplementation() override;
 
-#ifdef UFE_V4_FEATURES_AVAILABLE
-    std::string commandString() const override;
-#endif
+    UFE_V4(std::string commandString() const override;)
 
 private:
     const Ufe::Path            _sceneItemPath;
@@ -101,9 +100,7 @@ public:
 
     void executeImplementation() override;
 
-#ifdef UFE_V4_FEATURES_AVAILABLE
-    std::string commandString() const override;
-#endif
+    UFE_V4(std::string commandString() const override;)
 
 private:
     const Ufe::Path   _sceneItemPath;

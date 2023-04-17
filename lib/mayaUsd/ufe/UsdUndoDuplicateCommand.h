@@ -54,9 +54,7 @@ public:
     static UsdUndoDuplicateCommand::Ptr create(const UsdSceneItem::Ptr& srcItem);
 
     UsdSceneItem::Ptr duplicatedItem() const;
-#ifdef UFE_V4_FEATURES_AVAILABLE
-    Ufe::SceneItem::Ptr sceneItem() const override { return duplicatedItem(); }
-#endif
+    UFE_V4(Ufe::SceneItem::Ptr sceneItem() const override { return duplicatedItem(); })
 
     UFE_V2(void execute() override;)
     void undo() override;
