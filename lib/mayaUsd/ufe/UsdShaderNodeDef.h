@@ -149,7 +149,7 @@ public:
 private:
     const PXR_NS::SdrShaderNodeConstPtr fShaderNodeDef;
 #ifndef UFE_V4_FEATURES_AVAILABLE
-    const std::string fType;
+    const std::string             fType;
     const Ufe::ConstAttributeDefs fInputs;
     const Ufe::ConstAttributeDefs fOutputs;
 #endif

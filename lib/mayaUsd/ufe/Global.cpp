@@ -51,8 +51,8 @@
 #include <mayaUsd/ufe/UsdMaterialHandler.h>
 #endif
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#include <mayaUsd/ufe/UsdTransform3dRead.h>
 #include <mayaUsd/ufe/UsdConnectionHandler.h>
+#include <mayaUsd/ufe/UsdTransform3dRead.h>
 #include <mayaUsd/ufe/UsdUINodeGraphNodeHandler.h>
 #if UFE_PREVIEW_BATCHOPS_SUPPORT
 #include <mayaUsd/ufe/UsdBatchOpsHandler.h>
