@@ -146,12 +146,12 @@ class usdFileRelative(object):
 
         if cls._haveRelativePathFields:
             # We may need to hide the preview fields in certain cases
-            showPreviewFileds = True
+            showPreviewFields = True
             if relativeToWhat == 'SceneFile':
-                showPreviewFileds = cmds.file(q=True, exists=True)
+                showPreviewFields = cmds.file(q=True, exists=True)
 
-            cmds.textFieldGrp(cls.kUnresolvedPathTextField, edit=True, visible=showPreviewFileds)
-            cmds.textFieldGrp(cls.kResolvedPathTextField, edit=True, visible=showPreviewFileds)
+            cmds.textFieldGrp(cls.kUnresolvedPathTextField, edit=True, visible=showPreviewFields)
+            cmds.textFieldGrp(cls.kResolvedPathTextField, edit=True, visible=showPreviewFields)
 
             # Only enable fields when make relative is checked.
             makePathRelative = cmds.checkBox(cls.kMakePathRelativeCheckBox, query=True, value=True)
