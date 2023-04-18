@@ -20,9 +20,7 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdBatchOpsHandler::UsdBatchOpsHandler()
-{
-}
+UsdBatchOpsHandler::UsdBatchOpsHandler() { }
 
 UsdBatchOpsHandler::~UsdBatchOpsHandler() { }
 

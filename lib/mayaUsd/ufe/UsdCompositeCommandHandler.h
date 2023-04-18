@@ -32,8 +32,8 @@ public:
 protected:
     // Ufe::CompositeCommandHandler overrides.
     Ufe::CompositeCommandWrapper::Ptr createCompositeCommandWrapper_(
-        const Ufe::Selection&   selection,
-        const std::string& operationName) override;
+        const Ufe::Selection& selection,
+        const std::string&    operationName) override;
 }; // UsdCompositeCommandHandler
 
 } // namespace ufe

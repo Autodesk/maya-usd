@@ -184,10 +184,10 @@ static void doUsdInsertion(
 }
 
 static UsdSceneItem::Ptr doInsertion(
-    const SdfPath&        srcUsdPath,
-    const Ufe::Path&      srcUfePath,
-    const SdfPath&        dstUsdPath,
-    const Ufe::Path&      dstUfePath)
+    const SdfPath&   srcUsdPath,
+    const Ufe::Path& srcUfePath,
+    const SdfPath&   dstUsdPath,
+    const Ufe::Path& dstUfePath)
 {
     // We must retrieve the item every time we are called since it could be stale.
     // We need to get the USD prim from the UFE path.
@@ -225,10 +225,11 @@ static UsdSceneItem::Ptr doInsertion(
     // restrictions that have been verified when the command was created, should
     // only be session layers.
     {
-        PrimLayerFunc insertionFunc =
-            [stage, srcUsdPath, dstUsdPath](const UsdPrim& prim, const PXR_NS::SdfLayerRefPtr& layer) {
-                doUsdInsertion(stage, layer, srcUsdPath, layer, dstUsdPath);
-            };
+        PrimLayerFunc insertionFunc
+            = [stage, srcUsdPath, dstUsdPath](
+                  const UsdPrim& prim, const PXR_NS::SdfLayerRefPtr& layer) {
+                  doUsdInsertion(stage, layer, srcUsdPath, layer, dstUsdPath);
+              };
 
         const bool includeTopLayer = true;
         const auto sessionLayers = getAllSublayerRefs(stage->GetSessionLayer(), includeTopLayer);
