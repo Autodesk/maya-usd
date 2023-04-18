@@ -242,6 +242,12 @@ static bool isNodeTypeInList(
         const auto canonicalAncestorName
             = TfType::Find<UsdSchemaBase>().FindDerivedByName(ancestorType.c_str());
 
+        // Make sure we see at least one actual ancestor: For some types the first reported
+        // ancestor is the same as the node type itself.
+        if (canonicalAncestorName == canonicalName) {
+            continue;
+        }
+
         // Check whether an ancestor of our node matches one of the listed node types.
         if (std::find(
                 nodeTypeList.begin(),
