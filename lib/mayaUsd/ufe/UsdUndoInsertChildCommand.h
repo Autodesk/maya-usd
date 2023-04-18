@@ -17,6 +17,7 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
+#include <mayaUsd/undo/UsdUndoableItem.h>
 
 #include <pxr/usd/usd/prim.h>
 
@@ -63,11 +64,9 @@ protected:
         const UsdSceneItem::Ptr& pos);
 
 private:
+    void execute() override;
     void undo() override;
     void redo() override;
-
-    void insertChildRedo();
-    void insertChildUndo();
 
     UsdSceneItem::Ptr _ufeDstItem;
 
@@ -78,9 +77,7 @@ private:
     PXR_NS::SdfPath _usdSrcPath;
     PXR_NS::SdfPath _usdDstPath;
 
-    PXR_NS::SdfLayerHandle _childLayer;
-    PXR_NS::SdfLayerHandle _parentLayer;
-
+    UsdUndoableItem _undoableItem;
 }; // UsdUndoInsertChildCommand
 
 } // namespace ufe
