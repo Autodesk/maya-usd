@@ -19,9 +19,12 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 
+#include <maya/MDagPath.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
+#include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
+#include <ufe/pathString.h>
 #include <ufe/runTimeMgr.h>
 
 #include <cctype>
@@ -47,13 +50,34 @@ Ufe::Rtid getMayaRunTimeId()
     return g_MayaRtid;
 }
 
+MDagPath nameToDagPath(const std::string& name)
+{
+    MSelectionList selection;
+    selection.add(MString(name.c_str()));
+    MDagPath dag;
+    // Not found?  Empty selection list.
+    if (!selection.isEmpty()) {
+        MStatus status = selection.getDagPath(0, dag);
+        CHECK_MSTATUS(status);
+    }
+    return dag;
+}
+
+MDagPath ufeToDagPath(const Ufe::Path& ufePath)
+{
+    if (ufePath.runTimeId() != getMayaRunTimeId() || ufePath.nbSegments() > 1) {
+        return MDagPath();
+    }
+    return nameToDagPath(Ufe::PathString::string(ufePath));
+}
+
 //! \brief Converts a SdfPath to Ufe PathSegment
 ///
 /// In order to ensure compatibility with an arbitrary data model, it is possible to provide the
 /// desired runtime id as a parameter.
 ///
 //! \return Ufe PathSegment
-Ufe::PathSegment usdPathToUfePathSegment(const SdfPath& usdPath, Ufe::Rtid rtid)
+Ufe::PathSegment sdfPathToUfePathSegment(const SdfPath& usdPath, Ufe::Rtid rtid)
 {
     if (!TF_VERIFY(!usdPath.IsEmpty())) {
         // Return an empty segment.

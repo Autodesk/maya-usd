@@ -122,6 +122,7 @@ else()
             usdShade
             usdSkel
             usdUtils
+            ufeExtensions
             ${MAYA_LIBRARIES}
         PRIVATE
             $<$<BOOL:${USD_001905_BUILD}>:hio>

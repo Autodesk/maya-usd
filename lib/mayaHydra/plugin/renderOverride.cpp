@@ -981,23 +981,29 @@ void MtohRenderOverride::_PopulateSelectionList(
                         hit, selectInfo, selectionList, worldSpaceHitPts)) {
                     continue;
                 }
-                SdfPath                                hitId = hit.objectId;
-                const MayaHydraSceneIndexRegistration& registration
-                    = _sceneIndexRegistry->GetSceneIndexRegistrationForRprim(hitId);
+                SdfPath pickedPath = hit.objectId;
+                if (auto registration
+                    = _sceneIndexRegistry->GetSceneIndexRegistrationForRprim(pickedPath))
                 // Scene index is incompatible with UFE. Skip
-                if (registration.ufeRtid != MayaHydraSceneIndexRegistry::kInvalidUfeRtid) {
+                {
+                    // Remove scene index plugin path prefix to obtain local picked path with
+                    // respect to current scene index. This is because the scene index was inserted
+                    // into the render index using a custom prefix. As a result the scene index
+                    // prefix will be prepended to rprims tied to that scene index automatically.
+                    SdfPath localPath(
+                        pickedPath.ReplacePrefix(registration->sceneIndexPathPrefix, SdfPath("/")));
+                    Ufe::Path interpetedPath(registration->interpretRprimPathFn(
+                        registration->pluginSceneIndex, localPath));
 
-                    // First segment describing path to the proxy shape node
-                    MDagPath dagPath(MDagPath::getAPathTo(registration.dagNode.object(), &status));
-                    // Second segment describing path to the rprim
-                    SdfPath secondSegmentPath(
-                        // Remove scene index plugin path prefix
-                        hitId.ReplacePrefix(registration.sceneIndexPathPrefix, SdfPath("/")));
-
-                    Ufe::Path ufePath({ UfeExtensions::dagPathToUfePathSegment(dagPath),
-                                        UfeExtensions::usdPathToUfePathSegment(
-                                            secondSegmentPath, registration.ufeRtid) });
-                    if (auto si = Ufe::Hierarchy::createItem(ufePath)) {
+                    // If this is a maya UFE path, then select using MSelectionList
+                    // This is because the NamedSelection ignores Ufe items made from maya ufe path
+                    if (interpetedPath.runTimeId() == UfeExtensions::getMayaRunTimeId()) {
+                        selectionList.add(UfeExtensions::ufeToDagPath(interpetedPath));
+                        worldSpaceHitPts.append(
+                            hit.worldSpaceHitPoint[0],
+                            hit.worldSpaceHitPoint[1],
+                            hit.worldSpaceHitPoint[2]);
+                    } else if (auto si = Ufe::Hierarchy::createItem(interpetedPath)) {
                         ufeSel->append(si);
                     }
                 }

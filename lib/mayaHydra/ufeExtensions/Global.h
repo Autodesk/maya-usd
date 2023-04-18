@@ -34,7 +34,16 @@ namespace UfeExtensions {
 using SdfPath = PXR_NS::SdfPath;
 
 UFEEXTENSIONS_API
-Ufe::PathSegment usdPathToUfePathSegment(const SdfPath& usdPath, Ufe::Rtid rtid);
+Ufe::Rtid getMayaRunTimeId();
+
+//! Convert a single-segment Maya UFE path to a Dag path.  If the argument path
+//! is not for a Maya object, or if it has more than one segment, returns an
+//! invalid MDagPath.
+UFEEXTENSIONS_API
+MDagPath ufeToDagPath(const Ufe::Path& ufePath);
+
+UFEEXTENSIONS_API
+Ufe::PathSegment sdfPathToUfePathSegment(const SdfPath& usdPath, Ufe::Rtid rtid);
 
 UFEEXTENSIONS_API
 Ufe::PathSegment dagPathToUfePathSegment(const MDagPath& dagPath);

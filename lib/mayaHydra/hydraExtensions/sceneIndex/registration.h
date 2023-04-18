@@ -20,29 +20,36 @@
 #include <mayaHydraLib/api.h>
 
 #include <pxr/imaging/hd/renderIndex.h>
+#include <pxr/imaging/hd/sceneIndex.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
 
 #include <maya/MCallbackIdArray.h>
 #include <maya/MMessage.h>
 #include <maya/MNodeMessage.h>
 #include <maya/MObject.h>
 #include <maya/MObjectHandle.h>
+#include <ufe/path.h>
 #include <ufe/rtid.h>
+#include <ufe/sceneItem.h>
+#include <ufe/ufe.h>
 
 #include <atomic>
 #include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+using MayaHydraSelectionObserverPtr = std::shared_ptr<class MayaHydraSelectionObserver>;
+using MayaHydraSceneIndexRegistrationPtr = std::shared_ptr<struct MayaHydraSceneIndexRegistration>;
+typedef Ufe::Path (*MayaHydraInterpretRprimPath)(const HdSceneIndexBaseRefPtr&, const SdfPath&);
+
 struct MayaHydraSceneIndexRegistration
 {
-    HdSceneIndexBasePtr sceneIndex;
-    SdfPath             sceneIndexPathPrefix;
-    MObjectHandle       dagNode;
-    Ufe::Rtid           ufeRtid = 0;
+    HdSceneIndexBaseRefPtr      pluginSceneIndex;
+    SdfPath                     sceneIndexPathPrefix;
+    MObjectHandle               dagNode;
+    MayaHydraInterpretRprimPath interpretRprimPathFn = nullptr;
 };
-
-using MayaHydraSceneIndexRegistrationPtr = std::shared_ptr<MayaHydraSceneIndexRegistration>;
 
 /**
  * \brief MayaHydraSceneIndexRegistration is used to register a scene index for a given dag node
@@ -70,12 +77,12 @@ public:
     ~MayaHydraSceneIndexRegistry();
 
     MAYAHYDRALIB_API
-    const MayaHydraSceneIndexRegistration&
+    MayaHydraSceneIndexRegistrationPtr
     GetSceneIndexRegistrationForRprim(const SdfPath& rprimPath) const;
 
 private:
     void
-                _AddSceneIndexForNode(MObject& dagNode); // dagNode non-const because of callback registration
+    _AddSceneIndexForNode(MObject& dagNode); // dagNode non-const because of callback registration
     bool        _RemoveSceneIndexForNode(const MObject& dagNode);
     static void _SceneIndexNodeAddedCallback(MObject& obj, void* clientData);
     static void _SceneIndexNodeRemovedCallback(MObject& obj, void* clientData);
