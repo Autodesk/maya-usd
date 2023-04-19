@@ -4,7 +4,7 @@
 
 By default, when a Maya user modifies USD data, the modifications are written
 to the current edit target. That is, to the current targeted layer. The current
-layer is selected in the Layer Manager window in Maya.
+layer is selected in the Layer Editor window in Maya.
 
 Edit routing is a mechanism to select which USD layer will receive edits.
 When a routable edit is about to happen, the Maya USD plugin can temporarily
@@ -25,7 +25,7 @@ current targeted layer will be used.
 
 Currently, edit routing is divided in two categories: commands and attributes.
 
-For commands, the edit routing is called it receives an operation name that
+For commands, when the edit routing is called it receives an operation name that
 corresponds to the specific command to be routed. Only a subset of commands can
 be routed, but this subset is expected to grow. The operations that can be
 routed are named:
@@ -94,7 +94,7 @@ def routeToSessionLayer(context, routingData):
 
 Inputs:
 - prim: the USD prim (UsdPrim) that is being affected.
-- operation: the operation name (TfToken). Either visibility, duplicate or parent.
+- operation: the operation name (TfToken). Always attribute.
 - attribute: the attribute name, including its namespace, if any (TfToken).
 
 Outputs:
@@ -126,17 +126,35 @@ def routeAttrToSessionLayer(context, routingData):
 The maya reference edit routing is more complex than the other ones. It is
 described in the following documentation: [Maya Reference Edit Router](lib/usd/translators/mayaReferenceEditRouter.md).
 
-## API to register edit routing
+## Managing edit routers
 
-The Maya USD plugin provides C++ and Python functions to register edit routers.
-The function is called `registerEditRouter` and takes as arguments the name of
-the operation to be routed, as a USD token (TfToken) and the function that will
-do the routing. For example, the following Python script routes the `visibility`
-operation using a function called `routeToSessionLayer`:
+The Maya USD plugin provides C++ and Python functions to register edit routers
+and to remove them. The function to register an edit router is called
+`registerEditRouter` and takes as arguments the name of the operation to be
+routed, as a USD token (TfToken) and the function that will do the routing.
+For example, the following Python script routes the `visibility` operation
+using a function called `routeToSessionLayer`:
 
 ```Python
 import mayaUsd.lib
 mayaUsd.lib.registerEditRouter('visibility', routeToSessionLayer)
+```
+
+The function to turn off an edit router for a given operation is called
+`restoreDefaultEditRouter`. It restores the default edit router for that
+operation. For example, to turn off the edit router for `visibility`:
+
+```Python
+import mayaUsd.lib
+mayaUsd.lib.restoreDefaultEditRouter('visibility')
+```
+
+There is also a function to turn off all edit routing for all operations,
+called `restoreAllDefaultEditRouters`. It takes no argument. For example:
+
+```Python
+import mayaUsd.lib
+mayaUsd.lib.restoreAllDefaultEditRouters()
 ```
 
 ## Canceling commands
@@ -158,6 +176,71 @@ def preventCommandEditRouter(context, routingData):
     '''
     opName = context.get('operation') or 'unknown operation'
     raise Exception('Sorry, %s is not permitted' % opName)
+```
+
+## Routing custom composite commands
+
+When writing composite commands, that is a command made-up of sub-commands,
+it is possible to route the whole command. This will route all sub-commands
+to the same destination layer and ignore individual routing of each individual
+sub-command.
+
+To do this, one must choose a new and unique operation name for the composite
+command. We suggest that you use some unique prefix for your operation names
+to avoid conflict with future operation the Maya team might add in the future.
+
+Then one use the `OperationEditRouterContext` object in the composite command
+implementation to automatically do the routing. It is important to use the
+router countext in all functions so that the sub-commands are routed to the
+correct layer. Here is an example of a composite command written in Python:
+
+```Python
+import mayaUsd.lib
+import ufe
+
+class CustomCompositeCmd(ufe.CompositeUndoableCommand):
+    '''
+    Custom composite command that can be routed.
+    '''
+
+    customOpName = 'my studio name: custom operation name'
+
+    def __init__(self, prim, sceneItem):
+        super().__init__()
+        self._prim = prim
+        ctx = mayaUsd.lib.OperationEditRouterContext(self.customOpName, self._prim)
+        o3d = ufe.Object3d.object3d(sceneItem)
+        self.append(o3d.setVisibleCmd(False))
+
+    def execute(self):
+        ctx = mayaUsd.lib.OperationEditRouterContext(self.customOpName, self._prim)
+        super().execute()
+
+    def undo(self):
+        ctx = mayaUsd.lib.OperationEditRouterContext(self.customOpName, self._prim)
+        super().undo()
+
+    def redo(self):
+        ctx = mayaUsd.lib.OperationEditRouterContext(self.customOpName, self._prim)
+        super().redo()
+```
+
+Afterward, to route the new custom command, one would register an edit router
+with the custom operation name, like any other simple command. For example, in
+Python, it would look like this:
+
+```Python
+import mayaUsd.lib
+
+def routeCmdToRootLayer(context, routingData):
+    '''
+    Route the command to the root layer.
+    '''
+    prim = context.get('prim')
+    if prim:
+        routingData['layer'] = prim.GetStage().GetRootLayer().identifier
+
+mayaUsd.lib.registerEditRouter('my studio name: custom operation name', routeCmdToRootLayer)
 ```
 
 ## Persisting the edit routers

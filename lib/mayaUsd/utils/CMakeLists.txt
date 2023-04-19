@@ -11,6 +11,7 @@ target_sources(${PROJECT_NAME}
         dynamicAttribute.cpp
         editability.cpp
         editRouter.cpp
+        editRouterContext.cpp
         layerMuting.cpp
         layers.cpp
         loadRules.cpp
@@ -48,6 +49,7 @@ set(HEADERS
     dynamicAttribute.h
     editability.h
     editRouter.h
+    editRouterContext.h
     hash.h
     layerMuting.h
     layers.h

@@ -31,6 +31,7 @@ public:
     typedef std::shared_ptr<UsdShaderNodeDef> Ptr;
 
     static constexpr char kNodeDefCategoryShader[] = "Shader";
+    static constexpr char kNodeDefCategorySurface[] = "Surface";
 
     UsdShaderNodeDef(const PXR_NS::SdrShaderNodeConstPtr& shaderNodeDef);
     ~UsdShaderNodeDef();

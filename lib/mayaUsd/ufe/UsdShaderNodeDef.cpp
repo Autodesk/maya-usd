@@ -20,6 +20,7 @@
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdShaderAttributeDef.h>
 #include <mayaUsd/ufe/UsdUndoCreateFromNodeDefCommand.h>
+#include <mayaUsd/ufe/UsdUndoMaterialCommands.h>
 #endif
 
 #include "Global.h"
@@ -45,6 +46,7 @@ namespace ufe {
 PXR_NAMESPACE_USING_DIRECTIVE
 
 constexpr char UsdShaderNodeDef::kNodeDefCategoryShader[];
+constexpr char UsdShaderNodeDef::kNodeDefCategorySurface[];
 
 template <Ufe::AttributeDef::IOType IOTYPE>
 Ufe::ConstAttributeDefs getAttrs(const SdrShaderNodeConstPtr& shaderNodeDef)
@@ -359,6 +361,12 @@ Ufe::InsertChildCommand::Ptr UsdShaderNodeDef::createNodeCmd(
     TF_AXIOM(fShaderNodeDef);
     UsdSceneItem::Ptr parentItem = std::dynamic_pointer_cast<UsdSceneItem>(parent);
     if (parentItem) {
+        if (parentItem->nodeType() == "Scope"
+            && parentItem->nodeName()
+                == UsdUndoAssignNewMaterialCommand::resolvedMaterialScopeName()) {
+            return UsdUndoAddNewMaterialCommand::create(
+                parentItem, fShaderNodeDef->GetIdentifier());
+        }
         return UsdUndoCreateFromNodeDefCommand::create(
             fShaderNodeDef, parentItem, UsdMayaUtil::SanitizeName(name.string()));
     }
@@ -377,11 +385,21 @@ UsdShaderNodeDef::Ptr UsdShaderNodeDef::create(const SdrShaderNodeConstPtr& shad
 
 Ufe::NodeDefs UsdShaderNodeDef::definitions(const std::string& category)
 {
+    static std::unordered_set<std::string> validCategories = {
+        Ufe::NodeDefHandler::kNodeDefCategoryAll, kNodeDefCategoryShader, kNodeDefCategorySurface
+    };
+
     Ufe::NodeDefs result;
-    if (category == std::string(Ufe::NodeDefHandler::kNodeDefCategoryAll)
-        || category == std::string(kNodeDefCategoryShader)) {
-        SdrRegistry&        registry = SdrRegistry::GetInstance();
-        SdrShaderNodePtrVec shaderNodeDefs = registry.GetShaderNodesByFamily();
+    if (validCategories.count(category)) {
+        SdrShaderNodePtrVec shaderNodeDefs;
+
+        if (category == kNodeDefCategorySurface) {
+            shaderNodeDefs = UsdMayaUtil::GetSurfaceShaderNodeDefs();
+        } else {
+            SdrRegistry& registry = SdrRegistry::GetInstance();
+            shaderNodeDefs = registry.GetShaderNodesByFamily();
+        }
+
         result.reserve(shaderNodeDefs.size());
         for (const SdrShaderNodeConstPtr& shaderNodeDef : shaderNodeDefs) {
             result.emplace_back(UsdShaderNodeDef::create(shaderNodeDef));

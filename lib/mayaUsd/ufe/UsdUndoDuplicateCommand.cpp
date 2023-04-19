@@ -21,6 +21,7 @@
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/editRouter.h>
+#include <mayaUsd/utils/editRouterContext.h>
 #include <mayaUsd/utils/loadRules.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/undo/UsdUndoBlock.h>
@@ -59,7 +60,6 @@ UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(const UsdSceneItem::Ptr& srcIte
     _usdDstPath = parentPrim.GetPath().AppendChild(TfToken(newName));
 
     _srcLayer = MayaUsdUtils::getDefiningLayerAndPath(srcPrim).layer;
-    _dstLayer = getEditRouterLayer(MayaUsdEditRoutingTokens->RouteDuplicate, srcPrim);
 }
 
 UsdUndoDuplicateCommand::~UsdUndoDuplicateCommand() { }
@@ -84,6 +84,9 @@ void UsdUndoDuplicateCommand::execute()
     auto prim = ufePathToPrim(_ufeSrcPath);
     auto path = prim.GetPath();
     auto stage = prim.GetStage();
+
+    OperationEditRouterContext ctx(MayaUsdEditRoutingTokens->RouteDuplicate, prim);
+    _dstLayer = stage->GetEditTarget().GetLayer();
 
     auto                               item = Ufe::Hierarchy::createItem(_ufeSrcPath);
     MayaUsd::ufe::ReplicateExtrasToUSD extras;

@@ -1925,7 +1925,6 @@ class AttributeTestCase(unittest.TestCase):
         '''Test the name prettification routine.'''
         self.assertEqual(mayaUsdLib.Util.prettifyName("standard_surface"), "Standard Surface")
         self.assertEqual(mayaUsdLib.Util.prettifyName("standardSurface"), "Standard Surface")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("UsdPreviewSurface"), "Usd Preview Surface")
         self.assertEqual(mayaUsdLib.Util.prettifyName("USDPreviewSurface"), "USD Preview Surface")
         self.assertEqual(mayaUsdLib.Util.prettifyName("xformOp:rotateXYZ"), "Xform Op Rotate XYZ")
         self.assertEqual(mayaUsdLib.Util.prettifyName("ior"), "Ior")
@@ -1933,6 +1932,10 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(mayaUsdLib.Util.prettifyName("specular_IOR"), "Specular IOR")
         # This is as expected as we do not insert space on digit<->alpha transitions:
         self.assertEqual(mayaUsdLib.Util.prettifyName("Dx11Shader"), "Dx11Shader")
+        # Explicit substitutions
+        self.assertEqual(mayaUsdLib.Util.prettifyName("UsdPreviewSurface"), "USD Preview Surface")
+        self.assertEqual(mayaUsdLib.Util.prettifyName("mtlx"), "MaterialX")
+        self.assertEqual(mayaUsdLib.Util.prettifyName("gltf_pbr"), "glTF PBR")
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testAttributeMetadataChanged(self):

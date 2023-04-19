@@ -30,6 +30,7 @@
 #include <pxr/base/vt/value.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdr/declare.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/timeCode.h>
@@ -694,6 +695,10 @@ void AddMayaExtents(
     PXR_NS::GfBBox3d&         bbox,
     const PXR_NS::UsdPrim&    root,
     const PXR_NS::UsdTimeCode time);
+
+/// Access to materials associated with available renderers
+MAYAUSD_CORE_PUBLIC
+SdrShaderNodePtrVec GetSurfaceShaderNodeDefs();
 
 } // namespace UsdMayaUtil
 

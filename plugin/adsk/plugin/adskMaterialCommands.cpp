@@ -17,6 +17,9 @@
 
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
+#if (UFE_PREVIEW_VERSION_NUM >= 4001)
+#include <mayaUsd/ufe/UsdShaderNodeDef.h>
+#endif
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/query.h>
 #include <mayaUsd/utils/util.h>
@@ -60,6 +63,7 @@ MStatus ADSKMayaUSDGetMaterialsForRenderersCommand::parseArgs(const MArgList& ar
     return MS::kSuccess;
 }
 
+#if (UFE_PREVIEW_VERSION_NUM < 4001)
 void ADSKMayaUSDGetMaterialsForRenderersCommand::appendMaterialXMaterials() const
 {
     // TODO: Replace hard-coded materials with dynamically generated list.
@@ -101,6 +105,7 @@ void ADSKMayaUSDGetMaterialsForRenderersCommand::appendUsdMaterials() const
     const MString identifier = "UsdPreviewSurface";
     appendToResult("USD/" + label + "|" + identifier);
 }
+#endif
 
 // main MPxCommand execution point
 MStatus ADSKMayaUSDGetMaterialsForRenderersCommand::doIt(const MArgList& argList)
@@ -111,12 +116,29 @@ MStatus ADSKMayaUSDGetMaterialsForRenderersCommand::doIt(const MArgList& argList
     if (!status)
         return status;
 
-    // TODO: The list of returned materials is currently hard-coded and only for select,
-    // known renderers. We should populate the material lists dynamically based on what the
-    // installed renderers report as supported materials.
+        // TODO: The list of returned materials is currently hard-coded and only for select,
+        // known renderers. We should populate the material lists dynamically based on what the
+        // installed renderers report as supported materials.
+
+#if (UFE_PREVIEW_VERSION_NUM >= 4001)
+    const auto shaderNodeDefs = UsdMayaUtil::GetSurfaceShaderNodeDefs();
+    for (const auto& nodeDef : shaderNodeDefs) {
+        // To make use of ufe classifications
+        auto ufeNodeDef = ufe::UsdShaderNodeDef::create(nodeDef);
+        auto familyName = ufeNodeDef->classification(0);
+        auto sourceType = ufeNodeDef->classification(ufeNodeDef->nbClassifications() - 1);
+        appendToResult(MString(TfStringPrintf(
+                                   "%s/%s|%s",
+                                   UsdMayaUtil::prettifyName(sourceType).c_str(),
+                                   UsdMayaUtil::prettifyName(familyName).c_str(),
+                                   nodeDef->GetIdentifier().GetText())
+                                   .c_str()));
+    }
+#else
     appendUsdMaterials();
     appendArnoldMaterials();
     appendMaterialXMaterials();
+#endif
 
     return MS::kSuccess;
 }
@@ -219,6 +241,12 @@ static bool isNodeTypeInList(
     for (const auto& ancestorType : ancestors) {
         const auto canonicalAncestorName
             = TfType::Find<UsdSchemaBase>().FindDerivedByName(ancestorType.c_str());
+
+        // Make sure we see at least one actual ancestor: For some types the first reported
+        // ancestor is the same as the node type itself.
+        if (canonicalAncestorName == canonicalName) {
+            continue;
+        }
 
         // Check whether an ancestor of our node matches one of the listed node types.
         if (std::find(
