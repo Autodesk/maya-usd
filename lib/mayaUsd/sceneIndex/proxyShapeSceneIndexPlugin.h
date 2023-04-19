@@ -42,6 +42,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdFlatteningSceneIndex;
+TF_DECLARE_WEAK_AND_REF_PTRS(HdFlatteningSceneIndex);
 
 // The plugin class must be present in the pixar scope otherwise the factory method registered by
 // HdSceneIndexPluginRegistry::Define will not be available from the string constructed from the
