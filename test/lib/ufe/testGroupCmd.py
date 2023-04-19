@@ -521,9 +521,9 @@ class GroupCmdTestCase(unittest.TestCase):
         cmds.undo()
 
         self.assertEqual([item for item in stage.Traverse()],
-            [stage.GetPrimAtPath("/Sphere3"), 
+            [stage.GetPrimAtPath("/Sphere1"), 
             stage.GetPrimAtPath("/Sphere2"),
-            stage.GetPrimAtPath("/Sphere1")])
+            stage.GetPrimAtPath("/Sphere3")])
 
         cmds.redo()
 
@@ -610,9 +610,9 @@ class GroupCmdTestCase(unittest.TestCase):
         cmds.undo()
 
         self.assertEqual([item for item in stage.Traverse()],
-            [stage.GetPrimAtPath("/Sphere3"), 
+            [stage.GetPrimAtPath("/Sphere1"), 
             stage.GetPrimAtPath("/Sphere2"),
-            stage.GetPrimAtPath("/Sphere1")])
+            stage.GetPrimAtPath("/Sphere3")])
 
         verifyRadius(getItem(oldSphere1Name), radius)
 
@@ -666,6 +666,8 @@ class GroupCmdTestCase(unittest.TestCase):
         groupItem = ufe.GlobalSelection.get().front()
         groupHierarchy = ufe.Hierarchy.hierarchy(groupItem)
         self.assertEqual(len(groupHierarchy.children()), 3)
+
+        print(stage.GetLoadRules())
 
         self.assertEqual(loadRules.NoneRule, stage.GetLoadRules().GetEffectiveRuleForPath('/group1/Sphere1'))
         self.assertEqual(loadRules.AllRule, stage.GetLoadRules().GetEffectiveRuleForPath('/group1/Sphere2'))

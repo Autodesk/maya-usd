@@ -183,7 +183,7 @@ static void doUsdInsertion(
     }
 }
 
-static UsdSceneItem::Ptr doInsertion(
+static void doInsertion(
     const SdfPath&   srcUsdPath,
     const Ufe::Path& srcUfePath,
     const SdfPath&   dstUsdPath,
@@ -201,12 +201,6 @@ static UsdSceneItem::Ptr doInsertion(
     const SdfLayerHandle&      dstLayer = srcPrim.GetStage()->GetEditTarget().GetLayer();
 
     enforceMutedLayer(srcPrim, "reparent");
-
-    // Make sure the load state of the reparented prim will be preserved.
-    // We copy all rules that applied to it specifically and remove the rules
-    // that applied to it specifically.
-    duplicateLoadRules(*stage, srcUsdPath, dstUsdPath);
-    removeRulesForPath(*stage, srcUsdPath);
 
     // Do the insertion from the source layer to the target layer.
     {
@@ -252,16 +246,35 @@ static UsdSceneItem::Ptr doInsertion(
           };
 
     applyToAllLayersWithOpinions(srcPrim, removeFunc);
+}
 
-    UsdSceneItem::Ptr dstItem = UsdSceneItem::create(dstUfePath, ufePathToPrim(dstUfePath));
-    sendNotification<Ufe::ObjectReparent>(dstItem, srcUfePath);
-    return dstItem;
+static void
+preserveLoadRules(const Ufe::Path& srcUfePath, const SdfPath& srcUsdPath, const SdfPath& dstUsdPath)
+{
+    UsdPrim           srcPrim = ufePathToPrim(srcUfePath);
+    const UsdStagePtr stage = srcPrim.GetStage();
+
+    // Make sure the load state of the reparented prim will be preserved.
+    // We copy all rules that applied to it specifically and remove the rules
+    // that applied to it specifically.
+    duplicateLoadRules(*stage, srcUsdPath, dstUsdPath);
+    removeRulesForPath(*stage, srcUsdPath);
+}
+
+static const UsdSceneItem::Ptr
+sendReparentNotification(const Ufe::Path& srcUfePath, const Ufe::Path& dstUfePath)
+{
+    UsdPrim                 dstPrim = ufePathToPrim(dstUfePath);
+    const UsdSceneItem::Ptr ufeDstItem = UsdSceneItem::create(dstUfePath, dstPrim);
+
+    sendNotification<Ufe::ObjectReparent>(ufeDstItem, srcUfePath);
+
+    return ufeDstItem;
 }
 
 void UsdUndoInsertChildCommand::execute()
 {
     InPathChange pc;
-    UsdUndoBlock undoBlock(&_undoableItem);
 
     if (_usdDstPath.IsEmpty()) {
         const auto& parentPrim = ufePathToPrim(_ufeParentPath);
@@ -282,21 +295,46 @@ void UsdUndoInsertChildCommand::execute()
         _usdDstPath = parentPrim.GetPath().AppendChild(TfToken(childName));
     }
 
+    // Load rules must be duplicated before the prim is moved to be able
+    // to access the existing rules.
+    preserveLoadRules(_ufeSrcPath, _usdSrcPath, _usdDstPath);
+
     // We need to keep the generated item to be able to return it to the caller
     // via the insertedChild() member function.
-    _ufeDstItem = doInsertion(_usdSrcPath, _ufeSrcPath, _usdDstPath, _ufeDstPath);
+    {
+        UsdUndoBlock undoBlock(&_undoableItem);
+        doInsertion(_usdSrcPath, _ufeSrcPath, _usdDstPath, _ufeDstPath);
+    }
+
+    _ufeDstItem = sendReparentNotification(_ufeSrcPath, _ufeDstPath);
 }
 
 void UsdUndoInsertChildCommand::undo()
 {
     InPathChange pc;
+
+    // Load rules must be duplicated before the prim is moved to be able
+    // to access the existing rules.
+    // Note: the arguments passed are the opposite of those in execute and redo().
+    preserveLoadRules(_ufeDstPath, _usdDstPath, _usdSrcPath);
+
     _undoableItem.undo();
+
+    // Note: the arguments passed are the opposite of those in execute and redo().
+    sendReparentNotification(_ufeDstPath, _ufeSrcPath);
 }
 
 void UsdUndoInsertChildCommand::redo()
 {
     InPathChange pc;
+
+    // Load rules must be duplicated before the prim is moved to be able
+    // to access the existing rules.
+    preserveLoadRules(_ufeSrcPath, _usdSrcPath, _usdDstPath);
+
     _undoableItem.redo();
+
+    _ufeDstItem = sendReparentNotification(_ufeSrcPath, _ufeDstPath);
 }
 
 } // namespace ufe
