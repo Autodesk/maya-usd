@@ -163,8 +163,6 @@ bool MayaHydraSceneIndexRegistry::_RemoveSceneIndexForNode(const MObject& dagNod
     return false;
 }
 
-constexpr char kDataSourceEntryNodePathName[] = { "object" };
-constexpr char kDataSourceEntryInterpretRprimPathName[] = { "interpretRprimPath" };
 constexpr char kSceneIndexPluginSuffix[] = {
     "MayaNodeSceneIndexPlugin"
 }; // every scene index plugin compatible with the hydra viewport requires this suffix
@@ -182,23 +180,29 @@ void MayaHydraSceneIndexRegistry::_AddSceneIndexForNode(MObject& dagNode)
         = HdSceneIndexPluginRegistry::GetInstance();
     if (sceneIndexPluginRegistry.IsRegisteredPlugin(sceneIndexPluginId)) {
         using MayaHydraMObjectDataSource = HdRetainedTypedSampledDataSource<MObject>;
+        using MayaHydraVersionDataSource = HdRetainedTypedSampledDataSource<int>;
         // Functions retrieved from the scene index plugin
         using MayaHydraInterpretRprimPathDataSource
             = HdRetainedTypedSampledDataSource<MayaHydraInterpretRprimPath&>;
 
         // Create the registration record which is then added into the registry if everything
         // succeeds
+        static TfToken sDataSourceEntryNames[] { TfToken("object"),
+                                                 TfToken("version"),
+                                                 TfToken("interpretRprimPath") };
+        constexpr int  kDataSourceNumEntries = sizeof(sDataSourceEntryNames) / sizeof(TfToken);
         MayaHydraSceneIndexRegistrationPtr registration(new MayaHydraSceneIndexRegistration());
-
-        TfToken names[3] {
-
-            TfToken(kDataSourceEntryNodePathName), TfToken(kDataSourceEntryInterpretRprimPathName)
-        };
-        HdDataSourceBaseHandle values[2] { MayaHydraMObjectDataSource::New(dagNode),
-                                           MayaHydraInterpretRprimPathDataSource::New(
-                                               registration->interpretRprimPathFn) };
+        HdDataSourceBaseHandle             values[] { MayaHydraMObjectDataSource::New(dagNode),
+                                          MayaHydraVersionDataSource::New(MAYAHYDRA_API_VERSION),
+                                          MayaHydraInterpretRprimPathDataSource::New(
+                                              registration->interpretRprimPathFn) };
+        static_assert(
+            sizeof(values) / sizeof(HdDataSourceBaseHandle) == kDataSourceNumEntries,
+            "Incorrect number of data source entries");
         registration->pluginSceneIndex = sceneIndexPluginRegistry.AppendSceneIndex(
-            sceneIndexPluginId, nullptr, HdRetainedContainerDataSource::New(2, names, values));
+            sceneIndexPluginId,
+            nullptr,
+            HdRetainedContainerDataSource::New(kDataSourceNumEntries, sDataSourceEntryNames, values));
         if (TF_VERIFY(
                 registration->pluginSceneIndex,
                 "HdSceneIndexBase::AppendSceneIndex failed to create %s scene index from given "
