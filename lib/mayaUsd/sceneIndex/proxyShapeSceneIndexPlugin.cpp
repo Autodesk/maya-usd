@@ -41,9 +41,11 @@
 
 #include <pxr/base/tf/refPtr.h>
 
-typedef Ufe::Path (*MayaHydraInterpretRprimPath)(const HdSceneIndexBaseRefPtr&, const SdfPath&);
-
 PXR_NAMESPACE_OPEN_SCOPE
+
+typedef Ufe::Path (*MayaHydraInterpretRprimPath)(const HdSceneIndexBaseRefPtr&, const SdfPath&);
+typedef void (
+    *MayaHydraHandleSelectionChanged)(const HdSceneIndexBaseRefPtr&, const Ufe::SelectionChanged&);
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -63,21 +65,43 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
     static TfToken         dataSourceNodePathEntry("object");
     HdDataSourceBaseHandle dataSourceEntryPathHandle = inputArgs->Get(dataSourceNodePathEntry);
 
+    using MayaHydraVersionDataSource = HdRetainedTypedSampledDataSource<int>;
+    static TfToken         dataSourceVersionEntry("version");
+    HdDataSourceBaseHandle dataSourceEntryVersionHandle = inputArgs->Get(dataSourceVersionEntry);
+    int version = 100; // initial mayaHydra version where version data source had not been defined
+    if (auto dataSourceEntryVersion
+        = MayaHydraVersionDataSource::Cast(dataSourceEntryVersionHandle)) {
+        version = dataSourceEntryVersion->GetTypedValue(0.0f);
+    }
+
     if (auto dataSourceEntryNodePath = HdMObjectDataSource::Cast(dataSourceEntryPathHandle)) {
 #if WANT_UFE_BUILD
-        // Retrieve interpret pick function from the scene index plugin, to be accessed by mayaHydra
-        // interpretRprimPath
-        using MayaHydraInterpretRprimPathDataSource
-            = HdRetainedTypedSampledDataSource<MayaHydraInterpretRprimPath&>;
-        static TfToken         dataSourceInterpretPickEntry("interpretRprimPath");
-        HdDataSourceBaseHandle dataSourceEntryInterpretPickHandle
-            = inputArgs->Get(dataSourceInterpretPickEntry);
-        auto dataSourceEntryInterpretPick
-            = MayaHydraInterpretRprimPathDataSource::Cast(dataSourceEntryInterpretPickHandle);
-        MayaHydraInterpretRprimPath& interpretRprimPath
-            = dataSourceEntryInterpretPick->GetTypedValue(0.0f);
-        interpretRprimPath = (MayaHydraInterpretRprimPath)&MayaUsd::MayaUsdProxyShapeSceneIndex::
-            InterpretRprimPath;
+        if (version >= 200) {
+            // Retrieve interpret pick function from the scene index plugin, to be accessed by
+            // mayaHydra interpretRprimPath
+            using MayaHydraInterpretRprimPathDataSource
+                = HdRetainedTypedSampledDataSource<MayaHydraInterpretRprimPath&>;
+            static TfToken         dataSourceInterpretPickEntry("interpretRprimPath");
+            HdDataSourceBaseHandle dataSourceEntryInterpretPickHandle
+                = inputArgs->Get(dataSourceInterpretPickEntry);
+            auto dataSourceEntryInterpretPick
+                = MayaHydraInterpretRprimPathDataSource::Cast(dataSourceEntryInterpretPickHandle);
+            MayaHydraInterpretRprimPath& interpretRprimPath
+                = dataSourceEntryInterpretPick->GetTypedValue(0.0f);
+            interpretRprimPath = (MayaHydraInterpretRprimPath)&MayaUsd::
+                MayaUsdProxyShapeSceneIndex::InterpretRprimPath;
+        } else {
+            using HdRtidRefDataSource = HdRetainedTypedSampledDataSource<Ufe::Rtid&>;
+            static TfToken         dataSourceRuntimeEntry("runtime");
+            HdDataSourceBaseHandle dataSourceEntryRuntimeHandle
+                = inputArgs->Get(dataSourceRuntimeEntry);
+            auto dataSourceEntryRuntime = HdRtidRefDataSource::Cast(dataSourceEntryRuntimeHandle);
+            if (TF_VERIFY(dataSourceEntryRuntime, "Error UFE runtime id data source not found")) {
+                Ufe::Rtid& id = dataSourceEntryRuntime->GetTypedValue(0.0f);
+                id = MayaUsd::ufe::getUsdRunTimeId();
+                TF_VERIFY(id != 0, "Invalid UFE runtime id");
+            }
+        }
 #endif
         MObject           dagNode = dataSourceEntryNodePath->GetTypedValue(0.0f);
         MStatus           status;
