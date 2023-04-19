@@ -44,8 +44,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 typedef Ufe::Path (*MayaHydraInterpretRprimPath)(const HdSceneIndexBaseRefPtr&, const SdfPath&);
-typedef void (
-    *MayaHydraHandleSelectionChanged)(const HdSceneIndexBaseRefPtr&, const Ufe::SelectionChanged&);
 
 TF_REGISTRY_FUNCTION(TfType)
 {
