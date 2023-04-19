@@ -175,7 +175,7 @@ class ShaderNodeDefTestCase(unittest.TestCase):
         output = nodeDef.output("out")
         self.assertEqual(output.getMetadata("__SDR__defaultinput"), ufe.Value("in1"))
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4001', 'nodeDefHandler is only available in UFE preview version 0.4.1 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'nodeDefHandler is only available in UFE V4 or greater')
     def testNodeCreation(self):
         import mayaUsd_createStageWithNewLayer
         mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
