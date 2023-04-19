@@ -360,15 +360,9 @@ std::string MayaSessionState::defaultLoadPath() const
 void MayaSessionState::rootLayerPathChanged(std::string const& in_path)
 {
     if (!_currentStageEntry._proxyShapePath.empty()) {
-
-        MString script;
         MString proxyShape(_currentStageEntry._proxyShapePath.c_str());
         MString newValue(in_path.c_str());
-        script.format("setAttr -type \"string\" ^1s.filePath \"^2s\"", proxyShape, newValue);
-        MGlobal::executeCommand(
-            script,
-            /*display*/ true,
-            /*undo*/ false);
+        MayaUsd::utils::setNewProxyPath(proxyShape, newValue, nullptr, false);
     }
 }
 
