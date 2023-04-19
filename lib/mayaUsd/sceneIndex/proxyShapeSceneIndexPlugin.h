@@ -25,6 +25,7 @@
 #include <mayaUsd/nodes/proxyShapeBase.h>
 
 #include <pxr/base/tf/refPtr.h>
+#include <pxr/imaging/hd/flatteningSceneIndex.h>
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/sceneIndexPlugin.h>
 #include <pxr/imaging/hd/sceneIndexPluginRegistry.h>

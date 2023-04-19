@@ -22,7 +22,6 @@
 #include <mayaUsd/ufe/Global.h>
 #endif
 
-#include <pxr/imaging/hd/flatteningSceneIndex.h>
 #include <pxr/imaging/hd/retainedDataSource.h>
 #include <pxr/imaging/hd/sceneIndexPlugin.h>
 #include <pxr/imaging/hd/sceneIndexPluginRegistry.h>
