@@ -144,9 +144,11 @@ def ProxyShapeFilePathChanged(filePathAttr, newFilePath=None):
                 debugMessage('    User picked USD file, setting file path attribute')
                 # Simply set the file path attribute. The proxy shape will load the file.
                 usdFileToLoad = res[0]
-                if RequireUsdPathsRelativeToMayaSceneFile():
+                requireRelative = RequireUsdPathsRelativeToMayaSceneFile()
+                if requireRelative:
                     usdFileToLoad = mayaUsdLib.Util.getPathRelativeToMayaSceneFile(usdFileToLoad)
                 cmds.setAttr(filePathAttr, usdFileToLoad, type='string')
+                cmds.setAttr(filePathAttr+"Relative", requireRelative)
                 return True
         elif newFilePath is not None:
             # Instead of opening a file dialog to get the USD file, simply
