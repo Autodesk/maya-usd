@@ -76,7 +76,10 @@ class MayaUsdProxyShapeSceneIndex : public HdSingleInputFilteringSceneIndexBase
 public:
     using ParentClass = HdSingleInputFilteringSceneIndexBase;
 
-    static MayaUsdProxyShapeSceneIndexRefPtr New(MayaUsdProxyShapeBase* proxyShape);
+    static MayaUsdProxyShapeSceneIndexRefPtr
+    New(MayaUsdProxyShapeBase*                 proxyShape,
+        const HdFlatteningSceneIndexRefPtr&    flatteningSceneIndex,
+        const UsdImagingStageSceneIndexRefPtr& usdImagingStageSceneIndex);
 
     static Ufe::Path
     InterpretRprimPath(const HdSceneIndexBaseRefPtr& sceneIndex, const SdfPath& path);

@@ -65,6 +65,8 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
     static TfToken         dataSourceNodePathEntry("object");
     HdDataSourceBaseHandle dataSourceEntryPathHandle = inputArgs->Get(dataSourceNodePathEntry);
 
+    // Retrieve the version integer. The Version integer combines major, minor, and patch number
+    // like this major * 10000 + minor * 100 + patch
     using MayaHydraVersionDataSource = HdRetainedTypedSampledDataSource<int>;
     static TfToken         dataSourceVersionEntry("version");
     HdDataSourceBaseHandle dataSourceEntryVersionHandle = inputArgs->Get(dataSourceVersionEntry);
@@ -112,7 +114,13 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
 
         auto proxyShape = dynamic_cast<MayaUsdProxyShapeBase*>(dependNodeFn.userNode());
         if (TF_VERIFY(proxyShape, "Error getting MayaUsdProxyShapeBase")) {
-            return MayaUsd::MayaUsdProxyShapeSceneIndex::New(proxyShape);
+            // Convert USD prims to rprims consumed by Hydra
+            auto usdImagingStageSceneIndex = UsdImagingStageSceneIndex::New();
+            // Flatten transforms, visibility, purpose, model, and material
+            // bindings over hierarchies.
+            auto flatteningSceneIndex = HdFlatteningSceneIndex::New(usdImagingStageSceneIndex);
+            return MayaUsd::MayaUsdProxyShapeSceneIndex::New(
+                proxyShape, flatteningSceneIndex, usdImagingStageSceneIndex);
         }
     }
 
@@ -140,20 +148,14 @@ MayaUsdProxyShapeSceneIndex::MayaUsdProxyShapeSceneIndex(
 
 MayaUsdProxyShapeSceneIndex::~MayaUsdProxyShapeSceneIndex() { }
 
-MayaUsdProxyShapeSceneIndexRefPtr
-MayaUsdProxyShapeSceneIndex::New(MayaUsdProxyShapeBase* proxyShape)
+MayaUsdProxyShapeSceneIndexRefPtr MayaUsdProxyShapeSceneIndex::New(
+    MayaUsdProxyShapeBase*                 proxyShape,
+    const HdFlatteningSceneIndexRefPtr&    flatteningSceneIndex,
+    const UsdImagingStageSceneIndexRefPtr& usdImagingStageSceneIndex)
 {
-    auto usdImagingStageSceneIndex = UsdImagingStageSceneIndex::New();
-
     // Create the proxy shape scene index which populates the stage
     return TfCreateRefPtr(new MayaUsdProxyShapeSceneIndex(
-        // Flatten transforms, visibility, purpose, model, and material
-        // bindings over hierarchies.
-        HdFlatteningSceneIndex::New(
-            // Convert USD prims to rprims consumed by Hydra
-            usdImagingStageSceneIndex),
-        usdImagingStageSceneIndex,
-        proxyShape));
+        flatteningSceneIndex, usdImagingStageSceneIndex, proxyShape));
 }
 
 Ufe::Path MayaUsdProxyShapeSceneIndex::InterpretRprimPath(
