@@ -22,6 +22,7 @@
 #include <mayaUsd/ufe/Global.h>
 #endif
 
+#include <pxr/imaging/hd/flatteningSceneIndex.h>
 #include <pxr/imaging/hd/retainedDataSource.h>
 #include <pxr/imaging/hd/sceneIndexPlugin.h>
 #include <pxr/imaging/hd/sceneIndexPluginRegistry.h>
@@ -167,8 +168,7 @@ Ufe::Path MayaUsdProxyShapeSceneIndex::InterpretRprimPath(
         MDagPath dagPath(
             MDagPath::getAPathTo(proxyShapeSceneIndex->_proxyShape->thisMObject(), &status));
         return Ufe::Path({ MayaUsd::ufe::dagPathToPathSegment(dagPath),
-                           // Disable UfePath instances, passing in -1 to indicate this
-                           MayaUsd::ufe::usdPathToUfePathSegment(path, -1) });
+                           MayaUsd::ufe::usdPathToUfePathSegment(path) });
     }
 
     return Ufe::Path();
