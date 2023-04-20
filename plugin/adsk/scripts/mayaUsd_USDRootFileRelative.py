@@ -145,6 +145,14 @@ class usdFileRelative(object):
             cls.connectToDialogControls(parentLayout)
 
         if cls._haveRelativePathFields:
+            # We may need to hide the preview fields in certain cases
+            showPreviewFields = True
+            if relativeToWhat == 'SceneFile':
+                showPreviewFields = cmds.file(q=True, exists=True)
+
+            cmds.textFieldGrp(cls.kUnresolvedPathTextField, edit=True, visible=showPreviewFields)
+            cmds.textFieldGrp(cls.kResolvedPathTextField, edit=True, visible=showPreviewFields)
+
             # Only enable fields when make relative is checked.
             makePathRelative = cmds.checkBox(cls.kMakePathRelativeCheckBox, query=True, value=True)
             cls.onMakePathRelativeChanged(makePathRelative)
@@ -279,10 +287,11 @@ class usdRootFileRelative(usdFileRelative):
         Note: the function takes an unused filterType argument to be compatible
               with the dialog2 command API.
         '''
-        # If there is no Maya scene file saved, then the checkbox and label should be disabled.
-        haveSceneFile = cmds.file(q=True, exists=True)
+        # USD root layer can always be set relative to Maya scene file. 
+        # If the latter doesn't exist, we use a special approach with 
+        # postponed relative file path assignment 
         cls.setRelativeFilePathRoot(cmds.file(query=True, sceneName=True))
-        super(usdRootFileRelative, cls).uiInit(parentLayout, haveSceneFile, cls.kRelativeToWhat)
+        super(usdRootFileRelative, cls).uiInit(parentLayout, True, cls.kRelativeToWhat)
 
     @classmethod
     def uiCommit(cls, parentLayout, selectedFile=None):
