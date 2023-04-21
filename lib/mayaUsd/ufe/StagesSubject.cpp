@@ -178,8 +178,17 @@ void sendAttributeChanged(
         }
     } break;
     case AttributeChangeType::kAdded: {
-        notifyWithoutExceptions<Ufe::Attributes>(
-            Ufe::AttributeAdded(ufePath, changedToken.GetString()));
+        if (MayaUsd::ufe::InSetAttribute::inSetAttribute()) {
+            notifyWithoutExceptions<Ufe::Attributes>(
+                Ufe::AttributeValueChanged(ufePath, changedToken.GetString()));
+
+            if (MayaUsd::ufe::UsdCamera::isCameraToken(changedToken)) {
+                notifyWithoutExceptions<Ufe::Camera>(ufePath);
+            }
+        } else {
+            notifyWithoutExceptions<Ufe::Attributes>(
+                Ufe::AttributeAdded(ufePath, changedToken.GetString()));
+        }
     } break;
     case AttributeChangeType::kRemoved: {
         notifyWithoutExceptions<Ufe::Attributes>(

@@ -16,6 +16,7 @@
 #include "UsdAttribute.h"
 
 #include "Utils.h"
+#include "private/UfeNotifGuard.h"
 #include "private/Utils.h"
 
 #include <mayaUsd/ufe/StagesSubject.h>
@@ -86,6 +87,7 @@ template <typename T> bool setUsdAttr(MayaUsd::ufe::UsdAttribute& attr, const T&
     // our own in the StagesSubject, which we invoke here, so that only a
     // single UFE attribute changed notification is generated.
 
+    MayaUsd::ufe::InSetAttribute                    inSetAttr;
     MayaUsd::ufe::AttributeChangedNotificationGuard guard;
     const std::string                               errMsg = attr.isEditAllowedMsg();
     if (!errMsg.empty()) {
