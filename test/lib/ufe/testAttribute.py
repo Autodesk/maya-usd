@@ -1248,47 +1248,47 @@ class AttributeTestCase(unittest.TestCase):
         # "Props" and "Room_set". Ufe should be filtering out those notifications
         # so the global observer should still only see one notification.
         ufeCmd.execute(ball34XlateAttr.setCmd(ufe.Vector3d(4, 4, 15)))
-        ball34Obs.assertNotificationCount(self, numAdded = 1, numValue = 1)
+        ball34Obs.assertNotificationCount(self, numValue = 2)
         ball35Obs.assertNotificationCount(self)
-        globalObs.assertNotificationCount(self, numAdded = 1, numValue = 1)
+        globalObs.assertNotificationCount(self, numValue = 2)
 
         # The second modification only sends one USD notification for "xformOps:translate"
         # because all the spec's already exist. Ufe should also see one notification.
         ufeCmd.execute(ball34XlateAttr.setCmd(ufe.Vector3d(4, 4, 20)))
-        ball34Obs.assertNotificationCount(self, numAdded = 1, numValue = 2)
+        ball34Obs.assertNotificationCount(self, numValue = 3)
         ball35Obs.assertNotificationCount(self)
-        globalObs.assertNotificationCount(self, numAdded = 1, numValue = 2)
+        globalObs.assertNotificationCount(self, numValue = 3)
 
         # Undo, redo
         cmds.undo()
-        ball34Obs.assertNotificationCount(self, numAdded = 1, numValue = 3)
+        ball34Obs.assertNotificationCount(self, numValue = 4)
         ball35Obs.assertNotificationCount(self)
-        globalObs.assertNotificationCount(self, numAdded = 1, numValue = 3)
+        globalObs.assertNotificationCount(self, numValue = 4)
 
         cmds.redo()
-        ball34Obs.assertNotificationCount(self, numAdded = 1, numValue = 4)
+        ball34Obs.assertNotificationCount(self, numValue = 5)
         ball35Obs.assertNotificationCount(self)
-        globalObs.assertNotificationCount(self, numAdded = 1, numValue = 4)
+        globalObs.assertNotificationCount(self, numValue = 5)
 
         # get ready to undo the first modification
         cmds.undo()
-        ball34Obs.assertNotificationCount(self, numAdded = 1, numValue = 5)
+        ball34Obs.assertNotificationCount(self, numValue = 6)
         ball35Obs.assertNotificationCount(self)
-        globalObs.assertNotificationCount(self, numAdded = 1, numValue = 5)
+        globalObs.assertNotificationCount(self, numValue = 6)
 
         # Undo-ing the modification which created the USD specs is a little
         # different in USD, but from Ufe we should just still see one notification.
         cmds.undo()
-        ball34Obs.assertNotificationCount(self, numAdded = 1, numRemoved = 1, numValue = 5)
+        ball34Obs.assertNotificationCount(self, numRemoved = 1, numValue = 6)
         ball35Obs.assertNotificationCount(self)
-        globalObs.assertNotificationCount(self, numAdded = 1, numRemoved = 1, numValue = 5)
+        globalObs.assertNotificationCount(self, numRemoved = 1, numValue = 6)
 
         cmds.redo()
         # Note that UsdUndoHelper add an attribute with its value in one shot, which results in a
         # single AttributeAdded notification:
-        ball34Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 5)
+        ball34Obs.assertNotificationCount(self, numRemoved = 1, numValue = 7)
         ball35Obs.assertNotificationCount(self)
-        globalObs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 5)
+        globalObs.assertNotificationCount(self, numRemoved = 1, numValue = 7)
 
         # Make a change to ball35, global and ball35 observers change.
         ball35Attrs = ufe.Attributes.attributes(ball35)
@@ -1296,20 +1296,20 @@ class AttributeTestCase(unittest.TestCase):
 
         # "xformOp:translate"
         ufeCmd.execute(ball35XlateAttr.setCmd(ufe.Vector3d(4, 8, 15)))
-        ball34Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 5)
-        ball35Obs.assertNotificationCount(self, numAdded = 1, numValue = 1)
-        globalObs.assertNotificationCount(self, numAdded = 3, numRemoved = 1, numValue = 6)
+        ball34Obs.assertNotificationCount(self, numRemoved = 1, numValue = 7)
+        ball35Obs.assertNotificationCount(self, numValue = 2)
+        globalObs.assertNotificationCount(self, numRemoved = 1, numValue = 9)
 
         # Undo, redo
         cmds.undo()
-        ball34Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 5)
-        ball35Obs.assertNotificationCount(self, numAdded = 1, numRemoved = 1, numValue = 1)
-        globalObs.assertNotificationCount(self, numAdded = 3, numRemoved = 2, numValue = 6)
+        ball34Obs.assertNotificationCount(self, numRemoved = 1, numValue = 7)
+        ball35Obs.assertNotificationCount(self, numRemoved = 1, numValue = 2)
+        globalObs.assertNotificationCount(self, numRemoved = 2, numValue = 9)
 
         cmds.redo()
-        ball34Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 5)
-        ball35Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 1)
-        globalObs.assertNotificationCount(self, numAdded = 4, numRemoved = 2, numValue = 6)
+        ball34Obs.assertNotificationCount(self, numRemoved = 1, numValue = 7)
+        ball35Obs.assertNotificationCount(self, numRemoved = 1, numValue = 3)
+        globalObs.assertNotificationCount(self, numRemoved = 2, numValue = 10)
 
         # Test removeObserver.
         ufe.Attributes.removeObserver(ball34, ball34Obs)
@@ -1322,9 +1322,9 @@ class AttributeTestCase(unittest.TestCase):
 
         ufeCmd.execute(ball34XlateAttr.setCmd(ufe.Vector3d(4, 4, 25)))
 
-        ball34Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 5)
-        ball35Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 1)
-        globalObs.assertNotificationCount(self, numAdded = 4, numRemoved = 2, numValue = 7)
+        ball34Obs.assertNotificationCount(self, numRemoved = 1, numValue = 7)
+        ball35Obs.assertNotificationCount(self, numRemoved = 1, numValue = 3)
+        globalObs.assertNotificationCount(self, numRemoved = 2, numValue = 11)
 
         ufe.Attributes.removeObserver(globalObs)
 
@@ -1332,9 +1332,9 @@ class AttributeTestCase(unittest.TestCase):
 
         ufeCmd.execute(ball34XlateAttr.setCmd(ufe.Vector3d(7, 8, 9)))
 
-        ball34Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 5)
-        ball35Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 1)
-        globalObs.assertNotificationCount(self, numAdded = 4, numRemoved = 2, numValue = 7)
+        ball34Obs.assertNotificationCount(self, numRemoved = 1, numValue = 7)
+        ball35Obs.assertNotificationCount(self, numRemoved = 1, numValue = 3)
+        globalObs.assertNotificationCount(self, numRemoved = 2, numValue = 11)
 
     def testAttrChangeRedoAfterPrimCreateRedo(self):
         '''Redo attribute change after redo of prim creation.'''
