@@ -86,7 +86,7 @@ private:
     bool        _RemoveSceneIndexForNode(const MObject& dagNode);
     static void _SceneIndexNodeAddedCallback(MObject& obj, void* clientData);
     static void _SceneIndexNodeRemovedCallback(MObject& obj, void* clientData);
-
+    HdSceneIndexBaseRefPtr _AppendTerminalRenamingSceneIndex(HdSceneIndexBaseRefPtr sceneIndex);
     HdRenderIndex* _renderIndex = nullptr;
 
     MCallbackIdArray _sceneIndexDagNodeMessageCallbacks;

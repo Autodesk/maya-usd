@@ -21,7 +21,17 @@
 #include <pxr/imaging/hd/retainedDataSource.h>
 #include <pxr/imaging/hd/sceneIndexPlugin.h>
 #include <pxr/imaging/hd/sceneIndexPluginRegistry.h>
+#include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/usd/sdf/path.h>
+
+// Temp workaround to get the code to compile.
+// this will not be required once the pull request to USD header is complete.
+// Details of the issue - https://groups.google.com/g/usd-interest/c/0kyY3Z2sgjo
+// TODO: remove conditional #undefs after PR is complete.
+#ifdef interface
+#undef interface
+#endif
+#include <pxr/imaging/hdsi/terminalsResolvingSceneIndex.h>
 
 #include <maya/MDGMessage.h>
 #include <maya/MFnDependencyNode.h>
@@ -163,6 +173,20 @@ bool MayaHydraSceneIndexRegistry::_RemoveSceneIndexForNode(const MObject& dagNod
     return false;
 }
 
+HdSceneIndexBaseRefPtr
+MayaHydraSceneIndexRegistry::_AppendTerminalRenamingSceneIndex(HdSceneIndexBaseRefPtr sceneIndex)
+{    
+    // Get the list of renderer supported material network implementations.
+    TfTokenVector renderingContexts = _renderIndex->GetRenderDelegate()->
+                                                    GetMaterialRenderContexts();    
+    // Create remapping token pairs to help Hydra build the material networks.
+    std::map<TfToken, TfToken> terminalRemapList;
+    for (const auto& terminal : renderingContexts)
+        terminalRemapList.emplace(TfToken(terminal.GetString()+":surface"), 
+                                  HdMaterialTerminalTokens->surface);
+    return HdsiTerminalsResolvingSceneIndex::New(sceneIndex, terminalRemapList);    
+}
+
 constexpr char kSceneIndexPluginSuffix[] = {
     "MayaNodeSceneIndexPlugin"
 }; // every scene index plugin compatible with the hydra viewport requires this suffix
@@ -228,6 +252,12 @@ void MayaHydraSceneIndexRegistry::_AddSceneIndexForNode(MObject& dagNode)
                                      ? ""
                                      : "__" + std::to_string(_incrementedCounterDisambiguator++))));
 
+                // HYDRA-179
+                // Inject TerminalsResolvingSceneIndex to get Hydra to handle material bindings.
+                // A simple string replacement for Hydra to identify the terminals based on the render context.
+                HdSceneIndexBaseRefPtr outSceneIndex = _AppendTerminalRenamingSceneIndex(registration->pluginSceneIndex);
+                // Sanity check
+                registration->pluginSceneIndex = outSceneIndex ? outSceneIndex : registration->pluginSceneIndex;
                 // By inserting the scene index was inserted into the render index using a custom
                 // prefix, the chosen prefix will be prepended to rprims tied to that scene index
                 // automatically.
