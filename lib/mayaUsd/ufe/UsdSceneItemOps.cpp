@@ -50,12 +50,10 @@ const Ufe::Path& UsdSceneItemOps::path() const { return fItem->path(); }
 Ufe::SceneItem::Ptr UsdSceneItemOps::sceneItem() const { return fItem; }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4033)
 Ufe::UndoableCommand::Ptr UsdSceneItemOps::deleteItemCmdNoExecute()
 {
     return UsdUndoDeleteCommand::create(prim());
 }
-#endif
 #endif
 
 Ufe::UndoableCommand::Ptr UsdSceneItemOps::deleteItemCmd()
@@ -77,17 +75,10 @@ bool UsdSceneItemOps::deleteItem()
 }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4033)
-#if (UFE_PREVIEW_VERSION_NUM >= 4041)
-Ufe::SceneItemResultUndoableCommand::Ptr
-#else
-Ufe::UndoableCommand::Ptr
-#endif
-UsdSceneItemOps::duplicateItemCmdNoExecute()
+Ufe::SceneItemResultUndoableCommand::Ptr UsdSceneItemOps::duplicateItemCmdNoExecute()
 {
     return UsdUndoDuplicateCommand::create(fItem);
 }
-#endif
 #endif
 
 Ufe::Duplicate UsdSceneItemOps::duplicateItemCmd()
@@ -104,17 +95,11 @@ Ufe::SceneItem::Ptr UsdSceneItemOps::duplicateItem()
 }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4033)
-#if (UFE_PREVIEW_VERSION_NUM >= 4041)
 Ufe::SceneItemResultUndoableCommand::Ptr
-#else
-Ufe::UndoableCommand::Ptr
-#endif
 UsdSceneItemOps::renameItemCmdNoExecute(const Ufe::PathComponent& newName)
 {
     return UsdUndoRenameCommand::create(fItem, newName);
 }
-#endif
 #endif
 
 Ufe::Rename UsdSceneItemOps::renameItemCmd(const Ufe::PathComponent& newName)

@@ -35,9 +35,7 @@
 #include <unordered_set>
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
 #include "UsdShaderAttributeDef.h"
-#endif
 #endif
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #include <mayaUsd/base/tokens.h>
@@ -209,19 +207,14 @@ void setUsdAttributeColorFromUfe(
     setUsdAttr<T>(attr, vec);
 }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 template <typename T, typename U>
 U getUsdAttributeMatrixAsUfe(
     const MayaUsd::ufe::UsdAttribute& attr,
     const PXR_NS::UsdTimeCode&        time)
 {
     VtValue vt;
-    if (!attr.isValid() ||
-#ifdef UFE_V4_FEATURES_AVAILABLE
-        !attr._hasValue()) {
-#else
-        !attr.hasValue()) {
-#endif
+    if (!attr.isValid() || !attr._hasValue()) {
         if (!attr.defaultValue().empty()) {
             vt = MayaUsd::ufe::vtValueFromString(attr.usdAttributeType(), attr.defaultValue());
         } else {
@@ -447,7 +440,7 @@ UsdAttributeGeneric::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::U
 
 std::string UsdAttributeGeneric::nativeType() const { return UsdAttribute::nativeType(); }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 //------------------------------------------------------------------------------
 // UsdAttributeFilename:
 //------------------------------------------------------------------------------
@@ -677,7 +670,7 @@ template <> void TypedUsdAttribute<Ufe::Color3f>::set(const Ufe::Color3f& value)
     setUsdAttributeColorFromUfe<GfVec3f, Ufe::Color3f>(*this, value, getCurrentTime(sceneItem()));
 }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 template <> Ufe::Color4f TypedUsdAttribute<Ufe::Color4f>::get() const
 {
     return getUsdAttributeColorAsUfe<GfVec4f, Ufe::Color4f>(*this, getCurrentTime(sceneItem()));
@@ -699,7 +692,7 @@ template <> void TypedUsdAttribute<Ufe::Vector3i>::set(const Ufe::Vector3i& valu
     setUsdAttributeVectorFromUfe<GfVec3i, Ufe::Vector3i>(*this, value, getCurrentTime(sceneItem()));
 }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 template <> Ufe::Vector2f TypedUsdAttribute<Ufe::Vector2f>::get() const
 {
     return getUsdAttributeVectorAsUfe<GfVec2f, Ufe::Vector2f>(*this, getCurrentTime(sceneItem()));
@@ -721,7 +714,7 @@ template <> void TypedUsdAttribute<Ufe::Vector3f>::set(const Ufe::Vector3f& valu
     setUsdAttributeVectorFromUfe<GfVec3f, Ufe::Vector3f>(*this, value, getCurrentTime(sceneItem()));
 }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 template <> Ufe::Vector4f TypedUsdAttribute<Ufe::Vector4f>::get() const
 {
     return getUsdAttributeVectorAsUfe<GfVec4f, Ufe::Vector4f>(*this, getCurrentTime(sceneItem()));
@@ -743,7 +736,7 @@ template <> void TypedUsdAttribute<Ufe::Vector3d>::set(const Ufe::Vector3d& valu
     setUsdAttributeVectorFromUfe<GfVec3d, Ufe::Vector3d>(*this, value, getCurrentTime(sceneItem()));
 }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 template <> Ufe::Matrix3d TypedUsdAttribute<Ufe::Matrix3d>::get() const
 {
     return getUsdAttributeMatrixAsUfe<GfMatrix3d, Ufe::Matrix3d>(
@@ -953,7 +946,7 @@ UsdAttributeColorFloat3::Ptr UsdAttributeColorFloat3::create(
     return attr;
 }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 //------------------------------------------------------------------------------
 // UsdAttributeColorFloat4:
 //------------------------------------------------------------------------------
@@ -980,7 +973,7 @@ UsdAttributeInt3::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr
     return attr;
 }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 //------------------------------------------------------------------------------
 // UsdAttributeFloat2:
 //------------------------------------------------------------------------------
@@ -1006,7 +999,7 @@ UsdAttributeFloat3::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UP
     return attr;
 }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 //------------------------------------------------------------------------------
 // UsdAttributeFloat4:
 //------------------------------------------------------------------------------
@@ -1032,7 +1025,7 @@ UsdAttributeDouble3::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::U
     return attr;
 }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 //------------------------------------------------------------------------------
 // UsdAttributeMatrix3d:
 //------------------------------------------------------------------------------

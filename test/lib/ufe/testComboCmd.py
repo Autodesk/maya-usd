@@ -101,7 +101,7 @@ class TestObserver(ufe.Observer):
 
     def __call__(self, notification):
         if (ufeUtils.ufeFeatureSetVersion() >= 2):
-            if os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '4024':
+            if (ufeUtils.ufeFeatureSetVersion() >= 4):
                 if isinstance(notification, ufe.AttributeChanged):
                     self._valueChanged += 1
             else:

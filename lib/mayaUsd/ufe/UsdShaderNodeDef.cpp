@@ -17,7 +17,7 @@
 #include "UsdShaderNodeDef.h"
 
 #include <mayaUsd/ufe/Utils.h>
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdShaderAttributeDef.h>
 #include <mayaUsd/ufe/UsdUndoCreateFromNodeDefCommand.h>
 #include <mayaUsd/ufe/UsdUndoMaterialCommands.h>
@@ -64,7 +64,7 @@ Ufe::ConstAttributeDefs getAttrs(const SdrShaderNodeConstPtr& shaderNodeDef)
             // SdrNode::GetShaderInput has to downcast a NdrProperty pointer.
             continue;
         }
-#if (UFE_PREVIEW_VERSION_NUM < 4010)
+#ifndef UFE_V4_FEATURES_AVAILABLE
         std::ostringstream defaultValue;
         defaultValue << property->GetDefaultValue();
         Ufe::Attribute::Type type = usdTypeToUfe(property);
@@ -78,11 +78,9 @@ Ufe::ConstAttributeDefs getAttrs(const SdrShaderNodeConstPtr& shaderNodeDef)
 
 UsdShaderNodeDef::UsdShaderNodeDef(const SdrShaderNodeConstPtr& shaderNodeDef)
     : Ufe::NodeDef()
-#if (UFE_PREVIEW_VERSION_NUM < 4010)
-    , fType(shaderNodeDef ? shaderNodeDef->GetName() : "")
-#endif
     , fShaderNodeDef(shaderNodeDef)
-#if (UFE_PREVIEW_VERSION_NUM < 4010)
+#ifndef UFE_V4_FEATURES_AVAILABLE
+    , fType(shaderNodeDef ? shaderNodeDef->GetName() : "")
     , fInputs(
           shaderNodeDef ? getAttrs<Ufe::AttributeDef::INPUT_ATTR>(shaderNodeDef)
                         : Ufe::ConstAttributeDefs())
@@ -98,7 +96,7 @@ UsdShaderNodeDef::UsdShaderNodeDef(const SdrShaderNodeConstPtr& shaderNodeDef)
 
 UsdShaderNodeDef::~UsdShaderNodeDef() { }
 
-#if (UFE_PREVIEW_VERSION_NUM < 4010)
+#ifndef UFE_V4_FEATURES_AVAILABLE
 const std::string& UsdShaderNodeDef::type() const { return fType; }
 
 const Ufe::ConstAttributeDefs& UsdShaderNodeDef::inputs() const { return fInputs; }

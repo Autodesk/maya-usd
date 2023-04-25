@@ -962,41 +962,39 @@ namespace {
 Ufe::Attribute::Type _UsdTypeToUfe(const SdfValueTypeName& usdType)
 {
     // Map the USD type into UFE type.
-    static const std::unordered_map<size_t, Ufe::Attribute::Type> sUsdTypeToUfe
-    {
-        { SdfValueTypeNames->Bool.GetHash(), Ufe::Attribute::kBool },               // bool
-            { SdfValueTypeNames->Int.GetHash(), Ufe::Attribute::kInt },             // int32_t
-            { SdfValueTypeNames->Float.GetHash(), Ufe::Attribute::kFloat },         // float
-            { SdfValueTypeNames->Double.GetHash(), Ufe::Attribute::kDouble },       // double
-            { SdfValueTypeNames->String.GetHash(), Ufe::Attribute::kString },       // std::string
-            { SdfValueTypeNames->Token.GetHash(), Ufe::Attribute::kString },        // TfToken
-            { SdfValueTypeNames->Int3.GetHash(), Ufe::Attribute::kInt3 },           // GfVec3i
-            { SdfValueTypeNames->Float3.GetHash(), Ufe::Attribute::kFloat3 },       // GfVec3f
-            { SdfValueTypeNames->Double3.GetHash(), Ufe::Attribute::kDouble3 },     // GfVec3d
-            { SdfValueTypeNames->Color3f.GetHash(), Ufe::Attribute::kColorFloat3 }, // GfVec3f
-            { SdfValueTypeNames->Color3d.GetHash(), Ufe::Attribute::kColorFloat3 }, // GfVec3d
-#if (UFE_PREVIEW_VERSION_NUM >= 4015)
-            { SdfValueTypeNames->Asset.GetHash(), Ufe::Attribute::kFilename },      // SdfAssetPath
-            { SdfValueTypeNames->Float2.GetHash(), Ufe::Attribute::kFloat2 },       // GfVec2f
-            { SdfValueTypeNames->Float4.GetHash(), Ufe::Attribute::kFloat4 },       // GfVec4f
-            { SdfValueTypeNames->Color4f.GetHash(), Ufe::Attribute::kColorFloat4 }, // GfVec4f
-            { SdfValueTypeNames->Color4d.GetHash(), Ufe::Attribute::kColorFloat4 }, // GfVec4d
-            { SdfValueTypeNames->Matrix3d.GetHash(), Ufe::Attribute::kMatrix3d },   // GfMatrix3d
-            { SdfValueTypeNames->Matrix4d.GetHash(), Ufe::Attribute::kMatrix4d },   // GfMatrix4d
+    static const std::unordered_map<size_t, Ufe::Attribute::Type> sUsdTypeToUfe {
+        { SdfValueTypeNames->Bool.GetHash(), Ufe::Attribute::kBool },           // bool
+        { SdfValueTypeNames->Int.GetHash(), Ufe::Attribute::kInt },             // int32_t
+        { SdfValueTypeNames->Float.GetHash(), Ufe::Attribute::kFloat },         // float
+        { SdfValueTypeNames->Double.GetHash(), Ufe::Attribute::kDouble },       // double
+        { SdfValueTypeNames->String.GetHash(), Ufe::Attribute::kString },       // std::string
+        { SdfValueTypeNames->Token.GetHash(), Ufe::Attribute::kString },        // TfToken
+        { SdfValueTypeNames->Int3.GetHash(), Ufe::Attribute::kInt3 },           // GfVec3i
+        { SdfValueTypeNames->Float3.GetHash(), Ufe::Attribute::kFloat3 },       // GfVec3f
+        { SdfValueTypeNames->Double3.GetHash(), Ufe::Attribute::kDouble3 },     // GfVec3d
+        { SdfValueTypeNames->Color3f.GetHash(), Ufe::Attribute::kColorFloat3 }, // GfVec3f
+        { SdfValueTypeNames->Color3d.GetHash(), Ufe::Attribute::kColorFloat3 }, // GfVec3d
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        { SdfValueTypeNames->Asset.GetHash(), Ufe::Attribute::kFilename },      // SdfAssetPath
+        { SdfValueTypeNames->Float2.GetHash(), Ufe::Attribute::kFloat2 },       // GfVec2f
+        { SdfValueTypeNames->Float4.GetHash(), Ufe::Attribute::kFloat4 },       // GfVec4f
+        { SdfValueTypeNames->Color4f.GetHash(), Ufe::Attribute::kColorFloat4 }, // GfVec4f
+        { SdfValueTypeNames->Color4d.GetHash(), Ufe::Attribute::kColorFloat4 }, // GfVec4d
+        { SdfValueTypeNames->Matrix3d.GetHash(), Ufe::Attribute::kMatrix3d },   // GfMatrix3d
+        { SdfValueTypeNames->Matrix4d.GetHash(), Ufe::Attribute::kMatrix4d },   // GfMatrix4d
 #endif
     };
     const auto iter = sUsdTypeToUfe.find(usdType.GetHash());
     if (iter != sUsdTypeToUfe.end()) {
         return iter->second;
     } else {
-        static const std::unordered_map<std::string, Ufe::Attribute::Type> sCPPTypeToUfe
-        {
+        static const std::unordered_map<std::string, Ufe::Attribute::Type> sCPPTypeToUfe {
             // There are custom Normal3f, Point3f types in USD. They can all be recognized by the
             // underlying CPP type and if there is a Ufe type that matches, use it.
-            { "GfVec3i", Ufe::Attribute::kInt3 }, { "GfVec3d", Ufe::Attribute::kDouble3 },
-                { "GfVec3f", Ufe::Attribute::kFloat3 },
-#if (UFE_PREVIEW_VERSION_NUM >= 4015)
-                { "GfVec2f", Ufe::Attribute::kFloat2 }, { "GfVec4f", Ufe::Attribute::kFloat4 },
+            { "GfVec3i", Ufe::Attribute::kInt3 },   { "GfVec3d", Ufe::Attribute::kDouble3 },
+            { "GfVec3f", Ufe::Attribute::kFloat3 },
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            { "GfVec2f", Ufe::Attribute::kFloat2 }, { "GfVec4f", Ufe::Attribute::kFloat4 },
 #endif
         };
 
@@ -1056,7 +1054,7 @@ Ufe::Attribute::Type usdTypeToUfe(const SdrShaderPropertyConstPtr& shaderPropert
         if (!shaderProperty->GetOptions().empty()) {
             retVal = Ufe::Attribute::kEnumString;
         }
-#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+#ifdef UFE_V4_FEATURES_AVAILABLE
         else if (shaderProperty->IsAssetIdentifier()) {
             retVal = Ufe::Attribute::kFilename;
         }
@@ -1098,27 +1096,26 @@ Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::UsdAttribute& usdAttr)
 SdfValueTypeName ufeTypeToUsd(const Ufe::Attribute::Type ufeType)
 {
     // Map the USD type into UFE type.
-    static const std::unordered_map<Ufe::Attribute::Type, SdfValueTypeName> sUfeTypeToUsd
-    {
+    static const std::unordered_map<Ufe::Attribute::Type, SdfValueTypeName> sUfeTypeToUsd {
         { Ufe::Attribute::kBool, SdfValueTypeNames->Bool },
-            { Ufe::Attribute::kInt, SdfValueTypeNames->Int },
-            { Ufe::Attribute::kFloat, SdfValueTypeNames->Float },
-            { Ufe::Attribute::kDouble, SdfValueTypeNames->Double },
-            { Ufe::Attribute::kString, SdfValueTypeNames->String },
-            // Not enough info at this point to differentiate between TfToken and std:string.
-            { Ufe::Attribute::kEnumString, SdfValueTypeNames->Token },
-            { Ufe::Attribute::kInt3, SdfValueTypeNames->Int3 },
-            { Ufe::Attribute::kFloat3, SdfValueTypeNames->Float3 },
-            { Ufe::Attribute::kDouble3, SdfValueTypeNames->Double3 },
-            { Ufe::Attribute::kColorFloat3, SdfValueTypeNames->Color3f },
-            { Ufe::Attribute::kGeneric, SdfValueTypeNames->Token },
-#if (UFE_PREVIEW_VERSION_NUM >= 4015)
-            { Ufe::Attribute::kFilename, SdfValueTypeNames->Asset },
-            { Ufe::Attribute::kFloat2, SdfValueTypeNames->Float2 },
-            { Ufe::Attribute::kFloat4, SdfValueTypeNames->Float4 },
-            { Ufe::Attribute::kColorFloat4, SdfValueTypeNames->Color4f },
-            { Ufe::Attribute::kMatrix3d, SdfValueTypeNames->Matrix3d },
-            { Ufe::Attribute::kMatrix4d, SdfValueTypeNames->Matrix4d },
+        { Ufe::Attribute::kInt, SdfValueTypeNames->Int },
+        { Ufe::Attribute::kFloat, SdfValueTypeNames->Float },
+        { Ufe::Attribute::kDouble, SdfValueTypeNames->Double },
+        { Ufe::Attribute::kString, SdfValueTypeNames->String },
+        // Not enough info at this point to differentiate between TfToken and std:string.
+        { Ufe::Attribute::kEnumString, SdfValueTypeNames->Token },
+        { Ufe::Attribute::kInt3, SdfValueTypeNames->Int3 },
+        { Ufe::Attribute::kFloat3, SdfValueTypeNames->Float3 },
+        { Ufe::Attribute::kDouble3, SdfValueTypeNames->Double3 },
+        { Ufe::Attribute::kColorFloat3, SdfValueTypeNames->Color3f },
+        { Ufe::Attribute::kGeneric, SdfValueTypeNames->Token },
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        { Ufe::Attribute::kFilename, SdfValueTypeNames->Asset },
+        { Ufe::Attribute::kFloat2, SdfValueTypeNames->Float2 },
+        { Ufe::Attribute::kFloat4, SdfValueTypeNames->Float4 },
+        { Ufe::Attribute::kColorFloat4, SdfValueTypeNames->Color4f },
+        { Ufe::Attribute::kMatrix3d, SdfValueTypeNames->Matrix3d },
+        { Ufe::Attribute::kMatrix4d, SdfValueTypeNames->Matrix4d },
 #endif
     };
 

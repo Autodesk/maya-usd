@@ -46,7 +46,7 @@ public:
 
     Ufe::Connections::Ptr sourceConnections(const Ufe::SceneItem::Ptr& item) const override;
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4043)
+#ifdef UFE_V4_FEATURES_AVAILABLE
     std::shared_ptr<Ufe::ConnectionResultUndoableCommand> createConnectionCmd(
         const Ufe::Attribute::Ptr& srcAttr,
         const Ufe::Attribute::Ptr& dstAttr) const override;

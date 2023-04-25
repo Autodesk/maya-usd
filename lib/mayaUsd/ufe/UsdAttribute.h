@@ -184,15 +184,11 @@ public:
     std::string nativeType() const override;
 }; // UsdAttributeGeneric
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 //! \brief Interface for USD token attributes.
 class UsdAttributeFilename
     : public Ufe::AttributeFilename
-#ifdef UFE_V4_FEATURES_AVAILABLE
     , public UsdAttribute
-#else
-    , private UsdAttribute
-#endif
 {
 public:
     typedef std::shared_ptr<UsdAttributeFilename> Ptr;
@@ -412,7 +408,7 @@ public:
     create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder);
 }; // UsdAttributeColorFloat3
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 //! \brief Interface for USD RGB color (float) attributes.
 class UsdAttributeColorFloat4 : public TypedUsdAttribute<Ufe::Color4f>
 {
@@ -440,7 +436,7 @@ public:
     create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder);
 }; // UsdAttributeInt3
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 //! \brief Interface for USD Vector2f (float) attributes.
 class UsdAttributeFloat2 : public TypedUsdAttribute<Ufe::Vector2f>
 {
@@ -468,7 +464,7 @@ public:
     create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder);
 }; // UsdAttributeFloat3
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 //! \brief Interface for USD Vector4f (float) attributes.
 class UsdAttributeFloat4 : public TypedUsdAttribute<Ufe::Vector4f>
 {
@@ -496,7 +492,7 @@ public:
     create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder);
 }; // UsdAttributeDouble3
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 //! \brief Interface for USD Matrix3d (double) attributes.
 class UsdAttributeMatrix3d : public TypedUsdAttribute<Ufe::Matrix3d>
 {

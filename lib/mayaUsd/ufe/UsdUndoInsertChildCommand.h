@@ -16,6 +16,7 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UfeVersionCompat.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/usd/prim.h>
@@ -48,11 +49,7 @@ public:
 
     Ufe::SceneItem::Ptr insertedChild() const override { return _ufeDstItem; }
 
-#ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4032)
-    std::string commandString() const override;
-#endif
-#endif
+    UFE_V4(std::string commandString() const override;)
 
 protected:
     //! Construct a UsdUndoInsertChildCommand.  Note that as of 4-May-2020 the
