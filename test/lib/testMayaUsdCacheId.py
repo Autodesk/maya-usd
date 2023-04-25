@@ -28,7 +28,7 @@ from maya import standalone
 from mayaUsd import lib as mayaUsdLib
 
 import fixturesUtils
-import mayaUtils
+import testUtils
 
 
 class MayaUsdPythonCacheIdTestCase(unittest.TestCase):
@@ -223,7 +223,8 @@ class MayaUsdPythonCacheIdTestCase(unittest.TestCase):
            surviving a File->New cycle."""
 
         # Open ballset.ma scene in testSamples
-        mayaUtils.openGroupBallsScene()
+        filePath = testUtils.getTestScene("groupBalls", "ballset.ma")
+        cmds.file(filePath, force=True, open=True)
 
         # Get the cache ID
         cacheIdValue = cmds.getAttr('|transform1|proxyShape1.outStageCacheId')
@@ -238,7 +239,7 @@ class MayaUsdPythonCacheIdTestCase(unittest.TestCase):
         self.assertEqual(ball1Xform.Get()[0], 2)
 
         # Check that the ballset scene reloads from scratch
-        mayaUtils.openGroupBallsScene()
+        cmds.file(filePath, force=True, open=True)
         cacheIdValue = cmds.getAttr('|transform1|proxyShape1.outStageCacheId')
         cacheId = pxr.Usd.StageCache.Id.FromLongInt(cacheIdValue)
         cacheStage = self.SC.Find(cacheId)
