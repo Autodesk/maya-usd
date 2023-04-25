@@ -400,7 +400,7 @@ class DuplicateCmdTestCase(unittest.TestCase):
         self.assertIsNotNone(sublayer01)
         self.assertIsNotNone(sublayer01.GetPrimAtPath('/A1/B'))
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4041', 'Test only available in UFE preview version 0.4.41 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testUfeDuplicateCommandAPI(self):
         '''Test that the duplicate command can be invoked using the 3 known APIs.'''
 
@@ -464,7 +464,7 @@ class DuplicateCmdTestCase(unittest.TestCase):
         self.assertIsNotNone(plane7Item)
         self.assertEqual(plane7Item, duplicatedItem)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4041', 'Test only available in UFE preview version 0.4.41 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testUfeDuplicateHomonyms(self):
         '''Test that duplicating two items with similar names end up in two new duplicates.'''
         testFile = testUtils.getTestScene('MaterialX', 'BatchOpsTestScene.usda')
@@ -486,7 +486,7 @@ class DuplicateCmdTestCase(unittest.TestCase):
 
         self.assertNotEqual(cmd.targetItem(geomItem1.path()).path(), cmd.targetItem(geomItem2.path()).path())
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4041', 'Test only available in UFE preview version 0.4.41 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testUfeDuplicateDescendants(self):
         '''MAYA-125854: Test that duplicating a descendant of a selected ancestor results in the
            duplicate from the ancestor.'''

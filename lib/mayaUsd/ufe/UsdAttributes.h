@@ -23,9 +23,7 @@
 
 #include <ufe/attributes.h>
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
 #include <ufe/nodeDef.h>
-#endif
 #endif
 
 #include <unordered_map>
@@ -58,27 +56,14 @@ public:
     std::vector<std::string> attributeNames() const override;
     bool                     hasAttribute(const std::string& name) const override;
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4024)
-#if (UFE_PREVIEW_VERSION_NUM >= 4034)
     Ufe::AddAttributeUndoableCommand::Ptr
-    addAttributeCmd(const std::string& name, const Ufe::Attribute::Type& type) override;
-#else
-    Ufe::AddAttributeCommand::Ptr
-    addAttributeCmd(const std::string& name, const Ufe::Attribute::Type& type) override;
-#endif
+                              addAttributeCmd(const std::string& name, const Ufe::Attribute::Type& type) override;
     Ufe::UndoableCommand::Ptr removeAttributeCmd(const std::string& name) override;
-#endif
-
-#if (UFE_PREVIEW_VERSION_NUM >= 4034)
     Ufe::RenameAttributeUndoableCommand::Ptr
     renameAttributeCmd(const std::string& originalName, const std::string& newName) override;
-#endif
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
     inline Ufe::NodeDef::Ptr nodeDef() const;
-#endif
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4024)
     // Helpers for validation and execution:
     static bool canAddAttribute(const UsdSceneItem::Ptr& item, const Ufe::Attribute::Type& type);
     static Ufe::Attribute::Ptr doAddAttribute(
@@ -89,8 +74,7 @@ public:
     static bool        canRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
     static bool        doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
     static void        removeAttributesConnections(const PXR_NS::UsdPrim& prim);
-#endif
-#if (UFE_PREVIEW_VERSION_NUM >= 4034)
+
     static bool canRenameAttribute(
         const UsdSceneItem::Ptr& sceneItem,
         const std::string&       originalName,
@@ -99,7 +83,6 @@ public:
         const UsdSceneItem::Ptr& sceneItem,
         const std::string&       originalName,
         const std::string&       newName);
-#endif
 #endif
 
 private:

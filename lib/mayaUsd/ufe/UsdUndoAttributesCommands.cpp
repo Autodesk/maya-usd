@@ -27,7 +27,7 @@ UsdAddAttributeCommand::UsdAddAttributeCommand(
     const UsdSceneItem::Ptr&    sceneItem,
     const std::string&          name,
     const Ufe::Attribute::Type& type)
-#if (UFE_PREVIEW_VERSION_NUM >= 4034)
+#ifdef UFE_V4_FEATURES_AVAILABLE
     : UsdUndoableCommand<Ufe::AddAttributeUndoableCommand>()
 #else
     : UsdUndoableCommand<Ufe::AddAttributeCommand>()
@@ -74,12 +74,10 @@ void UsdAddAttributeCommand::executeImplementation()
 }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4032)
 std::string UsdAddAttributeCommand::commandString() const
 {
     return std::string("AddAttribute ") + _name + " " + Ufe::PathString::string(_sceneItemPath);
 }
-#endif
 #endif
 
 UsdRemoveAttributeCommand::UsdRemoveAttributeCommand(
@@ -111,13 +109,11 @@ void UsdRemoveAttributeCommand::executeImplementation()
 }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4032)
 std::string UsdRemoveAttributeCommand::commandString() const
 {
     return std::string("RemoveAttribute ") + _name + " " + Ufe::PathString::string(_sceneItemPath);
 }
-#endif
-#if (UFE_PREVIEW_VERSION_NUM >= 4034)
+
 UsdRenameAttributeCommand::UsdRenameAttributeCommand(
     const UsdSceneItem::Ptr& sceneItem,
     const std::string&       originalName,
@@ -165,7 +161,6 @@ Ufe::Attribute::Ptr UsdRenameAttributeCommand::attribute() const
 
 void UsdRenameAttributeCommand::setNewName(const std::string& newName) { _newName = newName; };
 
-#endif
 #endif
 
 } // namespace ufe

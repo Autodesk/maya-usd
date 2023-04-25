@@ -352,7 +352,7 @@ class ConnectionTestCase(unittest.TestCase):
             '|stage|stageShape,/DisplayColorCube/Looks/usdPreviewSurface1SG')
         self.assertEqual(dstAttr.name, 'outputs:surface')
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '4043', 'Test became invalid in UFE preview version 0.4.43 and greater')
+    @unittest.skipIf(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test became invalid in UFE v4 or greater')
     def testConnectionsHandler(self):
         '''Test create & delete a connection.'''
 
@@ -455,7 +455,7 @@ class ConnectionTestCase(unittest.TestCase):
         conns = connections.allConnections()
         self.assertEqual(len(conns), 1)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4043', 'Test only available in UFE preview version 0.4.43 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testConnectionsHandlerWithCnxCommands(self):
         '''Test create & delete a connection.'''
 
@@ -678,7 +678,7 @@ class ConnectionTestCase(unittest.TestCase):
         #       were before connecting, which might require deleting authored attributes.
         #       The undo must also be aware that the connection on the material got redirected.
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4043', 'Test only available in UFE preview version 0.4.43 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testCreateStandardSurfaceWithCnxCommandUndo(self):
         '''Test create a working standard surface shader.'''
         #
@@ -807,7 +807,7 @@ class ConnectionTestCase(unittest.TestCase):
         assertNoConnection(self, materialItem)
 
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test only available in UFE preview version 0.4.24 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testCreateStandardSurfaceWithAddAttribute(self):
         '''Test create a working standard surface shader.'''
         #
@@ -921,7 +921,7 @@ class ConnectionTestCase(unittest.TestCase):
         #       were before connecting, which might require deleting authored attributes.
         #       The undo must also be aware that the connection on the material got redirected.
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test only available in UFE preview version 0.4.24 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testCreateNodeGraphAttributes(self):
         '''Test create attributes on compound boundaries.'''
         cmds.file(new=True, force=True)
@@ -956,7 +956,7 @@ class ConnectionTestCase(unittest.TestCase):
             testAttrs.removeAttribute("outputs:bar")
             testObserver.assertNotificationCount(self, numAdded = 2, numRemoved = 2)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test only available in UFE preview version 0.4.24 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testCompoundDisplacementPassthrough(self):
         # Creating the connection in this test scene was causing an infinite loop that should now be fixed.
         testFile = testUtils.getTestScene('MaterialX', 'compound_displacement_passthrough.usda')
@@ -979,7 +979,7 @@ class ConnectionTestCase(unittest.TestCase):
         cmd = connectionHandler.createConnectionCmd(compoundDisplacementAttr, materialDisplacementAttr)
         cmd.execute()
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4043', 'Test only available in UFE preview version 0.4.43 and greater since it uses the UsdUndoDeleteConnectionCommand')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater since it uses the UsdUndoDeleteConnectionCommand')
     def testRemovePropertiesWithConnections(self):
         '''Test delete connections and properties.'''
 

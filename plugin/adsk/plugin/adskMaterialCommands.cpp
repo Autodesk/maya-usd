@@ -17,7 +17,7 @@
 
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
-#if (UFE_PREVIEW_VERSION_NUM >= 4001)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdShaderNodeDef.h>
 #endif
 #include <mayaUsd/ufe/Utils.h>
@@ -63,7 +63,7 @@ MStatus ADSKMayaUSDGetMaterialsForRenderersCommand::parseArgs(const MArgList& ar
     return MS::kSuccess;
 }
 
-#if (UFE_PREVIEW_VERSION_NUM < 4001)
+#ifndef UFE_V4_FEATURES_AVAILABLE
 void ADSKMayaUSDGetMaterialsForRenderersCommand::appendMaterialXMaterials() const
 {
     // TODO: Replace hard-coded materials with dynamically generated list.
@@ -120,7 +120,7 @@ MStatus ADSKMayaUSDGetMaterialsForRenderersCommand::doIt(const MArgList& argList
         // known renderers. We should populate the material lists dynamically based on what the
         // installed renderers report as supported materials.
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4001)
+#ifdef UFE_V4_FEATURES_AVAILABLE
     const auto shaderNodeDefs = UsdMayaUtil::GetSurfaceShaderNodeDefs();
     for (const auto& nodeDef : shaderNodeDefs) {
         // To make use of ufe classifications

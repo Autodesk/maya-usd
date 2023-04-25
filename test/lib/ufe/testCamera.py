@@ -263,7 +263,7 @@ class CameraTestCase(unittest.TestCase):
         cameraPrim = usdUtils.getPrimFromSceneItem(cam2Item)
         self._TestCameraAttributes(cam2Camera, cameraPrim)
 
-    @unittest.skipUnless(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '4012', 'Requires Ufe Preview Version at least 4013.')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Requires Ufe v4.')
     def testUsdCameraHandler(self):
         # Test that the camera handlers can find USD cameras in a scene segment
         camera2Path = ufe.PathString.path(self.camera2PathString)

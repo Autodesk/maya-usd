@@ -140,7 +140,7 @@ static constexpr char    kAddMayaReferenceLabel[] = "Add Maya Reference...";
 #if PXR_VERSION >= 2108
 static constexpr char kBindMaterialToSelectionItem[] = "Assign Material to Selection";
 static constexpr char kBindMaterialToSelectionLabel[] = "Assign Material to Selection";
-#if UFE_PREVIEW_VERSION_NUM >= 4010
+#ifdef UFE_V4_FEATURES_AVAILABLE
 static constexpr char kAssignNewMaterialItem[] = "Assign New Material";
 static constexpr char kAssignNewMaterialLabel[] = "Assign New Material";
 static constexpr char kAddNewMaterialItem[] = "Add New Material";
@@ -220,9 +220,7 @@ public:
     }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4032)
     std::string commandString() const override { return cmdsList().front()->commandString(); }
-#endif
 #endif
 };
 
@@ -250,9 +248,7 @@ public:
     }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4032)
     std::string commandString() const override { return cmdsList().front()->commandString(); }
-#endif
 #endif
 };
 #endif
@@ -891,7 +887,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
             // Top level item - Bind/unbind existing materials
             bool materialSeparatorsAdded = false;
             int  allowMaterialFunctions = 0;
-#if UFE_PREVIEW_VERSION_NUM >= 4010
+#ifdef UFE_V4_FEATURES_AVAILABLE
             MString script;
             script.format(
                 "mayaUsdMaterialBindings \"^1s\" -canAssignMaterialToNodeType true",
@@ -936,7 +932,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                         UnbindMaterialUndoableCommand::commandName);
                 }
             }
-#if UFE_PREVIEW_VERSION_NUM >= 4010
+#ifdef UFE_V4_FEATURES_AVAILABLE
             if (UsdUndoAddNewMaterialCommand::CompatiblePrim(fItem)) {
                 if (!materialSeparatorsAdded) {
                     items.emplace_back(Ufe::ContextItem::kSeparator);
@@ -1064,7 +1060,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                     }
                 }
             }
-#if UFE_PREVIEW_VERSION_NUM >= 4010
+#ifdef UFE_V4_FEATURES_AVAILABLE
         } else if (itemPath[0] == kAssignNewMaterialItem || itemPath[0] == kAddNewMaterialItem) {
             std::multimap<std::string, MString> renderersAndMaterials;
             MStringArray                        materials;
@@ -1272,7 +1268,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         return compositeCmd;
     } else if (itemPath[0] == UnbindMaterialUndoableCommand::commandName) {
         return std::make_shared<UnbindMaterialUndoableCommand>(fItem->path());
-#if UFE_PREVIEW_VERSION_NUM >= 4010
+#ifdef UFE_V4_FEATURES_AVAILABLE
     } else if (itemPath.size() == 3u && itemPath[0] == kAssignNewMaterialItem) {
         // Make a copy so that we don't change the user's original selection.
         Ufe::Selection sceneItems(*Ufe::GlobalSelection::get());

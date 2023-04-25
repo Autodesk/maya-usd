@@ -49,7 +49,7 @@ public:
 private:
     MStatus parseArgs(const MArgList& argList);
 
-#if (UFE_PREVIEW_VERSION_NUM < 4001)
+#ifndef UFE_V4_FEATURES_AVAILABLE
     void appendMaterialXMaterials() const;
     void appendArnoldMaterials() const;
     void appendUsdMaterials() const;

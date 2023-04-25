@@ -26,3 +26,7 @@
 #if !defined(UFE_V3_FEATURES_AVAILABLE) && !defined(UFE_V3)
 #define UFE_V3(...)
 #endif
+
+#if !defined(UFE_V4_FEATURES_AVAILABLE) && !defined(UFE_V4)
+#define UFE_V4(...)
+#endif
