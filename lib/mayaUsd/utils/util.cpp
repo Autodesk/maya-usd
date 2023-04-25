@@ -56,6 +56,7 @@
 
 #include <boost/functional/hash.hpp>
 
+#include <regex>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -81,6 +82,7 @@
 #include <pxr/base/vt/value.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/tokens.h>
+#include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/usdGeom/camera.h>
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/metrics.h>
@@ -749,6 +751,27 @@ std::string UsdMayaUtil::prettifyName(const std::string& name)
             prettyName += nextLetter;
         }
     }
+    // Manual substitutions for custom capitalisations. Will be searched as case-insensitive.
+    static const std::unordered_map<std::string, std::string> subs = {
+        { "usd", "USD" },
+        { "mtlx", "MaterialX" },
+        { "gltf pbr", "glTF PBR" },
+    };
+
+    static const auto subRegexes = []() {
+        std::vector<std::pair<std::regex, std::string>> regexes;
+        regexes.reserve(subs.size());
+        for (auto&& kv : subs) {
+            regexes.emplace_back(
+                std::regex { "\\b" + kv.first + "\\b", std::regex_constants::icase }, kv.second);
+        }
+        return regexes;
+    }();
+
+    for (auto&& re : subRegexes) {
+        prettyName = regex_replace(prettyName, re.first, re.second);
+    }
+
     return prettyName;
 }
 
@@ -2553,4 +2576,35 @@ void UsdMayaUtil::AddMayaExtents(GfBBox3d& bbox, const UsdPrim& root, const UsdT
             bbox = GfBBox3d::Combine(bbox, GfBBox3d(localExtents, xform));
         }
     }
+}
+
+SdrShaderNodePtrVec UsdMayaUtil::GetSurfaceShaderNodeDefs()
+{
+    // TODO: Replace hard-coded materials with dynamically generated list.
+    static const std::set<TfToken> vettedSurfaces = { TfToken("ND_standard_surface_surfaceshader"),
+                                                      TfToken("ND_gltf_pbr_surfaceshader"),
+                                                      TfToken("ND_UsdPreviewSurface_surfaceshader"),
+                                                      TfToken("UsdPreviewSurface") };
+
+    SdrShaderNodePtrVec surfaceShaderNodeDefs;
+
+    auto& registry = SdrRegistry::GetInstance();
+    for (auto&& id : vettedSurfaces) {
+        SdrShaderNodeConstPtr shaderNodeDef = registry.GetShaderNodeByIdentifier(id);
+        if (shaderNodeDef) {
+            surfaceShaderNodeDefs.emplace_back(shaderNodeDef);
+        }
+    }
+
+    for (auto&& sdrNode : registry.GetShaderNodesByFamily()) {
+        // Any shader that has the "shader/surface" role will
+        // be exposed in the material creation menus. This
+        // includes nodes from Arnold, but also VRay, PRMan,
+        // if they use the same string to tag surface nodes.
+        if (sdrNode->GetRole() == "shader/surface") {
+            surfaceShaderNodeDefs.emplace_back(sdrNode);
+        }
+    }
+
+    return surfaceShaderNodeDefs;
 }

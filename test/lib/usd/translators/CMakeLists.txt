@@ -39,6 +39,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportSelection.py
     testUsdExportSelectionHierarchy.py
     testUsdExportSkeleton.py
+    testUsdExportSkin.py
     testUsdExportStripNamespaces.py
     testUsdExportStroke.py
     testUsdExportUserTaggedAttributes.py

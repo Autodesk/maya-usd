@@ -66,9 +66,7 @@ void UsdUndoDeleteCommand::execute()
 
     if (MayaUsd::ufe::applyCommandRestrictionNoThrow(_prim, "delete")) {
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4024)
         UsdAttributes::removeAttributesConnections(_prim);
-#endif
 #endif
         PrimSpecFunc deleteFunc
             = [stage](const UsdPrim& prim, const SdfPrimSpecHandle& primSpec) -> void {

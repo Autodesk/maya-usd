@@ -40,7 +40,7 @@ void addMetadataStrings(
     if (nb <= 0)
         return;
     if (tooltip.empty())
-        tooltip += "<b>Introduced Composition Arcs:</b> ";
+        tooltip += "<b>Composition Arcs:</b> ";
     if (needComma)
         tooltip += ", ";
     if (nb == 1) {

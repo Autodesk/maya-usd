@@ -576,7 +576,7 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.redo()
         self.assertTrue(capsuleBindAPI.GetDirectBinding().GetMaterialPath().isEmpty)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testMaterialCreationForSingleObject(self):
         """This test builds a material using contextOps capabilities."""
@@ -689,7 +689,7 @@ class ContextOpsTestCase(unittest.TestCase):
             ufeCmd.execute(cmdSS)
             checkMaterial(self, rootHier, 3, 1, 0, "standard_surface", "mtlx", "out", "/test_scope")
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testMaterialCreationForMultipleObjects(self):
         """This test creates a single shared material for multiple objects using contextOps capabilities."""
@@ -836,7 +836,7 @@ class ContextOpsTestCase(unittest.TestCase):
             ufeCmd.execute(cmdSS)
             checkMaterial(self, rootHier, 5, 1, 1, 0, "standard_surface", "mtlx", "out", "/test_scope")
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testMaterialCreationScopeName(self):
         """This test verifies that materials get created in the correct scope."""
@@ -1026,7 +1026,7 @@ class ContextOpsTestCase(unittest.TestCase):
         expectedPath = proxyShapePath + ",/" + materialsScopeName + "/" + materialName
         assert ufe.Hierarchy.createItem(ufe.PathString.path(expectedPath))
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4020', 'Test only available in UFE preview version 0.4.20 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testAddMaterialToScope(self):
         """This test adds a new material to the material scope."""
@@ -1096,7 +1096,7 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(ufe.PathString.string(mxConn.dst.path), "|stage1|stageShape1,/mtl/standard_surface1")
         self.assertEqual(mxConn.dst.name, "outputs:mtlx:surface")
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testMaterialBindingWithNodeDefHandler(self):
         """In this test we will go as far as possible towards creating and binding a working
@@ -1177,7 +1177,7 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.redo()
         self.assertTrue(capsuleBindAPI.GetDirectBinding().GetMaterialPath().isEmpty)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testMaterialBindingToSelection(self):
         """Exercising the bind to selection context menu option."""
@@ -1275,7 +1275,7 @@ class ContextOpsTestCase(unittest.TestCase):
         # when returning the children list) but hasChildren still reports true in
         # UFE version before 0.4.4 for inactive to allow the caller to do conditional
         # inactive filtering, so we test that hasChildren is true for those versions.
-        if (os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '4004'):
+        if (ufeUtils.ufeFeatureSetVersion() >= 4):
             self.assertFalse(proxyShapehier.hasChildren())
         else:
             self.assertTrue(proxyShapehier.hasChildren())
@@ -1407,7 +1407,7 @@ class ContextOpsTestCase(unittest.TestCase):
         _validateLoadAndUnloadItems(ball15Item, ['Load', 'Load with Descendants'])
 
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testAssignExistingMaterialToSingleObject(self):
         """This test assigns an existing material from the stage via ContextOps capabilities."""
@@ -1466,7 +1466,7 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.undo()
         self.assertFalse(capsulePrim.HasAPI(UsdShade.MaterialBindingAPI))
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testGeomCoponentAssignment(self):
         '''Duplicate a Maya cube to USD and then assign a material on a face.'''

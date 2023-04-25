@@ -888,7 +888,7 @@ class RenameTestCase(unittest.TestCase):
 
         testPaths(self, shapeStage, "pCube1")
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4041', 'Test only available in UFE preview version 0.4.41 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testUfeRenameCommandAPI(self):
         '''Test that the rename command can be invoked using the 3 known APIs.'''
 

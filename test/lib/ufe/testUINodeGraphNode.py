@@ -58,6 +58,9 @@ class UINodeGraphNodeTestCase(unittest.TestCase):
 
     # Helper to avoid copy-pasting the entire test
     def doPosAndSizeTests(self, hasFunc, setFunc, getFunc, cmdFunc):
+        initialUpdateCount = cmds.getAttr('|transform1|proxyShape1.updateId')
+        initialResyncCount = cmds.getAttr('|transform1|proxyShape1.resyncId')
+    
         # Test hasFunc and getFunc
         self.assertFalse(hasFunc())
         pos0 = getFunc()
@@ -88,12 +91,13 @@ class UINodeGraphNodeTestCase(unittest.TestCase):
         self.assertEqual(pos4.x(), pos5.x())
         self.assertEqual(pos4.y(), pos5.y())
 
+        # None of these changes should force a render refresh:
+        self.assertEqual(initialUpdateCount, cmds.getAttr('|transform1|proxyShape1.updateId'))
+        self.assertEqual(initialResyncCount, cmds.getAttr('|transform1|proxyShape1.resyncId'))
+
     def testPosition(self):
         ball3Path = ufe.PathString.path('|transform1|proxyShape1,/Ball_set/Props/Ball_3')
         ball3SceneItem = ufe.Hierarchy.createItem(ball3Path)
-
-        initialUpdateCount = cmds.getAttr('|transform1|proxyShape1.updateId')
-        initialResyncCount = cmds.getAttr('|transform1|proxyShape1.resyncId')
                                           
         uiNodeGraphNode = ufe.UINodeGraphNode.uiNodeGraphNode(ball3SceneItem)
         self.doPosAndSizeTests(uiNodeGraphNode.hasPosition, uiNodeGraphNode.setPosition,
@@ -119,10 +123,6 @@ class UINodeGraphNodeTestCase(unittest.TestCase):
         
         self.doPosAndSizeTests(uiNodeGraphNode.hasSize, uiNodeGraphNode.setSize,
             uiNodeGraphNode.getSize, uiNodeGraphNode.setSizeCmd)
-
-        # None of these changes should force a render refresh:
-        self.assertEqual(initialUpdateCount, cmds.getAttr('|transform1|proxyShape1.updateId'))
-        self.assertEqual(initialResyncCount, cmds.getAttr('|transform1|proxyShape1.resyncId'))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
