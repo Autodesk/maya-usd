@@ -16,6 +16,7 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UfeVersionCompat.h>
 
 #include <ufe/sceneSegmentHandler.h>
 
@@ -48,9 +49,8 @@ public:
 
     // Ufe::SceneSegmentHandler overrides
     Ufe::Selection findGatewayItems_(const Ufe::Path& path) const override;
-#if (UFE_PREVIEW_VERSION_NUM >= 4035)
-    Ufe::Selection findGatewayItems_(const Ufe::Path& path, Ufe::Rtid nestedRtid) const override;
-#endif
+    UFE_V4(Ufe::Selection findGatewayItems_(const Ufe::Path& path, Ufe::Rtid nestedRtid)
+               const override;)
     bool isGateway_(const Ufe::Path& path) const override;
 
 private:

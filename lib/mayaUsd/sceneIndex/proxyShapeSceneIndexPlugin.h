@@ -31,11 +31,18 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usdImaging/usdImaging/stageSceneIndex.h>
 
+#if WANT_UFE_BUILD
+#include <ufe/path.h>
+#endif
+
 #include <memory>
 
 //////////////////////////////////////////////////////////////// MayaUsdProxyShapeSceneIndexPlugin
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+class HdFlatteningSceneIndex;
+TF_DECLARE_WEAK_AND_REF_PTRS(HdFlatteningSceneIndex);
 
 // The plugin class must be present in the pixar scope otherwise the factory method registered by
 // HdSceneIndexPluginRegistry::Define will not be available from the string constructed from the
@@ -70,11 +77,13 @@ class MayaUsdProxyShapeSceneIndex : public HdSingleInputFilteringSceneIndexBase
 public:
     using ParentClass = HdSingleInputFilteringSceneIndexBase;
 
-    static MayaUsdProxyShapeSceneIndexRefPtr New(MayaUsdProxyShapeBase* proxyShape)
-    {
-        return TfCreateRefPtr(
-            new MayaUsdProxyShapeSceneIndex(UsdImagingStageSceneIndex::New(), proxyShape));
-    }
+    static MayaUsdProxyShapeSceneIndexRefPtr
+    New(MayaUsdProxyShapeBase*                 proxyShape,
+        const HdFlatteningSceneIndexRefPtr&    flatteningSceneIndex,
+        const UsdImagingStageSceneIndexRefPtr& usdImagingStageSceneIndex);
+
+    static Ufe::Path
+    InterpretRprimPath(const HdSceneIndexBaseRefPtr& sceneIndex, const SdfPath& path);
 
     // satisfying HdSceneIndexBase
     HdSceneIndexPrim GetPrim(const SdfPath& primPath) const override;
@@ -82,7 +91,8 @@ public:
     SdfPathVector GetChildPrimPaths(const SdfPath& primPath) const override;
 
     MayaUsdProxyShapeSceneIndex(
-        UsdImagingStageSceneIndexRefPtr inputSceneIndex,
+        HdSceneIndexBaseRefPtr          inputSceneIndex,
+        UsdImagingStageSceneIndexRefPtr usdImagingStageSceneIndex,
         MayaUsdProxyShapeBase*          proxyShape);
 
     virtual ~MayaUsdProxyShapeSceneIndex();

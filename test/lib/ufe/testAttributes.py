@@ -118,7 +118,7 @@ class AttributesTestCase(unittest.TestCase):
         # Visibility should be in this list.
         self.assertIn(UsdGeom.Tokens.visibility, ball35AttrNames)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test for UFE preview version 0.4.24 and later')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test for UFE v4 or later')
     def testAddRemoveAttribute(self):
         '''Test adding and removing custom attributes'''
 
@@ -189,7 +189,7 @@ class AttributesTestCase(unittest.TestCase):
             with mayaUsdLib.DiagnosticBatchContext(1000) as bc:
                 attr = ball35Attrs.attribute("MyAttribute")
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test requires remove attribute and its connections feature only available on Ufe 0.4.24 and later')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test requires remove attribute and its connections feature only available on Ufe v4 or later')
     def testRemoveCompoundAttribute(self):
         '''Test removing compound attributes'''
 
@@ -309,7 +309,7 @@ class AttributesTestCase(unittest.TestCase):
         self.assertFalse(texturePrim.HasProperty('inputs:geomprop'))
         self.assertTrue(parentPrim.HasProperty('inputs:file2:varnameStr'))
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test for UFE preview version 0.4.24 and later')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test for UFE v4 or later')
     def testUniqueNameAttribute(self):
         '''Test unique name attribute'''
 
@@ -345,7 +345,7 @@ class AttributesTestCase(unittest.TestCase):
         attr = ball35Attrs.attribute("MyAttribute1")
         self.assertEqual(repr(attr),"ufe.AttributeString(<|transform1|proxyShape1,/Room_set/Props/Ball_35.MyAttribute1>)")
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4034', 'Test for UFE preview version 0.4.34 and later')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test for UFE v4 or later')
     def testRenamingAttribute(self):
         '''Test renaming an attribute'''
 

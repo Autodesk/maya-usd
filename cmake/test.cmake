@@ -218,6 +218,13 @@ finally:
     if(IS_WINDOWS)
         list(APPEND MAYAUSD_VARNAME_PATH "${CMAKE_INSTALL_PREFIX}/lib/gtest")
         list(APPEND MAYAUSD_VARNAME_PATH "${MAYA_LOCATION}/bin")
+    elseif(IS_LINUX)
+        if(PREFIX_COMMAND)
+            # Necessary for tests like DiffCore to find python lib since the test
+            # is an exectuable and running on its own (not with maya/mayapy).
+            # See DYLD_LIBRARY_PATH case below.
+            list(APPEND MAYAUSD_VARNAME_LD_LIBRARY_PATH "${MAYA_LOCATION}/lib")
+        endif()
     endif()
 
     # NOTE - we prefix varnames with "MAYAUSD_VARNAME_" just to make collision
@@ -428,7 +435,8 @@ finally:
         "MAYA_DISABLE_CER=1")
 
     if(IS_MACOSX)
-        # Necessary for tests like DiffCore to find python
+        # Necessary for tests like DiffCore to find python.
+        # See LD_LIBRARY_PATH for Linux above.
         set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
             "DYLD_LIBRARY_PATH=${MAYA_LOCATION}/MacOS:$ENV{DYLD_LIBRARY_PATH}")
         set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT

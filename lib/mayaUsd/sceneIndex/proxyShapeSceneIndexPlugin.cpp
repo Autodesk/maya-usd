@@ -34,10 +34,16 @@
 #include <maya/MSelectionList.h>
 #include <maya/MString.h>
 #if WANT_UFE_BUILD
+#include <mayaUsd/ufe/Utils.h>
+
 #include <ufe/rtid.h>
 #endif
 
+#include <pxr/base/tf/refPtr.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+typedef Ufe::Path (*MayaHydraInterpretRprimPath)(const HdSceneIndexBaseRefPtr&, const SdfPath&);
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -56,19 +62,45 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
     using HdMObjectDataSource = HdRetainedTypedSampledDataSource<MObject>;
     static TfToken         dataSourceNodePathEntry("object");
     HdDataSourceBaseHandle dataSourceEntryPathHandle = inputArgs->Get(dataSourceNodePathEntry);
-#if WANT_UFE_BUILD
-    using HdRtidRefDataSource = HdRetainedTypedSampledDataSource<Ufe::Rtid&>;
-    static TfToken         dataSourceRuntimeEntry("runtime");
-    HdDataSourceBaseHandle dataSourceEntryRuntimeHandle = inputArgs->Get(dataSourceRuntimeEntry);
-#endif
+
+    // Retrieve the version integer. The Version integer combines major, minor, and patch number
+    // like this major * 10000 + minor * 100 + patch
+    using MayaHydraVersionDataSource = HdRetainedTypedSampledDataSource<int>;
+    static TfToken         dataSourceVersionEntry("version");
+    HdDataSourceBaseHandle dataSourceEntryVersionHandle = inputArgs->Get(dataSourceVersionEntry);
+    int version = 100; // initial mayaHydra version where version data source had not been defined
+    if (auto dataSourceEntryVersion
+        = MayaHydraVersionDataSource::Cast(dataSourceEntryVersionHandle)) {
+        version = dataSourceEntryVersion->GetTypedValue(0.0f);
+    }
 
     if (auto dataSourceEntryNodePath = HdMObjectDataSource::Cast(dataSourceEntryPathHandle)) {
 #if WANT_UFE_BUILD
-        auto dataSourceEntryRuntime = HdRtidRefDataSource::Cast(dataSourceEntryRuntimeHandle);
-        if (TF_VERIFY(dataSourceEntryRuntime, "Error UFE runtime id data source not found")) {
-            Ufe::Rtid& id = dataSourceEntryRuntime->GetTypedValue(0.0f);
-            id = MayaUsd::ufe::getUsdRunTimeId();
-            TF_VERIFY(id != 0, "Invalid UFE runtime id");
+        if (version >= 200) {
+            // Retrieve interpret pick function from the scene index plugin, to be accessed by
+            // mayaHydra interpretRprimPath
+            using MayaHydraInterpretRprimPathDataSource
+                = HdRetainedTypedSampledDataSource<MayaHydraInterpretRprimPath&>;
+            static TfToken         dataSourceInterpretPickEntry("interpretRprimPath");
+            HdDataSourceBaseHandle dataSourceEntryInterpretPickHandle
+                = inputArgs->Get(dataSourceInterpretPickEntry);
+            auto dataSourceEntryInterpretPick
+                = MayaHydraInterpretRprimPathDataSource::Cast(dataSourceEntryInterpretPickHandle);
+            MayaHydraInterpretRprimPath& interpretRprimPath
+                = dataSourceEntryInterpretPick->GetTypedValue(0.0f);
+            interpretRprimPath = (MayaHydraInterpretRprimPath)&MayaUsd::
+                MayaUsdProxyShapeSceneIndex::InterpretRprimPath;
+        } else {
+            using HdRtidRefDataSource = HdRetainedTypedSampledDataSource<Ufe::Rtid&>;
+            static TfToken         dataSourceRuntimeEntry("runtime");
+            HdDataSourceBaseHandle dataSourceEntryRuntimeHandle
+                = inputArgs->Get(dataSourceRuntimeEntry);
+            auto dataSourceEntryRuntime = HdRtidRefDataSource::Cast(dataSourceEntryRuntimeHandle);
+            if (TF_VERIFY(dataSourceEntryRuntime, "Error UFE runtime id data source not found")) {
+                Ufe::Rtid& id = dataSourceEntryRuntime->GetTypedValue(0.0f);
+                id = MayaUsd::ufe::getUsdRunTimeId();
+                TF_VERIFY(id != 0, "Invalid UFE runtime id");
+            }
         }
 #endif
         MObject           dagNode = dataSourceEntryNodePath->GetTypedValue(0.0f);
@@ -80,10 +112,13 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
 
         auto proxyShape = dynamic_cast<MayaUsdProxyShapeBase*>(dependNodeFn.userNode());
         if (TF_VERIFY(proxyShape, "Error getting MayaUsdProxyShapeBase")) {
-            auto psSceneIndex = MayaUsd::MayaUsdProxyShapeSceneIndex::New(proxyShape);
+            // Convert USD prims to rprims consumed by Hydra
+            auto usdImagingStageSceneIndex = UsdImagingStageSceneIndex::New();
             // Flatten transforms, visibility, purpose, model, and material
             // bindings over hierarchies.
-            return HdFlatteningSceneIndex::New(psSceneIndex);
+            auto flatteningSceneIndex = HdFlatteningSceneIndex::New(usdImagingStageSceneIndex);
+            return MayaUsd::MayaUsdProxyShapeSceneIndex::New(
+                proxyShape, flatteningSceneIndex, usdImagingStageSceneIndex);
         }
     }
 
@@ -97,10 +132,11 @@ namespace MAYAUSD_NS_DEF {
 ///////////////////////// MayaUsdProxyShapeSceneIndex
 
 MayaUsdProxyShapeSceneIndex::MayaUsdProxyShapeSceneIndex(
-    UsdImagingStageSceneIndexRefPtr inputSceneIndex,
+    HdSceneIndexBaseRefPtr          inputSceneIndex,
+    UsdImagingStageSceneIndexRefPtr usdImagingStageSceneIndex,
     MayaUsdProxyShapeBase*          proxyShape)
     : ParentClass(inputSceneIndex)
-    , _usdImagingStageSceneIndex(inputSceneIndex)
+    , _usdImagingStageSceneIndex(usdImagingStageSceneIndex)
     , _proxyShape(proxyShape)
 {
     TfWeakPtr<MayaUsdProxyShapeSceneIndex> ptr(this);
@@ -109,6 +145,32 @@ MayaUsdProxyShapeSceneIndex::MayaUsdProxyShapeSceneIndex(
 }
 
 MayaUsdProxyShapeSceneIndex::~MayaUsdProxyShapeSceneIndex() { }
+
+MayaUsdProxyShapeSceneIndexRefPtr MayaUsdProxyShapeSceneIndex::New(
+    MayaUsdProxyShapeBase*                 proxyShape,
+    const HdFlatteningSceneIndexRefPtr&    flatteningSceneIndex,
+    const UsdImagingStageSceneIndexRefPtr& usdImagingStageSceneIndex)
+{
+    // Create the proxy shape scene index which populates the stage
+    return TfCreateRefPtr(new MayaUsdProxyShapeSceneIndex(
+        flatteningSceneIndex, usdImagingStageSceneIndex, proxyShape));
+}
+
+Ufe::Path MayaUsdProxyShapeSceneIndex::InterpretRprimPath(
+    const HdSceneIndexBaseRefPtr& sceneIndex,
+    const SdfPath&                path)
+{
+    if (MayaUsdProxyShapeSceneIndexRefPtr proxyShapeSceneIndex
+        = TfStatic_cast<MayaUsdProxyShapeSceneIndexRefPtr>(sceneIndex)) {
+        MStatus  status;
+        MDagPath dagPath(
+            MDagPath::getAPathTo(proxyShapeSceneIndex->_proxyShape->thisMObject(), &status));
+        return Ufe::Path({ MayaUsd::ufe::dagPathToPathSegment(dagPath),
+                           MayaUsd::ufe::usdPathToUfePathSegment(path) });
+    }
+
+    return Ufe::Path();
+}
 
 void MayaUsdProxyShapeSceneIndex::StageSet(const MayaUsdProxyStageSetNotice& notice) { Populate(); }
 
@@ -134,6 +196,8 @@ void MayaUsdProxyShapeSceneIndex::Populate()
             {
                 _usdImagingStageSceneIndex->SetStage(stage);
 #if PXR_VERSION <= 2305
+                // In most recent USD, Populate is called from within SetStage, so there is no need
+                // to callsites to call it explicitly
                 _usdImagingStageSceneIndex->Populate();
 #endif
                 _populated = true;
@@ -156,7 +220,7 @@ HdSceneIndexPrim MayaUsdProxyShapeSceneIndex::GetPrim(const SdfPath& primPath) c
         return HdSceneIndexPrim();
     }
 
-    return _usdImagingStageSceneIndex->GetPrim(primPath);
+    return _GetInputSceneIndex()->GetPrim(primPath);
 }
 
 SdfPathVector MayaUsdProxyShapeSceneIndex::GetChildPrimPaths(const SdfPath& primPath) const

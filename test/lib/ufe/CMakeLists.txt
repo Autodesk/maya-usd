@@ -69,18 +69,11 @@ if (v4_BatchOps IN_LIST UFE_PREVIEW_FEATURES)
 endif()
 
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
-        list(APPEND TEST_SCRIPT_FILES
-            testAttributeInfo.py
-            testConnections.py
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4023)
-        list(APPEND TEST_SCRIPT_FILES
-            testUINodeGraphNode.py
-        )
-    endif()
+    list(APPEND TEST_SCRIPT_FILES
+        testAttributeInfo.py
+        testConnections.py
+        testUINodeGraphNode.py
+    )
 
     if(CMAKE_WANT_MATERIALX_BUILD)
         list(APPEND TEST_SCRIPT_FILES

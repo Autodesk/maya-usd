@@ -92,6 +92,7 @@
 #include <maya/MPoint.h>
 #include <maya/MProfiler.h>
 #include <maya/MPxSurfaceShape.h>
+#include <maya/MSceneMessage.h>
 #include <maya/MSelectionMask.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
@@ -140,6 +141,7 @@ const MString MayaUsdProxyShapeBase::displayFilterLabel("USD Proxies");
 
 // Attributes
 MObject MayaUsdProxyShapeBase::filePathAttr;
+MObject MayaUsdProxyShapeBase::filePathRelativeAttr;
 MObject MayaUsdProxyShapeBase::primPathAttr;
 MObject MayaUsdProxyShapeBase::excludePrimPathsAttr;
 MObject MayaUsdProxyShapeBase::loadPayloadsAttr;
@@ -255,6 +257,15 @@ MStatus MayaUsdProxyShapeBase::initialize()
     typedAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = addAttribute(filePathAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    filePathRelativeAttr
+        = numericAttrFn.create("filePathRelative", "fpr", MFnNumericData::kBoolean, 0.0, &retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    numericAttrFn.setInternal(true);
+    numericAttrFn.setStorable(false);
+    numericAttrFn.setWritable(false);
+    retValue = addAttribute(filePathRelativeAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     primPathAttr
@@ -514,6 +525,29 @@ void MayaUsdProxyShapeBase::enableProxyAccessor()
     _usdAccessor = ProxyAccessor::createAndRegister(*this);
 }
 
+void beforeSaveCallback(void* clientData)
+{
+    auto proxyShape = static_cast<MayaUsdProxyShapeBase*>(clientData);
+    if (!proxyShape) {
+        return;
+    }
+
+    MStatus           status;
+    MFnDependencyNode depNode(proxyShape->thisMObject(), &status);
+    CHECK_MSTATUS(status);
+
+    MPlug filePathPlug = depNode.findPlug(MayaUsdProxyShapeBase::filePathAttr);
+    MPlug filePathRelativePlug = depNode.findPlug(MayaUsdProxyShapeBase::filePathRelativeAttr);
+
+    // Make proxy shape's file path relative if needed
+    ghc::filesystem::path filePath(filePathPlug.asString().asChar());
+    if (filePath.is_absolute() && filePathRelativePlug.asBool()) {
+        auto relativePath
+            = UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(filePath.generic_string());
+        filePathPlug.setString(relativePath.c_str());
+    }
+}
+
 /* virtual */
 void MayaUsdProxyShapeBase::postConstructor()
 {
@@ -525,6 +559,11 @@ void MayaUsdProxyShapeBase::postConstructor()
     MayaUsdProxyStageInvalidateNotice(*this).Send();
 
     updateAncestorCallbacks();
+
+    if (_preSaveCallbackId == 0) {
+        _preSaveCallbackId
+            = MSceneMessage::addCallback(MSceneMessage::kBeforeSave, beforeSaveCallback, this);
+    }
 }
 
 /* virtual */
@@ -1867,6 +1906,11 @@ MayaUsdProxyShapeBase::MayaUsdProxyShapeBase(
 /* virtual */
 MayaUsdProxyShapeBase::~MayaUsdProxyShapeBase()
 {
+    if (_preSaveCallbackId != 0) {
+        MMessage::removeCallback(_preSaveCallbackId);
+        _preSaveCallbackId = 0;
+    }
+
     clearAncestorCallbacks();
 
     // Deregister from the load-rules handling used to transfer load rules

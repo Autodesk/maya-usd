@@ -93,6 +93,8 @@ public:
     MAYAUSD_CORE_PUBLIC
     static MObject filePathAttr;
     MAYAUSD_CORE_PUBLIC
+    static MObject filePathRelativeAttr;
+    MAYAUSD_CORE_PUBLIC
     static MObject primPathAttr;
     MAYAUSD_CORE_PUBLIC
     static MObject excludePrimPathsAttr;
@@ -438,6 +440,8 @@ private:
     std::vector<MCallbackId> _ancestorCallbacks;
     MString                  _ancestorCallbacksPath;
     bool                     _inAncestorCallback { false };
+
+    MCallbackId _preSaveCallbackId { 0 };
 
 public:
     // Counter for the number of times compute is re-entered

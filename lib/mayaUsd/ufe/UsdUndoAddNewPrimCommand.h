@@ -17,6 +17,7 @@
 #define USD_ADD_NEW_PRIM_COMMAND
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UfeVersionCompat.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/undo/UsdUndoableItem.h>
 
@@ -48,11 +49,7 @@ public:
     const Ufe::Path& newUfePath() const;
     PXR_NS::UsdPrim  newPrim() const;
 
-#ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4032)
-    std::string commandString() const override;
-#endif
-#endif
+    UFE_V4(std::string commandString() const override;)
 
     static UsdUndoAddNewPrimCommand::Ptr
     create(const UsdSceneItem::Ptr& usdSceneItem, const std::string& name, const std::string& type);
