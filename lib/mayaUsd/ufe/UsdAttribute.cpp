@@ -263,7 +263,7 @@ public:
         MayaUsd::ufe::InSetAttribute inSetAttr;
         MayaUsd::ufe::UsdUndoableCommand<Ufe::UndoableCommand>::undo();
     }
-    
+
     void redo() override
     {
         MayaUsd::ufe::InSetAttribute inSetAttr;
