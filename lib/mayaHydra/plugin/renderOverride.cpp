@@ -149,40 +149,6 @@ int GetNearestHitIndex(
 
     return nearestHitIndex;
 }
-
-//! \brief  workaround to remove duplicate hits and improve selection performance.
-void ResolveUniqueHits_Workaround(const HdxPickHitVector& inHits, HdxPickHitVector& outHits)
-{
-    outHits.clear();
-
-    // hash -> hitIndex
-    std::unordered_map<size_t, size_t> hitIndices;
-
-    size_t previousHash = 0;
-
-    for (size_t i = 0; i < inHits.size(); i++) {
-        const HdxPickHit& hit = inHits[i];
-
-        size_t hash = 0;
-        MayaUsd::hash_combine(hash, hit.delegateId.GetHash());
-        MayaUsd::hash_combine(hash, hit.objectId.GetHash());
-        MayaUsd::hash_combine(hash, hit.instancerId.GetHash());
-        MayaUsd::hash_combine(hash, hit.instanceIndex);
-
-        // As an optimization, keep track of the previous hash value and
-        // reject indices that match it without performing a map lookup.
-        // Adjacent indices are likely enough to have the same prim,
-        // instance and element ids that this can be a significant
-        // improvement.
-        if (hitIndices.empty() || hash != previousHash) {
-            if (hitIndices.insert(std::make_pair(hash, i)).second) {
-                outHits.push_back(inHits[i]);
-            }
-            previousHash = hash;
-        }
-    }
-}
-
 } // namespace
 
 // MtohRenderOverride is a rendering override class for the viewport to use Hydra instead of VP2.0.
@@ -1012,6 +978,64 @@ void MtohRenderOverride::_PopulateSelectionList(
     }
 }
 
+void MtohRenderOverride::_PickByRegion(
+    HdxPickHitVector& outHits,
+    const MMatrix& viewMatrix,
+    const MMatrix& projMatrix,
+    bool pointSnappingActive,
+    int view_x,
+    int view_y,
+    int view_w,
+    int view_h,
+    unsigned int sel_x,
+    unsigned int sel_y,
+    unsigned int sel_w,
+    unsigned int sel_h)
+{
+    MMatrix adjustedProjMatrix;
+    // Compute a pick matrix that, when it is post-multiplied with the projection matrix, will
+    // cause the picking region to fill the entire viewport for OpenGL selection.
+    {
+        double center_x = sel_x + sel_w * 0.5;
+        double center_y = sel_y + sel_h * 0.5;
+
+        MMatrix pickMatrix;
+        pickMatrix[0][0] = view_w / double(sel_w);
+        pickMatrix[1][1] = view_h / double(sel_h);
+        pickMatrix[3][0] = (view_w - 2.0 * (center_x - view_x)) / double(sel_w);
+        pickMatrix[3][1] = (view_h - 2.0 * (center_y - view_y)) / double(sel_h);
+
+        adjustedProjMatrix = projMatrix * pickMatrix;
+    }
+
+    // Set up picking params.
+    HdxPickTaskContextParams pickParams;
+    // Use the same size as selection region is enough to get all pick results.
+    pickParams.resolution.Set(sel_w, sel_h);
+    pickParams.viewMatrix.Set(viewMatrix.matrix);
+    pickParams.projectionMatrix.Set(adjustedProjMatrix.matrix);
+    pickParams.resolveMode = HdxPickTokens->resolveUnique;
+
+    if (pointSnappingActive) {
+        pickParams.pickTarget = HdxPickTokens->pickPoints;
+
+        // Exclude selected Rprims to avoid self-snapping issue.
+        pickParams.collection = _pointSnappingCollection;
+        pickParams.collection.SetExcludePaths(_selectionCollection.GetRootPaths());
+    }
+    else {
+        pickParams.collection = _renderCollection;
+    }
+
+    pickParams.outHits = &outHits;
+
+    // Execute picking tasks.
+    HdTaskSharedPtrVector pickingTasks = _taskController->GetPickingTasks();
+    VtValue               pickParamsValue(pickParams);
+    _engine.SetTaskContextData(HdxPickTokens->pickParams, pickParamsValue);
+    _engine.Execute(_taskController->GetRenderIndex(), &pickingTasks);
+}
+
 bool MtohRenderOverride::select(
     const MHWRender::MFrameContext&  frameContext,
     const MHWRender::MSelectionInfo& selectInfo,
@@ -1046,45 +1070,41 @@ bool MtohRenderOverride::select(
     if (status != MStatus::kSuccess)
         return false;
 
-    // Compute a pick matrix that, when it is post-multiplied with the projection matrix, will
-    // cause the picking region to fill the entire/ viewport for OpenGL selection.
-    {
-        MMatrix pickMatrix;
-        pickMatrix[0][0] = view_w / double(sel_w);
-        pickMatrix[1][1] = view_h / double(sel_h);
-        pickMatrix[3][0] = (view_w - (double)(sel_x * 2 + sel_w)) / double(sel_w);
-        pickMatrix[3][1] = (view_h - (double)(sel_y * 2 + sel_h)) / double(sel_h);
-
-        projMatrix *= pickMatrix;
-    }
-
-    const bool pointSnappingActive = selectInfo.pointSnapping();
-
-    // Set up picking params.
-    HdxPickTaskContextParams pickParams;
-    pickParams.resolution.Set(view_w, view_h);
-    pickParams.viewMatrix.Set(viewMatrix.matrix);
-    pickParams.projectionMatrix.Set(projMatrix.matrix);
-    pickParams.resolveMode = HdxPickTokens->resolveUnique;
-
-    if (pointSnappingActive) {
-        pickParams.pickTarget = HdxPickTokens->pickPoints;
-
-        // Exclude selected Rprims to avoid self-snapping issue.
-        pickParams.collection = _pointSnappingCollection;
-        pickParams.collection.SetExcludePaths(_selectionCollection.GetRootPaths());
-    } else {
-        pickParams.collection = _renderCollection;
-    }
-
     HdxPickHitVector outHits;
-    pickParams.outHits = &outHits;
+    const bool pointSnappingActive = selectInfo.pointSnapping();
+    if (pointSnappingActive)
+    {
+        int cursor_x, cursor_y;
+        status = selectInfo.cursorPoint(cursor_x, cursor_y);
+        if (status != MStatus::kSuccess)
+            return false;
 
-    // Execute picking tasks.
-    HdTaskSharedPtrVector pickingTasks = _taskController->GetPickingTasks();
-    VtValue               pickParamsValue(pickParams);
-    _engine.SetTaskContextData(HdxPickTokens->pickParams, pickParamsValue);
-    _engine.Execute(_taskController->GetRenderIndex(), &pickingTasks);
+        // Performance optimization for large picking region.
+        // The idea is start to do picking from a small region (width = 100), return the hit result if there's one.
+        // Otherwise, increase the region size and do picking repeatly till the original region size is reached.
+        static bool pickPerfOptEnabled = true;
+        unsigned int curr_sel_w = 100;
+        while (pickPerfOptEnabled && curr_sel_w < sel_w && outHits.empty())
+        {
+            unsigned int curr_sel_h = curr_sel_w * double(sel_h) / double(sel_w);
+
+            unsigned int curr_sel_x = cursor_x > (int)curr_sel_w / 2 ? cursor_x - (int)curr_sel_w / 2 : 0;
+            unsigned int curr_sel_y = cursor_y > (int)curr_sel_h / 2 ? cursor_y - (int)curr_sel_h / 2 : 0;
+
+            _PickByRegion(outHits, viewMatrix, projMatrix, pointSnappingActive,
+                view_x, view_y, view_w, view_h, curr_sel_x, curr_sel_y, curr_sel_w, curr_sel_h);
+
+            // Increase the size of picking region.
+            curr_sel_w *= 2;
+        }
+    }
+
+    // Pick from original region directly when point snapping is not active or no hit is found yet.
+    if (outHits.empty())
+    {
+        _PickByRegion(outHits, viewMatrix, projMatrix, pointSnappingActive,
+            view_x, view_y, view_w, view_h, sel_x, sel_y, sel_w, sel_h);
+    }
 
     if (pointSnappingActive) {
         // Find the hit nearest to the cursor point and use it for point snapping.
@@ -1101,16 +1121,6 @@ bool MtohRenderOverride::select(
         } else {
             outHits.clear();
         }
-    } else {
-        // Multiple hits can be produced for a single object on marquee selection even pickTarget
-        // is the default "pickPrimsAndInstances" mode, and each hit is created for an "element"
-        // which I guess means a face id and should only be required when pickTarget is "pickFaces".
-        // I would expect only one hit to be created for object-level selection. Having duplicated
-        // hits for the same object would slow down selection performance, esp. for dense mesh.
-        // Some more details can be found: https://groups.google.com/g/usd-interest/c/Cgosy3r7Vv4
-        HdxPickHitVector uniqueHits;
-        ResolveUniqueHits_Workaround(outHits, uniqueHits);
-        outHits.swap(uniqueHits);
     }
 
     _PopulateSelectionList(outHits, selectInfo, selectionList, worldSpaceHitPts);

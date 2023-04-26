@@ -116,6 +116,20 @@ private:
     void              _DetectMayaDefaultLighting(const MHWRender::MDrawContext& drawContext);
     HdRenderDelegate* _GetRenderDelegate();
 
+    void _PickByRegion(
+        HdxPickHitVector& outHits,
+        const MMatrix& viewMatrix,
+        const MMatrix& projMatrix,
+        bool pointSnappingActive,
+        int view_x,
+        int view_y,
+        int view_w,
+        int view_h,
+        unsigned int sel_x,
+        unsigned int sel_y,
+        unsigned int sel_w,
+        unsigned int sel_h);
+
     inline PanelCallbacksList::iterator _FindPanelCallbacks(MString panelName)
     {
         // There should never be that many render panels, so linear iteration
