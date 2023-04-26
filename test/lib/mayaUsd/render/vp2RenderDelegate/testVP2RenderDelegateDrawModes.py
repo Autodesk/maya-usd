@@ -25,6 +25,7 @@ from mayaUsd import lib as mayaUsdLib
 from mayaUsd import ufe as mayaUsdUfe
 
 from pxr import Gf
+from pxr import Usd
 
 from maya import cmds
 
@@ -52,8 +53,12 @@ class testVP2RenderDelegateDrawModes(imageUtils.ImageDiffingTestCase):
 
         cls._testDir = os.path.abspath('.')
 
-    def assertSnapshotClose(self, imageName):
-        baselineImage = os.path.join(self._baselineDir, imageName)
+    def assertSnapshotClose(self, imageName, imageVersion):
+        baseImageName = imageName
+        if (imageVersion):
+            baseImageName = imageVersion + imageName
+        
+        baselineImage = os.path.join(self._baselineDir, baseImageName)
         snapshotImage = os.path.join(self._testDir, imageName)
         imageUtils.snapshot(snapshotImage, width=960, height=540)
         return self.assertImagesClose(baselineImage, snapshotImage)
@@ -70,14 +75,20 @@ class testVP2RenderDelegateDrawModes(imageUtils.ImageDiffingTestCase):
     def testDrawModes(self):
         self._StartTest('DrawModes')
         cmds.modelEditor('modelPanel4', edit=True, grid=False, displayTextures=True)
+        cmds.setAttr('hardwareRenderingGlobals.transparencyAlgorithm', 5)
+
+        usdVersion = Usd.GetVersion()
+        imageVersion = None
+        if usdVersion > (0, 22, 11):
+            imageVersion = 'post-22_11-'
 
         cmds.move(2, 2, 2, 'persp')
         cmds.rotate(-33, 45, 0, 'persp')
-        self.assertSnapshotClose('%s_cross_all_positive.png' % self._testName)
+        self.assertSnapshotClose('%s_cross_all_positive.png' % self._testName, imageVersion)
 
         cmds.move(-2, -2, -2, 'persp')
         cmds.rotate(145, 45, 0, 'persp')
-        self.assertSnapshotClose('%s_cross_all_negative.png' % self._testName)
+        self.assertSnapshotClose('%s_cross_all_negative.png' % self._testName, imageVersion)
 
         mayaPathSegment = mayaUtils.createUfePathSegment('|stage|stageShape')
         usdPathSegment = usdUtils.createUfePathSegment('/DrawModes')
@@ -89,11 +100,11 @@ class testVP2RenderDelegateDrawModes(imageUtils.ImageDiffingTestCase):
 
         cmds.move(2, 2, 2, 'persp')
         cmds.rotate(-33, 45, 0, 'persp')
-        self.assertSnapshotClose('%s_box_all_positive.png' % self._testName)
+        self.assertSnapshotClose('%s_box_all_positive.png' % self._testName, imageVersion)
 
         cmds.move(-2, -2, -2, 'persp')
         cmds.rotate(145, 45, 0, 'persp')
-        self.assertSnapshotClose('%s_box_all_negative.png' % self._testName)
+        self.assertSnapshotClose('%s_box_all_negative.png' % self._testName, imageVersion)
 
 
 if __name__ == '__main__':
