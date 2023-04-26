@@ -16,6 +16,7 @@
 #include "UsdAttributeHolder.h"
 
 #include "Utils.h"
+#include "private/UfeNotifGuard.h"
 
 #include <mayaUsd/utils/editRouter.h>
 #include <mayaUsd/utils/editRouterContext.h>
@@ -41,6 +42,8 @@ bool setUsdAttrMetadata(
     const Ufe::Value&           value)
 {
     PXR_NAMESPACE_USING_DIRECTIVE
+    MayaUsd::ufe::InSetAttribute inSetAttr;
+
     // Special cases for known Ufe metadata keys.
 
     // Note: we allow the locking attribute to be changed even if attribute is locked
@@ -162,6 +165,7 @@ bool UsdAttributeHolder::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode t
 
     AttributeEditRouterContext ctx(_usdAttr.GetPrim(), _usdAttr.GetName());
 
+    InSetAttribute inSetAttr;
     return _usdAttr.Set(value, time);
 }
 
@@ -437,6 +441,8 @@ bool UsdAttributeHolder::setMetadata(const std::string& key, const Ufe::Value& v
 bool UsdAttributeHolder::clearMetadata(const std::string& key)
 {
     PXR_NAMESPACE_USING_DIRECTIVE
+    InSetAttribute inSetAttr;
+
     if (isValid()) {
         AttributeEditRouterContext ctx(_usdAttr.GetPrim(), _usdAttr.GetName());
 
