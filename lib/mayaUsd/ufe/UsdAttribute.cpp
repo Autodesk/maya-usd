@@ -16,6 +16,7 @@
 #include "UsdAttribute.h"
 
 #include "Utils.h"
+#include "private/UfeNotifGuard.h"
 #include "private/Utils.h"
 
 #include <mayaUsd/ufe/StagesSubject.h>
@@ -84,6 +85,7 @@ template <typename T> bool setUsdAttr(MayaUsd::ufe::UsdAttribute& attr, const T&
     // our own in the StagesSubject, which we invoke here, so that only a
     // single UFE attribute changed notification is generated.
 
+    MayaUsd::ufe::InSetAttribute                    inSetAttr;
     MayaUsd::ufe::AttributeChangedNotificationGuard guard;
     const std::string                               errMsg = attr.isEditAllowedMsg();
     if (!errMsg.empty()) {
@@ -256,6 +258,18 @@ public:
     {
     }
 
+    void undo() override
+    {
+        MayaUsd::ufe::InSetAttribute inSetAttr;
+        MayaUsd::ufe::UsdUndoableCommand<Ufe::UndoableCommand>::undo();
+    }
+    
+    void redo() override
+    {
+        MayaUsd::ufe::InSetAttribute inSetAttr;
+        MayaUsd::ufe::UsdUndoableCommand<Ufe::UndoableCommand>::redo();
+    }
+
 protected:
     void executeImplementation() override { _attr->set(_newValue); }
 
@@ -276,6 +290,18 @@ public:
         , _key(key)
         , _newValue(newValue)
     {
+    }
+
+    void undo() override
+    {
+        MayaUsd::ufe::InSetAttribute inSetAttr;
+        MayaUsd::ufe::UsdUndoableCommand<Ufe::UndoableCommand>::undo();
+    }
+
+    void redo() override
+    {
+        MayaUsd::ufe::InSetAttribute inSetAttr;
+        MayaUsd::ufe::UsdUndoableCommand<Ufe::UndoableCommand>::redo();
     }
 
 protected:

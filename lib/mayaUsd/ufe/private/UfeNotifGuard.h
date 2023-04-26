@@ -47,6 +47,33 @@ private:
     static bool inGuard;
 };
 
+//! \brief Helper class to scope when we are in a set attribute operation.
+//
+//         It allows detecting that adding an attribute really was setting the
+//         attribute. When a USD prim did not have an opinion about an attribute
+//         value, it gets notified by USD as adding a property instead of setting
+//         a property, which is very unfortunate. This allows detecting this
+//         situation.
+//
+// This simple guard class can be used within a single scope.
+class InSetAttribute
+{
+public:
+    InSetAttribute() { inGuard += 1; }
+    ~InSetAttribute() { inGuard -= 1; }
+
+    // Delete the copy/move constructors assignment operators.
+    InSetAttribute(const InSetAttribute&) = delete;
+    InSetAttribute& operator=(const InSetAttribute&) = delete;
+    InSetAttribute(InSetAttribute&&) = delete;
+    InSetAttribute& operator=(InSetAttribute&&) = delete;
+
+    static bool inSetAttribute() { return inGuard > 0; }
+
+private:
+    static int inGuard;
+};
+
 //! \brief Helper class to scope when we are in an add or delete operation.
 //
 // This simple guard class can be used within a single scope, but does not have
