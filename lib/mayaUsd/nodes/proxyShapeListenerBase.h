@@ -38,6 +38,46 @@ TF_DECLARE_PUBLIC_TOKENS(
     MAYAUSD_CORE_PUBLIC,
     MAYAUSD_PROXY_SHAPE_LISTENER_BASE_TOKENS);
 
+/// \class MayaUsdProxyShapeListenerBase
+/// \brief This class allows listening to a Maya USD proxy for USD stage notifications.
+///
+/// Goals:
+///
+///  1 - Allow a client to know when a stage is changed
+///  2 - Filter out changes that do not affect the rendering of the stage
+///  3 - C++ clients of this code do not need to link with USD
+///  4 - The class should not affect the stage in any negative way
+///
+/// Implementation:
+///
+/// We add a new Maya node that can connect to the "outStageCacheId" of the proxy shape and provide
+/// update counters that will increment if the view needs to be refreshed or when the data needs to
+/// be resynced. Using an external node prevents affecting the USD stage and requires only Maya APIs
+/// for C++ clients.
+///
+/// The "updateId" counter will increment every time a scene refresh is required due to a value
+/// changing (equivalent to a Hydra "change"). The "resyncId" counter will increment every time a
+/// scene reparse is needed due to major topological changes (equivalent to a Hydra "resync").
+///
+/// Usage:
+///
+/// Clients wanting to listen on a proxyShape for USD changes need to instantiate a
+/// "mayaUsdProxyShapeListener" node and connect its "stageCacheId" input to the "outStageCacheId"
+/// output of the proxy shape. The new node will start listening on the proxy shape as soon as its
+/// "outStageCacheId" gets pulled. So, once the proxy to listener connection is done, you can
+/// either:
+///
+///  - connect your Maya node to the listener "outStageCacheId" and one of the two counters to get
+///  dirtied/evaluated via regular Maya process
+///
+///  - Use MNodeMessage.addNodeDirtyPlugCallback() or MNodeMessage.addAttributeChangedCallback() to
+///  have your C++ code receive notifications when the stage has changed and needs to be redrawn.
+///  When processing the scene for updates, you need to fetch the latest USD cache ID from the
+///  listener as this will allow the listener to start listening anew whenever the proxy starts
+///  handling a new stage. An implementation of this workflow can be found in
+///  test/testUtils/mayaUtils.py, look for TestProxyShapeUpdateHandler and its uses in unit tests.
+///
+
 class MayaUsdProxyShapeListenerBase : public MPxNode
 {
 public:
