@@ -75,11 +75,11 @@ class testVP2RenderDelegateDrawModes(imageUtils.ImageDiffingTestCase):
     def testDrawModes(self):
         self._StartTest('DrawModes')
         cmds.modelEditor('modelPanel4', edit=True, grid=False, displayTextures=True)
-        cmds.setAttr('hardwareRenderingGlobals.transparencyAlgorithm', 5)
 
         usdVersion = Usd.GetVersion()
         imageVersion = None
         if usdVersion > (0, 22, 11):
+            cmds.setAttr('hardwareRenderingGlobals.transparencyAlgorithm', 5)
             imageVersion = 'post-22_11-'
 
         cmds.move(2, 2, 2, 'persp')
