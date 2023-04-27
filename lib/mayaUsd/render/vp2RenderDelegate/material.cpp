@@ -506,11 +506,7 @@ std::string _GenerateXMLString(const HdMaterialNetwork2& materialNetwork)
 // arithmetic operation. So we need to "upgrade" the value we want to set as well.
 //
 // One example: ND_multiply_vector3FA(vector3 in1, float in2) will generate a float3 in2 uniform.
-MStatus _SetFAParameter(
-    MHWRender::MShaderInstance* surfaceShader,
-    const HdMaterialNode&       node,
-    const MString&              paramName,
-    float                       val)
+bool _IsFAParameter(const HdMaterialNode& node, const MString& paramName)
 {
     auto _endsWith = [](const std::string& s, const std::string& suffix) {
         return s.size() >= suffix.size()
@@ -519,11 +515,9 @@ MStatus _SetFAParameter(
 
     if (_IsMaterialX(node) && _endsWith(paramName.asChar(), "_in2")
         && _endsWith(node.identifier.GetString(), "FA")) {
-        // Try as vector
-        float vec[4] { val, val, val, val };
-        return surfaceShader->setParameter(paramName, &vec[0]);
+        return true;
     }
-    return MS::kFailure;
+    return false;
 }
 
 // MaterialX has a lot of node definitions that will auto-connect to a zero-index texture coordinate
@@ -2068,6 +2062,7 @@ void HdVP2Material::CompiledNetwork::Sync(
 
             if (!_surfaceShader || topoHash != _topoHash) {
                 _surfaceShader.reset(_CreateMaterialXShaderInstance(id, surfaceNetwork));
+                _frontFaceShader.reset(nullptr);
                 _pointShader.reset(nullptr);
                 _topoHash = topoHash;
                 // TopoChanged: We have a brand new surface material, tell the mesh to use
@@ -2131,6 +2126,7 @@ void HdVP2Material::CompiledNetwork::Sync(
 
             // The shader instance is owned by the material solely.
             _surfaceShader.reset(shader);
+            _frontFaceShader.reset(nullptr);
             _pointShader.reset(nullptr);
             // TopoChanged: We have a brand new surface material, tell the mesh to use it.
             _owner->_MaterialChanged(sceneDelegate);
@@ -3109,6 +3105,10 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
         HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L2, "UpdateShaderInstance");
 
     std::unordered_set<MString, MStringHash> updatedAttributes;
+    auto setShaderParam = [&updatedAttributes, this](auto&& paramName, auto&& paramValue) {
+        updatedAttributes.insert(paramName);
+        return SetShaderParameter(paramName, paramValue);
+    };
 
     const bool matIsTransparent = _IsTransparent(mat);
     if (matIsTransparent != _surfaceShader->isTransparent()) {
@@ -3160,14 +3160,12 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
 #ifdef WANT_MATERIALX_BUILD
                 if (isMaterialXNode) {
                     const MString paramName = "_" + nodeName + "file_sampler";
-                    samplerStatus = _surfaceShader->setParameter(paramName, *sampler);
-                    updatedAttributes.insert(paramName);
+                    samplerStatus = setShaderParam(paramName, *sampler);
                 } else
 #endif
                 {
                     const MString paramName = nodeName + "fileSampler";
-                    samplerStatus = _surfaceShader->setParameter(paramName, *sampler);
-                    updatedAttributes.insert(paramName);
+                    samplerStatus = setShaderParam(paramName, *sampler);
                 }
             }
         }
@@ -3177,28 +3175,31 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
             const VtValue& value = entry.second;
 
             MString paramName = nodeName + token.GetText();
-            updatedAttributes.insert(paramName);
 
             MStatus status = MStatus::kFailure;
 
             if (value.IsHolding<float>()) {
                 const float& val = value.UncheckedGet<float>();
-                status = _surfaceShader->setParameter(paramName, val);
+                status = setShaderParam(paramName, val);
 
 #ifdef WANT_MATERIALX_BUILD
                 if (!status) {
-                    status = _SetFAParameter(_surfaceShader.get(), node, paramName, val);
+                    if (_IsFAParameter(node, paramName)) {
+                        // Try as vector
+                        float vec[4] { val, val, val, val };
+                        status = setShaderParam(paramName, &vec[0]);
+                    }
                 }
 #endif
             } else if (value.IsHolding<GfVec2f>()) {
                 const float* val = value.UncheckedGet<GfVec2f>().data();
-                status = _surfaceShader->setParameter(paramName, val);
+                status = setShaderParam(paramName, val);
             } else if (value.IsHolding<GfVec3f>()) {
                 const float* val = value.UncheckedGet<GfVec3f>().data();
-                status = _surfaceShader->setParameter(paramName, val);
+                status = setShaderParam(paramName, val);
             } else if (value.IsHolding<GfVec4f>()) {
                 const float* val = value.UncheckedGet<GfVec4f>().data();
-                status = _surfaceShader->setParameter(paramName, val);
+                status = setShaderParam(paramName, val);
             } else if (value.IsHolding<TfToken>()) {
                 if (_IsUsdUVTexture(node)) {
                     if (token == UsdHydraTokens->wrapS || token == UsdHydraTokens->wrapT) {
@@ -3219,7 +3220,7 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
 
                     MHWRender::MTextureAssignment assignment;
                     assignment.texture = info._texture.get();
-                    status = _surfaceShader->setParameter(paramName, assignment);
+                    status = setShaderParam(paramName, assignment);
 
 #ifdef WANT_MATERIALX_BUILD
                     // TODO: MaterialX image nodes have colorSpace metadata on the file attribute,
@@ -3246,8 +3247,7 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
                                 }
                             }
                         }
-                        status = _surfaceShader->setParameter(paramName, isSRGB);
-                        updatedAttributes.insert(paramName);
+                        status = setShaderParam(paramName, isSRGB);
                     }
                     // These parameters allow scaling texcoords into the proper coordinates of the
                     // Maya UDIM texture atlas:
@@ -3257,8 +3257,7 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
 #else
                         paramName = nodeName + "stScale";
 #endif
-                        status = _surfaceShader->setParameter(paramName, info._stScale.data());
-                        updatedAttributes.insert(paramName);
+                        status = setShaderParam(paramName, info._stScale.data());
                     }
                     if (status) {
 #ifdef WANT_MATERIALX_BUILD
@@ -3266,29 +3265,28 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
 #else
                         paramName = nodeName + "stOffset";
 #endif
-                        status = _surfaceShader->setParameter(paramName, info._stOffset.data());
-                        updatedAttributes.insert(paramName);
+                        status = setShaderParam(paramName, info._stOffset.data());
                     }
                 }
             } else if (value.IsHolding<int>()) {
                 const int& val = value.UncheckedGet<int>();
                 if (node.identifier == UsdImagingTokens->UsdPreviewSurface
                     && token == _tokens->useSpecularWorkflow) {
-                    status = _surfaceShader->setParameter(paramName, val != 0);
+                    status = setShaderParam(paramName, val != 0);
                 } else {
-                    status = _surfaceShader->setParameter(paramName, val);
+                    status = setShaderParam(paramName, val);
                 }
             } else if (value.IsHolding<bool>()) {
                 const bool& val = value.UncheckedGet<bool>();
-                status = _surfaceShader->setParameter(paramName, val);
+                status = setShaderParam(paramName, val);
             } else if (value.IsHolding<GfMatrix4d>()) {
                 MMatrix matrix;
                 value.UncheckedGet<GfMatrix4d>().Get(matrix.matrix);
-                status = _surfaceShader->setParameter(paramName, matrix);
+                status = setShaderParam(paramName, matrix);
             } else if (value.IsHolding<GfMatrix4f>()) {
                 MFloatMatrix matrix;
                 value.UncheckedGet<GfMatrix4f>().Get(matrix.matrix);
-                status = _surfaceShader->setParameter(paramName, matrix);
+                status = setShaderParam(paramName, matrix);
 #ifdef WANT_MATERIALX_BUILD
             } else if (value.IsHolding<std::string>()) {
                 // Some MaterialX nodes have a string member that does not translate to a shader
@@ -3329,14 +3327,14 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
             MStatus status;
             void*   defaultValue = _surfaceShader->parameterDefaultValue(parameterName, status);
             if (status) {
-                _surfaceShader->setParameter(parameterName, static_cast<bool*>(defaultValue)[0]);
+                SetShaderParameter(parameterName, static_cast<bool*>(defaultValue)[0]);
             }
         } break;
         case MHWRender::MShaderInstance::kInteger: {
             MStatus status;
             void*   defaultValue = _surfaceShader->parameterDefaultValue(parameterName, status);
             if (status) {
-                _surfaceShader->setParameter(parameterName, static_cast<int*>(defaultValue)[0]);
+                SetShaderParameter(parameterName, static_cast<int*>(defaultValue)[0]);
             }
         } break;
         case MHWRender::MShaderInstance::kFloat:
@@ -3348,7 +3346,7 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
             MStatus status;
             void*   defaultValue = _surfaceShader->parameterDefaultValue(parameterName, status);
             if (status) {
-                _surfaceShader->setParameter(parameterName, static_cast<float*>(defaultValue));
+                SetShaderParameter(parameterName, static_cast<float*>(defaultValue));
             }
         } break;
         case MHWRender::MShaderInstance::kTexture1:
@@ -3357,9 +3355,14 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
         case MHWRender::MShaderInstance::kTextureCube:
             MHWRender::MTextureAssignment assignment;
             assignment.texture = nullptr;
-            _surfaceShader->setParameter(parameterName, assignment);
+            SetShaderParameter(parameterName, assignment);
             break;
         }
+    }
+
+    // Front face shader should always have culling enabled
+    if (_frontFaceShader) {
+        _frontFaceShader->setParameter("cullStyle", (int)1);
     }
 }
 
@@ -3542,6 +3545,16 @@ void HdVP2Material::_ScheduleRefresh()
     }
 }
 
+MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::GetFrontFaceShader() const
+{
+    if (!_frontFaceShader && _surfaceShader) {
+        _frontFaceShader.reset(_surfaceShader->clone());
+        _frontFaceShader->setParameter("cullStyle", (int)1);
+    }
+
+    return _frontFaceShader.get();
+}
+
 MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::GetPointShader() const
 {
     if (!_pointShader && _surfaceShader) {
@@ -3557,9 +3570,11 @@ HdVP2Material::NetworkConfig HdVP2Material::_GetCompiledConfig(const TfToken& re
     return (reprToken == HdReprTokens->smoothHull) ? kFull : kUntextured;
 }
 
-MHWRender::MShaderInstance* HdVP2Material::GetSurfaceShader(const TfToken& reprToken) const
+MHWRender::MShaderInstance*
+HdVP2Material::GetSurfaceShader(const TfToken& reprToken, bool backfaceCull) const
 {
-    return _compiledNetworks[_GetCompiledConfig(reprToken)].GetSurfaceShader();
+    const auto& compiledNetwork = _compiledNetworks[_GetCompiledConfig(reprToken)];
+    return backfaceCull ? compiledNetwork.GetFrontFaceShader() : compiledNetwork.GetSurfaceShader();
 }
 
 MHWRender::MShaderInstance* HdVP2Material::GetPointShader(const TfToken& reprToken) const
