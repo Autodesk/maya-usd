@@ -34,6 +34,8 @@ from maya import cmds
 from maya import standalone
 from maya.internal.ufeSupport import ufeCmdWrapper as ufeCmd
 
+import maya.api.OpenMaya as om
+
 import ufe
 
 import os
@@ -1474,6 +1476,13 @@ class ContextOpsTestCase(unittest.TestCase):
         cubeXForm, _ = cmds.polyCube(name='MyCube')
         psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
+        sl = om.MSelectionList()
+        sl.add(psPathStr)
+        dagPath = sl.getDagPath(0)
+        dagPath.extendToShape()
+
+        proxyShapeNode = dagPath.node()
+
         mayaUsd.lib.PrimUpdaterManager.duplicate(cmds.ls(cubeXForm, long=True)[0], psPathStr)
 
         topPath = ufe.PathString.path(psPathStr + ',/' + cubeXForm + "/" + "top")
@@ -1483,24 +1492,8 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(topSubset.GetFamilyNameAttr().Get(), "componentTag")
         self.assertFalse(topSubset.GetPrim().HasAPI(UsdShade.MaterialBindingAPI))
 
-        counters= { "resync": cmds.getAttr(psPathStr + '.resyncId'),
-                    "update" : cmds.getAttr(psPathStr + '.upid')}
-
-        def assertIsOnlyUpdate(self, counters, shapePathStr):
-            resyncCounter = cmds.getAttr(shapePathStr + '.resyncId')
-            updateCounter = cmds.getAttr(shapePathStr + '.updateId')
-            self.assertEqual(resyncCounter, counters["resync"])
-            self.assertGreater(updateCounter, counters["update"])
-            counters["resync"] = resyncCounter
-            counters["update"] = updateCounter
-
-        def assertIsResync(self, counters, shapePathStr):
-            resyncCounter = cmds.getAttr(shapePathStr + '.resyncId')
-            updateCounter = cmds.getAttr(shapePathStr + '.updateId')
-            self.assertGreater(resyncCounter, counters["resync"])
-            self.assertGreater(updateCounter, counters["update"])
-            counters["resync"] = resyncCounter
-            counters["update"] = updateCounter
+        messageHandler = mayaUtils.TestProxyShapeUpdateHandler(psPathStr)
+        messageHandler.snapshot()
 
         contextOps = ufe.ContextOps.contextOps(topItem)
         cmd = contextOps.doOpCmd(['Assign New Material', 'USD', 'UsdPreviewSurface'])
@@ -1514,41 +1507,65 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertTrue(topSubset.GetPrim().HasAPI(UsdShade.MaterialBindingAPI))
 
         # We expect a resync after this assignment:
-        assertIsResync(self, counters, psPathStr)
+        self.assertTrue(messageHandler.isResync())
 
         # setting a value the first time is a resync due to the creation of the attribute:
         attrs = ufe.Attributes.attributes(shaderItem)
         metallicAttr = attrs.attribute("inputs:metallic")
         ufeCmd.execute(metallicAttr.setCmd(0.5))
-        assertIsResync(self, counters, psPathStr)
+        self.assertTrue(messageHandler.isResync())
 
         # Subsequent changes are updates:
         ufeCmd.execute(metallicAttr.setCmd(0.7))
-        assertIsOnlyUpdate(self, counters, psPathStr)
+        self.assertTrue(messageHandler.isUpdate())
 
         # First undo is an update:
         cmds.undo()
-        assertIsOnlyUpdate(self, counters, psPathStr)
+        self.assertTrue(messageHandler.isUpdate())
 
         # Second undo is a resync:
         cmds.undo()
-        assertIsResync(self, counters, psPathStr)
+        self.assertTrue(messageHandler.isResync())
 
         # Third undo is also resync:
         cmds.undo()
-        assertIsResync(self, counters, psPathStr)
+        self.assertTrue(messageHandler.isResync())
 
         # First redo is resync:
         cmds.redo()
-        assertIsResync(self, counters, psPathStr)
+        self.assertTrue(messageHandler.isResync())
 
         # Second redo is resync:
         cmds.redo()
-        assertIsResync(self, counters, psPathStr)
+        self.assertTrue(messageHandler.isResync())
 
         # Third redo is update:
         cmds.redo()
-        assertIsOnlyUpdate(self, counters, psPathStr)
+        self.assertTrue(messageHandler.isUpdate())
+        currentCacheId = messageHandler.getStageCacheId()
+
+        # Changing the whole stage is a resync:
+        testFile = testUtils.getTestScene("MaterialX", "MtlxValueTypes.usda")
+        cmds.setAttr('{}.filePath'.format(psPathStr), testFile, type='string')
+
+        self.assertTrue(messageHandler.isResync())
+
+        # But that will be the last resync:
+        testFile = testUtils.getTestScene("MaterialX", "sin_compound.usda")
+        cmds.setAttr('{}.filePath'.format(psPathStr), testFile, type='string')
+
+        self.assertTrue(messageHandler.isUnchanged())
+
+        # Until we pull on the node to get the current stage cache id, which resets
+        # the stage listener to the new stage:
+        self.assertNotEqual(messageHandler.getStageCacheId(), currentCacheId)
+
+        testFile = testUtils.getTestScene("MaterialX", "MtlxUVStreamTest.usda")
+        cmds.setAttr('{}.filePath'.format(psPathStr), testFile, type='string')
+
+        self.assertTrue(messageHandler.isResync())
+
+        messageHandler.terminate()
 
 
 if __name__ == '__main__':
