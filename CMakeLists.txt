@@ -244,11 +244,7 @@ if (BUILD_ADSK_PLUGIN)
 endif()
 
 if (BUILD_HDMAYA)
-    if (IS_WINDOWS)
-        configure_file("modules/mtoh_Win.mod.template" ${PROJECT_BINARY_DIR}/mtoh.mod)
-    else()
-        configure_file("modules/mtoh.mod.template" ${PROJECT_BINARY_DIR}/mtoh.mod)
-    endif()
+    configure_file("modules/mtoh.mod.template" ${PROJECT_BINARY_DIR}/mtoh.mod)
     install(FILES ${PROJECT_BINARY_DIR}/mtoh.mod DESTINATION ${CMAKE_INSTALL_PREFIX})
 endif()
 

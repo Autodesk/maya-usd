@@ -1,6 +1,0 @@
-+ MTOH ${MAYAUSD_VERSION} ${CMAKE_INSTALL_PREFIX}/lib
-icons: 
-plug-ins: maya
-presets: 
-scripts: 
-resources: 
