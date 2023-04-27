@@ -3161,11 +3161,13 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
                 if (isMaterialXNode) {
                     const MString paramName = "_" + nodeName + "file_sampler";
                     samplerStatus = _surfaceShader->setParameter(paramName, *sampler);
+                    updatedAttributes.insert(paramName);
                 } else
 #endif
                 {
                     const MString paramName = nodeName + "fileSampler";
                     samplerStatus = _surfaceShader->setParameter(paramName, *sampler);
+                    updatedAttributes.insert(paramName);
                 }
             }
         }
@@ -3245,6 +3247,7 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
                             }
                         }
                         status = _surfaceShader->setParameter(paramName, isSRGB);
+                        updatedAttributes.insert(paramName);
                     }
                     // These parameters allow scaling texcoords into the proper coordinates of the
                     // Maya UDIM texture atlas:
@@ -3255,6 +3258,7 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
                         paramName = nodeName + "stScale";
 #endif
                         status = _surfaceShader->setParameter(paramName, info._stScale.data());
+                        updatedAttributes.insert(paramName);
                     }
                     if (status) {
 #ifdef WANT_MATERIALX_BUILD
@@ -3263,6 +3267,7 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
                         paramName = nodeName + "stOffset";
 #endif
                         status = _surfaceShader->setParameter(paramName, info._stOffset.data());
+                        updatedAttributes.insert(paramName);
                     }
                 }
             } else if (value.IsHolding<int>()) {
