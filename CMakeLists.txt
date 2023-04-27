@@ -243,6 +243,11 @@ if (BUILD_ADSK_PLUGIN)
     install(FILES ${PROJECT_BINARY_DIR}/mayaUSD.mod DESTINATION ${CMAKE_INSTALL_PREFIX})
 endif()
 
+if (BUILD_HDMAYA)
+    configure_file("modules/mtoh.mod.template" ${PROJECT_BINARY_DIR}/mtoh.mod)
+    install(FILES ${PROJECT_BINARY_DIR}/mtoh.mod DESTINATION ${CMAKE_INSTALL_PREFIX})
+endif()
+
 if (BUILD_PXR_PLUGIN)
     if (IS_WINDOWS)
         configure_file("modules/pxrUSD_Win.mod.template" ${PROJECT_BINARY_DIR}/pxrUSD.mod)
