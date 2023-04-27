@@ -46,6 +46,7 @@ typedef Ufe::Path (*MayaHydraInterpretRprimPath)(const HdSceneIndexBaseRefPtr&, 
 struct MayaHydraSceneIndexRegistration
 {
     HdSceneIndexBaseRefPtr      pluginSceneIndex;
+    HdSceneIndexBaseRefPtr      rootSceneIndex;
     SdfPath                     sceneIndexPathPrefix;
     MObjectHandle               dagNode;
     MayaHydraInterpretRprimPath interpretRprimPathFn = nullptr;

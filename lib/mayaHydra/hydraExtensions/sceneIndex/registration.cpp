@@ -165,7 +165,7 @@ bool MayaHydraSceneIndexRegistry::_RemoveSceneIndexForNode(const MObject& dagNod
     auto          it = _registrationsByObjectHandle.find(dagNodeHandle);
     if (it != _registrationsByObjectHandle.end()) {
         MayaHydraSceneIndexRegistrationPtr registration(it->second);
-        _renderIndex->RemoveSceneIndex(registration->pluginSceneIndex);
+        _renderIndex->RemoveSceneIndex(registration->rootSceneIndex);
         _registrationsByObjectHandle.erase(dagNodeHandle);
         _registrations.erase(registration->sceneIndexPathPrefix);
         return true;
@@ -257,12 +257,12 @@ void MayaHydraSceneIndexRegistry::_AddSceneIndexForNode(MObject& dagNode)
                 // A simple string replacement for Hydra to identify the terminals based on the render context.
                 HdSceneIndexBaseRefPtr outSceneIndex = _AppendTerminalRenamingSceneIndex(registration->pluginSceneIndex);
                 // Sanity check
-                registration->pluginSceneIndex = outSceneIndex ? outSceneIndex : registration->pluginSceneIndex;
+                registration->rootSceneIndex = outSceneIndex ? outSceneIndex : registration->pluginSceneIndex;
                 // By inserting the scene index was inserted into the render index using a custom
                 // prefix, the chosen prefix will be prepended to rprims tied to that scene index
                 // automatically.
                 _renderIndex->InsertSceneIndex(
-                    registration->pluginSceneIndex, registration->sceneIndexPathPrefix);
+                    registration->rootSceneIndex, registration->sceneIndexPathPrefix);
                 static SdfPath maya126790Workaround("maya126790Workaround");
                 registration->pluginSceneIndex->GetPrim(maya126790Workaround);
 
