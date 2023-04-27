@@ -153,7 +153,7 @@ if(CodeWrapperHandler IN_LIST UFE_PREVIEW_FEATURES)
 
     target_compile_definitions(${PROJECT_NAME}
         PRIVATE
-        UFE_PREVIEW_COMPOSITE_COMMAND_HANDLER_SUPPORT=1
+        UFE_PREVIEW_CODE_WRAPPER_HANDLER_SUPPORT=1
     )
 endif()
 
@@ -293,7 +293,7 @@ if (v4_BatchOps IN_LIST UFE_PREVIEW_FEATURES)
     )
 endif()
 
-if(v5_CodeWrapperHandler IN_LIST UFE_PREVIEW_FEATURES)
+if(CodeWrapperHandler IN_LIST UFE_PREVIEW_FEATURES)
     list(APPEND HEADERS
         UsdCodeWrapperHandler.h
     )

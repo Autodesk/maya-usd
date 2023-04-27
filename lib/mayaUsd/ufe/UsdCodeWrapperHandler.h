@@ -17,7 +17,7 @@
 
 #include <mayaUsd/ufe/UsdBatchOpsHandler.h>
 
-#include <ufe/compositeCommandHandler.h>
+#include <ufe/codeWrapperHandler.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -31,10 +31,8 @@ public:
 
 protected:
     // Ufe::CodeWrapperHandler overrides.
-    Ufe::CodeWrapper::Ptr createCodeWrapper_(
-        const Ufe::Selection& selection,
-        const std::string&    operationName,
-        const std::string&    subOperation) override;
+    Ufe::CodeWrapper::Ptr
+    createCodeWrapper_(const Ufe::Selection& selection, const std::string& operationName) override;
 }; // UsdCodeWrapperHandler
 
 } // namespace ufe

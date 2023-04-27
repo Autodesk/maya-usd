@@ -99,7 +99,7 @@ if (UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/batchOpsHandler.h")
     list(APPEND UFE_PREVIEW_FEATURES v4_BatchOps)
 endif()
 
-if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/compositeCommandHandler.h")
+if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/codeWrapperHandler.h")
     list(APPEND UFE_PREVIEW_FEATURES CodeWrapperHandler)
 endif()
 

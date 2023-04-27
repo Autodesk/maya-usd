@@ -27,19 +27,22 @@ namespace ufe {
 namespace {
 
 // A code wrapper that does edit routing for a command name by its operation.
+// The edit routing decision is cached after the first sub-operation and is
+// reused in subsequent sub-operations. This ensures the same edit routing is
+// used during a command execution and during undo and redo.
 //
 // Note: the code wrapper is the same for the command execute, undo and redo,
 //       so we don't need the sub-operation name.
 class UsdEditRoutingCodeWrapper : public Ufe::CodeWrapper
 {
 public:
-    UsdCodeWrapper(const Ufe::Selection& selection, const std::string& operationName)
+    UsdEditRoutingCodeWrapper(const Ufe::Selection& selection, const std::string& operationName)
         : _prim(findPrimInSelection(selection))
         , _operationName(PXR_NS::TfToken(operationName))
     {
     }
 
-    void prelude() override
+    void prelude(const std::string& /* subOperation */) override
     {
         if (_alreadyRouted) {
             _editRouterContext = std::make_unique<OperationEditRouterContext>(_stage, _layer);
@@ -52,7 +55,7 @@ public:
         }
     }
 
-    void cleanup() override { _editRouterContext.reset(); }
+    void cleanup(const std::string& /* subOperation */) override { _editRouterContext.reset(); }
 
 private:
     static PXR_NS::UsdPrim findPrimInSelection(const Ufe::Selection& selection)
@@ -83,10 +86,9 @@ std::shared_ptr<UsdCodeWrapperHandler> UsdCodeWrapperHandler::create()
     return std::make_shared<UsdCodeWrapperHandler>();
 }
 
-Ufe::CompositeCommandWrapper::Ptr UsdCodeWrapperHandler::createCodeWrapper_(
+Ufe::CodeWrapper::Ptr UsdCodeWrapperHandler::createCodeWrapper_(
     const Ufe::Selection& selection,
-    const std::string&    operationName,
-    const std::string&    subOperation)
+    const std::string&    operationName)
 {
     return std::make_unique<UsdEditRoutingCodeWrapper>(selection, operationName);
 }
