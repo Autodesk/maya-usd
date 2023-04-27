@@ -55,6 +55,7 @@ class PythonWrappersTestCase(unittest.TestCase):
     def testWrappers(self):
 
         ''' Verify the python wrappers.'''
+        cmds.file(new=True, force=True)
 
         # Create empty stage and add a prim.
         import mayaUsd_createStageWithNewLayer
@@ -121,6 +122,7 @@ class PythonWrappersTestCase(unittest.TestCase):
     # investigated as needed.
     @unittest.skipUnless((mayaUtils.mayaMajorVersion() == 2023) or mayaUtils.previewReleaseVersion() >= 139, 'Only supported in Maya 2023 or greater.')
     def testGetAllStages(self):
+        cmds.file(new=True, force=True)
 
         # Create two stages.
         import mayaUsd_createStageWithNewLayer
@@ -142,6 +144,40 @@ class PythonWrappersTestCase(unittest.TestCase):
         cmds.redo()
 
         self.assertEqual(len(mayaUsd.ufe.getAllStages()), 1)
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test for UFE v4 or later')
+    def testCreateStageWithNewLayerBinding(self):
+        cmds.file(new=True, force=True)
+
+        def verifyProxyShape(proxyShapePathString):
+            # Verify that we got a proxy shape object.
+            nodeType = cmds.nodeType(proxyShapePathString)
+            self.assertEqual('mayaUsdProxyShape', nodeType)
+            
+            # Verify that the shape node is connected to time.
+            self.assertTrue(cmds.isConnected('time1.outTime', proxyShapePathString+'.time'))
+
+        # Create a proxy shape under the world node.
+        proxy1PathString = mayaUsd.ufe.createStageWithNewLayer('|world')
+        self.assertEqual('|stage1|stageShape1', proxy1PathString)
+        verifyProxyShape(proxy1PathString)
+        self.assertEqual(len(mayaUsd.ufe.getAllStages()), 1)
+        cmds.undo()
+        self.assertEqual(len(mayaUsd.ufe.getAllStages()), 0)
+        cmds.redo()
+        self.assertEqual(len(mayaUsd.ufe.getAllStages()), 1)
+
+        # Create a proxy shape under a transform.
+        cmds.createNode('transform', skipSelect=True, name='transform1')
+        transformPathString = '|transform1'
+        proxy2PathString = mayaUsd.ufe.createStageWithNewLayer(transformPathString)
+        self.assertEqual('|transform1|stage1|stageShape1', proxy2PathString)
+        verifyProxyShape(proxy2PathString)
+        self.assertEqual(len(mayaUsd.ufe.getAllStages()), 2)
+        cmds.undo()
+        self.assertEqual(len(mayaUsd.ufe.getAllStages()), 1)
+        cmds.redo()
+        self.assertEqual(len(mayaUsd.ufe.getAllStages()), 2)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
