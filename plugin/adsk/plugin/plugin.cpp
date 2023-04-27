@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "ProxyShape.h"
+#include "ProxyShapeListener.h"
 #include "adskExportCommand.h"
 #include "adskImportCommand.h"
 #include "adskListJobContextsCommand.h"
@@ -278,6 +279,13 @@ MStatus initializePlugin(MObject obj)
     CHECK_MSTATUS(status);
 
     status = plugin.registerNode(
+        MayaUsd::ProxyShapeListener::typeName,
+        MayaUsd::ProxyShapeListener::typeId,
+        MayaUsd::ProxyShapeListener::creator,
+        MayaUsd::ProxyShapeListener::initialize);
+    CHECK_MSTATUS(status);
+
+    status = plugin.registerNode(
         MayaUsd::MayaUsdGeomNode::typeName,
         MayaUsd::MayaUsdGeomNode::typeId,
         MayaUsd::MayaUsdGeomNode::creator,
@@ -419,6 +427,9 @@ MStatus uninitializePlugin(MObject obj)
     deregisterCommandCheck<MayaUsd::ADSKMayaUSDGetMaterialsInStageCommand>(plugin);
     deregisterCommandCheck<MayaUsd::ADSKMayaUSDMaterialBindingsCommand>(plugin);
 #endif
+
+    status = plugin.deregisterNode(MayaUsd::ProxyShapeListener::typeId);
+    CHECK_MSTATUS(status);
 
     status = plugin.deregisterNode(MayaUsd::ProxyShape::typeId);
     CHECK_MSTATUS(status);

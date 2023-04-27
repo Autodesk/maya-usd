@@ -315,3 +315,80 @@ def activeModelPanel():
     for panel in cmds.getPanel(type="modelPanel"):
         if cmds.modelEditor(panel, q=1, av=1):
             return panel
+
+class TestProxyShapeUpdateHandler:
+    def __init__(self, proxyShapeName):
+        sl = om.MSelectionList()
+        sl.add(proxyShapeName)
+        dagPath = sl.getDagPath(0)
+        dagPath.extendToShape()
+        mod = om.MDGModifier()
+        listener = mod.createNode("mayaUsdProxyShapeListener")
+        proxyDepNode = om.MFnDependencyNode(dagPath.node())
+        listenerDepNode = om.MFnDependencyNode(listener)
+        mod.connect(proxyDepNode.findPlug("outStageCacheId", True),
+                    listenerDepNode.findPlug("stageCacheId", True))
+        mod.doIt()
+        listenerDepNode.findPlug("outStageCacheId", True).asInt()
+
+        self.nodeDirtyCbId = om.MNodeMessage.addNodeDirtyPlugCallback(listener, self.nodeDirty, None)
+        self.updateIdDirty = 0
+        self.resyncIdDirty = 0
+        self.attributeChangedCbId = om.MNodeMessage.addAttributeChangedCallback(listener, self.attributeChanged, None)
+        self.updateIdChanged = 0
+        self.resyncIdChanged = 0
+        self.listenerNode = listener
+
+    def terminate(self):
+        om.MMessage.removeCallback(self.nodeDirtyCbId)
+        om.MMessage.removeCallback(self.attributeChangedCbId)
+        del self.listenerNode
+
+    def snapshot(self):
+        self.updateIdDirtySaved = self.updateIdDirty
+        self.resyncIdDirtySaved = self.resyncIdDirty
+        self.updateIdChangedSaved = self.updateIdChanged
+        self.resyncIdChangedSaved = self.resyncIdChanged
+
+    def isUnchanged(self):
+        retVal = (self.updateIdDirtySaved == self.updateIdDirty and
+                  self.updateIdChangedSaved == self.updateIdChanged and
+                  self.resyncIdDirtySaved == self.resyncIdDirty and
+                  self.resyncIdChangedSaved == self.resyncIdChanged)
+        self.snapshot()
+        return retVal
+
+    def isUpdate(self):
+        retVal = (self.updateIdDirtySaved < self.updateIdDirty and
+                  self.updateIdChangedSaved < self.updateIdChanged and
+                  self.resyncIdDirtySaved == self.resyncIdDirty and
+                  self.resyncIdChangedSaved == self.resyncIdChanged)
+        self.snapshot()
+        return retVal
+
+    def isResync(self):
+        retVal = (self.updateIdDirtySaved < self.updateIdDirty and
+                  self.updateIdChangedSaved < self.updateIdChanged and
+                  self.resyncIdDirtySaved < self.resyncIdDirty and
+                  self.resyncIdChangedSaved < self.resyncIdChanged)
+        self.snapshot()
+        return retVal
+    
+    def getStageCacheId(self):
+        listenerDepNode = om.MFnDependencyNode(self.listenerNode)
+        return listenerDepNode.findPlug("outStageCacheId", True).asInt()
+
+    def nodeDirty(self, node, plug, listeners):
+        name = plug.partialName(False, False, False, False, False, True)
+        if name == "updateId":
+            self.updateIdDirty += 1
+        elif name == "resyncId":
+            self.resyncIdDirty += 1
+
+    def attributeChanged(self, message, plug, otherPlug, clientData):
+        if message & om.MNodeMessage.kAttributeSet:
+            name = plug.partialName(False, False, False, False, False, True)
+            if name == "updateId":
+                self.updateIdChanged += 1
+            elif name == "resyncId":
+                self.resyncIdChanged += 1
