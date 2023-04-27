@@ -224,21 +224,17 @@ Headers should be included in the following order, with each section separated b
 
 #include <string>
 
-#if defined(WANT_UFE_BUILD)
-  #include <ufe/ufe.h>
-#endif
+#include <ufe/ufe.h>
 ```
 
 ### Cross-platform development
 * Consult the [build.md](https://github.com/Autodesk/maya-usd/blob/dev/doc/build.md) compatibility table to ensure you use the recommended tool (i.e., compiler, operating system, CMake, etc.) versions.
 * Before pull requests (PRs) are considered for integration, they must compile and all tests should pass on all suppported platforms.
 
-### Conditional compilation (Maya, USD, UFE version)
+### Conditional compilation (Maya, USD version)
 **Maya**
 	* `MAYA_API_VERSION` is the consistent macro to test Maya version (`MAYA_APP_VERSION` * 10000 + `MAJOR_VERSION` * 100 + `MINOR_VERSION`)
 	* `MAYA_APP_VERSION` is available only since Maya 2019 and is a simple year number, so it is not allowed.
-**UFE**
-	* `WANT_UFE_BUILD` equals 1 if UFE is found and it should be used for conditional compilation on codes depending on UFE.
 
 **USD**
 	* `PXR_VERSION` is the macro to test USD version (`PXR_MAJOR_VERSION` * 10000 + `PXR_MINOR_VERSION` * 100 + `PXR_PATCH_VERSION`)

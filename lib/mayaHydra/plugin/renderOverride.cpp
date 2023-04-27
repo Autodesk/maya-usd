@@ -40,6 +40,7 @@
 #include <ufe/namedSelection.h>
 #include <ufe/path.h>
 #include <ufe/pathSegment.h>
+#include <ufe/pathString.h>
 #include <ufe/rtid.h>
 #include <ufe/selection.h>
 
@@ -537,17 +538,10 @@ MStatus MtohRenderOverride::Render(
         MStatus  status;
         MDagPath camPath = getFrameContext()->getCurrentCameraPath(&status);
         if (status == MStatus::kSuccess) {
-#ifdef MAYA_CURRENT_UFE_CAMERA_SUPPORT
             MString   ufeCameraPathString = getFrameContext()->getCurrentUfeCameraPath(&status);
-            Ufe::Path ufeCameraPath = Ufe::PathString::path(ufeCameraPathString.c_str());
-            bool      isUsdCamera = ufeCameraPath.runTimeId() == MayaUsd::ufe::getUsdRunTimeId();
-#else
-            static const MString defaultUfeProxyCameraShape(
-                "|defaultUfeProxyCameraTransformParent|defaultUfeProxyCameraTransform|"
-                "defaultUfeProxyCameraShape");
-            bool isUsdCamera = defaultUfeProxyCameraShape == camPath.fullPathName();
-#endif
-            if (!isUsdCamera) {
+            Ufe::Path ufeCameraPath = Ufe::PathString::path(ufeCameraPathString.asChar());
+            bool isMayaCamera = ufeCameraPath.runTimeId() == UfeExtensions::getMayaRunTimeId();
+            if (isMayaCamera) {
                 if (_mayaHydraSceneDelegate) {
                     params.camera = _mayaHydraSceneDelegate->SetCameraViewport(camPath, _viewport);
                     if (vpDirty)

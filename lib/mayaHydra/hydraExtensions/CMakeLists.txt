@@ -25,7 +25,6 @@ target_compile_definitions(${TARGET_NAME}
         MAYAHYDRALIB_EXPORT
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
         # Copy-pasted from lib/mayaUsd/CMakeLists.txt
-        $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
 )
 
 mayaUsd_compile_config(${TARGET_NAME})

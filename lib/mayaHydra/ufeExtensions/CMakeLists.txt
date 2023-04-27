@@ -15,10 +15,6 @@ set(HEADERS
 	Global.h
 )
 
-if (UFE_FOUND)
-    target_compile_definitions(${TARGET_NAME} PRIVATE WANT_UFE_BUILD)
-endif()
-
 # -----------------------------------------------------------------------------
 # compiler configuration
 # -----------------------------------------------------------------------------
