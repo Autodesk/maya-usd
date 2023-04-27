@@ -4,7 +4,7 @@ import maya.mel
 import fixturesUtils
 import mtohUtils
 
-class TestCommand(mtohUtils.MtohTestCase):
+class TestVisibility(mtohUtils.MtohTestCase):
     _file = __file__
 
     def setUp(self):

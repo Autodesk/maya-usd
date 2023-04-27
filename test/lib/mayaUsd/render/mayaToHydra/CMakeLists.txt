@@ -4,7 +4,8 @@ set(TEST_SCRIPT_FILES
 # Fail as of 22-Feb-2023.  Entered as MAYA-127898.
 #    testMtohBasicRender.py
 #    testMtohDagChanges.py
-    testMtohVisibility.py
+    testMeshes.py
+    testVisibility.py
 )
 
 foreach(script ${TEST_SCRIPT_FILES})
