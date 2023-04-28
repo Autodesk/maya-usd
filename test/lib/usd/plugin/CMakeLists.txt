@@ -134,6 +134,31 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/mayaUsdPlugInfo.json"
                "${CMAKE_CURRENT_BINARY_DIR}/TestMayaUsdPlug/mayaUsdPlugInfo.json"
 )
 
+set(TARGET_NAME usdVrayImportChaser)
+add_library(${TARGET_NAME} SHARED)
+
+# -----------------------------------------------------------------------------
+# sources
+# -----------------------------------------------------------------------------
+target_sources(${TARGET_NAME}
+    PRIVATE
+        plugin.cpp
+        chaser_sample.cpp
+)
+mayaUsd_compile_config(${TARGET_NAME})
+
+# -----------------------------------------------------------------------------
+# link libraries
+# -----------------------------------------------------------------------------
+target_link_libraries(${TARGET_NAME}
+    PRIVATE
+        mayaUsd
+)
+
+# -----------------------------------------------------------------------------
+# properties
+# -----------------------------------------------------------------------------
+maya_set_plugin_properties(${TARGET_NAME})
 
 set(TARGET_NAME usdTestInfoImportChaser)
 add_library(${TARGET_NAME} SHARED)
