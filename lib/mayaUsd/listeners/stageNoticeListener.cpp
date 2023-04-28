@@ -24,6 +24,8 @@
 #include <pxr/usd/usd/tokens.h>
 #include <pxr/usd/usdUI/tokens.h>
 
+#include <mutex>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /* virtual */
