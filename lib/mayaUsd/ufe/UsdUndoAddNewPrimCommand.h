@@ -32,7 +32,11 @@ namespace ufe {
 // This command is not restricted: it is always possible to create a new
 // prim even in weaker layer since the new prim, by the fact that it is new
 // cannot have an already-existing opinon that would shadow it.
+#ifdef UFE_V4_FEATURES_AVAILABLE
+class MAYAUSD_CORE_PUBLIC UsdUndoAddNewPrimCommand : public Ufe::SceneItemResultUndoableCommand
+#else
 class MAYAUSD_CORE_PUBLIC UsdUndoAddNewPrimCommand : public Ufe::UndoableCommand
+#endif
 {
 public:
     typedef std::shared_ptr<UsdUndoAddNewPrimCommand> Ptr;
@@ -50,6 +54,7 @@ public:
     PXR_NS::UsdPrim  newPrim() const;
 
     UFE_V4(std::string commandString() const override;)
+    UFE_V4(Ufe::SceneItem::Ptr sceneItem() const override;)
 
     static UsdUndoAddNewPrimCommand::Ptr
     create(const UsdSceneItem::Ptr& usdSceneItem, const std::string& name, const std::string& type);
