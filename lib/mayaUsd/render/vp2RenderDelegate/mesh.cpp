@@ -1735,8 +1735,9 @@ void HdVP2Mesh::_UpdateDrawItem(
                 renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
 
             if (material) {
-                MHWRender::MShaderInstance* shader
-                    = material->GetSurfaceShader(_GetMaterialNetworkToken(reprToken));
+                const HdCullStyle           cullStyle = GetCullStyle(sceneDelegate);
+                MHWRender::MShaderInstance* shader = material->GetSurfaceShader(
+                    _GetMaterialNetworkToken(reprToken), cullStyle == HdCullStyleBack);
                 if (shader != nullptr
                     && (shader != drawItemData._shader || shader != stateToCommit._shader)) {
                     drawItemData._shader = shader;
