@@ -93,6 +93,7 @@ const auto kSetLayerAsTargetLayerTooltip { create("kSetLayerAsTargetLayerTooltip
 const auto kUsdSaveFileFormat            { create("kUsdSaveFileFormat", "Save .usd File Format") };
 const auto kUsdLayerIdentifier           { create("kUsdLayerIdentifier", "USD Layer identifier: ^1s") };
 const auto kUsdStage                     { create("kUsdStage", "USD Stage:") };
+const auto kPinUsdStageTooltip           { create("kPinUsdStage", "When unpinned, follow the USD stage selected in the outliner.") };
 
 const auto kSaveAnonymousLayersErrorsTitle { create("kSaveAnonymousLayersErrorsTitle", "Save All Layers Error")};
 const auto kSaveAnonymousLayersErrorsMsg { create("kSaveAnonymousLayersErrorsMsg", "Errors were encountered while saving layers.  Check Script Editor for details.")};

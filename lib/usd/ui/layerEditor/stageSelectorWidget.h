@@ -35,8 +35,13 @@ class StageSelectorWidget : public QWidget
     Q_OBJECT
 public:
     StageSelectorWidget(SessionState* in_sessionState, QWidget* in_parent);
+    ~StageSelectorWidget() override;
+
+    void selectionChanged();
 
 protected:
+    void createUI();
+
     void                           setSessionState(SessionState* in_sessionState);
     SessionState::StageEntry const selectedStage();
 
@@ -47,11 +52,14 @@ protected:
     void stageReset(SessionState::StageEntry const& entry);
     void sessionStageChanged();
     void selectedIndexChanged(int index);
+    void stagePinClicked();
 
 private:
     SessionState* _sessionState = nullptr;
     QComboBox*    _dropDown = nullptr;
+    QPushButton*  _pinLayer = nullptr;
     bool          _internalChange = false; // for notifications
+    bool          _pinStageSelection = true;
 };
 
 } // namespace UsdLayerEditor
