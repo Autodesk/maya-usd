@@ -3105,6 +3105,10 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
         HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L2, "UpdateShaderInstance");
 
     std::unordered_set<MString, MStringHash> updatedAttributes;
+    auto setShaderParam = [&updatedAttributes, this](auto&& paramName, auto&& paramValue) {
+        updatedAttributes.insert(paramName);
+        return SetShaderParameter(paramName, paramValue);
+    };
 
     const bool matIsTransparent = _IsTransparent(mat);
     if (matIsTransparent != _surfaceShader->isTransparent()) {
@@ -3156,12 +3160,12 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
 #ifdef WANT_MATERIALX_BUILD
                 if (isMaterialXNode) {
                     const MString paramName = "_" + nodeName + "file_sampler";
-                    samplerStatus = SetShaderParameter(paramName, *sampler);
+                    samplerStatus = setShaderParam(paramName, *sampler);
                 } else
 #endif
                 {
                     const MString paramName = nodeName + "fileSampler";
-                    samplerStatus = SetShaderParameter(paramName, *sampler);
+                    samplerStatus = setShaderParam(paramName, *sampler);
                 }
             }
         }
@@ -3171,32 +3175,31 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
             const VtValue& value = entry.second;
 
             MString paramName = nodeName + token.GetText();
-            updatedAttributes.insert(paramName);
 
             MStatus status = MStatus::kFailure;
 
             if (value.IsHolding<float>()) {
                 const float& val = value.UncheckedGet<float>();
-                status = SetShaderParameter(paramName, val);
+                status = setShaderParam(paramName, val);
 
 #ifdef WANT_MATERIALX_BUILD
                 if (!status) {
                     if (_IsFAParameter(node, paramName)) {
                         // Try as vector
                         float vec[4] { val, val, val, val };
-                        status = SetShaderParameter(paramName, &vec[0]);
+                        status = setShaderParam(paramName, &vec[0]);
                     }
                 }
 #endif
             } else if (value.IsHolding<GfVec2f>()) {
                 const float* val = value.UncheckedGet<GfVec2f>().data();
-                status = SetShaderParameter(paramName, val);
+                status = setShaderParam(paramName, val);
             } else if (value.IsHolding<GfVec3f>()) {
                 const float* val = value.UncheckedGet<GfVec3f>().data();
-                status = SetShaderParameter(paramName, val);
+                status = setShaderParam(paramName, val);
             } else if (value.IsHolding<GfVec4f>()) {
                 const float* val = value.UncheckedGet<GfVec4f>().data();
-                status = SetShaderParameter(paramName, val);
+                status = setShaderParam(paramName, val);
             } else if (value.IsHolding<TfToken>()) {
                 if (_IsUsdUVTexture(node)) {
                     if (token == UsdHydraTokens->wrapS || token == UsdHydraTokens->wrapT) {
@@ -3217,7 +3220,7 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
 
                     MHWRender::MTextureAssignment assignment;
                     assignment.texture = info._texture.get();
-                    status = SetShaderParameter(paramName, assignment);
+                    status = setShaderParam(paramName, assignment);
 
 #ifdef WANT_MATERIALX_BUILD
                     // TODO: MaterialX image nodes have colorSpace metadata on the file attribute,
@@ -3244,7 +3247,7 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
                                 }
                             }
                         }
-                        status = SetShaderParameter(paramName, isSRGB);
+                        status = setShaderParam(paramName, isSRGB);
                     }
                     // These parameters allow scaling texcoords into the proper coordinates of the
                     // Maya UDIM texture atlas:
@@ -3254,7 +3257,7 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
 #else
                         paramName = nodeName + "stScale";
 #endif
-                        status = SetShaderParameter(paramName, info._stScale.data());
+                        status = setShaderParam(paramName, info._stScale.data());
                     }
                     if (status) {
 #ifdef WANT_MATERIALX_BUILD
@@ -3262,28 +3265,28 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
 #else
                         paramName = nodeName + "stOffset";
 #endif
-                        status = SetShaderParameter(paramName, info._stOffset.data());
+                        status = setShaderParam(paramName, info._stOffset.data());
                     }
                 }
             } else if (value.IsHolding<int>()) {
                 const int& val = value.UncheckedGet<int>();
                 if (node.identifier == UsdImagingTokens->UsdPreviewSurface
                     && token == _tokens->useSpecularWorkflow) {
-                    status = SetShaderParameter(paramName, val != 0);
+                    status = setShaderParam(paramName, val != 0);
                 } else {
-                    status = SetShaderParameter(paramName, val);
+                    status = setShaderParam(paramName, val);
                 }
             } else if (value.IsHolding<bool>()) {
                 const bool& val = value.UncheckedGet<bool>();
-                status = SetShaderParameter(paramName, val);
+                status = setShaderParam(paramName, val);
             } else if (value.IsHolding<GfMatrix4d>()) {
                 MMatrix matrix;
                 value.UncheckedGet<GfMatrix4d>().Get(matrix.matrix);
-                status = SetShaderParameter(paramName, matrix);
+                status = setShaderParam(paramName, matrix);
             } else if (value.IsHolding<GfMatrix4f>()) {
                 MFloatMatrix matrix;
                 value.UncheckedGet<GfMatrix4f>().Get(matrix.matrix);
-                status = SetShaderParameter(paramName, matrix);
+                status = setShaderParam(paramName, matrix);
 #ifdef WANT_MATERIALX_BUILD
             } else if (value.IsHolding<std::string>()) {
                 // Some MaterialX nodes have a string member that does not translate to a shader
