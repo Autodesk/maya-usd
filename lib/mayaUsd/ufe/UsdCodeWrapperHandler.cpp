@@ -86,7 +86,7 @@ std::shared_ptr<UsdCodeWrapperHandler> UsdCodeWrapperHandler::create()
     return std::make_shared<UsdCodeWrapperHandler>();
 }
 
-Ufe::CodeWrapper::Ptr UsdCodeWrapperHandler::createCodeWrapper_(
+Ufe::CodeWrapper::Ptr UsdCodeWrapperHandler::createCodeWrapper(
     const Ufe::Selection& selection,
     const std::string&    operationName)
 {

@@ -32,7 +32,7 @@ public:
 protected:
     // Ufe::CodeWrapperHandler overrides.
     Ufe::CodeWrapper::Ptr
-    createCodeWrapper_(const Ufe::Selection& selection, const std::string& operationName) override;
+    createCodeWrapper(const Ufe::Selection& selection, const std::string& operationName) override;
 }; // UsdCodeWrapperHandler
 
 } // namespace ufe
