@@ -41,6 +41,7 @@ public:
 
 protected:
     void createUI();
+    void updatePinnedStage();
 
     void                           setSessionState(SessionState* in_sessionState);
     SessionState::StageEntry const selectedStage();
@@ -57,7 +58,7 @@ protected:
 private:
     SessionState* _sessionState = nullptr;
     QComboBox*    _dropDown = nullptr;
-    QPushButton*  _pinLayer = nullptr;
+    QPushButton*  _pinStage = nullptr;
     bool          _internalChange = false; // for notifications
     bool          _pinStageSelection = true;
 };

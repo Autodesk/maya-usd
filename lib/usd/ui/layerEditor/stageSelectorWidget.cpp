@@ -19,6 +19,8 @@
 #include "sessionState.h"
 #include "stringResources.h"
 
+#include <mayaUsd/base/tokens.h>
+
 #if defined(WANT_UFE_BUILD)
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Utils.h>
@@ -28,6 +30,8 @@
 #include <pxr/usd/usd/common.h>
 
 #include <maya/MFnDagNode.h>
+#include <maya/MGlobal.h>
+#include <maya/MString.h>
 #include <maya/MUuid.h>
 
 #include <QtCore/QSignalBlocker>
@@ -66,6 +70,18 @@ int getEntryIndexById(
     std::vector<UsdLayerEditor::SessionState::StageEntry> const& stages)
 {
     return getEntryIndexById(entry._id, stages);
+}
+
+bool loadStagePinnedOption()
+{
+    const MString optionName = MayaUsdOptionVars->PinLayerEditorStage.GetText();
+    return MGlobal::optionVarExists(optionName) && MGlobal::optionVarIntValue(optionName) != 0;
+}
+
+void saveStagePinnedOption(bool isPinned)
+{
+    const MString optionName = MayaUsdOptionVars->PinLayerEditorStage.GetText();
+    MGlobal::setOptionVarValue(optionName, isPinned ? 1 : 0);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -173,6 +189,9 @@ StageSelectorWidget::StageSelectorWidget(SessionState* in_sessionState, QWidget*
 #if defined(WANT_UFE_BUILD)
     StageSelectorSelectionObserver::instance()->addStageSelector(*this);
 #endif
+
+    _pinStageSelection = loadStagePinnedOption();
+    updatePinnedStage();
 }
 
 StageSelectorWidget::~StageSelectorWidget()
@@ -203,13 +222,13 @@ void StageSelectorWidget::createUI()
 
     auto higButtonYOffset = DPIScale(4);
     auto buttonSize = DPIScale(24);
-    _pinLayer = new QPushButton();
-    _pinLayer->move(0, higButtonYOffset);
-    QtUtils::setupButtonWithHIGBitmaps(_pinLayer, ":/UsdLayerEditor/pin_on");
-    _pinLayer->setFixedSize(buttonSize, buttonSize);
-    _pinLayer->setToolTip(StringResources::getAsQString(StringResources::kPinUsdStageTooltip));
-    mainHLayout->addWidget(_pinLayer, 0, Qt::AlignLeft | Qt::AlignRight);
-    connect(_pinLayer, &QAbstractButton::clicked, this, &StageSelectorWidget::stagePinClicked);
+    _pinStage = new QPushButton();
+    _pinStage->move(0, higButtonYOffset);
+    QtUtils::setupButtonWithHIGBitmaps(_pinStage, ":/UsdLayerEditor/pin_on");
+    _pinStage->setFixedSize(buttonSize, buttonSize);
+    _pinStage->setToolTip(StringResources::getAsQString(StringResources::kPinUsdStageTooltip));
+    mainHLayout->addWidget(_pinStage, 0, Qt::AlignLeft | Qt::AlignRight);
+    connect(_pinStage, &QAbstractButton::clicked, this, &StageSelectorWidget::stagePinClicked);
 
     setLayout(mainHLayout);
 }
@@ -294,7 +313,6 @@ void StageSelectorWidget::selectionChanged()
         if (index == -1)
             continue;
 
-        QSignalBlocker blocker(_dropDown);
         _dropDown->setCurrentIndex(index);
         break;
     }
@@ -304,9 +322,14 @@ void StageSelectorWidget::selectionChanged()
 void StageSelectorWidget::stagePinClicked()
 {
     _pinStageSelection = !_pinStageSelection;
+    saveStagePinnedOption(_pinStageSelection);
+    updatePinnedStage();
+}
 
+void StageSelectorWidget::updatePinnedStage()
+{
     QtUtils::setupButtonWithHIGBitmaps(
-        _pinLayer, _pinStageSelection ? ":/UsdLayerEditor/pin_on" : ":/UsdLayerEditor/pin_off");
+        _pinStage, _pinStageSelection ? ":/UsdLayerEditor/pin_on" : ":/UsdLayerEditor/pin_off");
 
     if (_pinStageSelection) {
         selectedIndexChanged(_dropDown->currentIndex());
