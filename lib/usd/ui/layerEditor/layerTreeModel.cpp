@@ -136,6 +136,46 @@ QMimeData* LayerTreeModel::mimeData(const QModelIndexList& indexes) const
     return mimeData;
 }
 
+bool LayerTreeModel::canDropMimeData(
+    const QMimeData*   in_mimeData,
+    Qt::DropAction     action,
+    int                row,
+    int                column,
+    const QModelIndex& parentIndex) const
+{
+    if (!in_mimeData || (action != Qt::MoveAction)) {
+        return false;
+    }
+    if (!in_mimeData->hasFormat(LAYER_EDITOR_MIME_TYPE)) {
+        return false;
+    }
+
+    auto parentItem = layerItemFromIndex(parentIndex);
+    if (!parentItem || parentItem->isReadOnly()) {
+        return false;
+    }
+
+    // Only anonymous layers have additional restrictions
+    if (!parentItem->layer()->IsAnonymous()) {
+        return true;
+    }
+
+    // Layer with its path relative cannot be dropped to an anonymous layer
+    QStringList identifiers = in_mimeData->text().split(LAYED_EDITOR_MIME_SEP);
+    for (QString const& ident : identifiers) {
+        if (auto layer = SdfLayer::FindOrOpen(ident.toStdString())) {
+            if (auto layerItem = findUSDLayerItem(layer)) {
+                if (!layer->IsAnonymous()
+                    && QDir::isRelativePath(layerItem->subLayerPath().c_str())) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
 bool LayerTreeModel::dropMimeData(
     const QMimeData*   in_mimeData,
     Qt::DropAction     action,

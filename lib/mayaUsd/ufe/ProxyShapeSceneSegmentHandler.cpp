@@ -82,7 +82,7 @@ Ufe::Selection ProxyShapeSceneSegmentHandler::findGatewayItems_(const Ufe::Path&
     return result;
 }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4035)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 Ufe::Selection
 ProxyShapeSceneSegmentHandler::findGatewayItems_(const Ufe::Path& path, Ufe::Rtid nestedRtid) const
 {

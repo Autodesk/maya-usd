@@ -149,6 +149,32 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
 
         self._StartTest('DemoQuads')
 
+    def testWithEnabledMaterialX(self):
+        """Make sure the absence of MAYAUSD_VP2_USE_ONLY_PREVIEWSURFACE env var has an effect."""
+        cmds.file(force=True, new=True)
+
+        light = cmds.directionalLight(rgb=(1, 1, 1))
+        transform = cmds.listRelatives(light, parent=True)[0]
+        cmds.xform(transform, ro=(-30, -6, -75), ws=True)
+        cmds.setAttr(light+".intensity", 10)
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, lights=False, displayLights="all", displayTextures=True)
+
+        # Pyramid is red under preview surface, green as MaterialX, and
+        # blue as display colors. We want red here.
+        self._StartTest('ShadedPyramid')
+
+    def testUDIMs(self):
+        cmds.file(force=True, new=True)
+
+        cmds.move(0, 6, 0, 'persp')
+        cmds.rotate(-90, 0, 0, 'persp')
+
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, displayTextures=True)
+
+        self._StartTest('grid_with_udims')
+
     def testMayaPlace2dTexture(self):
         mayaUtils.loadPlugin("mayaUsdPlugin")
         panel = mayaUtils.activeModelPanel()

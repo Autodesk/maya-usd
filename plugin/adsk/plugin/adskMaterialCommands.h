@@ -49,9 +49,11 @@ public:
 private:
     MStatus parseArgs(const MArgList& argList);
 
+#ifndef UFE_V4_FEATURES_AVAILABLE
     void appendMaterialXMaterials() const;
     void appendArnoldMaterials() const;
     void appendUsdMaterials() const;
+#endif
 };
 
 //! \brief Returns an array of materials in the same stage as the object passed in via argument.

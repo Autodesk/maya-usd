@@ -92,6 +92,7 @@
 #include <maya/MPoint.h>
 #include <maya/MProfiler.h>
 #include <maya/MPxSurfaceShape.h>
+#include <maya/MSceneMessage.h>
 #include <maya/MSelectionMask.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
@@ -140,6 +141,7 @@ const MString MayaUsdProxyShapeBase::displayFilterLabel("USD Proxies");
 
 // Attributes
 MObject MayaUsdProxyShapeBase::filePathAttr;
+MObject MayaUsdProxyShapeBase::filePathRelativeAttr;
 MObject MayaUsdProxyShapeBase::primPathAttr;
 MObject MayaUsdProxyShapeBase::excludePrimPathsAttr;
 MObject MayaUsdProxyShapeBase::loadPayloadsAttr;
@@ -155,9 +157,6 @@ MObject MayaUsdProxyShapeBase::drawGuidePurposeAttr;
 MObject MayaUsdProxyShapeBase::sessionLayerNameAttr;
 MObject MayaUsdProxyShapeBase::rootLayerNameAttr;
 MObject MayaUsdProxyShapeBase::mutedLayersAttr;
-// Change counter attributes
-MObject MayaUsdProxyShapeBase::updateCounterAttr;
-MObject MayaUsdProxyShapeBase::resyncCounterAttr;
 // Output attributes
 MObject MayaUsdProxyShapeBase::outTimeAttr;
 MObject MayaUsdProxyShapeBase::outStageDataAttr;
@@ -258,6 +257,15 @@ MStatus MayaUsdProxyShapeBase::initialize()
     typedAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = addAttribute(filePathAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    filePathRelativeAttr
+        = numericAttrFn.create("filePathRelative", "fpr", MFnNumericData::kBoolean, 0.0, &retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    numericAttrFn.setInternal(true);
+    numericAttrFn.setStorable(false);
+    numericAttrFn.setWritable(false);
+    retValue = addAttribute(filePathRelativeAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     primPathAttr
@@ -392,26 +400,6 @@ MStatus MayaUsdProxyShapeBase::initialize()
     retValue = addAttribute(outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    updateCounterAttr
-        = numericAttrFn.create("updateId", "upid", MFnNumericData::kInt64, -1, &retValue);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    numericAttrFn.setStorable(false);
-    numericAttrFn.setWritable(false);
-    numericAttrFn.setHidden(true);
-    numericAttrFn.setInternal(true);
-    retValue = addAttribute(updateCounterAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-
-    resyncCounterAttr
-        = numericAttrFn.create("resyncId", "rsid", MFnNumericData::kInt64, -1, &retValue);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    numericAttrFn.setStorable(false);
-    numericAttrFn.setWritable(false);
-    numericAttrFn.setHidden(true);
-    numericAttrFn.setInternal(true);
-    retValue = addAttribute(resyncCounterAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-
     outStageCacheIdAttr
         = numericAttrFn.create("outStageCacheId", "ostcid", MFnNumericData::kInt, -1, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
@@ -537,6 +525,29 @@ void MayaUsdProxyShapeBase::enableProxyAccessor()
     _usdAccessor = ProxyAccessor::createAndRegister(*this);
 }
 
+void beforeSaveCallback(void* clientData)
+{
+    auto proxyShape = static_cast<MayaUsdProxyShapeBase*>(clientData);
+    if (!proxyShape) {
+        return;
+    }
+
+    MStatus           status;
+    MFnDependencyNode depNode(proxyShape->thisMObject(), &status);
+    CHECK_MSTATUS(status);
+
+    MPlug filePathPlug = depNode.findPlug(MayaUsdProxyShapeBase::filePathAttr);
+    MPlug filePathRelativePlug = depNode.findPlug(MayaUsdProxyShapeBase::filePathRelativeAttr);
+
+    // Make proxy shape's file path relative if needed
+    ghc::filesystem::path filePath(filePathPlug.asString().asChar());
+    if (filePath.is_absolute() && filePathRelativePlug.asBool()) {
+        auto relativePath
+            = UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(filePath.generic_string());
+        filePathPlug.setString(relativePath.c_str());
+    }
+}
+
 /* virtual */
 void MayaUsdProxyShapeBase::postConstructor()
 {
@@ -548,22 +559,11 @@ void MayaUsdProxyShapeBase::postConstructor()
     MayaUsdProxyStageInvalidateNotice(*this).Send();
 
     updateAncestorCallbacks();
-}
 
-/* virtual */
-bool MayaUsdProxyShapeBase::getInternalValue(const MPlug& plug, MDataHandle& handle)
-{
-    bool retVal = true;
-
-    if (plug == updateCounterAttr) {
-        handle.set(_shapeUpdateManager.GetUpdateCount());
-    } else if (plug == resyncCounterAttr) {
-        handle.set(_shapeUpdateManager.GetResyncCount());
-    } else {
-        retVal = MPxSurfaceShape::getInternalValue(plug, handle);
+    if (_preSaveCallbackId == 0) {
+        _preSaveCallbackId
+            = MSceneMessage::addCallback(MSceneMessage::kBeforeSave, beforeSaveCallback, this);
     }
-
-    return retVal;
 }
 
 /* virtual */
@@ -828,6 +828,15 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         if (stageCached) {
             sharedUsdStage = UsdUtilsStageCache::Get().Find(cacheId);
             isIncomingStage = true;
+            // If the stage set by stage ID is not anonymous, set the filePath
+            // attribute to it so that it can be reloaded when teh Maya scene
+            // is re-opened.
+            SdfLayerHandle rootLayer = sharedUsdStage->GetRootLayer();
+            if (rootLayer && !rootLayer->IsAnonymous()) {
+                MDataHandle outDataHandle = dataBlock.outputValue(filePathAttr, &retValue);
+                CHECK_MSTATUS_AND_RETURN_IT(retValue);
+                outDataHandle.set(MString(rootLayer->GetIdentifier().c_str()));
+            }
         } else {
             //
             // Calculate from USD filepath and primPath and variantKey
@@ -1897,6 +1906,11 @@ MayaUsdProxyShapeBase::MayaUsdProxyShapeBase(
 /* virtual */
 MayaUsdProxyShapeBase::~MayaUsdProxyShapeBase()
 {
+    if (_preSaveCallbackId != 0) {
+        MMessage::removeCallback(_preSaveCallbackId);
+        _preSaveCallbackId = 0;
+    }
+
     clearAncestorCallbacks();
 
     // Deregister from the load-rules handling used to transfer load rules
@@ -1972,6 +1986,11 @@ void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChang
     MProfilingScope profilingScope(
         _shapeBaseProfilerCategory, MProfiler::kColorB_L1, "Process USD objects changed");
 
+    if (UsdMayaStageNoticeListener::ClassifyObjectsChanged(notice)
+        == UsdMayaStageNoticeListener::ChangeType::kIgnored) {
+        return;
+    }
+
     // This will definitely force a BBox recomputation on "Frame All" or when framing a selected
     // stage. Computing bounds in USD is expensive, so if it pops up in other frequently used
     // scenarios we will have to investigate ways to make this cache clearing less expensive.
@@ -1979,11 +1998,6 @@ void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChang
 
     ProxyAccessor::stageChanged(_usdAccessor, thisMObject(), notice);
     MayaUsdProxyStageObjectsChangedNotice(*this, notice).Send();
-
-    // Also keeps track of the notification counters:
-    if (_shapeUpdateManager.CanIgnoreObjectsChanged(notice)) {
-        return;
-    }
 
     // Recompute the extents of any UsdGeomBoundable that has authored extents
     const auto& stage = notice.GetStage();

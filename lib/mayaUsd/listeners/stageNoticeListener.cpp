@@ -17,8 +17,14 @@
 
 #include <pxr/base/tf/notice.h>
 #include <pxr/base/tf/weakBase.h>
+#include <pxr/base/vt/value.h>
+#include <pxr/usd/sdf/listOp.h>
 #include <pxr/usd/usd/notice.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/tokens.h>
+#include <pxr/usd/usdUI/tokens.h>
+
+#include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -166,6 +172,92 @@ void UsdMayaStageNoticeListener::_OnStageEditTargetChanged(
     if (notice.GetStage() == _stage && _stageEditTargetChangedCallback) {
         _stageEditTargetChangedCallback(notice);
     }
+}
+
+namespace {
+bool _IsUiSchemaPrepend(const VtValue& v)
+{
+    static std::set<size_t> UiSchemaPrependHashes;
+    std::once_flag          hasHashes;
+    std::call_once(hasHashes, [&]() {
+        SdfTokenListOp op;
+        op.SetPrependedItems(TfTokenVector { TfToken("NodeGraphNodeAPI") });
+        UiSchemaPrependHashes.insert(hash_value(op));
+    });
+
+    if (v.IsHolding<SdfTokenListOp>()) {
+        const size_t hash = hash_value(v.UncheckedGet<SdfTokenListOp>());
+        if (UiSchemaPrependHashes.count(hash)) {
+            return true;
+        }
+    }
+    return false;
+}
+} // namespace
+
+UsdMayaStageNoticeListener::ChangeType
+UsdMayaStageNoticeListener::ClassifyObjectsChanged(UsdNotice::ObjectsChanged const& notice)
+{
+    using PathRange = UsdNotice::ObjectsChanged::PathRange;
+
+    auto range = notice.GetResyncedPaths();
+    if (!range.empty()) {
+        size_t ignoredCount = 0;
+        size_t resyncCount = 0;
+        for (auto it = range.begin(); it != range.end(); ++it) {
+            if (it->IsPropertyPath()) {
+                // We have a bunch of UI properties to ignore. Especially anything that comes from
+                // UI schemas.
+                if (it->GetName().rfind("ui:", 0) == 0) {
+                    ++ignoredCount;
+                    continue;
+                }
+            }
+            for (const SdfChangeList::Entry* entry : it.base()->second) {
+                for (auto&& infoChanged : entry->infoChanged) {
+                    if (infoChanged.first == UsdTokens->apiSchemas
+                        && _IsUiSchemaPrepend(infoChanged.second.second)) {
+                        ++ignoredCount;
+                    } else {
+                        ++resyncCount;
+                    }
+                }
+            }
+        }
+
+        if (ignoredCount) {
+            return resyncCount ? ChangeType::kResync : ChangeType::kIgnored;
+        } else {
+            return ChangeType::kResync;
+        }
+    }
+
+    auto retVal = ChangeType::kIgnored;
+
+    const PathRange pathsToUpdate = notice.GetChangedInfoOnlyPaths();
+    for (PathRange::const_iterator it = pathsToUpdate.begin(); it != pathsToUpdate.end(); ++it) {
+        if (it->IsAbsoluteRootOrPrimPath()) {
+            const TfTokenVector changedFields = it.GetChangedFields();
+            if (!changedFields.empty()) {
+                retVal = ChangeType::kUpdate;
+            }
+        } else if (it->IsPropertyPath()) {
+            // We have a bunch of UI properties to ignore. Especially anything that comes from UI
+            // schemas.
+            if (it->GetName().rfind("ui:", 0) == 0) {
+                continue;
+            }
+            retVal = ChangeType::kUpdate;
+            for (const auto& entry : it.base()->second) {
+                if (entry->flags.didChangeAttributeConnection) {
+                    retVal = ChangeType::kResync;
+                    break;
+                }
+            }
+        }
+    }
+
+    return retVal;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

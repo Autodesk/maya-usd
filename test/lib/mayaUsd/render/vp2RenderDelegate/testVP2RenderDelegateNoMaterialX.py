@@ -48,7 +48,7 @@ class testVP2RenderDelegateNoMaterialX(imageUtils.ImageDiffingTestCase):
             initializeStandalone=False, loadPlugin=False)
 
         cls._baselineDir = os.path.join(inputPath,
-            'VP2RenderDelegateMaterialXTest', 'baseline')
+            'VP2RenderDelegateNoMaterialXTest', 'baseline')
 
         cls._testDir = os.path.abspath('.')
 
@@ -84,6 +84,18 @@ class testVP2RenderDelegateNoMaterialX(imageUtils.ImageDiffingTestCase):
         # Pyramid is red under preview surface, green as MaterialX, and
         # blue as display colors. We want red here.
         self._StartTest('ShadedPyramid')
+
+    def testUDIMs(self):
+        """Make sure UDIMs are working in GlslFx mode"""
+        cmds.file(force=True, new=True)
+
+        cmds.move(0, 6, 0, 'persp')
+        cmds.rotate(-90, 0, 0, 'persp')
+
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, displayTextures=True)
+
+        self._StartTest('grid_with_udims')
 
 
 if __name__ == '__main__':

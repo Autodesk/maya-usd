@@ -22,6 +22,7 @@
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/utils/editRouter.h>
+#include <mayaUsd/utils/editRouterContext.h>
 #include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/loadRules.h>
 #include <mayaUsdUtils/util.h>
@@ -133,19 +134,16 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
     ufe::applyCommandRestriction(parentPrim, "reparent");
 
     _childLayer = childPrim.GetStage()->GetEditTarget().GetLayer();
-    _parentLayer = getEditRouterLayer(MayaUsdEditRoutingTokens->RouteParent, parentPrim);
 }
 
 UsdUndoInsertChildCommand::~UsdUndoInsertChildCommand() { }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4032)
 std::string UsdUndoInsertChildCommand::commandString() const
 {
     return std::string("InsertChild ") + Ufe::PathString::string(_ufeSrcPath) + " "
         + Ufe::PathString::string(_ufeParentPath);
 }
-#endif
 #endif
 
 /*static*/
@@ -246,6 +244,12 @@ void UsdUndoInsertChildCommand::insertChildRedo()
 {
     if (_usdDstPath.IsEmpty()) {
         const auto& parentPrim = ufePathToPrim(_ufeParentPath);
+
+        // Enforce the edit routing for the insert-child command in order to find
+        // the target layer. The edit router context sets the edit target of the
+        // stage of the given prim, if it gets routed.
+        OperationEditRouterContext ctx(MayaUsdEditRoutingTokens->RouteParent, parentPrim);
+        _parentLayer = parentPrim.GetStage()->GetEditTarget().GetLayer();
 
         // First, check if we need to rename the child.
         const auto childName = uniqueChildName(parentPrim, _ufeSrcPath.back().string());

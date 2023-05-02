@@ -17,6 +17,7 @@
 #define PXRUSDMAYA_UTIL_H
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
 
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/gf/vec3f.h>
@@ -29,6 +30,7 @@
 #include <pxr/base/vt/value.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdr/declare.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/timeCode.h>
@@ -184,6 +186,10 @@ MStatus GetMObjectByName(const std::string& nodeName, MObject& mObj);
 /// Gets the Maya MObject for the node named \p nodeName.
 MAYAUSD_CORE_PUBLIC
 MStatus GetMObjectByName(const MString& nodeName, MObject& mObj);
+
+/// Gets the proxy shape node named \p nodeName.
+MAYAUSD_CORE_PUBLIC
+MayaUsdProxyShapeBase* GetProxyShapeByProxyName(const std::string& nodeName);
 
 /// Gets the UsdStage for the proxy shape  node named \p nodeName.
 MAYAUSD_CORE_PUBLIC
@@ -689,6 +695,10 @@ void AddMayaExtents(
     PXR_NS::GfBBox3d&         bbox,
     const PXR_NS::UsdPrim&    root,
     const PXR_NS::UsdTimeCode time);
+
+/// Access to materials associated with available renderers
+MAYAUSD_CORE_PUBLIC
+SdrShaderNodePtrVec GetSurfaceShaderNodeDefs();
 
 } // namespace UsdMayaUtil
 

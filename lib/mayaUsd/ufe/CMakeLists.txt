@@ -145,66 +145,22 @@ if (v4_BatchOps IN_LIST UFE_PREVIEW_FEATURES)
 endif()
 
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4001)
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-                UsdShaderNodeDef.cpp
-                UsdShaderNodeDefHandler.cpp
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4010)
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-                UsdShaderAttributeDef.cpp
-                UsdShaderAttributeHolder.cpp
-                UsdUndoCreateFromNodeDefCommand.cpp
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4013)
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-                ProxyShapeCameraHandler.cpp
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-                UsdConnections.cpp
-                UsdConnectionHandler.cpp
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4023)
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-                UsdUINodeGraphNode.cpp
-                UsdUINodeGraphNodeHandler.cpp
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4024)
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-                UsdUndoAttributesCommands.cpp
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4025)
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-                UsdTransform3dRead.cpp
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4043)
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-                UsdUndoConnectionCommands.cpp
-        )
-    endif()
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            UsdShaderNodeDef.cpp
+            UsdShaderNodeDefHandler.cpp
+            UsdShaderAttributeDef.cpp
+            UsdShaderAttributeHolder.cpp
+            UsdUndoCreateFromNodeDefCommand.cpp
+            ProxyShapeCameraHandler.cpp
+            UsdConnections.cpp
+            UsdConnectionHandler.cpp
+            UsdUINodeGraphNode.cpp
+            UsdUINodeGraphNodeHandler.cpp
+            UsdUndoAttributesCommands.cpp
+            UsdTransform3dRead.cpp
+            UsdUndoConnectionCommands.cpp
+    )
 endif()
 
 if(PXR_VERSION GREATER_EQUAL 2108 AND CMAKE_UFE_V2_FEATURES_AVAILABLE)
@@ -325,58 +281,21 @@ if (v4_BatchOps IN_LIST UFE_PREVIEW_FEATURES)
 endif()
 
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4001)
-        list(APPEND HEADERS
-            UsdShaderNodeDef.h
-            UsdShaderNodeDefHandler.h
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4010)
-        list(APPEND HEADERS
-            UsdShaderAttributeDef.h
-            UsdShaderAttributeHolder.h
-            UsdUndoCreateFromNodeDefCommand.h
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4013)
-        list(APPEND HEADERS
-            ProxyShapeCameraHandler.h
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
-        list(APPEND HEADERS
-            UsdConnections.h
-            UsdConnectionHandler.h
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4023)
-        list(APPEND HEADERS
-            UsdUINodeGraphNode.h
-            UsdUINodeGraphNodeHandler.h
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4024)
-        list(APPEND HEADERS
-                UsdUndoAttributesCommands.h
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4025)
-        list(APPEND HEADERS
-            UsdTransform3dRead.h
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4043)
-        list(APPEND HEADERS
-            UsdUndoConnectionCommands.h
-        )
-    endif()
+    list(APPEND HEADERS
+        UsdShaderNodeDef.h
+        UsdShaderNodeDefHandler.h
+        UsdShaderAttributeDef.h
+        UsdShaderAttributeHolder.h
+        UsdUndoCreateFromNodeDefCommand.h
+        ProxyShapeCameraHandler.h
+        UsdConnections.h
+        UsdConnectionHandler.h
+        UsdUINodeGraphNode.h
+        UsdUINodeGraphNodeHandler.h
+        UsdUndoAttributesCommands.h
+        UsdTransform3dRead.h
+        UsdUndoConnectionCommands.h
+    )
 endif()
 
 if(PXR_VERSION GREATER_EQUAL 2108 AND CMAKE_UFE_V2_FEATURES_AVAILABLE)

@@ -18,6 +18,7 @@
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>
@@ -42,7 +43,7 @@ namespace {
 // use "mtl" instead. So we will go with the WG recommendation when creating new material scopes.
 static const std::string kDefaultMaterialScopeName("mtl");
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 bool connectShaderToMaterial(
     Ufe::SceneItem::Ptr shaderItem,
     UsdPrim             materialPrim,
@@ -204,7 +205,7 @@ void UnbindMaterialUndoableCommand::execute()
 }
 const std::string UnbindMaterialUndoableCommand::commandName("Unassign Material");
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 UsdUndoAssignNewMaterialCommand::UsdUndoAssignNewMaterialCommand(
     const UsdSceneItem::Ptr& parentItem,
     const std::string&       nodeId)
@@ -606,12 +607,15 @@ void UsdUndoAddNewMaterialCommand::execute()
     }
 
     //
-    // Connect the Shader to the material:
+    // Connect the Shader to the material, only for surfaces:
     //
-    if (!connectShaderToMaterial(
-            _createShaderCmd->insertedChild(), _createMaterialCmd->newPrim(), _nodeId)) {
-        markAsFailed();
-        return;
+    auto surfaces = UsdMayaUtil::GetSurfaceShaderNodeDefs();
+    if (std::find(surfaces.begin(), surfaces.end(), shaderNodeDef) != surfaces.end()) {
+        if (!connectShaderToMaterial(
+                _createShaderCmd->insertedChild(), _createMaterialCmd->newPrim(), _nodeId)) {
+            markAsFailed();
+            return;
+        }
     }
 }
 

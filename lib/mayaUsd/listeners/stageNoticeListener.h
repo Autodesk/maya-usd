@@ -77,6 +77,33 @@ public:
     MAYAUSD_CORE_PUBLIC
     void SetStageEditTargetChangedCallback(const StageEditTargetChangedCallback& callback);
 
+    /// We have incoming changes that USD will consider either requiring an
+    /// update (meaning the render delegate needs to refresh and redraw) or
+    /// a resync (meaning the scene delegate needs to fetch new datum). We
+    /// want external clients to be aware of these classes of updates in case
+    /// they do not use the Hydra system for refreshing and drawing the scene.
+    enum class ChangeType
+    {
+        kIgnored, // Change does not require redraw: UI change, metadata change.
+        kUpdate,  // Change requires redraw after refreshing parameter values
+        kResync   // Change requires refreshing cached buffers
+    };
+
+    /// This is a stripped down copy of UsdImagingDelegate::_OnUsdObjectsChanged which is the main
+    /// USD notification handler where paths to refresh and paths to update are compiled for the
+    /// next Hydra refresh. We do not gather paths as there is no simple way to know when to flush
+    /// these maps.
+    ///
+    /// This needs to stay as quick as possible since it is stuck in the middle of the notification
+    /// code path.
+    ///
+    /// This is a work in progress. Some improvements might be necessary in the future. The
+    /// following potential issues are already visible:
+    ///
+    ///  - Changing a parameter value for the first time creates the attribute, which is a kResync
+    MAYAUSD_CORE_PUBLIC
+    static ChangeType ClassifyObjectsChanged(UsdNotice::ObjectsChanged const& notice);
+
 private:
     UsdMayaStageNoticeListener(const UsdMayaStageNoticeListener&) = delete;
     UsdMayaStageNoticeListener& operator=(const UsdMayaStageNoticeListener&) = delete;

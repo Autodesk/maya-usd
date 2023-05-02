@@ -57,34 +57,16 @@ public:
 
     //@{
     // Ufe::SceneItemOps overrides
-    Ufe::SceneItem::Ptr sceneItem() const override;
-#ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4033)
-    Ufe::UndoableCommand::Ptr deleteItemCmdNoExecute() override;
-#endif
-#endif
+    Ufe::SceneItem::Ptr       sceneItem() const override;
     Ufe::UndoableCommand::Ptr deleteItemCmd() override;
     bool                      deleteItem() override;
+    Ufe::Duplicate            duplicateItemCmd() override;
+    Ufe::SceneItem::Ptr       duplicateItem() override;
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4033)
-#if (UFE_PREVIEW_VERSION_NUM >= 4041)
+    Ufe::UndoableCommand::Ptr                deleteItemCmdNoExecute() override;
     Ufe::SceneItemResultUndoableCommand::Ptr duplicateItemCmdNoExecute() override;
-#else
-    Ufe::UndoableCommand::Ptr duplicateItemCmdNoExecute() override;
-#endif
-#endif
-#endif
-    Ufe::Duplicate      duplicateItemCmd() override;
-    Ufe::SceneItem::Ptr duplicateItem() override;
-#ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4033)
-#if (UFE_PREVIEW_VERSION_NUM >= 4041)
     Ufe::SceneItemResultUndoableCommand::Ptr
     renameItemCmdNoExecute(const Ufe::PathComponent& newName) override;
-#else
-    Ufe::UndoableCommand::Ptr renameItemCmdNoExecute(const Ufe::PathComponent& newName) override;
-#endif
-#endif
 #endif
     Ufe::Rename         renameItemCmd(const Ufe::PathComponent& newName) override;
     Ufe::SceneItem::Ptr renameItem(const Ufe::PathComponent& newName) override;

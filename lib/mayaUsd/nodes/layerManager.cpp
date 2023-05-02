@@ -161,10 +161,10 @@ void convertAnonymousLayersRecursive(
         parentPtr._proxyPath = basename;
     } else if (stage->GetSessionLayer() == layer) {
         parentPtr._layerParent = nullptr;
-        parentPtr._proxyPath.clear();
+        parentPtr._proxyPath = basename;
     } else {
         parentPtr._layerParent = layer;
-        parentPtr._proxyPath.clear();
+        parentPtr._proxyPath = basename;
     }
 
     std::vector<std::string> sublayers = layer->GetSubLayerPaths();
@@ -786,7 +786,12 @@ BatchSaveResult LayerDatabase::saveUsdToUsdFiles()
                 SdfLayerHandleVector allLayers = info.stage->GetLayerStack(false);
                 for (auto layer : allLayers) {
                     if (layer->PermissionToSave()) {
-                        MayaUsd::utils::saveLayerWithFormat(layer);
+                        if (!MayaUsd::utils::saveLayerWithFormat(layer)) {
+                            MString errMsg;
+                            MString layerName(layer->GetDisplayName().c_str());
+                            errMsg.format("Could not save layer ^1s.", layerName);
+                            MGlobal::displayError(errMsg);
+                        }
                     }
                 }
             }
@@ -812,14 +817,22 @@ void LayerDatabase::convertAnonymousLayers(
     //       to convertAnonymousLayersRecursive
     root = stage->GetRootLayer();
     if (root->IsAnonymous()) {
+        const bool wasTargetLayer = (stage->GetEditTarget().GetLayer() == root);
         PXR_NS::SdfFileFormat::FileFormatArguments args;
         std::string newFileName = MayaUsd::utils::generateUniqueFileName(proxyName);
         if (UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile()) {
             newFileName = UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(newFileName);
         }
-        MayaUsd::utils::saveLayerWithFormat(root, newFileName);
+        if (!MayaUsd::utils::saveLayerWithFormat(root, newFileName)) {
+            MString errMsg;
+            MString layerName(root->GetDisplayName().c_str());
+            errMsg.format("Could not save layer ^1s.", layerName);
+            MGlobal::displayError(errMsg);
+        }
 
-        MayaUsd::utils::setNewProxyPath(pShape->name(), UsdMayaUtil::convert(newFileName));
+        SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(newFileName);
+        MayaUsd::utils::setNewProxyPath(
+            pShape->name(), UsdMayaUtil::convert(newFileName), newLayer, wasTargetLayer);
     }
 
     SdfLayerHandle session = stage->GetSessionLayer();
@@ -828,6 +841,7 @@ void LayerDatabase::convertAnonymousLayers(
 
         saveUsdLayerToMayaFile(session, true);
 
+        // TODO: should update the target layer of the proxy shape if the session was the target.
         setValueForAttr(
             proxyNode,
             MayaUsdProxyShapeBase::sessionLayerNameAttr,

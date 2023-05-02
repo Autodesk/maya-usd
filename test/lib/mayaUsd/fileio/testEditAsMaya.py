@@ -25,6 +25,7 @@ from maya import OpenMayaAnim as OMA
 
 import mayaUsd.lib
 
+import ufeUtils
 import mayaUtils
 import mayaUsd.ufe
 
@@ -324,7 +325,7 @@ class EditAsMayaTestCase(unittest.TestCase):
 
         verifyEditedScene()
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4029', 'Test only available in UFE preview version 0.4.29 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testEditAsMayaUIInfo(self):
         '''Edit a USD transform as a Maya Object and test the UI Info.'''
 

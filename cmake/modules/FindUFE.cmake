@@ -50,17 +50,10 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/ufe.h")
 
     if(UFE_MAJOR_VERSION VERSION_EQUAL "0")
         math(EXPR UFE_PREVIEW_VERSION_NUM "${UFE_MINOR_VERSION} * 1000 + ${UFE_PATCH_LEVEL}")
-    elseif(UFE_VERSION VERSION_EQUAL "4.0.0")
-        # Temporary. Once next Maya PR is released with UFE v4.0.0 this should
-        # be removed (along with all the UFE_PREVIEW_VERSION_NUM checks).
-        set(UFE_PREVIEW_VERSION_NUM 4045)
     elseif(UFE_VERSION VERSION_EQUAL "4.1.0")
         # Temporary. Once next Maya PR is released with UFE v4.1.0 this should
         # be removed (along with all the UFE_PREVIEW_VERSION_NUM checks).
-        # TODO - YY needs to be replaced with the "last" patch value before the bump
-        #        to 4.1.0.
-        #set(UFE_PREVIEW_VERSION_NUM 41YY)
-        message(FATAL_ERROR "Modification required to set UFE_PREVIEW_VERSION_NUM for Ufe v4.1")
+        set(UFE_PREVIEW_VERSION_NUM 4100)
     elseif((UFE_VERSION VERSION_GREATER_EQUAL "4.0.100") AND (UFE_VERSION VERSION_LESS "5.0.0"))
         # Temporary. Once next Maya PR is released with UFE v4.X.0 this should
         # be changed into UFE_PREVIEW_VERSION_NUM of 4XYY, where YY is the last value from "4.0.YY"

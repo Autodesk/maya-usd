@@ -351,7 +351,7 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4015', 'Test only available in UFE preview version 0.4.15 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testAttributeFilename(self):
         '''Test the Filename attribute type.'''
 
@@ -428,7 +428,7 @@ class AttributeTestCase(unittest.TestCase):
         self.runMayaGetAttrTest(ufeAttr)
 
     @unittest.skipIf(os.getenv('USD_HAS_MX_METADATA_SUPPORT', 'NOT-FOUND') not in ('1', "TRUE"), 'Test only available if USD can read MaterialX metadata')
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4001', 'nodeDefHandler is only available in UFE preview version 0.4.1 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'nodeDefHandler is only available in UFE v4 or greater')
     def testAttributeEnumStringToken(self):
         '''Test the EnumString attribute type that stores a token instead of a string.'''
 
@@ -645,7 +645,7 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '4015', 'Test not available in UFE preview version 0.4.15 and greater')
+    @unittest.skipIf(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test not available in UFE v4 or greater')
     def testAttributeColorFloat3(self):
         '''Test the ColorFloat3 attribute type.'''
 
@@ -685,7 +685,7 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4015', 'Test only available in UFE preview version 0.4.15 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testAttributeColorFloat3(self):
         '''Test the ColorFloat3 attribute type.'''
 
@@ -723,7 +723,7 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4015', 'Test only available in UFE preview version 0.4.15 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE preview v4 or greater')
     def testAttributeColorFloat4(self):
         '''Test the ColorFloat4 attribute type.'''
 
@@ -766,7 +766,7 @@ class AttributeTestCase(unittest.TestCase):
         # I could not find an int3 attribute to test with.
         pass
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4015', 'Test only available in UFE preview version 0.4.15 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testAttributeFloat2(self):
         '''Test the Float2 attribute type.'''
 
@@ -840,7 +840,7 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4015', 'Test only available in UFE preview version 0.4.15 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testAttributeFloat4(self):
         '''Test the Float4 attribute type.'''
 
@@ -916,7 +916,7 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4015', 'Test only available in UFE preview version 0.4.15 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testAttributeMatrix3d(self):
         '''Test the Matrix3d attribute type.'''
 
@@ -953,7 +953,7 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4015', 'Test only available in UFE preview version 0.4.15 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testAttributeMatrix4d(self):
         '''Test the Matrix4d attribute type.'''
 
@@ -990,7 +990,7 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
 
-    @unittest.skipUnless(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test for UFE preview version 0.4.23 and earlier')
+    @unittest.skipIf(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test for UFE v3 and earlier')
     def testObservation(self):
         '''
         Test Attributes observation interface.
@@ -1162,7 +1162,7 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(ball35Obs.notifications, 3)
         self.assertEqual(globalObs.notifications, 11)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4024', 'Test for UFE preview version 0.4.24 and later')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test for UFE v4 and later')
     def testObservationWithFineGrainedNotifications(self):
         '''
         Test Attributes observation interface.
@@ -1248,47 +1248,47 @@ class AttributeTestCase(unittest.TestCase):
         # "Props" and "Room_set". Ufe should be filtering out those notifications
         # so the global observer should still only see one notification.
         ufeCmd.execute(ball34XlateAttr.setCmd(ufe.Vector3d(4, 4, 15)))
-        ball34Obs.assertNotificationCount(self, numAdded = 1, numValue = 1)
+        ball34Obs.assertNotificationCount(self, numValue = 2)
         ball35Obs.assertNotificationCount(self)
-        globalObs.assertNotificationCount(self, numAdded = 1, numValue = 1)
+        globalObs.assertNotificationCount(self, numValue = 2)
 
         # The second modification only sends one USD notification for "xformOps:translate"
         # because all the spec's already exist. Ufe should also see one notification.
         ufeCmd.execute(ball34XlateAttr.setCmd(ufe.Vector3d(4, 4, 20)))
-        ball34Obs.assertNotificationCount(self, numAdded = 1, numValue = 2)
+        ball34Obs.assertNotificationCount(self, numValue = 3)
         ball35Obs.assertNotificationCount(self)
-        globalObs.assertNotificationCount(self, numAdded = 1, numValue = 2)
+        globalObs.assertNotificationCount(self, numValue = 3)
 
         # Undo, redo
         cmds.undo()
-        ball34Obs.assertNotificationCount(self, numAdded = 1, numValue = 3)
+        ball34Obs.assertNotificationCount(self, numValue = 4)
         ball35Obs.assertNotificationCount(self)
-        globalObs.assertNotificationCount(self, numAdded = 1, numValue = 3)
+        globalObs.assertNotificationCount(self, numValue = 4)
 
         cmds.redo()
-        ball34Obs.assertNotificationCount(self, numAdded = 1, numValue = 4)
+        ball34Obs.assertNotificationCount(self, numValue = 5)
         ball35Obs.assertNotificationCount(self)
-        globalObs.assertNotificationCount(self, numAdded = 1, numValue = 4)
+        globalObs.assertNotificationCount(self, numValue = 5)
 
         # get ready to undo the first modification
         cmds.undo()
-        ball34Obs.assertNotificationCount(self, numAdded = 1, numValue = 5)
+        ball34Obs.assertNotificationCount(self, numValue = 6)
         ball35Obs.assertNotificationCount(self)
-        globalObs.assertNotificationCount(self, numAdded = 1, numValue = 5)
+        globalObs.assertNotificationCount(self, numValue = 6)
 
         # Undo-ing the modification which created the USD specs is a little
         # different in USD, but from Ufe we should just still see one notification.
         cmds.undo()
-        ball34Obs.assertNotificationCount(self, numAdded = 1, numRemoved = 1, numValue = 5)
+        ball34Obs.assertNotificationCount(self, numRemoved = 1, numValue = 6)
         ball35Obs.assertNotificationCount(self)
-        globalObs.assertNotificationCount(self, numAdded = 1, numRemoved = 1, numValue = 5)
+        globalObs.assertNotificationCount(self, numRemoved = 1, numValue = 6)
 
         cmds.redo()
         # Note that UsdUndoHelper add an attribute with its value in one shot, which results in a
         # single AttributeAdded notification:
-        ball34Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 5)
+        ball34Obs.assertNotificationCount(self, numRemoved = 1, numValue = 7)
         ball35Obs.assertNotificationCount(self)
-        globalObs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 5)
+        globalObs.assertNotificationCount(self, numRemoved = 1, numValue = 7)
 
         # Make a change to ball35, global and ball35 observers change.
         ball35Attrs = ufe.Attributes.attributes(ball35)
@@ -1296,20 +1296,20 @@ class AttributeTestCase(unittest.TestCase):
 
         # "xformOp:translate"
         ufeCmd.execute(ball35XlateAttr.setCmd(ufe.Vector3d(4, 8, 15)))
-        ball34Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 5)
-        ball35Obs.assertNotificationCount(self, numAdded = 1, numValue = 1)
-        globalObs.assertNotificationCount(self, numAdded = 3, numRemoved = 1, numValue = 6)
+        ball34Obs.assertNotificationCount(self, numRemoved = 1, numValue = 7)
+        ball35Obs.assertNotificationCount(self, numValue = 2)
+        globalObs.assertNotificationCount(self, numRemoved = 1, numValue = 9)
 
         # Undo, redo
         cmds.undo()
-        ball34Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 5)
-        ball35Obs.assertNotificationCount(self, numAdded = 1, numRemoved = 1, numValue = 1)
-        globalObs.assertNotificationCount(self, numAdded = 3, numRemoved = 2, numValue = 6)
+        ball34Obs.assertNotificationCount(self, numRemoved = 1, numValue = 7)
+        ball35Obs.assertNotificationCount(self, numRemoved = 1, numValue = 2)
+        globalObs.assertNotificationCount(self, numRemoved = 2, numValue = 9)
 
         cmds.redo()
-        ball34Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 5)
-        ball35Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 1)
-        globalObs.assertNotificationCount(self, numAdded = 4, numRemoved = 2, numValue = 6)
+        ball34Obs.assertNotificationCount(self, numRemoved = 1, numValue = 7)
+        ball35Obs.assertNotificationCount(self, numRemoved = 1, numValue = 3)
+        globalObs.assertNotificationCount(self, numRemoved = 2, numValue = 10)
 
         # Test removeObserver.
         ufe.Attributes.removeObserver(ball34, ball34Obs)
@@ -1322,9 +1322,9 @@ class AttributeTestCase(unittest.TestCase):
 
         ufeCmd.execute(ball34XlateAttr.setCmd(ufe.Vector3d(4, 4, 25)))
 
-        ball34Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 5)
-        ball35Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 1)
-        globalObs.assertNotificationCount(self, numAdded = 4, numRemoved = 2, numValue = 7)
+        ball34Obs.assertNotificationCount(self, numRemoved = 1, numValue = 7)
+        ball35Obs.assertNotificationCount(self, numRemoved = 1, numValue = 3)
+        globalObs.assertNotificationCount(self, numRemoved = 2, numValue = 11)
 
         ufe.Attributes.removeObserver(globalObs)
 
@@ -1332,9 +1332,9 @@ class AttributeTestCase(unittest.TestCase):
 
         ufeCmd.execute(ball34XlateAttr.setCmd(ufe.Vector3d(7, 8, 9)))
 
-        ball34Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 5)
-        ball35Obs.assertNotificationCount(self, numAdded = 2, numRemoved = 1, numValue = 1)
-        globalObs.assertNotificationCount(self, numAdded = 4, numRemoved = 2, numValue = 7)
+        ball34Obs.assertNotificationCount(self, numRemoved = 1, numValue = 7)
+        ball35Obs.assertNotificationCount(self, numRemoved = 1, numValue = 3)
+        globalObs.assertNotificationCount(self, numRemoved = 2, numValue = 11)
 
     def testAttrChangeRedoAfterPrimCreateRedo(self):
         '''Redo attribute change after redo of prim creation.'''
@@ -1782,7 +1782,7 @@ class AttributeTestCase(unittest.TestCase):
         shaderAttr.set(newValue)
         validation(self, shaderAttr.get(), newValue)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4015', 'Test only available in UFE preview version 0.4.15 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testCreateAttributeTypes(self):
         """Tests all shader attribute types"""
@@ -1903,7 +1903,7 @@ class AttributeTestCase(unittest.TestCase):
             attr = shaderAttrs.attribute("inputs:" + attrName)
             self.assertEqual(str(attr.getMetadata(metaName)), metaValue)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testCreateUsdPreviewSurfaceAttribute(self):
         cmds.file(new=True, force=True)
@@ -1925,7 +1925,6 @@ class AttributeTestCase(unittest.TestCase):
         '''Test the name prettification routine.'''
         self.assertEqual(mayaUsdLib.Util.prettifyName("standard_surface"), "Standard Surface")
         self.assertEqual(mayaUsdLib.Util.prettifyName("standardSurface"), "Standard Surface")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("UsdPreviewSurface"), "Usd Preview Surface")
         self.assertEqual(mayaUsdLib.Util.prettifyName("USDPreviewSurface"), "USD Preview Surface")
         self.assertEqual(mayaUsdLib.Util.prettifyName("xformOp:rotateXYZ"), "Xform Op Rotate XYZ")
         self.assertEqual(mayaUsdLib.Util.prettifyName("ior"), "Ior")
@@ -1933,8 +1932,12 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(mayaUsdLib.Util.prettifyName("specular_IOR"), "Specular IOR")
         # This is as expected as we do not insert space on digit<->alpha transitions:
         self.assertEqual(mayaUsdLib.Util.prettifyName("Dx11Shader"), "Dx11Shader")
+        # Explicit substitutions
+        self.assertEqual(mayaUsdLib.Util.prettifyName("UsdPreviewSurface"), "USD Preview Surface")
+        self.assertEqual(mayaUsdLib.Util.prettifyName("mtlx"), "MaterialX")
+        self.assertEqual(mayaUsdLib.Util.prettifyName("gltf_pbr"), "glTF PBR")
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4037', 'Test only available in UFE preview version 0.4.37 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testAttributeMetadataChanged(self):
         cmds.file(new=True, force=True)
         testFile = testUtils.getTestScene("MaterialX", "sin_compound.usda")

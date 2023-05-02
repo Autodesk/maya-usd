@@ -216,7 +216,7 @@ PXR_NS::UsdStageRefPtr const& LayerTreeItem::stage() const
 
 bool LayerTreeItem::isMuted() const
 {
-    return isInvalidLayer() ? false : stage()->IsLayerMuted(_layer->GetIdentifier());
+    return isInvalidLayer() || !stage() ? false : stage()->IsLayerMuted(_layer->GetIdentifier());
 }
 
 bool LayerTreeItem::appearsMuted() const
@@ -352,7 +352,12 @@ void LayerTreeItem::saveEditsNoPrompt()
         if (!isSessionLayer())
             saveAnonymousLayer();
     } else {
-        MayaUsd::utils::saveLayerWithFormat(layer());
+        if (!MayaUsd::utils::saveLayerWithFormat(layer())) {
+            MString errMsg;
+            MString layerName(layer()->GetDisplayName().c_str());
+            errMsg.format("Could not save layer ^1s.", layerName);
+            MGlobal::displayError(errMsg);
+        }
     }
 }
 
@@ -402,7 +407,10 @@ void LayerTreeItem::saveAnonymousLayer()
                     auto model = parentModel();
                     MayaUsd::utils::updateSubLayer(parentItem->layer(), layer(), fileName);
                     if (setTarget) {
-                        sessionState->stage()->SetEditTarget(newLayer);
+                        auto stage = sessionState->stage();
+                        if (stage) {
+                            stage->SetEditTarget(newLayer);
+                        }
                     }
                     model->selectUsdLayerOnIdle(newLayer);
                 } else {

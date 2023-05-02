@@ -16,6 +16,7 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UfeVersionCompat.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
 #include <ufe/path.h>
@@ -26,7 +27,7 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief UsdUndoRenameCommand
-#if (UFE_PREVIEW_VERSION_NUM >= 4041)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 class MAYAUSD_CORE_PUBLIC UsdUndoRenameCommand : public Ufe::SceneItemResultUndoableCommand
 #else
 class MAYAUSD_CORE_PUBLIC UsdUndoRenameCommand : public Ufe::UndoableCommand
@@ -49,9 +50,7 @@ public:
     create(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName);
 
     UsdSceneItem::Ptr renamedItem() const;
-#if (UFE_PREVIEW_VERSION_NUM >= 4041)
-    Ufe::SceneItem::Ptr sceneItem() const override { return renamedItem(); }
-#endif
+    UFE_V4(Ufe::SceneItem::Ptr sceneItem() const override { return renamedItem(); })
 
 private:
     void renameRedo();
