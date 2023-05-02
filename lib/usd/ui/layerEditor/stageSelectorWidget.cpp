@@ -19,8 +19,10 @@
 #include "sessionState.h"
 #include "stringResources.h"
 
+#if defined(WANT_UFE_BUILD)
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Utils.h>
+#endif
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/common.h>
