@@ -159,27 +159,6 @@ void StageSelectorSelectionObserver::removeStageSelector(StageSelectorWidget& se
     _stageSelectors.erase(&selector);
 }
 
-#else
-
-class StageSelectorSelectionObserver : public Ufe::Observer
-{
-    static const std::shared_ptr<StageSelectorSelectionObserver>& instance()
-    {
-        static auto observer = std::make_shared<StageSelectorSelectionObserver>();
-        return observer;
-    }
-
-    void addStageSelector(StageSelectorWidget& /* selector */)
-    {
-        // No UFE: do nothing.
-    }
-
-    void removeStageSelector(StageSelectorWidget& /* selector */)
-    {
-        // No UFE: do nothing.
-    }
-};
-
 #endif
 
 } // namespace
@@ -191,12 +170,16 @@ StageSelectorWidget::StageSelectorWidget(SessionState* in_sessionState, QWidget*
 {
     createUI();
     setSessionState(in_sessionState);
+#if defined(WANT_UFE_BUILD)
     StageSelectorSelectionObserver::instance()->addStageSelector(*this);
+#endif
 }
 
 StageSelectorWidget::~StageSelectorWidget()
 {
+#if defined(WANT_UFE_BUILD)
     StageSelectorSelectionObserver::instance()->removeStageSelector(*this);
+#endif
 }
 
 void StageSelectorWidget::createUI()
@@ -286,13 +269,6 @@ void StageSelectorWidget::selectedIndexChanged(int index)
     _internalChange = false;
 }
 
-// Check if either the scene item itself is a proxy shape or it is a prim under
-// the proxy shape.
-static PXR_NS::MayaUsdProxyShapeBase* getProxyShapeFromSelection(const Ufe::SceneItem::Ptr& item)
-{
-    return MayaUsd::ufe::getProxyShape(item->path());
-}
-
 void StageSelectorWidget::selectionChanged()
 {
 #if defined(WANT_UFE_BUILD)
@@ -308,7 +284,7 @@ void StageSelectorWidget::selectionChanged()
     // that is a USD item. So if multiple stages are selected, the first one wins.
     const Ufe::Selection& ufeSelection = *ufeGlobalSelection;
     for (const auto& item : ufeSelection) {
-        auto proxyShapePtr = getProxyShapeFromSelection(item);
+        auto proxyShapePtr = MayaUsd::ufe::getProxyShape(item->path());
         if (!proxyShapePtr)
             continue;
 
