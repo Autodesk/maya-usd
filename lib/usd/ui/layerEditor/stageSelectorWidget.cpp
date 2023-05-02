@@ -74,13 +74,13 @@ int getEntryIndexById(
 
 bool loadStagePinnedOption()
 {
-    const MString optionName = MayaUsdOptionVars->PinLayerEditorStage.GetText();
+    const MString optionName = PXR_NS::MayaUsdOptionVars->PinLayerEditorStage.GetText();
     return MGlobal::optionVarExists(optionName) && MGlobal::optionVarIntValue(optionName) != 0;
 }
 
 void saveStagePinnedOption(bool isPinned)
 {
-    const MString optionName = MayaUsdOptionVars->PinLayerEditorStage.GetText();
+    const MString optionName = PXR_NS::MayaUsdOptionVars->PinLayerEditorStage.GetText();
     MGlobal::setOptionVarValue(optionName, isPinned ? 1 : 0);
 }
 
