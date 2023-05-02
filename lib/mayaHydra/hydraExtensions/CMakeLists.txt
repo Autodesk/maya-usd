@@ -61,7 +61,6 @@ if(NOT BUILD_MAYAUSD_LIBRARY)
             $<$<BOOL:${IS_LINUX}>:GL_GLEXT_PROTOTYPES>
             $<$<BOOL:${IS_LINUX}>:GLX_GLXEXT_PROTOTYPES>
             $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:WANT_MATERIALX_BUILD>
-            $<$<BOOL:${Qt5_FOUND}>:WANT_QT_BUILD>
             $<$<BOOL:${BUILD_MAYAHYDRALIB}>:BUILD_MAYAHYDRALIB>
 
             # this flag is needed when building maya-usd in Maya
