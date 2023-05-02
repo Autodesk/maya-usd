@@ -20,7 +20,6 @@
 #include "stringResources.h"
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
 
 #include <pxr/pxr.h>
@@ -289,27 +288,7 @@ void StageSelectorWidget::selectedIndexChanged(int index)
 // the proxy shape.
 static PXR_NS::MayaUsdProxyShapeBase* getProxyShapeFromSelection(const Ufe::SceneItem::Ptr& item)
 {
-
-    // Check if the selection is the proxy shape itself.
-    auto proxyShapePtr = MayaUsd::ufe::getProxyShape(item->path());
-    if (proxyShapePtr)
-        return proxyShapePtr;
-
-    // Check if the selection is a prim and find the associated
-    // proxy shape.
-    auto usdItem = std::dynamic_pointer_cast<MayaUsd::ufe::UsdSceneItem>(item);
-    if (!usdItem)
-        return nullptr;
-
-    const PXR_NS::UsdPrim& prim = usdItem->prim();
-    if (!prim)
-        return nullptr;
-
-    auto stage = prim.GetStage();
-    if (!stage)
-        return nullptr;
-
-    return MayaUsd::ufe::getProxyShape(MayaUsd::ufe::stagePath(stage));
+    return MayaUsd::ufe::getProxyShape(item->path());
 }
 
 void StageSelectorWidget::selectionChanged()
