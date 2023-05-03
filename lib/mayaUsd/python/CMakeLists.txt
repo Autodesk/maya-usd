@@ -78,6 +78,11 @@ target_compile_definitions(${PYTHON_TARGET_NAME}
         MFB_PACKAGE_MODULE=${PROJECT_NAME}
 )
 
+# QT_NO_KEYWORDS prevents Qt from defining the foreach, signals, slots and emit macros.
+# this avoids overlap between Qt macros and boost, and enforces using Q_ macros.
+set_target_properties(Qt5::Core PROPERTIES INTERFACE_COMPILE_DEFINITIONS QT_NO_KEYWORDS)
+
+
 mayaUsd_compile_config(${PYTHON_TARGET_NAME})
 
 # -----------------------------------------------------------------------------
@@ -86,6 +91,10 @@ mayaUsd_compile_config(${PYTHON_TARGET_NAME})
 target_link_libraries(${PYTHON_TARGET_NAME}
     PRIVATE
         ${PROJECT_NAME}
+    PRIVATE
+        Qt5::Core
+        Qt5::Gui
+        Qt5::Widgets
 )
 
 # -----------------------------------------------------------------------------

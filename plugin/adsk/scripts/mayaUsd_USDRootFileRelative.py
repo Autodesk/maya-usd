@@ -6,13 +6,9 @@ from mayaUSDRegisterStrings import getMayaUsdString
 from mayaUsdMayaReferenceUtils import pushOptionsUITemplate
 
 try:
-    from PySide2.QtCore import QObject, QFileInfo
-    from PySide2.QtWidgets import QFileDialog, QLayout, QWidget, QLineEdit, QDialogButtonBox, QComboBox
-    from shiboken2 import wrapInstance
+    from PySide2.QtWidgets import QFileDialog, QLineEdit, QDialogButtonBox, QComboBox, QApplication
 except:
-    from PySide6.QtCore import QObject, QFileInfo
-    from PySide6.QtWidgets import QFileDialog, QLayout, QWidget, QLineEdit, QDialogButtonBox, QComboBox
-    from shiboken6 import wrapInstance
+    from PySide6.QtWidgets import QFileDialog, QLineEdit, QDialogButtonBox, QComboBox, QApplication
 
 # Global variables
 _relativeToFilePath = None
@@ -182,17 +178,14 @@ class usdFileRelative(object):
         """
 
         # Get the Qt pointer for the input parent string (layout from mel).
-        ptr = omui.MQtUtil.findLayout(parentLayout)
-        if ptr is not None:
-            # Find the top-level window from that parent layout.
-            maya_widget = wrapInstance(int(ptr), QWidget)
-            pp = maya_widget.parent()
-            while pp:
-                if pp.inherits('QFileDialog'):
-                    cls._fileDialog = pp
-                pp = pp.parent()
-                if pp:
-                    maya_window = pp
+        maya_window_name = mayaUsdLib.Util.findLayoutWindowName(parentLayout)
+        for window in QApplication.topLevelWidgets():
+            if window.windowTitle() == maya_window_name:
+                maya_window = window
+                cls._fileDialog = maya_window
+                break
+        else:
+            print('Could not find dialog named %s' % maya_window_name)
 
         if maya_window:
             # Find the file name edit field and connect to it to be notified when text changes.

@@ -23,6 +23,11 @@
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/pyConversions.h>
 
+#include <maya/MQtUtil.h>
+
+#include <QtGui/QWindow.h>
+#include <QtWidgets/QDialog.h>
+#include <QtWidgets/QWidget.h>
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
 
@@ -52,6 +57,23 @@ std::string ensureUSDFileExtension(const std::string& fileToCheck)
     return ret;
 }
 
+std::string findLayoutWindowName(const std::string& layoutName)
+{
+    QWidget* layout = MQtUtil::findLayout(MString(layoutName.c_str()));
+    while (layout) {
+        if (dynamic_cast<QDialog*>(layout)) {
+            return layout->windowTitle().toStdString();
+        }
+        if (dynamic_cast<QWindow*>(layout)) {
+            return layout->windowTitle().toStdString();
+        }
+        QWidget* parent = layout->parentWidget();
+        layout = parent;
+    }
+
+    return {};
+}
+
 } // namespace
 
 void wrapUtil()
@@ -67,5 +89,7 @@ void wrapUtil()
                   UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile)
               .def("getPathRelativeToDirectory", UsdMayaUtilFileSystem::getPathRelativeToDirectory)
               .def("ensureUSDFileExtension", ensureUSDFileExtension)
+              .def("findLayoutWindowName", findLayoutWindowName)
+              .staticmethod("findLayoutWindowName")
               .staticmethod("getPathRelativeToMayaSceneFile");
 }
