@@ -195,7 +195,7 @@ void MayaUsdProxyShapeSceneIndex::Populate()
             // care of inside MayaUsdProxyShapeSceneIndex::_StageSet callback.
             {
                 _usdImagingStageSceneIndex->SetStage(stage);
-#if PXR_VERSION <= 2305
+#if PXR_VERSION < 2305
                 // In most recent USD, Populate is called from within SetStage, so there is no need
                 // to callsites to call it explicitly
                 _usdImagingStageSceneIndex->Populate();
