@@ -83,7 +83,7 @@ target_compile_definitions(${PYTHON_TARGET_NAME}
 set_target_properties(Qt5::Core PROPERTIES INTERFACE_COMPILE_DEFINITIONS QT_NO_KEYWORDS)
 
 if(IS_LINUX)
-    target_compile_definitions(${PROJECT_NAME}
+    target_compile_definitions(${PYTHON_TARGET_NAME}
         PRIVATE
             LINUX=1
     )
