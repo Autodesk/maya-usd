@@ -25,9 +25,9 @@
 
 #include <maya/MQtUtil.h>
 
-#include <QtGui/QWindow.h>
-#include <QtWidgets/QDialog.h>
-#include <QtWidgets/QWidget.h>
+#include <QtGui/QWindow>
+#include <QtWidgets/QDialog>
+#include <QtWidgets/QWidget>
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
 
