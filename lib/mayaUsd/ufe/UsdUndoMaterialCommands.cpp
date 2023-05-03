@@ -86,31 +86,6 @@ bool connectShaderToMaterial(
     UsdShadeConnectableAPI::ConnectToSource(materialOutput, shaderOutput);
     return true;
 }
-#endif
-
-bool _BindMaterialCompatiblePrim(const UsdPrim& usdPrim)
-{
-    if (UsdShadeNodeGraph(usdPrim) || UsdShadeShader(usdPrim)) {
-        // The binding schema can be applied anywhere, but it makes no sense on a
-        // material or a shader.
-        return false;
-    }
-    if (UsdGeomScope(usdPrim)
-        && usdPrim.GetName() == UsdMayaJobExportArgs::GetDefaultMaterialsScopeName()) {
-        return false;
-    }
-    if (auto subset = UsdGeomSubset(usdPrim)) {
-        TfToken elementType;
-        subset.GetElementTypeAttr().Get(&elementType);
-        if (elementType != UsdGeomTokens->face) {
-            return false;
-        }
-    }
-    if (PXR_NS::UsdShadeMaterialBindingAPI::CanApply(usdPrim)) {
-        return true;
-    }
-    return false;
-}
 
 //! Returns true if \p item is a materials scope.
 bool isMaterialsScope(const Ufe::SceneItem::Ptr& item)
@@ -178,6 +153,31 @@ Ufe::SceneItem::Ptr getMaterialsScope(const Ufe::Path& parentPath)
         // Name is already used by something that is not a scope. Try the next name.
         scopeName = scopeNamePrefix + std::to_string(i);
     }
+}
+#endif
+
+bool _BindMaterialCompatiblePrim(const UsdPrim& usdPrim)
+{
+    if (UsdShadeNodeGraph(usdPrim) || UsdShadeShader(usdPrim)) {
+        // The binding schema can be applied anywhere, but it makes no sense on a
+        // material or a shader.
+        return false;
+    }
+    if (UsdGeomScope(usdPrim)
+        && usdPrim.GetName() == UsdMayaJobExportArgs::GetDefaultMaterialsScopeName()) {
+        return false;
+    }
+    if (auto subset = UsdGeomSubset(usdPrim)) {
+        TfToken elementType;
+        subset.GetElementTypeAttr().Get(&elementType);
+        if (elementType != UsdGeomTokens->face) {
+            return false;
+        }
+    }
+    if (PXR_NS::UsdShadeMaterialBindingAPI::CanApply(usdPrim)) {
+        return true;
+    }
+    return false;
 }
 
 } // namespace
