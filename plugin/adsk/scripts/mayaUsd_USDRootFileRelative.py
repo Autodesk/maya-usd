@@ -169,6 +169,26 @@ class usdFileRelative(object):
         relative = cmds.checkBox(cls.kMakePathRelativeCheckBox, query=True, value=True)
         cmds.optionVar(iv=('mayaUsd_MakePathRelativeTo' + relativeToWhat, relative))
 
+    @staticmethod
+    def findWindowNameFromLayout(layoutName):
+        """
+        Find the window name that contains the given layout.
+        """
+        window_name = cmds.layout(layoutName, query=True, parent=True)
+        if '|' in window_name:
+            window_name = window_name.split('|')[0]
+        return cmds.window(window_name, query=True, title=True)
+
+    @staticmethod
+    def findQtWindowFromTitle(title):
+        """
+        Find the Qt window that has the given title.
+        """
+        for window in QApplication.topLevelWidgets():
+            if window.windowTitle() == title:
+                return window
+        return None
+
     @classmethod
     def connectToDialogControls(cls, parentLayout):
         """
@@ -177,13 +197,11 @@ class usdFileRelative(object):
         Used so we can update the file path preview fields.
         """
 
-        # Get the Qt pointer for the input parent string (layout from mel).
-        maya_window_name = mayaUsdLib.Util.findLayoutWindowName(parentLayout)
-        for window in QApplication.topLevelWidgets():
-            if window.windowTitle() == maya_window_name:
-                maya_window = window
-                cls._fileDialog = maya_window
-                break
+        # Get the Qt Window containing the input parent layout from mel.
+        maya_window_name = usdFileRelative.findWindowNameFromLayout(parentLayout)
+        maya_window = usdFileRelative.findQtWindowFromTitle(maya_window_name)
+        if maya_window:
+            cls._fileDialog = maya_window
         else:
             print('Could not find dialog named %s' % maya_window_name)
 
