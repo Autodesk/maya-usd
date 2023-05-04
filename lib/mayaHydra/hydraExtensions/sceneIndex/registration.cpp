@@ -1,25 +1,37 @@
 //
 // Copyright 2023 Autodesk, Inc. All rights reserved.
 //
-// Licensed under the Apache License, Version 2.0 (the “License”);
+// Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
 //   http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an “AS IS” BASIS,
+// distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
 
 #include <mayaHydraLib/sceneIndex/registration.h>
+#include <mayaHydraLib/utils.h>
 
 #include <pxr/imaging/hd/dataSourceTypeDefs.h>
 #include <pxr/imaging/hd/retainedDataSource.h>
 #include <pxr/imaging/hd/sceneIndexPlugin.h>
 #include <pxr/imaging/hd/sceneIndexPluginRegistry.h>
+#include <pxr/imaging/hd/renderDelegate.h>
+#include <pxr/usd/sdf/path.h>
+
+// Temp workaround to get the code to compile.
+// this will not be required once the pull request to USD header is complete.
+// Details of the issue - https://groups.google.com/g/usd-interest/c/0kyY3Z2sgjo
+// TODO: remove conditional #undefs after PR is complete.
+#ifdef interface
+#undef interface
+#endif
+#include <pxr/imaging/hdsi/terminalsResolvingSceneIndex.h>
 
 #include <maya/MDGMessage.h>
 #include <maya/MFnDependencyNode.h>
@@ -27,15 +39,9 @@
 #include <maya/MMessage.h>
 #include <maya/MNodeMessage.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include <ufeExtensions/Global.h>
 
-namespace {
-constexpr char kDataSourceEntryName[] = { "object" };
-constexpr char kSceneIndexPluginSuffix[] = {
-    "MayaNodeSceneIndexPlugin"
-}; // every scene index plugin compatible with the hydra viewport require this suffix
-constexpr char kDagNodeMessageName[] = { "dagNode" };
-} // namespace
+PXR_NAMESPACE_OPEN_SCOPE
 
 /* To add a custom scene index, a customer plugin must:
  1. Define a Maya dag node via the MPxNode interface, and register it MFnPlugin::registerNode. This
@@ -88,8 +94,11 @@ You may want to see the full source code in the Maya USD open source repository 
 https://github.com/Autodesk/maya-usd/tree/dev/lib/mayaUsd/sceneIndex
 */
 
+namespace {
+constexpr char kDagNodeMessageName[] = { "dagNode" };
+}
 // MayaHydraSceneIndexRegistration is used to register a scene index for a given dag node type.
-MayaHydraSceneIndexRegistration::MayaHydraSceneIndexRegistration(HdRenderIndex* renderIndex)
+MayaHydraSceneIndexRegistry::MayaHydraSceneIndexRegistry(HdRenderIndex* renderIndex)
     : _renderIndex(renderIndex)
 {
     // Begin registering of custom scene indices for given node types
@@ -102,9 +111,13 @@ MayaHydraSceneIndexRegistration::MayaHydraSceneIndexRegistration(HdRenderIndex* 
         MCallbackId id;
         MStatus     status;
         id = MDGMessage::addNodeAddedCallback(
-            _CustomSceneIndexNodeAddedCallback, kDagNodeMessageName, this, &status);
-        if (status == MS::kSuccess)
-            _customSceneIndexAddedCallbacks.append(id);
+            _SceneIndexNodeAddedCallback, kDagNodeMessageName, this, &status);
+        if (TF_VERIFY(status == MS::kSuccess, "NodeAdded callback registration failed."))
+            _sceneIndexDagNodeMessageCallbacks.append(id);
+        id = MDGMessage::addNodeRemovedCallback(
+            _SceneIndexNodeRemovedCallback, kDagNodeMessageName, this, &status);
+        if (TF_VERIFY(status == MS::kSuccess, "NodeRemoved callback registration failed."))
+            _sceneIndexDagNodeMessageCallbacks.append(id);
 
         // Iterate over scene to find out existing node which will miss eventual dagNode added
         // callbacks
@@ -113,98 +126,168 @@ MayaHydraSceneIndexRegistration::MayaHydraSceneIndexRegistration(HdRenderIndex* 
             MStatus status;
             MObject dagNode(nodesDagIt.item(&status));
             if (TF_VERIFY(status == MS::kSuccess)) {
-                _AddCustomSceneIndexForNode(dagNode);
+                _AddSceneIndexForNode(dagNode);
             }
         }
     }
 }
 
-MayaHydraSceneIndexRegistration::~MayaHydraSceneIndexRegistration()
+// Retrieve information relevant to registration such as UFE compatibility of a particular scene
+// index
+MayaHydraSceneIndexRegistrationPtr
+MayaHydraSceneIndexRegistry::GetSceneIndexRegistrationForRprim(const SdfPath& rprimPath) const
 {
-    MDGMessage::removeCallbacks(_customSceneIndexAddedCallbacks);
-    for (auto it : _customSceneIndexNodePreRemovalCallbacks) {
-        MNodeMessage::removeCallback(it.second);
+    // Retrieve the rprimPath prefix. Composed of the scene index plugin path, and a name used as a
+    // disambiguator. MAYA-128179: Revisit this operation. SdfPath operation is slow. No way to get
+    // first component only
+    SdfPath sceneIndexPluginPath = rprimPath.GetParentPath();
+    while (sceneIndexPluginPath.GetPathElementCount() > 2)
+        sceneIndexPluginPath = sceneIndexPluginPath.GetParentPath();
+    auto it = _registrations.find(sceneIndexPluginPath);
+    if (it != _registrations.end()) {
+        return it->second;
     }
-    _customSceneIndexAddedCallbacks.clear();
-    _customSceneIndexNodePreRemovalCallbacks.clear();
-    // Since render index is deleted above, scene indices must be recreated.
-    _customSceneIndices.clear();
+
+    return nullptr;
 }
 
-bool MayaHydraSceneIndexRegistration::_RemoveCustomSceneIndexForNode(const MObject& dagNode)
+MayaHydraSceneIndexRegistry::~MayaHydraSceneIndexRegistry()
+{
+    MDGMessage::removeCallbacks(_sceneIndexDagNodeMessageCallbacks);
+    _sceneIndexDagNodeMessageCallbacks.clear();
+    _registrationsByObjectHandle.clear();
+    _registrations.clear();
+}
+
+bool MayaHydraSceneIndexRegistry::_RemoveSceneIndexForNode(const MObject& dagNode)
 {
     MObjectHandle dagNodeHandle(dagNode);
-    auto          customSceneIndex = _customSceneIndices.find(dagNodeHandle);
-    if (customSceneIndex != _customSceneIndices.end()) {
-        _renderIndex->RemoveSceneIndex(customSceneIndex->second);
-        _customSceneIndices.erase(dagNodeHandle);
-        auto preRemovalCallback = _customSceneIndexNodePreRemovalCallbacks.find(dagNodeHandle);
-        if (TF_VERIFY(preRemovalCallback != _customSceneIndexNodePreRemovalCallbacks.end())) {
-            MNodeMessage::removeCallback(preRemovalCallback->second);
-            _customSceneIndexNodePreRemovalCallbacks.erase(dagNodeHandle);
-        }
+    auto          it = _registrationsByObjectHandle.find(dagNodeHandle);
+    if (it != _registrationsByObjectHandle.end()) {
+        MayaHydraSceneIndexRegistrationPtr registration(it->second);
+        _renderIndex->RemoveSceneIndex(registration->rootSceneIndex);
+        _registrationsByObjectHandle.erase(dagNodeHandle);
+        _registrations.erase(registration->sceneIndexPathPrefix);
         return true;
     }
     return false;
 }
 
-void MayaHydraSceneIndexRegistration::_AddCustomSceneIndexForNode(MObject& dagNode)
+HdSceneIndexBaseRefPtr
+MayaHydraSceneIndexRegistry::_AppendTerminalRenamingSceneIndex(HdSceneIndexBaseRefPtr sceneIndex)
+{    
+    // Get the list of renderer supported material network implementations.
+    TfTokenVector renderingContexts = _renderIndex->GetRenderDelegate()->
+                                                    GetMaterialRenderContexts();    
+    // Create remapping token pairs to help Hydra build the material networks.
+    std::map<TfToken, TfToken> terminalRemapList;
+    for (const auto& terminal : renderingContexts)
+        terminalRemapList.emplace(TfToken(terminal.GetString()+":surface"), 
+                                  HdMaterialTerminalTokens->surface);
+    return HdsiTerminalsResolvingSceneIndex::New(sceneIndex, terminalRemapList);    
+}
+
+constexpr char kSceneIndexPluginSuffix[] = {
+    "MayaNodeSceneIndexPlugin"
+}; // every scene index plugin compatible with the hydra viewport requires this suffix
+
+void MayaHydraSceneIndexRegistry::_AddSceneIndexForNode(MObject& dagNode)
 {
     MFnDependencyNode dependNodeFn(dagNode);
     // Name must match Plugin TfType registration thus must begin with upper case
-    std::string pluginName(dependNodeFn.typeName().asChar());
-    pluginName[0] = toupper(pluginName[0]);
-    pluginName += kSceneIndexPluginSuffix;
-    TfToken pluginId(pluginName);
+    std::string sceneIndexPluginName(dependNodeFn.typeName().asChar());
+    sceneIndexPluginName[0] = toupper(sceneIndexPluginName[0]);
+    sceneIndexPluginName += kSceneIndexPluginSuffix;
+    TfToken sceneIndexPluginId(sceneIndexPluginName);
 
     static HdSceneIndexPluginRegistry& sceneIndexPluginRegistry
         = HdSceneIndexPluginRegistry::GetInstance();
-    if (sceneIndexPluginRegistry.IsRegisteredPlugin(pluginId)) {
-        using HdMObjectDataSource = HdRetainedTypedSampledDataSource<MObject>;
-        TfToken                names[1] { TfToken(kDataSourceEntryName) };
-        HdDataSourceBaseHandle values[1] { HdMObjectDataSource::New(dagNode) };
-        HdSceneIndexBaseRefPtr sceneIndex = sceneIndexPluginRegistry.AppendSceneIndex(
-            pluginId, nullptr, HdRetainedContainerDataSource::New(1, names, values));
+    if (sceneIndexPluginRegistry.IsRegisteredPlugin(sceneIndexPluginId)) {
+        using MayaHydraMObjectDataSource = HdRetainedTypedSampledDataSource<MObject>;
+        using MayaHydraVersionDataSource = HdRetainedTypedSampledDataSource<int>;
+        // Functions retrieved from the scene index plugin
+        using MayaHydraInterpretRprimPathDataSource
+            = HdRetainedTypedSampledDataSource<MayaHydraInterpretRprimPath&>;
+
+        // Create the registration record which is then added into the registry if everything
+        // succeeds
+        static TfToken sDataSourceEntryNames[] { TfToken("object"),
+                                                 TfToken("version"),
+                                                 TfToken("interpretRprimPath") };
+        constexpr int  kDataSourceNumEntries = sizeof(sDataSourceEntryNames) / sizeof(TfToken);
+        MayaHydraSceneIndexRegistrationPtr registration(new MayaHydraSceneIndexRegistration());
+        HdDataSourceBaseHandle             values[] { MayaHydraMObjectDataSource::New(dagNode),
+                                          MayaHydraVersionDataSource::New(MAYAHYDRA_API_VERSION),
+                                          MayaHydraInterpretRprimPathDataSource::New(
+                                              registration->interpretRprimPathFn) };
+        static_assert(
+            sizeof(values) / sizeof(HdDataSourceBaseHandle) == kDataSourceNumEntries,
+            "Incorrect number of data source entries");
+        registration->pluginSceneIndex = sceneIndexPluginRegistry.AppendSceneIndex(
+            sceneIndexPluginId,
+            nullptr,
+            HdRetainedContainerDataSource::New(kDataSourceNumEntries, sDataSourceEntryNames, values));
         if (TF_VERIFY(
-                sceneIndex,
+                registration->pluginSceneIndex,
                 "HdSceneIndexBase::AppendSceneIndex failed to create %s scene index from given "
                 "node type.",
-                pluginName.c_str())) {
-            MStatus     status;
-            MCallbackId preRemovalCallback = MNodeMessage::addNodePreRemovalCallback(
-                dagNode, _CustomSceneIndexNodeRemovedCallback, this, &status);
-            if (TF_VERIFY(
-                    status != MS::kFailure, "MNodeMessage::addNodePreRemovalCallback failed")) {
-                _renderIndex->InsertSceneIndex(sceneIndex, SdfPath::AbsoluteRootPath());
+                sceneIndexPluginName.c_str())) {
+
+            MStatus  status;
+            MDagPath dagPath(MDagPath::getAPathTo(dagNode, &status));
+            if (TF_VERIFY(status == MS::kSuccess, "Incapable of finding dag path to given node")) {
+                registration->dagNode = MObjectHandle(dagNode);
+                // Construct the scene index path prefix appended to each rprim created by it.
+                // It is composed of the "scene index plugin's name" + "dag node name" +
+                // "disambiguator" The dag node name disambiguator is necessary in situation
+                // where node name isn't unique and may clash with other node defined by the
+                // same plugin.
+                registration->sceneIndexPathPrefix
+
+                    = SdfPath::AbsoluteRootPath()
+                          .AppendPath(SdfPath(sceneIndexPluginName))
+                          .AppendPath(SdfPath(
+                              std::string(dependNodeFn.name().asChar())
+                              + (dependNodeFn.hasUniqueName()
+                                     ? ""
+                                     : "__" + std::to_string(_incrementedCounterDisambiguator++))));
+
+                // HYDRA-179
+                // Inject TerminalsResolvingSceneIndex to get Hydra to handle material bindings.
+                // A simple string replacement for Hydra to identify the terminals based on the render context.
+                HdSceneIndexBaseRefPtr outSceneIndex = _AppendTerminalRenamingSceneIndex(registration->pluginSceneIndex);
+                // Sanity check
+                registration->rootSceneIndex = outSceneIndex ? outSceneIndex : registration->pluginSceneIndex;
+                // By inserting the scene index was inserted into the render index using a custom
+                // prefix, the chosen prefix will be prepended to rprims tied to that scene index
+                // automatically.
+                _renderIndex->InsertSceneIndex(
+                    registration->rootSceneIndex, registration->sceneIndexPathPrefix);
                 static SdfPath maya126790Workaround("maya126790Workaround");
-                sceneIndex->GetPrim(maya126790Workaround);
-                MObjectHandle dagNodeHandle(dagNode);
-                _customSceneIndices.insert({ dagNodeHandle, sceneIndex });
-                _customSceneIndexNodePreRemovalCallbacks.insert(
-                    { dagNodeHandle, preRemovalCallback });
+                registration->pluginSceneIndex->GetPrim(maya126790Workaround);
+
+                // Add registration record if everything succeeded
+                _registrations.insert({ registration->sceneIndexPathPrefix, registration });
+                _registrationsByObjectHandle.insert({ registration->dagNode, registration });
             }
         }
     }
 }
 
-void MayaHydraSceneIndexRegistration::_CustomSceneIndexNodeAddedCallback(
-    MObject& dagNode,
-    void*    clientData)
+void MayaHydraSceneIndexRegistry::_SceneIndexNodeAddedCallback(MObject& dagNode, void* clientData)
 {
     if (dagNode.isNull() || dagNode.apiType() != MFn::kPluginShape)
         return;
-    auto renderOverride = static_cast<MayaHydraSceneIndexRegistration*>(clientData);
-    renderOverride->_AddCustomSceneIndexForNode(dagNode);
+    auto renderOverride = static_cast<MayaHydraSceneIndexRegistry*>(clientData);
+    renderOverride->_AddSceneIndexForNode(dagNode);
 }
 
-void MayaHydraSceneIndexRegistration::_CustomSceneIndexNodeRemovedCallback(
-    MObject& dagNode,
-    void*    clientData)
+void MayaHydraSceneIndexRegistry::_SceneIndexNodeRemovedCallback(MObject& dagNode, void* clientData)
 {
     if (dagNode.isNull() || dagNode.apiType() != MFn::kPluginShape)
         return;
-    auto renderOverride = static_cast<MayaHydraSceneIndexRegistration*>(clientData);
-    renderOverride->_RemoveCustomSceneIndexForNode(dagNode);
+    auto renderOverride = static_cast<MayaHydraSceneIndexRegistry*>(clientData);
+    renderOverride->_RemoveSceneIndexForNode(dagNode);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

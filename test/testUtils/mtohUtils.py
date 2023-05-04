@@ -8,6 +8,8 @@ import fixturesUtils
 import testUtils
 from imageUtils import ImageDiffingTestCase
 
+import sys
+
 HD_STORM = "HdStormRendererPlugin"
 HD_STORM_OVERRIDE = "mayaHydraRenderOverride_" + HD_STORM
 
@@ -67,8 +69,15 @@ class MtohTestCase(ImageDiffingTestCase):
         self.cubeTrans = cmds.polyCube()[0]
         self.cubeShape = cmds.listRelatives(self.cubeTrans)[0]
         self.setHdStormRenderer()
-        self.cubeRprim = self.rprimPath(self.cubeShape)
-        self.assertInIndex(self.cubeRprim)
+        self.assertNodeNameInIndex(self.cubeShape)
+        # The single Maya cube shape maps to two rprims, the first once of
+        # which is the shape's StandardShadedItem.  The list is ordered, as the
+        # Hydra call made is HdRenderIndex::GetRprimIds(), which sorts
+        # according to std::less<SdfPath>, which will produce
+        # lexicographically-ordered paths.
+        self.cubeRprim = self.getIndex()[0]
+        cmds.select(clear=1)
+        cmds.refresh()
         self.assertVisible(self.cubeRprim)
         self.setBasicCam(dist=camDist)
         cmds.select(clear=True)
@@ -79,16 +88,6 @@ class MtohTestCase(ImageDiffingTestCase):
             color = (0.8, 0.8, 0.8)
             cmds.setAttr("standardSurface1.baseColor", type='float3', *color)
             cmds.setAttr("standardSurface1.specularRoughness", 0.4)
-
-    def rprimPath(self, fullPath):
-        if not fullPath.startswith('|'):
-            nodes = cmds.ls(fullPath, long=1)
-            if len(nodes) != 1:
-                raise RuntimeError("given fullPath {!r} mapped to {} nodes"
-                                   .format(fullPath, len(nodes)))
-            fullPath = nodes[0]
-        return '/'.join([self.delegateId, "rprims",
-                         fullPath.lstrip('|').replace('|', '/')])
 
     def getIndex(self, **kwargs):
         return cmds.mayaHydra(renderer=HD_STORM, listRenderIndex=True, **kwargs)
@@ -102,3 +101,16 @@ class MtohTestCase(ImageDiffingTestCase):
 
     def assertInIndex(self, rprim):
         self.assertIn(rprim, self.getIndex())
+
+    def assertNodeNameInIndex(self, nodeName):
+        for rprim in self.getIndex():
+            if nodeName in rprim:
+                return True
+        return False
+
+    def trace(self, msg):
+        sys.__stdout__.write(msg)
+        sys.__stdout__.flush()
+
+    def traceIndex(self, msg):
+        self.trace(msg.format(str(self.getIndex())))

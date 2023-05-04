@@ -1,14 +1,14 @@
 //
 // Copyright 2023 Autodesk, Inc. All rights reserved.
 //
-// Licensed under the Apache License, Version 2.0 (the “License”);
+// Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
 //   http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an “AS IS” BASIS,
+// distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
@@ -20,14 +20,37 @@
 #include <mayaHydraLib/api.h>
 
 #include <pxr/imaging/hd/renderIndex.h>
+#include <pxr/imaging/hd/sceneIndex.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
 
 #include <maya/MCallbackIdArray.h>
 #include <maya/MMessage.h>
+#include <maya/MNodeMessage.h>
 #include <maya/MObject.h>
 #include <maya/MObjectHandle.h>
+#include <ufe/path.h>
+#include <ufe/rtid.h>
+#include <ufe/sceneItem.h>
+#include <ufe/ufe.h>
+
+#include <atomic>
+#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+using MayaHydraSelectionObserverPtr = std::shared_ptr<class MayaHydraSelectionObserver>;
+using MayaHydraSceneIndexRegistrationPtr = std::shared_ptr<struct MayaHydraSceneIndexRegistration>;
+typedef Ufe::Path (*MayaHydraInterpretRprimPath)(const HdSceneIndexBaseRefPtr&, const SdfPath&);
+
+struct MayaHydraSceneIndexRegistration
+{
+    HdSceneIndexBaseRefPtr      pluginSceneIndex;
+    HdSceneIndexBaseRefPtr      rootSceneIndex;
+    SdfPath                     sceneIndexPathPrefix;
+    MObjectHandle               dagNode;
+    MayaHydraInterpretRprimPath interpretRprimPathFn = nullptr;
+};
 
 /**
  * \brief MayaHydraSceneIndexRegistration is used to register a scene index for a given dag node
@@ -44,32 +67,42 @@ PXR_NAMESPACE_OPEN_SCOPE
  *
  * See registration.cpp file for a code snippet.
  */
-class MayaHydraSceneIndexRegistration
+class MayaHydraSceneIndexRegistry
 {
 public:
+    static constexpr Ufe::Rtid kInvalidUfeRtid = 0;
     MAYAHYDRALIB_API
-    MayaHydraSceneIndexRegistration(HdRenderIndex* renderIndex);
+    MayaHydraSceneIndexRegistry(HdRenderIndex* renderIndex);
 
     MAYAHYDRALIB_API
-    ~MayaHydraSceneIndexRegistration();
+    ~MayaHydraSceneIndexRegistry();
+
+    MAYAHYDRALIB_API
+    MayaHydraSceneIndexRegistrationPtr
+    GetSceneIndexRegistrationForRprim(const SdfPath& rprimPath) const;
 
 private:
-    void _AddCustomSceneIndexForNode(
-        MObject& dagNode); // dagNode non-const because of callback registration
-    bool        _RemoveCustomSceneIndexForNode(const MObject& dagNode);
-    static void _CustomSceneIndexNodeAddedCallback(MObject& obj, void* clientData);
-    static void _CustomSceneIndexNodeRemovedCallback(MObject& obj, void* clientData);
+    void
+    _AddSceneIndexForNode(MObject& dagNode); // dagNode non-const because of callback registration
+    bool        _RemoveSceneIndexForNode(const MObject& dagNode);
+    static void _SceneIndexNodeAddedCallback(MObject& obj, void* clientData);
+    static void _SceneIndexNodeRemovedCallback(MObject& obj, void* clientData);
+    HdSceneIndexBaseRefPtr _AppendTerminalRenamingSceneIndex(HdSceneIndexBaseRefPtr sceneIndex);
+    HdRenderIndex* _renderIndex = nullptr;
 
-    HdRenderIndex*   _renderIndex = nullptr;
-    MCallbackIdArray _customSceneIndexAddedCallbacks;
+    MCallbackIdArray _sceneIndexDagNodeMessageCallbacks;
+
+    std::unordered_map<SdfPath, MayaHydraSceneIndexRegistrationPtr, SdfPath::Hash> _registrations;
+    // Maintain alternative way to retrieve registration based on MObjectHandle. This is faster to
+    // retrieve the registration upon callback whose event argument is the node itself.
     struct _HashObjectHandle
     {
         unsigned long operator()(const MObjectHandle& handle) const { return handle.hashCode(); }
     };
-    // MObjectHandle only used as opposed to MObject here because of their hashCode function.
-    std::unordered_map<MObjectHandle, MCallbackId, _HashObjectHandle>
-                                                                              _customSceneIndexNodePreRemovalCallbacks;
-    std::unordered_map<MObjectHandle, HdSceneIndexBasePtr, _HashObjectHandle> _customSceneIndices;
+    std::unordered_map<MObjectHandle, MayaHydraSceneIndexRegistrationPtr, _HashObjectHandle>
+        _registrationsByObjectHandle;
+
+    std::atomic_int _incrementedCounterDisambiguator { 0 };
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

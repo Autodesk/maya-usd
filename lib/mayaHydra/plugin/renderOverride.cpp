@@ -36,6 +36,16 @@
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/type.h>
 
+#include <ufe/hierarchy.h>
+#include <ufe/namedSelection.h>
+#include <ufe/path.h>
+#include <ufe/pathSegment.h>
+#include <ufe/pathString.h>
+#include <ufe/rtid.h>
+#include <ufe/selection.h>
+
+#include <ufeExtensions/Global.h>
+
 #if defined(MAYAUSD_VERSION)
 #include <mayaUsd/render/px_vp20/utils.h>
 #include <mayaUsd/utils/hash.h>
@@ -79,6 +89,7 @@ template <typename T> inline void hash_combine(std::size_t& seed, const T& value
 #include <maya/MGlobal.h>
 #include <maya/MNodeMessage.h>
 #include <maya/MObjectHandle.h>
+#include <maya/MProfiler.h>
 #include <maya/MSceneMessage.h>
 #include <maya/MSelectionList.h>
 #include <maya/MTimerMessage.h>
@@ -89,16 +100,9 @@ template <typename T> inline void hash_combine(std::size_t& seed, const T& value
 #include <exception>
 #include <limits>
 
-#if WANT_UFE_BUILD
-#include <maya/MFileIO.h>
-#include <ufe/globalSelection.h>
-#include <ufe/observableSelection.h>
-#include <ufe/path.h>
-#ifdef UFE_V2_FEATURES_AVAILABLE
-#include <ufe/pathString.h>
-#endif
-#include <ufe/selectionNotification.h>
-#endif // WANT_UFE_BUILD
+int _profilerCategory = MProfiler::addCategory(
+    "MtohRenderOverride (mayaHydra)",
+    "Events from mayaHydra render override");
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -109,46 +113,6 @@ namespace {
 // extra speed loss should be fine, and I'd rather be safe.
 std::mutex                       _allInstancesMutex;
 std::vector<MtohRenderOverride*> _allInstances;
-
-#if WANT_UFE_BUILD
-
-// Observe UFE scene items for transformation changed only when they are
-// selected.
-class UfeSelectionObserver : public UFE_NS::Observer
-{
-public:
-    UfeSelectionObserver(MtohRenderOverride& mtohRenderOverride)
-        : UFE_NS::Observer()
-        , _mtohRenderOverride(mtohRenderOverride)
-    {
-    }
-
-    //~UfeSelectionObserver() override {}
-
-    void operator()(const UFE_NS::Notification& notification) override
-    {
-        // During Maya file read, each node will be selected in turn, so we get
-        // notified for each node in the scene.  Prune this out.
-        if (MFileIO::isOpeningFile()) {
-            return;
-        }
-
-        auto selectionChanged = dynamic_cast<const UFE_NS::SelectionChanged*>(&notification);
-        if (selectionChanged == nullptr) {
-            return;
-        }
-
-        TF_DEBUG(MAYAHYDRALIB_RENDEROVERRIDE_SELECTION)
-            .Msg("UfeSelectionObserver triggered (ufe selection change "
-                 "triggered)\n");
-        _mtohRenderOverride.SelectionChanged();
-    }
-
-private:
-    MtohRenderOverride& _mtohRenderOverride;
-};
-
-#endif // WANT_UFE_BUILD
 
 //! \brief  Get the index of the hit nearest to a given cursor point.
 int GetNearestHitIndex(
@@ -186,47 +150,13 @@ int GetNearestHitIndex(
 
     return nearestHitIndex;
 }
-
-//! \brief  workaround to remove duplicate hits and improve selection performance.
-void ResolveUniqueHits_Workaround(const HdxPickHitVector& inHits, HdxPickHitVector& outHits)
-{
-    outHits.clear();
-
-    // hash -> hitIndex
-    std::unordered_map<size_t, size_t> hitIndices;
-
-    size_t previousHash = 0;
-
-    for (size_t i = 0; i < inHits.size(); i++) {
-        const HdxPickHit& hit = inHits[i];
-
-        size_t hash = 0;
-        MayaUsd::hash_combine(hash, hit.delegateId.GetHash());
-        MayaUsd::hash_combine(hash, hit.objectId.GetHash());
-        MayaUsd::hash_combine(hash, hit.instancerId.GetHash());
-        MayaUsd::hash_combine(hash, hit.instanceIndex);
-
-        // As an optimization, keep track of the previous hash value and
-        // reject indices that match it without performing a map lookup.
-        // Adjacent indices are likely enough to have the same prim,
-        // instance and element ids that this can be a significant
-        // improvement.
-        if (hitIndices.empty() || hash != previousHash) {
-            if (hitIndices.insert(std::make_pair(hash, i)).second) {
-                outHits.push_back(inHits[i]);
-            }
-            previousHash = hash;
-        }
-    }
-}
-
 } // namespace
 
 // MtohRenderOverride is a rendering override class for the viewport to use Hydra instead of VP2.0.
 MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
     : MHWRender::MRenderOverride(desc.overrideName.GetText())
     , _rendererDesc(desc)
-    , _sceneIndexRegistration(nullptr)
+    , _sceneIndexRegistry(nullptr)
     , _globals(MtohRenderGlobals::GetInstance())
     , _hgi(Hgi::CreatePlatformDefaultHgi())
     , _hgiDriver { HgiTokens->renderDriver, VtValue(_hgi.get()) }
@@ -275,26 +205,10 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
         std::lock_guard<std::mutex> lock(_allInstancesMutex);
         _allInstances.push_back(this);
     }
-
-#if WANT_UFE_BUILD
-    const UFE_NS::GlobalSelection::Ptr& ufeSelection = UFE_NS::GlobalSelection::get();
-    if (ufeSelection) {
-        _ufeSelectionObserver = std::make_shared<UfeSelectionObserver>(*this);
-        ufeSelection->addObserver(_ufeSelectionObserver);
-    }
-#endif // WANT_UFE_BUILD
 }
 
 MtohRenderOverride::~MtohRenderOverride()
 {
-#if WANT_UFE_BUILD
-    const Ufe::GlobalSelection::Ptr& ufeSelection = Ufe::GlobalSelection::get();
-    if (ufeSelection) {
-        ufeSelection->removeObserver(_ufeSelectionObserver);
-        _ufeSelectionObserver = nullptr;
-    }
-#endif // WANT_UFE_BUILD
-
     TF_DEBUG(MAYAHYDRALIB_RENDEROVERRIDE_RESOURCES)
         .Msg(
             "MtohRenderOverride destroyed (%s - %s - %s)\n",
@@ -545,13 +459,9 @@ MStatus MtohRenderOverride::Render(
         }
 
         if (scene.changed()) {
-            for (auto& it : _delegates) {
-                auto sceneDelegate = std::dynamic_pointer_cast<MayaHydraSceneDelegate>(it);
-                if (sceneDelegate) {
-                    sceneDelegate->HandleCompleteViewportScene(
-                        scene,
-                        static_cast<MFrameContext::DisplayStyle>(drawContext.getDisplayStyle()));
-                }
+            if (_mayaHydraSceneDelegate) {
+                _mayaHydraSceneDelegate->HandleCompleteViewportScene(
+                    scene, static_cast<MFrameContext::DisplayStyle>(drawContext.getDisplayStyle()));
             }
         }
 
@@ -628,26 +538,15 @@ MStatus MtohRenderOverride::Render(
         MStatus  status;
         MDagPath camPath = getFrameContext()->getCurrentCameraPath(&status);
         if (status == MStatus::kSuccess) {
-#ifdef MAYA_CURRENT_UFE_CAMERA_SUPPORT
             MString   ufeCameraPathString = getFrameContext()->getCurrentUfeCameraPath(&status);
-            Ufe::Path ufeCameraPath = Ufe::PathString::path(ufeCameraPathString.c_str());
-            bool      isUsdCamera = ufeCameraPath.runTimeId() == MayaUsd::ufe::getUsdRunTimeId();
-#else
-            static const MString defaultUfeProxyCameraShape(
-                "|defaultUfeProxyCameraTransformParent|defaultUfeProxyCameraTransform|"
-                "defaultUfeProxyCameraShape");
-            bool isUsdCamera = defaultUfeProxyCameraShape == camPath.fullPathName();
-#endif
-            if (!isUsdCamera) {
-                for (auto& delegate : _delegates) {
-                    if (MayaHydraSceneDelegate* mayaScene
-                        = dynamic_cast<MayaHydraSceneDelegate*>(delegate.get())) {
-                        params.camera = mayaScene->SetCameraViewport(camPath, _viewport);
-                        if (vpDirty)
-                            mayaScene->GetChangeTracker().MarkSprimDirty(
-                                params.camera, HdCamera::DirtyParams);
-                        break;
-                    }
+            Ufe::Path ufeCameraPath = Ufe::PathString::path(ufeCameraPathString.asChar());
+            bool isMayaCamera = ufeCameraPath.runTimeId() == UfeExtensions::getMayaRunTimeId();
+            if (isMayaCamera) {
+                if (_mayaHydraSceneDelegate) {
+                    params.camera = _mayaHydraSceneDelegate->SetCameraViewport(camPath, _viewport);
+                    if (vpDirty)
+                        _mayaHydraSceneDelegate->GetChangeTracker().MarkSprimDirty(
+                            params.camera, HdCamera::DirtyParams);
                 }
             }
         } else {
@@ -761,6 +660,12 @@ void MtohRenderOverride::_InitHydraResources()
             TfMakeValidIdentifier(_rendererDesc.rendererName.GetText()).c_str(),
             this))));
     _taskController->SetEnableShadows(true);
+    // Initialize the AOV system to render color for Storm, so the Metal/Vulkan backend can present
+    // to OpenGL view
+    if (_isUsingHdSt
+        && (_hgi->GetAPIName() == HgiTokens->Metal || _hgi->GetAPIName() == HgiTokens->Vulkan)) {
+        _taskController->SetRenderOutputs({ HdAovTokens->color });
+    }
 
     MayaHydraDelegate::InitData delegateInitData(
         TfToken(),
@@ -773,6 +678,7 @@ void MtohRenderOverride::_InitHydraResources()
 
     SdfPathVector solidPrimsRootPaths;
 
+    _mayaHydraSceneDelegate = nullptr;
     auto delegateNames = MayaHydraDelegateRegistry::GetDelegateNames();
     auto creators = MayaHydraDelegateRegistry::GetDelegateCreators();
     TF_VERIFY(delegateNames.size() == creators.size());
@@ -788,9 +694,12 @@ void MtohRenderOverride::_InitHydraResources()
         if (newDelegate) {
             // Call SetLightsEnabled before the delegate is populated
             newDelegate->SetLightsEnabled(!_hasDefaultLighting);
-            if (auto mayaSceneDelegate
-                = std::dynamic_pointer_cast<MayaHydraSceneDelegate>(newDelegate)) {
-                solidPrimsRootPaths.push_back(mayaSceneDelegate->GetSolidPrimsRootPath());
+            _mayaHydraSceneDelegate
+                = std::dynamic_pointer_cast<MayaHydraSceneDelegate>(newDelegate);
+            if (TF_VERIFY(
+                    _mayaHydraSceneDelegate,
+                    "Maya Hydra scene delegate not found, check mayaHydra plugin installation.")) {
+                solidPrimsRootPaths.push_back(_mayaHydraSceneDelegate->GetSolidPrimsRootPath());
             }
             _delegates.emplace_back(std::move(newDelegate));
         }
@@ -832,8 +741,9 @@ void MtohRenderOverride::_InitHydraResources()
             break;
         }
     }
-    if (!_sceneIndexRegistration)
-        _sceneIndexRegistration.reset(new MayaHydraSceneIndexRegistration(_renderIndex));
+    if (!_sceneIndexRegistry) {
+        _sceneIndexRegistry.reset(new MayaHydraSceneIndexRegistry(_renderIndex));
+    }
 
     _initializationSucceeded = true;
 }
@@ -847,6 +757,8 @@ void MtohRenderOverride::ClearHydraResources()
     TF_DEBUG(MAYAHYDRALIB_RENDEROVERRIDE_RESOURCES)
         .Msg("MtohRenderOverride::ClearHydraResources(%s)\n", _rendererDesc.rendererName.GetText());
 
+    _mayaHydraSceneDelegate = nullptr;
+    
     _delegates.clear();
     _defaultLightDelegate.reset();
 
@@ -874,7 +786,7 @@ void MtohRenderOverride::ClearHydraResources()
         _rendererPlugin = nullptr;
     }
 
-    _sceneIndexRegistration.reset(nullptr);
+    _sceneIndexRegistry = nullptr;
 
     _viewport = GfVec4d(0, 0, 0, 0);
     _initializationSucceeded = false;
@@ -910,20 +822,7 @@ void MtohRenderOverride::_SelectionChanged()
     SdfPathVector selectedPaths;
     auto          selection = std::make_shared<HdSelection>();
 
-#if WANT_UFE_BUILD
-    const UFE_NS::GlobalSelection::Ptr& ufeSelection = UFE_NS::GlobalSelection::get();
-#endif // WANT_UFE_BUILD
-
     for (auto& it : _delegates) {
-#if WANT_UFE_BUILD
-        if (it->SupportsUfeSelection()) {
-            if (ufeSelection) {
-                it->PopulateSelectedPaths(*ufeSelection, selectedPaths, selection);
-            }
-            // skip non-ufe PopulateSelectedPaths call
-            continue;
-        }
-#endif // WANT_UFE_BUILD
         it->PopulateSelectedPaths(sel, selectedPaths, selection);
     }
     _selectionCollection.SetRootPaths(selectedPaths);
@@ -1022,6 +921,115 @@ bool MtohRenderOverride::nextRenderOperation()
     return ++_currentOperation < static_cast<int>(_operations.size());
 }
 
+constexpr char kNamedSelection[] = "MayaSelectTool";
+
+void MtohRenderOverride::_PopulateSelectionList(
+    const HdxPickHitVector&          hits,
+    const MHWRender::MSelectionInfo& selectInfo,
+    MSelectionList&                  selectionList,
+    MPointArray&                     worldSpaceHitPts)
+{
+    if (hits.empty())
+        return;
+
+    if (_mayaHydraSceneDelegate) {
+
+        MStatus status;
+        if (auto ufeSel = Ufe::NamedSelection::get(kNamedSelection)) {
+            for (const HdxPickHit& hit : hits) {
+                if (_mayaHydraSceneDelegate->AddPickHitToSelectionList(
+                        hit, selectInfo, selectionList, worldSpaceHitPts)) {
+                    continue;
+                }
+                SdfPath pickedPath = hit.objectId;
+                if (auto registration
+                    = _sceneIndexRegistry->GetSceneIndexRegistrationForRprim(pickedPath))
+                // Scene index is incompatible with UFE. Skip
+                {
+                    // Remove scene index plugin path prefix to obtain local picked path with
+                    // respect to current scene index. This is because the scene index was inserted
+                    // into the render index using a custom prefix. As a result the scene index
+                    // prefix will be prepended to rprims tied to that scene index automatically.
+                    SdfPath localPath(
+                        pickedPath.ReplacePrefix(registration->sceneIndexPathPrefix, SdfPath("/")));
+                    Ufe::Path interpetedPath(registration->interpretRprimPathFn(
+                        registration->pluginSceneIndex, localPath));
+
+                    // If this is a maya UFE path, then select using MSelectionList
+                    // This is because the NamedSelection ignores Ufe items made from maya ufe path
+                    if (interpetedPath.runTimeId() == UfeExtensions::getMayaRunTimeId()) {
+                        selectionList.add(UfeExtensions::ufeToDagPath(interpetedPath));
+                        worldSpaceHitPts.append(
+                            hit.worldSpaceHitPoint[0],
+                            hit.worldSpaceHitPoint[1],
+                            hit.worldSpaceHitPoint[2]);
+                    } else if (auto si = Ufe::Hierarchy::createItem(interpetedPath)) {
+                        ufeSel->append(si);
+                    }
+                }
+            }
+        }
+    }
+}
+
+void MtohRenderOverride::_PickByRegion(
+    HdxPickHitVector& outHits,
+    const MMatrix& viewMatrix,
+    const MMatrix& projMatrix,
+    bool pointSnappingActive,
+    int view_x,
+    int view_y,
+    int view_w,
+    int view_h,
+    unsigned int sel_x,
+    unsigned int sel_y,
+    unsigned int sel_w,
+    unsigned int sel_h)
+{
+    MMatrix adjustedProjMatrix;
+    // Compute a pick matrix that, when it is post-multiplied with the projection matrix, will
+    // cause the picking region to fill the entire viewport for OpenGL selection.
+    {
+        double center_x = sel_x + sel_w * 0.5;
+        double center_y = sel_y + sel_h * 0.5;
+
+        MMatrix pickMatrix;
+        pickMatrix[0][0] = view_w / double(sel_w);
+        pickMatrix[1][1] = view_h / double(sel_h);
+        pickMatrix[3][0] = (view_w - 2.0 * (center_x - view_x)) / double(sel_w);
+        pickMatrix[3][1] = (view_h - 2.0 * (center_y - view_y)) / double(sel_h);
+
+        adjustedProjMatrix = projMatrix * pickMatrix;
+    }
+
+    // Set up picking params.
+    HdxPickTaskContextParams pickParams;
+    // Use the same size as selection region is enough to get all pick results.
+    pickParams.resolution.Set(sel_w, sel_h);
+    pickParams.viewMatrix.Set(viewMatrix.matrix);
+    pickParams.projectionMatrix.Set(adjustedProjMatrix.matrix);
+    pickParams.resolveMode = HdxPickTokens->resolveUnique;
+
+    if (pointSnappingActive) {
+        pickParams.pickTarget = HdxPickTokens->pickPoints;
+
+        // Exclude selected Rprims to avoid self-snapping issue.
+        pickParams.collection = _pointSnappingCollection;
+        pickParams.collection.SetExcludePaths(_selectionCollection.GetRootPaths());
+    }
+    else {
+        pickParams.collection = _renderCollection;
+    }
+
+    pickParams.outHits = &outHits;
+
+    // Execute picking tasks.
+    HdTaskSharedPtrVector pickingTasks = _taskController->GetPickingTasks();
+    VtValue               pickParamsValue(pickParams);
+    _engine.SetTaskContextData(HdxPickTokens->pickParams, pickParamsValue);
+    _engine.Execute(_taskController->GetRenderIndex(), &pickingTasks);
+}
+
 bool MtohRenderOverride::select(
     const MHWRender::MFrameContext&  frameContext,
     const MHWRender::MSelectionInfo& selectInfo,
@@ -1029,12 +1037,13 @@ bool MtohRenderOverride::select(
     MSelectionList& selectionList,
     MPointArray&    worldSpaceHitPts)
 {
-#ifndef MAYAHYDRA_DEVELOPMENTAL_NATIVE_SELECTION
-    // Skip override on plugin-side if prototype 2
-    // Rely on VP2 select and simply draw selection items
-    return false;
+#ifdef MAYAHYDRA_PROFILERS_ENABLED
+    MProfilingScope profilingScopeForEval(
+        _profilerCategory,
+        MProfiler::kColorD_L1,
+        "MtohRenderOverride::select",
+        "MtohRenderOverride::select");
 #endif
-
     MStatus status = MStatus::kFailure;
 
     MMatrix viewMatrix = frameContext.getMatrix(MHWRender::MFrameContext::kViewMtx, &status);
@@ -1055,45 +1064,41 @@ bool MtohRenderOverride::select(
     if (status != MStatus::kSuccess)
         return false;
 
-    // Compute a pick matrix that, when it is post-multiplied with the projection matrix, will
-    // cause the picking region to fill the entire/ viewport for OpenGL selection.
-    {
-        MMatrix pickMatrix;
-        pickMatrix[0][0] = view_w / double(sel_w);
-        pickMatrix[1][1] = view_h / double(sel_h);
-        pickMatrix[3][0] = (view_w - (double)(sel_x * 2 + sel_w)) / double(sel_w);
-        pickMatrix[3][1] = (view_h - (double)(sel_y * 2 + sel_h)) / double(sel_h);
-
-        projMatrix *= pickMatrix;
-    }
-
-    const bool pointSnappingActive = selectInfo.pointSnapping();
-
-    // Set up picking params.
-    HdxPickTaskContextParams pickParams;
-    pickParams.resolution.Set(view_w, view_h);
-    pickParams.viewMatrix.Set(viewMatrix.matrix);
-    pickParams.projectionMatrix.Set(projMatrix.matrix);
-    pickParams.resolveMode = HdxPickTokens->resolveUnique;
-
-    if (pointSnappingActive) {
-        pickParams.pickTarget = HdxPickTokens->pickPoints;
-
-        // Exclude selected Rprims to avoid self-snapping issue.
-        pickParams.collection = _pointSnappingCollection;
-        pickParams.collection.SetExcludePaths(_selectionCollection.GetRootPaths());
-    } else {
-        pickParams.collection = _renderCollection;
-    }
-
     HdxPickHitVector outHits;
-    pickParams.outHits = &outHits;
+    const bool pointSnappingActive = selectInfo.pointSnapping();
+    if (pointSnappingActive)
+    {
+        int cursor_x, cursor_y;
+        status = selectInfo.cursorPoint(cursor_x, cursor_y);
+        if (status != MStatus::kSuccess)
+            return false;
 
-    // Execute picking tasks.
-    HdTaskSharedPtrVector pickingTasks = _taskController->GetPickingTasks();
-    VtValue               pickParamsValue(pickParams);
-    _engine.SetTaskContextData(HdxPickTokens->pickParams, pickParamsValue);
-    _engine.Execute(_taskController->GetRenderIndex(), &pickingTasks);
+        // Performance optimization for large picking region.
+        // The idea is start to do picking from a small region (width = 100), return the hit result if there's one.
+        // Otherwise, increase the region size and do picking repeatly till the original region size is reached.
+        static bool pickPerfOptEnabled = true;
+        unsigned int curr_sel_w = 100;
+        while (pickPerfOptEnabled && curr_sel_w < sel_w && outHits.empty())
+        {
+            unsigned int curr_sel_h = curr_sel_w * double(sel_h) / double(sel_w);
+
+            unsigned int curr_sel_x = cursor_x > (int)curr_sel_w / 2 ? cursor_x - (int)curr_sel_w / 2 : 0;
+            unsigned int curr_sel_y = cursor_y > (int)curr_sel_h / 2 ? cursor_y - (int)curr_sel_h / 2 : 0;
+
+            _PickByRegion(outHits, viewMatrix, projMatrix, pointSnappingActive,
+                view_x, view_y, view_w, view_h, curr_sel_x, curr_sel_y, curr_sel_w, curr_sel_h);
+
+            // Increase the size of picking region.
+            curr_sel_w *= 2;
+        }
+    }
+
+    // Pick from original region directly when point snapping is not active or no hit is found yet.
+    if (outHits.empty())
+    {
+        _PickByRegion(outHits, viewMatrix, projMatrix, pointSnappingActive,
+            view_x, view_y, view_w, view_h, sel_x, sel_y, sel_w, sel_h);
+    }
 
     if (pointSnappingActive) {
         // Find the hit nearest to the cursor point and use it for point snapping.
@@ -1110,24 +1115,9 @@ bool MtohRenderOverride::select(
         } else {
             outHits.clear();
         }
-    } else {
-        // Multiple hits can be produced for a single object on marquee selection even pickTarget
-        // is the default "pickPrimsAndInstances" mode, and each hit is created for an "element"
-        // which I guess means a face id and should only be required when pickTarget is "pickFaces".
-        // I would expect only one hit to be created for object-level selection. Having duplicated
-        // hits for the same object would slow down selection performance, esp. for dense mesh.
-        // Some more details can be found: https://groups.google.com/g/usd-interest/c/Cgosy3r7Vv4
-        HdxPickHitVector uniqueHits;
-        ResolveUniqueHits_Workaround(outHits, uniqueHits);
-        outHits.swap(uniqueHits);
     }
 
-    if (!outHits.empty()) {
-        for (auto& it : _delegates) {
-            it->PopulateSelectionList(outHits, selectInfo, selectionList, worldSpaceHitPts);
-        }
-    }
-
+    _PopulateSelectionList(outHits, selectInfo, selectionList, worldSpaceHitPts);
     return true;
 }
 

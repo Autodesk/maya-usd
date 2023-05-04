@@ -17,10 +17,7 @@
 # Cache variables:
 # MAYA_HAS_DEFAULT_MATERIAL_API Presence of a default material API on MRenderItem.
 # MAYA_NEW_POINT_SNAPPING_SUPPORT Presence of point new snapping support.
-# MAYA_CURRENT_UFE_CAMERA_SUPPORT Presence of MFrameContext::getCurrentUfeCameraPath.
 # MAYA_HAS_CRASH_DETECTION Presence of isInCrashHandler API
-# MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT Presence of MPxSubSceneOverride::setUfeIdentifier.
-# MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT Presence of MPxSubSceneOverride::updateUfeIdentifier.
 # MAYA_ENABLE_NEW_PRIM_DELETE Enable new delete behaviour for delete command
 # MAYA_HAS_DISPLAY_STYLE_ALL_VIEWPORTS Presence of MFrameContext::getDisplayStyleOfAllViewports.
 # MAYA_ARRAY_ITERATOR_DIFFERENCE_TYPE_SUPPORT Presence of maya array iterator difference_type trait
@@ -28,7 +25,6 @@
 # MAYA_HAS_DISPLAY_LAYER_API Presence of MFnDisplayLayer
 # MAYA_HAS_NEW_DISPLAY_LAYER_MESSAGING_API Presence of MDisplayLayerMemberChangedFunction
 # MAYA_HAS_RENDER_ITEM_HIDE_ON_PLAYBACK_API Presence of MRenderItem has HideOnPlayback API
-# MAYA_CAMERA_GIZMO_SUPPORT Support for drawing Ufe cameras and lights in the viewport.
 # MAYA_LINUX_BUILT_WITH_CXX11_ABI Maya Linux was built with new cxx11 ABI.
 # MAYA_MACOSX_BUILT_WITH_UB2 Maya OSX was built with Universal Binary 2.
 
@@ -384,39 +380,12 @@ if (MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MSelectionContext.h")
     endif()
 endif()
 
-set(MAYA_CURRENT_UFE_CAMERA_SUPPORT FALSE CACHE INTERNAL "getCurrentUfeCameraPath")
-if (MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MFrameContext.h")
-    file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MFrameContext.h MAYA_HAS_API REGEX "getCurrentUfeCameraPath")
-    if(MAYA_HAS_API)
-        set(MAYA_CURRENT_UFE_CAMERA_SUPPORT TRUE CACHE INTERNAL "getCurrentUfeCameraPath")
-        message(STATUS "Maya has getCurrentUfeCameraPath")
-    endif()
-endif()
-
 set(MAYA_HAS_CRASH_DETECTION FALSE CACHE INTERNAL "isInCrashHandler")
 if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MGlobal.h")
     file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MGlobal.h MAYA_HAS_API REGEX "isInCrashHandler")
     if(MAYA_HAS_API)
         set(MAYA_HAS_CRASH_DETECTION TRUE CACHE INTERNAL "isInCrashHandler")
         message(STATUS "Maya has isInCrashHandler API")
-    endif()
-endif()
-
-set(MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT FALSE CACHE INTERNAL "setUfeIdentifiers")
-if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MPxSubSceneOverride.h")
-    file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MPxSubSceneOverride.h MAYA_HAS_API REGEX "setUfeIdentifiers")
-    if(MAYA_HAS_API)
-        set(MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT TRUE CACHE INTERNAL "setUfeIdentifiers")
-        message(STATUS "Maya has setUfeIdentifiers API")
-    endif()
-endif()
-
-set(MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT FALSE CACHE INTERNAL "updateUfeIdentifiers")
-if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MPxSubSceneOverride.h")
-    file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MPxSubSceneOverride.h MAYA_HAS_API REGEX "updateUfeIdentifiers")
-    if(MAYA_HAS_API)
-        set(MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT TRUE CACHE INTERNAL "updateUfeIdentifiers")
-        message(STATUS "Maya has updateUfeIdentifiers API")
     endif()
 endif()
 
@@ -474,12 +443,6 @@ if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MHWGeometry.h")
         set(MAYA_HAS_RENDER_ITEM_HIDE_ON_PLAYBACK_API TRUE CACHE INTERNAL "hasRenderItemHideOnPlaybackFunction")
         message(STATUS "MRenderItem has HideOnPlayback API")
     endif()
-endif()
-
-set(MAYA_CAMERA_GIZMO_SUPPORT FALSE CACHE INTERNAL "ufeCameraGizmos")
-if (MAYA_API_VERSION VERSION_GREATER_EQUAL 20230200)
-    set(MAYA_CAMERA_GIZMO_SUPPORT TRUE CACHE INTERNAL "ufeCameraGizmos")
-    message(STATUS "Maya has UFE gizmo drawing")
 endif()
 
 set(MAYA_LINUX_BUILT_WITH_CXX11_ABI FALSE CACHE INTERNAL "MayaLinuxBuiltWithCxx11ABI")

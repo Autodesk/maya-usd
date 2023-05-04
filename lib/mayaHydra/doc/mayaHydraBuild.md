@@ -113,7 +113,6 @@ BUILD_TESTS                 | builds all unit tests.                            
 BUILD_STRICT_MODE           | enforces all warnings as errors.                           | ON
 BUILD_WITH_PYTHON_3			| build with python 3.										 | OFF
 BUILD_SHARED_LIBS			| build libraries as shared or static.						 | ON
-CMAKE_WANT_UFE_BUILD        | enables building with UFE (if found).                      | ON
 
 ##### Stages
 

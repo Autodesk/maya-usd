@@ -30,6 +30,7 @@
 #include <pxr/imaging/hdx/renderTask.h>
 #include <pxr/pxr.h>
 
+#include <maya/MDagPath.h>
 #include <maya/MHWGeometryUtilities.h>
 #include <maya/MMatrix.h>
 
@@ -57,6 +58,7 @@ class MayaHydraRenderItemAdapter : public MayaHydraAdapter
 public:
     MAYAHYDRALIB_API
     MayaHydraRenderItemAdapter(
+        const MDagPath&       dagPath,
         const SdfPath&        slowId,
         int                   fastId,
         MayaHydraDelegateCtx* del,
@@ -166,7 +168,13 @@ public:
     int GetFastID() const { return _fastId; }
 
     MAYAHYDRALIB_API
+    const MDagPath& GetDagPath() const { return _dagPath; }
+
+    MAYAHYDRALIB_API
     MGeometry::Primitive GetPrimitive() const { return _primitive; }
+
+    MAYAHYDRALIB_API
+    const char* Name() const { return _name.asChar(); }
 
 private:
     MAYAHYDRALIB_API
@@ -176,6 +184,7 @@ private:
     void _InsertRprim();
 
     SdfPath                     _material;
+    MDagPath                    _dagPath;
     std::unique_ptr<HdTopology> _topology = nullptr;
     VtVec3fArray                _positions = {};
     VtVec2fArray                _uvs = {};
