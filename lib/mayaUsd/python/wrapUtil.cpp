@@ -18,8 +18,6 @@
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
-//#include <mayaUsdUI/ui/qtUtils.h>
-
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/attribute.h>
