@@ -348,8 +348,17 @@ HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
     auto* const param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     auto&       drawScene = param->GetDrawScene();
 
+    // See if the primitive is instanced
+    auto delegate = drawScene.GetUsdImagingDelegate();
+    auto instancerId = delegate->GetInstancerId(id);
+    bool instanced = !instancerId.IsEmpty();
+#if PXR_VERSION < 2211
+    // The additional condition here is to prevent a crash in USD versions below 22.11
+    instanced &= !delegate->GetInstanceIndices(instancerId, id).empty();
+#endif
+
     // display layers handling
-    if (!drawScene.GetUsdImagingDelegate()->GetInstancerId(id).IsEmpty()) {
+    if (instanced) {
         // Sync display layer modes for instanced prims.
         // This also sets the value of '_useInstancedDisplayLayerModes' that identifies whether
         // display layer modes will be handled on per-primitive or per-instance basis
@@ -884,6 +893,10 @@ void MayaUsdRPrim::_SyncSharedData(
     // If instancer is dirty, update instancing map
     if (HdChangeTracker::IsInstancerDirty(*dirtyBits, id)) {
         bool instanced = !refThis.GetInstancerId().IsEmpty();
+#if PXR_VERSION < 2211
+        // The additional condition here is to prevent a crash in USD versions below 22.11
+        instanced &= !delegate->GetInstanceIndices(refThis.GetInstancerId(), id).empty();
+#endif
 
         // UpdateInstancingMapEntry is not multithread-safe, so enqueue the call
         _delegate->GetVP2ResourceRegistry().EnqueueCommit([this, id, instanced]() {
