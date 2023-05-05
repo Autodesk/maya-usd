@@ -13,6 +13,7 @@
 # UFE_MATERIALS_SUPPORT     Presence of UFE materials support
 # UFE_SCENE_SEGMENT_SUPPORT Presence of UFE scene segment support
 # UFE_PREVIEW_FEATURES      List of all features introduced gradually in the UFE preview version
+# UFE_CLIPBOARD_SUPPORT     Presence of UFE Clipboard support
 #
 
 find_path(UFE_INCLUDE_DIR
@@ -153,4 +154,10 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/uiNodeGraphNode.h")
         set(UFE_UINODEGRAPHNODE_HAS_SIZE TRUE CACHE INTERNAL "ufeUINodeGraphNodeHasSize")
         message(STATUS "Maya has UFE UINodeGraphNode size interface")
     endif()
+endif()
+
+set(UFE_CLIPBOARD_SUPPORT FALSE CACHE INTERNAL "ufeClipboard")
+if (UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/clipboardHandler.h")
+    set(UFE_CLIPBOARD_SUPPORT TRUE CACHE INTERNAL "ufeClipboard")
+    message(STATUS "Maya has UFE Clipboard API")
 endif()

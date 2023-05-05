@@ -121,6 +121,11 @@ if (MAYA_HAS_DISPLAY_LAYER_API)
         )
 endif()
 
+if (UFE_CLIPBOARD_SUPPORT)
+    list(APPEND TEST_SCRIPT_FILES
+        testClipboardHandler.py
+    )
+endif()
 
 foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})

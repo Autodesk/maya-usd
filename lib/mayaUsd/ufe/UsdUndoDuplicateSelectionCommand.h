@@ -41,6 +41,10 @@ public:
     UsdUndoDuplicateSelectionCommand(
         const Ufe::Selection&       selection,
         const Ufe::ValueDictionary& duplicateOptions);
+    UsdUndoDuplicateSelectionCommand(
+        const Ufe::Selection&       selection,
+        const Ufe::ValueDictionary& duplicateOptions,
+        const UsdSceneItem::Ptr&    dstParentItem);
     ~UsdUndoDuplicateSelectionCommand() override;
 
     // Delete the copy/move constructors assignment operators.
@@ -52,12 +56,17 @@ public:
     //! Create a UsdUndoDuplicateSelectionCommand from a USD prim and UFE path.
     static Ptr
     create(const Ufe::Selection& selection, const Ufe::ValueDictionary& duplicateOptions);
+    static Ptr create(
+        const Ufe::Selection&       selection,
+        const Ufe::ValueDictionary& duplicateOptions,
+        const UsdSceneItem::Ptr&    dstParentItem);
 
     void execute() override;
     void undo() override;
     void redo() override;
 
-    Ufe::SceneItem::Ptr targetItem(const Ufe::Path& sourcePath) const override;
+    Ufe::SceneItem::Ptr              targetItem(const Ufe::Path& sourcePath) const override;
+    std::vector<Ufe::SceneItem::Ptr> targetItems() const override;
 
 private:
     UsdUndoableItem _undoableItem;
@@ -73,6 +82,9 @@ private:
     using DuplicatePathsMap = std::map<PXR_NS::SdfPath, PXR_NS::SdfPath>;
     using DuplicatesMap = std::unordered_map<Ufe::Path, DuplicatePathsMap>;
     DuplicatesMap _duplicatesMap;
+
+    // If provided, the parent item target destination.
+    UsdSceneItem::Ptr _dstParentItem;
 
     bool updateSdfPathVector(
         PXR_NS::SdfPathVector&               pathVec,

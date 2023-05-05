@@ -42,6 +42,10 @@ public:
     typedef std::shared_ptr<UsdUndoDuplicateCommand> Ptr;
 
     UsdUndoDuplicateCommand(const UsdSceneItem::Ptr& srcItem);
+    UsdUndoDuplicateCommand(
+        const UsdSceneItem::Ptr& srcItem,
+        const UsdSceneItem::Ptr& dstParentItem);
+
     ~UsdUndoDuplicateCommand() override;
 
     // Delete the copy/move constructors assignment operators.
@@ -52,6 +56,10 @@ public:
 
     //! Create a UsdUndoDuplicateCommand from a USD prim and UFE path.
     static UsdUndoDuplicateCommand::Ptr create(const UsdSceneItem::Ptr& srcItem);
+
+    //! Create a UsdUndoDuplicateCommand from a USD prim and its parent destination.
+    static UsdUndoDuplicateCommand::Ptr
+    create(const UsdSceneItem::Ptr& srcItem, const UsdSceneItem::Ptr& dstParentItem);
 
     UsdSceneItem::Ptr duplicatedItem() const;
     UFE_V4(Ufe::SceneItem::Ptr sceneItem() const override { return duplicatedItem(); })
@@ -69,6 +77,7 @@ private:
 #endif
 
     Ufe::Path       _ufeSrcPath;
+    Ufe::Path       _ufeDstPath;
     PXR_NS::SdfPath _usdDstPath;
 
     PXR_NS::SdfLayerHandle _srcLayer;

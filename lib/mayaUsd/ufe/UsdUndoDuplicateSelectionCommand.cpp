@@ -66,6 +66,15 @@ UsdUndoDuplicateSelectionCommand::UsdUndoDuplicateSelectionCommand(
     }
 }
 
+UsdUndoDuplicateSelectionCommand::UsdUndoDuplicateSelectionCommand(
+    const Ufe::Selection&       selection,
+    const Ufe::ValueDictionary& duplicateOptions,
+    const UsdSceneItem::Ptr&    dstParentItem)
+    : UsdUndoDuplicateSelectionCommand(selection, duplicateOptions)
+{
+    _dstParentItem = dstParentItem;
+}
+
 UsdUndoDuplicateSelectionCommand::~UsdUndoDuplicateSelectionCommand() { }
 
 UsdUndoDuplicateSelectionCommand::Ptr UsdUndoDuplicateSelectionCommand::create(
@@ -82,6 +91,22 @@ UsdUndoDuplicateSelectionCommand::Ptr UsdUndoDuplicateSelectionCommand::create(
     return retVal;
 }
 
+UsdUndoDuplicateSelectionCommand::Ptr UsdUndoDuplicateSelectionCommand::create(
+    const Ufe::Selection&       selection,
+    const Ufe::ValueDictionary& duplicateOptions,
+    const UsdSceneItem::Ptr&    dstParentItem)
+{
+    UsdUndoDuplicateSelectionCommand::Ptr retVal
+        = std::make_shared<UsdUndoDuplicateSelectionCommand>(
+            selection, duplicateOptions, dstParentItem);
+
+    if (retVal->_sourceItems.empty() || !dstParentItem) {
+        return {};
+    }
+
+    return retVal;
+}
+
 void UsdUndoDuplicateSelectionCommand::execute()
 {
     UsdUndoBlock undoBlock(&_undoableItem);
@@ -90,7 +115,9 @@ void UsdUndoDuplicateSelectionCommand::execute()
         // Need to create and execute. If we create all before executing any, then the collision
         // resolution on names will merge bob1 and bob2 into a single bob3 instead of creating a
         // bob3 and a bob4.
-        auto duplicateCmd = UsdUndoDuplicateCommand::create(usdItem);
+        auto duplicateCmd = _dstParentItem
+            ? UsdUndoDuplicateCommand::create(usdItem, _dstParentItem)
+            : UsdUndoDuplicateCommand::create(usdItem);
         duplicateCmd->execute();
 
         // Currently unordered_map since we need to streamline the targetItem override.
@@ -120,8 +147,7 @@ void UsdUndoDuplicateSelectionCommand::execute()
             continue;
         }
         for (const auto& duplicatePair : stageData.second) {
-            // Cleanup relationships and connections on the duplicate.
-            for (auto p : UsdPrimRange(stage->GetPrimAtPath(duplicatePair.second))) {
+            auto updatePropertiesAndRelationship = [&](UsdPrim& p) {
                 for (auto& prop : p.GetProperties()) {
                     if (prop.Is<PXR_NS::UsdAttribute>()) {
                         PXR_NS::UsdAttribute  attr = prop.As<PXR_NS::UsdAttribute>();
@@ -155,6 +181,16 @@ void UsdUndoDuplicateSelectionCommand::execute()
                         }
                     }
                 }
+            };
+
+            // Cleanup relationships and connections on the duplicate.
+            if (_dstParentItem) {
+                auto p = stage->GetPrimAtPath(duplicatePair.second);
+                updatePropertiesAndRelationship(p);
+            } else {
+                for (auto p : UsdPrimRange(stage->GetPrimAtPath(duplicatePair.second))) {
+                    updatePropertiesAndRelationship(p);
+                }
             }
         }
     }
@@ -186,6 +222,15 @@ Ufe::SceneItem::Ptr UsdUndoDuplicateSelectionCommand::targetItem(const Ufe::Path
         path = path.pop();
     }
     return {};
+}
+
+std::vector<Ufe::SceneItem::Ptr> UsdUndoDuplicateSelectionCommand::targetItems() const
+{
+    std::vector<Ufe::SceneItem::Ptr> targetItems;
+    for (auto& itemCmd : _perItemCommands) {
+        targetItems.push_back(itemCmd.second->duplicatedItem());
+    }
+    return targetItems;
 }
 
 bool UsdUndoDuplicateSelectionCommand::updateSdfPathVector(

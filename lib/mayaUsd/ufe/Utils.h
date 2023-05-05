@@ -100,6 +100,9 @@ MAYAUSD_CORE_PUBLIC
 int ufePathToInstanceIndex(const Ufe::Path& path, PXR_NS::UsdPrim* prim = nullptr);
 
 MAYAUSD_CORE_PUBLIC
+Ufe::Path appendToPath(const Ufe::Path& path, const std::string& name);
+
+MAYAUSD_CORE_PUBLIC
 bool isRootChild(const Ufe::Path& path);
 
 MAYAUSD_CORE_PUBLIC

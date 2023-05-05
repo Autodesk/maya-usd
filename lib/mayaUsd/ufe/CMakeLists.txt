@@ -130,6 +130,19 @@ if (UFE_UINODEGRAPHNODE_HAS_SIZE)
     )
 endif()
 
+if (UFE_CLIPBOARD_SUPPORT)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            UsdClipboardHandler.cpp
+            UsdUndoClipboardCommand.cpp
+    )
+
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_CLIPBOARD_SUPPORT=1
+    )
+endif()
+
 if (v4_BatchOps IN_LIST UFE_PREVIEW_FEATURES)
     message(STATUS "UFE_PREVIEW has V4 BatchOps support")
     target_sources(${PROJECT_NAME}
@@ -270,6 +283,13 @@ endif()
 if (UFE_SCENE_SEGMENT_SUPPORT)
     list(APPEND HEADERS
         ProxyShapeSceneSegmentHandler.h
+    )
+endif()
+
+if (UFE_CLIPBOARD_SUPPORT)
+    list(APPEND HEADERS
+        UsdClipboardHandler.h
+        UsdUndoClipboardCommand.h
     )
 endif()
 

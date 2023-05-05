@@ -59,7 +59,26 @@ UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(const UsdSceneItem::Ptr& srcIte
     auto newName = uniqueChildName(parentPrim, srcPrim.GetName());
     _usdDstPath = parentPrim.GetPath().AppendChild(TfToken(newName));
 
-    _srcLayer = MayaUsdUtils::getDefiningLayerAndPath(srcPrim).layer;
+    _srcLayer = _dstLayer = MayaUsdUtils::getDefiningLayerAndPath(srcPrim).layer;
+}
+
+UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(
+    const UsdSceneItem::Ptr& srcItem,
+    const UsdSceneItem::Ptr& dstParentItem)
+#if (UFE_PREVIEW_VERSION_NUM >= 4041)
+    : Ufe::SceneItemResultUndoableCommand()
+#else
+    : Ufe::UndoableCommand()
+#endif
+    , _ufeSrcPath(srcItem->path())
+    , _ufeDstPath(dstParentItem->path())
+{
+    auto srcPrim = srcItem->prim();
+
+    auto newName = uniqueChildName(dstParentItem->prim(), srcPrim.GetName());
+    _usdDstPath = dstParentItem->prim().GetPath().AppendChild(TfToken(newName));
+    _srcLayer = srcItem->prim().GetStage()->GetEditTarget().GetLayer();
+    _dstLayer = dstParentItem->prim().GetStage()->GetEditTarget().GetLayer();
 }
 
 UsdUndoDuplicateCommand::~UsdUndoDuplicateCommand() { }
@@ -69,8 +88,19 @@ UsdUndoDuplicateCommand::Ptr UsdUndoDuplicateCommand::create(const UsdSceneItem:
     return std::make_shared<UsdUndoDuplicateCommand>(srcItem);
 }
 
+UsdUndoDuplicateCommand::Ptr UsdUndoDuplicateCommand::create(
+    const UsdSceneItem::Ptr& srcItem,
+    const UsdSceneItem::Ptr& dstParentItem)
+{
+    return std::make_shared<UsdUndoDuplicateCommand>(srcItem, dstParentItem);
+}
+
 UsdSceneItem::Ptr UsdUndoDuplicateCommand::duplicatedItem() const
 {
+    if (_dstLayer != _srcLayer) {
+        const auto ufeSrcPath = appendToPath(_ufeDstPath, _usdDstPath.GetElementString());
+        return UsdSceneItem::create(ufeSrcPath, ufePathToPrim(ufeSrcPath));
+    }
     return createSiblingSceneItem(_ufeSrcPath, _usdDstPath.GetElementString());
 }
 
@@ -86,7 +116,6 @@ void UsdUndoDuplicateCommand::execute()
     auto stage = prim.GetStage();
 
     OperationEditRouterContext ctx(MayaUsdEditRoutingTokens->RouteDuplicate, prim);
-    _dstLayer = stage->GetEditTarget().GetLayer();
 
     auto                               item = Ufe::Hierarchy::createItem(_ufeSrcPath);
     MayaUsd::ufe::ReplicateExtrasToUSD extras;

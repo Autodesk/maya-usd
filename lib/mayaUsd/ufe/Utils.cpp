@@ -238,6 +238,18 @@ int ufePathToInstanceIndex(const Ufe::Path& path, UsdPrim* prim)
     return instanceIndex;
 }
 
+Ufe::Path appendToPath(const Ufe::Path& path, const std::string& name)
+{
+    Ufe::Path newUfePath;
+    if (1 == path.getSegments().size()) {
+        newUfePath = path
+            + Ufe::PathSegment(Ufe::PathComponent(name), MayaUsd::ufe::getUsdRunTimeId(), '/');
+    } else {
+        newUfePath = path + name;
+    }
+    return newUfePath;
+}
+
 bool isRootChild(const Ufe::Path& path)
 {
     // When called we make the assumption that we are given a valid

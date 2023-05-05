@@ -57,6 +57,9 @@
 #if UFE_PREVIEW_BATCHOPS_SUPPORT
 #include <mayaUsd/ufe/UsdBatchOpsHandler.h>
 #endif
+#if UFE_CLIPBOARD_SUPPORT
+#include <mayaUsd/ufe/UsdClipboardHandler.h>
+#endif
 #include <mayaUsd/ufe/ProxyShapeCameraHandler.h>
 #include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
 #endif
@@ -197,6 +200,9 @@ MStatus initialize()
     handlers.uiNodeGraphNodeHandler = UsdUINodeGraphNodeHandler::create();
 #if UFE_PREVIEW_BATCHOPS_SUPPORT
     handlers.batchOpsHandler = UsdBatchOpsHandler::create();
+#endif
+#if UFE_CLIPBOARD_SUPPORT
+    handlers.clipboardHandler = UsdClipboardHandler::create();
 #endif
     handlers.nodeDefHandler = UsdShaderNodeDefHandler::create();
 #endif
