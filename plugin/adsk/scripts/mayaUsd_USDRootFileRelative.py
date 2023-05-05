@@ -202,10 +202,6 @@ class usdFileRelative(object):
         maya_window = usdFileRelative.findQtWindowFromTitle(maya_window_name)
         if maya_window:
             cls._fileDialog = maya_window
-        else:
-            print('Could not find dialog named %s' % maya_window_name)
-
-        if maya_window:
             # Find the file name edit field and connect to it to be notified when text changes.
             fileNameEditField = maya_window.findChild(QLineEdit, 'fileNameEdit')
             if fileNameEditField:
