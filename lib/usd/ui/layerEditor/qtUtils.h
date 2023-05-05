@@ -51,6 +51,17 @@ public:
         auto localPos = widget->mapFromGlobal(globalPos);
         return rect.contains(localPos);
     }
+
+    // Prepares a push button with DPI-appropriate regular, hover and pressed png in the
+    // autodesk human interface guideline style
+    static void setupButtonWithHIGBitmaps(QPushButton* button, const QString& baseName);
+
+    // Returns image_100.png" when you pass "image",
+    // using the DPI setting and also returns always 100 on mac, because Qt doesn't
+    // properly support high dpi with style sheets
+    static QString getDPIPixmapName(QString baseName);
+
+    static void disableHIGButton(QPushButton* button, bool disable = true);
 };
 
 /**
