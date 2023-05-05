@@ -49,6 +49,10 @@ public:
 
     std::vector<Ufe::SceneItem::Ptr> getMaterials() const override;
 
+#if (UFE_PREVIEW_VERSION_NUM >= 5002)
+    bool hasMaterial() const override;
+#endif
+
 private:
     UsdSceneItem::Ptr _item;
 }; // UsdMaterial
