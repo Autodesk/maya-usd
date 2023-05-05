@@ -33,6 +33,8 @@ import ufe
 from functools import partial
 import unittest
 
+import os
+
 class MaterialTestCase(unittest.TestCase):
     '''Verify the Material UFE interface.
     
@@ -66,6 +68,10 @@ class MaterialTestCase(unittest.TestCase):
         globalSelection = ufe.GlobalSelection.get()
         globalSelection.clear()
 
+    # methods:
+    #   - getMaterials
+    #   - hasMaterial   (since UFE version 0.5.2 , or '5002')
+
     def testUsdNoMaterial(self):
         """
         Checks that an object is bound to zero materials.
@@ -78,8 +84,13 @@ class MaterialTestCase(unittest.TestCase):
         cubeItem = ufe.Hierarchy.createItem(cubePath)
 
         materialInterface = ufe.Material.material(cubeItem)
+
         materials = materialInterface.getMaterials()
         self.assertEqual(len(materials), 0)
+
+        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '5002'):
+            hasAnyMaterial = materialInterface.hasMaterial()
+            self.assertFalse(hasAnyMaterial)
 
     def testUsdSingleMaterial(self):
         """
@@ -93,8 +104,13 @@ class MaterialTestCase(unittest.TestCase):
         cubeItem = ufe.Hierarchy.createItem(cubePath)
 
         materialInterface = ufe.Material.material(cubeItem)
+
         materials = materialInterface.getMaterials()
         self.assertEqual(len(materials), 1)
+
+        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '5002'):
+            hasAnyMaterial = materialInterface.hasMaterial()
+            self.assertTrue(hasAnyMaterial)
 
     def testUsdMultipleMaterials(self):
         """
@@ -108,8 +124,13 @@ class MaterialTestCase(unittest.TestCase):
         cubeItem = ufe.Hierarchy.createItem(cubePath)
 
         materialInterface = ufe.Material.material(cubeItem)
+
         materials = materialInterface.getMaterials()
         self.assertEqual(len(materials), 2)
+
+        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '5002'):
+            hasAnyMaterial = materialInterface.hasMaterial()
+            self.assertTrue(hasAnyMaterial)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
