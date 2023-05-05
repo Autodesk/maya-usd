@@ -415,8 +415,8 @@ void UsdUndoAssignNewMaterialCommand::execute()
         //
         // 3. Create the Shader:
         //
-        UsdSceneItem::Ptr materialItem = std::dynamic_pointer_cast<UsdSceneItem>(
-            Ufe::Hierarchy::createItem(createMaterialCmd->newUfePath()));
+        UsdSceneItem::Ptr materialItem
+            = std::dynamic_pointer_cast<UsdSceneItem>(createMaterialCmd->sceneItem());
         auto createShaderCmd = UsdUndoCreateFromNodeDefCommand::create(
             shaderNodeDef, materialItem, shaderNodeDef->GetFamily().GetString());
         if (!createShaderCmd) {
@@ -582,8 +582,7 @@ void UsdUndoAddNewMaterialCommand::execute()
     //
     // Create the Shader:
     //
-    auto materialItem = std::dynamic_pointer_cast<UsdSceneItem>(
-        Ufe::Hierarchy::createItem(_createMaterialCmd->newUfePath()));
+    auto materialItem = std::dynamic_pointer_cast<UsdSceneItem>(_createMaterialCmd->sceneItem());
     _createShaderCmd = UsdUndoCreateFromNodeDefCommand::create(
         shaderNodeDef, materialItem, shaderNodeDef->GetFamily().GetString());
     if (!_createShaderCmd) {
@@ -686,8 +685,7 @@ void UsdUndoCreateMaterialsScopeCommand::execute()
     }
     createScopeCmd->execute();
 
-    auto scopePath = createScopeCmd->newUfePath();
-    auto scopeItem = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(scopePath));
+    auto scopeItem = std::dynamic_pointer_cast<UsdSceneItem>(createScopeCmd->sceneItem());
     auto materialsScopeName = UsdMayaJobExportArgs::GetDefaultMaterialsScopeName();
     auto renameCmd = UsdUndoRenameCommand::create(scopeItem, materialsScopeName);
     if (!renameCmd) {
