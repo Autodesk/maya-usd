@@ -1,0 +1,26 @@
+#usda 1.0
+(
+    defaultPrim = "FlowerPot"
+    upAxis = "Z"
+)
+
+def Xform "FlowerPot" (
+    kind = "component"
+    payload = @./FlowerPot_payload.usda@</FlowerPot>
+    variants = {
+        string modelingVariant = "FlowerPotA"
+    }
+    add variantSets = ["modelingVariant"]
+)
+{
+    variantSet "modelingVariant" = {
+        "FlowerPotA" {
+
+        }
+        "FlowerPotB" {
+
+        }
+    }
+}
+
+
