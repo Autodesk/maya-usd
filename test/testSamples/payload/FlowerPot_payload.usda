@@ -1,0 +1,13 @@
+#usda 1.0
+(
+    defaultPrim = "FlowerPot"
+    upAxis = "Z"
+)
+
+def "FlowerPot" (
+    add references = @./FlowerPot.geom.usd@</FlowerPot>
+)
+{
+}
+
+

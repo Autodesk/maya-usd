@@ -598,6 +598,29 @@ class DuplicateCmdTestCase(unittest.TestCase):
         dupTrf = ufe.Transform3d.transform3d(dupItem)
         self.assertEqual(ufe.Vector3d(2., 0., -2.), dupTrf.translation())
     
+    def testPrimWithPayload(self):
+        '''
+        Test duplicating a prim that has a payload.
+        The content of the payload should not become part of the destination prim.
+        The destination should still simply contain the payload arc.
+        '''
+
+        cmds.file(new=True, force=True)
+        withPayloadFile = testUtils.getTestScene("payload", "FlowerPot.usda")
+        withPayloadDagPath, withPayloadStage = mayaUtils.createProxyFromFile(withPayloadFile)
+        withPayloadUfePathString = ','.join([withPayloadDagPath, "/FlowerPot"])
+
+        cmds.duplicate(withPayloadUfePathString)
+
+        dupItem = ufeUtils.createUfeSceneItem(withPayloadDagPath, '/FlowerPot1')
+        self.assertIsNotNone(dupItem)
+
+        # Make sure the geometry did not get flattened into the duplicate
+        rootLayer = withPayloadStage.GetRootLayer()
+        rootLayerText = rootLayer.ExportToString()
+        self.assertNotIn('"Geom"', rootLayerText)
+        self.assertNotIn('Mesh', rootLayerText)
+    
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
