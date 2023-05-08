@@ -93,7 +93,7 @@ std::vector<Ufe::SceneItem::Ptr> UsdMaterial::getMaterials() const
     return materials;
 }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 5002)
+#if (UFE_PREVIEW_VERSION_NUM >= 5003)
 
 bool UsdMaterial::hasMaterial() const
 {
