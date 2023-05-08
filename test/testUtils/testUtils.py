@@ -22,6 +22,8 @@ import os
 import shutil
 import tempfile
 
+import maya.cmds as cmds
+
 def stripPrefix(input_str, prefix):
     if input_str.startswith(prefix):
         return input_str[len(prefix):]
@@ -78,3 +80,25 @@ class TemporaryDirectory:
         except:
             if not self.ignore_errors:
                 raise
+
+class PluginLoaded:
+    '''
+    Context manager that ensures a plugin is loaded, unloading it if it had not previously been loaded.
+    '''
+    def __init__(self, name):
+        self.name = name
+        self.wasLoaded = cmds.pluginInfo(self.name, q=True, loaded=True)
+
+    def __enter__(self):
+        '''Returns whether the plugin required loading.'''
+        if not self.wasLoaded:
+            cmds.loadPlugin(self.name, quiet=True)
+            return True
+        return False
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if not self.wasLoaded:
+            # Clean out the scene to allow plugin to unload cleanly.
+            cmds.file(new=True, force=True)
+            cmds.unloadPlugin(self.name)
+            

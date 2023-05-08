@@ -44,8 +44,6 @@ target_compile_definitions(${TARGET_NAME}
         $<$<BOOL:${IS_LINUX}>:LINUX>
         # Not sure if msvcc sets this automatically, but won't hurt to redefine
         $<$<BOOL:${IS_WINDOWS}>:_WIN32>
-        # Copy-pasted from lib/mayaUsd/CMakeLists.txt
-        $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
 )
 
 # -----------------------------------------------------------------------------
@@ -83,7 +81,8 @@ mayaUsd_compile_config(${TARGET_NAME})
 # -----------------------------------------------------------------------------
 target_link_libraries(${TARGET_NAME} 
     PRIVATE 
-        mayaHydraLib 
+        mayaHydraLib
+        ufeExtensions
         $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
 )
 

@@ -37,7 +37,6 @@ if(APPLE)
     option(BUILD_UB2 "Build Universal Binary 2 (UB2) Intel64+arm64" OFF)
 endif()
 set(BUILD_WITH_PYTHON_3_VERSION 3.7 CACHE STRING "The version of Python 3 to build with")
-option(CMAKE_WANT_UFE_BUILD "Enable building with UFE (if found)." OFF)
 option(CMAKE_WANT_MATERIALX_BUILD "Enable building with MaterialX (experimental)." OFF)
 
 set(PXR_OVERRIDE_PLUGINPATH_NAME PXR_PLUGINPATH_NAME
@@ -146,20 +145,11 @@ else()
     option(BUILD_MAYAHYDRALIB "Build the Maya-To-Hydra plugin and scene delegate." ON)
 endif()
 
-if(${MAYA_APP_VERSION} STRLESS "2019" AND CMAKE_WANT_UFE_BUILD)
-    set(CMAKE_WANT_UFE_BUILD OFF)
-    message(AUTHOR_WARNING "========================================================================================= \
-                            UFE is not available in Maya${MAYA_MAJOR_VERSION}. Maya2019 and later are supported only. \
-                            ========================================================================================= ")
-endif()
-
-if(CMAKE_WANT_UFE_BUILD)
-    find_package(UFE QUIET)
-    if(UFE_FOUND)
-        message(STATUS "Building with UFE ${UFE_VERSION} features enabled.")
-    else()
-        message(STATUS "UFE not found. UFE features will be disabled.")
-    endif()
+find_package(UFE REQUIRED)
+if(UFE_FOUND)
+    message(STATUS "Building with UFE ${UFE_VERSION}.")
+else()
+    message(STATUS "UFE not found.")
 endif()
 
 if(CMAKE_WANT_MATERIALX_BUILD AND MAYA_LIGHTAPI_VERSION LESS 2)

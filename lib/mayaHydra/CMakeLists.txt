@@ -1,2 +1,3 @@
 add_subdirectory(plugin)
 add_subdirectory(hydraExtensions)
+add_subdirectory(ufeExtensions)

@@ -28,6 +28,8 @@
 
 #include <maya/MFnLight.h>
 #include <maya/MShaderManager.h>
+#include <maya/MDagPath.h>
+#include <maya/MFnDependencyNode.h>
 
 #include <array>
 
@@ -55,6 +57,9 @@ SdfPath _GetRenderItemMayaPrimPath(const MRenderItem& ri)
     if (mayaPath.IsAbsolutePath()) {
         mayaPath = mayaPath.MakeRelativePath(SdfPath::AbsoluteRootPath());
     }
+
+    // Prepend Maya node name, for organisation and readability.
+    mayaPath = SdfPath(MFnDependencyNode(ri.sourceDagPath().node()).name().asChar()).AppendPath(mayaPath);
 
     if (MHWRender::MGeometry::Primitive::kLines != ri.primitive()
         && MHWRender::MGeometry::Primitive::kLineStrip != ri.primitive()
@@ -158,6 +163,8 @@ void MayaHydraDelegateCtx::RemoveInstancer(const SdfPath& id)
 {
     GetRenderIndex().RemoveInstancer(id);
 }
+
+SdfPath MayaHydraDelegateCtx::GetRprimPath() const { return _rprimPath; }
 
 SdfPath MayaHydraDelegateCtx::GetPrimPath(const MDagPath& dg, bool isSprim)
 {

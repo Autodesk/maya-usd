@@ -52,10 +52,16 @@
 #include <maya/MObjectHandle.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
+#include <maya/MProfiler.h>
+#include <maya/MSelectionList.h>
 #include <maya/MShaderManager.h>
 #include <maya/MString.h>
 
 #include <cassert>
+
+int _profilerCategory = MProfiler::addCategory(
+    "MayaHydraSceneDelegate (mayaHydra)",
+    "Events for MayaHydraSceneDelegate");
 
 #if PXR_VERSION < 2211
 #error USD version v0.22.11+ required
@@ -346,7 +352,9 @@ void MayaHydraSceneDelegate::HandleCompleteViewportScene(
         MayaHydraRenderItemAdapterPtr ria = nullptr;
         if (!_GetRenderItem(fastId, ria)) {
             const SdfPath slowId = GetRenderItemPrimPath(ri);
-            ria = std::make_shared<MayaHydraRenderItemAdapter>(slowId, fastId, this, ri);
+            // MAYA-128021: We do not currently support maya instances.
+            MDagPath dagPath(ri.sourceDagPath());
+            ria = std::make_shared<MayaHydraRenderItemAdapter>(dagPath, slowId, fastId, this, ri);
             _AddRenderItem(ria);
         }
 
@@ -1064,89 +1072,32 @@ void MayaHydraSceneDelegate::SetParams(const MayaHydraParams& params)
     MayaHydraDelegate::SetParams(params);
 }
 
-void MayaHydraSceneDelegate::PopulateSelectedPaths(
-    const MSelectionList&       mayaSelection,
-    SdfPathVector&              selectedSdfPaths,
-    const HdSelectionSharedPtr& selection)
-{
-#ifdef MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
-    TF_DEBUG(MAYAHYDRALIB_DELEGATE_SELECTION)
-        .Msg("MayaHydraSceneDelegate::PopulateSelectedPaths - %s\n", GetMayaDelegateID().GetText());
-
-    // We need to track selected masters (but not non-instanced prims)
-    // because they may not be unique when we iterate over selected items -
-    // each dag path should only be iterated over once, but multiple dag
-    // paths might map to the same master prim. So we use selectedMasters
-    // to ensure we don't add the same master prim to selectedSdfPaths
-    // more than once.
-    // While there may be a LOT of instances, hopefully there shouldn't
-    // be a huge number of different types of instances, so tracking this
-    // won't be too bad...
-    std::unordered_set<SdfPath, SdfPath::Hash> selectedMasters;
-    MAYAHYDRA_NS::MapSelectionDescendents(
-        mayaSelection,
-        [this, &selectedSdfPaths, &selectedMasters, &selection](const MDagPath& dagPath) {
-            SdfPath primId;
-            if (dagPath.isInstanced()) {
-                auto masterDag = MDagPath();
-                if (!TF_VERIFY(MDagPath::getAPathTo(dagPath.node(), masterDag))) {
-                    return;
-                }
-                primId = GetPrimPath(masterDag, false);
-            } else {
-                primId = GetPrimPath(dagPath, false);
-            }
-            auto adapter = _shapeAdapters.find(primId);
-            if (adapter == _shapeAdapters.end()) {
-                return;
-            }
-
-            TF_DEBUG(MAYAHYDRALIB_DELEGATE_SELECTION)
-                .Msg(
-                    "MayaHydraSceneDelegate::PopulateSelectedPaths - calling "
-                    "adapter PopulateSelectedPaths for: %s\n",
-                    adapter->second->GetID().GetText());
-            adapter->second->PopulateSelectedPaths(
-                dagPath, selectedSdfPaths, selectedMasters, selection);
-        },
-        MFn::kShape);
-#endif
-}
-
-void MayaHydraSceneDelegate::PopulateSelectionList(
-    const HdxPickHitVector&          hits,
+//! \brief  Try to obtain maya object corresponding to HdxPickHit and add it to a maya selection
+//! list \return whether the conversion was a success
+bool MayaHydraSceneDelegate::AddPickHitToSelectionList(
+    const HdxPickHit&                hit,
     const MHWRender::MSelectionInfo& selectInfo,
     MSelectionList&                  selectionList,
     MPointArray&                     worldSpaceHitPts)
 {
-#ifdef MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
-    for (const HdxPickHit& hit : hits) {
-        _FindAdapter<MayaHydraDagAdapter>(
-            hit.objectId,
-            [&hit, &selectionList, &worldSpaceHitPts](MayaHydraDagAdapter* a) {
-                if (a->IsInstanced()) {
-                    MDagPathArray dagPaths;
-                    MDagPath::getAllPathsTo(a->GetDagPath().node(), dagPaths);
-
-                    const int numInstances = dagPaths.length();
-                    if (hit.instanceIndex >= 0 && hit.instanceIndex < numInstances) {
-                        selectionList.add(dagPaths[hit.instanceIndex]);
-                        worldSpaceHitPts.append(
-                            hit.worldSpaceHitPoint[0],
-                            hit.worldSpaceHitPoint[1],
-                            hit.worldSpaceHitPoint[2]);
-                    }
-                } else {
-                    selectionList.add(a->GetDagPath());
-                    worldSpaceHitPts.append(
-                        hit.worldSpaceHitPoint[0],
-                        hit.worldSpaceHitPoint[1],
-                        hit.worldSpaceHitPoint[2]);
-                }
+    SdfPath hitId = hit.objectId;
+    // validate that hit is indeed a maya item. Alternatively, the rprim hit could be an rprim
+    // defined by a scene index such as maya usd.
+    if (hitId.HasPrefix(GetRprimPath())) {
+        _FindAdapter<MayaHydraRenderItemAdapter>(
+            hitId,
+            [&selectionList, &worldSpaceHitPts, &hit](MayaHydraRenderItemAdapter* a) {
+                selectionList.add(a->GetDagPath());
+                worldSpaceHitPts.append(
+                    hit.worldSpaceHitPoint[0],
+                    hit.worldSpaceHitPoint[1],
+                    hit.worldSpaceHitPoint[2]);
             },
-            _shapeAdapters);
+            _renderItemsAdapters);
+        return true;
     }
-#endif
+
+    return false;
 }
 
 HdMeshTopology MayaHydraSceneDelegate::GetMeshTopology(const SdfPath& id)

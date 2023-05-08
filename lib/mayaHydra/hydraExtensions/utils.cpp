@@ -30,6 +30,7 @@
 #include <maya/MObject.h>
 #include <maya/MPlugArray.h>
 #include <maya/MStatus.h>
+#include <ufe/runTimeMgr.h>
 
 #include <cctype>
 #include <sstream>
@@ -359,4 +360,5 @@ SdfPath RenderItemToSdfPath(
     }
     return sdfPath;
 }
+
 } // namespace MAYAHYDRA_NS_DEF

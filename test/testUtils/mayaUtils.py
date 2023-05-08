@@ -312,6 +312,17 @@ def ufeSupportFixLevel():
     return ufeSupportUtils.fixLevel() if hasattr(ufeSupportUtils, 'fixLevel') \
         else 0
 
+def hydraFixLevel():
+    '''
+    Return the Hydra fix level defined in Maya.
+
+    This is used to determine the presence of a Hydra-related feature or bug 
+    fix in Maya.
+    '''
+    import maya.internal.ufeSupport.utils as ufeSupportUtils
+    return ufeSupportUtils.hydraFixLevel() if hasattr(ufeSupportUtils, 'hydraFixLevel') \
+        else 0
+
 def activeModelPanel():
     """Return the model panel that will be used for playblasting etc..."""
     for panel in cmds.getPanel(type="modelPanel"):

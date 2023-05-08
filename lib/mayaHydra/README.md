@@ -41,3 +41,4 @@ The _Hydra for Maya_ plugin has the following isses and limitations:.
 ## Detailed Documentation
 + [Building the mayaHydra.mll plugin](./doc/mayaHydraBuild.md)
 + [Technical details of MayaHydra](./doc/mayaHydraDetails.md)
++ [Selection in MayaHydra](./doc/mayaHydraSelection.md)

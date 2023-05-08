@@ -16,6 +16,13 @@
 #ifndef MTOH_VIEW_OVERRIDE_H
 #define MTOH_VIEW_OVERRIDE_H
 
+#include "defaultLightDelegate.h"
+#include "renderGlobals.h"
+#include "utils.h"
+
+#include <mayaHydraLib/delegates/delegate.h>
+#include <mayaHydraLib/delegates/params.h>
+
 #include <pxr/base/tf/singleton.h>
 #include <pxr/imaging/hd/driver.h>
 #include <pxr/imaging/hd/engine.h>
@@ -37,23 +44,12 @@
 #include <memory>
 #include <mutex>
 
-#if WANT_UFE_BUILD
-#include <ufe/observer.h>
-#endif // WANT_UFE_BUILD
-
-#include "defaultLightDelegate.h"
-#include "renderGlobals.h"
-#include "utils.h"
-
-#include <mayaHydraLib/delegates/delegate.h>
-#include <mayaHydraLib/delegates/params.h>
-
-#include <maya/MViewport2Renderer.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 using HgiUniquePtr = std::unique_ptr<class Hgi>;
-class MayaHydraSceneIndexRegistration;
+class MayaHydraSceneIndexRegistry;
+class MayaHydraSceneDelegate;
+using HdxPickHitVector = std::vector<struct HdxPickHit>;
 
 /*! \brief MtohRenderOverride is a rendering override class for the viewport to use Hydra instead of
  * VP2.0.
@@ -120,6 +116,20 @@ private:
     void              _DetectMayaDefaultLighting(const MHWRender::MDrawContext& drawContext);
     HdRenderDelegate* _GetRenderDelegate();
 
+    void _PickByRegion(
+        HdxPickHitVector& outHits,
+        const MMatrix& viewMatrix,
+        const MMatrix& projMatrix,
+        bool pointSnappingActive,
+        int view_x,
+        int view_y,
+        int view_w,
+        int view_h,
+        unsigned int sel_x,
+        unsigned int sel_y,
+        unsigned int sel_w,
+        unsigned int sel_h);
+
     inline PanelCallbacksList::iterator _FindPanelCallbacks(MString panelName)
     {
         // There should never be that many render panels, so linear iteration
@@ -130,6 +140,13 @@ private:
             _renderPanelCallbacks.end(),
             [&panelName](const PanelCallbacks& item) { return item.first == panelName; });
     }
+
+    MAYAHYDRALIB_API
+    void _PopulateSelectionList(
+        const HdxPickHitVector&          hits,
+        const MHWRender::MSelectionInfo& selectInfo,
+        MSelectionList&                  selectionList,
+        MPointArray&                     worldSpaceHitPts);
 
     // Callbacks
     static void _ClearHydraCallback(void* data);
@@ -150,12 +167,12 @@ private:
 
     MtohRendererDescription _rendererDesc;
 
-    std::unique_ptr<MayaHydraSceneIndexRegistration> _sceneIndexRegistration;
-    std::vector<MHWRender::MRenderOperation*>        _operations;
-    MCallbackIdArray                                 _callbacks;
-    MCallbackId                                      _timerCallback = 0;
-    PanelCallbacksList                               _renderPanelCallbacks;
-    const MtohRenderGlobals&                         _globals;
+    std::shared_ptr<MayaHydraSceneIndexRegistry> _sceneIndexRegistry;
+    std::vector<MHWRender::MRenderOperation*>    _operations;
+    MCallbackIdArray                             _callbacks;
+    MCallbackId                                  _timerCallback = 0;
+    PanelCallbacksList                           _renderPanelCallbacks;
+    const MtohRenderGlobals&                     _globals;
 
     std::mutex                            _lastRenderTimeMutex;
     std::chrono::system_clock::time_point _lastRenderTime;
@@ -188,7 +205,8 @@ private:
 
     GlfSimpleLight _defaultLight;
 
-    std::vector<MayaHydraDelegatePtr> _delegates;
+    std::vector<MayaHydraDelegatePtr>       _delegates;
+    std::shared_ptr<MayaHydraSceneDelegate> _mayaHydraSceneDelegate;
 
     SdfPath _ID;
 
@@ -201,10 +219,6 @@ private:
     bool       _initializationSucceeded = false;
     bool       _hasDefaultLighting = false;
     bool       _selectionChanged = true;
-
-#if WANT_UFE_BUILD
-    UFE_NS::Observer::Ptr _ufeSelectionObserver;
-#endif // WANT_UFE_BUILD
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
