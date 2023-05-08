@@ -69,7 +69,7 @@ endif()
 # Set special Autodesk USD version. We use this to communicate whether or not
 # there are extra patches on-top of the normal USD build.
 set(ADSK_USD_VERSION ${USD_VERSION})
-if (USD_VERSION VERSION_LESS_EQUAL "0.23.02")
+if (USD_VERSION VERSION_LESS "0.23.02")
     # In the security fix there was a new inline method "max_size" added so we
     # can use that to determine if this USD build has the security fix.
     if (USD_INCLUDE_DIR AND EXISTS "${USD_INCLUDE_DIR}/pxr/base/vt/array.h")
