@@ -184,7 +184,14 @@ private:
         To avoid expensive searches during compute, we cache MPlug, SdfPath and converter needed
        to translate values between data models.
      */
-    using Item = std::tuple<MPlug, SdfPath, const Converter*, SyncId>;
+    struct Item
+    {
+        MPlug            plug;
+        SdfPath          path;
+        TfToken          property;
+        const Converter* converter = nullptr;
+        SyncId           syncId;
+    };
     using Container = std::vector<Item>;
 
     ProxyAccessor(ProxyStageProvider& provider)

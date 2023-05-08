@@ -161,6 +161,16 @@ def getSdfValueType(ufeObject, usdAttrName):
     else:
         return None
 
+def getPrimAttrPath(primSdfPath, primSdfPathStr, usdAttrName):
+    '''
+    Combine a prim SDF path with an attribute name, handling
+    specially the root prim, since it cannot have extra attribute.
+    '''
+    if primSdfPathStr == Sdf.Path.absoluteRootPath:
+        return '/.' + usdAttrName
+    else:
+        return primSdfPath.AppendProperty(usdAttrName)
+
 def getAccessPlug(ufeObject, usdAttrName, sdfValueType=Sdf.ValueTypeNames.Matrix4d):
     selectedDagPath, selectedPrimPath = getDagAndPrimFromUfe(ufeObject)
 
@@ -170,7 +180,7 @@ def getAccessPlug(ufeObject, usdAttrName, sdfValueType=Sdf.ValueTypeNames.Matrix
     sdfPath = Sdf.Path(selectedPrimPath)
 
     if not usdAttrName == "":
-        sdfPath = sdfPath.AppendProperty(usdAttrName)
+        sdfPath = getPrimAttrPath(sdfPath, selectedPrimPath, usdAttrName)
         sdfValueType = getSdfValueType(ufeObject,usdAttrName)
     
     plugNameValueAttr = getAccessPlugName(sdfPath)
@@ -194,7 +204,7 @@ def getOrCreateAccessPlug(ufeObject, usdAttrName, sdfValueType=Sdf.ValueTypeName
 
         sdfPath = Sdf.Path(selectedPrimPath)
         if not usdAttrName == "":
-            sdfPath = sdfPath.AppendProperty(usdAttrName)
+            sdfPath = getPrimAttrPath(sdfPath, selectedPrimPath, usdAttrName)
             
         plugNameValueAttr = getAccessPlugName(sdfPath)
     
@@ -219,17 +229,33 @@ def keyframeAccessPlug(ufeObject, usdAttrName):
     else:
         result = cmds.setKeyframe(proxyDagPath, attribute=plugNameValueAttr)
     
+def connectParentChildAttr(parentAttr, childDagPath, attrName, connect):
+    '''
+    Connect or disconnect a parent attribute to the child attribute.
+    '''
+    if parentAttr is None:
+        return
+    childAttr = childDagPath + '.' + attrName
+    print('{} "{}" to "{}"'.format(
+        ["Disconnecting", "Connecting"][connect],
+        parentAttr, childAttr))
+    if connect:
+        cmds.connectAttr(parentAttr, childAttr)
+    else:
+        cmds.disconnectAttr(parentAttr, childAttr)
+
 def parentItems(ufeChildren, ufeParent, connect=True):
     if not isUfeUsdPath(ufeParent):
         print("This method implements parenting under USD prim. Please provide UFE-USD item for ufeParent")
         return
     
+    print('parentItems: %s' % str(ufeParent.path()))
     parentDagPath, parentUsdPrimPath = getDagAndPrimFromUfe(ufeParent)
     parentValueAttr = getOrCreateAccessPlug(ufeParent, '', Sdf.ValueTypeNames.Matrix4d )
-    parentConnectionAttr = parentDagPath+'.'+parentValueAttr+'[0]'
-    parentVisibilityAttr = getOrCreateAccessPlug(ufeParent, 'combinedVisibility' )
-    parentVisibilityAttr = parentDagPath+'.'+parentVisibilityAttr
-    
+    parentConnectionAttr = parentDagPath+'.'+parentValueAttr+'[0]' if parentValueAttr else None
+    parentValueAttr = getOrCreateAccessPlug(ufeParent, 'combinedVisibility' )
+    parentVisibilityAttr = parentDagPath+'.'+parentValueAttr if parentValueAttr else None
+
     for ufeChild in ufeChildren:
         if isUfeUsdPath(ufeChild):
             print("Parenting of USD to USD is NOT implemented here")
@@ -240,20 +266,10 @@ def parentItems(ufeChildren, ufeParent, connect=True):
         print('{} "{}" to "{}{}"'.format(
             ["Unparenting", "Parenting"][connect],
             childDagPath, parentDagPath, parentUsdPrimPath))
-        childConnectionAttr = childDagPath+'.offsetParentMatrix'
-        print('{} "{}" to "{}"'.format(
-            ["Disconnecting", "Connecting"][connect],
-            parentConnectionAttr, childConnectionAttr))
-        childVisibilityAttr = childDagPath+'.lodVisibility' # cannot use 'visibility' here because it's already used by orphan manager
-        print('{} "{}" to "{}"'.format(
-            ["Disconnecting", "Connecting"][connect],
-            parentVisibilityAttr, childVisibilityAttr))
-        if connect:
-            cmds.connectAttr(parentConnectionAttr, childConnectionAttr)
-            cmds.connectAttr(parentVisibilityAttr, childVisibilityAttr)
-        else:
-            cmds.disconnectAttr(parentConnectionAttr, childConnectionAttr)
-            cmds.disconnectAttr(parentVisibilityAttr, childVisibilityAttr)
+        
+        connectParentChildAttr(parentConnectionAttr, childDagPath, 'offsetParentMatrix', connect)
+        # Cannot use 'visibility' here because it's already used by orphan manager
+        connectParentChildAttr(parentVisibilityAttr, childDagPath, 'lodVisibility', connect)
 
 def __parent(doParenting):
    ufeSelection = iter(ufe.GlobalSelection.get())
