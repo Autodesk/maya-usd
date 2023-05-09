@@ -334,6 +334,61 @@ std::string UsdMayaUtilFileSystem::getUniqueFileName(
     return pathModel.generic_string();
 }
 
+std::string UsdMayaUtilFileSystem::ensureUniqueFileName(const std::string& filename)
+{
+    std::string uniqueName = filename;
+    while (true) {
+        if (!ghc::filesystem::exists(ghc::filesystem::path(uniqueName)))
+            return uniqueName;
+
+        // Algorithm to generate a unique name:
+        //    1. Remove the extension
+        //    2. Replace the filename with the filename plus random text
+        //    3. Put the extension back.
+
+        ghc::filesystem::path uniquePath(filename);
+
+        const std::string extOnly = uniquePath.extension().generic_string();
+        uniquePath = uniquePath.replace_extension();
+
+        const std::string nameOnly = uniquePath.filename().generic_string();
+        uniquePath = uniquePath.replace_filename(nameOnly + "-" + generateUniqueName());
+
+        uniquePath = uniquePath.replace_extension(extOnly);
+
+        uniqueName = uniquePath.generic_string();
+    }
+}
+
+size_t UsdMayaUtilFileSystem::getNumberSuffixPosition(const std::string& text)
+{
+    const size_t length = text.size();
+
+    if (length == 0)
+        return 0;
+
+    size_t nonDigitPos = length - 1;
+    while (nonDigitPos != 0 && std::isdigit(text[nonDigitPos]))
+        --nonDigitPos;
+
+    return nonDigitPos + 1;
+}
+
+std::string UsdMayaUtilFileSystem::getNumberSuffix(const std::string& text)
+{
+    return text.substr(getNumberSuffixPosition(text));
+}
+
+std::string UsdMayaUtilFileSystem::increaseNumberSuffix(const std::string& text)
+{
+    const size_t      suffixPos = getNumberSuffixPosition(text);
+    const std::string numberText = text.substr(suffixPos);
+    const std::string prefixText = text.substr(0, suffixPos);
+
+    const int nextNumber = TfUnstringify<int>(numberText) + 1;
+    return prefixText + TfStringify(nextNumber);
+}
+
 bool UsdMayaUtilFileSystem::pathAppendPath(std::string& a, const std::string& b)
 {
     if (!ghc::filesystem::is_directory(a)) {

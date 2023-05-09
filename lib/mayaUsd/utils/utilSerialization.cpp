@@ -178,6 +178,20 @@ std::string generateUniqueFileName(const std::string& basename)
     return newFileName;
 }
 
+std::string generateUniqueLayerFileName(const std::string& basename, const SdfLayerRefPtr& layer)
+{
+    std::string layerNumber("1");
+    if (layer)
+        layerNumber = UsdMayaUtilFileSystem::getNumberSuffix(layer->GetDisplayName());
+
+    const std::string ext = PXR_NS::UsdUsdFileFormatTokens->Id.GetText();
+    const std::string layerFilename = basename + "-layer" + layerNumber + "." + ext;
+    const std::string dir = getSceneFolder();
+
+    return UsdMayaUtilFileSystem::ensureUniqueFileName(
+        UsdMayaUtilFileSystem::appendPaths(dir, layerFilename));
+}
+
 std::string usdFormatArgOption()
 {
     static const MString kSaveLayerFormatBinaryOption(
@@ -303,7 +317,7 @@ SdfLayerRefPtr saveAnonymousLayer(
     const std::string& basename,
     std::string        formatArg)
 {
-    std::string newFileName = generateUniqueFileName(basename);
+    std::string newFileName = generateUniqueLayerFileName(basename, anonLayer);
     return saveAnonymousLayer(stage, anonLayer, newFileName, false, parent, formatArg);
 }
 

@@ -43,6 +43,9 @@ std::string getSceneFolder();
 MAYAUSD_CORE_PUBLIC
 std::string generateUniqueFileName(const std::string& basename);
 
+MAYAUSD_CORE_PUBLIC
+std::string generateUniqueLayerFileName(const std::string& basename, const SdfLayerRefPtr& layer);
+
 /*! \brief Queries the Maya optionVar that decides what the internal format
     of a .usd file should be, either "usdc" or "usda".
  */
