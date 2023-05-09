@@ -249,7 +249,6 @@ def parentItems(ufeChildren, ufeParent, connect=True):
         print("This method implements parenting under USD prim. Please provide UFE-USD item for ufeParent")
         return
     
-    print('parentItems: %s' % str(ufeParent.path()))
     parentDagPath, parentUsdPrimPath = getDagAndPrimFromUfe(ufeParent)
     parentValueAttr = getOrCreateAccessPlug(ufeParent, '', Sdf.ValueTypeNames.Matrix4d )
     parentConnectionAttr = parentDagPath+'.'+parentValueAttr+'[0]' if parentValueAttr else None
