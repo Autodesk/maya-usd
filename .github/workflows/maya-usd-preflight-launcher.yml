@@ -24,7 +24,7 @@ jobs:
   build_preflight:
       timeout-minutes: 400
       runs-on: ubuntu-latest
-      needs: clang_format_linter
+#      needs: clang_format_linter
       if: ${{ github.event.assignee.login == 'ecp-maya-devops-adsk' }}
       steps:
 
