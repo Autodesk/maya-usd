@@ -689,7 +689,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
 
         if (colorSetName == UsdMayaMeshPrimvarTokens->DisplayOpacityColorSetName.GetString()) {
             // We only export opacity when we are exporting display color
-            // and the color is float3 
+            // and the color is float3
             // if its float4 it will split to color and alpha
             if (!exportDisplayOpacity) {
                 TF_WARN(
@@ -743,12 +743,12 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
                 true,
                 _GetSparseValueWriter());
 
-            // We can only export display opacity separately if display color doesn't contain alpha data
+            // We can only export display opacity separately if display color doesn't contain alpha
+            // data
             if (colorSetRep == MFnMesh::kRGB) {
                 exportDisplayOpacity = true;
             }
-        }
-        else {
+        } else {
             const std::string sanitizedName = UsdMayaUtil::SanitizeColorSetName(colorSetName);
             // if our sanitized name is different than our current one and the
             // sanitized name already exists, it means 2 things are trying to
