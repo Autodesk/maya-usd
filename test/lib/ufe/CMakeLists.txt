@@ -133,6 +133,7 @@ foreach(script ${TEST_SCRIPT_FILES})
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
             "USD_HAS_COLOR4_SDR_SUPPORT=${USD_HAS_COLOR4_SDR_SUPPORT}"
             "USD_HAS_MX_METADATA_SUPPORT=${USD_HAS_MX_METADATA_SUPPORT}"
+            "UFE_ATTRIBUTES_GET_ENUMS=${UFE_ATTRIBUTES_GET_ENUMS}"
     )
 
     # Add a ctest label to these tests for easy filtering.

@@ -532,8 +532,7 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4200',
-                     'getEnums interface only available in Ufe preview version greater equal to 4.1.200, or 0.5.4.')
+    @unittest.skipIf(os.getenv('UFE_ATTRIBUTES_GET_ENUMS', 'NOT-FOUND') not in ('1', "TRUE"), 'Test only available if UFE Attributes has a getEnums() method')
     def testAttributeIntEnum(self):
         '''Test the Int attribute type when it is an enum.'''
         cmds.file(new=True, force=True)
