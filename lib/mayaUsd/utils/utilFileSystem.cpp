@@ -364,7 +364,7 @@ size_t UsdMayaUtilFileSystem::getNumberSuffixPosition(const std::string& text)
 {
     const size_t length = text.size();
 
-    if (length == 0)
+    if (length <= 1)
         return 0;
 
     size_t nonDigitPos = length - 1;
