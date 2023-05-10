@@ -373,7 +373,7 @@ void UsdUndoAssignNewMaterialCommand::execute()
         createMaterialsScopeCmd->execute();
         _cmds->append(createMaterialsScopeCmd);
 
-        auto materialsScope = createMaterialsScopeCmd->sceneItem(); 
+        auto materialsScope = createMaterialsScopeCmd->sceneItem();
         if (!materialsScope || materialsScope->path().empty()) {
             // The _createScopeCmd and/or _renameScopeCmd will have emitted errors.
             markAsFailed();
