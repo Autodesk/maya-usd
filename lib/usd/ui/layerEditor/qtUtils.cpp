@@ -48,6 +48,65 @@ QPixmap QtUtils::createPixmap(QString const& in_pixmapName, int width, int heigh
     return pixmap;
 }
 
+QString QtUtils::getDPIPixmapName(QString baseName)
+{
+#ifdef Q_OS_DARWIN
+    return baseName + "_100.png";
+#else
+    const auto scale = utils->dpiScale();
+    if (scale >= 2.0)
+        return baseName + "_200.png";
+    else if (scale >= 1.5)
+        return baseName + "_150.png";
+    return baseName + "_100.png";
+#endif
+}
+
+void QtUtils::setupButtonWithHIGBitmaps(QPushButton* button, const QString& baseName)
+{
+    button->setFlat(true);
+
+    // regular size: 16px, pressed:24px
+    // therefore, border is 4
+    int     padding = DPIScale(4);
+    QString cssTemplate(R"CSS(
+    QPushButton {
+        padding : %1px;
+        background-image: url(%2);
+        background-position: center center;
+        background-repeat: no-repeat;
+        border: 0px;
+        background-origin: content;
+        }
+    QPushButton::hover {
+            background-image: url(%3);
+        }
+    QPushButton::pressed {
+        background-image: url(%4);
+        border: 0px;
+        padding: 0px;
+        background-origin: content;
+        })CSS");
+
+    QString css = cssTemplate.arg(padding)
+                      .arg(getDPIPixmapName(baseName))
+                      .arg(getDPIPixmapName(baseName + "_hover"))
+                      .arg(getDPIPixmapName(baseName + "_pressed"));
+
+    button->setStyleSheet(css);
+
+    // overkill, but used to generate the grayed out version
+    auto effect = new QGraphicsOpacityEffect(button);
+    button->setGraphicsEffect(effect);
+}
+
+void QtUtils::disableHIGButton(QPushButton* button, bool disable)
+{
+    button->setDisabled(disable);
+    auto effect = dynamic_cast<QGraphicsOpacityEffect*>(button->graphicsEffect());
+    effect->setOpacity(disable ? 0.4 : 1.0);
+}
+
 UsdLayerEditor::QtUtils* utils;
 
 void QtUtils::initLayoutMargins(QLayout* layout, int margin)

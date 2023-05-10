@@ -70,6 +70,8 @@ limitations under the License.
         <!-- The parameter is a workaround for VP2 to execute transparency test. For more details
              see PxrMayaUsdPreviewSurfaceShadingNodeOverride::getCustomMappings(). -->
         <float name="dummyTransparency" ref="opacityToTransparency.dummyTransparency"/>
+        
+        <int name="cullStyle" ref="NwFaceCameraIfNAN.cullStyle"/>
     </properties>
     <values>
         <!-- UsdPreviewSurface Parameter Default Values -->
@@ -100,6 +102,8 @@ limitations under the License.
         <!-- The parameter is a workaround for VP2 to execute transparency test. For more details
              see PxrMayaUsdPreviewSurfaceShadingNodeOverride::getCustomMappings(). -->
         <float name="dummyTransparency" value="0.0" />
+
+        <int name="cullStyle" value="0"/>
     </values>
     <outputs>
         <struct name="mayaSurfaceShaderOutput" ref="mayaSurfaceShaderOutput.mayaSurfaceShaderOutput"/>

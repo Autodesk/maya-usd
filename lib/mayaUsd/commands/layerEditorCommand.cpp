@@ -163,6 +163,7 @@ public:
             if (!validateAndReportIndex(layer, _index, (int)layer->GetNumSubLayerPaths())) {
                 return false;
             }
+            saveSelection();
             _subPath = layer->GetSubLayerPaths()[_index];
             holdOnPathIfDirty(layer, _subPath);
 
@@ -258,6 +259,7 @@ public:
             } else {
                 return false;
             }
+            restoreSelection();
         }
         return true;
     }
@@ -278,8 +280,44 @@ public:
         }
     }
 
+    void saveSelection()
+    {
+#if defined(WANT_UFE_BUILD)
+        // Make a copy of the global selection, to restore it on undo.
+        auto globalSn = Ufe::GlobalSelection::get();
+        _savedSn.replaceWith(*globalSn);
+        // Filter the global selection, removing items below our proxy shape.
+        // We know the path to the proxy shape has a single segment. Not
+        // using Ufe::PathString::path() for UFE v1 compatibility, which
+        // unfortunately reveals leading "world" path component implementation
+        // detail.
+        Ufe::Path path(
+            Ufe::PathSegment("world" + _proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
+        globalSn->replaceWith(MayaUsd::ufe::removeDescendants(_savedSn, path));
+#endif
+    }
+
+    void restoreSelection()
+    {
+#if defined(WANT_UFE_BUILD)
+        // Restore the saved selection to the global selection.  If a saved
+        // selection item started with the proxy shape path, re-create it.
+        // We know the path to the proxy shape has a single segment.  Not
+        // using Ufe::PathString::path() for UFE v1 compatibility, which
+        // unfortunately reveals leading "world" path component implementation
+        // detail.
+        Ufe::Path path(
+            Ufe::PathSegment("world" + _proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
+        auto globalSn = Ufe::GlobalSelection::get();
+        globalSn->replaceWith(MayaUsd::ufe::recreateDescendants(_savedSn, path));
+#endif
+    }
+
 protected:
     std::string _editTargetPath;
+#if defined(WANT_UFE_BUILD)
+    Ufe::Selection _savedSn;
+#endif
 
     UsdStageWeakPtr getStage()
     {
