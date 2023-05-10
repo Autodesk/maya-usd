@@ -32,6 +32,17 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief UsdUndoDuplicateCommand
+//!
+//! \details The USD duplicate command copies all opinions related the the USD prim
+//!          that are in the local layer stack of where the prim is first defined into
+//!          a single target layer, flattened.
+//!
+//!          This means that over opinions in the session layer and any layers in the
+//!          same local layer stack anchored at the root layer are duplicated.
+//!
+//!          It also means that opinion found in references and payloads are *not*
+//!          copied, but the references and payloads arcs are, so their opinions
+//!          are still taken into account.
 #ifdef UFE_V4_FEATURES_AVAILABLE
 class MAYAUSD_CORE_PUBLIC UsdUndoDuplicateCommand : public Ufe::SceneItemResultUndoableCommand
 #else
