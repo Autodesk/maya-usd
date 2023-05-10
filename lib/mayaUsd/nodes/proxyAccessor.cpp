@@ -689,7 +689,8 @@ MStatus ProxyAccessor::stageChanged(const MObject& node, const UsdNotice::Object
     if (_accessorInputItems.size() > 0) {
         auto findInputItemFn = [this](const SdfPath& changedPath) -> Item* {
             for (Item& item : _accessorInputItems) {
-                if (item.path == changedPath || item.path.AppendProperty(item.property) == changedPath) {
+                if (item.path == changedPath
+                    || item.path.AppendProperty(item.property) == changedPath) {
                     return &item;
                 }
             }

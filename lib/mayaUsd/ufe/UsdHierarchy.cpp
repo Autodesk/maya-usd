@@ -275,7 +275,7 @@ Ufe::AppendedChild UsdHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
     auto usdSrcPath = childPrim.GetPath();
     auto ufeDstPath = fItem->path() + childName;
     auto usdDstPath = prim().GetPath().AppendChild(TfToken(childName));
-    auto primSpec getDefiningPrimSpec(childPrim);
+    auto primSpec = getDefiningPrimSpec(childPrim);
     auto layer = primSpec ? primSpec->GetLayer() : SdfLayerHandle();
     if (!layer) {
         std::string err = TfStringPrintf("No prim found at %s", usdSrcPath.GetString().c_str());
