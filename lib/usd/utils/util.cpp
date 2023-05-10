@@ -234,13 +234,13 @@ std::vector<LayerAndPath> getAuthoredLayerAndPaths(const UsdPrim& prim, bool inc
     // so the record the layers that are under the payloads.
     std::set<SdfLayerHandle> payloadLayers;
     if (!includePayloads) {
-        UsdPrimCompositionQuery  query(prim);
+        UsdPrimCompositionQuery query(prim);
         for (const UsdPrimCompositionQueryArc& arc : query.GetCompositionArcs()) {
             if (arc.GetArcType() == PcpArcTypePayload) {
                 addArcLayers(arc, payloadLayers);
             } else {
                 SdfLayerHandle intro = arc.GetIntroducingLayer();
-                const bool underPayload = payloadLayers.count(intro);
+                const bool     underPayload = payloadLayers.count(intro);
                 if (underPayload) {
                     addArcLayers(arc, payloadLayers);
                 }

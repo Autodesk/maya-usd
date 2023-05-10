@@ -47,7 +47,8 @@ struct LayerAndPath
 //  The strongest layer is the first in the list.
 //  When the prim is in a reference, that path will not be equal to the path of the input prim.
 MAYA_USD_UTILS_PUBLIC
-std::vector<LayerAndPath> getAuthoredLayerAndPaths(const UsdPrim& prim, bool includePayloads = false);
+std::vector<LayerAndPath>
+getAuthoredLayerAndPaths(const UsdPrim& prim, bool includePayloads = false);
 
 //! Return the layer where the prim is defined and the path relative to that layer.
 //  When the prim is in a reference, that path will not be equal to the path of the input prim.
