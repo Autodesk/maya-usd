@@ -126,5 +126,20 @@ bool UsdMaterial::hasMaterial() const
 
 #endif
 
+#if (UFE_PREVIEW_VERSION_NUM >= 5005)
+
+bool UsdMaterial::canAssignMaterial() const
+{
+    if (!TF_VERIFY(_item)) {
+        return false;
+    }
+
+    // todo
+
+    return false;
+}
+
+#endif
+
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

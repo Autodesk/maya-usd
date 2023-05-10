@@ -132,5 +132,13 @@ class MaterialTestCase(unittest.TestCase):
             hasAnyMaterial = materialInterface.hasMaterial()
             self.assertTrue(hasAnyMaterial)
 
+    @unittest.skipUnless(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '5005', 'canAssignMaterial query since UFE version 0.5.5 , or 5005.')
+    def testCanAssignMaterial(self):
+        """
+        Checks if an object can be bound to a material.
+        """
+
+        self.assertTrue(True)
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

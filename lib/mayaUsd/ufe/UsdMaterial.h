@@ -53,6 +53,10 @@ public:
     bool hasMaterial() const override;
 #endif
 
+#if (UFE_PREVIEW_VERSION_NUM >= 5005)
+    bool canAssignMaterial() const override;
+#endif
+
 private:
     UsdSceneItem::Ptr _item;
 }; // UsdMaterial
