@@ -467,7 +467,6 @@ void SaveLayersDialog::onSaveAll()
         return;
     }
 
-    int         i, count;
     std::string newRoot;
 
     _newPaths.clear();
@@ -477,7 +476,7 @@ void SaveLayersDialog::onSaveAll()
     // The anonymous layer section in the dialog can be empty.
     if (nullptr != _anonLayersWidget) {
         QLayout* anonLayout = _anonLayersWidget->layout();
-        for (i = 0, count = anonLayout->count(); i < count; ++i) {
+        for (int count = anonLayout->count(), i = count - 1; i >= 0; --i) {
             auto row = dynamic_cast<SaveLayerPathRow*>(anonLayout->itemAt(i)->widget());
             if (!row || !row->_layerInfo.layer)
                 continue;
