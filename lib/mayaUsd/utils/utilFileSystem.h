@@ -147,6 +147,29 @@ MAYAUSD_CORE_PUBLIC
 std::string
 getUniqueFileName(const std::string& dir, const std::string& basename, const std::string& ext);
 
+/*! \brief returns a unique file name, make sure it does not exist on disk.
+ */
+MAYAUSD_CORE_PUBLIC
+std::string ensureUniqueFileName(const std::string& filename);
+
+/*! \brief returns the position of the numbered suffix.
+           Returns the end of the string position if no such suffix is present.
+ */
+MAYAUSD_CORE_PUBLIC
+size_t getNumberSuffixPosition(const std::string& text);
+
+/*! \brief returns the numbered suffix.
+           Returns the an empty string if no such suffix is present.
+ */
+MAYAUSD_CORE_PUBLIC
+std::string getNumberSuffix(const std::string& text);
+
+/*! \brief returns a new text with the numbered suffix increased by one.
+           Returns the text with 1 appended if no such suffix is present.
+ */
+MAYAUSD_CORE_PUBLIC
+std::string increaseNumberSuffix(const std::string& text);
+
 /*! \brief returns the aboluste path relative to the maya file
  */
 MAYAUSD_CORE_PUBLIC
