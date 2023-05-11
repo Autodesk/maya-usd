@@ -68,10 +68,14 @@ void populateChildren(
     }
     recursionDetector->push(layer->GetRealPath());
 
-    for (auto const path : subPaths) {
+    for (auto iter = subPaths.rbegin(); iter != subPaths.rend(); ++iter) {
+        std::string path = *iter;
         std::string actualPath = PXR_NS::SdfComputeAssetPathRelativeToLayer(layer, path);
         auto        subLayer = PXR_NS::SdfLayer::FindOrOpen(actualPath);
         if (subLayer && !recursionDetector->contains(subLayer->GetRealPath())) {
+            populateChildren(
+                proxyPath, stage, subLayer, recursionDetector, anonLayersToSave, dirtyLayersToSave);
+
             if (subLayer->IsAnonymous()) {
                 MayaUsd::utils::LayerInfo info;
                 info.stage = stage;
@@ -82,9 +86,6 @@ void populateChildren(
             } else if (subLayer->IsDirty()) {
                 dirtyLayersToSave.push_back(subLayer);
             }
-
-            populateChildren(
-                proxyPath, stage, subLayer, recursionDetector, anonLayersToSave, dirtyLayersToSave);
         }
     }
 
@@ -406,6 +407,8 @@ void getLayersToSaveFromProxy(const std::string& proxyPath, StageLayersToSave& l
     }
 
     auto root = stage->GetRootLayer();
+    populateChildren(
+        proxyPath, stage, root, nullptr, layersInfo._anonLayers, layersInfo._dirtyFileBackedLayers);
     if (root->IsAnonymous()) {
         LayerInfo info;
         info.stage = stage;
@@ -416,8 +419,6 @@ void getLayersToSaveFromProxy(const std::string& proxyPath, StageLayersToSave& l
     } else if (root->IsDirty()) {
         layersInfo._dirtyFileBackedLayers.push_back(root);
     }
-    populateChildren(
-        proxyPath, stage, root, nullptr, layersInfo._anonLayers, layersInfo._dirtyFileBackedLayers);
 
     auto session = stage->GetSessionLayer();
     populateChildren(

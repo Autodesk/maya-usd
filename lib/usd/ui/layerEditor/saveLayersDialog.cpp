@@ -343,7 +343,9 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2)
         anonLayout->setContentsMargins(margin, margin, margin, 0);
         anonLayout->setSpacing(DPIScale(8));
         anonLayout->setAlignment(Qt::AlignTop);
-        for (auto iter = _anonLayerInfos.cbegin(); iter != _anonLayerInfos.cend(); ++iter) {
+        // Note: must start from the end so that layers appear in the right order from parent to
+        // children.
+        for (auto iter = _anonLayerInfos.crbegin(); iter != _anonLayerInfos.crend(); ++iter) {
             auto row = new SaveLayerPathRow(this, (*iter));
             anonLayout->addWidget(row);
         }
@@ -467,8 +469,6 @@ void SaveLayersDialog::onSaveAll()
         return;
     }
 
-    std::string newRoot;
-
     _newPaths.clear();
     _problemLayers.clear();
     _emptyLayers.clear();
@@ -476,6 +476,7 @@ void SaveLayersDialog::onSaveAll()
     // The anonymous layer section in the dialog can be empty.
     if (nullptr != _anonLayersWidget) {
         QLayout* anonLayout = _anonLayersWidget->layout();
+        // Note: must start from the end so that sub-layers are saved before their parent.
         for (int count = anonLayout->count(), i = count - 1; i >= 0; --i) {
             auto row = dynamic_cast<SaveLayerPathRow*>(anonLayout->itemAt(i)->widget());
             if (!row || !row->_layerInfo.layer)
