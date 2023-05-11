@@ -259,7 +259,7 @@ static void addSubLayers(const SdfLayerHandle& layer, std::set<SdfLayerHandle>& 
         return;
 
     layers.insert(layer);
-    for (const std::string& layerPath : layer->GetSubLayerPaths())
+    for (const std::string layerPath : layer->GetSubLayerPaths())
         addSubLayers(SdfLayer::FindOrOpen(layerPath), layers);
 }
 
@@ -268,7 +268,7 @@ static bool hasSubLayerInSet(const SdfLayerHandle& layer, const std::set<SdfLaye
     if (!layer)
         return false;
 
-    for (const std::string& layerPath : layer->GetSubLayerPaths())
+    for (const std::string layerPath : layer->GetSubLayerPaths())
         if (layers.count(SdfLayer::FindOrOpen(layerPath)) > 0)
             return true;
 

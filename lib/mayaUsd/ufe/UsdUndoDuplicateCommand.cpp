@@ -22,10 +22,10 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/editRouter.h>
 #include <mayaUsd/utils/editRouterContext.h>
+#include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/loadRules.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/undo/UsdUndoBlock.h>
-#include <mayaUsd/utils/layers.h>
 #include <mayaUsdUtils/MergePrims.h>
 #endif
 
