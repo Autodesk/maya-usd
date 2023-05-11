@@ -144,7 +144,8 @@ SaveLayerPathRow::SaveLayerPathRow(SaveLayersDialog* in_parent, const LayerInfo&
     _label->setToolTip(in_parent->buildTooltipForLayer(_layerInfo.layer));
     gridLayout->addWidget(_label, 0, 0);
 
-    _pathToSaveAs = MayaUsd::utils::generateUniqueFileName(stageName).c_str();
+    _pathToSaveAs
+        = MayaUsd::utils::generateUniqueLayerFileName(stageName, _layerInfo.layer).c_str();
 
     QFileInfo fileInfo(_pathToSaveAs);
     QString   suggestedFullPath = fileInfo.absoluteFilePath();
