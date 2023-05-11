@@ -130,6 +130,13 @@ if (UFE_UINODEGRAPHNODE_HAS_SIZE)
     )
 endif()
 
+if (UFE_ATTRIBUTES_GET_ENUMS)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_ATTRIBUTES_GET_ENUMS=1
+    )
+endif()
+
 if (v4_BatchOps IN_LIST UFE_PREVIEW_FEATURES)
     message(STATUS "UFE_PREVIEW has V4 BatchOps support")
     target_sources(${PROJECT_NAME}
