@@ -22,12 +22,12 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/editRouter.h>
 #include <mayaUsd/utils/editRouterContext.h>
+#include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/loadRules.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsdUtils/MergePrims.h>
 #endif
-#include <mayaUsdUtils/util.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/copyUtils.h>
@@ -59,7 +59,9 @@ UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(const UsdSceneItem::Ptr& srcIte
     auto newName = uniqueChildName(parentPrim, srcPrim.GetName());
     _usdDstPath = parentPrim.GetPath().AppendChild(TfToken(newName));
 
-    _srcLayer = MayaUsdUtils::getDefiningLayerAndPath(srcPrim).layer;
+    auto primSpec = getDefiningPrimSpec(srcPrim);
+    if (primSpec)
+        _srcLayer = primSpec->GetLayer();
 }
 
 UsdUndoDuplicateCommand::~UsdUndoDuplicateCommand() { }
@@ -101,20 +103,19 @@ void UsdUndoDuplicateCommand::execute()
     // otherwise SdfCopySepc will fail.
     SdfJustCreatePrimInLayer(_dstLayer, _usdDstPath.GetParentPath());
 
-    // Retrieve the layers where there are opinion and order them from weak
-    // to strong. We will copy the weakest opinions first, so that they will
-    // get over-written by the stronger opinions.
-    using namespace MayaUsdUtils;
-    std::vector<LayerAndPath> authLayerAndPaths = getAuthoredLayerAndPaths(prim);
+    // Retrieve the local layers around where the prim is defined and order them
+    // from weak to strong. That weak-to-strong order allows us to copy the weakest
+    // opinions first, so that they will get over-written by the stronger opinions.
+    SdfPrimSpecHandleVector authLayerAndPaths = getDefiningPrimStack(prim);
     std::reverse(authLayerAndPaths.begin(), authLayerAndPaths.end());
 
-    MergePrimsOptions options;
-    options.verbosity = MergeVerbosity::None;
+    MayaUsdUtils::MergePrimsOptions options;
+    options.verbosity = MayaUsdUtils::MergeVerbosity::None;
     bool isFirst = true;
 
-    for (const LayerAndPath& layerAndPath : authLayerAndPaths) {
-        const auto layer = layerAndPath.layer;
-        const auto path = layerAndPath.path;
+    for (const SdfPrimSpecHandle& layerAndPath : authLayerAndPaths) {
+        const auto layer = layerAndPath->GetLayer();
+        const auto path = layerAndPath->GetPath();
         const bool result = isFirst
             ? SdfCopySpec(layer, path, _dstLayer, _usdDstPath)
             : mergePrims(stage, layer, path, stage, _dstLayer, _usdDstPath, options);

@@ -597,7 +597,33 @@ class DuplicateCmdTestCase(unittest.TestCase):
         self.assertIsNotNone(dupItem)
         dupTrf = ufe.Transform3d.transform3d(dupItem)
         self.assertEqual(ufe.Vector3d(2., 0., -2.), dupTrf.translation())
-    
+
+    def testPrimWithReference(self):
+        '''
+        Test duplicating a prim that contains a reference.
+        The content of the reference should not become part of the destination prim.
+        The destination should still simply contain the reference arc.
+        '''
+
+        cmds.file(new=True, force=True)
+        cubeRefFile = testUtils.getTestScene("cubeRef", "cube-root.usda")
+        cubeRefDagPath, cubeRefStage = mayaUtils.createProxyFromFile(cubeRefFile)
+        cubeUfePathString = ','.join([cubeRefDagPath, "/RootPrim/PrimWithRef"])
+
+        cmds.duplicate(cubeUfePathString)
+
+        # Verify that the duplicated item still references the cube.
+        cubeRefByDupItem = ufeUtils.createUfeSceneItem(cubeRefDagPath, '/RootPrim/PrimWithRef1/CubeMesh')
+        self.assertIsNotNone(cubeRefByDupItem)
+        dupTrf = ufe.Transform3d.transform3d(cubeRefByDupItem)
+        self.assertEqual(ufe.Vector3d(2., 0., -2.), dupTrf.translation())
+
+        # Make sure the geometry did not get flattened into the duplicate
+        rootLayer = cubeRefStage.GetRootLayer()
+        rootLayerText = rootLayer.ExportToString()
+        self.assertNotIn('"Geom"', rootLayerText)
+        self.assertNotIn('Mesh', rootLayerText)
+
     def testPrimWithPayload(self):
         '''
         Test duplicating a prim that has a payload.
