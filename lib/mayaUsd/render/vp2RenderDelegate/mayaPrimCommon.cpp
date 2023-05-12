@@ -353,7 +353,7 @@ HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
     auto instancerId = delegate->GetInstancerId(id);
     bool instanced = !instancerId.IsEmpty();
     // The additional condition below is to prevent a crash in USD function GetScenePrimPath
-    instanced &= !delegate->GetInstanceIndices(instancerId, id).empty();
+    instanced = (instanced && !delegate->GetInstanceIndices(instancerId, id).empty());
 
     // display layers handling
     if (instanced) {
