@@ -892,7 +892,8 @@ void MayaUsdRPrim::_SyncSharedData(
     if (HdChangeTracker::IsInstancerDirty(*dirtyBits, id)) {
         bool instanced = !refThis.GetInstancerId().IsEmpty();
         // The additional condition below is to prevent a crash in USD function GetScenePrimPath
-        instanced &= !delegate->GetInstanceIndices(refThis.GetInstancerId(), id).empty();
+        instanced
+            = (instanced && !delegate->GetInstanceIndices(refThis.GetInstancerId(), id).empty());
 
         // UpdateInstancingMapEntry is not multithread-safe, so enqueue the call
         _delegate->GetVP2ResourceRegistry().EnqueueCommit([this, id, instanced]() {
