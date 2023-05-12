@@ -426,18 +426,15 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
                 // note: normals gets dirty when points are marked as dirty,
                 // at change tracker.
                 if (!_meshSharedData->_adjacency) {
-                    _meshSharedData->_adjacency.reset(new Hd_VertexAdjacency());
-
-                    HdBufferSourceSharedPtr adjacencyComputation
-                        = _meshSharedData->_adjacency->GetSharedAdjacencyBuilderComputation(
-                            &_meshSharedData->_topology);
                     MProfilingScope profilingScope(
                         HdVP2RenderDelegate::sProfilerCategory,
                         MProfiler::kColorC_L2,
                         _rprimId.asChar(),
                         "HdVP2Mesh::computeAdjacency");
 
-                    adjacencyComputation->Resolve();
+                    _meshSharedData->_adjacency.reset(new Hd_VertexAdjacency());
+
+                    _meshSharedData->_adjacency->BuildAdjacencyTable(&_meshSharedData->_topology);
                 }
 
                 // Only the points referenced by the topology are used to compute
