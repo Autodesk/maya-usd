@@ -19,7 +19,7 @@
 #include "private/Utils.h"
 
 #include <mayaUsd/ufe/Utils.h>
-#include <mayaUsdUtils/util.h>
+#include <mayaUsd/utils/layers.h>
 
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/sdf/copyUtils.h>
@@ -269,13 +269,14 @@ Ufe::AppendedChild UsdHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
     std::string childName = uniqueChildName(fItem->prim(), child->path().back().string());
 
     // Set up all paths to perform the reparent.
-    auto           childPrim = usdChild->prim();
-    auto           stage = childPrim.GetStage();
-    auto           ufeSrcPath = usdChild->path();
-    auto           usdSrcPath = childPrim.GetPath();
-    auto           ufeDstPath = fItem->path() + childName;
-    auto           usdDstPath = prim().GetPath().AppendChild(TfToken(childName));
-    SdfLayerHandle layer = MayaUsdUtils::defPrimSpecLayer(childPrim);
+    auto childPrim = usdChild->prim();
+    auto stage = childPrim.GetStage();
+    auto ufeSrcPath = usdChild->path();
+    auto usdSrcPath = childPrim.GetPath();
+    auto ufeDstPath = fItem->path() + childName;
+    auto usdDstPath = prim().GetPath().AppendChild(TfToken(childName));
+    auto primSpec = getDefiningPrimSpec(childPrim);
+    auto layer = primSpec ? primSpec->GetLayer() : SdfLayerHandle();
     if (!layer) {
         std::string err = TfStringPrintf("No prim found at %s", usdSrcPath.GetString().c_str());
         throw std::runtime_error(err.c_str());

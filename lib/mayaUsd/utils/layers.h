@@ -174,6 +174,36 @@ PXR_NS::SdfLayerHandle getStrongerLayer(
     const PXR_NS::SdfLayerHandle& layer2,
     bool                          compareSessionLayers = false);
 
+//! Return all layers in the given layers where there are opinions about the prim.
+MAYAUSD_CORE_PUBLIC
+PXR_NS::SdfPrimSpecHandleVector
+getPrimStackForLayers(const PXR_NS::UsdPrim& prim, const PXR_NS::SdfLayerHandleVector& layers);
+
+//! Return all local layers in the stage of the prim where there are opinions about the prim.
+//
+// The goal is to avoid editing non-local layers. This issue is,
+// for example, that a rename operation would fail when applied
+// to a prim that references a show asset because the rename operation
+// would be attempted on the reference and classes it inherits.
+//
+// Concrete example:
+//     - Create a test asset that inherits from one or more classes
+//     - Create a prim within a Maya Usd scene that references this asset
+//     - Attempt to rename the prim
+//     - Observe the failure due to Sdf policy
+MAYAUSD_CORE_PUBLIC
+PXR_NS::SdfPrimSpecHandleVector getLocalPrimStack(const PXR_NS::UsdPrim& prim);
+
+//! Return all layers and related paths in the layer stack where the prim is first defined.
+//  When the prim is in a reference, those paths will not be equal to the path of the input prim.
+MAYAUSD_CORE_PUBLIC
+PXR_NS::SdfPrimSpecHandleVector getDefiningPrimStack(const PXR_NS::UsdPrim& prim);
+
+//! Return the layer and path where the prim is defined and the path relative to that layer.
+//  When the prim is in a reference, that path will not be equal to the path of the input prim.
+MAYAUSD_CORE_PUBLIC
+PXR_NS::SdfPrimSpecHandle getDefiningPrimSpec(const PXR_NS::UsdPrim& prim);
+
 } // namespace MAYAUSD_NS_DEF
 
 #endif
