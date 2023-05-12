@@ -678,7 +678,6 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
             continue;
 
         bool isDisplayColor = false;
-        bool isDisplayOpacity = false;
 
         if (colorSetName == UsdMayaMeshPrimvarTokens->DisplayColorColorSetName.GetString()) {
             if (!exportArgs.exportDisplayColor) {
