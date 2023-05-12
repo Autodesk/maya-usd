@@ -363,7 +363,7 @@ option(BUILD_MAYAHYDRALIB "Build the Maya-To-Hydra plugin and scene delegate." O
 3.  Use upper_case for Custom variables
 ```cmake
 # e.g for options names
-set(QT_VERSION "5.6")
+set(Boost_USE_DEBUG_PYTHON ON)
  
 set(HEADERS
     jobArgs.h

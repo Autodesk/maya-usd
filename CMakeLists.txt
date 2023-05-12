@@ -165,23 +165,6 @@ if(TARGET hdMtlx)
     endif()
 endif()
 
-if(DEFINED QT_LOCATION)
-    if(NOT DEFINED QT_VERSION)
-        if(${MAYA_APP_VERSION} STRLESS_EQUAL "2019")
-            set(QT_VERSION "5.6")
-        else()
-            set(QT_VERSION "5.12")
-        endif()
-    endif()
-    set(CMAKE_PREFIX_PATH "${QT_LOCATION}")
-    find_package(Qt5 ${QT_VERSION} COMPONENTS Core Gui Widgets REQUIRED)
-    if(Qt5_FOUND)
-        message(STATUS "Building with Qt features enabled.")
-    endif()
-else()
-    message(STATUS "QT_LOCATION not set. Building Qt features will be disabled.")
-endif()
-
 #------------------------------------------------------------------------------
 # compiler configuration
 #------------------------------------------------------------------------------

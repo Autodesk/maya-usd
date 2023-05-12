@@ -70,7 +70,7 @@ MayaHydraRenderItemAdapter::~MayaHydraRenderItemAdapter() { _RemoveRprim(); }
 
 TfToken MayaHydraRenderItemAdapter::GetRenderTag() const { return HdRenderTagTokens->geometry; }
 
-void MayaHydraRenderItemAdapter::UpdateTransform(MRenderItem& ri)
+void MayaHydraRenderItemAdapter::UpdateTransform(const MRenderItem& ri)
 {
     MMatrix matrix;
     if (ri.getMatrix(matrix) == MStatus::kSuccess) {
@@ -117,7 +117,7 @@ void MayaHydraRenderItemAdapter::_InsertRprim()
     }
 }
 
-void MayaHydraRenderItemAdapter::_RemoveRprim() { GetDelegate()->RemoveRprim(GetID()); }
+void MayaHydraRenderItemAdapter::_RemoveRprim() { GetDelegate()->RemoveRprim(GetID());} 
 
 // We receive in that function the changes made in the Maya viewport between the last frame rendered
 // and the current frame
