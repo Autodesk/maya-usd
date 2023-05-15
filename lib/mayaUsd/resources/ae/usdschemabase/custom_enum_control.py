@@ -19,9 +19,6 @@ import mayaUsd.lib as mayaUsdLib
 import maya.cmds as cmds
 import maya.internal.ufeSupport.attributes as attributes
 
-def _getEnums(attrs, attrName):
-    return [] if not hasattr(attrs, "getEnums") else attrs.getEnums(attrName)
-
 class CustomEnumControl(object):
     def __init__(self, ufeAttr, ufeAttrType, prim, attrName, useNiceName):
         self.ufeAttr = ufeAttr
@@ -30,7 +27,7 @@ class CustomEnumControl(object):
         self.attrName = attrName
         self.useNiceName = useNiceName
         ufeAttrs = ufe.Attributes.attributes(ufeAttr.sceneItem())
-        self.enums = _getEnums(ufeAttrs, ufeAttr.name)
+        self.enums = ufeAttrs.getEnums(ufeAttr.name)
         super(CustomEnumControl, self).__init__()
 
     def onCreate(self, *args):
@@ -83,7 +80,7 @@ class CustomEnumControl(object):
     def updateEnumDataReader(self, *values, **kwargs):
         ufeAttr = kwargs['ufeAttr']
         ufeAttrs = ufe.Attributes.attributes(ufeAttr.sceneItem())
-        enums = _getEnums(ufeAttrs, ufeAttr.name)
+        enums = ufeAttrs.getEnums(ufeAttr.name)
         if len(enums) > 0:
             for enum in enums:
                 if enum[0] == values[0]:
@@ -95,7 +92,7 @@ def customEnumControlCreator(aeTemplate, c):
     ufeAttrType = aeTemplate.attrS.attributeType(c)
     ufeAttr = aeTemplate.attrS.attribute(c)
     ufeAttrs = ufe.Attributes.attributes(ufeAttr.sceneItem())
-    enums = _getEnums(ufeAttrs, ufeAttr.name)
+    enums = ufeAttrs.getEnums(ufeAttr.name)
     # For now only integer enums are supported.
     if ufeAttrType == ufe.Attribute.kInt and len(enums) > 0:
         return CustomEnumControl(ufeAttr, ufeAttrType, aeTemplate.prim, c, aeTemplate.useNiceName)
