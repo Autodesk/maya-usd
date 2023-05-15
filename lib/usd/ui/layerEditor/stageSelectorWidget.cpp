@@ -250,7 +250,7 @@ void StageSelectorWidget::setSessionState(SessionState* in_sessionState)
         _sessionState, &SessionState::stageRenamedSignal, this, &StageSelectorWidget::stageRenamed);
     connect(_sessionState, &SessionState::stageResetSignal, this, &StageSelectorWidget::stageReset);
 
-    updateFromSessionState();
+    updateFromSessionState(_sessionState->stageEntry());
 }
 
 SessionState::StageEntry const StageSelectorWidget::selectedStage()

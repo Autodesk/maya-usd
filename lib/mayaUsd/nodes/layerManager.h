@@ -117,6 +117,11 @@ public:
     static void removeSupportForNodeType(MTypeId nodeId);
     static bool supportedNodeType(MTypeId nodeId);
 
+    //! \brief set the stage that is currently selected in the layer manager.
+    static void setSelectedStage(const std::string& stage);
+    //! \brief get the stage that should be selected in the layer manager.
+    static std::string getSelectedStage();
+
     /*! \brief  Supported Proxy Shapes should call this to possibly retrieve their Root and Session
        layers before calling Sdf::FindOrOpen.  If a handle is found and returned then it will be the
        recreated layer, and all sublayers, with edits from a previous Maya session and should be
@@ -135,6 +140,7 @@ public:
     static MObject fileFormatId;
     static MObject serialized;
     static MObject anonymous;
+    static MObject selectedStage;
 
 protected:
     LayerManager();
