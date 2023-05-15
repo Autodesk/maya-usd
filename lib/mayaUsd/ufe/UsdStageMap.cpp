@@ -56,7 +56,7 @@ Ufe::Path firstPath(const MObject& object)
 // Assuming proxy shape nodes cannot be instanced, simply return the first path.
 Ufe::Path firstPath(const MObjectHandle& handle)
 {
-    if (!TF_VERIFY(handle.isValid(), "Cannot get path from invalid object handle")) {
+    if (!handle.isValid()) {
         return Ufe::Path();
     }
     return firstPath(handle.object());
