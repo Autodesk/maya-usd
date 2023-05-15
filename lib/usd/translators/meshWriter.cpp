@@ -656,6 +656,8 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
     VtArray<float>   shadersAlphaData;
     TfToken          shadersInterpolation;
     VtArray<int>     shadersAssignmentIndices;
+    // check if its safe to export display opacity
+    bool exportDisplayOpacity = false;
 
     // If we're exporting displayColor or we have color sets, gather colors and
     // opacities from the shaders assigned to the mesh and/or its faces.
@@ -685,14 +687,18 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
         }
 
         if (colorSetName == UsdMayaMeshPrimvarTokens->DisplayOpacityColorSetName.GetString()) {
-            TF_WARN(
-                "Mesh \"%s\" has a color set named \"%s\", "
-                "which is a reserved Primvar name in USD. Skipping...",
-                finalMesh.fullPathName().asChar(),
-                UsdMayaMeshPrimvarTokens->DisplayOpacityColorSetName.GetText());
-            continue;
+            // We only export opacity when we are exporting display color
+            // and the color is float3
+            // if its float4 it will split to color and alpha
+            if (!exportDisplayOpacity) {
+                TF_WARN(
+                    "Mesh \"%s\" has a color set named \"%s\", "
+                    "which is a reserved Primvar name in USD. Skipping...",
+                    finalMesh.fullPathName().asChar(),
+                    UsdMayaMeshPrimvarTokens->DisplayOpacityColorSetName.GetText());
+                continue;
+            }
         }
-
         VtArray<GfVec3f>              RGBData;
         VtArray<float>                AlphaData;
         TfToken                       interpolation;
@@ -735,6 +741,12 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
                 clamped,
                 true,
                 _GetSparseValueWriter());
+
+            // We can only export display opacity separately if display color doesn't contain alpha
+            // data
+            if (colorSetRep == MFnMesh::kRGB) {
+                exportDisplayOpacity = true;
+            }
         } else {
             const std::string sanitizedName = UsdMayaUtil::SanitizeColorSetName(colorSetName);
             // if our sanitized name is different than our current one and the

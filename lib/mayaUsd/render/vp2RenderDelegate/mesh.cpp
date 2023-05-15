@@ -27,8 +27,6 @@
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/tf/getenv.h>
-#include <pxr/imaging/hd/extCompCpuComputation.h>
-#include <pxr/imaging/hd/extCompPrimvarBufferSource.h>
 #include <pxr/imaging/hd/extComputation.h>
 #include <pxr/imaging/hd/meshUtil.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
@@ -39,6 +37,11 @@
 #include <pxr/usdImaging/usdImaging/version.h>
 #if !defined(USD_IMAGING_API_VERSION) || USD_IMAGING_API_VERSION < 18
 #include <pxr/usdImaging/usdImaging/delegate.h>
+#endif
+#if !defined(HD_API_VERSION) || HD_API_VERSION < 49
+#include <pxr/imaging/hd/extCompCpuComputation.h>
+#else
+#include <pxr/imaging/hdSt/extCompCpuComputation.h>
 #endif
 
 #include <maya/MFrameContext.h>
@@ -2554,6 +2557,11 @@ void HdVP2Mesh::_UpdatePrimvarSources(
     const HdRenderIndex& renderIndex = sceneDelegate->GetRenderIndex();
     bool                 pointsAreComputed = false;
     for (const auto& primvarName : requiredPrimvars) {
+#if !defined(HD_API_VERSION) || HD_API_VERSION < 49
+        using HdStExtCompCpuComputation = HdExtCompCpuComputation;
+        using HdStExtCompCpuComputationSharedPtr = HdExtCompCpuComputationSharedPtr;
+#endif
+
         // The compPrimvars are a description of the link between the compute system and
         // what we need to draw.
         auto result
@@ -2564,7 +2572,7 @@ void HdVP2Mesh::_UpdatePrimvarSources(
         if (result == compPrimvars.end())
             continue;
         HdExtComputationPrimvarDescriptor compPrimvar = *result;
-        // Create the HdExtCompCpuComputation objects necessary to resolve the computation
+        // Create the HdStExtCompCpuComputation objects necessary to resolve the computation
         HdExtComputation const* sourceComp
             = static_cast<HdExtComputation const*>(renderIndex.GetSprim(
                 HdPrimTypeTokens->extComputation, compPrimvar.sourceComputationId));
@@ -2574,12 +2582,12 @@ void HdVP2Mesh::_UpdatePrimvarSources(
         // This compPrimvar is telling me that the primvar with "name" comes from compute.
         // The compPrimvar has the Id of the compute the data comes from, and the output
         // of the compute which contains the data
-        HdExtCompCpuComputationSharedPtr cpuComputation;
-        HdBufferSourceSharedPtrVector    sources;
+        HdStExtCompCpuComputationSharedPtr cpuComputation;
+        HdBufferSourceSharedPtrVector      sources;
         // There is a possible data race calling CreateComputation, see
         // https://github.com/PixarAnimationStudios/USD/issues/1742
         cpuComputation
-            = HdExtCompCpuComputation::CreateComputation(sceneDelegate, *sourceComp, &sources);
+            = HdStExtCompCpuComputation::CreateComputation(sceneDelegate, *sourceComp, &sources);
 
         // Immediately resolve the computation so we can fill _meshSharedData._primvarInfo
         for (HdBufferSourceSharedPtr& source : sources) {
