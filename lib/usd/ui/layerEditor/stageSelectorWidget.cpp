@@ -295,7 +295,7 @@ static MayaUsdProxyShapeBase* getChildProxyShape(const Ufe::SceneItem::Ptr& item
     if (!hierarchy)
         return nullptr;
 
-    for (const auto subItem : hierarchy->children()) {
+    for (const auto& subItem : hierarchy->children()) {
         auto proxyShapePtr = MayaUsd::ufe::getProxyShape(subItem->path());
         if (!proxyShapePtr)
             continue;
