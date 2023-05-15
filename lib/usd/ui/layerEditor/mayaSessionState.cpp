@@ -19,7 +19,9 @@
 #include "saveLayersDialog.h"
 #include "stringResources.h"
 
+#if defined(WANT_UFE_BUILD)
 #include <mayaUsd/nodes/layerManager.h>
+#endif
 #include <mayaUsd/nodes/usdPrimProvider.h>
 #include <mayaUsd/utils/util.h>
 
@@ -68,8 +70,10 @@ void MayaSessionState::setStageEntry(StageEntry const& inEntry)
         _currentStageEntry.clear();
     }
 
+#if defined(WANT_UFE_BUILD)
     if (!_inLoad)
         MayaUsd::LayerManager::setSelectedStage(_currentStageEntry._proxyShapePath);
+#endif
 }
 
 bool MayaSessionState::getStageEntry(StageEntry* out_stageEntry, const MString& shapePath)
@@ -296,11 +300,13 @@ void MayaSessionState::sceneLoadedCB(void* clientData)
 
 void MayaSessionState::loadSelectedStage()
 {
+#if defined(WANT_UFE_BUILD)
     const std::string shapePath = MayaUsd::LayerManager::getSelectedStage();
     StageEntry        entry;
     if (getStageEntry(&entry, shapePath.c_str())) {
         setStageEntry(entry);
     }
+#endif
 }
 
 bool MayaSessionState::saveLayerUI(

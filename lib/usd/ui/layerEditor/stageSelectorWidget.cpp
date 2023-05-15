@@ -289,6 +289,7 @@ void StageSelectorWidget::selectedIndexChanged(int index)
     _internalChange = false;
 }
 
+#if defined(WANT_UFE_BUILD)
 static MayaUsdProxyShapeBase* getChildProxyShape(const Ufe::SceneItem::Ptr& item)
 {
     Ufe::Hierarchy::Ptr hierarchy = Ufe::Hierarchy::hierarchy(item);
@@ -305,6 +306,7 @@ static MayaUsdProxyShapeBase* getChildProxyShape(const Ufe::SceneItem::Ptr& item
 
     return nullptr;
 }
+#endif
 
 void StageSelectorWidget::selectionChanged()
 {
