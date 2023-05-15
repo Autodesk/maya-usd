@@ -22,6 +22,7 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
 
+#include <ufe/hierarchy.h>
 #include <ufe/pathString.h>
 
 namespace {
@@ -47,7 +48,11 @@ UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(
     const UsdSceneItem::Ptr& usdSceneItem,
     const std::string&       name,
     const std::string&       type)
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    : Ufe::SceneItemResultUndoableCommand()
+#else
     : Ufe::UndoableCommand()
+#endif
 {
     // First get the stage from the proxy shape.
     auto ufePath = usdSceneItem->path();
@@ -114,6 +119,11 @@ std::string UsdUndoAddNewPrimCommand::commandString() const
 {
     return std::string("CreatePrim ") + _primToken.GetText() + " "
         + Ufe::PathString::string(_newUfePath);
+}
+
+Ufe::SceneItem::Ptr UsdUndoAddNewPrimCommand::sceneItem() const
+{
+    return Ufe::Hierarchy::createItem(newUfePath());
 }
 #endif
 

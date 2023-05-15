@@ -361,9 +361,7 @@ Ufe::InsertChildCommand::Ptr UsdShaderNodeDef::createNodeCmd(
     TF_AXIOM(fShaderNodeDef);
     UsdSceneItem::Ptr parentItem = std::dynamic_pointer_cast<UsdSceneItem>(parent);
     if (parentItem) {
-        if (parentItem->nodeType() == "Scope"
-            && parentItem->nodeName()
-                == UsdUndoAssignNewMaterialCommand::resolvedMaterialScopeName()) {
+        if (UsdUndoAddNewMaterialCommand::CompatiblePrim(parentItem)) {
             return UsdUndoAddNewMaterialCommand::create(
                 parentItem, fShaderNodeDef->GetIdentifier());
         }
