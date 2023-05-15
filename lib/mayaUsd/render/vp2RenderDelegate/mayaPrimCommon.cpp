@@ -353,7 +353,7 @@ HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
     auto instancerId = delegate->GetInstancerId(id);
     bool instanced = !instancerId.IsEmpty();
     // The additional condition below is to prevent a crash in USD function GetScenePrimPath
-    instanced &= !delegate->GetInstanceIndices(instancerId, id).empty();
+    instanced = (instanced && !delegate->GetInstanceIndices(instancerId, id).empty());
 
     // display layers handling
     if (instanced) {
@@ -892,7 +892,8 @@ void MayaUsdRPrim::_SyncSharedData(
     if (HdChangeTracker::IsInstancerDirty(*dirtyBits, id)) {
         bool instanced = !refThis.GetInstancerId().IsEmpty();
         // The additional condition below is to prevent a crash in USD function GetScenePrimPath
-        instanced &= !delegate->GetInstanceIndices(refThis.GetInstancerId(), id).empty();
+        instanced
+            = (instanced && !delegate->GetInstanceIndices(refThis.GetInstancerId(), id).empty());
 
         // UpdateInstancingMapEntry is not multithread-safe, so enqueue the call
         _delegate->GetVP2ResourceRegistry().EnqueueCommit([this, id, instanced]() {
