@@ -18,6 +18,7 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
 
 #include <pxr/base/tf/declarePtrs.h>
 #include <pxr/pxr.h>
@@ -46,6 +47,9 @@ TF_DECLARE_REF_PTRS(UsdMayaImportChaser);
 /// creating cycles or other undesirable setups in the DG.
 class UsdMayaImportChaser : public TfRefBase
 {
+protected:
+    UsdMayaPrimReaderContext::ObjectRegistry mNewNodeRegistry;
+
 public:
     virtual ~UsdMayaImportChaser() override { }
 
@@ -62,6 +66,9 @@ public:
 
     MAYAUSD_CORE_PUBLIC
     virtual bool Undo();
+
+    MAYAUSD_CORE_PUBLIC
+    void WriteToNodeRegistry(UsdMayaPrimReaderContext::ObjectRegistry nodeRegistry);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -441,47 +441,6 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         }
     }
 
-    ///
-    MDagPathArray myDagArray;
-    SdfPathVector mySdfPaths;
-    SdfPathSet    myImportedPaths;
-
-    /*
-    for (const auto& v : this->GetNewNodeRegistry()) {
-        auto tmp = v.first;
-        MObject obj;
-        if (TfMapLookup(mNewNodeRegistry, tmp, &obj)) {
-            if (obj.hasFn(MFn::kDagNode)) {
-                myDagArray.append(MDagPath::getAPathTo(obj));
-            }
-        }
-    }
-    */
-
-    // Not sure if we want to traverse all the stages or just one
-    // for (const UsdPrim prim : stage->Traverse()) {
-
-    // Since we are gonna traverse all, maybe only add the children node to it
-    for (const UsdPrim prim : stage->TraverseAll()) {
-        if (prim.GetChildren()) { 
-            continue;
-        }
-
-        myImportedPaths.insert(prim.GetPath());
-    }
-    
-    TF_FOR_ALL(pathsIter, myImportedPaths)
-    {
-        std::string key = pathsIter->GetString();
-        MObject     obj;
-        if (TfMapLookup(mNewNodeRegistry, key, &obj)) {
-            if (obj.hasFn(MFn::kDagNode)) {
-                myDagArray.append(MDagPath::getAPathTo(obj));
-                mySdfPaths.push_back(pathsIter->GetPrimPath());
-            }
-        }
-    }
-
     progressBar.advance();
 
     // NOTE: (yliangsiew) Look into a registry of post-import "chasers" here
@@ -490,7 +449,7 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
 
     ///
     UsdMayaImportChaserRegistry::FactoryContext ctx(
-        predicate, stage, myDagArray, mySdfPaths, this->mArgs);
+        predicate, stage, currentAddedDagPaths, fromSdfPaths, this->mArgs);
     for (const std::string& importChaserName : this->mArgs.chaserNames) {
         if (UsdMayaImportChaserRefPtr fn
             = UsdMayaImportChaserRegistry::GetInstance().Create(importChaserName.c_str(), ctx)) {
@@ -502,8 +461,9 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     progressBar.advance();
 
     for (const UsdMayaImportChaserRefPtr& chaser : this->mImportChasers) {
+        chaser->WriteToNodeRegistry(mNewNodeRegistry);
         bool bStat
-            = chaser->PostImport(predicate, stage, myDagArray, mySdfPaths, this->mArgs);
+            = chaser->PostImport(predicate, stage, currentAddedDagPaths, fromSdfPaths, this->mArgs);
         if (!bStat) {
             TF_WARN("Failed to execute import chaser!");
             return false;

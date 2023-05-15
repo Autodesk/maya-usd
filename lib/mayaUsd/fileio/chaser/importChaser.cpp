@@ -34,4 +34,9 @@ bool UsdMayaImportChaser::Redo() { return true; }
 
 bool UsdMayaImportChaser::Undo() { return true; }
 
+void UsdMayaImportChaser::WriteToNodeRegistry(
+    UsdMayaPrimReaderContext::ObjectRegistry nodeRegistry) {
+    mNewNodeRegistry = nodeRegistry;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
