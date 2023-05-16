@@ -40,6 +40,7 @@
 
 #if defined(WANT_UFE_BUILD)
 #include <ufe/globalSelection.h>
+#include <ufe/hierarchy.h>
 #include <ufe/observableSelection.h>
 #include <ufe/selection.h>
 #include <ufe/selectionNotification.h>
@@ -250,7 +251,7 @@ void StageSelectorWidget::setSessionState(SessionState* in_sessionState)
         _sessionState, &SessionState::stageRenamedSignal, this, &StageSelectorWidget::stageRenamed);
     connect(_sessionState, &SessionState::stageResetSignal, this, &StageSelectorWidget::stageReset);
 
-    updateFromSessionState();
+    updateFromSessionState(_sessionState->stageEntry());
 }
 
 SessionState::StageEntry const StageSelectorWidget::selectedStage()
@@ -288,6 +289,25 @@ void StageSelectorWidget::selectedIndexChanged(int index)
     _internalChange = false;
 }
 
+#if defined(WANT_UFE_BUILD)
+static MayaUsdProxyShapeBase* getChildProxyShape(const Ufe::SceneItem::Ptr& item)
+{
+    Ufe::Hierarchy::Ptr hierarchy = Ufe::Hierarchy::hierarchy(item);
+    if (!hierarchy)
+        return nullptr;
+
+    for (const auto& subItem : hierarchy->children()) {
+        auto proxyShapePtr = MayaUsd::ufe::getProxyShape(subItem->path());
+        if (!proxyShapePtr)
+            continue;
+
+        return proxyShapePtr;
+    }
+
+    return nullptr;
+}
+#endif
+
 void StageSelectorWidget::selectionChanged()
 {
 #if defined(WANT_UFE_BUILD)
@@ -304,8 +324,12 @@ void StageSelectorWidget::selectionChanged()
     const Ufe::Selection& ufeSelection = *ufeGlobalSelection;
     for (const auto& item : ufeSelection) {
         auto proxyShapePtr = MayaUsd::ufe::getProxyShape(item->path());
-        if (!proxyShapePtr)
-            continue;
+        if (!proxyShapePtr) {
+            proxyShapePtr = getChildProxyShape(item);
+            if (!proxyShapePtr) {
+                continue;
+            }
+        }
 
         MFnDagNode        dagNode(proxyShapePtr->thisMObject());
         const std::string id = dagNode.uuid().asString().asChar();
