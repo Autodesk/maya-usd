@@ -823,11 +823,14 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
 #endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
+        const bool isMayaRef = (prim().GetTypeName() == TfToken("MayaReference"));
         if (!fIsAGatewayType && PrimUpdaterManager::getInstance().canEditAsMaya(path())) {
             items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
-            items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
+            if (!isMayaRef) {
+                items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
+            }
         }
-        if (prim().GetTypeName() != TfToken("MayaReference")) {
+        if (!isMayaRef) {
             items.emplace_back(kAddMayaReferenceItem, kAddMayaReferenceLabel);
         }
         items.emplace_back(Ufe::ContextItem::kSeparator);
