@@ -35,6 +35,12 @@ proc int canEditAsMaya(string $obj)
     return 0;
 }
 
+proc int canDupAsMaya(string $obj)
+{
+    string $typ = `nodeType $obj`;
+    return $typ != "MayaReference";
+}
+
 global proc mayaUsdMenu_editAsMaya(string $obj)
 {
     if (!hasPrimUpdater())
@@ -197,7 +203,9 @@ global proc USDMenuProc(string $parent, string $obj)
         if (canEditAsMaya($obj)) {
             menuItem -label "Edit As Maya Data" -image "edit_as_Maya.png" -command ("{waitCursor -state 1; mayaUsdMenu_editAsMaya \"" + $obj + "\"; waitCursor -state 0;}");
         }
-        menuItem -label "Duplicate As Maya Data" -command ("{waitCursor -state 1; mayaUsdMenu_duplicate \"" + $obj + "\"; waitCursor -state 0;}");
+        if (canDupAsMaya($obj)) {
+            menuItem -label "Duplicate As Maya Data" -command ("{waitCursor -state 1; mayaUsdMenu_duplicate \"" + $obj + "\"; waitCursor -state 0;}");
+        }
 
         menuItem -divider true;
 
