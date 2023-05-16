@@ -19,6 +19,9 @@
 #include "saveLayersDialog.h"
 #include "stringResources.h"
 
+#if defined(WANT_UFE_BUILD)
+#include <mayaUsd/nodes/layerManager.h>
+#endif
 #include <mayaUsd/nodes/usdPrimProvider.h>
 #include <mayaUsd/utils/util.h>
 
@@ -66,6 +69,11 @@ void MayaSessionState::setStageEntry(StageEntry const& inEntry)
     if (!inEntry._stage) {
         _currentStageEntry.clear();
     }
+
+#if defined(WANT_UFE_BUILD)
+    if (!_inLoad)
+        MayaUsd::LayerManager::setSelectedStage(_currentStageEntry._proxyShapePath);
+#endif
 }
 
 bool MayaSessionState::getStageEntry(StageEntry* out_stageEntry, const MString& shapePath)
@@ -145,11 +153,21 @@ void MayaSessionState::registerNotifications()
         MSceneMessage::kBeforeNew, MayaSessionState::sceneClosingCB, this);
     _callbackIds.push_back(id);
 
+    id = MSceneMessage::addCallback(
+        MSceneMessage::kAfterOpen, MayaSessionState::sceneLoadedCB, this);
+    _callbackIds.push_back(id);
+
+    id = MSceneMessage::addCallback(
+        MSceneMessage::kAfterNew, MayaSessionState::sceneLoadedCB, this);
+    _callbackIds.push_back(id);
+
     id = MSceneMessage::addNamespaceRenamedCallback(MayaSessionState::namespaceRenamedCB, this);
     _callbackIds.push_back(id);
 
     TfWeakPtr<MayaSessionState> me(this);
     _stageResetNoticeKey = TfNotice::Register(me, &MayaSessionState::mayaUsdStageReset);
+
+    loadSelectedStage();
 }
 
 void MayaSessionState::unregisterNotifications()
@@ -267,8 +285,28 @@ void MayaSessionState::nodeRenamedCBOnIdle(const MString& shapePath)
 /* static */
 void MayaSessionState::sceneClosingCB(void* clientData)
 {
-    auto   THIS = static_cast<MayaSessionState*>(clientData);
+    auto THIS = static_cast<MayaSessionState*>(clientData);
+    THIS->_inLoad = true;
     Q_EMIT THIS->clearUIOnSceneResetSignal();
+}
+
+/* static */
+void MayaSessionState::sceneLoadedCB(void* clientData)
+{
+    auto THIS = static_cast<MayaSessionState*>(clientData);
+    THIS->loadSelectedStage();
+    THIS->_inLoad = false;
+}
+
+void MayaSessionState::loadSelectedStage()
+{
+#if defined(WANT_UFE_BUILD)
+    const std::string shapePath = MayaUsd::LayerManager::getSelectedStage();
+    StageEntry        entry;
+    if (getStageEntry(&entry, shapePath.c_str())) {
+        setStageEntry(entry);
+    }
+#endif
 }
 
 bool MayaSessionState::saveLayerUI(
