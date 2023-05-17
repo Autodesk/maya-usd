@@ -1,5 +1,5 @@
 #
-# Copyright 2020 Autodesk
+# Copyright 2023 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,6 +39,8 @@ endif()
 set(BUILD_WITH_PYTHON_3_VERSION 3.7 CACHE STRING "The version of Python 3 to build with")
 option(CMAKE_WANT_UFE_BUILD "Enable building with UFE (if found)." ON)
 option(CMAKE_WANT_MATERIALX_BUILD "Enable building with MaterialX (experimental)." OFF)
+
+option(BUILD_WITH_QT_6 "Build with QT 6." OFF)
 
 set(PXR_OVERRIDE_PLUGINPATH_NAME PXR_PLUGINPATH_NAME
     CACHE STRING "Name of env var USD searches to find plugins")
@@ -158,17 +160,32 @@ endif()
 
 if(DEFINED QT_LOCATION)
     if(NOT DEFINED QT_VERSION)
-        if(${MAYA_APP_VERSION} STRLESS_EQUAL "2019")
+		if(BUILD_WITH_QT_6)
+			set(QT_VERSION "6.5")
+			message(STATUS "Setting Qt version to Qt ${QT_VERSION}")
+        elseif(${MAYA_APP_VERSION} STRLESS_EQUAL "2019")
             set(QT_VERSION "5.6")
-        else()
-            set(QT_VERSION "5.12")
+			message(STATUS "Setting Qt version to Qt ${QT_VERSION}")
+		elseif(${MAYA_APP_VERSION} STRLESS_EQUAL "2020")
+			set(QT_VERSION "5.12")
+			message(STATUS "Setting Qt version to Qt ${QT_VERSION}")
+        else() # 2022, 2023, 2024
+            set(QT_VERSION "5.15")
+			message(STATUS "Setting Qt version to Qt ${QT_VERSION}")
         endif()
     endif()
     set(CMAKE_PREFIX_PATH "${QT_LOCATION}")
-    find_package(Qt5 ${QT_VERSION} COMPONENTS Core Gui Widgets REQUIRED)
-    if(Qt5_FOUND)
-        message(STATUS "Building with Qt features enabled.")
-    endif()
+	if(BUILD_WITH_QT_6)
+		find_package(Qt6 ${QT_VERSION} COMPONENTS Core Gui Widgets REQUIRED)
+		if(Qt6_FOUND)
+			message(STATUS "Building with Qt ${QT_VERSION} features enabled.")
+		endif()
+	else()
+		find_package(Qt5 ${QT_VERSION} COMPONENTS Core Gui Widgets REQUIRED)
+		if(Qt5_FOUND)
+			message(STATUS "Building with Qt ${QT_VERSION} features enabled.")
+		endif()
+	endif()
 else()
     message(STATUS "QT_LOCATION not set. Building Qt features will be disabled.")
 endif()
