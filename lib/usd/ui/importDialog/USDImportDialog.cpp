@@ -54,8 +54,13 @@ USDImportDialog::USDImportDialog(
         fRootPrimPath = importData->rootPrimPath();
         matchingImportData = importData;
     }
-
+    
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    int minW = fUI->nbPrimsInScopeLabel->fontMetrics().horizontalAdvance("12345");
+#else
     int minW = fUI->nbPrimsInScopeLabel->fontMetrics().width("12345");
+#endif
+
     fUI->nbPrimsInScopeLabel->setMinimumWidth(minW);
     fUI->nbVariantsChangedLabel->setMinimumWidth(minW);
 

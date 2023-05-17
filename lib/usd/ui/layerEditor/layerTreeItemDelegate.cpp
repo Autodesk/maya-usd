@@ -1,5 +1,5 @@
 //
-// Copyright 2020 Autodesk
+// Copyright 2023 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -164,7 +164,11 @@ void LayerTreeItemDelegate::paint_drawArrow(QPainter* painter, QRectC rect, Item
 void LayerTreeItemDelegate::paint_drawText(QPainter* painter, QRectC rect, Item item) const
 {
     const auto oldPen = painter->pen();
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    painter->setPen(QPen(item->data(Qt::ForegroundRole).value<QColor>(), 1));
+#else
     painter->setPen(QPen(item->data(Qt::TextColorRole).value<QColor>(), 1));
+#endif
     const auto textRect = getTextRect(rect);
     bool       muted = item->appearsMuted();
     bool       readOnly = item->isReadOnly();

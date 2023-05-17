@@ -191,9 +191,13 @@ void LayerTreeItem::fetchData(RebuildChildren in_rebuild, RecursionDetector* in_
 QVariant LayerTreeItem::data(int role) const
 {
     switch (role) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    case Qt::ForegroundRole: return QColor(200, 200, 200);
+#else
     case Qt::TextColorRole: return QColor(200, 200, 200);
+#endif
     case Qt::BackgroundRole: return QColor(71, 71, 71);
-    case Qt::TextAlignmentRole: return Qt::AlignLeft + Qt::AlignVCenter;
+    case Qt::TextAlignmentRole: return (static_cast<int>(Qt::AlignLeft) + static_cast<int>(Qt::AlignVCenter));
     case Qt::SizeHintRole: return QSize(0, DPIScale(30));
     default: return QStandardItem::data(role);
     }
