@@ -26,8 +26,12 @@
 #include <pxr/imaging/hd/retainedDataSource.h>
 #include <pxr/imaging/hd/sceneIndexPlugin.h>
 #include <pxr/imaging/hd/sceneIndexPluginRegistry.h>
+#include <pxr/imaging/hd/materialBindingSchema.h>
 #include <pxr/usd/usd/primFlags.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
+#include <pxr/usdImaging/usdImaging/niPrototypePropagatingSceneIndex.h>
+#include <pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h>
+#include <pxr/usdImaging/usdImaging/drawModeSceneIndex.h>
 
 #include <maya/MObject.h>
 #include <maya/MObjectHandle.h>
@@ -112,13 +116,32 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
 
         auto proxyShape = dynamic_cast<MayaUsdProxyShapeBase*>(dependNodeFn.userNode());
         if (TF_VERIFY(proxyShape, "Error getting MayaUsdProxyShapeBase")) {
+            
+            //Used for the HdFlatteningSceneIndex to flatten material bindings
+            static const HdContainerDataSourceHandle flatteningInputArgs =
+                HdRetainedContainerDataSource::New(
+                    HdMaterialBindingSchemaTokens->materialBinding,
+                    HdRetainedTypedSampledDataSource<bool>::New(true));
+
             // Convert USD prims to rprims consumed by Hydra
             auto usdImagingStageSceneIndex = UsdImagingStageSceneIndex::New();
+            
             // Flatten transforms, visibility, purpose, model, and material
             // bindings over hierarchies.
-            auto flatteningSceneIndex = HdFlatteningSceneIndex::New(usdImagingStageSceneIndex);
-            return MayaUsd::MayaUsdProxyShapeSceneIndex::New(
-                proxyShape, flatteningSceneIndex, usdImagingStageSceneIndex);
+            //Do it the same way as USDView does with a SceneIndices chain
+            HdSceneIndexBaseRefPtr _sceneIndex  = UsdImagingPiPrototypePropagatingSceneIndex::New(usdImagingStageSceneIndex);
+            _sceneIndex                         = UsdImagingNiPrototypePropagatingSceneIndex::New(_sceneIndex);
+
+            // The native prototype propagating scene index does a lot of
+            // the flattening before inserting copies of the the prototypes
+            // into the scene index. However, the resolved material for a prim
+            // coming from a USD prototype can depend on the prim ancestors of
+            // a corresponding instance. So we need to do one final resolve here.
+            _sceneIndex = HdFlatteningSceneIndex::New(_sceneIndex, flatteningInputArgs);
+
+            _sceneIndex = UsdImagingDrawModeSceneIndex::New(_sceneIndex, /* inputArgs = */ nullptr);
+
+            return MayaUsd::MayaUsdProxyShapeSceneIndex::New(proxyShape, _sceneIndex, usdImagingStageSceneIndex);
         }
     }
 
@@ -148,12 +171,12 @@ MayaUsdProxyShapeSceneIndex::~MayaUsdProxyShapeSceneIndex() { }
 
 MayaUsdProxyShapeSceneIndexRefPtr MayaUsdProxyShapeSceneIndex::New(
     MayaUsdProxyShapeBase*                 proxyShape,
-    const HdFlatteningSceneIndexRefPtr&    flatteningSceneIndex,
+    const HdSceneIndexBaseRefPtr&          sceneIndexChainLastElement,
     const UsdImagingStageSceneIndexRefPtr& usdImagingStageSceneIndex)
 {
     // Create the proxy shape scene index which populates the stage
     return TfCreateRefPtr(new MayaUsdProxyShapeSceneIndex(
-        flatteningSceneIndex, usdImagingStageSceneIndex, proxyShape));
+        sceneIndexChainLastElement, usdImagingStageSceneIndex, proxyShape));
 }
 
 Ufe::Path MayaUsdProxyShapeSceneIndex::InterpretRprimPath(
