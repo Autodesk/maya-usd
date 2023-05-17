@@ -237,10 +237,15 @@ bool UsdMayaUtilFileSystem::prepareLayerSaveUILayer(
         layerFileDir = getMayaSceneFileDir();
     }
 
+    return prepareLayerSaveUILayer(layerFileDir);
+}
+
+bool UsdMayaUtilFileSystem::prepareLayerSaveUILayer(const std::string& relativeAnchor)
+{
     const char* script = "import mayaUsd_USDRootFileRelative as murel\n"
                          "murel.usdFileRelative.setRelativeFilePathRoot(r'''%s''')";
 
-    const std::string commandString = TfStringPrintf(script, layerFileDir.c_str());
+    const std::string commandString = TfStringPrintf(script, relativeAnchor.c_str());
     return MGlobal::executePythonCommand(commandString.c_str());
 }
 
