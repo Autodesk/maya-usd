@@ -858,9 +858,9 @@ UsdMayaSchemaAdaptor::CreateAttribute(const TfToken& attrName, MDGModifier& modi
         UsdMayaReadUtil::SetMayaAttr(plug, attrDef->GetDefaultValue(), modifier);
     }
 #else
-    std::string       mayaAttrName = _GetMayaAttrNameOrAlias(attrName);
-    std::string       mayaNiceAttrName = attrDef.GetName();
-    MFnDependencyNode node(_handle.object());
+    std::string                  mayaAttrName = _GetMayaAttrNameOrAlias(attrName);
+    std::string                  mayaNiceAttrName = attrDef.GetName();
+    MFnDependencyNode            node(_handle.object());
 
     bool    newAttr = !node.hasAttribute(mayaAttrName.c_str());
     MObject attrObj = UsdMayaReadUtil::FindOrCreateMayaAttr(
@@ -874,7 +874,7 @@ UsdMayaSchemaAdaptor::CreateAttribute(const TfToken& attrName, MDGModifier& modi
         return UsdMayaAttributeAdaptor();
     }
 
-    MPlug plug = node.findPlug(attrObj);
+    MPlug   plug = node.findPlug(attrObj);
     VtValue fallbackValue;
     if (newAttr && attrDef.GetFallbackValue(&fallbackValue)) {
         // Set the fallback value as the initial value of the attribute, if
@@ -992,7 +992,9 @@ UsdMayaAttributeAdaptor::UsdMayaAttributeAdaptor(const MPlug& plug, SdfAttribute
 {
 }
 #else
-UsdMayaAttributeAdaptor::UsdMayaAttributeAdaptor(const MPlug& plug, const UsdPrimDefinition::Attribute attrDef)
+UsdMayaAttributeAdaptor::UsdMayaAttributeAdaptor(
+    const MPlug&                       plug,
+    const UsdPrimDefinition::Attribute attrDef)
     : _plug(plug)
     , _node(plug.node())
     , _attr(plug.attribute())
@@ -1031,7 +1033,7 @@ TfToken UsdMayaAttributeAdaptor::GetName() const
 
 #if PXR_VERSION < 2308
     return _attrDef->GetNameToken();
-#else 
+#else
     return _attrDef.GetName();
 #endif
 }
@@ -1044,7 +1046,7 @@ bool UsdMayaAttributeAdaptor::Get(VtValue* value) const
 
 #if PXR_VERSION < 2308
     VtValue result = UsdMayaWriteUtil::GetVtValue(_plug, _attrDef->GetTypeName());
-#else 
+#else
     VtValue result = UsdMayaWriteUtil::GetVtValue(_plug, _attrDef.GetTypeName());
 #endif
     if (result.IsEmpty()) {
@@ -1085,7 +1087,7 @@ bool UsdMayaAttributeAdaptor::Set(
 
 #if PXR_VERSION < 2308
 const SdfAttributeSpecHandle UsdMayaAttributeAdaptor::GetAttributeDefinition() const
-#else 
+#else
 UsdPrimDefinition::Attribute UsdMayaAttributeAdaptor::GetAttributeDefinition() const
 #endif
 {

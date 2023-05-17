@@ -824,8 +824,9 @@ bool UsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
                             /*custom*/ false,
                             attrDef->GetVariability());
 #else
-                        const UsdPrimDefinition::Attribute attrDef = attrAdaptor.GetAttributeDefinition();
-                        UsdAttribute                 attr = prim.CreateAttribute(
+                        const UsdPrimDefinition::Attribute attrDef
+                            = attrAdaptor.GetAttributeDefinition();
+                        UsdAttribute attr = prim.CreateAttribute(
                             attrDef.GetName(),
                             attrDef.GetTypeName(),
                             /*custom*/ false,
@@ -859,7 +860,7 @@ size_t UsdMayaWriteUtil::WriteSchemaAttributesToPrim(
 
     size_t count = 0;
     for (const TfToken& attrName : attributeNames) {
-        VtValue                value;
+        VtValue value;
 #if PXR_VERSION < 2308
         SdfAttributeSpecHandle attrDef;
         if (UsdMayaAttributeAdaptor attr = schema->GetAttribute(attrName)) {

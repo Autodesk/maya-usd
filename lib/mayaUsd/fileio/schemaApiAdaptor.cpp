@@ -66,10 +66,7 @@ UsdMayaAttributeAdaptor UsdMayaSchemaApiAdaptor::GetAttribute(const TfToken& att
 {
     TfToken mayaAttribute = GetMayaNameForUsdAttrName(attrName);
     if (!mayaAttribute.IsEmpty()) {
-        return GetConvertibleAttribute(
-            GetMayaObjectForSchema(),
-            mayaAttribute.GetText(),
-            attrName);
+        return GetConvertibleAttribute(GetMayaObjectForSchema(), mayaAttribute.GetText(), attrName);
     } else {
         // Untranslatable attributes are handled with dynamic attributes.
         MObjectHandle objectHandle(GetMayaObjectForSchema());
@@ -143,9 +140,9 @@ UsdMayaSchemaApiAdaptor::GetAuthoredAttributeNamesOnMayaObject(MObject mayaObjec
 }
 
 UsdMayaAttributeAdaptor UsdMayaSchemaApiAdaptor::GetConvertibleAttribute(
-    MObject                       mayaObject,
-    const MString&                mayaAttribute,
-    const TfToken&                attrName) const
+    MObject        mayaObject,
+    const MString& mayaAttribute,
+    const TfToken& attrName) const
 {
     if (mayaObject.isNull()) {
         // It is possible that the object got removed with RemoveSchema, making this call
@@ -157,10 +154,9 @@ UsdMayaAttributeAdaptor UsdMayaSchemaApiAdaptor::GetConvertibleAttribute(
 #if PXR_VERSION < 2308
     SdfAttributeSpecHandle attrDef = _schemaDef->GetSchemaAttributeSpec(attrName);
 #else
-    const UsdPrimDefinition::Attribute attrDef = 
-        _schemaDef->GetAttributeDefinition(attrName);
+    const UsdPrimDefinition::Attribute attrDef = _schemaDef->GetAttributeDefinition(attrName);
 #endif
-    
+
     if (!attrDef) {
         TF_CODING_ERROR("Attribute doesn't exist on schema '%s'", _schemaName.GetText());
         return UsdMayaAttributeAdaptor();

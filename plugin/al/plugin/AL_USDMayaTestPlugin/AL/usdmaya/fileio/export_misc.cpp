@@ -35,8 +35,7 @@ TEST(export_misc, subdivision_scheme)
     auto primDef = UsdSchemaRegistry::GetInstance().FindConcretePrimDefinition(geomTypeToken);
     ASSERT_TRUE(primDef);
     TfToken defaultToken;
-    primDef->GetAttributeFallbackValue(
-        UsdGeomTokens->subdivisionScheme, &defaultToken);
+    primDef->GetAttributeFallbackValue(UsdGeomTokens->subdivisionScheme, &defaultToken);
 #else
     auto attrSpec = UsdSchemaRegistry::GetAttributeDefinition(
         TfToken(geomType.GetTypeName()), UsdGeomTokens->subdivisionScheme);

@@ -251,8 +251,7 @@ static bool _AttributeAdaptor_Set(UsdMayaAttributeAdaptor& self, const VtValue& 
 static std::string _AttributeAdaptor__repr__(const UsdMayaAttributeAdaptor& self)
 {
     if (self) {
-        return TfStringPrintf(
-            "UsdMayaAttributeAdaptor<%s>", self.GetName().GetText());
+        return TfStringPrintf("UsdMayaAttributeAdaptor<%s>", self.GetName().GetText());
     } else {
         return "invalid attribute adaptor";
     }

@@ -54,9 +54,9 @@ class UsdMayaPrimReaderContext;
 class UsdMayaAttributeAdaptor
 {
 protected:
-    MPlug                  _plug;
-    MObjectHandle          _node;
-    MObjectHandle          _attr;
+    MPlug         _plug;
+    MObjectHandle _node;
+    MObjectHandle _attr;
 #if PXR_VERSION < 2308
     SdfAttributeSpecHandle _attrDef;
 #else
@@ -75,8 +75,7 @@ public:
     UsdMayaAttributeAdaptor(const MPlug& plug, SdfAttributeSpecHandle attrDef);
 #else
     MAYAUSD_CORE_PUBLIC
-    UsdMayaAttributeAdaptor(const MPlug& plug, 
-        const UsdPrimDefinition::Attribute attrDef);
+    UsdMayaAttributeAdaptor(const MPlug& plug, const UsdPrimDefinition::Attribute attrDef);
 #endif
 
     MAYAUSD_CORE_PUBLIC
@@ -151,7 +150,7 @@ public:
     /// Returns a null handle if this attribute adaptor is invalid.
     MAYAUSD_CORE_PUBLIC
     const SdfAttributeSpecHandle GetAttributeDefinition() const;
-#else 
+#else
     MAYAUSD_CORE_PUBLIC
     UsdPrimDefinition::Attribute GetAttributeDefinition() const;
 #endif
