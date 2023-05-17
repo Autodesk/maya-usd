@@ -57,7 +57,11 @@ protected:
     MPlug                  _plug;
     MObjectHandle          _node;
     MObjectHandle          _attr;
+#if PXR_VERSION < 2308
     SdfAttributeSpecHandle _attrDef;
+#else
+    UsdPrimDefinition::Attribute _attrDef;
+#endif
 
 public:
     MAYAUSD_CORE_PUBLIC
@@ -66,8 +70,14 @@ public:
     MAYAUSD_CORE_PUBLIC
     ~UsdMayaAttributeAdaptor();
 
+#if PXR_VERSION < 2308
     MAYAUSD_CORE_PUBLIC
     UsdMayaAttributeAdaptor(const MPlug& plug, SdfAttributeSpecHandle attrDef);
+#else
+    MAYAUSD_CORE_PUBLIC
+    UsdMayaAttributeAdaptor(const MPlug& plug, 
+        const UsdPrimDefinition::Attribute attrDef);
+#endif
 
     MAYAUSD_CORE_PUBLIC
     explicit operator bool() const;
@@ -136,10 +146,15 @@ public:
         const UsdMayaPrimReaderArgs& args,
         UsdMayaPrimReaderContext&    context);
 
+#if PXR_VERSION < 2308
     /// Gets the defining spec for this attribute from the schema registry.
     /// Returns a null handle if this attribute adaptor is invalid.
     MAYAUSD_CORE_PUBLIC
     const SdfAttributeSpecHandle GetAttributeDefinition() const;
+#else 
+    MAYAUSD_CORE_PUBLIC
+    UsdPrimDefinition::Attribute GetAttributeDefinition() const;
+#endif
 };
 
 /// The UsdMayaSchemaAdaptor is a wrapper around a Maya object associated with a

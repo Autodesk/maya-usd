@@ -149,7 +149,7 @@ private:
     UsdMayaAttributeAdaptor GetConvertibleAttribute(
         MObject                       mayaObject,
         const MString&                mayaAttribute,
-        const SdfAttributeSpecHandle& attrDef) const;
+        const TfToken&                attrName) const;
 };
 
 using UsdMayaSchemaApiAdaptorPtr = std::shared_ptr<UsdMayaSchemaApiAdaptor>;

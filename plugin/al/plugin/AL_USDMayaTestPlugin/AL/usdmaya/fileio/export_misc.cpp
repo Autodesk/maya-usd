@@ -34,12 +34,14 @@ TEST(export_misc, subdivision_scheme)
     auto geomTypeToken = UsdSchemaRegistry::GetInstance().GetConcreteSchemaTypeName(geomType);
     auto primDef = UsdSchemaRegistry::GetInstance().FindConcretePrimDefinition(geomTypeToken);
     ASSERT_TRUE(primDef);
-    auto attrSpec = primDef->GetSchemaAttributeSpec(UsdGeomTokens->subdivisionScheme);
+    TfToken defaultToken;
+    primDef->GetAttributeFallbackValue(
+        UsdGeomTokens->subdivisionScheme, &defaultToken);
 #else
     auto attrSpec = UsdSchemaRegistry::GetAttributeDefinition(
         TfToken(geomType.GetTypeName()), UsdGeomTokens->subdivisionScheme);
+    auto defaultToken = attrSpec->GetDefaultValue().UncheckedGet<TfToken>();
 #endif
-    auto                   defaultToken = attrSpec->GetDefaultValue().UncheckedGet<TfToken>();
     std::map<TfToken, int> subdSchemeMap = { { defaultToken, 0 }, // No value should be authored
                                              { UsdGeomTokens->catmullClark, 1 },
                                              { UsdGeomTokens->none, 2 },
