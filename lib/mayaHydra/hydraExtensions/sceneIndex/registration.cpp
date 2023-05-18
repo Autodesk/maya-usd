@@ -24,6 +24,9 @@
 #include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/usd/sdf/path.h>
 
+// The SceneIndex plugin required for MaterialX binding to work will no longer be needed
+// after 23.08 hopefully. Pixar has made changed to USD that should handle this case.
+#if PXR_VERSION < 2308
 // Temp workaround to get the code to compile.
 // this will not be required once the pull request to USD header is complete.
 // Details of the issue - https://groups.google.com/g/usd-interest/c/0kyY3Z2sgjo
@@ -32,6 +35,7 @@
 #undef interface
 #endif
 #include <pxr/imaging/hdsi/terminalsResolvingSceneIndex.h>
+#endif //PXR_VERSION
 
 #include <maya/MDGMessage.h>
 #include <maya/MFnDependencyNode.h>
@@ -173,6 +177,7 @@ bool MayaHydraSceneIndexRegistry::_RemoveSceneIndexForNode(const MObject& dagNod
     return false;
 }
 
+#if PXR_VERSION < 2308
 HdSceneIndexBaseRefPtr
 MayaHydraSceneIndexRegistry::_AppendTerminalRenamingSceneIndex(HdSceneIndexBaseRefPtr sceneIndex)
 {    
@@ -186,6 +191,7 @@ MayaHydraSceneIndexRegistry::_AppendTerminalRenamingSceneIndex(HdSceneIndexBaseR
                                   HdMaterialTerminalTokens->surface);
     return HdsiTerminalsResolvingSceneIndex::New(sceneIndex, terminalRemapList);    
 }
+#endif // PXR_VERSION
 
 constexpr char kSceneIndexPluginSuffix[] = {
     "MayaNodeSceneIndexPlugin"
@@ -252,12 +258,15 @@ void MayaHydraSceneIndexRegistry::_AddSceneIndexForNode(MObject& dagNode)
                                      ? ""
                                      : "__" + std::to_string(_incrementedCounterDisambiguator++))));
 
+                #if PXR_VERSION < 2308
                 // HYDRA-179
                 // Inject TerminalsResolvingSceneIndex to get Hydra to handle material bindings.
                 // A simple string replacement for Hydra to identify the terminals based on the render context.
                 HdSceneIndexBaseRefPtr outSceneIndex = _AppendTerminalRenamingSceneIndex(registration->pluginSceneIndex);
                 // Sanity check
                 registration->rootSceneIndex = outSceneIndex ? outSceneIndex : registration->pluginSceneIndex;
+                #endif // PXR_VERSION
+
                 // By inserting the scene index was inserted into the render index using a custom
                 // prefix, the chosen prefix will be prepended to rprims tied to that scene index
                 // automatically.

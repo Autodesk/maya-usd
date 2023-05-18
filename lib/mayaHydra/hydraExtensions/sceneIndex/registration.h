@@ -87,7 +87,9 @@ private:
     bool        _RemoveSceneIndexForNode(const MObject& dagNode);
     static void _SceneIndexNodeAddedCallback(MObject& obj, void* clientData);
     static void _SceneIndexNodeRemovedCallback(MObject& obj, void* clientData);
+    #if PXR_VERSION < 2308
     HdSceneIndexBaseRefPtr _AppendTerminalRenamingSceneIndex(HdSceneIndexBaseRefPtr sceneIndex);
+    #endif
     HdRenderIndex* _renderIndex = nullptr;
 
     MCallbackIdArray _sceneIndexDagNodeMessageCallbacks;
