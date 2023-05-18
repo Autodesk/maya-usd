@@ -139,6 +139,15 @@ using a function called `routeToSessionLayer`:
 import mayaUsd.lib
 mayaUsd.lib.registerEditRouter('visibility', routeToSessionLayer)
 ```
+Routing attributes that are affected by certain commands is still necessary, as 
+routing a command might not route changes on the attribute itself.
+When Routing Attributes, using the `routeAttrToSessionLayer` example above,
+the function used to register would be similar - only using the `attribute` argument:
+
+```Python
+import mayaUsd.lib
+mayaUsd.lib.registerEditRouter('attribute', routeAttrToSessionLayer)
+```
 
 The function to turn off an edit router for a given operation is called
 `restoreDefaultEditRouter`. It restores the default edit router for that
