@@ -59,7 +59,7 @@ def _CreateShot(shotName, shotDir, baseLayer):
 
     from pxr import Usd, UsdGeom
     shotStage = Usd.Stage.CreateNew(shotFilePath)
-    print "Creating shot at %s" % shotFilePath
+    print("Creating shot at %s" % shotFilePath)
 
     _CreateAndAddSubLayers(shotStage, shotName, shotDir, [
         './%s_sim.usd' % shotName,
