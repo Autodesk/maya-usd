@@ -86,7 +86,7 @@ global proc mayaUsd_USDSubLayerFileRelative_FileTypeChanged(string $parent, stri
 ///////////////////////////////////////////////////////////
 //
 // File dialog
-global proc string UsdLayerEditor_SaveLayerFileDialog(int $isRootLayer, string $parentLayerPath)
+global proc string UsdLayerEditor_SaveLayerFileDialog(int $isRootLayer, string $parentLayerPath, int $captionMode)
 {
     global string $gLayerParentPathUsdLayerEditorSaveFileDialog;
     $gLayerParentPathUsdLayerEditorSaveFileDialog = $parentLayerPath;
@@ -117,8 +117,20 @@ global proc string UsdLayerEditor_SaveLayerFileDialog(int $isRootLayer, string $
         $selectionCallback = "mayaUsd_USDSubLayerFileRelative_SelectionChanged";
     }
 
+    string $titleCaption;
+    string $actionCaption;
+    if ($captionMode == 0) {
+        $titleCaption = "Save As";
+        $actionCaption = "Save";
+    } else {
+        $titleCaption = "Set As";
+        $actionCaption = "Set";
+    }
+
     string $result[] = `fileDialog2 
         -fileMode 0
+        -caption $titleCaption
+        -okCaption $actionCaption
         -fileFilter $fileFilter
         -optionsUICreate $createCallback
         -optionsUIInit $initCallback

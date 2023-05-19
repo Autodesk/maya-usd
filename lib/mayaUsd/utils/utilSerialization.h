@@ -91,6 +91,13 @@ struct LayerInfo
     MayaUsd::utils::LayerParent parent;
 };
 
+struct PathInfo
+{
+    std::string absolutePath;
+    bool        savePathAsRelative { false };
+    std::string customRelativeAnchor;
+};
+
 using LayerInfos = std::vector<LayerInfo>;
 
 struct StageLayersToSave
@@ -132,8 +139,7 @@ MAYAUSD_CORE_PUBLIC
 PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
     PXR_NS::UsdStageRefPtr stage,
     PXR_NS::SdfLayerRefPtr anonLayer,
-    const std::string&     path,
-    bool                   savePathAsRelative,
+    const PathInfo&        pathInfo,
     LayerParent            parent,
     std::string            formatArg = "");
 
