@@ -39,4 +39,9 @@ void UsdMayaImportChaser::WriteToNodeRegistry(
     mNewNodeRegistry = nodeRegistry;
 }
 
+void UsdMayaImportChaser::WriteToSdfToDagMap(MSdfToDagMap sdfToDagMap)
+{
+    this->sdfToDagMap = sdfToDagMap;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

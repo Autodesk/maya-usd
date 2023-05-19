@@ -90,6 +90,9 @@ using MDagPathSet = std::set<MDagPath, _CmpDag>;
 /// Otherwise, you may see inconsistent results.
 template <typename V> using MDagPathMap = std::map<MDagPath, V, _CmpDag>;
 
+/// Mapping of SDF paths to an arbitrary type
+//template <typename V> using MSdfPathMap = std::map<SdfPath, V, _CmpDag>;
+
 struct _HashObjectHandle
 {
     unsigned long operator()(const MObjectHandle& handle) const { return handle.hashCode(); }

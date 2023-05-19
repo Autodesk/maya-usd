@@ -428,6 +428,30 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         topImportedPaths.insert(usdRootPrim.GetPath());
     }
 
+    SdfPathSet   sdfImportedPaths;
+    MSdfToDagMap sdfToDagMap;
+    for (const UsdPrim prim : stage->TraverseAll()) {
+        /*
+        if (!prim.GetChildren()) {
+            // traverse to the leaf child
+            sdfImportedPaths.insert(prim.GetPath());
+        }
+        */
+        sdfImportedPaths.insert(prim.GetPath());
+    }
+
+    TF_FOR_ALL(pathsIter, sdfImportedPaths)
+    {
+        std::string key = pathsIter->GetString();
+        MObject     obj;
+        if (TfMapLookup(mNewNodeRegistry, key, &obj)) {
+            if (obj.hasFn(MFn::kDagNode)) {
+                sdfToDagMap[pathsIter->GetPrimPath()] = MDagPath::getAPathTo(obj);
+            }
+        }
+    }
+
+
     TF_FOR_ALL(pathsIter, topImportedPaths)
     {
         std::string key = pathsIter->GetString();
@@ -437,6 +461,7 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
                 addedDagPaths->push_back(MDagPath::getAPathTo(obj));
                 currentAddedDagPaths.append(MDagPath::getAPathTo(obj));
                 fromSdfPaths.push_back(pathsIter->GetPrimPath());
+                sdfToDagMap[pathsIter->GetPrimPath()] = MDagPath::getAPathTo(obj);
             }
         }
     }
@@ -449,7 +474,7 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
 
     ///
     UsdMayaImportChaserRegistry::FactoryContext ctx(
-        predicate, stage, currentAddedDagPaths, fromSdfPaths, this->mArgs);
+        predicate, stage, currentAddedDagPaths, fromSdfPaths, this->mArgs, sdfToDagMap);
     for (const std::string& importChaserName : this->mArgs.chaserNames) {
         if (UsdMayaImportChaserRefPtr fn
             = UsdMayaImportChaserRegistry::GetInstance().Create(importChaserName.c_str(), ctx)) {
@@ -462,6 +487,7 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
 
     for (const UsdMayaImportChaserRefPtr& chaser : this->mImportChasers) {
         chaser->WriteToNodeRegistry(mNewNodeRegistry);
+        chaser->WriteToSdfToDagMap(sdfToDagMap);
         bool bStat
             = chaser->PostImport(predicate, stage, currentAddedDagPaths, fromSdfPaths, this->mArgs);
         if (!bStat) {

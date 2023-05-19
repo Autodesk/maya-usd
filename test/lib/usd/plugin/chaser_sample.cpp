@@ -33,9 +33,9 @@ public:
     {
 
         int numPaths = (int)sdfPaths.size();
-        int numDagPaths = dagPaths.length();
-        // assert(numPaths == (int)dagPaths.length());
-        assert(numPaths == numDagPaths);
+        //int numDagPaths = dagPaths.length();
+        assert(numPaths == (int)dagPaths.length());
+        //assert(numPaths == numDagPaths);
         for (int i = 0; i < numPaths; ++i) {
             SdfPath  sdfPath = sdfPaths[(size_t)i];
             MDagPath dagPath = dagPaths[(unsigned)i];
@@ -64,8 +64,13 @@ public:
             }
         }
 
-        // find the matching sdf and DAG path sets
+        for (const auto& p : sdfToDagMap) {
+            mySdfPaths.push_back(p.first);
+            myDagArray.append(p.second);
+        }
 
+        // find the matching sdf and DAG path sets
+        /*
         TF_FOR_ALL(pathsIter, sdfImportedPaths)
         {
             std::string key = pathsIter->GetString();
@@ -77,6 +82,7 @@ public:
                 }
             }
         }
+        */
         int n = (int)mySdfPaths.size();
         assert(n == (int)myDagArray.length());
 
