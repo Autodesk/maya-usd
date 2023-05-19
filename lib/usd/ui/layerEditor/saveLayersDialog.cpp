@@ -112,9 +112,12 @@ public:
 
     void setPathToSaveAs(const std::string& absolutePath, const std::string& relativeAnchor);
 
+    std::string calculateParentLayerDir() const;
+
 protected:
     void onOpenBrowser();
     void onTextChanged(const QString& text);
+    void postUpdate();
 
 public:
     ghc::filesystem::path _absolutePath;
@@ -124,6 +127,7 @@ public:
     LayerInfo         _layerInfo;
     QLabel*           _label { nullptr };
     QLineEdit*        _pathEdit { nullptr };
+    bool              _suppressTextCallback { false };
     QAbstractButton*  _openBrowser { nullptr };
 };
 
@@ -187,19 +191,46 @@ void SaveLayerPathRow::setPathToSaveAs(
                           .first;
     }
 
+    _suppressTextCallback = true;
     _pathEdit->setText(displayPath.c_str());
     _pathEdit->setEnabled(true);
+    _suppressTextCallback = false;
+
+    postUpdate();
+}
+
+std::string SaveLayerPathRow::calculateParentLayerDir() const
+{
+    auto& parentLayer = _layerInfo.parent._layerParent;
+    if (parentLayer) {
+        if (parentLayer->IsAnonymous()) {
+            auto parentLayerWidget = _parent->findEntry(parentLayer);
+            if (auto parentLayerEntry = dynamic_cast<SaveLayerPathRow*>(parentLayerWidget)) {
+                return UsdMayaUtilFileSystem::getDir(
+                    parentLayerEntry->getAbsolutePath().toStdString());
+            }
+        } else {
+            return UsdMayaUtilFileSystem::getLayerFileDir(parentLayer);
+        }
+    }
+
+    return std::string();
 }
 
 void SaveLayerPathRow::onOpenBrowser()
 {
+    // Calculate parent layer path
+    auto&       parentLayer = _layerInfo.parent._layerParent;
+    std::string parentLayerPath = calculateParentLayerDir();
+
+    // Run the UI and set the resulting path
     std::string absolutePath;
-    if (SaveLayersDialog::saveLayerFilePathUI(absolutePath, _layerInfo.parent._layerParent)) {
+    if (SaveLayersDialog::saveLayerFilePathUI(absolutePath, !parentLayer, parentLayerPath)) {
+        // Calculate relative anchor
         std::string relativeAnchor;
-        if (_layerInfo.parent._layerParent) {
+        if (parentLayer) {
             if (UsdMayaUtilFileSystem::requireUsdPathsRelativeToParentLayer()) {
-                relativeAnchor
-                    = UsdMayaUtilFileSystem::getLayerFileDir(_layerInfo.parent._layerParent);
+                relativeAnchor = parentLayerPath;
             }
         } else {
             if (UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile()) {
@@ -217,6 +248,10 @@ void SaveLayerPathRow::onOpenBrowser()
 
 void SaveLayerPathRow::onTextChanged(const QString& text)
 {
+    if (_suppressTextCallback) {
+        return;
+    }
+
     ghc::filesystem::path inputPath(text.toStdString());
     if (inputPath.is_absolute()) {
         _relativeAnchor.clear();
@@ -227,6 +262,32 @@ void SaveLayerPathRow::onTextChanged(const QString& text)
         _relativeAnchor = MayaUsd::utils::getSceneFolder();
         _absolutePath = (_relativeAnchor / inputPath).lexically_normal();
     }
+
+    postUpdate();
+}
+
+void SaveLayerPathRow::postUpdate()
+{
+    // Update _pathEdit tooltip
+    QString tooltip;
+    if (!_relativeAnchor.empty()) {
+        tooltip = "Directory: ";
+        tooltip += _relativeAnchor.generic_string().c_str();
+    }
+    _pathEdit->setToolTip(tooltip);
+
+    // Update relative anchors of child layers
+    _parent->forEachEntry([this](QWidget* w) {
+        auto entry = dynamic_cast<SaveLayerPathRow*>(w);
+        if (entry && entry->needToSaveAsRelative()
+            && (entry->_layerInfo.parent._layerParent == _layerInfo.layer)) {
+            ghc::filesystem::path relativeAnchor
+                = UsdMayaUtilFileSystem::getDir(getAbsolutePath().toStdString());
+            ghc::filesystem::path relatievPath = entry->_pathEdit->text().toStdString();
+            ghc::filesystem::path absolutePath = (relativeAnchor / relatievPath).lexically_normal();
+            entry->setPathToSaveAs(absolutePath.generic_string(), relativeAnchor.generic_string());
+        }
+    });
 }
 
 class SaveLayerPathRowArea : public QScrollArea
@@ -497,6 +558,35 @@ QString SaveLayersDialog::buildTooltipForLayer(SdfLayerRefPtr layer)
     return tooltip;
 }
 
+QWidget* SaveLayersDialog::findEntry(SdfLayerRefPtr key)
+{
+    if (!_anonLayersWidget || !_anonLayersWidget->layout()) {
+        return nullptr;
+    }
+
+    QLayout* anonLayout = _anonLayersWidget->layout();
+    for (int i = 0, count = anonLayout->count(); i < count; ++i) {
+        auto row = dynamic_cast<SaveLayerPathRow*>(anonLayout->itemAt(i)->widget());
+        if (row && row->_layerInfo.layer == key) {
+            return row;
+        }
+    }
+
+    return nullptr;
+}
+
+void SaveLayersDialog::forEachEntry(const std::function<void(QWidget*)>& func)
+{
+    if (!_anonLayersWidget || !_anonLayersWidget->layout()) {
+        return;
+    }
+
+    QLayout* anonLayout = _anonLayersWidget->layout();
+    for (int i = 0, count = anonLayout->count(); i < count; ++i) {
+        func(anonLayout->itemAt(i)->widget());
+    }
+}
+
 void SaveLayersDialog::onSaveAll()
 {
     if (!okToSave()) {
@@ -522,12 +612,16 @@ void SaveLayersDialog::onSaveAll()
                 auto parent = row->_layerInfo.parent;
                 auto stage = row->_layerInfo.stage;
 
-                auto newLayer = MayaUsd::utils::saveAnonymousLayer(
-                    stage,
-                    sdfLayer,
-                    absolutePath.toStdString(),
-                    row->needToSaveAsRelative(),
-                    parent);
+                MayaUsd::utils::PathInfo pathInfo;
+                pathInfo.absolutePath = absolutePath.toStdString();
+                pathInfo.savePathAsRelative = row->needToSaveAsRelative();
+                if (pathInfo.savePathAsRelative && parent._layerParent
+                    && parent._layerParent->IsAnonymous()) {
+                    pathInfo.customRelativeAnchor = row->calculateParentLayerDir();
+                }
+
+                auto newLayer
+                    = MayaUsd::utils::saveAnonymousLayer(stage, sdfLayer, pathInfo, parent);
                 if (newLayer) {
                     _newPaths.append(QString::fromStdString(sdfLayer->GetDisplayName()));
                     _newPaths.append(absolutePath);
@@ -636,9 +730,37 @@ bool SaveLayersDialog::saveLayerFilePathUI(
 
     MString cmd;
     cmd.format(
-        "UsdLayerEditor_SaveLayerFileDialog(^1s,^2s)",
+        "UsdLayerEditor_SaveLayerFileDialog(^1s,^2s,0)",
         parentLayer ? "0" : "1",
         parentLayerPath.c_str());
+
+    MString fileSelected;
+    MGlobal::executeCommand(
+        cmd,
+        fileSelected,
+        /*display*/ true,
+        /*undo*/ false);
+    if (fileSelected.length() == 0)
+        return false;
+
+    out_filePath = fileSelected.asChar();
+
+    return true;
+}
+
+/*static*/
+bool SaveLayersDialog::saveLayerFilePathUI(
+    std::string&       out_filePath,
+    bool               isRootLayer,
+    const std::string& parentLayerPath)
+{
+    UsdMayaUtilFileSystem::prepareLayerSaveUILayer(parentLayerPath);
+
+    MString cmd;
+    cmd.format(
+        "UsdLayerEditor_SaveLayerFileDialog(^1s,\"^2s\",1)",
+        isRootLayer ? "1" : "0",
+        ghc::filesystem::path(parentLayerPath).generic_string().c_str());
 
     MString fileSelected;
     MGlobal::executeCommand(
