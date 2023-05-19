@@ -437,10 +437,11 @@ UsdMayaXformStack::MatchingSubstack(const std::vector<UsdGeomXformOp>& xformops)
 
         if (GetNameMatters()) {
             // First try the fast attrName lookup...
-            const auto foundTokenIdxPairIter
-                = _sharedData->m_attrNamesToIdxs.find(xformOp.GetName());
+            const TfToken& opName = xformOp.GetName();
+            const auto     foundTokenIdxPairIter = _sharedData->m_attrNamesToIdxs.find(opName);
             if (foundTokenIdxPairIter == _sharedData->m_attrNamesToIdxs.end()) {
                 // Couldn't find the xformop in our stack, abort
+                // TF_WARN("Cannot find xform op %s", opName.GetText());
                 return _NO_MATCH;
             }
 
@@ -455,13 +456,21 @@ UsdMayaXformStack::MatchingSubstack(const std::vector<UsdGeomXformOp>& xformops)
             } else {
                 // The result we found is before an earlier-found op,
                 // so it doesn't match our stack... abort.
+                // TF_WARN(
+                //     "Cannot find index of xform op %s at %ld between [%ld, %ld]",
+                //     opName.GetText(),
+                //     long(nextOpIndex),
+                //     long(foundIdxPair.first),
+                //     long(foundIdxPair.second));
                 return _NO_MATCH;
             }
 
             assert(foundOpIdx != NO_INDEX);
+            // TF_STATUS("Found xform op %s at %ld", opName.GetText(), long(foundOpIdx));
 
             // Now check that the op type matches...
             if (!GetOps()[foundOpIdx].IsCompatibleType(xformOp.GetOpType())) {
+                // TF_WARN("Incorrect type for xform op %s", opName.GetText());
                 return _NO_MATCH;
             }
         } else {
@@ -489,7 +498,10 @@ UsdMayaXformStack::MatchingSubstack(const std::vector<UsdGeomXformOp>& xformops)
     // check pivot pairs
     TF_FOR_ALL(pairIter, GetInversionTwins())
     {
-        if (opNamesFound[pairIter->first] != opNamesFound[pairIter->second]) {
+        const size_t firstIdx = pairIter->first;
+        const size_t secondIdx = pairIter->second;
+        if (opNamesFound[firstIdx] != opNamesFound[secondIdx]) {
+            // TF_WARN("Unmatched pivot pairs at [%ld, %ld]", firstIdx, secondIdx);
             return _NO_MATCH;
         }
     }
@@ -519,36 +531,45 @@ const UsdMayaXformStack& UsdMayaXformStack::MayaStack()
 {
     static UsdMayaXformStack mayaStack(
         // ops
-        { UsdMayaXformOpClassification(
-              UsdMayaXformStackTokens->translate, UsdGeomXformOp::TypeTranslate),
-          UsdMayaXformOpClassification(
-              UsdMayaXformStackTokens->rotatePivotTranslate, UsdGeomXformOp::TypeTranslate),
-          UsdMayaXformOpClassification(
-              UsdMayaXformStackTokens->rotatePivot, UsdGeomXformOp::TypeTranslate),
-          UsdMayaXformOpClassification(
-              UsdMayaXformStackTokens->rotate, UsdGeomXformOp::TypeRotateXYZ),
-          UsdMayaXformOpClassification(
-              UsdMayaXformStackTokens->rotateAxis, UsdGeomXformOp::TypeRotateXYZ),
-          UsdMayaXformOpClassification(
-              UsdMayaXformStackTokens->rotatePivot,
-              UsdGeomXformOp::TypeTranslate,
-              true /* isInvertedTwin */),
-          UsdMayaXformOpClassification(
-              UsdMayaXformStackTokens->scalePivotTranslate, UsdGeomXformOp::TypeTranslate),
-          UsdMayaXformOpClassification(
-              UsdMayaXformStackTokens->scalePivot, UsdGeomXformOp::TypeTranslate),
-          UsdMayaXformOpClassification(
-              UsdMayaXformStackTokens->shear, UsdGeomXformOp::TypeTransform),
-          UsdMayaXformOpClassification(UsdMayaXformStackTokens->scale, UsdGeomXformOp::TypeScale),
-          UsdMayaXformOpClassification(
-              UsdMayaXformStackTokens->scalePivot,
-              UsdGeomXformOp::TypeTranslate,
-              true /* isInvertedTwin */) },
+        {
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->translate, UsdGeomXformOp::TypeTranslate),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->pivot, UsdGeomXformOp::TypeTranslate),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->rotatePivotTranslate, UsdGeomXformOp::TypeTranslate),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->rotatePivot, UsdGeomXformOp::TypeTranslate),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->rotate, UsdGeomXformOp::TypeRotateXYZ),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->rotateAxis, UsdGeomXformOp::TypeRotateXYZ),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->rotatePivot,
+                UsdGeomXformOp::TypeTranslate,
+                true /* isInvertedTwin */),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->scalePivotTranslate, UsdGeomXformOp::TypeTranslate),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->scalePivot, UsdGeomXformOp::TypeTranslate),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->shear, UsdGeomXformOp::TypeTransform),
+            UsdMayaXformOpClassification(UsdMayaXformStackTokens->scale, UsdGeomXformOp::TypeScale),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->scalePivot,
+                UsdGeomXformOp::TypeTranslate,
+                true /* isInvertedTwin */),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->pivot,
+                UsdGeomXformOp::TypeTranslate,
+                true /* isInvertedTwin */),
+        },
 
         // inversionTwins
         {
-            { 2, 5 },
-            { 7, 10 },
+            { 1, 12 },
+            { 3, 6 },
+            { 8, 11 },
         });
 
     return mayaStack;

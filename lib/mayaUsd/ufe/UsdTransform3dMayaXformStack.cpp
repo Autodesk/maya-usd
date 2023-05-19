@@ -75,6 +75,8 @@ PXR_NS::UsdAttribute getUsdPrimAttribute(const UsdPrim& prim, const TfToken& att
 const std::unordered_map<TfToken, UsdTransform3dMayaXformStack::OpNdx, TfToken::HashFunctor>
     gOpNameToNdx {
         { TfToken("xformOp:translate"), UsdTransform3dMayaXformStack::NdxTranslate },
+        // Note: this matches the USD common xformOp name.
+        { TfToken("xformOp:translate:pivot"), UsdTransform3dMayaXformStack::NdxPivot },
         { TfToken("xformOp:translate:rotatePivotTranslate"),
           UsdTransform3dMayaXformStack::NdxRotatePivotTranslate },
         { TfToken("xformOp:translate:rotatePivot"), UsdTransform3dMayaXformStack::NdxRotatePivot },
@@ -97,7 +99,10 @@ const std::unordered_map<TfToken, UsdTransform3dMayaXformStack::OpNdx, TfToken::
         { TfToken("xformOp:transform:shear"), UsdTransform3dMayaXformStack::NdxShear },
         { TfToken("xformOp:scale"), UsdTransform3dMayaXformStack::NdxScale },
         { TfToken("!invert!xformOp:translate:scalePivot"),
-          UsdTransform3dMayaXformStack::NdxScalePivotInverse }
+          UsdTransform3dMayaXformStack::NdxScalePivotInverse },
+        // Note: this matches the USD common xformOp name.
+        { TfToken("!invert!xformOp:translate:pivot"),
+          UsdTransform3dMayaXformStack::NdxPivotInverse }
     };
 
 } // namespace

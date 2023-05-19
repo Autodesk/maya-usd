@@ -82,9 +82,11 @@ bool MayaSessionState::getStageEntry(StageEntry* out_stageEntry, const MString& 
 
     MObject shapeObj;
     MStatus status = UsdMayaUtil::GetMObjectByName(shapePath, shapeObj);
-    CHECK_MSTATUS_AND_RETURN(status, false);
+    if (!status)
+        return false;
     MFnDagNode dagNode(shapeObj, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
+    if (!status)
+        return false;
 
     if (const UsdMayaUsdPrimProvider* usdPrimProvider
         = dynamic_cast<const UsdMayaUsdPrimProvider*>(dagNode.userNode())) {
@@ -303,7 +305,7 @@ void MayaSessionState::loadSelectedStage()
 #if defined(WANT_UFE_BUILD)
     const std::string shapePath = MayaUsd::LayerManager::getSelectedStage();
     StageEntry        entry;
-    if (getStageEntry(&entry, shapePath.c_str())) {
+    if (!shapePath.empty() && getStageEntry(&entry, shapePath.c_str())) {
         setStageEntry(entry);
     }
 #endif
