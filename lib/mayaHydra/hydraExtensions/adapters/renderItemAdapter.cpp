@@ -117,7 +117,7 @@ void MayaHydraRenderItemAdapter::_InsertRprim()
     }
 }
 
-void MayaHydraRenderItemAdapter::_RemoveRprim() { GetDelegate()->RemoveRprim(GetID()); }
+void MayaHydraRenderItemAdapter::_RemoveRprim() { GetDelegate()->RemoveRprim(GetID());} 
 
 // We receive in that function the changes made in the Maya viewport between the last frame rendered
 // and the current frame

@@ -352,6 +352,9 @@ void MayaHydraSceneDelegate::HandleCompleteViewportScene(
         MayaHydraRenderItemAdapterPtr ria = nullptr;
         if (!_GetRenderItem(fastId, ria)) {
             const SdfPath slowId = GetRenderItemPrimPath(ri);
+            if (slowId.IsEmpty()){
+                continue;
+            }
             // MAYA-128021: We do not currently support maya instances.
             MDagPath dagPath(ri.sourceDagPath());
             ria = std::make_shared<MayaHydraRenderItemAdapter>(dagPath, slowId, fastId, this, ri);
