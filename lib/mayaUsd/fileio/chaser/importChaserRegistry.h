@@ -51,8 +51,6 @@ public:
     class FactoryContext
     {
     public:
-        //typedef UsdMayaUtil::MSdfPathMap<MDagPath> SdfToDagMap;
-
         MAYAUSD_CORE_PUBLIC
         FactoryContext(
             Usd_PrimFlagsPredicate&     returnPredicate,
