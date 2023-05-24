@@ -81,7 +81,7 @@ class importChaserTest(mayaUsdLib.ImportChaser):
         assert(len(allSdfPaths) == len(allDagPaths))
 
         for i in range(len(allSdfPaths)):
-            print(("----------primitive ") + i)
+            print(("----------primitive ") + str(i))
             print(str(allSdfPaths[i]))
             print(str(allDagPaths[i]))
 
