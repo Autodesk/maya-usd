@@ -158,7 +158,7 @@ public:
 void wrapImportChaserRegistryFactoryContext()
 {
     boost::python::class_<MSdfToDagMap>("SdfToDagMap")
-        .def(boost::python::map_indexing_suite<MSdfToDagMap>());
+        .def(boost::python::map_indexing_suite<MSdfToDagMap, true>());
 
     boost::python::class_<UsdMayaImportChaserRegistry::FactoryContext>(
         "UsdMayaImportChaserRegistryFactoryContext", boost::python::no_init)

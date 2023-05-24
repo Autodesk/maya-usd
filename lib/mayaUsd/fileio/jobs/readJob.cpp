@@ -431,12 +431,6 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     SdfPathSet   sdfImportedPaths;
     MSdfToDagMap sdfToDagMap;
     for (const UsdPrim prim : stage->TraverseAll()) {
-        /*
-        if (!prim.GetChildren()) {
-            // traverse to the leaf child
-            sdfImportedPaths.insert(prim.GetPath());
-        }
-        */
         sdfImportedPaths.insert(prim.GetPath());
     }
 
@@ -450,7 +444,6 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
             }
         }
     }
-
 
     TF_FOR_ALL(pathsIter, topImportedPaths)
     {

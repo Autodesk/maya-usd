@@ -102,6 +102,36 @@ public:
             this->nodesEditedRecord.append(fnDagNode.object());
             this->editsRecord.append(strAttr);
         }
+
+        // Get the Sdf path to Dag path matching of all imported prims
+        // Use sdfToDagMap to get the look up the mapping
+        MGlobal::displayInfo(MString("Full SDF to DAG Mapping:"));
+
+        SdfPathSet    sdfImportedPaths;
+        MDagPathArray allDagArray;
+        SdfPathVector allSdfPaths;
+
+        for (const auto& sdfToDag : sdfToDagMap) {
+            allSdfPaths.push_back(sdfToDag.first);
+            allDagArray.append(sdfToDag.second);
+        }
+
+        int n = (int)allSdfPaths.size();
+        assert(n == (int)allDagArray.length());
+
+        for (int i = 0; i < n; ++i) {
+            SdfPath  sdfPath = allSdfPaths[(size_t)i];
+            MDagPath dagPath = allDagArray[(unsigned)i];
+            UsdPrim  prim = stage->GetPrimAtPath(sdfPath);
+            MGlobal::displayInfo(MString("----------primitive ") + i);
+            MGlobal::displayInfo(sdfPath.GetString().c_str());
+            MGlobal::displayInfo("\n");
+            MGlobal::displayInfo(dagPath.fullPathName());
+            MGlobal::displayInfo("\n");
+            MGlobal::displayInfo(prim.GetTypeName().GetText());
+            MGlobal::displayInfo("\n");
+        }
+
         return true;
     }
 
