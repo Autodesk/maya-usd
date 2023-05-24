@@ -479,7 +479,6 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     progressBar.advance();
 
     for (const UsdMayaImportChaserRefPtr& chaser : this->mImportChasers) {
-        chaser->WriteToNodeRegistry(mNewNodeRegistry);
         chaser->WriteToSdfToDagMap(sdfToDagMap);
         bool bStat
             = chaser->PostImport(predicate, stage, currentAddedDagPaths, fromSdfPaths, this->mArgs);
