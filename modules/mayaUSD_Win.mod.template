@@ -2,7 +2,7 @@
 icons: 
 plug-ins: 
 presets: 
-scripts: 
+scripts: lib/python
 resources: 
 PYTHONPATH+:=lib/python
 PATH+:=bin
@@ -19,7 +19,7 @@ PXR_MTLX_STDLIB_SEARCH_PATHS+:=libraries
 icons: lib/icons
 plug-ins: 
 presets: 
-scripts: lib/scripts
+scripts: lib/scripts;lib/python
 resources: 
 PATH+:=lib
 PXR_USD_WINDOWS_DLL_PATH+:=lib

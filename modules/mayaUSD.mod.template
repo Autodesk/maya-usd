@@ -2,7 +2,7 @@
 icons: 
 plug-ins: 
 presets: 
-scripts: 
+scripts: lib/python
 resources: 
 PYTHONPATH+:=lib/python
 USD_LOCATION:=
@@ -13,7 +13,7 @@ PXR_MTLX_STDLIB_SEARCH_PATHS+:=libraries
 icons: lib/icons
 plug-ins: 
 presets: 
-scripts: lib/scripts
+scripts: lib/scripts:lib/python
 resources: 
 PYTHONPATH+:=lib/python
 ${PXR_OVERRIDE_PLUGINPATH_NAME}+:=lib/usd
