@@ -160,31 +160,28 @@ public:
     // orphaned.
     bool isOrphaned(const Ufe::Path& pulledPath) const;
 
+    using PulledPrims = Ufe::Trie<PullVariantInfo>;
+    using PulledPrimNode = Ufe::TrieNode<PullVariantInfo>;
+    const PulledPrims& getPulledPrims() const { return _pulledPrims; }
+
 private:
     void handleOp(const Ufe::SceneCompositeNotification::Op& op);
 
-    Ufe::Trie<PullVariantInfo>&       pulledPrims();
-    const Ufe::Trie<PullVariantInfo>& pulledPrims() const;
+    static void recursiveSetOrphaned(const PulledPrimNode::Ptr& trieNode, bool orphaned);
+    static void recursiveSwitch(const PulledPrimNode::Ptr& trieNode, const Ufe::Path& ufePath);
 
-    static void
-    recursiveSetOrphaned(const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode, bool orphaned);
-    static void
-    recursiveSwitch(const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode, const Ufe::Path& ufePath);
-
-    static bool setOrphaned(const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode, bool orphaned);
+    static bool setOrphaned(const PulledPrimNode::Ptr& trieNode, bool orphaned);
 
     // Member function to access private nested classes.
     static std::list<VariantSetDescriptor> variantSetDescriptors(const Ufe::Path& path);
 
-    static Ufe::Trie<PullVariantInfo> deepCopy(const Ufe::Trie<PullVariantInfo>& src);
-    static void                       deepCopy(
-                              const Ufe::TrieNode<PullVariantInfo>::Ptr& src,
-                              const Ufe::TrieNode<PullVariantInfo>::Ptr& dst);
+    static PulledPrims deepCopy(const PulledPrims& src);
+    static void        deepCopy(const PulledPrimNode::Ptr& src, const PulledPrimNode::Ptr& dst);
 
     // Trie for fast lookup of descendant pulled prims.  The Trie key is the
     // UFE pulled path, and the Trie value is the corresponding Dag pull parent
     // and all ancestor variant set selections.
-    Ufe::Trie<PullVariantInfo> _pulledPrims;
+    PulledPrims _pulledPrims;
 
     // Flag to tell that the orphaned nodes manager is currently orphaning
     // nodes and should not react to its own actions.

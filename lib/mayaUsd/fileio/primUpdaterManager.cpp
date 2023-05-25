@@ -34,6 +34,7 @@
 #include <mayaUsd/utils/dynamicAttribute.h>
 #include <mayaUsd/utils/progressBarScope.h>
 #include <mayaUsd/utils/traverseLayer.h>
+#include <mayaUsd/utils/trieVisitor.h>
 
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
@@ -1810,6 +1811,29 @@ bool PrimUpdaterManager::hasPulledPrims() const
 {
     MObject pullRoot = findPullRoot();
     return !pullRoot.isNull();
+}
+
+PrimUpdaterManager::PulledPrimPaths PrimUpdaterManager::getPulledPrimPaths() const
+{
+    PulledPrimPaths pulledPaths;
+
+#ifdef HAS_ORPHANED_NODES_MANAGER
+
+    if (!_orphanedNodesManager)
+        return pulledPaths;
+
+    const OrphanedNodesManager::PulledPrims& pulledPrims = _orphanedNodesManager->getPulledPrims();
+    MayaUsd::TrieVisitor<OrphanedNodesManager::PullVariantInfo>::visit(
+        pulledPrims,
+        [&pulledPaths](
+            const Ufe::Path&                                            path,
+            const Ufe::TrieNode<OrphanedNodesManager::PullVariantInfo>& node) {
+            pulledPaths.emplace_back(path, node.data().editedAsMayaRoot);
+        });
+
+#endif
+
+    return pulledPaths;
 }
 
 #ifdef HAS_ORPHANED_NODES_MANAGER

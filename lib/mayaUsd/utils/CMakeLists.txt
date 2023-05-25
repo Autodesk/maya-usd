@@ -58,6 +58,7 @@ set(HEADERS
     stageCache.h
     targetLayer.h
     traverseLayer.h
+    trieVisitor.h
     undoHelperCommand.h
     util.h
     utilDictionary.h

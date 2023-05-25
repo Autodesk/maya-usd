@@ -15,6 +15,7 @@
 //
 #include "UsdObject3d.h"
 
+#include <mayaUsd/fileio/primUpdaterManager.h>
 #include <mayaUsd/ufe/UsdUndoVisibleCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
@@ -71,8 +72,8 @@ Ufe::BBox3d UsdObject3d::boundingBox() const
     // we can bypass time computation and simply use UsdTimeCode::Default()
     // as the time.
 
-    const auto& path = sceneItem()->path();
-    auto        purposes = getProxyShapePurposes(path);
+    const Ufe::Path& path = sceneItem()->path();
+    auto             purposes = getProxyShapePurposes(path);
     // Add in the default purpose.
     purposes.emplace_back(UsdGeomTokens->default_);
 
@@ -84,8 +85,12 @@ Ufe::BBox3d UsdObject3d::boundingBox() const
     // Add maya-specific extents
     UsdMayaUtil::AddMayaExtents(bbox, fPrim, time);
 
-    auto range = bbox.ComputeAlignedRange();
-    return Ufe::BBox3d(toVector3d(range.GetMin()), toVector3d(range.GetMax()));
+    auto        range = bbox.ComputeAlignedRange();
+    Ufe::BBox3d ufeBBox(toVector3d(range.GetMin()), toVector3d(range.GetMax()));
+
+    Ufe::BBox3d pulledBBox = getPulledPrimsBoundingBox(path);
+
+    return combineUfeBBox(ufeBBox, pulledBBox);
 }
 
 bool UsdObject3d::visibility() const

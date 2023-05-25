@@ -15,6 +15,7 @@
 //
 #include "Utils.h"
 
+#include <mayaUsd/fileio/primUpdaterManager.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
@@ -50,9 +51,13 @@
 #include <maya/MGlobal.h>
 #include <maya/MObjectHandle.h>
 #include <ufe/hierarchy.h>
+#include <ufe/object3d.h>
+#include <ufe/object3dHandler.h>
 #include <ufe/pathSegment.h>
 #include <ufe/rtid.h>
+#include <ufe/runTimeMgr.h>
 #include <ufe/selection.h>
+#include <ufe/types.h>
 
 #include <cassert>
 #include <cctype>
@@ -1137,6 +1142,72 @@ void ReplicateExtrasToUSD::finalize(
         }
     }
 #endif
+}
+
+static Ufe::BBox3d transformBBox(Ufe::SceneItem::Ptr& item, const Ufe::BBox3d& bbox)
+{
+    Ufe::BBox3d transformed(bbox);
+
+    Ufe::Transform3d::Ptr t3d = Ufe::Transform3d::transform3d(item);
+    if (!t3d)
+        return transformed;
+
+    Ufe::Matrix4d matrix = t3d->matrix();
+
+    transformed.min = toUfe(toUsd(matrix).Transform(toUsd(bbox.min)));
+    transformed.max = toUfe(toUsd(matrix).Transform(toUsd(bbox.max)));
+
+    return transformed;
+}
+
+static Ufe::BBox3d getTransformedBBox(const Ufe::Path& path)
+{
+    Ufe::SceneItem::Ptr item = Ufe::Hierarchy::createItem(path);
+    if (!item)
+        return {};
+
+    const auto&               runtimeMgr = Ufe::RunTimeMgr::instance();
+    Ufe::Object3dHandler::Ptr obj3dHandler = runtimeMgr.object3dHandler(item->runTimeId());
+    if (!obj3dHandler)
+        return {};
+
+    Ufe::Object3d::Ptr o3d = obj3dHandler->object3d(item);
+    if (!o3d)
+        return {};
+
+    return transformBBox(item, o3d->boundingBox());
+}
+
+Ufe::BBox3d getPulledPrimsBoundingBox(const Ufe::Path& path)
+{
+    Ufe::BBox3d ufeBBox;
+
+#ifdef HAS_ORPHANED_NODES_MANAGER
+    const auto& updaterMgr = PXR_NS::PrimUpdaterManager::getInstance();
+    PXR_NS::PrimUpdaterManager::PulledPrimPaths pulledPaths = updaterMgr.getPulledPrimPaths();
+    for (const auto& paths : pulledPaths) {
+        const Ufe::Path& pulledPath = paths.first;
+
+        if (pulledPath == path)
+            continue;
+
+        if (!pulledPath.startsWith(path))
+            continue;
+
+        Ufe::BBox3d pulledBBox = getTransformedBBox(pulledPath);
+
+        for (auto parentPath = pulledPath; parentPath != path; parentPath = parentPath.pop()) {
+            Ufe::SceneItem::Ptr parentItem = Ufe::Hierarchy::createItem(parentPath);
+            if (!parentItem)
+                continue;
+            pulledBBox = transformBBox(parentItem, pulledBBox);
+        }
+        
+        ufeBBox = UsdUfe::combineUfeBBox(ufeBBox, pulledBBox);
+    }
+#endif
+
+    return ufeBBox;
 }
 
 } // namespace ufe
