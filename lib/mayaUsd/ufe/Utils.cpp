@@ -774,9 +774,8 @@ Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::UsdAttribute& usdAttr)
         if (type == Ufe::Attribute::kString) {
             // Both std::string and TfToken resolve to kString, but if there is a list of allowed
             // tokens, then we use kEnumString instead.
-            auto attrDefn
-                = usdAttr.GetPrim().GetPrimDefinition().GetSchemaAttributeSpec(usdAttr.GetName());
-            if (attrDefn && attrDefn->HasAllowedTokens()) {
+            if (usdAttr.GetPrim().GetPrimDefinition().GetPropertyMetadata<VtTokenArray>(
+                    usdAttr.GetName(), SdfFieldKeys->AllowedTokens, nullptr)) {
                 type = Ufe::Attribute::kEnumString;
             }
             // TfToken is also used in UsdShade as a Generic placeholder for connecting struct I/O.

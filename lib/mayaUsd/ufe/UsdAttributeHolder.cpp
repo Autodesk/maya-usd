@@ -510,10 +510,10 @@ Ufe::AttributeEnumString::EnumValues UsdAttributeHolder::getEnumValues() const
 {
     Ufe::AttributeEnumString::EnumValues retVal;
     if (_usdAttr.IsValid()) {
-        auto attrDefn
-            = _usdAttr.GetPrim().GetPrimDefinition().GetSchemaAttributeSpec(_usdAttr.GetName());
-        if (attrDefn && attrDefn->HasAllowedTokens()) {
-            for (auto const& token : attrDefn->GetAllowedTokens()) {
+        VtTokenArray allowedTokens;
+        if (_usdAttr.GetPrim().GetPrimDefinition().GetPropertyMetadata(
+                _usdAttr.GetName(), SdfFieldKeys->AllowedTokens, &allowedTokens)) {
+            for (auto const& token : allowedTokens) {
                 retVal.push_back(token.GetString());
             }
         }
