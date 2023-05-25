@@ -428,19 +428,14 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         topImportedPaths.insert(usdRootPrim.GetPath());
     }
 
-    SdfPathSet   sdfImportedPaths;
     MSdfToDagMap sdfToDagMap;
     for (const UsdPrim prim : stage->TraverseAll()) {
-        sdfImportedPaths.insert(prim.GetPath());
-    }
-
-    TF_FOR_ALL(pathsIter, sdfImportedPaths)
-    {
-        std::string key = pathsIter->GetString();
+        SdfPath primSdfPath = prim.GetPath();
+        std::string key = primSdfPath.GetString();
         MObject     obj;
         if (TfMapLookup(mNewNodeRegistry, key, &obj)) {
             if (obj.hasFn(MFn::kDagNode)) {
-                sdfToDagMap[pathsIter->GetPrimPath()] = MDagPath::getAPathTo(obj);
+                sdfToDagMap[primSdfPath] = MDagPath::getAPathTo(obj);
             }
         }
     }
@@ -454,7 +449,6 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
                 addedDagPaths->push_back(MDagPath::getAPathTo(obj));
                 currentAddedDagPaths.append(MDagPath::getAPathTo(obj));
                 fromSdfPaths.push_back(pathsIter->GetPrimPath());
-                sdfToDagMap[pathsIter->GetPrimPath()] = MDagPath::getAPathTo(obj);
             }
         }
     }
