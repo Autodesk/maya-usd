@@ -59,7 +59,7 @@ void UsdUndoYourCommand::execute()
 
 ## How to use Undo/Redo service outside UFE Commands ( e.g MPxCommand )
 
-Collecting USD edits inside Maya MPxCommand happens automatically via UsdUndoBlockCmd. The idea is to execute the USD data model changes inside this object when UsdUndoBlock expires and store the invert objects in there for undo/redo purposes.
+Collecting USD edits inside Maya MPxCommand happens automatically via MayaUsdUndoBlockCmd. The idea is to execute the USD data model changes inside this object when UsdUndoBlock expires and store the invert objects in there for undo/redo purposes.
 
 When this command executes, it will call no-op MPxCommand::doIt() which pushes the command onto the Maya undo queue, and its redoIt() and undoIt() can then be used to restore the state.
 
@@ -89,4 +89,4 @@ cmds.redo()
 
 ```
 
-***NOTE:*** Currently UsdUndoBlockCmd command is only registered via mayaUsd plugin.
+***NOTE:*** Currently MayaUsdUndoBlockCmd command is only registered via mayaUsd plugin.

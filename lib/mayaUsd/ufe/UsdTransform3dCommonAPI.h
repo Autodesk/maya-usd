@@ -15,8 +15,9 @@
 //
 #pragma once
 
-#include <mayaUsd/ufe/UfeVersionCompat.h>
 #include <mayaUsd/ufe/UsdTransform3dBase.h>
+
+#include <usdUfe/ufe/UfeVersionCompat.h>
 
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
 

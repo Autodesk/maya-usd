@@ -18,9 +18,10 @@
 #include "Utils.h"
 #include "private/UfeNotifGuard.h"
 
-#include <mayaUsd/utils/editRouter.h>
-#include <mayaUsd/utils/editRouterContext.h>
 #include <mayaUsd/utils/util.h>
+
+#include <usdUfe/utils/editRouter.h>
+#include <usdUfe/utils/editRouterContext.h>
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #include <mayaUsd/base/tokens.h>
 #endif
@@ -42,7 +43,7 @@ bool setUsdAttrMetadata(
     const Ufe::Value&           value)
 {
     PXR_NAMESPACE_USING_DIRECTIVE
-    MayaUsd::ufe::InSetAttribute inSetAttr;
+    UsdUfe::InSetAttribute inSetAttr;
 
     // Special cases for known Ufe metadata keys.
 
@@ -56,7 +57,7 @@ bool setUsdAttrMetadata(
     // If attribute is locked don't allow setting Metadata.
     MayaUsd::ufe::enforceAttributeEditAllowed(attr);
 
-    MAYAUSD_NS_DEF::AttributeEditRouterContext ctx(attr.GetPrim(), attr.GetName());
+    UsdUfe::AttributeEditRouterContext ctx(attr.GetPrim(), attr.GetName());
 
     PXR_NS::TfToken tok(key);
     if (PXR_NS::UsdShadeNodeGraph(attr.GetPrim())) {
@@ -165,7 +166,7 @@ bool UsdAttributeHolder::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode t
 
     AttributeEditRouterContext ctx(_usdAttr.GetPrim(), _usdAttr.GetName());
 
-    InSetAttribute inSetAttr;
+    UsdUfe::InSetAttribute inSetAttr;
     return _usdAttr.Set(value, time);
 }
 
@@ -441,7 +442,7 @@ bool UsdAttributeHolder::setMetadata(const std::string& key, const Ufe::Value& v
 bool UsdAttributeHolder::clearMetadata(const std::string& key)
 {
     PXR_NAMESPACE_USING_DIRECTIVE
-    InSetAttribute inSetAttr;
+    UsdUfe::InSetAttribute inSetAttr;
 
     if (isValid()) {
         AttributeEditRouterContext ctx(_usdAttr.GetPrim(), _usdAttr.GetName());
@@ -509,10 +510,10 @@ Ufe::AttributeEnumString::EnumValues UsdAttributeHolder::getEnumValues() const
 {
     Ufe::AttributeEnumString::EnumValues retVal;
     if (_usdAttr.IsValid()) {
-        auto attrDefn
-            = _usdAttr.GetPrim().GetPrimDefinition().GetSchemaAttributeSpec(_usdAttr.GetName());
-        if (attrDefn && attrDefn->HasAllowedTokens()) {
-            for (auto const& token : attrDefn->GetAllowedTokens()) {
+        VtTokenArray allowedTokens;
+        if (_usdAttr.GetPrim().GetPrimDefinition().GetPropertyMetadata(
+                _usdAttr.GetName(), SdfFieldKeys->AllowedTokens, &allowedTokens)) {
+            for (auto const& token : allowedTokens) {
                 retVal.push_back(token.GetString());
             }
         }

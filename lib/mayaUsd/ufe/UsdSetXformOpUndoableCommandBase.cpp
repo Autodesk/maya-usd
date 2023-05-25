@@ -16,7 +16,8 @@
 #include "UsdSetXformOpUndoableCommandBase.h"
 
 #include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/undo/UsdUndoBlock.h>
+
+#include <usdUfe/undo/UsdUndoBlock.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

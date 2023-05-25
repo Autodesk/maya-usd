@@ -15,11 +15,10 @@
 //
 #include "UsdLight.h"
 
-#include "private/Utils.h"
-
-#include <mayaUsd/ufe/UsdUndoableCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
+
+#include <usdUfe/ufe/UsdUndoableCommand.h>
 
 #include <pxr/usd/usdLux/distantLight.h>
 #if PXR_VERSION < 2111

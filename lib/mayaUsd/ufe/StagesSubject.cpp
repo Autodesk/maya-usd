@@ -18,15 +18,17 @@
 #include "private/UfeNotifGuard.h"
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
-#include <mayaUsd/ufe/UfeVersionCompat.h>
+
+#include <usdUfe/ufe/UfeVersionCompat.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdCamera.h>
 #endif
 #include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/ufe/Utils.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
-#include <mayaUsd/undo/UsdUndoManager.h>
+#include <usdUfe/undo/UsdUndoManager.h>
 #endif
 
 #include <pxr/pxr.h>
@@ -172,7 +174,7 @@ void sendAttributeChanged(
         }
     } break;
     case AttributeChangeType::kAdded: {
-        if (MayaUsd::ufe::InSetAttribute::inSetAttribute()) {
+        if (UsdUfe::InSetAttribute::inSetAttribute()) {
             notifyWithoutExceptions<Ufe::Attributes>(
                 Ufe::AttributeValueChanged(ufePath, changedToken.GetString()));
 
@@ -457,7 +459,6 @@ namespace ufe {
 // Global variables & macros
 //------------------------------------------------------------------------------
 extern UsdStageMap g_StageMap;
-extern Ufe::Rtid   g_USDRtid;
 
 //------------------------------------------------------------------------------
 // StagesSubject
@@ -589,9 +590,10 @@ void StagesSubject::stageChanged(
             // to move the transform manipulator back to original position).
             const TfToken nameToken = changedPath.GetNameToken();
             auto          usdPrimPathStr = changedPath.GetPrimPath().GetString();
-            auto ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
+            auto          ufePath
+                = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, getUsdRunTimeId(), '/');
             if (isTransformChange(nameToken)) {
-                if (!InTransform3dChange::inTransform3dChange()) {
+                if (!UsdUfe::InTransform3dChange::inTransform3dChange()) {
                     notifyWithoutExceptions<Ufe::Transform3d>(ufePath);
                 }
             }
@@ -616,7 +618,7 @@ void StagesSubject::stageChanged(
             prim = stage->GetPseudoRoot();
         } else {
             const std::string& usdPrimPathStr = changedPath.GetPrimPath().GetString();
-            ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
+            ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, getUsdRunTimeId(), '/');
             prim = stage->GetPrimAtPath(changedPath);
         }
 
@@ -694,7 +696,7 @@ void StagesSubject::stageChanged(
          ++it) {
         const auto& changedPath = *it;
         auto        usdPrimPathStr = changedPath.GetPrimPath().GetString();
-        auto        ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
+        auto ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, getUsdRunTimeId(), '/');
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
         bool sendValueChangedFallback = true;
@@ -715,7 +717,7 @@ void StagesSubject::stageChanged(
         }
 #endif
 
-        if (!InTransform3dChange::inTransform3dChange()) {
+        if (!UsdUfe::InTransform3dChange::inTransform3dChange()) {
             // Is the change a Transform3d change?
             const UsdPrim prim = stage->GetPrimAtPath(changedPath.GetPrimPath());
             const TfToken nameToken = changedPath.GetNameToken();

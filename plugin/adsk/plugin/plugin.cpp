@@ -37,7 +37,7 @@
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
-#include <mayaUsd/undo/UsdUndoBlock.h>
+#include <mayaUsd/undo/MayaUsdUndoBlock.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/undoHelperCommand.h>
 
@@ -238,7 +238,7 @@ MStatus initializePlugin(MObject obj)
 #endif
 
     status = plugin.registerCommand(
-        MayaUsd::UsdUndoBlockCmd::commandName, MayaUsd::UsdUndoBlockCmd::creator);
+        MayaUsd::MayaUsdUndoBlockCmd::commandName, MayaUsd::MayaUsdUndoBlockCmd::creator);
     CHECK_MSTATUS(status);
 
     status = MayaUsdProxyShapePlugin::initialize(plugin);
@@ -440,7 +440,7 @@ MStatus uninitializePlugin(MObject obj)
     status = MayaUsdProxyShapePlugin::finalize(plugin);
     CHECK_MSTATUS(status);
 
-    status = plugin.deregisterCommand(MayaUsd::UsdUndoBlockCmd::commandName);
+    status = plugin.deregisterCommand(MayaUsd::MayaUsdUndoBlockCmd::commandName);
     CHECK_MSTATUS(status);
 
 #if defined(WANT_UFE_BUILD)

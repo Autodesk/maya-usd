@@ -17,7 +17,8 @@
 #define MAYAUSD_UFE_USD_POINT_INSTANCE_MODIFIER_BASE_H
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/vt/array.h>

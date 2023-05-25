@@ -16,11 +16,12 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UfeVersionCompat.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
+
+#include <usdUfe/ufe/UfeVersionCompat.h>
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-#include <mayaUsd/undo/UsdUndoableItem.h>
+#include <usdUfe/undo/UsdUndoableItem.h>
 #endif
 
 #include <pxr/usd/sdf/path.h>

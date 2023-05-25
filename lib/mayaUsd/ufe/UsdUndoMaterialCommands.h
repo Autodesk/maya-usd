@@ -16,11 +16,13 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
-#include <mayaUsd/undo/UsdUndoableItem.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/undo/UsdUndoableItem.h>
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
 #include <mayaUsd/ufe/UsdUndoCreateFromNodeDefCommand.h>
+
+#include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>
 #endif
 
 #include <pxr/usd/usd/prim.h>

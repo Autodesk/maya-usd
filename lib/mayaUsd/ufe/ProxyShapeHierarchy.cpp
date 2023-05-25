@@ -29,9 +29,9 @@
 #include <stdexcept>
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-#include <mayaUsd/ufe/UsdUndoCreateGroupCommand.h>
-#include <mayaUsd/ufe/UsdUndoInsertChildCommand.h>
-#include <mayaUsd/ufe/UsdUndoReorderCommand.h>
+#include <usdUfe/ufe/UsdUndoCreateGroupCommand.h>
+#include <usdUfe/ufe/UsdUndoInsertChildCommand.h>
+#include <usdUfe/ufe/UsdUndoReorderCommand.h>
 #endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -65,11 +65,6 @@ UsdPrimSiblingRange getUSDFilteredChildren(
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
-
-//------------------------------------------------------------------------------
-// Global variables
-//------------------------------------------------------------------------------
-extern Ufe::Rtid g_USDRtid;
 
 //------------------------------------------------------------------------------
 // ProxyShapeHierarchy
@@ -233,7 +228,7 @@ ProxyShapeHierarchy::createUFEChildList(const UsdPrimSiblingRange& range, bool f
             children.emplace_back(UsdSceneItem::create(
                 parentPath
                     + Ufe::PathSegment(
-                        Ufe::PathComponent(child.GetName().GetString()), g_USDRtid, '/'),
+                        Ufe::PathComponent(child.GetName().GetString()), getUsdRunTimeId(), '/'),
                 child));
         }
     }

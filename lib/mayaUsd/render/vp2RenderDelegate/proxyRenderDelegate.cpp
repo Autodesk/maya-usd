@@ -71,8 +71,9 @@
 
 #if defined(WANT_UFE_BUILD)
 #include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <ufe/globalSelection.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -216,7 +217,7 @@ void PopulateSelection(
     }
 
     // Filter out non-USD items.
-    auto usdItem = std::dynamic_pointer_cast<MayaUsd::ufe::UsdSceneItem>(item);
+    auto usdItem = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(item);
     if (!usdItem) {
         return;
     }

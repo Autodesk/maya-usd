@@ -8,7 +8,7 @@
 
 #include "UsdMaterialHandler.h"
 
-#include <mayaUsd/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/usdGeom/imageable.h>

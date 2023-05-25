@@ -20,8 +20,9 @@
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/ufe/UsdUndoRenameCommand.h>
 #include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsd/utils/util.h>
+
+#include <usdUfe/undo/UsdUndoBlock.h>
 
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>
@@ -184,7 +185,7 @@ bool _BindMaterialCompatiblePrim(const UsdPrim& usdPrim)
 
 bool BindMaterialUndoableCommand::CompatiblePrim(const Ufe::SceneItem::Ptr& item)
 {
-    auto usdItem = std::dynamic_pointer_cast<const MAYAUSD_NS::ufe::UsdSceneItem>(item);
+    auto usdItem = std::dynamic_pointer_cast<const UsdUfe::UsdSceneItem>(item);
     if (!usdItem) {
         return false;
     }
@@ -488,7 +489,7 @@ void UsdUndoAssignNewMaterialCommand::redo()
             // Find out all Material creation followed by a shader creation and reconnect the
             // shader to the material. Don't assume any ordering.
             auto addMaterialCmd
-                = std::dynamic_pointer_cast<MAYAUSD_NS::ufe::UsdUndoAddNewPrimCommand>(*cmdsIt++);
+                = std::dynamic_pointer_cast<UsdUfe::UsdUndoAddNewPrimCommand>(*cmdsIt++);
             if (addMaterialCmd && addMaterialCmd->newPrim()
                 && UsdShadeMaterial(addMaterialCmd->newPrim())
                 && cmdsIt != _cmds->cmdsList().end()) {
@@ -668,7 +669,7 @@ Ufe::SceneItem::Ptr UsdUndoCreateMaterialsScopeCommand::sceneItem() const { retu
 
 void UsdUndoCreateMaterialsScopeCommand::execute()
 {
-    MayaUsd::ufe::InAddOrDeleteOperation ad;
+    UsdUfe::InAddOrDeleteOperation ad;
 
     UsdUndoBlock undoBlock(&_undoableItem);
 
@@ -705,21 +706,21 @@ void UsdUndoCreateMaterialsScopeCommand::execute()
 
 void UsdUndoCreateMaterialsScopeCommand::undo()
 {
-    MayaUsd::ufe::InAddOrDeleteOperation ad;
+    UsdUfe::InAddOrDeleteOperation ad;
 
     _undoableItem.undo();
 }
 
 void UsdUndoCreateMaterialsScopeCommand::redo()
 {
-    MayaUsd::ufe::InAddOrDeleteOperation ad;
+    UsdUfe::InAddOrDeleteOperation ad;
 
     _undoableItem.redo();
 }
 
 void UsdUndoCreateMaterialsScopeCommand::markAsFailed()
 {
-    MayaUsd::ufe::InAddOrDeleteOperation ad;
+    UsdUfe::InAddOrDeleteOperation ad;
     undo();
 }
 

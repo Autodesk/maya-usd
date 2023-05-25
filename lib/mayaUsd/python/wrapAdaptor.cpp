@@ -250,19 +250,8 @@ static bool _AttributeAdaptor_Set(UsdMayaAttributeAdaptor& self, const VtValue& 
 
 static std::string _AttributeAdaptor__repr__(const UsdMayaAttributeAdaptor& self)
 {
-    std::string                  schemaName;
-    const SdfAttributeSpecHandle attrDef = self.GetAttributeDefinition();
-    if (TF_VERIFY(attrDef)) {
-        const SdfPrimSpecHandle schemaDef
-            = TfDynamic_cast<const SdfPrimSpecHandle>(attrDef->GetOwner());
-        if (TF_VERIFY(schemaDef)) {
-            schemaName = schemaDef->GetName();
-        }
-    }
-
     if (self) {
-        return TfStringPrintf(
-            "UsdMayaAttributeAdaptor<%s:%s>", schemaName.c_str(), self.GetName().GetText());
+        return TfStringPrintf("UsdMayaAttributeAdaptor<%s>", self.GetName().GetText());
     } else {
         return "invalid attribute adaptor";
     }

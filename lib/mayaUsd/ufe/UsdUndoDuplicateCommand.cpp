@@ -16,18 +16,23 @@
 #include "UsdUndoDuplicateCommand.h"
 
 #include "private/UfeNotifGuard.h"
-#include "private/Utils.h"
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/utils/editRouter.h>
-#include <mayaUsd/utils/editRouterContext.h>
-#include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/loadRules.h>
+
+#include <usdUfe/utils/layers.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
-#include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsdUtils/MergePrims.h>
+
+#include <usdUfe/undo/UsdUndoBlock.h>
 #endif
+
+#include <usdUfe/base/tokens.h>
+#include <usdUfe/utils/editRouter.h>
+#include <usdUfe/utils/editRouterContext.h>
+#include <usdUfe/utils/loadRules.h>
+#include <usdUfe/utils/usdUtils.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/copyUtils.h>
@@ -59,7 +64,7 @@ UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(const UsdSceneItem::Ptr& srcIte
     auto newName = uniqueChildName(parentPrim, srcPrim.GetName());
     _usdDstPath = parentPrim.GetPath().AppendChild(TfToken(newName));
 
-    auto primSpec = getDefiningPrimSpec(srcPrim);
+    auto primSpec = UsdUfe::getDefiningPrimSpec(srcPrim);
     if (primSpec)
         _srcLayer = primSpec->GetLayer();
 }
@@ -79,7 +84,7 @@ UsdSceneItem::Ptr UsdUndoDuplicateCommand::duplicatedItem() const
 #ifdef UFE_V2_FEATURES_AVAILABLE
 void UsdUndoDuplicateCommand::execute()
 {
-    MayaUsd::ufe::InAddOrDeleteOperation ad;
+    UsdUfe::InAddOrDeleteOperation ad;
 
     UsdUndoBlock undoBlock(&_undoableItem);
 
@@ -87,7 +92,7 @@ void UsdUndoDuplicateCommand::execute()
     auto path = prim.GetPath();
     auto stage = prim.GetStage();
 
-    OperationEditRouterContext ctx(MayaUsdEditRoutingTokens->RouteDuplicate, prim);
+    OperationEditRouterContext ctx(UsdUfe::EditRoutingTokens->RouteDuplicate, prim);
     _dstLayer = stage->GetEditTarget().GetLayer();
 
     auto                               item = Ufe::Hierarchy::createItem(_ufeSrcPath);
@@ -135,14 +140,14 @@ void UsdUndoDuplicateCommand::execute()
 
 void UsdUndoDuplicateCommand::undo()
 {
-    MayaUsd::ufe::InAddOrDeleteOperation ad;
+    UsdUfe::InAddOrDeleteOperation ad;
 
     _undoableItem.undo();
 }
 
 void UsdUndoDuplicateCommand::redo()
 {
-    MayaUsd::ufe::InAddOrDeleteOperation ad;
+    UsdUfe::InAddOrDeleteOperation ad;
 
     _undoableItem.redo();
 }
@@ -178,7 +183,7 @@ bool UsdUndoDuplicateCommand::duplicateRedo()
 void UsdUndoDuplicateCommand::undo()
 {
     try {
-        MayaUsd::ufe::InAddOrDeleteOperation ad;
+        UsdUfe::InAddOrDeleteOperation ad;
         if (!duplicateUndo()) {
             UFE_LOG("duplicate undo failed");
         }
@@ -191,7 +196,7 @@ void UsdUndoDuplicateCommand::undo()
 void UsdUndoDuplicateCommand::redo()
 {
     try {
-        MayaUsd::ufe::InAddOrDeleteOperation ad;
+        UsdUfe::InAddOrDeleteOperation ad;
         if (!duplicateRedo()) {
             UFE_LOG("duplicate redo failed");
         }

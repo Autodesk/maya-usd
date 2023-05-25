@@ -17,6 +17,8 @@
 
 #include <mayaUsd/base/api.h>
 
+#include <usdUfe/ufe/Global.h>
+
 #include <maya/MStatus.h>
 #include <ufe/rtid.h>
 
@@ -34,8 +36,7 @@ MAYAUSD_CORE_PUBLIC
 MStatus finalize(bool exiting = false);
 
 //! Return the run-time ID allocated to USD.
-MAYAUSD_CORE_PUBLIC
-Ufe::Rtid getUsdRunTimeId();
+inline Ufe::Rtid getUsdRunTimeId() { return UsdUfe::getUsdRunTimeId(); }
 
 //! Return the run-time ID allocated to Maya.
 MAYAUSD_CORE_PUBLIC

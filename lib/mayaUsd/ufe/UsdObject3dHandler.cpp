@@ -8,7 +8,7 @@
 
 #include "UsdObject3dHandler.h"
 
-#include <mayaUsd/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/usdGeom/imageable.h>
 

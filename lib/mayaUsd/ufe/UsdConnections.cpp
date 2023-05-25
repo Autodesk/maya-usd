@@ -15,8 +15,9 @@
 //
 
 #include <mayaUsd/ufe/UsdConnections.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/sdf/path.h>

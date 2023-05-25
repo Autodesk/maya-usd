@@ -17,11 +17,11 @@
 
 #include "Utils.h"
 #include "private/UfeNotifGuard.h"
-#include "private/Utils.h"
 
 #include <mayaUsd/ufe/StagesSubject.h>
-#include <mayaUsd/ufe/UsdUndoableCommand.h>
 #include <mayaUsd/ufe/Utils.h>
+
+#include <usdUfe/ufe/UsdUndoableCommand.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
@@ -30,6 +30,8 @@
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/schemaRegistry.h>
 #include <pxr/usd/usdShade/utils.h>
+
+#include <maya/MGlobal.h>
 
 #include <sstream>
 #include <unordered_map>
@@ -85,7 +87,7 @@ template <typename T> bool setUsdAttr(MayaUsd::ufe::UsdAttribute& attr, const T&
     // our own in the StagesSubject, which we invoke here, so that only a
     // single UFE attribute changed notification is generated.
 
-    MayaUsd::ufe::InSetAttribute                    inSetAttr;
+    UsdUfe::InSetAttribute                          inSetAttr;
     MayaUsd::ufe::AttributeChangedNotificationGuard guard;
     const std::string                               errMsg = attr.isEditAllowedMsg();
     if (!errMsg.empty()) {
@@ -249,7 +251,7 @@ void setUsdAttributeMatrixFromUfe(
 #endif
 
 template <typename T, typename A = MayaUsd::ufe::TypedUsdAttribute<T>>
-class SetUndoableCommand : public MayaUsd::ufe::UsdUndoableCommand<Ufe::UndoableCommand>
+class SetUndoableCommand : public UsdUfe::UsdUndoableCommand<Ufe::UndoableCommand>
 {
 public:
     SetUndoableCommand(const typename A::Ptr& attr, const T& newValue)
@@ -260,14 +262,14 @@ public:
 
     void undo() override
     {
-        MayaUsd::ufe::InSetAttribute inSetAttr;
-        MayaUsd::ufe::UsdUndoableCommand<Ufe::UndoableCommand>::undo();
+        UsdUfe::InSetAttribute inSetAttr;
+        UsdUfe::UsdUndoableCommand<Ufe::UndoableCommand>::undo();
     }
 
     void redo() override
     {
-        MayaUsd::ufe::InSetAttribute inSetAttr;
-        MayaUsd::ufe::UsdUndoableCommand<Ufe::UndoableCommand>::redo();
+        UsdUfe::InSetAttribute inSetAttr;
+        UsdUfe::UsdUndoableCommand<Ufe::UndoableCommand>::redo();
     }
 
 protected:
@@ -279,7 +281,7 @@ private:
 };
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
-class SetUndoableMetadataCommand : public MayaUsd::ufe::UsdUndoableCommand<Ufe::UndoableCommand>
+class SetUndoableMetadataCommand : public UsdUfe::UsdUndoableCommand<Ufe::UndoableCommand>
 {
 public:
     SetUndoableMetadataCommand(
@@ -294,14 +296,14 @@ public:
 
     void undo() override
     {
-        MayaUsd::ufe::InSetAttribute inSetAttr;
-        MayaUsd::ufe::UsdUndoableCommand<Ufe::UndoableCommand>::undo();
+        UsdUfe::InSetAttribute inSetAttr;
+        UsdUfe::UsdUndoableCommand<Ufe::UndoableCommand>::undo();
     }
 
     void redo() override
     {
-        MayaUsd::ufe::InSetAttribute inSetAttr;
-        MayaUsd::ufe::UsdUndoableCommand<Ufe::UndoableCommand>::redo();
+        UsdUfe::InSetAttribute inSetAttr;
+        UsdUfe::UsdUndoableCommand<Ufe::UndoableCommand>::redo();
     }
 
 protected:
