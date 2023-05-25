@@ -197,7 +197,8 @@ QVariant LayerTreeItem::data(int role) const
     case Qt::TextColorRole: return QColor(200, 200, 200);
 #endif
     case Qt::BackgroundRole: return QColor(71, 71, 71);
-    case Qt::TextAlignmentRole: return (static_cast<int>(Qt::AlignLeft) + static_cast<int>(Qt::AlignVCenter));
+    case Qt::TextAlignmentRole:
+        return (static_cast<int>(Qt::AlignLeft) + static_cast<int>(Qt::AlignVCenter));
     case Qt::SizeHintRole: return QSize(0, DPIScale(30));
     default: return QStandardItem::data(role);
     }
