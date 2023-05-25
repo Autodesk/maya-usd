@@ -18,7 +18,7 @@
 
 #include "UsdShaderNodeDef.h"
 
-#include <mayaUsd/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/usdShade/shader.h>

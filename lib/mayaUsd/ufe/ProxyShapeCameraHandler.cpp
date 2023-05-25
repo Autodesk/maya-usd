@@ -19,8 +19,9 @@
 #include "UsdCameraHandler.h"
 #include "pxr/usd/usdGeom/camera.h"
 
-#include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/primRange.h>

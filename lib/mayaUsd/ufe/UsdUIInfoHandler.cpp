@@ -15,7 +15,7 @@
 //
 #include "UsdUIInfoHandler.h"
 
-#include "UsdSceneItem.h"
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/sdf/listOp.h> // SdfReferenceListOp/SdfPayloadListOp/SdfPathListOp
 #include <pxr/usd/sdf/schema.h> // SdfFieldKeys

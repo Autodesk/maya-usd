@@ -168,7 +168,7 @@ endfunction()
 #
 #   SUBDIR     - sub-directory in which to promote files.
 #   FILES      - list of files to promote.
-#   BASESDIR   - base dirctory where promoted headers are installed into.
+#   BASEDIR    - base directory where promoted headers are installed into.
 #                if not defined, mayaUsd subdirectory is used by default.
 #
 #

@@ -9,16 +9,12 @@ target_sources(${PROJECT_NAME}
         ProxyShapeHierarchyHandler.cpp
         SetVariantSelectionCommand.cpp
         StagesSubject.cpp
-        UsdHierarchy.cpp
-        UsdHierarchyHandler.cpp
         UsdPointInstanceOrientationModifier.cpp
         UsdPointInstancePositionModifier.cpp
         UsdPointInstanceScaleModifier.cpp
-        UsdRootChildHierarchy.cpp
         UsdRotatePivotTranslateUndoableCommand.cpp
         UsdRotateUndoableCommand.cpp
         UsdScaleUndoableCommand.cpp
-        UsdSceneItem.cpp
         UsdSceneItemOps.cpp
         UsdSceneItemOpsHandler.cpp
         UsdStageMap.cpp
@@ -60,14 +56,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdTransform3dUndoableCommands.cpp
             UsdUIInfoHandler.cpp
             UsdUIUfeObserver.cpp
-            UsdUndoableCommand.cpp
-            UsdUndoAddNewPrimCommand.cpp
-            UsdUndoCreateGroupCommand.cpp
-            UsdUndoInsertChildCommand.cpp
-            UsdUndoReorderCommand.cpp
-            UsdUndoSetKindCommand.cpp
             UsdUndoVisibleCommand.cpp
-            UsdUndoUngroupCommand.cpp
             XformOpUtils.cpp
     )
 endif()
@@ -78,10 +67,12 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
             # See MayaUIInfoHandler.h comments.
             EditAsMayaCommand.cpp
             MayaUIInfoHandler.cpp
+            MayaUsdHierarchy.cpp
+            MayaUsdHierarchyHandler.cpp
+            MayaUsdRootChildHierarchy.cpp
             PulledObjectHierarchy.cpp
             PulledObjectHierarchyHandler.cpp
             UsdPathMappingHandler.cpp
-            UsdUndoUngroupCommand.cpp
     )
 endif()
 
@@ -184,17 +175,13 @@ set(HEADERS
     ProxyShapeHierarchyHandler.h
     SetVariantSelectionCommand.h
     StagesSubject.h
-    UsdHierarchy.h
-    UsdHierarchyHandler.h
     UsdPointInstanceModifierBase.h
     UsdPointInstanceOrientationModifier.h
     UsdPointInstancePositionModifier.h
     UsdPointInstanceScaleModifier.h
-    UsdRootChildHierarchy.h
     UsdRotatePivotTranslateUndoableCommand.h
     UsdRotateUndoableCommand.h
     UsdScaleUndoableCommand.h
-    UsdSceneItem.h
     UsdSceneItemOps.h
     UsdSceneItemOpsHandler.h
     UsdStageMap.h
@@ -207,7 +194,6 @@ set(HEADERS
     UsdUndoDuplicateCommand.h
     UsdUndoRenameCommand.h
     Utils.h
-    UfeVersionCompat.h
 )
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
@@ -236,12 +222,6 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdTransform3dUndoableCommands.h
         UsdUIInfoHandler.h
         UsdUIUfeObserver.h
-        UsdUndoableCommand.h
-        UsdUndoAddNewPrimCommand.h
-        UsdUndoCreateGroupCommand.h
-        UsdUndoInsertChildCommand.h
-        UsdUndoReorderCommand.h
-        UsdUndoSetKindCommand.h
         UsdUndoVisibleCommand.h
         XformOpUtils.h
     )
@@ -253,10 +233,12 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
         # in the Outliner, which is a UFE v3 feature.
         EditAsMayaCommand.h
         MayaUIInfoHandler.h
+        MayaUsdHierarchy.h
+        MayaUsdHierarchyHandler.h
+        MayaUsdRootChildHierarchy.h
         PulledObjectHierarchy.h
         PulledObjectHierarchyHandler.h
         UsdPathMappingHandler.h
-        UsdUndoUngroupCommand.h
     )
 endif()
 
@@ -324,11 +306,6 @@ install(FILES ${HEADERS}
 )
 
 set(UFE_PYTHON_MODULE_NAME ufe)
-
-# -----------------------------------------------------------------------------
-# subdirectories
-# -----------------------------------------------------------------------------
-add_subdirectory(private)
 
 # -----------------------------------------------------------------------------
 # target (UFE Python Bindings)

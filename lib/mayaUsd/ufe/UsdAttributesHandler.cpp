@@ -15,7 +15,7 @@
 //
 #include "UsdAttributesHandler.h"
 
-#include <mayaUsd/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {

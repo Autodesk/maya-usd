@@ -15,8 +15,10 @@
 //
 #include "UsdTransform3dHandler.h"
 
-#include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/Utils.h>
 
 #include <maya/MGlobal.h>
 
@@ -78,7 +80,7 @@ Ufe::Transform3d::Ptr UsdTransform3dHandler::transform3d(const Ufe::SceneItem::P
     }
 
     std::string errMsg;
-    if (!MayaUsd::ufe::isEditTargetLayerModifiable(usdItem->prim().GetStage(), &errMsg)) {
+    if (!UsdUfe::isEditTargetLayerModifiable(usdItem->prim().GetStage(), &errMsg)) {
         MGlobal::displayError(errMsg.c_str());
         return nullptr;
     }

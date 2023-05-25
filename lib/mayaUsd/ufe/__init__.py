@@ -21,3 +21,8 @@ else:
     Tf.PrepareModule(_ufe, locals())
     del _ufe
 del Tf
+
+# TEMP (UsdUfe)
+# Import all the names from the usdUfe module into this (mayaUsd.ufe) module.
+# During the transition this helps by not having to update all the maya-usd tests.
+from usdUfe import *

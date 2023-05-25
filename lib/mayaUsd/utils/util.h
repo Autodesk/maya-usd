@@ -19,6 +19,8 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 
+#include <usdUfe/utils/Utils.h>
+
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/gf/vec4f.h>
@@ -145,6 +147,9 @@ inline double ConvertMMToCM(const double mm) { return mm / MillimetersPerCentime
 /// Converts the given value \p cm in centimeters to the equivalent value
 /// in millimeters.
 inline double ConvertCMToMM(const double cm) { return cm * MillimetersPerCentimeter; }
+
+inline std::string SanitizeName(const std::string& name) { return UsdUfe::SanitizeName(name); }
+inline std::string prettifyName(const std::string& name) { return UsdUfe::prettifyName(name); }
 
 /// Converts the given value \p mdistance in Maya's MDistance units to the
 /// equivalent value in USD's metersPerUnit.
@@ -289,19 +294,6 @@ const std::string MayaNamespaceDelimiter(":");
 /// If \p nsDepth is -1, all namespaces are stripped.
 MAYAUSD_CORE_PUBLIC
 std::string stripNamespaces(const std::string& nodeName, const int nsDepth = -1);
-
-MAYAUSD_CORE_PUBLIC
-std::string SanitizeName(const std::string& name);
-
-/// Return a prettified name from camelCase or snake_case source.
-///
-/// Put a space in the name when preceded by a capital letter.
-/// Exceptions: Number followed by capital
-///            Multiple capital letters together
-/// Replace underscore by space and capitalize next letter
-/// Always capitalize first letter
-MAYAUSD_CORE_PUBLIC
-std::string prettifyName(const std::string& name);
 
 // This to allow various pipeline to sanitize the colorset name for output
 MAYAUSD_CORE_PUBLIC
