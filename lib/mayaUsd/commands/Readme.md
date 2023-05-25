@@ -309,6 +309,40 @@ using the Python "adaptor" helper; see the section on
 | `USD_ATTR_subdivisionScheme`              | string | `none`, `bilinear`, `catmullClark`, `loop` | Determines the Mesh subdivision scheme. Default can be configured using the `-defaultMeshScheme` export option for meshes without `USD_ATTR_subdivisionScheme` manually specified; we currently default to `catmullClark`. |
 
 
+### Specifying Arbitrary Attributes for Export 
+
+Attributes on a Maya DAG node that are not part of an existing schema or are otherwise unknown to USD can still be tagged for export.
+
+Attributes of a node can be added to Maya attribute USD_UserExportedAttributesJson as a JSON dictionary. During export, this attribute is used to find the names of additional Maya attributes to export as USD attributes, as well as any additional metadata about how the attribute should be exported. Here is example of what the JSON in this attribute might look like after tagging:
+
+```javascript 
+{ "myMayaAttributeOne":
+{ }, "myMayaAttributeTwo":
+
+{ "usdAttrName": "my:namespace:attributeTwo" }
+
+, "attributeAsPrimvar":
+
+{ "usdAttrType": "primvar" }
+
+, "attributeAsVertexInterpPrimvar":
+
+{ "usdAttrType": "primvar", "interpolation": "vertex" }
+
+, "attributeAsRibAttribute":
+
+{ "usdAttrType": "usdRi" }
+
+"doubleAttributeAsFloatAttribute":
+
+{ "translateMayaDoubleToUsdSinglePrecision": true }
+```
+
+If the attribute metadata contains a value for usdAttrName, the attribute will be given that name in USD. Otherwise, the Maya attribute name will be used, and for regular USD attributes, that name will be prepended with the userProperties: namespace. Note that other types of attributes such as primvars and UsdRi attributes have specific namespacing schemes, so attributes of those types will follow those namespacing conventions. Maya attributes in the JSON will be processed in sorted order. Any USD attribute name collisions will be resolved by using the first attribute visited, and a warning will be issued about subsequent attribute tags for the same USD attribute. The attribute metadata can also contain a value for usdAttrType which can be set to primvar to create the attribute as a UsdGeomPrimvar, or to usdRi to create the attribute using UsdRiStatements::CreateRiAttribute(). Any other value for usdAttrType will result in a regular USD attribute. Attributes to be exported as primvars can also have their interpolation specified by providing a value for the interpolation key in the attribute metadata.
+
+There is not always a direct mapping between Maya-native types and USD/Sdf types, and often it's desirable to intentionally use a single precision type when the extra precision is not needed to reduce size, I/O bandwidth, etc. For example, there is no native Maya attribute type to represent an array of float triples. To get an attribute with a VtVec3fArray type in USD, you can create a vectorArray data-typed attribute in Maya (which stores an array of MVectors, which contain doubles) and set the attribute metadata translateMayaDoubleToUsdSinglePrecision to true so that the data is cast to single precision on export. It will be up-cast back to double precision on re-import.
+
+
 #### Export Chasers (Advanced)
 
 Export chasers are plugins that run as part of the export and can
