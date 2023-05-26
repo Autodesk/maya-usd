@@ -1147,6 +1147,8 @@ void ReplicateExtrasToUSD::finalize(
 #endif
 }
 
+#ifdef HAS_ORPHANED_NODES_MANAGER
+
 static Ufe::BBox3d transformBBox(Ufe::SceneItem::Ptr& item, const Ufe::BBox3d& bbox)
 {
     Ufe::BBox3d transformed(bbox);
@@ -1181,6 +1183,8 @@ static Ufe::BBox3d getTransformedBBox(const Ufe::Path& path)
     return transformBBox(item, o3d->boundingBox());
 }
 
+#endif /* HAS_ORPHANED_NODES_MANAGER */
+
 Ufe::BBox3d getPulledPrimsBoundingBox(const Ufe::Path& path)
 {
     Ufe::BBox3d ufeBBox;
@@ -1208,7 +1212,7 @@ Ufe::BBox3d getPulledPrimsBoundingBox(const Ufe::Path& path)
 
         ufeBBox = UsdUfe::combineUfeBBox(ufeBBox, pulledBBox);
     }
-#endif
+#endif /* HAS_ORPHANED_NODES_MANAGER */
 
     return ufeBBox;
 }

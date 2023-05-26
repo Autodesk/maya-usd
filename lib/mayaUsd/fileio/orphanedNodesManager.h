@@ -42,11 +42,11 @@ namespace MAYAUSD_NS_DEF {
 /// and edit orphaning is the set of variant selections of all ancestors of
 /// the prim being edited.
 
-class OrphanedNodesManager : public Ufe::Observer
+class MAYAUSD_CORE_PUBLIC OrphanedNodesManager : public Ufe::Observer
 {
 public:
     /// \brief Records a single variant selection of a single variant set.
-    struct VariantSelection
+    struct MAYAUSD_CORE_PUBLIC VariantSelection
     {
         VariantSelection() = default;
         VariantSelection(const std::string& vsn, const std::string& vs)
@@ -65,7 +65,7 @@ public:
     };
 
     /// \brief Records all variant selections of a single prim.
-    struct VariantSetDescriptor
+    struct MAYAUSD_CORE_PUBLIC VariantSetDescriptor
     {
         VariantSetDescriptor() = default;
         VariantSetDescriptor(const Ufe::Path& p, const std::list<VariantSelection>& vs)
@@ -84,7 +84,7 @@ public:
 
     /// \brief Records all variant selections of all ancestors of the prim edited as maya,
     ///        with the DAG path of the root of Maya nodes corresponding to the edited prim.
-    struct PullVariantInfo
+    struct MAYAUSD_CORE_PUBLIC PullVariantInfo
     {
         PullVariantInfo() = default;
         PullVariantInfo(const MDagPath& editedMayaRoot, const std::list<VariantSetDescriptor>& vsd)
@@ -97,7 +97,7 @@ public:
     };
 
     /// \brief Entire state of the OrphanedNodesManager at a point in time, used for undo/redo.
-    class Memento
+    class MAYAUSD_CORE_PUBLIC Memento
     {
     public:
         // Can create an initial empty state, for it to be overwritten later.
