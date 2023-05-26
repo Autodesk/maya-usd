@@ -1202,7 +1202,7 @@ Ufe::BBox3d getPulledPrimsBoundingBox(const Ufe::Path& path)
                 continue;
             pulledBBox = transformBBox(parentItem, pulledBBox);
         }
-        
+
         ufeBBox = UsdUfe::combineUfeBBox(ufeBBox, pulledBBox);
     }
 #endif

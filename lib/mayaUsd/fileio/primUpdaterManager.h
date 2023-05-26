@@ -79,7 +79,7 @@ public:
     bool hasPulledPrims() const;
 
     using PulledPrimPaths = std::vector<std::pair<Ufe::Path, MDagPath>>;
-    
+
     /// \brief Retrieve the UFE path of the edited USD data and the corresponding path of Maya data.
     MAYAUSD_CORE_PUBLIC
     PulledPrimPaths getPulledPrimPaths() const;

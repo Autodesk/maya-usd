@@ -17,8 +17,8 @@
 
 #include <usdUfe/base/api.h>
 
-#include <ufe/ufe.h>
 #include <ufe/types.h>
+#include <ufe/ufe.h>
 
 // #ifdef UFE_V2_FEATURES_AVAILABLE
 // #include <mayaUsd/ufe/UsdAttribute.h>
