@@ -17,11 +17,6 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         testVP2RenderDelegatePrimPath.py
         testVP2RenderDelegateUSDPreviewSurface.py
         testVP2RenderDelegateConsolidation.py
-    )
-endif()
-
-if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
-    list(APPEND TEST_SCRIPT_FILES
         testVP2RenderDelegatePerInstanceInheritedData.py
         testVP2RenderDelegateBasisCurves.py
         testVP2RenderDelegateDrawModes.py
@@ -29,12 +24,10 @@ if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
     )
 endif()
 
-if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
-    if (CMAKE_UFE_V2_FEATURES_AVAILABLE)
-        list(APPEND TEST_SCRIPT_FILES
-            testVP2RenderDelegateUsdCamera.py
-        )
-    endif()
+if (CMAKE_UFE_V2_FEATURES_AVAILABLE)
+    list(APPEND TEST_SCRIPT_FILES
+        testVP2RenderDelegateUsdCamera.py
+    )
 endif()
 
 if (MAYA_APP_VERSION VERSION_GREATER 2022)

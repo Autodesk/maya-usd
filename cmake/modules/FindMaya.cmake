@@ -9,8 +9,7 @@
 # MAYA_<lib>_FOUND    Defined if <lib> has been found
 # MAYA_<lib>_LIBRARY  Path to <lib> library
 # MAYA_INCLUDE_DIRS   Path to the devkit's include directories
-# MAYA_API_VERSION    Maya version (6-8 digits)
-# MAYA_APP_VERSION    Maya app version (4 digits)
+# MAYA_API_VERSION    Maya API version (6-8 digits) - defined in MTypes.h
 # MAYA_LIGHTAPI_VERSION Maya light API version (1 or 2 or 3)
 # MAYA_PREVIEW_RELEASE_VERSION Preview Release number (3 or more digits) in preview releases, 0 in official releases
 #
@@ -89,8 +88,8 @@ endif()
 
 if(IS_MACOSX)
     # On OSX, setting MAYA_LOCATION to either the base installation dir (ie,
-    # `/Application/Autodesk/maya20xx`), or the Contents folder in the Maya.app dir
-    # (ie, `/Application/Autodesk/maya20xx/Maya.app/Contents`) are supported.
+    # `/Application/Autodesk/maya202x`), or the Contents folder in the Maya.app dir
+    # (ie, `/Application/Autodesk/maya202x/Maya.app/Contents`) are supported.
     find_path(MAYA_BASE_DIR
             include/maya/MFn.h
         HINTS
@@ -98,12 +97,6 @@ if(IS_MACOSX)
             "$ENV{MAYA_LOCATION}/../.."
             "${MAYA_LOCATION}"
             "$ENV{MAYA_LOCATION}"
-            "/Applications/Autodesk/maya2020"
-            "/Applications/Autodesk/maya2019"
-            "/Applications/Autodesk/maya2018"
-            "/Applications/Autodesk/maya2017"
-            "/Applications/Autodesk/maya2016.5"
-            "/Applications/Autodesk/maya2016"
         DOC
             "Maya installation root directory"
     )
@@ -125,12 +118,6 @@ elseif(IS_LINUX)
         HINTS
             "${MAYA_LOCATION}"
             "$ENV{MAYA_LOCATION}"
-            "/usr/autodesk/maya2020-x64"
-            "/usr/autodesk/maya2019-x64"
-            "/usr/autodesk/maya2018-x64"
-            "/usr/autodesk/maya2017-x64"
-            "/usr/autodesk/maya2016.5-x64"
-            "/usr/autodesk/maya2016-x64"
         DOC
             "Maya installation root directory"
     )
@@ -151,12 +138,6 @@ elseif(IS_WINDOWS)
         HINTS
             "${MAYA_LOCATION}"
             "$ENV{MAYA_LOCATION}"
-            "C:/Program Files/Autodesk/Maya2020"
-            "C:/Program Files/Autodesk/Maya2019"
-            "C:/Program Files/Autodesk/Maya2018"
-            "C:/Program Files/Autodesk/Maya2017"
-            "C:/Program Files/Autodesk/Maya2016.5"
-            "C:/Program Files/Autodesk/Maya2016"
         DOC
             "Maya installation root directory"
     )
@@ -269,14 +250,6 @@ if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MTypes.h")
     # Tease the MAYA_API_VERSION numbers from the lib headers
     file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MTypes.h TMP REGEX "#define MAYA_API_VERSION.*$")
     string(REGEX MATCHALL "[0-9]+" MAYA_API_VERSION ${TMP})
-
-    # MAYA_APP_VERSION
-    file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MTypes.h MAYA_APP_VERSION REGEX "#define MAYA_APP_VERSION.*$")
-    if(MAYA_APP_VERSION)
-        string(REGEX MATCHALL "[0-9]+" MAYA_APP_VERSION ${MAYA_APP_VERSION})
-    else()
-        string(SUBSTRING ${MAYA_API_VERSION} "0" "4" MAYA_APP_VERSION)
-    endif()
 endif()
 
 if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MDefines.h")
@@ -290,10 +263,8 @@ endif()
 
 # Determine the Python version and switch between mayapy and mayapy2.
 set(MAYAPY_EXE mayapy)
-set(MAYA_PY_VERSION 2)
-if(${MAYA_APP_VERSION} STRGREATER_EQUAL "2021")
-    set(MAYA_PY_VERSION 3)
-
+set(MAYA_PY_VERSION 3)
+if(MAYA_API_VERSION VERSION_GREATER_EQUAL 20220000 AND MAYA_API_VERSION VERSION_LESS 2023000)
     # check to see if we have a mayapy2 executable
     find_program(MAYA_PY_EXECUTABLE2
             mayapy2
@@ -550,8 +521,7 @@ find_package_handle_standard_args(Maya
         MAYA_INCLUDE_DIRS
         MAYA_LIBRARIES
         MAYA_API_VERSION
-        MAYA_APP_VERSION
         MAYA_LIGHTAPI_VERSION
     VERSION_VAR
-        MAYA_APP_VERSION
+        MAYA_API_VERSION
 )

@@ -1,4 +1,5 @@
 set(TEST_SCRIPT_FILES
+    testComponentTags.py
     testPrimReader.py
     testPrimWriter.py
     testExportChaser.py
@@ -11,11 +12,6 @@ set(TEST_SCRIPT_FILES
     # will be skipped if not found (probably because BUILD_PXR_PLUGIN is off).
     testSchemaApiAdaptor.py
 )
-if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
-    list(APPEND TEST_SCRIPT_FILES
-        testComponentTags.py
-    )
-endif()
 
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     list(APPEND TEST_SCRIPT_FILES

@@ -58,7 +58,7 @@ if(IS_MACOSX)
 endif()
 
 # Disable the test for now here to simplify tests: MAYA-124144 MayaUsd: Maya OSX blessing failing GTest:AL_USDTransactionTests
-if (NOT MAYA_APP_VERSION VERSION_GREATER 2023 OR NOT IS_MACOSX)
+if (NOT MAYA_API_VERSION VERSION_GREATER 20230000 OR NOT IS_MACOSX)
     mayaUsd_add_test(GTest:${TARGET_NAME}
         COMMAND $<TARGET_FILE:${TARGET_NAME}>
         ENV

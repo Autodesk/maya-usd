@@ -238,8 +238,8 @@ Headers should be included in the following order, with each section separated b
 
 ### Conditional compilation (Maya, USD, UFE version)
 **Maya**
-	* `MAYA_API_VERSION` is the consistent macro to test Maya version (`MAYA_APP_VERSION` * 10000 + `MAJOR_VERSION` * 100 + `MINOR_VERSION`)
-	* `MAYA_APP_VERSION` is available only since Maya 2019 and is a simple year number, so it is not allowed.
+	* `MAYA_API_VERSION` is the consistent macro to test Maya version (`Maya app version` * 10000 + `Maya major version` * 100 + `Maya minor version`).
+
 **UFE**
 	* `WANT_UFE_BUILD` equals 1 if UFE is found and it should be used for conditional compilation on codes depending on UFE.
 
