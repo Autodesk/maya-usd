@@ -76,11 +76,6 @@ template <> struct hash<MObjectHandle>
 };
 } // namespace std
 
-namespace Ufe {
-    template class Trie<MayaUsd::OrphanedNodesManager::PullVariantInfo>;
-    template class TrieNode<MayaUsd::OrphanedNodesManager::PullVariantInfo>;
-}
-
 namespace {
 
 const std::string kPullParentPathKey("Maya:Pull:ParentPath");
