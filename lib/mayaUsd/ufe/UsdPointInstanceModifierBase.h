@@ -155,13 +155,9 @@ public:
             return usdValue;
         }
 
-        // For USD 21.02+, avoid triggering a copy-on-write by making sure that
+        // Avoid triggering a copy-on-write by making sure that
         // we invoke operator[] on a const reference to the array.
-#if PXR_VERSION >= 2102
         return usdValues.AsConst()[instanceIndex];
-#else
-        return usdValues[instanceIndex];
-#endif
     }
 
     bool setValue(

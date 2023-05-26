@@ -901,12 +901,7 @@ bool UsdMayaMeshWriteUtils::getMeshUVSetData(
     uvArray->clear();
     uvArray->reserve(static_cast<size_t>(uArray.length()));
     for (unsigned int uvId = 0u; uvId < uArray.length(); ++uvId) {
-#if PXR_VERSION >= 2011
         uvArray->emplace_back(uArray[uvId], vArray[uvId]);
-#else
-        GfVec2f value(uArray[uvId], vArray[uvId]);
-        uvArray->push_back(value);
-#endif
     }
 
     // Now iterate through all the face vertices and fill in the faceVarying

@@ -284,7 +284,6 @@ VtValue HdMayaCameraAdapter::GetCameraParamValue(const TfToken& paramName)
             return {};
         return VtValue(windowPolicy);
     }
-#if PXR_VERSION >= 2102
     if (paramName == HdCameraTokens->projection) {
         if (isOrtho) {
             return VtValue(HdCamera::Orthographic);
@@ -292,8 +291,6 @@ VtValue HdMayaCameraAdapter::GetCameraParamValue(const TfToken& paramName)
             return VtValue(HdCamera::Perspective);
         }
     }
-
-#endif
 
     return {};
 }
