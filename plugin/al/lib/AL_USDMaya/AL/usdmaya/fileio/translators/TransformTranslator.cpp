@@ -48,7 +48,6 @@ namespace usdmaya {
 namespace fileio {
 namespace translators {
 
-#if MAYA_APP_VERSION > 2019
 //----------------------------------------------------------------------------------------------------------------------
 static const GfMatrix4d g_identityMatrix(1.0);
 static constexpr double g_tolerance = 1e-9;
@@ -193,8 +192,6 @@ bool extractOffsetMatrixComponent(const MPlug& attr, double* value)
 }
 
 } // namespace
-
-#endif
 
 //----------------------------------------------------------------------------------------------------------------------
 MObject TransformTranslator::m_inheritsTransform = MObject::kNullObj;
@@ -863,7 +860,6 @@ MStatus TransformTranslator::copyAttributes(
         // This adds an op to the stack so we should do it after ClearXformOpOrder():
         xformSchema.SetResetXformStack(!inheritsTransform);
 
-#if MAYA_APP_VERSION > 2019
         if (params.m_mergeOffsetParentMatrix
             && extractOffsetMatrixComponents(
                 from, translation, rotation, rotateOrder, scale, shear)) {
@@ -871,18 +867,13 @@ MStatus TransformTranslator::copyAttributes(
             transformAnimated
                 |= animationCheck(animTranslator, MPlug(from, MPxTransform::offsetParentMatrix));
         } else {
-#endif
-
             /// Retrieve the values directly from Maya
             getVec3(from, m_scale, (float*)&scale);
             getVec3(from, m_shear, (float*)&shear);
             getVec3(from, m_rotation, (float*)&rotation);
             getInt32(from, m_rotateOrder, rotateOrder);
             getVec3(from, m_translation, (double*)&translation);
-
-#if MAYA_APP_VERSION > 2019
         }
-#endif
 
         bool plugAnimated = animationCheck(animTranslator, MPlug(from, m_visible));
         if (plugAnimated || visible != defaultVisible) {
@@ -1030,7 +1021,6 @@ void TransformTranslator::copyAttributeValue(
     }
 }
 
-#if MAYA_APP_VERSION > 2019
 //----------------------------------------------------------------------------------------------------------------------
 void TransformTranslator::copyAttributeValue(
     const MPlug&       attr,
@@ -1104,8 +1094,6 @@ void TransformTranslator::copyAttributeValue(
 
     translators::DgNodeTranslator::copyAttributeValue(attr, usdAttr, scale, timeCode);
 }
-
-#endif
 
 //----------------------------------------------------------------------------------------------------------------------
 } // namespace translators

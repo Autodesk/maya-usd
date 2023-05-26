@@ -439,12 +439,7 @@ _ComputeShadingNodeTypeForShaderId(const TfToken& shaderId, const UsdMayaShading
 
     // Loop over the compoundClassifications, though I believe
     // compoundClassifications will always have size 0 or 1.
-#if MAYA_API_VERSION >= 20190000
     for (const MString& compoundClassification : compoundClassifications) {
-#else
-    for (unsigned int i = 0; i < compoundClassifications.length(); ++i) {
-        const MString& compoundClassification = compoundClassifications[i];
-#endif
         const std::string compoundClassificationStr(compoundClassification.asChar());
         for (const std::string& classification : TfStringSplit(compoundClassificationStr, ":")) {
             for (const auto& classPrefixAndType : _classificationsToTypes) {

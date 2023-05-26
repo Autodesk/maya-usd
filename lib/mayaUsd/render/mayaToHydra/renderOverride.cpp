@@ -120,8 +120,6 @@ private:
 
 #endif // WANT_UFE_BUILD
 
-#if MAYA_API_VERSION >= 20210000
-
 //! \brief  Get the index of the hit nearest to a given cursor point.
 int GetNearestHitIndex(
     const MHWRender::MFrameContext& frameContext,
@@ -191,8 +189,6 @@ void ResolveUniqueHits_Workaround(const HdxPickHitVector& inHits, HdxPickHitVect
         }
     }
 }
-
-#endif
 
 } // namespace
 
@@ -980,7 +976,6 @@ bool MtohRenderOverride::nextRenderOperation()
     return ++_currentOperation < static_cast<int>(_operations.size());
 }
 
-#if MAYA_API_VERSION >= 20210000
 bool MtohRenderOverride::select(
     const MHWRender::MFrameContext&  frameContext,
     const MHWRender::MSelectionInfo& selectInfo,
@@ -1083,7 +1078,6 @@ bool MtohRenderOverride::select(
 
     return true;
 }
-#endif
 
 void MtohRenderOverride::_ClearHydraCallback(void* data)
 {
