@@ -13,9 +13,10 @@ PXR_MTLX_STDLIB_SEARCH_PATHS+:=libraries
 icons: lib/icons
 plug-ins: 
 presets: 
-scripts: lib/scripts:lib/python
+scripts: lib/scripts
 resources: 
 PYTHONPATH+:=lib/python
+MAYA_SCRIPT_PATH+:=lib/python
 ${PXR_OVERRIDE_PLUGINPATH_NAME}+:=lib/usd
 MAYAUSD_VERSION=${MAYAUSD_VERSION}
 PXR_MTLX_STDLIB_SEARCH_PATHS+:=libraries
