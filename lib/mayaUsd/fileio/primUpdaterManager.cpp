@@ -60,6 +60,7 @@
 #include <ufe/path.h>
 #include <ufe/pathString.h>
 #include <ufe/sceneNotification.h>
+#include <ufe/trie.imp.h>
 
 #include <functional>
 #include <tuple>
@@ -74,6 +75,11 @@ template <> struct hash<MObjectHandle>
     std::size_t operator()(const MObjectHandle& obj) const { return obj.hashCode(); }
 };
 } // namespace std
+
+namespace Ufe {
+    template class Trie<MayaUsd::OrphanedNodesManager::PullVariantInfo>;
+    template class TrieNode<MayaUsd::OrphanedNodesManager::PullVariantInfo>;
+}
 
 namespace {
 
