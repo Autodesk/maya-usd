@@ -41,6 +41,7 @@ public:
     enum OpNdx
     {
         NdxTranslate = 0,
+        NdxPivot,
         NdxRotatePivotTranslate,
         NdxRotatePivot,
         NdxRotate,
@@ -51,6 +52,7 @@ public:
         NdxShear,
         NdxScale,
         NdxScalePivotInverse,
+        NdxPivotInverse,
         NbOpNdx
     };
 

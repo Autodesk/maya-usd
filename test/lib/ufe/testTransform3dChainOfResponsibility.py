@@ -141,20 +141,24 @@ class Transform3dChainOfResponsibilityTestCase(unittest.TestCase):
                            "!invert!xformOp:translate:pivot")))
         self.assertTrue(UsdGeom.XformCommonAPI(cubeXformable))
 
-        # Move the pivot.  Because the common API is handling the request, no
-        # pivot compensation transform ops will be created, and we remain
-        # common API compatible.
+        # Move the pivot.  Because now the Maya API is handling the request,
+        # a pivot compensation transform ops will be created, and we don't
+        # remain common API compatible.
         sn.clear()
         sn.append(cubeItem)
         self.assertEqual(cubeT3d.rotatePivot(), ufe.Vector3d(0, 0, 0))
         cmds.move(0, -2.104143, 3.139701, r=True, urp=True, usp=True)
         self.assertNotEqual(cubeT3d.rotatePivot(), ufe.Vector3d(0, 0, 0))
 
+        print(cubeXformable.GetXformOpOrderAttr().Get())
         self.assertEqual(
             cubeXformable.GetXformOpOrderAttr().Get(), 
-            Vt.TokenArray(("xformOp:translate:pivot", "xformOp:rotateXYZ",
-                           "!invert!xformOp:translate:pivot")))
-        self.assertTrue(UsdGeom.XformCommonAPI(cubeXformable))
+            Vt.TokenArray(("xformOp:translate:pivot", "xformOp:translate:rotatePivotTranslate",
+                           "xformOp:translate:rotatePivot", "xformOp:rotateXYZ",
+                           "!invert!xformOp:translate:rotatePivot",
+                           "xformOp:translate:scalePivotTranslate", "xformOp:translate:scalePivot",
+                           "!invert!xformOp:translate:scalePivot", "!invert!xformOp:translate:pivot")))
+        self.assertFalse(UsdGeom.XformCommonAPI(cubeXformable))
 
 
 if __name__ == '__main__':
