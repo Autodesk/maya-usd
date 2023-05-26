@@ -1397,8 +1397,6 @@ bool UsdMayaMeshWriteUtils::getMeshColorSetData(
     return true;
 }
 
-#if MAYA_API_VERSION >= 20220000
-
 MStatus UsdMayaMeshWriteUtils::exportComponentTags(UsdGeomMesh& primSchema, MObject obj)
 {
     MStatus status { MS::kSuccess };
@@ -1479,7 +1477,5 @@ MStatus UsdMayaMeshWriteUtils::exportComponentTags(UsdGeomMesh& primSchema, MObj
 
     return status;
 }
-
-#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE

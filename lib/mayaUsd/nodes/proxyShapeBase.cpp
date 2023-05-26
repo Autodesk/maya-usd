@@ -213,14 +213,8 @@ void createNewAnonSubLayerRecursive(
     }
 }
 //! Profiler category for proxy accessor events
-const int _shapeBaseProfilerCategory = MProfiler::addCategory(
-#if MAYA_API_VERSION >= 20190000
-    "ProxyShapeBase",
-    "ProxyShapeBase events"
-#else
-    "ProxyShapeBase"
-#endif
-);
+const int _shapeBaseProfilerCategory
+    = MProfiler::addCategory("ProxyShapeBase", "ProxyShapeBase events");
 
 struct InComputeGuard
 {
@@ -1671,7 +1665,6 @@ MStatus MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray&
     return retValue;
 }
 
-#if MAYA_API_VERSION >= 20210000
 /* virtual */
 void MayaUsdProxyShapeBase::getCacheSetup(
     const MEvaluationNode&   evalNode,
@@ -1697,7 +1690,6 @@ void MayaUsdProxyShapeBase::configCache(const MEvaluationNode& evalNode, MCacheS
         schema.add(outStageDataAttr);
     }
 }
-#endif
 
 UsdPrim MayaUsdProxyShapeBase::_GetUsdPrim(MDataBlock dataBlock) const
 {

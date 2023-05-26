@@ -46,14 +46,11 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnLambertShader.h>
 #include <maya/MFnSet.h>
+#include <maya/MFnStandardSurfaceShader.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
-
-#if MAYA_API_VERSION >= 20200000
-#include <maya/MFnStandardSurfaceShader.h>
-#endif
 
 #include <string>
 
@@ -136,7 +133,6 @@ DEFINE_SHADING_MODE_IMPORTER_WITH_JOB_ARGUMENTS(
 
     MPlug       outputPlug;
     std::string surfaceNodeName;
-#if MAYA_API_VERSION >= 20200000
     if (preferredMaterial == UsdMayaPreferredMaterialTokens->standardSurface) {
         MFnStandardSurfaceShader surfaceFn;
         surfaceFn.setObject(shadingObj);
@@ -154,9 +150,7 @@ DEFINE_SHADING_MODE_IMPORTER_WITH_JOB_ARGUMENTS(
         // shading engine.
         outputPlug = surfaceFn.findPlug("outColor", &status);
         CHECK_MSTATUS_AND_RETURN(status, MObject());
-    } else
-#endif
-        if (preferredMaterial == UsdMayaPreferredMaterialTokens->usdPreviewSurface) {
+    } else if (preferredMaterial == UsdMayaPreferredMaterialTokens->usdPreviewSurface) {
         MFnDependencyNode depNodeFn;
         depNodeFn.setObject(shadingObj);
         surfaceNodeName = depNodeFn.name().asChar();

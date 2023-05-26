@@ -239,7 +239,6 @@ public:
         const MEvaluationNode& evaluationNode,
         PostEvaluationType     evalType) override;
 
-#if MAYA_API_VERSION >= 20210000
     MAYAUSD_CORE_PUBLIC
     void getCacheSetup(
         const MEvaluationNode&   evalNode,
@@ -249,7 +248,6 @@ public:
 
     MAYAUSD_CORE_PUBLIC
     void configCache(const MEvaluationNode& evalNode, MCacheSchema& schema) const override;
-#endif
 
     MAYAUSD_CORE_PUBLIC
     MStatus setDependentsDirty(const MPlug& plug, MPlugArray& plugArray) override;

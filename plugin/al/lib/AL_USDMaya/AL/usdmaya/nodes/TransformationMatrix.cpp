@@ -31,14 +31,8 @@
 #define AL_USDMAYA_XFORM_COMP_EPSILON 1e-7
 
 namespace {
-const int _transformationMatrixProfilerCategory = MProfiler::addCategory(
-#if MAYA_API_VERSION >= 20190000
-    "TransformationMatrix",
-    "TransformationMatrix"
-#else
-    "TransformationMatrix"
-#endif
-);
+const int _transformationMatrixProfilerCategory
+    = MProfiler::addCategory("TransformationMatrix", "TransformationMatrix");
 } // namespace
 
 PXR_NAMESPACE_USING_DIRECTIVE

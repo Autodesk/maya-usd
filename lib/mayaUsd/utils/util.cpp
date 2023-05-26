@@ -17,6 +17,7 @@
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/undo/OpUndoItems.h>
+#include <mayaUsd/utils/colorSpace.h>
 
 #include <maya/MAnimControl.h>
 #include <maya/MAnimUtil.h>
@@ -37,6 +38,7 @@
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnSet.h>
 #include <maya/MFnSingleIndexedComponent.h>
+#include <maya/MFnStandardSurfaceShader.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MGlobal.h>
 #include <maya/MItDag.h>
@@ -61,12 +63,6 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-
-#if MAYA_API_VERSION >= 20200000
-#include <maya/MFnStandardSurfaceShader.h>
-#endif
-
-#include <mayaUsd/utils/colorSpace.h>
 
 #include <pxr/base/gf/gamma.h>
 #include <pxr/base/gf/vec2f.h>
@@ -852,7 +848,6 @@ bool _GetColorAndTransparencyFromStandardSurface(
     GfVec3f*       rgb,
     float*         alpha)
 {
-#if MAYA_API_VERSION >= 20200000
     MStatus                  status;
     MFnStandardSurfaceShader surfaceFn(shaderObj, &status);
     if (status == MS::kSuccess) {
@@ -870,7 +865,6 @@ bool _GetColorAndTransparencyFromStandardSurface(
         }
         return true;
     }
-#endif
     return false;
 }
 
@@ -2326,11 +2320,9 @@ double UsdMayaUtil::ConvertMTimeUnitToDouble(const MTime::Unit& unit)
     case MTime::k80FPS: {
         ret = 80.0;
     } break;
-#if MAYA_API_VERSION >= 20200000
     case MTime::k90FPS: {
         ret = 90.0;
     } break;
-#endif
     case MTime::k100FPS: {
         ret = 100.0;
     } break;

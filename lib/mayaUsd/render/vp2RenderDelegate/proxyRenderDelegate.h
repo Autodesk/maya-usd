@@ -43,11 +43,6 @@
 #include <ufe/path.h>
 #endif
 
-// Conditional compilation due to Maya API gap.
-#if MAYA_API_VERSION >= 20200000
-#define MAYA_ENABLE_UPDATE_FOR_SELECTION
-#endif
-
 // Use the latest MPxSubSceneOverride API
 #ifndef OPENMAYA_MPXSUBSCENEOVERRIDE_LATEST_NAMESPACE
 #define OPENMAYA_MPXSUBSCENEOVERRIDE_LATEST_NAMESPACE OPENMAYA_MAJOR_NAMESPACE
@@ -129,10 +124,8 @@ public:
     MAYAUSD_CORE_PUBLIC
     MHWRender::DrawAPI supportedDrawAPIs() const override;
 
-#if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
     MAYAUSD_CORE_PUBLIC
     bool enableUpdateForSelection() const override;
-#endif
 
     MAYAUSD_CORE_PUBLIC
     bool requiresUpdate(const MSubSceneContainer& container, const MFrameContext& frameContext)
@@ -473,7 +466,7 @@ private:
     MCallbackId _mayaSelectionCallbackId { 0 };
 #endif
 
-#if defined(WANT_UFE_BUILD) && defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
+#if defined(WANT_UFE_BUILD)
     //! Adjustment mode for global selection list: ADD, REMOVE, REPLACE, XOR
     MGlobal::ListAdjustment _globalListAdjustment;
 
