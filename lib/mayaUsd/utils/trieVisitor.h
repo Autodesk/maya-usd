@@ -41,6 +41,7 @@ template <class T> struct TrieVisitor
     ///        By default, only vist node with data, controlled by \p allNodes
     ///        This visit function assumes the root UFE path is in a Maya segment
     ///        and switches of run-times alternate between Maya and USD.
+    MAYAUSD_CORE_PUBLIC
     static void
     visit(const Ufe::Trie<T>& trie, const TrieVistorFunction& function, bool allNodes = false);
 
@@ -50,6 +51,7 @@ template <class T> struct TrieVisitor
     ///        By default, only vist node with data, controlled by \p allNodes
     ///        This visit function assumes the root UFE path is in a Maya segment
     ///        and switches of run-times alternate between Maya and USD.
+    MAYAUSD_CORE_PUBLIC
     static void visit(
         const Ufe::Path&          parentPath,
         const TrieNodePtr&        node,

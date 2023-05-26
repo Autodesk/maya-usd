@@ -15,7 +15,6 @@
 //
 #include "UsdObject3d.h"
 
-#include <mayaUsd/fileio/primUpdaterManager.h>
 #include <mayaUsd/ufe/UsdUndoVisibleCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
