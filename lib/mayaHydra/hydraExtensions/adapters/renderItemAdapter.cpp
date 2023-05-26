@@ -70,7 +70,7 @@ MayaHydraRenderItemAdapter::~MayaHydraRenderItemAdapter() { _RemoveRprim(); }
 
 TfToken MayaHydraRenderItemAdapter::GetRenderTag() const { return HdRenderTagTokens->geometry; }
 
-void MayaHydraRenderItemAdapter::UpdateTransform(MRenderItem& ri)
+void MayaHydraRenderItemAdapter::UpdateTransform(const MRenderItem& ri)
 {
     MMatrix matrix;
     if (ri.getMatrix(matrix) == MStatus::kSuccess) {

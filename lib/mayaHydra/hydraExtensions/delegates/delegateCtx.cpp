@@ -88,6 +88,12 @@ SdfPath _GetPrimPath(const SdfPath& base, const MDagPath& dg)
         mayaPath = mayaPath.MakeRelativePath(SdfPath::AbsoluteRootPath());
     }
 
+    if (MFnDependencyNode(dg.node()).typeName().asChar() == TfToken("mesh")) {
+        // Prefix with "Solid" when it's not a line/points primitive to be able to use only solid
+        // primitives in lighting/shadowing by their root path
+        mayaPath = solidPath.AppendPath(mayaPath);
+    }
+
     return base.AppendPath(mayaPath);
 }
 

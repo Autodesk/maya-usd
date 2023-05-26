@@ -71,6 +71,25 @@ int _profilerCategory = MProfiler::addCategory(
 #error Maya API version 2024+ required
 #endif
 
+namespace {
+
+bool filterMesh(const MRenderItem& ri) {
+    return
+#ifdef MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
+        // Filter our mesh render items, and let the mesh adapter handle Maya
+        // meshes.  The MRenderItem::name() for meshes is "StandardShadedItem", 
+        // their MRenderItem::type() is InternalMaterialItem, but 
+        // this type can also be used for other purposes, e.g. face groups, so
+        // using the name is more appropriate.
+        (ri.name() == "StandardShadedItem")
+#else
+        false
+#endif
+        ;
+}
+
+}
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 SdfPath MayaHydraSceneDelegate::_fallbackMaterial;
@@ -337,15 +356,10 @@ void MayaHydraSceneDelegate::HandleCompleteViewportScene(
 
         auto& ri = *scene.mItems[i];
 
-        MColor                   wireframeColor;
-        MHWRender::DisplayStatus displayStatus = MHWRender::kNoStatus;
-
-        MDagPath dagPath = ri.sourceDagPath();
-        if (dagPath.isValid()) {
-            wireframeColor = MGeometryUtilities::wireframeColor(
-                dagPath); // This is a color managed VP2 color, it will need to be unmanaged at some
-                          // point
-            displayStatus = MGeometryUtilities::displayStatus(dagPath);
+        // Meshes can optionally be handled by the mesh adapter, rather than by
+        // render items.
+        if (filterMesh(ri)) {
+            continue;
         }
 
         int                           fastId = ri.InternalObjectId();
@@ -371,6 +385,17 @@ void MayaHydraSceneDelegate::HandleCompleteViewportScene(
 
         if (flags & MDataServerOperation::MViewportScene::MVS_changedEffect) {
             ria->SetMaterial(material);
+        }
+
+        MColor                   wireframeColor;
+        MHWRender::DisplayStatus displayStatus = MHWRender::kNoStatus;
+
+        MDagPath dagPath = ri.sourceDagPath();
+        if (dagPath.isValid()) {
+            wireframeColor = MGeometryUtilities::wireframeColor(
+                dagPath); // This is a color managed VP2 color, it will need to be unmanaged at some
+                          // point
+            displayStatus = MGeometryUtilities::displayStatus(dagPath);
         }
 
         const MayaHydraRenderItemAdapter::UpdateFromDeltaData data(
@@ -889,6 +914,11 @@ void MayaHydraSceneDelegate::OnDagNodeAdded(const MObject& obj)
     if (auto lightFn = MayaHydraAdapterRegistry::GetLightAdapterCreator(obj)) {
         _lightsToAdd.push_back({ obj, lightFn });
     }
+#ifdef MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
+    else {
+        _addedNodes.push_back(obj);
+    }
+#endif
 }
 
 void MayaHydraSceneDelegate::OnDagNodeRemoved(const MObject& obj)
@@ -901,6 +931,15 @@ void MayaHydraSceneDelegate::OnDagNodeRemoved(const MObject& obj)
     if (it != _lightsToAdd.end()) {
         _lightsToAdd.erase(it, _lightsToAdd.end());
     }
+#ifdef MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
+    else {
+        const auto it = std::remove_if(_addedNodes.begin(), _addedNodes.end(), [&obj](const auto& item) { return item == obj; });
+
+        if (it != _addedNodes.end()) {
+            _addedNodes.erase(it, _addedNodes.end());
+        }
+    }
+#endif
 }
 
 #ifdef MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY

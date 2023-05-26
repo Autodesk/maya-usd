@@ -18,6 +18,8 @@
 #ifndef MAYAHYDRALIB_SCENE_DELEGATE_H
 #define MAYAHYDRALIB_SCENE_DELEGATE_H
 
+// #define MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
+
 #include <mayaHydraLib/adapters/cameraAdapter.h>
 #include <mayaHydraLib/adapters/lightAdapter.h>
 #include <mayaHydraLib/adapters/materialAdapter.h>
@@ -57,8 +59,10 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 /**
- * \brief MayaHydraSceneDelegate is an Hydra custom scene delegate used to translate from a Maya
- * scene to hydra.
+ * \brief Hydra custom scene delegate.
+ *
+ * MayaHydraSceneDelegate is a Hydra custom scene delegate used to translate
+ * from a Maya scene to Hydra.
  *
  * If you want to know how to add a custom scene index to this plug-in, then please see the
  * registration.cpp file.
@@ -282,6 +286,7 @@ private:
     std::vector<std::tuple<SdfPath, MObject>>  _adaptersToRecreate;
     std::vector<std::tuple<SdfPath, uint32_t>> _adaptersToRebuild;
 #ifdef MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
+    // Nodes accumulated during _onDagNodeAdded() callback.
     std::vector<MObject> _addedNodes;
 #endif
 

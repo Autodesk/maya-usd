@@ -119,7 +119,7 @@ public:
     HdPrimvarDescriptorVector GetPrimvarDescriptors(HdInterpolation interpolation) override;
 
     MAYAHYDRALIB_API
-    void UpdateTransform(MRenderItem& ri);
+    void UpdateTransform(const MRenderItem& ri);
 
     /// Class used to pass data to the UpdateFromDelta method, so we can extend the parameters in
     /// the future if needed.
