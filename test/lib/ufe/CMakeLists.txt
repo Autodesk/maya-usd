@@ -40,6 +40,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         testPointInstances.py
         testReorderCmd.py
         testRotateCmd.py
+        testRotateCmdUndoRedo.py
         testRotatePivot.py
         testScaleCmd.py
         testSceneItem.py
