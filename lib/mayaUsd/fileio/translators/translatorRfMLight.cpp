@@ -38,12 +38,8 @@
 #include <pxr/usd/usdLux/distantLight.h>
 #include <pxr/usd/usdLux/domeLight.h>
 #include <pxr/usd/usdLux/geometryLight.h>
-#if PXR_VERSION < 2111
-#include <pxr/usd/usdLux/light.h>
-#else
 #include <pxr/usd/usdLux/lightAPI.h>
 #include <pxr/usd/usdLux/meshLightAPI.h>
-#endif
 #include <pxr/usd/usdLux/rectLight.h>
 #include <pxr/usd/usdLux/shadowAPI.h>
 #include <pxr/usd/usdLux/shapingAPI.h>
@@ -92,21 +88,12 @@ static constexpr bool _USE_SDR_TO_TRANSLATE =
 #endif
 
 void _ReadShaderAttributesFromUsdPrim_deprecated(
-#if PXR_VERSION < 2111
-    const UsdLuxLight lightSchema,
-#else
     const UsdLuxLightAPI lightSchema,
-#endif
-    MFnDependencyNode& depFn);
+    MFnDependencyNode&   depFn);
 
 void _WriteShaderAttributesToUsdPrim_deprecated(
     const MFnDependencyNode& depFn,
-#if PXR_VERSION < 2111
-    UsdLuxLight& lightSchema
-#else
-    UsdLuxLightAPI&      lightSchema
-#endif
-);
+    UsdLuxLightAPI&          lightSchema);
 
 static bool _ReportError(const std::string& msg, const SdfPath& primPath = SdfPath())
 {
@@ -124,45 +111,6 @@ static TfToken _GetMayaLightTypeToken(const MFnDependencyNode& depFn)
     return TfToken(mayaLightTypeName.asChar());
 }
 
-#if PXR_VERSION < 2111
-static UsdLuxLight _DefineUsdLuxLightForMayaLight(
-    const MFnDependencyNode&  depFn,
-    const TfToken&            mayaLightTypeToken,
-    UsdMayaPrimWriterContext* context)
-{
-    UsdLuxLight lightSchema;
-
-    UsdStageRefPtr stage = context->GetUsdStage();
-    const SdfPath& authorPath = context->GetAuthorPath();
-
-    if (mayaLightTypeToken == _tokens->AovLightMayaTypeName) {
-        lightSchema = UsdLuxLight(stage->DefinePrim(authorPath, _tokens->AovLightMayaTypeName));
-    } else if (mayaLightTypeToken == _tokens->CylinderLightMayaTypeName) {
-        lightSchema = UsdLuxCylinderLight::Define(stage, authorPath);
-    } else if (mayaLightTypeToken == _tokens->DiskLightMayaTypeName) {
-        lightSchema = UsdLuxDiskLight::Define(stage, authorPath);
-    } else if (mayaLightTypeToken == _tokens->DistantLightMayaTypeName) {
-        lightSchema = UsdLuxDistantLight::Define(stage, authorPath);
-    } else if (mayaLightTypeToken == _tokens->DomeLightMayaTypeName) {
-        lightSchema = UsdLuxDomeLight::Define(stage, authorPath);
-    } else if (mayaLightTypeToken == _tokens->EnvDayLightMayaTypeName) {
-        lightSchema = UsdLuxLight(stage->DefinePrim(authorPath, _tokens->EnvDayLightMayaTypeName));
-#if PXR_VERSION < 2209
-    } else if (mayaLightTypeToken == _tokens->MeshLightMayaTypeName) {
-        // In 22.09, MeshLight is exported as a MeshLightAPI schema
-        lightSchema = UsdLuxGeometryLight::Define(stage, authorPath);
-#endif
-    } else if (mayaLightTypeToken == _tokens->RectLightMayaTypeName) {
-        lightSchema = UsdLuxRectLight::Define(stage, authorPath);
-    } else if (mayaLightTypeToken == _tokens->SphereLightMayaTypeName) {
-        lightSchema = UsdLuxSphereLight::Define(stage, authorPath);
-    } else {
-        _ReportError("Could not determine UsdLux schema for Maya light", authorPath);
-    }
-
-    return lightSchema;
-}
-#else
 static UsdLuxLightAPI _DefineUsdLuxLightForMayaLight(
     const MFnDependencyNode&  depFn,
     const TfToken&            mayaLightTypeToken,
@@ -201,7 +149,6 @@ static UsdLuxLightAPI _DefineUsdLuxLightForMayaLight(
 
     return lightSchema;
 }
-#endif
 
 /* static */
 bool UsdMayaTranslatorRfMLight::Write(
@@ -223,11 +170,7 @@ bool UsdMayaTranslatorRfMLight::Write(
         return false;
     }
 
-#if PXR_VERSION < 2111
-    UsdLuxLight lightSchema = _DefineUsdLuxLightForMayaLight(depFn, mayaLightTypeToken, context);
-#else
     UsdLuxLightAPI lightSchema = _DefineUsdLuxLightForMayaLight(depFn, mayaLightTypeToken, context);
-#endif
     if (!lightSchema) {
         return _ReportError("Failed to create UsdLuxLightAPI prim", authorPath);
     }
@@ -242,11 +185,7 @@ bool UsdMayaTranslatorRfMLight::Write(
     return true;
 }
 
-#if PXR_VERSION < 2111
-static TfToken _GetMayaTypeTokenForUsdLuxLight(const UsdLuxLight& lightSchema)
-#else
 static TfToken _GetMayaTypeTokenForUsdLuxLight(const UsdLuxLightAPI& lightSchema)
-#endif
 {
     const UsdPrim& lightPrim = lightSchema.GetPrim();
 
@@ -291,11 +230,7 @@ bool UsdMayaTranslatorRfMLight::Read(
         return false;
     }
 
-#if PXR_VERSION < 2111
-    const UsdLuxLight lightSchema(usdPrim);
-#else
     const UsdLuxLightAPI lightSchema(usdPrim);
-#endif
     if (!lightSchema) {
         return _ReportError("Failed to read UsdLuxLightAPI prim", usdPrim.GetPath());
     }

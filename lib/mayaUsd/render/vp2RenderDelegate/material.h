@@ -95,10 +95,6 @@ public:
 
     HdDirtyBits GetInitialDirtyBitsMask() const override;
 
-#if PXR_VERSION < 2011
-    void Reload() override {};
-#endif
-
     //! Get the surface shader instance.
     MHWRender::MShaderInstance*
                                 GetSurfaceShader(const TfToken& reprToken, bool backfaceCull = false) const;

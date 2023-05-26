@@ -540,12 +540,7 @@ void UsdMaya_ReadJob::_DoImportInstanceIt(
     if (!primIt.IsPostVisit()) {
         return;
     }
-    const UsdPrim prototype =
-#if PXR_VERSION < 2011
-        prim.GetMaster();
-#else
-        prim.GetPrototype();
-#endif
+    const UsdPrim prototype = prim.GetPrototype();
     if (!prototype) {
         return;
     }
@@ -650,11 +645,7 @@ bool UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootP
         UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
         readCtx.SetTimeSampleMultiplier(mTimeSampleMultiplier);
 
-#if PXR_VERSION < 2011
-        auto prototypes = usdRootPrim.GetStage()->GetMasters();
-#else
-        auto prototypes = usdRootPrim.GetStage()->GetPrototypes();
-#endif
+        auto                          prototypes = usdRootPrim.GetStage()->GetPrototypes();
         const int                     loopSize = prototypes.size();
         MayaUsd::ProgressBarLoopScope prototypesLoop(loopSize);
         for (const auto& prototype : prototypes) {

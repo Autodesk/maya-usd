@@ -100,9 +100,6 @@ public:
 #if PXR_VERSION >= 2005
     float outlineSelectionWidth = 4.f;
 #endif
-#if PXR_VERSION <= 2005
-    float enableColorQuantization = false;
-#endif
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

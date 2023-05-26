@@ -657,10 +657,6 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
     } else
         _taskController->SetSelectionEnableOutline(false);
 #endif
-#if PXR_VERSION <= 2005
-    _taskController->SetColorizeQuantizationEnabled(_globals.enableColorQuantization);
-#endif
-
     _taskController->SetCollection(_renderCollection);
     if (_isUsingHdSt) {
         // TODO: Is there a way to improve this? Quite silly.
@@ -729,9 +725,6 @@ void MtohRenderOverride::_InitHydraResources()
 
     _initializationAttempted = true;
 
-#if PXR_VERSION < 2102
-    GlfGlewInit();
-#endif
     GlfContextCaps::InitInstance();
     _rendererPlugin
         = HdRendererPluginRegistry::GetInstance().GetRendererPlugin(_rendererDesc.rendererName);

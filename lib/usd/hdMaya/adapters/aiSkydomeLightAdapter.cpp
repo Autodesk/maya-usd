@@ -97,20 +97,6 @@ public:
                 file.findPlug(MayaAttrs::file::fileTextureName, true).asString().asChar()));
         } else if (paramName == HdLightTokens->enableColorTemperature) {
             return VtValue(false);
-#if PXR_VERSION < 2011
-        } else if (paramName == HdLightTokens->textureResource) {
-            auto fileObj = GetConnectedFileNode(GetNode(), HdMayaAdapterTokens->color);
-            // TODO: Return a default, white texture?
-            // Ideally we would want to return a custom texture resource based
-            // on the color, but not sure how easy that would be.
-            if (fileObj == MObject::kNullObj) {
-                return {};
-            }
-            return VtValue { GetFileTextureResource(
-                fileObj,
-                GetFileTexturePath(MFnDependencyNode(fileObj)),
-                GetDelegate()->GetParams().textureMemoryPerTexture) };
-#endif // PXR_VERSION < 2011
         }
         return {};
     }

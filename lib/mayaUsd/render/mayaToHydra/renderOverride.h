@@ -16,11 +16,6 @@
 #ifndef MTOH_VIEW_OVERRIDE_H
 #define MTOH_VIEW_OVERRIDE_H
 
-#include <pxr/pxr.h>
-#if PXR_VERSION < 2102
-#include <pxr/imaging/glf/glew.h>
-#endif
-
 #include <pxr/base/tf/singleton.h>
 #include <pxr/imaging/hd/driver.h>
 #include <pxr/imaging/hd/engine.h>

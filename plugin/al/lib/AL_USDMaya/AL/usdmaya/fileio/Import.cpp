@@ -155,13 +155,8 @@ void Import::doImport()
         for (; !it.done(); it.next()) {
             const UsdPrim& prim = it.prim();
             if (prim.IsInstance()) {
-                UsdPrim prototypePrim =
-#if PXR_VERSION < 2011
-                    prim.GetMaster();
-#else
-                    prim.GetPrototype();
-#endif
-                auto iter = prototypeMap.find(prototypePrim.GetPath());
+                UsdPrim prototypePrim = prim.GetPrototype();
+                auto    iter = prototypeMap.find(prototypePrim.GetPath());
                 if (iter == prototypeMap.end()) {
                     MObject    mayaObject = createParentTransform(prim, it, manufacture);
                     MFnDagNode fnInstance(mayaObject);
@@ -235,11 +230,7 @@ MObject Import::createShape(
     bool                                parentUnmerged)
 {
     MObject shapeObj;
-#if PXR_VERSION < 2011
-    if (prim.IsInMaster()) {
-#else
     if (prim.IsInPrototype()) {
-#endif
         const SdfPath& primPath = prim.GetPrimPath();
         if (m_instanceObjects.find(primPath) != m_instanceObjects.end()) {
             shapeObj = m_instanceObjects[primPath];

@@ -87,12 +87,6 @@ global proc mtohRenderOverride_AddMTOHAttributes(int $fromAE) {
     mtohRenderOverride_AddAttribute("mtoh", "Highlight outline (in pixels, 0 to disable)", "mtohSelectionOutline", $fromAE);
 )mel"
 #endif
-#if PXR_VERSION <= 2005
-                                          R"mel(
-    mtohRenderOverride_AddAttribute("mtoh", "Enable color quantization", "mtohColorQuantization", $fromAE);
-)mel"
-#endif
-
                                           R"mel(
 }
 
@@ -896,15 +890,6 @@ MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params)
             node, filter.mayaString(), defGlobals.outlineSelectionWidth, userDefaults);
     }
 #endif
-#if PXR_VERSION <= 2005
-    if (filter(_tokens->mtohColorQuantization)) {
-        _CreateBoolAttribute(
-            node, filter.mayaString(), defGlobals.enableColorQuantization, userDefaults);
-        if (filter.attributeFilter()) {
-            return mayaObject;
-        }
-    }
-#endif
     // TODO: Move this to an external function and add support for more types,
     //  and improve code quality/reuse.
     for (const auto& rit : MtohGetRendererSettings()) {
@@ -1086,14 +1071,6 @@ MtohRenderGlobals::GetInstance(const GlobalParams& params, bool storeUserSetting
 #if PXR_VERSION >= 2005
     if (filter(_tokens->mtohSelectionOutline)) {
         _GetAttribute(node, filter.mayaString(), globals.outlineSelectionWidth, storeUserSetting);
-        if (filter.attributeFilter()) {
-            return globals;
-        }
-    }
-#endif
-#if PXR_VERSION <= 2005
-    if (filter(_tokens->mtohColorQuantization)) {
-        _GetAttribute(node, filter.mayaString(), globals.enableColorQuantization, storeUserSetting);
         if (filter.attributeFilter()) {
             return globals;
         }

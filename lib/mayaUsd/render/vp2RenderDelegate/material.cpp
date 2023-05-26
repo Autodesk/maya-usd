@@ -74,11 +74,6 @@
 #include <MaterialXRender/ImageHandler.h>
 #endif
 
-#if PXR_VERSION <= 2008
-// Needed for GL_HALF_FLOAT.
-#include <GL/glew.h>
-#endif
-
 #include <ghc/filesystem.hpp>
 #include <tbb/parallel_for.h>
 

@@ -17,11 +17,7 @@
 
 #include <pxr/base/tf/type.h>
 #include <pxr/pxr.h>
-#if PXR_VERSION < 2008
-#include <pxr/usd/usd/schemaBase.h>
-#else
 #include <pxr/usd/usd/primTypeInfo.h>
-#endif
 #include <pxr/usd/usd/schemaRegistry.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -55,13 +51,8 @@ std::vector<std::string> UsdSceneItem::ancestorNodeTypes() const
     if (!fPrim)
         return strAncestorTypes;
 
-#if PXR_VERSION < 2008
-    static const TfType schemaBaseType = TfType::Find<UsdSchemaBase>();
-    const TfType schemaType = schemaBaseType.FindDerivedByName(fPrim.GetTypeName().GetString());
-#else
     // Get the actual schema type from the prim definition.
     const TfType& schemaType = fPrim.GetPrimTypeInfo().GetSchemaType();
-#endif
     if (!schemaType) {
         // No schema type, return empty ancestor types.
         return strAncestorTypes;
