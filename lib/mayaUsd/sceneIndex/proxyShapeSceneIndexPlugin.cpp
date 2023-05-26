@@ -23,15 +23,15 @@
 #endif
 
 #include <pxr/imaging/hd/flatteningSceneIndex.h>
+#include <pxr/imaging/hd/materialBindingSchema.h>
 #include <pxr/imaging/hd/retainedDataSource.h>
 #include <pxr/imaging/hd/sceneIndexPlugin.h>
 #include <pxr/imaging/hd/sceneIndexPluginRegistry.h>
-#include <pxr/imaging/hd/materialBindingSchema.h>
 #include <pxr/usd/usd/primFlags.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
+#include <pxr/usdImaging/usdImaging/drawModeSceneIndex.h>
 #include <pxr/usdImaging/usdImaging/niPrototypePropagatingSceneIndex.h>
 #include <pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h>
-#include <pxr/usdImaging/usdImaging/drawModeSceneIndex.h>
 
 #include <maya/MObject.h>
 #include <maya/MObjectHandle.h>
@@ -116,21 +116,22 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
 
         auto proxyShape = dynamic_cast<MayaUsdProxyShapeBase*>(dependNodeFn.userNode());
         if (TF_VERIFY(proxyShape, "Error getting MayaUsdProxyShapeBase")) {
-            
-            //Used for the HdFlatteningSceneIndex to flatten material bindings
-            static const HdContainerDataSourceHandle flatteningInputArgs =
-                HdRetainedContainerDataSource::New(
+
+            // Used for the HdFlatteningSceneIndex to flatten material bindings
+            static const HdContainerDataSourceHandle flatteningInputArgs
+                = HdRetainedContainerDataSource::New(
                     HdMaterialBindingSchemaTokens->materialBinding,
                     HdRetainedTypedSampledDataSource<bool>::New(true));
 
             // Convert USD prims to rprims consumed by Hydra
             auto usdImagingStageSceneIndex = UsdImagingStageSceneIndex::New();
-            
+
             // Flatten transforms, visibility, purpose, model, and material
             // bindings over hierarchies.
-            //Do it the same way as USDView does with a SceneIndices chain
-            HdSceneIndexBaseRefPtr _sceneIndex  = UsdImagingPiPrototypePropagatingSceneIndex::New(usdImagingStageSceneIndex);
-            _sceneIndex                         = UsdImagingNiPrototypePropagatingSceneIndex::New(_sceneIndex);
+            // Do it the same way as USDView does with a SceneIndices chain
+            HdSceneIndexBaseRefPtr _sceneIndex
+                = UsdImagingPiPrototypePropagatingSceneIndex::New(usdImagingStageSceneIndex);
+            _sceneIndex = UsdImagingNiPrototypePropagatingSceneIndex::New(_sceneIndex);
 
             // The native prototype propagating scene index does a lot of
             // the flattening before inserting copies of the the prototypes
@@ -141,7 +142,8 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
 
             _sceneIndex = UsdImagingDrawModeSceneIndex::New(_sceneIndex, /* inputArgs = */ nullptr);
 
-            return MayaUsd::MayaUsdProxyShapeSceneIndex::New(proxyShape, _sceneIndex, usdImagingStageSceneIndex);
+            return MayaUsd::MayaUsdProxyShapeSceneIndex::New(
+                proxyShape, _sceneIndex, usdImagingStageSceneIndex);
         }
     }
 
