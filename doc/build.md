@@ -27,11 +27,11 @@ Before building the project, consult the following table to ensure you use the r
 
 #### 2. Download and Build Pixar USD 
 
-See Pixar's official github page for instructions on how to build USD: https://github.com/PixarAnimationStudios/USD . Pixar has recently removed support for building Maya USD libraries/plug-ins in their github repository and ```build_usd.py```. When building the maya-usd project, it is important the recommended ```Pixar USD``` commitID or tag from the table below are used: 
+See Pixar's official github page for instructions on how to build USD: https://github.com/PixarAnimationStudios/USD . Pixar has removed support for building Maya USD libraries/plug-ins in their github repository and ```build_usd.py```. When building the maya-usd project, it is important the recommended ```Pixar USD``` commitID or tag from the table below are used: 
 
-|               |      ![](images/pxr.png)          |        
-|:------------: |:---------------:                  |
-|  CommitID/Tags | release: [v21.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v21.02) or [v21.05](https://github.com/PixarAnimationStudios/USD/releases/tag/v21.05) or [v21.08](https://github.com/PixarAnimationStudios/USD/releases/tag/v21.08) or [v21.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v21.11) or [v22.05b](https://github.com/PixarAnimationStudios/USD/releases/tag/v22.05b) or [v22.08](https://github.com/PixarAnimationStudios/USD/releases/tag/v22.08) or [v22.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v22.11)<br> dev: [97d2ba3 (tag v23.02)](https://github.com/PixarAnimationStudios/USD/commit/97d2ba37cc8749b147694d0dd5f9e7127e1b6919) |
+|               |      ![](images/pxr.png)          | USD version used in Maya |
+|:------------: |:---------------:                  |:------------------------:|
+|  CommitID/Tags | release: [v21.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v21.11) or [v22.05b](https://github.com/PixarAnimationStudios/USD/releases/tag/v22.05b) or [v22.08](https://github.com/PixarAnimationStudios/USD/releases/tag/v22.08) or [v22.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v22.11)<br> dev: [97d2ba3 (tag v23.02)](https://github.com/PixarAnimationStudios/USD/commit/97d2ba37cc8749b147694d0dd5f9e7127e1b6919) | Maya 2022 = v21.11<br>Maya 2023 = v21.11<br>Maya 2024 = v22.11 |
 
 For additional information on building Pixar USD, see the ***Additional Build Instruction*** section below.
 

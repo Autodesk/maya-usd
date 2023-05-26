@@ -56,6 +56,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdTransform3dUndoableCommands.cpp
             UsdUIInfoHandler.cpp
             UsdUIUfeObserver.cpp
+            UsdUndoMaterialCommands.cpp
             UsdUndoVisibleCommand.cpp
             XformOpUtils.cpp
     )
@@ -161,13 +162,6 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     )
 endif()
 
-if(PXR_VERSION GREATER_EQUAL 2108 AND CMAKE_UFE_V2_FEATURES_AVAILABLE)
-    target_sources(${PROJECT_NAME}
-        PRIVATE
-            UsdUndoMaterialCommands.cpp
-    )
-endif()
-
 set(HEADERS
     Global.h
     ProxyShapeHandler.h
@@ -222,6 +216,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdTransform3dUndoableCommands.h
         UsdUIInfoHandler.h
         UsdUIUfeObserver.h
+        UsdUndoMaterialCommands.h
         UsdUndoVisibleCommand.h
         XformOpUtils.h
     )
@@ -284,12 +279,6 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         UsdUndoAttributesCommands.h
         UsdTransform3dRead.h
         UsdUndoConnectionCommands.h
-    )
-endif()
-
-if(PXR_VERSION GREATER_EQUAL 2108 AND CMAKE_UFE_V2_FEATURES_AVAILABLE)
-    list(APPEND HEADERS
-        UsdUndoMaterialCommands.h
     )
 endif()
 

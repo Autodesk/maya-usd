@@ -66,6 +66,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdUndoInsertChildCommand.cpp
             UsdUndoReorderCommand.cpp
             UsdUndoSetKindCommand.cpp
+            #UsdUndoMaterialCommands.cpp
             #UsdUndoVisibleCommand.cpp
             #XformOpUtils.cpp
     )
@@ -199,13 +200,6 @@ endif()
 #    endif()
 #endif()
 
-#if(PXR_VERSION GREATER_EQUAL 2108 AND CMAKE_UFE_V2_FEATURES_AVAILABLE)
-#    target_sources(${PROJECT_NAME}
-#        PRIVATE
-#            #UsdUndoMaterialCommands.cpp
-#    )
-#endif()
-
 set(HEADERS
     Global.h
     #ProxyShapeHandler.h
@@ -271,6 +265,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdUndoInsertChildCommand.h
         UsdUndoReorderCommand.h
         UsdUndoSetKindCommand.h
+        #UsdUndoMaterialCommands.h
         #UsdUndoVisibleCommand.h
         #XformOpUtils.h
     )
@@ -369,12 +364,6 @@ endif()
 #            #UsdUndoConnectionCommands.h
 #        )
 #    endif()
-#endif()
-
-#if(PXR_VERSION GREATER_EQUAL 2108 AND CMAKE_UFE_V2_FEATURES_AVAILABLE)
-#    list(APPEND HEADERS
-#        #UsdUndoMaterialCommands.h
-#    )
 #endif()
 
 # -----------------------------------------------------------------------------

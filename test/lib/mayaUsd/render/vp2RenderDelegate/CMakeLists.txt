@@ -12,13 +12,6 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND TEST_SCRIPT_FILES
     	testVP2RenderDelegateDuplicateProxy.py
         testVP2RenderDelegateInteractiveWorkflows.py
-    )
-endif()
-
-if (CMAKE_UFE_V2_FEATURES_AVAILABLE AND PXR_VERSION GREATER_EQUAL 2008)
-    # The point instance selection tests requires UsdImaging API version 14 or
-    # later, which is only provided by core USD 20.08 or later.
-    list(APPEND TEST_SCRIPT_FILES
         testVP2RenderDelegatePointInstanceSelection.py
         testVP2RenderDelegatePointInstancesPickMode.py
         testVP2RenderDelegatePrimPath.py
@@ -31,14 +24,9 @@ if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
     list(APPEND TEST_SCRIPT_FILES
         testVP2RenderDelegatePerInstanceInheritedData.py
         testVP2RenderDelegateBasisCurves.py
+        testVP2RenderDelegateDrawModes.py
 		testVP2RenderDelegatePoints.py
     )
-
-    if (PXR_VERSION GREATER_EQUAL 2105)
-        list(APPEND TEST_SCRIPT_FILES
-            testVP2RenderDelegateDrawModes.py
-        )
-    endif()
 endif()
 
 if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
