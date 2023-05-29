@@ -24,7 +24,7 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Interface to create the USD Attributes interface objects.
-class UsdAttributesHandler : public Ufe::AttributesHandler
+class MAYAUSD_CORE_PUBLIC UsdAttributesHandler : public Ufe::AttributesHandler
 {
 public:
     typedef std::shared_ptr<UsdAttributesHandler> Ptr;
