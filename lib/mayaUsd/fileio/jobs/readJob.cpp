@@ -430,7 +430,7 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
 
     MSdfToDagMap sdfToDagMap;
     for (const UsdPrim prim : stage->TraverseAll()) {
-        SdfPath primSdfPath = prim.GetPath();
+        SdfPath     primSdfPath = prim.GetPath();
         std::string key = primSdfPath.GetString();
         MObject     obj;
         if (TfMapLookup(mNewNodeRegistry, key, &obj)) {
@@ -461,7 +461,7 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
 
     ///
     UsdMayaImportChaserRegistry::FactoryContext ctx(
-        predicate, stage, currentAddedDagPaths, fromSdfPaths, this->mArgs, sdfToDagMap);
+        predicate, stage, currentAddedDagPaths, fromSdfPaths, this->mArgs);
     for (const std::string& importChaserName : this->mArgs.chaserNames) {
         if (UsdMayaImportChaserRefPtr fn
             = UsdMayaImportChaserRegistry::GetInstance().Create(importChaserName.c_str(), ctx)) {

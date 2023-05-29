@@ -73,7 +73,7 @@ class importChaserTest(mayaUsdLib.ImportChaser):
         print(" ----------------- SdfToDagMap ------------------")
         allSdfPaths = []
         allDagPaths = []
-        sdfToDagMap = self.factoryContext.GetSdfToDagMap()
+        sdfToDagMap = self.GetSdfToDagMap()
         for sdfToDag in sdfToDagMap:
             allSdfPaths.append(sdfToDag.key())
             allDagPaths.append(sdfToDag.data())

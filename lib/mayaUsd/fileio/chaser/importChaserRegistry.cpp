@@ -34,13 +34,11 @@ UsdMayaImportChaserRegistry::FactoryContext::FactoryContext(
     const UsdStagePtr&          stage,
     const MDagPathArray&        dagPaths,
     const SdfPathVector&        sdfPaths,
-    const UsdMayaJobImportArgs& jobArgs,
-    const MSdfToDagMap&         sdfToDagMap)
+    const UsdMayaJobImportArgs& jobArgs)
     : _stage(stage)
     , _dagPaths(dagPaths)
     , _sdfPaths(sdfPaths)
     , _jobArgs(jobArgs)
-    , _sdfToDagMap(sdfToDagMap)
 {
 }
 
@@ -59,11 +57,6 @@ const SdfPathVector& UsdMayaImportChaserRegistry::FactoryContext::GetImportedPri
 const UsdMayaJobImportArgs& UsdMayaImportChaserRegistry::FactoryContext::GetJobArgs() const
 {
     return this->_jobArgs;
-}
-
-const MSdfToDagMap& UsdMayaImportChaserRegistry::FactoryContext::GetSdfToDagMap() const
-{
-    return this->_sdfToDagMap;
 }
 
 TF_INSTANTIATE_SINGLETON(UsdMayaImportChaserRegistry);

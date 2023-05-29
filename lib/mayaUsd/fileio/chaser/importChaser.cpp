@@ -39,4 +39,6 @@ void UsdMayaImportChaser::WriteToSdfToDagMap(MSdfToDagMap sdfToDagMap)
     this->sdfToDagMap = sdfToDagMap;
 }
 
+MSdfToDagMap& UsdMayaImportChaser::GetSdfToDagMap() { return sdfToDagMap; }
+
 PXR_NAMESPACE_CLOSE_SCOPE

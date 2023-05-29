@@ -57,8 +57,7 @@ public:
             const UsdStagePtr&          stage,
             const MDagPathArray&        dagPaths,
             const SdfPathVector&        sdfPaths,
-            const UsdMayaJobImportArgs& jobArgs,
-            const MSdfToDagMap&         sdfToDagMap);
+            const UsdMayaJobImportArgs& jobArgs);
 
         /// \brief Returns a pointer to the imported stage object.
         MAYAUSD_CORE_PUBLIC
@@ -76,16 +75,11 @@ public:
         MAYAUSD_CORE_PUBLIC
         const UsdMayaJobImportArgs& GetJobArgs() const;
 
-        /// \brief Returns the Sdf path to Dag path map used for accessing all nodes.
-        MAYAUSD_CORE_PUBLIC
-        const MSdfToDagMap& GetSdfToDagMap() const;
-
     private:
         UsdStagePtr                 _stage;
         const MDagPathArray&        _dagPaths;
         const SdfPathVector&        _sdfPaths;
         const UsdMayaJobImportArgs& _jobArgs;
-        const MSdfToDagMap&         _sdfToDagMap;
     };
 
     using FactoryFn = std::function<UsdMayaImportChaser*(const FactoryContext&)>;

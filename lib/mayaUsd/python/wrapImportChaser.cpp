@@ -76,6 +76,8 @@ public:
     bool default_Undo() { return base_t::Undo(); }
     bool Undo() override { return this->CallVirtual<>("Undo", &This::default_Undo)(); }
 
+    MSdfToDagMap& GetSdfToDagMap() { return base_t::GetSdfToDagMap(); }
+
     //---------------------------------------------------------------------------------------------
     /// \brief  wraps a factory function that allows registering an updated Python class
     //---------------------------------------------------------------------------------------------
@@ -174,10 +176,6 @@ void wrapImportChaserRegistryFactoryContext()
         .def(
             "GetJobArgs",
             &UsdMayaImportChaserRegistry::FactoryContext::GetJobArgs,
-            boost::python::return_internal_reference<>())
-        .def(
-            "GetSdfToDagMap",
-            &UsdMayaImportChaserRegistry::FactoryContext::GetSdfToDagMap,
             boost::python::return_internal_reference<>());
 }
 
@@ -195,5 +193,9 @@ void wrapImportChaser()
         .def("Register", &ImportChaserWrapper::Register)
         .staticmethod("Register")
         .def("Unregister", &ImportChaserWrapper::Unregister)
-        .staticmethod("Unregister");
+        .staticmethod("Unregister")
+        .def(
+            "GetSdfToDagMap",
+            &ImportChaserWrapper::GetSdfToDagMap,
+            boost::python::return_internal_reference<>());
 }

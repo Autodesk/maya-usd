@@ -70,6 +70,9 @@ public:
 
     MAYAUSD_CORE_PUBLIC
     void WriteToSdfToDagMap(MSdfToDagMap sdfToDagMap);
+
+    MAYAUSD_CORE_PUBLIC
+    MSdfToDagMap& GetSdfToDagMap();
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
