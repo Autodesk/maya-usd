@@ -18,7 +18,6 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
-#include <mayaUsd/fileio/primReaderContext.h>
 
 #include <pxr/base/tf/declarePtrs.h>
 #include <pxr/pxr.h>
@@ -48,7 +47,7 @@ TF_DECLARE_REF_PTRS(UsdMayaImportChaser);
 using MSdfToDagMap = std::map<SdfPath, MDagPath>;
 class UsdMayaImportChaser : public TfRefBase
 {
-protected:
+private:
     MSdfToDagMap sdfToDagMap;
 
 public:

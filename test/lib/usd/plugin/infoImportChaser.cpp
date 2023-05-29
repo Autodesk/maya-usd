@@ -110,6 +110,7 @@ public:
         SdfPathSet    sdfImportedPaths;
         MDagPathArray allDagArray;
         SdfPathVector allSdfPaths;
+        MSdfToDagMap  sdfToDagMap = GetSdfToDagMap();
 
         for (const auto& sdfToDag : sdfToDagMap) {
             allSdfPaths.push_back(sdfToDag.first);
