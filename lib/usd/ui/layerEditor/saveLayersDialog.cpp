@@ -167,13 +167,18 @@ SaveLayerPathRow::SaveLayerPathRow(SaveLayersDialog* in_parent, const LayerInfo&
     QString checkBoxTitle = _layerInfo.parent._layerParent
         ? StringResources::getAsQString(StringResources::kBatchSaveRelativeToParent)
         : StringResources::getAsQString(StringResources::kBatchSaveRelativeToScene);
-    QString checkBoxTooltip
-        = StringResources::getAsQString(StringResources::kBatchSaveRelativeTooltip)
-        + (_layerInfo.parent._layerParent ? _layerInfo.parent._layerParent->GetIdentifier().c_str()
-                                          : "the saved scene file");
+    MString checkBoxTooltipEnding
+        = StringResources::getAsMString(StringResources::kBatchSaveRelativeTooltipEnding0);
+    if (_layerInfo.parent._layerParent) {
+        checkBoxTooltipEnding = _layerInfo.parent._layerParent->GetIdentifier().c_str();
+    }
+    MString checkBoxTooltip;
+    checkBoxTooltip.format(
+        StringResources::getAsMString(StringResources::kBatchSaveRelativeTooltip),
+        checkBoxTooltipEnding);
 
     _relative = new QCheckBox(checkBoxTitle, this);
-    _relative->setToolTip(checkBoxTooltip);
+    _relative->setToolTip(MQtUtil::toQString(checkBoxTooltip));
     connect(_relative, &QCheckBox::stateChanged, this, &SaveLayerPathRow::onRelativeChanged);
     gridLayout->addWidget(_relative, 0, 3);
 
