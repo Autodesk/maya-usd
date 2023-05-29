@@ -29,7 +29,11 @@
 #include <pxr/imaging/hd/sceneIndexPluginRegistry.h>
 #include <pxr/usd/usd/primFlags.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
+#if PXR_VERSION >= 2302
 #include <pxr/usdImaging/usdImaging/drawModeSceneIndex.h>
+#else
+#include <pxr/usdImaging/usdImagingGL/drawModeSceneIndex.h> //for USD 2211
+#endif
 #include <pxr/usdImaging/usdImaging/niPrototypePropagatingSceneIndex.h>
 #include <pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h>
 
@@ -116,8 +120,16 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
 
         auto proxyShape = dynamic_cast<MayaUsdProxyShapeBase*>(dependNodeFn.userNode());
         if (TF_VERIFY(proxyShape, "Error getting MayaUsdProxyShapeBase")) {
-
-            // Used for the HdFlatteningSceneIndex to flatten material bindings
+// We already have PXR_VERSION >= 2211
+#if PXR_VERSION < 2302 // So for 2211
+            auto                   usdImagingStageSceneIndex = UsdImagingStageSceneIndex::New();
+            HdSceneIndexBaseRefPtr _sceneIndex_ = UsdImagingGLDrawModeSceneIndex::New(
+                HdFlatteningSceneIndex::New(
+                    HdInstancedBySceneIndex::New(usdImagingStageSceneIndex)),
+                /* inputArgs = */ nullptr);
+#else
+            // For PXR_VERSION >= 2302
+            //  Used for the HdFlatteningSceneIndex to flatten material bindings
             static const HdContainerDataSourceHandle flatteningInputArgs
                 = HdRetainedContainerDataSource::New(
                     HdMaterialBindingSchemaTokens->materialBinding,
@@ -139,8 +151,8 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
             // coming from a USD prototype can depend on the prim ancestors of
             // a corresponding instance. So we need to do one final resolve here.
             _sceneIndex = HdFlatteningSceneIndex::New(_sceneIndex, flatteningInputArgs);
-
             _sceneIndex = UsdImagingDrawModeSceneIndex::New(_sceneIndex, /* inputArgs = */ nullptr);
+#endif
 
             return MayaUsd::MayaUsdProxyShapeSceneIndex::New(
                 proxyShape, _sceneIndex, usdImagingStageSceneIndex);
