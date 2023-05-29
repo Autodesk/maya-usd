@@ -2,7 +2,6 @@
 set(TEST_SCRIPT_FILES
     testMayaUsdConverter.py
     testMayaUsdCreateStageCommands.py
-    testMayaUsdPythonImport.py
     testMayaUsdLayerEditorCommands.py
     testMayaUsdCacheId.py
 )
@@ -32,6 +31,21 @@ foreach(script ${TEST_SCRIPT_FILES})
     set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
 endforeach()
 
+# The testMayaUsdPythonImport now checks that we can import both the USD Python bindings
+# and the MayaUSD Python bindings in a script node context. For this to be tested, we
+# need to point to the updated module file and explicitly ask Maya to block execution of
+# insecure scripts.
+mayaUsd_get_unittest_target(target testMayaUsdPythonImport.py)
+mayaUsd_add_test(${target}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    PYTHON_MODULE ${target}
+    MODULE_PATH ${CMAKE_INSTALL_PREFIX}
+    ENV
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+        "MAYA_SECURE_BATCH_ENABLE=1"
+)
+set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
+
 foreach(script ${INTERACTIVE_TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})
     mayaUsd_add_test(${target}
@@ -46,14 +60,6 @@ foreach(script ${INTERACTIVE_TEST_SCRIPT_FILES})
     # Add a ctest label to these tests for easy filtering.
     set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
 endforeach()
-
-# The testMayaUsdPythonImport now checks that we can import both the USD Python bindings
-# and the MayaUSD Python bindings in a script node context. For this to be tested, we
-# need to point to the updated module file and explicitly ask Maya to block execution of
-# insecure scripts.
-mayaUsd_get_unittest_target(target testMayaUsdPythonImport.py)
-set_property(TEST ${target} APPEND PROPERTY ENVIRONMENT "MAYA_MODULE_PATH=${CMAKE_INSTALL_PREFIX}")
-set_property(TEST ${target} APPEND PROPERTY ENVIRONMENT "MAYA_SECURE_BATCH_ENABLE=1")
 
 #
 # -----------------------------------------------------------------------------

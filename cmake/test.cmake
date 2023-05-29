@@ -22,6 +22,7 @@ endfunction()
 #   PYTHON_SCRIPT      - Python script file to execute; should exit with an
 #                        appropriate exitcode to indicate success or failure.
 #   WORKING_DIRECTORY  - Directory from which the test executable will be called.
+#   MODULE_PATH        - Value of the MAYA_MODULE_PATH env var
 #   COMMAND            - Command line to execute as a test
 #   NO_STANDALONE_INIT - Only allowable with PYTHON_MODULE or
 #                        PYTHON_COMMAND. With those modes, this
@@ -65,9 +66,9 @@ function(mayaUsd_add_test test_name)
     # -----------------
 
     cmake_parse_arguments(PREFIX
-        "NO_STANDALONE_INIT;INTERACTIVE"                                # options
-        "PYTHON_MODULE;PYTHON_COMMAND;PYTHON_SCRIPT;WORKING_DIRECTORY"  # one_value keywords
-        "COMMAND;ENV"                                                   # multi_value keywords
+        "NO_STANDALONE_INIT;INTERACTIVE"                                            # options
+        "PYTHON_MODULE;PYTHON_COMMAND;PYTHON_SCRIPT;WORKING_DIRECTORY;MODULE_PATH"  # one_value keywords
+        "COMMAND;ENV"                                                               # multi_value keywords
         ${ARGN}
     )
 
@@ -396,9 +397,13 @@ finally:
         endif()
     endforeach()
 
-    # Unset any MAYA_MODULE_PATH as we set all the individual variables
-    # so we don't want to conflict with a MayaUsd module.
-    set_property(TEST ${test_name} APPEND PROPERTY ENVIRONMENT "MAYA_MODULE_PATH=")
+    if (PREFIX_MODULE_PATH)
+        set_property(TEST ${test_name} APPEND PROPERTY ENVIRONMENT "MAYA_MODULE_PATH=${PREFIX_MODULE_PATH}")
+    else()
+        # Unset any MAYA_MODULE_PATH as we set all the individual variables
+        # so we don't want to conflict with a MayaUsd module.
+        set_property(TEST ${test_name} APPEND PROPERTY ENVIRONMENT "MAYA_MODULE_PATH=")
+    endif()
 
     # set all env vars
     foreach(pathvar ${ALL_PATH_VARS})
