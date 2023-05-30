@@ -18,8 +18,6 @@
 
 #include "private/UfeNotifGuard.h"
 
-#include <mayaUsd/utils/layers.h>
-
 #include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>

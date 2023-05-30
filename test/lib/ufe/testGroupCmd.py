@@ -667,8 +667,6 @@ class GroupCmdTestCase(unittest.TestCase):
         groupHierarchy = ufe.Hierarchy.hierarchy(groupItem)
         self.assertEqual(len(groupHierarchy.children()), 3)
 
-        print(stage.GetLoadRules())
-
         self.assertEqual(loadRules.NoneRule, stage.GetLoadRules().GetEffectiveRuleForPath('/group1/Sphere1'))
         self.assertEqual(loadRules.AllRule, stage.GetLoadRules().GetEffectiveRuleForPath('/group1/Sphere2'))
 

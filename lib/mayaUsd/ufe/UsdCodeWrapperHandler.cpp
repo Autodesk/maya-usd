@@ -18,11 +18,7 @@
 #include <UsdUfe/ufe/UsdSceneItem.h>
 #include <UsdUfe/utils/editRouterContext.h>
 
-#include <ufe/sceneItem.h>
 #include <ufe/selection.h>
-
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
 
 namespace {
 
@@ -79,6 +75,9 @@ private:
 };
 
 } // namespace
+
+namespace MAYAUSD_NS_DEF {
+namespace ufe {
 
 /*static*/
 std::shared_ptr<UsdCodeWrapperHandler> UsdCodeWrapperHandler::create()

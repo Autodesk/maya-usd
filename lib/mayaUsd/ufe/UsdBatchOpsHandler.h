@@ -23,7 +23,7 @@
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/stage.h>
 
-#if UFE_PREVIEW_CODE_WRAPPER_HANDLER_SUPPORT
+#ifdef UFE_PREVIEW_CODE_WRAPPER_HANDLER_SUPPORT
 #include <ufe/codeWrapperHandler.h>
 #else
 #include <ufe/batchOpsHandler.h>
@@ -33,7 +33,7 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Interface to create a UsdBatchOpsHandler interface object.
-#if UFE_PREVIEW_CODE_WRAPPER_HANDLER_SUPPORT
+#ifdef UFE_PREVIEW_CODE_WRAPPER_HANDLER_SUPPORT
 class MAYAUSD_CORE_PUBLIC UsdBatchOpsHandler : public Ufe::CodeWrapperHandler
 #else
 class MAYAUSD_CORE_PUBLIC UsdBatchOpsHandler : public Ufe::BatchOpsHandler

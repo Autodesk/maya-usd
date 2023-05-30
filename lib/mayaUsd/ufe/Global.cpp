@@ -56,7 +56,9 @@
 #endif
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
+#include <mayaUsd/ufe/ProxyShapeCameraHandler.h>
 #include <mayaUsd/ufe/UsdConnectionHandler.h>
+#include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
 #include <mayaUsd/ufe/UsdTransform3dRead.h>
 #include <mayaUsd/ufe/UsdUINodeGraphNodeHandler.h>
 
@@ -64,19 +66,10 @@
 #include <mayaUsd/ufe/UsdBatchOpsHandler.h>
 #endif
 
-#if UFE_PREVIEW_CODE_WRAPPER_HANDLER_SUPPORT
+#endif
+
+#ifdef UFE_PREVIEW_CODE_WRAPPER_HANDLER_SUPPORT
 #include <mayaUsd/ufe/UsdCodeWrapperHandler.h>
-#endif
-
-#if (UFE_PREVIEW_VERSION_NUM >= 4001)
-#include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
-#endif
-
-#endif
-
-#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4013)
-#include <mayaUsd/ufe/ProxyShapeCameraHandler.h>
-#include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
 #endif
 
 #if UFE_SCENE_SEGMENT_SUPPORT
@@ -220,7 +213,7 @@ MStatus initialize()
     handlers.connectionHandler = UsdConnectionHandler::create();
     handlers.uiNodeGraphNodeHandler = UsdUINodeGraphNodeHandler::create();
 
-#if UFE_PREVIEW_CODE_WRAPPER_HANDLER_SUPPORT
+#ifdef UFE_PREVIEW_CODE_WRAPPER_HANDLER_SUPPORT
     handlers.batchOpsHandler = UsdCodeWrapperHandler::create();
 #elif UFE_PREVIEW_BATCHOPS_SUPPORT
     handlers.batchOpsHandler = UsdBatchOpsHandler::create();
@@ -333,12 +326,6 @@ MStatus initialize()
     runTimeMgr.setUIInfoHandler(g_MayaRtid, uiInfoHandler);
 #endif
 
-#else  /* UFE_V2_FEATURES_AVAILABLE */
-    auto usdHierHandler = UsdHierarchyHandler::create();
-    auto usdTrans3dHandler = UsdTransform3dHandler::create();
-    auto usdSceneItemOpsHandler = UsdSceneItemOpsHandler::create();
-    g_USDRtid = runTimeMgr.register_(
-        kUSDRunTimeName, usdHierHandler, usdTrans3dHandler, usdSceneItemOpsHandler);
 #endif /* UFE_V2_FEATURES_AVAILABLE */
 
 #if !defined(NDEBUG)
