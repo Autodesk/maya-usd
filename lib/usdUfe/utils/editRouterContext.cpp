@@ -59,7 +59,7 @@ const PXR_NS::SdfLayerHandle& StackedEditRouterContext::getLayer() const
     return empty;
 }
 
-const PXR_NS::UsdStagePtr& StackedEditRouterContext::getStage() const
+PXR_NS::UsdStagePtr StackedEditRouterContext::getStage() const
 {
     if (_stage)
         return _stage;
@@ -67,8 +67,7 @@ const PXR_NS::UsdStagePtr& StackedEditRouterContext::getStage() const
     if (const StackedEditRouterContext* ctx = GetStackPrevious())
         return ctx->getStage();
 
-    static const PXR_NS::UsdStagePtr empty;
-    return empty;
+    return {};
 }
 
 bool StackedEditRouterContext::isTargetAlreadySet() const

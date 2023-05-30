@@ -219,9 +219,7 @@ MStatus initialize()
     handlers.batchOpsHandler = UsdBatchOpsHandler::create();
 #endif
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4001)
     handlers.nodeDefHandler = UsdShaderNodeDefHandler::create();
-#endif
 
 #endif /* UFE_V4_FEATURES_AVAILABLE */
 

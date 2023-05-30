@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYA_USD_CODE_WRAPPER_HANDLER_H
+#define MAYA_USD_CODE_WRAPPER_HANDLER_H
 
 #include <mayaUsd/ufe/UsdBatchOpsHandler.h>
 
@@ -37,3 +38,5 @@ protected:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif /* MAYA_USD_CODE_WRAPPER_HANDLER_H */

@@ -42,7 +42,7 @@ public:
     /*! \brief Retrieve the routed stage.
      * \return The stage that is being routed. Null if the edit target was not changed.
      */
-    const PXR_NS::UsdStagePtr& getStage() const;
+    PXR_NS::UsdStagePtr getStage() const;
 
 protected:
     /*! \brief Check if an edit context higher-up in the call-stack of this
