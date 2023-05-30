@@ -17,6 +17,8 @@
 #
 
 import unittest
+import os
+from maya import cmds
 
 
 class MayaUsdPythonImportTestCase(unittest.TestCase):
@@ -34,3 +36,30 @@ class MayaUsdPythonImportTestCase(unittest.TestCase):
         # not causing USD libraries to be loaded any other way.
         stageCache = mayaUsdLib.StageCache.Get(True, True)
         self.assertEqual(type(stageCache).__name__, 'StageCache')
+
+    def testPixarModulesAreSafeForScripting(self):
+        """Test that a script node can import the
+           Pixar Python modules in a secure scripting
+           context"""
+
+        node = cmds.createNode("script")
+
+        # This Pixar import will fail and stop the script unless it was added to the secure import paths.
+        cmds.setAttr(node + ".b", "from maya import cmds\nfrom pxr import Sdr\ncmds.createNode('script')\n", type="string")
+        cmds.setAttr(node + ".st", 1) # Execute on Open call
+        cmds.setAttr(node + ".stp", 1) # Python script
+
+        # Save and re-load the scene
+        testDir = os.path.join(os.path.abspath('.'), 'TestMayaUsdPythonImport')
+        try:
+            os.makedirs(testDir)
+        except OSError:
+            pass
+        tmpMayaFile = os.path.join(testDir, 'testPxrScriptNode.ma')
+        cmds.file(rename=tmpMayaFile)
+        cmds.file(save=True, type='mayaAscii')
+        cmds.file(new=True, force=True)
+        cmds.file(tmpMayaFile, open=True, force=True)
+
+        # If the script was safe, we should have a second script node:
+        self.assertEqual(cmds.getAttr("script2.st"), 0)
