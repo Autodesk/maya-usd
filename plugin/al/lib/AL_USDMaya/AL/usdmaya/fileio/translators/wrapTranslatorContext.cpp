@@ -19,6 +19,7 @@
 
 #include <pxr/base/tf/makePyConstructor.h>
 #include <pxr/base/tf/pyPtrHelpers.h>
+#include <pxr/pxr.h>
 
 #include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
@@ -163,4 +164,8 @@ void wrapTranslatorContext()
         .def("insertItem", &_insertItem);
 }
 
+// This macro was removed in USD 23.08. It was only needed to support
+// Visual Studio 2015, which USD itself no longer supports.
+#if PXR_VERSION < 2308
 TF_REFPTR_CONST_VOLATILE_GET(TranslatorContext)
+#endif
