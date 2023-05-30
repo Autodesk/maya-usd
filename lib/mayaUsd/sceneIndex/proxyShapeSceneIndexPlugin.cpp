@@ -124,7 +124,7 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
 // We already have PXR_VERSION >= 2211
 #if PXR_VERSION < 2302 // So for 2211
             auto                   usdImagingStageSceneIndex = UsdImagingStageSceneIndex::New();
-            HdSceneIndexBaseRefPtr _sceneIndex_ = UsdImagingGLDrawModeSceneIndex::New(
+            HdSceneIndexBaseRefPtr _sceneIndex = UsdImagingGLDrawModeSceneIndex::New(
                 HdFlatteningSceneIndex::New(
                     HdInstancedBySceneIndex::New(usdImagingStageSceneIndex)),
                 /* inputArgs = */ nullptr);
