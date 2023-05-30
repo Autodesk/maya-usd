@@ -34,6 +34,7 @@
 #include <pxr/usdImaging/usdImaging/niPrototypePropagatingSceneIndex.h>
 #include <pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h>
 #else
+#include <pxr/imaging/hd/instancedBySceneIndex.h>
 #include <pxr/usdImaging/usdImagingGL/drawModeSceneIndex.h> //For USD 2211
 #endif
 
