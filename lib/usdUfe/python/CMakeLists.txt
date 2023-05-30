@@ -20,7 +20,6 @@ target_sources(${PYTHON_TARGET_NAME}
         wrapEditRouter.cpp
         wrapGlobal.cpp
         wrapUtils.cpp
-        #wrapNotice.cpp
 )
 
 # -----------------------------------------------------------------------------
