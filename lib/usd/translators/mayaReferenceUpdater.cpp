@@ -58,7 +58,7 @@ namespace {
 // variant has its own copy of the flag.
 void clearAutoEdit(const Ufe::Path& pulledPath)
 {
-    MAYAUSD_NS::PrimActivation activation(pulledPath);
+    MayaUsd::PrimActivation activation(pulledPath);
 
     // The given prim can be invalid. This happens for example if an
     // ancestor was deactivated.
@@ -67,7 +67,7 @@ void clearAutoEdit(const Ufe::Path& pulledPath)
         return;
 
     UsdPrim parentPrim = prim.GetParent();
-    MAYAUSD_NS::applyToAllVariants(parentPrim, true, [prim]() {
+    MayaUsd::applyToAllVariants(parentPrim, true, [prim]() {
         // Note: the prim might not exist in all variants, so check its validity.
         if (!prim.IsValid())
             return;

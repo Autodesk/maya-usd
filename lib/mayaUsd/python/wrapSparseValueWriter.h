@@ -24,7 +24,7 @@
 // set values, which means it must be passed at least by reference. We will wrap the USD class in a
 // way that allows seamless copies in Python land without duplicating the USD class.
 
-PXR_NAMESPACE_USING_DIRECTIVE;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 class MayaUsdLibSparseValueWriter
 {

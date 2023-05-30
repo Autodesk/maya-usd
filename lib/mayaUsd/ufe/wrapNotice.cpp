@@ -20,9 +20,6 @@
 
 #include <boost/python/class.hpp>
 
-using namespace MayaUsd;
-using namespace boost::python;
-
 namespace {
 
 TF_INSTANTIATE_NOTICE_WRAPPER(MayaUsdProxyStageSetNotice, TfNotice);

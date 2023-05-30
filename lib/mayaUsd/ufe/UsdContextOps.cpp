@@ -301,7 +301,7 @@ protected:
     {
         // Save the load rules so that switching the stage settings will be able to preserve the
         // load rules.
-        MAYAUSD_NS::MayaUsdProxyShapeStageExtraData::saveLoadRules(_stage);
+        MayaUsd::MayaUsdProxyShapeStageExtraData::saveLoadRules(_stage);
     }
 
 private:
