@@ -5,6 +5,7 @@ set(TEST_SCRIPT_FILES
 #    testMtohBasicRender.py
 #    testMtohDagChanges.py
     testMeshes.py
+    testNamespaces.py
     testVisibility.py
 )
 

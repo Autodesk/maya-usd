@@ -44,7 +44,7 @@ SdfPath _GetRenderItemMayaPrimPath(const MRenderItem& ri)
     if (ri.InternalObjectId() == 0)
         return {};
 
-    SdfPath mayaPath = MAYAHYDRA_NS::RenderItemToSdfPath(ri, false, false);
+    SdfPath mayaPath = MayaHydra::RenderItemToSdfPath(ri, false, false);
     if (mayaPath.IsEmpty())
         return {};
 
@@ -53,13 +53,13 @@ SdfPath _GetRenderItemMayaPrimPath(const MRenderItem& ri)
         return {}; // Error
     }
 
-    // We cannot apppend an absolute path (I.e : starting with "/")
+    // We cannot append an absolute path (I.e : starting with "/")
     if (mayaPath.IsAbsolutePath()) {
         mayaPath = mayaPath.MakeRelativePath(SdfPath::AbsoluteRootPath());
     }
 
     // Prepend Maya node name, for organisation and readability.
-    mayaPath = SdfPath(MFnDependencyNode(ri.sourceDagPath().node()).name().asChar()).AppendPath(mayaPath);
+    mayaPath = SdfPath(MayaHydra::SanitizeName(MFnDependencyNode(ri.sourceDagPath().node()).name().asChar())).AppendPath(mayaPath);
 
     if (MHWRender::MGeometry::Primitive::kLines != ri.primitive()
         && MHWRender::MGeometry::Primitive::kLineStrip != ri.primitive()
@@ -74,7 +74,7 @@ SdfPath _GetRenderItemMayaPrimPath(const MRenderItem& ri)
 
 SdfPath _GetPrimPath(const SdfPath& base, const MDagPath& dg)
 {
-    SdfPath mayaPath = MAYAHYDRA_NS::DagPathToSdfPath(dg, false, false);
+    SdfPath mayaPath = MayaHydra::DagPathToSdfPath(dg, false, false);
     if (mayaPath.IsEmpty()) {
         return {};
     }
@@ -83,7 +83,7 @@ SdfPath _GetPrimPath(const SdfPath& base, const MDagPath& dg)
         return {}; // Error
     }
 
-    // We cannot apppend an absolute path (I.e : starting with "/")
+    // We cannot append an absolute path (I.e : starting with "/")
     if (mayaPath.IsAbsolutePath()) {
         mayaPath = mayaPath.MakeRelativePath(SdfPath::AbsoluteRootPath());
     }
