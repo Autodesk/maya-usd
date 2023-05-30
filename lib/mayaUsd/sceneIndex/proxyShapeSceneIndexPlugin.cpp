@@ -30,12 +30,12 @@
 #include <pxr/usd/usd/primFlags.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 #if PXR_VERSION >= 2302
-#include <pxr/usdImaging/usdImaging/drawModeSceneIndex.h>
-#else
-#include <pxr/usdImaging/usdImagingGL/drawModeSceneIndex.h> //for USD 2211
-#endif
+#include <pxr/usdImaging/usdImaging/drawModeSceneIndex.h> //For USD 2302 and later
 #include <pxr/usdImaging/usdImaging/niPrototypePropagatingSceneIndex.h>
 #include <pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h>
+#else
+#include <pxr/usdImaging/usdImagingGL/drawModeSceneIndex.h> //For USD 2211
+#endif
 
 #include <maya/MObject.h>
 #include <maya/MObjectHandle.h>
