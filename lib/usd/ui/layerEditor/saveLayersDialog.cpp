@@ -167,15 +167,15 @@ SaveLayerPathRow::SaveLayerPathRow(SaveLayersDialog* in_parent, const LayerInfo&
     QString checkBoxTitle = _layerInfo.parent._layerParent
         ? StringResources::getAsQString(StringResources::kBatchSaveRelativeToParent)
         : StringResources::getAsQString(StringResources::kBatchSaveRelativeToScene);
-    MString checkBoxTooltipEnding
-        = StringResources::getAsMString(StringResources::kBatchSaveRelativeTooltipEnding0);
-    if (_layerInfo.parent._layerParent) {
-        checkBoxTooltipEnding = _layerInfo.parent._layerParent->GetIdentifier().c_str();
-    }
     MString checkBoxTooltip;
-    checkBoxTooltip.format(
-        StringResources::getAsMString(StringResources::kBatchSaveRelativeTooltip),
-        checkBoxTooltipEnding);
+    if (_layerInfo.parent._layerParent) {
+        checkBoxTooltip.format(
+            StringResources::getAsMString(StringResources::kBatchSaveRelativeToLayerTooltip),
+            _layerInfo.parent._layerParent->GetIdentifier().c_str());
+    } else {
+        checkBoxTooltip
+            = StringResources::getAsMString(StringResources::kBatchSaveRelativeToSceneTooltip);
+    }
 
     _relative = new QCheckBox(checkBoxTitle, this);
     _relative->setToolTip(MQtUtil::toQString(checkBoxTooltip));

@@ -109,8 +109,8 @@ const auto kSaveLayerUsdFileFormatSbm    { create("kSaveLayerUsdFileFormatSbm", 
 const auto kBatchSaveAllRelative { create("kBatchSaveAllRelative", "Convert All to Relative Paths.")};
 const auto kBatchSaveRelativeToScene { create("kBatchSaveRelativeToScene", "Relative to Scene File.")};
 const auto kBatchSaveRelativeToParent { create("kBatchSaveRelativeToParent", "Relative to Parent Layer.")};
-const auto kBatchSaveRelativeTooltip { create("kBatchSaveRelativeTooltip", "This path will be relative to ^1s.")};
-const auto kBatchSaveRelativeTooltipEnding0 { create("kBatchSaveRelativeTooltipEnding0", "the saved scene file")};
+const auto kBatchSaveRelativeToLayerTooltip { create("kBatchSaveRelativeToLayerTooltip", "This path will be relative to the layer: ^1s.")};
+const auto kBatchSaveRelativeToSceneTooltip { create("kBatchSaveRelativeToSceneTooltip", "This path will be relative to the saved scene file.")};
 
 // -------------------------------------------------------------
 // Errors
