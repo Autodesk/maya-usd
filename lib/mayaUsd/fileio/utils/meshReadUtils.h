@@ -69,7 +69,8 @@ MAYAUSD_CORE_PUBLIC
 void assignPrimvarsToMesh(
     const UsdGeomMesh&  mesh,
     const MObject&      meshObj,
-    const TfToken::Set& excludePrimvarSet);
+    const TfToken::Set& excludePrimvarSet,
+    const TfToken::Set& excludePrimvarNamespaceSet);
 
 MAYAUSD_CORE_PUBLIC
 void assignInvisibleFaces(const UsdGeomMesh& mesh, const MObject& meshObj);

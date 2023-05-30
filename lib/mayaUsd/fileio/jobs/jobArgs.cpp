@@ -1097,6 +1097,8 @@ UsdMayaJobImportArgs::UsdMayaJobImportArgs(
           UsdMayaJobImportArgsTokens->Import,
           UsdMayaJobImportArgsTokens->Unloaded }))
     , excludePrimvarNames(extractTokenSet(userArgs, UsdMayaJobImportArgsTokens->excludePrimvar))
+    , excludePrimvarNamespaces(
+          extractTokenSet(userArgs, UsdMayaJobImportArgsTokens->excludePrimvarNamespace))
     , includeAPINames(extractTokenSet(userArgs, UsdMayaJobImportArgsTokens->apiSchema))
     , jobContextNames(extractTokenSet(userArgs, UsdMayaJobImportArgsTokens->jobContext))
     , includeMetadataKeys(extractTokenSet(userArgs, UsdMayaJobImportArgsTokens->metadata))
