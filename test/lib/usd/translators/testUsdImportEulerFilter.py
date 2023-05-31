@@ -68,11 +68,12 @@ class testUsdImportEulerFilter(unittest.TestCase):
     def setUpClass(cls):
         inputPath = fixturesUtils.setUpClass(__file__)
 
-        cls.skel_file = os.path.join(inputPath, "UsdImportEulerFilterTest", "UsdImportEulerFilterTest_skel.usda")
+        tempTestPath = os.environ.get('MAYA_APP_DIR')
+        cls.skel_file = os.path.join(tempTestPath, "UsdImportEulerFilterTest", "UsdImportEulerFilterTest_skel.usda")
         
         build_skel_scene(cls.skel_file)
 
-        cls.xform_file = os.path.join(inputPath, "UsdImportEulerFilterTest", "UsdImportEulerFilterTest_xform.usda")
+        cls.xform_file = os.path.join(tempTestPath, "UsdImportEulerFilterTest", "UsdImportEulerFilterTest_xform.usda")
         build_xform_scene(cls.xform_file)
 
     def test_skel_rotation_fail(self):

@@ -48,8 +48,7 @@ class TestProxyShapeAnonymousLayer(unittest.TestCase):
 
     def setUp(self):
         unittest.TestCase.setUp(self)
-        self.workingDir = os.path.abspath(type(self).__name__)
-        os.mkdir(self.workingDir)
+        self.workingDir = os.environ.get('MAYA_APP_DIR')
         cmds.file(new=True, save=False, force=True)
         cmds.loadPlugin("AL_USDMayaPlugin", quiet=True)
         self.assertTrue(cmds.pluginInfo("AL_USDMayaPlugin", query=True, loaded=True))
