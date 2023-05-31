@@ -337,7 +337,6 @@ SdfPath DagPathToSdfPath(
 
 SdfPath RenderItemToSdfPath(
     const MRenderItem& ri,
-    const bool         mergeTransformAndShape,
     const bool         stripNamespaces)
 {
     std::string internalObjectId(

@@ -183,11 +183,7 @@ SdfPath DagPathToSdfPath(
     const bool      mergeTransformAndShape,
     const bool      stripNamespaces);
 
-/// Converts the given Maya MDagPath \p dagPath into an SdfPath.
-///
-/// If \p mergeTransformAndShape and the dagPath is a shapeNode, it will return
-/// the same value as MDagPathToUsdPath(transformPath) where transformPath is
-/// the MDagPath for \p dagPath's transform node.
+/// Creates an SdfPath from the given Maya MRenderItem
 ///
 /// Elements of the path will be sanitized such that it is a valid SdfPath.
 /// This means it will replace Maya's namespace delimiter (':') with
@@ -195,7 +191,6 @@ SdfPath DagPathToSdfPath(
 MAYAHYDRALIB_API
 SdfPath RenderItemToSdfPath(
     const MRenderItem& ri,
-    const bool         mergeTransformAndShape,
     const bool         stripNamespaces);
 
 } // namespace MAYAHYDRA_NS_DEF

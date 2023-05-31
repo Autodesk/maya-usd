@@ -39,62 +39,71 @@ namespace {
 
 static const SdfPath solidPath = SdfPath(std::string("Solid"));
 
-SdfPath _GetRenderItemMayaPrimPath(const MRenderItem& ri)
+template<class T> SdfPath toSdfPath(const T& src);
+template<> inline SdfPath toSdfPath<MDagPath>(const MDagPath& dag) {
+    return MayaHydra::DagPathToSdfPath(dag, false, false);
+}
+template<> inline SdfPath toSdfPath<MRenderItem>(const MRenderItem& ri) {
+    return MayaHydra::RenderItemToSdfPath(ri, false);
+}
+
+template<class T> SdfPath maybePrepend(const T& src, const SdfPath& inPath);
+template<> inline SdfPath maybePrepend<MDagPath>(
+    const MDagPath& , const SdfPath& inPath
+) {
+    return inPath;
+}
+template<> inline SdfPath maybePrepend<MRenderItem>(
+    const MRenderItem& ri, const SdfPath& inPath
+) {
+    // Prepend Maya node name, for organisation and readability.
+    return SdfPath(MayaHydra::SanitizeName(MFnDependencyNode(ri.sourceDagPath().node()).name().asChar())).AppendPath(inPath);
+}
+
+template<class T> bool testSolid(const T& src);
+template<> inline bool testSolid<MDagPath>(const MDagPath& dag) {
+    return (MFnDependencyNode(dag.node()).typeName().asChar() == TfToken("mesh"));
+}
+template<> inline bool testSolid<MRenderItem>(const MRenderItem& ri) {
+    return (MHWRender::MGeometry::Primitive::kLines != ri.primitive()
+            && MHWRender::MGeometry::Primitive::kLineStrip != ri.primitive()
+            && MHWRender::MGeometry::Primitive::kPoints != ri.primitive());
+}
+
+template<class T>
+SdfPath GetMayaPrimPath(const T& src)
 {
-    if (ri.InternalObjectId() == 0)
+    SdfPath mayaPath = toSdfPath(src);
+    if (mayaPath.IsEmpty() || mayaPath.IsAbsoluteRootPath())
         return {};
-
-    SdfPath mayaPath = MayaHydra::RenderItemToSdfPath(ri, false, false);
-    if (mayaPath.IsEmpty())
-        return {};
-
-    const std::string theString = std::string(mayaPath.GetText());
-    if (theString.size() < 2) {
-        return {}; // Error
-    }
 
     // We cannot append an absolute path (I.e : starting with "/")
     if (mayaPath.IsAbsolutePath()) {
         mayaPath = mayaPath.MakeRelativePath(SdfPath::AbsoluteRootPath());
     }
 
-    // Prepend Maya node name, for organisation and readability.
-    mayaPath = SdfPath(MayaHydra::SanitizeName(MFnDependencyNode(ri.sourceDagPath().node()).name().asChar())).AppendPath(mayaPath);
+    mayaPath = maybePrepend(src, mayaPath);
 
-    if (MHWRender::MGeometry::Primitive::kLines != ri.primitive()
-        && MHWRender::MGeometry::Primitive::kLineStrip != ri.primitive()
-        && MHWRender::MGeometry::Primitive::kPoints != ri.primitive()) {
-        // Prefix with "Solid" when it's not a line/points primitive to be able to use only solid
-        // primitives in lighting/shadowing by their root path
+    if (testSolid(src)) {
+        // Prefix with "Solid" when it's not a line/points primitive to be able
+        // to use only solid primitives in lighting/shadowing by their root path
         mayaPath = solidPath.AppendPath(mayaPath);
     }
 
     return mayaPath;
 }
 
+SdfPath _GetRenderItemMayaPrimPath(const MRenderItem& ri)
+{
+    if (ri.InternalObjectId() == 0)
+        return {};
+
+    return GetMayaPrimPath(ri);
+}
+
 SdfPath _GetPrimPath(const SdfPath& base, const MDagPath& dg)
 {
-    SdfPath mayaPath = MayaHydra::DagPathToSdfPath(dg, false, false);
-    if (mayaPath.IsEmpty()) {
-        return {};
-    }
-    const std::string theString = std::string(mayaPath.GetText());
-    if (theString.size() < 2) {
-        return {}; // Error
-    }
-
-    // We cannot append an absolute path (I.e : starting with "/")
-    if (mayaPath.IsAbsolutePath()) {
-        mayaPath = mayaPath.MakeRelativePath(SdfPath::AbsoluteRootPath());
-    }
-
-    if (MFnDependencyNode(dg.node()).typeName().asChar() == TfToken("mesh")) {
-        // Prefix with "Solid" when it's not a line/points primitive to be able to use only solid
-        // primitives in lighting/shadowing by their root path
-        mayaPath = solidPath.AppendPath(mayaPath);
-    }
-
-    return base.AppendPath(mayaPath);
+    return base.AppendPath(GetMayaPrimPath(dg));
 }
 
 SdfPath _GetRenderItemPrimPath(const SdfPath& base, const MRenderItem& ri)
