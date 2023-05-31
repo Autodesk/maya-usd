@@ -108,7 +108,7 @@ MayaLayerEditorWindow::MayaLayerEditorWindow(const char* panelName, QWidget* par
         &MayaLayerEditorWindow::onClearUIOnSceneReset);
 }
 
-MayaLayerEditorWindow::~MayaLayerEditorWindow() { _sessionState.unregisterNotifications(); }
+MayaLayerEditorWindow::~MayaLayerEditorWindow() { }
 
 void MayaLayerEditorWindow::onClearUIOnSceneReset()
 {
@@ -116,7 +116,6 @@ void MayaLayerEditorWindow::onClearUIOnSceneReset()
     // safer to delete the entire UI and re-recreate it on scene changes
     // to release all the proxies
     LayerTreeModel::suspendUsdNotices(true);
-    _sessionState.unregisterNotifications();
     setCentralWidget(nullptr);
     delete _layerEditor;
 
@@ -129,7 +128,6 @@ void MayaLayerEditorWindow::onCreateUI()
     _layerEditor = new LayerEditorWidget(_sessionState, this);
     setCentralWidget(_layerEditor);
     _layerEditor->show();
-    _sessionState.registerNotifications();
 
     connect(
         treeView(),
