@@ -56,11 +56,17 @@ MayaSessionState::MayaSessionState()
     if (MGlobal::optionVarExists(AUTO_HIDE_OPTION_VAR)) {
         _autoHideSessionLayer = MGlobal::optionVarIntValue(AUTO_HIDE_OPTION_VAR) != 0;
     }
+
+    registerNotifications();
 }
 
 MayaSessionState::~MayaSessionState()
 {
-    //
+    try {
+        unregisterNotifications();
+    } catch (const std::exception&) {
+        // Ignore errors in destructor.
+    }
 }
 
 void MayaSessionState::setStageEntry(StageEntry const& inEntry)

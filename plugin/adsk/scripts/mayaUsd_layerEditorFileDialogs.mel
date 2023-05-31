@@ -120,11 +120,11 @@ global proc string UsdLayerEditor_SaveLayerFileDialog(int $isRootLayer, string $
     string $titleCaption;
     string $actionCaption;
     if ($captionMode == 0) {
-        $titleCaption = "Save As";
-        $actionCaption = "Save";
+        $titleCaption = getMayaUsdString("kMenuSaveAs");
+        $actionCaption = getMayaUsdString("kButtonSave");
     } else {
-        $titleCaption = "Set As";
-        $actionCaption = "Set";
+        $titleCaption = getMayaUsdString("kMenuSetAs");
+        $actionCaption = getMayaUsdString("kButtonSet");
     }
 
     string $result[] = `fileDialog2 

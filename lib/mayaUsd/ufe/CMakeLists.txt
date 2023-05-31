@@ -158,6 +158,7 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
             UsdUndoAttributesCommands.cpp
             UsdTransform3dRead.cpp
             UsdUndoConnectionCommands.cpp
+            UsdUndoCreateStageWithNewLayerCommand.cpp
     )
 endif()
 
@@ -284,6 +285,7 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         UsdUndoAttributesCommands.h
         UsdTransform3dRead.h
         UsdUndoConnectionCommands.h
+        UsdUndoCreateStageWithNewLayerCommand.h
     )
 endif()
 

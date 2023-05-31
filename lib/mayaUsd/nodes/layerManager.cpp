@@ -550,7 +550,15 @@ void LayerDatabase::refreshProxiesToSave()
     }
 }
 
-void LayerDatabase::setSelectedStage(const std::string& stage) { _selectedStage = stage; }
+void LayerDatabase::setSelectedStage(const std::string& stage)
+{
+    if (_selectedStage == stage)
+        return;
+
+    _selectedStage = stage;
+    // Mark the scene as modified.
+    MGlobal::executeCommand("file -modified 1");
+}
 
 std::string LayerDatabase::getSelectedStage() const { return _selectedStage; }
 
