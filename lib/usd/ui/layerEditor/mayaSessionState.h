@@ -78,13 +78,13 @@ Q_SIGNALS:
     void clearUIOnSceneResetSignal();
 
 public:
-    void registerNotifications();
-    void unregisterNotifications();
-
     // get the stage and proxy name for a path
     static bool getStageEntry(StageEntry* out_stageEntry, const MString& shapePath);
 
 protected:
+    void registerNotifications();
+    void unregisterNotifications();
+
     // maya callback handers
     static void proxyShapeAddedCB(MObject& node, void* clientData);
     static void proxyShapeRemovedCB(MObject& node, void* clientData);
