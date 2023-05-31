@@ -33,6 +33,12 @@
 #include <ufe/pathString.h>
 #endif
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#include <mayaUsd/ufe/UsdUndoCreateStageWithNewLayerCommand.h>
+
+#include <ufe/undoableCommandMgr.h>
+#endif
+
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 
@@ -186,12 +192,35 @@ PXR_NS::TfTokenVector _getProxyShapePurposes(const std::string& ufePathString)
     return ufe::getProxyShapePurposes(path);
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+std::string createStageWithNewLayer(const std::string& parentPathString)
+{
+    auto parentPath = Ufe::PathString::path(parentPathString);
+    auto parent = Ufe::Hierarchy::createItem(parentPath);
+    auto command = MayaUsd::ufe::UsdUndoCreateStageWithNewLayerCommand::create(parent);
+    if (!command) {
+        return "";
+    }
+
+    Ufe::UndoableCommandMgr::instance().executeCmd(command);
+    if (!command->sceneItem()) {
+        return "";
+    }
+
+    return Ufe::PathString::string(command->sceneItem()->path());
+}
+#endif
+
 void wrapUtils()
 {
 #ifdef UFE_V2_FEATURES_AVAILABLE
     def("getPrimFromRawItem", getPrimFromRawItem);
     def("getNodeNameFromRawItem", getNodeNameFromRawItem);
     def("getNodeTypeFromRawItem", getNodeTypeFromRawItem);
+#endif
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    def("createStageWithNewLayer", createStageWithNewLayer);
 #endif
 
     // Because mayaUsd and UFE have incompatible Python bindings that do not
