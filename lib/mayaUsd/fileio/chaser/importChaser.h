@@ -68,7 +68,7 @@ public:
     virtual bool Undo();
 
     MAYAUSD_CORE_PUBLIC
-    void WriteToSdfToDagMap(MSdfToDagMap sdfToDagMap);
+    void SetSdfToDagMap(const MSdfToDagMap& sdfToDagMap);
 
     MAYAUSD_CORE_PUBLIC
     MSdfToDagMap& GetSdfToDagMap();

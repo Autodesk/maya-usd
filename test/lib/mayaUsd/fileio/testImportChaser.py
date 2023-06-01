@@ -70,20 +70,13 @@ class importChaserTest(mayaUsdLib.ImportChaser):
         # Get the Sdf path to Dag path matching of all imported prims
         # Call GetSdfToDagMap() to get the sdfToDagMap, 
         # which contains SDF path to Dag path mapping
-        print(" ----------------- SdfToDagMap ------------------")
-        allSdfPaths = []
-        allDagPaths = []
         sdfToDagMap = self.GetSdfToDagMap()
+        sdfToDagMappingStr = "Sdf to Dag mapping: \n"
         for sdfToDag in sdfToDagMap:
-            allSdfPaths.append(sdfToDag.key())
-            allDagPaths.append(sdfToDag.data())
+            sdfToDagMappingStr += (str(sdfToDag.key()) + "\n")
+            sdfToDagMappingStr += (str(sdfToDag.data()) + "\n")
 
-        assert(len(allSdfPaths) == len(allDagPaths))
-
-        for i in range(len(allSdfPaths)):
-            print(("----------primitive ") + str(i))
-            print(str(allSdfPaths[i]))
-            print(str(allDagPaths[i]))
+        print("Info from Sdf To Dag Mapping:\n" + sdfToDagMappingStr)
 
         return True
 

@@ -459,7 +459,6 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     // and call `PostImport` on each of them.
     this->mImportChasers.clear();
 
-    ///
     UsdMayaImportChaserRegistry::FactoryContext ctx(
         predicate, stage, currentAddedDagPaths, fromSdfPaths, this->mArgs);
     for (const std::string& importChaserName : this->mArgs.chaserNames) {
@@ -473,7 +472,7 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     progressBar.advance();
 
     for (const UsdMayaImportChaserRefPtr& chaser : this->mImportChasers) {
-        chaser->WriteToSdfToDagMap(sdfToDagMap);
+        chaser->SetSdfToDagMap(sdfToDagMap);
         bool bStat
             = chaser->PostImport(predicate, stage, currentAddedDagPaths, fromSdfPaths, this->mArgs);
         if (!bStat) {

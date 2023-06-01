@@ -34,7 +34,7 @@ bool UsdMayaImportChaser::Redo() { return true; }
 
 bool UsdMayaImportChaser::Undo() { return true; }
 
-void UsdMayaImportChaser::WriteToSdfToDagMap(MSdfToDagMap sdfToDagMap)
+void UsdMayaImportChaser::SetSdfToDagMap(const MSdfToDagMap& sdfToDagMap)
 {
     this->sdfToDagMap = sdfToDagMap;
 }
