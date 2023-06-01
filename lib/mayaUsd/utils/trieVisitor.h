@@ -29,7 +29,7 @@ namespace MAYAUSD_NS_DEF {
 /// correctly built UFE path of each node.
 ///
 /// Note: this cannot be moved to UsdUfe since it needs to know about Maya run-time
-///       to build the UFE path segments with teh correct run-time ID.
+///       to build the UFE path segments with the correct run-time ID.
 
 template <class T> struct TrieVisitor
 {

@@ -831,7 +831,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             sharedUsdStage = UsdUtilsStageCache::Get().Find(cacheId);
             isIncomingStage = true;
             // If the stage set by stage ID is not anonymous, set the filePath
-            // attribute to it so that it can be reloaded when teh Maya scene
+            // attribute to it so that it can be reloaded when the Maya scene
             // is re-opened.
             SdfLayerHandle rootLayer = sharedUsdStage->GetRootLayer();
             if (rootLayer && !rootLayer->IsAnonymous()) {
