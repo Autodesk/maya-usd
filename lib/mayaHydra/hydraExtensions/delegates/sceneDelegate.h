@@ -18,8 +18,6 @@
 #ifndef MAYAHYDRALIB_SCENE_DELEGATE_H
 #define MAYAHYDRALIB_SCENE_DELEGATE_H
 
-// #define MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
-
 #include <mayaHydraLib/adapters/cameraAdapter.h>
 #include <mayaHydraLib/adapters/lightAdapter.h>
 #include <mayaHydraLib/adapters/materialAdapter.h>
@@ -113,18 +111,13 @@ public:
     void MaterialTagChanged(const SdfPath& id) override;
 
     MAYAHYDRALIB_API
-    MayaHydraShapeAdapterPtr GetShapeAdapter(const SdfPath& id);
-
-    MAYAHYDRALIB_API
     MayaHydraLightAdapterPtr GetLightAdapter(const SdfPath& id);
 
     MAYAHYDRALIB_API
     MayaHydraMaterialAdapterPtr GetMaterialAdapter(const SdfPath& id);
 
-#ifdef MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
     MAYAHYDRALIB_API
     void InsertDag(const MDagPath& dag);
-#endif
 
     void OnDagNodeAdded(const MObject& obj);
 
@@ -268,11 +261,11 @@ private:
     static VtValue CreateMayaDefaultMaterial();
 
     bool _CreateMaterial(const SdfPath& id, const MObject& obj);
-#ifdef MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
+
     /// \brief Unordered Map storing the shape adapters.
     AdapterMap<MayaHydraShapeAdapterPtr> _shapeAdapters;
-#endif
-    /// \brief Unordered Map storing the shape adapters.
+
+    /// \brief Unordered Map storing the render item adapters.
     AdapterMap<MayaHydraRenderItemAdapterPtr>              _renderItemsAdapters;
     std::unordered_map<int, MayaHydraRenderItemAdapterPtr> _renderItemsAdaptersFast;
 
@@ -285,10 +278,8 @@ private:
     std::vector<MCallbackId>                   _callbacks;
     std::vector<std::tuple<SdfPath, MObject>>  _adaptersToRecreate;
     std::vector<std::tuple<SdfPath, uint32_t>> _adaptersToRebuild;
-#ifdef MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
     // Nodes accumulated during _onDagNodeAdded() callback.
     std::vector<MObject> _addedNodes;
-#endif
 
     using LightAdapterCreator
         = std::function<MayaHydraLightAdapterPtr(MayaHydraDelegateCtx*, const MDagPath&)>;
