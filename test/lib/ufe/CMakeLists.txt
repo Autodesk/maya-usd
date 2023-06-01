@@ -128,6 +128,11 @@ if (MAYA_HAS_DISPLAY_LAYER_API)
         )
 endif()
 
+if(CodeWrapperHandler IN_LIST UFE_PREVIEW_FEATURES)
+    set(UFE_HAS_CODE_WRAPPER "1")
+else()
+    set(UFE_HAS_CODE_WRAPPER "0")
+endif()
 
 foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})
@@ -138,6 +143,7 @@ foreach(script ${TEST_SCRIPT_FILES})
             "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_SOURCE_DIR}/ufeTestPlugins"
             "UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}"
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+            "UFE_HAS_CODE_WRAPPER=${UFE_HAS_CODE_WRAPPER}"
             "USD_HAS_COLOR4_SDR_SUPPORT=${USD_HAS_COLOR4_SDR_SUPPORT}"
             "USD_HAS_MX_METADATA_SUPPORT=${USD_HAS_MX_METADATA_SUPPORT}"
             "UFE_ATTRIBUTES_GET_ENUMS=${UFE_ATTRIBUTES_GET_ENUMS}"

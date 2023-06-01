@@ -99,6 +99,11 @@ if (UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/batchOpsHandler.h")
     list(APPEND UFE_PREVIEW_FEATURES v4_BatchOps)
 endif()
 
+if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/codeWrapperHandler.h")
+    list(APPEND UFE_PREVIEW_FEATURES CodeWrapperHandler)
+    message(STATUS "Maya has UFE code wrapper API")
+endif()
+
 # Handle the QUIETLY and REQUIRED arguments and set UFE_FOUND to TRUE if
 # all listed variables are TRUE.
 include(FindPackageHandleStandardArgs)
