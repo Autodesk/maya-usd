@@ -88,11 +88,10 @@ class SelectNotificationTestCase(unittest.TestCase):
         cmds.select(clear=True)
 
     def runSelectionNotificationTest(self, selectCmd, getSelection, notificationName):
-        selected = []
+        self.selected = []
 
         def selectionCallback(params):
-            nonlocal selected
-            selected = getSelection()
+            self.selected = getSelection()
 
         def clearSelection():
             globalSn = ufe.GlobalSelection.get()
@@ -106,7 +105,7 @@ class SelectNotificationTestCase(unittest.TestCase):
                 clearSelection()
                 selectCmd(item)
                 expected = ufe.PathString.string(item.path())
-                self.assertListEqual(selected, [expected])
+                self.assertListEqual(self.selected, [expected])
         finally:
             om.MEventMessage.removeCallback(ufeSelectionCallbackID)
 
