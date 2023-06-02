@@ -21,9 +21,11 @@
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/fileio/utils/roundTripUtil.h>
 #include <mayaUsd/utils/colorSpace.h>
+#include <mayaUsd/utils/json.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/gf/vec3f.h>
+#include <pxr/base/js/json.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
@@ -32,6 +34,7 @@
 #include <pxr/usd/usdGeom/primvarsAPI.h>
 #include <pxr/usd/usdGeom/subset.h>
 #include <pxr/usd/usdGeom/tokens.h>
+#include <pxr/usd/usdShade/materialBindingAPI.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
 #include <maya/MFloatVector.h>
@@ -42,6 +45,7 @@
 #include <maya/MFnPartition.h>
 #include <maya/MFnSet.h>
 #include <maya/MFnSingleIndexedComponent.h>
+#include <maya/MFnTypedAttribute.h>
 #include <maya/MGlobal.h>
 #include <maya/MIntArray.h>
 #include <maya/MItMeshEdge.h>
@@ -56,6 +60,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(UsdMayaMeshPrimvarTokens, PXRUSDMAYA_MESH_PRIMVAR_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(UsdMayaGeomSubsetTokens, PXRUSDMAYA_GEOMSUBSET_TOKENS);
 
 // These tokens are supported Maya attributes used for Mesh surfaces
 // clang-format off
@@ -64,6 +69,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // we capitalize this because it doesn't correspond to an actual attribute
     (USD_EmitNormals)
+    (USD_GeomSubsetInfo)
 
     // This is a value for face varying interpolate boundary from OpenSubdiv 2
     // that we translate to face varying linear interpolation for OpenSubdiv 3.
@@ -888,17 +894,66 @@ MStatus UsdMayaMeshReadUtils::assignSubDivTagsToMesh(
 
 #if MAYA_API_VERSION >= 20220000
 
-MStatus
-UsdMayaMeshReadUtils::getComponentTags(const UsdGeomMesh& mesh, std::vector<ComponentTagData>& tags)
+bool UsdMayaMeshReadUtils::getGeomSubsetInfo(const MObject& mesh, JsValue& meshRoundtripData)
+{
+    MFnDependencyNode depNodeFn(mesh);
+    MPlug             plug = depNodeFn.findPlug(MString(_meshTokens->USD_GeomSubsetInfo.GetText()));
+    if (!plug.isNull()) {
+        JsParseError error;
+        JsValue      value = JsParseString(plug.asString().asChar(), &error);
+        if (value) {
+            meshRoundtripData = value;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void UsdMayaMeshReadUtils::setGeomSubsetInfo(const MObject& mesh, const JsValue& meshRoundtripData)
+{
+    MStatus           status { MS::kSuccess };
+    MFnDependencyNode depNodeFn(mesh);
+    MPlug             plug = depNodeFn.findPlug(MString(_meshTokens->USD_GeomSubsetInfo.GetText()));
+    if (plug.isNull()) {
+
+        MFnTypedAttribute tAttr;
+        MObject           attr = tAttr.create(
+            _meshTokens->USD_GeomSubsetInfo.GetText(),
+            _meshTokens->USD_GeomSubsetInfo.GetText(),
+            MFnData::kString,
+            MObject::kNullObj,
+            &status);
+        if (status == MS::kSuccess) {
+            depNodeFn.addAttribute(attr);
+            plug = depNodeFn.findPlug(attr);
+        }
+    }
+    if (!plug.isNull()) {
+        std::ostringstream ostr;
+        JsWriter           compactWriter(ostr, JsWriter::Style::Compact);
+        JsWriteValue(&compactWriter, meshRoundtripData);
+        plug.setString(ostr.str().c_str());
+    }
+}
+
+MStatus UsdMayaMeshReadUtils::getComponentTags(
+    const UsdGeomMesh&             mesh,
+    std::vector<ComponentTagData>& tags,
+    JsValue&                       meshRoundtripData)
 {
     MStatus status { MS::kSuccess };
 
     // Find all the prims defining componentTags
-    TfToken                    componentTagFamilyName("componentTag");
-    std::vector<UsdGeomSubset> subsets
-        = UsdGeomSubset::GetGeomSubsets(mesh, UsdGeomTokens->face, componentTagFamilyName);
+    std::vector<UsdGeomSubset> subsets = UsdGeomSubset::GetGeomSubsets(mesh, UsdGeomTokens->face);
+
+    JsObject allRoundtripData;
 
     for (auto& ss : subsets) {
+        if (UsdMayaRoundTripUtil::IsPrimMayaGenerated(ss.GetPrim())) {
+            continue;
+        }
+
         // Get the tagName out of the subset
         MString tagName(ss.GetPrim().GetName().GetText());
 
@@ -919,8 +974,35 @@ UsdMayaMeshReadUtils::getComponentTags(const UsdGeomMesh& mesh, std::vector<Comp
         compFn.addElements(mFaces);
 
         tags.emplace_back(tagName, faceComp);
+
+        // Gather roundtrip data:
+        JsObject subsetRoundtripData;
+
+        TfToken familyName;
+        ss.GetFamilyNameAttr().Get(&familyName);
+        if (familyName != UsdMayaGeomSubsetTokens->ComponentTagFamilyName) {
+            subsetRoundtripData[ss.GetFamilyNameAttr().GetBaseName()]
+                = JsValue(familyName.GetString());
+        }
+
+        // Could be any applicable API, but we mostly care about materials:
+        if (ss.GetPrim().HasAPI<UsdShadeMaterialBindingAPI>()) {
+            const auto ssBindingAPI = UsdShadeMaterialBindingAPI(ss.GetPrim());
+            const auto boundMaterial = ssBindingAPI.ComputeBoundMaterial();
+            if (boundMaterial) {
+                subsetRoundtripData[UsdMayaGeomSubsetTokens->MaterialPathKey]
+                    = JsValue(boundMaterial.GetPrim().GetPath().GetText());
+            }
+        }
+
+        if (!subsetRoundtripData.empty()) {
+            allRoundtripData[tagName.asChar()] = subsetRoundtripData;
+        }
     }
 
+    if (!allRoundtripData.empty()) {
+        meshRoundtripData = allRoundtripData;
+    }
     return status;
 }
 
@@ -945,7 +1027,8 @@ MStatus UsdMayaMeshReadUtils::createComponentTags(const UsdGeomMesh& mesh, const
     MPlug ctContent(meshObj, ctContentsAttr);
 
     std::vector<ComponentTagData> tags;
-    status = getComponentTags(mesh, tags);
+    JsValue                       meshRoundtripData;
+    status = getComponentTags(mesh, tags, meshRoundtripData);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     unsigned int idx = 0;
@@ -967,6 +1050,10 @@ MStatus UsdMayaMeshReadUtils::createComponentTags(const UsdGeomMesh& mesh, const
         ctContent.setValue(componentList);
 
         idx++;
+    }
+
+    if (meshRoundtripData) {
+        setGeomSubsetInfo(meshObj, meshRoundtripData);
     }
 
     return status;

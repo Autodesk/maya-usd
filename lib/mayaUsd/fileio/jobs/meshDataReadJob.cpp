@@ -66,7 +66,8 @@ void getComponentTags(MFnMeshData& dataCreator, const UsdGeomMesh& mesh)
 #if MAYA_API_VERSION >= 20220000
 
     std::vector<UsdMayaMeshReadUtils::ComponentTagData> componentTags;
-    UsdMayaMeshReadUtils::getComponentTags(mesh, componentTags);
+    JsValue                                             meshRoundtrippingData;
+    UsdMayaMeshReadUtils::getComponentTags(mesh, componentTags, meshRoundtrippingData);
 
     for (auto& tag : componentTags) {
         auto& name = tag.first;

@@ -19,9 +19,11 @@
 #include <mayaUsd/fileio/shading/shadingModeExporter.h>
 #include <mayaUsd/fileio/shading/shadingModeImporter.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/fileio/utils/meshReadUtils.h>
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/fileio/utils/roundTripUtil.h>
 #include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/json.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/diagnostic.h>
@@ -51,6 +53,7 @@
 #include <maya/MObject.h>
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
+#include <maya/MUuid.h>
 
 #include <set>
 #include <string>
@@ -423,6 +426,38 @@ bool UsdMayaTranslatorMaterial::AssignMaterial(
                         faceUVBindings)) {
                     return false;
                 }
+            }
+        }
+
+        // We now have sufficient information to transform material SdfPaths to equivalent Maya
+        // object identifiers.
+        JsValue info;
+        if (UsdMayaMeshReadUtils::getGeomSubsetInfo(shapeObj, info) && info) {
+            JsObject meshRoundtrippingInfo = info.GetJsObject();
+            JsObject updatedInfo;
+
+            for (auto&& ssInfoIt : meshRoundtrippingInfo) {
+                JsObject subsetRoundtrippingInfo = ssInfoIt.second.GetJsObject();
+                auto     materialIt
+                    = subsetRoundtrippingInfo.find(UsdMayaGeomSubsetTokens->MaterialPathKey);
+                if (materialIt != subsetRoundtrippingInfo.cend()) {
+                    SdfPath materialPath(materialIt->second.GetString());
+                    MObject materialObj = context->GetMayaNode(materialPath, false);
+                    if (!materialObj.isNull()) {
+                        MFnDependencyNode depNodeFn(materialObj);
+                        // Names are not yet final at this stage of import. The only reliable
+                        // identifier is the UUID.
+                        subsetRoundtrippingInfo[UsdMayaGeomSubsetTokens->MaterialUuidKey]
+                            = JsValue(depNodeFn.uuid().asString().asChar());
+                    }
+                    subsetRoundtrippingInfo.erase(materialIt);
+                    updatedInfo[ssInfoIt.first] = subsetRoundtrippingInfo;
+                }
+            }
+            if (!updatedInfo.empty()) {
+                // Add back all unmodified entries:
+                updatedInfo.insert(meshRoundtrippingInfo.begin(), meshRoundtrippingInfo.end());
+                UsdMayaMeshReadUtils::setGeomSubsetInfo(shapeObj, updatedInfo);
             }
         }
     }

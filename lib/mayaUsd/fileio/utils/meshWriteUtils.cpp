@@ -23,6 +23,7 @@
 #include <mayaUsd/fileio/utils/roundTripUtil.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/utils/colorSpace.h>
+#include <mayaUsd/utils/json.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/gf/vec3f.h>
@@ -1408,10 +1409,14 @@ MStatus UsdMayaMeshWriteUtils::exportComponentTags(UsdGeomMesh& primSchema, MObj
     MPlug outShp = depNodeFn.findPlug("outMesh", &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
+    JsObject subsetInfoDict;
+    JsValue  info;
+    if (UsdMayaMeshReadUtils::getGeomSubsetInfo(obj, info) && info) {
+        subsetInfoDict = info.GetJsObject();
+    }
     auto    outShpHolder = UsdMayaUtil::GetPlugDataHandle(outShp);
     MObject geomObj = outShpHolder->GetDataHandle().data();
     if (geomObj.hasFn(MFn::kGeometryData)) {
-        TfToken         componentTagFamilyName("componentTag");
         MFnGeometryData fnGeomData(geomObj);
         MStringArray    keys;
         status = fnGeomData.componentTags(keys);
@@ -1433,12 +1438,22 @@ MStatus UsdMayaMeshWriteUtils::exportComponentTags(UsdGeomMesh& primSchema, MObj
                     indices.reserve(curIndices.length());
                     for (unsigned int j = 0; j < curIndices.length(); ++j)
                         indices.push_back(curIndices[j]);
+                    // See if we have a custom familyName in the roundtripping data:
+                    TfToken    familyName = UsdMayaGeomSubsetTokens->ComponentTagFamilyName;
+                    const auto subsetIt = subsetInfoDict.find(keys[i].asChar());
+                    if (subsetIt != subsetInfoDict.cend()) {
+                        const auto& subsetInfo = subsetIt->second.GetJsObject();
+                        const auto  familyInfo = subsetInfo.find("familyName");
+                        if (familyInfo != subsetInfo.cend()) {
+                            familyName = TfToken(familyInfo->second.GetString());
+                        }
+                    }
                     UsdGeomSubset ss = UsdGeomSubset::CreateGeomSubset(
                         primSchema,
                         TfToken(keys[i].asChar()),
                         UsdGeomTokens->face,
                         indices,
-                        componentTagFamilyName);
+                        familyName);
                 }
             }
         }
