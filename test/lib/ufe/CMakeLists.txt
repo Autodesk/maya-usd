@@ -5,6 +5,7 @@ set(TEST_SCRIPT_FILES
     testMayaPickwalk.py
     testPythonWrappers.py
     testSelection.py
+    testSelectionNotification.py
     testSelectionByArray.py
     testUfePythonImport.py
     testAttributeBlock.py
