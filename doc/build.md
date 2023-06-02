@@ -129,7 +129,6 @@ BUILD_STRICT_MODE           | enforces all warnings as errors.                  
 BUILD_WITH_PYTHON_3			| build with python 3.										 | OFF
 BUILD_SHARED_LIBS			| build libraries as shared or static.						 | ON
 BUILD_UB2                   | build universal binary 2 (UB2) Intel64+arm64 (apple only)  | OFF
-CMAKE_WANT_UFE_BUILD        | enables building with UFE (if found).                      | ON
 CMAKE_WANT_MATERIALX_BUILD  | enable building with MaterialX (experimental). | OFF
 
 ##### Stages

@@ -65,7 +65,7 @@ mayaUsd_compile_config(${TARGET_NAME})
 # -----------------------------------------------------------------------------
 target_include_directories(${TARGET_NAME}
     PRIVATE
-        $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
+        ${UFE_INCLUDE_DIR}
 )
 
 # -----------------------------------------------------------------------------
@@ -73,7 +73,7 @@ target_include_directories(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 target_link_libraries(${TARGET_NAME}
     PRIVATE
-        $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
+        ${UFE_LIBRARY}
         basePxrUsdPreviewSurface
 )
 
