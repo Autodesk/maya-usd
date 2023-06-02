@@ -2202,14 +2202,7 @@ Ufe::Path MayaUsdProxyShapeBase::ufePath() const
     MDagPath thisPath;
     MDagPath::getAPathTo(thisMObject(), thisPath);
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
     return Ufe::PathString::path(thisPath.fullPathName().asChar());
-#else
-    // MDagPath does not include |world to its full path name
-    MString fullpath = "|world" + thisPath.fullPathName();
-
-    return Ufe::Path(Ufe::PathSegment(fullpath.asChar(), MAYA_UFE_RUNTIME_ID, MAYA_UFE_SEPARATOR));
-#endif
 }
 
 std::atomic<int> MayaUsdProxyShapeBase::in_compute { 0 };

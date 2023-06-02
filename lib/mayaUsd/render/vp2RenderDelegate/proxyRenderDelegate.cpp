@@ -1343,10 +1343,6 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         return false;
     }
 
-    auto handler = Ufe::RunTimeMgr::instance().hierarchyHandler(USD_UFE_RUNTIME_ID);
-    if (handler == nullptr)
-        return false;
-
     const SdfPath rprimId = HdVP2DrawItem::RenderItemToPrimPath(renderItem);
 
     // If drawInstID is positive, it means the selection hit comes from one instanced render item,
@@ -1462,8 +1458,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     }
 
     const Ufe::PathSegment pathSegment = UsdUfe::usdPathToUfePathSegment(usdPath, instanceIndex);
-    const Ufe::SceneItem::Ptr& si
-        = handler->createItem(_proxyShapeData->ProxyShape()->ufePath() + pathSegment);
+    auto si = Ufe::Hierarchy::createItem(_proxyShapeData->ProxyShape()->ufePath() + pathSegment);
     if (!si) {
         TF_WARN("Failed to create UFE scene item for Rprim '%s'", rprimId.GetText());
         return false;

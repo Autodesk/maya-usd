@@ -34,6 +34,7 @@
 #include "ufe/transform3dNotification.h"
 
 #include <mayaUsd/listeners/notice.h>
+#include <mayaUsd/ufe/Global.h>
 
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/getenv.h>
@@ -77,7 +78,7 @@ public:
 
         // Action for USD scene items only.
         Ufe::SceneItem::Ptr sceneItem = xformChanged->item();
-        if (!sceneItem || (sceneItem->runTimeId() != AL::usdmaya::USD_UFE_RUNTIME_ID))
+        if (!sceneItem || (sceneItem->runTimeId() != MayaUsd::ufe::getUsdRunTimeId()))
             return;
 
         std::string mayaPath = sceneItem->path().popSegment().popHead().string();
@@ -134,7 +135,7 @@ public:
 
     void observe(const Ufe::SceneItem::Ptr& si)
     {
-        if (si && (si->runTimeId() == USD_UFE_RUNTIME_ID)
+        if (si && (si->runTimeId() == MayaUsd::ufe::getUsdRunTimeId())
             && Ufe::Transform3d::addObserver(si, m_ufeTransformObserver)) {
             m_observedSceneItems.push_back(si);
         }
@@ -174,7 +175,7 @@ public:
         } else if (
             auto removed = dynamic_cast<const Ufe::SelectionItemRemoved*>(selectionChanged)) {
             Ufe::SceneItem::Ptr si = removed->item();
-            if (si && (si->runTimeId() == USD_UFE_RUNTIME_ID)
+            if (si && (si->runTimeId() == MayaUsd::ufe::getUsdRunTimeId())
                 && Ufe::Transform3d::removeObserver(si, m_ufeTransformObserver)) {
                 m_observedSceneItems.remove(si);
             }

@@ -31,10 +31,5 @@ const MTypeId AL_USDMAYA_USDGEOMCAMERAPROXY(0x00112A2B);
 const MTypeId AL_USDMAYA_SCOPE(0x00112A31);
 const MTypeId AL_USDMAYA_IDENTITY_MATRIX(0x00112A32);
 
-const int  MAYA_UFE_RUNTIME_ID(1);
-const char MAYA_UFE_SEPARATOR('|');
-const int  USD_UFE_RUNTIME_ID(2);
-const char USD_UFE_SEPARATOR('/');
-
 } // namespace usdmaya
 } // namespace AL

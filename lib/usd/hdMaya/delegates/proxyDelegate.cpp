@@ -345,10 +345,6 @@ void HdMayaProxyDelegate::PopulateSelectionList(
         return;
     }
 
-    auto handler = Ufe::RunTimeMgr::instance().hierarchyHandler(USD_UFE_RUNTIME_ID);
-    if (handler == nullptr)
-        return;
-
 #ifdef UFE_V2_FEATURES_AVAILABLE
     auto ufeSel = Ufe::NamedSelection::get("MayaSelectTool");
 #else
@@ -381,10 +377,9 @@ void HdMayaProxyDelegate::PopulateSelectionList(
             usdPath = adapter->ConvertIndexPathToCachePath(usdPath);
 #endif
 
-            const Ufe::PathSegment pathSegment(
-                usdPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
-            const Ufe::SceneItem::Ptr& si
-                = handler->createItem(adapter->GetProxy()->ufePath() + pathSegment);
+            const Ufe::PathSegment pathSegment
+                = MayaUsd::ufe::usdPathToUfePathSegment(usdPath);
+            auto si = Ufe::Hierarchy::createItem(adapter->GetProxy()->ufePath() + pathSegment);
             if (!si) {
                 TF_WARN("Failed to create UFE scene item for '%s'", objectId.GetText());
                 break;

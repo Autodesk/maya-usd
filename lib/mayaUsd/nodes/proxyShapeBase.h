@@ -44,11 +44,6 @@
 
 UFE_NS_DEF { class Path; }
 
-constexpr int  MAYA_UFE_RUNTIME_ID = 1;
-constexpr char MAYA_UFE_SEPARATOR = '|';
-constexpr int  USD_UFE_RUNTIME_ID = 2;
-constexpr char USD_UFE_SEPARATOR = '/';
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/listeners/stageNoticeListener.h>
 #include <mayaUsd/nodes/proxyAccessor.h>
