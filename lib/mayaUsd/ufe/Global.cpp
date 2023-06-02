@@ -23,6 +23,7 @@
 #include <mayaUsd/ufe/UsdSceneItemOpsHandler.h>
 #include <mayaUsd/ufe/UsdTransform3dHandler.h>
 #include <mayaUsd/ufe/Utils.h>
+
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/ProxyShapeContextOpsHandler.h>
 #include <mayaUsd/ufe/UsdAttributesHandler.h>
@@ -37,6 +38,7 @@
 #include <mayaUsd/ufe/UsdUIInfoHandler.h>
 #include <mayaUsd/ufe/UsdUIUfeObserver.h>
 #endif
+
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #define HAVE_PATH_MAPPING
 #include <mayaUsd/ufe/MayaUIInfoHandler.h>
@@ -44,22 +46,32 @@
 #include <mayaUsd/ufe/PulledObjectHierarchyHandler.h>
 #include <mayaUsd/ufe/UsdPathMappingHandler.h>
 #endif
+
 #if UFE_LIGHTS_SUPPORT
 #include <mayaUsd/ufe/UsdLightHandler.h>
 #endif
+
 #if UFE_MATERIALS_SUPPORT
 #include <mayaUsd/ufe/UsdMaterialHandler.h>
 #endif
+
 #ifdef UFE_V4_FEATURES_AVAILABLE
+#include <mayaUsd/ufe/ProxyShapeCameraHandler.h>
 #include <mayaUsd/ufe/UsdConnectionHandler.h>
+#include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
 #include <mayaUsd/ufe/UsdTransform3dRead.h>
 #include <mayaUsd/ufe/UsdUINodeGraphNodeHandler.h>
+
 #if UFE_PREVIEW_BATCHOPS_SUPPORT
 #include <mayaUsd/ufe/UsdBatchOpsHandler.h>
 #endif
-#include <mayaUsd/ufe/ProxyShapeCameraHandler.h>
-#include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
+
 #endif
+
+#ifdef UFE_PREVIEW_CODE_WRAPPER_HANDLER_SUPPORT
+#include <mayaUsd/ufe/UsdCodeWrapperHandler.h>
+#endif
+
 #if UFE_SCENE_SEGMENT_SUPPORT
 #include <mayaUsd/ufe/ProxyShapeSceneSegmentHandler.h>
 #endif
@@ -72,6 +84,7 @@
 #include <maya/MSceneMessage.h>
 #include <ufe/hierarchyHandler.h>
 #include <ufe/runTimeMgr.h>
+
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/pathString.h>
 #endif
@@ -187,20 +200,28 @@ MStatus initialize()
     handlers.contextOpsHandler = UsdContextOpsHandler::create();
     handlers.uiInfoHandler = UsdUIInfoHandler::create();
     handlers.cameraHandler = UsdCameraHandler::create();
+
 #ifdef UFE_V4_FEATURES_AVAILABLE
+
 #if UFE_LIGHTS_SUPPORT
     handlers.lightHandler = UsdLightHandler::create();
 #endif
+
 #if UFE_MATERIALS_SUPPORT
     handlers.materialHandler = UsdMaterialHandler::create();
 #endif
     handlers.connectionHandler = UsdConnectionHandler::create();
     handlers.uiNodeGraphNodeHandler = UsdUINodeGraphNodeHandler::create();
-#if UFE_PREVIEW_BATCHOPS_SUPPORT
+
+#ifdef UFE_PREVIEW_CODE_WRAPPER_HANDLER_SUPPORT
+    handlers.batchOpsHandler = UsdCodeWrapperHandler::create();
+#elif UFE_PREVIEW_BATCHOPS_SUPPORT
     handlers.batchOpsHandler = UsdBatchOpsHandler::create();
 #endif
+
     handlers.nodeDefHandler = UsdShaderNodeDefHandler::create();
-#endif
+
+#endif /* UFE_V4_FEATURES_AVAILABLE */
 
 #if UFE_SCENE_SEGMENT_SUPPORT
     // set up the SceneSegmentHandler
@@ -209,6 +230,7 @@ MStatus initialize()
         = ProxyShapeSceneSegmentHandler::create(g_MayaSceneSegmentHandler);
     runTimeMgr.setSceneSegmentHandler(g_MayaRtid, proxyShapeSceneSegmentHandler);
 #endif
+
 #ifdef UFE_V4_FEATURES_AVAILABLE
     // set up the ProxyShapeCameraHandler
     g_MayaCameraHandler = runTimeMgr.cameraHandler(g_MayaRtid);
@@ -281,13 +303,15 @@ MStatus initialize()
     MayaUsd::ufe::UsdUIUfeObserver::create();
 
 #ifndef UFE_V4_FEATURES_AVAILABLE
+
 #if UFE_LIGHTS_SUPPORT
     runTimeMgr.setLightHandler(usdRtid, UsdLightHandler::create());
 #endif
 #if UFE_MATERIALS_SUPPORT
     runTimeMgr.setMaterialHandler(usdRtid, UsdMaterialHandler::create());
 #endif
-#endif
+
+#endif /* UFE_V4_FEATURES_AVAILABLE */
 
 #ifdef HAVE_PATH_MAPPING
     g_MayaPathMappingHandler = runTimeMgr.pathMappingHandler(g_MayaRtid);
@@ -300,7 +324,7 @@ MStatus initialize()
     runTimeMgr.setUIInfoHandler(g_MayaRtid, uiInfoHandler);
 #endif
 
-#endif
+#endif /* UFE_V2_FEATURES_AVAILABLE */
 
 #if !defined(NDEBUG)
     assert(usdRtid != 0);

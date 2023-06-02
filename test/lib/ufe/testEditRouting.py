@@ -7,6 +7,7 @@ import mayaUsd.ufe
 import mayaUtils
 import ufeUtils
 import ufe
+import os
 import unittest
 import usdUtils
 from pxr import UsdGeom
@@ -17,7 +18,7 @@ from pxr import UsdGeom
 
 def filterUsdStr(usdSceneStr):
     '''Remove empty lines and lines starting with pound character.'''
-    nonBlankLines = filter(None, [l.rstrip() for l in usdSceneStr.splitlines()])
+    nonBlankLines = filter(None, [l.strip() for l in usdSceneStr.splitlines()])
     finalLines = [l for l in nonBlankLines if not l.startswith('#')]
     return '\n'.join(finalLines)
 
@@ -206,7 +207,7 @@ class EditRoutingTestCase(unittest.TestCase):
  
             # Check that correct visibility changes were written to the session layer
             self.assertEqual(filterUsdStr(sessionLayer.ExportToString()),
-                            'over "B"\n{\n    token visibility = "invisible"\n}')
+                            filterUsdStr('over "B"\n{\n    token visibility = "invisible"\n}'))
             
         self._verifyEditRouterForCmd('visibility', setVisibility, verifyVisibility)
 
@@ -225,7 +226,7 @@ class EditRoutingTestCase(unittest.TestCase):
  
             # Check that correct duplicated prim was written to the session layer
             self.assertEqual(filterUsdStr(sessionLayer.ExportToString()),
-                            'def Xform "B1"\n{\n}')
+                            filterUsdStr('def Xform "B1"\n{\n}'))
             
         self._verifyEditRouterForCmd('duplicate', duplicate, verifyDuplicate)
 
@@ -240,7 +241,7 @@ class EditRoutingTestCase(unittest.TestCase):
         def verifyGroup(sessionLayer):
             # Check that correct grouped prim was written to the session layer
             self.assertEqual(filterUsdStr(sessionLayer.ExportToString()),
-                            'over "group1"\n{\n    def Xform "B"\n    {\n    }\n}')
+                            filterUsdStr('over "group1"\n{\n    def Xform "B"\n    {\n    }\n}'))
 
             # Check that the grouped prim was created in the session layer
             self.assertIsNotNone(sessionLayer.GetPrimAtPath('/group1'))
@@ -280,7 +281,7 @@ class EditRoutingTestCase(unittest.TestCase):
  
         # Check that correct visibility changes were written to the session layer
         self.assertEqual(filterUsdStr(sessionLayer.ExportToString()),
-                         'over "B"\n{\n    token visibility = "invisible"\n}')
+                         filterUsdStr('over "B"\n{\n    token visibility = "invisible"\n}'))
 
     def testEditRouterForAttributeVisibility(self):
         '''
@@ -313,7 +314,7 @@ class EditRoutingTestCase(unittest.TestCase):
  
         # Check that correct visibility changes were written to the session layer
         self.assertEqual(filterUsdStr(sessionLayer.ExportToString()),
-                         'over "B"\n{\n    token visibility = "invisible"\n}')
+                         filterUsdStr('over "B"\n{\n    token visibility = "invisible"\n}'))
         
         # Check we are still allowed to set the attribute without
         # explicitly changing the edit target.
@@ -416,7 +417,7 @@ class EditRoutingTestCase(unittest.TestCase):
         # Check to root layer only contains bare A and B xforms.
         rootLayer = stage.GetRootLayer()
         self.assertEqual(filterUsdStr(rootLayer.ExportToString()),
-                         'def Xform "A"\n{\n}\ndef Xform "B"\n{\n}')
+                         filterUsdStr('def Xform "A"\n{\n}\ndef Xform "B"\n{\n}'))
  
         # Route the visibility command to the session layer.
         # Route the custom composite command to the root layer.
@@ -442,7 +443,7 @@ class EditRoutingTestCase(unittest.TestCase):
         # Check that visibility was written to the root layer
         rootLayer = stage.GetRootLayer()
         self.assertEqual(filterUsdStr(rootLayer.ExportToString()),
-                         'def Xform "A"\n{\n}\ndef Xform "B"\n{\n    token visibility = "invisible"\n}')
+                         filterUsdStr('def Xform "A"\n{\n}\ndef Xform "B"\n{\n    token visibility = "invisible"\n}'))
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'UFE composite commands only available in Python from UFE v4.')
     def testNotRoutingCompositeCmd(self):
@@ -460,7 +461,7 @@ class EditRoutingTestCase(unittest.TestCase):
         # Check to root layer only contains bare A and B xforms.
         rootLayer = stage.GetRootLayer()
         self.assertEqual(filterUsdStr(rootLayer.ExportToString()),
-                         'def Xform "A"\n{\n}\ndef Xform "B"\n{\n}')
+                         filterUsdStr('def Xform "A"\n{\n}\ndef Xform "B"\n{\n}'))
  
         # Select /B
         sn = ufe.GlobalSelection.get()
@@ -480,8 +481,61 @@ class EditRoutingTestCase(unittest.TestCase):
         # Check that visibility was written to the root layer
         rootLayer = stage.GetRootLayer()
         self.assertEqual(filterUsdStr(rootLayer.ExportToString()),
-                         'def Xform "A"\n{\n}\ndef Xform "B"\n{\n    token visibility = "invisible"\n}')
+                         filterUsdStr('def Xform "A"\n{\n}\ndef Xform "B"\n{\n    token visibility = "invisible"\n}'))
 
+    @unittest.skipIf(os.getenv('UFE_HAS_CODE_WRAPPER', '0') < '1', 'Test requires code wrapper handler only available in UFE 0.5.5 and later')
+    def testRoutingCompositeGroupCmd(self):
+        '''
+        Test that an edit router for the group composite command routes all sub-commands.
+        '''
+        # Get the session layer
+        prim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A")
+        stage = prim.GetStage()
+        sessionLayer = stage.GetSessionLayer()
+ 
+        # Check that the session layer is empty
+        self.assertTrue(sessionLayer.empty)
+
+        # Check to root layer only contains bare A and B xforms.
+        rootLayer = stage.GetRootLayer()
+        self.assertEqual(filterUsdStr(rootLayer.ExportToString()),
+                         filterUsdStr('def Xform "A"\n{\n}\ndef Xform "B"\n{\n}'))
+ 
+        # Route the group command to the session layer.
+        mayaUsd.lib.registerEditRouter('group', routeCmdToSessionLayer)
+ 
+        # Select /B
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(self.b)
+ 
+        # Group
+        cmds.group()
+ 
+        # Check that everything was written to the session layer
+        self.assertIsNotNone(sessionLayer)
+        expectedContents = '''
+            def Xform "group1" (
+                kind = "group"
+            )
+            {
+                float3 xformOp:translate:rotatePivot = (0, 0, 0)
+                float3 xformOp:translate:rotatePivotTranslate = (0, 0, 0)
+                float3 xformOp:translate:scalePivot = (0, 0, 0)
+                float3 xformOp:translate:scalePivotTranslate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate:rotatePivotTranslate", "xformOp:translate:rotatePivot", "!invert!xformOp:translate:rotatePivot", "xformOp:translate:scalePivotTranslate", "xformOp:translate:scalePivot", "!invert!xformOp:translate:scalePivot"]
+                def Xform "B"
+                {
+                    float3 xformOp:rotateXYZ = (0, -0, 0)
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (0, 0, 0)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+                }
+            }
+            '''
+        self.maxDiff = None
+        self.assertEqual(filterUsdStr(sessionLayer.ExportToString()), filterUsdStr(expectedContents))
+ 
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

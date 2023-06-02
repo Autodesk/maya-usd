@@ -346,8 +346,8 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
         // The priority order for what objects get exported is (from highest to lowest):
         //
         //     - Requesting to export the current selection.
-        //     - Explicit export roots provided to the command.
         //     - Explicit objects given to the command.
+        //     - Explicit export roots provided to the command.
         //     - Otherwise defaults to all objects.
         //
         // This priority order is embodied from code here and from code in the function
@@ -357,18 +357,18 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
         UsdMayaUtil::MDagPathSet dagPaths;
         bool                     exportSelected = argData.isFlagSet(kSelectionFlag);
         if (!exportSelected) {
-            if (userArgs.count(UsdMayaJobExportArgsTokens->exportRoots) > 0) {
-                const auto exportRoots = DictUtils::extractVector<std::string>(
-                    userArgs, UsdMayaJobExportArgsTokens->exportRoots);
-                if (exportRoots.size() > 0) {
-                    for (const std::string& root : exportRoots) {
-                        objSelList.add(root.c_str());
-                    }
-                }
-            }
+            argData.getObjects(objSelList);
 
             if (objSelList.isEmpty()) {
-                argData.getObjects(objSelList);
+                if (userArgs.count(UsdMayaJobExportArgsTokens->exportRoots) > 0) {
+                    const auto exportRoots = DictUtils::extractVector<std::string>(
+                        userArgs, UsdMayaJobExportArgsTokens->exportRoots);
+                    if (exportRoots.size() > 0) {
+                        for (const std::string& root : exportRoots) {
+                            objSelList.add(root.c_str());
+                        }
+                    }
+                }
             }
         }
         UsdMayaUtil::GetFilteredSelectionToExport(exportSelected, objSelList, dagPaths);
