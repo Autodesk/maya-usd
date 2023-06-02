@@ -62,7 +62,13 @@ class importChaserTest(mayaUsdLib.ImportChaser):
         # Call GetSdfToDagMap() to get the sdfToDagMap, 
         # which contains SDF path to Dag path mapping
         sdfToDagMap = self.GetSdfToDagMap()
+
+        # Test Sdf To Dag Map
+        testMap = next(iter(sdfToDagMap))
+        assert(testMap.key() == sdfPaths[0])
+        assert(testMap.data() == dagPaths[0])
         assert(primCount == len(sdfToDagMap))
+
         sdfToDagMappingStr = "Sdf to Dag mapping: \n"
         for sdfToDag in sdfToDagMap:
             sdfToDagMappingStr += (str(sdfToDag.key()) + "\n")
