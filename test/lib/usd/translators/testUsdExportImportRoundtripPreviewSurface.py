@@ -448,8 +448,8 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
             (connect_api, out_name, _) = src_input.GetConnectedSource()
             self.assertEqual(connect_api.GetPath(), mat_path + dst_name)
 
-    def testGeomSubsetRoundtrip(self):
-        """Test that GeomSubsets numbers stay under control when rountripping"""
+    def CommonGeomSubsetRoundtrip(self, useCollections):
+        """Common test for geom subset export"""
         cmds.file(f=True, new=True)
 
         # Take a cube since it already has 6 subsets defined:
@@ -467,11 +467,19 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         createMaterial("blueFace", .0, .0, .95, ".f[4]")
 
         # Export:
-        usd_path = os.path.abspath('CubeWithAssignedFaces.usda')
-        cmds.usdExport(mergeTransformAndShape=True,
-            file=usd_path,
-            shadingMode='useRegistry',
-            exportDisplayColor=False)
+        if useCollections:
+            usd_path = os.path.abspath('CubeWithAssignedFaces_CB.usda')
+            cmds.usdExport(mergeTransformAndShape=True,
+                file=usd_path,
+                shadingMode='useRegistry',
+                exportDisplayColor=False,
+                exportCollectionBasedBindings=True)
+        else:
+            usd_path = os.path.abspath('CubeWithAssignedFaces.usda')
+            cmds.usdExport(mergeTransformAndShape=True,
+                file=usd_path,
+                shadingMode='useRegistry',
+                exportDisplayColor=False)
 
         stage = Usd.Stage.Open(usd_path)
 
@@ -575,7 +583,10 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         geomSubset.GetIndicesAttr().Set([3,])
 
         # Save the modified stage under a new name:
-        modified_usd_path = os.path.abspath('CubeWithModifiedFaces.usda')
+        if useCollections:
+            modified_usd_path = os.path.abspath('CubeWithModifiedFaces_CB.usda')
+        else:
+            modified_usd_path = os.path.abspath('CubeWithModifiedFaces.usda')
         stage.GetRootLayer().Export(modified_usd_path)
 
         # Update our expected results:
@@ -630,16 +641,34 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
 
         # We export without changes to make sure we get back the modified cube without
         # any extra subsets.
-        reexported_usd_path = os.path.abspath('CubeWithAssignedFaces_reexported.usda')
-        cmds.usdExport(mergeTransformAndShape=True,
-            file=reexported_usd_path,
-            shadingMode='useRegistry',
-            exportDisplayColor=False)
+        if useCollections:
+            reexported_usd_path = os.path.abspath('CubeWithAssignedFaces_reexported_CB.usda')
+            cmds.usdExport(mergeTransformAndShape=True,
+                file=reexported_usd_path,
+                shadingMode='useRegistry',
+                exportDisplayColor=False,
+                exportCollectionBasedBindings=True)
+        else:
+            reexported_usd_path = os.path.abspath('CubeWithAssignedFaces_reexported.usda')
+            cmds.usdExport(mergeTransformAndShape=True,
+                file=reexported_usd_path,
+                shadingMode='useRegistry',
+                exportDisplayColor=False)
         
         stage = Usd.Stage.Open(reexported_usd_path)
 
         # Test that the re-exported stage has the exact same GeomsSubsets as the one we imported:
         ValidateUSDStage(self, stage, allSubsets)
+
+    def testGeomSubsetRoundtrip(self):
+        """Test that GeomSubsets numbers stay under control when rountripping
+           with direct material assignment"""
+        self.CommonGeomSubsetRoundtrip(False)
+
+    def testGeomSubsetRoundtripCollectionBased(self):
+        """Test that GeomSubsets numbers stay under control when rountripping
+           with collection based material assignemnt"""
+        self.CommonGeomSubsetRoundtrip(True)
 
     @unittest.skipUnless("mayaUtils" in globals() and mayaUtils.mayaMajorVersion() >= 2020, 'Requires standardSurface node which appeared in 2020.')
     def testOpacityRoundtrip(self):

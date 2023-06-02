@@ -449,6 +449,12 @@ bool UsdMayaTranslatorMaterial::AssignMaterial(
                         // identifier is the UUID.
                         subsetRoundtrippingInfo[UsdMayaGeomSubsetTokens->MaterialUuidKey]
                             = JsValue(depNodeFn.uuid().asString().asChar());
+                    } else {
+                        TF_RUNTIME_ERROR(
+                            "Unable to resolve path <%s> on imported GeomSubset <%s> to a shading "
+                            "group.",
+                            materialPath.GetText(),
+                            ssInfoIt.first.c_str());
                     }
                     subsetRoundtrippingInfo.erase(materialIt);
                     updatedInfo[ssInfoIt.first] = subsetRoundtrippingInfo;

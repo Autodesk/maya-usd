@@ -726,7 +726,8 @@ VtIntArray _AssignComponentTags(
     const UsdShadeMaterial&                materialToBind,
     const MObjectHandle&                   geomHandle,
     const std::vector<UsdGeomSubset>&      currentGeomSubsets,
-    const VtIntArray&                      faceIndices)
+    const VtIntArray&                      faceIndices,
+    SdfPathSet* const                      boundPrimPaths)
 {
     if (currentGeomSubsets.empty() || faceIndices.empty() || !geomHandle.isValid()) {
         return faceIndices;
@@ -778,6 +779,10 @@ VtIntArray _AssignComponentTags(
                         = UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<
                             UsdShadeMaterialBindingAPI>(geomSubset.GetPrim());
                     subsetBindingAPI.Bind(materialToBind);
+                }
+
+                if (boundPrimPaths) {
+                    boundPrimPaths->insert(geomSubset.GetPath());
                 }
 
                 // Mark those faces as handled
@@ -860,7 +865,12 @@ void UsdMayaShadingModeExportContext::BindStandardMaterialPrim(
 
             const auto currentGeomSubsets = bindingAPI.GetMaterialBindSubsets();
             VtIntArray unhandledFaceIndices = _AssignComponentTags(
-                this, materialToBind, iter.shapeObj, currentGeomSubsets, faceIndices);
+                this,
+                materialToBind,
+                iter.shapeObj,
+                currentGeomSubsets,
+                faceIndices,
+                boundPrimPaths);
 
             // If we assigned all faces to component tags, then we are done for this
             // material.

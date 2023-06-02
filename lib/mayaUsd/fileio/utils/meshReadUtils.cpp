@@ -950,6 +950,8 @@ MStatus UsdMayaMeshReadUtils::getComponentTags(
     JsObject allRoundtripData;
 
     for (auto& ss : subsets) {
+        // GeomSubsets that are created to represent faces with a material assigned are marked as
+        // Maya generated and should not be merged into the mesh componentTags.
         if (UsdMayaRoundTripUtil::IsPrimMayaGenerated(ss.GetPrim())) {
             continue;
         }
@@ -985,7 +987,7 @@ MStatus UsdMayaMeshReadUtils::getComponentTags(
                 = JsValue(familyName.GetString());
         }
 
-        // Could be any applicable API, but we mostly care about materials:
+        // We are interested in materials bound to faces.
         if (ss.GetPrim().HasAPI<UsdShadeMaterialBindingAPI>()) {
             const auto ssBindingAPI = UsdShadeMaterialBindingAPI(ss.GetPrim());
             const auto boundMaterial = ssBindingAPI.ComputeBoundMaterial();
