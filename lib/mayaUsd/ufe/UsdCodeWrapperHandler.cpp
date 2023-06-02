@@ -15,8 +15,8 @@
 //
 #include "UsdCodeWrapperHandler.h"
 
-#include <UsdUfe/ufe/UsdSceneItem.h>
-#include <UsdUfe/utils/editRouterContext.h>
+#include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/utils/editRouterContext.h>
 
 #include <ufe/selection.h>
 
