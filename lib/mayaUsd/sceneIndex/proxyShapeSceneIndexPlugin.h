@@ -31,9 +31,7 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usdImaging/usdImaging/stageSceneIndex.h>
 
-#if WANT_UFE_BUILD
 #include <ufe/path.h>
-#endif
 
 #include <memory>
 

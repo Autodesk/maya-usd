@@ -32,11 +32,13 @@
 #include <mayaUsd/fileio/shaderReaderRegistry.h>
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/listeners/notice.h>
+#include <mayaUsd/nodes/layerManager.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/proxyShapePlugin.h>
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
+#include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/undo/MayaUsdUndoBlock.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/undoHelperCommand.h>
@@ -57,10 +59,6 @@
 #include <mayaUsdUI/ui/USDImportDialogCmd.h>
 #include <mayaUsdUI/ui/initStringResources.h>
 #endif
-
-#if defined(WANT_UFE_BUILD)
-#include <mayaUsd/nodes/layerManager.h>
-#include <mayaUsd/ufe/Global.h>
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdTransform3dHandler.h>
@@ -84,8 +82,6 @@
 #include <mayaUsdUI/ui/batchSaveLayersUIDelegate.h>
 #endif
 
-#endif
-
 #if defined(MAYAUSD_VERSION)
 #define STRINGIFY(x) #x
 #define TOSTRING(x)  STRINGIFY(x)
@@ -101,7 +97,7 @@ const MTypeId MayaUsdPreviewSurface_typeId(0x58000096);
 const MString MayaUsdPreviewSurface_typeName("usdPreviewSurface");
 const MString MayaUsdPreviewSurface_registrantId("mayaUsdPlugin");
 
-#if defined(WANT_UFE_BUILD) && defined(UFE_V2_FEATURES_AVAILABLE)
+#if defined(UFE_V2_FEATURES_AVAILABLE)
 // Keep a reference to the existing USD Transform3d handler, to restore on
 // finalization.
 Ufe::Transform3dHandler::Ptr g_OldTransform3dHandler;
@@ -244,7 +240,6 @@ MStatus initializePlugin(MObject obj)
     status = MayaUsdProxyShapePlugin::initialize(plugin);
     CHECK_MSTATUS(status);
 
-#if defined(WANT_UFE_BUILD)
     status = MayaUsd::ufe::initialize();
     if (!status) {
         status.perror("mayaUsdPlugin: unable to initialize ufe.");
@@ -265,8 +260,6 @@ MStatus initializePlugin(MObject obj)
         status.perror(
             MString("mayaUsdPlugin: unable to register command ") + ToggleTransform3d::commandName);
     }
-#endif
-
 #endif
 
     status = plugin.registerShape(
@@ -346,12 +339,10 @@ MStatus initializePlugin(MObject obj)
         }
     }
 
-#if defined(WANT_UFE_BUILD)
     MayaUsd::LayerManager::addSupportForNodeType(MayaUsd::ProxyShape::typeId);
 #if defined(WANT_QT_BUILD)
     UsdLayerEditor::initialize();
     MayaUsd::LayerManager::SetBatchSaveDelegate(UsdLayerEditor::batchSaveLayersUIDelegate);
-#endif
 #endif
 
     UsdMayaSceneResetNotice::InstallListener();
@@ -443,7 +434,6 @@ MStatus uninitializePlugin(MObject obj)
     status = plugin.deregisterCommand(MayaUsd::MayaUsdUndoBlockCmd::commandName);
     CHECK_MSTATUS(status);
 
-#if defined(WANT_UFE_BUILD)
 #ifdef UFE_V2_FEATURES_AVAILABLE
     status = plugin.deregisterCommand(ToggleTransform3d::commandName);
     if (!status) {
@@ -462,13 +452,10 @@ MStatus uninitializePlugin(MObject obj)
 
     status = MayaUsd::ufe::finalize();
     CHECK_MSTATUS(status);
-#endif
 
-#if defined(WANT_UFE_BUILD)
     MayaUsd::LayerManager::removeSupportForNodeType(MayaUsd::ProxyShape::typeId);
 #if defined(WANT_QT_BUILD)
     MayaUsd::LayerManager::SetBatchSaveDelegate(nullptr);
-#endif
 #endif
 
     UsdMayaSceneResetNotice::RemoveListener();

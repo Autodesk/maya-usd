@@ -16,6 +16,13 @@
 #ifndef MTOH_VIEW_OVERRIDE_H
 #define MTOH_VIEW_OVERRIDE_H
 
+#include "defaultLightDelegate.h"
+#include "renderGlobals.h"
+#include "utils.h"
+
+#include <hdMaya/delegates/delegate.h>
+#include <hdMaya/delegates/params.h>
+
 #include <pxr/base/tf/singleton.h>
 #include <pxr/imaging/hd/driver.h>
 #include <pxr/imaging/hd/engine.h>
@@ -29,22 +36,12 @@
 #include <maya/MMessage.h>
 #include <maya/MString.h>
 #include <maya/MViewport2Renderer.h>
+#include <ufe/observer.h>
 
 #include <atomic>
 #include <chrono>
 #include <memory>
 #include <mutex>
-
-#if WANT_UFE_BUILD
-#include <ufe/observer.h>
-#endif // WANT_UFE_BUILD
-
-#include "defaultLightDelegate.h"
-#include "renderGlobals.h"
-#include "utils.h"
-
-#include <hdMaya/delegates/delegate.h>
-#include <hdMaya/delegates/params.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -191,9 +188,7 @@ private:
     bool       _hasDefaultLighting = false;
     bool       _selectionChanged = true;
 
-#if WANT_UFE_BUILD
     UFE_NS::Observer::Ptr _ufeSelectionObserver;
-#endif // WANT_UFE_BUILD
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

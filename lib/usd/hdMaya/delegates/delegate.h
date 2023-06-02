@@ -36,12 +36,9 @@
 #include <maya/MPointArray.h>
 #include <maya/MSelectionContext.h>
 #include <maya/MSelectionList.h>
+#include <ufe/selection.h>
 
 #include <memory>
-
-#if WANT_UFE_BUILD
-#include <ufe/selection.h>
-#endif // WANT_UFE_BUILD
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -101,7 +98,6 @@ public:
     {
     }
 
-#if WANT_UFE_BUILD
     virtual void PopulateSelectedPaths(
         const UFE_NS::Selection&    ufeSelection,
         SdfPathVector&              selectedSdfPaths,
@@ -110,7 +106,6 @@ public:
     }
 
     virtual bool SupportsUfeSelection() { return false; }
-#endif // WANT_UFE_BUILD
 
     virtual void PopulateSelectionList(
         const HdxPickHitVector&          hits,

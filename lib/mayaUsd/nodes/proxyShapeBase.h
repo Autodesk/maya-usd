@@ -38,11 +38,9 @@
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 #include <maya/MTypeId.h>
+#include <ufe/ufe.h>
 
 #include <map>
-
-#if defined(WANT_UFE_BUILD)
-#include <ufe/ufe.h>
 
 UFE_NS_DEF { class Path; }
 
@@ -50,7 +48,6 @@ constexpr int  MAYA_UFE_RUNTIME_ID = 1;
 constexpr char MAYA_UFE_SEPARATOR = '|';
 constexpr int  USD_UFE_RUNTIME_ID = 2;
 constexpr char USD_UFE_SEPARATOR = '/';
-#endif
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/listeners/stageNoticeListener.h>
@@ -273,10 +270,8 @@ public:
     MDagPath parentTransform();
 
     // Is this required if there is parentTransform?
-#if defined(WANT_UFE_BUILD)
     MAYAUSD_CORE_PUBLIC
     Ufe::Path ufePath() const;
-#endif
 
     /// Returns whether the proxy shape allows subpaths within its
     /// hierarchy to be selected independently when using the Viewport 2.0

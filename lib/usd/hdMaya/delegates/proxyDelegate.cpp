@@ -19,6 +19,7 @@
 #include <hdMaya/debugCodes.h>
 #include <hdMaya/delegates/delegateRegistry.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/ufe/Global.h>
 
 #include <pxr/base/tf/envSetting.h>
 #include <pxr/base/tf/type.h>
@@ -31,21 +32,17 @@
 #include <maya/MNodeClass.h>
 #include <maya/MObject.h>
 #include <maya/MSceneMessage.h>
+#include <ufe/globalSelection.h>
+#include <ufe/observableSelection.h>
+#include <ufe/runTimeMgr.h>
 
 #include <atomic>
 #include <mutex>
 #include <unordered_set>
 
-#if WANT_UFE_BUILD
-#include <mayaUsd/ufe/Global.h>
-
-#include <ufe/globalSelection.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/namedSelection.h>
 #endif
-#include <ufe/observableSelection.h>
-#include <ufe/runTimeMgr.h>
-#endif // WANT_UFE_BUILD
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -139,7 +136,6 @@ void SetupPluginCallbacks()
 }
 
 #ifndef UFE_V2_FEATURES_AVAILABLE
-#if WANT_UFE_BUILD
 MGlobal::ListAdjustment GetListAdjustment()
 {
     // Keyboard modifiers can be queried from QApplication::keyboardModifiers()
@@ -164,7 +160,6 @@ MGlobal::ListAdjustment GetListAdjustment()
 
     return listAdjustment;
 }
-#endif
 #endif
 
 } // namespace
@@ -221,7 +216,6 @@ void HdMayaProxyDelegate::PreFrame(const MHWRender::MDrawContext& context)
     }
 }
 
-#if WANT_UFE_BUILD
 
 void HdMayaProxyDelegate::PopulateSelectedPaths(
     const UFE_NS::Selection&    ufeSelection,
@@ -325,8 +319,6 @@ void HdMayaProxyDelegate::PopulateSelectedPaths(
 
 bool HdMayaProxyDelegate::SupportsUfeSelection() { return MayaUsd::ufe::getUsdRunTimeId() != 0; }
 
-#endif // WANT_UFE_BUILD
-
 void HdMayaProxyDelegate::PopulateSelectionList(
     const HdxPickHitVector&          hits,
     const MHWRender::MSelectionInfo& selectInfo,
@@ -353,7 +345,6 @@ void HdMayaProxyDelegate::PopulateSelectionList(
         return;
     }
 
-#if WANT_UFE_BUILD
     auto handler = Ufe::RunTimeMgr::instance().hierarchyHandler(USD_UFE_RUNTIME_ID);
     if (handler == nullptr)
         return;
@@ -426,7 +417,6 @@ void HdMayaProxyDelegate::PopulateSelectionList(
             break;
         }
     }
-#endif // WANT_UFE_BUILD
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

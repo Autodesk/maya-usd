@@ -1,9 +1,7 @@
 #ifndef SAVELAYERSDIALOG_H
 #define SAVELAYERSDIALOG_H
 
-#if defined(WANT_UFE_BUILD)
 #include <mayaUsd/nodes/layerManager.h>
-#endif
 #include <mayaUsd/utils/utilSerialization.h>
 
 #include <pxr/usd/sdf/layer.h>
@@ -33,10 +31,8 @@ public:
     // Create dialog using single stage (from session state).
     SaveLayersDialog(SessionState* in_sessionState, QWidget* in_parent);
 
-#if defined(WANT_UFE_BUILD)
     // Create dialog for bulk save using all provided proxy shapes and their owned stages.
     SaveLayersDialog(QWidget* in_parent, const std::vector<MayaUsd::StageSavingInfo>& infos);
-#endif
 
     ~SaveLayersDialog();
 

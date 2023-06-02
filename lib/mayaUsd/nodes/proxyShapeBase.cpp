@@ -20,8 +20,10 @@
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/listeners/proxyShapeNotice.h>
+#include <mayaUsd/nodes/layerManager.h>
 #include <mayaUsd/nodes/proxyShapeStageExtraData.h>
 #include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/customLayerData.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/layerMuting.h>
@@ -99,6 +101,8 @@
 #include <maya/MString.h>
 #include <maya/MTime.h>
 #include <maya/MViewport2Renderer.h>
+#include <ufe/path.h>
+#include <ufe/pathString.h>
 
 #include <ghc/filesystem.hpp>
 
@@ -106,16 +110,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-#if defined(WANT_UFE_BUILD)
-#include <mayaUsd/nodes/layerManager.h>
-#include <mayaUsd/ufe/Utils.h>
-
-#include <ufe/path.h>
-#ifdef UFE_V2_FEATURES_AVAILABLE
-#include <ufe/pathString.h>
-#endif
-#endif
 
 using namespace MayaUsd;
 
@@ -647,7 +641,6 @@ MStatus MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
     return MS::kUnknownParameter;
 }
 
-#if defined(WANT_UFE_BUILD)
 /* virtual */
 SdfLayerRefPtr MayaUsdProxyShapeBase::computeRootLayer(MDataBlock& dataBlock, const std::string&)
 {
@@ -669,18 +662,6 @@ SdfLayerRefPtr MayaUsdProxyShapeBase::computeSessionLayer(MDataBlock& dataBlock)
         return nullptr;
     }
 }
-
-#else
-/* virtual */
-SdfLayerRefPtr MayaUsdProxyShapeBase::computeRootLayer(MDataBlock&, const std::string&)
-{
-    return nullptr;
-}
-
-/* virtual */
-SdfLayerRefPtr MayaUsdProxyShapeBase::computeSessionLayer(MDataBlock&) { return nullptr; }
-
-#endif
 
 namespace {
 
@@ -805,7 +786,6 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
     bool sharableStage = isShareableStage();
 
-#if defined(WANT_UFE_BUILD)
     // Load the unshared comp from file
     // This is so that we can remap the anon layer identifiers that have been loaded from disk which
     // are saved in the unshared root layer
@@ -835,7 +815,6 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             }
         }
     }
-#endif
 
     bool isIncomingStage = false;
 
@@ -1528,7 +1507,6 @@ MBoundingBox MayaUsdProxyShapeBase::boundingBox() const
 
     UsdMayaUtil::AddMayaExtents(allBox, prim, currTime);
 
-#if defined(WANT_UFE_BUILD)
     Ufe::BBox3d pulledUfeBBox = ufe::getPulledPrimsBoundingBox(ufePath());
     if (!pulledUfeBBox.empty()) {
         GfBBox3d pulledBox(GfRange3d(
@@ -1536,7 +1514,6 @@ MBoundingBox MayaUsdProxyShapeBase::boundingBox() const
             GfVec3d(pulledUfeBBox.max.x(), pulledUfeBBox.max.y(), pulledUfeBBox.max.z())));
         allBox = GfBBox3d::Combine(allBox, pulledBox);
     }
-#endif
 
     MBoundingBox& retval = nonConstThis->_boundingBoxCache[currTime];
 
@@ -2219,7 +2196,6 @@ void MayaUsdProxyShapeBase::onAncestorPlugDirty(MPlug& plug)
     _inAncestorCallback = false;
 }
 
-#if defined(WANT_UFE_BUILD)
 Ufe::Path MayaUsdProxyShapeBase::ufePath() const
 {
     // Build a path segment to proxyShape
@@ -2235,7 +2211,6 @@ Ufe::Path MayaUsdProxyShapeBase::ufePath() const
     return Ufe::Path(Ufe::PathSegment(fullpath.asChar(), MAYA_UFE_RUNTIME_ID, MAYA_UFE_SEPARATOR));
 #endif
 }
-#endif
 
 std::atomic<int> MayaUsdProxyShapeBase::in_compute { 0 };
 

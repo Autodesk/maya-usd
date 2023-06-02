@@ -24,6 +24,7 @@
 #include <hdMaya/delegates/sceneDelegate.h>
 #include <hdMaya/utils.h>
 #include <mayaUsd/render/px_vp20/utils.h>
+#include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/utils/hash.h>
 
 #include <pxr/base/gf/matrix4d.h>
@@ -45,30 +46,26 @@
 #include <maya/MConditionMessage.h>
 #include <maya/MDrawContext.h>
 #include <maya/MEventMessage.h>
+#include <maya/MFileIO.h>
 #include <maya/MGlobal.h>
 #include <maya/MNodeMessage.h>
 #include <maya/MSceneMessage.h>
 #include <maya/MSelectionList.h>
 #include <maya/MTimerMessage.h>
 #include <maya/MUiMessage.h>
+#include <ufe/globalSelection.h>
+#include <ufe/observableSelection.h>
+#include <ufe/path.h>
 
 #include <atomic>
 #include <chrono>
 #include <exception>
 #include <limits>
 
-#if WANT_UFE_BUILD
-#include <mayaUsd/ufe/Global.h>
-
-#include <maya/MFileIO.h>
-#include <ufe/globalSelection.h>
-#include <ufe/observableSelection.h>
-#include <ufe/path.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/pathString.h>
 #endif
 #include <ufe/selectionNotification.h>
-#endif // WANT_UFE_BUILD
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -79,8 +76,6 @@ namespace {
 // extra speed loss should be fine, and I'd rather be safe.
 std::mutex                       _allInstancesMutex;
 std::vector<MtohRenderOverride*> _allInstances;
-
-#if WANT_UFE_BUILD
 
 // Observe UFE scene items for transformation changed only when they are
 // selected.
@@ -117,8 +112,6 @@ public:
 private:
     MtohRenderOverride& _mtohRenderOverride;
 };
-
-#endif // WANT_UFE_BUILD
 
 //! \brief  Get the index of the hit nearest to a given cursor point.
 int GetNearestHitIndex(
@@ -244,24 +237,20 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
         _allInstances.push_back(this);
     }
 
-#if WANT_UFE_BUILD
     const UFE_NS::GlobalSelection::Ptr& ufeSelection = UFE_NS::GlobalSelection::get();
     if (ufeSelection) {
         _ufeSelectionObserver = std::make_shared<UfeSelectionObserver>(*this);
         ufeSelection->addObserver(_ufeSelectionObserver);
     }
-#endif // WANT_UFE_BUILD
 }
 
 MtohRenderOverride::~MtohRenderOverride()
 {
-#if WANT_UFE_BUILD
     const Ufe::GlobalSelection::Ptr& ufeSelection = Ufe::GlobalSelection::get();
     if (ufeSelection) {
         ufeSelection->removeObserver(_ufeSelectionObserver);
         _ufeSelectionObserver = nullptr;
     }
-#endif // WANT_UFE_BUILD
 
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
         .Msg(
@@ -866,12 +855,9 @@ void MtohRenderOverride::_SelectionChanged()
     SdfPathVector selectedPaths;
     auto          selection = std::make_shared<HdSelection>();
 
-#if WANT_UFE_BUILD
     const UFE_NS::GlobalSelection::Ptr& ufeSelection = UFE_NS::GlobalSelection::get();
-#endif // WANT_UFE_BUILD
 
     for (auto& it : _delegates) {
-#if WANT_UFE_BUILD
         if (it->SupportsUfeSelection()) {
             if (ufeSelection) {
                 it->PopulateSelectedPaths(*ufeSelection, selectedPaths, selection);
@@ -879,7 +865,6 @@ void MtohRenderOverride::_SelectionChanged()
             // skip non-ufe PopulateSelectedPaths call
             continue;
         }
-#endif // WANT_UFE_BUILD
         it->PopulateSelectedPaths(sel, selectedPaths, selection);
     }
     _selectionCollection.SetRootPaths(selectedPaths);
