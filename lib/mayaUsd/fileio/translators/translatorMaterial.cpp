@@ -194,9 +194,9 @@ _GetUVBindingsFromMaterial(const UsdShadeMaterial& material, UsdMayaPrimReaderCo
         if (!val.IsHolding<TfToken>() && !val.IsHolding<std::string>()) {
             continue;
         }
-        SdfPath           nodePath = isMergeable
-                      ? material.GetBaseMaterial().GetPath().AppendChild(TfToken(splitName[1]))
-                      : material.GetPath().AppendChild(TfToken(splitName[1]));
+        SdfPath nodePath = isMergeable
+            ? material.GetBaseMaterial().GetPath().AppendChild(TfToken(splitName[1]))
+            : material.GetPath().AppendChild(TfToken(splitName[1]));
         MObject           mayaNode = context->GetMayaNode(nodePath, false);
         MStatus           status;
         MFnDependencyNode depFn(mayaNode, &status);
