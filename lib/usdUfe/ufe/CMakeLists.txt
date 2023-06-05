@@ -14,12 +14,15 @@ target_sources(${PROJECT_NAME}
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
+            UsdObject3d.cpp
+            UsdObject3dHandler.cpp
             UsdUndoableCommand.cpp
             UsdUndoAddNewPrimCommand.cpp
             UsdUndoCreateGroupCommand.cpp
             UsdUndoInsertChildCommand.cpp
             UsdUndoReorderCommand.cpp
             UsdUndoSetKindCommand.cpp
+            UsdUndoVisibleCommand.cpp
     )
 endif()
 
@@ -43,12 +46,15 @@ set(HEADERS
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND HEADERS
+        UsdObject3d.h
+        UsdObject3dHandler.h
         UsdUndoableCommand.h
         UsdUndoAddNewPrimCommand.h
         UsdUndoCreateGroupCommand.h
         UsdUndoInsertChildCommand.h
         UsdUndoReorderCommand.h
         UsdUndoSetKindCommand.h
+        UsdUndoVisibleCommand.h
     )
 endif()
 

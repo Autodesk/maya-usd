@@ -17,7 +17,10 @@
 #define MAYA_USD_EDITABILITY_H
 
 #include <pxr/base/tf/token.h>
+#include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/property.h>
+
+#include <string.h>
 
 namespace MAYAUSD_NS_DEF {
 
@@ -28,6 +31,11 @@ namespace Editability {
 /*! \brief  Verify if a property is locked.
  */
 bool isLocked(PXR_NS::UsdProperty property);
+
+/*! \brief Verify is an attribute is locked, optionally setting error message.
+ */
+bool isAttributeLocked(const PXR_NS::UsdAttribute& attr, std::string* errMsg);
+
 } // namespace Editability
 
 } // namespace MAYAUSD_NS_DEF

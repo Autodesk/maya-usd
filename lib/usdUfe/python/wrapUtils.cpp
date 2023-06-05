@@ -56,10 +56,20 @@ int _ufePathToInstanceIndex(const std::string& ufePathString)
     return UsdUfe::ufePathToInstanceIndex(Ufe::PathString::path(ufePathString));
 }
 
-
 bool _isEditTargetLayerModifiable(const PXR_NS::UsdStageWeakPtr stage)
 {
     return UsdUfe::isEditTargetLayerModifiable(stage);
+}
+
+PXR_NS::UsdTimeCode _getTime(const std::string& pathStr)
+{
+    const Ufe::Path path = Ufe::PathString::path(pathStr);
+    return UsdUfe::getTime(path);
+}
+
+bool _isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
+{
+    return UsdUfe::isAttributeEditAllowed(attr);
 }
 
 void wrapUtils()
@@ -75,4 +85,6 @@ void wrapUtils()
     def("ufePathToPrim", _ufePathToPrim);
     def("ufePathToInstanceIndex", _ufePathToInstanceIndex);
     def("isEditTargetLayerModifiable", _isEditTargetLayerModifiable);
+    def("getTime", _getTime);
+    def("isAttributeEditAllowed", _isAttributeEditAllowed);
 }

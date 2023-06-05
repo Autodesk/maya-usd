@@ -16,12 +16,11 @@
 #pragma once
 
 #include <usdUfe/base/api.h>
-
-#include <ufe/ufe.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <ufe/path.h>
 #include <ufe/scene.h>
+#include <ufe/ufe.h>
 
 #include <string>
 
@@ -33,7 +32,10 @@ UFE_NS_DEF
 
 namespace USDUFE_NS_DEF {
 
+// DCC specific accessor functions.
 typedef PXR_NS::UsdPrim (*UfePathToPrimFn)(const Ufe::Path&);
+typedef PXR_NS::UsdTimeCode (*TimeAccessorFn)(const Ufe::Path&);
+typedef bool (*IsAttributeLockedFn)(const PXR_NS::UsdAttribute& attr, std::string* errMsg);
 
 //------------------------------------------------------------------------------
 // Helper functions
@@ -54,6 +56,28 @@ void setUfePathToPrimFn(UfePathToPrimFn fn);
 //! Return the USD prim corresponding to the argument UFE path.
 USDUFE_PUBLIC
 PXR_NS::UsdPrim ufePathToPrim(const Ufe::Path& path);
+
+//! Set the DCC specific time accessor function.
+//! It cannot be empty.
+//! \excpection std::invalid_argument if fn is empty.
+USDUFE_PUBLIC
+void setTimeAccessorFn(TimeAccessorFn fn);
+
+//! Get the time along the argument path.
+USDUFE_PUBLIC
+PXR_NS::UsdTimeCode getTime(const Ufe::Path& path);
+
+//! Set the DCC specific USD attributed is locked test function.
+//! Use of this function is optional, if one is not supplied then
+//! default value (false) will be returned by accessor function.
+USDUFE_PUBLIC
+void setIsAttributeLockedFn(IsAttributeLockedFn fn);
+
+//! Return whether the input USD attribute is locked and therefore cannot
+//! be edited.
+//! \return True if the USD attributed is locked, otherwise false (default).
+USDUFE_PUBLIC
+bool isAttributedLocked(const PXR_NS::UsdAttribute& attr, std::string* errMsg = nullptr);
 
 //! Return the instance index corresponding to the argument UFE path if it
 //! represents a point instance.
@@ -93,6 +117,52 @@ inline UsdSceneItem::Ptr downcast(const Ufe::SceneItem::Ptr& item)
 {
     return std::dynamic_pointer_cast<UsdSceneItem>(item);
 }
+
+//------------------------------------------------------------------------------
+// Verify edit restrictions.
+//------------------------------------------------------------------------------
+
+//! Check if an attribute value is allowed to be changed.
+//! \return True, if the attribute value is allowed to be edited in the stage's local Layer Stack.
+USDUFE_PUBLIC
+bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMsg = nullptr);
+
+USDUFE_PUBLIC
+bool isAttributeEditAllowed(
+    const PXR_NS::UsdPrim& prim,
+    const PXR_NS::TfToken& attrName,
+    std::string*           errMsg);
+
+USDUFE_PUBLIC
+bool isAttributeEditAllowed(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName);
+
+//! Enforce if an attribute value is allowed to be changed. Throw an exceptio if not allowed.
+USDUFE_PUBLIC
+void enforceAttributeEditAllowed(const PXR_NS::UsdAttribute& attr);
+
+USDUFE_PUBLIC
+void enforceAttributeEditAllowed(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName);
+
+//! Check if a prim metadata is allowed to be changed.
+//! Can check a specific key in a metadata dictionary, optionally, if keyPaty is not empty.
+//! \return True, if the metadata value is allowed to be edited in the stage's local Layer Stack.
+USDUFE_PUBLIC
+bool isPrimMetadataEditAllowed(
+    const PXR_NS::UsdPrim& prim,
+    const PXR_NS::TfToken& metadataName,
+    const PXR_NS::TfToken& keyPath,
+    std::string*           errMsg);
+
+//! Check if a property metadata is allowed to be changed.
+//! Can check a specific key in a metadata dictionary, optionally, if keyPaty is not empty.
+//! \return True, if the metadata value is allowed to be edited in the stage's local Layer Stack.
+USDUFE_PUBLIC
+bool isPropertyMetadataEditAllowed(
+    const PXR_NS::UsdPrim& prim,
+    const PXR_NS::TfToken& propName,
+    const PXR_NS::TfToken& metadataName,
+    const PXR_NS::TfToken& keyPath,
+    std::string*           errMsg);
 
 //! Apply restriction rules on the given prim
 USDUFE_PUBLIC

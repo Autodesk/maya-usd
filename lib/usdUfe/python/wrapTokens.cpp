@@ -13,15 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <pxr/base/tf/pyModule.h>
+
+#include <usdUfe/base/tokens.h>
+
+#include <pxr/base/tf/pyStaticTokens.h>
 #include <pxr/pxr.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE
+void wrapTokens()
 {
-    TF_WRAP(EditRouter);
-    TF_WRAP(Global);
-    TF_WRAP(Tokens);
-    TF_WRAP(Utils);
+    TF_PY_WRAP_PUBLIC_TOKENS("EditRoutingTokens", EditRoutingTokens, USDUFE_EDIT_ROUTING_TOKENS);
 }

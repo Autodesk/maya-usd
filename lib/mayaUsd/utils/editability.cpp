@@ -46,5 +46,18 @@ bool isLocked(PXR_NS::UsdProperty property)
     }
 }
 
+bool isAttributeLocked(const PXR_NS::UsdAttribute& attr, std::string* errMsg)
+{
+    if (isLocked(attr)) {
+        if (errMsg) {
+            *errMsg = TfStringPrintf(
+                "Cannot edit [%s] attribute because its lock metadata is [on].",
+                attr.GetBaseName().GetText());
+        }
+        return true;
+    }
+    return false;
+}
+
 } // namespace Editability
 } // namespace MAYAUSD_NS_DEF

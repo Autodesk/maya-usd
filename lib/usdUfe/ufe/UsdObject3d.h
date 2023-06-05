@@ -7,20 +7,24 @@
 // ===========================================================================
 #pragma once
 
-#include <mayaUsd/base/api.h>
-
+#include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 
-#include <ufe/object3d.h>
+#include <pxr/base/gf/bbox3d.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/timeCode.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+#include <ufe/object3d.h>
+#include <ufe/path.h>
+
+namespace USDUFE_NS_DEF {
 
 //! \brief USD run-time 3D object interface
 /*!
     This class implements the Object3d interface for USD prims.
 */
-class MAYAUSD_CORE_PUBLIC UsdObject3d : public Ufe::Object3d
+class USDUFE_PUBLIC UsdObject3d : public Ufe::Object3d
 {
 public:
     using Ptr = std::shared_ptr<UsdObject3d>;
@@ -37,6 +41,18 @@ public:
     //! Create a UsdObject3d.
     static UsdObject3d::Ptr create(const UsdSceneItem::Ptr& item);
 
+    PXR_NS::UsdPrim prim() const { return fPrim; }
+
+    // DCC specific helpers:
+
+    //! Return the non-default purposes of the gateway node along the
+    //! argument path.
+    //! The default purpose is not returned, and is considered implicit.
+    virtual PXR_NS::TfTokenVector getPurposes(const Ufe::Path& path) const;
+
+    //! Adjust the input bounding box extents for the given runtime.
+    virtual void adjustBBoxExtents(PXR_NS::GfBBox3d& bbox, const PXR_NS::UsdTimeCode time) const;
+
     // Ufe::Object3d overrides
     Ufe::SceneItem::Ptr       sceneItem() const override;
     Ufe::BBox3d               boundingBox() const override;
@@ -50,5 +66,4 @@ private:
 
 }; // UsdObject3d
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

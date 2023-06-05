@@ -238,51 +238,5 @@ private:
     mutable std::map<PXR_NS::SdfPath, MObject> _primToLayerMap;
 };
 
-//------------------------------------------------------------------------------
-// Verify edit restrictions.
-//------------------------------------------------------------------------------
-
-//! Check if an attribute value is allowed to be changed.
-//! \return True, if the attribute value is allowed to be edited in the stage's local Layer Stack.
-MAYAUSD_CORE_PUBLIC
-bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMsg = nullptr);
-
-MAYAUSD_CORE_PUBLIC
-bool isAttributeEditAllowed(
-    const PXR_NS::UsdPrim& prim,
-    const PXR_NS::TfToken& attrName,
-    std::string*           errMsg);
-
-MAYAUSD_CORE_PUBLIC
-bool isAttributeEditAllowed(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName);
-
-//! Enforce if an attribute value is allowed to be changed. Throw an exceptio if not allowed.
-MAYAUSD_CORE_PUBLIC
-void enforceAttributeEditAllowed(const PXR_NS::UsdAttribute& attr);
-
-MAYAUSD_CORE_PUBLIC
-void enforceAttributeEditAllowed(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName);
-
-//! Check if a prim metadata is allowed to be changed.
-//! Can check a specific key in a metadata dictionary, optionally, if keyPaty is not empty.
-//! \return True, if the metadata value is allowed to be edited in the stage's local Layer Stack.
-MAYAUSD_CORE_PUBLIC
-bool isPrimMetadataEditAllowed(
-    const PXR_NS::UsdPrim& prim,
-    const PXR_NS::TfToken& metadataName,
-    const PXR_NS::TfToken& keyPath,
-    std::string*           errMsg);
-
-//! Check if a property metadata is allowed to be changed.
-//! Can check a specific key in a metadata dictionary, optionally, if keyPaty is not empty.
-//! \return True, if the metadata value is allowed to be edited in the stage's local Layer Stack.
-MAYAUSD_CORE_PUBLIC
-bool isPropertyMetadataEditAllowed(
-    const PXR_NS::UsdPrim& prim,
-    const PXR_NS::TfToken& propName,
-    const PXR_NS::TfToken& metadataName,
-    const PXR_NS::TfToken& keyPath,
-    std::string*           errMsg);
-
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

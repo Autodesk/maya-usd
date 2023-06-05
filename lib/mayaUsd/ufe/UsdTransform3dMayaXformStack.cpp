@@ -22,6 +22,7 @@
 #include <mayaUsd/ufe/UsdTransform3dUndoableCommands.h>
 #include <mayaUsd/ufe/Utils.h>
 
+#include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
 
@@ -787,11 +788,11 @@ bool UsdTransform3dMayaXformStack::isAttributeEditAllowed(
     PXR_NS::UsdAttribute attr;
     if (!attrName.IsEmpty())
         attr = prim().GetAttribute(attrName);
-    if (attr && !MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg)) {
+    if (attr && !UsdUfe::isAttributeEditAllowed(attr, &errMsg)) {
         return false;
     } else if (!attr) {
         UsdGeomXformable xformable(prim());
-        if (!MayaUsd::ufe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
+        if (!UsdUfe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
             return false;
         }
     }

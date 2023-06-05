@@ -163,23 +163,6 @@ static Ufe::Path _UfeV1StringToUsdPath(const std::string& ufePathString)
 }
 #endif
 
-PXR_NS::UsdTimeCode _getTime(const std::string& pathStr)
-{
-    const Ufe::Path path =
-#ifdef UFE_V2_FEATURES_AVAILABLE
-        Ufe::PathString::path(
-#else
-        _UfeV1StringToUsdPath(
-#endif
-            pathStr);
-    return ufe::getTime(path);
-}
-
-bool _isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
-{
-    return ufe::isAttributeEditAllowed(attr);
-}
-
 PXR_NS::TfTokenVector _getProxyShapePurposes(const std::string& ufePathString)
 {
     auto path =
@@ -235,7 +218,5 @@ void wrapUtils()
     def("usdPathToUfePathSegment",
         _usdPathToUfePathSegment,
         (arg("usdPath"), arg("instanceIndex") = PXR_NS::UsdImagingDelegate::ALL_INSTANCES));
-    def("getTime", _getTime);
     def("getProxyShapePurposes", _getProxyShapePurposes);
-    def("isAttributeEditAllowed", _isAttributeEditAllowed);
 }

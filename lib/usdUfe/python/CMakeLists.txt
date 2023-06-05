@@ -19,6 +19,7 @@ target_sources(${PYTHON_TARGET_NAME}
         module.cpp
         wrapEditRouter.cpp
         wrapGlobal.cpp
+        wrapTokens.cpp
         wrapUtils.cpp
 )
 
