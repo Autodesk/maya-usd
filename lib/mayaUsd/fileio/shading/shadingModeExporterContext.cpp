@@ -540,9 +540,8 @@ public:
 
             switch (splitName.size()) {
             case 3: _nodesWithUVInput.push_back(TfToken(splitName[1])); break;
-            default
-                : // NOTE: (yliangsiew) Means that we have a Maya node with a namespace/multiple
-                  // namespaces.
+            default: // NOTE: (yliangsiew) Means that we have a Maya node with a namespace/multiple
+                     // namespaces.
             {
                 std::string mayaNodeName = splitName[1];
                 for (size_t i = 2; i < splitName.size() - 1; ++i) {
@@ -748,10 +747,28 @@ VtIntArray _AssignComponentTags(
             const auto  infoIt = subsetInfoDict.find(ssName);
             if (infoIt != subsetInfoDict.cend()) {
                 // Check candidate:
+                if (!infoIt->second.IsObject()) {
+                    TF_RUNTIME_ERROR(
+                        "Invalid GeomSubset roundtrip info on node '%s': "
+                        "info for subset '%s' is not a dictionary.",
+                        UsdMayaUtil::GetMayaNodeName(geomHandle.object()).c_str(),
+                        ssName.c_str());
+                    continue;
+                }
                 const auto& geomSubsetInfo = infoIt->second.GetJsObject();
                 const auto  uuidIt = geomSubsetInfo.find(UsdMayaGeomSubsetTokens->MaterialUuidKey);
-                if (uuidIt == geomSubsetInfo.cend()
-                    || uuidIt->second.GetString() != shadingGroupUUID) {
+                if (uuidIt == geomSubsetInfo.cend()) {
+                    continue;
+                }
+                if (!uuidIt->second.IsString()) {
+                    TF_RUNTIME_ERROR(
+                        "Invalid GeomSubset roundtrip info on node '%s': "
+                        "material info for subset '%s' is not a string.",
+                        UsdMayaUtil::GetMayaNodeName(geomHandle.object()).c_str(),
+                        ssName.c_str());
+                    continue;
+                }
+                if (uuidIt->second.GetString() != shadingGroupUUID) {
                     continue;
                 }
 

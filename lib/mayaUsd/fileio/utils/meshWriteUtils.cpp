@@ -1442,10 +1442,26 @@ MStatus UsdMayaMeshWriteUtils::exportComponentTags(UsdGeomMesh& primSchema, MObj
                     TfToken    familyName = UsdMayaGeomSubsetTokens->ComponentTagFamilyName;
                     const auto subsetIt = subsetInfoDict.find(keys[i].asChar());
                     if (subsetIt != subsetInfoDict.cend()) {
-                        const auto& subsetInfo = subsetIt->second.GetJsObject();
-                        const auto  familyInfo = subsetInfo.find("familyName");
-                        if (familyInfo != subsetInfo.cend()) {
-                            familyName = TfToken(familyInfo->second.GetString());
+                        if (subsetIt->second.IsObject()) {
+                            const auto& subsetInfo = subsetIt->second.GetJsObject();
+                            const auto  familyInfo = subsetInfo.find("familyName");
+                            if (familyInfo != subsetInfo.cend()) {
+                                if (familyInfo->second.IsString()) {
+                                    familyName = TfToken(familyInfo->second.GetString());
+                                } else {
+                                    TF_RUNTIME_ERROR(
+                                        "Invalid GeomSubset roundtrip info on node '%s': "
+                                        "familyName for subset '%s' is not a string.",
+                                        UsdMayaUtil::GetMayaNodeName(obj).c_str(),
+                                        keys[i].asChar());
+                                }
+                            }
+                        } else {
+                            TF_RUNTIME_ERROR(
+                                "Invalid GeomSubset roundtrip info on node '%s': "
+                                "info for subset '%s' is not a dictionary.",
+                                UsdMayaUtil::GetMayaNodeName(obj).c_str(),
+                                keys[i].asChar());
                         }
                     }
                     UsdGeomSubset ss = UsdGeomSubset::CreateGeomSubset(

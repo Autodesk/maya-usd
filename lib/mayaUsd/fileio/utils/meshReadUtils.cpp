@@ -902,8 +902,24 @@ bool UsdMayaMeshReadUtils::getGeomSubsetInfo(const MObject& mesh, JsValue& meshR
         JsParseError error;
         JsValue      value = JsParseString(plug.asString().asChar(), &error);
         if (value) {
+            // That value must be a dictionary:
+            if (!value.IsObject()) {
+                TF_RUNTIME_ERROR(
+                    "Invalid GeomSubset roundtrip info on node '%s': "
+                    "does not parse to a dictionary.",
+                    UsdMayaUtil::GetMayaNodeName(mesh).c_str());
+                return false;
+            }
             meshRoundtripData = value;
             return true;
+        } else {
+            TF_RUNTIME_ERROR(
+                "Failed to parse GeomSubset JSON roundtrip info on node '%s' "
+                "at line %d, column %d: %s",
+                UsdMayaUtil::GetMayaNodeName(mesh).c_str(),
+                error.line,
+                error.column,
+                error.reason.c_str());
         }
     }
 

@@ -194,9 +194,9 @@ _GetUVBindingsFromMaterial(const UsdShadeMaterial& material, UsdMayaPrimReaderCo
         if (!val.IsHolding<TfToken>() && !val.IsHolding<std::string>()) {
             continue;
         }
-        SdfPath nodePath = isMergeable
-            ? material.GetBaseMaterial().GetPath().AppendChild(TfToken(splitName[1]))
-            : material.GetPath().AppendChild(TfToken(splitName[1]));
+        SdfPath           nodePath = isMergeable
+                      ? material.GetBaseMaterial().GetPath().AppendChild(TfToken(splitName[1]))
+                      : material.GetPath().AppendChild(TfToken(splitName[1]));
         MObject           mayaNode = context->GetMayaNode(nodePath, false);
         MStatus           status;
         MFnDependencyNode depFn(mayaNode, &status);
@@ -437,10 +437,26 @@ bool UsdMayaTranslatorMaterial::AssignMaterial(
             JsObject updatedInfo;
 
             for (auto&& ssInfoIt : meshRoundtrippingInfo) {
+                if (!ssInfoIt.second.IsObject()) {
+                    TF_RUNTIME_ERROR(
+                        "Invalid GeomSubset roundtrip info on node '%s': "
+                        "info for subset '%s' is not a dictionary.",
+                        UsdMayaUtil::GetMayaNodeName(shapeObj).c_str(),
+                        ssInfoIt.first.c_str());
+                    continue;
+                }
                 JsObject subsetRoundtrippingInfo = ssInfoIt.second.GetJsObject();
                 auto     materialIt
                     = subsetRoundtrippingInfo.find(UsdMayaGeomSubsetTokens->MaterialPathKey);
                 if (materialIt != subsetRoundtrippingInfo.cend()) {
+                    if (!materialIt->second.IsString()) {
+                        TF_RUNTIME_ERROR(
+                            "Invalid GeomSubset roundtrip info on node '%s': "
+                            "material path for subset '%s' is not a string.",
+                            UsdMayaUtil::GetMayaNodeName(shapeObj).c_str(),
+                            ssInfoIt.first.c_str());
+                        continue;
+                    }
                     SdfPath materialPath(materialIt->second.GetString());
                     MObject materialObj = context->GetMayaNode(materialPath, false);
                     if (!materialObj.isNull()) {
