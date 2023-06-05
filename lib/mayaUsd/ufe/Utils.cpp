@@ -15,16 +15,16 @@
 //
 #include "Utils.h"
 
-#ifdef UFE_V3_FEATURES_AVAILABLE
-#include <mayaUsd/fileio/primUpdaterManager.h>
-#endif
-
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/utils/editability.h>
 #include <mayaUsd/utils/util.h>
+
+#ifdef UFE_V3_FEATURES_AVAILABLE
+#include <mayaUsd/fileio/primUpdaterManager.h>
+#endif
 
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/utils/layers.h>
