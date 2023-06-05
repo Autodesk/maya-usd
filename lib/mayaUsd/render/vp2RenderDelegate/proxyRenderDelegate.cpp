@@ -78,9 +78,7 @@
 #include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <ufe/globalSelection.h>
-#ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/namedSelection.h>
-#endif
 #include <ufe/observableSelection.h>
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
 #include <ufe/pathString.h>
@@ -723,11 +721,7 @@ void ProxyRenderDelegate::_InitRenderDelegate()
                 globalSelection->addObserver(_observer);
             }
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
             Ufe::Scene::instance().addObserver(_observer);
-#else
-            Ufe::Scene::instance().addObjectAddObserver(_observer);
-#endif
         }
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
@@ -1387,7 +1381,6 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     // searching optionVars for each intersection.
     const TfToken&                   selectionKind = _selectionKind;
     const UsdPointInstancesPickMode& pointInstancesPickMode = _pointInstancesPickMode;
-    const MGlobal::ListAdjustment&   listAdjustment = _globalListAdjustment;
 
     UsdPrim       prim = _proxyShapeData->UsdStage()->GetPrimAtPath(usdPath);
     const UsdPrim topLevelPrim = _proxyShapeData->UsdStage()->GetPrimAtPath(topLevelPath);
@@ -1464,32 +1457,8 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         return false;
     }
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
-    TF_UNUSED(listAdjustment);
-
     auto ufeSel = Ufe::NamedSelection::get("MayaSelectTool");
     ufeSel->append(si);
-#else
-    auto    globalSelection = Ufe::GlobalSelection::get();
-
-    switch (listAdjustment) {
-    case MGlobal::kReplaceList:
-        // The list has been cleared before viewport selection runs, so we
-        // can add the new hits directly. UFE selection list is a superset
-        // of Maya selection list, calling clear()/replaceWith() on UFE
-        // selection list would clear Maya selection list.
-        globalSelection->append(si);
-        break;
-    case MGlobal::kAddToList: globalSelection->append(si); break;
-    case MGlobal::kRemoveFromList: globalSelection->remove(si); break;
-    case MGlobal::kXORWithList:
-        if (!globalSelection->remove(si)) {
-            globalSelection->append(si);
-        }
-        break;
-    default: TF_WARN("Unexpected MGlobal::ListAdjustment enum for selection."); break;
-    }
-#endif
 
     return true;
 }

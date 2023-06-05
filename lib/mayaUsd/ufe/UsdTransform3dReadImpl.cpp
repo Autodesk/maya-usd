@@ -30,7 +30,6 @@ UsdTransform3dReadImpl::UsdTransform3dReadImpl(const UsdSceneItem::Ptr& item)
 {
 }
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::Matrix4d UsdTransform3dReadImpl::matrix() const
 {
     GfMatrix4d       m(1);
@@ -47,7 +46,6 @@ Ufe::Matrix4d UsdTransform3dReadImpl::matrix() const
 
     return toUfe(m);
 }
-#endif
 
 Ufe::Matrix4d UsdTransform3dReadImpl::segmentInclusiveMatrix() const
 {

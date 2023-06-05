@@ -95,7 +95,6 @@ const Ufe::Path& UsdTransform3d::path() const { return fItem->path(); }
 
 Ufe::SceneItem::Ptr UsdTransform3d::sceneItem() const { return fItem; }
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd(double x, double y, double z)
 {
     if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))) {
@@ -104,7 +103,6 @@ Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd(double x, double
 
     return UsdTranslateUndoableCommand::create(path(), x, y, z);
 }
-#endif
 
 void UsdTransform3d::translate(double x, double y, double z)
 {
@@ -127,7 +125,6 @@ Ufe::Vector3d UsdTransform3d::translation() const
     return Ufe::Vector3d(x, y, z);
 }
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::Vector3d UsdTransform3d::rotation() const
 {
     double        x { 0 }, y { 0 }, z { 0 };
@@ -168,14 +165,12 @@ Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd(double x, double y, do
 
     return UsdRotateUndoableCommand::create(path(), x, y, z);
 }
-#endif
 
 void UsdTransform3d::rotate(double x, double y, double z)
 {
     rotateOp(prim(), fItem->path(), x, y, z);
 }
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd(double x, double y, double z)
 {
     if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
@@ -185,36 +180,6 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd(double x, double y, doub
     return UsdScaleUndoableCommand::create(path(), x, y, z);
 }
 
-#else
-Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd()
-{
-    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))) {
-        return nullptr;
-    }
-
-    return UsdTranslateUndoableCommand::create(fItem, 0, 0, 0);
-}
-
-Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd()
-{
-    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"))) {
-        return nullptr;
-    }
-
-    return UsdRotateUndoableCommand::create(fItem, 0, 0, 0);
-}
-
-Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd()
-{
-    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
-        return nullptr;
-    }
-
-    return UsdScaleUndoableCommand::create(fItem, 1, 1, 1);
-}
-#endif
-
-#ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::SetMatrix4dUndoableCommand::Ptr UsdTransform3d::setMatrixCmd(const Ufe::Matrix4d& m)
 {
     // TODO: HS Aug25,2020 dummy code to pass the compiler errors
@@ -240,19 +205,13 @@ Ufe::Matrix4d UsdTransform3d::matrix() const
 
     return convertFromUsd(m);
 }
-#endif
 
 void UsdTransform3d::scale(double x, double y, double z)
 {
     scaleOp(prim(), fItem->path(), x, y, z);
 }
 
-Ufe::TranslateUndoableCommand::Ptr
-#ifdef UFE_V2_FEATURES_AVAILABLE
-UsdTransform3d::rotatePivotCmd(double, double, double)
-#else
-UsdTransform3d::rotatePivotTranslateCmd()
-#endif
+Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::rotatePivotCmd(double, double, double)
 {
     if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:translate:pivot"))) {
         return nullptr;
@@ -260,23 +219,10 @@ UsdTransform3d::rotatePivotTranslateCmd()
 
     // As of 12-Oct-2020, setting rotate pivot on command creation
     // unsupported.  Use translate() method on returned command.
-    return UsdRotatePivotTranslateUndoableCommand::create(
-#ifdef UFE_V2_FEATURES_AVAILABLE
-        fItem->path()
-#else
-        prim(), fItem->path(), fItem
-#endif
-    );
+    return UsdRotatePivotTranslateUndoableCommand::create(fItem->path());
 }
 
-void
-#ifdef UFE_V2_FEATURES_AVAILABLE
-UsdTransform3d::rotatePivot(
-#else
-UsdTransform3d::rotatePivotTranslate(
-#endif
-    double x, double y, double z
-)
+void UsdTransform3d::rotatePivot(double x, double y, double z)
 {
     rotatePivotTranslateOp(prim(), path(), x, y, z);
 }
@@ -297,30 +243,15 @@ Ufe::Vector3d UsdTransform3d::rotatePivot() const
     return Ufe::Vector3d(x, y, z);
 }
 
-Ufe::TranslateUndoableCommand::Ptr
-#ifdef UFE_V2_FEATURES_AVAILABLE
-UsdTransform3d::scalePivotCmd(double, double, double)
-#else
-UsdTransform3d::scalePivotTranslateCmd()
-#endif
+Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::scalePivotCmd(double, double, double)
 {
     return nullptr;
 }
 
-void
-#ifdef UFE_V2_FEATURES_AVAILABLE
-UsdTransform3d::scalePivot(
-#else
-UsdTransform3d::scalePivotTranslate(
-#endif
-    double, double, double
-)
-{
-}
+void UsdTransform3d::scalePivot(double, double, double) { }
 
 Ufe::Vector3d UsdTransform3d::scalePivot() const { return rotatePivot(); }
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateRotatePivotCmd(double, double, double)
 {
     // USD common transform API does not support rotate pivot correction.
@@ -344,7 +275,6 @@ Ufe::Vector3d UsdTransform3d::scalePivotTranslation() const
     // USD common transform API does not support scale pivot correction.
     return Ufe::Vector3d(0, 0, 0);
 }
-#endif
 
 Ufe::Matrix4d UsdTransform3d::segmentInclusiveMatrix() const
 {

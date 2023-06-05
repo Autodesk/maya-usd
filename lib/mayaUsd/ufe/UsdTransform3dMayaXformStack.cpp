@@ -839,7 +839,7 @@ UsdTransform3dMayaXformStackHandler::transform3d(const Ufe::SceneItem::Ptr& item
 }
 
 Ufe::Transform3d::Ptr UsdTransform3dMayaXformStackHandler::editTransform3d(
-    const Ufe::SceneItem::Ptr& item UFE_V2(, const Ufe::EditTransform3dHint& hint)) const
+    const Ufe::SceneItem::Ptr& item, const Ufe::EditTransform3dHint& hint) const
 {
     // MAYA-109190: Moved the IsInstanceProxy() check here since it was causing the
     // camera framing not properly be applied.
@@ -865,8 +865,7 @@ Ufe::Transform3d::Ptr UsdTransform3dMayaXformStackHandler::editTransform3d(
         return nullptr;
     }
 
-    return createTransform3d(
-        item, [&]() { return _nextHandler->editTransform3d(item UFE_V2(, hint)); });
+    return createTransform3d(item, [&]() { return _nextHandler->editTransform3d(item, hint); });
 }
 
 } // namespace ufe

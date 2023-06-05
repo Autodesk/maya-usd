@@ -39,6 +39,7 @@
 #include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 #include <mayaUsd/ufe/Global.h>
+#include <mayaUsd/ufe/UsdTransform3dHandler.h>
 #include <mayaUsd/undo/MayaUsdUndoBlock.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/undoHelperCommand.h>
@@ -49,7 +50,10 @@
 
 #include <maya/MDrawRegistry.h>
 #include <maya/MFnPlugin.h>
+#include <maya/MGlobal.h>
+#include <maya/MPxCommand.h>
 #include <maya/MStatus.h>
+#include <ufe/runTimeMgr.h>
 
 #include <basePxrUsdPreviewSurface/usdPreviewSurfacePlugin.h>
 
@@ -58,17 +62,6 @@
 #if defined(WANT_QT_BUILD)
 #include <mayaUsdUI/ui/USDImportDialogCmd.h>
 #include <mayaUsdUI/ui/initStringResources.h>
-#endif
-
-#ifdef UFE_V2_FEATURES_AVAILABLE
-#include <mayaUsd/ufe/UsdTransform3dHandler.h>
-
-#include <ufe/runTimeMgr.h>
-
-// For Maya preview release 121 enabling and disabling of new Transform3d
-// functionality.  PPT, 1-Dec-2020.
-#include <maya/MGlobal.h>
-#include <maya/MPxCommand.h>
 #endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -434,7 +427,6 @@ MStatus uninitializePlugin(MObject obj)
     status = plugin.deregisterCommand(MayaUsd::MayaUsdUndoBlockCmd::commandName);
     CHECK_MSTATUS(status);
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
     status = plugin.deregisterCommand(ToggleTransform3d::commandName);
     if (!status) {
         status.perror(
@@ -448,7 +440,6 @@ MStatus uninitializePlugin(MObject obj)
 
     g_OldTransform3dHandler = nullptr;
     g_NewTransform3dHandler = nullptr;
-#endif
 
     status = MayaUsd::ufe::finalize();
     CHECK_MSTATUS(status);

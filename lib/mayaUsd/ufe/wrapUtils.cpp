@@ -26,12 +26,10 @@
 
 #include <ufe/path.h>
 #include <ufe/pathSegment.h>
+#include <ufe/pathString.h>
 #include <ufe/rtid.h>
 #include <ufe/runTimeMgr.h>
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
-#include <ufe/pathString.h>
-#endif
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdUndoCreateStageWithNewLayerCommand.h>
@@ -47,7 +45,6 @@
 using namespace MayaUsd;
 using namespace boost::python;
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 PXR_NS::UsdPrim getPrimFromRawItem(uint64_t rawItem)
 {
     Ufe::SceneItem*       item = reinterpret_cast<Ufe::SceneItem*>(rawItem);
@@ -77,7 +74,6 @@ std::string getNodeTypeFromRawItem(uint64_t rawItem)
     }
     return type;
 }
-#endif
 
 std::vector<PXR_NS::UsdStageRefPtr> _getAllStages()
 {
@@ -90,48 +86,9 @@ std::vector<PXR_NS::UsdStageRefPtr> _getAllStages()
     return output;
 }
 
-#ifndef UFE_V2_FEATURES_AVAILABLE
-// Helper function for UFE versions before version 2 for converting a path
-// string to a UFE path.
-static Ufe::Path _UfeV1StringToUsdPath(const std::string& ufePathString)
-{
-    Ufe::Path path;
-
-    // The path string is a list of segment strings separated by ',' comma
-    // separator.
-    auto segmentStrings = PXR_NS::TfStringTokenize(ufePathString, ",");
-
-    // If there are fewer than two segments, there cannot be a USD segment, so
-    // return an invalid path.
-    if (segmentStrings.size() < 2u) {
-        return path;
-    }
-
-    // We have the path string split into segments. Build up the Ufe::Path one
-    // segment at a time. The path segment separator is the first character
-    // of each segment. We know that USD's separator is '/' and Maya's
-    // separator is '|', so use a map to get the corresponding UFE run-time ID.
-    static std::map<char, Ufe::Rtid> sepToRtid
-        = { { '/', ufe::getUsdRunTimeId() }, { '|', ufe::getMayaRunTimeId() } };
-    for (size_t i = 0u; i < segmentStrings.size(); ++i) {
-        const auto& segmentString = segmentStrings[i];
-        char        sep = segmentString[0u];
-        path = path + Ufe::PathSegment(segmentString, sepToRtid.at(sep), sep);
-    }
-
-    return path;
-}
-#endif
-
 PXR_NS::TfTokenVector _getProxyShapePurposes(const std::string& ufePathString)
 {
-    auto path =
-#ifdef UFE_V2_FEATURES_AVAILABLE
-        Ufe::PathString::path(
-#else
-        _UfeV1StringToUsdPath(
-#endif
-            ufePathString);
+    auto path = Ufe::PathString::path(ufePathString);
     return ufe::getProxyShapePurposes(path);
 }
 
@@ -156,11 +113,9 @@ std::string createStageWithNewLayer(const std::string& parentPathString)
 
 void wrapUtils()
 {
-#ifdef UFE_V2_FEATURES_AVAILABLE
     def("getPrimFromRawItem", getPrimFromRawItem);
     def("getNodeNameFromRawItem", getNodeNameFromRawItem);
     def("getNodeTypeFromRawItem", getNodeTypeFromRawItem);
-#endif
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
     def("createStageWithNewLayer", createStageWithNewLayer);

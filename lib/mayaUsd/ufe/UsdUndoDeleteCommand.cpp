@@ -18,15 +18,12 @@
 #include "private/UfeNotifGuard.h"
 
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/utils/layers.h>
 #include <usdUfe/utils/usdUtils.h>
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/editContext.h>
-
-#ifdef UFE_V2_FEATURES_AVAILABLE
-#include <usdUfe/undo/UsdUndoBlock.h>
-#endif
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdAttributes.h>
@@ -48,7 +45,6 @@ UsdUndoDeleteCommand::Ptr UsdUndoDeleteCommand::create(const PXR_NS::UsdPrim& pr
     return std::make_shared<UsdUndoDeleteCommand>(prim);
 }
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 void UsdUndoDeleteCommand::execute()
 {
     if (!_prim.IsValid())
@@ -106,17 +102,6 @@ void UsdUndoDeleteCommand::redo()
 
     _undoableItem.redo();
 }
-#else
-void UsdUndoDeleteCommand::perform(bool state)
-{
-    UsdUfe::InAddOrDeleteOperation ad;
-    _prim.SetActive(state);
-}
-
-void UsdUndoDeleteCommand::undo() { perform(true); }
-
-void UsdUndoDeleteCommand::redo() { perform(false); }
-#endif
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

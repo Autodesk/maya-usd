@@ -18,26 +18,23 @@
 #include "private/UfeNotifGuard.h"
 
 #include <mayaUsd/ufe/MayaStagesSubject.h>
-#include <mayaUsd/ufe/ProxyShapeHandler.h>
-#include <mayaUsd/ufe/ProxyShapeHierarchyHandler.h>
-#include <mayaUsd/ufe/UsdSceneItemOpsHandler.h>
-#include <mayaUsd/ufe/UsdTransform3dHandler.h>
-#include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/utils/editability.h>
-
-#ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/MayaUsdObject3dHandler.h>
 #include <mayaUsd/ufe/ProxyShapeContextOpsHandler.h>
+#include <mayaUsd/ufe/ProxyShapeHandler.h>
+#include <mayaUsd/ufe/ProxyShapeHierarchyHandler.h>
 #include <mayaUsd/ufe/UsdAttributesHandler.h>
 #include <mayaUsd/ufe/UsdContextOpsHandler.h>
+#include <mayaUsd/ufe/UsdSceneItemOpsHandler.h>
 #include <mayaUsd/ufe/UsdTransform3dCommonAPI.h>
 #include <mayaUsd/ufe/UsdTransform3dFallbackMayaXformStack.h>
+#include <mayaUsd/ufe/UsdTransform3dHandler.h>
 #include <mayaUsd/ufe/UsdTransform3dMatrixOp.h>
 #include <mayaUsd/ufe/UsdTransform3dMayaXformStack.h>
 #include <mayaUsd/ufe/UsdTransform3dPointInstance.h>
 #include <mayaUsd/ufe/UsdUIInfoHandler.h>
 #include <mayaUsd/ufe/UsdUIUfeObserver.h>
-#endif
+#include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/utils/editability.h>
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #define HAVE_PATH_MAPPING
@@ -83,11 +80,8 @@
 
 #include <maya/MSceneMessage.h>
 #include <ufe/hierarchyHandler.h>
-#include <ufe/runTimeMgr.h>
-
-#ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/pathString.h>
-#endif
+#include <ufe/runTimeMgr.h>
 
 #include <cassert>
 #include <string>
@@ -122,11 +116,9 @@ Ufe::Rtid                g_MayaRtid = 0;
 // Keep a reference to it to restore on finalization.
 Ufe::HierarchyHandler::Ptr g_MayaHierarchyHandler;
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 // The normal Maya context ops handler, which we decorate for ProxyShape support.
 // Keep a reference to it to restore on finalization.
 Ufe::ContextOpsHandler::Ptr g_MayaContextOpsHandler;
-#endif
 
 #if UFE_SCENE_SEGMENT_SUPPORT
 // The normal Maya scene segment handler, which we decorate for ProxyShape support.
@@ -184,13 +176,10 @@ MStatus initialize()
     runTimeMgr.setHierarchyHandler(g_MayaRtid, proxyShapeHierHandler);
 #endif
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
     g_MayaContextOpsHandler = runTimeMgr.contextOpsHandler(g_MayaRtid);
     auto proxyShapeContextOpsHandler = ProxyShapeContextOpsHandler::create(g_MayaContextOpsHandler);
     runTimeMgr.setContextOpsHandler(g_MayaRtid, proxyShapeContextOpsHandler);
-#endif
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
     UsdUfe::Handlers          usdUfeHandlers;
     Ufe::RunTimeMgr::Handlers handlers;
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -324,8 +313,6 @@ MStatus initialize()
     runTimeMgr.setUIInfoHandler(g_MayaRtid, uiInfoHandler);
 #endif
 
-#endif /* UFE_V2_FEATURES_AVAILABLE */
-
 #if !defined(NDEBUG)
     assert(usdRtid != 0);
 #endif
@@ -333,7 +320,7 @@ MStatus initialize()
         return MS::kFailure;
 
     // Register for UFE string to path service using path component separator '/'
-    UFE_V2(Ufe::PathString::registerPathComponentSeparator(usdRtid, '/');)
+    Ufe::PathString::registerPathComponentSeparator(usdRtid, '/');
 
     // Initialize edit router registry with default routers.
     MayaUsd::registerMayaEditRouters();
@@ -354,14 +341,13 @@ MStatus finalize(bool exiting)
 
     // Restore the normal Maya hierarchy handler, and unregister.
     runTimeMgr.setHierarchyHandler(g_MayaRtid, g_MayaHierarchyHandler);
-#ifdef UFE_V2_FEATURES_AVAILABLE
     // Restore the normal Maya context ops handler (can be empty).
     if (g_MayaContextOpsHandler)
         runTimeMgr.setContextOpsHandler(g_MayaRtid, g_MayaContextOpsHandler);
     g_MayaContextOpsHandler.reset();
 
     MayaUsd::ufe::UsdUIUfeObserver::destroy();
-#endif
+
     UsdUfe::finalize(exiting);
     g_MayaHierarchyHandler.reset();
 

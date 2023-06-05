@@ -37,15 +37,7 @@ class MAYAUSD_CORE_PUBLIC UsdRotatePivotTranslateUndoableCommand
 public:
     typedef std::shared_ptr<UsdRotatePivotTranslateUndoableCommand> Ptr;
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
     UsdRotatePivotTranslateUndoableCommand(const Ufe::Path& path);
-#else
-    UsdRotatePivotTranslateUndoableCommand(
-        const PXR_NS::UsdPrim&     prim,
-        const Ufe::Path&           ufePath,
-        const Ufe::SceneItem::Ptr& item);
-#endif
-
     ~UsdRotatePivotTranslateUndoableCommand() override;
 
     // Delete the copy/move constructors assignment operators.
@@ -56,22 +48,14 @@ public:
     UsdRotatePivotTranslateUndoableCommand& operator=(UsdRotatePivotTranslateUndoableCommand&&)
         = delete;
 
-//! Create a UsdRotatePivotTranslateUndoableCommand from a USD prim, UFE path and UFE scene item.
-#ifdef UFE_V2_FEATURES_AVAILABLE
+    //! Create a UsdRotatePivotTranslateUndoableCommand from a USD prim, UFE path and UFE scene
+    //! item.
     static UsdRotatePivotTranslateUndoableCommand::Ptr create(const Ufe::Path& path);
-#else
-    static UsdRotatePivotTranslateUndoableCommand::Ptr
-         create(const PXR_NS::UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item);
-#endif
 
     // Ufe::TranslateUndoableCommand overrides
     void undo() override;
     void redo() override;
-#ifdef UFE_V2_FEATURES_AVAILABLE
     bool set(double x, double y, double z) override;
-#else
-    bool translate(double x, double y, double z) override;
-#endif
 
     inline PXR_NS::UsdPrim prim() const
     {
@@ -83,12 +67,9 @@ public:
     }
 
 private:
-    UFE_V2(UsdSceneItem::Ptr sceneItem() const;)
+    UsdSceneItem::Ptr sceneItem() const;
 
 private:
-#ifndef UFE_V2_FEATURES_AVAILABLE
-    PXR_NS::UsdPrim fPrim;
-#endif
     Ufe::Path                 fPath;
     mutable UsdSceneItem::Ptr fItem { nullptr };
     PXR_NS::UsdAttribute      fPivotAttrib;

@@ -56,16 +56,13 @@
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
 #include <ufe/path.h>
+#include <ufe/pathString.h>
+#include <ufe/selectionNotification.h>
 
 #include <atomic>
 #include <chrono>
 #include <exception>
 #include <limits>
-
-#ifdef UFE_V2_FEATURES_AVAILABLE
-#include <ufe/pathString.h>
-#endif
-#include <ufe/selectionNotification.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

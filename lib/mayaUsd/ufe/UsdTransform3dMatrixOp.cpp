@@ -413,7 +413,8 @@ UsdTransform3dMatrixOpHandler::transform3d(const Ufe::SceneItem::Ptr& item) cons
 }
 
 Ufe::Transform3d::Ptr UsdTransform3dMatrixOpHandler::editTransform3d(
-    const Ufe::SceneItem::Ptr& item UFE_V2(, const Ufe::EditTransform3dHint& hint)) const
+    const Ufe::SceneItem::Ptr&      item,
+    const Ufe::EditTransform3dHint& hint) const
 {
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
 
@@ -442,7 +443,7 @@ Ufe::Transform3d::Ptr UsdTransform3dMatrixOpHandler::editTransform3d(
 
     // If no matrix was found, pass on to the next handler.
     if (i == xformOps.cend()) {
-        return _nextHandler->editTransform3d(item UFE_V2(, hint));
+        return _nextHandler->editTransform3d(item, hint);
     }
 
     // If we've found a matrix op, but there is a more local non-matrix op in
@@ -453,7 +454,7 @@ Ufe::Transform3d::Ptr UsdTransform3dMatrixOpHandler::editTransform3d(
     // on to the next handler, since we can't handle them.
     return (findNonMatrix(i, xformOps) || (hint.type() == Ufe::EditTransform3dHint::RotatePivot)
             || (hint.type() == Ufe::EditTransform3dHint::ScalePivot))
-        ? _nextHandler->editTransform3d(item UFE_V2(, hint))
+        ? _nextHandler->editTransform3d(item, hint)
         : UsdTransform3dMatrixOp::create(usdItem, *i);
 }
 
