@@ -23,17 +23,13 @@
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
 
-using namespace std;
-using namespace boost::python;
-using namespace boost;
-
-PXR_NAMESPACE_USING_DIRECTIVE;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapRoundTripUtil()
 {
     typedef UsdMayaRoundTripUtil This;
-    scope                        RoundTripUtil
-        = class_<This>("RoundTripUtil", no_init)
+    boost::python::scope         RoundTripUtil
+        = boost::python::class_<This>("RoundTripUtil", boost::python::no_init)
               .def("IsAttributeUserAuthored", This::IsAttributeUserAuthored)
               .staticmethod("IsAttributeUserAuthored")
 

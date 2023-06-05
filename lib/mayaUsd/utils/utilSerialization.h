@@ -43,6 +43,9 @@ std::string getSceneFolder();
 MAYAUSD_CORE_PUBLIC
 std::string generateUniqueFileName(const std::string& basename);
 
+MAYAUSD_CORE_PUBLIC
+std::string generateUniqueLayerFileName(const std::string& basename, const SdfLayerRefPtr& layer);
+
 /*! \brief Queries the Maya optionVar that decides what the internal format
     of a .usd file should be, either "usdc" or "usda".
  */
@@ -88,6 +91,13 @@ struct LayerInfo
     MayaUsd::utils::LayerParent parent;
 };
 
+struct PathInfo
+{
+    std::string absolutePath;
+    bool        savePathAsRelative { false };
+    std::string customRelativeAnchor;
+};
+
 using LayerInfos = std::vector<LayerInfo>;
 
 struct StageLayersToSave
@@ -129,8 +139,7 @@ MAYAUSD_CORE_PUBLIC
 PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
     PXR_NS::UsdStageRefPtr stage,
     PXR_NS::SdfLayerRefPtr anonLayer,
-    const std::string&     path,
-    bool                   savePathAsRelative,
+    const PathInfo&        pathInfo,
     LayerParent            parent,
     std::string            formatArg = "");
 

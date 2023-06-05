@@ -66,7 +66,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((ConfirmExistingFileSave, "mayaUsd_ConfirmExistingFileSave"))     \
     /* optionVar to turn on or off async texture loading            */ \
     /* Notice that only newly opened USD stage would be affected.   */ \
-    ((DisableAsyncTextureLoading, "mayaUsd_DisableAsyncTextureLoading"))
+    ((DisableAsyncTextureLoading, "mayaUsd_DisableAsyncTextureLoading")) \
+    /* option var to remember if the stage in the layer editor is pinned. */ \
+    ((PinLayerEditorStage, "mayaUsd_PinLayerEditorStage"))
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(MayaUsdOptionVars, MAYAUSD_CORE_PUBLIC, MAYA_USD_OPTIONVAR_TOKENS);
@@ -122,24 +124,9 @@ TF_DECLARE_PUBLIC_TOKENS(MayaUsdTokens, MAYAUSD_CORE_PUBLIC, MAYA_USD_GENERIC_TO
 //
 // clang-format off
 #define MAYA_USD_EDIT_ROUTING_TOKENS                    \
-    /* Tokens shared by multiple edit routers        */ \
-                                                        \
-    /* Prim received in the context                  */ \
-    ((Prim, "prim"))                                    \
-    /* Layer received in the context                 */ \
-    ((Layer, "layer"))                                  \
-    /* Routing operation                             */ \
-    ((Operation, "operation"))                          \
-    /* Stage received in the context of some router  */ \
-    ((Stage, "stage"))                                  \
-                                                        \
     /* Routing operations                            */ \
                                                         \
     ((RouteCacheToUSD, "mayaReferencePush"))            \
-    ((RouteParent, "parent"))                           \
-    ((RouteDuplicate, "duplicate"))                     \
-    ((RouteVisibility, "visibility"))                   \
-    ((RouteAttribute, "attribute"))                     \
                                                         \
     /* Tokens for cache-to-USD routing               */ \
                                                         \

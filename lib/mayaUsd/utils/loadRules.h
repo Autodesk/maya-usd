@@ -26,20 +26,6 @@
 
 namespace MAYAUSD_NS_DEF {
 
-/*! \brief modify the stage load rules so that the rules governing fromPath are replicated for
- * destPath.
- */
-MAYAUSD_CORE_PUBLIC
-void duplicateLoadRules(
-    PXR_NS::UsdStage&      stage,
-    const PXR_NS::SdfPath& fromPath,
-    const PXR_NS::SdfPath& destPath);
-
-/*! \brief modify the stage load rules so that all rules governing the path are removed.
- */
-MAYAUSD_CORE_PUBLIC
-void removeRulesForPath(PXR_NS::UsdStage& stage, const PXR_NS::SdfPath& path);
-
 /*! \brief convert the stage load rules to a text format.
  */
 MAYAUSD_CORE_PUBLIC

@@ -1359,43 +1359,40 @@ class ParentCmdTestCase(unittest.TestCase):
             self.assertFalse(len(prim.GetStage().GetRootLayer().subLayerPaths)==0)
             layerId = prim.GetStage().GetRootLayer().subLayerPaths[0]
             layer = Sdf.Layer.Find(layerId)
-            # Make sure the destination exists in the target layer, otherwise
-            # SdfCopySpec will error.
-            Sdf.JustCreatePrimInLayer(layer, prim.GetPath())
             routingData['layer'] = layerId
 
         # Register our edit router which directs the parent edit to
         # higher-priority layer B, which is not the edit target.
         mayaUsd.lib.registerEditRouter('parent', firstSubLayer)
+        try:
+            # Check that layer B is empty.
+            bSubLayer = Sdf.Layer.Find(bSubLayerId)
+            self.assertEqual(filterUsdStr(bSubLayer.ExportToString()), '')
 
-        # Check that layer B is empty.
-        bSubLayer = Sdf.Layer.Find(bSubLayerId)
-        self.assertEqual(filterUsdStr(bSubLayer.ExportToString()), '')
+            # We select B and C, in order, and parent.  This parents B to C.
+            sn = ufe.GlobalSelection.get()
+            sn.clear()
+            b = ufe.Hierarchy.createItem(ufe.PathString.path(psPathStr+',/A/B'))
+            c = ufe.Hierarchy.createItem(ufe.PathString.path(psPathStr+',/C'))
+            sn.append(b)
+            sn.append(c)
 
-        # We select B and C, in order, and parent.  This parents B to C.
-        sn = ufe.GlobalSelection.get()
-        sn.clear()
-        b = ufe.Hierarchy.createItem(ufe.PathString.path(psPathStr+',/A/B'))
-        c = ufe.Hierarchy.createItem(ufe.PathString.path(psPathStr+',/C'))
-        sn.append(b)
-        sn.append(c)
+            a = ufe.Hierarchy.createItem(ufe.PathString.path(psPathStr+',/A'))
+            self.assertEqual(ufe.Hierarchy.hierarchy(b).parent(), a)
 
-        a = ufe.Hierarchy.createItem(ufe.PathString.path(psPathStr+',/A'))
-        self.assertEqual(ufe.Hierarchy.hierarchy(b).parent(), a)
+            cmds.parent()
 
-        cmds.parent()
+            # Check that prim B is now a child of prim C.  Re-create its scene
+            # item, as its path has changed.
+            b = ufe.Hierarchy.createItem(ufe.PathString.path(psPathStr+',/C/B'))
+            self.assertEqual(ufe.Hierarchy.hierarchy(b).parent(), c)
 
-        # Check that prim B is now a child of prim C.  Re-create its scene
-        # item, as its path has changed.
-        b = ufe.Hierarchy.createItem(ufe.PathString.path(psPathStr+',/C/B'))
-        self.assertEqual(ufe.Hierarchy.hierarchy(b).parent(), c)
-
-        # Check that layer B now has the parent overs.
-        self.assertEqual(filterUsdStr(bSubLayer.ExportToString()),
-                         'over "C"\n{\n    def Xform "B"\n    {\n    }\n}')
-
-        # Restore default edit router.
-        mayaUsd.lib.restoreDefaultEditRouter('parent')
+            # Check that layer B now has the parent overs.
+            self.assertEqual(filterUsdStr(bSubLayer.ExportToString()),
+                            'over "C"\n{\n    def Xform "B"\n    {\n    }\n}')
+        finally:
+            # Restore default edit router.
+            mayaUsd.lib.restoreDefaultEditRouter('parent')
 
     @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() >= 7, 'Require parent command fix from Maya')
     def testParentAbsoluteUnderScope(self):

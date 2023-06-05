@@ -30,14 +30,10 @@
 #include <ufe/ufeAssert.h>
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
 #include <mayaUsd/ufe/UsdShaderAttributeDef.h>
 #include <mayaUsd/ufe/UsdShaderAttributeHolder.h>
 #include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
-#endif
-#if (UFE_PREVIEW_VERSION_NUM >= 4024)
 #include <mayaUsd/ufe/UsdUndoAttributesCommands.h>
-#endif
 #endif
 
 // Note: normally we would use this using directive, but here we cannot because
@@ -55,7 +51,6 @@ namespace ufe {
 namespace {
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
 std::pair<PXR_NS::SdrShaderPropertyConstPtr, PXR_NS::UsdShadeAttributeType>
 _GetSdrPropertyAndType(const Ufe::SceneItem::Ptr& item, const std::string& tokName)
 {
@@ -73,11 +68,10 @@ _GetSdrPropertyAndType(const Ufe::SceneItem::Ptr& item, const std::string& tokNa
     return { nullptr, PXR_NS::UsdShadeAttributeType::Invalid };
 }
 #endif
-#endif
 } // namespace
 
 UsdAttributes::UsdAttributes(const UsdSceneItem::Ptr& item)
-    : Ufe::Attributes()
+    : UFE_ATTRIBUTES_BASE()
     , fItem(item)
 {
     PXR_NAMESPACE_USING_DIRECTIVE
@@ -128,12 +122,10 @@ Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
 
         // Shader definitions always win over created UsdAttributes:
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
     PXR_NS::SdrShaderPropertyConstPtr shaderProp = _GetSdrPropertyAndType(fItem, name).first;
     if (shaderProp) {
         return UsdShaderAttributeDef(shaderProp).type();
     }
-#endif
 #endif
 
     // See if a UsdAttribute can be wrapped:
@@ -171,8 +163,8 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
     static const std::unordered_map<
         std::string,
         std::function<Ufe::Attribute::Ptr(const UsdSceneItem::Ptr&, UsdAttributeHolder::UPtr&&)>>
-        ctorMap
-        = { ADD_UFE_USD_CTOR(Bool),
+        ctorMap = {
+            ADD_UFE_USD_CTOR(Bool),
             ADD_UFE_USD_CTOR(Int),
             ADD_UFE_USD_CTOR(Float),
             ADD_UFE_USD_CTOR(Double),
@@ -181,7 +173,7 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
             ADD_UFE_USD_CTOR(Float3),
             ADD_UFE_USD_CTOR(Double3),
             ADD_UFE_USD_CTOR(Generic),
-#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+#ifdef UFE_V4_FEATURES_AVAILABLE
             ADD_UFE_USD_CTOR(ColorFloat4),
             ADD_UFE_USD_CTOR(Filename),
             ADD_UFE_USD_CTOR(Float2),
@@ -207,13 +199,12 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
                       return UsdAttributeEnumToken::create(si, std::move(attrHolder));
                   }
               } },
-          };
+        };
 #undef ADD_UFE_USD_CTOR
 
     Ufe::Attribute::Ptr newAttr;
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
     // The shader definition always wins over a created attribute:
     auto shaderPropAndType = _GetSdrPropertyAndType(fItem, name);
     if (shaderPropAndType.first) {
@@ -226,7 +217,6 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
                     fPrim, shaderPropAndType.first, shaderPropAndType.second));
         }
     }
-#endif
 #endif
 
     if (!newAttr) {
@@ -244,7 +234,7 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
             newAttr = ctorIt->second(fItem, UsdAttributeHolder::create(usdAttr));
     }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4024)
+#ifdef UFE_V4_FEATURES_AVAILABLE
     // If this is a Usd attribute (cannot change) then we cache it for future access.
     if (!canRemoveAttribute(fItem, name)) {
         fUsdAttributes[name] = newAttr;
@@ -262,7 +252,6 @@ std::vector<std::string> UsdAttributes::attributeNames() const
     std::set<std::string>    nameSet;
     std::string              name;
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
     PXR_NS::SdrShaderNodeConstPtr shaderNode = UsdShaderNodeDefHandler::usdDefinition(fItem);
     if (shaderNode) {
         auto addAttributeNames
@@ -277,7 +266,6 @@ std::vector<std::string> UsdAttributes::attributeNames() const
         addAttributeNames(shaderNode->GetInputNames(), PXR_NS::UsdShadeAttributeType::Input);
         addAttributeNames(shaderNode->GetOutputNames(), PXR_NS::UsdShadeAttributeType::Output);
     }
-#endif
 #endif
     if (fPrim) {
         auto primAttrs = fPrim.GetAttributes();
@@ -298,47 +286,31 @@ bool UsdAttributes::hasAttribute(const std::string& name) const
         return true;
     }
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
     if (_GetSdrPropertyAndType(fItem, name).first) {
         return true;
     }
-#endif
 #endif
     return false;
 }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4024)
-#if (UFE_PREVIEW_VERSION_NUM >= 4034)
 Ufe::AddAttributeUndoableCommand::Ptr
 UsdAttributes::addAttributeCmd(const std::string& name, const Ufe::Attribute::Type& type)
 {
     return UsdAddAttributeCommand::create(fItem, name, type);
 }
-#else
-
-Ufe::AddAttributeCommand::Ptr
-UsdAttributes::addAttributeCmd(const std::string& name, const Ufe::Attribute::Type& type)
-{
-    return UsdAddAttributeCommand::create(fItem, name, type);
-}
-#endif
 Ufe::UndoableCommand::Ptr UsdAttributes::removeAttributeCmd(const std::string& name)
 {
     return UsdRemoveAttributeCommand::create(fItem, name);
 }
-#endif
-#if (UFE_PREVIEW_VERSION_NUM >= 4034)
 Ufe::RenameAttributeUndoableCommand::Ptr
 UsdAttributes::renameAttributeCmd(const std::string& originalName, const std::string& newName)
 {
     return UsdRenameAttributeCommand::create(fItem, originalName, newName);
 }
 #endif
-#endif
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4024)
 // Helpers for validation and execution:
 bool UsdAttributes::canAddAttribute(const UsdSceneItem::Ptr& item, const Ufe::Attribute::Type& type)
 {
@@ -635,8 +607,6 @@ bool UsdAttributes::doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::
     }
     return false;
 }
-#endif
-#if (UFE_PREVIEW_VERSION_NUM >= 4034)
 bool UsdAttributes::canRenameAttribute(
     const UsdSceneItem::Ptr& sceneItem,
     const std::string&       originalName,
@@ -757,6 +727,21 @@ Ufe::Attribute::Ptr UsdAttributes::doRenameAttribute(
     }
 
     return renamedAttr;
+}
+#endif
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#ifdef UFE_ATTRIBUTES_GET_ENUMS
+UFE_ATTRIBUTES_BASE::Enums UsdAttributes::getEnums(const std::string& attrName) const
+{
+    UFE_ATTRIBUTES_BASE::Enums        result;
+    PXR_NS::SdrShaderPropertyConstPtr shaderProp = _GetSdrPropertyAndType(fItem, attrName).first;
+    if (shaderProp) {
+        for (const auto& option : shaderProp->GetOptions()) {
+            result.emplace_back(option.first.GetString(), option.second.GetString());
+        }
+    }
+    return result;
 }
 #endif
 #endif

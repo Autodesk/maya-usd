@@ -180,26 +180,38 @@ bool isAccessorInputPlug(const MPlug& plug)
 }
 
 //! \brief  Retrieve SdfPath from give plug
-SdfPath getAccessorSdfPath(const MPlug& plug)
+using SdfPathAndPropName = std::pair<SdfPath, TfToken>;
+SdfPathAndPropName getAccessorSdfPath(const MPlug& plug)
 {
     MString niceNameCmd;
     niceNameCmd.format("attributeName -nice ^1s", plug.name().asChar());
 
     MString niceNameCmdResult;
-    if (MGlobal::executeCommand(niceNameCmd, niceNameCmdResult)) {
-        // Something we shouldn't have to deal with when things will get exposed
-        // to C++. For array we will receive sdfpath with element index.
-        // Example: "/path/to/prim[0]"
-        int arrayIndex = plug.isArray() ? niceNameCmdResult.rindexW('[') : -1;
-        if (arrayIndex >= 1) {
-            niceNameCmdResult = niceNameCmdResult.substringW(0, arrayIndex - 1);
-        }
+    if (!MGlobal::executeCommand(niceNameCmd, niceNameCmdResult))
+        return {};
 
-        if (SdfPath::IsValidPathString(niceNameCmdResult.asChar()))
-            return SdfPath(niceNameCmdResult.asChar());
+    // Something we shouldn't have to deal with when things will get exposed
+    // to C++. For array we will receive sdfpath with element index.
+    // Example: "/path/to/prim[0]"
+    int arrayIndex = plug.isArray() ? niceNameCmdResult.rindexW('[') : -1;
+    if (arrayIndex >= 1) {
+        niceNameCmdResult = niceNameCmdResult.substringW(0, arrayIndex - 1);
     }
 
-    return SdfPath();
+    TfToken propName;
+
+    const int dotIndex = niceNameCmdResult.index('.');
+    if (dotIndex >= 0) {
+        MStringArray primAndProp;
+        niceNameCmdResult.split('.', primAndProp);
+        niceNameCmdResult = primAndProp[0];
+        propName = TfToken(primAndProp[1].asChar());
+    }
+
+    if (!SdfPath::IsValidPathString(niceNameCmdResult.asChar()))
+        return {};
+
+    return std::make_pair(SdfPath(niceNameCmdResult.asChar()), propName);
 }
 } // namespace
 
@@ -237,27 +249,31 @@ MStatus ProxyAccessor::addCallbacks(MObject object)
                 MFnAttribute attr(plug.attribute());
                 MObject      parentAttr = attr.parent();
 
-                SdfPath path;
+                SdfPathAndPropName pathAndProp;
                 if (parentAttr.isNull())
-                    path = getAccessorSdfPath(plug);
+                    pathAndProp = getAccessorSdfPath(plug);
                 else {
                     MPlug parentPlug(plug.node(), parentAttr);
-                    path = getAccessorSdfPath(parentPlug);
+                    pathAndProp = getAccessorSdfPath(parentPlug);
                 }
 
-                if (path.IsEmpty() || !path.IsPrimPropertyPath())
+                const SdfPath& path = pathAndProp.first;
+                const TfToken& propName = pathAndProp.second;
+
+                if (path.IsEmpty())
                     return;
 
                 // Compute dependencies is considered as temporary data
                 UsdEditContext editContext(stage, stage->GetSessionLayer());
 
-                SdfPath primPath = path.GetPrimPath();
-                UsdPrim prim = stage->GetPrimAtPath(primPath);
+                UsdPrim prim = stage->GetPrimAtPath(path);
 
-                if (!prim.RemoveProperty(path.GetNameToken())) {
+                if (!prim.IsPseudoRoot() && !prim.RemoveProperty(propName)) {
                     TF_DEBUG(USDMAYA_PROXYACCESSOR)
                         .Msg(
-                            "Failed to clear target layer on disconnect of '%s'\n", path.GetText());
+                            "Failed to clear target layer on disconnect of '%s.%s'\n",
+                            path.GetText(),
+                            propName.GetText());
                 }
             }
         },
@@ -308,61 +324,63 @@ void ProxyAccessor::collectAccessorItems(MObject node)
         if (!isAccessorPlugName(name.asChar()))
             continue;
 
-        MPlug   valuePlug(node, attr.object());
-        SdfPath path = getAccessorSdfPath(valuePlug);
+        Item item;
+        item.plug = MPlug(node, attr.object());
 
-        if (path.IsEmpty()) {
+        SdfPathAndPropName pathAndProp = getAccessorSdfPath(item.plug);
+        item.path = pathAndProp.first;
+        item.property = pathAndProp.second;
+
+        if (item.path.IsEmpty()) {
             TF_DEBUG(USDMAYA_PROXYACCESSOR)
                 .Msg(
                     "Plug found '%s', but it's not pointing at a valid SdfPath; ignoring\n",
-                    valuePlug.name().asChar());
+                    item.plug.name().asChar());
             continue;
         }
 
-        SdfPath        primPath = path.GetPrimPath();
-        const UsdPrim& prim = stage->GetPrimAtPath(primPath);
+        const UsdPrim& prim = stage->GetPrimAtPath(item.path);
 
-        const Converter* converter = nullptr;
-        if (!path.IsPrimPropertyPath() || path.GetNameToken() == combinedVisibilityToken) {
-            SdfValueTypeName typeName = Converter::getUsdTypeName(valuePlug, false);
+        if (item.property.IsEmpty() || item.property == combinedVisibilityToken) {
+            SdfValueTypeName typeName = Converter::getUsdTypeName(item.plug, false);
             SdfValueTypeName expectedType
-                = path.IsPrimPropertyPath() ? SdfValueTypeNames->Int : SdfValueTypeNames->Matrix4d;
+                = item.property.IsEmpty() ? SdfValueTypeNames->Matrix4d : SdfValueTypeNames->Int;
             if (typeName != expectedType) {
                 TF_DEBUG(USDMAYA_PROXYACCESSOR)
                     .Msg(
-                        "Prim path found, but value plug is not a supported data type '%s' "
+                        "Prim path found, but value plug is not a supported data type '%s.%s' "
                         "(%s); ignoring\n",
-                        path.GetText(),
-                        valuePlug.attribute().apiTypeStr());
+                        item.path.GetText(),
+                        item.property.GetText(),
+                        item.plug.attribute().apiTypeStr());
                 continue;
             }
 
-            converter = Converter::find(typeName, false);
+            item.converter = Converter::find(typeName, false);
         } else {
-            const TfToken& propertyToken = path.GetNameToken();
-            UsdAttribute   attribute = prim.GetAttribute(propertyToken);
+            UsdAttribute attribute = prim.GetAttribute(item.property);
 
             if (!attribute.IsDefined()) {
                 TF_DEBUG(USDMAYA_PROXYACCESSOR)
-                    .Msg("Attribute is not defined '%s'; ignoring\n", path.GetText());
+                    .Msg("Attribute is not defined '%s'; ignoring\n", item.path.GetText());
                 continue;
             }
 
-            converter = Converter::find(valuePlug, attribute);
+            item.converter = Converter::find(item.plug, attribute);
         }
 
-        if (!converter) {
+        if (!item.converter) {
             TF_DEBUG(USDMAYA_PROXYACCESSOR)
-                .Msg("Skipped attribute, no valid converter found for '%s'\n", path.GetText());
+                .Msg("Skipped attribute, no valid converter found for '%s'\n", item.path.GetText());
             continue;
         }
 
-        if (isAccessorInputPlug(valuePlug)) {
-            TF_DEBUG(USDMAYA_PROXYACCESSOR).Msg("Added INPUT '%s'\n", path.GetText());
-            _accessorInputItems.emplace_back(valuePlug, path, converter, SyncId());
+        if (isAccessorInputPlug(item.plug)) {
+            TF_DEBUG(USDMAYA_PROXYACCESSOR).Msg("Added INPUT '%s'\n", item.path.GetText());
+            _accessorInputItems.emplace_back(item);
         } else {
-            TF_DEBUG(USDMAYA_PROXYACCESSOR).Msg("Added OUTPUT '%s'\n", path.GetText());
-            _accessorOutputItems.emplace_back(valuePlug, path, converter, SyncId());
+            TF_DEBUG(USDMAYA_PROXYACCESSOR).Msg("Added OUTPUT '%s'\n", item.path.GetText());
+            _accessorOutputItems.emplace_back(item);
         }
     }
 
@@ -373,9 +391,7 @@ const ProxyAccessor::Item* ProxyAccessor::findAccessorItem(const MPlug& plug, bo
 {
     const Container& accessorItems = isInput ? _accessorInputItems : _accessorOutputItems;
     for (const auto& item : accessorItems) {
-        const MPlug& itemPlug = std::get<0>(item);
-
-        if ((plug.isElement() && itemPlug == plug.array()) || itemPlug == plug)
+        if ((plug.isElement() && item.plug == plug.array()) || item.plug == plug)
             return &item;
     }
 
@@ -402,13 +418,12 @@ MStatus ProxyAccessor::addDependentsDirty(const MPlug& plug, MPlugArray& plugArr
         TF_DEBUG(USDMAYA_PROXYACCESSOR).Msg("Dirty all outputs from '%s'\n", plug.name().asChar());
 
         for (const auto& item : _accessorOutputItems) {
-            const MPlug& itemPlug = std::get<0>(item);
-            if (!itemPlug.isArray())
-                plugArray.append(itemPlug);
+            if (!item.plug.isArray())
+                plugArray.append(item.plug);
             else {
-                const unsigned int numElements = itemPlug.numElements();
+                const unsigned int numElements = item.plug.numElements();
                 for (unsigned int i = 0; i < numElements; i++) {
-                    plugArray.append(itemPlug[i]);
+                    plugArray.append(item.plug[i]);
                 }
             }
         }
@@ -430,18 +445,14 @@ MStatus ProxyAccessor::compute(const MPlug& plug, MDataBlock& dataBlock)
 
             ComputeContext& topState = *_inCompute;
 
-            const SdfPath& itemPath = std::get<1>(*accessorItem);
             // If it's not a property path, then we will be writing out world matrix data
-            if (!itemPath.IsPrimPropertyPath()) {
+            if (!accessorItem->path.IsPrimPropertyPath()) {
                 // Read only inputs that can affect requested xform matrix and that haven't been
                 // yet read. We will perform evaluationId check to prevent causing recursive
                 // computation of the same plug, when there is more than one input depending on it.
                 for (auto& inputItem : _accessorInputItems) {
-                    const SdfPath& inputItemPath = std::get<1>(inputItem);
-                    SdfPath        inputItemPrimPath = inputItemPath.GetPrimPath();
-
-                    if (UsdGeomXformOp::IsXformOp(inputItemPath.GetNameToken())
-                        && itemPath.HasPrefix(inputItemPrimPath)) {
+                    if (UsdGeomXformOp::IsXformOp(inputItem.property)
+                        && accessorItem->path.HasPrefix(inputItem.path)) {
                         computeInput(inputItem, topState._stage, dataBlock, topState._args);
                     }
                 }
@@ -504,49 +515,45 @@ MStatus ProxyAccessor::compute(const MPlug& plug, MDataBlock& dataBlock)
 }
 
 MStatus ProxyAccessor::computeInput(
-    Item&                inputItemToCompute,
+    Item&                item,
     const UsdStageRefPtr stage,
     MDataBlock&          dataBlock,
     const ConverterArgs& args)
 {
     MStatus retValue = MS::kSuccess;
 
-    SyncId& evaluationId = std::get<3>(inputItemToCompute);
+    SyncId& evaluationId = item.syncId;
     if (evaluationId.inSync(_evaluationId))
         return MS::kSuccess;
 
-    const MPlug&     itemPlug = std::get<0>(inputItemToCompute);
-    const SdfPath&   itemPath = std::get<1>(inputItemToCompute);
-    const Converter* itemConverter = std::get<2>(inputItemToCompute);
     // We should cache UsdAttribute in here too and avoid expensive
     // searches (i.e. getting the prim, getting attribute, checking if defined)
 
     MProfilingScope profilingScope(
-        _accessorProfilerCategory, MProfiler::kColorB_L1, "Write input", itemPath.GetText());
+        _accessorProfilerCategory, MProfiler::kColorB_L1, "Write input", item.path.GetText());
 
     evaluationId.sync(_evaluationId);
 
-    SdfPath        itemPrimPath = itemPath.GetPrimPath();
-    const UsdPrim& itemPrim = stage->GetPrimAtPath(itemPrimPath);
+    const UsdPrim& itemPrim = stage->GetPrimAtPath(item.path);
 
-    if (!itemPath.IsPrimPropertyPath() || !itemConverter)
+    if (item.property.IsEmpty() || !item.converter)
         return MS::kFailure;
 
-    const TfToken& itemPropertyToken = itemPath.GetNameToken();
-    UsdAttribute   itemAttribute = itemPrim.GetAttribute(itemPropertyToken);
+    UsdAttribute itemAttribute = itemPrim.GetAttribute(item.property);
 
     if (!itemAttribute.IsDefined()) {
-        TF_CODING_ERROR("Undefined/invalid attribute '%s'", itemPath.GetText());
+        TF_CODING_ERROR(
+            "Undefined/invalid attribute '%s.%s'", item.path.GetText(), item.property.GetText());
         return MS::kFailure;
     }
 
-    MDataHandle itemDataHandle = dataBlock.inputValue(itemPlug, &retValue);
+    MDataHandle itemDataHandle = dataBlock.inputValue(item.plug, &retValue);
     if (MFAIL(retValue)) {
         return retValue;
     }
 
     VtValue convertedValue;
-    itemConverter->convert(itemDataHandle, convertedValue, args);
+    item.converter->convert(itemDataHandle, convertedValue, args);
 
     // Don't set the value if it didn't change. This will save us expensive invalidation +
     // compute
@@ -559,7 +566,7 @@ MStatus ProxyAccessor::computeInput(
 }
 
 MStatus ProxyAccessor::computeOutput(
-    const Item&          outputItemToCompute,
+    const Item&          item,
     const MMatrix&       proxyInclusiveMatrix,
     const UsdStageRefPtr stage,
     MDataBlock&          dataBlock,
@@ -568,25 +575,21 @@ MStatus ProxyAccessor::computeOutput(
 {
     MStatus retValue = MS::kSuccess;
 
-    const MPlug&     itemPlug = std::get<0>(outputItemToCompute);
-    const SdfPath&   itemPath = std::get<1>(outputItemToCompute);
-    const Converter* itemConverter = std::get<2>(outputItemToCompute);
     // We should cache UsdAttribute in here too and avoid expensive
     // searches (i.e. getting the prim, getting attribute, checking if defined)
 
     MProfilingScope profilingScope(
-        _accessorProfilerCategory, MProfiler::kColorB_L1, "Write output", itemPath.GetText());
+        _accessorProfilerCategory, MProfiler::kColorB_L1, "Write output", item.path.GetText());
 
-    SdfPath        itemPrimPath = itemPath.GetPrimPath();
-    const UsdPrim& itemPrim = stage->GetPrimAtPath(itemPrimPath);
+    const UsdPrim& itemPrim = stage->GetPrimAtPath(item.path);
 
-    MDataHandle itemDataHandle = dataBlock.outputValue(itemPlug, &retValue);
+    MDataHandle itemDataHandle = dataBlock.outputValue(item.plug, &retValue);
     if (MFAIL(retValue)) {
         return retValue;
     }
 
     // If it's not a property path, then we will be writing out world matrix data
-    if (!itemPath.IsPrimPropertyPath()) {
+    if (item.property.IsEmpty()) {
         GfMatrix4d mat = xformCache.GetLocalToWorldTransform(itemPrim);
         MMatrix    mayaMat;
         TypedConverter<MMatrix, GfMatrix4d>::convert(mat, mayaMat);
@@ -598,14 +601,14 @@ MStatus ProxyAccessor::computeOutput(
         data.set(mayaMat);
 
         MArrayDataHandle  dstArray(itemDataHandle);
-        MArrayDataBuilder dstArrayBuilder(&dataBlock, itemPlug.attribute(), 1);
+        MArrayDataBuilder dstArrayBuilder(&dataBlock, item.plug.attribute(), 1);
 
         MDataHandle dstElement = dstArrayBuilder.addElement(0);
         dstElement.set(dataMatrix);
 
         dstArray.set(dstArrayBuilder);
         dstArray.setAllClean();
-    } else if (itemPath.GetNameToken() == combinedVisibilityToken) {
+    } else if (item.property == combinedVisibilityToken) {
         // First, verify visibility of the proxy shape
 #if defined(WANT_UFE_BUILD)
         Ufe::Path proxyShapeUfePath = MayaUsd::ufe::stagePath(stage);
@@ -621,19 +624,21 @@ MStatus ProxyAccessor::computeOutput(
         }
 
         itemDataHandle.set(visible ? 1 : 0);
-    } else if (itemConverter) {
-        const TfToken& itemPropertyToken = itemPath.GetNameToken();
-        UsdAttribute   itemAttribute = itemPrim.GetAttribute(itemPropertyToken);
+    } else if (item.converter) {
+        UsdAttribute itemAttribute = itemPrim.GetAttribute(item.property);
 
         // cache this! expensive call
         if (!itemAttribute.IsDefined()) {
-            TF_CODING_ERROR("Undefined/invalid attribute '%s'", itemPath.GetText());
+            TF_CODING_ERROR(
+                "Undefined/invalid attribute '%s.%s'",
+                item.path.GetText(),
+                item.property.GetText());
 
-            dataBlock.setClean(itemPlug);
+            dataBlock.setClean(item.plug);
             return MS::kFailure;
         }
 
-        itemConverter->convert(itemAttribute, itemDataHandle, args);
+        item.converter->convert(itemAttribute, itemDataHandle, args);
     }
 
     // Even if we have no data to write, we set the data in data block as clean
@@ -641,7 +646,7 @@ MStatus ProxyAccessor::computeOutput(
     // which result in particular path being invalid, we will preserve the value
     // from last time it was available
     itemDataHandle.setClean();
-    dataBlock.setClean(itemPlug.attribute());
+    dataBlock.setClean(item.plug.attribute());
 
     return MS::kSuccess;
 }
@@ -683,8 +688,9 @@ MStatus ProxyAccessor::stageChanged(const MObject& node, const UsdNotice::Object
 
     if (_accessorInputItems.size() > 0) {
         auto findInputItemFn = [this](const SdfPath& changedPath) -> Item* {
-            for (auto& item : _accessorInputItems) {
-                if (std::get<1>(item) == changedPath) {
+            for (Item& item : _accessorInputItems) {
+                if (item.path == changedPath
+                    || item.path.AppendProperty(item.property) == changedPath) {
                     return &item;
                 }
             }
@@ -700,7 +706,7 @@ MStatus ProxyAccessor::stageChanged(const MObject& node, const UsdNotice::Object
 
         for (const auto& changedPath : notice.GetChangedInfoOnlyPaths()) {
             if (changedPath.IsPrimPropertyPath()) {
-                auto* changedInput = findInputItemFn(changedPath);
+                Item* changedInput = findInputItemFn(changedPath);
                 if (!changedInput) {
                     TF_DEBUG(USDMAYA_PROXYACCESSOR)
                         .Msg(
@@ -712,10 +718,10 @@ MStatus ProxyAccessor::stageChanged(const MObject& node, const UsdNotice::Object
                 TF_DEBUG(USDMAYA_PROXYACCESSOR)
                     .Msg("Input PrimPropertyPath has changed '%s'\n", changedPath.GetText());
 
-                MPlug&           changedPlug = std::get<0>(*changedInput);
-                const Converter* converter = std::get<2>(*changedInput);
+                MPlug&           changedPlug = changedInput->plug;
+                const Converter* converter = changedInput->converter;
 
-                SdfPath        changedPrimPath = changedPath.GetPrimPath();
+                SdfPath        changedPrimPath = changedPath.GetAbsoluteRootOrPrimPath();
                 const UsdPrim& changedPrim = stage->GetPrimAtPath(changedPrimPath);
 
                 const TfToken& changedPropertyToken = changedPath.GetNameToken();

@@ -19,6 +19,9 @@
 #include "saveLayersDialog.h"
 #include "stringResources.h"
 
+#if defined(WANT_UFE_BUILD)
+#include <mayaUsd/nodes/layerManager.h>
+#endif
 #include <mayaUsd/nodes/usdPrimProvider.h>
 #include <mayaUsd/utils/util.h>
 
@@ -53,11 +56,17 @@ MayaSessionState::MayaSessionState()
     if (MGlobal::optionVarExists(AUTO_HIDE_OPTION_VAR)) {
         _autoHideSessionLayer = MGlobal::optionVarIntValue(AUTO_HIDE_OPTION_VAR) != 0;
     }
+
+    registerNotifications();
 }
 
 MayaSessionState::~MayaSessionState()
 {
-    //
+    try {
+        unregisterNotifications();
+    } catch (const std::exception&) {
+        // Ignore errors in destructor.
+    }
 }
 
 void MayaSessionState::setStageEntry(StageEntry const& inEntry)
@@ -66,6 +75,11 @@ void MayaSessionState::setStageEntry(StageEntry const& inEntry)
     if (!inEntry._stage) {
         _currentStageEntry.clear();
     }
+
+#if defined(WANT_UFE_BUILD)
+    if (!_inLoad)
+        MayaUsd::LayerManager::setSelectedStage(_currentStageEntry._proxyShapePath);
+#endif
 }
 
 bool MayaSessionState::getStageEntry(StageEntry* out_stageEntry, const MString& shapePath)
@@ -74,9 +88,11 @@ bool MayaSessionState::getStageEntry(StageEntry* out_stageEntry, const MString& 
 
     MObject shapeObj;
     MStatus status = UsdMayaUtil::GetMObjectByName(shapePath, shapeObj);
-    CHECK_MSTATUS_AND_RETURN(status, false);
+    if (!status)
+        return false;
     MFnDagNode dagNode(shapeObj, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
+    if (!status)
+        return false;
 
     if (const UsdMayaUsdPrimProvider* usdPrimProvider
         = dynamic_cast<const UsdMayaUsdPrimProvider*>(dagNode.userNode())) {
@@ -145,11 +161,21 @@ void MayaSessionState::registerNotifications()
         MSceneMessage::kBeforeNew, MayaSessionState::sceneClosingCB, this);
     _callbackIds.push_back(id);
 
+    id = MSceneMessage::addCallback(
+        MSceneMessage::kAfterOpen, MayaSessionState::sceneLoadedCB, this);
+    _callbackIds.push_back(id);
+
+    id = MSceneMessage::addCallback(
+        MSceneMessage::kAfterNew, MayaSessionState::sceneLoadedCB, this);
+    _callbackIds.push_back(id);
+
     id = MSceneMessage::addNamespaceRenamedCallback(MayaSessionState::namespaceRenamedCB, this);
     _callbackIds.push_back(id);
 
     TfWeakPtr<MayaSessionState> me(this);
     _stageResetNoticeKey = TfNotice::Register(me, &MayaSessionState::mayaUsdStageReset);
+
+    loadSelectedStage();
 }
 
 void MayaSessionState::unregisterNotifications()
@@ -267,8 +293,28 @@ void MayaSessionState::nodeRenamedCBOnIdle(const MString& shapePath)
 /* static */
 void MayaSessionState::sceneClosingCB(void* clientData)
 {
-    auto   THIS = static_cast<MayaSessionState*>(clientData);
+    auto THIS = static_cast<MayaSessionState*>(clientData);
+    THIS->_inLoad = true;
     Q_EMIT THIS->clearUIOnSceneResetSignal();
+}
+
+/* static */
+void MayaSessionState::sceneLoadedCB(void* clientData)
+{
+    auto THIS = static_cast<MayaSessionState*>(clientData);
+    THIS->loadSelectedStage();
+    THIS->_inLoad = false;
+}
+
+void MayaSessionState::loadSelectedStage()
+{
+#if defined(WANT_UFE_BUILD)
+    const std::string shapePath = MayaUsd::LayerManager::getSelectedStage();
+    StageEntry        entry;
+    if (!shapePath.empty() && getStageEntry(&entry, shapePath.c_str())) {
+        setStageEntry(entry);
+    }
+#endif
 }
 
 bool MayaSessionState::saveLayerUI(
@@ -360,15 +406,9 @@ std::string MayaSessionState::defaultLoadPath() const
 void MayaSessionState::rootLayerPathChanged(std::string const& in_path)
 {
     if (!_currentStageEntry._proxyShapePath.empty()) {
-
-        MString script;
         MString proxyShape(_currentStageEntry._proxyShapePath.c_str());
         MString newValue(in_path.c_str());
-        script.format("setAttr -type \"string\" ^1s.filePath \"^2s\"", proxyShape, newValue);
-        MGlobal::executeCommand(
-            script,
-            /*display*/ true,
-            /*undo*/ false);
+        MayaUsd::utils::setNewProxyPath(proxyShape, newValue, nullptr, false);
     }
 }
 

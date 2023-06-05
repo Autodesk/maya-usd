@@ -521,9 +521,9 @@ class GroupCmdTestCase(unittest.TestCase):
         cmds.undo()
 
         self.assertEqual([item for item in stage.Traverse()],
-            [stage.GetPrimAtPath("/Sphere3"), 
+            [stage.GetPrimAtPath("/Sphere1"), 
             stage.GetPrimAtPath("/Sphere2"),
-            stage.GetPrimAtPath("/Sphere1")])
+            stage.GetPrimAtPath("/Sphere3")])
 
         cmds.redo()
 
@@ -610,9 +610,9 @@ class GroupCmdTestCase(unittest.TestCase):
         cmds.undo()
 
         self.assertEqual([item for item in stage.Traverse()],
-            [stage.GetPrimAtPath("/Sphere3"), 
+            [stage.GetPrimAtPath("/Sphere1"), 
             stage.GetPrimAtPath("/Sphere2"),
-            stage.GetPrimAtPath("/Sphere1")])
+            stage.GetPrimAtPath("/Sphere3")])
 
         verifyRadius(getItem(oldSphere1Name), radius)
 

@@ -18,6 +18,7 @@
 
 import fixturesUtils
 import mayaUtils
+import testUtils
 
 from maya import cmds
 from maya import standalone
@@ -26,7 +27,6 @@ import ufe
 
 import os
 import unittest
-
 
 class UINodeGraphNodeTestCase(unittest.TestCase):
     '''Verify the UINodeGraphNode USD implementation.
@@ -53,14 +53,18 @@ class UINodeGraphNodeTestCase(unittest.TestCase):
         # Open ballset.ma scene in testSamples
         mayaUtils.openGroupBallsScene()
 
+        self.messageHandler = mayaUtils.TestProxyShapeUpdateHandler('|transform1|proxyShape1')
+
         # Clear selection to start off
         cmds.select(clear=True)
 
+    def tearDown(self):
+        self.messageHandler.terminate()
+
     # Helper to avoid copy-pasting the entire test
     def doPosAndSizeTests(self, hasFunc, setFunc, getFunc, cmdFunc):
-        initialUpdateCount = cmds.getAttr('|transform1|proxyShape1.updateId')
-        initialResyncCount = cmds.getAttr('|transform1|proxyShape1.resyncId')
-    
+        self.messageHandler.snapshot()
+                                          
         # Test hasFunc and getFunc
         self.assertFalse(hasFunc())
         pos0 = getFunc()
@@ -92,13 +96,12 @@ class UINodeGraphNodeTestCase(unittest.TestCase):
         self.assertEqual(pos4.y(), pos5.y())
 
         # None of these changes should force a render refresh:
-        self.assertEqual(initialUpdateCount, cmds.getAttr('|transform1|proxyShape1.updateId'))
-        self.assertEqual(initialResyncCount, cmds.getAttr('|transform1|proxyShape1.resyncId'))
+        self.assertTrue(self.messageHandler.isUnchanged())
 
     def testPosition(self):
         ball3Path = ufe.PathString.path('|transform1|proxyShape1,/Ball_set/Props/Ball_3')
         ball3SceneItem = ufe.Hierarchy.createItem(ball3Path)
-                                          
+
         uiNodeGraphNode = ufe.UINodeGraphNode.uiNodeGraphNode(ball3SceneItem)
         self.doPosAndSizeTests(uiNodeGraphNode.hasPosition, uiNodeGraphNode.setPosition,
             uiNodeGraphNode.getPosition, uiNodeGraphNode.setPositionCmd)
@@ -113,7 +116,7 @@ class UINodeGraphNodeTestCase(unittest.TestCase):
             uiNodeGraphNode = ufe.UINodeGraphNode_v4_1.uiNodeGraphNode(ball3SceneItem)
         else:
             uiNodeGraphNode = ufe.UINodeGraphNode.uiNodeGraphNode(ball3SceneItem)
-        
+
         self.doPosAndSizeTests(uiNodeGraphNode.hasSize, uiNodeGraphNode.setSize,
             uiNodeGraphNode.getSize, uiNodeGraphNode.setSizeCmd)
 

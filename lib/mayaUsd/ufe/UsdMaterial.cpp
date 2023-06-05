@@ -52,20 +52,20 @@ std::vector<Ufe::SceneItem::Ptr> UsdMaterial::getMaterials() const
 
     std::vector<PXR_NS::UsdPrim> materialPrims;
 
-    const PXR_NS::UsdPrim&                            prim = _item->prim();
-    PXR_NS::UsdShadeMaterialBindingAPI                bindingApi(prim);
-    PXR_NS::UsdShadeMaterialBindingAPI::DirectBinding directBinding = bindingApi.GetDirectBinding();
+    const PXR_NS::UsdPrim&             prim = _item->prim();
+    PXR_NS::UsdShadeMaterialBindingAPI bindingApi(prim);
 
     // 1. Simple case: A material is directly attached to our object.
-    const PXR_NS::UsdShadeMaterial material = directBinding.GetMaterial();
+    PXR_NS::UsdShadeMaterialBindingAPI::DirectBinding directBinding = bindingApi.GetDirectBinding();
+    const PXR_NS::UsdShadeMaterial                    material = directBinding.GetMaterial();
     if (material) {
         materialPrims.push_back(material.GetPrim());
     }
 
     // 2. Check whether multiple materials are attached to this object via geometry subsets.
     for (const auto& geometrySubset : bindingApi.GetMaterialBindSubsets()) {
-        const UsdShadeMaterialBindingAPI subsetBindingAPI(geometrySubset.GetPrim());
-        const UsdShadeMaterial           material
+        const PXR_NS::UsdShadeMaterialBindingAPI subsetBindingAPI(geometrySubset.GetPrim());
+        const PXR_NS::UsdShadeMaterial           material
             = subsetBindingAPI.ComputeBoundMaterial(UsdShadeTokens->surface);
         if (material) {
             materialPrims.push_back(material.GetPrim());
@@ -92,6 +92,39 @@ std::vector<Ufe::SceneItem::Ptr> UsdMaterial::getMaterials() const
 
     return materials;
 }
+
+#if (UFE_PREVIEW_VERSION_NUM >= 5003)
+
+bool UsdMaterial::hasMaterial() const
+{
+    if (!TF_VERIFY(_item)) {
+        return false;
+    }
+
+    const PXR_NS::UsdPrim&             prim = _item->prim();
+    PXR_NS::UsdShadeMaterialBindingAPI bindingApi(prim);
+
+    // 1. Simple case: A material is directly attached to our object.
+    PXR_NS::UsdShadeMaterialBindingAPI::DirectBinding directBinding = bindingApi.GetDirectBinding();
+    const PXR_NS::UsdShadeMaterial                    material = directBinding.GetMaterial();
+    if (material) {
+        return true;
+    }
+
+    // 2. Check whether any material is attached to this object via geometry subsets.
+    for (const auto& geometrySubset : bindingApi.GetMaterialBindSubsets()) {
+        const PXR_NS::UsdShadeMaterialBindingAPI subsetBindingAPI(geometrySubset.GetPrim());
+        const PXR_NS::UsdShadeMaterial           material
+            = subsetBindingAPI.ComputeBoundMaterial(UsdShadeTokens->surface);
+        if (material) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+#endif
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

@@ -20,8 +20,9 @@
 #include <mayaUsd/ufe/UsdPointInstanceOrientationModifier.h>
 #include <mayaUsd/ufe/UsdPointInstancePositionModifier.h>
 #include <mayaUsd/ufe/UsdPointInstanceScaleModifier.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/UsdTransform3dBase.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <ufe/transform3dHandler.h>
 #include <ufe/transform3dUndoableCommands.h>

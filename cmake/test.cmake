@@ -22,6 +22,7 @@ endfunction()
 #   PYTHON_SCRIPT      - Python script file to execute; should exit with an
 #                        appropriate exitcode to indicate success or failure.
 #   WORKING_DIRECTORY  - Directory from which the test executable will be called.
+#   MODULE_PATH        - Value of the MAYA_MODULE_PATH env var
 #   COMMAND            - Command line to execute as a test
 #   NO_STANDALONE_INIT - Only allowable with PYTHON_MODULE or
 #                        PYTHON_COMMAND. With those modes, this
@@ -65,9 +66,9 @@ function(mayaUsd_add_test test_name)
     # -----------------
 
     cmake_parse_arguments(PREFIX
-        "NO_STANDALONE_INIT;INTERACTIVE"                                # options
-        "PYTHON_MODULE;PYTHON_COMMAND;PYTHON_SCRIPT;WORKING_DIRECTORY"  # one_value keywords
-        "COMMAND;ENV"                                                   # multi_value keywords
+        "NO_STANDALONE_INIT;INTERACTIVE"                                            # options
+        "PYTHON_MODULE;PYTHON_COMMAND;PYTHON_SCRIPT;WORKING_DIRECTORY;MODULE_PATH"  # one_value keywords
+        "COMMAND;ENV"                                                               # multi_value keywords
         ${ARGN}
     )
 
@@ -186,226 +187,319 @@ finally:
     # -----------------
     # 3) Set up environ
     # -----------------
-
-    set(ALL_PATH_VARS
-        PYTHONPATH
-        MAYA_PLUG_IN_PATH
-        MAYA_SCRIPT_PATH
-        XBMLANGPATH
-        ${PXR_OVERRIDE_PLUGINPATH_NAME}
-        PXR_MTLX_STDLIB_SEARCH_PATHS
-    )
-
-    if(IS_WINDOWS)
-        # Put path at the front of the list of env vars.
-        list(INSERT ALL_PATH_VARS 0
-            PATH
+    if (PREFIX_MODULE_PATH)
+        # With MAYA_MODULE_PATH:
+        #
+        # We expect the module path to do the bulk of the env setting. We might
+        # need a tweak or two to add local test paths and libs.
+        set(ALL_PATH_VARS
+            PYTHONPATH
         )
-        list(APPEND ALL_PATH_VARS
-            PXR_USD_WINDOWS_DLL_PATH
-        )
-    else()
-        list(APPEND ALL_PATH_VARS
-            LD_LIBRARY_PATH
-        )
-    endif()
 
-    # Set initial empty values for all path vars
-    foreach(pathvar ${ALL_PATH_VARS})
-        set(MAYAUSD_VARNAME_${pathvar})
-    endforeach()
-
-    if(IS_WINDOWS)
-        list(APPEND MAYAUSD_VARNAME_PATH "${CMAKE_INSTALL_PREFIX}/lib/gtest")
-        list(APPEND MAYAUSD_VARNAME_PATH "${MAYA_LOCATION}/bin")
-    elseif(IS_LINUX)
-        if(PREFIX_COMMAND)
-            # Necessary for tests like DiffCore to find python lib since the test
-            # is an exectuable and running on its own (not with maya/mayapy).
-            # See DYLD_LIBRARY_PATH case below.
-            list(APPEND MAYAUSD_VARNAME_LD_LIBRARY_PATH "${MAYA_LOCATION}/lib")
-        endif()
-    endif()
-
-    # NOTE - we prefix varnames with "MAYAUSD_VARNAME_" just to make collision
-    # with some existing var less likely
-
-    # Emulate what mayaUSD.mod would do
-
-    # MayaUsd core library
-    if (BUILD_MAYAUSD_LIBRARY)
-        list(APPEND MAYAUSD_VARNAME_PATH
-             "${CMAKE_INSTALL_PREFIX}/lib")
         if(IS_WINDOWS)
-            list(APPEND MAYAUSD_VARNAME_PXR_USD_WINDOWS_DLL_PATH
-                "${CMAKE_INSTALL_PREFIX}/lib")
-        endif()
-        list(APPEND MAYAUSD_VARNAME_PYTHONPATH
-             "${CMAKE_INSTALL_PREFIX}/lib/scripts")
-        list(APPEND MAYAUSD_VARNAME_MAYA_SCRIPT_PATH
-             "${CMAKE_INSTALL_PREFIX}/lib/scripts")
-        if (IS_LINUX)
-            # On Linux the paths in XBMLANGPATH need a /%B at the end.
-            list(APPEND MAYAUSD_VARNAME_XBMLANGPATH
-                 "${CMAKE_INSTALL_PREFIX}/lib/icons/%B")
+            # Put path at the front of the list of env vars.
+            list(INSERT ALL_PATH_VARS 0
+                PATH
+            )
         else()
-            list(APPEND MAYAUSD_VARNAME_XBMLANGPATH
-                 "${CMAKE_INSTALL_PREFIX}/lib/icons")
+            list(APPEND ALL_PATH_VARS
+                LD_LIBRARY_PATH
+            )
         endif()
-        list(APPEND MAYAUSD_VARNAME_PYTHONPATH
-             "${CMAKE_INSTALL_PREFIX}/lib/python")
-        list(APPEND MAYAUSD_VARNAME_${PXR_OVERRIDE_PLUGINPATH_NAME}
-             "${CMAKE_INSTALL_PREFIX}/lib/usd")
-        list(APPEND MAYAUSD_VARNAME_PXR_MTLX_STDLIB_SEARCH_PATHS
-             "${CMAKE_INSTALL_PREFIX}/libraries")
-    endif()
 
-    # adsk plugin
-    if (BUILD_ADSK_PLUGIN)
-        list(APPEND MAYAUSD_VARNAME_MAYA_PLUG_IN_PATH
-             "${CMAKE_INSTALL_PREFIX}/plugin/adsk/plugin")
-        list(APPEND MAYAUSD_VARNAME_PYTHONPATH
-             "${CMAKE_INSTALL_PREFIX}/plugin/adsk/scripts")
-        list(APPEND MAYAUSD_VARNAME_MAYA_SCRIPT_PATH
-             "${CMAKE_INSTALL_PREFIX}/plugin/adsk/scripts")
-    endif()
+        # Set initial empty values for all path vars
+        foreach(pathvar ${ALL_PATH_VARS})
+            set(MAYAUSD_VARNAME_${pathvar})
+        endforeach()
 
-    # pxr plugin
-    if (BUILD_PXR_PLUGIN)
-        list(APPEND MAYAUSD_VARNAME_PYTHONPATH
-             "${CMAKE_INSTALL_PREFIX}/plugin/pxr/lib/python")
-        list(APPEND MAYAUSD_VARNAME_PATH
-             "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib")
         if(IS_WINDOWS)
-            list(APPEND MAYAUSD_VARNAME_PXR_USD_WINDOWS_DLL_PATH
-                "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib")
-        endif()
-        list(APPEND MAYAUSD_VARNAME_MAYA_SCRIPT_PATH
-             "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib/usd/usdMaya/resources")
-        list(APPEND MAYAUSD_VARNAME_MAYA_PLUG_IN_PATH
-             "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/plugin")
-        list(APPEND MAYAUSD_VARNAME_${PXR_OVERRIDE_PLUGINPATH_NAME}
-             "${CMAKE_INSTALL_PREFIX}/plugin/pxr/lib/usd")
-    endif()
-
-    # al plugin
-    if (BUILD_AL_PLUGIN)
-        list(APPEND MAYAUSD_VARNAME_PYTHONPATH
-             "${CMAKE_INSTALL_PREFIX}/plugin/al/lib/python")
-        list(APPEND MAYAUSD_VARNAME_PATH
-             "${CMAKE_INSTALL_PREFIX}/plugin/al/lib")
-        if(IS_WINDOWS)
-            list(APPEND MAYAUSD_VARNAME_PXR_USD_WINDOWS_DLL_PATH
-                "${CMAKE_INSTALL_PREFIX}/plugin/al/lib")
-        endif()
-        list(APPEND MAYAUSD_VARNAME_MAYA_PLUG_IN_PATH
-             "${CMAKE_INSTALL_PREFIX}/plugin/al/plugin")
-        list(APPEND MAYAUSD_VARNAME_${PXR_OVERRIDE_PLUGINPATH_NAME}
-             "${CMAKE_INSTALL_PREFIX}/plugin/al/lib/usd")
-        list(APPEND MAYAUSD_VARNAME_${PXR_OVERRIDE_PLUGINPATH_NAME}
-             "${CMAKE_INSTALL_PREFIX}/plugin/al/plugin")
-    endif()
-
-    if(IS_WINDOWS AND DEFINED ENV{PYTHONHOME})
-        # If the environment contains a PYTHONHOME, also set the path to
-        # that folder so that we can find the python DLLs.
-        list(APPEND MAYAUSD_VARNAME_PATH $ENV{PYTHONHOME})
-        if(IS_WINDOWS)
-            list(APPEND MAYAUSD_VARNAME_PXR_USD_WINDOWS_DLL_PATH $ENV{PXR_USD_WINDOWS_DLL_PATH})
-        endif()
-    endif()
-
-    # Adjust PYTHONPATH to include the path to our test utilities.
-    list(APPEND MAYAUSD_VARNAME_PYTHONPATH "${MAYA_USD_DIR}/test/testUtils")
-
-    # Adjust PYTHONPATH to include the path to our test.
-    list(APPEND MAYAUSD_VARNAME_PYTHONPATH "${CMAKE_CURRENT_SOURCE_DIR}")
-
-    # USD
-    #
-    # Adjust PATH and PYTHONPATH to include USD.
-    # These should come last (esp PYTHONPATH, in case another module is overriding
-    # with pkgutil)
-   if (DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
-        set(USD_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/${MAYAUSD_TO_USD_RELATIVE_PATH}")
-    else()
-        set(USD_INSTALL_LOCATION ${PXR_USD_LOCATION})
-    endif()
-    # Inherit any existing PYTHONPATH, but keep it at the end.
-    list(APPEND MAYAUSD_VARNAME_PYTHONPATH
-        "${USD_INSTALL_LOCATION}/lib/python")
-    if(IS_WINDOWS)
-        list(APPEND MAYAUSD_VARNAME_PATH
-            "${USD_INSTALL_LOCATION}/bin")
-        list(APPEND MAYAUSD_VARNAME_PATH
-            "${USD_INSTALL_LOCATION}/lib")
-        list(APPEND MAYAUSD_VARNAME_PATH
-            "${USD_INSTALL_LOCATION}/plugin/usd")
-
-        list(APPEND MAYAUSD_VARNAME_PXR_USD_WINDOWS_DLL_PATH
-            "${USD_INSTALL_LOCATION}/bin")
-        list(APPEND MAYAUSD_VARNAME_PXR_USD_WINDOWS_DLL_PATH
-            "${USD_INSTALL_LOCATION}/lib")
-        list(APPEND MAYAUSD_VARNAME_PXR_USD_WINDOWS_DLL_PATH
-            "${USD_INSTALL_LOCATION}/plugin/usd")
-    endif()
-    list(APPEND MAYAUSD_VARNAME_PXR_MTLX_STDLIB_SEARCH_PATHS
-            "${PXR_USD_LOCATION}/libraries")
-
-    # NOTE: this should come after any setting of PATH/PYTHONPATH so
-    #       that our entries will come first.
-    # Inherit any existing PATH/PYTHONPATH, but keep it at the end.
-    # This is needed (especially for PATH) because we will overwrite
-    # both with the values from our list and we need to keep any
-    # system entries.
-    list(APPEND MAYAUSD_VARNAME_PATH $ENV{PATH})
-    list(APPEND MAYAUSD_VARNAME_PYTHONPATH $ENV{PYTHONPATH})
-
-    # Inherit any existing PXR_USD_WINDOWS_DLL_PATH.
-    if(IS_WINDOWS)
-        list(APPEND MAYAUSD_VARNAME_PXR_USD_WINDOWS_DLL_PATH
-                $ENV{PXR_USD_WINDOWS_DLL_PATH})
-    endif()
-
-    # convert the internally-processed envs from cmake list
-    foreach(pathvar ${ALL_PATH_VARS})
-        separate_argument_list(MAYAUSD_VARNAME_${pathvar})
-    endforeach()
-
-    # prepend the passed-in ENV values - assume these are already
-    # separated + escaped
-    foreach(name_value_pair ${PREFIX_ENV})
-        mayaUsd_split_head_tail("${name_value_pair}" "=" env_name env_value)
-        if(NOT env_name)
-            message(FATAL_ERROR "poorly formatted NAME=VALUE pair - name "
-                "missing: ${name_value_pair}")
-        endif()
-
-        # now either prepend to existing list, or create new
-        if("${env_name}" IN_LIST ALL_PATH_VARS)
-            if(IS_WINDOWS)
-                set(MAYAUSD_VARNAME_${env_name}
-                    "${env_value}\;${MAYAUSD_VARNAME_${env_name}}")
-            else()
-                set(MAYAUSD_VARNAME_${env_name}
-                    "${env_value}:${MAYAUSD_VARNAME_${env_name}}")
+            list(APPEND MAYAUSD_VARNAME_PATH "${CMAKE_INSTALL_PREFIX}/lib/gtest")
+            list(APPEND MAYAUSD_VARNAME_PATH "${MAYA_LOCATION}/bin")
+        elseif(IS_LINUX)
+            if(PREFIX_COMMAND)
+                # Necessary for tests like DiffCore to find python lib since the test
+                # is an exectuable and running on its own (not with maya/mayapy).
+                # See DYLD_LIBRARY_PATH case below.
+                list(APPEND MAYAUSD_VARNAME_LD_LIBRARY_PATH "${MAYA_LOCATION}/lib")
             endif()
-        else()
-            set("MAYAUSD_VARNAME_${env_name}" ${env_value})
-            list(APPEND ALL_PATH_VARS "${env_name}")
         endif()
-    endforeach()
 
-    # Unset any MAYA_MODULE_PATH as we set all the individual variables
-    # so we don't want to conflict with a MayaUsd module.
-    set_property(TEST ${test_name} APPEND PROPERTY ENVIRONMENT "MAYA_MODULE_PATH=")
+        # NOTE - we prefix varnames with "MAYAUSD_VARNAME_" just to make collision
+        # with some existing var less likely
+
+        if(IS_WINDOWS AND DEFINED ENV{PYTHONHOME})
+            # If the environment contains a PYTHONHOME, also set the path to
+            # that folder so that we can find the python DLLs.
+            list(APPEND MAYAUSD_VARNAME_PATH $ENV{PYTHONHOME})
+            if(IS_WINDOWS)
+                list(APPEND MAYAUSD_VARNAME_PXR_USD_WINDOWS_DLL_PATH $ENV{PXR_USD_WINDOWS_DLL_PATH})
+            endif()
+        endif()
+
+        # Adjust PYTHONPATH to include the path to our test utilities.
+        list(APPEND MAYAUSD_VARNAME_PYTHONPATH "${MAYA_USD_DIR}/test/testUtils")
+
+        # Adjust PYTHONPATH to include the path to our test.
+        list(APPEND MAYAUSD_VARNAME_PYTHONPATH "${CMAKE_CURRENT_SOURCE_DIR}")
+
+        # convert the internally-processed envs from cmake list
+        foreach(pathvar ${ALL_PATH_VARS})
+            separate_argument_list(MAYAUSD_VARNAME_${pathvar})
+        endforeach()
+
+        # prepend the passed-in ENV values - assume these are already
+        # separated + escaped
+        foreach(name_value_pair ${PREFIX_ENV})
+            mayaUsd_split_head_tail("${name_value_pair}" "=" env_name env_value)
+            if(NOT env_name)
+                message(FATAL_ERROR "poorly formatted NAME=VALUE pair - name "
+                    "missing: ${name_value_pair}")
+            endif()
+
+            # now either prepend to existing list, or create new
+            if("${env_name}" IN_LIST ALL_PATH_VARS)
+                if(IS_WINDOWS)
+                    set(MAYAUSD_VARNAME_${env_name}
+                        "${env_value}\;${MAYAUSD_VARNAME_${env_name}}")
+                else()
+                    set(MAYAUSD_VARNAME_${env_name}
+                        "${env_value}:${MAYAUSD_VARNAME_${env_name}}")
+                endif()
+            else()
+                set("MAYAUSD_VARNAME_${env_name}" ${env_value})
+                list(APPEND ALL_PATH_VARS "${env_name}")
+            endif()
+        endforeach()
+
+        # We expect the module files to set all relevant env vars:
+        set_property(TEST ${test_name} APPEND PROPERTY ENVIRONMENT "MAYA_MODULE_PATH=${PREFIX_MODULE_PATH}")
+
+    else()
+        # No MAYA_MODULE_PATH:
+        #
+        # Here we simulate what we think the module files are doing. This might
+        # have diverged a bit, but as long as the unit tests run correctly things
+        # will be fine.
+        set(ALL_PATH_VARS
+            PYTHONPATH
+            MAYA_PLUG_IN_PATH
+            MAYA_SCRIPT_PATH
+            XBMLANGPATH
+            ${PXR_OVERRIDE_PLUGINPATH_NAME}
+            PXR_MTLX_STDLIB_SEARCH_PATHS
+        )
+
+        if(IS_WINDOWS)
+            # Put path at the front of the list of env vars.
+            list(INSERT ALL_PATH_VARS 0
+                PATH
+            )
+            list(APPEND ALL_PATH_VARS
+                PXR_USD_WINDOWS_DLL_PATH
+            )
+        else()
+            list(APPEND ALL_PATH_VARS
+                LD_LIBRARY_PATH
+            )
+        endif()
+
+        # Set initial empty values for all path vars
+        foreach(pathvar ${ALL_PATH_VARS})
+            set(MAYAUSD_VARNAME_${pathvar})
+        endforeach()
+
+        if(IS_WINDOWS)
+            list(APPEND MAYAUSD_VARNAME_PATH "${CMAKE_INSTALL_PREFIX}/lib/gtest")
+            list(APPEND MAYAUSD_VARNAME_PATH "${MAYA_LOCATION}/bin")
+        elseif(IS_LINUX)
+            if(PREFIX_COMMAND)
+                # Necessary for tests like DiffCore to find python lib since the test
+                # is an exectuable and running on its own (not with maya/mayapy).
+                # See DYLD_LIBRARY_PATH case below.
+                list(APPEND MAYAUSD_VARNAME_LD_LIBRARY_PATH "${MAYA_LOCATION}/lib")
+            endif()
+        endif()
+
+        # NOTE - we prefix varnames with "MAYAUSD_VARNAME_" just to make collision
+        # with some existing var less likely
+
+        # Emulate what mayaUSD.mod would do
+
+        # MayaUsd core library
+        if (BUILD_MAYAUSD_LIBRARY)
+            list(APPEND MAYAUSD_VARNAME_PATH
+                "${CMAKE_INSTALL_PREFIX}/lib")
+            if(IS_WINDOWS)
+                list(APPEND MAYAUSD_VARNAME_PXR_USD_WINDOWS_DLL_PATH
+                    "${CMAKE_INSTALL_PREFIX}/lib")
+            endif()
+            list(APPEND MAYAUSD_VARNAME_PYTHONPATH
+                "${CMAKE_INSTALL_PREFIX}/lib/scripts")
+            list(APPEND MAYAUSD_VARNAME_MAYA_SCRIPT_PATH
+                "${CMAKE_INSTALL_PREFIX}/lib/scripts")
+            if (IS_LINUX)
+                # On Linux the paths in XBMLANGPATH need a /%B at the end.
+                list(APPEND MAYAUSD_VARNAME_XBMLANGPATH
+                    "${CMAKE_INSTALL_PREFIX}/lib/icons/%B")
+            else()
+                list(APPEND MAYAUSD_VARNAME_XBMLANGPATH
+                    "${CMAKE_INSTALL_PREFIX}/lib/icons")
+            endif()
+            list(APPEND MAYAUSD_VARNAME_PYTHONPATH
+                "${CMAKE_INSTALL_PREFIX}/lib/python")
+            list(APPEND MAYAUSD_VARNAME_${PXR_OVERRIDE_PLUGINPATH_NAME}
+                "${CMAKE_INSTALL_PREFIX}/lib/usd")
+            list(APPEND MAYAUSD_VARNAME_PXR_MTLX_STDLIB_SEARCH_PATHS
+                "${CMAKE_INSTALL_PREFIX}/libraries")
+        endif()
+
+        # adsk plugin
+        if (BUILD_ADSK_PLUGIN)
+            list(APPEND MAYAUSD_VARNAME_MAYA_PLUG_IN_PATH
+                "${CMAKE_INSTALL_PREFIX}/plugin/adsk/plugin")
+            list(APPEND MAYAUSD_VARNAME_PYTHONPATH
+                "${CMAKE_INSTALL_PREFIX}/plugin/adsk/scripts")
+            list(APPEND MAYAUSD_VARNAME_MAYA_SCRIPT_PATH
+                "${CMAKE_INSTALL_PREFIX}/plugin/adsk/scripts")
+        endif()
+
+        # pxr plugin
+        if (BUILD_PXR_PLUGIN)
+            list(APPEND MAYAUSD_VARNAME_PYTHONPATH
+                "${CMAKE_INSTALL_PREFIX}/plugin/pxr/lib/python")
+            list(APPEND MAYAUSD_VARNAME_PATH
+                "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib")
+            if(IS_WINDOWS)
+                list(APPEND MAYAUSD_VARNAME_PXR_USD_WINDOWS_DLL_PATH
+                    "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib")
+            endif()
+            list(APPEND MAYAUSD_VARNAME_MAYA_SCRIPT_PATH
+                "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib/usd/usdMaya/resources")
+            list(APPEND MAYAUSD_VARNAME_MAYA_PLUG_IN_PATH
+                "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/plugin")
+            list(APPEND MAYAUSD_VARNAME_${PXR_OVERRIDE_PLUGINPATH_NAME}
+                "${CMAKE_INSTALL_PREFIX}/plugin/pxr/lib/usd")
+        endif()
+
+        # al plugin
+        if (BUILD_AL_PLUGIN)
+            list(APPEND MAYAUSD_VARNAME_PYTHONPATH
+                "${CMAKE_INSTALL_PREFIX}/plugin/al/lib/python")
+            list(APPEND MAYAUSD_VARNAME_PATH
+                "${CMAKE_INSTALL_PREFIX}/plugin/al/lib")
+            if(IS_WINDOWS)
+                list(APPEND MAYAUSD_VARNAME_PXR_USD_WINDOWS_DLL_PATH
+                    "${CMAKE_INSTALL_PREFIX}/plugin/al/lib")
+            endif()
+            list(APPEND MAYAUSD_VARNAME_MAYA_PLUG_IN_PATH
+                "${CMAKE_INSTALL_PREFIX}/plugin/al/plugin")
+            list(APPEND MAYAUSD_VARNAME_${PXR_OVERRIDE_PLUGINPATH_NAME}
+                "${CMAKE_INSTALL_PREFIX}/plugin/al/lib/usd")
+            list(APPEND MAYAUSD_VARNAME_${PXR_OVERRIDE_PLUGINPATH_NAME}
+                "${CMAKE_INSTALL_PREFIX}/plugin/al/plugin")
+        endif()
+
+        if(IS_WINDOWS AND DEFINED ENV{PYTHONHOME})
+            # If the environment contains a PYTHONHOME, also set the path to
+            # that folder so that we can find the python DLLs.
+            list(APPEND MAYAUSD_VARNAME_PATH $ENV{PYTHONHOME})
+            if(IS_WINDOWS)
+                list(APPEND MAYAUSD_VARNAME_PXR_USD_WINDOWS_DLL_PATH $ENV{PXR_USD_WINDOWS_DLL_PATH})
+            endif()
+        endif()
+
+        # Adjust PYTHONPATH to include the path to our test utilities.
+        list(APPEND MAYAUSD_VARNAME_PYTHONPATH "${MAYA_USD_DIR}/test/testUtils")
+
+        # Adjust PYTHONPATH to include the path to our test.
+        list(APPEND MAYAUSD_VARNAME_PYTHONPATH "${CMAKE_CURRENT_SOURCE_DIR}")
+
+        # USD
+        #
+        # Adjust PATH and PYTHONPATH to include USD.
+        # These should come last (esp PYTHONPATH, in case another module is overriding
+        # with pkgutil)
+    if (DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+            set(USD_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/${MAYAUSD_TO_USD_RELATIVE_PATH}")
+        else()
+            set(USD_INSTALL_LOCATION ${PXR_USD_LOCATION})
+        endif()
+        # Inherit any existing PYTHONPATH, but keep it at the end.
+        list(APPEND MAYAUSD_VARNAME_PYTHONPATH
+            "${USD_INSTALL_LOCATION}/lib/python")
+        if(IS_WINDOWS)
+            list(APPEND MAYAUSD_VARNAME_PATH
+                "${USD_INSTALL_LOCATION}/bin")
+            list(APPEND MAYAUSD_VARNAME_PATH
+                "${USD_INSTALL_LOCATION}/lib")
+            list(APPEND MAYAUSD_VARNAME_PATH
+                "${USD_INSTALL_LOCATION}/plugin/usd")
+
+            list(APPEND MAYAUSD_VARNAME_PXR_USD_WINDOWS_DLL_PATH
+                "${USD_INSTALL_LOCATION}/bin")
+            list(APPEND MAYAUSD_VARNAME_PXR_USD_WINDOWS_DLL_PATH
+                "${USD_INSTALL_LOCATION}/lib")
+            list(APPEND MAYAUSD_VARNAME_PXR_USD_WINDOWS_DLL_PATH
+                "${USD_INSTALL_LOCATION}/plugin/usd")
+        endif()
+        list(APPEND MAYAUSD_VARNAME_PXR_MTLX_STDLIB_SEARCH_PATHS
+                "${PXR_USD_LOCATION}/libraries")
+
+        # NOTE: this should come after any setting of PATH/PYTHONPATH so
+        #       that our entries will come first.
+        # Inherit any existing PATH/PYTHONPATH, but keep it at the end.
+        # This is needed (especially for PATH) because we will overwrite
+        # both with the values from our list and we need to keep any
+        # system entries.
+        list(APPEND MAYAUSD_VARNAME_PATH $ENV{PATH})
+        list(APPEND MAYAUSD_VARNAME_PYTHONPATH $ENV{PYTHONPATH})
+
+        # Inherit any existing PXR_USD_WINDOWS_DLL_PATH.
+        if(IS_WINDOWS)
+            list(APPEND MAYAUSD_VARNAME_PXR_USD_WINDOWS_DLL_PATH
+                    $ENV{PXR_USD_WINDOWS_DLL_PATH})
+        endif()
+
+        # convert the internally-processed envs from cmake list
+        foreach(pathvar ${ALL_PATH_VARS})
+            separate_argument_list(MAYAUSD_VARNAME_${pathvar})
+        endforeach()
+
+        # prepend the passed-in ENV values - assume these are already
+        # separated + escaped
+        foreach(name_value_pair ${PREFIX_ENV})
+            mayaUsd_split_head_tail("${name_value_pair}" "=" env_name env_value)
+            if(NOT env_name)
+                message(FATAL_ERROR "poorly formatted NAME=VALUE pair - name "
+                    "missing: ${name_value_pair}")
+            endif()
+
+            # now either prepend to existing list, or create new
+            if("${env_name}" IN_LIST ALL_PATH_VARS)
+                if(IS_WINDOWS)
+                    set(MAYAUSD_VARNAME_${env_name}
+                        "${env_value}\;${MAYAUSD_VARNAME_${env_name}}")
+                else()
+                    set(MAYAUSD_VARNAME_${env_name}
+                        "${env_value}:${MAYAUSD_VARNAME_${env_name}}")
+                endif()
+            else()
+                set("MAYAUSD_VARNAME_${env_name}" ${env_value})
+                list(APPEND ALL_PATH_VARS "${env_name}")
+            endif()
+        endforeach()
+
+        # Unset any MAYA_MODULE_PATH as we set all the individual variables
+        # so we don't want to conflict with a MayaUsd module.
+        set_property(TEST ${test_name} APPEND PROPERTY ENVIRONMENT "MAYA_MODULE_PATH=")
+    endif()
 
     # set all env vars
     foreach(pathvar ${ALL_PATH_VARS})
         set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
             "${pathvar}=${MAYAUSD_VARNAME_${pathvar}}")
     endforeach()
-    
+
     # Set a temporary folder path for the TMP,TEMP and MAYA_APP_DIR in which the
     # maya profile will be created.
     # Note: replace bad chars in test_name with _.

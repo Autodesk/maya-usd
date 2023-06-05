@@ -16,7 +16,8 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <ufe/material.h>
 #include <ufe/sceneItem.h>
@@ -48,6 +49,10 @@ public:
     static UsdMaterial::Ptr create(const UsdSceneItem::Ptr& item);
 
     std::vector<Ufe::SceneItem::Ptr> getMaterials() const override;
+
+#if (UFE_PREVIEW_VERSION_NUM >= 5003)
+    bool hasMaterial() const override;
+#endif
 
 private:
     UsdSceneItem::Ptr _item;

@@ -16,7 +16,6 @@
 #include "UsdContextOps.h"
 
 #include "private/UfeNotifGuard.h"
-#include "private/Utils.h"
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #include <mayaUsd/commands/PullPushCommands.h>
@@ -28,11 +27,12 @@
 #include <mayaUsd/nodes/proxyShapeStageExtraData.h>
 #include <mayaUsd/ufe/SetVariantSelectionCommand.h>
 #include <mayaUsd/ufe/UsdObject3d.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
-#include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
@@ -140,7 +140,7 @@ static constexpr char    kAddMayaReferenceLabel[] = "Add Maya Reference...";
 #if PXR_VERSION >= 2108
 static constexpr char kBindMaterialToSelectionItem[] = "Assign Material to Selection";
 static constexpr char kBindMaterialToSelectionLabel[] = "Assign Material to Selection";
-#if UFE_PREVIEW_VERSION_NUM >= 4010
+#ifdef UFE_V4_FEATURES_AVAILABLE
 static constexpr char kAssignNewMaterialItem[] = "Assign New Material";
 static constexpr char kAssignNewMaterialLabel[] = "Assign New Material";
 static constexpr char kAddNewMaterialItem[] = "Add New Material";
@@ -199,16 +199,15 @@ struct WaitCursor
 class UsdUndoAddNewPrimAndSelectCommand : public Ufe::CompositeUndoableCommand
 {
 public:
-    UsdUndoAddNewPrimAndSelectCommand(
-        const MAYAUSD_NS::ufe::UsdUndoAddNewPrimCommand::Ptr& creationCmd)
+    UsdUndoAddNewPrimAndSelectCommand(const UsdUfe::UsdUndoAddNewPrimCommand::Ptr& creationCmd)
         : Ufe::CompositeUndoableCommand({ creationCmd })
     {
     }
 
     void execute() override
     {
-        auto addPrimCmd = std::dynamic_pointer_cast<MAYAUSD_NS::ufe::UsdUndoAddNewPrimCommand>(
-            cmdsList().front());
+        auto addPrimCmd
+            = std::dynamic_pointer_cast<UsdUfe::UsdUndoAddNewPrimCommand>(cmdsList().front());
         addPrimCmd->execute();
         // Create the selection command only if the creation succeeded:
         if (!addPrimCmd->newUfePath().empty()) {
@@ -220,9 +219,7 @@ public:
     }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4032)
     std::string commandString() const override { return cmdsList().front()->commandString(); }
-#endif
 #endif
 };
 
@@ -250,9 +247,7 @@ public:
     }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4032)
     std::string commandString() const override { return cmdsList().front()->commandString(); }
-#endif
 #endif
 };
 #endif
@@ -306,7 +301,7 @@ protected:
     {
         // Save the load rules so that switching the stage settings will be able to preserve the
         // load rules.
-        MAYAUSD_NS::MayaUsdProxyShapeStageExtraData::saveLoadRules(_stage);
+        MayaUsd::MayaUsdProxyShapeStageExtraData::saveLoadRules(_stage);
     }
 
 private:
@@ -357,7 +352,7 @@ public:
         if (_stage) {
             UsdPrim prim = _stage->GetPrimAtPath(_primPath);
             if (prim.IsValid()) {
-                MayaUsd::ufe::InAddOrDeleteOperation ad;
+                UsdUfe::InAddOrDeleteOperation ad;
                 prim.SetActive(_active);
             }
         }
@@ -368,7 +363,7 @@ public:
         if (_stage) {
             UsdPrim prim = _stage->GetPrimAtPath(_primPath);
             if (prim.IsValid()) {
-                MayaUsd::ufe::InAddOrDeleteOperation ad;
+                UsdUfe::InAddOrDeleteOperation ad;
                 prim.SetActive(!_active);
             }
         }
@@ -739,7 +734,7 @@ bool sceneItemSupportsShading(const Ufe::SceneItem::Ptr& sceneItem)
         return true;
     }
 #else
-    auto usdItem = std::dynamic_pointer_cast<MayaUsd::ufe::UsdSceneItem>(sceneItem);
+    auto usdItem = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(sceneItem);
     if (!usdItem) {
         return false;
     }
@@ -827,11 +822,14 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
 #endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
+        const bool isMayaRef = (prim().GetTypeName() == TfToken("MayaReference"));
         if (!fIsAGatewayType && PrimUpdaterManager::getInstance().canEditAsMaya(path())) {
             items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
-            items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
+            if (!isMayaRef) {
+                items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
+            }
         }
-        if (prim().GetTypeName() != TfToken("MayaReference")) {
+        if (!isMayaRef) {
             items.emplace_back(kAddMayaReferenceItem, kAddMayaReferenceLabel);
         }
         items.emplace_back(Ufe::ContextItem::kSeparator);
@@ -891,7 +889,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
             // Top level item - Bind/unbind existing materials
             bool materialSeparatorsAdded = false;
             int  allowMaterialFunctions = 0;
-#if UFE_PREVIEW_VERSION_NUM >= 4010
+#ifdef UFE_V4_FEATURES_AVAILABLE
             MString script;
             script.format(
                 "mayaUsdMaterialBindings \"^1s\" -canAssignMaterialToNodeType true",
@@ -936,7 +934,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                         UnbindMaterialUndoableCommand::commandName);
                 }
             }
-#if UFE_PREVIEW_VERSION_NUM >= 4010
+#ifdef UFE_V4_FEATURES_AVAILABLE
             if (UsdUndoAddNewMaterialCommand::CompatiblePrim(fItem)) {
                 if (!materialSeparatorsAdded) {
                     items.emplace_back(Ufe::ContextItem::kSeparator);
@@ -1064,7 +1062,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                     }
                 }
             }
-#if UFE_PREVIEW_VERSION_NUM >= 4010
+#ifdef UFE_V4_FEATURES_AVAILABLE
         } else if (itemPath[0] == kAssignNewMaterialItem || itemPath[0] == kAddNewMaterialItem) {
             std::multimap<std::string, MString> renderersAndMaterials;
             MStringArray                        materials;
@@ -1196,9 +1194,9 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         auto primType = itemPath[itemPath.size() - 1];
 #ifdef UFE_V3_FEATURES_AVAILABLE
         return std::make_shared<UsdUndoAddNewPrimAndSelectCommand>(
-            UsdUndoAddNewPrimCommand::create(fItem, primType, primType));
+            UsdUfe::UsdUndoAddNewPrimCommand::create(fItem, primType, primType));
 #else
-        return UsdUndoAddNewPrimCommand::create(fItem, primType, primType);
+        return UsdUfe::UsdUndoAddNewPrimCommand::create(fItem, primType, primType);
 #endif
 #ifdef WANT_QT_BUILD
         // When building without Qt there is no LayerEditor
@@ -1272,7 +1270,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         return compositeCmd;
     } else if (itemPath[0] == UnbindMaterialUndoableCommand::commandName) {
         return std::make_shared<UnbindMaterialUndoableCommand>(fItem->path());
-#if UFE_PREVIEW_VERSION_NUM >= 4010
+#ifdef UFE_V4_FEATURES_AVAILABLE
     } else if (itemPath.size() == 3u && itemPath[0] == kAssignNewMaterialItem) {
         // Make a copy so that we don't change the user's original selection.
         Ufe::Selection sceneItems(*Ufe::GlobalSelection::get());

@@ -36,12 +36,13 @@ IncludeCategories:
   # 1. Related header
   # 2. All private headers
   # 3. All public headers from this repository (maya-usd)
-  # 4. Pixar + USD headers
-  # 5. Autodesk + Maya headers
-  # 6. Other libraries' headers
-  # 7. C++ standard library headers
-  # 8. C system headers
-  # 9. Conditional includes
+  # 4. UsdUfe headers
+  # 5. Pixar + USD headers
+  # 6. Autodesk + Maya headers
+  # 7. Other libraries' headers
+  # 8. C++ standard library headers
+  # 9. C system headers
+  # 10. Conditional includes
 
   # 0. GL loaders must be included before any other GL header
   # Negative priority puts it above the default IncludeIsMainRegex
@@ -56,33 +57,37 @@ IncludeCategories:
   - Regex:           '^<(mayaUsd.*|hdMaya|AL|usdMaya)/'
     Priority:        3
 
-  # 4. Pixar + USD headers
-  - Regex:           '^<pxr/'
+  # 4. UsdUfe library headers
+  - Regex:           '^<usdUfe/'
     Priority:        4
 
-  # 5. Autodesk + Maya headers
-  - Regex:           '^<(maya|ufe)/'
+  # 5. Pixar + USD headers
+  - Regex:           '^<pxr/'
     Priority:        5
 
-  # 7. C++ standard library headers
+  # 6. Autodesk + Maya headers
+  - Regex:           '^<(maya|ufe)/'
+    Priority:        6
+
+  # 8. C++ standard library headers
   #    angle brackets, no directory, no extension
   - Regex:           '^<[A-Za-z0-9_-]+>$'
-    Priority:        7
+    Priority:        8
 
-  # 8. C system headers
+  # 9. C system headers
   #    angle brackets, no directory, end with ".h"
   - Regex:           '^<[A-Za-z0-9_-]+\.h>$'
-    Priority:        8
+    Priority:        9
 
   # 2. All private headers
   - Regex:           '^"'
     Priority:        2
 
-  # 6. Other libraries' headers
+  # 7. Other libraries' headers
   - Regex:           '^<'
-    Priority:        6
+    Priority:        7
 
-  # 9. Conditional includes
+  # 10. Conditional includes
   # Not reordered by clang-format, we need to manually make sure these come last
 
 MaxEmptyLinesToKeep: '1'

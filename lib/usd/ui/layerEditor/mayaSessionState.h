@@ -78,13 +78,13 @@ Q_SIGNALS:
     void clearUIOnSceneResetSignal();
 
 public:
-    void registerNotifications();
-    void unregisterNotifications();
-
     // get the stage and proxy name for a path
     static bool getStageEntry(StageEntry* out_stageEntry, const MString& shapePath);
 
 protected:
+    void registerNotifications();
+    void unregisterNotifications();
+
     // maya callback handers
     static void proxyShapeAddedCB(MObject& node, void* clientData);
     static void proxyShapeRemovedCB(MObject& node, void* clientData);
@@ -92,6 +92,7 @@ protected:
     static void
                 namespaceRenamedCB(const MString& oldName, const MString& newName, void* clientData);
     static void sceneClosingCB(void* clientData);
+    static void sceneLoadedCB(void* clientData);
 
     void proxyShapeAddedCBOnIdle(const MObject& node);
     void nodeRenamedCBOnIdle(const MString& shapePath);
@@ -100,9 +101,12 @@ protected:
     void mayaUsdStageReset(const MayaUsdProxyStageSetNotice& notice);
     void mayaUsdStageResetCBOnIdle(StageEntry const& entry);
 
+    void loadSelectedStage();
+
     std::vector<MCallbackId> _callbackIds;
     TfNotice::Key            _stageResetNoticeKey;
     MayaCommandHook          _mayaCommandHook;
+    bool                     _inLoad = false;
 };
 
 } // namespace UsdLayerEditor

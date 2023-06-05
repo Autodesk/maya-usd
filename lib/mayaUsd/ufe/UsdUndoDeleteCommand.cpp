@@ -16,16 +16,15 @@
 #include "UsdUndoDeleteCommand.h"
 
 #include "private/UfeNotifGuard.h"
-#include "private/Utils.h"
 
-#include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/utils/layers.h>
+#include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/layers.h>
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/editContext.h>
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-#include <mayaUsd/undo/UsdUndoBlock.h>
+#include <usdUfe/undo/UsdUndoBlock.h>
 #endif
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
@@ -56,7 +55,7 @@ void UsdUndoDeleteCommand::execute()
 
     enforceMutedLayer(_prim, "remove");
 
-    MayaUsd::ufe::InAddOrDeleteOperation ad;
+    UsdUfe::InAddOrDeleteOperation ad;
 
     UsdUndoBlock undoBlock(&_undoableItem);
 
@@ -64,11 +63,9 @@ void UsdUndoDeleteCommand::execute()
     const auto& stage = _prim.GetStage();
     auto        targetPrimSpec = stage->GetEditTarget().GetPrimSpecForScenePath(_prim.GetPath());
 
-    if (MayaUsd::ufe::applyCommandRestrictionNoThrow(_prim, "delete")) {
+    if (UsdUfe::applyCommandRestrictionNoThrow(_prim, "delete")) {
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4024)
         UsdAttributes::removeAttributesConnections(_prim);
-#endif
 #endif
         PrimSpecFunc deleteFunc
             = [stage](const UsdPrim& prim, const SdfPrimSpecHandle& primSpec) -> void {
@@ -89,21 +86,21 @@ void UsdUndoDeleteCommand::execute()
 
 void UsdUndoDeleteCommand::undo()
 {
-    MayaUsd::ufe::InAddOrDeleteOperation ad;
+    UsdUfe::InAddOrDeleteOperation ad;
 
     _undoableItem.undo();
 }
 
 void UsdUndoDeleteCommand::redo()
 {
-    MayaUsd::ufe::InAddOrDeleteOperation ad;
+    UsdUfe::InAddOrDeleteOperation ad;
 
     _undoableItem.redo();
 }
 #else
 void UsdUndoDeleteCommand::perform(bool state)
 {
-    MayaUsd::ufe::InAddOrDeleteOperation ad;
+    UsdUfe::InAddOrDeleteOperation ad;
     _prim.SetActive(state);
 }
 

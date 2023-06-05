@@ -92,7 +92,12 @@ bool UsdUINodeGraphNode::hasPosOrSize(CoordType coordType) const
     }
     UsdAttribute attr
         = coordType == CoordType::Position ? posApi.GetPosAttr() : posApi.GetSizeAttr();
-    return attr.IsValid();
+    if (!attr.IsValid()) {
+        return false;
+    }
+    VtValue v;
+    attr.Get(&v);
+    return v.IsHolding<GfVec2f>();
 }
 
 Ufe::Vector2f UsdUINodeGraphNode::getPosOrSize(CoordType coordType) const

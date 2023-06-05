@@ -9,16 +9,12 @@ target_sources(${PROJECT_NAME}
         ProxyShapeHierarchyHandler.cpp
         SetVariantSelectionCommand.cpp
         StagesSubject.cpp
-        UsdHierarchy.cpp
-        UsdHierarchyHandler.cpp
         UsdPointInstanceOrientationModifier.cpp
         UsdPointInstancePositionModifier.cpp
         UsdPointInstanceScaleModifier.cpp
-        UsdRootChildHierarchy.cpp
         UsdRotatePivotTranslateUndoableCommand.cpp
         UsdRotateUndoableCommand.cpp
         UsdScaleUndoableCommand.cpp
-        UsdSceneItem.cpp
         UsdSceneItemOps.cpp
         UsdSceneItemOpsHandler.cpp
         UsdStageMap.cpp
@@ -60,14 +56,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdTransform3dUndoableCommands.cpp
             UsdUIInfoHandler.cpp
             UsdUIUfeObserver.cpp
-            UsdUndoableCommand.cpp
-            UsdUndoAddNewPrimCommand.cpp
-            UsdUndoCreateGroupCommand.cpp
-            UsdUndoInsertChildCommand.cpp
-            UsdUndoReorderCommand.cpp
-            UsdUndoSetKindCommand.cpp
             UsdUndoVisibleCommand.cpp
-            UsdUndoUngroupCommand.cpp
             XformOpUtils.cpp
     )
 endif()
@@ -78,10 +67,12 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
             # See MayaUIInfoHandler.h comments.
             EditAsMayaCommand.cpp
             MayaUIInfoHandler.cpp
+            MayaUsdHierarchy.cpp
+            MayaUsdHierarchyHandler.cpp
+            MayaUsdRootChildHierarchy.cpp
             PulledObjectHierarchy.cpp
             PulledObjectHierarchyHandler.cpp
             UsdPathMappingHandler.cpp
-            UsdUndoUngroupCommand.cpp
     )
 endif()
 
@@ -130,6 +121,13 @@ if (UFE_UINODEGRAPHNODE_HAS_SIZE)
     )
 endif()
 
+if (UFE_ATTRIBUTES_GET_ENUMS)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_ATTRIBUTES_GET_ENUMS=1
+    )
+endif()
+
 if (v4_BatchOps IN_LIST UFE_PREVIEW_FEATURES)
     message(STATUS "UFE_PREVIEW has V4 BatchOps support")
     target_sources(${PROJECT_NAME}
@@ -144,67 +142,37 @@ if (v4_BatchOps IN_LIST UFE_PREVIEW_FEATURES)
     )
 endif()
 
+if(CodeWrapperHandler IN_LIST UFE_PREVIEW_FEATURES)
+    message(STATUS "UFE_PREVIEW has composite command handler support")
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+        UsdCodeWrapperHandler.cpp
+    )
+
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+        UFE_PREVIEW_CODE_WRAPPER_HANDLER_SUPPORT=1
+    )
+endif()
+
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4001)
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-                UsdShaderNodeDef.cpp
-                UsdShaderNodeDefHandler.cpp
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4010)
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-                UsdShaderAttributeDef.cpp
-                UsdShaderAttributeHolder.cpp
-                UsdUndoCreateFromNodeDefCommand.cpp
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4013)
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-                ProxyShapeCameraHandler.cpp
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-                UsdConnections.cpp
-                UsdConnectionHandler.cpp
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4023)
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-                UsdUINodeGraphNode.cpp
-                UsdUINodeGraphNodeHandler.cpp
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4024)
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-                UsdUndoAttributesCommands.cpp
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4025)
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-                UsdTransform3dRead.cpp
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4043)
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-                UsdUndoConnectionCommands.cpp
-        )
-    endif()
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            UsdShaderNodeDef.cpp
+            UsdShaderNodeDefHandler.cpp
+            UsdShaderAttributeDef.cpp
+            UsdShaderAttributeHolder.cpp
+            UsdUndoCreateFromNodeDefCommand.cpp
+            ProxyShapeCameraHandler.cpp
+            UsdConnections.cpp
+            UsdConnectionHandler.cpp
+            UsdUINodeGraphNode.cpp
+            UsdUINodeGraphNodeHandler.cpp
+            UsdUndoAttributesCommands.cpp
+            UsdTransform3dRead.cpp
+            UsdUndoConnectionCommands.cpp
+            UsdUndoCreateStageWithNewLayerCommand.cpp
+    )
 endif()
 
 if(PXR_VERSION GREATER_EQUAL 2108 AND CMAKE_UFE_V2_FEATURES_AVAILABLE)
@@ -221,17 +189,13 @@ set(HEADERS
     ProxyShapeHierarchyHandler.h
     SetVariantSelectionCommand.h
     StagesSubject.h
-    UsdHierarchy.h
-    UsdHierarchyHandler.h
     UsdPointInstanceModifierBase.h
     UsdPointInstanceOrientationModifier.h
     UsdPointInstancePositionModifier.h
     UsdPointInstanceScaleModifier.h
-    UsdRootChildHierarchy.h
     UsdRotatePivotTranslateUndoableCommand.h
     UsdRotateUndoableCommand.h
     UsdScaleUndoableCommand.h
-    UsdSceneItem.h
     UsdSceneItemOps.h
     UsdSceneItemOpsHandler.h
     UsdStageMap.h
@@ -244,7 +208,6 @@ set(HEADERS
     UsdUndoDuplicateCommand.h
     UsdUndoRenameCommand.h
     Utils.h
-    UfeVersionCompat.h
 )
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
@@ -273,12 +236,6 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdTransform3dUndoableCommands.h
         UsdUIInfoHandler.h
         UsdUIUfeObserver.h
-        UsdUndoableCommand.h
-        UsdUndoAddNewPrimCommand.h
-        UsdUndoCreateGroupCommand.h
-        UsdUndoInsertChildCommand.h
-        UsdUndoReorderCommand.h
-        UsdUndoSetKindCommand.h
         UsdUndoVisibleCommand.h
         XformOpUtils.h
     )
@@ -290,10 +247,12 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
         # in the Outliner, which is a UFE v3 feature.
         EditAsMayaCommand.h
         MayaUIInfoHandler.h
+        MayaUsdHierarchy.h
+        MayaUsdHierarchyHandler.h
+        MayaUsdRootChildHierarchy.h
         PulledObjectHierarchy.h
         PulledObjectHierarchyHandler.h
         UsdPathMappingHandler.h
-        UsdUndoUngroupCommand.h
     )
 endif()
 
@@ -324,59 +283,29 @@ if (v4_BatchOps IN_LIST UFE_PREVIEW_FEATURES)
     )
 endif()
 
+if(CodeWrapperHandler IN_LIST UFE_PREVIEW_FEATURES)
+    list(APPEND HEADERS
+        UsdCodeWrapperHandler.h
+    )
+endif()
+
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4001)
-        list(APPEND HEADERS
-            UsdShaderNodeDef.h
-            UsdShaderNodeDefHandler.h
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4010)
-        list(APPEND HEADERS
-            UsdShaderAttributeDef.h
-            UsdShaderAttributeHolder.h
-            UsdUndoCreateFromNodeDefCommand.h
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4013)
-        list(APPEND HEADERS
-            ProxyShapeCameraHandler.h
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
-        list(APPEND HEADERS
-            UsdConnections.h
-            UsdConnectionHandler.h
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4023)
-        list(APPEND HEADERS
-            UsdUINodeGraphNode.h
-            UsdUINodeGraphNodeHandler.h
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4024)
-        list(APPEND HEADERS
-                UsdUndoAttributesCommands.h
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4025)
-        list(APPEND HEADERS
-            UsdTransform3dRead.h
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4043)
-        list(APPEND HEADERS
-            UsdUndoConnectionCommands.h
-        )
-    endif()
+    list(APPEND HEADERS
+        UsdShaderNodeDef.h
+        UsdShaderNodeDefHandler.h
+        UsdShaderAttributeDef.h
+        UsdShaderAttributeHolder.h
+        UsdUndoCreateFromNodeDefCommand.h
+        ProxyShapeCameraHandler.h
+        UsdConnections.h
+        UsdConnectionHandler.h
+        UsdUINodeGraphNode.h
+        UsdUINodeGraphNodeHandler.h
+        UsdUndoAttributesCommands.h
+        UsdTransform3dRead.h
+        UsdUndoConnectionCommands.h
+        UsdUndoCreateStageWithNewLayerCommand.h
+    )
 endif()
 
 if(PXR_VERSION GREATER_EQUAL 2108 AND CMAKE_UFE_V2_FEATURES_AVAILABLE)
@@ -398,11 +327,6 @@ install(FILES ${HEADERS}
 )
 
 set(UFE_PYTHON_MODULE_NAME ufe)
-
-# -----------------------------------------------------------------------------
-# subdirectories
-# -----------------------------------------------------------------------------
-add_subdirectory(private)
 
 # -----------------------------------------------------------------------------
 # target (UFE Python Bindings)

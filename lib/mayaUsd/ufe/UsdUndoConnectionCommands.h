@@ -17,7 +17,8 @@
 #define MAYAUSD_UFE_USDUNDOCONNECTIONCOMMANDS_H
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/undo/UsdUndoableItem.h>
+
+#include <usdUfe/undo/UsdUndoableItem.h>
 
 #include <ufe/attribute.h>
 #include <ufe/undoableCommand.h>

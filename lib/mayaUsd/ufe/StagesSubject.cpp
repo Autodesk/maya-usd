@@ -18,15 +18,17 @@
 #include "private/UfeNotifGuard.h"
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
-#include <mayaUsd/ufe/UfeVersionCompat.h>
+
+#include <usdUfe/ufe/UfeVersionCompat.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdCamera.h>
 #endif
 #include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/ufe/Utils.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
-#include <mayaUsd/undo/UsdUndoManager.h>
+#include <usdUfe/undo/UsdUndoManager.h>
 #endif
 
 #include <pxr/pxr.h>
@@ -156,18 +158,12 @@ bool inAttributeChangedNotificationGuard()
     return attributeChangedNotificationGuardCount.load() > 0;
 }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4024)
-#define UFE_V4_24(...) __VA_ARGS__
-#else
-#define UFE_V4_24(...)
-#endif
-
 void sendAttributeChanged(
     const Ufe::Path&    ufePath,
     const TfToken&      changedToken,
-    AttributeChangeType UFE_V4_24(changeType))
+    AttributeChangeType UFE_V4(changeType))
 {
-#if (UFE_PREVIEW_VERSION_NUM >= 4024)
+#ifdef UFE_V4_FEATURES_AVAILABLE
     switch (changeType) {
     case AttributeChangeType::kValueChanged: {
         notifyWithoutExceptions<Ufe::Attributes>(
@@ -178,8 +174,17 @@ void sendAttributeChanged(
         }
     } break;
     case AttributeChangeType::kAdded: {
-        notifyWithoutExceptions<Ufe::Attributes>(
-            Ufe::AttributeAdded(ufePath, changedToken.GetString()));
+        if (UsdUfe::InSetAttribute::inSetAttribute()) {
+            notifyWithoutExceptions<Ufe::Attributes>(
+                Ufe::AttributeValueChanged(ufePath, changedToken.GetString()));
+
+            if (MayaUsd::ufe::UsdCamera::isCameraToken(changedToken)) {
+                notifyWithoutExceptions<Ufe::Camera>(ufePath);
+            }
+        } else {
+            notifyWithoutExceptions<Ufe::Attributes>(
+                Ufe::AttributeAdded(ufePath, changedToken.GetString()));
+        }
     } break;
     case AttributeChangeType::kRemoved: {
         notifyWithoutExceptions<Ufe::Attributes>(
@@ -203,11 +208,11 @@ void sendAttributeChanged(
 #endif
 }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4037)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 void sendAttributeMetadataChanged(
     const Ufe::Path&             ufePath,
     const TfToken&               changedToken,
-    AttributeChangeType          UFE_V4_24(changeType),
+    AttributeChangeType          UFE_V4(changeType),
     const std::set<std::string>& metadataKeys)
 {
     if (changeType == AttributeChangeType::kMetadataChanged) {
@@ -235,7 +240,7 @@ void valueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
     }
 }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4024)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 void attributeChanged(
     const Ufe::Path&    ufePath,
     const TfToken&      changedToken,
@@ -257,7 +262,7 @@ void attributeChanged(
 }
 #endif
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4037)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 void attributeMetadataChanged(
     const Ufe::Path&             ufePath,
     const TfToken&               changedToken,
@@ -309,17 +314,15 @@ std::vector<std::string> getMetadataKeys(const std::string& strMetadata)
 void processAttributeChanges(
     const Ufe::Path&                                ufePath,
     const SdfPath&                                  changedPath,
-    const std::vector<const SdfChangeList::Entry*>& UFE_V4_24(entries))
+    const std::vector<const SdfChangeList::Entry*>& UFE_V4(entries))
 {
-#if (UFE_PREVIEW_VERSION_NUM >= 4024)
-    bool sendValueChanged = true; // Default notification to send.
-    bool sendAdded = false;
-    bool sendRemoved = false;
-    bool sendConnectionChanged = false;
-#if (UFE_PREVIEW_VERSION_NUM >= 4037)
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    bool                  sendValueChanged = true; // Default notification to send.
+    bool                  sendAdded = false;
+    bool                  sendRemoved = false;
+    bool                  sendConnectionChanged = false;
     bool                  sendMetadataChanged = false;
     std::set<std::string> metadataKeys;
-#endif
     for (const auto& entry : entries) {
         // We can have multiple flags merged into a single entry:
         if (entry->flags.didAddProperty || entry->flags.didAddPropertyWithOnlyRequiredFields) {
@@ -335,7 +338,6 @@ void processAttributeChanges(
             sendConnectionChanged = true;
             sendValueChanged = false;
         }
-#if (UFE_PREVIEW_VERSION_NUM >= 4037)
         for (const auto& infoChanged : entry->infoChanged) {
             if (infoChanged.first == UsdShadeTokens->sdrMetadata) {
                 sendMetadataChanged = true;
@@ -352,7 +354,6 @@ void processAttributeChanges(
                 }
             }
         }
-#endif
     }
     if (sendAdded) {
         attributeChanged(ufePath, changedPath.GetNameToken(), AttributeChangeType::kAdded);
@@ -367,7 +368,6 @@ void processAttributeChanges(
     if (sendRemoved) {
         attributeChanged(ufePath, changedPath.GetNameToken(), AttributeChangeType::kRemoved);
     }
-#if (UFE_PREVIEW_VERSION_NUM >= 4037)
     if (sendMetadataChanged) {
         attributeMetadataChanged(
             ufePath,
@@ -375,7 +375,6 @@ void processAttributeChanges(
             AttributeChangeType::kMetadataChanged,
             metadataKeys);
     }
-#endif
 #else
     valueChanged(ufePath, changedPath.GetNameToken());
 #endif
@@ -460,7 +459,6 @@ namespace ufe {
 // Global variables & macros
 //------------------------------------------------------------------------------
 extern UsdStageMap g_StageMap;
-extern Ufe::Rtid   g_USDRtid;
 
 //------------------------------------------------------------------------------
 // StagesSubject
@@ -592,9 +590,10 @@ void StagesSubject::stageChanged(
             // to move the transform manipulator back to original position).
             const TfToken nameToken = changedPath.GetNameToken();
             auto          usdPrimPathStr = changedPath.GetPrimPath().GetString();
-            auto ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
+            auto          ufePath
+                = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, getUsdRunTimeId(), '/');
             if (isTransformChange(nameToken)) {
-                if (!InTransform3dChange::inTransform3dChange()) {
+                if (!UsdUfe::InTransform3dChange::inTransform3dChange()) {
                     notifyWithoutExceptions<Ufe::Transform3d>(ufePath);
                 }
             }
@@ -619,7 +618,7 @@ void StagesSubject::stageChanged(
             prim = stage->GetPseudoRoot();
         } else {
             const std::string& usdPrimPathStr = changedPath.GetPrimPath().GetString();
-            ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
+            ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, getUsdRunTimeId(), '/');
             prim = stage->GetPrimAtPath(changedPath);
         }
 
@@ -697,7 +696,7 @@ void StagesSubject::stageChanged(
          ++it) {
         const auto& changedPath = *it;
         auto        usdPrimPathStr = changedPath.GetPrimPath().GetString();
-        auto        ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
+        auto ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, getUsdRunTimeId(), '/');
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
         bool sendValueChangedFallback = true;
@@ -718,7 +717,7 @@ void StagesSubject::stageChanged(
         }
 #endif
 
-        if (!InTransform3dChange::inTransform3dChange()) {
+        if (!UsdUfe::InTransform3dChange::inTransform3dChange()) {
             // Is the change a Transform3d change?
             const UsdPrim prim = stage->GetPrimAtPath(changedPath.GetPrimPath());
             const TfToken nameToken = changedPath.GetNameToken();
@@ -902,7 +901,7 @@ AttributeChangedNotificationGuard::~AttributeChangedNotificationGuard()
 
     for (const auto& notificationInfo : pendingAttributeChangedNotifications) {
         if (notificationInfo._type == AttributeChangeType::kMetadataChanged) {
-#if (UFE_PREVIEW_VERSION_NUM >= 4037)
+#ifdef UFE_V4_FEATURES_AVAILABLE
             if (const auto metadataNotificationInfo
                 = dynamic_cast<const AttributeMetadataNotification*>(&notificationInfo)) {
                 sendAttributeMetadataChanged(

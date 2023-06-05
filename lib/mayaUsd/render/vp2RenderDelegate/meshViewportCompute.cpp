@@ -355,12 +355,10 @@ void MeshViewportCompute::createConsolidatedAdjacency()
         MProfiler::kColorD_L2,
         "MeshViewportCompute:createConsolidatedAdjacency");
 
-    Hd_VertexAdjacencySharedPtr adjacency(new Hd_VertexAdjacency());
-    HdBufferSourceSharedPtr     adjacencyComputation
-        = adjacency->GetSharedAdjacencyBuilderComputation(&_meshSharedData->_topology);
-    adjacencyComputation->Resolve();
+    Hd_VertexAdjacency adjacency;
+    adjacency.BuildAdjacencyTable(&_meshSharedData->_topology);
 
-    const VtIntArray& adjacencyTable = adjacency->GetAdjacencyTable();
+    const VtIntArray& adjacencyTable = adjacency.GetAdjacencyTable();
     size_t            adjacencyBufferSize = adjacencyTable.size();
     int*              adjCopy = new int[adjacencyBufferSize];
     memcpy(adjCopy, adjacencyTable.data(), adjacencyBufferSize * sizeof(int));

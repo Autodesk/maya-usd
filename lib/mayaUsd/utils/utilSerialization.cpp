@@ -68,7 +68,8 @@ void populateChildren(
     }
     recursionDetector->push(layer->GetRealPath());
 
-    for (auto const path : subPaths) {
+    for (auto iter = subPaths.rbegin(); iter != subPaths.rend(); ++iter) {
+        std::string path = *iter;
         std::string actualPath = PXR_NS::SdfComputeAssetPathRelativeToLayer(layer, path);
         auto        subLayer = PXR_NS::SdfLayer::FindOrOpen(actualPath);
         if (subLayer && !recursionDetector->contains(subLayer->GetRealPath())) {
@@ -178,6 +179,20 @@ std::string generateUniqueFileName(const std::string& basename)
     return newFileName;
 }
 
+std::string generateUniqueLayerFileName(const std::string& basename, const SdfLayerRefPtr& layer)
+{
+    std::string layerNumber("1");
+    if (layer)
+        layerNumber = UsdMayaUtilFileSystem::getNumberSuffix(layer->GetDisplayName());
+
+    const std::string ext = PXR_NS::UsdUsdFileFormatTokens->Id.GetText();
+    const std::string layerFilename = basename + "-layer" + layerNumber + "." + ext;
+    const std::string dir = getSceneFolder();
+
+    return UsdMayaUtilFileSystem::ensureUniqueFileName(
+        UsdMayaUtilFileSystem::appendPaths(dir, layerFilename));
+}
+
 std::string usdFormatArgOption()
 {
     static const MString kSaveLayerFormatBinaryOption(
@@ -224,8 +239,12 @@ void setNewProxyPath(
     const SdfLayerRefPtr& layer,
     bool                  isTargetLayer)
 {
+    const bool  needRelativePath = UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile();
+    const char* filePathCmd = "setAttr -type \"string\" ^1s.filePath \"^2s\"; "
+                              "setAttr ^1s.filePathRelative ^3s; ";
+
     MString script;
-    script.format("setAttr -type \"string\" ^1s.filePath \"^2s\"", proxyNodeName, newRootLayerPath);
+    script.format(filePathCmd, proxyNodeName, newRootLayerPath, needRelativePath ? "1" : "0");
     MGlobal::executeCommand(
         script,
         /*display*/ true,
@@ -299,23 +318,23 @@ SdfLayerRefPtr saveAnonymousLayer(
     const std::string& basename,
     std::string        formatArg)
 {
-    std::string newFileName = generateUniqueFileName(basename);
-    return saveAnonymousLayer(stage, anonLayer, newFileName, false, parent, formatArg);
+    PathInfo pathInfo;
+    pathInfo.absolutePath = generateUniqueLayerFileName(basename, anonLayer);
+    return saveAnonymousLayer(stage, anonLayer, pathInfo, parent, formatArg);
 }
 
 SdfLayerRefPtr saveAnonymousLayer(
-    UsdStageRefPtr     stage,
-    SdfLayerRefPtr     anonLayer,
-    const std::string& path,
-    bool               savePathAsRelative,
-    LayerParent        parent,
-    std::string        formatArg)
+    UsdStageRefPtr  stage,
+    SdfLayerRefPtr  anonLayer,
+    const PathInfo& pathInfo,
+    LayerParent     parent,
+    std::string     formatArg)
 {
     if (!anonLayer || !anonLayer->IsAnonymous()) {
         return nullptr;
     }
 
-    std::string filePath(path);
+    std::string filePath(pathInfo.absolutePath);
     ensureUSDFileExtension(filePath);
 
     const bool wasTargetLayer = (stage->GetEditTarget().GetLayer() == anonLayer);
@@ -327,8 +346,12 @@ SdfLayerRefPtr saveAnonymousLayer(
     const bool  isSubLayer = (parent._layerParent != nullptr);
     std::string relativePathAnchor;
 
-    if (savePathAsRelative) {
-        if (isSubLayer) {
+    if (pathInfo.savePathAsRelative) {
+        if (!pathInfo.customRelativeAnchor.empty()) {
+            relativePathAnchor = pathInfo.customRelativeAnchor;
+            filePath
+                = UsdMayaUtilFileSystem::makePathRelativeTo(filePath, relativePathAnchor).first;
+        } else if (isSubLayer) {
             filePath
                 = UsdMayaUtilFileSystem::getPathRelativeToLayerFile(filePath, parent._layerParent);
             relativePathAnchor = UsdMayaUtilFileSystem::getLayerFileDir(parent._layerParent);

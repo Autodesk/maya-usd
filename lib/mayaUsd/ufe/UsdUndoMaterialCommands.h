@@ -16,11 +16,13 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
-#include <mayaUsd/undo/UsdUndoableItem.h>
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
-#include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/undo/UsdUndoableItem.h>
+#ifdef UFE_V4_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdUndoCreateFromNodeDefCommand.h>
+
+#include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>
 #endif
 
 #include <pxr/usd/usd/prim.h>
@@ -87,7 +89,7 @@ private:
     UsdUndoableItem _undoableItem;
 };
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 //! \brief UsdUndoAssignNewMaterialCommand
 class MAYAUSD_CORE_PUBLIC UsdUndoAssignNewMaterialCommand : public Ufe::InsertChildCommand
 {
@@ -122,9 +124,6 @@ public:
     void execute() override;
     void undo() override;
     void redo() override;
-
-    // Returns the name of the material scope in this Maya session.
-    static std::string resolvedMaterialScopeName();
 
 private:
     void markAsFailed();
@@ -178,6 +177,45 @@ private:
     UsdUndoCreateFromNodeDefCommand::Ptr _createShaderCmd;
 
 }; // UsdUndoAddNewMaterialCommand
+
+//! \brief This command is used to create a materials scope under a specified parent item. A
+//! materials scope is a USD Scope with a special name (usually "mtl"), which holds materials. By
+//! convention, all materials should reside within such a scope.
+class MAYAUSD_CORE_PUBLIC UsdUndoCreateMaterialsScopeCommand
+    : public Ufe::SceneItemResultUndoableCommand
+{
+public:
+    typedef std::shared_ptr<UsdUndoCreateMaterialsScopeCommand> Ptr;
+
+    UsdUndoCreateMaterialsScopeCommand(const UsdSceneItem::Ptr& parentItem);
+    ~UsdUndoCreateMaterialsScopeCommand() override;
+
+    // Delete the copy/move constructors assignment operators.
+    UsdUndoCreateMaterialsScopeCommand(const UsdUndoCreateMaterialsScopeCommand&) = delete;
+    UsdUndoCreateMaterialsScopeCommand& operator=(const UsdUndoCreateMaterialsScopeCommand&)
+        = delete;
+    UsdUndoCreateMaterialsScopeCommand(UsdUndoCreateMaterialsScopeCommand&&) = delete;
+    UsdUndoCreateMaterialsScopeCommand& operator=(UsdUndoCreateMaterialsScopeCommand&&) = delete;
+
+    //! Create a UsdUndoCreateMaterialsScopeCommand that creates a new materials scope under \p
+    //! parentItem. If there already is a materials scope under \p parentItem, the command will
+    //! not create a new materials scope but simply point to the existing one.
+    static UsdUndoCreateMaterialsScopeCommand::Ptr create(const UsdSceneItem::Ptr& parentItem);
+
+    Ufe::SceneItem::Ptr sceneItem() const override;
+
+    void execute() override;
+    void undo() override;
+    void redo() override;
+
+private:
+    void markAsFailed();
+
+    UsdSceneItem::Ptr   _parentItem;
+    Ufe::SceneItem::Ptr _insertedChild;
+
+    UsdUndoableItem _undoableItem;
+}; // UsdUndoCreateMaterialsScopeCommand
 #endif
 
 } // namespace ufe

@@ -15,10 +15,14 @@
 //
 #include "UsdUndoMaterialCommands.h"
 
+#include "private/UfeNotifGuard.h"
+
 #include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/ufe/UsdUndoRenameCommand.h>
 #include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsd/utils/util.h>
+
+#include <usdUfe/undo/UsdUndoBlock.h>
 
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>
@@ -39,11 +43,7 @@ namespace ufe {
 
 namespace {
 
-// Pixar uses "Looks" to name the materials scope. The USD asset workgroup recommendations is to
-// use "mtl" instead. So we will go with the WG recommendation when creating new material scopes.
-static const std::string kDefaultMaterialScopeName("mtl");
-
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 bool connectShaderToMaterial(
     Ufe::SceneItem::Ptr shaderItem,
     UsdPrim             materialPrim,
@@ -87,6 +87,74 @@ bool connectShaderToMaterial(
     UsdShadeConnectableAPI::ConnectToSource(materialOutput, shaderOutput);
     return true;
 }
+
+//! Returns true if \p item is a materials scope.
+bool isMaterialsScope(const Ufe::SceneItem::Ptr& item)
+{
+    if (!item) {
+        return false;
+    }
+
+    // Must be a scope.
+    if (item->nodeType() != "Scope") {
+        return false;
+    }
+
+    // With the magic name.
+    if (item->nodeName() == UsdMayaJobExportArgs::GetDefaultMaterialsScopeName()) {
+        return true;
+    }
+
+    // Or with only materials inside
+    auto scopeHierarchy = Ufe::Hierarchy::hierarchy(item);
+    if (scopeHierarchy) {
+        for (auto&& child : scopeHierarchy->children()) {
+            if (child->nodeType() != "Material") {
+                // At least one non material
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+//! Searches the children of \p parentPath for a materials scope. Returns a null pointer if no
+//! materials scope is found.
+Ufe::SceneItem::Ptr getMaterialsScope(const Ufe::Path& parentPath)
+{
+    auto parent = Ufe::Hierarchy::createItem(parentPath);
+    if (!parent) {
+        return nullptr;
+    }
+
+    auto parentHierarchy = Ufe::Hierarchy::hierarchy(parent);
+    if (!parentHierarchy) {
+        return nullptr;
+    }
+
+    // Find an available materials scope name.
+    // Usually the materials scope will simply have the default name (e.g. "mtl"). However, if
+    // that name is used by a non-scope object, a number should be appended (e.g. "mtl1"). If
+    // this name is not available either, increment the number until an available name is found.
+    std::string scopeNamePrefix = UsdMayaJobExportArgs::GetDefaultMaterialsScopeName();
+    std::string scopeName = scopeNamePrefix;
+    auto        hasName
+        = [&scopeName](const Ufe::SceneItem::Ptr& item) { return item->nodeName() == scopeName; };
+    Ufe::SceneItemList children = parentHierarchy->children();
+    for (size_t i = 1;; ++i) {
+        auto childrenIterator = std::find_if(children.begin(), children.end(), hasName);
+        if (childrenIterator == children.end()) {
+            return nullptr;
+        }
+        if ((*childrenIterator)->nodeType() == "Scope") {
+            return *childrenIterator;
+        }
+
+        // Name is already used by something that is not a scope. Try the next name.
+        scopeName = scopeNamePrefix + std::to_string(i);
+    }
+}
 #endif
 
 bool _BindMaterialCompatiblePrim(const UsdPrim& usdPrim)
@@ -96,7 +164,8 @@ bool _BindMaterialCompatiblePrim(const UsdPrim& usdPrim)
         // material or a shader.
         return false;
     }
-    if (UsdGeomScope(usdPrim) && usdPrim.GetName() == kDefaultMaterialScopeName) {
+    if (UsdGeomScope(usdPrim)
+        && usdPrim.GetName() == UsdMayaJobExportArgs::GetDefaultMaterialsScopeName()) {
         return false;
     }
     if (auto subset = UsdGeomSubset(usdPrim)) {
@@ -116,7 +185,7 @@ bool _BindMaterialCompatiblePrim(const UsdPrim& usdPrim)
 
 bool BindMaterialUndoableCommand::CompatiblePrim(const Ufe::SceneItem::Ptr& item)
 {
-    auto usdItem = std::dynamic_pointer_cast<const MAYAUSD_NS::ufe::UsdSceneItem>(item);
+    auto usdItem = std::dynamic_pointer_cast<const UsdUfe::UsdSceneItem>(item);
     if (!usdItem) {
         return false;
     }
@@ -205,7 +274,7 @@ void UnbindMaterialUndoableCommand::execute()
 }
 const std::string UnbindMaterialUndoableCommand::commandName("Unassign Material");
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 UsdUndoAssignNewMaterialCommand::UsdUndoAssignNewMaterialCommand(
     const UsdSceneItem::Ptr& parentItem,
     const std::string&       nodeId)
@@ -276,15 +345,8 @@ Ufe::SceneItem::Ptr UsdUndoAssignNewMaterialCommand::insertedChild() const
     return {};
 }
 
-std::string UsdUndoAssignNewMaterialCommand::resolvedMaterialScopeName()
-{
-    return UsdMayaJobExportArgs::GetDefaultMaterialsScopeName();
-}
-
 void UsdUndoAssignNewMaterialCommand::execute()
 {
-    std::string materialsScopeNamePrefix = resolvedMaterialScopeName();
-
     // Materials cannot be shared between stages. So we create a unique material per stage,
     // which can then be shared between any number of objects within that stage.
     for (const auto& selectedInStage : _stagesAndPaths) {
@@ -302,63 +364,17 @@ void UsdUndoAssignNewMaterialCommand::execute()
         //
         // 1. Create the Scope "materials" if it does not exist:
         //
-        auto stagePath = selectedPaths[0].popSegment();
-        auto stageHierarchy = Ufe::Hierarchy::hierarchy(Ufe::Hierarchy::createItem(stagePath));
-        if (!stageHierarchy) {
+        auto stageItem
+            = UsdSceneItem::create(MayaUsd::ufe::stagePath(stage), stage->GetPseudoRoot());
+        auto createMaterialsScopeCmd = UsdUndoCreateMaterialsScopeCommand::create(stageItem);
+        if (!createMaterialsScopeCmd) {
             markAsFailed();
             return;
         }
+        createMaterialsScopeCmd->execute();
+        _cmds->append(createMaterialsScopeCmd);
 
-        // Find an available materials scope name.
-        // Usually the materials scope will simply have the default name (e.g. "mtl"). However, if
-        // that name is used by a non-scope object, a number should be appended (e.g. "mtl1"). If
-        // this name is not available either, increment the number until an available name is found.
-        Ufe::SceneItem::Ptr materialsScope = nullptr;
-        std::string         materialsScopeName = materialsScopeNamePrefix;
-        Ufe::SceneItemList  children = stageHierarchy->children();
-        for (size_t i = 1;; ++i) {
-            auto hasName = [&materialsScopeName](const Ufe::SceneItem::Ptr& item) {
-                return item->nodeName() == materialsScopeName;
-            };
-            auto childrenIterator = std::find_if(children.begin(), children.end(), hasName);
-            if (childrenIterator == children.end()) {
-                break;
-            }
-            if ((*childrenIterator)->nodeType() == "Scope") {
-                materialsScope = *childrenIterator;
-                break;
-            }
-
-            // Name is already used by something that is not a scope. Try the next name.
-            materialsScopeName = materialsScopeNamePrefix + std::to_string(i);
-        }
-
-        if (!materialsScope) {
-            auto createScopeCmd = UsdUndoAddNewPrimCommand::create(
-                UsdSceneItem::create(MayaUsd::ufe::stagePath(stage), stage->GetPseudoRoot()),
-                materialsScopeName,
-                "Scope");
-            if (!createScopeCmd) {
-                markAsFailed();
-                return;
-            }
-            createScopeCmd->execute();
-            _cmds->append(createScopeCmd);
-            auto scopePath = createScopeCmd->newUfePath();
-            // The code automatically appends a "1". We need to rename:
-            auto itemOps = Ufe::SceneItemOps::sceneItemOps(Ufe::Hierarchy::createItem(scopePath));
-            if (!itemOps) {
-                markAsFailed();
-                return;
-            }
-            auto rename = itemOps->renameItemCmd(Ufe::PathComponent(materialsScopeName));
-            if (!rename.undoableCommand) {
-                markAsFailed();
-                return;
-            }
-            _cmds->append(rename.undoableCommand);
-            materialsScope = rename.item;
-        }
+        auto materialsScope = createMaterialsScopeCmd->sceneItem();
         if (!materialsScope || materialsScope->path().empty()) {
             // The _createScopeCmd and/or _renameScopeCmd will have emitted errors.
             markAsFailed();
@@ -400,8 +416,8 @@ void UsdUndoAssignNewMaterialCommand::execute()
         //
         // 3. Create the Shader:
         //
-        UsdSceneItem::Ptr materialItem = std::dynamic_pointer_cast<UsdSceneItem>(
-            Ufe::Hierarchy::createItem(createMaterialCmd->newUfePath()));
+        UsdSceneItem::Ptr materialItem
+            = std::dynamic_pointer_cast<UsdSceneItem>(createMaterialCmd->sceneItem());
         auto createShaderCmd = UsdUndoCreateFromNodeDefCommand::create(
             shaderNodeDef, materialItem, shaderNodeDef->GetFamily().GetString());
         if (!createShaderCmd) {
@@ -473,7 +489,7 @@ void UsdUndoAssignNewMaterialCommand::redo()
             // Find out all Material creation followed by a shader creation and reconnect the
             // shader to the material. Don't assume any ordering.
             auto addMaterialCmd
-                = std::dynamic_pointer_cast<MAYAUSD_NS::ufe::UsdUndoAddNewPrimCommand>(*cmdsIt++);
+                = std::dynamic_pointer_cast<UsdUfe::UsdUndoAddNewPrimCommand>(*cmdsIt++);
             if (addMaterialCmd && addMaterialCmd->newPrim()
                 && UsdShadeMaterial(addMaterialCmd->newPrim())
                 && cmdsIt != _cmds->cmdsList().end()) {
@@ -525,32 +541,8 @@ Ufe::SceneItem::Ptr UsdUndoAddNewMaterialCommand::insertedChild() const
 
 bool UsdUndoAddNewMaterialCommand::CompatiblePrim(const Ufe::SceneItem::Ptr& target)
 {
-    if (!target) {
-        return false;
-    }
-
-    // Must be a scope.
-    if (target->nodeType() != "Scope") {
-        return false;
-    }
-
-    // With the magic name.
-    if (target->nodeName() == UsdUndoAssignNewMaterialCommand::resolvedMaterialScopeName()) {
-        return true;
-    }
-
-    // Or with only materials inside
-    auto scopeHierarchy = Ufe::Hierarchy::hierarchy(target);
-    if (scopeHierarchy) {
-        for (auto&& child : scopeHierarchy->children()) {
-            if (child->nodeType() != "Material") {
-                // At least one non material
-                return false;
-            }
-        }
-    }
-
-    return true;
+    // Must be a materials scope.
+    return isMaterialsScope(target);
 }
 
 void UsdUndoAddNewMaterialCommand::execute()
@@ -591,8 +583,7 @@ void UsdUndoAddNewMaterialCommand::execute()
     //
     // Create the Shader:
     //
-    auto materialItem = std::dynamic_pointer_cast<UsdSceneItem>(
-        Ufe::Hierarchy::createItem(_createMaterialCmd->newUfePath()));
+    auto materialItem = std::dynamic_pointer_cast<UsdSceneItem>(_createMaterialCmd->sceneItem());
     _createShaderCmd = UsdUndoCreateFromNodeDefCommand::create(
         shaderNodeDef, materialItem, shaderNodeDef->GetFamily().GetString());
     if (!_createShaderCmd) {
@@ -648,6 +639,89 @@ void UsdUndoAddNewMaterialCommand::markAsFailed()
         _createMaterialCmd->undo();
         _createMaterialCmd.reset();
     }
+}
+
+UsdUndoCreateMaterialsScopeCommand::UsdUndoCreateMaterialsScopeCommand(
+    const UsdSceneItem::Ptr& parentItem)
+    : _parentItem(nullptr)
+    , _insertedChild(nullptr)
+{
+    if (!parentItem || !parentItem->prim().IsActive())
+        return;
+
+    _parentItem = parentItem;
+    _insertedChild = getMaterialsScope(_parentItem->path());
+}
+
+UsdUndoCreateMaterialsScopeCommand::~UsdUndoCreateMaterialsScopeCommand() { }
+
+UsdUndoCreateMaterialsScopeCommand::Ptr
+UsdUndoCreateMaterialsScopeCommand::create(const UsdSceneItem::Ptr& parentItem)
+{
+    // Changing the hierarchy of invalid items is not allowed.
+    if (!parentItem || !parentItem->prim().IsActive())
+        return nullptr;
+
+    return std::make_shared<UsdUndoCreateMaterialsScopeCommand>(parentItem);
+}
+
+Ufe::SceneItem::Ptr UsdUndoCreateMaterialsScopeCommand::sceneItem() const { return _insertedChild; }
+
+void UsdUndoCreateMaterialsScopeCommand::execute()
+{
+    UsdUfe::InAddOrDeleteOperation ad;
+
+    UsdUndoBlock undoBlock(&_undoableItem);
+
+    if (_insertedChild || !_parentItem) {
+        return;
+    }
+
+    // The AddNewPrimCommand automatically appends a "1" to the name, so it cannot create a
+    // scope with the desired name directly. Create a scope and rename it afterwards.
+    auto createScopeCmd = UsdUndoAddNewPrimCommand::create(_parentItem, "ScopeName", "Scope");
+    if (!createScopeCmd) {
+        markAsFailed();
+        return;
+    }
+    createScopeCmd->execute();
+
+    auto scopeItem = std::dynamic_pointer_cast<UsdSceneItem>(createScopeCmd->sceneItem());
+    auto materialsScopeName = UsdMayaJobExportArgs::GetDefaultMaterialsScopeName();
+    auto renameCmd = UsdUndoRenameCommand::create(scopeItem, materialsScopeName);
+    if (!renameCmd) {
+        markAsFailed();
+        return;
+    }
+    renameCmd->execute();
+
+    scopeItem = renameCmd->renamedItem();
+    if (!scopeItem || scopeItem->path().empty()) {
+        markAsFailed();
+        return;
+    }
+
+    _insertedChild = scopeItem;
+}
+
+void UsdUndoCreateMaterialsScopeCommand::undo()
+{
+    UsdUfe::InAddOrDeleteOperation ad;
+
+    _undoableItem.undo();
+}
+
+void UsdUndoCreateMaterialsScopeCommand::redo()
+{
+    UsdUfe::InAddOrDeleteOperation ad;
+
+    _undoableItem.redo();
+}
+
+void UsdUndoCreateMaterialsScopeCommand::markAsFailed()
+{
+    UsdUfe::InAddOrDeleteOperation ad;
+    undo();
 }
 
 #endif

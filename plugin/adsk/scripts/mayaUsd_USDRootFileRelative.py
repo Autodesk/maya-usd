@@ -6,13 +6,9 @@ from mayaUSDRegisterStrings import getMayaUsdString
 from mayaUsdMayaReferenceUtils import pushOptionsUITemplate
 
 try:
-    from PySide2.QtCore import QObject, QFileInfo
-    from PySide2.QtWidgets import QFileDialog, QLayout, QWidget, QLineEdit, QDialogButtonBox, QComboBox
-    from shiboken2 import wrapInstance
+    from PySide2.QtWidgets import QFileDialog, QLineEdit, QDialogButtonBox, QComboBox, QApplication
 except:
-    from PySide6.QtCore import QObject, QFileInfo
-    from PySide6.QtWidgets import QFileDialog, QLayout, QWidget, QLineEdit, QDialogButtonBox, QComboBox
-    from shiboken6 import wrapInstance
+    from PySide6.QtWidgets import QFileDialog, QLineEdit, QDialogButtonBox, QComboBox, QApplication
 
 # Global variables
 _relativeToFilePath = None
@@ -145,6 +141,14 @@ class usdFileRelative(object):
             cls.connectToDialogControls(parentLayout)
 
         if cls._haveRelativePathFields:
+            # We may need to hide the preview fields in certain cases
+            showPreviewFields = True
+            if relativeToWhat == 'SceneFile':
+                showPreviewFields = cmds.file(q=True, exists=True)
+
+            cmds.textFieldGrp(cls.kUnresolvedPathTextField, edit=True, visible=showPreviewFields)
+            cmds.textFieldGrp(cls.kResolvedPathTextField, edit=True, visible=showPreviewFields)
+
             # Only enable fields when make relative is checked.
             makePathRelative = cmds.checkBox(cls.kMakePathRelativeCheckBox, query=True, value=True)
             cls.onMakePathRelativeChanged(makePathRelative)
@@ -165,6 +169,26 @@ class usdFileRelative(object):
         relative = cmds.checkBox(cls.kMakePathRelativeCheckBox, query=True, value=True)
         cmds.optionVar(iv=('mayaUsd_MakePathRelativeTo' + relativeToWhat, relative))
 
+    @staticmethod
+    def findWindowNameFromLayout(layoutName):
+        """
+        Find the window name that contains the given layout.
+        """
+        window_name = cmds.layout(layoutName, query=True, parent=True)
+        if '|' in window_name:
+            window_name = window_name.split('|')[0]
+        return cmds.window(window_name, query=True, title=True)
+
+    @staticmethod
+    def findQtWindowFromTitle(title):
+        """
+        Find the Qt window that has the given title.
+        """
+        for window in QApplication.topLevelWidgets():
+            if window.windowTitle() == title:
+                return window
+        return None
+
     @classmethod
     def connectToDialogControls(cls, parentLayout):
         """
@@ -173,20 +197,11 @@ class usdFileRelative(object):
         Used so we can update the file path preview fields.
         """
 
-        # Get the Qt pointer for the input parent string (layout from mel).
-        ptr = omui.MQtUtil.findLayout(parentLayout)
-        if ptr is not None:
-            # Find the top-level window from that parent layout.
-            maya_widget = wrapInstance(int(ptr), QWidget)
-            pp = maya_widget.parent()
-            while pp:
-                if pp.inherits('QFileDialog'):
-                    cls._fileDialog = pp
-                pp = pp.parent()
-                if pp:
-                    maya_window = pp
-
+        # Get the Qt Window containing the input parent layout from mel.
+        maya_window_name = usdFileRelative.findWindowNameFromLayout(parentLayout)
+        maya_window = usdFileRelative.findQtWindowFromTitle(maya_window_name)
         if maya_window:
+            cls._fileDialog = maya_window
             # Find the file name edit field and connect to it to be notified when text changes.
             fileNameEditField = maya_window.findChild(QLineEdit, 'fileNameEdit')
             if fileNameEditField:
@@ -279,10 +294,11 @@ class usdRootFileRelative(usdFileRelative):
         Note: the function takes an unused filterType argument to be compatible
               with the dialog2 command API.
         '''
-        # If there is no Maya scene file saved, then the checkbox and label should be disabled.
-        haveSceneFile = cmds.file(q=True, exists=True)
+        # USD root layer can always be set relative to Maya scene file. 
+        # If the latter doesn't exist, we use a special approach with 
+        # postponed relative file path assignment 
         cls.setRelativeFilePathRoot(cmds.file(query=True, sceneName=True))
-        super(usdRootFileRelative, cls).uiInit(parentLayout, haveSceneFile, cls.kRelativeToWhat)
+        super(usdRootFileRelative, cls).uiInit(parentLayout, True, cls.kRelativeToWhat)
 
     @classmethod
     def uiCommit(cls, parentLayout, selectedFile=None):

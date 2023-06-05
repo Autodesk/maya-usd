@@ -15,11 +15,10 @@
 //
 #include "UsdUndoDuplicateSelectionCommand.h"
 
-#include "private/Utils.h"
-
 #include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/undo/UsdUndoBlock.h>
-#include <mayaUsdUtils/util.h>
+
+#include <usdUfe/undo/UsdUndoBlock.h>
+#include <usdUfe/utils/usdUtils.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/path.h>

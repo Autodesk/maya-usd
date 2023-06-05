@@ -19,8 +19,9 @@
 #include "UsdCamera.h"
 #include "pxr/usd/usdGeom/camera.h"
 
-#include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/sdf/path.h>
@@ -59,7 +60,7 @@ Ufe::Camera::Ptr UsdCameraHandler::camera(const Ufe::SceneItem::Ptr& item) const
     return UsdCamera::create(usdItem);
 }
 
-#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4013)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 Ufe::Selection UsdCameraHandler::find_(const Ufe::Path& path) const
 {
     TF_VERIFY(path.runTimeId() == getUsdRunTimeId());

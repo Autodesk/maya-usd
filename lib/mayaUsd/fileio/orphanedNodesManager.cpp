@@ -19,8 +19,9 @@
 #include <mayaUsd/fileio/pullInformation.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/usd/editContext.h>
@@ -318,7 +319,7 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
             // inactive children (since pulled prims are inactivated), to
             // support a variant switch to variant child with the same name.
 
-            auto parentUsdItem = std::dynamic_pointer_cast<MayaUsd::ufe::UsdSceneItem>(parentItem);
+            auto parentUsdItem = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(parentItem);
             if (!parentUsdItem) {
                 // USD sends resync changes (UFE subtree invalidate) on the
                 // pseudo-root itself.  Since the pseudo-root has no payload or
@@ -543,8 +544,8 @@ void OrphanedNodesManager::recursiveSwitch(
     if (trieNode->hasData()) {
         TF_VERIFY(trieNode->empty());
 
-        auto pulledNode = std::dynamic_pointer_cast<MayaUsd::ufe::UsdSceneItem>(
-            Ufe::Hierarchy::createItem(ufePath));
+        auto pulledNode
+            = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(Ufe::Hierarchy::createItem(ufePath));
         if (!TF_VERIFY(pulledNode)) {
             return;
         }
@@ -585,7 +586,7 @@ OrphanedNodesManager::variantSetDescriptors(const Ufe::Path& p)
     auto                            path = p;
     while (path.runTimeId() == MayaUsd::ufe::getUsdRunTimeId()) {
         auto ancestor = Ufe::Hierarchy::createItem(path);
-        auto usdAncestor = std::static_pointer_cast<MayaUsd::ufe::UsdSceneItem>(ancestor);
+        auto usdAncestor = std::static_pointer_cast<UsdUfe::UsdSceneItem>(ancestor);
         auto variantSets = usdAncestor->prim().GetVariantSets();
         std::list<VariantSelection> vs;
         for (const auto& vsn : variantSets.GetNames()) {

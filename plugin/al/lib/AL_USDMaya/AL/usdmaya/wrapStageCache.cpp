@@ -21,10 +21,6 @@
 #include <boost/python/args.hpp>
 #include <boost/python/def.hpp>
 
-// using namespace std;
-// using namespace boost::python;
-// using namespace boost;
-
 void wrapStageCache()
 {
     boost::python::class_<AL::usdmaya::StageCache>("StageCache")

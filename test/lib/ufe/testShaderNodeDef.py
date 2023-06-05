@@ -18,6 +18,7 @@
 
 import fixturesUtils
 import mayaUtils
+import ufeUtils
 
 from maya import standalone
 
@@ -57,7 +58,7 @@ class ShaderNodeDefTestCase(unittest.TestCase):
         self.assertIsNotNone(connectionHandler)
         return connectionHandler
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4001', 'nodeDefHandler is only available in UFE preview version 0.4.1 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'nodeDefHandler is only available in UFE v4 or greater')
     def testDefinitions(self):
         nodeDefHandler = self.getNodeDefHandler()
         nodeDefs = nodeDefHandler.definitions("Shader")
@@ -99,52 +100,7 @@ class ShaderNodeDefTestCase(unittest.TestCase):
         for mtlxDef in mtlxDefs:
             self.assertTrue(mtlxDef in nodeDefTypes)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4001', 'nodeDefHandler is only available in UFE preview version 0.4.1 and greater')
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '4015', 'filename and float2 are no longer generic starting with Ufe 0.4.15')
-    def testDefinitionByType(self):
-        type = "ND_image_color3"
-        nodeDefHandler = self.getNodeDefHandler()
-        nodeDef = nodeDefHandler.definition(type)
-        self.assertIsNotNone(nodeDef)
-        inputs = nodeDef.inputs()
-        outputs = nodeDef.outputs()
-        self.assertEqual(nodeDef.type(), type)
-        self.assertEqual(len(inputs), 10)
-        self.assertEqual(inputs[0].name(), "file")
-        self.assertEqual(inputs[0].type(), "Generic")
-        self.assertEqual(inputs[0].defaultValue(), "")
-        self.assertEqual(inputs[1].name(), "layer")
-        self.assertEqual(inputs[1].type(), "String")
-        self.assertEqual(inputs[1].defaultValue(), "")
-        self.assertEqual(inputs[2].name(), "default")
-        self.assertEqual(inputs[2].type(), "ColorFloat3")
-        self.assertEqual(inputs[2].defaultValue(), "(0, 0, 0)")
-        self.assertEqual(inputs[3].name(), "texcoord")
-        self.assertEqual(inputs[3].type(), "Generic")
-        self.assertEqual(inputs[3].defaultValue(), "")
-        self.assertEqual(inputs[4].name(), "uaddressmode")
-        self.assertEqual(inputs[4].type(), "EnumString")
-        self.assertEqual(inputs[4].defaultValue(), "periodic")
-        self.assertEqual(inputs[5].name(), "vaddressmode")
-        self.assertEqual(inputs[5].type(), "EnumString")
-        self.assertEqual(inputs[5].defaultValue(), "periodic")
-        self.assertEqual(inputs[6].name(), "filtertype")
-        self.assertEqual(inputs[6].type(), "EnumString")
-        self.assertEqual(inputs[6].defaultValue(), "linear")
-        self.assertEqual(inputs[7].name(), "framerange")
-        self.assertEqual(inputs[7].type(), "String")
-        self.assertEqual(inputs[7].defaultValue(), "")
-        self.assertEqual(inputs[8].name(), "frameoffset")
-        self.assertEqual(inputs[8].type(), "Int")
-        self.assertEqual(inputs[8].defaultValue(), "0")
-        self.assertEqual(inputs[9].name(), "frameendaction")
-        self.assertEqual(inputs[9].type(), "EnumString")
-        self.assertEqual(inputs[9].defaultValue(), "constant")
-        self.assertEqual(len(outputs), 1)
-        self.assertEqual(outputs[0].name(), "out")
-        self.assertEqual(outputs[0].type(), "ColorFloat3")
-
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4015', 'filename and float2 are no longer generic starting with Ufe 0.4.15')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'filename and float2 are no longer generic starting with Ufe v4')
     def testDefinitionByType(self):
         type = "ND_image_color3"
         nodeDefHandler = self.getNodeDefHandler()
@@ -188,7 +144,7 @@ class ShaderNodeDefTestCase(unittest.TestCase):
         self.assertEqual(outputs[0].name(), "out")
         self.assertEqual(outputs[0].type(), "ColorFloat3")
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Improvements to nodeDef only available in UFE preview version 0.4.8 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Improvements to nodeDef only available in UFE v4 or greater')
     def testClassificationsAndMetadata(self):
         type = "ND_image_color3"
         nodeDefHandler = self.getNodeDefHandler()
@@ -219,7 +175,7 @@ class ShaderNodeDefTestCase(unittest.TestCase):
         output = nodeDef.output("out")
         self.assertEqual(output.getMetadata("__SDR__defaultinput"), ufe.Value("in1"))
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4001', 'nodeDefHandler is only available in UFE preview version 0.4.1 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'nodeDefHandler is only available in UFE V4 or greater')
     def testNodeCreation(self):
         import mayaUsd_createStageWithNewLayer
         mayaUsd_createStageWithNewLayer.createStageWithNewLayer()

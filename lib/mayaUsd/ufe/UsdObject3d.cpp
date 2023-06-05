@@ -17,9 +17,10 @@
 
 #include <mayaUsd/ufe/UsdUndoVisibleCommand.h>
 #include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/utils/editRouter.h>
-#include <mayaUsd/utils/editRouterContext.h>
 #include <mayaUsd/utils/util.h>
+
+#include <usdUfe/utils/editRouter.h>
+#include <usdUfe/utils/editRouterContext.h>
 
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/bboxCache.h>

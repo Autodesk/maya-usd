@@ -5,6 +5,7 @@ set(TEST_SCRIPT_FILES
     testMayaPickwalk.py
     testPythonWrappers.py
     testSelection.py
+    testSelectionNotification.py
     testSelectionByArray.py
     testUfePythonImport.py
     testAttributeBlock.py
@@ -16,6 +17,12 @@ set(TEST_SUPPORT_FILES
 )
 
 set(INTERACTIVE_TEST_SCRIPT_FILES "")
+
+if(UFE_FOUND AND MAYA_APP_VERSION VERSION_GREATER_EQUAL 2023)
+    list(APPEND TEST_SCRIPT_FILES
+        testCenterPivot.py
+    )
+endif()
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND TEST_SCRIPT_FILES
@@ -34,6 +41,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         testPointInstances.py
         testReorderCmd.py
         testRotateCmd.py
+        testRotateCmdUndoRedo.py
         testRotatePivot.py
         testScaleCmd.py
         testSceneItem.py
@@ -69,18 +77,11 @@ if (v4_BatchOps IN_LIST UFE_PREVIEW_FEATURES)
 endif()
 
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
-        list(APPEND TEST_SCRIPT_FILES
-            testAttributeInfo.py
-            testConnections.py
-        )
-    endif()
-
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4023)
-        list(APPEND TEST_SCRIPT_FILES
-            testUINodeGraphNode.py
-        )
-    endif()
+    list(APPEND TEST_SCRIPT_FILES
+        testAttributeInfo.py
+        testConnections.py
+        testUINodeGraphNode.py
+    )
 
     if(CMAKE_WANT_MATERIALX_BUILD)
         list(APPEND TEST_SCRIPT_FILES
@@ -128,6 +129,11 @@ if (MAYA_HAS_DISPLAY_LAYER_API)
         )
 endif()
 
+if(CodeWrapperHandler IN_LIST UFE_PREVIEW_FEATURES)
+    set(UFE_HAS_CODE_WRAPPER "1")
+else()
+    set(UFE_HAS_CODE_WRAPPER "0")
+endif()
 
 foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})
@@ -138,8 +144,10 @@ foreach(script ${TEST_SCRIPT_FILES})
             "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_SOURCE_DIR}/ufeTestPlugins"
             "UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}"
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+            "UFE_HAS_CODE_WRAPPER=${UFE_HAS_CODE_WRAPPER}"
             "USD_HAS_COLOR4_SDR_SUPPORT=${USD_HAS_COLOR4_SDR_SUPPORT}"
             "USD_HAS_MX_METADATA_SUPPORT=${USD_HAS_MX_METADATA_SUPPORT}"
+            "UFE_ATTRIBUTES_GET_ENUMS=${UFE_ATTRIBUTES_GET_ENUMS}"
     )
 
     # Add a ctest label to these tests for easy filtering.

@@ -18,7 +18,7 @@
 
 #include "OpUndoItemList.h"
 
-#include <mayaUsd/undo/UsdUndoableItem.h>
+#include <usdUfe/undo/UsdUndoableItem.h>
 
 #include <maya/MDGModifier.h>
 #include <maya/MDagModifier.h>
@@ -183,11 +183,11 @@ class UsdUndoableItemUndoItem : public OpUndoItem
 public:
     /// \brief create a USD undo item recorder and keep track of it.
     MAYAUSD_CORE_PUBLIC
-    static MAYAUSD_NS::UsdUndoableItem& create(const std::string name, OpUndoItemList& undoInfo);
+    static UsdUfe::UsdUndoableItem& create(const std::string name, OpUndoItemList& undoInfo);
 
     /// \brief create a USD undo item recorder and keep track of it in the global undo item list.
     MAYAUSD_CORE_PUBLIC
-    static MAYAUSD_NS::UsdUndoableItem& create(const std::string name);
+    static UsdUfe::UsdUndoableItem& create(const std::string name);
 
     /// \brief construct a USD undo item recorder.
     MAYAUSD_CORE_PUBLIC
@@ -209,10 +209,10 @@ public:
 
     /// \brief gets the DG modifier.
     MAYAUSD_CORE_PUBLIC
-    MAYAUSD_NS::UsdUndoableItem& getUndoableItem() { return _item; }
+    UsdUfe::UsdUndoableItem& getUndoableItem() { return _item; }
 
 private:
-    MAYAUSD_NS::UsdUndoableItem _item;
+    UsdUfe::UsdUndoableItem _item;
 };
 
 //------------------------------------------------------------------------------

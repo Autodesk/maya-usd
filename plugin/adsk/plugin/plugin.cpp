@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "ProxyShape.h"
+#include "ProxyShapeListener.h"
 #include "adskExportCommand.h"
 #include "adskImportCommand.h"
 #include "adskListJobContextsCommand.h"
@@ -36,7 +37,7 @@
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
-#include <mayaUsd/undo/UsdUndoBlock.h>
+#include <mayaUsd/undo/MayaUsdUndoBlock.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/undoHelperCommand.h>
 
@@ -237,7 +238,7 @@ MStatus initializePlugin(MObject obj)
 #endif
 
     status = plugin.registerCommand(
-        MayaUsd::UsdUndoBlockCmd::commandName, MayaUsd::UsdUndoBlockCmd::creator);
+        MayaUsd::MayaUsdUndoBlockCmd::commandName, MayaUsd::MayaUsdUndoBlockCmd::creator);
     CHECK_MSTATUS(status);
 
     status = MayaUsdProxyShapePlugin::initialize(plugin);
@@ -275,6 +276,13 @@ MStatus initializePlugin(MObject obj)
         MayaUsd::ProxyShape::initialize,
         UsdMayaProxyShapeUI::creator,
         MayaUsdProxyShapePlugin::getProxyShapeClassification());
+    CHECK_MSTATUS(status);
+
+    status = plugin.registerNode(
+        MayaUsd::ProxyShapeListener::typeName,
+        MayaUsd::ProxyShapeListener::typeId,
+        MayaUsd::ProxyShapeListener::creator,
+        MayaUsd::ProxyShapeListener::initialize);
     CHECK_MSTATUS(status);
 
     status = plugin.registerNode(
@@ -339,7 +347,7 @@ MStatus initializePlugin(MObject obj)
     }
 
 #if defined(WANT_UFE_BUILD)
-    MayaUsd::LayerManager::addSupportForNodeType(MAYAUSD_NS::ProxyShape::typeId);
+    MayaUsd::LayerManager::addSupportForNodeType(MayaUsd::ProxyShape::typeId);
 #if defined(WANT_QT_BUILD)
     UsdLayerEditor::initialize();
     MayaUsd::LayerManager::SetBatchSaveDelegate(UsdLayerEditor::batchSaveLayersUIDelegate);
@@ -420,6 +428,9 @@ MStatus uninitializePlugin(MObject obj)
     deregisterCommandCheck<MayaUsd::ADSKMayaUSDMaterialBindingsCommand>(plugin);
 #endif
 
+    status = plugin.deregisterNode(MayaUsd::ProxyShapeListener::typeId);
+    CHECK_MSTATUS(status);
+
     status = plugin.deregisterNode(MayaUsd::ProxyShape::typeId);
     CHECK_MSTATUS(status);
 
@@ -429,7 +440,7 @@ MStatus uninitializePlugin(MObject obj)
     status = MayaUsdProxyShapePlugin::finalize(plugin);
     CHECK_MSTATUS(status);
 
-    status = plugin.deregisterCommand(MayaUsd::UsdUndoBlockCmd::commandName);
+    status = plugin.deregisterCommand(MayaUsd::MayaUsdUndoBlockCmd::commandName);
     CHECK_MSTATUS(status);
 
 #if defined(WANT_UFE_BUILD)
@@ -454,7 +465,7 @@ MStatus uninitializePlugin(MObject obj)
 #endif
 
 #if defined(WANT_UFE_BUILD)
-    MayaUsd::LayerManager::removeSupportForNodeType(MAYAUSD_NS::ProxyShape::typeId);
+    MayaUsd::LayerManager::removeSupportForNodeType(MayaUsd::ProxyShape::typeId);
 #if defined(WANT_QT_BUILD)
     MayaUsd::LayerManager::SetBatchSaveDelegate(nullptr);
 #endif

@@ -50,10 +50,6 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/ufe.h")
 
     if(UFE_MAJOR_VERSION VERSION_EQUAL "0")
         math(EXPR UFE_PREVIEW_VERSION_NUM "${UFE_MINOR_VERSION} * 1000 + ${UFE_PATCH_LEVEL}")
-    elseif(UFE_VERSION VERSION_EQUAL "4.0.0")
-        # Temporary. Once next Maya PR is released with UFE v4.0.0 this should
-        # be removed (along with all the UFE_PREVIEW_VERSION_NUM checks).
-        set(UFE_PREVIEW_VERSION_NUM 4045)
     elseif(UFE_VERSION VERSION_EQUAL "4.1.0")
         # Temporary. Once next Maya PR is released with UFE v4.1.0 this should
         # be removed (along with all the UFE_PREVIEW_VERSION_NUM checks).
@@ -101,6 +97,11 @@ list(APPEND UFE_PREVIEW_FEATURES ufe)
 
 if (UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/batchOpsHandler.h")
     list(APPEND UFE_PREVIEW_FEATURES v4_BatchOps)
+endif()
+
+if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/codeWrapperHandler.h")
+    list(APPEND UFE_PREVIEW_FEATURES CodeWrapperHandler)
+    message(STATUS "Maya has UFE code wrapper API")
 endif()
 
 # Handle the QUIETLY and REQUIRED arguments and set UFE_FOUND to TRUE if
@@ -158,3 +159,13 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/uiNodeGraphNode.h")
         message(STATUS "Maya has UFE UINodeGraphNode size interface")
     endif()
 endif()
+
+set(UFE_ATTRIBUTES_GET_ENUMS FALSE CACHE INTERNAL "ufeAttributesGetEnums")
+if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/attributes.h")
+    file(STRINGS ${UFE_INCLUDE_DIR}/ufe/attributes.h UFE_HAS_API REGEX "getEnums")
+    if(UFE_HAS_API)
+        set(UFE_ATTRIBUTES_GET_ENUMS TRUE CACHE INTERNAL "ufeAttributesGetEnums")
+        message(STATUS "Maya has UFE Attribute's getEnums interface")
+    endif()
+endif()
+

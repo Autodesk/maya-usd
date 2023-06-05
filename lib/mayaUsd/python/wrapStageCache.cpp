@@ -23,10 +23,6 @@
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
 
-using namespace std;
-using namespace boost::python;
-using namespace boost;
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
@@ -41,13 +37,13 @@ UsdStageCache& _UsdMayaStageCacheGet(bool loadAll, bool shared)
 
 void wrapStageCache()
 {
-    class_<UsdMayaStageCache>("StageCache")
+    boost::python::class_<UsdMayaStageCache>("StageCache")
 
         .def(
             "Get",
             _UsdMayaStageCacheGet,
-            python::args("loadAll", "shared"),
-            return_value_policy<reference_existing_object>())
+            boost::python::args("loadAll", "shared"),
+            boost::python::return_value_policy<boost::python::reference_existing_object>())
         .staticmethod("Get")
         .def("Clear", &UsdMayaStageCache::Clear)
         .staticmethod("Clear");

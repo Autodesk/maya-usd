@@ -205,6 +205,12 @@ endif()
 #------------------------------------------------------------------------------
 # plugins
 #------------------------------------------------------------------------------
+if (BUILD_PXR_PLUGIN OR BUILD_AL_PLUGIN OR BUILD_ADSK_PLUGIN)
+    if (NOT BUILD_MAYAUSD_LIBRARY)
+        message(FATAL_ERROR "Building plugins requires MayaUsd core libraries.")
+    endif()
+endif()
+
 if (BUILD_PXR_PLUGIN)
     add_subdirectory(plugin/pxr)
 endif()
@@ -241,6 +247,11 @@ if (BUILD_ADSK_PLUGIN)
         configure_file("modules/mayaUSD.mod.template" ${PROJECT_BINARY_DIR}/mayaUSD.mod)
     endif()
     install(FILES ${PROJECT_BINARY_DIR}/mayaUSD.mod DESTINATION ${CMAKE_INSTALL_PREFIX})
+endif()
+
+if (BUILD_HDMAYA)
+    configure_file("modules/mtoh.mod.template" ${PROJECT_BINARY_DIR}/mtoh.mod)
+    install(FILES ${PROJECT_BINARY_DIR}/mtoh.mod DESTINATION ${CMAKE_INSTALL_PREFIX})
 endif()
 
 if (BUILD_PXR_PLUGIN)

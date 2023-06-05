@@ -23,15 +23,15 @@
 #include <pxr/usd/usdLux/lightAPI.h>
 #endif
 
-#include <mayaUsd/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 #if PXR_VERSION < 2111
-using UsdLuxLightCommon = pxr::UsdLuxLight;
+using UsdLuxLightCommon = PXR_NS::UsdLuxLight;
 #else
-using UsdLuxLightCommon = pxr::UsdLuxLightAPI;
+using UsdLuxLightCommon = PXR_NS::UsdLuxLightAPI;
 #endif
 
 UsdLightHandler::UsdLightHandler()
