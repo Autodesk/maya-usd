@@ -15,6 +15,7 @@
 //
 #include "Utils.h"
 
+#include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
@@ -213,6 +214,36 @@ bool isAGatewayType(const std::string& mayaNodeType)
         g_GatewayType[mayaNodeType] = isInherited;
     }
     return isInherited;
+}
+
+bool isMaterialsScope(const Ufe::SceneItem::Ptr& item)
+{
+    if (!item) {
+        return false;
+    }
+
+    // Must be a scope.
+    if (item->nodeType() != "Scope") {
+        return false;
+    }
+
+    // With the magic name.
+    if (item->nodeName() == UsdMayaJobExportArgs::GetDefaultMaterialsScopeName()) {
+        return true;
+    }
+
+    // Or with only materials inside
+    auto scopeHierarchy = Ufe::Hierarchy::hierarchy(item);
+    if (scopeHierarchy) {
+        for (auto&& child : scopeHierarchy->children()) {
+            if (child->nodeType() != "Material") {
+                // At least one non material
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 Ufe::Path dagPathToUfe(const MDagPath& dagPath)
