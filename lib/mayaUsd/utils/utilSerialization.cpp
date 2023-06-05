@@ -398,11 +398,13 @@ void updateSubLayer(
     subLayers.Replace(oldSubLayer->GetIdentifier(), newSubLayerPath);
 
     const std::string oldAbsPath = oldSubLayer->GetRealPath();
-    subLayers.Replace(oldAbsPath, newSubLayerPath);
+    if (oldAbsPath.length() > 0) {
+        subLayers.Replace(oldAbsPath, newSubLayerPath);
 
-    const std::string oldRelPath
-        = UsdMayaUtilFileSystem::getPathRelativeToLayerFile(oldAbsPath, parentLayer);
-    subLayers.Replace(oldRelPath, newSubLayerPath);
+        const std::string oldRelPath
+            = UsdMayaUtilFileSystem::getPathRelativeToLayerFile(oldAbsPath, parentLayer);
+        subLayers.Replace(oldRelPath, newSubLayerPath);
+    }
 }
 
 void ensureUSDFileExtension(std::string& filePath)
