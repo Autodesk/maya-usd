@@ -17,22 +17,12 @@
 
 #include "UsdLight.h"
 
-#if PXR_VERSION < 2111
-#include <pxr/usd/usdLux/light.h>
-#else
-#include <pxr/usd/usdLux/lightAPI.h>
-#endif
-
 #include <usdUfe/ufe/UsdSceneItem.h>
+
+#include <pxr/usd/usdLux/lightAPI.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
-
-#if PXR_VERSION < 2111
-using UsdLuxLightCommon = PXR_NS::UsdLuxLight;
-#else
-using UsdLuxLightCommon = PXR_NS::UsdLuxLightAPI;
-#endif
 
 UsdLightHandler::UsdLightHandler()
     : Ufe::LightHandler()
@@ -52,7 +42,7 @@ Ufe::Light::Ptr UsdLightHandler::light(const Ufe::SceneItem::Ptr& item) const
 
     // Test if this item is a light. If not, then we cannot create a light
     // interface for it, which is a valid case (such as for a mesh node type).
-    UsdLuxLightCommon lightSchema(usdItem->prim());
+    PXR_NS::UsdLuxLightAPI lightSchema(usdItem->prim());
     if (!lightSchema)
         return nullptr;
 

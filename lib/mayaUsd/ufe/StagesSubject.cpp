@@ -739,20 +739,8 @@ void StagesSubject::stageChanged(
                     // may have been affected, so we construct UFE paths for
                     // every instance and issue a notification for each one.
                     const UsdGeomPointInstancer pointInstancer(prim);
-
-#if PXR_VERSION >= 2011
-                    const size_t numInstances
+                    const size_t                numInstances
                         = bool(pointInstancer) ? pointInstancer.GetInstanceCount() : 0u;
-#else
-                    VtIntArray protoIndices;
-                    if (pointInstancer) {
-                        const UsdAttribute protoIndicesAttr = pointInstancer.GetProtoIndicesAttr();
-                        if (protoIndicesAttr) {
-                            protoIndicesAttr.Get(&protoIndices);
-                        }
-                    }
-                    const size_t numInstances = protoIndices.size();
-#endif
 
                     // The PointInstancer schema can theoretically support as
                     // as many instances as can be addressed by size_t, but

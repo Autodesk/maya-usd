@@ -48,19 +48,6 @@
 #define MAYA_ENABLE_UPDATE_FOR_SELECTION
 #endif
 
-#if PXR_VERSION < 2008
-#define ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
-/*  In USD v20.05 and earlier when the purpose of an rprim changes the visibility gets dirtied,
-    and that doesn't update the render tag version.
-
-    Pixar is in the process of fixing this one as noted in:
-    https://groups.google.com/forum/#!topic/usd-interest/9pzFbtCEY-Y
-
-    Logged as:
-    https://github.com/PixarAnimationStudios/USD/issues/1243
-*/
-#endif
-
 // Use the latest MPxSubSceneOverride API
 #ifndef OPENMAYA_MPXSUBSCENEOVERRIDE_LATEST_NAMESPACE
 #define OPENMAYA_MPXSUBSCENEOVERRIDE_LATEST_NAMESPACE OPENMAYA_MAJOR_NAMESPACE

@@ -25,11 +25,7 @@
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usdLux/distantLight.h>
-#if PXR_VERSION < 2111
-#include <pxr/usd/usdLux/light.h>
-#else
 #include <pxr/usd/usdLux/lightAPI.h>
-#endif
 #include <pxr/usd/usdLux/rectLight.h>
 #include <pxr/usd/usdLux/sphereLight.h>
 
@@ -48,12 +44,8 @@ struct UsdMayaTranslatorLight
     /// Return true if all the parameters were exported properly.
     MAYAUSD_CORE_PUBLIC
     static bool WriteLightAttrs(
-        const UsdTimeCode& usdTime,
-#if PXR_VERSION < 2111
-        const UsdLuxLight& usdLight,
-#else
-        const UsdLuxLightAPI& usdLight,
-#endif
+        const UsdTimeCode&         usdTime,
+        const UsdLuxLightAPI&      usdLight,
         MFnLight&                  mayaLight,
         UsdUtilsSparseValueWriter* valueWriter = nullptr);
 

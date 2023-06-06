@@ -21,11 +21,7 @@
 #include <usdUfe/ufe/UsdUndoableCommand.h>
 
 #include <pxr/usd/usdLux/distantLight.h>
-#if PXR_VERSION < 2111
-#include <pxr/usd/usdLux/light.h>
-#else
 #include <pxr/usd/usdLux/lightAPI.h>
-#endif
 #include <pxr/usd/usdLux/rectLight.h>
 #include <pxr/usd/usdLux/shadowAPI.h>
 #include <pxr/usd/usdLux/shapingAPI.h>
@@ -88,12 +84,6 @@ UsdLight::Ptr UsdLight::create(const UsdSceneItem::Ptr& item)
     return std::make_shared<UsdLight>(item);
 }
 
-#if PXR_VERSION < 2111
-using UsdLuxLightCommon = UsdLuxLight;
-#else
-using UsdLuxLightCommon = UsdLuxLightAPI;
-#endif
-
 //------------------------------------------------------------------------------
 // Ufe::Light overrides
 //------------------------------------------------------------------------------
@@ -121,7 +111,7 @@ Ufe::Light::Type UsdLight::type() const
 
 float getLightIntensity(const UsdPrim& prim)
 {
-    const UsdLuxLightCommon    lightSchema(prim);
+    const UsdLuxLightAPI       lightSchema(prim);
     const PXR_NS::UsdAttribute lightAttribute = lightSchema.GetIntensityAttr();
 
     float val = 0.f;
@@ -131,7 +121,7 @@ float getLightIntensity(const UsdPrim& prim)
 
 void setLightIntensity(const UsdPrim& prim, float attrVal)
 {
-    const UsdLuxLightCommon    lightSchema(prim);
+    const UsdLuxLightAPI       lightSchema(prim);
     const PXR_NS::UsdAttribute lightAttribute = lightSchema.GetIntensityAttr();
 
     lightAttribute.Set(attrVal);
@@ -151,7 +141,7 @@ float UsdLight::intensity() const { return getLightIntensity(prim()); }
 
 Ufe::Color3f getLightColor(const UsdPrim& prim)
 {
-    const UsdLuxLightCommon    lightSchema(prim);
+    const UsdLuxLightAPI       lightSchema(prim);
     const PXR_NS::UsdAttribute lightAttribute = lightSchema.GetColorAttr();
 
     GfVec3f val(0.f, 0.f, 0.f);
@@ -161,7 +151,7 @@ Ufe::Color3f getLightColor(const UsdPrim& prim)
 
 void setLightColor(const UsdPrim& prim, const Ufe::Color3f& attrVal)
 {
-    const UsdLuxLightCommon    lightSchema(prim);
+    const UsdLuxLightAPI       lightSchema(prim);
     const PXR_NS::UsdAttribute lightAttribute = lightSchema.GetColorAttr();
 
     lightAttribute.Set(GfVec3f(attrVal.r(), attrVal.g(), attrVal.b()));
@@ -246,7 +236,7 @@ Ufe::Color3f UsdLight::shadowColor() const { return getLightShadowColor(prim());
 
 float getLightDiffuse(const UsdPrim& prim)
 {
-    const UsdLuxLightCommon    lightSchema(prim);
+    const UsdLuxLightAPI       lightSchema(prim);
     const PXR_NS::UsdAttribute lightAttribute = lightSchema.GetDiffuseAttr();
 
     float val = 0.f;
@@ -256,7 +246,7 @@ float getLightDiffuse(const UsdPrim& prim)
 
 void setLightDiffuse(const UsdPrim& prim, float attrVal)
 {
-    const UsdLuxLightCommon    lightSchema(prim);
+    const UsdLuxLightAPI       lightSchema(prim);
     const PXR_NS::UsdAttribute lightAttribute = lightSchema.GetDiffuseAttr();
 
     lightAttribute.Set(attrVal);
@@ -276,7 +266,7 @@ float UsdLight::diffuse() const { return getLightDiffuse(prim()); }
 
 float getLightSpecular(const UsdPrim& prim)
 {
-    const UsdLuxLightCommon    lightSchema(prim);
+    const UsdLuxLightAPI       lightSchema(prim);
     const PXR_NS::UsdAttribute lightAttribute = lightSchema.GetSpecularAttr();
 
     float val = 0.f;
@@ -286,7 +276,7 @@ float getLightSpecular(const UsdPrim& prim)
 
 void setLightSpecular(const UsdPrim& prim, float attrVal)
 {
-    const UsdLuxLightCommon    lightSchema(prim);
+    const UsdLuxLightAPI       lightSchema(prim);
     const PXR_NS::UsdAttribute lightAttribute = lightSchema.GetSpecularAttr();
 
     lightAttribute.Set(attrVal);

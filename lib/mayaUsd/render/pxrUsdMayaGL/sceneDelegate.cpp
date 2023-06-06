@@ -153,9 +153,7 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
         cache[HdCameraTokens->worldToViewMatrix] = VtValue(GfMatrix4d(1.0));
         cache[HdCameraTokens->projectionMatrix] = VtValue(GfMatrix4d(1.0));
 
-#if PXR_VERSION >= 2102
         cache[HdCameraTokens->projection] = VtValue();
-#endif
         cache[HdCameraTokens->horizontalAperture] = VtValue();
         cache[HdCameraTokens->verticalAperture] = VtValue();
         cache[HdCameraTokens->horizontalApertureOffset] = VtValue();
@@ -168,9 +166,7 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
         cache[HdCameraTokens->focusDistance] = VtValue();
         cache[HdCameraTokens->shutterOpen] = VtValue();
         cache[HdCameraTokens->shutterClose] = VtValue();
-#if PXR_VERSION >= 2011
         cache[HdCameraTokens->exposure] = VtValue();
-#endif
     }
 
     // Simple lighting task.
@@ -308,9 +304,7 @@ void PxrMayaHdSceneDelegate::SetCameraState(
     cache[HdTokens->transform] = VtValue(worldToViewMatrix.GetInverse());
     cache[HdCameraTokens->worldToViewMatrix] = VtValue(worldToViewMatrix);
     cache[HdCameraTokens->projectionMatrix] = VtValue(projectionMatrix);
-#if PXR_VERSION >= 2102
     cache[HdCameraTokens->projection] = VtValue();
-#endif
     cache[HdCameraTokens->horizontalAperture] = VtValue();
     cache[HdCameraTokens->verticalAperture] = VtValue();
     cache[HdCameraTokens->horizontalApertureOffset] = VtValue();
@@ -324,9 +318,7 @@ void PxrMayaHdSceneDelegate::SetCameraState(
     cache[HdCameraTokens->focusDistance] = VtValue();
     cache[HdCameraTokens->shutterOpen] = VtValue();
     cache[HdCameraTokens->shutterClose] = VtValue();
-#if PXR_VERSION >= 2011
     cache[HdCameraTokens->exposure] = VtValue();
-#endif
 
     // invalidate the camera to be synced
     GetRenderIndex().GetChangeTracker().MarkSprimDirty(_cameraId, HdCamera::AllDirty);

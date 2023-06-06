@@ -37,13 +37,6 @@
 #include <maya/MRenderUtil.h>
 #include <maya/MSelectionList.h>
 
-#if PXR_VERSION < 2011
-#include <pxr/imaging/hd/textureResource.h>
-#include <pxr/imaging/hd/types.h>
-
-#include <tuple>
-#endif // PXR_VERSION < 2011
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \brief Converts a Maya matrix to a double precision GfMatrix.
@@ -95,31 +88,6 @@ MObject GetConnectedFileNode(const MFnDependencyNode& node, const TfToken& param
 ///  tags are kept intact.
 HDMAYA_API
 TfToken GetFileTexturePath(const MFnDependencyNode& fileNode);
-
-#if PXR_VERSION < 2011
-
-/// \brief Returns the texture resource from a "file" shader node.
-/// \param fileObj "file" shader object.
-/// \param filePath Path to the texture file held by "file" shader node.
-/// \param maxTextureMemory Maximum texture memory in bytes available for
-///  loading the texture. If the texture requires more memory
-///  than \p maxTextureMemory, higher mip-map levels are discarded until the
-///  memory required is less than \p maxTextureMemory.
-/// \return Pointer to the Hydra Texture resource.
-HDMAYA_API
-HdTextureResourceSharedPtr GetFileTextureResource(
-    const MObject& fileObj,
-    const TfToken& filePath,
-    int            maxTextureMemory = 4 * 1024 * 1024);
-
-/// \brief Returns the texture wrapping parameters from a "file" shader node.
-/// \param fileObj "file" shader object.
-/// \return A `std::tuple<HdWrap, HdWrap>` holding the wrapping parameters
-///  for s and t axis.
-HDMAYA_API
-std::tuple<HdWrap, HdWrap> GetFileTextureWrappingParams(const MObject& fileObj);
-
-#endif // PXR_VERSION < 2011
 
 /// \brief Runs a function on all recursive descendents of a selection list
 ///  May optionally filter by node type. The items in the list are also included

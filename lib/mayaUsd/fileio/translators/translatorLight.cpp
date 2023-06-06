@@ -36,11 +36,7 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdLux/distantLight.h>
-#if PXR_VERSION < 2111
-#include <pxr/usd/usdLux/light.h>
-#else
 #include <pxr/usd/usdLux/lightAPI.h>
-#endif
 #include <pxr/usd/usdLux/rectLight.h>
 #include <pxr/usd/usdLux/shadowAPI.h>
 #include <pxr/usd/usdLux/shapingAPI.h>
@@ -85,12 +81,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 // Export the "common" light attributes from MFnLights to UsdLuxLightAPI
 bool UsdMayaTranslatorLight::WriteLightAttrs(
-    const UsdTimeCode& usdTime,
-#if PXR_VERSION < 2111
-    const UsdLuxLight& usdLight,
-#else
-    const UsdLuxLightAPI& usdLight,
-#endif
+    const UsdTimeCode&         usdTime,
+    const UsdLuxLightAPI&      usdLight,
     MFnLight&                  mayaLight,
     UsdUtilsSparseValueWriter* valueWriter)
 {
@@ -148,11 +140,7 @@ bool UsdMayaTranslatorLight::WriteLightAttrs(
 // accessors, as we need to support animations. Instead we're getting
 // the Maya plugs from MFnDependencyNode
 static bool _ReadLightAttrs(
-#if PXR_VERSION < 2111
-    const UsdLuxLight& lightSchema,
-#else
-    const UsdLuxLightAPI& lightSchema,
-#endif
+    const UsdLuxLightAPI&        lightSchema,
     MFnDependencyNode&           depFn,
     const UsdMayaPrimReaderArgs& args,
     UsdMayaPrimReaderContext&    context)
@@ -229,11 +217,7 @@ bool UsdMayaTranslatorLight::WriteDirectionalLightAttrs(
 
 // Import the specialized MFnDirectionalLight attributes
 static bool _ReadDirectionalLight(
-#if PXR_VERSION < 2111
-    const UsdLuxLight& lightSchema,
-#else
-    const UsdLuxLightAPI& lightSchema,
-#endif
+    const UsdLuxLightAPI&        lightSchema,
     MFnDependencyNode&           depFn,
     const UsdMayaPrimReaderArgs& args,
     UsdMayaPrimReaderContext&    context)
@@ -274,11 +258,7 @@ bool UsdMayaTranslatorLight::WritePointLightAttrs(
 
 // Import the specialized MFnPointLight attributes
 static bool _ReadPointLight(
-#if PXR_VERSION < 2111
-    const UsdLuxLight& lightSchema,
-#else
-    const UsdLuxLightAPI& lightSchema,
-#endif
+    const UsdLuxLightAPI&        lightSchema,
     MFnDependencyNode&           depFn,
     const UsdMayaPrimReaderArgs& args,
     UsdMayaPrimReaderContext&    context)
@@ -346,11 +326,7 @@ bool UsdMayaTranslatorLight::WriteSpotLightAttrs(
 
 // Import the specialized MFnSpotLight attributes
 static bool _ReadSpotLight(
-#if PXR_VERSION < 2111
-    const UsdLuxLight& lightSchema,
-#else
-    const UsdLuxLightAPI& lightSchema,
-#endif
+    const UsdLuxLightAPI&        lightSchema,
     MFnDependencyNode&           depFn,
     const UsdMayaPrimReaderArgs& args,
     UsdMayaPrimReaderContext&    context)
@@ -429,11 +405,7 @@ bool UsdMayaTranslatorLight::WriteAreaLightAttrs(
 
 /// Read the parameters from UsdLuxRectLight into a Maya area light
 static bool _ReadAreaLight(
-#if PXR_VERSION < 2111
-    const UsdLuxLight& lightSchema,
-#else
-    const UsdLuxLightAPI& lightSchema,
-#endif
+    const UsdLuxLightAPI&        lightSchema,
     MFnDependencyNode&           depFn,
     const UsdMayaPrimReaderArgs& args,
     UsdMayaPrimReaderContext&    context)
@@ -462,11 +434,7 @@ bool UsdMayaTranslatorLight::Read(
     if (!usdPrim) {
         return false;
     }
-#if PXR_VERSION < 2111
-    const UsdLuxLight lightSchema(usdPrim);
-#else
     const UsdLuxLightAPI lightSchema(usdPrim);
-#endif
     if (!lightSchema) {
         TF_RUNTIME_ERROR(
             "Failed to read UsdLuxLightAPI prim for light %s", usdPrim.GetPath().GetText());

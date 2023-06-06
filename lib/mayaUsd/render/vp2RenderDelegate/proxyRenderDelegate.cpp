@@ -1894,11 +1894,6 @@ void ProxyRenderDelegate::_UpdateRenderTags()
     // changed since the last time we set the render tags so we know if there is a change
     // to an individual rprim or not.
     bool rprimRenderTagChanged = !_changeVersions.renderTagValid(changeTracker);
-#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
-    rprimRenderTagChanged
-        = rprimRenderTagChanged || !_changeVersions.visibilityValid(changeTracker);
-#endif
-
     bool renderPurposeChanged = false;
     bool proxyPurposeChanged = false;
     bool guidePurposeChanged = false;

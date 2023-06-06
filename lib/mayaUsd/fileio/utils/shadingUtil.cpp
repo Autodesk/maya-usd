@@ -20,6 +20,7 @@
 #include <pxr/base/tf/pathUtils.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/imaging/hio/image.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/valueTypeName.h>
 #include <pxr/usd/sdr/registry.h>
@@ -29,12 +30,6 @@
 #include <pxr/usd/usdShade/output.h>
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
-
-#if PXR_VERSION >= 2102
-#include <pxr/imaging/hio/image.h>
-#else
-#include <pxr/imaging/glf/image.h>
-#endif
 
 #include <maya/MPlug.h>
 #include <maya/MString.h>
@@ -269,7 +264,6 @@ void UsdMayaShadingUtil::ResolveUsdTextureFileName(
     }
 }
 
-#if PXR_VERSION >= 2102
 int UsdMayaShadingUtil::GetNumberOfChannels(const std::string& fileTextureName)
 {
     // Using Hio because the Maya texture node does not provide the information:
@@ -283,75 +277,3 @@ int UsdMayaShadingUtil::GetNumberOfChannels(const std::string& fileTextureName)
 
     return HioGetComponentCount(imageFormat);
 }
-#elif PXR_VERSION >= 2011
-int UsdMayaShadingUtil::GetNumberOfChannels(const std::string& fileTextureName)
-{
-    GlfImageSharedPtr image = GlfImage::OpenForReading(fileTextureName.c_str());
-
-    if (!image) {
-        return 4;
-    }
-
-    // Inlined HioGetComponentCount from USD 21.02:
-    switch (image->GetHioFormat()) {
-    case HioFormatUNorm8:
-    case HioFormatSNorm8:
-    case HioFormatFloat16:
-    case HioFormatFloat32:
-    case HioFormatDouble64:
-    case HioFormatUInt16:
-    case HioFormatInt16:
-    case HioFormatUInt32:
-    case HioFormatInt32:
-    case HioFormatUNorm8srgb: return 1;
-    case HioFormatUNorm8Vec2:
-    case HioFormatSNorm8Vec2:
-    case HioFormatFloat16Vec2:
-    case HioFormatFloat32Vec2:
-    case HioFormatDouble64Vec2:
-    case HioFormatUInt16Vec2:
-    case HioFormatInt16Vec2:
-    case HioFormatUInt32Vec2:
-    case HioFormatInt32Vec2:
-    case HioFormatUNorm8Vec2srgb: return 2;
-    case HioFormatUNorm8Vec3:
-    case HioFormatSNorm8Vec3:
-    case HioFormatFloat16Vec3:
-    case HioFormatFloat32Vec3:
-    case HioFormatDouble64Vec3:
-    case HioFormatUInt16Vec3:
-    case HioFormatInt16Vec3:
-    case HioFormatUInt32Vec3:
-    case HioFormatInt32Vec3:
-    case HioFormatUNorm8Vec3srgb:
-    case HioFormatBC6FloatVec3:
-    case HioFormatBC6UFloatVec3: return 3;
-    default: return 4;
-    }
-}
-#else // 20.08
-// Not including the OpenGL headers just for 3 constants, especially since this code
-// is going to be retired soon.
-
-// From glcorearb.h:
-#define GL_RED 0x1903
-#define GL_RG  0x8227
-#define GL_RGB 0x1907
-
-int UsdMayaShadingUtil::GetNumberOfChannels(const std::string& fileTextureName)
-{
-    // Using Glf because the Maya texture node does not provide the information:
-    GlfImageSharedPtr image = GlfImage::OpenForReading(fileTextureName.c_str());
-
-    if (!image) {
-        return 4;
-    }
-
-    switch (image->GetFormat()) {
-    case GL_RED: return 1;
-    case GL_RG: return 2;
-    case GL_RGB: return 3;
-    default: return 4;
-    }
-}
-#endif

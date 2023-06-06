@@ -14,13 +14,7 @@
 // limitations under the License.
 //
 
-// GL loading library needs to be included before any other OpenGL headers.
-#include <pxr/pxr.h>
-#if PXR_VERSION < 2102
-#include <pxr/imaging/glf/glew.h>
-#else
 #include <pxr/imaging/garch/glApi.h>
-#endif
 
 #include "batchRenderer.h"
 
@@ -109,9 +103,6 @@ const int UsdMayaGLBatchRenderer::ProfilerCategory = MProfiler::addCategory(
 /* static */
 void UsdMayaGLBatchRenderer::Init()
 {
-#if PXR_VERSION < 2102
-    GlfGlewInit();
-#endif
     GlfContextCaps::InitInstance();
 
     GetInstance();
@@ -395,11 +386,7 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer()
     , _objectSoftSelectEnabled(false)
     , _softSelectOptionsCallbackId(0)
     , _selectResultsKey(GfMatrix4d(0.0), GfMatrix4d(0.0), false)
-#if PXR_VERSION > 2005
     , _hgi(Hgi::CreatePlatformDefaultHgi())
-#else
-    , _hgi(Hgi::GetPlatformDefaultHgi())
-#endif
     , _hgiDriver { HgiTokens->renderDriver, VtValue(_hgi.get()) }
     , _selectionResolution(256)
     , _enableDepthSelection(false)

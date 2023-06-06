@@ -200,11 +200,7 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
     : MHWRender::MRenderOverride(desc.overrideName.GetText())
     , _rendererDesc(desc)
     , _globals(MtohRenderGlobals::GetInstance())
-#if PXR_VERSION > 2005
     , _hgi(Hgi::CreatePlatformDefaultHgi())
-#else
-    , _hgi(Hgi::GetPlatformDefaultHgi())
-#endif
     , _hgiDriver { HgiTokens->renderDriver, VtValue(_hgi.get()) }
     , _selectionTracker(new HdxSelectionTracker)
     , _isUsingHdSt(desc.rendererName == MtohTokens->HdStormRendererPlugin)
@@ -480,14 +476,9 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
         //
         if (_playBlasting && !_isUsingHdSt && !tasks.empty()) {
             // XXX: Is this better as user-configurable ?
-            constexpr auto msWait = std::chrono::duration<float, std::milli>(100);
-#if PXR_VERSION >= 2005
+            constexpr auto                 msWait = std::chrono::duration<float, std::milli>(100);
             std::shared_ptr<HdxRenderTask> renderTask
                 = std::dynamic_pointer_cast<HdxRenderTask>(tasks.front());
-#else
-            boost::shared_ptr<HdxRenderTask> renderTask
-                = boost::dynamic_pointer_cast<HdxRenderTask>(tasks.front());
-#endif
             if (renderTask) {
                 HdTaskSharedPtrVector renderOnly = { renderTask };
                 _engine.Execute(_renderIndex, &renderOnly);
@@ -650,17 +641,11 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
     _taskController->SetSelectionColor(_globals.colorSelectionHighlightColor);
     _taskController->SetEnableSelection(_globals.colorSelectionHighlight);
 
-#if PXR_VERSION >= 2005
     if (_globals.outlineSelectionWidth != 0.f) {
         _taskController->SetSelectionOutlineRadius(_globals.outlineSelectionWidth);
         _taskController->SetSelectionEnableOutline(true);
     } else
         _taskController->SetSelectionEnableOutline(false);
-#endif
-#if PXR_VERSION <= 2005
-    _taskController->SetColorizeQuantizationEnabled(_globals.enableColorQuantization);
-#endif
-
     _taskController->SetCollection(_renderCollection);
     if (_isUsingHdSt) {
         // TODO: Is there a way to improve this? Quite silly.
@@ -729,9 +714,6 @@ void MtohRenderOverride::_InitHydraResources()
 
     _initializationAttempted = true;
 
-#if PXR_VERSION < 2102
-    GlfGlewInit();
-#endif
     GlfContextCaps::InitInstance();
     _rendererPlugin
         = HdRendererPluginRegistry::GetInstance().GetRendererPlugin(_rendererDesc.rendererName);
@@ -832,12 +814,7 @@ void MtohRenderOverride::ClearHydraResources()
 
     // Cleanup internal context data that keep references to data that is now
     // invalid.
-#if PXR_VERSION >= 2108
     _engine.ClearTaskContextData();
-#else
-    for (const auto& token : HdxTokens->allTokens)
-        _engine.RemoveTaskContextData(token);
-#endif
 
     if (_taskController != nullptr) {
         delete _taskController;

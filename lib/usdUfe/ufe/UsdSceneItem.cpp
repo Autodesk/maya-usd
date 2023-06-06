@@ -17,11 +17,7 @@
 
 #include <pxr/base/tf/type.h>
 #include <pxr/pxr.h>
-#if PXR_VERSION < 2008
-#include <pxr/usd/usd/schemaBase.h>
-#else
 #include <pxr/usd/usd/primTypeInfo.h>
-#endif
 #include <pxr/usd/usd/schemaRegistry.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -55,13 +51,8 @@ std::vector<std::string> UsdSceneItem::ancestorNodeTypes() const
     if (!fPrim)
         return strAncestorTypes;
 
-#if PXR_VERSION < 2008
-    static const TfType schemaBaseType = TfType::Find<UsdSchemaBase>();
-    const TfType schemaType = schemaBaseType.FindDerivedByName(fPrim.GetTypeName().GetString());
-#else
     // Get the actual schema type from the prim definition.
     const TfType& schemaType = fPrim.GetPrimTypeInfo().GetSchemaType();
-#endif
     if (!schemaType) {
         // No schema type, return empty ancestor types.
         return strAncestorTypes;
@@ -79,20 +70,9 @@ std::vector<std::string> UsdSceneItem::ancestorNodeTypes() const
     for (const TfType& ty : tfAncestorTypes) {
         // If there is a concrete schema type name, we'll return that since it is what
         // is used/shown in the UI (ex: 'Xform' vs 'UsdGeomXform').
-#if PXR_VERSION >= 2005
         const auto& schemaReg = UsdSchemaRegistry::GetInstance();
         strAncestorTypes.emplace_back(
             schemaReg.IsConcrete(ty) ? schemaReg.GetSchemaTypeName(ty) : ty.GetTypeName());
-#else
-        // In USD 20.05 and earlier we cannot get the concrete schema type.
-        // Thus the USD prim icons that we provide will not be found correctly.
-        // There are two workarounds:
-        // 1) Incorporate the GetSchemaTypeName() method into your build of
-        //    USD. See https://github.com/PixarAnimationStudios/USD/commit/340759c
-        // 2) Rename the icon files to match the type name.
-        //    Ex: "out_USD_Cone_xxx.png" -> "out_USD_UsdGeomCone_xxx.png"
-        strAncestorTypes.emplace_back(ty.GetTypeName());
-#endif
     }
     ancestorTypesCache[schemaType] = strAncestorTypes;
     return strAncestorTypes;
