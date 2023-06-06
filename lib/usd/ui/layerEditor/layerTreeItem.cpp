@@ -365,7 +365,8 @@ void LayerTreeItem::saveEditsNoPrompt()
 void LayerTreeItem::saveAnonymousLayer()
 {
     // TODO: the code below is very similar to mayaUsd::utils::saveAnonymousLayer().
-    //       When fixing bug here or there, we need to fix it in the other. Refactor to have a single copy.
+    //       When fixing bug here or there, we need to fix it in the other. Refactor to have a
+    //       single copy.
 
     auto sessionState = parentModel()->sessionState();
 
@@ -403,7 +404,7 @@ void LayerTreeItem::saveAnonymousLayer()
                 //       opening the layer in isolation, we need to use the absolute path. Failure
                 //       to do so will make finding the layer by its own identifier fail! A symptom
                 //       of this failure is that drag-and-drop in the Layer Manager UI fails
-                //       immediately after saving a lyer with relative paths.
+                //       immediately after saving a layer with a relative path.
                 SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(absoluteFileName);
 
                 // Now replace the layer in the parent, using a relative path if requested.
