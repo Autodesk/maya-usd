@@ -39,7 +39,6 @@
 #include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 #include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/UsdTransform3dHandler.h>
 #include <mayaUsd/undo/MayaUsdUndoBlock.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/undoHelperCommand.h>
@@ -50,8 +49,6 @@
 
 #include <maya/MDrawRegistry.h>
 #include <maya/MFnPlugin.h>
-#include <maya/MGlobal.h>
-#include <maya/MPxCommand.h>
 #include <maya/MStatus.h>
 #include <ufe/runTimeMgr.h>
 
@@ -89,52 +86,6 @@ namespace {
 const MTypeId MayaUsdPreviewSurface_typeId(0x58000096);
 const MString MayaUsdPreviewSurface_typeName("usdPreviewSurface");
 const MString MayaUsdPreviewSurface_registrantId("mayaUsdPlugin");
-
-#if defined(UFE_V2_FEATURES_AVAILABLE)
-// Keep a reference to the existing USD Transform3d handler, to restore on
-// finalization.
-Ufe::Transform3dHandler::Ptr g_OldTransform3dHandler;
-Ufe::Transform3dHandler::Ptr g_NewTransform3dHandler;
-
-class ToggleTransform3d : public MPxCommand
-{
-public:
-    ToggleTransform3d() { }
-    static void* creator() { return new ToggleTransform3d(); }
-
-    static const MString commandName;
-
-    MStatus doIt(const MArgList&) override { return redoIt(); }
-
-    void toggle() const
-    {
-        bool toNew
-            = (Ufe::RunTimeMgr::instance().transform3dHandler(MayaUsd::ufe::getUsdRunTimeId())
-               == g_OldTransform3dHandler);
-        Ufe::RunTimeMgr::instance().setTransform3dHandler(
-            MayaUsd::ufe::getUsdRunTimeId(),
-            toNew ? g_NewTransform3dHandler : g_OldTransform3dHandler);
-        MGlobal::displayInfo(
-            toNew ? MString("Using chain of responsibility Transform3d handlers.")
-                  : MString("Using legacy Transform3d handler."));
-    }
-
-    MStatus redoIt() override
-    {
-        toggle();
-        return MS::kSuccess;
-    }
-    MStatus undoIt() override
-    {
-        toggle();
-        return MS::kSuccess;
-    }
-    bool isUndoable() const override { return true; }
-};
-
-const MString ToggleTransform3d::commandName { "toggleTransform3d" };
-
-#endif
 
 template <typename T> void registerCommandCheck(MFnPlugin& plugin)
 {
@@ -237,23 +188,6 @@ MStatus initializePlugin(MObject obj)
     if (!status) {
         status.perror("mayaUsdPlugin: unable to initialize ufe.");
     }
-
-#ifdef UFE_V2_FEATURES_AVAILABLE
-    // For backward compatibility, provide a command to revert to UFE v1 (Maya
-    // 2020) Ufe::Transform3d handling, which is based on the USD common
-    // transform API:
-    // https://graphics.pixar.com/usd/docs/api/class_usd_geom_xform_common_a_p_i.html
-    auto& runTimeMgr = Ufe::RunTimeMgr::instance();
-    auto  usdRtid = MayaUsd::ufe::getUsdRunTimeId();
-    g_NewTransform3dHandler = runTimeMgr.transform3dHandler(usdRtid);
-    g_OldTransform3dHandler = MayaUsd::ufe::UsdTransform3dHandler::create();
-
-    status = plugin.registerCommand(ToggleTransform3d::commandName, ToggleTransform3d::creator);
-    if (!status) {
-        status.perror(
-            MString("mayaUsdPlugin: unable to register command ") + ToggleTransform3d::commandName);
-    }
-#endif
 
     status = plugin.registerShape(
         MayaUsd::ProxyShape::typeName,
@@ -426,20 +360,6 @@ MStatus uninitializePlugin(MObject obj)
 
     status = plugin.deregisterCommand(MayaUsd::MayaUsdUndoBlockCmd::commandName);
     CHECK_MSTATUS(status);
-
-    status = plugin.deregisterCommand(ToggleTransform3d::commandName);
-    if (!status) {
-        status.perror(
-            MString("mayaUsdPlugin: unable to deregister command ")
-            + ToggleTransform3d::commandName);
-    }
-
-    // Restore the initial maya-usd Transform3d handler.
-    Ufe::RunTimeMgr::instance().setTransform3dHandler(
-        MayaUsd::ufe::getUsdRunTimeId(), g_OldTransform3dHandler);
-
-    g_OldTransform3dHandler = nullptr;
-    g_NewTransform3dHandler = nullptr;
 
     status = MayaUsd::ufe::finalize();
     CHECK_MSTATUS(status);
