@@ -3,7 +3,8 @@ import maya.mel as mel
 import maya.OpenMayaUI as omui
 import mayaUsd.lib as mayaUsdLib
 from mayaUSDRegisterStrings import getMayaUsdString
-from mayaUsdMayaReferenceUtils import pushOptionsUITemplate
+import mayaUsdMayaReferenceUtils as mayaRefUtils
+import AETemplateHelpers
 
 try:
     from PySide2.QtWidgets import QFileDialog, QLineEdit, QDialogButtonBox, QComboBox, QApplication
@@ -72,7 +73,7 @@ class usdFileRelative(object):
 
         Input relativeToWhat tells what the file is relative to. See the class docs.
         """
-        pushOptionsUITemplate()
+        mayaRefUtils.pushOptionsUITemplate()
         cmds.setParent(parentLayout)
 
         optBoxForm = cmds.formLayout('optionsBoxForm')
@@ -105,6 +106,8 @@ class usdFileRelative(object):
         cmds.textFieldGrp(cls.kUnresolvedPathTextField, label=kUnresolvedPathStr, ann=kUnresolvedPathAnnStr, editable=False)
         cmds.textFieldGrp(cls.kResolvedPathTextField, label=kResolvedPathStr, ann=kResolvedPathAnnStr , editable=False)
         cls._haveRelativePathFields = True
+
+        return topForm
 
     @classmethod
     def uiInit(cls, parentLayout, canBeRelative, relativeToWhat):
@@ -286,7 +289,7 @@ class usdRootFileRelative(usdFileRelative):
 
     @classmethod
     def uiCreate(cls, parentLayout):
-        super(usdRootFileRelative, cls).uiCreate(parentLayout, cls.kRelativeToWhat)
+        return super(usdRootFileRelative, cls).uiCreate(parentLayout, cls.kRelativeToWhat)
 
     @classmethod
     def uiInit(cls, parentLayout, filterType):
@@ -319,7 +322,7 @@ class usdSubLayerFileRelative(usdFileRelative):
 
     @classmethod
     def uiCreate(cls, parentLayout):
-        super(usdSubLayerFileRelative, cls).uiCreate(parentLayout, cls.kRelativeToWhat)
+        return super(usdSubLayerFileRelative, cls).uiCreate(parentLayout, cls.kRelativeToWhat)
 
     @classmethod
     def uiInit(cls, parentLayout, filterType, parentLayerPath = ""):
@@ -351,7 +354,7 @@ class usdFileRelativeToEditTargetLayer(usdFileRelative):
 
     @classmethod
     def uiCreate(cls, parentLayout):
-        super(usdFileRelativeToEditTargetLayer, cls).uiCreate(parentLayout, cls.kRelativeToWhat)
+        return super(usdFileRelativeToEditTargetLayer, cls).uiCreate(parentLayout, cls.kRelativeToWhat)
 
     @classmethod
     def uiInit(cls, parentLayout, filterType):
@@ -370,3 +373,65 @@ class usdFileRelativeToEditTargetLayer(usdFileRelative):
               with the dialog2 command API.
         '''
         super(usdFileRelativeToEditTargetLayer, cls).uiCommit(parentLayout, cls.kRelativeToWhat)
+
+class usdAddRefOrPayloadRelativeToEditTargetLayer(usdFileRelativeToEditTargetLayer):
+    '''
+    Helper class to create the UI for add reference or payload optionally
+    relative to a layer file.
+    '''
+
+    @classmethod
+    def uiCreate(cls, parentLayout):
+        topForm = super(usdAddRefOrPayloadRelativeToEditTargetLayer, cls).uiCreate(parentLayout)
+
+        cmds.setParent(topForm)
+        cmds.frameLayout(label=getMayaUsdString("kCompositionArcOptions"), collapsable=False)
+
+        mayaRefUtils.createUsdRefOrPayloadUI(True)
+
+        return topForm
+
+    @classmethod
+    def uiInit(cls, parentLayout, filterType):
+        '''
+        Note: the function takes an unused filterType argument to be compatible
+              with the dialog2 command API.
+        '''
+        super(usdAddRefOrPayloadRelativeToEditTargetLayer, cls).uiInit(parentLayout, filterType)
+
+        wantRef = AETemplateHelpers.wantReferenceCompositionArc()
+        wantPrepend = AETemplateHelpers.wantPrependCompositionArc()
+        wantLoad = AETemplateHelpers.wantPayloadLoaded()
+
+        compositionArc = mayaRefUtils.compositionArcReference if wantRef else mayaRefUtils.compositionArcPayload
+        listEditType = mayaRefUtils.listEditTypePrepend if wantPrepend else mayaRefUtils.listEditTypeAppend
+        loadPayload = bool(wantLoad)
+
+        values = {
+            mayaRefUtils.compositionArcKey: compositionArc,
+            mayaRefUtils.listEditTypeKey: listEditType,
+            mayaRefUtils.loadPayloadKey: loadPayload,
+        }
+        mayaRefUtils.initUsdRefOrPayloadUI(values, True)
+
+    @classmethod
+    def uiCommit(cls, parentLayout, selectedFile=None):
+        '''
+        Note: the function takes an unused selectedFile argument to be compatible
+              with the dialog2 command API.
+        '''
+        super(usdAddRefOrPayloadRelativeToEditTargetLayer, cls).uiCommit(parentLayout, selectedFile)
+
+        values = mayaRefUtils.commitUsdRefOrPayloadUI(True)
+
+        compositionArc = values[mayaRefUtils.compositionArcKey]
+        listEditType = values[mayaRefUtils.listEditTypeKey]
+        loadPayload = values[mayaRefUtils.loadPayloadKey]
+
+        wantReference = bool(compositionArc == mayaRefUtils.compositionArcReference)
+        wantPrepend = bool(listEditType == mayaRefUtils.listEditTypePrepend)
+        wantLoad = bool(loadPayload)
+
+        AETemplateHelpers.saveWantReferenceCompositionArc(wantReference)
+        AETemplateHelpers.saveWantPrependCompositionArc(wantPrepend)
+        AETemplateHelpers.saveWantPayloadLoaded(wantLoad)

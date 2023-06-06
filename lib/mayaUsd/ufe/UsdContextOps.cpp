@@ -44,6 +44,7 @@
 #include <pxr/usd/sdr/shaderNode.h>
 #include <pxr/usd/sdr/shaderProperty.h>
 #include <pxr/usd/usd/common.h>
+#include <pxr/usd/usd/payloads.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/references.h>
 #include <pxr/usd/usd/stage.h>
@@ -145,6 +146,8 @@ static constexpr char kAddNewMaterialLabel[] = "Add New Material";
 static constexpr char kAssignExistingMaterialItem[] = "Assign Existing Material";
 static constexpr char kAssignExistingMaterialLabel[] = "Assign Existing Material";
 #endif
+static constexpr char kAddRefOrPayloadLabel[] = "Add USD Reference/Payload...";
+static constexpr char kAddRefOrPayloadItem[] = "AddReferenceOrPayload";
 
 static constexpr char kAllRegisteredTypesItem[] = "All Registered";
 static constexpr char kAllRegisteredTypesLabel[] = "All Registered";
@@ -465,7 +468,7 @@ const char* _selectUSDFileScript()
         {
             string $result[] = `fileDialog2
                 -fileMode 1
-                -caption "Add Reference to USD Prim"
+                -caption "Add Reference/Payload to Prim"
                 -fileFilter "USD Files (%s);;%s"
                 -optionsUICreate addUSDReferenceCreateUi
                 -optionsUIInit addUSDReferenceInitUi
@@ -521,12 +524,11 @@ ClearAllUSDReferencesConfirm();
 class AddUsdReferenceUndoableCommand : public Ufe::UndoableCommand
 {
 public:
-    static const std::string commandName;
-
-    AddUsdReferenceUndoableCommand(const UsdPrim& prim, const std::string& filePath)
+    AddUsdReferenceUndoableCommand(const UsdPrim& prim, const std::string& filePath, bool prepend)
         : _prim(prim)
         , _sdfRef()
         , _filePath(filePath)
+        , _listPos(prepend ? UsdListPositionBackOfPrependList : UsdListPositionBackOfAppendList)
     {
     }
 
@@ -547,16 +549,57 @@ public:
                 _sdfRef = SdfReference(_filePath);
             }
             UsdReferences primRefs = _prim.GetReferences();
-            primRefs.AddReference(_sdfRef);
+            primRefs.AddReference(_sdfRef, _listPos);
         }
     }
 
 private:
-    UsdPrim           _prim;
-    SdfReference      _sdfRef;
-    const std::string _filePath;
+    UsdPrim         _prim;
+    SdfReference    _sdfRef;
+    std::string     _filePath;
+    UsdListPosition _listPos;
 };
-const std::string AddUsdReferenceUndoableCommand::commandName("Add USD Reference...");
+
+class AddUsdPayloadUndoableCommand : public Ufe::UndoableCommand
+{
+public:
+    AddUsdPayloadUndoableCommand(const UsdPrim& prim, const std::string& filePath, bool prepend)
+        : _prim(prim)
+        , _sdfPayload()
+        , _filePath(filePath)
+        , _listPos(prepend ? UsdListPositionBackOfPrependList : UsdListPositionBackOfAppendList)
+    {
+    }
+
+    void undo() override
+    {
+        if (!_prim.IsValid())
+            return;
+
+        UsdPayloads primPayloads = _prim.GetPayloads();
+        primPayloads.RemovePayload(_sdfPayload);
+    }
+
+    void redo() override
+    {
+        if (!_prim.IsValid())
+            return;
+
+        if (TfStringEndsWith(_filePath, ".mtlx")) {
+            _sdfPayload = SdfPayload(_filePath, SdfPath("/MaterialX"));
+        } else {
+            _sdfPayload = SdfPayload(_filePath);
+        }
+        UsdPayloads primPayloads = _prim.GetPayloads();
+        primPayloads.AddPayload(_sdfPayload, _listPos);
+    }
+
+private:
+    UsdPrim         _prim;
+    SdfPayload      _sdfPayload;
+    std::string     _filePath;
+    UsdListPosition _listPos;
+};
 
 class ClearAllReferencesUndoableCommand : public Ufe::UndoableCommand
 {
@@ -850,9 +893,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
         // Top level item - Add New Prim (for all context op types).
         items.emplace_back(kUSDAddNewPrimItem, kUSDAddNewPrimLabel, Ufe::ContextItem::kHasChildren);
         if (!fIsAGatewayType) {
-            items.emplace_back(
-                AddUsdReferenceUndoableCommand::commandName,
-                AddUsdReferenceUndoableCommand::commandName);
+            items.emplace_back(kAddRefOrPayloadItem, kAddRefOrPayloadLabel);
             items.emplace_back(
                 ClearAllReferencesUndoableCommand::commandName,
                 ClearAllReferencesUndoableCommand::commandName);
@@ -1178,7 +1219,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         MGlobal::executeCommand(script);
         return nullptr;
 #endif
-    } else if (itemPath[0] == AddUsdReferenceUndoableCommand::commandName) {
+    } else if (itemPath[0] == kAddRefOrPayloadItem) {
         if (!_prepareUSDReferenceTargetLayer(prim()))
             return nullptr;
 
@@ -1191,7 +1232,27 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         if (path.empty())
             return nullptr;
 
-        return std::make_shared<AddUsdReferenceUndoableCommand>(prim(), path);
+        const bool asRef = UsdMayaUtilFileSystem::wantReferenceCompositionArc();
+        const bool prepend = UsdMayaUtilFileSystem::wantPrependCompositionArc();
+        if (asRef) {
+            return std::make_shared<AddUsdReferenceUndoableCommand>(prim(), path, prepend);
+        } else {
+            Ufe::UndoableCommand::Ptr preloadCmd;
+            const bool                preload = UsdMayaUtilFileSystem::wantPayloadLoaded();
+            if (preload) {
+                preloadCmd = std::make_shared<LoadUndoableCommand>(prim(), UsdLoadWithDescendants);
+            } else {
+                preloadCmd = std::make_shared<UnloadUndoableCommand>(prim());
+            }
+
+            auto payloadCmd = std::make_shared<AddUsdPayloadUndoableCommand>(prim(), path, prepend);
+
+            auto compoCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
+            compoCmd->append(preloadCmd);
+            compoCmd->append(payloadCmd);
+
+            return compoCmd;
+        }
     } else if (itemPath[0] == ClearAllReferencesUndoableCommand::commandName) {
         MString confirmation = MGlobal::executeCommandStringResult(clearAllReferencesConfirmScript);
         if (ClearAllReferencesUndoableCommand::cancelRemoval == confirmation)

@@ -62,7 +62,32 @@ def GetStageFromProxyShapeAttr(attr):
     return(stageName, proxyStage)
 
 def RequireUsdPathsRelativeToMayaSceneFile():
-    return cmds.optionVar(exists="mayaUsd_MakePathRelativeToSceneFile") and cmds.optionVar(query="mayaUsd_MakePathRelativeToSceneFile")
+    opVarName = "mayaUsd_MakePathRelativeToSceneFile"
+    return cmds.optionVar(exists=opVarName) and cmds.optionVar(query=opVarName)
+
+def wantReferenceCompositionArc():
+    opVarName = "mayaUsd_WantReferenceCompositionArc"
+    return cmds.optionVar(exists=opVarName) and cmds.optionVar(query=opVarName)
+
+def saveWantReferenceCompositionArc(want):
+    opVarName = "mayaUsd_WantReferenceCompositionArc"
+    cmds.optionVar(iv=(opVarName, want))
+
+def wantPrependCompositionArc():
+    opVarName = "mayaUsd_WantPrependCompositionArc"
+    return cmds.optionVar(exists=opVarName) and cmds.optionVar(query=opVarName)
+
+def saveWantPrependCompositionArc(want):
+    opVarName = "mayaUsd_WantPrependCompositionArc"
+    cmds.optionVar(iv=(opVarName, want))
+
+def wantPayloadLoaded():
+    opVarName = "mayaUsd_WantPayloadLoaded"
+    return cmds.optionVar(exists=opVarName) and cmds.optionVar(query=opVarName)
+
+def saveWantPayloadLoaded(want):
+    opVarName = "mayaUsd_WantPayloadLoaded"
+    cmds.optionVar(iv=(opVarName, want))
 
 def ProxyShapeFilePathChanged(filePathAttr, newFilePath=None):
     # Function called from the MayaUsd Proxy Shape template when the file path

@@ -272,6 +272,27 @@ bool UsdMayaUtilFileSystem::requireUsdPathsRelativeToEditTargetLayer()
         && MGlobal::optionVarIntValue(MAKE_PATH_RELATIVE_TO_EDIT_TARGET_LAYER_FILE);
 }
 
+bool UsdMayaUtilFileSystem::wantReferenceCompositionArc()
+{
+    static const MString WANT_REFERENCE_COMPOSITION_ARC = "mayaUsd_WantReferenceCompositionArc";
+    return MGlobal::optionVarExists(WANT_REFERENCE_COMPOSITION_ARC)
+        && MGlobal::optionVarIntValue(WANT_REFERENCE_COMPOSITION_ARC);
+}
+
+bool UsdMayaUtilFileSystem::wantPrependCompositionArc()
+{
+    static const MString WANT_PREPEND_COMPOSITION_ARC = "mayaUsd_WantPrependCompositionArc";
+    return MGlobal::optionVarExists(WANT_PREPEND_COMPOSITION_ARC)
+        && MGlobal::optionVarIntValue(WANT_PREPEND_COMPOSITION_ARC);
+}
+
+bool UsdMayaUtilFileSystem::wantPayloadLoaded()
+{
+    static const MString WANT_PAYLOAD_LOADED = "mayaUsd_WantPayloadLoaded";
+    return MGlobal::optionVarExists(WANT_PAYLOAD_LOADED)
+        && MGlobal::optionVarIntValue(WANT_PAYLOAD_LOADED);
+}
+
 const char* getScenesFolderScript = R"(
 global proc string UsdMayaUtilFileSystem_GetScenesFolder()
 {

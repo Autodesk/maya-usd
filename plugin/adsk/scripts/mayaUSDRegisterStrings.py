@@ -45,3 +45,4 @@ def mayaUSDRegisterStrings():
     register("kUnresolvedPathAnn", "This field indicates the path with the file name currently chosen in your text input. Note: This is the string that will be written out to the file in the chosen directory in order to enable portability.")
     register("kResolvedPath", "Resolved Path:")
     register("kResolvedPathAnn", "This field indicates the resolved path of your chosen working directory for your USD file. Note: The resolved path for the file can vary for each individual as the file is handed off.")
+    register("kCompositionArcOptions", "Composition Arc Options")

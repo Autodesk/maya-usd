@@ -21,16 +21,16 @@ global proc addUSDReferenceCreateUi(string $parent)
 {
     setParent $parent;
     string $layout = `scrollLayout -childResizable true`;
-    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdFileRelativeToEditTargetLayer.uiCreate(r'''" + $layout + "''')");
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdAddRefOrPayloadRelativeToEditTargetLayer.uiCreate(r'''" + $layout + "''')");
 }
 
 global proc addUSDReferenceInitUi(string $parent, string $filterType)
 {
-    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdFileRelativeToEditTargetLayer.uiInit(r'''" + $parent + "''', r'''" + $filterType + "''')");
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdAddRefOrPayloadRelativeToEditTargetLayer.uiInit(r'''" + $parent + "''', r'''" + $filterType + "''')");
 }
 
 global proc addUSDReferenceToUsdCommitUi(string $parent, string $selectedFile)
 {
     setParent $parent;
-    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdFileRelativeToEditTargetLayer.uiCommit(r'''" + $parent + "''', r'''" + $selectedFile + "''')");
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdAddRefOrPayloadRelativeToEditTargetLayer.uiCommit(r'''" + $parent + "''', r'''" + $selectedFile + "''')");
 }
