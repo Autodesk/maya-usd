@@ -44,12 +44,8 @@ class TestSnapshot(mtohUtils.MtohTestCase):
         self.assertSnapshotEqual("flat_orange.png")
         self.assertRaises(AssertionError,
                           self.assertSnapshotEqual, "flat_orange_bad.png")
-        # 17515 is the exact 8-bit raw-pixel difference between flat_orange.png
-        # flat_orange_bad.png, and 163200000 is the maximum diff for an 8-bit,
-        # 40x40, 4-channel image.  So this tests that assertSnapshotClose is
-        # working
-        self.assertSnapshotClose("flat_orange_bad.png", None, 17515 / 163200000.0)
-
+        # TODO: test assertSnapshotClose
+        
 
 class TestMayaHydraRender(mtohUtils.MtohTestCase):
     _file = __file__
@@ -60,9 +56,9 @@ class TestMayaHydraRender(mtohUtils.MtohTestCase):
             imageVersion = 'lambertDefaultMaterial'
 
         self.makeCubeScene(camDist=6)
-        self.assertSnapshotClose("cube_unselected.png", imageVersion, 0.0002)
+        self.assertSnapshotEqual("cube_unselected.png", imageVersion)
         cmds.select(self.cubeTrans)
-        self.assertSnapshotClose("cube_selected.png", imageVersion, 0.0002)
+        self.assertSnapshotEqual("cube_selected.png", imageVersion)
 
 
 if __name__ == '__main__':

@@ -167,3 +167,14 @@ find_package_handle_standard_args(USD
     VERSION_VAR
         USD_VERSION
 )
+
+find_program(OIIO_idiff_BINARY
+        idiff
+    HINTS
+        ${PXR_USD_LOCATION}
+        $ENV{PXR_USD_LOCATION}
+    PATH_SUFFIXES
+        bin/
+    DOC
+        "OIIO's idiff binary"  
+)
