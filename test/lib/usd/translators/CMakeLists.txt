@@ -238,7 +238,7 @@ endif()
 # These import/export tests will work with older versions of Maya and USD.
 # However getting the test materials to appear in the Maya viewport will
 # require a recent Maya preview release combined with a bleeding edge USD
-if (MAYA_APP_VERSION VERSION_GREATER 2022 AND PXR_VERSION VERSION_GREATER 2102)
+if (MAYA_APP_VERSION VERSION_GREATER 2022)
     set(MTLX_TEST_SCRIPT_FILES
         testUsdExportMaterialX.py
         testUsdImportMaterialX.py
@@ -274,18 +274,16 @@ mayaUsd_add_test(testUsdMayaListShadingModesCommand
 set_property(TEST testUsdMayaListShadingModesCommand APPEND PROPERTY LABELS translators)
 
 # Requires Physics API to test some exporters:
-if (PXR_VERSION VERSION_GREATER 2105)
-    # Once of the tests in this file requires UsdMaya (from the Pixar plugin). That test
-    # will be skipped if not found (probably because BUILD_PXR_PLUGIN is off).
-    mayaUsd_add_test(testUsdExportSchemaApi
-        PYTHON_MODULE testUsdExportSchemaApi
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        ENV
-            "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
-            "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_BINARY_DIR}/../plugin/nullApiExporter"
-    )
-    set_property(TEST testUsdExportSchemaApi APPEND PROPERTY LABELS translators)
-endif()
+# One of the tests in this file requires UsdMaya (from the Pixar plugin). That test
+# will be skipped if not found (probably because BUILD_PXR_PLUGIN is off).
+mayaUsd_add_test(testUsdExportSchemaApi
+    PYTHON_MODULE testUsdExportSchemaApi
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    ENV
+        "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
+        "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_BINARY_DIR}/../plugin/nullApiExporter"
+)
+set_property(TEST testUsdExportSchemaApi APPEND PROPERTY LABELS translators)
 
 mayaUsd_add_test(testUsdImportExportSiteSpecificConfig
     PYTHON_MODULE testUsdImportExportSiteSpecificConfig

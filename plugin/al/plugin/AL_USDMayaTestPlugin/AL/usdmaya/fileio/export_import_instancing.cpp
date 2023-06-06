@@ -71,11 +71,7 @@ TEST(export_import_instancing, usd_instancing_roundtrip)
     usdXform.GetLocalTransformation(&usdTransform, &resetsXformStack);
     EXPECT_DOUBLE_EQ(usdTransform[3][0], 5.0);
 
-#if PXR_VERSION < 2011
-    UsdPrim prototypePrim = prim.GetMaster();
-#else
     UsdPrim prototypePrim = prim.GetPrototype();
-#endif
     EXPECT_TRUE(prototypePrim.IsValid());
     UsdPrim prototypePrimChild = prototypePrim.GetChild(TfToken("pSphereShape1"));
     EXPECT_TRUE(prototypePrimChild.IsValid() && prototypePrimChild.IsA<UsdGeomMesh>());

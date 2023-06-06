@@ -416,11 +416,7 @@ bool UsdMayaWriteJobContext::_OpenFile(const std::string& filename, bool append)
         } else {
             SdfLayer::FileFormatArguments args;
             args[UsdUsdFileFormatTokens->FormatArg] = mArgs.defaultUSDFormat.GetString();
-#if PXR_VERSION > 2008
             layer = SdfLayer::CreateNew(filename, args);
-#else
-            layer = SdfLayer::CreateNew(filename, "", args);
-#endif
         }
         if (!layer) {
             TF_RUNTIME_ERROR("Failed to create layer '%s'", filename.c_str());

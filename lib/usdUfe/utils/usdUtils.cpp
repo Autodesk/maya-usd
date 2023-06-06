@@ -261,13 +261,6 @@ bool updateReferencedPath(const UsdPrim& oldPrim, const SdfPath& newPath)
     return true;
 }
 
-bool isInternalReference(const SdfReference& ref)
-{
-#if PXR_VERSION >= 2008
-    return ref.IsInternal();
-#else
-    return ref.GetAssetPath().empty();
-#endif
-}
+bool isInternalReference(const SdfReference& ref) { return ref.IsInternal(); }
 
 } // namespace USDUFE_NS_DEF
