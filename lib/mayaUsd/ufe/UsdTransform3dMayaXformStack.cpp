@@ -16,14 +16,14 @@
 #include "UsdTransform3dMayaXformStack.h"
 
 #include "private/UfeNotifGuard.h"
-#include "private/Utils.h"
 
 #include <mayaUsd/fileio/utils/xformStack.h>
 #include <mayaUsd/ufe/RotationUtils.h>
 #include <mayaUsd/ufe/UsdTransform3dUndoableCommands.h>
 #include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/undo/UsdUndoBlock.h>
-#include <mayaUsd/undo/UsdUndoableItem.h>
+
+#include <usdUfe/undo/UsdUndoBlock.h>
+#include <usdUfe/undo/UsdUndoableItem.h>
 
 #include <maya/MEulerRotation.h>
 #include <maya/MGlobal.h>
@@ -75,6 +75,8 @@ PXR_NS::UsdAttribute getUsdPrimAttribute(const UsdPrim& prim, const TfToken& att
 const std::unordered_map<TfToken, UsdTransform3dMayaXformStack::OpNdx, TfToken::HashFunctor>
     gOpNameToNdx {
         { TfToken("xformOp:translate"), UsdTransform3dMayaXformStack::NdxTranslate },
+        // Note: this matches the USD common xformOp name.
+        { TfToken("xformOp:translate:pivot"), UsdTransform3dMayaXformStack::NdxPivot },
         { TfToken("xformOp:translate:rotatePivotTranslate"),
           UsdTransform3dMayaXformStack::NdxRotatePivotTranslate },
         { TfToken("xformOp:translate:rotatePivot"), UsdTransform3dMayaXformStack::NdxRotatePivot },
@@ -97,7 +99,10 @@ const std::unordered_map<TfToken, UsdTransform3dMayaXformStack::OpNdx, TfToken::
         { TfToken("xformOp:transform:shear"), UsdTransform3dMayaXformStack::NdxShear },
         { TfToken("xformOp:scale"), UsdTransform3dMayaXformStack::NdxScale },
         { TfToken("!invert!xformOp:translate:scalePivot"),
-          UsdTransform3dMayaXformStack::NdxScalePivotInverse }
+          UsdTransform3dMayaXformStack::NdxScalePivotInverse },
+        // Note: this matches the USD common xformOp name.
+        { TfToken("!invert!xformOp:translate:pivot"),
+          UsdTransform3dMayaXformStack::NdxPivotInverse }
     };
 
 } // namespace
@@ -467,7 +472,7 @@ UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
             } else {
                 // Use notification guard, otherwise will generate one notification
                 // for the xform op add, and another for the reorder.
-                InTransform3dChange guard(cmd.path());
+                UsdUfe::InTransform3dChange guard(cmd.path());
                 auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
                 TF_AXIOM(usdSceneItem);
                 UsdGeomXformable xformable(usdSceneItem->prim());
@@ -514,7 +519,7 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMayaXformStack::scaleCmd(double x, 
                 return UsdGeomXformOp(attr);
             } else {
 
-                InTransform3dChange guard(cmd.path());
+                UsdUfe::InTransform3dChange guard(cmd.path());
                 auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
                 TF_AXIOM(usdSceneItem);
                 UsdGeomXformable xformable(usdSceneItem->prim());
@@ -630,8 +635,8 @@ Ufe::SetVector3dUndoableCommand::Ptr UsdTransform3dMayaXformStack::setVector3dCm
             if (attr) {
                 return UsdGeomXformOp(attr);
             } else {
-                InTransform3dChange guard(cmd.path());
-                UsdGeomXformable    xformable(usdSceneItem->prim());
+                UsdUfe::InTransform3dChange guard(cmd.path());
+                UsdGeomXformable            xformable(usdSceneItem->prim());
                 auto op = xformable.AddTranslateOp(OpPrecision<V>::precision, opSuffix);
                 TF_VERIFY(op);
                 op.Set(v);
@@ -676,7 +681,7 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
             // its inverse is added --- this does not match the Maya transform
             // stack.  Use of SdfChangeBlock is discouraged when calling USD
             // APIs above Sdf, so use our own guard.
-            InTransform3dChange guard(cmd.path());
+            UsdUfe::InTransform3dChange guard(cmd.path());
             auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
             TF_AXIOM(usdSceneItem);
             UsdGeomXformable xformable(usdSceneItem->prim());
@@ -839,7 +844,7 @@ Ufe::Transform3d::Ptr UsdTransform3dMayaXformStackHandler::editTransform3d(
     }
 
     std::string errMsg;
-    if (!MayaUsd::ufe::isEditTargetLayerModifiable(usdItem->prim().GetStage(), &errMsg)) {
+    if (!UsdUfe::isEditTargetLayerModifiable(usdItem->prim().GetStage(), &errMsg)) {
         MGlobal::displayError(errMsg.c_str());
         return nullptr;
     }

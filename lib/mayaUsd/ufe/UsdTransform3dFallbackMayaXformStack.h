@@ -15,8 +15,9 @@
 //
 #pragma once
 
-#include <mayaUsd/ufe/UfeVersionCompat.h>
 #include <mayaUsd/ufe/UsdTransform3dMayaXformStack.h>
+
+#include <usdUfe/ufe/UfeVersionCompat.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {

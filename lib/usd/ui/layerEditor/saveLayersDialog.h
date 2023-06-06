@@ -53,9 +53,12 @@ public:
 
     void forEachEntry(const std::function<void(QWidget*)>& func);
 
+    void quietlyUncheckAllAsRelative();
+
 protected:
     void onSaveAll();
     void onCancel();
+    void onAllAsRelativeChanged();
 
     bool okToSave();
 
@@ -83,6 +86,7 @@ private:
     QStringList   _emptyLayers;
     QWidget*      _anonLayersWidget { nullptr };
     QWidget*      _fileLayersWidget { nullptr };
+    QCheckBox*    _allAsRelative { nullptr };
     LayerInfos    _anonLayerInfos;
     layerSet      _dirtyFileBackedLayers;
     stageLayerMap _stageLayerMap;

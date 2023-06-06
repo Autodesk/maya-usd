@@ -17,8 +17,9 @@
 
 #include <mayaUsd/fileio/primUpdaterManager.h>
 #include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/utils/util.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/base/tf/diagnostic.h>
 
@@ -39,7 +40,7 @@ namespace {
 // done to avoid having that prim and its sub-hierarchy exist in the scene as
 // stale USD duplicates of Maya pulled nodes.  If the USD pulled ancestor does
 // not exist, the argument Maya node is orphaned.
-MayaUsd::ufe::UsdSceneItem::Ptr pulledUsdAncestorItem(const Ufe::SceneItem::Ptr& mayaItem)
+UsdUfe::UsdSceneItem::Ptr pulledUsdAncestorItem(const Ufe::SceneItem::Ptr& mayaItem)
 {
     // This function requires a Maya item to compute its USD ancestor.
     if (!TF_VERIFY(mayaItem->runTimeId() == MayaUsd::ufe::getMayaRunTimeId())) {
@@ -77,8 +78,7 @@ MayaUsd::ufe::UsdSceneItem::Ptr pulledUsdAncestorItem(const Ufe::SceneItem::Ptr&
     // Try to create a USD scene item (and its underlying prim) from the pulled
     // ancestor USD path.  If no such USD prim exists, our argument Maya node
     // is orphaned.
-    return std::static_pointer_cast<MayaUsd::ufe::UsdSceneItem>(
-        Ufe::Hierarchy::createItem(usdItemPath));
+    return std::static_pointer_cast<UsdUfe::UsdSceneItem>(Ufe::Hierarchy::createItem(usdItemPath));
 }
 
 // A Maya node is orphaned if its pulled ancestor is not in the scene.

@@ -17,10 +17,11 @@
 #define USD_ATTRIBUTES_COMMANDS
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UfeVersionCompat.h>
 #include <mayaUsd/ufe/UsdAttribute.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
-#include <mayaUsd/ufe/UsdUndoableCommand.h>
+
+#include <usdUfe/ufe/UfeVersionCompat.h>
+#include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/UsdUndoableCommand.h>
 
 #include <pxr/usd/usd/prim.h>
 

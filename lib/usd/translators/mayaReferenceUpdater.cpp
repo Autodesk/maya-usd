@@ -24,13 +24,15 @@
 #include <mayaUsd/ufe/SetVariantSelectionCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/OpUndoItems.h>
-#include <mayaUsd/utils/editRouter.h>
 #include <mayaUsd/utils/primActivation.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilSerialization.h>
 #include <mayaUsd/utils/variants.h>
 #include <mayaUsd_Schemas/ALMayaReference.h>
 #include <mayaUsd_Schemas/MayaReference.h>
+
+#include <usdUfe/base/tokens.h>
+#include <usdUfe/utils/editRouter.h>
 
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/tf/diagnostic.h>
@@ -56,7 +58,7 @@ namespace {
 // variant has its own copy of the flag.
 void clearAutoEdit(const Ufe::Path& pulledPath)
 {
-    MAYAUSD_NS::PrimActivation activation(pulledPath);
+    MayaUsd::PrimActivation activation(pulledPath);
 
     // The given prim can be invalid. This happens for example if an
     // ancestor was deactivated.
@@ -65,7 +67,7 @@ void clearAutoEdit(const Ufe::Path& pulledPath)
         return;
 
     UsdPrim parentPrim = prim.GetParent();
-    MAYAUSD_NS::applyToAllVariants(parentPrim, true, [prim]() {
+    MayaUsd::applyToAllVariants(parentPrim, true, [prim]() {
         // Note: the prim might not exist in all variants, so check its validity.
         if (!prim.IsValid())
             return;
@@ -192,7 +194,7 @@ bool callEditRouter(
     const PXR_NS::VtDictionary& routerContext,
     PXR_NS::VtDictionary&       routingData)
 {
-    MayaUsd::EditRouter::Ptr dstEditRouter = MayaUsd::getEditRouter(routerName);
+    UsdUfe::EditRouter::Ptr dstEditRouter = UsdUfe::getEditRouter(routerName);
     if (!dstEditRouter)
         return false;
 
@@ -226,8 +228,8 @@ UsdMayaPrimUpdater::PushCopySpecs PxrUsdTranslators_MayaReferenceUpdater::pushCo
     routerContext[MayaUsdEditRoutingTokens->DstPath] = PXR_NS::VtValue(dstSdfPath);
 
     // Use the edit router to find the destination layer and path.
-    routerContext[MayaUsdEditRoutingTokens->Stage] = PXR_NS::VtValue(getContext()->GetUsdStage());
-    routerContext[MayaUsdEditRoutingTokens->Prim] = PXR_NS::VtValue(dstSdfPath.GetString());
+    routerContext[UsdUfe::EditRoutingTokens->Stage] = PXR_NS::VtValue(getContext()->GetUsdStage());
+    routerContext[UsdUfe::EditRoutingTokens->Prim] = PXR_NS::VtValue(dstSdfPath.GetString());
 
     PXR_NS::VtDictionary routingData;
 
@@ -235,7 +237,7 @@ UsdMayaPrimUpdater::PushCopySpecs PxrUsdTranslators_MayaReferenceUpdater::pushCo
         return PushCopySpecs::Failed;
 
     // Retrieve the destination layer and prim path from the routing data.
-    auto cacheDstLayerStr = findValue(routingData, MayaUsdEditRoutingTokens->Layer);
+    auto cacheDstLayerStr = findValue(routingData, UsdUfe::EditRoutingTokens->Layer);
     if (!TF_VERIFY(!cacheDstLayerStr.empty()))
         return PushCopySpecs::Failed;
 

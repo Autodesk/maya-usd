@@ -81,9 +81,10 @@ public:
     /// all the faces in the bound prim or the entire bound prim.
     struct Assignment
     {
-        SdfPath    boundPrimPath;
-        VtIntArray faceIndices;
-        TfToken    shapeName;
+        SdfPath       boundPrimPath;
+        VtIntArray    faceIndices;
+        TfToken       shapeName;
+        MObjectHandle shapeObj;
     };
 
     /// Vector of assignments.

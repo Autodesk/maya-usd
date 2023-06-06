@@ -16,7 +16,8 @@
 #include "adskMaterialCommands.h"
 
 #include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdShaderNodeDef.h>
 #endif
@@ -290,7 +291,7 @@ MStatus ADSKMayaUSDMaterialBindingsCommand::doIt(const MArgList& argList)
     }
 
     if (parser.isFlagSet(kHasMaterialBindingFlag)) {
-        auto usdSceneItem = std::dynamic_pointer_cast<MayaUsd::ufe::UsdSceneItem>(sceneItem);
+        auto usdSceneItem = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(sceneItem);
         if (!usdSceneItem) {
             MGlobal::displayError("Invalid SceneItem:" + ufePathString);
             throw MS::kFailure;

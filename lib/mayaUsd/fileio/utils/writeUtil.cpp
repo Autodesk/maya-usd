@@ -816,12 +816,22 @@ bool UsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
                     = schemaAdaptor->GetAttribute(attrName)) {
                     VtValue value;
                     if (attrAdaptor.Get(&value)) {
+#if PXR_VERSION < 2308
                         const SdfAttributeSpecHandle attrDef = attrAdaptor.GetAttributeDefinition();
                         UsdAttribute                 attr = prim.CreateAttribute(
                             attrDef->GetNameToken(),
                             attrDef->GetTypeName(),
                             /*custom*/ false,
                             attrDef->GetVariability());
+#else
+                        const UsdPrimDefinition::Attribute attrDef
+                            = attrAdaptor.GetAttributeDefinition();
+                        UsdAttribute attr = prim.CreateAttribute(
+                            attrDef.GetName(),
+                            attrDef.GetTypeName(),
+                            /*custom*/ false,
+                            attrDef.GetVariability());
+#endif
                         SetAttribute(attr, value, usdTime, valueWriter);
                     }
                 }
@@ -850,7 +860,8 @@ size_t UsdMayaWriteUtil::WriteSchemaAttributesToPrim(
 
     size_t count = 0;
     for (const TfToken& attrName : attributeNames) {
-        VtValue                value;
+        VtValue value;
+#if PXR_VERSION < 2308
         SdfAttributeSpecHandle attrDef;
         if (UsdMayaAttributeAdaptor attr = schema->GetAttribute(attrName)) {
             attr.Get(&value);
@@ -863,6 +874,20 @@ size_t UsdMayaWriteUtil::WriteSchemaAttributesToPrim(
                 attrDef->GetTypeName(),
                 /*custom*/ false,
                 attrDef->GetVariability());
+#else
+        UsdPrimDefinition::Attribute attrDef;
+        if (UsdMayaAttributeAdaptor attr = schema->GetAttribute(attrName)) {
+            attr.Get(&value);
+            attrDef = attr.GetAttributeDefinition();
+        }
+
+        if (!value.IsEmpty() && attrDef) {
+            UsdAttribute attr = prim.CreateAttribute(
+                attrDef.GetName(),
+                attrDef.GetTypeName(),
+                /*custom*/ false,
+                attrDef.GetVariability());
+#endif
             if (SetAttribute(attr, value, usdTime, valueWriter)) {
                 count++;
             }

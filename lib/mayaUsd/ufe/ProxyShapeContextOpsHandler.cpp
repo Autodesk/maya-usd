@@ -16,8 +16,9 @@
 #include "ProxyShapeContextOpsHandler.h"
 
 #include <mayaUsd/ufe/UsdContextOpsHandler.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/usd/stage.h>
 

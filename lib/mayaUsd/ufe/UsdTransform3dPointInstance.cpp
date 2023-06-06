@@ -16,9 +16,10 @@
 #include "UsdTransform3dPointInstance.h"
 
 #include <mayaUsd/ufe/UsdPointInstanceUndoableCommands.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/UsdTransform3dBase.h>
 #include <mayaUsd/ufe/Utils.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/quath.h>

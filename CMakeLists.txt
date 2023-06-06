@@ -222,6 +222,12 @@ endif()
 #------------------------------------------------------------------------------
 # plugins
 #------------------------------------------------------------------------------
+if (BUILD_PXR_PLUGIN OR BUILD_AL_PLUGIN OR BUILD_ADSK_PLUGIN)
+    if (NOT BUILD_MAYAUSD_LIBRARY)
+        message(FATAL_ERROR "Building plugins requires MayaUsd core libraries.")
+    endif()
+endif()
+
 if (BUILD_PXR_PLUGIN)
     add_subdirectory(plugin/pxr)
 endif()

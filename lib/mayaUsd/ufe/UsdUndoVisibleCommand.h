@@ -16,7 +16,8 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/undo/UsdUndoableItem.h>
+
+#include <usdUfe/undo/UsdUndoableItem.h>
 
 #include <pxr/usd/usd/prim.h>
 

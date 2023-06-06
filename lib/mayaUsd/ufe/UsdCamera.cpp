@@ -15,14 +15,14 @@
 //
 #include "UsdCamera.h"
 
-#include "private/Utils.h"
 #include "pxr/base/gf/frustum.h"
 #include "pxr/usd/usdGeom/camera.h"
 #include "pxr/usd/usdGeom/metrics.h"
 
-#include <mayaUsd/ufe/UsdUndoableCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
+
+#include <usdUfe/ufe/UsdUndoableCommand.h>
 
 #include <pxr/imaging/hd/camera.h>
 

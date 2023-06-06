@@ -15,8 +15,6 @@
 //
 #include "UsdPathMappingHandler.h"
 
-#include "UsdSceneItem.h"
-
 #include <mayaUsd/fileio/primUpdaterManager.h>
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/utils/util.h>
