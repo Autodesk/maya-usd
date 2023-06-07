@@ -31,3 +31,6 @@ foreach(script ${TEST_SCRIPT_FILES})
     # Assign a CTest label to these tests for easy filtering.
     set_property(TEST ${target} APPEND PROPERTY LABELS mayaHydra)
 endforeach()
+
+# C++ unit tests
+add_subdirectory(cpp)
