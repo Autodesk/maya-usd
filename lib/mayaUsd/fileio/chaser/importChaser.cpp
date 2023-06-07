@@ -34,4 +34,11 @@ bool UsdMayaImportChaser::Redo() { return true; }
 
 bool UsdMayaImportChaser::Undo() { return true; }
 
+void UsdMayaImportChaser::SetSdfToDagMap(const MSdfToDagMap& sdfToDagMap)
+{
+    this->sdfToDagMap = sdfToDagMap;
+}
+
+MSdfToDagMap& UsdMayaImportChaser::GetSdfToDagMap() { return sdfToDagMap; }
+
 PXR_NAMESPACE_CLOSE_SCOPE

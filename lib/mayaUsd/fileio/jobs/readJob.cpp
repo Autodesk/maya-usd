@@ -428,6 +428,18 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         topImportedPaths.insert(usdRootPrim.GetPath());
     }
 
+    MSdfToDagMap sdfToDagMap;
+    for (const UsdPrim prim : stage->TraverseAll()) {
+        SdfPath     primSdfPath = prim.GetPath();
+        std::string key = primSdfPath.GetString();
+        MObject     obj;
+        if (TfMapLookup(mNewNodeRegistry, key, &obj)) {
+            if (obj.hasFn(MFn::kDagNode)) {
+                sdfToDagMap[primSdfPath] = MDagPath::getAPathTo(obj);
+            }
+        }
+    }
+
     TF_FOR_ALL(pathsIter, topImportedPaths)
     {
         std::string key = pathsIter->GetString();
@@ -440,11 +452,13 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
             }
         }
     }
+
     progressBar.advance();
 
     // NOTE: (yliangsiew) Look into a registry of post-import "chasers" here
     // and call `PostImport` on each of them.
     this->mImportChasers.clear();
+
     UsdMayaImportChaserRegistry::FactoryContext ctx(
         predicate, stage, currentAddedDagPaths, fromSdfPaths, this->mArgs);
     for (const std::string& importChaserName : this->mArgs.chaserNames) {
@@ -458,6 +472,7 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     progressBar.advance();
 
     for (const UsdMayaImportChaserRefPtr& chaser : this->mImportChasers) {
+        chaser->SetSdfToDagMap(sdfToDagMap);
         bool bStat
             = chaser->PostImport(predicate, stage, currentAddedDagPaths, fromSdfPaths, this->mArgs);
         if (!bStat) {
