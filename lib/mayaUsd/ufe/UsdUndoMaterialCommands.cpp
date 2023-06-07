@@ -88,37 +88,6 @@ bool connectShaderToMaterial(
     return true;
 }
 
-//! Returns true if \p item is a materials scope.
-bool isMaterialsScope(const Ufe::SceneItem::Ptr& item)
-{
-    if (!item) {
-        return false;
-    }
-
-    // Must be a scope.
-    if (item->nodeType() != "Scope") {
-        return false;
-    }
-
-    // With the magic name.
-    if (item->nodeName() == UsdMayaJobExportArgs::GetDefaultMaterialsScopeName()) {
-        return true;
-    }
-
-    // Or with only materials inside
-    auto scopeHierarchy = Ufe::Hierarchy::hierarchy(item);
-    if (scopeHierarchy) {
-        for (auto&& child : scopeHierarchy->children()) {
-            if (child->nodeType() != "Material") {
-                // At least one non material
-                return false;
-            }
-        }
-    }
-
-    return true;
-}
-
 //! Searches the children of \p parentPath for a materials scope. Returns a null pointer if no
 //! materials scope is found.
 Ufe::SceneItem::Ptr getMaterialsScope(const Ufe::Path& parentPath)
