@@ -43,9 +43,12 @@ class importChaserTest(mayaUsdLib.ImportChaser):
         for sdfPath in sdfPaths:
             sdfPathsStr += str(sdfPath) + "\n"
 
+        # Declare a counter for sdf to dag mapping test
+        primCount = 0
         stageTraverseStr = "Stage traversal: "
         for prim in stage.TraverseAll():
             stageTraverseStr += prim.GetName() + "\n"
+            primCount += 1
 
         customLayerData = stage.GetRootLayer().customLayerData
         customLayerDataStr = "Custom layer data: "
@@ -54,6 +57,24 @@ class importChaserTest(mayaUsdLib.ImportChaser):
             customLayerDataStr += data + customLayerData[data] + "\n"
 
         print("Info from import:\n" + sdfPathsStr + stageTraverseStr + customLayerDataStr)
+
+        # Get the Sdf path to Dag path matching of all imported prims
+        # Call GetSdfToDagMap() to get the sdfToDagMap, 
+        # which contains SDF path to Dag path mapping
+        sdfToDagMap = self.GetSdfToDagMap()
+
+        # Test Sdf To Dag Map
+        testMap = next(iter(sdfToDagMap))
+        assert(testMap.key() == sdfPaths[0])
+        assert(testMap.data() == dagPaths[0])
+        assert(primCount == len(sdfToDagMap))
+
+        sdfToDagMappingStr = "Sdf to Dag mapping: \n"
+        for sdfToDag in sdfToDagMap:
+            sdfToDagMappingStr += (str(sdfToDag.key()) + "\n")
+            sdfToDagMappingStr += (str(sdfToDag.data()) + "\n")
+
+        print("Info from Sdf To Dag Mapping:\n" + sdfToDagMappingStr)
 
         # NOTE: (yliangsiew) Just for the sake of having something that we can actually run
         # unit tests against, we'll add a custom attribute to the root DAG paths imported

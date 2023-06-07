@@ -215,24 +215,21 @@ void MayaUsdProxyShapeSceneIndex::StageSet(const MayaUsdProxyStageSetNotice& not
 void MayaUsdProxyShapeSceneIndex::ObjectsChanged(
     const MayaUsdProxyStageObjectsChangedNotice& notice)
 {
-    // MAYA-126804 TODO: This should be enough to trigger dirty notifications being send
-    // when a matrix is changed. However this is not working due missing
-    // UsdImagingMeshAdapter::Invalidate implementation. This is not part of USD v22.11 however has
-    // been fixed in later versions.
     _usdImagingStageSceneIndex->ApplyPendingUpdates();
 }
 
 void MayaUsdProxyShapeSceneIndex::Populate()
 {
     if (!_populated) {
-        if (auto stage = _proxyShape->getUsdStage()) {
+        auto stage = _proxyShape->getUsdStage();
+        if (TF_VERIFY(stage, "Unable to fetch a valid USDStage.")) {
+            _usdImagingStageSceneIndex->SetStage(stage);
             // Check whether the pseudo-root has children
             if (!stage->GetPseudoRoot().GetChildren().empty())
             // MAYA-126641: Upon first call to MayaUsdProxyShapeBase::getUsdStage, the stage may be
             // empty. Do not mark the scene index as _populated, until stage is full. This is taken
             // care of inside MayaUsdProxyShapeSceneIndex::_StageSet callback.
             {
-                _usdImagingStageSceneIndex->SetStage(stage);
 #if PXR_VERSION < 2305
                 // In most recent USD, Populate is called from within SetStage, so there is no need
                 // to callsites to call it explicitly
