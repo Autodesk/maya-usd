@@ -15,8 +15,7 @@
 //
 #pragma once
 
-#include <mayaUsd/base/api.h>
-
+#include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/base/tf/token.h>
@@ -25,11 +24,10 @@
 #include <ufe/camera.h>
 #include <ufe/path.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //! \brief Interface to transform objects in 3D.
-class MAYAUSD_CORE_PUBLIC UsdCamera : public Ufe::Camera
+class USDUFE_PUBLIC UsdCamera : public Ufe::Camera
 {
 public:
     typedef std::shared_ptr<UsdCamera> Ptr;
@@ -95,5 +93,4 @@ private:
 
 }; // UsdCamera
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

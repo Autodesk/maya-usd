@@ -14,6 +14,8 @@ target_sources(${PROJECT_NAME}
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
+            UsdCamera.cpp
+            UsdCameraHandler.cpp
             UsdObject3d.cpp
             UsdObject3dHandler.cpp
             UsdUndoableCommand.cpp
@@ -46,6 +48,8 @@ set(HEADERS
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND HEADERS
+        UsdCamera.h
+        UsdCameraHandler.h
         UsdObject3d.h
         UsdObject3dHandler.h
         UsdUndoableCommand.h

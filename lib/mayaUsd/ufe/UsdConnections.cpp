@@ -14,10 +14,10 @@
 // limitations under the License.
 //
 
-#include <mayaUsd/ufe/UsdConnections.h>
-#include <mayaUsd/ufe/Utils.h>
+#include "UsdConnections.h"
 
 #include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/Utils.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/sdf/path.h>
@@ -79,7 +79,7 @@ std::vector<Ufe::Connection::Ptr> UsdConnections::allConnections() const
                 // Find the Maya Ufe::Path of the connected shader node.
                 const PXR_NS::UsdPrim connectedPrim = sourceInfo.source.GetPrim();
                 const Ufe::Path       connectedPrimPath
-                    = stagePath + usdPathToUfePathSegment(connectedPrim.GetPrimPath());
+                    = stagePath + UsdUfe::usdPathToUfePathSegment(connectedPrim.GetPrimPath());
 
                 // Find the name of the connected source attribute name.
                 PXR_NS::TfToken tkSourceName = PXR_NS::UsdShadeUtils::GetFullName(

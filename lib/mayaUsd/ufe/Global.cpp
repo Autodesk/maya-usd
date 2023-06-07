@@ -29,7 +29,6 @@
 #include <mayaUsd/ufe/MayaUsdObject3dHandler.h>
 #include <mayaUsd/ufe/ProxyShapeContextOpsHandler.h>
 #include <mayaUsd/ufe/UsdAttributesHandler.h>
-#include <mayaUsd/ufe/UsdCameraHandler.h>
 #include <mayaUsd/ufe/UsdContextOpsHandler.h>
 #include <mayaUsd/ufe/UsdTransform3dCommonAPI.h>
 #include <mayaUsd/ufe/UsdTransform3dFallbackMayaXformStack.h>
@@ -203,7 +202,6 @@ MStatus initialize()
     usdUfeHandlers.object3dHandler = MayaUsdObject3dHandler::create();
     handlers.contextOpsHandler = UsdContextOpsHandler::create();
     handlers.uiInfoHandler = UsdUIInfoHandler::create();
-    handlers.cameraHandler = UsdCameraHandler::create();
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 
@@ -287,8 +285,6 @@ MStatus initialize()
         runTimeMgr.setContextOpsHandler(usdRtid, handlers.contextOpsHandler);
     if (handlers.uiInfoHandler)
         runTimeMgr.setUIInfoHandler(usdRtid, handlers.uiInfoHandler);
-    if (handlers.cameraHandler)
-        runTimeMgr.setCameraHandler(usdRtid, handlers.cameraHandler);
 #ifdef UFE_V4_FEATURES_AVAILABLE
     if (handlers.lightHandler)
         runTimeMgr.setLightHandler(usdRtid, handlers.lightHandler);

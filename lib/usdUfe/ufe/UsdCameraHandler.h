@@ -15,17 +15,16 @@
 //
 #pragma once
 
-#include <mayaUsd/base/api.h>
+#include <usdUfe/base/api.h>
 
 #include <pxr/usd/usd/prim.h>
 
 #include <ufe/cameraHandler.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //! \brief Interface to create a UsdCameraHandler interface object.
-class MAYAUSD_CORE_PUBLIC UsdCameraHandler : public Ufe::CameraHandler
+class USDUFE_PUBLIC UsdCameraHandler : public Ufe::CameraHandler
 {
 public:
     typedef std::shared_ptr<UsdCameraHandler> Ptr;
@@ -54,5 +53,4 @@ public:
 
 }; // UsdCameraHandler
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

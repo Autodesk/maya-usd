@@ -23,6 +23,9 @@
 #include <ufe/types.h>
 #include <ufe/ufe.h>
 
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usdImaging/usdImaging/delegate.h>
+
 #include <string>
 
 UFE_NS_DEF
@@ -41,6 +44,14 @@ typedef bool (*IsAttributeLockedFn)(const PXR_NS::UsdAttribute& attr, std::strin
 //------------------------------------------------------------------------------
 // Helper functions
 //------------------------------------------------------------------------------
+
+//! Get the UFE path segment corresponding to the argument USD path.
+//! If an instanceIndex is provided, the path segment for a point instance with
+//! that USD path and index is returned.
+USDUFE_PUBLIC
+Ufe::PathSegment usdPathToUfePathSegment(
+    const PXR_NS::SdfPath& usdPath,
+    int                    instanceIndex = PXR_NS::UsdImagingDelegate::ALL_INSTANCES);
 
 //! Get the UFE path representing just the USD prim for the argument UFE path.
 //! Any instance index component at the tail of the given path is removed from

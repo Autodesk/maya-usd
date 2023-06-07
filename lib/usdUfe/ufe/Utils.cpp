@@ -15,6 +15,7 @@
 //
 #include "Utils.h"
 
+#include <usdUfe/ufe/Global.h>
 #include <usdUfe/utils/layers.h>
 #include <usdUfe/utils/usdUtils.h>
 
@@ -24,6 +25,8 @@
 #include <pxr/usd/usd/primCompositionQuery.h>
 #include <pxr/usd/usd/resolver.h>
 #include <pxr/usd/usd/stage.h>
+
+#include <ufe/pathSegment.h>
 
 #include <cctype>
 #include <regex>
@@ -86,6 +89,31 @@ UsdUfe::IsAttributeLockedFn gIsAttributeLockedFn = nullptr;
 } // anonymous namespace
 
 namespace USDUFE_NS_DEF {
+
+Ufe::PathSegment usdPathToUfePathSegment(const SdfPath& usdPath, int instanceIndex)
+{
+    const Ufe::Rtid   usdRuntimeId = getUsdRunTimeId();
+    static const char separator = SdfPathTokens->childDelimiter.GetText()[0u];
+
+    if (usdPath.IsEmpty()) {
+        // Return an empty segment.
+        return Ufe::PathSegment(Ufe::PathSegment::Components(), usdRuntimeId, separator);
+    }
+
+    std::string pathString = usdPath.GetString();
+
+    if (instanceIndex >= 0) {
+        // Note here that we're taking advantage of the fact that identifiers
+        // in SdfPaths must be C/Python identifiers; that is, they must *not*
+        // begin with a digit. This means that when we see a path component at
+        // the end of a USD path segment that does begin with a digit, we can
+        // be sure that it represents an instance index and not a prim or other
+        // USD entity.
+        pathString += TfStringPrintf("%c%d", separator, instanceIndex);
+    }
+
+    return Ufe::PathSegment(pathString, usdRuntimeId, separator);
+}
 
 Ufe::Path stripInstanceIndexFromUfePath(const Ufe::Path& path)
 {

@@ -18,12 +18,12 @@
 #include "private/UfeNotifGuard.h"
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
-#include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 
+#include <usdUfe/ufe/Global.h>
 #include <usdUfe/ufe/UfeVersionCompat.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
-#include <mayaUsd/ufe/UsdCamera.h>
+#include <usdUfe/ufe/UsdCamera.h>
 #endif
 #include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/ufe/Utils.h>
@@ -169,7 +169,7 @@ void sendAttributeChanged(
         notifyWithoutExceptions<Ufe::Attributes>(
             Ufe::AttributeValueChanged(ufePath, changedToken.GetString()));
 
-        if (MayaUsd::ufe::UsdCamera::isCameraToken(changedToken)) {
+        if (UsdUfe::UsdCamera::isCameraToken(changedToken)) {
             notifyWithoutExceptions<Ufe::Camera>(ufePath);
         }
     } break;
@@ -178,7 +178,7 @@ void sendAttributeChanged(
             notifyWithoutExceptions<Ufe::Attributes>(
                 Ufe::AttributeValueChanged(ufePath, changedToken.GetString()));
 
-            if (MayaUsd::ufe::UsdCamera::isCameraToken(changedToken)) {
+            if (UsdUfe::UsdCamera::isCameraToken(changedToken)) {
                 notifyWithoutExceptions<Ufe::Camera>(ufePath);
             }
         } else {
@@ -202,7 +202,7 @@ void sendAttributeChanged(
     notifyWithoutExceptions<Ufe::Attributes>(
         Ufe::AttributeValueChanged(ufePath, changedToken.GetString()));
 
-    if (MayaUsd::ufe::UsdCamera::isCameraToken(changedToken)) {
+    if (UsdUfe::UsdCamera::isCameraToken(changedToken)) {
         notifyWithoutExceptions<Ufe::Camera>(ufePath);
     }
 #endif
@@ -618,7 +618,7 @@ void StagesSubject::stageChanged(
             prim = stage->GetPseudoRoot();
         } else {
             const std::string& usdPrimPathStr = changedPath.GetPrimPath().GetString();
-            ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, getUsdRunTimeId(), '/');
+            ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, UsdUfe::getUsdRunTimeId(), '/');
             prim = stage->GetPrimAtPath(changedPath);
         }
 
@@ -696,7 +696,7 @@ void StagesSubject::stageChanged(
          ++it) {
         const auto& changedPath = *it;
         auto        usdPrimPathStr = changedPath.GetPrimPath().GetString();
-        auto ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, getUsdRunTimeId(), '/');
+        auto ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, UsdUfe::getUsdRunTimeId(), '/');
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
         bool sendValueChangedFallback = true;

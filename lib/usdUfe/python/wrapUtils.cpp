@@ -35,6 +35,13 @@
 
 using namespace boost::python;
 
+std::string _usdPathToUfePathSegment(
+    const PXR_NS::SdfPath& usdPath,
+    int                    instanceIndex = PXR_NS::UsdImagingDelegate::ALL_INSTANCES)
+{
+    return UsdUfe::usdPathToUfePathSegment(usdPath, instanceIndex).string();
+}
+
 std::string _uniqueChildName(const PXR_NS::UsdPrim& parent, const std::string& name)
 {
     return UsdUfe::uniqueChildName(parent, name);
@@ -80,6 +87,9 @@ void wrapUtils()
     // here, and are forced to use strings.  Use the tentative string
     // representation of Ufe::Path as comma-separated segments.  We know that
     // the USD path separator is '/'.  PPT, 8-Dec-2019.
+    def("usdPathToUfePathSegment",
+        _usdPathToUfePathSegment,
+        (arg("usdPath"), arg("instanceIndex") = PXR_NS::UsdImagingDelegate::ALL_INSTANCES));
     def("uniqueChildName", _uniqueChildName);
     def("stripInstanceIndexFromUfePath", _stripInstanceIndexFromUfePath, (arg("ufePathString")));
     def("ufePathToPrim", _ufePathToPrim);

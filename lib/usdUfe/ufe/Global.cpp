@@ -15,6 +15,7 @@
 //
 #include "Global.h"
 
+#include <usdUfe/ufe/UsdCameraHandler.h>
 #include <usdUfe/ufe/UsdHierarchyHandler.h>
 #include <usdUfe/ufe/UsdObject3dHandler.h>
 
@@ -70,6 +71,8 @@ Ufe::Rtid initialize(const DCCFunctions& dccFunctions, const Handlers& handlers)
         = handlers.hierarchyHandler ? handlers.hierarchyHandler : UsdHierarchyHandler::create();
     rtHandlers.object3dHandler
         = handlers.object3dHandler ? handlers.object3dHandler : UsdObject3dHandler::create();
+    rtHandlers.cameraHandler
+        = handlers.cameraHandler ? handlers.cameraHandler : UsdCameraHandler::create();
 
     g_USDRtid = Ufe::RunTimeMgr::instance().register_(kUSDRunTimeName, rtHandlers);
     TF_VERIFY(g_USDRtid != 0);

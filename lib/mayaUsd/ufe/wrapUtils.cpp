@@ -123,13 +123,6 @@ std::string _stagePath(PXR_NS::UsdStageWeakPtr stage)
 #endif
 }
 
-std::string _usdPathToUfePathSegment(
-    const PXR_NS::SdfPath& usdPath,
-    int                    instanceIndex = PXR_NS::UsdImagingDelegate::ALL_INSTANCES)
-{
-    return ufe::usdPathToUfePathSegment(usdPath, instanceIndex).string();
-}
-
 #ifndef UFE_V2_FEATURES_AVAILABLE
 // Helper function for UFE versions before version 2 for converting a path
 // string to a UFE path.
@@ -215,8 +208,5 @@ void wrapUtils()
     def("getStage", _getStage);
     def("getAllStages", _getAllStages, return_value_policy<PXR_NS::TfPySequenceToList>());
     def("stagePath", _stagePath);
-    def("usdPathToUfePathSegment",
-        _usdPathToUfePathSegment,
-        (arg("usdPath"), arg("instanceIndex") = PXR_NS::UsdImagingDelegate::ALL_INSTANCES));
     def("getProxyShapePurposes", _getProxyShapePurposes);
 }
