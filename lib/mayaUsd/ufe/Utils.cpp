@@ -1149,21 +1149,31 @@ void ReplicateExtrasToUSD::finalize(
 
 #ifdef HAS_ORPHANED_NODES_MANAGER
 
-static Ufe::BBox3d transformBBox(Ufe::SceneItem::Ptr& item, const Ufe::BBox3d& bbox)
+static Ufe::BBox3d transformBBox(const PXR_NS::GfMatrix4d& matrix, const Ufe::BBox3d& bbox)
 {
     Ufe::BBox3d transformed(bbox);
 
-    Ufe::Transform3d::Ptr t3d = Ufe::Transform3d::transform3d(item);
-    if (!t3d)
-        return transformed;
-
-    Ufe::Matrix4d matrix = t3d->matrix();
-
-    transformed.min = toUfe(toUsd(matrix).Transform(toUsd(bbox.min)));
-    transformed.max = toUfe(toUsd(matrix).Transform(toUsd(bbox.max)));
+    transformed.min = toUfe(matrix.Transform(toUsd(bbox.min)));
+    transformed.max = toUfe(matrix.Transform(toUsd(bbox.max)));
 
     return transformed;
 }
+
+static Ufe::BBox3d transformBBox(const Ufe::Matrix4d& matrix, const Ufe::BBox3d& bbox)
+{
+    return transformBBox(toUsd(matrix), bbox);
+}
+
+static Ufe::BBox3d transformBBox(Ufe::SceneItem::Ptr& item, const Ufe::BBox3d& bbox)
+{
+    Ufe::Transform3d::Ptr t3d = Ufe::Transform3d::transform3d(item);
+    if (!t3d)
+        return bbox;
+
+    return transformBBox(t3d->matrix(), bbox);
+}
+
+#ifdef MAYA_OBJECT3D_HAS_BOUNDING_BOX
 
 static Ufe::BBox3d getTransformedBBox(const Ufe::Path& path)
 {
@@ -1183,6 +1193,20 @@ static Ufe::BBox3d getTransformedBBox(const Ufe::Path& path)
     return transformBBox(item, o3d->boundingBox());
 }
 
+#else
+
+static Ufe::BBox3d getTransformedBBox(const MDagPath& path)
+{
+    MFnDagNode node(path);
+
+    MBoundingBox mayaBBox = node.boundingBox();
+    return Ufe::BBox3d(
+        Ufe::Vector3d(mayaBBox.min().x, mayaBBox.min().y, mayaBBox.min().z),
+        Ufe::Vector3d(mayaBBox.max().x, mayaBBox.max().y, mayaBBox.max().z));
+}
+
+#endif /* MAYA_OBJECT3D_HAS_BOUNDING_BOX */
+
 #endif /* HAS_ORPHANED_NODES_MANAGER */
 
 Ufe::BBox3d getPulledPrimsBoundingBox(const Ufe::Path& path)
@@ -1201,9 +1225,16 @@ Ufe::BBox3d getPulledPrimsBoundingBox(const Ufe::Path& path)
         if (!pulledPath.startsWith(path))
             continue;
 
+            // Note: Maya implementation of the Object3d UFE interface does not
+            //       implement the boundingBox() function. So we ask the DAG instead.
+#ifdef MAYA_OBJECT3D_HAS_BOUNDING_BOX
         Ufe::BBox3d pulledBBox = getTransformedBBox(pulledPath);
+#else
+        const MDagPath& mayaPath = paths.second;
+        Ufe::BBox3d     pulledBBox = getTransformedBBox(mayaPath);
+#endif
 
-        for (auto parentPath = pulledPath; parentPath != path; parentPath = parentPath.pop()) {
+        for (auto parentPath = pulledPath.pop(); parentPath != path; parentPath = parentPath.pop()) {
             Ufe::SceneItem::Ptr parentItem = Ufe::Hierarchy::createItem(parentPath);
             if (!parentItem)
                 continue;
