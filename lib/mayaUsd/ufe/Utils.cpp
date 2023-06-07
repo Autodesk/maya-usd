@@ -1234,7 +1234,8 @@ Ufe::BBox3d getPulledPrimsBoundingBox(const Ufe::Path& path)
         Ufe::BBox3d     pulledBBox = getTransformedBBox(mayaPath);
 #endif
 
-        for (auto parentPath = pulledPath.pop(); parentPath != path; parentPath = parentPath.pop()) {
+        for (auto parentPath = pulledPath.pop(); parentPath != path;
+             parentPath = parentPath.pop()) {
             Ufe::SceneItem::Ptr parentItem = Ufe::Hierarchy::createItem(parentPath);
             if (!parentItem)
                 continue;
