@@ -23,7 +23,11 @@
 #endif
 
 #include <pxr/imaging/hd/flatteningSceneIndex.h>
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 51
+#include <pxr/imaging/hd/materialBindingsSchema.h>
+#else
 #include <pxr/imaging/hd/materialBindingSchema.h>
+#endif
 #include <pxr/imaging/hd/retainedDataSource.h>
 #include <pxr/imaging/hd/sceneIndexPlugin.h>
 #include <pxr/imaging/hd/sceneIndexPluginRegistry.h>
@@ -133,7 +137,11 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
             //  Used for the HdFlatteningSceneIndex to flatten material bindings
             static const HdContainerDataSourceHandle flatteningInputArgs
                 = HdRetainedContainerDataSource::New(
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 51
+                    HdMaterialBindingsSchema::GetSchemaToken(),
+#else
                     HdMaterialBindingSchemaTokens->materialBinding,
+#endif
                     HdRetainedTypedSampledDataSource<bool>::New(true));
 
             // Convert USD prims to rprims consumed by Hydra
