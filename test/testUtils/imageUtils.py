@@ -114,31 +114,31 @@ def snapshot(outputPath, width=400, height=None, hud=False, grid=False, camera=N
 
 def imageDiff(imagePath1, imagePath2, verbose, env, fail, failpercent, hardfail, 
                 warn, warnpercent, hardwarn, perceptual):    
-    # Returns the completed process instance after running idiff.
-    #
-    #   imagePath1          - First image to compare.
-    #   imagePath2          - Second image to compare.
-    #   verbose             - If enabled, the image diffing command will be printed to log
-    #   env                 - Mapping that defines the environment variables for the idiff command call  
-    #   fail                - The threshold for the acceptable difference (relatively to the mean of 
-    #                         the two values) of a pixel for failure        
-    #   failpercent         - The percentage of pixels that can be different before failure
-    #   hardfail            - Triggers a failure if any pixels are above this threshold (if the absolute
-    #                         difference is below this threshold)
-    #   warn                - The threshold for the acceptable difference of a pixel for a warning
-    #   warnpercent         - The percentage of pixels that can be different before a warning
-    #   hardwarn            - Triggers a warning if any pixels are above this threshold
-    #   perceptual          - Performs an additional test to see if two images are visually different
-    #                         If enabled, test overall will fail if more than the "fail percentage" failed 
-    #                         the perceptual test.
-    # 
-    # By default, if any pixels differ between the images, the comparison will fail.
-    # If, for example, we set fail=0.004, failpercent=10 and hardfail=0.25, the comparison will fail if
-    # more than 10% of the pixels differ by 0.004, or if any pixel differs by more than 0.25 (just above a 
-    # 1/255 threshold).
-    # 
-    # For more information, see https://github.com/OpenImageIO/oiio/blob/cb6475c0dd72b9c49d862d98c6cd2da4509d5f37/src/doc/idiff.rst#L1
+    """ Returns the completed process instance after running idiff.
     
+    imagePath1   -- First image to compare.
+    imagePath2   -- Second image to compare.
+    verbose      -- If enabled, the image diffing command will be printed to log.
+    env          -- Mapping that defines the environment variables for the idiff command call. 
+    fail         -- The threshold for the acceptable difference (relatively to the mean of 
+                    the two values) of a pixel for failure.    
+    failpercent  -- The percentage of pixels that can be different before failure.
+    hardfail     -- Triggers a failure if any pixels are above this threshold (if the absolute 
+                    difference is below this threshold).
+    warn         -- The threshold for the acceptable difference of a pixel for a warning.
+    warnpercent  -- The percentage of pixels that can be different before a warning.
+    hardwarn     -- Triggers a warning if any pixels are above this threshold.
+    perceptual   -- Performs an additional test to see if two images are visually different.
+                    If enabled, test overall will fail if more than the "fail percentage" failed 
+                    the perceptual test.
+    
+    By default, if any pixels differ between the images, the comparison will fail.
+    If, for example, we set fail=0.004, failpercent=10 and hardfail=0.25, the comparison will 
+    fail if more than 10% of the pixels differ by 0.004, or if any pixel differs by more than 
+    0.25 (just above a 1/255 threshold).
+     
+    For more information, see https://github.com/OpenImageIO/oiio/blob/cb6475c0dd72b9c49d862d98c6cd2da4509d5f37/src/doc/idiff.rst#L1
+    """
     import platform
     if platform.system() == 'Windows':
         imageDiff = 'idiff.exe'
@@ -167,12 +167,6 @@ def imageDiff(imagePath1, imagePath2, verbose, env, fail, failpercent, hardfail,
         import sys
         sys.__stdout__.write("\nimage diffing with {0}".format(cmd))
         sys.__stdout__.flush()
-        # This will print any diffs to stdout which is a nice side-effect
-        # 0: OK: the images match within the warning and error thresholds.
-        # 1: Warning: the errors differ a little, but within error thresholds.
-        # 2: Failure: the errors differ a lot, outside error thresholds.
-        # 3: The images were not the same size and could not be compared.
-        # 4: File error: could not find or open input files, etc.
 
     proc = subprocess.run(cmd, shell=False, env=env, stdout=subprocess.PIPE)
     return proc
@@ -181,6 +175,18 @@ class ImageDiffingTestCase(unittest.TestCase):
 
     def assertImagesClose(self, imagePath1, imagePath2, _fail, _failpercent, _hardfail,
                     _warn, _warnpercent, _hardwarn, _perceptual):
+        """ 
+        The method will return idiff's return code if the comparison passes with 
+        a return code of 0 or 1. 
+        0 -- OK: the images match within the warning and error thresholds.
+        1 -- Warning: the errors differ a little, but within error thresholds.
+        
+        The assertion will fail if the return code is 2, 3 or 4.
+        2 -- Failure: the errors differ a lot, outside error thresholds.
+        3 -- The images were not the same size and could not be compared.
+        4 -- File error: could not find or open input files, etc.
+        """
+        
         proc = imageDiff(imagePath1, imagePath2, verbose=True, env=os.environ.copy(), 
                             fail=_fail, failpercent=_failpercent, hardfail=_hardfail,
                             warn=_warn, warnpercent=_warnpercent, hardwarn=_hardwarn, 

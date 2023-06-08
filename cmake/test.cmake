@@ -6,7 +6,7 @@ function(mayaUsd_get_unittest_target unittest_target unittest_basename)
 endfunction()
 
 if (OIIO_idiff_BINARY)
-    set(IMAGE_DIFF_TOOL ${OIIO_idiff_BINARY} CACHE STRING "Uses idiff for image diffing")
+    set(IMAGE_DIFF_TOOL ${OIIO_idiff_BINARY} CACHE STRING "Use idiff for image comparison")
 endif()
 
 #

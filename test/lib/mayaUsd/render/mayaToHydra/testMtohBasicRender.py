@@ -43,9 +43,7 @@ class TestSnapshot(mtohUtils.MtohTestCase):
 
         self.assertSnapshotEqual("flat_orange.png")
         self.assertRaises(AssertionError,
-                          self.assertSnapshotEqual, "flat_orange_bad.png")
-        # TODO: test assertSnapshotClose
-        
+                          self.assertSnapshotEqual, "flat_orange_bad.png")        
 
 class TestMayaHydraRender(mtohUtils.MtohTestCase):
     _file = __file__
