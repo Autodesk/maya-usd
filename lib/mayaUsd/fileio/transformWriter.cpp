@@ -158,7 +158,7 @@ void UsdMayaTransformWriter::_ComputeXformOps(
                     value[i] = GfRadiansToDegrees(value[i]);
                 }
             } else if (animChannel.opType == _XformType::Translate) {
-                // Scale the translate as needed to fit the desired metersPerUnit
+                // Scale the translation as needed to fit the desired metersPerUnit
                 if (distanceConversionScalar != 1.0) {
                     value = value * distanceConversionScalar;
                 }

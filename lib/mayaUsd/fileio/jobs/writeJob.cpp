@@ -545,7 +545,7 @@ bool UsdMaya_WriteJob::_FinishWriting()
     if (mayaInternalUnit != MDistance::uiUnit()
         || mJobCtx.mArgs.metersPerUnit != mayaInternalUnitLinear) {
         TF_WARN(
-            "Distance unit conversion is experimental. "
+            "Support for Distance unit conversion is evolving. "
             "All distance units will be written in %s except where conversion is supported "
             "and if enabled.",
             MDistance::Unit_EnumDef::raw_name(mayaInternalUnit)
