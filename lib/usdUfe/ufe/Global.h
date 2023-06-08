@@ -16,6 +16,7 @@
 #pragma once
 
 #include <usdUfe/base/api.h>
+#include <usdUfe/ufe/StagesSubject.h>
 #include <usdUfe/ufe/Utils.h>
 
 #include <ufe/cameraHandler.h>
@@ -35,8 +36,10 @@ namespace USDUFE_NS_DEF {
 struct USDUFE_PUBLIC DCCFunctions
 {
     // Mandatory: function whichs must be supplied.
-    UfePathToPrimFn ufePathToPrimFn = nullptr;
-    TimeAccessorFn  timeAccessorFn = nullptr;
+    StageAccessorFn     stageAccessorFn = nullptr;
+    StagePathAccessorFn stagePathAccessorFn = nullptr;
+    UfePathToPrimFn     ufePathToPrimFn = nullptr;
+    TimeAccessorFn      timeAccessorFn = nullptr;
 
     // Optional: default values will be used if no function is supplied.
     IsAttributeLockedFn isAttributeLockedFn = nullptr;
@@ -79,9 +82,16 @@ struct USDUFE_PUBLIC Handlers
 
 //! Only intended to be called by the plugin initialization, to
 //! initialize the handlers and stage model.
+//! \param [in] dccFunctions Struct containing DCC specific functions for plugin to function.
+//! \param [in] handlers Struct containing Ufe runtime handlers used to initialize the plugin.
+//! \param [in] ss Optional USD subject class, it not provided basic one will be created.
+//!
 //! \return Ufe runtime ID for USD or 0 in case of error.
 USDUFE_PUBLIC
-Ufe::Rtid initialize(const DCCFunctions&, const Handlers&);
+Ufe::Rtid initialize(
+    const DCCFunctions& dccFunctions,
+    const Handlers&     handlers,
+    StagesSubject::Ptr  ss = nullptr);
 
 //! Only intended to be called by the plugin finalization, to
 //! finalize the handlers stage model.

@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-//#include <mayaUsd/ufe/Global.h>
+
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/Utils.h>
 
@@ -34,6 +34,18 @@
 #include <string>
 
 using namespace boost::python;
+
+PXR_NS::UsdStageWeakPtr _getStage(const std::string& ufePathString)
+{
+    return UsdUfe::getStage(Ufe::PathString::path(ufePathString));
+}
+
+std::string _stagePath(PXR_NS::UsdStageWeakPtr stage)
+{
+    // Even though the Proxy shape node's UFE path is a single segment, we always
+    // need to return as a Ufe::PathString (to remove |world).
+    return Ufe::PathString::string(UsdUfe::stagePath(stage));
+}
 
 std::string _usdPathToUfePathSegment(
     const PXR_NS::SdfPath& usdPath,
@@ -87,6 +99,8 @@ void wrapUtils()
     // here, and are forced to use strings.  Use the tentative string
     // representation of Ufe::Path as comma-separated segments.  We know that
     // the USD path separator is '/'.  PPT, 8-Dec-2019.
+    def("getStage", _getStage);
+    def("stagePath", _stagePath);
     def("usdPathToUfePathSegment",
         _usdPathToUfePathSegment,
         (arg("usdPath"), arg("instanceIndex") = PXR_NS::UsdImagingDelegate::ALL_INSTANCES));

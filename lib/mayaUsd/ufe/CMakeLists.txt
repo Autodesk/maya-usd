@@ -4,11 +4,11 @@
 target_sources(${PROJECT_NAME} 
     PRIVATE
         Global.cpp
+        MayaStagesSubject.cpp
         ProxyShapeHandler.cpp
         ProxyShapeHierarchy.cpp
         ProxyShapeHierarchyHandler.cpp
         SetVariantSelectionCommand.cpp
-        StagesSubject.cpp
         UsdPointInstanceOrientationModifier.cpp
         UsdPointInstancePositionModifier.cpp
         UsdPointInstanceScaleModifier.cpp
@@ -175,11 +175,11 @@ endif()
 
 set(HEADERS
     Global.h
+    MayaStagesSubject.h
     ProxyShapeHandler.h
     ProxyShapeHierarchy.h
     ProxyShapeHierarchyHandler.h
     SetVariantSelectionCommand.h
-    StagesSubject.h
     UsdPointInstanceModifierBase.h
     UsdPointInstanceOrientationModifier.h
     UsdPointInstancePositionModifier.h

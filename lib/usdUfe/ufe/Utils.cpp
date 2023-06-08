@@ -82,6 +82,8 @@ uint32_t findLayerIndex(const UsdPrim& prim, const SdfLayerHandle& layer)
     return position;
 }
 
+UsdUfe::StageAccessorFn     gStageAccessorFn = nullptr;
+UsdUfe::StagePathAccessorFn gStagePathAccessorFn = nullptr;
 UsdUfe::UfePathToPrimFn     gUfePathToPrimFn = nullptr;
 UsdUfe::TimeAccessorFn      gTimeAccessorFn = nullptr;
 UsdUfe::IsAttributeLockedFn gIsAttributeLockedFn = nullptr;
@@ -89,6 +91,44 @@ UsdUfe::IsAttributeLockedFn gIsAttributeLockedFn = nullptr;
 } // anonymous namespace
 
 namespace USDUFE_NS_DEF {
+
+//------------------------------------------------------------------------------
+// Utility Functions
+//------------------------------------------------------------------------------
+
+void setStageAccessorFn(StageAccessorFn fn)
+{
+    if (nullptr == fn) {
+        throw std::invalid_argument("Path to prim function cannot be empty.");
+    }
+    gStageAccessorFn = fn;
+};
+
+PXR_NS::UsdStageWeakPtr getStage(const Ufe::Path& path)
+{
+    if (nullptr == gStageAccessorFn) {
+        throw std::runtime_error("Path to prim function cannot be empty.");
+    }
+
+    return gStageAccessorFn(path);
+}
+
+void setStagePathAccessorFn(StagePathAccessorFn fn)
+{
+    if (nullptr == fn) {
+        throw std::invalid_argument("Path to prim function cannot be empty.");
+    }
+    gStagePathAccessorFn = fn;
+}
+
+Ufe::Path stagePath(PXR_NS::UsdStageWeakPtr stage)
+{
+    if (nullptr == gStagePathAccessorFn) {
+        throw std::runtime_error("Path to prim function cannot be empty.");
+    }
+
+    return gStagePathAccessorFn(stage);
+}
 
 Ufe::PathSegment usdPathToUfePathSegment(const SdfPath& usdPath, int instanceIndex)
 {

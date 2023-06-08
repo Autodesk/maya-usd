@@ -4,6 +4,7 @@
 target_sources(${PROJECT_NAME}
     PRIVATE
         Global.cpp
+        StagesSubject.cpp
         UsdHierarchy.cpp
         UsdHierarchyHandler.cpp
         UsdRootChildHierarchy.cpp
@@ -38,6 +39,7 @@ endif()
 
 set(HEADERS
     Global.h
+    StagesSubject.h
     UsdHierarchy.h
     UsdHierarchyHandler.h
     UsdRootChildHierarchy.h
