@@ -112,6 +112,10 @@ class testVP2RenderDelegateCameras(imageUtils.ImageDiffingTestCase):
         cmds.select( clear=True )
         self.assertSnapshotClose('%s_with_new_camera.png' % (self._testName))
 
+        # set time and verify camera animation
+        cmds.currentTime(4)
+        self.assertSnapshotClose('%s_animation.png' % (self._testName))
+
     def _GetSceneItem(self, mayaPathString, usdPathString):
         mayaPathSegment = mayaUtils.createUfePathSegment(mayaPathString)
         usdPathSegment = usdUtils.createUfePathSegment(usdPathString)
