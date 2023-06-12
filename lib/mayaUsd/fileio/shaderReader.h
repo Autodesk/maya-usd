@@ -41,6 +41,7 @@ public:
     MAYAUSD_CORE_PUBLIC
     UsdMayaShaderReader(const UsdMayaPrimReaderArgs&);
 
+    /*
     /// The level of support a reader can offer for a given context
     ///
     /// A basic reader that gives correct results across most contexts should
@@ -53,6 +54,7 @@ public:
         Fallback,
         Unsupported
     };
+    */
 
     /// This static function is expected for all shader readers and allows
     /// declaring how well this class can support the current context:

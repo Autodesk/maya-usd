@@ -72,7 +72,11 @@ bool UsdMayaPrimUpdater::canEditAsMaya() const
     // exporter (to USD) capability.
     auto prim = MayaUsd::ufe::ufePathToPrim(_path);
     TF_AXIOM(prim);
-    return (UsdMayaPrimReaderRegistry::Find(prim.GetTypeName()) != nullptr);
+    UsdMayaJobImportArgs jobArgs = UsdMayaJobImportArgs::CreateFromDictionary(
+        _context->GetUserArgs(),
+        /* importWithProxyShapes = */ false,
+        GfInterval::GetFullInterval());
+    return (UsdMayaPrimReaderRegistry::Find(prim.GetTypeName(), jobArgs) != nullptr);
 }
 
 bool UsdMayaPrimUpdater::editAsMaya() { return true; }

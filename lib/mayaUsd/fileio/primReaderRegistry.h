@@ -54,6 +54,11 @@ struct UsdMayaPrimReaderRegistry
     /// for the given prim reader args.
     typedef std::function<UsdMayaPrimReaderSharedPtr(const UsdMayaPrimReaderArgs&)> ReaderFactoryFn;
 
+    /// Predicate function, i.e. a function that can tell the level of support
+    /// the reader function will provide for a given context.
+    using ContextPredicateFn
+        = std::function<UsdMayaPrimReader::ContextSupport(const UsdMayaJobImportArgs&)>;
+
     /// Reader function, i.e. a function that reads a prim. This is the
     /// signature of the function declared in the PXRUSDMAYA_DEFINE_READER
     /// macro.
@@ -62,6 +67,16 @@ struct UsdMayaPrimReaderRegistry
     /// \brief Register \p fn as a reader provider for \p type.
     MAYAUSD_CORE_PUBLIC
     static void Register(const TfType& type, ReaderFactoryFn fn, bool fromPython = false);
+
+    // Debug:
+    // overload a function for backward compatibility?
+    /// \brief Register \p fn as a reader provider for \p type.
+    MAYAUSD_CORE_PUBLIC
+    static void Register(
+        const TfType&   type,
+        ContextPredicateFn pred,
+        ReaderFactoryFn fn,
+        bool fromPython = false);
 
     /// \brief Register \p fn as a reader provider for \p T.
     ///
@@ -85,6 +100,30 @@ struct UsdMayaPrimReaderRegistry
         }
     }
 
+    // TODO: Write the sample code
+    /// \brief Register \p fn as a reader provider for \p T.
+    ///
+    /// Example for registering a reader factory in your custom plugin, assuming
+    /// that MyType is registered with the TfType system:
+    /// \code{.cpp}
+    /// class MyReader : public UsdMayaPrimReader {
+    ///     static UsdMayaPrimReaderSharedPtr Create(
+    ///             const UsdMayaPrimReaderArgs&);
+    /// };
+    /// TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaPrimReaderRegistry, MyType) {
+    ///     UsdMayaPrimReaderRegistry::Register<MyType>(ContextSupport, MyReader::Create);
+    /// }
+    /// \endcode
+    template <typename T>
+    static void Register(ContextPredicateFn pred, ReaderFactoryFn fn, bool fromPython = false)
+    {
+        if (TfType t = TfType::Find<T>()) {
+            Register(t, pred, fn, fromPython);
+        } else {
+            TF_CODING_ERROR("Cannot register unknown TfType: %s.", ArchGetDemangled<T>().c_str());
+        }
+    }
+
     /// \brief Wraps \p fn in a ReaderFactoryFn and registers that factory
     /// function as a reader provider for \p T.
     /// This is a helper method for the macro PXRUSDMAYA_DEFINE_READER;
@@ -100,13 +139,14 @@ struct UsdMayaPrimReaderRegistry
     /// prim.GetTypeName()
     /// \endcode
     MAYAUSD_CORE_PUBLIC
-    static ReaderFactoryFn Find(const TfToken& usdTypeName);
+    static ReaderFactoryFn
+    Find(const TfToken& usdTypeName, const UsdMayaJobImportArgs& importArgs);
 
     /// Similar to Find(), but returns a "fallback" prim reader factory if none
     /// can be found for \p usdTypeName. Thus, this always returns a valid
     /// reader factory.
     MAYAUSD_CORE_PUBLIC
-    static ReaderFactoryFn FindOrFallback(const TfToken& usdTypeName);
+    static ReaderFactoryFn FindOrFallback(const TfToken& usdTypeName, const UsdMayaJobImportArgs& importArgs);
 };
 
 // Lookup TfType by name instead of static C++ type when
