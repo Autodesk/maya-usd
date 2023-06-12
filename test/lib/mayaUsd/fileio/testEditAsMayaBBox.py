@@ -25,6 +25,7 @@ from pxr import Usd, UsdGeom, Gf, Sdf
 
 from maya import cmds
 from maya import standalone
+from maya.api import OpenMaya as om
 
 import fixturesUtils
 import mayaUtils
@@ -66,22 +67,38 @@ class EditAsMayaBBoxTestCase(unittest.TestCase):
             self.assertTrue(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(sphere2UfePathStr))
             self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(sphere2UfePathStr))
 
-        cmds.select('Sphere2', r=True)
-        cmds.move(10., 10., 10., relative=True)
+        mayaSphere2DagPathStr = 'Sphere2'
 
         sphere1UfePath = ufe.PathString.path(sphere1UfePathStr)
         sphere1UfeItem = ufe.Hierarchy.createItem(sphere1UfePath)
-        sphere1UfeObject3d = ufe.Object3d.object3d(sphere1UfeItem)
-        sphere1UfeBBox = sphere1UfeObject3d.boundingBox()
-
-        testUtils.assertVectorAlmostEqual(self, sphere1UfeBBox.min.vector, [-1, -1, -1], 5)
-        testUtils.assertVectorAlmostEqual(self, sphere1UfeBBox.max.vector, [1, 1, 1], 5)
 
         sphere2UfePath = ufe.PathString.path(sphere2UfePathStr)
         sphere2UfeItem = ufe.Hierarchy.createItem(sphere2UfePath)
+
+        sphere2UfeT3d = ufe.Transform3d.transform3d(sphere2UfeItem)
+        sphere2UfeTranslation = sphere2UfeT3d.translation()
+
+        mayaSphere2Obj = om.MSelectionList().add(mayaSphere2DagPathStr).getDagPath(0).node()
+        mayaSphere2XformFn = om.MFnTransform(mayaSphere2Obj)
+        mayaSphere2Translation = mayaSphere2XformFn.translation(om.MSpace.kTransform)
+        testUtils.assertVectorAlmostEqual(self, sphere2UfeTranslation.vector, mayaSphere2Translation, 5)
+
+        # Move the edited Maya object so it no longer is at the same position
+        # as the original USD node.
+        cmds.select('Sphere2', r=True)
+        cmds.move(10., 10., 10., relative=True)
+
+        sphere2UfeTranslation = sphere2UfeT3d.translation()
+        mayaSphere2Translation = mayaSphere2XformFn.translation(om.MSpace.kTransform)
+        testUtils.assertVectorNotAlmostEqual(self, sphere2UfeTranslation.vector, mayaSphere2Translation, 5)
+
+        sphere1UfeObject3d = ufe.Object3d.object3d(sphere1UfeItem)
+        sphere1UfeBBox = sphere1UfeObject3d.boundingBox()
+        testUtils.assertVectorAlmostEqual(self, sphere1UfeBBox.min.vector, [-1, -1, -1], 5)
+        testUtils.assertVectorAlmostEqual(self, sphere1UfeBBox.max.vector, [1, 1, 1], 5)
+
         sphere2UfeObject3d = ufe.Object3d.object3d(sphere2UfeItem)
         sphere2UfeBBox = sphere2UfeObject3d.boundingBox()
-
         testUtils.assertVectorAlmostEqual(self, sphere2UfeBBox.min.vector, [-1, -1, -1], 5)
         testUtils.assertVectorAlmostEqual(self, sphere2UfeBBox.max.vector, [1, 1, 1], 5)
 
