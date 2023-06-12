@@ -110,6 +110,28 @@ _ChaserArgs(const VtDictionary& userArgs, const TfToken& key)
     return result;
 }
 
+double _ExtractMetersPerUnit(const VtDictionary& userArgs)
+{
+    MDistance::Unit mayaInternalUnit = MDistance::internalUnit();
+    auto metersPerUnit = UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(mayaInternalUnit);
+
+    auto value = extractDouble(userArgs, UsdMayaJobExportArgsTokens->metersPerUnit, 0.0);
+
+    // Anything less than equal to -1 is treated as the UI unit
+    if (value <= -1.0) {
+        MDistance::Unit mayaUIUnit = MDistance::uiUnit();
+        return UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(mayaUIUnit);
+    }
+
+    // Zero is treated as the default and returns the default internal unit
+    if (value <= 0.0) {
+        return metersPerUnit;
+    }
+
+    // Otherwise take the final value as is
+    return value;
+}
+
 std::map<std::string, std::string> _UVSetRemaps(const VtDictionary& userArgs, const TfToken& key)
 {
     const std::vector<std::vector<VtValue>> uvRemaps
@@ -637,6 +659,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     , chaserNames(extractVector<std::string>(userArgs, UsdMayaJobExportArgsTokens->chaser))
     , allChaserArgs(_ChaserArgs(userArgs, UsdMayaJobExportArgsTokens->chaserArgs))
     , customLayerData(_CustomLayerData(userArgs, UsdMayaJobExportArgsTokens->customLayerData))
+    , metersPerUnit(_ExtractMetersPerUnit(userArgs))
     , remapUVSetsTo(_UVSetRemaps(userArgs, UsdMayaJobExportArgsTokens->remapUVSetsTo))
     , melPerFrameCallback(extractString(userArgs, UsdMayaJobExportArgsTokens->melPerFrameCallback))
     , melPostCallback(extractString(userArgs, UsdMayaJobExportArgsTokens->melPostCallback))
@@ -669,6 +692,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << "exportDefaultCameras: " << TfStringify(exportArgs.exportDefaultCameras) << std::endl
         << "exportDisplayColor: " << TfStringify(exportArgs.exportDisplayColor) << std::endl
         << "exportDistanceUnit: " << TfStringify(exportArgs.exportDistanceUnit) << std::endl
+        << "metersPerUnit: " << TfStringify(exportArgs.metersPerUnit) << std::endl
         << "exportInstances: " << TfStringify(exportArgs.exportInstances) << std::endl
         << "exportMaterialCollections: " << TfStringify(exportArgs.exportMaterialCollections)
         << std::endl
@@ -974,6 +998,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->geomSidedness]
             = UsdMayaJobExportArgsTokens->derived.GetString();
         d[UsdMayaJobExportArgsTokens->customLayerData] = std::vector<VtValue>();
+        d[UsdMayaJobExportArgsTokens->metersPerUnit] = 0.0;
 
         // plugInfo.json site defaults.
         // The defaults dict should be correctly-typed, so enable
@@ -1013,6 +1038,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->chaserArgs] = _stringTripletVector;
         d[UsdMayaJobExportArgsTokens->remapUVSetsTo] = _stringPairVector;
         d[UsdMayaJobExportArgsTokens->customLayerData] = _stringTripletVector;
+        d[UsdMayaJobExportArgsTokens->metersPerUnit] = _double;
         d[UsdMayaJobExportArgsTokens->compatibility] = _string;
         d[UsdMayaJobExportArgsTokens->defaultCameras] = _boolean;
         d[UsdMayaJobExportArgsTokens->defaultMeshScheme] = _string;
