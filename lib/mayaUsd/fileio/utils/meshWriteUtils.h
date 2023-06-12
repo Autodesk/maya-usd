@@ -121,6 +121,7 @@ void writePointsData(
     const MFnMesh&             meshFn,
     UsdGeomMesh&               primSchema,
     const UsdTimeCode&         usdTime,
+    const double               distanceUnitsScalar,
     UsdUtilsSparseValueWriter* valueWriter);
 
 MAYAUSD_CORE_PUBLIC
