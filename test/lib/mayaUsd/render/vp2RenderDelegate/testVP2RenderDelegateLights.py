@@ -102,6 +102,10 @@ class testVP2RenderDelegateLights(imageUtils.ImageDiffingTestCase):
         cmds.select( clear=True )
         self.assertSnapshotClose('%s_with_new_light.png' % (self._testName))
 
+        # set time and verify light animation
+        cmds.currentTime(3)
+        self.assertSnapshotClose('%s_animation.png' % (self._testName))
+
     def _GetSceneItem(self, mayaPathString, usdPathString):
         mayaPathSegment = mayaUtils.createUfePathSegment(mayaPathString)
         usdPathSegment = usdUtils.createUfePathSegment(usdPathString)
