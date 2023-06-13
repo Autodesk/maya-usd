@@ -44,22 +44,26 @@ public:
     MAYAUSD_CORE_PUBLIC
     ~PrimUpdaterManager();
 
+    /// \brief merges edited Maya data into its corresponding USD stage.
     MAYAUSD_CORE_PUBLIC
     bool mergeToUsd(
         const MFnDependencyNode& depNodeFn,
         const Ufe::Path&         pulledPath,
         const VtDictionary&      userArgs = VtDictionary());
 
+    /// \brief edit USD data as Maya data.
     MAYAUSD_CORE_PUBLIC
     bool editAsMaya(const Ufe::Path& path, const VtDictionary& userArgs = VtDictionary());
 
-    // Can the prim at the argument path be edited as Maya.
+    /// \brief Verify if the prim at the argument path be edited as Maya.
     MAYAUSD_CORE_PUBLIC
     bool canEditAsMaya(const Ufe::Path& path) const;
 
+    /// \brief discards edited Maya data.
     MAYAUSD_CORE_PUBLIC
     bool discardEdits(const MDagPath& dagPath);
 
+    /// \brief Copy USD data into USD or Maya data.
     MAYAUSD_CORE_PUBLIC
     bool duplicate(
         const Ufe::Path&    srcPath,
@@ -70,7 +74,15 @@ public:
     MAYAUSD_CORE_PUBLIC
     static PrimUpdaterManager& getInstance();
 
+    /// \brief Verify if there are any data edited as Maya data.
+    MAYAUSD_CORE_PUBLIC
     bool hasPulledPrims() const;
+
+    using PulledPrimPaths = std::vector<std::pair<Ufe::Path, MDagPath>>;
+
+    /// \brief Retrieve the UFE path of the edited USD data and the corresponding path of Maya data.
+    MAYAUSD_CORE_PUBLIC
+    PulledPrimPaths getPulledPrimPaths() const;
 
 private:
     PrimUpdaterManager();

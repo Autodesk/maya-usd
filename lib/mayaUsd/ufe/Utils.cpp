@@ -23,6 +23,10 @@
 #include <mayaUsd/utils/editability.h>
 #include <mayaUsd/utils/util.h>
 
+#ifdef UFE_V3_FEATURES_AVAILABLE
+#include <mayaUsd/fileio/primUpdaterManager.h>
+#endif
+
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/utils/layers.h>
 #include <usdUfe/utils/usdUtils.h>
@@ -51,9 +55,13 @@
 #include <maya/MGlobal.h>
 #include <maya/MObjectHandle.h>
 #include <ufe/hierarchy.h>
+#include <ufe/object3d.h>
+#include <ufe/object3dHandler.h>
 #include <ufe/pathSegment.h>
 #include <ufe/rtid.h>
+#include <ufe/runTimeMgr.h>
 #include <ufe/selection.h>
+#include <ufe/types.h>
 
 #include <cassert>
 #include <cctype>
@@ -1168,6 +1176,80 @@ void ReplicateExtrasToUSD::finalize(
         }
     }
 #endif
+}
+
+#ifdef HAS_ORPHANED_NODES_MANAGER
+
+static Ufe::BBox3d transformBBox(const PXR_NS::GfMatrix4d& matrix, const Ufe::BBox3d& bbox)
+{
+    Ufe::BBox3d transformed(bbox);
+
+    transformed.min = toUfe(matrix.Transform(toUsd(bbox.min)));
+    transformed.max = toUfe(matrix.Transform(toUsd(bbox.max)));
+
+    return transformed;
+}
+
+static Ufe::BBox3d transformBBox(const Ufe::Matrix4d& matrix, const Ufe::BBox3d& bbox)
+{
+    return transformBBox(toUsd(matrix), bbox);
+}
+
+static Ufe::BBox3d transformBBox(Ufe::SceneItem::Ptr& item, const Ufe::BBox3d& bbox)
+{
+    Ufe::Transform3d::Ptr t3d = Ufe::Transform3d::transform3d(item);
+    if (!t3d)
+        return bbox;
+
+    return transformBBox(t3d->matrix(), bbox);
+}
+
+static Ufe::BBox3d getTransformedBBox(const MDagPath& path)
+{
+    MFnDagNode node(path);
+
+    MBoundingBox mayaBBox = node.boundingBox();
+    return Ufe::BBox3d(
+        Ufe::Vector3d(mayaBBox.min().x, mayaBBox.min().y, mayaBBox.min().z),
+        Ufe::Vector3d(mayaBBox.max().x, mayaBBox.max().y, mayaBBox.max().z));
+}
+
+#endif /* HAS_ORPHANED_NODES_MANAGER */
+
+Ufe::BBox3d getPulledPrimsBoundingBox(const Ufe::Path& path)
+{
+    Ufe::BBox3d ufeBBox;
+
+#ifdef HAS_ORPHANED_NODES_MANAGER
+    const auto& updaterMgr = PXR_NS::PrimUpdaterManager::getInstance();
+    PXR_NS::PrimUpdaterManager::PulledPrimPaths pulledPaths = updaterMgr.getPulledPrimPaths();
+    for (const auto& paths : pulledPaths) {
+        const Ufe::Path& pulledPath = paths.first;
+
+        if (pulledPath == path)
+            continue;
+
+        if (!pulledPath.startsWith(path))
+            continue;
+
+        // Note: Maya implementation of the Object3d UFE interface does not
+        //       implement the boundingBox() function. So we ask the DAG instead.
+        const MDagPath& mayaPath = paths.second;
+        Ufe::BBox3d     pulledBBox = getTransformedBBox(mayaPath);
+
+        for (auto parentPath = pulledPath.pop(); parentPath != path;
+             parentPath = parentPath.pop()) {
+            Ufe::SceneItem::Ptr parentItem = Ufe::Hierarchy::createItem(parentPath);
+            if (!parentItem)
+                continue;
+            pulledBBox = transformBBox(parentItem, pulledBBox);
+        }
+
+        ufeBBox = UsdUfe::combineUfeBBox(ufeBBox, pulledBBox);
+    }
+#endif /* HAS_ORPHANED_NODES_MANAGER */
+
+    return ufeBBox;
 }
 
 } // namespace ufe

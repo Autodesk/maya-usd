@@ -196,6 +196,12 @@ inline Ufe::Vector3d toUfe(const PXR_NS::GfVec3d& src)
     return Ufe::Vector3d(src[0], src[1], src[2]);
 }
 
+//! Copy the argument vector into the return vector.
+inline PXR_NS::GfVec3d toUsd(const Ufe::Vector3d& src)
+{
+    return PXR_NS::GfVec3d(src.x(), src.y(), src.z());
+}
+
 //! Filter a source selection by removing descendants of filterPath.
 Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath);
 
@@ -287,6 +293,11 @@ bool isPropertyMetadataEditAllowed(
     const PXR_NS::TfToken& metadataName,
     const PXR_NS::TfToken& keyPath,
     std::string*           errMsg);
+
+//! Return the UFE bounding-box of all prims that are pulled for edit-as-Maya
+//! under the given UFE path.
+MAYAUSD_CORE_PUBLIC
+Ufe::BBox3d getPulledPrimsBoundingBox(const Ufe::Path& path);
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

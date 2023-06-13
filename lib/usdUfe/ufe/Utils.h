@@ -17,7 +17,9 @@
 
 #include <usdUfe/base/api.h>
 
+#include <ufe/types.h>
 #include <ufe/ufe.h>
+
 // #ifdef UFE_V2_FEATURES_AVAILABLE
 // #include <mayaUsd/ufe/UsdAttribute.h>
 // #endif
@@ -281,5 +283,9 @@ USDUFE_PUBLIC
 bool isEditTargetLayerModifiable(
     const PXR_NS::UsdStageWeakPtr stage,
     std::string*                  errMsg = nullptr);
+
+//! Combine two UFE bounding boxes.
+USDUFE_PUBLIC
+Ufe::BBox3d combineUfeBBox(const Ufe::BBox3d& ufeBBox1, const Ufe::BBox3d& ufeBBox2);
 
 } // namespace USDUFE_NS_DEF

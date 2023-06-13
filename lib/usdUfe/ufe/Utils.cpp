@@ -462,6 +462,29 @@ bool allowedInStrongerLayer(
 
 } // namespace
 
+Ufe::BBox3d combineUfeBBox(const Ufe::BBox3d& ufeBBox1, const Ufe::BBox3d& ufeBBox2)
+{
+    if (ufeBBox1.empty())
+        return ufeBBox2;
+
+    if (ufeBBox2.empty())
+        return ufeBBox1;
+
+    Ufe::BBox3d combinedBBox;
+
+    combinedBBox.min.set(
+        std::min(ufeBBox1.min.x(), ufeBBox2.min.x()),
+        std::min(ufeBBox1.min.y(), ufeBBox2.min.y()),
+        std::min(ufeBBox1.min.z(), ufeBBox2.min.z()));
+
+    combinedBBox.max.set(
+        std::max(ufeBBox1.max.x(), ufeBBox2.max.x()),
+        std::max(ufeBBox1.max.y(), ufeBBox2.max.y()),
+        std::max(ufeBBox1.max.z(), ufeBBox2.max.z()));
+
+    return combinedBBox;
+}
+
 void applyCommandRestriction(
     const UsdPrim&     prim,
     const std::string& commandName,
