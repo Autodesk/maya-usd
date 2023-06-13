@@ -106,10 +106,9 @@ void setStageAccessorFn(StageAccessorFn fn)
 
 PXR_NS::UsdStageWeakPtr getStage(const Ufe::Path& path)
 {
-    if (nullptr == gStageAccessorFn) {
-        throw std::runtime_error("Path to prim function cannot be empty.");
-    }
-
+#if !defined(NDEBUG)
+    assert(gStageAccessorFn != nullptr);
+#endif
     return gStageAccessorFn(path);
 }
 
@@ -123,10 +122,9 @@ void setStagePathAccessorFn(StagePathAccessorFn fn)
 
 Ufe::Path stagePath(PXR_NS::UsdStageWeakPtr stage)
 {
-    if (nullptr == gStagePathAccessorFn) {
-        throw std::runtime_error("Path to prim function cannot be empty.");
-    }
-
+#if !defined(NDEBUG)
+    assert(gStagePathAccessorFn != nullptr);
+#endif
     return gStagePathAccessorFn(stage);
 }
 
@@ -184,10 +182,9 @@ void setUfePathToPrimFn(UfePathToPrimFn fn)
 
 UsdPrim ufePathToPrim(const Ufe::Path& path)
 {
-    if (nullptr == gUfePathToPrimFn) {
-        throw std::runtime_error("Path to prim function cannot be empty.");
-    }
-
+#if !defined(NDEBUG)
+    assert(gUfePathToPrimFn != nullptr);
+#endif
     return gUfePathToPrimFn(path);
 }
 
@@ -201,10 +198,9 @@ void setTimeAccessorFn(TimeAccessorFn fn)
 
 PXR_NS::UsdTimeCode getTime(const Ufe::Path& path)
 {
-    if (nullptr == gTimeAccessorFn) {
-        throw std::runtime_error("Time accessor function cannot be empty.");
-    }
-
+#if !defined(NDEBUG)
+    assert(gTimeAccessorFn != nullptr);
+#endif
     return gTimeAccessorFn(path);
 }
 
