@@ -7,6 +7,7 @@ set(TEST_SCRIPT_FILES
     testMeshes.py
     testNamespaces.py
     testVisibility.py
+    testStageAddPrim.py
 )
 
 foreach(script ${TEST_SCRIPT_FILES})

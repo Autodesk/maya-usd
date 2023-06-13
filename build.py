@@ -365,7 +365,11 @@ def BuildAndInstall(context, buildArgs, stages):
         stagesArgs = []
         if context.mayaLocation:
             extraArgs.append('-DMAYA_LOCATION="{mayaLocation}"'
-                             .format(mayaLocation=context.mayaLocation))
+                             .format(mayaLocation=context.mayaLocation))        
+        
+        if context.mayaUsdLocation:
+            extraArgs.append('-DMAYAUSD_LOCATION="{mayaUsdLocation}"'
+                             .format(mayaUsdLocation=context.mayaUsdLocation))
 
         if context.pxrUsdLocation:
             extraArgs.append('-DPXR_USD_LOCATION="{pxrUsdLocation}"'
@@ -441,6 +445,9 @@ parser.add_argument("--install-location", type=str,
 parser.add_argument("--maya-location", type=str,
                     help="Directory where Maya is installed.")
 
+parser.add_argument("--mayausd-location", type=str,
+                    help="Directory where MayaUsd is installed.")
+                    
 parser.add_argument("--pxrusd-location", type=str,
                     help="Directory where Pixar USD is installed.")
 
@@ -523,6 +530,10 @@ class InstallContext:
         self.mayaLocation = (os.path.abspath(args.maya_location)
                                 if args.maya_location else None)
 
+        # MayaUsd Location
+        self.mayaUsdLocation = (os.path.abspath(args.mayausd_location)
+                                if args.mayausd_location else None)
+        
         # PXR USD Location
         self.pxrUsdLocation = (os.path.abspath(args.pxrusd_location)
                                 if args.pxrusd_location else None)

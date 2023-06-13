@@ -223,61 +223,48 @@ finally:
     # NOTE - we prefix varnames with "MAYAUSD_VARNAME_" just to make collision
     # with some existing var less likely
 
-    # Emulate what mayaUSD.mod would do
+    # Emulate what the module files for mayaHydra and mayaUsdPlugin would do.
 
-    # adsk
+    # mayaHydra
     list(APPEND MAYAUSD_VARNAME_PATH
          "${CMAKE_INSTALL_PREFIX}/lib")
-    list(APPEND MAYAUSD_VARNAME_PYTHONPATH
-         "${CMAKE_INSTALL_PREFIX}/lib/scripts")
-    list(APPEND MAYAUSD_VARNAME_MAYA_SCRIPT_PATH
-         "${CMAKE_INSTALL_PREFIX}/lib/scripts")
-    if (IS_LINUX)
-        # On Linux the paths in XBMLANGPATH need a /%B at the end.
-        list(APPEND MAYAUSD_VARNAME_XBMLANGPATH
-             "${CMAKE_INSTALL_PREFIX}/lib/icons/%B")
-    else()
-        list(APPEND MAYAUSD_VARNAME_XBMLANGPATH
-             "${CMAKE_INSTALL_PREFIX}/lib/icons")
-    endif()
-    list(APPEND MAYAUSD_VARNAME_PYTHONPATH
-         "${CMAKE_INSTALL_PREFIX}/lib/python")
     list(APPEND MAYAUSD_VARNAME_${PXR_OVERRIDE_PLUGINPATH_NAME}
          "${CMAKE_INSTALL_PREFIX}/lib/usd")
     list(APPEND MAYAUSD_VARNAME_MAYA_PLUG_IN_PATH
-         "${CMAKE_INSTALL_PREFIX}/plugin/adsk/plugin")
-    list(APPEND MAYAUSD_VARNAME_PYTHONPATH
-         "${CMAKE_INSTALL_PREFIX}/plugin/adsk/scripts")
-    list(APPEND MAYAUSD_VARNAME_MAYA_SCRIPT_PATH
-         "${CMAKE_INSTALL_PREFIX}/plugin/adsk/scripts")
-    list(APPEND MAYAUSD_VARNAME_PXR_MTLX_STDLIB_SEARCH_PATHS
-         "${PXR_USD_LOCATION}/libraries")
-    list(APPEND MAYAUSD_VARNAME_PXR_MTLX_STDLIB_SEARCH_PATHS
-         "${CMAKE_INSTALL_PREFIX}/libraries")
+         "${CMAKE_INSTALL_PREFIX}/lib/maya")
 
-    # pxr
-    list(APPEND MAYAUSD_VARNAME_PYTHONPATH
-         "${CMAKE_INSTALL_PREFIX}/plugin/pxr/lib/python")
-    list(APPEND MAYAUSD_VARNAME_PATH
-         "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib")
-    list(APPEND MAYAUSD_VARNAME_MAYA_SCRIPT_PATH
-         "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib/usd/usdMaya/resources")
-    list(APPEND MAYAUSD_VARNAME_MAYA_PLUG_IN_PATH
-         "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/plugin")
-    list(APPEND MAYAUSD_VARNAME_${PXR_OVERRIDE_PLUGINPATH_NAME}
-         "${CMAKE_INSTALL_PREFIX}/plugin/pxr/lib/usd")
+    # mayaUsdPlugin
+    if(DEFINED MAYAUSD_LOCATION)
+        list(APPEND MAYAUSD_VARNAME_PATH
+             "${MAYAUSD_LOCATION}/lib")
+        list(APPEND MAYAUSD_VARNAME_PYTHONPATH
+             "${MAYAUSD_LOCATION}/lib/scripts")
+        list(APPEND MAYAUSD_VARNAME_MAYA_SCRIPT_PATH
+             "${MAYAUSD_LOCATION}/lib/scripts")
+        if (IS_LINUX)
+            # On Linux the paths in XBMLANGPATH need a /%B at the end.
+            list(APPEND MAYAUSD_VARNAME_XBMLANGPATH
+                 "${MAYAUSD_LOCATION}/lib/icons/%B")
+        else()
+            list(APPEND MAYAUSD_VARNAME_XBMLANGPATH
+                 "${MAYAUSD_LOCATION}/lib/icons")
+        endif()
+        list(APPEND MAYAUSD_VARNAME_PYTHONPATH 
+             "${MAYAUSD_LOCATION}/lib/python")
+        list(APPEND MAYAUSD_VARNAME_${PXR_OVERRIDE_PLUGINPATH_NAME}
+             "${MAYAUSD_LOCATION}/lib/usd")
+        list(APPEND MAYAUSD_VARNAME_MAYA_PLUG_IN_PATH
+             "${MAYAUSD_LOCATION}/plugin/adsk/plugin")
+        list(APPEND MAYAUSD_VARNAME_PYTHONPATH
+             "${MAYAUSD_LOCATION}/plugin/adsk/scripts")
+        list(APPEND MAYAUSD_VARNAME_MAYA_SCRIPT_PATH
+             "${MAYAUSD_LOCATION}/plugin/adsk/scripts")
+        list(APPEND MAYAUSD_VARNAME_PXR_MTLX_STDLIB_SEARCH_PATHS
+             "${PXR_USD_LOCATION}/libraries")
+        list(APPEND MAYAUSD_VARNAME_PXR_MTLX_STDLIB_SEARCH_PATHS
+             "${MAYAUSD_LOCATION}/libraries")
+    endif()
 
-    # al
-    list(APPEND MAYAUSD_VARNAME_PYTHONPATH
-         "${CMAKE_INSTALL_PREFIX}/plugin/al/lib/python")
-    list(APPEND MAYAUSD_VARNAME_PATH
-         "${CMAKE_INSTALL_PREFIX}/plugin/al/lib")
-    list(APPEND MAYAUSD_VARNAME_MAYA_PLUG_IN_PATH
-         "${CMAKE_INSTALL_PREFIX}/plugin/al/plugin")
-    list(APPEND MAYAUSD_VARNAME_${PXR_OVERRIDE_PLUGINPATH_NAME}
-         "${CMAKE_INSTALL_PREFIX}/plugin/al/lib/usd")
-    list(APPEND MAYAUSD_VARNAME_${PXR_OVERRIDE_PLUGINPATH_NAME}
-         "${CMAKE_INSTALL_PREFIX}/plugin/al/plugin")
 
     if(IS_WINDOWS AND DEFINED ENV{PYTHONHOME})
         # If the environment contains a PYTHONHOME, also set the path to
