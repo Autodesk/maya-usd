@@ -5,6 +5,10 @@ function(mayaUsd_get_unittest_target unittest_target unittest_basename)
     set(${unittest_target} "${unittest_name}" PARENT_SCOPE)
 endfunction()
 
+if (OIIO_idiff_BINARY)
+    set(IMAGE_DIFF_TOOL ${OIIO_idiff_BINARY} CACHE STRING "Use idiff for image comparison")
+endif()
+
 #
 # mayaUsd_add_test( <test_name>
 #                   {PYTHON_MODULE <python_module_name> |

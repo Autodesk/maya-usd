@@ -40,16 +40,23 @@ class MtohTestCase(ImageDiffingTestCase):
 
         cls._testDir = os.path.abspath('.')
 
-    def assertSnapshotClose(self, refImage, imageVersion=None,
-                            maxAvgChannelDiff=\
-                                ImageDiffingTestCase.AVG_CHANNEL_DIFF):
+    def resolveRefImage(self, refImage, imageVersion):
         if not os.path.isabs(refImage):
             if imageVersion:
                 refImage = os.path.join(self._inputDir, imageVersion, refImage)
             else:
                 refImage = os.path.join(self._inputDir, refImage)
-        super(MtohTestCase, self).assertSnapshotClose(
-            refImage, maxAvgChannelDiff=maxAvgChannelDiff)
+        return refImage
+
+    def assertSnapshotClose(self, refImage, fail, failpercent, imageVersion=None, hardfail=None, 
+                warn=None, warnpercent=None, hardwarn=None, perceptual=False):
+        refImage = self.resolveRefImage(refImage, imageVersion)
+        super(MtohTestCase, self).assertSnapshotClose(refImage, fail, failpercent, hardfail,
+                            warn, warnpercent, hardwarn, perceptual)
+
+    def assertSnapshotEqual(self, refImage, imageVersion=None):
+        refImage = self.resolveRefImage(refImage, imageVersion)
+        super(MtohTestCase, self).assertSnapshotEqual(refImage)
 
     def setHdStormRenderer(self):
         self.activeEditor = cmds.playblast(activeEditor=1)
