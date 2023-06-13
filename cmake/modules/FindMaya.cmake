@@ -16,6 +16,7 @@
 #
 # Cache variables:
 # MAYA_HAS_DEFAULT_MATERIAL_API Presence of a default material API on MRenderItem.
+# MAYA_HAS_COLOR_MANAGEMENT_SUPPORT_API Maya API provides color management support
 # MAYA_NEW_POINT_SNAPPING_SUPPORT Presence of point new snapping support.
 # MAYA_CURRENT_UFE_CAMERA_SUPPORT Presence of MFrameContext::getCurrentUfeCameraPath.
 # MAYA_HAS_CRASH_DETECTION Presence of isInCrashHandler API
@@ -372,6 +373,15 @@ if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MHWGeometry.h")
     if(MAYA_HAS_API)
         set(MAYA_HAS_DEFAULT_MATERIAL_API TRUE CACHE INTERNAL "setDefaultMaterialHandling")
         message(STATUS "Maya has setDefaultMaterialHandling API")
+    endif()
+endif()
+
+set(MAYA_HAS_COLOR_MANAGEMENT_SUPPORT_API FALSE CACHE INTERNAL "getColorManagementFragmentInfo")
+if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MFragmentManager.h")
+    file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MFragmentManager.h MAYA_HAS_API REGEX "getColorManagementFragmentInfo")
+    if(MAYA_HAS_API)
+        set(MAYA_HAS_COLOR_MANAGEMENT_SUPPORT_API TRUE CACHE INTERNAL "getColorManagementFragmentInfo")
+        message(STATUS "Maya has getColorManagementFragmentInfo API")
     endif()
 endif()
 
