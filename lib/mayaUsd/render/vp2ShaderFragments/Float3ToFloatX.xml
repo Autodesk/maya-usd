@@ -1,0 +1,47 @@
+<fragment uiName="Float3ToFloatX" name="Float3ToFloatX" type="plumbing" class="ShadeFragment" version="1.0" feature_level="0">
+    <description>
+        Extracts the X component of a 3D float vector.
+    </description>
+    <properties>
+        <float3 name="input"/>
+    </properties>
+    <values/>
+    <outputs>
+        <float name="output"/>
+    </outputs>
+    <implementation>
+        <implementation render="OGSRenderer" language="Cg" lang_version="2.1">
+            <function_name val="Float3ToFloatX"/>
+            <source>
+                <![CDATA[
+float Float3ToFloatX(float3 in_vec)
+{
+    return in_vec.x;
+}
+]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="GLSL" lang_version="3.0">
+            <function_name val="Float3ToFloatX"/>
+            <source>
+                <![CDATA[
+float Float3ToFloatX(vec3 in_vec)
+{
+    return in_vec.x;
+}
+]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="HLSL" lang_version="11.0">
+            <function_name val="Float3ToFloatX"/>
+            <source>
+                <![CDATA[
+float Float3ToFloatX(float3 in_vec)
+{
+    return in_vec.x;
+}
+]]>
+            </source>
+        </implementation>
+    </implementation>
+</fragment>

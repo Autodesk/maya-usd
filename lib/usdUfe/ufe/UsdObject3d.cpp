@@ -88,8 +88,12 @@ Ufe::BBox3d UsdObject3d::boundingBox() const
     // Adjust extents for this runtime.
     adjustBBoxExtents(bbox, time);
 
-    auto range = bbox.ComputeAlignedRange();
-    return Ufe::BBox3d(toVector3d(range.GetMin()), toVector3d(range.GetMax()));
+    auto        range = bbox.ComputeAlignedRange();
+    Ufe::BBox3d ufeBBox(toVector3d(range.GetMin()), toVector3d(range.GetMax()));
+
+    Ufe::BBox3d pulledBBox = getPulledPrimsBoundingBox(path);
+
+    return combineUfeBBox(ufeBBox, pulledBBox);
 }
 
 bool UsdObject3d::visibility() const

@@ -108,6 +108,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (geomSidedness)   \
     (worldspace) \
     (customLayerData) \
+    (metersPerUnit) \
     /* Special "none" token */ \
     (none) \
     /* referenceObjectMode values */ \
@@ -233,6 +234,7 @@ struct UsdMayaJobExportArgs
     const std::vector<std::string>          chaserNames;
     const std::map<std::string, ChaserArgs> allChaserArgs;
     const VtDictionary                      customLayerData;
+    const double                            metersPerUnit;
 
     const std::map<std::string, std::string> remapUVSetsTo;
 

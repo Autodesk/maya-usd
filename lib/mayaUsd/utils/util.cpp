@@ -184,6 +184,14 @@ MDistance::Unit UsdMayaUtil::ConvertUsdGeomLinearUnitToMDistanceUnit(const doubl
     return MDistance::kCentimeters;
 }
 
+double UsdMayaUtil::GetExportDistanceConversionScalar(const double metersPerUnit)
+{
+    auto internalUnits
+        = UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(MDistance::internalUnit());
+    auto internalToMetersScalar = metersPerUnit / internalUnits;
+    return 1.0 / internalToMetersScalar;
+}
+
 std::string UsdMayaUtil::GetMayaNodeName(const MObject& mayaNode)
 {
     MString nodeName;

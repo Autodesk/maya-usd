@@ -109,6 +109,7 @@
 
 #if defined(WANT_UFE_BUILD)
 #include <mayaUsd/nodes/layerManager.h>
+#include <mayaUsd/ufe/Utils.h>
 
 #include <ufe/path.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -830,7 +831,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             sharedUsdStage = UsdUtilsStageCache::Get().Find(cacheId);
             isIncomingStage = true;
             // If the stage set by stage ID is not anonymous, set the filePath
-            // attribute to it so that it can be reloaded when teh Maya scene
+            // attribute to it so that it can be reloaded when the Maya scene
             // is re-opened.
             SdfLayerHandle rootLayer = sharedUsdStage->GetRootLayer();
             if (rootLayer && !rootLayer->IsAnonymous()) {
@@ -1487,6 +1488,16 @@ MBoundingBox MayaUsdProxyShapeBase::boundingBox() const
         = imageablePrim.ComputeUntransformedBound(currTime, purpose1, purpose2, purpose3, purpose4);
 
     UsdMayaUtil::AddMayaExtents(allBox, prim, currTime);
+
+#if defined(WANT_UFE_BUILD)
+    Ufe::BBox3d pulledUfeBBox = ufe::getPulledPrimsBoundingBox(ufePath());
+    if (!pulledUfeBBox.empty()) {
+        GfBBox3d pulledBox(GfRange3d(
+            GfVec3d(pulledUfeBBox.min.x(), pulledUfeBBox.min.y(), pulledUfeBBox.min.z()),
+            GfVec3d(pulledUfeBBox.max.x(), pulledUfeBBox.max.y(), pulledUfeBBox.max.z())));
+        allBox = GfBBox3d::Combine(allBox, pulledBox);
+    }
+#endif
 
     MBoundingBox& retval = nonConstThis->_boundingBoxCache[currTime];
 

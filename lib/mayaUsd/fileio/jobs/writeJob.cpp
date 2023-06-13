@@ -537,18 +537,23 @@ bool UsdMaya_WriteJob::_FinishWriting()
 
     // XXX Currently all distance values are written directly to USD, and will
     // be in centimeters (Maya's internal unit) despite what the users UIUnit
-    // preference is. Future work could include converting exported values to
-    // the UIUnit setting and writing that unit to metadata.
+    // preference is.
+    // Some conversion does take place but this is experimental
     MDistance::Unit mayaInternalUnit = MDistance::internalUnit();
-    if (mayaInternalUnit != MDistance::uiUnit()) {
-        TF_WARN("Distance unit conversion is not yet supported. "
-                "All distance values will be exported in Maya's internal "
-                "distance unit.");
+    auto            mayaInternalUnitLinear
+        = UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(mayaInternalUnit);
+    if (mayaInternalUnit != MDistance::uiUnit()
+        || mJobCtx.mArgs.metersPerUnit != mayaInternalUnitLinear) {
+        TF_WARN(
+            "Support for Distance unit conversion is evolving. "
+            "All distance units will be written in %s except where conversion is supported "
+            "and if enabled.",
+            MDistance::Unit_EnumDef::raw_name(mayaInternalUnit)
+                + sizeof(char)); // skip the k character
     }
 
     if (mJobCtx.mArgs.exportDistanceUnit) {
-        UsdGeomSetStageMetersPerUnit(
-            mJobCtx.mStage, UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(mayaInternalUnit));
+        UsdGeomSetStageMetersPerUnit(mJobCtx.mStage, mJobCtx.mArgs.metersPerUnit);
     }
 
     if (usdRootPrim) {

@@ -60,6 +60,14 @@ namespace {
 const TfTokenVector sFallbackShaderPrimvars
     = { HdTokens->displayColor, HdTokens->displayOpacity, HdTokens->normals };
 
+// Proper support for selection highlighting on/off switch in
+// MRenderItem starts only beyond Maya 2024.1
+#if MAYA_API_VERSION > 20240100
+constexpr int sDrawModeSelectionHighlighting = MHWRender::MGeometry::kSelectionHighlighting;
+#else
+constexpr int sDrawModeSelectionHighlighting = 0;
+#endif
+
 //! Helper utility function to fill primvar data to vertex buffer.
 template <class DEST_TYPE, class SRC_TYPE>
 void _FillPrimvarData(
@@ -2696,7 +2704,8 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateSelectionHighlightRenderItem(const MSt
         name, MHWRender::MRenderItem::DecorationItem, MHWRender::MGeometry::kLines);
 
     constexpr MHWRender::MGeometry::DrawMode drawMode = static_cast<MHWRender::MGeometry::DrawMode>(
-        MHWRender::MGeometry::kShaded | MHWRender::MGeometry::kTextured);
+        MHWRender::MGeometry::kShaded | MHWRender::MGeometry::kTextured
+        | sDrawModeSelectionHighlighting);
     renderItem->setDrawMode(drawMode);
     renderItem->depthPriority(MHWRender::MRenderItem::sActiveWireDepthPriority);
     renderItem->castsShadows(false);

@@ -796,6 +796,7 @@ void UsdMayaMeshWriteUtils::writePointsData(
     const MFnMesh&             meshFn,
     UsdGeomMesh&               primSchema,
     const UsdTimeCode&         usdTime,
+    const double               distanceUnitsScalar,
     UsdUtilsSparseValueWriter* valueWriter)
 {
     MStatus status { MS::kSuccess };
@@ -810,7 +811,13 @@ void UsdMayaMeshWriteUtils::writePointsData(
 
     const GfVec3f* vecData = reinterpret_cast<const GfVec3f*>(pointsData);
     VtVec3fArray   points(vecData, vecData + numVertices);
-    VtVec3fArray   extent(2);
+
+    // Multiply all mesh points by distanceUnitsScalar
+    if (distanceUnitsScalar != 1.0) {
+        points = points * distanceUnitsScalar;
+    }
+
+    VtVec3fArray extent(2);
     // Compute the extent using the raw points
     UsdGeomPointBased::ComputeExtent(points, &extent);
 

@@ -156,10 +156,14 @@ inline std::string prettifyName(const std::string& name) { return UsdUfe::pretti
 MAYAUSD_CORE_PUBLIC
 double ConvertMDistanceUnitToUsdGeomLinearUnit(const MDistance::Unit mdistanceUnit);
 
-/// Coverts the given value \p linearUnit in USD's metersPerUnit to the
+/// Converts the given value \p linearUnit in USD's metersPerUnit to the
 /// equivalent value in Maya's MDistance units.
 MAYAUSD_CORE_PUBLIC
 MDistance::Unit ConvertUsdGeomLinearUnitToMDistanceUnit(const double linearUnit);
+
+/// Returns a scaling value from Maya's internal units to the specified \p metersPerUnit
+MAYAUSD_CORE_PUBLIC
+double GetExportDistanceConversionScalar(const double metersPerUnit);
 
 /// Get the full name of the Maya node \p mayaNode.
 ///

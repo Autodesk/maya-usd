@@ -177,6 +177,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (st)
     (varname)
     (sourceColorSpace)
+    ((auto_, "auto"))
     (sRGB)
     (raw)
     (fallback)
@@ -201,6 +202,15 @@ TF_DEFINE_PRIVATE_TOKENS(
     (Float4ToFloatZ)
     (Float4ToFloatW)
     (Float4ToFloat3)
+    (Float3ToFloatX)
+    (Float3ToFloatY)
+    (Float3ToFloatZ)
+
+    // When using OCIO from Maya:
+    (Maya_OCIO_)
+    (toColor3ForCM)
+    (extract)
+
 
     (UsdPrimvarReader_color)
     (UsdPrimvarReader_vector)
@@ -1059,6 +1069,232 @@ std::string _GenerateXMLString(const HdMaterialNetwork& materialNetwork, bool in
 
     return result;
 }
+
+#ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
+void _AddColorManagementFragments(HdMaterialNetwork& net)
+{
+    MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
+    if (!theRenderer) {
+        return;
+    }
+
+    MHWRender::MFragmentManager* fragmentManager = theRenderer->getFragmentManager();
+    if (!fragmentManager) {
+        return;
+    }
+
+    // Need some robustness around sRGB since not all OCIO configs declare it the same way:
+    const auto sRGBAliases
+        = std::vector<MString> { "sRGB",         "sRGB - Texture",
+                                 "srgb_tx",      "Utility - sRGB - Texture",
+                                 "srgb_texture", "Input - Generic - sRGB - Texture" };
+    // Not static since it can change with the OCIO config.
+    MString sRGBAliasToUse;
+
+    // This will help keep our color management (CM) path identifiers unique:
+    size_t cmCounter = net.nodes.size();
+
+    auto netNodesEnd = net.nodes.end();
+    for (auto it = net.nodes.begin(); it != netNodesEnd; ++it) {
+        auto node = *it;
+        if (!_IsUsdUVTexture(node)) {
+            continue;
+        }
+
+        // Need to find the source color space:
+        TfToken sourceColorSpace = _tokens->auto_;
+        auto    scsIt = node.parameters.find(_tokens->sourceColorSpace);
+        if (scsIt != node.parameters.end()) {
+            const VtValue& scsValue = scsIt->second;
+            if (scsValue.IsHolding<TfToken>()) {
+                sourceColorSpace = scsValue.UncheckedGet<TfToken>();
+            }
+        }
+
+        // We need to insert the proper CM shader fragment here so it becomes part
+        // of the material hash:
+        MString colorSpace;
+
+        if (sourceColorSpace == _tokens->auto_) {
+            auto fileIt = node.parameters.find(_tokens->file);
+            if (fileIt == node.parameters.end() || !fileIt->second.IsHolding<SdfAssetPath>()) {
+                continue;
+            }
+            auto const&        filenameVal = fileIt->second.Get<SdfAssetPath>();
+            const std::string& resolvedPath = filenameVal.GetResolvedPath();
+            if (resolvedPath.empty()) {
+                continue;
+            }
+            const std::string& assetPath = filenameVal.GetAssetPath();
+            MString            colorRuleCmd;
+            colorRuleCmd.format(
+                "colorManagementFileRules -evaluate \"^1s\";",
+                (!resolvedPath.empty() ? resolvedPath : assetPath).c_str());
+            colorSpace = MGlobal::executeCommandStringResult(colorRuleCmd);
+        } else if (sourceColorSpace == _tokens->sRGB) {
+            if (sRGBAliasToUse.isEmpty()) {
+                for (auto&& sRGBAlias : sRGBAliases) {
+                    MString fragName, inputName, outputName;
+                    MStatus status = fragmentManager->getColorManagementFragmentInfo(
+                        sRGBAlias, fragName, inputName, outputName);
+                    if (status) {
+                        sRGBAliasToUse = sRGBAlias;
+                    }
+                }
+            }
+            if (sRGBAliasToUse.isEmpty()) {
+                // No alias found. Do not color correct...
+                continue;
+            }
+            colorSpace = sRGBAliasToUse;
+        } else if (sourceColorSpace == _tokens->raw) {
+            // No cm necessary for raw:
+            continue;
+        } else {
+            // Let's see if OCIO knows about that one:
+            colorSpace = sourceColorSpace.GetText();
+        }
+
+        MString fragName, inputName, outputName;
+        MStatus status = fragmentManager->getColorManagementFragmentInfo(
+            colorSpace, fragName, inputName, outputName);
+        if (!status) {
+            continue;
+        }
+
+        // Move all tx output relations to the new cm node
+        bool   hadOneColorOutput = false;
+        size_t numPassthrough = 0;
+
+        // Explicitly not color correcting alpha connections:
+        // Should we consider XYZ vector output to not require CM?
+        static const auto sColorOutputs
+            = std::set<TfToken> { _tokens->rgb, _tokens->xyz, _tokens->r, _tokens->x,
+                                  _tokens->g,   _tokens->y,   _tokens->b, _tokens->z };
+        static const auto sChannelSelectorMap = std::map<TfToken, TfToken> {
+            { _tokens->r, _tokens->Float3ToFloatX }, { _tokens->x, _tokens->Float3ToFloatX },
+            { _tokens->g, _tokens->Float3ToFloatY }, { _tokens->y, _tokens->Float3ToFloatY },
+            { _tokens->b, _tokens->Float3ToFloatZ }, { _tokens->z, _tokens->Float3ToFloatZ },
+            { _tokens->a, _tokens->Float4ToFloatW }, { _tokens->w, _tokens->Float4ToFloatW }
+        };
+
+        for (HdMaterialRelationship& rel : net.relationships) {
+            if (rel.inputId == node.path) {
+                if (sColorOutputs.count(rel.inputName)) {
+                    // We need to add a cm node:
+                    hadOneColorOutput = true;
+                }
+                if (sChannelSelectorMap.count(rel.inputName)) {
+                    // Count how many extra passthrough will be needed
+                    ++numPassthrough;
+                }
+            }
+        }
+
+        if (hadOneColorOutput) {
+            // Need to keep the topological sort order of the network, so need to be careful with
+            // our iterators.
+
+            // Using the distance from start of the vector is safe against reallocation:
+            auto itDistance = std::distance(net.nodes.begin(), it);
+            net.nodes.reserve(net.nodes.size() + 2 + numPassthrough);
+
+            // Need a color4 to color3 passthrough (PT) between the texture (TX) and the color
+            // management (CM) node:
+            HdMaterialNode ptNode;
+            ptNode.identifier = _tokens->Float4ToFloat3;
+            ptNode.path = SdfPath(_tokens->toColor3ForCM.GetString() + std::to_string(++cmCounter));
+
+            // Insert it directly after the TX node:
+            ++itDistance;
+            net.nodes.insert(net.nodes.begin() + itDistance, ptNode);
+
+            // Now add the CM node:
+            HdMaterialNode cmNode;
+            cmNode.identifier = TfToken(fragName.asChar());
+            cmNode.path = SdfPath(
+                _tokens->Maya_OCIO_.GetString() + std::to_string(cmNode.identifier.Hash()) + "_"
+                + std::to_string(++cmCounter));
+
+            // Directly after the PT node
+            ++itDistance;
+            net.nodes.insert(net.nodes.begin() + itDistance, cmNode);
+
+            // Add a relationship between the TX and PT
+            std::vector<HdMaterialRelationship> newRelationships;
+            HdMaterialRelationship              newRel
+                = { node.path, _tokens->output, ptNode.path, _tokens->input };
+            newRelationships.push_back(newRel);
+
+            // Add a relationship between the PT and CM
+            newRel = { ptNode.path, _tokens->output, cmNode.path, TfToken(inputName.asChar()) };
+            newRelationships.push_back(newRel);
+
+            std::map<TfToken, SdfPath> addedChannelSelectors;
+
+            // Now reconnect all TX -> destination relationships to the proper passthrough:
+            for (HdMaterialRelationship& rel : net.relationships) {
+                if (rel.inputId != node.path) {
+                    continue;
+                }
+                // Do we need a channel selector (CS) to extract a component:
+                auto exIt = sChannelSelectorMap.find(rel.inputName);
+
+                if (exIt == sChannelSelectorMap.end()) {
+                    // No CS necessary: update connection between TX and destination:
+                    rel.inputId = cmNode.path;
+                    rel.inputName = TfToken(outputName.asChar());
+                } else {
+                    // Add CS between CM and destination, but only once per channel
+                    auto csIt = addedChannelSelectors.find(exIt->second);
+                    if (csIt == addedChannelSelectors.end()) {
+                        // That CS needs to be added:
+                        HdMaterialNode csNode;
+                        csNode.identifier = exIt->second;
+                        csNode.path = SdfPath(
+                            _tokens->extract.GetString() + exIt->second.GetString()
+                            + std::to_string(++cmCounter));
+
+                        // Directly after the CM node
+                        ++itDistance;
+                        net.nodes.insert(net.nodes.begin() + itDistance, csNode);
+
+                        if (exIt->second != _tokens->Float4ToFloatW) {
+                            // Add relationship between the CM and CS
+                            newRel = { cmNode.path,
+                                       TfToken(outputName.asChar()),
+                                       csNode.path,
+                                       _tokens->input };
+                            newRelationships.push_back(newRel);
+                        } else {
+                            // Alpha channel connects directly from TX to CS:
+                            newRel = { node.path, _tokens->output, csNode.path, _tokens->input };
+                            newRelationships.push_back(newRel);
+                        }
+
+                        csIt = addedChannelSelectors.insert({ exIt->second, csNode.path }).first;
+                    }
+
+                    // Repath new relationship between the CS and the destination:
+                    rel.inputId = csIt->second;
+                    rel.inputName = _tokens->output;
+                }
+            }
+            // Add all new relationships:
+            net.relationships.insert(
+                net.relationships.end(), newRelationships.begin(), newRelationships.end());
+
+            // Update for loop iterators:
+            it = net.nodes.begin() + itDistance;
+            netNodesEnd = net.nodes.end();
+        }
+    }
+
+    if (TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
+        std::cout << "Color managed network:\n" << _GenerateXMLString(net, true) << "\n";
+    }
+}
+#endif
 
 //! Return true if the surface shader needs to be rendered in a transparency pass.
 bool _IsTransparent(const HdMaterialNetwork& network)
@@ -2125,12 +2361,14 @@ void HdVP2Material::CompiledNetwork::_ApplyVP2Fixes(
         SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifier(outNode.identifier);
 #endif
         if (_IsUsdUVTexture(node)) {
+#ifndef HAS_COLOR_MANAGEMENT_SUPPORT_API
             // We need to rename according to the Maya color working space pref:
             if (!mayaWorkingColorSpace.length()) {
                 // Query the user pref:
                 mayaWorkingColorSpace = MGlobal::executeCommandStringResult(
                     "colorManagementPrefs -q -renderingSpaceName");
             }
+#endif
             outNode.identifier = TfToken(
                 HdVP2ShaderFragments::getUsdUVTextureFragmentName(mayaWorkingColorSpace).asChar());
         } else {
@@ -2170,6 +2408,10 @@ void HdVP2Material::CompiledNetwork::_ApplyVP2Fixes(
         outRel.inputId = _nodePathMap[outRel.inputId];
         outRel.outputId = _nodePathMap[outRel.outputId];
     }
+
+#ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
+    _AddColorManagementFragments(tmpNet);
+#endif
 
     outNet.nodes.reserve(numNodes + numRelationships);
     outNet.relationships.reserve(numRelationships * 2);
@@ -3087,6 +3329,7 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
                     assignment.texture = info._texture.get();
                     status = setShaderParam(paramName, assignment);
 
+#ifndef HAS_COLOR_MANAGEMENT_SUPPORT_API
 #ifdef WANT_MATERIALX_BUILD
                     // TODO: MaterialX image nodes have colorSpace metadata on the file attribute,
                     // and this can be found in the UsdShade version of the MaterialX document. At
@@ -3114,6 +3357,7 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
                         }
                         status = setShaderParam(paramName, isSRGB);
                     }
+#endif
                     // These parameters allow scaling texcoords into the proper coordinates of the
                     // Maya UDIM texture atlas:
                     if (status) {
@@ -3229,6 +3473,10 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
     if (_frontFaceShader) {
         _frontFaceShader->setParameter("cullStyle", (int)1);
     }
+
+#ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
+    _surfaceShader->addColorManagementTextures();
+#endif
 }
 
 namespace {

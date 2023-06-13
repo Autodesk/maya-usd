@@ -52,7 +52,7 @@ class testMayaUsdExportLayerAttributes(unittest.TestCase):
 
         for name, fps in fps_map.items():
             cmds.currentUnit(time=name)
-            temp_file = os.path.join(self.temp_dir, 'test_{}.usda'.format(name))
+            temp_file = os.path.join(self.temp_dir, 'test_fps_{}.usda'.format(name))
             cmds.mayaUSDExport(f=temp_file, frameRange=(1, 5))
 
             stage = Usd.Stage.Open(temp_file)
@@ -91,6 +91,41 @@ class testMayaUsdExportLayerAttributes(unittest.TestCase):
         invalid = ('a', 'b', 'c', 'd', 'e')
         for i in invalid:
             self.assertNotIn(i, data)
+
+    def test_metersPerUnit(self):
+        units = {
+            "meters": 1.0,
+            "default": 0
+        }
+
+        cmds.file(new=True, force=True)
+        transform, shape = cmds.polyCube()
+
+        cmds.setKeyframe(transform, value=0, attribute="translateX", time=1)
+        cmds.setKeyframe(transform, value=10, attribute="translateX", time=2)
+
+        for name, metersPerUnit in units.items():
+            is_default = not metersPerUnit
+
+            temp_file = os.path.join(self.temp_dir, 'test_metersPerUnit_{}.usda'.format(name))
+            cmds.mayaUSDExport(f=temp_file, frameRange=(1, 2), metersPerUnit=metersPerUnit)
+
+            stage = Usd.Stage.Open(temp_file)
+            prim = stage.GetPrimAtPath("/{}".format(transform))
+
+            self.assertTrue(prim, "Could not find cube in export")
+
+            points = prim.GetAttribute("points").Get()
+
+            # Only need to check the first of the first vertices
+            px = abs(points[0][0])
+            self.assertAlmostEqual(px, 0.5 if is_default else 0.005, msg="Mesh points weren't scaled properly")
+
+            # Only need to check tx on the translate
+            translate_attr = prim.GetAttribute("xformOp:translate")
+            self.assertAlmostEqual(translate_attr.Get(1)[0], 0)
+            self.assertAlmostEqual(translate_attr.Get(2)[0], 10 if is_default else 0.1,
+                                   msg="Translate values weren't scaled properly")
 
 
 if __name__ == '__main__':
