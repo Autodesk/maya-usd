@@ -52,6 +52,5 @@ MayaUsdObject3d::adjustAlignedBBox(const Ufe::BBox3d& bbox, const PXR_NS::UsdTim
     return combineUfeBBox(bbox, pulledBBox);
 }
 
-
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

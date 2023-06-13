@@ -20,8 +20,8 @@
 
 #include <ufe/path.h>
 #include <ufe/scene.h>
-#include <ufe/ufe.h>
 #include <ufe/types.h>
+#include <ufe/ufe.h>
 
 #include <string>
 
