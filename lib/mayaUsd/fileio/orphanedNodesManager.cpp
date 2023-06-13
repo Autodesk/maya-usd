@@ -77,9 +77,10 @@ using PullVariantInfo = OrphanedNodesManager::PullVariantInfo;
 using VariantSetDescriptor = OrphanedNodesManager::VariantSetDescriptor;
 using VariantSelection = OrphanedNodesManager::VariantSelection;
 using PulledPrims = OrphanedNodesManager::PulledPrims;
-using PulledPrimNode = OrphanedNodesManager::PulledPrimNode;
+using PulledPrimNode = Ufe::TrieNode<PullVariantInfo>;
 
-Ufe::Path trieNodeToPulledPrimUfePath(PulledPrimNode::Ptr trieNode);
+Ufe::PathSegment::Components trieNodeToPathComponents(PulledPrimNode::Ptr trieNode);
+Ufe::Path                    trieNodeToPulledPrimUfePath(PulledPrimNode::Ptr trieNode);
 
 void renameVariantDescriptors(
     std::list<VariantSetDescriptor>& descriptors,
@@ -103,16 +104,45 @@ void renameVariantInfo(
     //       data we must make a copy, modify the copy and call setData().
     PullVariantInfo newVariantInfo = trieNode->data();
 
-    // Note: the change to USD data must be done *after* changes to Maya data because
-    //       the outliner reacts to UFE notifications received following the USD edits
-    //       to rebuild the node tree and the Maya node we want to hide must have been
-    //       hidden by that point. So the node visibility change must be done *first*.
     renameVariantDescriptors(newVariantInfo.variantSetDescriptors, oldPath, newPath);
 
-    Ufe::Path pulledPath = trieNodeToPulledPrimUfePath(trieNode);
-    TF_VERIFY(writePullInformation(pulledPath, newVariantInfo.editedAsMayaRoot));
-
     trieNode->setData(newVariantInfo);
+}
+
+void renamePullInformation(
+    const PulledPrimNode::Ptr& trieNode,
+    const Ufe::Path&           oldPath,
+    const Ufe::Path&           newPath)
+{
+    // Note: the trie only contains UFE path components, no UFE segments.
+    //       So we can't build a correct UFE path with the correct run-time ID
+    //       and the correct separators.
+    //
+    //       The old and new UFE paths do contain the correct run-time ID. So
+    //       we use them to build the correct UFE path to write the new pulled
+    //       information. Note that we *cannot* rely on the proxy shape existing
+    //       because we're sometimes called after it has been deleted. The reason
+    //       is that when Maya deletes a node, it temporarily reparents its children
+    //       to the Maya world root. This is the context in which we're sometimes
+    //       being called. Very confusing and unfortunate.
+    //
+    //       In all cases, we're being called about the proxy shape node being
+    //       reparented, so we just assume that the new path ends at the transition
+    //       between the Maya run-time and the USD run-time.
+    Ufe::Path pulledPath = newPath;
+
+    const Ufe::PathSegment::Components pathComponents = trieNodeToPathComponents(trieNode);
+    for (size_t i = newPath.size(); i < pathComponents.size(); ++i) {
+        const Ufe::PathComponent& comp = pathComponents[i];
+        if (pulledPath.nbSegments() < 2) {
+            pulledPath = pulledPath + Ufe::PathSegment(comp, ufe::getUsdRunTimeId(), '/');
+        } else {
+            pulledPath = pulledPath + comp;
+        }
+    }
+
+    const MDagPath& mayaPath = trieNode->data().editedAsMayaRoot;
+    TF_VERIFY(writePullInformation(pulledPath, mayaPath));
 }
 
 void recursiveRename(
@@ -122,6 +152,7 @@ void recursiveRename(
 {
     if (trieNode->hasData()) {
         renameVariantInfo(trieNode, oldPath, newPath);
+        renamePullInformation(trieNode, oldPath, newPath);
     } else {
         auto childrenComponents = trieNode->childrenComponents();
         for (auto& c : childrenComponents) {
@@ -413,11 +444,10 @@ bool OrphanedNodesManager::isOrphaned(const Ufe::Path& pulledPath) const
 
 namespace {
 
-Ufe::Path
-trieNodeToPulledPrimUfePath(Ufe::TrieNode<OrphanedNodesManager::PullVariantInfo>::Ptr trieNode)
+Ufe::PathSegment::Components trieNodeToPathComponents(PulledPrimNode::Ptr trieNode)
 {
-    // Accumulate all UFE path components, in reverse order. We will pop them
-    // from the back while building the pulled prim path.
+    // Accumulate all UFE path components, in reverse order. We then reverse
+    // the order to get the true path order.
     //
     // Note: the trie root node is not really part of the hierarchy, so do not
     //       include it in the components. We detect we are at the root when
@@ -427,16 +457,19 @@ trieNodeToPulledPrimUfePath(Ufe::TrieNode<OrphanedNodesManager::PullVariantInfo>
         pathComponents.push_back(trieNode->component());
         trieNode = trieNode->parent();
     }
+    std::reverse(pathComponents.begin(), pathComponents.end());
+    return pathComponents;
+}
 
+Ufe::Path trieNodeToPulledPrimUfePath(PulledPrimNode::Ptr trieNode)
+{
     // We assume the prim path is comosed of two segments: one in Maya, up to the
     // stage proxy shape, then in USD.
     Ufe::Path primPath;
     bool      foundStage = false;
 
-    while (pathComponents.size() > 0) {
-        Ufe::PathComponent comp = pathComponents.back();
-        pathComponents.pop_back();
-
+    const Ufe::PathSegment::Components pathComponents = trieNodeToPathComponents(trieNode);
+    for (const Ufe::PathComponent& comp : pathComponents) {
         // If the path is empty, it means we are starting the Maya path, so create
         // a Maya UFE segment.
         //
