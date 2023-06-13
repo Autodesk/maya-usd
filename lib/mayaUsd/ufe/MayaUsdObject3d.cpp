@@ -45,5 +45,13 @@ void MayaUsdObject3d::adjustBBoxExtents(PXR_NS::GfBBox3d& bbox, const PXR_NS::Us
     UsdMayaUtil::AddMayaExtents(bbox, prim(), time);
 }
 
+Ufe::BBox3d
+MayaUsdObject3d::adjustAlignedBBox(const Ufe::BBox3d& bbox, const PXR_NS::UsdTimeCode time) const
+{
+    Ufe::BBox3d pulledBBox = getPulledPrimsBoundingBox(sceneItem()->path());
+    return combineUfeBBox(bbox, pulledBBox);
+}
+
+
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

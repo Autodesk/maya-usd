@@ -59,6 +59,13 @@ void UsdObject3d::adjustBBoxExtents(PXR_NS::GfBBox3d&, const PXR_NS::UsdTimeCode
     // Do nothing in base class.
 }
 
+Ufe::BBox3d
+UsdObject3d::adjustAlignedBBox(const Ufe::BBox3d& bbox, const PXR_NS::UsdTimeCode time) const
+{
+    // Do nothing in the base class
+    return bbox;
+}
+
 //------------------------------------------------------------------------------
 // Ufe::Object3d overrides
 //------------------------------------------------------------------------------
@@ -91,9 +98,8 @@ Ufe::BBox3d UsdObject3d::boundingBox() const
     auto        range = bbox.ComputeAlignedRange();
     Ufe::BBox3d ufeBBox(toVector3d(range.GetMin()), toVector3d(range.GetMax()));
 
-    Ufe::BBox3d pulledBBox = getPulledPrimsBoundingBox(path);
-
-    return combineUfeBBox(ufeBBox, pulledBBox);
+    // Allow a derived class (for a DCC) to adjust the bounding box.
+    return adjustAlignedBBox(ufeBBox, time);
 }
 
 bool UsdObject3d::visibility() const

@@ -46,6 +46,8 @@ public:
     // UsdObject3d overrides
     PXR_NS::TfTokenVector getPurposes(const Ufe::Path& path) const override;
     void adjustBBoxExtents(PXR_NS::GfBBox3d& bbox, const PXR_NS::UsdTimeCode time) const override;
+    Ufe::BBox3d
+    adjustAlignedBBox(const Ufe::BBox3d& bbox, const PXR_NS::UsdTimeCode time) const override;
 
 }; // MayaUsdObject3d
 

@@ -53,6 +53,10 @@ public:
     //! Adjust the input bounding box extents for the given runtime.
     virtual void adjustBBoxExtents(PXR_NS::GfBBox3d& bbox, const PXR_NS::UsdTimeCode time) const;
 
+    //! Adjust the aligned bounding box for the given runtime.
+    virtual Ufe::BBox3d
+    adjustAlignedBBox(const Ufe::BBox3d& bbox, const PXR_NS::UsdTimeCode time) const;
+
     // Ufe::Object3d overrides
     Ufe::SceneItem::Ptr       sceneItem() const override;
     Ufe::BBox3d               boundingBox() const override;
