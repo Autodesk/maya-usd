@@ -20,11 +20,16 @@ from pxr import Gf
 from maya import OpenMayaUI as OMUI
 from maya import cmds
 
-from PySide2 import QtCore
-from PySide2.QtTest import QTest
-from PySide2.QtWidgets import QWidget
-
-from shiboken2 import wrapInstance
+try:
+    from PySide2 import QtCore
+    from PySide2.QtTest import QTest
+    from PySide2.QtWidgets import QWidget
+    from shiboken2 import wrapInstance
+except:
+    from PySide6 import QtCore
+    from PySide6.QtTest import QTest
+    from PySide6.QtWidgets import QWidget
+    from shiboken6 import wrapInstance
 
 import os
 import sys

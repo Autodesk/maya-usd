@@ -1,5 +1,5 @@
 #
-# Copyright 2020 Autodesk
+# Copyright 2023 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ target_compile_definitions(${PROJECT_NAME}
         $<$<BOOL:${IS_LINUX}>:GL_GLEXT_PROTOTYPES>
         $<$<BOOL:${IS_LINUX}>:GLX_GLXEXT_PROTOTYPES>
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:WANT_MATERIALX_BUILD>
-        $<$<BOOL:${Qt5_FOUND}>:WANT_QT_BUILD>
+		$<$<OR:$<BOOL:${Qt5_FOUND}>,$<BOOL:${Qt6_FOUND}>>:WANT_QT_BUILD>
         $<$<BOOL:${BUILD_HDMAYA}>:BUILD_HDMAYA>
 
         # this flag is needed when building maya-usd in Maya

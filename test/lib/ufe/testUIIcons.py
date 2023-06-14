@@ -26,8 +26,12 @@ import ufe
 import mayaUsd
 from pxr import Usd, Tf
 
-from shiboken2 import wrapInstance
-from PySide2.QtGui import QIcon
+try:
+    from shiboken2 import wrapInstance
+    from PySide2.QtGui import QIcon
+except:
+    from shiboken6 import wrapInstance
+    from PySide6.QtGui import QIcon
 
 class UIIconsTestCase(unittest.TestCase):
     """
