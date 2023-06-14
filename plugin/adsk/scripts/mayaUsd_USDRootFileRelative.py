@@ -4,7 +4,7 @@ import maya.OpenMayaUI as omui
 import mayaUsd.lib as mayaUsdLib
 from mayaUSDRegisterStrings import getMayaUsdString
 import mayaUsdMayaReferenceUtils as mayaRefUtils
-import AETemplateHelpers
+import mayaUsdUtils
 
 try:
     from PySide2.QtWidgets import QFileDialog, QLineEdit, QDialogButtonBox, QComboBox, QApplication
@@ -399,9 +399,9 @@ class usdAddRefOrPayloadRelativeToEditTargetLayer(usdFileRelativeToEditTargetLay
         '''
         super(usdAddRefOrPayloadRelativeToEditTargetLayer, cls).uiInit(parentLayout, filterType)
 
-        wantRef = AETemplateHelpers.wantReferenceCompositionArc()
-        wantPrepend = AETemplateHelpers.wantPrependCompositionArc()
-        wantLoad = AETemplateHelpers.wantPayloadLoaded()
+        wantRef = mayaUsdUtils.wantReferenceCompositionArc()
+        wantPrepend = mayaUsdUtils.wantPrependCompositionArc()
+        wantLoad = mayaUsdUtils.wantPayloadLoaded()
 
         compositionArc = mayaRefUtils.compositionArcReference if wantRef else mayaRefUtils.compositionArcPayload
         listEditType = mayaRefUtils.listEditTypePrepend if wantPrepend else mayaRefUtils.listEditTypeAppend
@@ -432,6 +432,6 @@ class usdAddRefOrPayloadRelativeToEditTargetLayer(usdFileRelativeToEditTargetLay
         wantPrepend = bool(listEditType == mayaRefUtils.listEditTypePrepend)
         wantLoad = bool(loadPayload)
 
-        AETemplateHelpers.saveWantReferenceCompositionArc(wantReference)
-        AETemplateHelpers.saveWantPrependCompositionArc(wantPrepend)
-        AETemplateHelpers.saveWantPayloadLoaded(wantLoad)
+        mayaUsdUtils.saveWantReferenceCompositionArc(wantReference)
+        mayaUsdUtils.saveWantPrependCompositionArc(wantPrepend)
+        mayaUsdUtils.saveWantPayloadLoaded(wantLoad)
