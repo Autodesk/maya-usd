@@ -104,6 +104,14 @@ recommended that you be very mindful of the edits you are making to the scene
 graph, and how multiple import chasers might work together in unexpected ways or
 have inter-dependencies.
 
+PostImport function provides access to the SDF paths of USD objects and the DAG paths
+of imported Maya objects. Input parameter `dagPaths` and `sdfPaths` represent the corresponding 
+DAG and SDF paths for the top primitives. To access the mapping between SDF and DAG paths of 
+all primitives, you can use the `GetSdfToDagMap()` function, which returns a 
+`MSdfToDagMap` object with SDF path as the key and DAG path as the value. Input parameter `stage`
+contains information of all primitives in the current stage. Use `TraverseAll()` to traverse the
+primitives.
+
 Import chasers may also be written to parse an array of 3 string arguments for
 their own purposes, similar to the Alembic export chaser example.
 
