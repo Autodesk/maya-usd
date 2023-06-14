@@ -15,14 +15,11 @@
 //
 #include "UsdObject3d.h"
 
-#include <mayaUsd/ufe/UsdUndoVisibleCommand.h>
-#include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/utils/util.h>
-
+#include <usdUfe/ufe/UsdUndoVisibleCommand.h>
+#include <usdUfe/ufe/Utils.h>
 #include <usdUfe/utils/editRouter.h>
 #include <usdUfe/utils/editRouterContext.h>
 
-#include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/bboxCache.h>
 #include <pxr/usd/usdGeom/tokens.h>
 
@@ -31,14 +28,11 @@
 
 #include <stdexcept>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace {
-Ufe::Vector3d toVector3d(const GfVec3d& v) { return Ufe::Vector3d(v[0], v[1], v[2]); }
+Ufe::Vector3d toVector3d(const PXR_NS::GfVec3d& v) { return Ufe::Vector3d(v[0], v[1], v[2]); }
 } // namespace
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 UsdObject3d::UsdObject3d(const UsdSceneItem::Ptr& item)
     : Ufe::Object3d()
@@ -53,6 +47,23 @@ UsdObject3d::~UsdObject3d() { }
 UsdObject3d::Ptr UsdObject3d::create(const UsdSceneItem::Ptr& item)
 {
     return std::make_shared<UsdObject3d>(item);
+}
+
+//------------------------------------------------------------------------------
+// DCC specific helpers
+//------------------------------------------------------------------------------
+PXR_NS::TfTokenVector UsdObject3d::getPurposes(const Ufe::Path&) const { return {}; }
+
+void UsdObject3d::adjustBBoxExtents(PXR_NS::GfBBox3d&, const PXR_NS::UsdTimeCode) const
+{
+    // Do nothing in base class.
+}
+
+Ufe::BBox3d
+UsdObject3d::adjustAlignedBBox(const Ufe::BBox3d& bbox, const PXR_NS::UsdTimeCode time) const
+{
+    // Do nothing in the base class
+    return bbox;
 }
 
 //------------------------------------------------------------------------------
@@ -71,41 +82,41 @@ Ufe::BBox3d UsdObject3d::boundingBox() const
     // we can bypass time computation and simply use UsdTimeCode::Default()
     // as the time.
 
-    const Ufe::Path& path = sceneItem()->path();
-    auto             purposes = getProxyShapePurposes(path);
-    // Add in the default purpose.
-    purposes.emplace_back(UsdGeomTokens->default_);
+    // Get the DCC specific purposes and then add in the default purpose.
+    const auto& path = sceneItem()->path();
+    auto        purposes = getPurposes(path);
+    purposes.emplace_back(PXR_NS::UsdGeomTokens->default_);
 
     // UsdGeomImageable::ComputeUntransformedBound() just calls
     // UsdGeomBBoxCache, so do this here as well.
     auto time = getTime(path);
-    auto bbox = UsdGeomBBoxCache(time, purposes).ComputeUntransformedBound(fPrim);
+    auto bbox = PXR_NS::UsdGeomBBoxCache(time, purposes).ComputeUntransformedBound(fPrim);
 
-    // Add maya-specific extents
-    UsdMayaUtil::AddMayaExtents(bbox, fPrim, time);
+    // Adjust extents for this runtime.
+    adjustBBoxExtents(bbox, time);
 
     auto        range = bbox.ComputeAlignedRange();
     Ufe::BBox3d ufeBBox(toVector3d(range.GetMin()), toVector3d(range.GetMax()));
 
-    Ufe::BBox3d pulledBBox = getPulledPrimsBoundingBox(path);
-
-    return combineUfeBBox(ufeBBox, pulledBBox);
+    // Allow a derived class (for a DCC) to adjust the bounding box.
+    return adjustAlignedBBox(ufeBBox, time);
 }
 
 bool UsdObject3d::visibility() const
 {
-    TfToken visibilityToken;
-    auto    visAttr = UsdGeomImageable(fPrim).GetVisibilityAttr();
+    PXR_NS::TfToken visibilityToken;
+    auto            visAttr = PXR_NS::UsdGeomImageable(fPrim).GetVisibilityAttr();
     visAttr.Get(&visibilityToken);
 
-    return visibilityToken != UsdGeomTokens->invisible;
+    return visibilityToken != PXR_NS::UsdGeomTokens->invisible;
 }
 
 void UsdObject3d::setVisibility(bool vis)
 {
-    AttributeEditRouterContext ctx(fPrim, UsdGeomTokens->visibility);
+    AttributeEditRouterContext ctx(fPrim, PXR_NS::UsdGeomTokens->visibility);
 
-    vis ? UsdGeomImageable(fPrim).MakeVisible() : UsdGeomImageable(fPrim).MakeInvisible();
+    vis ? PXR_NS::UsdGeomImageable(fPrim).MakeVisible()
+        : PXR_NS::UsdGeomImageable(fPrim).MakeInvisible();
 }
 
 Ufe::UndoableCommand::Ptr UsdObject3d::setVisibleCmd(bool vis)
@@ -113,5 +124,4 @@ Ufe::UndoableCommand::Ptr UsdObject3d::setVisibleCmd(bool vis)
     return UsdUndoVisibleCommand::create(fPrim, vis);
 }
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

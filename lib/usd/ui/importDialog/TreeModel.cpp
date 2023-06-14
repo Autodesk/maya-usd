@@ -118,7 +118,7 @@ QVariant TreeModel::data(const QModelIndex& index, int role /*= Qt::DisplayRole*
 Qt::ItemFlags TreeModel::flags(const QModelIndex& index) const
 {
     if (!index.isValid())
-        return 0;
+        return static_cast<Qt::ItemFlags>(0);
 
     // The base class implementation returns a combination of flags that enables
     // the item (ItemIsEnabled) and allows it to be selected (ItemIsSelectable).

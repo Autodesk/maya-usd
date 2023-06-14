@@ -1,5 +1,5 @@
 #
-# Copyright 2020 Autodesk
+# Copyright 2023 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,9 +40,9 @@ mayaUsd_compile_config(${PROJECT_NAME})
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
         mayaUsdUI
-        Qt5::Core
-        Qt5::Gui
-        Qt5::Widgets
+		$<IF:$<BOOL:${Qt6_FOUND}>,Qt6::Core,Qt5::Core>
+		$<IF:$<BOOL:${Qt6_FOUND}>,Qt6::Gui,Qt5::Gui>
+		$<IF:$<BOOL:${Qt6_FOUND}>,Qt6::Widgets,Qt5::Widgets>
 )
 
 if (IS_LINUX)

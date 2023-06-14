@@ -24,7 +24,7 @@
 namespace USDUFE_NS_DEF {
 
 USDUFE_PUBLIC
-std::string SanitizeName(const std::string& name);
+std::string sanitizeName(const std::string& name);
 
 /// Return a prettified name from camelCase or snake_case source.
 ///

@@ -15,6 +15,7 @@
 //
 #include "UsdRootChildHierarchy.h"
 
+#include <ufe/pathString.h>
 #include <ufe/runTimeMgr.h>
 
 #include <cassert>
@@ -55,8 +56,8 @@ Ufe::SceneItem::Ptr UsdRootChildHierarchy::parent() const
     // Our parent path should be in a different runtime.
     assert(parentPath.runTimeId() != path().runTimeId());
 #endif
-    if (parentPath.runTimeId() != path().runTimeId())
-        TF_WARN(kNotGatewayNodePath, path().string().c_str());
+    if (parentPath.runTimeId() == path().runTimeId())
+        TF_WARN(kNotGatewayNodePath, Ufe::PathString::string(path()).c_str());
 
     return Ufe::Hierarchy::createItem(parentPath);
 }

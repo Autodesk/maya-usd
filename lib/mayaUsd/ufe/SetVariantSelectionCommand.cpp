@@ -17,6 +17,8 @@
 
 #include <mayaUsd/ufe/Utils.h>
 
+#include <usdUfe/ufe/Utils.h>
+
 #include <pxr/usd/usd/variantSets.h>
 
 #include <ufe/globalSelection.h>
@@ -52,7 +54,7 @@ SetVariantSelectionCommand::~SetVariantSelectionCommand() { }
 void SetVariantSelectionCommand::redo()
 {
     std::string errMsg;
-    if (!MayaUsd::ufe::isPrimMetadataEditAllowed(
+    if (!UsdUfe::isPrimMetadataEditAllowed(
             _prim,
             PXR_NS::SdfFieldKeys->VariantSelection,
             PXR_NS::TfToken(_varSet.GetName()),
@@ -71,7 +73,7 @@ void SetVariantSelectionCommand::redo()
 void SetVariantSelectionCommand::undo()
 {
     std::string errMsg;
-    if (!MayaUsd::ufe::isPrimMetadataEditAllowed(
+    if (!UsdUfe::isPrimMetadataEditAllowed(
             _prim,
             PXR_NS::SdfFieldKeys->VariantSelection,
             PXR_NS::TfToken(_varSet.GetName()),

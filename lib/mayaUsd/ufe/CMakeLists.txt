@@ -33,6 +33,8 @@ target_sources(${PROJECT_NAME}
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
+            MayaUsdObject3d.cpp
+            MayaUsdObject3dHandler.cpp
             ProxyShapeContextOpsHandler.cpp
             RotationUtils.cpp
             UsdAttribute.cpp
@@ -43,8 +45,6 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdCameraHandler.cpp
             UsdContextOps.cpp
             UsdContextOpsHandler.cpp
-            UsdObject3d.cpp
-            UsdObject3dHandler.cpp
             UsdSetXformOpUndoableCommandBase.cpp
             UsdTransform3dBase.cpp
             UsdTransform3dCommonAPI.cpp
@@ -57,7 +57,6 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdUIInfoHandler.cpp
             UsdUIUfeObserver.cpp
             UsdUndoMaterialCommands.cpp
-            UsdUndoVisibleCommand.cpp
             XformOpUtils.cpp
     )
 endif()
@@ -206,6 +205,8 @@ set(HEADERS
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND HEADERS
+        MayaUsdObject3d.h
+        MayaUsdObject3dHandler.h
         ProxyShapeContextOpsHandler.h
         RotationUtils.h
         UsdAttribute.h
@@ -216,8 +217,6 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdCameraHandler.h
         UsdContextOps.h
         UsdContextOpsHandler.h
-        UsdObject3d.h
-        UsdObject3dHandler.h
         UsdPointInstanceUndoableCommands.h
         UsdSetXformOpUndoableCommandBase.h
         UsdTransform3dBase.h
@@ -231,7 +230,6 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdUIInfoHandler.h
         UsdUIUfeObserver.h
         UsdUndoMaterialCommands.h
-        UsdUndoVisibleCommand.h
         XformOpUtils.h
     )
 endif()

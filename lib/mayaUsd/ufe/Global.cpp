@@ -23,13 +23,14 @@
 #include <mayaUsd/ufe/UsdSceneItemOpsHandler.h>
 #include <mayaUsd/ufe/UsdTransform3dHandler.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/utils/editability.h>
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
+#include <mayaUsd/ufe/MayaUsdObject3dHandler.h>
 #include <mayaUsd/ufe/ProxyShapeContextOpsHandler.h>
 #include <mayaUsd/ufe/UsdAttributesHandler.h>
 #include <mayaUsd/ufe/UsdCameraHandler.h>
 #include <mayaUsd/ufe/UsdContextOpsHandler.h>
-#include <mayaUsd/ufe/UsdObject3dHandler.h>
 #include <mayaUsd/ufe/UsdTransform3dCommonAPI.h>
 #include <mayaUsd/ufe/UsdTransform3dFallbackMayaXformStack.h>
 #include <mayaUsd/ufe/UsdTransform3dMatrixOp.h>
@@ -159,8 +160,11 @@ MStatus initialize()
     if (gRegistrationCount++ > 0)
         return MS::kSuccess;
 
-    // Set the Ufe path to prim function in UsdUfe.
-    UsdUfe::setUfePathToPrimFn(MayaUsd::ufe::ufePathToPrim);
+    // Set the Maya specific functions required for the UsdUfe plugin to work correctly.
+    UsdUfe::DCCFunctions dccFunctions;
+    dccFunctions.ufePathToPrimFn = MayaUsd::ufe::ufePathToPrim;
+    dccFunctions.timeAccessorFn = MayaUsd::ufe::getTime;
+    dccFunctions.isAttributeLockedFn = MayaUsd::Editability::isAttributeLocked;
 
     // Replace the Maya hierarchy handler with ours.
     auto& runTimeMgr = Ufe::RunTimeMgr::instance();
@@ -196,7 +200,7 @@ MStatus initialize()
 #endif
     handlers.sceneItemOpsHandler = UsdSceneItemOpsHandler::create();
     handlers.attributesHandler = UsdAttributesHandler::create();
-    handlers.object3dHandler = UsdObject3dHandler::create();
+    usdUfeHandlers.object3dHandler = MayaUsdObject3dHandler::create();
     handlers.contextOpsHandler = UsdContextOpsHandler::create();
     handlers.uiInfoHandler = UsdUIInfoHandler::create();
     handlers.cameraHandler = UsdCameraHandler::create();
@@ -265,7 +269,7 @@ MStatus initialize()
 
     // Initialize UsdUfe which will register all the default handlers
     // and the overrides we provide.
-    auto usdRtid = UsdUfe::initialize(usdUfeHandlers);
+    auto usdRtid = UsdUfe::initialize(dccFunctions, usdUfeHandlers);
 
     // TEMP (UsdUfe)
     // Can only call Ufe::RunTimeMgr::register_() once for a given runtime name.
