@@ -143,7 +143,7 @@ def imageDiff(imagePath1, imagePath2, verbose, env, fail, failpercent, hardfail,
     if platform.system() == 'Windows':
         imageDiff = 'idiff.exe'
     else:
-        imageDiff = 'idiff'
+        imageDiff = os.environ['IMAGE_DIFF_TOOL']
     cmdArgs = []
     if warn is not None:
         cmdArgs.extend(['-warn', str(warn)])
