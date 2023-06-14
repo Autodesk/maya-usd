@@ -43,7 +43,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 // clang-format on
 
-
 namespace {
 struct _RegistryEntry
 {
@@ -52,12 +51,10 @@ struct _RegistryEntry
     int                                           _index;
 };
 
-// typedef std::map<TfToken, UsdMayaPrimReaderRegistry::ReaderFactoryFn> _Registry;
 typedef std::unordered_multimap<TfToken, _RegistryEntry, TfToken::HashFunctor> _Registry;
-static _Registry _reg;
+static _Registry                                                               _reg;
 static int                                                                     _indexCounter = 0;
 
-//TODO: Add pred function
 _Registry::const_iterator _Find(const TfToken& typeName, const UsdMayaJobImportArgs& importArgs)
 {
     using ContextSupport = UsdMayaPrimReader::ContextSupport;
@@ -65,12 +62,10 @@ _Registry::const_iterator _Find(const TfToken& typeName, const UsdMayaJobImportA
     _Registry::const_iterator ret = _reg.cend();
     _Registry::const_iterator first, last;
 
-    // Debug
-    // equal range will return the start and end pos for all elements that matches typename
-    // we need all matches because we are using a multimap, that each type can have multiple readers
     std::tie(first, last) = _reg.equal_range(typeName);
     while (first != last) {
         ContextSupport support = first->second._pred(importArgs);
+        // Look for a "Supported" reader. If no "Supported" reader is found, use a "Fallback" reader
         if (support == ContextSupport::Supported) {
             ret = first;
             break;
@@ -94,37 +89,42 @@ void UsdMayaPrimReaderRegistry::Register(
     int     index = _indexCounter++;
     TF_DEBUG(PXRUSDMAYA_REGISTRY)
         .Msg("Registering UsdMayaPrimReader for TfType %s.\n", tfTypeName.GetText());
-    //std::pair<_Registry::iterator, bool> insertStatus = _reg.insert(std::make_pair(tfTypeName, fn));
 
-    // Debug: 
-    // For backward compatiblity, can we create a emtry pred function that always return Fallback?
+    // Use default ContextSupport if not specified
     _reg.insert(std::make_pair(
         tfTypeName,
         _RegistryEntry {
             [](const UsdMayaJobImportArgs&) { return UsdMayaPrimReader::ContextSupport::Fallback; },
             fn,
             index }));
-    /*
-    if (insertStatus.second) {
-        UsdMaya_RegistryHelper::AddUnloader([tfTypeName]() { _reg.erase(tfTypeName); }, fromPython);
-    } else {
-        TF_CODING_ERROR("Multiple readers for type %s", tfTypeName.GetText());
+
+    if (fn) {
+        UsdMaya_RegistryHelper::AddUnloader(
+            [tfTypeName, index]() {
+                _Registry::const_iterator it, itEnd;
+                std::tie(it, itEnd) = _reg.equal_range(tfTypeName);
+                for (; it != itEnd; ++it) {
+                    if (it->second._index == index) {
+                        _reg.erase(it);
+                        break;
+                    }
+                }
+            },
+            fromPython);
     }
-    */
 }
 
 /* static */
 void UsdMayaPrimReaderRegistry::Register(
-    const TfType&                              t,
+    const TfType&                                 t,
     UsdMayaPrimReaderRegistry::ContextPredicateFn pred,
-    UsdMayaPrimReaderRegistry::ReaderFactoryFn fn,
-    bool                                       fromPython)
+    UsdMayaPrimReaderRegistry::ReaderFactoryFn    fn,
+    bool                                          fromPython)
 {
     TfToken tfTypeName(t.GetTypeName());
     int     index = _indexCounter++;
     TF_DEBUG(PXRUSDMAYA_REGISTRY)
         .Msg("Registering UsdMayaPrimReader for TfType %s.\n", tfTypeName.GetText());
-    //std::pair<_Registry::iterator, bool> insertStatus = _reg.insert(std::make_pair(tfTypeName, _RegistryEntry { pred, fn }));
     _reg.insert(std::make_pair(tfTypeName, _RegistryEntry { pred, fn, index }));
 
     // The unloader uses the index to know which entry to erase when there are
@@ -143,7 +143,6 @@ void UsdMayaPrimReaderRegistry::Register(
             },
             fromPython);
     }
-
 }
 
 /* static */
@@ -177,7 +176,6 @@ UsdMayaPrimReaderRegistry::Find(const TfToken& usdTypeName, const UsdMayaJobImpo
 
     // ideally something just registered itself.  if not, we at least put it in
     // the registry in case we encounter it again.
- 
     if (_reg.count(typeName) == 0) {
         TF_DEBUG(PXRUSDMAYA_REGISTRY)
             .Msg("No usdMaya reader plugin for TfType %s. No maya plugin.\n", typeName.GetText());
@@ -192,8 +190,9 @@ UsdMayaPrimReaderRegistry::Find(const TfToken& usdTypeName, const UsdMayaJobImpo
 }
 
 /* static */
-UsdMayaPrimReaderRegistry::ReaderFactoryFn
-UsdMayaPrimReaderRegistry::FindOrFallback(const TfToken& usdTypeName, const UsdMayaJobImportArgs& importArgs)
+UsdMayaPrimReaderRegistry::ReaderFactoryFn UsdMayaPrimReaderRegistry::FindOrFallback(
+    const TfToken&              usdTypeName,
+    const UsdMayaJobImportArgs& importArgs)
 {
     if (ReaderFactoryFn fn = Find(usdTypeName, importArgs)) {
         return fn;

@@ -68,17 +68,16 @@ struct UsdMayaPrimReaderRegistry
     MAYAUSD_CORE_PUBLIC
     static void Register(const TfType& type, ReaderFactoryFn fn, bool fromPython = false);
 
-    // Debug:
-    // overload a function for backward compatibility?
-    /// \brief Register \p fn as a reader provider for \p type.
+    /// \brief Register \p fn as a reader provider for \p type and provide the supportability.
     MAYAUSD_CORE_PUBLIC
     static void Register(
-        const TfType&   type,
+        const TfType&      type,
         ContextPredicateFn pred,
-        ReaderFactoryFn fn,
-        bool fromPython = false);
+        ReaderFactoryFn    fn,
+        bool               fromPython = false);
 
     /// \brief Register \p fn as a reader provider for \p T.
+    /// Context support will be set to default "Fallback"
     ///
     /// Example for registering a reader factory in your custom plugin, assuming
     /// that MyType is registered with the TfType system:
@@ -100,8 +99,8 @@ struct UsdMayaPrimReaderRegistry
         }
     }
 
-    // TODO: Write the sample code
-    /// \brief Register \p fn as a reader provider for \p T.
+    /// \brief Register \p fn as a reader provider for \p T and provide the supportability.
+    /// Use "Supported" to override default reader
     ///
     /// Example for registering a reader factory in your custom plugin, assuming
     /// that MyType is registered with the TfType system:
@@ -139,14 +138,14 @@ struct UsdMayaPrimReaderRegistry
     /// prim.GetTypeName()
     /// \endcode
     MAYAUSD_CORE_PUBLIC
-    static ReaderFactoryFn
-    Find(const TfToken& usdTypeName, const UsdMayaJobImportArgs& importArgs);
+    static ReaderFactoryFn Find(const TfToken& usdTypeName, const UsdMayaJobImportArgs& importArgs);
 
     /// Similar to Find(), but returns a "fallback" prim reader factory if none
     /// can be found for \p usdTypeName. Thus, this always returns a valid
     /// reader factory.
     MAYAUSD_CORE_PUBLIC
-    static ReaderFactoryFn FindOrFallback(const TfToken& usdTypeName, const UsdMayaJobImportArgs& importArgs);
+    static ReaderFactoryFn
+    FindOrFallback(const TfToken& usdTypeName, const UsdMayaJobImportArgs& importArgs);
 };
 
 // Lookup TfType by name instead of static C++ type when
