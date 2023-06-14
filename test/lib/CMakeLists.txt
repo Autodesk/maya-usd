@@ -43,7 +43,7 @@ if(BUILD_MAYAUSD_LIBRARY)
             ENV
                 "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
                 "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}:${PXR_USD_LOCATION}/lib64:${PXR_USD_LOCATION}/lib"
-                "IMAGE_DIFF_TOOL=${IMAGE_DIFF_TOOL}"
+                "IMAGE_DIFF_TOOL_=${IMAGE_DIFF_TOOL}"
         )
 
         # Add a ctest label to these tests for easy filtering.
