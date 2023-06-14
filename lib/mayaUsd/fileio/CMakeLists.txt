@@ -3,6 +3,7 @@
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
+        enhancedSparseValueWriter.cpp
         fallbackPrimReader.cpp
         functorPrimReader.cpp
         functorPrimWriter.cpp
@@ -57,6 +58,7 @@ endif()
 
 
 set(HEADERS
+    enhancedSparseValueWriter.h
     fallbackPrimReader.h
     functorPrimReader.h
     functorPrimWriter.h

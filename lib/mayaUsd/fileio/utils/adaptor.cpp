@@ -962,7 +962,7 @@ const UsdPrimDefinition* UsdMayaSchemaAdaptor::GetSchemaDefinition() const { ret
 bool UsdMayaSchemaAdaptor::CopyToPrim(
     const UsdPrim&,
     const UsdTimeCode&,
-    UsdUtilsSparseValueWriter*) const
+    EnhancedSparseValueWriter*) const
 {
     return false;
 }

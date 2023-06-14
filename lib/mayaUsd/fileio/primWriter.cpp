@@ -77,6 +77,7 @@ UsdMayaPrimWriter::UsdMayaPrimWriter(
     , _mayaObject(depNodeFn.object())
     , _usdPath(usdPath)
     , _baseDagToUsdPaths(UsdMayaUtil::getDagPathMap(depNodeFn, usdPath))
+    , _valueWriter(jobCtx.GetArgs().writeDefaults)
     , _exportVisibility(jobCtx.GetArgs().exportVisibility)
     , _hasAnimCurves(_IsAnimated(jobCtx.GetArgs(), depNodeFn.object()))
 {
@@ -255,7 +256,7 @@ const UsdMayaJobExportArgs& UsdMayaPrimWriter::_GetExportArgs() const
     return _writeJobCtx.GetArgs();
 }
 
-UsdUtilsSparseValueWriter* UsdMayaPrimWriter::_GetSparseValueWriter() { return &_valueWriter; }
+EnhancedSparseValueWriter* UsdMayaPrimWriter::_GetSparseValueWriter() { return &_valueWriter; }
 
 void UsdMayaPrimWriter::MakeSingleSamplesStatic()
 {

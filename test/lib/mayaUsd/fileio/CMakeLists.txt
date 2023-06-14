@@ -21,6 +21,7 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     list(APPEND TEST_SCRIPT_FILES
         testEditAsMaya.py
         testEditAsMayaBBox.py
+        testEditAsMayaDefaultValue.py
         testMergeToUsd.py
         testDuplicateAs.py
         testPrimUpdater.py

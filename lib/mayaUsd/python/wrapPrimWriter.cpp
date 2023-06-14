@@ -454,7 +454,7 @@ class PrimWriterAllowProtected : public UsdMayaPrimWriter
 public:
     void _SetUsdPrim(const UsdPrim& usdPrim) { base_t::_SetUsdPrim(usdPrim); }
     const UsdMayaJobExportArgs& _GetExportArgs() const { return base_t::_GetExportArgs(); }
-    UsdUtilsSparseValueWriter*  _GetSparseValueWriter() { return base_t::_GetSparseValueWriter(); }
+    EnhancedSparseValueWriter*  _GetSparseValueWriter() { return base_t::_GetSparseValueWriter(); }
 };
 
 void unprotect_SetUsdPrim(UsdMayaPrimWriter& pw, const UsdPrim& prim)
@@ -561,6 +561,7 @@ void wrapJobExportArgs()
         .def_readonly("mergeTransformAndShape", &UsdMayaJobExportArgs::mergeTransformAndShape)
         .def_readonly("normalizeNurbs", &UsdMayaJobExportArgs::normalizeNurbs)
         .def_readonly("preserveUVSetNames", &UsdMayaJobExportArgs::preserveUVSetNames)
+        .def_readonly("writeDefaults", &UsdMayaJobExportArgs::writeDefaults)
         .add_property(
             "parentScope",
             make_getter(&UsdMayaJobExportArgs::parentScope, return_value_policy<return_by_value>()))

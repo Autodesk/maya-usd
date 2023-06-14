@@ -51,6 +51,7 @@ public:
     static constexpr auto kExportComponentTagsFlag = "tag";
     static constexpr auto kIgnoreWarningsFlag = "ign";
     static constexpr auto kExportInstancesFlag = "ein";
+    static constexpr auto kWriteDefaults = "wd";
     static constexpr auto kMergeTransformAndShapeFlag = "mt";
     static constexpr auto kStripNamespacesFlag = "sn";
     static constexpr auto kExportRefsAsInstanceableFlag = "eri";

@@ -358,7 +358,7 @@ public:
     bool CopyToPrim(
         const UsdPrim&             prim,
         const UsdTimeCode&         usdTime,
-        UsdUtilsSparseValueWriter* valueWriter) const override
+        EnhancedSparseValueWriter* valueWriter) const override
     {
         std::string whyNot;
         if (!UsdPhysicsRigidBodyAPI::CanApply(prim, &whyNot)) {
