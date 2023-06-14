@@ -20,7 +20,6 @@
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UsdStageMap.h>
-#include <mayaUsd/utils/editability.h>
 #include <mayaUsd/utils/util.h>
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -33,14 +32,11 @@
 
 #include <pxr/base/tf/hashset.h>
 #include <pxr/base/tf/stringUtils.h>
-#include <pxr/usd/pcp/layerStack.h>
-#include <pxr/usd/pcp/site.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/tokens.h>
 #include <pxr/usd/sdr/shaderProperty.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primCompositionQuery.h>
-#include <pxr/usd/usd/resolver.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/pointInstancer.h>
 #include <pxr/usd/usdGeom/tokens.h>
@@ -82,35 +78,6 @@ namespace {
 constexpr auto kIllegalUFEPath = "Illegal UFE run-time path %s.";
 
 typedef std::unordered_map<TfToken, SdfValueTypeName, TfToken::HashFunctor> TokenToSdfTypeMap;
-
-// This function calculates the position index for a given layer across all
-// the site's local LayerStacks
-uint32_t findLayerIndex(const UsdPrim& prim, const SdfLayerHandle& layer)
-{
-    uint32_t position { 0 };
-
-    const PcpPrimIndex& primIndex = prim.ComputeExpandedPrimIndex();
-
-    // iterate through the expanded primIndex
-    for (PcpNodeRef node : primIndex.GetNodeRange()) {
-
-        TF_AXIOM(node);
-
-        const PcpLayerStackSite&   site = node.GetSite();
-        const PcpLayerStackRefPtr& layerStack = site.layerStack;
-
-        // iterate through the "local" Layer stack for each site
-        // to find the layer
-        for (SdfLayerRefPtr const& l : layerStack->GetLayers()) {
-            if (l == layer) {
-                return position;
-            }
-            ++position;
-        }
-    }
-
-    return position;
-}
 
 } // anonymous namespace
 
@@ -486,213 +453,6 @@ bool canRemoveDstProperty(const PXR_NS::UsdAttribute& dstAttr)
 
     // Do not remove boundary properties even if there are connections.
     return false;
-}
-
-bool isPrimMetadataEditAllowed(
-    const UsdPrim&         prim,
-    const TfToken&         metadataName,
-    const PXR_NS::TfToken& keyPath,
-    std::string*           errMsg)
-{
-    return isPropertyMetadataEditAllowed(prim, TfToken(), metadataName, keyPath, errMsg);
-}
-
-bool isPropertyMetadataEditAllowed(
-    const UsdPrim&         prim,
-    const PXR_NS::TfToken& propName,
-    const TfToken&         metadataName,
-    const PXR_NS::TfToken& keyPath,
-    std::string*           errMsg)
-{
-    // If the intended target layer is not modifiable as a whole,
-    // then no metadata edits are allowed at all.
-    const UsdStagePtr& stage = prim.GetStage();
-    if (!UsdUfe::isEditTargetLayerModifiable(stage, errMsg))
-        return false;
-
-    // Find the highest layer that has the metadata authored. The prim
-    // expanded PCP index, which contains all locations that contribute
-    // to the prim, is scanned for the first metadata authoring.
-    //
-    // Note: as far as we know, there are no USD API to retrieve the list
-    //       of authored locations for a metadata, unlike properties.
-    //
-    //       The code here is inspired by code from USD, according to
-    //       the following call sequence:
-    //          - UsdObject::GetAllAuthoredMetadata()
-    //          - UsdStage::_GetAllMetadata()
-    //          - UsdStage::_GetMetadataImpl()
-    //          - UsdStage::_GetGeneralMetadataImpl()
-    //          - Usd_Resolver class
-    //          - _ComposeGeneralMetadataImpl()
-    //          - ExistenceComposer::ConsumeAuthored()
-    //          - SdfLayer::HasFieldDictKey()
-    //
-    //          - UsdPrim::GetVariantSets
-    //          - UsdVariantSet::GetVariantSelection()
-    SdfLayerHandle topAuthoredLayer;
-    {
-        const SdfPath       primPath = prim.GetPath();
-        const PcpPrimIndex& primIndex = prim.ComputeExpandedPrimIndex();
-
-        // We need special processing for variant selection.
-        //
-        // Note: we would also need spacial processing for reference and payload,
-        //       but let's postpone them until we actually need it since it would
-        //       add yet more complexities.
-        const bool isVariantSelection = (metadataName == SdfFieldKeys->VariantSelection);
-
-        // Note: specPath is important even if prop name is empty, it then means
-        //       a metadata on the prim itself.
-        Usd_Resolver resolver(&primIndex);
-        SdfPath      specPath = resolver.GetLocalPath(propName);
-
-        for (bool isNewNode = false; resolver.IsValid(); isNewNode = resolver.NextLayer()) {
-            if (isNewNode)
-                specPath = resolver.GetLocalPath(propName);
-
-            // Consume an authored opinion here, if one exists.
-            SdfLayerRefPtr const& layer = resolver.GetLayer();
-            const bool            gotOpinion = keyPath.IsEmpty() || isVariantSelection
-                ? layer->HasField(specPath, metadataName)
-                : layer->HasFieldDictKey(specPath, metadataName, keyPath);
-
-            if (gotOpinion) {
-                if (isVariantSelection) {
-                    using SelMap = SdfVariantSelectionMap;
-                    const SelMap variantSel = layer->GetFieldAs<SelMap>(specPath, metadataName);
-                    if (variantSel.count(keyPath) == 0) {
-                        continue;
-                    }
-                }
-                topAuthoredLayer = layer;
-                break;
-            }
-        }
-    }
-
-    // Get the layer where we intend to author a new opinion.
-    const UsdEditTarget& editTarget = stage->GetEditTarget();
-    const SdfLayerHandle targetLayer = editTarget.GetLayer();
-
-    // Verify that the intended target layer is stronger than existing authored opinions.
-    const auto strongestLayer
-        = UsdUfe::getStrongerLayer(stage, targetLayer, topAuthoredLayer, true);
-    bool allowed = (strongestLayer == targetLayer);
-    if (!allowed && errMsg) {
-        *errMsg = TfStringPrintf(
-            "Cannot edit [%s] attribute because there is a stronger opinion in [%s].",
-            metadataName.GetText(),
-            strongestLayer ? strongestLayer->GetDisplayName().c_str() : "some layer");
-    }
-    return allowed;
-}
-
-bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMsg)
-{
-    if (Editability::isLocked(attr)) {
-        if (errMsg) {
-            *errMsg = TfStringPrintf(
-                "Cannot edit [%s] attribute because its lock metadata is [on].",
-                attr.GetBaseName().GetText());
-        }
-        return false;
-    }
-
-    // get the property spec in the edit target's layer
-    const auto& prim = attr.GetPrim();
-    const auto& stage = prim.GetStage();
-    const auto& editTarget = stage->GetEditTarget();
-
-    if (!UsdUfe::isEditTargetLayerModifiable(stage, errMsg)) {
-        return false;
-    }
-
-    // get the index to edit target layer
-    const auto targetLayerIndex = findLayerIndex(prim, editTarget.GetLayer());
-
-    // HS March 22th,2021
-    // TODO: "Value Clips" are UsdStage-level feature, unknown to Pcp.So if the attribute in
-    // question is affected by Value Clips, we would will likely get the wrong answer. See Spiff
-    // comment for more information :
-    // https://groups.google.com/g/usd-interest/c/xTxFYQA_bRs/m/lX_WqNLoBAAJ
-
-    // Read on Value Clips here:
-    // https://graphics.pixar.com/usd/docs/api/_usd__page__value_clips.html
-
-    // get the strength-ordered ( strong-to-weak order ) list of property specs that provide
-    // opinions for this property.
-    const auto& propertyStack = attr.GetPropertyStack();
-
-    if (!propertyStack.empty()) {
-        // get the strongest layer that has the attr.
-        auto strongestLayer = attr.GetPropertyStack().front()->GetLayer();
-
-        // compare the calculated index between the "attr" and "edit target" layers.
-        if (findLayerIndex(prim, strongestLayer) < targetLayerIndex) {
-            if (errMsg) {
-                *errMsg = TfStringPrintf(
-                    "Cannot edit [%s] attribute because there is a stronger opinion in [%s].",
-                    attr.GetBaseName().GetText(),
-                    strongestLayer->GetDisplayName().c_str());
-            }
-
-            return false;
-        }
-    }
-
-    return true;
-}
-
-bool isAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName, std::string* errMsg)
-{
-    TF_AXIOM(prim);
-    TF_AXIOM(!attrName.IsEmpty());
-
-    UsdGeomXformable xformable(prim);
-    if (xformable) {
-        if (UsdGeomXformOp::IsXformOp(attrName)) {
-            // check for the attribute in XformOpOrderAttr first
-            if (!isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), errMsg)) {
-                return false;
-            }
-        }
-    }
-    // check the attribute itself
-    if (!isAttributeEditAllowed(prim.GetAttribute(attrName), errMsg)) {
-        return false;
-    }
-
-    return true;
-}
-
-bool isAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName)
-{
-    std::string errMsg;
-    if (!isAttributeEditAllowed(prim, attrName, &errMsg)) {
-        MGlobal::displayError(errMsg.c_str());
-        return false;
-    }
-
-    return true;
-}
-
-void enforceAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
-{
-    std::string errMsg;
-    if (!isAttributeEditAllowed(attr, &errMsg)) {
-        MGlobal::displayError(errMsg.c_str());
-        throw std::runtime_error(errMsg);
-    }
-}
-
-void enforceAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName)
-{
-    std::string errMsg;
-    if (!isAttributeEditAllowed(prim, attrName, &errMsg)) {
-        MGlobal::displayError(errMsg.c_str());
-        throw std::runtime_error(errMsg);
-    }
 }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE

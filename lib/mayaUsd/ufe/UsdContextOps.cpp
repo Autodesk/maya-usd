@@ -22,8 +22,8 @@
 #include <mayaUsd/fileio/primUpdaterManager.h>
 #endif
 #include <mayaUsd/nodes/proxyShapeStageExtraData.h>
+#include <mayaUsd/ufe/MayaUsdObject3d.h>
 #include <mayaUsd/ufe/SetVariantSelectionCommand.h>
-#include <mayaUsd/ufe/UsdObject3d.h>
 #include <mayaUsd/ufe/UsdUndoMaterialCommands.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
@@ -1139,7 +1139,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
             path(), prim(), itemPath[1], itemPath[2]);
     } // Variant sets
     else if (itemPath[0] == kUSDToggleVisibilityItem) {
-        auto object3d = UsdObject3d::create(fItem);
+        auto object3d = MayaUsdObject3d::create(fItem);
         TF_AXIOM(object3d);
         auto current = object3d->visibility();
         return object3d->setVisibleCmd(!current);

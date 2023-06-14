@@ -7,19 +7,18 @@
 // ===========================================================================
 #pragma once
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdObject3d.h>
+#include <usdUfe/base/api.h>
+#include <usdUfe/ufe/UsdObject3d.h>
 
 #include <ufe/object3dHandler.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //! \brief USD run-time 3D object handler.
 /*!
         Factory object for Object3d interfaces.
  */
-class MAYAUSD_CORE_PUBLIC UsdObject3dHandler : public Ufe::Object3dHandler
+class USDUFE_PUBLIC UsdObject3dHandler : public Ufe::Object3dHandler
 {
 public:
     typedef std::shared_ptr<UsdObject3dHandler> Ptr;
@@ -36,10 +35,12 @@ public:
     //! Create a UsdObject3dHandler.
     static UsdObject3dHandler::Ptr create();
 
+    // Helpers
+    bool canCreateObject3dForItem(const Ufe::SceneItem::Ptr& item) const;
+
     // UsdObject3dHandler overrides
     Ufe::Object3d::Ptr object3d(const Ufe::SceneItem::Ptr& item) const override;
 
 }; // UsdObject3dHandler
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

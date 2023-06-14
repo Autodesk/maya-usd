@@ -16,7 +16,6 @@
 #include "editRouter.h"
 
 #include <usdUfe/base/tokens.h>
-//#include <mayaUsdUtils/MergePrims.h>
 
 #include <pxr/base/tf/callContext.h>
 #include <pxr/base/tf/diagnosticLite.h>

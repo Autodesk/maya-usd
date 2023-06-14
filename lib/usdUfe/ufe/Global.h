@@ -16,13 +16,30 @@
 #pragma once
 
 #include <usdUfe/base/api.h>
+#include <usdUfe/ufe/Utils.h>
 
 #include <ufe/hierarchyHandler.h>
+#include <ufe/object3dHandler.h>
 #include <ufe/rtid.h>
 
 #include <string>
 
 namespace USDUFE_NS_DEF {
+
+/*! Ufe runtime DCC specific functions.
+
+    You must provide each of the mandatory functions in order for the plugin
+    to function correctly for your runtime.
+*/
+struct USDUFE_PUBLIC DCCFunctions
+{
+    // Mandatory: function whichs must be supplied.
+    UfePathToPrimFn ufePathToPrimFn = nullptr;
+    TimeAccessorFn  timeAccessorFn = nullptr;
+
+    // Optional: default values will be used if no function is supplied.
+    IsAttributeLockedFn isAttributeLockedFn = nullptr;
+};
 
 /*! Ufe runtime handlers used to initialize the plugin.
 
@@ -40,7 +57,7 @@ struct USDUFE_PUBLIC Handlers
 
     // Ufe v2 handlers
     //     Ufe::AttributesHandler::Ptr   attributesHandler;
-    //     Ufe::Object3dHandler::Ptr     object3dHandler;
+    Ufe::Object3dHandler::Ptr object3dHandler;
     //     Ufe::ContextOpsHandler::Ptr   contextOpsHandler;
     //     Ufe::UIInfoHandler::Ptr       uiInfoHandler;
     //     Ufe::CameraHandler::Ptr       cameraHandler;
@@ -63,7 +80,7 @@ struct USDUFE_PUBLIC Handlers
 //! initialize the handlers and stage model.
 //! \return Ufe runtime ID for USD or 0 in case of error.
 USDUFE_PUBLIC
-Ufe::Rtid initialize(const Handlers&);
+Ufe::Rtid initialize(const DCCFunctions&, const Handlers&);
 
 //! Only intended to be called by the plugin finalization, to
 //! finalize the handlers stage model.
