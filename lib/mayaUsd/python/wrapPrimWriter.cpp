@@ -454,7 +454,7 @@ class PrimWriterAllowProtected : public UsdMayaPrimWriter
 public:
     void _SetUsdPrim(const UsdPrim& usdPrim) { base_t::_SetUsdPrim(usdPrim); }
     const UsdMayaJobExportArgs& _GetExportArgs() const { return base_t::_GetExportArgs(); }
-    EnhancedSparseValueWriter*  _GetSparseValueWriter() { return base_t::_GetSparseValueWriter(); }
+    FlexibleSparseValueWriter*  _GetSparseValueWriter() { return base_t::_GetSparseValueWriter(); }
 };
 
 void unprotect_SetUsdPrim(UsdMayaPrimWriter& pw, const UsdPrim& prim)

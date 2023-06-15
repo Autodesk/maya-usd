@@ -660,7 +660,7 @@ bool UsdMayaWriteUtil::SetUsdAttr(
     const MPlug&               attrPlug,
     const UsdAttribute&        usdAttr,
     const UsdTimeCode&         usdTime,
-    EnhancedSparseValueWriter* valueWriter)
+    FlexibleSparseValueWriter* valueWriter)
 {
     if (!usdAttr || attrPlug.isNull()) {
         return false;
@@ -718,7 +718,7 @@ bool UsdMayaWriteUtil::WriteUserExportedAttributes(
     const MObject&             mayaNode,
     const UsdPrim&             usdPrim,
     const UsdTimeCode&         usdTime,
-    EnhancedSparseValueWriter* valueWriter)
+    FlexibleSparseValueWriter* valueWriter)
 {
     std::vector<UsdMayaUserTaggedAttribute> exportedAttributes
         = UsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(mayaNode);
@@ -796,7 +796,7 @@ bool UsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
     const UsdPrim&              prim,
     const UsdMayaJobExportArgs& jobExportArgs,
     const UsdTimeCode&          usdTime,
-    EnhancedSparseValueWriter*  valueWriter)
+    FlexibleSparseValueWriter*  valueWriter)
 {
     UsdMayaAdaptor adaptor(mayaObject, jobExportArgs);
     if (!adaptor) {
@@ -846,7 +846,7 @@ size_t UsdMayaWriteUtil::WriteSchemaAttributesToPrim(
     const TfType&               schemaType,
     const std::vector<TfToken>& attributeNames,
     const UsdTimeCode&          usdTime,
-    EnhancedSparseValueWriter*  valueWriter)
+    FlexibleSparseValueWriter*  valueWriter)
 {
     UsdMayaSchemaAdaptorPtr schema;
     if (UsdMayaAdaptor adaptor = UsdMayaAdaptor(object)) {
@@ -938,7 +938,7 @@ bool UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
     const UsdGeomPointInstancer& instancer,
     const size_t                 numPrototypes,
     const UsdTimeCode&           usdTime,
-    EnhancedSparseValueWriter*   valueWriter)
+    FlexibleSparseValueWriter*   valueWriter)
 {
     MStatus status;
 

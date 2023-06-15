@@ -14,16 +14,16 @@
 // limitations under the License.
 //
 
-#include "enhancedSparseValueWriter.h"
+#include "flexibleSparseValueWriter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-EnhancedSparseValueWriter::EnhancedSparseValueWriter(bool writeDefaults)
+FlexibleSparseValueWriter::FlexibleSparseValueWriter(bool writeDefaults)
     : _writeDefaults(writeDefaults)
 {
 }
 
-bool EnhancedSparseValueWriter::SetAttribute(
+bool FlexibleSparseValueWriter::SetAttribute(
     const UsdAttribute& attr,
     const VtValue&      value,
     const UsdTimeCode   time)
@@ -37,7 +37,7 @@ bool EnhancedSparseValueWriter::SetAttribute(
     }
 }
 
-bool EnhancedSparseValueWriter::SetAttribute(
+bool FlexibleSparseValueWriter::SetAttribute(
     const UsdAttribute& attr,
     VtValue*            value,
     const UsdTimeCode   time)

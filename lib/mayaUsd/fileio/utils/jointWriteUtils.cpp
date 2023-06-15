@@ -18,7 +18,7 @@
 #include "jointWriteUtils.h"
 
 #include <mayaUsd/base/debugCodes.h>
-#include <mayaUsd/fileio/enhancedSparseValueWriter.h>
+#include <mayaUsd/fileio/flexibleSparseValueWriter.h>
 #include <mayaUsd/fileio/translators/translatorSkel.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
@@ -415,7 +415,7 @@ MObject UsdMayaJointUtil::writeSkinningData(
     const MDagPath&            dagPath,
     SdfPath&                   skelPath,
     const bool                 stripNamespaces,
-    EnhancedSparseValueWriter* valueWriter)
+    FlexibleSparseValueWriter* valueWriter)
 {
     // Figure out if we even have a skin cluster in the first place.
     MObject skinClusterObj = UsdMayaJointUtil::getSkinCluster(dagPath);

@@ -126,7 +126,7 @@ inline void _addAttr(
     const SdfValueTypeName&    typeName,
     const VtArray<T>&          a,
     const UsdTimeCode&         usdTime,
-    EnhancedSparseValueWriter* valueWriter)
+    FlexibleSparseValueWriter* valueWriter)
 {
     auto    attr = points.GetPrim().CreateAttribute(name, typeName, false, SdfVariabilityVarying);
     VtValue val(a);
@@ -145,7 +145,7 @@ void _addAttrVec(
     const SdfValueTypeName&    typeName,
     const _strVecPairVec<T>&   a,
     const UsdTimeCode&         usdTime,
-    EnhancedSparseValueWriter* valueWriter)
+    FlexibleSparseValueWriter* valueWriter)
 {
     for (const auto& v : a) {
         _addAttr(points, v.first, typeName, *v.second, usdTime, valueWriter);

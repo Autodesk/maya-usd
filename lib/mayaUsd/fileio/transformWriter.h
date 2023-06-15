@@ -108,7 +108,7 @@ private:
             const GfVec3d&             value,
             const GfMatrix4d&          matrix,
             const UsdTimeCode&         usdTime,
-            EnhancedSparseValueWriter* valueWriter) const;
+            FlexibleSparseValueWriter* valueWriter) const;
     };
 
     // For a given array of _AnimChannels and time, compute the xformOp data if
@@ -118,7 +118,7 @@ private:
         const UsdTimeCode&                         usdTime,
         const bool                                 eulerFilter,
         UsdMayaTransformWriter::_TokenRotationMap* previousRotates,
-        EnhancedSparseValueWriter*                 valueWriter,
+        FlexibleSparseValueWriter*                 valueWriter,
         double                                     distanceConversionScalar);
 
     // Creates an _AnimChannel from a Maya compound attribute if there is

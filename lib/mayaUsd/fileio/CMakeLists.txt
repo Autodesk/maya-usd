@@ -3,8 +3,8 @@
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
-        enhancedSparseValueWriter.cpp
         fallbackPrimReader.cpp
+        flexibleSparseValueWriter.cpp
         functorPrimReader.cpp
         functorPrimWriter.cpp
         importData.cpp
@@ -58,8 +58,8 @@ endif()
 
 
 set(HEADERS
-    enhancedSparseValueWriter.h
     fallbackPrimReader.h
+    flexibleSparseValueWriter.h
     functorPrimReader.h
     functorPrimWriter.h
     importData.h

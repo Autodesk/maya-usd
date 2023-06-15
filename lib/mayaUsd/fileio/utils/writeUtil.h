@@ -17,7 +17,7 @@
 #define PXRUSDMAYA_WRITEUTIL_H
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/enhancedSparseValueWriter.h>
+#include <mayaUsd/fileio/flexibleSparseValueWriter.h>
 #include <mayaUsd/fileio/utils/userTaggedAttribute.h>
 
 #include <pxr/base/tf/token.h>
@@ -41,7 +41,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class EnhancedSparseValueWriter;
+class FlexibleSparseValueWriter;
 struct UsdMayaJobExportArgs;
 
 /// This struct contains helpers for writing USD (thus reading Maya data).
@@ -157,7 +157,7 @@ struct UsdMayaWriteUtil
         const MPlug&               attrPlug,
         const UsdAttribute&        usdAttr,
         const UsdTimeCode&         usdTime,
-        EnhancedSparseValueWriter* valueWriter = nullptr);
+        FlexibleSparseValueWriter* valueWriter = nullptr);
 
     /// Given a Maya node \p mayaNode, inspect it for attributes tagged by
     /// the user for export to USD and write them onto \p usdPrim at time
@@ -167,7 +167,7 @@ struct UsdMayaWriteUtil
         const MObject&             mayaNode,
         const UsdPrim&             usdPrim,
         const UsdTimeCode&         usdTime,
-        EnhancedSparseValueWriter* valueWriter = nullptr);
+        FlexibleSparseValueWriter* valueWriter = nullptr);
 
     /// Writes all of the adaptor metadata from \p mayaObject onto the \p prim.
     /// Returns true if successful (even if there was nothing to export).
@@ -185,7 +185,7 @@ struct UsdMayaWriteUtil
         const UsdPrim&              prim,
         const UsdMayaJobExportArgs& jobExportArgs,
         const UsdTimeCode&          usdTime = UsdTimeCode::Default(),
-        EnhancedSparseValueWriter*  valueWriter = nullptr);
+        FlexibleSparseValueWriter*  valueWriter = nullptr);
 
     template <typename T>
     static size_t WriteSchemaAttributesToPrim(
@@ -193,7 +193,7 @@ struct UsdMayaWriteUtil
         const UsdPrim&              prim,
         const std::vector<TfToken>& attributeNames,
         const UsdTimeCode&          usdTime = UsdTimeCode::Default(),
-        EnhancedSparseValueWriter*  valueWriter = nullptr)
+        FlexibleSparseValueWriter*  valueWriter = nullptr)
     {
         return WriteSchemaAttributesToPrim(
             object, prim, TfType::Find<T>(), attributeNames, usdTime, valueWriter);
@@ -211,7 +211,7 @@ struct UsdMayaWriteUtil
         const TfType&               schemaType,
         const std::vector<TfToken>& attributeNames,
         const UsdTimeCode&          usdTime = UsdTimeCode::Default(),
-        EnhancedSparseValueWriter*  valueWriter = nullptr);
+        FlexibleSparseValueWriter*  valueWriter = nullptr);
 
     /// Authors class inherits on \p usdPrim.  \p inheritClassNames are
     /// specified as names (not paths).  For example, they should be
@@ -230,7 +230,7 @@ struct UsdMayaWriteUtil
         const UsdGeomPointInstancer& instancer,
         const size_t                 numPrototypes,
         const UsdTimeCode&           usdTime,
-        EnhancedSparseValueWriter*   valueWriter = nullptr);
+        FlexibleSparseValueWriter*   valueWriter = nullptr);
 
     /// \}
 
@@ -299,14 +299,14 @@ struct UsdMayaWriteUtil
     ///
     /// When this method is used to write attribute values,
     /// any redundant authoring of the default value or of time-samples
-    /// are avoided by using the utility class EnhancedSparseValueWriter,
+    /// are avoided by using the utility class FlexibleSparseValueWriter,
     /// if provided.
     template <typename T>
     static bool SetAttribute(
         const UsdAttribute&        attr,
         const T&                   value,
         const UsdTimeCode          time = UsdTimeCode::Default(),
-        EnhancedSparseValueWriter* valueWriter = nullptr)
+        FlexibleSparseValueWriter* valueWriter = nullptr)
     {
         return valueWriter ? valueWriter->SetAttribute(attr, VtValue(value), time)
                            : attr.Set(value, time);
@@ -322,7 +322,7 @@ struct UsdMayaWriteUtil
         const UsdAttribute&        attr,
         T*                         value,
         const UsdTimeCode          time = UsdTimeCode::Default(),
-        EnhancedSparseValueWriter* valueWriter = nullptr)
+        FlexibleSparseValueWriter* valueWriter = nullptr)
     {
         return valueWriter ? valueWriter->SetAttribute(attr, VtValue::Take(*value), time)
                            : attr.Set(*value, time);

@@ -26,20 +26,20 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// Enhanced spare value writer.
+/// Flexible spare value writer.
 ///
-/// The enhancement is that we can force to write default values at the default time.
+/// The flexibility is that we can force to write default values at the default time.
 /// This is necessary in some cases, for example to author a layer that will override
 /// a value back to its default. Another example is during edit-as-Maya / merge-to-USD
 /// where we need to author default values in case the original value was not the default.
-class MAYAUSD_CORE_PUBLIC EnhancedSparseValueWriter
+class MAYAUSD_CORE_PUBLIC FlexibleSparseValueWriter
 {
 public:
     /// Constructor taking a flag to decide if default values at default time should be written.
-    EnhancedSparseValueWriter(bool writeDefaults = true);
+    FlexibleSparseValueWriter(bool writeDefaults = true);
 
-    EnhancedSparseValueWriter(const EnhancedSparseValueWriter&) = delete;
-    EnhancedSparseValueWriter& operator=(const EnhancedSparseValueWriter&) = delete;
+    FlexibleSparseValueWriter(const FlexibleSparseValueWriter&) = delete;
+    FlexibleSparseValueWriter& operator=(const FlexibleSparseValueWriter&) = delete;
 
     /// Sets the value of \p attr to \p value at time \p time. The value
     /// is written sparsely, i.e., the default value is authored only if

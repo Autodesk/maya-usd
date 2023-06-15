@@ -16,10 +16,10 @@
 #ifndef PYMAYAUSDLIB_SPARSEVALUE_WRITER_H
 #define PYMAYAUSDLIB_SPARSEVALUE_WRITER_H
 
-#include <mayaUsd/fileio/enhancedSparseValueWriter.h>
+#include <mayaUsd/fileio/flexibleSparseValueWriter.h>
 
 // Python will create copies of classes to prevent dangerous access to ephemeral pointers. This does
-// not work well for USD's EnhancedSparseValueWriter because it builds up a memory of all previously
+// not work well for USD's FlexibleSparseValueWriter because it builds up a memory of all previously
 // set values, which means it must be passed at least by reference. We will wrap the USD class in a
 // way that allows seamless copies in Python land without duplicating the USD class.
 
@@ -27,14 +27,14 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 class MayaUsdLibSparseValueWriter
 {
-    EnhancedSparseValueWriter* _writer = nullptr;
+    FlexibleSparseValueWriter* _writer = nullptr;
 
 public:
     MayaUsdLibSparseValueWriter() = default;
 
     ~MayaUsdLibSparseValueWriter() = default;
 
-    MayaUsdLibSparseValueWriter(EnhancedSparseValueWriter* writer)
+    MayaUsdLibSparseValueWriter(FlexibleSparseValueWriter* writer)
         : _writer(writer)
     {
     }
@@ -63,7 +63,7 @@ public:
         }
     };
 
-    EnhancedSparseValueWriter* Get() const { return _writer; }
+    FlexibleSparseValueWriter* Get() const { return _writer; }
 };
 
 #endif

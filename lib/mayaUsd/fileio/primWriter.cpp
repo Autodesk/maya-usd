@@ -256,7 +256,7 @@ const UsdMayaJobExportArgs& UsdMayaPrimWriter::_GetExportArgs() const
     return _writeJobCtx.GetArgs();
 }
 
-EnhancedSparseValueWriter* UsdMayaPrimWriter::_GetSparseValueWriter() { return &_valueWriter; }
+FlexibleSparseValueWriter* UsdMayaPrimWriter::_GetSparseValueWriter() { return &_valueWriter; }
 
 void UsdMayaPrimWriter::MakeSingleSamplesStatic()
 {

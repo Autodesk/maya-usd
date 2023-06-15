@@ -20,7 +20,7 @@
 #define PXRUSDMAYA_JOINT_WRITE_UTILS_H
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/enhancedSparseValueWriter.h>
+#include <mayaUsd/fileio/flexibleSparseValueWriter.h>
 
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/tf/staticTokens.h>
@@ -170,7 +170,7 @@ MObject writeSkinningData(
     const MDagPath&            dagPath,
     SdfPath&                   skelPath,
     const bool                 stripNamespaces,
-    EnhancedSparseValueWriter* valueWriter);
+    FlexibleSparseValueWriter* valueWriter);
 } // namespace UsdMayaJointUtil
 
 PXR_NAMESPACE_CLOSE_SCOPE
