@@ -19,7 +19,7 @@ foreach(script ${TEST_SCRIPT_FILES})
         ENV
             "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
 
-            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}:${PXR_USD_LOCATION}/lib64:${PXR_USD_LOCATION}/lib"
+            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
             "IMAGE_DIFF_TOOL=${IMAGE_DIFF_TOOL}"
             # Maya uses a very old version of GLEW, so we need support for
             # pre-loading a newer version from elsewhere.
