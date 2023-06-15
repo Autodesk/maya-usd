@@ -107,6 +107,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (staticSingleSample) \
     (geomSidedness)   \
     (worldspace) \
+    (writeDefaults) \
     (customLayerData) \
     (metersPerUnit) \
     /* Special "none" token */ \
@@ -214,6 +215,8 @@ struct UsdMayaJobExportArgs
     const bool stripNamespaces;
     // Export root prims using their worldspace transform instead of local transform.
     const bool worldspace;
+    // Write default values at default time.
+    const bool writeDefaults;
 
     /// This is the path of the USD prim under which *all* prims will be
     /// authored.

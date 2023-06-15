@@ -84,7 +84,7 @@ bool UsdMayaTranslatorLight::WriteLightAttrs(
     const UsdTimeCode&         usdTime,
     const UsdLuxLightAPI&      usdLight,
     MFnLight&                  mayaLight,
-    UsdUtilsSparseValueWriter* valueWriter)
+    FlexibleSparseValueWriter* valueWriter)
 {
     MStatus status;
     float   intensity = mayaLight.intensity(&status);
@@ -203,7 +203,7 @@ bool UsdMayaTranslatorLight::WriteDirectionalLightAttrs(
     const UsdTimeCode&         usdTime,
     const UsdLuxDistantLight&  usdLight,
     MFnDirectionalLight&       mayaLight,
-    UsdUtilsSparseValueWriter* valueWriter)
+    FlexibleSparseValueWriter* valueWriter)
 {
     MStatus status;
     // UsdLuxDistantLight have an attribute "angle" that is similar
@@ -239,7 +239,7 @@ bool UsdMayaTranslatorLight::WritePointLightAttrs(
     const UsdTimeCode&         usdTime,
     const UsdLuxSphereLight&   usdLight,
     MFnPointLight&             mayaLight,
-    UsdUtilsSparseValueWriter* valueWriter)
+    FlexibleSparseValueWriter* valueWriter)
 {
     MStatus status;
     // A pointLight is simply a sphere light with a null radius.
@@ -280,7 +280,7 @@ bool UsdMayaTranslatorLight::WriteSpotLightAttrs(
     const UsdTimeCode&         usdTime,
     const UsdLuxSphereLight&   usdLight,
     MFnSpotLight&              mayaLight,
-    UsdUtilsSparseValueWriter* valueWriter)
+    FlexibleSparseValueWriter* valueWriter)
 {
     MStatus status;
     // A spot light is similar to point lights, but it has a shaping API for the spot cone
@@ -388,7 +388,7 @@ bool UsdMayaTranslatorLight::WriteAreaLightAttrs(
     const UsdTimeCode&         usdTime,
     const UsdLuxRectLight&     usdLight,
     MFnAreaLight&              mayaLight,
-    UsdUtilsSparseValueWriter* valueWriter)
+    FlexibleSparseValueWriter* valueWriter)
 {
     MStatus status;
 

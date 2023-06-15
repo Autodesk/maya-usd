@@ -53,7 +53,7 @@ void UsdMayaTransformWriter::_AnimChannel::setXformOp(
     const GfVec3d&             value,
     const GfMatrix4d&          matrix,
     const UsdTimeCode&         usdTime,
-    UsdUtilsSparseValueWriter* valueWriter) const
+    FlexibleSparseValueWriter* valueWriter) const
 {
     if (!op) {
         TF_CODING_ERROR("Xform op is not valid");
@@ -85,7 +85,7 @@ void UsdMayaTransformWriter::_ComputeXformOps(
     const UsdTimeCode&                         usdTime,
     const bool                                 eulerFilter,
     UsdMayaTransformWriter::_TokenRotationMap* previousRotates,
-    UsdUtilsSparseValueWriter*                 valueWriter,
+    FlexibleSparseValueWriter*                 valueWriter,
     double                                     distanceConversionScalar)
 {
     if (!TF_VERIFY(previousRotates)) {

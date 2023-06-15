@@ -17,6 +17,7 @@
 #define PXRUSDMAYA_ADAPTOR_H
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/flexibleSparseValueWriter.h>
 
 #include <pxr/base/tf/registryManager.h>
 #include <pxr/base/vt/value.h>
@@ -25,7 +26,6 @@
 #include <pxr/usd/sdf/primSpec.h>
 #include <pxr/usd/usd/common.h>
 #include <pxr/usd/usd/schemaRegistry.h>
-#include <pxr/usd/usdUtils/sparseValueWriter.h>
 
 #include <maya/MObjectHandle.h>
 #include <maya/MPlug.h>
@@ -267,7 +267,7 @@ public:
     virtual bool CopyToPrim(
         const UsdPrim&             prim,
         const UsdTimeCode&         usdTime,
-        UsdUtilsSparseValueWriter* valueWriter) const;
+        FlexibleSparseValueWriter* valueWriter) const;
 
     /// Creates and copies the adapted data from another USD Prim:
     /// Returns true if CopyFromPrim is implemented.
