@@ -626,6 +626,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     , preserveUVSetNames(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->preserveUVSetNames))
     , stripNamespaces(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->stripNamespaces))
     , worldspace(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->worldspace))
+    , writeDefaults(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->writeDefaults))
     , parentScope(extractAbsolutePath(userArgs, UsdMayaJobExportArgsTokens->parentScope))
     , renderLayerMode(extractToken(
           userArgs,
@@ -721,6 +722,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << "mergeTransformAndShape: " << TfStringify(exportArgs.mergeTransformAndShape) << std::endl
         << "normalizeNurbs: " << TfStringify(exportArgs.normalizeNurbs) << std::endl
         << "preserveUVSetNames: " << TfStringify(exportArgs.preserveUVSetNames) << std::endl
+        << "writeDefaults: " << TfStringify(exportArgs.writeDefaults) << std::endl
         << "parentScope: " << exportArgs.parentScope << std::endl
         << "renderLayerMode: " << exportArgs.renderLayerMode << std::endl
         << "rootKind: " << exportArgs.rootKind << std::endl
@@ -979,6 +981,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->mergeTransformAndShape] = true;
         d[UsdMayaJobExportArgsTokens->normalizeNurbs] = false;
         d[UsdMayaJobExportArgsTokens->preserveUVSetNames] = false;
+        d[UsdMayaJobExportArgsTokens->writeDefaults] = false;
         d[UsdMayaJobExportArgsTokens->parentScope] = std::string();
         d[UsdMayaJobExportArgsTokens->pythonPerFrameCallback] = std::string();
         d[UsdMayaJobExportArgsTokens->pythonPostCallback] = std::string();
@@ -1071,6 +1074,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->mergeTransformAndShape] = _boolean;
         d[UsdMayaJobExportArgsTokens->normalizeNurbs] = _boolean;
         d[UsdMayaJobExportArgsTokens->preserveUVSetNames] = _boolean;
+        d[UsdMayaJobExportArgsTokens->writeDefaults] = _boolean;
         d[UsdMayaJobExportArgsTokens->parentScope] = _string;
         d[UsdMayaJobExportArgsTokens->pythonPerFrameCallback] = _string;
         d[UsdMayaJobExportArgsTokens->pythonPostCallback] = _string;

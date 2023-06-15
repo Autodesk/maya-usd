@@ -43,6 +43,8 @@ MSyntax MayaUSDExportCommand::createSyntax()
     // These flags correspond to entries in
     // UsdMayaJobExportArgs::GetGuideDictionary.
     syntax.addFlag(
+        kWriteDefaults, UsdMayaJobExportArgsTokens->writeDefaults.GetText(), MSyntax::kBoolean);
+    syntax.addFlag(
         kMergeTransformAndShapeFlag,
         UsdMayaJobExportArgsTokens->mergeTransformAndShape.GetText(),
         MSyntax::kBoolean);

@@ -17,17 +17,14 @@
 #define PXRUSDMAYA_PRIM_WRITER_H
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/flexibleSparseValueWriter.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/utils/util.h>
 
-#include <pxr/base/vt/value.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
-#include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
-#include <pxr/usd/usd/timeCode.h>
-#include <pxr/usd/usdUtils/sparseValueWriter.h>
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
@@ -189,7 +186,7 @@ protected:
     /// attributes. Access to this is provided so that attribute authoring
     /// happening inside non-member functions can make use of it.
     MAYAUSD_CORE_PUBLIC
-    UsdUtilsSparseValueWriter* _GetSparseValueWriter();
+    FlexibleSparseValueWriter* _GetSparseValueWriter();
 
     UsdPrim                 _usdPrim;
     UsdMayaWriteJobContext& _writeJobCtx;
@@ -214,7 +211,7 @@ private:
     const SdfPath                           _usdPath;
     const UsdMayaUtil::MDagPathMap<SdfPath> _baseDagToUsdPaths;
 
-    UsdUtilsSparseValueWriter _valueWriter;
+    FlexibleSparseValueWriter _valueWriter;
 
     bool _exportVisibility;
     bool _hasAnimCurves;
