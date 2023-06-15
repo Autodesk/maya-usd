@@ -62,7 +62,8 @@ def GetStageFromProxyShapeAttr(attr):
     return(stageName, proxyStage)
 
 def RequireUsdPathsRelativeToMayaSceneFile():
-    return cmds.optionVar(exists="mayaUsd_MakePathRelativeToSceneFile") and cmds.optionVar(query="mayaUsd_MakePathRelativeToSceneFile")
+    opVarName = "mayaUsd_MakePathRelativeToSceneFile"
+    return cmds.optionVar(exists=opVarName) and cmds.optionVar(query=opVarName)
 
 def ProxyShapeFilePathChanged(filePathAttr, newFilePath=None):
     # Function called from the MayaUsd Proxy Shape template when the file path

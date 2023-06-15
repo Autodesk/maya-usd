@@ -122,6 +122,21 @@ getPathRelativeToLayerFile(const std::string& fileName, const PXR_NS::SdfLayerHa
 MAYAUSD_CORE_PUBLIC
 bool requireUsdPathsRelativeToMayaSceneFile();
 
+/*! \brief returns true if the USD file should be added as a reference, false for as a payload.
+ */
+MAYAUSD_CORE_PUBLIC
+bool wantReferenceCompositionArc();
+
+/*! \brief returns true if the USD the reference or payload should be prepend, else append.
+ */
+MAYAUSD_CORE_PUBLIC
+bool wantPrependCompositionArc();
+
+/*! \brief returns true if the USD payload should be immediately loaded.
+ */
+MAYAUSD_CORE_PUBLIC
+bool wantPayloadLoaded();
+
 /*! \brief prepares the UI used to save layers, so that the UI can potentially make the
            selected file name relative to the given directory.
  */
