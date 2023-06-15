@@ -140,10 +140,9 @@ def imageDiff(imagePath1, imagePath2, verbose, env, fail, failpercent, hardfail,
     For more information, see https://github.com/OpenImageIO/oiio/blob/cb6475c0dd72b9c49d862d98c6cd2da4509d5f37/src/doc/idiff.rst#L1
     """
     import platform
-    if platform.system() == 'Windows':
-        imageDiff = 'idiff.exe'
-    else:
-        imageDiff = os.environ['IMAGE_DIFF_TOOL']
+
+    imageDiff = os.environ['IMAGE_DIFF_TOOL']
+    
     cmdArgs = []
     if warn is not None:
         cmdArgs.extend(['-warn', str(warn)])

@@ -42,8 +42,7 @@ if(BUILD_MAYAUSD_LIBRARY)
             PYTHON_SCRIPT ${script}
             ENV
                 "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
-                "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}:${PXR_USD_LOCATION}/lib64:${PXR_USD_LOCATION}/lib"
-                "IMAGE_DIFF_TOOL=${IMAGE_DIFF_TOOL}"
+                "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
         )
 
         # Add a ctest label to these tests for easy filtering.
