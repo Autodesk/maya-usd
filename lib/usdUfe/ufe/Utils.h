@@ -18,6 +18,9 @@
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usdImaging/usdImaging/delegate.h>
+
 #include <ufe/path.h>
 #include <ufe/scene.h>
 #include <ufe/types.h>
@@ -34,6 +37,8 @@ UFE_NS_DEF
 namespace USDUFE_NS_DEF {
 
 // DCC specific accessor functions.
+typedef PXR_NS::UsdStageWeakPtr (*StageAccessorFn)(const Ufe::Path&);
+typedef Ufe::Path (*StagePathAccessorFn)(PXR_NS::UsdStageWeakPtr);
 typedef PXR_NS::UsdPrim (*UfePathToPrimFn)(const Ufe::Path&);
 typedef PXR_NS::UsdTimeCode (*TimeAccessorFn)(const Ufe::Path&);
 typedef bool (*IsAttributeLockedFn)(const PXR_NS::UsdAttribute& attr, std::string* errMsg);
@@ -41,6 +46,34 @@ typedef bool (*IsAttributeLockedFn)(const PXR_NS::UsdAttribute& attr, std::strin
 //------------------------------------------------------------------------------
 // Helper functions
 //------------------------------------------------------------------------------
+
+//! Set the DCC specific stage accessor function.
+//! It cannot be empty.
+//! \exception std::invalid_argument If fn is empty.
+USDUFE_PUBLIC
+void setStageAccessorFn(StageAccessorFn fn);
+
+//! Get USD stage corresponding to argument UFE path.
+USDUFE_PUBLIC
+PXR_NS::UsdStageWeakPtr getStage(const Ufe::Path& path);
+
+//! Set the DCC specific stage path accessor function.
+//! It cannot be empty.
+//! \exception std::invalid_argument If fn is empty.
+USDUFE_PUBLIC
+void setStagePathAccessorFn(StagePathAccessorFn fn);
+
+//! Return the ProxyShape node UFE path for the argument stage.
+USDUFE_PUBLIC
+Ufe::Path stagePath(PXR_NS::UsdStageWeakPtr stage);
+
+//! Get the UFE path segment corresponding to the argument USD path.
+//! If an instanceIndex is provided, the path segment for a point instance with
+//! that USD path and index is returned.
+USDUFE_PUBLIC
+Ufe::PathSegment usdPathToUfePathSegment(
+    const PXR_NS::SdfPath& usdPath,
+    int                    instanceIndex = PXR_NS::UsdImagingDelegate::ALL_INSTANCES);
 
 //! Get the UFE path representing just the USD prim for the argument UFE path.
 //! Any instance index component at the tail of the given path is removed from

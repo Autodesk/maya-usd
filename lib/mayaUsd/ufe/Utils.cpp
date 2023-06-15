@@ -105,31 +105,6 @@ Ufe::Path stagePath(UsdStageWeakPtr stage) { return g_StageMap.path(stage); }
 
 TfHashSet<UsdStageWeakPtr, TfHash> getAllStages() { return g_StageMap.allStages(); }
 
-Ufe::PathSegment usdPathToUfePathSegment(const SdfPath& usdPath, int instanceIndex)
-{
-    const Ufe::Rtid   usdRuntimeId = getUsdRunTimeId();
-    static const char separator = SdfPathTokens->childDelimiter.GetText()[0u];
-
-    if (usdPath.IsEmpty()) {
-        // Return an empty segment.
-        return Ufe::PathSegment(Ufe::PathSegment::Components(), usdRuntimeId, separator);
-    }
-
-    std::string pathString = usdPath.GetString();
-
-    if (instanceIndex >= 0) {
-        // Note here that we're taking advantage of the fact that identifiers
-        // in SdfPaths must be C/Python identifiers; that is, they must *not*
-        // begin with a digit. This means that when we see a path component at
-        // the end of a USD path segment that does begin with a digit, we can
-        // be sure that it represents an instance index and not a prim or other
-        // USD entity.
-        pathString += TfStringPrintf("%c%d", separator, instanceIndex);
-    }
-
-    return Ufe::PathSegment(pathString, usdRuntimeId, separator);
-}
-
 UsdPrim ufePathToPrim(const Ufe::Path& path)
 {
     // When called we do not make any assumption on whether or not the
@@ -927,7 +902,7 @@ void ReplicateExtrasToUSD::finalize(
                 usdPrimPath = usdPrimPath.ReplacePrefix(*oldPrefix, *newPrefix);
             }
 
-            auto                primPath = MayaUsd::ufe::usdPathToUfePathSegment(usdPrimPath);
+            auto                primPath = UsdUfe::usdPathToUfePathSegment(usdPrimPath);
             Ufe::Path::Segments segments { stagePath.getSegments()[0], primPath };
             Ufe::Path           ufePath(std::move(segments));
 

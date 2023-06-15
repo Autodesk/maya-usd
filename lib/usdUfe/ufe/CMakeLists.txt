@@ -4,6 +4,7 @@
 target_sources(${PROJECT_NAME}
     PRIVATE
         Global.cpp
+        StagesSubject.cpp
         UsdHierarchy.cpp
         UsdHierarchyHandler.cpp
         UsdRootChildHierarchy.cpp
@@ -14,6 +15,8 @@ target_sources(${PROJECT_NAME}
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
+            UsdCamera.cpp
+            UsdCameraHandler.cpp
             UsdObject3d.cpp
             UsdObject3dHandler.cpp
             UsdUndoableCommand.cpp
@@ -36,6 +39,7 @@ endif()
 
 set(HEADERS
     Global.h
+    StagesSubject.h
     UsdHierarchy.h
     UsdHierarchyHandler.h
     UsdRootChildHierarchy.h
@@ -46,6 +50,8 @@ set(HEADERS
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND HEADERS
+        UsdCamera.h
+        UsdCameraHandler.h
         UsdObject3d.h
         UsdObject3dHandler.h
         UsdUndoableCommand.h

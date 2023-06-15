@@ -4,11 +4,11 @@
 target_sources(${PROJECT_NAME} 
     PRIVATE
         Global.cpp
+        MayaStagesSubject.cpp
         ProxyShapeHandler.cpp
         ProxyShapeHierarchy.cpp
         ProxyShapeHierarchyHandler.cpp
         SetVariantSelectionCommand.cpp
-        StagesSubject.cpp
         UsdPointInstanceOrientationModifier.cpp
         UsdPointInstancePositionModifier.cpp
         UsdPointInstanceScaleModifier.cpp
@@ -41,8 +41,6 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdAttributeHolder.cpp
             UsdAttributes.cpp
             UsdAttributesHandler.cpp
-            UsdCamera.cpp
-            UsdCameraHandler.cpp
             UsdContextOps.cpp
             UsdContextOpsHandler.cpp
             UsdSetXformOpUndoableCommandBase.cpp
@@ -177,11 +175,11 @@ endif()
 
 set(HEADERS
     Global.h
+    MayaStagesSubject.h
     ProxyShapeHandler.h
     ProxyShapeHierarchy.h
     ProxyShapeHierarchyHandler.h
     SetVariantSelectionCommand.h
-    StagesSubject.h
     UsdPointInstanceModifierBase.h
     UsdPointInstanceOrientationModifier.h
     UsdPointInstancePositionModifier.h
@@ -213,8 +211,6 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdAttributeHolder.h
         UsdAttributes.h
         UsdAttributesHandler.h
-        UsdCamera.h
-        UsdCameraHandler.h
         UsdContextOps.h
         UsdContextOpsHandler.h
         UsdPointInstanceUndoableCommands.h

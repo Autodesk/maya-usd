@@ -15,13 +15,12 @@
 //
 #include "UsdCameraHandler.h"
 
-#include "Global.h"
-#include "UsdCamera.h"
 #include "pxr/usd/usdGeom/camera.h"
 
-#include <mayaUsd/ufe/Utils.h>
-
+#include <usdUfe/ufe/Global.h>
+#include <usdUfe/ufe/UsdCamera.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/Utils.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/sdf/path.h>
@@ -30,8 +29,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 UsdCameraHandler::UsdCameraHandler()
     : Ufe::CameraHandler()
@@ -89,5 +87,4 @@ Ufe::Selection UsdCameraHandler::find(
 }
 #endif
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

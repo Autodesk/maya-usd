@@ -19,6 +19,7 @@ find_path(USD_INCLUDE_DIR
         "USD Include directory"
 )
 
+# This component is optional.
 find_file(USD_GENSCHEMA
     NAMES
         usdGenSchema
@@ -142,14 +143,6 @@ if (USD_LIBRARY_DIR AND EXISTS "${USD_LIBRARY_DIR}/${USD_LIB_PREFIX}usdMtlx${CMA
     endif()
 endif()
 
-message(STATUS "USD include dir: ${USD_INCLUDE_DIR}")
-message(STATUS "USD library dir: ${USD_LIBRARY_DIR}")
-message(STATUS "USD version: ${USD_VERSION}")
-message(STATUS "Autodesk USD version: ${ADSK_USD_VERSION}")
-if(DEFINED USD_BOOST_VERSION)
-    message(STATUS "USD Boost::boost version: ${USD_BOOST_VERSION}")
-endif()
-
 include(FindPackageHandleStandardArgs)
 
 find_package_handle_standard_args(USD
@@ -157,7 +150,6 @@ find_package_handle_standard_args(USD
         PXR_USD_LOCATION
         USD_INCLUDE_DIR
         USD_LIBRARY_DIR
-        USD_GENSCHEMA
         USD_CONFIG_FILE
         USD_VERSION
         ADSK_USD_VERSION
@@ -165,3 +157,17 @@ find_package_handle_standard_args(USD
     VERSION_VAR
         USD_VERSION
 )
+
+if (USD_FOUND)
+    # This will follow a message "-- Found USD: <path> ..."
+    message(STATUS "   USD include dir: ${USD_INCLUDE_DIR}")
+    message(STATUS "   USD library dir: ${USD_LIBRARY_DIR}")
+    if (USD_GENSCHEMA)
+        message(STATUS "   usdGenSchema: ${USD_GENSCHEMA}")
+    endif()
+    message(STATUS "   USD version: ${USD_VERSION}")
+    message(STATUS "   Autodesk USD version: ${ADSK_USD_VERSION}")
+    if(DEFINED USD_BOOST_VERSION)
+        message(STATUS "   USD Boost::boost version: ${USD_BOOST_VERSION}")
+    endif()
+endif()
