@@ -1,0 +1,47 @@
+<fragment uiName="Float3ToFloatY" name="Float3ToFloatY" type="plumbing" class="ShadeFragment" version="1.0" feature_level="0">
+    <description>
+        Extracts the Y component of a 3D float vector.
+    </description>
+    <properties>
+        <float3 name="input"/>
+    </properties>
+    <values/>
+    <outputs>
+        <float name="output"/>
+    </outputs>
+    <implementation>
+        <implementation render="OGSRenderer" language="Cg" lang_version="2.1">
+            <function_name val="Float3ToFloatY"/>
+            <source>
+                <![CDATA[
+float Float3ToFloatY(float3 in_vec)
+{
+    return in_vec.y;
+}
+]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="GLSL" lang_version="3.0">
+            <function_name val="Float3ToFloatY"/>
+            <source>
+                <![CDATA[
+float Float3ToFloatY(vec3 in_vec)
+{
+    return in_vec.y;
+}
+]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="HLSL" lang_version="11.0">
+            <function_name val="Float3ToFloatY"/>
+            <source>
+                <![CDATA[
+float Float3ToFloatY(float3 in_vec)
+{
+    return in_vec.y;
+}
+]]>
+            </source>
+        </implementation>
+    </implementation>
+</fragment>

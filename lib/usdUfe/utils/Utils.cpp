@@ -24,7 +24,7 @@
 
 namespace USDUFE_NS_DEF {
 
-std::string SanitizeName(const std::string& name)
+std::string sanitizeName(const std::string& name)
 {
     return PXR_NS::TfStringReplace(name, ":", "_");
 }

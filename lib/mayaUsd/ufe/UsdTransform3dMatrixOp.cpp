@@ -22,6 +22,7 @@
 
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/UsdUndoableCommand.h>
+#include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
 
@@ -83,7 +84,7 @@ GfMatrix4d xformInv(
     ops.assign(begin, end);
 
     GfMatrix4d m { 1 };
-    if (!UsdGeomXformable::GetLocalTransformation(&m, ops, getTime(path))) {
+    if (!UsdGeomXformable::GetLocalTransformation(&m, ops, MayaUsd::ufe::getTime(path))) {
         TF_FATAL_ERROR(
             "Local transformation computation for item %s failed.", path.string().c_str());
     }
@@ -280,7 +281,7 @@ Ufe::Vector3d UsdTransform3dMatrixOp::scale() const { return getScale(matrix());
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dMatrixOp::translateCmd(double x, double y, double z)
 {
-    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))) {
+    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))) {
         return nullptr;
     }
 
@@ -289,7 +290,7 @@ UsdTransform3dMatrixOp::translateCmd(double x, double y, double z)
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3dMatrixOp::rotateCmd(double x, double y, double z)
 {
-    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"))) {
+    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"))) {
         return nullptr;
     }
 
@@ -298,7 +299,7 @@ Ufe::RotateUndoableCommand::Ptr UsdTransform3dMatrixOp::rotateCmd(double x, doub
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMatrixOp::scaleCmd(double x, double y, double z)
 {
-    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
+    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
         return nullptr;
     }
 

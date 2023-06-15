@@ -217,6 +217,8 @@ MSyntax MayaUSDExportCommand::createSyntax()
     syntax.makeFlagMultiUse(UsdMayaJobExportArgsTokens->customLayerData.GetText());
 
     // These are additional flags under our control.
+    syntax.addFlag(
+        kMetersPerUnit, UsdMayaJobExportArgsTokens->metersPerUnit.GetText(), MSyntax::kDouble);
     syntax.addFlag(kFrameRangeFlag, kFrameRangeFlagLong, MSyntax::kDouble, MSyntax::kDouble);
     syntax.addFlag(kFrameStrideFlag, kFrameStrideFlagLong, MSyntax::kDouble);
     syntax.addFlag(kFrameSampleFlag, kFrameSampleFlagLong, MSyntax::kDouble);

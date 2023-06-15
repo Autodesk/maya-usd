@@ -15,7 +15,9 @@
 //
 #include "Global.h"
 
+#include <usdUfe/ufe/UsdCameraHandler.h>
 #include <usdUfe/ufe/UsdHierarchyHandler.h>
+#include <usdUfe/ufe/UsdObject3dHandler.h>
 
 #include <pxr/base/tf/diagnostic.h>
 
@@ -42,11 +44,17 @@ static const std::string kUSDRunTimeName("USD");
 // with illegal 0 value.
 Ufe::Rtid g_USDRtid = 0;
 
+// Subject singleton for observation of all USD stages.
+StagesSubject::Ptr g_StagesSubject;
+
 //------------------------------------------------------------------------------
 // Functions
 //------------------------------------------------------------------------------
 
-Ufe::Rtid initialize(const Handlers& handlers)
+Ufe::Rtid initialize(
+    const DCCFunctions& dccFunctions,
+    const Handlers&     handlers,
+    StagesSubject::Ptr  ss /*= nullptr*/)
 {
     PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -54,11 +62,28 @@ Ufe::Rtid initialize(const Handlers& handlers)
     if (gRegistrationCount++ > 0)
         return g_USDRtid;
 
+    // Set the DCC specific functions required for the UsdUfe plugin to work.
+    UsdUfe::setStageAccessorFn(dccFunctions.stageAccessorFn);
+    UsdUfe::setStagePathAccessorFn(dccFunctions.stagePathAccessorFn);
+    UsdUfe::setUfePathToPrimFn(dccFunctions.ufePathToPrimFn);
+    UsdUfe::setTimeAccessorFn(dccFunctions.timeAccessorFn);
+
+    // Optional DCC specific functions.
+    if (dccFunctions.isAttributeLockedFn)
+        UsdUfe::setIsAttributeLockedFn(dccFunctions.isAttributeLockedFn);
+
+    // Store the input stages subject if provided, otherwise create the default one.
+    g_StagesSubject = ss ? ss : StagesSubject::create();
+
     // Copy all the input handlers into the Ufe handler struct and
     // create any default ones which are null.
     Ufe::RunTimeMgr::Handlers rtHandlers;
     rtHandlers.hierarchyHandler
         = handlers.hierarchyHandler ? handlers.hierarchyHandler : UsdHierarchyHandler::create();
+    rtHandlers.object3dHandler
+        = handlers.object3dHandler ? handlers.object3dHandler : UsdObject3dHandler::create();
+    rtHandlers.cameraHandler
+        = handlers.cameraHandler ? handlers.cameraHandler : UsdCameraHandler::create();
 
     g_USDRtid = Ufe::RunTimeMgr::instance().register_(kUSDRunTimeName, rtHandlers);
     TF_VERIFY(g_USDRtid != 0);
@@ -73,6 +98,8 @@ bool finalize(bool exiting)
 
     auto& runTimeMgr = Ufe::RunTimeMgr::instance();
     runTimeMgr.unregister(g_USDRtid);
+
+    g_StagesSubject.Reset();
 
     return true;
 }

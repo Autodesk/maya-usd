@@ -46,17 +46,10 @@ class SdfAssetPath;
 class MayaUsd_SchemasALMayaReference : public MayaUsd_SchemasMayaReference
 {
 public:
-#if PXR_VERSION >= 2108
     /// Compile time constant representing what kind of schema this class is.
     ///
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::ConcreteTyped;
-#else
-    /// Compile time constant representing what kind of schema this class is.
-    ///
-    /// \sa UsdSchemaType
-    static const UsdSchemaType schemaType = UsdSchemaType::ConcreteTyped;
-#endif
 
     /// Construct a MayaUsd_SchemasALMayaReference on UsdPrim \p prim .
     /// Equivalent to MayaUsd_SchemasALMayaReference::Get(prim.GetStage(), prim.GetPath())
@@ -123,19 +116,11 @@ public:
     static MayaUsd_SchemasALMayaReference Define(const UsdStagePtr& stage, const SdfPath& path);
 
 protected:
-#if PXR_VERSION >= 2108
     /// Returns the kind of schema this class belongs to.
     ///
     /// \sa UsdSchemaKind
     MAYAUSD_SCHEMAS_API
     UsdSchemaKind _GetSchemaKind() const override;
-#else
-    /// Returns the type of schema this class belongs to.
-    ///
-    /// \sa UsdSchemaType
-    MAYAUSD_SCHEMAS_API
-    UsdSchemaType _GetSchemaType() const override;
-#endif
 
 private:
     // needs to invoke _GetStaticTfType.

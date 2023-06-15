@@ -14,17 +14,6 @@
 // limitations under the License.
 //
 
-// GLEW must be included early (for core USD < 21.02), but we need pxr.h first
-// so that PXR_VERSION has the correct value.
-// We also disable clang-format for this block, since otherwise v10.0.0 fails
-// to recognize that "utils.h" is the related header.
-// clang-format off
-#include <pxr/pxr.h>
-#if PXR_VERSION < 2102
-#include <pxr/imaging/glf/glew.h>
-#endif
-// clang-format on
-
 #include "utils.h"
 
 #include "renderGlobals.h"
@@ -34,6 +23,7 @@
 #include <pxr/imaging/hd/rendererPlugin.h>
 #include <pxr/imaging/hd/rendererPluginRegistry.h>
 #include <pxr/usdImaging/usdImagingGL/engine.h>
+
 #include <maya/MGlobal.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -64,9 +54,6 @@ MtohInitializeRenderPlugins()
 
             // XXX: As of 22.02, this needs to be called for Storm
             if (pluginDesc.id == MtohTokens->HdStormRendererPlugin) {
-#if PXR_VERSION < 2102
-                GlfGlewInit();
-#endif
                 GlfContextCaps::InitInstance();
             }
 

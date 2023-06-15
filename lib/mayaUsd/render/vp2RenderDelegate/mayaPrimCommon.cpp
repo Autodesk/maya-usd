@@ -913,12 +913,7 @@ void MayaUsdRPrim::_SyncSharedData(
     // in the shared data structure based on current Hydra data
     _RenderTag() = renderTag;
 #else
-    if (*dirtyBits
-        & (HdChangeTracker::DirtyRenderTag
-#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
-           | HdChangeTracker::DirtyVisibility
-#endif
-           )) {
+    if (*dirtyBits & (HdChangeTracker::DirtyRenderTag)) {
         _RenderTag() = renderTag;
     }
 #endif
@@ -958,12 +953,7 @@ bool MayaUsdRPrim::_SyncCommon(
     HdRenderIndex& renderIndex = delegate->GetRenderIndex();
     if (!drawScene.DrawRenderTag(renderIndex.GetRenderTag(id))) {
         _HideAllDrawItems(curRepr);
-        *dirtyBits &= ~(
-            HdChangeTracker::DirtyRenderTag
-#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
-            | HdChangeTracker::DirtyVisibility
-#endif
-        );
+        *dirtyBits &= ~(HdChangeTracker::DirtyRenderTag);
         return false;
     }
 

@@ -15,19 +15,17 @@
 //
 #pragma once
 
-#include <mayaUsd/base/api.h>
-
+#include <usdUfe/base/api.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
 
 #include <pxr/usd/usd/prim.h>
 
 #include <ufe/undoableCommand.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //! \brief UsdUndoVisibleCommand
-class MAYAUSD_CORE_PUBLIC UsdUndoVisibleCommand : public Ufe::UndoableCommand
+class USDUFE_PUBLIC UsdUndoVisibleCommand : public Ufe::UndoableCommand
 {
 public:
     typedef std::shared_ptr<UsdUndoVisibleCommand> Ptr;
@@ -58,5 +56,4 @@ private:
 
 }; // UsdUndoVisibleCommand
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

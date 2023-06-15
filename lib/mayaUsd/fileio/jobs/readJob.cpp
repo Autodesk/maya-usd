@@ -428,6 +428,18 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         topImportedPaths.insert(usdRootPrim.GetPath());
     }
 
+    MSdfToDagMap sdfToDagMap;
+    for (const UsdPrim prim : stage->TraverseAll()) {
+        SdfPath     primSdfPath = prim.GetPath();
+        std::string key = primSdfPath.GetString();
+        MObject     obj;
+        if (TfMapLookup(mNewNodeRegistry, key, &obj)) {
+            if (obj.hasFn(MFn::kDagNode)) {
+                sdfToDagMap[primSdfPath] = MDagPath::getAPathTo(obj);
+            }
+        }
+    }
+
     TF_FOR_ALL(pathsIter, topImportedPaths)
     {
         std::string key = pathsIter->GetString();
@@ -440,11 +452,13 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
             }
         }
     }
+
     progressBar.advance();
 
     // NOTE: (yliangsiew) Look into a registry of post-import "chasers" here
     // and call `PostImport` on each of them.
     this->mImportChasers.clear();
+
     UsdMayaImportChaserRegistry::FactoryContext ctx(
         predicate, stage, currentAddedDagPaths, fromSdfPaths, this->mArgs);
     for (const std::string& importChaserName : this->mArgs.chaserNames) {
@@ -458,6 +472,7 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     progressBar.advance();
 
     for (const UsdMayaImportChaserRefPtr& chaser : this->mImportChasers) {
+        chaser->SetSdfToDagMap(sdfToDagMap);
         bool bStat
             = chaser->PostImport(predicate, stage, currentAddedDagPaths, fromSdfPaths, this->mArgs);
         if (!bStat) {
@@ -540,12 +555,7 @@ void UsdMaya_ReadJob::_DoImportInstanceIt(
     if (!primIt.IsPostVisit()) {
         return;
     }
-    const UsdPrim prototype =
-#if PXR_VERSION < 2011
-        prim.GetMaster();
-#else
-        prim.GetPrototype();
-#endif
+    const UsdPrim prototype = prim.GetPrototype();
     if (!prototype) {
         return;
     }
@@ -650,11 +660,7 @@ bool UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootP
         UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
         readCtx.SetTimeSampleMultiplier(mTimeSampleMultiplier);
 
-#if PXR_VERSION < 2011
-        auto prototypes = usdRootPrim.GetStage()->GetMasters();
-#else
-        auto prototypes = usdRootPrim.GetStage()->GetPrototypes();
-#endif
+        auto                          prototypes = usdRootPrim.GetStage()->GetPrototypes();
         const int                     loopSize = prototypes.size();
         MayaUsd::ProgressBarLoopScope prototypesLoop(loopSize);
         for (const auto& prototype : prototypes) {

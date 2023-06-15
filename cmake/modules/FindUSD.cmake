@@ -19,6 +19,7 @@ find_path(USD_INCLUDE_DIR
         "USD Include directory"
 )
 
+# This component is optional.
 find_file(USD_GENSCHEMA
     NAMES
         usdGenSchema
@@ -47,24 +48,14 @@ get_filename_component(PXR_USD_LOCATION "${USD_CONFIG_FILE}" DIRECTORY)
 
 include(${USD_CONFIG_FILE})
 
-if(DEFINED PXR_VERSION)
-    # Starting in core USD 21.05, pxrConfig.cmake provides the various USD
-    # version numbers as CMake variables, in which case PXR_VERSION should have
-    # been defined, along with the major, minor, and patch version numbers, so
-    # there is no need to extract them from the pxr/pxr.h header file anymore.
-    # The only thing we need to do is assemble the USD_VERSION version string.
-    set(USD_VERSION ${PXR_MAJOR_VERSION}.${PXR_MINOR_VERSION}.${PXR_PATCH_VERSION})
-elseif(USD_INCLUDE_DIR AND EXISTS "${USD_INCLUDE_DIR}/pxr/pxr.h")
-    foreach(_usd_comp MAJOR MINOR PATCH)
-        file(STRINGS
-            "${USD_INCLUDE_DIR}/pxr/pxr.h"
-            _usd_tmp
-            REGEX "#define PXR_${_usd_comp}_VERSION .*$")
-        string(REGEX MATCHALL "[0-9]+" USD_${_usd_comp}_VERSION ${_usd_tmp})
-    endforeach()
-    set(USD_VERSION ${USD_MAJOR_VERSION}.${USD_MINOR_VERSION}.${USD_PATCH_VERSION})
-    math(EXPR PXR_VERSION "${USD_MAJOR_VERSION} * 10000 + ${USD_MINOR_VERSION} * 100 + ${USD_PATCH_VERSION}")
+if(NOT DEFINED PXR_VERSION)
+    message(FATAL_ERROR "Expected PXR_VERSION defined in pxrConfig.cmake")
 endif()
+# Starting in core USD 21.05, pxrConfig.cmake provides the various USD
+# version numbers as CMake variables, in which case PXR_VERSION should have
+# been defined, along with the major, minor, and patch version numbers.
+# The only thing we need to do is assemble the USD_VERSION version string.
+set(USD_VERSION ${PXR_MAJOR_VERSION}.${PXR_MINOR_VERSION}.${PXR_PATCH_VERSION})
 
 # Set special Autodesk USD version. We use this to communicate whether or not
 # there are extra patches on-top of the normal USD build.
@@ -81,22 +72,13 @@ if (USD_VERSION VERSION_LESS "0.23.02")
     endif()
 endif()
 
-# Note that on Windows with USD <= 0.19.11, USD_LIB_PREFIX should be left at
-# default (or set to empty string), even if PXR_LIB_PREFIX was specified when
-# building core USD, due to a bug.
-
-# On all other platforms / versions, it should match the PXR_LIB_PREFIX used
+# USD_LIB_PREFIX should match the PXR_LIB_PREFIX used
 # for building USD (and shouldn't need to be touched if PXR_LIB_PREFIX was not
 # used / left at it's default value). Starting with USD 21.11, the default
 # value for PXR_LIB_PREFIX was changed to include "usd_".
 
-if (USD_VERSION VERSION_GREATER_EQUAL "0.21.11")
-    set(USD_LIB_PREFIX "${CMAKE_SHARED_LIBRARY_PREFIX}usd_"
-        CACHE STRING "Prefix of USD libraries; generally matches the PXR_LIB_PREFIX used when building core USD")
-else()
-    set(USD_LIB_PREFIX ${CMAKE_SHARED_LIBRARY_PREFIX}
-        CACHE STRING "Prefix of USD libraries; generally matches the PXR_LIB_PREFIX used when building core USD")
-endif()
+set(USD_LIB_PREFIX "${CMAKE_SHARED_LIBRARY_PREFIX}usd_"
+    CACHE STRING "Prefix of USD libraries; generally matches the PXR_LIB_PREFIX used when building core USD")
 
 if (WIN32)
     # ".lib" on Windows
@@ -161,14 +143,6 @@ if (USD_LIBRARY_DIR AND EXISTS "${USD_LIBRARY_DIR}/${USD_LIB_PREFIX}usdMtlx${CMA
     endif()
 endif()
 
-message(STATUS "USD include dir: ${USD_INCLUDE_DIR}")
-message(STATUS "USD library dir: ${USD_LIBRARY_DIR}")
-message(STATUS "USD version: ${USD_VERSION}")
-message(STATUS "Autodesk USD version: ${ADSK_USD_VERSION}")
-if(DEFINED USD_BOOST_VERSION)
-    message(STATUS "USD Boost::boost version: ${USD_BOOST_VERSION}")
-endif()
-
 include(FindPackageHandleStandardArgs)
 
 find_package_handle_standard_args(USD
@@ -176,7 +150,6 @@ find_package_handle_standard_args(USD
         PXR_USD_LOCATION
         USD_INCLUDE_DIR
         USD_LIBRARY_DIR
-        USD_GENSCHEMA
         USD_CONFIG_FILE
         USD_VERSION
         ADSK_USD_VERSION
@@ -184,3 +157,17 @@ find_package_handle_standard_args(USD
     VERSION_VAR
         USD_VERSION
 )
+
+if (USD_FOUND)
+    # This will follow a message "-- Found USD: <path> ..."
+    message(STATUS "   USD include dir: ${USD_INCLUDE_DIR}")
+    message(STATUS "   USD library dir: ${USD_LIBRARY_DIR}")
+    if (USD_GENSCHEMA)
+        message(STATUS "   usdGenSchema: ${USD_GENSCHEMA}")
+    endif()
+    message(STATUS "   USD version: ${USD_VERSION}")
+    message(STATUS "   Autodesk USD version: ${ADSK_USD_VERSION}")
+    if(DEFINED USD_BOOST_VERSION)
+        message(STATUS "   USD Boost::boost version: ${USD_BOOST_VERSION}")
+    endif()
+endif()

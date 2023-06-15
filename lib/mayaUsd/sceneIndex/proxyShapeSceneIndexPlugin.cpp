@@ -22,8 +22,14 @@
 #include <mayaUsd/ufe/Global.h>
 #endif
 
+#include <usdUfe/ufe/Utils.h>
+
 #include <pxr/imaging/hd/flatteningSceneIndex.h>
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 51
+#include <pxr/imaging/hd/materialBindingsSchema.h>
+#else
 #include <pxr/imaging/hd/materialBindingSchema.h>
+#endif
 #include <pxr/imaging/hd/retainedDataSource.h>
 #include <pxr/imaging/hd/sceneIndexPlugin.h>
 #include <pxr/imaging/hd/sceneIndexPluginRegistry.h>
@@ -133,7 +139,11 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
             //  Used for the HdFlatteningSceneIndex to flatten material bindings
             static const HdContainerDataSourceHandle flatteningInputArgs
                 = HdRetainedContainerDataSource::New(
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 51
+                    HdMaterialBindingsSchema::GetSchemaToken(),
+#else
                     HdMaterialBindingSchemaTokens->materialBinding,
+#endif
                     HdRetainedTypedSampledDataSource<bool>::New(true));
 
             // Convert USD prims to rprims consumed by Hydra
@@ -203,8 +213,8 @@ Ufe::Path MayaUsdProxyShapeSceneIndex::InterpretRprimPath(
         MStatus  status;
         MDagPath dagPath(
             MDagPath::getAPathTo(proxyShapeSceneIndex->_proxyShape->thisMObject(), &status));
-        return Ufe::Path({ MayaUsd::ufe::dagPathToPathSegment(dagPath),
-                           MayaUsd::ufe::usdPathToUfePathSegment(path) });
+        return Ufe::Path(
+            { MayaUsd::ufe::dagPathToPathSegment(dagPath), UsdUfe::usdPathToUfePathSegment(path) });
     }
 
     return Ufe::Path();
@@ -215,24 +225,21 @@ void MayaUsdProxyShapeSceneIndex::StageSet(const MayaUsdProxyStageSetNotice& not
 void MayaUsdProxyShapeSceneIndex::ObjectsChanged(
     const MayaUsdProxyStageObjectsChangedNotice& notice)
 {
-    // MAYA-126804 TODO: This should be enough to trigger dirty notifications being send
-    // when a matrix is changed. However this is not working due missing
-    // UsdImagingMeshAdapter::Invalidate implementation. This is not part of USD v22.11 however has
-    // been fixed in later versions.
     _usdImagingStageSceneIndex->ApplyPendingUpdates();
 }
 
 void MayaUsdProxyShapeSceneIndex::Populate()
 {
     if (!_populated) {
-        if (auto stage = _proxyShape->getUsdStage()) {
+        auto stage = _proxyShape->getUsdStage();
+        if (TF_VERIFY(stage, "Unable to fetch a valid USDStage.")) {
+            _usdImagingStageSceneIndex->SetStage(stage);
             // Check whether the pseudo-root has children
             if (!stage->GetPseudoRoot().GetChildren().empty())
             // MAYA-126641: Upon first call to MayaUsdProxyShapeBase::getUsdStage, the stage may be
             // empty. Do not mark the scene index as _populated, until stage is full. This is taken
             // care of inside MayaUsdProxyShapeSceneIndex::_StageSet callback.
             {
-                _usdImagingStageSceneIndex->SetStage(stage);
 #if PXR_VERSION < 2305
                 // In most recent USD, Populate is called from within SetStage, so there is no need
                 // to callsites to call it explicitly

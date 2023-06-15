@@ -15,12 +15,11 @@
 //
 #include "ProxyShapeCameraHandler.h"
 
-#include "Global.h"
-#include "UsdCameraHandler.h"
 #include "pxr/usd/usdGeom/camera.h"
 
 #include <mayaUsd/ufe/Utils.h>
 
+#include <usdUfe/ufe/UsdCameraHandler.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/sdf/path.h>

@@ -123,11 +123,7 @@ public:
 
     TfToken       GetMaterialBindingPurpose() const override;
     TfTokenVector GetShaderSourceTypes() const override;
-#if PXR_VERSION < 2105
-    TfToken GetMaterialNetworkSelector() const override;
-#else
     TfTokenVector GetMaterialRenderContexts() const override;
-#endif
 
     bool IsPrimvarFilteringNeeded() const override { return true; }
 

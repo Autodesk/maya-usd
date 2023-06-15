@@ -28,14 +28,15 @@
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/OpUndoItemMuting.h>
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/dynamicAttribute.h>
 #include <mayaUsd/utils/progressBarScope.h>
 #include <mayaUsd/utils/traverseLayer.h>
+#include <mayaUsd/utils/trieVisitor.h>
 
 #include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 
 #include <pxr/base/tf/diagnostic.h>
@@ -59,6 +60,7 @@
 #include <ufe/path.h>
 #include <ufe/pathString.h>
 #include <ufe/sceneNotification.h>
+#include <ufe/trie.imp.h>
 
 #include <functional>
 #include <tuple>
@@ -616,7 +618,7 @@ UsdMayaPrimUpdaterSharedPtr createUpdater(
     // path to form a proper UFE path.
     auto                psPath = MayaUsd::ufe::stagePath(context.GetUsdStage());
     Ufe::Path::Segments segments { psPath.getSegments()[0],
-                                   MayaUsd::ufe::usdPathToUfePathSegment(dstPath) };
+                                   UsdUfe::usdPathToUfePathSegment(dstPath) };
     Ufe::Path           ufePath(std::move(segments));
 
     // Get the Maya object corresponding to the SdfPath.  As of 19-Oct-2021,
@@ -1594,7 +1596,7 @@ void PrimUpdaterManager::onProxyContentChanged(
             != UsdMayaPrimUpdater::Supports::AutoPull)
             return false;
 
-        const Ufe::PathSegment pathSegment = MayaUsd::ufe::usdPathToUfePathSegment(prim.GetPath());
+        const Ufe::PathSegment pathSegment = UsdUfe::usdPathToUfePathSegment(prim.GetPath());
         const Ufe::Path        path = proxyShapeUfePath + pathSegment;
 
         auto factory = std::get<UpdaterFactoryFn>(registryItem);
@@ -1810,6 +1812,29 @@ bool PrimUpdaterManager::hasPulledPrims() const
 {
     MObject pullRoot = findPullRoot();
     return !pullRoot.isNull();
+}
+
+PrimUpdaterManager::PulledPrimPaths PrimUpdaterManager::getPulledPrimPaths() const
+{
+    PulledPrimPaths pulledPaths;
+
+#ifdef HAS_ORPHANED_NODES_MANAGER
+
+    if (!_orphanedNodesManager)
+        return pulledPaths;
+
+    const OrphanedNodesManager::PulledPrims& pulledPrims = _orphanedNodesManager->getPulledPrims();
+    MayaUsd::TrieVisitor<OrphanedNodesManager::PullVariantInfo>::visit(
+        pulledPrims,
+        [&pulledPaths](
+            const Ufe::Path&                                            path,
+            const Ufe::TrieNode<OrphanedNodesManager::PullVariantInfo>& node) {
+            pulledPaths.emplace_back(path, node.data().editedAsMayaRoot);
+        });
+
+#endif
+
+    return pulledPaths;
 }
 
 #ifdef HAS_ORPHANED_NODES_MANAGER

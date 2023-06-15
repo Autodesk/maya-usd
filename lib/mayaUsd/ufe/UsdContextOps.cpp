@@ -21,12 +21,10 @@
 #include <mayaUsd/commands/PullPushCommands.h>
 #include <mayaUsd/fileio/primUpdaterManager.h>
 #endif
-#if PXR_VERSION >= 2108
-#include <mayaUsd/ufe/UsdUndoMaterialCommands.h>
-#endif
 #include <mayaUsd/nodes/proxyShapeStageExtraData.h>
+#include <mayaUsd/ufe/MayaUsdObject3d.h>
 #include <mayaUsd/ufe/SetVariantSelectionCommand.h>
-#include <mayaUsd/ufe/UsdObject3d.h>
+#include <mayaUsd/ufe/UsdUndoMaterialCommands.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
@@ -46,6 +44,7 @@
 #include <pxr/usd/sdr/shaderNode.h>
 #include <pxr/usd/sdr/shaderProperty.h>
 #include <pxr/usd/usd/common.h>
+#include <pxr/usd/usd/payloads.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/references.h>
 #include <pxr/usd/usd/stage.h>
@@ -137,7 +136,6 @@ static constexpr char    kDuplicateAsMayaLabel[] = "Duplicate As Maya Data";
 static constexpr char    kAddMayaReferenceItem[] = "Add Maya Reference";
 static constexpr char    kAddMayaReferenceLabel[] = "Add Maya Reference...";
 #endif
-#if PXR_VERSION >= 2108
 static constexpr char kBindMaterialToSelectionItem[] = "Assign Material to Selection";
 static constexpr char kBindMaterialToSelectionLabel[] = "Assign Material to Selection";
 #ifdef UFE_V4_FEATURES_AVAILABLE
@@ -148,9 +146,9 @@ static constexpr char kAddNewMaterialLabel[] = "Add New Material";
 static constexpr char kAssignExistingMaterialItem[] = "Assign Existing Material";
 static constexpr char kAssignExistingMaterialLabel[] = "Assign Existing Material";
 #endif
-#endif
+static constexpr char kAddRefOrPayloadLabel[] = "Add USD Reference/Payload...";
+static constexpr char kAddRefOrPayloadItem[] = "AddReferenceOrPayload";
 
-#if PXR_VERSION >= 2008
 static constexpr char kAllRegisteredTypesItem[] = "All Registered";
 static constexpr char kAllRegisteredTypesLabel[] = "All Registered";
 
@@ -185,7 +183,6 @@ static const std::vector<std::string> kSchemaNiceNames = {
     "", // Skip legacy AL schemas
 };
 // clang-format on
-#endif
 
 //! \brief Change the cursor to wait state on construction and restore it on destruction.
 struct WaitCursor
@@ -471,7 +468,7 @@ const char* _selectUSDFileScript()
         {
             string $result[] = `fileDialog2
                 -fileMode 1
-                -caption "Add Reference to USD Prim"
+                -caption "Add Reference/Payload to Prim"
                 -fileFilter "USD Files (%s);;%s"
                 -optionsUICreate addUSDReferenceCreateUi
                 -optionsUIInit addUSDReferenceInitUi
@@ -527,12 +524,11 @@ ClearAllUSDReferencesConfirm();
 class AddUsdReferenceUndoableCommand : public Ufe::UndoableCommand
 {
 public:
-    static const std::string commandName;
-
-    AddUsdReferenceUndoableCommand(const UsdPrim& prim, const std::string& filePath)
+    AddUsdReferenceUndoableCommand(const UsdPrim& prim, const std::string& filePath, bool prepend)
         : _prim(prim)
         , _sdfRef()
         , _filePath(filePath)
+        , _listPos(prepend ? UsdListPositionBackOfPrependList : UsdListPositionBackOfAppendList)
     {
     }
 
@@ -553,16 +549,57 @@ public:
                 _sdfRef = SdfReference(_filePath);
             }
             UsdReferences primRefs = _prim.GetReferences();
-            primRefs.AddReference(_sdfRef);
+            primRefs.AddReference(_sdfRef, _listPos);
         }
     }
 
 private:
-    UsdPrim           _prim;
-    SdfReference      _sdfRef;
-    const std::string _filePath;
+    UsdPrim         _prim;
+    SdfReference    _sdfRef;
+    std::string     _filePath;
+    UsdListPosition _listPos;
 };
-const std::string AddUsdReferenceUndoableCommand::commandName("Add USD Reference...");
+
+class AddUsdPayloadUndoableCommand : public Ufe::UndoableCommand
+{
+public:
+    AddUsdPayloadUndoableCommand(const UsdPrim& prim, const std::string& filePath, bool prepend)
+        : _prim(prim)
+        , _sdfPayload()
+        , _filePath(filePath)
+        , _listPos(prepend ? UsdListPositionBackOfPrependList : UsdListPositionBackOfAppendList)
+    {
+    }
+
+    void undo() override
+    {
+        if (!_prim.IsValid())
+            return;
+
+        UsdPayloads primPayloads = _prim.GetPayloads();
+        primPayloads.RemovePayload(_sdfPayload);
+    }
+
+    void redo() override
+    {
+        if (!_prim.IsValid())
+            return;
+
+        if (TfStringEndsWith(_filePath, ".mtlx")) {
+            _sdfPayload = SdfPayload(_filePath, SdfPath("/MaterialX"));
+        } else {
+            _sdfPayload = SdfPayload(_filePath);
+        }
+        UsdPayloads primPayloads = _prim.GetPayloads();
+        primPayloads.AddPayload(_sdfPayload, _listPos);
+    }
+
+private:
+    UsdPrim         _prim;
+    SdfPayload      _sdfPayload;
+    std::string     _filePath;
+    UsdListPosition _listPos;
+};
 
 class ClearAllReferencesUndoableCommand : public Ufe::UndoableCommand
 {
@@ -596,13 +633,7 @@ _computeLoadAndUnloadItems(const UsdPrim& prim)
 {
     std::vector<std::pair<const char* const, const char* const>> itemLabelPairs;
 
-    const bool isInPrototype =
-#if PXR_VERSION >= 2011
-        prim.IsInPrototype();
-#else
-        prim.IsInMaster();
-#endif
-
+    const bool isInPrototype = prim.IsInPrototype();
     if (!prim.IsActive() || isInPrototype) {
         return itemLabelPairs;
     }
@@ -663,7 +694,7 @@ _computeLoadAndUnloadItems(const UsdPrim& prim)
 
     return itemLabelPairs;
 }
-#if PXR_VERSION >= 2008
+
 //! \brief Get groups of concrete schema prim types to list dynamically in the UI
 static const std::vector<MayaUsd::ufe::SchemaTypeGroup> getConcretePrimTypes(bool sorted)
 {
@@ -725,23 +756,12 @@ static const std::vector<MayaUsd::ufe::SchemaTypeGroup> getConcretePrimTypes(boo
 
     return groups;
 }
-#endif
 
 bool sceneItemSupportsShading(const Ufe::SceneItem::Ptr& sceneItem)
 {
-#if PXR_VERSION >= 2108
     if (MayaUsd::ufe::BindMaterialUndoableCommand::CompatiblePrim(sceneItem)) {
         return true;
     }
-#else
-    auto usdItem = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(sceneItem);
-    if (!usdItem) {
-        return false;
-    }
-    if (PXR_NS::UsdShadeMaterialBindingAPI(usdItem->prim())) {
-        return true;
-    }
-#endif
     return false;
 }
 
@@ -777,9 +797,7 @@ void executeEditAsMaya(const Ufe::Path& path)
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-#if PXR_VERSION >= 2008
 std::vector<SchemaTypeGroup> UsdContextOps::schemaTypeGroups = {};
-#endif
 
 UsdContextOps::UsdContextOps(const UsdSceneItem::Ptr& item)
     : Ufe::ContextOps()
@@ -809,12 +827,10 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
 {
     Ufe::ContextOps::Items items;
     if (itemPath.empty()) {
-#if PXR_VERSION >= 2108
         if (fItem->prim().IsA<UsdShadeMaterial>() && selectionSupportsShading()) {
             items.emplace_back(kBindMaterialToSelectionItem, kBindMaterialToSelectionLabel);
             items.emplace_back(Ufe::ContextItem::kSeparator);
         }
-#endif
 #ifdef WANT_QT_BUILD
         // Top-level item - USD Layer editor (for all context op types).
         // Only available when building with Qt enabled.
@@ -877,14 +893,11 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
         // Top level item - Add New Prim (for all context op types).
         items.emplace_back(kUSDAddNewPrimItem, kUSDAddNewPrimLabel, Ufe::ContextItem::kHasChildren);
         if (!fIsAGatewayType) {
-            items.emplace_back(
-                AddUsdReferenceUndoableCommand::commandName,
-                AddUsdReferenceUndoableCommand::commandName);
+            items.emplace_back(kAddRefOrPayloadItem, kAddRefOrPayloadLabel);
             items.emplace_back(
                 ClearAllReferencesUndoableCommand::commandName,
                 ClearAllReferencesUndoableCommand::commandName);
         }
-#if PXR_VERSION >= 2108
         if (!fIsAGatewayType) {
             // Top level item - Bind/unbind existing materials
             bool materialSeparatorsAdded = false;
@@ -945,7 +958,6 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
             }
 #endif
         }
-#endif
     } else {
         if (itemPath[0] == kUSDVariantSetsItem) {
             UsdVariantSets           varSets = prim().GetVariantSets();
@@ -991,7 +1003,6 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                 items.emplace_back(
                     kUSDCylinderPrimItem, kUSDCylinderPrimLabel, kUSDCylinderPrimImage);
                 items.emplace_back(kUSDSpherePrimItem, kUSDSpherePrimLabel, kUSDSpherePrimImage);
-#if PXR_VERSION >= 2008
                 items.emplace_back(Ufe::ContextItem::kSeparator);
                 items.emplace_back(
                     kAllRegisteredTypesItem,
@@ -1023,11 +1034,8 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                         }
                     }
                 }
-#endif
-            } // If USD >= 20.08, submenus end here. Otherwise end of Root Setup
-        }
-#if PXR_VERSION >= 2108
-        else if (itemPath[0] == BindMaterialUndoableCommand::commandName) {
+            }
+        } else if (itemPath[0] == BindMaterialUndoableCommand::commandName) {
             if (fItem) {
                 auto prim = fItem->prim();
                 if (prim) {
@@ -1137,7 +1145,6 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
             }
 #endif
         }
-#endif
     } // Top-level items
     return items;
 }
@@ -1173,7 +1180,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
             path(), prim(), itemPath[1], itemPath[2]);
     } // Variant sets
     else if (itemPath[0] == kUSDToggleVisibilityItem) {
-        auto object3d = UsdObject3d::create(fItem);
+        auto object3d = MayaUsdObject3d::create(fItem);
         TF_AXIOM(object3d);
         auto current = object3d->visibility();
         return object3d->setVisibleCmd(!current);
@@ -1212,7 +1219,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         MGlobal::executeCommand(script);
         return nullptr;
 #endif
-    } else if (itemPath[0] == AddUsdReferenceUndoableCommand::commandName) {
+    } else if (itemPath[0] == kAddRefOrPayloadItem) {
         if (!_prepareUSDReferenceTargetLayer(prim()))
             return nullptr;
 
@@ -1225,7 +1232,27 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         if (path.empty())
             return nullptr;
 
-        return std::make_shared<AddUsdReferenceUndoableCommand>(prim(), path);
+        const bool asRef = UsdMayaUtilFileSystem::wantReferenceCompositionArc();
+        const bool prepend = UsdMayaUtilFileSystem::wantPrependCompositionArc();
+        if (asRef) {
+            return std::make_shared<AddUsdReferenceUndoableCommand>(prim(), path, prepend);
+        } else {
+            Ufe::UndoableCommand::Ptr preloadCmd;
+            const bool                preload = UsdMayaUtilFileSystem::wantPayloadLoaded();
+            if (preload) {
+                preloadCmd = std::make_shared<LoadUndoableCommand>(prim(), UsdLoadWithDescendants);
+            } else {
+                preloadCmd = std::make_shared<UnloadUndoableCommand>(prim());
+            }
+
+            auto payloadCmd = std::make_shared<AddUsdPayloadUndoableCommand>(prim(), path, prepend);
+
+            auto compoCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
+            compoCmd->append(preloadCmd);
+            compoCmd->append(payloadCmd);
+
+            return compoCmd;
+        }
     } else if (itemPath[0] == ClearAllReferencesUndoableCommand::commandName) {
         MString confirmation = MGlobal::executeCommandStringResult(clearAllReferencesConfirmScript);
         if (ClearAllReferencesUndoableCommand::cancelRemoval == confirmation)
@@ -1251,7 +1278,6 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
             script, /* display = */ false, /* undoable = */ true);
     }
 #endif
-#if PXR_VERSION >= 2108
     else if (itemPath[0] == BindMaterialUndoableCommand::commandName) {
         return std::make_shared<BindMaterialUndoableCommand>(fItem->path(), SdfPath(itemPath[1]));
     } else if (itemPath[0] == kBindMaterialToSelectionItem) {
@@ -1300,7 +1326,6 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         return compositeCmd;
 #endif
     }
-#endif
     return nullptr;
 }
 

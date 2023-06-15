@@ -43,7 +43,7 @@ void UsdUndoUngroupCommand::execute()
     // "Ungrouping" means moving group's children up a level in hierarchy
     // followed by group node getting removed.
 
-    // Handling insertion (a.k.a move ) is best to be done on Maya side to cover
+    // Handling insertion (a.k.a move ) is best to be done on DCC side to cover
     // all possible flags ( absolute, relative, world, parent ).
 
     // remove group prim

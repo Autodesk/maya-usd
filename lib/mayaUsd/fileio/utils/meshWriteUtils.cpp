@@ -796,6 +796,7 @@ void UsdMayaMeshWriteUtils::writePointsData(
     const MFnMesh&             meshFn,
     UsdGeomMesh&               primSchema,
     const UsdTimeCode&         usdTime,
+    const double               distanceUnitsScalar,
     UsdUtilsSparseValueWriter* valueWriter)
 {
     MStatus status { MS::kSuccess };
@@ -810,7 +811,13 @@ void UsdMayaMeshWriteUtils::writePointsData(
 
     const GfVec3f* vecData = reinterpret_cast<const GfVec3f*>(pointsData);
     VtVec3fArray   points(vecData, vecData + numVertices);
-    VtVec3fArray   extent(2);
+
+    // Multiply all mesh points by distanceUnitsScalar
+    if (distanceUnitsScalar != 1.0) {
+        points = points * distanceUnitsScalar;
+    }
+
+    VtVec3fArray extent(2);
     // Compute the extent using the raw points
     UsdGeomPointBased::ComputeExtent(points, &extent);
 
@@ -902,12 +909,7 @@ bool UsdMayaMeshWriteUtils::getMeshUVSetData(
     uvArray->clear();
     uvArray->reserve(static_cast<size_t>(uArray.length()));
     for (unsigned int uvId = 0u; uvId < uArray.length(); ++uvId) {
-#if PXR_VERSION >= 2011
         uvArray->emplace_back(uArray[uvId], vArray[uvId]);
-#else
-        GfVec2f value(uArray[uvId], vArray[uvId]);
-        uvArray->push_back(value);
-#endif
     }
 
     // Now iterate through all the face vertices and fill in the faceVarying

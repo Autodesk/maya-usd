@@ -75,6 +75,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (Float4ToFloatW)
     (Float4ToFloat3)
     (Float4ToFloat4)
+    (Float3ToFloatX)
+    (Float3ToFloatY)
+    (Float3ToFloatZ)
 
     (NwFaceCameraIfNAN)
 
@@ -90,6 +93,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (UsdPrimvarColor)
 
     (UsdUVTexture)
+    (UsdUVTexture_noCM)
     (UsdTransform2d)
 
     (UsdPrimvarReader_color)
@@ -138,7 +142,11 @@ static const TfTokenVector _FragmentNames = { _tokens->BasisCurvesCubicColorDoma
                                               _tokens->Float4ToFloatW,
                                               _tokens->Float4ToFloat3,
                                               _tokens->Float4ToFloat4,
-
+#ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
+                                              _tokens->Float3ToFloatX,
+                                              _tokens->Float3ToFloatY,
+                                              _tokens->Float3ToFloatZ,
+#endif
                                               _tokens->NwFaceCameraIfNAN,
 
                                               _tokens->PointsGeometry,
@@ -149,6 +157,9 @@ static const TfTokenVector _FragmentNames = { _tokens->BasisCurvesCubicColorDoma
                                               _tokens->opacityToTransparency,
 #if PXR_VERSION <= 2211
                                               _tokens->UsdDrawModeCards,
+#endif
+#ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
+                                              _tokens->UsdUVTexture_noCM,
 #endif
                                               _tokens->usdPreviewSurfaceLightingAPI1,
                                               _tokens->usdPreviewSurfaceLightingAPI2,
@@ -232,6 +243,12 @@ int _registrationCount = 0;
 std::map<std::string, std::string> _textureFragNames;
 } // namespace
 
+#ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
+MString HdVP2ShaderFragments::getUsdUVTextureFragmentName(const MString&)
+{
+    return _tokens->UsdUVTexture_noCM.GetText();
+}
+#else
 MString HdVP2ShaderFragments::getUsdUVTextureFragmentName(const MString& workingColorSpace)
 {
     auto it = _textureFragNames.find(workingColorSpace.asChar());
@@ -247,6 +264,7 @@ MString HdVP2ShaderFragments::getUsdUVTextureFragmentName(const MString& working
 
     return "UsdUVTexture_to_linrec709";
 }
+#endif
 
 // Fragment registration should be done after VP2 has been initialized, to avoid any errors from
 // headless configurations or command-line renders.
@@ -388,6 +406,7 @@ MStatus HdVP2ShaderFragments::registerFragments()
         }
     }
 
+#ifndef HAS_COLOR_MANAGEMENT_SUPPORT_API
     {
         // This is a temporary fix for Maya 2022 that is quite fragile and will need to be revisited
         // in the near future. It will not handle the custom color space some large scale clients
@@ -534,6 +553,7 @@ MStatus HdVP2ShaderFragments::registerFragments()
             "UsdUVTexture_to_linrec2020",
             LINREC709_TO_SCENE_LINREC709_REC_2020);
     }
+#endif // not HAS_COLOR_MANAGEMENT_SUPPORT_API
 
 #if MAYA_API_VERSION >= 20210000
 
