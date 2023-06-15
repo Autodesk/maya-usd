@@ -47,61 +47,6 @@ _mayaRefDagPath = None
 # Pulled Maya reference prim.
 _pulledMayaRefPrim = None
 
-_compositionArcLabels = [getMayaUsdLibString('kMenuPayload'), getMayaUsdLibString('kMenuReference')]
-_compositionArcValues = [                         'Payload',                           'Reference' ]
-
-_listEditedAsLabels = [getMayaUsdLibString('kMenuAppend'), getMayaUsdLibString('kMenuPrepend')]
-_listEditedAsValues = [                         'Append',                           'Prepend' ]
-
-
-def _getMenuGrpValue(menuName, values, defaultIndex = 0):
-    """
-    Retrieves the currently selected values from a menu.
-    """
-    # Note: option menu selection index start at 1, so we subtract 1.
-    menuIndex = cmds.optionMenuGrp(menuName, query=True, select=True) - 1
-    if 0 <= menuIndex < len(values):
-        return values[menuIndex]
-    else:
-        return values[defaultIndex]
-
-def _getMenuValue(menuName, values, defaultIndex = 0):
-    """
-    Retrieves the currently selected values from a menu.
-    """
-    # Note: option menu selection index start at 1, so we subtract 1.
-    menuIndex = cmds.optionMenu(menuName, query=True, select=True) - 1
-    if 0 <= menuIndex < len(values):
-        return values[menuIndex]
-    else:
-        return values[defaultIndex]
-
-
-def _getMenuIndex(values, current, defaultIndex = 1):
-    """
-    Retrieves the menu index corresponding to the current value selected amongst values.
-    If the value is invalid, returns the defaultIndex.
-    """
-    try:
-        # Note: menu index is 1-based.
-        return values.index(current) + 1
-    except:
-        return defaultIndex
-
-
-def compositionArcChanged(selectedItem):
-    """
-    Reacts to the composition arc type being selected by the user.
-    """
-    pass
-
-
-def listEditChanged(selectedItem):
-    """
-    Reacts to the list edited UI being changed by the user.
-    """
-    pass
-
 
 def variantSetNameChanged(selectedItem):
     """
@@ -183,18 +128,7 @@ def cacheFileUsdHierarchyOptions(topForm):
                                  l=getMayaUsdLibString('kCacheFileWillAppear'))
         cmds.textField(text=str(_pulledMayaRefPrim.GetParent().GetPath()), editable=False)
 
-    with mayaRefUtils.SetParentContext(cmds.rowLayout(numberOfColumns=2)):
-        cmds.optionMenuGrp('compositionArcTypeMenu',
-                           label=getMayaUsdLibString('kOptionAsUSDReference'),
-                           cc=compositionArcChanged,
-                           annotation=getMayaUsdLibString('kOptionAsUSDReferenceToolTip'))
-        for label in _compositionArcLabels:
-            cmds.menuItem(label=label)
-        cmds.optionMenu('listEditedAsMenu',
-                        label=getMayaUsdLibString('kOptionListEditedAs'),
-                        cc=listEditChanged)
-        for label in _listEditedAsLabels:
-            cmds.menuItem(label=label)
+    mayaRefUtils.createUsdRefOrPayloadUI()
 
     variantRb = cmds.radioButtonGrp('variantRadioButton',
                                     nrb=1,
@@ -322,11 +256,9 @@ def cacheInitUi(parent, filterType):
     # variant is the default, otherwise all variant options are disabled.
     mayaRefPrimParent = _pulledMayaRefPrim.GetParent()
 
-    menuIndex = _getMenuIndex(_compositionArcValues, optionsDict['rn_payloadOrReference'])
-    cmds.optionMenuGrp('compositionArcTypeMenu', edit=True, select=menuIndex)
-
-    menuIndex = _getMenuIndex(_listEditedAsValues, optionsDict['rn_listEditType'])
-    cmds.optionMenu('listEditedAsMenu', edit=True, select=menuIndex)
+    mayaRefUtils.initUsdRefOrPayloadUI({
+        mayaRefUtils.compositionArcKey: optionsDict['rn_payloadOrReference'],
+        mayaRefUtils.listEditTypeKey: optionsDict['rn_listEditType']})
 
     if mayaRefPrimParent.HasVariantSets():
         # Define in variant is the default.
@@ -379,8 +311,10 @@ def cacheCommitUi(parent, selectedFile):
     mel.eval('mayaUsdTranslatorExport("fileOptionsScroll", "query={exportOpts}", "", "mayaUsdCacheMayaReference_setCacheOptions")'.format(exportOpts=kTranslatorExportOptions))
 
     primName = cmds.textFieldGrp('primNameText', query=True, text=True)
-    payloadOrReference = _getMenuGrpValue('compositionArcTypeMenu', _compositionArcValues)
-    listEditType = _getMenuValue('listEditedAsMenu', _listEditedAsValues)
+    
+    values = mayaRefUtils.commitUsdRefOrPayloadUI()
+    compositionArc = values[mayaRefUtils.compositionArcKey]
+    listEditType = values[mayaRefUtils.listEditTypeKey]
     
     defineInVariant = cmds.radioButtonGrp('variantRadioButton', query=True, select=True)
     if defineInVariant:
@@ -393,7 +327,7 @@ def cacheCommitUi(parent, selectedFile):
         variantSetName = None
 
     userArgs = cacheToUsd.createCacheCreationOptions(
-        getCacheExportOptions(), selectedFile, primName, payloadOrReference,
+        getCacheExportOptions(), selectedFile, primName, compositionArc,
         listEditType, variantSetName, variantName)
 
     cacheToUsd.saveCacheCreationOptions(userArgs)
