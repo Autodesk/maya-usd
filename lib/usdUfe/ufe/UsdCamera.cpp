@@ -15,19 +15,16 @@
 //
 #include "UsdCamera.h"
 
-#include "pxr/base/gf/frustum.h"
-#include "pxr/usd/usdGeom/camera.h"
-#include "pxr/usd/usdGeom/metrics.h"
-
-#include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/utils/util.h>
-
 #include <usdUfe/ufe/UsdUndoableCommand.h>
+#include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/Utils.h>
 
+#include <pxr/base/gf/frustum.h>
 #include <pxr/imaging/hd/camera.h>
+#include <pxr/usd/usdGeom/camera.h>
+#include <pxr/usd/usdGeom/metrics.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 UsdCamera::UsdCamera()
     : Camera()
@@ -81,7 +78,7 @@ float convertToStageUnits(float value, double valueUnits, const PXR_NS::UsdPrim&
         stageUnits = UsdGeomGetStageMetersPerUnit(stage);
     }
 
-    return UsdMayaUtil::ConvertUnit(value, valueUnits, stageUnits);
+    return UsdUfe::convertUnit(value, valueUnits, stageUnits);
 }
 
 float convertToTenthOfStageUnits(float value, double valueUnits, const PXR_NS::UsdPrim& prim)
@@ -133,7 +130,7 @@ float UsdCamera::horizontalAperture() const
         stageUnits = UsdGeomGetStageMetersPerUnit(stage);
     }
 
-    return UsdMayaUtil::ConvertUnit(horizontalAperture, stageUnits, UsdGeomLinearUnits::inches);
+    return convertUnit(horizontalAperture, stageUnits, UsdGeomLinearUnits::inches);
 }
 
 Ufe::VerticalApertureUndoableCommand::Ptr UsdCamera::verticalApertureCmd(float value)
@@ -171,7 +168,7 @@ float UsdCamera::verticalAperture() const
         stageUnits = UsdGeomGetStageMetersPerUnit(stage);
     }
 
-    return UsdMayaUtil::ConvertUnit(verticalAperture, stageUnits, UsdGeomLinearUnits::inches);
+    return convertUnit(verticalAperture, stageUnits, UsdGeomLinearUnits::inches);
 }
 
 Ufe::HorizontalApertureOffsetUndoableCommand::Ptr
@@ -211,8 +208,7 @@ float UsdCamera::horizontalApertureOffset() const
         stageUnits = UsdGeomGetStageMetersPerUnit(stage);
     }
 
-    return UsdMayaUtil::ConvertUnit(
-        horizontalApertureOffset, stageUnits, UsdGeomLinearUnits::inches);
+    return convertUnit(horizontalApertureOffset, stageUnits, UsdGeomLinearUnits::inches);
 }
 
 Ufe::VerticalApertureOffsetUndoableCommand::Ptr UsdCamera::verticalApertureOffsetCmd(float value)
@@ -251,7 +247,7 @@ float UsdCamera::verticalApertureOffset() const
         stageUnits = UsdGeomGetStageMetersPerUnit(stage);
     }
 
-    return UsdMayaUtil::ConvertUnit(verticalApertureOffset, stageUnits, UsdGeomLinearUnits::inches);
+    return convertUnit(verticalApertureOffset, stageUnits, UsdGeomLinearUnits::inches);
 }
 
 Ufe::FStopUndoableCommand::Ptr UsdCamera::fStopCmd(float value)
@@ -294,12 +290,7 @@ float UsdCamera::fStop() const
         stageUnits = UsdGeomGetStageMetersPerUnit(stage);
     }
 
-#if MAYA_API_VERSION >= 20220100
-    return UsdMayaUtil::ConvertUnit(fStop, stageUnits, UsdGeomLinearUnits::millimeters);
-#else
-    float retVal = UsdMayaUtil::ConvertUnit(fStop, stageUnits, UsdGeomLinearUnits::millimeters);
-    return retVal < FLT_EPSILON ? FLT_EPSILON : retVal;
-#endif
+    return convertUnit(fStop, stageUnits, UsdGeomLinearUnits::millimeters);
 }
 
 Ufe::FocalLengthUndoableCommand::Ptr UsdCamera::focalLengthCmd(float value)
@@ -337,7 +328,7 @@ float UsdCamera::focalLength() const
         stageUnits = UsdGeomGetStageMetersPerUnit(stage);
     }
 
-    return UsdMayaUtil::ConvertUnit(focalLength, stageUnits, UsdGeomLinearUnits::millimeters);
+    return convertUnit(focalLength, stageUnits, UsdGeomLinearUnits::millimeters);
 }
 
 Ufe::FocusDistanceUndoableCommand::Ptr UsdCamera::focusDistanceCmd(float value)
@@ -375,7 +366,7 @@ float UsdCamera::focusDistance() const
         stageUnits = UsdGeomGetStageMetersPerUnit(stage);
     }
 
-    return UsdMayaUtil::ConvertUnit(focusDistance, stageUnits, UsdGeomLinearUnits::centimeters);
+    return convertUnit(focusDistance, stageUnits, UsdGeomLinearUnits::centimeters);
 }
 
 Ufe::NearClipPlaneUndoableCommand::Ptr UsdCamera::nearClipPlaneCmd(float value)
@@ -478,5 +469,4 @@ Ufe::Camera::Projection UsdCamera::projection() const
     return Ufe::Camera::Perspective;
 }
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

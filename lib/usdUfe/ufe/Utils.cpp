@@ -15,6 +15,7 @@
 //
 #include "Utils.h"
 
+#include <usdUfe/ufe/Global.h>
 #include <usdUfe/utils/layers.h>
 #include <usdUfe/utils/usdUtils.h>
 
@@ -24,6 +25,8 @@
 #include <pxr/usd/usd/primCompositionQuery.h>
 #include <pxr/usd/usd/resolver.h>
 #include <pxr/usd/usd/stage.h>
+
+#include <ufe/pathSegment.h>
 
 #include <cctype>
 #include <regex>
@@ -79,6 +82,8 @@ uint32_t findLayerIndex(const UsdPrim& prim, const SdfLayerHandle& layer)
     return position;
 }
 
+UsdUfe::StageAccessorFn     gStageAccessorFn = nullptr;
+UsdUfe::StagePathAccessorFn gStagePathAccessorFn = nullptr;
 UsdUfe::UfePathToPrimFn     gUfePathToPrimFn = nullptr;
 UsdUfe::TimeAccessorFn      gTimeAccessorFn = nullptr;
 UsdUfe::IsAttributeLockedFn gIsAttributeLockedFn = nullptr;
@@ -86,6 +91,67 @@ UsdUfe::IsAttributeLockedFn gIsAttributeLockedFn = nullptr;
 } // anonymous namespace
 
 namespace USDUFE_NS_DEF {
+
+//------------------------------------------------------------------------------
+// Utility Functions
+//------------------------------------------------------------------------------
+
+void setStageAccessorFn(StageAccessorFn fn)
+{
+    if (nullptr == fn) {
+        throw std::invalid_argument("Path to prim function cannot be empty.");
+    }
+    gStageAccessorFn = fn;
+};
+
+PXR_NS::UsdStageWeakPtr getStage(const Ufe::Path& path)
+{
+#if !defined(NDEBUG)
+    assert(gStageAccessorFn != nullptr);
+#endif
+    return gStageAccessorFn(path);
+}
+
+void setStagePathAccessorFn(StagePathAccessorFn fn)
+{
+    if (nullptr == fn) {
+        throw std::invalid_argument("Path to prim function cannot be empty.");
+    }
+    gStagePathAccessorFn = fn;
+}
+
+Ufe::Path stagePath(PXR_NS::UsdStageWeakPtr stage)
+{
+#if !defined(NDEBUG)
+    assert(gStagePathAccessorFn != nullptr);
+#endif
+    return gStagePathAccessorFn(stage);
+}
+
+Ufe::PathSegment usdPathToUfePathSegment(const SdfPath& usdPath, int instanceIndex)
+{
+    const Ufe::Rtid   usdRuntimeId = getUsdRunTimeId();
+    static const char separator = SdfPathTokens->childDelimiter.GetText()[0u];
+
+    if (usdPath.IsEmpty()) {
+        // Return an empty segment.
+        return Ufe::PathSegment(Ufe::PathSegment::Components(), usdRuntimeId, separator);
+    }
+
+    std::string pathString = usdPath.GetString();
+
+    if (instanceIndex >= 0) {
+        // Note here that we're taking advantage of the fact that identifiers
+        // in SdfPaths must be C/Python identifiers; that is, they must *not*
+        // begin with a digit. This means that when we see a path component at
+        // the end of a USD path segment that does begin with a digit, we can
+        // be sure that it represents an instance index and not a prim or other
+        // USD entity.
+        pathString += TfStringPrintf("%c%d", separator, instanceIndex);
+    }
+
+    return Ufe::PathSegment(pathString, usdRuntimeId, separator);
+}
 
 Ufe::Path stripInstanceIndexFromUfePath(const Ufe::Path& path)
 {
@@ -116,10 +182,9 @@ void setUfePathToPrimFn(UfePathToPrimFn fn)
 
 UsdPrim ufePathToPrim(const Ufe::Path& path)
 {
-    if (nullptr == gUfePathToPrimFn) {
-        throw std::runtime_error("Path to prim function cannot be empty.");
-    }
-
+#if !defined(NDEBUG)
+    assert(gUfePathToPrimFn != nullptr);
+#endif
     return gUfePathToPrimFn(path);
 }
 
@@ -133,10 +198,9 @@ void setTimeAccessorFn(TimeAccessorFn fn)
 
 PXR_NS::UsdTimeCode getTime(const Ufe::Path& path)
 {
-    if (nullptr == gTimeAccessorFn) {
-        throw std::runtime_error("Time accessor function cannot be empty.");
-    }
-
+#if !defined(NDEBUG)
+    assert(gTimeAccessorFn != nullptr);
+#endif
     return gTimeAccessorFn(path);
 }
 

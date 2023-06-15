@@ -22,6 +22,8 @@
 #include <mayaUsd/ufe/Global.h>
 #endif
 
+#include <usdUfe/ufe/Utils.h>
+
 #include <pxr/imaging/hd/flatteningSceneIndex.h>
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 51
 #include <pxr/imaging/hd/materialBindingsSchema.h>
@@ -211,8 +213,8 @@ Ufe::Path MayaUsdProxyShapeSceneIndex::InterpretRprimPath(
         MStatus  status;
         MDagPath dagPath(
             MDagPath::getAPathTo(proxyShapeSceneIndex->_proxyShape->thisMObject(), &status));
-        return Ufe::Path({ MayaUsd::ufe::dagPathToPathSegment(dagPath),
-                           MayaUsd::ufe::usdPathToUfePathSegment(path) });
+        return Ufe::Path(
+            { MayaUsd::ufe::dagPathToPathSegment(dagPath), UsdUfe::usdPathToUfePathSegment(path) });
     }
 
     return Ufe::Path();

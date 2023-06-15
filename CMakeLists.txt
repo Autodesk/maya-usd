@@ -85,7 +85,9 @@ endif()
 # modules and definitions
 #------------------------------------------------------------------------------
 include(cmake/utils.cmake)
-find_package(Maya 2018 REQUIRED)
+if (BUILD_MAYAUSD_LIBRARY)
+    find_package(Maya 2018 REQUIRED)
+endif()
 
 if(APPLE AND BUILD_UB2 AND NOT MAYA_MACOSX_BUILT_WITH_UB2)
     message(WARNING  "Maya was NOT built with Universal Binary 2")
@@ -117,9 +119,16 @@ message(STATUS "   PYTHON_INCLUDE_DIRS = ${PYTHON_INCLUDE_DIRS}")
 message(STATUS "   PYTHON_LIBRARIES    = ${PYTHON_LIBRARIES}")
 message(STATUS "   Python_EXECUTABLE   = ${Python_EXECUTABLE}")
 
-include(cmake/jinja.cmake)
+if (BUILD_MAYAUSD_LIBRARY)
+    include(cmake/jinja.cmake)
+endif()
 
 find_package(USD 0.21.11 REQUIRED)
+if (BUILD_MAYAUSD_LIBRARY OR BUILD_AL_PLUGIN OR BUILD_TESTS)
+    if(NOT USD_GENSCHEMA)
+        message(FATAL_ERROR "Building MayaUsd requires usdGenSchema (from USD)")
+    endif()
+endif()
 if (CMAKE_WANT_MATERIALX_BUILD)
     # Requires at least USD 21.08 for hdMtlx module and USD must have been built with MaterialX:
     if(NOT TARGET hdMtlx)
@@ -129,11 +138,13 @@ if (CMAKE_WANT_MATERIALX_BUILD)
 endif()
 include(cmake/usd.cmake)
 
-if(${MAYA_APP_VERSION} STRLESS "2019" AND CMAKE_WANT_UFE_BUILD)
-    set(CMAKE_WANT_UFE_BUILD OFF)
-    message(AUTHOR_WARNING "========================================================================================= \
-                            UFE is not available in Maya${MAYA_MAJOR_VERSION}. Maya2019 and later are supported only. \
-                            ========================================================================================= ")
+if(DEFINED MAYA_APP_VERSION)
+    if (${MAYA_APP_VERSION} STRLESS "2019" AND CMAKE_WANT_UFE_BUILD)
+        set(CMAKE_WANT_UFE_BUILD OFF)
+        message(AUTHOR_WARNING "========================================================================================= \
+                                UFE is not available in Maya${MAYA_MAJOR_VERSION}. Maya2019 and later are supported only. \
+                                ========================================================================================= ")
+    endif()
 endif()
 
 if(CMAKE_WANT_UFE_BUILD)
@@ -163,15 +174,16 @@ if(DEFINED QT_LOCATION)
 		if(BUILD_WITH_QT_6)
 			set(QT_VERSION "6.5")
 			message(STATUS "Setting Qt version to Qt ${QT_VERSION}")
-        elseif(${MAYA_APP_VERSION} STRLESS_EQUAL "2019")
-            set(QT_VERSION "5.6")
-			message(STATUS "Setting Qt version to Qt ${QT_VERSION}")
-		elseif(${MAYA_APP_VERSION} STRLESS_EQUAL "2020")
-			set(QT_VERSION "5.12")
-			message(STATUS "Setting Qt version to Qt ${QT_VERSION}")
-        else() # 2022, 2023, 2024
-            set(QT_VERSION "5.15")
-			message(STATUS "Setting Qt version to Qt ${QT_VERSION}")
+        else()
+            set(QT_VERSION "5.15")  # default version Maya 2022/2023/2024
+            if(DEFINED MAYA_APP_VERSION)
+                if(${MAYA_APP_VERSION} STRLESS_EQUAL "2019")
+                    set(QT_VERSION "5.6")
+                elseif(${MAYA_APP_VERSION} STRLESS_EQUAL "2020")
+                    set(QT_VERSION "5.12")
+                endif()
+                message(STATUS "Setting Qt version to Qt ${QT_VERSION}")
+            endif()
         endif()
     endif()
     set(CMAKE_PREFIX_PATH "${QT_LOCATION}")
@@ -198,7 +210,9 @@ include(cmake/compiler_config.cmake)
 #------------------------------------------------------------------------------
 # gulrak filesystem
 #------------------------------------------------------------------------------
-include(cmake/gulrak.cmake)
+if (BUILD_MAYAUSD_LIBRARY OR BUILD_AL_PLUGIN)
+    include(cmake/gulrak.cmake)
+endif()
 
 #------------------------------------------------------------------------------
 # test
@@ -215,9 +229,7 @@ endif()
 #------------------------------------------------------------------------------
 # lib
 #------------------------------------------------------------------------------
-if (BUILD_MAYAUSD_LIBRARY)
-    add_subdirectory(lib)
-endif()
+add_subdirectory(lib)
 
 #------------------------------------------------------------------------------
 # plugins

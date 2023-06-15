@@ -15,7 +15,7 @@
 //
 #include "UsdMaterial.h"
 
-#include <mayaUsd/ufe/Utils.h>
+#include <usdUfe/ufe/Utils.h>
 
 #include <ufe/types.h>
 
@@ -75,7 +75,7 @@ std::vector<Ufe::SceneItem::Ptr> UsdMaterial::getMaterials() const
     // 3. Find the associated Ufe::SceneItem for each material attached to our object.
     for (auto& materialPrim : materialPrims) {
         const PXR_NS::SdfPath& materialSdfPath = materialPrim.GetPath();
-        const Ufe::Path        materialUfePath = usdPathToUfePathSegment(materialSdfPath);
+        const Ufe::Path        materialUfePath = UsdUfe::usdPathToUfePathSegment(materialSdfPath);
 
         // Construct a UFE path consisting of two segments:
         // 1. The path to the USD stage

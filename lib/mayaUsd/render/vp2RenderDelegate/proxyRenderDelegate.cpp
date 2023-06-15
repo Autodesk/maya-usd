@@ -26,6 +26,8 @@
 #include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/selectability.h>
 
+#include <usdUfe/ufe/Utils.h>
+
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stringUtils.h>
@@ -1487,8 +1489,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         }
     }
 
-    const Ufe::PathSegment pathSegment
-        = MayaUsd::ufe::usdPathToUfePathSegment(usdPath, instanceIndex);
+    const Ufe::PathSegment pathSegment = UsdUfe::usdPathToUfePathSegment(usdPath, instanceIndex);
     const Ufe::SceneItem::Ptr& si
         = handler->createItem(_proxyShapeData->ProxyShape()->ufePath() + pathSegment);
     if (!si) {

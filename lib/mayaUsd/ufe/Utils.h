@@ -32,7 +32,6 @@
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/timeCode.h>
-#include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <maya/MDagPath.h>
 #include <ufe/path.h>
@@ -73,14 +72,6 @@ Ufe::Path stagePath(PXR_NS::UsdStageWeakPtr stage);
 //! Return all the USD stages.
 MAYAUSD_CORE_PUBLIC
 PXR_NS::TfHashSet<PXR_NS::UsdStageWeakPtr, PXR_NS::TfHash> getAllStages();
-
-//! Get the UFE path segment corresponding to the argument USD path.
-//! If an instanceIndex is provided, the path segment for a point instance with
-//! that USD path and index is returned.
-MAYAUSD_CORE_PUBLIC
-Ufe::PathSegment usdPathToUfePathSegment(
-    const PXR_NS::SdfPath& usdPath,
-    int                    instanceIndex = PXR_NS::UsdImagingDelegate::ALL_INSTANCES);
 
 //! Return the USD prim corresponding to the argument UFE path.
 MAYAUSD_CORE_PUBLIC
