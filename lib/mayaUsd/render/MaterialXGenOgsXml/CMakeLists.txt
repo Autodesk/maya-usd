@@ -4,6 +4,7 @@
 target_sources(${PROJECT_NAME} 
     PRIVATE
         GlslFragmentGenerator.cpp
+        GlslOcioNodeImpl.cpp
         OgsFragment.cpp
         OgsXmlGenerator.cpp
         Nodes/SurfaceNodeMaya.cpp
@@ -12,6 +13,7 @@ target_sources(${PROJECT_NAME}
 
 set(HEADERS
     GlslFragmentGenerator.h
+    GlslOcioNodeImpl.h
     OgsFragment.h
     OgsXmlGenerator.h
 )

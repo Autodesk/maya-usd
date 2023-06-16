@@ -304,6 +304,8 @@ void xmlAddValues(pugi::xml_node& parent, const VariableBlock& block, bool skipL
 const string OgsXmlGenerator::OUTPUT_NAME = "outColor";
 const string OgsXmlGenerator::VP_TRANSPARENCY_NAME = "vp2Transparency";
 const string OgsXmlGenerator::SAMPLER_SUFFIX = "_sampler";
+const string OgsXmlGenerator::OCIO_SAMPLER_SUFFIX = "Sampler";
+const string OgsXmlGenerator::OCIO_SAMPLER_PREFIX = "Input_";
 
 bool OgsXmlGenerator::isSamplerName(const string& name)
 {
@@ -313,8 +315,23 @@ bool OgsXmlGenerator::isSamplerName(const string& name)
     // requires that the texture name be a substring of the sampler name.
 
     static const size_t SUFFIX_LENGTH = SAMPLER_SUFFIX.size();
-    return name.size() > SUFFIX_LENGTH + 1 && name[0] == '_'
-        && 0 == name.compare(name.size() - SUFFIX_LENGTH, SUFFIX_LENGTH, SAMPLER_SUFFIX);
+    if (name.size() > SUFFIX_LENGTH + 1 && name[0] == '_'
+        && 0 == name.compare(name.size() - SUFFIX_LENGTH, SUFFIX_LENGTH, SAMPLER_SUFFIX)) {
+        // Regular sampler.
+        return true;
+    }
+
+    static const size_t OCIO_SUFFIX_LENGTH = OCIO_SAMPLER_SUFFIX.size();
+    if (name.rfind(OCIO_SAMPLER_PREFIX, 0) == 0) {
+        if (name.size() > OCIO_SUFFIX_LENGTH + 1
+            && 0
+                == name.compare(
+                    name.size() - OCIO_SUFFIX_LENGTH, OCIO_SUFFIX_LENGTH, OCIO_SAMPLER_SUFFIX)) {
+            // OCIO sampler.
+            return true;
+        }
+    }
+    return false;
 }
 
 string OgsXmlGenerator::textureToSamplerName(const string& textureName)
@@ -328,9 +345,16 @@ string OgsXmlGenerator::textureToSamplerName(const string& textureName)
 string OgsXmlGenerator::samplerToTextureName(const string& samplerName)
 {
     static const size_t PREFIX_SUFFIX_LENGTH = SAMPLER_SUFFIX.size() + 1;
-    return isSamplerName(samplerName)
-        ? samplerName.substr(1, samplerName.size() - PREFIX_SUFFIX_LENGTH)
-        : "";
+    static const size_t OCIO_SUFFIX_LENGTH = OCIO_SAMPLER_PREFIX.size() + 1;
+    if (isSamplerName(samplerName)) {
+        if (samplerName[0] == '_') {
+            return samplerName.substr(1, samplerName.size() - PREFIX_SUFFIX_LENGTH);
+        } else {
+            return samplerName.substr(0, samplerName.size() - OCIO_SUFFIX_LENGTH);
+        }
+    }
+
+    return {};
 }
 
 string OgsXmlGenerator::generate(
