@@ -19,6 +19,26 @@
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/colorSpace.h>
 
+#include <pxr/base/gf/gamma.h>
+#include <pxr/base/gf/vec2f.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/gf/vec4f.h>
+#include <pxr/base/js/json.h>
+#include <pxr/base/tf/hashmap.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/base/vt/types.h>
+#include <pxr/base/vt/value.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/tokens.h>
+#include <pxr/usd/sdr/registry.h>
+#include <pxr/usd/usdGeom/camera.h>
+#include <pxr/usd/usdGeom/mesh.h>
+#include <pxr/usd/usdGeom/metrics.h>
+#include <pxr/usd/usdGeom/xformCache.h>
+
 #include <maya/MAnimControl.h>
 #include <maya/MAnimUtil.h>
 #include <maya/MArgDatabase.h>
@@ -58,33 +78,12 @@
 
 #include <boost/functional/hash.hpp>
 
+#include <cctype>
 #include <regex>
 #include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
-
-#include <pxr/base/gf/gamma.h>
-#include <pxr/base/gf/vec2f.h>
-#include <pxr/base/gf/vec3f.h>
-#include <pxr/base/gf/vec4f.h>
-#include <pxr/base/js/json.h>
-#include <pxr/base/tf/hashmap.h>
-#include <pxr/base/tf/staticTokens.h>
-#include <pxr/base/tf/stringUtils.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/base/vt/array.h>
-#include <pxr/base/vt/types.h>
-#include <pxr/base/vt/value.h>
-#include <pxr/usd/sdf/path.h>
-#include <pxr/usd/sdf/tokens.h>
-#include <pxr/usd/sdr/registry.h>
-#include <pxr/usd/usdGeom/camera.h>
-#include <pxr/usd/usdGeom/mesh.h>
-#include <pxr/usd/usdGeom/metrics.h>
-#include <pxr/usd/usdGeom/xformCache.h>
-
-#include <cctype>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
