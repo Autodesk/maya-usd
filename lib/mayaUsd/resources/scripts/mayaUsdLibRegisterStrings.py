@@ -70,6 +70,16 @@ def mayaUsdLibRegisterStrings():
     register('kTextVariant', 'Variant')
     register('kTextVariantToolTip','If selected, your Maya reference will be defined in a variant. This will enable your prim to\nhave 2 variants you can switch between in the Outliner; the Maya reference and its USD cache.')
 
+    # mayaUsdClearRefsOrPayloadsOptions.py
+    register('kClearRefsOrPayloadsOptionsTitle', 'Clear All USD References/Payloads')
+    register('kClearRefsOrPayloadsOptionsMessage', 'Clear all references/payloads on %s?')
+    register('kClearButton', 'Clear')
+    register('kCancelButton', 'Cancel')
+    register('kAllRefsLabel', 'All References')
+    register('kAllRefsTooltip', 'Clear all references on the prim.')
+    register('kAllPayloadsLabel', 'All Payloads')
+    register('kAllPayloadsTooltip', 'Clearr all payloads on the prims.')
+
     # mayaUsdMergeToUSDOptions.py
     register('kMergeToUSDOptionsTitle', 'Merge Maya Edits to USD Options')
     register('kMergeButton', 'Merge')
