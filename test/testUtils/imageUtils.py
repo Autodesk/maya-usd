@@ -1,8 +1,6 @@
 import os
-import unittest
 import maya.cmds as cmds
 import maya.mel
-import testUtils
 import mayaUtils
 import subprocess
 
@@ -171,7 +169,8 @@ def imageDiff(imagePath1, imagePath2, verbose, env, fail, failpercent, hardfail,
     proc = subprocess.run(cmd, shell=False, env=env, stdout=subprocess.PIPE)
     return proc
 
-class ImageDiffingTestCase(unittest.TestCase):
+class ImageDiffingTestCase:
+    '''Mixin class for unit tests that require image comparison.'''
 
     def assertImagesClose(self, imagePath1, imagePath2, _fail, _failpercent, _hardfail,
                     _warn, _warnpercent, _hardwarn, _perceptual):

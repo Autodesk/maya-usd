@@ -16,8 +16,8 @@ def checkForMayaUsd():
     
     return True
     
-class TestStage(mtohUtils.MtohTestCase):
-    # MtohTestCase.setUpClass requirement.
+class TestStage(mtohUtils.MayaHydraBaseTestCase):
+    # MayaHydraBaseTestCase.setUpClass requirement.
     _file = __file__
           
     @unittest.skipUnless(checkForMayaUsd(), "Requires Maya USD Plugin.")

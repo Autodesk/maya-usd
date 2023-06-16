@@ -3,8 +3,8 @@ import maya.cmds as cmds
 import fixturesUtils
 import mtohUtils
 
-class TestNamespaces(mtohUtils.MtohTestCase):
-    # MtohTestCase.setUpClass requirement.
+class TestNamespaces(mtohUtils.MayaHydraBaseTestCase):
+    # MayaHydraBaseTestCase.setUpClass requirement.
     _file = __file__
 
     def matchingRprims(self, rprims, matching):

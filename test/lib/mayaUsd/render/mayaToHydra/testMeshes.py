@@ -8,8 +8,8 @@ from testUtils import PluginLoaded
 
 import unittest
 
-class TestMeshes(mtohUtils.MtohTestCase):
-    # MtohTestCase.setUpClass requirement.
+class TestMeshes(mtohUtils.MayaHydraBaseTestCase):
+    # MayaHydraBaseTestCase.setUpClass requirement.
     _file = __file__
 
     def matchingRprims(self, rprims, matching):
