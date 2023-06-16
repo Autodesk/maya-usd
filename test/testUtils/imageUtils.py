@@ -110,14 +110,13 @@ def snapshot(outputPath, width=400, height=None, hud=False, grid=False, camera=N
         if camera:
             cmds.lookThru(panel, oldCamera)
 
-def imageDiff(imagePath1, imagePath2, verbose, env, fail, failpercent, hardfail, 
+def imageDiff(imagePath1, imagePath2, verbose, fail, failpercent, hardfail, 
                 warn, warnpercent, hardwarn, perceptual):    
     """ Returns the completed process instance after running idiff.
     
     imagePath1   -- First image to compare.
     imagePath2   -- Second image to compare.
     verbose      -- If enabled, the image diffing command will be printed to log.
-    env          -- Mapping that defines the environment variables for the idiff command call. 
     fail         -- The threshold for the acceptable difference (relatively to the mean of 
                     the two values) of a pixel for failure.    
     failpercent  -- The percentage of pixels that can be different before failure.
@@ -138,10 +137,9 @@ def imageDiff(imagePath1, imagePath2, verbose, env, fail, failpercent, hardfail,
     For more information, see https://github.com/OpenImageIO/oiio/blob/cb6475c0dd72b9c49d862d98c6cd2da4509d5f37/src/doc/idiff.rst#L1
     """
     import platform
-    if platform.system() == 'Windows':
-        imageDiff = 'idiff.exe'
-    else:
-        imageDiff = 'idiff'
+
+    imageDiff = os.environ['IMAGE_DIFF_TOOL']
+    
     cmdArgs = []
     if warn is not None:
         cmdArgs.extend(['-warn', str(warn)])
@@ -166,7 +164,18 @@ def imageDiff(imagePath1, imagePath2, verbose, env, fail, failpercent, hardfail,
         sys.__stdout__.write("\nimage diffing with {0}".format(cmd))
         sys.__stdout__.flush()
 
-    proc = subprocess.run(cmd, shell=False, env=env, stdout=subprocess.PIPE)
+    # LD_LIBRARY_PATH needs to be set for the idiff executable because its 
+    # RPATH is absolute rather than relative to ORIGIN, meaning the RPATH 
+    # points to the absolute path on the machine where idiff was built.
+    # This absence of relative paths for RPATH comes from OpenImageIO.
+    # We introduce a second workaround to avoid Maya using usd's libpng, 
+    # because both use incompatible versions of libpng. This is done by 
+    # setting LD_LIBRARY_PATH to IDIFF_LD_LIBRARY_PATH only when we run 
+    # idiff using Python's subprocess module.
+    os.environ["LD_LIBRARY_PATH"] = os.environ['IDIFF_LD_LIBRARY_PATH']
+    
+    # Run idiff command
+    proc = subprocess.run(cmd, shell=False, env=os.environ.copy(), stdout=subprocess.PIPE)
     return proc
 
 class ImageDiffingTestCase:
@@ -186,7 +195,7 @@ class ImageDiffingTestCase:
         4 -- File error: could not find or open input files, etc.
         """
         
-        proc = imageDiff(imagePath1, imagePath2, verbose=True, env=os.environ.copy(), 
+        proc = imageDiff(imagePath1, imagePath2, verbose=True, 
                             fail=_fail, failpercent=_failpercent, hardfail=_hardfail,
                             warn=_warn, warnpercent=_warnpercent, hardwarn=_hardwarn, 
                             perceptual=_perceptual)
