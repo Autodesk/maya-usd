@@ -18,12 +18,17 @@ foreach(script ${TEST_SCRIPT_FILES})
         PYTHON_SCRIPT ${script}
         ENV
             "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
-
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
             "IMAGE_DIFF_TOOL=${IMAGE_DIFF_TOOL}"
 
-            # Workaround to ensure idiff finds its compiled library file without 
-            # maya finding libpng in usd, which is an older incompatible version
+            # LD_LIBRARY_PATH needs to be set for the idiff executable because its 
+            # RPATH is absolute rather than relative to ORIGIN, meaning the RPATH 
+            # points to the absolute path on the machine where idiff was built.
+            # This absence of relative paths for RPATH comes from OpenImageIO.
+            # We introduce a second workaround to avoid Maya using usd's libpng, 
+            # because both use incompatible versions of libpng. This is done by 
+            # setting LD_LIBRARY_PATH to IDIFF_LD_LIBRARY_PATH only when we run 
+            # idiff using Python's subprocess module.
             "IDIFF_LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}:${PXR_USD_LOCATION}/lib64:${PXR_USD_LOCATION}/lib"
 
             # Maya uses a very old version of GLEW, so we need support for

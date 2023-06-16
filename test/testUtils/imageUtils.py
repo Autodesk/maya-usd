@@ -166,8 +166,14 @@ def imageDiff(imagePath1, imagePath2, verbose, fail, failpercent, hardfail,
         sys.__stdout__.write("\nimage diffing with {0}".format(cmd))
         sys.__stdout__.flush()
 
-    # Workaround to ensure idiff finds its compiled library file without 
-    # maya finding libpng in usd, which is an older incompatible version
+    # LD_LIBRARY_PATH needs to be set for the idiff executable because its 
+    # RPATH is absolute rather than relative to ORIGIN, meaning the RPATH 
+    # points to the absolute path on the machine where idiff was built.
+    # This absence of relative paths for RPATH comes from OpenImageIO.
+    # We introduce a second workaround to avoid Maya using usd's libpng, 
+    # because both use incompatible versions of libpng. This is done by 
+    # setting LD_LIBRARY_PATH to IDIFF_LD_LIBRARY_PATH only when we run 
+    # idiff using Python's subprocess module.
     os.environ["LD_LIBRARY_PATH"] = os.environ['IDIFF_LD_LIBRARY_PATH']
     
     # Run idiff command
