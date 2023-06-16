@@ -107,7 +107,7 @@ const Ufe::ConstAttributeDefs& UsdShaderNodeDef::outputs() const { return fOutpu
 
 std::string UsdShaderNodeDef::type() const
 {
-    TF_AXIOM(fShaderNodeDef);
+    TF_DEV_AXIOM(fShaderNodeDef);
     return fShaderNodeDef->GetIdentifier();
 }
 
@@ -137,7 +137,7 @@ bool _isArnoldWithIssue1214(const PXR_NS::SdrShaderNode& shaderNodeDef)
 
 std::size_t UsdShaderNodeDef::nbClassifications() const
 {
-    TF_AXIOM(fShaderNodeDef);
+    TF_DEV_AXIOM(fShaderNodeDef);
 
     // Based on a review of all items found in the Sdr registry as of USD 21.11:
 
@@ -169,7 +169,7 @@ std::size_t UsdShaderNodeDef::nbClassifications() const
 
 std::string UsdShaderNodeDef::classification(std::size_t level) const
 {
-    TF_AXIOM(fShaderNodeDef);
+    TF_DEV_AXIOM(fShaderNodeDef);
     if (fShaderNodeDef->GetFamily().IsEmpty()) {
         switch (level) {
         // UsdLux:
@@ -215,7 +215,7 @@ std::string UsdShaderNodeDef::classification(std::size_t level) const
 
 std::vector<std::string> UsdShaderNodeDef::inputNames() const
 {
-    TF_AXIOM(fShaderNodeDef);
+    TF_DEV_AXIOM(fShaderNodeDef);
     std::vector<std::string> retVal;
     auto names = fShaderNodeDef->GetInputNames();
     retVal.reserve(names.size());
@@ -227,13 +227,13 @@ std::vector<std::string> UsdShaderNodeDef::inputNames() const
 
 bool UsdShaderNodeDef::hasInput(const std::string& name) const
 {
-    TF_AXIOM(fShaderNodeDef);
+    TF_DEV_AXIOM(fShaderNodeDef);
     return fShaderNodeDef->GetShaderInput(TfToken(name));
 }
 
 Ufe::AttributeDef::ConstPtr UsdShaderNodeDef::input(const std::string& name) const
 {
-    TF_AXIOM(fShaderNodeDef);
+    TF_DEV_AXIOM(fShaderNodeDef);
     if (SdrShaderPropertyConstPtr property = fShaderNodeDef->GetShaderInput(TfToken(name))) {
         return Ufe::AttributeDef::ConstPtr(new UsdShaderAttributeDef(property));
     }
@@ -242,13 +242,13 @@ Ufe::AttributeDef::ConstPtr UsdShaderNodeDef::input(const std::string& name) con
 
 Ufe::ConstAttributeDefs UsdShaderNodeDef::inputs() const
 {
-    TF_AXIOM(fShaderNodeDef);
+    TF_DEV_AXIOM(fShaderNodeDef);
     return getAttrs<Ufe::AttributeDef::INPUT_ATTR>(fShaderNodeDef);
 }
 
 std::vector<std::string> UsdShaderNodeDef::outputNames() const
 {
-    TF_AXIOM(fShaderNodeDef);
+    TF_DEV_AXIOM(fShaderNodeDef);
     std::vector<std::string> retVal;
     auto names = fShaderNodeDef->GetOutputNames();
     retVal.reserve(names.size());
@@ -260,13 +260,13 @@ std::vector<std::string> UsdShaderNodeDef::outputNames() const
 
 bool UsdShaderNodeDef::hasOutput(const std::string& name) const
 {
-    TF_AXIOM(fShaderNodeDef);
+    TF_DEV_AXIOM(fShaderNodeDef);
     return fShaderNodeDef->GetShaderOutput(TfToken(name));
 }
 
 Ufe::AttributeDef::ConstPtr UsdShaderNodeDef::output(const std::string& name) const
 {
-    TF_AXIOM(fShaderNodeDef);
+    TF_DEV_AXIOM(fShaderNodeDef);
     if (SdrShaderPropertyConstPtr property = fShaderNodeDef->GetShaderOutput(TfToken(name))) {
         return Ufe::AttributeDef::ConstPtr(new UsdShaderAttributeDef(property));
     }
@@ -275,7 +275,7 @@ Ufe::AttributeDef::ConstPtr UsdShaderNodeDef::output(const std::string& name) co
 
 Ufe::ConstAttributeDefs UsdShaderNodeDef::outputs() const
 {
-    TF_AXIOM(fShaderNodeDef);
+    TF_DEV_AXIOM(fShaderNodeDef);
     return getAttrs<Ufe::AttributeDef::OUTPUT_ATTR>(fShaderNodeDef);
 }
 
@@ -305,7 +305,7 @@ static const MetadataMap _metaMap = {
 
 Ufe::Value UsdShaderNodeDef::getMetadata(const std::string& key) const
 {
-    TF_AXIOM(fShaderNodeDef);
+    TF_DEV_AXIOM(fShaderNodeDef);
     const NdrTokenMap& metadata = fShaderNodeDef->GetMetadata();
     auto it = metadata.find(TfToken(key));
     if (it != metadata.cend()) {
@@ -322,7 +322,7 @@ Ufe::Value UsdShaderNodeDef::getMetadata(const std::string& key) const
 
 bool UsdShaderNodeDef::hasMetadata(const std::string& key) const
 {
-    TF_AXIOM(fShaderNodeDef);
+    TF_DEV_AXIOM(fShaderNodeDef);
     const NdrTokenMap& metadata = fShaderNodeDef->GetMetadata();
     auto it = metadata.find(TfToken(key));
     if (it != metadata.cend()) {
@@ -341,7 +341,7 @@ Ufe::SceneItem::Ptr UsdShaderNodeDef::createNode(
     const Ufe::SceneItem::Ptr& parent,
     const Ufe::PathComponent& name) const
 {
-    TF_AXIOM(fShaderNodeDef);
+    TF_DEV_AXIOM(fShaderNodeDef);
     UsdSceneItem::Ptr parentItem = std::dynamic_pointer_cast<UsdSceneItem>(parent);
     if (parentItem) {
         UsdUndoCreateFromNodeDefCommand::Ptr cmd
@@ -358,7 +358,7 @@ Ufe::InsertChildCommand::Ptr UsdShaderNodeDef::createNodeCmd(
     const Ufe::SceneItem::Ptr& parent,
     const Ufe::PathComponent& name) const
 {
-    TF_AXIOM(fShaderNodeDef);
+    TF_DEV_AXIOM(fShaderNodeDef);
     UsdSceneItem::Ptr parentItem = std::dynamic_pointer_cast<UsdSceneItem>(parent);
     if (parentItem) {
         if (UsdUndoAddNewMaterialCommand::CompatiblePrim(parentItem)) {
