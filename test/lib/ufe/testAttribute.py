@@ -701,10 +701,9 @@ class AttributeTestCase(unittest.TestCase):
         # Then make sure that new UFE value matches what it in USD.
         self.assertColorAlmostEqual(ufeAttr.get(), usdAttr.Get())
 
-        # The following causes a segmentation fault on CentOS 7.
-        # self.runUndoRedo(ufeAttr,
-        #                  ufe.Color3f(vec.r()+1.0, vec.g()+2.0, vec.b()+3.0))
-        # Entered as MAYA-102168.
+        self.runUndoRedo(ufeAttr,
+                         ufe.Color3f(vec.r()+1.0, vec.g()+2.0, vec.b()+3.0))
+        
         newVec = ufe.Color3f(vec.color[0]+1.0, vec.color[1]+2.0, vec.color[2]+3.0)
         self.runUndoRedo(ufeAttr, newVec)
 
