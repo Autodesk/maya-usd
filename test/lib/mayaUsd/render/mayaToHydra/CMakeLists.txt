@@ -21,6 +21,11 @@ foreach(script ${TEST_SCRIPT_FILES})
 
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
             "IMAGE_DIFF_TOOL=${IMAGE_DIFF_TOOL}"
+
+            # Workaround to ensure idiff finds its compiled library file without 
+            # maya finding libpng in usd, which is an older incompatible version
+            "IDIFF_LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}:${PXR_USD_LOCATION}/lib64:${PXR_USD_LOCATION}/lib"
+
             # Maya uses a very old version of GLEW, so we need support for
             # pre-loading a newer version from elsewhere.
             "LD_PRELOAD=${ADDITIONAL_LD_PRELOAD}"

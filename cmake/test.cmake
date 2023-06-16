@@ -7,7 +7,6 @@ endfunction()
 
 if (OIIO_idiff_BINARY)
     set(IMAGE_DIFF_TOOL ${OIIO_idiff_BINARY} CACHE STRING "Use idiff for image comparison")
-    message(IMAGE_DIFF_TOOL=${IMAGE_DIFF_TOOL})
 endif()
 
 #
