@@ -2663,11 +2663,12 @@ TfToken _RequiresColorManagement(
         for (auto&& csAttrName : _knownColorSpaceAttrs) {
             auto paramIt = n.parameters.find(csAttrName);
             if (paramIt != n.parameters.end()) {
-                if (paramIt->second.IsHolding<TfToken>()) {
-                    sourceColorSpace = paramIt->second.UncheckedGet<TfToken>().GetString();
+                const VtValue& val = paramIt->second;
+                if (val.IsHolding<TfToken>()) {
+                    sourceColorSpace = val.UncheckedGet<TfToken>().GetString();
                     return;
-                } else if (paramIt->second.IsHolding<std::string>()) {
-                    sourceColorSpace = paramIt->second.UncheckedGet<std::string>();
+                } else if (val.IsHolding<std::string>()) {
+                    sourceColorSpace = val.UncheckedGet<std::string>();
                     return;
                 }
             }

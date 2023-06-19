@@ -25,6 +25,7 @@
 #include <MaterialXGenShader/Shader.h>
 #include <MaterialXGenShader/ShaderStage.h>
 
+#include <cstring>
 #include <map>
 
 MATERIALX_NAMESPACE_BEGIN
