@@ -13,16 +13,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <pxr/base/tf/pyModule.h>
-#include <pxr/pxr.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
+#include "UsdUndoClearPayloadsCommand.h"
 
-TF_WRAP_MODULE
+#include <pxr/usd/usd/payloads.h>
+
+namespace USDUFE_NS_DEF {
+
+UsdUndoClearPayloadsCommand::UsdUndoClearPayloadsCommand(const PXR_NS::UsdPrim& prim)
+    : _prim(prim)
 {
-    TF_WRAP(EditRouter);
-    TF_WRAP(Global);
-    TF_WRAP(Tokens);
-    TF_WRAP(Utils);
-    TF_WRAP(Commands);
 }
+
+void UsdUndoClearPayloadsCommand::executeImplementation()
+{
+    if (!_prim.IsValid())
+        return;
+
+    _prim.GetPayloads().ClearPayloads();
+}
+
+} // namespace USDUFE_NS_DEF

@@ -23,6 +23,7 @@
 #include <pxr/usd/usd/prim.h>
 
 #include <ufe/hierarchy.h>
+#include <ufe/selection.h>
 
 namespace USDUFE_NS_DEF {
 

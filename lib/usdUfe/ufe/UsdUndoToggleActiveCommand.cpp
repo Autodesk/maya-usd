@@ -13,16 +13,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <pxr/base/tf/pyModule.h>
-#include <pxr/pxr.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
+#include "UsdUndoToggleActiveCommand.h"
 
-TF_WRAP_MODULE
+#include "private/UfeNotifGuard.h"
+
+namespace USDUFE_NS_DEF {
+
+UsdUndoToggleActiveCommand::UsdUndoToggleActiveCommand(const PXR_NS::UsdPrim& prim)
+    : _stage(prim.GetStage())
+    , _primPath(prim.GetPath())
 {
-    TF_WRAP(EditRouter);
-    TF_WRAP(Global);
-    TF_WRAP(Tokens);
-    TF_WRAP(Utils);
-    TF_WRAP(Commands);
 }
+
+void UsdUndoToggleActiveCommand::executeImplementation()
+{
+    if (!_stage)
+        return;
+
+    PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+    if (!prim.IsValid())
+        return;
+
+    UsdUfe::InAddOrDeleteOperation ad;
+    prim.SetActive(!prim.IsActive());
+}
+
+} // namespace USDUFE_NS_DEF
