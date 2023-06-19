@@ -57,7 +57,6 @@ constexpr const char TAG_SOURCE[] = "source";
 
 // Lengths where needed:
 constexpr auto TAG_TEXTURE2_LEN = sizeof(TAG_TEXTURE2) / sizeof(TAG_TEXTURE2[0]);
-constexpr auto TAG_SAMPLER_LEN = sizeof(TAG_SAMPLER) / sizeof(TAG_SAMPLER[0]);
 
 // Expected XML attribute names for an OCIO fragment:
 constexpr const char ATTR_NAME[] = "name";
