@@ -13,16 +13,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <pxr/base/tf/pyModule.h>
-#include <pxr/pxr.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
+#include "UsdUndoClearReferencesCommand.h"
 
-TF_WRAP_MODULE
+#include <pxr/usd/usd/references.h>
+
+namespace USDUFE_NS_DEF {
+
+UsdUndoClearReferencesCommand::UsdUndoClearReferencesCommand(const PXR_NS::UsdPrim& prim)
+    : _prim(prim)
 {
-    TF_WRAP(EditRouter);
-    TF_WRAP(Global);
-    TF_WRAP(Tokens);
-    TF_WRAP(Utils);
-    TF_WRAP(Commands);
 }
+
+void UsdUndoClearReferencesCommand::executeImplementation()
+{
+    if (!_prim.IsValid())
+        return;
+
+    _prim.GetReferences().ClearReferences();
+}
+
+} // namespace USDUFE_NS_DEF

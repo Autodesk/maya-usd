@@ -38,13 +38,16 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         testObject3d.py
         testRename.py
         testParentCmd.py
+        testPayloadCommands.py
         testPointInstances.py
+        testReferenceCommands.py
         testReorderCmd.py
         testRotateCmd.py
         testRotateCmdUndoRedo.py
         testRotatePivot.py
         testScaleCmd.py
         testSceneItem.py
+        testToggleCommands.py
         testTransform3dChainOfResponsibility.py
         testTransform3dTranslate.py
         testUIInfoHandler.py

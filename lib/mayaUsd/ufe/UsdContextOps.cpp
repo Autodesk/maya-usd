@@ -21,18 +21,23 @@
 #include <mayaUsd/commands/PullPushCommands.h>
 #include <mayaUsd/fileio/primUpdaterManager.h>
 #endif
-#include <mayaUsd/nodes/proxyShapeStageExtraData.h>
 #include <mayaUsd/ufe/MayaUsdObject3d.h>
 #include <mayaUsd/ufe/SetVariantSelectionCommand.h>
 #include <mayaUsd/ufe/UsdUndoMaterialCommands.h>
+#include <mayaUsd/ufe/UsdUndoPayloadCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>
-#include <usdUfe/undo/UsdUndoBlock.h>
-#include <usdUfe/undo/UsdUndoableItem.h>
+#include <usdUfe/ufe/UsdUndoAddPayloadCommand.h>
+#include <usdUfe/ufe/UsdUndoAddReferenceCommand.h>
+#include <usdUfe/ufe/UsdUndoClearPayloadsCommand.h>
+#include <usdUfe/ufe/UsdUndoClearReferencesCommand.h>
+#include <usdUfe/ufe/UsdUndoSelectAfterCommand.h>
+#include <usdUfe/ufe/UsdUndoToggleActiveCommand.h>
+#include <usdUfe/ufe/UsdUndoToggleInstanceableCommand.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
@@ -46,9 +51,7 @@
 #include <pxr/usd/sdr/shaderNode.h>
 #include <pxr/usd/sdr/shaderProperty.h>
 #include <pxr/usd/usd/common.h>
-#include <pxr/usd/usd/payloads.h>
 #include <pxr/usd/usd/prim.h>
-#include <pxr/usd/usd/references.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/variantSets.h>
 #include <pxr/usd/usdGeom/tokens.h>
@@ -196,34 +199,6 @@ struct WaitCursor
 };
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
-//! \brief Create a Prim and select it:
-class UsdUndoAddNewPrimAndSelectCommand : public Ufe::CompositeUndoableCommand
-{
-public:
-    UsdUndoAddNewPrimAndSelectCommand(const UsdUfe::UsdUndoAddNewPrimCommand::Ptr& creationCmd)
-        : Ufe::CompositeUndoableCommand({ creationCmd })
-    {
-    }
-
-    void execute() override
-    {
-        auto addPrimCmd
-            = std::dynamic_pointer_cast<UsdUfe::UsdUndoAddNewPrimCommand>(cmdsList().front());
-        addPrimCmd->execute();
-        // Create the selection command only if the creation succeeded:
-        if (!addPrimCmd->newUfePath().empty()) {
-            Ufe::Selection newSelection;
-            newSelection.append(Ufe::Hierarchy::createItem(addPrimCmd->newUfePath()));
-            append(Ufe::SelectionReplaceWith::createAndExecute(
-                Ufe::GlobalSelection::get(), newSelection));
-        }
-    }
-
-#ifdef UFE_V4_FEATURES_AVAILABLE
-    std::string commandString() const override { return cmdsList().front()->commandString(); }
-#endif
-};
-
 //! \brief Create a working Material and select it:
 class InsertChildAndSelectCommand : public Ufe::CompositeUndoableCommand
 {
@@ -252,166 +227,6 @@ public:
 #endif
 };
 #endif
-
-//! \brief Undoable command for loading a USD prim.
-class LoadUnloadBaseUndoableCommand : public Ufe::UndoableCommand
-{
-protected:
-    LoadUnloadBaseUndoableCommand(const UsdPrim& prim, UsdLoadPolicy policy)
-        : _stage(prim.GetStage())
-        , _primPath(prim.GetPath())
-        , _policy(policy)
-    {
-    }
-
-    LoadUnloadBaseUndoableCommand(const UsdPrim& prim)
-        : _stage(prim.GetStage())
-        , _primPath(prim.GetPath())
-        , _policy(UsdLoadPolicy::UsdLoadWithoutDescendants)
-    {
-        if (!_stage)
-            return;
-
-        // When not provided with the load policy, we need to figure out
-        // what the current policy is.
-        UsdStageLoadRules loadRules = _stage->GetLoadRules();
-        _policy = loadRules.GetEffectiveRuleForPath(_primPath) == UsdStageLoadRules::Rule::AllRule
-            ? UsdLoadPolicy::UsdLoadWithDescendants
-            : UsdLoadPolicy::UsdLoadWithoutDescendants;
-    }
-
-    void doLoad() const
-    {
-        if (!_stage)
-            return;
-
-        _stage->Load(_primPath, _policy);
-        saveModifiedLoadRules();
-    }
-
-    void doUnload() const
-    {
-        if (!_stage)
-            return;
-
-        _stage->Unload(_primPath);
-        saveModifiedLoadRules();
-    }
-
-    void saveModifiedLoadRules() const
-    {
-        // Save the load rules so that switching the stage settings will be able to preserve the
-        // load rules.
-        MayaUsd::MayaUsdProxyShapeStageExtraData::saveLoadRules(_stage);
-    }
-
-private:
-    const UsdStageWeakPtr _stage;
-    const SdfPath         _primPath;
-    UsdLoadPolicy         _policy;
-};
-
-//! \brief Undoable command for loading a USD prim.
-class LoadUndoableCommand : public LoadUnloadBaseUndoableCommand
-{
-public:
-    LoadUndoableCommand(const UsdPrim& prim, UsdLoadPolicy policy)
-        : LoadUnloadBaseUndoableCommand(prim, policy)
-    {
-    }
-
-    void redo() override { doLoad(); }
-    void undo() override { doUnload(); }
-};
-
-//! \brief Undoable command for unloading a USD prim.
-class UnloadUndoableCommand : public LoadUnloadBaseUndoableCommand
-{
-public:
-    UnloadUndoableCommand(const UsdPrim& prim)
-        : LoadUnloadBaseUndoableCommand(prim)
-    {
-    }
-
-    void redo() override { doUnload(); }
-    void undo() override { doLoad(); }
-};
-
-//! \brief Undoable command for prim active state change
-class ToggleActiveStateCommand : public Ufe::UndoableCommand
-{
-public:
-    ToggleActiveStateCommand(const UsdPrim& prim)
-    {
-        _stage = prim.GetStage();
-        _primPath = prim.GetPath();
-        _active = prim.IsActive();
-    }
-
-    void undo() override
-    {
-        if (_stage) {
-            UsdPrim prim = _stage->GetPrimAtPath(_primPath);
-            if (prim.IsValid()) {
-                UsdUfe::InAddOrDeleteOperation ad;
-                prim.SetActive(_active);
-            }
-        }
-    }
-
-    void redo() override
-    {
-        if (_stage) {
-            UsdPrim prim = _stage->GetPrimAtPath(_primPath);
-            if (prim.IsValid()) {
-                UsdUfe::InAddOrDeleteOperation ad;
-                prim.SetActive(!_active);
-            }
-        }
-    }
-
-private:
-    PXR_NS::UsdStageWeakPtr _stage;
-    PXR_NS::SdfPath         _primPath;
-    bool                    _active;
-};
-
-//! \brief Undoable command for prim instanceable state change
-class ToggleInstanceableStateCommand : public Ufe::UndoableCommand
-{
-public:
-    ToggleInstanceableStateCommand(const UsdPrim& prim)
-    {
-        _stage = prim.GetStage();
-        _primPath = prim.GetPath();
-        _instanceable = prim.IsInstanceable();
-    }
-
-    void undo() override
-    {
-        if (_stage) {
-            UsdPrim prim = _stage->GetPrimAtPath(_primPath);
-            if (prim.IsValid()) {
-                prim.SetInstanceable(_instanceable);
-            }
-        }
-    }
-
-    void redo() override
-    {
-        if (_stage) {
-            UsdPrim prim = _stage->GetPrimAtPath(_primPath);
-            if (prim.IsValid()) {
-                prim.SetInstanceable(!_instanceable);
-            }
-        }
-    }
-
-private:
-    PXR_NS::UsdStageWeakPtr _stage;
-    PXR_NS::SdfPath         _primPath;
-    bool                    _instanceable;
-};
 
 const PXR_NS::SdfLayerHandle getCurrentTargetLayer(const UsdPrim& prim)
 {
@@ -512,140 +327,6 @@ makeUSDReferenceFilePathRelativeIfRequested(const std::string& filePath, const U
 
     return relativePathAndSuccess.first;
 }
-
-class AddUsdReferenceUndoableCommand : public Ufe::UndoableCommand
-{
-public:
-    AddUsdReferenceUndoableCommand(const UsdPrim& prim, const std::string& filePath, bool prepend)
-        : _prim(prim)
-        , _sdfRef()
-        , _filePath(filePath)
-        , _listPos(prepend ? UsdListPositionBackOfPrependList : UsdListPositionBackOfAppendList)
-    {
-    }
-
-    void undo() override
-    {
-        if (_prim.IsValid()) {
-            UsdReferences primRefs = _prim.GetReferences();
-            primRefs.RemoveReference(_sdfRef);
-        }
-    }
-
-    void redo() override
-    {
-        if (_prim.IsValid()) {
-            if (TfStringEndsWith(_filePath, ".mtlx")) {
-                _sdfRef = SdfReference(_filePath, SdfPath("/MaterialX"));
-            } else {
-                _sdfRef = SdfReference(_filePath);
-            }
-            UsdReferences primRefs = _prim.GetReferences();
-            primRefs.AddReference(_sdfRef, _listPos);
-        }
-    }
-
-private:
-    UsdPrim         _prim;
-    SdfReference    _sdfRef;
-    std::string     _filePath;
-    UsdListPosition _listPos;
-};
-
-class AddUsdPayloadUndoableCommand : public Ufe::UndoableCommand
-{
-public:
-    AddUsdPayloadUndoableCommand(const UsdPrim& prim, const std::string& filePath, bool prepend)
-        : _prim(prim)
-        , _sdfPayload()
-        , _filePath(filePath)
-        , _listPos(prepend ? UsdListPositionBackOfPrependList : UsdListPositionBackOfAppendList)
-    {
-    }
-
-    void undo() override
-    {
-        if (!_prim.IsValid())
-            return;
-
-        UsdPayloads primPayloads = _prim.GetPayloads();
-        primPayloads.RemovePayload(_sdfPayload);
-    }
-
-    void redo() override
-    {
-        if (!_prim.IsValid())
-            return;
-
-        if (TfStringEndsWith(_filePath, ".mtlx")) {
-            _sdfPayload = SdfPayload(_filePath, SdfPath("/MaterialX"));
-        } else {
-            _sdfPayload = SdfPayload(_filePath);
-        }
-        UsdPayloads primPayloads = _prim.GetPayloads();
-        primPayloads.AddPayload(_sdfPayload, _listPos);
-    }
-
-private:
-    UsdPrim         _prim;
-    SdfPayload      _sdfPayload;
-    std::string     _filePath;
-    UsdListPosition _listPos;
-};
-
-class ClearAllReferencesUndoableCommand : public Ufe::UndoableCommand
-{
-public:
-    ClearAllReferencesUndoableCommand(const UsdPrim& prim)
-        : _prim(prim)
-    {
-    }
-
-    void undo() override { _undoItem.undo(); }
-
-    void redo() override { _undoItem.redo(); }
-
-    void execute() override
-    {
-        if (!_prim.IsValid())
-            return;
-
-        UsdUfe::UsdUndoBlock block(&_undoItem);
-        UsdReferences        primRefs = _prim.GetReferences();
-        primRefs.ClearReferences();
-    }
-
-private:
-    UsdPrim                 _prim;
-    UsdUfe::UsdUndoableItem _undoItem;
-};
-
-class ClearAllPayloadsUndoableCommand : public Ufe::UndoableCommand
-{
-public:
-    ClearAllPayloadsUndoableCommand(const UsdPrim& prim)
-        : _prim(prim)
-    {
-    }
-
-    void undo() override { _undoItem.undo(); }
-
-    void redo() override { _undoItem.redo(); }
-
-    void execute() override
-    {
-        if (!_prim.IsValid())
-            return;
-
-        UsdUfe::UsdUndoBlock block(&_undoItem);
-        UsdPayloads          primRefs = _prim.GetPayloads();
-        primRefs.ClearPayloads();
-    }
-
-private:
-    UsdPrim                 _prim;
-    UsdUfe::UsdUndoableItem _undoItem;
-};
 
 std::vector<std::pair<const char* const, const char* const>>
 _computeLoadAndUnloadItems(const UsdPrim& prim)
@@ -1179,9 +860,9 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
             ? UsdLoadWithDescendants
             : UsdLoadWithoutDescendants;
 
-        return std::make_shared<LoadUndoableCommand>(prim(), policy);
+        return std::make_shared<UsdUndoLoadPayloadCommand>(prim(), policy);
     } else if (itemPath[0u] == kUSDUnloadItem) {
-        return std::make_shared<UnloadUndoableCommand>(prim());
+        return std::make_shared<UsdUndoUnloadPayloadCommand>(prim());
     } else if (itemPath[0] == kUSDVariantSetsItem) {
         // Operation is to set a variant in a variant set.  Need both the
         // variant set and the variant as arguments to the operation.
@@ -1203,10 +884,10 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         return object3d->setVisibleCmd(!current);
     } // Visibility
     else if (itemPath[0] == kUSDToggleActiveStateItem) {
-        return std::make_shared<ToggleActiveStateCommand>(prim());
+        return std::make_shared<UsdUfe::UsdUndoToggleActiveCommand>(prim());
     } // ActiveState
     else if (itemPath[0] == kUSDToggleInstanceableStateItem) {
-        return std::make_shared<ToggleInstanceableStateCommand>(prim());
+        return std::make_shared<UsdUfe::UsdUndoToggleInstanceableCommand>(prim());
     } // InstanceableState
     else if (!itemPath.empty() && (itemPath[0] == kUSDAddNewPrimItem)) {
         // Operation is to create a new prim of the type specified.
@@ -1217,8 +898,8 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         // At this point we know the last item in the itemPath is the prim type to create
         auto primType = itemPath[itemPath.size() - 1];
 #ifdef UFE_V3_FEATURES_AVAILABLE
-        return std::make_shared<UsdUndoAddNewPrimAndSelectCommand>(
-            UsdUfe::UsdUndoAddNewPrimCommand::create(fItem, primType, primType));
+        return UsdUfe::UsdUndoSelectAfterCommand<UsdUfe::UsdUndoAddNewPrimCommand>::create(
+            fItem, primType, primType);
 #else
         return UsdUfe::UsdUndoAddNewPrimCommand::create(fItem, primType, primType);
 #endif
@@ -1252,17 +933,19 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         const bool asRef = UsdMayaUtilFileSystem::wantReferenceCompositionArc();
         const bool prepend = UsdMayaUtilFileSystem::wantPrependCompositionArc();
         if (asRef) {
-            return std::make_shared<AddUsdReferenceUndoableCommand>(prim(), path, prepend);
+            return std::make_shared<UsdUfe::UsdUndoAddReferenceCommand>(prim(), path, prepend);
         } else {
             Ufe::UndoableCommand::Ptr preloadCmd;
             const bool                preload = UsdMayaUtilFileSystem::wantPayloadLoaded();
             if (preload) {
-                preloadCmd = std::make_shared<LoadUndoableCommand>(prim(), UsdLoadWithDescendants);
+                preloadCmd
+                    = std::make_shared<UsdUndoLoadPayloadCommand>(prim(), UsdLoadWithDescendants);
             } else {
-                preloadCmd = std::make_shared<UnloadUndoableCommand>(prim());
+                preloadCmd = std::make_shared<UsdUndoUnloadPayloadCommand>(prim());
             }
 
-            auto payloadCmd = std::make_shared<AddUsdPayloadUndoableCommand>(prim(), path, prepend);
+            auto payloadCmd
+                = std::make_shared<UsdUfe::UsdUndoAddPayloadCommand>(prim(), path, prepend);
 
             auto compoCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
             compoCmd->append(preloadCmd);
@@ -1290,12 +973,13 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
                 if (!compositeCmd) {
                     compositeCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
                 }
-                compositeCmd->append(std::make_shared<ClearAllReferencesUndoableCommand>(prim()));
+                compositeCmd->append(
+                    std::make_shared<UsdUfe::UsdUndoClearReferencesCommand>(prim()));
             } else if (res == "payloads") {
                 if (!compositeCmd) {
                     compositeCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
                 }
-                compositeCmd->append(std::make_shared<ClearAllPayloadsUndoableCommand>(prim()));
+                compositeCmd->append(std::make_shared<UsdUfe::UsdUndoClearPayloadsCommand>(prim()));
             }
         }
         return compositeCmd;

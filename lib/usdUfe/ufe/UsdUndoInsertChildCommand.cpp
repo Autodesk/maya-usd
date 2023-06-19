@@ -333,4 +333,11 @@ void UsdUndoInsertChildCommand::redo()
     _ufeDstItem = sendReparentNotification(_ufeSrcPath, _ufeDstPath);
 }
 
+Ufe::Selection USDUFE_PUBLIC getNewSelectionFromCommand(const Ufe::InsertChildCommand& cmd)
+{
+    Ufe::Selection newSelection;
+    newSelection.append(cmd.insertedChild());
+    return newSelection;
+}
+
 } // namespace USDUFE_NS_DEF
