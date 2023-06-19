@@ -52,7 +52,6 @@ constexpr const char TAG_VALUES[] = "values";
 constexpr const char TAG_OUTPUTS[] = "outputs";
 constexpr const char TAG_IMPLEMENTATION[] = "implementation";
 constexpr const char TAG_TEXTURE2[] = "texture2";
-constexpr const char TAG_SAMPLER[] = "sampler";
 constexpr const char TAG_SOURCE[] = "source";
 
 // Lengths where needed:
