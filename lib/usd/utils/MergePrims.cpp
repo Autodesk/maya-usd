@@ -1013,9 +1013,10 @@ bool mergePrims(
 
     UsdEditContext editCtx(dstStage, target);
 
-    /// Create any missing prim in the dst hierarchy as "over". Prims may be missing because we are targeting a
-    /// different layer than where the destination prim is authored. The SdfCopySpec function does not
-    /// automatically create the missing parent, unlike other functions like UsdStage::CreatePrim.
+    /// Create any missing prim in the dst hierarchy as "over". Prims may be missing because we are
+    /// targeting a different layer than where the destination prim is authored. The SdfCopySpec
+    /// function does not automatically create the missing parent, unlike other functions like
+    /// UsdStage::CreatePrim.
     SdfJustCreatePrimInLayer(dstLayer, augmentedDstPath);
 
     if (options.ignoreUpperLayerOpinions) {
