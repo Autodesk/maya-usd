@@ -599,7 +599,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
         if (status == MStatus::kSuccess) {
 #ifdef MAYA_CURRENT_UFE_CAMERA_SUPPORT
             MString   ufeCameraPathString = getFrameContext()->getCurrentUfeCameraPath(&status);
-            Ufe::Path ufeCameraPath = Ufe::PathString::path(ufeCameraPathString.c_str());
+            Ufe::Path ufeCameraPath = Ufe::PathString::path(ufeCameraPathString.asChar());
             bool      isUsdCamera = ufeCameraPath.runTimeId() == MayaUsd::ufe::getUsdRunTimeId();
 #else
             static const MString defaultUfeProxyCameraShape(
