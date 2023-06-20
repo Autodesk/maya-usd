@@ -198,6 +198,36 @@ struct WaitCursor
     ~WaitCursor() { MGlobal::executeCommand("waitCursor -state 0"); }
 };
 
+#ifdef UFE_V3_FEATURES_AVAILABLE
+//! \brief Create a working Material and select it:
+class InsertChildAndSelectCommand : public Ufe::CompositeUndoableCommand
+{
+public:
+    InsertChildAndSelectCommand(const Ufe::InsertChildCommand::Ptr& creationCmd)
+        : Ufe::CompositeUndoableCommand({ creationCmd })
+    {
+    }
+
+    void execute() override
+    {
+        auto insertChildCmd
+            = std::dynamic_pointer_cast<Ufe::InsertChildCommand>(cmdsList().front());
+        insertChildCmd->execute();
+        // Create the selection command only if the creation succeeded:
+        if (insertChildCmd->insertedChild()) {
+            Ufe::Selection newSelection;
+            newSelection.append(insertChildCmd->insertedChild());
+            append(Ufe::SelectionReplaceWith::createAndExecute(
+                Ufe::GlobalSelection::get(), newSelection));
+        }
+    }
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    std::string commandString() const override { return cmdsList().front()->commandString(); }
+#endif
+};
+#endif
+
 const PXR_NS::SdfLayerHandle getCurrentTargetLayer(const UsdPrim& prim)
 {
     auto stage = prim.GetStage();
@@ -998,12 +1028,12 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         // regardless of its selection state.
         sceneItems.append(fItem);
         if (sceneItems.size() > 0u) {
-            return UsdUfe::UsdUndoSelectAfterCommand<UsdUndoAssignNewMaterialCommand>::create(
-                sceneItems, itemPath[2]);
+            return std::make_shared<InsertChildAndSelectCommand>(
+                UsdUndoAssignNewMaterialCommand::create(sceneItems, itemPath[2]));
         }
     } else if (itemPath.size() == 3u && itemPath[0] == kAddNewMaterialItem) {
-        return UsdUfe::UsdUndoSelectAfterCommand<UsdUndoAddNewMaterialCommand>::create(
-            fItem, itemPath[2]);
+        return std::make_shared<InsertChildAndSelectCommand>(
+            UsdUndoAddNewMaterialCommand::create(fItem, itemPath[2]));
     } else if (itemPath.size() == 3u && itemPath[0] == kAssignExistingMaterialItem) {
         std::shared_ptr<Ufe::CompositeUndoableCommand> compositeCmd;
         Ufe::Selection                                 sceneItems(*Ufe::GlobalSelection::get());
