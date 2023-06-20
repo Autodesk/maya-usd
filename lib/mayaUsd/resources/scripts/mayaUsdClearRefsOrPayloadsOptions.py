@@ -52,8 +52,8 @@ def _createClearRefsOrPayloadsOptionsDialog():
     """
 
     # Same spacing as Maya option boxes.
-    spacer = 16
-    edge   = 12
+    spacer = 8
+    edge   = 6
 
     # Use same height for buttons as in Maya option boxes.
     buttonWidth = 100
@@ -180,7 +180,7 @@ def getClearRefsOrPayloadsOptionsDict():
 
 def setClearRefsOrPayloadsOptionsDict(options):
     """
-    Sets the current clear references or payloads options from teh given dictionary.
+    Sets the current clear references or payloads options from the given dictionary.
     """
     mayaUsdOptions.setOptionsDict(
         _getClearRefsOrPayloadsOptionsVarName(),
