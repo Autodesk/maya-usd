@@ -298,6 +298,12 @@ class MergeToUsdTestCase(unittest.TestCase):
     
         assertVectorAlmostEqual(self, mayaValues, usdValues)
 
+        # Check that edits have been set as "overs"
+        primSpecA = layers[1].GetPrimAtPath("/A")
+        self.assertEqual(primSpecA.specifier, Sdf.SpecifierOver)
+        primSpecB = layers[1].GetPrimAtPath("/A/B")
+        self.assertEqual(primSpecB.specifier, Sdf.SpecifierOver)
+
     def testEquivalentTransformMergeToUsd(self):
         '''Merge edits on a USD transform back to USD when the new transform is equivalent.'''
 
