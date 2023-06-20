@@ -321,6 +321,7 @@ const std::set<std::string> _mtlxTopoNodeSet = {
     "switch"
 };
 
+#ifndef HAS_COLOR_MANAGEMENT_SUPPORT_API
 // Maps from a known Maya target color space name to the corresponding color correct category.
 const std::unordered_map<std::string, std::string> _mtlxColorCorrectCategoryMap = {
     { "scene-linear Rec.709-sRGB", "MayaND_sRGBtoLinrec709_" },
@@ -333,6 +334,7 @@ const std::unordered_map<std::string, std::string> _mtlxColorCorrectCategoryMap 
     { "scene-linear Rec.2020",     "MayaND_sRGBtoLinrec2020_" },
     { "scene-linear Rec 2020",     "MayaND_sRGBtoLinrec2020_" },
 };
+#endif
 
 // clang-format on
 
@@ -2603,19 +2605,21 @@ void HdVP2Material::CompiledNetwork::_ApplyVP2Fixes(
 
 #ifdef WANT_MATERIALX_BUILD
 
-// MaterialX does offer only limited support for OCIO. We expect something more in a future release,
-// but in the meantime we can still add color management nodes to bring textures in one of the five
-// colorspaces MayaUSD already supports for UsdPreviewSurface.
-//
 // We will be extremely arbitrary on all MaterialX image and tiledimage nodes and assume that color3
 // and color4 require color management based on the file extension.
 //
 // For image nodes connected to a fileTexture post-processor, we will also check for the colorSpace
-// attribute and respect requests for Raw.
+// attribute and respect requests.
 TfToken _RequiresColorManagement(
-    const HdMaterialNode2&    node,
-    const HdMaterialNode2&    upstream,
+    const HdMaterialNode2& node,
+    const HdMaterialNode2& upstream,
+#ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
+    const HdMaterialNetwork2& inNet,
+    TfToken&                  cmInputName,
+    TfToken&                  cmOutputName)
+#else
     const HdMaterialNetwork2& inNet)
+#endif
 {
     const mx::NodeDefPtr nodeDef = _GetMaterialXData()._mtlxLibrary->getNodeDef(node.nodeTypeId);
     const mx::NodeDefPtr upstreamDef
@@ -2647,37 +2651,97 @@ TfToken _RequiresColorManagement(
         return {};
     }
 
-    SdfAssetPath filenameVal;
-    for (const auto& inputName : fileInputs) {
-        auto itFileParam = upstream.parameters.find(inputName);
-        if (itFileParam != upstream.parameters.end()
-            && itFileParam->second.IsHolding<SdfAssetPath>()) {
-            filenameVal = itFileParam->second.Get<SdfAssetPath>();
-            break;
+    // Look for explicit color spaces first:
+    std::string       sourceColorSpace;
+    static const auto _knownColorSpaceAttrs
+        = std::vector<TfToken> { _tokens->sourceColorSpace, _mtlxTokens->colorSpace };
+    static const auto _mxFindColorSpace = [&sourceColorSpace](const auto& n) {
+        if (!sourceColorSpace.empty()) {
+            return;
+        }
+
+        for (auto&& csAttrName : _knownColorSpaceAttrs) {
+            auto paramIt = n.parameters.find(csAttrName);
+            if (paramIt != n.parameters.end()) {
+                const VtValue& val = paramIt->second;
+                if (val.IsHolding<TfToken>()) {
+                    sourceColorSpace = val.UncheckedGet<TfToken>().GetString();
+                    return;
+                } else if (val.IsHolding<std::string>()) {
+                    sourceColorSpace = val.UncheckedGet<std::string>();
+                    return;
+                }
+            }
+        }
+    };
+    // Can be on the upstream node (UsdUVTexture):
+    _mxFindColorSpace(upstream);
+    // Can sometimes be on node (MayaND_fileTexture):
+    _mxFindColorSpace(node);
+    // To be updated as soon as color space metadata gets transmitted through Hydra.
+
+    if (sourceColorSpace.empty() || sourceColorSpace == _tokens->auto_) {
+        SdfAssetPath filenameVal;
+        for (const auto& inputName : fileInputs) {
+            auto itFileParam = upstream.parameters.find(inputName);
+            if (itFileParam != upstream.parameters.end()
+                && itFileParam->second.IsHolding<SdfAssetPath>()) {
+                filenameVal = itFileParam->second.Get<SdfAssetPath>();
+                break;
+            }
+        }
+
+        const std::string& resolvedPath = filenameVal.GetResolvedPath();
+        if (resolvedPath.empty()) {
+            return {};
+        }
+        const std::string& assetPath = filenameVal.GetAssetPath();
+        MString            colorRuleCmd;
+        colorRuleCmd.format(
+            "colorManagementFileRules -evaluate \"^1s\";",
+            (!resolvedPath.empty() ? resolvedPath : assetPath).c_str());
+        const MString colorSpaceByRule(MGlobal::executeCommandStringResult(colorRuleCmd));
+        sourceColorSpace = colorSpaceByRule.asChar();
+    }
+
+    if (sourceColorSpace == "Raw" || sourceColorSpace == "raw") {
+        return {};
+    }
+
+#ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
+    MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
+    if (!theRenderer) {
+        return {};
+    }
+
+    MHWRender::MFragmentManager* fragmentManager = theRenderer->getFragmentManager();
+    if (!fragmentManager) {
+        return {};
+    }
+
+    MString fragName, fragInput, fragOutput;
+    if (fragmentManager->getColorManagementFragmentInfo(
+            sourceColorSpace.c_str(), fragName, fragInput, fragOutput)) {
+        std::string untypedNodeDefId = MaterialXMaya::OgsFragment::registerOCIOFragment(
+            fragName.asChar(), _GetMaterialXData()._mtlxLibrary);
+        if (!untypedNodeDefId.empty()) {
+            cmInputName = TfToken(fragInput.asChar());
+            cmOutputName = TfToken(fragOutput.asChar());
+            return TfToken((untypedNodeDefId + colorOutput->getType()));
         }
     }
-
-    const std::string& resolvedPath = filenameVal.GetResolvedPath();
-    if (resolvedPath.empty()) {
-        return {};
+#else
+    if (sourceColorSpace == _tokens->sRGB.GetString()) {
+        // Non-OCIO code only knows how to handle sRGB source color space.
+        // If we ended up here, then a color management node was required:
+        if (colorOutput->getType().back() == '3') {
+            return _mtlxTokens->color3;
+        } else {
+            return _mtlxTokens->color4;
+        }
     }
-    const std::string& assetPath = filenameVal.GetAssetPath();
-    MString            colorRuleCmd;
-    colorRuleCmd.format(
-        "colorManagementFileRules -evaluate \"^1s\";",
-        (!resolvedPath.empty() ? resolvedPath : assetPath).c_str());
-    const MString colorSpaceByRule(MGlobal::executeCommandStringResult(colorRuleCmd));
-    if (colorSpaceByRule != _tokens->sRGB.GetText()) {
-        // We only know how to handle sRGB source color space.
-        return {};
-    }
-
-    // If we ended up here, then a color management node was required:
-    if (colorOutput->getType().back() == '3') {
-        return _mtlxTokens->color3;
-    } else {
-        return _mtlxTokens->color4;
-    }
+#endif
+    return {};
 }
 
 void HdVP2Material::CompiledNetwork::_ApplyMtlxVP2Fixes(
@@ -2749,34 +2813,48 @@ void HdVP2Material::CompiledNetwork::_ApplyMtlxVP2Fixes(
         for (const auto& cnxPair : inNode.inputConnections) {
             std::vector<HdMaterialConnection2> outCnx;
             for (const auto& c : cnxPair.second) {
+                TfToken cmNodeDefId, cmInputName, cmOutputName;
+#ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
+                cmNodeDefId = _RequiresColorManagement(
+                    inNode,
+                    inNet.nodes.find(c.upstreamNode)->second,
+                    inNet,
+                    cmInputName,
+                    cmOutputName);
+#else
                 TfToken colorManagementType = _RequiresColorManagement(
                     inNode, inNet.nodes.find(c.upstreamNode)->second, inNet);
-                if (!colorManagementType.IsEmpty() && colorManagementCategory.empty()) {
-                    // Query the user pref:
-                    MString mayaWorkingColorSpace = MGlobal::executeCommandStringResult(
-                        "colorManagementPrefs -q -renderingSpaceName");
+                if (!colorManagementType.IsEmpty()) {
+                    if (colorManagementCategory.empty()) {
+                        // Query the user pref:
+                        MString mayaWorkingColorSpace = MGlobal::executeCommandStringResult(
+                            "colorManagementPrefs -q -renderingSpaceName");
 
-                    auto categoryIt
-                        = _mtlxColorCorrectCategoryMap.find(mayaWorkingColorSpace.asChar());
-                    if (categoryIt != _mtlxColorCorrectCategoryMap.end()) {
-                        colorManagementCategory = categoryIt->second;
+                        auto categoryIt
+                            = _mtlxColorCorrectCategoryMap.find(mayaWorkingColorSpace.asChar());
+                        if (categoryIt != _mtlxColorCorrectCategoryMap.end()) {
+                            colorManagementCategory = categoryIt->second;
+                        }
                     }
+                    cmNodeDefId
+                        = TfToken(colorManagementCategory + colorManagementType.GetString());
+                    cmInputName = _mtlxTokens->in;
+                    cmOutputName = _mtlxTokens->out;
                 }
-
-                if (colorManagementType.IsEmpty() || colorManagementCategory.empty()) {
+#endif
+                if (cmNodeDefId.IsEmpty()) {
                     outCnx.emplace_back(HdMaterialConnection2 { _nodePathMap[c.upstreamNode],
                                                                 c.upstreamOutputName });
                 } else {
                     // Insert color management node:
                     HdMaterialNode2 ccNode;
-                    ccNode.nodeTypeId
-                        = TfToken(colorManagementCategory + colorManagementType.GetString());
+                    ccNode.nodeTypeId = cmNodeDefId;
                     HdMaterialConnection2 ccCnx { _nodePathMap[c.upstreamNode],
                                                   c.upstreamOutputName };
-                    ccNode.inputConnections.insert({ _mtlxTokens->in, { ccCnx } });
+                    ccNode.inputConnections.insert({ cmInputName, { ccCnx } });
                     SdfPath ccPath
                         = ngBase.AppendChild(TfToken("N" + std::to_string(nodeCounter++)));
-                    outCnx.emplace_back(HdMaterialConnection2 { ccPath, _mtlxTokens->out });
+                    outCnx.emplace_back(HdMaterialConnection2 { ccPath, cmOutputName });
                     outNet.nodes.emplace(ccPath, std::move(ccNode));
                 }
             }
@@ -2851,7 +2929,7 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
                 _GetMaterialXData()._mtlxLibrary);
 #else
             std::set<SdfPath> hdTextureNodes;
-            mx::StringMap     mxHdTextureMap; // Mx-Hd texture name counterparts
+            mx::StringMap mxHdTextureMap; // Mx-Hd texture name counterparts
             mtlxDoc = HdMtlxCreateMtlxDocumentFromHdNetwork(
                 fixedNetwork,
                 *surfTerminal, // MaterialX HdNode
