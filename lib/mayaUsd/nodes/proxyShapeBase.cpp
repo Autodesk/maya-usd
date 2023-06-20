@@ -159,7 +159,7 @@ MObject MayaUsdProxyShapeBase::drawGuidePurposeAttr;
 MObject MayaUsdProxyShapeBase::sessionLayerNameAttr;
 MObject MayaUsdProxyShapeBase::rootLayerNameAttr;
 MObject MayaUsdProxyShapeBase::mutedLayersAttr;
-#if MAYA_APP_VERSION == 2024
+#if MAYA_API_VERSION >= 20240000 && MAYA_API_VERSION <= 20249999
 // Change counter attributes
 MObject MayaUsdProxyShapeBase::updateCounterAttr;
 MObject MayaUsdProxyShapeBase::resyncCounterAttr;
@@ -407,7 +407,7 @@ MStatus MayaUsdProxyShapeBase::initialize()
     retValue = addAttribute(outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-#if MAYA_APP_VERSION == 2024
+#if MAYA_API_VERSION >= 20240000 && MAYA_API_VERSION <= 20249999
     updateCounterAttr
         = numericAttrFn.create("updateId", "upid", MFnNumericData::kInt64, -1, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
@@ -595,7 +595,7 @@ void MayaUsdProxyShapeBase::postConstructor()
     }
 }
 
-#if MAYA_APP_VERSION == 2024
+#if MAYA_API_VERSION >= 20240000 && MAYA_API_VERSION <= 20249999
 /* virtual */
 bool MayaUsdProxyShapeBase::getInternalValue(const MPlug& plug, MDataHandle& handle)
 {
@@ -2043,7 +2043,7 @@ void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChang
     MProfilingScope profilingScope(
         _shapeBaseProfilerCategory, MProfiler::kColorB_L1, "Process USD objects changed");
 
-#if MAYA_APP_VERSION == 2024
+#if MAYA_API_VERSION >= 20240000 && MAYA_API_VERSION <= 20249999
     switch (UsdMayaStageNoticeListener::ClassifyObjectsChanged(notice)) {
     case UsdMayaStageNoticeListener::ChangeType::kIgnored: return;
     case UsdMayaStageNoticeListener::ChangeType::kResync: ++_UsdStageResyncCounter;
