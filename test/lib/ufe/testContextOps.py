@@ -1492,6 +1492,27 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(topSubset.GetFamilyNameAttr().Get(), "componentTag")
         self.assertFalse(topSubset.GetPrim().HasAPI(UsdShade.MaterialBindingAPI))
 
+        if mayaUtils.mayaMajorVersion() == 2024:
+            # We also can check the old sync counters:
+            counters= { "resync": cmds.getAttr(psPathStr + '.resyncId'),
+                        "update" : cmds.getAttr(psPathStr + '.upid')}
+
+            def assertIsOnlyUpdate(self, counters, shapePathStr):
+                resyncCounter = cmds.getAttr(shapePathStr + '.resyncId')
+                updateCounter = cmds.getAttr(shapePathStr + '.updateId')
+                self.assertEqual(resyncCounter, counters["resync"])
+                self.assertGreater(updateCounter, counters["update"])
+                counters["resync"] = resyncCounter
+                counters["update"] = updateCounter
+
+            def assertIsResync(self, counters, shapePathStr):
+                resyncCounter = cmds.getAttr(shapePathStr + '.resyncId')
+                updateCounter = cmds.getAttr(shapePathStr + '.updateId')
+                self.assertGreater(resyncCounter, counters["resync"])
+                self.assertGreater(updateCounter, counters["update"])
+                counters["resync"] = resyncCounter
+                counters["update"] = updateCounter            
+
         messageHandler = mayaUtils.TestProxyShapeUpdateHandler(psPathStr)
         messageHandler.snapshot()
 
@@ -1508,40 +1529,58 @@ class ContextOpsTestCase(unittest.TestCase):
 
         # We expect a resync after this assignment:
         self.assertTrue(messageHandler.isResync())
+        if mayaUtils.mayaMajorVersion() == 2024:
+            assertIsResync(self, counters, psPathStr)
 
         # setting a value the first time is a resync due to the creation of the attribute:
         attrs = ufe.Attributes.attributes(shaderItem)
         metallicAttr = attrs.attribute("inputs:metallic")
         ufeCmd.execute(metallicAttr.setCmd(0.5))
         self.assertTrue(messageHandler.isResync())
+        if mayaUtils.mayaMajorVersion() == 2024:
+            assertIsResync(self, counters, psPathStr)
 
         # Subsequent changes are updates:
         ufeCmd.execute(metallicAttr.setCmd(0.7))
         self.assertTrue(messageHandler.isUpdate())
+        if mayaUtils.mayaMajorVersion() == 2024:
+            assertIsOnlyUpdate(self, counters, psPathStr)
 
         # First undo is an update:
         cmds.undo()
         self.assertTrue(messageHandler.isUpdate())
+        if mayaUtils.mayaMajorVersion() == 2024:
+            assertIsOnlyUpdate(self, counters, psPathStr)
 
         # Second undo is a resync:
         cmds.undo()
         self.assertTrue(messageHandler.isResync())
+        if mayaUtils.mayaMajorVersion() == 2024:
+            assertIsResync(self, counters, psPathStr)
 
         # Third undo is also resync:
         cmds.undo()
         self.assertTrue(messageHandler.isResync())
+        if mayaUtils.mayaMajorVersion() == 2024:
+            assertIsResync(self, counters, psPathStr)
 
         # First redo is resync:
         cmds.redo()
         self.assertTrue(messageHandler.isResync())
+        if mayaUtils.mayaMajorVersion() == 2024:
+            assertIsResync(self, counters, psPathStr)
 
         # Second redo is resync:
         cmds.redo()
         self.assertTrue(messageHandler.isResync())
+        if mayaUtils.mayaMajorVersion() == 2024:
+            assertIsResync(self, counters, psPathStr)
 
         # Third redo is update:
         cmds.redo()
         self.assertTrue(messageHandler.isUpdate())
+        if mayaUtils.mayaMajorVersion() == 2024:
+            assertIsOnlyUpdate(self, counters, psPathStr)
         currentCacheId = messageHandler.getStageCacheId()
 
         # Changing the whole stage is a resync:
@@ -1549,6 +1588,7 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.setAttr('{}.filePath'.format(psPathStr), testFile, type='string')
 
         self.assertTrue(messageHandler.isResync())
+        # The old smart signaling for Maya 2024 will not catch that.
 
         # But that will be the last resync:
         testFile = testUtils.getTestScene("MaterialX", "sin_compound.usda")
@@ -1564,6 +1604,7 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.setAttr('{}.filePath'.format(psPathStr), testFile, type='string')
 
         self.assertTrue(messageHandler.isResync())
+        # The old smart signaling for Maya 2024 will not catch that.
 
         messageHandler.terminate()
 
