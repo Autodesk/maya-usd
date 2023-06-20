@@ -159,6 +159,11 @@ MObject MayaUsdProxyShapeBase::drawGuidePurposeAttr;
 MObject MayaUsdProxyShapeBase::sessionLayerNameAttr;
 MObject MayaUsdProxyShapeBase::rootLayerNameAttr;
 MObject MayaUsdProxyShapeBase::mutedLayersAttr;
+#if MAYA_API_VERSION >= 20240000 && MAYA_API_VERSION <= 20249999
+// Change counter attributes
+MObject MayaUsdProxyShapeBase::updateCounterAttr;
+MObject MayaUsdProxyShapeBase::resyncCounterAttr;
+#endif
 // Output attributes
 MObject MayaUsdProxyShapeBase::outTimeAttr;
 MObject MayaUsdProxyShapeBase::outStageDataAttr;
@@ -402,6 +407,28 @@ MStatus MayaUsdProxyShapeBase::initialize()
     retValue = addAttribute(outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
+#if MAYA_API_VERSION >= 20240000 && MAYA_API_VERSION <= 20249999
+    updateCounterAttr
+        = numericAttrFn.create("updateId", "upid", MFnNumericData::kInt64, -1, &retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    numericAttrFn.setStorable(false);
+    numericAttrFn.setWritable(false);
+    numericAttrFn.setHidden(true);
+    numericAttrFn.setInternal(true);
+    retValue = addAttribute(updateCounterAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    resyncCounterAttr
+        = numericAttrFn.create("resyncId", "rsid", MFnNumericData::kInt64, -1, &retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    numericAttrFn.setStorable(false);
+    numericAttrFn.setWritable(false);
+    numericAttrFn.setHidden(true);
+    numericAttrFn.setInternal(true);
+    retValue = addAttribute(resyncCounterAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+#endif
+
     outStageCacheIdAttr
         = numericAttrFn.create("outStageCacheId", "ostcid", MFnNumericData::kInt, -1, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
@@ -567,6 +594,24 @@ void MayaUsdProxyShapeBase::postConstructor()
             = MSceneMessage::addCallback(MSceneMessage::kBeforeSave, beforeSaveCallback, this);
     }
 }
+
+#if MAYA_API_VERSION >= 20240000 && MAYA_API_VERSION <= 20249999
+/* virtual */
+bool MayaUsdProxyShapeBase::getInternalValue(const MPlug& plug, MDataHandle& handle)
+{
+    bool retVal = true;
+
+    if (plug == updateCounterAttr) {
+        handle.set(_UsdStageUpdateCounter);
+    } else if (plug == resyncCounterAttr) {
+        handle.set(_UsdStageResyncCounter);
+    } else {
+        retVal = MPxSurfaceShape::getInternalValue(plug, handle);
+    }
+
+    return retVal;
+}
+#endif
 
 /* virtual */
 MStatus MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
@@ -1998,10 +2043,19 @@ void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChang
     MProfilingScope profilingScope(
         _shapeBaseProfilerCategory, MProfiler::kColorB_L1, "Process USD objects changed");
 
+#if MAYA_API_VERSION >= 20240000 && MAYA_API_VERSION <= 20249999
+    switch (UsdMayaStageNoticeListener::ClassifyObjectsChanged(notice)) {
+    case UsdMayaStageNoticeListener::ChangeType::kIgnored: return;
+    case UsdMayaStageNoticeListener::ChangeType::kResync: ++_UsdStageResyncCounter;
+    // [[fallthrough]]; // We want that fallthrough to have the update always triggered.
+    case UsdMayaStageNoticeListener::ChangeType::kUpdate: ++_UsdStageUpdateCounter; break;
+    }
+#else
     if (UsdMayaStageNoticeListener::ClassifyObjectsChanged(notice)
         == UsdMayaStageNoticeListener::ChangeType::kIgnored) {
         return;
     }
+#endif
 
     // This will definitely force a BBox recomputation on "Frame All" or when framing a selected
     // stage. Computing bounds in USD is expensive, so if it pops up in other frequently used
