@@ -40,6 +40,7 @@ def mayaUsdLibRegisterStrings():
     register('kLabelUnusedTransformAttrs', 'Unused')
     register('kLabelMetadata', 'Metadata')
     register('kLabelAppliedSchemas', 'Applied Schemas')
+    register('kOpenImage', 'Open')
 
     # mayaUsdAddMayaReference.py
     register('kErrorGroupPrimExists', 'Group prim "^1s" already exists under "^2s". Choose prim name other than "^1s" to proceed.')
