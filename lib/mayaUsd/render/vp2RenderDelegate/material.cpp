@@ -324,13 +324,6 @@ void CMPrefs::Refresh()
         return;
     }
 
-    int isOCIOV2 = 0;
-    MGlobal::executeCommand("colorManagementPrefs -q -ociov2Enabled", isOCIOV2, false, false);
-    if (!isOCIOV2) {
-        _active = false;
-        return;
-    }
-
     _active = true;
 
     _renderingSpaceName
@@ -441,7 +434,7 @@ const std::set<std::string> _mtlxTopoNodeSet = {
     "switch"
 };
 
-// These attribute names usually indiquate we have a source color space to handle.
+// These attribute names usually indicate we have a source color space to handle.
 const auto _mtlxKnownColorSpaceAttrs
         = std::vector<TfToken> { _tokens->sourceColorSpace, _mtlxTokens->colorSpace };
 
