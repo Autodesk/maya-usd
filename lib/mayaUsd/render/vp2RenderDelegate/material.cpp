@@ -529,6 +529,7 @@ bool _MxHasFilenameInput(const mx::NodeDefPtr nodeDef)
     return false;
 }
 
+#ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
 bool _MxHasFilenameInput(const HdMaterialNode2& inNode)
 {
     mx::NodeDefPtr nodeDef
@@ -538,6 +539,7 @@ bool _MxHasFilenameInput(const HdMaterialNode2& inNode)
     }
     return false;
 }
+#endif
 
 //! Helper function to generate a topo hash that can be used to detect if two networks share the
 //  same topology.
