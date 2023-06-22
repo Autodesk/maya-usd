@@ -112,6 +112,9 @@ public:
     //! The specified Rprim stops listening to changes on this material.
     void UnsubscribeFromMaterialUpdates(const SdfPath& rprimId);
 
+    //! Trigger sync on all Rprims which are listening to changes on this material.
+    void MaterialChanged(HdSceneDelegate* sceneDelegate);
+
     class TextureLoadingTask;
     friend class TextureLoadingTask;
 
@@ -208,9 +211,6 @@ private:
         MHWRender::MTexture* texture,
         bool                 isColorSpaceSRGB,
         const MFloatArray&   uvScaleOffset);
-
-    //! Trigger sync on all Rprims which are listening to changes on this material.
-    void _MaterialChanged(HdSceneDelegate* sceneDelegate);
 
     static void _ScheduleRefresh();
 

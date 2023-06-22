@@ -31,6 +31,8 @@
 
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>
+#include <usdUfe/undo/UsdUndoBlock.h>
+#include <usdUfe/undo/UsdUndoableItem.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
@@ -148,6 +150,8 @@ static constexpr char kAssignExistingMaterialLabel[] = "Assign Existing Material
 #endif
 static constexpr char kAddRefOrPayloadLabel[] = "Add USD Reference/Payload...";
 static constexpr char kAddRefOrPayloadItem[] = "AddReferenceOrPayload";
+const constexpr char  kClearAllRefsOrPayloadsLabel[] = "Clear All USD References/Payloads...";
+const constexpr char  kClearAllRefsOrPayloadsItem[] = "ClearAllReferencesOrPaylaods";
 
 static constexpr char kAllRegisteredTypesItem[] = "All Registered";
 static constexpr char kAllRegisteredTypesLabel[] = "All Registered";
@@ -509,18 +513,6 @@ makeUSDReferenceFilePathRelativeIfRequested(const std::string& filePath, const U
     return relativePathAndSuccess.first;
 }
 
-const char* clearAllReferencesConfirmScript = R"(
-global proc string ClearAllUSDReferencesConfirm()
-{
-    return `confirmDialog -title "Remove All References"
-        -message "Removing all references from USD prim.  Are you sure?"
-        -button "Yes" -button "No" -defaultButton "Yes"
-        -cancelButton "No" -dismissString "No"`;
-
-}
-ClearAllUSDReferencesConfirm();
-)";
-
 class AddUsdReferenceUndoableCommand : public Ufe::UndoableCommand
 {
 public:
@@ -604,29 +596,56 @@ private:
 class ClearAllReferencesUndoableCommand : public Ufe::UndoableCommand
 {
 public:
-    static const std::string commandName;
-    static const MString     cancelRemoval;
-
     ClearAllReferencesUndoableCommand(const UsdPrim& prim)
         : _prim(prim)
     {
     }
 
-    void undo() override { }
+    void undo() override { _undoItem.undo(); }
 
-    void redo() override
+    void redo() override { _undoItem.redo(); }
+
+    void execute() override
     {
-        if (_prim.IsValid()) {
-            UsdReferences primRefs = _prim.GetReferences();
-            primRefs.ClearReferences();
-        }
+        if (!_prim.IsValid())
+            return;
+
+        UsdUfe::UsdUndoBlock block(&_undoItem);
+        UsdReferences        primRefs = _prim.GetReferences();
+        primRefs.ClearReferences();
     }
 
 private:
-    UsdPrim _prim;
+    UsdPrim                 _prim;
+    UsdUfe::UsdUndoableItem _undoItem;
 };
-const std::string ClearAllReferencesUndoableCommand::commandName("Clear All References");
-const MString     ClearAllReferencesUndoableCommand::cancelRemoval("No");
+
+class ClearAllPayloadsUndoableCommand : public Ufe::UndoableCommand
+{
+public:
+    ClearAllPayloadsUndoableCommand(const UsdPrim& prim)
+        : _prim(prim)
+    {
+    }
+
+    void undo() override { _undoItem.undo(); }
+
+    void redo() override { _undoItem.redo(); }
+
+    void execute() override
+    {
+        if (!_prim.IsValid())
+            return;
+
+        UsdUfe::UsdUndoBlock block(&_undoItem);
+        UsdPayloads          primRefs = _prim.GetPayloads();
+        primRefs.ClearPayloads();
+    }
+
+private:
+    UsdPrim                 _prim;
+    UsdUfe::UsdUndoableItem _undoItem;
+};
 
 std::vector<std::pair<const char* const, const char* const>>
 _computeLoadAndUnloadItems(const UsdPrim& prim)
@@ -894,9 +913,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
         items.emplace_back(kUSDAddNewPrimItem, kUSDAddNewPrimLabel, Ufe::ContextItem::kHasChildren);
         if (!fIsAGatewayType) {
             items.emplace_back(kAddRefOrPayloadItem, kAddRefOrPayloadLabel);
-            items.emplace_back(
-                ClearAllReferencesUndoableCommand::commandName,
-                ClearAllReferencesUndoableCommand::commandName);
+            items.emplace_back(kClearAllRefsOrPayloadsItem, kClearAllRefsOrPayloadsLabel);
         }
         if (!fIsAGatewayType) {
             // Top level item - Bind/unbind existing materials
@@ -1253,12 +1270,35 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
 
             return compoCmd;
         }
-    } else if (itemPath[0] == ClearAllReferencesUndoableCommand::commandName) {
-        MString confirmation = MGlobal::executeCommandStringResult(clearAllReferencesConfirmScript);
-        if (ClearAllReferencesUndoableCommand::cancelRemoval == confirmation)
+    } else if (itemPath[0] == kClearAllRefsOrPayloadsItem) {
+        if (fItem->path().empty())
             return nullptr;
+        MString itemName = fItem->path().back().string().c_str();
 
-        return std::make_shared<ClearAllReferencesUndoableCommand>(prim());
+        MString cmd;
+        cmd.format(
+            "import mayaUsdClearRefsOrPayloadsOptions; "
+            "mayaUsdClearRefsOrPayloadsOptions.showClearRefsOrPayloadsOptions(r'''^1s''')",
+            itemName);
+        MStringArray results;
+        MGlobal::executePythonCommand(cmd, results);
+        if (MString("Clear") != results[0])
+            return nullptr;
+        std::shared_ptr<Ufe::CompositeUndoableCommand> compositeCmd;
+        for (const MString& res : results) {
+            if (res == "references") {
+                if (!compositeCmd) {
+                    compositeCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
+                }
+                compositeCmd->append(std::make_shared<ClearAllReferencesUndoableCommand>(prim()));
+            } else if (res == "payloads") {
+                if (!compositeCmd) {
+                    compositeCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
+                }
+                compositeCmd->append(std::make_shared<ClearAllPayloadsUndoableCommand>(prim()));
+            }
+        }
+        return compositeCmd;
     }
 #ifdef UFE_V3_FEATURES_AVAILABLE
     else if (itemPath[0] == kEditAsMayaItem) {
