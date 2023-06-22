@@ -285,5 +285,23 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         # Snapshot and assert similarity
         self.assertSnapshotClose('OCIO_Integration.png')
 
+        # Disable OCIO:
+        cmds.colorManagementPrefs(edit=True, cmEnabled=False)
+
+        # Snapshot and assert similarity
+        self.assertSnapshotClose('OCIO_Integration_disabled.png')
+
+        # Re-enable OCIO:
+        cmds.colorManagementPrefs(edit=True, cmEnabled=True)
+
+        # Snapshot and assert similarity
+        self.assertSnapshotClose('OCIO_Integration_enabled.png')
+
+        # Change working colorspace:
+        cmds.colorManagementPrefs(edit=True, renderingSpaceName="Linear P3-D65")
+
+        # Snapshot and assert similarity
+        self.assertSnapshotClose('OCIO_Integration_p3_d65.png')
+
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())

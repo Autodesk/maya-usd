@@ -55,7 +55,7 @@ def Mesh "pPlane1" (
                     asset inputs:file = @textures/color_palette_ACEScg.exr@ (
                         colorSpace = "ACEScg"
                     )
-                    string inputs:filtertype = "cubic"
+                    string inputs:filtertype = "closest"
                     float2 inputs:texcoord.connect = </pPlane1/mtl/usdPreviewSurface1SG/MayaNG_usdPreviewSurface1SG/place2dTexture1.outputs:out>
                     string inputs:uaddressmode = "periodic"
                     string inputs:vaddressmode = "periodic"
@@ -140,7 +140,7 @@ def Mesh "pPlane2" (
                     asset inputs:file = @textures/color_palette_ADX10.exr@ (
                         colorSpace = "ADX10"
                     )
-                    string inputs:filtertype = "cubic"
+                    string inputs:filtertype = "closest"
                     float2 inputs:texcoord.connect = </pPlane2/mtl/usdPreviewSurface9SG/MayaNG_usdPreviewSurface9SG/place2dTexture8.outputs:out>
                     string inputs:uaddressmode = "periodic"
                     string inputs:vaddressmode = "periodic"
@@ -225,7 +225,7 @@ def Mesh "pPlane3" (
                     asset inputs:file = @textures/color_palette_ADX16.exr@ (
                         colorSpace = "ADX16"
                     )
-                    string inputs:filtertype = "cubic"
+                    string inputs:filtertype = "closest"
                     float2 inputs:texcoord.connect = </pPlane3/mtl/usdPreviewSurface10SG/MayaNG_usdPreviewSurface10SG/place2dTexture9.outputs:out>
                     string inputs:uaddressmode = "periodic"
                     string inputs:vaddressmode = "periodic"
@@ -306,9 +306,9 @@ def Mesh "pPlane4" (
                 {
                     uniform token info:id = "ND_image_color4"
                     asset inputs:file = @textures/color_palette_arri_logc4.exr@ (
-                        colorSpace = "ARRI LogC4 - Curve"
+                        colorSpace = "ARRI LogC4"
                     )
-                    string inputs:filtertype = "cubic"
+                    string inputs:filtertype = "closest"
                     float2 inputs:texcoord.connect = </pPlane4/mtl/usdPreviewSurface11SG/MayaNG_usdPreviewSurface11SG/place2dTexture10.outputs:out>
                     string inputs:uaddressmode = "periodic"
                     string inputs:vaddressmode = "periodic"
@@ -318,7 +318,7 @@ def Mesh "pPlane4" (
                 def Shader "file10_MayafileTexture"
                 {
                     uniform token info:id = "MayaND_fileTexture_color4"
-                    string inputs:colorSpace = "ARRI LogC4 - Curve"
+                    string inputs:colorSpace = "ARRI LogC4"
                     color4f inputs:defaultColor = (0.5, 0.5, 0.5, 1)
                     color4f inputs:inColor.connect = </pPlane4/mtl/usdPreviewSurface11SG/MayaNG_usdPreviewSurface11SG/file10.outputs:out>
                     color4f inputs:uvCoord.connect = </pPlane4/mtl/usdPreviewSurface11SG/MayaNG_usdPreviewSurface11SG/place2dTexture10.outputs:out>
@@ -393,7 +393,7 @@ def Mesh "pPlane5" (
                     asset inputs:file = @textures/color_palette_g24_rec709.exr@ (
                         colorSpace = "Gamma 2.4 Rec.709 - Texture"
                     )
-                    string inputs:filtertype = "cubic"
+                    string inputs:filtertype = "closest"
                     float2 inputs:texcoord.connect = </pPlane5/mtl/usdPreviewSurface12SG/MayaNG_usdPreviewSurface12SG/place2dTexture11.outputs:out>
                     string inputs:uaddressmode = "periodic"
                     string inputs:vaddressmode = "periodic"
@@ -478,7 +478,7 @@ def Mesh "pPlane6" (
                     asset inputs:file = @textures/color_palette_lin_p3d65.exr@ (
                         colorSpace = "Linear P3-D65"
                     )
-                    string inputs:filtertype = "cubic"
+                    string inputs:filtertype = "closest"
                     float2 inputs:texcoord.connect = </pPlane6/mtl/usdPreviewSurface13SG/MayaNG_usdPreviewSurface13SG/place2dTexture12.outputs:out>
                     string inputs:uaddressmode = "periodic"
                     string inputs:vaddressmode = "periodic"
@@ -563,7 +563,7 @@ def Mesh "pPlane7" (
                     asset inputs:file = @textures/color_palette_srgb_texture.exr@ (
                         colorSpace = "sRGB - Texture"
                     )
-                    string inputs:filtertype = "cubic"
+                    string inputs:filtertype = "closest"
                     float2 inputs:texcoord.connect = </pPlane7/mtl/usdPreviewSurface14SG/MayaNG_usdPreviewSurface14SG/place2dTexture13.outputs:out>
                     string inputs:uaddressmode = "periodic"
                     string inputs:vaddressmode = "periodic"
