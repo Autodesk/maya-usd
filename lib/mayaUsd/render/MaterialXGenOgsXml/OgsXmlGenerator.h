@@ -39,6 +39,8 @@ public:
 
 private:
     static const string SAMPLER_SUFFIX;
+    static const string OCIO_SAMPLER_SUFFIX;
+    static const string OCIO_SAMPLER_PREFIX;
     static int          sUseLightAPI;
 };
 
