@@ -44,7 +44,7 @@ public:
         Unsupported
     };
 
-    /// This static function is expected for all shader readers and allows
+    /// This static function is expected for all prim readers and allows
     /// declaring how well this class can support the current context:
     MAYAUSD_CORE_PUBLIC
     static ContextSupport CanImport(const UsdMayaJobImportArgs& importArgs);
