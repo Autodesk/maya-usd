@@ -28,6 +28,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdUndoCreateGroupCommand.cpp
             UsdUndoInsertChildCommand.cpp
             UsdUndoReorderCommand.cpp
+            UsdUndoSelectAfterCommand.cpp
             UsdUndoSetKindCommand.cpp
             UsdUndoToggleActiveCommand.cpp
             UsdUndoToggleInstanceableCommand.cpp

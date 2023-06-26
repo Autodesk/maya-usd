@@ -9,19 +9,9 @@ import usdUfe
 import ufe
 import unittest
 import usdUtils
-import testUtils
+from usdUtils import filterUsdStr
 
 from pxr import Usd
-
-#####################################################################
-#
-# Helper to compare strings.
-
-def filterUsdStr(usdSceneStr):
-    '''Remove empty lines and lines starting with pound character.'''
-    nonBlankLines = filter(None, [l.strip() for l in usdSceneStr.splitlines()])
-    finalLines = [l for l in nonBlankLines if not l.startswith('#')]
-    return '\n'.join(finalLines)
 
 
 #####################################################################

@@ -17,7 +17,6 @@
 #define UFE_USD_SELECT_AFTER_COMMAND
 
 #include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>
-#include <usdUfe/ufe/UsdUndoInsertChildCommand.h>
 
 #include <ufe/globalSelection.h>
 #include <ufe/selection.h>

@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2023 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_UFE_USDUNDOPAYLOADCOMMAND_H
+#define MAYAUSD_UFE_USDUNDOPAYLOADCOMMAND_H
 
 #include <mayaUsd/base/api.h>
 
@@ -67,3 +68,5 @@ public:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif
