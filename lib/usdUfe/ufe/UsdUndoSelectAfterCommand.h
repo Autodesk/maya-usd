@@ -34,7 +34,7 @@ public:
     // Bring in the base class constructors.
     using OtherCommand::OtherCommand;
 
-    ~UsdUndoSelectAfterCommand() override {}
+    ~UsdUndoSelectAfterCommand() override { }
 
     void execute() override
     {
