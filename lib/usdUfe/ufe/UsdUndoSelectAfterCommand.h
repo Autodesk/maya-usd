@@ -19,6 +19,7 @@
 #include <usdUfe/base/api.h>
 
 #include <ufe/globalSelection.h>
+#include <ufe/hierarchy.h>
 #include <ufe/observableSelection.h>
 #include <ufe/selection.h>
 #include <ufe/undoableCommand.h>
