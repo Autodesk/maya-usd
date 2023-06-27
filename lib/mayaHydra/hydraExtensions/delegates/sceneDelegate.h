@@ -300,6 +300,9 @@ private:
     /// _useDefaultMaterial is true
     static VtValue _mayaDefaultMaterial;
 
+    /// Rendertags to be displayed in Hydra
+    static const TfTokenVector _renderTagsDisplayed;
+
     bool _useDefaultMaterial = false;
     bool _xRayEnabled = false;
     bool _isPlaybackRunning = false;

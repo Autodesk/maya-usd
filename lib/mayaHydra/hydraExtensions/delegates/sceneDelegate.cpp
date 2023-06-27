@@ -102,6 +102,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 SdfPath MayaHydraSceneDelegate::_fallbackMaterial;
 SdfPath MayaHydraSceneDelegate::_mayaDefaultMaterialPath; // Common to all scene delegates
 VtValue MayaHydraSceneDelegate::_mayaDefaultMaterial;
+/// Rendertags to be displayed in Hydra (geometry, guide, proxy, render, widget) ignoring "hidden"
+const TfTokenVector MayaHydraSceneDelegate::_renderTagsDisplayed = {HdRenderTagTokens->geometry, HdRenderTagTokens->guide, HdRenderTagTokens->proxy, HdRenderTagTokens->render, HdRenderTagTokens->widget};
 
 namespace {
 
@@ -265,6 +267,11 @@ MayaHydraSceneDelegate::MayaHydraSceneDelegate(const InitData& initData)
 
     // Enable the following line to print to the output window the lights parameters type and
     // values. TfDebug::Enable(MAYAHYDRALIB_DELEGATE_PRINT_LIGHTS_PARAMETERS_VALUES);
+
+    auto pTaskController = GetTaskController();
+    if (pTaskController){
+        pTaskController->SetRenderTags(_renderTagsDisplayed);//Set the render tags displayed in Hydra, this also acts on others scene indices like maya-usd stages
+    }
 
     static std::once_flag once;
     std::call_once(once, []() {
