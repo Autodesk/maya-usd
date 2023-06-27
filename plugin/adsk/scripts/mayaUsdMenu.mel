@@ -272,6 +272,7 @@ proc initRuntimeCommands() {
 
     source "mayaUsd_createStageFromFile.mel";
     source "mayaUsd_layerEditorFileDialogs.mel";
+    source "mayaUsd_imageFileDialogs.mel";
 }
 
 ///////////////////////////////////////////////////////////////////////////////
