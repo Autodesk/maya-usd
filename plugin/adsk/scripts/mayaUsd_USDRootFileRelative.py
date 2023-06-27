@@ -44,6 +44,7 @@ class usdFileRelative(object):
     _canBeRelative = False
     _haveRelativePathFields = False
     _parentLayerPath = ""
+    _ensureUsdExtension = True
 
     @staticmethod
     def setRelativeFilePathRoot(filePath):
@@ -68,7 +69,7 @@ class usdFileRelative(object):
         """
         Helper method to create the UI layout for the file relative actions.
 
-        Input parentLayout arg is expected to the a scroll layout into which controls
+        Input parentLayout arg is expected to be a scroll layout into which controls
         can be added.
 
         Input relativeToWhat tells what the file is relative to. See the class docs.
@@ -76,16 +77,6 @@ class usdFileRelative(object):
         mayaRefUtils.pushOptionsUITemplate()
         cmds.setParent(parentLayout)
 
-        optBoxForm = cmds.formLayout('optionsBoxForm')
-        topFrame = cmds.frameLayout(
-            'optionsBoxFrame', collapsable=False, labelVisible=False,
-            marginWidth=10, borderVisible=False)
-        cmds.formLayout(optBoxForm, edit=True,
-                        af=[(topFrame, 'left', 0),
-                            (topFrame, 'top', 0),
-                            (topFrame, 'right', 0),
-                            (topFrame, 'bottom', 0)])
-        
         topForm = cmds.columnLayout('actionOptionsForm', rowSpacing=5)
 
         kFileOptionsStr = getMayaUsdString("kFileOptions")
@@ -128,6 +119,7 @@ class usdFileRelative(object):
         cls._fileDialog = None
         cls._acceptButton = None
         cls._canBeRelative = canBeRelative
+        cls._ensureUsdExtension = True
         cls._haveRelativePathFields = cmds.textFieldGrp(cls.kUnresolvedPathTextField, exists=True)
 
         # Get the current checkbox value from optionVar (if any) and update checkbox.
@@ -255,10 +247,14 @@ class usdFileRelative(object):
             selFiles = cls._fileDialog.selectedFiles() if cls._fileDialog and cls._acceptButton and cls._acceptButton.isEnabled() else None
             selectedFile = selFiles[0] if selFiles else ''
 
-            # Make sure the file path has a valid USD extension. This is NOT done by the fileDialog so
-            # the user is free to enter any extension they want. The layer editor code will then verify
-            # (and fix if needed) the file path before saving. We do the same here for preview.
-            unresolvedPath = mayaUsdLib.Util.ensureUSDFileExtension(selectedFile) if selectedFile else ''
+            if cls._ensureUsdExtension:
+                # Make sure the file path has a valid USD extension. This is NOT done by the fileDialog so
+                # the user is free to enter any extension they want. The layer editor code will then verify
+                # (and fix if needed) the file path before saving. We do the same here for preview.
+                unresolvedPath = mayaUsdLib.Util.ensureUSDFileExtension(selectedFile) if selectedFile else ''
+            else:
+                unresolvedPath = selectedFile
+                
             relativePath = ''
             if unresolvedPath and cls._parentLayerPath:
                 relativePath = mayaUsdLib.Util.getPathRelativeToDirectory(unresolvedPath, cls._parentLayerPath)
@@ -435,3 +431,19 @@ class usdAddRefOrPayloadRelativeToEditTargetLayer(usdFileRelativeToEditTargetLay
         mayaUsdUtils.saveWantReferenceCompositionArc(wantReference)
         mayaUsdUtils.saveWantPrependCompositionArc(wantPrepend)
         mayaUsdUtils.saveWantPayloadLoaded(wantLoad)
+
+class usdImageRelativeToEditTargetLayer(usdFileRelativeToEditTargetLayer):
+    '''
+    Helper class to create the UI for image optionally relative to a layer file.
+    '''
+    @classmethod
+    def uiInit(cls, parentLayout, filterType):
+        '''
+        Note: the function takes an unused filterType argument to be compatible
+              with the dialog2 command API.
+        '''
+        super(usdImageRelativeToEditTargetLayer, cls).uiInit(parentLayout, filterType)
+
+        # Do not force the USD file extension since we are selecting image files.
+        cls._ensureUsdExtension = False
+
