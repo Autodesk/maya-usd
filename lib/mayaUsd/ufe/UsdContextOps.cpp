@@ -472,7 +472,7 @@ const char* _selectUSDFileScript()
         {
             string $result[] = `fileDialog2
                 -fileMode 1
-                -caption "Add Reference/Payload to Prim"
+                -caption "Add USD Reference/Payload to Prim"
                 -fileFilter "USD Files (%s);;%s"
                 -optionsUICreate addUSDReferenceCreateUi
                 -optionsUIInit addUSDReferenceInitUi
