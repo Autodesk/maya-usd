@@ -17,6 +17,8 @@
 
 #include <mayaUsd/ufe/Utils.h>
 
+#include <pxr/base/tf/stringUtils.h>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
@@ -37,8 +39,9 @@ Ufe::Matrix4d UsdTransform3dReadImpl::matrix() const
         bool unused;
         auto ops = xformable.GetOrderedXformOps(&unused);
         if (!UsdGeomXformable::GetLocalTransformation(&m, ops, getTime(path()))) {
-            TF_FATAL_ERROR(
+            std::string msg = TfStringPrintf(
                 "Local transformation computation for prim %s failed.", prim().GetPath().GetText());
+            throw std::runtime_error(msg.c_str());
         }
     }
 

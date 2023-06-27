@@ -186,7 +186,7 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path)
             if (newPath != cachedPath) {
                 // Key is stale.  Remove it from our cache, and add the new entry.
                 auto count = fPathToObject.erase(cachedPath);
-                TF_AXIOM(count);
+                TF_VERIFY(count);
                 if (!newPath.empty())
                     fPathToObject[newPath] = cachedObject;
             }

@@ -758,8 +758,8 @@ Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& f
             dst.append(item);
         } else {
             auto recreatedItem = Ufe::Hierarchy::createItem(item->path());
-            TF_AXIOM(recreatedItem);
-            dst.append(recreatedItem);
+            if (recreatedItem)
+                dst.append(recreatedItem);
         }
     }
     return dst;

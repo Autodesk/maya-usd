@@ -65,8 +65,10 @@ public:
     inline PXR_NS::UsdPrim prim() const
     {
         PXR_NAMESPACE_USING_DIRECTIVE
-        TF_AXIOM(fItem != nullptr);
-        return fItem->prim();
+        if (TF_VERIFY(fItem != nullptr))
+            return fItem->prim();
+        else
+            return PXR_NS::UsdPrim();
     }
 
     // When we are created from the ProxyShapeContextOpsHandler we do not have the proper
