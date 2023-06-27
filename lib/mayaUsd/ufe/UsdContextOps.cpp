@@ -151,7 +151,7 @@ static constexpr char kAssignExistingMaterialLabel[] = "Assign Existing Material
 static constexpr char kAddRefOrPayloadLabel[] = "Add USD Reference/Payload...";
 static constexpr char kAddRefOrPayloadItem[] = "AddReferenceOrPayload";
 const constexpr char  kClearAllRefsOrPayloadsLabel[] = "Clear All USD References/Payloads...";
-const constexpr char  kClearAllRefsOrPayloadsItem[] = "ClearAllReferencesOrPaylaods";
+const constexpr char  kClearAllRefsOrPayloadsItem[] = "ClearAllReferencesOrPayloads";
 
 static constexpr char kAllRegisteredTypesItem[] = "All Registered";
 static constexpr char kAllRegisteredTypesLabel[] = "All Registered";

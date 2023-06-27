@@ -79,7 +79,7 @@ def mayaUsdLibRegisterStrings():
     register('kAllRefsLabel', 'All References')
     register('kAllRefsTooltip', 'Clear all references on the prim.')
     register('kAllPayloadsLabel', 'All Payloads')
-    register('kAllPayloadsTooltip', 'Clear all payloads on the prims.')
+    register('kAllPayloadsTooltip', 'Clear all payloads on the prim.')
 
     # mayaUsdMergeToUSDOptions.py
     register('kMergeToUSDOptionsTitle', 'Merge Maya Edits to USD Options')
