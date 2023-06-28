@@ -55,7 +55,8 @@ typedef std::unordered_multimap<TfToken, _RegistryEntry, TfToken::HashFunctor> _
 static _Registry                                                               _reg;
 static int                                                                     _indexCounter = 0;
 
-_Registry::const_iterator _Find(const TfToken& typeName, const UsdMayaJobImportArgs& importArgs)
+_Registry::const_iterator
+_Find(const TfToken& typeName, const UsdMayaJobImportArgs& importArgs, const UsdPrim& importPrim)
 {
     using ContextSupport = UsdMayaPrimReader::ContextSupport;
 
@@ -64,7 +65,7 @@ _Registry::const_iterator _Find(const TfToken& typeName, const UsdMayaJobImportA
 
     std::tie(first, last) = _reg.equal_range(typeName);
     while (first != last) {
-        ContextSupport support = first->second._pred(importArgs);
+        ContextSupport support = first->second._pred(importArgs, importPrim);
         // Look for a "Supported" reader. If no "Supported" reader is found, use a "Fallback" reader
         if (support == ContextSupport::Supported) {
             ret = first;
@@ -93,8 +94,9 @@ void UsdMayaPrimReaderRegistry::Register(
     // Use default ContextSupport if not specified
     _reg.insert(std::make_pair(
         tfTypeName,
-        _RegistryEntry {
-            [](const UsdMayaJobImportArgs&) { return UsdMayaPrimReader::ContextSupport::Fallback; },
+        _RegistryEntry { [](const UsdMayaJobImportArgs&, const UsdPrim) {
+                            return UsdMayaPrimReader::ContextSupport::Fallback;
+                        },
             fn,
             index }));
 
@@ -152,8 +154,10 @@ void UsdMayaPrimReaderRegistry::RegisterRaw(const TfType& t, UsdMayaPrimReaderRe
 }
 
 /* static */
-UsdMayaPrimReaderRegistry::ReaderFactoryFn
-UsdMayaPrimReaderRegistry::Find(const TfToken& usdTypeName, const UsdMayaJobImportArgs& importArgs)
+UsdMayaPrimReaderRegistry::ReaderFactoryFn UsdMayaPrimReaderRegistry::Find(
+    const TfToken&              usdTypeName,
+    const UsdMayaJobImportArgs& importArgs,
+    const UsdPrim&              importPrim)
 {
     TfRegistryManager::GetInstance().SubscribeTo<UsdMayaPrimReaderRegistry>();
 
@@ -165,7 +169,7 @@ UsdMayaPrimReaderRegistry::Find(const TfToken& usdTypeName, const UsdMayaJobImpo
     ReaderFactoryFn ret = nullptr;
 
     // For that we are using unordered_multimap now, we can't use TfMapLookup anymore
-    _Registry::const_iterator it = _Find(typeName, importArgs);
+    _Registry::const_iterator it = _Find(typeName, importArgs, importPrim);
 
     if (it != _reg.end()) {
         return it->second._fn;
@@ -182,7 +186,7 @@ UsdMayaPrimReaderRegistry::Find(const TfToken& usdTypeName, const UsdMayaJobImpo
         //_reg[typeName] = nullptr;
         Register(
             tfType,
-            [](const UsdMayaJobImportArgs&) { return UsdMayaPrimReader::ContextSupport::Fallback; },
+            [](const UsdMayaJobImportArgs&, const UsdPrim&) { return UsdMayaPrimReader::ContextSupport::Fallback; },
             nullptr);
     }
 
@@ -192,9 +196,10 @@ UsdMayaPrimReaderRegistry::Find(const TfToken& usdTypeName, const UsdMayaJobImpo
 /* static */
 UsdMayaPrimReaderRegistry::ReaderFactoryFn UsdMayaPrimReaderRegistry::FindOrFallback(
     const TfToken&              usdTypeName,
-    const UsdMayaJobImportArgs& importArgs)
+    const UsdMayaJobImportArgs& importArgs,
+    const UsdPrim&              importPrim)
 {
-    if (ReaderFactoryFn fn = Find(usdTypeName, importArgs)) {
+    if (ReaderFactoryFn fn = Find(usdTypeName, importArgs, importPrim)) {
         return fn;
     }
 

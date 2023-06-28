@@ -57,7 +57,7 @@ struct UsdMayaPrimReaderRegistry
     /// Predicate function, i.e. a function that can tell the level of support
     /// the reader function will provide for a given context.
     using ContextPredicateFn
-        = std::function<UsdMayaPrimReader::ContextSupport(const UsdMayaJobImportArgs&)>;
+        = std::function<UsdMayaPrimReader::ContextSupport(const UsdMayaJobImportArgs&, const UsdPrim&)>;
 
     /// Reader function, i.e. a function that reads a prim. This is the
     /// signature of the function declared in the PXRUSDMAYA_DEFINE_READER
@@ -138,14 +138,14 @@ struct UsdMayaPrimReaderRegistry
     /// prim.GetTypeName()
     /// \endcode
     MAYAUSD_CORE_PUBLIC
-    static ReaderFactoryFn Find(const TfToken& usdTypeName, const UsdMayaJobImportArgs& importArgs);
+    static ReaderFactoryFn Find(const TfToken& usdTypeName, const UsdMayaJobImportArgs& importArgs, const UsdPrim& importPrim);
 
     /// Similar to Find(), but returns a "fallback" prim reader factory if none
     /// can be found for \p usdTypeName. Thus, this always returns a valid
     /// reader factory.
     MAYAUSD_CORE_PUBLIC
     static ReaderFactoryFn
-    FindOrFallback(const TfToken& usdTypeName, const UsdMayaJobImportArgs& importArgs);
+    FindOrFallback(const TfToken& usdTypeName, const UsdMayaJobImportArgs& importArgs, const UsdPrim& importPrim);
 };
 
 // Lookup TfType by name instead of static C++ type when

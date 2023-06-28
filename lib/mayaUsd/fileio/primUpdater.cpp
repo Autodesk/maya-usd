@@ -76,7 +76,7 @@ bool UsdMayaPrimUpdater::canEditAsMaya() const
         _context->GetUserArgs(),
         /* importWithProxyShapes = */ false,
         GfInterval::GetFullInterval());
-    return (UsdMayaPrimReaderRegistry::Find(prim.GetTypeName(), jobArgs) != nullptr);
+    return (UsdMayaPrimReaderRegistry::Find(prim.GetTypeName(), jobArgs, prim) != nullptr);
 }
 
 bool UsdMayaPrimUpdater::editAsMaya() { return true; }

@@ -35,6 +35,14 @@ UsdMayaShaderReader::UsdMayaShaderReader(const UsdMayaPrimReaderArgs& readArgs)
 {
 }
 
+/* static */
+UsdMayaShaderReader::ContextSupport UsdMayaShaderReader::CanImport(const UsdMayaJobImportArgs&)
+{
+    // Default value for all readers is Fallback. More specialized writers can
+    // override the base CanImport to report Supported/Unsupported as necessary.
+    return ContextSupport::Fallback;
+}
+
 /* virtual */
 MPlug UsdMayaShaderReader::GetMayaPlugForUsdAttrName(
     const TfToken& usdAttrName,
