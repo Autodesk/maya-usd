@@ -77,7 +77,7 @@ public:
     /// A static function is expected for all writers and allows
     /// declaring how well this class can support the current context.
     MAYAUSD_CORE_PUBLIC
-    static ContextSupport CanImport(const UsdMayaJobExportArgs& emportArgs);
+    static ContextSupport CanImport(const UsdMayaJobExportArgs& exportArgs);
 
     MAYAUSD_CORE_PUBLIC
     virtual ~UsdMayaPrimWriter();

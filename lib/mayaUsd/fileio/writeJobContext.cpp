@@ -564,7 +564,7 @@ UsdMayaWriteJobContext::_FindWriter(const std::string& mayaNodeType)
         = UsdMayaUtil::GetAllAncestorMayaNodeTypes(mayaNodeType);
     for (auto i = ancestorTypes.rbegin(); i != ancestorTypes.rend(); ++i) {
         if (UsdMayaPrimWriterRegistry::WriterFactoryFn primWriterFactory
-            = UsdMayaPrimWriterRegistry::Find(*i)) {
+            = UsdMayaPrimWriterRegistry::Find(*i, mArgs)) {
             mWriterFactoryCache[mayaNodeType] = primWriterFactory;
             return primWriterFactory;
         }
