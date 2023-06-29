@@ -28,6 +28,7 @@
 #include <QtGui/QFontMetrics>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QBoxLayout>
+#include <QtWidgets/QGridLayout>
 #include <ghc/filesystem.hpp>
 
 #include <string>
@@ -102,7 +103,11 @@ public:
     using LayerInfo = MayaUsd::utils::LayerInfo;
     using LayerInfos = MayaUsd::utils::LayerInfos;
 
-    SaveLayerPathRow(SaveLayersDialog* in_parent, const LayerInfo& in_layerInfo);
+    SaveLayerPathRow(
+        SaveLayersDialog* in_parent,
+        QGridLayout*      gridLayout,
+        int               gridRow,
+        const LayerInfo&  in_layerInfo);
 
     QString layerDisplayName() const;
 
@@ -134,13 +139,15 @@ public:
     bool              _suppressUserInputCallbacks { false };
 };
 
-SaveLayerPathRow::SaveLayerPathRow(SaveLayersDialog* in_parent, const LayerInfo& in_layerInfo)
+SaveLayerPathRow::SaveLayerPathRow(
+    SaveLayersDialog* in_parent,
+    QGridLayout*      gridLayout,
+    int               gridRow,
+    const LayerInfo&  in_layerInfo)
     : QWidget(in_parent)
     , _parent(in_parent)
     , _layerInfo(in_layerInfo)
 {
-    auto gridLayout = new QGridLayout();
-    QtUtils::initLayoutMargins(gridLayout);
 
     // Since this is an anonymous layer, it should only be associated with a single stage.
     std::string stageName;
@@ -153,15 +160,15 @@ SaveLayerPathRow::SaveLayerPathRow(SaveLayersDialog* in_parent, const LayerInfo&
     QString displayName = _layerInfo.layer->GetDisplayName().c_str();
     _label = new QLabel(displayName);
     _label->setToolTip(in_parent->buildTooltipForLayer(_layerInfo.layer));
-    gridLayout->addWidget(_label, 0, 0);
+    gridLayout->addWidget(_label, gridRow, 0);
 
     _pathEdit = new AnonLayerPathEdit(this);
     connect(_pathEdit, &QLineEdit::textChanged, this, &SaveLayerPathRow::onTextChanged);
-    gridLayout->addWidget(_pathEdit, 0, 1);
+    gridLayout->addWidget(_pathEdit, gridRow, 1);
 
     QIcon icon = utils->createIcon(":/fileOpen.png");
     _openBrowser = new GeneratedIconButton(this, icon);
-    gridLayout->addWidget(_openBrowser, 0, 2);
+    gridLayout->addWidget(_openBrowser, gridRow, 2);
     connect(_openBrowser, &QAbstractButton::clicked, this, &SaveLayerPathRow::onOpenBrowser);
 
     QString checkBoxTitle = _layerInfo.parent._layerParent
@@ -171,7 +178,7 @@ SaveLayerPathRow::SaveLayerPathRow(SaveLayersDialog* in_parent, const LayerInfo&
     if (_layerInfo.parent._layerParent) {
         checkBoxTooltip.format(
             StringResources::getAsMString(StringResources::kBatchSaveRelativeToLayerTooltip),
-            _layerInfo.parent._layerParent->GetIdentifier().c_str());
+            _layerInfo.parent._layerParent->GetDisplayName().c_str());
     } else {
         checkBoxTooltip
             = StringResources::getAsMString(StringResources::kBatchSaveRelativeToSceneTooltip);
@@ -180,11 +187,7 @@ SaveLayerPathRow::SaveLayerPathRow(SaveLayersDialog* in_parent, const LayerInfo&
     _relative = new QCheckBox(checkBoxTitle, this);
     _relative->setToolTip(MQtUtil::toQString(checkBoxTooltip));
     connect(_relative, &QCheckBox::stateChanged, this, &SaveLayerPathRow::onRelativeChanged);
-    gridLayout->addWidget(_relative, 0, 3);
-
-    setLayout(gridLayout);
-
-    setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Maximum);
+    gridLayout->addWidget(_relative, gridRow, 3);
 
     QString pathToSaveAs
         = MayaUsd::utils::generateUniqueLayerFileName(stageName, _layerInfo.layer).c_str();
@@ -492,15 +495,16 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2)
 
     // Anonymous layers.
     if (haveAnonLayers) {
-        auto anonLayout = new QVBoxLayout();
-        anonLayout->setContentsMargins(margin, margin, margin, 0);
-        anonLayout->setSpacing(DPIScale(8));
+        auto anonLayout = new QGridLayout();
+        QtUtils::initLayoutMargins(anonLayout, DPIScale(8));
         anonLayout->setAlignment(Qt::AlignTop);
         // Note: must start from the end so that layers appear in the right order from parent to
         // children.
+        int gridRow = 0;
         for (auto iter = _anonLayerInfos.crbegin(); iter != _anonLayerInfos.crend(); ++iter) {
-            auto row = new SaveLayerPathRow(this, (*iter));
-            anonLayout->addWidget(row);
+            // Note: the row adds itself as a children of the dialog, so it will be deleted
+            //       when the dialog closes.
+            new SaveLayerPathRow(this, anonLayout, gridRow++, (*iter));
         }
 
         _anonLayersWidget = new QWidget();
