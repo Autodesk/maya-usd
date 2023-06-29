@@ -53,7 +53,7 @@ struct _RegistryEntry
 // typedef std::map<std::string, UsdMayaPrimWriterRegistry::WriterFactoryFn> _Registry;
 typedef std::unordered_multimap<std::string, _RegistryEntry> _Registry;
 static _Registry                                             _reg;
-static std::set<std::string> _mayaTypesThatDoNotCreatePrims;
+static std::set<std::string>                                 _mayaTypesThatDoNotCreatePrims;
 static int                                                   _indexCounter = 0;
 
 _Registry::const_iterator
@@ -189,6 +189,21 @@ UsdMayaPrimWriterRegistry::WriterFactoryFn UsdMayaPrimWriterRegistry::Find(
     }
 
     return nullptr;
+}
+
+/* static */
+void UsdMayaPrimWriterRegistry::Poke(const std::string& mayaTypeName)
+{
+    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaPrimWriterRegistry>();
+
+    _Registry::const_iterator first, last;
+    std::tie(first, last) = _reg.equal_range(mayaTypeName);
+
+    if (first == last) {
+        // If the type name is not currently in our registry, check for plugin registry
+        static const TfTokenVector SCOPE = { _tokens->UsdMaya, _tokens->PrimWriter };
+        UsdMaya_RegistryHelper::FindAndLoadMayaPlug(SCOPE, mayaTypeName);
+    }
 }
 
 /* static */

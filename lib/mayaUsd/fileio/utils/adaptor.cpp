@@ -158,12 +158,7 @@ TfType UsdMayaAdaptor::GetUsdType() const
     // The adaptor type mapping might be registered externally in a prim writer
     // plugin. This simply pokes the prim writer registry to load the prim
     // writer plugin in order to pull in the adaptor mapping.
-    if (!_jobExportArgs) {
-        TF_CODING_ERROR("ExportArgs shouldn't be Null.");
-        return TfType();
-    }
-
-    UsdMayaPrimWriterRegistry::Find(depNode.typeName().asChar(), *_jobExportArgs);
+    UsdMayaPrimWriterRegistry::Poke(depNode.typeName().asChar());
     TfRegistryManager::GetInstance().SubscribeTo<UsdMayaAdaptor>();
 
     const auto iter = _schemaLookup.find(depNode.typeName().asChar());
