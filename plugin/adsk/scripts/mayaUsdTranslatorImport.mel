@@ -168,11 +168,14 @@ global proc int mayaUsdTranslatorImport (string $parent,
     int $cw1 = 180;
     int $cw2 = 300;
     int $bw = 125;
+    int $forEditAsMaya = ($resultCallback == "mayaUsdMenu_EditAsMayaDataOptionsCallback") ? 1 : 0;
 
     if ($action == "post") {
         setParent $parent;
 
-        columnLayout -adj true -rs 5 mayaUsdTranslator_OptsCol;
+        int $columnSpacing = ($forEditAsMaya ? 12 : 5);
+        string $menuAnnotation = ($forEditAsMaya ? "EditAsMayaOptions" : "ImportOptions");
+        columnLayout -adj true -rs $columnSpacing -ann $menuAnnotation  mayaUsdTranslator_OptsCol;
 
         optionMenuGrp -l  `getMayaUsdString("kImportJobContextLbl")` -cw 1 $cw1 -annotation `getMayaUsdString("kImportJobContextAnn")` -cc ("mayaUsdTranslatorImport_JobContextCB") mayaUsdTranslator_jobContextPopup;
             menuItem -l `getMayaUsdString("kImportJobContextNoneLbl")` -ann "None";
@@ -187,7 +190,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
             }
 
 
-        if (`exists usdImportDialog`)
+        if (`exists usdImportDialog` && !$forEditAsMaya)
         {
             rowLayout -numberOfColumns 4 -cw 1 $cw1 -cat 1 "right" 0;
                 text -label `getMayaUsdString("kImportScopeVariantsLbl")`
@@ -279,11 +282,15 @@ global proc int mayaUsdTranslatorImport (string $parent,
         string $currentOptions = "";
         $currentOptions = mayaUsdTranslatorImport_AppendMaterialsFromCheckBoxGrp($currentOptions, "shadingMode", "mayaUsdTranslator_MaterialsCheckBox");
         $currentOptions = mayaUsdTranslatorImport_AppendFromPopup($currentOptions, "preferredMaterial", "mayaUsdTranslator_MaterialsConversionMenu");
-        $currentOptions = mayaUsdTranslatorImport_AppendFromDialog($currentOptions, "primPath", "-primPath");
+        if (!$forEditAsMaya) {
+            $currentOptions = mayaUsdTranslatorImport_AppendFromDialog($currentOptions, "primPath", "-primPath");
+        }
         $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "readAnimData", "mayaUsdTranslator_AnimDataCheckBox");
-        $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "useCustomFrameRange", "mayaUsdTranslator_CustomFrameRangeCheckBox");
-        $currentOptions = mayaUsdTranslatorImport_AppendFromIntFieldGrp($currentOptions, "startTime", 1, "mayaUsdTranslator_CustomFrameRange");
-        $currentOptions = mayaUsdTranslatorImport_AppendFromIntFieldGrp($currentOptions, "endTime", 2, "mayaUsdTranslator_CustomFrameRange");
+        if (!$forEditAsMaya) {
+            $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "useCustomFrameRange", "mayaUsdTranslator_CustomFrameRangeCheckBox");
+            $currentOptions = mayaUsdTranslatorImport_AppendFromIntFieldGrp($currentOptions, "startTime", 1, "mayaUsdTranslator_CustomFrameRange");
+            $currentOptions = mayaUsdTranslatorImport_AppendFromIntFieldGrp($currentOptions, "endTime", 2, "mayaUsdTranslator_CustomFrameRange");
+        }
         $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "importUSDZTextures", "mayaUsdTranslator_ImportUSDZTexturesCheckBox");
         $currentOptions = mayaUsdTranslatorImport_AppendJobContexts($currentOptions, "jobContext");
 
@@ -365,7 +372,8 @@ global proc mayaUsdTranslatorImport_SetMaterialsCheckBox(string $arg, int $enabl
 
 global proc mayaUsdTranslatorImport_AnimationCB()
 {
-    if (`checkBoxGrp -q -value1 mayaUsdTranslator_AnimDataCheckBox` == 1) {
+    int $forEditAsMaya = (`columnLayout -q -ann mayaUsdTranslator_OptsCol` == "EditAsMayaOptions") ? 1 : 0;
+    if ((`checkBoxGrp -q -value1 mayaUsdTranslator_AnimDataCheckBox` == 1) && !$forEditAsMaya) {
         checkBoxGrp -e -vis true mayaUsdTranslator_CustomFrameRangeCheckBox;
         int $vis = (`checkBoxGrp -q -value1 mayaUsdTranslator_CustomFrameRangeCheckBox` == 1);
         intFieldGrp -e -vis $vis mayaUsdTranslator_CustomFrameRange;

@@ -236,6 +236,49 @@ bool allowTopologyModifications(MDagPath& root)
     return dgMod.doIt();
 }
 
+UsdMayaJobImportArgs CreateImportArgsForPullImport(const VtDictionary& basicUserArgs)
+{
+    VtDictionary userArgs(basicUserArgs);
+
+    MString              optionsString;
+    static const MString optionVarName("usdMaya_EditAsMayaDataOptions");
+    if (MGlobal::optionVarExists(optionVarName)) {
+        optionsString = MGlobal::optionVarStringValue(optionVarName);
+    }
+
+    bool readAnimData = true;
+    if (optionsString.length() > 0) {
+        MStringArray optionList;
+        MStringArray theOption;
+        optionsString.split(';', optionList);
+        for (int i = 0, n = optionList.length(); i < n; ++i) {
+            theOption.clear();
+            optionList[i].split('=', theOption);
+            if (theOption.length() != 2) {
+                continue;
+            }
+
+            std::string argName(theOption[0].asChar(), theOption[0].length());
+            if (argName == "readAnimData") {
+                readAnimData = (theOption[1].asInt() != 0);
+            } else {
+                userArgs[argName] = UsdMayaUtil::ParseArgumentValue(
+                    argName, theOption[1].asChar(), UsdMayaJobImportArgs::GetGuideDictionary());
+            }
+        }
+    }
+
+    GfInterval timeInterval;
+    if (readAnimData) {
+        timeInterval = GfInterval::GetFullInterval();
+    }
+
+    return UsdMayaJobImportArgs::CreateFromDictionary(
+        userArgs,
+        /* importWithProxyShapes = */ false,
+        timeInterval);
+}
+
 //------------------------------------------------------------------------------
 //
 // Perform the import step of the pull (first step), with the argument
@@ -261,12 +304,8 @@ PullImportPaths pullImport(
     userArgs[UsdMayaJobImportArgsTokens->pullImportStage] = PXR_NS::VtValue(context.GetUsdStage());
     userArgs[UsdMayaJobImportArgsTokens->preserveTimeline] = true;
 
-    UsdMayaJobImportArgs jobArgs = UsdMayaJobImportArgs::CreateFromDictionary(
-        userArgs,
-        /* importWithProxyShapes = */ false,
-        GfInterval::GetFullInterval());
-
-    MayaUsd::ImportData importData(mFileName);
+    UsdMayaJobImportArgs jobArgs = CreateImportArgsForPullImport(userArgs);
+    MayaUsd::ImportData  importData(mFileName);
     importData.setRootPrimPath(pulledPrim.GetPath().GetText());
 
     auto readJob = std::make_shared<UsdMaya_ReadJob>(importData, jobArgs);
