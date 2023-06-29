@@ -28,6 +28,7 @@
 
 #include <pxr/base/gf/rotation.h>
 #include <pxr/base/gf/transform.h>
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/usdGeom/xformCache.h>
 #include <pxr/usd/usdGeom/xformOp.h>
 #include <pxr/usd/usdGeom/xformable.h>
@@ -85,8 +86,9 @@ GfMatrix4d xformInv(
 
     GfMatrix4d m { 1 };
     if (!UsdGeomXformable::GetLocalTransformation(&m, ops, MayaUsd::ufe::getTime(path))) {
-        TF_FATAL_ERROR(
+        std::string msg = TfStringPrintf(
             "Local transformation computation for item %s failed.", path.string().c_str());
+        throw std::runtime_error(msg.c_str());
     }
 
     return m.GetInverse();
@@ -191,7 +193,9 @@ public:
         GfMatrix4d unusedR, unusedP;
         GfVec3d    s;
         if (!opTransform.Factor(&unusedR, &s, &fU, &fT, &unusedP)) {
-            TF_FATAL_ERROR("Cannot decompose transform for op %s", op.GetOpName().GetText());
+            std::string msg
+                = TfStringPrintf("Cannot decompose transform for op %s", op.GetOpName().GetText());
+            throw std::runtime_error(msg.c_str());
         }
 
         fS = GfMatrix4d(GfVec4d(s[0], s[1], s[2], 1.0));
@@ -235,7 +239,9 @@ public:
         GfMatrix4d unusedR, unusedP;
         GfVec3d    unusedS;
         if (!opTransform.Factor(&unusedR, &unusedS, &fU, &fT, &unusedP)) {
-            TF_FATAL_ERROR("Cannot decompose transform for op %s", op.GetOpName().GetText());
+            std::string msg
+                = TfStringPrintf("Cannot decompose transform for op %s", op.GetOpName().GetText());
+            throw std::runtime_error(msg.c_str());
         }
     }
 

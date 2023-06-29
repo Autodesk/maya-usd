@@ -87,16 +87,32 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         cmds.file(force=True, new=True)
         cmds.move(6, -6, 6, 'persp')
         cmds.rotate(60, 0, 45, 'persp')
-        self._StartTest('MayaSurfaces')
+
+        # OCIO will clamp colors before converting them, giving slightly different
+        # results for the triplanar projection:
+        suffix = ""
+        if os.getenv('MAYA_HAS_COLOR_MANAGEMENT_SUPPORT_API', 'FALSE') == 'TRUE':
+            suffix = "_ocio"
+
+        mayaUtils.loadPlugin("mayaUsdPlugin")
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, displayTextures=True)
+
+        testFile = testUtils.getTestScene("MaterialX", "MayaSurfaces.usda")
+        mayaUtils.createProxyFromFile(testFile)
+        globalSelection = ufe.GlobalSelection.get()
+        globalSelection.clear()
+        self.assertSnapshotClose('%s_render.png' % ("MayaSurfaces" + suffix))
 
         # Flat shading requires V3 lighting API:
         if int(os.getenv("MAYA_LIGHTAPI_VERSION")) >= 3:
             panel = mayaUtils.activeModelPanel()
             cmds.modelEditor(panel, edit=True, displayLights="flat")
-            self._StartTest('MayaSurfaces_flat')
+            self.assertSnapshotClose('%s_render.png' % ('MayaSurfaces_flat' + suffix))
             cmds.modelEditor(panel, edit=True, displayLights="default")
 
-        self._StartTest('MayaSurfaces_untextured', False)
+        cmds.modelEditor(panel, edit=True, displayTextures=False)
+        self.assertSnapshotClose('MayaSurfaces_untextured_render.png')
 
     def testResetToDefaultValues(self):
         """When deleting an authored attribute, make sure the shader reverts to the default unauthored value."""
@@ -232,6 +248,60 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
 
         cmds.setAttr("hardwareRenderingGlobals.multiSampleEnable", True)
 
+    @unittest.skipUnless(os.getenv('MAYA_HAS_COLOR_MANAGEMENT_SUPPORT_API', 'FALSE') == 'TRUE', 'Test requires OCIO API in Maya SDK.')
+    def testOCIOIntegration(self):
+        """Test that we can color manage using Maya OCIO fragments."""
+        cmds.file(new=True, force=True)
+        # This config has file rules for all the new textures:
+        configFile = testUtils.getTestScene("MaterialX", "studio-config-v1.0.0_aces-v1.3_ocio-v2.0.ocio")
+        cmds.colorManagementPrefs(edit=True, configFilePath=configFile)
+
+        # Import the Maya data so we can compare:
+        mayaFile = testUtils.getTestScene("MaterialX", "color_management.ma")
+        cmds.file(mayaFile, i=True, type="mayaAscii")
+
+        # And a few USD stages that have USD and MaterialX data in need of color management:
+        usdCases = (("USD", 0.51), ("MTLX", -0.51), ("MTLX_Raw", -1.02))
+        for suffix, offset in usdCases:
+            testFile = testUtils.getTestScene("MaterialX", "color_management_{}.usda".format(suffix))
+            proxyNode = mayaUtils.createProxyFromFile(testFile)[0]
+
+            proxyXform = "|".join(proxyNode.split("|")[:-1])
+            cmds.setAttr(proxyXform + ".translateZ", offset)
+            cmds.setAttr(proxyXform + ".scaleX", 0.5)
+
+        # Position our camera:
+        cmds.setAttr("persp.translateX", 0)
+        cmds.setAttr("persp.translateY", 4)
+        cmds.setAttr("persp.translateZ", -0.25)
+        cmds.setAttr("persp.rotateX", -90)
+        cmds.setAttr("persp.rotateY", 0)
+        cmds.setAttr("persp.rotateZ", 0)    
+
+        # Turn on textured display and focus in on the subject
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, e=1, displayTextures=1)
+
+        # Snapshot and assert similarity
+        self.assertSnapshotClose('OCIO_Integration.png')
+
+        # Disable OCIO:
+        cmds.colorManagementPrefs(edit=True, cmEnabled=False)
+
+        # Snapshot and assert similarity
+        self.assertSnapshotClose('OCIO_Integration_disabled.png')
+
+        # Re-enable OCIO:
+        cmds.colorManagementPrefs(edit=True, cmEnabled=True)
+
+        # Snapshot and assert similarity
+        self.assertSnapshotClose('OCIO_Integration_enabled.png')
+
+        # Change working colorspace:
+        cmds.colorManagementPrefs(edit=True, renderingSpaceName="Linear P3-D65")
+
+        # Snapshot and assert similarity
+        self.assertSnapshotClose('OCIO_Integration_p3_d65.png')
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())

@@ -1,0 +1,435 @@
+#usda 1.0
+(
+    defaultPrim = "pPlane1"
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
+
+def Mesh "pPlane1" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.25), (0.5, 0, 0.25)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </pPlane1/mtl/usdPreviewSurface1SG>
+    point3f[] points = [(-0.5, 0, 0.25), (0.5, 0, 0.25), (-0.5, 0, -0.25), (0.5, 0, -0.25)]
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+    double3 xformOp:translate = (-3.03, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Scope "mtl"
+    {
+        def Material "usdPreviewSurface1SG"
+        {
+            string inputs:file1:varname = "st"
+            token outputs:surface.connect = </pPlane1/mtl/usdPreviewSurface1SG/usdPreviewSurface1.outputs:surface>
+
+            def Shader "usdPreviewSurface1"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0, 0, 0)
+                color3f inputs:emissiveColor.connect = </pPlane1/mtl/usdPreviewSurface1SG/file1.outputs:rgb>
+                float inputs:roughness = 1
+                token outputs:displacement
+                token outputs:surface
+            }
+
+            def Shader "file1"
+            {
+                uniform token info:id = "UsdUVTexture"
+                float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
+                asset inputs:file = @textures/color_palette_ACEScg.exr@
+                float2 inputs:st.connect = </pPlane1/mtl/usdPreviewSurface1SG/place2dTexture1.outputs:result>
+                token inputs:wrapS = "repeat"
+                token inputs:wrapT = "repeat"
+                float3 outputs:rgb
+            }
+
+            def Shader "place2dTexture1"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                string inputs:varname.connect = </pPlane1/mtl/usdPreviewSurface1SG.inputs:file1:varname>
+                float2 outputs:result
+            }
+        }
+    }
+}
+
+def Mesh "pPlane2" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.25), (0.5, 0, 0.25)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </pPlane2/mtl/usdPreviewSurface9SG>
+    point3f[] points = [(-0.5, 0, 0.25), (0.5, 0, 0.25), (-0.5, 0, -0.25), (0.5, 0, -0.25)]
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+    double3 xformOp:translate = (-2.02, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Scope "mtl"
+    {
+        def Material "usdPreviewSurface9SG"
+        {
+            string inputs:file8:varname = "st"
+            token outputs:surface.connect = </pPlane2/mtl/usdPreviewSurface9SG/usdPreviewSurface9.outputs:surface>
+
+            def Shader "usdPreviewSurface9"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0, 0, 0)
+                color3f inputs:emissiveColor.connect = </pPlane2/mtl/usdPreviewSurface9SG/file8.outputs:rgb>
+                float inputs:roughness = 1
+                token outputs:displacement
+                token outputs:surface
+            }
+
+            def Shader "file8"
+            {
+                uniform token info:id = "UsdUVTexture"
+                float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
+                asset inputs:file = @textures/color_palette_ADX10.exr@
+                float2 inputs:st.connect = </pPlane2/mtl/usdPreviewSurface9SG/place2dTexture8.outputs:result>
+                token inputs:wrapS = "repeat"
+                token inputs:wrapT = "repeat"
+                float3 outputs:rgb
+            }
+
+            def Shader "place2dTexture8"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                string inputs:varname.connect = </pPlane2/mtl/usdPreviewSurface9SG.inputs:file8:varname>
+                float2 outputs:result
+            }
+        }
+    }
+}
+
+def Mesh "pPlane3" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.25), (0.5, 0, 0.25)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </pPlane3/mtl/usdPreviewSurface10SG>
+    point3f[] points = [(-0.5, 0, 0.25), (0.5, 0, 0.25), (-0.5, 0, -0.25), (0.5, 0, -0.25)]
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+    double3 xformOp:translate = (-1.01, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Scope "mtl"
+    {
+        def Material "usdPreviewSurface10SG"
+        {
+            string inputs:file9:varname = "st"
+            token outputs:surface.connect = </pPlane3/mtl/usdPreviewSurface10SG/usdPreviewSurface10.outputs:surface>
+
+            def Shader "usdPreviewSurface10"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0, 0, 0)
+                color3f inputs:emissiveColor.connect = </pPlane3/mtl/usdPreviewSurface10SG/file9.outputs:rgb>
+                float inputs:roughness = 1
+                token outputs:displacement
+                token outputs:surface
+            }
+
+            def Shader "file9"
+            {
+                uniform token info:id = "UsdUVTexture"
+                float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
+                asset inputs:file = @textures/color_palette_ADX16.exr@
+                float2 inputs:st.connect = </pPlane3/mtl/usdPreviewSurface10SG/place2dTexture9.outputs:result>
+                token inputs:wrapS = "repeat"
+                token inputs:wrapT = "repeat"
+                float3 outputs:rgb
+            }
+
+            def Shader "place2dTexture9"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                string inputs:varname.connect = </pPlane3/mtl/usdPreviewSurface10SG.inputs:file9:varname>
+                float2 outputs:result
+            }
+        }
+    }
+}
+
+def Mesh "pPlane4" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.25), (0.5, 0, 0.25)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </pPlane4/mtl/usdPreviewSurface11SG>
+    point3f[] points = [(-0.5, 0, 0.25), (0.5, 0, 0.25), (-0.5, 0, -0.25), (0.5, 0, -0.25)]
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+
+    def Scope "mtl"
+    {
+        def Material "usdPreviewSurface11SG"
+        {
+            string inputs:file10:varname = "st"
+            token outputs:surface.connect = </pPlane4/mtl/usdPreviewSurface11SG/usdPreviewSurface11.outputs:surface>
+
+            def Shader "usdPreviewSurface11"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0, 0, 0)
+                color3f inputs:emissiveColor.connect = </pPlane4/mtl/usdPreviewSurface11SG/file10.outputs:rgb>
+                float inputs:roughness = 1
+                token outputs:displacement
+                token outputs:surface
+            }
+
+            def Shader "file10"
+            {
+                uniform token info:id = "UsdUVTexture"
+                float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
+                asset inputs:file = @textures/color_palette_arri_logc4.exr@
+                float2 inputs:st.connect = </pPlane4/mtl/usdPreviewSurface11SG/place2dTexture10.outputs:result>
+                token inputs:wrapS = "repeat"
+                token inputs:wrapT = "repeat"
+                float3 outputs:rgb
+            }
+
+            def Shader "place2dTexture10"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                string inputs:varname.connect = </pPlane4/mtl/usdPreviewSurface11SG.inputs:file10:varname>
+                float2 outputs:result
+            }
+        }
+    }
+}
+
+def Mesh "pPlane5" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.25), (0.5, 0, 0.25)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </pPlane5/mtl/usdPreviewSurface12SG>
+    point3f[] points = [(-0.5, 0, 0.25), (0.5, 0, 0.25), (-0.5, 0, -0.25), (0.5, 0, -0.25)]
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+    double3 xformOp:translate = (1.01, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Scope "mtl"
+    {
+        def Material "usdPreviewSurface12SG"
+        {
+            string inputs:file11:varname = "st"
+            token outputs:surface.connect = </pPlane5/mtl/usdPreviewSurface12SG/usdPreviewSurface12.outputs:surface>
+
+            def Shader "usdPreviewSurface12"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0, 0, 0)
+                color3f inputs:emissiveColor.connect = </pPlane5/mtl/usdPreviewSurface12SG/file11.outputs:rgb>
+                float inputs:roughness = 1
+                token outputs:displacement
+                token outputs:surface
+            }
+
+            def Shader "file11"
+            {
+                uniform token info:id = "UsdUVTexture"
+                float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
+                asset inputs:file = @textures/color_palette_g24_rec709.exr@
+                float2 inputs:st.connect = </pPlane5/mtl/usdPreviewSurface12SG/place2dTexture11.outputs:result>
+                token inputs:wrapS = "repeat"
+                token inputs:wrapT = "repeat"
+                float3 outputs:rgb
+            }
+
+            def Shader "place2dTexture11"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                string inputs:varname.connect = </pPlane5/mtl/usdPreviewSurface12SG.inputs:file11:varname>
+                float2 outputs:result
+            }
+        }
+    }
+}
+
+def Mesh "pPlane6" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.25), (0.5, 0, 0.25)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </pPlane6/mtl/usdPreviewSurface13SG>
+    point3f[] points = [(-0.5, 0, 0.25), (0.5, 0, 0.25), (-0.5, 0, -0.25), (0.5, 0, -0.25)]
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+    double3 xformOp:translate = (2.02, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Scope "mtl"
+    {
+        def Material "usdPreviewSurface13SG"
+        {
+            string inputs:file12:varname = "st"
+            token outputs:surface.connect = </pPlane6/mtl/usdPreviewSurface13SG/usdPreviewSurface13.outputs:surface>
+
+            def Shader "usdPreviewSurface13"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0, 0, 0)
+                color3f inputs:emissiveColor.connect = </pPlane6/mtl/usdPreviewSurface13SG/file12.outputs:rgb>
+                float inputs:roughness = 1
+                token outputs:displacement
+                token outputs:surface
+            }
+
+            def Shader "file12"
+            {
+                uniform token info:id = "UsdUVTexture"
+                float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
+                asset inputs:file = @textures/color_palette_lin_p3d65.exr@
+                float2 inputs:st.connect = </pPlane6/mtl/usdPreviewSurface13SG/place2dTexture12.outputs:result>
+                token inputs:wrapS = "repeat"
+                token inputs:wrapT = "repeat"
+                float3 outputs:rgb
+            }
+
+            def Shader "place2dTexture12"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                string inputs:varname.connect = </pPlane6/mtl/usdPreviewSurface13SG.inputs:file12:varname>
+                float2 outputs:result
+            }
+        }
+    }
+}
+
+def Mesh "pPlane7" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.25), (0.5, 0, 0.25)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </pPlane7/mtl/usdPreviewSurface14SG>
+    point3f[] points = [(-0.5, 0, 0.25), (0.5, 0, 0.25), (-0.5, 0, -0.25), (0.5, 0, -0.25)]
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+    double3 xformOp:translate = (3.03, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Scope "mtl"
+    {
+        def Material "usdPreviewSurface14SG"
+        {
+            string inputs:file13:varname = "st"
+            token outputs:surface.connect = </pPlane7/mtl/usdPreviewSurface14SG/usdPreviewSurface14.outputs:surface>
+
+            def Shader "usdPreviewSurface14"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0, 0, 0)
+                color3f inputs:emissiveColor.connect = </pPlane7/mtl/usdPreviewSurface14SG/file13.outputs:rgb>
+                float inputs:roughness = 1
+                token outputs:displacement
+                token outputs:surface
+            }
+
+            def Shader "file13"
+            {
+                uniform token info:id = "UsdUVTexture"
+                float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
+                asset inputs:file = @textures/color_palette_srgb_texture.exr@ (
+                    colorSpace = "sRGB"
+                )
+                token inputs:sourceColorSpace = "sRGB"
+                float2 inputs:st.connect = </pPlane7/mtl/usdPreviewSurface14SG/place2dTexture13.outputs:result>
+                token inputs:wrapS = "repeat"
+                token inputs:wrapT = "repeat"
+                float3 outputs:rgb
+            }
+
+            def Shader "place2dTexture13"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                string inputs:varname.connect = </pPlane7/mtl/usdPreviewSurface14SG.inputs:file13:varname>
+                float2 outputs:result
+            }
+        }
+    }
+}
+

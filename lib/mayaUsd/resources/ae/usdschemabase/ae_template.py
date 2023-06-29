@@ -17,6 +17,7 @@ import collections
 import fnmatch
 from functools import partial
 import re
+import os.path
 import ufe
 import maya.mel as mel
 import maya.cmds as cmds
@@ -24,6 +25,7 @@ import mayaUsd.ufe as mayaUsdUfe
 import mayaUsd.lib as mayaUsdLib
 import maya.internal.common.ufe_ae.template as ufeAeTemplate
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
+import mayaUsd_USDRootFileRelative as murel
 
 try:
     # This helper class was only added recently to Maya.
@@ -32,13 +34,18 @@ try:
 except:
     hasAEPopupMenu = False
 
+try:
+    from PySide2 import QtCore
+except:
+    from PySide6 import QtCore
+
 from maya.common.ui import LayoutManager, ParentManager
 from maya.common.ui import setClipboardData
 from maya.OpenMaya import MGlobal
 
 # We manually import all the classes which have a 'GetSchemaAttributeNames'
 # method so we have access to it and the 'pythonClass' method.
-from pxr import Usd, UsdGeom, UsdLux, UsdRender, UsdRi, UsdShade, UsdSkel, UsdUI, UsdVol, Kind, Tf, Sdr
+from pxr import Usd, UsdGeom, UsdLux, UsdRender, UsdRi, UsdShade, UsdSkel, UsdUI, UsdVol, Kind, Tf, Sdr, Sdf
 
 nameTxt = 'nameTxt'
 attrValueFld = 'attrValueFld'
@@ -380,6 +387,165 @@ class ConnectionsCustomControl(object):
         # varying, so we don't need to implement the replace.
         pass
 
+def _NOL10N(text):
+    return text
+
+class ImageCustomControl(object):
+    filenameField = _NOL10N("UIFilenameField")
+
+    def __init__(self, ufeAttr, prim, attrName, useNiceName):
+        self.ufeAttr = ufeAttr
+        self.prim = prim
+        self.attrName = attrName
+        self.useNiceName = useNiceName
+        self.controlName = None
+        super(ImageCustomControl, self).__init__()
+
+    def onCreate(self, *args):
+        cmds.setUITemplate(_NOL10N("attributeEditorTemplate"), pst=True)
+
+        attrUIName = mayaUsdLib.Util.prettifyName(self.attrName) if self.useNiceName else self.attrName
+        ufeAttr = self.ufeAttr
+
+        createdControl = cmds.rowLayout(nc=3)
+        self.controlName = createdControl
+        with LayoutManager(createdControl):
+            cmds.text(label=attrUIName)
+            cmds.textField(ImageCustomControl.filenameField)
+            cmds.symbolButton(_NOL10N("browser"), image=_NOL10N("navButtonBrowse.png"))
+
+        cmds.setUITemplate(ppt=True)
+        pMenu = attributes.AEPopupMenu(createdControl, ufeAttr)
+
+        self.onReplace()
+        return createdControl
+
+    def onReplace(self, *args):
+        ufeAttr = self.ufeAttr
+        controlName = self.controlName
+        with ParentManager(controlName):
+            self.updateUi(ufeAttr, controlName)
+            callback = lambda filename,filetype : self.assignFilename(ufeAttr, filename, filetype)
+            command = lambda *_a : self.filenameBrowser(callback)
+            cmds.button(_NOL10N("browser"), c=command, e=True)
+
+        self.attachCallbacks(ufeAttr, controlName, None)
+
+    def updateUi(self, attr, uiControlName):
+        '''Callback function to update the UI when the data model changes.'''
+        isLocked = attributes.isAttributeLocked(attr)
+        bgClr = attributes.getAttributeColorRGB(attr)
+        # We might get called from the text field instead of the row layout:
+        fieldPos = uiControlName.find(ImageCustomControl.filenameField)
+        if fieldPos > 0:
+            uiControlName = uiControlName[:fieldPos - 1]
+        with ParentManager(uiControlName):
+            cmds.textField(ImageCustomControl.filenameField, e=True, tx=attr.get(), editable=not isLocked)
+            if bgClr:
+                cmds.textField(ImageCustomControl.filenameField, e=True, backgroundColor=bgClr)
+
+    def attachCallbacks(self, ufeAttr, uiControl, changedCommand):
+        # Create change callback for UFE and UI value synchronization.
+        filenameControl = uiControl + "|" + ImageCustomControl.filenameField
+        uiControlDesc = attributes.UIControlDescriptor(filenameControl, 'textField', hasDrag=False)
+        cb = attributes.createChangeCb(self.updateUi, ufeAttr, uiControlDesc)
+        with ParentManager(uiControl):
+            cmds.textField(ImageCustomControl.filenameField, edit=True, changeCommand=cb)
+
+    def assignFilename(self, ufeAttr, filename, fileType):
+        ufeFullPath = _NOL10N('%s.%s') % (ufe.PathString.string(ufeAttr.sceneItem().path()), ufeAttr.name)
+        cmds.setAttr(ufeFullPath, filename)
+        currentDir = cmds.workspace(q=True, dir=True)
+        mel.eval(_NOL10N("""retainWorkingDirectory("%s")""") % currentDir)
+        self.updateUi(ufeAttr, self.controlName)
+        return True
+
+    @staticmethod
+    def fromNativePath(path):
+        if cmds.about(nt=True):
+            return cmds.encodeString(path).replace(_NOL10N("\\\\"),_NOL10N("/"))
+        return path
+    
+    @staticmethod
+    def fixFileDialogSplitters():
+        org = QtCore.QCoreApplication.organizationName()
+        app = QtCore.QCoreApplication.applicationName()
+        settings = QtCore.QSettings(org, app)
+        kFileDialogSettingsGroup = 'FileDialog'
+        kOptionsSplittersKey = 'optionsSplitters'
+        settings.beginGroup(kFileDialogSettingsGroup)
+        size = settings.beginReadArray(kOptionsSplittersKey)
+        if size < 2 or settings.value(str(1), 0) <= 0:
+            settings.endArray()
+            settings.beginWriteArray(kOptionsSplittersKey)
+            for i in range(2):
+                settings.setArrayIndex(i)
+                settings.setValue(str(i), 120 + 120 * i)
+            settings.endArray()
+        settings.endArray()
+        settings.endGroup()
+
+    def filenameBrowser(self, callback):
+        workspace = cmds.workspace(q=True, fn=True)
+
+        ImageCustomControl.fixFileDialogSplitters()
+
+        dialogArgs = {
+            'startDir'          : mel.eval(_NOL10N("""setWorkingDirectory("%s", "image", "sourceImages")""") % workspace),
+            'filter'            : mel.eval(_NOL10N("buildImageFileFilterList()")),
+            'caption'           : getMayaUsdLibString('kOpenImage'),
+            'createCallback'    : "mayaUsd_ImageFileRelative_UICreate",
+            'initCallback'      : "mayaUsd_ImageFileRelative_UIInit",
+            'commitCallback'    : "mayaUsd_ImageFileRelative_UICommit",
+            'fileTypeCallback'  : "mayaUsd_ImageFileRelative_FileTypeChanged",
+            'selectionCallback' : "mayaUsd_ImageFileRelative_SelectionChanged",
+        }
+
+        cmd = r'''fileDialog2''' \
+              r''' -caption "{caption}"''' \
+              r''' -fileMode 1''' \
+              r''' -fileFilter "{filter}"''' \
+              r''' -selectFileFilter "All Files"''' \
+              r''' -startingDirectory "{startDir}"''' \
+              r''' -optionsUICreate {createCallback}''' \
+              r''' -optionsUIInit {initCallback}''' \
+              r''' -optionsUICommit2 {commitCallback}''' \
+              r''' -fileTypeChanged {fileTypeCallback}''' \
+              r''' -selectionChanged {selectionCallback}'''.format(**dialogArgs)
+        
+        ImageCustomControl.prepareRelativeDir(self.prim)
+
+        files = mel.eval(cmd)
+
+        if files != None and len(files) > 0:
+            fileName = files[0]
+            if ImageCustomControl.wantRelativeFileName():
+                layerDirName = ImageCustomControl.getCurrentTargetLayerDir(self.prim)
+                fileName = mayaUsdLib.Util.getPathRelativeToDirectory(fileName, layerDirName)
+            callback(ImageCustomControl.fromNativePath(fileName), _NOL10N(""))
+
+    @staticmethod
+    def wantRelativeFileName():
+        opVarName = "mayaUsd_MakePathRelativeToEditTargetLayer"
+        return cmds.optionVar(exists=opVarName) and cmds.optionVar(query=opVarName)
+
+    @staticmethod
+    def getCurrentTargetLayerDir(prim):
+        stage = prim.GetStage()
+        if not stage:
+            return None
+        layer = stage.GetEditTarget().GetLayer()
+        if not layer:
+            return ''
+        layerFileName = layer.realPath
+        return os.path.dirname(layerFileName)
+
+    @staticmethod
+    def prepareRelativeDir(prim):
+        layerDirName = ImageCustomControl.getCurrentTargetLayerDir(prim)
+        murel.usdFileRelative.setRelativeFilePathRoot(layerDirName)
+
+
 class NoticeListener(object):
     # Inserted as a custom control, but does not have any UI. Instead we use
     # this control to be notified from USD when any metadata has changed
@@ -427,6 +593,12 @@ def arrayCustomControlCreator(aeTemplate, c):
         return ArrayCustomControl(ufeAttr, aeTemplate.prim, c, aeTemplate.useNiceName)
     else:
         return None
+    
+def imageCustomControlCreate(aeTemplate, c):
+    if not aeTemplate.isImageAttribute(c):
+        return None
+    ufeAttr = aeTemplate.attrS.attribute(c)
+    return ImageCustomControl(ufeAttr, aeTemplate.prim, c, aeTemplate.useNiceName)
 
 def defaultControlCreator(aeTemplate, c):
     cmds.editorTemplate(addControl=[c])
@@ -596,6 +768,7 @@ class AETemplate(object):
     learn how attributes are stored.
     '''
     def __init__(self, ufeSceneItem):
+        self.assetPathType = Tf.Type.FindByName('SdfAssetPath')
         self.item = ufeSceneItem
         self.prim = mayaUsdUfe.ufePathToPrim(ufe.PathString.string(self.item.path()))
 
@@ -631,7 +804,7 @@ class AETemplate(object):
             except:
                 pass
 
-    _controlCreators = [connectionsCustomControlCreator, arrayCustomControlCreator, defaultControlCreator]
+    _controlCreators = [connectionsCustomControlCreator, arrayCustomControlCreator, imageCustomControlCreate, defaultControlCreator]
 
     @staticmethod
     def prependControlCreator(controlCreator):
@@ -896,6 +1069,17 @@ class AETemplate(object):
             typeName = attr.GetTypeName()
             return typeName.isArray
         return False
+
+    def isImageAttribute(self, attrName):
+        if self.attrS.attributeType(attrName) != ufe.Attribute.kFilename:
+            return False
+        attr = self.prim.GetAttribute(attrName)
+        if not attr:
+            return False
+        typeName = attr.GetTypeName()
+        if not typeName:
+            return False
+        return self.assetPathType == typeName.type
 
     def attributeHasConnections(self, attrName):
         # Simple helper to return whether the input attribute (by name) has
