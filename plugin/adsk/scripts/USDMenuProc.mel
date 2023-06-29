@@ -222,7 +222,7 @@ global proc mayaUsdMenu_EditAsMayaDataOptions(string $obj)
         $optionsString = `optionVar -query usdMaya_EditAsMayaDataOptions`;
     }
 
-    string $optionsFrame = `frameLayout -collapsable false -labelVisible false -marginHeight 40 -borderVisible false editAsMayaDataOptionsFrame`;
+    string $optionsFrame = `frameLayout -collapsable false -labelVisible false -marginHeight 10 -borderVisible false editAsMayaDataOptionsFrame`;
     mayaUsdTranslatorImport ($optionsFrame, "post", $optionsString, "mayaUsdMenu_EditAsMayaDataOptionsCallback");
 
     string $applyCloseBtn = getOptionBoxApplyAndCloseBtn();
@@ -254,6 +254,9 @@ global proc mayaUsdMenu_EditAsMayaDataOptions(string $obj)
 	}
 
     showOptionBox();
+
+    global string $gOptionBox;
+    window -e -height 260 $gOptionBox;
 }
 
 // On right click in the viewport, either through selection or through a pick
