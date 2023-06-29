@@ -15,17 +15,15 @@
 //
 #include "UsdUndoVisibleCommand.h"
 
-#include <mayaUsd/ufe/Utils.h>
-
 #include <usdUfe/base/tokens.h>
+#include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/utils/editRouter.h>
 #include <usdUfe/utils/editRouterContext.h>
 
 #include <pxr/usd/usdGeom/imageable.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 UsdUndoVisibleCommand::UsdUndoVisibleCommand(const UsdPrim& prim, bool vis)
     : Ufe::UndoableCommand()
@@ -63,5 +61,4 @@ void UsdUndoVisibleCommand::redo() { _undoableItem.redo(); }
 
 void UsdUndoVisibleCommand::undo() { _undoableItem.undo(); }
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

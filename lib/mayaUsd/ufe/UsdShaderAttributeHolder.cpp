@@ -52,7 +52,9 @@ UsdShaderAttributeHolder::UsdShaderAttributeHolder(
 
     // sdrProp must be valid at creation and will stay valid.
     PXR_NAMESPACE_USING_DIRECTIVE
-    TF_AXIOM(sdrProp && sdrType != PXR_NS::UsdShadeAttributeType::Invalid);
+    if (!TF_VERIFY(sdrProp && sdrType != PXR_NS::UsdShadeAttributeType::Invalid)) {
+        throw std::runtime_error("Invalid shader attribute holder");
+    }
 }
 
 UsdAttributeHolder::UPtr UsdShaderAttributeHolder::create(

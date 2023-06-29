@@ -44,8 +44,12 @@ TF_DECLARE_REF_PTRS(UsdMayaImportChaser);
 ///
 /// Chasers need to be very careful that they do not conflict with each other and end up
 /// creating cycles or other undesirable setups in the DG.
+using MSdfToDagMap = std::map<SdfPath, MDagPath>;
 class UsdMayaImportChaser : public TfRefBase
 {
+private:
+    MSdfToDagMap sdfToDagMap;
+
 public:
     virtual ~UsdMayaImportChaser() override { }
 
@@ -62,6 +66,12 @@ public:
 
     MAYAUSD_CORE_PUBLIC
     virtual bool Undo();
+
+    MAYAUSD_CORE_PUBLIC
+    void SetSdfToDagMap(const MSdfToDagMap& sdfToDagMap);
+
+    MAYAUSD_CORE_PUBLIC
+    MSdfToDagMap& GetSdfToDagMap();
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

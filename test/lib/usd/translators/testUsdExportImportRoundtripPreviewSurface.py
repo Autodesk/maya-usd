@@ -473,13 +473,15 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
                 file=usd_path,
                 shadingMode='useRegistry',
                 exportDisplayColor=False,
-                exportCollectionBasedBindings=True)
+                exportCollectionBasedBindings=True,
+                exportComponentTags=True)
         else:
             usd_path = os.path.abspath('CubeWithAssignedFaces.usda')
             cmds.usdExport(mergeTransformAndShape=True,
                 file=usd_path,
                 shadingMode='useRegistry',
-                exportDisplayColor=False)
+                exportDisplayColor=False,
+                exportComponentTags=True)
 
         stage = Usd.Stage.Open(usd_path)
 
@@ -647,13 +649,15 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
                 file=reexported_usd_path,
                 shadingMode='useRegistry',
                 exportDisplayColor=False,
-                exportCollectionBasedBindings=True)
+                exportCollectionBasedBindings=True,
+                exportComponentTags=True)
         else:
             reexported_usd_path = os.path.abspath('CubeWithAssignedFaces_reexported.usda')
             cmds.usdExport(mergeTransformAndShape=True,
                 file=reexported_usd_path,
                 shadingMode='useRegistry',
-                exportDisplayColor=False)
+                exportDisplayColor=False,
+                exportComponentTags=True)
         
         stage = Usd.Stage.Open(reexported_usd_path)
 

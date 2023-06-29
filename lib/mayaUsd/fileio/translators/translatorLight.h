@@ -47,7 +47,7 @@ struct UsdMayaTranslatorLight
         const UsdTimeCode&         usdTime,
         const UsdLuxLightAPI&      usdLight,
         MFnLight&                  mayaLight,
-        UsdUtilsSparseValueWriter* valueWriter = nullptr);
+        FlexibleSparseValueWriter* valueWriter = nullptr);
 
     /// Exports Maya's directional light attributes using UsdLuxDistantLight schema
     MAYAUSD_CORE_PUBLIC
@@ -55,7 +55,7 @@ struct UsdMayaTranslatorLight
         const UsdTimeCode&         usdTime,
         const UsdLuxDistantLight&  usdLight,
         MFnDirectionalLight&       mayaLight,
-        UsdUtilsSparseValueWriter* valueWriter = nullptr);
+        FlexibleSparseValueWriter* valueWriter = nullptr);
 
     /// Exports Maya's point light attributes using UsdLuxSphereLight schema
     MAYAUSD_CORE_PUBLIC
@@ -63,7 +63,7 @@ struct UsdMayaTranslatorLight
         const UsdTimeCode&         usdTime,
         const UsdLuxSphereLight&   usdLight,
         MFnPointLight&             mayaLight,
-        UsdUtilsSparseValueWriter* valueWriter = nullptr);
+        FlexibleSparseValueWriter* valueWriter = nullptr);
 
     /// Exports Maya's spot light attributes using UsdLuxSphereLight and UsdLuxShapingAPI schemas
     MAYAUSD_CORE_PUBLIC
@@ -71,7 +71,7 @@ struct UsdMayaTranslatorLight
         const UsdTimeCode&         usdTime,
         const UsdLuxSphereLight&   usdLight,
         MFnSpotLight&              mayaLight,
-        UsdUtilsSparseValueWriter* valueWriter = nullptr);
+        FlexibleSparseValueWriter* valueWriter = nullptr);
 
     /// Exports Maya's area light attributes using UsdLuxRectLight schema
     MAYAUSD_CORE_PUBLIC
@@ -79,7 +79,7 @@ struct UsdMayaTranslatorLight
         const UsdTimeCode&         usdTime,
         const UsdLuxRectLight&     usdLight,
         MFnAreaLight&              mayaLight,
-        UsdUtilsSparseValueWriter* valueWriter = nullptr);
+        FlexibleSparseValueWriter* valueWriter = nullptr);
 
     /// Import a UsdLuxLightAPI schema as a corresponding Maya light.
     /// Return true if the maya light was properly created and imported

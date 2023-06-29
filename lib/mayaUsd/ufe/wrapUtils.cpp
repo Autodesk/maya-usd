@@ -79,27 +79,6 @@ std::string getNodeTypeFromRawItem(uint64_t rawItem)
 }
 #endif
 
-PXR_NS::UsdStageWeakPtr _getStage(const std::string& ufePathString)
-{
-#ifdef UFE_V2_FEATURES_AVAILABLE
-    return ufe::getStage(Ufe::PathString::path(ufePathString));
-#else
-    // This function works on a single-segment path, i.e. the Maya Dag path
-    // segment to the proxy shape.  We know the Maya run-time ID is 1,
-    // separator is '|'.
-    // The helper function proxyShapeHandle() assumes Maya path starts
-    // with "|world" and will pop it off. So make sure our string has it.
-    // Note: std::string starts_with only added for C++20. So use diff trick.
-    std::string proxyPath;
-    if (ufePathString.rfind("|world", 0) == std::string::npos) {
-        proxyPath = "|world" + ufePathString;
-    } else {
-        proxyPath = ufePathString;
-    }
-    return ufe::getStage(Ufe::Path(Ufe::PathSegment(proxyPath, 1, '|')));
-#endif
-}
-
 std::vector<PXR_NS::UsdStageRefPtr> _getAllStages()
 {
     auto                                allStages = ufe::getAllStages();
@@ -109,25 +88,6 @@ std::vector<PXR_NS::UsdStageRefPtr> _getAllStages()
         output.push_back(stageRefPtr);
     }
     return output;
-}
-
-std::string _stagePath(PXR_NS::UsdStageWeakPtr stage)
-{
-#ifdef UFE_V2_FEATURES_AVAILABLE
-    // Even though the Proxy shape node's UFE path is a single segment, we always
-    // need to return as a Ufe::PathString (to remove |world).
-    return Ufe::PathString::string(ufe::stagePath(stage));
-#else
-    // Remove the leading '|world' component.
-    return ufe::stagePath(stage).popHead().string();
-#endif
-}
-
-std::string _usdPathToUfePathSegment(
-    const PXR_NS::SdfPath& usdPath,
-    int                    instanceIndex = PXR_NS::UsdImagingDelegate::ALL_INSTANCES)
-{
-    return ufe::usdPathToUfePathSegment(usdPath, instanceIndex).string();
 }
 
 #ifndef UFE_V2_FEATURES_AVAILABLE
@@ -162,23 +122,6 @@ static Ufe::Path _UfeV1StringToUsdPath(const std::string& ufePathString)
     return path;
 }
 #endif
-
-PXR_NS::UsdTimeCode _getTime(const std::string& pathStr)
-{
-    const Ufe::Path path =
-#ifdef UFE_V2_FEATURES_AVAILABLE
-        Ufe::PathString::path(
-#else
-        _UfeV1StringToUsdPath(
-#endif
-            pathStr);
-    return ufe::getTime(path);
-}
-
-bool _isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
-{
-    return ufe::isAttributeEditAllowed(attr);
-}
 
 PXR_NS::TfTokenVector _getProxyShapePurposes(const std::string& ufePathString)
 {
@@ -229,13 +172,6 @@ void wrapUtils()
     // here, and are forced to use strings.  Use the tentative string
     // representation of Ufe::Path as comma-separated segments.  We know that
     // the USD path separator is '/'.  PPT, 8-Dec-2019.
-    def("getStage", _getStage);
     def("getAllStages", _getAllStages, return_value_policy<PXR_NS::TfPySequenceToList>());
-    def("stagePath", _stagePath);
-    def("usdPathToUfePathSegment",
-        _usdPathToUfePathSegment,
-        (arg("usdPath"), arg("instanceIndex") = PXR_NS::UsdImagingDelegate::ALL_INSTANCES));
-    def("getTime", _getTime);
     def("getProxyShapePurposes", _getProxyShapePurposes);
-    def("isAttributeEditAllowed", _isAttributeEditAllowed);
 }

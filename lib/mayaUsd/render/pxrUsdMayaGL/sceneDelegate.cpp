@@ -167,6 +167,26 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
         cache[HdCameraTokens->shutterOpen] = VtValue();
         cache[HdCameraTokens->shutterClose] = VtValue();
         cache[HdCameraTokens->exposure] = VtValue();
+#if HD_API_VERSION >= 52
+        cache[HdCameraTokens->focusOn] = VtValue();
+        cache[HdCameraTokens->dofAspect] = VtValue();
+        cache[HdCameraTokens->splitDiopterCount] = VtValue();
+        cache[HdCameraTokens->splitDiopterAngle] = VtValue();
+        cache[HdCameraTokens->splitDiopterOffset1] = VtValue();
+        cache[HdCameraTokens->splitDiopterWidth1] = VtValue();
+        cache[HdCameraTokens->splitDiopterFocusDistance1] = VtValue();
+        cache[HdCameraTokens->splitDiopterOffset2] = VtValue();
+        cache[HdCameraTokens->splitDiopterWidth2] = VtValue();
+        cache[HdCameraTokens->splitDiopterFocusDistance2] = VtValue();
+        cache[HdCameraTokens->lensDistortionType] = VtValue();
+        cache[HdCameraTokens->lensDistortionK1] = VtValue();
+        cache[HdCameraTokens->lensDistortionK2] = VtValue();
+        cache[HdCameraTokens->lensDistortionCenter] = VtValue();
+        cache[HdCameraTokens->lensDistortionAnaSq] = VtValue();
+        cache[HdCameraTokens->lensDistortionAsym] = VtValue();
+        cache[HdCameraTokens->lensDistortionScale] = VtValue();
+        cache[HdCameraTokens->lensDistortionIor] = VtValue();
+#endif
     }
 
     // Simple lighting task.
@@ -319,6 +339,26 @@ void PxrMayaHdSceneDelegate::SetCameraState(
     cache[HdCameraTokens->shutterOpen] = VtValue();
     cache[HdCameraTokens->shutterClose] = VtValue();
     cache[HdCameraTokens->exposure] = VtValue();
+#if HD_API_VERSION >= 52
+    cache[HdCameraTokens->focusOn] = VtValue();
+    cache[HdCameraTokens->dofAspect] = VtValue();
+    cache[HdCameraTokens->splitDiopterCount] = VtValue();
+    cache[HdCameraTokens->splitDiopterAngle] = VtValue();
+    cache[HdCameraTokens->splitDiopterOffset1] = VtValue();
+    cache[HdCameraTokens->splitDiopterWidth1] = VtValue();
+    cache[HdCameraTokens->splitDiopterFocusDistance1] = VtValue();
+    cache[HdCameraTokens->splitDiopterOffset2] = VtValue();
+    cache[HdCameraTokens->splitDiopterWidth2] = VtValue();
+    cache[HdCameraTokens->splitDiopterFocusDistance2] = VtValue();
+    cache[HdCameraTokens->lensDistortionType] = VtValue();
+    cache[HdCameraTokens->lensDistortionK1] = VtValue();
+    cache[HdCameraTokens->lensDistortionK2] = VtValue();
+    cache[HdCameraTokens->lensDistortionCenter] = VtValue();
+    cache[HdCameraTokens->lensDistortionAnaSq] = VtValue();
+    cache[HdCameraTokens->lensDistortionAsym] = VtValue();
+    cache[HdCameraTokens->lensDistortionScale] = VtValue();
+    cache[HdCameraTokens->lensDistortionIor] = VtValue();
+#endif
 
     // invalidate the camera to be synced
     GetRenderIndex().GetChangeTracker().MarkSprimDirty(_cameraId, HdCamera::AllDirty);

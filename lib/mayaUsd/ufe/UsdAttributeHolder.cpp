@@ -20,6 +20,7 @@
 
 #include <mayaUsd/utils/util.h>
 
+#include <usdUfe/ufe/Utils.h>
 #include <usdUfe/utils/editRouter.h>
 #include <usdUfe/utils/editRouterContext.h>
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -55,7 +56,7 @@ bool setUsdAttrMetadata(
     }
 
     // If attribute is locked don't allow setting Metadata.
-    MayaUsd::ufe::enforceAttributeEditAllowed(attr);
+    UsdUfe::enforceAttributeEditAllowed(attr);
 
     UsdUfe::AttributeEditRouterContext ctx(attr.GetPrim(), attr.GetName());
 
@@ -126,7 +127,7 @@ std::string UsdAttributeHolder::isEditAllowedMsg() const
         try {
             std::string                errMsg;
             AttributeEditRouterContext ctx(prim, _usdAttr.GetName());
-            isAttributeEditAllowed(_usdAttr, &errMsg);
+            UsdUfe::isAttributeEditAllowed(_usdAttr, &errMsg);
             return errMsg;
         } catch (std::exception&) {
             return "Editing has been prevented by edit router.";

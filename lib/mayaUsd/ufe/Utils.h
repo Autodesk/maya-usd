@@ -32,7 +32,6 @@
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/timeCode.h>
-#include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <maya/MDagPath.h>
 #include <ufe/path.h>
@@ -74,14 +73,6 @@ Ufe::Path stagePath(PXR_NS::UsdStageWeakPtr stage);
 MAYAUSD_CORE_PUBLIC
 PXR_NS::TfHashSet<PXR_NS::UsdStageWeakPtr, PXR_NS::TfHash> getAllStages();
 
-//! Get the UFE path segment corresponding to the argument USD path.
-//! If an instanceIndex is provided, the path segment for a point instance with
-//! that USD path and index is returned.
-MAYAUSD_CORE_PUBLIC
-Ufe::PathSegment usdPathToUfePathSegment(
-    const PXR_NS::SdfPath& usdPath,
-    int                    instanceIndex = PXR_NS::UsdImagingDelegate::ALL_INSTANCES);
-
 //! Return the USD prim corresponding to the argument UFE path.
 MAYAUSD_CORE_PUBLIC
 PXR_NS::UsdPrim ufePathToPrim(const Ufe::Path& path);
@@ -103,6 +94,10 @@ inline std::string uniqueChildName(const PXR_NS::UsdPrim& parent, const std::str
 //! Return if a Maya node type is derived from the gateway node type.
 MAYAUSD_CORE_PUBLIC
 bool isAGatewayType(const std::string& mayaNodeType);
+
+//! Returns true if \p item is a materials scope.
+MAYAUSD_CORE_PUBLIC
+bool isMaterialsScope(const Ufe::SceneItem::Ptr& item);
 
 MAYAUSD_CORE_PUBLIC
 Ufe::Path dagPathToUfe(const MDagPath& dagPath);
@@ -192,6 +187,12 @@ inline Ufe::Vector3d toUfe(const PXR_NS::GfVec3d& src)
     return Ufe::Vector3d(src[0], src[1], src[2]);
 }
 
+//! Copy the argument vector into the return vector.
+inline PXR_NS::GfVec3d toUsd(const Ufe::Vector3d& src)
+{
+    return PXR_NS::GfVec3d(src.x(), src.y(), src.z());
+}
+
 //! Filter a source selection by removing descendants of filterPath.
 Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath);
 
@@ -238,51 +239,10 @@ private:
     mutable std::map<PXR_NS::SdfPath, MObject> _primToLayerMap;
 };
 
-//------------------------------------------------------------------------------
-// Verify edit restrictions.
-//------------------------------------------------------------------------------
-
-//! Check if an attribute value is allowed to be changed.
-//! \return True, if the attribute value is allowed to be edited in the stage's local Layer Stack.
+//! Return the UFE bounding-box of all prims that are pulled for edit-as-Maya
+//! under the given UFE path.
 MAYAUSD_CORE_PUBLIC
-bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMsg = nullptr);
-
-MAYAUSD_CORE_PUBLIC
-bool isAttributeEditAllowed(
-    const PXR_NS::UsdPrim& prim,
-    const PXR_NS::TfToken& attrName,
-    std::string*           errMsg);
-
-MAYAUSD_CORE_PUBLIC
-bool isAttributeEditAllowed(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName);
-
-//! Enforce if an attribute value is allowed to be changed. Throw an exceptio if not allowed.
-MAYAUSD_CORE_PUBLIC
-void enforceAttributeEditAllowed(const PXR_NS::UsdAttribute& attr);
-
-MAYAUSD_CORE_PUBLIC
-void enforceAttributeEditAllowed(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName);
-
-//! Check if a prim metadata is allowed to be changed.
-//! Can check a specific key in a metadata dictionary, optionally, if keyPaty is not empty.
-//! \return True, if the metadata value is allowed to be edited in the stage's local Layer Stack.
-MAYAUSD_CORE_PUBLIC
-bool isPrimMetadataEditAllowed(
-    const PXR_NS::UsdPrim& prim,
-    const PXR_NS::TfToken& metadataName,
-    const PXR_NS::TfToken& keyPath,
-    std::string*           errMsg);
-
-//! Check if a property metadata is allowed to be changed.
-//! Can check a specific key in a metadata dictionary, optionally, if keyPaty is not empty.
-//! \return True, if the metadata value is allowed to be edited in the stage's local Layer Stack.
-MAYAUSD_CORE_PUBLIC
-bool isPropertyMetadataEditAllowed(
-    const PXR_NS::UsdPrim& prim,
-    const PXR_NS::TfToken& propName,
-    const PXR_NS::TfToken& metadataName,
-    const PXR_NS::TfToken& keyPath,
-    std::string*           errMsg);
+Ufe::BBox3d getPulledPrimsBoundingBox(const Ufe::Path& path);
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

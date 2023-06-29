@@ -204,6 +204,9 @@ public:
     void ColorPrefsChanged();
 
     MAYAUSD_CORE_PUBLIC
+    void ColorManagementRefresh();
+
+    MAYAUSD_CORE_PUBLIC
     MColor GetWireframeColor();
 
     MAYAUSD_CORE_PUBLIC
@@ -384,6 +387,7 @@ private:
 #endif
 
     std::vector<MCallbackId> _mayaColorPrefsCallbackIds;
+    std::vector<MCallbackId> _mayaColorManagementCallbackIds;
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     bool _selectionModeChanged { true }; //!< Whether the global selection mode has changed

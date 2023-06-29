@@ -1,5 +1,5 @@
 #
-# Copyright 2020 Autodesk
+# Copyright 2023 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,6 +39,8 @@ endif()
 set(BUILD_WITH_PYTHON_3_VERSION 3.7 CACHE STRING "The version of Python 3 to build with")
 option(CMAKE_WANT_UFE_BUILD "Enable building with UFE (if found)." ON)
 option(CMAKE_WANT_MATERIALX_BUILD "Enable building with MaterialX (experimental)." OFF)
+
+option(BUILD_WITH_QT_6 "Build with QT 6." OFF)
 
 set(PXR_OVERRIDE_PLUGINPATH_NAME PXR_PLUGINPATH_NAME
     CACHE STRING "Name of env var USD searches to find plugins")
@@ -83,7 +85,9 @@ endif()
 # modules and definitions
 #------------------------------------------------------------------------------
 include(cmake/utils.cmake)
-find_package(Maya 2018 REQUIRED)
+if (BUILD_MAYAUSD_LIBRARY)
+    find_package(Maya 2018 REQUIRED)
+endif()
 
 if(APPLE AND BUILD_UB2 AND NOT MAYA_MACOSX_BUILT_WITH_UB2)
     message(WARNING  "Maya was NOT built with Universal Binary 2")
@@ -115,9 +119,16 @@ message(STATUS "   PYTHON_INCLUDE_DIRS = ${PYTHON_INCLUDE_DIRS}")
 message(STATUS "   PYTHON_LIBRARIES    = ${PYTHON_LIBRARIES}")
 message(STATUS "   Python_EXECUTABLE   = ${Python_EXECUTABLE}")
 
-include(cmake/jinja.cmake)
+if (BUILD_MAYAUSD_LIBRARY)
+    include(cmake/jinja.cmake)
+endif()
 
 find_package(USD 0.21.11 REQUIRED)
+if (BUILD_MAYAUSD_LIBRARY OR BUILD_AL_PLUGIN OR BUILD_TESTS)
+    if(NOT USD_GENSCHEMA)
+        message(FATAL_ERROR "Building MayaUsd requires usdGenSchema (from USD)")
+    endif()
+endif()
 if (CMAKE_WANT_MATERIALX_BUILD)
     # Requires at least USD 21.08 for hdMtlx module and USD must have been built with MaterialX:
     if(NOT TARGET hdMtlx)
@@ -127,11 +138,13 @@ if (CMAKE_WANT_MATERIALX_BUILD)
 endif()
 include(cmake/usd.cmake)
 
-if(${MAYA_APP_VERSION} STRLESS "2019" AND CMAKE_WANT_UFE_BUILD)
-    set(CMAKE_WANT_UFE_BUILD OFF)
-    message(AUTHOR_WARNING "========================================================================================= \
-                            UFE is not available in Maya${MAYA_MAJOR_VERSION}. Maya2019 and later are supported only. \
-                            ========================================================================================= ")
+if(DEFINED MAYA_APP_VERSION)
+    if (${MAYA_APP_VERSION} STRLESS "2019" AND CMAKE_WANT_UFE_BUILD)
+        set(CMAKE_WANT_UFE_BUILD OFF)
+        message(AUTHOR_WARNING "========================================================================================= \
+                                UFE is not available in Maya${MAYA_MAJOR_VERSION}. Maya2019 and later are supported only. \
+                                ========================================================================================= ")
+    endif()
 endif()
 
 if(CMAKE_WANT_UFE_BUILD)
@@ -158,17 +171,33 @@ endif()
 
 if(DEFINED QT_LOCATION)
     if(NOT DEFINED QT_VERSION)
-        if(${MAYA_APP_VERSION} STRLESS_EQUAL "2019")
-            set(QT_VERSION "5.6")
+		if(BUILD_WITH_QT_6)
+			set(QT_VERSION "6.5")
+			message(STATUS "Setting Qt version to Qt ${QT_VERSION}")
         else()
-            set(QT_VERSION "5.12")
+            set(QT_VERSION "5.15")  # default version Maya 2022/2023/2024
+            if(DEFINED MAYA_APP_VERSION)
+                if(${MAYA_APP_VERSION} STRLESS_EQUAL "2019")
+                    set(QT_VERSION "5.6")
+                elseif(${MAYA_APP_VERSION} STRLESS_EQUAL "2020")
+                    set(QT_VERSION "5.12")
+                endif()
+                message(STATUS "Setting Qt version to Qt ${QT_VERSION}")
+            endif()
         endif()
     endif()
     set(CMAKE_PREFIX_PATH "${QT_LOCATION}")
-    find_package(Qt5 ${QT_VERSION} COMPONENTS Core Gui Widgets REQUIRED)
-    if(Qt5_FOUND)
-        message(STATUS "Building with Qt features enabled.")
-    endif()
+	if(BUILD_WITH_QT_6)
+		find_package(Qt6 ${QT_VERSION} COMPONENTS Core Gui Widgets REQUIRED)
+		if(Qt6_FOUND)
+			message(STATUS "Building with Qt ${QT_VERSION} features enabled.")
+		endif()
+	else()
+		find_package(Qt5 ${QT_VERSION} COMPONENTS Core Gui Widgets REQUIRED)
+		if(Qt5_FOUND)
+			message(STATUS "Building with Qt ${QT_VERSION} features enabled.")
+		endif()
+	endif()
 else()
     message(STATUS "QT_LOCATION not set. Building Qt features will be disabled.")
 endif()
@@ -181,7 +210,9 @@ include(cmake/compiler_config.cmake)
 #------------------------------------------------------------------------------
 # gulrak filesystem
 #------------------------------------------------------------------------------
-include(cmake/gulrak.cmake)
+if (BUILD_MAYAUSD_LIBRARY OR BUILD_AL_PLUGIN)
+    include(cmake/gulrak.cmake)
+endif()
 
 #------------------------------------------------------------------------------
 # test
@@ -198,9 +229,7 @@ endif()
 #------------------------------------------------------------------------------
 # lib
 #------------------------------------------------------------------------------
-if (BUILD_MAYAUSD_LIBRARY)
-    add_subdirectory(lib)
-endif()
+add_subdirectory(lib)
 
 #------------------------------------------------------------------------------
 # plugins

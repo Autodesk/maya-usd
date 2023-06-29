@@ -17,19 +17,19 @@
 
 #include "private/UfeNotifGuard.h"
 
+#include <mayaUsd/ufe/MayaStagesSubject.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/ProxyShapeHierarchyHandler.h>
-#include <mayaUsd/ufe/StagesSubject.h>
 #include <mayaUsd/ufe/UsdSceneItemOpsHandler.h>
 #include <mayaUsd/ufe/UsdTransform3dHandler.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/utils/editability.h>
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
+#include <mayaUsd/ufe/MayaUsdObject3dHandler.h>
 #include <mayaUsd/ufe/ProxyShapeContextOpsHandler.h>
 #include <mayaUsd/ufe/UsdAttributesHandler.h>
-#include <mayaUsd/ufe/UsdCameraHandler.h>
 #include <mayaUsd/ufe/UsdContextOpsHandler.h>
-#include <mayaUsd/ufe/UsdObject3dHandler.h>
 #include <mayaUsd/ufe/UsdTransform3dCommonAPI.h>
 #include <mayaUsd/ufe/UsdTransform3dFallbackMayaXformStack.h>
 #include <mayaUsd/ufe/UsdTransform3dMatrixOp.h>
@@ -144,9 +144,6 @@ Ufe::PathMappingHandler::Ptr g_MayaPathMappingHandler;
 Ufe::UIInfoHandler::Ptr g_MayaUIInfoHandler;
 #endif
 
-// Subject singleton for observation of all USD stages.
-StagesSubject::Ptr g_StagesSubject;
-
 //------------------------------------------------------------------------------
 // Functions
 //------------------------------------------------------------------------------
@@ -159,8 +156,13 @@ MStatus initialize()
     if (gRegistrationCount++ > 0)
         return MS::kSuccess;
 
-    // Set the Ufe path to prim function in UsdUfe.
-    UsdUfe::setUfePathToPrimFn(MayaUsd::ufe::ufePathToPrim);
+    // Set the Maya specific functions required for the UsdUfe plugin to work correctly.
+    UsdUfe::DCCFunctions dccFunctions;
+    dccFunctions.stageAccessorFn = MayaUsd::ufe::getStage;
+    dccFunctions.stagePathAccessorFn = MayaUsd::ufe::stagePath;
+    dccFunctions.ufePathToPrimFn = MayaUsd::ufe::ufePathToPrim;
+    dccFunctions.timeAccessorFn = MayaUsd::ufe::getTime;
+    dccFunctions.isAttributeLockedFn = MayaUsd::Editability::isAttributeLocked;
 
     // Replace the Maya hierarchy handler with ours.
     auto& runTimeMgr = Ufe::RunTimeMgr::instance();
@@ -196,10 +198,9 @@ MStatus initialize()
 #endif
     handlers.sceneItemOpsHandler = UsdSceneItemOpsHandler::create();
     handlers.attributesHandler = UsdAttributesHandler::create();
-    handlers.object3dHandler = UsdObject3dHandler::create();
+    usdUfeHandlers.object3dHandler = MayaUsdObject3dHandler::create();
     handlers.contextOpsHandler = UsdContextOpsHandler::create();
     handlers.uiInfoHandler = UsdUIInfoHandler::create();
-    handlers.cameraHandler = UsdCameraHandler::create();
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 
@@ -265,7 +266,8 @@ MStatus initialize()
 
     // Initialize UsdUfe which will register all the default handlers
     // and the overrides we provide.
-    auto usdRtid = UsdUfe::initialize(usdUfeHandlers);
+    auto ss = MayaStagesSubject::create();
+    auto usdRtid = UsdUfe::initialize(dccFunctions, usdUfeHandlers, ss);
 
     // TEMP (UsdUfe)
     // Can only call Ufe::RunTimeMgr::register_() once for a given runtime name.
@@ -283,8 +285,6 @@ MStatus initialize()
         runTimeMgr.setContextOpsHandler(usdRtid, handlers.contextOpsHandler);
     if (handlers.uiInfoHandler)
         runTimeMgr.setUIInfoHandler(usdRtid, handlers.uiInfoHandler);
-    if (handlers.cameraHandler)
-        runTimeMgr.setCameraHandler(usdRtid, handlers.cameraHandler);
 #ifdef UFE_V4_FEATURES_AVAILABLE
     if (handlers.lightHandler)
         runTimeMgr.setLightHandler(usdRtid, handlers.lightHandler);
@@ -331,8 +331,6 @@ MStatus initialize()
 #endif
     if (usdRtid == 0)
         return MS::kFailure;
-
-    g_StagesSubject = StagesSubject::create();
 
     // Register for UFE string to path service using path component separator '/'
     UFE_V2(Ufe::PathString::registerPathComponentSeparator(usdRtid, '/');)
@@ -384,8 +382,6 @@ MStatus finalize(bool exiting)
     runTimeMgr.setUIInfoHandler(g_MayaRtid, g_MayaUIInfoHandler);
     g_MayaUIInfoHandler.reset();
 #endif
-
-    g_StagesSubject.Reset();
 
     MMessage::removeCallback(gExitingCbId);
 

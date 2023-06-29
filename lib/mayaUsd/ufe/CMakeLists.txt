@@ -4,11 +4,11 @@
 target_sources(${PROJECT_NAME} 
     PRIVATE
         Global.cpp
+        MayaStagesSubject.cpp
         ProxyShapeHandler.cpp
         ProxyShapeHierarchy.cpp
         ProxyShapeHierarchyHandler.cpp
         SetVariantSelectionCommand.cpp
-        StagesSubject.cpp
         UsdPointInstanceOrientationModifier.cpp
         UsdPointInstancePositionModifier.cpp
         UsdPointInstanceScaleModifier.cpp
@@ -33,18 +33,16 @@ target_sources(${PROJECT_NAME}
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
+            MayaUsdObject3d.cpp
+            MayaUsdObject3dHandler.cpp
             ProxyShapeContextOpsHandler.cpp
             RotationUtils.cpp
             UsdAttribute.cpp
             UsdAttributeHolder.cpp
             UsdAttributes.cpp
             UsdAttributesHandler.cpp
-            UsdCamera.cpp
-            UsdCameraHandler.cpp
             UsdContextOps.cpp
             UsdContextOpsHandler.cpp
-            UsdObject3d.cpp
-            UsdObject3dHandler.cpp
             UsdSetXformOpUndoableCommandBase.cpp
             UsdTransform3dBase.cpp
             UsdTransform3dCommonAPI.cpp
@@ -57,7 +55,6 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdUIInfoHandler.cpp
             UsdUIUfeObserver.cpp
             UsdUndoMaterialCommands.cpp
-            UsdUndoVisibleCommand.cpp
             XformOpUtils.cpp
     )
 endif()
@@ -178,11 +175,11 @@ endif()
 
 set(HEADERS
     Global.h
+    MayaStagesSubject.h
     ProxyShapeHandler.h
     ProxyShapeHierarchy.h
     ProxyShapeHierarchyHandler.h
     SetVariantSelectionCommand.h
-    StagesSubject.h
     UsdPointInstanceModifierBase.h
     UsdPointInstanceOrientationModifier.h
     UsdPointInstancePositionModifier.h
@@ -206,18 +203,16 @@ set(HEADERS
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND HEADERS
+        MayaUsdObject3d.h
+        MayaUsdObject3dHandler.h
         ProxyShapeContextOpsHandler.h
         RotationUtils.h
         UsdAttribute.h
         UsdAttributeHolder.h
         UsdAttributes.h
         UsdAttributesHandler.h
-        UsdCamera.h
-        UsdCameraHandler.h
         UsdContextOps.h
         UsdContextOpsHandler.h
-        UsdObject3d.h
-        UsdObject3dHandler.h
         UsdPointInstanceUndoableCommands.h
         UsdSetXformOpUndoableCommandBase.h
         UsdTransform3dBase.h
@@ -231,7 +226,6 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdUIInfoHandler.h
         UsdUIUfeObserver.h
         UsdUndoMaterialCommands.h
-        UsdUndoVisibleCommand.h
         XformOpUtils.h
     )
 endif()

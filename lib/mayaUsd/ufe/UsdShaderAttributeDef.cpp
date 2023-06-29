@@ -47,19 +47,19 @@ UsdShaderAttributeDef::~UsdShaderAttributeDef() { }
 
 std::string UsdShaderAttributeDef::name() const
 {
-    TF_AXIOM(fShaderAttributeDef);
+    TF_DEV_AXIOM(fShaderAttributeDef);
     return fShaderAttributeDef->GetName().GetString();
 }
 
 std::string UsdShaderAttributeDef::type() const
 {
-    TF_AXIOM(fShaderAttributeDef);
+    TF_DEV_AXIOM(fShaderAttributeDef);
     return usdTypeToUfe(fShaderAttributeDef);
 }
 
 std::string UsdShaderAttributeDef::defaultValue() const
 {
-    TF_AXIOM(fShaderAttributeDef);
+    TF_DEV_AXIOM(fShaderAttributeDef);
     std::ostringstream defaultValue;
     defaultValue << fShaderAttributeDef->GetDefaultValue();
     return defaultValue.str();
@@ -67,7 +67,7 @@ std::string UsdShaderAttributeDef::defaultValue() const
 
 Ufe::AttributeDef::IOType UsdShaderAttributeDef::ioType() const
 {
-    TF_AXIOM(fShaderAttributeDef);
+    TF_DEV_AXIOM(fShaderAttributeDef);
     return fShaderAttributeDef->IsOutput() ? Ufe::AttributeDef::OUTPUT_ATTR
                                            : Ufe::AttributeDef::INPUT_ATTR;
 }
@@ -131,7 +131,7 @@ static const MetadataMap _metaMap = {
 
 Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
 {
-    TF_AXIOM(fShaderAttributeDef);
+    TF_DEV_AXIOM(fShaderAttributeDef);
     const NdrTokenMap& metadata = fShaderAttributeDef->GetMetadata();
     auto               it = metadata.find(TfToken(key));
     if (it != metadata.cend()) {
@@ -154,7 +154,7 @@ Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
 
 bool UsdShaderAttributeDef::hasMetadata(const std::string& key) const
 {
-    TF_AXIOM(fShaderAttributeDef);
+    TF_DEV_AXIOM(fShaderAttributeDef);
     const NdrTokenMap& metadata = fShaderAttributeDef->GetMetadata();
     auto               it = metadata.find(TfToken(key));
     if (it != metadata.cend()) {

@@ -19,6 +19,9 @@
 #include <mayaUsd/ufe/UsdTransform3dUndoableCommands.h>
 #include <mayaUsd/ufe/Utils.h>
 
+#include <usdUfe/ufe/Utils.h>
+
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/usdGeom/xformCache.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -137,8 +140,9 @@ Ufe::Vector3d UsdTransform3dCommonAPI::translation() const
     UsdGeomXformCommonAPI::RotationOrder rotOrder;
 
     if (!_commonAPI.GetXformVectorsByAccumulation(&t, &r, &s, &pvt, &rotOrder, getTime(path()))) {
-        TF_FATAL_ERROR(
+        std::string msg = TfStringPrintf(
             "Cannot read common API transform values for prim %s", prim().GetPath().GetText());
+        throw std::runtime_error(msg.c_str());
     }
 
     return toUfe(t);
@@ -151,8 +155,9 @@ Ufe::Vector3d UsdTransform3dCommonAPI::rotation() const
     UsdGeomXformCommonAPI::RotationOrder rotOrder;
 
     if (!_commonAPI.GetXformVectorsByAccumulation(&t, &r, &s, &pvt, &rotOrder, getTime(path()))) {
-        TF_FATAL_ERROR(
+        std::string msg = TfStringPrintf(
             "Cannot read common API transform values for prim %s", prim().GetPath().GetText());
+        throw std::runtime_error(msg.c_str());
     }
 
     return toUfe(r);
@@ -165,8 +170,9 @@ Ufe::Vector3d UsdTransform3dCommonAPI::scale() const
     UsdGeomXformCommonAPI::RotationOrder rotOrder;
 
     if (!_commonAPI.GetXformVectorsByAccumulation(&t, &r, &s, &pvt, &rotOrder, getTime(path()))) {
-        TF_FATAL_ERROR(
+        std::string msg = TfStringPrintf(
             "Cannot read common API transform values for prim %s", prim().GetPath().GetText());
+        throw std::runtime_error(msg.c_str());
     }
 
     return toUfe(s);
@@ -191,7 +197,7 @@ void UsdTransform3dCommonAPI::scale(double x, double y, double z)
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dCommonAPI::translateCmd(double x, double y, double z)
 {
-    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))) {
+    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))) {
         return nullptr;
     }
 
@@ -200,7 +206,7 @@ UsdTransform3dCommonAPI::translateCmd(double x, double y, double z)
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3dCommonAPI::rotateCmd(double x, double y, double z)
 {
-    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"))) {
+    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"))) {
         return nullptr;
     }
 
@@ -209,7 +215,7 @@ Ufe::RotateUndoableCommand::Ptr UsdTransform3dCommonAPI::rotateCmd(double x, dou
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3dCommonAPI::scaleCmd(double x, double y, double z)
 {
-    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
+    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
         return nullptr;
     }
 
@@ -219,7 +225,7 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dCommonAPI::scaleCmd(double x, doubl
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dCommonAPI::rotatePivotCmd(double x, double y, double z)
 {
-    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:translate:pivot"))) {
+    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:translate:pivot"))) {
         return nullptr;
     }
 
@@ -238,8 +244,9 @@ Ufe::Vector3d UsdTransform3dCommonAPI::rotatePivot() const
     UsdGeomXformCommonAPI::RotationOrder rotOrder;
 
     if (!_commonAPI.GetXformVectorsByAccumulation(&t, &r, &s, &pvt, &rotOrder, getTime(path()))) {
-        TF_FATAL_ERROR(
+        std::string msg = TfStringPrintf(
             "Cannot read common API transform values for prim %s", prim().GetPath().GetText());
+        throw std::runtime_error(msg.c_str());
     }
 
     return toUfe(pvt);
@@ -249,9 +256,9 @@ Ufe::Vector3d UsdTransform3dCommonAPI::scalePivot() const { return rotatePivot()
 
 Ufe::SetMatrix4dUndoableCommand::Ptr UsdTransform3dCommonAPI::setMatrixCmd(const Ufe::Matrix4d& m)
 {
-    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))
-        || !isAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"))
-        || !isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
+    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))
+        || !UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"))
+        || !UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
         return nullptr;
     }
 

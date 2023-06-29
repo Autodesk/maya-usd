@@ -28,14 +28,15 @@
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/OpUndoItemMuting.h>
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/dynamicAttribute.h>
 #include <mayaUsd/utils/progressBarScope.h>
 #include <mayaUsd/utils/traverseLayer.h>
+#include <mayaUsd/utils/trieVisitor.h>
 
 #include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 
 #include <pxr/base/tf/diagnostic.h>
@@ -59,6 +60,7 @@
 #include <ufe/path.h>
 #include <ufe/pathString.h>
 #include <ufe/sceneNotification.h>
+#include <ufe/trie.imp.h>
 
 #include <functional>
 #include <tuple>
@@ -240,7 +242,7 @@ bool allowTopologyModifications(MDagPath& root)
 // prim as the root of the USD hierarchy to be pulled.  The UFE path and
 // the prim refer to the same object: the prim is passed in as an
 // optimization to avoid an additional call to ufePathToPrim().
-using PullImportPaths = std::pair<std::vector<MDagPath>, std::vector<Ufe::Path>>;
+using PullImportPaths = std::vector<std::pair<MDagPath, Ufe::Path>>;
 PullImportPaths pullImport(
     const Ufe::Path&                 ufePulledPath,
     const UsdPrim&                   pulledPrim,
@@ -283,14 +285,13 @@ PullImportPaths pullImport(
     }
     progressBar.advance();
 
-    std::vector<MDagPath>  addedDagPaths;
-    std::vector<Ufe::Path> pulledUfePaths;
+    std::vector<MDagPath> addedDagPaths;
 
     // Execute the command, which can succeed but import nothing.
     bool success = readJob->Read(&addedDagPaths);
     if (!success || addedDagPaths.size() == 0) {
         TF_WARN("Nothing to edit in the selection.");
-        return PullImportPaths({}, {});
+        return PullImportPaths();
     }
     progressBar.advance();
 
@@ -424,17 +425,18 @@ PullImportPaths pullImport(
     progressBar.advance();
 
     // For each added Dag path, get the UFE path of the pulled USD prim.
-    pulledUfePaths.reserve(addedDagPaths.size());
+    PullImportPaths pulledPaths;
+    pulledPaths.reserve(addedDagPaths.size());
     for (const auto& dagPath : addedDagPaths) {
         auto found = objToUfePath.find(MObjectHandle(dagPath.node()));
-        TF_AXIOM(found != objToUfePath.end());
-        pulledUfePaths.emplace_back(found->second);
+        if (TF_VERIFY(found != objToUfePath.end())) {
+            pulledPaths.emplace_back(std::make_pair(dagPath, found->second));
+        }
     }
     progressBar.advance();
 
-    auto ret = PullImportPaths(addedDagPaths, pulledUfePaths);
     progressBar.advance();
-    return ret;
+    return pulledPaths;
 }
 
 //------------------------------------------------------------------------------
@@ -461,18 +463,15 @@ bool pullCustomize(const PullImportPaths& importedPaths, const UsdMayaPrimUpdate
 {
     // The number of imported paths should (hopefully) never be so great
     // as to overwhelm the computation with progress bar updates.
-    MayaUsd::ProgressBarScope progressBar(importedPaths.first.size());
+    MayaUsd::ProgressBarScope progressBar(importedPaths.size());
 
     // Record all USD modifications in an undo block and item.
     UsdUfe::UsdUndoBlock undoBlock(
         &UsdUndoableItemUndoItem::create("Pull customize USD data modifications"));
 
-    TF_AXIOM(importedPaths.first.size() == importedPaths.second.size());
-    auto dagPathIt = importedPaths.first.begin();
-    auto ufePathIt = importedPaths.second.begin();
-    for (; dagPathIt != importedPaths.first.end(); ++dagPathIt, ++ufePathIt) {
-        const auto&       dagPath = *dagPathIt;
-        const auto&       pulledUfePath = *ufePathIt;
+    for (const auto& importedPair : importedPaths) {
+        const auto&       dagPath = importedPair.first;
+        const auto&       pulledUfePath = importedPair.second;
         MFnDependencyNode dgNodeFn(dagPath.node());
 
         auto registryItem = getUpdaterItem(dgNodeFn);
@@ -616,7 +615,7 @@ UsdMayaPrimUpdaterSharedPtr createUpdater(
     // path to form a proper UFE path.
     auto                psPath = MayaUsd::ufe::stagePath(context.GetUsdStage());
     Ufe::Path::Segments segments { psPath.getSegments()[0],
-                                   MayaUsd::ufe::usdPathToUfePathSegment(dstPath) };
+                                   UsdUfe::usdPathToUfePathSegment(dstPath) };
     Ufe::Path           ufePath(std::move(segments));
 
     // Get the Maya object corresponding to the SdfPath.  As of 19-Oct-2021,
@@ -1157,7 +1156,7 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
 
     // 1) Perform the import
     PullImportPaths importedPaths = pullImport(path, pulledPrim, context);
-    if (importedPaths.first.empty()) {
+    if (importedPaths.empty()) {
         return false;
     }
     progressBar.advance();
@@ -1171,7 +1170,7 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
 
 #ifdef HAS_ORPHANED_NODES_MANAGER
     if (_orphanedNodesManager) {
-        RecordPullVariantInfoUndoItem::execute(_orphanedNodesManager, path, importedPaths.first[0]);
+        RecordPullVariantInfoUndoItem::execute(_orphanedNodesManager, path, importedPaths[0].first);
     }
 #endif
 
@@ -1499,7 +1498,6 @@ bool PrimUpdaterManager::duplicate(
     }
     // Copy from DG to USD
     else if (srcProxyShape == nullptr && dstProxyShape) {
-        TF_AXIOM(srcPath.nbSegments() == 1);
         MDagPath dagPath = PXR_NS::UsdMayaUtil::nameToDagPath(Ufe::PathString::string(srcPath));
         if (!dagPath.isValid()) {
             return false;
@@ -1594,7 +1592,7 @@ void PrimUpdaterManager::onProxyContentChanged(
             != UsdMayaPrimUpdater::Supports::AutoPull)
             return false;
 
-        const Ufe::PathSegment pathSegment = MayaUsd::ufe::usdPathToUfePathSegment(prim.GetPath());
+        const Ufe::PathSegment pathSegment = UsdUfe::usdPathToUfePathSegment(prim.GetPath());
         const Ufe::Path        path = proxyShapeUfePath + pathSegment;
 
         auto factory = std::get<UpdaterFactoryFn>(registryItem);
@@ -1810,6 +1808,29 @@ bool PrimUpdaterManager::hasPulledPrims() const
 {
     MObject pullRoot = findPullRoot();
     return !pullRoot.isNull();
+}
+
+PrimUpdaterManager::PulledPrimPaths PrimUpdaterManager::getPulledPrimPaths() const
+{
+    PulledPrimPaths pulledPaths;
+
+#ifdef HAS_ORPHANED_NODES_MANAGER
+
+    if (!_orphanedNodesManager)
+        return pulledPaths;
+
+    const OrphanedNodesManager::PulledPrims& pulledPrims = _orphanedNodesManager->getPulledPrims();
+    MayaUsd::TrieVisitor<OrphanedNodesManager::PullVariantInfo>::visit(
+        pulledPrims,
+        [&pulledPaths](
+            const Ufe::Path&                                            path,
+            const Ufe::TrieNode<OrphanedNodesManager::PullVariantInfo>& node) {
+            pulledPaths.emplace_back(path, node.data().editedAsMayaRoot);
+        });
+
+#endif
+
+    return pulledPaths;
 }
 
 #ifdef HAS_ORPHANED_NODES_MANAGER

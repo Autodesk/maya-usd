@@ -22,6 +22,6 @@ TF_WRAP_MODULE
 {
     TF_WRAP(EditRouter);
     TF_WRAP(Global);
+    TF_WRAP(Tokens);
     TF_WRAP(Utils);
-    // TF_WRAP(Notice);
 }

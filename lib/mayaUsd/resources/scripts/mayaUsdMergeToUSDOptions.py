@@ -286,6 +286,7 @@ def getDefaultMergeToUSDOptionsDict():
         "exportInstances":          "1",
         "exportVisibility":         "1",
         "mergeTransformAndShape":   "1",
+        "writeDefaults":            "1",
         "stripNamespaces":          "0",
         "worldspace":               "0",
     }

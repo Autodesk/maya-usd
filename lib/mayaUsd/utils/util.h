@@ -132,12 +132,6 @@ inline double ConvertMMToInches(const double mm) { return mm / MillimetersPerInc
 /// in millimeters.
 inline double ConvertInchesToMM(const double inches) { return inches * MillimetersPerInch; }
 
-/// Converts the given value \p d from units \p from to the equivalent value in units \p
-inline double ConvertUnit(double d, double from, double to)
-{
-    return from == to ? d : d * from / to;
-}
-
 const double MillimetersPerCentimeter = 10.0;
 
 /// Converts the given value \p mm in millimeters to the equivalent value
@@ -148,7 +142,7 @@ inline double ConvertMMToCM(const double mm) { return mm / MillimetersPerCentime
 /// in millimeters.
 inline double ConvertCMToMM(const double cm) { return cm * MillimetersPerCentimeter; }
 
-inline std::string SanitizeName(const std::string& name) { return UsdUfe::SanitizeName(name); }
+inline std::string SanitizeName(const std::string& name) { return UsdUfe::sanitizeName(name); }
 inline std::string prettifyName(const std::string& name) { return UsdUfe::prettifyName(name); }
 
 /// Converts the given value \p mdistance in Maya's MDistance units to the
@@ -156,10 +150,14 @@ inline std::string prettifyName(const std::string& name) { return UsdUfe::pretti
 MAYAUSD_CORE_PUBLIC
 double ConvertMDistanceUnitToUsdGeomLinearUnit(const MDistance::Unit mdistanceUnit);
 
-/// Coverts the given value \p linearUnit in USD's metersPerUnit to the
+/// Converts the given value \p linearUnit in USD's metersPerUnit to the
 /// equivalent value in Maya's MDistance units.
 MAYAUSD_CORE_PUBLIC
 MDistance::Unit ConvertUsdGeomLinearUnitToMDistanceUnit(const double linearUnit);
+
+/// Returns a scaling value from Maya's internal units to the specified \p metersPerUnit
+MAYAUSD_CORE_PUBLIC
+double GetExportDistanceConversionScalar(const double metersPerUnit);
 
 /// Get the full name of the Maya node \p mayaNode.
 ///

@@ -129,10 +129,13 @@ def imageDiff(imagePath1, imagePath2):
 
     # We use QImage because we know we should have access to
     # it in maya...
-    import PySide2.QtGui
+    try:
+        from PySide2.QtGui import QImage
+    except:
+        from PySide6.QtGui import QImage
 
     def loadImage(imagePath):
-        img = PySide2.QtGui.QImage()
+        img = QImage()
         if not img.load(imagePath):
             raise ValueError("unable to load image: {}".format(imagePath))
         return img

@@ -109,6 +109,7 @@
 
 #if defined(WANT_UFE_BUILD)
 #include <mayaUsd/nodes/layerManager.h>
+#include <mayaUsd/ufe/Utils.h>
 
 #include <ufe/path.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -158,6 +159,11 @@ MObject MayaUsdProxyShapeBase::drawGuidePurposeAttr;
 MObject MayaUsdProxyShapeBase::sessionLayerNameAttr;
 MObject MayaUsdProxyShapeBase::rootLayerNameAttr;
 MObject MayaUsdProxyShapeBase::mutedLayersAttr;
+#if MAYA_API_VERSION >= 20240000 && MAYA_API_VERSION <= 20249999
+// Change counter attributes
+MObject MayaUsdProxyShapeBase::updateCounterAttr;
+MObject MayaUsdProxyShapeBase::resyncCounterAttr;
+#endif
 // Output attributes
 MObject MayaUsdProxyShapeBase::outTimeAttr;
 MObject MayaUsdProxyShapeBase::outStageDataAttr;
@@ -401,6 +407,28 @@ MStatus MayaUsdProxyShapeBase::initialize()
     retValue = addAttribute(outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
+#if MAYA_API_VERSION >= 20240000 && MAYA_API_VERSION <= 20249999
+    updateCounterAttr
+        = numericAttrFn.create("updateId", "upid", MFnNumericData::kInt64, -1, &retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    numericAttrFn.setStorable(false);
+    numericAttrFn.setWritable(false);
+    numericAttrFn.setHidden(true);
+    numericAttrFn.setInternal(true);
+    retValue = addAttribute(updateCounterAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    resyncCounterAttr
+        = numericAttrFn.create("resyncId", "rsid", MFnNumericData::kInt64, -1, &retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    numericAttrFn.setStorable(false);
+    numericAttrFn.setWritable(false);
+    numericAttrFn.setHidden(true);
+    numericAttrFn.setInternal(true);
+    retValue = addAttribute(resyncCounterAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+#endif
+
     outStageCacheIdAttr
         = numericAttrFn.create("outStageCacheId", "ostcid", MFnNumericData::kInt, -1, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
@@ -566,6 +594,24 @@ void MayaUsdProxyShapeBase::postConstructor()
             = MSceneMessage::addCallback(MSceneMessage::kBeforeSave, beforeSaveCallback, this);
     }
 }
+
+#if MAYA_API_VERSION >= 20240000 && MAYA_API_VERSION <= 20249999
+/* virtual */
+bool MayaUsdProxyShapeBase::getInternalValue(const MPlug& plug, MDataHandle& handle)
+{
+    bool retVal = true;
+
+    if (plug == updateCounterAttr) {
+        handle.set(_UsdStageUpdateCounter);
+    } else if (plug == resyncCounterAttr) {
+        handle.set(_UsdStageResyncCounter);
+    } else {
+        retVal = MPxSurfaceShape::getInternalValue(plug, handle);
+    }
+
+    return retVal;
+}
+#endif
 
 /* virtual */
 MStatus MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
@@ -830,7 +876,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             sharedUsdStage = UsdUtilsStageCache::Get().Find(cacheId);
             isIncomingStage = true;
             // If the stage set by stage ID is not anonymous, set the filePath
-            // attribute to it so that it can be reloaded when teh Maya scene
+            // attribute to it so that it can be reloaded when the Maya scene
             // is re-opened.
             SdfLayerHandle rootLayer = sharedUsdStage->GetRootLayer();
             if (rootLayer && !rootLayer->IsAnonymous()) {
@@ -1488,6 +1534,16 @@ MBoundingBox MayaUsdProxyShapeBase::boundingBox() const
 
     UsdMayaUtil::AddMayaExtents(allBox, prim, currTime);
 
+#if defined(WANT_UFE_BUILD)
+    Ufe::BBox3d pulledUfeBBox = ufe::getPulledPrimsBoundingBox(ufePath());
+    if (!pulledUfeBBox.empty()) {
+        GfBBox3d pulledBox(GfRange3d(
+            GfVec3d(pulledUfeBBox.min.x(), pulledUfeBBox.min.y(), pulledUfeBBox.min.z()),
+            GfVec3d(pulledUfeBBox.max.x(), pulledUfeBBox.max.y(), pulledUfeBBox.max.z())));
+        allBox = GfBBox3d::Combine(allBox, pulledBox);
+    }
+#endif
+
     MBoundingBox& retval = nonConstThis->_boundingBoxCache[currTime];
 
     const GfRange3d boxRange = allBox.ComputeAlignedBox();
@@ -1987,10 +2043,19 @@ void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChang
     MProfilingScope profilingScope(
         _shapeBaseProfilerCategory, MProfiler::kColorB_L1, "Process USD objects changed");
 
+#if MAYA_API_VERSION >= 20240000 && MAYA_API_VERSION <= 20249999
+    switch (UsdMayaStageNoticeListener::ClassifyObjectsChanged(notice)) {
+    case UsdMayaStageNoticeListener::ChangeType::kIgnored: return;
+    case UsdMayaStageNoticeListener::ChangeType::kResync: ++_UsdStageResyncCounter;
+    // [[fallthrough]]; // We want that fallthrough to have the update always triggered.
+    case UsdMayaStageNoticeListener::ChangeType::kUpdate: ++_UsdStageUpdateCounter; break;
+    }
+#else
     if (UsdMayaStageNoticeListener::ClassifyObjectsChanged(notice)
         == UsdMayaStageNoticeListener::ChangeType::kIgnored) {
         return;
     }
+#endif
 
     // This will definitely force a BBox recomputation on "Frame All" or when framing a selected
     // stage. Computing bounds in USD is expensive, so if it pops up in other frequently used

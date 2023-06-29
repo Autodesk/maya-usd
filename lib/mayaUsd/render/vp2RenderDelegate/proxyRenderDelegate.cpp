@@ -16,6 +16,7 @@
 #include "proxyRenderDelegate.h"
 
 #include "draw_item.h"
+#include "material.h"
 #include "mayaPrimCommon.h"
 #include "render_delegate.h"
 #include "tokens.h"
@@ -25,6 +26,8 @@
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/selectability.h>
+
+#include <usdUfe/ufe/Utils.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
@@ -448,6 +451,14 @@ void colorPrefsChangedCB(void* clientData)
     }
 }
 
+void colorManagementRefreshCB(void* clientData)
+{
+    ProxyRenderDelegate* prd = static_cast<ProxyRenderDelegate*>(clientData);
+    if (prd) {
+        prd->ColorManagementRefresh();
+    }
+}
+
 // Copied from renderIndex.cpp, the code that does HdRenderIndex::GetDrawItems. But I just want the
 // rprimIds, I don't want to go all the way to draw items.
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 42
@@ -595,6 +606,9 @@ ProxyRenderDelegate::~ProxyRenderDelegate()
     }
 #endif
     for (auto id : _mayaColorPrefsCallbackIds) {
+        MMessage::removeCallback(id);
+    }
+    for (auto id : _mayaColorManagementCallbackIds) {
         MMessage::removeCallback(id);
     }
 }
@@ -782,6 +796,16 @@ void ProxyRenderDelegate::_InitRenderDelegate()
             MEventMessage::addEventCallback("DisplayColorChanged", colorPrefsChangedCB, this));
         _mayaColorPrefsCallbackIds.push_back(
             MEventMessage::addEventCallback("DisplayRGBColorChanged", colorPrefsChangedCB, this));
+
+        // Monitor color management prefs.
+        _mayaColorManagementCallbackIds.push_back(MEventMessage::addEventCallback(
+            "colorMgtEnabledChanged", colorManagementRefreshCB, this));
+        _mayaColorManagementCallbackIds.push_back(MEventMessage::addEventCallback(
+            "colorMgtWorkingSpaceChanged", colorManagementRefreshCB, this));
+        _mayaColorManagementCallbackIds.push_back(MEventMessage::addEventCallback(
+            "colorMgtConfigChanged", colorManagementRefreshCB, this));
+        _mayaColorManagementCallbackIds.push_back(MEventMessage::addEventCallback(
+            "colorMgtConfigFilePathChanged", colorManagementRefreshCB, this));
 
         // We don't really need any HdTask because VP2RenderDelegate uses Hydra
         // engine for data preparation only, but we have to add a dummy render
@@ -1199,6 +1223,10 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
                 HdPrimTypeTokens->material, SdfPath::AbsoluteRootPath());
             for (auto material : materials) {
                 changeTracker.MarkSprimDirty(material, HdMaterial::DirtyParams);
+                // Tell all the Rprims associated with this material to recompute primvars
+                HdVP2Material* vp2material = static_cast<HdVP2Material*>(
+                    _renderIndex->GetSprim(HdPrimTypeTokens->material, material));
+                vp2material->MaterialChanged(_sceneDelegate.get());
             }
         }
 
@@ -1487,8 +1515,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         }
     }
 
-    const Ufe::PathSegment pathSegment
-        = MayaUsd::ufe::usdPathToUfePathSegment(usdPath, instanceIndex);
+    const Ufe::PathSegment pathSegment = UsdUfe::usdPathToUfePathSegment(usdPath, instanceIndex);
     const Ufe::SceneItem::Ptr& si
         = handler->createItem(_proxyShapeData->ProxyShape()->ufePath() + pathSegment);
     if (!si) {
@@ -1766,6 +1793,19 @@ void ProxyRenderDelegate::_RequestRefresh()
 void ProxyRenderDelegate::ColorPrefsChanged()
 {
     _colorPrefsChanged = true;
+    _RequestRefresh();
+}
+
+void ProxyRenderDelegate::ColorManagementRefresh()
+{
+    // Need to resync all color management aware materials
+    HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
+    auto             materials
+        = _renderIndex->GetSprimSubtree(HdPrimTypeTokens->material, SdfPath::AbsoluteRootPath());
+    for (auto material : materials) {
+        changeTracker.MarkSprimDirty(material, HdMaterial::DirtyParams);
+    }
+
     _RequestRefresh();
 }
 

@@ -191,9 +191,14 @@ void LayerTreeItem::fetchData(RebuildChildren in_rebuild, RecursionDetector* in_
 QVariant LayerTreeItem::data(int role) const
 {
     switch (role) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    case Qt::ForegroundRole: return QColor(200, 200, 200);
+#else
     case Qt::TextColorRole: return QColor(200, 200, 200);
+#endif
     case Qt::BackgroundRole: return QColor(71, 71, 71);
-    case Qt::TextAlignmentRole: return Qt::AlignLeft + Qt::AlignVCenter;
+    case Qt::TextAlignmentRole:
+        return (static_cast<int>(Qt::AlignLeft) + static_cast<int>(Qt::AlignVCenter));
     case Qt::SizeHintRole: return QSize(0, DPIScale(30));
     default: return QStandardItem::data(role);
     }
@@ -364,6 +369,10 @@ void LayerTreeItem::saveEditsNoPrompt()
 // helper to save anon layers called by saveEdits()
 void LayerTreeItem::saveAnonymousLayer()
 {
+    // TODO: the code below is very similar to mayaUsd::utils::saveAnonymousLayer().
+    //       When fixing bug here or there, we need to fix it in the other. Refactor to have a
+    //       single copy.
+
     auto sessionState = parentModel()->sessionState();
 
     std::string fileName;
@@ -375,6 +384,8 @@ void LayerTreeItem::saveAnonymousLayer()
         const QString dialogTitle = StringResources::getAsQString(StringResources::kSaveLayer);
         std::string   formatTag = MayaUsd::utils::usdFormatArgOption();
         if (saveSubLayer(dialogTitle, parentLayerItem(), layer(), fileName, formatTag)) {
+
+            const std::string absoluteFileName = fileName;
 
             // now replace the layer in the parent
             if (isRootLayer()) {
@@ -393,15 +404,15 @@ void LayerTreeItem::saveAnonymousLayer()
                         = UsdMayaUtilFileSystem::getLayerFileDir(parentItem->layer());
                 }
 
-                // Now replace the layer in the parent
-                //
-                // When the filePath was made relative, we need to help FindOrOpen to locate
-                //      the sub-layers when using relative paths. We temporarily chande the
-                //      current directory to the location the file path is relative to.
-                UsdMayaUtilFileSystem::TemporaryCurrentDir tempCurDir(relativePathAnchor);
-                auto newLayer = SdfLayer::FindOrOpen(fileName);
-                tempCurDir.restore();
+                // Note: we need to open the layer with the absolute path. The relative path is only
+                //       used by the parent layer to refer to the sub-layer relative to itself. When
+                //       opening the layer in isolation, we need to use the absolute path. Failure
+                //       to do so will make finding the layer by its own identifier fail! A symptom
+                //       of this failure is that drag-and-drop in the Layer Manager UI fails
+                //       immediately after saving a layer with a relative path.
+                SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(absoluteFileName);
 
+                // Now replace the layer in the parent, using a relative path if requested.
                 if (newLayer) {
                     bool setTarget = _isTargetLayer;
                     auto model = parentModel();

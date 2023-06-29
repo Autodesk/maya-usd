@@ -330,6 +330,10 @@ SdfLayerRefPtr saveAnonymousLayer(
     LayerParent     parent,
     std::string     formatArg)
 {
+    // TODO: the code below is very similar to LayerTreeItem::saveAnonymousLayer().
+    //       When fixing bug here or there, we need to fix it in the other. Refactor to have a
+    //       single copy.
+
     if (!anonLayer || !anonLayer->IsAnonymous()) {
         return nullptr;
     }
@@ -361,13 +365,15 @@ SdfLayerRefPtr saveAnonymousLayer(
         }
     }
 
-    // When the filePath was made relative, we need to help FindOrOpen to locate
-    //      the sub-layers when using relative paths. We temporarily chande the
-    //      current directory to the location the file path is relative to.
-    UsdMayaUtilFileSystem::TemporaryCurrentDir tempCurDir(relativePathAnchor);
-    SdfLayerRefPtr                             newLayer = SdfLayer::FindOrOpen(filePath);
-    tempCurDir.restore();
+    // Note: we need to open the layer with the absolute path. The relative path is only
+    //       used by the parent layer to refer to the sub-layer relative to itself. When
+    //       opening the layer in isolation, we need to use the absolute path. Failure to
+    //       do so will make finding the layer by its own identifier fail! A symptom of
+    //       this failure is that drag-and-drop in the Layer Manager UI fails immediately
+    //       after saving a layer with a relative path.
+    SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(pathInfo.absolutePath);
 
+    // Now replace the layer in the parent, using a relative path if requested.
     if (newLayer) {
         if (isSubLayer) {
             updateSubLayer(parent._layerParent, anonLayer, filePath);
@@ -398,11 +404,13 @@ void updateSubLayer(
     subLayers.Replace(oldSubLayer->GetIdentifier(), newSubLayerPath);
 
     const std::string oldAbsPath = oldSubLayer->GetRealPath();
-    subLayers.Replace(oldAbsPath, newSubLayerPath);
+    if (oldAbsPath.length() > 0) {
+        subLayers.Replace(oldAbsPath, newSubLayerPath);
 
-    const std::string oldRelPath
-        = UsdMayaUtilFileSystem::getPathRelativeToLayerFile(oldAbsPath, parentLayer);
-    subLayers.Replace(oldRelPath, newSubLayerPath);
+        const std::string oldRelPath
+            = UsdMayaUtilFileSystem::getPathRelativeToLayerFile(oldAbsPath, parentLayer);
+        subLayers.Replace(oldRelPath, newSubLayerPath);
+    }
 }
 
 void ensureUSDFileExtension(std::string& filePath)

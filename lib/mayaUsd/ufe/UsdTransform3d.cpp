@@ -21,8 +21,10 @@
 #include <mayaUsd/ufe/UsdRotateUndoableCommand.h>
 #include <mayaUsd/ufe/UsdScaleUndoableCommand.h>
 #include <mayaUsd/ufe/UsdTranslateUndoableCommand.h>
-#include <mayaUsd/ufe/Utils.h>
 
+#include <usdUfe/ufe/Utils.h>
+
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/usdGeom/xformCache.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -96,7 +98,7 @@ Ufe::SceneItem::Ptr UsdTransform3d::sceneItem() const { return fItem; }
 #ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd(double x, double y, double z)
 {
-    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))) {
+    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))) {
         return nullptr;
     }
 
@@ -160,7 +162,7 @@ Ufe::Vector3d UsdTransform3d::scale() const
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd(double x, double y, double z)
 {
-    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"))) {
+    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"))) {
         return nullptr;
     }
 
@@ -176,7 +178,7 @@ void UsdTransform3d::rotate(double x, double y, double z)
 #ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd(double x, double y, double z)
 {
-    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
+    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
         return nullptr;
     }
 
@@ -186,7 +188,7 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd(double x, double y, doub
 #else
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd()
 {
-    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))) {
+    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))) {
         return nullptr;
     }
 
@@ -195,7 +197,7 @@ Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd()
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd()
 {
-    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"))) {
+    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"))) {
         return nullptr;
     }
 
@@ -204,7 +206,7 @@ Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd()
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd()
 {
-    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
+    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
         return nullptr;
     }
 
@@ -231,8 +233,9 @@ Ufe::Matrix4d UsdTransform3d::matrix() const
 
     // 4x4 local affine transformation matrix. 4th column of matrix is [0 0 0 1]
     if (!UsdGeomXformable::GetLocalTransformation(&m, ops, getTime(path()))) {
-        TF_FATAL_ERROR(
+        std::string msg = TfStringPrintf(
             "Local transformation computation for prim %s failed.", prim().GetPath().GetText());
+        throw std::runtime_error(msg.c_str());
     }
 
     return convertFromUsd(m);
@@ -251,7 +254,7 @@ UsdTransform3d::rotatePivotCmd(double, double, double)
 UsdTransform3d::rotatePivotTranslateCmd()
 #endif
 {
-    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:translate:pivot"))) {
+    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:translate:pivot"))) {
         return nullptr;
     }
 

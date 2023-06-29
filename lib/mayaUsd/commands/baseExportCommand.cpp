@@ -43,6 +43,8 @@ MSyntax MayaUSDExportCommand::createSyntax()
     // These flags correspond to entries in
     // UsdMayaJobExportArgs::GetGuideDictionary.
     syntax.addFlag(
+        kWriteDefaults, UsdMayaJobExportArgsTokens->writeDefaults.GetText(), MSyntax::kBoolean);
+    syntax.addFlag(
         kMergeTransformAndShapeFlag,
         UsdMayaJobExportArgsTokens->mergeTransformAndShape.GetText(),
         MSyntax::kBoolean);
@@ -217,6 +219,8 @@ MSyntax MayaUSDExportCommand::createSyntax()
     syntax.makeFlagMultiUse(UsdMayaJobExportArgsTokens->customLayerData.GetText());
 
     // These are additional flags under our control.
+    syntax.addFlag(
+        kMetersPerUnit, UsdMayaJobExportArgsTokens->metersPerUnit.GetText(), MSyntax::kDouble);
     syntax.addFlag(kFrameRangeFlag, kFrameRangeFlagLong, MSyntax::kDouble, MSyntax::kDouble);
     syntax.addFlag(kFrameStrideFlag, kFrameStrideFlagLong, MSyntax::kDouble);
     syntax.addFlag(kFrameSampleFlag, kFrameSampleFlagLong, MSyntax::kDouble);

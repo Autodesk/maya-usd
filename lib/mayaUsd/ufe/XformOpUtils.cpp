@@ -16,6 +16,7 @@
 
 #include "XformOpUtils.h"
 
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/usdGeom/xformable.h>
 
 #include <maya/MMatrix.h>
@@ -37,8 +38,7 @@ GfMatrix4d computeLocalTransformWithIterator(
     const UsdTimeCode&                          time)
 {
     // If we want the op to be included, increment the end op iterator.
-    if (INCLUSIVE) {
-        TF_AXIOM(endOp != ops.end());
+    if (INCLUSIVE && endOp != ops.end()) {
         ++endOp;
     }
 
@@ -49,7 +49,7 @@ GfMatrix4d computeLocalTransformWithIterator(
 
     GfMatrix4d m(1);
     if (!UsdGeomXformable::GetLocalTransformation(&m, argOps, time)) {
-        TF_FATAL_ERROR("Local transformation computation failed.");
+        throw std::runtime_error("Local transformation computation failed.");
     }
 
     return m;
@@ -65,7 +65,9 @@ computeLocalTransformWithOp(const UsdPrim& prim, const UsdGeomXformOp& op, const
 
     auto i = std::find(ops.begin(), ops.end(), op);
     if (i == ops.end()) {
-        TF_FATAL_ERROR("Matrix op %s not found in transform ops.", op.GetOpName().GetText());
+        std::string msg
+            = TfStringPrintf("Matrix op %s not found in transform ops.", op.GetOpName().GetText());
+        throw std::runtime_error(msg.c_str());
     }
 
     return computeLocalTransformWithIterator<INCLUSIVE>(ops, i, time);

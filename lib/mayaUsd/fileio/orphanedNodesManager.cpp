@@ -41,7 +41,7 @@ namespace MAYAUSD_NS_DEF {
 // Class OrphanedNodesManager::Memento
 //------------------------------------------------------------------------------
 
-OrphanedNodesManager::Memento::Memento(Ufe::Trie<PullVariantInfo>&& pulledPrims)
+OrphanedNodesManager::Memento::Memento(PulledPrims&& pulledPrims)
     : _pulledPrims(std::move(pulledPrims))
 {
 }
@@ -76,8 +76,11 @@ namespace {
 using PullVariantInfo = OrphanedNodesManager::PullVariantInfo;
 using VariantSetDescriptor = OrphanedNodesManager::VariantSetDescriptor;
 using VariantSelection = OrphanedNodesManager::VariantSelection;
+using PulledPrims = OrphanedNodesManager::PulledPrims;
+using PulledPrimNode = Ufe::TrieNode<PullVariantInfo>;
 
-Ufe::Path trieNodeToPulledPrimUfePath(Ufe::TrieNode<PullVariantInfo>::Ptr trieNode);
+Ufe::PathSegment::Components trieNodeToPathComponents(PulledPrimNode::Ptr trieNode);
+Ufe::Path                    trieNodeToPulledPrimUfePath(PulledPrimNode::Ptr trieNode);
 
 void renameVariantDescriptors(
     std::list<VariantSetDescriptor>& descriptors,
@@ -93,33 +96,63 @@ void renameVariantDescriptors(
 }
 
 void renameVariantInfo(
-    const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode,
-    const Ufe::Path&                           oldPath,
-    const Ufe::Path&                           newPath)
+    const PulledPrimNode::Ptr& trieNode,
+    const Ufe::Path&           oldPath,
+    const Ufe::Path&           newPath)
 {
     // Note: TrieNode has no non-const data() function, so to modify the
     //       data we must make a copy, modify the copy and call setData().
     PullVariantInfo newVariantInfo = trieNode->data();
 
-    // Note: the change to USD data must be done *after* changes to Maya data because
-    //       the outliner reacts to UFE notifications received following the USD edits
-    //       to rebuild the node tree and the Maya node we want to hide must have been
-    //       hidden by that point. So the node visibility change must be done *first*.
     renameVariantDescriptors(newVariantInfo.variantSetDescriptors, oldPath, newPath);
-
-    Ufe::Path pulledPath = trieNodeToPulledPrimUfePath(trieNode);
-    TF_VERIFY(writePullInformation(pulledPath, newVariantInfo.editedAsMayaRoot));
 
     trieNode->setData(newVariantInfo);
 }
 
+void renamePullInformation(
+    const PulledPrimNode::Ptr& trieNode,
+    const Ufe::Path&           oldPath,
+    const Ufe::Path&           newPath)
+{
+    // Note: the trie only contains UFE path components, no UFE segments.
+    //       So we can't build a correct UFE path with the correct run-time ID
+    //       and the correct separators.
+    //
+    //       The old and new UFE paths do contain the correct run-time ID. So
+    //       we use them to build the correct UFE path to write the new pulled
+    //       information. Note that we *cannot* rely on the proxy shape existing
+    //       because we're sometimes called after it has been deleted. The reason
+    //       is that when Maya deletes a node, it temporarily reparents its children
+    //       to the Maya world root. This is the context in which we're sometimes
+    //       being called. Very confusing and unfortunate.
+    //
+    //       In all cases, we're being called about the proxy shape node being
+    //       reparented, so we just assume that the new path ends at the transition
+    //       between the Maya run-time and the USD run-time.
+    Ufe::Path pulledPath = newPath;
+
+    const Ufe::PathSegment::Components pathComponents = trieNodeToPathComponents(trieNode);
+    for (size_t i = newPath.size(); i < pathComponents.size(); ++i) {
+        const Ufe::PathComponent& comp = pathComponents[i];
+        if (pulledPath.nbSegments() < 2) {
+            pulledPath = pulledPath + Ufe::PathSegment(comp, ufe::getUsdRunTimeId(), '/');
+        } else {
+            pulledPath = pulledPath + comp;
+        }
+    }
+
+    const MDagPath& mayaPath = trieNode->data().editedAsMayaRoot;
+    TF_VERIFY(writePullInformation(pulledPath, mayaPath));
+}
+
 void recursiveRename(
-    const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode,
-    const Ufe::Path&                           oldPath,
-    const Ufe::Path&                           newPath)
+    const PulledPrimNode::Ptr& trieNode,
+    const Ufe::Path&           oldPath,
+    const Ufe::Path&           newPath)
 {
     if (trieNode->hasData()) {
         renameVariantInfo(trieNode, oldPath, newPath);
+        renamePullInformation(trieNode, oldPath, newPath);
     } else {
         auto childrenComponents = trieNode->childrenComponents();
         for (auto& c : childrenComponents) {
@@ -129,9 +162,9 @@ void recursiveRename(
 }
 
 void handlePathChange(
-    const Ufe::Path&            oldPath,
-    const Ufe::SceneItem::Ptr&  item,
-    Ufe::Trie<PullVariantInfo>& pulledPrims)
+    const Ufe::Path&           oldPath,
+    const Ufe::SceneItem::Ptr& item,
+    PulledPrims&               pulledPrims)
 {
     if (!item)
         return;
@@ -175,31 +208,42 @@ OrphanedNodesManager::OrphanedNodesManager()
 
 void OrphanedNodesManager::add(const Ufe::Path& pulledPath, const MDagPath& editedAsMayaRoot)
 {
+    // Adding a node twice to the orphan manager is idem-potent. The manager was already
+    // racking that node.
+    if (_pulledPrims.containsDescendantInclusive(pulledPath))
+        return;
+
     // Add the edited-as-Maya root to our pulled prims prefix tree.  Also add the full
     // configuration of variant set selections for each ancestor, up to the USD
     // pseudo-root.  Variants on the pulled path itself are ignored, as once
     // pulled into Maya they cannot be changed.
-    TF_AXIOM(!pulledPrims().containsDescendantInclusive(pulledPath));
-    TF_AXIOM(pulledPath.runTimeId() == MayaUsd::ufe::getUsdRunTimeId());
+    if (_pulledPrims.containsDescendantInclusive(pulledPath)) {
+        TF_WARN("Trying to edit-as-Maya a descendant of an already edited prim.");
+        return;
+    }
+    if (pulledPath.runTimeId() != MayaUsd::ufe::getUsdRunTimeId()) {
+        TF_WARN("Trying to monitor a non-USD node for edit-as-Maya orphaning.");
+        return;
+    }
 
     // We store a list of (path, list of (variant set, variant set selection)),
     // for all ancestors, starting at closest ancestor.
     auto ancestorPath = pulledPath.pop();
     auto vsd = variantSetDescriptors(ancestorPath);
 
-    pulledPrims().add(pulledPath, PullVariantInfo(editedAsMayaRoot, vsd));
+    _pulledPrims.add(pulledPath, PullVariantInfo(editedAsMayaRoot, vsd));
 }
 
 OrphanedNodesManager::Memento OrphanedNodesManager::remove(const Ufe::Path& pulledPath)
 {
     Memento oldPulledPrims(preserve());
-    TF_AXIOM(pulledPrims().remove(pulledPath) != nullptr);
+    TF_VERIFY(_pulledPrims.remove(pulledPath) != nullptr);
     return oldPulledPrims;
 }
 
 const PullVariantInfo& OrphanedNodesManager::get(const Ufe::Path& pulledPath) const
 {
-    const auto infoNode = pulledPrims().find(pulledPath);
+    const auto infoNode = _pulledPrims.find(pulledPath);
     if (!infoNode || !infoNode->hasData()) {
         static const PullVariantInfo empty;
         return empty;
@@ -220,11 +264,11 @@ void OrphanedNodesManager::operator()(const Ufe::Notification& n)
         const auto& sceneCompositeNotification
             = static_cast<const Ufe::SceneCompositeNotification&>(n);
         for (const auto& op : sceneCompositeNotification.opsList()) {
-            if (pulledPrims().containsDescendant(op.path)) {
+            if (_pulledPrims.containsDescendant(op.path)) {
                 handleOp(op);
             }
         }
-    } else if (pulledPrims().containsDescendant(changedPath)) {
+    } else if (_pulledPrims.containsDescendant(changedPath)) {
 #ifdef UFE_V4_FEATURES_AVAILABLE
         // Use UFE v4 notification to op conversion.
         handleOp(sceneNotification);
@@ -264,7 +308,7 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
         // descendants of the argument path that have all the proper variants.
         // The trie node that corresponds to the added path is the starting
         // point.  It may be an internal node, without data.
-        auto ancestorNode = pulledPrims().node(op.path);
+        auto ancestorNode = _pulledPrims.node(op.path);
         TF_VERIFY(ancestorNode);
         recursiveSwitch(ancestorNode, op.path);
     } break;
@@ -283,7 +327,7 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
         // Traverse the trie, and hide pull parents that are descendants of
         // the argument path.  First, get the trie node that corresponds to
         // the path.  It may be an internal node, without data.
-        auto ancestorNode = pulledPrims().node(op.path);
+        auto ancestorNode = _pulledPrims.node(op.path);
         TF_VERIFY(ancestorNode);
         recursiveSetOrphaned(ancestorNode, true);
     } break;
@@ -303,7 +347,7 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
 
         auto parentHier = Ufe::Hierarchy::hierarchy(parentItem);
         if (!parentHier->hasChildren()) {
-            auto ancestorNode = pulledPrims().node(op.path);
+            auto ancestorNode = _pulledPrims.node(op.path);
             if (ancestorNode) {
                 recursiveSetOrphaned(ancestorNode, true);
             }
@@ -324,7 +368,7 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
                 // USD sends resync changes (UFE subtree invalidate) on the
                 // pseudo-root itself.  Since the pseudo-root has no payload or
                 // variant, ignore these.
-                TF_AXIOM(parentItem->path().nbSegments() == 1);
+                TF_VERIFY(parentItem->path().nbSegments() == 1);
                 return;
             }
             auto parentPrim = parentUsdItem->prim();
@@ -337,7 +381,7 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
                     + Ufe::PathSegment(
                           child.GetPath().GetAsString(), MayaUsd::ufe::getUsdRunTimeId(), '/');
 
-                auto ancestorNode = pulledPrims().node(childPath);
+                auto ancestorNode = _pulledPrims.node(childPath);
                 // If there is no ancestor node in the trie, this means that
                 // the new hierarchy is completely different from the one when
                 // the pull occurred, which means that the pulled object must
@@ -353,7 +397,7 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
                 // children appear in the trie, means that we've switched to a
                 // different variant, and everything below that path should be
                 // hidden.
-                auto ancestorNode = pulledPrims().node(op.path);
+                auto ancestorNode = _pulledPrims.node(op.path);
                 if (ancestorNode) {
                     recursiveSetOrphaned(ancestorNode, true);
                 }
@@ -374,24 +418,20 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
     }
 }
 
-Ufe::Trie<PullVariantInfo>& OrphanedNodesManager::pulledPrims() { return _pulledPrims; }
+void OrphanedNodesManager::clear() { _pulledPrims.clear(); }
 
-const Ufe::Trie<PullVariantInfo>& OrphanedNodesManager::pulledPrims() const { return _pulledPrims; }
-
-void OrphanedNodesManager::clear() { pulledPrims().clear(); }
-
-bool OrphanedNodesManager::empty() const { return pulledPrims().root()->empty(); }
+bool OrphanedNodesManager::empty() const { return _pulledPrims.root()->empty(); }
 
 OrphanedNodesManager::Memento OrphanedNodesManager::preserve() const
 {
-    return Memento(deepCopy(pulledPrims()));
+    return Memento(deepCopy(_pulledPrims));
 }
 
 void OrphanedNodesManager::restore(Memento&& previous) { _pulledPrims = previous.release(); }
 
 bool OrphanedNodesManager::isOrphaned(const Ufe::Path& pulledPath) const
 {
-    auto trieNode = pulledPrims().node(pulledPath);
+    auto trieNode = _pulledPrims.node(pulledPath);
     if (!trieNode) {
         // If the argument path has not been pulled, it can't be orphaned.
         return false;
@@ -415,11 +455,10 @@ bool OrphanedNodesManager::isOrphaned(const Ufe::Path& pulledPath) const
 
 namespace {
 
-Ufe::Path
-trieNodeToPulledPrimUfePath(Ufe::TrieNode<OrphanedNodesManager::PullVariantInfo>::Ptr trieNode)
+Ufe::PathSegment::Components trieNodeToPathComponents(PulledPrimNode::Ptr trieNode)
 {
-    // Accumulate all UFE path components, in reverse order. We will pop them
-    // from the back while building the pulled prim path.
+    // Accumulate all UFE path components, in reverse order. We then reverse
+    // the order to get the true path order.
     //
     // Note: the trie root node is not really part of the hierarchy, so do not
     //       include it in the components. We detect we are at the root when
@@ -429,16 +468,19 @@ trieNodeToPulledPrimUfePath(Ufe::TrieNode<OrphanedNodesManager::PullVariantInfo>
         pathComponents.push_back(trieNode->component());
         trieNode = trieNode->parent();
     }
+    std::reverse(pathComponents.begin(), pathComponents.end());
+    return pathComponents;
+}
 
+Ufe::Path trieNodeToPulledPrimUfePath(PulledPrimNode::Ptr trieNode)
+{
     // We assume the prim path is comosed of two segments: one in Maya, up to the
     // stage proxy shape, then in USD.
     Ufe::Path primPath;
     bool      foundStage = false;
 
-    while (pathComponents.size() > 0) {
-        Ufe::PathComponent comp = pathComponents.back();
-        pathComponents.pop_back();
-
+    const Ufe::PathSegment::Components pathComponents = trieNodeToPathComponents(trieNode);
+    for (const Ufe::PathComponent& comp : pathComponents) {
         // If the path is empty, it means we are starting the Maya path, so create
         // a Maya UFE segment.
         //
@@ -481,9 +523,7 @@ MStatus setNodeVisibility(const MDagPath& dagPath, bool visibility)
 } // namespace
 
 /* static */
-bool OrphanedNodesManager::setOrphaned(
-    const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode,
-    bool                                       orphaned)
+bool OrphanedNodesManager::setOrphaned(const PulledPrimNode::Ptr& trieNode, bool orphaned)
 {
     TF_VERIFY(trieNode->hasData());
 
@@ -516,9 +556,7 @@ bool OrphanedNodesManager::setOrphaned(
 }
 
 /* static */
-void OrphanedNodesManager::recursiveSetOrphaned(
-    const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode,
-    bool                                       orphaned)
+void OrphanedNodesManager::recursiveSetOrphaned(const PulledPrimNode::Ptr& trieNode, bool orphaned)
 {
     // We know in our case that a trie node with data can't have children,
     // since descendants of a pulled prim can't be pulled.
@@ -535,8 +573,8 @@ void OrphanedNodesManager::recursiveSetOrphaned(
 
 /* static */
 void OrphanedNodesManager::recursiveSwitch(
-    const Ufe::TrieNode<PullVariantInfo>::Ptr& trieNode,
-    const Ufe::Path&                           ufePath)
+    const PulledPrimNode::Ptr& trieNode,
+    const Ufe::Path&           ufePath)
 {
     // We know in our case that a trie node with data can't have children,
     // since descendants of a pulled prim can't be pulled.  A trie node with
@@ -599,21 +637,19 @@ OrphanedNodesManager::variantSetDescriptors(const Ufe::Path& p)
 }
 
 /* static */
-Ufe::Trie<PullVariantInfo> OrphanedNodesManager::deepCopy(const Ufe::Trie<PullVariantInfo>& src)
+PulledPrims OrphanedNodesManager::deepCopy(const PulledPrims& src)
 {
-    Ufe::Trie<PullVariantInfo> dst;
+    PulledPrims dst;
     deepCopy(src.root(), dst.root());
     return dst;
 }
 
 /* static */
-void OrphanedNodesManager::deepCopy(
-    const Ufe::TrieNode<PullVariantInfo>::Ptr& src,
-    const Ufe::TrieNode<PullVariantInfo>::Ptr& dst)
+void OrphanedNodesManager::deepCopy(const PulledPrimNode::Ptr& src, const PulledPrimNode::Ptr& dst)
 {
     for (const auto& c : src->childrenComponents()) {
         const auto& srcChild = (*src)[c];
-        auto        dstChild = std::make_shared<Ufe::TrieNode<PullVariantInfo>>(c);
+        auto        dstChild = std::make_shared<PulledPrimNode>(c);
         dst->add(dstChild);
         if (srcChild->hasData()) {
             dstChild->setData(srcChild->data());

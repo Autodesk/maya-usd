@@ -23,8 +23,14 @@
 /// General utilities for working with the UsdUfe library.
 namespace USDUFE_NS_DEF {
 
+/// Converts the given value \p d from units \p from to the equivalent value in units \p
+inline double convertUnit(double d, double from, double to)
+{
+    return from == to ? d : d * from / to;
+}
+
 USDUFE_PUBLIC
-std::string SanitizeName(const std::string& name);
+std::string sanitizeName(const std::string& name);
 
 /// Return a prettified name from camelCase or snake_case source.
 ///
