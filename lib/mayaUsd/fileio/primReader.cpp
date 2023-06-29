@@ -23,7 +23,8 @@ UsdMayaPrimReader::UsdMayaPrimReader(const UsdMayaPrimReaderArgs& args)
 }
 
 /* static */
-UsdMayaPrimReader::ContextSupport UsdMayaPrimReader::CanImport(const UsdMayaJobImportArgs&, const UsdPrim& importPrim)
+UsdMayaPrimReader::ContextSupport
+UsdMayaPrimReader::CanImport(const UsdMayaJobImportArgs&, const UsdPrim& importPrim)
 {
     // Default value for all readers is Fallback. More specialized writers can
     // override the base CanImport to report Supported/Unsupported as necessary.

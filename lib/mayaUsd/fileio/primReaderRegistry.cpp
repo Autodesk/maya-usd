@@ -97,8 +97,8 @@ void UsdMayaPrimReaderRegistry::Register(
         _RegistryEntry { [](const UsdMayaJobImportArgs&, const UsdPrim) {
                             return UsdMayaPrimReader::ContextSupport::Fallback;
                         },
-            fn,
-            index }));
+                         fn,
+                         index }));
 
     if (fn) {
         UsdMaya_RegistryHelper::AddUnloader(
@@ -186,7 +186,9 @@ UsdMayaPrimReaderRegistry::ReaderFactoryFn UsdMayaPrimReaderRegistry::Find(
         //_reg[typeName] = nullptr;
         Register(
             tfType,
-            [](const UsdMayaJobImportArgs&, const UsdPrim&) { return UsdMayaPrimReader::ContextSupport::Fallback; },
+            [](const UsdMayaJobImportArgs&, const UsdPrim&) {
+                return UsdMayaPrimReader::ContextSupport::Fallback;
+            },
             nullptr);
     }
 

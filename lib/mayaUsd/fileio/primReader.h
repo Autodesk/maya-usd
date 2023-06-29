@@ -47,7 +47,8 @@ public:
     /// This static function is expected for all prim readers and allows
     /// declaring how well this class can support the current context:
     MAYAUSD_CORE_PUBLIC
-    static ContextSupport CanImport(const UsdMayaJobImportArgs& importArgs, const UsdPrim& importPrim);
+    static ContextSupport
+    CanImport(const UsdMayaJobImportArgs& importArgs, const UsdPrim& importPrim);
 
     /// Reads the USD prim given by the prim reader args into a Maya shape,
     /// modifying the prim reader context as a result.
