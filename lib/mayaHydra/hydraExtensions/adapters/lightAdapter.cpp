@@ -18,6 +18,7 @@
 #include <mayaHydraLib/adapters/adapterDebugCodes.h>
 #include <mayaHydraLib/adapters/constantShadowMatrix.h>
 #include <mayaHydraLib/adapters/mayaAttrs.h>
+#include <mayaHydraLib/mayaHydraSceneProducer.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/type.h>
@@ -34,6 +35,12 @@
 #include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
+// Bring the MayaHydra namespace into scope.
+// The following code currently lives inside the pxr namespace, but it would make more sense to 
+// have it inside the MayaHydra namespace. This using statement allows us to use MayaHydra symbols
+// from within the pxr namespace as if we were in the MayaHydra namespace.
+// Remove this once the code has been moved to the MayaHydra namespace.
+using namespace MayaHydra;
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -88,8 +95,8 @@ const MString defaultLightSet("defaultLightSet");
 // MayaHydraLightAdapter is the base class for any light adapter used to handle the translation from
 // a light to hydra.
 
-MayaHydraLightAdapter::MayaHydraLightAdapter(MayaHydraDelegateCtx* delegate, const MDagPath& dag)
-    : MayaHydraDagAdapter(delegate->GetPrimPath(dag, true), delegate, dag)
+MayaHydraLightAdapter::MayaHydraLightAdapter(MayaHydraSceneProducer* producer, const MDagPath& dag)
+    : MayaHydraDagAdapter(producer->GetPrimPath(dag, true), producer, dag)
 {
     // This should be avoided, not a good idea to call virtual functions
     // directly or indirectly in a constructor.
@@ -98,7 +105,7 @@ MayaHydraLightAdapter::MayaHydraLightAdapter(MayaHydraDelegateCtx* delegate, con
 
     // Special case for Arnold lights which are seen as locators
     if (IsAnArnoldSkyDomeLight(dag)) {
-        GetDelegate()->AddArnoldLight(dag);
+        GetSceneProducer()->AddArnoldLight(dag);
     }
 }
 
@@ -107,7 +114,7 @@ MayaHydraLightAdapter::~MayaHydraLightAdapter()
     // Special case for Arnold lights which are seen as locators
     const MDagPath& dag = GetDagPath();
     if (IsAnArnoldSkyDomeLight(dag)) {
-        GetDelegate()->RemoveArnoldLight(dag);
+        GetSceneProducer()->RemoveArnoldLight(dag);
     }
 }
 
@@ -121,7 +128,7 @@ bool MayaHydraLightAdapter::IsAnArnoldSkyDomeLight(const MDagPath& dag) const
 
 bool MayaHydraLightAdapter::IsSupported() const
 {
-    return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(LightType());
+    return GetSceneProducer()->GetRenderIndex().IsSprimTypeSupported(LightType());
 }
 
 void MayaHydraLightAdapter::Populate()
@@ -130,7 +137,7 @@ void MayaHydraLightAdapter::Populate()
         return;
     }
     if (IsVisible() && _isLightingOn) {
-        GetDelegate()->InsertSprim(LightType(), GetID(), HdLight::AllDirty);
+        GetSceneProducer()->InsertSprim(this, LightType(), GetID(), HdLight::AllDirty);
         _isPopulated = true;
     }
 }
@@ -138,7 +145,7 @@ void MayaHydraLightAdapter::Populate()
 void MayaHydraLightAdapter::MarkDirty(HdDirtyBits dirtyBits)
 {
     if (_isPopulated && dirtyBits != 0) {
-        GetDelegate()->GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits);
+        GetSceneProducer()->MarkSprimDirty(GetID(), dirtyBits);
     }
 }
 
@@ -147,7 +154,7 @@ void MayaHydraLightAdapter::RemovePrim()
     if (!_isPopulated) {
         return;
     }
-    GetDelegate()->RemoveSprim(LightType(), GetID());
+    GetSceneProducer()->RemoveSprim(LightType(), GetID());
     _isPopulated = false;
 }
 
@@ -196,20 +203,25 @@ VtValue MayaHydraLightAdapter::Get(const TfToken& key)
         } else if (decayRate == 2) {
             light.SetAttenuation(GfVec3f(0.0f, 0.0f, 1.0f));
         }
+#if PXR_VERSION < 2308
         light.SetTransform(
-            MAYAHYDRA_NS::GetGfMatrixFromMaya(GetDagPath().inclusiveMatrixInverse()));
+            GetGfMatrixFromMaya(GetDagPath().inclusiveMatrixInverse()));
+#else
+        light.SetTransform(
+            GetGfMatrixFromMaya(GetDagPath().inclusiveMatrix()));
+#endif
         _CalculateLightParams(light);
         return VtValue(light);
     } else if (key == HdTokens->transform) {
         return VtValue(MayaHydraDagAdapter::GetTransform());
     } else if (key == HdLightTokens->shadowCollection) {
-        // Exclude lines/points primitives from receiving lighting and casting shadows by only
-        // taking the primitives whose root path is GetDelegate()->GetSolidPrimsRootPath()
-        const SdfPath     rootPathForNonLinesPrimitives = GetDelegate()->GetSolidPrimsRootPath();
+        // Exclude prims that should not be lighted by only
+        // taking the primitives whose root path is GetSceneProducer()->GetLightedPrimsRootPath()
+        const SdfPath     lightedPrimsRootPath = GetSceneProducer()->GetLightedPrimsRootPath();
         HdRprimCollection coll(
             HdTokens->geometry,
             HdReprSelector(HdReprTokens->refined),
-            rootPathForNonLinesPrimitives);
+            lightedPrimsRootPath);
         return VtValue(coll);
     } else if (key == HdLightTokens->shadowParams) {
         HdxShadowParams shadowParams;
@@ -308,9 +320,9 @@ void MayaHydraLightAdapter::_CalculateShadowParams(MFnLight& light, HdxShadowPar
 
     params.enabled = true;
     params.resolution = dmapResolutionPlug.isNull()
-        ? GetDelegate()->GetParams().maximumShadowMapResolution
+        ? GetSceneProducer()->GetParams().maximumShadowMapResolution
         : std::min(
-            GetDelegate()->GetParams().maximumShadowMapResolution, dmapResolutionPlug.asInt());
+            GetSceneProducer()->GetParams().maximumShadowMapResolution, dmapResolutionPlug.asInt());
 
     params.shadowMatrix
         = std::make_shared<MayaHydraConstantShadowMatrix>(GetTransform() * _shadowProjectionMatrix);

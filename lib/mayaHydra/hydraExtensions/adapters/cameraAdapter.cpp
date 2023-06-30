@@ -18,6 +18,7 @@
 #include <mayaHydraLib/adapters/adapterDebugCodes.h>
 #include <mayaHydraLib/adapters/adapterRegistry.h>
 #include <mayaHydraLib/adapters/mayaAttrs.h>
+#include <mayaHydraLib/mayaHydraSceneProducer.h>
 
 #include <pxr/base/gf/interval.h>
 #include <pxr/imaging/hd/camera.h>
@@ -39,16 +40,16 @@ TF_REGISTRY_FUNCTION_WITH_TAG(MayaHydraAdapterRegistry, camera)
 {
     MayaHydraAdapterRegistry::RegisterCameraAdapter(
         HdPrimTypeTokens->camera,
-        [](MayaHydraDelegateCtx* delegate, const MDagPath& dag) -> MayaHydraCameraAdapterPtr {
-            return MayaHydraCameraAdapterPtr(new MayaHydraCameraAdapter(delegate, dag));
+        [](MayaHydraSceneProducer* producer, const MDagPath& dag) -> MayaHydraCameraAdapterPtr {
+            return MayaHydraCameraAdapterPtr(new MayaHydraCameraAdapter(producer, dag));
         });
 }
 
 } // namespace
 
 // MayaHydraCameraAdapter is used to handle the translation from a Maya camera to hydra.
-MayaHydraCameraAdapter::MayaHydraCameraAdapter(MayaHydraDelegateCtx* delegate, const MDagPath& dag)
-    : MayaHydraShapeAdapter(delegate->GetPrimPath(dag, true), delegate, dag)
+MayaHydraCameraAdapter::MayaHydraCameraAdapter(MayaHydraSceneProducer* producer, const MDagPath& dag)
+    : MayaHydraShapeAdapter(producer->GetPrimPath(dag, true), producer, dag)
 {
 }
 
@@ -58,7 +59,7 @@ TfToken MayaHydraCameraAdapter::CameraType() { return HdPrimTypeTokens->camera; 
 
 bool MayaHydraCameraAdapter::IsSupported() const
 {
-    return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(CameraType());
+    return GetSceneProducer()->GetRenderIndex().IsSprimTypeSupported(CameraType());
 }
 
 void MayaHydraCameraAdapter::Populate()
@@ -66,7 +67,7 @@ void MayaHydraCameraAdapter::Populate()
     if (_isPopulated) {
         return;
     }
-    GetDelegate()->InsertSprim(CameraType(), GetID(), HdCamera::AllDirty);
+    GetSceneProducer()->InsertSprim(this, CameraType(), GetID(), HdCamera::AllDirty);
     _isPopulated = true;
 }
 
@@ -74,7 +75,7 @@ void MayaHydraCameraAdapter::MarkDirty(HdDirtyBits dirtyBits)
 {
     if (_isPopulated && dirtyBits != 0) {
         dirtyBits = dirtyBits & HdCamera::AllDirty;
-        GetDelegate()->GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits);
+        GetSceneProducer()->MarkSprimDirty(GetID(), dirtyBits);
     }
 }
 
@@ -119,7 +120,7 @@ void MayaHydraCameraAdapter::RemovePrim()
     if (!_isPopulated) {
         return;
     }
-    GetDelegate()->RemoveSprim(CameraType(), GetID());
+    GetSceneProducer()->RemoveSprim(CameraType(), GetID());
     _isPopulated = false;
 }
 
@@ -194,20 +195,20 @@ VtValue MayaHydraCameraAdapter::GetCameraParamValue(const TfToken& paramName)
 
     if (paramName == HdCameraTokens->shutterOpen) {
         // No motion samples, instantaneous shutter
-        if (!GetDelegate()->GetParams().motionSamplesEnabled())
+        if (!GetSceneProducer()->GetParams().motionSamplesEnabled())
             return VtValue(double(0));
-        return VtValue(double(GetDelegate()->GetCurrentTimeSamplingInterval().GetMin()));
+        return VtValue(double(GetSceneProducer()->GetCurrentTimeSamplingInterval().GetMin()));
     }
     if (paramName == HdCameraTokens->shutterClose) {
         // No motion samples, instantaneous shutter
-        if (!GetDelegate()->GetParams().motionSamplesEnabled())
+        if (!GetSceneProducer()->GetParams().motionSamplesEnabled())
             return VtValue(double(0));
         const auto shutterAngle = camera.shutterAngle(&status);
         if (hadError(status))
             return {};
         auto constexpr maxRadians = M_PI * 2.0;
         auto shutterClose = std::min(std::max(0.0, shutterAngle), maxRadians) / maxRadians;
-        auto interval = GetDelegate()->GetCurrentTimeSamplingInterval();
+        auto interval = GetSceneProducer()->GetCurrentTimeSamplingInterval();
         return VtValue(double(interval.GetMin() + interval.GetSize() * shutterClose));
     }
 

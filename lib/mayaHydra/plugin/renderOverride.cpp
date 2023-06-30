@@ -21,16 +21,16 @@
 #include <pxr/imaging/garch/glApi.h>
 #endif
 
-#include "pluginDebugCodes.h"
 #include "renderOverride.h"
+
+#include "pluginDebugCodes.h"
 #include "renderOverrideUtils.h"
 #include "tokens.h"
-#include "utils.h"
 
 #include <mayaHydraLib/delegates/delegateRegistry.h>
 #include <mayaHydraLib/delegates/sceneDelegate.h>
+#include <mayaHydraLib/interface.h>
 #include <mayaHydraLib/sceneIndex/registration.h>
-#include <mayaHydraLib/utils.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
@@ -105,6 +105,12 @@ int _profilerCategory = MProfiler::addCategory(
     "Events from mayaHydra render override");
 
 PXR_NAMESPACE_OPEN_SCOPE
+// Bring the MayaHydra namespace into scope.
+// The following code currently lives inside the pxr namespace, but it would make more sense to 
+// have it inside the MayaHydra namespace. This using statement allows us to use MayaHydra symbols
+// from within the pxr namespace as if we were in the MayaHydra namespace.
+// Remove this once the code has been moved to the MayaHydra namespace.
+using namespace MayaHydra;
 
 namespace {
 
@@ -326,10 +332,8 @@ SdfPath MtohRenderOverride::RendererSceneDelegateId(TfToken rendererName, TfToke
         return SdfPath();
     }
 
-    for (auto& delegate : instance->_delegates) {
-        if (delegate->GetName() == sceneDelegateName) {
-            return delegate->GetMayaDelegateID();
-        }
+    if (instance->_mayaHydraSceneProducer) {
+        return instance->_mayaHydraSceneProducer->GetDelegateID(sceneDelegateName);
     }
     return SdfPath();
 }
@@ -459,8 +463,8 @@ MStatus MtohRenderOverride::Render(
         }
 
         if (scene.changed()) {
-            if (_mayaHydraSceneDelegate) {
-                _mayaHydraSceneDelegate->HandleCompleteViewportScene(
+            if (_mayaHydraSceneProducer) {
+                _mayaHydraSceneProducer->HandleCompleteViewportScene(
                     scene, static_cast<MFrameContext::DisplayStyle>(drawContext.getDisplayStyle()));
             }
         }
@@ -500,13 +504,11 @@ MStatus MtohRenderOverride::Render(
     MayaHydraParams delegateParams = _globals.delegateParams;
     delegateParams.displaySmoothMeshes = !(displayStyle & MHWRender::MFrameContext::kFlatShaded);
 
-    if (_defaultLightDelegate != nullptr) {
-        _defaultLightDelegate->SetLightingOn(_hasDefaultLighting);
-        _defaultLightDelegate->SetDefaultLight(_defaultLight);
-    }
-    for (auto& it : _delegates) {
-        it->SetParams(delegateParams);
-        it->PreFrame(drawContext);
+    if (_mayaHydraSceneProducer) {
+        _mayaHydraSceneProducer->SetDefaultLightEnabled(_hasDefaultLighting);
+        _mayaHydraSceneProducer->SetDefaultLight(_defaultLight);
+        _mayaHydraSceneProducer->SetParams(delegateParams);
+        _mayaHydraSceneProducer->PreFrame(drawContext);
     }
 
     HdxRenderTaskParams params;
@@ -528,10 +530,20 @@ MStatus MtohRenderOverride::Render(
         _taskController->SetRenderViewport(_viewport);
     }
 
+    // Set Purpose tags
+    TfTokenVector mhRenderTags = {HdRenderTagTokens->geometry};
+    if (delegateParams.renderPurpose)
+        mhRenderTags.push_back(HdRenderTagTokens->render);
+    if (delegateParams.proxyPurpose)
+        mhRenderTags.push_back(HdRenderTagTokens->proxy);
+    if (delegateParams.guidePurpose)
+        mhRenderTags.push_back(HdRenderTagTokens->guide);
+    _taskController->SetRenderTags(mhRenderTags);
+
     _taskController->SetFreeCameraMatrices(
-        MAYAHYDRA_NS::GetGfMatrixFromMaya(
+        GetGfMatrixFromMaya(
             drawContext.getMatrix(MHWRender::MFrameContext::kViewMtx)),
-        MAYAHYDRA_NS::GetGfMatrixFromMaya(
+        GetGfMatrixFromMaya(
             drawContext.getMatrix(MHWRender::MFrameContext::kProjectionMtx)));
 
     if (delegateParams.motionSamplesEnabled()) {
@@ -542,10 +554,10 @@ MStatus MtohRenderOverride::Render(
             Ufe::Path ufeCameraPath = Ufe::PathString::path(ufeCameraPathString.asChar());
             bool isMayaCamera = ufeCameraPath.runTimeId() == UfeExtensions::getMayaRunTimeId();
             if (isMayaCamera) {
-                if (_mayaHydraSceneDelegate) {
-                    params.camera = _mayaHydraSceneDelegate->SetCameraViewport(camPath, _viewport);
+                if (_mayaHydraSceneProducer) {
+                    params.camera = _mayaHydraSceneProducer->SetCameraViewport(camPath, _viewport);
                     if (vpDirty)
-                        _mayaHydraSceneDelegate->GetChangeTracker().MarkSprimDirty(
+                        _mayaHydraSceneProducer->GetRenderIndex().GetChangeTracker().MarkSprimDirty(
                             params.camera, HdCamera::DirtyParams);
                 }
             }
@@ -613,9 +625,8 @@ MStatus MtohRenderOverride::Render(
     } else {
         renderFrame(true);
     }
-
-    for (auto& it : _delegates) {
-        it->PostFrame();
+    if (_mayaHydraSceneProducer) {
+        _mayaHydraSceneProducer->PostFrame();
     }
 
     return MStatus::kSuccess;
@@ -645,13 +656,14 @@ void MtohRenderOverride::_InitHydraResources()
     if (!_rendererPlugin)
         return;
 
-    auto* renderDelegate = _rendererPlugin->CreateRenderDelegate();
-    if (!renderDelegate)
+    _renderDelegate = HdRendererPluginRegistry::GetInstance().CreateRenderDelegate(_rendererDesc.rendererName);
+    if (!_renderDelegate)
         return;
 
-    _renderIndex = HdRenderIndex::New(renderDelegate, { &_hgiDriver });
+    _renderIndex = HdRenderIndex::New(_renderDelegate.Get(), {&_hgiDriver});
     if (!_renderIndex)
         return;
+    GetMayaHydraLibInterface().RegisterTerminalSceneIndex(_renderIndex->GetTerminalSceneIndex());
 
     _taskController = new HdxTaskController(
         _renderIndex,
@@ -660,10 +672,8 @@ void MtohRenderOverride::_InitHydraResources()
             TfMakeValidIdentifier(_rendererDesc.rendererName.GetText()).c_str(),
             this))));
     _taskController->SetEnableShadows(true);
-    // Initialize the AOV system to render color for Storm, so the Metal/Vulkan backend can present
-    // to OpenGL view
-    if (_isUsingHdSt
-        && (_hgi->GetAPIName() == HgiTokens->Metal || _hgi->GetAPIName() == HgiTokens->Vulkan)) {
+    // Initialize the AOV system to render color for Storm
+    if (_isUsingHdSt) {
         _taskController->SetRenderOutputs({ HdAovTokens->color });
     }
 
@@ -676,50 +686,12 @@ void MtohRenderOverride::_InitHydraResources()
         SdfPath(),
         _isUsingHdSt);
 
-    SdfPathVector solidPrimsRootPaths;
-
-    _mayaHydraSceneDelegate = nullptr;
-    auto delegateNames = MayaHydraDelegateRegistry::GetDelegateNames();
-    auto creators = MayaHydraDelegateRegistry::GetDelegateCreators();
-    TF_VERIFY(delegateNames.size() == creators.size());
-    for (size_t i = 0, n = creators.size(); i < n; ++i) {
-        const auto& creator = creators[i];
-        if (creator == nullptr) {
-            continue;
-        }
-        delegateInitData.name = delegateNames[i];
-        delegateInitData.delegateID = _ID.AppendChild(
-            TfToken(TfStringPrintf("_Delegate_%s_%lu_%p", delegateNames[i].GetText(), i, this)));
-        auto newDelegate = creator(delegateInitData);
-        if (newDelegate) {
-            // Call SetLightsEnabled before the delegate is populated
-            newDelegate->SetLightsEnabled(!_hasDefaultLighting);
-            _mayaHydraSceneDelegate
-                = std::dynamic_pointer_cast<MayaHydraSceneDelegate>(newDelegate);
-            if (TF_VERIFY(
-                    _mayaHydraSceneDelegate,
-                    "Maya Hydra scene delegate not found, check mayaHydra plugin installation.")) {
-                solidPrimsRootPaths.push_back(_mayaHydraSceneDelegate->GetSolidPrimsRootPath());
-            }
-            _delegates.emplace_back(std::move(newDelegate));
-        }
-    }
-
-    delegateInitData.delegateID
-        = _ID.AppendChild(TfToken(TfStringPrintf("_DefaultLightDelegate_%p", this)));
-    _defaultLightDelegate.reset(new MtohDefaultLightDelegate(delegateInitData));
-    // Set the scene delegate SolidPrimitivesRootPaths for the lines and points primitives to be
-    // ignored by the default light
-    _defaultLightDelegate->SetSolidPrimitivesRootPaths(solidPrimsRootPaths);
+    _mayaHydraSceneProducer.reset(new MayaHydraSceneProducer(_ID, delegateInitData, !_hasDefaultLighting));
 
     VtValue selectionTrackerValue(_selectionTracker);
     _engine.SetTaskContextData(HdxTokens->selectionState, selectionTrackerValue);
-    for (auto& it : _delegates) {
-        it->Populate();
-    }
-    if (_defaultLightDelegate && _hasDefaultLighting) {
-        _defaultLightDelegate->Populate();
-    }
+
+    _mayaHydraSceneProducer->Populate();
 
     _renderIndex->GetChangeTracker().AddCollection(_selectionCollection.GetName());
     _SelectionChanged();
@@ -757,10 +729,7 @@ void MtohRenderOverride::ClearHydraResources()
     TF_DEBUG(MAYAHYDRALIB_RENDEROVERRIDE_RESOURCES)
         .Msg("MtohRenderOverride::ClearHydraResources(%s)\n", _rendererDesc.rendererName.GetText());
 
-    _mayaHydraSceneDelegate = nullptr;
-    
-    _delegates.clear();
-    _defaultLightDelegate.reset();
+    _mayaHydraSceneProducer = nullptr;
 
     // Cleanup internal context data that keep references to data that is now
     // invalid.
@@ -771,17 +740,14 @@ void MtohRenderOverride::ClearHydraResources()
         _taskController = nullptr;
     }
 
-    HdRenderDelegate* renderDelegate = nullptr;
     if (_renderIndex != nullptr) {
-        renderDelegate = _renderIndex->GetRenderDelegate();
+        GetMayaHydraLibInterface().UnregisterTerminalSceneIndex(_renderIndex->GetTerminalSceneIndex());
         delete _renderIndex;
         _renderIndex = nullptr;
     }
 
     if (_rendererPlugin != nullptr) {
-        if (renderDelegate != nullptr) {
-            _rendererPlugin->DeleteRenderDelegate(renderDelegate);
-        }
+        _renderDelegate = nullptr;
         HdRendererPluginRegistry::GetInstance().ReleasePlugin(_rendererPlugin);
         _rendererPlugin = nullptr;
     }
@@ -822,9 +788,10 @@ void MtohRenderOverride::_SelectionChanged()
     SdfPathVector selectedPaths;
     auto          selection = std::make_shared<HdSelection>();
 
-    for (auto& it : _delegates) {
-        it->PopulateSelectedPaths(sel, selectedPaths, selection);
+    if (_mayaHydraSceneProducer) {
+        _mayaHydraSceneProducer->PopulateSelectedPaths(sel, selectedPaths, selection);
     }
+
     _selectionCollection.SetRootPaths(selectedPaths);
     _selectionTracker->SetSelection(HdSelectionSharedPtr(selection));
     TF_DEBUG(MAYAHYDRALIB_RENDEROVERRIDE_SELECTION)
@@ -932,12 +899,12 @@ void MtohRenderOverride::_PopulateSelectionList(
     if (hits.empty())
         return;
 
-    if (_mayaHydraSceneDelegate) {
+    if (_mayaHydraSceneProducer) {
 
         MStatus status;
         if (auto ufeSel = Ufe::NamedSelection::get(kNamedSelection)) {
             for (const HdxPickHit& hit : hits) {
-                if (_mayaHydraSceneDelegate->AddPickHitToSelectionList(
+                if (_mayaHydraSceneProducer->AddPickHitToSelectionList(
                         hit, selectInfo, selectionList, worldSpaceHitPts)) {
                     continue;
                 }

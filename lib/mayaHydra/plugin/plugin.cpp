@@ -15,6 +15,7 @@
 //
 // Copyright 2023 Autodesk, Inc. All rights reserved.
 //
+#include "pluginUtils.h"
 #include "renderGlobals.h"
 #include "renderOverride.h"
 #include "viewCommand.h"
@@ -104,7 +105,7 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj)
     }
 
     if (auto* renderer = MHWRender::MRenderer::theRenderer()) {
-        for (const auto& desc : MtohGetRendererDescriptions()) {
+        for (const auto& desc : MayaHydra::MtohGetRendererDescriptions()) {
             auto    mtohRenderer = std::make_unique<MtohRenderOverride>(desc);
             MStatus status = renderer->registerOverride(mtohRenderer.get());
             if (status == MS::kSuccess) {

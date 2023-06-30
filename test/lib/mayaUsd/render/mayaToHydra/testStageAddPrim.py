@@ -8,19 +8,11 @@ from testUtils import PluginLoaded
 import unittest
 import sys
 
-def checkForMayaUsd():
-    try:
-        cmds.loadPlugin('mayaUsdPlugin')
-    except:
-        return False
-    
-    return True
-    
 class TestStage(mtohUtils.MayaHydraBaseTestCase):
     # MayaHydraBaseTestCase.setUpClass requirement.
     _file = __file__
           
-    @unittest.skipUnless(checkForMayaUsd(), "Requires Maya USD Plugin.")
+    @unittest.skipUnless(mtohUtils.checkForMayaUsdPlugin(), "Requires Maya USD Plugin.")
     def test_addPrim(self):
         import mayaUsd_createStageWithNewLayer
         import mayaUsd.lib

@@ -28,6 +28,7 @@ MayaHydraDelegate::MayaHydraDelegate(const InitData& initData)
     , _engine(initData.engine)
     , _taskController(initData.taskController)
     , _isHdSt(initData.isHdSt)
+    , _producer(initData.producer)
 {
 }
 

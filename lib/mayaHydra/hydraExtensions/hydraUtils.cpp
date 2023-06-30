@@ -1,6 +1,6 @@
 //
-//
-// Copyright 2023 Autodesk
+// Copyright 2019 Luma Pictures
+// Copyright 2023 Autodesk, Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,41 +14,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "utils.h"
+
+#include "hydraUtils.h"
 
 #include <pxr/base/gf/quath.h>
 #include <pxr/base/gf/vec2f.h>
-#include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
-#include <pxr/pxr.h>
+#include <pxr/imaging/hd/xformSchema.h>
 #include <pxr/usd/sdf/assetPath.h>
-#include <pxr/usd/sdf/path.h>
-
-#include <maya/MFnDependencyNode.h>
-#include <maya/MHWGeometry.h>
-#include <maya/MObject.h>
-#include <maya/MPlugArray.h>
-#include <maya/MStatus.h>
-#include <ufe/runTimeMgr.h>
-
-#include <cctype>
-#include <sstream>
-
-namespace MAYAHYDRA_NS_DEF {
-
-namespace MayaAttrs = PXR_NS::MayaAttrs;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-/*  Return in the std::string outValueAsString the VtValue type and value
- *  written as text for debugging purpose.
- */
-void ConvertVtValueAsText(const VtValue& val, std::string& outValueAsString)
+// This is the delimiter that Maya uses to identify levels of hierarchy in the
+// Maya DAG.
+constexpr char MayaDagDelimiter[] = "|";
+
+// This is the delimiter that Maya uses to separate levels of namespace in
+// Maya node names.
+constexpr char MayaNamespaceDelimiter[] = ":";
+
+namespace MAYAHYDRA_NS_DEF {
+
+std::string ConvertVtValueToString(const VtValue& val)
 {
     if (val.IsEmpty()) {
-        outValueAsString = "No Value!";
-        return;
+        return "No Value!";
     }
 
     std::ostringstream ss;
@@ -153,73 +144,16 @@ void ConvertVtValueAsText(const VtValue& val, std::string& outValueAsString)
         ss << "GfMatrix4d : " << strMat4d;
     }
 
-    outValueAsString = ss.str();
-    if (outValueAsString.size() > 0) {
-        return;
+    std::string valueString = ss.str();
+    if (valueString.size() > 0) {
+        return valueString;
     }
 
     // Unknown
-    outValueAsString = " * Unknown Type *";
+    return "* Unknown Type *";
 }
 
-MObject GetConnectedFileNode(const MObject& obj, const TfToken& paramName)
-{
-    MStatus           status;
-    MFnDependencyNode node(obj, &status);
-    if (ARCH_UNLIKELY(!status)) {
-        return MObject::kNullObj;
-    }
-    return GetConnectedFileNode(node, paramName);
-}
-
-MObject GetConnectedFileNode(const MFnDependencyNode& node, const TfToken& paramName)
-{
-    MPlugArray conns;
-    node.findPlug(paramName.GetText(), true).connectedTo(conns, true, false);
-    if (conns.length() == 0) {
-        return MObject::kNullObj;
-    }
-    const auto ret = conns[0].node();
-    if (ret.apiType() == MFn::kFileTexture) {
-        return ret;
-    }
-    return MObject::kNullObj;
-}
-
-TfToken GetFileTexturePath(const MFnDependencyNode& fileNode)
-{
-    if (fileNode.findPlug(MayaAttrs::file::uvTilingMode, true).asShort() != 0) {
-        const TfToken ret {
-            fileNode.findPlug(MayaAttrs::file::fileTextureNamePattern, true).asString().asChar()
-        };
-        return ret.IsEmpty()
-            ? TfToken { fileNode.findPlug(MayaAttrs::file::computedFileTextureNamePattern, true)
-                            .asString()
-                            .asChar() }
-            : ret;
-    } else {
-        const TfToken ret { MRenderUtil::exactFileTextureName(fileNode.object()).asChar() };
-        return ret.IsEmpty() ? TfToken { fileNode.findPlug(MayaAttrs::file::fileTextureName, true)
-                                             .asString()
-                                             .asChar() }
-                             : ret;
-    }
-}
-
-// This is the delimiter that Maya uses to identify levels of hierarchy in the
-// Maya DAG.
-constexpr char MayaDagDelimiter[] = "|";
-
-// This is the delimiter that Maya uses to separate levels of namespace in
-// Maya node names.
-constexpr char MayaNamespaceDelimiter[] = ":";
-
-// Strip \p nsDepth namespaces from \p nodeName.
-//
-// This will turn "taco:foo:bar" into "foo:bar" for \p nsDepth == 1, or
-// "taco:foo:bar" into "bar" for \p nsDepth > 1.
-// If \p nsDepth is -1, all namespaces are stripped.
-static std::string stripNamespaces(const std::string& nodeName, const int nsDepth = -1)
+std::string StripNamespaces(const std::string& nodeName, const int nsDepth)
 {
     if (nodeName.empty() || nsDepth == 0) {
         return nodeName;
@@ -267,33 +201,6 @@ static std::string stripNamespaces(const std::string& nodeName, const int nsDept
     return ss.str();
 }
 
-std::string SanitizeName(const std::string& name)
-{
-    return PXR_NS::TfStringReplace(name, ":", "_");
-}
-
-// XXX: see logic in UsdMayaTransformWriter.  It's unfortunate that this
-// logic is in 2 places.  we should merge.
-static bool _IsShape(const MDagPath& dagPath)
-{
-    if (dagPath.hasFn(MFn::kTransform)) {
-        return false;
-    }
-
-    // go to the parent
-    MDagPath parentDagPath = dagPath;
-    parentDagPath.pop();
-    if (!parentDagPath.hasFn(MFn::kTransform)) {
-        return false;
-    }
-
-    unsigned int numberOfShapesDirectlyBelow = 0;
-    parentDagPath.numberOfShapesDirectlyBelow(numberOfShapesDirectlyBelow);
-    return (numberOfShapesDirectlyBelow == 1);
-}
-
-// Converts the given Maya node name \p nodeName into an SdfPath.
-//
 // Elements of the path will be sanitized such that it is a valid SdfPath.
 // This means it will replace Maya's namespace delimiter (':') with
 // underscores ('_').
@@ -301,65 +208,41 @@ static bool _IsShape(const MDagPath& dagPath)
 // Some common issues that can make a path invalid include: Starting with a number : Path names
 // must start with a letter, not a number. Including spaces or special characters : Path names can
 // only contain letters, numbers, and the characters _, -, and : .
-const std::string& SanitizeNameForSdfPath(std::string& pathString, const bool doStripNamespaces)
+void SanitizeNameForSdfPath(std::string& inoutPathString, bool doStripNamespaces /*= false*/)
 {
     if (doStripNamespaces) {
         // Drop namespaces instead of making them part of the path.
-        pathString = stripNamespaces(pathString);
+        inoutPathString = StripNamespaces(inoutPathString);
     }
 
     std::replace(
-        pathString.begin(),
-        pathString.end(),
+        inoutPathString.begin(),
+        inoutPathString.end(),
         MayaDagDelimiter[0],
         PXR_NS::SdfPathTokens->childDelimiter.GetString()[0]);
-    std::replace(pathString.begin(), pathString.end(), MayaNamespaceDelimiter[0], '_');
-    std::replace(pathString.begin(), pathString.end(), ',', '_');
-    std::replace(pathString.begin(), pathString.end(), ';', '_');
-
-    return pathString;
+    std::replace(inoutPathString.begin(), inoutPathString.end(), MayaNamespaceDelimiter[0], '_');
+    std::replace(inoutPathString.begin(), inoutPathString.end(), ',', '_');
+    std::replace(inoutPathString.begin(), inoutPathString.end(), ';', '_');
 }
 
-SdfPath DagPathToSdfPath(
-    const MDagPath& dagPath,
-    const bool      mergeTransformAndShape,
-    const bool      stripNamespaces)
+SdfPath MakeRelativeToParentPath(const SdfPath& path)
 {
-    std::string name = dagPath.fullPathName().asChar();
-    SdfPath     usdPath(SanitizeNameForSdfPath(name, stripNamespaces));
-
-    if (mergeTransformAndShape && _IsShape(dagPath)) {
-        usdPath = usdPath.GetParentPath();
-    }
-
-    return usdPath;
+    return path.MakeRelativePath(path.GetParentPath());
 }
 
-SdfPath RenderItemToSdfPath(
-    const MRenderItem& ri,
-    const bool         stripNamespaces)
+bool GetXformMatrixFromPrim(const HdSceneIndexPrim& prim, GfMatrix4d& outMatrix)
 {
-    std::string internalObjectId(
-        "_" + std::to_string(ri.InternalObjectId())); // preventively prepend item id by underscore
-    std::string name(ri.name().asChar() + internalObjectId);
-    // Try to sanitize maya path to be used as an sdf path.
-    SanitizeNameForSdfPath(name, stripNamespaces);
-    // Path names must start with a letter, not a number
-    // If a number is found, prepend the path with an underscore
-    char digit = name[0];
-    if (std::isdigit(digit)) {
-        name.insert(0, "_");
+    HdContainerDataSourceHandle xformContainer
+        = HdContainerDataSource::Cast(prim.dataSource->Get(HdXformSchemaTokens->xform));
+    if (!xformContainer) {
+        return false;
     }
-
-    SdfPath sdfPath(name);
-    if (!TF_VERIFY(
-            !sdfPath.IsEmpty(),
-            "Render item using invalid SdfPath '%s'. Using item's id instead.",
-            name.c_str())) {
-        // If failed to include render item's name as an SdfPath simply use the item id.
-        return SdfPath(internalObjectId);
+    HdXformSchema xform = HdXformSchema(xformContainer);
+    if (!xform.GetMatrix()) {
+        return false;
     }
-    return sdfPath;
+    outMatrix = xform.GetMatrix()->GetValue(0).Get<GfMatrix4d>();
+    return true;
 }
 
 } // namespace MAYAHYDRA_NS_DEF

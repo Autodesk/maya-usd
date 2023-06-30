@@ -17,6 +17,7 @@
 
 #include <mayaHydraLib/adapters/adapterDebugCodes.h>
 #include <mayaHydraLib/adapters/mayaAttrs.h>
+#include <mayaHydraLib/mayaHydraSceneProducer.h>
 
 #include <pxr/base/gf/interval.h>
 #include <pxr/base/tf/type.h>
@@ -33,6 +34,12 @@
 #include <maya/MTransformationMatrix.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+// Bring the MayaHydra namespace into scope.
+// The following code currently lives inside the pxr namespace, but it would make more sense to 
+// have it inside the MayaHydra namespace. This using statement allows us to use MayaHydra symbols
+// from within the pxr namespace as if we were in the MayaHydra namespace.
+// Remove this once the code has been moved to the MayaHydra namespace.
+using namespace MayaHydra;
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -102,7 +109,7 @@ void _HierarchyChanged(MDagPath& child, MDagPath& parent, void* clientData)
             parent.partialPathName().asChar());
     adapter->RemoveCallbacks();
     adapter->RemovePrim();
-    adapter->GetDelegate()->RecreateAdapterOnIdle(adapter->GetID(), adapter->GetNode());
+    adapter->GetSceneProducer()->RecreateAdapterOnIdle(adapter->GetID(), adapter->GetNode());
 }
 
 void _InstancerNodeDirty(MObject& node, MPlug& plug, void* clientData)
@@ -128,9 +135,9 @@ const auto _instancePrimvarDescriptors = HdPrimvarDescriptorVector {
 // MayaHydraDagAdapter is the adapter base class for any dag object.
 MayaHydraDagAdapter::MayaHydraDagAdapter(
     const SdfPath&        id,
-    MayaHydraDelegateCtx* delegate,
+    MayaHydraSceneProducer* producer,
     const MDagPath&       dagPath)
-    : MayaHydraAdapter(dagPath.node(), id, delegate)
+    : MayaHydraAdapter(dagPath.node(), id, producer)
     , _dagPath(dagPath)
 {
     // We shouldn't call virtual functions in constructors.
@@ -150,7 +157,7 @@ GfMatrix4d MayaHydraDagAdapter::GetTransform()
         if (IsInstanced()) {
             _transform.SetIdentity();
         } else {
-            _transform = MAYAHYDRA_NS::GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
+            _transform = GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
         }
         _invalidTransform = false;
     }
@@ -161,8 +168,8 @@ GfMatrix4d MayaHydraDagAdapter::GetTransform()
 size_t
 MayaHydraDagAdapter::SampleTransform(size_t maxSampleCount, float* times, GfMatrix4d* samples)
 {
-    return GetDelegate()->SampleValues(maxSampleCount, times, samples, [&]() -> GfMatrix4d {
-        return MAYAHYDRA_NS::GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
+    return GetSceneProducer()->SampleValues(maxSampleCount, times, samples, [&]() -> GfMatrix4d {
+        return GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
     });
 }
 
@@ -203,9 +210,9 @@ void MayaHydraDagAdapter::CreateCallbacks()
 void MayaHydraDagAdapter::MarkDirty(HdDirtyBits dirtyBits)
 {
     if (dirtyBits != 0) {
-        GetDelegate()->GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits);
+        GetSceneProducer()->GetRenderIndex().GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits);
         if (IsInstanced()) {
-            GetDelegate()->GetChangeTracker().MarkInstancerDirty(GetInstancerID(), dirtyBits);
+            GetSceneProducer()->GetRenderIndex().GetChangeTracker().MarkInstancerDirty(GetInstancerID(), dirtyBits);
         }
         if (dirtyBits & HdChangeTracker::DirtyVisibility) {
             _visibilityDirty = true;
@@ -218,9 +225,9 @@ void MayaHydraDagAdapter::RemovePrim()
     if (!_isPopulated) {
         return;
     }
-    GetDelegate()->RemoveRprim(GetID());
+    GetSceneProducer()->RemoveRprim(GetID());
     if (_isInstanced) {
-        GetDelegate()->RemoveInstancer(GetID().AppendProperty(_tokens->instancer));
+        GetSceneProducer()->GetRenderIndex().RemoveInstancer(GetID().AppendProperty(_tokens->instancer));
     }
     _isPopulated = false;
 }
@@ -324,7 +331,7 @@ VtValue MayaHydraDagAdapter::GetInstancePrimvar(const TfToken& key)
         ret.reserve(numDags);
         for (auto i = decltype(numDags) { 0 }; i < numDags; ++i) {
             if (dags[i].isValid() && dags[i].isVisible()) {
-                ret.push_back(MAYAHYDRA_NS::GetGfMatrixFromMaya(dags[i].inclusiveMatrix()));
+                ret.push_back(GetGfMatrixFromMaya(dags[i].inclusiveMatrix()));
             }
         }
         return VtValue(ret);

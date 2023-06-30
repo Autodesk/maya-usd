@@ -8,6 +8,7 @@ target_sources(${TARGET_NAME}
         delegateDebugCodes.cpp
         delegateRegistry.cpp
         sceneDelegate.cpp
+        defaultLightDelegate.cpp
         testDelegate.cpp
 )
 
@@ -18,6 +19,7 @@ set(HEADERS
     delegateRegistry.h
     params.h
     sceneDelegate.h
+    defaultLightDelegate.h
     testDelegate.h
 )
 

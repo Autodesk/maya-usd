@@ -21,7 +21,7 @@
 #include <mayaHydraLib/adapters/materialNetworkConverter.h>
 #include <mayaHydraLib/adapters/mayaAttrs.h>
 #include <mayaHydraLib/adapters/tokens.h>
-#include <mayaHydraLib/utils.h>
+#include <mayaHydraLib/mayaHydraSceneProducer.h>
 
 #include <pxr/base/tf/stl.h>
 #include <pxr/base/tf/token.h>
@@ -52,15 +52,15 @@ const TfTokenVector _stSamplerCoords = { TfToken("st") };
 
 MayaHydraMaterialAdapter::MayaHydraMaterialAdapter(
     const SdfPath&        id,
-    MayaHydraDelegateCtx* delegate,
+    MayaHydraSceneProducer* producer,
     const MObject&        node)
-    : MayaHydraAdapter(node, id, delegate)
+    : MayaHydraAdapter(node, id, producer)
 {
 }
 
 bool MayaHydraMaterialAdapter::IsSupported() const
 {
-    return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->material);
+    return GetSceneProducer()->GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->material);
 }
 
 bool MayaHydraMaterialAdapter::HasType(const TfToken& typeId) const
@@ -70,7 +70,7 @@ bool MayaHydraMaterialAdapter::HasType(const TfToken& typeId) const
 
 void MayaHydraMaterialAdapter::MarkDirty(HdDirtyBits dirtyBits)
 {
-    GetDelegate()->GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits);
+    GetSceneProducer()->MarkSprimDirty(GetID(), dirtyBits);
 }
 
 void MayaHydraMaterialAdapter::RemovePrim()
@@ -78,7 +78,7 @@ void MayaHydraMaterialAdapter::RemovePrim()
     if (!_isPopulated) {
         return;
     }
-    GetDelegate()->RemoveSprim(HdPrimTypeTokens->material, GetID());
+    GetSceneProducer()->RemoveSprim(HdPrimTypeTokens->material, GetID());
     _isPopulated = false;
 }
 
@@ -89,7 +89,7 @@ void MayaHydraMaterialAdapter::Populate()
     if (_isPopulated) {
         return;
     }
-    GetDelegate()->InsertSprim(HdPrimTypeTokens->material, GetID(), HdMaterial::AllDirty);
+    GetSceneProducer()->InsertSprim(this, HdPrimTypeTokens->material, GetID(), HdMaterial::AllDirty);
     _isPopulated = true;
 }
 
@@ -134,9 +134,9 @@ public:
 
     MayaHydraShadingEngineAdapter(
         const SdfPath&        id,
-        MayaHydraDelegateCtx* delegate,
+        MayaHydraSceneProducer* producer,
         const MObject&        obj)
-        : MayaHydraMaterialAdapter(id, delegate, obj)
+        : MayaHydraMaterialAdapter(id, producer, obj)
         , _surfaceShaderCallback(0)
     {
         _CacheNodeAndTypes();
@@ -184,8 +184,8 @@ private:
     {
         auto* adapter = reinterpret_cast<MayaHydraShadingEngineAdapter*>(clientData);
         adapter->MarkDirty(HdMaterial::AllDirty);
-        if (adapter->GetDelegate()->IsHdSt()) {
-            adapter->GetDelegate()->MaterialTagChanged(adapter->GetID());
+        if (adapter->GetSceneProducer()->IsHdSt()) {
+            adapter->GetSceneProducer()->MaterialTagChanged(adapter->GetID());
         }
     }
 
@@ -304,10 +304,10 @@ TF_REGISTRY_FUNCTION_WITH_TAG(MayaHydraAdapterRegistry, shadingEngine)
     MayaHydraAdapterRegistry::RegisterMaterialAdapter(
         TfToken("shadingEngine"),
         [](const SdfPath&        id,
-           MayaHydraDelegateCtx* delegate,
+            MayaHydraSceneProducer* producer,
            const MObject&        obj) -> MayaHydraMaterialAdapterPtr {
             return MayaHydraMaterialAdapterPtr(
-                new MayaHydraShadingEngineAdapter(id, delegate, obj));
+                new MayaHydraShadingEngineAdapter(id, producer, obj));
         });
 }
 
