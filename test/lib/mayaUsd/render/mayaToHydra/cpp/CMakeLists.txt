@@ -1,49 +1,67 @@
-function(mayaUsd_add_cpp_test TARGET_NAME)
-    add_executable(${TARGET_NAME})
+# -----------------------------------------------------------------------------
+# setup
+# -----------------------------------------------------------------------------
+find_package(GTest REQUIRED)
 
-    # -----------------------------------------------------------------------------
-    # sources
-    # -----------------------------------------------------------------------------
-    target_sources(${TARGET_NAME}
-        PRIVATE
-            main.cpp
-            ${ARGN}
-    )
+set(TARGET_NAME mayaHydraCppTests)
+add_library(${TARGET_NAME} SHARED)
 
-    # -----------------------------------------------------------------------------
-    # compiler configuration
-    # -----------------------------------------------------------------------------
-    mayaUsd_compile_config(${TARGET_NAME})
+# -----------------------------------------------------------------------------
+# sources
+# -----------------------------------------------------------------------------
+target_sources(${TARGET_NAME}
+    PRIVATE
+        mayaHydraCppTestsCmd.cpp
+        testCppFramework.cpp
+)
 
-    target_compile_definitions(${TARGET_NAME}
-        PRIVATE
-            $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
-    )
+# -----------------------------------------------------------------------------
+# compiler configuration
+# -----------------------------------------------------------------------------
+mayaUsd_compile_config(${TARGET_NAME})
 
-    # -----------------------------------------------------------------------------
-    # link libraries
-    # -----------------------------------------------------------------------------
-    target_link_libraries(${TARGET_NAME}
-        PRIVATE 
-            GTest::GTest
-    )
+target_compile_definitions(${TARGET_NAME}
+    PRIVATE
+        $<$<BOOL:${IS_MACOSX}>:OSMac_>
+        $<$<BOOL:${IS_LINUX}>:LINUX>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        $<$<BOOL:${IS_WINDOWS}>:GTEST_LINKED_AS_SHARED_LIBRARY>
+)
 
-    # -----------------------------------------------------------------------------
-    # unit tests
-    # -----------------------------------------------------------------------------
-    mayaUsd_add_test(${TARGET_NAME}
-        COMMAND $<TARGET_FILE:${TARGET_NAME}>
-        ENV
-            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
-    )
-endfunction()
+# -----------------------------------------------------------------------------
+# include directories
+# -----------------------------------------------------------------------------
+target_include_directories(${TARGET_NAME} 
+    PUBLIC
+        ${MAYA_INCLUDE_DIRS}
+        ${GTEST_INCLUDE_DIRS}
+)
 
-if(IS_MACOSX)
-    # Create symbolic link to python framework
-    file(CREATE_LINK ${MAYA_LOCATION}/Frameworks ${CMAKE_CURRENT_BINARY_DIR}/../Frameworks SYMBOLIC)
+# -----------------------------------------------------------------------------
+# link libraries
+# -----------------------------------------------------------------------------
+target_link_libraries(${TARGET_NAME}
+    PUBLIC 
+        ${GTEST_LIBRARIES}
+        ${MAYA_LIBRARIES}
+)
+
+# -----------------------------------------------------------------------------
+# properties
+# -----------------------------------------------------------------------------
+maya_set_plugin_properties(${TARGET_NAME})
+
+# -----------------------------------------------------------------------------
+# run-time search paths
+# -----------------------------------------------------------------------------
+if(IS_MACOSX OR IS_LINUX) 
+    mayaUsd_init_rpath(rpath "lib/maya")
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib/gtest")
+    mayaUsd_install_rpath(rpath ${TARGET_NAME})
 endif()
 
-mayaUsd_add_cpp_test(
-    testDummy
-    testDummy.cpp
-)
+# -----------------------------------------------------------------------------
+# install
+# -----------------------------------------------------------------------------
+install(TARGETS ${TARGET_NAME}
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/maya)

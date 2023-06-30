@@ -8,6 +8,7 @@ set(TEST_SCRIPT_FILES
     testNamespaces.py
     testVisibility.py
     testStageAddPrim.py
+    cpp/testCppFramework.py
 )
 
 # Test use of mesh adapter code for mesh support, using environment variable.
