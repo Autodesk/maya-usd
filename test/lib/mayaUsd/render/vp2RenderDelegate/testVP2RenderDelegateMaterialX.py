@@ -303,5 +303,97 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         # Snapshot and assert similarity
         self.assertSnapshotClose('OCIO_Integration_p3_d65.png')
 
+    @unittest.skipUnless(os.getenv('MAYA_HAS_COLOR_MANAGEMENT_SUPPORT_API', 'FALSE') == 'TRUE', 'Test requires OCIO API in Maya SDK.')
+    def testOCIOIntegrationSourceColorSpaces(self):
+        """Test that the code properly parses explicit color spaces in the fileTexture 
+           and UsdUVTexture nodes. Still using Maya OCIO fragments."""
+        cmds.file(new=True, force=True)
+        mayaUtils.loadPlugin("mayaUsdPlugin")
+
+        def connectUVNode(uv_node, file_node):
+            for att_name in (".coverage", ".translateFrame", ".rotateFrame",
+                            ".mirrorU", ".mirrorV", ".stagger", ".wrapU",
+                            ".wrapV", ".repeatUV", ".offset", ".rotateUV",
+                            ".noiseUV", ".vertexUvOne", ".vertexUvTwo",
+                            ".vertexUvThree", ".vertexCameraOne"):
+                cmds.connectAttr(uv_node + att_name, file_node + att_name, f=True)
+            cmds.connectAttr(uv_node + ".outUV", file_node + ".uvCoord", f=True)
+            cmds.connectAttr(uv_node + ".outUvFilterSize", file_node + ".uvFilterSize", f=True)
+
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, displayTextures=True)
+
+        # Too much differences between Linux and Windows otherwise
+        cmds.setAttr("hardwareRenderingGlobals.multiSampleEnable", True)
+
+        # Position our camera:
+        cmds.setAttr("persp.translateX", -0.5)
+        cmds.setAttr("persp.translateY", 6)
+        cmds.setAttr("persp.translateZ", 0)
+        cmds.setAttr("persp.rotateX", -90)
+        cmds.setAttr("persp.rotateY", 0)
+        cmds.setAttr("persp.rotateZ", 0)    
+
+        # Build the scene to test OCIO export options.
+        testDataFiles = (
+            ("_ACEScg", "ACEScg"),
+            ("_ADX10", "Log film scan (ADX10)"),
+            ("_lin_p3d65", "scene-linear DCI-P3 D65"),
+            ("_srgb_texture", "sRGB")
+        )
+
+        posX = -2.02
+        for fileSuffix, colorSpace in testDataFiles:
+            plane_xform = cmds.polyPlane(ch=False, cuv=1, sx=1, sy=1)[0]
+            cmds.setAttr(plane_xform + ".translateX", posX)
+            posX += 1.01
+
+            material_node = cmds.shadingNode("usdPreviewSurface", asShader=True,
+                                            name="usdPreviewSurface{}".format(fileSuffix))
+
+            material_sg = cmds.sets(renderable=True, noSurfaceShader=True,
+                                    empty=True, name=material_node+"SG")
+            cmds.connectAttr(material_node+".outColor",
+                            material_sg+".surfaceShader", force=True)
+            cmds.sets(plane_xform, e=True, forceElement=material_sg)
+
+            cmds.setAttr(material_node + ".roughness", 1)
+            cmds.setAttr(material_node + ".diffuseColor", 0, 0, 0, type="double3")
+
+            file_node = cmds.shadingNode("file", asTexture=True,
+                                        isColorManaged=True,
+                                        name="file{}".format(fileSuffix))
+            uv_node = cmds.shadingNode("place2dTexture", asUtility=True,
+                                    name="place2dTexture{}".format(fileSuffix))
+
+            connectUVNode(uv_node, file_node)
+
+            cmds.connectAttr(file_node + ".outColor",
+                            material_node + ".emissiveColor", f=True)
+
+            txfile = testUtils.getTestScene("MaterialX", "textures", "color_palette{}.exr".format(fileSuffix))
+            cmds.setAttr(file_node+".fileTextureName", txfile, type="string")
+            cmds.setAttr(file_node+".colorSpace", colorSpace, type="string")
+            cmds.setAttr(file_node+".ignoreColorSpaceFileRules", 1)
+            cmds.setAttr(file_node+".filterType", 0)
+            cmds.setAttr(file_node + ".defaultColor", 0.5, 0.25, 0.125, type="double3")
+
+        usdFilePath = os.path.join(self._testDir, "explicit_ocio_usd.usda")
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
+            shadingMode='useRegistry', convertMaterialsTo=['UsdPreviewSurface'],
+            materialsScopeName='mtl')
+
+        mtlxFilePath = os.path.join(self._testDir, "explicit_ocio_mtlx.usda")
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=mtlxFilePath,
+            shadingMode='useRegistry', convertMaterialsTo=['MaterialX'],
+            materialsScopeName='mtl')
+
+        xform = mayaUtils.createProxyFromFile(usdFilePath)[0]
+        cmds.move(0, 0, 1.01, xform)
+        xform = mayaUtils.createProxyFromFile(mtlxFilePath)[0]
+        cmds.move(0, 0, -1.01, xform)
+
+        self.assertSnapshotClose('OCIO_Explicit.png')
+
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())

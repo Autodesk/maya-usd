@@ -64,7 +64,7 @@ if (CMAKE_WANT_MATERIALX_BUILD)
             "MAYA_LIGHTAPI_VERSION=${MAYA_LIGHTAPI_VERSION}"
             "MATERIALX_VERSION=${MaterialX_VERSION}"
             "MAYA_HAS_COLOR_MANAGEMENT_SUPPORT_API=${MAYA_HAS_COLOR_MANAGEMENT_SUPPORT_API}"
-
+            "MAYAUSD_EXPORT_EXPANDED_COLORSPACE_ATTRIBUTE=1"
             # Maya uses a very old version of GLEW, so we need support for
             # pre-loading a newer version from elsewhere.
             "LD_PRELOAD=${ADDITIONAL_LD_PRELOAD}"
