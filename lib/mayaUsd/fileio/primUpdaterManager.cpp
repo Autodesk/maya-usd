@@ -1163,6 +1163,11 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
         return false;
     }
 
+    if (pulledPrim.IsInstanceProxy()) {
+        TF_WARN("Cannot edit a USD instance proxy.");
+        return false;
+    }
+
     MayaUsd::ProgressBarScope progressBar(7, "Converting to Maya Data");
 
     PushPullScope scopeIt(_inPushPull);
@@ -1247,6 +1252,11 @@ bool PrimUpdaterManager::canEditAsMaya(const Ufe::Path& path) const
     // as Maya.
     auto prim = MayaUsd::ufe::ufePathToPrim(path);
     if (!prim) {
+        return false;
+    }
+
+    // USD refuses that we modify point instance proxies, so detect that.
+    if (prim.IsInstanceProxy()) {
         return false;
     }
 
