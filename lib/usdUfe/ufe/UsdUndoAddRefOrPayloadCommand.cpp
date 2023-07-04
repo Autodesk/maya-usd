@@ -28,7 +28,7 @@ using namespace PXR_NS;
 static std::string validatePrimSpec(const UsdPrim& prim, const SdfPrimSpecHandle& primSpec)
 {
     if (!primSpec)
-        return "is not valid.";
+        return "is not valid";
 
     // A common error is to reference a prim that is not the same type as the prim
     // that contains the reference. Since only the type of the prim that contains
@@ -40,7 +40,7 @@ static std::string validatePrimSpec(const UsdPrim& prim, const SdfPrimSpecHandle
     const std::string& targetType = primSpec->GetTypeName();
     if (primType != targetType)
         return TfStringPrintf(
-            "does not have the same type as the targeted prim: [%s] vs [%s].",
+            "does not have the same type as the targeted prim: [%s] vs [%s]",
             primType.c_str(),
             targetType.c_str());
 
@@ -75,15 +75,19 @@ getPrimPath(const UsdPrim& prim, const std::string& filePath, const std::string&
         SdfPrimSpecHandle primSpec = layerRef->GetPrimAtPath(SdfPath(primName.GetText()));
         const std::string errorMessage = validatePrimSpec(prim, primSpec);
         if (!errorMessage.empty())
-            TF_WARN(
-                (std::string("The default prim in file [%s] ") + errorMessage).c_str(),
-                filePath.c_str());
+            TF_WARN("The default prim in file [%s] %s.", errorMessage.c_str(), filePath.c_str());
         return SdfPath();
     }
 
     // If the referenced file has no default prim, return the path to the first
     // valid root prim we find.
-    std::string errorMessage = " is absent.";
+
+    TF_STATUS(
+        "The file [%s] does not contain a default prim, the first valid root prim "
+        "will be used.",
+        filePath.c_str());
+
+    std::string errorMessage;
     for (const SdfPrimSpecHandle primSpec : layerRef->GetRootPrims()) {
         if (!primSpec)
             continue;
@@ -93,11 +97,11 @@ getPrimPath(const UsdPrim& prim, const std::string& filePath, const std::string&
             return primSpec->GetPath();
     }
 
-    TF_WARN(
-        (std::string("The file [%s] does not contain a default prim and the root prim ")
-         + errorMessage)
-            .c_str(),
-        filePath.c_str());
+    if (errorMessage.empty()) {
+        TF_WARN("Could not find any valid root prim.");
+    } else {
+        TF_WARN("Could not find a valid root prim, the root prim %s.", errorMessage.c_str());
+    }
 
     return SdfPath();
 }
