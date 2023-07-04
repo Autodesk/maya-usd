@@ -29,6 +29,7 @@ TF_WRAP_MODULE
     TF_WRAP(Adaptor);
     TF_WRAP(BlockSceneModificationContext);
     TF_WRAP(ColorSpace);
+    TF_WRAP(Commands);
     TF_WRAP(Converter);
     TF_WRAP(ConverterArgs);
     TF_WRAP(DiagnosticDelegate);

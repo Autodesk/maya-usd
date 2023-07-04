@@ -21,6 +21,7 @@ import mayaUtils
 import testUtils
 from testUtils import assertVectorAlmostEqual, assertVectorNotAlmostEqual
 import usdUtils
+from usdUtils import filterUsdStr
 
 import mayaUsd.ufe
 
@@ -33,12 +34,6 @@ import ufe
 
 import os
 import unittest
-
-def filterUsdStr(usdSceneStr):
-    '''Remove empty lines and lines starting with pound character.'''
-    nonBlankLines = filter(None, [l.rstrip() for l in usdSceneStr.splitlines()])
-    finalLines = [l for l in nonBlankLines if not l.startswith('#')]
-    return '\n'.join(finalLines)
 
 def childrenNames(children):
     return [str(child.path().back()) for child in children]
@@ -1389,7 +1384,7 @@ class ParentCmdTestCase(unittest.TestCase):
 
             # Check that layer B now has the parent overs.
             self.assertEqual(filterUsdStr(bSubLayer.ExportToString()),
-                            'over "C"\n{\n    def Xform "B"\n    {\n    }\n}')
+                            filterUsdStr('over "C"\n{\n    def Xform "B"\n    {\n    }\n}'))
         finally:
             # Restore default edit router.
             mayaUsd.lib.restoreDefaultEditRouter('parent')

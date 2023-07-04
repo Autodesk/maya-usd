@@ -13,16 +13,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <pxr/base/tf/pyModule.h>
-#include <pxr/pxr.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
+#include "UsdUndoSelectAfterCommand.h"
 
-TF_WRAP_MODULE
+namespace USDUFE_NS_DEF {
+
+Ufe::Selection getNewSelectionFromCommand(const Ufe::InsertChildCommand& cmd)
 {
-    TF_WRAP(EditRouter);
-    TF_WRAP(Global);
-    TF_WRAP(Tokens);
-    TF_WRAP(Utils);
-    TF_WRAP(Commands);
+    Ufe::Selection newSelection;
+    newSelection.append(cmd.insertedChild());
+    return newSelection;
 }
+
+} // namespace USDUFE_NS_DEF
