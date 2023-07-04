@@ -126,10 +126,11 @@ void UsdMayaPrimWriterRegistry::Register(
     // Use default ContextSupport if not specified
     _reg.insert(std::make_pair(
         mayaTypeName,
-        _RegistryEntry {
-            [](const UsdMayaJobExportArgs&, const MFnDependencyNode&) { return UsdMayaPrimWriter::ContextSupport::Fallback; },
-            fn,
-            index }));
+        _RegistryEntry { [](const UsdMayaJobExportArgs&, const MFnDependencyNode&) {
+                            return UsdMayaPrimWriter::ContextSupport::Fallback;
+                        },
+                         fn,
+                         index }));
 
     // The unloader uses the index to know which entry to erase when there are
     // more than one for the same mayaTypeName.
