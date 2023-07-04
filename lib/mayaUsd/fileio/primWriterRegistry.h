@@ -79,8 +79,8 @@ struct UsdMayaPrimWriterRegistry
 
     /// Predicate function, i.e. a function that can tell the level of support
     /// the writer function will provide for a given set of export options.
-    using ContextPredicateFn
-        = std::function<UsdMayaPrimWriter::ContextSupport(const UsdMayaJobExportArgs&)>;
+    using ContextPredicateFn = std::function<
+        UsdMayaPrimWriter::ContextSupport(const UsdMayaJobExportArgs&, const MFnDependencyNode&)>;
 
     /// \brief Register \p fn as a factory function providing a
     /// UsdMayaPrimWriter subclass that can be used to write \p mayaType.
@@ -142,8 +142,10 @@ struct UsdMayaPrimWriterRegistry
     ///
     /// If there is no writer plugin for \p mayaTypeName, returns nullptr.
     MAYAUSD_CORE_PUBLIC
-    static WriterFactoryFn
-    Find(const std::string& mayaTypeName, const UsdMayaJobExportArgs& exportArgs);
+    static WriterFactoryFn Find(
+        const std::string&          mayaTypeName,
+        const UsdMayaJobExportArgs& exportArgs,
+        const MFnDependencyNode&    exportNode);
 
     /// \brief Check for external primWriter for \p mayaTypeName.
     MAYAUSD_CORE_PUBLIC

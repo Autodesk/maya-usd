@@ -56,8 +56,10 @@ static _Registry                                             _reg;
 static std::set<std::string>                                 _mayaTypesThatDoNotCreatePrims;
 static int                                                   _indexCounter = 0;
 
-_Registry::const_iterator
-_Find(const std::string& mayaTypeName, const UsdMayaJobExportArgs& exportArgs)
+_Registry::const_iterator _Find(
+    const std::string&          mayaTypeName,
+    const UsdMayaJobExportArgs& exportArgs,
+    const MFnDependencyNode&    exportNode)
 {
     using ContextSupport = UsdMayaPrimWriter::ContextSupport;
 
@@ -65,7 +67,7 @@ _Find(const std::string& mayaTypeName, const UsdMayaJobExportArgs& exportArgs)
     _Registry::const_iterator first, last;
     std::tie(first, last) = _reg.equal_range(mayaTypeName);
     while (first != last) {
-        ContextSupport support = first->second._pred(exportArgs);
+        ContextSupport support = first->second._pred(exportArgs, exportNode);
         // Look for a "Supported" reader. If no "Supported" reader is found, use a "Fallback" reader
         if (support == ContextSupport::Supported) {
             ret = first;
@@ -125,7 +127,7 @@ void UsdMayaPrimWriterRegistry::Register(
     _reg.insert(std::make_pair(
         mayaTypeName,
         _RegistryEntry {
-            [](const UsdMayaJobExportArgs&) { return UsdMayaPrimWriter::ContextSupport::Fallback; },
+            [](const UsdMayaJobExportArgs&, const MFnDependencyNode&) { return UsdMayaPrimWriter::ContextSupport::Fallback; },
             fn,
             index }));
 
@@ -156,11 +158,12 @@ void UsdMayaPrimWriterRegistry::RegisterRaw(
 /* static */
 UsdMayaPrimWriterRegistry::WriterFactoryFn UsdMayaPrimWriterRegistry::Find(
     const std::string&          mayaTypeName,
-    const UsdMayaJobExportArgs& exportArgs)
+    const UsdMayaJobExportArgs& exportArgs,
+    const MFnDependencyNode&    exportNode)
 {
     TfRegistryManager::GetInstance().SubscribeTo<UsdMayaPrimWriterRegistry>();
 
-    _Registry::const_iterator it = _Find(mayaTypeName, exportArgs);
+    _Registry::const_iterator it = _Find(mayaTypeName, exportArgs, exportNode);
 
     if (it != _reg.end()) {
         return it->second._writer;
@@ -169,7 +172,7 @@ UsdMayaPrimWriterRegistry::WriterFactoryFn UsdMayaPrimWriterRegistry::Find(
     static const TfTokenVector SCOPE = { _tokens->UsdMaya, _tokens->PrimWriter };
     UsdMaya_RegistryHelper::FindAndLoadMayaPlug(SCOPE, mayaTypeName);
 
-    it = _Find(mayaTypeName, exportArgs);
+    it = _Find(mayaTypeName, exportArgs, exportNode);
 
     if (it != _reg.end()) {
         return it->second._writer;
@@ -181,7 +184,7 @@ UsdMayaPrimWriterRegistry::WriterFactoryFn UsdMayaPrimWriterRegistry::Find(
         // Nothing registered at all, remember that:
         _reg.insert(std::make_pair(
             mayaTypeName,
-            _RegistryEntry { [](const UsdMayaJobExportArgs&) {
+            _RegistryEntry { [](const UsdMayaJobExportArgs&, const MFnDependencyNode&) {
                                 return UsdMayaPrimWriter::ContextSupport::Fallback;
                             },
                              nullptr,
