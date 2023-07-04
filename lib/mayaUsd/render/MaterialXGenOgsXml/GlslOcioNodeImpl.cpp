@@ -62,8 +62,20 @@ constexpr const char ATTR_NAME[] = "name";
 constexpr const char ATTR_LANGUAGE[] = "language";
 constexpr const char ATTR_VAL[] = "val";
 
-std::map<std::string, pugi::xml_document> knownOCIOFragments;
-std::vector<std::string>                  knownOCIOImplementations;
+struct OcioData
+{
+    std::string              fragName;
+    std::string              colorInput;
+    std::string              colorOutput;
+    std::vector<std::string> extraParams;
+    std::vector<std::string> samplerNames;
+    std::string              functionName;
+    std::string              sourceCode;
+};
+
+std::map<std::string, OcioData> knownOCIOFragments;
+std::vector<std::string>        knownOCIOImplementations;
+DocumentPtr                     knownLibrary;
 
 std::string getUntypedNodeDefName(const std::string& nodeName)
 {
@@ -75,35 +87,34 @@ std::string getUntypedImplementationName(const std::string& nodeName)
     return OCIO_IM_PREFIX + nodeName + "_";
 }
 
-const pugi::xml_document& docFromImplementationName(const std::string& implName)
+const OcioData& getOcioData(const std::string& implName)
 {
     // Would be so much faster with removeprefix and removesuffix:
     auto nodeName = implName.substr(
         OCIO_IM_PREFIX_LEN - 1, implName.size() - OCIO_IM_PREFIX_LEN - OCIO_COLOR3_LEN + 1);
 
-    auto docIt = knownOCIOFragments.find(nodeName);
-    if (docIt != knownOCIOFragments.end()) {
-        return docIt->second;
+    auto it = knownOCIOFragments.find(nodeName);
+    if (it == knownOCIOFragments.end()) {
+        throw std::runtime_error("Missing OCIO data");
     }
-    static const pugi::xml_document emptyDoc;
-    return emptyDoc;
+    return it->second;
 }
 
-void addOCIONodeDef(DocumentPtr lib, const pugi::xml_document& doc, const std::string& output_type)
+void addOCIONodeDef(const OcioData& ocioData, const std::string& output_type)
 {
-    std::string nodeName = doc.child(TAG_FRAGMENT).attribute(ATTR_NAME).as_string();
-    std::string defName = getUntypedNodeDefName(nodeName) + output_type;
-    std::string implName = getUntypedImplementationName(nodeName) + output_type;
+    if (!knownLibrary) {
+        knownLibrary = createDocument();
+    }
 
-    auto nodeDef = lib->addNodeDef(defName, "", nodeName);
+    std::string defName = getUntypedNodeDefName(ocioData.fragName) + output_type;
+    std::string implName = getUntypedImplementationName(ocioData.fragName) + output_type;
 
-    auto inputInfo = doc.child(TAG_FRAGMENT).child(TAG_VALUES).child(TAG_FLOAT3);
-    nodeDef->addInput(inputInfo.attribute(ATTR_NAME).as_string(), output_type);
+    auto nodeDef = knownLibrary->addNodeDef(defName, "", ocioData.fragName);
 
-    auto outputInfo = doc.child(TAG_FRAGMENT).child(TAG_OUTPUTS).child(TAG_FLOAT3);
-    nodeDef->addOutput(outputInfo.attribute(ATTR_NAME).as_string(), output_type);
+    nodeDef->addInput(ocioData.colorInput, output_type);
+    nodeDef->addOutput(ocioData.colorOutput, output_type);
 
-    auto implementation = lib->addImplementation(implName);
+    auto implementation = knownLibrary->addImplementation(implName);
     implementation->setTarget(GlslShaderGenerator::TARGET);
     implementation->setNodeDef(nodeDef);
 
@@ -129,19 +140,9 @@ public:
 };
 } // namespace
 
-std::string
-GlslOcioNodeImpl::registerOCIOFragment(const std::string& fragName, DocumentPtr mtlxLibrary)
+std::string GlslOcioNodeImpl::registerOCIOFragment(const std::string& fragName)
 {
     if (knownOCIOFragments.count(fragName)) {
-        // Make sure the NodeDef are there:
-        if (!mtlxLibrary->getNodeDef(getUntypedNodeDefName(fragName) + OCIO_COLOR3)) {
-            addOCIONodeDef(mtlxLibrary, knownOCIOFragments[fragName], OCIO_COLOR3);
-        }
-
-        if (!mtlxLibrary->getNodeDef(getUntypedNodeDefName(fragName) + OCIO_COLOR4)) {
-            addOCIONodeDef(mtlxLibrary, knownOCIOFragments[fragName], OCIO_COLOR4);
-        }
-
         return getUntypedNodeDefName(fragName);
     }
 
@@ -174,6 +175,8 @@ GlslOcioNodeImpl::registerOCIOFragment(const std::string& fragName, DocumentPtr 
         return {};
     }
 
+    OcioData ocioData;
+
     // Validate that the fragment structure is 100% as expected. We need the properties, values,
     // outputs, and GLSL source to proceed:
     auto fragment = doc.child(TAG_FRAGMENT);
@@ -181,45 +184,71 @@ GlslOcioNodeImpl::registerOCIOFragment(const std::string& fragName, DocumentPtr 
         return {};
     }
 
+    ocioData.fragName = fragment.attribute(ATTR_NAME).as_string();
+    if (ocioData.fragName.empty()) {
+        return {};
+    }
+
     auto properties = fragment.child(TAG_PROPERTIES);
     if (!properties) {
         return {};
+    }
+    bool skipColorInput = true;
+    for (auto&& property : fragment.child(TAG_PROPERTIES).children()) {
+        if (skipColorInput) {
+            skipColorInput = false;
+            continue;
+        }
+        if (std::strncmp(property.name(), TAG_TEXTURE2, TAG_TEXTURE2_LEN) == 0) {
+            std::string samplerName = property.attribute(ATTR_NAME).as_string();
+            samplerName += "Sampler";
+            ocioData.samplerNames.emplace_back(samplerName);
+            continue;
+        }
+        ocioData.extraParams.emplace_back(property.attribute(ATTR_NAME).as_string());
     }
 
     auto values = fragment.child(TAG_VALUES);
     if (!values) {
         return {};
     }
+    auto inputInfo = fragment.child(TAG_VALUES).child(TAG_FLOAT3);
+    ocioData.colorInput = inputInfo.attribute(ATTR_NAME).as_string();
 
     auto outputs = fragment.child(TAG_OUTPUTS);
     if (!outputs) {
         return {};
     }
+    auto outputInfo = fragment.child(TAG_OUTPUTS).child(TAG_FLOAT3);
+    ocioData.colorOutput = outputInfo.attribute(ATTR_NAME).as_string();
 
     auto implementations = fragment.child(TAG_IMPLEMENTATION);
     if (!implementations) {
         return {};
     }
-    bool hasGLSL = false;
     for (auto&& implementation : implementations.children()) {
         auto language = implementation.attribute(ATTR_LANGUAGE);
         if (std::strncmp(language.as_string(), OCIO_GLSL, OCIO_GLSL_LEN) == 0) {
-            hasGLSL = true;
+            ocioData.sourceCode = implementation.child_value(TAG_SOURCE);
+            ocioData.functionName
+                = implementation.child(TAG_FUNCTION_NAME).attribute(ATTR_VAL).as_string();
             break;
         }
     }
-    if (!hasGLSL) {
+    if (ocioData.sourceCode.empty() || ocioData.functionName.empty()) {
         return {};
     }
 
     // We now have all the data we need. Preserve the info and add our new OCIO NodeDef in the
     // library.
-    addOCIONodeDef(mtlxLibrary, doc, OCIO_COLOR3);
-    addOCIONodeDef(mtlxLibrary, doc, OCIO_COLOR4);
-    knownOCIOFragments.emplace(fragName, std::move(doc));
+    addOCIONodeDef(ocioData, OCIO_COLOR3);
+    addOCIONodeDef(ocioData, OCIO_COLOR4);
+    knownOCIOFragments.emplace(fragName, std::move(ocioData));
 
     return getUntypedNodeDefName(fragName);
 }
+
+DocumentPtr GlslOcioNodeImpl::getOCIOLibrary() { return knownLibrary; }
 
 const std::vector<std::string>& GlslOcioNodeImpl::getOCIOImplementations()
 {
@@ -231,19 +260,11 @@ ShaderNodeImplPtr GlslOcioNodeImpl::create() { return std::make_shared<GlslOcioN
 void GlslOcioNodeImpl::createVariables(const ShaderNode& node, GenContext& context, Shader& shader)
     const
 {
-    const auto& ocioDoc = docFromImplementationName(getName());
-    if (ocioDoc.empty()) {
-        return;
-    }
+    const OcioData& ocioData = getOcioData(getName());
 
-    // Need to create texture inputs if required:
-    for (auto&& property : ocioDoc.child(TAG_FRAGMENT).child(TAG_PROPERTIES).children()) {
-        if (std::strncmp(property.name(), TAG_TEXTURE2, TAG_TEXTURE2_LEN) == 0) {
-            std::string samplerName = property.attribute(ATTR_NAME).as_string();
-            samplerName += "Sampler";
-            addStageUniform(
-                HW::PUBLIC_UNIFORMS, Type::FILENAME, samplerName, shader.getStage(Stage::PIXEL));
-        }
+    for (auto&& samplerName : ocioData.samplerNames) {
+        addStageUniform(
+            HW::PUBLIC_UNIFORMS, Type::FILENAME, samplerName, shader.getStage(Stage::PIXEL));
     }
 }
 
@@ -253,10 +274,7 @@ void GlslOcioNodeImpl::emitFunctionDefinition(
     ShaderStage&      stage) const
 {
     if (stage.getName() == Stage::PIXEL) {
-        const auto& ocioDoc = docFromImplementationName(getName());
-        if (ocioDoc.empty()) {
-            return;
-        }
+        const OcioData& ocioData = getOcioData(getName());
 
         // Since the color3 and color4 implementations share the same code block, we need to make
         // sure the definition is only emitted once.
@@ -265,24 +283,14 @@ void GlslOcioNodeImpl::emitFunctionDefinition(
             context.pushUserData(GlslOcioNodeData::name(), GlslOcioNodeData::create());
             pOcioData = context.getUserData<GlslOcioNodeData>(GlslOcioNodeData::name());
         }
-        const auto* fragName = ocioDoc.child(TAG_FRAGMENT).attribute(ATTR_NAME).as_string();
-        if (pOcioData->emittedOcioBlocks.count(fragName)) {
-            return;
-        }
-        pOcioData->emittedOcioBlocks.insert(fragName);
 
-        auto implementations = ocioDoc.child(TAG_FRAGMENT).child(TAG_IMPLEMENTATION);
-        if (!implementations) {
+        if (pOcioData->emittedOcioBlocks.count(ocioData.fragName)) {
             return;
         }
-        for (auto&& implementation : implementations.children()) {
-            auto language = implementation.attribute(ATTR_LANGUAGE);
-            if (std::strncmp(language.as_string(), OCIO_GLSL, OCIO_GLSL_LEN) == 0) {
-                stage.addString(implementation.child_value(TAG_SOURCE));
-                stage.endLine(false);
-                return;
-            }
-        }
+        pOcioData->emittedOcioBlocks.insert(ocioData.fragName);
+
+        stage.addString(ocioData.sourceCode);
+        stage.endLine(false);
     }
 }
 
@@ -292,26 +300,8 @@ void GlslOcioNodeImpl::emitFunctionCall(
     ShaderStage&      stage) const
 {
     if (stage.getName() == Stage::PIXEL) {
-        std::string implName = getName();
-        const auto& ocioDoc = docFromImplementationName(implName);
-        if (ocioDoc.empty()) {
-            return;
-        }
-        std::string functionName;
-
-        auto implementations = ocioDoc.child(TAG_FRAGMENT).child(TAG_IMPLEMENTATION);
-        if (!implementations) {
-            return;
-        }
-        for (auto&& implementation : implementations.children()) {
-            auto language = implementation.attribute(ATTR_LANGUAGE);
-            if (std::strncmp(language.as_string(), OCIO_GLSL, OCIO_GLSL_LEN) == 0) {
-
-                functionName
-                    = implementation.child(TAG_FUNCTION_NAME).attribute(ATTR_VAL).as_string();
-                break;
-            }
-        }
+        std::string     implName = getName();
+        const OcioData& ocioData = getOcioData(implName);
 
         // Function call for color4: vec4 res = vec4(func(in.rgb, ...), in.a);
         // Function call for color3: vec3 res =      func(in, ...);
@@ -330,26 +320,15 @@ void GlslOcioNodeImpl::emitFunctionCall(
             shadergen.emitString(" vec4(", stage);
         }
 
-        shadergen.emitString(functionName + "(", stage);
+        shadergen.emitString(ocioData.functionName + "(", stage);
         shadergen.emitInput(colorInput, context, stage);
         if (isColor4) {
             shadergen.emitString(".rgb", stage);
         }
 
-        bool skipColorInput = true;
-        for (auto&& prop : ocioDoc.child(TAG_FRAGMENT).child(TAG_PROPERTIES).children()) {
-            if (skipColorInput) {
-                // Skip the color input as it was processed above
-                skipColorInput = false;
-                continue;
-            }
-            if (std::strncmp(prop.name(), TAG_TEXTURE2, TAG_TEXTURE2_LEN) == 0) {
-                // Skip texture inputs since we only need the sampler
-                continue;
-            }
-            // Add all other parameters as-is since this will be the uniform parameter name
+        for (auto&& extraParam : ocioData.extraParams) {
             shadergen.emitString(", ", stage);
-            shadergen.emitString(prop.attribute(ATTR_NAME).as_string(), stage);
+            shadergen.emitString(extraParam, stage);
         }
 
         shadergen.emitString(")", stage);

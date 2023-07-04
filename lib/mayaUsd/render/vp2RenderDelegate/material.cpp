@@ -243,6 +243,12 @@ public:
     static bool           Active() { return Get()._active; }
     static const MString& RenderingSpaceName() { return Get()._renderingSpaceName; }
     static const MString& sRGBName() { return Get()._sRGBName; }
+    static std::string    getFileRule(const std::string& path)
+    {
+        MString colorRuleCmd;
+        colorRuleCmd.format("colorManagementFileRules -evaluate \"^1s\";", MString(path.c_str()));
+        return MGlobal::executeCommandStringResult(colorRuleCmd).asChar();
+    }
 
     static void SetDirty()
     {
@@ -306,6 +312,8 @@ void CMPrefs::Refresh()
         // The color management settings are quietly reset on file new:
         _mayaColorManagementCallbackIds.push_back(
             MSceneMessage::addCallback(MSceneMessage::kBeforeNew, colorManagementRefreshCB, this));
+        _mayaColorManagementCallbackIds.push_back(
+            MSceneMessage::addCallback(MSceneMessage::kBeforeOpen, colorManagementRefreshCB, this));
 
         // Cleanup on exit:
         _mayaExitingCB
@@ -575,7 +583,13 @@ size_t _GenerateNetwork2TopoHash(const HdMaterialNetwork2& materialNetwork)
                 auto cmIt = node.parameters.find(cmName);
                 if (cmIt != node.parameters.end()) {
                     MayaUsd::hash_combine(topoHash, hash_value(cmIt->first));
-                    MayaUsd::hash_combine(topoHash, hash_value(cmIt->second));
+                    if (cmIt->second.IsHolding<TfToken>()) {
+                        auto const& colorSpace = cmIt->second.UncheckedGet<TfToken>();
+                        MayaUsd::hash_combine(topoHash, hash_value(colorSpace));
+                    } else if (cmIt->second.IsHolding<std::string>()) {
+                        auto const& colorSpace = cmIt->second.UncheckedGet<std::string>();
+                        MayaUsd::hash_combine(topoHash, std::hash<std::string> {}(colorSpace));
+                    }
                 }
             }
             if (_MxHasFilenameInput(node)) {
@@ -597,7 +611,8 @@ size_t _GenerateNetwork2TopoHash(const HdMaterialNetwork2& materialNetwork)
 
 #ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
     if (hasTextureNode) {
-        MayaUsd::hash_combine(topoHash, CMPrefs::RenderingSpaceName().asChar());
+        MayaUsd::hash_combine(
+            topoHash, std::hash<std::string> {}(CMPrefs::RenderingSpaceName().asChar()));
     }
 #endif
 
@@ -1260,6 +1275,9 @@ void _AddColorManagementFragments(HdMaterialNetwork& net)
             if (scsValue.IsHolding<TfToken>()) {
                 sourceColorSpace = scsValue.UncheckedGet<TfToken>();
             }
+            if (scsValue.IsHolding<std::string>()) {
+                sourceColorSpace = TfToken(scsValue.UncheckedGet<std::string>());
+            }
         }
 
         // We need to insert the proper CM shader fragment here so it becomes part
@@ -1271,17 +1289,12 @@ void _AddColorManagementFragments(HdMaterialNetwork& net)
             if (fileIt == node.parameters.end() || !fileIt->second.IsHolding<SdfAssetPath>()) {
                 continue;
             }
-            auto const&        filenameVal = fileIt->second.Get<SdfAssetPath>();
-            const std::string& resolvedPath = filenameVal.GetResolvedPath();
+            auto const& filenameVal = fileIt->second.Get<SdfAssetPath>();
+            auto const& resolvedPath = filenameVal.GetResolvedPath();
             if (resolvedPath.empty()) {
                 continue;
             }
-            const std::string& assetPath = filenameVal.GetAssetPath();
-            MString            colorRuleCmd;
-            colorRuleCmd.format(
-                "colorManagementFileRules -evaluate \"^1s\";",
-                (!resolvedPath.empty() ? resolvedPath : assetPath).c_str());
-            colorSpace = MGlobal::executeCommandStringResult(colorRuleCmd);
+            colorSpace = CMPrefs::getFileRule(resolvedPath).c_str();
         } else if (sourceColorSpace == _tokens->sRGB) {
             if (CMPrefs::sRGBName().isEmpty()) {
                 // No alias found. Do not color correct...
@@ -2780,8 +2793,7 @@ TfToken _RequiresColorManagement(
     }
 
     // Look for explicit color spaces first:
-    std::string       sourceColorSpace;
-    static const auto _mxFindColorSpace = [&sourceColorSpace](const auto& n) {
+    static const auto _mxFindColorSpace = [](const auto& n, auto& sourceColorSpace) {
         if (!sourceColorSpace.empty()) {
             return;
         }
@@ -2800,10 +2812,12 @@ TfToken _RequiresColorManagement(
             }
         }
     };
+
+    std::string sourceColorSpace;
     // Can be on the upstream node (UsdUVTexture):
-    _mxFindColorSpace(upstream);
+    _mxFindColorSpace(upstream, sourceColorSpace);
     // Can sometimes be on node (MayaND_fileTexture):
-    _mxFindColorSpace(node);
+    _mxFindColorSpace(node, sourceColorSpace);
     // To be updated as soon as color space metadata gets transmitted through Hydra.
 
     if (sourceColorSpace.empty() || sourceColorSpace == _tokens->auto_) {
@@ -2817,17 +2831,11 @@ TfToken _RequiresColorManagement(
             }
         }
 
-        const std::string& resolvedPath = filenameVal.GetResolvedPath();
+        auto const& resolvedPath = filenameVal.GetResolvedPath();
         if (resolvedPath.empty()) {
             return {};
         }
-        const std::string& assetPath = filenameVal.GetAssetPath();
-        MString            colorRuleCmd;
-        colorRuleCmd.format(
-            "colorManagementFileRules -evaluate \"^1s\";",
-            (!resolvedPath.empty() ? resolvedPath : assetPath).c_str());
-        const MString colorSpaceByRule(MGlobal::executeCommandStringResult(colorRuleCmd));
-        sourceColorSpace = colorSpaceByRule.asChar();
+        sourceColorSpace = CMPrefs::getFileRule(resolvedPath);
     }
 
     if (sourceColorSpace == "Raw" || sourceColorSpace == "raw") {
@@ -2848,8 +2856,8 @@ TfToken _RequiresColorManagement(
     MString fragName, fragInput, fragOutput;
     if (fragmentManager->getColorManagementFragmentInfo(
             sourceColorSpace.c_str(), fragName, fragInput, fragOutput)) {
-        std::string untypedNodeDefId = MaterialXMaya::OgsFragment::registerOCIOFragment(
-            fragName.asChar(), _GetMaterialXData()._mtlxLibrary);
+        std::string untypedNodeDefId
+            = MaterialXMaya::OgsFragment::registerOCIOFragment(fragName.asChar());
         if (!untypedNodeDefId.empty()) {
             cmInputName = TfToken(fragInput.asChar());
             cmOutputName = TfToken(fragOutput.asChar());
@@ -3043,6 +3051,14 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
         const mx::FileSearchPath& crLibrarySearchPath(_GetMaterialXData()._mtlxSearchPath);
         if (mtlxSdrNode) {
 
+#ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
+            mx::DocumentPtr completeLibrary = mx::createDocument();
+            completeLibrary->importLibrary(_GetMaterialXData()._mtlxLibrary);
+            completeLibrary->importLibrary(MaterialXMaya::OgsFragment::getOCIOLibrary());
+#else
+            mx::DocumentPtr completeLibrary = _GetMaterialXData()._mtlxLibrary;
+#endif
+
             // Create the MaterialX Document from the HdMaterialNetwork
 #if PXR_VERSION > 2111
             mtlxDoc = HdMtlxCreateMtlxDocumentFromHdNetwork(
@@ -3050,7 +3066,7 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
                 *surfTerminal, // MaterialX HdNode
                 fixedPath,
                 SdfPath(_mtlxTokens->USD_Mtlx_VP2_Material),
-                _GetMaterialXData()._mtlxLibrary);
+                completeLibrary);
 #else
             std::set<SdfPath> hdTextureNodes;
             mx::StringMap mxHdTextureMap; // Mx-Hd texture name counterparts
@@ -3058,7 +3074,7 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
                 fixedNetwork,
                 *surfTerminal, // MaterialX HdNode
                 SdfPath(_mtlxTokens->USD_Mtlx_VP2_Material),
-                _GetMaterialXData()._mtlxLibrary,
+                completeLibrary,
                 &hdTextureNodes,
                 &mxHdTextureMap);
 #endif
