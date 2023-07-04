@@ -75,7 +75,7 @@ getPrimPath(const UsdPrim& prim, const std::string& filePath, const std::string&
         SdfPrimSpecHandle primSpec = layerRef->GetPrimAtPath(SdfPath(primName.GetText()));
         const std::string errorMessage = validatePrimSpec(prim, primSpec);
         if (!errorMessage.empty())
-            TF_WARN("The default prim in file [%s] %s.", errorMessage.c_str(), filePath.c_str());
+            TF_WARN("The default prim in file [%s] %s.", filePath.c_str(), errorMessage.c_str());
         return SdfPath();
     }
 
