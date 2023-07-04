@@ -1137,6 +1137,11 @@ bool PrimUpdaterManager::mergeToUsd(
     if (TF_VERIFY(hier)) {
         scene.notify(Ufe::SubtreeInvalidate(hier->defaultParent()));
     }
+
+    // We must recreate the UFE item because it has changed data models (Maya -> USD).
+    if (TF_VERIFY(ufeUsdItem))
+        scene.notify(Ufe::ObjectAdd(ufeUsdItem));
+
     progressBar.advance();
 
     scopeIt.end();
@@ -1403,6 +1408,11 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
     if (TF_VERIFY(hier)) {
         scene.notify(Ufe::SubtreeInvalidate(hier->defaultParent()));
     }
+
+    // We must recreate the UFE item because it has changed data models (Maya -> USD).
+    if (TF_VERIFY(ufeUsdItem))
+        scene.notify(Ufe::ObjectAdd(ufeUsdItem));
+
     progressBar.advance();
 
     scopeIt.end();
