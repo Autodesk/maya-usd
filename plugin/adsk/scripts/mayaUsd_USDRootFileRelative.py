@@ -36,7 +36,6 @@ class usdFileRelative(object):
 
     kMakePathRelativeCheckBox = 'MakePathRelativeTo'
     kUnresolvedPathTextField = 'UnresolvedPath'
-    kResolvedPathTextField = 'ResolvedPath'
 
     # We will store whether or not the file can be made relative. Used to know when we need
     # to update fields.
