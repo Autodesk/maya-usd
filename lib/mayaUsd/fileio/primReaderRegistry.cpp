@@ -183,7 +183,6 @@ UsdMayaPrimReaderRegistry::ReaderFactoryFn UsdMayaPrimReaderRegistry::Find(
     if (_reg.count(typeName) == 0) {
         TF_DEBUG(PXRUSDMAYA_REGISTRY)
             .Msg("No usdMaya reader plugin for TfType %s. No maya plugin.\n", typeName.GetText());
-        //_reg[typeName] = nullptr;
         Register(
             tfType,
             [](const UsdMayaJobImportArgs&, const UsdPrim&) {
