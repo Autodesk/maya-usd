@@ -338,7 +338,7 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::defaultParent() const
     // so we return that.
     //
     // It used to return the USD virtual root prim, but that caused problem since
-    // the UFE path pointed to a Maya node (the proxy shape) and teh default parent
+    // the UFE path pointed to a Maya node (the proxy shape) and the default parent
     // was a USD object, leading to a contradiction. In particular, it became
     // impossible to create a UFE Hiearchy interface from that default parent: its
     // path indicated it was in the Maya run-time, yet its scene item claimed to
