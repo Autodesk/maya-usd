@@ -23,6 +23,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdUndoAddNewPrimCommand.cpp
             UsdUndoAddPayloadCommand.cpp
             UsdUndoAddReferenceCommand.cpp
+            UsdUndoAddRefOrPayloadCommand.cpp
             UsdUndoClearPayloadsCommand.cpp
             UsdUndoClearReferencesCommand.cpp
             UsdUndoCreateGroupCommand.cpp
@@ -65,6 +66,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdUndoAddNewPrimCommand.h
         UsdUndoAddPayloadCommand.h
         UsdUndoAddReferenceCommand.h
+        UsdUndoAddRefOrPayloadCommand.h
         UsdUndoClearPayloadsCommand.h
         UsdUndoClearReferencesCommand.h
         UsdUndoCreateGroupCommand.h

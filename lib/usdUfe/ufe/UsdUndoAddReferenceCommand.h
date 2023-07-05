@@ -16,20 +16,12 @@
 #ifndef USD_UFE_ADD_REFERENCE_COMMAND
 #define USD_UFE_ADD_REFERENCE_COMMAND
 
-#include <usdUfe/base/api.h>
-#include <usdUfe/ufe/UsdUndoableCommand.h>
-
-#include <pxr/usd/usd/prim.h>
-#include <pxr/usd/usd/references.h>
-
-#include <ufe/undoableCommand.h>
-
-#include <string>
+#include <usdUfe/ufe/UsdUndoAddRefOrPayloadCommand.h>
 
 namespace USDUFE_NS_DEF {
 
 //! \brief Command to add a reference to a prim.
-class USDUFE_PUBLIC UsdUndoAddReferenceCommand : public UsdUndoableCommand<Ufe::UndoableCommand>
+class USDUFE_PUBLIC UsdUndoAddReferenceCommand : public UsdUndoAddRefOrPayloadCommand
 {
 public:
     UsdUndoAddReferenceCommand(
@@ -37,14 +29,11 @@ public:
         const std::string&     filePath,
         bool                   prepend);
 
-protected:
-    void executeImplementation() override;
-
-private:
-    PXR_NS::UsdPrim         _prim;
-    PXR_NS::SdfReference    _sdfRef;
-    std::string             _filePath;
-    PXR_NS::UsdListPosition _listPos;
+    UsdUndoAddReferenceCommand(
+        const PXR_NS::UsdPrim& prim,
+        const std::string&     filePath,
+        const std::string&     primPath,
+        bool                   prepend);
 };
 
 } // namespace USDUFE_NS_DEF
