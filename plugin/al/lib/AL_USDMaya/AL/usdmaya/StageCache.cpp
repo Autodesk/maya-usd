@@ -22,14 +22,7 @@
 
 #include <maya/MProfiler.h>
 namespace {
-const int _stageCacheProfilerCategory = MProfiler::addCategory(
-#if MAYA_API_VERSION >= 20190000
-    "StageCache",
-    "StageCache"
-#else
-    "StageCache"
-#endif
-);
+const int _stageCacheProfilerCategory = MProfiler::addCategory("StageCache", "StageCache");
 } // namespace
 
 namespace AL {

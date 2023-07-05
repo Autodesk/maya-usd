@@ -63,8 +63,6 @@ GfMatrix4d getTransform(const UsdPrim& prim, const std::map<SdfPath, GfMatrix4d>
 
 void getComponentTags(MFnMeshData& dataCreator, const UsdGeomMesh& mesh)
 {
-#if MAYA_API_VERSION >= 20220000
-
     // Unclear at this time if this mesh requires roundtripping info
     // for the component tags.
     std::vector<UsdMayaMeshReadUtils::ComponentTagData> componentTags;
@@ -81,8 +79,6 @@ void getComponentTags(MFnMeshData& dataCreator, const UsdGeomMesh& mesh)
 
         dataCreator.setComponentTagContents(name, content);
     }
-
-#endif
 }
 } // namespace
 

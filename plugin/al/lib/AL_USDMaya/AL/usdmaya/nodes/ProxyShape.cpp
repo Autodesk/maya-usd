@@ -74,14 +74,8 @@ typedef void (
 const char* ProxyShape::s_selectionMaskName = "al_ProxyShape";
 
 namespace {
-const int _proxyShapeProfilerCategory = MProfiler::addCategory(
-#if MAYA_API_VERSION >= 20190000
-    "AL_usdmaya_ProxyShape",
-    "AL_usdmaya_ProxyShape"
-#else
-    "AL_usdmaya_ProxyShape"
-#endif
-);
+const int _proxyShapeProfilerCategory
+    = MProfiler::addCategory("AL_usdmaya_ProxyShape", "AL_usdmaya_ProxyShape");
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief Verify given Maya node is still valid.
@@ -1499,9 +1493,7 @@ void ProxyShape::postConstructor()
     MPlug(thisMObject(), m_visibleInReflections).setValue(true);
     MPlug(thisMObject(), m_visibleInRefractions).setValue(true);
 
-#if MAYA_API_VERSION >= 20210000
     enableProxyAccessor();
-#endif
 }
 
 //----------------------------------------------------------------------------------------------------------------------

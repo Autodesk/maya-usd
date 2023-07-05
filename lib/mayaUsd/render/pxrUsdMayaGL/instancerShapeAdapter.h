@@ -17,19 +17,6 @@
 #define PXRUSDMAYAGL_INSTANCER_SHAPE_ADAPTER_H
 
 /// \file pxrUsdMayaGL/instancerShapeAdapter.h
-#include <memory>
-
-// XXX: With Maya versions up through 2019 on Linux, M3dView.h ends up
-// indirectly including an X11 header that #define's "Bool" as int:
-//   - <maya/M3dView.h> includes <maya/MNativeWindowHdl.h>
-//   - <maya/MNativeWindowHdl.h> includes <X11/Intrinsic.h>
-//   - <X11/Intrinsic.h> includes <X11/Xlib.h>
-//   - <X11/Xlib.h> does: "#define Bool int"
-// This can cause compilation issues if <pxr/usd/sdf/types.h> is included
-// afterwards, so to fix this, we ensure that it gets included first.
-//
-// The X11 include appears to have been removed in Maya 2020+, so this should
-// no longer be an issue with later versions.
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h>
 
@@ -41,6 +28,8 @@
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <maya/M3dView.h>
+
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

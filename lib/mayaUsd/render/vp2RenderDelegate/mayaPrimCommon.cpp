@@ -133,11 +133,7 @@ void MayaUsdRPrim::_CommitMVertexBuffer(MHWRender::MVertexBuffer* const buffer, 
 
 void MayaUsdRPrim::_SetWantConsolidation(MHWRender::MRenderItem& renderItem, bool state)
 {
-#if MAYA_API_VERSION >= 20190000
     renderItem.setWantConsolidation(state);
-#else
-    renderItem.setWantSubSceneConsolidation(state);
-#endif
 }
 
 void MayaUsdRPrim::_UpdateTransform(
@@ -497,9 +493,7 @@ MHWRender::MRenderItem* MayaUsdRPrim::_CreateBoundingBoxRenderItem(
     renderItem->setSelectionMask(selectionMask);
     _InitRenderItemCommon(renderItem);
 
-#if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(exclusionFlag);
-#endif
 
     return renderItem;
 }
@@ -530,9 +524,7 @@ MHWRender::MRenderItem* MayaUsdRPrim::_CreateWireframeRenderItem(
 #endif
     _InitRenderItemCommon(renderItem);
 
-#if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(exclusionFlag);
-#endif
 
     return renderItem;
 }
@@ -559,9 +551,7 @@ MHWRender::MRenderItem* MayaUsdRPrim::_CreatePointsRenderItem(
     renderItem->setSelectionMask(selectionMasks);
     _InitRenderItemCommon(renderItem);
 
-#if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(exclusionFlag);
-#endif
 
     return renderItem;
 }

@@ -42,7 +42,6 @@
 
 // Maya 2020 is missing API necessary for compute support
 // OSX doesn't have OpenGL 4.3 support necessary for compute
-// USD before 20.08 doesn't include some OSD commits we rely on
 #if MAYA_API_VERSION >= 20210000 && !defined(OSMac_)
 #define HDVP2_ENABLE_GPU_COMPUTE
 #endif
