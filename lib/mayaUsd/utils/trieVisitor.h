@@ -18,7 +18,9 @@
 
 #include <mayaUsd/base/api.h>
 
+#if UFE_SCENE_SEGMENT_SUPPORT
 #include <ufe/sceneSegmentHandler.h>
+#endif
 #include <ufe/trie.h>
 
 #include <functional>
@@ -84,14 +86,18 @@ inline void TrieVisitor<T>::visit(
         if (nodeComp) {
             if (parentPath.empty()) {
                 nodePath = Ufe::Path(Ufe::PathSegment(nodeComp, ufe::getMayaRunTimeId(), '|'));
-            } else if (Ufe::SceneSegmentHandler::isGateway(parentPath)) {
+            } 
+        #if UFE_SCENE_SEGMENT_SUPPORT
+            else if (Ufe::SceneSegmentHandler::isGateway(parentPath)) {
                 if (parentPath.runTimeId() == ufe::getUsdRunTimeId()) {
                     nodePath
                         = parentPath + Ufe::PathSegment(nodeComp, ufe::getMayaRunTimeId(), '|');
                 } else {
                     nodePath = parentPath + Ufe::PathSegment(nodeComp, ufe::getUsdRunTimeId(), '/');
-                }
-            } else {
+                }            
+            }
+        #endif
+            else {
                 nodePath = parentPath + nodeComp;
             }
         }
