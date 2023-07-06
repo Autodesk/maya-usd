@@ -98,14 +98,14 @@ class TestDagChanges(mtohUtils.MtohTestCase):
 
             # No instances to start
             #   (1) |pCube1|pCubeShape1
-            self.assertSnapshotClose("instances_1.png", self.imageVersion)
+            self.assertSnapshotEqual("instances_1.png", self.imageVersion)
 
             # Add |group1|pCube1 instance
             #   (1) |pCube1|pCubeShape1
             #   (2) |group1|pCube1|pCubeShape1
             cmds.parent(self.cubeTrans, self.grp1, add=1, r=1)
             cmds.select(clear=1)
-            self.assertSnapshotClose("instances_12.png", self.imageVersion)
+            self.assertSnapshotEqual("instances_12.png", self.imageVersion)
 
             # Add |pCube2|pCubeShape1 instance
             #   (1) |pCube1|pCubeShape1
@@ -113,7 +113,7 @@ class TestDagChanges(mtohUtils.MtohTestCase):
             #   (3) |pCube2|pCubeShape1
             cmds.parent(self.cubeShape, pCube2, add=1, r=1, shape=1)
             cmds.select(clear=1)
-            self.assertSnapshotClose("instances_123.png", self.imageVersion)
+            self.assertSnapshotEqual("instances_123.png", self.imageVersion)
 
             # Add |group2|group1|pCube1 instance
             #   (1) |pCube1|pCubeShape1
@@ -122,7 +122,7 @@ class TestDagChanges(mtohUtils.MtohTestCase):
             #   (4) |group2||group1|pCube1|pCubeShape1
             cmds.parent(self.grp1, self.grp2, add=1, r=1)
             cmds.select(clear=1)
-            self.assertSnapshotClose("instances_1234.png", self.imageVersion)
+            self.assertSnapshotEqual("instances_1234.png", self.imageVersion)
 
             # Add |group1|pCube2 instance
             #   (1) |pCube1|pCubeShape1
@@ -133,7 +133,7 @@ class TestDagChanges(mtohUtils.MtohTestCase):
             #   (6) |group2||group1|pCube2|pCubeShape1
             cmds.parent(pCube2, self.grp1, add=1, r=1)
             cmds.select(clear=1)
-            self.assertSnapshotClose("instances_123456.png", self.imageVersion)
+            self.assertSnapshotEqual("instances_123456.png", self.imageVersion)
 
             # Delete group2
             #   [no shapes]
@@ -142,7 +142,7 @@ class TestDagChanges(mtohUtils.MtohTestCase):
             try:
                 cmds.delete(self.grp2)
                 self.assertNotIn(self.cubeRprim, self.getIndex())
-                self.assertSnapshotClose("instances_0.png", self.imageVersion)
+                self.assertSnapshotEqual("instances_0.png", self.imageVersion)
             finally:
                 cmds.undoInfo(closeChunk=1)
 
@@ -154,7 +154,7 @@ class TestDagChanges(mtohUtils.MtohTestCase):
             #   (5) |group1|pCube2|pCubeShape1
             #   (6) |group2||group1|pCube2|pCubeShape1
             cmds.undo()
-            self.assertSnapshotClose("instances_123456.png", self.imageVersion)
+            self.assertSnapshotEqual("instances_123456.png", self.imageVersion)
 
             # Remove |group2|group1 instance
             #   (1) |pCube1|pCubeShape1
@@ -163,7 +163,7 @@ class TestDagChanges(mtohUtils.MtohTestCase):
             #   (5) |group1|pCube2|pCubeShape1
             cmds.parent('|{self.grp2}|{self.grp1}'.format(self=self),
                         removeObject=1)
-            self.assertSnapshotClose("instances_1235.png", self.imageVersion)
+            self.assertSnapshotEqual("instances_1235.png", self.imageVersion)
 
             # Remove pCube2|pCubeShape1 instance
             #   (1) |pCube1|pCubeShape1
@@ -173,7 +173,7 @@ class TestDagChanges(mtohUtils.MtohTestCase):
                 cmds.parent('|{pCube2}|{self.cubeShape}'.format(self=self,
                                                                     pCube2=pCube2),
                             removeObject=1, shape=1)
-                self.assertSnapshotClose("instances_12.png", self.imageVersion)
+                self.assertSnapshotEqual("instances_12.png", self.imageVersion)
             finally:
                 cmds.undoInfo(closeChunk=1)
 
@@ -183,7 +183,7 @@ class TestDagChanges(mtohUtils.MtohTestCase):
             #   (3) |pCube2|pCubeShape1
             #   (5) |group1|pCube2|pCubeShape1
             cmds.undo()
-            self.assertSnapshotClose("instances_1235.png", self.imageVersion)
+            self.assertSnapshotEqual("instances_1235.png", self.imageVersion)
 
             # Remove pCube1|pCubeShape1 (the "master" instance)
             #   (3) |pCube2|pCubeShape1
@@ -192,7 +192,7 @@ class TestDagChanges(mtohUtils.MtohTestCase):
             try:
                 cmds.parent('|{self.cubeTrans}|{self.cubeShape}'.format(self=self),
                             removeObject=1, shape=1)
-                self.assertSnapshotClose("instances_35.png", self.imageVersion)
+                self.assertSnapshotEqual("instances_35.png", self.imageVersion)
             finally:
                 cmds.undoInfo(closeChunk=1)
 
@@ -207,7 +207,7 @@ class TestDagChanges(mtohUtils.MtohTestCase):
             # need to disable without flusing the queue, so we can test redo
             cmds.undoInfo(stateWithoutFlush=0)
             try:
-                self.assertSnapshotClose("instances_1235.png", self.imageVersion)
+                self.assertSnapshotEqual("instances_1235.png", self.imageVersion)
             finally:
                 cmds.undoInfo(stateWithoutFlush=1)
 
@@ -215,21 +215,21 @@ class TestDagChanges(mtohUtils.MtohTestCase):
             #   (3) |pCube2|pCubeShape1
             #   (5) |group1|pCube2|pCubeShape1
             cmds.redo()
-            self.assertSnapshotClose("instances_35.png", self.imageVersion)
+            self.assertSnapshotEqual("instances_35.png", self.imageVersion)
 
             # Remove |group1|pCube2 instance
             #   (3) |pCube2|pCubeShape1
             cmds.parent('{self.grp1}|{pCube2}'.format(self=self,
                                                       pCube2=pCube2),
                         removeObject=1)
-            self.assertSnapshotClose("instances_3.png", self.imageVersion)
+            self.assertSnapshotEqual("instances_3.png", self.imageVersion)
         finally:
             cmds.undoInfo(state=undoWasEnabled)
 
     def test_move(self):
-        self.assertSnapshotClose("instances_1.png", self.imageVersion)
+        self.assertSnapshotEqual("instances_1.png", self.imageVersion)
         cmds.setAttr('{}.ty'.format(self.cubeTrans), 5)
-        self.assertSnapshotClose("instances_3.png", self.imageVersion)
+        self.assertSnapshotEqual("instances_3.png", self.imageVersion)
 
     def test_instance_move(self):
         # Add |group1|pCube1 instance
@@ -240,11 +240,11 @@ class TestDagChanges(mtohUtils.MtohTestCase):
 
         # because we haven't moved anything, it should initially look like only
         # one cube...
-        self.assertSnapshotClose("instances_1.png", self.imageVersion)
+        self.assertSnapshotEqual("instances_1.png", self.imageVersion)
 
         cmds.setAttr('{}.tz'.format(self.grp1), 5)
         # Now that we moved one, it should look like 2 cubes
-        self.assertSnapshotClose("instances_12.png", self.imageVersion)
+        self.assertSnapshotEqual("instances_12.png", self.imageVersion)
 
 
 class TestUndo(mtohUtils.MtohTestCase):
@@ -273,7 +273,7 @@ class TestUndo(mtohUtils.MtohTestCase):
                 cmds.select(clear=1)
                 cmds.refresh()
                 self.assertEqual([cubeRprim], self.getIndex())
-                self.assertSnapshotClose("instances_1.png", self.imageVersion)
+                self.assertSnapshotEqual("instances_1.png", self.imageVersion)
             finally:
                 cmds.undoInfo(closeChunk=1)
 
@@ -285,7 +285,7 @@ class TestUndo(mtohUtils.MtohTestCase):
             try:
                 cmds.refresh()
                 self.assertEqual([], self.getIndex())
-                self.assertSnapshotClose("instances_0.png", self.imageVersion)
+                self.assertSnapshotEqual("instances_0.png", self.imageVersion)
             finally:
                 cmds.undoInfo(stateWithoutFlush=1)
 
@@ -295,7 +295,7 @@ class TestUndo(mtohUtils.MtohTestCase):
             try:
                 cmds.refresh()
                 self.assertEqual([cubeRprim], self.getIndex())
-                self.assertSnapshotClose("instances_1.png", self.imageVersion)
+                self.assertSnapshotEqual("instances_1.png", self.imageVersion)
             finally:
                 cmds.undoInfo(stateWithoutFlush=1)
 

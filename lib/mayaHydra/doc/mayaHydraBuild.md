@@ -20,8 +20,6 @@ Before building the project, consult the following table to ensure you use the r
 | Supported Maya Version|  2024   |                   2024                    |   2024    |
 
 |        Optional       | ![](images/windows.png)   |                            ![](images/mac.png)               |   ![](images/linux.png)     |
-|:---------------------:|:-------------------------:|:------------------------------------------------------------:|:---------------------------:|
-|          Qt           | Maya 2024 = 5.15.2 | Maya 2024 = 5.15.2 | Maya 2024 = 5.15.2 |
 
 ***NOTE:*** Visit the online Maya developer help document under ***Setting up your build environment*** for additional compiler requirements on different platforms.
 

@@ -1,5 +1,6 @@
 import inspect
 import os
+import unittest
 
 import maya.cmds as cmds
 import maya.mel
@@ -13,43 +14,20 @@ import sys
 HD_STORM = "HdStormRendererPlugin"
 HD_STORM_OVERRIDE = "mayaHydraRenderOverride_" + HD_STORM
 
-
-class MtohTestCase(ImageDiffingTestCase):
-    DEFAULT_CAM_DIST = 24
+class MayaHydraBaseTestCase(unittest.TestCase):
+    '''Base class for mayaHydra unit tests without image comparison.'''
 
     _file = None
-    _inputDir = None
+
+    DEFAULT_CAM_DIST = 24
 
     @classmethod
     def setUpClass(cls):
         if cls._file is None:
-            raise ValueError("For subclasses of MtohTestCase, set "
-                             "`_file = __file__` when defining")
-
-        inputPath = fixturesUtils.setUpClass(
-            cls._file, suffix=('_' + cls.__name__),
-            initializeStandalone=False, loadPlugin=False)
-        cmds.loadPlugin('mayaHydra', quiet=True)
-
-        if cls._inputDir is None:
-            inputDirName = os.path.splitext(os.path.basename(cls._file))[0]
-            inputDirName = testUtils.stripPrefix(inputDirName, 'test')
-            if not inputDirName.endswith('Test'):
-                inputDirName += 'Test'
-            cls._inputDir = os.path.join(inputPath, inputDirName)
-
-        cls._testDir = os.path.abspath('.')
-
-    def assertSnapshotClose(self, refImage, imageVersion=None,
-                            maxAvgChannelDiff=\
-                                ImageDiffingTestCase.AVG_CHANNEL_DIFF):
-        if not os.path.isabs(refImage):
-            if imageVersion:
-                refImage = os.path.join(self._inputDir, imageVersion, refImage)
-            else:
-                refImage = os.path.join(self._inputDir, refImage)
-        super(MtohTestCase, self).assertSnapshotClose(
-            refImage, maxAvgChannelDiff=maxAvgChannelDiff)
+            raise ValueError("Subclasses of MayaHydraBaseTestCase must "
+                             "define `_file = __file__`")
+        fixturesUtils.readOnlySetUpClass(cls._file, 'mayaHydra', 
+                                         initializeStandalone=False)
 
     def setHdStormRenderer(self):
         self.activeEditor = cmds.playblast(activeEditor=1)
@@ -114,3 +92,45 @@ class MtohTestCase(ImageDiffingTestCase):
 
     def traceIndex(self, msg):
         self.trace(msg.format(str(self.getIndex())))
+
+class MtohTestCase(MayaHydraBaseTestCase, ImageDiffingTestCase):
+    '''Base class for mayaHydra unit tests with image comparison.'''
+
+    _inputDir = None
+
+    @classmethod
+    def setUpClass(cls):
+        if cls._file is None:
+            raise ValueError("Subclasses of MtohTestCase, must define "
+                             "`_file = __file__`")
+
+        inputPath = fixturesUtils.setUpClass(
+            cls._file, 'mayaHydra', initializeStandalone=False, 
+            suffix=('_' + cls.__name__))
+
+        if cls._inputDir is None:
+            inputDirName = os.path.splitext(os.path.basename(cls._file))[0]
+            inputDirName = testUtils.stripPrefix(inputDirName, 'test')
+            if not inputDirName.endswith('Test'):
+                inputDirName += 'Test'
+            cls._inputDir = os.path.join(inputPath, inputDirName)
+
+        cls._testDir = os.path.abspath('.')
+
+    def resolveRefImage(self, refImage, imageVersion):
+        if not os.path.isabs(refImage):
+            if imageVersion:
+                refImage = os.path.join(self._inputDir, imageVersion, refImage)
+            else:
+                refImage = os.path.join(self._inputDir, refImage)
+        return refImage
+
+    def assertSnapshotClose(self, refImage, fail, failpercent, imageVersion=None, hardfail=None, 
+                warn=None, warnpercent=None, hardwarn=None, perceptual=False):
+        refImage = self.resolveRefImage(refImage, imageVersion)
+        super(MtohTestCase, self).assertSnapshotClose(refImage, fail, failpercent, hardfail,
+                            warn, warnpercent, hardwarn, perceptual)
+
+    def assertSnapshotEqual(self, refImage, imageVersion=None):
+        refImage = self.resolveRefImage(refImage, imageVersion)
+        super(MtohTestCase, self).assertSnapshotEqual(refImage)

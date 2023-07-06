@@ -40,8 +40,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /**
  * This file contains the MayaHydraMeshAdapter class to translate from a Maya mesh to hydra.
- * Please note that, as of Feb 2023, this is not used by the hydra plugin, we translate from a
- * renderitem to hydra using the MayaHydraRenderItemAdapter class.
+ * Please note that, as of May 2023, this is optionally used by mayaHydra, with
+ * a compile-time switch (see sceneDelegate.h).
+ *
+ * We can also translate from a MRenderitem to Hydra using the
+ * MayaHydraRenderItemAdapter class.
  */
 
 namespace {

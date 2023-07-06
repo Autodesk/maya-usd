@@ -19,10 +19,7 @@ import shutil
 import sys
 import unittest
 
-_exportTranslatorName = "USD Export"
-_defaultPluginName = "mayaUsdPlugin"
-
-def _setUpClass(modulePathName, initializeStandalone, loadPlugin, pluginName):
+def _setUpClass(modulePathName, pluginName, initializeStandalone):
     '''
     Common code for setUpClass() and readOnlySetUpClass()
     '''
@@ -30,25 +27,14 @@ def _setUpClass(modulePathName, initializeStandalone, loadPlugin, pluginName):
         from maya import standalone
         standalone.initialize('usd')
 
-    if loadPlugin:
+    if pluginName:
         import maya.cmds as cmds
         cmds.loadPlugin(pluginName, quiet=True)
-
-        if pluginName == _defaultPluginName:
-            # Monkey patch cmds so that usdExport and usdImport becomes aliases. We
-            # *only* do this if we're loading the plugin, since otherwise the
-            # export/import commands will not exist.
-            cmds.usdExport = cmds.mayaUSDExport
-            cmds.usdImport = cmds.mayaUSDImport
 
     realPath = os.path.realpath(modulePathName)
     return os.path.split(realPath)
 
-def exportTranslatorName():
-    return _exportTranslatorName
-
-def setUpClass(modulePathName, suffix='', initializeStandalone=True,
-        loadPlugin=True, pluginName=_defaultPluginName):
+def setUpClass(modulePathName, pluginName, initializeStandalone=True, suffix=''):
     '''
     Test class setup.
 
@@ -59,8 +45,8 @@ def setUpClass(modulePathName, suffix='', initializeStandalone=True,
     - (Optionally) Loads the plugin
     - Returns the original directory from the argument.
     '''
-    (testDir, testFile) = _setUpClass(modulePathName, initializeStandalone,
-        loadPlugin, pluginName)
+    (testDir, testFile) = _setUpClass(modulePathName, pluginName, 
+                                      initializeStandalone)
     outputName = os.path.splitext(testFile)[0]+suffix+'Output'
 
     outputPath = os.path.join(os.path.abspath('.'), outputName)
@@ -73,7 +59,7 @@ def setUpClass(modulePathName, suffix='', initializeStandalone=True,
 
     return testDir
 
-def tearDownClass(unloadPlugin=True, pluginName=_defaultPluginName):
+def tearDownClass(pluginName):
     '''
     Test class teardown.
     
@@ -85,15 +71,14 @@ def tearDownClass(unloadPlugin=True, pluginName=_defaultPluginName):
     avoid nested test directories.
     '''
     
-    if unloadPlugin:
+    if pluginName:
         import maya.cmds as cmds
         cmds.unloadPlugin(pluginName, force=True)
 
     # Exit into the main test directory
     os.chdir("..")
 
-def readOnlySetUpClass(modulePathName, initializeStandalone=True,
-        loadPlugin=True, pluginName=_defaultPluginName):
+def readOnlySetUpClass(modulePathName, pluginName, initializeStandalone=True):
     '''
     Test class import setup for tests that do not write to the file system.
 
@@ -102,8 +87,8 @@ def readOnlySetUpClass(modulePathName, initializeStandalone=True,
     - (Optionally) Loads the plugin
     - Returns the original directory from the argument.
     '''
-    (testDir, testFile) = _setUpClass(modulePathName, initializeStandalone,
-        loadPlugin, pluginName)
+    (testDir, testFile) = _setUpClass(modulePathName, pluginName, 
+                                      initializeStandalone)
 
     return testDir
 

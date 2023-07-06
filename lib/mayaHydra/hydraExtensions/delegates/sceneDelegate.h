@@ -57,8 +57,10 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 /**
- * \brief MayaHydraSceneDelegate is an Hydra custom scene delegate used to translate from a Maya
- * scene to hydra.
+ * \brief Hydra custom scene delegate.
+ *
+ * MayaHydraSceneDelegate is a Hydra custom scene delegate used to translate
+ * from a Maya scene to Hydra.
  *
  * If you want to know how to add a custom scene index to this plug-in, then please see the
  * registration.cpp file.
@@ -109,18 +111,13 @@ public:
     void MaterialTagChanged(const SdfPath& id) override;
 
     MAYAHYDRALIB_API
-    MayaHydraShapeAdapterPtr GetShapeAdapter(const SdfPath& id);
-
-    MAYAHYDRALIB_API
     MayaHydraLightAdapterPtr GetLightAdapter(const SdfPath& id);
 
     MAYAHYDRALIB_API
     MayaHydraMaterialAdapterPtr GetMaterialAdapter(const SdfPath& id);
 
-#ifdef MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
     MAYAHYDRALIB_API
     void InsertDag(const MDagPath& dag);
-#endif
 
     void OnDagNodeAdded(const MObject& obj);
 
@@ -264,11 +261,11 @@ private:
     static VtValue CreateMayaDefaultMaterial();
 
     bool _CreateMaterial(const SdfPath& id, const MObject& obj);
-#ifdef MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
+
     /// \brief Unordered Map storing the shape adapters.
     AdapterMap<MayaHydraShapeAdapterPtr> _shapeAdapters;
-#endif
-    /// \brief Unordered Map storing the shape adapters.
+
+    /// \brief Unordered Map storing the render item adapters.
     AdapterMap<MayaHydraRenderItemAdapterPtr>              _renderItemsAdapters;
     std::unordered_map<int, MayaHydraRenderItemAdapterPtr> _renderItemsAdaptersFast;
 
@@ -281,9 +278,8 @@ private:
     std::vector<MCallbackId>                   _callbacks;
     std::vector<std::tuple<SdfPath, MObject>>  _adaptersToRecreate;
     std::vector<std::tuple<SdfPath, uint32_t>> _adaptersToRebuild;
-#ifdef MAYAHYDRA_DEVELOPMENTAL_ALTERNATE_OBJECT_PATHWAY
+    // Nodes accumulated during _onDagNodeAdded() callback.
     std::vector<MObject> _addedNodes;
-#endif
 
     using LightAdapterCreator
         = std::function<MayaHydraLightAdapterPtr(MayaHydraDelegateCtx*, const MDagPath&)>;
@@ -303,6 +299,9 @@ private:
     /// _mayaDefaultMaterial is an hydra material used to override all materials from the scene when
     /// _useDefaultMaterial is true
     static VtValue _mayaDefaultMaterial;
+
+    /// Rendertags to be displayed in Hydra
+    static const TfTokenVector _renderTagsDisplayed;
 
     bool _useDefaultMaterial = false;
     bool _xRayEnabled = false;

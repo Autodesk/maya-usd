@@ -27,7 +27,7 @@ class TestVisibility(mtohUtils.MtohTestCase):
         self.assertIn(
             self.cubeRprim,
             self.getVisibleIndex())
-        self.assertSnapshotClose(cubeUnselectedImg, self.imageVersion)
+        self.assertSnapshotEqual(cubeUnselectedImg, self.imageVersion)
 
         cmds.setAttr("{}.visibility".format(self.cubeTrans), False)
         self.assertFalse(cmds.getAttr("{}.visibility".format(self.cubeTrans)))
@@ -35,15 +35,14 @@ class TestVisibility(mtohUtils.MtohTestCase):
         self.assertNotIn(
             self.cubeRprim,
             self.getVisibleIndex())
-        self.assertSnapshotClose(nothingImg)
-
+        self.assertSnapshotEqual(nothingImg)
         cmds.setAttr("{}.visibility".format(self.cubeTrans), True)
         self.assertTrue(cmds.getAttr("{}.visibility".format(self.cubeTrans)))
         cmds.refresh()
         self.assertIn(
             self.cubeRprim,
             self.getVisibleIndex())
-        self.assertSnapshotClose(cubeUnselectedImg, self.imageVersion)
+        self.assertSnapshotEqual(cubeUnselectedImg, self.imageVersion)
 
     def test_toggleShapeVis(self):
         cmds.setAttr("{}.visibility".format(self.cubeShape), False)

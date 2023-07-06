@@ -8,8 +8,8 @@ from testUtils import PluginLoaded
 
 import unittest
 
-class TestMeshes(mtohUtils.MtohTestCase):
-    # MtohTestCase.setUpClass requirement.
+class TestMeshes(mtohUtils.MayaHydraBaseTestCase):
+    # MayaHydraBaseTestCase.setUpClass requirement.
     _file = __file__
 
     def matchingRprims(self, rprims, matching):
@@ -33,6 +33,20 @@ class TestMeshes(mtohUtils.MtohTestCase):
             # Should still be a single rprim from the sweep shape.
             rprims = self.getIndex()
             self.assertEqual(1, self.matchingRprims(rprims, 'sweepShape'))
+
+    def test_meshSolid(self):
+        '''Test that meshes are under the common Solid root for lighting / shadowing.'''
+        self.setHdStormRenderer()
+        cmds.polySphere(r=1, sx=20, sy=20, ax=[0, 1, 0], cuv=2 , ch=1)
+        cmds.refresh()
+
+        # There should be two rprims from the poly sphere, one for the mesh and
+        # another wireframe for selection highlighting.
+        rprims = self.getIndex()
+        self.assertEqual(2, len(rprims))
+
+        # Only the mesh rprim is a child of the Solid hierarchy.
+        self.assertEqual(1, self.matchingRprims(rprims, 'Solid'))
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())

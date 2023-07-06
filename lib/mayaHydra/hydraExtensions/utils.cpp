@@ -314,6 +314,8 @@ const std::string& SanitizeNameForSdfPath(std::string& pathString, const bool do
         MayaDagDelimiter[0],
         PXR_NS::SdfPathTokens->childDelimiter.GetString()[0]);
     std::replace(pathString.begin(), pathString.end(), MayaNamespaceDelimiter[0], '_');
+    std::replace(pathString.begin(), pathString.end(), ',', '_');
+    std::replace(pathString.begin(), pathString.end(), ';', '_');
 
     return pathString;
 }
@@ -335,7 +337,6 @@ SdfPath DagPathToSdfPath(
 
 SdfPath RenderItemToSdfPath(
     const MRenderItem& ri,
-    const bool         mergeTransformAndShape,
     const bool         stripNamespaces)
 {
     std::string internalObjectId(

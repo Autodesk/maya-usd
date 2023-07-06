@@ -365,7 +365,11 @@ def BuildAndInstall(context, buildArgs, stages):
         stagesArgs = []
         if context.mayaLocation:
             extraArgs.append('-DMAYA_LOCATION="{mayaLocation}"'
-                             .format(mayaLocation=context.mayaLocation))
+                             .format(mayaLocation=context.mayaLocation))        
+        
+        if context.mayaUsdLocation:
+            extraArgs.append('-DMAYAUSD_LOCATION="{mayaUsdLocation}"'
+                             .format(mayaUsdLocation=context.mayaUsdLocation))
 
         if context.pxrUsdLocation:
             extraArgs.append('-DPXR_USD_LOCATION="{pxrUsdLocation}"'
@@ -381,10 +385,6 @@ def BuildAndInstall(context, buildArgs, stages):
             extraArgs.append('-DMAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG=ON')
         else:
             extraArgs.append('-DMAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG=OFF')
-
-        if context.qtLocation:
-            extraArgs.append('-DQT_LOCATION="{qtLocation}"'
-                             .format(qtLocation=context.qtLocation))
 
         extraArgs += buildArgs
         stagesArgs += stages
@@ -445,6 +445,9 @@ parser.add_argument("--install-location", type=str,
 parser.add_argument("--maya-location", type=str,
                     help="Directory where Maya is installed.")
 
+parser.add_argument("--mayausd-location", type=str,
+                    help="Directory where MayaUsd is installed.")
+                    
 parser.add_argument("--pxrusd-location", type=str,
                     help="Directory where Pixar USD is installed.")
 
@@ -463,9 +466,6 @@ varGroup.add_argument("--build-relwithdebug", dest="build_relwithdebug", action=
 
 parser.add_argument("--debug-python", dest="debug_python", action="store_true",
                       help="Define Boost Python Debug if your Python library comes with Debugging symbols (default: %(default)s).")
-
-parser.add_argument("--qt-location", type=str,
-                    help="Directory where Qt is installed.")
 
 parser.add_argument("--build-args", type=str, nargs="*", default=[],
                    help=("Comma-separated list of arguments passed into CMake when building libraries"))
@@ -530,6 +530,10 @@ class InstallContext:
         self.mayaLocation = (os.path.abspath(args.maya_location)
                                 if args.maya_location else None)
 
+        # MayaUsd Location
+        self.mayaUsdLocation = (os.path.abspath(args.mayausd_location)
+                                if args.mayausd_location else None)
+        
         # PXR USD Location
         self.pxrUsdLocation = (os.path.abspath(args.pxrusd_location)
                                 if args.pxrusd_location else None)
@@ -537,10 +541,6 @@ class InstallContext:
         # Maya Devkit Location
         self.devkitLocation = (os.path.abspath(args.devkit_location)
                                 if args.devkit_location else None)
-
-        # Qt Location
-        self.qtLocation = (os.path.abspath(args.qt_location)
-                           if args.qt_location else None)
 
         # Log File Name
         logFileName="build_log.txt"
