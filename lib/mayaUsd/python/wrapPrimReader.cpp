@@ -112,6 +112,25 @@ public:
             return sptr;
         }
 
+        UsdMayaPrimReader::ContextSupport
+        operator()(const UsdMayaJobImportArgs& args, const UsdPrim& importPrim)
+        {
+            boost::python::object pyClass = GetPythonObject(_classIndex);
+            if (!pyClass) {
+                // Prototype was unregistered
+                return UsdMayaPrimReader::ContextSupport::Unsupported;
+            }
+            TfPyLock pyLock;
+            if (PyObject_HasAttrString(pyClass.ptr(), "CanImport")) {
+                boost::python::object CanImport = pyClass.attr("CanImport");
+                PyObject*             callable = CanImport.ptr();
+                auto                  res = boost::python::call<int>(callable, args);
+                return UsdMayaPrimReader::ContextSupport(res);
+            } else {
+                return UsdMayaPrimReader::CanImport(args, importPrim);
+            }
+        }
+
         // Create a new wrapper for a Python class that is seen for the first time for a given
         // purpose. If we already have a registration for this purpose: update the class to
         // allow the previously issued factory function to use it.
@@ -150,12 +169,20 @@ public:
         }
     };
 
-    static void Register(boost::python::object cl, const std::string& typeName)
+    static void Register(
+        boost::python::object                               cl,
+        const std::string&                                  typeName,
+        const UsdMayaPrimReaderRegistry::ContextPredicateFn pred = nullptr)
     {
         UsdMayaPrimReaderRegistry::ReaderFactoryFn fn = FactoryFnWrapper::Register(cl, typeName);
         if (fn) {
             auto type = TfType::FindByName(typeName);
-            UsdMayaPrimReaderRegistry::Register(type, fn, true);
+            // If no context support is provided, use the default register function
+            if (pred) {
+                UsdMayaPrimReaderRegistry::Register(type, pred, fn, true);
+            } else {
+                UsdMayaPrimReaderRegistry::Register(type, fn, true);
+            }
         }
     }
 
@@ -499,10 +526,19 @@ void wrapPrimReaderArgs()
         .def("GetUseAsAnimationCache", &UsdMayaPrimReaderArgs::GetUseAsAnimationCache);
 }
 
+TF_REGISTRY_FUNCTION(TfEnum)
+{
+    TF_ADD_ENUM_NAME(UsdMayaPrimReader::ContextSupport::Supported, "Supported");
+    TF_ADD_ENUM_NAME(UsdMayaPrimReader::ContextSupport::Fallback, "Fallback");
+    TF_ADD_ENUM_NAME(UsdMayaPrimReader::ContextSupport::Unsupported, "Unsupported");
+}
+
 void wrapPrimReader()
 {
     using namespace boost::python;
     typedef UsdMayaPrimReader This;
+
+    TfPyWrapEnum<UsdMayaPrimReader::ContextSupport>();
 
     class_<PrimReaderWrapper<>, boost::noncopyable>("PrimReader", no_init)
         .def("__init__", make_constructor(&PrimReaderWrapper<>::New))
