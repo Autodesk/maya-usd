@@ -51,7 +51,7 @@ MayaStagesSubject::MayaStagesSubject()
     // MSceneMessage.kBeforeNew file callback, which should be illegal.
     // Detect this and ignore illegal calls to after new file callbacks.
     // PPT, 19-Jan-16.
-    fBeforeNewCallback = false;
+    setInNewScene(false);
 
     MStatus res;
     fCbIds.append(
@@ -84,11 +84,11 @@ MayaStagesSubject::Ptr MayaStagesSubject::create()
     return TfCreateWeakPtr(new MayaStagesSubject);
 }
 
-bool MayaStagesSubject::beforeNewCallback() const { return fBeforeNewCallback; }
+bool MayaStagesSubject::isInNewScene() const { return fIsInNewScene; }
 
-void MayaStagesSubject::beforeNewCallback(bool b)
+void MayaStagesSubject::setInNewScene(bool b)
 {
-    fBeforeNewCallback = b;
+    fIsInNewScene = b;
     fInvalidStages.clear();
 }
 
@@ -96,7 +96,8 @@ void MayaStagesSubject::beforeNewCallback(bool b)
 void MayaStagesSubject::beforeNewCallback(void* clientData)
 {
     MayaStagesSubject* ss = static_cast<MayaStagesSubject*>(clientData);
-    ss->beforeNewCallback(true);
+    ss->setInNewScene(true);
+    ss->beforeOpen();
 }
 
 /*static*/
@@ -111,21 +112,19 @@ void MayaStagesSubject::afterNewCallback(void* clientData)
     MayaStagesSubject* ss = static_cast<MayaStagesSubject*>(clientData);
 
     // Workaround to MAYA-65920: detect and avoid illegal callback sequence.
-    if (!ss->beforeNewCallback())
+    if (!ss->isInNewScene())
         return;
 
-    ss->beforeNewCallback(false);
+    ss->setInNewScene(false);
     MayaStagesSubject::afterOpenCallback(clientData);
 }
 
 /*static*/
-void MayaStagesSubject::afterOpenCallback(void* clientData)
-{
-    MayaStagesSubject* ss = static_cast<MayaStagesSubject*>(clientData);
-    ss->afterOpen();
-}
+void MayaStagesSubject::afterOpenCallback(void* clientData) { afterNewCallback(clientData); }
 
-void MayaStagesSubject::afterOpen()
+void MayaStagesSubject::beforeOpen() { clearListeners(); }
+
+void MayaStagesSubject::clearListeners()
 {
     // Observe stage changes, for all stages.  Return listener object can
     // optionally be used to call Revoke() to remove observation, but must
@@ -164,6 +163,11 @@ void MayaStagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
         UsdUndoManager::instance().trackLayerStates(noticeStage->GetEditTarget().GetLayer());
     }
 
+    setupListeners();
+}
+
+void MayaStagesSubject::setupListeners()
+{
     // Handle re-entrant MayaUsdProxyShapeBase::compute; allow update only on first compute call.
     if (MayaUsdProxyShapeBase::in_compute > 1)
         return;
@@ -200,7 +204,7 @@ void MayaStagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
 
 void MayaStagesSubject::onStageInvalidate(const MayaUsdProxyStageInvalidateNotice& notice)
 {
-    afterOpen();
+    clearListeners();
 
     auto p = notice.GetProxyShape().ufePath();
     if (!p.empty()) {
