@@ -558,13 +558,6 @@ void wrapPrimReader()
         .staticmethod("Unregister");
 }
 
-TF_REGISTRY_FUNCTION(TfEnum)
-{
-    TF_ADD_ENUM_NAME(UsdMayaShaderReader::ContextSupport::Supported, "Supported");
-    TF_ADD_ENUM_NAME(UsdMayaShaderReader::ContextSupport::Fallback, "Fallback");
-    TF_ADD_ENUM_NAME(UsdMayaShaderReader::ContextSupport::Unsupported, "Unsupported");
-}
-
 //----------------------------------------------------------------------------------------------------------------------
 void wrapShaderReader()
 {
