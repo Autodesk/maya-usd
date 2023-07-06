@@ -65,6 +65,9 @@ UsdMayaPrimReader::CanImport(const UsdMayaJobImportArgs&, const UsdPrim& importP
 {
     // Default value for all readers is Fallback. More specialized writers can
     // override the base CanImport to report Supported/Unsupported as necessary.
+    TF_WARN("=============================================================");
+    TF_WARN("I'm gonna use this one as my Mesh Prim Reader");
+    TF_WARN("=============================================================");
     return ContextSupport::Supported;
 }
 
@@ -80,6 +83,10 @@ TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaPrimReaderRegistry, UsdGeomMesh)
 bool MayaUsdPrimReaderMyMesh::Read(UsdMayaPrimReaderContext& context)
 {
     MStatus status { MS::kSuccess };
+
+    TF_WARN("=============================================================");
+    TF_WARN("Reading from customized Prim Reader");
+    TF_WARN("=============================================================");
 
     const auto& prim = _GetArgs().GetUsdPrim();
     auto        mesh = UsdGeomMesh(prim);
