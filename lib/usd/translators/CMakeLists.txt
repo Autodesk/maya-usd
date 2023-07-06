@@ -28,6 +28,7 @@ target_sources(${TARGET_NAME}
         materialReader.cpp
         mayaReferenceReader.cpp
         meshReader.cpp
+        myMeshReader.cpp
         meshWriter.cpp
         meshWriter_BlendShapes.cpp
         nurbsCurvesReader.cpp
