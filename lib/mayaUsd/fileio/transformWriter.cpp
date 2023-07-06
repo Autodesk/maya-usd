@@ -214,7 +214,13 @@ bool UsdMayaTransformWriter::_GatherAnimChannel(
     // this is to handle the case where there is a connection to the parent
     // plug but not to the child plugs, if the connection is there and you are
     // not forcing static, then all of the children are considered animated
-    int parentSample = UsdMayaUtil::getSampledType(iTrans.findPlug(mayaAttrNameMStr), false);
+    const MPlug parentPlug = iTrans.findPlug(mayaAttrNameMStr);
+    int parentSample = UsdMayaUtil::getSampledType(parentPlug, false);
+
+    // If the plug is connected in Maya then we need the USD attribute to exist so that it is
+    // possible to create a USD connection for it. This will cause the attribute to be added even if
+    // the value is the null value.
+    const bool parentIsConnected = parentPlug.isConnected();
 
     // Determine what plug are needed based on default value & being
     // connected/animated
@@ -246,7 +252,11 @@ bool UsdMayaTransformWriter::_GatherAnimChannel(
         } else {
             const bool isNullValue = isMatrix ? GfIsClose(chan.defMatrix, GfMatrix4d(1.0), 1e-7)
                                               : GfIsClose(chan.defValue[i], nullValue[i], 1e-7);
-            if (!isNullValue) {
+
+            // If the plug is connected in Maya then we need the USD attribute to exist so that it
+            // is possible to create a USD connection for it. This will cause the attribute to be
+            // added even if the value is the null value.
+            if (!isNullValue || (parentIsConnected == true) || (chan.plug[i].isConnected() == true)) {
                 chan.sampleType[i] = _SampleType::Static;
                 hasValidComponents = true;
             }
