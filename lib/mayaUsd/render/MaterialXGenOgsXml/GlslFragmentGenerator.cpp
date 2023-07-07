@@ -7,6 +7,7 @@
 
 #include "Nodes/SurfaceNodeMaya.h"
 
+#include <mayaUsd/render/MaterialXGenOgsXml/GlslOcioNodeImpl.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/OgsXmlGenerator.h>
 
 #include <MaterialXGenGlsl/GlslShaderGenerator.h>
@@ -145,6 +146,10 @@ GlslFragmentGenerator::GlslFragmentGenerator()
         _tokenSubstitutions[HW::T_LIGHT_DATA_INSTANCE]
             = "g_lightData"; // Store Maya lights in global non-const
         _tokenSubstitutions[HW::T_NUM_ACTIVE_LIGHT_SOURCES] = "g_numActiveLightSources";
+    }
+
+    for (auto&& implName : GlslOcioNodeImpl::getOCIOImplementations()) {
+        registerImplementation(implName, GlslOcioNodeImpl::create);
     }
 }
 

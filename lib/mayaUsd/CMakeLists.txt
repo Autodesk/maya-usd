@@ -1,5 +1,5 @@
 #
-# Copyright 2020 Autodesk
+# Copyright 2023 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ target_compile_definitions(${PROJECT_NAME}
         $<$<BOOL:${IS_LINUX}>:GL_GLEXT_PROTOTYPES>
         $<$<BOOL:${IS_LINUX}>:GLX_GLXEXT_PROTOTYPES>
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:WANT_MATERIALX_BUILD>
-        $<$<BOOL:${Qt5_FOUND}>:WANT_QT_BUILD>
+		$<$<OR:$<BOOL:${Qt5_FOUND}>,$<BOOL:${Qt6_FOUND}>>:WANT_QT_BUILD>
         $<$<BOOL:${BUILD_HDMAYA}>:BUILD_HDMAYA>
 
         # this flag is needed when building maya-usd in Maya
@@ -68,6 +68,14 @@ if (MAYA_HAS_DEFAULT_MATERIAL_API)
     target_compile_definitions(${PROJECT_NAME}
         PRIVATE
             HAS_DEFAULT_MATERIAL_SUPPORT_API=1
+    )
+endif()
+
+message(STATUS "MAYA_HAS_COLOR_MANAGEMENT_SUPPORT_API is ${MAYA_HAS_COLOR_MANAGEMENT_SUPPORT_API}")
+if (MAYA_HAS_COLOR_MANAGEMENT_SUPPORT_API)
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+        HAS_COLOR_MANAGEMENT_SUPPORT_API=1
     )
 endif()
 
@@ -209,6 +217,11 @@ target_include_directories(${PROJECT_NAME}
         ${PXR_INCLUDE_DIRS}
         $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
         ${CMAKE_BINARY_DIR}/include
+
+    PRIVATE
+        # TEMP (UsdUfe) - this one is temporary during the transition to UsdUfe.
+        # See lib\usdUfe\ufe\private\CMakeLists.txt
+        ${CMAKE_BINARY_DIR}/include/usdUfe/mayaUsd
 )
 
 # -----------------------------------------------------------------------------
@@ -241,6 +254,7 @@ target_link_libraries(${PROJECT_NAME}
         $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
         ${MAYA_LIBRARIES}
         mayaUsdUtils
+        usdUfe
     PRIVATE
         ghc_filesystem
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:hdMtlx>

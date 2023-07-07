@@ -17,24 +17,29 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdAttribute.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/usd/prim.h>
 
 #include <ufe/attributes.h>
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
 #include <ufe/nodeDef.h>
-#endif
 #endif
 
 #include <unordered_map>
+
+#ifdef UFE_V4_2_FEATURES_AVAILABLE
+#define UFE_ATTRIBUTES_BASE Ufe::Attributes_v4_2
+#else
+#define UFE_ATTRIBUTES_BASE Ufe::Attributes
+#endif
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Interface for USD Attributes.
-class UsdAttributes : public Ufe::Attributes
+class UsdAttributes : public UFE_ATTRIBUTES_BASE
 {
 public:
     typedef std::shared_ptr<UsdAttributes> Ptr;
@@ -58,27 +63,14 @@ public:
     std::vector<std::string> attributeNames() const override;
     bool                     hasAttribute(const std::string& name) const override;
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4024)
-#if (UFE_PREVIEW_VERSION_NUM >= 4034)
     Ufe::AddAttributeUndoableCommand::Ptr
-    addAttributeCmd(const std::string& name, const Ufe::Attribute::Type& type) override;
-#else
-    Ufe::AddAttributeCommand::Ptr
-    addAttributeCmd(const std::string& name, const Ufe::Attribute::Type& type) override;
-#endif
+                              addAttributeCmd(const std::string& name, const Ufe::Attribute::Type& type) override;
     Ufe::UndoableCommand::Ptr removeAttributeCmd(const std::string& name) override;
-#endif
-
-#if (UFE_PREVIEW_VERSION_NUM >= 4034)
     Ufe::RenameAttributeUndoableCommand::Ptr
     renameAttributeCmd(const std::string& originalName, const std::string& newName) override;
-#endif
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
     inline Ufe::NodeDef::Ptr nodeDef() const;
-#endif
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4024)
     // Helpers for validation and execution:
     static bool canAddAttribute(const UsdSceneItem::Ptr& item, const Ufe::Attribute::Type& type);
     static Ufe::Attribute::Ptr doAddAttribute(
@@ -89,8 +81,7 @@ public:
     static bool        canRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
     static bool        doRemoveAttribute(const UsdSceneItem::Ptr& item, const std::string& name);
     static void        removeAttributesConnections(const PXR_NS::UsdPrim& prim);
-#endif
-#if (UFE_PREVIEW_VERSION_NUM >= 4034)
+
     static bool canRenameAttribute(
         const UsdSceneItem::Ptr& sceneItem,
         const std::string&       originalName,
@@ -99,6 +90,10 @@ public:
         const UsdSceneItem::Ptr& sceneItem,
         const std::string&       originalName,
         const std::string&       newName);
+#endif
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#ifdef UFE_ATTRIBUTES_GET_ENUMS
+    UFE_ATTRIBUTES_BASE::Enums getEnums(const std::string& attrName) const override;
 #endif
 #endif
 

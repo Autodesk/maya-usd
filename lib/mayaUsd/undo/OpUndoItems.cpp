@@ -161,16 +161,16 @@ bool MDGModifierUndoItem::redo() { return _modifier.doIt() == MS::kSuccess; }
 // UsdUndoableItemUndoItem
 //------------------------------------------------------------------------------
 
-MAYAUSD_NS::UsdUndoableItem&
+UsdUfe::UsdUndoableItem&
 UsdUndoableItemUndoItem::create(const std::string name, OpUndoItemList& undoInfo)
 {
-    auto                         item = std::make_unique<UsdUndoableItemUndoItem>(std::move(name));
-    MAYAUSD_NS::UsdUndoableItem& mod = item->getUndoableItem();
+    auto                     item = std::make_unique<UsdUndoableItemUndoItem>(std::move(name));
+    UsdUfe::UsdUndoableItem& mod = item->getUndoableItem();
     undoInfo.addItem(std::move(item));
     return mod;
 }
 
-MAYAUSD_NS::UsdUndoableItem& UsdUndoableItemUndoItem::create(const std::string name)
+UsdUfe::UsdUndoableItem& UsdUndoableItemUndoItem::create(const std::string name)
 {
     return create(name, OpUndoItemList::instance());
 }

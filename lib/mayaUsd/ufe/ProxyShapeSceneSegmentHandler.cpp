@@ -15,6 +15,7 @@
 //
 #include "ProxyShapeSceneSegmentHandler.h"
 
+#include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/Utils.h>
 
 #include <ufe/hierarchy.h>
@@ -22,8 +23,6 @@
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
-
-extern Ufe::Rtid g_USDRtid;
 
 namespace {
 
@@ -82,12 +81,12 @@ Ufe::Selection ProxyShapeSceneSegmentHandler::findGatewayItems_(const Ufe::Path&
     return result;
 }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4035)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 Ufe::Selection
 ProxyShapeSceneSegmentHandler::findGatewayItems_(const Ufe::Path& path, Ufe::Rtid nestedRtid) const
 {
     // Handle other gateway node types that MayaUSD is not aware of.
-    if (nestedRtid != g_USDRtid) {
+    if (nestedRtid != getUsdRunTimeId()) {
         // `nestedRtid` is used as a filter. If it doesn't match the MayaUSD runtime ID, the method
         // can return early.
         return fMayaSceneSegmentHandler

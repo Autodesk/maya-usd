@@ -132,6 +132,9 @@ public:
         MPointArray&                     worldSpaceHitPts) override;
 #endif
 
+    bool GetEnableMaterials() const { return _enableMaterials; }
+    void SetEnableMaterials(bool enable) { _enableMaterials = enable; }
+
 protected:
     HDMAYA_API
     HdMeshTopology GetMeshTopology(const SdfPath& id) override;
@@ -232,14 +235,6 @@ protected:
 
     HDMAYA_API
     VtValue GetMaterialResource(const SdfPath& id) override;
-
-#if PXR_VERSION < 2011
-    HDMAYA_API
-    HdTextureResource::ID GetTextureResourceID(const SdfPath& textureId) override;
-
-    HDMAYA_API
-    HdTextureResourceSharedPtr GetTextureResource(const SdfPath& textureId) override;
-#endif // PXR_VERSION < 2011
 
 private:
     template <typename AdapterPtr, typename Map>

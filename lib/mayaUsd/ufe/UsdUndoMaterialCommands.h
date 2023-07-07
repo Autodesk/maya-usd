@@ -16,14 +16,18 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
-#include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/undo/UsdUndoableItem.h>
+#ifdef UFE_V4_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdUndoCreateFromNodeDefCommand.h>
+
+#include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>
 #endif
 
 #include <pxr/usd/usd/prim.h>
 
+#include <ufe/path.h>
 #include <ufe/pathComponent.h>
 #include <ufe/selection.h>
 #include <ufe/undoableCommand.h>
@@ -40,9 +44,9 @@ class MAYAUSD_CORE_PUBLIC BindMaterialUndoableCommand : public Ufe::UndoableComm
 public:
     static const std::string commandName;
 
-    static PXR_NS::UsdPrim CompatiblePrim(const Ufe::SceneItem::Ptr& item);
+    static bool CompatiblePrim(const Ufe::SceneItem::Ptr& item);
 
-    BindMaterialUndoableCommand(const PXR_NS::UsdPrim& prim, const PXR_NS::SdfPath& materialPath);
+    BindMaterialUndoableCommand(Ufe::Path primPath, const PXR_NS::SdfPath& materialPath);
     ~BindMaterialUndoableCommand() override;
 
     // Delete the copy/move constructors assignment operators.
@@ -51,15 +55,14 @@ public:
     BindMaterialUndoableCommand(BindMaterialUndoableCommand&&) = delete;
     BindMaterialUndoableCommand& operator=(BindMaterialUndoableCommand&&) = delete;
 
+    void execute() override;
     void undo() override;
     void redo() override;
 
 private:
-    PXR_NS::UsdStageWeakPtr _stage;
-    PXR_NS::SdfPath         _primPath;
-    PXR_NS::SdfPath         _materialPath;
-    PXR_NS::SdfPath         _previousMaterialPath;
-    bool                    _appliedBindingAPI = false;
+    Ufe::Path       _primPath;
+    PXR_NS::SdfPath _materialPath;
+    UsdUndoableItem _undoableItem;
 };
 
 //! \brief UnbindMaterialUndoableCommand
@@ -68,7 +71,7 @@ class MAYAUSD_CORE_PUBLIC UnbindMaterialUndoableCommand : public Ufe::UndoableCo
 public:
     static const std::string commandName;
 
-    UnbindMaterialUndoableCommand(const PXR_NS::UsdPrim& prim);
+    UnbindMaterialUndoableCommand(Ufe::Path primPath);
     ~UnbindMaterialUndoableCommand() override;
 
     // Delete the copy/move constructors assignment operators.
@@ -77,16 +80,16 @@ public:
     UnbindMaterialUndoableCommand(UnbindMaterialUndoableCommand&&) = delete;
     UnbindMaterialUndoableCommand& operator=(UnbindMaterialUndoableCommand&&) = delete;
 
+    void execute() override;
     void undo() override;
     void redo() override;
 
 private:
-    PXR_NS::UsdStageWeakPtr _stage;
-    PXR_NS::SdfPath         _primPath;
-    PXR_NS::SdfPath         _materialPath;
+    Ufe::Path       _primPath;
+    UsdUndoableItem _undoableItem;
 };
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
+#ifdef UFE_V4_FEATURES_AVAILABLE
 //! \brief UsdUndoAssignNewMaterialCommand
 class MAYAUSD_CORE_PUBLIC UsdUndoAssignNewMaterialCommand : public Ufe::InsertChildCommand
 {
@@ -121,9 +124,6 @@ public:
     void execute() override;
     void undo() override;
     void redo() override;
-
-    // Returns the name of the material scope in this Maya session.
-    static std::string resolvedMaterialScopeName();
 
 private:
     void markAsFailed();
@@ -177,6 +177,45 @@ private:
     UsdUndoCreateFromNodeDefCommand::Ptr _createShaderCmd;
 
 }; // UsdUndoAddNewMaterialCommand
+
+//! \brief This command is used to create a materials scope under a specified parent item. A
+//! materials scope is a USD Scope with a special name (usually "mtl"), which holds materials. By
+//! convention, all materials should reside within such a scope.
+class MAYAUSD_CORE_PUBLIC UsdUndoCreateMaterialsScopeCommand
+    : public Ufe::SceneItemResultUndoableCommand
+{
+public:
+    typedef std::shared_ptr<UsdUndoCreateMaterialsScopeCommand> Ptr;
+
+    UsdUndoCreateMaterialsScopeCommand(const UsdSceneItem::Ptr& parentItem);
+    ~UsdUndoCreateMaterialsScopeCommand() override;
+
+    // Delete the copy/move constructors assignment operators.
+    UsdUndoCreateMaterialsScopeCommand(const UsdUndoCreateMaterialsScopeCommand&) = delete;
+    UsdUndoCreateMaterialsScopeCommand& operator=(const UsdUndoCreateMaterialsScopeCommand&)
+        = delete;
+    UsdUndoCreateMaterialsScopeCommand(UsdUndoCreateMaterialsScopeCommand&&) = delete;
+    UsdUndoCreateMaterialsScopeCommand& operator=(UsdUndoCreateMaterialsScopeCommand&&) = delete;
+
+    //! Create a UsdUndoCreateMaterialsScopeCommand that creates a new materials scope under \p
+    //! parentItem. If there already is a materials scope under \p parentItem, the command will
+    //! not create a new materials scope but simply point to the existing one.
+    static UsdUndoCreateMaterialsScopeCommand::Ptr create(const UsdSceneItem::Ptr& parentItem);
+
+    Ufe::SceneItem::Ptr sceneItem() const override;
+
+    void execute() override;
+    void undo() override;
+    void redo() override;
+
+private:
+    void markAsFailed();
+
+    UsdSceneItem::Ptr   _parentItem;
+    Ufe::SceneItem::Ptr _insertedChild;
+
+    UsdUndoableItem _undoableItem;
+}; // UsdUndoCreateMaterialsScopeCommand
 #endif
 
 } // namespace ufe

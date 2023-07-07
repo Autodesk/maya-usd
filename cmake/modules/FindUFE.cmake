@@ -48,20 +48,30 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/ufe.h")
     endforeach()
     set(UFE_VERSION ${UFE_MAJOR_VERSION}.${UFE_MINOR_VERSION}.${UFE_PATCH_LEVEL})
 
-    if("${UFE_MAJOR_VERSION}" STREQUAL "0")
+    if(UFE_MAJOR_VERSION VERSION_EQUAL "0")
         math(EXPR UFE_PREVIEW_VERSION_NUM "${UFE_MINOR_VERSION} * 1000 + ${UFE_PATCH_LEVEL}")
-    elseif("${UFE_VERSION}" STREQUAL "4.0.0")
-        # Temporary. Once next Maya PR is released with UFE v4.0.0 this should
+    elseif(UFE_VERSION VERSION_EQUAL "4.1.0")
+        # Temporary. Once next Maya is released with UFE v4.1.0 this should
         # be removed (along with all the UFE_PREVIEW_VERSION_NUM checks).
-        set(UFE_PREVIEW_VERSION_NUM 4045)
+        set(UFE_PREVIEW_VERSION_NUM 4100)
+    elseif(UFE_VERSION VERSION_EQUAL "4.2.0")
+        # Temporary. Once next Maya is released with UFE v4.2.0 this should
+        # be removed (along with all the UFE_PREVIEW_VERSION_NUM checks).
+        set(UFE_PREVIEW_VERSION_NUM 4202)
+    elseif((UFE_VERSION VERSION_GREATER_EQUAL "4.2.300") AND (UFE_VERSION VERSION_LESS "5.0.0"))
+        # Temporary - will only be used if there is development for a Ufe v4.3.0 to create
+        # the UFE_PREVIEW_VERSION_NUM for that version while it is in development.
+        # Note: the UFE_PATCH_LEVEL will start at 300 and will thus encode the minor version
+        #       of 3 (so we don't use UFE_MINOR_VERSION in this formula).
+        math(EXPR UFE_PREVIEW_VERSION_NUM "4 * 1000 + ${UFE_PATCH_LEVEL}")
     endif()
 
     file(STRINGS
         "${UFE_INCLUDE_DIR}/ufe/ufe.h"
         _ufe_features
-        REGEX "#define UFE_V[0-9]+_FEATURES_AVAILABLE$")
+        REGEX "#define UFE_V[0-9]+(_[0-9]+)?_FEATURES_AVAILABLE$")
     foreach(_ufe_tmp ${_ufe_features})
-        if(_ufe_tmp MATCHES "#define UFE_V([0-9]+)_FEATURES_AVAILABLE$")
+        if(_ufe_tmp MATCHES "#define UFE_V([0-9]+(_[0-9]+)?)_FEATURES_AVAILABLE$")
             set(CMAKE_UFE_V${CMAKE_MATCH_1}_FEATURES_AVAILABLE ON)
         endif()
     endforeach()
@@ -93,6 +103,11 @@ list(APPEND UFE_PREVIEW_FEATURES ufe)
 
 if (UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/batchOpsHandler.h")
     list(APPEND UFE_PREVIEW_FEATURES v4_BatchOps)
+endif()
+
+if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/codeWrapperHandler.h")
+    list(APPEND UFE_PREVIEW_FEATURES CodeWrapperHandler)
+    message(STATUS "Maya has UFE code wrapper API")
 endif()
 
 # Handle the QUIETLY and REQUIRED arguments and set UFE_FOUND to TRUE if
@@ -141,3 +156,22 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/trie.h")
         message(STATUS "Maya has UFE TrieNode childrenComponents accessor")
     endif()
 endif()
+
+set(UFE_UINODEGRAPHNODE_HAS_SIZE FALSE CACHE INTERNAL "ufeUINodeGraphNodeHasSize")
+if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/uiNodeGraphNode.h")
+    file(STRINGS ${UFE_INCLUDE_DIR}/ufe/uiNodeGraphNode.h UFE_HAS_API REGEX "getSize")
+    if(UFE_HAS_API)
+        set(UFE_UINODEGRAPHNODE_HAS_SIZE TRUE CACHE INTERNAL "ufeUINodeGraphNodeHasSize")
+        message(STATUS "Maya has UFE UINodeGraphNode size interface")
+    endif()
+endif()
+
+set(UFE_ATTRIBUTES_GET_ENUMS FALSE CACHE INTERNAL "ufeAttributesGetEnums")
+if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/attributes.h")
+    file(STRINGS ${UFE_INCLUDE_DIR}/ufe/attributes.h UFE_HAS_API REGEX "getEnums")
+    if(UFE_HAS_API)
+        set(UFE_ATTRIBUTES_GET_ENUMS TRUE CACHE INTERNAL "ufeAttributesGetEnums")
+        message(STATUS "Maya has UFE Attribute's getEnums interface")
+    endif()
+endif()
+

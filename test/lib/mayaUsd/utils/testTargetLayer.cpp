@@ -4,16 +4,15 @@
 
 #include <gtest/gtest.h>
 
-using namespace PXR_NS;
-using namespace MAYAUSD_NS_DEF;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 TEST(ConvertTargetLayer, convertDefaultTargetLayer)
 {
     auto originalStage = UsdStage::CreateInMemory();
     auto originalTargetLayer = originalStage->GetEditTarget();
 
-    const MString text = convertTargetLayerToText(*originalStage);
-    setTargetLayerFromText(*originalStage, text);
+    const MString text = MayaUsd::convertTargetLayerToText(*originalStage);
+    MayaUsd::setTargetLayerFromText(*originalStage, text);
 
     auto restoredTargetLayer = originalStage->GetEditTarget();
     EXPECT_EQ(originalTargetLayer, restoredTargetLayer);
@@ -28,8 +27,8 @@ TEST(ConvertTargetLayer, convertSubLayerTargetLayer)
 
     auto originalTargetLayer = originalStage->GetEditTarget();
 
-    const MString text = convertTargetLayerToText(*originalStage);
-    setTargetLayerFromText(*originalStage, text);
+    const MString text = MayaUsd::convertTargetLayerToText(*originalStage);
+    MayaUsd::setTargetLayerFromText(*originalStage, text);
 
     auto restoredTargetLayer = originalStage->GetEditTarget();
     EXPECT_EQ(originalTargetLayer, restoredTargetLayer);

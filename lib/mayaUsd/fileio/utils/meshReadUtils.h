@@ -39,6 +39,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdGeomMesh;
+class JsValue;
 
 // clang-format off
 #define PXRUSDMAYA_MESH_PRIMVAR_TOKENS \
@@ -51,6 +52,18 @@ TF_DECLARE_PUBLIC_TOKENS(
     UsdMayaMeshPrimvarTokens,
     MAYAUSD_CORE_PUBLIC,
     PXRUSDMAYA_MESH_PRIMVAR_TOKENS);
+
+// clang-format off
+#define PXRUSDMAYA_GEOMSUBSET_TOKENS \
+    ((ComponentTagFamilyName, "componentTag")) \
+    ((MaterialPathKey, "materialPath")) \
+    ((MaterialUuidKey, "materialUUID"))
+// clang-format on
+
+TF_DECLARE_PUBLIC_TOKENS(
+    UsdMayaGeomSubsetTokens,
+    MAYAUSD_CORE_PUBLIC,
+    PXRUSDMAYA_GEOMSUBSET_TOKENS);
 
 /// Utilities for dealing with USD and RenderMan for Maya mesh/subdiv tags.
 namespace UsdMayaMeshReadUtils {
@@ -79,6 +92,16 @@ MStatus assignSubDivTagsToMesh(const UsdGeomMesh&, MObject&, MFnMesh&);
 
 #if MAYA_API_VERSION >= 20220000
 
+/// Gets the internal UsdGeomSubset info on the Maya \p mesh, placing it in
+/// \p value. Returns true if the info exists on the mesh, and false if not.
+MAYAUSD_CORE_PUBLIC
+bool getGeomSubsetInfo(const MObject& mesh, JsValue& meshRoundtripData);
+
+/// Sets the internal UsdGeomSubset info on the Maya \p mesh.
+/// This value provides roundtripping data for the exporter.
+MAYAUSD_CORE_PUBLIC
+void setGeomSubsetInfo(const MObject& mesh, const JsValue& meshRoundtripData);
+
 MAYAUSD_CORE_PUBLIC
 MStatus createComponentTags(const UsdGeomMesh& mesh, const MObject& meshObj);
 
@@ -86,7 +109,10 @@ MStatus createComponentTags(const UsdGeomMesh& mesh, const MObject& meshObj);
 using ComponentTagData = std::pair<MString, MObject>;
 
 MAYAUSD_CORE_PUBLIC
-MStatus getComponentTags(const UsdGeomMesh& mesh, std::vector<ComponentTagData>& tags);
+MStatus getComponentTags(
+    const UsdGeomMesh&             mesh,
+    std::vector<ComponentTagData>& tags,
+    JsValue&                       meshRoundtripData);
 
 #endif
 

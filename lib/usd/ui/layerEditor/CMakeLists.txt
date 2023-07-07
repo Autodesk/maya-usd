@@ -56,6 +56,14 @@ target_sources(${PROJECT_NAME}
         warningDialogs.h
 )
 
+# -----------------------------------------------------------------------------
+# link libraries
+# -----------------------------------------------------------------------------
+target_link_libraries(${PROJECT_NAME}
+    PRIVATE
+        ghc_filesystem
+)
+
 if (UFE_FOUND)
     target_sources(${PROJECT_NAME}
         PRIVATE

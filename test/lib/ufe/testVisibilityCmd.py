@@ -8,6 +8,7 @@ import mayaUtils
 import ufe
 import unittest
 import usdUtils
+from pxr import UsdGeom
 
 def filterUsdStr(usdSceneStr):
     '''Remove empty lines and lines starting with pound character.'''
@@ -23,16 +24,6 @@ def getSessionLayer(context, routingData):
     
     routingData['layer'] = prim.GetStage().GetSessionLayer().identifier
     
-def createUfePathSegment(usdPath):
-    """
-        Create an UFE path from a given usd path.
-        Args:
-            usdPath (str): The usd path to use
-        Returns :
-            PathSegment of the given usdPath
-    """
-    return ufe.PathSegment(usdPath, mayaUsd.ufe.getUsdRunTimeId(), '/')
-
 class VisibilityCmdTestCase(unittest.TestCase):
     '''Verify the Maya Edit Router for visibility.'''
     pluginsLoaded = False
@@ -78,8 +69,10 @@ class VisibilityCmdTestCase(unittest.TestCase):
         # Restore default edit router.
         mayaUsd.lib.restoreDefaultEditRouter('visibility')
 
-    def testEditRouter(self):
-        '''Test edit router functionality.'''
+    def testEditRouterForCmd(self):
+        '''
+        Test edit router functionality for the set-visibility command.
+        '''
 
         # Select /A
         sn = ufe.GlobalSelection.get()
@@ -96,9 +89,6 @@ class VisibilityCmdTestCase(unittest.TestCase):
         # Send visibility edits to the session layer.
         mayaUsd.lib.registerEditRouter('visibility', getSessionLayer)
  
-        # Check that something was written to the session layer
-        self.assertIsNotNone(sessionLayer)
-
         # Select /B
         sn = ufe.GlobalSelection.get()
         sn.clear()
@@ -118,8 +108,10 @@ class VisibilityCmdTestCase(unittest.TestCase):
         self.assertEqual(filterUsdStr(sessionLayer.ExportToString()),
                          'over "B"\n{\n    token visibility = "invisible"\n}')
 
-    def testEditRouterShowHideMultipleSelection(self):
-        '''Test edit routing under show and hide scenarios with multiple selection.'''
+    def testEditRouterForCmdShowHideMultipleSelection(self):
+        '''
+        Test edit routing under for the set-visibility command with multiple selection.
+        '''
 
         # Get the session layer, check it's empty.
         prim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A")
@@ -150,6 +142,7 @@ class VisibilityCmdTestCase(unittest.TestCase):
         # Check visibility was written to the session layer.
         self.assertEqual(filterUsdStr(sessionLayer.ExportToString()),
                          'over "A"\n{\n    token visibility = "invisible"\n}\nover "B"\n{\n    token visibility = "invisible"\n}')
+ 
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

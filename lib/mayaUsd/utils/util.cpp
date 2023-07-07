@@ -56,6 +56,7 @@
 
 #include <boost/functional/hash.hpp>
 
+#include <regex>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -81,14 +82,13 @@
 #include <pxr/base/vt/value.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/tokens.h>
+#include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/usdGeom/camera.h>
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/metrics.h>
 #include <pxr/usd/usdGeom/xformCache.h>
 
 #include <cctype>
-
-using namespace MAYAUSD_NS_DEF;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -184,6 +184,14 @@ MDistance::Unit UsdMayaUtil::ConvertUsdGeomLinearUnitToMDistanceUnit(const doubl
     return MDistance::kCentimeters;
 }
 
+double UsdMayaUtil::GetExportDistanceConversionScalar(const double metersPerUnit)
+{
+    auto internalUnits
+        = UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(MDistance::internalUnit());
+    auto internalToMetersScalar = metersPerUnit / internalUnits;
+    return 1.0 / internalToMetersScalar;
+}
+
 std::string UsdMayaUtil::GetMayaNodeName(const MObject& mayaNode)
 {
     MString nodeName;
@@ -240,18 +248,22 @@ MStatus UsdMayaUtil::GetMObjectByName(const std::string& nodeName, MObject& mObj
     return GetMObjectByName(MString(nodeName.c_str()), mObj);
 }
 
-UsdStageRefPtr UsdMayaUtil::GetStageByProxyName(const std::string& proxyPath)
+MayaUsdProxyShapeBase* UsdMayaUtil::GetProxyShapeByProxyName(const std::string& proxyPath)
 {
     MObject mobj;
     MStatus status = UsdMayaUtil::GetMObjectByName(proxyPath, mobj);
-    if (status == MStatus::kSuccess) {
-        MFnDependencyNode fn;
-        fn.setObject(mobj);
-        MayaUsdProxyShapeBase* pShape = static_cast<MayaUsdProxyShapeBase*>(fn.userNode());
-        return pShape ? pShape->getUsdStage() : nullptr;
-    }
+    if (status != MStatus::kSuccess)
+        return nullptr;
 
-    return nullptr;
+    MFnDependencyNode fn;
+    fn.setObject(mobj);
+    return static_cast<MayaUsdProxyShapeBase*>(fn.userNode());
+}
+
+UsdStageRefPtr UsdMayaUtil::GetStageByProxyName(const std::string& proxyPath)
+{
+    MayaUsdProxyShapeBase* pShape = UsdMayaUtil::GetProxyShapeByProxyName(proxyPath);
+    return pShape ? pShape->getUsdStage() : nullptr;
 }
 
 MStatus UsdMayaUtil::GetPlugByName(const std::string& attrPath, MPlug& plug)
@@ -717,37 +729,6 @@ std::string UsdMayaUtil::stripNamespaces(const std::string& nodeName, const int 
     }
 
     return ss.str();
-}
-
-std::string UsdMayaUtil::SanitizeName(const std::string& name)
-{
-    return TfStringReplace(name, ":", "_");
-}
-
-std::string UsdMayaUtil::prettifyName(const std::string& name)
-{
-    std::string prettyName(1, std::toupper(name[0]));
-    size_t      nbChars = name.size();
-    bool        capitalizeNext = false;
-    for (size_t i = 1; i < nbChars; ++i) {
-        unsigned char nextLetter = name[i];
-        if (capitalizeNext) {
-            nextLetter = std::toupper(nextLetter);
-            capitalizeNext = false;
-        }
-        if (std::isupper(name[i]) && !std::isdigit(name[i - 1])) {
-            if (((i < (nbChars - 1)) && !std::isupper(name[i + 1])) || std::islower(name[i - 1])) {
-                prettyName += ' ';
-            }
-            prettyName += nextLetter;
-        } else if (name[i] == '_' || name[i] == ':') {
-            prettyName += " ";
-            capitalizeNext = true;
-        } else {
-            prettyName += nextLetter;
-        }
-    }
-    return prettyName;
 }
 
 // This to allow various pipeline to sanitize the colorset name for output
@@ -1285,7 +1266,7 @@ MPlug UsdMayaUtil::GetConnected(const MPlug& plug)
 
 void UsdMayaUtil::Connect(const MPlug& srcPlug, const MPlug& dstPlug, const bool clearDstPlug)
 {
-    MDGModifier& dgMod = MDGModifierUndoItem::create("Generic plug connection");
+    MDGModifier& dgMod = MayaUsd::MDGModifierUndoItem::create("Generic plug connection");
     Connect(srcPlug, dstPlug, clearDstPlug, dgMod);
 }
 
@@ -2551,4 +2532,35 @@ void UsdMayaUtil::AddMayaExtents(GfBBox3d& bbox, const UsdPrim& root, const UsdT
             bbox = GfBBox3d::Combine(bbox, GfBBox3d(localExtents, xform));
         }
     }
+}
+
+SdrShaderNodePtrVec UsdMayaUtil::GetSurfaceShaderNodeDefs()
+{
+    // TODO: Replace hard-coded materials with dynamically generated list.
+    static const std::set<TfToken> vettedSurfaces = { TfToken("ND_standard_surface_surfaceshader"),
+                                                      TfToken("ND_gltf_pbr_surfaceshader"),
+                                                      TfToken("ND_UsdPreviewSurface_surfaceshader"),
+                                                      TfToken("UsdPreviewSurface") };
+
+    SdrShaderNodePtrVec surfaceShaderNodeDefs;
+
+    auto& registry = SdrRegistry::GetInstance();
+    for (auto&& id : vettedSurfaces) {
+        SdrShaderNodeConstPtr shaderNodeDef = registry.GetShaderNodeByIdentifier(id);
+        if (shaderNodeDef) {
+            surfaceShaderNodeDefs.emplace_back(shaderNodeDef);
+        }
+    }
+
+    for (auto&& sdrNode : registry.GetShaderNodesByFamily()) {
+        // Any shader that has the "shader/surface" role will
+        // be exposed in the material creation menus. This
+        // includes nodes from Arnold, but also VRay, PRMan,
+        // if they use the same string to tag surface nodes.
+        if (sdrNode->GetRole() == "shader/surface") {
+            surfaceShaderNodeDefs.emplace_back(sdrNode);
+        }
+    }
+
+    return surfaceShaderNodeDefs;
 }

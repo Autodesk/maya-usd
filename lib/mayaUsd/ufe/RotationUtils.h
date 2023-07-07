@@ -77,8 +77,15 @@ inline PXR_NS::VtValue toZ(double, double, double z)
 inline Ufe::Vector3d fromXYZ(const PXR_NS::VtValue& value)
 {
     // No rotation order conversion
-    auto v = value.Get<PXR_NS::GfVec3f>();
-    return Ufe::Vector3d(v[0], v[1], v[2]);
+    if (value.IsHolding<PXR_NS::GfVec3f>()) {
+        auto v = value.Get<PXR_NS::GfVec3f>();
+        return Ufe::Vector3d(v[0], v[1], v[2]);
+    }
+    if (value.IsHolding<PXR_NS::GfVec3d>()) {
+        auto v = value.Get<PXR_NS::GfVec3d>();
+        return Ufe::Vector3d(v[0], v[1], v[2]);
+    }
+    return {};
 }
 
 template <MEulerRotation::RotationOrder SRC_ROT_ORDER>
@@ -92,16 +99,22 @@ constexpr auto fromZYX = fromRot<MEulerRotation::kZYX>;
 
 inline Ufe::Vector3d fromX(const PXR_NS::VtValue& value)
 {
+    if (value.IsHolding<double>())
+        return Ufe::Vector3d(value.Get<double>(), 0, 0);
     return Ufe::Vector3d(value.Get<float>(), 0, 0);
 }
 
 inline Ufe::Vector3d fromY(const PXR_NS::VtValue& value)
 {
+    if (value.IsHolding<double>())
+        return Ufe::Vector3d(0, value.Get<double>(), 0);
     return Ufe::Vector3d(0, value.Get<float>(), 0);
 }
 
 inline Ufe::Vector3d fromZ(const PXR_NS::VtValue& value)
 {
+    if (value.IsHolding<double>())
+        return Ufe::Vector3d(0, 0, value.Get<double>());
     return Ufe::Vector3d(0, 0, value.Get<float>());
 }
 

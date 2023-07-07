@@ -28,7 +28,7 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_USING_DIRECTIVE;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 class UsdMayaUtilScope
@@ -56,14 +56,16 @@ std::string ensureUSDFileExtension(const std::string& fileToCheck)
 
 void wrapUtil()
 {
-    scope s = class_<UsdMayaUtilScope>("Util", no_init)
-                  .def("IsAuthored", UsdMayaUtil::IsAuthored)
-                  .def("prettifyName", &UsdMayaUtil::prettifyName)
-                  .staticmethod("prettifyName")
-                  .def("getDictionaryFromEncodedOptions", getDictionaryFromEncodedOptions)
-                  .def(
-                      "getPathRelativeToMayaSceneFile",
-                      UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile)
-                  .def("ensureUSDFileExtension", ensureUSDFileExtension)
-                  .staticmethod("getPathRelativeToMayaSceneFile");
+    scope s
+        = class_<UsdMayaUtilScope>("Util", no_init)
+              .def("IsAuthored", UsdMayaUtil::IsAuthored)
+              .def("prettifyName", &UsdMayaUtil::prettifyName)
+              .staticmethod("prettifyName")
+              .def("getDictionaryFromEncodedOptions", getDictionaryFromEncodedOptions)
+              .def(
+                  "getPathRelativeToMayaSceneFile",
+                  UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile)
+              .def("getPathRelativeToDirectory", UsdMayaUtilFileSystem::getPathRelativeToDirectory)
+              .def("ensureUSDFileExtension", ensureUSDFileExtension)
+              .staticmethod("getPathRelativeToMayaSceneFile");
 }

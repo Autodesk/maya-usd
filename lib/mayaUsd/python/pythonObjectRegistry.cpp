@@ -23,7 +23,6 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 
-using namespace std;
 using namespace boost::python;
 using namespace boost;
 

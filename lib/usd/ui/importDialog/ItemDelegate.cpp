@@ -252,7 +252,13 @@ QLayout* VariantsEditorWidget::createVariantSet(
     QComboBox* cb = new QComboBox;
 
     ItemDelegate* id = const_cast<ItemDelegate*>(itemDelegate);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 7, 0)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    connect(
+        cb,
+        static_cast<void (QComboBox::*)(const QString&)>(&QComboBox::textActivated),
+        id,
+        [this, id] { id->commitVariantSelection(this); });
+#elif QT_VERSION >= QT_VERSION_CHECK(5, 7, 0)
     connect(cb, QOverload<const QString&>::of(&QComboBox::activated), id, [this, id] {
         id->commitVariantSelection(this);
     });

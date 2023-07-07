@@ -18,7 +18,6 @@ target_sources(${TARGET_NAME}
         DiffValues.cpp
         MergePrims.cpp
         MergePrimsOptions.cpp
-        util.cpp
 )
 
 # -----------------------------------------------------------------------------
@@ -68,7 +67,6 @@ set(HEADERS
     MergePrimsOptions.h
     ForwardDeclares.h
     SIMD.h
-    util.h
 )
 
 mayaUsd_promoteHeaderList( 
@@ -83,6 +81,8 @@ mayaUsd_promoteHeaderList(
 # -----------------------------------------------------------------------------
 install(TARGETS ${TARGET_NAME}
     LIBRARY
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+    ARCHIVE
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
     RUNTIME
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib

@@ -76,6 +76,7 @@ class testXformStack(unittest.TestCase):
             [(x.GetName(), x.IsInvertedTwin(), x.GetOpType()) for x in mayaStack.GetOps()],
             [
                 ('translate',             False, UsdGeom.XformOp.TypeTranslate),
+                ('pivot',                 False, UsdGeom.XformOp.TypeTranslate),
                 ('rotatePivotTranslate',  False, UsdGeom.XformOp.TypeTranslate),
                 ('rotatePivot',           False, UsdGeom.XformOp.TypeTranslate),
                 ('rotate',                False, UsdGeom.XformOp.TypeRotateXYZ),
@@ -86,6 +87,7 @@ class testXformStack(unittest.TestCase):
                 ('shear',                 False, UsdGeom.XformOp.TypeTransform),
                 ('scale',                 False, UsdGeom.XformOp.TypeScale),
                 ('scalePivot',            True,  UsdGeom.XformOp.TypeTranslate),
+                ('pivot',                 True,  UsdGeom.XformOp.TypeTranslate),
             ]
         )
 
@@ -256,7 +258,7 @@ class testXformStack(unittest.TestCase):
     def testGetInversionTwins(self):
         mayaStack = mayaUsdLib.XformStack.MayaStack()
         self.assertEqual(mayaStack.GetInversionTwins(),
-                         [(2, 5), (7, 10)])
+                         [(1, 12), (3, 6), (8, 11)])
         commonStack = mayaUsdLib.XformStack.CommonStack()
         self.assertEqual(commonStack.GetInversionTwins(),
                          [(1, 4)])
@@ -285,8 +287,8 @@ class testXformStack(unittest.TestCase):
     #   UsdMayaXformStack::MatrixStack
     def testGetSize(self):
         mayaStack = mayaUsdLib.XformStack.MayaStack()
-        self.assertEqual(len(mayaStack), 11)
-        self.assertEqual(mayaStack.GetSize(), 11)
+        self.assertEqual(len(mayaStack), 13)
+        self.assertEqual(mayaStack.GetSize(), 13)
         commonStack = mayaUsdLib.XformStack.CommonStack()
         self.assertEqual(len(commonStack), 5)
         self.assertEqual(commonStack.GetSize(), 5)
@@ -300,37 +302,41 @@ class testXformStack(unittest.TestCase):
     def testIndexing(self):
         mayaStack = mayaUsdLib.XformStack.MayaStack()
         self.assertEqual(mayaStack[0].GetName(), 'translate')
-        self.assertEqual(mayaStack[1].GetName(), 'rotatePivotTranslate')
-        self.assertEqual(mayaStack[2].GetName(), 'rotatePivot')
-        self.assertEqual(mayaStack[3].GetName(), 'rotate')
-        self.assertEqual(mayaStack[4].GetName(), 'rotateAxis')
-        self.assertEqual(mayaStack[5].GetName(), 'rotatePivot')
-        self.assertEqual(mayaStack[6].GetName(), 'scalePivotTranslate')
-        self.assertEqual(mayaStack[7].GetName(), 'scalePivot')
-        self.assertEqual(mayaStack[8].GetName(), 'shear')
-        self.assertEqual(mayaStack[9].GetName(), 'scale')
-        self.assertEqual(mayaStack[10].GetName(), 'scalePivot')
+        self.assertEqual(mayaStack[1].GetName(), 'pivot')
+        self.assertEqual(mayaStack[2].GetName(), 'rotatePivotTranslate')
+        self.assertEqual(mayaStack[3].GetName(), 'rotatePivot')
+        self.assertEqual(mayaStack[4].GetName(), 'rotate')
+        self.assertEqual(mayaStack[5].GetName(), 'rotateAxis')
+        self.assertEqual(mayaStack[6].GetName(), 'rotatePivot')
+        self.assertEqual(mayaStack[7].GetName(), 'scalePivotTranslate')
+        self.assertEqual(mayaStack[8].GetName(), 'scalePivot')
+        self.assertEqual(mayaStack[9].GetName(), 'shear')
+        self.assertEqual(mayaStack[10].GetName(), 'scale')
+        self.assertEqual(mayaStack[11].GetName(), 'scalePivot')
+        self.assertEqual(mayaStack[12].GetName(), 'pivot')
 
-        self.assertEqual(mayaStack[-11].GetName(), 'translate')
-        self.assertEqual(mayaStack[-10].GetName(), 'rotatePivotTranslate')
-        self.assertEqual(mayaStack[-9].GetName(), 'rotatePivot')
-        self.assertEqual(mayaStack[-8].GetName(), 'rotate')
-        self.assertEqual(mayaStack[-7].GetName(), 'rotateAxis')
-        self.assertEqual(mayaStack[-6].GetName(), 'rotatePivot')
-        self.assertEqual(mayaStack[-5].GetName(), 'scalePivotTranslate')
-        self.assertEqual(mayaStack[-4].GetName(), 'scalePivot')
-        self.assertEqual(mayaStack[-3].GetName(), 'shear')
-        self.assertEqual(mayaStack[-2].GetName(), 'scale')
-        self.assertEqual(mayaStack[-1].GetName(), 'scalePivot')
+        self.assertEqual(mayaStack[-13].GetName(), 'translate')
+        self.assertEqual(mayaStack[-12].GetName(), 'pivot')
+        self.assertEqual(mayaStack[-11].GetName(), 'rotatePivotTranslate')
+        self.assertEqual(mayaStack[-10].GetName(), 'rotatePivot')
+        self.assertEqual(mayaStack[-9].GetName(), 'rotate')
+        self.assertEqual(mayaStack[-8].GetName(), 'rotateAxis')
+        self.assertEqual(mayaStack[-7].GetName(), 'rotatePivot')
+        self.assertEqual(mayaStack[-6].GetName(), 'scalePivotTranslate')
+        self.assertEqual(mayaStack[-5].GetName(), 'scalePivot')
+        self.assertEqual(mayaStack[-4].GetName(), 'shear')
+        self.assertEqual(mayaStack[-3].GetName(), 'scale')
+        self.assertEqual(mayaStack[-2].GetName(), 'scalePivot')
+        self.assertEqual(mayaStack[-1].GetName(), 'pivot')
 
         def getStackItem(i):
             return mayaStack[i]
 
-        self.assertRaises(IndexError, getStackItem, 11)
-        self.assertRaises(IndexError, getStackItem, 12)
+        self.assertRaises(IndexError, getStackItem, 13)
+        self.assertRaises(IndexError, getStackItem, 14)
         self.assertRaises(IndexError, getStackItem, 300)
-        self.assertRaises(IndexError, getStackItem, -12)
-        self.assertRaises(IndexError, getStackItem, -13)
+        self.assertRaises(IndexError, getStackItem, -14)
+        self.assertRaises(IndexError, getStackItem, -15)
         self.assertRaises(IndexError, getStackItem, -1000)
 
     #   UsdMayaXformStack::FindOpIndex
@@ -339,70 +345,76 @@ class testXformStack(unittest.TestCase):
     def testFindOpIndex(self):
         mayaStack = mayaUsdLib.XformStack.MayaStack()
         self.assertEqual(mayaStack.FindOpIndex('translate'), 0)
-        self.assertEqual(mayaStack.FindOpIndex('rotatePivotTranslate'), 1)
-        self.assertEqual(mayaStack.FindOpIndex('rotatePivot'), 2)
-        self.assertEqual(mayaStack.FindOpIndex('rotate'), 3)
-        self.assertEqual(mayaStack.FindOpIndex('rotateAxis'), 4)
-        #assertEqual(mayaStack.FindOpIndex('rotatePivot'), 5)
-        self.assertEqual(mayaStack.FindOpIndex('scalePivotTranslate'), 6)
-        self.assertEqual(mayaStack.FindOpIndex('scalePivot'), 7)
-        self.assertEqual(mayaStack.FindOpIndex('shear'), 8)
-        self.assertEqual(mayaStack.FindOpIndex('scale'), 9)
-        #assertEqual(mayaStack.FindOpIndex('scalePivot'), 10)
+        self.assertEqual(mayaStack.FindOpIndex('pivot'), 1)
+        self.assertEqual(mayaStack.FindOpIndex('rotatePivotTranslate'), 2)
+        self.assertEqual(mayaStack.FindOpIndex('rotatePivot'), 3)
+        self.assertEqual(mayaStack.FindOpIndex('rotate'), 4)
+        self.assertEqual(mayaStack.FindOpIndex('rotateAxis'), 5)
+        #assertEqual(mayaStack.FindOpIndex('rotatePivot'), 6)
+        self.assertEqual(mayaStack.FindOpIndex('scalePivotTranslate'), 7)
+        self.assertEqual(mayaStack.FindOpIndex('scalePivot'), 8)
+        self.assertEqual(mayaStack.FindOpIndex('shear'), 9)
+        self.assertEqual(mayaStack.FindOpIndex('scale'), 10)
+        #assertEqual(mayaStack.FindOpIndex('scalePivot'), 11)
+        #self.assertEqual(mayaStack.FindOpIndex('translate'), 12)
 
         self.assertEqual(mayaStack.FindOpIndex('translate', isInvertedTwin=False), 0)
-        self.assertEqual(mayaStack.FindOpIndex('rotatePivotTranslate', isInvertedTwin=False), 1)
-        self.assertEqual(mayaStack.FindOpIndex('rotatePivot', isInvertedTwin=False), 2)
-        self.assertEqual(mayaStack.FindOpIndex('rotate', isInvertedTwin=False), 3)
-        self.assertEqual(mayaStack.FindOpIndex('rotateAxis', isInvertedTwin=False), 4)
-        #assertEqual(mayaStack.FindOpIndex('rotatePivot', isInvertedTwin=False), 5)
-        self.assertEqual(mayaStack.FindOpIndex('scalePivotTranslate', isInvertedTwin=False), 6)
-        self.assertEqual(mayaStack.FindOpIndex('scalePivot', isInvertedTwin=False), 7)
-        self.assertEqual(mayaStack.FindOpIndex('shear', isInvertedTwin=False), 8)
-        self.assertEqual(mayaStack.FindOpIndex('scale', isInvertedTwin=False), 9)
-        #assertEqual(mayaStack.FindOpIndex('scalePivot', isInvertedTwin=False), 10)
+        self.assertEqual(mayaStack.FindOpIndex('pivot', isInvertedTwin=False), 1)
+        self.assertEqual(mayaStack.FindOpIndex('rotatePivotTranslate', isInvertedTwin=False), 2)
+        self.assertEqual(mayaStack.FindOpIndex('rotatePivot', isInvertedTwin=False), 3)
+        self.assertEqual(mayaStack.FindOpIndex('rotate', isInvertedTwin=False), 4)
+        self.assertEqual(mayaStack.FindOpIndex('rotateAxis', isInvertedTwin=False), 5)
+        #assertEqual(mayaStack.FindOpIndex('rotatePivot', isInvertedTwin=False), 6)
+        self.assertEqual(mayaStack.FindOpIndex('scalePivotTranslate', isInvertedTwin=False), 7)
+        self.assertEqual(mayaStack.FindOpIndex('scalePivot', isInvertedTwin=False), 8)
+        self.assertEqual(mayaStack.FindOpIndex('shear', isInvertedTwin=False), 9)
+        self.assertEqual(mayaStack.FindOpIndex('scale', isInvertedTwin=False), 10)
+        #assertEqual(mayaStack.FindOpIndex('scalePivot', isInvertedTwin=False), 11)
+        #assertEqual(mayaStack.FindOpIndex('pivot', isInvertedTwin=False), 12)
 
         self.assertEqual(mayaStack.FindOpIndex('translate', False), 0)
-        self.assertEqual(mayaStack.FindOpIndex('rotatePivotTranslate', False), 1)
-        self.assertEqual(mayaStack.FindOpIndex('rotatePivot', False), 2)
-        self.assertEqual(mayaStack.FindOpIndex('rotate', False), 3)
-        self.assertEqual(mayaStack.FindOpIndex('rotateAxis', False), 4)
-        #assertEqual(mayaStack.FindOpIndex('rotatePivot', False), 5)
-        self.assertEqual(mayaStack.FindOpIndex('scalePivotTranslate', False), 6)
-        self.assertEqual(mayaStack.FindOpIndex('scalePivot', False), 7)
-        self.assertEqual(mayaStack.FindOpIndex('shear', False), 8)
-        self.assertEqual(mayaStack.FindOpIndex('scale', False), 9)
-        #assertEqual(mayaStack.FindOpIndex('scalePivot', False), 10)
+        self.assertEqual(mayaStack.FindOpIndex('pivot', False), 1)
+        self.assertEqual(mayaStack.FindOpIndex('rotatePivotTranslate', False), 2)
+        self.assertEqual(mayaStack.FindOpIndex('rotatePivot', False), 3)
+        self.assertEqual(mayaStack.FindOpIndex('rotate', False), 4)
+        self.assertEqual(mayaStack.FindOpIndex('rotateAxis', False), 5)
+        #assertEqual(mayaStack.FindOpIndex('rotatePivot', False), 6)
+        self.assertEqual(mayaStack.FindOpIndex('scalePivotTranslate', False), 7)
+        self.assertEqual(mayaStack.FindOpIndex('scalePivot', False), 8)
+        self.assertEqual(mayaStack.FindOpIndex('shear', False), 9)
+        self.assertEqual(mayaStack.FindOpIndex('scale', False), 10)
+        #assertEqual(mayaStack.FindOpIndex('scalePivot', False), 11)
+        #assertEqual(mayaStack.FindOpIndex('pivot', False), 12)
 
         self.assertIs(mayaStack.FindOpIndex('translate', isInvertedTwin=True), None)
         self.assertIs(mayaStack.FindOpIndex('rotatePivotTranslate', isInvertedTwin=True), None)
         #self.assertIs(mayaStack.FindOpIndex('rotatePivot', isInvertedTwin=True), 2)
         self.assertIs(mayaStack.FindOpIndex('rotate', isInvertedTwin=True), None)
         self.assertIs(mayaStack.FindOpIndex('rotateAxis', isInvertedTwin=True), None)
-        self.assertEqual(mayaStack.FindOpIndex('rotatePivot', isInvertedTwin=True), 5)
+        self.assertEqual(mayaStack.FindOpIndex('rotatePivot', isInvertedTwin=True), 6)
         self.assertIs(mayaStack.FindOpIndex('scalePivotTranslate', isInvertedTwin=True), None)
         #self.assertIs(mayaStack.FindOpIndex('scalePivot', isInvertedTwin=True), 7)
         self.assertIs(mayaStack.FindOpIndex('shear', isInvertedTwin=True), None)
         self.assertIs(mayaStack.FindOpIndex('scale', isInvertedTwin=True), None)
-        self.assertEqual(mayaStack.FindOpIndex('scalePivot', isInvertedTwin=True), 10)
+        self.assertEqual(mayaStack.FindOpIndex('scalePivot', isInvertedTwin=True), 11)
 
         self.assertIs(mayaStack.FindOpIndex('translate', True), None)
         self.assertIs(mayaStack.FindOpIndex('rotatePivotTranslate', True), None)
         #self.assertIs(mayaStack.FindOpIndex('rotatePivot', True), 2)
         self.assertIs(mayaStack.FindOpIndex('rotate', True), None)
         self.assertIs(mayaStack.FindOpIndex('rotateAxis', True), None)
-        self.assertEqual(mayaStack.FindOpIndex('rotatePivot', True), 5)
+        self.assertEqual(mayaStack.FindOpIndex('rotatePivot', True), 6)
         self.assertIs(mayaStack.FindOpIndex('scalePivotTranslate', True), None)
         #self.assertIs(mayaStack.FindOpIndex('scalePivot', True), 7)
         self.assertIs(mayaStack.FindOpIndex('shear', True), None)
         self.assertIs(mayaStack.FindOpIndex('scale', True), None)
-        self.assertEqual(mayaStack.FindOpIndex('scalePivot', True), 10)
+        self.assertEqual(mayaStack.FindOpIndex('scalePivot', True), 11)
 
-        self.assertIs(mayaStack.FindOpIndex('pivot'), None)
-        self.assertIs(mayaStack.FindOpIndex('pivot', isInvertedTwin=True), None)
-        self.assertIs(mayaStack.FindOpIndex('pivot', True), None)
-        self.assertIs(mayaStack.FindOpIndex('pivot', isInvertedTwin=False), None)
-        self.assertIs(mayaStack.FindOpIndex('pivot', False), None)
+        self.assertIs(mayaStack.FindOpIndex('pivot'), 1)
+        self.assertIs(mayaStack.FindOpIndex('pivot', isInvertedTwin=True), 12)
+        self.assertIs(mayaStack.FindOpIndex('pivot', True), 12)
+        self.assertIs(mayaStack.FindOpIndex('pivot', isInvertedTwin=False), 1)
+        self.assertIs(mayaStack.FindOpIndex('pivot', False), 1)
 
         commonStack = mayaUsdLib.XformStack.CommonStack()
         self.assertEqual(commonStack.FindOpIndex('pivot'), 1)
@@ -528,11 +540,11 @@ class testXformStack(unittest.TestCase):
         self.assertEqual(getNameInverted(mayaStack.FindOp('scalePivot', True)),
                     ('scalePivot', True))
 
-        self.assertIs(mayaStack.FindOp('pivot'), None)
-        self.assertIs(mayaStack.FindOp('pivot', isInvertedTwin=True), None)
-        self.assertIs(mayaStack.FindOp('pivot', True), None)
-        self.assertIs(mayaStack.FindOp('pivot', isInvertedTwin=False), None)
-        self.assertIs(mayaStack.FindOp('pivot', False), None)
+        self.assertEqual(getNameInverted(mayaStack.FindOp('pivot')), ('pivot', False))
+        self.assertEqual(getNameInverted(mayaStack.FindOp('pivot', isInvertedTwin=True)), ('pivot', True))
+        self.assertEqual(getNameInverted(mayaStack.FindOp('pivot', True)), ('pivot', True))
+        self.assertEqual(getNameInverted(mayaStack.FindOp('pivot', isInvertedTwin=False)), ('pivot', False))
+        self.assertEqual(getNameInverted(mayaStack.FindOp('pivot', False)), ('pivot', False))
 
         commonStack = mayaUsdLib.XformStack.CommonStack()
         self.assertEqual(getNameInverted(commonStack.FindOp('pivot')),
@@ -566,16 +578,15 @@ class testXformStack(unittest.TestCase):
     def testFindOpIndexPair(self):
         mayaStack = mayaUsdLib.XformStack.MayaStack()
         self.assertEqual(mayaStack.FindOpIndexPair('translate'), (0, None))
-        self.assertEqual(mayaStack.FindOpIndexPair('rotatePivotTranslate'), (1, None))
-        self.assertEqual(mayaStack.FindOpIndexPair('rotatePivot'), (2, 5))
-        self.assertEqual(mayaStack.FindOpIndexPair('rotate'), (3, None))
-        self.assertEqual(mayaStack.FindOpIndexPair('rotateAxis'), (4, None))
-        self.assertEqual(mayaStack.FindOpIndexPair('scalePivotTranslate'), (6, None))
-        self.assertEqual(mayaStack.FindOpIndexPair('scalePivot'), (7, 10))
-        self.assertEqual(mayaStack.FindOpIndexPair('shear'), (8, None))
-        self.assertEqual(mayaStack.FindOpIndexPair('scale'), (9, None))
-
-        self.assertEqual(mayaStack.FindOpIndexPair('pivot'), (None, None))
+        self.assertEqual(mayaStack.FindOpIndexPair('pivot'), (1, 12))
+        self.assertEqual(mayaStack.FindOpIndexPair('rotatePivotTranslate'), (2, None))
+        self.assertEqual(mayaStack.FindOpIndexPair('rotatePivot'), (3, 6))
+        self.assertEqual(mayaStack.FindOpIndexPair('rotate'), (4, None))
+        self.assertEqual(mayaStack.FindOpIndexPair('rotateAxis'), (5, None))
+        self.assertEqual(mayaStack.FindOpIndexPair('scalePivotTranslate'), (7, None))
+        self.assertEqual(mayaStack.FindOpIndexPair('scalePivot'), (8, 11))
+        self.assertEqual(mayaStack.FindOpIndexPair('shear'), (9, None))
+        self.assertEqual(mayaStack.FindOpIndexPair('scale'), (10, None))
 
         commonStack = mayaUsdLib.XformStack.CommonStack()
         self.assertEqual(commonStack.FindOpIndexPair('pivot'), (1, 4))
@@ -620,8 +631,8 @@ class testXformStack(unittest.TestCase):
                          ('shear', False), None)
         assertFindOpPair(mayaStack, 'scale',
                          ('scale', False), None)
-
-        assertFindOpPair(mayaStack, 'pivot', None, None)
+        assertFindOpPair(mayaStack, 'pivot',
+                         ('pivot', False), ('pivot', True))
 
         commonStack = mayaUsdLib.XformStack.CommonStack()
         assertFindOpPair(commonStack, 'pivot',
@@ -640,6 +651,7 @@ class testXformStack(unittest.TestCase):
         self.ops = OrderedDict()
 
         self.ops['translate'] = self.xform.AddTranslateOp(opSuffix='translate')
+        self.ops['pivot'] = self.xform.AddTranslateOp(opSuffix='pivot')
         self.ops['rotatePivotTranslate'] = self.xform.AddTranslateOp(opSuffix='rotatePivotTranslate')
         self.ops['rotatePivot'] = self.xform.AddTranslateOp(opSuffix='rotatePivot')
         self.ops['rotate'] = self.xform.AddRotateXYZOp(opSuffix='rotate')
@@ -653,6 +665,7 @@ class testXformStack(unittest.TestCase):
         # "xformOp:translate:translate")
         self.ops['scale'] = self.xform.AddScaleOp()
         self.ops['scalePivotINV'] = self.xform.AddTranslateOp(opSuffix='scalePivot', isInverseOp=True)
+        self.ops['pivotINV'] = self.xform.AddTranslateOp(opSuffix='pivot', isInverseOp=True)
 
     def makeCommonStackAttrs(self):
         from pxr import UsdGeom
@@ -976,7 +989,7 @@ class testXformStack(unittest.TestCase):
             commonOnly, commonStack)
         self.doFirstMatchingTest(
             [mayaStack],
-            commonOnly, commonStack, expectEmpty=True)
+            commonOnly, mayaStack)
         self.doFirstMatchingTest(
             [commonStack],
             commonOnly, commonStack)
@@ -988,7 +1001,7 @@ class testXformStack(unittest.TestCase):
             commonOnly, commonStack)
         self.doFirstMatchingTest(
             [mayaStack, matrixStack],
-            commonOnly, commonStack, expectEmpty=True)
+            commonOnly, mayaStack)
 
         # Should match matrix only:
         self.makeMatrixStackAttrs()

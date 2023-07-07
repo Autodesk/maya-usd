@@ -130,6 +130,15 @@ class testVP2RenderDelegateSelection(imageUtils.ImageDiffingTestCase):
         cmds.modelEditor('modelPanel4', e=True, wireframeOnShaded=False, displayLights='default')
         self._selectionTest('', usdCube, usdCylinder, proxyDagPath, 'smoothShaded')
 
+        # Test selection highlighting enabled/disabled
+        if (mayaUtils.mayaMajorMinorVersions() > (2024, 1)):
+            cmds.select(proxyDagPath)
+            self.assertSnapshotClose('selectionHighlightEnabled.png')
+            cmds.modelEditor('modelPanel4', e=True, selectionHiliteDisplay=False)
+            self.assertSnapshotClose('selectionHighlightDisabled.png')
+            cmds.modelEditor('modelPanel4', e=True, selectionHiliteDisplay=True)
+            cmds.select(clear=True)
+
         # Test wireframe on shaded
         cmds.modelEditor('modelPanel4', e=True, displayAppearance='smoothShaded', displayLights='default')
         cmds.modelEditor('modelPanel4', e=True, wireframeOnShaded=True, displayLights='default')

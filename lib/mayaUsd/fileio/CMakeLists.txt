@@ -4,6 +4,7 @@
 target_sources(${PROJECT_NAME} 
     PRIVATE
         fallbackPrimReader.cpp
+        flexibleSparseValueWriter.cpp
         functorPrimReader.cpp
         functorPrimWriter.cpp
         importData.cpp
@@ -58,6 +59,7 @@ endif()
 
 set(HEADERS
     fallbackPrimReader.h
+    flexibleSparseValueWriter.h
     functorPrimReader.h
     functorPrimWriter.h
     importData.h

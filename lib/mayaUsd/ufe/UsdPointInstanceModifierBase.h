@@ -17,7 +17,8 @@
 #define MAYAUSD_UFE_USD_POINT_INSTANCE_MODIFIER_BASE_H
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/vt/array.h>
@@ -154,13 +155,9 @@ public:
             return usdValue;
         }
 
-        // For USD 21.02+, avoid triggering a copy-on-write by making sure that
+        // Avoid triggering a copy-on-write by making sure that
         // we invoke operator[] on a const reference to the array.
-#if PXR_VERSION >= 2102
         return usdValues.AsConst()[instanceIndex];
-#else
-        return usdValues[instanceIndex];
-#endif
     }
 
     bool setValue(

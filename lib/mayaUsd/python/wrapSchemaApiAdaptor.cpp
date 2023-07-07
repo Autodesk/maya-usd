@@ -89,7 +89,7 @@ public:
     bool CopyToPrim(
         const UsdPrim&             prim,
         const UsdTimeCode&         usdTime,
-        UsdUtilsSparseValueWriter* valueWriter) const override
+        FlexibleSparseValueWriter* valueWriter) const override
     {
         return python_CopyToPrim(prim, usdTime, MayaUsdLibSparseValueWriter(valueWriter));
     }

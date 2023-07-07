@@ -123,7 +123,11 @@ function(mayaUsd_add_rpath rpathRef target)
     endif()
     file(TO_CMAKE_PATH "${target}" target)
     set(NEW_RPATH "${${rpathRef}}")
-    list(APPEND NEW_RPATH "$ORIGIN/${target}")
+    if("${target}" MATCHES "^\@")
+        list(APPEND NEW_RPATH "${target}")
+    else()
+        list(APPEND NEW_RPATH "$ORIGIN/${target}")
+    endif()
     set(${rpathRef} "${NEW_RPATH}" PARENT_SCOPE)
 endfunction()
 
@@ -168,7 +172,7 @@ endfunction()
 #
 #   SUBDIR     - sub-directory in which to promote files.
 #   FILES      - list of files to promote.
-#   BASESDIR   - base dirctory where promoted headers are installed into.
+#   BASEDIR    - base directory where promoted headers are installed into.
 #                if not defined, mayaUsd subdirectory is used by default.
 #
 #

@@ -23,6 +23,7 @@
 #include <pxr/usd/sdf/relationshipSpec.h>
 #include <pxr/usd/usd/stageCache.h>
 #include <pxr/usd/usdGeom/tokens.h>
+#include <pxr/usd/usdUtils/stageCache.h>
 
 #include <maya/MFileIO.h>
 #include <maya/MGlobal.h>
@@ -52,6 +53,8 @@ struct _OnSceneResetListener : public TfWeakBase
     void OnSceneReset(const UsdMayaSceneResetNotice& notice)
     {
         UsdMayaStageCache::Clear();
+
+        UsdUtilsStageCache::Get().Clear();
 
         std::lock_guard<std::mutex> lock(_sharedSessionLayersMutex);
         _sharedSessionLayers.clear();

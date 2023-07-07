@@ -97,12 +97,7 @@ public:
     GfVec4f      colorSelectionHighlightColor = GfVec4f(1.0f, 1.0f, 0.0f, 0.5f);
     bool         colorSelectionHighlight = true;
     bool         wireframeSelectionHighlight = true;
-#if PXR_VERSION >= 2005
-    float outlineSelectionWidth = 4.f;
-#endif
-#if PXR_VERSION <= 2005
-    float enableColorQuantization = false;
-#endif
+    float        outlineSelectionWidth = 4.f;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

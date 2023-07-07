@@ -25,6 +25,7 @@
 #include <pxr/base/tf/pyPtrHelpers.h>
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/base/tf/refPtr.h>
+#include <pxr/pxr.h>
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDGModifier.h>
@@ -378,5 +379,9 @@ void wrapTranslatorBase()
     MStatusFromPythonBool::Register();
 }
 
+// This macro was removed in USD 23.08. It was only needed to support
+// Visual Studio 2015, which USD itself no longer supports.
+#if PXR_VERSION < 2308
 TF_REFPTR_CONST_VOLATILE_GET(TranslatorBaseWrapper)
 TF_REFPTR_CONST_VOLATILE_GET(TranslatorBase)
+#endif

@@ -1,5 +1,5 @@
 //
-// Copyright 2020 Autodesk
+// Copyright 2023 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -157,7 +157,11 @@ protected:
         const override
     {
         if (hint == QStyle::SH_Slider_AbsoluteSetButtons) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+            return Qt::LeftButton | Qt::MiddleButton | Qt::RightButton;
+#else
             return Qt::LeftButton | Qt::MidButton | Qt::RightButton;
+#endif
         } else if (hint == QStyle::SH_ItemView_ShowDecorationSelected) {
             return 0;
         } else {

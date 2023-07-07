@@ -77,6 +77,12 @@ public:
     //! \return True if the USD population mask is not empty.
     bool hasPopulationMask() const;
 
+    //! Apply euler filter to imported rotation animCurves
+    void setApplyEulerFilter(bool value);
+
+    //! \return True if the imported rotation curves should be euler filtered
+    bool applyEulerFilter() const;
+
     //! \return The USD population mask of the stage to use for import.
     const UsdStagePopulationMask& stagePopulationMask() const;
 
@@ -134,8 +140,9 @@ private:
     std::string              fRootPrimPath;
     std::string              fFilename;
 
-    int fPrimsInScopeCount;
-    int fSwitchedVariantCount;
+    int  fPrimsInScopeCount;
+    int  fSwitchedVariantCount;
+    bool fApplyEulerFilter;
 };
 
 } // namespace MAYAUSD_NS_DEF

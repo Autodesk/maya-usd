@@ -19,6 +19,7 @@ import mayaUsd.lib as mayaUsdLib
 
 from pxr import Sdf
 from pxr import Tf
+from pxr import Usd
 from pxr import UsdGeom
 from pxr import UsdSkel
 
@@ -156,8 +157,13 @@ class testUsdMayaAdaptor(unittest.TestCase):
         self.assertTrue(attr)
         self.assertEqual(attr.Get(), Sdf.AssetPath("example.png"))
 
-        self.assertEqual(attr.GetAttributeDefinition().name,
+        if Usd.GetVersion() < (0, 23, 8):
+            self.assertEqual(attr.GetAttributeDefinition().name,
                 "model:cardTextureXPos")
+        else:
+            self.assertEqual(attr.GetAttributeDefinition().GetName(),
+                "model:cardTextureXPos")
+
         self.assertEqual(modelAPI.GetAuthoredAttributeNames(),
                 [UsdGeom.Tokens.modelCardTextureXPos])
 

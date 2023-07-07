@@ -1,0 +1,32 @@
+#usda 1.0
+
+def PointInstancer "PointInstancer" (
+    kind = "dress_group"
+)
+{
+    quath[] orientations = [(1, 0, 0, 0), (1, 0, 0, 0)]
+    point3f[] positions = [(-5, 5, 0), (5, 5, 0)]
+    int[] protoIndices = [0, 0]
+    rel prototypes = [
+        </PointInstancer/Prototypes/Sphere1>,
+    ]
+    float3[] scales = [(1, 1, 1), (1, 1, 1)]
+    float3 xformOp:rotateXYZ = (0, 0, 90)
+    float3 xformOp:scale = (1, 1, 1)
+    double3 xformOp:translate = (0, 0, 0)
+    float3 xformOp:translate:pivot = (0, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:translate:pivot", "xformOp:rotateXYZ", "xformOp:scale", "!invert!xformOp:translate:pivot"]
+
+    def "Prototypes" (
+        kind = "group"
+    )
+    {
+        def Sphere "Sphere1"
+        {
+            float3 xformOp:rotateXYZ = (0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+        }
+    }
+}

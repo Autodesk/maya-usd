@@ -5,7 +5,7 @@
 
 #include <gtest/gtest.h>
 
-using namespace PXR_NS;
+PXR_NAMESPACE_USING_DIRECTIVE
 using namespace MayaUsdUtils;
 
 // Note: metadata must be registered, for tests we used a pre-registered one.

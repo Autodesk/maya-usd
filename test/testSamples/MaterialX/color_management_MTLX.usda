@@ -1,0 +1,600 @@
+#usda 1.0
+(
+    defaultPrim = "pPlane1"
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
+
+def Mesh "pPlane1" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.25), (0.5, 0, 0.25)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </pPlane1/mtl/usdPreviewSurface1SG>
+    point3f[] points = [(-0.5, 0, 0.25), (0.5, 0, 0.25), (-0.5, 0, -0.25), (0.5, 0, -0.25)]
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+    double3 xformOp:translate = (-3.03, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Scope "mtl"
+    {
+        def Material "usdPreviewSurface1SG"
+        {
+            string inputs:file1:varname = "st"
+            token outputs:mtlx:surface.connect = </pPlane1/mtl/usdPreviewSurface1SG/usdPreviewSurface1.outputs:out>
+
+            def Shader "usdPreviewSurface1"
+            {
+                uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+                color3f inputs:diffuseColor = (0, 0, 0)
+                color3f inputs:emissiveColor.connect = </pPlane1/mtl/usdPreviewSurface1SG/MayaNG_usdPreviewSurface1SG.outputs:emissiveColor>
+                float inputs:roughness = 1
+                token outputs:out
+            }
+
+            def NodeGraph "MayaNG_usdPreviewSurface1SG"
+            {
+                string inputs:file1:varname.connect = </pPlane1/mtl/usdPreviewSurface1SG.inputs:file1:varname>
+                color3f outputs:emissiveColor.connect = </pPlane1/mtl/usdPreviewSurface1SG/MayaNG_usdPreviewSurface1SG/MayaConvert_file1_MayafileTexture.outputs:out>
+
+                def Shader "file1"
+                {
+                    uniform token info:id = "ND_image_color4"
+                    asset inputs:file = @textures/color_palette_ACEScg.exr@ (
+                        colorSpace = "ACEScg"
+                    )
+                    string inputs:filtertype = "cubic"
+                    float2 inputs:texcoord.connect = </pPlane1/mtl/usdPreviewSurface1SG/MayaNG_usdPreviewSurface1SG/place2dTexture1.outputs:out>
+                    string inputs:uaddressmode = "periodic"
+                    string inputs:vaddressmode = "periodic"
+                    color4f outputs:out
+                }
+
+                def Shader "file1_MayafileTexture"
+                {
+                    uniform token info:id = "MayaND_fileTexture_color4"
+                    string inputs:colorSpace = "ACEScg"
+                    color4f inputs:defaultColor = (0.5, 0.5, 0.5, 1)
+                    color4f inputs:inColor.connect = </pPlane1/mtl/usdPreviewSurface1SG/MayaNG_usdPreviewSurface1SG/file1.outputs:out>
+                    color4f inputs:uvCoord.connect = </pPlane1/mtl/usdPreviewSurface1SG/MayaNG_usdPreviewSurface1SG/place2dTexture1.outputs:out>
+                    color4f outputs:outColor
+                }
+
+                def Shader "MayaConvert_file1_MayafileTexture"
+                {
+                    uniform token info:id = "ND_convert_color4_color3"
+                    color4f inputs:in.connect = </pPlane1/mtl/usdPreviewSurface1SG/MayaNG_usdPreviewSurface1SG/file1_MayafileTexture.outputs:outColor>
+                    color3f outputs:out
+                }
+
+                def Shader "place2dTexture1"
+                {
+                    uniform token info:id = "ND_geompropvalue_vector2"
+                    string inputs:geomprop.connect = </pPlane1/mtl/usdPreviewSurface1SG/MayaNG_usdPreviewSurface1SG.inputs:file1:varname>
+                    float2 outputs:out
+                }
+            }
+        }
+    }
+}
+
+def Mesh "pPlane2" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.25), (0.5, 0, 0.25)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </pPlane2/mtl/usdPreviewSurface9SG>
+    point3f[] points = [(-0.5, 0, 0.25), (0.5, 0, 0.25), (-0.5, 0, -0.25), (0.5, 0, -0.25)]
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+    double3 xformOp:translate = (-2.02, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Scope "mtl"
+    {
+        def Material "usdPreviewSurface9SG"
+        {
+            string inputs:file8:varname = "st"
+            token outputs:mtlx:surface.connect = </pPlane2/mtl/usdPreviewSurface9SG/usdPreviewSurface9.outputs:out>
+
+            def Shader "usdPreviewSurface9"
+            {
+                uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+                color3f inputs:diffuseColor = (0, 0, 0)
+                color3f inputs:emissiveColor.connect = </pPlane2/mtl/usdPreviewSurface9SG/MayaNG_usdPreviewSurface9SG.outputs:emissiveColor>
+                float inputs:roughness = 1
+                token outputs:out
+            }
+
+            def NodeGraph "MayaNG_usdPreviewSurface9SG"
+            {
+                string inputs:file8:varname.connect = </pPlane2/mtl/usdPreviewSurface9SG.inputs:file8:varname>
+                color3f outputs:emissiveColor.connect = </pPlane2/mtl/usdPreviewSurface9SG/MayaNG_usdPreviewSurface9SG/MayaConvert_file8_MayafileTexture.outputs:out>
+
+                def Shader "file8"
+                {
+                    uniform token info:id = "ND_image_color4"
+                    asset inputs:file = @textures/color_palette_ADX10.exr@ (
+                        colorSpace = "ADX10"
+                    )
+                    string inputs:filtertype = "cubic"
+                    float2 inputs:texcoord.connect = </pPlane2/mtl/usdPreviewSurface9SG/MayaNG_usdPreviewSurface9SG/place2dTexture8.outputs:out>
+                    string inputs:uaddressmode = "periodic"
+                    string inputs:vaddressmode = "periodic"
+                    color4f outputs:out
+                }
+
+                def Shader "file8_MayafileTexture"
+                {
+                    uniform token info:id = "MayaND_fileTexture_color4"
+                    string inputs:colorSpace = "ADX10"
+                    color4f inputs:defaultColor = (0.5, 0.5, 0.5, 1)
+                    color4f inputs:inColor.connect = </pPlane2/mtl/usdPreviewSurface9SG/MayaNG_usdPreviewSurface9SG/file8.outputs:out>
+                    color4f inputs:uvCoord.connect = </pPlane2/mtl/usdPreviewSurface9SG/MayaNG_usdPreviewSurface9SG/place2dTexture8.outputs:out>
+                    color4f outputs:outColor
+                }
+
+                def Shader "MayaConvert_file8_MayafileTexture"
+                {
+                    uniform token info:id = "ND_convert_color4_color3"
+                    color4f inputs:in.connect = </pPlane2/mtl/usdPreviewSurface9SG/MayaNG_usdPreviewSurface9SG/file8_MayafileTexture.outputs:outColor>
+                    color3f outputs:out
+                }
+
+                def Shader "place2dTexture8"
+                {
+                    uniform token info:id = "ND_geompropvalue_vector2"
+                    string inputs:geomprop.connect = </pPlane2/mtl/usdPreviewSurface9SG/MayaNG_usdPreviewSurface9SG.inputs:file8:varname>
+                    float2 outputs:out
+                }
+            }
+        }
+    }
+}
+
+def Mesh "pPlane3" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.25), (0.5, 0, 0.25)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </pPlane3/mtl/usdPreviewSurface10SG>
+    point3f[] points = [(-0.5, 0, 0.25), (0.5, 0, 0.25), (-0.5, 0, -0.25), (0.5, 0, -0.25)]
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+    double3 xformOp:translate = (-1.01, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Scope "mtl"
+    {
+        def Material "usdPreviewSurface10SG"
+        {
+            string inputs:file9:varname = "st"
+            token outputs:mtlx:surface.connect = </pPlane3/mtl/usdPreviewSurface10SG/usdPreviewSurface10.outputs:out>
+
+            def Shader "usdPreviewSurface10"
+            {
+                uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+                color3f inputs:diffuseColor = (0, 0, 0)
+                color3f inputs:emissiveColor.connect = </pPlane3/mtl/usdPreviewSurface10SG/MayaNG_usdPreviewSurface10SG.outputs:emissiveColor>
+                float inputs:roughness = 1
+                token outputs:out
+            }
+
+            def NodeGraph "MayaNG_usdPreviewSurface10SG"
+            {
+                string inputs:file9:varname.connect = </pPlane3/mtl/usdPreviewSurface10SG.inputs:file9:varname>
+                color3f outputs:emissiveColor.connect = </pPlane3/mtl/usdPreviewSurface10SG/MayaNG_usdPreviewSurface10SG/MayaConvert_file9_MayafileTexture.outputs:out>
+
+                def Shader "file9"
+                {
+                    uniform token info:id = "ND_image_color4"
+                    asset inputs:file = @textures/color_palette_ADX16.exr@ (
+                        colorSpace = "ADX16"
+                    )
+                    string inputs:filtertype = "cubic"
+                    float2 inputs:texcoord.connect = </pPlane3/mtl/usdPreviewSurface10SG/MayaNG_usdPreviewSurface10SG/place2dTexture9.outputs:out>
+                    string inputs:uaddressmode = "periodic"
+                    string inputs:vaddressmode = "periodic"
+                    color4f outputs:out
+                }
+
+                def Shader "file9_MayafileTexture"
+                {
+                    uniform token info:id = "MayaND_fileTexture_color4"
+                    string inputs:colorSpace = "ADX16"
+                    color4f inputs:defaultColor = (0.5, 0.5, 0.5, 1)
+                    color4f inputs:inColor.connect = </pPlane3/mtl/usdPreviewSurface10SG/MayaNG_usdPreviewSurface10SG/file9.outputs:out>
+                    color4f inputs:uvCoord.connect = </pPlane3/mtl/usdPreviewSurface10SG/MayaNG_usdPreviewSurface10SG/place2dTexture9.outputs:out>
+                    color4f outputs:outColor
+                }
+
+                def Shader "MayaConvert_file9_MayafileTexture"
+                {
+                    uniform token info:id = "ND_convert_color4_color3"
+                    color4f inputs:in.connect = </pPlane3/mtl/usdPreviewSurface10SG/MayaNG_usdPreviewSurface10SG/file9_MayafileTexture.outputs:outColor>
+                    color3f outputs:out
+                }
+
+                def Shader "place2dTexture9"
+                {
+                    uniform token info:id = "ND_geompropvalue_vector2"
+                    string inputs:geomprop.connect = </pPlane3/mtl/usdPreviewSurface10SG/MayaNG_usdPreviewSurface10SG.inputs:file9:varname>
+                    float2 outputs:out
+                }
+            }
+        }
+    }
+}
+
+def Mesh "pPlane4" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.25), (0.5, 0, 0.25)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </pPlane4/mtl/usdPreviewSurface11SG>
+    point3f[] points = [(-0.5, 0, 0.25), (0.5, 0, 0.25), (-0.5, 0, -0.25), (0.5, 0, -0.25)]
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+
+    def Scope "mtl"
+    {
+        def Material "usdPreviewSurface11SG"
+        {
+            string inputs:file10:varname = "st"
+            token outputs:mtlx:surface.connect = </pPlane4/mtl/usdPreviewSurface11SG/usdPreviewSurface11.outputs:out>
+
+            def Shader "usdPreviewSurface11"
+            {
+                uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+                color3f inputs:diffuseColor = (0, 0, 0)
+                color3f inputs:emissiveColor.connect = </pPlane4/mtl/usdPreviewSurface11SG/MayaNG_usdPreviewSurface11SG.outputs:emissiveColor>
+                float inputs:roughness = 1
+                token outputs:out
+            }
+
+            def NodeGraph "MayaNG_usdPreviewSurface11SG"
+            {
+                string inputs:file10:varname.connect = </pPlane4/mtl/usdPreviewSurface11SG.inputs:file10:varname>
+                color3f outputs:emissiveColor.connect = </pPlane4/mtl/usdPreviewSurface11SG/MayaNG_usdPreviewSurface11SG/MayaConvert_file10_MayafileTexture.outputs:out>
+
+                def Shader "file10"
+                {
+                    uniform token info:id = "ND_image_color4"
+                    asset inputs:file = @textures/color_palette_arri_logc4.exr@ (
+                        colorSpace = "ARRI LogC4 - Curve"
+                    )
+                    string inputs:filtertype = "cubic"
+                    float2 inputs:texcoord.connect = </pPlane4/mtl/usdPreviewSurface11SG/MayaNG_usdPreviewSurface11SG/place2dTexture10.outputs:out>
+                    string inputs:uaddressmode = "periodic"
+                    string inputs:vaddressmode = "periodic"
+                    color4f outputs:out
+                }
+
+                def Shader "file10_MayafileTexture"
+                {
+                    uniform token info:id = "MayaND_fileTexture_color4"
+                    string inputs:colorSpace = "ARRI LogC4 - Curve"
+                    color4f inputs:defaultColor = (0.5, 0.5, 0.5, 1)
+                    color4f inputs:inColor.connect = </pPlane4/mtl/usdPreviewSurface11SG/MayaNG_usdPreviewSurface11SG/file10.outputs:out>
+                    color4f inputs:uvCoord.connect = </pPlane4/mtl/usdPreviewSurface11SG/MayaNG_usdPreviewSurface11SG/place2dTexture10.outputs:out>
+                    color4f outputs:outColor
+                }
+
+                def Shader "MayaConvert_file10_MayafileTexture"
+                {
+                    uniform token info:id = "ND_convert_color4_color3"
+                    color4f inputs:in.connect = </pPlane4/mtl/usdPreviewSurface11SG/MayaNG_usdPreviewSurface11SG/file10_MayafileTexture.outputs:outColor>
+                    color3f outputs:out
+                }
+
+                def Shader "place2dTexture10"
+                {
+                    uniform token info:id = "ND_geompropvalue_vector2"
+                    string inputs:geomprop.connect = </pPlane4/mtl/usdPreviewSurface11SG/MayaNG_usdPreviewSurface11SG.inputs:file10:varname>
+                    float2 outputs:out
+                }
+            }
+        }
+    }
+}
+
+def Mesh "pPlane5" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.25), (0.5, 0, 0.25)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </pPlane5/mtl/usdPreviewSurface12SG>
+    point3f[] points = [(-0.5, 0, 0.25), (0.5, 0, 0.25), (-0.5, 0, -0.25), (0.5, 0, -0.25)]
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+    double3 xformOp:translate = (1.01, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Scope "mtl"
+    {
+        def Material "usdPreviewSurface12SG"
+        {
+            string inputs:file11:varname = "st"
+            token outputs:mtlx:surface.connect = </pPlane5/mtl/usdPreviewSurface12SG/usdPreviewSurface12.outputs:out>
+
+            def Shader "usdPreviewSurface12"
+            {
+                uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+                color3f inputs:diffuseColor = (0, 0, 0)
+                color3f inputs:emissiveColor.connect = </pPlane5/mtl/usdPreviewSurface12SG/MayaNG_usdPreviewSurface12SG.outputs:emissiveColor>
+                float inputs:roughness = 1
+                token outputs:out
+            }
+
+            def NodeGraph "MayaNG_usdPreviewSurface12SG"
+            {
+                string inputs:file11:varname.connect = </pPlane5/mtl/usdPreviewSurface12SG.inputs:file11:varname>
+                color3f outputs:emissiveColor.connect = </pPlane5/mtl/usdPreviewSurface12SG/MayaNG_usdPreviewSurface12SG/MayaConvert_file11_MayafileTexture.outputs:out>
+
+                def Shader "file11"
+                {
+                    uniform token info:id = "ND_image_color4"
+                    asset inputs:file = @textures/color_palette_g24_rec709.exr@ (
+                        colorSpace = "Gamma 2.4 Rec.709 - Texture"
+                    )
+                    string inputs:filtertype = "cubic"
+                    float2 inputs:texcoord.connect = </pPlane5/mtl/usdPreviewSurface12SG/MayaNG_usdPreviewSurface12SG/place2dTexture11.outputs:out>
+                    string inputs:uaddressmode = "periodic"
+                    string inputs:vaddressmode = "periodic"
+                    color4f outputs:out
+                }
+
+                def Shader "file11_MayafileTexture"
+                {
+                    uniform token info:id = "MayaND_fileTexture_color4"
+                    string inputs:colorSpace = "Gamma 2.4 Rec.709 - Texture"
+                    color4f inputs:defaultColor = (0.5, 0.5, 0.5, 1)
+                    color4f inputs:inColor.connect = </pPlane5/mtl/usdPreviewSurface12SG/MayaNG_usdPreviewSurface12SG/file11.outputs:out>
+                    color4f inputs:uvCoord.connect = </pPlane5/mtl/usdPreviewSurface12SG/MayaNG_usdPreviewSurface12SG/place2dTexture11.outputs:out>
+                    color4f outputs:outColor
+                }
+
+                def Shader "MayaConvert_file11_MayafileTexture"
+                {
+                    uniform token info:id = "ND_convert_color4_color3"
+                    color4f inputs:in.connect = </pPlane5/mtl/usdPreviewSurface12SG/MayaNG_usdPreviewSurface12SG/file11_MayafileTexture.outputs:outColor>
+                    color3f outputs:out
+                }
+
+                def Shader "place2dTexture11"
+                {
+                    uniform token info:id = "ND_geompropvalue_vector2"
+                    string inputs:geomprop.connect = </pPlane5/mtl/usdPreviewSurface12SG/MayaNG_usdPreviewSurface12SG.inputs:file11:varname>
+                    float2 outputs:out
+                }
+            }
+        }
+    }
+}
+
+def Mesh "pPlane6" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.25), (0.5, 0, 0.25)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </pPlane6/mtl/usdPreviewSurface13SG>
+    point3f[] points = [(-0.5, 0, 0.25), (0.5, 0, 0.25), (-0.5, 0, -0.25), (0.5, 0, -0.25)]
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+    double3 xformOp:translate = (2.02, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Scope "mtl"
+    {
+        def Material "usdPreviewSurface13SG"
+        {
+            string inputs:file12:varname = "st"
+            token outputs:mtlx:surface.connect = </pPlane6/mtl/usdPreviewSurface13SG/usdPreviewSurface13.outputs:out>
+
+            def Shader "usdPreviewSurface13"
+            {
+                uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+                color3f inputs:diffuseColor = (0, 0, 0)
+                color3f inputs:emissiveColor.connect = </pPlane6/mtl/usdPreviewSurface13SG/MayaNG_usdPreviewSurface13SG.outputs:emissiveColor>
+                float inputs:roughness = 1
+                token outputs:out
+            }
+
+            def NodeGraph "MayaNG_usdPreviewSurface13SG"
+            {
+                string inputs:file12:varname.connect = </pPlane6/mtl/usdPreviewSurface13SG.inputs:file12:varname>
+                color3f outputs:emissiveColor.connect = </pPlane6/mtl/usdPreviewSurface13SG/MayaNG_usdPreviewSurface13SG/MayaConvert_file12_MayafileTexture.outputs:out>
+
+                def Shader "file12"
+                {
+                    uniform token info:id = "ND_image_color4"
+                    asset inputs:file = @textures/color_palette_lin_p3d65.exr@ (
+                        colorSpace = "Linear P3-D65"
+                    )
+                    string inputs:filtertype = "cubic"
+                    float2 inputs:texcoord.connect = </pPlane6/mtl/usdPreviewSurface13SG/MayaNG_usdPreviewSurface13SG/place2dTexture12.outputs:out>
+                    string inputs:uaddressmode = "periodic"
+                    string inputs:vaddressmode = "periodic"
+                    color4f outputs:out
+                }
+
+                def Shader "file12_MayafileTexture"
+                {
+                    uniform token info:id = "MayaND_fileTexture_color4"
+                    string inputs:colorSpace = "Linear P3-D65"
+                    color4f inputs:defaultColor = (0.5, 0.5, 0.5, 1)
+                    color4f inputs:inColor.connect = </pPlane6/mtl/usdPreviewSurface13SG/MayaNG_usdPreviewSurface13SG/file12.outputs:out>
+                    color4f inputs:uvCoord.connect = </pPlane6/mtl/usdPreviewSurface13SG/MayaNG_usdPreviewSurface13SG/place2dTexture12.outputs:out>
+                    color4f outputs:outColor
+                }
+
+                def Shader "MayaConvert_file12_MayafileTexture"
+                {
+                    uniform token info:id = "ND_convert_color4_color3"
+                    color4f inputs:in.connect = </pPlane6/mtl/usdPreviewSurface13SG/MayaNG_usdPreviewSurface13SG/file12_MayafileTexture.outputs:outColor>
+                    color3f outputs:out
+                }
+
+                def Shader "place2dTexture12"
+                {
+                    uniform token info:id = "ND_geompropvalue_vector2"
+                    string inputs:geomprop.connect = </pPlane6/mtl/usdPreviewSurface13SG/MayaNG_usdPreviewSurface13SG.inputs:file12:varname>
+                    float2 outputs:out
+                }
+            }
+        }
+    }
+}
+
+def Mesh "pPlane7" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.25), (0.5, 0, 0.25)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </pPlane7/mtl/usdPreviewSurface14SG>
+    point3f[] points = [(-0.5, 0, 0.25), (0.5, 0, 0.25), (-0.5, 0, -0.25), (0.5, 0, -0.25)]
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+    double3 xformOp:translate = (3.03, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Scope "mtl"
+    {
+        def Material "usdPreviewSurface14SG"
+        {
+            string inputs:file13:varname = "st"
+            token outputs:mtlx:surface.connect = </pPlane7/mtl/usdPreviewSurface14SG/usdPreviewSurface14.outputs:out>
+
+            def Shader "usdPreviewSurface14"
+            {
+                uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+                color3f inputs:diffuseColor = (0, 0, 0)
+                color3f inputs:emissiveColor.connect = </pPlane7/mtl/usdPreviewSurface14SG/MayaNG_usdPreviewSurface14SG.outputs:emissiveColor>
+                float inputs:roughness = 1
+                token outputs:out
+            }
+
+            def NodeGraph "MayaNG_usdPreviewSurface14SG"
+            {
+                string inputs:file13:varname.connect = </pPlane7/mtl/usdPreviewSurface14SG.inputs:file13:varname>
+                color3f outputs:emissiveColor.connect = </pPlane7/mtl/usdPreviewSurface14SG/MayaNG_usdPreviewSurface14SG/MayaConvert_file13_MayafileTexture.outputs:out>
+
+                def Shader "file13"
+                {
+                    uniform token info:id = "ND_image_color4"
+                    asset inputs:file = @textures/color_palette_srgb_texture.exr@ (
+                        colorSpace = "sRGB - Texture"
+                    )
+                    string inputs:filtertype = "cubic"
+                    float2 inputs:texcoord.connect = </pPlane7/mtl/usdPreviewSurface14SG/MayaNG_usdPreviewSurface14SG/place2dTexture13.outputs:out>
+                    string inputs:uaddressmode = "periodic"
+                    string inputs:vaddressmode = "periodic"
+                    color4f outputs:out
+                }
+
+                def Shader "file13_MayafileTexture"
+                {
+                    uniform token info:id = "MayaND_fileTexture_color4"
+                    string inputs:colorSpace = "sRGB - Texture"
+                    color4f inputs:defaultColor = (0.5, 0.5, 0.5, 1)
+                    color4f inputs:inColor.connect = </pPlane7/mtl/usdPreviewSurface14SG/MayaNG_usdPreviewSurface14SG/file13.outputs:out>
+                    color4f inputs:uvCoord.connect = </pPlane7/mtl/usdPreviewSurface14SG/MayaNG_usdPreviewSurface14SG/place2dTexture13.outputs:out>
+                    color4f outputs:outColor
+                }
+
+                def Shader "MayaConvert_file13_MayafileTexture"
+                {
+                    uniform token info:id = "ND_convert_color4_color3"
+                    color4f inputs:in.connect = </pPlane7/mtl/usdPreviewSurface14SG/MayaNG_usdPreviewSurface14SG/file13_MayafileTexture.outputs:outColor>
+                    color3f outputs:out
+                }
+
+                def Shader "place2dTexture13"
+                {
+                    uniform token info:id = "ND_geompropvalue_vector2"
+                    string inputs:geomprop.connect = </pPlane7/mtl/usdPreviewSurface14SG/MayaNG_usdPreviewSurface14SG.inputs:file13:varname>
+                    float2 outputs:out
+                }
+            }
+        }
+    }
+}
+

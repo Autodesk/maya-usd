@@ -32,7 +32,7 @@
 // Workaround for a material consolidation update issue in VP2. Before USD 0.20.11, a Rprim will be
 // recreated if its material has any change, so everything gets refreshed and the update issue gets
 // masked. Once the update issue is fixed in VP2 we will disable this workaround.
-#if PXR_VERSION >= 2011 && MAYA_API_VERSION >= 20210000 && MAYA_API_VERSION < 20230000
+#if MAYA_API_VERSION >= 20210000 && MAYA_API_VERSION < 20230000
 #define HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
 #endif
 
@@ -95,12 +95,9 @@ public:
 
     HdDirtyBits GetInitialDirtyBitsMask() const override;
 
-#if PXR_VERSION < 2011
-    void Reload() override {};
-#endif
-
     //! Get the surface shader instance.
-    MHWRender::MShaderInstance* GetSurfaceShader(const TfToken& reprToken) const;
+    MHWRender::MShaderInstance*
+                                GetSurfaceShader(const TfToken& reprToken, bool backfaceCull = false) const;
     MHWRender::MShaderInstance* GetPointShader(const TfToken& reprToken) const;
 
     //! Get primvar tokens required by this material.
@@ -132,14 +129,48 @@ private:
         void Sync(HdSceneDelegate*, const HdMaterialNetworkMap&);
 
         MHWRender::MShaderInstance* GetSurfaceShader() const { return _surfaceShader.get(); }
+        MHWRender::MShaderInstance* GetFrontFaceShader() const;
         MHWRender::MShaderInstance* GetPointShader() const;
         const TfTokenVector&        GetRequiredPrimvars() const { return _requiredPrimvars; }
+
+        template <typename ParameterType>
+        MStatus SetShaderParameter(const MString& paramName, const ParameterType& val)
+        {
+            MStatus status;
+            if (_surfaceShader && status) {
+                status = _surfaceShader->setParameter(paramName, val);
+            }
+            if (_frontFaceShader && status) {
+                status = _frontFaceShader->setParameter(paramName, val);
+            }
+            if (_pointShader && status) {
+                status = _pointShader->setParameter(paramName, val);
+            }
+            return status;
+        }
+
+        template <typename ParameterType>
+        MStatus SetShaderParameter(const MString& paramName, ParameterType& val)
+        {
+            MStatus status;
+            if (_surfaceShader && status) {
+                status = _surfaceShader->setParameter(paramName, val);
+            }
+            if (_frontFaceShader && status) {
+                status = _frontFaceShader->setParameter(paramName, val);
+            }
+            if (_pointShader && status) {
+                status = _pointShader->setParameter(paramName, val);
+            }
+            return status;
+        }
 
     private:
         HdVP2Material* _owner;
         TfToken _surfaceNetworkToken; //!< Generated token to uniquely identify a material network
         SdfPath _surfaceShaderId;     //!< Path of the surface shader
         HdVP2ShaderUniquePtr         _surfaceShader;    //!< VP2 surface shader instance
+        mutable HdVP2ShaderUniquePtr _frontFaceShader;  //!< same as above + backface culling
         mutable HdVP2ShaderUniquePtr _pointShader;      //!< VP2 point shader instance, if needed
         TfTokenVector                _requiredPrimvars; //!< primvars required by this network
         std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>

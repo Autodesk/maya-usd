@@ -1,0 +1,332 @@
+#usda 1.0
+(
+)
+
+def "Def1"
+{
+}
+
+def ALMayaReference "ALMayaReference1" 
+{
+}
+
+def MayaReference "MayaReference1" 
+{
+}
+
+def BasisCurves "BasisCurves1" 
+{
+}
+
+def Camera "Camera1" 
+{
+}
+
+def Capsule "Capsule1" 
+{
+}
+
+def Cone "Cone1" 
+{
+}
+
+def Cube "Cube1" 
+{
+}
+
+def Cylinder "Cylinder1" 
+{
+}
+
+def HermiteCurves "HermiteCurves1" 
+{
+}
+
+def Imageable "Imageable1" 
+{
+}
+
+def Mesh "Mesh1" 
+{
+}
+
+def NurbsCurves "NurbsCurves1" 
+{
+}
+
+def NurbsPatch "NurbsPatch1" 
+{
+}
+
+def Plane "Plane1" 
+{
+}
+
+def PointInstancer "PointInstancer1" 
+{
+}
+
+def Points "Points1" 
+{
+}
+
+def Scope "Scope1" 
+{
+}
+
+def Sphere "Sphere1" 
+{
+}
+
+def GeomSubset "GeomSubset1" 
+{
+}
+
+def Xform "Xform1" 
+{
+}
+
+def UsdHydraGenerativeProceduralAPI "UsdHydraGenerativeProceduralAPI1" 
+{
+}
+
+def CylinderLight "CylinderLight1" 
+{
+}
+
+def DiskLight "DiskLight1" 
+{
+}
+
+def DistantLight "DistantLight1" 
+{
+}
+
+def DomeLight "DomeLight1" 
+{
+}
+
+def GeometryLight "GeometryLight1" 
+{
+}
+
+def LightFilter "LightFilter1" 
+{
+}
+
+def PluginLight "PluginLight1" 
+{
+}
+
+def PluginLightFilter "PluginLightFilter1" 
+{
+}
+
+def PortalLight "PortalLight1" 
+{
+}
+
+def RectLight "RectLight1" 
+{
+}
+
+def SphereLight "SphereLight1" 
+{
+}
+
+def SpatialAudio "SpatialAudio1" 
+{
+}
+
+def ArticulationRootAPI "ArticulationRootAPI1" 
+{
+}
+
+def CollisionAPI "CollisionAPI1" 
+{
+}
+
+def CollisionGroup "CollisionGroup1" 
+{
+}
+
+def DistanceJoint "DistanceJoint1" 
+{
+}
+
+def DriveAPI "DriveAPI1" 
+{
+}
+
+def FilteredPairsAPI "FilteredPairsAPI1" 
+{
+}
+
+def FixedJoint "FixedJoint1" 
+{
+}
+
+def Joint "Joint1" 
+{
+}
+
+def LimitAPI "LimitAPI1" 
+{
+}
+
+def MassAPI "MassAPI1" 
+{
+}
+
+def MaterialAPI "MaterialAPI1" 
+{
+}
+
+def MeshCollisionAPI "MeshCollisionAPI1" 
+{
+}
+
+def PrismaticJoint "PrismaticJoint1" 
+{
+}
+
+def RevoluteJoint "RevoluteJoint1" 
+{
+}
+
+def RigidBodyAPI "RigidBodyAPI1" 
+{
+}
+
+def Scene "Scene1" 
+{
+}
+
+def SphericalJoint "SphericalJoint1" 
+{
+}
+
+def GenerativeProcedural "GenerativeProcedural1" 
+{
+}
+
+def RenderDenoisePass "RenderDenoisePass1" 
+{
+}
+
+def RenderPass "RenderPass1" 
+{
+}
+
+def RenderProduct "RenderProduct1" 
+{
+}
+
+def RenderSettings "RenderSettings1" 
+{
+}
+
+def RenderSettingsBase "RenderSettingsBase1" 
+{
+}
+
+def RenderVar "RenderVar1" 
+{
+}
+
+def Material "Material1" 
+{
+}
+
+def MaterialBindingAPI "MaterialBindingAPI1" 
+{
+}
+
+def NodeDefAPI "NodeDefAPI1" 
+{
+}
+
+def NodeGraph "NodeGraph1" 
+{
+}
+
+def Shader "Shader1" 
+{
+}
+
+def SkelAnimation "SkelAnimation1" 
+{
+}
+
+def SkelBindingAPI "SkelBindingAPI1" 
+{
+}
+
+def SkelBlendShape "SkelBlendShape1" 
+{
+}
+
+def SkelPackedJointAnimation "SkelPackedJointAnimation1" 
+{
+}
+
+def SkelRoot "SkelRoot1" 
+{
+}
+
+def Skeleton "Skeleton1" 
+{
+}
+
+def Backdrop "Backdrop1" 
+{
+}
+
+def Field3DAsset "Field3DAsset1" 
+{
+}
+
+def FieldAsset "FieldAsset1" 
+{
+}
+
+def FieldBase "FieldBase1" 
+{
+}
+
+def OpenVDBAsset "OpenVDBAsset1" 
+{
+}
+
+def Volume "Volume1" 
+{
+}
+
+def Foo "Foo1"
+{
+}
+
+def Cube "CubeWithMaterial" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </mtl/standard_surface1>
+}
+
+def Cube "CubeWithoutMaterial"
+{
+}
+
+def Scope "mtl"
+{
+    def Material "standard_surface1"
+    {
+        token outputs:mtlx:surface.connect = </mtl/standard_surface1/standard_surface1.outputs:out>
+
+        def Shader "standard_surface1"
+        {
+            uniform token info:id = "ND_standard_surface_surfaceshader"
+            token outputs:out
+        }
+    }
+}

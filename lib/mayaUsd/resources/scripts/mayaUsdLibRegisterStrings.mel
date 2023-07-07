@@ -46,7 +46,7 @@ global proc mayaUsdLibRegisterStrings()
     register("kMayaRefEditAsMayaDataAnn", "Select this checkbox to enable editing the MayaReference prim as a Maya Reference.");
     register("kMayaRefOptions", "Maya Reference Options");
     register("kMayaRefCreateNew", "Create New");
-    register("kMayaRefAddToPrim", "Add Maya Reference to USD Prim");
+    register("kMayaRefAddToPrim", "Add Maya Reference to Prim");
     register("kMayaRefReference", "Reference");
 
     // Used in multiple places.

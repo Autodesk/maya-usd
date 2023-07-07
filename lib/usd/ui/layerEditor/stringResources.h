@@ -93,6 +93,7 @@ const auto kSetLayerAsTargetLayerTooltip { create("kSetLayerAsTargetLayerTooltip
 const auto kUsdSaveFileFormat            { create("kUsdSaveFileFormat", "Save .usd File Format") };
 const auto kUsdLayerIdentifier           { create("kUsdLayerIdentifier", "USD Layer identifier: ^1s") };
 const auto kUsdStage                     { create("kUsdStage", "USD Stage:") };
+const auto kPinUsdStageTooltip           { create("kPinUsdStage", "When unpinned, follow the USD stage selected in the outliner.") };
 
 const auto kSaveAnonymousLayersErrorsTitle { create("kSaveAnonymousLayersErrorsTitle", "Save All Layers Error")};
 const auto kSaveAnonymousLayersErrorsMsg { create("kSaveAnonymousLayersErrorsMsg", "Errors were encountered while saving layers.  Check Script Editor for details.")};
@@ -105,6 +106,11 @@ const auto kSaveAnonymousIdenticalFiles { create("kSaveAnonymousIdenticalFiles",
 const auto kSaveLayerUsdFileFormatAnn    { create("kSaveLayerUsdFileFormatAnn", "Select whether the .usd file is written out in binary or ASCII. You can save a file in .usdc (binary) or .usda (ASCII) format. Manually entering a file name with an extension overrides the selection in this drop-down menu.") };
 const auto kSaveLayerUsdFileFormatSbm    { create("kSaveLayerUsdFileFormatSbm", "Select whether the .usd file is written out in binary or ASCII") };
 
+const auto kBatchSaveAllRelative { create("kBatchSaveAllRelative", "Convert All to Relative Paths.")};
+const auto kBatchSaveRelativeToScene { create("kBatchSaveRelativeToScene", "Relative to Scene File.")};
+const auto kBatchSaveRelativeToParent { create("kBatchSaveRelativeToParent", "Relative to Parent Layer.")};
+const auto kBatchSaveRelativeToLayerTooltip { create("kBatchSaveRelativeToLayerTooltip", "This path will be relative to the layer: ^1s.")};
+const auto kBatchSaveRelativeToSceneTooltip { create("kBatchSaveRelativeToSceneTooltip", "This path will be relative to the saved scene file.")};
 
 // -------------------------------------------------------------
 // Errors

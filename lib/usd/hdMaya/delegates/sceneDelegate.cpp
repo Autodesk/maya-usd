@@ -133,17 +133,6 @@ inline bool _RemoveAdapter(const SdfPath& id, F f, M0& m0, M&... m)
 
 template <typename R> inline R _GetDefaultValue() { return {}; }
 
-#if PXR_VERSION < 2011
-
-// Default return value for HdTextureResource::ID, if not found, should be
-// -1, not {} - which would be 0
-template <> inline HdTextureResource::ID _GetDefaultValue<HdTextureResource::ID>()
-{
-    return HdTextureResource::ID(-1);
-}
-
-#endif // PXR_VERSION < 2011
-
 // This will be nicer to use with automatic parameter deduction for lambdas in
 // C++14.
 template <typename T, typename R, typename F> inline R _GetValue(const SdfPath&, F)
@@ -1117,57 +1106,6 @@ VtValue HdMayaSceneDelegate::GetMaterialResource(const SdfPath& id)
         _materialAdapters);
     return ret.IsEmpty() ? HdMayaMaterialAdapter::GetPreviewMaterialResource(id) : ret;
 }
-
-#if PXR_VERSION < 2011
-
-HdTextureResource::ID HdMayaSceneDelegate::GetTextureResourceID(const SdfPath& textureId)
-{
-    TF_DEBUG(HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE_ID)
-        .Msg("HdMayaSceneDelegate::GetTextureResourceID(%s)\n", textureId.GetText());
-    return _GetValue<HdMayaMaterialAdapter, HdTextureResource::ID>(
-        textureId.GetPrimPath(),
-        [&textureId](HdMayaMaterialAdapter* a) -> HdTextureResource::ID {
-            return a->GetTextureResourceID(textureId.GetNameToken());
-        },
-        _materialAdapters);
-}
-
-HdTextureResourceSharedPtr HdMayaSceneDelegate::GetTextureResource(const SdfPath& textureId)
-{
-    TF_DEBUG(HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE)
-        .Msg("HdMayaSceneDelegate::GetTextureResource(%s)\n", textureId.GetText());
-
-    auto* adapterPtr = TfMapLookupPtr(_materialAdapters, textureId);
-
-    if (!adapterPtr) {
-        // For texture nodes we may have only inserted an adapter for the material
-        // not for the texture itself.
-        //
-        // UsdShade has the rule that a UsdShade node must be nested inside the
-        // UsdMaterial scope. We traverse the parent paths to find the material.
-        //
-        // Example for texture prim:
-        //    /Materials/Woody/BootMaterial/UsdShadeNodeGraph/Tex
-        // We want to find Sprim:
-        //    /Materials/Woody/BootMaterial
-
-        // While-loop to account for nesting of UsdNodeGraphs and DrawMode
-        // adapter with prototypes.
-        SdfPath parentPath = textureId;
-        while (!adapterPtr && !parentPath.IsRootPrimPath()) {
-            parentPath = parentPath.GetParentPath();
-            adapterPtr = TfMapLookupPtr(_materialAdapters, parentPath);
-        }
-    }
-
-    if (adapterPtr) {
-        return adapterPtr->get()->GetTextureResource(textureId);
-    }
-
-    return nullptr;
-}
-
-#endif // PXR_VERSION < 2011
 
 bool HdMayaSceneDelegate::_CreateMaterial(const SdfPath& id, const MObject& obj)
 {

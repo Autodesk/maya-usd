@@ -14,13 +14,7 @@
 // limitations under the License.
 //
 
-// GL loading library needs to be included before any other OpenGL headers.
-#include <pxr/pxr.h>
-#if PXR_VERSION < 2102
-#include <pxr/imaging/glf/glew.h>
-#else
 #include <pxr/imaging/garch/glApi.h>
-#endif
 
 #include "utils.h"
 

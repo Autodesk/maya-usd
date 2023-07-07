@@ -43,11 +43,22 @@ public:
     // UI to get a file path to save a layer.
     // As output returns the path.
     static bool
-    saveLayerFilePathUI(std::string& out_filePath, const PXR_NS::SdfLayerRefPtr& parentLayer);
+                saveLayerFilePathUI(std::string& out_filePath, const PXR_NS::SdfLayerRefPtr& parentLayer);
+    static bool saveLayerFilePathUI(
+        std::string&       out_filePath,
+        bool               isRootLayer,
+        const std::string& parentLayerPath);
+
+    QWidget* findEntry(SdfLayerRefPtr key);
+
+    void forEachEntry(const std::function<void(QWidget*)>& func);
+
+    void quietlyUncheckAllAsRelative();
 
 protected:
     void onSaveAll();
     void onCancel();
+    void onAllAsRelativeChanged();
 
     bool okToSave();
 
@@ -75,6 +86,7 @@ private:
     QStringList   _emptyLayers;
     QWidget*      _anonLayersWidget { nullptr };
     QWidget*      _fileLayersWidget { nullptr };
+    QCheckBox*    _allAsRelative { nullptr };
     LayerInfos    _anonLayerInfos;
     layerSet      _dirtyFileBackedLayers;
     stageLayerMap _stageLayerMap;

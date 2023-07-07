@@ -57,8 +57,6 @@
 
 #include <regex>
 
-using namespace MAYAUSD_NS_DEF;
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 class MtlxUsd_FileWriter : public MtlxUsd_BaseWriter

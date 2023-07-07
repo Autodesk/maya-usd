@@ -174,6 +174,23 @@ std::pair<std::string, bool> UsdMayaUtilFileSystem::makePathRelativeTo(
     return std::make_pair(relativePath.generic_string(), true);
 }
 
+std::string UsdMayaUtilFileSystem::getPathRelativeToDirectory(
+    const std::string& fileName,
+    const std::string& relativeToDir)
+{
+    auto relativePathAndSuccess = makePathRelativeTo(fileName, relativeToDir);
+
+    if (!relativePathAndSuccess.second) {
+        TF_WARN(
+            "File name (%s) cannot be resolved as relative to its parent layer directory (%s), "
+            "using the absolute path.",
+            fileName.c_str(),
+            relativeToDir.c_str());
+    }
+
+    return relativePathAndSuccess.first;
+}
+
 std::string UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(const std::string& fileName)
 {
     auto relativePathAndSuccess = makePathRelativeTo(fileName, getMayaSceneFileDir());
@@ -220,10 +237,15 @@ bool UsdMayaUtilFileSystem::prepareLayerSaveUILayer(
         layerFileDir = getMayaSceneFileDir();
     }
 
+    return prepareLayerSaveUILayer(layerFileDir);
+}
+
+bool UsdMayaUtilFileSystem::prepareLayerSaveUILayer(const std::string& relativeAnchor)
+{
     const char* script = "import mayaUsd_USDRootFileRelative as murel\n"
                          "murel.usdFileRelative.setRelativeFilePathRoot(r'''%s''')";
 
-    const std::string commandString = TfStringPrintf(script, layerFileDir.c_str());
+    const std::string commandString = TfStringPrintf(script, relativeAnchor.c_str());
     return MGlobal::executePythonCommand(commandString.c_str());
 }
 
@@ -248,6 +270,27 @@ bool UsdMayaUtilFileSystem::requireUsdPathsRelativeToEditTargetLayer()
         = "mayaUsd_MakePathRelativeToEditTargetLayer";
     return MGlobal::optionVarExists(MAKE_PATH_RELATIVE_TO_EDIT_TARGET_LAYER_FILE)
         && MGlobal::optionVarIntValue(MAKE_PATH_RELATIVE_TO_EDIT_TARGET_LAYER_FILE);
+}
+
+bool UsdMayaUtilFileSystem::wantReferenceCompositionArc()
+{
+    static const MString WANT_REFERENCE_COMPOSITION_ARC = "mayaUsd_WantReferenceCompositionArc";
+    return MGlobal::optionVarExists(WANT_REFERENCE_COMPOSITION_ARC)
+        && MGlobal::optionVarIntValue(WANT_REFERENCE_COMPOSITION_ARC);
+}
+
+bool UsdMayaUtilFileSystem::wantPrependCompositionArc()
+{
+    static const MString WANT_PREPEND_COMPOSITION_ARC = "mayaUsd_WantPrependCompositionArc";
+    return MGlobal::optionVarExists(WANT_PREPEND_COMPOSITION_ARC)
+        && MGlobal::optionVarIntValue(WANT_PREPEND_COMPOSITION_ARC);
+}
+
+bool UsdMayaUtilFileSystem::wantPayloadLoaded()
+{
+    static const MString WANT_PAYLOAD_LOADED = "mayaUsd_WantPayloadLoaded";
+    return MGlobal::optionVarExists(WANT_PAYLOAD_LOADED)
+        && MGlobal::optionVarIntValue(WANT_PAYLOAD_LOADED);
 }
 
 const char* getScenesFolderScript = R"(
@@ -315,6 +358,61 @@ std::string UsdMayaUtilFileSystem::getUniqueFileName(
     pathModel.append(fileNameModel);
 
     return pathModel.generic_string();
+}
+
+std::string UsdMayaUtilFileSystem::ensureUniqueFileName(const std::string& filename)
+{
+    std::string uniqueName = filename;
+    while (true) {
+        if (!ghc::filesystem::exists(ghc::filesystem::path(uniqueName)))
+            return uniqueName;
+
+        // Algorithm to generate a unique name:
+        //    1. Remove the extension
+        //    2. Replace the filename with the filename plus random text
+        //    3. Put the extension back.
+
+        ghc::filesystem::path uniquePath(filename);
+
+        const std::string extOnly = uniquePath.extension().generic_string();
+        uniquePath = uniquePath.replace_extension();
+
+        const std::string nameOnly = uniquePath.filename().generic_string();
+        uniquePath = uniquePath.replace_filename(nameOnly + "-" + generateUniqueName());
+
+        uniquePath = uniquePath.replace_extension(extOnly);
+
+        uniqueName = uniquePath.generic_string();
+    }
+}
+
+size_t UsdMayaUtilFileSystem::getNumberSuffixPosition(const std::string& text)
+{
+    const size_t length = text.size();
+
+    if (length <= 1)
+        return 0;
+
+    size_t nonDigitPos = length - 1;
+    while (nonDigitPos != 0 && std::isdigit(text[nonDigitPos]))
+        --nonDigitPos;
+
+    return nonDigitPos + 1;
+}
+
+std::string UsdMayaUtilFileSystem::getNumberSuffix(const std::string& text)
+{
+    return text.substr(getNumberSuffixPosition(text));
+}
+
+std::string UsdMayaUtilFileSystem::increaseNumberSuffix(const std::string& text)
+{
+    const size_t      suffixPos = getNumberSuffixPosition(text);
+    const std::string numberText = text.substr(suffixPos);
+    const std::string prefixText = text.substr(0, suffixPos);
+
+    const int nextNumber = TfUnstringify<int>(numberText) + 1;
+    return prefixText + TfStringify(nextNumber);
 }
 
 bool UsdMayaUtilFileSystem::pathAppendPath(std::string& a, const std::string& b)

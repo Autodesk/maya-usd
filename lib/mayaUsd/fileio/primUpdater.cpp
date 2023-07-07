@@ -50,8 +50,6 @@ extern Ufe::Rtid g_MayaRtid;
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
 
-using namespace MAYAUSD_NS_DEF;
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMayaPrimUpdater::UsdMayaPrimUpdater(
@@ -90,7 +88,7 @@ bool UsdMayaPrimUpdater::discardEdits()
     // the reference is unloaded. Don't try to delete them here.
     MFnDependencyNode depNode(objectToDelete);
     if (!depNode.isFromReferencedFile()) {
-        MStatus status = NodeDeletionUndoItem::deleteNode(
+        MStatus status = MayaUsd::NodeDeletionUndoItem::deleteNode(
             "Discard edits delete individual pulled node", depNode.absoluteName(), objectToDelete);
 
         if (status != MS::kSuccess) {

@@ -9,6 +9,7 @@ target_sources(${PROJECT_NAME}
         proxyShapeBase.cpp
         proxyShapePlugin.cpp
         proxyShapeStageExtraData.cpp
+        proxyShapeListenerBase.cpp
         stageData.cpp
         stageNode.cpp
         usdPrimProvider.cpp
@@ -22,6 +23,7 @@ set(HEADERS
     proxyShapePlugin.h
     proxyStageProvider.h
     proxyShapeStageExtraData.h
+    proxyShapeListenerBase.h
     stageData.h
     stageNode.h
     usdPrimProvider.h

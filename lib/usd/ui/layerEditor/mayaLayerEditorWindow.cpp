@@ -35,20 +35,18 @@
 #include <map>
 #include <vector>
 
-using namespace MAYAUSD_NS_DEF;
-
 namespace {
 using namespace UsdLayerEditor;
 
-class LayerEditorWindowCreator : public AbstractLayerEditorCreator
+class LayerEditorWindowCreator : public MayaUsd::AbstractLayerEditorCreator
 {
 public:
     LayerEditorWindowCreator() { ; };
     virtual ~LayerEditorWindowCreator() { }
 
-    AbstractLayerEditorWindow* createWindow(const char* panelName) override;
-    AbstractLayerEditorWindow* getWindow(const char* panelName) const override;
-    std::vector<std::string>   getAllPanelNames() const override;
+    MayaUsd::AbstractLayerEditorWindow* createWindow(const char* panelName) override;
+    MayaUsd::AbstractLayerEditorWindow* getWindow(const char* panelName) const override;
+    std::vector<std::string>            getAllPanelNames() const override;
 
 private:
     // it's very important that this be a QPointer, so that it gets
@@ -60,7 +58,7 @@ private:
 
 LayerEditorWindowCreator::EditorsMap LayerEditorWindowCreator::_editors;
 
-AbstractLayerEditorWindow* LayerEditorWindowCreator::createWindow(const char* panelName)
+MayaUsd::AbstractLayerEditorWindow* LayerEditorWindowCreator::createWindow(const char* panelName)
 {
     auto _workspaceControl = MQtUtil::getCurrentParent();
     auto editorWindow = new MayaLayerEditorWindow(panelName, nullptr);
@@ -71,13 +69,14 @@ AbstractLayerEditorWindow* LayerEditorWindowCreator::createWindow(const char* pa
     return editorWindow;
 }
 
-AbstractLayerEditorWindow* LayerEditorWindowCreator::getWindow(const char* panelName) const
+MayaUsd::AbstractLayerEditorWindow* LayerEditorWindowCreator::getWindow(const char* panelName) const
 {
     auto window = _editors.find(panelName);
     return (window == _editors.end()) ? nullptr : window->second;
 }
 
-AbstractLayerEditorCreator::PanelNamesList LayerEditorWindowCreator::getAllPanelNames() const
+MayaUsd::AbstractLayerEditorCreator::PanelNamesList
+LayerEditorWindowCreator::getAllPanelNames() const
 {
     PanelNamesList result;
     for (auto entry : _editors) {
@@ -92,7 +91,7 @@ namespace UsdLayerEditor {
 
 MayaLayerEditorWindow::MayaLayerEditorWindow(const char* panelName, QWidget* parent)
     : PARENT_CLASS(parent)
-    , AbstractLayerEditorWindow(panelName)
+    , MayaUsd::AbstractLayerEditorWindow(panelName)
     , _panelName(panelName)
 {
     // Normally this will be set from the MayaUsd plugin, but only
@@ -109,7 +108,7 @@ MayaLayerEditorWindow::MayaLayerEditorWindow(const char* panelName, QWidget* par
         &MayaLayerEditorWindow::onClearUIOnSceneReset);
 }
 
-MayaLayerEditorWindow::~MayaLayerEditorWindow() { _sessionState.unregisterNotifications(); }
+MayaLayerEditorWindow::~MayaLayerEditorWindow() { }
 
 void MayaLayerEditorWindow::onClearUIOnSceneReset()
 {
@@ -117,7 +116,6 @@ void MayaLayerEditorWindow::onClearUIOnSceneReset()
     // safer to delete the entire UI and re-recreate it on scene changes
     // to release all the proxies
     LayerTreeModel::suspendUsdNotices(true);
-    _sessionState.unregisterNotifications();
     setCentralWidget(nullptr);
     delete _layerEditor;
 
@@ -130,7 +128,6 @@ void MayaLayerEditorWindow::onCreateUI()
     _layerEditor = new LayerEditorWidget(_sessionState, this);
     setCentralWidget(_layerEditor);
     _layerEditor->show();
-    _sessionState.registerNotifications();
 
     connect(
         treeView(),

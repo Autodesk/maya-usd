@@ -18,6 +18,7 @@
 
 import fixturesUtils
 import mayaUtils
+import ufeUtils
 
 from maya import cmds
 from maya import standalone
@@ -91,7 +92,7 @@ class UIInfoHandlerTestCase(unittest.TestCase):
         self.assertEqual(icon.baseIcon, "out_USD_Sphere.png")
         self.assertFalse(icon.badgeIcon)    # empty string
 
-        if os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '4029':
+        if ufeUtils.ufeFeatureSetVersion() >= 4:
             # Ball_3 should have a "normal" icon mode.
             self.assertEqual(ufe.UIInfoHandler.Normal, icon.mode)
 
