@@ -119,7 +119,7 @@ void MayaLayerEditorWindow::onClearUIOnSceneReset()
     setCentralWidget(nullptr);
     delete _layerEditor;
 
-    QTimer::singleShot(2000, this, &MayaLayerEditorWindow::onCreateUI);
+    QTimer::singleShot(0, this, &MayaLayerEditorWindow::onCreateUI);
 }
 
 void MayaLayerEditorWindow::onCreateUI()
