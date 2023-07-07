@@ -124,7 +124,7 @@ public:
             if (PyObject_HasAttrString(pyClass.ptr(), "CanImport")) {
                 boost::python::object CanImport = pyClass.attr("CanImport");
                 PyObject*             callable = CanImport.ptr();
-                auto                  res = boost::python::call<int>(callable, args);
+                auto                  res = boost::python::call<int>(callable, args, importPrim);
                 return UsdMayaPrimReader::ContextSupport(res);
             } else {
                 return UsdMayaPrimReader::CanImport(args, importPrim);
@@ -134,17 +134,13 @@ public:
         // Create a new wrapper for a Python class that is seen for the first time for a given
         // purpose. If we already have a registration for this purpose: update the class to
         // allow the previously issued factory function to use it.
-        static UsdMayaPrimReaderRegistry::ReaderFactoryFn
-        Register(boost::python::object cl, const std::string& typeName)
+        static FactoryFnWrapper
+        Register(boost::python::object cl, const std::string& typeName, bool& updated)
         {
             size_t classIndex = RegisterPythonObject(cl, GetKey(cl, typeName));
-            if (classIndex != UsdMayaPythonObjectRegistry::UPDATED) {
-                // Return a new factory function:
-                return FactoryFnWrapper { classIndex };
-            } else {
-                // We already registered a factory function for this purpose:
-                return nullptr;
-            }
+            updated = classIndex == UsdMayaPythonObjectRegistry::UPDATED;
+            // Return a new factory function:
+            return FactoryFnWrapper { classIndex };
         }
 
         // Unregister a class for a given purpose. This will cause the associated factory
@@ -169,20 +165,14 @@ public:
         }
     };
 
-    static void Register(
-        boost::python::object                               cl,
-        const std::string&                                  typeName,
-        const UsdMayaPrimReaderRegistry::ContextPredicateFn pred = nullptr)
+    static void Register(boost::python::object cl, const std::string& typeName)
     {
-        UsdMayaPrimReaderRegistry::ReaderFactoryFn fn = FactoryFnWrapper::Register(cl, typeName);
-        if (fn) {
+        bool             updated = false;
+        FactoryFnWrapper fn
+            = FactoryFnWrapper::Register(cl, typeName, updated);
+        if (!updated) {
             auto type = TfType::FindByName(typeName);
-            // If no context support is provided, use the default register function
-            if (pred) {
-                UsdMayaPrimReaderRegistry::Register(type, pred, fn, true);
-            } else {
-                UsdMayaPrimReaderRegistry::Register(type, fn, true);
-            }
+            UsdMayaPrimReaderRegistry::Register(type, fn, fn, true);
         }
     }
 
@@ -324,20 +314,20 @@ public:
             return sptr;
         }
 
-        // We can have multiple function objects, this one apapts the CanImport function:
-        UsdMayaShaderReader::ContextSupport operator()(const UsdMayaJobImportArgs& args)
+        // We can have multiple function objects, this one adapts the CanImport function:
+        UsdMayaPrimReader::ContextSupport operator()(const UsdMayaJobImportArgs& args)
         {
             boost::python::object pyClass = GetPythonObject(_classIndex);
             if (!pyClass) {
                 // Prototype was unregistered
-                return UsdMayaShaderReader::ContextSupport::Unsupported;
+                return UsdMayaPrimReader::ContextSupport::Unsupported;
             }
             TfPyLock pyLock;
             if (PyObject_HasAttrString(pyClass.ptr(), "CanImport")) {
                 boost::python::object CanImport = pyClass.attr("CanImport");
                 PyObject*             callable = CanImport.ptr();
                 auto                  res = boost::python::call<int>(callable, args);
-                return UsdMayaShaderReader::ContextSupport(res);
+                return UsdMayaPrimReader::ContextSupport(res);
             } else {
                 return UsdMayaShaderReader::CanImport(args);
             }
@@ -538,10 +528,13 @@ void wrapPrimReader()
     using namespace boost::python;
     typedef UsdMayaPrimReader This;
 
+    class_<PrimReaderWrapper<>, boost::noncopyable> c("PrimReader", no_init);
+
+    scope s(c);
+
     TfPyWrapEnum<UsdMayaPrimReader::ContextSupport>();
 
-    class_<PrimReaderWrapper<>, boost::noncopyable>("PrimReader", no_init)
-        .def("__init__", make_constructor(&PrimReaderWrapper<>::New))
+    c.def("__init__", make_constructor(&PrimReaderWrapper<>::New))
         .def("Read", pure_virtual(&UsdMayaPrimReader::Read))
         .def(
             "HasPostReadSubtree",
@@ -568,8 +561,6 @@ void wrapShaderReader()
         "ShaderReader", no_init);
 
     scope s(c);
-
-    TfPyWrapEnum<UsdMayaShaderReader::ContextSupport>();
 
     c.def("__init__", make_constructor(&ShaderReaderWrapper::New))
         .def("Read", pure_virtual(&UsdMayaPrimReader::Read))

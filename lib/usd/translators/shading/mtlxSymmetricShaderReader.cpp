@@ -138,7 +138,7 @@ TF_REGISTRY_FUNCTION(UsdMayaShaderReaderRegistry)
 };
 
 /* static */
-UsdMayaShaderReader::ContextSupport
+UsdMayaPrimReader::ContextSupport
 MtlxUsd_SymmetricShaderReader::CanImport(const UsdMayaJobImportArgs& importArgs)
 {
     if (importArgs.GetMaterialConversion() == TrMtlxTokens->conversionName) {
