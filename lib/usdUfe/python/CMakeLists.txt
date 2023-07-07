@@ -21,6 +21,7 @@ target_sources(${PYTHON_TARGET_NAME}
         wrapGlobal.cpp
         wrapTokens.cpp
         wrapUtils.cpp
+        wrapCommands.cpp
 )
 
 # -----------------------------------------------------------------------------

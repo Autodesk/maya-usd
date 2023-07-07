@@ -497,11 +497,16 @@ std::string OgsFragment::getSpecularEnvKey()
     return retVal;
 }
 
-std::string
-OgsFragment::registerOCIOFragment(const std::string& fragName, mx::DocumentPtr mtlxLibrary)
+std::string OgsFragment::registerOCIOFragment(const std::string& fragName)
 {
     // Delegate to the GlslOcioNodeImpl:
-    return mx::GlslOcioNodeImpl::registerOCIOFragment(fragName, mtlxLibrary);
+    return mx::GlslOcioNodeImpl::registerOCIOFragment(fragName);
+}
+
+mx::DocumentPtr OgsFragment::getOCIOLibrary()
+{
+    // Delegate to the GlslOcioNodeImpl:
+    return mx::GlslOcioNodeImpl::getOCIOLibrary();
 }
 
 } // namespace MaterialXMaya

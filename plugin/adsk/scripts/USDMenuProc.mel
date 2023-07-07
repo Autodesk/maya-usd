@@ -184,6 +184,81 @@ global proc mayaUsdMenu_unassignMaterial(string $ufePath)
     }
 }
 
+global proc mayaUsdMenu_EditAsMayaDataOptionsCallback(string $optionsString)
+{
+    optionVar -stringValue usdMaya_EditAsMayaDataOptions $optionsString;
+}
+
+global proc mayaUsdMenu_EditAsMayaDataOptionsReset(string $obj)
+{
+    optionVar -remove usdMaya_EditAsMayaDataOptions;
+    mayaUsdMenu_EditAsMayaDataOptions($obj);
+}
+
+global proc mayaUsdMenu_ApplyEditAsMayaDataOptions(string $obj)
+{
+    mayaUsdTranslatorImport ("", "query", "", "mayaUsdMenu_EditAsMayaDataOptionsCallback");
+    hideOptionBox;
+
+    if (size($obj)) {
+        waitCursor -state 1; 
+        mayaUsdMenu_editAsMaya $obj; 
+        waitCursor -state 0;
+    }
+}
+
+global proc mayaUsdMenu_EditAsMayaDataOptions(string $obj)
+{
+    global string $gOptionBoxOptions;
+    $gOptionBoxOptions = "noToolAndAction";
+    string $layout = getOptionBox();
+    setParent $layout;
+
+    setUITemplate -pushTemplate DefaultTemplate;
+    setOptionBoxTitle(getMayaUsdString("kEditAsMayaDataOptions"));
+
+    string $optionsString = ";readAnimData=1";
+    if (`optionVar -exists usdMaya_EditAsMayaDataOptions`) {
+        $optionsString = `optionVar -query usdMaya_EditAsMayaDataOptions`;
+    }
+
+    string $optionsFrame = `frameLayout -collapsable false -labelVisible false -marginHeight 10 -borderVisible false editAsMayaDataOptionsFrame`;
+    mayaUsdTranslatorImport ($optionsFrame, "post", $optionsString, "mayaUsdMenu_EditAsMayaDataOptionsCallback");
+
+    string $applyCloseBtn = getOptionBoxApplyAndCloseBtn();
+    button -edit -label `getMayaUsdString("kEditAsMayaData")`
+        -command ("mayaUsdMenu_ApplyEditAsMayaDataOptions(\"" + $obj + "\");")
+        $applyCloseBtn;
+
+    string $applyBtn = getOptionBoxApplyBtn();
+    button -edit
+        -command ("mayaUsdMenu_ApplyEditAsMayaDataOptions(\"\");")
+        $applyBtn;
+
+    string $resetBtn = getOptionBoxResetBtn();
+    button -edit 
+        -command ("mayaUsdMenu_EditAsMayaDataOptionsReset(\"" + $obj + "\");")
+        $resetBtn;
+
+    string $saveBtn = getOptionBoxSaveBtn();
+    button -edit 
+        -command "mayaUsdTranslatorImport(\"\", \"query\", \"\", \"mayaUsdMenu_EditAsMayaDataOptionsCallback\")"
+        $saveBtn;
+
+	string $helpItem = getOptionBoxHelpItem(); 
+	if ($helpItem != "") {
+		menuItem -edit 
+			-label `getMayaUsdString("kHelpOnEditAsMayaDataOptions")`
+            -command ( "showHelp UsdImportOptionsConfig" )
+			$helpItem;
+	}
+
+    showOptionBox();
+
+    global string $gOptionBox;
+    window -e -height 260 $gOptionBox;
+}
+
 // On right click in the viewport, either through selection or through a pick
 // hit, Maya will look for a procedure called $runTimeName + "MenuProc".
 // and call it.  When the selection or pick hit is a USD prim, this calls the
@@ -201,7 +276,8 @@ global proc USDMenuProc(string $parent, string $obj)
 
         setParent -menu ..;
         if (canEditAsMaya($obj)) {
-            menuItem -label "Edit As Maya Data" -image "edit_as_Maya.png" -command ("{waitCursor -state 1; mayaUsdMenu_editAsMaya \"" + $obj + "\"; waitCursor -state 0;}");
+            menuItem -label `getMayaUsdString("kEditAsMayaData")` -image "edit_as_Maya.png" -command ("{waitCursor -state 1; mayaUsdMenu_editAsMaya \"" + $obj + "\"; waitCursor -state 0;}");
+            menuItem -command ("{mayaUsdMenu_EditAsMayaDataOptions \"" + $obj + "\";}") -optionBox true;
         }
         if (canDupAsMaya($obj)) {
             menuItem -label "Duplicate As Maya Data" -command ("{waitCursor -state 1; mayaUsdMenu_duplicate \"" + $obj + "\"; waitCursor -state 0;}");

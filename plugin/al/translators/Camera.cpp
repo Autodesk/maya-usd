@@ -34,14 +34,7 @@
 #include <maya/MTime.h>
 
 namespace {
-const int _cameraProfilerCategory = MProfiler::addCategory(
-#if MAYA_API_VERSION >= 20190000
-    "Camera",
-    "Camera"
-#else
-    "Camera"
-#endif
-);
+const int _cameraProfilerCategory = MProfiler::addCategory("Camera", "Camera");
 } // namespace
 
 namespace AL {

@@ -21,10 +21,18 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdObject3dHandler.cpp
             UsdUndoableCommand.cpp
             UsdUndoAddNewPrimCommand.cpp
+            UsdUndoAddPayloadCommand.cpp
+            UsdUndoAddReferenceCommand.cpp
+            UsdUndoAddRefOrPayloadCommand.cpp
+            UsdUndoClearPayloadsCommand.cpp
+            UsdUndoClearReferencesCommand.cpp
             UsdUndoCreateGroupCommand.cpp
             UsdUndoInsertChildCommand.cpp
             UsdUndoReorderCommand.cpp
+            UsdUndoSelectAfterCommand.cpp
             UsdUndoSetKindCommand.cpp
+            UsdUndoToggleActiveCommand.cpp
+            UsdUndoToggleInstanceableCommand.cpp
             UsdUndoVisibleCommand.cpp
     )
 endif()
@@ -56,10 +64,18 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdObject3dHandler.h
         UsdUndoableCommand.h
         UsdUndoAddNewPrimCommand.h
+        UsdUndoAddPayloadCommand.h
+        UsdUndoAddReferenceCommand.h
+        UsdUndoAddRefOrPayloadCommand.h
+        UsdUndoClearPayloadsCommand.h
+        UsdUndoClearReferencesCommand.h
         UsdUndoCreateGroupCommand.h
         UsdUndoInsertChildCommand.h
         UsdUndoReorderCommand.h
+        UsdUndoSelectAfterCommand.h
         UsdUndoSetKindCommand.h
+        UsdUndoToggleActiveCommand.h
+        UsdUndoToggleInstanceableCommand.h
         UsdUndoVisibleCommand.h
     )
 endif()

@@ -236,11 +236,7 @@ void MayaCommandHook::selectPrimsWithSpec(UsdLayer usdLayer)
     script += R"PYTHON(
 # Ufe
 import ufe
-try:
-    from maya.internal.ufeSupport import ufeSelectCmd
-except ImportError:
-    # Maya 2019 and 2020 don't have ufeSupport plugin, so use fallback.
-    from ufeScripts import ufeSelectCmd
+from maya.internal.ufeSupport import ufeSelectCmd
 
 # create a selection list
 sn = ufe.Selection()

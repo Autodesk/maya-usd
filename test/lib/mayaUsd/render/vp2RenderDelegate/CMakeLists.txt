@@ -17,11 +17,6 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         testVP2RenderDelegatePrimPath.py
         testVP2RenderDelegateUSDPreviewSurface.py
         testVP2RenderDelegateConsolidation.py
-    )
-endif()
-
-if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
-    list(APPEND TEST_SCRIPT_FILES
         testVP2RenderDelegatePerInstanceInheritedData.py
         testVP2RenderDelegateBasisCurves.py
         testVP2RenderDelegateDrawModes.py
@@ -29,12 +24,10 @@ if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
     )
 endif()
 
-if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
-    if (CMAKE_UFE_V2_FEATURES_AVAILABLE)
-        list(APPEND TEST_SCRIPT_FILES
-            testVP2RenderDelegateUsdCamera.py
-        )
-    endif()
+if (CMAKE_UFE_V2_FEATURES_AVAILABLE)
+    list(APPEND TEST_SCRIPT_FILES
+        testVP2RenderDelegateUsdCamera.py
+    )
 endif()
 
 if (MAYA_APP_VERSION VERSION_GREATER 2022)
@@ -64,7 +57,7 @@ if (CMAKE_WANT_MATERIALX_BUILD)
             "MAYA_LIGHTAPI_VERSION=${MAYA_LIGHTAPI_VERSION}"
             "MATERIALX_VERSION=${MaterialX_VERSION}"
             "MAYA_HAS_COLOR_MANAGEMENT_SUPPORT_API=${MAYA_HAS_COLOR_MANAGEMENT_SUPPORT_API}"
-
+            "MAYAUSD_EXPORT_EXPANDED_COLORSPACE_ATTRIBUTE=1"
             # Maya uses a very old version of GLEW, so we need support for
             # pre-loading a newer version from elsewhere.
             "LD_PRELOAD=${ADDITIONAL_LD_PRELOAD}"

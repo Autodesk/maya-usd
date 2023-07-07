@@ -101,14 +101,7 @@ MStatus Scope::initialise()
             AL_MAYA_CHECK_ERROR(attributeAffects(inAttr, rotatePivotTranslate), errorString);
             AL_MAYA_CHECK_ERROR(attributeAffects(inAttr, scalePivot), errorString);
             AL_MAYA_CHECK_ERROR(attributeAffects(inAttr, scalePivotTranslate), errorString);
-            // Maya 2018 (checked 2018.2 and 2018.3) has a bug where, if any loaded plugin has an
-            // MPxTransform subclass that has ANY attribute that connected to rotateAxis, it will
-            // cause the rotateAxis to evaluate INCORRECTLY, even on the BASE transform class! See
-            // this gist for full reproduction details:
-            //   https://gist.github.com/elrond79/f9ddb277da3eab2948d27ddb1f84aba0
-#if MAYA_API_VERSION >= 20180600
             AL_MAYA_CHECK_ERROR(attributeAffects(inAttr, rotateAxis), errorString);
-#endif
             AL_MAYA_CHECK_ERROR(attributeAffects(inAttr, matrix), errorString);
             AL_MAYA_CHECK_ERROR(attributeAffects(inAttr, worldMatrix), errorString);
             AL_MAYA_CHECK_ERROR(attributeAffects(inAttr, inverseMatrix), errorString);

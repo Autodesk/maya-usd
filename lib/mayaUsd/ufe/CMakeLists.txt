@@ -25,6 +25,7 @@ target_sources(${PROJECT_NAME}
         UsdTranslateUndoableCommand.cpp
         UsdUndoDeleteCommand.cpp
         UsdUndoDuplicateCommand.cpp
+        UsdUndoPayloadCommand.cpp
         UsdUndoRenameCommand.cpp
         Utils.cpp
         moduleDeps.cpp
@@ -197,6 +198,7 @@ set(HEADERS
     UsdTranslateUndoableCommand.h
     UsdUndoDeleteCommand.h
     UsdUndoDuplicateCommand.h
+    UsdUndoPayloadCommand.h
     UsdUndoRenameCommand.h
     Utils.h
 )

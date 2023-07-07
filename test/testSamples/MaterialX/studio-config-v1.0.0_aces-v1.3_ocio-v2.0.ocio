@@ -32,7 +32,7 @@ file_rules:
   - !<Rule> {name: G24REC709, extension: "exr", pattern: "*g24_rec709*", colorspace: Gamma 2.4 Rec.709 - Texture}
   - !<Rule> {name: LINP3D65, extension: "exr", pattern: "*lin_p3d65*", colorspace: Linear P3-D65}
   - !<Rule> {name: SRGB, extension: "exr", pattern: "*srgb_texture*", colorspace: sRGB - Texture}
-  - !<Rule> {name: ARRILOGC4, extension: "exr", pattern: "*arri_logc4*", colorspace: ARRI LogC4 - Curve}
+  - !<Rule> {name: ARRILOGC4, extension: "exr", pattern: "*arri_logc4*", colorspace: ARRI LogC4}
   - !<Rule> {name: Default, colorspace: ACES2065-1}
 
 shared_views:

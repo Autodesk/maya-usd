@@ -8,13 +8,8 @@ import mayaUtils
 import ufe
 import unittest
 import usdUtils
+from usdUtils import filterUsdStr
 from pxr import UsdGeom
-
-def filterUsdStr(usdSceneStr):
-    '''Remove empty lines and lines starting with pound character.'''
-    nonBlankLines = filter(None, [l.rstrip() for l in usdSceneStr.splitlines()])
-    finalLines = [l for l in nonBlankLines if not l.startswith('#')]
-    return '\n'.join(finalLines)
 
 def getSessionLayer(context, routingData):
     prim = context.get('prim')
@@ -106,7 +101,7 @@ class VisibilityCmdTestCase(unittest.TestCase):
  
         # Check that correct visibility changes were written to the session layer
         self.assertEqual(filterUsdStr(sessionLayer.ExportToString()),
-                         'over "B"\n{\n    token visibility = "invisible"\n}')
+                         filterUsdStr('over "B"\n{\n    token visibility = "invisible"\n}'))
 
     def testEditRouterForCmdShowHideMultipleSelection(self):
         '''
@@ -130,7 +125,7 @@ class VisibilityCmdTestCase(unittest.TestCase):
 
         # Check visibility was written to the session layer.
         self.assertEqual(filterUsdStr(sessionLayer.ExportToString()),
-                         'over "A"\n{\n    token visibility = "invisible"\n}')
+                         filterUsdStr('over "A"\n{\n    token visibility = "invisible"\n}'))
 
         # Hiding a multiple selection with already-hidden A must not error.
         # Careful: hide command clears the selection, so must add /A again.
@@ -141,7 +136,7 @@ class VisibilityCmdTestCase(unittest.TestCase):
 
         # Check visibility was written to the session layer.
         self.assertEqual(filterUsdStr(sessionLayer.ExportToString()),
-                         'over "A"\n{\n    token visibility = "invisible"\n}\nover "B"\n{\n    token visibility = "invisible"\n}')
+                         filterUsdStr('over "A"\n{\n    token visibility = "invisible"\n}\nover "B"\n{\n    token visibility = "invisible"\n}'))
  
 
 if __name__ == '__main__':

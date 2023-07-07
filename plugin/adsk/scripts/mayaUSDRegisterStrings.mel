@@ -30,6 +30,9 @@ global proc mayaUSDRegisterStrings()
     register("kButtonCancel", "Cancel");
     register("kCreateUsdStageFromFile", "Create USD Stage from File");
     register("kCreateUsdStageFromFileOptions", "Create USD Stage from File Options");
+    register("kEditAsMayaData", "Edit As Maya Data");
+    register("kEditAsMayaDataOptions", "Edit As Maya Data Options");
+    register("kHelpOnEditAsMayaDataOptions", "Help on Edit As Maya Data Options");
     register("kCreateStageFromFile", "Create Stage from File");
     register("kCreateStage", "Create");
     register("kDefaultPrim", "Default Prim");

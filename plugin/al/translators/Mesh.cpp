@@ -41,14 +41,7 @@
 #include <maya/MVectorArray.h>
 
 namespace {
-const int _meshProfilerCategory = MProfiler::addCategory(
-#if MAYA_API_VERSION >= 20190000
-    "Mesh",
-    "Mesh"
-#else
-    "Mesh"
-#endif
-);
+const int _meshProfilerCategory = MProfiler::addCategory("Mesh", "Mesh");
 } // namespace
 
 namespace AL {

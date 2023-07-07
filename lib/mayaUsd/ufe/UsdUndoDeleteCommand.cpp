@@ -19,6 +19,7 @@
 
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/utils/layers.h>
+#include <usdUfe/utils/usdUtils.h>
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/editContext.h>
@@ -67,6 +68,14 @@ void UsdUndoDeleteCommand::execute()
 #ifdef UFE_V4_FEATURES_AVAILABLE
         UsdAttributes::removeAttributesConnections(_prim);
 #endif
+        // Let removeAttributesConnections be run first as it will also cleanup
+        // attributes that were authored only to be the destination of a connection.
+        if (!UsdUfe::cleanReferencedPath(_prim)) {
+            const std::string error = TfStringPrintf(
+                "Failed to cleanup references to prim \"%s\".", _prim.GetPath().GetText());
+            TF_WARN("%s", error.c_str());
+            throw std::runtime_error(error);
+        }
         PrimSpecFunc deleteFunc
             = [stage](const UsdPrim& prim, const SdfPrimSpecHandle& primSpec) -> void {
             PXR_NS::UsdEditContext ctx(stage, primSpec->GetLayer());

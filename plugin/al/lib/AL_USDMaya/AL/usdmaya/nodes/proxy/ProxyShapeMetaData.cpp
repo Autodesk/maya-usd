@@ -24,14 +24,8 @@
 
 #include <maya/MProfiler.h>
 namespace {
-const int _proxyShapeMetadataProfilerCategory = MProfiler::addCategory(
-#if MAYA_API_VERSION >= 20190000
-    "AL_usdmaya_ProxyShape_selection",
-    "AL_usdmaya_ProxyShape_selection"
-#else
-    "AL_usdmaya_ProxyShape_selection"
-#endif
-);
+const int _proxyShapeMetadataProfilerCategory
+    = MProfiler::addCategory("AL_usdmaya_ProxyShape_selection", "AL_usdmaya_ProxyShape_selection");
 } // namespace
 
 namespace AL {
