@@ -168,8 +168,7 @@ public:
     static void Register(boost::python::object cl, const std::string& typeName)
     {
         bool             updated = false;
-        FactoryFnWrapper fn
-            = FactoryFnWrapper::Register(cl, typeName, updated);
+        FactoryFnWrapper fn = FactoryFnWrapper::Register(cl, typeName, updated);
         if (!updated) {
             auto type = TfType::FindByName(typeName);
             UsdMayaPrimReaderRegistry::Register(type, fn, fn, true);
