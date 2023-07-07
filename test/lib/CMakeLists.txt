@@ -6,7 +6,7 @@ set(TEST_SCRIPT_FILES
     testMayaUsdCacheId.py
 )
 
-if (UFE_FOUND AND MAYA_APP_VERSION VERSION_GREATER 2020)
+if (UFE_FOUND)
     list(APPEND TEST_SCRIPT_FILES
         testMayaUsdDirtyScene.py
         testMayaUsdProxyAccessor.py

@@ -26,14 +26,8 @@
 
 #include <maya/MProfiler.h>
 namespace {
-const int _translatorProfilerCategory = MProfiler::addCategory(
-#if MAYA_API_VERSION >= 20190000
-    "TranslatorManufacture",
-    "TranslatorManufacture"
-#else
-    "TranslatorManufacture"
-#endif
-);
+const int _translatorProfilerCategory
+    = MProfiler::addCategory("TranslatorManufacture", "TranslatorManufacture");
 } // namespace
 
 namespace AL {

@@ -22,13 +22,8 @@
 #include <maya/MProfiler.h>
 namespace {
 const int _proxyShapeVariantFallbacksProfilerCategory = MProfiler::addCategory(
-#if MAYA_API_VERSION >= 20190000
     "AL_usdmaya_ProxyShape_variant_fallbacks",
-    "AL_usdmaya_ProxyShape_variant_fallbacks"
-#else
-    "AL_usdmaya_ProxyShape_variant_fallbacks"
-#endif
-);
+    "AL_usdmaya_ProxyShape_variant_fallbacks");
 } // namespace
 
 namespace AL {

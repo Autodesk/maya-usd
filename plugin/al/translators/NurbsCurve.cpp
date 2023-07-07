@@ -37,14 +37,7 @@
 #include <maya/MStatus.h>
 
 namespace {
-const int _nurbsCurveProfilerCategory = MProfiler::addCategory(
-#if MAYA_API_VERSION >= 20190000
-    "NurbsCurve",
-    "NurbsCurve"
-#else
-    "NurbsCurve"
-#endif
-);
+const int _nurbsCurveProfilerCategory = MProfiler::addCategory("NurbsCurve", "NurbsCurve");
 } // namespace
 
 namespace AL {

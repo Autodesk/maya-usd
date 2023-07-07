@@ -123,14 +123,12 @@ public:
         SdfPathVector&              selectedSdfPaths,
         const HdSelectionSharedPtr& selection) override;
 
-#if MAYA_API_VERSION >= 20210000
     HDMAYA_API
     void PopulateSelectionList(
         const HdxPickHitVector&          hits,
         const MHWRender::MSelectionInfo& selectInfo,
         MSelectionList&                  selectionList,
         MPointArray&                     worldSpaceHitPts) override;
-#endif
 
     bool GetEnableMaterials() const { return _enableMaterials; }
     void SetEnableMaterials(bool enable) { _enableMaterials = enable; }

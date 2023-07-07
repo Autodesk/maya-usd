@@ -739,7 +739,6 @@ void HdMayaSceneDelegate::PopulateSelectedPaths(
         MFn::kShape);
 }
 
-#if MAYA_API_VERSION >= 20210000
 void HdMayaSceneDelegate::PopulateSelectionList(
     const HdxPickHitVector&          hits,
     const MHWRender::MSelectionInfo& selectInfo,
@@ -773,7 +772,6 @@ void HdMayaSceneDelegate::PopulateSelectionList(
             _shapeAdapters);
     }
 }
-#endif
 
 HdMeshTopology HdMayaSceneDelegate::GetMeshTopology(const SdfPath& id)
 {

@@ -892,8 +892,6 @@ MStatus UsdMayaMeshReadUtils::assignSubDivTagsToMesh(
     return MS::kSuccess;
 }
 
-#if MAYA_API_VERSION >= 20220000
-
 bool UsdMayaMeshReadUtils::getGeomSubsetInfo(const MObject& mesh, JsValue& meshRoundtripData)
 {
     MFnDependencyNode depNodeFn(mesh);
@@ -1076,7 +1074,5 @@ MStatus UsdMayaMeshReadUtils::createComponentTags(const UsdGeomMesh& mesh, const
 
     return status;
 }
-
-#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -12,7 +12,7 @@ if (CMAKE_UFE_V2_FEATURES_AVAILABLE)
     set(MAYAUSD_AE_TEMPLATES usdschemabase)
 
     foreach(_SUBDIR ${MAYAUSD_AE_TEMPLATES})
-        install(FILES ${_SUBDIR}/__init__.py ${_SUBDIR}/custom_enum_control.py ${_SUBDIR}/ae_template.py
+        install(FILES ${_SUBDIR}/__init__.py ${_SUBDIR}/custom_image_control.py ${_SUBDIR}/custom_enum_control.py ${_SUBDIR}/ae_template.py
             DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/usd/nodes/${_SUBDIR}
         )
     endforeach()

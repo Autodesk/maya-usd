@@ -15,36 +15,23 @@
 //
 #include "UsdUndoAddReferenceCommand.h"
 
-#include <pxr/base/tf/stringUtils.h>
-#include <pxr/usd/sdf/path.h>
-
 namespace USDUFE_NS_DEF {
 
-//! \brief Command to add a reference to a prim.
 UsdUndoAddReferenceCommand::UsdUndoAddReferenceCommand(
     const PXR_NS::UsdPrim& prim,
     const std::string&     filePath,
     bool                   prepend)
-    : _prim(prim)
-    , _sdfRef()
-    , _filePath(filePath)
-    , _listPos(
-          prepend ? PXR_NS::UsdListPositionBackOfPrependList
-                  : PXR_NS::UsdListPositionBackOfAppendList)
+    : UsdUndoAddReferenceCommand(prim, filePath, {}, prepend)
 {
 }
 
-void UsdUndoAddReferenceCommand::executeImplementation()
+UsdUndoAddReferenceCommand::UsdUndoAddReferenceCommand(
+    const PXR_NS::UsdPrim& prim,
+    const std::string&     filePath,
+    const std::string&     primPath,
+    bool                   prepend)
+    : UsdUndoAddRefOrPayloadCommand(prim, filePath, primPath, getListPosition(prepend), false)
 {
-    if (!_prim.IsValid())
-        return;
-
-    _sdfRef = PXR_NS::TfStringEndsWith(_filePath, ".mtlx")
-        ? PXR_NS::SdfReference(_filePath, PXR_NS::SdfPath("/MaterialX"))
-        : PXR_NS::SdfReference(_filePath);
-
-    PXR_NS::UsdReferences primRefs = _prim.GetReferences();
-    primRefs.AddReference(_sdfRef, _listPos);
 }
 
 } // namespace USDUFE_NS_DEF
