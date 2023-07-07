@@ -109,6 +109,10 @@ if(IS_WINDOWS)
         testLoadRules.cpp
     )
     add_mayaUsdLibUtils_test(
+        testUtilsFileSystem
+        testUtilsFileSystem.cpp
+    )
+    add_mayaUsdLibUtils_test(
         testTargetLayer
         testTargetLayer.cpp
     )

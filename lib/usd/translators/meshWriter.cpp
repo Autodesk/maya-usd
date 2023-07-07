@@ -346,6 +346,9 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
 
     const UsdMayaJobExportArgs& exportArgs = _GetExportArgs();
 
+    double distanceConversionScalar
+        = UsdMayaUtil::GetExportDistanceConversionScalar(exportArgs.metersPerUnit);
+
     // Exporting reference object only once
     if (usdTime.IsDefault() && exportArgs.referenceObjectMode != UsdMayaJobExportArgsTokens->none) {
         UsdMayaMeshWriteUtils::exportReferenceMesh(
@@ -557,7 +560,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
             TF_WARN("Blendshapes were requested to be exported, but no upstream blendshapes could "
                     "be found.");
             UsdMayaMeshWriteUtils::writePointsData(
-                geomMesh, primSchema, usdTime, _GetSparseValueWriter());
+                geomMesh, primSchema, usdTime, distanceConversionScalar, _GetSparseValueWriter());
         } else {
             MFnDependencyNode fnNode(upstreamBlendShape, &status);
             CHECK_MSTATUS_AND_RETURN(status, false);
@@ -583,14 +586,14 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
             MFnMesh fnMesh(inputGeo, &status);
             CHECK_MSTATUS_AND_RETURN(status, false);
             UsdMayaMeshWriteUtils::writePointsData(
-                fnMesh, primSchema, usdTime, _GetSparseValueWriter());
+                fnMesh, primSchema, usdTime, distanceConversionScalar, _GetSparseValueWriter());
         }
     } else {
         // TODO: (yliangsiew) Any other deformers that get implemented in the future will have to
         // make sure that they don't just enter this scope; otherwise, their deformed point
         // positions will get "baked" into the pref pose as well.
         UsdMayaMeshWriteUtils::writePointsData(
-            geomMesh, primSchema, usdTime, _GetSparseValueWriter());
+            geomMesh, primSchema, usdTime, distanceConversionScalar, _GetSparseValueWriter());
     }
 
     // Write faceVertexIndices
@@ -656,6 +659,8 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
     VtArray<float>   shadersAlphaData;
     TfToken          shadersInterpolation;
     VtArray<int>     shadersAssignmentIndices;
+    // check if its safe to export display opacity
+    bool exportDisplayOpacity = false;
 
     // If we're exporting displayColor or we have color sets, gather colors and
     // opacities from the shaders assigned to the mesh and/or its faces.
@@ -685,14 +690,18 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
         }
 
         if (colorSetName == UsdMayaMeshPrimvarTokens->DisplayOpacityColorSetName.GetString()) {
-            TF_WARN(
-                "Mesh \"%s\" has a color set named \"%s\", "
-                "which is a reserved Primvar name in USD. Skipping...",
-                finalMesh.fullPathName().asChar(),
-                UsdMayaMeshPrimvarTokens->DisplayOpacityColorSetName.GetText());
-            continue;
+            // We only export opacity when we are exporting display color
+            // and the color is float3
+            // if its float4 it will split to color and alpha
+            if (!exportDisplayOpacity) {
+                TF_WARN(
+                    "Mesh \"%s\" has a color set named \"%s\", "
+                    "which is a reserved Primvar name in USD. Skipping...",
+                    finalMesh.fullPathName().asChar(),
+                    UsdMayaMeshPrimvarTokens->DisplayOpacityColorSetName.GetText());
+                continue;
+            }
         }
-
         VtArray<GfVec3f>              RGBData;
         VtArray<float>                AlphaData;
         TfToken                       interpolation;
@@ -735,6 +744,12 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
                 clamped,
                 true,
                 _GetSparseValueWriter());
+
+            // We can only export display opacity separately if display color doesn't contain alpha
+            // data
+            if (colorSetRep == MFnMesh::kRGB) {
+                exportDisplayOpacity = true;
+            }
         } else {
             const std::string sanitizedName = UsdMayaUtil::SanitizeColorSetName(colorSetName);
             // if our sanitized name is different than our current one and the

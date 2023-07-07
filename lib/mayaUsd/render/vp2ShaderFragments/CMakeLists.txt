@@ -15,6 +15,9 @@ list(APPEND SHADERFRAGMENTS_XMLS
     Float4ToFloatX.xml
     Float4ToFloatY.xml
     Float4ToFloatZ.xml
+    Float3ToFloatX.xml
+    Float3ToFloatY.xml
+    Float3ToFloatZ.xml
     UsdPreviewSurfaceLightAPI1.xml
     UsdPreviewSurfaceLightAPI2.xml
     UsdPreviewSurfaceLightAPI3.xml
@@ -62,6 +65,7 @@ list(APPEND SHADERFRAGMENTS_XMLS
     UsdPrimvarReader_float4.xml
     UsdPrimvarReader_vector.xml
     UsdTransform2d.xml
+    UsdUVTexture_noCM.xml
     UsdUVTexture.xml
     # USD plug info
     plugInfo.json

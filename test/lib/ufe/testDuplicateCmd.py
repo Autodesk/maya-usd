@@ -400,7 +400,7 @@ class DuplicateCmdTestCase(unittest.TestCase):
         self.assertIsNotNone(sublayer01)
         self.assertIsNotNone(sublayer01.GetPrimAtPath('/A1/B'))
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4041', 'Test only available in UFE preview version 0.4.41 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testUfeDuplicateCommandAPI(self):
         '''Test that the duplicate command can be invoked using the 3 known APIs.'''
 
@@ -464,7 +464,7 @@ class DuplicateCmdTestCase(unittest.TestCase):
         self.assertIsNotNone(plane7Item)
         self.assertEqual(plane7Item, duplicatedItem)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4041', 'Test only available in UFE preview version 0.4.41 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testUfeDuplicateHomonyms(self):
         '''Test that duplicating two items with similar names end up in two new duplicates.'''
         testFile = testUtils.getTestScene('MaterialX', 'BatchOpsTestScene.usda')
@@ -486,7 +486,7 @@ class DuplicateCmdTestCase(unittest.TestCase):
 
         self.assertNotEqual(cmd.targetItem(geomItem1.path()).path(), cmd.targetItem(geomItem2.path()).path())
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4041', 'Test only available in UFE preview version 0.4.41 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testUfeDuplicateDescendants(self):
         '''MAYA-125854: Test that duplicating a descendant of a selected ancestor results in the
            duplicate from the ancestor.'''
@@ -597,6 +597,55 @@ class DuplicateCmdTestCase(unittest.TestCase):
         self.assertIsNotNone(dupItem)
         dupTrf = ufe.Transform3d.transform3d(dupItem)
         self.assertEqual(ufe.Vector3d(2., 0., -2.), dupTrf.translation())
+
+    def testPrimWithReference(self):
+        '''
+        Test duplicating a prim that contains a reference.
+        The content of the reference should not become part of the destination prim.
+        The destination should still simply contain the reference arc.
+        '''
+
+        cmds.file(new=True, force=True)
+        cubeRefFile = testUtils.getTestScene("cubeRef", "cube-root.usda")
+        cubeRefDagPath, cubeRefStage = mayaUtils.createProxyFromFile(cubeRefFile)
+        cubeUfePathString = ','.join([cubeRefDagPath, "/RootPrim/PrimWithRef"])
+
+        cmds.duplicate(cubeUfePathString)
+
+        # Verify that the duplicated item still references the cube.
+        cubeRefByDupItem = ufeUtils.createUfeSceneItem(cubeRefDagPath, '/RootPrim/PrimWithRef1/CubeMesh')
+        self.assertIsNotNone(cubeRefByDupItem)
+        dupTrf = ufe.Transform3d.transform3d(cubeRefByDupItem)
+        self.assertEqual(ufe.Vector3d(2., 0., -2.), dupTrf.translation())
+
+        # Make sure the geometry did not get flattened into the duplicate
+        rootLayer = cubeRefStage.GetRootLayer()
+        rootLayerText = rootLayer.ExportToString()
+        self.assertNotIn('"Geom"', rootLayerText)
+        self.assertNotIn('Mesh', rootLayerText)
+
+    def testPrimWithPayload(self):
+        '''
+        Test duplicating a prim that has a payload.
+        The content of the payload should not become part of the destination prim.
+        The destination should still simply contain the payload arc.
+        '''
+
+        cmds.file(new=True, force=True)
+        withPayloadFile = testUtils.getTestScene("payload", "FlowerPot.usda")
+        withPayloadDagPath, withPayloadStage = mayaUtils.createProxyFromFile(withPayloadFile)
+        withPayloadUfePathString = ','.join([withPayloadDagPath, "/FlowerPot"])
+
+        cmds.duplicate(withPayloadUfePathString)
+
+        dupItem = ufeUtils.createUfeSceneItem(withPayloadDagPath, '/FlowerPot1')
+        self.assertIsNotNone(dupItem)
+
+        # Make sure the geometry did not get flattened into the duplicate
+        rootLayer = withPayloadStage.GetRootLayer()
+        rootLayerText = rootLayer.ExportToString()
+        self.assertNotIn('"Geom"', rootLayerText)
+        self.assertNotIn('Mesh', rootLayerText)
     
 
 if __name__ == '__main__':

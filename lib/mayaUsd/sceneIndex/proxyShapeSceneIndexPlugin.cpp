@@ -22,22 +22,43 @@
 #include <mayaUsd/ufe/Global.h>
 #endif
 
+#include <usdUfe/ufe/Utils.h>
+
 #include <pxr/imaging/hd/flatteningSceneIndex.h>
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 51
+#include <pxr/imaging/hd/materialBindingsSchema.h>
+#else
+#include <pxr/imaging/hd/materialBindingSchema.h>
+#endif
 #include <pxr/imaging/hd/retainedDataSource.h>
 #include <pxr/imaging/hd/sceneIndexPlugin.h>
 #include <pxr/imaging/hd/sceneIndexPluginRegistry.h>
 #include <pxr/usd/usd/primFlags.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
+#if PXR_VERSION >= 2302
+#include <pxr/usdImaging/usdImaging/drawModeSceneIndex.h> //For USD 2302 and later
+#include <pxr/usdImaging/usdImaging/niPrototypePropagatingSceneIndex.h>
+#include <pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h>
+#else
+#include <pxr/imaging/hd/instancedBySceneIndex.h>
+#include <pxr/usdImaging/usdImagingGL/drawModeSceneIndex.h> //For USD 2211
+#endif
 
 #include <maya/MObject.h>
 #include <maya/MObjectHandle.h>
 #include <maya/MSelectionList.h>
 #include <maya/MString.h>
 #if WANT_UFE_BUILD
+#include <mayaUsd/ufe/Utils.h>
+
 #include <ufe/rtid.h>
 #endif
 
+#include <pxr/base/tf/refPtr.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+typedef Ufe::Path (*MayaHydraInterpretRprimPath)(const HdSceneIndexBaseRefPtr&, const SdfPath&);
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -56,19 +77,45 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
     using HdMObjectDataSource = HdRetainedTypedSampledDataSource<MObject>;
     static TfToken         dataSourceNodePathEntry("object");
     HdDataSourceBaseHandle dataSourceEntryPathHandle = inputArgs->Get(dataSourceNodePathEntry);
-#if WANT_UFE_BUILD
-    using HdRtidRefDataSource = HdRetainedTypedSampledDataSource<Ufe::Rtid&>;
-    static TfToken         dataSourceRuntimeEntry("runtime");
-    HdDataSourceBaseHandle dataSourceEntryRuntimeHandle = inputArgs->Get(dataSourceRuntimeEntry);
-#endif
+
+    // Retrieve the version integer. The Version integer combines major, minor, and patch number
+    // like this major * 10000 + minor * 100 + patch
+    using MayaHydraVersionDataSource = HdRetainedTypedSampledDataSource<int>;
+    static TfToken         dataSourceVersionEntry("version");
+    HdDataSourceBaseHandle dataSourceEntryVersionHandle = inputArgs->Get(dataSourceVersionEntry);
+    int version = 100; // initial mayaHydra version where version data source had not been defined
+    if (auto dataSourceEntryVersion
+        = MayaHydraVersionDataSource::Cast(dataSourceEntryVersionHandle)) {
+        version = dataSourceEntryVersion->GetTypedValue(0.0f);
+    }
 
     if (auto dataSourceEntryNodePath = HdMObjectDataSource::Cast(dataSourceEntryPathHandle)) {
 #if WANT_UFE_BUILD
-        auto dataSourceEntryRuntime = HdRtidRefDataSource::Cast(dataSourceEntryRuntimeHandle);
-        if (TF_VERIFY(dataSourceEntryRuntime, "Error UFE runtime id data source not found")) {
-            Ufe::Rtid& id = dataSourceEntryRuntime->GetTypedValue(0.0f);
-            id = MayaUsd::ufe::getUsdRunTimeId();
-            TF_VERIFY(id != 0, "Invalid UFE runtime id");
+        if (version >= 200) {
+            // Retrieve interpret pick function from the scene index plugin, to be accessed by
+            // mayaHydra interpretRprimPath
+            using MayaHydraInterpretRprimPathDataSource
+                = HdRetainedTypedSampledDataSource<MayaHydraInterpretRprimPath&>;
+            static TfToken         dataSourceInterpretPickEntry("interpretRprimPath");
+            HdDataSourceBaseHandle dataSourceEntryInterpretPickHandle
+                = inputArgs->Get(dataSourceInterpretPickEntry);
+            auto dataSourceEntryInterpretPick
+                = MayaHydraInterpretRprimPathDataSource::Cast(dataSourceEntryInterpretPickHandle);
+            MayaHydraInterpretRprimPath& interpretRprimPath
+                = dataSourceEntryInterpretPick->GetTypedValue(0.0f);
+            interpretRprimPath = (MayaHydraInterpretRprimPath)&MayaUsd::
+                MayaUsdProxyShapeSceneIndex::InterpretRprimPath;
+        } else {
+            using HdRtidRefDataSource = HdRetainedTypedSampledDataSource<Ufe::Rtid&>;
+            static TfToken         dataSourceRuntimeEntry("runtime");
+            HdDataSourceBaseHandle dataSourceEntryRuntimeHandle
+                = inputArgs->Get(dataSourceRuntimeEntry);
+            auto dataSourceEntryRuntime = HdRtidRefDataSource::Cast(dataSourceEntryRuntimeHandle);
+            if (TF_VERIFY(dataSourceEntryRuntime, "Error UFE runtime id data source not found")) {
+                Ufe::Rtid& id = dataSourceEntryRuntime->GetTypedValue(0.0f);
+                id = MayaUsd::ufe::getUsdRunTimeId();
+                TF_VERIFY(id != 0, "Invalid UFE runtime id");
+            }
         }
 #endif
         MObject           dagNode = dataSourceEntryNodePath->GetTypedValue(0.0f);
@@ -80,10 +127,46 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
 
         auto proxyShape = dynamic_cast<MayaUsdProxyShapeBase*>(dependNodeFn.userNode());
         if (TF_VERIFY(proxyShape, "Error getting MayaUsdProxyShapeBase")) {
-            auto psSceneIndex = MayaUsd::MayaUsdProxyShapeSceneIndex::New(proxyShape);
+// We already have PXR_VERSION >= 2211
+#if PXR_VERSION < 2302 // So for 2211
+            auto                   usdImagingStageSceneIndex = UsdImagingStageSceneIndex::New();
+            HdSceneIndexBaseRefPtr _sceneIndex = UsdImagingGLDrawModeSceneIndex::New(
+                HdFlatteningSceneIndex::New(
+                    HdInstancedBySceneIndex::New(usdImagingStageSceneIndex)),
+                /* inputArgs = */ nullptr);
+#else
+            // For PXR_VERSION >= 2302
+            //  Used for the HdFlatteningSceneIndex to flatten material bindings
+            static const HdContainerDataSourceHandle flatteningInputArgs
+                = HdRetainedContainerDataSource::New(
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 51
+                    HdMaterialBindingsSchema::GetSchemaToken(),
+#else
+                    HdMaterialBindingSchemaTokens->materialBinding,
+#endif
+                    HdRetainedTypedSampledDataSource<bool>::New(true));
+
+            // Convert USD prims to rprims consumed by Hydra
+            auto usdImagingStageSceneIndex = UsdImagingStageSceneIndex::New();
+
             // Flatten transforms, visibility, purpose, model, and material
             // bindings over hierarchies.
-            return HdFlatteningSceneIndex::New(psSceneIndex);
+            // Do it the same way as USDView does with a SceneIndices chain
+            HdSceneIndexBaseRefPtr _sceneIndex
+                = UsdImagingPiPrototypePropagatingSceneIndex::New(usdImagingStageSceneIndex);
+            _sceneIndex = UsdImagingNiPrototypePropagatingSceneIndex::New(_sceneIndex);
+
+            // The native prototype propagating scene index does a lot of
+            // the flattening before inserting copies of the the prototypes
+            // into the scene index. However, the resolved material for a prim
+            // coming from a USD prototype can depend on the prim ancestors of
+            // a corresponding instance. So we need to do one final resolve here.
+            _sceneIndex = HdFlatteningSceneIndex::New(_sceneIndex, flatteningInputArgs);
+            _sceneIndex = UsdImagingDrawModeSceneIndex::New(_sceneIndex, /* inputArgs = */ nullptr);
+#endif
+
+            return MayaUsd::MayaUsdProxyShapeSceneIndex::New(
+                proxyShape, _sceneIndex, usdImagingStageSceneIndex);
         }
     }
 
@@ -97,10 +180,11 @@ namespace MAYAUSD_NS_DEF {
 ///////////////////////// MayaUsdProxyShapeSceneIndex
 
 MayaUsdProxyShapeSceneIndex::MayaUsdProxyShapeSceneIndex(
-    UsdImagingStageSceneIndexRefPtr inputSceneIndex,
+    HdSceneIndexBaseRefPtr          inputSceneIndex,
+    UsdImagingStageSceneIndexRefPtr usdImagingStageSceneIndex,
     MayaUsdProxyShapeBase*          proxyShape)
     : ParentClass(inputSceneIndex)
-    , _usdImagingStageSceneIndex(inputSceneIndex)
+    , _usdImagingStageSceneIndex(usdImagingStageSceneIndex)
     , _proxyShape(proxyShape)
 {
     TfWeakPtr<MayaUsdProxyShapeSceneIndex> ptr(this);
@@ -110,30 +194,57 @@ MayaUsdProxyShapeSceneIndex::MayaUsdProxyShapeSceneIndex(
 
 MayaUsdProxyShapeSceneIndex::~MayaUsdProxyShapeSceneIndex() { }
 
+MayaUsdProxyShapeSceneIndexRefPtr MayaUsdProxyShapeSceneIndex::New(
+    MayaUsdProxyShapeBase*                 proxyShape,
+    const HdSceneIndexBaseRefPtr&          sceneIndexChainLastElement,
+    const UsdImagingStageSceneIndexRefPtr& usdImagingStageSceneIndex)
+{
+    // Create the proxy shape scene index which populates the stage
+    return TfCreateRefPtr(new MayaUsdProxyShapeSceneIndex(
+        sceneIndexChainLastElement, usdImagingStageSceneIndex, proxyShape));
+}
+
+Ufe::Path MayaUsdProxyShapeSceneIndex::InterpretRprimPath(
+    const HdSceneIndexBaseRefPtr& sceneIndex,
+    const SdfPath&                path)
+{
+    if (MayaUsdProxyShapeSceneIndexRefPtr proxyShapeSceneIndex
+        = TfStatic_cast<MayaUsdProxyShapeSceneIndexRefPtr>(sceneIndex)) {
+        MStatus  status;
+        MDagPath dagPath(
+            MDagPath::getAPathTo(proxyShapeSceneIndex->_proxyShape->thisMObject(), &status));
+        return Ufe::Path(
+            { MayaUsd::ufe::dagPathToPathSegment(dagPath), UsdUfe::usdPathToUfePathSegment(path) });
+    }
+
+    return Ufe::Path();
+}
+
 void MayaUsdProxyShapeSceneIndex::StageSet(const MayaUsdProxyStageSetNotice& notice) { Populate(); }
 
 void MayaUsdProxyShapeSceneIndex::ObjectsChanged(
     const MayaUsdProxyStageObjectsChangedNotice& notice)
 {
-    // MAYA-126804 TODO: This should be enough to trigger dirty notifications being send
-    // when a matrix is changed. However this is not working due missing
-    // UsdImagingMeshAdapter::Invalidate implementation. This is not part of USD v22.11 however has
-    // been fixed in later versions.
     _usdImagingStageSceneIndex->ApplyPendingUpdates();
 }
 
 void MayaUsdProxyShapeSceneIndex::Populate()
 {
     if (!_populated) {
-        if (auto stage = _proxyShape->getUsdStage()) {
+        auto stage = _proxyShape->getUsdStage();
+        if (TF_VERIFY(stage, "Unable to fetch a valid USDStage.")) {
+            _usdImagingStageSceneIndex->SetStage(stage);
             // Check whether the pseudo-root has children
             if (!stage->GetPseudoRoot().GetChildren().empty())
             // MAYA-126641: Upon first call to MayaUsdProxyShapeBase::getUsdStage, the stage may be
             // empty. Do not mark the scene index as _populated, until stage is full. This is taken
             // care of inside MayaUsdProxyShapeSceneIndex::_StageSet callback.
             {
-                _usdImagingStageSceneIndex->SetStage(stage);
+#if PXR_VERSION < 2305
+                // In most recent USD, Populate is called from within SetStage, so there is no need
+                // to callsites to call it explicitly
                 _usdImagingStageSceneIndex->Populate();
+#endif
                 _populated = true;
             }
         }
@@ -154,7 +265,7 @@ HdSceneIndexPrim MayaUsdProxyShapeSceneIndex::GetPrim(const SdfPath& primPath) c
         return HdSceneIndexPrim();
     }
 
-    return _usdImagingStageSceneIndex->GetPrim(primPath);
+    return _GetInputSceneIndex()->GetPrim(primPath);
 }
 
 SdfPathVector MayaUsdProxyShapeSceneIndex::GetChildPrimPaths(const SdfPath& primPath) const

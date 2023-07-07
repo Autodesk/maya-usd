@@ -22,7 +22,12 @@ limitations under the License.
     <properties>
         <float3 name="Nw" semantic="Nw" flags="varyingInputParam" />
         <float3 name="Vw" semantic="Vw" flags="varyingInputParam" />
+        <float  name="facingFactor" semantic="SV_FACE" flags="varyingInputParam" />
+        <int name="cullStyle"/>
     </properties>
+    <values>
+        <int name="cullStyle" value="0"/>
+    </values>
     <outputs>
         <float3 name="output" />
     </outputs>
@@ -31,8 +36,12 @@ limitations under the License.
             <function_name val="NwFaceCameraIfNAN" />
             <source>
                 <![CDATA[
-vec3 NwFaceCameraIfNAN(vec3 Nw, vec3 Vw)
+vec3 NwFaceCameraIfNAN(vec3 Nw, vec3 Vw, float facingFactor, int cullStyle)
 {
+    // discard backfaces to prevent z-fighting
+    if ((cullStyle != 0) && (facingFactor <= 0.f))
+        discard;
+
     return any(isnan(Nw)) ? Vw : Nw;
 }
                 ]]>
@@ -42,8 +51,12 @@ vec3 NwFaceCameraIfNAN(vec3 Nw, vec3 Vw)
             <function_name val="NwFaceCameraIfNAN" />
             <source>
                 <![CDATA[
-float3 NwFaceCameraIfNAN(float3 Nw, float3 Vw)
+float3 NwFaceCameraIfNAN(float3 Nw, float3 Vw, float facingFactor, int cullStyle)
 {
+    // discard backfaces to prevent z-fighting
+    if ((cullStyle != 0) && (facingFactor > 0.f))
+        discard;
+
     return any(isnan(Nw)) ? Vw : Nw;
 }
                 ]]>
@@ -53,8 +66,12 @@ float3 NwFaceCameraIfNAN(float3 Nw, float3 Vw)
             <function_name val="NwFaceCameraIfNAN" />
             <source>
                 <![CDATA[
-float3 NwFaceCameraIfNAN(float3 Nw, float3 Vw)
+float3 NwFaceCameraIfNAN(float3 Nw, float3 Vw, float facingFactor, int cullStyle)
 {
+    // discard backfaces to prevent z-fighting
+    if ((cullStyle != 0) && (facingFactor <= 0.f))
+        discard;
+
     return any(isnan(Nw)) ? Vw : Nw;
 }
                 ]]>

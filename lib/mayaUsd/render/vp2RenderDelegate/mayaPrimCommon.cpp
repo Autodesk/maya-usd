@@ -348,8 +348,15 @@ HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
     auto* const param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     auto&       drawScene = param->GetDrawScene();
 
+    // See if the primitive is instanced
+    auto delegate = drawScene.GetUsdImagingDelegate();
+    auto instancerId = delegate->GetInstancerId(id);
+    bool instanced = !instancerId.IsEmpty();
+    // The additional condition below is to prevent a crash in USD function GetScenePrimPath
+    instanced = (instanced && !delegate->GetInstanceIndices(instancerId, id).empty());
+
     // display layers handling
-    if (!drawScene.GetUsdImagingDelegate()->GetInstancerId(id).IsEmpty()) {
+    if (instanced) {
         // Sync display layer modes for instanced prims.
         // This also sets the value of '_useInstancedDisplayLayerModes' that identifies whether
         // display layer modes will be handled on per-primitive or per-instance basis
@@ -884,6 +891,9 @@ void MayaUsdRPrim::_SyncSharedData(
     // If instancer is dirty, update instancing map
     if (HdChangeTracker::IsInstancerDirty(*dirtyBits, id)) {
         bool instanced = !refThis.GetInstancerId().IsEmpty();
+        // The additional condition below is to prevent a crash in USD function GetScenePrimPath
+        instanced
+            = (instanced && !delegate->GetInstanceIndices(refThis.GetInstancerId(), id).empty());
 
         // UpdateInstancingMapEntry is not multithread-safe, so enqueue the call
         _delegate->GetVP2ResourceRegistry().EnqueueCommit([this, id, instanced]() {
@@ -903,12 +913,7 @@ void MayaUsdRPrim::_SyncSharedData(
     // in the shared data structure based on current Hydra data
     _RenderTag() = renderTag;
 #else
-    if (*dirtyBits
-        & (HdChangeTracker::DirtyRenderTag
-#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
-           | HdChangeTracker::DirtyVisibility
-#endif
-           )) {
+    if (*dirtyBits & (HdChangeTracker::DirtyRenderTag)) {
         _RenderTag() = renderTag;
     }
 #endif
@@ -948,12 +953,7 @@ bool MayaUsdRPrim::_SyncCommon(
     HdRenderIndex& renderIndex = delegate->GetRenderIndex();
     if (!drawScene.DrawRenderTag(renderIndex.GetRenderTag(id))) {
         _HideAllDrawItems(curRepr);
-        *dirtyBits &= ~(
-            HdChangeTracker::DirtyRenderTag
-#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
-            | HdChangeTracker::DirtyVisibility
-#endif
-        );
+        *dirtyBits &= ~(HdChangeTracker::DirtyRenderTag);
         return false;
     }
 

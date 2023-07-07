@@ -77,6 +77,12 @@ MAYAUSD_CORE_PUBLIC
 std::pair<std::string, bool>
 makePathRelativeTo(const std::string& fileName, const std::string& relativeToDir);
 
+/*! \brief returns relative path of a layer file to its parent layer's directory
+ */
+MAYAUSD_CORE_PUBLIC
+std::string
+getPathRelativeToDirectory(const std::string& fileName, const std::string& relativeToDir);
+
 /*! \brief returns parent directory of a maya scene file opened by reference
  */
 MAYAUSD_CORE_PUBLIC
@@ -116,6 +122,27 @@ getPathRelativeToLayerFile(const std::string& fileName, const PXR_NS::SdfLayerHa
 MAYAUSD_CORE_PUBLIC
 bool requireUsdPathsRelativeToMayaSceneFile();
 
+/*! \brief returns true if the USD file should be added as a reference, false for as a payload.
+ */
+MAYAUSD_CORE_PUBLIC
+bool wantReferenceCompositionArc();
+
+/*! \brief returns true if the USD the reference or payload should be prepend, else append.
+ */
+MAYAUSD_CORE_PUBLIC
+bool wantPrependCompositionArc();
+
+/*! \brief returns true if the USD payload should be immediately loaded.
+ */
+MAYAUSD_CORE_PUBLIC
+bool wantPayloadLoaded();
+
+/*! \brief prepares the UI used to save layers, so that the UI can potentially make the
+           selected file name relative to the given directory.
+ */
+MAYAUSD_CORE_PUBLIC
+bool prepareLayerSaveUILayer(const std::string& relativeAnchor);
+
 /*! \brief prepares the UI used to save layers with the given layer file path, so that the UI
            can potentially make the selected file name relative to that layer. If the layer is
            null, the UI can either use the scene file or not make the file relative.
@@ -140,6 +167,29 @@ bool requireUsdPathsRelativeToEditTargetLayer();
 MAYAUSD_CORE_PUBLIC
 std::string
 getUniqueFileName(const std::string& dir, const std::string& basename, const std::string& ext);
+
+/*! \brief returns a unique file name, make sure it does not exist on disk.
+ */
+MAYAUSD_CORE_PUBLIC
+std::string ensureUniqueFileName(const std::string& filename);
+
+/*! \brief returns the position of the numbered suffix.
+           Returns the end of the string position if no such suffix is present.
+ */
+MAYAUSD_CORE_PUBLIC
+size_t getNumberSuffixPosition(const std::string& text);
+
+/*! \brief returns the numbered suffix.
+           Returns the an empty string if no such suffix is present.
+ */
+MAYAUSD_CORE_PUBLIC
+std::string getNumberSuffix(const std::string& text);
+
+/*! \brief returns a new text with the numbered suffix increased by one.
+           Returns the text with 1 appended if no such suffix is present.
+ */
+MAYAUSD_CORE_PUBLIC
+std::string increaseNumberSuffix(const std::string& text);
 
 /*! \brief returns the aboluste path relative to the maya file
  */

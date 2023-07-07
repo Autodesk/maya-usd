@@ -147,9 +147,9 @@ private:
     /// Allows remapping a USD attribute request to a different object if necessary
     MAYAUSD_CORE_PUBLIC
     UsdMayaAttributeAdaptor GetConvertibleAttribute(
-        MObject                       mayaObject,
-        const MString&                mayaAttribute,
-        const SdfAttributeSpecHandle& attrDef) const;
+        MObject        mayaObject,
+        const MString& mayaAttribute,
+        const TfToken& attrName) const;
 };
 
 using UsdMayaSchemaApiAdaptorPtr = std::shared_ptr<UsdMayaSchemaApiAdaptor>;

@@ -6,11 +6,7 @@ target_sources(${PROJECT_NAME}
         OpUndoItemList.cpp
         OpUndoItemRecorder.cpp
         OpUndoItems.cpp
-        UsdUndoBlock.cpp
-        UsdUndoManager.cpp
-        UsdUndoStateDelegate.cpp
-        UsdUndoableItem.cpp
-
+        MayaUsdUndoBlock.cpp
 )
 
 # -----------------------------------------------------------------------------
@@ -21,10 +17,7 @@ set(HEADERS
     OpUndoItemMuting.h
     OpUndoItemRecorder.h
     OpUndoItems.h
-    UsdUndoBlock.h
-    UsdUndoManager.h
-    UsdUndoStateDelegate.h
-    UsdUndoableItem.h
+    MayaUsdUndoBlock.h
 )
 
 # -----------------------------------------------------------------------------

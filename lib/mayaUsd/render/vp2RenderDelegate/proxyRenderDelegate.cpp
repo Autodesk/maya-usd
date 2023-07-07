@@ -26,6 +26,8 @@
 #include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/selectability.h>
 
+#include <usdUfe/ufe/Utils.h>
+
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stringUtils.h>
@@ -71,8 +73,9 @@
 
 #if defined(WANT_UFE_BUILD)
 #include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <ufe/globalSelection.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -216,7 +219,7 @@ void PopulateSelection(
     }
 
     // Filter out non-USD items.
-    auto usdItem = std::dynamic_pointer_cast<MayaUsd::ufe::UsdSceneItem>(item);
+    auto usdItem = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(item);
     if (!usdItem) {
         return;
     }
@@ -1486,8 +1489,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         }
     }
 
-    const Ufe::PathSegment pathSegment
-        = MayaUsd::ufe::usdPathToUfePathSegment(usdPath, instanceIndex);
+    const Ufe::PathSegment pathSegment = UsdUfe::usdPathToUfePathSegment(usdPath, instanceIndex);
     const Ufe::SceneItem::Ptr& si
         = handler->createItem(_proxyShapeData->ProxyShape()->ufePath() + pathSegment);
     if (!si) {
@@ -1893,11 +1895,6 @@ void ProxyRenderDelegate::_UpdateRenderTags()
     // changed since the last time we set the render tags so we know if there is a change
     // to an individual rprim or not.
     bool rprimRenderTagChanged = !_changeVersions.renderTagValid(changeTracker);
-#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
-    rprimRenderTagChanged
-        = rprimRenderTagChanged || !_changeVersions.visibilityValid(changeTracker);
-#endif
-
     bool renderPurposeChanged = false;
     bool proxyPurposeChanged = false;
     bool guidePurposeChanged = false;

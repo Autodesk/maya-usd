@@ -74,10 +74,8 @@
 #include <MaterialXRender/ImageHandler.h>
 #endif
 
-#if PXR_VERSION <= 2008
-// Needed for GL_HALF_FLOAT.
-#include <GL/glew.h>
-#endif
+#include <pxr/imaging/hdSt/udimTextureObject.h>
+#include <pxr/imaging/hio/image.h>
 
 #include <ghc/filesystem.hpp>
 #include <tbb/parallel_for.h>
@@ -87,18 +85,6 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
-
-#if PXR_VERSION >= 2102
-#include <pxr/imaging/hdSt/udimTextureObject.h>
-#else
-#include <pxr/imaging/glf/udimTexture.h>
-#endif
-
-#if PXR_VERSION >= 2102
-#include <pxr/imaging/hio/image.h>
-#else
-#include <pxr/imaging/glf/image.h>
-#endif
 
 #ifdef WANT_MATERIALX_BUILD
 namespace mx = MaterialX;
@@ -191,6 +177,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (st)
     (varname)
     (sourceColorSpace)
+    ((auto_, "auto"))
     (sRGB)
     (raw)
     (fallback)
@@ -215,6 +202,15 @@ TF_DEFINE_PRIVATE_TOKENS(
     (Float4ToFloatZ)
     (Float4ToFloatW)
     (Float4ToFloat3)
+    (Float3ToFloatX)
+    (Float3ToFloatY)
+    (Float3ToFloatZ)
+
+    // When using OCIO from Maya:
+    (Maya_OCIO_)
+    (toColor3ForCM)
+    (extract)
+
 
     (UsdPrimvarReader_color)
     (UsdPrimvarReader_vector)
@@ -325,6 +321,7 @@ const std::set<std::string> _mtlxTopoNodeSet = {
     "switch"
 };
 
+#ifndef HAS_COLOR_MANAGEMENT_SUPPORT_API
 // Maps from a known Maya target color space name to the corresponding color correct category.
 const std::unordered_map<std::string, std::string> _mtlxColorCorrectCategoryMap = {
     { "scene-linear Rec.709-sRGB", "MayaND_sRGBtoLinrec709_" },
@@ -337,6 +334,7 @@ const std::unordered_map<std::string, std::string> _mtlxColorCorrectCategoryMap 
     { "scene-linear Rec.2020",     "MayaND_sRGBtoLinrec2020_" },
     { "scene-linear Rec 2020",     "MayaND_sRGBtoLinrec2020_" },
 };
+#endif
 
 // clang-format on
 
@@ -506,11 +504,7 @@ std::string _GenerateXMLString(const HdMaterialNetwork2& materialNetwork)
 // arithmetic operation. So we need to "upgrade" the value we want to set as well.
 //
 // One example: ND_multiply_vector3FA(vector3 in1, float in2) will generate a float3 in2 uniform.
-MStatus _SetFAParameter(
-    MHWRender::MShaderInstance* surfaceShader,
-    const HdMaterialNode&       node,
-    const MString&              paramName,
-    float                       val)
+bool _IsFAParameter(const HdMaterialNode& node, const MString& paramName)
 {
     auto _endsWith = [](const std::string& s, const std::string& suffix) {
         return s.size() >= suffix.size()
@@ -519,11 +513,9 @@ MStatus _SetFAParameter(
 
     if (_IsMaterialX(node) && _endsWith(paramName.asChar(), "_in2")
         && _endsWith(node.identifier.GetString(), "FA")) {
-        // Try as vector
-        float vec[4] { val, val, val, val };
-        return surfaceShader->setParameter(paramName, &vec[0]);
+        return true;
     }
-    return MS::kFailure;
+    return false;
 }
 
 // MaterialX has a lot of node definitions that will auto-connect to a zero-index texture coordinate
@@ -1080,6 +1072,232 @@ std::string _GenerateXMLString(const HdMaterialNetwork& materialNetwork, bool in
     return result;
 }
 
+#ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
+void _AddColorManagementFragments(HdMaterialNetwork& net)
+{
+    MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
+    if (!theRenderer) {
+        return;
+    }
+
+    MHWRender::MFragmentManager* fragmentManager = theRenderer->getFragmentManager();
+    if (!fragmentManager) {
+        return;
+    }
+
+    // Need some robustness around sRGB since not all OCIO configs declare it the same way:
+    const auto sRGBAliases
+        = std::vector<MString> { "sRGB",         "sRGB - Texture",
+                                 "srgb_tx",      "Utility - sRGB - Texture",
+                                 "srgb_texture", "Input - Generic - sRGB - Texture" };
+    // Not static since it can change with the OCIO config.
+    MString sRGBAliasToUse;
+
+    // This will help keep our color management (CM) path identifiers unique:
+    size_t cmCounter = net.nodes.size();
+
+    auto netNodesEnd = net.nodes.end();
+    for (auto it = net.nodes.begin(); it != netNodesEnd; ++it) {
+        auto node = *it;
+        if (!_IsUsdUVTexture(node)) {
+            continue;
+        }
+
+        // Need to find the source color space:
+        TfToken sourceColorSpace = _tokens->auto_;
+        auto    scsIt = node.parameters.find(_tokens->sourceColorSpace);
+        if (scsIt != node.parameters.end()) {
+            const VtValue& scsValue = scsIt->second;
+            if (scsValue.IsHolding<TfToken>()) {
+                sourceColorSpace = scsValue.UncheckedGet<TfToken>();
+            }
+        }
+
+        // We need to insert the proper CM shader fragment here so it becomes part
+        // of the material hash:
+        MString colorSpace;
+
+        if (sourceColorSpace == _tokens->auto_) {
+            auto fileIt = node.parameters.find(_tokens->file);
+            if (fileIt == node.parameters.end() || !fileIt->second.IsHolding<SdfAssetPath>()) {
+                continue;
+            }
+            auto const&        filenameVal = fileIt->second.Get<SdfAssetPath>();
+            const std::string& resolvedPath = filenameVal.GetResolvedPath();
+            if (resolvedPath.empty()) {
+                continue;
+            }
+            const std::string& assetPath = filenameVal.GetAssetPath();
+            MString            colorRuleCmd;
+            colorRuleCmd.format(
+                "colorManagementFileRules -evaluate \"^1s\";",
+                (!resolvedPath.empty() ? resolvedPath : assetPath).c_str());
+            colorSpace = MGlobal::executeCommandStringResult(colorRuleCmd);
+        } else if (sourceColorSpace == _tokens->sRGB) {
+            if (sRGBAliasToUse.isEmpty()) {
+                for (auto&& sRGBAlias : sRGBAliases) {
+                    MString fragName, inputName, outputName;
+                    MStatus status = fragmentManager->getColorManagementFragmentInfo(
+                        sRGBAlias, fragName, inputName, outputName);
+                    if (status) {
+                        sRGBAliasToUse = sRGBAlias;
+                    }
+                }
+            }
+            if (sRGBAliasToUse.isEmpty()) {
+                // No alias found. Do not color correct...
+                continue;
+            }
+            colorSpace = sRGBAliasToUse;
+        } else if (sourceColorSpace == _tokens->raw) {
+            // No cm necessary for raw:
+            continue;
+        } else {
+            // Let's see if OCIO knows about that one:
+            colorSpace = sourceColorSpace.GetText();
+        }
+
+        MString fragName, inputName, outputName;
+        MStatus status = fragmentManager->getColorManagementFragmentInfo(
+            colorSpace, fragName, inputName, outputName);
+        if (!status) {
+            continue;
+        }
+
+        // Move all tx output relations to the new cm node
+        bool   hadOneColorOutput = false;
+        size_t numPassthrough = 0;
+
+        // Explicitly not color correcting alpha connections:
+        // Should we consider XYZ vector output to not require CM?
+        static const auto sColorOutputs
+            = std::set<TfToken> { _tokens->rgb, _tokens->xyz, _tokens->r, _tokens->x,
+                                  _tokens->g,   _tokens->y,   _tokens->b, _tokens->z };
+        static const auto sChannelSelectorMap = std::map<TfToken, TfToken> {
+            { _tokens->r, _tokens->Float3ToFloatX }, { _tokens->x, _tokens->Float3ToFloatX },
+            { _tokens->g, _tokens->Float3ToFloatY }, { _tokens->y, _tokens->Float3ToFloatY },
+            { _tokens->b, _tokens->Float3ToFloatZ }, { _tokens->z, _tokens->Float3ToFloatZ },
+            { _tokens->a, _tokens->Float4ToFloatW }, { _tokens->w, _tokens->Float4ToFloatW }
+        };
+
+        for (HdMaterialRelationship& rel : net.relationships) {
+            if (rel.inputId == node.path) {
+                if (sColorOutputs.count(rel.inputName)) {
+                    // We need to add a cm node:
+                    hadOneColorOutput = true;
+                }
+                if (sChannelSelectorMap.count(rel.inputName)) {
+                    // Count how many extra passthrough will be needed
+                    ++numPassthrough;
+                }
+            }
+        }
+
+        if (hadOneColorOutput) {
+            // Need to keep the topological sort order of the network, so need to be careful with
+            // our iterators.
+
+            // Using the distance from start of the vector is safe against reallocation:
+            auto itDistance = std::distance(net.nodes.begin(), it);
+            net.nodes.reserve(net.nodes.size() + 2 + numPassthrough);
+
+            // Need a color4 to color3 passthrough (PT) between the texture (TX) and the color
+            // management (CM) node:
+            HdMaterialNode ptNode;
+            ptNode.identifier = _tokens->Float4ToFloat3;
+            ptNode.path = SdfPath(_tokens->toColor3ForCM.GetString() + std::to_string(++cmCounter));
+
+            // Insert it directly after the TX node:
+            ++itDistance;
+            net.nodes.insert(net.nodes.begin() + itDistance, ptNode);
+
+            // Now add the CM node:
+            HdMaterialNode cmNode;
+            cmNode.identifier = TfToken(fragName.asChar());
+            cmNode.path = SdfPath(
+                _tokens->Maya_OCIO_.GetString() + std::to_string(cmNode.identifier.Hash()) + "_"
+                + std::to_string(++cmCounter));
+
+            // Directly after the PT node
+            ++itDistance;
+            net.nodes.insert(net.nodes.begin() + itDistance, cmNode);
+
+            // Add a relationship between the TX and PT
+            std::vector<HdMaterialRelationship> newRelationships;
+            HdMaterialRelationship              newRel
+                = { node.path, _tokens->output, ptNode.path, _tokens->input };
+            newRelationships.push_back(newRel);
+
+            // Add a relationship between the PT and CM
+            newRel = { ptNode.path, _tokens->output, cmNode.path, TfToken(inputName.asChar()) };
+            newRelationships.push_back(newRel);
+
+            std::map<TfToken, SdfPath> addedChannelSelectors;
+
+            // Now reconnect all TX -> destination relationships to the proper passthrough:
+            for (HdMaterialRelationship& rel : net.relationships) {
+                if (rel.inputId != node.path) {
+                    continue;
+                }
+                // Do we need a channel selector (CS) to extract a component:
+                auto exIt = sChannelSelectorMap.find(rel.inputName);
+
+                if (exIt == sChannelSelectorMap.end()) {
+                    // No CS necessary: update connection between TX and destination:
+                    rel.inputId = cmNode.path;
+                    rel.inputName = TfToken(outputName.asChar());
+                } else {
+                    // Add CS between CM and destination, but only once per channel
+                    auto csIt = addedChannelSelectors.find(exIt->second);
+                    if (csIt == addedChannelSelectors.end()) {
+                        // That CS needs to be added:
+                        HdMaterialNode csNode;
+                        csNode.identifier = exIt->second;
+                        csNode.path = SdfPath(
+                            _tokens->extract.GetString() + exIt->second.GetString()
+                            + std::to_string(++cmCounter));
+
+                        // Directly after the CM node
+                        ++itDistance;
+                        net.nodes.insert(net.nodes.begin() + itDistance, csNode);
+
+                        if (exIt->second != _tokens->Float4ToFloatW) {
+                            // Add relationship between the CM and CS
+                            newRel = { cmNode.path,
+                                       TfToken(outputName.asChar()),
+                                       csNode.path,
+                                       _tokens->input };
+                            newRelationships.push_back(newRel);
+                        } else {
+                            // Alpha channel connects directly from TX to CS:
+                            newRel = { node.path, _tokens->output, csNode.path, _tokens->input };
+                            newRelationships.push_back(newRel);
+                        }
+
+                        csIt = addedChannelSelectors.insert({ exIt->second, csNode.path }).first;
+                    }
+
+                    // Repath new relationship between the CS and the destination:
+                    rel.inputId = csIt->second;
+                    rel.inputName = _tokens->output;
+                }
+            }
+            // Add all new relationships:
+            net.relationships.insert(
+                net.relationships.end(), newRelationships.begin(), newRelationships.end());
+
+            // Update for loop iterators:
+            it = net.nodes.begin() + itDistance;
+            netNodesEnd = net.nodes.end();
+        }
+    }
+
+    if (TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
+        std::cout << "Color managed network:\n" << _GenerateXMLString(net, true) << "\n";
+    }
+}
+#endif
+
 //! Return true if the surface shader needs to be rendered in a transparency pass.
 bool _IsTransparent(const HdMaterialNetwork& network)
 {
@@ -1248,13 +1466,8 @@ _LoadUdimTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& u
     */
 
     // test for a UDIM texture
-#if PXR_VERSION >= 2102
     if (!HdStIsSupportedUdimTexture(path))
         return nullptr;
-#else
-    if (!GlfIsSupportedUdimTexture(path))
-        return nullptr;
-#endif
 
     /*
         Maya's tiled texture support is implemented quite differently from Usd's UDIM support.
@@ -1297,11 +1510,7 @@ _LoadUdimTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& u
     // resolution, warn the user if Maya's tiled texture implementation is going to result in
     // a loss of texture data.
     {
-#if PXR_VERSION >= 2102
         HioImageSharedPtr image = HioImage::OpenForReading(std::get<1>(tiles[0]).GetString());
-#else
-        GlfImageSharedPtr image = GlfImage::OpenForReading(std::get<1>(tiles[0]).GetString());
-#endif
         if (!TF_VERIFY(image)) {
             return nullptr;
         }
@@ -1326,11 +1535,7 @@ _LoadUdimTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& u
     for (auto& tile : tiles) {
         tilePaths.append(MString(std::get<1>(tile).GetText()));
 
-#if PXR_VERSION >= 2102
         HioImageSharedPtr image = HioImage::OpenForReading(std::get<1>(tile).GetString());
-#else
-        GlfImageSharedPtr image = GlfImage::OpenForReading(std::get<1>(tile).GetString());
-#endif
         if (!TF_VERIFY(image)) {
             return nullptr;
         }
@@ -1407,13 +1612,8 @@ MHWRender::MTexture* _LoadTexture(
         HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L2, "LoadTexture", path.c_str());
 
     // If it is a UDIM texture we need to modify the path before calling OpenForReading
-#if PXR_VERSION >= 2102
     if (HdStIsSupportedUdimTexture(path))
         return _LoadUdimTexture(path, isColorSpaceSRGB, uvScaleOffset);
-#else
-    if (GlfIsSupportedUdimTexture(path))
-        return _LoadUdimTexture(path, isColorSpaceSRGB, uvScaleOffset);
-#endif
 
     MHWRender::MRenderer* const       renderer = MHWRender::MRenderer::theRenderer();
     MHWRender::MTextureManager* const textureMgr
@@ -1427,12 +1627,7 @@ MHWRender::MTexture* _LoadTexture(
         return texture;
     }
 
-#if PXR_VERSION >= 2102
     HioImageSharedPtr image = HioImage::OpenForReading(path);
-#else
-    GlfImageSharedPtr     image = GlfImage::OpenForReading(path);
-#endif
-
     if (!TF_VERIFY(image, "Unable to create an image from %s", path.c_str())) {
         if (!hasFallbackColor) {
             return nullptr;
@@ -1444,22 +1639,11 @@ MHWRender::MTexture* _LoadTexture(
     // This image is used for loading pixel data from usdz only and should
     // not trigger any OpenGL call. VP2RenderDelegate will transfer the
     // texels to GPU memory with VP2 API which is 3D API agnostic.
-#if PXR_VERSION >= 2102
     HioImage::StorageSpec spec;
-#else
-    GlfImage::StorageSpec spec;
-#endif
     spec.width = image->GetWidth();
     spec.height = image->GetHeight();
     spec.depth = 1;
-#if PXR_VERSION >= 2102
     spec.format = image->GetFormat();
-#elif PXR_VERSION > 2008
-    spec.hioFormat = image->GetHioFormat();
-#else
-    spec.format = image->GetFormat();
-    spec.type = image->GetType();
-#endif
     spec.flipped = false;
 
     const int bpp = image->GetBytesPerPixel();
@@ -1480,32 +1664,106 @@ MHWRender::MTexture* _LoadTexture(
     desc.fBytesPerRow = bytesPerRow;
     desc.fBytesPerSlice = bytesPerSlice;
 
-#if PXR_VERSION > 2008
-#if PXR_VERSION >= 2102
     auto specFormat = spec.format;
-#else
-    auto specFormat = spec.hioFormat;
-#endif
     switch (specFormat) {
     // Single Channel
-    case HioFormatFloat32:
-        desc.fFormat = MHWRender::kR32_FLOAT;
-        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
-        break;
-    case HioFormatFloat16:
-        desc.fFormat = MHWRender::kR16_FLOAT;
-        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
-        break;
-    case HioFormatUNorm8:
-        desc.fFormat = MHWRender::kR8_UNORM;
-        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
-        break;
+    case HioFormatFloat32: {
+        // We want white instead or red when expanding to RGB, so convert to kR32G32B32_FLOAT
+        constexpr int bpp_RGB32 = 3 * 4;
+
+        desc.fFormat = MHWRender::kR32G32B32_FLOAT;
+        desc.fBytesPerRow = spec.width * bpp_RGB32;
+        desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+        std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+        uint32_t* texels32 = (uint32_t*)texels.data();
+        uint32_t* storage32 = (uint32_t*)storage.data();
+
+        for (int p = 0; p < spec.height * spec.width; p++) {
+            const uint32_t pixel = *storage32++;
+            *texels32++ = pixel;
+            *texels32++ = pixel;
+            *texels32++ = pixel;
+        }
+
+        texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+    } break;
+    case HioFormatFloat16: {
+        // We want white instead or red when expanding to RGB, so convert to kR16G16B16A16_FLOAT
+        constexpr int bpp_8 = 8;
+
+        desc.fFormat = MHWRender::kR16G16B16A16_FLOAT;
+        desc.fBytesPerRow = spec.width * bpp_8;
+        desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+        std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+        GfHalf         opaqueAlpha(1.0f);
+        const uint16_t alphaBits = opaqueAlpha.bits();
+
+        uint16_t* texels16 = (uint16_t*)texels.data();
+        uint16_t* storage16 = (uint16_t*)storage.data();
+
+        for (int p = 0; p < spec.height * spec.width; p++) {
+            const uint16_t pixel = *storage16++;
+            *texels16++ = pixel;
+            *texels16++ = pixel;
+            *texels16++ = pixel;
+            *texels16++ = alphaBits;
+        }
+
+        texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+    } break;
+    case HioFormatUNorm8: {
+        // We want white instead or red when expanding to RGB, so convert to kR8G8B8A8_UNORM
+        constexpr int bpp_4 = 4;
+
+        desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
+        desc.fBytesPerRow = spec.width * bpp_4;
+        desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+        std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+        uint8_t* texels8 = (uint8_t*)texels.data();
+        uint8_t* storage8 = (uint8_t*)storage.data();
+
+        for (int p = 0; p < spec.height * spec.width; p++) {
+            const uint8_t pixel = *storage8++;
+            *texels8++ = pixel;
+            *texels8++ = pixel;
+            *texels8++ = pixel;
+            *texels8++ = 0xFF;
+        }
+
+        texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+        isColorSpaceSRGB = image->IsColorSpaceSRGB();
+    } break;
 
     // Dual channel (quite rare, but seen with mono + alpha files)
-    case HioFormatFloat32Vec2:
-        desc.fFormat = MHWRender::kR32G32_FLOAT;
-        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
-        break;
+    case HioFormatFloat32Vec2: {
+        // R32G32 is supported by VP2. But we want black and white, so R32G32B32A32.
+        constexpr int bpp_RGBA32 = 4 * 4;
+
+        desc.fFormat = MHWRender::kR32G32B32A32_FLOAT;
+        desc.fBytesPerRow = spec.width * bpp_RGBA32;
+        desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+        std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+        uint32_t* texels32 = (uint32_t*)texels.data();
+        uint32_t* storage32 = (uint32_t*)storage.data();
+
+        for (int p = 0; p < spec.height * spec.width; p++) {
+            const uint32_t pixel = *storage32++;
+            *texels32++ = pixel;
+            *texels32++ = pixel;
+            *texels32++ = pixel;
+            *texels32++ = *storage32++;
+        }
+
+        texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+    } break;
     case HioFormatFloat16Vec2: {
         // R16G16 is not supported by VP2. Converted to R16G16B16A16.
         constexpr int bpp_8 = 8;
@@ -1516,18 +1774,15 @@ MHWRender::MTexture* _LoadTexture(
 
         std::vector<unsigned char> texels(desc.fBytesPerSlice);
 
-        for (int y = 0; y < spec.height; y++) {
-            for (int x = 0; x < spec.width; x++) {
-                const int t = spec.width * y + x;
-                texels[t * bpp_8 + 0] = storage[t * bpp + 0];
-                texels[t * bpp_8 + 1] = storage[t * bpp + 1];
-                texels[t * bpp_8 + 2] = storage[t * bpp + 0];
-                texels[t * bpp_8 + 3] = storage[t * bpp + 1];
-                texels[t * bpp_8 + 4] = storage[t * bpp + 0];
-                texels[t * bpp_8 + 5] = storage[t * bpp + 1];
-                texels[t * bpp_8 + 6] = storage[t * bpp + 2];
-                texels[t * bpp_8 + 7] = storage[t * bpp + 3];
-            }
+        uint16_t* texels16 = (uint16_t*)texels.data();
+        uint16_t* storage16 = (uint16_t*)storage.data();
+
+        for (int p = 0; p < spec.height * spec.width; p++) {
+            const uint16_t pixel = *storage16++;
+            *texels16++ = pixel;
+            *texels16++ = pixel;
+            *texels16++ = pixel;
+            *texels16++ = *storage16++;
         }
 
         texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
@@ -1544,14 +1799,15 @@ MHWRender::MTexture* _LoadTexture(
 
         std::vector<unsigned char> texels(desc.fBytesPerSlice);
 
-        for (int y = 0; y < spec.height; y++) {
-            for (int x = 0; x < spec.width; x++) {
-                const int t = spec.width * y + x;
-                texels[t * bpp_4] = storage[t * bpp];
-                texels[t * bpp_4 + 1] = storage[t * bpp];
-                texels[t * bpp_4 + 2] = storage[t * bpp];
-                texels[t * bpp_4 + 3] = storage[t * bpp + 1];
-            }
+        uint8_t* texels8 = (uint8_t*)texels.data();
+        uint8_t* storage8 = (uint8_t*)storage.data();
+
+        for (int p = 0; p < spec.height * spec.width; p++) {
+            const uint8_t pixel = *storage8++;
+            *texels8++ = pixel;
+            *texels8++ = pixel;
+            *texels8++ = pixel;
+            *texels8++ = *storage8++;
         }
 
         texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
@@ -1644,88 +1900,6 @@ MHWRender::MTexture* _LoadTexture(
             path.c_str());
         break;
     }
-#else
-    switch (spec.format) {
-    case GL_RED:
-        desc.fFormat = MHWRender::kR8_UNORM;
-        if (spec.type == GL_FLOAT)
-            desc.fFormat = MHWRender::kR32_FLOAT;
-        else if (spec.type == GL_HALF_FLOAT)
-            desc.fFormat = MHWRender::kR16_FLOAT;
-        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
-        break;
-    case GL_RGB:
-        if (spec.type == GL_FLOAT) {
-            desc.fFormat = MHWRender::kR32G32B32_FLOAT;
-            texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
-        } else if (spec.type == GL_HALF_FLOAT) {
-            // R16G16B16 is not supported by VP2. Converted to R16G16B16A16.
-            constexpr int bpp_8 = 8;
-
-            desc.fFormat = MHWRender::kR16G16B16A16_FLOAT;
-            desc.fBytesPerRow = spec.width * bpp_8;
-            desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
-
-            GfHalf               opaqueAlpha(1.0f);
-            const unsigned short alphaBits = opaqueAlpha.bits();
-            const unsigned char  lowAlpha = reinterpret_cast<const unsigned char*>(&alphaBits)[0];
-            const unsigned char  highAlpha = reinterpret_cast<const unsigned char*>(&alphaBits)[1];
-
-            std::vector<unsigned char> texels(desc.fBytesPerSlice);
-
-            for (int y = 0; y < spec.height; y++) {
-                for (int x = 0; x < spec.width; x++) {
-                    const int t = spec.width * y + x;
-                    texels[t * bpp_8 + 0] = storage[t * bpp + 0];
-                    texels[t * bpp_8 + 1] = storage[t * bpp + 1];
-                    texels[t * bpp_8 + 2] = storage[t * bpp + 2];
-                    texels[t * bpp_8 + 3] = storage[t * bpp + 3];
-                    texels[t * bpp_8 + 4] = storage[t * bpp + 4];
-                    texels[t * bpp_8 + 5] = storage[t * bpp + 5];
-                    texels[t * bpp_8 + 6] = lowAlpha;
-                    texels[t * bpp_8 + 7] = highAlpha;
-                }
-            }
-
-            texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
-        } else {
-            // R8G8B8 is not supported by VP2. Converted to R8G8B8A8.
-            constexpr int bpp_4 = 4;
-
-            desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
-            desc.fBytesPerRow = spec.width * bpp_4;
-            desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
-
-            std::vector<unsigned char> texels(desc.fBytesPerSlice);
-
-            for (int y = 0; y < spec.height; y++) {
-                for (int x = 0; x < spec.width; x++) {
-                    const int t = spec.width * y + x;
-                    texels[t * bpp_4] = storage[t * bpp];
-                    texels[t * bpp_4 + 1] = storage[t * bpp + 1];
-                    texels[t * bpp_4 + 2] = storage[t * bpp + 2];
-                    texels[t * bpp_4 + 3] = 255;
-                }
-            }
-
-            texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
-            isColorSpaceSRGB = image->IsColorSpaceSRGB();
-        }
-        break;
-    case GL_RGBA:
-        if (spec.type == GL_FLOAT) {
-            desc.fFormat = MHWRender::kR32G32B32A32_FLOAT;
-        } else if (spec.type == GL_HALF_FLOAT) {
-            desc.fFormat = MHWRender::kR16G16B16A16_FLOAT;
-        } else {
-            desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
-            isColorSpaceSRGB = image->IsColorSpaceSRGB();
-        }
-        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
-        break;
-    default: break;
-    }
-#endif
 
     return texture;
 }
@@ -1991,6 +2165,7 @@ void HdVP2Material::CompiledNetwork::Sync(
 
             if (!_surfaceShader || topoHash != _topoHash) {
                 _surfaceShader.reset(_CreateMaterialXShaderInstance(id, surfaceNetwork));
+                _frontFaceShader.reset(nullptr);
                 _pointShader.reset(nullptr);
                 _topoHash = topoHash;
                 // TopoChanged: We have a brand new surface material, tell the mesh to use
@@ -2054,6 +2229,7 @@ void HdVP2Material::CompiledNetwork::Sync(
 
             // The shader instance is owned by the material solely.
             _surfaceShader.reset(shader);
+            _frontFaceShader.reset(nullptr);
             _pointShader.reset(nullptr);
             // TopoChanged: We have a brand new surface material, tell the mesh to use it.
             _owner->_MaterialChanged(sceneDelegate);
@@ -2187,12 +2363,14 @@ void HdVP2Material::CompiledNetwork::_ApplyVP2Fixes(
         SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifier(outNode.identifier);
 #endif
         if (_IsUsdUVTexture(node)) {
+#ifndef HAS_COLOR_MANAGEMENT_SUPPORT_API
             // We need to rename according to the Maya color working space pref:
             if (!mayaWorkingColorSpace.length()) {
                 // Query the user pref:
                 mayaWorkingColorSpace = MGlobal::executeCommandStringResult(
                     "colorManagementPrefs -q -renderingSpaceName");
             }
+#endif
             outNode.identifier = TfToken(
                 HdVP2ShaderFragments::getUsdUVTextureFragmentName(mayaWorkingColorSpace).asChar());
         } else {
@@ -2232,6 +2410,10 @@ void HdVP2Material::CompiledNetwork::_ApplyVP2Fixes(
         outRel.inputId = _nodePathMap[outRel.inputId];
         outRel.outputId = _nodePathMap[outRel.outputId];
     }
+
+#ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
+    _AddColorManagementFragments(tmpNet);
+#endif
 
     outNet.nodes.reserve(numNodes + numRelationships);
     outNet.relationships.reserve(numRelationships * 2);
@@ -2423,19 +2605,21 @@ void HdVP2Material::CompiledNetwork::_ApplyVP2Fixes(
 
 #ifdef WANT_MATERIALX_BUILD
 
-// MaterialX does offer only limited support for OCIO. We expect something more in a future release,
-// but in the meantime we can still add color management nodes to bring textures in one of the five
-// colorspaces MayaUSD already supports for UsdPreviewSurface.
-//
 // We will be extremely arbitrary on all MaterialX image and tiledimage nodes and assume that color3
 // and color4 require color management based on the file extension.
 //
 // For image nodes connected to a fileTexture post-processor, we will also check for the colorSpace
-// attribute and respect requests for Raw.
+// attribute and respect requests.
 TfToken _RequiresColorManagement(
-    const HdMaterialNode2&    node,
-    const HdMaterialNode2&    upstream,
+    const HdMaterialNode2& node,
+    const HdMaterialNode2& upstream,
+#ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
+    const HdMaterialNetwork2& inNet,
+    TfToken&                  cmInputName,
+    TfToken&                  cmOutputName)
+#else
     const HdMaterialNetwork2& inNet)
+#endif
 {
     const mx::NodeDefPtr nodeDef = _GetMaterialXData()._mtlxLibrary->getNodeDef(node.nodeTypeId);
     const mx::NodeDefPtr upstreamDef
@@ -2467,37 +2651,97 @@ TfToken _RequiresColorManagement(
         return {};
     }
 
-    SdfAssetPath filenameVal;
-    for (const auto& inputName : fileInputs) {
-        auto itFileParam = upstream.parameters.find(inputName);
-        if (itFileParam != upstream.parameters.end()
-            && itFileParam->second.IsHolding<SdfAssetPath>()) {
-            filenameVal = itFileParam->second.Get<SdfAssetPath>();
-            break;
+    // Look for explicit color spaces first:
+    std::string       sourceColorSpace;
+    static const auto _knownColorSpaceAttrs
+        = std::vector<TfToken> { _tokens->sourceColorSpace, _mtlxTokens->colorSpace };
+    static const auto _mxFindColorSpace = [&sourceColorSpace](const auto& n) {
+        if (!sourceColorSpace.empty()) {
+            return;
+        }
+
+        for (auto&& csAttrName : _knownColorSpaceAttrs) {
+            auto paramIt = n.parameters.find(csAttrName);
+            if (paramIt != n.parameters.end()) {
+                const VtValue& val = paramIt->second;
+                if (val.IsHolding<TfToken>()) {
+                    sourceColorSpace = val.UncheckedGet<TfToken>().GetString();
+                    return;
+                } else if (val.IsHolding<std::string>()) {
+                    sourceColorSpace = val.UncheckedGet<std::string>();
+                    return;
+                }
+            }
+        }
+    };
+    // Can be on the upstream node (UsdUVTexture):
+    _mxFindColorSpace(upstream);
+    // Can sometimes be on node (MayaND_fileTexture):
+    _mxFindColorSpace(node);
+    // To be updated as soon as color space metadata gets transmitted through Hydra.
+
+    if (sourceColorSpace.empty() || sourceColorSpace == _tokens->auto_) {
+        SdfAssetPath filenameVal;
+        for (const auto& inputName : fileInputs) {
+            auto itFileParam = upstream.parameters.find(inputName);
+            if (itFileParam != upstream.parameters.end()
+                && itFileParam->second.IsHolding<SdfAssetPath>()) {
+                filenameVal = itFileParam->second.Get<SdfAssetPath>();
+                break;
+            }
+        }
+
+        const std::string& resolvedPath = filenameVal.GetResolvedPath();
+        if (resolvedPath.empty()) {
+            return {};
+        }
+        const std::string& assetPath = filenameVal.GetAssetPath();
+        MString            colorRuleCmd;
+        colorRuleCmd.format(
+            "colorManagementFileRules -evaluate \"^1s\";",
+            (!resolvedPath.empty() ? resolvedPath : assetPath).c_str());
+        const MString colorSpaceByRule(MGlobal::executeCommandStringResult(colorRuleCmd));
+        sourceColorSpace = colorSpaceByRule.asChar();
+    }
+
+    if (sourceColorSpace == "Raw" || sourceColorSpace == "raw") {
+        return {};
+    }
+
+#ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
+    MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
+    if (!theRenderer) {
+        return {};
+    }
+
+    MHWRender::MFragmentManager* fragmentManager = theRenderer->getFragmentManager();
+    if (!fragmentManager) {
+        return {};
+    }
+
+    MString fragName, fragInput, fragOutput;
+    if (fragmentManager->getColorManagementFragmentInfo(
+            sourceColorSpace.c_str(), fragName, fragInput, fragOutput)) {
+        std::string untypedNodeDefId = MaterialXMaya::OgsFragment::registerOCIOFragment(
+            fragName.asChar(), _GetMaterialXData()._mtlxLibrary);
+        if (!untypedNodeDefId.empty()) {
+            cmInputName = TfToken(fragInput.asChar());
+            cmOutputName = TfToken(fragOutput.asChar());
+            return TfToken((untypedNodeDefId + colorOutput->getType()));
         }
     }
-
-    const std::string& resolvedPath = filenameVal.GetResolvedPath();
-    if (resolvedPath.empty()) {
-        return {};
+#else
+    if (sourceColorSpace == _tokens->sRGB.GetString()) {
+        // Non-OCIO code only knows how to handle sRGB source color space.
+        // If we ended up here, then a color management node was required:
+        if (colorOutput->getType().back() == '3') {
+            return _mtlxTokens->color3;
+        } else {
+            return _mtlxTokens->color4;
+        }
     }
-    const std::string& assetPath = filenameVal.GetAssetPath();
-    MString            colorRuleCmd;
-    colorRuleCmd.format(
-        "colorManagementFileRules -evaluate \"^1s\";",
-        (!resolvedPath.empty() ? resolvedPath : assetPath).c_str());
-    const MString colorSpaceByRule(MGlobal::executeCommandStringResult(colorRuleCmd));
-    if (colorSpaceByRule != _tokens->sRGB.GetText()) {
-        // We only know how to handle sRGB source color space.
-        return {};
-    }
-
-    // If we ended up here, then a color management node was required:
-    if (colorOutput->getType().back() == '3') {
-        return _mtlxTokens->color3;
-    } else {
-        return _mtlxTokens->color4;
-    }
+#endif
+    return {};
 }
 
 void HdVP2Material::CompiledNetwork::_ApplyMtlxVP2Fixes(
@@ -2569,34 +2813,48 @@ void HdVP2Material::CompiledNetwork::_ApplyMtlxVP2Fixes(
         for (const auto& cnxPair : inNode.inputConnections) {
             std::vector<HdMaterialConnection2> outCnx;
             for (const auto& c : cnxPair.second) {
+                TfToken cmNodeDefId, cmInputName, cmOutputName;
+#ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
+                cmNodeDefId = _RequiresColorManagement(
+                    inNode,
+                    inNet.nodes.find(c.upstreamNode)->second,
+                    inNet,
+                    cmInputName,
+                    cmOutputName);
+#else
                 TfToken colorManagementType = _RequiresColorManagement(
                     inNode, inNet.nodes.find(c.upstreamNode)->second, inNet);
-                if (!colorManagementType.IsEmpty() && colorManagementCategory.empty()) {
-                    // Query the user pref:
-                    MString mayaWorkingColorSpace = MGlobal::executeCommandStringResult(
-                        "colorManagementPrefs -q -renderingSpaceName");
+                if (!colorManagementType.IsEmpty()) {
+                    if (colorManagementCategory.empty()) {
+                        // Query the user pref:
+                        MString mayaWorkingColorSpace = MGlobal::executeCommandStringResult(
+                            "colorManagementPrefs -q -renderingSpaceName");
 
-                    auto categoryIt
-                        = _mtlxColorCorrectCategoryMap.find(mayaWorkingColorSpace.asChar());
-                    if (categoryIt != _mtlxColorCorrectCategoryMap.end()) {
-                        colorManagementCategory = categoryIt->second;
+                        auto categoryIt
+                            = _mtlxColorCorrectCategoryMap.find(mayaWorkingColorSpace.asChar());
+                        if (categoryIt != _mtlxColorCorrectCategoryMap.end()) {
+                            colorManagementCategory = categoryIt->second;
+                        }
                     }
+                    cmNodeDefId
+                        = TfToken(colorManagementCategory + colorManagementType.GetString());
+                    cmInputName = _mtlxTokens->in;
+                    cmOutputName = _mtlxTokens->out;
                 }
-
-                if (colorManagementType.IsEmpty() || colorManagementCategory.empty()) {
+#endif
+                if (cmNodeDefId.IsEmpty()) {
                     outCnx.emplace_back(HdMaterialConnection2 { _nodePathMap[c.upstreamNode],
                                                                 c.upstreamOutputName });
                 } else {
                     // Insert color management node:
                     HdMaterialNode2 ccNode;
-                    ccNode.nodeTypeId
-                        = TfToken(colorManagementCategory + colorManagementType.GetString());
+                    ccNode.nodeTypeId = cmNodeDefId;
                     HdMaterialConnection2 ccCnx { _nodePathMap[c.upstreamNode],
                                                   c.upstreamOutputName };
-                    ccNode.inputConnections.insert({ _mtlxTokens->in, { ccCnx } });
+                    ccNode.inputConnections.insert({ cmInputName, { ccCnx } });
                     SdfPath ccPath
                         = ngBase.AppendChild(TfToken("N" + std::to_string(nodeCounter++)));
-                    outCnx.emplace_back(HdMaterialConnection2 { ccPath, _mtlxTokens->out });
+                    outCnx.emplace_back(HdMaterialConnection2 { ccPath, cmOutputName });
                     outNet.nodes.emplace(ccPath, std::move(ccNode));
                 }
             }
@@ -2671,7 +2929,7 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
                 _GetMaterialXData()._mtlxLibrary);
 #else
             std::set<SdfPath> hdTextureNodes;
-            mx::StringMap     mxHdTextureMap; // Mx-Hd texture name counterparts
+            mx::StringMap mxHdTextureMap; // Mx-Hd texture name counterparts
             mtlxDoc = HdMtlxCreateMtlxDocumentFromHdNetwork(
                 fixedNetwork,
                 *surfTerminal, // MaterialX HdNode
@@ -3032,6 +3290,10 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
         HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L2, "UpdateShaderInstance");
 
     std::unordered_set<MString, MStringHash> updatedAttributes;
+    auto setShaderParam = [&updatedAttributes, this](auto&& paramName, auto&& paramValue) {
+        updatedAttributes.insert(paramName);
+        return SetShaderParameter(paramName, paramValue);
+    };
 
     const bool matIsTransparent = _IsTransparent(mat);
     if (matIsTransparent != _surfaceShader->isTransparent()) {
@@ -3083,12 +3345,12 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
 #ifdef WANT_MATERIALX_BUILD
                 if (isMaterialXNode) {
                     const MString paramName = "_" + nodeName + "file_sampler";
-                    samplerStatus = _surfaceShader->setParameter(paramName, *sampler);
+                    samplerStatus = setShaderParam(paramName, *sampler);
                 } else
 #endif
                 {
                     const MString paramName = nodeName + "fileSampler";
-                    samplerStatus = _surfaceShader->setParameter(paramName, *sampler);
+                    samplerStatus = setShaderParam(paramName, *sampler);
                 }
             }
         }
@@ -3098,28 +3360,31 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
             const VtValue& value = entry.second;
 
             MString paramName = nodeName + token.GetText();
-            updatedAttributes.insert(paramName);
 
             MStatus status = MStatus::kFailure;
 
             if (value.IsHolding<float>()) {
                 const float& val = value.UncheckedGet<float>();
-                status = _surfaceShader->setParameter(paramName, val);
+                status = setShaderParam(paramName, val);
 
 #ifdef WANT_MATERIALX_BUILD
                 if (!status) {
-                    status = _SetFAParameter(_surfaceShader.get(), node, paramName, val);
+                    if (_IsFAParameter(node, paramName)) {
+                        // Try as vector
+                        float vec[4] { val, val, val, val };
+                        status = setShaderParam(paramName, &vec[0]);
+                    }
                 }
 #endif
             } else if (value.IsHolding<GfVec2f>()) {
                 const float* val = value.UncheckedGet<GfVec2f>().data();
-                status = _surfaceShader->setParameter(paramName, val);
+                status = setShaderParam(paramName, val);
             } else if (value.IsHolding<GfVec3f>()) {
                 const float* val = value.UncheckedGet<GfVec3f>().data();
-                status = _surfaceShader->setParameter(paramName, val);
+                status = setShaderParam(paramName, val);
             } else if (value.IsHolding<GfVec4f>()) {
                 const float* val = value.UncheckedGet<GfVec4f>().data();
-                status = _surfaceShader->setParameter(paramName, val);
+                status = setShaderParam(paramName, val);
             } else if (value.IsHolding<TfToken>()) {
                 if (_IsUsdUVTexture(node)) {
                     if (token == UsdHydraTokens->wrapS || token == UsdHydraTokens->wrapT) {
@@ -3140,8 +3405,9 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
 
                     MHWRender::MTextureAssignment assignment;
                     assignment.texture = info._texture.get();
-                    status = _surfaceShader->setParameter(paramName, assignment);
+                    status = setShaderParam(paramName, assignment);
 
+#ifndef HAS_COLOR_MANAGEMENT_SUPPORT_API
 #ifdef WANT_MATERIALX_BUILD
                     // TODO: MaterialX image nodes have colorSpace metadata on the file attribute,
                     // and this can be found in the UsdShade version of the MaterialX document. At
@@ -3167,8 +3433,9 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
                                 }
                             }
                         }
-                        status = _surfaceShader->setParameter(paramName, isSRGB);
+                        status = setShaderParam(paramName, isSRGB);
                     }
+#endif
                     // These parameters allow scaling texcoords into the proper coordinates of the
                     // Maya UDIM texture atlas:
                     if (status) {
@@ -3177,7 +3444,7 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
 #else
                         paramName = nodeName + "stScale";
 #endif
-                        status = _surfaceShader->setParameter(paramName, info._stScale.data());
+                        status = setShaderParam(paramName, info._stScale.data());
                     }
                     if (status) {
 #ifdef WANT_MATERIALX_BUILD
@@ -3185,28 +3452,28 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
 #else
                         paramName = nodeName + "stOffset";
 #endif
-                        status = _surfaceShader->setParameter(paramName, info._stOffset.data());
+                        status = setShaderParam(paramName, info._stOffset.data());
                     }
                 }
             } else if (value.IsHolding<int>()) {
                 const int& val = value.UncheckedGet<int>();
                 if (node.identifier == UsdImagingTokens->UsdPreviewSurface
                     && token == _tokens->useSpecularWorkflow) {
-                    status = _surfaceShader->setParameter(paramName, val != 0);
+                    status = setShaderParam(paramName, val != 0);
                 } else {
-                    status = _surfaceShader->setParameter(paramName, val);
+                    status = setShaderParam(paramName, val);
                 }
             } else if (value.IsHolding<bool>()) {
                 const bool& val = value.UncheckedGet<bool>();
-                status = _surfaceShader->setParameter(paramName, val);
+                status = setShaderParam(paramName, val);
             } else if (value.IsHolding<GfMatrix4d>()) {
                 MMatrix matrix;
                 value.UncheckedGet<GfMatrix4d>().Get(matrix.matrix);
-                status = _surfaceShader->setParameter(paramName, matrix);
+                status = setShaderParam(paramName, matrix);
             } else if (value.IsHolding<GfMatrix4f>()) {
                 MFloatMatrix matrix;
                 value.UncheckedGet<GfMatrix4f>().Get(matrix.matrix);
-                status = _surfaceShader->setParameter(paramName, matrix);
+                status = setShaderParam(paramName, matrix);
 #ifdef WANT_MATERIALX_BUILD
             } else if (value.IsHolding<std::string>()) {
                 // Some MaterialX nodes have a string member that does not translate to a shader
@@ -3247,14 +3514,14 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
             MStatus status;
             void*   defaultValue = _surfaceShader->parameterDefaultValue(parameterName, status);
             if (status) {
-                _surfaceShader->setParameter(parameterName, static_cast<bool*>(defaultValue)[0]);
+                SetShaderParameter(parameterName, static_cast<bool*>(defaultValue)[0]);
             }
         } break;
         case MHWRender::MShaderInstance::kInteger: {
             MStatus status;
             void*   defaultValue = _surfaceShader->parameterDefaultValue(parameterName, status);
             if (status) {
-                _surfaceShader->setParameter(parameterName, static_cast<int*>(defaultValue)[0]);
+                SetShaderParameter(parameterName, static_cast<int*>(defaultValue)[0]);
             }
         } break;
         case MHWRender::MShaderInstance::kFloat:
@@ -3266,7 +3533,7 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
             MStatus status;
             void*   defaultValue = _surfaceShader->parameterDefaultValue(parameterName, status);
             if (status) {
-                _surfaceShader->setParameter(parameterName, static_cast<float*>(defaultValue));
+                SetShaderParameter(parameterName, static_cast<float*>(defaultValue));
             }
         } break;
         case MHWRender::MShaderInstance::kTexture1:
@@ -3275,10 +3542,19 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
         case MHWRender::MShaderInstance::kTextureCube:
             MHWRender::MTextureAssignment assignment;
             assignment.texture = nullptr;
-            _surfaceShader->setParameter(parameterName, assignment);
+            SetShaderParameter(parameterName, assignment);
             break;
         }
     }
+
+    // Front face shader should always have culling enabled
+    if (_frontFaceShader) {
+        _frontFaceShader->setParameter("cullStyle", (int)1);
+    }
+
+#ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
+    _surfaceShader->addColorManagementTextures();
+#endif
 }
 
 namespace {
@@ -3460,6 +3736,16 @@ void HdVP2Material::_ScheduleRefresh()
     }
 }
 
+MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::GetFrontFaceShader() const
+{
+    if (!_frontFaceShader && _surfaceShader) {
+        _frontFaceShader.reset(_surfaceShader->clone());
+        _frontFaceShader->setParameter("cullStyle", (int)1);
+    }
+
+    return _frontFaceShader.get();
+}
+
 MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::GetPointShader() const
 {
     if (!_pointShader && _surfaceShader) {
@@ -3475,9 +3761,11 @@ HdVP2Material::NetworkConfig HdVP2Material::_GetCompiledConfig(const TfToken& re
     return (reprToken == HdReprTokens->smoothHull) ? kFull : kUntextured;
 }
 
-MHWRender::MShaderInstance* HdVP2Material::GetSurfaceShader(const TfToken& reprToken) const
+MHWRender::MShaderInstance*
+HdVP2Material::GetSurfaceShader(const TfToken& reprToken, bool backfaceCull) const
 {
-    return _compiledNetworks[_GetCompiledConfig(reprToken)].GetSurfaceShader();
+    const auto& compiledNetwork = _compiledNetworks[_GetCompiledConfig(reprToken)];
+    return backfaceCull ? compiledNetwork.GetFrontFaceShader() : compiledNetwork.GetSurfaceShader();
 }
 
 MHWRender::MShaderInstance* HdVP2Material::GetPointShader(const TfToken& reprToken) const

@@ -141,14 +141,12 @@ inline bool ProxyShape::TransformReference::checkRef(const TransformReason reaso
             m_selected,
             m_refCount,
             m_required);
-    uint32_t sl = m_selected;
     uint32_t rc = m_refCount;
     uint32_t rq = m_required;
 
     switch (reason) {
     case kSelection:
         assert(m_selected);
-        --sl;
         --m_selectedTemp;
         break;
     case kRequested:

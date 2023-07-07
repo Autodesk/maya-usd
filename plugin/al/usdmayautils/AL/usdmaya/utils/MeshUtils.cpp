@@ -1522,12 +1522,12 @@ void MeshExportContext::copyColourSetData(
             return;
     }
 
-    MColorArray           colours;
     size_t                coloursLength = 0;
-    VtArray<GfVec4f>      colourValues;
     std::vector<uint32_t> indicesToExtract;
 
     for (uint32_t i = 0; i < colourSetNames.length(); i++) {
+        MColorArray colours;
+
         MFnMesh::MColorRepresentation representation
             = fnMesh.getColorRepresentation(colourSetNames[i]);
         MItMeshPolygon it(fnMesh.object());
@@ -1580,7 +1580,6 @@ void MeshExportContext::copyColourSetData(
 
         // if outputting as a vec3 (or we're writing to the displayColor GPrim schema attribute)
         if (colourSetNames[i] == displayColorToken.GetText()) {
-
             if (representation >= MFnMesh::kRGB) {
                 VtArray<GfVec3f> colourValues;
                 if (interpolation == UsdGeomTokens->constant) {
@@ -1666,12 +1665,15 @@ void MeshExportContext::copyColourSetData(
         }
     }
 
+    MColorArray colours;
+
     for (uint32_t i = 0; i < diff_report.size(); i++) {
         MColor                        defaultColour(1, 0, 0);
         MFnMesh::MColorRepresentation representation
             = fnMesh.getColorRepresentation(diff_report[i].setName());
         fnMesh.getColors(colours, &diff_report[i].setName(), &defaultColour);
 
+        coloursLength = colours.length();
         std::vector<uint32_t>& indicesToExtract = diff_report[i].indicesToExtract();
 
         TfToken interp = UsdGeomTokens->faceVarying;

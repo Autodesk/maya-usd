@@ -22,6 +22,7 @@ import usdUtils
 import ufeUtils
 import testUtils
 import mayaUsd
+import mayaUsd_createStageWithNewLayer
 
 from pxr import UsdGeom
 from pxr import UsdShade
@@ -32,6 +33,8 @@ from pxr import Vt
 from maya import cmds
 from maya import standalone
 from maya.internal.ufeSupport import ufeCmdWrapper as ufeCmd
+
+import maya.api.OpenMaya as om
 
 import ufe
 
@@ -312,7 +315,6 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         # Create a proxy shape with empty stage to start with.
-        import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Create our UFE notification observer
@@ -416,7 +418,6 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         # Create a proxy shape with empty stage to start with.
-        import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Create our UFE notification observer
@@ -514,7 +515,6 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         # Create a proxy shape with empty stage to start with.
-        import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Create a ContextOps interface for the proxy shape.
@@ -578,14 +578,13 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.redo()
         self.assertTrue(capsuleBindAPI.GetDirectBinding().GetMaterialPath().isEmpty)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testMaterialCreationForSingleObject(self):
         """This test builds a material using contextOps capabilities."""
         cmds.file(new=True, force=True)
 
         # Create a proxy shape with empty stage to start with.
-        import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Create a ContextOps interface for the proxy shape.
@@ -692,14 +691,13 @@ class ContextOpsTestCase(unittest.TestCase):
             ufeCmd.execute(cmdSS)
             checkMaterial(self, rootHier, 3, 1, 0, "standard_surface", "mtlx", "out", "/test_scope")
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testMaterialCreationForMultipleObjects(self):
         """This test creates a single shared material for multiple objects using contextOps capabilities."""
         cmds.file(new=True, force=True)
 
         # Create a proxy shape with empty stage to start with.
-        import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Create a ContextOps interface for the proxy shape.
@@ -840,14 +838,13 @@ class ContextOpsTestCase(unittest.TestCase):
             ufeCmd.execute(cmdSS)
             checkMaterial(self, rootHier, 5, 1, 1, 0, "standard_surface", "mtlx", "out", "/test_scope")
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testMaterialCreationScopeName(self):
         """This test verifies that materials get created in the correct scope."""
         cmds.file(new=True, force=True)
 
         # Helper function to create a new proxy shape.
-        import mayaUsd_createStageWithNewLayer
         def createProxyShape():
             proxyShapePathString = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
             proxyShapePath = ufe.PathString.path(proxyShapePathString)
@@ -1031,14 +1028,13 @@ class ContextOpsTestCase(unittest.TestCase):
         expectedPath = proxyShapePath + ",/" + materialsScopeName + "/" + materialName
         assert ufe.Hierarchy.createItem(ufe.PathString.path(expectedPath))
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4020', 'Test only available in UFE preview version 0.4.20 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testAddMaterialToScope(self):
         """This test adds a new material to the material scope."""
         cmds.file(new=True, force=True)
 
         # Create a proxy shape with empty stage to start with.
-        import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Create a ContextOps interface for the proxy shape.
@@ -1102,7 +1098,7 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(ufe.PathString.string(mxConn.dst.path), "|stage1|stageShape1,/mtl/standard_surface1")
         self.assertEqual(mxConn.dst.name, "outputs:mtlx:surface")
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testMaterialBindingWithNodeDefHandler(self):
         """In this test we will go as far as possible towards creating and binding a working
@@ -1111,7 +1107,6 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         # Create a proxy shape with empty stage to start with.
-        import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Create a ContextOps interface for the proxy shape.
@@ -1184,14 +1179,13 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.redo()
         self.assertTrue(capsuleBindAPI.GetDirectBinding().GetMaterialPath().isEmpty)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testMaterialBindingToSelection(self):
         """Exercising the bind to selection context menu option."""
         cmds.file(new=True, force=True)
 
         # Create a proxy shape with empty stage to start with.
-        import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Create a ContextOps interface for the proxy shape.
@@ -1250,7 +1244,6 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         # Create a proxy shape with empty stage to start with.
-        import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Create a ContextOps interface for the proxy shape.
@@ -1284,7 +1277,7 @@ class ContextOpsTestCase(unittest.TestCase):
         # when returning the children list) but hasChildren still reports true in
         # UFE version before 0.4.4 for inactive to allow the caller to do conditional
         # inactive filtering, so we test that hasChildren is true for those versions.
-        if (os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '4004'):
+        if (ufeUtils.ufeFeatureSetVersion() >= 4):
             self.assertFalse(proxyShapehier.hasChildren())
         else:
             self.assertTrue(proxyShapehier.hasChildren())
@@ -1416,14 +1409,13 @@ class ContextOpsTestCase(unittest.TestCase):
         _validateLoadAndUnloadItems(ball15Item, ['Load', 'Load with Descendants'])
 
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testAssignExistingMaterialToSingleObject(self):
         """This test assigns an existing material from the stage via ContextOps capabilities."""
         cmds.file(new=True, force=True)
 
         # Create a proxy shape with empty stage to start with.
-        import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Create a ContextOps interface for the proxy shape.
@@ -1475,6 +1467,147 @@ class ContextOpsTestCase(unittest.TestCase):
 
         cmds.undo()
         self.assertFalse(capsulePrim.HasAPI(UsdShade.MaterialBindingAPI))
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
+    def testGeomCoponentAssignment(self):
+        '''Duplicate a Maya cube to USD and then assign a material on a face.'''
+
+        cubeXForm, _ = cmds.polyCube(name='MyCube')
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        sl = om.MSelectionList()
+        sl.add(psPathStr)
+        dagPath = sl.getDagPath(0)
+        dagPath.extendToShape()
+
+        proxyShapeNode = dagPath.node()
+
+        mayaUsd.lib.PrimUpdaterManager.duplicate(cmds.ls(cubeXForm, long=True)[0], psPathStr)
+
+        topPath = ufe.PathString.path(psPathStr + ',/' + cubeXForm + "/" + "top")
+        topItem = ufe.Hierarchy.createItem(topPath)
+        topSubset = UsdGeom.Subset(usdUtils.getPrimFromSceneItem(topItem))
+
+        self.assertEqual(topSubset.GetFamilyNameAttr().Get(), "componentTag")
+        self.assertFalse(topSubset.GetPrim().HasAPI(UsdShade.MaterialBindingAPI))
+
+        if mayaUtils.mayaMajorVersion() == 2024:
+            # We also can check the old sync counters:
+            counters= { "resync": cmds.getAttr(psPathStr + '.resyncId'),
+                        "update" : cmds.getAttr(psPathStr + '.upid')}
+
+            def assertIsOnlyUpdate(self, counters, shapePathStr):
+                resyncCounter = cmds.getAttr(shapePathStr + '.resyncId')
+                updateCounter = cmds.getAttr(shapePathStr + '.updateId')
+                self.assertEqual(resyncCounter, counters["resync"])
+                self.assertGreater(updateCounter, counters["update"])
+                counters["resync"] = resyncCounter
+                counters["update"] = updateCounter
+
+            def assertIsResync(self, counters, shapePathStr):
+                resyncCounter = cmds.getAttr(shapePathStr + '.resyncId')
+                updateCounter = cmds.getAttr(shapePathStr + '.updateId')
+                self.assertGreater(resyncCounter, counters["resync"])
+                self.assertGreater(updateCounter, counters["update"])
+                counters["resync"] = resyncCounter
+                counters["update"] = updateCounter            
+
+        messageHandler = mayaUtils.TestProxyShapeUpdateHandler(psPathStr)
+        messageHandler.snapshot()
+
+        contextOps = ufe.ContextOps.contextOps(topItem)
+        cmd = contextOps.doOpCmd(['Assign New Material', 'USD', 'UsdPreviewSurface'])
+        self.assertIsNotNone(cmd)
+        ufeCmd.execute(cmd)
+
+        snIter = iter(ufe.GlobalSelection.get())
+        shaderItem = next(snIter)
+
+        self.assertEqual(topSubset.GetFamilyNameAttr().Get(), "materialBind")
+        self.assertTrue(topSubset.GetPrim().HasAPI(UsdShade.MaterialBindingAPI))
+
+        # We expect a resync after this assignment:
+        self.assertTrue(messageHandler.isResync())
+        if mayaUtils.mayaMajorVersion() == 2024:
+            assertIsResync(self, counters, psPathStr)
+
+        # setting a value the first time is a resync due to the creation of the attribute:
+        attrs = ufe.Attributes.attributes(shaderItem)
+        metallicAttr = attrs.attribute("inputs:metallic")
+        ufeCmd.execute(metallicAttr.setCmd(0.5))
+        self.assertTrue(messageHandler.isResync())
+        if mayaUtils.mayaMajorVersion() == 2024:
+            assertIsResync(self, counters, psPathStr)
+
+        # Subsequent changes are updates:
+        ufeCmd.execute(metallicAttr.setCmd(0.7))
+        self.assertTrue(messageHandler.isUpdate())
+        if mayaUtils.mayaMajorVersion() == 2024:
+            assertIsOnlyUpdate(self, counters, psPathStr)
+
+        # First undo is an update:
+        cmds.undo()
+        self.assertTrue(messageHandler.isUpdate())
+        if mayaUtils.mayaMajorVersion() == 2024:
+            assertIsOnlyUpdate(self, counters, psPathStr)
+
+        # Second undo is a resync:
+        cmds.undo()
+        self.assertTrue(messageHandler.isResync())
+        if mayaUtils.mayaMajorVersion() == 2024:
+            assertIsResync(self, counters, psPathStr)
+
+        # Third undo is also resync:
+        cmds.undo()
+        self.assertTrue(messageHandler.isResync())
+        if mayaUtils.mayaMajorVersion() == 2024:
+            assertIsResync(self, counters, psPathStr)
+
+        # First redo is resync:
+        cmds.redo()
+        self.assertTrue(messageHandler.isResync())
+        if mayaUtils.mayaMajorVersion() == 2024:
+            assertIsResync(self, counters, psPathStr)
+
+        # Second redo is resync:
+        cmds.redo()
+        self.assertTrue(messageHandler.isResync())
+        if mayaUtils.mayaMajorVersion() == 2024:
+            assertIsResync(self, counters, psPathStr)
+
+        # Third redo is update:
+        cmds.redo()
+        self.assertTrue(messageHandler.isUpdate())
+        if mayaUtils.mayaMajorVersion() == 2024:
+            assertIsOnlyUpdate(self, counters, psPathStr)
+        currentCacheId = messageHandler.getStageCacheId()
+
+        # Changing the whole stage is a resync:
+        testFile = testUtils.getTestScene("MaterialX", "MtlxValueTypes.usda")
+        cmds.setAttr('{}.filePath'.format(psPathStr), testFile, type='string')
+
+        self.assertTrue(messageHandler.isResync())
+        # The old smart signaling for Maya 2024 will not catch that.
+
+        # But that will be the last resync:
+        testFile = testUtils.getTestScene("MaterialX", "sin_compound.usda")
+        cmds.setAttr('{}.filePath'.format(psPathStr), testFile, type='string')
+
+        self.assertTrue(messageHandler.isUnchanged())
+
+        # Until we pull on the node to get the current stage cache id, which resets
+        # the stage listener to the new stage:
+        self.assertNotEqual(messageHandler.getStageCacheId(), currentCacheId)
+
+        testFile = testUtils.getTestScene("MaterialX", "MtlxUVStreamTest.usda")
+        cmds.setAttr('{}.filePath'.format(psPathStr), testFile, type='string')
+
+        self.assertTrue(messageHandler.isResync())
+        # The old smart signaling for Maya 2024 will not catch that.
+
+        messageHandler.terminate()
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

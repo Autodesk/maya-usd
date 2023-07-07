@@ -15,7 +15,7 @@
 //
 #include "UsdUIInfoHandler.h"
 
-#include "UsdSceneItem.h"
+#include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/sdf/listOp.h> // SdfReferenceListOp/SdfPayloadListOp/SdfPathListOp
 #include <pxr/usd/sdf/schema.h> // SdfFieldKeys
@@ -40,7 +40,7 @@ void addMetadataStrings(
     if (nb <= 0)
         return;
     if (tooltip.empty())
-        tooltip += "<b>Introduced Composition Arcs:</b> ";
+        tooltip += "<b>Composition Arcs:</b> ";
     if (needComma)
         tooltip += ", ";
     if (nb == 1) {

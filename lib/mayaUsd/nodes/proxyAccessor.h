@@ -141,6 +141,15 @@ public:
             return MStatus::kFailure;
     }
 
+    //! \brief  Initializes recomputation of accessor plugs
+    static MStatus forceCompute(const Owner& accessor, const MObject& node)
+    {
+        if (accessor)
+            return accessor->forceCompute(node);
+        else
+            return MStatus::kFailure;
+    }
+
     /*! \brief  Proxy accessor is creating acceleration structure to avoid the discovery of
      accessor plugs at each compute. This accelleration structure has to be invalidate when
      stage changes.
@@ -175,7 +184,14 @@ private:
         To avoid expensive searches during compute, we cache MPlug, SdfPath and converter needed
        to translate values between data models.
      */
-    using Item = std::tuple<MPlug, SdfPath, const Converter*, SyncId>;
+    struct Item
+    {
+        MPlug            plug;
+        SdfPath          path;
+        TfToken          property;
+        const Converter* converter = nullptr;
+        SyncId           syncId;
+    };
     using Container = std::vector<Item>;
 
     ProxyAccessor(ProxyStageProvider& provider)

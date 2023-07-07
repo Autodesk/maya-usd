@@ -30,6 +30,7 @@
 #include <maya/MDGModifier.h>
 #include <maya/MDagModifier.h>
 #include <maya/MDoubleArray.h>
+#include <maya/MEulerRotation.h>
 #include <maya/MFnAnimCurve.h>
 #include <maya/MFnComponentListData.h>
 #include <maya/MFnDependencyNode.h>
@@ -44,8 +45,6 @@
 #include <maya/MObjectHandle.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
-
-using namespace MAYAUSD_NS_DEF;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -214,7 +213,8 @@ bool _SetTransformAnim(
     MFnDependencyNode&              transformNode,
     const std::vector<GfMatrix4d>&  xforms,
     MTimeArray&                     times,
-    const UsdMayaPrimReaderContext* context)
+    const UsdMayaPrimReaderContext* context,
+    bool                            applyEulerFilter)
 {
     if (xforms.size() != times.length()) {
         TF_WARN("xforms size [%zu] != times size [%du].", xforms.size(), times.length());
@@ -246,6 +246,22 @@ bool _SetTransformAnim(
                     rotates[c][i] = r[c];
                     scales[c][i] = s[c];
                 }
+            }
+        }
+
+        if (applyEulerFilter) {
+            MPlug                         rotOrder = transformNode.findPlug("rotateOrder");
+            MEulerRotation::RotationOrder order
+                = static_cast<MEulerRotation::RotationOrder>(rotOrder.asInt());
+
+            MEulerRotation last(rotates[0][0], rotates[1][0], rotates[2][0], order);
+            for (unsigned int i = 1; i < rotates[0].length(); ++i) {
+                MEulerRotation current(rotates[0][i], rotates[1][i], rotates[2][i], order);
+                current.setToClosestSolution(last);
+                rotates[0][i] = current[0];
+                rotates[1][i] = current[1];
+                rotates[2][i] = current[2];
+                last = current;
             }
         }
 
@@ -502,7 +518,12 @@ bool _CopyAnimFromSkel(
         MFnDependencyNode skelXformDep(jointContainer, &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
 
-        if (!_SetTransformAnim(skelXformDep, skelLocalXforms, mayaTimes, context)) {
+        if (!_SetTransformAnim(
+                skelXformDep,
+                skelLocalXforms,
+                mayaTimes,
+                context,
+                args.GetJobArguments().applyEulerFilter)) {
             return false;
         }
     }
@@ -540,7 +561,8 @@ bool _CopyAnimFromSkel(
             xforms[i] = samples[i][jointIdx];
         }
 
-        if (!_SetTransformAnim(jointDep, xforms, mayaTimes, context))
+        if (!_SetTransformAnim(
+                jointDep, xforms, mayaTimes, context, args.GetJobArguments().applyEulerFilter))
             return false;
     }
     return true;
@@ -726,7 +748,7 @@ bool _CreateDagPose(
     MObject*                  dagPoseNode)
 {
     MStatus      status;
-    MDGModifier& dgMod = MDGModifierUndoItem::create("Skeleton DAG pose creation");
+    MDGModifier& dgMod = MayaUsd::MDGModifierUndoItem::create("Skeleton DAG pose creation");
 
     *dagPoseNode = dgMod.createNode(_MayaTokens->dagPoseType, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
@@ -1004,7 +1026,7 @@ bool _CreateRestMesh(const MObject& inputMesh, const MObject& parent, MObject* r
     // Determine a new name for the rest mesh, and rename the copy.
     static const MString restSuffix("_rest");
     MString              restMeshName = meshFn.name() + restSuffix;
-    MDGModifier&         dgMod = MDGModifierUndoItem::create("Rename deformer input mesh");
+    MDGModifier&         dgMod = MayaUsd::MDGModifierUndoItem::create("Rename deformer input mesh");
     status = dgMod.renameNode(*restMesh, restMeshName);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
@@ -1020,7 +1042,7 @@ bool _ClearIncomingConnections(MPlug& plug)
     MPlugArray connections;
     if (plug.connectedTo(connections, /*asDst*/ true, /*asSrc*/ false)) {
         MStatus      status;
-        MDGModifier& dgMod = MDGModifierUndoItem::create("Clear deformer connections");
+        MDGModifier& dgMod = MayaUsd::MDGModifierUndoItem::create("Clear deformer connections");
         for (unsigned int i = 0; i < connections.length(); ++i) {
             status = dgMod.disconnect(plug, connections[i]);
             CHECK_MSTATUS_AND_RETURN(status, false);
@@ -1140,7 +1162,7 @@ bool UsdMayaTranslatorSkel::CreateSkinCluster(
         return false;
     }
 
-    MDGModifier& dgMod = MDGModifierUndoItem::create("Skin cluster creation");
+    MDGModifier& dgMod = MayaUsd::MDGModifierUndoItem::create("Skin cluster creation");
 
     MObject skinCluster = dgMod.createNode(_MayaTokens->skinClusterType, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);

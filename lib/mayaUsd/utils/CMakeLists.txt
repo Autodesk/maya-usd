@@ -10,12 +10,11 @@ target_sources(${PROJECT_NAME}
         diagnosticDelegate.cpp
         dynamicAttribute.cpp
         editability.cpp
-        editRouter.cpp
         layerMuting.cpp
         layers.cpp
-        loadRules.cpp
         loadRulesText.cpp
         loadRulesAttribute.cpp
+        mayaEditRouter.cpp
         query.cpp
         plugRegistryHelper.cpp
         progressBarScope.cpp
@@ -47,11 +46,11 @@ set(HEADERS
     diagnosticDelegate.h
     dynamicAttribute.h
     editability.h
-    editRouter.h
     hash.h
     layerMuting.h
     layers.h
     loadRules.h
+    mayaEditRouter.h
     query.h
     plugRegistryHelper.h
     progressBarScope.h
@@ -59,6 +58,7 @@ set(HEADERS
     stageCache.h
     targetLayer.h
     traverseLayer.h
+    trieVisitor.h
     undoHelperCommand.h
     util.h
     utilDictionary.h

@@ -26,6 +26,7 @@
 #include <boost/python/def.hpp>
 #include <boost/python/make_constructor.hpp>
 #include <boost/python/return_internal_reference.hpp>
+#include <boost/python/suite/indexing/map_indexing_suite.hpp>
 #include <boost/python/wrapper.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -74,6 +75,8 @@ public:
 
     bool default_Undo() { return base_t::Undo(); }
     bool Undo() override { return this->CallVirtual<>("Undo", &This::default_Undo)(); }
+
+    MSdfToDagMap& GetSdfToDagMap() { return base_t::GetSdfToDagMap(); }
 
     //---------------------------------------------------------------------------------------------
     /// \brief  wraps a factory function that allows registering an updated Python class
@@ -156,6 +159,9 @@ public:
 //----------------------------------------------------------------------------------------------------------------------
 void wrapImportChaserRegistryFactoryContext()
 {
+    boost::python::class_<MSdfToDagMap>("SdfToDagMap")
+        .def(boost::python::map_indexing_suite<MSdfToDagMap, true>());
+
     boost::python::class_<UsdMayaImportChaserRegistry::FactoryContext>(
         "UsdMayaImportChaserRegistryFactoryContext", boost::python::no_init)
         .def("GetStage", &UsdMayaImportChaserRegistry::FactoryContext::GetStage)
@@ -187,5 +193,9 @@ void wrapImportChaser()
         .def("Register", &ImportChaserWrapper::Register)
         .staticmethod("Register")
         .def("Unregister", &ImportChaserWrapper::Unregister)
-        .staticmethod("Unregister");
+        .staticmethod("Unregister")
+        .def(
+            "GetSdfToDagMap",
+            &ImportChaserWrapper::GetSdfToDagMap,
+            boost::python::return_internal_reference<>());
 }

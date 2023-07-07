@@ -32,6 +32,7 @@
 #endif
 
 #include <pxr/base/tf/refPtr.h>
+#include <pxr/pxr.h>
 
 #include <maya/MStringArray.h>
 
@@ -102,4 +103,8 @@ void wrapLayerManager()
         .def("getLayerIdentifiers", PyLayerManager::getLayerIdentifiers);
 }
 
+// This macro was removed in USD 23.08. It was only needed to support
+// Visual Studio 2015, which USD itself no longer supports.
+#if PXR_VERSION < 2308
 TF_REFPTR_CONST_VOLATILE_GET(LayerManager)
+#endif

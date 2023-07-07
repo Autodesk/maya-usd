@@ -81,19 +81,7 @@ global proc mtohRenderOverride_AddMTOHAttributes(int $fromAE) {
     mtohRenderOverride_AddAttribute("mtoh", "Show Wireframe on Selected Objects", "mtohWireframeSelectionHighlight", $fromAE);
     mtohRenderOverride_AddAttribute("mtoh", "Highlight Selected Objects", "mtohColorSelectionHighlight", $fromAE);
     mtohRenderOverride_AddAttribute("mtoh", "Highlight Color for Selected Objects", "mtohColorSelectionHighlightColor", $fromAE);
-)mel"
-#if PXR_VERSION >= 2005
-                                          R"mel(
     mtohRenderOverride_AddAttribute("mtoh", "Highlight outline (in pixels, 0 to disable)", "mtohSelectionOutline", $fromAE);
-)mel"
-#endif
-#if PXR_VERSION <= 2005
-                                          R"mel(
-    mtohRenderOverride_AddAttribute("mtoh", "Enable color quantization", "mtohColorQuantization", $fromAE);
-)mel"
-#endif
-
-                                          R"mel(
 }
 
 global proc mtohRenderOverride_AEAttributesCallback(string $nodeName) {
@@ -890,21 +878,11 @@ MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params)
             return mayaObject;
         }
     }
-#if PXR_VERSION >= 2005
     if (filter(_tokens->mtohSelectionOutline)) {
         _CreateFloatAttribute(
             node, filter.mayaString(), defGlobals.outlineSelectionWidth, userDefaults);
     }
-#endif
-#if PXR_VERSION <= 2005
-    if (filter(_tokens->mtohColorQuantization)) {
-        _CreateBoolAttribute(
-            node, filter.mayaString(), defGlobals.enableColorQuantization, userDefaults);
-        if (filter.attributeFilter()) {
-            return mayaObject;
-        }
-    }
-#endif
+
     // TODO: Move this to an external function and add support for more types,
     //  and improve code quality/reuse.
     for (const auto& rit : MtohGetRendererSettings()) {
@@ -1083,22 +1061,12 @@ MtohRenderGlobals::GetInstance(const GlobalParams& params, bool storeUserSetting
             return globals;
         }
     }
-#if PXR_VERSION >= 2005
     if (filter(_tokens->mtohSelectionOutline)) {
         _GetAttribute(node, filter.mayaString(), globals.outlineSelectionWidth, storeUserSetting);
         if (filter.attributeFilter()) {
             return globals;
         }
     }
-#endif
-#if PXR_VERSION <= 2005
-    if (filter(_tokens->mtohColorQuantization)) {
-        _GetAttribute(node, filter.mayaString(), globals.enableColorQuantization, storeUserSetting);
-        if (filter.attributeFilter()) {
-            return globals;
-        }
-    }
-#endif
 
     // TODO: Move this to an external function and add support for more types,
     //  and improve code quality/reuse.

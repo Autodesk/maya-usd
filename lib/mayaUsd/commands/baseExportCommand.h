@@ -51,6 +51,7 @@ public:
     static constexpr auto kExportComponentTagsFlag = "tag";
     static constexpr auto kIgnoreWarningsFlag = "ign";
     static constexpr auto kExportInstancesFlag = "ein";
+    static constexpr auto kWriteDefaults = "wd";
     static constexpr auto kMergeTransformAndShapeFlag = "mt";
     static constexpr auto kStripNamespacesFlag = "sn";
     static constexpr auto kExportRefsAsInstanceableFlag = "eri";
@@ -90,6 +91,7 @@ public:
     static constexpr auto kJobContextFlag = "jc";
     static constexpr auto kWorldspaceFlag = "wsp";
     static constexpr auto kCustomLayerData = "cld";
+    static constexpr auto kMetersPerUnit = "mpu";
 
     // Short and Long forms of flags defined by this command itself:
     static constexpr auto kAppendFlag = "a";

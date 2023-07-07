@@ -17,8 +17,9 @@
 
 from pxr import Tf
 from pxr import Usd
-from pxr import UsdShade
+from pxr import UsdShade, UsdGeom
 
+import json
 import os
 import unittest
 
@@ -446,6 +447,232 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
             self.assertTrue(src_input.HasConnectedSource())
             (connect_api, out_name, _) = src_input.GetConnectedSource()
             self.assertEqual(connect_api.GetPath(), mat_path + dst_name)
+
+    def CommonGeomSubsetRoundtrip(self, useCollections):
+        """Common test for geom subset export"""
+        cmds.file(f=True, new=True)
+
+        # Take a cube since it already has 6 subsets defined:
+        cube_xform = cmds.polyCube()[0]
+
+        # Apply a global material and two face materials:
+        def createMaterial(name, R, G, B, subset):
+            material_node = cmds.shadingNode("usdPreviewSurface", asShader=True, name=name)
+            material_sg = cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name=name+"SG")
+            cmds.connectAttr(material_node+".outColor", material_sg+".surfaceShader", force=True)
+            cmds.setAttr(material_node+".diffuseColor", R, G, B, type="double3")
+            cmds.sets(cube_xform + subset, e=True, forceElement=material_sg)
+        createMaterial("greyCube", .15, .15, .15, "")
+        createMaterial("redFace", .95, .0, .0, ".f[0]")
+        createMaterial("blueFace", .0, .0, .95, ".f[4]")
+
+        # Export:
+        if useCollections:
+            usd_path = os.path.abspath('CubeWithAssignedFaces_CB.usda')
+            cmds.usdExport(mergeTransformAndShape=True,
+                file=usd_path,
+                shadingMode='useRegistry',
+                exportDisplayColor=False,
+                exportCollectionBasedBindings=True,
+                exportComponentTags=True)
+        else:
+            usd_path = os.path.abspath('CubeWithAssignedFaces.usda')
+            cmds.usdExport(mergeTransformAndShape=True,
+                file=usd_path,
+                shadingMode='useRegistry',
+                exportDisplayColor=False,
+                exportComponentTags=True)
+
+        stage = Usd.Stage.Open(usd_path)
+
+        cube = stage.GetPrimAtPath("/pCube1")
+        numGeomSubsets = 0
+        for children in cube.GetAllChildren():
+            if children.IsA(UsdGeom.Subset):
+                numGeomSubsets += 1
+        self.assertEqual(numGeomSubsets, 9)
+
+        # These are the subsets as initially exported from the cube:
+        allSubsets = {
+            # The shading GeomSubsets should be marked as Maya generated
+            "greyCubeSG": ([1, 2, 3, 5], "materialBind", "greyCubeSG", True),
+            "redFaceSG": ([0,], "materialBind", "redFaceSG", True),
+            "blueFaceSG": ([4,], "materialBind", "blueFaceSG", True),
+            # The cube subsets are all standard:
+            "top": ([1,], "componentTag", None, False),
+            "bottom": ([3,], "componentTag", None, False),
+            "left": ([5,], "componentTag", None, False),
+            "right": ([4,], "componentTag", None, False),
+            "front": ([0,], "componentTag", None, False),
+            "back": ([2,], "componentTag", None, False),
+        }
+        
+        def ValidateUSDStage(self, stage, allSubsets):
+            cube = stage.GetPrimAtPath("/pCube1")
+            numGeomSubsets = 0
+            for children in cube.GetAllChildren():
+                if children.IsA(UsdGeom.Subset):
+                    numGeomSubsets += 1
+            self.assertEqual(numGeomSubsets, len(allSubsets))
+
+            # Validate the subsets are as expected:
+            for geomSubsetName, info in allSubsets.items():
+                faces, familyName, materialName, isMayaGenerated = info
+                geomSubset = stage.GetPrimAtPath("/pCube1/" + geomSubsetName)
+                self.assertEqual(geomSubset.GetAttribute("familyName").Get(), familyName)
+                self.assertEqual(geomSubset.GetAttribute("elementType").Get(), "face")
+                self.assertEqual(geomSubset.GetAttribute("indices").Get(), faces)
+                if isMayaGenerated:
+                    customData = geomSubset.GetCustomDataByKey("Maya")
+                    self.assertIsNotNone(customData)
+                    self.assertIn("generated", customData)
+                else:
+                    self.assertFalse(geomSubset.HasCustomDataKey("Maya"))
+                if materialName:
+                    bindAPI = UsdShade.MaterialBindingAPI(geomSubset)
+                    material = bindAPI.ComputeBoundMaterial()[0]
+                    self.assertEqual(material.GetPath().name, materialName)
+
+        ValidateUSDStage(self, stage, allSubsets)
+
+        cmds.file(f=True, new=True)
+
+        # Re-import. We expect to still have 6 componentTags on the mesh and
+        # two assigned faces:
+        cmds.usdImport(file=usd_path, shadingMode=[["useRegistry", "UsdPreviewSurface"], ])
+        
+        expectedFaces = {
+            "top": "f[1]",
+            "bottom": "f[3]",
+            "left": "f[5]",
+            "right": "f[4]",
+            "front": "f[0]",
+            "back": "f[2]",
+        }
+        self.assertEqual(set(cmds.geometryAttrInfo('pCube1.outMesh', cnm=True)), set(expectedFaces.keys()))
+        for tagName, components in expectedFaces.items():
+            self.assertEqual(cmds.geometryAttrInfo("pCube1.outMesh", cmp=True, cex=tagName), [components,])
+
+        cmds.select("greyCubeSG")
+        self.assertEqual(set(cmds.ls(selection=True)), set(['pCube1.f[1:3]', 'pCube1.f[5]']))
+        cmds.select("redFaceSG")
+        self.assertEqual(cmds.ls(selection=True), ['pCube1.f[0]',])
+        cmds.select("blueFaceSG")
+        self.assertEqual(cmds.ls(selection=True), ['pCube1.f[4]',])
+
+        expectedMayaSets = set(["defaultLightSet", "defaultObjectSet", "initialParticleSE", "initialShadingGroup",
+                                "greyCubeSG", "redFaceSG", "blueFaceSG"])
+        self.assertEqual(set(cmds.ls(sets=True)), expectedMayaSets)
+
+        # We now edit the USD data to create a few interesting differences
+        # in component tag family names and shader assignments:
+        geomSubset = stage.GetPrimAtPath("/pCube1/top")
+        geomSubset.GetAttribute("familyName").Set("topFamily")
+
+        geomSubset = stage.GetPrimAtPath("/pCube1/left")
+        geomSubset.GetAttribute("familyName").Set("materialBind")
+        subsetBindAPI = UsdShade.MaterialBindingAPI.Apply(geomSubset.GetPrim())
+        subsetBindAPI.Bind(UsdShade.Material(stage.GetPrimAtPath("/pCube1/Looks/blueFaceSG")))
+
+        meshBindAPI = UsdShade.MaterialBindingAPI(stage.GetPrimAtPath("/pCube1"))
+        geomSubset = meshBindAPI.CreateMaterialBindSubset("newKidOnTheBlock", [1, 2], UsdGeom.Tokens.face)
+        subsetBindAPI = UsdShade.MaterialBindingAPI.Apply(geomSubset.GetPrim())
+        subsetBindAPI.Bind(UsdShade.Material(stage.GetPrimAtPath("/pCube1/Looks/redFaceSG")))
+
+        # The "unassigned faced" were previously [1, 2, 3, 5]
+        # We have assigned faces 1, 2, and 5 (left), so the only one remaining is 3:
+        geomSubset = UsdGeom.Subset(stage.GetPrimAtPath("/pCube1/greyCubeSG"))
+        geomSubset.GetIndicesAttr().Set([3,])
+
+        # Save the modified stage under a new name:
+        if useCollections:
+            modified_usd_path = os.path.abspath('CubeWithModifiedFaces_CB.usda')
+        else:
+            modified_usd_path = os.path.abspath('CubeWithModifiedFaces.usda')
+        stage.GetRootLayer().Export(modified_usd_path)
+
+        # Update our expected results:
+        allSubsets["top"] = ([1,], "topFamily", None, False)
+        allSubsets["left"] = ([5,], "materialBind", "blueFaceSG", False)
+        allSubsets["newKidOnTheBlock"] = ([1, 2], "materialBind", "redFaceSG", False)
+        allSubsets["greyCubeSG"] = ([3,], "materialBind", "greyCubeSG", True)
+
+        # Test that the stage we are about to import corresponds to our expectations:        
+        ValidateUSDStage(self, stage, allSubsets)
+
+        cmds.file(f=True, new=True)
+
+        # Re-import. We expect now to have 7 componentTags on the mesh and
+        # a more complex face assignment:
+        cmds.usdImport(file=modified_usd_path, shadingMode=[["useRegistry", "UsdPreviewSurface"], ])
+
+        expectedFaces["newKidOnTheBlock"] = "f[1:2]"
+
+        self.assertEqual(set(cmds.geometryAttrInfo('pCube1.outMesh', cnm=True)), set(expectedFaces.keys()))
+        for tagName, components in expectedFaces.items():
+            self.assertEqual(cmds.geometryAttrInfo("pCube1.outMesh", cmp=True, cex=tagName), [components,])
+
+        cmds.select("greyCubeSG")
+        self.assertEqual(cmds.ls(selection=True), ['pCube1.f[3]',])
+        cmds.select("redFaceSG")
+        self.assertEqual(cmds.ls(selection=True), ['pCube1.f[0:2]',])
+        cmds.select("blueFaceSG")
+        self.assertEqual(cmds.ls(selection=True), ['pCube1.f[4:5]',])
+
+        self.assertEqual(set(cmds.ls(sets=True)), expectedMayaSets)
+
+        # We should also have some roundtripping info on the mesh:
+        roundtripInfo = json.loads(cmds.getAttr("pCube1.USD_GeomSubsetInfo"))
+        cmds.select("redFaceSG", noExpand=True)
+        redUUID = cmds.ls(selection=True, uuid=True)[0]
+        cmds.select("blueFaceSG", noExpand=True)
+        blueUUID = cmds.ls(selection=True, uuid=True)[0]
+        expectedInfo = {
+            "left": {
+                "familyName": "materialBind",
+                "materialUUID": blueUUID
+            },
+            "newKidOnTheBlock": {
+                "familyName": "materialBind",
+                "materialUUID": redUUID},
+            "top": {
+                "familyName": "topFamily"
+            }
+        }
+        self.assertEqual(roundtripInfo, expectedInfo)
+
+        # We export without changes to make sure we get back the modified cube without
+        # any extra subsets.
+        if useCollections:
+            reexported_usd_path = os.path.abspath('CubeWithAssignedFaces_reexported_CB.usda')
+            cmds.usdExport(mergeTransformAndShape=True,
+                file=reexported_usd_path,
+                shadingMode='useRegistry',
+                exportDisplayColor=False,
+                exportCollectionBasedBindings=True,
+                exportComponentTags=True)
+        else:
+            reexported_usd_path = os.path.abspath('CubeWithAssignedFaces_reexported.usda')
+            cmds.usdExport(mergeTransformAndShape=True,
+                file=reexported_usd_path,
+                shadingMode='useRegistry',
+                exportDisplayColor=False,
+                exportComponentTags=True)
+        
+        stage = Usd.Stage.Open(reexported_usd_path)
+
+        # Test that the re-exported stage has the exact same GeomsSubsets as the one we imported:
+        ValidateUSDStage(self, stage, allSubsets)
+
+    def testGeomSubsetRoundtrip(self):
+        """Test that GeomSubsets numbers stay under control when rountripping
+           with direct material assignment"""
+        self.CommonGeomSubsetRoundtrip(False)
+
+    def testGeomSubsetRoundtripCollectionBased(self):
+        """Test that GeomSubsets numbers stay under control when rountripping
+           with collection based material assignemnt"""
+        self.CommonGeomSubsetRoundtrip(True)
 
     @unittest.skipUnless("mayaUtils" in globals() and mayaUtils.mayaMajorVersion() >= 2020, 'Requires standardSurface node which appeared in 2020.')
     def testOpacityRoundtrip(self):

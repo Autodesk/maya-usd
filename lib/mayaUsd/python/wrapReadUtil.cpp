@@ -29,7 +29,7 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_USING_DIRECTIVE;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 std::string _FindOrCreateMayaAttr(

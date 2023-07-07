@@ -27,10 +27,6 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 
-using namespace std;
-using namespace boost::python;
-using namespace boost;
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
@@ -126,7 +122,8 @@ bool isEditedPrimOrphaned(const PXR_NS::UsdPrim& prim)
 
 void wrapPrimUpdaterManager()
 {
-    class_<PrimUpdaterManager, noncopyable>("PrimUpdaterManager", no_init)
+    boost::python::class_<PrimUpdaterManager, boost::noncopyable>(
+        "PrimUpdaterManager", boost::python::no_init)
         .def("isAnimated", isAnimated)
         .def("mergeToUsd", mergeToUsd, mergeToUsd_overloads())
         .def("editAsMaya", editAsMaya)

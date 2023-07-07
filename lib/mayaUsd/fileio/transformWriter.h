@@ -108,7 +108,7 @@ private:
             const GfVec3d&             value,
             const GfMatrix4d&          matrix,
             const UsdTimeCode&         usdTime,
-            UsdUtilsSparseValueWriter* valueWriter) const;
+            FlexibleSparseValueWriter* valueWriter) const;
     };
 
     // For a given array of _AnimChannels and time, compute the xformOp data if
@@ -118,7 +118,8 @@ private:
         const UsdTimeCode&                         usdTime,
         const bool                                 eulerFilter,
         UsdMayaTransformWriter::_TokenRotationMap* previousRotates,
-        UsdUtilsSparseValueWriter*                 valueWriter);
+        FlexibleSparseValueWriter*                 valueWriter,
+        double                                     distanceConversionScalar);
 
     // Creates an _AnimChannel from a Maya compound attribute if there is
     // meaningful data. This means we found data that is non-identity.
@@ -155,6 +156,7 @@ private:
 
     std::vector<_AnimChannel> _animChannels;
     _TokenRotationMap         _previousRotates;
+    double                    _distanceConversionScalar = 1.0;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

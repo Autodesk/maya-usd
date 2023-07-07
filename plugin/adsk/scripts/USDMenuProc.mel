@@ -35,6 +35,12 @@ proc int canEditAsMaya(string $obj)
     return 0;
 }
 
+proc int canDupAsMaya(string $obj)
+{
+    string $typ = `nodeType $obj`;
+    return $typ != "MayaReference";
+}
+
 global proc mayaUsdMenu_editAsMaya(string $obj)
 {
     if (!hasPrimUpdater())
@@ -147,7 +153,7 @@ global proc mayaUsdMenu_addExistingMaterials(string $ufePath)
         // Get a string containing the path to the material without the name of the material itself.
         string $path[] = $pathAndMaterial;
         stringArrayRemoveAtIndex($numTokens - 1, $path);
-        string $pathString = stringArrayToString($path, "/");
+        string $pathString = "/" + stringArrayToString($path, "/");
 
         // Create a new submenu for each path.
         if ($previousPathString != $pathString)
@@ -197,26 +203,43 @@ global proc USDMenuProc(string $parent, string $obj)
         if (canEditAsMaya($obj)) {
             menuItem -label "Edit As Maya Data" -image "edit_as_Maya.png" -command ("{waitCursor -state 1; mayaUsdMenu_editAsMaya \"" + $obj + "\"; waitCursor -state 0;}");
         }
-        menuItem -label "Duplicate As Maya Data" -command ("{waitCursor -state 1; mayaUsdMenu_duplicate \"" + $obj + "\"; waitCursor -state 0;}");
+        if (canDupAsMaya($obj)) {
+            menuItem -label "Duplicate As Maya Data" -command ("{waitCursor -state 1; mayaUsdMenu_duplicate \"" + $obj + "\"; waitCursor -state 0;}");
+        }
 
         menuItem -divider true;
 
-        // "Assign New Material" from a list of materials provided by the renderers.
-        menuItem -subMenu true -tearOff false -label "Assign New Material";
+        // Material-related options should only be shown if the right-clicked object is of a type known to support material bindings.
+        int $allowMaterialFunctions = `mayaUsdMaterialBindings $obj -canAssignMaterialToNodeType true`;
+        if ($allowMaterialFunctions)
         {
-            mayaUsdMenu_addNewMaterials($obj);
-        }
-        setParent -menu ..;
+            // "Assign New Material" from a list of materials provided by the renderers.
+            menuItem -subMenu true -tearOff false -label "Assign New Material";
+            {
+                mayaUsdMenu_addNewMaterials($obj);
+            }
+            setParent -menu ..;
 
-        // "Assign Existing Material" from a list of materials in the selected item's stage.
-        menuItem -subMenu true -tearOff false -label "Assign Existing Material";
-        {
-            mayaUsdMenu_addExistingMaterials($obj);
-        }
-        setParent -menu ..;
+            // Only show if we have materials in the stage.
+            string $materials[] = `mayaUsdGetMaterialsInStage $obj`;
+            if (size($materials) > 0)
+            {
+                // "Assign Existing Material" from a list of materials in the selected item's stage.
+                menuItem -subMenu true -tearOff false -label "Assign Existing Material";
+                {
+                    mayaUsdMenu_addExistingMaterials($obj);
+                }
+                setParent -menu ..;
+            }
 
-        // Unassign (aka "unbind") the material from the selected object.
-        menuItem -label "Unassign Material" -command ("{waitCursor -state 1; mayaUsdMenu_unassignMaterial \"" + $obj + "\"; waitCursor -state 0;}");
+            // Only show the following entry if the object actually has a material assigned.
+            int $hasMaterialBindingAPI = `mayaUsdMaterialBindings $obj -hasMaterialBinding true`;
+            if ($hasMaterialBindingAPI)
+            {
+                // Unassign (aka "unbind") the material from the selected object.
+                menuItem -label "Unassign Material" -command ("{waitCursor -state 1; mayaUsdMenu_unassignMaterial \"" + $obj + "\"; waitCursor -state 0;}");
+            }
+        }
     }
 
     // Allow the user to define a proc with additional menu items

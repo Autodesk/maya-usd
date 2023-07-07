@@ -25,11 +25,7 @@
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usdLux/distantLight.h>
-#if PXR_VERSION < 2111
-#include <pxr/usd/usdLux/light.h>
-#else
 #include <pxr/usd/usdLux/lightAPI.h>
-#endif
 #include <pxr/usd/usdLux/rectLight.h>
 #include <pxr/usd/usdLux/sphereLight.h>
 
@@ -48,14 +44,10 @@ struct UsdMayaTranslatorLight
     /// Return true if all the parameters were exported properly.
     MAYAUSD_CORE_PUBLIC
     static bool WriteLightAttrs(
-        const UsdTimeCode& usdTime,
-#if PXR_VERSION < 2111
-        const UsdLuxLight& usdLight,
-#else
-        const UsdLuxLightAPI& usdLight,
-#endif
+        const UsdTimeCode&         usdTime,
+        const UsdLuxLightAPI&      usdLight,
         MFnLight&                  mayaLight,
-        UsdUtilsSparseValueWriter* valueWriter = nullptr);
+        FlexibleSparseValueWriter* valueWriter = nullptr);
 
     /// Exports Maya's directional light attributes using UsdLuxDistantLight schema
     MAYAUSD_CORE_PUBLIC
@@ -63,7 +55,7 @@ struct UsdMayaTranslatorLight
         const UsdTimeCode&         usdTime,
         const UsdLuxDistantLight&  usdLight,
         MFnDirectionalLight&       mayaLight,
-        UsdUtilsSparseValueWriter* valueWriter = nullptr);
+        FlexibleSparseValueWriter* valueWriter = nullptr);
 
     /// Exports Maya's point light attributes using UsdLuxSphereLight schema
     MAYAUSD_CORE_PUBLIC
@@ -71,7 +63,7 @@ struct UsdMayaTranslatorLight
         const UsdTimeCode&         usdTime,
         const UsdLuxSphereLight&   usdLight,
         MFnPointLight&             mayaLight,
-        UsdUtilsSparseValueWriter* valueWriter = nullptr);
+        FlexibleSparseValueWriter* valueWriter = nullptr);
 
     /// Exports Maya's spot light attributes using UsdLuxSphereLight and UsdLuxShapingAPI schemas
     MAYAUSD_CORE_PUBLIC
@@ -79,7 +71,7 @@ struct UsdMayaTranslatorLight
         const UsdTimeCode&         usdTime,
         const UsdLuxSphereLight&   usdLight,
         MFnSpotLight&              mayaLight,
-        UsdUtilsSparseValueWriter* valueWriter = nullptr);
+        FlexibleSparseValueWriter* valueWriter = nullptr);
 
     /// Exports Maya's area light attributes using UsdLuxRectLight schema
     MAYAUSD_CORE_PUBLIC
@@ -87,7 +79,7 @@ struct UsdMayaTranslatorLight
         const UsdTimeCode&         usdTime,
         const UsdLuxRectLight&     usdLight,
         MFnAreaLight&              mayaLight,
-        UsdUtilsSparseValueWriter* valueWriter = nullptr);
+        FlexibleSparseValueWriter* valueWriter = nullptr);
 
     /// Import a UsdLuxLightAPI schema as a corresponding Maya light.
     /// Return true if the maya light was properly created and imported

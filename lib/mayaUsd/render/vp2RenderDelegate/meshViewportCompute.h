@@ -16,8 +16,6 @@
 #ifndef HD_VP2_MESHVIEWPORTCOMPUTE
 #define HD_VP2_MESHVIEWPORTCOMPUTE
 
-#include <pxr/pxr.h> // for PXR_VERSION
-
 #include <maya/MTypes.h> // for MAYA_API_VERSION
 
 /*
@@ -86,11 +84,7 @@
 // clang-format wants to re-order these two includes but they must be done in this order or
 // the code will not compile.
 // clang-format off
-#if PXR_VERSION < 2102
-#include <pxr/imaging/glf/glew.h> // needs to be included before anything else includes gl.h
-#else
 #include <pxr/imaging/garch/glApi.h>
-#endif
 #include <mayaUsd/render/px_vp20/glslProgram.h> // this includes gl.h and no GL loader.
 //clang-format on
 #endif

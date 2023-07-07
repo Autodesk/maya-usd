@@ -26,6 +26,7 @@ global proc string getMayaUsdString(string $key)
 global proc mayaUSDRegisterStrings()
 {
     register("kButtonSave", "Save");
+    register("kButtonSet", "Set");
     register("kButtonCancel", "Cancel");
     register("kCreateUsdStageFromFile", "Create USD Stage from File");
     register("kCreateUsdStageFromFileOptions", "Create USD Stage from File Options");
@@ -67,6 +68,7 @@ global proc mayaUSDRegisterStrings()
     register("kMenuStageSubMenu", "Universal Scene Description (USD)");
     register("kMenuStageSubMenuAnn", "Create a USD stage");
     register("kMenuSaveAs", "Save As...");
+    register("kMenuSetAs", "Set As...");
     register("kMenuSaveEdits", "Save Edits");
     register("kMenuUnmute", "Unmute");
     register("kPointInstances", "Point Instances");

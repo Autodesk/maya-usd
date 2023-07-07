@@ -66,7 +66,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((ConfirmExistingFileSave, "mayaUsd_ConfirmExistingFileSave"))     \
     /* optionVar to turn on or off async texture loading            */ \
     /* Notice that only newly opened USD stage would be affected.   */ \
-    ((DisableAsyncTextureLoading, "mayaUsd_DisableAsyncTextureLoading"))
+    ((DisableAsyncTextureLoading, "mayaUsd_DisableAsyncTextureLoading")) \
+    /* option var to remember if the stage in the layer editor is pinned. */ \
+    ((PinLayerEditorStage, "mayaUsd_PinLayerEditorStage"))
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(MayaUsdOptionVars, MAYAUSD_CORE_PUBLIC, MAYA_USD_OPTIONVAR_TOKENS);
@@ -103,7 +105,7 @@ TF_DECLARE_PUBLIC_TOKENS(MayaUsdOptionVars, MAYAUSD_CORE_PUBLIC, MAYA_USD_OPTION
 
 TF_DECLARE_PUBLIC_TOKENS(MayaUsdMetadata, MAYAUSD_CORE_PUBLIC, MAYA_USD_METADATA_TOKENS);
 
-// geeric tokens in MayaUSD
+// generic tokens in MayaUSD
 //
 // clang-format off
 #define MAYA_USD_GENERIC_TOKENS                          \
@@ -117,6 +119,55 @@ TF_DECLARE_PUBLIC_TOKENS(MayaUsdMetadata, MAYAUSD_CORE_PUBLIC, MAYA_USD_METADATA
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(MayaUsdTokens, MAYAUSD_CORE_PUBLIC, MAYA_USD_GENERIC_TOKENS);
+
+// Tokens for edit routing in MayaUSD
+//
+// clang-format off
+#define MAYA_USD_EDIT_ROUTING_TOKENS                    \
+    /* Routing operations                            */ \
+                                                        \
+    ((RouteCacheToUSD, "mayaReferencePush"))            \
+                                                        \
+    /* Tokens for cache-to-USD routing               */ \
+                                                        \
+    /* Prim type under which the cache is created    */ \
+    ((Xform, "Xform"))                                  \
+    /* Default USD file format for cache             */ \
+    ((DefaultUSDFormat, "defaultUSDFormat"))            \
+    /* Destination layer for caching                 */ \
+    ((DestinationLayerPath, "rn_layer"))                \
+    /* Destination prim for caching                  */ \
+    ((DestinationPrimName, "rn_primName"))              \
+    /* If reference added as an append or preprend   */ \
+    ((ListEditType, "rn_listEditType"))                 \
+    /* Is cache a reference or payload               */ \
+    ((PayloadOrReference, "rn_payloadOrReference"))     \
+    /* Is cache defined in a variant                 */ \
+    ((DefineInVariant, "rn_defineInVariant"))           \
+    /* Name of variant set for the cache             */ \
+    ((VariantSetName, "rn_variantSetName"))             \
+    /* Name of the variant for the cache             */ \
+    ((VariantName, "rn_variantName"))                   \
+    /* Source stage for copying the transform        */ \
+    ((SrcStage, "src_stage"))                           \
+    /* Source layer for copying the transform        */ \
+    ((SrcLayer, "src_layer"))                           \
+    /* Source prim  for copying the transform        */ \
+    ((SrcPath, "src_path"))                             \
+    /* Destination stage for copying the transform   */ \
+    ((DstStage, "dst_stage"))                           \
+    /* Destination layer for copying the transform   */ \
+    ((DstLayer, "dst_layer"))                           \
+    /* Destination prim for copying the transform    */ \
+    ((DstPath, "dst_path"))                             \
+    /* Flag if the layer was saved (yes/no)          */ \
+    ((SaveLayer, "save_layer"))                         \
+    /* Final path to the cache                       */ \
+    ((Path, "path"))                                    \
+                                                        \
+// clang-format on
+
+TF_DECLARE_PUBLIC_TOKENS(MayaUsdEditRoutingTokens, MAYAUSD_CORE_PUBLIC, MAYA_USD_EDIT_ROUTING_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

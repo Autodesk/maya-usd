@@ -15,14 +15,16 @@
 //
 #include "UsdTransform3dMatrixOp.h"
 
-#include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/UsdSetXformOpUndoableCommandBase.h>
 #include <mayaUsd/ufe/UsdTransform3dSetObjectMatrix.h>
-#include <mayaUsd/ufe/UsdUndoableCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/ufe/XformOpUtils.h>
-#include <mayaUsd/undo/UsdUndoBlock.h>
-#include <mayaUsd/undo/UsdUndoableItem.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/UsdUndoableCommand.h>
+#include <usdUfe/ufe/Utils.h>
+#include <usdUfe/undo/UsdUndoBlock.h>
+#include <usdUfe/undo/UsdUndoableItem.h>
 
 #include <pxr/base/gf/rotation.h>
 #include <pxr/base/gf/transform.h>
@@ -82,7 +84,7 @@ GfMatrix4d xformInv(
     ops.assign(begin, end);
 
     GfMatrix4d m { 1 };
-    if (!UsdGeomXformable::GetLocalTransformation(&m, ops, getTime(path))) {
+    if (!UsdGeomXformable::GetLocalTransformation(&m, ops, MayaUsd::ufe::getTime(path))) {
         TF_FATAL_ERROR(
             "Local transformation computation for item %s failed.", path.string().c_str());
     }
@@ -279,19 +281,28 @@ Ufe::Vector3d UsdTransform3dMatrixOp::scale() const { return getScale(matrix());
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dMatrixOp::translateCmd(double x, double y, double z)
 {
-    enforceAttributeEditAllowed(prim(), TfToken("xformOp:translate"));
+    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))) {
+        return nullptr;
+    }
+
     return std::make_shared<MatrixOpTranslateUndoableCmd>(path(), _op, UsdTimeCode::Default());
 }
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3dMatrixOp::rotateCmd(double x, double y, double z)
 {
-    enforceAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"));
-    return nullptr;
+    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"))) {
+        return nullptr;
+    }
+
+    return std::make_shared<MatrixOpRotateUndoableCmd>(path(), _op, UsdTimeCode::Default());
 }
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMatrixOp::scaleCmd(double x, double y, double z)
 {
-    enforceAttributeEditAllowed(prim(), TfToken("xformOp:scale"));
+    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
+        return nullptr;
+    }
+
     return std::make_shared<MatrixOpScaleUndoableCmd>(path(), _op, UsdTimeCode::Default());
 }
 

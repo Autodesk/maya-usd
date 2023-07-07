@@ -948,25 +948,6 @@ TfTokenVector HdVP2RenderDelegate::GetShaderSourceTypes() const
 #endif
 }
 
-#if PXR_VERSION < 2105
-
-TfToken HdVP2RenderDelegate::GetMaterialNetworkSelector() const
-{
-#ifdef WANT_MATERIALX_BUILD
-    MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
-    if (theRenderer && theRenderer->drawAPI() == MHWRender::kOpenGLCoreProfile
-        && !TfGetEnvSetting(MAYAUSD_VP2_USE_ONLY_PREVIEWSURFACE)) {
-        return HdVP2Tokens->mtlx;
-    } else {
-        return HdVP2Tokens->glslfx;
-    }
-#else
-    return HdVP2Tokens->glslfx;
-#endif
-}
-
-#else // PXR_VERSION < 2105
-
 TfTokenVector HdVP2RenderDelegate::GetMaterialRenderContexts() const
 {
 #ifdef WANT_MATERIALX_BUILD
@@ -981,7 +962,6 @@ TfTokenVector HdVP2RenderDelegate::GetMaterialRenderContexts() const
     return { HdVP2Tokens->glslfx };
 #endif
 }
-#endif // PXR_VERSION < 2105
 
 /*! \brief  Returns a node name made as a child of delegate's id.
  */

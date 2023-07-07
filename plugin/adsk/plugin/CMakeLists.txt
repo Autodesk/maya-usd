@@ -1,5 +1,5 @@
 #
-# Copyright 2020 Autodesk
+# Copyright 2023 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ target_sources(${TARGET_NAME}
         importTranslator.cpp
         exportTranslator.cpp
         ProxyShape.cpp
+        ProxyShapeListener.cpp
 )
 
 if (CMAKE_UFE_V3_FEATURES_AVAILABLE)
@@ -47,7 +48,7 @@ endif()
 target_compile_definitions(${TARGET_NAME}
     PRIVATE
         MAYAUSD_PLUGIN_EXPORT
-        $<$<BOOL:${Qt5_FOUND}>:WANT_QT_BUILD>
+        $<$<OR:$<BOOL:${Qt5_FOUND}>,$<BOOL:${Qt6_FOUND}>>:WANT_QT_BUILD>
 )
 
 if(DEFINED MAYAUSD_VERSION)
@@ -76,7 +77,7 @@ target_link_libraries(${TARGET_NAME}
         basePxrUsdPreviewSurface
 )
 
-if (${Qt5_FOUND})
+if (Qt5_FOUND OR Qt6_FOUND)
     target_link_libraries(${TARGET_NAME}
         PRIVATE
             mayaUsdUI

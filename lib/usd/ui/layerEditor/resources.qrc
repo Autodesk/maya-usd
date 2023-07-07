@@ -35,6 +35,24 @@
         <file alias="LE_import_layer_pressed_150.png">resources/import_layer_pressed_150.png</file>
         <file alias="LE_import_layer_pressed_200.png">resources/import_layer_pressed_200.png</file>
 
+        <file alias="pin_off_100.png">resources/pin_off_100.png</file>
+        <file alias="pin_off_150.png">resources/pin_off_150.png</file>
+        <file alias="pin_off_200.png">resources/pin_off_200.png</file>
+        <file alias="pin_off_hover_100.png">resources/pin_off_hover_100.png</file>
+        <file alias="pin_off_hover_150.png">resources/pin_off_hover_150.png</file>
+        <file alias="pin_off_hover_200.png">resources/pin_off_hover_200.png</file>
+        <file alias="pin_off_pressed_100.png">resources/pin_on_hover_100.png</file>
+        <file alias="pin_off_pressed_150.png">resources/pin_on_hover_150.png</file>
+        <file alias="pin_off_pressed_200.png">resources/pin_on_hover_200.png</file>
+        <file alias="pin_on_100.png">resources/pin_on_100.png</file>
+        <file alias="pin_on_150.png">resources/pin_on_150.png</file>
+        <file alias="pin_on_200.png">resources/pin_on_200.png</file>
+        <file alias="pin_on_hover_100.png">resources/pin_on_hover_100.png</file>
+        <file alias="pin_on_hover_150.png">resources/pin_on_hover_150.png</file>
+        <file alias="pin_on_hover_200.png">resources/pin_on_hover_200.png</file>
+        <file alias="pin_on_pressed_100.png">resources/pin_off_hover_100.png</file>
+        <file alias="pin_on_pressed_150.png">resources/pin_off_hover_150.png</file>
+        <file alias="pin_on_pressed_200.png">resources/pin_off_hover_200.png</file>
 
         <file alias="target_hover.png">resources/target_hover_100.png</file>
         <file alias="target_hover_150.png">resources/target_hover_150.png</file>

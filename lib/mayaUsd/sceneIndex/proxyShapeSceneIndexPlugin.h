@@ -31,6 +31,10 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usdImaging/usdImaging/stageSceneIndex.h>
 
+#if WANT_UFE_BUILD
+#include <ufe/path.h>
+#endif
+
 #include <memory>
 
 //////////////////////////////////////////////////////////////// MayaUsdProxyShapeSceneIndexPlugin
@@ -70,11 +74,13 @@ class MayaUsdProxyShapeSceneIndex : public HdSingleInputFilteringSceneIndexBase
 public:
     using ParentClass = HdSingleInputFilteringSceneIndexBase;
 
-    static MayaUsdProxyShapeSceneIndexRefPtr New(MayaUsdProxyShapeBase* proxyShape)
-    {
-        return TfCreateRefPtr(
-            new MayaUsdProxyShapeSceneIndex(UsdImagingStageSceneIndex::New(), proxyShape));
-    }
+    static MayaUsdProxyShapeSceneIndexRefPtr
+    New(MayaUsdProxyShapeBase*                 proxyShape,
+        const HdSceneIndexBaseRefPtr&          sceneIndexChainLastElement,
+        const UsdImagingStageSceneIndexRefPtr& usdImagingStageSceneIndex);
+
+    static Ufe::Path
+    InterpretRprimPath(const HdSceneIndexBaseRefPtr& sceneIndex, const SdfPath& path);
 
     // satisfying HdSceneIndexBase
     HdSceneIndexPrim GetPrim(const SdfPath& primPath) const override;
@@ -82,7 +88,8 @@ public:
     SdfPathVector GetChildPrimPaths(const SdfPath& primPath) const override;
 
     MayaUsdProxyShapeSceneIndex(
-        UsdImagingStageSceneIndexRefPtr inputSceneIndex,
+        HdSceneIndexBaseRefPtr          inputSceneIndex,
+        UsdImagingStageSceneIndexRefPtr usdImagingStageSceneIndex,
         MayaUsdProxyShapeBase*          proxyShape);
 
     virtual ~MayaUsdProxyShapeSceneIndex();

@@ -17,6 +17,9 @@
 #define PXRUSDMAYA_UTIL_H
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
+
+#include <usdUfe/utils/Utils.h>
 
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/gf/vec3f.h>
@@ -29,6 +32,7 @@
 #include <pxr/base/vt/value.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdr/declare.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/timeCode.h>
@@ -128,12 +132,6 @@ inline double ConvertMMToInches(const double mm) { return mm / MillimetersPerInc
 /// in millimeters.
 inline double ConvertInchesToMM(const double inches) { return inches * MillimetersPerInch; }
 
-/// Converts the given value \p d from units \p from to the equivalent value in units \p
-inline double ConvertUnit(double d, double from, double to)
-{
-    return from == to ? d : d * from / to;
-}
-
 const double MillimetersPerCentimeter = 10.0;
 
 /// Converts the given value \p mm in millimeters to the equivalent value
@@ -144,15 +142,22 @@ inline double ConvertMMToCM(const double mm) { return mm / MillimetersPerCentime
 /// in millimeters.
 inline double ConvertCMToMM(const double cm) { return cm * MillimetersPerCentimeter; }
 
+inline std::string SanitizeName(const std::string& name) { return UsdUfe::sanitizeName(name); }
+inline std::string prettifyName(const std::string& name) { return UsdUfe::prettifyName(name); }
+
 /// Converts the given value \p mdistance in Maya's MDistance units to the
 /// equivalent value in USD's metersPerUnit.
 MAYAUSD_CORE_PUBLIC
 double ConvertMDistanceUnitToUsdGeomLinearUnit(const MDistance::Unit mdistanceUnit);
 
-/// Coverts the given value \p linearUnit in USD's metersPerUnit to the
+/// Converts the given value \p linearUnit in USD's metersPerUnit to the
 /// equivalent value in Maya's MDistance units.
 MAYAUSD_CORE_PUBLIC
 MDistance::Unit ConvertUsdGeomLinearUnitToMDistanceUnit(const double linearUnit);
+
+/// Returns a scaling value from Maya's internal units to the specified \p metersPerUnit
+MAYAUSD_CORE_PUBLIC
+double GetExportDistanceConversionScalar(const double metersPerUnit);
 
 /// Get the full name of the Maya node \p mayaNode.
 ///
@@ -184,6 +189,10 @@ MStatus GetMObjectByName(const std::string& nodeName, MObject& mObj);
 /// Gets the Maya MObject for the node named \p nodeName.
 MAYAUSD_CORE_PUBLIC
 MStatus GetMObjectByName(const MString& nodeName, MObject& mObj);
+
+/// Gets the proxy shape node named \p nodeName.
+MAYAUSD_CORE_PUBLIC
+MayaUsdProxyShapeBase* GetProxyShapeByProxyName(const std::string& nodeName);
 
 /// Gets the UsdStage for the proxy shape  node named \p nodeName.
 MAYAUSD_CORE_PUBLIC
@@ -283,19 +292,6 @@ const std::string MayaNamespaceDelimiter(":");
 /// If \p nsDepth is -1, all namespaces are stripped.
 MAYAUSD_CORE_PUBLIC
 std::string stripNamespaces(const std::string& nodeName, const int nsDepth = -1);
-
-MAYAUSD_CORE_PUBLIC
-std::string SanitizeName(const std::string& name);
-
-/// Return a prettified name from camelCase or snake_case source.
-///
-/// Put a space in the name when preceded by a capital letter.
-/// Exceptions: Number followed by capital
-///            Multiple capital letters together
-/// Replace underscore by space and capitalize next letter
-/// Always capitalize first letter
-MAYAUSD_CORE_PUBLIC
-std::string prettifyName(const std::string& name);
 
 // This to allow various pipeline to sanitize the colorset name for output
 MAYAUSD_CORE_PUBLIC
@@ -689,6 +685,10 @@ void AddMayaExtents(
     PXR_NS::GfBBox3d&         bbox,
     const PXR_NS::UsdPrim&    root,
     const PXR_NS::UsdTimeCode time);
+
+/// Access to materials associated with available renderers
+MAYAUSD_CORE_PUBLIC
+SdrShaderNodePtrVec GetSurfaceShaderNodeDefs();
 
 } // namespace UsdMayaUtil
 

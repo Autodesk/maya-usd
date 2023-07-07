@@ -28,7 +28,7 @@
 
 namespace MayaUsdUtils {
 
-PXR_NAMESPACE_USING_DIRECTIVE;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
@@ -935,15 +935,6 @@ bool mergeDiffPrims(
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-/// Create any missing parents as "over". Parents may be missing because we are targeting a
-/// different layer than where the destination prim is authored. The SdfCopySpec function does not
-/// automatically create the missing parent, unlike other functions like UsdStage::CreatePrim.
-void createMissingParents(const SdfLayerRefPtr& dstLayer, const SdfPath& dstPath)
-{
-    SdfJustCreatePrimInLayer(dstLayer, dstPath.GetParentPath());
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 // Augment a USD SdfPath with the variants selections currently active at all levels.
 std::pair<SdfPath, UsdEditTarget> augmentPathWithVariants(
     const UsdStageRefPtr& stage,
@@ -1022,7 +1013,11 @@ bool mergePrims(
 
     UsdEditContext editCtx(dstStage, target);
 
-    createMissingParents(dstLayer, augmentedDstPath);
+    /// Create any missing prim in the dst hierarchy as "over". Prims may be missing because we are
+    /// targeting a different layer than where the destination prim is authored. The SdfCopySpec
+    /// function does not automatically create the missing parent, unlike other functions like
+    /// UsdStage::CreatePrim.
+    SdfJustCreatePrimInLayer(dstLayer, augmentedDstPath);
 
     if (options.ignoreUpperLayerOpinions) {
         auto           tempStage = UsdStage::CreateInMemory();

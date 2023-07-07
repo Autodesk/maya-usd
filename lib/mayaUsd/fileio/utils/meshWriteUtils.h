@@ -19,6 +19,7 @@
 #define PXRUSDMAYA_MESH_WRITE_UTILS_H
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/flexibleSparseValueWriter.h>
 
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/tf/staticTokens.h>
@@ -27,7 +28,6 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usdGeom/mesh.h>
-#include <pxr/usd/usdUtils/sparseValueWriter.h>
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
@@ -109,32 +109,33 @@ MAYAUSD_CORE_PUBLIC
 void assignSubDivTagsToUSDPrim(
     MFnMesh&                   meshFn,
     UsdGeomMesh&               primSchema,
-    UsdUtilsSparseValueWriter* valueWriter);
+    FlexibleSparseValueWriter* valueWriter);
 
 void assignSubDivTagsToUSDPrim(
     MFnMesh&                   meshFn,
     UsdGeomMesh&               primSchema,
-    UsdUtilsSparseValueWriter* valueWriter);
+    FlexibleSparseValueWriter* valueWriter);
 
 MAYAUSD_CORE_PUBLIC
 void writePointsData(
     const MFnMesh&             meshFn,
     UsdGeomMesh&               primSchema,
     const UsdTimeCode&         usdTime,
-    UsdUtilsSparseValueWriter* valueWriter);
+    const double               distanceUnitsScalar,
+    FlexibleSparseValueWriter* valueWriter);
 
 MAYAUSD_CORE_PUBLIC
 void writeFaceVertexIndicesData(
     const MFnMesh&             meshFn,
     UsdGeomMesh&               primSchema,
     const UsdTimeCode&         usdTime,
-    UsdUtilsSparseValueWriter* valueWriter);
+    FlexibleSparseValueWriter* valueWriter);
 
 MAYAUSD_CORE_PUBLIC
 void writeInvisibleFacesData(
     const MFnMesh&             meshFn,
     UsdGeomMesh&               primSchema,
-    UsdUtilsSparseValueWriter* valueWriter);
+    FlexibleSparseValueWriter* valueWriter);
 
 MAYAUSD_CORE_PUBLIC
 bool getMeshUVSetData(
@@ -149,7 +150,7 @@ bool writeUVSetsAsVec2fPrimvars(
     const MFnMesh&                            meshFn,
     UsdGeomMesh&                              primSchema,
     const UsdTimeCode&                        usdTime,
-    UsdUtilsSparseValueWriter*                valueWriter,
+    FlexibleSparseValueWriter*                valueWriter,
     bool                                      preserveSetNames,
     const std::map<std::string, std::string>& uvSetRemaps);
 
@@ -157,20 +158,20 @@ MAYAUSD_CORE_PUBLIC
 void writeSubdivInterpBound(
     MFnMesh&                   mesh,
     UsdGeomMesh&               primSchema,
-    UsdUtilsSparseValueWriter* valueWriter);
+    FlexibleSparseValueWriter* valueWriter);
 
 MAYAUSD_CORE_PUBLIC
 void writeSubdivFVLinearInterpolation(
     MFnMesh&                   meshFn,
     UsdGeomMesh&               primSchema,
-    UsdUtilsSparseValueWriter* valueWriter);
+    FlexibleSparseValueWriter* valueWriter);
 
 MAYAUSD_CORE_PUBLIC
 void writeNormalsData(
     const MFnMesh&             meshFn,
     UsdGeomMesh&               primSchema,
     const UsdTimeCode&         usdTime,
-    UsdUtilsSparseValueWriter* valueWriter);
+    FlexibleSparseValueWriter* valueWriter);
 
 MAYAUSD_CORE_PUBLIC
 bool addDisplayPrimvars(
@@ -183,7 +184,7 @@ bool addDisplayPrimvars(
     const VtIntArray&                   assignmentIndices,
     const bool                          clamped,
     const bool                          authored,
-    UsdUtilsSparseValueWriter*          valueWriter);
+    FlexibleSparseValueWriter*          valueWriter);
 
 MAYAUSD_CORE_PUBLIC
 bool createRGBPrimVar(
@@ -194,7 +195,7 @@ bool createRGBPrimVar(
     const TfToken&             interpolation,
     const VtIntArray&          assignmentIndices,
     bool                       clamped,
-    UsdUtilsSparseValueWriter* valueWriter);
+    FlexibleSparseValueWriter* valueWriter);
 
 MAYAUSD_CORE_PUBLIC
 bool createRGBAPrimVar(
@@ -206,7 +207,7 @@ bool createRGBAPrimVar(
     const TfToken&             interpolation,
     const VtIntArray&          assignmentIndices,
     bool                       clamped,
-    UsdUtilsSparseValueWriter* valueWriter);
+    FlexibleSparseValueWriter* valueWriter);
 
 MAYAUSD_CORE_PUBLIC
 bool createAlphaPrimVar(
@@ -217,7 +218,7 @@ bool createAlphaPrimVar(
     const TfToken&             interpolation,
     const VtIntArray&          assignmentIndices,
     bool                       clamped,
-    UsdUtilsSparseValueWriter* valueWriter);
+    FlexibleSparseValueWriter* valueWriter);
 
 /// Collect values from the color set named \p colorSet.
 /// If \p isDisplayColor is true and this color set represents displayColor,

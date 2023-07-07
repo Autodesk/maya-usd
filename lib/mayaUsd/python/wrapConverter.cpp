@@ -30,9 +30,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_USING_DIRECTIVE;
+PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace MAYAUSD_NS_DEF;
+using namespace MayaUsd;
 
 namespace {
 constexpr auto find1

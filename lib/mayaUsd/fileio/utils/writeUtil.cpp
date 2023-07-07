@@ -70,8 +70,6 @@
 #include <string>
 #include <vector>
 
-using namespace MAYAUSD_NS_DEF;
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(
@@ -181,7 +179,7 @@ UsdAttribute UsdMayaWriteUtil::GetOrCreateUsdAttr(
     }
 
     const SdfValueTypeName& typeName
-        = Converter::getUsdTypeName(attrPlug, translateMayaDoubleToUsdSinglePrecision);
+        = MayaUsd::Converter::getUsdTypeName(attrPlug, translateMayaDoubleToUsdSinglePrecision);
     if (typeName) {
         usdAttr = usdPrim.CreateAttribute(usdAttrNameToken, typeName, custom);
     }
@@ -223,7 +221,7 @@ UsdGeomPrimvar UsdMayaWriteUtil::GetOrCreatePrimvar(
     }
 
     const SdfValueTypeName& typeName
-        = Converter::getUsdTypeName(attrPlug, translateMayaDoubleToUsdSinglePrecision);
+        = MayaUsd::Converter::getUsdTypeName(attrPlug, translateMayaDoubleToUsdSinglePrecision);
     if (typeName) {
         primvar = pvAPI.CreatePrimvar(primvarNameToken, typeName, interpolation, elementSize);
     }
@@ -272,7 +270,7 @@ UsdAttribute UsdMayaWriteUtil::GetOrCreateUsdRiAttribute(
     }
 
     const SdfValueTypeName& typeName
-        = Converter::getUsdTypeName(attrPlug, translateMayaDoubleToUsdSinglePrecision);
+        = MayaUsd::Converter::getUsdTypeName(attrPlug, translateMayaDoubleToUsdSinglePrecision);
     if (typeName) {
         riStatements = UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<UsdRiStatementsAPI>(usdPrim);
         usdAttr = riStatements.CreateRiAttribute(riAttrNameToken, typeName.GetType(), nameSpace);
@@ -662,7 +660,7 @@ bool UsdMayaWriteUtil::SetUsdAttr(
     const MPlug&               attrPlug,
     const UsdAttribute&        usdAttr,
     const UsdTimeCode&         usdTime,
-    UsdUtilsSparseValueWriter* valueWriter)
+    FlexibleSparseValueWriter* valueWriter)
 {
     if (!usdAttr || attrPlug.isNull()) {
         return false;
@@ -720,7 +718,7 @@ bool UsdMayaWriteUtil::WriteUserExportedAttributes(
     const MObject&             mayaNode,
     const UsdPrim&             usdPrim,
     const UsdTimeCode&         usdTime,
-    UsdUtilsSparseValueWriter* valueWriter)
+    FlexibleSparseValueWriter* valueWriter)
 {
     std::vector<UsdMayaUserTaggedAttribute> exportedAttributes
         = UsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(mayaNode);
@@ -798,7 +796,7 @@ bool UsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
     const UsdPrim&              prim,
     const UsdMayaJobExportArgs& jobExportArgs,
     const UsdTimeCode&          usdTime,
-    UsdUtilsSparseValueWriter*  valueWriter)
+    FlexibleSparseValueWriter*  valueWriter)
 {
     UsdMayaAdaptor adaptor(mayaObject, jobExportArgs);
     if (!adaptor) {
@@ -807,9 +805,7 @@ bool UsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
 
     for (const TfToken& schemaName : adaptor.GetAppliedSchemas()) {
         if (const UsdMayaSchemaAdaptorPtr schemaAdaptor = adaptor.GetSchemaByName(schemaName)) {
-#if PXR_VERSION > 2005
             prim.AddAppliedSchema(schemaName);
-#endif
             if (schemaAdaptor->CopyToPrim(prim, usdTime, valueWriter)) {
                 continue;
             }
@@ -818,12 +814,22 @@ bool UsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
                     = schemaAdaptor->GetAttribute(attrName)) {
                     VtValue value;
                     if (attrAdaptor.Get(&value)) {
+#if PXR_VERSION < 2308
                         const SdfAttributeSpecHandle attrDef = attrAdaptor.GetAttributeDefinition();
                         UsdAttribute                 attr = prim.CreateAttribute(
                             attrDef->GetNameToken(),
                             attrDef->GetTypeName(),
                             /*custom*/ false,
                             attrDef->GetVariability());
+#else
+                        const UsdPrimDefinition::Attribute attrDef
+                            = attrAdaptor.GetAttributeDefinition();
+                        UsdAttribute attr = prim.CreateAttribute(
+                            attrDef.GetName(),
+                            attrDef.GetTypeName(),
+                            /*custom*/ false,
+                            attrDef.GetVariability());
+#endif
                         SetAttribute(attr, value, usdTime, valueWriter);
                     }
                 }
@@ -840,7 +846,7 @@ size_t UsdMayaWriteUtil::WriteSchemaAttributesToPrim(
     const TfType&               schemaType,
     const std::vector<TfToken>& attributeNames,
     const UsdTimeCode&          usdTime,
-    UsdUtilsSparseValueWriter*  valueWriter)
+    FlexibleSparseValueWriter*  valueWriter)
 {
     UsdMayaSchemaAdaptorPtr schema;
     if (UsdMayaAdaptor adaptor = UsdMayaAdaptor(object)) {
@@ -852,7 +858,8 @@ size_t UsdMayaWriteUtil::WriteSchemaAttributesToPrim(
 
     size_t count = 0;
     for (const TfToken& attrName : attributeNames) {
-        VtValue                value;
+        VtValue value;
+#if PXR_VERSION < 2308
         SdfAttributeSpecHandle attrDef;
         if (UsdMayaAttributeAdaptor attr = schema->GetAttribute(attrName)) {
             attr.Get(&value);
@@ -865,6 +872,20 @@ size_t UsdMayaWriteUtil::WriteSchemaAttributesToPrim(
                 attrDef->GetTypeName(),
                 /*custom*/ false,
                 attrDef->GetVariability());
+#else
+        UsdPrimDefinition::Attribute attrDef;
+        if (UsdMayaAttributeAdaptor attr = schema->GetAttribute(attrName)) {
+            attr.Get(&value);
+            attrDef = attr.GetAttributeDefinition();
+        }
+
+        if (!value.IsEmpty() && attrDef) {
+            UsdAttribute attr = prim.CreateAttribute(
+                attrDef.GetName(),
+                attrDef.GetTypeName(),
+                /*custom*/ false,
+                attrDef.GetVariability());
+#endif
             if (SetAttribute(attr, value, usdTime, valueWriter)) {
                 count++;
             }
@@ -917,7 +938,7 @@ bool UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
     const UsdGeomPointInstancer& instancer,
     const size_t                 numPrototypes,
     const UsdTimeCode&           usdTime,
-    UsdUtilsSparseValueWriter*   valueWriter)
+    FlexibleSparseValueWriter*   valueWriter)
 {
     MStatus status;
 

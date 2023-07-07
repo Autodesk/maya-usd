@@ -15,6 +15,7 @@
 //
 #include "primUpdaterManager.h"
 
+#include <mayaUsd/base/tokens.h>
 #include <mayaUsd/fileio/fallbackPrimUpdater.h>
 #include <mayaUsd/fileio/importData.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
@@ -27,14 +28,16 @@
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
-#include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/OpUndoItemMuting.h>
 #include <mayaUsd/undo/OpUndoItems.h>
-#include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsd/utils/dynamicAttribute.h>
 #include <mayaUsd/utils/progressBarScope.h>
 #include <mayaUsd/utils/traverseLayer.h>
+#include <mayaUsd/utils/trieVisitor.h>
+
+#include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/Utils.h>
+#include <usdUfe/undo/UsdUndoBlock.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/instantiateSingleton.h>
@@ -57,6 +60,7 @@
 #include <ufe/path.h>
 #include <ufe/pathString.h>
 #include <ufe/sceneNotification.h>
+#include <ufe/trie.imp.h>
 
 #include <functional>
 #include <tuple>
@@ -103,7 +107,7 @@ Ufe::Path usdToMaya(const Ufe::Path& usdPath)
         return Ufe::Path();
     }
     std::string dagPathStr;
-    if (!TF_VERIFY(MAYAUSD_NS_DEF::readPullInformation(prim, dagPathStr))) {
+    if (!TF_VERIFY(MayaUsd::readPullInformation(prim, dagPathStr))) {
         return Ufe::Path();
     }
 
@@ -462,7 +466,7 @@ bool pullCustomize(const PullImportPaths& importedPaths, const UsdMayaPrimUpdate
     MayaUsd::ProgressBarScope progressBar(importedPaths.first.size());
 
     // Record all USD modifications in an undo block and item.
-    UsdUndoBlock undoBlock(
+    UsdUfe::UsdUndoBlock undoBlock(
         &UsdUndoableItemUndoItem::create("Pull customize USD data modifications"));
 
     TF_AXIOM(importedPaths.first.size() == importedPaths.second.size());
@@ -614,7 +618,7 @@ UsdMayaPrimUpdaterSharedPtr createUpdater(
     // path to form a proper UFE path.
     auto                psPath = MayaUsd::ufe::stagePath(context.GetUsdStage());
     Ufe::Path::Segments segments { psPath.getSegments()[0],
-                                   MayaUsd::ufe::usdPathToUfePathSegment(dstPath) };
+                                   UsdUfe::usdPathToUfePathSegment(dstPath) };
     Ufe::Path           ufePath(std::move(segments));
 
     // Get the Maya object corresponding to the SdfPath.  As of 19-Oct-2021,
@@ -935,8 +939,9 @@ bool PrimUpdaterManager::mergeToUsd(
 
     // Are we doing a merge or cache?
     MString progStr(
-        VtDictionaryIsHolding<std::string>(userArgs, "rn_primName") ? "Caching to USD"
-                                                                    : "Merging to USD");
+        VtDictionaryIsHolding<std::string>(userArgs, MayaUsdEditRoutingTokens->DestinationPrimName)
+            ? "Caching to USD"
+            : "Merging to USD");
     MayaUsd::ProgressBarScope progressBar(11, progStr);
     PushPullScope             scopeIt(_inPushPull);
 
@@ -1010,7 +1015,7 @@ bool PrimUpdaterManager::mergeToUsd(
 #endif
 
     // Record all USD modifications in an undo block and item.
-    UsdUndoBlock undoBlock(
+    UsdUfe::UsdUndoBlock undoBlock(
         &UsdUndoableItemUndoItem::create("Merge to Maya USD data modifications"));
 
     // The push is done in two stages:
@@ -1257,7 +1262,7 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
     PushPullScope             scopeIt(_inPushPull);
 
     // Record all USD modifications in an undo block and item.
-    UsdUndoBlock undoBlock(
+    UsdUfe::UsdUndoBlock undoBlock(
         &UsdUndoableItemUndoItem::create("Discard edits USD data modifications"));
 
     auto mayaPath = usdToMaya(pulledPath);
@@ -1507,7 +1512,7 @@ bool PrimUpdaterManager::duplicate(
         auto ctxArgs = VtDictionaryOver(userArgs, UsdMayaJobExportArgs::GetDefaultDictionary());
 
         // Record all USD modifications in an undo block and item.
-        MAYAUSD_NS::UsdUndoBlock undoBlock(
+        UsdUfe::UsdUndoBlock undoBlock(
             &UsdUndoableItemUndoItem::create("Duplicate USD data modifications"));
         progressBar.advance();
 
@@ -1591,7 +1596,7 @@ void PrimUpdaterManager::onProxyContentChanged(
             != UsdMayaPrimUpdater::Supports::AutoPull)
             return false;
 
-        const Ufe::PathSegment pathSegment = MayaUsd::ufe::usdPathToUfePathSegment(prim.GetPath());
+        const Ufe::PathSegment pathSegment = UsdUfe::usdPathToUfePathSegment(prim.GetPath());
         const Ufe::Path        path = proxyShapeUfePath + pathSegment;
 
         auto factory = std::get<UpdaterFactoryFn>(registryItem);
@@ -1774,7 +1779,7 @@ MDagPath PrimUpdaterManager::setupPullParent(const Ufe::Path& pulledPath, VtDict
     MayaUsd::ProgressBarScope progressBar(3);
 
     // Record all USD modifications in an undo block and item.
-    UsdUndoBlock undoBlock(
+    UsdUfe::UsdUndoBlock undoBlock(
         &UsdUndoableItemUndoItem::create("Setup pull parent USD data modification"));
 
     MObject pullRoot = findOrCreatePullRoot();
@@ -1807,6 +1812,29 @@ bool PrimUpdaterManager::hasPulledPrims() const
 {
     MObject pullRoot = findPullRoot();
     return !pullRoot.isNull();
+}
+
+PrimUpdaterManager::PulledPrimPaths PrimUpdaterManager::getPulledPrimPaths() const
+{
+    PulledPrimPaths pulledPaths;
+
+#ifdef HAS_ORPHANED_NODES_MANAGER
+
+    if (!_orphanedNodesManager)
+        return pulledPaths;
+
+    const OrphanedNodesManager::PulledPrims& pulledPrims = _orphanedNodesManager->getPulledPrims();
+    MayaUsd::TrieVisitor<OrphanedNodesManager::PullVariantInfo>::visit(
+        pulledPrims,
+        [&pulledPaths](
+            const Ufe::Path&                                            path,
+            const Ufe::TrieNode<OrphanedNodesManager::PullVariantInfo>& node) {
+            pulledPaths.emplace_back(path, node.data().editedAsMayaRoot);
+        });
+
+#endif
+
+    return pulledPaths;
 }
 
 #ifdef HAS_ORPHANED_NODES_MANAGER

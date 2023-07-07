@@ -35,8 +35,6 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MPlug.h>
 
-using namespace MAYAUSD_NS_DEF;
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 const UsdPrimDefinition*
@@ -315,7 +313,7 @@ UsdMayaSchemaAdaptorPtr UsdMayaAdaptor::GetSchemaOrInheritedSchema(const TfType&
 
 UsdMayaSchemaAdaptorPtr UsdMayaAdaptor::ApplySchema(const TfType& ty)
 {
-    return ApplySchema(ty, MDGModifierUndoItem::create("Adaptor schema application"));
+    return ApplySchema(ty, MayaUsd::MDGModifierUndoItem::create("Adaptor schema application"));
 }
 
 UsdMayaSchemaAdaptorPtr UsdMayaAdaptor::ApplySchema(const TfType& ty, MDGModifier& modifier)
@@ -332,7 +330,7 @@ UsdMayaSchemaAdaptorPtr UsdMayaAdaptor::ApplySchema(const TfType& ty, MDGModifie
 UsdMayaSchemaAdaptorPtr UsdMayaAdaptor::ApplySchemaByName(const TfToken& schemaName)
 {
     return ApplySchemaByName(
-        schemaName, MDGModifierUndoItem::create("Adaptor schema application by name"));
+        schemaName, MayaUsd::MDGModifierUndoItem::create("Adaptor schema application by name"));
 }
 
 UsdMayaSchemaAdaptorPtr
@@ -415,7 +413,7 @@ UsdMayaAdaptor::ApplySchemaByName(const TfToken& schemaName, MDGModifier& modifi
 
 void UsdMayaAdaptor::UnapplySchema(const TfType& ty)
 {
-    UnapplySchema(ty, MDGModifierUndoItem::create("Adaptor schema removal"));
+    UnapplySchema(ty, MayaUsd::MDGModifierUndoItem::create("Adaptor schema removal"));
 }
 
 void UsdMayaAdaptor::UnapplySchema(const TfType& ty, MDGModifier& modifier)
@@ -431,7 +429,8 @@ void UsdMayaAdaptor::UnapplySchema(const TfType& ty, MDGModifier& modifier)
 
 void UsdMayaAdaptor::UnapplySchemaByName(const TfToken& schemaName)
 {
-    UnapplySchemaByName(schemaName, MDGModifierUndoItem::create("Adaptor schema removal by name"));
+    UnapplySchemaByName(
+        schemaName, MayaUsd::MDGModifierUndoItem::create("Adaptor schema removal by name"));
 }
 
 void UsdMayaAdaptor::UnapplySchemaByName(const TfToken& schemaName, MDGModifier& modifier)
@@ -533,7 +532,8 @@ bool UsdMayaAdaptor::GetMetadata(const TfToken& key, VtValue* value) const
 
 bool UsdMayaAdaptor::SetMetadata(const TfToken& key, const VtValue& value)
 {
-    return SetMetadata(key, value, MDGModifierUndoItem::create("Adaptor metadata modification"));
+    return SetMetadata(
+        key, value, MayaUsd::MDGModifierUndoItem::create("Adaptor metadata modification"));
 }
 
 bool UsdMayaAdaptor::SetMetadata(const TfToken& key, const VtValue& value, MDGModifier& modifier)
@@ -579,7 +579,7 @@ bool UsdMayaAdaptor::SetMetadata(const TfToken& key, const VtValue& value, MDGMo
 
 void UsdMayaAdaptor::ClearMetadata(const TfToken& key)
 {
-    ClearMetadata(key, MDGModifierUndoItem::create("Adaptor metadata clearing"));
+    ClearMetadata(key, MayaUsd::MDGModifierUndoItem::create("Adaptor metadata clearing"));
 }
 
 void UsdMayaAdaptor::ClearMetadata(const TfToken& key, MDGModifier& modifier)
@@ -761,11 +761,19 @@ TfToken UsdMayaSchemaAdaptor::GetName() const
     return _schemaName;
 }
 
+#if PXR_VERSION < 2308
 static SdfAttributeSpecHandle
 _GetAttributeSpec(const UsdPrimDefinition* primDef, const TfToken& attrName)
 {
     return primDef->GetSchemaAttributeSpec(attrName);
 }
+#else
+static UsdPrimDefinition::Attribute
+_GetAttributeDef(const UsdPrimDefinition* primDef, const TfToken& attrName)
+{
+    return primDef->GetAttributeDefinition(attrName);
+}
+#endif
 
 UsdMayaAttributeAdaptor UsdMayaSchemaAdaptor::GetAttribute(const TfToken& attrName) const
 {
@@ -773,7 +781,12 @@ UsdMayaAttributeAdaptor UsdMayaSchemaAdaptor::GetAttribute(const TfToken& attrNa
         return UsdMayaAttributeAdaptor();
     }
 
+#if PXR_VERSION < 2308
     SdfAttributeSpecHandle attrDef = _GetAttributeSpec(_schemaDef, attrName);
+#else
+    UsdPrimDefinition::Attribute attrDef = _GetAttributeDef(_schemaDef, attrName);
+#endif
+
     if (!attrDef) {
         TF_CODING_ERROR(
             "Attribute '%s' doesn't exist on schema '%s'",
@@ -794,7 +807,8 @@ UsdMayaAttributeAdaptor UsdMayaSchemaAdaptor::GetAttribute(const TfToken& attrNa
 
 UsdMayaAttributeAdaptor UsdMayaSchemaAdaptor::CreateAttribute(const TfToken& attrName)
 {
-    return CreateAttribute(attrName, MDGModifierUndoItem::create("Adaptor attribute creation"));
+    return CreateAttribute(
+        attrName, MayaUsd::MDGModifierUndoItem::create("Adaptor attribute creation"));
 }
 
 UsdMayaAttributeAdaptor
@@ -805,7 +819,12 @@ UsdMayaSchemaAdaptor::CreateAttribute(const TfToken& attrName, MDGModifier& modi
         return UsdMayaAttributeAdaptor();
     }
 
+#if PXR_VERSION < 2308
     SdfAttributeSpecHandle attrDef = _GetAttributeSpec(_schemaDef, attrName);
+#else
+    UsdPrimDefinition::Attribute attrDef = _GetAttributeDef(_schemaDef, attrName);
+#endif
+
     if (!attrDef) {
         TF_CODING_ERROR(
             "Attribute '%s' doesn't exist on schema '%s'",
@@ -814,6 +833,7 @@ UsdMayaSchemaAdaptor::CreateAttribute(const TfToken& attrName, MDGModifier& modi
         return UsdMayaAttributeAdaptor();
     }
 
+#if PXR_VERSION < 2308
     std::string       mayaAttrName = _GetMayaAttrNameOrAlias(attrName);
     std::string       mayaNiceAttrName = attrDef->GetName();
     MFnDependencyNode node(_handle.object());
@@ -837,13 +857,39 @@ UsdMayaSchemaAdaptor::CreateAttribute(const TfToken& attrName, MDGModifier& modi
         // Maya, because it won't behave like the fallback value in USD.)
         UsdMayaReadUtil::SetMayaAttr(plug, attrDef->GetDefaultValue(), modifier);
     }
+#else
+    std::string                  mayaAttrName = _GetMayaAttrNameOrAlias(attrName);
+    std::string                  mayaNiceAttrName = attrDef.GetName();
+    MFnDependencyNode            node(_handle.object());
+
+    bool    newAttr = !node.hasAttribute(mayaAttrName.c_str());
+    MObject attrObj = UsdMayaReadUtil::FindOrCreateMayaAttr(
+        attrDef.GetTypeName(),
+        attrDef.GetVariability(),
+        node,
+        mayaAttrName,
+        mayaNiceAttrName,
+        modifier);
+    if (attrObj.isNull()) {
+        return UsdMayaAttributeAdaptor();
+    }
+
+    MPlug   plug = node.findPlug(attrObj);
+    VtValue fallbackValue;
+    if (newAttr && attrDef.GetFallbackValue(&fallbackValue)) {
+        // Set the fallback value as the initial value of the attribute, if
+        // it exists. (There's not much point in setting the "default" value in
+        // Maya, because it won't behave like the fallback value in USD.)
+        UsdMayaReadUtil::SetMayaAttr(plug, fallbackValue, modifier);
+    }
+#endif
 
     return UsdMayaAttributeAdaptor(plug, attrDef);
 }
 
 void UsdMayaSchemaAdaptor::RemoveAttribute(const TfToken& attrName)
 {
-    RemoveAttribute(attrName, MDGModifierUndoItem::create("Adaptor attribute removal"));
+    RemoveAttribute(attrName, MayaUsd::MDGModifierUndoItem::create("Adaptor attribute removal"));
 }
 
 void UsdMayaSchemaAdaptor::RemoveAttribute(const TfToken& attrName, MDGModifier& modifier)
@@ -853,7 +899,11 @@ void UsdMayaSchemaAdaptor::RemoveAttribute(const TfToken& attrName, MDGModifier&
         return;
     }
 
+#if PXR_VERSION < 2308
     SdfAttributeSpecHandle attrDef = _GetAttributeSpec(_schemaDef, attrName);
+#else
+    UsdPrimDefinition::Attribute attrDef = _GetAttributeDef(_schemaDef, attrName);
+#endif
     if (!attrDef) {
         TF_CODING_ERROR(
             "Attribute '%s' doesn't exist on schema '%s'",
@@ -912,7 +962,7 @@ const UsdPrimDefinition* UsdMayaSchemaAdaptor::GetSchemaDefinition() const { ret
 bool UsdMayaSchemaAdaptor::CopyToPrim(
     const UsdPrim&,
     const UsdTimeCode&,
-    UsdUtilsSparseValueWriter*) const
+    FlexibleSparseValueWriter*) const
 {
     return false;
 }
@@ -929,10 +979,11 @@ UsdMayaAttributeAdaptor::UsdMayaAttributeAdaptor()
     : _plug()
     , _node()
     , _attr()
-    , _attrDef(nullptr)
+    , _attrDef()
 {
 }
 
+#if PXR_VERSION < 2308
 UsdMayaAttributeAdaptor::UsdMayaAttributeAdaptor(const MPlug& plug, SdfAttributeSpecHandle attrDef)
     : _plug(plug)
     , _node(plug.node())
@@ -940,6 +991,17 @@ UsdMayaAttributeAdaptor::UsdMayaAttributeAdaptor(const MPlug& plug, SdfAttribute
     , _attrDef(attrDef)
 {
 }
+#else
+UsdMayaAttributeAdaptor::UsdMayaAttributeAdaptor(
+    const MPlug&                       plug,
+    const UsdPrimDefinition::Attribute attrDef)
+    : _plug(plug)
+    , _node(plug.node())
+    , _attr(plug.attribute())
+    , _attrDef(attrDef)
+{
+}
+#endif
 
 UsdMayaAttributeAdaptor::~UsdMayaAttributeAdaptor() { }
 
@@ -969,7 +1031,11 @@ TfToken UsdMayaAttributeAdaptor::GetName() const
         return TfToken();
     }
 
+#if PXR_VERSION < 2308
     return _attrDef->GetNameToken();
+#else
+    return _attrDef.GetName();
+#endif
 }
 
 bool UsdMayaAttributeAdaptor::Get(VtValue* value) const
@@ -978,7 +1044,11 @@ bool UsdMayaAttributeAdaptor::Get(VtValue* value) const
         return false;
     }
 
+#if PXR_VERSION < 2308
     VtValue result = UsdMayaWriteUtil::GetVtValue(_plug, _attrDef->GetTypeName());
+#else
+    VtValue result = UsdMayaWriteUtil::GetVtValue(_plug, _attrDef.GetTypeName());
+#endif
     if (result.IsEmpty()) {
         return false;
     }
@@ -989,7 +1059,7 @@ bool UsdMayaAttributeAdaptor::Get(VtValue* value) const
 
 bool UsdMayaAttributeAdaptor::Set(const VtValue& newValue)
 {
-    return Set(newValue, MDGModifierUndoItem::create("Adaptor attribute modification"));
+    return Set(newValue, MayaUsd::MDGModifierUndoItem::create("Adaptor attribute modification"));
 }
 
 bool UsdMayaAttributeAdaptor::Set(const VtValue& newValue, MDGModifier& modifier)
@@ -1015,7 +1085,11 @@ bool UsdMayaAttributeAdaptor::Set(
     return false;
 }
 
+#if PXR_VERSION < 2308
 const SdfAttributeSpecHandle UsdMayaAttributeAdaptor::GetAttributeDefinition() const
+#else
+UsdPrimDefinition::Attribute UsdMayaAttributeAdaptor::GetAttributeDefinition() const
+#endif
 {
     return _attrDef;
 }

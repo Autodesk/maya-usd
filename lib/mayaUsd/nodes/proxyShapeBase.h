@@ -93,6 +93,8 @@ public:
     MAYAUSD_CORE_PUBLIC
     static MObject filePathAttr;
     MAYAUSD_CORE_PUBLIC
+    static MObject filePathRelativeAttr;
+    MAYAUSD_CORE_PUBLIC
     static MObject primPathAttr;
     MAYAUSD_CORE_PUBLIC
     static MObject excludePrimPathsAttr;
@@ -123,6 +125,14 @@ public:
     static MObject rootLayerNameAttr;
     MAYAUSD_CORE_PUBLIC
     static MObject mutedLayersAttr;
+
+#if MAYA_API_VERSION >= 20240000 && MAYA_API_VERSION <= 20249999
+    // Change counter attributes
+    MAYAUSD_CORE_PUBLIC
+    static MObject updateCounterAttr;
+    MAYAUSD_CORE_PUBLIC
+    static MObject resyncCounterAttr;
+#endif
 
     // Output attributes
     MAYAUSD_CORE_PUBLIC
@@ -169,6 +179,10 @@ public:
 
     MAYAUSD_CORE_PUBLIC
     void postConstructor() override;
+#if MAYA_API_VERSION >= 20240000 && MAYA_API_VERSION <= 20249999
+    MAYAUSD_CORE_PUBLIC
+    bool getInternalValue(const MPlug&, MDataHandle&) override;
+#endif
     MAYAUSD_CORE_PUBLIC
     MStatus compute(const MPlug& plug, MDataBlock& dataBlock) override;
     MAYAUSD_CORE_PUBLIC
@@ -289,6 +303,9 @@ public:
     MAYAUSD_CORE_PUBLIC
     bool isIncomingLayer(const std::string& layerIdentifier) const;
 
+    MAYAUSD_CORE_PUBLIC
+    void onAncestorPlugDirty(MPlug& plug);
+
 protected:
     MAYAUSD_CORE_PUBLIC
     MayaUsdProxyShapeBase(
@@ -364,6 +381,9 @@ private:
     MStatus computeOutStageData(MDataBlock& dataBlock);
     MStatus computeOutStageCacheId(MDataBlock& dataBlock);
 
+    void clearAncestorCallbacks();
+    void updateAncestorCallbacks();
+
     void updateShareMode(
         const UsdStageRefPtr&    sharedUsdStage,
         const UsdStageRefPtr&    unsharedUsdStage,
@@ -398,6 +418,12 @@ private:
     size_t                              _excludePrimPathsVersion { 1 };
     size_t                              _UsdStageVersion { 1 };
 
+#if MAYA_API_VERSION >= 20240000 && MAYA_API_VERSION <= 20249999
+    // Notification counters:
+    MInt64 _UsdStageUpdateCounter { 1 };
+    MInt64 _UsdStageResyncCounter { 1 };
+#endif
+
     MayaUsd::ProxyAccessor::Owner _usdAccessor;
 
     static ClosestPointDelegate _sharedClosestPointDelegate;
@@ -416,11 +442,24 @@ private:
     SdfLayerRefPtr _unsharedStageSessionLayer;
     SdfLayerRefPtr _unsharedStageRootLayer;
 
+    // Current edit target for the stage. Kept in a dynamic attribute for save/load,
+    // transferred to this variable on the first compute. Afterward, when the edit
+    // target is changed, this gets updated via a notification listener.
+    SdfLayerRefPtr _targetLayer;
+
     // We need to keep track of unshared sublayers (otherwise they get removed)
     std::vector<SdfLayerRefPtr> _unsharedStageRootSublayers;
 
     // Keep track of the incoming layers
     std::set<std::string> _incomingLayers;
+
+    // Callbacks for listening to ancestor dirty messages.
+    // That includes the proxy shape itself.
+    std::vector<MCallbackId> _ancestorCallbacks;
+    MString                  _ancestorCallbacksPath;
+    bool                     _inAncestorCallback { false };
+
+    MCallbackId _preSaveCallbackId { 0 };
 
 public:
     // Counter for the number of times compute is re-entered

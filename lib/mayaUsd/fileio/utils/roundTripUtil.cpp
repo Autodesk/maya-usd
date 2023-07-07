@@ -50,9 +50,9 @@ TF_DEFINE_PRIVATE_TOKENS(
 // clang-format on
 
 template <typename T>
-static bool _GetMayaDictValue(const UsdAttribute& attr, const TfToken& key, T* outVal)
+static bool _GetMayaDictValue(const UsdObject& obj, const TfToken& key, T* outVal)
 {
-    VtValue data = attr.GetCustomDataByKey(_tokens->Maya);
+    VtValue data = obj.GetCustomDataByKey(_tokens->Maya);
     if (data.IsEmpty()) {
         return false;
     }
@@ -61,7 +61,7 @@ static bool _GetMayaDictValue(const UsdAttribute& attr, const TfToken& key, T* o
         TF_WARN(
             "Expected %s on <%s> to be a dictionary.",
             _tokens->Maya.GetText(),
-            attr.GetPath().GetText());
+            obj.GetPath().GetText());
         return false;
     }
 
@@ -75,7 +75,7 @@ static bool _GetMayaDictValue(const UsdAttribute& attr, const TfToken& key, T* o
                 "Unexpected type for %s[%s] on <%s>.",
                 _tokens->Maya.GetText(),
                 key.GetText(),
-                attr.GetPath().GetText());
+                obj.GetPath().GetText());
         }
     }
 
@@ -83,9 +83,9 @@ static bool _GetMayaDictValue(const UsdAttribute& attr, const TfToken& key, T* o
 }
 
 template <typename T>
-static void _SetMayaDictValue(const UsdAttribute& attr, const TfToken& flagName, const T& val)
+static void _SetMayaDictValue(const UsdObject& obj, const TfToken& flagName, const T& val)
 {
-    VtValue data = attr.GetCustomDataByKey(_tokens->Maya);
+    VtValue data = obj.GetCustomDataByKey(_tokens->Maya);
 
     VtDictionary newDict;
     if (!data.IsEmpty()) {
@@ -95,13 +95,13 @@ static void _SetMayaDictValue(const UsdAttribute& attr, const TfToken& flagName,
             TF_WARN(
                 "Expected to get %s on <%s> to be a dictionary.",
                 _tokens->Maya.GetText(),
-                attr.GetPath().GetText());
+                obj.GetPath().GetText());
             return;
         }
     }
 
     newDict[flagName] = VtValue(val);
-    attr.SetCustomDataByKey(_tokens->Maya, VtValue(newDict));
+    obj.SetCustomDataByKey(_tokens->Maya, VtValue(newDict));
 }
 
 /* static */
@@ -121,6 +121,19 @@ bool UsdMayaRoundTripUtil::IsAttributeMayaGenerated(const UsdAttribute& attr)
 void UsdMayaRoundTripUtil::MarkAttributeAsMayaGenerated(const UsdAttribute& attr)
 {
     _SetMayaDictValue(attr, _tokens->generated, true);
+}
+
+/* static */
+bool UsdMayaRoundTripUtil::IsPrimMayaGenerated(const UsdPrim& prim)
+{
+    bool ret = false;
+    return _GetMayaDictValue(prim, _tokens->generated, &ret) && ret;
+}
+
+/* static */
+void UsdMayaRoundTripUtil::MarkPrimAsMayaGenerated(const UsdPrim& prim)
+{
+    _SetMayaDictValue(prim, _tokens->generated, true);
 }
 
 /* static */

@@ -16,8 +16,13 @@
 #include "UsdAttributeHolder.h"
 
 #include "Utils.h"
+#include "private/UfeNotifGuard.h"
 
 #include <mayaUsd/utils/util.h>
+
+#include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/editRouter.h>
+#include <usdUfe/utils/editRouterContext.h>
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #include <mayaUsd/base/tokens.h>
 #endif
@@ -26,6 +31,7 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/usd/stage.h>
 
 namespace {
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -38,6 +44,8 @@ bool setUsdAttrMetadata(
     const Ufe::Value&           value)
 {
     PXR_NAMESPACE_USING_DIRECTIVE
+    UsdUfe::InSetAttribute inSetAttr;
+
     // Special cases for known Ufe metadata keys.
 
     // Note: we allow the locking attribute to be changed even if attribute is locked
@@ -48,7 +56,9 @@ bool setUsdAttrMetadata(
     }
 
     // If attribute is locked don't allow setting Metadata.
-    MayaUsd::ufe::enforceAttributeEditAllowed(attr);
+    UsdUfe::enforceAttributeEditAllowed(attr);
+
+    UsdUfe::AttributeEditRouterContext ctx(attr.GetPrim(), attr.GetName());
 
     PXR_NS::TfToken tok(key);
     if (PXR_NS::UsdShadeNodeGraph(attr.GetPrim())) {
@@ -109,9 +119,19 @@ UsdAttributeHolder::UPtr UsdAttributeHolder::create(const PXR_NS::UsdAttribute& 
 std::string UsdAttributeHolder::isEditAllowedMsg() const
 {
     if (isValid()) {
-        std::string errMsg;
-        isAttributeEditAllowed(_usdAttr, &errMsg);
-        return errMsg;
+        PXR_NS::UsdPrim prim = _usdAttr.GetPrim();
+
+        // Edit routing is done by a user-provided implementation that can raise exceptions.
+        // In particular, they can raise an exception to prevent the execution of the associated
+        // command. This is directly relevant for this check of allowed edits.
+        try {
+            std::string                errMsg;
+            AttributeEditRouterContext ctx(prim, _usdAttr.GetName());
+            UsdUfe::isAttributeEditAllowed(_usdAttr, &errMsg);
+            return errMsg;
+        } catch (std::exception&) {
+            return "Editing has been prevented by edit router.";
+        }
     } else {
         return "Editing is not allowed.";
     }
@@ -145,6 +165,9 @@ bool UsdAttributeHolder::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode t
         }
     }
 
+    AttributeEditRouterContext ctx(_usdAttr.GetPrim(), _usdAttr.GetName());
+
+    UsdUfe::InSetAttribute inSetAttr;
     return _usdAttr.Set(value, time);
 }
 
@@ -420,7 +443,11 @@ bool UsdAttributeHolder::setMetadata(const std::string& key, const Ufe::Value& v
 bool UsdAttributeHolder::clearMetadata(const std::string& key)
 {
     PXR_NAMESPACE_USING_DIRECTIVE
+    UsdUfe::InSetAttribute inSetAttr;
+
     if (isValid()) {
+        AttributeEditRouterContext ctx(_usdAttr.GetPrim(), _usdAttr.GetName());
+
         PXR_NS::TfToken tok(key);
         // Special cases for NodeGraphs:
         if (PXR_NS::UsdShadeNodeGraph(usdPrim())) {
@@ -431,6 +458,7 @@ bool UsdAttributeHolder::clearMetadata(const std::string& key)
             }
             return !hasMetadata(key);
         }
+
         // Special cases for known Ufe metadata keys.
         if (key == Ufe::Attribute::kLocked) {
             return _usdAttr.ClearMetadata(MayaUsdMetadata->Lock);
@@ -483,10 +511,10 @@ Ufe::AttributeEnumString::EnumValues UsdAttributeHolder::getEnumValues() const
 {
     Ufe::AttributeEnumString::EnumValues retVal;
     if (_usdAttr.IsValid()) {
-        auto attrDefn
-            = _usdAttr.GetPrim().GetPrimDefinition().GetSchemaAttributeSpec(_usdAttr.GetName());
-        if (attrDefn && attrDefn->HasAllowedTokens()) {
-            for (auto const& token : attrDefn->GetAllowedTokens()) {
+        VtTokenArray allowedTokens;
+        if (_usdAttr.GetPrim().GetPrimDefinition().GetPropertyMetadata(
+                _usdAttr.GetName(), SdfFieldKeys->AllowedTokens, &allowedTokens)) {
+            for (auto const& token : allowedTokens) {
                 retVal.push_back(token.GetString());
             }
         }

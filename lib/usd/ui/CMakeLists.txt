@@ -1,5 +1,5 @@
 #
-# Copyright 2020 Autodesk
+# Copyright 2023 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -47,7 +47,11 @@ target_compile_definitions(${PROJECT_NAME}
 
 # QT_NO_KEYWORDS prevents Qt from defining the foreach, signals, slots and emit macros.
 # this avoids overlap between Qt macros and boost, and enforces using Q_ macros.
-set_target_properties(Qt5::Core PROPERTIES INTERFACE_COMPILE_DEFINITIONS QT_NO_KEYWORDS)
+if (Qt6_FOUND)
+	set_target_properties(Qt6::Core PROPERTIES INTERFACE_COMPILE_DEFINITIONS QT_NO_KEYWORDS)
+else()
+	set_target_properties(Qt5::Core PROPERTIES INTERFACE_COMPILE_DEFINITIONS QT_NO_KEYWORDS)
+endif()
 
 mayaUsd_compile_config(${PROJECT_NAME})
 
@@ -58,9 +62,9 @@ target_link_libraries(${PROJECT_NAME}
     PUBLIC
         mayaUsd
     PRIVATE
-        Qt5::Core
-        Qt5::Gui
-        Qt5::Widgets
+		$<IF:$<BOOL:${Qt6_FOUND}>,Qt6::Core,Qt5::Core>
+		$<IF:$<BOOL:${Qt6_FOUND}>,Qt6::Gui,Qt5::Gui>
+		$<IF:$<BOOL:${Qt6_FOUND}>,Qt6::Widgets,Qt5::Widgets>
 )
 
 # -----------------------------------------------------------------------------
@@ -78,6 +82,9 @@ if(IS_MACOSX OR IS_LINUX)
     endif()
     if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
         mayaUsd_add_rpath(rpath "../../../Maya.app/Contents/MacOS")
+        if (Qt6_FOUND)
+            mayaUsd_add_rpath(rpath "@executable_path/../Frameworks")
+        endif()
     endif()
     mayaUsd_add_rpath(rpath ${MAYAUSDUI_INSTALL_PATH})
     mayaUsd_install_rpath(rpath ${PROJECT_NAME})

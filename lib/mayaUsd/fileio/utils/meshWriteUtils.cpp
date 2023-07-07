@@ -23,6 +23,7 @@
 #include <mayaUsd/fileio/utils/roundTripUtil.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/utils/colorSpace.h>
+#include <mayaUsd/utils/json.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/gf/vec3f.h>
@@ -185,7 +186,7 @@ void setPrimvar(
     const VtValue&             values,
     const VtValue&             defaultValue,
     const UsdTimeCode&         usdTime,
-    UsdUtilsSparseValueWriter* valueWriter)
+    FlexibleSparseValueWriter* valueWriter)
 {
     // Simple case of non-indexed primvars.
     if (indices.empty()) {
@@ -254,7 +255,7 @@ UsdGeomPrimvar createUVPrimVar(
     const VtArray<GfVec2f>&    data,
     const TfToken&             interpolation,
     const VtIntArray&          assignmentIndices,
-    UsdUtilsSparseValueWriter* valueWriter)
+    FlexibleSparseValueWriter* valueWriter)
 {
     const unsigned int numValues = data.size();
     if (numValues == 0) {
@@ -701,7 +702,7 @@ void UsdMayaMeshWriteUtils::exportReferenceMesh(
 void UsdMayaMeshWriteUtils::assignSubDivTagsToUSDPrim(
     MFnMesh&                   meshFn,
     UsdGeomMesh&               primSchema,
-    UsdUtilsSparseValueWriter* valueWriter)
+    FlexibleSparseValueWriter* valueWriter)
 {
     // Vert Creasing
     MUintArray   mayaCreaseVertIds;
@@ -795,7 +796,8 @@ void UsdMayaMeshWriteUtils::writePointsData(
     const MFnMesh&             meshFn,
     UsdGeomMesh&               primSchema,
     const UsdTimeCode&         usdTime,
-    UsdUtilsSparseValueWriter* valueWriter)
+    const double               distanceUnitsScalar,
+    FlexibleSparseValueWriter* valueWriter)
 {
     MStatus status { MS::kSuccess };
 
@@ -809,7 +811,13 @@ void UsdMayaMeshWriteUtils::writePointsData(
 
     const GfVec3f* vecData = reinterpret_cast<const GfVec3f*>(pointsData);
     VtVec3fArray   points(vecData, vecData + numVertices);
-    VtVec3fArray   extent(2);
+
+    // Multiply all mesh points by distanceUnitsScalar
+    if (distanceUnitsScalar != 1.0) {
+        points = points * distanceUnitsScalar;
+    }
+
+    VtVec3fArray extent(2);
     // Compute the extent using the raw points
     UsdGeomPointBased::ComputeExtent(points, &extent);
 
@@ -821,7 +829,7 @@ void UsdMayaMeshWriteUtils::writeFaceVertexIndicesData(
     const MFnMesh&             meshFn,
     UsdGeomMesh&               primSchema,
     const UsdTimeCode&         usdTime,
-    UsdUtilsSparseValueWriter* valueWriter)
+    FlexibleSparseValueWriter* valueWriter)
 {
     const int numFaceVertices = meshFn.numFaceVertices();
     const int numPolygons = meshFn.numPolygons();
@@ -852,7 +860,7 @@ void UsdMayaMeshWriteUtils::writeFaceVertexIndicesData(
 void UsdMayaMeshWriteUtils::writeInvisibleFacesData(
     const MFnMesh&             meshFn,
     UsdGeomMesh&               primSchema,
-    UsdUtilsSparseValueWriter* valueWriter)
+    FlexibleSparseValueWriter* valueWriter)
 {
     MUintArray     mayaHoles = meshFn.getInvisibleFaces();
     const uint32_t count = mayaHoles.length();
@@ -901,12 +909,7 @@ bool UsdMayaMeshWriteUtils::getMeshUVSetData(
     uvArray->clear();
     uvArray->reserve(static_cast<size_t>(uArray.length()));
     for (unsigned int uvId = 0u; uvId < uArray.length(); ++uvId) {
-#if PXR_VERSION >= 2011
         uvArray->emplace_back(uArray[uvId], vArray[uvId]);
-#else
-        GfVec2f value(uArray[uvId], vArray[uvId]);
-        uvArray->push_back(value);
-#endif
     }
 
     // Now iterate through all the face vertices and fill in the faceVarying
@@ -945,7 +948,7 @@ bool UsdMayaMeshWriteUtils::writeUVSetsAsVec2fPrimvars(
     const MFnMesh&                            meshFn,
     UsdGeomMesh&                              primSchema,
     const UsdTimeCode&                        usdTime,
-    UsdUtilsSparseValueWriter*                valueWriter,
+    FlexibleSparseValueWriter*                valueWriter,
     bool                                      preserveSetNames,
     const std::map<std::string, std::string>& uvSetRemaps)
 {
@@ -995,7 +998,7 @@ bool UsdMayaMeshWriteUtils::writeUVSetsAsVec2fPrimvars(
 void UsdMayaMeshWriteUtils::writeSubdivInterpBound(
     MFnMesh&                   meshFn,
     UsdGeomMesh&               primSchema,
-    UsdUtilsSparseValueWriter* valueWriter)
+    FlexibleSparseValueWriter* valueWriter)
 {
     TfToken sdInterpBound = UsdMayaMeshWriteUtils::getSubdivInterpBoundary(meshFn);
     if (!sdInterpBound.IsEmpty()) {
@@ -1010,7 +1013,7 @@ void UsdMayaMeshWriteUtils::writeSubdivInterpBound(
 void UsdMayaMeshWriteUtils::writeSubdivFVLinearInterpolation(
     MFnMesh&                   meshFn,
     UsdGeomMesh&               primSchema,
-    UsdUtilsSparseValueWriter* valueWriter)
+    FlexibleSparseValueWriter* valueWriter)
 {
     TfToken sdFVLinearInterpolation = UsdMayaMeshWriteUtils::getSubdivFVLinearInterpolation(meshFn);
     if (!sdFVLinearInterpolation.IsEmpty()) {
@@ -1026,7 +1029,7 @@ void UsdMayaMeshWriteUtils::writeNormalsData(
     const MFnMesh&             meshFn,
     UsdGeomMesh&               primSchema,
     const UsdTimeCode&         usdTime,
-    UsdUtilsSparseValueWriter* valueWriter)
+    FlexibleSparseValueWriter* valueWriter)
 {
     VtVec3fArray meshNormals;
     TfToken      normalInterp;
@@ -1050,7 +1053,7 @@ bool UsdMayaMeshWriteUtils::addDisplayPrimvars(
     const VtIntArray&                   assignmentIndices,
     const bool                          clamped,
     const bool                          authored,
-    UsdUtilsSparseValueWriter*          valueWriter)
+    FlexibleSparseValueWriter*          valueWriter)
 {
     // We are appending the default value to the primvar in the post export function
     // so if the dataset is empty and the assignment indices are not, we still
@@ -1128,7 +1131,7 @@ bool UsdMayaMeshWriteUtils::createRGBPrimVar(
     const TfToken&             interpolation,
     const VtIntArray&          assignmentIndices,
     bool                       clamped,
-    UsdUtilsSparseValueWriter* valueWriter)
+    FlexibleSparseValueWriter* valueWriter)
 {
     const unsigned int numValues = data.size();
     if (numValues == 0) {
@@ -1167,7 +1170,7 @@ bool UsdMayaMeshWriteUtils::createRGBAPrimVar(
     const TfToken&             interpolation,
     const VtIntArray&          assignmentIndices,
     bool                       clamped,
-    UsdUtilsSparseValueWriter* valueWriter)
+    FlexibleSparseValueWriter* valueWriter)
 {
     const unsigned int numValues = rgbData.size();
     if (numValues == 0 || numValues != alphaData.size()) {
@@ -1210,7 +1213,7 @@ bool UsdMayaMeshWriteUtils::createAlphaPrimVar(
     const TfToken&             interpolation,
     const VtIntArray&          assignmentIndices,
     bool                       clamped,
-    UsdUtilsSparseValueWriter* valueWriter)
+    FlexibleSparseValueWriter* valueWriter)
 {
     const unsigned int numValues = data.size();
     if (numValues == 0) {
@@ -1408,10 +1411,14 @@ MStatus UsdMayaMeshWriteUtils::exportComponentTags(UsdGeomMesh& primSchema, MObj
     MPlug outShp = depNodeFn.findPlug("outMesh", &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
+    JsObject subsetInfoDict;
+    JsValue  info;
+    if (UsdMayaMeshReadUtils::getGeomSubsetInfo(obj, info) && info) {
+        subsetInfoDict = info.GetJsObject();
+    }
     auto    outShpHolder = UsdMayaUtil::GetPlugDataHandle(outShp);
     MObject geomObj = outShpHolder->GetDataHandle().data();
     if (geomObj.hasFn(MFn::kGeometryData)) {
-        TfToken         componentTagFamilyName("componentTag");
         MFnGeometryData fnGeomData(geomObj);
         MStringArray    keys;
         status = fnGeomData.componentTags(keys);
@@ -1433,12 +1440,38 @@ MStatus UsdMayaMeshWriteUtils::exportComponentTags(UsdGeomMesh& primSchema, MObj
                     indices.reserve(curIndices.length());
                     for (unsigned int j = 0; j < curIndices.length(); ++j)
                         indices.push_back(curIndices[j]);
+                    // See if we have a custom familyName in the roundtripping data:
+                    TfToken    familyName = UsdMayaGeomSubsetTokens->ComponentTagFamilyName;
+                    const auto subsetIt = subsetInfoDict.find(keys[i].asChar());
+                    if (subsetIt != subsetInfoDict.cend()) {
+                        if (subsetIt->second.IsObject()) {
+                            const auto& subsetInfo = subsetIt->second.GetJsObject();
+                            const auto  familyInfo = subsetInfo.find("familyName");
+                            if (familyInfo != subsetInfo.cend()) {
+                                if (familyInfo->second.IsString()) {
+                                    familyName = TfToken(familyInfo->second.GetString());
+                                } else {
+                                    TF_RUNTIME_ERROR(
+                                        "Invalid GeomSubset roundtrip info on node '%s': "
+                                        "familyName for subset '%s' is not a string.",
+                                        UsdMayaUtil::GetMayaNodeName(obj).c_str(),
+                                        keys[i].asChar());
+                                }
+                            }
+                        } else {
+                            TF_RUNTIME_ERROR(
+                                "Invalid GeomSubset roundtrip info on node '%s': "
+                                "info for subset '%s' is not a dictionary.",
+                                UsdMayaUtil::GetMayaNodeName(obj).c_str(),
+                                keys[i].asChar());
+                        }
+                    }
                     UsdGeomSubset ss = UsdGeomSubset::CreateGeomSubset(
                         primSchema,
                         TfToken(keys[i].asChar()),
                         UsdGeomTokens->face,
                         indices,
-                        componentTagFamilyName);
+                        familyName);
                 }
             }
         }

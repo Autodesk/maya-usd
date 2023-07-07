@@ -101,7 +101,7 @@ class TestObserver(ufe.Observer):
 
     def __call__(self, notification):
         if (ufeUtils.ufeFeatureSetVersion() >= 2):
-            if os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '4024':
+            if (ufeUtils.ufeFeatureSetVersion() >= 4):
                 if isinstance(notification, ufe.AttributeChanged):
                     self._valueChanged += 1
             else:
@@ -630,15 +630,15 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
         # Add transform ops that do not match either the Maya transform stack,
         # the USD common API transform stack, or a matrix stack.
         sphereXformable.AddTranslateOp()
-        sphereXformable.AddTranslateOp(UsdGeom.XformOp.PrecisionFloat, "pivot")
+        sphereXformable.AddTranslateOp(UsdGeom.XformOp.PrecisionFloat, "pivotCustom")
         sphereXformable.AddRotateZOp()
         sphereXformable.AddTranslateOp(
-            UsdGeom.XformOp.PrecisionFloat, "pivot", True)
+            UsdGeom.XformOp.PrecisionFloat, "pivotCustom", True)
 
         self.assertEqual(
             sphereXformable.GetXformOpOrderAttr().Get(), Vt.TokenArray((
-                "xformOp:translate", "xformOp:translate:pivot",
-                "xformOp:rotateZ", "!invert!xformOp:translate:pivot")))
+                "xformOp:translate", "xformOp:translate:pivotCustom",
+                "xformOp:rotateZ", "!invert!xformOp:translate:pivotCustom")))
 
         self.assertFalse(UsdGeom.XformCommonAPI(sphereXformable))
         self.assertFalse(mayaUsd.lib.XformStack.MayaStack().MatchingSubstack(
@@ -655,8 +655,8 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
         # Fallback interface will have added a RotXYZ transform op.
         self.assertEqual(
             sphereXformable.GetXformOpOrderAttr().Get(), Vt.TokenArray((
-                "xformOp:translate", "xformOp:translate:pivot",
-                "xformOp:rotateZ", "!invert!xformOp:translate:pivot",
+                "xformOp:translate", "xformOp:translate:pivotCustom",
+                "xformOp:rotateZ", "!invert!xformOp:translate:pivotCustom",
                 "xformOp:rotateXYZ:maya_fallback")))
 
     @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')

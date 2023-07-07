@@ -19,6 +19,7 @@
 import fixturesUtils
 import mayaUtils
 import testUtils
+import ufeUtils
 
 from maya import cmds
 from maya import standalone
@@ -84,7 +85,7 @@ class SceneSegmentTestCase(unittest.TestCase):
         handler = ufe.RunTimeMgr.instance().sceneSegmentHandler(camerasParentPath.runTimeId())
         self.assertEqual(handler, None)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4035', 'Test for UFE preview version 0.4.35 and later')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test for UFE v4 or later')
     def testFilteredFindGatewayItems(self):
         proxyShapePath = ufe.PathString.path('|stage|stageShape')
         proxyShapeParentPath = ufe.PathString.path('|stage')

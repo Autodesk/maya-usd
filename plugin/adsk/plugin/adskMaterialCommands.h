@@ -49,9 +49,11 @@ public:
 private:
     MStatus parseArgs(const MArgList& argList);
 
+#ifndef UFE_V4_FEATURES_AVAILABLE
     void appendMaterialXMaterials() const;
     void appendArnoldMaterials() const;
     void appendUsdMaterials() const;
+#endif
 };
 
 //! \brief Returns an array of materials in the same stage as the object passed in via argument.
@@ -59,6 +61,27 @@ private:
 class MAYAUSD_PLUGIN_PUBLIC ADSKMayaUSDGetMaterialsInStageCommand : public MPxCommand
 {
 public:
+    // plugin registration requirements
+    static const MString commandName;
+    static void*         creator();
+    static MSyntax       createSyntax();
+
+    MStatus doIt(const MArgList& argList) override;
+    bool    isUndoable() const override { return false; }
+
+private:
+    MStatus parseArgs(const MArgList& argList);
+};
+
+//! \brief Checks a SceneItem for various material-binding related attributes.
+class MAYAUSD_PLUGIN_PUBLIC ADSKMayaUSDMaterialBindingsCommand : public MPxCommand
+{
+public:
+    static constexpr auto kCanAssignMaterialToNodeType = "ca";
+    static constexpr auto kCanAssignMaterialToNodeTypeLong = "canAssignMaterialToNodeType";
+    static constexpr auto kHasMaterialBindingFlag = "mb";
+    static constexpr auto kHasMaterialBindingFlagLong = "hasMaterialBinding";
+
     // plugin registration requirements
     static const MString commandName;
     static void*         creator();

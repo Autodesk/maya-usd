@@ -486,6 +486,11 @@ void wrapProxyShape()
 // The best place to put this fix would be in pxr/base/lib/tf/refPtr.h
 // where TF_REFPTR_CONST_VOLATILE_GET is defined, but for now we are
 // patching it locally.
+//
+// This macro was removed in USD 23.08. It was only needed to support
+// Visual Studio 2015, which USD itself no longer supports.
+#if PXR_VERSION < 2308
 #if defined(ARCH_COMPILER_MSVC) && ARCH_COMPILER_MSVC_VERSION <= 1910
 TF_REFPTR_CONST_VOLATILE_GET(ProxyShape)
+#endif
 #endif

@@ -31,7 +31,6 @@
 
 #include <mutex>
 
-using namespace std;
 using boost::python::class_;
 using boost::python::copy_const_reference;
 using boost::python::extract;
@@ -151,7 +150,7 @@ public:
         for (const auto& idxPair : stack.GetInversionTwins()) {
             result.append(convert_index_pair(idxPair));
         }
-        return move(result);
+        return std::move(result);
     }
 
     static object

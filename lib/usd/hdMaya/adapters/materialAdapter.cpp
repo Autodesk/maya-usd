@@ -34,10 +34,6 @@
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 
-#if PXR_VERSION < 2011
-#include <pxr/imaging/hdSt/textureResourceHandle.h>
-#endif // PXR_VERSION < 2011
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -90,20 +86,6 @@ void HdMayaMaterialAdapter::Populate()
     GetDelegate()->InsertSprim(HdPrimTypeTokens->material, GetID(), HdMaterial::AllDirty);
     _isPopulated = true;
 }
-
-#if PXR_VERSION < 2011
-
-HdTextureResource::ID HdMayaMaterialAdapter::GetTextureResourceID(const TfToken& paramName)
-{
-    return {};
-}
-
-HdTextureResourceSharedPtr HdMayaMaterialAdapter::GetTextureResource(const SdfPath& textureShaderId)
-{
-    return {};
-}
-
-#endif // PXR_VERSION < 2011
 
 VtValue HdMayaMaterialAdapter::GetMaterialResource()
 {
@@ -214,30 +196,6 @@ private:
         }
     }
 
-#if PXR_VERSION < 2011
-
-    HdTextureResourceSharedPtr GetTextureResource(const SdfPath& textureShaderId) override
-    {
-        TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
-            .Msg(
-                "HdMayaShadingEngineAdapter::GetTextureResource(%s): %s\n",
-                textureShaderId.GetText(),
-                GetID().GetText());
-        if (GetDelegate()->IsHdSt()) {
-            auto* mObjPtr = TfMapLookupPtr(_materialPathToMobj, textureShaderId);
-            if (!mObjPtr || (*mObjPtr) == MObject::kNullObj) {
-                return {};
-            }
-            return GetFileTextureResource(
-                *mObjPtr,
-                GetFileTexturePath(MFnDependencyNode(*mObjPtr)),
-                GetDelegate()->GetParams().textureMemoryPerTexture);
-        }
-        return {};
-    }
-
-#endif // PXR_VERSION < 2011
-
     void _CreateSurfaceMaterialCallback()
     {
         _CacheNodeAndTypes();
@@ -251,21 +209,6 @@ private:
                 = MNodeMessage::addNodeDirtyCallback(_surfaceShader, _DirtyShaderParams, this);
         }
     }
-
-#if PXR_VERSION < 2011
-
-    inline HdTextureResource::ID
-    _GetTextureResourceID(const MObject& fileObj, const TfToken& filePath)
-    {
-        auto       hash = filePath.Hash();
-        const auto wrapping = GetFileTextureWrappingParams(fileObj);
-        MayaUsd::hash_combine(hash, GetDelegate()->GetParams().textureMemoryPerTexture);
-        MayaUsd::hash_combine(hash, std::get<0>(wrapping));
-        MayaUsd::hash_combine(hash, std::get<1>(wrapping));
-        return HdTextureResource::ID(hash);
-    }
-
-#endif // PXR_VERSION < 2011
 
     VtValue GetMaterialResource() override
     {
@@ -320,13 +263,6 @@ private:
     MObject _surfaceShader;
     TfToken _surfaceShaderType;
     // So they live long enough
-
-#if PXR_VERSION < 2011
-
-    std::unordered_map<TfToken, HdStTextureResourceHandleSharedPtr, TfToken::HashFunctor>
-        _textureResourceHandles;
-
-#endif // PXR_VERSION < 2011
 
     MCallbackId _surfaceShaderCallback;
 #ifdef HDMAYA_OIT_ENABLED

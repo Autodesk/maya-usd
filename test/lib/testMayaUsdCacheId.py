@@ -28,6 +28,7 @@ from maya import standalone
 from mayaUsd import lib as mayaUsdLib
 
 import fixturesUtils
+import testUtils
 
 
 class MayaUsdPythonCacheIdTestCase(unittest.TestCase):
@@ -165,6 +166,11 @@ class MayaUsdPythonCacheIdTestCase(unittest.TestCase):
         # Check they are the same
         self.assertEqual(shapeStageA, cacheStageB)
 
+        # Check that cache gets cleared
+        cmds.file(new=True, force=True)
+
+        self.assertFalse(self.SC.Contains(cacheId))
+
     def testCacheIdNotStoredInFile(self):
         # Open the stage and get the cache Id
         with pxr.Usd.StageCacheContext(self.SC):
@@ -211,3 +217,31 @@ class MayaUsdPythonCacheIdTestCase(unittest.TestCase):
         # Check that the stageCacheId reset to -1
         self.assertEqual(cmds.getAttr('{}.stageCacheId'.format(shapeNodeB)),
                          -1)
+
+    def testCacheLeaksAreFixed(self):
+        """Clearing the pxr.UsdUtils.StageCache prevents a modified stage from
+           surviving a File->New cycle."""
+
+        # Open ballset.ma scene in testSamples
+        filePath = testUtils.getTestScene("groupBalls", "ballset.ma")
+        cmds.file(filePath, force=True, open=True)
+
+        # Get the cache ID
+        cacheIdValue = cmds.getAttr('|transform1|proxyShape1.outStageCacheId')
+        cacheId = pxr.Usd.StageCache.Id.FromLongInt(cacheIdValue)
+        self.assertTrue(self.SC.Contains(cacheId))
+        cacheStage = self.SC.Find(cacheId)
+
+        # Modify the stage
+        ball1Xform = cacheStage.GetPrimAtPath("/Ball_set/Props/Ball_1").GetAttribute("xformOp:translate")
+        self.assertEqual(ball1Xform.Get()[0], -5.0)
+        ball1Xform.Set((2,2,2))
+        self.assertEqual(ball1Xform.Get()[0], 2)
+
+        # Check that the ballset scene reloads from scratch
+        cmds.file(filePath, force=True, open=True)
+        cacheIdValue = cmds.getAttr('|transform1|proxyShape1.outStageCacheId')
+        cacheId = pxr.Usd.StageCache.Id.FromLongInt(cacheIdValue)
+        cacheStage = self.SC.Find(cacheId)
+        ball1Xform = cacheStage.GetPrimAtPath("/Ball_set/Props/Ball_1").GetAttribute("xformOp:translate")
+        self.assertEqual(ball1Xform.Get()[0], -5.0)
