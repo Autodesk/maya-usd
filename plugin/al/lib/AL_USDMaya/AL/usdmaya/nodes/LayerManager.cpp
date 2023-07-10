@@ -40,14 +40,7 @@
 #include <mutex>
 
 namespace {
-const int _layerManagerProfilerCategory = MProfiler::addCategory(
-#if MAYA_API_VERSION >= 20190000
-    "LayerManager",
-    "LayerManager"
-#else
-    "LayerManager"
-#endif
-);
+const int _layerManagerProfilerCategory = MProfiler::addCategory("LayerManager", "LayerManager");
 
 MObjectHandle theLayerManagerHandle;
 

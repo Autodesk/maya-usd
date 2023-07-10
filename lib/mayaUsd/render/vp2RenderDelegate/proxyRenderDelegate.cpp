@@ -616,11 +616,9 @@ ProxyRenderDelegate::~ProxyRenderDelegate()
 //! \brief  This drawing routine supports all devices (DirectX and OpenGL)
 MHWRender::DrawAPI ProxyRenderDelegate::supportedDrawAPIs() const { return MHWRender::kAllDevices; }
 
-#if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
 //! \brief  Enable subscene update in selection passes for deferred update of selection render
 //! items.
 bool ProxyRenderDelegate::enableUpdateForSelection() const { return true; }
-#endif
 
 //! \brief  Always requires update since changes are tracked by Hydraw change tracker and it will
 //! guarantee minimal update; only exception is if rendering through Maya-to-Hydra
@@ -1116,7 +1114,6 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
     // If update for selection is enabled, the draw data for the "points" repr
     // won't be prepared until point snapping is activated; otherwise the draw
     // data have to be prepared early for possible activation of point snapping.
-#if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
     const bool inSelectionPass = (frameContext.getSelectionInfo() != nullptr);
 #if !defined(MAYA_NEW_POINT_SNAPPING_SUPPORT) || defined(WANT_UFE_BUILD)
     const bool inPointSnapping = pointSnappingActive();
@@ -1134,15 +1131,6 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         _pointInstancesPickMode = UsdPointInstancesPickMode::PointInstancer;
     }
 #endif // defined(WANT_UFE_BUILD)
-
-#else // !defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
-    _combinedDisplayStyles[HdReprTokens->points] = _frameCounter;
-
-    constexpr bool inSelectionPass = false;
-#if !defined(MAYA_NEW_POINT_SNAPPING_SUPPORT)
-    constexpr bool inPointSnapping = false;
-#endif
-#endif // defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
 
     // Work around USD issue #1516. There is a significant performance overhead caused by populating
     // selection, so only force the populate selection to occur when we detect a change which
@@ -1260,11 +1248,7 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     const MSelectionInfo* selectionInfo = frameContext.getSelectionInfo();
     if (selectionInfo) {
         bool oldSnapToPoints = _snapToPoints;
-#if MAYA_API_VERSION >= 20220000
         _snapToPoints = selectionInfo->pointSnapping();
-#else
-        _snapToPoints = pointSnappingActive();
-#endif
         if (_snapToPoints != oldSnapToPoints) {
             _selectionModeChanged = true;
         }
@@ -1430,22 +1414,16 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         topLevelInstanceIndex = instancerContext.front().second;
     }
 #else
-    SdfPath                         usdPath = GetScenePrimPath(rprimId, instanceIndex);
+    SdfPath usdPath = GetScenePrimPath(rprimId, instanceIndex);
 #endif
 
     // If update for selection is enabled, we can query the Maya selection list
     // adjustment, USD selection kind, and USD point instances pick mode once
     // per selection update to avoid the cost of executing MEL commands or
     // searching optionVars for each intersection.
-#if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
     const TfToken&                   selectionKind = _selectionKind;
     const UsdPointInstancesPickMode& pointInstancesPickMode = _pointInstancesPickMode;
     const MGlobal::ListAdjustment&   listAdjustment = _globalListAdjustment;
-#else
-    const TfToken                   selectionKind = GetSelectionKind();
-    const UsdPointInstancesPickMode pointInstancesPickMode = GetPointInstancesPickMode();
-    const MGlobal::ListAdjustment   listAdjustment = GetListAdjustment();
-#endif
 
     UsdPrim       prim = _proxyShapeData->UsdStage()->GetPrimAtPath(usdPath);
     const UsdPrim topLevelPrim = _proxyShapeData->UsdStage()->GetPrimAtPath(topLevelPath);
@@ -1529,7 +1507,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     auto ufeSel = Ufe::NamedSelection::get("MayaSelectTool");
     ufeSel->append(si);
 #else
-    auto                            globalSelection = Ufe::GlobalSelection::get();
+    auto    globalSelection = Ufe::GlobalSelection::get();
 
     switch (listAdjustment) {
     case MGlobal::kReplaceList:

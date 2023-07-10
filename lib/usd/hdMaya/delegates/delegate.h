@@ -112,7 +112,6 @@ public:
     virtual bool SupportsUfeSelection() { return false; }
 #endif // WANT_UFE_BUILD
 
-#if MAYA_API_VERSION >= 20210000
     virtual void PopulateSelectionList(
         const HdxPickHitVector&          hits,
         const MHWRender::MSelectionInfo& selectInfo,
@@ -120,7 +119,6 @@ public:
         MPointArray&                     worldSpaceHitPts)
     {
     }
-#endif
 
     void SetLightsEnabled(const bool enabled) { _lightsEnabled = enabled; }
     bool GetLightsEnabled() { return _lightsEnabled; }

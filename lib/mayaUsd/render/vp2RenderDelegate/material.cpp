@@ -3244,11 +3244,6 @@ HdVP2Material::CompiledNetwork::_CreateShaderInstance(const HdMaterialNetwork& m
 
     MHWRender::MShaderInstance* shaderInstance = nullptr;
 
-    // MShaderInstance supports multiple connections between shaders on Maya 2018.7, 2019.3, 2020
-    // and above.
-#if (MAYA_API_VERSION >= 20190300) \
-    || ((MAYA_API_VERSION >= 20180700) && (MAYA_API_VERSION < 20190000))
-
     // UsdImagingMaterialAdapter has walked the shader graph and emitted nodes
     // and relationships in topological order to avoid forward-references, thus
     // we can run a reverse iteration to avoid connecting a fragment before any
@@ -3320,98 +3315,6 @@ HdVP2Material::CompiledNetwork::_CreateShaderInstance(const HdMaterialNetwork& m
                 .Msg("Failed to connect shader %s\n", node.path.GetText());
         }
     }
-
-#elif MAYA_API_VERSION >= 20190000
-
-    // UsdImagingMaterialAdapter has walked the shader graph and emitted nodes
-    // and relationships in topological order to avoid forward-references, thus
-    // we can run a reverse iteration to avoid connecting a fragment before any
-    // of its downstream fragments.
-    const auto rend = mat.nodes.rend();
-    for (auto rit = mat.nodes.rbegin(); rit != rend; rit++) {
-        const HdMaterialNode& node = *rit;
-
-        const MString nodeId = node.identifier.GetText();
-        const MString nodeName = node.path.GetNameToken().GetText();
-
-        if (shaderInstance == nullptr) {
-            shaderInstance = shaderMgr->getFragmentShader(nodeId, "outSurfaceFinal", true);
-            if (shaderInstance == nullptr) {
-                TF_WARN("Failed to create shader instance for %s", nodeId.asChar());
-                break;
-            }
-
-            continue;
-        }
-
-        MStringArray outputNames, inputNames;
-
-        std::string primvarname;
-
-        for (const HdMaterialRelationship& rel : mat.relationships) {
-            if (rel.inputId == node.path) {
-                outputNames.append(rel.inputName.GetText());
-                inputNames.append(rel.outputName.GetText());
-            }
-
-            if (_IsUsdUVTexture(node)) {
-                if (rel.outputId == node.path && rel.outputName == _tokens->st) {
-                    for (const HdMaterialNode& n : mat.nodes) {
-                        if (n.path == rel.inputId && _IsUsdPrimvarReader(n)) {
-                            auto it = n.parameters.find(_tokens->varname);
-                            if (it != n.parameters.end()) {
-                                primvarname = TfStringify(it->second);
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        // Without multi-connection support for MShaderInstance, this code path
-        // can only support common patterns of UsdShade material network, i.e.
-        // a UsdUVTexture is connected to a single input of a USD Preview Surface.
-        // More generic fix is coming.
-        if (outputNames.length() == 1) {
-            MStatus status
-                = shaderInstance->addInputFragment(nodeId, outputNames[0], inputNames[0]);
-
-            if (!status) {
-                TF_DEBUG(HDVP2_DEBUG_MATERIAL)
-                    .Msg(
-                        "Error %s happened when connecting shader %s\n",
-                        status.errorString().asChar(),
-                        node.path.GetText());
-            }
-
-            if (_IsUsdUVTexture(node)) {
-                const MString paramNames[]
-                    = { "file", "fileSampler", "isColorSpaceSRGB", "fallback", "scale", "bias" };
-
-                for (const MString& paramName : paramNames) {
-                    const MString resolvedName = nodeName + paramName;
-                    shaderInstance->renameParameter(paramName, resolvedName);
-                }
-
-                const MString paramName = _tokens->st.GetText();
-                shaderInstance->setSemantic(paramName, "uvCoord");
-                shaderInstance->setAsVarying(paramName, true);
-                shaderInstance->renameParameter(paramName, primvarname.c_str());
-            }
-        } else {
-            TF_DEBUG(HDVP2_DEBUG_MATERIAL)
-                .Msg("Failed to connect shader %s\n", node.path.GetText());
-
-            if (outputNames.length() > 1) {
-                TF_DEBUG(HDVP2_DEBUG_MATERIAL)
-                    .Msg("MShaderInstance doesn't support "
-                         "multiple connections between shaders on the current Maya version.\n");
-            }
-        }
-    }
-
-#endif
 
     return shaderInstance;
 }

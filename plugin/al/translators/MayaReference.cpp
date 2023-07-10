@@ -42,14 +42,7 @@
 #include <maya/MSelectionList.h>
 
 namespace {
-const int _mayaReferenceProfilerCategory = MProfiler::addCategory(
-#if MAYA_API_VERSION >= 20190000
-    "MayaReference",
-    "MayaReference"
-#else
-    "MayaReference"
-#endif
-);
+const int _mayaReferenceProfilerCategory = MProfiler::addCategory("MayaReference", "MayaReference");
 } // namespace
 
 namespace AL {

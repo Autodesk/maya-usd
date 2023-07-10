@@ -139,7 +139,7 @@ void SetupPluginCallbacks()
 }
 
 #ifndef UFE_V2_FEATURES_AVAILABLE
-#if (MAYA_API_VERSION >= 20210000) && WANT_UFE_BUILD
+#if WANT_UFE_BUILD
 MGlobal::ListAdjustment GetListAdjustment()
 {
     // Keyboard modifiers can be queried from QApplication::keyboardModifiers()
@@ -327,7 +327,6 @@ bool HdMayaProxyDelegate::SupportsUfeSelection() { return MayaUsd::ufe::getUsdRu
 
 #endif // WANT_UFE_BUILD
 
-#if MAYA_API_VERSION >= 20210000
 void HdMayaProxyDelegate::PopulateSelectionList(
     const HdxPickHitVector&          hits,
     const MHWRender::MSelectionInfo& selectInfo,
@@ -429,6 +428,5 @@ void HdMayaProxyDelegate::PopulateSelectionList(
     }
 #endif // WANT_UFE_BUILD
 }
-#endif // MAYA_API_VERSION >= 20210000
 
 PXR_NAMESPACE_CLOSE_SCOPE

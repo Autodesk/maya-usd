@@ -107,6 +107,36 @@ void replaceInternalReferencePath(
     }
 }
 
+void removeInternalReferencePath(
+    const UsdPrim&            deletedPrim,
+    const SdfReferencesProxy& referencesList,
+    SdfListOpType             op)
+{
+    // set the listProxy based on the SdfListOpType
+    SdfReferencesProxy::ListProxy listProxy = referencesList.GetAppendedItems();
+    if (op == SdfListOpTypePrepended) {
+        listProxy = referencesList.GetPrependedItems();
+    } else if (op == SdfListOpTypeOrdered) {
+        listProxy = referencesList.GetOrderedItems();
+    } else if (op == SdfListOpTypeAdded) {
+        listProxy = referencesList.GetAddedItems();
+    } else if (op == SdfListOpTypeDeleted) {
+        listProxy = referencesList.GetDeletedItems();
+    }
+
+    for (size_t idx = 0; idx < listProxy.size();) {
+        const SdfReference ref = listProxy[idx];
+        if (UsdUfe::isInternalReference(ref)) {
+            if (deletedPrim.GetPath() == ref.GetPrimPath()
+                || ref.GetPrimPath().HasPrefix(deletedPrim.GetPath())) {
+                listProxy.Erase(idx);
+                continue; // Not increasing idx
+            }
+        }
+        ++idx;
+    }
+}
+
 // This template method updates the SdfPath for inherited or specialized arcs
 // when the path to the concrete prim they refer to has changed.
 // HS January 13, 2021: Find a better generic way to consolidate this method with
@@ -143,6 +173,34 @@ void replacePath(const UsdPrim& oldPrim, const SdfPath& newPath, const T& proxy,
     }
 }
 
+// This template method cleans the SdfPath for inherited or specialized arcs
+// when the path to the concrete prim they refer to has becomed invalid.
+// HS January 13, 2021: Find a better generic way to consolidate this method with
+// removeReferenceItems
+template <typename T> void removePath(const UsdPrim& deletedPrim, const T& proxy, SdfListOpType op)
+{
+    // set the listProxy based on the SdfListOpType
+    typename T::ListProxy listProxy { proxy.GetAppendedItems() };
+    if (op == SdfListOpTypePrepended) {
+        listProxy = proxy.GetPrependedItems();
+    } else if (op == SdfListOpTypeOrdered) {
+        listProxy = proxy.GetOrderedItems();
+    } else if (op == SdfListOpTypeAdded) {
+        listProxy = proxy.GetAddedItems();
+    } else if (op == SdfListOpTypeDeleted) {
+        listProxy = proxy.GetDeletedItems();
+    }
+
+    for (size_t idx = 0; idx < listProxy.size();) {
+        const SdfPath path = listProxy[idx];
+        if (deletedPrim.GetPath() == path.GetPrimPath() || path.HasPrefix(deletedPrim.GetPath())) {
+            listProxy.Erase(idx);
+            continue; // Not increasing idx
+        }
+        ++idx;
+    }
+}
+
 void replacePropertyPath(const UsdPrim& oldPrim, const SdfPath& newPath, UsdProperty& prop)
 {
     if (prop.Is<UsdAttribute>()) {
@@ -176,6 +234,58 @@ void replacePropertyPath(const UsdPrim& oldPrim, const SdfPath& newPath, UsdProp
         }
         if (hasChanged) {
             rel.SetTargets(targets);
+        }
+    }
+}
+
+void removePropertyPath(const UsdPrim& deletedPrim, UsdProperty& prop)
+{
+    if (prop.Is<UsdAttribute>()) {
+        UsdAttribute  attr = prop.As<UsdAttribute>();
+        SdfPathVector sources;
+        attr.GetConnections(&sources);
+        bool hasChanged = false;
+        for (size_t i = 0; i < sources.size();) {
+            const SdfPath& path = sources[i];
+            if (deletedPrim.GetPath() == path.GetPrimPath()
+                || path.HasPrefix(deletedPrim.GetPath())) {
+                hasChanged = true;
+                sources.erase(sources.cbegin() + i);
+                continue;
+            }
+            ++i;
+        }
+        if (hasChanged) {
+            if (sources.empty()) {
+                attr.ClearConnections();
+                if (!attr.HasValue()) {
+                    prop.GetPrim().RemoveProperty(prop.GetName());
+                }
+            } else {
+                attr.SetConnections(sources);
+            }
+        }
+    } else if (prop.Is<UsdRelationship>()) {
+        UsdRelationship rel = prop.As<UsdRelationship>();
+        SdfPathVector   targets;
+        rel.GetTargets(&targets);
+        bool hasChanged = false;
+        for (size_t i = 0; i < targets.size();) {
+            const SdfPath& path = targets[i];
+            if (deletedPrim.GetPath() == path.GetPrimPath()
+                || path.HasPrefix(deletedPrim.GetPath())) {
+                hasChanged = true;
+                targets.erase(targets.cbegin() + i);
+                continue;
+            }
+            ++i;
+        }
+        if (hasChanged) {
+            if (targets.empty()) {
+                rel.ClearTargets(true);
+            } else {
+                rel.SetTargets(targets);
+            }
         }
     }
 }
@@ -255,6 +365,53 @@ bool updateReferencedPath(const UsdPrim& oldPrim, const SdfPath& newPath)
         // Need to repath connections and relationships:
         for (auto& prop : p.GetProperties()) {
             replacePropertyPath(oldPrim, newPath, prop);
+        }
+    }
+
+    return true;
+}
+
+bool cleanReferencedPath(const UsdPrim& deletedPrim)
+{
+    SdfChangeBlock changeBlock;
+
+    for (const auto& p : deletedPrim.GetStage()->Traverse()) {
+
+        auto primSpec = getPrimSpecAtEditTarget(p);
+        // check different composition arcs
+        if (p.HasAuthoredReferences()) {
+            if (primSpec) {
+
+                SdfReferencesProxy referencesList = primSpec->GetReferenceList();
+
+                // update append/prepend lists individually
+                removeInternalReferencePath(deletedPrim, referencesList, SdfListOpTypeAppended);
+                removeInternalReferencePath(deletedPrim, referencesList, SdfListOpTypePrepended);
+            }
+        } else if (p.HasAuthoredInherits()) {
+            if (primSpec) {
+
+                SdfInheritsProxy inheritsList = primSpec->GetInheritPathList();
+
+                // update append/prepend lists individually
+                removePath<SdfInheritsProxy>(deletedPrim, inheritsList, SdfListOpTypeAppended);
+                removePath<SdfInheritsProxy>(deletedPrim, inheritsList, SdfListOpTypePrepended);
+            }
+        } else if (p.HasAuthoredSpecializes()) {
+            if (primSpec) {
+                SdfSpecializesProxy specializesList = primSpec->GetSpecializesList();
+
+                // update append/prepend lists individually
+                removePath<SdfSpecializesProxy>(
+                    deletedPrim, specializesList, SdfListOpTypeAppended);
+                removePath<SdfSpecializesProxy>(
+                    deletedPrim, specializesList, SdfListOpTypePrepended);
+            }
+        }
+
+        // Need to repath connections and relationships:
+        for (auto& prop : p.GetProperties()) {
+            removePropertyPath(deletedPrim, prop);
         }
     }
 
