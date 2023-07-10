@@ -165,8 +165,9 @@ MapSelectionDescendents(const MSelectionList& sel, FUNC func, MFn::Type filterTy
     }
 }
 
+/// Replaces the invalid characters for SdfPath in place in inOutPathString.
 MAYAHYDRALIB_API
-std::string SanitizeName(const std::string& name);
+void SanitizeNameForSdfPath(std::string& inOutPathString, bool doStripNamespaces = false);
 
 /// Converts the given Maya MDagPath \p dagPath into an SdfPath.
 ///

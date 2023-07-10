@@ -731,8 +731,9 @@ HdMaterialNode* MayaHydraMaterialNetworkConverter::GetMaterial(const MObject& ma
     }
     TF_DEBUG(MAYAHYDRALIB_ADAPTER_MATERIALS)
         .Msg("MayaHydraMaterialNetworkConverter::GetMaterial(node=%s)\n", chr);
-    std::string usdNameStr = MAYAHYDRA_NS::SanitizeName(chr);
-    const auto  materialPath = _prefix.AppendChild(TfToken(usdNameStr));
+    std::string nodeNameString(chr);
+    MAYAHYDRA_NS::SanitizeNameForSdfPath(nodeNameString);
+    const auto  materialPath = _prefix.AppendChild(TfToken(nodeNameString));
 
     auto findResult = std::find_if(
         _network.nodes.begin(),

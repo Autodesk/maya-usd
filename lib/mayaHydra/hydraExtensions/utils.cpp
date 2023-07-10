@@ -267,11 +267,6 @@ static std::string stripNamespaces(const std::string& nodeName, const int nsDept
     return ss.str();
 }
 
-std::string SanitizeName(const std::string& name)
-{
-    return PXR_NS::TfStringReplace(name, ":", "_");
-}
-
 // XXX: see logic in UsdMayaTransformWriter.  It's unfortunate that this
 // logic is in 2 places.  we should merge.
 static bool _IsShape(const MDagPath& dagPath)
@@ -301,23 +296,21 @@ static bool _IsShape(const MDagPath& dagPath)
 // Some common issues that can make a path invalid include: Starting with a number : Path names
 // must start with a letter, not a number. Including spaces or special characters : Path names can
 // only contain letters, numbers, and the characters _, -, and : .
-const std::string& SanitizeNameForSdfPath(std::string& pathString, const bool doStripNamespaces)
+void SanitizeNameForSdfPath(std::string& inoutPathString, bool doStripNamespaces /*= false*/)
 {
     if (doStripNamespaces) {
         // Drop namespaces instead of making them part of the path.
-        pathString = stripNamespaces(pathString);
+        inoutPathString = stripNamespaces(inoutPathString);
     }
 
     std::replace(
-        pathString.begin(),
-        pathString.end(),
+        inoutPathString.begin(),
+        inoutPathString.end(),
         MayaDagDelimiter[0],
         PXR_NS::SdfPathTokens->childDelimiter.GetString()[0]);
-    std::replace(pathString.begin(), pathString.end(), MayaNamespaceDelimiter[0], '_');
-    std::replace(pathString.begin(), pathString.end(), ',', '_');
-    std::replace(pathString.begin(), pathString.end(), ';', '_');
-
-    return pathString;
+    std::replace(inoutPathString.begin(), inoutPathString.end(), MayaNamespaceDelimiter[0], '_');
+    std::replace(inoutPathString.begin(), inoutPathString.end(), ',', '_');
+    std::replace(inoutPathString.begin(), inoutPathString.end(), ';', '_');
 }
 
 SdfPath DagPathToSdfPath(
@@ -326,7 +319,8 @@ SdfPath DagPathToSdfPath(
     const bool      stripNamespaces)
 {
     std::string name = dagPath.fullPathName().asChar();
-    SdfPath     usdPath(SanitizeNameForSdfPath(name, stripNamespaces));
+    SanitizeNameForSdfPath(name, stripNamespaces);
+    SdfPath usdPath(name);
 
     if (mergeTransformAndShape && _IsShape(dagPath)) {
         usdPath = usdPath.GetParentPath();

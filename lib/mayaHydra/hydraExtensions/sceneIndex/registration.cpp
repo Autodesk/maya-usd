@@ -248,12 +248,13 @@ void MayaHydraSceneIndexRegistry::_AddSceneIndexForNode(MObject& dagNode)
                 // "disambiguator" The dag node name disambiguator is necessary in situation
                 // where node name isn't unique and may clash with other node defined by the
                 // same plugin.
-                registration->sceneIndexPathPrefix
-
-                    = SdfPath::AbsoluteRootPath()
+                std::string dependNodeNameString (dependNodeFn.name().asChar());
+                MAYAHYDRA_NS_DEF::SanitizeNameForSdfPath(dependNodeNameString);
+                
+                registration->sceneIndexPathPrefix = 
+                          SdfPath::AbsoluteRootPath()
                           .AppendPath(SdfPath(sceneIndexPluginName))
-                          .AppendPath(SdfPath(
-                              std::string(dependNodeFn.name().asChar())
+                          .AppendPath(SdfPath(dependNodeNameString
                               + (dependNodeFn.hasUniqueName()
                                      ? ""
                                      : "__" + std::to_string(_incrementedCounterDisambiguator++))));

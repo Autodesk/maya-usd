@@ -57,7 +57,9 @@ template<> inline SdfPath maybePrepend<MRenderItem>(
     const MRenderItem& ri, const SdfPath& inPath
 ) {
     // Prepend Maya node name, for organisation and readability.
-    return SdfPath(MayaHydra::SanitizeName(MFnDependencyNode(ri.sourceDagPath().node()).name().asChar())).AppendPath(inPath);
+    std::string dependNodeNameString (MFnDependencyNode(ri.sourceDagPath().node()).name().asChar());
+    MayaHydra::SanitizeNameForSdfPath(dependNodeNameString);
+    return SdfPath(dependNodeNameString).AppendPath(inPath);
 }
 
 template<class T> bool testSolid(const T& src);
@@ -127,10 +129,10 @@ SdfPath _GetMaterialPath(const SdfPath& base, const MObject& obj)
     if (chr == nullptr || chr[0] == '\0') {
         return {};
     }
-    std::string usdPathStr(chr);
-    // replace namespace ":" with "_"
-    std::replace(usdPathStr.begin(), usdPathStr.end(), ':', '_');
-    return base.AppendPath(SdfPath(usdPathStr));
+
+    std::string nodeName(chr);
+    MAYAHYDRA_NS_DEF::SanitizeNameForSdfPath(nodeName);
+    return base.AppendPath(SdfPath(nodeName));
 }
 
 } // namespace
