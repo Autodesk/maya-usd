@@ -348,7 +348,7 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::defaultParent() const
     // nodes that lacked a parent, to figure a default location where to insert them.
     //
     // The PrimUpdaterManager also used to call it, but it no longer does.
-    return fMayaHierarchy->defaultParent();
+    return parent();
 }
 
 #endif // UFE_V2_FEATURES_AVAILABLE
