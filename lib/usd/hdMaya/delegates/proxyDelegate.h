@@ -56,7 +56,7 @@ public:
     //        const HdSelectionSharedPtr& selection) override;
 
     void PopulateSelectedPaths(
-        const UFE_NS::Selection&    ufeSelection,
+        const Ufe::Selection&       ufeSelection,
         SdfPathVector&              selectedSdfPaths,
         const HdSelectionSharedPtr& selection) override;
     bool SupportsUfeSelection() override;

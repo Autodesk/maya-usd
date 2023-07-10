@@ -188,7 +188,7 @@ void HdMayaProxyDelegate::PreFrame(const MHWRender::MDrawContext& context)
 
 
 void HdMayaProxyDelegate::PopulateSelectedPaths(
-    const UFE_NS::Selection&    ufeSelection,
+    const Ufe::Selection&       ufeSelection,
     SdfPathVector&              selectedSdfPaths,
     const HdSelectionSharedPtr& selection)
 {

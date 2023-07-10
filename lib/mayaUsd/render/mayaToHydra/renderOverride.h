@@ -188,7 +188,7 @@ private:
     bool       _hasDefaultLighting = false;
     bool       _selectionChanged = true;
 
-    UFE_NS::Observer::Ptr _ufeSelectionObserver;
+    Ufe::Observer::Ptr _ufeSelectionObserver;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

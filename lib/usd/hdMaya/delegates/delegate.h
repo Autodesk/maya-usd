@@ -99,7 +99,7 @@ public:
     }
 
     virtual void PopulateSelectedPaths(
-        const UFE_NS::Selection&    ufeSelection,
+        const Ufe::Selection&       ufeSelection,
         SdfPathVector&              selectedSdfPaths,
         const HdSelectionSharedPtr& selection)
     {
