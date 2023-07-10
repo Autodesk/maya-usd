@@ -20,14 +20,7 @@
 
 #include <maya/MProfiler.h>
 namespace {
-const int _primFilterProfilerCategory = MProfiler::addCategory(
-#if MAYA_API_VERSION >= 20190000
-    "PrimFIlter",
-    "PrimFIlter"
-#else
-    "PrimFIlter"
-#endif
-);
+const int _primFilterProfilerCategory = MProfiler::addCategory("PrimFIlter", "PrimFIlter");
 } // namespace
 
 namespace AL {

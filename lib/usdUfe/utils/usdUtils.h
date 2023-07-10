@@ -41,6 +41,12 @@ void printCompositionQuery(const UsdPrim& prim, std::ostream& os);
 USDUFE_PUBLIC
 bool updateReferencedPath(const UsdPrim& oldPrim, const SdfPath& newPath);
 
+//! This function automatically cleans the SdfPath for different
+//  composition arcs (internal references, inherits, specializes) when
+//  the path to the concrete prim they refer to becomes invalid.
+USDUFE_PUBLIC
+bool cleanReferencedPath(const UsdPrim& deletedPrim);
+
 //! Returns true if reference is internal.
 USDUFE_PUBLIC
 bool isInternalReference(const SdfReference&);

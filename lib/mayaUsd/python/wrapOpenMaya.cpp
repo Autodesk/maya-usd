@@ -19,11 +19,8 @@
 #include <maya/MTypes.h>
 
 // Hack because MDGModifier assign operator is not public.
-// For 2019, the hack is different see MDGModifier2019 in this file
-#if MAYA_API_VERSION >= 20200000
 #undef OPENMAYA_PRIVATE
 #define OPENMAYA_PRIVATE public
-#endif
 
 #include <maya/MDGModifier.h>
 #include <maya/MDagPath.h>
@@ -44,23 +41,6 @@ template <class MayaClass> void copyOperator(void* dst, const MayaClass& object)
 {
     *((MayaClass*)(dst)) = object;
 }
-
-// Hack to have access at MDGModifier assign operator from OpenMaya 2019
-#if MAYA_API_VERSION < 20200000
-class MDGModifier2019 : public MDGModifier
-{
-public:
-    MDGModifier2019& operator=(const MDGModifier2019& rhs)
-    {
-        MDGModifier::operator=(rhs);
-        return *this;
-    }
-};
-template <> void copyOperator(void* dst, const MDGModifier& object)
-{
-    *((MDGModifier2019*)(dst)) = (MDGModifier2019&)object;
-}
-#endif
 
 /* Should be detectable detecting maya_useNewAPI in plugin
 

@@ -36,7 +36,6 @@ class usdFileRelative(object):
 
     kMakePathRelativeCheckBox = 'MakePathRelativeTo'
     kUnresolvedPathTextField = 'UnresolvedPath'
-    kResolvedPathTextField = 'ResolvedPath'
 
     # We will store whether or not the file can be made relative. Used to know when we need
     # to update fields.
@@ -79,23 +78,20 @@ class usdFileRelative(object):
 
         topForm = cmds.columnLayout('actionOptionsForm', rowSpacing=5)
 
-        kFileOptionsStr = getMayaUsdString("kFileOptions")
+        kRelativePathOptionsStr = getMayaUsdString("kRelativePathOptions")
         kMakePathRelativeStr = getMayaUsdString("kMakePathRelativeTo" + relativeToWhat)
         kMakePathRelativeAnnStr = getMayaUsdString("kMakePathRelativeTo" + relativeToWhat + "Ann")
         kUnresolvedPathStr = getMayaUsdString("kUnresolvedPath")
         kUnresolvedPathAnnStr = getMayaUsdString("kUnresolvedPathAnn")
-        kResolvedPathStr = getMayaUsdString("kResolvedPath")
-        kResolvedPathAnnStr = getMayaUsdString("kResolvedPathAnn")
  
         optBoxMarginWidth = mel.eval('global int $gOptionBoxTemplateDescriptionMarginWidth; $gOptionBoxTemplateDescriptionMarginWidth += 0')
         cmds.setParent(topForm)
-        cmds.frameLayout(label=kFileOptionsStr, collapsable=False)
+        cmds.frameLayout(label=kRelativePathOptionsStr, collapsable=False)
         widgetColumn = cmds.columnLayout()
         cmds.checkBox(cls.kMakePathRelativeCheckBox, label=kMakePathRelativeStr, ann=kMakePathRelativeAnnStr)
         
         cmds.checkBox(cls.kMakePathRelativeCheckBox, edit=True, changeCommand=cls.onMakePathRelativeChanged)
         cmds.textFieldGrp(cls.kUnresolvedPathTextField, label=kUnresolvedPathStr, ann=kUnresolvedPathAnnStr, editable=False)
-        cmds.textFieldGrp(cls.kResolvedPathTextField, label=kResolvedPathStr, ann=kResolvedPathAnnStr , editable=False)
         cls._haveRelativePathFields = True
 
         return topForm
@@ -142,7 +138,6 @@ class usdFileRelative(object):
                 showPreviewFields = cmds.file(q=True, exists=True)
 
             cmds.textFieldGrp(cls.kUnresolvedPathTextField, edit=True, visible=showPreviewFields)
-            cmds.textFieldGrp(cls.kResolvedPathTextField, edit=True, visible=showPreviewFields)
 
             # Only enable fields when make relative is checked.
             makePathRelative = cmds.checkBox(cls.kMakePathRelativeCheckBox, query=True, value=True)
@@ -220,7 +215,6 @@ class usdFileRelative(object):
             return
         enableFields = cls._canBeRelative and checked
         cmds.textFieldGrp(cls.kUnresolvedPathTextField, edit=True, enable=enableFields, text='')
-        cmds.textFieldGrp(cls.kResolvedPathTextField, edit=True, enable=enableFields, text='')
         if enableFields:
             cls.updateFilePathPreviewFields(checked)
 
@@ -261,7 +255,6 @@ class usdFileRelative(object):
             elif unresolvedPath:
                 relativePath = mayaUsdLib.Util.getPathRelativeToMayaSceneFile(unresolvedPath)
             cmds.textFieldGrp(cls.kUnresolvedPathTextField, edit=True, text=relativePath)
-            cmds.textFieldGrp(cls.kResolvedPathTextField, edit=True, text=unresolvedPath)
 
     @classmethod
     def selectionChanged(cls, parentLayout, selection):

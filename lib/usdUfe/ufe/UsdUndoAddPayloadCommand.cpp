@@ -16,36 +16,23 @@
 
 #include "UsdUndoAddPayloadCommand.h"
 
-#include <pxr/base/tf/stringUtils.h>
-#include <pxr/usd/sdf/path.h>
-
 namespace USDUFE_NS_DEF {
 
 UsdUndoAddPayloadCommand::UsdUndoAddPayloadCommand(
     const PXR_NS::UsdPrim& prim,
     const std::string&     filePath,
     bool                   prepend)
-    : _prim(prim)
-    , _sdfPayload()
-    , _filePath(filePath)
-    , _listPos(
-          prepend ? PXR_NS::UsdListPositionBackOfPrependList
-                  : PXR_NS::UsdListPositionBackOfAppendList)
+    : UsdUndoAddPayloadCommand(prim, filePath, {}, prepend)
 {
 }
 
-void UsdUndoAddPayloadCommand::executeImplementation()
+UsdUndoAddPayloadCommand::UsdUndoAddPayloadCommand(
+    const PXR_NS::UsdPrim& prim,
+    const std::string&     filePath,
+    const std::string&     primPath,
+    bool                   prepend)
+    : UsdUndoAddRefOrPayloadCommand(prim, filePath, primPath, getListPosition(prepend), true)
 {
-    if (!_prim.IsValid())
-        return;
-
-    if (PXR_NS::TfStringEndsWith(_filePath, ".mtlx")) {
-        _sdfPayload = PXR_NS::SdfPayload(_filePath, PXR_NS::SdfPath("/MaterialX"));
-    } else {
-        _sdfPayload = PXR_NS::SdfPayload(_filePath);
-    }
-    PXR_NS::UsdPayloads primPayloads = _prim.GetPayloads();
-    primPayloads.AddPayload(_sdfPayload, _listPos);
 }
 
 } // namespace USDUFE_NS_DEF

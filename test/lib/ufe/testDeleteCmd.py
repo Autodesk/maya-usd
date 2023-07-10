@@ -29,7 +29,7 @@ from maya import standalone
 
 import ufe
 
-from pxr import Sdf
+from pxr import Sdf, UsdShade
 
 import os
 import unittest
@@ -525,6 +525,82 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertTrue(parentPrim.HasProperty('outputs:displacement'))
         self.assertFalse(surface2Prim.HasProperty('outputs:out'))
         self.assertFalse(surface3Prim.HasProperty('inputs:bsdf'))
+
+    def testDeleteAndRemoveReference(self):
+        '''Test deleting a prim and its references'''
+
+        # open treeRef.ma scene in testSamples
+        mayaUtils.openTreeRefScene()
+
+        # validate the default edit target to be the Rootlayer.
+        mayaPathSegment = mayaUtils.createUfePathSegment('|TreeRef_usd|TreeRef_usdShape')
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        self.assertTrue(stage)
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/leaf_ref_1').HasAuthoredReferences())
+        
+        # delete the greenLeaf and check the internal references were cleaned:
+        cmds.delete('|TreeRef_usd|TreeRef_usdShape,/TreeBase/leavesXform/greenLeaf')
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/leaf_ref_1').HasAuthoredReferences())
+        # Ref2 has an "external" reference, but to this file. It will not be
+        # cleaned up because external, baut maybe it should have since the
+        # referenced file happens to be the root layer?
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/leaf_ref_2').HasAuthoredReferences())
+        
+        # validate undo
+        cmds.undo()
+        ref1 = stage.GetPrimAtPath('/TreeBase/leaf_ref_1')
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/leaf_ref_1').HasAuthoredReferences())
+        
+        # validate redo
+        cmds.redo()
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/leaf_ref_1').HasAuthoredReferences())
+
+        # Try deleting leavesXform hierarchy, which also deletes greenLeaf and
+        # should clean-up the reference.
+        cmds.undo()
+        cmds.delete('|TreeRef_usd|TreeRef_usdShape,/TreeBase/leavesXform')
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/leaf_ref_1').HasAuthoredReferences())
+
+        # validate undo
+        cmds.undo()
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/leaf_ref_1').HasAuthoredReferences())
+        
+        # validate redo
+        cmds.redo()
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/leaf_ref_1').HasAuthoredReferences())
+
+    def testDeleteAndInheritMaterial(self):
+        '''Test deleting a material cleans up all places where it was assigned'''
+
+        cmds.file(new=True, force=True)
+        testFile = testUtils.getTestScene('tree', 'treeMat.usda')
+        pathString,stage = mayaUtils.createProxyFromFile(testFile)
+        self.assertTrue(stage)
+        self.assertTrue(pathString)
+        matAPI = UsdShade.MaterialBindingAPI(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
+
+        self.assertEqual(matAPI.ComputeBoundMaterial()[0].GetPrim().GetPath(), '/mtlFoliage/GreenMat')
+
+        cmds.delete(pathString + ',/mtlFoliage/GreenMat')
+        self.assertEqual(matAPI.ComputeBoundMaterial()[0].GetPrim().GetPath(), '/mtl/BrownMat')
+
+        cmds.undo()
+        self.assertEqual(matAPI.ComputeBoundMaterial()[0].GetPrim().GetPath(), '/mtlFoliage/GreenMat')
+
+        cmds.redo()
+        self.assertEqual(matAPI.ComputeBoundMaterial()[0].GetPrim().GetPath(), '/mtl/BrownMat')
+
+        cmds.undo()
+        cmds.delete(pathString + ',/mtlFoliage')
+        self.assertEqual(matAPI.ComputeBoundMaterial()[0].GetPrim().GetPath(), '/mtl/BrownMat')
+
+        cmds.undo()
+        self.assertEqual(matAPI.ComputeBoundMaterial()[0].GetPrim().GetPath(), '/mtlFoliage/GreenMat')
+
+        cmds.redo()
+        self.assertEqual(matAPI.ComputeBoundMaterial()[0].GetPrim().GetPath(), '/mtl/BrownMat')
+
 
     def testDeleteRestrictionMutedLayer(self):
         '''

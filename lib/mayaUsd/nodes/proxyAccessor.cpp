@@ -146,14 +146,7 @@ public:
 
 namespace {
 //! Profiler category for proxy accessor events
-const int _accessorProfilerCategory = MProfiler::addCategory(
-#if MAYA_API_VERSION >= 20190000
-    "ProxyAccessor",
-    "ProxyAccessor"
-#else
-    "ProxyAccessor"
-#endif
-);
+const int _accessorProfilerCategory = MProfiler::addCategory("ProxyAccessor", "ProxyAccessor");
 
 static const TfToken combinedVisibilityToken("combinedVisibility");
 
