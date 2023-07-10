@@ -21,6 +21,7 @@ import platform
 import unittest
 
 import testUtils
+from ufeUtils import ufeFeatureSetVersion
 
 from maya import cmds
 import maya.mel as mel
@@ -94,6 +95,7 @@ class MayaUsdCreateStageCommandsTestCase(unittest.TestCase):
         # Restore mayaUsd_MakePathRelativeToSceneFile
         cmds.optionVar(iv=('mayaUsd_MakePathRelativeToSceneFile', 0))
 
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater.')
     def testCreateStageWithCommand(self):
         '''
         Create a stage with a new layer using the command exposed by a Python wrapper.
