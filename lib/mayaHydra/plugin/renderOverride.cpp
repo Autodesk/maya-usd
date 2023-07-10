@@ -645,11 +645,11 @@ void MtohRenderOverride::_InitHydraResources()
     if (!_rendererPlugin)
         return;
 
-    auto* renderDelegate = _rendererPlugin->CreateRenderDelegate();
-    if (!renderDelegate)
+    _renderDelegate = HdRendererPluginRegistry::GetInstance().CreateRenderDelegate(_rendererDesc.rendererName);
+    if (!_renderDelegate)
         return;
 
-    _renderIndex = HdRenderIndex::New(renderDelegate, { &_hgiDriver });
+    _renderIndex = HdRenderIndex::New(_renderDelegate.Get(), {&_hgiDriver});
     if (!_renderIndex)
         return;
 
@@ -771,17 +771,13 @@ void MtohRenderOverride::ClearHydraResources()
         _taskController = nullptr;
     }
 
-    HdRenderDelegate* renderDelegate = nullptr;
     if (_renderIndex != nullptr) {
-        renderDelegate = _renderIndex->GetRenderDelegate();
         delete _renderIndex;
         _renderIndex = nullptr;
     }
 
     if (_rendererPlugin != nullptr) {
-        if (renderDelegate != nullptr) {
-            _rendererPlugin->DeleteRenderDelegate(renderDelegate);
-        }
+        _renderDelegate = nullptr;
         HdRendererPluginRegistry::GetInstance().ReleasePlugin(_rendererPlugin);
         _rendererPlugin = nullptr;
     }

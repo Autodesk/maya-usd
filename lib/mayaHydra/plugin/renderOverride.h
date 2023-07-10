@@ -29,6 +29,7 @@
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/rendererPlugin.h>
 #include <pxr/imaging/hd/rprimCollection.h>
+#include <pxr/imaging/hd/pluginRenderDelegateUniqueHandle.h>
 #include <pxr/imaging/hdSt/renderDelegate.h>
 #include <pxr/imaging/hdx/taskController.h>
 #include <pxr/pxr.h>
@@ -189,6 +190,7 @@ private:
     HdEngine                                  _engine;
     HdRendererPlugin*                         _rendererPlugin = nullptr;
     HdxTaskController*                        _taskController = nullptr;
+    HdPluginRenderDelegateUniqueHandle        _renderDelegate = nullptr;
     HdRenderIndex*                            _renderIndex = nullptr;
     std::unique_ptr<MtohDefaultLightDelegate> _defaultLightDelegate = nullptr;
     HdxSelectionTrackerSharedPtr              _selectionTracker;
