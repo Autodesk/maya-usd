@@ -2307,21 +2307,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                         *stateToCommit._instanceColors);
                     TF_VERIFY(result == MStatus::kSuccess);
                 }
-            }
-#if MAYA_API_VERSION >= 20210000
-            else if (newInstanceCount >= 1) {
-#else
-            // In Maya 2020 and before, GPU instancing and consolidation are two separate
-            // systems that cannot be used by a render item at the same time. In case of single
-            // instance, we keep the original render item to allow consolidation with other
-            // prims. In case of multiple instances, we need to disable consolidation to allow
-            // GPU instancing to be used.
-            else if (newInstanceCount == 1) {
-                bool success = renderItem->setMatrix(&(*stateToCommit._instanceTransforms)[0]);
-                TF_VERIFY(success);
-            } else if (newInstanceCount > 1) {
-                _SetWantConsolidation(*renderItem, false);
-#endif
+            } else if (newInstanceCount >= 1) {
                 if (stateToCommit._instanceTransforms) {
                     result = drawScene.setInstanceTransformArray(
                         *renderItem, *stateToCommit._instanceTransforms);
@@ -2685,9 +2671,7 @@ HdVP2DrawItem::RenderItemData& HdVP2Mesh::_CreateSmoothHullRenderItem(
     renderItem->setSelectionMask(MSelectionMask::kSelectMeshes);
 #endif
 
-#if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
-#endif
 
 #ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
     renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
@@ -2714,9 +2698,7 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateSelectionHighlightRenderItem(const MSt
     renderItem->setSelectionMask(MSelectionMask());
     _InitRenderItemCommon(renderItem);
 
-#if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
-#endif
 
     return renderItem;
 }

@@ -30,14 +30,8 @@
 
 #include <iostream>
 namespace {
-const int _animationTranslatorProfilerCategory = MProfiler::addCategory(
-#if MAYA_API_VERSION >= 20190000
-    "AnimationTranslator",
-    "AnimationTranslator"
-#else
-    "AnimationTranslator"
-#endif
-);
+const int _animationTranslatorProfilerCategory
+    = MProfiler::addCategory("AnimationTranslator", "AnimationTranslator");
 } // namespace
 
 namespace AL {
@@ -286,11 +280,8 @@ MStatus AnimationCheckTransformAttributes::initialise()
     AL_MAYA_CHECK_ERROR(status, errorString);
     m_commonTransformAttributes[12] = transformNodeClass.attribute("rotateOrder", &status);
     AL_MAYA_CHECK_ERROR(status, errorString);
-
-#if MAYA_APP_VERSION > 2019
     m_commonTransformAttributes[13] = transformNodeClass.attribute("offsetParentMatrix", &status);
     AL_MAYA_CHECK_ERROR(status, errorString);
-#endif
 
     m_inheritTransformAttribute = transformNodeClass.attribute("inheritsTransform", &status);
     AL_MAYA_CHECK_ERROR(status, errorString);

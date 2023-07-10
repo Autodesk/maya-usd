@@ -16,20 +16,12 @@
 #ifndef USD_UFE_ADD_PAYLOAD_COMMAND
 #define USD_UFE_ADD_PAYLOAD_COMMAND
 
-#include <usdUfe/base/api.h>
-#include <usdUfe/ufe/UsdUndoableCommand.h>
-
-#include <pxr/usd/usd/payloads.h>
-#include <pxr/usd/usd/prim.h>
-
-#include <ufe/undoableCommand.h>
-
-#include <string>
+#include <usdUfe/ufe/UsdUndoAddRefOrPayloadCommand.h>
 
 namespace USDUFE_NS_DEF {
 
 //! \brief Command to add a payload to a prim.
-class USDUFE_PUBLIC UsdUndoAddPayloadCommand : public UsdUndoableCommand<Ufe::UndoableCommand>
+class USDUFE_PUBLIC UsdUndoAddPayloadCommand : public UsdUndoAddRefOrPayloadCommand
 {
 public:
     UsdUndoAddPayloadCommand(
@@ -37,14 +29,11 @@ public:
         const std::string&     filePath,
         bool                   prepend);
 
-protected:
-    void executeImplementation() override;
-
-private:
-    PXR_NS::UsdPrim         _prim;
-    PXR_NS::SdfPayload      _sdfPayload;
-    std::string             _filePath;
-    PXR_NS::UsdListPosition _listPos;
+    UsdUndoAddPayloadCommand(
+        const PXR_NS::UsdPrim& prim,
+        const std::string&     filePath,
+        const std::string&     primPath,
+        bool                   prepend);
 };
 
 } // namespace USDUFE_NS_DEF

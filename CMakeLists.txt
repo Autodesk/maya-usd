@@ -24,9 +24,6 @@ option(BUILD_MAYAUSD_LIBRARY "Build Core USD libraries." ON)
 option(BUILD_ADSK_PLUGIN "Build Autodesk USD plugin." ON)
 option(BUILD_PXR_PLUGIN "Build the Pixar USD plugin and libraries." ON)
 option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." ON)
-# Default value made dependent on maya + usd version - see below
-#   Convert back to a normal option if we no longer support maya-2019, or
-#   no longer support USD-20.11
 option(BUILD_HDMAYA "Build the legacy Maya-To-Hydra plugin and scene delegate." OFF)
 option(BUILD_RFM_TRANSLATORS "Build translators for RenderMan for Maya shaders." ON)
 option(BUILD_TESTS "Build tests." ON)
@@ -86,7 +83,7 @@ endif()
 #------------------------------------------------------------------------------
 include(cmake/utils.cmake)
 if (BUILD_MAYAUSD_LIBRARY)
-    find_package(Maya 2018 REQUIRED)
+    find_package(Maya 2022 REQUIRED)
 endif()
 
 if(APPLE AND BUILD_UB2 AND NOT MAYA_MACOSX_BUILT_WITH_UB2)
@@ -138,15 +135,6 @@ if (CMAKE_WANT_MATERIALX_BUILD)
 endif()
 include(cmake/usd.cmake)
 
-if(DEFINED MAYA_APP_VERSION)
-    if (${MAYA_APP_VERSION} STRLESS "2019" AND CMAKE_WANT_UFE_BUILD)
-        set(CMAKE_WANT_UFE_BUILD OFF)
-        message(AUTHOR_WARNING "========================================================================================= \
-                                UFE is not available in Maya${MAYA_MAJOR_VERSION}. Maya2019 and later are supported only. \
-                                ========================================================================================= ")
-    endif()
-endif()
-
 if(CMAKE_WANT_UFE_BUILD)
     find_package(UFE QUIET)
     if(UFE_FOUND)
@@ -173,18 +161,10 @@ if(DEFINED QT_LOCATION)
     if(NOT DEFINED QT_VERSION)
 		if(BUILD_WITH_QT_6)
 			set(QT_VERSION "6.5")
-			message(STATUS "Setting Qt version to Qt ${QT_VERSION}")
-        else()
-            set(QT_VERSION "5.15")  # default version Maya 2022/2023/2024
-            if(DEFINED MAYA_APP_VERSION)
-                if(${MAYA_APP_VERSION} STRLESS_EQUAL "2019")
-                    set(QT_VERSION "5.6")
-                elseif(${MAYA_APP_VERSION} STRLESS_EQUAL "2020")
-                    set(QT_VERSION "5.12")
-                endif()
-                message(STATUS "Setting Qt version to Qt ${QT_VERSION}")
-            endif()
+        else() # Maya 2022, 2023, 2024
+            set(QT_VERSION "5.15")
         endif()
+        message(STATUS "Setting Qt version to Qt ${QT_VERSION}")
     endif()
     set(CMAKE_PREFIX_PATH "${QT_LOCATION}")
 	if(BUILD_WITH_QT_6)

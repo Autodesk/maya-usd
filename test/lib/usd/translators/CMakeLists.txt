@@ -198,42 +198,39 @@ mayaUsd_add_test(testUsdImportChaser
 )
 set_property(TEST testUsdImportChaser APPEND PROPERTY LABELS translators)
 
-# Test using standardSurface, which was introduced in Maya 2020.
-if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2020)
-    set(CUSTOM_TEST_SCRIPT_FILES
-        testUsdExportCustomConverter.template.py
-        testUsdImportCustomConverter.template.py
+set(CUSTOM_TEST_SCRIPT_FILES
+    testUsdExportCustomConverter.template.py
+    testUsdImportCustomConverter.template.py
+)
+set(PLUGIN_TYPES
+    Maya
+    USD
+)
+foreach(template_script ${CUSTOM_TEST_SCRIPT_FILES})
+    string(REGEX REPLACE "\\.template.py" ".py" script
+            "${template_script}")
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/${template_script}"
+        "${CMAKE_CURRENT_BINARY_DIR}/${script}"
+        @ONLY
     )
-    set(PLUGIN_TYPES
-        Maya
-        USD
-    )
-    foreach(template_script ${CUSTOM_TEST_SCRIPT_FILES})
-        string(REGEX REPLACE "\\.template.py" ".py" script
-              "${template_script}")
-        configure_file(
-            "${CMAKE_CURRENT_SOURCE_DIR}/${template_script}"
-            "${CMAKE_CURRENT_BINARY_DIR}/${script}"
-            @ONLY
-        )
 
-        foreach(plugin_type ${PLUGIN_TYPES})
-            mayaUsd_get_unittest_target(module ${script})
-            set(target "${module}-${plugin_type}")
-            mayaUsd_add_test(${target}
-                PYTHON_MODULE ${module}
-                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-                ENV
-                    "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
-                    "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_BINARY_DIR}/../plugin/${plugin_type}"
-                    "INPUT_PATH=${CMAKE_CURRENT_SOURCE_DIR}"
-                    "PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}"
-                    "USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME=1"
-                    )
-            set_property(TEST ${target} APPEND PROPERTY LABELS translators)
-        endforeach()
+    foreach(plugin_type ${PLUGIN_TYPES})
+        mayaUsd_get_unittest_target(module ${script})
+        set(target "${module}-${plugin_type}")
+        mayaUsd_add_test(${target}
+            PYTHON_MODULE ${module}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            ENV
+                "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
+                "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_BINARY_DIR}/../plugin/${plugin_type}"
+                "INPUT_PATH=${CMAKE_CURRENT_SOURCE_DIR}"
+                "PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}"
+                "USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME=1"
+                )
+        set_property(TEST ${target} APPEND PROPERTY LABELS translators)
     endforeach()
-endif()
+endforeach()
 
 # These import/export tests will work with older versions of Maya and USD.
 # However getting the test materials to appear in the Maya viewport will
