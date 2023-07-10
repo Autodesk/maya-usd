@@ -30,7 +30,6 @@
 #include <ufe/rtid.h>
 #include <ufe/runTimeMgr.h>
 
-
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdUndoCreateStageWithNewLayerCommand.h>
 
