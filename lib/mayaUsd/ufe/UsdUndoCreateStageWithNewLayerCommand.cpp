@@ -91,11 +91,10 @@ bool UsdUndoCreateStageWithNewLayerCommand::executeWithinUndoRecorder()
     MDagModifier& dagMod = MDagModifierUndoItem::create("Create stage with new Layer");
 
     // Create a transform node.
-    // Note: It would be possible to create the transform and the proxy shape in one doIt() call
-    // of a single MDagModifier. However, doing so causes notifications to be sent in a
-    // different order, which triggers a `TF_VERIFY(g_StageMap.isDirty())` in
-    // StagesSubject::onStageSet(). Using a separate MDagModifier to create the transform seems
-    // more robust and avoids triggering the TF_VERIFY.
+    // Note: It would be possible to create the transform and the proxy shape in one doIt() call.
+    // However, doing so causes notifications to be sent in a different order, which triggers a
+    // `TF_VERIFY(g_StageMap.isDirty())` in StagesSubject::onStageSet(). Creating the transform in a
+    // separate doIt() call seems more robust and avoids triggering the TF_VERIFY.
     MObject transformObj;
     transformObj = dagMod.createNode("transform", parentObject);
     if (transformObj.isNull())
