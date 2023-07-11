@@ -1135,7 +1135,7 @@ bool PrimUpdaterManager::mergeToUsd(
     auto ufeUsdItem = Ufe::Hierarchy::createItem(pulledPath.pop());
     auto hier = Ufe::Hierarchy::hierarchy(ufeUsdItem);
     if (TF_VERIFY(hier)) {
-        scene.notify(Ufe::SubtreeInvalidate(hier->defaultParent()));
+        scene.notify(Ufe::SubtreeInvalidate(hier->parent()));
     }
     progressBar.advance();
 
@@ -1401,7 +1401,7 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
     auto ufeUsdItem = Ufe::Hierarchy::createItem(pulledPath);
     auto hier = Ufe::Hierarchy::hierarchy(ufeUsdItem);
     if (TF_VERIFY(hier)) {
-        scene.notify(Ufe::SubtreeInvalidate(hier->defaultParent()));
+        scene.notify(Ufe::SubtreeInvalidate(hier->parent()));
     }
     progressBar.advance();
 

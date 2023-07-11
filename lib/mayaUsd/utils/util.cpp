@@ -1210,6 +1210,14 @@ bool UsdMayaUtil::IsAuthored(const MPlug& plug)
     // make a copy of plug here.
     MPlug plugCopy(plug);
 
+    // MPlug::isFromReferencedFile did not seem to be accurate, so this checks the node state.
+    // If the node is referenced, use MPlug::isDefaultValue - it is not clear if isDefaultValue
+    // works in all contexts as the code below uses MPlug::getSetAttrCmds.
+    //
+    MFnDependencyNode nodeFn(plug.node());
+    if (nodeFn.isFromReferencedFile() && !plug.isDefaultValue())
+        return true;
+
     MStringArray setAttrCmds;
     status = plugCopy.getSetAttrCmds(setAttrCmds, MPlug::kChanged);
     CHECK_MSTATUS_AND_RETURN(status, false);

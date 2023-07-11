@@ -140,7 +140,11 @@ MStatus MayaUsdProxyShapeListenerBase::initialize()
     return retValue;
 }
 
-void MayaUsdProxyShapeListenerBase::postConstructor() { setExistWithoutInConnections(false); }
+void MayaUsdProxyShapeListenerBase::postConstructor()
+{
+    setExistWithoutInConnections(false);
+    setDoNotWrite(true);
+}
 
 MStatus MayaUsdProxyShapeListenerBase::compute(const MPlug& plug, MDataBlock& dataBlock)
 {

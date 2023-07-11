@@ -289,8 +289,13 @@ ShaderPtr GlslFragmentGenerator::generate(
     _tokenSubstitutions[ShaderGenerator::T_FILE_TRANSFORM_UV]
         = (context.getOptions().fileTextureVerticalFlip ? "mx_transform_uv_vflip.glsl"
                                                         : "mx_transform_uv.glsl");
+#if MX_COMBINED_VERSION <= 13806
     _tokenSubstitutions[HW::T_REFRACTION_ENV] = MX_REFRACTION_SUBSTITUTION;
-#endif
+#else
+    // Renamed in 1.38.7
+    _tokenSubstitutions[HW::T_REFRACTION_TWO_SIDED] = MX_REFRACTION_SUBSTITUTION;
+#endif // <= 13806
+#endif // <= 13804
 
     // Add all functions for node implementations
     emitFunctionDefinitions(graph, context, pixelStage);
