@@ -31,6 +31,25 @@ public:
     UsdMayaPrimReader(const UsdMayaPrimReaderArgs&);
     virtual ~UsdMayaPrimReader() {};
 
+    /// The level of support a reader can offer for a given context
+    ///
+    /// A basic reader that gives correct results across most contexts should
+    /// report `Fallback`, while a specialized reader that really shines in a
+    /// given context should report `Supported` when the context is right and
+    /// `Unsupported` if the context is not as expected.
+    enum class ContextSupport
+    {
+        Supported,
+        Fallback,
+        Unsupported
+    };
+
+    /// This static function is expected for all prim readers and allows
+    /// declaring how well this class can support the current context:
+    MAYAUSD_CORE_PUBLIC
+    static ContextSupport
+    CanImport(const UsdMayaJobImportArgs& importArgs, const UsdPrim& importPrim);
+
     /// Reads the USD prim given by the prim reader args into a Maya shape,
     /// modifying the prim reader context as a result.
     /// Returns true if successful.

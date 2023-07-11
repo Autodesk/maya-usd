@@ -528,7 +528,7 @@ void UsdMaya_ReadJob::_DoImportPrimIt(
 
         TfToken typeName = prim.GetTypeName();
         if (UsdMayaPrimReaderRegistry::ReaderFactoryFn factoryFn
-            = UsdMayaPrimReaderRegistry::FindOrFallback(typeName)) {
+            = UsdMayaPrimReaderRegistry::FindOrFallback(typeName, mArgs, prim)) {
             UsdMayaPrimReaderSharedPtr primReader = factoryFn(args);
             if (primReader) {
                 TempNodeTrackerScope scope(readCtx);

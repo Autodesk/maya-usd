@@ -74,7 +74,12 @@ bool UsdMayaPrimUpdater::canEditAsMaya() const
     // Invalid prim cannot be edited.
     if (!prim)
         return false;
-    return (UsdMayaPrimReaderRegistry::Find(prim.GetTypeName()) != nullptr);
+
+    UsdMayaJobImportArgs jobArgs = UsdMayaJobImportArgs::CreateFromDictionary(
+        _context->GetUserArgs(),
+        /* importWithProxyShapes = */ false,
+        GfInterval::GetFullInterval());
+    return (UsdMayaPrimReaderRegistry::Find(prim.GetTypeName(), jobArgs, prim) != nullptr);
 }
 
 bool UsdMayaPrimUpdater::editAsMaya() { return true; }
