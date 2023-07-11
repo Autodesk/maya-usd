@@ -74,7 +74,7 @@ void UsdMayaSymmetricShaderReader::RegisterReader(
 }
 
 /* static */
-UsdMayaShaderReader::ContextSupport UsdMayaSymmetricShaderReader::CanImport(
+UsdMayaPrimReader::ContextSupport UsdMayaSymmetricShaderReader::CanImport(
     const UsdMayaJobImportArgs& importArgs,
     const TfToken&              materialConversion)
 {

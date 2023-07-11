@@ -78,7 +78,7 @@ PxrUsdTranslators_BlinnReader::PxrUsdTranslators_BlinnReader(const UsdMayaPrimRe
 }
 
 /* static */
-UsdMayaShaderReader::ContextSupport
+UsdMayaPrimReader::ContextSupport
 PxrUsdTranslators_BlinnReader::CanImport(const UsdMayaJobImportArgs& importArgs)
 {
     return importArgs.preferredMaterial == UsdMayaPreferredMaterialTokens->blinn
