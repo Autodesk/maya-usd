@@ -215,11 +215,15 @@ public:
                 // Prototype was unregistered
                 return UsdMayaPrimWriter::ContextSupport::Unsupported;
             }
-            TfPyLock              pyLock;
-            boost::python::object CanExport = pyClass.attr("CanExport");
-            PyObject*             callable = CanExport.ptr();
-            auto                  res = boost::python::call<int>(callable, exportArgs, exportObj);
-            return UsdMayaPrimWriter::ContextSupport(res);
+            TfPyLock pyLock;
+            if (PyObject_HasAttrString(pyClass.ptr(), "CanExport")) {
+                boost::python::object CanExport = pyClass.attr("CanExport");
+                PyObject*             callable = CanExport.ptr();
+                auto res = boost::python::call<int>(callable, exportArgs, exportObj);
+                return UsdMayaPrimWriter::ContextSupport(res);
+            } else {
+                return UsdMayaPrimWriter::ContextSupport::Fallback;
+            }
         }
 
         // Create a new wrapper for a Python class that is seen for the first time for a given
