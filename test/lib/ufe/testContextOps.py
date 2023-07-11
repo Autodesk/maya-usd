@@ -1483,7 +1483,8 @@ class ContextOpsTestCase(unittest.TestCase):
 
         proxyShapeNode = dagPath.node()
 
-        mayaUsd.lib.PrimUpdaterManager.duplicate(cmds.ls(cubeXForm, long=True)[0], psPathStr)
+        with mayaUsd.lib.OpUndoItemList():
+            mayaUsd.lib.PrimUpdaterManager.duplicate(cmds.ls(cubeXForm, long=True)[0], psPathStr)
 
         topPath = ufe.PathString.path(psPathStr + ',/' + cubeXForm + "/" + "top")
         topItem = ufe.Hierarchy.createItem(topPath)

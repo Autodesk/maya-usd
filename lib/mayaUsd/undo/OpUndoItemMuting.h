@@ -18,6 +18,7 @@
 #define MAYAUSD_UNDO_OPUNDOINFOMUTING_H
 
 #include <mayaUsd/undo/OpUndoItemList.h>
+#include <mayaUsd/undo/OpUndoItemValidator.h>
 
 namespace MAYAUSD_NS_DEF {
 
@@ -30,18 +31,14 @@ namespace MAYAUSD_NS_DEF {
 // that don't want to be undoable, we need a way to clear the genarated undo
 // items. That is what the OpUndoItemMuting class does: it will clear all undo
 // items generated while a muting instance is created.
-class MAYAUSD_CORE_PUBLIC OpUndoItemMuting
+class MAYAUSD_CORE_PUBLIC OpUndoItemMuting : public OpUndoItemValidator
 {
 public:
-    //! \brief Constructor extracts all undo info items.
-    OpUndoItemMuting()
-        : _preservedUndoInfo(std::move(OpUndoItemList::instance()))
-    {
-        OpUndoItemList::instance().clear();
-    }
+    //! \brief Constructor mute all undo items that are created after this.
+    OpUndoItemMuting();
 
     //! \brief Destructor restores all preserved undo info items that were extracted.
-    ~OpUndoItemMuting() { OpUndoItemList::instance() = std::move(_preservedUndoInfo); }
+    ~OpUndoItemMuting();
 
 private:
     OpUndoItemList _preservedUndoInfo;

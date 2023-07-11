@@ -1050,8 +1050,6 @@ void LayerDatabase::loadLayersPostRead(void*)
 
 void LayerDatabase::cleanUpNewScene(void*)
 {
-    // This is called during a Maya notification callback, so no undo supported.
-    OpUndoItemMuting muting;
     LayerDatabase::instance().removeAllLayers();
     LayerDatabase::removeManagerNode();
 }
@@ -1157,6 +1155,9 @@ void LayerDatabase::removeManagerNode(MayaUsd::LayerManager* lm)
     if (!lm) {
         return;
     }
+
+    // This is called during a Maya notification callback, so no undo supported.
+    OpUndoItemMuting muting;
 
     clearManagerNode(lm);
 

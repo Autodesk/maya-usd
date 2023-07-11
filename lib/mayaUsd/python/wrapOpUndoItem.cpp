@@ -41,38 +41,20 @@ public:
 
     ~PythonOpUndoItemList() { }
 
-    void enter()
-    {
-        if (!TF_VERIFY(_undoItemList == nullptr)) {
-            return;
-        }
-        _undoItemList = std::make_unique<MayaUsd::OpUndoItemList>();
-        _recorder = std::make_unique<MayaUsd::OpUndoItemRecorder>(*_undoItemList);
-    }
+    void enter() { _recorder = std::make_unique<MayaUsd::OpUndoItemRecorder>(_undoItemList); }
 
-    void exit(object, object, object)
-    {
-        if (!TF_VERIFY(_undoItemList != nullptr)) {
-            return;
-        }
-        _recorder.reset();
-        _undoItemList.reset();
-    }
+    void exit(object, object, object) { _recorder.reset(); }
 
-    void undo()
-    {
-        if (_undoItemList)
-            _undoItemList->undo();
-    }
+    bool isEmpty() { return _undoItemList.isEmpty(); }
 
-    void redo()
-    {
-        if (_undoItemList)
-            _undoItemList->redo();
-    }
+    void clear() { _undoItemList.clear(); }
+
+    void undo() { _undoItemList.undo(); }
+
+    void redo() { _undoItemList.redo(); }
 
 private:
-    std::unique_ptr<MayaUsd::OpUndoItemList>     _undoItemList;
+    MayaUsd::OpUndoItemList                      _undoItemList;
     std::unique_ptr<MayaUsd::OpUndoItemRecorder> _recorder;
 };
 
@@ -86,6 +68,8 @@ void wrapOpUndoItem()
         class_<This, boost::noncopyable>("OpUndoItemList", init<>())
             .def("__enter__", &This::enter)
             .def("__exit__", &This::exit)
+            .def("isEmpty", &This::isEmpty)
+            .def("clear", &This::clear)
             .def("undo", &This::undo)
             .def("redo", &This::redo);
     }
