@@ -115,7 +115,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 // clang-format on
 
-UsdMayaShaderWriter::ContextSupport
+UsdMayaPrimWriter::ContextSupport
 PxrUsdTranslators_FileTextureWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
 {
     if (exportArgs.convertMaterialsTo == UsdImagingTokens->UsdPreviewSurface) {

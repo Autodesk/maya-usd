@@ -84,7 +84,7 @@ struct UsdMayaShaderWriterRegistry
     /// Predicate function, i.e. a function that can tell the level of support
     /// the writer function will provide for a given set of export options.
     using ContextPredicateFn
-        = std::function<UsdMayaShaderWriter::ContextSupport(const UsdMayaJobExportArgs&)>;
+        = std::function<UsdMayaPrimWriter::ContextSupport(const UsdMayaJobExportArgs&)>;
 
     /// \brief Register \p fn as a factory function providing a
     /// UsdMayaShaderWriter subclass that can be used to write \p mayaType.

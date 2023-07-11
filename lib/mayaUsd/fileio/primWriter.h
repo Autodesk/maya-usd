@@ -78,7 +78,7 @@ public:
     /// declaring how well this class can support the current context.
     MAYAUSD_CORE_PUBLIC
     static ContextSupport
-    CanExport(const UsdMayaJobExportArgs& exportArgs, const MFnDependencyNode& exportNode);
+    CanExport(const UsdMayaJobExportArgs& exportArgs, const MObject& exportObj);
 
     MAYAUSD_CORE_PUBLIC
     virtual ~UsdMayaPrimWriter();

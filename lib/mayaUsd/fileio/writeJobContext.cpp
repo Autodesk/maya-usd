@@ -565,7 +565,7 @@ UsdMayaWriteJobContext::_FindWriter(const MFnDependencyNode& mayaNode)
         = UsdMayaUtil::GetAllAncestorMayaNodeTypes(mayaNodeType);
     for (auto i = ancestorTypes.rbegin(); i != ancestorTypes.rend(); ++i) {
         if (UsdMayaPrimWriterRegistry::WriterFactoryFn primWriterFactory
-            = UsdMayaPrimWriterRegistry::Find(*i, mArgs, mayaNode)) {
+            = UsdMayaPrimWriterRegistry::Find(*i, mArgs, mayaNode.object())) {
             mWriterFactoryCache[mayaNodeType] = primWriterFactory;
             return primWriterFactory;
         }

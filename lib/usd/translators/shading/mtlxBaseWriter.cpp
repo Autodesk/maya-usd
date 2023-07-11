@@ -75,7 +75,7 @@ REGISTER_SHADING_MODE_EXPORT_MATERIAL_CONVERSION(
     TrMtlxTokens->niceName,
     TrMtlxTokens->exportDescription);
 
-UsdMayaShaderWriter::ContextSupport
+UsdMayaPrimWriter::ContextSupport
 MtlxUsd_BaseWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
 {
     return exportArgs.convertMaterialsTo == TrMtlxTokens->conversionName

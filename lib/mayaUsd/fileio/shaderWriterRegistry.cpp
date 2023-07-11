@@ -57,7 +57,7 @@ static int       _indexCounter = 0;
 
 _Registry::const_iterator _Find(const TfToken& usdInfoId, const UsdMayaJobExportArgs& exportArgs)
 {
-    using ContextSupport = UsdMayaShaderWriter::ContextSupport;
+    using ContextSupport = UsdMayaPrimWriter::ContextSupport;
 
     TfToken    conversion = exportArgs.convertMaterialsTo;
     const bool noFallback
@@ -141,7 +141,7 @@ UsdMayaShaderWriterRegistry::WriterFactoryFn UsdMayaShaderWriterRegistry::Find(
         _reg.insert(std::make_pair(
             mayaTypeName,
             _RegistryEntry { [](const UsdMayaJobExportArgs&) {
-                                return UsdMayaShaderWriter::ContextSupport::Fallback;
+                                return UsdMayaPrimWriter::ContextSupport::Fallback;
                             },
                              nullptr,
                              -1 }));
