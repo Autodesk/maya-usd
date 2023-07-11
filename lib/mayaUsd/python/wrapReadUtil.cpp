@@ -15,6 +15,7 @@
 //
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/undo/OpUndoItemMuting.h>
 
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/pxr.h>
@@ -39,6 +40,9 @@ std::string _FindOrCreateMayaAttr(
     const std::string&      attrName,
     const std::string&      attrNiceName = std::string())
 {
+    // Optional muting in case we are not being called with a undo item recorder.
+    MayaUsd::OpUndoItemMuting muting;
+
     std::string attrPath;
 
     MObject obj;
@@ -60,6 +64,9 @@ std::string _FindOrCreateMayaAttr(
 
 bool _SetMayaAttr(const std::string& attrPath, const VtValue& newValue)
 {
+    // Optional muting in case we are not being called with a undo item recorder.
+    MayaUsd::OpUndoItemMuting muting;
+
     MPlug   plug;
     MStatus status = UsdMayaUtil::GetPlugByName(attrPath, plug);
     if (!status) {
@@ -72,6 +79,9 @@ bool _SetMayaAttr(const std::string& attrPath, const VtValue& newValue)
 
 void _SetMayaAttrKeyableState(const std::string& attrPath, const SdfVariability variability)
 {
+    // Optional muting in case we are not being called with a undo item recorder.
+    MayaUsd::OpUndoItemMuting muting;
+
     MPlug   plug;
     MStatus status = UsdMayaUtil::GetPlugByName(attrPath, plug);
     if (!status) {

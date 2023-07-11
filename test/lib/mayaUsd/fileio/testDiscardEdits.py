@@ -324,7 +324,8 @@ class DiscardEditsTestCase(unittest.TestCase):
         cPathStr = ps + ',/A/B/C'
 
         # See testHideOrphanedNodes.py for scene structure.  Pull on C.
-        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(cPathStr))
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(cPathStr))
         
         cMayaItem = ufe.GlobalSelection.get().front()
         cMayaPathStr = ufe.PathString.string(cMayaItem.path())
@@ -336,7 +337,8 @@ class DiscardEditsTestCase(unittest.TestCase):
         aPrim.Unload()
 
         # Discard edits on C.
-        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.discardEdits(cMayaPathStr))
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.discardEdits(cMayaPathStr))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

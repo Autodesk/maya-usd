@@ -15,6 +15,8 @@
 //
 #include "OpUndoItems.h"
 
+#include "OpUndoItemMuting.h"
+
 #include <mayaUsd/utils/util.h>
 #ifdef WANT_UFE_BUILD
 #include <mayaUsd/ufe/Utils.h>
@@ -60,6 +62,14 @@ MString formatCommand(const MString& commandName, const MObject& commandArg)
 
 bool executeAndAdd(std::unique_ptr<OpUndoItem>&& item, OpUndoItemList& undoInfo)
 {
+#ifdef WANT_VALIDATE_UNDO_ITEM
+    // Note: validate only if using teh global list, which requires the use of
+    //       a OpUndoItemRecorder or OpUndoItemMuting. For explicitly-provided
+    //       undo item lists, the item will be properly preserved in that list.
+    if (&undoInfo == &OpUndoItemList::instance())
+        OpUndoItemValidator::validateItem(*item);
+#endif
+
     if (!item->execute())
         return false;
     undoInfo.addItem(std::move(item));
@@ -286,11 +296,23 @@ bool FunctionUndoItem::execute(
     return execute(name, redo, undo, OpUndoItemList::instance());
 }
 
+bool FunctionUndoItem::execute()
+{
+    if (!_redo)
+        return false;
+
+    return _redo();
+}
+
 bool FunctionUndoItem::undo()
 {
     if (!_undo)
         return false;
 
+    // During undo and redo the original command and its undo item list
+    // no longer exist. Anything operation was already recorded (and is
+    // in fact being executed!), so mute the undo item recording.
+    OpUndoItemMuting muting;
     return _undo();
 }
 
@@ -299,6 +321,10 @@ bool FunctionUndoItem::redo()
     if (!_redo)
         return false;
 
+    // During undo and redo the original command and its undo item list
+    // no longer exist. Anything operation was already recorded (and is
+    // in fact being executed!), so mute the undo item recording.
+    OpUndoItemMuting muting;
     return _redo();
 }
 

@@ -1,6 +1,13 @@
 set(TEST_SCRIPT_FILES
     testUsdUndoManager.py
+    testOpUndoItemList.py
 )
+
+if(CMAKE_WANT_VALIDATE_UNDO_ITEM)
+    list(APPEND TEST_SCRIPT_FILES
+        testOpUndoItem.py
+    )
+endif()
 
 foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})

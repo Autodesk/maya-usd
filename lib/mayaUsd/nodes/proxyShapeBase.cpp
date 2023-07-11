@@ -22,6 +22,7 @@
 #include <mayaUsd/listeners/proxyShapeNotice.h>
 #include <mayaUsd/nodes/proxyShapeStageExtraData.h>
 #include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/undo/OpUndoItemMuting.h>
 #include <mayaUsd/utils/customLayerData.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/layerMuting.h>
@@ -2009,6 +2010,9 @@ void MayaUsdProxyShapeBase::_OnLayerMutingChanged(const UsdNotice::LayerMutingCh
     if (!stage)
         return;
 
+    // We're in a callback so undo items cannot be registered into an undoable command.
+    // Mute the undo/redo for commands called from here.
+    OpUndoItemMuting muting;
     copyLayerMutingToAttribute(*stage, *this);
 }
 

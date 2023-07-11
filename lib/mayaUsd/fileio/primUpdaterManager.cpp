@@ -1693,8 +1693,6 @@ void PrimUpdaterManager::onProxyContentChanged(
             }
         }
     }
-
-    executeAdditionalCommands(context);
 }
 
 PrimUpdaterManager& PrimUpdaterManager::getInstance()

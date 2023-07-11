@@ -116,7 +116,8 @@ class HideOrphanedNodesTestCase(unittest.TestCase):
         for pathStr in pathStrings:
             # See testEditAsMaya.py comments: PathMappingHandler toHost()
             # unimplemented, use selection to get pull host path.
-            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(pathStr))
+            with mayaUsd.lib.OpUndoItemList():
+                self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(pathStr))
             mayaItem = ufe.GlobalSelection.get().front()
             mayaPath = mayaItem.path()
             self.assertEqual(mayaPath.nbSegments(), 1)
