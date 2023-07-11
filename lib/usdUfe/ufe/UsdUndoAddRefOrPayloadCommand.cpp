@@ -30,19 +30,13 @@ static std::string validatePrimSpec(const UsdPrim& prim, const SdfPrimSpecHandle
     if (!primSpec)
         return "is not valid";
 
-    // A common error is to reference a prim that is not the same type as the prim
-    // that contains the reference. Since only the type of the prim that contains
-    // the reference is used, the referenced prim might not show up.
-    //
-    // This happens a lot when trying to reference geometry (mesh) instead of the
+    // A common error is to reference geometry (mesh) instead of the
     // prim containing the geometry. Of vis-versa, referencing a prim inside a mesh.
+    // So we warn
     const std::string& primType = prim.GetTypeName();
     const std::string& targetType = primSpec->GetTypeName();
-    if (primType != targetType)
-        return TfStringPrintf(
-            "does not have the same type as the targeted prim: [%s] vs [%s]",
-            primType.c_str(),
-            targetType.c_str());
+    if (primType != "Mesh" && targetType == "Mesh")
+        return "is referencing a mesh into a non-mesh, the mesh may not be visible";
 
     return "";
 }
@@ -87,22 +81,18 @@ getPrimPath(const UsdPrim& prim, const std::string& filePath, const std::string&
         "will be used.",
         filePath.c_str());
 
-    std::string errorMessage;
     for (const SdfPrimSpecHandle primSpec : layerRef->GetRootPrims()) {
         if (!primSpec)
             continue;
 
-        errorMessage = validatePrimSpec(prim, primSpec);
-        if (errorMessage.empty())
-            return primSpec->GetPath();
+        const std::string errorMessage = validatePrimSpec(prim, primSpec);
+        if (!errorMessage.empty())
+            TF_WARN("The root prim %s.", errorMessage.c_str());
+
+        return primSpec->GetPath();
     }
 
-    if (errorMessage.empty()) {
-        TF_WARN("Could not find any valid root prim.");
-    } else {
-        TF_WARN("Could not find a valid root prim, the root prim %s.", errorMessage.c_str());
-    }
-
+    TF_WARN("Could not find any valid root prim.");
     return SdfPath();
 }
 
