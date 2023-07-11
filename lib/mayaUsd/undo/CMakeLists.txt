@@ -4,7 +4,9 @@
 target_sources(${PROJECT_NAME} 
     PRIVATE
         OpUndoItemList.cpp
+        OpUndoItemMuting.cpp
         OpUndoItemRecorder.cpp
+        OpUndoItemValidator.cpp
         OpUndoItems.cpp
         MayaUsdUndoBlock.cpp
 )
@@ -16,6 +18,7 @@ set(HEADERS
     OpUndoItemList.h
     OpUndoItemMuting.h
     OpUndoItemRecorder.h
+    OpUndoItemValidator.h
     OpUndoItems.h
     MayaUsdUndoBlock.h
 )

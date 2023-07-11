@@ -109,6 +109,11 @@ public:
     MAYAUSD_CORE_PUBLIC
     void addItem(OpUndoItem::Ptr&& item);
 
+    const std::vector<OpUndoItem::Ptr>& getItems() const { return _undoItems; }
+
+    /// \brief verify if the list is empty.
+    bool isEmpty() const { return _undoItems.empty(); }
+
     /// \brief clear all undo/redo information contained here.
     MAYAUSD_CORE_PUBLIC
     void clear();
