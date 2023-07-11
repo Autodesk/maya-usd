@@ -59,7 +59,7 @@ static int                                                   _indexCounter = 0;
 _Registry::const_iterator _Find(
     const std::string&          mayaTypeName,
     const UsdMayaJobExportArgs& exportArgs,
-    const MObject&    exportObj)
+    const MObject&              exportObj)
 {
     using ContextSupport = UsdMayaPrimWriter::ContextSupport;
 

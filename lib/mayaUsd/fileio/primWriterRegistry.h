@@ -145,7 +145,7 @@ struct UsdMayaPrimWriterRegistry
     static WriterFactoryFn Find(
         const std::string&          mayaTypeName,
         const UsdMayaJobExportArgs& exportArgs,
-        const MObject&    exportObj);
+        const MObject&              exportObj);
 
     /// \brief Check for external primWriter for \p mayaTypeName.
     MAYAUSD_CORE_PUBLIC

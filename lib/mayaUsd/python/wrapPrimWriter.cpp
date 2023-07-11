@@ -209,7 +209,7 @@ public:
         UsdMayaPrimWriter::ContextSupport
         operator()(const UsdMayaJobExportArgs& exportArgs, const MObject& exportObj)
         {
-            
+
             boost::python::object pyClass = GetPythonObject(_classIndex);
             if (!pyClass) {
                 // Prototype was unregistered
@@ -219,7 +219,7 @@ public:
             boost::python::object CanExport = pyClass.attr("CanExport");
             PyObject*             callable = CanExport.ptr();
             auto                  res = boost::python::call<int>(callable, exportArgs, exportObj);
-            return UsdMayaPrimWriter::ContextSupport(res);            
+            return UsdMayaPrimWriter::ContextSupport(res);
         }
 
         // Create a new wrapper for a Python class that is seen for the first time for a given
