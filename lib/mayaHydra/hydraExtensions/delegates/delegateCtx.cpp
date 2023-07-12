@@ -37,7 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-static const SdfPath solidPath = SdfPath(std::string("Solid"));
+static const SdfPath lightedObjectsPath = SdfPath(std::string("Lighted"));
 
 template<class T> SdfPath toSdfPath(const T& src);
 template<> inline SdfPath toSdfPath<MDagPath>(const MDagPath& dag) {
@@ -62,11 +62,20 @@ template<> inline SdfPath maybePrepend<MRenderItem>(
     return SdfPath(dependNodeNameString).AppendPath(inPath);
 }
 
-template<class T> bool testSolid(const T& src);
-template<> inline bool testSolid<MDagPath>(const MDagPath& dag) {
+///Returns false if this object should not be lighted, true if it should be lighted
+template<class T> bool shouldBeLighted(const T& src);
+//Template specialization for MDagPath
+template<> inline bool shouldBeLighted<MDagPath>(const MDagPath& dag) {
     return (MFnDependencyNode(dag.node()).typeName().asChar() == TfToken("mesh"));
 }
-template<> inline bool testSolid<MRenderItem>(const MRenderItem& ri) {
+//Template specialization for MRenderItem
+template<> inline bool shouldBeLighted<MRenderItem>(const MRenderItem& ri) {
+    
+    //Special case to recognize the Arnold skydome light
+    if (MayaHydraDelegateCtx::isRenderItem_aiSkyDomeLightTriangleShape(ri)){
+        return false;//Don't light the sky dome light shape
+    }
+        
     return (MHWRender::MGeometry::Primitive::kLines != ri.primitive()
             && MHWRender::MGeometry::Primitive::kLineStrip != ri.primitive()
             && MHWRender::MGeometry::Primitive::kPoints != ri.primitive());
@@ -86,10 +95,10 @@ SdfPath GetMayaPrimPath(const T& src)
 
     mayaPath = maybePrepend(src, mayaPath);
 
-    if (testSolid(src)) {
-        // Prefix with "Solid" when it's not a line/points primitive to be able
-        // to use only solid primitives in lighting/shadowing by their root path
-        mayaPath = solidPath.AppendPath(mayaPath);
+    if (shouldBeLighted(src)) {
+        // Use a specific prefix when it's not an object that needs to interact with lights and shadows to be able
+        // We filter the objects that don't have this prefix in lights HdLightTokens->shadowCollection parameter
+        mayaPath = lightedObjectsPath.AppendPath(mayaPath);
     }
 
     return mayaPath;
@@ -207,9 +216,26 @@ SdfPath MayaHydraDelegateCtx::GetMaterialPath(const MObject& obj)
     return _GetMaterialPath(_materialPath, obj);
 }
 
-SdfPath MayaHydraDelegateCtx::GetSolidPrimsRootPath() const
+SdfPath MayaHydraDelegateCtx::GetLightedPrimsRootPath() const
 {
-    return _rprimPath.AppendPath(solidPath);
+    return _rprimPath.AppendPath(lightedObjectsPath);
+}
+
+bool MayaHydraDelegateCtx::isRenderItem_aiSkyDomeLightTriangleShape(const MRenderItem& renderItem)
+{ 
+    static const std::string _aiSkyDomeLight ("aiSkyDomeLight");
+
+    const auto prim = renderItem.primitive();
+    MDagPath dag    = renderItem.sourceDagPath();
+    if( dag.isValid() && (MHWRender::MGeometry::Primitive::kTriangles == prim) && (MHWRender::MRenderItem::DecorationItem == renderItem.type()) ){
+        std::string fpName = dag.fullPathName().asChar();
+        if (fpName.find(_aiSkyDomeLight) != std::string::npos) {
+            //This render item is a aiSkyDomeLight
+            return true;
+        }
+    }
+
+    return false;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

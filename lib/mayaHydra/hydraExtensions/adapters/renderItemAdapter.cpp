@@ -134,12 +134,12 @@ void MayaHydraRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data
                                     // geometry and topology as our data has been cleared
     using MVS = MDataServerOperation::MViewportScene;
     // const bool isNew = flags & MViewportScene::MVS_new;  //not used yet
-    const bool visible = data._flags & MVS::MVS_visible;
-    const bool matrixChanged = data._flags & MVS::MVS_changedMatrix;
-    const bool geomChanged = (data._flags & MVS::MVS_changedGeometry) || positionsHaveBeenReset;
-    const bool topoChanged = (data._flags & MVS::MVS_changedTopo) || positionsHaveBeenReset;
-    const bool visibChanged = data._flags & MVS::MVS_changedVisibility;
-    const bool effectChanged = data._flags & MVS::MVS_changedEffect;
+    const bool visible          = data._flags & MVS::MVS_visible;
+    const bool matrixChanged    = data._flags & MVS::MVS_changedMatrix;
+    const bool geomChanged      = (data._flags & MVS::MVS_changedGeometry) || positionsHaveBeenReset;
+    const bool topoChanged      = (data._flags & MVS::MVS_changedTopo) || positionsHaveBeenReset;
+    const bool visibChanged     = data._flags & MVS::MVS_changedVisibility;
+    const bool effectChanged    = data._flags & MVS::MVS_changedEffect;
 
     HdDirtyBits dirtyBits = 0;
 
@@ -148,6 +148,7 @@ void MayaHydraRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data
         dirtyBits |= HdChangeTracker::DirtyPrimvar; // displayColor primVar
     }
 
+    const bool displayStatusChanged = (_displayStatus != data._displayStatus);
     _displayStatus = data._displayStatus;
     const bool hideOnPlayback = data._ri.isHideOnPlayback();
     if (hideOnPlayback != _isHideOnPlayback) {
@@ -155,6 +156,11 @@ void MayaHydraRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data
         dirtyBits |= HdChangeTracker::DirtyVisibility;
     }
 
+    //Special case for aiSkydomeLight which is visible only when it is selected
+    if (_isArnoldSkyDomeLightTriangleShape && displayStatusChanged){ 
+        SetVisible(IsRenderItemSelected());
+        dirtyBits |= HdChangeTracker::DirtyVisibility;
+    } else
     if (visibChanged) {
         SetVisible(visible);
         dirtyBits |= HdChangeTracker::DirtyVisibility;
@@ -268,14 +274,12 @@ void MayaHydraRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data
                         if (desc.semantic() != MGeometry::Semantic::kTexture)
                             continue;
 
-                        // Hydra expects a uv coordinate for each face-index (total of 36), not 1
-                        // per vertex. not for every vertex. e.g. a cube expects 36 uvs not 24. Note
-                        // that ASSERT(mvb->vertexCount() == 24) See
-                        // HdStMesh::_PopulateFaceVaryingPrimvars
+                        // Hydra expects a uv coordinate for each face-index, not 1 per vertex. 
+                        // e.g. a cube expects 36 uvs not 24.
                         _uvs.clear();
                         _uvs.resize(indices->size());
                         float* uvs = (float*)mvb->map();
-                        for (int i = 0; i < indexCount; i++) {
+                        for (int i = 0; i < indexCount; ++i) {
                             _uvs[i].Set(&uvs[indicesData[i] * 2]);
                         }
                         mvb->unmap();
@@ -374,28 +378,39 @@ void MayaHydraRenderItemAdapter::MarkDirty(HdDirtyBits dirtyBits)
 HdPrimvarDescriptorVector
 MayaHydraRenderItemAdapter::GetPrimvarDescriptors(HdInterpolation interpolation)
 {
+    HdPrimvarDescriptor desc;
+
     // Vertices
     if (interpolation == HdInterpolationVertex) {
-        HdPrimvarDescriptor desc;
-        desc.name = UsdGeomTokens->points;
-        desc.interpolation = interpolation;
-        desc.role = HdPrimvarRoleTokens->point;
+        desc.name           = UsdGeomTokens->points;
+        desc.interpolation  = interpolation;
+        desc.role           = HdPrimvarRoleTokens->point;
         return { desc };
     } else if (interpolation == HdInterpolationFaceVarying) {
         // UVs are face varying in maya.
         if (_primitive == MGeometry::Primitive::kTriangles) {
-            HdPrimvarDescriptor desc;
-            desc.name = MayaHydraAdapterTokens->st;
-            desc.interpolation = interpolation;
-            desc.role = HdPrimvarRoleTokens->textureCoordinate;
+            desc.name           = MayaHydraAdapterTokens->st;
+            desc.interpolation  = interpolation;
+            desc.role           = HdPrimvarRoleTokens->textureCoordinate;
             return { desc };
         }
     } else if (interpolation == HdInterpolationConstant) {
-        HdPrimvarDescriptor desc;
-        desc.name = HdTokens->displayColor;
-        desc.interpolation = interpolation;
-        desc.role = HdPrimvarRoleTokens->color;
-        return { desc };
+        switch(_primitive){
+            case MGeometry::Primitive::kPoints: //Fall into
+            case MGeometry::Primitive::kLines: //Fall into
+            case MGeometry::Primitive::kLineStrip: //Fall into
+            case MGeometry::Primitive::kAdjacentLines: //Fall into
+            case MGeometry::Primitive::kAdjacentLineStrip:
+            {
+                desc.name           = HdTokens->displayColor;//Use display color only for lines/points (avoid triangles)
+                desc.interpolation  = interpolation;
+                desc.role           = HdPrimvarRoleTokens->color;
+                return { desc };
+            }
+            break;
+            default:
+            break;
+        }
     }
 
     return {};
@@ -424,6 +439,20 @@ void MayaHydraRenderItemAdapter::SetPlaybackChanged()
     if (_isHideOnPlayback) {
         MarkDirty(HdChangeTracker::DirtyVisibility);
     }
+}
+
+bool MayaHydraRenderItemAdapter::IsRenderItemSelected() const
+{ 
+    return  (MHWRender::DisplayStatus::kActive  == _displayStatus) || 
+            (MHWRender::DisplayStatus::kLead    == _displayStatus);
+}
+
+HdCullStyle MayaHydraRenderItemAdapter::GetCullStyle() const
+{
+    // HdCullStyleNothing means no culling, HdCullStyledontCare means : let the renderer choose
+    // between back or front faces culling. We don't want culling, since we want to see the
+    // backfaces being unlit with MayaHydraSceneDelegate::GetDoubleSided returning false.
+    return _isArnoldSkyDomeLightTriangleShape ? HdCullStyleFront : HdCullStyleNothing;
 }
 
 ///////////////////////////////////////////////////////////////////////

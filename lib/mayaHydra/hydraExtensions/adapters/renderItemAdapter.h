@@ -83,6 +83,9 @@ public:
     bool GetDoubleSided() const override { return false; };
 
     MAYAHYDRALIB_API
+    HdCullStyle GetCullStyle() const override;
+
+    MAYAHYDRALIB_API
     virtual void MarkDirty(HdDirtyBits dirtyBits) override;
 
     MAYAHYDRALIB_API
@@ -176,6 +179,15 @@ public:
     MAYAHYDRALIB_API
     const char* Name() const { return _name.asChar(); }
 
+    MAYAHYDRALIB_API
+    void SetIsRenderITemAnaiSkydomeLightTriangleShape(bool val) {_isArnoldSkyDomeLightTriangleShape = val;}
+
+    MAYAHYDRALIB_API
+    bool GetIsRenderITemAnaiSkydomeLightTriangleShape() const {return _isArnoldSkyDomeLightTriangleShape;}
+
+    MAYAHYDRALIB_API
+    bool IsRenderItemSelected() const;
+
 private:
     MAYAHYDRALIB_API
     void _RemoveRprim();
@@ -196,6 +208,7 @@ private:
     MColor                      _wireframeColor = { 1.f, 1.f, 1.f, 1.f };
     bool                        _isHideOnPlayback = false;
     MHWRender::DisplayStatus    _displayStatus = MHWRender::DisplayStatus::kNoStatus;
+    bool                        _isArnoldSkyDomeLightTriangleShape = false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

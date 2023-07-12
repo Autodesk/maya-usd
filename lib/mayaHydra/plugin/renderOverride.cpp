@@ -701,7 +701,7 @@ void MtohRenderOverride::_InitHydraResources()
             if (TF_VERIFY(
                     _mayaHydraSceneDelegate,
                     "Maya Hydra scene delegate not found, check mayaHydra plugin installation.")) {
-                solidPrimsRootPaths.push_back(_mayaHydraSceneDelegate->GetSolidPrimsRootPath());
+                solidPrimsRootPaths.push_back(_mayaHydraSceneDelegate->GetLightedPrimsRootPath());
             }
             _delegates.emplace_back(std::move(newDelegate));
         }

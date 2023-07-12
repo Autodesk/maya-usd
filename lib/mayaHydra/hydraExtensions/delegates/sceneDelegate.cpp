@@ -384,6 +384,10 @@ void MayaHydraSceneDelegate::HandleCompleteViewportScene(
             // MAYA-128021: We do not currently support maya instances.
             MDagPath dagPath(ri.sourceDagPath());
             ria = std::make_shared<MayaHydraRenderItemAdapter>(dagPath, slowId, fastId, this, ri);
+
+            //Update the render item adapter if this render item is an aiSkydomeLight shape
+            ria->SetIsRenderITemAnaiSkydomeLightTriangleShape(isRenderItem_aiSkyDomeLightTriangleShape(ri));
+
             _AddRenderItem(ria);
         }
 
@@ -1424,10 +1428,12 @@ HdCullStyle MayaHydraSceneDelegate::GetCullStyle(const SdfPath& id)
 {
     TF_DEBUG(MAYAHYDRALIB_DELEGATE_GET_CULL_STYLE)
         .Msg("MayaHydraSceneDelegate::GetCullStyle(%s)\n", id.GetText());
-    // HdCullStyleNothing means no culling, HdCullStyledontCare means : let the renderer choose
-    // between back or front faces culling. We don't want culling, since we want to see the
-    // backfaces being unlit with MayaHydraSceneDelegate::GetDoubleSided returning false.
-    return HdCullStyleNothing;
+
+    return _GetValue<MayaHydraAdapter, HdCullStyle>(
+        id,
+        [](MayaHydraAdapter* a) -> HdCullStyle { return a->GetCullStyle(); },
+        _shapeAdapters,
+        _renderItemsAdapters);
 }
 
 HdDisplayStyle MayaHydraSceneDelegate::GetDisplayStyle(const SdfPath& id)

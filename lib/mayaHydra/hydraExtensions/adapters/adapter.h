@@ -86,6 +86,8 @@ public:
     MAYAHYDRALIB_API
     virtual bool GetDoubleSided() const { return true; }
     MAYAHYDRALIB_API
+    virtual HdCullStyle GetCullStyle() const { return HdCullStyleNothing; }
+    MAYAHYDRALIB_API
     virtual HdDisplayStyle GetDisplayStyle() { return { 0, false, false }; }
 
 protected:

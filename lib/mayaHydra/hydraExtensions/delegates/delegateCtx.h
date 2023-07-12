@@ -60,6 +60,18 @@ public:
     void RemoveSprim(const TfToken& typeId, const SdfPath& id);
     MAYAHYDRALIB_API
     void         RemoveInstancer(const SdfPath& id);
+    
+    /**
+     * @brief Is used to identify a Maya RenderItem as an aiSkydomeLight triangle shape.
+     *
+     * @usage Is used to identify a Maya RenderItem as an aiSkydomeLight triangle shape.
+     *
+     * @param[in] renderItem is the Maya RenderItem which you want to test.
+     *
+     * @return returns true if it is an aiSkydomeLight triangle shape, false if not.
+     */
+    static bool isRenderItem_aiSkyDomeLightTriangleShape(const MRenderItem& renderItem);
+
     virtual void RemoveAdapter(const SdfPath& id) { }
     virtual void RecreateAdapter(const SdfPath& id, const MObject& obj) { }
     virtual void RecreateAdapterOnIdle(const SdfPath& id, const MObject& obj) { }
@@ -87,7 +99,7 @@ public:
 
     MAYAHYDRALIB_API
     SdfPath
-    GetSolidPrimsRootPath() const; // Get the root path for non lines and non points primitives
+    GetLightedPrimsRootPath() const; /// Get the root path for lighted objects, objects that don't have this in their SdfPath are not lighted
 
     MAYAHYDRALIB_API
     SdfPath GetRprimPath() const;
