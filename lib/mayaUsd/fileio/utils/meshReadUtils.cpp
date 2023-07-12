@@ -628,7 +628,6 @@ void UsdMayaMeshReadUtils::assignPrimvarsToMesh(
                 skipPrimvar = true;
                 break;
             }
-  
         }
         if (skipPrimvar) {
             continue;
