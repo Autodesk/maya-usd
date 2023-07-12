@@ -1118,7 +1118,13 @@ bool MayaHydraSceneDelegate::AddPickHitToSelectionList(
         _FindAdapter<MayaHydraRenderItemAdapter>(
             hitId,
             [&selectionList, &worldSpaceHitPts, &hit](MayaHydraRenderItemAdapter* a) {
-                selectionList.add(a->GetDagPath());
+                // prepare the selection path of the hit item, the transform path is expected if available
+                const auto& itemPath = a->GetDagPath();
+                MDagPath selectPath;
+                if (MS::kSuccess != MDagPath::getAPathTo(itemPath.transform(), selectPath)) {
+                    selectPath = itemPath;
+                }
+                selectionList.add(selectPath);
                 worldSpaceHitPts.append(
                     hit.worldSpaceHitPoint[0],
                     hit.worldSpaceHitPoint[1],
