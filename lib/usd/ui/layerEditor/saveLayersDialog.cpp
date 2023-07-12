@@ -662,6 +662,7 @@ void SaveLayersDialog::onSaveAll()
     _problemLayers.clear();
     _emptyLayers.clear();
 
+    // Note: must start from the end so that sub-layers are saved before their parent.
     for (int count = _saveLayerPathRows.size(), i = count - 1; i >= 0; --i) {
         auto row = dynamic_cast<SaveLayerPathRow*>(_saveLayerPathRows[i]);
         if (!row || !row->_layerInfo.layer)
