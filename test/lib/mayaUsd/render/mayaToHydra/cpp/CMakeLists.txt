@@ -13,6 +13,8 @@ target_sources(${TARGET_NAME}
     PRIVATE
         mayaHydraCppTestsCmd.cpp
         testCppFramework.cpp
+        testMayaSceneFlattening.cpp
+        testUtils.cpp
 )
 
 # -----------------------------------------------------------------------------
@@ -33,7 +35,6 @@ target_compile_definitions(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 target_include_directories(${TARGET_NAME} 
     PUBLIC
-        ${MAYA_INCLUDE_DIRS}
         ${GTEST_INCLUDE_DIRS}
 )
 
@@ -41,9 +42,9 @@ target_include_directories(${TARGET_NAME}
 # link libraries
 # -----------------------------------------------------------------------------
 target_link_libraries(${TARGET_NAME}
-    PUBLIC 
+    PUBLIC
+        mayaHydraLib
         ${GTEST_LIBRARIES}
-        ${MAYA_LIBRARIES}
 )
 
 # -----------------------------------------------------------------------------

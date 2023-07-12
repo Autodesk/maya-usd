@@ -9,6 +9,7 @@ set(TEST_SCRIPT_FILES
     testVisibility.py
     testStageAddPrim.py
     cpp/testCppFramework.py
+    cpp/testMayaSceneFlattening.py
 )
 
 # Test use of mesh adapter code for mesh support, using environment variable.

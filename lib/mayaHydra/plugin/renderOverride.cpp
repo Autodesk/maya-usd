@@ -29,6 +29,7 @@
 
 #include <mayaHydraLib/delegates/delegateRegistry.h>
 #include <mayaHydraLib/delegates/sceneDelegate.h>
+#include <mayaHydraLib/interface.h>
 #include <mayaHydraLib/sceneIndex/registration.h>
 #include <mayaHydraLib/utils.h>
 
@@ -652,6 +653,7 @@ void MtohRenderOverride::_InitHydraResources()
     _renderIndex = HdRenderIndex::New(_renderDelegate.Get(), {&_hgiDriver});
     if (!_renderIndex)
         return;
+    GetMayaHydraLibInterface().RegisterTerminalSceneIndex(_renderIndex->GetTerminalSceneIndex());
 
     _taskController = new HdxTaskController(
         _renderIndex,
@@ -772,6 +774,7 @@ void MtohRenderOverride::ClearHydraResources()
     }
 
     if (_renderIndex != nullptr) {
+        GetMayaHydraLibInterface().UnregisterTerminalSceneIndex(_renderIndex->GetTerminalSceneIndex());
         delete _renderIndex;
         _renderIndex = nullptr;
     }

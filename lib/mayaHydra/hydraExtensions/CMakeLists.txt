@@ -8,13 +8,18 @@ add_library(${TARGET_NAME} SHARED)
 target_sources(${TARGET_NAME} 
     PRIVATE
         debugCodes.cpp
+        interfaceImp.cpp
+        mayaUtils.cpp
         utils.cpp
 )
 
 set(HEADERS
     api.h
-    utils.h
     debugCodes.h
+    interface.h
+    interfaceImp.h
+    mayaUtils.h
+    utils.h
 )
 
 # -----------------------------------------------------------------------------

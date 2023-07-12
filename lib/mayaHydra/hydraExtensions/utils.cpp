@@ -21,6 +21,7 @@
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
+#include <pxr/imaging/hd/xformSchema.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/assetPath.h>
 #include <pxr/usd/sdf/path.h>
@@ -329,9 +330,7 @@ SdfPath DagPathToSdfPath(
     return usdPath;
 }
 
-SdfPath RenderItemToSdfPath(
-    const MRenderItem& ri,
-    const bool         stripNamespaces)
+SdfPath RenderItemToSdfPath(const MRenderItem& ri, const bool stripNamespaces)
 {
     std::string internalObjectId(
         "_" + std::to_string(ri.InternalObjectId())); // preventively prepend item id by underscore
@@ -354,6 +353,26 @@ SdfPath RenderItemToSdfPath(
         return SdfPath(internalObjectId);
     }
     return sdfPath;
+}
+
+SdfPath MakeRelativeToParentPath(const SdfPath& path)
+{
+    return path.MakeRelativePath(path.GetParentPath());
+}
+
+bool GetXformMatrixFromPrim(const HdSceneIndexPrim& prim, GfMatrix4d& outMatrix)
+{
+    HdContainerDataSourceHandle xformContainer
+        = HdContainerDataSource::Cast(prim.dataSource->Get(HdXformSchemaTokens->xform));
+    if (!xformContainer) {
+        return false;
+    }
+    HdXformSchema xform = HdXformSchema(xformContainer);
+    if (!xform.GetMatrix()) {
+        return false;
+    }
+    outMatrix = xform.GetMatrix()->GetValue(0).Get<GfMatrix4d>();
+    return true;
 }
 
 } // namespace MAYAHYDRA_NS_DEF

@@ -28,6 +28,7 @@
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/imaging/hd/sceneIndex.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 
@@ -55,6 +56,7 @@ using GfMatrix4d = PXR_NS::GfMatrix4d;
 using TfToken = PXR_NS::TfToken;
 using SdfPath = PXR_NS::SdfPath;
 using TfCallContext = PXR_NS::TfCallContext;
+using HdSceneIndexPrim = PXR_NS::HdSceneIndexPrim;
 
 /// \brief Converts a Maya matrix to a double precision GfMatrix.
 /// \param mayaMat Maya `MMatrix` to be converted.
@@ -190,9 +192,34 @@ SdfPath DagPathToSdfPath(
 /// This means it will replace Maya's namespace delimiter (':') with
 /// underscores ('_').
 MAYAHYDRALIB_API
-SdfPath RenderItemToSdfPath(
-    const MRenderItem& ri,
-    const bool         stripNamespaces);
+SdfPath RenderItemToSdfPath(const MRenderItem& ri, const bool stripNamespaces);
+
+/**
+ * @brief Get the given SdfPath without its parent path.
+ *
+ * @usage Get the given SdfPath without its parent path. The result is the last
+ * element of the original SdfPath.
+ *
+ * @param[in] path is the SdfPath from which to remove the parent path.
+ *
+ * @return The path without its parent path.
+ */
+MAYAHYDRALIB_API
+SdfPath MakeRelativeToParentPath(const SdfPath& path);
+
+/**
+ * @brief Get the Hydra Xform matrix from a given prim.
+ *
+ * @usage Get the Hydra Xform matrix from a given prim. This method makes no guarantee on whether
+ * the matrix is flattened or not.
+ *
+ * @param[in] prim is the Hydra prim in the SceneIndex of which to get the transform matrix.
+ * @param[out] outMatrix is the transform matrix of the prim.
+ *
+ * @return True if the operation succeeded, false otherwise.
+ */
+MAYAHYDRALIB_API
+bool GetXformMatrixFromPrim(const HdSceneIndexPrim& prim, GfMatrix4d& outMatrix);
 
 } // namespace MAYAHYDRA_NS_DEF
 
