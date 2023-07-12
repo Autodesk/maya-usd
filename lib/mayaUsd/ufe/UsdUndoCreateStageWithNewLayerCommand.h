@@ -17,8 +17,8 @@
 #define MAYAUSD_UFE_CREATESTAGEWITHNEWLAYERCOMMAND_H
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/undo/OpUndoItemList.h>
 
-#include <maya/MDagModifier.h>
 #include <ufe/undoableCommand.h>
 
 namespace MAYAUSD_NS_DEF {
@@ -60,12 +60,14 @@ public:
     void redo() override;
 
 private:
+    // Executes the command, called within a undo recorder.
+    // Returns true on success.
+    bool executeWithinUndoRecorder();
+
     Ufe::SceneItem::Ptr _parentItem;
     Ufe::SceneItem::Ptr _insertedChild;
 
-    MDagModifier& _createTransformDagMod;
-    MDagModifier& _createProxyShapeDagMod;
-    bool          _success;
+    OpUndoItemList _undoItemList;
 }; // UsdUndoCreateStageWithNewLayerCommand
 
 } // namespace ufe
