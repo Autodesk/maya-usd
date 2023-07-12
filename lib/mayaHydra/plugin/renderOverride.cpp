@@ -662,10 +662,8 @@ void MtohRenderOverride::_InitHydraResources()
             TfMakeValidIdentifier(_rendererDesc.rendererName.GetText()).c_str(),
             this))));
     _taskController->SetEnableShadows(true);
-    // Initialize the AOV system to render color for Storm, so the Metal/Vulkan backend can present
-    // to OpenGL view
-    if (_isUsingHdSt
-        && (_hgi->GetAPIName() == HgiTokens->Metal || _hgi->GetAPIName() == HgiTokens->Vulkan)) {
+    // Initialize the AOV system to render color for Storm
+    if (_isUsingHdSt) {
         _taskController->SetRenderOutputs({ HdAovTokens->color });
     }
 
