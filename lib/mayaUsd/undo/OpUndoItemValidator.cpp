@@ -25,7 +25,7 @@
 
 namespace MAYAUSD_NS_DEF {
 
-static std::atomic<int> validatorCount = 0;
+static std::atomic<int> validatorCount;
 
 /* static */
 void OpUndoItemValidator::increaseValidatorCount() { ++validatorCount; }
