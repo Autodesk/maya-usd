@@ -120,7 +120,7 @@ void MayaLayerEditorWindow::onClearUIOnSceneReset()
     delete _layerEditor;
     _sessionState.setStageEntry(UsdLayerEditor::SessionState::StageEntry {});
 
-    QTimer::singleShot(2000, this, &MayaLayerEditorWindow::onCreateUI);
+    QTimer::singleShot(0, this, &MayaLayerEditorWindow::onCreateUI);
 }
 
 void MayaLayerEditorWindow::onCreateUI()
