@@ -23,7 +23,7 @@
 
 namespace USDUFE_NS_DEF {
 
-using namespace PXR_NS;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static std::string validatePrimSpec(const UsdPrim& prim, const SdfPrimSpecHandle& primSpec)
 {
