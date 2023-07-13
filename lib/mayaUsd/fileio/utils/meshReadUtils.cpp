@@ -616,21 +616,23 @@ void UsdMayaMeshReadUtils::assignPrimvarsToMesh(
             continue;
         }
 
-        // Exclude primvars if they match with the exclude namespace
-        std::string primVarString = fullName.GetString();
+        // Exclude primvars if they match with the exclude namespac
+        if (primvar.NameContainsNamespaces()) {
+            std::string primVarString = fullName.GetString();
+            bool        skipPrimvar = false;
+            for (const TfToken& primVarNameSpace : excludePrivarNamespaceSet) {
+                std::string primVarNameSpaceString = primVarNameSpace.GetString();
 
-        bool skipPrimvar = false;
-        for (const TfToken& primVarNameSpace : excludePrivarNamespaceSet) {
-            std::string primVarNameSpaceString = primVarNameSpace.GetString();
-
-            // The primVarString is a substring of excludePrimVarNamespace string from the beginning
-            if (primVarString.find(primVarNameSpaceString) == 0) {
-                skipPrimvar = true;
-                break;
+                // The primVarString is a substring of excludePrimVarNamespace string from the
+                // beginning
+                if (primVarString.find(primVarNameSpaceString) == 0) {
+                    skipPrimvar = true;
+                    break;
+                }
             }
-        }
-        if (skipPrimvar) {
-            continue;
+            if (skipPrimvar) {
+                continue;
+            }
         }
 
         // If the primvar is called either displayColor or displayOpacity check
