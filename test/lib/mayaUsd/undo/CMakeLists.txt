@@ -1,12 +1,16 @@
 set(TEST_SCRIPT_FILES
     testUsdUndoManager.py
-    testOpUndoItemList.py
 )
 
-if(CMAKE_WANT_VALIDATE_UNDO_ITEM)
+if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     list(APPEND TEST_SCRIPT_FILES
-        testOpUndoItem.py
+        testOpUndoItemList.py
     )
+    if(CMAKE_WANT_VALIDATE_UNDO_ITEM)
+        list(APPEND TEST_SCRIPT_FILES
+            testOpUndoItem.py
+        )
+    endif()
 endif()
 
 foreach(script ${TEST_SCRIPT_FILES})
