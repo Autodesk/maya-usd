@@ -15,10 +15,9 @@
 //
 #include "UsdUndoPayloadCommand.h"
 
-#include <mayaUsd/nodes/proxyShapeStageExtraData.h>
+#include <usdUfe/ufe/Utils.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 UsdUndoLoadUnloadBaseCommand::UsdUndoLoadUnloadBaseCommand(
     const PXR_NS::UsdPrim& prim,
@@ -68,7 +67,7 @@ void UsdUndoLoadUnloadBaseCommand::saveModifiedLoadRules() const
 {
     // Save the load rules so that switching the stage settings will be able to preserve the
     // load rules.
-    MayaUsd::MayaUsdProxyShapeStageExtraData::saveLoadRules(_stage);
+    UsdUfe::saveStageLoadRules(_stage);
 }
 
 UsdUndoLoadPayloadCommand::UsdUndoLoadPayloadCommand(
@@ -89,5 +88,4 @@ UsdUndoUnloadPayloadCommand::UsdUndoUnloadPayloadCommand(const PXR_NS::UsdPrim& 
 void UsdUndoUnloadPayloadCommand::redo() { doUnload(); }
 void UsdUndoUnloadPayloadCommand::undo() { doLoad(); }
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

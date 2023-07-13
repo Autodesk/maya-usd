@@ -17,6 +17,7 @@
 
 #include <usdUfe/ufe/Global.h>
 #include <usdUfe/utils/layers.h>
+#include <usdUfe/utils/loadRules.h>
 #include <usdUfe/utils/usdUtils.h>
 
 #include <pxr/usd/pcp/layerStack.h>
@@ -82,11 +83,12 @@ uint32_t findLayerIndex(const UsdPrim& prim, const SdfLayerHandle& layer)
     return position;
 }
 
-UsdUfe::StageAccessorFn     gStageAccessorFn = nullptr;
-UsdUfe::StagePathAccessorFn gStagePathAccessorFn = nullptr;
-UsdUfe::UfePathToPrimFn     gUfePathToPrimFn = nullptr;
-UsdUfe::TimeAccessorFn      gTimeAccessorFn = nullptr;
-UsdUfe::IsAttributeLockedFn gIsAttributeLockedFn = nullptr;
+UsdUfe::StageAccessorFn      gStageAccessorFn = nullptr;
+UsdUfe::StagePathAccessorFn  gStagePathAccessorFn = nullptr;
+UsdUfe::UfePathToPrimFn      gUfePathToPrimFn = nullptr;
+UsdUfe::TimeAccessorFn       gTimeAccessorFn = nullptr;
+UsdUfe::IsAttributeLockedFn  gIsAttributeLockedFn = nullptr;
+UsdUfe::SaveStageLoadRulesFn gSaveStageLoadRulesFn = nullptr;
 
 } // anonymous namespace
 
@@ -213,6 +215,19 @@ void setIsAttributeLockedFn(IsAttributeLockedFn fn)
 bool isAttributedLocked(const PXR_NS::UsdAttribute& attr, std::string* errMsg /*= nullptr*/)
 {
     return gIsAttributeLockedFn ? gIsAttributeLockedFn(attr, errMsg) : false;
+}
+
+void setSaveStageLoadRulesFn(SaveStageLoadRulesFn fn)
+{
+    // This function is allowed to be null in which case nothing extra is done
+    // to save the load rules when loading/unloading a payload.
+    gSaveStageLoadRulesFn = fn;
+}
+
+void saveStageLoadRules(const PXR_NS::UsdStageRefPtr& stage)
+{
+    if (gSaveStageLoadRulesFn)
+        gSaveStageLoadRulesFn(stage);
 }
 
 int ufePathToInstanceIndex(const Ufe::Path& path, UsdPrim* prim)
@@ -703,6 +718,38 @@ bool isEditTargetLayerModifiable(const UsdStageWeakPtr stage, std::string* errMs
     }
 
     return true;
+}
+
+Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath)
+{
+    // Filter the src selection, removing items below the filterPath
+    Ufe::Selection dst;
+    for (const auto& item : src) {
+        const auto& itemPath = item->path();
+        // The filterPath itself is still valid.
+        if (!itemPath.startsWith(filterPath) || itemPath == filterPath) {
+            dst.append(item);
+        }
+    }
+    return dst;
+}
+
+Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath)
+{
+    // If a src selection item starts with the filterPath, re-create it.
+    Ufe::Selection dst;
+    for (const auto& item : src) {
+        const auto& itemPath = item->path();
+        // The filterPath itself is still valid.
+        if (!itemPath.startsWith(filterPath) || itemPath == filterPath) {
+            dst.append(item);
+        } else {
+            auto recreatedItem = Ufe::Hierarchy::createItem(item->path());
+            if (recreatedItem)
+                dst.append(recreatedItem);
+        }
+    }
+    return dst;
 }
 
 } // namespace USDUFE_NS_DEF

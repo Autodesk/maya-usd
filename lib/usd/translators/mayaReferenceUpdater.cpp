@@ -21,7 +21,6 @@
 #include <mayaUsd/fileio/translators/translatorMayaReference.h>
 #include <mayaUsd/fileio/utils/adaptor.h>
 #include <mayaUsd/fileio/utils/xformStack.h>
-#include <mayaUsd/ufe/SetVariantSelectionCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/primActivation.h>
@@ -31,6 +30,7 @@
 #include <mayaUsd_Schemas/ALMayaReference.h>
 #include <mayaUsd_Schemas/MayaReference.h>
 
+#include <UsdUfe/ufe/SetVariantSelectionCommand.h>
 #include <usdUfe/base/tokens.h>
 #include <usdUfe/utils/editRouter.h>
 

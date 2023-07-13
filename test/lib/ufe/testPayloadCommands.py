@@ -119,7 +119,7 @@ class PayloadCommandsTestCase(unittest.TestCase):
         self.assertTrue(prim.IsLoaded())
 
         # Verify unload payload
-        cmd = mayaUsd.lib.UnloadPayloadCommand(prim)
+        cmd = usdUfe.UnloadPayloadCommand(prim)
         self.assertIsNotNone(cmd)
 
         cmd.execute()
@@ -132,7 +132,7 @@ class PayloadCommandsTestCase(unittest.TestCase):
         self.assertFalse(prim.IsLoaded())
 
         # Verify load payload
-        cmd = mayaUsd.lib.LoadPayloadCommand(prim, Usd.LoadWithDescendants)
+        cmd = usdUfe.LoadPayloadCommand(prim, Usd.LoadWithDescendants)
         self.assertIsNotNone(cmd)
 
         cmd.execute()

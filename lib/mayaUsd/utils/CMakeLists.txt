@@ -13,7 +13,6 @@ target_sources(${PROJECT_NAME}
         json.cpp
         layerMuting.cpp
         layers.cpp
-        loadRulesText.cpp
         loadRulesAttribute.cpp
         mayaEditRouter.cpp
         query.cpp

@@ -16,6 +16,7 @@
 #include "Global.h"
 
 #include <usdUfe/ufe/UsdCameraHandler.h>
+#include <usdUfe/ufe/UsdContextOpsHandler.h>
 #include <usdUfe/ufe/UsdHierarchyHandler.h>
 #include <usdUfe/ufe/UsdObject3dHandler.h>
 
@@ -71,6 +72,8 @@ Ufe::Rtid initialize(
     // Optional DCC specific functions.
     if (dccFunctions.isAttributeLockedFn)
         UsdUfe::setIsAttributeLockedFn(dccFunctions.isAttributeLockedFn);
+    if (dccFunctions.saveStageLoadRulesFn)
+        UsdUfe::setSaveStageLoadRulesFn(dccFunctions.saveStageLoadRulesFn);
 
     // Create a default stages subject if none is provided.
     if (nullptr == ss) {
@@ -84,6 +87,8 @@ Ufe::Rtid initialize(
         = handlers.hierarchyHandler ? handlers.hierarchyHandler : UsdHierarchyHandler::create();
     rtHandlers.object3dHandler
         = handlers.object3dHandler ? handlers.object3dHandler : UsdObject3dHandler::create();
+    rtHandlers.contextOpsHandler
+        = handlers.contextOpsHandler ? handlers.contextOpsHandler : UsdContextOpsHandler::create();
     rtHandlers.cameraHandler
         = handlers.cameraHandler ? handlers.cameraHandler : UsdCameraHandler::create();
 

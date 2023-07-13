@@ -1,5 +1,5 @@
 //
-// Copyright 2020 Autodesk
+// Copyright 2023 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,34 +16,33 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdContextOps.h>
 
-#include <ufe/contextOpsHandler.h>
+#include <usdUfe/ufe/UsdContextOpsHandler.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-//! \brief Interface to create a UsdContextOps interface object.
-class MAYAUSD_CORE_PUBLIC UsdContextOpsHandler : public Ufe::ContextOpsHandler
+//! \brief Interface to create a MayaUsdContextOps interface object.
+class MAYAUSD_CORE_PUBLIC MayaUsdContextOpsHandler : public UsdUfe::UsdContextOpsHandler
 {
 public:
-    typedef std::shared_ptr<UsdContextOpsHandler> Ptr;
+    typedef std::shared_ptr<MayaUsdContextOpsHandler> Ptr;
 
-    UsdContextOpsHandler();
-    ~UsdContextOpsHandler() override;
+    MayaUsdContextOpsHandler();
+    ~MayaUsdContextOpsHandler() override;
 
     // Delete the copy/move constructors assignment operators.
-    UsdContextOpsHandler(const UsdContextOpsHandler&) = delete;
-    UsdContextOpsHandler& operator=(const UsdContextOpsHandler&) = delete;
-    UsdContextOpsHandler(UsdContextOpsHandler&&) = delete;
-    UsdContextOpsHandler& operator=(UsdContextOpsHandler&&) = delete;
+    MayaUsdContextOpsHandler(const MayaUsdContextOpsHandler&) = delete;
+    MayaUsdContextOpsHandler& operator=(const MayaUsdContextOpsHandler&) = delete;
+    MayaUsdContextOpsHandler(MayaUsdContextOpsHandler&&) = delete;
+    MayaUsdContextOpsHandler& operator=(MayaUsdContextOpsHandler&&) = delete;
 
-    //! Create a UsdContextOpsHandler.
-    static UsdContextOpsHandler::Ptr create();
+    //! Create a MayaUsdContextOpsHandler.
+    static MayaUsdContextOpsHandler::Ptr create();
 
-    // Ufe::ContextOpsHandler overrides
+    // UsdUfe::UsdContextOpsHandler overrides
     Ufe::ContextOps::Ptr contextOps(const Ufe::SceneItem::Ptr& item) const override;
-}; // UsdContextOpsHandler
+}; // MayaUsdContextOpsHandler
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

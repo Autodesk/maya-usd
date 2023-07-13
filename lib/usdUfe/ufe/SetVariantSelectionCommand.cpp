@@ -15,8 +15,6 @@
 //
 #include "SetVariantSelectionCommand.h"
 
-#include <mayaUsd/ufe/Utils.h>
-
 #include <usdUfe/ufe/Utils.h>
 
 #include <pxr/usd/usd/variantSets.h>
@@ -24,8 +22,7 @@
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 SetVariantSelectionCommand::Ptr SetVariantSelectionCommand::create(
     const Ufe::Path&       path,
@@ -66,7 +63,7 @@ void SetVariantSelectionCommand::redo()
     auto globalSn = Ufe::GlobalSelection::get();
     _savedSn.replaceWith(*globalSn);
     // Filter the global selection, removing items below our prim.
-    globalSn->replaceWith(MayaUsd::ufe::removeDescendants(_savedSn, _path));
+    globalSn->replaceWith(UsdUfe::removeDescendants(_savedSn, _path));
     _varSet.SetVariantSelection(_newSelection);
 }
 
@@ -85,8 +82,7 @@ void SetVariantSelectionCommand::undo()
     // Restore the saved selection to the global selection.  If a saved
     // selection item started with the prim's path, re-create it.
     auto globalSn = Ufe::GlobalSelection::get();
-    globalSn->replaceWith(MayaUsd::ufe::recreateDescendants(_savedSn, _path));
+    globalSn->replaceWith(UsdUfe::recreateDescendants(_savedSn, _path));
 }
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

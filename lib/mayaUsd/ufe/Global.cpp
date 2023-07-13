@@ -17,13 +17,14 @@
 
 #include "private/UfeNotifGuard.h"
 
+#include <mayaUsd/nodes/proxyShapeStageExtraData.h>
 #include <mayaUsd/ufe/MayaStagesSubject.h>
+#include <mayaUsd/ufe/MayaUsdContextOpsHandler.h>
 #include <mayaUsd/ufe/MayaUsdObject3dHandler.h>
 #include <mayaUsd/ufe/ProxyShapeContextOpsHandler.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/ProxyShapeHierarchyHandler.h>
 #include <mayaUsd/ufe/UsdAttributesHandler.h>
-#include <mayaUsd/ufe/UsdContextOpsHandler.h>
 #include <mayaUsd/ufe/UsdSceneItemOpsHandler.h>
 #include <mayaUsd/ufe/UsdTransform3dCommonAPI.h>
 #include <mayaUsd/ufe/UsdTransform3dFallbackMayaXformStack.h>
@@ -162,6 +163,7 @@ MStatus initialize()
     dccFunctions.ufePathToPrimFn = MayaUsd::ufe::ufePathToPrim;
     dccFunctions.timeAccessorFn = MayaUsd::ufe::getTime;
     dccFunctions.isAttributeLockedFn = MayaUsd::Editability::isAttributeLocked;
+    dccFunctions.saveStageLoadRulesFn = MayaUsd::MayaUsdProxyShapeStageExtraData::saveLoadRules;
 
     // Replace the Maya hierarchy handler with ours.
     auto& runTimeMgr = Ufe::RunTimeMgr::instance();
@@ -195,7 +197,7 @@ MStatus initialize()
     handlers.sceneItemOpsHandler = UsdSceneItemOpsHandler::create();
     handlers.attributesHandler = UsdAttributesHandler::create();
     usdUfeHandlers.object3dHandler = MayaUsdObject3dHandler::create();
-    handlers.contextOpsHandler = UsdContextOpsHandler::create();
+    usdUfeHandlers.contextOpsHandler = MayaUsdContextOpsHandler::create();
     handlers.uiInfoHandler = UsdUIInfoHandler::create();
 
 #ifdef UFE_V4_FEATURES_AVAILABLE

@@ -15,7 +15,7 @@
 //
 #pragma once
 
-#include <mayaUsd/base/api.h>
+#include <UsdUfe/base/api.h>
 
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/variantSets.h>
@@ -26,11 +26,10 @@
 
 #include <string>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //! \brief Command to change a variant selection.
-class MAYAUSD_CORE_PUBLIC SetVariantSelectionCommand : public Ufe::UndoableCommand
+class USDUFE_PUBLIC SetVariantSelectionCommand : public Ufe::UndoableCommand
 {
 public:
     using Ptr = std::shared_ptr<SetVariantSelectionCommand>;
@@ -68,5 +67,4 @@ private:
     Ufe::Selection        _savedSn; // For global selection save and restore.
 };
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF
