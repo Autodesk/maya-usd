@@ -124,7 +124,7 @@ def routeAttrToSessionLayer(context, routingData):
 ### Maya references
 
 The maya reference edit routing is more complex than the other ones. It is
-described in the following documentation: [Maya Reference Edit Router](lib/usd/translators/mayaReferenceEditRouter.md).
+described in the following documentation: [Maya Reference Edit Router](../lib/usd/translators/mayaReferenceEditRouter.md).
 
 ## Managing edit routers
 
