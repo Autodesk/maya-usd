@@ -22,7 +22,7 @@ import ufeUtils
 import testUtils
 import usdUtils
 
-from pxr import Usd, UsdGeom, Vt, Gf, UsdLux, UsdUI
+from pxr import Usd, UsdGeom, Vt, Gf, UsdLux, UsdUI, Sdr
 from pxr import UsdShade
 
 from maya import cmds
@@ -40,6 +40,11 @@ import os
 import random
 import unittest
 
+def UsdHasDefaultForMatrix33():
+    r = Sdr.Registry()
+    n = r.GetNodeByIdentifier("ND_add_matrix33")
+    i = n.GetShaderInput("in1")
+    return i.GetDefaultValue() is not None
 
 class TestObserver(ufe.Observer):
     def __init__(self):
@@ -1856,10 +1861,10 @@ class AttributeTestCase(unittest.TestCase):
         newVector3 = ufe.Vector3f(0.2, 0.4, 0.6)
         origVector4 = ufe.Vector4f(0.0, 0.0, 0.0, 0.0)
         newVector4 = ufe.Vector4f(0.2, 0.4, 0.6, 0.8)
-        # Default Matrix33 should be identity, but USD does not store a default value for that type.
-        # Requires same fix as Boolean in pxr/usd/usdMtlx/parser.cpp
-        #   See: https://github.com/PixarAnimationStudios/USD/pull/1789
-        origMatrix3 = ufe.Matrix3d([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+        if UsdHasDefaultForMatrix33():
+            origMatrix3 = ufe.Matrix3d([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        else:
+            origMatrix3 = ufe.Matrix3d([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
         newMatrix3 = ufe.Matrix3d([[2, 4, 6], [7, 5, 3], [1, 2, 3]])
         origMatrix4 = ufe.Matrix4d([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
         newMatrix4 = ufe.Matrix4d([[1, 2, 1, 1], [0, 1, 0, 1], [2, 3, 4, 1], [1, 1, 1, 1]])

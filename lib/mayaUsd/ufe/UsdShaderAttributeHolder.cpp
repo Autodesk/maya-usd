@@ -78,9 +78,16 @@ std::string UsdShaderAttributeHolder::isEditAllowedMsg() const
 
 std::string UsdShaderAttributeHolder::defaultValue() const
 {
+    // TODO: Add a PXR_VERSION if a fix is introduced in OpenUSD.
     if (_sdrProp->GetType() == PXR_NS::SdfValueTypeNames->Matrix3d.GetAsToken()) {
-        // There is no Matrix3d type in Sdr, so the MaterialX default value is not kept
-        return "0,0,0,0,0,0,0,0,0";
+        std::string val = UsdShaderAttributeDef(_sdrProp).defaultValue();
+        if (val.empty()) {
+            // There is no Matrix3d type in Sdr, so the MaterialX default value is not kept
+            return "0,0,0,0,0,0,0,0,0";
+        }
+        // But if https://github.com/PixarAnimationStudios/OpenUSD/issues/2523 gets fixed
+        // then return that value:
+        return val;
     }
 #if PXR_VERSION < 2205
     if (_sdrProp->GetType() == PXR_NS::SdfValueTypeNames->Bool.GetAsToken()) {
