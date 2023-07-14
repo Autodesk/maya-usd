@@ -80,7 +80,7 @@ std::string UsdShaderAttributeHolder::defaultValue() const
 {
     // TODO: Add a PXR_VERSION if a fix is introduced in OpenUSD.
     if (_sdrProp->GetType() == PXR_NS::SdfValueTypeNames->Matrix3d.GetAsToken()) {
-        std::string val = UsdShaderAttributeDef(_sdrProp).defaultValue();
+        const std::string val = UsdShaderAttributeDef(_sdrProp).defaultValue();
         if (val.empty()) {
             // There is no Matrix3d type in Sdr, so the MaterialX default value is not kept
             return "0,0,0,0,0,0,0,0,0";
