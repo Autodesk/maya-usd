@@ -49,6 +49,7 @@ public:
     static constexpr auto kApiSchemaFlag = "api";
     static constexpr auto kJobContextFlag = "jc";
     static constexpr auto kExcludePrimvarFlag = "epv";
+    static constexpr auto kExcludePrimvarNamespaceFlag = "epn";
     static constexpr auto kUseAsAnimationCacheFlag = "uac";
     static constexpr auto kImportChaserFlag = "chr";
     static constexpr auto kImportChaserArgsFlag = "cha";

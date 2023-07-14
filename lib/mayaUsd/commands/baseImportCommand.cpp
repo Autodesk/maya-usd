@@ -78,6 +78,11 @@ MSyntax MayaUSDImportCommand::createSyntax()
         MSyntax::kString);
     syntax.makeFlagMultiUse(kExcludePrimvarFlag);
     syntax.addFlag(
+        kExcludePrimvarNamespaceFlag,
+        UsdMayaJobImportArgsTokens->excludePrimvarNamespace.GetText(),
+        MSyntax::kString);
+    syntax.makeFlagMultiUse(kExcludePrimvarNamespaceFlag);
+    syntax.addFlag(
         kUseAsAnimationCacheFlag,
         UsdMayaJobImportArgsTokens->useAsAnimationCache.GetText(),
         MSyntax::kBoolean);

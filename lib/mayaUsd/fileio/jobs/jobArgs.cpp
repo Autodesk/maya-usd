@@ -1127,6 +1127,8 @@ UsdMayaJobImportArgs::UsdMayaJobImportArgs(
           UsdMayaJobImportArgsTokens->Import,
           UsdMayaJobImportArgsTokens->Unloaded }))
     , excludePrimvarNames(extractTokenSet(userArgs, UsdMayaJobImportArgsTokens->excludePrimvar))
+    , excludePrimvarNamespaces(
+          extractTokenSet(userArgs, UsdMayaJobImportArgsTokens->excludePrimvarNamespace))
     , includeAPINames(extractTokenSet(userArgs, UsdMayaJobImportArgsTokens->apiSchema))
     , jobContextNames(extractTokenSet(userArgs, UsdMayaJobImportArgsTokens->jobContext))
     , includeMetadataKeys(extractTokenSet(userArgs, UsdMayaJobImportArgsTokens->metadata))
@@ -1185,6 +1187,7 @@ const VtDictionary& UsdMayaJobImportArgs::GetDefaultDictionary()
             = UsdMayaJobImportArgsTokens->Collapsed.GetString();
         d[UsdMayaJobImportArgsTokens->apiSchema] = std::vector<VtValue>();
         d[UsdMayaJobImportArgsTokens->excludePrimvar] = std::vector<VtValue>();
+        d[UsdMayaJobImportArgsTokens->excludePrimvarNamespace] = std::vector<VtValue>();
         d[UsdMayaJobImportArgsTokens->jobContext] = std::vector<VtValue>();
         d[UsdMayaJobImportArgsTokens->metadata]
             = std::vector<VtValue>({ VtValue(SdfFieldKeys->Hidden.GetString()),
@@ -1267,6 +1270,7 @@ const VtDictionary& UsdMayaJobImportArgs::GetGuideDictionary()
         d[UsdMayaJobImportArgsTokens->assemblyRep] = _string;
         d[UsdMayaJobImportArgsTokens->apiSchema] = _stringVector;
         d[UsdMayaJobImportArgsTokens->excludePrimvar] = _stringVector;
+        d[UsdMayaJobImportArgsTokens->excludePrimvarNamespace] = _stringVector;
         d[UsdMayaJobImportArgsTokens->jobContext] = _stringVector;
         d[UsdMayaJobImportArgsTokens->metadata] = _stringVector;
         d[UsdMayaJobImportArgsTokens->shadingMode] = _stringTupletVector;
