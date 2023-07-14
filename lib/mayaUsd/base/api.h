@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include <pxr/base/arch/export.h>
+#include <pxr/pxr.h>
 
 // clang-format off
 #if defined _WIN32 || defined __CYGWIN__
