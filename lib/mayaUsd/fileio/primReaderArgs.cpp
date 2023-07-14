@@ -43,6 +43,11 @@ const TfToken::Set& UsdMayaPrimReaderArgs::GetExcludePrimvarNames() const
     return _jobArgs.excludePrimvarNames;
 }
 
+const TfToken::Set& UsdMayaPrimReaderArgs::GetExcludePrimvarNamespaces() const
+{
+    return _jobArgs.excludePrimvarNamespaces;
+}
+
 bool UsdMayaPrimReaderArgs::GetUseAsAnimationCache() const { return _jobArgs.useAsAnimationCache; }
 
 PXR_NAMESPACE_CLOSE_SCOPE
