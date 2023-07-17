@@ -42,7 +42,8 @@ class usdFileRelative(object):
     # Note: are initialized in the uiInit() method.
     _canBeRelative = False
     _haveRelativePathFields = False
-    _parentLayerPath = ""
+    _relativeToDir = ""
+    _relativeToScene = False
     _ensureUsdExtension = True
 
     @staticmethod
@@ -250,9 +251,9 @@ class usdFileRelative(object):
                 unresolvedPath = selectedFile
                 
             relativePath = ''
-            if unresolvedPath and cls._parentLayerPath:
-                relativePath = mayaUsdLib.Util.getPathRelativeToDirectory(unresolvedPath, cls._parentLayerPath)
-            elif unresolvedPath:
+            if unresolvedPath and cls._relativeToDir:
+                relativePath = mayaUsdLib.Util.getPathRelativeToDirectory(unresolvedPath, cls._relativeToDir)
+            elif unresolvedPath and cls._relativeToScene:
                 relativePath = mayaUsdLib.Util.getPathRelativeToMayaSceneFile(unresolvedPath)
             cmds.textFieldGrp(cls.kUnresolvedPathTextField, edit=True, text=relativePath)
 
@@ -290,6 +291,7 @@ class usdRootFileRelative(usdFileRelative):
         # If the latter doesn't exist, we use a special approach with 
         # postponed relative file path assignment 
         cls.setRelativeFilePathRoot(cmds.file(query=True, sceneName=True))
+        cls._relativeToScene = True
         super(usdRootFileRelative, cls).uiInit(parentLayout, True, cls.kRelativeToWhat)
 
     @classmethod
@@ -320,8 +322,8 @@ class usdSubLayerFileRelative(usdFileRelative):
               with the dialog2 command API.
         '''
 
-        cls._parentLayerPath = parentLayerPath
-        canBeRelative = bool(usdFileRelative.getRelativeFilePathRoot())
+        cls._relativeToDir = parentLayerPath
+        canBeRelative = bool(cls._relativeToDir)
         super(usdSubLayerFileRelative, cls).uiInit(parentLayout, canBeRelative, cls.kRelativeToWhat)
 
     @classmethod
@@ -351,8 +353,9 @@ class usdFileRelativeToEditTargetLayer(usdFileRelative):
         Note: the function takes an unused filterType argument to be compatible
               with the dialog2 command API.
         '''
+        cls._relativeToDir = usdFileRelative.getRelativeFilePathRoot()
         # If there is no target layer saved, then the checkbox and label should be disabled.
-        canBeRelative = bool(usdFileRelative.getRelativeFilePathRoot())
+        canBeRelative = bool(cls._relativeToDir)
         super(usdFileRelativeToEditTargetLayer, cls).uiInit(parentLayout, canBeRelative, cls.kRelativeToWhat)
 
     @classmethod
