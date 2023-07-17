@@ -63,7 +63,7 @@ MString formatCommand(const MString& commandName, const MObject& commandArg)
 bool executeAndAdd(std::unique_ptr<OpUndoItem>&& item, OpUndoItemList& undoInfo)
 {
 #ifdef WANT_VALIDATE_UNDO_ITEM
-    // Note: validate only if using teh global list, which requires the use of
+    // Note: validate only if using the global list, which requires the use of
     //       a OpUndoItemRecorder or OpUndoItemMuting. For explicitly-provided
     //       undo item lists, the item will be properly preserved in that list.
     if (&undoInfo == &OpUndoItemList::instance())
@@ -310,8 +310,8 @@ bool FunctionUndoItem::undo()
         return false;
 
     // During undo and redo the original command and its undo item list
-    // no longer exist. Anything operation was already recorded (and is
-    // in fact being executed!), so mute the undo item recording.
+    // no longer exist. All operations were already recorded (and are
+    // in fact being undone!), so mute the undo item recording.
     OpUndoItemMuting muting;
     return _undo();
 }
@@ -322,8 +322,8 @@ bool FunctionUndoItem::redo()
         return false;
 
     // During undo and redo the original command and its undo item list
-    // no longer exist. Anything operation was already recorded (and is
-    // in fact being executed!), so mute the undo item recording.
+    // no longer exist. All operations were already recorded (and are
+    // in fact being redone!), so mute the undo item recording.
     OpUndoItemMuting muting;
     return _redo();
 }

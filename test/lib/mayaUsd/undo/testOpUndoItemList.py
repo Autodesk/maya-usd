@@ -98,7 +98,7 @@ class OpUndoItemListTestCase(unittest.TestCase):
         undoList.clear()
         self.assertTrue(undoList.isEmpty())
 
-        # Verify that undo and redo do nothing with teh empty list.
+        # Verify that undo and redo do nothing with the empty list.
         undoList.undo()
         self.assertTrue(undoList.isEmpty())
         self.assertTrue(hasDuplicatedObjects())

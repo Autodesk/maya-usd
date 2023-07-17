@@ -25,7 +25,7 @@ class OpUndoItem;
 
 //! \brief Validate that the global undo item list is in the correct state.
 //
-// Only turne don in debug build to help catch incorrect usage of OpUndoItem.
+// Only turned on in debug builds to help catch incorrect usages of OpUndoItem.
 class MAYAUSD_CORE_PUBLIC OpUndoItemValidator
 {
 public:
