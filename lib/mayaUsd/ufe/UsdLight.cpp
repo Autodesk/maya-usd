@@ -185,7 +185,12 @@ void setLightShadowEnable(const UsdPrim& prim, bool attrVal)
     const UsdLuxShadowAPI      shadowAPI(prim);
     const PXR_NS::UsdAttribute lightAttribute = shadowAPI.GetShadowEnableAttr();
 
-    lightAttribute.Set(attrVal);
+    if (lightAttribute) {
+        lightAttribute.Set(attrVal);
+    } else {
+        const PXR_NS::UsdAttribute shadowAttribute = shadowAPI.CreateShadowEnableAttr();
+        shadowAttribute.Set(attrVal);
+    }
 }
 
 Ufe::Light::ShadowEnableUndoableCommand::Ptr UsdLight::shadowEnableCmd(bool se)

@@ -46,7 +46,10 @@ Ufe::Light::Ptr UsdLightHandler::light(const Ufe::SceneItem::Ptr& item) const
     if (!lightSchema)
         return nullptr;
 
-    return UsdLight::create(usdItem);
+    UsdLight::Ptr usdLight = UsdLight::create(usdItem);
+    usdLight->shadowEnable(true);
+
+    return usdLight;
 }
 
 } // namespace ufe
