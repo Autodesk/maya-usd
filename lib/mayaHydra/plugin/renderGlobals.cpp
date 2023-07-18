@@ -1038,7 +1038,6 @@ MtohRenderGlobals::GetInstance(const GlobalParams& params, bool storeUserSetting
             filter.mayaString(),
             globals.delegateParams.proxyPurpose,
             storeUserSetting)) {
-        globals.delegateParams.proxyPurpose;
         if (filter.attributeFilter()) {
             return globals;
         }
@@ -1049,7 +1048,6 @@ MtohRenderGlobals::GetInstance(const GlobalParams& params, bool storeUserSetting
             filter.mayaString(),
             globals.delegateParams.renderPurpose,
             storeUserSetting)) {
-        globals.delegateParams.renderPurpose;
         if (filter.attributeFilter()) {
             return globals;
         }
@@ -1060,7 +1058,6 @@ MtohRenderGlobals::GetInstance(const GlobalParams& params, bool storeUserSetting
             filter.mayaString(),
             globals.delegateParams.guidePurpose,
             storeUserSetting)) {
-        globals.delegateParams.guidePurpose;
         if (filter.attributeFilter()) {
             return globals;
         }
