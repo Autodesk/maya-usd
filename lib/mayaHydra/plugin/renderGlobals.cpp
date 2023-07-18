@@ -47,6 +47,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     (defaultRenderGlobals)
+    (mayaHydraProxyPurpose)
+    (mayaHydraRenderPurpose)
+    (mayaHydraGuidePurpose)
     (mtohTextureMemoryPerTexture)
     (mtohMotionSampleStart)
     (mtohMotionSampleEnd)
@@ -720,6 +723,37 @@ void MtohRenderGlobals::BuildOptionsMenu(
            << quote(MtohTokens->mtohMaximumShadowMapResolution.GetText()) // Label
            << ", $fromAE);\n";
     }
+
+    // Temp solution to store global settings for USD Purpose tags
+    {
+        ss << "\tframeLayout -label \"Global USD Display Purpose Tags\" -collapsable true;";
+    }
+    {        
+        ss << "\tmtohRenderOverride_AddAttribute(" << quote(rendererDesc.rendererName.GetString())
+           << ',' << quote("Display Purpose") << ',' // Description
+           << quote(_MangleName(_tokens->mayaHydraProxyPurpose).GetString())
+           << ','                                                         // Attribute name
+           << quote("Proxy")                                              // Label
+           << ", $fromAE);\n";
+    }
+    {        
+        ss << "\tmtohRenderOverride_AddAttribute(" << quote(rendererDesc.rendererName.GetString())
+           << ',' << quote("Display Purpose") << ',' // Description
+           << quote(_MangleName(_tokens->mayaHydraRenderPurpose).GetString())
+           << ','                                                         // Attribute name
+           << quote("Render")                                             // Label
+           << ", $fromAE);\n";
+    }
+    {        
+        ss << "\tmtohRenderOverride_AddAttribute(" << quote(rendererDesc.rendererName.GetString())
+           << ',' << quote("Display Purpose") << ',' // Description
+           << quote(_MangleName(_tokens->mayaHydraGuidePurpose).GetString())
+           << ','                                                         // Attribute name
+           << quote("Guide")                                              // Label
+           << ", $fromAE);\n";
+    }
+    ss << "setParent ..;";
+    ss << "setParent ..;";
     ss << "}\n";
 
     const auto optionsCommand = ss.str();
@@ -811,6 +845,37 @@ MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params)
     if (filter(_tokens->mtohMotionSampleEnd)) {
         _CreateFloatAttribute(
             node, filter.mayaString(), defGlobals.delegateParams.motionSampleEnd, userDefaults);
+        if (filter.attributeFilter()) {
+            return mayaObject;
+        }
+    }
+    
+    if (filter(_tokens->mayaHydraRenderPurpose)) {
+        _CreateBoolAttribute(
+            node,
+            filter.mayaString(),
+            defGlobals.delegateParams.renderPurpose,
+            userDefaults);
+        if (filter.attributeFilter()) {
+            return mayaObject;
+        }
+    }
+    if (filter(_tokens->mayaHydraProxyPurpose)) {
+        _CreateBoolAttribute(
+            node,
+            filter.mayaString(),
+            defGlobals.delegateParams.proxyPurpose,
+            userDefaults);
+        if (filter.attributeFilter()) {
+            return mayaObject;
+        }
+    }
+    if (filter(_tokens->mayaHydraGuidePurpose)) {
+        _CreateBoolAttribute(
+            node,
+            filter.mayaString(),
+            defGlobals.delegateParams.guidePurpose,
+            userDefaults);
         if (filter.attributeFilter()) {
             return mayaObject;
         }
@@ -966,7 +1031,40 @@ MtohRenderGlobals::GetInstance(const GlobalParams& params, bool storeUserSetting
     }
 
     MtohSettingFilter filter(params);
-
+    
+    if (filter(_tokens->mayaHydraProxyPurpose)
+        && _GetAttribute(
+            node,
+            filter.mayaString(),
+            globals.delegateParams.proxyPurpose,
+            storeUserSetting)) {
+        globals.delegateParams.proxyPurpose;
+        if (filter.attributeFilter()) {
+            return globals;
+        }
+    }
+    if (filter(_tokens->mayaHydraRenderPurpose)
+        && _GetAttribute(
+            node,
+            filter.mayaString(),
+            globals.delegateParams.renderPurpose,
+            storeUserSetting)) {
+        globals.delegateParams.renderPurpose;
+        if (filter.attributeFilter()) {
+            return globals;
+        }
+    }
+    if (filter(_tokens->mayaHydraGuidePurpose)
+        && _GetAttribute(
+            node,
+            filter.mayaString(),
+            globals.delegateParams.guidePurpose,
+            storeUserSetting)) {
+        globals.delegateParams.guidePurpose;
+        if (filter.attributeFilter()) {
+            return globals;
+        }
+    }
     if (filter(_tokens->mtohTextureMemoryPerTexture)
         && _GetAttribute(
             node,

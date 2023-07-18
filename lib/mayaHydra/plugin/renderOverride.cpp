@@ -529,6 +529,16 @@ MStatus MtohRenderOverride::Render(
         _taskController->SetRenderViewport(_viewport);
     }
 
+    // Set Purpose tags
+    TfTokenVector mhRenderTags = {HdRenderTagTokens->geometry};
+    if (delegateParams.renderPurpose)
+        mhRenderTags.push_back(HdRenderTagTokens->render);
+    if (delegateParams.proxyPurpose)
+        mhRenderTags.push_back(HdRenderTagTokens->proxy);
+    if (delegateParams.guidePurpose)
+        mhRenderTags.push_back(HdRenderTagTokens->guide);
+    _taskController->SetRenderTags(mhRenderTags);
+
     _taskController->SetFreeCameraMatrices(
         MAYAHYDRA_NS::GetGfMatrixFromMaya(
             drawContext.getMatrix(MHWRender::MFrameContext::kViewMtx)),
