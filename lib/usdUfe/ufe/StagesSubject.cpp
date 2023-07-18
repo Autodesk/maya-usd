@@ -395,7 +395,7 @@ void StagesSubject::stageChanged(
                     notifyWithoutExceptions<Ufe::Transform3d>(ufePath);
                 }
             }
-            UFE_V2(processAttributeChanges(ufePath, changedPath, it.base()->second);)
+            processAttributeChanges(ufePath, changedPath, it.base()->second);
             // No further processing for this prim property path is required.
             continue;
         }
@@ -521,7 +521,7 @@ void StagesSubject::stageChanged(
             const TfToken nameToken = changedPath.GetNameToken();
             if (isTransformChange(nameToken)) {
                 notifyWithoutExceptions<Ufe::Transform3d>(ufePath);
-                UFE_V2(sendValueChangedFallback = false;)
+                sendValueChangedFallback = false;
             } else if (prim && prim.IsA<UsdGeomPointInstancer>()) {
                 // If the prim at the changed path is a PointInstancer, check
                 // whether the modified path is one of the attributes authored
@@ -556,7 +556,7 @@ void StagesSubject::stageChanged(
                             + usdPathToUfePathSegment(changedPath.GetPrimPath(), instanceIndex);
                         notifyWithoutExceptions<Ufe::Transform3d>(instanceUfePath);
                     }
-                    UFE_V2(sendValueChangedFallback = false;)
+                    sendValueChangedFallback = false;
                 }
             }
         }

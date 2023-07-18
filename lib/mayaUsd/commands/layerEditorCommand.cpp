@@ -16,6 +16,8 @@
 
 #include "layerEditorCommand.h"
 
+#include <mayaUsd/ufe/Global.h>
+#include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/query.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
@@ -25,14 +27,8 @@
 #include <maya/MArgParser.h>
 #include <maya/MStringArray.h>
 #include <maya/MSyntax.h>
-
-#if defined(WANT_UFE_BUILD)
-#include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/Utils.h>
-
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
-#endif
 
 #include <ghc/filesystem.hpp>
 
@@ -282,7 +278,6 @@ public:
 
     void saveSelection()
     {
-#if defined(WANT_UFE_BUILD)
         // Make a copy of the global selection, to restore it on undo.
         auto globalSn = Ufe::GlobalSelection::get();
         _savedSn.replaceWith(*globalSn);
@@ -294,12 +289,10 @@ public:
         Ufe::Path path(
             Ufe::PathSegment("world" + _proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
         globalSn->replaceWith(MayaUsd::ufe::removeDescendants(_savedSn, path));
-#endif
     }
 
     void restoreSelection()
     {
-#if defined(WANT_UFE_BUILD)
         // Restore the saved selection to the global selection.  If a saved
         // selection item started with the proxy shape path, re-create it.
         // We know the path to the proxy shape has a single segment.  Not
@@ -310,14 +303,11 @@ public:
             Ufe::PathSegment("world" + _proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
         auto globalSn = Ufe::GlobalSelection::get();
         globalSn->replaceWith(MayaUsd::ufe::recreateDescendants(_savedSn, path));
-#endif
     }
 
 protected:
-    std::string _editTargetPath;
-#if defined(WANT_UFE_BUILD)
+    std::string    _editTargetPath;
     Ufe::Selection _savedSn;
-#endif
 
     UsdStageWeakPtr getStage()
     {
@@ -665,7 +655,6 @@ private:
 
     void saveSelection()
     {
-#if defined(WANT_UFE_BUILD)
         // Make a copy of the global selection, to restore it on unmute.
         auto globalSn = Ufe::GlobalSelection::get();
         _savedSn.replaceWith(*globalSn);
@@ -677,12 +666,10 @@ private:
         Ufe::Path path(
             Ufe::PathSegment("world" + _proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
         globalSn->replaceWith(MayaUsd::ufe::removeDescendants(_savedSn, path));
-#endif
     }
 
     void restoreSelection()
     {
-#if defined(WANT_UFE_BUILD)
         // Restore the saved selection to the global selection.  If a saved
         // selection item started with the proxy shape path, re-create it.
         // We know the path to the proxy shape has a single segment.  Not
@@ -693,12 +680,9 @@ private:
             Ufe::PathSegment("world" + _proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
         auto globalSn = Ufe::GlobalSelection::get();
         globalSn->replaceWith(MayaUsd::ufe::recreateDescendants(_savedSn, path));
-#endif
     }
 
-#if defined(WANT_UFE_BUILD)
-    Ufe::Selection _savedSn;
-#endif
+    Ufe::Selection         _savedSn;
     PXR_NS::SdfLayerRefPtr _mutedLayer;
 };
 

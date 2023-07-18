@@ -123,13 +123,6 @@ find_package_handle_standard_args(UFE
         UFE_VERSION
 )
 
-if(UFE_FOUND)
-    message(STATUS "UFE include dir: ${UFE_INCLUDE_DIR}")
-    message(STATUS "UFE library: ${UFE_LIBRARY}")
-    message(STATUS "UFE version: ${UFE_VERSION}")
-    message(STATUS "UFE preview features: ${UFE_PREVIEW_FEATURES}")
-endif()
-
 set(UFE_LIGHTS_SUPPORT FALSE CACHE INTERNAL "ufeLights")
 if (UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/lightHandler.h")
     set(UFE_LIGHTS_SUPPORT TRUE CACHE INTERNAL "ufeLights")

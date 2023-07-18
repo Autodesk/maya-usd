@@ -5,6 +5,7 @@
 set(TEST_SCRIPT_FILES
     testBlockSceneModificationContext.py
     testDiagnosticDelegate.py
+    testUtilsEditability.py
 )
 
 if(CMAKE_WANT_MATERIALX_BUILD AND CMAKE_UFE_V3_FEATURES_AVAILABLE)
@@ -13,20 +14,10 @@ if(CMAKE_WANT_MATERIALX_BUILD AND CMAKE_UFE_V3_FEATURES_AVAILABLE)
     )
 endif()
 
-if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
-    list(APPEND TEST_SCRIPT_FILES
-        testUtilsEditability.py
-    )
-endif()
-
-set(INTERACTIVE_TEST_SCRIPT_FILES "")
-
-if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
-    list(APPEND INTERACTIVE_TEST_SCRIPT_FILES
-        testUtilsSelectability.py
-        testUtilsSelectabilityPointInstanceSelection.py
-    )
-endif()
+set(INTERACTIVE_TEST_SCRIPT_FILES
+    testUtilsSelectability.py
+    testUtilsSelectabilityPointInstanceSelection.py
+)
 
 foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})

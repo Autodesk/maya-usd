@@ -23,11 +23,8 @@
 
 #include <maya/MGlobal.h>
 #include <maya/MTime.h>
-
-#if WANT_UFE_BUILD
 #include <ufe/rtid.h>
 #include <ufe/runTimeMgr.h>
-#endif // WANT_UFE_BUILD
 
 PXR_NAMESPACE_OPEN_SCOPE
 

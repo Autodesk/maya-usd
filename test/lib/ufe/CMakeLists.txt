@@ -1,65 +1,59 @@
 # unit test scripts.  Note that testTRSBase.py is not a test case, but rather
 # a module providing a base class for other tests.
 set(TEST_SCRIPT_FILES
+    testAttribute.py
+    testAttributeBlock.py
+    testAttributes.py
+    testBlockedLayerEdit.py
+    testChildFilter.py
+    testComboCmd.py
+    testContextOps.py
+    testDuplicateCmd.py
+    testEditRouting.py
+    testGroupCmd.py
     testMatrices.py
     testMayaPickwalk.py
+    testMoveCmd.py
+    testObject3d.py
+    testObservableScene.py
+    testParentCmd.py
+    testPayloadCommands.py
+    testPointInstances.py
     testPythonWrappers.py
+    testReferenceCommands.py
+    testRename.py
+    testReorderCmd.py
+    testRotateCmd.py
+    testRotateCmdUndoRedo.py
+    testRotatePivot.py
+    testScaleCmd.py
+    testSceneItem.py
     testSelection.py
     testSelectionNotification.py
     testSelectionByArray.py
+    testToggleCommands.py
+    testTransform3dChainOfResponsibility.py
+    testTransform3dTranslate.py
+    testUIInfoHandler.py
     testUfePythonImport.py
-    testAttributeBlock.py
-    testBlockedLayerEdit.py
+    testVisibilityCmd.py
 )
 
 set(TEST_SUPPORT_FILES
     testTRSBase.py
 )
 
-set(INTERACTIVE_TEST_SCRIPT_FILES "")
+set(INTERACTIVE_TEST_SCRIPT_FILES
+    testPixelMoveCmd.py
+    testUIIcons.py
+)
 
-if(UFE_FOUND AND MAYA_APP_VERSION VERSION_GREATER_EQUAL 2023)
+if(MAYA_APP_VERSION VERSION_GREATER_EQUAL 2023)
     list(APPEND TEST_SCRIPT_FILES
         testCenterPivot.py
     )
 endif()
 
-if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
-    list(APPEND TEST_SCRIPT_FILES
-        testAttribute.py
-        testAttributes.py
-        testChildFilter.py
-        testComboCmd.py
-        testContextOps.py
-        testDuplicateCmd.py
-        testEditRouting.py
-        testGroupCmd.py
-        testMoveCmd.py
-        testObject3d.py
-        testRename.py
-        testParentCmd.py
-        testPayloadCommands.py
-        testPointInstances.py
-        testReferenceCommands.py
-        testReorderCmd.py
-        testRotateCmd.py
-        testRotateCmdUndoRedo.py
-        testRotatePivot.py
-        testScaleCmd.py
-        testSceneItem.py
-        testToggleCommands.py
-        testTransform3dChainOfResponsibility.py
-        testTransform3dTranslate.py
-        testUIInfoHandler.py
-        testVisibilityCmd.py
-        testObservableScene.py
-    )
-
-    list(APPEND INTERACTIVE_TEST_SCRIPT_FILES
-        testPixelMoveCmd.py
-        testUIIcons.py
-    )
-endif()
 
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     list(APPEND TEST_SCRIPT_FILES

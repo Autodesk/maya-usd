@@ -18,6 +18,10 @@
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/Utils.h>
 
+#include <usdUfe/ufe/UsdUndoCreateGroupCommand.h>
+#include <usdUfe/ufe/UsdUndoInsertChildCommand.h>
+#include <usdUfe/ufe/UsdUndoReorderCommand.h>
+
 #include <pxr/usd/usd/stage.h>
 
 #include <ufe/log.h>
@@ -27,12 +31,6 @@
 
 #include <cassert>
 #include <stdexcept>
-
-#ifdef UFE_V2_FEATURES_AVAILABLE
-#include <usdUfe/ufe/UsdUndoCreateGroupCommand.h>
-#include <usdUfe/ufe/UsdUndoInsertChildCommand.h>
-#include <usdUfe/ufe/UsdUndoReorderCommand.h>
-#endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #include <mayaUsd/fileio/primUpdaterManager.h>
@@ -179,7 +177,6 @@ Ufe::SceneItemList ProxyShapeHierarchy::children() const
     return createUFEChildList(getUSDFilteredChildren(rootPrim), true /*filterInactive*/);
 }
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::SceneItemList ProxyShapeHierarchy::filteredChildren(const ChildFilter& childFilter) const
 {
     // Return filtered children of the USD root.
@@ -200,7 +197,6 @@ Ufe::SceneItemList ProxyShapeHierarchy::filteredChildren(const ChildFilter& chil
     UFE_LOG("Unknown child filter");
     return Ufe::SceneItemList();
 }
-#endif
 
 // Return UFE child list from input USD child list.
 Ufe::SceneItemList
@@ -236,16 +232,6 @@ ProxyShapeHierarchy::createUFEChildList(const UsdPrimSiblingRange& range, bool f
 }
 
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::parent() const { return fMayaHierarchy->parent(); }
-
-#ifndef UFE_V2_FEATURES_AVAILABLE
-// UFE v1 specific method
-Ufe::AppendedChild ProxyShapeHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
-{
-    throw std::runtime_error("ProxyShapeHierarchy::appendChild() not implemented");
-}
-#endif
-
-#ifdef UFE_V2_FEATURES_AVAILABLE
 
 Ufe::InsertChildCommand::Ptr ProxyShapeHierarchy::insertChildCmd(
     const Ufe::SceneItem::Ptr& child,
@@ -350,8 +336,6 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::defaultParent() const
     // The PrimUpdaterManager also used to call it, but it no longer does.
     return parent();
 }
-
-#endif // UFE_V2_FEATURES_AVAILABLE
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::ungroupCmd() const

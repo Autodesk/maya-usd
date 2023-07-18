@@ -301,7 +301,8 @@ UsdTransform3dCommonAPIHandler::transform3d(const Ufe::SceneItem::Ptr& item) con
 }
 
 Ufe::Transform3d::Ptr UsdTransform3dCommonAPIHandler::editTransform3d(
-    const Ufe::SceneItem::Ptr& item UFE_V2(, const Ufe::EditTransform3dHint& hint)) const
+    const Ufe::SceneItem::Ptr&      item,
+    const Ufe::EditTransform3dHint& hint) const
 {
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
 
@@ -315,7 +316,7 @@ Ufe::Transform3d::Ptr UsdTransform3dCommonAPIHandler::editTransform3d(
     auto commonAPI = UsdGeomXformCommonAPI(usdItem->prim());
 
     return commonAPI ? UsdTransform3dCommonAPI::create(usdItem)
-                     : _nextHandler->editTransform3d(item UFE_V2(, hint));
+                     : _nextHandler->editTransform3d(item, hint);
 }
 
 } // namespace ufe

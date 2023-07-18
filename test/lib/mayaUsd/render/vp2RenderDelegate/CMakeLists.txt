@@ -6,29 +6,19 @@ list(APPEND TEST_SCRIPT_FILES
 	testVP2RenderDelegateGeomSubset.py
     testVP2RenderDelegatePointInstanceOrientation.py
     testVP2RenderDelegateTextureLoading.py
+    testVP2RenderDelegateDuplicateProxy.py
+    testVP2RenderDelegateInteractiveWorkflows.py
+    testVP2RenderDelegatePointInstanceSelection.py
+    testVP2RenderDelegatePointInstancesPickMode.py
+    testVP2RenderDelegatePrimPath.py
+    testVP2RenderDelegateUSDPreviewSurface.py
+    testVP2RenderDelegateConsolidation.py
+    testVP2RenderDelegatePerInstanceInheritedData.py
+    testVP2RenderDelegateBasisCurves.py
+    testVP2RenderDelegateDrawModes.py
+	testVP2RenderDelegatePoints.py
+    testVP2RenderDelegateUsdCamera.py
 )
-
-if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
-    list(APPEND TEST_SCRIPT_FILES
-    	testVP2RenderDelegateDuplicateProxy.py
-        testVP2RenderDelegateInteractiveWorkflows.py
-        testVP2RenderDelegatePointInstanceSelection.py
-        testVP2RenderDelegatePointInstancesPickMode.py
-        testVP2RenderDelegatePrimPath.py
-        testVP2RenderDelegateUSDPreviewSurface.py
-        testVP2RenderDelegateConsolidation.py
-        testVP2RenderDelegatePerInstanceInheritedData.py
-        testVP2RenderDelegateBasisCurves.py
-        testVP2RenderDelegateDrawModes.py
-		testVP2RenderDelegatePoints.py
-    )
-endif()
-
-if (CMAKE_UFE_V2_FEATURES_AVAILABLE)
-    list(APPEND TEST_SCRIPT_FILES
-        testVP2RenderDelegateUsdCamera.py
-    )
-endif()
 
 if (MAYA_APP_VERSION VERSION_GREATER 2022)
     list(APPEND TEST_SCRIPT_FILES

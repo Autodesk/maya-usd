@@ -15,19 +15,15 @@
 //
 #include "OpUndoItems.h"
 
-#include <mayaUsd/utils/util.h>
-#ifdef WANT_UFE_BUILD
 #include <mayaUsd/ufe/Utils.h>
-#endif
+#include <mayaUsd/utils/util.h>
 
 #include <maya/MGlobal.h>
 #include <maya/MItDag.h>
 #include <maya/MSelectionList.h>
-#ifdef WANT_UFE_BUILD
 #include <ufe/globalSelection.h>
 #include <ufe/hierarchy.h>
 #include <ufe/observableSelection.h>
-#endif
 
 namespace MAYAUSD_NS_DEF {
 
@@ -368,8 +364,6 @@ bool SelectionUndoItem::redo()
     return status == MS::kSuccess;
 }
 
-#ifdef WANT_UFE_BUILD
-
 //------------------------------------------------------------------------------
 // UfeSelectionUndoItem
 //------------------------------------------------------------------------------
@@ -505,8 +499,6 @@ bool UfeCommandUndoItem::redo()
     _command->redo();
     return true;
 }
-
-#endif
 
 //------------------------------------------------------------------------------
 // LockNodesUndoItem

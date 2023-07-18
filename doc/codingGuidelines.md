@@ -227,8 +227,8 @@ Headers should be included in the following order, with each section separated b
 
 #include <string>
 
-#if defined(WANT_UFE_BUILD)
-  #include <ufe/ufe.h>
+#ifdef UFE_V3_FEATURES_AVAILABLE
+#include <ufe/types.h>
 #endif
 ```
 
@@ -242,7 +242,7 @@ Headers should be included in the following order, with each section separated b
 	* `MAYA_APP_VERSION` is a simple year number, so it is not allowed in C++ code. However it is set as a CMake variable and allowed in cmake files.
 
 **UFE**
-	* `WANT_UFE_BUILD` equals 1 if UFE is found and it should be used for conditional compilation on codes depending on UFE.
+	* Each version of Ufe contains a features available define (in ufe.h) such as `UFE_V4_FEATURES_AVAILABLE` that can be used for conditional compilation on code depending on Ufe Version.
 
 **USD**
 	* `PXR_VERSION` is the macro to test USD version (`PXR_MAJOR_VERSION` * 10000 + `PXR_MINOR_VERSION` * 100 + `PXR_PATCH_VERSION`)

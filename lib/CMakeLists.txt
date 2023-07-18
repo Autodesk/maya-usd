@@ -1,7 +1,4 @@
-if(UFE_FOUND)
-    add_subdirectory(usdUfe)
-endif()
-
+add_subdirectory(usdUfe)
 if (BUILD_MAYAUSD_LIBRARY)
     add_subdirectory(mayaUsd)
     add_subdirectory(usd)

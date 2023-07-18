@@ -5,10 +5,20 @@ target_sources(${PROJECT_NAME}
     PRIVATE
         Global.cpp
         MayaStagesSubject.cpp
+        MayaUsdObject3d.cpp
+        MayaUsdObject3dHandler.cpp
+        ProxyShapeContextOpsHandler.cpp
         ProxyShapeHandler.cpp
         ProxyShapeHierarchy.cpp
         ProxyShapeHierarchyHandler.cpp
+        RotationUtils.cpp
         SetVariantSelectionCommand.cpp
+        UsdAttribute.cpp
+        UsdAttributeHolder.cpp
+        UsdAttributes.cpp
+        UsdAttributesHandler.cpp
+        UsdContextOps.cpp
+        UsdContextOpsHandler.cpp
         UsdPointInstanceOrientationModifier.cpp
         UsdPointInstancePositionModifier.cpp
         UsdPointInstanceScaleModifier.cpp
@@ -17,48 +27,30 @@ target_sources(${PROJECT_NAME}
         UsdScaleUndoableCommand.cpp
         UsdSceneItemOps.cpp
         UsdSceneItemOpsHandler.cpp
+        UsdSetXformOpUndoableCommandBase.cpp
         UsdStageMap.cpp
         UsdTRSUndoableCommandBase.cpp
-        UsdTransform3d.cpp
+        UsdTransform3dBase.cpp
+        UsdTransform3dCommonAPI.cpp
+        UsdTransform3dFallbackMayaXformStack.cpp
+        UsdTransform3dMatrixOp.cpp
+        UsdTransform3dMayaXformStack.cpp
+        UsdTransform3dPointInstance.cpp
         UsdTransform3dReadImpl.cpp
-        UsdTransform3dHandler.cpp
+        UsdTransform3dSetObjectMatrix.cpp
+        UsdTransform3dUndoableCommands.cpp
         UsdTranslateUndoableCommand.cpp
+        UsdUIInfoHandler.cpp
+        UsdUIUfeObserver.cpp
         UsdUndoDeleteCommand.cpp
         UsdUndoDuplicateCommand.cpp
+        UsdUndoMaterialCommands.cpp
         UsdUndoPayloadCommand.cpp
         UsdUndoRenameCommand.cpp
         Utils.cpp
+        XformOpUtils.cpp
         moduleDeps.cpp
 )
-
-if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
-    target_sources(${PROJECT_NAME}
-        PRIVATE
-            MayaUsdObject3d.cpp
-            MayaUsdObject3dHandler.cpp
-            ProxyShapeContextOpsHandler.cpp
-            RotationUtils.cpp
-            UsdAttribute.cpp
-            UsdAttributeHolder.cpp
-            UsdAttributes.cpp
-            UsdAttributesHandler.cpp
-            UsdContextOps.cpp
-            UsdContextOpsHandler.cpp
-            UsdSetXformOpUndoableCommandBase.cpp
-            UsdTransform3dBase.cpp
-            UsdTransform3dCommonAPI.cpp
-            UsdTransform3dFallbackMayaXformStack.cpp
-            UsdTransform3dMatrixOp.cpp
-            UsdTransform3dMayaXformStack.cpp
-            UsdTransform3dPointInstance.cpp
-            UsdTransform3dSetObjectMatrix.cpp
-            UsdTransform3dUndoableCommands.cpp
-            UsdUIInfoHandler.cpp
-            UsdUIUfeObserver.cpp
-            UsdUndoMaterialCommands.cpp
-            XformOpUtils.cpp
-    )
-endif()
 
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
@@ -177,60 +169,53 @@ endif()
 set(HEADERS
     Global.h
     MayaStagesSubject.h
+    MayaUsdObject3d.h
+    MayaUsdObject3dHandler.h
+    ProxyShapeContextOpsHandler.h
     ProxyShapeHandler.h
     ProxyShapeHierarchy.h
     ProxyShapeHierarchyHandler.h
+    RotationUtils.h
     SetVariantSelectionCommand.h
+    UsdAttribute.h
+    UsdAttributeHolder.h
+    UsdAttributes.h
+    UsdAttributesHandler.h
+    UsdContextOps.h
+    UsdContextOpsHandler.h
     UsdPointInstanceModifierBase.h
     UsdPointInstanceOrientationModifier.h
     UsdPointInstancePositionModifier.h
     UsdPointInstanceScaleModifier.h
+    UsdPointInstanceUndoableCommands.h
     UsdRotatePivotTranslateUndoableCommand.h
     UsdRotateUndoableCommand.h
     UsdScaleUndoableCommand.h
     UsdSceneItemOps.h
     UsdSceneItemOpsHandler.h
+    UsdSetXformOpUndoableCommandBase.h
     UsdStageMap.h
     UsdTRSUndoableCommandBase.h
-    UsdTransform3d.h
+    UsdTransform3dBase.h
+    UsdTransform3dCommonAPI.h
+    UsdTransform3dFallbackMayaXformStack.h
+    UsdTransform3dMatrixOp.h
+    UsdTransform3dMayaXformStack.h
+    UsdTransform3dPointInstance.h
     UsdTransform3dReadImpl.h
-    UsdTransform3dHandler.h
+    UsdTransform3dSetObjectMatrix.h
+    UsdTransform3dUndoableCommands.h
     UsdTranslateUndoableCommand.h
+    UsdUIInfoHandler.h
+    UsdUIUfeObserver.h
     UsdUndoDeleteCommand.h
     UsdUndoDuplicateCommand.h
+    UsdUndoMaterialCommands.h
     UsdUndoPayloadCommand.h
     UsdUndoRenameCommand.h
     Utils.h
+    XformOpUtils.h
 )
-
-if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
-    list(APPEND HEADERS
-        MayaUsdObject3d.h
-        MayaUsdObject3dHandler.h
-        ProxyShapeContextOpsHandler.h
-        RotationUtils.h
-        UsdAttribute.h
-        UsdAttributeHolder.h
-        UsdAttributes.h
-        UsdAttributesHandler.h
-        UsdContextOps.h
-        UsdContextOpsHandler.h
-        UsdPointInstanceUndoableCommands.h
-        UsdSetXformOpUndoableCommandBase.h
-        UsdTransform3dBase.h
-        UsdTransform3dCommonAPI.h
-        UsdTransform3dFallbackMayaXformStack.h
-        UsdTransform3dMatrixOp.h
-        UsdTransform3dMayaXformStack.h
-        UsdTransform3dPointInstance.h
-        UsdTransform3dSetObjectMatrix.h
-        UsdTransform3dUndoableCommands.h
-        UsdUIInfoHandler.h
-        UsdUIUfeObserver.h
-        UsdUndoMaterialCommands.h
-        XformOpUtils.h
-    )
-endif()
 
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     list(APPEND HEADERS

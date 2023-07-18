@@ -22,7 +22,6 @@ namespace ufe {
 
 PXR_NS::TfToken UsdRotateUndoableCommand::rotXYZ("xformOp:rotateXYZ");
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 UsdRotateUndoableCommand::UsdRotateUndoableCommand(
     const Ufe::Path& path,
     double           x,
@@ -30,15 +29,6 @@ UsdRotateUndoableCommand::UsdRotateUndoableCommand(
     double           z)
     : Ufe::RotateUndoableCommand(path)
     , UsdTRSUndoableCommandBase(x, y, z)
-#else
-UsdRotateUndoableCommand::UsdRotateUndoableCommand(
-    const UsdSceneItem::Ptr& item,
-    double                   x,
-    double                   y,
-    double                   z)
-    : Ufe::RotateUndoableCommand(item)
-    , UsdTRSUndoableCommandBase(item, x, y, z)
-#endif
 {
     // Since we want to change xformOp:rotateXYZ, and we need to store the
     // prevRotate for undo purposes, we need to make sure we convert it to
@@ -55,7 +45,6 @@ UsdRotateUndoableCommand::UsdRotateUndoableCommand(
 
 UsdRotateUndoableCommand::~UsdRotateUndoableCommand() { }
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 UsdRotateUndoableCommand::Ptr
 UsdRotateUndoableCommand::create(const Ufe::Path& path, double x, double y, double z)
 {
@@ -63,15 +52,6 @@ UsdRotateUndoableCommand::create(const Ufe::Path& path, double x, double y, doub
     cmd->initialize();
     return cmd;
 }
-#else
-UsdRotateUndoableCommand::Ptr
-UsdRotateUndoableCommand::create(const UsdSceneItem::Ptr& item, double x, double y, double z)
-{
-    auto cmd = std::make_shared<MakeSharedEnabler<UsdRotateUndoableCommand>>(item, x, y, z);
-    cmd->initialize();
-    return cmd;
-}
-#endif
 
 void UsdRotateUndoableCommand::undo()
 {
@@ -97,11 +77,7 @@ void UsdRotateUndoableCommand::performImp(double x, double y, double z)
 // Ufe::RotateUndoableCommand overrides
 //------------------------------------------------------------------------------
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 bool UsdRotateUndoableCommand::set(double x, double y, double z)
-#else
-bool UsdRotateUndoableCommand::rotate(double x, double y, double z)
-#endif
 {
     // Fail early - Initialization did not go as expected.
     if (fFailedInit) {

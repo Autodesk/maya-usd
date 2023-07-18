@@ -100,14 +100,12 @@ UsdTransform3dBase::translateScalePivotCmd(double, double, double)
 
 Ufe::Vector3d UsdTransform3dBase::scalePivotTranslation() const { return Ufe::Vector3d(0, 0, 0); }
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::SetMatrix4dUndoableCommand::Ptr UsdTransform3dBase::setMatrixCmd(const Ufe::Matrix4d& m)
 {
     return nullptr;
 }
 
 Ufe::Matrix4d UsdTransform3dBase::matrix() const { return UsdTransform3dReadImpl::matrix(); }
-#endif
 
 Ufe::Matrix4d UsdTransform3dBase::segmentInclusiveMatrix() const
 {
