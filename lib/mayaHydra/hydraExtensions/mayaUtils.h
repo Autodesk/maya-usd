@@ -47,3 +47,37 @@ MStatus GetDagPathFromNodeName(const MString& nodeName, MDagPath& outDagPath);
  */
 MAYAHYDRALIB_API
 MStatus GetMayaMatrixFromDagPath(const MDagPath& dagPath, MMatrix& outMatrix);
+
+/**
+ * @brief Determines whether a given DAG path points to a UFE item created by maya-usd
+ *
+ * @usage Determines whether a given DAG path points to a UFE item created by maya-usd. UFE stands
+ * for Universal Front End : the goal of the Universal Front End is to create a DCC-agnostic
+ * component that will allow a DCC to browse and edit data in multiple data models.
+ *
+ * @param[in] dagPath is the DAG path of the node in the Maya scene graph.
+ * @param[out] returnStatus is an optional output variable to return whether the operation was
+ * successful. Default value is nullptr (not going to store the result status).
+ *
+ * @return True if the item pointed to by dagPath is a UFE item created by maya-usd, false
+ * otherwise.
+ */
+MAYAHYDRALIB_API
+bool IsUfeItemFromMayaUsd(const MDagPath& dagPath, MStatus* returnStatus = nullptr);
+
+/**
+ * @brief Determines whether a given object is a UFE item created by maya-usd
+ *
+ * @usage Determines whether a given object is a UFE item created by maya-usd. UFE stands
+ * for Universal Front End : the goal of the Universal Front End is to create a DCC-agnostic
+ * component that will allow a DCC to browse and edit data in multiple data models.
+ *
+ * @param[in] obj is the object representing the DAG node.
+ * @param[out] returnStatus is an optional output variable to return whether the operation was
+ * successful. Default value is nullptr (not going to store the result status).
+ *
+ * @return True if the item represented by obj is a UFE item created by maya-usd, false
+ * otherwise.
+ */
+MAYAHYDRALIB_API
+bool IsUfeItemFromMayaUsd(const MObject& obj, MStatus* returnStatus = nullptr);

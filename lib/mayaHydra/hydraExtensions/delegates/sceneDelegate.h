@@ -239,11 +239,15 @@ protected:
 
 private:
     template <typename AdapterPtr, typename Map>
-    AdapterPtr Create(
+    AdapterPtr _CreateAdapter(
         const MDagPath&                                                          dag,
         const std::function<AdapterPtr(MayaHydraDelegateCtx*, const MDagPath&)>& adapterCreator,
         Map&                                                                     adapterMap,
         bool                                                                     isSprim = false);
+    
+    MayaHydraLightAdapterPtr CreateLightAdapter(const MDagPath& dagPath);
+    MayaHydraCameraAdapterPtr CreateCameraAdapter(const MDagPath& dagPath);
+    MayaHydraShapeAdapterPtr CreateShapeAdapter(const MDagPath& dagPath);
 
     MAYAHYDRALIB_API
     bool _GetRenderItem(int fastId, MayaHydraRenderItemAdapterPtr& adapter);

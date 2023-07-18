@@ -14,6 +14,7 @@ target_sources(${TARGET_NAME}
         mayaHydraCppTestsCmd.cpp
         testCppFramework.cpp
         testMayaSceneFlattening.cpp
+        testMayaUsdUfeItems.cpp
         testUtils.cpp
 )
 
