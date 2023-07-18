@@ -227,7 +227,7 @@ Headers should be included in the following order, with each section separated b
 
 #include <string>
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
+#ifdef UFE_V3_FEATURES_AVAILABLE
 #include <ufe/types.h>
 #endif
 ```
