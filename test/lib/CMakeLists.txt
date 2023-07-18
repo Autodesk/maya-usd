@@ -2,16 +2,11 @@
 set(TEST_SCRIPT_FILES
     testMayaUsdConverter.py
     testMayaUsdCreateStageCommands.py
+    testMayaUsdDirtyScene.py
     testMayaUsdLayerEditorCommands.py
+    testMayaUsdProxyAccessor.py
     testMayaUsdCacheId.py
 )
-
-if (UFE_FOUND)
-    list(APPEND TEST_SCRIPT_FILES
-        testMayaUsdDirtyScene.py
-        testMayaUsdProxyAccessor.py
-    )
-endif()
 
 # Interactive Unit test scripts.
 set(INTERACTIVE_TEST_SCRIPT_FILES
@@ -100,9 +95,6 @@ foreach(script ${TEST_PLUG_FILES})
 endforeach()
 
 # -----------------------------------------------------------------------------
-if (UFE_FOUND)
-    add_subdirectory(ufe)
-    add_subdirectory(mayaUsd)
-endif()
-
+add_subdirectory(ufe)
+add_subdirectory(mayaUsd)
 add_subdirectory(usd)

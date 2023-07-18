@@ -17,9 +17,7 @@
 #include <pxr/pxr.h>
 
 // UFE v3 used as an indicator of support for edit as Maya.
-#if defined(WANT_UFE_BUILD)
 #include <ufe/ufe.h>
-#endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

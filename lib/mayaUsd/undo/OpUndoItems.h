@@ -26,10 +26,8 @@
 #include <maya/MFnSet.h>
 #include <maya/MGlobal.h>
 #include <maya/MSelectionList.h>
-#ifdef WANT_UFE_BUILD
 #include <ufe/selection.h>
 #include <ufe/undoableCommand.h>
-#endif
 
 #include <memory>
 #include <vector>
@@ -411,8 +409,6 @@ private:
     MGlobal::ListAdjustment _selMode;
 };
 
-#ifdef WANT_UFE_BUILD
-
 //------------------------------------------------------------------------------
 // UfeSelectionUndoItem
 //------------------------------------------------------------------------------
@@ -528,8 +524,6 @@ public:
 private:
     std::shared_ptr<Ufe::UndoableCommand> _command;
 };
-
-#endif
 
 //------------------------------------------------------------------------------
 // LockNodesUndoItem

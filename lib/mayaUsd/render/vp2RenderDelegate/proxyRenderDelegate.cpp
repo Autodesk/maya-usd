@@ -72,16 +72,13 @@
 #include <maya/MNodeMessage.h>
 #endif
 
-#if defined(WANT_UFE_BUILD)
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/Utils.h>
 
 #include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <ufe/globalSelection.h>
-#ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/namedSelection.h>
-#endif
 #include <ufe/observableSelection.h>
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
 #include <ufe/pathString.h>
@@ -93,7 +90,6 @@
 #include <ufe/sceneItem.h>
 #include <ufe/sceneNotification.h>
 #include <ufe/selectionNotification.h>
-#endif
 
 #if defined(BUILD_HDMAYA)
 #include <mayaUsd/render/mayaToHydra/utils.h>
@@ -106,7 +102,6 @@ namespace {
 //! Representation selector for point snapping
 const HdReprSelector kPointsReprSelector(TfToken(), TfToken(), HdReprTokens->points);
 
-#if defined(WANT_UFE_BUILD)
 //! \brief  Query the global selection list adjustment.
 MGlobal::ListAdjustment GetListAdjustment()
 {
@@ -235,7 +230,6 @@ void PopulateSelection(
     sceneDelegate.PopulateSelection(
         HdSelection::HighlightModeSelect, usdPath, instanceIndex, result);
 }
-#endif // defined(WANT_UFE_BUILD)
 
 //! \brief  Append the selected prim paths to the result list.
 void AppendSelectedPrimPaths(const HdSelectionSharedPtr& selection, SdfPathVector& result)
@@ -325,7 +319,6 @@ void _ConfigureReprs()
     HdPoints::ConfigureRepr(HdVP2ReprTokens->smoothHullUntextured, HdPointsGeomStylePoints);
 }
 
-#if defined(WANT_UFE_BUILD)
 class UfeObserver : public Ufe::Observer
 {
 public:
@@ -401,15 +394,6 @@ public:
 private:
     ProxyRenderDelegate& _proxyRenderDelegate;
 };
-#else
-void SelectionChangedCB(void* data)
-{
-    ProxyRenderDelegate* prd = static_cast<ProxyRenderDelegate*>(data);
-    if (prd) {
-        prd->SelectionChanged();
-    }
-}
-#endif
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
 #ifdef MAYA_HAS_NEW_DISPLAY_LAYER_MESSAGING_API
@@ -589,11 +573,6 @@ ProxyRenderDelegate::~ProxyRenderDelegate()
 {
     _ClearRenderDelegate();
 
-#if !defined(WANT_UFE_BUILD)
-    if (_mayaSelectionCallbackId != 0) {
-        MMessage::removeCallback(_mayaSelectionCallbackId);
-    }
-#endif
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
     if (_mayaDisplayLayerAddedCallbackId != 0)
         MMessage::removeCallback(_mayaDisplayLayerAddedCallbackId);
@@ -734,7 +713,6 @@ void ProxyRenderDelegate::_InitRenderDelegate()
         _defaultCollection.reset(new HdRprimCollection());
         _defaultCollection->SetName(HdTokens->geometry);
 
-#if defined(WANT_UFE_BUILD)
         if (!_observer) {
             _observer = std::make_shared<UfeObserver>(*this);
 
@@ -743,19 +721,8 @@ void ProxyRenderDelegate::_InitRenderDelegate()
                 globalSelection->addObserver(_observer);
             }
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
             Ufe::Scene::instance().addObserver(_observer);
-#else
-            Ufe::Scene::instance().addObjectAddObserver(_observer);
-#endif
         }
-#else
-        // Without UFE, support basic selection highlight at proxy shape level.
-        if (!_mayaSelectionCallbackId) {
-            _mayaSelectionCallbackId
-                = MEventMessage::addEventCallback("SelectionChanged", SelectionChangedCB, this);
-        }
-#endif
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
         // Display layers maybe loaded before us, so make sure to track/cache them
@@ -1115,11 +1082,8 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
     // won't be prepared until point snapping is activated; otherwise the draw
     // data have to be prepared early for possible activation of point snapping.
     const bool inSelectionPass = (frameContext.getSelectionInfo() != nullptr);
-#if !defined(MAYA_NEW_POINT_SNAPPING_SUPPORT) || defined(WANT_UFE_BUILD)
     const bool inPointSnapping = pointSnappingActive();
-#endif
 
-#if defined(WANT_UFE_BUILD)
     // Query selection adjustment and kind only if the update is triggered in a selection pass.
     if (inSelectionPass && !inPointSnapping) {
         _globalListAdjustment = GetListAdjustment();
@@ -1130,7 +1094,6 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         _selectionKind = TfToken();
         _pointInstancesPickMode = UsdPointInstancesPickMode::PointInstancer;
     }
-#endif // defined(WANT_UFE_BUILD)
 
     // Work around USD issue #1516. There is a significant performance overhead caused by populating
     // selection, so only force the populate selection to occur when we detect a change which
@@ -1363,7 +1326,6 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     const MHWRender::MIntersection& intersection,
     MDagPath&                       dagPath) const
 {
-#if defined(WANT_UFE_BUILD)
     // When point snapping, only the point position matters, so return the DAG path and avoid the
     // UFE global selection list to be updated.
     if (pointSnappingActive()) {
@@ -1374,10 +1336,6 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     if (!_proxyShapeData->ProxyShape() || !_proxyShapeData->ProxyShape()->isUfeSelectionEnabled()) {
         return false;
     }
-
-    auto handler = Ufe::RunTimeMgr::instance().hierarchyHandler(USD_UFE_RUNTIME_ID);
-    if (handler == nullptr)
-        return false;
 
     const SdfPath rprimId = HdVP2DrawItem::RenderItemToPrimPath(renderItem);
 
@@ -1423,7 +1381,6 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     // searching optionVars for each intersection.
     const TfToken&                   selectionKind = _selectionKind;
     const UsdPointInstancesPickMode& pointInstancesPickMode = _pointInstancesPickMode;
-    const MGlobal::ListAdjustment&   listAdjustment = _globalListAdjustment;
 
     UsdPrim       prim = _proxyShapeData->UsdStage()->GetPrimAtPath(usdPath);
     const UsdPrim topLevelPrim = _proxyShapeData->UsdStage()->GetPrimAtPath(topLevelPath);
@@ -1494,42 +1451,14 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     }
 
     const Ufe::PathSegment pathSegment = UsdUfe::usdPathToUfePathSegment(usdPath, instanceIndex);
-    const Ufe::SceneItem::Ptr& si
-        = handler->createItem(_proxyShapeData->ProxyShape()->ufePath() + pathSegment);
+    auto si = Ufe::Hierarchy::createItem(_proxyShapeData->ProxyShape()->ufePath() + pathSegment);
     if (!si) {
         TF_WARN("Failed to create UFE scene item for Rprim '%s'", rprimId.GetText());
         return false;
     }
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
-    TF_UNUSED(listAdjustment);
-
     auto ufeSel = Ufe::NamedSelection::get("MayaSelectTool");
     ufeSel->append(si);
-#else
-    auto    globalSelection = Ufe::GlobalSelection::get();
-
-    switch (listAdjustment) {
-    case MGlobal::kReplaceList:
-        // The list has been cleared before viewport selection runs, so we
-        // can add the new hits directly. UFE selection list is a superset
-        // of Maya selection list, calling clear()/replaceWith() on UFE
-        // selection list would clear Maya selection list.
-        globalSelection->append(si);
-        break;
-    case MGlobal::kAddToList: globalSelection->append(si); break;
-    case MGlobal::kRemoveFromList: globalSelection->remove(si); break;
-    case MGlobal::kXORWithList:
-        if (!globalSelection->remove(si)) {
-            globalSelection->append(si);
-        }
-        break;
-    default: TF_WARN("Unexpected MGlobal::ListAdjustment enum for selection."); break;
-    }
-#endif
-#else
-    dagPath = _proxyShapeData->ProxyDagPath();
-#endif
 
     return true;
 }
@@ -1790,7 +1719,6 @@ void ProxyRenderDelegate::ColorManagementRefresh()
 //! \brief  Populate lead and active selection for Rprims under the proxy shape.
 void ProxyRenderDelegate::_PopulateSelection()
 {
-#if defined(WANT_UFE_BUILD)
     if (_proxyShapeData->ProxyShape() == nullptr) {
         return;
     }
@@ -1812,7 +1740,6 @@ void ProxyRenderDelegate::_PopulateSelection()
             PopulateSelection(*it, proxyPath, *_sceneDelegate, _activeSelection);
         }
     }
-#endif
 }
 
 /*! \brief  Notify selection change to rprims.

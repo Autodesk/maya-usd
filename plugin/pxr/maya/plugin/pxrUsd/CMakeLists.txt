@@ -13,9 +13,11 @@ pxr_plugin(${PXR_PACKAGE}
         ${MAYA_Foundation_LIBRARY}
         ${MAYA_OpenMaya_LIBRARY}
         ${MAYA_OpenMayaRender_LIBRARY}
+        ${UFE_LIBRARY}
 
     INCLUDE_DIRS
         ${MAYA_INCLUDE_DIRS}
+        ${UFE_INCLUDE_DIR}
 
     CPPFILES
         alembicChaser.cpp
@@ -30,12 +32,6 @@ pxr_plugin(${PXR_PACKAGE}
 
     DISABLE_PRECOMPILED_HEADERS
 )
-
-if (UFE_FOUND)
-    target_link_libraries(${PXR_PACKAGE} ${UFE_LIBRARY})
-    target_compile_definitions(${PXR_PACKAGE} PRIVATE WANT_UFE_BUILD)
-    target_include_directories(${PXR_PACKAGE} PRIVATE ${UFE_INCLUDE_DIR})
-endif()
 
 pxr_test_scripts(
     testenv/testPxrUsdAlembicChaser.py

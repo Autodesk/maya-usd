@@ -131,7 +131,7 @@ class testUsdImportColorSets(unittest.TestCase):
 
         usdFile = os.path.join(inputPath, "UsdImportColorSetsTest", "UsdImportColorSetsTest.usda")
         cmds.usdImport(file=usdFile, shadingMode=[['none', 'default'], ],
-                       excludePrimvar='ExcludeMe')
+                       excludePrimvar='ExcludeMe',excludePrimvarNamespace="ExcludeMeNamespace:ExcludeMeToo")
 
     def _GetMayaMesh(self, meshName):
         selectionList = OpenMaya.MSelectionList()
@@ -595,6 +595,13 @@ class testUsdImportColorSets(unittest.TestCase):
         colorSets = mayaCubeMesh.getColorSetNames()
         self.assertNotIn("ExcludeMe", colorSets)
         self.assertIn("ExcludeMeNot", colorSets)
+
+    def testExcludePrimvarNameSpaces(self):
+        """Tests excluding primvars when importing color sets."""
+        mayaCubeMesh = self._GetMayaMesh('ColorSetsCubeShape')
+        colorSets = mayaCubeMesh.getColorSetNames()
+        self.assertNotIn("ExcludeMeNamespace:ExcludeMeToo:testExclude", colorSets)
+        self.assertIn("ExcludeMeNotNamespace:ExcludeMeNotEither:testExclude", colorSets)
 
 
 if __name__ == '__main__':

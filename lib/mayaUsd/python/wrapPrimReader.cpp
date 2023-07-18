@@ -453,6 +453,11 @@ void wrapJobImportArgs()
             make_getter(
                 &UsdMayaJobImportArgs::excludePrimvarNames,
                 return_value_policy<TfPySequenceToSet>()))
+        .add_property(
+            "excludePrimvarNamespaces",
+            make_getter(
+                &UsdMayaJobImportArgs::excludePrimvarNamespaces,
+                return_value_policy<TfPySequenceToSet>()))
         .def_readonly("importInstances", &UsdMayaJobImportArgs::importInstances)
         .def_readonly("importUSDZTextures", &UsdMayaJobImportArgs::importUSDZTextures)
         .def_readonly(
@@ -511,6 +516,10 @@ void wrapPrimReaderArgs()
         .def(
             "GetExcludePrimvarNames",
             &UsdMayaPrimReaderArgs::GetExcludePrimvarNames,
+            return_internal_reference<>())
+        .def(
+            "GetExcludePrimvarNamespaces",
+            &UsdMayaPrimReaderArgs::GetExcludePrimvarNamespaces,
             return_internal_reference<>())
         .def("GetUseAsAnimationCache", &UsdMayaPrimReaderArgs::GetUseAsAnimationCache);
 }

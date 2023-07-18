@@ -41,12 +41,8 @@
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 #define UFE_ENABLE_ASSERTS
 #include <ufe/ufeAssert.h>
-#else
-#include <cassert>
-#endif
 
 #include <cctype>
 

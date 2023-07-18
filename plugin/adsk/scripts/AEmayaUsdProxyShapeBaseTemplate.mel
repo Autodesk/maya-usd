@@ -11,7 +11,7 @@ global proc AEmayaUsdProxyShapeInfoNew(string $input)
     AEmayaUsdProxyShapeInfoReplace($input);
 }
 
-global proc AEmayaUsdProxyShapeInfoReplace(string $input)
+global proc string AEmayaUsdProxyShapeInfoChanged(string $input)
 {
     // From the input attribute we simply want the node name.
     string $nodeName = plugNode($input);
@@ -24,6 +24,22 @@ global proc AEmayaUsdProxyShapeInfoReplace(string $input)
 
     textFieldGrp -edit -text $rootLayer mayaUsdProxyShapeRootLayer;
     textFieldGrp -edit -text $defaultPrim mayaUsdProxyShapeDefaultPrim;
+
+    return $fullNodeName;
+}
+
+global proc AEmayaUsdProxyShapeInfoReplace(string $input)
+{
+    string $fullNodeName = AEmayaUsdProxyShapeInfoChanged($input);
+
+    // Add a script job on the file path attribute so we can update the AE control
+    // if the attribute changes from the outside.
+    global int $mayaUsdProxyShapeInfoScriptJobId = -1;
+    if (`scriptJob -exists $mayaUsdProxyShapeInfoScriptJobId`)
+        scriptJob -kill $mayaUsdProxyShapeInfoScriptJobId;
+    string $cmd = "AEmayaUsdProxyShapeInfoChanged(\"" + $input + "\")";
+    string $attrName = $fullNodeName + ".filePath";
+    $mayaUsdProxyShapeInfoScriptJobId = `scriptJob -parent mayaUsdProxyShapeRootLayer -attributeChange $attrName $cmd`;
 }
 
 global proc AEmayaUsdProxyShapeShareStageNew(string $shareStageAttr)

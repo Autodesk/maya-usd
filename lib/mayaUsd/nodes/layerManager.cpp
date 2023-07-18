@@ -463,7 +463,7 @@ bool LayerDatabase::hasDirtyLayer() const
 bool LayerDatabase::getProxiesToSave(bool isExport)
 {
     bool checkSelection = isExport && (MFileIO::kExportTypeSelected == MFileIO::exportType());
-    const UFE_NS::GlobalSelection::Ptr& ufeSelection = UFE_NS::GlobalSelection::get();
+    const Ufe::GlobalSelection::Ptr& ufeSelection = Ufe::GlobalSelection::get();
 
     clearProxies();
 
