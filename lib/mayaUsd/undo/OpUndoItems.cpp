@@ -15,8 +15,7 @@
 //
 #include "OpUndoItems.h"
 
-#include "OpUndoItemMuting.h"
-
+#include <mayaUsd/undo/OpUndoItemMuting.h>
 #include <mayaUsd/utils/util.h>
 #ifdef WANT_UFE_BUILD
 #include <mayaUsd/ufe/Utils.h>
