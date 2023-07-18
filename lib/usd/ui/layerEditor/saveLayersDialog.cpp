@@ -504,7 +504,10 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2)
         for (auto iter = _anonLayerInfos.crbegin(); iter != _anonLayerInfos.crend(); ++iter) {
             // Note: the row adds itself as a children of the dialog, so it will be deleted
             //       when the dialog closes.
-            new SaveLayerPathRow(this, anonLayout, gridRow++, (*iter));
+            auto saveLayerPathRow = new SaveLayerPathRow(this, anonLayout, gridRow++, (*iter));
+            // Note: We keep track of the row data so that it can be used when saving layers without
+            // having to iterate over SaveLayersDialog's entire layout.
+            _saveLayerPathRows.push_back(saveLayerPathRow);
         }
 
         _anonLayersWidget = new QWidget();
@@ -632,13 +635,8 @@ QString SaveLayersDialog::buildTooltipForLayer(SdfLayerRefPtr layer)
 
 QWidget* SaveLayersDialog::findEntry(SdfLayerRefPtr key)
 {
-    if (!_anonLayersWidget || !_anonLayersWidget->layout()) {
-        return nullptr;
-    }
-
-    QLayout* anonLayout = _anonLayersWidget->layout();
-    for (int i = 0, count = anonLayout->count(); i < count; ++i) {
-        auto row = dynamic_cast<SaveLayerPathRow*>(anonLayout->itemAt(i)->widget());
+    for (int i = 0, count = _saveLayerPathRows.size(); i < count; ++i) {
+        auto row = dynamic_cast<SaveLayerPathRow*>(_saveLayerPathRows[i]);
         if (row && row->_layerInfo.layer == key) {
             return row;
         }
@@ -649,13 +647,8 @@ QWidget* SaveLayersDialog::findEntry(SdfLayerRefPtr key)
 
 void SaveLayersDialog::forEachEntry(const std::function<void(QWidget*)>& func)
 {
-    if (!_anonLayersWidget || !_anonLayersWidget->layout()) {
-        return;
-    }
-
-    QLayout* anonLayout = _anonLayersWidget->layout();
-    for (int i = 0, count = anonLayout->count(); i < count; ++i) {
-        func(anonLayout->itemAt(i)->widget());
+    for (int i = 0, count = _saveLayerPathRows.size(); i < count; ++i) {
+        func(_saveLayerPathRows[i]);
     }
 }
 
@@ -669,41 +662,36 @@ void SaveLayersDialog::onSaveAll()
     _problemLayers.clear();
     _emptyLayers.clear();
 
-    // The anonymous layer section in the dialog can be empty.
-    if (nullptr != _anonLayersWidget) {
-        QLayout* anonLayout = _anonLayersWidget->layout();
-        // Note: must start from the end so that sub-layers are saved before their parent.
-        for (int count = anonLayout->count(), i = count - 1; i >= 0; --i) {
-            auto row = dynamic_cast<SaveLayerPathRow*>(anonLayout->itemAt(i)->widget());
-            if (!row || !row->_layerInfo.layer)
-                continue;
+    // Note: must start from the end so that sub-layers are saved before their parent.
+    for (int count = _saveLayerPathRows.size(), i = count - 1; i >= 0; --i) {
+        auto row = dynamic_cast<SaveLayerPathRow*>(_saveLayerPathRows[i]);
+        if (!row || !row->_layerInfo.layer)
+            continue;
 
-            QString absolutePath = row->getAbsolutePath();
-            if (!absolutePath.isEmpty()) {
-                auto sdfLayer = row->_layerInfo.layer;
-                auto parent = row->_layerInfo.parent;
-                auto stage = row->_layerInfo.stage;
+        QString absolutePath = row->getAbsolutePath();
+        if (!absolutePath.isEmpty()) {
+            auto sdfLayer = row->_layerInfo.layer;
+            auto parent = row->_layerInfo.parent;
+            auto stage = row->_layerInfo.stage;
 
-                MayaUsd::utils::PathInfo pathInfo;
-                pathInfo.absolutePath = absolutePath.toStdString();
-                pathInfo.savePathAsRelative = row->needToSaveAsRelative();
-                if (pathInfo.savePathAsRelative && parent._layerParent
-                    && parent._layerParent->IsAnonymous()) {
-                    pathInfo.customRelativeAnchor = row->calculateParentLayerDir();
-                }
-
-                auto newLayer
-                    = MayaUsd::utils::saveAnonymousLayer(stage, sdfLayer, pathInfo, parent);
-                if (newLayer) {
-                    _newPaths.append(QString::fromStdString(sdfLayer->GetDisplayName()));
-                    _newPaths.append(absolutePath);
-                } else {
-                    _problemLayers.append(QString::fromStdString(sdfLayer->GetDisplayName()));
-                    _problemLayers.append(absolutePath);
-                }
-            } else {
-                _emptyLayers.append(row->layerDisplayName());
+            MayaUsd::utils::PathInfo pathInfo;
+            pathInfo.absolutePath = absolutePath.toStdString();
+            pathInfo.savePathAsRelative = row->needToSaveAsRelative();
+            if (pathInfo.savePathAsRelative && parent._layerParent
+                && parent._layerParent->IsAnonymous()) {
+                pathInfo.customRelativeAnchor = row->calculateParentLayerDir();
             }
+
+            auto newLayer = MayaUsd::utils::saveAnonymousLayer(stage, sdfLayer, pathInfo, parent);
+            if (newLayer) {
+                _newPaths.append(QString::fromStdString(sdfLayer->GetDisplayName()));
+                _newPaths.append(absolutePath);
+            } else {
+                _problemLayers.append(QString::fromStdString(sdfLayer->GetDisplayName()));
+                _problemLayers.append(absolutePath);
+            }
+        } else {
+            _emptyLayers.append(row->layerDisplayName());
         }
     }
 
@@ -719,25 +707,22 @@ bool SaveLayersDialog::okToSave()
     QMap<QString, int> alreadySeenPaths;
     QStringList        existingFiles;
 
-    // The anonymous layer section in the dialog can be empty.
-    if (nullptr != _anonLayersWidget) {
-        QLayout* anonLayout = _anonLayersWidget->layout();
-        for (int i = 0, count = anonLayout->count(); i < count; ++i) {
-            auto row = dynamic_cast<SaveLayerPathRow*>(anonLayout->itemAt(i)->widget());
-            if (nullptr == row)
-                continue;
+    for (int count = _saveLayerPathRows.size(), i = count - 1; i >= 0; --i) {
+        auto row = dynamic_cast<SaveLayerPathRow*>(_saveLayerPathRows[i]);
+        if (!row || !row->_layerInfo.layer)
+            continue;
 
-            QString path = row->getAbsolutePath();
-            if (!path.isEmpty()) {
-                if (alreadySeenPaths.count(path) > 0) {
-                    alreadySeenPaths[path] += 1;
-                } else {
-                    alreadySeenPaths[path] = 1;
-                }
-                QFileInfo fInfo(path);
-                if (fInfo.exists()) {
-                    existingFiles.append(path);
-                }
+        QString path = row->getAbsolutePath();
+
+        if (!path.isEmpty()) {
+            if (alreadySeenPaths.count(path) > 0) {
+                alreadySeenPaths[path] += 1;
+            } else {
+                alreadySeenPaths[path] = 1;
+            }
+            QFileInfo fInfo(path);
+            if (fInfo.exists()) {
+                existingFiles.append(path);
             }
         }
     }
