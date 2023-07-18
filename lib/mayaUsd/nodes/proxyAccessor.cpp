@@ -16,11 +16,8 @@
 #include "proxyAccessor.h"
 
 #include <mayaUsd/base/debugCodes.h>
-#include <mayaUsd/utils/converter.h>
-
-#if defined(WANT_UFE_BUILD)
 #include <mayaUsd/ufe/Utils.h>
-#endif
+#include <mayaUsd/utils/converter.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/ar/resolverScopedCache.h>
@@ -603,13 +600,10 @@ MStatus ProxyAccessor::computeOutput(
         dstArray.setAllClean();
     } else if (item.property == combinedVisibilityToken) {
         // First, verify visibility of the proxy shape
-#if defined(WANT_UFE_BUILD)
         Ufe::Path proxyShapeUfePath = MayaUsd::ufe::stagePath(stage);
         MDagPath  proxyShapeDagPath = MayaUsd::ufe::ufeToDagPath(proxyShapeUfePath);
         bool      visible = proxyShapeDagPath.isVisible();
-#else
-        bool visible = true;
-#endif
+
         // Next, verify visibility of the usd prim
         UsdGeomImageable imageable(itemPrim);
         if (visible && imageable) {

@@ -12,6 +12,7 @@
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/listeners/notice.h>
+#include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
@@ -32,10 +33,6 @@
 #include <ghc/filesystem.hpp>
 
 #include <string>
-
-#if defined(WANT_UFE_BUILD)
-#include <mayaUsd/ufe/Utils.h>
-#endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -391,7 +388,6 @@ public:
 //
 namespace UsdLayerEditor {
 
-#if defined(WANT_UFE_BUILD)
 SaveLayersDialog::SaveLayersDialog(
     QWidget*                                     in_parent,
     const std::vector<MayaUsd::StageSavingInfo>& infos)
@@ -418,7 +414,6 @@ SaveLayersDialog::SaveLayersDialog(
         static_cast<int>(infos.size()), static_cast<int>(_anonLayerInfos.size()), msg1, msg2);
     buildDialog(msg1, msg2);
 }
-#endif
 
 SaveLayersDialog::SaveLayersDialog(SessionState* in_sessionState, QWidget* in_parent)
     : QDialog(in_parent, Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::WindowCloseButtonHint)

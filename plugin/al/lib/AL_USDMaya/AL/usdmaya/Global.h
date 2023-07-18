@@ -73,10 +73,8 @@ private:
                                  m_preExport; ///< callback prior to exporting the scene (so we can store the session layer)
     static AL::event::CallbackId m_postExport; ///< callback after exporting
 
-#if defined(WANT_UFE_BUILD)
     class UfeSelectionObserver;
     static std::shared_ptr<UfeSelectionObserver> m_ufeSelectionObserver;
-#endif
 };
 
 //----------------------------------------------------------------------------------------------------------------------

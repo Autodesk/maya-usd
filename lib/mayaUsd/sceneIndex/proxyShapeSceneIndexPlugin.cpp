@@ -18,9 +18,8 @@
 
 #if PXR_VERSION >= 2211
 
-#if WANT_UFE_BUILD
 #include <mayaUsd/ufe/Global.h>
-#endif
+#include <mayaUsd/ufe/Utils.h>
 
 #include <usdUfe/ufe/Utils.h>
 
@@ -48,13 +47,7 @@
 #include <maya/MObjectHandle.h>
 #include <maya/MSelectionList.h>
 #include <maya/MString.h>
-#if WANT_UFE_BUILD
-#include <mayaUsd/ufe/Utils.h>
-
 #include <ufe/rtid.h>
-#endif
-
-#include <pxr/base/tf/refPtr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -90,7 +83,6 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
     }
 
     if (auto dataSourceEntryNodePath = HdMObjectDataSource::Cast(dataSourceEntryPathHandle)) {
-#if WANT_UFE_BUILD
         if (version >= 200) {
             // Retrieve interpret pick function from the scene index plugin, to be accessed by
             // mayaHydra interpretRprimPath
@@ -117,7 +109,6 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
                 TF_VERIFY(id != 0, "Invalid UFE runtime id");
             }
         }
-#endif
         MObject           dagNode = dataSourceEntryNodePath->GetTypedValue(0.0f);
         MStatus           status;
         MFnDependencyNode dependNodeFn(dagNode, &status);

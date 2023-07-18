@@ -16,6 +16,7 @@
 #include "proxyShapePlugin.h"
 
 #include <mayaUsd/nodes/hdImagingShape.h>
+#include <mayaUsd/nodes/layerManager.h>
 #include <mayaUsd/nodes/pointBasedDeformerNode.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/proxyShapeListenerBase.h>
@@ -37,10 +38,6 @@
 #include <maya/MGlobal.h>
 #include <maya/MPxNode.h>
 #include <maya/MStatus.h>
-
-#if defined(WANT_UFE_BUILD)
-#include <mayaUsd/nodes/layerManager.h>
-#endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -109,14 +106,12 @@ MStatus MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
         MPxNode::kDeformerNode);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
-#if defined(WANT_UFE_BUILD)
     status = plugin.registerNode(
         MayaUsd::LayerManager::typeName,
         MayaUsd::LayerManager::typeId,
         MayaUsd::LayerManager::creator,
         MayaUsd::LayerManager::initialize);
     CHECK_MSTATUS(status);
-#endif
 
     status = plugin.registerNode(
         MayaUsdProxyShapeListenerBase::typeName,
@@ -223,10 +218,8 @@ MStatus MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
     status = plugin.deregisterNode(MayaUsdProxyShapeListenerBase::typeId);
     CHECK_MSTATUS(status);
 
-#if defined(WANT_UFE_BUILD)
     status = plugin.deregisterNode(MayaUsd::LayerManager::typeId);
     CHECK_MSTATUS(status);
-#endif
 
     status = plugin.deregisterNode(UsdMayaStageNode::typeId);
     CHECK_MSTATUS(status);

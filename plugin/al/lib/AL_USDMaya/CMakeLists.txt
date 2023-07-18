@@ -169,7 +169,7 @@ target_include_directories(
     PUBLIC
     ${PXR_INCLUDE_DIRS}
     ${MAYA_INCLUDE_DIRS}
-    $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
+    ${UFE_INCLUDE_DIR}
 )
 
 # There were bugs in both cmake and findboost with the boost version string. So in
@@ -206,7 +206,7 @@ target_link_libraries(${LIBRARY_NAME}
     ${MAYA_OpenMaya_LIBRARY}
     ${MAYA_OpenMayaRender_LIBRARY}
     mayaUsd
-    $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
+    ${UFE_LIBRARY}
     ghc_filesystem
 )
 

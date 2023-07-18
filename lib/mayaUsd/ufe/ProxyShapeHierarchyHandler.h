@@ -56,9 +56,9 @@ public:
     create(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler);
 
     // Ufe::HierarchyHandler overrides
-    Ufe::Hierarchy::Ptr hierarchy(const Ufe::SceneItem::Ptr& item) const override;
-    Ufe::SceneItem::Ptr createItem(const Ufe::Path& path) const override;
-    UFE_V2(Ufe::Hierarchy::ChildFilter childFilter() const override;)
+    Ufe::Hierarchy::Ptr         hierarchy(const Ufe::SceneItem::Ptr& item) const override;
+    Ufe::SceneItem::Ptr         createItem(const Ufe::Path& path) const override;
+    Ufe::Hierarchy::ChildFilter childFilter() const override;
 
 private:
     Ufe::HierarchyHandler::Ptr fMayaHierarchyHandler;

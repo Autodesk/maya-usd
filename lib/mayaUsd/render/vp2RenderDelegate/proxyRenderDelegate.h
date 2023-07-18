@@ -36,12 +36,10 @@
 #include <maya/MObject.h>
 #include <maya/MObjectArray.h>
 #include <maya/MPxSubSceneOverride.h>
-
-#include <memory>
-#if defined(WANT_UFE_BUILD)
 #include <ufe/observer.h>
 #include <ufe/path.h>
-#endif
+
+#include <memory>
 
 // Use the latest MPxSubSceneOverride API
 #ifndef OPENMAYA_MPXSUBSCENEOVERRIDE_LATEST_NAMESPACE
@@ -462,15 +460,9 @@ private:
     HdSelectionSharedPtr _leadSelection;   //!< A collection of Rprims being lead selection
     HdSelectionSharedPtr _activeSelection; //!< A collection of Rprims being active selection
 
-#if defined(WANT_UFE_BUILD)
     //! Observer to listen to UFE changes
     Ufe::Observer::Ptr _observer;
-#else
-    //! Minimum support for proxy selection when UFE is not available.
-    MCallbackId _mayaSelectionCallbackId { 0 };
-#endif
 
-#if defined(WANT_UFE_BUILD)
     //! Adjustment mode for global selection list: ADD, REMOVE, REPLACE, XOR
     MGlobal::ListAdjustment _globalListAdjustment;
 
@@ -479,7 +471,6 @@ private:
 
     //! Pick resolution behavior to use when the picked object is a point instance.
     UsdPointInstancesPickMode _pointInstancesPickMode;
-#endif
 };
 
 /*! \brief  Is this object properly initialized and can start receiving updates. Once this is done,

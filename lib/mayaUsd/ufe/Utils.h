@@ -16,14 +16,10 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
-
-#include <usdUfe/ufe/Utils.h>
-
-#include <ufe/ufe.h>
-#ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdAttribute.h>
-#endif
+
 #include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/Utils.h>
 
 #include <pxr/base/tf/hashset.h>
 #include <pxr/base/tf/token.h>
@@ -36,11 +32,7 @@
 #include <maya/MDagPath.h>
 #include <ufe/path.h>
 #include <ufe/scene.h>
-#ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/types.h>
-#else
-#include <ufe/transform3d.h>
-#endif
 
 #include <cstring> // memcpy
 
@@ -145,7 +137,6 @@ bool canRemoveSrcProperty(const PXR_NS::UsdAttribute& srcAttr);
 MAYAUSD_CORE_PUBLIC
 bool canRemoveDstProperty(const PXR_NS::UsdAttribute& dstAttr);
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 MAYAUSD_CORE_PUBLIC
 Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::UsdAttribute& usdAttr);
 
@@ -157,7 +148,6 @@ PXR_NS::SdfValueTypeName ufeTypeToUsd(const Ufe::Attribute::Type ufeType);
 
 PXR_NS::VtValue
 vtValueFromString(const PXR_NS::SdfValueTypeName& typeName, const std::string& strValue);
-#endif
 
 //! Readability function to downcast a SceneItem::Ptr to a UsdSceneItem::Ptr.
 inline UsdSceneItem::Ptr downcast(const Ufe::SceneItem::Ptr& item)
