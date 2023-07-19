@@ -175,6 +175,11 @@ bool getLightShadowEnable(const UsdPrim& prim)
     const UsdLuxShadowAPI      shadowAPI(prim);
     const PXR_NS::UsdAttribute lightAttribute = shadowAPI.GetShadowEnableAttr();
 
+    if (!lightAttribute) {
+        // If the shadow enable attribute is not created yet, create one here
+        shadowAPI.CreateShadowEnableAttr(VtValue(true));
+    }
+
     bool val = false;
     lightAttribute.Get(&val);
     return val;
@@ -187,9 +192,6 @@ void setLightShadowEnable(const UsdPrim& prim, bool attrVal)
 
     if (lightAttribute) {
         lightAttribute.Set(attrVal);
-    } else {
-        const PXR_NS::UsdAttribute shadowAttribute = shadowAPI.CreateShadowEnableAttr();
-        shadowAttribute.Set(attrVal);
     }
 }
 
@@ -209,6 +211,11 @@ Ufe::Color3f getLightShadowColor(const UsdPrim& prim)
 {
     const UsdLuxShadowAPI      shadowAPI(prim);
     const PXR_NS::UsdAttribute lightAttribute = shadowAPI.GetShadowColorAttr();
+
+    if (!lightAttribute) {
+        // If the shadow color attribute is not created yet, create one here
+        shadowAPI.CreateShadowColorAttr();
+    }
 
     GfVec3f val(0.f, 0.f, 0.f);
     lightAttribute.Get(&val);
