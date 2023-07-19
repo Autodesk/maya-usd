@@ -16,6 +16,7 @@
 import mayaUsd.lib as mayaUsdLib
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
 import mayaUsd_USDRootFileRelative as murel
+import mayaUsdUtils
 
 import maya.cmds as cmds
 import maya.mel as mel
@@ -173,19 +174,8 @@ class ImageCustomControl(object):
         return cmds.optionVar(exists=opVarName) and cmds.optionVar(query=opVarName)
 
     @staticmethod
-    def getCurrentTargetLayerDir(prim):
-        stage = prim.GetStage()
-        if not stage:
-            return None
-        layer = stage.GetEditTarget().GetLayer()
-        if not layer:
-            return ''
-        layerFileName = layer.realPath
-        return os.path.dirname(layerFileName)
-
-    @staticmethod
     def prepareRelativeDir(prim):
-        layerDirName = ImageCustomControl.getCurrentTargetLayerDir(prim)
+        layerDirName = mayaUsdUtils.getCurrentTargetLayerDir(prim)
         murel.usdFileRelative.setRelativeFilePathRoot(layerDirName)
 
 

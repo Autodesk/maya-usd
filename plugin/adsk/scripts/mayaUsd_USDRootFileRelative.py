@@ -45,6 +45,7 @@ class usdFileRelative(object):
     _relativeToDir = ""
     _relativeToScene = False
     _ensureUsdExtension = True
+    _checkBoxClass = None
 
     @staticmethod
     def setRelativeFilePathRoot(filePath):
@@ -63,7 +64,7 @@ class usdFileRelative(object):
         '''
         global _relativeToFilePath
         return _relativeToFilePath
-
+    
     @classmethod
     def uiCreate(cls, parentLayout):
         """
@@ -88,18 +89,19 @@ class usdFileRelative(object):
         return topForm
 
     @classmethod
-    def uiCreateFields(cls):
+    def uiCreateFields(cls, useCheckBoxGrp=False):
         """
         Helper method to create the UI fields for the file relative actions.
         """
+        cls._checkBoxClass = CheckboxGroup if useCheckBoxGrp else Checkbox
+
         kMakePathRelativeStr = getMayaUsdString("kMakePathRelativeTo" + cls.kRelativeToWhat)
         kMakePathRelativeAnnStr = getMayaUsdString("kMakePathRelativeTo" + cls.kRelativeToWhat + "Ann")
         kUnresolvedPathStr = getMayaUsdString("kUnresolvedPath")
         kUnresolvedPathAnnStr = getMayaUsdString("kUnresolvedPathAnn")
 
-        cmds.checkBox(cls.kMakePathRelativeCheckBox, label=kMakePathRelativeStr, ann=kMakePathRelativeAnnStr)
-        
-        cmds.checkBox(cls.kMakePathRelativeCheckBox, edit=True, changeCommand=cls.onMakePathRelativeChanged)
+        cls._checkBoxClass.create(cls.kMakePathRelativeCheckBox, kMakePathRelativeStr, kMakePathRelativeAnnStr)
+        cls._checkBoxClass.command(cls.kMakePathRelativeCheckBox, cls.onMakePathRelativeChanged)
         cmds.textFieldGrp(cls.kUnresolvedPathTextField, label=kUnresolvedPathStr, ann=kUnresolvedPathAnnStr, editable=False)
         cls._haveRelativePathFields = True
 
@@ -122,10 +124,10 @@ class usdFileRelative(object):
         # Get the current checkbox value from optionVar (if any) and update checkbox.
         if cmds.optionVar(exists='mayaUsd_MakePathRelativeTo' + cls.kRelativeToWhat):
             relative = cmds.optionVar(query='mayaUsd_MakePathRelativeTo' + cls.kRelativeToWhat)
-            cmds.checkBox(cls.kMakePathRelativeCheckBox, edit=True, value=relative)
+            cls._checkBoxClass.set(cls.kMakePathRelativeCheckBox, relative)
 
         # If if cannot be relative, then the checkbox and label should be disabled.
-        cmds.checkBox(cls.kMakePathRelativeCheckBox, edit=True, enable=cls._canBeRelative)
+        cls._checkBoxClass.enable(cls.kMakePathRelativeCheckBox, cls._canBeRelative)
 
         # We only need to connect to the dialog box controls when we can be relative because
         # that is when the file path preview fields are enabled.
@@ -141,7 +143,7 @@ class usdFileRelative(object):
             cmds.textFieldGrp(cls.kUnresolvedPathTextField, edit=True, visible=showPreviewFields)
 
             # Only enable fields when make relative is checked.
-            makePathRelative = cmds.checkBox(cls.kMakePathRelativeCheckBox, query=True, value=True)
+            makePathRelative = cls._checkBoxClass.get(cls.kMakePathRelativeCheckBox)
             cls.onMakePathRelativeChanged(makePathRelative)
 
     @classmethod
@@ -155,7 +157,7 @@ class usdFileRelative(object):
         cmds.setParent(parentLayout)
 
         # Get the current checkbox state and save to optionVar.
-        relative = cmds.checkBox(cls.kMakePathRelativeCheckBox, query=True, value=True)
+        relative = cls._checkBoxClass.get(cls.kMakePathRelativeCheckBox)
         cmds.optionVar(iv=('mayaUsd_MakePathRelativeTo' + cls.kRelativeToWhat, relative))
 
     @staticmethod
@@ -232,7 +234,7 @@ class usdFileRelative(object):
         if not cls._haveRelativePathFields:
             return
         if makePathRelative == None:
-            makePathRelative = cmds.checkBox(cls.kMakePathRelativeCheckBox, query=True, value=True)
+            makePathRelative = cls._checkBoxClass.get(cls.kMakePathRelativeCheckBox)
 
         if cls._canBeRelative and makePathRelative:
             # If the accept button is disabled it means there is no valid input in the file
@@ -459,3 +461,47 @@ class usdMayaRefRelativeToEditTargetLayer(usdFileRelativeToEditTargetLayer):
         # Do not force the USD file extension since we are selecting Maya files.
         cls._ensureUsdExtension = False
 
+# Abstract away the difference between check-box and check-box group
+
+class Checkbox:
+    @staticmethod
+    def create(uiName, label, tooltip):
+        cmds.checkBox(uiName, label=label, ann=tooltip)
+
+    @staticmethod
+    def command(uiName, cmd):
+        cmds.checkBox(uiName, edit=True, changeCommand=cmd)
+
+    @staticmethod
+    def set(uiName, value):
+        cmds.checkBox(uiName, edit=True, value=value)
+
+    @staticmethod
+    def enable(uiName, enabled):
+        cmds.checkBox(uiName, edit=True, enable=enabled)
+
+    @staticmethod
+    def get(uiName):
+        return cmds.checkBox(uiName, query=True, value=True)
+
+class CheckboxGroup:
+    @staticmethod
+    def create(uiName, label, tooltip):
+        cmds.checkBoxGrp(uiName, numberOfCheckBoxes=1, label="",
+                        label1=label, ann=tooltip)
+
+    @staticmethod
+    def command(uiName, cmd):
+        cmds.checkBoxGrp(uiName, edit=True, cc1=cmd)
+
+    @staticmethod
+    def set(uiName, value):
+        cmds.checkBoxGrp(uiName, edit=True, v1=value)
+
+    @staticmethod
+    def enable(uiName, enabled):
+        cmds.checkBoxGrp(uiName, edit=True, enable=enabled)
+
+    @staticmethod
+    def get(uiName):
+        return cmds.checkBoxGrp(uiName, query=True, v1=True)

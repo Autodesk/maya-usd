@@ -56,7 +56,7 @@ def mayaUsdLibRegisterStrings():
     register('kCacheFileWillAppear', 'Cache file will\nappear on parent\nprim:')
     register('kCacheMayaRefCache', 'Cache')
     register('kCacheMayaRefOptions', 'Cache File Options')
-    register('kCacheMayaRefUsdHierarchy', 'Author Cache File to USD Hierarchy')
+    register('kCacheMayaRefUsdHierarchy', 'Author Cache File to USD')
     register('kCaptionCacheToUsd', 'Cache to USD')
     register('kErrorCacheToUsdFailed', 'Cache to USD failed for "^1s".')
     register('kMenuAppend', 'Append')
