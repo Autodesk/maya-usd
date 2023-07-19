@@ -106,7 +106,7 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Internal helper class to implement the pure virtual methods from Ufe::Attribute.
-class UsdAttribute
+class MAYAUSD_CORE_PUBLIC UsdAttribute
 {
 public:
     UsdAttribute(UsdAttributeHolder::UPtr&& attrHolder);
