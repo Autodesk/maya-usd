@@ -168,28 +168,27 @@ UsdMayaPrimReaderRegistry::ReaderFactoryFn UsdMayaPrimReaderRegistry::Find(
     TfToken         typeName(typeNameStr);
     ReaderFactoryFn ret = nullptr;
 
+    if (_reg.count(typeName) == 0) {
+        static const TfTokenVector SCOPE = { _tokens->UsdMaya, _tokens->PrimReader };
+        UsdMaya_RegistryHelper::FindAndLoadMayaPlug(SCOPE, typeNameStr);
+    }
+
     // For that we are using unordered_multimap now, we can't use TfMapLookup anymore
     _Registry::const_iterator it = _Find(typeName, importArgs, importPrim);
-
     if (it != _reg.end()) {
         return it->second._fn;
     }
 
-    static const TfTokenVector SCOPE = { _tokens->UsdMaya, _tokens->PrimReader };
-    UsdMaya_RegistryHelper::FindAndLoadMayaPlug(SCOPE, typeNameStr);
-
-    // ideally something just registered itself.  if not, we at least put it in
+    // if nothing was found and nothing was registered, we at least put it in
     // the registry in case we encounter it again.
-    if (_reg.count(typeName) == 0) {
-        TF_DEBUG(PXRUSDMAYA_REGISTRY)
-            .Msg("No usdMaya reader plugin for TfType %s. No maya plugin.\n", typeName.GetText());
-        Register(
-            tfType,
-            [](const UsdMayaJobImportArgs&, const UsdPrim&) {
-                return UsdMayaPrimReader::ContextSupport::Fallback;
-            },
-            nullptr);
-    }
+    TF_DEBUG(PXRUSDMAYA_REGISTRY)
+        .Msg("No usdMaya reader plugin for TfType %s. No maya plugin.\n", typeName.GetText());
+    Register(
+        tfType,
+        [](const UsdMayaJobImportArgs&, const UsdPrim&) {
+            return UsdMayaPrimReader::ContextSupport::Fallback;
+        },
+        nullptr);
 
     return nullptr;
 }
