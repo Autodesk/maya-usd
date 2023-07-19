@@ -33,6 +33,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class MayaHydraSceneProducer;
+
 /**
  * \brief MayaHydraAiSkyDomeLightAdapter is used to handle the translation from an Arnold skydome
  * light to hydra.
@@ -60,8 +62,8 @@ class MayaHydraAiSkyDomeLightAdapter : public MayaHydraLightAdapter
     bool _usingSuffix1      = true; 
 
 public:
-    MayaHydraAiSkyDomeLightAdapter(MayaHydraDelegateCtx* delegate, const MDagPath& dag)
-        : MayaHydraLightAdapter(delegate, dag)
+    MayaHydraAiSkyDomeLightAdapter(MayaHydraSceneProducer* producer, const MDagPath& dag)
+        : MayaHydraLightAdapter(producer, dag)
     {
         //Init static variables if needed
         if (! _pTextureManager){
@@ -245,8 +247,8 @@ TF_REGISTRY_FUNCTION_WITH_TAG(MayaHydraAdapterRegistry, domeLight)
 {
     MayaHydraAdapterRegistry::RegisterLightAdapter(
         TfToken("aiSkyDomeLight"),
-        [](MayaHydraDelegateCtx* delegate, const MDagPath& dag) -> MayaHydraLightAdapterPtr {
-            return MayaHydraLightAdapterPtr(new MayaHydraAiSkyDomeLightAdapter(delegate, dag));
+        [](MayaHydraSceneProducer* producer, const MDagPath& dag) -> MayaHydraLightAdapterPtr {
+            return MayaHydraLightAdapterPtr(new MayaHydraAiSkyDomeLightAdapter(producer, dag));
         });
 }
 

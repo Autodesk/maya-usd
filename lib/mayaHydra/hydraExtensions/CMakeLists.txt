@@ -11,6 +11,7 @@ target_sources(${TARGET_NAME}
         interfaceImp.cpp
         mayaUtils.cpp
         utils.cpp
+        mayaHydraSceneProducer.cpp
 )
 
 set(HEADERS
@@ -20,6 +21,7 @@ set(HEADERS
     interfaceImp.h
     mayaUtils.h
     utils.h
+    mayaHydraSceneProducer.h
 )
 
 # -----------------------------------------------------------------------------

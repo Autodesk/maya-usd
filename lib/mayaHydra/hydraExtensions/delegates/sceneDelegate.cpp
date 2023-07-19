@@ -377,7 +377,7 @@ void MayaHydraSceneDelegate::HandleCompleteViewportScene(
             }
             // MAYA-128021: We do not currently support maya instances.
             MDagPath dagPath(ri.sourceDagPath());
-            ria = std::make_shared<MayaHydraRenderItemAdapter>(dagPath, slowId, fastId, this, ri);
+            ria = std::make_shared<MayaHydraRenderItemAdapter>(dagPath, slowId, fastId, GetProducer(), ri);
 
             //Update the render item adapter if this render item is an aiSkydomeLight shape
             ria->SetIsRenderITemAnaiSkydomeLightTriangleShape(isRenderItem_aiSkyDomeLightTriangleShape(ri));
@@ -799,7 +799,7 @@ MayaHydraMaterialAdapterPtr MayaHydraSceneDelegate::GetMaterialAdapter(const Sdf
 template <typename AdapterPtr, typename Map>
 AdapterPtr MayaHydraSceneDelegate::_CreateAdapter(
     const MDagPath&                                                          dag,
-    const std::function<AdapterPtr(MayaHydraDelegateCtx*, const MDagPath&)>& adapterCreator,
+    const std::function<AdapterPtr(MayaHydraSceneProducer*, const MDagPath&)>& adapterCreator,
     Map&                                                                     adapterMap,
     bool                                                                     isSprim)
 {
@@ -827,7 +827,7 @@ AdapterPtr MayaHydraSceneDelegate::_CreateAdapter(
     if (TfMapLookupPtr(adapterMap, id) != nullptr) {
         return {};
     }
-    auto adapter = adapterCreator(this, dag);
+    auto adapter = adapterCreator(GetProducer(), dag);
     if (adapter == nullptr || !adapter->IsSupported()) {
         return {};
     }
@@ -1548,7 +1548,7 @@ bool MayaHydraSceneDelegate::_CreateMaterial(const SdfPath& id, const MObject& o
     if (materialCreator == nullptr) {
         return false;
     }
-    auto materialAdapter = materialCreator(id, this, obj);
+    auto materialAdapter = materialCreator(id, GetProducer(), obj);
     if (materialAdapter == nullptr || !materialAdapter->IsSupported()) {
         return false;
     }

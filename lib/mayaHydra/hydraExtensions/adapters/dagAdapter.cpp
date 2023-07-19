@@ -17,6 +17,7 @@
 
 #include <mayaHydraLib/adapters/adapterDebugCodes.h>
 #include <mayaHydraLib/adapters/mayaAttrs.h>
+#include <mayaHydraLib/mayaHydraSceneProducer.h>
 
 #include <pxr/base/gf/interval.h>
 #include <pxr/base/tf/type.h>
@@ -102,7 +103,7 @@ void _HierarchyChanged(MDagPath& child, MDagPath& parent, void* clientData)
             parent.partialPathName().asChar());
     adapter->RemoveCallbacks();
     adapter->RemovePrim();
-    adapter->GetDelegate()->RecreateAdapterOnIdle(adapter->GetID(), adapter->GetNode());
+    adapter->GetSceneProducer()->RecreateAdapterOnIdle(adapter->GetID(), adapter->GetNode());
 }
 
 void _InstancerNodeDirty(MObject& node, MPlug& plug, void* clientData)
@@ -128,9 +129,9 @@ const auto _instancePrimvarDescriptors = HdPrimvarDescriptorVector {
 // MayaHydraDagAdapter is the adapter base class for any dag object.
 MayaHydraDagAdapter::MayaHydraDagAdapter(
     const SdfPath&        id,
-    MayaHydraDelegateCtx* delegate,
+    MayaHydraSceneProducer* producer,
     const MDagPath&       dagPath)
-    : MayaHydraAdapter(dagPath.node(), id, delegate)
+    : MayaHydraAdapter(dagPath.node(), id, producer)
     , _dagPath(dagPath)
 {
     // We shouldn't call virtual functions in constructors.
@@ -161,7 +162,7 @@ GfMatrix4d MayaHydraDagAdapter::GetTransform()
 size_t
 MayaHydraDagAdapter::SampleTransform(size_t maxSampleCount, float* times, GfMatrix4d* samples)
 {
-    return GetDelegate()->SampleValues(maxSampleCount, times, samples, [&]() -> GfMatrix4d {
+    return GetSceneProducer()->SampleValues(maxSampleCount, times, samples, [&]() -> GfMatrix4d {
         return MAYAHYDRA_NS::GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
     });
 }
@@ -203,9 +204,9 @@ void MayaHydraDagAdapter::CreateCallbacks()
 void MayaHydraDagAdapter::MarkDirty(HdDirtyBits dirtyBits)
 {
     if (dirtyBits != 0) {
-        GetDelegate()->GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits);
+        GetSceneProducer()->GetRenderIndex().GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits);
         if (IsInstanced()) {
-            GetDelegate()->GetChangeTracker().MarkInstancerDirty(GetInstancerID(), dirtyBits);
+            GetSceneProducer()->GetRenderIndex().GetChangeTracker().MarkInstancerDirty(GetInstancerID(), dirtyBits);
         }
         if (dirtyBits & HdChangeTracker::DirtyVisibility) {
             _visibilityDirty = true;
@@ -218,9 +219,9 @@ void MayaHydraDagAdapter::RemovePrim()
     if (!_isPopulated) {
         return;
     }
-    GetDelegate()->RemoveRprim(GetID());
+    GetSceneProducer()->RemoveRprim(GetID());
     if (_isInstanced) {
-        GetDelegate()->RemoveInstancer(GetID().AppendProperty(_tokens->instancer));
+        GetSceneProducer()->GetRenderIndex().RemoveInstancer(GetID().AppendProperty(_tokens->instancer));
     }
     _isPopulated = false;
 }

@@ -18,6 +18,7 @@
 #include <mayaHydraLib/adapters/adapterDebugCodes.h>
 #include <mayaHydraLib/adapters/materialNetworkConverter.h>
 #include <mayaHydraLib/adapters/mayaAttrs.h>
+#include <mayaHydraLib/mayaHydraSceneProducer.h>
 
 #include <pxr/base/tf/type.h>
 
@@ -35,7 +36,7 @@ void _preRemoval(MObject& node, void* clientData)
     auto* adapter = reinterpret_cast<MayaHydraAdapter*>(clientData);
     TF_DEBUG(MAYAHYDRALIB_ADAPTER_CALLBACKS)
         .Msg("Pre-removal callback triggered for prim (%s)\n", adapter->GetID().GetText());
-    adapter->GetDelegate()->RemoveAdapter(adapter->GetID());
+    adapter->GetSceneProducer()->RemoveAdapter(adapter->GetID());
 }
 
 void _nameChanged(MObject& node, const MString& str, void* clientData)
@@ -46,7 +47,7 @@ void _nameChanged(MObject& node, const MString& str, void* clientData)
     TF_DEBUG(MAYAHYDRALIB_ADAPTER_CALLBACKS)
         .Msg("Name-changed callback triggered for prim (%s)\n", adapter->GetID().GetText());
     adapter->RemoveCallbacks();
-    adapter->GetDelegate()->RecreateAdapterOnIdle(adapter->GetID(), adapter->GetNode());
+    adapter->GetSceneProducer()->RecreateAdapterOnIdle(adapter->GetID(), adapter->GetNode());
 }
 
 } // namespace
@@ -56,9 +57,9 @@ void _nameChanged(MObject& node, const MString& str, void* clientData)
 MayaHydraAdapter::MayaHydraAdapter(
     const MObject&        node,
     const SdfPath&        id,
-    MayaHydraDelegateCtx* delegate)
+    MayaHydraSceneProducer* producer)
     : _id(id)
-    , _delegate(delegate)
+    , _sceneProducer(producer)
     , _node(node)
 {
 }

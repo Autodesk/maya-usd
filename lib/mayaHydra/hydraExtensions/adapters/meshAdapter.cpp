@@ -18,6 +18,7 @@
 #include <mayaHydraLib/adapters/mayaAttrs.h>
 #include <mayaHydraLib/adapters/shapeAdapter.h>
 #include <mayaHydraLib/adapters/tokens.h>
+#include <mayaHydraLib/mayaHydraSceneProducer.h>
 
 #include <pxr/base/gf/interval.h>
 #include <pxr/base/tf/type.h>
@@ -78,8 +79,8 @@ const std::pair<MObject&, HdDirtyBits> _dirtyBits[] {
 class MayaHydraMeshAdapter : public MayaHydraShapeAdapter
 {
 public:
-    MayaHydraMeshAdapter(MayaHydraDelegateCtx* delegate, const MDagPath& dag)
-        : MayaHydraShapeAdapter(delegate->GetPrimPath(dag, false), delegate, dag)
+    MayaHydraMeshAdapter(MayaHydraSceneProducer* producer, const MDagPath& dag)
+        : MayaHydraShapeAdapter(producer->GetPrimPath(dag, false), producer, dag)
     {
     }
 
@@ -90,7 +91,7 @@ public:
         if (_isPopulated) {
             return;
         }
-        GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), GetInstancerID());
+        GetSceneProducer()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), GetInstancerID());
         _isPopulated = true;
     }
 
@@ -149,7 +150,7 @@ public:
 
     bool IsSupported() const override
     {
-        return GetDelegate()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->mesh);
+        return GetSceneProducer()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->mesh);
     }
 
     VtValue GetUVs()
@@ -219,7 +220,7 @@ public:
             if (ARCH_UNLIKELY(!status)) {
                 return 0;
             }
-            return GetDelegate()->SampleValues(
+            return GetSceneProducer()->SampleValues(
                 maxSampleCount, times, samples, [&]() -> VtValue { return GetPoints(mesh); });
         } else if (key == MayaHydraAdapterTokens->st) {
             times[0] = 0.0f;
@@ -246,7 +247,7 @@ public:
         }
 
         return HdMeshTopology(
-            (GetDelegate()->GetParams().displaySmoothMeshes || GetDisplayStyle().refineLevel > 0)
+            (GetSceneProducer()->GetParams().displaySmoothMeshes || GetDisplayStyle().refineLevel > 0)
                 ? PxOsdOpenSubdivTokens->catmullClark
                 : PxOsdOpenSubdivTokens->none,
 
@@ -462,8 +463,8 @@ TF_REGISTRY_FUNCTION_WITH_TAG(MayaHydraAdapterRegistry, mesh)
 {
     MayaHydraAdapterRegistry::RegisterShapeAdapter(
         TfToken("mesh"),
-        [](MayaHydraDelegateCtx* delegate, const MDagPath& dag) -> MayaHydraShapeAdapterPtr {
-            return MayaHydraShapeAdapterPtr(new MayaHydraMeshAdapter(delegate, dag));
+        [](MayaHydraSceneProducer* producer, const MDagPath& dag) -> MayaHydraShapeAdapterPtr {
+            return MayaHydraShapeAdapterPtr(new MayaHydraMeshAdapter(producer, dag));
         });
 }
 

@@ -241,7 +241,7 @@ private:
     template <typename AdapterPtr, typename Map>
     AdapterPtr _CreateAdapter(
         const MDagPath&                                                          dag,
-        const std::function<AdapterPtr(MayaHydraDelegateCtx*, const MDagPath&)>& adapterCreator,
+        const std::function<AdapterPtr(MayaHydraSceneProducer*, const MDagPath&)>& adapterCreator,
         Map&                                                                     adapterMap,
         bool                                                                     isSprim = false);
     
@@ -286,7 +286,7 @@ private:
     std::vector<MObject> _addedNodes;
 
     using LightAdapterCreator
-        = std::function<MayaHydraLightAdapterPtr(MayaHydraDelegateCtx*, const MDagPath&)>;
+        = std::function<MayaHydraLightAdapterPtr(MayaHydraSceneProducer*, const MDagPath&)>;
     std::vector<std::pair<MObject, LightAdapterCreator>> _lightsToAdd;
 
     /// Is used to maintain a list of Arnold lights, they are not seen as lights by Maya but as

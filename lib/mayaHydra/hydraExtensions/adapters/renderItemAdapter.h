@@ -26,7 +26,6 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/imaging/hd/meshTopology.h>
 #include <pxr/imaging/hd/renderIndex.h>
-#include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/imaging/hdx/renderTask.h>
 #include <pxr/pxr.h>
 
@@ -38,6 +37,8 @@
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+class MayaHydraSceneProducer;
 
 namespace {
 std::string kRenderItemTypeName = "renderItem";
@@ -61,7 +62,7 @@ public:
         const MDagPath&       dagPath,
         const SdfPath&        slowId,
         int                   fastId,
-        MayaHydraDelegateCtx* del,
+        MayaHydraSceneProducer* producer,
         const MRenderItem&    ri);
 
     MAYAHYDRALIB_API

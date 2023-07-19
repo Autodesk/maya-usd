@@ -22,6 +22,7 @@
 
 #include <mayaHydraLib/delegates/delegate.h>
 #include <mayaHydraLib/delegates/params.h>
+#include <mayaHydraLib/mayaHydraSceneProducer.h>
 
 #include <pxr/base/tf/singleton.h>
 #include <pxr/imaging/hd/driver.h>
@@ -208,8 +209,7 @@ private:
 
     GlfSimpleLight _defaultLight;
 
-    std::vector<MayaHydraDelegatePtr>       _delegates;
-    std::shared_ptr<MayaHydraSceneDelegate> _mayaHydraSceneDelegate;
+    std::unique_ptr<MayaHydraSceneProducer> _mayaHydraSceneProducer;
 
     SdfPath _ID;
 

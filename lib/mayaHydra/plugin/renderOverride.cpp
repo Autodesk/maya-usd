@@ -327,10 +327,8 @@ SdfPath MtohRenderOverride::RendererSceneDelegateId(TfToken rendererName, TfToke
         return SdfPath();
     }
 
-    for (auto& delegate : instance->_delegates) {
-        if (delegate->GetName() == sceneDelegateName) {
-            return delegate->GetMayaDelegateID();
-        }
+    if (instance->_mayaHydraSceneProducer) {
+        return instance->_mayaHydraSceneProducer->GetDelegateID(sceneDelegateName);
     }
     return SdfPath();
 }
@@ -460,8 +458,8 @@ MStatus MtohRenderOverride::Render(
         }
 
         if (scene.changed()) {
-            if (_mayaHydraSceneDelegate) {
-                _mayaHydraSceneDelegate->HandleCompleteViewportScene(
+            if (_mayaHydraSceneProducer) {
+                _mayaHydraSceneProducer->HandleCompleteViewportScene(
                     scene, static_cast<MFrameContext::DisplayStyle>(drawContext.getDisplayStyle()));
             }
         }
@@ -505,9 +503,9 @@ MStatus MtohRenderOverride::Render(
         _defaultLightDelegate->SetLightingOn(_hasDefaultLighting);
         _defaultLightDelegate->SetDefaultLight(_defaultLight);
     }
-    for (auto& it : _delegates) {
-        it->SetParams(delegateParams);
-        it->PreFrame(drawContext);
+    if (_mayaHydraSceneProducer) {
+        _mayaHydraSceneProducer->SetParams(delegateParams);
+        _mayaHydraSceneProducer->PreFrame(drawContext);
     }
 
     HdxRenderTaskParams params;
@@ -553,10 +551,10 @@ MStatus MtohRenderOverride::Render(
             Ufe::Path ufeCameraPath = Ufe::PathString::path(ufeCameraPathString.asChar());
             bool isMayaCamera = ufeCameraPath.runTimeId() == UfeExtensions::getMayaRunTimeId();
             if (isMayaCamera) {
-                if (_mayaHydraSceneDelegate) {
-                    params.camera = _mayaHydraSceneDelegate->SetCameraViewport(camPath, _viewport);
+                if (_mayaHydraSceneProducer) {
+                    params.camera = _mayaHydraSceneProducer->SetCameraViewport(camPath, _viewport);
                     if (vpDirty)
-                        _mayaHydraSceneDelegate->GetChangeTracker().MarkSprimDirty(
+                        _mayaHydraSceneProducer->GetRenderIndex().GetChangeTracker().MarkSprimDirty(
                             params.camera, HdCamera::DirtyParams);
                 }
             }
@@ -624,9 +622,8 @@ MStatus MtohRenderOverride::Render(
     } else {
         renderFrame(true);
     }
-
-    for (auto& it : _delegates) {
-        it->PostFrame();
+    if (_mayaHydraSceneProducer) {
+        _mayaHydraSceneProducer->PostFrame();
     }
 
     return MStatus::kSuccess;
@@ -686,47 +683,20 @@ void MtohRenderOverride::_InitHydraResources()
         SdfPath(),
         _isUsingHdSt);
 
-    SdfPathVector solidPrimsRootPaths;
-
-    _mayaHydraSceneDelegate = nullptr;
-    auto delegateNames = MayaHydraDelegateRegistry::GetDelegateNames();
-    auto creators = MayaHydraDelegateRegistry::GetDelegateCreators();
-    TF_VERIFY(delegateNames.size() == creators.size());
-    for (size_t i = 0, n = creators.size(); i < n; ++i) {
-        const auto& creator = creators[i];
-        if (creator == nullptr) {
-            continue;
-        }
-        delegateInitData.name = delegateNames[i];
-        delegateInitData.delegateID = _ID.AppendChild(
-            TfToken(TfStringPrintf("_Delegate_%s_%lu_%p", delegateNames[i].GetText(), i, this)));
-        auto newDelegate = creator(delegateInitData);
-        if (newDelegate) {
-            // Call SetLightsEnabled before the delegate is populated
-            newDelegate->SetLightsEnabled(!_hasDefaultLighting);
-            _mayaHydraSceneDelegate
-                = std::dynamic_pointer_cast<MayaHydraSceneDelegate>(newDelegate);
-            if (TF_VERIFY(
-                    _mayaHydraSceneDelegate,
-                    "Maya Hydra scene delegate not found, check mayaHydra plugin installation.")) {
-                solidPrimsRootPaths.push_back(_mayaHydraSceneDelegate->GetLightedPrimsRootPath());
-            }
-            _delegates.emplace_back(std::move(newDelegate));
-        }
-    }
+    _mayaHydraSceneProducer.reset(new MayaHydraSceneProducer(_ID, delegateInitData, !_hasDefaultLighting));
 
     delegateInitData.delegateID
         = _ID.AppendChild(TfToken(TfStringPrintf("_DefaultLightDelegate_%p", this)));
     _defaultLightDelegate.reset(new MtohDefaultLightDelegate(delegateInitData));
     // Set the scene delegate SolidPrimitivesRootPaths for the lines and points primitives to be
     // ignored by the default light
-    _defaultLightDelegate->SetSolidPrimitivesRootPaths(solidPrimsRootPaths);
+    _defaultLightDelegate->SetSolidPrimitivesRootPaths(_mayaHydraSceneProducer->GetSolidPrimsRootPaths());
 
     VtValue selectionTrackerValue(_selectionTracker);
     _engine.SetTaskContextData(HdxTokens->selectionState, selectionTrackerValue);
-    for (auto& it : _delegates) {
-        it->Populate();
-    }
+
+    _mayaHydraSceneProducer->Populate();
+
     if (_defaultLightDelegate && _hasDefaultLighting) {
         _defaultLightDelegate->Populate();
     }
@@ -767,9 +737,8 @@ void MtohRenderOverride::ClearHydraResources()
     TF_DEBUG(MAYAHYDRALIB_RENDEROVERRIDE_RESOURCES)
         .Msg("MtohRenderOverride::ClearHydraResources(%s)\n", _rendererDesc.rendererName.GetText());
 
-    _mayaHydraSceneDelegate = nullptr;
-    
-    _delegates.clear();
+    _mayaHydraSceneProducer = nullptr;
+
     _defaultLightDelegate.reset();
 
     // Cleanup internal context data that keep references to data that is now
@@ -829,9 +798,10 @@ void MtohRenderOverride::_SelectionChanged()
     SdfPathVector selectedPaths;
     auto          selection = std::make_shared<HdSelection>();
 
-    for (auto& it : _delegates) {
-        it->PopulateSelectedPaths(sel, selectedPaths, selection);
+    if (_mayaHydraSceneProducer) {
+        _mayaHydraSceneProducer->PopulateSelectedPaths(sel, selectedPaths, selection);
     }
+
     _selectionCollection.SetRootPaths(selectedPaths);
     _selectionTracker->SetSelection(HdSelectionSharedPtr(selection));
     TF_DEBUG(MAYAHYDRALIB_RENDEROVERRIDE_SELECTION)
@@ -939,12 +909,12 @@ void MtohRenderOverride::_PopulateSelectionList(
     if (hits.empty())
         return;
 
-    if (_mayaHydraSceneDelegate) {
+    if (_mayaHydraSceneProducer) {
 
         MStatus status;
         if (auto ufeSel = Ufe::NamedSelection::get(kNamedSelection)) {
             for (const HdxPickHit& hit : hits) {
-                if (_mayaHydraSceneDelegate->AddPickHitToSelectionList(
+                if (_mayaHydraSceneProducer->AddPickHitToSelectionList(
                         hit, selectInfo, selectionList, worldSpaceHitPts)) {
                     continue;
                 }

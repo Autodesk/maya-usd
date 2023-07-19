@@ -39,6 +39,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class MayaHydraSceneProducer;
+
 /**
  * \brief MayaHydraDagAdapter is the adapter base class for any dag object.
  */
@@ -46,7 +48,7 @@ class MayaHydraDagAdapter : public MayaHydraAdapter
 {
 protected:
     MAYAHYDRALIB_API
-    MayaHydraDagAdapter(const SdfPath& id, MayaHydraDelegateCtx* delegate, const MDagPath& dagPath);
+    MayaHydraDagAdapter(const SdfPath& id, MayaHydraSceneProducer* producer, const MDagPath& dagPath);
 
 public:
     MAYAHYDRALIB_API
