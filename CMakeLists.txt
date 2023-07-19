@@ -156,7 +156,7 @@ endif()
 
 if(DEFINED QT_LOCATION)
     if(NOT DEFINED QT_VERSION)
-		if(BUILD_WITH_QT_6)
+        if(BUILD_WITH_QT_6)
 			set(QT_VERSION "6.5")
         else() # Maya 2022, 2023, 2024
             set(QT_VERSION "5.15")
@@ -164,19 +164,41 @@ if(DEFINED QT_LOCATION)
         message(STATUS "Setting Qt version to Qt ${QT_VERSION}")
     endif()
     set(CMAKE_PREFIX_PATH "${QT_LOCATION}")
+
 	if(BUILD_WITH_QT_6)
 		find_package(Qt6 ${QT_VERSION} COMPONENTS Core Gui Widgets REQUIRED)
-		if(Qt6_FOUND)
-			message(STATUS "Building with Qt ${QT_VERSION} features enabled.")
-		endif()
 	else()
 		find_package(Qt5 ${QT_VERSION} COMPONENTS Core Gui Widgets REQUIRED)
-		if(Qt5_FOUND)
-			message(STATUS "Building with Qt ${QT_VERSION} features enabled.")
-		endif()
 	endif()
+    if(Qt5_FOUND OR Qt6_FOUND)
+        message(STATUS "Found Qt in custom location, building with Qt ${QT_VERSION} features enabled.")
+        set(Qt_FOUND TRUE)
+    else()
+        message(WARNING "Could not find Qt in custom location: ${QT_LOCATION}. Building with Qt features will be disabled.")
+    endif()
 else()
-    message(STATUS "QT_LOCATION not set. Building Qt features will be disabled.")
+    # First look for Qt6 in the Maya devkit.
+    # The Qt6 archive in the Maya devkit contains everything needed for the normal cmake find_package.
+    set(CMAKE_PREFIX_PATH "${MAYA_DEVKIT_LOCATION}/Qt")
+    find_package(Qt6 6.5 COMPONENTS Core Gui Widgets QUIET)
+    if (Qt6_FOUND)
+        message(STATUS "Found Qt6 in Maya devkit, building with Qt ${Qt6_VERSION} features enabled.")
+        set(BUILD_WITH_QT_6 ON)
+        set(Qt_FOUND TRUE)
+    else()
+        # If we didn't find Qt6 in Maya devkit, search again, but for Qt5 this time.
+        # Minimum version required is 5.15 (Maya 2022/2023/2024).
+        # This will find Qt in the Maya devkit using a custom find package.
+        # So the version will match Maya we are building for.
+        find_package(Maya_Qt 5.15 COMPONENTS Core Gui Widgets QUIET)
+        if (Maya_Qt_FOUND)
+            message(STATUS "Found Qt5 in Maya devkit, building with Qt ${MAYA_QT_VERSION} features enabled.")
+            set(BUILD_WITH_QT_6 OFF)
+            set(Qt_FOUND TRUE)
+        else()
+            message(WARNING "Could not find Qt in Maya devkit directory: ${MAYA_DEVKIT_LOCATION}. Building with Qt features will be disabled.")
+        endif()
+    endif()
 endif()
 
 #------------------------------------------------------------------------------
