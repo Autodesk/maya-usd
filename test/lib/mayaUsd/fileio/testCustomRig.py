@@ -180,7 +180,8 @@ class testCustomRig(unittest.TestCase):
         bobUfePathStr = "{},/world/anim/bob".format(proxyShape)
         
         # Pull the object for editing in Maya
-        self.assertTrue(mayaUsdLib.PrimUpdaterManager.editAsMaya(bobUfePathStr))
+        with mayaUsdLib.OpUndoItemList():
+            self.assertTrue(mayaUsdLib.PrimUpdaterManager.editAsMaya(bobUfePathStr))
         
         # Retrieve pulled object
         bobMayaPathStr = cmds.ls(sl=True)[0]
@@ -198,7 +199,8 @@ class testCustomRig(unittest.TestCase):
         cmds.setKeyframe( "bob|pCube2.ty", time=10.0, value=10 )
         
         # Push the animation back to USD. This will use a custom logic that will write it to a new prim
-        self.assertTrue(mayaUsdLib.PrimUpdaterManager.mergeToUsd(bobMayaPathStr))
+        with mayaUsdLib.OpUndoItemList():
+            self.assertTrue(mayaUsdLib.PrimUpdaterManager.mergeToUsd(bobMayaPathStr))
         
         # After push, all Maya objects should be gone
         self.assertFalse(self._GetMFnDagNode("bob"))
@@ -243,7 +245,8 @@ class testCustomRig(unittest.TestCase):
         bobUfePathStr = "{},/world/anim/bob".format(proxyShape)
         
         # Pull the object for editing in Maya
-        self.assertTrue(mayaUsdLib.PrimUpdaterManager.editAsMaya(bobUfePathStr))
+        with mayaUsdLib.OpUndoItemList():
+            self.assertTrue(mayaUsdLib.PrimUpdaterManager.editAsMaya(bobUfePathStr))
         
         # Retrieve pulled object
         bobMayaPathStr = cmds.ls(sl=True)[0]
@@ -267,7 +270,8 @@ class testCustomRig(unittest.TestCase):
             'endTime': 9.0,
             'frameStride': 2.0,
         }
-        self.assertTrue(mayaUsdLib.PrimUpdaterManager.mergeToUsd(bobMayaPathStr, userArgs))
+        with mayaUsdLib.OpUndoItemList():
+            self.assertTrue(mayaUsdLib.PrimUpdaterManager.mergeToUsd(bobMayaPathStr, userArgs))
         
         # After push, all Maya objects should be gone
         self.assertFalse(self._GetMFnDagNode("bob"))

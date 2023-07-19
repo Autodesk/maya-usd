@@ -303,6 +303,10 @@ public:
     MAYAUSD_CORE_PUBLIC
     ~FunctionUndoItem() override;
 
+    /// \brief execute a single sub-operation. Calls redo.
+    MAYAUSD_CORE_PUBLIC
+    bool execute() override;
+
     /// \brief undo a single sub-operation.
     MAYAUSD_CORE_PUBLIC
     bool undo() override;
