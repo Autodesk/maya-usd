@@ -173,11 +173,12 @@ Ufe::Color3f UsdLight::color() const { return getLightColor(prim()); }
 bool getLightShadowEnable(const UsdPrim& prim)
 {
     const UsdLuxShadowAPI      shadowAPI(prim);
-    const PXR_NS::UsdAttribute lightAttribute = shadowAPI.GetShadowEnableAttr();
+    PXR_NS::UsdAttribute lightAttribute = shadowAPI.GetShadowEnableAttr();
 
     if (!lightAttribute) {
         // If the shadow enable attribute is not created yet, create one here
-        shadowAPI.CreateShadowEnableAttr(VtValue(true));
+        lightAttribute = shadowAPI.CreateShadowEnableAttr(VtValue(true));
+        return true;
     }
 
     bool val = false;
@@ -210,11 +211,11 @@ bool UsdLight::shadowEnable() const { return getLightShadowEnable(prim()); }
 Ufe::Color3f getLightShadowColor(const UsdPrim& prim)
 {
     const UsdLuxShadowAPI      shadowAPI(prim);
-    const PXR_NS::UsdAttribute lightAttribute = shadowAPI.GetShadowColorAttr();
+    PXR_NS::UsdAttribute lightAttribute = shadowAPI.GetShadowColorAttr();
 
     if (!lightAttribute) {
         // If the shadow color attribute is not created yet, create one here
-        shadowAPI.CreateShadowColorAttr();
+        lightAttribute = shadowAPI.CreateShadowColorAttr();
     }
 
     GfVec3f val(0.f, 0.f, 0.f);
