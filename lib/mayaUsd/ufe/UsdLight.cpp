@@ -172,8 +172,8 @@ Ufe::Color3f UsdLight::color() const { return getLightColor(prim()); }
 
 bool getLightShadowEnable(const UsdPrim& prim)
 {
-    const UsdLuxShadowAPI      shadowAPI(prim);
-    PXR_NS::UsdAttribute lightAttribute = shadowAPI.GetShadowEnableAttr();
+    const UsdLuxShadowAPI shadowAPI(prim);
+    PXR_NS::UsdAttribute  lightAttribute = shadowAPI.GetShadowEnableAttr();
 
     if (!lightAttribute) {
         // If the shadow enable attribute is not created yet, create one here
@@ -210,8 +210,8 @@ bool UsdLight::shadowEnable() const { return getLightShadowEnable(prim()); }
 
 Ufe::Color3f getLightShadowColor(const UsdPrim& prim)
 {
-    const UsdLuxShadowAPI      shadowAPI(prim);
-    PXR_NS::UsdAttribute lightAttribute = shadowAPI.GetShadowColorAttr();
+    const UsdLuxShadowAPI shadowAPI(prim);
+    PXR_NS::UsdAttribute  lightAttribute = shadowAPI.GetShadowColorAttr();
 
     if (!lightAttribute) {
         // If the shadow color attribute is not created yet, create one here
