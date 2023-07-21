@@ -234,7 +234,11 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
         renderIndex->InsertTask<HdxSelectionTask>(this, _selectionTaskId);
         _ValueCache&           cache = _valueCacheMap[_selectionTaskId];
         HdxSelectionTaskParams taskParams;
+#if HDX_API_VERSION < 10
         taskParams.enableSelection = true;
+#else
+        taskParams.enableSelectionHighlight = true;
+#endif
 
         // Note that the selection color is a constant zero value. This is to
         // mimic selection behavior in Maya where the wireframe color is what
