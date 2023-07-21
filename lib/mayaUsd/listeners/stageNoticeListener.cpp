@@ -246,10 +246,9 @@ UsdMayaStageNoticeListener::ClassifyObjectsChanged(UsdNotice::ObjectsChanged con
         if (it->IsAbsoluteRootOrPrimPath()) {
             const TfTokenVector changedFields = it.GetChangedFields();
             for (auto&& changedField : changedFields) {
-                if (changedField == SdfFieldKeys->CustomData && it->IsPrimPath()) {
-                    if (_IsShadingPrim(notice.GetStage()->GetPrimAtPath(it->GetPrimPath()))) {
-                        continue;
-                    }
+                if (changedField == SdfFieldKeys->CustomData && it->IsPrimPath()
+                    && _IsShadingPrim(notice.GetStage()->GetPrimAtPath(it->GetPrimPath()))) {
+                    continue;
                 }
                 retVal = ChangeType::kUpdate;
                 break;
