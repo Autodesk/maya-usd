@@ -49,6 +49,9 @@ class primWriterTest(mayaUsdLib.PrimWriter):
         self._SetUsdPrim(usdPrim)
         primWriterTest.InitCalled = True
 
+    def CanExport(cls, exportArgs, exportObj=None):
+        return mayaUsdLib.PrimWriter.ContextSupport.Supported
+
     def Write(self, usdTime):
         depNodeFn = OpenMaya.MFnDependencyNode(self.GetMayaObject())
         plg = depNodeFn.findPlug('inMesh', True)
