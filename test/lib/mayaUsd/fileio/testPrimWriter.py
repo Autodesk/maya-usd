@@ -49,6 +49,7 @@ class primWriterTest(mayaUsdLib.PrimWriter):
         self._SetUsdPrim(usdPrim)
         primWriterTest.InitCalled = True
 
+    @classmethod
     def CanExport(cls, exportArgs, exportObj=None):
         return mayaUsdLib.PrimWriter.ContextSupport.Supported
 
