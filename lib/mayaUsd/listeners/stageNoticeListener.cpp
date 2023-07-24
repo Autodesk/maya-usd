@@ -22,6 +22,8 @@
 #include <pxr/usd/usd/notice.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/tokens.h>
+#include <pxr/usd/usdShade/nodeGraph.h>
+#include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdUI/tokens.h>
 
 #include <mutex>
@@ -193,6 +195,11 @@ bool _IsUiSchemaPrepend(const VtValue& v)
     }
     return false;
 }
+
+bool _IsShadingPrim(const UsdPrim& prim)
+{
+    return prim && (prim.IsA<UsdShadeShader>() || prim.IsA<UsdShadeNodeGraph>());
+}
 } // namespace
 
 UsdMayaStageNoticeListener::ChangeType
@@ -238,8 +245,13 @@ UsdMayaStageNoticeListener::ClassifyObjectsChanged(UsdNotice::ObjectsChanged con
     for (PathRange::const_iterator it = pathsToUpdate.begin(); it != pathsToUpdate.end(); ++it) {
         if (it->IsAbsoluteRootOrPrimPath()) {
             const TfTokenVector changedFields = it.GetChangedFields();
-            if (!changedFields.empty()) {
+            for (auto&& changedField : changedFields) {
+                if (changedField == SdfFieldKeys->CustomData && it->IsPrimPath()
+                    && _IsShadingPrim(notice.GetStage()->GetPrimAtPath(it->GetPrimPath()))) {
+                    continue;
+                }
                 retVal = ChangeType::kUpdate;
+                break;
             }
         } else if (it->IsPropertyPath()) {
             // We have a bunch of UI properties to ignore. Especially anything that comes from UI
