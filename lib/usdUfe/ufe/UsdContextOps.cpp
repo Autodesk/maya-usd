@@ -18,7 +18,7 @@
 #include "private/UfeNotifGuard.h"
 
 #include <usdUfe/ufe/SetVariantSelectionCommand.h>
-#include <usdUfe/ufe/UsdObject3d.h>
+#include <usdUfe/ufe/UsdObject3dHandler.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>
 #include <usdUfe/ufe/UsdUndoPayloadCommand.h>
@@ -29,11 +29,6 @@
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
 #include <pxr/usd/usd/variantSets.h>
-#include <pxr/usd/usdGeom/tokens.h>
-
-#include <ufe/attribute.h>
-#include <ufe/attributes.h>
-#include <ufe/object3d.h>
 
 #include <vector>
 
@@ -326,17 +321,15 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                     kUSDVariantSetsItem, kUSDVariantSetsLabel, Ufe::ContextItem::kHasChildren);
             }
             // Visibility:
-            // If the item has a visibility attribute, add menu item to change visibility.
+            // If the item has the object3d interface, add menu item to change visibility.
             // Note: certain prim types such as shaders & materials don't support visibility.
-            auto attributes = Ufe::Attributes::attributes(sceneItem());
-            if (attributes && attributes->hasAttribute(UsdGeomTokens->visibility)) {
-                auto visibility = std::dynamic_pointer_cast<Ufe::AttributeEnumString>(
-                    attributes->attribute(UsdGeomTokens->visibility));
-                if (visibility) {
-                    auto              current = visibility->get();
-                    const std::string l = (current == UsdGeomTokens->invisible)
-                        ? std::string(kUSDMakeVisibleLabel)
-                        : std::string(kUSDMakeInvisibleLabel);
+            auto object3dHndlr = UsdObject3dHandler::create();
+            if (object3dHndlr) {
+                auto object3d = object3dHndlr->object3d(sceneItem());
+                if (object3d) {
+                    auto       visibility = object3d->visibility();
+                    const auto l = visibility ? std::string(kUSDMakeInvisibleLabel)
+                                              : std::string(kUSDMakeVisibleLabel);
                     items.emplace_back(kUSDToggleVisibilityItem, l);
                 }
             }
@@ -467,6 +460,8 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
             path(), prim(), itemPath[1], itemPath[2]);
     } // Variant sets
     else if (itemPath[0] == kUSDToggleVisibilityItem) {
+        // Note: can use UsdObject3d::create() directly here since we know the item
+        //       supports it (because we added the menu item).
         auto object3d = UsdObject3d::create(fItem);
         if (!TF_VERIFY(object3d))
             return nullptr;
