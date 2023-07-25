@@ -118,13 +118,11 @@ public:
     MAYAUSD_CORE_PUBLIC
     static MObject mutedLayersAttr;
 
-#if MAYA_API_VERSION >= 20240000 && MAYA_API_VERSION <= 20249999
     // Change counter attributes
     MAYAUSD_CORE_PUBLIC
     static MObject updateCounterAttr;
     MAYAUSD_CORE_PUBLIC
     static MObject resyncCounterAttr;
-#endif
 
     // Output attributes
     MAYAUSD_CORE_PUBLIC
@@ -171,10 +169,8 @@ public:
 
     MAYAUSD_CORE_PUBLIC
     void postConstructor() override;
-#if MAYA_API_VERSION >= 20240000 && MAYA_API_VERSION <= 20249999
     MAYAUSD_CORE_PUBLIC
     bool getInternalValue(const MPlug&, MDataHandle&) override;
-#endif
     MAYAUSD_CORE_PUBLIC
     MStatus compute(const MPlug& plug, MDataBlock& dataBlock) override;
     MAYAUSD_CORE_PUBLIC
@@ -406,11 +402,9 @@ private:
     size_t                              _excludePrimPathsVersion { 1 };
     size_t                              _UsdStageVersion { 1 };
 
-#if MAYA_API_VERSION >= 20240000 && MAYA_API_VERSION <= 20249999
     // Notification counters:
     MInt64 _UsdStageUpdateCounter { 1 };
     MInt64 _UsdStageResyncCounter { 1 };
-#endif
 
     MayaUsd::ProxyAccessor::Owner _usdAccessor;
 
