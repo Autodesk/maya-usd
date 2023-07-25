@@ -91,7 +91,7 @@ public:
         if (_isPopulated) {
             return;
         }
-        GetSceneProducer()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), GetInstancerID());
+        GetSceneProducer()->InsertRprim(this, HdPrimTypeTokens->mesh, GetID(), GetInstancerID());
         _isPopulated = true;
     }
 

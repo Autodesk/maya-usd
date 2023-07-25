@@ -71,7 +71,7 @@ public:
         return GetSceneProducer()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->basisCurves);
     }
 
-    void Populate() override { GetSceneProducer()->InsertRprim(HdPrimTypeTokens->basisCurves, GetID()); }
+    void Populate() override { GetSceneProducer()->InsertRprim(this, HdPrimTypeTokens->basisCurves, GetID()); }
 
     void CreateCallbacks() override
     {

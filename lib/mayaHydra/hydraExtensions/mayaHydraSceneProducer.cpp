@@ -18,6 +18,7 @@
 
 #include <mayaHydraLib/delegates/sceneDelegate.h>
 #include <mayaHydraLib/delegates/delegateRegistry.h>
+#include <mayaHydraLib/sceneIndex/mayaHydraSceneIndex.h>
 
 #include <pxr/base/tf/envSetting.h>
 
@@ -38,7 +39,16 @@ MayaHydraSceneProducer::MayaHydraSceneProducer(
 {
     if (enableMayaNativeSceneIndex())
     {
-        //_sceneIndex = new MayaHydraSceneIndex();
+        initData.name = TfToken("MayaHydraSceneIndex");
+        initData.delegateID = id.AppendChild(
+            TfToken(TfStringPrintf("_Index_MayaHydraSceneIndex_%p", this)));
+        initData.producer = this;
+        _sceneIndex = MayaHydraSceneIndex::New(id, initData, lightEnabled);
+        if (TF_VERIFY(
+            _sceneIndex,
+            "Maya Hydra scene index not found, check mayaHydra plugin installation.")) {
+            _solidPrimsRootPaths.push_back(_sceneIndex->GetLightedPrimsRootPath());
+        }
     }
     else
     {
@@ -73,6 +83,10 @@ MayaHydraSceneProducer::MayaHydraSceneProducer(
 
 MayaHydraSceneProducer::~MayaHydraSceneProducer()
 {
+    if (enableMayaNativeSceneIndex())
+    {
+        _sceneIndex->GetRenderIndex().RemoveSceneIndex(_sceneIndex);
+    }
     _delegates.clear();
 }
 
@@ -80,7 +94,7 @@ void MayaHydraSceneProducer::HandleCompleteViewportScene(const MDataServerOperat
 {
     if (enableMayaNativeSceneIndex())
     {
-        //return _sceneIndex->HandleCompleteViewportScene(scene, ds);
+        return _sceneIndex->HandleCompleteViewportScene(scene, ds);
     }
     else
     {
@@ -92,7 +106,9 @@ void MayaHydraSceneProducer::Populate()
 {
     if (enableMayaNativeSceneIndex())
     {
-        //return _sceneIndex->Populate();
+        _sceneIndex->Populate();
+        // Call InsertSceneIndex before prims are added to scene index, would it be better to call later?
+        _sceneIndex->GetRenderIndex().InsertSceneIndex(_sceneIndex, SdfPath::AbsoluteRootPath());
     }
     else
     {
@@ -109,10 +125,10 @@ void MayaHydraSceneProducer::PopulateSelectedPaths(
 {
     if (enableMayaNativeSceneIndex())
     {
-        //return _sceneIndex->PopulateSelectedPaths(
-        //    mayaSelection,
-        //    selectedSdfPaths,
-        //    selection);
+        return _sceneIndex->PopulateSelectedPaths(
+            mayaSelection,
+            selectedSdfPaths,
+            selection);
     }
     else
     {
@@ -126,8 +142,7 @@ SdfPath MayaHydraSceneProducer::SetCameraViewport(const MDagPath& camPath, const
 {
     if (enableMayaNativeSceneIndex())
     {
-        //return _sceneIndex->SetCameraViewport(camPath, viewport);
-        return SdfPath();
+        return _sceneIndex->SetCameraViewport(camPath, viewport);
     }
     else
     {
@@ -139,7 +154,7 @@ void MayaHydraSceneProducer::SetLightsEnabled(const bool enabled)
 {
     if (enableMayaNativeSceneIndex())
     {
-        //return _sceneIndex->SetLightsEnabled(enabled);
+        return _sceneIndex->SetLightsEnabled(enabled);
     }
     else
     {
@@ -151,9 +166,7 @@ const MayaHydraParams& MayaHydraSceneProducer::GetParams() const
 {
     if (enableMayaNativeSceneIndex())
     {
-        //return _sceneIndex->GetParams();
-        static MayaHydraParams params;
-        return params;
+        return _sceneIndex->GetParams();
     }
     else
     {
@@ -165,7 +178,7 @@ void MayaHydraSceneProducer::SetParams(const MayaHydraParams& params)
 {
     if (enableMayaNativeSceneIndex())
     {
-        //return _sceneIndex->SetParams(params);
+        return _sceneIndex->SetParams(params);
     }
     else
     {
@@ -183,12 +196,11 @@ bool MayaHydraSceneProducer::AddPickHitToSelectionList(
 {
     if (enableMayaNativeSceneIndex())
     {
-        //return _sceneIndex->AddPickHitToSelectionList(
-        //    hit,
-        //    selectInfo,
-        //    selectionList,
-        //    worldSpaceHitPts);
-        return false;
+        return _sceneIndex->AddPickHitToSelectionList(
+            hit,
+            selectInfo,
+            selectionList,
+            worldSpaceHitPts);
     }
     else
     {
@@ -204,9 +216,7 @@ HdRenderIndex& MayaHydraSceneProducer::GetRenderIndex()
 {
     if (enableMayaNativeSceneIndex())
     {
-        //return _sceneIndex->GetRenderIndex();
-        auto index = HdRenderIndex::New(nullptr, {});
-        return *index;
+        return _sceneIndex->GetRenderIndex();
     }
     else
     {
@@ -218,7 +228,7 @@ bool MayaHydraSceneProducer::IsHdSt() const
 {
     if (enableMayaNativeSceneIndex())
     {
-        return true;
+        return _sceneIndex->IsHdSt();
     }
     else
     {
@@ -242,8 +252,7 @@ SdfPath MayaHydraSceneProducer::GetPrimPath(const MDagPath& dg, bool isSprim)
 {
     if (enableMayaNativeSceneIndex())
     {
-        //return _sceneIndex->GetPrimPath(dg, isSprim);
-        return SdfPath();
+        return _sceneIndex->GetPrimPath(dg, isSprim);
     }
     else
     {
@@ -252,13 +261,14 @@ SdfPath MayaHydraSceneProducer::GetPrimPath(const MDagPath& dg, bool isSprim)
 }
 
 void MayaHydraSceneProducer::InsertRprim(
+    MayaHydraAdapter* adapter,
     const TfToken& typeId,
     const SdfPath& id,
     const SdfPath& instancerId)
 {
     if (enableMayaNativeSceneIndex())
     {
-        //return _sceneIndex->InsertRprim();
+        return _sceneIndex->InsertRprim(adapter, typeId, id, instancerId);
     }
     else
     {
@@ -270,11 +280,23 @@ void MayaHydraSceneProducer::RemoveRprim(const SdfPath& id)
 {
     if (enableMayaNativeSceneIndex())
     {
-        //_sceneIndex->RemoveRprim(id);
+        _sceneIndex->RemoveRprim(id);
     }
     else
     {
         _sceneDelegate->RemoveRprim(id);
+    }
+}
+
+void MayaHydraSceneProducer::MarkRprimDirty(const SdfPath& id, HdDirtyBits dirtyBits)
+{
+    if (enableMayaNativeSceneIndex())
+    {
+        _sceneIndex->MarkRprimDirty(id, dirtyBits);
+    }
+    else
+    {
+        _sceneDelegate->GetRenderIndex().GetChangeTracker().MarkRprimDirty(id, dirtyBits);
     }
 }
 
@@ -285,7 +307,7 @@ void MayaHydraSceneProducer::InsertSprim(
 {
     if (enableMayaNativeSceneIndex())
     {
-        //_sceneIndex->InsertSprim();
+        _sceneIndex->InsertSprim(typeId, id, initialBits);
     }
     else
     {
@@ -297,7 +319,7 @@ void MayaHydraSceneProducer::RemoveSprim(const TfToken& typeId, const SdfPath& i
 {
     if (enableMayaNativeSceneIndex())
     {
-        //_sceneIndex->RemoveSprim(typeId, id);
+        _sceneIndex->RemoveSprim(typeId, id);
     }
     else
     {
@@ -309,6 +331,7 @@ void MayaHydraSceneProducer::AddArnoldLight(const MDagPath& dag)
 {
     if (enableMayaNativeSceneIndex())
     {
+        // TODO: Light
         //_sceneIndex->AddArnoldLight(dag);
     }
     else
@@ -321,6 +344,7 @@ void MayaHydraSceneProducer::RemoveArnoldLight(const MDagPath& dag)
 {
     if (enableMayaNativeSceneIndex())
     {
+        // TODO: Light
         //_sceneIndex->RemoveArnoldLight(dag);
     }
     else
@@ -333,8 +357,7 @@ SdfPath MayaHydraSceneProducer::GetDelegateID(TfToken name)
 {
     if (enableMayaNativeSceneIndex())
     {
-        //return _sceneIndex->GetDelegateID(name);
-        return SdfPath();
+        return _sceneIndex->GetDelegateID(name);
     }
     else
     {
@@ -351,7 +374,7 @@ void MayaHydraSceneProducer::PreFrame(const MHWRender::MDrawContext& drawContext
 {
     if (enableMayaNativeSceneIndex())
     {
-        //return _sceneIndex->PreFrame(drawContext);
+        _sceneIndex->PreFrame(drawContext);
     }
     else
     {
@@ -365,7 +388,7 @@ void MayaHydraSceneProducer::PostFrame()
 {
     if (enableMayaNativeSceneIndex())
     {
-        //return _sceneIndex->PostFrame();
+        _sceneIndex->PostFrame();
     }
     else
     {
@@ -379,7 +402,7 @@ void MayaHydraSceneProducer::RemoveAdapter(const SdfPath& id)
 {
     if (enableMayaNativeSceneIndex())
     {
-        //return _sceneIndex->RemoveAdapter();
+        return _sceneIndex->RemoveAdapter(id);
     }
     else
     {
@@ -391,7 +414,7 @@ void MayaHydraSceneProducer::RecreateAdapterOnIdle(const SdfPath& id, const MObj
 {
     if (enableMayaNativeSceneIndex())
     {
-        //return _sceneIndex->RecreateAdapterOnIdle(id, obj);
+        return _sceneIndex->RecreateAdapterOnIdle(id, obj);
     }
     else
     {
@@ -403,8 +426,7 @@ SdfPath MayaHydraSceneProducer::GetLightedPrimsRootPath() const
 {
     if (enableMayaNativeSceneIndex())
     {
-        //return _sceneIndex->GetDelegateID(name);
-        return SdfPath();
+        return _sceneIndex->GetLightedPrimsRootPath();
     }
     else
     {
@@ -416,6 +438,7 @@ void MayaHydraSceneProducer::MaterialTagChanged(const SdfPath& id)
 {
     if (enableMayaNativeSceneIndex())
     {
+        // TODO: Material
         //return _sceneIndex->MaterialTagChanged(name);
     }
     else
@@ -428,8 +451,7 @@ GfInterval MayaHydraSceneProducer::GetCurrentTimeSamplingInterval() const
 {
     if (enableMayaNativeSceneIndex())
     {
-        //return _sceneIndex->GetCurrentTimeSamplingInterval(name);
-        return GfInterval();
+        return _sceneIndex->GetCurrentTimeSamplingInterval();
     }
     else
     {

@@ -64,7 +64,7 @@ MayaHydraRenderItemAdapter::MayaHydraRenderItemAdapter(
     , _name(ri.name())
     , _fastId(fastId)
 {
-    _InsertRprim();
+    _InsertRprim(this);
 }
 
 MayaHydraRenderItemAdapter::~MayaHydraRenderItemAdapter() { _RemoveRprim(); }
@@ -99,18 +99,18 @@ bool MayaHydraRenderItemAdapter::IsSupported() const
     }
 }
 
-void MayaHydraRenderItemAdapter::_InsertRprim()
+void MayaHydraRenderItemAdapter::_InsertRprim(MayaHydraAdapter* adapter)
 {
     switch (GetPrimitive()) {
     case MHWRender::MGeometry::Primitive::kTriangles:
-        GetSceneProducer()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), {});
+        GetSceneProducer()->InsertRprim(adapter, HdPrimTypeTokens->mesh, GetID(), {});
         break;
     case MHWRender::MGeometry::Primitive::kLines:
     case MHWRender::MGeometry::Primitive::kLineStrip:
-        GetSceneProducer()->InsertRprim(HdPrimTypeTokens->basisCurves, GetID(), {});
+        GetSceneProducer()->InsertRprim(adapter, HdPrimTypeTokens->basisCurves, GetID(), {});
         break;
     case MHWRender::MGeometry::Primitive::kPoints:
-        GetSceneProducer()->InsertRprim(HdPrimTypeTokens->points, GetID(), {});
+        GetSceneProducer()->InsertRprim(adapter, HdPrimTypeTokens->points, GetID(), {});
         break;
     default:
         assert(false); // unexpected/unsupported primitive type
@@ -372,7 +372,7 @@ VtValue MayaHydraRenderItemAdapter::Get(const TfToken& key)
 void MayaHydraRenderItemAdapter::MarkDirty(HdDirtyBits dirtyBits)
 {
     if (dirtyBits != 0) {
-        GetSceneProducer()->GetRenderIndex().GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits);
+        GetSceneProducer()->MarkRprimDirty(GetID(), dirtyBits);
     }
 }
 

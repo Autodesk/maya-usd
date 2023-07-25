@@ -194,7 +194,7 @@ private:
     void _RemoveRprim();
 
     MAYAHYDRALIB_API
-    void _InsertRprim();
+    void _InsertRprim(MayaHydraAdapter* adapter);
 
     SdfPath                     _material;
     MDagPath                    _dagPath;

@@ -4,10 +4,14 @@
 target_sources(${TARGET_NAME}
     PRIVATE
     registration.cpp
+    mayaHydraSceneIndex.cpp
+    mayaHydraDataSourceRenderItem.cpp
 )
 
 set(HEADERS
     registration.h
+    mayaHydraSceneIndex.h
+    mayaHydraDataSourceRenderItem.h
 )
 
 # -----------------------------------------------------------------------------

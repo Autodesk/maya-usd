@@ -26,6 +26,7 @@
 #include <mayaHydraLib/api.h>
 #include <mayaHydraLib/delegates/params.h>
 #include <mayaHydraLib/delegates/delegate.h>
+#include <mayaHydraLib/sceneIndex/mayaHydraSceneIndex.h>
 
 #include <pxr/usd/sdf/path.h>
 #include <pxr/imaging/hdx/pickTask.h>
@@ -40,7 +41,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class MayaHydraSceneDelegate;
-class MayaHydraSceneIndex;
+class MayaHydraAdapter;
 
 /**
  * \brief MayaHydraSceneProducer is used to produce the hydra scene from Maya native scene.
@@ -60,10 +61,10 @@ public:
     // Propogate scene changes from Maya to Hydra
     void HandleCompleteViewportScene(const MDataServerOperation::MViewportScene& scene, MFrameContext::DisplayStyle ds);
 
-    // Populate primitives from Maya to Hydra
+    // Populate primitives from Maya
     void Populate();
 
-    // Populate selected paths from Maya to Hydra
+    // Populate selected paths from Maya
     void PopulateSelectedPaths(
         const MSelectionList& mayaSelection,
         SdfPathVector& selectedSdfPaths,
@@ -76,46 +77,65 @@ public:
         MSelectionList& selectionList,
         MPointArray& worldSpaceHitPts);
 
+    // Insert a Rprim to hydra scene
     void InsertRprim(
+        MayaHydraAdapter* adapter,
         const TfToken& typeId,
         const SdfPath& id,
         const SdfPath& instancerId = {});
+
+    // Remove a Rprim from hydra scene
     void RemoveRprim(const SdfPath& id);
+
+    // Mark a Rprim in hydra scene as dirty
+    void MarkRprimDirty(const SdfPath& id, HdDirtyBits dirtyBits);
+
+    // Insert a Sprim to hydra scene
     void InsertSprim(
         const TfToken& typeId, 
         const SdfPath& id, 
         HdDirtyBits initialBits);
+
+    // Remove a Sprim from hydra scene
     void RemoveSprim(const TfToken& typeId, const SdfPath& id);
 
-    SdfPath GetPrimPath(const MDagPath& dg, bool isSprim);
-    HdRenderIndex& GetRenderIndex();
+    // Operation that's performed on rendering a frame
+    void PreFrame(const MHWRender::MDrawContext& drawContext);
+    void PostFrame();
+
+    const MayaHydraParams& GetParams() const;
+    void SetParams(const MayaHydraParams& params);
+
+    // Adapter operations
+    void RemoveAdapter(const SdfPath& id);
+    void RecreateAdapterOnIdle(const SdfPath& id, const MObject& obj);
+
+    // Update viewport info to camera
+    SdfPath SetCameraViewport(const MDagPath& camPath, const GfVec4d& viewport);
+
+    // Enable or disable lighting
+    void SetLightsEnabled(const bool enabled);
 
     void AddArnoldLight(const MDagPath& dag);
     void RemoveArnoldLight(const MDagPath& dag);
 
     bool IsHdSt() const;
+
     bool GetPlaybackRunning() const;
 
-    SdfPath SetCameraViewport(const MDagPath& camPath, const GfVec4d& viewport);
-    void SetLightsEnabled(const bool enabled);
+    SdfPath GetPrimPath(const MDagPath& dg, bool isSprim);
+
+    HdRenderIndex& GetRenderIndex();
 
     SdfPath GetLightedPrimsRootPath() const;
-    void MaterialTagChanged(const SdfPath& id);
 
-    const MayaHydraParams& GetParams() const;
-    void SetParams(const MayaHydraParams& params);
-
-    void PreFrame(const MHWRender::MDrawContext& drawContext);
-    void PostFrame();
+    GfInterval GetCurrentTimeSamplingInterval() const;
 
     // Return the id of underlying delegate by name (MayaHydraSceneIndex or MayaHydraSceneDelegate)
     SdfPath GetDelegateID(TfToken name);
     SdfPathVector GetSolidPrimsRootPaths() { return _solidPrimsRootPaths; }
 
-    void RemoveAdapter(const SdfPath& id);
-    void RecreateAdapterOnIdle(const SdfPath& id, const MObject& obj);
-
-    GfInterval GetCurrentTimeSamplingInterval() const;
+    void MaterialTagChanged(const SdfPath& id);
 
     // Common function to return templated sample types
     template <typename T, typename Getter>
@@ -169,7 +189,7 @@ private:
     std::shared_ptr<MayaHydraSceneDelegate> _sceneDelegate;
     std::vector<MayaHydraDelegatePtr> _delegates;
     // SceneIndex
-    std::shared_ptr<MayaHydraSceneIndex> _sceneIndex;
+    MayaHydraSceneIndexRefPtr _sceneIndex;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
