@@ -21,9 +21,6 @@
 #include <pxr/usd/sdf/schema.h> // SdfFieldKeys
 #include <pxr/usd/usd/variantSets.h>
 
-#include <maya/MDoubleArray.h>
-#include <maya/MGlobal.h>
-
 #include <map>
 #include <vector>
 
@@ -71,8 +68,7 @@ void addMetadataCount(
 
 } // namespace
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 UsdUIInfoHandler::UsdUIInfoHandler()
     : Ufe::UIInfoHandler()
@@ -81,54 +77,12 @@ UsdUIInfoHandler::UsdUIInfoHandler()
     fInvisibleColor[0] = -1.;
     fInvisibleColor[1] = -1.;
     fInvisibleColor[2] = -1.;
-
-    // Register a callback to invalidate the invisible color.
-    fColorChangedCallbackId = MEventMessage::addEventCallback(
-        "DisplayRGBColorChanged", onColorChanged, reinterpret_cast<void*>(this));
-
-    // Immediately update the invisible color to get a starting current value.
-    updateInvisibleColor();
 }
 
-UsdUIInfoHandler::~UsdUIInfoHandler()
-{
-    // Unregister the callback used to invalidate the invisible color.
-    if (fColorChangedCallbackId)
-        MMessage::removeCallback(fColorChangedCallbackId);
-}
+UsdUIInfoHandler::~UsdUIInfoHandler() { }
 
 /*static*/
 UsdUIInfoHandler::Ptr UsdUIInfoHandler::create() { return std::make_shared<UsdUIInfoHandler>(); }
-
-void UsdUIInfoHandler::updateInvisibleColor()
-{
-    // Retrieve the invisible color of the outliner.
-    //
-    // We *cannot* intialize it in treeViewCellInfo() because
-    // that function gets called in a paint event and calling
-    // a command in a painting event can cause a recursive paint
-    // event if commands echoing is on, which can corrupt the
-    // Qt paint internal which lead to a crash. Typical symptom
-    // is that the state variable of the Qt paint engine becomes
-    // null midway through the repaint.
-
-    MDoubleArray color;
-    MGlobal::executeCommand("displayRGBColor -q \"outlinerInvisibleColor\"", color);
-
-    if (color.length() == 3) {
-        color.get(fInvisibleColor.data());
-    }
-}
-
-/*static*/
-void UsdUIInfoHandler::onColorChanged(void* data)
-{
-    UsdUIInfoHandler* infoHandler = reinterpret_cast<UsdUIInfoHandler*>(data);
-    if (!infoHandler)
-        return;
-
-    infoHandler->updateInvisibleColor();
-}
 
 //------------------------------------------------------------------------------
 // Ufe::UIInfoHandler overrides
@@ -151,6 +105,7 @@ bool UsdUIInfoHandler::treeViewCellInfo(const Ufe::SceneItem::Ptr& item, Ufe::Ce
                     static_cast<float>(fInvisibleColor[1]),
                     static_cast<float>(fInvisibleColor[2]));
             } else {
+                // Default color (dark gray) if none provided.
                 info.textFgColor.set(0.403922f, 0.403922f, 0.403922f);
             }
         }
@@ -159,15 +114,10 @@ bool UsdUIInfoHandler::treeViewCellInfo(const Ufe::SceneItem::Ptr& item, Ufe::Ce
     return changed;
 }
 
-Ufe::UIInfoHandler::Icon UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Ptr& item) const
+UsdUIInfoHandler::SupportedTypesMap UsdUIInfoHandler::getSupportedIconTypes() const
 {
-    // Special case for nullptr input.
-    if (!item) {
-        return Ufe::UIInfoHandler::Icon("out_USD_UsdTyped.png"); // Default USD icon
-    }
-
     // We support these node types directly.
-    static const std::map<std::string, std::string> supportedTypes {
+    static const SupportedTypesMap supportedTypes {
         { "", "out_USD_Def.png" }, // No node type
         { "BlendShape", "out_USD_BlendShape.png" },
         { "Camera", "out_USD_Camera.png" },
@@ -178,8 +128,6 @@ Ufe::UIInfoHandler::Icon UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Pt
         { "GeomSubset", "out_USD_GeomSubset.png" },
         { "LightFilter", "out_USD_LightFilter.png" },
         { "LightPortal", "out_USD_LightPortal.png" },
-        { "MayaReference", "out_USD_MayaReference.png" },
-        { "ALMayaReference", "out_USD_MayaReference.png" }, // Same as mayaRef
         { "Mesh", "out_USD_Mesh.png" },
         { "NurbsPatch", "out_USD_NurbsPatch.png" },
         { "PluginLight", "out_USD_PluginLight.png" },
@@ -195,7 +143,17 @@ Ufe::UIInfoHandler::Icon UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Pt
         { "NodeGraph", "out_USD_Shader.png" },
         { "Shader", "out_USD_Shader.png" },
     };
+    return supportedTypes;
+}
 
+Ufe::UIInfoHandler::Icon UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Ptr& item) const
+{
+    // Special case for nullptr input.
+    if (!item) {
+        return Ufe::UIInfoHandler::Icon("out_USD_UsdTyped.png"); // Default USD icon
+    }
+
+    auto                     supportedTypes = getSupportedIconTypes();
     Ufe::UIInfoHandler::Icon icon; // Default is empty (no icon and no badge).
     const auto               search = supportedTypes.find(item->nodeType());
     if (search != supportedTypes.cend()) {
@@ -272,5 +230,4 @@ std::string UsdUIInfoHandler::treeViewTooltip(const Ufe::SceneItem::Ptr& item) c
 
 std::string UsdUIInfoHandler::getLongRunTimeLabel() const { return "Universal Scene Description"; }
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

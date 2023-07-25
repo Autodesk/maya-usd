@@ -21,6 +21,7 @@
 #include <mayaUsd/ufe/MayaStagesSubject.h>
 #include <mayaUsd/ufe/MayaUsdContextOpsHandler.h>
 #include <mayaUsd/ufe/MayaUsdObject3dHandler.h>
+#include <mayaUsd/ufe/MayaUsdUIInfoHandler.h>
 #include <mayaUsd/ufe/ProxyShapeContextOpsHandler.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/ProxyShapeHierarchyHandler.h>
@@ -31,7 +32,6 @@
 #include <mayaUsd/ufe/UsdTransform3dMatrixOp.h>
 #include <mayaUsd/ufe/UsdTransform3dMayaXformStack.h>
 #include <mayaUsd/ufe/UsdTransform3dPointInstance.h>
-#include <mayaUsd/ufe/UsdUIInfoHandler.h>
 #include <mayaUsd/ufe/UsdUIUfeObserver.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/editability.h>
@@ -198,7 +198,7 @@ MStatus initialize()
     handlers.attributesHandler = UsdAttributesHandler::create();
     usdUfeHandlers.object3dHandler = MayaUsdObject3dHandler::create();
     usdUfeHandlers.contextOpsHandler = MayaUsdContextOpsHandler::create();
-    handlers.uiInfoHandler = UsdUIInfoHandler::create();
+    usdUfeHandlers.uiInfoHandler = MayaUsdUIInfoHandler::create();
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 

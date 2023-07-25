@@ -24,6 +24,7 @@
 #include <ufe/hierarchyHandler.h>
 #include <ufe/object3dHandler.h>
 #include <ufe/rtid.h>
+#include <ufe/uiInfoHandler.h>
 
 #include <string>
 
@@ -65,8 +66,8 @@ struct USDUFE_PUBLIC Handlers
     //     Ufe::AttributesHandler::Ptr   attributesHandler;
     Ufe::Object3dHandler::Ptr   object3dHandler;
     Ufe::ContextOpsHandler::Ptr contextOpsHandler;
-    //     Ufe::UIInfoHandler::Ptr       uiInfoHandler;
-    Ufe::CameraHandler::Ptr cameraHandler;
+    Ufe::UIInfoHandler::Ptr     uiInfoHandler;
+    Ufe::CameraHandler::Ptr     cameraHandler;
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 //     Ufe::PathMappingHandler::Ptr  pathMappingHandler;

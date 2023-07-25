@@ -9,6 +9,7 @@ target_sources(${PROJECT_NAME}
         MayaUsdContextOpsHandler.cpp
         MayaUsdObject3d.cpp
         MayaUsdObject3dHandler.cpp
+        MayaUsdUIInfoHandler.cpp
         ProxyShapeContextOpsHandler.cpp
         ProxyShapeHandler.cpp
         ProxyShapeHierarchy.cpp
@@ -39,7 +40,6 @@ target_sources(${PROJECT_NAME}
         UsdTransform3dSetObjectMatrix.cpp
         UsdTransform3dUndoableCommands.cpp
         UsdTranslateUndoableCommand.cpp
-        UsdUIInfoHandler.cpp
         UsdUIUfeObserver.cpp
         UsdUndoDeleteCommand.cpp
         UsdUndoDuplicateCommand.cpp
@@ -171,6 +171,7 @@ set(HEADERS
     MayaUsdContextOpsHandler.h
     MayaUsdObject3d.h
     MayaUsdObject3dHandler.h
+    MayaUsdUIInfoHandler.h
     ProxyShapeContextOpsHandler.h
     ProxyShapeHandler.h
     ProxyShapeHierarchy.h
@@ -203,7 +204,6 @@ set(HEADERS
     UsdTransform3dSetObjectMatrix.h
     UsdTransform3dUndoableCommands.h
     UsdTranslateUndoableCommand.h
-    UsdUIInfoHandler.h
     UsdUIUfeObserver.h
     UsdUndoDeleteCommand.h
     UsdUndoDuplicateCommand.h
