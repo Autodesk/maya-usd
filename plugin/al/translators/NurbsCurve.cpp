@@ -216,6 +216,11 @@ void NurbsCurve::writeEdits(
     MProfilingScope profilerScope(
         _nurbsCurveProfilerCategory, MProfiler::kColorE_L3, "Write edits");
 
+    const int curveOrder = fnCurve.degree() + 1;
+    if (!TF_VERIFY(curveOrder <= fnCurve.numCVs())) {
+        return;
+    }
+
     uint32_t diff_curves = AL::usdmaya::utils::kAllNurbsCurveComponents;
     bool     performDiff = !writeAll;
     if (performDiff) {
