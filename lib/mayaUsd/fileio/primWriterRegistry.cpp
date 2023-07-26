@@ -179,8 +179,10 @@ UsdMayaPrimWriterRegistry::WriterFactoryFn UsdMayaPrimWriterRegistry::Find(
         return it->second._writer;
     }
 
-    // ideally something just registered itself.  if not, we at least put it in
+    // if nothing was found and nothing was registered, we at least put it in
     // the registry in case we encounter it again.
+    TF_DEBUG(PXRUSDMAYA_REGISTRY)
+        .Msg("No usdMaya writer plugin for TfType %s. No maya plugin.\n", mayaTypeName);
     if (_reg.count(mayaTypeName) == 0) {
         // Nothing registered at all, remember that:
         _reg.insert(std::make_pair(
@@ -196,7 +198,7 @@ UsdMayaPrimWriterRegistry::WriterFactoryFn UsdMayaPrimWriterRegistry::Find(
 }
 
 /* static */
-void UsdMayaPrimWriterRegistry::Poke(const std::string& mayaTypeName)
+void UsdMayaPrimWriterRegistry::CheckForWriterPlugin(const std::string& mayaTypeName)
 {
     TfRegistryManager::GetInstance().SubscribeTo<UsdMayaPrimWriterRegistry>();
 

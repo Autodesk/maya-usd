@@ -233,7 +233,7 @@ public:
         Register(boost::python::object cl, const std::string& mayaTypeName, bool& updated)
         {
             size_t classIndex = RegisterPythonObject(cl, GetKey(cl, mayaTypeName));
-            updated = classIndex == UsdMayaPythonObjectRegistry::UPDATED;
+            updated = (classIndex == UsdMayaPythonObjectRegistry::UPDATED);
             // Return a new factory function:
             return FactoryFnWrapper { classIndex };
         }
@@ -265,6 +265,9 @@ public:
         bool             updated = false;
         FactoryFnWrapper fn = FactoryFnWrapper::Register(cl, mayaTypeName, updated);
         if (!updated) {
+
+            // fn is used twice because the register function will handle both
+            // CanExport and FactoryFn
             UsdMayaPrimWriterRegistry::Register(mayaTypeName, fn, fn, true);
         }
     }

@@ -149,7 +149,7 @@ struct UsdMayaPrimWriterRegistry
 
     /// \brief Check for external primWriter for \p mayaTypeName.
     MAYAUSD_CORE_PUBLIC
-    static void Poke(const std::string& mayaTypeName);
+    static void CheckForWriterPlugin(const std::string& mayaTypeName);
 
     /// \brief Registers a maya node type to *not* create a new prim.
     ///
