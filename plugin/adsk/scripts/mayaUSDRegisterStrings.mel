@@ -194,7 +194,7 @@ global proc mayaUSDRegisterStrings()
     register("kExportVisibilityLbl", "Visibility:");
 
     // All strings for import dialog:
-    register("kImportAnimationDataLbl", "Animation Data: ");
+    register("kImportAnimationDataLbl", "Animation Data");
     register("kImportCustomFrameRangeLbl", "Custom Frame Range: ");
     register("kImportFrameRangeLbl", "Frame Range Start/End: ");
     register("kImportHierarchyViewLbl", "Hierarchy View");
@@ -210,7 +210,7 @@ global proc mayaUSDRegisterStrings()
     register("kImportMaterialConvBlnLbl", "Blinn");
     register("kImportMaterialConvPhgLbl", "Phong");
     register("kImportMaterialsAnn", "If selected, shading data is extracted from the USD file for import");
-    register("kImportMaterialsLbl", "Materials: ");
+    register("kImportMaterialsLbl", "Materials");
     register("kImportPrimsInScopeNumLbl", "Total Number of Prims in Scope:");
     register("kImportSelectFileTxt", "Please select a file to enable this option");
     register("kImportScopeVariantsAnn", "Select a USD file and click <strong>Hierarchy View</strong> to build the scope of your import and switch variants.<br><br><strong>Scope</strong>: A USD file consists of prims, the primary container object in USD. Prims can contain any scene element, like meshes, lights, cameras, etc. Use the checkboxes in the <strong>Hierarchy View</strong> to select and deselect prims to build the scope of your import.<br><br><strong>Variant</strong>: A variant is a single, named variation of a variant set. Each variant set is a package of alternatives that users can switch between non-destructively. A variant set has no limits to what it can store. Variants can be used to swap out a material or change the entire hierarchy of an asset. A single prim can have many variants and variant sets, but only one variant from each variant set can be selected for import into Maya.");
