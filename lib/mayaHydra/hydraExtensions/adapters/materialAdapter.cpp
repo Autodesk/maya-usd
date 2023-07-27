@@ -71,7 +71,7 @@ bool MayaHydraMaterialAdapter::HasType(const TfToken& typeId) const
 
 void MayaHydraMaterialAdapter::MarkDirty(HdDirtyBits dirtyBits)
 {
-    GetSceneProducer()->GetRenderIndex().GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits);
+    GetSceneProducer()->MarkSprimDirty(GetID(), dirtyBits);
 }
 
 void MayaHydraMaterialAdapter::RemovePrim()
@@ -90,7 +90,7 @@ void MayaHydraMaterialAdapter::Populate()
     if (_isPopulated) {
         return;
     }
-    GetSceneProducer()->InsertSprim(HdPrimTypeTokens->material, GetID(), HdMaterial::AllDirty);
+    GetSceneProducer()->InsertSprim(this, HdPrimTypeTokens->material, GetID(), HdMaterial::AllDirty);
     _isPopulated = true;
 }
 

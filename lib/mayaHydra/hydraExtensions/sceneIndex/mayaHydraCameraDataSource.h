@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
-#ifndef MAYAHYDRADATASOURCERENDERITEM_H
-#define MAYAHYDRADATASOURCERENDERITEM_H
+#ifndef MAYAHYDRACAMERADATASOURCE_H
+#define MAYAHYDRACAMERADATASOURCE_H
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
@@ -24,14 +24,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class MayaHydraRenderItemAdapter;
+class MayaHydraAdapter;
 /**
- * \brief A container data source representing data unique to render item
+ * \brief A container data source representing data unique to camera
  */
- class MayaHydraDataSourceRenderItem : public HdContainerDataSource
+ class MayaHydraCameraDataSource : public HdContainerDataSource
 {
 public:
-    HD_DECLARE_DATASOURCE(MayaHydraDataSourceRenderItem);
+    HD_DECLARE_DATASOURCE(MayaHydraCameraDataSource);
 
     // ------------------------------------------------------------------------
     // HdContainerDataSource implementations
@@ -39,25 +39,18 @@ public:
     HdDataSourceBaseHandle Get(const TfToken& name) override;
 
 private:
-    MayaHydraDataSourceRenderItem(
+    MayaHydraCameraDataSource(
         const SdfPath& id,
         TfToken type,
-        MayaHydraRenderItemAdapter* riAdapter);
+        MayaHydraAdapter* adapter);
 
-    HdDataSourceBaseHandle _GetVisibilityDataSource();
-    HdDataSourceBaseHandle _GetPrimvarsDataSource();
-    TfToken _InterpolationAsToken(HdInterpolation interpolation);
-private:
     SdfPath _id;
     TfToken _type;
-    MayaHydraRenderItemAdapter* _riAdapter = nullptr;
-
-    std::atomic_bool _primvarsBuilt;
-    HdContainerDataSourceAtomicHandle _primvars;
+    MayaHydraAdapter* _adapter = nullptr;
 };
 
-HD_DECLARE_DATASOURCE_HANDLES(MayaHydraDataSourceRenderItem);
+HD_DECLARE_DATASOURCE_HANDLES(MayaHydraCameraDataSource);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // MAYAHYDRADATASOURCERENDERITEM_H
+#endif // MAYAHYDRACAMERADATASOURCE_H

@@ -131,7 +131,7 @@ void MayaHydraLightAdapter::Populate()
         return;
     }
     if (IsVisible() && _isLightingOn) {
-        GetSceneProducer()->InsertSprim(LightType(), GetID(), HdLight::AllDirty);
+        GetSceneProducer()->InsertSprim(this, LightType(), GetID(), HdLight::AllDirty);
         _isPopulated = true;
     }
 }
@@ -139,7 +139,7 @@ void MayaHydraLightAdapter::Populate()
 void MayaHydraLightAdapter::MarkDirty(HdDirtyBits dirtyBits)
 {
     if (_isPopulated && dirtyBits != 0) {
-        GetSceneProducer()->GetRenderIndex().GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits);
+        GetSceneProducer()->MarkSprimDirty(GetID(), dirtyBits);
     }
 }
 

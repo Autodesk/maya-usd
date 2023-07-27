@@ -92,12 +92,16 @@ public:
 
     // Insert a Sprim to hydra scene
     void InsertSprim(
+        MayaHydraAdapter* adapter,
         const TfToken& typeId, 
         const SdfPath& id, 
         HdDirtyBits initialBits);
 
     // Remove a Sprim from hydra scene
     void RemoveSprim(const TfToken& typeId, const SdfPath& id);
+
+    // Mark a Sprim in hydra scene as dirty
+    void MarkSprimDirty(const SdfPath& id, HdDirtyBits dirtyBits);
 
     // Operation that's performed on rendering a frame
     void PreFrame(const MHWRender::MDrawContext& drawContext);

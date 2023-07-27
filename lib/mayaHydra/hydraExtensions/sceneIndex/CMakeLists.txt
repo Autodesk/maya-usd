@@ -5,13 +5,21 @@ target_sources(${TARGET_NAME}
     PRIVATE
     registration.cpp
     mayaHydraSceneIndex.cpp
-    mayaHydraDataSourceRenderItem.cpp
+    mayaHydraDataSource.cpp
+    mayaHydraPrimvarDataSource.cpp
+    mayaHydraDisplayStyleDataSource.cpp
+    mayaHydraCameraDataSource.cpp
+    mayaHydraLightDataSource.cpp
 )
 
 set(HEADERS
     registration.h
     mayaHydraSceneIndex.h
-    mayaHydraDataSourceRenderItem.h
+    mayaHydraDataSource.h
+    mayaHydraPrimvarDataSource.h
+    mayaHydraDisplayStyleDataSource.h
+    mayaHydraCameraDataSource.h
+    mayaHydraLightDataSource.h
 )
 
 # -----------------------------------------------------------------------------

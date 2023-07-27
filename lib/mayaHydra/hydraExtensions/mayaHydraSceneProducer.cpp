@@ -268,7 +268,7 @@ void MayaHydraSceneProducer::InsertRprim(
 {
     if (enableMayaNativeSceneIndex())
     {
-        return _sceneIndex->InsertRprim(adapter, typeId, id, instancerId);
+        return _sceneIndex->InsertPrim(adapter, typeId, id);
     }
     else
     {
@@ -280,7 +280,7 @@ void MayaHydraSceneProducer::RemoveRprim(const SdfPath& id)
 {
     if (enableMayaNativeSceneIndex())
     {
-        _sceneIndex->RemoveRprim(id);
+        _sceneIndex->RemovePrim(id);
     }
     else
     {
@@ -292,7 +292,7 @@ void MayaHydraSceneProducer::MarkRprimDirty(const SdfPath& id, HdDirtyBits dirty
 {
     if (enableMayaNativeSceneIndex())
     {
-        _sceneIndex->MarkRprimDirty(id, dirtyBits);
+        _sceneIndex->MarkPrimDirty(id, dirtyBits);
     }
     else
     {
@@ -301,13 +301,14 @@ void MayaHydraSceneProducer::MarkRprimDirty(const SdfPath& id, HdDirtyBits dirty
 }
 
 void MayaHydraSceneProducer::InsertSprim(
+    MayaHydraAdapter* adapter,
     const TfToken& typeId,
     const SdfPath& id,
     HdDirtyBits initialBits)
 {
     if (enableMayaNativeSceneIndex())
     {
-        _sceneIndex->InsertSprim(typeId, id, initialBits);
+        _sceneIndex->InsertPrim(adapter, typeId, id);
     }
     else
     {
@@ -319,7 +320,7 @@ void MayaHydraSceneProducer::RemoveSprim(const TfToken& typeId, const SdfPath& i
 {
     if (enableMayaNativeSceneIndex())
     {
-        _sceneIndex->RemoveSprim(typeId, id);
+        _sceneIndex->RemovePrim(id);
     }
     else
     {
@@ -327,12 +328,23 @@ void MayaHydraSceneProducer::RemoveSprim(const TfToken& typeId, const SdfPath& i
     }
 }
 
+void MayaHydraSceneProducer::MarkSprimDirty(const SdfPath& id, HdDirtyBits dirtyBits)
+{
+    if (enableMayaNativeSceneIndex())
+    {
+        _sceneIndex->MarkPrimDirty(id, dirtyBits);
+    }
+    else
+    {
+        _sceneDelegate->GetRenderIndex().GetChangeTracker().MarkSprimDirty(id, dirtyBits);
+    }
+}
+
 void MayaHydraSceneProducer::AddArnoldLight(const MDagPath& dag)
 {
     if (enableMayaNativeSceneIndex())
     {
-        // TODO: Light
-        //_sceneIndex->AddArnoldLight(dag);
+        _sceneIndex->AddArnoldLight(dag);
     }
     else
     {
@@ -344,8 +356,7 @@ void MayaHydraSceneProducer::RemoveArnoldLight(const MDagPath& dag)
 {
     if (enableMayaNativeSceneIndex())
     {
-        // TODO: Light
-        //_sceneIndex->RemoveArnoldLight(dag);
+        _sceneIndex->RemoveArnoldLight(dag);
     }
     else
     {
@@ -438,8 +449,7 @@ void MayaHydraSceneProducer::MaterialTagChanged(const SdfPath& id)
 {
     if (enableMayaNativeSceneIndex())
     {
-        // TODO: Material
-        //return _sceneIndex->MaterialTagChanged(name);
+        _sceneIndex->MaterialTagChanged(id);
     }
     else
     {

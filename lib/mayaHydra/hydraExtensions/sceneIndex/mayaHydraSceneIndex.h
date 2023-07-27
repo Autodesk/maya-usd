@@ -22,6 +22,7 @@
 #include <maya/MObject.h>
 #include <maya/MSelectionList.h>
 #include <maya/MViewport2Renderer.h>
+#include <maya/MDrawContext.h>
 
 #include <mayaHydraLib/api.h>
 #include <mayaHydraLib/delegates/params.h>
@@ -59,6 +60,11 @@ TF_DECLARE_REF_PTRS(MayaHydraSceneIndex);
 class MAYAHYDRALIB_API MayaHydraSceneIndex : public HdSceneIndexBase
 {
 public:
+    enum RebuildFlags : uint32_t
+    {
+        RebuildFlagPrim = 1 << 1,
+        RebuildFlagCallbacks = 1 << 2,
+    };
     template <typename T> using AdapterMap = std::unordered_map<SdfPath, T, SdfPath::Hash>;
 
     static MayaHydraSceneIndexRefPtr New(SdfPath& id,
@@ -66,6 +72,8 @@ public:
         bool lightEnabled) {
         return TfCreateRefPtr(new MayaHydraSceneIndex(id, initData, lightEnabled));
     }
+
+    ~MayaHydraSceneIndex();
 
     // ------------------------------------------------------------------------
     // HdSceneIndexBase implementations
@@ -106,40 +114,34 @@ public:
         MSelectionList& selectionList,
         MPointArray& worldSpaceHitPts);
 
-    // Insert a Rprim to hydra scene
-    void InsertRprim(
+    // Insert a primitive to hydra scene
+    void InsertPrim(
         MayaHydraAdapter* adapter,
         const TfToken& typeId,
-        const SdfPath& id,
-        const SdfPath& instancerId);
+        const SdfPath& id);
 
-    // Remove a Rprim from hydra scene
-    void RemoveRprim(const SdfPath& id);
+    // Remove a primitive from hydra scene
+    void RemovePrim(const SdfPath& id);
 
-    // Mark a Rprim in hydra scene as dirty
-    void MarkRprimDirty(
+    // Mark a primitive in hydra scene as dirty
+    void MarkPrimDirty(
         const SdfPath& id,
         HdDirtyBits dirtyBits);
-
-    // Insert a Sprim to hydra scene
-    void InsertSprim(
-        const TfToken& typeId,
-        const SdfPath& id,
-        HdDirtyBits    initialBits);
-
-    // Remove a Sprim from hydra scene
-    void RemoveSprim(const TfToken& typeId, const SdfPath& id);
 
     // Operation that's performed on rendering a frame
     void PreFrame(const MHWRender::MDrawContext& drawContext);
     void PostFrame();
 
-    void SetParams(const MayaHydraParams& params) { _params = params; }
+    void SetParams(const MayaHydraParams& params);
     const MayaHydraParams& GetParams() const { return _params; }
+
+    VtValue GetShadingStyle(const SdfPath& id);
 
     // Adapter operations
     void RemoveAdapter(const SdfPath& id);
+    void RecreateAdapter(const SdfPath& id, const MObject& obj);
     void RecreateAdapterOnIdle(const SdfPath& id, const MObject& obj);
+    void RebuildAdapterOnIdle(const SdfPath& id, uint32_t flags);
 
     // Update viewport info to camera
     SdfPath SetCameraViewport(const MDagPath& camPath, const GfVec4d& viewport);
@@ -147,6 +149,19 @@ public:
     // Enable or disable lighting
     void SetLightsEnabled(const bool enabled) { _lightsEnabled = enabled; }
     bool GetLightsEnabled() { return _lightsEnabled; }
+
+    // Dag Node operations
+    void InsertDag(const MDagPath& dag);
+    void OnDagNodeAdded(const MObject& obj);
+    void OnDagNodeRemoved(const MObject& obj);
+    void AddNewInstance(const MDagPath& dag);
+    void UpdateLightVisibility(const MDagPath& dag);
+
+    void AddArnoldLight(const MDagPath& dag);
+    void RemoveArnoldLight(const MDagPath& dag);
+
+    void MaterialTagChanged(const SdfPath& id);
+    SdfPath GetMaterialId(const SdfPath& id);
 
     GfInterval GetCurrentTimeSamplingInterval() const;
 
@@ -166,11 +181,24 @@ public:
 
     bool IsHdSt() const { return _isHdSt; }
 
+    MayaHydraSceneProducer* GetProducer() { return _producer; };
+
+   
 private:
     MayaHydraSceneIndex(
         SdfPath& id,
         MayaHydraDelegate::InitData& initData,
         bool lightEnabled);
+
+    template <typename AdapterPtr, typename Map>
+    AdapterPtr _CreateAdapter(
+        const MDagPath& dag,
+        const std::function<AdapterPtr(MayaHydraSceneProducer*, const MDagPath&)>& adapterCreator,
+        Map& adapterMap,
+        bool                                                                     isSprim = false);
+    MayaHydraLightAdapterPtr CreateLightAdapter(const MDagPath& dagPath);
+    MayaHydraCameraAdapterPtr CreateCameraAdapter(const MDagPath& dagPath);
+    MayaHydraShapeAdapterPtr CreateShapeAdapter(const MDagPath& dagPath);
 
     // Utilites
     bool _GetRenderItem(int fastId, MayaHydraRenderItemAdapterPtr& adapter);
@@ -178,7 +206,9 @@ private:
     void _RemoveRenderItem(const MayaHydraRenderItemAdapterPtr& ria);
     bool _GetRenderItemMaterial(const MRenderItem& ri, SdfPath& material, MObject& shadingEngineNode);
     SdfPath _GetRenderItemPrimPath(const MRenderItem& ri);
-
+    SdfPath GetMaterialPath(const MObject& obj);
+    bool _CreateMaterial(const SdfPath& id, const MObject& obj);
+    static VtValue CreateMayaDefaultMaterial();
 private:
     // ------------------------------------------------------------------------
     // HdSceneIndexBase implementations
@@ -208,7 +238,23 @@ private:
     std::vector<std::tuple<SdfPath, MObject>>  _adaptersToRecreate;
     std::vector<std::tuple<SdfPath, uint32_t>> _adaptersToRebuild;
 
+    std::vector<MObject> _addedNodes;
+    using LightAdapterCreator
+        = std::function<MayaHydraLightAdapterPtr(MayaHydraSceneProducer*, const MDagPath&)>;
+    std::vector<std::pair<MObject, LightAdapterCreator>> _lightsToAdd;
+    std::vector<MDagPath> _arnoldLightPaths;
+    std::vector<SdfPath> _materialTagsChanged;
+
     static SdfPath _fallbackMaterial;
+    /// _mayaDefaultMaterialPath is common to all scene indexes, it's the SdfPath of
+    /// _mayaDefaultMaterial
+    static SdfPath _mayaDefaultMaterialPath;
+    /// _mayaDefaultMaterial is an hydra material used to override all materials from the scene when
+    /// _useDefaultMaterial is true
+    static VtValue _mayaDefaultMaterial;
+
+    bool _useDefaultMaterial = false;
+    bool _xRayEnabled = false;
     bool _isPlaybackRunning = false;
     bool _lightsEnabled = true;
     bool _isHdSt = false;

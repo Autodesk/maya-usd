@@ -67,7 +67,7 @@ void MayaHydraCameraAdapter::Populate()
     if (_isPopulated) {
         return;
     }
-    GetSceneProducer()->InsertSprim(CameraType(), GetID(), HdCamera::AllDirty);
+    GetSceneProducer()->InsertSprim(this, CameraType(), GetID(), HdCamera::AllDirty);
     _isPopulated = true;
 }
 
@@ -75,7 +75,7 @@ void MayaHydraCameraAdapter::MarkDirty(HdDirtyBits dirtyBits)
 {
     if (_isPopulated && dirtyBits != 0) {
         dirtyBits = dirtyBits & HdCamera::AllDirty;
-        GetSceneProducer()->GetRenderIndex().GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits);
+        GetSceneProducer()->MarkSprimDirty(GetID(), dirtyBits);
     }
 }
 
