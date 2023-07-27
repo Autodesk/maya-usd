@@ -386,23 +386,23 @@ global proc mayaUsdTranslatorImport_AnimationCB()
 {
     int $forEditAsMaya = (`columnLayout -q -ann mayaUsdTranslator_OptsCol` == "EditAsMayaOptions") ? 1 : 0;
     if ((`checkBoxGrp -q -value1 mayaUsdTranslator_AnimDataCheckBox` == 1) && !$forEditAsMaya) {
-        checkBoxGrp -e -vis true mayaUsdTranslator_CustomFrameRangeCheckBox;
+        checkBoxGrp -e -en true mayaUsdTranslator_CustomFrameRangeCheckBox;
         int $vis = (`checkBoxGrp -q -value1 mayaUsdTranslator_CustomFrameRangeCheckBox` == 1);
-        intFieldGrp -e -vis $vis mayaUsdTranslator_CustomFrameRange;
+        intFieldGrp -e -en $vis mayaUsdTranslator_CustomFrameRange;
     } else {
-        checkBoxGrp -e -vis false mayaUsdTranslator_CustomFrameRangeCheckBox;
-        intFieldGrp -e -vis false mayaUsdTranslator_CustomFrameRange;
+        checkBoxGrp -e -en false mayaUsdTranslator_CustomFrameRangeCheckBox;
+        intFieldGrp -e -en false mayaUsdTranslator_CustomFrameRange;
     }
 }
 
 global proc mayaUsdTranslatorImport_MaterialsCB()
 {
     if (`checkBoxGrp -q -value1 mayaUsdTranslator_MaterialsCheckBox` == 1) {
-        optionMenuGrp -e -vis true mayaUsdTranslator_MaterialsConversionMenu;
-        checkBoxGrp -e -vis true mayaUsdTranslator_ImportUSDZTexturesCheckBox;
+        optionMenuGrp -e -en true mayaUsdTranslator_MaterialsConversionMenu;
+        checkBoxGrp -e -en true mayaUsdTranslator_ImportUSDZTexturesCheckBox;
     } else {
-        optionMenuGrp -e -vis false mayaUsdTranslator_MaterialsConversionMenu;
-        checkBoxGrp -e -vis false mayaUsdTranslator_ImportUSDZTexturesCheckBox;
+        optionMenuGrp -e -en false mayaUsdTranslator_MaterialsConversionMenu;
+        checkBoxGrp -e -en false mayaUsdTranslator_ImportUSDZTexturesCheckBox;
     }
 }
 

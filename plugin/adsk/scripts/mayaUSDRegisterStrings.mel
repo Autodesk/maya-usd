@@ -220,7 +220,7 @@ global proc mayaUSDRegisterStrings()
     //register("kImportToInstanceLbl", "Instanced Prims: ");
     register("kImportToInstanceOpt", "Convert Instance Proxies to Instances");
     register("kImportUSDZTxtAnn", "When a .usdz file is chosen and this is selected, .usdz texture files are imported and copied to new files on disk. To locate these files, navigate to the current Maya workspace /sourceimages directory.");
-    register("kImportUSDZTxtLbl", "USDZ Texture Import: ");
+    register("kImportUSDZTxtLbl", "USDZ Texture Import");
     register("kImportVariantsInScopeNumLbl", "Variants Switched in Scope:");
     register("kMayaDiscardEdits", "Discard Maya Edits");
     register("kMayaRefDiscardEdits", "Cancel Editing as Maya Data");
