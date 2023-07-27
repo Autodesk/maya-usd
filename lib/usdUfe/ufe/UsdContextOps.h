@@ -24,6 +24,8 @@
 #include <ufe/path.h>
 
 #include <vector>
+#include <string>
+#include <map>
 
 namespace USDUFE_NS_DEF {
 
@@ -81,6 +83,14 @@ public:
     Ufe::SceneItem::Ptr       sceneItem() const override;
     Items                     getItems(const ItemPath& itemPath) const override;
     Ufe::UndoableCommand::Ptr doOpCmd(const ItemPath& itemPath) override;
+
+    // Helpers
+
+    // Called from getItems() method to replace the USD schema names with a
+    // nice UI name (in the context menu).
+    // Can be overridden by derived class to add to the map.
+    typedef std::map<std::string, std::string> SchemaNameMap;
+    virtual SchemaNameMap                      getSchemaPluginNiceNames() const;
 
 protected:
     UsdSceneItem::Ptr fItem;

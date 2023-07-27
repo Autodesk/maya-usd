@@ -89,38 +89,6 @@ static const std::string kUSDSpherePrimImage { "out_USD_Sphere.png" };
 static constexpr char kAllRegisteredTypesItem[] = "All Registered";
 static constexpr char kAllRegisteredTypesLabel[] = "All Registered";
 
-// Grouping and name mapping for registered schema plugins
-static const std::vector<std::string> kSchemaPluginNames = {
-    "usdGeom",
-    "usdLux",
-    "mayaUsd_Schemas",
-    "usdMedia",
-    "usdRender",
-    "usdRi",
-    "usdShade",
-    "usdSkel",
-    "usdUI",
-    "usdVol",
-    "AL_USDMayaSchemasTest",
-    "AL_USDMayaSchemas",
-};
-// clang-format off
-static const std::vector<std::string> kSchemaNiceNames = {
-    "Geometry",
-    "Lighting",
-    "Maya Reference",
-    "Media",
-    "Render",
-    "RenderMan",
-    "Shading",
-    "Skeleton",
-    "UI",
-    "Volumes",
-    "", // Skip legacy AL schemas
-    "", // Skip legacy AL schemas
-};
-// clang-format on
-
 std::vector<std::pair<const char* const, const char* const>>
 _computeLoadAndUnloadItems(const UsdPrim& prim)
 {
@@ -189,7 +157,8 @@ _computeLoadAndUnloadItems(const UsdPrim& prim)
 }
 
 //! \brief Get groups of concrete schema prim types to list dynamically in the UI
-static const std::vector<UsdUfe::SchemaTypeGroup> getConcretePrimTypes(bool sorted)
+static const std::vector<UsdUfe::SchemaTypeGroup>
+getConcretePrimTypes(bool sorted, const UsdContextOps::SchemaNameMap& schemaPluginNiceNames)
 {
     std::vector<UsdUfe::SchemaTypeGroup> groups;
 
@@ -211,11 +180,9 @@ static const std::vector<UsdUfe::SchemaTypeGroup> getConcretePrimTypes(bool sort
 
         // For every plugin we check if there's a nice name registered and use that instead
         auto plugin_name = plugin->GetName();
-        auto name_itr
-            = std::find(kSchemaPluginNames.begin(), kSchemaPluginNames.end(), plugin_name);
-        if (name_itr != kSchemaPluginNames.end()) {
-            plugin_name = kSchemaNiceNames[name_itr - kSchemaPluginNames.begin()];
-        }
+        const auto search = schemaPluginNiceNames.find(plugin_name);
+        if (search != schemaPluginNiceNames.end())
+            plugin_name = search->second;
 
         // We don't list empty names. This allows hiding certain plugins too.
         if (plugin_name.empty()) {
@@ -403,7 +370,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                     // Load this each time the menu is called in case plugins were loaded
                     //      in between invocations.
                     // However we cache it so the submenus don't need to re-query
-                    schemaTypeGroups = getConcretePrimTypes(true);
+                    schemaTypeGroups = getConcretePrimTypes(true, getSchemaPluginNiceNames());
                     for (auto schema : schemaTypeGroups) {
                         items.emplace_back(
                             schema._name.c_str(),
@@ -490,6 +457,24 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
 #endif
     }
     return nullptr;
+}
+
+UsdContextOps::SchemaNameMap UsdContextOps::getSchemaPluginNiceNames() const
+{
+    static const SchemaNameMap schemaPluginNiceNames = {
+        { "usdGeom", "Geometry" },
+        { "usdLux", "Lighting" },
+        { "usdMedia", "Media" },
+        { "usdRender", "Render" },
+        { "usdRi", "RenderMan" },
+        { "usdPhysics", "Physics" },
+        { "usdProc", "Procedural" },
+        { "usdShade", "Shading" },
+        { "usdSkel", "Skeleton" },
+        { "usdUI", "UI" },
+        { "usdVol", "Volumes" },
+    };
+    return schemaPluginNiceNames;
 }
 
 } // namespace USDUFE_NS_DEF

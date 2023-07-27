@@ -34,6 +34,7 @@ namespace ufe {
 class MAYAUSD_CORE_PUBLIC MayaUsdContextOps : public UsdUfe::UsdContextOps
 {
 public:
+    typedef UsdUfe::UsdContextOps              Parent;
     typedef std::shared_ptr<MayaUsdContextOps> Ptr;
 
     MayaUsdContextOps(const UsdSceneItem::Ptr& item);
@@ -51,6 +52,8 @@ public:
     // UsdUfe::UsdContextOps overrides
     Items                     getItems(const ItemPath& itemPath) const override;
     Ufe::UndoableCommand::Ptr doOpCmd(const ItemPath& itemPath) override;
+
+    UsdUfe::UsdContextOps::SchemaNameMap getSchemaPluginNiceNames() const override;
 
 }; // MayaUsdContextOps
 

@@ -673,5 +673,19 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
     return nullptr;
 }
 
+UsdUfe::UsdContextOps::SchemaNameMap MayaUsdContextOps::getSchemaPluginNiceNames() const
+{
+    auto pluginNiceNames = Parent::getSchemaPluginNiceNames();
+
+    static const SchemaNameMap mayaSchemaNiceNames = {
+        { "mayaUsd_Schemas", "Maya Reference" },
+        { "AL_USDMayaSchemasTest", "" }, // Skip legacy AL schemas
+        { "AL_USDMayaSchemas", "" }      // Skip legacy AL schemas
+    };
+
+    pluginNiceNames.insert(mayaSchemaNiceNames.begin(), mayaSchemaNiceNames.end());
+    return pluginNiceNames;
+}
+
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
