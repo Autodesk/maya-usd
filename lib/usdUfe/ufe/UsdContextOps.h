@@ -23,9 +23,9 @@
 #include <ufe/contextOps.h>
 #include <ufe/path.h>
 
-#include <vector>
-#include <string>
 #include <map>
+#include <string>
+#include <vector>
 
 namespace USDUFE_NS_DEF {
 

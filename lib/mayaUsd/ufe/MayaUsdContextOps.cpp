@@ -677,11 +677,13 @@ UsdUfe::UsdContextOps::SchemaNameMap MayaUsdContextOps::getSchemaPluginNiceNames
 {
     auto pluginNiceNames = Parent::getSchemaPluginNiceNames();
 
+    // clang-format off
     static const SchemaNameMap mayaSchemaNiceNames = {
         { "mayaUsd_Schemas", "Maya Reference" },
         { "AL_USDMayaSchemasTest", "" }, // Skip legacy AL schemas
         { "AL_USDMayaSchemas", "" }      // Skip legacy AL schemas
     };
+    // clang-format on
 
     pluginNiceNames.insert(mayaSchemaNiceNames.begin(), mayaSchemaNiceNames.end());
     return pluginNiceNames;

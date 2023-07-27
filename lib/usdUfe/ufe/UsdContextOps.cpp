@@ -179,10 +179,11 @@ getConcretePrimTypes(bool sorted, const UsdContextOps::SchemaNameMap& schemaPlug
         }
 
         // For every plugin we check if there's a nice name registered and use that instead
-        auto plugin_name = plugin->GetName();
+        auto       plugin_name = plugin->GetName();
         const auto search = schemaPluginNiceNames.find(plugin_name);
-        if (search != schemaPluginNiceNames.end())
+        if (search != schemaPluginNiceNames.end()) {
             plugin_name = search->second;
+        }
 
         // We don't list empty names. This allows hiding certain plugins too.
         if (plugin_name.empty()) {
@@ -461,6 +462,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
 
 UsdContextOps::SchemaNameMap UsdContextOps::getSchemaPluginNiceNames() const
 {
+    // clang-format off
     static const SchemaNameMap schemaPluginNiceNames = {
         { "usdGeom", "Geometry" },
         { "usdLux", "Lighting" },
@@ -474,6 +476,7 @@ UsdContextOps::SchemaNameMap UsdContextOps::getSchemaPluginNiceNames() const
         { "usdUI", "UI" },
         { "usdVol", "Volumes" },
     };
+    // clang-format on
     return schemaPluginNiceNames;
 }
 
