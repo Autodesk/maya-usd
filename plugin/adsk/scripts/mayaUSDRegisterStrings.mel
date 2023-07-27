@@ -217,7 +217,6 @@ global proc mayaUSDRegisterStrings()
     register("kImportScopeVariantsLbl", "Scope and Variants: ");
     register("kImportScopeVariantsSbm", "Select a USD file and click Hierarchy View to open the Hierarchy View window. This window lets you toggle prim checkboxes and non-destructively switch between variants to build the scope of your import.");
     register("kImportToInstanceAnn", "If selected, instance proxies will be converted to Maya instances. Instance proxies enable parts of the USD scenegraph to share prims through instancing even though instances cannot have descendants in USD. Each instanced prim is associated with a master prim that serves as the root of the scenegraph. This hierarchy reduces the time needed to load the file. Instanced prims must be manually tagged in USD. Enabling this option will convert any USD instance proxies to Maya instances as you import them.");
-    //register("kImportToInstanceLbl", "Instanced Prims: ");
     register("kImportToInstanceOpt", "Convert Instance Proxies to Instances");
     register("kImportUSDZTxtAnn", "When a .usdz file is chosen and this is selected, .usdz texture files are imported and copied to new files on disk. To locate these files, navigate to the current Maya workspace /sourceimages directory.");
     register("kImportUSDZTxtLbl", "USDZ Texture Import");
