@@ -46,6 +46,7 @@ public:
     static constexpr auto kDefaultUSDFormatFlag = "duf";
     static constexpr auto kExportColorSetsFlag = "cls";
     static constexpr auto kExportUVsFlag = "uvs";
+    static constexpr auto kExportRelativeTexturesFlag = "rtx";
     static constexpr auto kEulerFilterFlag = "ef";
     static constexpr auto kExportVisibilityFlag = "vis";
     static constexpr auto kExportComponentTagsFlag = "tag";

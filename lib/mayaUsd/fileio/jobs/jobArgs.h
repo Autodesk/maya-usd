@@ -79,6 +79,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (exportSkels) \
     (exportSkin) \
     (exportUVs) \
+    (exportRelativeTextures) \
     (exportVisibility) \
     (jobContext) \
     (exportComponentTags) \
@@ -112,6 +113,10 @@ TF_DECLARE_PUBLIC_TOKENS(
     (metersPerUnit) \
     /* Special "none" token */ \
     (none) \
+    /* relative textures values */ \
+    (automatic) \
+    (absolute) \
+    (relative) \
     /* referenceObjectMode values */ \
     (attributeOnly) \
     (defaultToMesh) \
@@ -189,6 +194,7 @@ struct UsdMayaJobExportArgs
     const bool        exportMaterialCollections;
     const bool        exportMeshUVs;
     const bool        exportNurbsExplicitUV;
+    const TfToken     exportRelativeTextures;
     const TfToken     referenceObjectMode;
     const bool        exportRefsAsInstanceable;
     const TfToken     exportSkels;

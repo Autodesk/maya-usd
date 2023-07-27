@@ -520,6 +520,7 @@ void wrapJobExportArgs()
         .def_readonly("exportMaterialCollections", &UsdMayaJobExportArgs::exportMaterialCollections)
         .def_readonly("exportMeshUVs", &UsdMayaJobExportArgs::exportMeshUVs)
         .def_readonly("exportNurbsExplicitUV", &UsdMayaJobExportArgs::exportNurbsExplicitUV)
+        .def_readonly("exportRelativeTextures", &UsdMayaJobExportArgs::exportRelativeTextures)
         .def_readonly("referenceObjectMode", &UsdMayaJobExportArgs::referenceObjectMode)
         .def_readonly("exportRefsAsInstanceable", &UsdMayaJobExportArgs::exportRefsAsInstanceable)
         .add_property(

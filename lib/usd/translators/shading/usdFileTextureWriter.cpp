@@ -275,7 +275,10 @@ void PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
     // We use the ExportArgs fileName here instead of the USD root layer path
     // to make sure that we are basing logic of the final export location
     UsdMayaShadingUtil::ResolveUsdTextureFileName(
-        fileTextureName, _GetExportArgs().GetResolvedFileName(), isUDIM);
+        fileTextureName,
+        _GetExportArgs().GetResolvedFileName(),
+        _GetExportArgs().exportRelativeTextures,
+        isUDIM);
 
     UsdShadeInput fileInput = shaderSchema.CreateInput(TrUsdTokens->file, SdfValueTypeNames->Asset);
     fileInput.Set(SdfAssetPath(fileTextureName.c_str()), usdTime);
@@ -727,7 +730,10 @@ UsdAttribute PxrUsdTranslators_FileTextureWriter::GetShadingAttributeForMayaAttr
             std::string fileTextureName(fileTextureNamePlug.asString().asChar());
 
             UsdMayaShadingUtil::ResolveUsdTextureFileName(
-                fileTextureName, _GetExportArgs().GetResolvedFileName(), false);
+                fileTextureName,
+                _GetExportArgs().GetResolvedFileName(),
+                _GetExportArgs().exportRelativeTextures,
+                false);
             int numChannels = UsdMayaShadingUtil::GetNumberOfChannels(fileTextureName);
             if (numChannels == 1) {
                 usdAttrName = TrUsdTokens->RedOutputName;
