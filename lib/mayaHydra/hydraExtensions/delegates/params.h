@@ -30,7 +30,7 @@ PXR_NAMESPACE_OPEN_SCOPE
  */
 struct MayaHydraParams
 {
-    bool  proxyPurpose = false;
+    bool  proxyPurpose = true;
     bool  renderPurpose = false;
     bool  guidePurpose = false;
     int   textureMemoryPerTexture = 4 * 1024 * 1024;
