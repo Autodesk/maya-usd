@@ -726,7 +726,7 @@ void MtohRenderGlobals::BuildOptionsMenu(
 
     // Temp solution to store global settings for USD Purpose tags
     {
-        ss << "\tframeLayout -label \"Global USD Display Purpose Tags\" -collapsable true;";
+        ss << "\tframeLayout -label \"Display Purpose\" -collapsable true;";
     }
     {        
         ss << "\tmtohRenderOverride_AddAttribute(" << quote(rendererDesc.rendererName.GetString())
