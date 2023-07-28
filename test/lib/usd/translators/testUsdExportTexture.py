@@ -38,6 +38,24 @@ class testUsdExportTexture(unittest.TestCase):
     def tearDownClass(cls):
         standalone.uninitialize()
 
+    def getUsdFilePath(self):
+        # Note: the output file needs to be in the test folder so that
+        #       it is possible to create relative paths, since we are not
+        #       guaranteed that the build folder is on th esame drive as
+        #       the source folder. For example, it is not in preflight testing.
+        outputFolder = os.path.join(self.inputPath, 'UsdExportTextureTest', 'output')
+        return os.path.join(outputFolder, 'TextureTest.usda')
+
+    def tearDown(self):
+        usdFilePath = self.getUsdFilePath()
+        try:
+            if os.path.exists(usdFilePath):
+                os.remove(usdFilePath)
+        except Exception:
+            # Don't let cleanup errors fail the test.
+            # We're removing the output file only to be nice, it is not mandatory.
+            pass
+
     def runTextureTest(self, relativeMode):
         projectFolder = os.path.join(self.inputPath, 'UsdExportTextureTest', 'rel_project')
         mayaScenePath = os.path.join(projectFolder, 'scenes', 'TextureTest.ma')
@@ -51,7 +69,7 @@ class testUsdExportTexture(unittest.TestCase):
         cmds.setAttr('file1.ftn', texturePath, edit=True, type='string')
 
         # Export to USD.
-        usdFilePath = os.path.abspath('TextureTest.usda')
+        usdFilePath = self.getUsdFilePath()
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath, exportRelativeTextures=relativeMode)
 
         stage = Usd.Stage.Open(usdFilePath)
@@ -66,7 +84,9 @@ class testUsdExportTexture(unittest.TestCase):
         self.assertTrue(fileAttr, fileAttrName)
         exportedTexturePath = fileAttr.Get()
         self.assertTrue(exportedTexturePath, fileAttrName)
-        self.assertEqual(os.path.isabs(exportedTexturePath.path), relativeMode=='absolute')
+        shouldBeAbsolute = bool(relativeMode=='absolute')
+        self.assertEqual(os.path.isabs(exportedTexturePath.path), shouldBeAbsolute,
+                         'The exported texture %s does not have the right relative mode' % exportedTexturePath)
 
     def testExportRelativeTexture(self):
         '''
