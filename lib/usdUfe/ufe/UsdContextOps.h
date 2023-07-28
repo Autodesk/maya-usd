@@ -15,8 +15,7 @@
 //
 #pragma once
 
-#include <mayaUsd/base/api.h>
-
+#include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/usd/prim.h>
@@ -24,8 +23,11 @@
 #include <ufe/contextOps.h>
 #include <ufe/path.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+#include <map>
+#include <string>
+#include <vector>
+
+namespace USDUFE_NS_DEF {
 
 struct SchemaTypeGroup
 {
@@ -43,7 +45,7 @@ struct SchemaTypeGroup
 
     \see UFE ContextOps class documentation for more details
 */
-class MAYAUSD_CORE_PUBLIC UsdContextOps : public Ufe::ContextOps
+class USDUFE_PUBLIC UsdContextOps : public Ufe::ContextOps
 {
 public:
     typedef std::shared_ptr<UsdContextOps> Ptr;
@@ -71,8 +73,8 @@ public:
             return PXR_NS::UsdPrim();
     }
 
-    // When we are created from the ProxyShapeContextOpsHandler we do not have the proper
-    // Maya UFE scene item. So it won't return the correct node type. Therefore we set
+    // When we are created from a gateway node ContextOpsHandler we do not have the proper
+    // UFE scene item. So it won't return the correct node type. Therefore we set
     // this flag directly.
     void setIsAGatewayType(bool t) { fIsAGatewayType = t; }
     bool isAGatewayType() const { return fIsAGatewayType; }
@@ -82,7 +84,15 @@ public:
     Items                     getItems(const ItemPath& itemPath) const override;
     Ufe::UndoableCommand::Ptr doOpCmd(const ItemPath& itemPath) override;
 
-private:
+    // Helpers
+
+    // Called from getItems() method to replace the USD schema names with a
+    // nice UI name (in the context menu).
+    // Can be overridden by derived class to add to the map.
+    typedef std::map<std::string, std::string> SchemaNameMap;
+    virtual SchemaNameMap                      getSchemaPluginNiceNames() const;
+
+protected:
     UsdSceneItem::Ptr fItem;
     bool              fIsAGatewayType { false };
 
@@ -91,5 +101,4 @@ private:
 
 }; // UsdContextOps
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

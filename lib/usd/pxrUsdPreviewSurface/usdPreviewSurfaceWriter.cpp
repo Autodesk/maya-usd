@@ -135,7 +135,7 @@ void _ValidateNormalMap(const MPlug& shadingNodePlug)
 
 } // namespace
 
-UsdMayaShaderWriter::ContextSupport
+UsdMayaPrimWriter::ContextSupport
 PxrMayaUsdPreviewSurface_Writer::CanExport(const UsdMayaJobExportArgs& exportArgs)
 {
     if (exportArgs.convertMaterialsTo == UsdImagingTokens->UsdPreviewSurface) {

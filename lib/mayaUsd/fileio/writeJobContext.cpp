@@ -537,8 +537,7 @@ UsdMayaPrimWriterSharedPtr UsdMayaWriteJobContext::CreatePrimWriter(
     // This is either a DG node or a non-instanced DAG node, so try to look up
     // a writer plugin. We search through the node's type ancestors, working
     // backwards until we find a prim writer plugin.
-    const std::string mayaTypeName(depNodeFn.typeName().asChar());
-    if (UsdMayaPrimWriterRegistry::WriterFactoryFn primWriterFactory = _FindWriter(mayaTypeName)) {
+    if (UsdMayaPrimWriterRegistry::WriterFactoryFn primWriterFactory = _FindWriter(depNodeFn)) {
         if (UsdMayaPrimWriterSharedPtr primPtr = primWriterFactory(depNodeFn, writePath, *this)) {
             // We found a registered user prim writer that handles this node
             // type, so return now.
@@ -551,8 +550,10 @@ UsdMayaPrimWriterSharedPtr UsdMayaWriteJobContext::CreatePrimWriter(
 }
 
 UsdMayaPrimWriterRegistry::WriterFactoryFn
-UsdMayaWriteJobContext::_FindWriter(const std::string& mayaNodeType)
+UsdMayaWriteJobContext::_FindWriter(const MFnDependencyNode& mayaNode)
 {
+    const std::string mayaNodeType(mayaNode.typeName().asChar());
+
     // Check if type is already cached locally.
     auto iter = mWriterFactoryCache.find(mayaNodeType);
     if (iter != mWriterFactoryCache.end()) {
@@ -564,7 +565,7 @@ UsdMayaWriteJobContext::_FindWriter(const std::string& mayaNodeType)
         = UsdMayaUtil::GetAllAncestorMayaNodeTypes(mayaNodeType);
     for (auto i = ancestorTypes.rbegin(); i != ancestorTypes.rend(); ++i) {
         if (UsdMayaPrimWriterRegistry::WriterFactoryFn primWriterFactory
-            = UsdMayaPrimWriterRegistry::Find(*i)) {
+            = UsdMayaPrimWriterRegistry::Find(*i, mArgs, mayaNode.object())) {
             mWriterFactoryCache[mayaNodeType] = primWriterFactory;
             return primWriterFactory;
         }

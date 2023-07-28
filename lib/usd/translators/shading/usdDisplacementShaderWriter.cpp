@@ -152,7 +152,7 @@ void PxrUsdTranslators_DisplacementShaderWriter::Write(const UsdTimeCode& usdTim
 }
 
 /* static */
-UsdMayaShaderWriter::ContextSupport
+UsdMayaPrimWriter::ContextSupport
 PxrUsdTranslators_DisplacementShaderWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
 {
     if (exportArgs.convertMaterialsTo == UsdImagingTokens->UsdPreviewSurface) {

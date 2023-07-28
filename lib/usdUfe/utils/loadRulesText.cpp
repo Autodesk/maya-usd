@@ -16,23 +16,23 @@
 
 #include "loadRules.h"
 
-#include <maya/MStringArray.h>
+#include <pxr/base/tf/stringUtils.h>
 
-namespace MAYAUSD_NS_DEF {
+namespace USDUFE_NS_DEF {
 
-MString convertLoadRulesToText(const PXR_NS::UsdStage& stage)
+std::string convertLoadRulesToText(const PXR_NS::UsdStage& stage)
 {
     return convertLoadRulesToText(stage.GetLoadRules());
 }
 
-void setLoadRulesFromText(PXR_NS::UsdStage& stage, const MString& text)
+void setLoadRulesFromText(PXR_NS::UsdStage& stage, const std::string& text)
 {
     const auto newLoadRules = createLoadRulesFromText(text);
     if (stage.GetLoadRules() != newLoadRules)
         stage.SetLoadRules(newLoadRules);
 }
 
-static MString convertRuleToText(const PXR_NS::UsdStageLoadRules::Rule rule)
+static std::string convertRuleToText(const PXR_NS::UsdStageLoadRules::Rule rule)
 {
     // Note: using namespace required for the TF_WARN macro.
     PXR_NAMESPACE_USING_DIRECTIVE
@@ -45,21 +45,22 @@ static MString convertRuleToText(const PXR_NS::UsdStageLoadRules::Rule rule)
     }
 }
 
-static MString
+static std::string
 convertPerPathRuleToText(const PXR_NS::SdfPath& path, const PXR_NS::UsdStageLoadRules::Rule rule)
 {
-    MString text;
-    text.format("^1s=^2s", path.GetAsString().c_str(), convertRuleToText(rule));
-    return text;
+    // Note: using namespace required for the TfStringfPrintf macro.
+    PXR_NAMESPACE_USING_DIRECTIVE
+
+    return TfStringPrintf("%s=%s", path.GetAsString().c_str(), convertRuleToText(rule).c_str());
 }
 
-MString convertLoadRulesToText(const PXR_NS::UsdStageLoadRules& rules)
+std::string convertLoadRulesToText(const PXR_NS::UsdStageLoadRules& rules)
 {
-    MString text;
+    std::string text;
 
     const auto& perPathRules = rules.GetRules();
     for (const auto& pathAndRule : perPathRules) {
-        if (text.length() > 0)
+        if (!text.empty())
             text += ";";
 
         text += convertPerPathRuleToText(pathAndRule.first, pathAndRule.second);
@@ -68,7 +69,7 @@ MString convertLoadRulesToText(const PXR_NS::UsdStageLoadRules& rules)
     return text;
 }
 
-static PXR_NS::UsdStageLoadRules::Rule createRuleFromText(const MString& text)
+static PXR_NS::UsdStageLoadRules::Rule createRuleFromText(const std::string& text)
 {
     // Note: using namespace required for the TF_WARN macro.
     PXR_NAMESPACE_USING_DIRECTIVE
@@ -80,23 +81,21 @@ static PXR_NS::UsdStageLoadRules::Rule createRuleFromText(const MString& text)
     if (text == "none")
         return UsdStageLoadRules::NoneRule;
 
-    TF_WARN("Convert text to rule: invalid rule: %s", text.asChar());
+    TF_WARN("Convert text to rule: invalid rule: %s", text.c_str());
     return PXR_NS::UsdStageLoadRules::AllRule;
 }
 
-PXR_NS::UsdStageLoadRules createLoadRulesFromText(const MString& text)
+PXR_NS::UsdStageLoadRules createLoadRulesFromText(const std::string& text)
 {
     PXR_NS::UsdStageLoadRules rules;
 
-    MStringArray perPathRules;
-    text.split(';', perPathRules);
+    auto perPathRules = PXR_NS::TfStringSplit(text, ";");
     for (const auto& item : perPathRules) {
-        MStringArray pathAndRule;
-        item.split('=', pathAndRule);
-        if (pathAndRule.length() != 2)
+        auto pathAndRule = PXR_NS::TfStringSplit(item, "=");
+        if (pathAndRule.size() != 2)
             continue;
 
-        auto path = PXR_NS::SdfPath(pathAndRule[0].asChar());
+        auto path = PXR_NS::SdfPath(pathAndRule[0]);
         auto rule = createRuleFromText(pathAndRule[1]);
 
         rules.AddRule(path, rule);
@@ -105,4 +104,4 @@ PXR_NS::UsdStageLoadRules createLoadRulesFromText(const MString& text)
     return rules;
 }
 
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

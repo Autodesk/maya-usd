@@ -183,14 +183,6 @@ inline PXR_NS::GfVec3d toUsd(const Ufe::Vector3d& src)
     return PXR_NS::GfVec3d(src.x(), src.y(), src.z());
 }
 
-//! Filter a source selection by removing descendants of filterPath.
-Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath);
-
-//! Re-build a source selection by copying scene items that are not descendants
-//! of filterPath to the destination, and re-creating the others into the
-//! destination using the source scene item path.
-Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath);
-
 //! Splits a string by each specified separator.
 MAYAUSD_CORE_PUBLIC
 std::vector<std::string> splitString(const std::string& str, const std::string& separators);

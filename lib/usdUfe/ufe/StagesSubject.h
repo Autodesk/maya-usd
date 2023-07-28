@@ -45,19 +45,22 @@ namespace USDUFE_NS_DEF {
         See the MayaUsd implmentation for more details:
         https://github.com/Autodesk/maya-usd/blob/dev/lib/mayaUsd/ufe/MayaStagesSubject.cpp
  */
-class USDUFE_PUBLIC StagesSubject : public PXR_NS::TfWeakBase
+class USDUFE_PUBLIC StagesSubject
+    : public PXR_NS::TfRefBase
+    , public PXR_NS::TfWeakBase
 {
 public:
     typedef PXR_NS::TfWeakPtr<StagesSubject> Ptr;
+    typedef PXR_NS::TfRefPtr<StagesSubject>  RefPtr;
 
     //! Constructor
     StagesSubject();
 
     //! Destructor
-    ~StagesSubject();
+    virtual ~StagesSubject();
 
     //! Create the StagesSubject.
-    static StagesSubject::Ptr create();
+    static StagesSubject::RefPtr create();
 
     // Delete the copy/move constructors assignment operators.
     StagesSubject(const StagesSubject&) = delete;

@@ -4,9 +4,12 @@
 target_sources(${PROJECT_NAME}
     PRIVATE
         Global.cpp
+        SetVariantSelectionCommand.cpp
         StagesSubject.cpp
         UsdCamera.cpp
         UsdCameraHandler.cpp
+        UsdContextOps.cpp
+        UsdContextOpsHandler.cpp
         UsdHierarchy.cpp
         UsdHierarchyHandler.cpp
         UsdObject3d.cpp
@@ -21,6 +24,7 @@ target_sources(${PROJECT_NAME}
         UsdUndoClearReferencesCommand.cpp
         UsdUndoCreateGroupCommand.cpp
         UsdUndoInsertChildCommand.cpp
+        UsdUndoPayloadCommand.cpp
         UsdUndoReorderCommand.cpp
         UsdUndoSelectAfterCommand.cpp
         UsdUndoSetKindCommand.cpp
@@ -41,10 +45,13 @@ endif()
 
 set(HEADERS
     Global.h
+    SetVariantSelectionCommand.h
     StagesSubject.h
     UfeVersionCompat.h
     UsdCamera.h
     UsdCameraHandler.h
+    UsdContextOps.h
+    UsdContextOpsHandler.h
     UsdHierarchy.h
     UsdHierarchyHandler.h
     UsdObject3d.h
@@ -59,6 +66,7 @@ set(HEADERS
     UsdUndoClearReferencesCommand.h
     UsdUndoCreateGroupCommand.h
     UsdUndoInsertChildCommand.h
+    UsdUndoPayloadCommand.h
     UsdUndoReorderCommand.h
     UsdUndoSelectAfterCommand.h
     UsdUndoSetKindCommand.h

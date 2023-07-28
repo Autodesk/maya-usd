@@ -368,7 +368,7 @@ StagesSubject::StagesSubject() { }
 StagesSubject::~StagesSubject() { }
 
 /*static*/
-StagesSubject::Ptr StagesSubject::create() { return TfCreateWeakPtr(new StagesSubject); }
+StagesSubject::RefPtr StagesSubject::create() { return TfCreateRefPtr(new StagesSubject); }
 
 void StagesSubject::stageChanged(
     UsdNotice::ObjectsChanged const& notice,

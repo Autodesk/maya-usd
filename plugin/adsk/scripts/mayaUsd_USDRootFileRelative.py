@@ -316,7 +316,7 @@ class usdSubLayerFileRelative(usdFileRelative):
         return super(usdSubLayerFileRelative, cls).uiCreate(parentLayout, cls.kRelativeToWhat)
 
     @classmethod
-    def uiInit(cls, parentLayout, filterType, parentLayerPath = ""):
+    def uiInit(cls, parentLayout, filterType, parentLayerPath):
         '''
         Note: the function takes an unused filterType argument to be compatible
               with the dialog2 command API.

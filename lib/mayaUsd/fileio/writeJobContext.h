@@ -186,7 +186,7 @@ private:
         std::vector<UsdMayaPrimWriterSharedPtr>::const_iterator* end) const;
 
     /// Prim writer search with ancestor type resolution behavior.
-    UsdMayaPrimWriterRegistry::WriterFactoryFn _FindWriter(const std::string& mayaNodeType);
+    UsdMayaPrimWriterRegistry::WriterFactoryFn _FindWriter(const MFnDependencyNode& mayaNode);
 
     struct MObjectHandleComp
     {

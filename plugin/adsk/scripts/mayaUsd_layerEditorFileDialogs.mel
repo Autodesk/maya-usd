@@ -164,7 +164,8 @@ global proc UsdLayerEditor_LoadLayersFileDialogOptions_UICreate(string $parent)
 
 global proc UsdLayerEditor_LoadLayersFileDialogOptions_UIInit(string $parent, string $filterType)
 {
-    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdSubLayerFileRelative.uiInit('" + $parent + "', '" + $filterType + "')");
+    global string $gLayerParentPathUsdLayerEditorSaveFileDialog;
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdSubLayerFileRelative.uiInit('" + $parent + "', '" + $filterType + "',  '" + $gLayerParentPathUsdLayerEditorSaveFileDialog + "')");
 }
 
 global proc UsdLayerEditor_LoadLayersFileDialogOptions_UICommit(string $parent, string $selectedFile)
@@ -174,6 +175,9 @@ global proc UsdLayerEditor_LoadLayersFileDialogOptions_UICommit(string $parent, 
 
 global proc string[] UsdLayerEditor_LoadLayersFileDialog(string $title, string $folder)
 {
+    global string $gLayerParentPathUsdLayerEditorSaveFileDialog;
+    $gLayerParentPathUsdLayerEditorSaveFileDialog = $folder;
+    
     string $fileFilter = python("from mayaUsdUtils import getUSDDialogFileFilters; getUSDDialogFileFilters(False)");
     $okCaption = getMayaUsdString("kLoad");
 

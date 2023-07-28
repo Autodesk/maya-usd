@@ -17,6 +17,7 @@
 #include <usdUfe/ufe/UsdUndoAddReferenceCommand.h>
 #include <usdUfe/ufe/UsdUndoClearPayloadsCommand.h>
 #include <usdUfe/ufe/UsdUndoClearReferencesCommand.h>
+#include <usdUfe/ufe/UsdUndoPayloadCommand.h>
 #include <usdUfe/ufe/UsdUndoToggleActiveCommand.h>
 #include <usdUfe/ufe/UsdUndoToggleInstanceableCommand.h>
 
@@ -57,6 +58,17 @@ UsdUfe::UsdUndoToggleActiveCommand* ToggleActiveCommandInit(const PXR_NS::UsdPri
 UsdUfe::UsdUndoToggleInstanceableCommand* ToggleInstanceableCommandInit(const PXR_NS::UsdPrim& prim)
 {
     return new UsdUfe::UsdUndoToggleInstanceableCommand(prim);
+}
+
+UsdUfe::UsdUndoLoadPayloadCommand*
+LoadPayloadCommandInit(const PXR_NS::UsdPrim& prim, PXR_NS::UsdLoadPolicy policy)
+{
+    return new UsdUfe::UsdUndoLoadPayloadCommand(prim, policy);
+}
+
+UsdUfe::UsdUndoUnloadPayloadCommand* UnloadPayloadCommandInit(const PXR_NS::UsdPrim& prim)
+{
+    return new UsdUfe::UsdUndoUnloadPayloadCommand(prim);
 }
 
 } // namespace
@@ -110,5 +122,21 @@ void wrapCommands()
             .def("execute", &UsdUfe::UsdUndoToggleInstanceableCommand::execute)
             .def("undo", &UsdUfe::UsdUndoToggleInstanceableCommand::undo)
             .def("redo", &UsdUfe::UsdUndoToggleInstanceableCommand::redo);
+    }
+    {
+        using This = UsdUfe::UsdUndoLoadPayloadCommand;
+        class_<This, boost::noncopyable>("LoadPayloadCommand", no_init)
+            .def("__init__", make_constructor(LoadPayloadCommandInit))
+            .def("execute", &UsdUfe::UsdUndoLoadPayloadCommand::execute)
+            .def("undo", &UsdUfe::UsdUndoLoadPayloadCommand::undo)
+            .def("redo", &UsdUfe::UsdUndoLoadPayloadCommand::redo);
+    }
+    {
+        using This = UsdUfe::UsdUndoUnloadPayloadCommand;
+        class_<This, boost::noncopyable>("UnloadPayloadCommand", no_init)
+            .def("__init__", make_constructor(UnloadPayloadCommandInit))
+            .def("execute", &UsdUfe::UsdUndoUnloadPayloadCommand::execute)
+            .def("undo", &UsdUfe::UsdUndoUnloadPayloadCommand::undo)
+            .def("redo", &UsdUfe::UsdUndoUnloadPayloadCommand::redo);
     }
 }

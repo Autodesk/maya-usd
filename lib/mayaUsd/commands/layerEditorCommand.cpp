@@ -17,9 +17,10 @@
 #include "layerEditorCommand.h"
 
 #include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/query.h>
 #include <mayaUsd/utils/utilFileSystem.h>
+
+#include <usdUfe/ufe/Utils.h>
 
 #include <pxr/base/tf/diagnostic.h>
 
@@ -288,7 +289,7 @@ public:
         // detail.
         Ufe::Path path(
             Ufe::PathSegment("world" + _proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
-        globalSn->replaceWith(MayaUsd::ufe::removeDescendants(_savedSn, path));
+        globalSn->replaceWith(UsdUfe::removeDescendants(_savedSn, path));
     }
 
     void restoreSelection()
@@ -302,7 +303,7 @@ public:
         Ufe::Path path(
             Ufe::PathSegment("world" + _proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
         auto globalSn = Ufe::GlobalSelection::get();
-        globalSn->replaceWith(MayaUsd::ufe::recreateDescendants(_savedSn, path));
+        globalSn->replaceWith(UsdUfe::recreateDescendants(_savedSn, path));
     }
 
 protected:
@@ -665,7 +666,7 @@ private:
         // detail.
         Ufe::Path path(
             Ufe::PathSegment("world" + _proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
-        globalSn->replaceWith(MayaUsd::ufe::removeDescendants(_savedSn, path));
+        globalSn->replaceWith(UsdUfe::removeDescendants(_savedSn, path));
     }
 
     void restoreSelection()
@@ -679,7 +680,7 @@ private:
         Ufe::Path path(
             Ufe::PathSegment("world" + _proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
         auto globalSn = Ufe::GlobalSelection::get();
-        globalSn->replaceWith(MayaUsd::ufe::recreateDescendants(_savedSn, path));
+        globalSn->replaceWith(UsdUfe::recreateDescendants(_savedSn, path));
     }
 
     Ufe::Selection         _savedSn;

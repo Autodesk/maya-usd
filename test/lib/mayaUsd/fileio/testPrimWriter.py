@@ -32,6 +32,7 @@ class primWriterTest(mayaUsdLib.PrimWriter):
     InitCalled = False
     WriteCalled = False
     PostExportCalled = False
+    CanExportCalled = False
 
     def __init__(self, *args, **kwargs):
         super(primWriterTest, self).__init__(*args, **kwargs)
@@ -48,6 +49,11 @@ class primWriterTest(mayaUsdLib.PrimWriter):
             return
         self._SetUsdPrim(usdPrim)
         primWriterTest.InitCalled = True
+
+    @classmethod
+    def CanExport(cls, exportArgs, exportObj=None):
+        primWriterTest.CanExportCalled = True
+        return mayaUsdLib.PrimWriter.ContextSupport.Supported
 
     def Write(self, usdTime):
         depNodeFn = OpenMaya.MFnDependencyNode(self.GetMayaObject())
@@ -88,6 +94,7 @@ class testReadWriteUtils(unittest.TestCase):
             shadingMode='none')
 
         self.assertTrue(primWriterTest.InitCalled)
+        self.assertTrue(primWriterTest.CanExportCalled)
         self.assertTrue(primWriterTest.WriteCalled)
         self.assertTrue(primWriterTest.PostExportCalled)
 
