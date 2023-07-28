@@ -195,14 +195,12 @@ std::string UsdMayaUtilFileSystem::getPathRelativeToProject(const std::string& f
     if (pos != 0)
         return {};
 
-    std::string relativePath = fileName.substr(projectPath.length(), fileName.length());
-    // Note: don't assume the project path contains or does not contain a trailing
-    //       path separator. Get rid of it if it was left in the relative path by
-    //       the substring above.
-    while (relativePath[0] == '/' || relativePath[0] == '\\')
-        relativePath = relativePath.substr(1, relativePath.length());
+    auto relativePathAndSuccess = makePathRelativeTo(fileName, projectPath.asChar());
 
-    return relativePath;
+    if (!relativePathAndSuccess.second)
+        return {};
+
+    return relativePathAndSuccess.first;
 }
 
 std::string UsdMayaUtilFileSystem::getPathRelativeToDirectory(
