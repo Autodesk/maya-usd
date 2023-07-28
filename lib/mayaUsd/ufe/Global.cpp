@@ -17,13 +17,14 @@
 
 #include "private/UfeNotifGuard.h"
 
+#include <mayaUsd/nodes/proxyShapeStageExtraData.h>
 #include <mayaUsd/ufe/MayaStagesSubject.h>
+#include <mayaUsd/ufe/MayaUsdContextOpsHandler.h>
 #include <mayaUsd/ufe/MayaUsdObject3dHandler.h>
 #include <mayaUsd/ufe/ProxyShapeContextOpsHandler.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/ProxyShapeHierarchyHandler.h>
 #include <mayaUsd/ufe/UsdAttributesHandler.h>
-#include <mayaUsd/ufe/UsdContextOpsHandler.h>
 #include <mayaUsd/ufe/UsdSceneItemOpsHandler.h>
 #include <mayaUsd/ufe/UsdTransform3dCommonAPI.h>
 #include <mayaUsd/ufe/UsdTransform3dFallbackMayaXformStack.h>
@@ -95,9 +96,17 @@ void exitingCallback(void* /* unusedData */)
     MayaUsd::ufe::finalize(/* exiting = */ true);
 }
 
+//------------------------------------------------------------------------------
+// Global variables
+//------------------------------------------------------------------------------
+
 int gRegistrationCount = 0;
 
 MCallbackId gExitingCbId = 0;
+
+// Subject singleton for observation of all USD stages.
+MayaUsd::ufe::MayaStagesSubject::RefPtr g_StagesSubject;
+
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -154,6 +163,7 @@ MStatus initialize()
     dccFunctions.ufePathToPrimFn = MayaUsd::ufe::ufePathToPrim;
     dccFunctions.timeAccessorFn = MayaUsd::ufe::getTime;
     dccFunctions.isAttributeLockedFn = MayaUsd::Editability::isAttributeLocked;
+    dccFunctions.saveStageLoadRulesFn = MayaUsd::MayaUsdProxyShapeStageExtraData::saveLoadRules;
 
     // Replace the Maya hierarchy handler with ours.
     auto& runTimeMgr = Ufe::RunTimeMgr::instance();
@@ -187,7 +197,7 @@ MStatus initialize()
     handlers.sceneItemOpsHandler = UsdSceneItemOpsHandler::create();
     handlers.attributesHandler = UsdAttributesHandler::create();
     usdUfeHandlers.object3dHandler = MayaUsdObject3dHandler::create();
-    handlers.contextOpsHandler = UsdContextOpsHandler::create();
+    usdUfeHandlers.contextOpsHandler = MayaUsdContextOpsHandler::create();
     handlers.uiInfoHandler = UsdUIInfoHandler::create();
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
@@ -254,8 +264,9 @@ MStatus initialize()
 
     // Initialize UsdUfe which will register all the default handlers
     // and the overrides we provide.
-    auto ss = MayaStagesSubject::create();
-    auto usdRtid = UsdUfe::initialize(dccFunctions, usdUfeHandlers, ss);
+    // Subject singleton for observation of all USD stages.
+    g_StagesSubject = MayaStagesSubject::create();
+    auto usdRtid = UsdUfe::initialize(dccFunctions, usdUfeHandlers, g_StagesSubject);
 
     // TEMP (UsdUfe)
     // Can only call Ufe::RunTimeMgr::register_() once for a given runtime name.
@@ -349,6 +360,9 @@ MStatus finalize(bool exiting)
 
     UsdUfe::finalize(exiting);
     g_MayaHierarchyHandler.reset();
+
+    // Destroy our stages subject.
+    g_StagesSubject.Reset();
 
 #if UFE_SCENE_SEGMENT_SUPPORT
     runTimeMgr.setSceneSegmentHandler(g_MayaRtid, g_MayaSceneSegmentHandler);

@@ -16,6 +16,7 @@
 #include "Global.h"
 
 #include <usdUfe/ufe/UsdCameraHandler.h>
+#include <usdUfe/ufe/UsdContextOpsHandler.h>
 #include <usdUfe/ufe/UsdHierarchyHandler.h>
 #include <usdUfe/ufe/UsdObject3dHandler.h>
 
@@ -45,7 +46,7 @@ static const std::string kUSDRunTimeName("USD");
 Ufe::Rtid g_USDRtid = 0;
 
 // Subject singleton for observation of all USD stages.
-StagesSubject::Ptr g_StagesSubject;
+StagesSubject::RefPtr g_DefaultStagesSubject;
 
 //------------------------------------------------------------------------------
 // Functions
@@ -71,9 +72,13 @@ Ufe::Rtid initialize(
     // Optional DCC specific functions.
     if (dccFunctions.isAttributeLockedFn)
         UsdUfe::setIsAttributeLockedFn(dccFunctions.isAttributeLockedFn);
+    if (dccFunctions.saveStageLoadRulesFn)
+        UsdUfe::setSaveStageLoadRulesFn(dccFunctions.saveStageLoadRulesFn);
 
-    // Store the input stages subject if provided, otherwise create the default one.
-    g_StagesSubject = ss ? ss : StagesSubject::create();
+    // Create a default stages subject if none is provided.
+    if (nullptr == ss) {
+        g_DefaultStagesSubject = StagesSubject::create();
+    }
 
     // Copy all the input handlers into the Ufe handler struct and
     // create any default ones which are null.
@@ -82,6 +87,8 @@ Ufe::Rtid initialize(
         = handlers.hierarchyHandler ? handlers.hierarchyHandler : UsdHierarchyHandler::create();
     rtHandlers.object3dHandler
         = handlers.object3dHandler ? handlers.object3dHandler : UsdObject3dHandler::create();
+    rtHandlers.contextOpsHandler
+        = handlers.contextOpsHandler ? handlers.contextOpsHandler : UsdContextOpsHandler::create();
     rtHandlers.cameraHandler
         = handlers.cameraHandler ? handlers.cameraHandler : UsdCameraHandler::create();
 
@@ -99,7 +106,8 @@ bool finalize(bool exiting)
     auto& runTimeMgr = Ufe::RunTimeMgr::instance();
     runTimeMgr.unregister(g_USDRtid);
 
-    g_StagesSubject.Reset();
+    // If we created the default stages subject we must destroy it.
+    g_DefaultStagesSubject.Reset();
 
     return true;
 }

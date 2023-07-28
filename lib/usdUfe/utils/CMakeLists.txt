@@ -7,6 +7,7 @@ target_sources(${PROJECT_NAME}
         editRouterContext.cpp
         layers.cpp
         loadRules.cpp
+        loadRulesText.cpp
         usdUtils.cpp
         Utils.cpp
 )

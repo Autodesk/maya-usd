@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef MAYAUSD_UFE_USDUNDOPAYLOADCOMMAND_H
-#define MAYAUSD_UFE_USDUNDOPAYLOADCOMMAND_H
+#ifndef USDUFE_USDUNDOPAYLOADCOMMAND_H
+#define USDUFE_USDUNDOPAYLOADCOMMAND_H
 
-#include <mayaUsd/base/api.h>
+#include <usdUfe/base/api.h>
 
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/payloads.h>
@@ -25,11 +25,10 @@
 
 #include <ufe/undoableCommand.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //! \brief Undoable command for loading a USD prim.
-class MAYAUSD_CORE_PUBLIC UsdUndoLoadUnloadBaseCommand : public Ufe::UndoableCommand
+class USDUFE_PUBLIC UsdUndoLoadUnloadBaseCommand : public Ufe::UndoableCommand
 {
 protected:
     UsdUndoLoadUnloadBaseCommand(const PXR_NS::UsdPrim& prim, PXR_NS::UsdLoadPolicy policy);
@@ -47,7 +46,7 @@ private:
 };
 
 //! \brief Undoable command for loading a USD prim.
-class MAYAUSD_CORE_PUBLIC UsdUndoLoadPayloadCommand : public UsdUndoLoadUnloadBaseCommand
+class USDUFE_PUBLIC UsdUndoLoadPayloadCommand : public UsdUndoLoadUnloadBaseCommand
 {
 public:
     UsdUndoLoadPayloadCommand(const PXR_NS::UsdPrim& prim, PXR_NS::UsdLoadPolicy policy);
@@ -57,7 +56,7 @@ public:
 };
 
 //! \brief Undoable command for unloading a USD prim.
-class MAYAUSD_CORE_PUBLIC UsdUndoUnloadPayloadCommand : public UsdUndoLoadUnloadBaseCommand
+class USDUFE_PUBLIC UsdUndoUnloadPayloadCommand : public UsdUndoLoadUnloadBaseCommand
 {
 public:
     UsdUndoUnloadPayloadCommand(const PXR_NS::UsdPrim& prim);
@@ -66,7 +65,6 @@ public:
     void undo() override;
 };
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF
 
 #endif

@@ -1,5 +1,6 @@
+
 //
-// Copyright 2020 Autodesk
+// Copyright 2023 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,35 +14,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "UsdContextOpsHandler.h"
+#include "MayaUsdContextOpsHandler.h"
+
+#include <mayaUsd/ufe/MayaUsdContextOps.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdContextOpsHandler::UsdContextOpsHandler()
-    : Ufe::ContextOpsHandler()
+MayaUsdContextOpsHandler::MayaUsdContextOpsHandler()
+    : UsdUfe::UsdContextOpsHandler()
 {
 }
 
-UsdContextOpsHandler::~UsdContextOpsHandler() { }
+MayaUsdContextOpsHandler::~MayaUsdContextOpsHandler() { }
 
 /*static*/
-UsdContextOpsHandler::Ptr UsdContextOpsHandler::create()
+MayaUsdContextOpsHandler::Ptr MayaUsdContextOpsHandler::create()
 {
-    return std::make_shared<UsdContextOpsHandler>();
+    return std::make_shared<MayaUsdContextOpsHandler>();
 }
 
 //------------------------------------------------------------------------------
 // Ufe::ContextOpsHandler overrides
 //------------------------------------------------------------------------------
 
-Ufe::ContextOps::Ptr UsdContextOpsHandler::contextOps(const Ufe::SceneItem::Ptr& item) const
+Ufe::ContextOps::Ptr MayaUsdContextOpsHandler::contextOps(const Ufe::SceneItem::Ptr& item) const
 {
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
 #if !defined(NDEBUG)
     assert(usdItem);
 #endif
-    return UsdContextOps::create(usdItem);
+    return MayaUsdContextOps::create(usdItem);
 }
 
 } // namespace ufe

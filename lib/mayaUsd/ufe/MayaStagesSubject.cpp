@@ -67,7 +67,7 @@ MayaStagesSubject::MayaStagesSubject()
         MSceneMessage::addCallback(MSceneMessage::kAfterNew, afterNewCallback, this, &res));
     CHECK_MSTATUS(res);
 
-    TfWeakPtr<MayaStagesSubject> me(this);
+    auto me = PXR_NS::TfCreateWeakPtr(this);
     TfNotice::Register(me, &MayaStagesSubject::onStageSet);
     TfNotice::Register(me, &MayaStagesSubject::onStageInvalidate);
 }
@@ -79,9 +79,9 @@ MayaStagesSubject::~MayaStagesSubject()
 }
 
 /*static*/
-MayaStagesSubject::Ptr MayaStagesSubject::create()
+MayaStagesSubject::RefPtr MayaStagesSubject::create()
 {
-    return TfCreateWeakPtr(new MayaStagesSubject);
+    return TfCreateRefPtr(new MayaStagesSubject);
 }
 
 bool MayaStagesSubject::isInNewScene() const { return fIsInNewScene; }
@@ -179,7 +179,7 @@ void MayaStagesSubject::setupListeners()
         TF_VERIFY(g_StageMap.isDirty());
         TF_VERIFY(fStageListeners.empty());
 
-        MayaStagesSubject::Ptr me(this);
+        auto me = PXR_NS::TfCreateWeakPtr(this);
         for (auto stage : ProxyShapeHandler::getAllStages()) {
             NoticeKeys noticeKeys;
             noticeKeys[0] = TfNotice::Register(me, &MayaStagesSubject::stageChanged, stage);

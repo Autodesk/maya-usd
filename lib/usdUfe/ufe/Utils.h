@@ -19,6 +19,7 @@
 #include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/stage.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <ufe/path.h>
@@ -42,6 +43,7 @@ typedef Ufe::Path (*StagePathAccessorFn)(PXR_NS::UsdStageWeakPtr);
 typedef PXR_NS::UsdPrim (*UfePathToPrimFn)(const Ufe::Path&);
 typedef PXR_NS::UsdTimeCode (*TimeAccessorFn)(const Ufe::Path&);
 typedef bool (*IsAttributeLockedFn)(const PXR_NS::UsdAttribute& attr, std::string* errMsg);
+typedef void (*SaveStageLoadRulesFn)(const PXR_NS::UsdStageRefPtr&);
 
 //------------------------------------------------------------------------------
 // Helper functions
@@ -101,7 +103,7 @@ void setTimeAccessorFn(TimeAccessorFn fn);
 USDUFE_PUBLIC
 PXR_NS::UsdTimeCode getTime(const Ufe::Path& path);
 
-//! Set the DCC specific USD attributed is locked test function.
+//! Set the DCC specific USD attribute is locked test function.
 //! Use of this function is optional, if one is not supplied then
 //! default value (false) will be returned by accessor function.
 USDUFE_PUBLIC
@@ -112,6 +114,19 @@ void setIsAttributeLockedFn(IsAttributeLockedFn fn);
 //! \return True if the USD attributed is locked, otherwise false (default).
 USDUFE_PUBLIC
 bool isAttributedLocked(const PXR_NS::UsdAttribute& attr, std::string* errMsg = nullptr);
+
+//! Set the DCC specific USD save load rules function.
+//! Use of this function is optional, if one is supplied then it
+//! will be called when loading/unloading a payload.
+//! Save the load rules so that switching the stage settings will
+//! be able to preserve the load rules.
+USDUFE_PUBLIC
+void setSaveStageLoadRulesFn(SaveStageLoadRulesFn fn);
+
+//! If an optional save load rules function was set, call it.
+//! If a stage is provided then only that stage is used, otherwise
+//! all stages will be used.
+void saveStageLoadRules(const PXR_NS::UsdStageRefPtr& stage);
 
 //! Return the instance index corresponding to the argument UFE path if it
 //! represents a point instance.
@@ -147,6 +162,16 @@ inline UsdSceneItem::Ptr downcast(const Ufe::SceneItem::Ptr& item)
 {
     return std::dynamic_pointer_cast<UsdSceneItem>(item);
 }
+
+//! Filter a source selection by removing descendants of filterPath.
+USDUFE_PUBLIC
+Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath);
+
+//! Re-build a source selection by copying scene items that are not descendants
+//! of filterPath to the destination, and re-creating the others into the
+//! destination using the source scene item path.
+USDUFE_PUBLIC
+Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath);
 
 //------------------------------------------------------------------------------
 // Verify edit restrictions.

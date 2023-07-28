@@ -713,38 +713,6 @@ VtValue vtValueFromString(const SdfValueTypeName& typeName, const std::string& s
     return {};
 }
 
-Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath)
-{
-    // Filter the src selection, removing items below the filterPath
-    Ufe::Selection dst;
-    for (const auto& item : src) {
-        const auto& itemPath = item->path();
-        // The filterPath itself is still valid.
-        if (!itemPath.startsWith(filterPath) || itemPath == filterPath) {
-            dst.append(item);
-        }
-    }
-    return dst;
-}
-
-Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath)
-{
-    // If a src selection item starts with the filterPath, re-create it.
-    Ufe::Selection dst;
-    for (const auto& item : src) {
-        const auto& itemPath = item->path();
-        // The filterPath itself is still valid.
-        if (!itemPath.startsWith(filterPath) || itemPath == filterPath) {
-            dst.append(item);
-        } else {
-            auto recreatedItem = Ufe::Hierarchy::createItem(item->path());
-            if (recreatedItem)
-                dst.append(recreatedItem);
-        }
-    }
-    return dst;
-}
-
 std::vector<std::string> splitString(const std::string& str, const std::string& separators)
 {
     std::vector<std::string> split;

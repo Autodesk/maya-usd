@@ -5,6 +5,8 @@ target_sources(${PROJECT_NAME}
     PRIVATE
         Global.cpp
         MayaStagesSubject.cpp
+        MayaUsdContextOps.cpp
+        MayaUsdContextOpsHandler.cpp
         MayaUsdObject3d.cpp
         MayaUsdObject3dHandler.cpp
         ProxyShapeContextOpsHandler.cpp
@@ -12,13 +14,10 @@ target_sources(${PROJECT_NAME}
         ProxyShapeHierarchy.cpp
         ProxyShapeHierarchyHandler.cpp
         RotationUtils.cpp
-        SetVariantSelectionCommand.cpp
         UsdAttribute.cpp
         UsdAttributeHolder.cpp
         UsdAttributes.cpp
         UsdAttributesHandler.cpp
-        UsdContextOps.cpp
-        UsdContextOpsHandler.cpp
         UsdPointInstanceOrientationModifier.cpp
         UsdPointInstancePositionModifier.cpp
         UsdPointInstanceScaleModifier.cpp
@@ -45,7 +44,6 @@ target_sources(${PROJECT_NAME}
         UsdUndoDeleteCommand.cpp
         UsdUndoDuplicateCommand.cpp
         UsdUndoMaterialCommands.cpp
-        UsdUndoPayloadCommand.cpp
         UsdUndoRenameCommand.cpp
         Utils.cpp
         XformOpUtils.cpp
@@ -169,6 +167,8 @@ endif()
 set(HEADERS
     Global.h
     MayaStagesSubject.h
+    MayaUsdContextOps.h
+    MayaUsdContextOpsHandler.h
     MayaUsdObject3d.h
     MayaUsdObject3dHandler.h
     ProxyShapeContextOpsHandler.h
@@ -176,13 +176,10 @@ set(HEADERS
     ProxyShapeHierarchy.h
     ProxyShapeHierarchyHandler.h
     RotationUtils.h
-    SetVariantSelectionCommand.h
     UsdAttribute.h
     UsdAttributeHolder.h
     UsdAttributes.h
     UsdAttributesHandler.h
-    UsdContextOps.h
-    UsdContextOpsHandler.h
     UsdPointInstanceModifierBase.h
     UsdPointInstanceOrientationModifier.h
     UsdPointInstancePositionModifier.h
@@ -211,7 +208,6 @@ set(HEADERS
     UsdUndoDeleteCommand.h
     UsdUndoDuplicateCommand.h
     UsdUndoMaterialCommands.h
-    UsdUndoPayloadCommand.h
     UsdUndoRenameCommand.h
     Utils.h
     XformOpUtils.h

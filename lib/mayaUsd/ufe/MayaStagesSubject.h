@@ -39,15 +39,16 @@ class MAYAUSD_CORE_PUBLIC MayaStagesSubject : public UsdUfe::StagesSubject
 {
 public:
     typedef PXR_NS::TfWeakPtr<MayaStagesSubject> Ptr;
+    typedef PXR_NS::TfRefPtr<MayaStagesSubject>  RefPtr;
 
     //! Constructor
     MayaStagesSubject();
 
     //! Destructor
-    ~MayaStagesSubject();
+    ~MayaStagesSubject() override;
 
     //! Create the MayaStagesSubject.
-    static MayaStagesSubject::Ptr create();
+    static MayaStagesSubject::RefPtr create();
 
     // Delete the copy/move constructors assignment operators.
     MayaStagesSubject(const MayaStagesSubject&) = delete;

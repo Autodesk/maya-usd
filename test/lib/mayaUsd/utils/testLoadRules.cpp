@@ -1,4 +1,4 @@
-#include <mayaUsd/utils/loadRules.h>
+#include <usdUfe/utils/loadRules.h>
 
 #include <gtest/gtest.h>
 
@@ -8,9 +8,9 @@ TEST(ConvertLoadRules, convertEmptyLoadRules)
 {
     UsdStageLoadRules originalLoadRules;
 
-    const MString text = MayaUsd::convertLoadRulesToText(originalLoadRules);
+    auto text = UsdUfe::convertLoadRulesToText(originalLoadRules);
 
-    UsdStageLoadRules convertedLoadRules = MayaUsd::createLoadRulesFromText(text);
+    UsdStageLoadRules convertedLoadRules = UsdUfe::createLoadRulesFromText(text);
 
     EXPECT_EQ(originalLoadRules, convertedLoadRules);
 }
@@ -22,9 +22,9 @@ TEST(ConvertLoadRules, convertSimpleLoadRules)
     originalLoadRules.AddRule(SdfPath("/a/b"), UsdStageLoadRules::NoneRule);
     originalLoadRules.AddRule(SdfPath("/d"), UsdStageLoadRules::OnlyRule);
 
-    const MString text = MayaUsd::convertLoadRulesToText(originalLoadRules);
+    auto text = UsdUfe::convertLoadRulesToText(originalLoadRules);
 
-    UsdStageLoadRules convertedLoadRules = MayaUsd::createLoadRulesFromText(text);
+    UsdStageLoadRules convertedLoadRules = UsdUfe::createLoadRulesFromText(text);
 
     EXPECT_EQ(originalLoadRules, convertedLoadRules);
 }
@@ -33,10 +33,10 @@ TEST(ConvertLoadRules, convertEmptyStageLoadRules)
 {
     auto originalStage = UsdStage::CreateInMemory();
 
-    const MString text = MayaUsd::convertLoadRulesToText(*originalStage);
+    auto text = UsdUfe::convertLoadRulesToText(*originalStage);
 
     auto convertedStage = UsdStage::CreateInMemory();
-    MayaUsd::setLoadRulesFromText(*convertedStage, text);
+    UsdUfe::setLoadRulesFromText(*convertedStage, text);
 
     EXPECT_EQ(originalStage->GetLoadRules(), convertedStage->GetLoadRules());
 }
@@ -51,10 +51,10 @@ TEST(ConvertLoadRules, convertSimpleStageLoadRules)
     auto originalStage = UsdStage::CreateInMemory();
     originalStage->SetLoadRules(originalLoadRules);
 
-    const MString text = MayaUsd::convertLoadRulesToText(*originalStage);
+    auto text = UsdUfe::convertLoadRulesToText(*originalStage);
 
     auto convertedStage = UsdStage::CreateInMemory();
-    MayaUsd::setLoadRulesFromText(*convertedStage, text);
+    UsdUfe::setLoadRulesFromText(*convertedStage, text);
 
     EXPECT_EQ(originalStage->GetLoadRules(), convertedStage->GetLoadRules());
 }
