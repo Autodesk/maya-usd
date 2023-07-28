@@ -15,7 +15,7 @@
 //
 #pragma once
 
-#include <UsdUfe/base/api.h>
+#include <usdUfe/base/api.h>
 
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/variantSets.h>

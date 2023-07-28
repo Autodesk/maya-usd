@@ -30,8 +30,8 @@
 #include <mayaUsd_Schemas/ALMayaReference.h>
 #include <mayaUsd_Schemas/MayaReference.h>
 
-#include <UsdUfe/ufe/SetVariantSelectionCommand.h>
 #include <usdUfe/base/tokens.h>
+#include <usdUfe/ufe/SetVariantSelectionCommand.h>
 #include <usdUfe/utils/editRouter.h>
 
 #include <pxr/base/gf/vec2f.h>

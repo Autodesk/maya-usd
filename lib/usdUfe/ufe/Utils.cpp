@@ -28,6 +28,7 @@
 #include <pxr/usd/usd/stage.h>
 
 #include <ufe/pathSegment.h>
+#include <ufe/selection.h>
 
 #include <cctype>
 #include <regex>
