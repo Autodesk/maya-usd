@@ -67,7 +67,7 @@ void UsdMayaSymmetricShaderWriter::RegisterWriter(
 }
 
 /* static */
-UsdMayaShaderWriter::ContextSupport UsdMayaSymmetricShaderWriter::CanExport(
+UsdMayaPrimWriter::ContextSupport UsdMayaSymmetricShaderWriter::CanExport(
     const UsdMayaJobExportArgs& exportArgs,
     const TfToken&              materialConversionName)
 {
