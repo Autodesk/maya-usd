@@ -190,6 +190,15 @@ global proc mayaUSDRegisterStrings()
     register("kExportSubdMethodNoLbl", "None (Polygonal Mesh)");
     register("kExportUVSetsAnn", "Exports Maya UV Sets as USD primvars.");
     register("kExportUVSetsLbl", "UV Sets");
+    register("kExportRelativeTexturesAnn",
+        "Choose whether your texture files are written as relative\n" +
+        "or absolute paths as you export them to USD. If you select\n" +
+        "Automatic, it will be chosen for you in the exported USD file\n" +
+        "based on what they currently are as Maya data.");
+    register("kExportRelativeTexturesAutomaticLbl", "Automatic");
+    register("kExportRelativeTexturesAbsoluteLbl", "Absolute");
+    register("kExportRelativeTexturesRelativeLbl", "Relative");
+    register("kExportRelativeTexturesLbl", "Texture File Paths:");
     register("kExportVisibilityAnn", "Exports Maya visibility attributes as USD metadata.");
     register("kExportVisibilityLbl", "Visibility");
 

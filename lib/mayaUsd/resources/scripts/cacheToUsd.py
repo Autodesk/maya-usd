@@ -49,7 +49,8 @@ def createCacheCreationOptions(exportOptions, cacheFile, cachePrimName,
     defineInVariant = 0 if variantSetName is None else 1
 
     userArgs = mayaUsd.lib.Util.getDictionaryFromEncodedOptions(exportOptions)
-    
+
+    userArgs['file']                  = cacheFile
     userArgs['rn_layer']              = cacheFile
     userArgs['rn_relativePath']       = 1 if relativePath else 0
     userArgs['rn_primName']           = cachePrimName
