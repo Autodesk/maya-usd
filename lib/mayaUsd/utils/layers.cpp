@@ -32,4 +32,4 @@ const std::string getTargetLayerFolder(const PXR_NS::UsdPrim& prim)
     return PXR_NS::UsdMayaUtilFileSystem::getDir(UsdUfe::getTargetLayerFilePath(prim));
 }
 
-}
+} // namespace MAYAUSD_NS_DEF
