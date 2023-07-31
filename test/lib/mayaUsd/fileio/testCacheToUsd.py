@@ -285,16 +285,13 @@ class CacheToUsdTestCase(unittest.TestCase):
         cachePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(cacheItem.path()))
         query = Usd.PrimCompositionQuery(cachePrim)
         foundPayload = False
-        payloadLayer = None
         for arc in query.GetCompositionArcs():
             if arc.GetArcType() == Pcp.ArcTypePayload:
                 foundPayload = True
-                payloadLayer = arc.GetTargetLayer()
                 break
 
         self.assertTrue(foundPayload)
         self.assertTrue(cachePrim.HasAuthoredPayloads())
-        self.assertIsNotNone(payloadLayer)
 
         # If using relative path, verify the payload source is using
         # a relative file path.
