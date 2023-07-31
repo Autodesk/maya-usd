@@ -229,24 +229,26 @@ global proc int mayaUsdTranslatorImport (string $parent,
 //            menuItem -label "Object space";
 //            menuItem -label "World space";
 //        optionMenuGrp -e -sl 1 mayaUsdTranslator_CoordSystemOptionMenu;
+        frameLayout -label `getMayaUsdString("kImportMaterialsLbl")` materialsFrameLayout;
+            separator -style "none";
+            checkBoxGrp -label "" -label1 `getMayaUsdString("kImportMaterialsLbl")` -cw 1 $cw1 -value1 1 -ann `getMayaUsdString("kImportMaterialsAnn")` -cc ("mayaUsdTranslatorImport_MaterialsCB") mayaUsdTranslator_MaterialsCheckBox;
 
-        checkBoxGrp -label `getMayaUsdString("kImportMaterialsLbl")` -cw 1 $cw1 -value1 1 -ann `getMayaUsdString("kImportMaterialsAnn")` -cc ("mayaUsdTranslatorImport_MaterialsCB") mayaUsdTranslator_MaterialsCheckBox;
+            string $apiString = `about -q -apiVersion`;
+            $apiString = `substring $apiString 1 4`;
+            optionMenuGrp -l `getMayaUsdString("kImportMaterialConvLbl")` -cw 1 $cw1 -ann `getMayaUsdString("kImportMaterialConvAnn")` mayaUsdTranslator_MaterialsConversionMenu;
+            menuItem -l `getMayaUsdString("kImportMaterialConvNoneLbl")` -ann "none";
+            if ((int)$apiString >= 2020) {
+                menuItem -l `getMayaUsdString("kImportMaterialConvSSLbl")` -ann "standardSurface";
+            }
+            menuItem -l `getMayaUsdString("kImportMaterialConvLamLbl")` -ann "lambert";
+            menuItem -l `getMayaUsdString("kImportMaterialConvPSLbl")` -ann "usdPreviewSurface";
+            menuItem -l `getMayaUsdString("kImportMaterialConvBlnLbl")` -ann "blinn";
+            menuItem -l `getMayaUsdString("kImportMaterialConvPhgLbl")` -ann "phong";
 
-        string $apiString = `about -q -apiVersion`;
-        $apiString = `substring $apiString 1 4`;
-        optionMenuGrp -l `getMayaUsdString("kImportMaterialConvLbl")` -cw 1 $cw2 -ann `getMayaUsdString("kImportMaterialConvAnn")` mayaUsdTranslator_MaterialsConversionMenu;
-        menuItem -l `getMayaUsdString("kImportMaterialConvNoneLbl")` -ann "none";
-        if ((int)$apiString >= 2020) {
-            menuItem -l `getMayaUsdString("kImportMaterialConvSSLbl")` -ann "standardSurface";
-        }
-        menuItem -l `getMayaUsdString("kImportMaterialConvLamLbl")` -ann "lambert";
-        menuItem -l `getMayaUsdString("kImportMaterialConvPSLbl")` -ann "usdPreviewSurface";
-        menuItem -l `getMayaUsdString("kImportMaterialConvBlnLbl")` -ann "blinn";
-        menuItem -l `getMayaUsdString("kImportMaterialConvPhgLbl")` -ann "phong";
+            checkBoxGrp -label "" -label1 `getMayaUsdString("kImportUSDZTxtLbl")` -cw 1 $cw1 -ann `getMayaUsdString("kImportUSDZTxtAnn")` mayaUsdTranslator_ImportUSDZTexturesCheckBox;
 
-        checkBoxGrp -label `getMayaUsdString("kImportUSDZTxtLbl")` -cw 1 $cw2 -ann `getMayaUsdString("kImportUSDZTxtAnn")` mayaUsdTranslator_ImportUSDZTexturesCheckBox;
-
-        checkBoxGrp -label `getMayaUsdString("kImportToInstanceLbl")` -label1 `getMayaUsdString("kImportToInstanceOpt")` -cw 1 $cw1 -value1 1 -ann `getMayaUsdString("kImportToInstanceAnn")` mayaUsdTranslator_ImportInstancesCheckBox;
+            separator -style "none";
+        setParent ..;
 
 //        optionMenuGrp -label "Include Metadata: " -cw 1 $cw1 mayaUsdTranslator_IncludeMetadataOptionMenu;
 //            menuItem "All";
@@ -264,11 +266,21 @@ global proc int mayaUsdTranslatorImport (string $parent,
 //            menuItem "Custom";
 //        optionMenuGrp -e -sl 2 mayaUsdTranslator_IncludeCustomAttribOptionMenu;
 
-        checkBoxGrp -label `getMayaUsdString("kImportAnimationDataLbl")` -cw 1 $cw1 -cc ("mayaUsdTranslatorImport_AnimationCB") mayaUsdTranslator_AnimDataCheckBox;
+        frameLayout -label "Animation" animationFrameLayout;
+            separator -style "none";
+            checkBoxGrp -label "" -label1 `getMayaUsdString("kImportAnimationDataLbl")` -cw 1 $cw1 -cc ("mayaUsdTranslatorImport_AnimationCB") mayaUsdTranslator_AnimDataCheckBox;
 
-        checkBoxGrp -label `getMayaUsdString("kImportCustomFrameRangeLbl")` -cw 1 $cw2 -cc ("mayaUsdTranslatorImport_AnimationCB") mayaUsdTranslator_CustomFrameRangeCheckBox;
+            checkBoxGrp -label "" -label1 `getMayaUsdString("kImportCustomFrameRangeLbl")` -cw 1 $cw1 -cc ("mayaUsdTranslatorImport_AnimationCB") mayaUsdTranslator_CustomFrameRangeCheckBox;
 
-        intFieldGrp -label `getMayaUsdString("kImportFrameRangeLbl")` -nf 2 -cw 1 $cw2 mayaUsdTranslator_CustomFrameRange;
+            intFieldGrp -label `getMayaUsdString("kImportFrameRangeLbl")` -nf 2 -cw 1 $cw1 mayaUsdTranslator_CustomFrameRange;
+            separator -style "none";
+        setParent ..;
+
+        frameLayout -label "Advanced" advancedFrameLayout;
+            separator -style "none";
+            checkBoxGrp -label "" -label1 `getMayaUsdString("kImportToInstanceOpt")` -cw 1 $cw1 -value1 1 -ann `getMayaUsdString("kImportToInstanceAnn")` mayaUsdTranslator_ImportInstancesCheckBox;
+            separator -style "none";
+        setParent ..;
 
         // Now set to current settings.
         string $currentOptions = $initialSettings;
@@ -374,23 +386,23 @@ global proc mayaUsdTranslatorImport_AnimationCB()
 {
     int $forEditAsMaya = (`columnLayout -q -ann mayaUsdTranslator_OptsCol` == "EditAsMayaOptions") ? 1 : 0;
     if ((`checkBoxGrp -q -value1 mayaUsdTranslator_AnimDataCheckBox` == 1) && !$forEditAsMaya) {
-        checkBoxGrp -e -vis true mayaUsdTranslator_CustomFrameRangeCheckBox;
+        checkBoxGrp -e -en true mayaUsdTranslator_CustomFrameRangeCheckBox;
         int $vis = (`checkBoxGrp -q -value1 mayaUsdTranslator_CustomFrameRangeCheckBox` == 1);
-        intFieldGrp -e -vis $vis mayaUsdTranslator_CustomFrameRange;
+        intFieldGrp -e -en $vis mayaUsdTranslator_CustomFrameRange;
     } else {
-        checkBoxGrp -e -vis false mayaUsdTranslator_CustomFrameRangeCheckBox;
-        intFieldGrp -e -vis false mayaUsdTranslator_CustomFrameRange;
+        checkBoxGrp -e -en false mayaUsdTranslator_CustomFrameRangeCheckBox;
+        intFieldGrp -e -en false mayaUsdTranslator_CustomFrameRange;
     }
 }
 
 global proc mayaUsdTranslatorImport_MaterialsCB()
 {
     if (`checkBoxGrp -q -value1 mayaUsdTranslator_MaterialsCheckBox` == 1) {
-        optionMenuGrp -e -vis true mayaUsdTranslator_MaterialsConversionMenu;
-        checkBoxGrp -e -vis true mayaUsdTranslator_ImportUSDZTexturesCheckBox;
+        optionMenuGrp -e -en true mayaUsdTranslator_MaterialsConversionMenu;
+        checkBoxGrp -e -en true mayaUsdTranslator_ImportUSDZTexturesCheckBox;
     } else {
-        optionMenuGrp -e -vis false mayaUsdTranslator_MaterialsConversionMenu;
-        checkBoxGrp -e -vis false mayaUsdTranslator_ImportUSDZTexturesCheckBox;
+        optionMenuGrp -e -en false mayaUsdTranslator_MaterialsConversionMenu;
+        checkBoxGrp -e -en false mayaUsdTranslator_ImportUSDZTexturesCheckBox;
     }
 }
 

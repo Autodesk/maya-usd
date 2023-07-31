@@ -65,14 +65,12 @@ class usdFileRelative(object):
         return _relativeToFilePath
 
     @classmethod
-    def uiCreate(cls, parentLayout, relativeToWhat):
+    def uiCreate(cls, parentLayout):
         """
         Helper method to create the UI layout for the file relative actions.
 
         Input parentLayout arg is expected to be a scroll layout into which controls
         can be added.
-
-        Input relativeToWhat tells what the file is relative to. See the class docs.
         """
         mayaRefUtils.pushOptionsUITemplate()
         cmds.setParent(parentLayout)
@@ -80,48 +78,50 @@ class usdFileRelative(object):
         topForm = cmds.columnLayout('actionOptionsForm', rowSpacing=5)
 
         kRelativePathOptionsStr = getMayaUsdString("kRelativePathOptions")
-        kMakePathRelativeStr = getMayaUsdString("kMakePathRelativeTo" + relativeToWhat)
-        kMakePathRelativeAnnStr = getMayaUsdString("kMakePathRelativeTo" + relativeToWhat + "Ann")
-        kUnresolvedPathStr = getMayaUsdString("kUnresolvedPath")
-        kUnresolvedPathAnnStr = getMayaUsdString("kUnresolvedPathAnn")
  
-        optBoxMarginWidth = mel.eval('global int $gOptionBoxTemplateDescriptionMarginWidth; $gOptionBoxTemplateDescriptionMarginWidth += 0')
         cmds.setParent(topForm)
         cmds.frameLayout(label=kRelativePathOptionsStr, collapsable=False)
         widgetColumn = cmds.columnLayout()
+
+        cls.uiCreateFields()
+
+        return topForm
+
+    @classmethod
+    def uiCreateFields(cls):
+        """
+        Helper method to create the UI fields for the file relative actions.
+        """
+        kMakePathRelativeStr = getMayaUsdString("kMakePathRelativeTo" + cls.kRelativeToWhat)
+        kMakePathRelativeAnnStr = getMayaUsdString("kMakePathRelativeTo" + cls.kRelativeToWhat + "Ann")
+        kUnresolvedPathStr = getMayaUsdString("kUnresolvedPath")
+        kUnresolvedPathAnnStr = getMayaUsdString("kUnresolvedPathAnn")
+
         cmds.checkBox(cls.kMakePathRelativeCheckBox, label=kMakePathRelativeStr, ann=kMakePathRelativeAnnStr)
         
         cmds.checkBox(cls.kMakePathRelativeCheckBox, edit=True, changeCommand=cls.onMakePathRelativeChanged)
         cmds.textFieldGrp(cls.kUnresolvedPathTextField, label=kUnresolvedPathStr, ann=kUnresolvedPathAnnStr, editable=False)
         cls._haveRelativePathFields = True
 
-        return topForm
-
     @classmethod
-    def uiInit(cls, parentLayout, canBeRelative, relativeToWhat):
+    def uiInit(cls, parentLayout):
         """
         Helper method to initialize the UI layout for the file relative actions.
 
         Input parentLayout arg is expected to be a scroll layout into which controls
         can be added.
-
-        Input canBeRelative tells if the file can be made relative at all. If false,
-        the relative path UI is shown but disabled.
-
-        Input relativeToWhat tells what the file is relative to. See the class docs.
         """
         cmds.setParent(parentLayout)
 
         # Initialize the class variables.
         cls._fileDialog = None
         cls._acceptButton = None
-        cls._canBeRelative = canBeRelative
         cls._ensureUsdExtension = True
         cls._haveRelativePathFields = cmds.textFieldGrp(cls.kUnresolvedPathTextField, exists=True)
 
         # Get the current checkbox value from optionVar (if any) and update checkbox.
-        if cmds.optionVar(exists='mayaUsd_MakePathRelativeTo' + relativeToWhat):
-            relative = cmds.optionVar(query='mayaUsd_MakePathRelativeTo' + relativeToWhat)
+        if cmds.optionVar(exists='mayaUsd_MakePathRelativeTo' + cls.kRelativeToWhat):
+            relative = cmds.optionVar(query='mayaUsd_MakePathRelativeTo' + cls.kRelativeToWhat)
             cmds.checkBox(cls.kMakePathRelativeCheckBox, edit=True, value=relative)
 
         # If if cannot be relative, then the checkbox and label should be disabled.
@@ -135,7 +135,7 @@ class usdFileRelative(object):
         if cls._haveRelativePathFields:
             # We may need to hide the preview fields in certain cases
             showPreviewFields = True
-            if relativeToWhat == 'SceneFile':
+            if cls.kRelativeToWhat == 'SceneFile':
                 showPreviewFields = cmds.file(q=True, exists=True)
 
             cmds.textFieldGrp(cls.kUnresolvedPathTextField, edit=True, visible=showPreviewFields)
@@ -145,20 +145,18 @@ class usdFileRelative(object):
             cls.onMakePathRelativeChanged(makePathRelative)
 
     @classmethod
-    def uiCommit(cls, parentLayout, relativeToWhat):
+    def uiCommit(cls, parentLayout):
         """
         Helper method to commit the UI layout for the file relative actions.
 
         Input parentLayout arg is expected to the a scroll layout into which controls
         can be added.
-
-        Input relativeToWhat tells what the file is relative to. See the class docs.
         """
         cmds.setParent(parentLayout)
 
         # Get the current checkbox state and save to optionVar.
         relative = cmds.checkBox(cls.kMakePathRelativeCheckBox, query=True, value=True)
-        cmds.optionVar(iv=('mayaUsd_MakePathRelativeTo' + relativeToWhat, relative))
+        cmds.optionVar(iv=('mayaUsd_MakePathRelativeTo' + cls.kRelativeToWhat, relative))
 
     @staticmethod
     def findWindowNameFromLayout(layoutName):
@@ -279,7 +277,7 @@ class usdRootFileRelative(usdFileRelative):
 
     @classmethod
     def uiCreate(cls, parentLayout):
-        return super(usdRootFileRelative, cls).uiCreate(parentLayout, cls.kRelativeToWhat)
+        return super(usdRootFileRelative, cls).uiCreate(parentLayout)
 
     @classmethod
     def uiInit(cls, parentLayout, filterType):
@@ -292,7 +290,8 @@ class usdRootFileRelative(usdFileRelative):
         # postponed relative file path assignment 
         cls.setRelativeFilePathRoot(cmds.file(query=True, sceneName=True))
         cls._relativeToScene = True
-        super(usdRootFileRelative, cls).uiInit(parentLayout, True, cls.kRelativeToWhat)
+        cls._canBeRelative = True
+        super(usdRootFileRelative, cls).uiInit(parentLayout)
 
     @classmethod
     def uiCommit(cls, parentLayout, selectedFile=None):
@@ -300,7 +299,7 @@ class usdRootFileRelative(usdFileRelative):
         Note: the function takes an unused selectedFile argument to be compatible
               with the dialog2 command API.
         '''
-        super(usdRootFileRelative, cls).uiCommit(parentLayout, cls.kRelativeToWhat)
+        super(usdRootFileRelative, cls).uiCommit(parentLayout)
 
 
 class usdSubLayerFileRelative(usdFileRelative):
@@ -313,7 +312,7 @@ class usdSubLayerFileRelative(usdFileRelative):
 
     @classmethod
     def uiCreate(cls, parentLayout):
-        return super(usdSubLayerFileRelative, cls).uiCreate(parentLayout, cls.kRelativeToWhat)
+        return super(usdSubLayerFileRelative, cls).uiCreate(parentLayout)
 
     @classmethod
     def uiInit(cls, parentLayout, filterType, parentLayerPath):
@@ -321,10 +320,10 @@ class usdSubLayerFileRelative(usdFileRelative):
         Note: the function takes an unused filterType argument to be compatible
               with the dialog2 command API.
         '''
-
         cls._relativeToDir = parentLayerPath
-        canBeRelative = bool(cls._relativeToDir)
-        super(usdSubLayerFileRelative, cls).uiInit(parentLayout, canBeRelative, cls.kRelativeToWhat)
+        # If the parent layer is not saved, then the checkbox and label should be disabled.
+        cls._canBeRelative = bool(cls._relativeToDir)
+        super(usdSubLayerFileRelative, cls).uiInit(parentLayout)
 
     @classmethod
     def uiCommit(cls, parentLayout, selectedFile=None):
@@ -332,7 +331,7 @@ class usdSubLayerFileRelative(usdFileRelative):
         Note: the function takes an unused selectedFile argument to be compatible
               with the dialog2 command API.
         '''
-        super(usdSubLayerFileRelative, cls).uiCommit(parentLayout, cls.kRelativeToWhat)
+        super(usdSubLayerFileRelative, cls).uiCommit(parentLayout)
 
 
 class usdFileRelativeToEditTargetLayer(usdFileRelative):
@@ -345,7 +344,7 @@ class usdFileRelativeToEditTargetLayer(usdFileRelative):
 
     @classmethod
     def uiCreate(cls, parentLayout):
-        return super(usdFileRelativeToEditTargetLayer, cls).uiCreate(parentLayout, cls.kRelativeToWhat)
+        return super(usdFileRelativeToEditTargetLayer, cls).uiCreate(parentLayout)
 
     @classmethod
     def uiInit(cls, parentLayout, filterType):
@@ -355,8 +354,8 @@ class usdFileRelativeToEditTargetLayer(usdFileRelative):
         '''
         cls._relativeToDir = usdFileRelative.getRelativeFilePathRoot()
         # If there is no target layer saved, then the checkbox and label should be disabled.
-        canBeRelative = bool(cls._relativeToDir)
-        super(usdFileRelativeToEditTargetLayer, cls).uiInit(parentLayout, canBeRelative, cls.kRelativeToWhat)
+        cls._canBeRelative = bool(cls._relativeToDir)
+        super(usdFileRelativeToEditTargetLayer, cls).uiInit(parentLayout)
 
     @classmethod
     def uiCommit(cls, parentLayout, selectedFile=None):
@@ -364,7 +363,7 @@ class usdFileRelativeToEditTargetLayer(usdFileRelative):
         Note: the function takes an unused selectedFile argument to be compatible
               with the dialog2 command API.
         '''
-        super(usdFileRelativeToEditTargetLayer, cls).uiCommit(parentLayout, cls.kRelativeToWhat)
+        super(usdFileRelativeToEditTargetLayer, cls).uiCommit(parentLayout)
 
 class usdAddRefOrPayloadRelativeToEditTargetLayer(usdFileRelativeToEditTargetLayer):
     '''
@@ -441,5 +440,22 @@ class usdImageRelativeToEditTargetLayer(usdFileRelativeToEditTargetLayer):
         super(usdImageRelativeToEditTargetLayer, cls).uiInit(parentLayout, filterType)
 
         # Do not force the USD file extension since we are selecting image files.
+        cls._ensureUsdExtension = False
+
+
+class usdMayaRefRelativeToEditTargetLayer(usdFileRelativeToEditTargetLayer):
+    '''
+    Helper class to create the UI for Maya ref optionally relative to a layer file
+    via the current USD edit target.
+    '''
+    @classmethod
+    def uiInit(cls, parentLayout, filterType):
+        '''
+        Note: the function takes an unused filterType argument to be compatible
+              with the dialog2 command API.
+        '''
+        super(usdMayaRefRelativeToEditTargetLayer, cls).uiInit(parentLayout, filterType)
+
+        # Do not force the USD file extension since we are selecting Maya files.
         cls._ensureUsdExtension = False
 

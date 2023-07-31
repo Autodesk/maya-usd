@@ -155,7 +155,9 @@ const std::string getTargetLayerFilePath(const UsdPrim& prim)
 
 bool _prepareUSDReferenceTargetLayer(const UsdPrim& prim)
 {
-    return UsdMayaUtilFileSystem::prepareLayerSaveUILayer(getCurrentTargetLayer(prim), false);
+    static const bool useSceneFileForRoot = false;
+    return UsdMayaUtilFileSystem::prepareLayerSaveUILayer(
+        getCurrentTargetLayer(prim), useSceneFileForRoot);
 }
 
 // Ask SDF for all supported extensions:
@@ -616,6 +618,9 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
         WaitCursor wait;
         MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ true);
     } else if (itemPath[0] == kAddMayaReferenceItem) {
+        if (!_prepareUSDReferenceTargetLayer(prim()))
+            return nullptr;
+
         MString script;
         script.format("addMayaReferenceToUsd \"^1s\"", Ufe::PathString::string(path()).c_str());
         MString result = MGlobal::executeCommandStringResult(
