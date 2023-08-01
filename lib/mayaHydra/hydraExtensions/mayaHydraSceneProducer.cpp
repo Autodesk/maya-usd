@@ -16,6 +16,7 @@
 
 #include "mayaHydraSceneProducer.h"
 
+#include <mayaHydraLib/delegates/defaultLightDelegate.h>
 #include <mayaHydraLib/delegates/sceneDelegate.h>
 #include <mayaHydraLib/delegates/delegateRegistry.h>
 #include <mayaHydraLib/sceneIndex/mayaHydraSceneIndex.h>
@@ -44,14 +45,11 @@ MayaHydraSceneProducer::MayaHydraSceneProducer(
             TfToken(TfStringPrintf("_Index_MayaHydraSceneIndex_%p", this)));
         initData.producer = this;
         _sceneIndex = MayaHydraSceneIndex::New(id, initData, lightEnabled);
-        if (TF_VERIFY(
-            _sceneIndex,
-            "Maya Hydra scene index not found, check mayaHydra plugin installation.")) {
-            _solidPrimsRootPaths.push_back(_sceneIndex->GetLightedPrimsRootPath());
-        }
+        TF_VERIFY(_sceneIndex, "Maya Hydra scene index not found, check mayaHydra plugin installation.");
     }
     else
     {
+        SdfPathVector solidPrimsRootPaths;
         auto delegateNames = MayaHydraDelegateRegistry::GetDelegateNames();
         auto creators = MayaHydraDelegateRegistry::GetDelegateCreators();
         TF_VERIFY(delegateNames.size() == creators.size());
@@ -73,11 +71,18 @@ MayaHydraSceneProducer::MayaHydraSceneProducer(
                 if (TF_VERIFY(
                     _sceneDelegate,
                     "Maya Hydra scene delegate not found, check mayaHydra plugin installation.")) {
-                    _solidPrimsRootPaths.push_back(_sceneDelegate->GetLightedPrimsRootPath());
+                    solidPrimsRootPaths.push_back(_sceneDelegate->GetLightedPrimsRootPath());
                 }
                 _delegates.emplace_back(std::move(newDelegate));
             }
         }
+
+        initData.delegateID
+            = id.AppendChild(TfToken(TfStringPrintf("_DefaultLightDelegate_%p", this)));
+        _defaultLightDelegate.reset(new MtohDefaultLightDelegate(initData));
+        // Set the scene delegate SolidPrimitivesRootPaths for the lines and points primitives to be
+        // ignored by the default light
+        _defaultLightDelegate->SetSolidPrimitivesRootPaths(solidPrimsRootPaths);
     }
 }
 
@@ -114,6 +119,10 @@ void MayaHydraSceneProducer::Populate()
     {
         for (auto& it : _delegates) {
             it->Populate();
+        }
+
+        if (_defaultLightDelegate && !_sceneDelegate->GetLightsEnabled()) {
+            _defaultLightDelegate->Populate();
         }
     }
 }
@@ -159,6 +168,31 @@ void MayaHydraSceneProducer::SetLightsEnabled(const bool enabled)
     else
     {
         return _sceneDelegate->SetLightsEnabled(enabled);
+    }
+}
+
+void MayaHydraSceneProducer::SetDefaultLightEnabled(const bool enabled)
+{
+    if (enableMayaNativeSceneIndex())
+    {
+        _sceneIndex->SetDefaultLightEnabled(enabled);
+    }
+    else
+    {
+        _defaultLightDelegate->SetLightingOn(enabled);
+    }
+}
+
+
+void MayaHydraSceneProducer::SetDefaultLight(const GlfSimpleLight& light)
+{
+    if (enableMayaNativeSceneIndex())
+    {
+        _sceneIndex->SetDefaultLight(light);
+    }
+    else
+    {
+        _defaultLightDelegate->SetDefaultLight(light);
     }
 }
 

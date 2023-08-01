@@ -83,6 +83,17 @@ namespace {
         return false;
     }
 
+    bool AreLightsParamsWeUseDifferent(const GlfSimpleLight& light1, const GlfSimpleLight& light2)
+    {
+        // We only update 3 parameters in the default light : position, diffuse and specular. We don't
+        // use the primitive's transform.
+        return (light1.GetPosition() != light2.GetPosition())
+            || // Position (in which we actually store a direction, updated when rotating the view for
+               // example)
+            (light1.GetDiffuse() != light2.GetDiffuse())
+            || (light1.GetSpecular() != light2.GetSpecular());
+    }
+
     static const SdfPath lightedObjectsPath = SdfPath(std::string("Lighted"));
 
     template<class T> SdfPath toSdfPath(const T& src);
@@ -333,11 +344,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     (roughness)
     (MayaHydraMeshPoints)
     (constantLighting)
+    (DefaultMayaLight)
 );
 
 SdfPath MayaHydraSceneIndex::_fallbackMaterial;
 SdfPath MayaHydraSceneIndex::_mayaDefaultMaterialPath; // Common to all scene indexes
 VtValue MayaHydraSceneIndex::_mayaDefaultMaterial;
+SdfPath MayaHydraSceneIndex::_mayaDefaultLightPath; // Common to all scene indexes
 
 MayaHydraSceneIndex::MayaHydraSceneIndex(
     SdfPath& id,
@@ -355,6 +368,7 @@ MayaHydraSceneIndex::MayaHydraSceneIndex(
     std::call_once(once, []() {
         _mayaDefaultMaterialPath = SdfPath::AbsoluteRootPath().AppendChild(
             _tokens->MayaDefaultMaterial); // Is an absolute path, not linked to a scene index
+        _mayaDefaultLightPath = SdfPath::AbsoluteRootPath().AppendChild(_tokens->DefaultMayaLight);
         _mayaDefaultMaterial = MayaHydraSceneIndex::CreateMayaDefaultMaterial();
         _fallbackMaterial = SdfPath::EmptyPath(); // Empty path for hydra fallback material
     });
@@ -371,6 +385,8 @@ MayaHydraSceneIndex::~MayaHydraSceneIndex()
         _shapeAdapters,
         _lightAdapters,
         _materialAdapters);
+
+    SetDefaultLightEnabled(false);
 }
 
 void MayaHydraSceneIndex::HandleCompleteViewportScene(const MDataServerOperation::MViewportScene& scene, MFrameContext::DisplayStyle ds)
@@ -585,6 +601,37 @@ void MayaHydraSceneIndex::Populate()
 
     // TODO: Material: Adding default material sprim
     //InsertPrim(HdPrimTypeTokens->material, _mayaDefaultMaterialPath);
+}
+
+void MayaHydraSceneIndex::SetDefaultLightEnabled(const bool enabled)
+{
+    if (_useMayaDefaultLight != enabled) {
+        _useMayaDefaultLight = enabled;
+
+        if (_useMayaDefaultLight) {
+            auto mayaDefaultLightDataSource = MayaHydraDefaultLightDataSource::New(_mayaDefaultLightPath, HdPrimTypeTokens->simpleLight, this);
+            AddPrims({ { _mayaDefaultLightPath, HdPrimTypeTokens->simpleLight, mayaDefaultLightDataSource } });
+        }
+        else
+        {
+            RemovePrim(_mayaDefaultLightPath);
+        }
+    }
+}
+
+void MayaHydraSceneIndex::SetDefaultLight(const GlfSimpleLight& light)
+{
+    // We only update 3 parameters in the default light : position (in which we store a direction),
+    // diffuse and specular
+    // We don't never update the transform for the default light
+    const bool lightsParamsWeUseAreDifferent = AreLightsParamsWeUseDifferent(_mayaDefaultLight, light);
+    if (lightsParamsWeUseAreDifferent) {
+        // Update our light
+        _mayaDefaultLight.SetDiffuse(light.GetDiffuse());
+        _mayaDefaultLight.SetSpecular(light.GetSpecular());
+        _mayaDefaultLight.SetPosition(light.GetPosition());
+        MarkPrimDirty(_mayaDefaultLightPath, HdLight::DirtyParams);
+    }
 }
 
 VtValue MayaHydraSceneIndex::CreateMayaDefaultMaterial()

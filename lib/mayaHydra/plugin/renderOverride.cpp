@@ -499,11 +499,9 @@ MStatus MtohRenderOverride::Render(
     MayaHydraParams delegateParams = _globals.delegateParams;
     delegateParams.displaySmoothMeshes = !(displayStyle & MHWRender::MFrameContext::kFlatShaded);
 
-    if (_defaultLightDelegate != nullptr) {
-        _defaultLightDelegate->SetLightingOn(_hasDefaultLighting);
-        _defaultLightDelegate->SetDefaultLight(_defaultLight);
-    }
     if (_mayaHydraSceneProducer) {
+        _mayaHydraSceneProducer->SetDefaultLightEnabled(_hasDefaultLighting);
+        _mayaHydraSceneProducer->SetDefaultLight(_defaultLight);
         _mayaHydraSceneProducer->SetParams(delegateParams);
         _mayaHydraSceneProducer->PreFrame(drawContext);
     }
@@ -685,21 +683,10 @@ void MtohRenderOverride::_InitHydraResources()
 
     _mayaHydraSceneProducer.reset(new MayaHydraSceneProducer(_ID, delegateInitData, !_hasDefaultLighting));
 
-    delegateInitData.delegateID
-        = _ID.AppendChild(TfToken(TfStringPrintf("_DefaultLightDelegate_%p", this)));
-    _defaultLightDelegate.reset(new MtohDefaultLightDelegate(delegateInitData));
-    // Set the scene delegate SolidPrimitivesRootPaths for the lines and points primitives to be
-    // ignored by the default light
-    _defaultLightDelegate->SetSolidPrimitivesRootPaths(_mayaHydraSceneProducer->GetSolidPrimsRootPaths());
-
     VtValue selectionTrackerValue(_selectionTracker);
     _engine.SetTaskContextData(HdxTokens->selectionState, selectionTrackerValue);
 
     _mayaHydraSceneProducer->Populate();
-
-    if (_defaultLightDelegate && _hasDefaultLighting) {
-        _defaultLightDelegate->Populate();
-    }
 
     _renderIndex->GetChangeTracker().AddCollection(_selectionCollection.GetName());
     _SelectionChanged();
@@ -738,8 +725,6 @@ void MtohRenderOverride::ClearHydraResources()
         .Msg("MtohRenderOverride::ClearHydraResources(%s)\n", _rendererDesc.rendererName.GetText());
 
     _mayaHydraSceneProducer = nullptr;
-
-    _defaultLightDelegate.reset();
 
     // Cleanup internal context data that keep references to data that is now
     // invalid.

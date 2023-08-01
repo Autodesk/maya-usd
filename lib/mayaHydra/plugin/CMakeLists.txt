@@ -7,7 +7,6 @@ add_library(${TARGET_NAME} SHARED)
 # -----------------------------------------------------------------------------
 target_sources(${TARGET_NAME} 
     PRIVATE
-        defaultLightDelegate.cpp
         plugin.cpp
         pluginDebugCodes.cpp
         renderGlobals.cpp

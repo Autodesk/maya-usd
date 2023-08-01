@@ -16,7 +16,6 @@
 #ifndef MTOH_VIEW_OVERRIDE_H
 #define MTOH_VIEW_OVERRIDE_H
 
-#include "defaultLightDelegate.h"
 #include "renderGlobals.h"
 #include "utils.h"
 
@@ -193,7 +192,6 @@ private:
     HdxTaskController*                        _taskController = nullptr;
     HdPluginRenderDelegateUniqueHandle        _renderDelegate = nullptr;
     HdRenderIndex*                            _renderIndex = nullptr;
-    std::unique_ptr<MtohDefaultLightDelegate> _defaultLightDelegate = nullptr;
     HdxSelectionTrackerSharedPtr              _selectionTracker;
     HdRprimCollection                         _renderCollection { HdTokens->geometry,
                                           HdReprSelector(HdReprTokens->refined),

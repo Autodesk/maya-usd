@@ -42,6 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class MayaHydraSceneDelegate;
 class MayaHydraAdapter;
+class MtohDefaultLightDelegate;
 
 /**
  * \brief MayaHydraSceneProducer is used to produce the hydra scene from Maya native scene.
@@ -119,6 +120,8 @@ public:
 
     // Enable or disable lighting
     void SetLightsEnabled(const bool enabled);
+    void SetDefaultLightEnabled(const bool enabled);
+    void SetDefaultLight(const GlfSimpleLight& light);
 
     void AddArnoldLight(const MDagPath& dag);
     void RemoveArnoldLight(const MDagPath& dag);
@@ -137,7 +140,6 @@ public:
 
     // Return the id of underlying delegate by name (MayaHydraSceneIndex or MayaHydraSceneDelegate)
     SdfPath GetDelegateID(TfToken name);
-    SdfPathVector GetSolidPrimsRootPaths() { return _solidPrimsRootPaths; }
 
     void MaterialTagChanged(const SdfPath& id);
 
@@ -184,7 +186,6 @@ public:
     }
 
 private:
-    SdfPathVector _solidPrimsRootPaths;
 
     //
     // Delegates, depends on if MAYA_HYDRA_ENABLE_NATIVE_SCENE_INDEX is enabled or not.
@@ -192,6 +193,7 @@ private:
     // SceneDelegate
     std::shared_ptr<MayaHydraSceneDelegate> _sceneDelegate;
     std::vector<MayaHydraDelegatePtr> _delegates;
+    std::unique_ptr<MtohDefaultLightDelegate> _defaultLightDelegate;
     // SceneIndex
     MayaHydraSceneIndexRefPtr _sceneIndex;
 };

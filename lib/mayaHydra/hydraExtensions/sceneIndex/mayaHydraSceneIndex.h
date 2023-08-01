@@ -32,6 +32,7 @@
 #include <mayaHydraLib/adapters/materialAdapter.h>
 #include <mayaHydraLib/adapters/lightAdapter.h>
 #include <mayaHydraLib/adapters/cameraAdapter.h>
+#include <mayaHydraLib/sceneIndex/mayaHydraDefaultLightDataSource.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
@@ -148,7 +149,13 @@ public:
 
     // Enable or disable lighting
     void SetLightsEnabled(const bool enabled) { _lightsEnabled = enabled; }
-    bool GetLightsEnabled() { return _lightsEnabled; }
+    bool GetLightsEnabled() const { return _lightsEnabled; }
+
+    // Enable or disable default lighting
+    void SetDefaultLightEnabled(const bool enabled);
+    bool GetDefaultLightEnabled() const { return _useMayaDefaultLight; }
+    void SetDefaultLight(const GlfSimpleLight& light);
+    const GlfSimpleLight& GetDefaultLight() const { return _mayaDefaultLight; }
 
     // Dag Node operations
     void InsertDag(const MDagPath& dag);
@@ -245,6 +252,7 @@ private:
     std::vector<MDagPath> _arnoldLightPaths;
     std::vector<SdfPath> _materialTagsChanged;
 
+    bool _useDefaultMaterial = false;
     static SdfPath _fallbackMaterial;
     /// _mayaDefaultMaterialPath is common to all scene indexes, it's the SdfPath of
     /// _mayaDefaultMaterial
@@ -253,7 +261,11 @@ private:
     /// _useDefaultMaterial is true
     static VtValue _mayaDefaultMaterial;
 
-    bool _useDefaultMaterial = false;
+    // Default light
+    GlfSimpleLight _mayaDefaultLight;
+    bool _useMayaDefaultLight = false;
+    static SdfPath _mayaDefaultLightPath;
+
     bool _xRayEnabled = false;
     bool _isPlaybackRunning = false;
     bool _lightsEnabled = true;

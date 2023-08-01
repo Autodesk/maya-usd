@@ -10,6 +10,7 @@ target_sources(${TARGET_NAME}
     mayaHydraDisplayStyleDataSource.cpp
     mayaHydraCameraDataSource.cpp
     mayaHydraLightDataSource.cpp
+    mayaHydraDefaultLightDataSource.cpp
 )
 
 set(HEADERS
@@ -20,6 +21,7 @@ set(HEADERS
     mayaHydraDisplayStyleDataSource.h
     mayaHydraCameraDataSource.h
     mayaHydraLightDataSource.h
+    mayaHydraDefaultLightDataSource.h
 )
 
 # -----------------------------------------------------------------------------
