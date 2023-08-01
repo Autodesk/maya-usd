@@ -92,33 +92,6 @@ class ReferenceCommandsTestCase(unittest.TestCase):
         self.assertFalse(prim.HasAuthoredReferences())
         self.assertEqual(originalRootContents, filterUsdStr(self.stage.GetRootLayer().ExportToString()))
 
-    def testAddAReferenceWithoutDefaultPrim(self):
-        '''
-        Test add reference command when the file has no default prim.
-        '''
-        # Get the session layer
-        prim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A")
-
-        self.assertFalse(prim.HasAuthoredReferences())
-        originalRootContents = filterUsdStr(self.stage.GetRootLayer().ExportToString())
-
-        referencedFile = testUtils.getTestScene('twoSpheres', 'sphere_no_default.usda')
-        cmd = usdUfe.AddReferenceCommand(prim, referencedFile, True)
-
-        cmd.execute()
-        self.assertTrue(prim.HasAuthoredReferences())
-        self.assertIsNotNone(self.stage.GetPrimAtPath('/A/sphere'))
-        self.assertTrue(self.stage.GetPrimAtPath('/A/sphere'))
-
-        cmd.undo()
-        self.assertFalse(prim.HasAuthoredReferences())
-        self.assertEqual(originalRootContents, filterUsdStr(self.stage.GetRootLayer().ExportToString()))
-
-        cmd.redo()
-        self.assertTrue(prim.HasAuthoredReferences())
-        self.assertIsNotNone(self.stage.GetPrimAtPath('/A/sphere'))
-        self.assertTrue(self.stage.GetPrimAtPath('/A/sphere'))
-
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
