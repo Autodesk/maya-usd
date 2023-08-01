@@ -1839,6 +1839,16 @@ void ProxyRenderDelegate::_UpdateRenderTags()
     // changed since the last time we set the render tags so we know if there is a change
     // to an individual rprim or not.
     bool rprimRenderTagChanged = !_changeVersions.renderTagValid(changeTracker);
+    if (rprimRenderTagChanged) {
+        for (auto path : _renderIndex->GetRprimIds()) {
+            if (changeTracker.GetRprimDirtyBits(path) & HdChangeTracker::DirtyRenderTag) {
+                // Since USD 23.02, DirtyRenderTag is not enough to provoke a sync,
+                // so we add an extra dirty flag - DirtyVisibility
+                changeTracker.MarkRprimDirty(path, HdChangeTracker::DirtyVisibility);
+            }
+        }
+    }
+
     bool renderPurposeChanged = false;
     bool proxyPurposeChanged = false;
     bool guidePurposeChanged = false;
@@ -1870,41 +1880,26 @@ void ProxyRenderDelegate::_UpdateRenderTags()
             // this call to MarkRprimDirty will increment the change tracker render
             // tag version. We don't want this to cause rprimRenderTagChanged to be
             // true when a tag hasn't actually changed.
-            changeTracker.MarkRprimDirty(id, HdChangeTracker::DirtyRenderTag);
+            // Since USD 23.02, DirtyRenderTag is not enough to provoke a sync,
+            // so we add an extra dirty flag - DirtyVisibility
+            changeTracker.MarkRprimDirty(
+                id, HdChangeTracker::DirtyRenderTag | HdChangeTracker::DirtyVisibility);
         }
     }
 
-    // Vp2RenderDelegate implements render tags as a per-render item setting.
-    // To handle cases when an rprim changes from a displayed tag to a hidden tag
-    // we need to visit all the rprims and set the enable flag correctly on
-    // all their render items. Do visit all the rprims we need to set the
-    // render tags to be all the tags.
-    // When an rprim has it's renderTag changed the global render tag version
-    // id will change.
-    if (rprimRenderTagChanged) {
-        // Sync every rprim, no matter what it's tag is. We don't know the tag(s) of
-        // the rprim that changed, so the only way we can be sure to sync it is by
-        // syncing everything.
-        TfTokenVector renderTags = { HdRenderTagTokens->geometry,
-                                     HdRenderTagTokens->render,
-                                     HdRenderTagTokens->proxy,
-                                     HdRenderTagTokens->guide };
-        _taskController->SetRenderTags(renderTags);
-        _taskRenderTagsValid = false;
-    }
     // When the render tag on an rprim changes we do a pass over all rprims to update
     // their visibility. The frame after we do the pass over all the tags, set the tags back to
     // the minimum set of tags.
-    else if (anyPurposeChanged || !_taskRenderTagsValid) {
+    if (anyPurposeChanged || rprimRenderTagChanged || !_taskRenderTagsValid) {
         TfTokenVector renderTags
             = { HdRenderTagTokens->geometry }; // always draw geometry render tag purpose.
-        if (_proxyShapeData->DrawRenderPurpose() || renderPurposeChanged) {
+        if (_proxyShapeData->DrawRenderPurpose() || renderPurposeChanged || rprimRenderTagChanged) {
             renderTags.push_back(HdRenderTagTokens->render);
         }
-        if (_proxyShapeData->DrawProxyPurpose() || proxyPurposeChanged) {
+        if (_proxyShapeData->DrawProxyPurpose() || proxyPurposeChanged || rprimRenderTagChanged) {
             renderTags.push_back(HdRenderTagTokens->proxy);
         }
-        if (_proxyShapeData->DrawGuidePurpose() || guidePurposeChanged) {
+        if (_proxyShapeData->DrawGuidePurpose() || guidePurposeChanged || rprimRenderTagChanged) {
             renderTags.push_back(HdRenderTagTokens->guide);
         }
         _taskController->SetRenderTags(renderTags);
@@ -1912,7 +1907,7 @@ void ProxyRenderDelegate::_UpdateRenderTags()
         // in the _taskController just so that we get one sync to hide the render
         // items. In that case we need to leave _taskRenderTagsValid false, so that
         // we get a chance to remove that tag next frame.
-        _taskRenderTagsValid = !anyPurposeChanged;
+        _taskRenderTagsValid = !(anyPurposeChanged || rprimRenderTagChanged);
     }
 
     // TODO: UsdImagingDelegate is purpose-aware. There are methods

@@ -25,24 +25,11 @@ namespace USDUFE_NS_DEF {
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-static std::string validatePrimSpec(const UsdPrim& prim, const SdfPrimSpecHandle& primSpec)
-{
-    if (!primSpec)
-        return "is not valid";
-
-    // A common error is to reference geometry (mesh) instead of the
-    // prim containing the geometry. Of vis-versa, referencing a prim inside a mesh.
-    // So we warn
-    const std::string& primType = prim.GetTypeName();
-    const std::string& targetType = primSpec->GetTypeName();
-    if (primType != "Mesh" && targetType == "Mesh")
-        return "is referencing a mesh into a non-mesh, the mesh may not be visible";
-
-    return "";
-}
-
-static PXR_NS::SdfPath
-getPrimPath(const UsdPrim& prim, const std::string& filePath, const std::string& primPath)
+static PXR_NS::SdfPath getPrimPath(
+    const UsdPrim&     prim,
+    const std::string& filePath,
+    const std::string& primPath,
+    bool               isPayload)
 {
     // When an explicit prim path was given, use that.
     if (!primPath.empty())
@@ -64,35 +51,16 @@ getPrimPath(const UsdPrim& prim, const std::string& filePath, const std::string&
         return SdfPath();
 
     // If the referenced file has a default prim, leave the prim path empty.
-    if (layerRef->HasDefaultPrim()) {
-        TfToken           primName = layerRef->GetDefaultPrim();
-        SdfPrimSpecHandle primSpec = layerRef->GetPrimAtPath(SdfPath(primName.GetText()));
-        const std::string errorMessage = validatePrimSpec(prim, primSpec);
-        if (!errorMessage.empty())
-            TF_WARN("The default prim in file [%s] %s.", filePath.c_str(), errorMessage.c_str());
+    if (layerRef->HasDefaultPrim())
         return SdfPath();
-    }
 
-    // If the referenced file has no default prim, return the path to the first
-    // valid root prim we find.
+    // If the referenced file has no default prim, tell the user it won't be
+    // loaded properly.
+    TF_WARN(
+        "The file [%s] does not contain a default prim, the %s will be invalid.",
+        filePath.c_str(),
+        isPayload ? "payload" : "reference");
 
-    TF_STATUS(
-        "The file [%s] does not contain a default prim, the first valid root prim "
-        "will be used.",
-        filePath.c_str());
-
-    for (const SdfPrimSpecHandle primSpec : layerRef->GetRootPrims()) {
-        if (!primSpec)
-            continue;
-
-        const std::string errorMessage = validatePrimSpec(prim, primSpec);
-        if (!errorMessage.empty())
-            TF_WARN("The root prim %s.", errorMessage.c_str());
-
-        return primSpec->GetPath();
-    }
-
-    TF_WARN("Could not find any valid root prim.");
     return SdfPath();
 }
 
@@ -120,7 +88,7 @@ void UsdUndoAddRefOrPayloadCommand::executeImplementation()
     if (!_prim.IsValid())
         return;
 
-    SdfPath primPath = getPrimPath(_prim, _filePath, _primPath);
+    SdfPath primPath = getPrimPath(_prim, _filePath, _primPath, _isPayload);
     if (_isPayload) {
         SdfPayload  payload(_filePath, primPath);
         UsdPayloads primPayloads = _prim.GetPayloads();
