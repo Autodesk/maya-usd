@@ -20,15 +20,6 @@ project(maya-usd)
 #------------------------------------------------------------------------------
 # options
 #------------------------------------------------------------------------------
-option(BUILD_MAYAUSD_LIBRARY "Build Core USD libraries." OFF)
-option(BUILD_ADSK_PLUGIN "Build Autodesk USD plugin." OFF)
-option(BUILD_PXR_PLUGIN "Build the Pixar USD plugin and libraries." OFF)
-option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." OFF)
-# Default value made dependent on maya + usd version - see below
-#   Convert back to a normal option if we no longer support maya-2019, or
-#   no longer support USD-20.11
-#option(BUILD_MAYAHYDRALIB "Build the Maya-To-Hydra plugin and scene delegate." ON)
-option(BUILD_RFM_TRANSLATORS "Build translators for RenderMan for Maya shaders." ON)
 option(BUILD_TESTS "Build tests." ON)
 option(BUILD_STRICT_MODE "Enforce all warnings as errors." ON)
 option(BUILD_SHARED_LIBS "Build libraries as shared or static." ON)
@@ -88,17 +79,10 @@ if(APPLE AND BUILD_UB2 AND NOT MAYA_MACOSX_BUILT_WITH_UB2)
     message(WARNING  "Maya was NOT built with Universal Binary 2")
 endif()
 
-if (BUILD_MAYAUSD_LIBRARY)
-    include(cmake/mayausd_version.info)
-    set(MAYAUSD_VERSION "${MAYAUSD_MAJOR_VERSION}.${MAYAUSD_MINOR_VERSION}.${MAYAUSD_PATCH_LEVEL}")
-endif()
-
-if(NOT BUILD_MAYAUSD_LIBRARY)
-    include(cmake/mayahydra_version.info)
-    set(MAYAHYDRA_VERSION "${MAYAHYDRA_MAJOR_VERSION}.${MAYAHYDRA_MINOR_VERSION}.${MAYAHYDRA_PATCH_LEVEL}")
-    if(DEFINED ENV{PLUGIN_CUT_ID})
-        set(MAYAHYDRA_CUT_ID $ENV{PLUGIN_CUT_ID})
-    endif()
+include(cmake/mayahydra_version.info)
+set(MAYAHYDRA_VERSION "${MAYAHYDRA_MAJOR_VERSION}.${MAYAHYDRA_MINOR_VERSION}.${MAYAHYDRA_PATCH_LEVEL}")
+if(DEFINED ENV{PLUGIN_CUT_ID})
+    set(MAYAHYDRA_CUT_ID $ENV{PLUGIN_CUT_ID})
 endif()
 
 if (DEFINED PYTHON_INCLUDE_DIR AND DEFINED PYTHON_LIBRARIES AND DEFINED Python_EXECUTABLE)
@@ -117,7 +101,7 @@ endif()
 if (NOT PYTHONLIBS_FOUND)
     include(cmake/python.cmake)
 endif()
-message(STATUS "Build MayaUSD with Python3 = " ${BUILD_WITH_PYTHON_3})
+message(STATUS "Build mayaHydra with Python3 = " ${BUILD_WITH_PYTHON_3})
 message(STATUS "   PYTHON_INCLUDE_DIRS = ${PYTHON_INCLUDE_DIRS}")
 message(STATUS "   PYTHON_LIBRARIES    = ${PYTHON_LIBRARIES}")
 message(STATUS "   Python_EXECUTABLE   = ${Python_EXECUTABLE}")
@@ -134,16 +118,7 @@ if (CMAKE_WANT_MATERIALX_BUILD)
 endif()
 include(cmake/usd.cmake)
 
-if( MAYA_APP_VERSION LESS 2020 AND PXR_VERSION GREATER 2005 AND PXR_VERSION LESS 2102 )
-    # Default to OFF if maya==2019 AND USD==(20.08||20.11)
-    #   Due to a problem with glew - if you force on with these versions, you
-    #   will probably need to LD_PRELOAD your glew lib.
-    #   See:
-    #      https://github.com/Autodesk/maya-usd/discussions/1017
-    option(BUILD_MAYAHYDRALIB "Build the Maya-To-Hydra plugin and scene delegate." OFF)
-else()
-    option(BUILD_MAYAHYDRALIB "Build the Maya-To-Hydra plugin and scene delegate." ON)
-endif()
+option(BUILD_MAYAHYDRALIB "Build the Maya-To-Hydra plugin and scene delegate." ON)
 
 find_package(UFE REQUIRED)
 if(UFE_FOUND)
@@ -190,32 +165,7 @@ endif()
 #------------------------------------------------------------------------------
 # lib
 #------------------------------------------------------------------------------
-if (BUILD_MAYAUSD_LIBRARY)
-    add_subdirectory(lib)
-endif()
-
-#------------------------------------------------------------------------------
-# plugins
-#------------------------------------------------------------------------------
-if (BUILD_PXR_PLUGIN)
-    add_subdirectory(plugin/pxr)
-endif()
-
-if (BUILD_AL_PLUGIN)
-    if(BUILD_USDMAYA_PXR_TRANSLATORS AND NOT BUILD_PXR_PLUGIN)
-        message(FATAL_ERROR "Animal logic's pixar translator depends on pixar plugin!")
-    endif()
-
-    add_subdirectory(plugin/al)
-endif()
-
-if (BUILD_ADSK_PLUGIN)
-    add_subdirectory(plugin/adsk)
-endif()
-
-if(BUILD_MAYAHYDRALIB)
-    add_subdirectory(lib/mayaHydra)
-endif()
+add_subdirectory(lib)
 
 #------------------------------------------------------------------------------
 # install
@@ -230,40 +180,9 @@ endif()
 #------------------------------------------------------------------------------
 # Maya module files
 #------------------------------------------------------------------------------
-if (BUILD_ADSK_PLUGIN)
-    if (IS_WINDOWS)
-        configure_file("modules/mayaUSD_Win.mod.template" ${PROJECT_BINARY_DIR}/mayaUSD.mod)
-    else()
-        configure_file("modules/mayaUSD.mod.template" ${PROJECT_BINARY_DIR}/mayaUSD.mod)
-    endif()
-    install(FILES ${PROJECT_BINARY_DIR}/mayaUSD.mod DESTINATION ${CMAKE_INSTALL_PREFIX})
+if (IS_WINDOWS)
+    configure_file("modules/mayaHydra_Win.mod.template" ${PROJECT_BINARY_DIR}/mayaHydra.mod)
+else()
+    configure_file("modules/mayaHydra.mod.template" ${PROJECT_BINARY_DIR}/mayaHydra.mod)
 endif()
-
-if (BUILD_PXR_PLUGIN)
-    if (IS_WINDOWS)
-        configure_file("modules/pxrUSD_Win.mod.template" ${PROJECT_BINARY_DIR}/pxrUSD.mod)
-    else()
-        configure_file("modules/pxrUSD.mod.template" ${PROJECT_BINARY_DIR}/pxrUSD.mod)
-    endif()
-    install(FILES ${PROJECT_BINARY_DIR}/pxrUSD.mod DESTINATION ${CMAKE_INSTALL_PREFIX})
-endif()
-
-if (BUILD_AL_PLUGIN)
-    if (IS_WINDOWS)
-        configure_file("modules/alUSD_Win.mod.template" ${PROJECT_BINARY_DIR}/alUSD.mod)
-    else()
-        configure_file("modules/alUSD.mod.template" ${PROJECT_BINARY_DIR}/alUSD.mod)
-    endif()
-    install(FILES ${PROJECT_BINARY_DIR}/alUSD.mod DESTINATION ${CMAKE_INSTALL_PREFIX})
-endif()
-
-if(NOT BUILD_MAYAUSD_LIBRARY)
-    if(BUILD_MAYAHYDRALIB)
-        if (IS_WINDOWS)
-            configure_file("modules/mayaHydra_Win.mod.template" ${PROJECT_BINARY_DIR}/mayaHydra.mod)
-        else()
-            configure_file("modules/mayaHydra.mod.template" ${PROJECT_BINARY_DIR}/mayaHydra.mod)
-        endif()
-        install(FILES ${PROJECT_BINARY_DIR}/mayaHydra.mod DESTINATION ${CMAKE_INSTALL_PREFIX})
-    endif()
-endif()
+install(FILES ${PROJECT_BINARY_DIR}/mayaHydra.mod DESTINATION ${CMAKE_INSTALL_PREFIX})
