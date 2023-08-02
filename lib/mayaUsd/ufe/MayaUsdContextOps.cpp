@@ -21,6 +21,7 @@
 #endif
 #include <mayaUsd/ufe/UsdUndoMaterialCommands.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
@@ -135,29 +136,11 @@ public:
 };
 #endif
 
-const PXR_NS::SdfLayerHandle getCurrentTargetLayer(const UsdPrim& prim)
-{
-    auto stage = prim.GetStage();
-    if (!stage)
-        return {};
-
-    return stage->GetEditTarget().GetLayer();
-}
-
-const std::string getTargetLayerFilePath(const UsdPrim& prim)
-{
-    auto layer = getCurrentTargetLayer(prim);
-    if (!layer)
-        return {};
-
-    return layer->GetRealPath();
-}
-
 bool _prepareUSDReferenceTargetLayer(const UsdPrim& prim)
 {
     static const bool useSceneFileForRoot = false;
     return UsdMayaUtilFileSystem::prepareLayerSaveUILayer(
-        getCurrentTargetLayer(prim), useSceneFileForRoot);
+        UsdUfe::getCurrentTargetLayer(prim), useSceneFileForRoot);
 }
 
 // Ask SDF for all supported extensions:
@@ -223,8 +206,7 @@ makeUSDReferenceFilePathRelativeIfRequested(const std::string& filePath, const U
     if (!UsdMayaUtilFileSystem::requireUsdPathsRelativeToEditTargetLayer())
         return filePath;
 
-    const std::string layerDirPath = UsdMayaUtilFileSystem::getDir(getTargetLayerFilePath(prim));
-
+    const std::string layerDirPath = MayaUsd::getTargetLayerFolder(prim);
     auto relativePathAndSuccess = UsdMayaUtilFileSystem::makePathRelativeTo(filePath, layerDirPath);
 
     if (!relativePathAndSuccess.second) {

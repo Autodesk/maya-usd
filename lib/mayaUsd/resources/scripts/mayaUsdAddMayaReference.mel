@@ -101,7 +101,7 @@ proc fileOptionsTabPage(string $tabLayout)
     frameLayout -label `getMayaUsdLibString("kMayaRefUsdOptions")`;
     string $widgetColumn = `columnLayout usdOptionsLayout`;
 
-    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdMayaRefRelativeToEditTargetLayer.uiCreateFields()");
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdMayaRefRelativeToEditTargetLayer.uiCreateFields(True)");
 
     textFieldGrp
         -label `getMayaUsdLibString("kMayaRefMayaRefPrimName")`
