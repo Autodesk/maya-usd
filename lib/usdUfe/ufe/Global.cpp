@@ -19,6 +19,7 @@
 #include <usdUfe/ufe/UsdContextOpsHandler.h>
 #include <usdUfe/ufe/UsdHierarchyHandler.h>
 #include <usdUfe/ufe/UsdObject3dHandler.h>
+#include <usdUfe/ufe/UsdUIInfoHandler.h>
 
 #include <pxr/base/tf/diagnostic.h>
 
@@ -89,6 +90,8 @@ Ufe::Rtid initialize(
         = handlers.object3dHandler ? handlers.object3dHandler : UsdObject3dHandler::create();
     rtHandlers.contextOpsHandler
         = handlers.contextOpsHandler ? handlers.contextOpsHandler : UsdContextOpsHandler::create();
+    rtHandlers.uiInfoHandler
+        = handlers.uiInfoHandler ? handlers.uiInfoHandler : UsdUIInfoHandler::create();
     rtHandlers.cameraHandler
         = handlers.cameraHandler ? handlers.cameraHandler : UsdCameraHandler::create();
 

@@ -165,6 +165,7 @@ endif()
 # -----------------------------------------------------------------------------
 add_subdirectory(base)
 add_subdirectory(python)
+add_subdirectory(resources)
 add_subdirectory(ufe)
 add_subdirectory(undo)
 add_subdirectory(utils)

@@ -17,18 +17,18 @@
 // limitations under the License.
 //
 
-#include <mayaUsd/base/api.h>
+#include <usdUfe/base/api.h>
 
-#include <maya/MEventMessage.h>
 #include <ufe/uiInfoHandler.h>
 
 #include <array>
+#include <map>
+#include <string>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //! \brief Implementation of Ufe::UIInfoHandler interface for USD objects.
-class MAYAUSD_CORE_PUBLIC UsdUIInfoHandler : public Ufe::UIInfoHandler
+class USDUFE_PUBLIC UsdUIInfoHandler : public Ufe::UIInfoHandler
 {
 public:
     typedef std::shared_ptr<UsdUIInfoHandler> Ptr;
@@ -51,18 +51,19 @@ public:
     std::string              treeViewTooltip(const Ufe::SceneItem::Ptr& item) const override;
     std::string              getLongRunTimeLabel() const override;
 
-private:
-    void updateInvisibleColor();
+    // Helpers
 
-    // Note: the on-color-changed callback function is declared taking a void pointer
-    //       to be compatible with MMessage callback API.
-    static void onColorChanged(void*);
+    // Called from treeViewIcon() method to find the correct icon based on node type.
+    // Get the map (node type -> icon filename) of the supported icon types.
+    // Can be overridden by derived class to add to the map.
+    typedef std::map<std::string, std::string> SupportedTypesMap;
+    virtual SupportedTypesMap                  getSupportedIconTypes() const;
 
+protected:
+    // Derived classes can set this color to override the default invisible color.
     std::array<double, 3> fInvisibleColor;
-    MCallbackId           fColorChangedCallbackId = 0;
 }; // UsdUIInfoHandler
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF
 
 #endif // USDUIINFOHANDLER_H
