@@ -169,6 +169,7 @@ public:
 
     void MaterialTagChanged(const SdfPath& id);
     SdfPath GetMaterialId(const SdfPath& id);
+    VtValue GetMaterialResource(const SdfPath& id);
 
     GfInterval GetCurrentTimeSamplingInterval() const;
 

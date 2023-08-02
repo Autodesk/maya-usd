@@ -51,7 +51,7 @@ private:
     HdDataSourceBaseHandle _GetPrimvarsDataSource();
     TfToken _InterpolationAsToken(HdInterpolation interpolation);
     HdDataSourceBaseHandle _GetMaterialBindingDataSource();
-
+    HdDataSourceBaseHandle _GetMaterialDataSource();
 private:
     SdfPath _id;
     TfToken _type;

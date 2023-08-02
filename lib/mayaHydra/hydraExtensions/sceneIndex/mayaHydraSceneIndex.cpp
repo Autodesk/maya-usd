@@ -598,9 +598,6 @@ void MayaHydraSceneIndex::Populate()
     if (status) {
         _callbacks.push_back(id);
     }
-
-    // TODO: Material: Adding default material sprim
-    //InsertPrim(HdPrimTypeTokens->material, _mayaDefaultMaterialPath);
 }
 
 void MayaHydraSceneIndex::SetDefaultLightEnabled(const bool enabled)
@@ -632,6 +629,23 @@ void MayaHydraSceneIndex::SetDefaultLight(const GlfSimpleLight& light)
         _mayaDefaultLight.SetPosition(light.GetPosition());
         MarkPrimDirty(_mayaDefaultLightPath, HdLight::DirtyParams);
     }
+}
+
+VtValue MayaHydraSceneIndex::GetMaterialResource(const SdfPath& id)
+{
+    if (id == _mayaDefaultMaterialPath) {
+        return _mayaDefaultMaterial;
+    }
+
+    if (id == _fallbackMaterial) {
+        return MayaHydraMaterialAdapter::GetPreviewMaterialResource(id);
+    }
+
+    auto ret = _GetValue<MayaHydraMaterialAdapter, VtValue>(
+        id,
+        [](MayaHydraMaterialAdapter* a) -> VtValue { return a->GetMaterialResource(); },
+        _materialAdapters);
+    return ret.IsEmpty() ? MayaHydraMaterialAdapter::GetPreviewMaterialResource(id) : ret;
 }
 
 VtValue MayaHydraSceneIndex::CreateMayaDefaultMaterial()
