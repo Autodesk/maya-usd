@@ -40,7 +40,8 @@ def getDefaultCacheCreationOptions():
 
 def createCacheCreationOptions(exportOptions, cacheFile, cachePrimName,
                             payloadOrReference, listEditType,
-                            variantSetName = None, variantName = None):
+                            variantSetName = None, variantName = None,
+                            relativePath=False):
     """
     Creates the dict containing the export options and the cache-to-USD options.
     """
@@ -50,6 +51,7 @@ def createCacheCreationOptions(exportOptions, cacheFile, cachePrimName,
     userArgs = mayaUsd.lib.Util.getDictionaryFromEncodedOptions(exportOptions)
     
     userArgs['rn_layer']              = cacheFile
+    userArgs['rn_relativePath']       = 1 if relativePath else 0
     userArgs['rn_primName']           = cachePrimName
     userArgs['rn_defineInVariant']    = defineInVariant
     userArgs['rn_payloadOrReference'] = payloadOrReference

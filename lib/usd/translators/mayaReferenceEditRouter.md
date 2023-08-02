@@ -44,7 +44,8 @@ The input information received by the Maya Reference `edit router` are:
 
 - "prim" (std::string): the `SdfPath` of the USD Maya Reference that was edited. 
 - "defaultUSDFormat" (std::string): the USD file format used to create the cache.
-- "rn_layer" (std::string): the file path to the cache. A layer will be created there.
+- "rn_layer" (std::string): the absolute file path to the cache. A layer will be created there.
+- "rn_relativePath" (int): if the file path should be converted to be relative to the layer containing the reference. 0 or 1.
 - "rn_primName" (std::string): the name of the root prim of the cache.
 - "rn_listEditType" (std::string): how the reference is added: "Append" or "Prepend".
 - "rn_payloadOrReference" (std::string): type of ref: "Reference" or "Payload".

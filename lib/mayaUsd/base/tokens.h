@@ -134,8 +134,10 @@ TF_DECLARE_PUBLIC_TOKENS(MayaUsdTokens, MAYAUSD_CORE_PUBLIC, MAYA_USD_GENERIC_TO
     ((Xform, "Xform"))                                  \
     /* Default USD file format for cache             */ \
     ((DefaultUSDFormat, "defaultUSDFormat"))            \
-    /* Destination layer for caching                 */ \
+    /* Destination layer absolute path for caching   */ \
     ((DestinationLayerPath, "rn_layer"))                \
+    /* If cache will be converted to a relative path */ \
+    ((RelativePath, "rn_relativePath"))                 \
     /* Destination prim for caching                  */ \
     ((DestinationPrimName, "rn_primName"))              \
     /* If reference added as an append or preprend   */ \

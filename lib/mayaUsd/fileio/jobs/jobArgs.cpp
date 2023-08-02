@@ -594,6 +594,13 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
           extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportMaterialCollections))
     , exportMeshUVs(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportUVs))
     , exportNurbsExplicitUV(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportUVs))
+    , exportRelativeTextures(extractToken(
+          userArgs,
+          UsdMayaJobExportArgsTokens->exportRelativeTextures,
+          UsdMayaJobExportArgsTokens->automatic,
+          { UsdMayaJobExportArgsTokens->automatic,
+            UsdMayaJobExportArgsTokens->absolute,
+            UsdMayaJobExportArgsTokens->relative }))
     , referenceObjectMode(extractToken(
           userArgs,
           UsdMayaJobExportArgsTokens->referenceObjectMode,
@@ -699,6 +706,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << std::endl
         << "exportMeshUVs: " << TfStringify(exportArgs.exportMeshUVs) << std::endl
         << "exportNurbsExplicitUV: " << TfStringify(exportArgs.exportNurbsExplicitUV) << std::endl
+        << "exportRelativeTextures: " << TfStringify(exportArgs.exportRelativeTextures) << std::endl
         << "referenceObjectMode: " << exportArgs.referenceObjectMode << std::endl
         << "exportRefsAsInstanceable: " << TfStringify(exportArgs.exportRefsAsInstanceable)
         << std::endl
@@ -967,6 +975,8 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->exportSkels] = UsdMayaJobExportArgsTokens->none.GetString();
         d[UsdMayaJobExportArgsTokens->exportBlendShapes] = false;
         d[UsdMayaJobExportArgsTokens->exportUVs] = true;
+        d[UsdMayaJobExportArgsTokens->exportRelativeTextures]
+            = UsdMayaJobExportArgsTokens->automatic.GetString();
         d[UsdMayaJobExportArgsTokens->exportVisibility] = true;
         d[UsdMayaJobExportArgsTokens->exportComponentTags] = true;
         d[UsdMayaJobExportArgsTokens->file] = std::string();
@@ -1060,6 +1070,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->exportSkels] = _string;
         d[UsdMayaJobExportArgsTokens->exportBlendShapes] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportUVs] = _boolean;
+        d[UsdMayaJobExportArgsTokens->exportRelativeTextures] = _string;
         d[UsdMayaJobExportArgsTokens->exportVisibility] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportComponentTags] = _boolean;
         d[UsdMayaJobExportArgsTokens->file] = _string;

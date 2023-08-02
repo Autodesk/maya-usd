@@ -23,6 +23,7 @@ import maya.cmds as cmds
 import mayaUsd
 
 import ufe
+import os.path
 
 def getPulledInfo(dagPath):
     """
@@ -75,6 +76,23 @@ def isPulledMayaReference(dagPath):
 
     _, _, _, prim = getPulledInfo(dagPath)
     return prim and prim.GetTypeName() == 'MayaReference'
+
+
+def getCurrentTargetLayerDir(prim):
+    """
+    Retrieve the edit target of the stage of the given prim and return the
+    folder that contains the targeted layer.
+
+    Returns an empty string for invalid prim, unsaved layers, etc.
+    """
+    stage = prim.GetStage()
+    if not stage:
+        return ''
+    layer = stage.GetEditTarget().GetLayer()
+    if not layer:
+        return ''
+    layerFileName = layer.realPath
+    return os.path.dirname(layerFileName)
 
 
 def getMonoFormatFileFilterLabels(includeCompressed = True):

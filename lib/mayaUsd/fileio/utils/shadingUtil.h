@@ -93,10 +93,16 @@ MObject CreatePlace2dTextureAndConnectTexture(MObject textureNode);
 
 /// Computes a USD file name from a Maya file name.
 ///
-/// Makes path relative to \p usdFileName and resolves issues with UDIM naming.
+/// Convert path according to the given relative mode and resolves issues with UDIM naming.
+///
+/// The possible relative modes are:
+///    - relative: make \p fileTextureName relative to \p usdFileName
+///    - absolute: make \p fileTextureName absolute
+///    - automatic: make relative if already relative, absolute if already absolute
 MAYAUSD_CORE_PUBLIC void ResolveUsdTextureFileName(
     std::string&       fileTextureName,
     const std::string& usdFileName,
+    const TfToken&     relativeMode,
     bool               isUDIM);
 
 /// Computes how many channels a texture file has by loading its header from disk

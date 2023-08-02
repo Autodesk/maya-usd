@@ -2,39 +2,9 @@
 # install
 # ---------------------------------------------------------------------------------------------
 
-# Maya Outliner icons
+# Maya Outliner icons (most come from UsdUfe)
 set(OUTLINER_ICONS
-    BlendShape
-    Camera
-    Capsule
-    CompArcBadge
-    CompArcBadgeV
-    Cone
-    Cube
-    Cylinder
-    Def
-    GeomSubset
-    LightFilter
-    LightPortal
     MayaReference
-    Mesh
-    NurbsPatch
-    PluginLight
-    PointInstancer
-    Points
-    Scope
-    SkelAnimation
-    Skeleton
-    SkelRoot
-    Sphere
-    UsdGeomCurves
-    UsdGeomXformable
-    UsdLuxBoundableLightBase
-    UsdLuxNonboundableLightBase
-    UsdTyped
-    Volume
-    Material
-    Shader
 )
 foreach(ICON_BASE ${OUTLINER_ICONS})
     # The _100.png files need to be installed without the _100. This is the

@@ -24,16 +24,19 @@ set(TEST_SCRIPT_FILES
     testUsdExportOverImport.py
     testUsdExportUsdPreviewSurface.py
     testUsdExportParentScope.py
+
     # To investigate: following test asserts in MFnParticleSystem, but passes.
     # PPT, 17-Jun-20.
     testUsdExportParticles.py
     testUsdExportPref.py
+
     # Following test runs only in legacy render layer mode, otherwise skipped.
     # Legacy render layers are deprecated, and should not be used.
     # To avoid skipping and run in legacy render layer mode,
     # export MAYA_ENABLE_LEGACY_RENDER_LAYERS=1
     testUsdExportRenderLayerMode.py
-    ## XXX: This test is disabled by default since it requires the RenderMan for Maya plugin.
+
+    # # XXX: This test is disabled by default since it requires the RenderMan for Maya plugin.
     # testUsdExportRfMLight.py
     testUsdExportRoots.py
     testUsdExportRootsAndParentScope.py
@@ -43,6 +46,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportSkin.py
     testUsdExportStripNamespaces.py
     testUsdExportStroke.py
+    testUsdExportTexture.py
     testUsdExportUserTaggedAttributes.py
     testUsdExportVisibilityDefault.py
     testUsdImportAnonymousLayer.py
@@ -57,6 +61,7 @@ set(TEST_SCRIPT_FILES
     testUsdImportDisplacement.py
     testUsdImportExportScope.py
     testUsdImportExportTypelessDefs.py
+
     # To investigate: following test asserts in TDNshapeEditorManager.cpp, but
     # passes.  PPT, 17-Jun-20.
     testUsdImportFrameRange.py
@@ -67,6 +72,7 @@ set(TEST_SCRIPT_FILES
     testUsdImportMesh.py
     testUsdImportPointCache.py
     testUsdImportPreviewSurface.py
+
     # XXX: This test is disabled by default since it requires the RenderMan for Maya plugin.
     # testUsdImportRfMLight.py
     testUsdImportSessionLayer.py

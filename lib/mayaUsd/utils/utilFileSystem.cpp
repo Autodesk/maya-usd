@@ -174,6 +174,35 @@ std::pair<std::string, bool> UsdMayaUtilFileSystem::makePathRelativeTo(
     return std::make_pair(relativePath.generic_string(), true);
 }
 
+std::string UsdMayaUtilFileSystem::getPathRelativeToProject(const std::string& fileName)
+{
+    if (fileName.empty())
+        return {};
+
+    MString projectPath = MGlobal::executeCommandStringResult("workspace -q -rd");
+    // Note: don't use isEmpty() because it is not available in Maya 2022 and earlier.
+    if (projectPath.length() == 0)
+        return {};
+
+    // Note: we do *not* use filesystem function to attempt to make the
+    //       path relative sinceit would succeed as long as both paths
+    //       are on the same drive. We really only want to know if the
+    //       project path is the prefix of the file path. Maya will
+    //       preserve paths entered manually with relative folder ("..")
+    //       by keping an absolute path with ".." embedded in them,
+    //       so this works even in this situation.
+    const auto pos = fileName.find(projectPath.asChar());
+    if (pos != 0)
+        return {};
+
+    auto relativePathAndSuccess = makePathRelativeTo(fileName, projectPath.asChar());
+
+    if (!relativePathAndSuccess.second)
+        return {};
+
+    return relativePathAndSuccess.first;
+}
+
 std::string UsdMayaUtilFileSystem::getPathRelativeToDirectory(
     const std::string& fileName,
     const std::string& relativeToDir)
