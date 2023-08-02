@@ -267,6 +267,7 @@ def getDefaultMergeToUSDOptionsDict():
     """
     return {
         "exportUVs":                "1",
+        "exportRelativeTextures":   "automatic",
         "exportSkels":              "none",
         "exportSkin":               "none",
         "exportBlendShapes":        "0",
