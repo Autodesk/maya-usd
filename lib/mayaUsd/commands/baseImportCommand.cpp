@@ -64,6 +64,10 @@ MSyntax MayaUSDImportCommand::createSyntax()
         kImportUSDZTexturesFilePathFlag,
         UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath.GetText(),
         MSyntax::kString);
+    syntax.addFlag(
+        kImportRelativeTexturesFlag,
+        UsdMayaJobImportArgsTokens->importRelativeTextures.GetText(),
+        MSyntax::kString);
     syntax.addFlag(kMetadataFlag, UsdMayaJobImportArgsTokens->metadata.GetText(), MSyntax::kString);
     syntax.makeFlagMultiUse(kMetadataFlag);
     syntax.addFlag(

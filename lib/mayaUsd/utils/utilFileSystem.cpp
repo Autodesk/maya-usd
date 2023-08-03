@@ -174,14 +174,20 @@ std::pair<std::string, bool> UsdMayaUtilFileSystem::makePathRelativeTo(
     return std::make_pair(relativePath.generic_string(), true);
 }
 
+std::string UsdMayaUtilFileSystem::getProjectPath()
+{
+    MString projectPath = MGlobal::executeCommandStringResult("workspace -q -rd");
+    return projectPath.asChar();
+}
+
 std::string UsdMayaUtilFileSystem::getPathRelativeToProject(const std::string& fileName)
 {
     if (fileName.empty())
         return {};
 
-    MString projectPath = MGlobal::executeCommandStringResult("workspace -q -rd");
     // Note: don't use isEmpty() because it is not available in Maya 2022 and earlier.
-    if (projectPath.length() == 0)
+    const std::string projectPath = getProjectPath();
+    if (projectPath.empty())
         return {};
 
     // Note: we do *not* use filesystem function to attempt to make the
@@ -191,16 +197,33 @@ std::string UsdMayaUtilFileSystem::getPathRelativeToProject(const std::string& f
     //       preserve paths entered manually with relative folder ("..")
     //       by keping an absolute path with ".." embedded in them,
     //       so this works even in this situation.
-    const auto pos = fileName.find(projectPath.asChar());
+    const auto pos = fileName.find(projectPath);
     if (pos != 0)
         return {};
 
-    auto relativePathAndSuccess = makePathRelativeTo(fileName, projectPath.asChar());
+    auto relativePathAndSuccess = makePathRelativeTo(fileName, projectPath);
 
     if (!relativePathAndSuccess.second)
         return {};
 
     return relativePathAndSuccess.first;
+}
+
+std::string UsdMayaUtilFileSystem::makeProjectRelatedPath(const std::string& fileName)
+{
+    const std::string projectPath = UsdMayaUtilFileSystem::getProjectPath();
+    if (projectPath.empty())
+        return {};
+
+    // Attempt to create a relative path relative to the project folder.
+    // If that fails, we cannot create the project-relative path.
+    const auto pathAndSuccess = UsdMayaUtilFileSystem::makePathRelativeTo(fileName, projectPath);
+    if (!pathAndSuccess.second)
+        return {};
+
+    // Make the path absolute but relative to the project folder. That is an absolute
+    // path that starts with the project path.
+    return UsdMayaUtilFileSystem::appendPaths(projectPath, pathAndSuccess.first);
 }
 
 std::string UsdMayaUtilFileSystem::getPathRelativeToDirectory(

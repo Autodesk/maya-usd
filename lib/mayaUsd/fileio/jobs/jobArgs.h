@@ -155,8 +155,14 @@ TF_DECLARE_PUBLIC_TOKENS(
     (importInstances) \
     (importUSDZTextures) \
     (importUSDZTexturesFilePath) \
+    (importRelativeTextures) \
     (pullImportStage) \
     (preserveTimeline) \
+    /* values for import relative textures */ \
+    (automatic) \
+    (absolute) \
+    (relative) \
+    (none) \
     /* assemblyRep values */ \
     (Collapsed) \
     (Full) \
@@ -348,6 +354,7 @@ struct UsdMayaJobImportArgs
     const TfToken        preferredMaterial;
     const std::string    importUSDZTexturesFilePath;
     const bool           importUSDZTextures;
+    const std::string    importRelativeTextures;
     const bool           importInstances;
     const bool           useAsAnimationCache;
     const bool           importWithProxyShapes;
