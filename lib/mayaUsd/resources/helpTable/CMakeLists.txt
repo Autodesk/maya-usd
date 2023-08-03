@@ -3,6 +3,6 @@
 # ---------------------------------------------------------------------------------------------
 
 install(FILES "helpTableMayaUSD"
-        DESTINATION "${INSTALL_DIR_SUFFIX}/helpTable"
+		DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/helpTable"
     )
 

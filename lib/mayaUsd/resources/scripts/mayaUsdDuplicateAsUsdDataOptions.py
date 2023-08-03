@@ -19,8 +19,8 @@ import maya.mel as mel
 
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
 from mayaUsdMergeToUSDOptions import getDefaultMergeToUSDOptionsDict
+from mayaUsdUtils import showHelpMayaUSD
 import mayaUsdOptions
-from mayaUsd_help import *
 from functools import partial
 
 

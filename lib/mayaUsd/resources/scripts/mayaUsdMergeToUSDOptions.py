@@ -17,8 +17,8 @@
 import maya.cmds as cmds
 import maya.mel as mel
 
-from mayaUsd_help import *
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
+from mayaUsdUtils import showHelpMayaUSD
 import mayaUsdOptions
 
 from functools import partial

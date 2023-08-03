@@ -219,7 +219,7 @@ void USDImportDialog::onResetFileTriggered()
 void USDImportDialog::onHierarchyViewHelpTriggered()
 {
     MGlobal::executePythonCommand(
-        "from mayaUsd_help import *; showHelpMayaUSD(\"UsdHierarchyView\");");
+        "from mayaUsdUtils import showHelpMayaUSD; showHelpMayaUSD(\"UsdHierarchyView\");");
 }
 
 void USDImportDialog::onCheckedStateChanged(int nbChecked)
