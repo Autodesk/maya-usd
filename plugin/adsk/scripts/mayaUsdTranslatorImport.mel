@@ -79,6 +79,7 @@ global proc mayaUsdTranslatorImport_EnableAllControls() {
 
     optionMenuGrp -e -en 1 mayaUsdTranslator_jobContextPopup;
     optionMenuGrp -e -en 1 mayaUsdTranslator_MaterialsConversionMenu;
+    optionMenuGrp -e -en 1 mayaUsdTranslator_RelativeTexturesMenu;
 
     intFieldGrp -e -en1 1 -en2 1 mayaUsdTranslator_CustomFrameRange;
 }
@@ -100,6 +101,8 @@ global proc mayaUsdTranslatorImport_SetFromOptions(string $currentOptions, int $
                 $jobContext = $optionBreakDown[1];
             } else if ($optionBreakDown[0] == "preferredMaterial") {
                 mayaUsdTranslatorImport_SetOptionMenuByAnnotation($optionBreakDown[1], $enable, "mayaUsdTranslator_MaterialsConversionMenu");
+            } else if ($optionBreakDown[0] == "importRelativeTextures") {
+                mayaUsdTranslatorImport_SetOptionMenuByAnnotation($optionBreakDown[1], $enable, "mayaUsdTranslator_RelativeTexturesMenu");
             } else if ($optionBreakDown[0] == "readAnimData") {
                 mayaUsdTranslatorImport_SetCheckBoxGrp($optionBreakDown[1], $enable, "mayaUsdTranslator_AnimDataCheckBox");
                 mayaUsdTranslatorImport_AnimationCB();
@@ -245,6 +248,11 @@ global proc int mayaUsdTranslatorImport (string $parent,
             menuItem -l `getMayaUsdString("kImportMaterialConvBlnLbl")` -ann "blinn";
             menuItem -l `getMayaUsdString("kImportMaterialConvPhgLbl")` -ann "phong";
 
+            optionMenuGrp -l `getMayaUsdString("kImportRelativeTexturesLbl")` -cw 1 $cw1 -ann `getMayaUsdString("kImportRelativeTexturesAnn")` mayaUsdTranslator_RelativeTexturesMenu;
+            menuItem -l `getMayaUsdString("kImportRelativeTexturesAutomaticLbl")` -ann "automatic";
+            menuItem -l `getMayaUsdString("kImportRelativeTexturesAbsoluteLbl")` -ann "absolute";
+            menuItem -l `getMayaUsdString("kImportRelativeTexturesRelativeLbl")` -ann "relative";
+
             checkBoxGrp -label "" -label1 `getMayaUsdString("kImportUSDZTxtLbl")` -cw 1 $cw1 -ann `getMayaUsdString("kImportUSDZTxtAnn")` mayaUsdTranslator_ImportUSDZTexturesCheckBox;
 
             separator -style "none";
@@ -294,6 +302,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
         string $currentOptions = "";
         $currentOptions = mayaUsdTranslatorImport_AppendMaterialsFromCheckBoxGrp($currentOptions, "shadingMode", "mayaUsdTranslator_MaterialsCheckBox");
         $currentOptions = mayaUsdTranslatorImport_AppendFromPopup($currentOptions, "preferredMaterial", "mayaUsdTranslator_MaterialsConversionMenu");
+        $currentOptions = mayaUsdTranslatorImport_AppendFromPopup($currentOptions, "importRelativeTextures", "mayaUsdTranslator_RelativeTexturesMenu");
         if (!$forEditAsMaya) {
             $currentOptions = mayaUsdTranslatorImport_AppendFromDialog($currentOptions, "primPath", "-primPath");
         }
@@ -399,9 +408,11 @@ global proc mayaUsdTranslatorImport_MaterialsCB()
 {
     if (`checkBoxGrp -q -value1 mayaUsdTranslator_MaterialsCheckBox` == 1) {
         optionMenuGrp -e -en true mayaUsdTranslator_MaterialsConversionMenu;
+        optionMenuGrp -e -en true mayaUsdTranslator_RelativeTexturesMenu;
         checkBoxGrp -e -en true mayaUsdTranslator_ImportUSDZTexturesCheckBox;
     } else {
         optionMenuGrp -e -en false mayaUsdTranslator_MaterialsConversionMenu;
+        optionMenuGrp -e -en false mayaUsdTranslator_RelativeTexturesMenu;
         checkBoxGrp -e -en false mayaUsdTranslator_ImportUSDZTexturesCheckBox;
     }
 }
