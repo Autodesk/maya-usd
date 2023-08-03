@@ -18,7 +18,7 @@
 
 #include <mayaHydraLib/adapters/adapter.h>
 #include <mayaHydraLib/adapters/adapterDebugCodes.h>
-#include <mayaHydraLib/utils.h>
+#include <mayaHydraLib/mixedUtils.h>
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/range3d.h>

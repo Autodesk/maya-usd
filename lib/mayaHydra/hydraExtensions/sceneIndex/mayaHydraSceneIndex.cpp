@@ -31,9 +31,13 @@
 #include <maya/MShaderManager.h>
 #include <maya/MString.h>
 
-#include <mayaHydraLib/sceneIndex/mayaHydraDataSource.h>
-#include <mayaHydraLib/mayaUtils.h>
 #include <mayaHydraLib/adapters/adapterRegistry.h>
+#include <mayaHydraLib/adapters/mayaAttrs.h>
+#include <mayaHydraLib/hydraUtils.h>
+#include <mayaHydraLib/mayaHydra.h>
+#include <mayaHydraLib/mayaUtils.h>
+#include <mayaHydraLib/mixedUtils.h>
+#include <mayaHydraLib/sceneIndex/mayaHydraDataSource.h>
 
 #include <pxr/base/tf/envSetting.h>
 #include <pxr/imaging/hd/meshSchema.h>
@@ -44,8 +48,13 @@
 #include <pxr/imaging/hd/rprim.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
 
-
 PXR_NAMESPACE_OPEN_SCOPE
+// Bring the MayaHydra namespace into scope.
+// The following code currently lives inside the pxr namespace, but it would make more sense to 
+// have it inside the MayaHydra namespace. This using statement allows us to use MayaHydra symbols
+// from within the pxr namespace as if we were in the MayaHydra namespace.
+// Remove this once the code has been moved to the MayaHydra namespace.
+using namespace MayaHydra;
 
 TF_DEFINE_ENV_SETTING(MAYA_HYDRA_USE_MESH_ADAPTER, false,
     "Use mesh adapter instead of MRenderItem for Maya meshes.");
@@ -98,10 +107,10 @@ namespace {
 
     template<class T> SdfPath toSdfPath(const T& src);
     template<> inline SdfPath toSdfPath<MDagPath>(const MDagPath& dag) {
-        return MayaHydra::DagPathToSdfPath(dag, false, false);
+        return DagPathToSdfPath(dag, false, false);
     }
     template<> inline SdfPath toSdfPath<MRenderItem>(const MRenderItem& ri) {
-        return MayaHydra::RenderItemToSdfPath(ri, false);
+        return RenderItemToSdfPath(ri, false);
     }
 
     template<class T> SdfPath maybePrepend(const T& src, const SdfPath& inPath);
@@ -115,7 +124,7 @@ namespace {
         ) {
         // Prepend Maya node name, for organisation and readability.
         std::string dependNodeNameString(MFnDependencyNode(ri.sourceDagPath().node()).name().asChar());
-        MayaHydra::SanitizeNameForSdfPath(dependNodeNameString);
+        SanitizeNameForSdfPath(dependNodeNameString);
         return SdfPath(dependNodeNameString).AppendPath(inPath);
     }
 
@@ -305,7 +314,7 @@ namespace {
         }
 
         std::string nodeName(chr);
-        MAYAHYDRA_NS_DEF::SanitizeNameForSdfPath(nodeName);
+        SanitizeNameForSdfPath(nodeName);
         return base.AppendPath(SdfPath(nodeName));
     }
 
@@ -891,7 +900,7 @@ void MayaHydraSceneIndex::PreFrame(const MHWRender::MDrawContext& context)
             _FindAdapter<MayaHydraLightAdapter>(
                 GetPrimPath(lightPath, true),
                 [&matrixVal](MayaHydraLightAdapter* a) {
-                    a->SetShadowProjectionMatrix(MAYAHYDRA_NS::GetGfMatrixFromMaya(matrixVal));
+                    a->SetShadowProjectionMatrix(GetGfMatrixFromMaya(matrixVal));
                 },
                 _lightAdapters);
         }

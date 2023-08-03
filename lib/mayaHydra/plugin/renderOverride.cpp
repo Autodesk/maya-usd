@@ -21,17 +21,16 @@
 #include <pxr/imaging/garch/glApi.h>
 #endif
 
-#include "pluginDebugCodes.h"
 #include "renderOverride.h"
+
+#include "pluginDebugCodes.h"
 #include "renderOverrideUtils.h"
 #include "tokens.h"
-#include "utils.h"
 
 #include <mayaHydraLib/delegates/delegateRegistry.h>
 #include <mayaHydraLib/delegates/sceneDelegate.h>
 #include <mayaHydraLib/interface.h>
 #include <mayaHydraLib/sceneIndex/registration.h>
-#include <mayaHydraLib/utils.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
@@ -106,6 +105,12 @@ int _profilerCategory = MProfiler::addCategory(
     "Events from mayaHydra render override");
 
 PXR_NAMESPACE_OPEN_SCOPE
+// Bring the MayaHydra namespace into scope.
+// The following code currently lives inside the pxr namespace, but it would make more sense to 
+// have it inside the MayaHydra namespace. This using statement allows us to use MayaHydra symbols
+// from within the pxr namespace as if we were in the MayaHydra namespace.
+// Remove this once the code has been moved to the MayaHydra namespace.
+using namespace MayaHydra;
 
 namespace {
 
@@ -536,9 +541,9 @@ MStatus MtohRenderOverride::Render(
     _taskController->SetRenderTags(mhRenderTags);
 
     _taskController->SetFreeCameraMatrices(
-        MAYAHYDRA_NS::GetGfMatrixFromMaya(
+        GetGfMatrixFromMaya(
             drawContext.getMatrix(MHWRender::MFrameContext::kViewMtx)),
-        MAYAHYDRA_NS::GetGfMatrixFromMaya(
+        GetGfMatrixFromMaya(
             drawContext.getMatrix(MHWRender::MFrameContext::kProjectionMtx)));
 
     if (delegateParams.motionSamplesEnabled()) {

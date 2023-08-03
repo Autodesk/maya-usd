@@ -1,8 +1,8 @@
 
 #include "testUtils.h"
 
+#include <mayaHydraLib/hydraUtils.h>
 #include <mayaHydraLib/mayaUtils.h>
-#include <mayaHydraLib/utils.h>
 
 #include <pxr/imaging/hd/tokens.h>
 
@@ -12,7 +12,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace MAYAHYDRA_NS;
+using namespace MayaHydra;
 
 TEST(MayaSceneFlattening, childHasFlattenedTransform)
 {

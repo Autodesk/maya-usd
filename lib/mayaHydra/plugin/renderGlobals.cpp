@@ -13,16 +13,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #include "renderGlobals.h"
 
-#include "pxr/usd/usdRender/settings.h"
 #include "renderOverride.h"
-#include "utils.h"
 
 #include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/imaging/hd/rendererPlugin.h>
 #include <pxr/imaging/hd/rendererPluginRegistry.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/usdRender/settings.h>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnEnumAttribute.h>
@@ -41,6 +41,12 @@
 // the parameters from the chosen render delegate.
 
 PXR_NAMESPACE_OPEN_SCOPE
+// Bring the MayaHydra namespace into scope.
+// The following code currently lives inside the pxr namespace, but it would make more sense to 
+// have it inside the MayaHydra namespace. This using statement allows us to use MayaHydra symbols
+// from within the pxr namespace as if we were in the MayaHydra namespace.
+// Remove this once the code has been moved to the MayaHydra namespace.
+using namespace MayaHydra;
 
 // clang-format off
 TF_DEFINE_PRIVATE_TOKENS(

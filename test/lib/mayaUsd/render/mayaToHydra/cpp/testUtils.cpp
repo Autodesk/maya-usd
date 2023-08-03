@@ -1,8 +1,24 @@
+//
+// Copyright 2023 Autodesk, Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 
 #include "testUtils.h"
 
+#include <mayaHydraLib/hydraUtils.h>
 #include <mayaHydraLib/interface.h>
-#include <mayaHydraLib/utils.h>
+#include <mayaHydraLib/mixedUtils.h>
 
 #include <pxr/imaging/hd/dataSourceLegacyPrim.h>
 #include <pxr/imaging/hd/xformSchema.h>
@@ -13,8 +29,12 @@
 #include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-using namespace MAYAHYDRA_NS;
+// Bring the MayaHydra namespace into scope.
+// The following code currently lives inside the pxr namespace, but it would make more sense to 
+// have it inside the MayaHydra namespace. This using statement allows us to use MayaHydra symbols
+// from within the pxr namespace as if we were in the MayaHydra namespace.
+// Remove this once the code has been moved to the MayaHydra namespace.
+using namespace MayaHydra;
 
 const SceneIndicesVector& GetTerminalSceneIndices()
 {
@@ -23,7 +43,7 @@ const SceneIndicesVector& GetTerminalSceneIndices()
 
 bool MatricesAreClose(const GfMatrix4d& hydraMatrix, const MMatrix& mayaMatrix, double tolerance)
 {
-    return GfIsClose(hydraMatrix, MAYAHYDRA_NS::GetGfMatrixFromMaya(mayaMatrix), tolerance);
+    return GfIsClose(hydraMatrix, GetGfMatrixFromMaya(mayaMatrix), tolerance);
 }
 
 SceneIndexInspector::SceneIndexInspector(HdSceneIndexBasePtr sceneIndex)

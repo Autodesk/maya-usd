@@ -9,10 +9,10 @@ target_sources(${TARGET_NAME}
     PRIVATE
         plugin.cpp
         pluginDebugCodes.cpp
+        pluginUtils.cpp
         renderGlobals.cpp
         renderOverride.cpp
         tokens.cpp
-        utils.cpp
         viewCommand.cpp
 )
 
@@ -24,7 +24,7 @@ if (BUILD_MAYAUSD_LIBRARY)
 endif()
 
 set(HEADERS
-    utils.h
+    pluginUtils.h
 )
 
 # -----------------------------------------------------------------------------

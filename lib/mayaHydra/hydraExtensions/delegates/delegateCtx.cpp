@@ -17,7 +17,8 @@
 //
 #include "delegateCtx.h"
 
-#include <mayaHydraLib/utils.h>
+#include <mayaHydraLib/hydraUtils.h>
+#include <mayaHydraLib/mixedUtils.h>
 
 #include <pxr/base/gf/frustum.h>
 #include <pxr/base/gf/plane.h>
@@ -34,6 +35,12 @@
 #include <array>
 
 PXR_NAMESPACE_OPEN_SCOPE
+// Bring the MayaHydra namespace into scope.
+// The following code currently lives inside the pxr namespace, but it would make more sense to 
+// have it inside the MayaHydra namespace. This using statement allows us to use MayaHydra symbols
+// from within the pxr namespace as if we were in the MayaHydra namespace.
+// Remove this once the code has been moved to the MayaHydra namespace.
+using namespace MayaHydra;
 
 namespace {
 
@@ -41,10 +48,10 @@ static const SdfPath lightedObjectsPath = SdfPath(std::string("Lighted"));
 
 template<class T> SdfPath toSdfPath(const T& src);
 template<> inline SdfPath toSdfPath<MDagPath>(const MDagPath& dag) {
-    return MayaHydra::DagPathToSdfPath(dag, false, false);
+    return DagPathToSdfPath(dag, false, false);
 }
 template<> inline SdfPath toSdfPath<MRenderItem>(const MRenderItem& ri) {
-    return MayaHydra::RenderItemToSdfPath(ri, false);
+    return RenderItemToSdfPath(ri, false);
 }
 
 template<class T> SdfPath maybePrepend(const T& src, const SdfPath& inPath);
@@ -58,7 +65,7 @@ template<> inline SdfPath maybePrepend<MRenderItem>(
 ) {
     // Prepend Maya node name, for organisation and readability.
     std::string dependNodeNameString (MFnDependencyNode(ri.sourceDagPath().node()).name().asChar());
-    MayaHydra::SanitizeNameForSdfPath(dependNodeNameString);
+    SanitizeNameForSdfPath(dependNodeNameString);
     return SdfPath(dependNodeNameString).AppendPath(inPath);
 }
 
@@ -140,7 +147,7 @@ SdfPath _GetMaterialPath(const SdfPath& base, const MObject& obj)
     }
 
     std::string nodeName(chr);
-    MAYAHYDRA_NS_DEF::SanitizeNameForSdfPath(nodeName);
+    SanitizeNameForSdfPath(nodeName);
     return base.AppendPath(SdfPath(nodeName));
 }
 

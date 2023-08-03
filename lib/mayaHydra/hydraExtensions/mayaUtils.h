@@ -14,12 +14,15 @@
 // limitations under the License.
 //
 
-#include <mayaHydraLib/api.h>
+#ifndef MAYAHYDRALIB_MAYA_UTILS_H
+#define MAYAHYDRALIB_MAYA_UTILS_H
 
-#include <maya/MDagPath.h>
-#include <maya/MMatrix.h>
-#include <maya/MStatus.h>
-#include <maya/MString.h>
+#include <mayaHydraLib/api.h>
+#include <mayaHydraLib/mayaHydra.h>
+
+#include <maya/MApiNamespace.h>
+
+namespace MAYAHYDRA_NS_DEF {
 
 /**
  * @brief Get the DAG path of a node from its name
@@ -81,3 +84,7 @@ bool IsUfeItemFromMayaUsd(const MDagPath& dagPath, MStatus* returnStatus = nullp
  */
 MAYAHYDRALIB_API
 bool IsUfeItemFromMayaUsd(const MObject& obj, MStatus* returnStatus = nullptr);
+
+} // namespace MAYAHYDRA_NS_DEF
+
+#endif // MAYAHYDRALIB_MAYA_UTILS_H

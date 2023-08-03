@@ -16,8 +16,8 @@
 #ifndef MTOH_RENDER_GLOBALS_H
 #define MTOH_RENDER_GLOBALS_H
 
+#include "pluginUtils.h"
 #include "tokens.h"
-#include "utils.h"
 
 #include <mayaHydraLib/delegates/params.h>
 
@@ -32,6 +32,8 @@
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
+// Remove this using statement once the following code is moved into the MayaHydra namespace
+using MtohRendererDescription = MayaHydra::MtohRendererDescription;
 
 /*! \brief MtohRenderGlobals is where we build the UI and expose to MEL the global parameters from
  * this plug-in and the parameters from the chosen render delegate.

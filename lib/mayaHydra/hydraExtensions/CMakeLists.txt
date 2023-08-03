@@ -8,19 +8,21 @@ add_library(${TARGET_NAME} SHARED)
 target_sources(${TARGET_NAME} 
     PRIVATE
         debugCodes.cpp
+        hydraUtils.cpp
         interfaceImp.cpp
         mayaUtils.cpp
-        utils.cpp
+        mixedUtils.cpp
         mayaHydraSceneProducer.cpp
 )
 
 set(HEADERS
     api.h
     debugCodes.h
+    hydraUtils.h
     interface.h
     interfaceImp.h
     mayaUtils.h
-    utils.h
+    mixedUtils.h
     mayaHydraSceneProducer.h
 )
 

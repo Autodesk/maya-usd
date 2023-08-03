@@ -13,8 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #ifndef MTOH_UTILS_H
 #define MTOH_UTILS_H
+
+#include <mayaHydraLib/mayaHydra.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/imaging/hd/renderDelegate.h>
@@ -26,55 +29,34 @@
 #include <string>
 #include <vector>
 
-PXR_NAMESPACE_OPEN_SCOPE
+namespace MAYAHYDRA_NS_DEF {
 
 constexpr auto MTOH_RENDER_OVERRIDE_PREFIX = "mayaHydraRenderOverride_";
 
 struct MtohRendererDescription
 {
-    MtohRendererDescription(const TfToken& rn, const TfToken& on, const TfToken& dn)
+    MtohRendererDescription(const pxr::TfToken& rn, const pxr::TfToken& on, const pxr::TfToken& dn)
         : rendererName(rn)
         , overrideName(on)
         , displayName(dn)
     {
     }
 
-    TfToken rendererName;
-    TfToken overrideName;
-    TfToken displayName;
+    pxr::TfToken rendererName;
+    pxr::TfToken overrideName;
+    pxr::TfToken displayName;
 };
 
 using MtohRendererDescriptionVector = std::vector<MtohRendererDescription>;
 
 /// Map from MtohRendererDescription::rendererName to it's a HdRenderSettingDescriptorList
 using MtohRendererSettings
-    = std::unordered_map<TfToken, HdRenderSettingDescriptorList, TfToken::HashFunctor>;
+    = std::unordered_map<pxr::TfToken, pxr::HdRenderSettingDescriptorList, pxr::TfToken::HashFunctor>;
 
-/// Defining these in header so don't need to link to use
-inline bool IsMtohRenderOverrideName(const MString& overrideName)
-{
-    // See if the override is an mayaHydra one - ie, it starts with the right prefix
-
-    // VS2017 msvc didn't accept this as a constexpr
-    const auto prefixLen = strlen(MTOH_RENDER_OVERRIDE_PREFIX);
-    if (overrideName.length() < prefixLen) {
-        return false;
-    }
-
-    return overrideName.substring(0, prefixLen - 1) == MTOH_RENDER_OVERRIDE_PREFIX;
-}
-
-inline bool IsMtohRenderOverride(const MHWRender::MFrameContext& frameContext)
-{
-    MHWRender::MFrameContext::RenderOverrideInformation overrideInfo;
-    frameContext.getRenderOverrideInformation(overrideInfo);
-    return IsMtohRenderOverrideName(overrideInfo.overrideName);
-}
-
-std::string                          MtohGetRendererPluginDisplayName(const TfToken& id);
+std::string                          MtohGetRendererPluginDisplayName(const pxr::TfToken& id);
 const MtohRendererDescriptionVector& MtohGetRendererDescriptions();
 const MtohRendererSettings&          MtohGetRendererSettings();
 
-PXR_NAMESPACE_CLOSE_SCOPE
+} // namespace MAYAHYDRA_NS_DEF
 
 #endif // MTOH_UTILS_H

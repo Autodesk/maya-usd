@@ -23,8 +23,9 @@
 #include <mayaHydraLib/adapters/renderItemAdapter.h>
 #include <mayaHydraLib/delegates/delegateDebugCodes.h>
 #include <mayaHydraLib/delegates/delegateRegistry.h>
+#include <mayaHydraLib/hydraUtils.h>
+#include <mayaHydraLib/mayaHydra.h>
 #include <mayaHydraLib/mayaUtils.h>
-#include <mayaHydraLib/utils.h>
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/range3d.h>
@@ -99,6 +100,12 @@ bool filterMesh(const MRenderItem& ri) {
 }
 
 PXR_NAMESPACE_OPEN_SCOPE
+// Bring the MayaHydra namespace into scope.
+// The following code currently lives inside the pxr namespace, but it would make more sense to 
+// have it inside the MayaHydra namespace. This using statement allows us to use MayaHydra symbols
+// from within the pxr namespace as if we were in the MayaHydra namespace.
+// Remove this once the code has been moved to the MayaHydra namespace.
+using namespace MayaHydra;
 
 SdfPath MayaHydraSceneDelegate::_fallbackMaterial;
 SdfPath MayaHydraSceneDelegate::_mayaDefaultMaterialPath; // Common to all scene delegates
@@ -624,7 +631,7 @@ void MayaHydraSceneDelegate::PreFrame(const MHWRender::MDrawContext& context)
             _FindAdapter<MayaHydraLightAdapter>(
                 GetPrimPath(lightPath, true),
                 [&matrixVal](MayaHydraLightAdapter* a) {
-                    a->SetShadowProjectionMatrix(MAYAHYDRA_NS::GetGfMatrixFromMaya(matrixVal));
+                    a->SetShadowProjectionMatrix(GetGfMatrixFromMaya(matrixVal));
                 },
                 _lightAdapters);
         }
@@ -1354,8 +1361,7 @@ VtValue MayaHydraSceneDelegate::GetLightParamValue(const SdfPath& id, const TfTo
 
     if (TfDebug::IsEnabled(MAYAHYDRALIB_DELEGATE_PRINT_LIGHTS_PARAMETERS_VALUES)) {
         // Print the lights parameters to the output window
-        std::string valueAsString;
-        MAYAHYDRA_NS_DEF::ConvertVtValueAsText(val, valueAsString);
+        std::string valueAsString = ConvertVtValueToString(val);
         cout << "Light : " << id.GetText() << " Parameter : " << paramName.GetText()
              << " Value : " << valueAsString << endl;
     }

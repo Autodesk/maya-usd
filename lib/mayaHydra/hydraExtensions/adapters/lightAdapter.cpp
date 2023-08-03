@@ -35,6 +35,12 @@
 #include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
+// Bring the MayaHydra namespace into scope.
+// The following code currently lives inside the pxr namespace, but it would make more sense to 
+// have it inside the MayaHydra namespace. This using statement allows us to use MayaHydra symbols
+// from within the pxr namespace as if we were in the MayaHydra namespace.
+// Remove this once the code has been moved to the MayaHydra namespace.
+using namespace MayaHydra;
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -198,7 +204,7 @@ VtValue MayaHydraLightAdapter::Get(const TfToken& key)
             light.SetAttenuation(GfVec3f(0.0f, 0.0f, 1.0f));
         }
         light.SetTransform(
-            MAYAHYDRA_NS::GetGfMatrixFromMaya(GetDagPath().inclusiveMatrixInverse()));
+            GetGfMatrixFromMaya(GetDagPath().inclusiveMatrixInverse()));
         _CalculateLightParams(light);
         return VtValue(light);
     } else if (key == HdTokens->transform) {

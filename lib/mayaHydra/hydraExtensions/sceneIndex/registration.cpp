@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
+#include <mayaHydraLib/hydraUtils.h>
 #include <mayaHydraLib/sceneIndex/registration.h>
-#include <mayaHydraLib/utils.h>
 
 #include <pxr/imaging/hd/dataSourceTypeDefs.h>
 #include <pxr/imaging/hd/retainedDataSource.h>
@@ -46,6 +46,12 @@
 #include <ufeExtensions/Global.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+// Bring the MayaHydra namespace into scope.
+// The following code currently lives inside the pxr namespace, but it would make more sense to 
+// have it inside the MayaHydra namespace. This using statement allows us to use MayaHydra symbols
+// from within the pxr namespace as if we were in the MayaHydra namespace.
+// Remove this once the code has been moved to the MayaHydra namespace.
+using namespace MayaHydra;
 
 /* To add a custom scene index, a customer plugin must:
  1. Define a Maya dag node via the MPxNode interface, and register it MFnPlugin::registerNode. This
@@ -249,7 +255,7 @@ void MayaHydraSceneIndexRegistry::_AddSceneIndexForNode(MObject& dagNode)
                 // where node name isn't unique and may clash with other node defined by the
                 // same plugin.
                 std::string dependNodeNameString (dependNodeFn.name().asChar());
-                MAYAHYDRA_NS_DEF::SanitizeNameForSdfPath(dependNodeNameString);
+                SanitizeNameForSdfPath(dependNodeNameString);
                 
                 registration->sceneIndexPathPrefix = 
                           SdfPath::AbsoluteRootPath()

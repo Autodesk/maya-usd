@@ -17,7 +17,7 @@
 #define MTOH_VIEW_OVERRIDE_H
 
 #include "renderGlobals.h"
-#include "utils.h"
+#include "pluginUtils.h"
 
 #include <mayaHydraLib/delegates/delegate.h>
 #include <mayaHydraLib/delegates/params.h>
@@ -46,6 +46,8 @@
 #include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
+// Remove this using statement once the following code is moved into the MayaHydra namespace
+using MtohRendererDescription = MayaHydra::MtohRendererDescription;
 
 using HgiUniquePtr = std::unique_ptr<class Hgi>;
 class MayaHydraSceneIndexRegistry;

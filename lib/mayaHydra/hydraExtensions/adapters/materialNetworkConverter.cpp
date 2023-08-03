@@ -21,7 +21,8 @@
 #include <mayaHydraLib/adapters/materialAdapter.h>
 #include <mayaHydraLib/adapters/mayaAttrs.h>
 #include <mayaHydraLib/adapters/tokens.h>
-#include <mayaHydraLib/utils.h>
+#include <mayaHydraLib/hydraUtils.h>
+#include <mayaHydraLib/mixedUtils.h>
 
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>
@@ -36,6 +37,12 @@
 #include <sstream>
 
 PXR_NAMESPACE_OPEN_SCOPE
+// Bring the MayaHydra namespace into scope.
+// The following code currently lives inside the pxr namespace, but it would make more sense to 
+// have it inside the MayaHydra namespace. This using statement allows us to use MayaHydra symbols
+// from within the pxr namespace as if we were in the MayaHydra namespace.
+// Remove this once the code has been moved to the MayaHydra namespace.
+using namespace MayaHydra;
 
 /* This file contains how we translate the Maya shaders (Blinn, Lambert, Standard Surface etc.) to
    hydra and how we do the parameters mapping. See MayaHydraMaterialNetworkConverter::initialize()
@@ -50,8 +57,7 @@ void DebugPrintParameters(const std::map<TfToken, VtValue>& params)
     cout << "\n"; // Add a line
     // Print all parameters types and values
     for (auto param : params) {
-        std::string valueAsString;
-        MAYAHYDRA_NS_DEF::ConvertVtValueAsText(param.second, valueAsString);
+        std::string valueAsString = ConvertVtValueToString(param.second);
         cout << "Material parameters : (" << param.first.GetText() << " - " << valueAsString.c_str()
              << ")\n";
     }
@@ -490,7 +496,7 @@ public:
         const VtValue*          fallback = nullptr,
         MPlugArray*             outPlug = nullptr) override
     {
-        auto path = MAYAHYDRA_NS::GetFileTexturePath(node);
+        auto path = GetFileTexturePath(node);
         return VtValue(SdfAssetPath(path.GetText(), path.GetText()));
     }
 };
@@ -732,7 +738,7 @@ HdMaterialNode* MayaHydraMaterialNetworkConverter::GetMaterial(const MObject& ma
     TF_DEBUG(MAYAHYDRALIB_ADAPTER_MATERIALS)
         .Msg("MayaHydraMaterialNetworkConverter::GetMaterial(node=%s)\n", chr);
     std::string nodeNameString(chr);
-    MAYAHYDRA_NS::SanitizeNameForSdfPath(nodeNameString);
+    SanitizeNameForSdfPath(nodeNameString);
     const auto  materialPath = _prefix.AppendChild(TfToken(nodeNameString));
 
     auto findResult = std::find_if(

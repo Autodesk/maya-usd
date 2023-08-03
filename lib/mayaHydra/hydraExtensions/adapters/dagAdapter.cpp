@@ -34,6 +34,12 @@
 #include <maya/MTransformationMatrix.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+// Bring the MayaHydra namespace into scope.
+// The following code currently lives inside the pxr namespace, but it would make more sense to 
+// have it inside the MayaHydra namespace. This using statement allows us to use MayaHydra symbols
+// from within the pxr namespace as if we were in the MayaHydra namespace.
+// Remove this once the code has been moved to the MayaHydra namespace.
+using namespace MayaHydra;
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -151,7 +157,7 @@ GfMatrix4d MayaHydraDagAdapter::GetTransform()
         if (IsInstanced()) {
             _transform.SetIdentity();
         } else {
-            _transform = MAYAHYDRA_NS::GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
+            _transform = GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
         }
         _invalidTransform = false;
     }
@@ -163,7 +169,7 @@ size_t
 MayaHydraDagAdapter::SampleTransform(size_t maxSampleCount, float* times, GfMatrix4d* samples)
 {
     return GetSceneProducer()->SampleValues(maxSampleCount, times, samples, [&]() -> GfMatrix4d {
-        return MAYAHYDRA_NS::GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
+        return GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
     });
 }
 
@@ -325,7 +331,7 @@ VtValue MayaHydraDagAdapter::GetInstancePrimvar(const TfToken& key)
         ret.reserve(numDags);
         for (auto i = decltype(numDags) { 0 }; i < numDags; ++i) {
             if (dags[i].isValid() && dags[i].isVisible()) {
-                ret.push_back(MAYAHYDRA_NS::GetGfMatrixFromMaya(dags[i].inclusiveMatrix()));
+                ret.push_back(GetGfMatrixFromMaya(dags[i].inclusiveMatrix()));
             }
         }
         return VtValue(ret);

@@ -15,9 +15,9 @@
 //
 #include "viewCommand.h"
 
+#include "pluginUtils.h"
 #include "renderGlobals.h"
 #include "renderOverride.h"
-#include "utils.h"
 
 #include <mayaHydraLib/delegates/delegateRegistry.h>
 
@@ -35,6 +35,12 @@
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
+// Bring the MayaHydra namespace into scope.
+// The following code currently lives inside the pxr namespace, but it would make more sense to 
+// have it inside the MayaHydra namespace. This using statement allows us to use MayaHydra symbols
+// from within the pxr namespace as if we were in the MayaHydra namespace.
+// Remove this once the code has been moved to the MayaHydra namespace.
+using namespace MayaHydra;
 
 const MString MtohViewCmd::name("mayaHydra");
 

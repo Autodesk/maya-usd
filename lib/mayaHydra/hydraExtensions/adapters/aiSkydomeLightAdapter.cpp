@@ -20,7 +20,6 @@
 #include <mayaHydraLib/adapters/lightAdapter.h>
 #include <mayaHydraLib/adapters/mayaAttrs.h>
 #include <mayaHydraLib/adapters/tokens.h>
-#include <mayaHydraLib/utils.h>
 
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/light.h>

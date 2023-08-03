@@ -21,7 +21,6 @@
 #include <mayaHydraLib/adapters/materialNetworkConverter.h>
 #include <mayaHydraLib/adapters/mayaAttrs.h>
 #include <mayaHydraLib/adapters/tokens.h>
-#include <mayaHydraLib/utils.h>
 #include <mayaHydraLib/mayaHydraSceneProducer.h>
 
 #include <pxr/base/tf/stl.h>
