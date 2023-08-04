@@ -197,7 +197,7 @@ std::string UsdMayaUtilFileSystem::getPathRelativeToProject(const std::string& f
     //       preserve paths entered manually with relative folder ("..")
     //       by keping an absolute path with ".." embedded in them,
     //       so this works even in this situation.
-    const auto pos = fileName.find(projectPath);
+    const auto pos = fileName.rfind(projectPath, 0);
     if (pos != 0)
         return {};
 

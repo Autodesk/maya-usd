@@ -62,7 +62,7 @@ static SdfAssetPath handleShaderInput(const UsdShadeInput& usdInput)
     return val.UncheckedGet<SdfAssetPath>();
 }
 
-static bool handleMissingResolvedPath(SdfAssetPath* resolvedAssetPath)
+static void handleMissingResolvedPath(SdfAssetPath* resolvedAssetPath)
 {
     const std::string& filePath = resolvedAssetPath->GetResolvedPath();
     if (!filePath.empty() && !ArIsPackageRelativePath(filePath)) {
@@ -74,8 +74,6 @@ static bool handleMissingResolvedPath(SdfAssetPath* resolvedAssetPath)
         // as a relationship like texture paths inside USDZ assets.
         *resolvedAssetPath = SdfAssetPath(filePath, filePath);
     }
-
-    return true;
 }
 
 // Note: return false only on import errors. Currently always returns true.
@@ -340,8 +338,7 @@ bool ResolveTextureAssetPath(
 
     SdfAssetPath resolvedAssetPath = originalAssetPath;
 
-    if (!handleMissingResolvedPath(&resolvedAssetPath))
-        return false;
+    handleMissingResolvedPath(&resolvedAssetPath);
 
     // Handle UDIM texture files:
     if (!handleUDIM(prim, depFn, &resolvedAssetPath))
@@ -350,6 +347,9 @@ bool ResolveTextureAssetPath(
     if (!handleUSDZTexture(prim, depFn, jobArgs, &resolvedAssetPath))
         return false;
 
+    // Note: current implementation of handleMakeRelative always succeeds,
+    //       checking return value in case it evolves to have real fatal error
+    //       conditions in the future.
     if (!handleMakeRelative(jobArgs, originalAssetPath, &resolvedAssetPath))
         return false;
 
