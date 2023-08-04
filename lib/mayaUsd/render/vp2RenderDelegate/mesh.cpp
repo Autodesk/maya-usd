@@ -891,7 +891,8 @@ void HdVP2Mesh::Sync(
 
         auto addRequiredPrimvars = [&](const SdfPath& materialId) {
             TfTokenVector requiredPrimvars;
-            if (!_GetMaterialPrimvars(renderIndex, materialId, requiredPrimvars)) {
+            if (!_GetMaterialPrimvars(renderIndex, materialId, requiredPrimvars)
+                || !(reprToken == HdReprTokens->smoothHull)) {
                 requiredPrimvars = sFallbackShaderPrimvars;
             }
 
@@ -1745,7 +1746,8 @@ void HdVP2Mesh::_UpdateDrawItem(
             const HdVP2Material* material = static_cast<const HdVP2Material*>(
                 renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
 
-            if (material) {
+            if (material && (reprToken == HdReprTokens->smoothHull)) {
+                //debug
                 const HdCullStyle           cullStyle = GetCullStyle(sceneDelegate);
                 MHWRender::MShaderInstance* shader = material->GetSurfaceShader(
                     _GetMaterialNetworkToken(reprToken), cullStyle == HdCullStyleBack);
