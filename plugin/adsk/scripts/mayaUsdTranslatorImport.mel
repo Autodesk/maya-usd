@@ -249,9 +249,13 @@ global proc int mayaUsdTranslatorImport (string $parent,
             menuItem -l `getMayaUsdString("kImportMaterialConvPhgLbl")` -ann "phong";
 
             optionMenuGrp -l `getMayaUsdString("kImportRelativeTexturesLbl")` -cw 1 $cw1 -ann `getMayaUsdString("kImportRelativeTexturesAnn")` mayaUsdTranslator_RelativeTexturesMenu;
-            menuItem -l `getMayaUsdString("kImportRelativeTexturesAutomaticLbl")` -ann "automatic";
-            menuItem -l `getMayaUsdString("kImportRelativeTexturesAbsoluteLbl")` -ann "absolute";
-            menuItem -l `getMayaUsdString("kImportRelativeTexturesRelativeLbl")` -ann "relative";
+            string $lbl;
+            $lbl = getMayaUsdString("kImportRelativeTexturesAutomaticLbl");
+            menuItem -l $lbl -ann $lbl;
+            $lbl = getMayaUsdString("kImportRelativeTexturesAbsoluteLbl");
+            menuItem -l $lbl -ann $lbl;
+            $lbl = getMayaUsdString("kImportRelativeTexturesRelativeLbl");
+            menuItem -l $lbl -ann $lbl;
 
             checkBoxGrp -label "" -label1 `getMayaUsdString("kImportUSDZTxtLbl")` -cw 1 $cw1 -ann `getMayaUsdString("kImportUSDZTxtAnn")` mayaUsdTranslator_ImportUSDZTexturesCheckBox;
 
