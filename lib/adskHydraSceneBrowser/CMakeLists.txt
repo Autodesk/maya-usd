@@ -62,7 +62,7 @@ foreach(SOURCE IN ITEMS ${SOURCES})
     configure_file("${DOWNLOAD_LOCATION}/${SOURCE}" "${DLL_API_LOCATION}/${SOURCE}" COPYONLY)
 endforeach()
 
-foreach(HEADER IN ${HEADERS})
+foreach(HEADER IN ITEMS ${HEADERS})
     # Download header files
     download(${HEADER})
     
