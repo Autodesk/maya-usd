@@ -179,7 +179,6 @@ std::string UsdMayaUtilFileSystem::getPathRelativeToProject(const std::string& f
     if (fileName.empty())
         return {};
 
-    // Note: don't use isEmpty() because it is not available in Maya 2022 and earlier.
     const std::string projectPath(UsdMayaUtil::GetCurrentMayaWorkspacePath().asChar());
     if (projectPath.empty())
         return {};
@@ -211,8 +210,7 @@ std::string UsdMayaUtilFileSystem::makeProjectRelatedPath(const std::string& fil
 
     // Attempt to create a relative path relative to the project folder.
     // If that fails, we cannot create the project-relative path.
-    const auto pathAndSuccess
-        = UsdMayaUtilFileSystem::makePathRelativeTo(fileName, projectPath);
+    const auto pathAndSuccess = UsdMayaUtilFileSystem::makePathRelativeTo(fileName, projectPath);
     if (!pathAndSuccess.second)
         return {};
 
