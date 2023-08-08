@@ -32,6 +32,8 @@ option(CMAKE_WANT_MATERIALX_BUILD "Enable building with MaterialX (experimental)
 
 set(PXR_OVERRIDE_PLUGINPATH_NAME PXR_PLUGINPATH_NAME
     CACHE STRING "Name of env var USD searches to find plugins")
+    
+option(BUILD_HDSBLIB "Build Hydra Scene Browser library (hdui)." OFF)
 
 #------------------------------------------------------------------------------
 # internal flags to control build
@@ -167,6 +169,10 @@ endif()
 #------------------------------------------------------------------------------
 add_subdirectory(lib)
 
+if(BUILD_HDSBLIB AND IS_WINDOWS)
+    add_subdirectory(lib/adskHydraSceneBrowser)
+endif()
+
 #------------------------------------------------------------------------------
 # install
 #------------------------------------------------------------------------------
@@ -175,7 +181,6 @@ if (DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
 else()
     set(USD_INSTALL_LOCATION ${PXR_USD_LOCATION})
 endif()
-
 
 #------------------------------------------------------------------------------
 # Maya module files
