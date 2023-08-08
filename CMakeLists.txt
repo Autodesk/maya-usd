@@ -34,6 +34,9 @@ set(PXR_OVERRIDE_PLUGINPATH_NAME PXR_PLUGINPATH_NAME
     CACHE STRING "Name of env var USD searches to find plugins")
     
 option(BUILD_HDSBLIB "Build Hydra Scene Browser library (hdui)." OFF)
+ # Note: if BUILD_HDSB_PLUGIN is set to 'ON', the Hydra Scene Browser library 
+ # will be built by default because it is a dependency of the plugin.
+option(BUILD_HDSB_PLUGIN "Build Hydra Scene Browser plugin for Maya." OFF)
 
 #------------------------------------------------------------------------------
 # internal flags to control build
@@ -169,8 +172,15 @@ endif()
 #------------------------------------------------------------------------------
 add_subdirectory(lib)
 
-if(BUILD_HDSBLIB AND IS_WINDOWS)
+if((BUILD_HDSB_PLUGIN OR BUILD_HDSBLIB) AND IS_WINDOWS) # Only build for windows until it can be tested on Linux and MacOS
     add_subdirectory(lib/adskHydraSceneBrowser)
+endif()
+
+#------------------------------------------------------------------------------
+# plugin
+#------------------------------------------------------------------------------
+if(BUILD_HDSB_PLUGIN AND IS_WINDOWS) # Only build for windows until it can be tested on Linux and MacOS
+    add_subdirectory(plugin/mayaHydraSceneBrowser)
 endif()
 
 #------------------------------------------------------------------------------
