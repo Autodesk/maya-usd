@@ -68,6 +68,7 @@ def mayaUsdLibRegisterStrings():
     register('kOptionAsUSDReferenceStatusMsg', 'Choose the type of USD Reference composition arc for your Maya Reference.')
     register('kOptionListEditedAs', 'List Edited As')
     register('kOptionLoadPayload', 'Load Payload:')
+    register('kLoadPayloadAnnotation', 'If selected, all existing payloads on the prim will be unchanged and new payloads will be loaded as well. When deselected, all payloads on the prim will be unloaded.')
     register('kTextDefineIn', 'Define in:')
     register('kTextVariant', 'Variant')
     register('kTextVariantToolTip','If selected, your Maya reference will be defined in a variant. This will enable your prim to\nhave 2 variants you can switch between in the Outliner; the Maya reference and its USD cache.')
