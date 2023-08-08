@@ -679,9 +679,13 @@ global proc int mayaUsdTranslatorExport (string $parent,
                 }
 
                 optionMenuGrp -l `getMayaUsdString("kExportRelativeTexturesLbl")` -annotation `getMayaUsdString("kExportRelativeTexturesAnn")` exportRelativeTexturesPopup;
-                    menuItem -l `getMayaUsdString("kExportRelativeTexturesAutomaticLbl")` -ann "automatic";
-                    menuItem -l `getMayaUsdString("kExportRelativeTexturesAbsoluteLbl")` -ann "absolute";
-                    menuItem -l `getMayaUsdString("kExportRelativeTexturesRelativeLbl")` -ann "relative";
+                    string $lbl;
+                    $lbl = getMayaUsdString("kExportRelativeTexturesAutomaticLbl");
+                    menuItem -l $lbl -ann $lbl;
+                    $lbl = getMayaUsdString("kExportRelativeTexturesAbsoluteLbl");
+                    menuItem -l $lbl -ann $lbl;
+                    $lbl = getMayaUsdString("kExportRelativeTexturesRelativeLbl");
+                    menuItem -l $lbl -ann $lbl;
 
                 separator -style "none";
             setParent ..;
