@@ -139,6 +139,7 @@ def createUsdRefOrPayloadUI(showLoadPayload=False):
     if showLoadPayload:
         cmds.checkBoxGrp('loadPayload',
                          label=getMayaUsdLibString('kOptionLoadPayload'),
+                         annotation=getMayaUsdLibString('kLoadPayloadAnnotation'),
                          ncb=1)
 
 def initUsdRefOrPayloadUI(values, showLoadPayload=False):
