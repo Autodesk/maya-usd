@@ -210,7 +210,7 @@ global proc mayaUSDRegisterStrings()
     register("kImportMaterialConvBlnLbl", "Blinn");
     register("kImportMaterialConvPhgLbl", "Phong");
     register("kImportRelativeTexturesLbl", "Texture File Paths:");
-    register("kImportRelativeTexturesAnn", "<b/>Choose whether your texture files are written as relative or absolute paths\n" + 
+    register("kImportRelativeTexturesAnn", "Choose whether your texture files are written as relative or absolute paths\n" + 
                                            "as you import them to Maya. If you select <b>Automatic</b>, it will be chosen for you\n" +
                                            "in the import based on what they currently are as USD data.");
     register("kImportRelativeTexturesAutomaticLbl", "Automatic");
