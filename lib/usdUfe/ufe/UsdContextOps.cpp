@@ -295,10 +295,13 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
             if (object3dHndlr) {
                 auto object3d = object3dHndlr->object3d(sceneItem());
                 if (object3d) {
-                    auto       visibility = object3d->visibility();
-                    const auto l = visibility ? std::string(kUSDMakeInvisibleLabel)
-                                              : std::string(kUSDMakeVisibleLabel);
-                    items.emplace_back(kUSDToggleVisibilityItem, l);
+                    // Don't actually use UsdObject3d::visibility() - it looks at the authored visibility
+                    // attribute. Instead, compute the effective visibility to decide on the label to use.
+                    const auto imageable = UsdGeomImageable(prim());
+                    const auto visibility = imageable.ComputeVisibility() != UsdGeomTokens->invisible;
+                    const auto label = visibility ? std::string(kUSDMakeInvisibleLabel)
+                        : std::string(kUSDMakeVisibleLabel);
+                    items.emplace_back(kUSDToggleVisibilityItem, label);
                 }
             }
             // Prim active state:
@@ -433,7 +436,11 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         auto object3d = UsdObject3d::create(fItem);
         if (!TF_VERIFY(object3d))
             return nullptr;
-        auto current = object3d->visibility();
+        // Don't use UsdObject3d::visibility() - it looks at the authored visibility
+        // attribute. Instead, compute the effective visibility, which is what we want
+        // to toggle.
+        const auto imageable = UsdGeomImageable(prim());
+        const auto current = imageable.ComputeVisibility() != UsdGeomTokens->invisible;
         return object3d->setVisibleCmd(!current);
     } // Visibility
     else if (itemPath[0] == kUSDToggleActiveStateItem) {
