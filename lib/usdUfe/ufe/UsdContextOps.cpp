@@ -295,12 +295,14 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
             if (object3dHndlr) {
                 auto object3d = object3dHndlr->object3d(sceneItem());
                 if (object3d) {
-                    // Don't actually use UsdObject3d::visibility() - it looks at the authored visibility
-                    // attribute. Instead, compute the effective visibility to decide on the label to use.
+                    // Don't actually use UsdObject3d::visibility() - it looks at the authored
+                    // visibility attribute. Instead, compute the effective visibility to decide on
+                    // the label to use.
                     const auto imageable = UsdGeomImageable(prim());
-                    const auto visibility = imageable.ComputeVisibility() != UsdGeomTokens->invisible;
+                    const auto visibility
+                        = imageable.ComputeVisibility() != UsdGeomTokens->invisible;
                     const auto label = visibility ? std::string(kUSDMakeInvisibleLabel)
-                        : std::string(kUSDMakeVisibleLabel);
+                                                  : std::string(kUSDMakeVisibleLabel);
                     items.emplace_back(kUSDToggleVisibilityItem, label);
                 }
             }
