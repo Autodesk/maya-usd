@@ -355,6 +355,7 @@ global proc mayaUsdTranslatorExport_EnableAllControls() {
             string $widgetName = $opt + "_ConvertMaterialsToCheckBox";
             checkBoxGrp -e -en 1 $widgetName;
         }
+        optionMenuGrp -e -en 1 exportRelativeTexturesPopup;
     }
 
     if (stringArrayContains("advanced", $sectionNames)) {
@@ -390,6 +391,8 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
             tokenize($optionList[$index], "=", $optionBreakDown);
             if ($optionBreakDown[0] == "exportUVs") {
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportUVsCheckBox");
+            } else if ($optionBreakDown[0] == "exportRelativeTextures") {
+                mayaUsdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], $enable, "exportRelativeTexturesPopup");
             } else if ($optionBreakDown[0] == "exportSkels") {
                 mayaUsdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], $enable, "skelsPopup");
             } else if ($optionBreakDown[0] == "exportSkin") {
@@ -674,7 +677,16 @@ global proc int mayaUsdTranslatorExport (string $parent,
                         -label "" -label1 $conversion -annotation $ann
                         $widgetName;
                 }
-                
+
+                optionMenuGrp -l `getMayaUsdString("kExportRelativeTexturesLbl")` -annotation `getMayaUsdString("kExportRelativeTexturesAnn")` exportRelativeTexturesPopup;
+                    string $lbl;
+                    $lbl = getMayaUsdString("kExportRelativeTexturesAutomaticLbl");
+                    menuItem -l $lbl -ann $lbl;
+                    $lbl = getMayaUsdString("kExportRelativeTexturesAbsoluteLbl");
+                    menuItem -l $lbl -ann $lbl;
+                    $lbl = getMayaUsdString("kExportRelativeTexturesRelativeLbl");
+                    menuItem -l $lbl -ann $lbl;
+
                 separator -style "none";
             setParent ..;
         }
@@ -774,6 +786,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
 
         if (stringArrayContains("materials", $sectionNames)) {
             $currentOptions = mayaUsdTranslatorExport_AppendConvertMaterialsTo($currentOptions, "convertMaterialsTo");
+            $currentOptions = mayaUsdTranslatorExport_AppendFromPopup($currentOptions, "exportRelativeTextures", "exportRelativeTexturesPopup");
         }
 
         if (stringArrayContains("advanced", $sectionNames)) {
