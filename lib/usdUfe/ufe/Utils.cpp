@@ -90,6 +90,7 @@ UsdUfe::UfePathToPrimFn      gUfePathToPrimFn = nullptr;
 UsdUfe::TimeAccessorFn       gTimeAccessorFn = nullptr;
 UsdUfe::IsAttributeLockedFn  gIsAttributeLockedFn = nullptr;
 UsdUfe::SaveStageLoadRulesFn gSaveStageLoadRulesFn = nullptr;
+UsdUfe::IsRootChildFn        gIsRootChildFn = nullptr;
 
 } // anonymous namespace
 
@@ -231,6 +232,29 @@ void saveStageLoadRules(const PXR_NS::UsdStageRefPtr& stage)
         gSaveStageLoadRulesFn(stage);
 }
 
+void setIsRootChildFn(IsRootChildFn fn)
+{
+    // This function is allowed to be null in which case, the default implementation
+    // is used (isRootChildDefault()).
+    gIsRootChildFn = fn;
+}
+
+bool isRootChild(const Ufe::Path& path)
+{
+    return gIsRootChildFn ? gIsRootChildFn(path) : isRootChildDefault(path);
+}
+
+bool isRootChildDefault(const Ufe::Path& path)
+{
+    // When called we make the assumption that we are given a valid
+    // path and we are only testing whether or not we are a root child.
+    auto segments = path.getSegments();
+    if (segments.size() != 2) {
+        TF_RUNTIME_ERROR(kIllegalUFEPath, path.string().c_str());
+    }
+    return (segments[1].size() == 1);
+}
+
 int ufePathToInstanceIndex(const Ufe::Path& path, UsdPrim* prim)
 {
     int instanceIndex = UsdImagingDelegate::ALL_INSTANCES;
@@ -252,17 +276,6 @@ int ufePathToInstanceIndex(const Ufe::Path& path, UsdPrim* prim)
     }
 
     return instanceIndex;
-}
-
-bool isRootChild(const Ufe::Path& path)
-{
-    // When called we make the assumption that we are given a valid
-    // path and we are only testing whether or not we are a root child.
-    auto segments = path.getSegments();
-    if (segments.size() != 2) {
-        TF_RUNTIME_ERROR(kIllegalUFEPath, path.string().c_str());
-    }
-    return (segments[1].size() == 1);
 }
 
 std::string uniqueName(const TfToken::HashSet& existingNames, std::string srcName)

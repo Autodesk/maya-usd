@@ -44,6 +44,7 @@ typedef PXR_NS::UsdPrim (*UfePathToPrimFn)(const Ufe::Path&);
 typedef PXR_NS::UsdTimeCode (*TimeAccessorFn)(const Ufe::Path&);
 typedef bool (*IsAttributeLockedFn)(const PXR_NS::UsdAttribute& attr, std::string* errMsg);
 typedef void (*SaveStageLoadRulesFn)(const PXR_NS::UsdStageRefPtr&);
+typedef bool (*IsRootChildFn)(const Ufe::Path& path);
 
 //------------------------------------------------------------------------------
 // Helper functions
@@ -137,8 +138,21 @@ void saveStageLoadRules(const PXR_NS::UsdStageRefPtr& stage);
 USDUFE_PUBLIC
 int ufePathToInstanceIndex(const Ufe::Path& path, PXR_NS::UsdPrim* prim = nullptr);
 
+//! Set the DCC specific "isRootChild" test function.
+//! Use of this function is optional, if one is not supplied then
+//! a default implementation of isRootChild is used..
+USDUFE_PUBLIC
+void setIsRootChildFn(IsRootChildFn fn);
+
+//! Returns true if the path corresponds to an item at the root of a runtime.
+//! Implementation can be set by the DCC.
 USDUFE_PUBLIC
 bool isRootChild(const Ufe::Path& path);
+
+//! Default isRootChild() implementation. Assumes 2 segments. Will report a root child
+//! if the second segment has a single component.
+USDUFE_PUBLIC
+bool isRootChildDefault(const Ufe::Path& path);
 
 //! Split the source name into a base name and a numerical suffix (set to
 //! 1 if absent).  Increment the numerical suffix until name is unique.
