@@ -1151,6 +1151,14 @@ UsdMayaJobImportArgs::UsdMayaJobImportArgs(
           UsdMayaPreferredMaterialTokens->allTokens))
     , importUSDZTexturesFilePath(UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(userArgs))
     , importUSDZTextures(extractBoolean(userArgs, UsdMayaJobImportArgsTokens->importUSDZTextures))
+    , importRelativeTextures(extractToken(
+          userArgs,
+          UsdMayaJobImportArgsTokens->importRelativeTextures,
+          UsdMayaJobImportArgsTokens->none,
+          { UsdMayaJobImportArgsTokens->automatic,
+            UsdMayaJobImportArgsTokens->absolute,
+            UsdMayaJobImportArgsTokens->relative,
+            UsdMayaJobImportArgsTokens->none }))
     , importInstances(extractBoolean(userArgs, UsdMayaJobImportArgsTokens->importInstances))
     , useAsAnimationCache(extractBoolean(userArgs, UsdMayaJobImportArgsTokens->useAsAnimationCache))
     , importWithProxyShapes(importWithProxyShapes)
@@ -1209,6 +1217,8 @@ const VtDictionary& UsdMayaJobImportArgs::GetDefaultDictionary()
         d[UsdMayaJobImportArgsTokens->importInstances] = true;
         d[UsdMayaJobImportArgsTokens->importUSDZTextures] = false;
         d[UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath] = "";
+        d[UsdMayaJobImportArgsTokens->importRelativeTextures]
+            = UsdMayaJobImportArgsTokens->none.GetString();
         d[UsdMayaJobImportArgsTokens->pullImportStage] = UsdStageRefPtr();
         d[UsdMayaJobImportArgsTokens->useAsAnimationCache] = false;
         d[UsdMayaJobImportArgsTokens->preserveTimeline] = false;
@@ -1289,6 +1299,7 @@ const VtDictionary& UsdMayaJobImportArgs::GetGuideDictionary()
         d[UsdMayaJobImportArgsTokens->importInstances] = _boolean;
         d[UsdMayaJobImportArgsTokens->importUSDZTextures] = _boolean;
         d[UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath] = _string;
+        d[UsdMayaJobImportArgsTokens->importRelativeTextures] = _string;
         d[UsdMayaJobImportArgsTokens->pullImportStage] = _usdStageRefPtr;
         d[UsdMayaJobImportArgsTokens->useAsAnimationCache] = _boolean;
         d[UsdMayaJobImportArgsTokens->preserveTimeline] = _boolean;
@@ -1377,6 +1388,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobImportArgs& importAr
         << "importInstances: " << TfStringify(importArgs.importInstances) << std::endl
         << "importUSDZTextures: " << TfStringify(importArgs.importUSDZTextures) << std::endl
         << "importUSDZTexturesFilePath: " << TfStringify(importArgs.importUSDZTexturesFilePath)
+        << "importRelativeTextures: " << TfStringify(importArgs.importRelativeTextures) << std::endl
         << "pullImportStage: " << TfStringify(importArgs.pullImportStage) << std::endl
         << std::endl
         << "timeInterval: " << importArgs.timeInterval << std::endl

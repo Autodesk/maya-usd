@@ -218,6 +218,13 @@ global proc mayaUSDRegisterStrings()
     register("kImportMaterialConvPSLbl", "USD Preview Surface");
     register("kImportMaterialConvBlnLbl", "Blinn");
     register("kImportMaterialConvPhgLbl", "Phong");
+    register("kImportRelativeTexturesLbl", "Texture File Paths:");
+    register("kImportRelativeTexturesAnn", "Choose whether your texture files are written as relative or absolute paths\n" + 
+                                           "as you import them to Maya. If you select <b>Automatic</b>, it will be chosen for you\n" +
+                                           "in the import based on what they currently are as USD data.");
+    register("kImportRelativeTexturesAutomaticLbl", "Automatic");
+    register("kImportRelativeTexturesAbsoluteLbl", "Absolute");
+    register("kImportRelativeTexturesRelativeLbl", "Relative");
     register("kImportMaterialsAnn", "If selected, shading data is extracted from the USD file for import");
     register("kImportMaterialsLbl", "Materials");
     register("kImportPrimsInScopeNumLbl", "Total Number of Prims in Scope:");
