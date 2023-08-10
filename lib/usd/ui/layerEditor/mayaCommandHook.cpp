@@ -211,7 +211,11 @@ void MayaCommandHook::muteSubLayer(UsdLayer usdLayer, bool muteIt)
 }
 
 // Help menu callback
-void MayaCommandHook::showLayerEditorHelp() { executeMel("showHelp UsdLayerEditor"); }
+void MayaCommandHook::showLayerEditorHelp()
+{
+    MGlobal::executePythonCommand(
+        "from mayaUsdUtils import showHelpMayaUSD; showHelpMayaUSD(\"UsdLayerEditor\");");
+}
 
 // this method is used to select the prims with spec in a layer
 void MayaCommandHook::selectPrimsWithSpec(UsdLayer usdLayer)

@@ -249,7 +249,7 @@ global proc mayaUsdMenu_EditAsMayaDataOptions(string $obj)
 	if ($helpItem != "") {
 		menuItem -edit 
 			-label `getMayaUsdString("kHelpOnEditAsMayaDataOptions")`
-            -command ( "showHelp UsdImportOptionsConfig" )
+            -command ("python(\"from mayaUsdUtils import showHelpMayaUSD; showHelpMayaUSD('UsdImportOptionsConfig');\")")
 			$helpItem;
 	}
 
