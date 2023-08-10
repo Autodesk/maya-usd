@@ -60,7 +60,7 @@ that corresponds to the imported primPath but could be multiple
 paths if primPath="/".
 
 ### Repeatable flags
-The `-primVar` flag can be used multiple times when used to import specific variants. on MEL, this simply means using the flag repeatedly for each prim that contains the chosen variants. On Python, the flag requires a string array to import. for example. importing multiple variant choices using python would for example use:
+The `-primVar` flag can be used multiple times when used to import specific variants. In MEL, this simply means using the flag repeatedly for each prim that contains the chosen variants. In Python, the flag requires a string array to import. Importing multiple variant choices using python would for example use:
 
 ```python
 cmds.mayaUSDImport(
