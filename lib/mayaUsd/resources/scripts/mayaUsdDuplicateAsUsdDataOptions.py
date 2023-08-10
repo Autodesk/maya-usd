@@ -19,8 +19,8 @@ import maya.mel as mel
 
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
 from mayaUsdMergeToUSDOptions import getDefaultMergeToUSDOptionsDict
+from mayaUsdUtils import showHelpMayaUSD
 import mayaUsdOptions
-
 from functools import partial
 
 
@@ -72,9 +72,8 @@ def _createDuplicateAsUsdDataOptionsDialog(window):
     cmds.menuItem(label=getMayaUsdLibString("kResetSettingsMenuItem"), command=partial(_resetDuplicateAsUsdDataOptions, subLayout))
 
     cmds.setParent(menuBarLayout)
-    if _hasDuplicateAsUsdDataOptionsHelp():
-        menu = cmds.menu(label=getMayaUsdLibString("kHelpMenu"), parent=menuBarLayout)
-        cmds.menuItem(label=getMayaUsdLibString("kHelpDuplicateAsUsdDataOptionsMenuItem"), command=_helpDuplicateAsUsdDataOptions)
+    menu = cmds.menu(label=getMayaUsdLibString("kHelpMenu"), parent=menuBarLayout)
+    cmds.menuItem(label=getMayaUsdLibString("kHelpDuplicateAsUsdDataOptionsMenuItem"), command=_helpDuplicateAsUsdDataOptions)
 
     buttonsLayout = cmds.formLayout(parent=windowFormLayout)
 
@@ -150,22 +149,11 @@ def _fillDuplicateAsUsdDataOptionsDialog(subLayout, optionsText, action):
         mayaUsdTranslatorExport("{subLayout}", "{action}=all;!output", "{optionsText}", "")
         '''.format(optionsText=optionsText, subLayout=subLayout, action=action))
 
-
-def _hasDuplicateAsUsdDataOptionsHelp():
-    """
-    Returns True if the help topic for the options is available in Maya.
-    """
-    # Note: catchQuiet returns 0 or 1, not the value, so we use a dummy assignment
-    #       to produce the value to be returned by eval().
-    url = mel.eval('''catchQuiet($url = `showHelp -q "''' + _kDuplicateAsUsdDataOptionsHelpContentId + '''"`); $a = $url;''')
-    return bool(url)
-
 def _helpDuplicateAsUsdDataOptions(data=None):
     """
     Shows help on the duplicate-as-Usd-data options dialog.
     """
-    cmds.showHelp(_kDuplicateAsUsdDataOptionsHelpContentId)
-
+    showHelpMayaUSD(_kDuplicateAsUsdDataOptionsHelpContentId);
 
 def _getDuplicateAsUsdDataOptionsVarName():
     """
