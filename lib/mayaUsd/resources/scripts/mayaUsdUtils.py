@@ -220,10 +220,9 @@ def showHelpMayaUSD(contentId):
     
     try:
         # Finding the path to helpTableMayaUSD file.
-        dirName = cmds.pluginInfo('mayaUsdPlugin', q=True, p=True)
-        dirName = os.path.dirname(dirName) + "/../../../lib/helpTable/" + "helpTableMayaUSD"
+        helpTablePath = os.path.join(os.environ['MAYAUSD_LIB_LOCATION'], 'helpTable/helpTableMayaUSD');
         # Setting the default helpTable to helpTableMayaUSD
-        cmds.showHelp(dirName, helpTable=True)
+        cmds.showHelp(helpTablePath, helpTable=True)
         # Showing the help content
         cmds.showHelp(contentId)
     finally:
