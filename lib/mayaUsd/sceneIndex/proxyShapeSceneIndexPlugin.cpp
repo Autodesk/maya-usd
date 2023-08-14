@@ -191,9 +191,9 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
             sceneIndex = HdFlatteningSceneIndex::New(sceneIndex, flatteningInputArgs);
             sceneIndex = UsdImagingDrawModeSceneIndex::New(sceneIndex, /* inputArgs = */ nullptr);
 #endif
-
             return MayaUsd::MayaUsdProxyShapeSceneIndex::New(
                 proxyShape, sceneIndex, usdImagingStageSceneIndex);
+#endif
         }
     }
 
