@@ -196,7 +196,7 @@ MtlxUsd_FileWriter::MtlxUsd_FileWriter(
 
     fileTextureSchema.CreateInput(TrMayaTokens->inColor, _outputDataType)
         .ConnectToSource(colorOutput);
-    fileTextureSchema.CreateInput(TrMayaTokens->uvCoord, _outputDataType);
+    fileTextureSchema.CreateInput(TrMayaTokens->uvCoord, SdfValueTypeNames->Float2);
     fileTextureSchema.CreateOutput(TrMayaTokens->outColor, _outputDataType);
 
     const MPlug uvCoordPlug = depNodeFn.findPlug(
