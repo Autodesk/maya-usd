@@ -34,6 +34,8 @@ protected:
     UsdUndoLoadUnloadBaseCommand(const PXR_NS::UsdPrim& prim, PXR_NS::UsdLoadPolicy policy);
     UsdUndoLoadUnloadBaseCommand(const PXR_NS::UsdPrim& prim);
 
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoLoadUnloadBaseCommand);
+
     void doLoad() const;
     void doUnload() const;
 

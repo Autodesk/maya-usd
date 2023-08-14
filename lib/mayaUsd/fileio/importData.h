@@ -48,13 +48,7 @@ public:
     ImportData();
     ImportData(const std::string& f);
 
-    //@{
-    //! No copy or move constructor/assignment.
-    ImportData(const ImportData&) = delete;
-    ImportData& operator=(const ImportData&) = delete;
-    ImportData(ImportData&&) = delete;
-    ImportData& operator=(ImportData&&) = delete;
-    //@}
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ImportData);
 
     //! Clears all the stored data.
     void clearData();

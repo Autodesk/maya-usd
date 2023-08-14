@@ -39,6 +39,8 @@ public:
         PXR_NS::UsdListPosition listPos,
         bool                    isPayload);
 
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoAddRefOrPayloadCommand);
+
 protected:
     static PXR_NS::UsdListPosition getListPosition(bool prepend);
 

@@ -24,12 +24,7 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-MayaUsdHierarchyHandler::MayaUsdHierarchyHandler()
-    : UsdUfe::UsdHierarchyHandler()
-{
-}
-
-MayaUsdHierarchyHandler::~MayaUsdHierarchyHandler() { }
+MAYAUSD_VERIFY_CLASS_SETUP(UsdUfe::UsdHierarchyHandler, MayaUsdHierarchyHandler);
 
 /*static*/
 MayaUsdHierarchyHandler::Ptr MayaUsdHierarchyHandler::create()

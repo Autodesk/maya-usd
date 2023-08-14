@@ -93,6 +93,10 @@ inline Ufe::Path toPath(const std::string& mayaPathString)
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+// Ensure that UsdStageMap is properly setup.
+static_assert(!std::has_virtual_destructor<UsdStageMap>::value);
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdStageMap);
+
 //------------------------------------------------------------------------------
 // Global variables
 //------------------------------------------------------------------------------

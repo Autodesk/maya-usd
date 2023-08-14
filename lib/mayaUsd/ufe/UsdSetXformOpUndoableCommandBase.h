@@ -64,6 +64,8 @@ public:
         const PXR_NS::UsdTimeCode& writeTime);
     UsdSetXformOpUndoableCommandBase(const Ufe::Path& path, const PXR_NS::UsdTimeCode& writeTime);
 
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdSetXformOpUndoableCommandBase);
+
     // Ufe::UndoableCommand overrides.
     void execute() override;
     void undo() override;

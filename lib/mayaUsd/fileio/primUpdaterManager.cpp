@@ -955,6 +955,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(PrimUpdaterManager);
 
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(PrimUpdaterManager);
+
 PrimUpdaterManager::PrimUpdaterManager()
 #ifdef HAS_ORPHANED_NODES_MANAGER
     : _orphanedNodesManager(std::make_shared<OrphanedNodesManager>())

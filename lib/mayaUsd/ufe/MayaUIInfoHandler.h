@@ -30,14 +30,9 @@ class MAYAUSD_CORE_PUBLIC MayaUIInfoHandler : public Ufe::UIInfoHandler
 public:
     typedef std::shared_ptr<MayaUIInfoHandler> Ptr;
 
-    MayaUIInfoHandler();
-    ~MayaUIInfoHandler() override;
+    MayaUIInfoHandler() = default;
 
-    // Delete the copy/move constructors assignment operators.
-    MayaUIInfoHandler(const MayaUIInfoHandler&) = delete;
-    MayaUIInfoHandler& operator=(const MayaUIInfoHandler&) = delete;
-    MayaUIInfoHandler(MayaUIInfoHandler&&) = delete;
-    MayaUIInfoHandler& operator=(MayaUIInfoHandler&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(MayaUIInfoHandler);
 
     //! Create a MayaUIInfoHandler.
     static MayaUIInfoHandler::Ptr create();

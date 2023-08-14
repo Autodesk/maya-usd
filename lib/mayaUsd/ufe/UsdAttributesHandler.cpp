@@ -20,12 +20,7 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdAttributesHandler::UsdAttributesHandler()
-    : Ufe::AttributesHandler()
-{
-}
-
-UsdAttributesHandler::~UsdAttributesHandler() { }
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::AttributesHandler, UsdAttributesHandler);
 
 /*static*/
 UsdAttributesHandler::Ptr UsdAttributesHandler::create()

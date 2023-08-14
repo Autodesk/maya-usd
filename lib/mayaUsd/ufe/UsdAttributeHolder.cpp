@@ -106,6 +106,9 @@ namespace ufe {
 // UsdAttributeHolder:
 //------------------------------------------------------------------------------
 
+// Ensure that UsdAttributeHolder is properly setup.
+static_assert(std::has_virtual_destructor<UsdAttributeHolder>::value);
+
 UsdAttributeHolder::UsdAttributeHolder(const PXR_NS::UsdAttribute& usdAttr)
     : _usdAttr(usdAttr)
 {

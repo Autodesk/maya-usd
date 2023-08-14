@@ -18,12 +18,7 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdSceneItemOpsHandler::UsdSceneItemOpsHandler()
-    : Ufe::SceneItemOpsHandler()
-{
-}
-
-UsdSceneItemOpsHandler::~UsdSceneItemOpsHandler() { }
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::SceneItemOpsHandler, UsdSceneItemOpsHandler);
 
 /*static*/
 UsdSceneItemOpsHandler::Ptr UsdSceneItemOpsHandler::create()

@@ -32,6 +32,13 @@ MayaUsd::ufe::UsdPointInstanceScaleModifier::Batches sBatches;
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+// Ensure that UsdPointInstanceScaleModifier is properly setup.
+static_assert(std::is_base_of<
+              UsdPointInstanceModifierBase<Ufe::Vector3d, PXR_NS::GfVec3f>,
+              UsdPointInstanceScaleModifier>::value);
+static_assert(std::has_virtual_destructor<UsdPointInstanceScaleModifier>::value);
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdPointInstanceScaleModifier);
+
 /* override */
 UsdAttribute UsdPointInstanceScaleModifier::_getAttribute() const
 {

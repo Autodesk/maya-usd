@@ -119,13 +119,13 @@ UsdPrimSiblingRange getUSDFilteredChildren(
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(Ufe::Hierarchy, UsdHierarchy);
+
 UsdHierarchy::UsdHierarchy(const UsdSceneItem::Ptr& item)
     : Ufe::Hierarchy()
     , fItem(item)
 {
 }
-
-UsdHierarchy::~UsdHierarchy() { }
 
 /*static*/
 UsdHierarchy::Ptr UsdHierarchy::create(const UsdSceneItem::Ptr& item)

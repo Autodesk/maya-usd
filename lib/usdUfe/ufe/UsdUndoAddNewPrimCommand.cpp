@@ -42,6 +42,13 @@ Ufe::Path appendToPath(const Ufe::Path& path, const std::string& name)
 
 namespace USDUFE_NS_DEF {
 
+// Ensure that UsdUndoAddNewPrimCommand is properly setup.
+#ifdef UFE_V4_FEATURES_AVAILABLE
+USDUFE_VERIFY_CLASS_SETUP(Ufe::SceneItemResultUndoableCommand, UsdUndoAddNewPrimCommand);
+#else
+USDUFE_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdUndoAddNewPrimCommand);
+#endif
+
 UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(
     const UsdSceneItem::Ptr& usdSceneItem,
     const std::string&       name,

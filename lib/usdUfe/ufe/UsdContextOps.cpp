@@ -241,6 +241,8 @@ getConcretePrimTypes(bool sorted, const UsdContextOps::SchemaNameMap& schemaPlug
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(Ufe::ContextOps, UsdContextOps);
+
 std::vector<SchemaTypeGroup> UsdContextOps::schemaTypeGroups = {};
 
 UsdContextOps::UsdContextOps(const UsdSceneItem::Ptr& item)
@@ -248,8 +250,6 @@ UsdContextOps::UsdContextOps(const UsdSceneItem::Ptr& item)
 {
     setItem(item);
 }
-
-UsdContextOps::~UsdContextOps() { }
 
 /*static*/
 UsdContextOps::Ptr UsdContextOps::create(const UsdSceneItem::Ptr& item)

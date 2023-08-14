@@ -46,6 +46,8 @@ public:
         const std::string&     key,
         const Ufe::Value&      value);
 
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(SetSceneItemMetadataCommand);
+
     void executeImplementation() override;
 
 private:

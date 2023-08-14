@@ -38,6 +38,10 @@ namespace ufe {
 // UsdShaderAttributeHolder:
 //------------------------------------------------------------------------------
 
+// Ensure that UsdShaderAttributeHolder is properly setup.
+static_assert(std::is_base_of<UsdAttributeHolder, UsdShaderAttributeHolder>::value);
+static_assert(std::has_virtual_destructor<UsdShaderAttributeHolder>::value);
+
 UsdShaderAttributeHolder::UsdShaderAttributeHolder(
     PXR_NS::UsdPrim                   usdPrim,
     PXR_NS::SdrShaderPropertyConstPtr sdrProp,

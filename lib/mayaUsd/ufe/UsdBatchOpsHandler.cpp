@@ -20,9 +20,12 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdBatchOpsHandler::UsdBatchOpsHandler() { }
-
-UsdBatchOpsHandler::~UsdBatchOpsHandler() { }
+// Ensure that UsdBatchOpsHandler is properly setup.
+#ifdef UFE_PREVIEW_CODE_WRAPPER_HANDLER_SUPPORT
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::CodeWrapperHandler, UsdBatchOpsHandler);
+#else
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::BatchOpsHandler, UsdBatchOpsHandler);
+#endif
 
 /*static*/
 UsdBatchOpsHandler::Ptr UsdBatchOpsHandler::create()

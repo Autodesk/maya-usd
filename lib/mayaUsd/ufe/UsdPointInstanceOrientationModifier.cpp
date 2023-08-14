@@ -40,6 +40,13 @@ MayaUsd::ufe::UsdPointInstanceOrientationModifier::Batches sBatches;
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+// Ensure that UsdPointInstanceOrientationModifier is properly setup.
+static_assert(std::is_base_of<
+              UsdPointInstanceModifierBase<Ufe::Vector3d, PXR_NS::GfQuath>,
+              UsdPointInstanceOrientationModifier>::value);
+static_assert(std::has_virtual_destructor<UsdPointInstanceOrientationModifier>::value);
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdPointInstanceOrientationModifier);
+
 /* override */
 GfQuath UsdPointInstanceOrientationModifier::convertValueToUsd(const Ufe::Vector3d& ufeValue) const
 {

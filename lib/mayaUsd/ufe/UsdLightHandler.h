@@ -28,14 +28,9 @@ class MAYAUSD_CORE_PUBLIC UsdLightHandler : public Ufe::LightHandler
 public:
     typedef std::shared_ptr<UsdLightHandler> Ptr;
 
-    UsdLightHandler();
-    ~UsdLightHandler();
+    UsdLightHandler() = default;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdLightHandler(const UsdLightHandler&) = delete;
-    UsdLightHandler& operator=(const UsdLightHandler&) = delete;
-    UsdLightHandler(UsdLightHandler&&) = delete;
-    UsdLightHandler& operator=(UsdLightHandler&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdLightHandler);
 
     //! Create a UsdLightHandler.
     static UsdLightHandler::Ptr create();

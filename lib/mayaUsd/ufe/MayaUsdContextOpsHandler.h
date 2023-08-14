@@ -28,14 +28,7 @@ class MAYAUSD_CORE_PUBLIC MayaUsdContextOpsHandler : public UsdUfe::UsdContextOp
 public:
     typedef std::shared_ptr<MayaUsdContextOpsHandler> Ptr;
 
-    MayaUsdContextOpsHandler();
-    ~MayaUsdContextOpsHandler() override;
-
-    // Delete the copy/move constructors assignment operators.
-    MayaUsdContextOpsHandler(const MayaUsdContextOpsHandler&) = delete;
-    MayaUsdContextOpsHandler& operator=(const MayaUsdContextOpsHandler&) = delete;
-    MayaUsdContextOpsHandler(MayaUsdContextOpsHandler&&) = delete;
-    MayaUsdContextOpsHandler& operator=(MayaUsdContextOpsHandler&&) = delete;
+    MayaUsdContextOpsHandler() = default;
 
     //! Create a MayaUsdContextOpsHandler.
     static MayaUsdContextOpsHandler::Ptr create();

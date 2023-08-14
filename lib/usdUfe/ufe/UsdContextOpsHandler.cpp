@@ -17,12 +17,7 @@
 
 namespace USDUFE_NS_DEF {
 
-UsdContextOpsHandler::UsdContextOpsHandler()
-    : Ufe::ContextOpsHandler()
-{
-}
-
-UsdContextOpsHandler::~UsdContextOpsHandler() { }
+USDUFE_VERIFY_CLASS_SETUP(Ufe::ContextOpsHandler, UsdContextOpsHandler);
 
 /*static*/
 UsdContextOpsHandler::Ptr UsdContextOpsHandler::create()

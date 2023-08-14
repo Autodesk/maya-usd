@@ -41,8 +41,6 @@ public:
     {
     }
 
-    ~UsdPointInstancePositionModifier() override = default;
-
     PXR_NS::GfVec3f convertValueToUsd(const Ufe::Vector3d& ufeValue) const override
     {
         return PXR_NS::GfVec3f(ufeValue.x(), ufeValue.y(), ufeValue.z());

@@ -97,7 +97,6 @@ public:
         const Ufe::Transform3d::Ptr& wrapped,
         const PXR_NS::GfMatrix4d&    mlInv,
         const PXR_NS::GfMatrix4d&    mrInv);
-    ~UsdTransform3dSetObjectMatrix() override = default;
 
     //! Create a UsdTransform3dSetObjectMatrix.
     static UsdTransform3dSetObjectMatrix::Ptr create(

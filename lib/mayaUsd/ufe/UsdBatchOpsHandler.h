@@ -42,14 +42,9 @@ class MAYAUSD_CORE_PUBLIC UsdBatchOpsHandler : public Ufe::BatchOpsHandler
 public:
     typedef std::shared_ptr<UsdBatchOpsHandler> Ptr;
 
-    UsdBatchOpsHandler();
-    ~UsdBatchOpsHandler() override;
+    UsdBatchOpsHandler() = default;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdBatchOpsHandler(const UsdBatchOpsHandler&) = delete;
-    UsdBatchOpsHandler& operator=(const UsdBatchOpsHandler&) = delete;
-    UsdBatchOpsHandler(UsdBatchOpsHandler&&) = delete;
-    UsdBatchOpsHandler& operator=(UsdBatchOpsHandler&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdBatchOpsHandler);
 
     //! Create a UsdBatchOpsHandler.
     static UsdBatchOpsHandler::Ptr create();

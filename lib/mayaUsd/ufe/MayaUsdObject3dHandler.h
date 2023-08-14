@@ -30,14 +30,7 @@ class MAYAUSD_CORE_PUBLIC MayaUsdObject3dHandler : public UsdUfe::UsdObject3dHan
 public:
     typedef std::shared_ptr<MayaUsdObject3dHandler> Ptr;
 
-    MayaUsdObject3dHandler();
-    ~MayaUsdObject3dHandler() override;
-
-    // Delete the copy/move constructors assignment operators.
-    MayaUsdObject3dHandler(const MayaUsdObject3dHandler&) = delete;
-    MayaUsdObject3dHandler& operator=(const MayaUsdObject3dHandler&) = delete;
-    MayaUsdObject3dHandler(MayaUsdObject3dHandler&&) = delete;
-    MayaUsdObject3dHandler& operator=(MayaUsdObject3dHandler&&) = delete;
+    MayaUsdObject3dHandler() = default;
 
     //! Create a MayaUsdObject3dHandler.
     static MayaUsdObject3dHandler::Ptr create();

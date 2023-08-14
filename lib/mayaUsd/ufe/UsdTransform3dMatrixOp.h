@@ -48,7 +48,6 @@ public:
     typedef std::shared_ptr<UsdTransform3dMatrixOp> Ptr;
 
     UsdTransform3dMatrixOp(const UsdSceneItem::Ptr& item, const PXR_NS::UsdGeomXformOp& op);
-    ~UsdTransform3dMatrixOp() override = default;
 
     //! Create a UsdTransform3dMatrixOp.
     static UsdTransform3dMatrixOp::Ptr

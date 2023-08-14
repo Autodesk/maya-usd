@@ -19,6 +19,8 @@
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdUndoBlock);
+
 uint32_t UsdUndoBlock::_undoBlockDepth { 0 };
 
 UsdUndoBlock::UsdUndoBlock(UsdUndoableItem* undoItem)

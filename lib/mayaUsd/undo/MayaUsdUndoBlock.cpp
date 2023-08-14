@@ -26,6 +26,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
 
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(MayaUsdUndoBlock);
+
 const MString MayaUsdUndoBlockCmd::commandName { "undoBlockCmd" };
 
 UsdUfe::UsdUndoableItem MayaUsdUndoBlockCmd::argUndoItem;

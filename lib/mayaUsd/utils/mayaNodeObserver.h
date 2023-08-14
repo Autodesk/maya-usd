@@ -58,6 +58,8 @@ public:
     MAYAUSD_CORE_PUBLIC
     ~MayaNodeObserver();
 
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(MayaNodeObserver);
+
     //! Start observing the given node. Ends observing any previous observed node.
     MAYAUSD_CORE_PUBLIC
     void startObserving(const MObject& observedNode);
@@ -86,9 +88,6 @@ public:
     static void removeCallbackId(MCallbackId& callbackId);
 
 private:
-    MayaNodeObserver(const MayaNodeObserver&) = delete;
-    MayaNodeObserver& operator=(const MayaNodeObserver&) = delete;
-
     void updateRenameCallback();
     void removeRenameCallback();
 

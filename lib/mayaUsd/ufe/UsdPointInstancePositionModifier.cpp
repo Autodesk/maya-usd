@@ -32,6 +32,13 @@ MayaUsd::ufe::UsdPointInstancePositionModifier::Batches sBatches;
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+// Ensure that UsdPointInstancePositionModifier is properly setup.
+static_assert(std::is_base_of<
+              UsdPointInstanceModifierBase<Ufe::Vector3d, PXR_NS::GfVec3f>,
+              UsdPointInstancePositionModifier>::value);
+static_assert(std::has_virtual_destructor<UsdPointInstancePositionModifier>::value);
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdPointInstancePositionModifier);
+
 /* override */
 UsdAttribute UsdPointInstancePositionModifier::_getAttribute() const
 {

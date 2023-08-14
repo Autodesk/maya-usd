@@ -25,13 +25,8 @@ public:
     typedef std::shared_ptr<UsdUINodeGraphNodeHandler> Ptr;
 
     UsdUINodeGraphNodeHandler() = default;
-    ~UsdUINodeGraphNodeHandler() override = default;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUINodeGraphNodeHandler(const UsdUINodeGraphNodeHandler&) = delete;
-    UsdUINodeGraphNodeHandler& operator=(const UsdUINodeGraphNodeHandler&) = delete;
-    UsdUINodeGraphNodeHandler(UsdUINodeGraphNodeHandler&&) = delete;
-    UsdUINodeGraphNodeHandler& operator=(UsdUINodeGraphNodeHandler&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUINodeGraphNodeHandler);
 
     //! Create a UsdUINodeGraphNodeHandler.
     static UsdUINodeGraphNodeHandler::Ptr create();

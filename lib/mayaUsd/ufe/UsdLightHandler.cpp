@@ -24,12 +24,7 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdLightHandler::UsdLightHandler()
-    : Ufe::LightHandler()
-{
-}
-
-UsdLightHandler::~UsdLightHandler() { }
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::LightHandler, UsdLightHandler);
 
 UsdLightHandler::Ptr UsdLightHandler::create() { return std::make_shared<UsdLightHandler>(); }
 

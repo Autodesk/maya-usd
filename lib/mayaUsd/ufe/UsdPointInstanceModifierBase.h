@@ -89,6 +89,8 @@ public:
 
     virtual ~UsdPointInstanceModifierBase() = default;
 
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdPointInstanceModifierBase);
+
     bool setSceneItem(const UsdSceneItem::Ptr& sceneItem)
     {
         _prim = PXR_NS::UsdPrim();
@@ -266,7 +268,7 @@ protected:
 
     PXR_NS::UsdAttribute _getOrCreateAttribute()
     {
-        // XXX: Needed for Tf error message macros.
+        // Needed for Tf error message macros.
         PXR_NAMESPACE_USING_DIRECTIVE
 
         // Get the size of the prototype indices array. If we need to create

@@ -36,12 +36,6 @@ public:
     MayaUsdUIInfoHandler();
     ~MayaUsdUIInfoHandler() override;
 
-    // Delete the copy/move constructors assignment operators.
-    MayaUsdUIInfoHandler(const MayaUsdUIInfoHandler&) = delete;
-    MayaUsdUIInfoHandler& operator=(const MayaUsdUIInfoHandler&) = delete;
-    MayaUsdUIInfoHandler(MayaUsdUIInfoHandler&&) = delete;
-    MayaUsdUIInfoHandler& operator=(MayaUsdUIInfoHandler&&) = delete;
-
     //! Create a MayaUsdUIInfoHandler.
     static MayaUsdUIInfoHandler::Ptr create();
 

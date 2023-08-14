@@ -70,6 +70,8 @@ void addMetadataCount(
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(Ufe::UIInfoHandler, UsdUIInfoHandler);
+
 UsdUIInfoHandler::UsdUIInfoHandler()
     : Ufe::UIInfoHandler()
 {
@@ -78,8 +80,6 @@ UsdUIInfoHandler::UsdUIInfoHandler()
     fInvisibleColor[1] = -1.;
     fInvisibleColor[2] = -1.;
 }
-
-UsdUIInfoHandler::~UsdUIInfoHandler() { }
 
 /*static*/
 UsdUIInfoHandler::Ptr UsdUIInfoHandler::create() { return std::make_shared<UsdUIInfoHandler>(); }

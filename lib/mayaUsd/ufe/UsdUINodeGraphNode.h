@@ -34,12 +34,8 @@ public:
     typedef std::shared_ptr<UsdUINodeGraphNode> Ptr;
 
     UsdUINodeGraphNode(const UsdSceneItem::Ptr& item);
-    ~UsdUINodeGraphNode() override = default;
 
-    UsdUINodeGraphNode(const UsdUINodeGraphNode&) = delete;
-    UsdUINodeGraphNode& operator=(const UsdUINodeGraphNode&) = delete;
-    UsdUINodeGraphNode(UsdUINodeGraphNode&&) = delete;
-    UsdUINodeGraphNode& operator=(UsdUINodeGraphNode&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUINodeGraphNode);
 
     //! Create a UsdUINodeGraphNode.
     static UsdUINodeGraphNode::Ptr create(const UsdSceneItem::Ptr& item);

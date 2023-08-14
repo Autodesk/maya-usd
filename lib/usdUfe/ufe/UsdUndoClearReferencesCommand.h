@@ -31,6 +31,8 @@ class USDUFE_PUBLIC UsdUndoClearReferencesCommand : public UsdUndoableCommand<Uf
 public:
     UsdUndoClearReferencesCommand(const PXR_NS::UsdPrim& prim);
 
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoClearReferencesCommand);
+
 protected:
     void executeImplementation() override;
 
