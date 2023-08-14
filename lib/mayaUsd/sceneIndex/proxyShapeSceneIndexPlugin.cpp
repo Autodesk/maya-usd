@@ -207,9 +207,9 @@ namespace MAYAUSD_NS_DEF {
 ///////////////////////// MayaUsdProxyShapeSceneIndex
 
 MayaUsdProxyShapeSceneIndex::MayaUsdProxyShapeSceneIndex(
-    HdSceneIndexBaseRefPtr inputSceneIndex,
+    HdSceneIndexBaseRefPtr          inputSceneIndex,
     UsdImagingStageSceneIndexRefPtr usdImagingStageSceneIndex,
-    MayaUsdProxyShapeBase* proxyShape)
+    MayaUsdProxyShapeBase*          proxyShape)
     : ParentClass(inputSceneIndex)
     , _usdImagingStageSceneIndex(usdImagingStageSceneIndex)
     , _proxyShape(proxyShape)
@@ -222,8 +222,8 @@ MayaUsdProxyShapeSceneIndex::MayaUsdProxyShapeSceneIndex(
 MayaUsdProxyShapeSceneIndex::~MayaUsdProxyShapeSceneIndex() { }
 
 MayaUsdProxyShapeSceneIndexRefPtr MayaUsdProxyShapeSceneIndex::New(
-    MayaUsdProxyShapeBase* proxyShape,
-    const HdSceneIndexBaseRefPtr& sceneIndexChainLastElement,
+    MayaUsdProxyShapeBase*                 proxyShape,
+    const HdSceneIndexBaseRefPtr&          sceneIndexChainLastElement,
     const UsdImagingStageSceneIndexRefPtr& usdImagingStageSceneIndex)
 {
     // Create the proxy shape scene index which populates the stage
@@ -233,11 +233,11 @@ MayaUsdProxyShapeSceneIndexRefPtr MayaUsdProxyShapeSceneIndex::New(
 
 Ufe::Path MayaUsdProxyShapeSceneIndex::InterpretRprimPath(
     const HdSceneIndexBaseRefPtr& sceneIndex,
-    const SdfPath& path)
+    const SdfPath&                path)
 {
     if (MayaUsdProxyShapeSceneIndexRefPtr proxyShapeSceneIndex
         = TfStatic_cast<MayaUsdProxyShapeSceneIndexRefPtr>(sceneIndex)) {
-        MStatus status;
+        MStatus  status;
         MDagPath dagPath(
             MDagPath::getAPathTo(proxyShapeSceneIndex->_proxyShape->thisMObject(), &status));
         return Ufe::Path(
@@ -301,21 +301,21 @@ SdfPathVector MayaUsdProxyShapeSceneIndex::GetChildPrimPaths(const SdfPath& prim
 }
 
 void MayaUsdProxyShapeSceneIndex::_PrimsAdded(
-    const HdSceneIndexBase& sender,
+    const HdSceneIndexBase&                       sender,
     const HdSceneIndexObserver::AddedPrimEntries& entries)
 {
     _SendPrimsAdded(entries);
 }
 
 void MayaUsdProxyShapeSceneIndex::_PrimsRemoved(
-    const HdSceneIndexBase& sender,
+    const HdSceneIndexBase&                         sender,
     const HdSceneIndexObserver::RemovedPrimEntries& entries)
 {
     _SendPrimsRemoved(entries);
 }
 
 void MayaUsdProxyShapeSceneIndex::_PrimsDirtied(
-    const HdSceneIndexBase& sender,
+    const HdSceneIndexBase&                         sender,
     const HdSceneIndexObserver::DirtiedPrimEntries& entries)
 {
     _SendPrimsDirtied(entries);
