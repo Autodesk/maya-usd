@@ -170,7 +170,7 @@ class ImageCustomControl(object):
 
     @staticmethod
     def wantRelativeFileName():
-        opVarName = "mayaUsd_MakePathRelativeToEditTargetLayer"
+        opVarName = "mayaUsd_MakePathRelativeToImageEditTargetLayer"
         return cmds.optionVar(exists=opVarName) and cmds.optionVar(query=opVarName)
 
     @staticmethod
