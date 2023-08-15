@@ -448,12 +448,11 @@ void StagesSubject::stageChanged(
                 const std::vector<const SdfChangeList::Entry*>& entries = it.base()->second;
                 bool                                            sentNotif { false };
                 for (const auto& entry : entries) {
-                    if (entry->flags.didAddInertPrim || entry->flags.didAddNonInertPrim) {
+                    if (entry->flags.didAddNonInertPrim) {
                         sendObjectAdd(sceneItem);
                         sentNotif = true;
                         break;
-                    } else if (
-                        entry->flags.didRemoveInertPrim || entry->flags.didRemoveNonInertPrim) {
+                    } else if (entry->flags.didRemoveNonInertPrim) {
                         sendObjectPostDelete(sceneItem);
                         sentNotif = true;
                         break;
