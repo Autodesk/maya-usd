@@ -891,9 +891,9 @@ void HdVP2Mesh::Sync(
 
         auto addRequiredPrimvars = [&](const SdfPath& materialId) {
             TfTokenVector requiredPrimvars;
-            // Only load textures when texture mode is selected
             if (!_GetMaterialPrimvars(renderIndex, materialId, requiredPrimvars)
                 || !(reprToken == HdReprTokens->smoothHull)) {
+                // debug
                 requiredPrimvars = sFallbackShaderPrimvars;
             }
 
@@ -1747,13 +1747,14 @@ void HdVP2Mesh::_UpdateDrawItem(
             const HdVP2Material* material = static_cast<const HdVP2Material*>(
                 renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
 
+            //if (material && (reprToken == HdReprTokens->smoothHull)) {
             if (material) {
                 const HdCullStyle           cullStyle = GetCullStyle(sceneDelegate);
                 MHWRender::MShaderInstance* shader = material->GetSurfaceShader(
                     _GetMaterialNetworkToken(reprToken), cullStyle == HdCullStyleBack);
 
                 // If untextured mode is selected, check if the material has base color
-                if (reprToken == HdVP2ReprTokens->smoothHullUntextured) {
+                if (reprToken == HdVP2ReprTokens->smoothHullUntextured){
                     MStringArray parameters;
                     shader->parameterList(parameters);
                     const bool hasColor = parameters.indexOf("base_color") != -1
@@ -1762,8 +1763,8 @@ void HdVP2Mesh::_UpdateDrawItem(
                     // if not, use the fallback shader, which will use the display color
                     if (!hasColor)
                         drawItemData._shaderIsFallback = true;
-                } else if (
-                    shader != nullptr
+                }
+                else if (shader != nullptr
                     && (shader != drawItemData._shader || shader != stateToCommit._shader)) {
                     drawItemData._shader = shader;
                     drawItemData._shaderIsFallback = false;
