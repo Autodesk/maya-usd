@@ -58,15 +58,9 @@ void UsdUndoCreateFromNodeDefCommand::execute()
     setIdAttr();
 }
 
-void UsdUndoCreateFromNodeDefCommand::undo()
-{
-    _undoableItem.undo();
-}
+void UsdUndoCreateFromNodeDefCommand::undo() { _undoableItem.undo(); }
 
-void UsdUndoCreateFromNodeDefCommand::redo()
-{
-    _undoableItem.redo();
-}
+void UsdUndoCreateFromNodeDefCommand::redo() { _undoableItem.redo(); }
 
 void UsdUndoCreateFromNodeDefCommand::setIdAttr()
 {

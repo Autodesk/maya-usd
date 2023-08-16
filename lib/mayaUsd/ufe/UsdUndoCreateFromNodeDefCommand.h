@@ -19,7 +19,6 @@
 
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>
-
 #include <usdUfe/undo/UsdUndoableItem.h>
 
 #include <pxr/usd/sdr/shaderNode.h>
