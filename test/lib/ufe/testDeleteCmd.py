@@ -394,10 +394,10 @@ class DeleteCmdTestCase(unittest.TestCase):
         stage.DefinePrim('/TreeBase/newChild', 'Xform')
         stage.SetEditTarget(stage.GetRootLayer())
         
-        # delete two USD prims and Maya's shape
+        # Delete the /TreeBase prim, at the usd root.
         ufeObs.reset()
         cmds.delete('|Tree_usd|Tree_usdShape,/TreeBase')
-        self.assertEqual(ufeObs.nbDeleteNotif() , 2)
+        self.assertEqual(ufeObs.nbDeleteNotif() , 1)
         self.assertFalse(stage.GetPrimAtPath('/TreeBase'))
         self.assertFalse(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
         self.assertFalse(stage.GetPrimAtPath('/TreeBase/trunk'))
