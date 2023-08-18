@@ -891,7 +891,13 @@ void HdVP2Mesh::Sync(
 
         auto addRequiredPrimvars = [&](const SdfPath& materialId) {
             TfTokenVector requiredPrimvars;
-            if (!_GetMaterialPrimvars(renderIndex, materialId, requiredPrimvars)) {
+            if (!_GetMaterialPrimvars(renderIndex, materialId, requiredPrimvars)
+                || ((reprToken == HdVP2ReprTokens->smoothHullUntextured)
+                    && (MGlobal::optionVarIntValue(
+                            MayaUsdOptionVars->ShowDisplayColorTextureOff.GetText())
+                        != 0))) {
+                // if user selected present display color in untextured mode, use fallback shader as
+                // well
                 requiredPrimvars = sFallbackShaderPrimvars;
             }
 
@@ -1746,16 +1752,27 @@ void HdVP2Mesh::_UpdateDrawItem(
                 renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
 
             if (material) {
-                const HdCullStyle           cullStyle = GetCullStyle(sceneDelegate);
-                MHWRender::MShaderInstance* shader = material->GetSurfaceShader(
-                    _GetMaterialNetworkToken(reprToken), cullStyle == HdCullStyleBack);
-                if (shader != nullptr
-                    && (shader != drawItemData._shader || shader != stateToCommit._shader)) {
-                    drawItemData._shader = shader;
-                    drawItemData._shaderIsFallback = false;
-                    stateToCommit._shader = shader;
-                    stateToCommit._isTransparent
-                        = shader->isTransparent() || renderItemData._transparent;
+                const MString optionVarName(
+                    MayaUsdOptionVars->ShowDisplayColorTextureOff.GetText());
+
+                // if untextured mode with show display color specified, use fallback shader
+                if ((reprToken == HdVP2ReprTokens->smoothHullUntextured)
+                    && (MGlobal::optionVarIntValue(
+                            MayaUsdOptionVars->ShowDisplayColorTextureOff.GetText())
+                        != 0)) {
+                    drawItemData._shaderIsFallback = true;
+                } else {
+                    const HdCullStyle           cullStyle = GetCullStyle(sceneDelegate);
+                    MHWRender::MShaderInstance* shader = material->GetSurfaceShader(
+                        _GetMaterialNetworkToken(reprToken), cullStyle == HdCullStyleBack);
+                    if (shader != nullptr
+                        && (shader != drawItemData._shader || shader != stateToCommit._shader)) {
+                        drawItemData._shader = shader;
+                        drawItemData._shaderIsFallback = false;
+                        stateToCommit._shader = shader;
+                        stateToCommit._isTransparent
+                            = shader->isTransparent() || renderItemData._transparent;
+                    }
                 }
             } else {
                 drawItemData._shaderIsFallback = true;

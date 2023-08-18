@@ -68,7 +68,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     /* Notice that only newly opened USD stage would be affected.   */ \
     ((DisableAsyncTextureLoading, "mayaUsd_DisableAsyncTextureLoading")) \
     /* option var to remember if the stage in the layer editor is pinned. */ \
-    ((PinLayerEditorStage, "mayaUsd_PinLayerEditorStage"))
+    ((PinLayerEditorStage, "mayaUsd_PinLayerEditorStage")) \
+    /* option var to remember if use display color when texture mode off */ \
+    ((ShowDisplayColorTextureOff, "mayaUsd_ShowDisplayColorTextureOff"))
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(MayaUsdOptionVars, MAYAUSD_CORE_PUBLIC, MAYA_USD_OPTIONVAR_TOKENS);
