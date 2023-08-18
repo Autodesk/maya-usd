@@ -181,8 +181,8 @@ def imageDiff(imagePath1, imagePath2, verbose, fail, failpercent, hardfail,
 class ImageDiffingTestCase:
     '''Mixin class for unit tests that require image comparison.'''
 
-    def assertImagesClose(self, imagePath1, imagePath2, _fail, _failpercent, _hardfail,
-                    _warn, _warnpercent, _hardwarn, _perceptual):
+    def assertImagesClose(self, imagePath1, imagePath2, fail, failpercent, hardfail=None,
+                    warn=None, warnpercent=None, hardwarn=None, perceptual=False):
         """ 
         The method will return idiff's return code if the comparison passes with 
         a return code of 0 or 1. 
@@ -196,12 +196,15 @@ class ImageDiffingTestCase:
         """
         
         proc = imageDiff(imagePath1, imagePath2, verbose=True, 
-                            fail=_fail, failpercent=_failpercent, hardfail=_hardfail,
-                            warn=_warn, warnpercent=_warnpercent, hardwarn=_hardwarn, 
-                            perceptual=_perceptual)
+                            fail=fail, failpercent=failpercent, hardfail=hardfail,
+                            warn=warn, warnpercent=warnpercent, hardwarn=hardwarn, 
+                            perceptual=perceptual)
         if proc.returncode not in (0, 1):
             self.fail(str(proc.stdout))
         return proc.returncode
+    
+    def assertImagesEqual(self, imagePath1, imagePath2):
+        self.assertImagesClose(imagePath1, imagePath2, fail=None, failpercent=None)
     
     def assertSnapshotClose(self, refImage, fail, failpercent, hardfail=None, 
                 warn=None, warnpercent=None, hardwarn=None, perceptual=False):
@@ -212,9 +215,10 @@ class ImageDiffingTestCase:
         snapshot(snapImage)
         
         return self.assertImagesClose(refImage, snapImage, 
-               _fail=fail, _failpercent=failpercent, _hardfail=hardfail,
-               _warn=warn, _warnpercent=warnpercent, _hardwarn=hardwarn, 
-               _perceptual=perceptual)
+               fail=fail, failpercent=failpercent, hardfail=hardfail,
+               warn=warn, warnpercent=warnpercent, hardwarn=hardwarn, 
+               perceptual=perceptual)
         
     def assertSnapshotEqual(self, refImage):
+        '''Use of this method is discouraged, as renders can vary slightly between renderer architectures.'''
         return self.assertSnapshotClose(refImage, fail=None, failpercent=None)

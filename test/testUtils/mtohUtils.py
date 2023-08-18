@@ -133,6 +133,18 @@ class MtohTestCase(MayaHydraBaseTestCase, ImageDiffingTestCase):
                 refImage = os.path.join(self._inputDir, refImage)
         return refImage
 
+    def assertImagesClose(self, image1, image2, fail, failpercent, image1Version=None, image2Version=None, 
+                hardfail=None, warn=None, warnpercent=None, hardwarn=None, perceptual=False):
+        imagePath1 = self.resolveRefImage(image1, image1Version)
+        imagePath2 = self.resolveRefImage(image2, image2Version)
+        super(MtohTestCase, self).assertImagesClose(imagePath1, imagePath2, fail, failpercent, hardfail, 
+                            warn, warnpercent, hardwarn, perceptual)
+        
+    def assertImagesEqual(self, image1, image2, image1Version=None, image2Version=None):
+        imagePath1 = self.resolveRefImage(image1, image1Version)
+        imagePath2 = self.resolveRefImage(image2, image2Version)
+        super(MtohTestCase, self).assertImagesEqual(imagePath1, imagePath2)
+
     def assertSnapshotClose(self, refImage, fail, failpercent, imageVersion=None, hardfail=None, 
                 warn=None, warnpercent=None, hardwarn=None, perceptual=False):
         refImage = self.resolveRefImage(refImage, imageVersion)
@@ -140,5 +152,6 @@ class MtohTestCase(MayaHydraBaseTestCase, ImageDiffingTestCase):
                             warn, warnpercent, hardwarn, perceptual)
 
     def assertSnapshotEqual(self, refImage, imageVersion=None):
+        '''Use of this method is discouraged, as renders can vary slightly between renderer architectures.'''
         refImage = self.resolveRefImage(refImage, imageVersion)
         super(MtohTestCase, self).assertSnapshotEqual(refImage)

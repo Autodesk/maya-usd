@@ -1,5 +1,6 @@
 # Unit test scripts.
 set(TEST_SCRIPT_FILES
+    testImageDiffing.py
     testMtohCommand.py
 # Fail as of 22-Feb-2023.  Entered as MAYA-127898.
 #    testMtohBasicRender.py

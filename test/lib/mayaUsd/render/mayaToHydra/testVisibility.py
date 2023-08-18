@@ -7,6 +7,9 @@ import mtohUtils
 class TestVisibility(mtohUtils.MtohTestCase):
     _file = __file__
 
+    IMAGEDIFF_FAIL_THRESHOLD = 0.01
+    IMAGEDIFF_FAIL_PERCENT = 0.1
+
     def setUp(self):
         self.makeCubeScene(camDist=6)
         self.assertTrue(cmds.getAttr("{}.visibility".format(self.cubeTrans)))
@@ -27,7 +30,8 @@ class TestVisibility(mtohUtils.MtohTestCase):
         self.assertIn(
             self.cubeRprim,
             self.getVisibleIndex())
-        self.assertSnapshotEqual(cubeUnselectedImg, self.imageVersion)
+        self.assertSnapshotClose(cubeUnselectedImg, self.IMAGEDIFF_FAIL_THRESHOLD, self.IMAGEDIFF_FAIL_PERCENT, 
+                                 imageVersion=self.imageVersion)
 
         cmds.setAttr("{}.visibility".format(self.cubeTrans), False)
         self.assertFalse(cmds.getAttr("{}.visibility".format(self.cubeTrans)))
@@ -35,14 +39,15 @@ class TestVisibility(mtohUtils.MtohTestCase):
         self.assertNotIn(
             self.cubeRprim,
             self.getVisibleIndex())
-        self.assertSnapshotEqual(nothingImg)
+        self.assertSnapshotClose(nothingImg, self.IMAGEDIFF_FAIL_THRESHOLD, self.IMAGEDIFF_FAIL_PERCENT)
         cmds.setAttr("{}.visibility".format(self.cubeTrans), True)
         self.assertTrue(cmds.getAttr("{}.visibility".format(self.cubeTrans)))
         cmds.refresh()
         self.assertIn(
             self.cubeRprim,
             self.getVisibleIndex())
-        self.assertSnapshotEqual(cubeUnselectedImg, self.imageVersion)
+        self.assertSnapshotClose(cubeUnselectedImg, self.IMAGEDIFF_FAIL_THRESHOLD, self.IMAGEDIFF_FAIL_PERCENT, 
+                                 imageVersion=self.imageVersion)
 
     def test_toggleShapeVis(self):
         cmds.setAttr("{}.visibility".format(self.cubeShape), False)
