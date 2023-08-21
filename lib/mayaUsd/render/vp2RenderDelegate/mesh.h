@@ -21,7 +21,6 @@
 #include "meshViewportCompute.h"
 #include "primvarInfo.h"
 
-#include <mayaUsd/base/tokens.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 
 #include <pxr/imaging/hd/mesh.h>

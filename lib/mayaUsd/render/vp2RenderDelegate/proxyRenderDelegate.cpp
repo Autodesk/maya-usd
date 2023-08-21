@@ -661,6 +661,13 @@ void ProxyRenderDelegate::_InitRenderDelegate()
 {
     TF_VERIFY(_proxyShapeData->ProxyShape());
 
+    // Initialize the optionVar ShowDisplayColorTextureOff, which will decide if display color will
+    // be used when untextured mode is selected
+    const MString optionVarName(MayaUsdOptionVars->ShowDisplayColorTextureOff.GetText());
+    if (!MGlobal::optionVarExists(optionVarName)) {
+        MGlobal::setOptionVarValue(optionVarName, 0);
+    }
+
     // No need to run all the checks if we got till the end
     if (_isInitialized())
         return;

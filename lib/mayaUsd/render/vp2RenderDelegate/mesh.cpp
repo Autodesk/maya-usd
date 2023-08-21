@@ -22,6 +22,7 @@
 #include "render_delegate.h"
 #include "tokens.h"
 
+#include <mayaUsd/base/tokens.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 #include <mayaUsd/utils/colorSpace.h>
 
