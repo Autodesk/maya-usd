@@ -452,11 +452,19 @@ void StagesSubject::stageChanged(
                         sendObjectAdd(sceneItem);
                         sentNotif = true;
                         break;
-                    } else if (
+                    }
+                    // Note : Do nothing here with didRemoveInertPrim and didRemoveNonInertPrim.
+                    // Indeed, we can get these if prim specs are removed from some layers, but it
+                    // does not mean that the prim is no longer in the composed stage. If the prim
+                    // was actually gone, we would either get an invalid prim (in which case we
+                    // would not even get here, and would send a object destroyed" notif in the else
+                    // below), or we would fall into the "HasInfoChange : Active" case below. If
+                    // nothing else sends a notif in the loop (typically via the info change :
+                    // active) we do not want to send the fallback notif, so act as if a notif was
+                    // sent.
+                    else if (
                         entry->flags.didRemoveInertPrim || entry->flags.didRemoveNonInertPrim) {
-                        sendObjectPostDelete(sceneItem);
                         sentNotif = true;
-                        break;
                     }
 
                     // Special case for "active" metadata.
