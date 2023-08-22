@@ -19,8 +19,13 @@
 import fixturesUtils
 
 from maya import standalone
+from maya import cmds
+import mayaUtils
 
+from pxr import Usd
 import ufe
+
+from mayaUsd import lib as mayaUsdLib
 
 import os
 import sys
@@ -58,10 +63,15 @@ class TestObserver(ufe.Observer):
         return [self.add, self.delete, self.pathChange, self.subtreeInvalidate, self.composite]
 
 class UFEObservableSceneTest(unittest.TestCase):
-
+    
+    pluginsLoaded = False
+    
     @classmethod
     def setUpClass(cls):
         fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+        
+        if not cls.pluginsLoaded:
+            cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
 
     @classmethod
     def tearDownClass(cls):
@@ -120,6 +130,40 @@ class UFEObservableSceneTest(unittest.TestCase):
         #     ufe.Scene.notify(ufe.ObjectAdd(itemB))
         #     ufe.Scene.notify(ufe.ObjectAdd(itemC))
 
+    def testInertPrimAddRemoveNotifications(self):
+        
+        cmds.file(new=True, force=True)
+        
+        usdFilePath = cmds.internalVar(utd=1) + '/testInertPrimAddRemove.usda'
+        stage = Usd.Stage.CreateNew(usdFilePath)
+        
+        fooPath = '/foo'
+        stage.DefinePrim(fooPath, 'Xform')
+        
+        # Save out the file, and bring it back into Maya under a proxy shape.
+        stage.GetRootLayer().Save()
+        proxyShape = cmds.createNode('mayaUsdProxyShape')
+        cmds.setAttr('mayaUsdProxyShape1.filePath', usdFilePath, type='string')
+
+        stage = mayaUsdLib.GetPrim(proxyShape).GetStage()
+
+        # Work on the session layer, to easily clear changes.
+        sessionLayer = stage.GetSessionLayer()        
+        stage.SetEditTarget(sessionLayer)
+        
+        snObs = TestObserver()
+        ufe.Scene.addObserver(snObs)
+                
+        # Deactivate the prim...expect object delete notif.
+        fooPrim = stage.GetPrimAtPath(fooPath)
+        fooPrim.SetActive(False)
+        self.checkNotifications(snObs, [0,1,0,0,0,0])
+        
+        # Clear session layer, expect an object added notif, as the inactive
+        # state was cleared from the session layer.
+        sessionLayer.Clear()
+        self.checkNotifications(snObs, [1,1,0,0,0,0])
+        
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -148,7 +148,12 @@ UsdUndoAddNewPrimCommand::Ptr UsdUndoAddNewPrimCommand::create(
 Ufe::Selection getNewSelectionFromCommand(const UsdUndoAddNewPrimCommand& cmd)
 {
     Ufe::Selection newSelection;
-    newSelection.append(Ufe::Hierarchy::createItem(cmd.newUfePath()));
+    const auto     newItem = Ufe::Hierarchy::createItem(cmd.newUfePath());
+    // The add operation may have failed (for example, if attempting to edit instance proxies).
+    // Appending a null item throws an exception, which we dont want in this case.
+    if (newItem) {
+        newSelection.append(Ufe::Hierarchy::createItem(cmd.newUfePath()));
+    }
     return newSelection;
 }
 

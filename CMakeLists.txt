@@ -34,7 +34,7 @@ if(APPLE)
     option(BUILD_UB2 "Build Universal Binary 2 (UB2) Intel64+arm64" OFF)
 endif()
 set(BUILD_WITH_PYTHON_3_VERSION 3.7 CACHE STRING "The version of Python 3 to build with")
-option(CMAKE_WANT_MATERIALX_BUILD "Enable building with MaterialX (experimental)." OFF)
+option(CMAKE_WANT_MATERIALX_BUILD "Enable building with MaterialX." ON)
 option(CMAKE_WANT_VALIDATE_UNDO_ITEM "Enable validating undo items list." OFF)
 
 option(BUILD_WITH_QT_6 "Build with QT 6." OFF)
