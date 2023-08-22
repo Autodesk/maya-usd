@@ -379,6 +379,8 @@ def BuildAndInstall(context, buildArgs, stages):
             extraArgs.append('-DCMAKE_WANT_MATERIALX_BUILD=ON')
             extraArgs.append('-DCMAKE_PREFIX_PATH="{materialxLocation}"'
                              .format(materialxLocation=context.pxrUsdLocation))
+        else:
+            extraArgs.append('-DCMAKE_WANT_MATERIALX_BUILD=OFF')
 
         # Many people on Windows may not have python with the 
         # debugging symbol (python27_d.lib) installed, this is the common case.
