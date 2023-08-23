@@ -42,7 +42,6 @@
 #include <pxr/usdImaging/usdImaging/delegate.h>
 #if PXR_VERSION >= 2302
 #include <pxr/usdImaging/usdImaging/drawModeSceneIndex.h> //For USD 2302 and later
-#include <pxr/usdImaging/usdImaging/modelSchema.h>        //For USD 2302 and later
 #include <pxr/usdImaging/usdImaging/niPrototypePropagatingSceneIndex.h>
 #include <pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h>
 #else
@@ -51,6 +50,14 @@
 #endif
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 54
 #include <pxr/imaging/hd/flattenedMaterialBindingsDataSourceProvider.h>
+#include <pxr/imaging/hdsi/legacyDisplayStyleOverrideSceneIndex.h>
+#include <pxr/imaging/hdsi/primTypePruningSceneIndex.h>
+#include <pxr/usdImaging/usdImaging/extentResolvingSceneIndex.h>
+#include <pxr/usdImaging/usdImaging/flattenedDataSourceProviders.h>
+#include <pxr/usdImaging/usdImaging/renderSettingsFlatteningSceneIndex.h>
+#include <pxr/usdImaging/usdImaging/rootOverridesSceneIndex.h>
+#include <pxr/usdImaging/usdImaging/selectionSceneIndex.h>
+#include <pxr/usdImaging/usdImaging/unloadedDrawModeSceneIndex.h>
 #endif
 #endif
 
@@ -146,7 +153,7 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
                 /* inputArgs = */ nullptr);
 #else
             // For PXR_VERSION >=  2302 so for USD 22.11+
-#if defined(HD_API_VERSION) && HD_API_VERSION >= 54
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 54 // For USD 23.08+
             using namespace HdMakeDataSourceContainingFlattenedDataSourceProvider;
 #endif
             //  Used for the HdFlatteningSceneIndex to flatten material bindings
@@ -157,7 +164,7 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
 #else
                     HdMaterialBindingSchemaTokens->materialBinding,
 #endif
-#if defined(HD_API_VERSION) && HD_API_VERSION >= 54
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 54 // For USD 23.08+
                     Make<HdFlattenedMaterialBindingsDataSourceProvider>());
 #else
                     HdRetainedTypedSampledDataSource<bool>::New(true));
@@ -191,7 +198,8 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
                 HdRetainedTypedSampledDataSource<bool>::New(_displayUnloadedPrimsWithBounds));
 
             // Create the scene index graph.
-            sceneIndex = _stageSceneIndex = UsdImagingStageSceneIndex::New(stageInputArgs);
+            auto usdImagingStageSceneIndex = UsdImagingStageSceneIndex::New(stageInputArgs);
+            HdSceneIndexBaseRefPtr sceneIndex = usdImagingStageSceneIndex;
 
             static HdContainerDataSourceHandle const materialPruningInputArgs
                 = HdRetainedContainerDataSource::New(
@@ -204,8 +212,7 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
 
             // Prune scene materials prior to flattening inherited
             // materials bindings and resolving material bindings
-            sceneIndex = _materialPruningSceneIndex
-                = HdsiPrimTypePruningSceneIndex::New(sceneIndex, materialPruningInputArgs);
+            sceneIndex = HdsiPrimTypePruningSceneIndex::New(sceneIndex, materialPruningInputArgs);
 
             static HdContainerDataSourceHandle const lightPruningInputArgs
                 = HdRetainedContainerDataSource::New(
@@ -214,8 +221,7 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
                     HdsiPrimTypePruningSceneIndexTokens->doNotPruneNonPrimPaths,
                     HdRetainedTypedSampledDataSource<bool>::New(false));
 
-            sceneIndex = _lightPruningSceneIndex
-                = HdsiPrimTypePruningSceneIndex::New(sceneIndex, lightPruningInputArgs);
+            sceneIndex = HdsiPrimTypePruningSceneIndex::New(sceneIndex, lightPruningInputArgs);
 
             // Use extentsHint for default_/geometry purpose
             HdContainerDataSourceHandle const extentInputArgs = HdRetainedContainerDataSource::New(
@@ -228,14 +234,13 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
                 sceneIndex = UsdImagingUnloadedDrawModeSceneIndex::New(sceneIndex);
             }
 
-            sceneIndex = _rootOverridesSceneIndex
-                = UsdImagingRootOverridesSceneIndex::New(sceneIndex);
+            sceneIndex = UsdImagingRootOverridesSceneIndex::New(sceneIndex);
 
             sceneIndex = UsdImagingPiPrototypePropagatingSceneIndex::New(sceneIndex);
 
             sceneIndex = UsdImagingNiPrototypePropagatingSceneIndex::New(sceneIndex);
 
-            sceneIndex = _selectionSceneIndex = UsdImagingSelectionSceneIndex::New(sceneIndex);
+            sceneIndex = UsdImagingSelectionSceneIndex::New(sceneIndex);
 
             sceneIndex = UsdImagingRenderSettingsFlatteningSceneIndex::New(sceneIndex);
 
@@ -246,8 +251,7 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
                 sceneIndex,
                 /* inputArgs = */ nullptr);
 
-            sceneIndex = _displayStyleSceneIndex
-                = HdsiLegacyDisplayStyleOverrideSceneIndex::New(sceneIndex);
+            sceneIndex = HdsiLegacyDisplayStyleOverrideSceneIndex::New(sceneIndex);
 
 #endif // End of #if PXR_VERSION < 2308 block
 #endif // end of #if PXR_VERSION < 2302 block
