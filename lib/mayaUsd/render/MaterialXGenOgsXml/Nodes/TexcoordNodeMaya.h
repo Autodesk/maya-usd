@@ -10,15 +10,18 @@
 
 MATERIALX_NAMESPACE_BEGIN
 
-/// Re-implementation of an index-based texcood node into a geompropvalue using standard USD primvar names
+/// Re-implementation of an index-based texcood node into a geompropvalue using standard USD primvar
+/// names
 class TexcoordNodeGlslMaya : public GlslImplementation
 {
-  public:
+public:
     static ShaderNodeImplPtr create();
 
-    void createVariables(const ShaderNode& node, GenContext& context, Shader& shader) const override;
+    void
+    createVariables(const ShaderNode& node, GenContext& context, Shader& shader) const override;
 
-    void emitFunctionCall(const ShaderNode& node, GenContext& context, ShaderStage& stage) const override;
+    void emitFunctionCall(const ShaderNode& node, GenContext& context, ShaderStage& stage)
+        const override;
 
     bool isEditable(const ShaderInput& /*input*/) const override { return false; }
 };

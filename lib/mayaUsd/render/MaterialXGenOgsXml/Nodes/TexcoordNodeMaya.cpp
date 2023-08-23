@@ -14,16 +14,18 @@ ShaderNodeImplPtr TexcoordNodeGlslMaya::create()
     return std::make_shared<TexcoordNodeGlslMaya>();
 }
 
-void TexcoordNodeGlslMaya::createVariables(const ShaderNode& node, GenContext&, Shader& shader) const
+void TexcoordNodeGlslMaya::createVariables(const ShaderNode& node, GenContext&, Shader& shader)
+    const
 {
     const ShaderInput* indexInput = node.getInput(INDEX);
-    if (!indexInput || !indexInput->getValue())
-    {
-        throw ExceptionShaderGenError("No 'index' parameter found on texcoord node '" + node.getName() + "'. Don't know what property to bind");
+    if (!indexInput || !indexInput->getValue()) {
+        throw ExceptionShaderGenError(
+            "No 'index' parameter found on texcoord node '" + node.getName()
+            + "'. Don't know what property to bind");
     }
     // Use the standard USD convention for texcoord primvar names:
     const string index = indexInput ? indexInput->getValue()->getValueString() : "0";
-    string geomProp = "st";
+    string       geomProp = "st";
     if (index != "0") {
         geomProp += index;
     };
@@ -33,21 +35,27 @@ void TexcoordNodeGlslMaya::createVariables(const ShaderNode& node, GenContext&, 
     ShaderStage& ps = shader.getStage(Stage::PIXEL);
 
     addStageInput(HW::VERTEX_INPUTS, output->getType(), HW::T_IN_GEOMPROP + "_" + geomProp, vs);
-    addStageConnector(HW::VERTEX_DATA, output->getType(), HW::T_IN_GEOMPROP + "_" + geomProp, vs, ps);
+    addStageConnector(
+        HW::VERTEX_DATA, output->getType(), HW::T_IN_GEOMPROP + "_" + geomProp, vs, ps);
 }
 
-void TexcoordNodeGlslMaya::emitFunctionCall(const ShaderNode& node, GenContext& context, ShaderStage& stage) const
+void TexcoordNodeGlslMaya::emitFunctionCall(
+    const ShaderNode& node,
+    GenContext&       context,
+    ShaderStage&      stage) const
 {
-    const GlslShaderGenerator& shadergen = static_cast<const GlslShaderGenerator&>(context.getShaderGenerator());
+    const GlslShaderGenerator& shadergen
+        = static_cast<const GlslShaderGenerator&>(context.getShaderGenerator());
 
     const ShaderInput* indexInput = node.getInput(INDEX);
-    if (!indexInput)
-    {
-        throw ExceptionShaderGenError("No 'index' parameter found on texcoord node '" + node.getName() + "'. Don't know what property to bind");
+    if (!indexInput) {
+        throw ExceptionShaderGenError(
+            "No 'index' parameter found on texcoord node '" + node.getName()
+            + "'. Don't know what property to bind");
     }
     // Use the standard USD convention for texcoord primvar names:
     const string index = indexInput ? indexInput->getValue()->getValueString() : "0";
-    string geomname = "st";
+    string       geomname = "st";
     if (index != "0") {
         geomname += index;
     };
@@ -56,11 +64,12 @@ void TexcoordNodeGlslMaya::emitFunctionCall(const ShaderNode& node, GenContext& 
     DEFINE_SHADER_STAGE(stage, Stage::VERTEX)
     {
         VariableBlock& vertexData = stage.getOutputBlock(HW::VERTEX_DATA);
-        const string prefix = shadergen.getVertexDataPrefix(vertexData);
-        ShaderPort* geomprop = vertexData[variable];
-        if (!geomprop->isEmitted())
-        {
-            shadergen.emitLine(prefix + geomprop->getVariable() + " = " + HW::T_IN_GEOMPROP + "_" + geomname, stage);
+        const string   prefix = shadergen.getVertexDataPrefix(vertexData);
+        ShaderPort*    geomprop = vertexData[variable];
+        if (!geomprop->isEmitted()) {
+            shadergen.emitLine(
+                prefix + geomprop->getVariable() + " = " + HW::T_IN_GEOMPROP + "_" + geomname,
+                stage);
             geomprop->setEmitted();
         }
     }
@@ -68,8 +77,8 @@ void TexcoordNodeGlslMaya::emitFunctionCall(const ShaderNode& node, GenContext& 
     DEFINE_SHADER_STAGE(stage, Stage::PIXEL)
     {
         VariableBlock& vertexData = stage.getInputBlock(HW::VERTEX_DATA);
-        const string prefix = shadergen.getVertexDataPrefix(vertexData);
-        ShaderPort* geomprop = vertexData[variable];
+        const string   prefix = shadergen.getVertexDataPrefix(vertexData);
+        ShaderPort*    geomprop = vertexData[variable];
         shadergen.emitLineBegin(stage);
         shadergen.emitOutput(node.getOutput(), true, false, context, stage);
         shadergen.emitString(" = " + prefix + geomprop->getVariable(), stage);

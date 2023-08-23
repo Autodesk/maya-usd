@@ -70,7 +70,6 @@ void fixupVertexDataInstance(ShaderStage& stage)
 
     static const std::regex vtxRegex(vtxSource.c_str());
 
-
     // Find keywords:                        (as text)
     //
     //  vec[23] (HW::T_IN_GEOMPROP_NAME)     vec2 $inGeomprop_st
@@ -80,7 +79,8 @@ void fixupVertexDataInstance(ShaderStage& stage)
     // vec2 unused_(HW::T_IN_GEOMPROP_NAME)  vec2 unused_inGeomprop_st
     //
 
-    static const std::string primvarParamSource = "vec([23]) [$](" + d(HW::T_IN_GEOMPROP) + "_[A-Za-z0-9_]+)";
+    static const std::string primvarParamSource
+        = "vec([23]) [$](" + d(HW::T_IN_GEOMPROP) + "_[A-Za-z0-9_]+)";
 
     static const std::regex primvarParamRegex(primvarParamSource.c_str());
 
@@ -93,7 +93,8 @@ void fixupVertexDataInstance(ShaderStage& stage)
     //  PIX_IN.(NAME)                                       PIX_IN.st
     //
 
-    static const std::string vdCleanupSource = "[$]" + d(HW::T_VERTEX_DATA_INSTANCE) + "[.][$]" + d(HW::T_IN_GEOMPROP) + "_([A-Za-z0-9_]+)";
+    static const std::string vdCleanupSource = "[$]" + d(HW::T_VERTEX_DATA_INSTANCE) + "[.][$]"
+        + d(HW::T_IN_GEOMPROP) + "_([A-Za-z0-9_]+)";
 
     static const std::regex vdCleanupRegex(vdCleanupSource.c_str());
 
@@ -164,8 +165,10 @@ GlslFragmentGenerator::GlslFragmentGenerator()
         _tokenSubstitutions[HW::T_NUM_ACTIVE_LIGHT_SOURCES] = "g_numActiveLightSources";
     }
 
-    registerImplementation("IM_texcoord_vector2_" + GlslShaderGenerator::TARGET, TexcoordNodeGlslMaya::create);
-    registerImplementation("IM_texcoord_vector3_" + GlslShaderGenerator::TARGET, TexcoordNodeGlslMaya::create);
+    registerImplementation(
+        "IM_texcoord_vector2_" + GlslShaderGenerator::TARGET, TexcoordNodeGlslMaya::create);
+    registerImplementation(
+        "IM_texcoord_vector3_" + GlslShaderGenerator::TARGET, TexcoordNodeGlslMaya::create);
 
     for (auto&& implName : GlslOcioNodeImpl::getOCIOImplementations()) {
         registerImplementation(implName, GlslOcioNodeImpl::create);
