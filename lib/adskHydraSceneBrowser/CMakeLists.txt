@@ -43,7 +43,12 @@ set(SOURCES
     sceneIndexTreeWidget.cpp
 )
 
+# Get the versioning scheme used in the file download URLs : last two digits of the year + digits of the month
+# We first strip the major version (e.g. 0.23.8 -> 23.8)
 string(REGEX REPLACE "^[0-9]+\\.([0-9]+\\.[0-9]+)$" "\\1" USD_minor_patch_version ${USD_VERSION})
+# We then re-insert leading 0s to single-digit numbers (e.g. 23.8 -> 23.08)
+# (note that \\10 works because CMake only captures up to 9 subgroups)
+string(REGEX REPLACE "(\\.|^)([1-9])(\\.|$)" "\\10\\2\\3" USD_minor_patch_version ${USD_minor_patch_version})
 set(DOWNLOAD_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/src/download")
 set(PATCH_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/src/patch")
 
