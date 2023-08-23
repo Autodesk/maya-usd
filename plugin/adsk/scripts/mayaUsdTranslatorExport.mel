@@ -679,13 +679,10 @@ global proc int mayaUsdTranslatorExport (string $parent,
                 }
 
                 optionMenuGrp -l `getMayaUsdString("kExportRelativeTexturesLbl")` -annotation `getMayaUsdString("kExportRelativeTexturesAnn")` exportRelativeTexturesPopup;
-                    string $lbl;
-                    $lbl = getMayaUsdString("kExportRelativeTexturesAutomaticLbl");
-                    menuItem -l $lbl -ann $lbl;
-                    $lbl = getMayaUsdString("kExportRelativeTexturesAbsoluteLbl");
-                    menuItem -l $lbl -ann $lbl;
-                    $lbl = getMayaUsdString("kExportRelativeTexturesRelativeLbl");
-                    menuItem -l $lbl -ann $lbl;
+                    // The annotation will be used to assign value to token exportRelativeTextures, so lower case is used
+                    menuItem -l `getMayaUsdString("kExportRelativeTexturesAutomaticLbl")` -ann "automatic";
+                    menuItem -l `getMayaUsdString("kExportRelativeTexturesAbsoluteLbl")` -ann "absolute";
+                    menuItem -l `getMayaUsdString("kExportRelativeTexturesRelativeLbl")` -ann "relative";
 
                 separator -style "none";
             setParent ..;
