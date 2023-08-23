@@ -16,8 +16,8 @@ Before building the project, consult the following table to ensure you use the r
 |         Python        | 2.7.15 or 3.7.7 or 3.9.7  |                       2.7.15 or 3.7.7 or 3.9.7               |  2.7.15 or 3.7.7 or 3.9.7   |
 |    Python Packages    | PyYAML, PySide, PyOpenGL, Jinja2        | PyYAML, PySide2, PyOpenGL, Jinja2              | PyYAML, PySide, PyOpenGL, Jinja2 |
 |    Build generator    | Visual Studio, Ninja (Recommended)    |  XCode, Ninja (Recommended)                      |    Ninja (Recommended)      |
-|    Command processor  | Visual Studio X64 2017 or 2019 command prompt  |                     bash                |             bash            |
-| Supported Maya Version| 2022, 2023, 2024 | 2022, 2023, 2024 | 2022, 2023, 2024 |
+|    Command processor  | Visual Studio X64 {2017/2019/2022} command prompt |                  bash                |             bash            |
+| Supported Maya Version|     2022, 2023, 2024      |                       2022, 2023, 2024                       |      2022, 2023, 2024       |
 
 |        Optional       | ![](images/windows.png)   |                            ![](images/mac.png)               |   ![](images/linux.png)     |
 |:---------------------:|:-------------------------:|:------------------------------------------------------------:|:---------------------------:|
@@ -47,7 +47,7 @@ The Universal Front End (UFE) is a DCC-agnostic component that allows Maya to br
 | v1.0.0                     | Maya 2020.x                                            | |
 | v2.0.0<br>v2.0.3<br>v2.1.0 | Maya 2022 <br>Maya 2022.1/2022.2/2022.3<br>Maya 2022.4 | https://help.autodesk.com/view/MAYAUL/2022/ENU/?guid=Maya_SDK_ufe_ref_index_html |
 | v3.0.0<br>v3.2.0<br>v3.3.0 | Maya 2023/2023.1<br>Maya 2023.2<br>Maya 2023.3         | https://help.autodesk.com/view/MAYAUL/2023/ENU/?guid=MAYA_API_REF_ufe_ref_index_html |
-| v4.0.0                     | Maya 2024                                              | https://help.autodesk.com/view/MAYAUL/2024/ENU/?guid=MAYA_API_REF_ufe_ref_index_html |
+| v4.0.0<br>v4.1.0           | Maya 2024<br>Maya 2024.1                               | https://help.autodesk.com/view/MAYAUL/2024/ENU/?guid=MAYA_API_REF_ufe_ref_index_html |
 | v0.5.x                     | Maya PR                                                | |
 
 To build the project with UFE support, you will need to use the headers and libraries included in the ***Maya Devkit***:
