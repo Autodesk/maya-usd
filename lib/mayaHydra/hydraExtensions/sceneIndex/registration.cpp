@@ -265,6 +265,7 @@ void MayaHydraSceneIndexRegistry::_AddSceneIndexForNode(MObject& dagNode)
                                      ? ""
                                      : "__" + std::to_string(_incrementedCounterDisambiguator++))));
 
+                registration->rootSceneIndex = registration->pluginSceneIndex;
                 #if PXR_VERSION < 2308
                 // HYDRA-179
                 // Inject TerminalsResolvingSceneIndex to get Hydra to handle material bindings.
