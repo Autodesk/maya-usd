@@ -287,7 +287,8 @@ MayaUsdProxyShapeSceneIndex::MayaUsdProxyShapeSceneIndex(
     _timeChangeCallbackId = MEventMessage::addEventCallback("timeChanged", onTimeChanged, this);
 }
 
-MayaUsdProxyShapeSceneIndex::~MayaUsdProxyShapeSceneIndex() {
+MayaUsdProxyShapeSceneIndex::~MayaUsdProxyShapeSceneIndex()
+{
     MMessage::removeCallback(_timeChangeCallbackId);
 }
 
