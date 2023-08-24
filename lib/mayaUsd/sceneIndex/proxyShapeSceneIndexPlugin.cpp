@@ -61,11 +61,11 @@
 #endif
 #endif
 
+#include <maya/MEventMessage.h>
 #include <maya/MObject.h>
 #include <maya/MObjectHandle.h>
 #include <maya/MSelectionList.h>
 #include <maya/MString.h>
-#include <maya/MEventMessage.h>
 #include <ufe/rtid.h>
 
 PXR_NAMESPACE_OPEN_SCOPE

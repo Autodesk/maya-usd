@@ -31,9 +31,8 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usdImaging/usdImaging/stageSceneIndex.h>
 
-#include <ufe/path.h>
-
 #include <maya/MMessage.h>
+#include <ufe/path.h>
 
 #include <memory>
 
