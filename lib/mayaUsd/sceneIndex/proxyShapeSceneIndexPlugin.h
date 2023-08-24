@@ -33,6 +33,8 @@
 
 #include <ufe/path.h>
 
+#include <maya/MMessage.h>
+
 #include <memory>
 
 //////////////////////////////////////////////////////////////// MayaUsdProxyShapeSceneIndexPlugin
@@ -92,6 +94,8 @@ public:
 
     virtual ~MayaUsdProxyShapeSceneIndex();
 
+    void UpdateTime();
+
 private:
     void ObjectsChanged(const MayaUsdProxyStageObjectsChangedNotice& notice);
 
@@ -113,9 +117,12 @@ protected:
         const HdSceneIndexObserver::DirtiedPrimEntries& entries) override final;
 
 private:
+    static void onTimeChanged(void* data);
+
     UsdImagingStageSceneIndexRefPtr _usdImagingStageSceneIndex;
     MayaUsdProxyShapeBase*          _proxyShape { nullptr };
     std::atomic_bool                _populated { false };
+    MCallbackId                     _timeChangeCallbackId;
 };
 } // namespace MAYAUSD_NS_DEF
 
