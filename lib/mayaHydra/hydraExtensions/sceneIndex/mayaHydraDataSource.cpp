@@ -267,6 +267,7 @@ TfToken MayaHydraDataSource::_InterpolationAsToken(HdInterpolation interpolation
 HdDataSourceBaseHandle
 MayaHydraDataSource::_GetMaterialBindingDataSource()
 {
+#if PXR_VERSION < 2308
     SdfPath path = _sceneIndex->GetMaterialId(_id);
     if (path.IsEmpty()) {
         return nullptr;
@@ -274,19 +275,29 @@ MayaHydraDataSource::_GetMaterialBindingDataSource()
     HdDataSourceBaseHandle bindingPath =
         HdRetainedTypedSampledDataSource<SdfPath>::New(path);
 
-    TfToken t = 
-#if PXR_VERSION < 2308
-        HdMaterialBindingSchemaTokens->allPurpose;
-#else
-        HdMaterialBindingsSchemaTokens->allPurpose;
-#endif
+    TfToken t = HdMaterialBindingSchemaTokens->allPurpose;
     HdContainerDataSourceHandle binding =
-#if PXR_VERSION < 2308
         HdMaterialBindingSchema::BuildRetained(1, &t, &bindingPath);
-#else
-        HdMaterialBindingsSchema::BuildRetained(1, &t, &bindingPath);
-#endif
     return binding;
+#else
+    const SdfPath path = _sceneIndex->GetMaterialId(_id);
+    if (path.IsEmpty()) {
+        return nullptr;
+    }
+    static const TfToken purposes[] = {
+        HdMaterialBindingsSchemaTokens->allPurpose
+    };
+    HdDataSourceBaseHandle const materialBindingSources[] = {
+        HdMaterialBindingSchema::Builder()
+            .SetPath(
+                HdRetainedTypedSampledDataSource<SdfPath>::New(path))
+            .Build()
+    };
+
+    return
+        HdMaterialBindingsSchema::BuildRetained(
+            TfArraySize(purposes), purposes, materialBindingSources);
+#endif
 }
 
 static bool

@@ -44,7 +44,11 @@
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/rendererPlugin.h>
 #include <pxr/imaging/hdx/taskController.h>
+#if PXR_VERSION < 2308
 #include <pxr/imaging/hd/sceneIndex.h>
+#else
+#include <pxr/imaging/hd/retainedSceneIndex.h>
+#endif
 
 #include <unordered_map>
 
@@ -56,9 +60,13 @@ TF_DECLARE_REF_PTRS(MayaHydraSceneIndex);
 
 /**
  * \brief MayaHydraSceneIndex is a scene index to produce the hydra scene from Maya native scene.
- * TODO: MayaHydraSceneIndex can be derived from HdRetainedSceneIndex with usd 23.05+.
  */
-class MAYAHYDRALIB_API MayaHydraSceneIndex : public HdSceneIndexBase
+class MAYAHYDRALIB_API MayaHydraSceneIndex : 
+#if PXR_VERSION < 2308
+    public HdSceneIndexBase
+#else
+    public HdRetainedSceneIndex
+#endif
 {
 public:
     enum RebuildFlags : uint32_t
@@ -76,9 +84,9 @@ public:
 
     ~MayaHydraSceneIndex();
 
+#if PXR_VERSION < 2308
     // ------------------------------------------------------------------------
     // HdSceneIndexBase implementations
-    // TODO: Reuse the implementations from HdRetainedSceneIndex with usd 23.05+
     HdSceneIndexPrim GetPrim(const SdfPath& primPath) const override;
     SdfPathVector GetChildPrimPaths(const SdfPath& primPath) const override;
 
@@ -93,6 +101,7 @@ public:
     void AddPrims(const AddedPrimEntries& entries);
     void RemovePrims(const HdSceneIndexObserver::RemovedPrimEntries& entries);
     void DirtyPrims(const HdSceneIndexObserver::DirtiedPrimEntries& entries);
+#endif
 
     // ------------------------------------------------------------------------
     // Maya Hydra scene producer implementations

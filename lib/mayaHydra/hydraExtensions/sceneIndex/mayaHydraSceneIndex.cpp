@@ -492,6 +492,7 @@ void MayaHydraSceneIndex::HandleCompleteViewportScene(const MDataServerOperation
     }
 }
 
+#if PXR_VERSION < 2308
 void MayaHydraSceneIndex::AddPrims(const AddedPrimEntries& entries)
 {
     HdSceneIndexObserver::AddedPrimEntries observerEntries;
@@ -571,6 +572,7 @@ SdfPathVector MayaHydraSceneIndex::GetChildPrimPaths(const SdfPath& primPath) co
 
     return result;
 }
+#endif
 
 void MayaHydraSceneIndex::Populate()
 {
