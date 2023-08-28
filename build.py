@@ -385,6 +385,32 @@ def SetupMayaQt(context):
                 if not qtComponentsToFind:  # Once we've found them all, we are done.
                     return True
 
+    def safeTarfileExtract(members):
+        """Use a function to look for bad paths in the tarfile archive to fix
+        security/bandit B202: tarfile_unsafe_members."""
+
+        def isBadPath(path, base):
+            return not os.path.realpath(os.path.abspath(os.path.join(base, path))).startswith(base)
+        def isBadLink(info, base):
+            # Links are interpreted relative to the directory containing the link.
+            tip = os.path.realpath(os.path.abspath(os.path.join(base, dirname(info.name))))
+            return _badpath(info.linkname, base=tip)
+
+        base = os.path.realpath(os.path.abspath('.'))
+        result = []
+        for finfo in members:
+            # If any bad paths for links are found in the tarfile, print an error
+            # and don't extract anything from tarfile.
+            if isBadPath(finfo.name, base):
+                PrintError('Found illegal path {path} in tarfile, blocking tarfile extraction.'.format(path=finfo.name))
+                return []
+            elif (finfo.issym() or finfo.islnk()) and isBadLink(finfo, base):
+                PrintError('Found illegal link {link} in tarfile, blocking tarfile extraction.'.format(link=finfo.linkname))
+                return []
+            else:
+                result.append(finfo)
+        return result
+
     # The list of directories (in order) that we'll search. This list matches the one
     # in FindMayaQt.cmake.
     dirsToSearch = [context.devkitLocation]
@@ -419,15 +445,17 @@ def SetupMayaQt(context):
                 try:
                     # We only need certain Qt components so we only extract the headers for those.
                     if Windows():
-                        archive = zipfile.ZipFile(qtZipFile, mode='r')
-                        files = [n for n in archive.namelist()
+                        zipArchive = zipfile.ZipFile(qtZipFile, mode='r')
+                        files = [n for n in zipArchive.namelist()
                             if (n.startswith('QtCore/') or n.startswith('QtGui/') or n.startswith('QtWidgets/'))]
+                        zipArchive.extractall(qtZipDirFolder, files)
+                        zipArchive.close()
                     else:
-                        archive = tarfile.open(qtZipFile, mode='r')
-                        files = [n for n in archive.getmembers()
+                        tarArchive = tarfile.open(qtZipFile, mode='r')
+                        files = [n for n in tarArchive.getmembers()
                             if (n.name.startswith('./QtCore/') or n.name.startswith('./QtGui/') or n.name.startswith('./QtWidgets/'))]
-                    archive.extractall(qtZipDirFolder, files)
-                    archive.close()
+                        tarArchive.extractall(qtZipDirFolder, members=safeTarfileExtract(files))
+                        tarArchive.close()
                 except zipfile.BadZipfile as error:
                     PrintError(str(error))
                 except tarfile.TarError as error:
@@ -449,7 +477,7 @@ def SetupMayaQt(context):
                 PrintStatus("  Extracting '{zip}' to '{dir}'".format(zip=qtArchive, dir=qtZipDirFolder))
                 try:
                     archive = tarfile.open(qtArchive, mode='r')
-                    archive.extractall(qtZipDirFolder)
+                    archive.extractall(qtZipDirFolder, members=safeTarfileExtract(archive.getmembers()))
                     archive.close()
                 except tarfile.TarError as error:
                     PrintError(str(error))
