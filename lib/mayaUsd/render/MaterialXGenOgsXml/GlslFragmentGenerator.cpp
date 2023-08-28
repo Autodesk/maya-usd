@@ -8,6 +8,7 @@
 #include "Nodes/SurfaceNodeMaya.h"
 #include "Nodes/TexcoordNodeMaya.h"
 
+#include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/GlslOcioNodeImpl.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/OgsXmlGenerator.h>
 
@@ -165,10 +166,12 @@ GlslFragmentGenerator::GlslFragmentGenerator()
         _tokenSubstitutions[HW::T_NUM_ACTIVE_LIGHT_SOURCES] = "g_numActiveLightSources";
     }
 
-    registerImplementation(
-        "IM_texcoord_vector2_" + GlslShaderGenerator::TARGET, TexcoordNodeGlslMaya::create);
-    registerImplementation(
-        "IM_texcoord_vector3_" + GlslShaderGenerator::TARGET, TexcoordNodeGlslMaya::create);
+    if (!OgsXmlGenerator::getPrimaryUVSetName().empty()) {
+        registerImplementation(
+            "IM_texcoord_vector2_" + GlslShaderGenerator::TARGET, TexcoordNodeGlslMaya::create);
+        registerImplementation(
+            "IM_texcoord_vector3_" + GlslShaderGenerator::TARGET, TexcoordNodeGlslMaya::create);
+    }
 
     for (auto&& implName : GlslOcioNodeImpl::getOCIOImplementations()) {
         registerImplementation(implName, GlslOcioNodeImpl::create);

@@ -44,6 +44,7 @@
 #include <pxr/usd/sdf/assetPath.h>
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/usdHydra/tokens.h>
+#include <pxr/usd/usdUtils/pipeline.h>
 #include <pxr/usdImaging/usdImaging/textureUtils.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
 
@@ -475,6 +476,12 @@ struct _MaterialXData
         _FixLibraryTangentInputs(_mtlxLibrary);
 
         mx::OgsXmlGenerator::setUseLightAPI(MAYA_LIGHTAPI_VERSION_2);
+
+        // This environment variable is defined in USD: pxr\usd\usdMtlx\parser.cpp
+        static const std::string env = TfGetenv("USDMTLX_PRIMARY_UV_NAME");
+        std::string mainUvSetName = env.empty() ? UsdUtilsGetPrimaryUVSetName().GetString() : env;
+
+        mx::OgsXmlGenerator::setPrimaryUVSetName(mainUvSetName);
     }
     MaterialX::FileSearchPath _mtlxSearchPath; //!< MaterialX library search path
     MaterialX::DocumentPtr    _mtlxLibrary;    //!< MaterialX library

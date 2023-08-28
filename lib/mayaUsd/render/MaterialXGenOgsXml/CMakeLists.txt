@@ -13,6 +13,7 @@ target_sources(${PROJECT_NAME}
 )
 
 set(HEADERS
+    CombinedMaterialXVersion.h
     GlslFragmentGenerator.h
     GlslOcioNodeImpl.h
     OgsFragment.h
