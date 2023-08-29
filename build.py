@@ -672,9 +672,7 @@ class InstallContext:
 
         # DEPRECATED: Qt Location
         if args.qt_location:
-            PrintError("--qt-location flag is deprecated as Qt is found automatically in Maya devkit.")
-            PrintError("If you want to use custom Qt, use flag: --build-args=-DQT_LOCATION=<dir>")
-            sys.exit(1)
+            PrintWarning("--qt-location flag is deprecated as Qt is found automatically in Maya devkit.")
 
         # MaterialX
         self.materialxEnabled = args.build_materialx
