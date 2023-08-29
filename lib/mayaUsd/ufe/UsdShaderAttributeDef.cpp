@@ -117,13 +117,39 @@ static const MetadataMap _metaMap = {
       } },
     { MayaUsdMetadata->UISoftMin
           .GetString(), // Maya has 0-100 sliders. In rendering, sliders are 0-1.
-      [](const PXR_NS::SdrShaderProperty&) {
-          return std::string { "0.0" }; // Will only be returned if the metadata does not exist.
+      [](const PXR_NS::SdrShaderProperty& p) {
+          // Will only be returned if the metadata does not exist.
+          static const auto defaultSoftMin = std::unordered_map<std::string, Ufe::Value> {
+              { Ufe::Attribute::kFloat, std::string { "0" } },
+              { Ufe::Attribute::kFloat3, std::string { "0,0,0" } },
+              { Ufe::Attribute::kColorFloat3, std::string { "0,0,0" } },
+              { Ufe::Attribute::kDouble, std::string { "0" } },
+#ifdef UFE_V4_FEATURES_AVAILABLE
+              { Ufe::Attribute::kFloat2, std::string { "0,0" } },
+              { Ufe::Attribute::kFloat4, std::string { "0,0,0,0" } },
+              { Ufe::Attribute::kColorFloat4, std::string { "0,0,0,0" } },
+#endif
+          };
+          auto itDefault = defaultSoftMin.find(usdTypeToUfe(&p));
+          return itDefault != defaultSoftMin.end() ? itDefault->second : Ufe::Value();
       } },
     { MayaUsdMetadata->UISoftMax
           .GetString(), // Maya has 0-100 sliders. In rendering, sliders are 0-1.
-      [](const PXR_NS::SdrShaderProperty&) {
-          return std::string { "1.0" }; // Will only be returned if the metadata does not exist.
+      [](const PXR_NS::SdrShaderProperty& p) {
+          // Will only be returned if the metadata does not exist.
+          static const auto defaultSoftMin = std::unordered_map<std::string, Ufe::Value> {
+              { Ufe::Attribute::kFloat, std::string { "1" } },
+              { Ufe::Attribute::kFloat3, std::string { "1,1,1" } },
+              { Ufe::Attribute::kColorFloat3, std::string { "1,1,1" } },
+              { Ufe::Attribute::kDouble, std::string { "1" } },
+#ifdef UFE_V4_FEATURES_AVAILABLE
+              { Ufe::Attribute::kFloat2, std::string { "1,1" } },
+              { Ufe::Attribute::kFloat4, std::string { "1,1,1,1" } },
+              { Ufe::Attribute::kColorFloat4, std::string { "1,1,1,1" } },
+#endif
+          };
+          auto itDefault = defaultSoftMin.find(usdTypeToUfe(&p));
+          return itDefault != defaultSoftMin.end() ? itDefault->second : Ufe::Value();
       } },
     // If Ufe decides to use another completely different convention, it can be added here:
 };
