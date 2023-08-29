@@ -563,4 +563,9 @@ int OgsXmlGenerator::sUseLightAPI = 1;
 int  OgsXmlGenerator::useLightAPI() { return sUseLightAPI; }
 void OgsXmlGenerator::setUseLightAPI(int val) { sUseLightAPI = val; }
 
+string OgsXmlGenerator::sPrimaryUVSetName;
+
+const string& OgsXmlGenerator::getPrimaryUVSetName() { return sPrimaryUVSetName; }
+void          OgsXmlGenerator::setPrimaryUVSetName(const string& val) { sPrimaryUVSetName = val; }
+
 MATERIALX_NAMESPACE_END

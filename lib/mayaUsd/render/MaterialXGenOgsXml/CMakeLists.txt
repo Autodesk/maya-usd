@@ -8,10 +8,12 @@ target_sources(${PROJECT_NAME}
         OgsFragment.cpp
         OgsXmlGenerator.cpp
         Nodes/SurfaceNodeMaya.cpp
+        Nodes/TexcoordNodeMaya.cpp
         PugiXML/pugixml.cpp
 )
 
 set(HEADERS
+    CombinedMaterialXVersion.h
     GlslFragmentGenerator.h
     GlslOcioNodeImpl.h
     OgsFragment.h
