@@ -137,7 +137,7 @@ static const MetadataMap _metaMap = {
           .GetString(), // Maya has 0-100 sliders. In rendering, sliders are 0-1.
       [](const PXR_NS::SdrShaderProperty& p) {
           // Will only be returned if the metadata does not exist.
-          static const auto defaultSoftMin = std::unordered_map<std::string, Ufe::Value> {
+          static const auto defaultSoftMax = std::unordered_map<std::string, Ufe::Value> {
               { Ufe::Attribute::kFloat, std::string { "1" } },
               { Ufe::Attribute::kFloat3, std::string { "1,1,1" } },
               { Ufe::Attribute::kColorFloat3, std::string { "1,1,1" } },
@@ -148,8 +148,8 @@ static const MetadataMap _metaMap = {
               { Ufe::Attribute::kColorFloat4, std::string { "1,1,1,1" } },
 #endif
           };
-          auto itDefault = defaultSoftMin.find(usdTypeToUfe(&p));
-          return itDefault != defaultSoftMin.end() ? itDefault->second : Ufe::Value();
+          auto itDefault = defaultSoftMax.find(usdTypeToUfe(&p));
+          return itDefault != defaultSoftMax.end() ? itDefault->second : Ufe::Value();
       } },
     // If Ufe decides to use another completely different convention, it can be added here:
 };
