@@ -29,7 +29,7 @@ std::string geomNameFromIndex(const std::string& index)
     // pxr\usdImaging\usdImaging\materialParamUtils.cpp would then be able to handle indexed values.
 #if 0
     int i = fromValueString<int>(index);
-    if (i < 0 || i < 9) {
+    if (i < 0 || i > 9) {
         i = 0;
     }
     if (i > 0) {
