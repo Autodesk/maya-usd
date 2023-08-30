@@ -393,8 +393,8 @@ def SetupMayaQt(context):
             return not os.path.realpath(os.path.abspath(os.path.join(base, path))).startswith(base)
         def isBadLink(info, base):
             # Links are interpreted relative to the directory containing the link.
-            tip = os.path.realpath(os.path.abspath(os.path.join(base, dirname(info.name))))
-            return _badpath(info.linkname, base=tip)
+            tip = os.path.realpath(os.path.abspath(os.path.join(base, os.path.dirname(info.name))))
+            return isBadPath(info.linkname, base=tip)
 
         base = os.path.realpath(os.path.abspath('.'))
         result = []
