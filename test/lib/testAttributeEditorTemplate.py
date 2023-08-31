@@ -80,10 +80,11 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         proxyShapePath = ufe.PathString.path(proxyShape)
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
 
-        # Create a Capsule via contextOps menu. The capsule is automatically
-        # selected by the 'Add New Prim', so the AE will be showing it.
+        # Create a Capsule via contextOps menu. Not all versions of Maya automatically
+        # select the prim from 'Add New Prim', so always select it here.
         proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
         proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
+        cmds.select(proxyShape + ",/Capsule1")
 
         # Enable the display of Array Attributes.
         cmds.optionVar(intValue=('mayaUSD_AEShowArrayAttributes', 1))
@@ -109,10 +110,13 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         self.assertIsNotNone(frameLayout, 'Could not find Capsule frameLayout')
 
         # We should also have float slider controls for 'Height' & 'Radius'.
-        heightControl = self.searchForMayaControl(frameLayout, cmds.floatSliderGrp, 'Height')
-        self.assertIsNotNone(heightControl, 'Could not find Capsule Height control')
-        radiusControl = self.searchForMayaControl(frameLayout, cmds.floatSliderGrp, 'Radius')
-        self.assertIsNotNone(radiusControl, 'Could not find Capsule Radius control')
+        # Note: During Maya 2024 the controls were switched from floatFieldGrp to floatSliderGrp.
+        heightControl1 = self.searchForMayaControl(frameLayout, cmds.floatSliderGrp, 'Height')
+        heightControl2 = self.searchForMayaControl(frameLayout, cmds.floatFieldGrp, 'Height')
+        self.assertTrue(heightControl1 or heightControl2, 'Could not find Capsule Height control')
+        radiusControl1 = self.searchForMayaControl(frameLayout, cmds.floatSliderGrp, 'Radius')
+        radiusControl2 = self.searchForMayaControl(frameLayout, cmds.floatFieldGrp, 'Radius')
+        self.assertIsNotNone(radiusControl1 or radiusControl2, 'Could not find Capsule Radius control')
 
         # Since we enabled array attributes we should have an 'Extent' attribute.
         extentControl = self.searchForMayaControl(frameLayout, cmds.text, 'Extent')
@@ -128,9 +132,10 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         self.assertIsNotNone(frameLayout, 'Could not find Metadata frameLayout')
 
         # Create a SphereLight via contextOps menu.
-        # This prim type has applied schemas and extra attributes.
+        # This prim type has applied schemas.
         proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
         proxyShapeContextOps.doOp(['Add New Prim', 'SphereLight'])
+        cmds.select(proxyShape + ",/SphereLight1")
         maya.mel.eval('openAEWindow')
 
         # Make sure we can find formLayout for the SphereLight.
@@ -152,9 +157,24 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         # --------------------------------------------------------------------------------
         # Test the 'createCustomExtraAttrs' method of template.
         # --------------------------------------------------------------------------------
+
+        # Create a PhysicsScene via contextOps menu.
+        # This prim type has extra attributes.
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'PhysicsScene'])
+        cmds.select(proxyShape + ",/PhysicsScene1")
+        maya.mel.eval('openAEWindow')
+
+        # Make sure we can find formLayout for the PhysicsScene.
+        lightFormLayout = 'AttrEdUSDPhysicsSceneFormLayout'
+        self.assertTrue(cmds.formLayout(lightFormLayout, exists=True))
+        startLayout = cmds.formLayout(lightFormLayout, query=True, fullPathName=True)
+        self.assertIsNotNone(startLayout, 'Could not get full path for PhysicsScene formLayout')
+
         sectionName = maya.mel.eval("uiRes(\"s_TPStemplateStrings.rExtraAttributes\");")
         frameLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, sectionName)
         self.assertIsNotNone(frameLayout, 'Could not find Extra Attributes frameLayout')
+
 
     def testAECustomImageControl(self):
         '''Simple test for the customImageControlCreator in AE template.'''
@@ -164,7 +184,6 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
 
         # Select this prim which has a custom image control attribute.
         cmds.select('|stage|stageShape,/TypeSampler/MaterialX/D_filename', r=True)
-
 
         # Make sure the AE is visible.
         import maya.mel
@@ -177,14 +196,15 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         startLayout = cmds.formLayout(shaderFormLayout, query=True, fullPathName=True)
         self.assertIsNotNone(startLayout, 'Could not get full path for Shader formLayout')
 
-        # We should have a frameLayout called 'Shader: Dot' in the template.
-        # If there is a scripting error in the template, this layout will be missing.
-        frameLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, 'Shader: Dot')
-        self.assertIsNotNone(frameLayout, 'Could not find "Shader: Dot" frameLayout')
+        if mayaUtils.mayaMajorVersion() > 2024:
+            # We should have a frameLayout called 'Shader: Dot' in the template.
+            # If there is a scripting error in the template, this layout will be missing.
+            frameLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, 'Shader: Dot')
+            self.assertIsNotNone(frameLayout, 'Could not find "Shader: Dot" frameLayout')
 
-        # We should also have custom image control for 'Inputs In'.
-        InputsInControl = self.searchForMayaControl(frameLayout, cmds.text, 'Inputs In')
-        self.assertIsNotNone(InputsInControl, 'Could not find D_filename "Inputs In" control')
+            # We should also have custom image control for 'Inputs In'.
+            InputsInControl = self.searchForMayaControl(frameLayout, cmds.text, 'Inputs In')
+            self.assertIsNotNone(InputsInControl, 'Could not find D_filename "Inputs In" control')
 
     def testAECustomEnumControl(self):
         '''Simple test for the customEnumControlCreator in AE template.'''
@@ -242,14 +262,15 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         startLayout = cmds.formLayout(shaderFormLayout, query=True, fullPathName=True)
         self.assertIsNotNone(startLayout, 'Could not get full path for Shader formLayout')
         
-        # We should have a frameLayout called 'Shader: Fractal3d' in the template.
-        # If there is a scripting error in the template, this layout will be missing.
-        frameLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, 'Shader: Fractal3d')
-        self.assertIsNotNone(frameLayout, 'Could not find "Shader: Fractal3d" frameLayout')
-        
-        # We should also have an attribute called 'Amplitude' which has a connection.
-        AmplitudeControl = self.searchForMayaControl(frameLayout, cmds.text, 'Amplitude')
-        self.assertIsNotNone(AmplitudeControl, 'Could not find fractal3d1 "Amplitude" control')
+        if mayaUtils.mayaMajorVersion() > 2024:
+            # We should have a frameLayout called 'Shader: Fractal3d' in the template.
+            # If there is a scripting error in the template, this layout will be missing.
+            frameLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, 'Shader: Fractal3d')
+            self.assertIsNotNone(frameLayout, 'Could not find "Shader: Fractal3d" frameLayout')
+            
+            # We should also have an attribute called 'Amplitude' which has a connection.
+            AmplitudeControl = self.searchForMayaControl(frameLayout, cmds.text, 'Amplitude')
+            self.assertIsNotNone(AmplitudeControl, 'Could not find fractal3d1 "Amplitude" control')
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())
