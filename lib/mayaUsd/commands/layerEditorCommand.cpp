@@ -55,6 +55,8 @@ const char kAddAnonSublayerFlag[] = "aa";
 const char kAddAnonSublayerFlagL[] = "addAnonymous";
 const char kMuteLayerFlag[] = "mt";
 const char kMuteLayerFlagL[] = "muteLayer";
+const char kSaveLayerFlag[] = "slp";
+const char kSaveLayerFlagL[] = "saveLayerToPath";
 
 } // namespace
 
@@ -71,7 +73,8 @@ enum class CmdId
     kDiscardEdit,
     kClearLayer,
     kAddAnonLayer,
-    kMuteLayer
+    kMuteLayer,
+    kSaveLayer
 };
 
 class BaseCmd
@@ -594,6 +597,29 @@ public:
     }
 };
 
+class SaveLayer : public BaseCmd
+{
+public:
+    SaveLayer()
+        : BaseCmd((CmdId::kSaveLayer))
+    {
+    }
+
+    bool doIt(SdfLayerHandle layer) override 
+    {
+        TF_WARN("Do it");
+        TF_WARN(_fileName);
+        return true;
+    }
+
+    bool undoIt(SdfLayerHandle layer) override
+    {
+        TF_WARN("Can not undo this");
+        return false;
+    }
+    std::string _fileName;
+};
+
 class MuteLayer : public BaseCmd
 {
 public:
@@ -777,6 +803,8 @@ MSyntax LayerEditorCommand::createSyntax()
     syntax.makeFlagMultiUse(kAddAnonSublayerFlag);
     // paramter: proxy shape name
     syntax.addFlag(kMuteLayerFlag, kMuteLayerFlagL, MSyntax::kBoolean, MSyntax::kString);
+    // parameter: file save path
+    syntax.addFlag(kSaveLayerFlag, kSaveLayerFlagL, MSyntax::kString);
 
     return syntax;
 }
@@ -916,6 +944,19 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
             cmd->_muteIt = muteIt;
             cmd->_proxyShapePath = proxyShapeName.asChar();
             _subCommands.push_back(std::move(cmd));
+        }
+        if(argParser.isFlagSet(kSaveLayerFlag)){
+            TF_WARN("flag set saveLayerFlag");
+            auto    count = argParser.numberOfFlagUses(kSaveLayerFlag);
+            for (unsigned i = 0; i < count; i++) {
+                auto cmd = std::make_shared<Impl::SaveLayer>();
+
+                MArgList listOfArgs;
+                argParser.getFlagArgumentList(kSaveLayerFlag, i, listOfArgs);
+                TF_WARN(listOfArgs.asString(0).asUTF8());
+                cmd->_fileName = listOfArgs.asString(0).asUTF8();
+                _subCommands.push_back(std::move(cmd));
+            }
         }
     }
 

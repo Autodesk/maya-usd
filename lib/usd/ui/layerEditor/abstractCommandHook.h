@@ -79,6 +79,9 @@ public:
     // mute or unmute the given layer
     virtual void muteSubLayer(UsdLayer usdLayer, bool muteIt) = 0;
 
+    // save layers to disk
+    virtual void saveSubLayers(std::string name) = 0;
+
     // starts a complex undo operation in the host app. Please use UndoContext class to safely
     // open/close
     virtual void openUndoBracket(const QString& name) = 0;

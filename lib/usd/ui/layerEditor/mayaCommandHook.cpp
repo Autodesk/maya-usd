@@ -210,6 +210,15 @@ void MayaCommandHook::muteSubLayer(UsdLayer usdLayer, bool muteIt)
     executeMel(cmd).asChar();
 }
 
+// replaces a path in the layer stack
+void MayaCommandHook::saveSubLayers(std::string name)
+{
+    std::string cmd;
+    cmd = "mayaUsdLayerEditor -edit -saveLayerToPath ";
+    TF_WARN("saveLayers " + name);
+    executeMel(cmd);
+}
+
 // Help menu callback
 void MayaCommandHook::showLayerEditorHelp()
 {
