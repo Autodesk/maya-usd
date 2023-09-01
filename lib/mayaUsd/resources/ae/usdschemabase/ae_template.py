@@ -902,7 +902,8 @@ class AETemplate(object):
         return False
 
     def isImageAttribute(self, attrName):
-        if self.attrS.attributeType(attrName) != ufe.Attribute.kFilename:
+        kFilenameAttr = ufe.Attribute.kFilename if hasattr(ufe.Attribute, "kFilename") else 'Filename'
+        if self.attrS.attributeType(attrName) != kFilenameAttr:
             return False
         attr = self.prim.GetAttribute(attrName)
         if not attr:

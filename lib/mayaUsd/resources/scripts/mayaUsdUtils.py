@@ -197,7 +197,7 @@ def saveWantReferenceCompositionArc(want):
 
 def wantPrependCompositionArc():
     opVarName = "mayaUsd_WantPrependCompositionArc"
-    return cmds.optionVar(exists=opVarName) and cmds.optionVar(query=opVarName)
+    return not cmds.optionVar(exists=opVarName) or cmds.optionVar(query=opVarName)
 
 def saveWantPrependCompositionArc(want):
     opVarName = "mayaUsd_WantPrependCompositionArc"
