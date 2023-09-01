@@ -91,6 +91,7 @@ UsdUfe::TimeAccessorFn       gTimeAccessorFn = nullptr;
 UsdUfe::IsAttributeLockedFn  gIsAttributeLockedFn = nullptr;
 UsdUfe::SaveStageLoadRulesFn gSaveStageLoadRulesFn = nullptr;
 UsdUfe::IsRootChildFn        gIsRootChildFn = nullptr;
+UsdUfe::UniqueChildNameFn    gUniqueChildNameFn = nullptr;
 
 } // anonymous namespace
 
@@ -278,27 +279,57 @@ int ufePathToInstanceIndex(const Ufe::Path& path, UsdPrim* prim)
     return instanceIndex;
 }
 
-std::string uniqueName(const TfToken::HashSet& existingNames, std::string srcName)
+bool splitNumericalSuffix(const std::string srcName, std::string& base, std::string& suffix)
 {
     // Compiled regular expression to find a numerical suffix to a path component.
     // It searches for any number of characters followed by a single non-numeric,
     // then one or more digits at end of string.
     std::regex  re("(.*)([^0-9])([0-9]+)$");
-    std::string base { srcName };
-    int         suffix { 1 };
+    base = srcName;
     std::smatch match;
     if (std::regex_match(srcName, match, re)) {
         base = match[1].str() + match[2].str();
-        suffix = std::stoi(match[3].str()) + 1;
+        suffix = match[3].str();
+        return true;
     }
-    std::string dstName = base + std::to_string(suffix);
+    return false;
+}
+
+std::string uniqueName(const TfToken::HashSet& existingNames, std::string srcName)
+{
+    std::string base, suffixStr;
+    int         suffix { 1 };
+    size_t      lenSuffix { 1 };
+    if (splitNumericalSuffix(srcName, base, suffixStr)) {
+        lenSuffix = suffixStr.length();
+        suffix = std::stoi(suffixStr) + 1;
+    }
+
+    // Create a suffix string from the number keeping the same number of digits as
+    // numerical suffix from input srcName (padding with 0's if needed).
+    suffixStr = std::to_string(suffix);
+    suffixStr = std::string(lenSuffix - std::min(lenSuffix, suffixStr.length()), '0') + suffixStr;
+    std::string dstName = base + suffixStr;
     while (existingNames.count(TfToken(dstName)) > 0) {
         dstName = base + std::to_string(++suffix);
     }
     return dstName;
 }
 
+void setUniqueChildNameFn(UniqueChildNameFn fn)
+{
+    // This function is allowed to be null in which case, the default implementation
+    // is used (uniqueChildNameDefault()).
+    gUniqueChildNameFn = fn;
+}
+
 std::string uniqueChildName(const UsdPrim& usdParent, const std::string& name)
+{
+    return gUniqueChildNameFn ? gUniqueChildNameFn(usdParent, name)
+                              : uniqueChildNameDefault(usdParent, name);
+}
+
+std::string uniqueChildNameDefault(const UsdPrim& usdParent, const std::string& name)
 {
     if (!usdParent.IsValid())
         return std::string();
