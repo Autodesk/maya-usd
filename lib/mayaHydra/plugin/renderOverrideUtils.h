@@ -18,8 +18,6 @@
 #ifndef MTOH_VIEW_OVERRIDE_UTILS_H
 #define MTOH_VIEW_OVERRIDE_UTILS_H
 
-#include <mayaHydraLib/utils.h>
-
 #include <pxr/pxr.h>
 
 #include <maya/MViewport2Renderer.h>

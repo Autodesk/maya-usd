@@ -17,6 +17,7 @@
 #include <mayaHydraLib/adapters/adapterRegistry.h>
 #include <mayaHydraLib/adapters/mayaAttrs.h>
 #include <mayaHydraLib/adapters/shapeAdapter.h>
+#include <mayaHydraLib/mayaHydraSceneProducer.h>
 
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/tokens.h>
@@ -58,8 +59,8 @@ const std::array<std::pair<MObject&, HdDirtyBits>, 4> _dirtyBits { {
 class MayaHydraNurbsCurveAdapter : public MayaHydraShapeAdapter
 {
 public:
-    MayaHydraNurbsCurveAdapter(MayaHydraDelegateCtx* delegate, const MDagPath& dag)
-        : MayaHydraShapeAdapter(delegate->GetPrimPath(dag, false), delegate, dag)
+    MayaHydraNurbsCurveAdapter(MayaHydraSceneProducer* producer, const MDagPath& dag)
+        : MayaHydraShapeAdapter(producer->GetPrimPath(dag, false), producer, dag)
     {
     }
 
@@ -67,10 +68,10 @@ public:
 
     bool IsSupported() const override
     {
-        return GetDelegate()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->basisCurves);
+        return GetSceneProducer()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->basisCurves);
     }
 
-    void Populate() override { GetDelegate()->InsertRprim(HdPrimTypeTokens->basisCurves, GetID()); }
+    void Populate() override { GetSceneProducer()->InsertRprim(this, HdPrimTypeTokens->basisCurves, GetID()); }
 
     void CreateCallbacks() override
     {
@@ -240,8 +241,8 @@ TF_REGISTRY_FUNCTION_WITH_TAG(MayaHydraAdapterRegistry, mesh)
 {
     MayaHydraAdapterRegistry::RegisterShapeAdapter(
         TfToken("nurbsCurve"),
-        [](MayaHydraDelegateCtx* delegate, const MDagPath& dag) -> MayaHydraShapeAdapterPtr {
-            return MayaHydraShapeAdapterPtr(new MayaHydraNurbsCurveAdapter(delegate, dag));
+        [](MayaHydraSceneProducer* producer, const MDagPath& dag) -> MayaHydraShapeAdapterPtr {
+            return MayaHydraShapeAdapterPtr(new MayaHydraNurbsCurveAdapter(producer, dag));
         });
 }
 

@@ -1,5 +1,6 @@
 # Unit test scripts.
 set(TEST_SCRIPT_FILES
+    testImageDiffing.py
     testMtohCommand.py
 # Fail as of 22-Feb-2023.  Entered as MAYA-127898.
 #    testMtohBasicRender.py
@@ -8,6 +9,9 @@ set(TEST_SCRIPT_FILES
     testNamespaces.py
     testVisibility.py
     testStageAddPrim.py
+    cpp/testCppFramework.py
+    cpp/testMayaSceneFlattening.py
+    cpp/testMayaUsdUfeItems.py
 )
 
 # Test use of mesh adapter code for mesh support, using environment variable.

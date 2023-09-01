@@ -23,7 +23,9 @@
 #include <mayaHydraLib/adapters/renderItemAdapter.h>
 #include <mayaHydraLib/delegates/delegateDebugCodes.h>
 #include <mayaHydraLib/delegates/delegateRegistry.h>
-#include <mayaHydraLib/utils.h>
+#include <mayaHydraLib/hydraUtils.h>
+#include <mayaHydraLib/mayaHydra.h>
+#include <mayaHydraLib/mayaUtils.h>
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/range3d.h>
@@ -98,12 +100,16 @@ bool filterMesh(const MRenderItem& ri) {
 }
 
 PXR_NAMESPACE_OPEN_SCOPE
+// Bring the MayaHydra namespace into scope.
+// The following code currently lives inside the pxr namespace, but it would make more sense to 
+// have it inside the MayaHydra namespace. This using statement allows us to use MayaHydra symbols
+// from within the pxr namespace as if we were in the MayaHydra namespace.
+// Remove this once the code has been moved to the MayaHydra namespace.
+using namespace MayaHydra;
 
 SdfPath MayaHydraSceneDelegate::_fallbackMaterial;
 SdfPath MayaHydraSceneDelegate::_mayaDefaultMaterialPath; // Common to all scene delegates
 VtValue MayaHydraSceneDelegate::_mayaDefaultMaterial;
-/// Rendertags to be displayed in Hydra (geometry, guide, proxy, render, widget) ignoring "hidden"
-const TfTokenVector MayaHydraSceneDelegate::_renderTagsDisplayed = {HdRenderTagTokens->geometry, HdRenderTagTokens->guide, HdRenderTagTokens->proxy, HdRenderTagTokens->render, HdRenderTagTokens->widget};
 
 namespace {
 
@@ -268,11 +274,6 @@ MayaHydraSceneDelegate::MayaHydraSceneDelegate(const InitData& initData)
     // Enable the following line to print to the output window the lights parameters type and
     // values. TfDebug::Enable(MAYAHYDRALIB_DELEGATE_PRINT_LIGHTS_PARAMETERS_VALUES);
 
-    auto pTaskController = GetTaskController();
-    if (pTaskController){
-        pTaskController->SetRenderTags(_renderTagsDisplayed);//Set the render tags displayed in Hydra, this also acts on others scene indices like maya-usd stages
-    }
-
     static std::once_flag once;
     std::call_once(once, []() {
         _mayaDefaultMaterialPath = SdfPath::AbsoluteRootPath().AppendChild(
@@ -383,7 +384,11 @@ void MayaHydraSceneDelegate::HandleCompleteViewportScene(
             }
             // MAYA-128021: We do not currently support maya instances.
             MDagPath dagPath(ri.sourceDagPath());
-            ria = std::make_shared<MayaHydraRenderItemAdapter>(dagPath, slowId, fastId, this, ri);
+            ria = std::make_shared<MayaHydraRenderItemAdapter>(dagPath, slowId, fastId, GetProducer(), ri);
+
+            //Update the render item adapter if this render item is an aiSkydomeLight shape
+            ria->SetIsRenderITemAnaiSkydomeLightTriangleShape(isRenderItem_aiSkyDomeLightTriangleShape(ri));
+
             _AddRenderItem(ria);
         }
 
@@ -509,7 +514,7 @@ void MayaHydraSceneDelegate::PreFrame(const MHWRender::MDrawContext& context)
             if (!status) {
                 return;
             }
-            MayaHydraSceneDelegate::Create(dag, lightToAdd.second, _lightAdapters, true);
+            CreateLightAdapter(dag);
         }
         _lightsToAdd.clear();
     }
@@ -609,6 +614,10 @@ void MayaHydraSceneDelegate::PreFrame(const MHWRender::MDrawContext& context)
         if (!lightPath.isValid()) {
             continue;
         }
+        if (IsUfeItemFromMayaUsd(lightPath)) {
+            // If this is a UFE light created by maya-usd, it will have already added it to Hydra
+            continue;
+        }
 
         activelightPaths.push_back(lightPath);
 
@@ -622,7 +631,7 @@ void MayaHydraSceneDelegate::PreFrame(const MHWRender::MDrawContext& context)
             _FindAdapter<MayaHydraLightAdapter>(
                 GetPrimPath(lightPath, true),
                 [&matrixVal](MayaHydraLightAdapter* a) {
-                    a->SetShadowProjectionMatrix(MAYAHYDRA_NS::GetGfMatrixFromMaya(matrixVal));
+                    a->SetShadowProjectionMatrix(GetGfMatrixFromMaya(matrixVal));
                 },
                 _lightAdapters);
         }
@@ -641,11 +650,7 @@ void MayaHydraSceneDelegate::PreFrame(const MHWRender::MDrawContext& context)
         },
         _lightAdapters);
     for (const auto& lightPath : activelightPaths) {
-        Create(
-            lightPath,
-            MayaHydraAdapterRegistry::GetLightAdapterCreator(lightPath),
-            _lightAdapters,
-            true);
+        CreateLightAdapter(lightPath);
     }
 }
 
@@ -799,19 +804,28 @@ MayaHydraMaterialAdapterPtr MayaHydraSceneDelegate::GetMaterialAdapter(const Sdf
 }
 
 template <typename AdapterPtr, typename Map>
-AdapterPtr MayaHydraSceneDelegate::Create(
+AdapterPtr MayaHydraSceneDelegate::_CreateAdapter(
     const MDagPath&                                                          dag,
-    const std::function<AdapterPtr(MayaHydraDelegateCtx*, const MDagPath&)>& adapterCreator,
+    const std::function<AdapterPtr(MayaHydraSceneProducer*, const MDagPath&)>& adapterCreator,
     Map&                                                                     adapterMap,
     bool                                                                     isSprim)
 {
+    // Filter for whether we should even attempt to create the adapter
+
     if (!adapterCreator) {
         return {};
     }
 
+    if (IsUfeItemFromMayaUsd(dag)) {
+        // UFE items that have a Hydra representation will be added to Hydra by maya-usd
+        return {};
+    }
+
+    // Attempt to create the adapter
+
     TF_DEBUG(MAYAHYDRALIB_DELEGATE_INSERTDAG)
         .Msg(
-            "MayaHydraSceneDelegate::Create::"
+            "MayaHydraSceneDelegate::_CreateAdapter::"
             "found %s: %s\n",
             MFnDependencyNode(dag.node()).typeName().asChar(),
             dag.fullPathName().asChar());
@@ -820,7 +834,7 @@ AdapterPtr MayaHydraSceneDelegate::Create(
     if (TfMapLookupPtr(adapterMap, id) != nullptr) {
         return {};
     }
-    auto adapter = adapterCreator(this, dag);
+    auto adapter = adapterCreator(GetProducer(), dag);
     if (adapter == nullptr || !adapter->IsSupported()) {
         return {};
     }
@@ -828,6 +842,23 @@ AdapterPtr MayaHydraSceneDelegate::Create(
     adapter->CreateCallbacks();
     adapterMap.insert({ id, adapter });
     return adapter;
+}
+
+MayaHydraLightAdapterPtr MayaHydraSceneDelegate::CreateLightAdapter(const MDagPath& dagPath)
+{
+    auto lightCreatorFunc = MayaHydraAdapterRegistry::GetLightAdapterCreator(dagPath);
+    return _CreateAdapter(dagPath, lightCreatorFunc, _lightAdapters, true);
+}
+
+MayaHydraCameraAdapterPtr MayaHydraSceneDelegate::CreateCameraAdapter(const MDagPath& dagPath)
+{
+    auto cameraCreatorFunc = MayaHydraAdapterRegistry::GetCameraAdapterCreator(dagPath);
+    return _CreateAdapter(dagPath, cameraCreatorFunc, _cameraAdapters, true);
+}
+
+MayaHydraShapeAdapterPtr MayaHydraSceneDelegate::CreateShapeAdapter(const MDagPath& dagPath) {
+    auto shapeCreatorFunc = MayaHydraAdapterRegistry::GetShapeAdapterCreator(dagPath);
+    return _CreateAdapter(dagPath, shapeCreatorFunc, _shapeAdapters);
 }
 
 namespace {
@@ -905,6 +936,11 @@ void MayaHydraSceneDelegate::OnDagNodeAdded(const MObject& obj)
     if (obj.isNull())
         return;
 
+    if (IsUfeItemFromMayaUsd(obj)) {
+        // UFE items that have a Hydra representation will be added to Hydra by maya-usd
+        return;
+    }
+
     // When not using the mesh adapter we care only about lights for this
     // callback.  It is used to create a LightAdapter when adding a new light
     // in the scene for Hydra rendering.
@@ -952,25 +988,17 @@ void MayaHydraSceneDelegate::InsertDag(const MDagPath& dag)
         return;
     }
 
-    // Skip UFE nodes coming from USD runtime
-    // UFE stands for Universal Front End : the goal of the Universal Front End is to create a
-    // DCC-agnostic component that will allow a DCC to browse and edit data in multiple data models.
-    // Those will be handled by USD Imaging delegate
-    MStatus              status;
-    static const MString ufeRuntimeStr = "ufeRuntime";
-    MPlug                ufeRuntimePlug = dagNode.findPlug(ufeRuntimeStr, false, &status);
-    if ((status == MS::kSuccess) && ufeRuntimePlug.asString() == "USD") {
+    if (IsUfeItemFromMayaUsd(dag)) {
+        // UFE items that have a Hydra representation will be added to Hydra by maya-usd
         return;
     }
 
     // Custom lights don't have MFn::kLight.
     if (GetLightsEnabled()) {
-        if (Create(
-                dag, MayaHydraAdapterRegistry::GetLightAdapterCreator(dag), _lightAdapters, true))
+        if (CreateLightAdapter(dag))
             return;
     }
-    if (Create(
-            dag, MayaHydraAdapterRegistry::GetCameraAdapterCreator(dag), _cameraAdapters, true)) {
+    if (CreateCameraAdapter(dag)) {
         return;
     }
     // We are inserting a single prim and
@@ -979,8 +1007,7 @@ void MayaHydraSceneDelegate::InsertDag(const MDagPath& dag)
         return;
     }
 
-    auto adapter
-        = Create(dag, MayaHydraAdapterRegistry::GetShapeAdapterCreator(dag), _shapeAdapters);
+    auto adapter = CreateShapeAdapter(dag);
     if (adapter) {
         auto material = adapter->GetMaterial();
         if (material != MObject::kNullObj) {
@@ -1114,7 +1141,13 @@ bool MayaHydraSceneDelegate::AddPickHitToSelectionList(
         _FindAdapter<MayaHydraRenderItemAdapter>(
             hitId,
             [&selectionList, &worldSpaceHitPts, &hit](MayaHydraRenderItemAdapter* a) {
-                selectionList.add(a->GetDagPath());
+                // prepare the selection path of the hit item, the transform path is expected if available
+                const auto& itemPath = a->GetDagPath();
+                MDagPath selectPath;
+                if (MS::kSuccess != MDagPath::getAPathTo(itemPath.transform(), selectPath)) {
+                    selectPath = itemPath;
+                }
+                selectionList.add(selectPath);
                 worldSpaceHitPts.append(
                     hit.worldSpaceHitPoint[0],
                     hit.worldSpaceHitPoint[1],
@@ -1328,8 +1361,7 @@ VtValue MayaHydraSceneDelegate::GetLightParamValue(const SdfPath& id, const TfTo
 
     if (TfDebug::IsEnabled(MAYAHYDRALIB_DELEGATE_PRINT_LIGHTS_PARAMETERS_VALUES)) {
         // Print the lights parameters to the output window
-        std::string valueAsString;
-        MAYAHYDRA_NS_DEF::ConvertVtValueAsText(val, valueAsString);
+        std::string valueAsString = ConvertVtValueToString(val);
         cout << "Light : " << id.GetText() << " Parameter : " << paramName.GetText()
              << " Value : " << valueAsString << endl;
     }
@@ -1424,10 +1456,12 @@ HdCullStyle MayaHydraSceneDelegate::GetCullStyle(const SdfPath& id)
 {
     TF_DEBUG(MAYAHYDRALIB_DELEGATE_GET_CULL_STYLE)
         .Msg("MayaHydraSceneDelegate::GetCullStyle(%s)\n", id.GetText());
-    // HdCullStyleNothing means no culling, HdCullStyledontCare means : let the renderer choose
-    // between back or front faces culling. We don't want culling, since we want to see the
-    // backfaces being unlit with MayaHydraSceneDelegate::GetDoubleSided returning false.
-    return HdCullStyleNothing;
+
+    return _GetValue<MayaHydraAdapter, HdCullStyle>(
+        id,
+        [](MayaHydraAdapter* a) -> HdCullStyle { return a->GetCullStyle(); },
+        _shapeAdapters,
+        _renderItemsAdapters);
 }
 
 HdDisplayStyle MayaHydraSceneDelegate::GetDisplayStyle(const SdfPath& id)
@@ -1484,7 +1518,7 @@ SdfPath MayaHydraSceneDelegate::GetMaterialId(const SdfPath& id)
         if (TfMapLookupPtr(_materialAdapters, materialId) != nullptr) {
             return materialId;
         }
-    
+
         return _CreateMaterial(materialId, material) ? materialId : _fallbackMaterial;
     }
 
@@ -1520,7 +1554,7 @@ bool MayaHydraSceneDelegate::_CreateMaterial(const SdfPath& id, const MObject& o
     if (materialCreator == nullptr) {
         return false;
     }
-    auto materialAdapter = materialCreator(id, this, obj);
+    auto materialAdapter = materialCreator(id, GetProducer(), obj);
     if (materialAdapter == nullptr || !materialAdapter->IsSupported()) {
         return false;
     }

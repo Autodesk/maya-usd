@@ -30,6 +30,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class MayaHydraSceneProducer;
+
 /**
  * \brief MayaHydraAdapter is the base class for all adapters. An adapter is used to translate from
  * Maya data to hydra data.
@@ -39,12 +41,12 @@ class MayaHydraAdapter
 {
 public:
     MAYAHYDRALIB_API
-    MayaHydraAdapter(const MObject& node, const SdfPath& id, MayaHydraDelegateCtx* delegate);
+    MayaHydraAdapter(const MObject& node, const SdfPath& id, MayaHydraSceneProducer* producer);
     MAYAHYDRALIB_API
     virtual ~MayaHydraAdapter();
 
     const SdfPath&        GetID() const { return _id; }
-    MayaHydraDelegateCtx* GetDelegate() const { return _delegate; }
+    MayaHydraSceneProducer* GetSceneProducer() const { return _sceneProducer; }
     MAYAHYDRALIB_API
     void AddCallback(MCallbackId callbackId);
     MAYAHYDRALIB_API
@@ -86,12 +88,14 @@ public:
     MAYAHYDRALIB_API
     virtual bool GetDoubleSided() const { return true; }
     MAYAHYDRALIB_API
+    virtual HdCullStyle GetCullStyle() const { return HdCullStyleNothing; }
+    MAYAHYDRALIB_API
     virtual HdDisplayStyle GetDisplayStyle() { return { 0, false, false }; }
 
 protected:
     SdfPath                  _id;
     std::vector<MCallbackId> _callbacks;
-    MayaHydraDelegateCtx*    _delegate;
+    MayaHydraSceneProducer*  _sceneProducer;
     MObject                  _node;
 
     bool _isPopulated = false;

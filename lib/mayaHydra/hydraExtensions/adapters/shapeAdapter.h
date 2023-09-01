@@ -22,6 +22,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class MayaHydraSceneProducer;
+
 /**
  * \brief MayaHydraShapeAdapter is an adapter to translate from Maya shapes to hydra
  * Please note that, at this time, this is not used by the hydra plug-in, we translate from a
@@ -33,7 +35,7 @@ protected:
     MAYAHYDRALIB_API
     MayaHydraShapeAdapter(
         const SdfPath&        id,
-        MayaHydraDelegateCtx* delegate,
+        MayaHydraSceneProducer* producer,
         const MDagPath&       dagPath);
 
 public:

@@ -239,11 +239,15 @@ protected:
 
 private:
     template <typename AdapterPtr, typename Map>
-    AdapterPtr Create(
+    AdapterPtr _CreateAdapter(
         const MDagPath&                                                          dag,
-        const std::function<AdapterPtr(MayaHydraDelegateCtx*, const MDagPath&)>& adapterCreator,
+        const std::function<AdapterPtr(MayaHydraSceneProducer*, const MDagPath&)>& adapterCreator,
         Map&                                                                     adapterMap,
         bool                                                                     isSprim = false);
+    
+    MayaHydraLightAdapterPtr CreateLightAdapter(const MDagPath& dagPath);
+    MayaHydraCameraAdapterPtr CreateCameraAdapter(const MDagPath& dagPath);
+    MayaHydraShapeAdapterPtr CreateShapeAdapter(const MDagPath& dagPath);
 
     MAYAHYDRALIB_API
     bool _GetRenderItem(int fastId, MayaHydraRenderItemAdapterPtr& adapter);
@@ -282,7 +286,7 @@ private:
     std::vector<MObject> _addedNodes;
 
     using LightAdapterCreator
-        = std::function<MayaHydraLightAdapterPtr(MayaHydraDelegateCtx*, const MDagPath&)>;
+        = std::function<MayaHydraLightAdapterPtr(MayaHydraSceneProducer*, const MDagPath&)>;
     std::vector<std::pair<MObject, LightAdapterCreator>> _lightsToAdd;
 
     /// Is used to maintain a list of Arnold lights, they are not seen as lights by Maya but as
@@ -299,9 +303,6 @@ private:
     /// _mayaDefaultMaterial is an hydra material used to override all materials from the scene when
     /// _useDefaultMaterial is true
     static VtValue _mayaDefaultMaterial;
-
-    /// Rendertags to be displayed in Hydra
-    static const TfTokenVector _renderTagsDisplayed;
 
     bool _useDefaultMaterial = false;
     bool _xRayEnabled = false;

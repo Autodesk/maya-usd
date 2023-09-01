@@ -29,6 +29,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class MayaHydraSceneProducer;
+
 /**
  * \brief MayaHydraLightAdapter is the base class for any light adapter used to handle the
  * translation from a light to hydra.
@@ -42,7 +44,7 @@ public:
     }
 
     MAYAHYDRALIB_API
-    MayaHydraLightAdapter(MayaHydraDelegateCtx* delegate, const MDagPath& dag);
+    MayaHydraLightAdapter(MayaHydraSceneProducer* producer, const MDagPath& dag);
     MAYAHYDRALIB_API
     virtual ~MayaHydraLightAdapter();
     MAYAHYDRALIB_API

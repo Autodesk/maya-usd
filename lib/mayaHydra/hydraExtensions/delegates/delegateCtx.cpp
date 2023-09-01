@@ -17,7 +17,8 @@
 //
 #include "delegateCtx.h"
 
-#include <mayaHydraLib/utils.h>
+#include <mayaHydraLib/hydraUtils.h>
+#include <mayaHydraLib/mixedUtils.h>
 
 #include <pxr/base/gf/frustum.h>
 #include <pxr/base/gf/plane.h>
@@ -34,17 +35,23 @@
 #include <array>
 
 PXR_NAMESPACE_OPEN_SCOPE
+// Bring the MayaHydra namespace into scope.
+// The following code currently lives inside the pxr namespace, but it would make more sense to 
+// have it inside the MayaHydra namespace. This using statement allows us to use MayaHydra symbols
+// from within the pxr namespace as if we were in the MayaHydra namespace.
+// Remove this once the code has been moved to the MayaHydra namespace.
+using namespace MayaHydra;
 
 namespace {
 
-static const SdfPath solidPath = SdfPath(std::string("Solid"));
+static const SdfPath lightedObjectsPath = SdfPath(std::string("Lighted"));
 
 template<class T> SdfPath toSdfPath(const T& src);
 template<> inline SdfPath toSdfPath<MDagPath>(const MDagPath& dag) {
-    return MayaHydra::DagPathToSdfPath(dag, false, false);
+    return DagPathToSdfPath(dag, false, false);
 }
 template<> inline SdfPath toSdfPath<MRenderItem>(const MRenderItem& ri) {
-    return MayaHydra::RenderItemToSdfPath(ri, false);
+    return RenderItemToSdfPath(ri, false);
 }
 
 template<class T> SdfPath maybePrepend(const T& src, const SdfPath& inPath);
@@ -57,14 +64,25 @@ template<> inline SdfPath maybePrepend<MRenderItem>(
     const MRenderItem& ri, const SdfPath& inPath
 ) {
     // Prepend Maya node name, for organisation and readability.
-    return SdfPath(MayaHydra::SanitizeName(MFnDependencyNode(ri.sourceDagPath().node()).name().asChar())).AppendPath(inPath);
+    std::string dependNodeNameString (MFnDependencyNode(ri.sourceDagPath().node()).name().asChar());
+    SanitizeNameForSdfPath(dependNodeNameString);
+    return SdfPath(dependNodeNameString).AppendPath(inPath);
 }
 
-template<class T> bool testSolid(const T& src);
-template<> inline bool testSolid<MDagPath>(const MDagPath& dag) {
+///Returns false if this object should not be lighted, true if it should be lighted
+template<class T> bool shouldBeLighted(const T& src);
+//Template specialization for MDagPath
+template<> inline bool shouldBeLighted<MDagPath>(const MDagPath& dag) {
     return (MFnDependencyNode(dag.node()).typeName().asChar() == TfToken("mesh"));
 }
-template<> inline bool testSolid<MRenderItem>(const MRenderItem& ri) {
+//Template specialization for MRenderItem
+template<> inline bool shouldBeLighted<MRenderItem>(const MRenderItem& ri) {
+    
+    //Special case to recognize the Arnold skydome light
+    if (MayaHydraDelegateCtx::isRenderItem_aiSkyDomeLightTriangleShape(ri)){
+        return false;//Don't light the sky dome light shape
+    }
+        
     return (MHWRender::MGeometry::Primitive::kLines != ri.primitive()
             && MHWRender::MGeometry::Primitive::kLineStrip != ri.primitive()
             && MHWRender::MGeometry::Primitive::kPoints != ri.primitive());
@@ -84,10 +102,10 @@ SdfPath GetMayaPrimPath(const T& src)
 
     mayaPath = maybePrepend(src, mayaPath);
 
-    if (testSolid(src)) {
-        // Prefix with "Solid" when it's not a line/points primitive to be able
-        // to use only solid primitives in lighting/shadowing by their root path
-        mayaPath = solidPath.AppendPath(mayaPath);
+    if (shouldBeLighted(src)) {
+        // Use a specific prefix when it's not an object that needs to interact with lights and shadows to be able
+        // We filter the objects that don't have this prefix in lights HdLightTokens->shadowCollection parameter
+        mayaPath = lightedObjectsPath.AppendPath(mayaPath);
     }
 
     return mayaPath;
@@ -127,10 +145,10 @@ SdfPath _GetMaterialPath(const SdfPath& base, const MObject& obj)
     if (chr == nullptr || chr[0] == '\0') {
         return {};
     }
-    std::string usdPathStr(chr);
-    // replace namespace ":" with "_"
-    std::replace(usdPathStr.begin(), usdPathStr.end(), ':', '_');
-    return base.AppendPath(SdfPath(usdPathStr));
+
+    std::string nodeName(chr);
+    SanitizeNameForSdfPath(nodeName);
+    return base.AppendPath(SdfPath(nodeName));
 }
 
 } // namespace
@@ -205,9 +223,26 @@ SdfPath MayaHydraDelegateCtx::GetMaterialPath(const MObject& obj)
     return _GetMaterialPath(_materialPath, obj);
 }
 
-SdfPath MayaHydraDelegateCtx::GetSolidPrimsRootPath() const
+SdfPath MayaHydraDelegateCtx::GetLightedPrimsRootPath() const
 {
-    return _rprimPath.AppendPath(solidPath);
+    return _rprimPath.AppendPath(lightedObjectsPath);
+}
+
+bool MayaHydraDelegateCtx::isRenderItem_aiSkyDomeLightTriangleShape(const MRenderItem& renderItem)
+{ 
+    static const std::string _aiSkyDomeLight ("aiSkyDomeLight");
+
+    const auto prim = renderItem.primitive();
+    MDagPath dag    = renderItem.sourceDagPath();
+    if( dag.isValid() && (MHWRender::MGeometry::Primitive::kTriangles == prim) && (MHWRender::MRenderItem::DecorationItem == renderItem.type()) ){
+        std::string fpName = dag.fullPathName().asChar();
+        if (fpName.find(_aiSkyDomeLight) != std::string::npos) {
+            //This render item is a aiSkyDomeLight
+            return true;
+        }
+    }
+
+    return false;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

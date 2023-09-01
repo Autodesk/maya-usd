@@ -1,2 +1,1 @@
-add_subdirectory(mayaUsd)
-add_subdirectory(usd)
+add_subdirectory(mayaHydra)

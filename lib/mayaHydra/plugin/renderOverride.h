@@ -16,12 +16,12 @@
 #ifndef MTOH_VIEW_OVERRIDE_H
 #define MTOH_VIEW_OVERRIDE_H
 
-#include "defaultLightDelegate.h"
 #include "renderGlobals.h"
-#include "utils.h"
+#include "pluginUtils.h"
 
 #include <mayaHydraLib/delegates/delegate.h>
 #include <mayaHydraLib/delegates/params.h>
+#include <mayaHydraLib/mayaHydraSceneProducer.h>
 
 #include <pxr/base/tf/singleton.h>
 #include <pxr/imaging/hd/driver.h>
@@ -29,6 +29,7 @@
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/rendererPlugin.h>
 #include <pxr/imaging/hd/rprimCollection.h>
+#include <pxr/imaging/hd/pluginRenderDelegateUniqueHandle.h>
 #include <pxr/imaging/hdSt/renderDelegate.h>
 #include <pxr/imaging/hdx/taskController.h>
 #include <pxr/pxr.h>
@@ -45,6 +46,8 @@
 #include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
+// Remove this using statement once the following code is moved into the MayaHydra namespace
+using MtohRendererDescription = MayaHydra::MtohRendererDescription;
 
 using HgiUniquePtr = std::unique_ptr<class Hgi>;
 class MayaHydraSceneIndexRegistry;
@@ -189,8 +192,8 @@ private:
     HdEngine                                  _engine;
     HdRendererPlugin*                         _rendererPlugin = nullptr;
     HdxTaskController*                        _taskController = nullptr;
+    HdPluginRenderDelegateUniqueHandle        _renderDelegate = nullptr;
     HdRenderIndex*                            _renderIndex = nullptr;
-    std::unique_ptr<MtohDefaultLightDelegate> _defaultLightDelegate = nullptr;
     HdxSelectionTrackerSharedPtr              _selectionTracker;
     HdRprimCollection                         _renderCollection { HdTokens->geometry,
                                           HdReprSelector(HdReprTokens->refined),
@@ -206,8 +209,7 @@ private:
 
     GlfSimpleLight _defaultLight;
 
-    std::vector<MayaHydraDelegatePtr>       _delegates;
-    std::shared_ptr<MayaHydraSceneDelegate> _mayaHydraSceneDelegate;
+    std::unique_ptr<MayaHydraSceneProducer> _mayaHydraSceneProducer;
 
     SdfPath _ID;
 

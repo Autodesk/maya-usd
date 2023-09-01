@@ -22,6 +22,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class MayaHydraSceneProducer;
+
 /**
  * \brief MayaHydraMaterialAdapter is used to handle the translation from a Maya material to hydra.
  * If you are looking for how we translate the Maya shaders to hydra and how we do the parameters
@@ -33,7 +35,7 @@ public:
     MAYAHYDRALIB_API
     MayaHydraMaterialAdapter(
         const SdfPath&        id,
-        MayaHydraDelegateCtx* delegate,
+        MayaHydraSceneProducer* producer,
         const MObject&        node);
     MAYAHYDRALIB_API
     virtual ~MayaHydraMaterialAdapter() = default;

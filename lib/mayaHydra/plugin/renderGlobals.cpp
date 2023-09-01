@@ -13,16 +13,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #include "renderGlobals.h"
 
-#include "pxr/usd/usdRender/settings.h"
 #include "renderOverride.h"
-#include "utils.h"
 
 #include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/imaging/hd/rendererPlugin.h>
 #include <pxr/imaging/hd/rendererPluginRegistry.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/usdRender/settings.h>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnEnumAttribute.h>
@@ -41,12 +41,21 @@
 // the parameters from the chosen render delegate.
 
 PXR_NAMESPACE_OPEN_SCOPE
+// Bring the MayaHydra namespace into scope.
+// The following code currently lives inside the pxr namespace, but it would make more sense to 
+// have it inside the MayaHydra namespace. This using statement allows us to use MayaHydra symbols
+// from within the pxr namespace as if we were in the MayaHydra namespace.
+// Remove this once the code has been moved to the MayaHydra namespace.
+using namespace MayaHydra;
 
 // clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     (defaultRenderGlobals)
+    (mayaHydraProxyPurpose)
+    (mayaHydraRenderPurpose)
+    (mayaHydraGuidePurpose)
     (mtohTextureMemoryPerTexture)
     (mtohMotionSampleStart)
     (mtohMotionSampleEnd)
@@ -720,6 +729,37 @@ void MtohRenderGlobals::BuildOptionsMenu(
            << quote(MtohTokens->mtohMaximumShadowMapResolution.GetText()) // Label
            << ", $fromAE);\n";
     }
+
+    // Temp solution to store global settings for USD Purpose tags
+    {
+        ss << "\tframeLayout -label \"Display Purpose\" -collapsable true;";
+    }
+    {        
+        ss << "\tmtohRenderOverride_AddAttribute(" << quote(rendererDesc.rendererName.GetString())
+           << ',' << quote("Display Purpose") << ',' // Description
+           << quote(_MangleName(_tokens->mayaHydraProxyPurpose).GetString())
+           << ','                                                         // Attribute name
+           << quote("Proxy")                                              // Label
+           << ", $fromAE);\n";
+    }
+    {        
+        ss << "\tmtohRenderOverride_AddAttribute(" << quote(rendererDesc.rendererName.GetString())
+           << ',' << quote("Display Purpose") << ',' // Description
+           << quote(_MangleName(_tokens->mayaHydraRenderPurpose).GetString())
+           << ','                                                         // Attribute name
+           << quote("Render")                                             // Label
+           << ", $fromAE);\n";
+    }
+    {        
+        ss << "\tmtohRenderOverride_AddAttribute(" << quote(rendererDesc.rendererName.GetString())
+           << ',' << quote("Display Purpose") << ',' // Description
+           << quote(_MangleName(_tokens->mayaHydraGuidePurpose).GetString())
+           << ','                                                         // Attribute name
+           << quote("Guide")                                              // Label
+           << ", $fromAE);\n";
+    }
+    ss << "setParent ..;";
+    ss << "setParent ..;";
     ss << "}\n";
 
     const auto optionsCommand = ss.str();
@@ -811,6 +851,37 @@ MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params)
     if (filter(_tokens->mtohMotionSampleEnd)) {
         _CreateFloatAttribute(
             node, filter.mayaString(), defGlobals.delegateParams.motionSampleEnd, userDefaults);
+        if (filter.attributeFilter()) {
+            return mayaObject;
+        }
+    }
+    
+    if (filter(_tokens->mayaHydraRenderPurpose)) {
+        _CreateBoolAttribute(
+            node,
+            filter.mayaString(),
+            defGlobals.delegateParams.renderPurpose,
+            userDefaults);
+        if (filter.attributeFilter()) {
+            return mayaObject;
+        }
+    }
+    if (filter(_tokens->mayaHydraProxyPurpose)) {
+        _CreateBoolAttribute(
+            node,
+            filter.mayaString(),
+            defGlobals.delegateParams.proxyPurpose,
+            userDefaults);
+        if (filter.attributeFilter()) {
+            return mayaObject;
+        }
+    }
+    if (filter(_tokens->mayaHydraGuidePurpose)) {
+        _CreateBoolAttribute(
+            node,
+            filter.mayaString(),
+            defGlobals.delegateParams.guidePurpose,
+            userDefaults);
         if (filter.attributeFilter()) {
             return mayaObject;
         }
@@ -966,7 +1037,37 @@ MtohRenderGlobals::GetInstance(const GlobalParams& params, bool storeUserSetting
     }
 
     MtohSettingFilter filter(params);
-
+    
+    if (filter(_tokens->mayaHydraProxyPurpose)
+        && _GetAttribute(
+            node,
+            filter.mayaString(),
+            globals.delegateParams.proxyPurpose,
+            storeUserSetting)) {
+        if (filter.attributeFilter()) {
+            return globals;
+        }
+    }
+    if (filter(_tokens->mayaHydraRenderPurpose)
+        && _GetAttribute(
+            node,
+            filter.mayaString(),
+            globals.delegateParams.renderPurpose,
+            storeUserSetting)) {
+        if (filter.attributeFilter()) {
+            return globals;
+        }
+    }
+    if (filter(_tokens->mayaHydraGuidePurpose)
+        && _GetAttribute(
+            node,
+            filter.mayaString(),
+            globals.delegateParams.guidePurpose,
+            storeUserSetting)) {
+        if (filter.attributeFilter()) {
+            return globals;
+        }
+    }
     if (filter(_tokens->mtohTextureMemoryPerTexture)
         && _GetAttribute(
             node,

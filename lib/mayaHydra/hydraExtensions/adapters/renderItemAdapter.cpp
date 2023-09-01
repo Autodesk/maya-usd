@@ -1,14 +1,14 @@
 //
 // Copyright 2023 Autodesk, Inc. All rights reserved.
 //
-// Licensed under the Apache License, Version 2.0 (the “License”);
+// Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
 //   http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an “AS IS” BASIS,
+// distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
@@ -21,6 +21,7 @@
 #include <mayaHydraLib/adapters/mayaAttrs.h>
 #include <mayaHydraLib/adapters/tokens.h>
 #include <mayaHydraLib/delegates/sceneDelegate.h>
+#include <mayaHydraLib/mayaHydraSceneProducer.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
@@ -42,6 +43,12 @@
 #include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
+// Bring the MayaHydra namespace into scope.
+// The following code currently lives inside the pxr namespace, but it would make more sense to 
+// have it inside the MayaHydra namespace. This using statement allows us to use MayaHydra symbols
+// from within the pxr namespace as if we were in the MayaHydra namespace.
+// Remove this once the code has been moved to the MayaHydra namespace.
+using namespace MayaHydra;
 
 #define PLUG_THIS_PLUGIN \
     PlugRegistry::GetInstance().GetPluginWithName(TF_PP_STRINGIZE(MFB_PACKAGE_NAME))
@@ -55,15 +62,15 @@ MayaHydraRenderItemAdapter::MayaHydraRenderItemAdapter(
     const MDagPath&       dagPath,
     const SdfPath&        slowId,
     int                   fastId,
-    MayaHydraDelegateCtx* del,
+    MayaHydraSceneProducer* producer,
     const MRenderItem&    ri)
-    : MayaHydraAdapter(MObject(), slowId, del)
+    : MayaHydraAdapter(MObject(), slowId, producer)
     , _dagPath(dagPath)
     , _primitive(ri.primitive())
     , _name(ri.name())
     , _fastId(fastId)
 {
-    _InsertRprim();
+    _InsertRprim(this);
 }
 
 MayaHydraRenderItemAdapter::~MayaHydraRenderItemAdapter() { _RemoveRprim(); }
@@ -74,10 +81,10 @@ void MayaHydraRenderItemAdapter::UpdateTransform(const MRenderItem& ri)
 {
     MMatrix matrix;
     if (ri.getMatrix(matrix) == MStatus::kSuccess) {
-        _transform[0] = MAYAHYDRA_NS::GetGfMatrixFromMaya(matrix);
-        if (GetDelegate()->GetParams().motionSamplesEnabled()) {
+        _transform[0] = GetGfMatrixFromMaya(matrix);
+        if (GetSceneProducer()->GetParams().motionSamplesEnabled()) {
             MDGContextGuard guard(MAnimControl::currentTime() + 1.0);
-            _transform[1] = MAYAHYDRA_NS::GetGfMatrixFromMaya(matrix);
+            _transform[1] = GetGfMatrixFromMaya(matrix);
         } else {
             _transform[1] = _transform[0];
         }
@@ -88,28 +95,28 @@ bool MayaHydraRenderItemAdapter::IsSupported() const
 {
     switch (_primitive) {
     case MHWRender::MGeometry::Primitive::kTriangles:
-        return GetDelegate()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->mesh);
+        return GetSceneProducer()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->mesh);
     case MHWRender::MGeometry::Primitive::kLines:
     case MHWRender::MGeometry::Primitive::kLineStrip:
-        return GetDelegate()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->basisCurves);
+        return GetSceneProducer()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->basisCurves);
     case MHWRender::MGeometry::Primitive::kPoints:
-        return GetDelegate()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->points);
+        return GetSceneProducer()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->points);
     default: return false;
     }
 }
 
-void MayaHydraRenderItemAdapter::_InsertRprim()
+void MayaHydraRenderItemAdapter::_InsertRprim(MayaHydraAdapter* adapter)
 {
     switch (GetPrimitive()) {
     case MHWRender::MGeometry::Primitive::kTriangles:
-        GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), {});
+        GetSceneProducer()->InsertRprim(adapter, HdPrimTypeTokens->mesh, GetID(), {});
         break;
     case MHWRender::MGeometry::Primitive::kLines:
     case MHWRender::MGeometry::Primitive::kLineStrip:
-        GetDelegate()->InsertRprim(HdPrimTypeTokens->basisCurves, GetID(), {});
+        GetSceneProducer()->InsertRprim(adapter, HdPrimTypeTokens->basisCurves, GetID(), {});
         break;
     case MHWRender::MGeometry::Primitive::kPoints:
-        GetDelegate()->InsertRprim(HdPrimTypeTokens->points, GetID(), {});
+        GetSceneProducer()->InsertRprim(adapter, HdPrimTypeTokens->points, GetID(), {});
         break;
     default:
         assert(false); // unexpected/unsupported primitive type
@@ -117,7 +124,7 @@ void MayaHydraRenderItemAdapter::_InsertRprim()
     }
 }
 
-void MayaHydraRenderItemAdapter::_RemoveRprim() { GetDelegate()->RemoveRprim(GetID());} 
+void MayaHydraRenderItemAdapter::_RemoveRprim() { GetSceneProducer()->RemoveRprim(GetID());} 
 
 // We receive in that function the changes made in the Maya viewport between the last frame rendered
 // and the current frame
@@ -134,12 +141,12 @@ void MayaHydraRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data
                                     // geometry and topology as our data has been cleared
     using MVS = MDataServerOperation::MViewportScene;
     // const bool isNew = flags & MViewportScene::MVS_new;  //not used yet
-    const bool visible = data._flags & MVS::MVS_visible;
-    const bool matrixChanged = data._flags & MVS::MVS_changedMatrix;
-    const bool geomChanged = (data._flags & MVS::MVS_changedGeometry) || positionsHaveBeenReset;
-    const bool topoChanged = (data._flags & MVS::MVS_changedTopo) || positionsHaveBeenReset;
-    const bool visibChanged = data._flags & MVS::MVS_changedVisibility;
-    const bool effectChanged = data._flags & MVS::MVS_changedEffect;
+    const bool visible          = data._flags & MVS::MVS_visible;
+    const bool matrixChanged    = data._flags & MVS::MVS_changedMatrix;
+    const bool geomChanged      = (data._flags & MVS::MVS_changedGeometry) || positionsHaveBeenReset;
+    const bool topoChanged      = (data._flags & MVS::MVS_changedTopo) || positionsHaveBeenReset;
+    const bool visibChanged     = data._flags & MVS::MVS_changedVisibility;
+    const bool effectChanged    = data._flags & MVS::MVS_changedEffect;
 
     HdDirtyBits dirtyBits = 0;
 
@@ -148,6 +155,7 @@ void MayaHydraRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data
         dirtyBits |= HdChangeTracker::DirtyPrimvar; // displayColor primVar
     }
 
+    const bool displayStatusChanged = (_displayStatus != data._displayStatus);
     _displayStatus = data._displayStatus;
     const bool hideOnPlayback = data._ri.isHideOnPlayback();
     if (hideOnPlayback != _isHideOnPlayback) {
@@ -155,6 +163,11 @@ void MayaHydraRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data
         dirtyBits |= HdChangeTracker::DirtyVisibility;
     }
 
+    //Special case for aiSkydomeLight which is visible only when it is selected
+    if (_isArnoldSkyDomeLightTriangleShape && displayStatusChanged){ 
+        SetVisible(IsRenderItemSelected());
+        dirtyBits |= HdChangeTracker::DirtyVisibility;
+    } else
     if (visibChanged) {
         SetVisible(visible);
         dirtyBits |= HdChangeTracker::DirtyVisibility;
@@ -268,14 +281,12 @@ void MayaHydraRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data
                         if (desc.semantic() != MGeometry::Semantic::kTexture)
                             continue;
 
-                        // Hydra expects a uv coordinate for each face-index (total of 36), not 1
-                        // per vertex. not for every vertex. e.g. a cube expects 36 uvs not 24. Note
-                        // that ASSERT(mvb->vertexCount() == 24) See
-                        // HdStMesh::_PopulateFaceVaryingPrimvars
+                        // Hydra expects a uv coordinate for each face-index, not 1 per vertex. 
+                        // e.g. a cube expects 36 uvs not 24.
                         _uvs.clear();
                         _uvs.resize(indices->size());
                         float* uvs = (float*)mvb->map();
-                        for (int i = 0; i < indexCount; i++) {
+                        for (int i = 0; i < indexCount; ++i) {
                             _uvs[i].Set(&uvs[indicesData[i] * 2]);
                         }
                         mvb->unmap();
@@ -300,7 +311,7 @@ void MayaHydraRenderItemAdapter::UpdateFromDelta(const UpdateFromDeltaData& data
         switch (GetPrimitive()) {
         case MGeometry::Primitive::kTriangles:
             _topology.reset(new HdMeshTopology(
-                (GetDelegate()->GetParams().displaySmoothMeshes
+                (GetSceneProducer()->GetParams().displaySmoothMeshes
                  || GetDisplayStyle().refineLevel > 0)
                     ? PxOsdOpenSubdivTokens->catmullClark
                     : PxOsdOpenSubdivTokens->none,
@@ -367,35 +378,46 @@ VtValue MayaHydraRenderItemAdapter::Get(const TfToken& key)
 void MayaHydraRenderItemAdapter::MarkDirty(HdDirtyBits dirtyBits)
 {
     if (dirtyBits != 0) {
-        GetDelegate()->GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits);
+        GetSceneProducer()->MarkRprimDirty(GetID(), dirtyBits);
     }
 }
 
 HdPrimvarDescriptorVector
 MayaHydraRenderItemAdapter::GetPrimvarDescriptors(HdInterpolation interpolation)
 {
+    HdPrimvarDescriptor desc;
+
     // Vertices
     if (interpolation == HdInterpolationVertex) {
-        HdPrimvarDescriptor desc;
-        desc.name = UsdGeomTokens->points;
-        desc.interpolation = interpolation;
-        desc.role = HdPrimvarRoleTokens->point;
+        desc.name           = UsdGeomTokens->points;
+        desc.interpolation  = interpolation;
+        desc.role           = HdPrimvarRoleTokens->point;
         return { desc };
     } else if (interpolation == HdInterpolationFaceVarying) {
         // UVs are face varying in maya.
         if (_primitive == MGeometry::Primitive::kTriangles) {
-            HdPrimvarDescriptor desc;
-            desc.name = MayaHydraAdapterTokens->st;
-            desc.interpolation = interpolation;
-            desc.role = HdPrimvarRoleTokens->textureCoordinate;
+            desc.name           = MayaHydraAdapterTokens->st;
+            desc.interpolation  = interpolation;
+            desc.role           = HdPrimvarRoleTokens->textureCoordinate;
             return { desc };
         }
     } else if (interpolation == HdInterpolationConstant) {
-        HdPrimvarDescriptor desc;
-        desc.name = HdTokens->displayColor;
-        desc.interpolation = interpolation;
-        desc.role = HdPrimvarRoleTokens->color;
-        return { desc };
+        switch(_primitive){
+            case MGeometry::Primitive::kPoints: //Fall into
+            case MGeometry::Primitive::kLines: //Fall into
+            case MGeometry::Primitive::kLineStrip: //Fall into
+            case MGeometry::Primitive::kAdjacentLines: //Fall into
+            case MGeometry::Primitive::kAdjacentLineStrip:
+            {
+                desc.name           = HdTokens->displayColor;//Use display color only for lines/points (avoid triangles)
+                desc.interpolation  = interpolation;
+                desc.role           = HdPrimvarRoleTokens->color;
+                return { desc };
+            }
+            break;
+            default:
+            break;
+        }
     }
 
     return {};
@@ -410,8 +432,8 @@ bool MayaHydraRenderItemAdapter::GetVisible()
     if (_isHideOnPlayback) {
         // MAYA-127216: Remove dependency on parent class MayaHydraAdapter. This will let us use
         // MayaHydraSceneDelegate directly
-        auto sceneDelegate = static_cast<MayaHydraSceneDelegate*>(GetDelegate());
-        return !sceneDelegate->GetPlaybackRunning();
+        auto sceneProducer = static_cast<MayaHydraSceneProducer*>(GetSceneProducer());
+        return !sceneProducer->GetPlaybackRunning();
     }
 
     return _visible;
@@ -424,6 +446,20 @@ void MayaHydraRenderItemAdapter::SetPlaybackChanged()
     if (_isHideOnPlayback) {
         MarkDirty(HdChangeTracker::DirtyVisibility);
     }
+}
+
+bool MayaHydraRenderItemAdapter::IsRenderItemSelected() const
+{ 
+    return  (MHWRender::DisplayStatus::kActive  == _displayStatus) || 
+            (MHWRender::DisplayStatus::kLead    == _displayStatus);
+}
+
+HdCullStyle MayaHydraRenderItemAdapter::GetCullStyle() const
+{
+    // HdCullStyleNothing means no culling, HdCullStyledontCare means : let the renderer choose
+    // between back or front faces culling. We don't want culling, since we want to see the
+    // backfaces being unlit with MayaHydraSceneDelegate::GetDoubleSided returning false.
+    return _isArnoldSkyDomeLightTriangleShape ? HdCullStyleFront : HdCullStyleNothing;
 }
 
 ///////////////////////////////////////////////////////////////////////

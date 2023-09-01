@@ -1,14 +1,14 @@
 //
 // Copyright 2023 Autodesk, Inc. All rights reserved.
 //
-// Licensed under the Apache License, Version 2.0 (the “License”);
+// Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
 //   http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an “AS IS” BASIS,
+// distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
@@ -20,13 +20,11 @@
 #include <mayaHydraLib/adapters/adapter.h>
 #include <mayaHydraLib/adapters/adapterDebugCodes.h>
 #include <mayaHydraLib/adapters/materialNetworkConverter.h>
-#include <mayaHydraLib/utils.h>
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/imaging/hd/meshTopology.h>
 #include <pxr/imaging/hd/renderIndex.h>
-#include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/imaging/hdx/renderTask.h>
 #include <pxr/pxr.h>
 
@@ -38,6 +36,8 @@
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+class MayaHydraSceneProducer;
 
 namespace {
 std::string kRenderItemTypeName = "renderItem";
@@ -61,7 +61,7 @@ public:
         const MDagPath&       dagPath,
         const SdfPath&        slowId,
         int                   fastId,
-        MayaHydraDelegateCtx* del,
+        MayaHydraSceneProducer* producer,
         const MRenderItem&    ri);
 
     MAYAHYDRALIB_API
@@ -81,6 +81,9 @@ public:
 
     MAYAHYDRALIB_API
     bool GetDoubleSided() const override { return false; };
+
+    MAYAHYDRALIB_API
+    HdCullStyle GetCullStyle() const override;
 
     MAYAHYDRALIB_API
     virtual void MarkDirty(HdDirtyBits dirtyBits) override;
@@ -176,12 +179,21 @@ public:
     MAYAHYDRALIB_API
     const char* Name() const { return _name.asChar(); }
 
+    MAYAHYDRALIB_API
+    void SetIsRenderITemAnaiSkydomeLightTriangleShape(bool val) {_isArnoldSkyDomeLightTriangleShape = val;}
+
+    MAYAHYDRALIB_API
+    bool GetIsRenderITemAnaiSkydomeLightTriangleShape() const {return _isArnoldSkyDomeLightTriangleShape;}
+
+    MAYAHYDRALIB_API
+    bool IsRenderItemSelected() const;
+
 private:
     MAYAHYDRALIB_API
     void _RemoveRprim();
 
     MAYAHYDRALIB_API
-    void _InsertRprim();
+    void _InsertRprim(MayaHydraAdapter* adapter);
 
     SdfPath                     _material;
     MDagPath                    _dagPath;
@@ -196,6 +208,7 @@ private:
     MColor                      _wireframeColor = { 1.f, 1.f, 1.f, 1.f };
     bool                        _isHideOnPlayback = false;
     MHWRender::DisplayStatus    _displayStatus = MHWRender::DisplayStatus::kNoStatus;
+    bool                        _isArnoldSkyDomeLightTriangleShape = false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

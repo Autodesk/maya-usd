@@ -41,6 +41,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class MayaHydraSceneProducer;
+
 /**
  * \brief MayaHydraDelegate is the base class for delegate classes.
  */
@@ -57,7 +59,8 @@ public:
             HdRendererPlugin*  rendererPluginIn,
             HdxTaskController* taskControllerIn,
             const SdfPath&     delegateIDIn,
-            bool               isHdStIn)
+            bool               isHdStIn,
+            MayaHydraSceneProducer* producerIn = nullptr)
             : name(nameIn)
             , engine(engineIn)
             , renderIndex(renderIndexIn)
@@ -65,6 +68,7 @@ public:
             , taskController(taskControllerIn)
             , delegateID(delegateIDIn)
             , isHdSt(isHdStIn)
+            , producer(producerIn)
         {
         }
 
@@ -75,6 +79,7 @@ public:
         HdxTaskController* taskController;
         SdfPath            delegateID;
         bool               isHdSt;
+        MayaHydraSceneProducer* producer;
     };
 
     MAYAHYDRALIB_API
@@ -169,6 +174,8 @@ public:
         return nSamples;
     }
 
+    MayaHydraSceneProducer* GetProducer() { return _producer; };
+
 private:
     MayaHydraParams _params;
 
@@ -186,6 +193,8 @@ private:
     HdxTaskController* _taskController;
     bool               _isHdSt = false;
     bool               _lightsEnabled = true;
+
+    MayaHydraSceneProducer* _producer = nullptr;
 };
 
 using MayaHydraDelegatePtr = std::shared_ptr<MayaHydraDelegate>;

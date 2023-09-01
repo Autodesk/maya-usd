@@ -22,7 +22,7 @@
 #include <pxr/pxr.h>
 // clang-format on
 
-#include "utils.h"
+#include "pluginUtils.h"
 
 #include "renderGlobals.h"
 #include "tokens.h"
@@ -34,14 +34,17 @@
 
 #include <maya/MGlobal.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-std::pair<const MtohRendererDescriptionVector&, const MtohRendererSettings&>
+std::pair<
+    const MayaHydra::MtohRendererDescriptionVector&,
+    const MayaHydra::MtohRendererSettings&>
 MtohInitializeRenderPlugins()
 {
-    using Storage = std::pair<MtohRendererDescriptionVector, MtohRendererSettings>;
+    using Storage = std::
+        pair<MayaHydra::MtohRendererDescriptionVector, MayaHydra::MtohRendererSettings>;
 
     static const Storage ret = []() -> Storage {
         HdRendererPluginRegistry& pluginRegistry = HdRendererPluginRegistry::GetInstance();
@@ -85,7 +88,8 @@ MtohInitializeRenderPlugins()
             std::shared_ptr<pxr::UsdImagingGLEngine> _engine;
             store.first.emplace_back(
                 renderer,
-                TfToken(TfStringPrintf("%s%s", MTOH_RENDER_OVERRIDE_PREFIX, renderer.GetText())),
+                TfToken(TfStringPrintf(
+                    "%s%s", MayaHydra::MTOH_RENDER_OVERRIDE_PREFIX, renderer.GetText())),
                 TfToken(TfStringPrintf(
                     "(Technology Preview) Hydra %s",
                     _engine->GetRendererDisplayName(pluginDesc.id).c_str())));
@@ -101,6 +105,8 @@ MtohInitializeRenderPlugins()
 }
 
 } // namespace
+
+namespace MAYAHYDRA_NS_DEF {
 
 std::string MtohGetRendererPluginDisplayName(const TfToken& id)
 {
@@ -122,4 +128,4 @@ const MtohRendererSettings& MtohGetRendererSettings()
     return MtohInitializeRenderPlugins().second;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+} // namespace MAYAHYDRA_NS_DEF
