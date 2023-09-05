@@ -44,6 +44,7 @@
 #include <pxr/usd/sdf/assetPath.h>
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/usdHydra/tokens.h>
+#include <pxr/usd/usdUtils/pipeline.h>
 #include <pxr/usdImaging/usdImaging/textureUtils.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
 
@@ -423,7 +424,7 @@ const std::set<std::string> _mtlxTopoNodeSet = {
     "normal",
     "tangent",
     "bitangent",
-    // Topo affecting nodes due to channel index. We remap to geomprop in _AddMissingTexcoordReaders
+    // Topo affecting nodes due to channel index.
     "texcoord",
     // Color at vertices also affect topo, but we have not locked a naming scheme to go from index
     // based to name based as we did for UV sets. We will mark them as topo-affecting, but there is
@@ -475,6 +476,12 @@ struct _MaterialXData
         _FixLibraryTangentInputs(_mtlxLibrary);
 
         mx::OgsXmlGenerator::setUseLightAPI(MAYA_LIGHTAPI_VERSION_2);
+
+        // This environment variable is defined in USD: pxr\usd\usdMtlx\parser.cpp
+        static const std::string env = TfGetenv("USDMTLX_PRIMARY_UV_NAME");
+        std::string mainUvSetName = env.empty() ? UsdUtilsGetPrimaryUVSetName().GetString() : env;
+
+        mx::OgsXmlGenerator::setPrimaryUVSetName(mainUvSetName);
     }
     MaterialX::FileSearchPath _mtlxSearchPath; //!< MaterialX library search path
     MaterialX::DocumentPtr    _mtlxLibrary;    //!< MaterialX library
@@ -694,89 +701,6 @@ bool _IsFAParameter(const HdMaterialNode& node, const MString& paramName)
         return true;
     }
     return false;
-}
-
-// MaterialX has a lot of node definitions that will auto-connect to a zero-index texture coordinate
-// system. To make these graphs compatible, we will redirect any unconnected input that uses such an
-// auto-connection scheme to instead read a texcoord geomprop called "st" which is the canonical
-// name for UV at index zero.
-void _AddMissingTexcoordReaders(mx::DocumentPtr& mtlxDoc)
-{
-    mx::NodeGraphPtr nodeGraph = mtlxDoc->getNodeGraph(_mtlxTokens->NG_Maya.GetString());
-    if (!nodeGraph) {
-        return;
-    }
-
-    // This will hold the emergency "ST" reader if one was necessary
-    mx::NodePtr stReader;
-    // Store nodes to delete when loop iteration is complete
-    std::vector<std::string> nodesToDelete;
-
-    for (mx::NodePtr node : nodeGraph->getNodes()) {
-        // Check the inputs of the node for UV0 default geom properties
-        mx::NodeDefPtr nodeDef = node->getNodeDef();
-        // A missing node def is a very bad sign. No need to process further.
-        if (!TF_VERIFY(
-                nodeDef,
-                "Could not find MaterialX NodeDef for Node '%s'. Please recheck library paths.",
-                node->getNamePath().c_str())) {
-            return;
-        }
-        for (mx::InputPtr input : nodeDef->getActiveInputs()) {
-            if (input->hasDefaultGeomPropString()
-                && input->getDefaultGeomPropString() == _mtlxTokens->UV0.GetString()) {
-                // See if the corresponding input is connected on the node:
-                if (node->getConnectedNodeName(input->getName()).empty()) {
-                    // Create emergency ST reader if necessary
-                    if (!stReader) {
-                        stReader = nodeGraph->addNode(
-                            _mtlxTokens->geompropvalue.GetString(),
-                            _mtlxTokens->ST_reader.GetString(),
-                            _mtlxTokens->vector2.GetString());
-                        mx::ValueElementPtr prpInput = stReader->addInput(
-                            _mtlxTokens->geomprop.GetString(), _mtlxTokens->string.GetString());
-                        prpInput->setValueString(_tokens->st.GetString());
-                    }
-                    node->addInput(input->getName(), input->getType());
-                    node->setConnectedNodeName(input->getName(), stReader->getName());
-                }
-            }
-        }
-        // Check if it is an explicit texcoord reader:
-        if (nodeDef->getNodeString() == _mtlxTokens->texcoord.GetString()) {
-            // Switch it with a geompropvalue of the same name:
-            std::string nodeName = node->getName();
-            std::string oldName = nodeName + "_toDelete";
-            node->setName(oldName);
-            nodesToDelete.push_back(oldName);
-            // Find out if there is an explicit stream index:
-            int          streamIndex = 0;
-            mx::InputPtr indexInput = node->getInput(_mtlxTokens->index.GetString());
-            if (indexInput && indexInput->hasValue()) {
-                mx::ValuePtr indexValue = indexInput->getValue();
-                if (indexValue->isA<int>()) {
-                    streamIndex = indexValue->asA<int>();
-                }
-            }
-            // Add replacement geompropvalue node:
-            mx::NodePtr doppelNode = nodeGraph->addNode(
-                _mtlxTokens->geompropvalue.GetString(),
-                nodeName,
-                nodeDef->getOutput(_mtlxTokens->out.GetString())->getType());
-            mx::ValueElementPtr prpInput = doppelNode->addInput(
-                _mtlxTokens->geomprop.GetString(), _mtlxTokens->string.GetString());
-            MString primvar = _tokens->st.GetText();
-            if (streamIndex) {
-                // If reading at index > 0 we add the index to the primvar name:
-                primvar += streamIndex;
-            }
-            prpInput->setValueString(primvar.asChar());
-        }
-    }
-    // Delete all obsolete texcoord reader nodes.
-    for (const std::string& deadNode : nodesToDelete) {
-        nodeGraph->removeNode(deadNode);
-    }
 }
 
 // Recursively traverse a node graph, depth first, to find target node
@@ -3084,7 +3008,6 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
             }
 
             // Touchups required to fix input stream issues:
-            _AddMissingTexcoordReaders(mtlxDoc);
             _AddMissingTangents(mtlxDoc);
 
             _surfaceShaderId = terminalPath;

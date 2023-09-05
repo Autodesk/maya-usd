@@ -61,6 +61,7 @@
 #endif
 #endif
 
+#include <maya/MEventMessage.h>
 #include <maya/MObject.h>
 #include <maya/MObjectHandle.h>
 #include <maya/MSelectionList.h>
@@ -282,9 +283,14 @@ MayaUsdProxyShapeSceneIndex::MayaUsdProxyShapeSceneIndex(
     TfWeakPtr<MayaUsdProxyShapeSceneIndex> ptr(this);
     TfNotice::Register(ptr, &MayaUsdProxyShapeSceneIndex::StageSet);
     TfNotice::Register(ptr, &MayaUsdProxyShapeSceneIndex::ObjectsChanged);
+
+    _timeChangeCallbackId = MEventMessage::addEventCallback("timeChanged", onTimeChanged, this);
 }
 
-MayaUsdProxyShapeSceneIndex::~MayaUsdProxyShapeSceneIndex() { }
+MayaUsdProxyShapeSceneIndex::~MayaUsdProxyShapeSceneIndex()
+{
+    MMessage::removeCallback(_timeChangeCallbackId);
+}
 
 MayaUsdProxyShapeSceneIndexRefPtr MayaUsdProxyShapeSceneIndex::New(
     MayaUsdProxyShapeBase*                 proxyShape,
@@ -294,6 +300,22 @@ MayaUsdProxyShapeSceneIndexRefPtr MayaUsdProxyShapeSceneIndex::New(
     // Create the proxy shape scene index which populates the stage
     return TfCreateRefPtr(new MayaUsdProxyShapeSceneIndex(
         sceneIndexChainLastElement, usdImagingStageSceneIndex, proxyShape));
+}
+
+void MayaUsdProxyShapeSceneIndex::onTimeChanged(void* data)
+{
+    auto* instance = reinterpret_cast<MayaUsdProxyShapeSceneIndex*>(data);
+    if (!TF_VERIFY(instance)) {
+        return;
+    }
+    instance->UpdateTime();
+}
+
+void MayaUsdProxyShapeSceneIndex::UpdateTime()
+{
+    if (_usdImagingStageSceneIndex && _proxyShape) {
+        _usdImagingStageSceneIndex->SetTime(_proxyShape->getTime());
+    }
 }
 
 Ufe::Path MayaUsdProxyShapeSceneIndex::InterpretRprimPath(
@@ -339,6 +361,8 @@ void MayaUsdProxyShapeSceneIndex::Populate()
 #endif
                 _populated = true;
             }
+            // Set the initial time
+            UpdateTime();
         }
     }
 }

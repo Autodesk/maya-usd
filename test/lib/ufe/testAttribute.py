@@ -1936,6 +1936,29 @@ class AttributeTestCase(unittest.TestCase):
             attr = shaderAttrs.attribute("inputs:" + attrName)
             self.assertEqual(str(attr.getMetadata(metaName)), metaValue)
 
+        for rangedType in ("float", "vector2", "vector3", "vector4", "color3", "color4"):
+            numComponents = 1
+            if rangedType[-1].isdecimal():
+                numComponents = int(rangedType[-1])
+            dotDef = ufe.NodeDef.definition(materialItem.runTimeId(), "ND_dot_" + rangedType)
+            cmd = dotDef.createNodeCmd(materialItem, ufe.PathComponent("dotty_" + rangedType))
+            ufeCmd.execute(cmd)
+            shaderItem = cmd.insertedChild
+            shaderAttrs = ufe.Attributes.attributes(shaderItem)
+            attr = shaderAttrs.attribute("inputs:in")
+            self.assertEqual(str(attr.getMetadata("uisoftmin")), ",".join(["0" for i in range(numComponents)]))
+            self.assertEqual(str(attr.getMetadata("uisoftmax")), ",".join(["1" for i in range(numComponents)]))
+
+        for unrangedType in ("boolean", "integer", "matrix33", "matrix44", "string", "filename"):
+            dotDef = ufe.NodeDef.definition(materialItem.runTimeId(), "ND_dot_" + unrangedType)
+            cmd = dotDef.createNodeCmd(materialItem, ufe.PathComponent("dotty_" + unrangedType))
+            ufeCmd.execute(cmd)
+            shaderItem = cmd.insertedChild
+            shaderAttrs = ufe.Attributes.attributes(shaderItem)
+            attr = shaderAttrs.attribute("inputs:in")
+            self.assertFalse(attr.hasMetadata("uisoftmin"))
+            self.assertFalse(attr.hasMetadata("uisoftmax"))
+
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testCreateUsdPreviewSurfaceAttribute(self):

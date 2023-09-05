@@ -37,11 +37,17 @@ public:
     static int  useLightAPI();
     static void setUseLightAPI(int);
 
+    /// Replace every texcoord use with this UV set name (optional):
+    /// Empty string will let texcoord generate their usual code.
+    static const string& getPrimaryUVSetName();
+    static void          setPrimaryUVSetName(const string& mainUvSetName);
+
 private:
     static const string SAMPLER_SUFFIX;
     static const string OCIO_SAMPLER_SUFFIX;
     static const string OCIO_SAMPLER_PREFIX;
     static int          sUseLightAPI;
+    static string       sPrimaryUVSetName;
 };
 
 MATERIALX_NAMESPACE_END
