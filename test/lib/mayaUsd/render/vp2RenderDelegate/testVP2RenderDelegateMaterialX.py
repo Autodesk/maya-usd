@@ -160,8 +160,13 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         cmds.move(0, 8, 0, 'persp')
         cmds.rotate(-90, 0, 0, 'persp')
 
+        # Add a light to see bump mapping:
+        light = cmds.directionalLight(rgb=(1, 1, 1))
+        transform = cmds.listRelatives(light, parent=True)[0]
+        cmds.xform(transform, ro=(105, 25, 130), ws=True)
+        cmds.setAttr(light+".intensity", 2)
         panel = mayaUtils.activeModelPanel()
-        cmds.modelEditor(panel, edit=True, displayTextures=True)
+        cmds.modelEditor(panel, edit=True, lights=True, displayLights="all", displayTextures=True)
 
         self._StartTest('DemoQuads')
 

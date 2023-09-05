@@ -148,6 +148,9 @@ std::string UsdMayaUtilFileSystem::getLayerFileDir(const PXR_NS::SdfLayerHandle&
         return std::string();
 
     const std::string layerFileName = layer->GetRealPath();
+    if (layerFileName.empty())
+        return std::string();
+
     return UsdMayaUtilFileSystem::getDir(layerFileName);
 }
 
@@ -258,12 +261,21 @@ std::string UsdMayaUtilFileSystem::getPathRelativeToLayerFile(
         return fileName;
 
     const std::string layerDirPath = getLayerFileDir(layer);
-    auto              relativePathAndSuccess = makePathRelativeTo(fileName, layerDirPath);
+    if (layerDirPath.empty()) {
+        TF_WARN(
+            "File name (%s) cannot be resolved as relative since its parent layer is not saved,"
+            " using the absolute path instead.",
+            fileName.c_str());
+
+        return fileName;
+    }
+
+    auto relativePathAndSuccess = makePathRelativeTo(fileName, layerDirPath);
 
     if (!relativePathAndSuccess.second) {
         TF_WARN(
             "File name (%s) cannot be resolved as relative to its parent layer directory (%s), "
-            "using the absolute path.",
+            "using the absolute path instead.",
             fileName.c_str(),
             layerDirPath.c_str());
     }
