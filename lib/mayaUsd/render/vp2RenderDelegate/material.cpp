@@ -800,6 +800,8 @@ void _AddMissingTangents(mx::DocumentPtr& mtlxDoc)
 {
     // We will need at least one geompropvalue reader to generate tangents:
     mx::NodePtr stReader;
+    // If we find one implicit texcoord input we can still try to generate texcoord tangents:
+    bool hasOneImplicitTexcoordInput = false;
 
     // List of all items to fix:
     using nodeInput = std::pair<mx::NodePtr, std::string>;
@@ -832,6 +834,10 @@ void _AddMissingTangents(mx::DocumentPtr& mtlxDoc)
                 if (geomPropString == _mtlxTokens->Tobject.GetString()
                     && !material->getConnectedOutput(input->getName())) {
                     materialTobjectInputs.emplace_back(material, input->getName());
+                }
+                if (geomPropString == _mtlxTokens->UV0
+                    && !material->getConnectedOutput(input->getName())) {
+                    hasOneImplicitTexcoordInput = true;
                 }
             }
         }
@@ -884,6 +890,10 @@ void _AddMissingTangents(mx::DocumentPtr& mtlxDoc)
                         && node->getConnectedNodeName(input->getName()).empty()) {
                         graphTobjectInputs.emplace_back(node, input->getName());
                     }
+                    if (geomPropString == _mtlxTokens->UV0
+                        && node->getConnectedNodeName(input->getName()).empty()) {
+                        hasOneImplicitTexcoordInput = true;
+                    }
                 }
             }
             // Check if it is an explicit tangent reader:
@@ -900,15 +910,19 @@ void _AddMissingTangents(mx::DocumentPtr& mtlxDoc)
 
         // Create the tangent generator:
         mx::NodePtr tangentGenerator;
-        if (stReader) {
+        if (stReader || hasOneImplicitTexcoordInput) {
             tangentGenerator = nodeGraph->addNode(
                 _mtlxTokens->texcoordtangents.GetString(),
                 _mtlxTokens->Tw_reader.GetString(),
                 _mtlxTokens->vector3.GetString());
             tangentGenerator->addInput(
                 _mtlxTokens->texcoord.GetString(), _mtlxTokens->vector2.GetString());
-            tangentGenerator->setConnectedNodeName(
-                _mtlxTokens->texcoord.GetString(), stReader->getName());
+            if (stReader) {
+                // Use an explicit geomprop reader if one was found, otherwise, leave it to the
+                // implicit geomprop reader code in shadergen.
+                tangentGenerator->setConnectedNodeName(
+                    _mtlxTokens->texcoord.GetString(), stReader->getName());
+            }
         } else {
             tangentGenerator = nodeGraph->addNode(
                 _mtlxTokens->arbitrarytangents.GetString(),
