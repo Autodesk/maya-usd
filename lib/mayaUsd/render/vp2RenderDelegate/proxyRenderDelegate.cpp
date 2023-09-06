@@ -1228,7 +1228,9 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     if (selectionInfo) {
         bool oldSnapToSelectedObjects = _snapToSelectedObjects;
         _snapToSelectedObjects = selectionInfo->snapToActive(&status);
-        TF_VERIFY(status == MStatus::kSuccess);
+        if (status != MStatus::kSuccess) {
+            TF_WARN("Could not snap selected object.");
+        }
         if (_snapToSelectedObjects != oldSnapToSelectedObjects) {
             _selectionModeChanged = true;
         }
