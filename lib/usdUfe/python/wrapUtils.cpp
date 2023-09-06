@@ -57,7 +57,10 @@ std::string _usdPathToUfePathSegment(
 
 std::string _uniqueName(const std::vector<std::string>& existingNames, std::string srcName)
 {
-    PXR_NS::TfToken::HashSet existingNamesSet(existingNames.begin(), existingNames.end());
+    PXR_NS::TfToken::HashSet existingNamesSet;
+    for (const auto& n : existingNames) {
+        existingNamesSet.insert(PXR_NS::TfToken(n));
+    }
     return UsdUfe::uniqueName(existingNamesSet, srcName);
 }
 
@@ -75,6 +78,11 @@ PXR_NS::UsdPrim _ufePathToPrim(const std::string& ufePathString)
 int _ufePathToInstanceIndex(const std::string& ufePathString)
 {
     return UsdUfe::ufePathToInstanceIndex(Ufe::PathString::path(ufePathString));
+}
+
+bool _isEditTargetLayerModifiable(const PXR_NS::UsdStageWeakPtr stage)
+{
+    return UsdUfe::isEditTargetLayerModifiable(stage);
 }
 
 PXR_NS::UsdTimeCode _getTime(const std::string& pathStr)
@@ -106,7 +114,7 @@ void wrapUtils()
     def("stripInstanceIndexFromUfePath", _stripInstanceIndexFromUfePath, (arg("ufePathString")));
     def("ufePathToPrim", _ufePathToPrim);
     def("ufePathToInstanceIndex", _ufePathToInstanceIndex);
-    def("isEditTargetLayerModifiable", UsdUfe::isEditTargetLayerModifiable);
+    def("isEditTargetLayerModifiable", _isEditTargetLayerModifiable);
     def("getTime", _getTime);
     def("isAttributeEditAllowed", _isAttributeEditAllowed);
 }
