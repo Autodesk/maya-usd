@@ -66,7 +66,13 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
                         if mayaControlCmd(child, q=True, label=True) == labelToFind:
                             return child
         return None
-    
+
+    def attrEdFormLayoutName(self, obj):
+        # Ufe runtime name (USD) was added to formLayout name in 2022.2.
+        attrEdLayout = 'AttrEdUSD%sFormLayout' if mayaUtils.mayaMajorMinorVersions() >= (2022, 2) else 'AttrEd%sFormLayout'
+        formLayoutName = attrEdLayout % obj
+        return formLayoutName
+
     def testAETemplate(self):
         '''Simple test to check the Attribute Editor template has no scripting errors
         which prevent it from being used. When that happens there is no layout in AE
@@ -99,7 +105,7 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         
         # In the AE there is a formLayout for each USD prim type. We start
         # by making sure we can find the one for capsule.
-        capsuleFormLayout = 'AttrEdUSDCapsuleFormLayout'
+        capsuleFormLayout = self.attrEdFormLayoutName('Capsule')
         self.assertTrue(cmds.formLayout(capsuleFormLayout, exists=True))
         startLayout = cmds.formLayout(capsuleFormLayout, query=True, fullPathName=True)
         self.assertIsNotNone(startLayout, 'Could not get full path for Capsule formLayout')
@@ -139,7 +145,7 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         maya.mel.eval('openAEWindow')
 
         # Make sure we can find formLayout for the SphereLight.
-        lightFormLayout = 'AttrEdUSDSphereLightFormLayout'
+        lightFormLayout = self.attrEdFormLayoutName('SphereLight')
         self.assertTrue(cmds.formLayout(lightFormLayout, exists=True))
         startLayout = cmds.formLayout(lightFormLayout, query=True, fullPathName=True)
         self.assertIsNotNone(startLayout, 'Could not get full path for SphereLight formLayout')
@@ -166,7 +172,7 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         maya.mel.eval('openAEWindow')
 
         # Make sure we can find formLayout for the PhysicsScene.
-        lightFormLayout = 'AttrEdUSDPhysicsSceneFormLayout'
+        lightFormLayout = self.attrEdFormLayoutName('PhysicsScene')
         self.assertTrue(cmds.formLayout(lightFormLayout, exists=True))
         startLayout = cmds.formLayout(lightFormLayout, query=True, fullPathName=True)
         self.assertIsNotNone(startLayout, 'Could not get full path for PhysicsScene formLayout')
@@ -191,7 +197,7 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
 
         # In the AE there is a formLayout for each USD prim type. We start
         # by making sure we can find the one for shader.
-        shaderFormLayout = 'AttrEdUSDShaderFormLayout'
+        shaderFormLayout = self.attrEdFormLayoutName('Shader')
         self.assertTrue(cmds.formLayout(shaderFormLayout, exists=True))
         startLayout = cmds.formLayout(shaderFormLayout, query=True, fullPathName=True)
         self.assertIsNotNone(startLayout, 'Could not get full path for Shader formLayout')
@@ -227,7 +233,7 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
 
         # In the AE there is a formLayout for each USD prim type. We start
         # by making sure we can find the one for Shader.
-        shaderFormLayout = 'AttrEdUSDShaderFormLayout'
+        shaderFormLayout = self.attrEdFormLayoutName('Shader')
         self.assertTrue(cmds.formLayout(shaderFormLayout, exists=True))
         startLayout = cmds.formLayout(shaderFormLayout, query=True, fullPathName=True)
         self.assertIsNotNone(startLayout, 'Could not get full path for Shader formLayout')
@@ -257,7 +263,7 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
 
         # In the AE there is a formLayout for each USD prim type. We start
         # by making sure we can find the one for Shader.
-        shaderFormLayout = 'AttrEdUSDShaderFormLayout'
+        shaderFormLayout = self.attrEdFormLayoutName('Shader')
         self.assertTrue(cmds.formLayout(shaderFormLayout, exists=True))
         startLayout = cmds.formLayout(shaderFormLayout, query=True, fullPathName=True)
         self.assertIsNotNone(startLayout, 'Could not get full path for Shader formLayout')
