@@ -311,7 +311,10 @@ std::string uniqueName(const TfToken::HashSet& existingNames, std::string srcNam
     suffixStr = std::string(lenSuffix - std::min(lenSuffix, suffixStr.length()), '0') + suffixStr;
     std::string dstName = base + suffixStr;
     while (existingNames.count(TfToken(dstName)) > 0) {
-        dstName = base + std::to_string(++suffix);
+        suffixStr = std::to_string(++suffix);
+        suffixStr
+            = std::string(lenSuffix - std::min(lenSuffix, suffixStr.length()), '0') + suffixStr;
+        dstName = base + suffixStr;
     }
     return dstName;
 }

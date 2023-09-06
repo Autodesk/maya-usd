@@ -31,6 +31,7 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 
+#include <vector>
 #include <string>
 
 using namespace boost::python;
@@ -54,9 +55,10 @@ std::string _usdPathToUfePathSegment(
     return UsdUfe::usdPathToUfePathSegment(usdPath, instanceIndex).string();
 }
 
-std::string _uniqueChildName(const PXR_NS::UsdPrim& parent, const std::string& name)
+std::string _uniqueName(const std::vector<std::string>& existingNames, std::string srcName)
 {
-    return UsdUfe::uniqueChildName(parent, name);
+    PXR_NS::TfToken::HashSet existingNamesSet(existingNames.begin(), existingNames.end());
+    return UsdUfe::uniqueName(existingNamesSet, srcName);
 }
 
 std::string _stripInstanceIndexFromUfePath(const std::string& ufePathString)
@@ -73,11 +75,6 @@ PXR_NS::UsdPrim _ufePathToPrim(const std::string& ufePathString)
 int _ufePathToInstanceIndex(const std::string& ufePathString)
 {
     return UsdUfe::ufePathToInstanceIndex(Ufe::PathString::path(ufePathString));
-}
-
-bool _isEditTargetLayerModifiable(const PXR_NS::UsdStageWeakPtr stage)
-{
-    return UsdUfe::isEditTargetLayerModifiable(stage);
 }
 
 PXR_NS::UsdTimeCode _getTime(const std::string& pathStr)
@@ -104,11 +101,12 @@ void wrapUtils()
     def("usdPathToUfePathSegment",
         _usdPathToUfePathSegment,
         (arg("usdPath"), arg("instanceIndex") = PXR_NS::UsdImagingDelegate::ALL_INSTANCES));
-    def("uniqueChildName", _uniqueChildName);
+    def("uniqueName", _uniqueName);
+    def("uniqueChildName", UsdUfe::uniqueChildName);
     def("stripInstanceIndexFromUfePath", _stripInstanceIndexFromUfePath, (arg("ufePathString")));
     def("ufePathToPrim", _ufePathToPrim);
     def("ufePathToInstanceIndex", _ufePathToInstanceIndex);
-    def("isEditTargetLayerModifiable", _isEditTargetLayerModifiable);
+    def("isEditTargetLayerModifiable", UsdUfe::isEditTargetLayerModifiable);
     def("getTime", _getTime);
     def("isAttributeEditAllowed", _isAttributeEditAllowed);
 }
