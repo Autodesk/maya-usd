@@ -284,7 +284,7 @@ bool splitNumericalSuffix(const std::string srcName, std::string& base, std::str
     // Compiled regular expression to find a numerical suffix to a path component.
     // It searches for any number of characters followed by a single non-numeric,
     // then one or more digits at end of string.
-    std::regex  re("(.*)([^0-9])([0-9]+)$");
+    std::regex re("(.*)([^0-9])([0-9]+)$");
     base = srcName;
     std::smatch match;
     if (std::regex_match(srcName, match, re)) {

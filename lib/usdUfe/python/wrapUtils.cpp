@@ -31,8 +31,8 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 
-#include <vector>
 #include <string>
+#include <vector>
 
 using namespace boost::python;
 

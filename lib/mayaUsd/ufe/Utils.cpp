@@ -154,8 +154,7 @@ std::string uniqueChildNameMayaStandard(const PXR_NS::UsdPrim& usdParent, const 
     // Example: with siblings Capsule001 & Capsule006, duplicating Capsule001
     //          will set new unique name to Capsule007.
     std::string childName { name };
-    if (allChildrenNames.find(TfToken(childName)) != allChildrenNames.end())
-    {
+    if (allChildrenNames.find(TfToken(childName)) != allChildrenNames.end()) {
         // Get the base name (removing the numerical suffix) so that we can compare
         // that to all the sibling names.
         std::string baseName, suffix;
@@ -163,8 +162,7 @@ std::string uniqueChildNameMayaStandard(const PXR_NS::UsdPrim& usdParent, const 
 
         std::string             childBaseName;
         std::pair<TfToken, int> largestMatching("", -1);
-        for (const auto child : allChildrenNames)
-        {
+        for (const auto child : allChildrenNames) {
             // While iterating thru all the children look for ones that match
             // the base name of the input. When we find one check its numerical
             // suffix and store the greatest one.
