@@ -115,7 +115,6 @@ class UIIconsTestCase(unittest.TestCase):
             ('NurbsCurves',             'out_USD_UsdGeomCurves.png'),
             ('NurbsPatch',              'out_USD_NurbsPatch.png'),
             ('OpenVDBAsset',            'out_USD_UsdGeomXformable.png'),
-            ('PackedJointAnimation',    'out_USD_SkelAnimation.png'),
             ('PluginLight',             'out_USD_PluginLight.png'),
             ('PluginLightFilter',       'out_USD_LightFilter.png'),
             ('PointInstancer',          'out_USD_PointInstancer.png'),

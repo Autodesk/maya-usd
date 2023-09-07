@@ -266,10 +266,6 @@ def SkelBlendShape "SkelBlendShape1"
 {
 }
 
-def SkelPackedJointAnimation "SkelPackedJointAnimation1" 
-{
-}
-
 def SkelRoot "SkelRoot1" 
 {
 }
