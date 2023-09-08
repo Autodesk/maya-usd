@@ -159,9 +159,10 @@ std::string uniqueChildNameMayaStandard(const PXR_NS::UsdPrim& usdParent, const 
         // that to all the sibling names.
         std::string baseName, suffix;
         splitNumericalSuffix(childName, baseName, suffix);
+        int suffixValue = !suffix.empty() ? std::stoi(suffix) : 0;
 
-        std::string             childBaseName;
-        std::pair<TfToken, int> largestMatching("", -1);
+        std::string                 childBaseName;
+        std::pair<std::string, int> largestMatching(childName, suffixValue);
         for (const auto& child : allChildrenNames) {
             // While iterating thru all the children look for ones that match
             // the base name of the input. When we find one check its numerical
@@ -170,7 +171,7 @@ std::string uniqueChildNameMayaStandard(const PXR_NS::UsdPrim& usdParent, const 
             if (baseName == childBaseName) {
                 int suffixValue = !suffix.empty() ? std::stoi(suffix) : 0;
                 if (suffixValue > largestMatching.second) {
-                    largestMatching = std::make_pair(child, suffixValue);
+                    largestMatching = std::make_pair(child.GetString(), suffixValue);
                 }
             }
         }
