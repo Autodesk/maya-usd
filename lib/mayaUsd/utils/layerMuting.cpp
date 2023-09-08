@@ -16,6 +16,10 @@
 
 #include "layerMuting.h"
 
+#include <mayaUsd/listeners/notice.h>
+
+#include <pxr/base/tf/weakBase.h>
+
 namespace MAYAUSD_NS_DEF {
 
 MStatus copyLayerMutingToAttribute(const PXR_NS::UsdStage& stage, MayaUsdProxyShapeBase& proxyShape)
@@ -30,6 +34,75 @@ copyLayerMutingFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_NS::Us
     const std::vector<std::string> unmuted;
     stage.MuteAndUnmuteLayers(muted, unmuted);
     return MS::kSuccess;
+}
+
+namespace {
+
+// Automatic reset of recorded muted layers when the Maya scene is reset.
+struct SceneResetListener : public PXR_NS::TfWeakBase
+{
+    SceneResetListener()
+    {
+        PXR_NS::TfWeakPtr<SceneResetListener> me(this);
+        PXR_NS::TfNotice::Register(me, &SceneResetListener::OnSceneReset);
+    }
+
+    void OnSceneReset(const UsdMayaSceneResetNotice&)
+    {
+        // Make sure we don't hold onto muted layers now that the
+        // Maya scene is reset.
+        forgetMutedLayers();
+    }
+};
+
+// The set of muted layers.
+//
+// Kept in a function to avoid problem with the order of construction
+// of global variables in C++.
+using MutedLayers = std::set<PXR_NS::SdfLayerRefPtr>;
+MutedLayers& getMutedLayers()
+{
+    // Note: C++ guarantees correct multi-thread protection for static
+    //       variables initialization in functions.
+    static SceneResetListener onSceneResetListener;
+    static MutedLayers        layers;
+    return layers;
+}
+} // namespace
+
+void addMutedLayer(const PXR_NS::SdfLayerRefPtr& layer)
+{
+    if (!layer)
+        return;
+
+    // Non-dirty, non-anonymous layers can be reloaded, so we
+    // won't hold onto them.
+    const bool needHolding = (layer->IsDirty() || layer->IsAnonymous());
+    if (!needHolding)
+        return;
+
+    MutedLayers& layers = getMutedLayers();
+    layers.insert(layer);
+
+    // Hold onto sub-layers as well, in case they are dirty or anonymous.
+    // Note: the GetSubLayerPaths function returns proxies, so we have to
+    //       hold the std::string by value, not reference.
+    for (const std::string subLayerPath : layer->GetSubLayerPaths()) {
+        auto subLayer = SdfLayer::FindRelativeToLayer(layer, subLayerPath);
+        addMutedLayer(subLayer);
+    }
+}
+
+void removeMutedLayer(const PXR_NS::SdfLayerRefPtr& layer)
+{
+    MutedLayers& layers = getMutedLayers();
+    layers.erase(layer);
+}
+
+void forgetMutedLayers()
+{
+    MutedLayers& layers = getMutedLayers();
+    layers.clear();
 }
 
 } // namespace MAYAUSD_NS_DEF
