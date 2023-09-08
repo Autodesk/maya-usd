@@ -43,8 +43,11 @@ class testUsdImportInstances(unittest.TestCase):
 
     def sortedPathsTo(self, node):
         """Get a sorted list of paths going to the specified node"""
-        sel = om.MGlobal.getSelectionListByName(node)
-        self.assertEqual(sel.length(), 1)
+        try:
+            sel = om.MGlobal.getSelectionListByName(node)
+        except Exception:
+            self.assertTrue(False, 'Could not find node %s' % node)
+        self.assertEqual(sel.length(), 1, 'Could not find node %s' % node)
         val = [str(i) for i in om.MDagPath.getAllPathsTo(sel.getDependNode(0))]
         val.sort()
         return tuple(val)
@@ -86,19 +89,12 @@ class testUsdImportInstances(unittest.TestCase):
         expected_cliques = [
             # pCube1 is not an instance:
             ('pCube1',),
-            # Bad: We have an extra transform added here for the USD scope and
-            # no sharing of first pCubeShape1 transform.
-            ('pCube1|pCubeShape1',),
-            ('pCube2|pCubeShape1',),
-            ('pCube3|pCubeShape1',),
             # Correctly shared via instancing, but with 2 extra transforms:
+            ('pCube1|pCubeShape1',),
+
             ('pCube1|pCubeShape1|pCubeShape1',
              'pCube2|pCubeShape1|pCubeShape1',
              'pCube3|pCubeShape1|pCubeShape1'),
-
-            ('pCube1|pCubeShape1|pCubeShape1|pCubeShape1Shape',
-             'pCube2|pCubeShape1|pCubeShape1|pCubeShape1Shape',
-             'pCube3|pCubeShape1|pCubeShape1|pCubeShape1Shape'),
         ]
 
         for clique in expected_cliques:
@@ -145,10 +141,6 @@ class testUsdImportInstances(unittest.TestCase):
             ('pCube1|pCubeShape1',
              'pCube2|pCubeShape1',
              'pCube3|pCubeShape1'),
-
-            ('pCube1|pCubeShape1|pCubeShape1Shape',
-             'pCube2|pCubeShape1|pCubeShape1Shape',
-             'pCube3|pCubeShape1|pCubeShape1Shape'),
         ]
 
         for clique in expected_cliques:
@@ -182,14 +174,14 @@ class testUsdImportInstances(unittest.TestCase):
 
         # Format is sorted all paths of an instance clique:
         expected_cliques = [
-            # Correctly shared via instancing, but with 2 extra transforms:
-            ('pCube1|pCubeShape1|pCubeShape1|pCubeShape1Shape',
-             'pCube4|pCubeShape1|pCubeShape1|pCubeShape1Shape'),
+            # Correctly shared via instancing, but with 1 extra transforms:
+            ('pCube1|pCubeShape1|pCubeShape1',
+             'pCube4|pCubeShape1|pCubeShape1'),
 
-            ('pCube1|pCube2|pCubeShape2|pCubeShape2|pCubeShape2Shape',
-             'pCube1|pCube3|pCubeShape2|pCubeShape2|pCubeShape2Shape',
-             'pCube4|pCube2|pCubeShape2|pCubeShape2|pCubeShape2Shape',
-             'pCube4|pCube3|pCubeShape2|pCubeShape2|pCubeShape2Shape'),
+            ('pCube1|pCube2|pCubeShape2|pCubeShape2',
+             'pCube1|pCube3|pCubeShape2|pCubeShape2',
+             'pCube4|pCube2|pCubeShape2|pCubeShape2',
+             'pCube4|pCube3|pCubeShape2|pCubeShape2'),
             # Incorrect: Would expect all pCube2 to be shared:
             ('pCube1|pCube2',),
 
@@ -260,17 +252,17 @@ class testUsdImportInstances(unittest.TestCase):
 
         # Format is sorted all paths of an instance clique:
         expected_cliques = [
-            # Correctly shared via instancing, but with 2 extra transforms:
-            ('pCube1|pCubeShape1|pCubeShape1|pCubeShape1Shape',
-             'pCube4|pCubeShape1|pCubeShape1|pCubeShape1Shape',
-             'pCube5|pCubeShape1|pCubeShape1|pCubeShape1Shape'),
-            # Correctly shared, but with 3 extra transforms:
-            ('pCube1|pCube2|pCube2|pCubeShape2|pCubeShape2|pCubeShape2Shape',
-             'pCube1|pCube3|pCube3|pCubeShape2|pCubeShape2|pCubeShape2Shape',
-             'pCube4|pCube2|pCube2|pCubeShape2|pCubeShape2|pCubeShape2Shape',
-             'pCube4|pCube3|pCube3|pCubeShape2|pCubeShape2|pCubeShape2Shape',
-             'pCube5|pCube2|pCube2|pCubeShape2|pCubeShape2|pCubeShape2Shape',
-             'pCube5|pCube3|pCube3|pCubeShape2|pCubeShape2|pCubeShape2Shape'),
+            # Correctly shared via instancing, but with 1 extra transforms:
+            ('pCube1|pCubeShape1|pCubeShape1',
+             'pCube4|pCubeShape1|pCubeShape1',
+             'pCube5|pCubeShape1|pCubeShape1'),
+            # Correctly shared, but with 2 extra transforms:
+            ('pCube1|pCube2|pCube2|pCubeShape2|pCubeShape2',
+             'pCube1|pCube3|pCube3|pCubeShape2|pCubeShape2',
+             'pCube4|pCube2|pCube2|pCubeShape2|pCubeShape2',
+             'pCube4|pCube3|pCube3|pCubeShape2|pCubeShape2',
+             'pCube5|pCube2|pCube2|pCubeShape2|pCubeShape2',
+             'pCube5|pCube3|pCube3|pCubeShape2|pCubeShape2'),
             # Incorrect: Would expect all pCube2 to be shared:
             ('pCube1|pCube2',),
 
@@ -343,17 +335,17 @@ class testUsdImportInstances(unittest.TestCase):
 
         # Format is sorted all paths of an instance clique:
         expected_cliques = [
-            # Correctly shared via instancing, but with 1 extra transforms:
-            ('pCube1|pCubeShape1|pCubeShape1Shape',
-             'pCube4|pCubeShape1|pCubeShape1Shape',
-             'pCube5|pCubeShape1|pCubeShape1Shape'),
-            # Correctly shared, with 1 extra transform:
-            ('pCube1|pCube2|pCubeShape2|pCubeShape2Shape',
-             'pCube1|pCube3|pCubeShape2|pCubeShape2Shape',
-             'pCube4|pCube2|pCubeShape2|pCubeShape2Shape',
-             'pCube4|pCube3|pCubeShape2|pCubeShape2Shape',
-             'pCube5|pCube2|pCubeShape2|pCubeShape2Shape',
-             'pCube5|pCube3|pCubeShape2|pCubeShape2Shape'),
+            # Correctly shared via instancing:
+            ('pCube1|pCubeShape1',
+             'pCube4|pCubeShape1',
+             'pCube5|pCubeShape1'),
+            # Correctly shared:
+            ('pCube1|pCube2|pCubeShape2',
+             'pCube1|pCube3|pCubeShape2',
+             'pCube4|pCube2|pCubeShape2',
+             'pCube4|pCube3|pCubeShape2',
+             'pCube5|pCube2|pCubeShape2',
+             'pCube5|pCube3|pCubeShape2'),
             # All pCube2 are shared:
             ('pCube1|pCube2', 'pCube4|pCube2', 'pCube5|pCube2',),
             # All pCube3 are shared:
@@ -424,17 +416,17 @@ class testUsdImportInstances(unittest.TestCase):
 
         # Format is sorted all paths of an instance clique:
         expected_cliques = [
-            # Correctly shared via instancing, but with 2 extra transforms:
-            ('pCube1|pCubeShape1|pCubeShape1|pCubeShape1Shape',
-             'pCube4|pCubeShape1|pCubeShape1|pCubeShape1Shape',
-             'pCube5|pCubeShape1|pCubeShape1|pCubeShape1Shape'),
-            # Correctly shared, but with 3 extra transforms:
-            ('pCube1|pCube2|pCube2|pCubeShape2|pCubeShape2|pCubeShape2Shape',
-             'pCube1|pCube3|pCube3|pCubeShape2|pCubeShape2|pCubeShape2Shape',
-             'pCube4|pCube2|pCube2|pCubeShape2|pCubeShape2|pCubeShape2Shape',
-             'pCube4|pCube3|pCube3|pCubeShape2|pCubeShape2|pCubeShape2Shape',
-             'pCube5|pCube2|pCube2|pCubeShape2|pCubeShape2|pCubeShape2Shape',
-             'pCube5|pCube3|pCube3|pCubeShape2|pCubeShape2|pCubeShape2Shape'),
+            # Correctly shared via instancing, but with 1 extra transforms:
+            ('pCube1|pCubeShape1|pCubeShape1',
+             'pCube4|pCubeShape1|pCubeShape1',
+             'pCube5|pCubeShape1|pCubeShape1'),
+            # Correctly shared, but with 2 extra transforms:
+            ('pCube1|pCube2|pCube2|pCubeShape2|pCubeShape2',
+             'pCube1|pCube3|pCube3|pCubeShape2|pCubeShape2',
+             'pCube4|pCube2|pCube2|pCubeShape2|pCubeShape2',
+             'pCube4|pCube3|pCube3|pCubeShape2|pCubeShape2',
+             'pCube5|pCube2|pCube2|pCubeShape2|pCubeShape2',
+             'pCube5|pCube3|pCube3|pCubeShape2|pCubeShape2'),
             # Incorrect: Would expect all pCube2 to be shared:
             ('pCube1|pCube2',),
 
@@ -519,21 +511,21 @@ class testUsdImportInstances(unittest.TestCase):
 
         # Format is sorted all paths of an instance clique:
         expected_cliques = [
-            # Correctly shared via instancing, but with 2 extra transforms:
-            ('pCube1|pCubeShape1|pCubeShape1|pCubeShape1Shape',
-             'pCube4|pCubeShape1|pCubeShape1|pCubeShape1Shape',
-             'pCube5|pCubeShape1|pCubeShape1|pCubeShape1Shape'),
+            # Correctly shared via instancing, but with 1 extra transforms:
+            ('pCube1|pCubeShape1|pCubeShape1',
+             'pCube4|pCubeShape1|pCubeShape1',
+             'pCube5|pCubeShape1|pCubeShape1'),
             # The modified pCube5 does not share at the pCubeShape1 level:
             ('pCube1|pCubeShape1', 'pCube4|pCubeShape1'),
 
             ('pCube5|pCubeShape1',),
-            # Correctly shared, with 2 extra transform:
-            ('pCube1|pCube2|pCube2|pCubeShape2|pCubeShape2Shape',
-             'pCube1|pCube3|pCube3|pCubeShape2|pCubeShape2Shape',
-             'pCube4|pCube2|pCube2|pCubeShape2|pCubeShape2Shape',
-             'pCube4|pCube3|pCube3|pCubeShape2|pCubeShape2Shape',
-             'pCube5|pCube2|pCube2|pCubeShape2|pCubeShape2Shape',
-             'pCube5|pCube3|pCube3|pCubeShape2|pCubeShape2Shape'),
+            # Correctly shared, with 1 extra transform:
+            ('pCube1|pCube2|pCube2|pCubeShape2',
+             'pCube1|pCube3|pCube3|pCubeShape2',
+             'pCube4|pCube2|pCube2|pCubeShape2',
+             'pCube4|pCube3|pCube3|pCubeShape2',
+             'pCube5|pCube2|pCube2|pCubeShape2',
+             'pCube5|pCube3|pCube3|pCubeShape2'),
             # All pCube2|pCube2 and pCube3|pCube3 are shared:
             ('pCube1|pCube2|pCube2', 'pCube4|pCube2|pCube2', 'pCube5|pCube2|pCube2',),
 
