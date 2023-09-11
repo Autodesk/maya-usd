@@ -149,6 +149,8 @@ class testMaterialCommands(unittest.TestCase):
         self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/SkelAnimation1", canAssignMaterialToNodeType=True), False)
         self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/SkelBindingAPI1", canAssignMaterialToNodeType=True), False)
         self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/SkelBlendShape1", canAssignMaterialToNodeType=True), False)
+        if usdVersion <= (0, 23, 8):
+            self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/SkelPackedJointAnimation1", canAssignMaterialToNodeType=True), False)
         self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/SkelRoot1", canAssignMaterialToNodeType=True), False)
         self.assertEqual(cmds.mayaUsdMaterialBindings("|stage|stageShape,/Skeleton1", canAssignMaterialToNodeType=True), False)
 

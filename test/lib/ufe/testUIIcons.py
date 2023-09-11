@@ -146,6 +146,10 @@ class UIIconsTestCase(unittest.TestCase):
                 ('PhysicsScene',            'out_USD_UsdTyped.png'),
                 ('PhysicsSphericalJoint',   'out_USD_UsdTyped.png')
             ])
+        if usdVer <= (0, 23, 8):
+            primTypes.extend([
+                ('PackedJointAnimation',    'out_USD_SkelAnimation.png')
+            ])
 
         # Special case for node types which are in an AL schema.
         # They aren't available when compiling without the AL plugin.
