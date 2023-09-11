@@ -94,6 +94,10 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         if os.getenv('MAYA_HAS_COLOR_MANAGEMENT_SUPPORT_API', 'FALSE') == 'TRUE':
             suffix = "_ocio"
 
+        # MaterialX 1.38.8 has a new triplanar node with superior blending
+        if os.getenv('MATERIALX_VERSION', '1.38.0') >= '1.38.8':
+            suffix += "_blended"
+
         mayaUtils.loadPlugin("mayaUsdPlugin")
         panel = mayaUtils.activeModelPanel()
         cmds.modelEditor(panel, edit=True, displayTextures=True)
