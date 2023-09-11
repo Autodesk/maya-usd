@@ -63,6 +63,7 @@
 #include <maya/MViewport2Renderer.h>
 
 #ifdef WANT_MATERIALX_BUILD
+#include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/OgsFragment.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/OgsXmlGenerator.h>
 
@@ -439,8 +440,15 @@ const std::set<std::string> _mtlxTopoNodeSet = {
     "convert",
     // Constants: they get inlined in the source.
     "constant",
-    // Switch, unless all inputs are connected.
-    "switch"
+#if MX_COMBINED_VERSION < 13808
+    // Switch, unless all inputs are connected. Bug was fixed in 1.38.8.
+    "switch",
+#endif
+#if MX_COMBINED_VERSION == 13807
+    // Dot became topological in 1.38.7. Reverted in 1.38.8.
+    // Still topological for filename though.
+    "dot",
+#endif
 };
 
 // These attribute names usually indicate we have a source color space to handle.
@@ -521,6 +529,12 @@ bool _IsTopologicalNode(const HdMaterialNode2& inNode)
     mx::NodeDefPtr nodeDef
         = _GetMaterialXData()._mtlxLibrary->getNodeDef(inNode.nodeTypeId.GetString());
     if (nodeDef) {
+#if MX_COMBINED_VERSION >= 13807
+        // Dot filename is always topological to prevent creating extra OpenGL samplers in the
+        // generated OpenGL code.
+        if (nodeDef->getName() == "ND_dot_filename")
+            return true;
+#endif
         return _mtlxTopoNodeSet.find(nodeDef->getNodeString()) != _mtlxTopoNodeSet.cend();
     }
     return false;
