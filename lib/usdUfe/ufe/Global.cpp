@@ -77,6 +77,8 @@ Ufe::Rtid initialize(
         UsdUfe::setSaveStageLoadRulesFn(dccFunctions.saveStageLoadRulesFn);
     if (dccFunctions.isRootChildFn)
         UsdUfe::setIsRootChildFn(dccFunctions.isRootChildFn);
+    if (dccFunctions.uniqueChildNameFn)
+        UsdUfe::setUniqueChildNameFn(dccFunctions.uniqueChildNameFn);
 
     // Create a default stages subject if none is provided.
     if (nullptr == ss) {

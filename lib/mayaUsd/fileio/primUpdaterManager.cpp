@@ -1605,7 +1605,7 @@ bool PrimUpdaterManager::duplicate(
 
         // Make the destination root path unique.
         SdfPath     dstParentPath = dstParentPrim.GetPath();
-        std::string dstChildName = ufe::uniqueChildName(dstParentPrim, srcRootPath.GetName());
+        std::string dstChildName = UsdUfe::uniqueChildName(dstParentPrim, srcRootPath.GetName());
         SdfPath     dstRootPath = dstParentPath.AppendChild(TfToken(dstChildName));
         progressBar.advance();
 

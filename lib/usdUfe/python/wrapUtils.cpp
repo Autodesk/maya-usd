@@ -32,6 +32,7 @@
 #include <boost/python/def.hpp>
 
 #include <string>
+#include <vector>
 
 using namespace boost::python;
 
@@ -54,9 +55,13 @@ std::string _usdPathToUfePathSegment(
     return UsdUfe::usdPathToUfePathSegment(usdPath, instanceIndex).string();
 }
 
-std::string _uniqueChildName(const PXR_NS::UsdPrim& parent, const std::string& name)
+std::string _uniqueName(const std::vector<std::string>& existingNames, std::string srcName)
 {
-    return UsdUfe::uniqueChildName(parent, name);
+    PXR_NS::TfToken::HashSet existingNamesSet;
+    for (const auto& n : existingNames) {
+        existingNamesSet.insert(PXR_NS::TfToken(n));
+    }
+    return UsdUfe::uniqueName(existingNamesSet, srcName);
 }
 
 std::string _stripInstanceIndexFromUfePath(const std::string& ufePathString)
@@ -104,7 +109,8 @@ void wrapUtils()
     def("usdPathToUfePathSegment",
         _usdPathToUfePathSegment,
         (arg("usdPath"), arg("instanceIndex") = PXR_NS::UsdImagingDelegate::ALL_INSTANCES));
-    def("uniqueChildName", _uniqueChildName);
+    def("uniqueName", _uniqueName);
+    def("uniqueChildName", UsdUfe::uniqueChildName);
     def("stripInstanceIndexFromUfePath", _stripInstanceIndexFromUfePath, (arg("ufePathString")));
     def("ufePathToPrim", _ufePathToPrim);
     def("ufePathToInstanceIndex", _ufePathToInstanceIndex);
