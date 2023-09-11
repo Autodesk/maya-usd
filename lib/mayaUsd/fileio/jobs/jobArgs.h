@@ -111,6 +111,8 @@ TF_DECLARE_PUBLIC_TOKENS(
     (writeDefaults) \
     (customLayerData) \
     (metersPerUnit) \
+    /* Types of objects to export */ \
+    (excludeExportTypes) \
     /* Special "none" token */ \
     (none) \
     /* relative textures values */ \
@@ -245,6 +247,7 @@ struct UsdMayaJobExportArgs
     const TfToken      geomSidedness;
     const TfToken::Set includeAPINames;
     const TfToken::Set jobContextNames;
+    const TfToken::Set excludeExportTypes;
 
     using ChaserArgs = std::map<std::string, std::string>;
     const std::vector<std::string>          chaserNames;
