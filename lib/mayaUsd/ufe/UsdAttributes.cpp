@@ -338,7 +338,7 @@ UsdAttributes::getUniqueAttrName(const UsdSceneItem::Ptr& item, const std::strin
             attributeNames.insert(PXR_NS::TfToken(attributeName));
         }
 
-        return uniqueName(attributeNames, attrName);
+        return UsdUfe::uniqueName(attributeNames, attrName);
     }
     return attrName;
 }
