@@ -95,8 +95,25 @@ void addMutedLayer(const PXR_NS::SdfLayerRefPtr& layer)
 
 void removeMutedLayer(const PXR_NS::SdfLayerRefPtr& layer)
 {
+    if (!layer)
+        return;
+
     MutedLayers& layers = getMutedLayers();
     layers.erase(layer);
+
+    // Stop holding onto sub-layers as well, in case they were previously
+    // dirty or anonymous.
+    //
+    // Note: we don't check the dirty or anonymous status while removing
+    //       in case the status changed. Trying to remove a layer that
+    //       was not held has no consequences.
+    //
+    // Note: the GetSubLayerPaths function returns proxies, so we have to
+    //       hold the std::string by value, not reference.
+    for (const std::string subLayerPath : layer->GetSubLayerPaths()) {
+        auto subLayer = SdfLayer::FindRelativeToLayer(layer, subLayerPath);
+        removeMutedLayer(subLayer);
+    }
 }
 
 void forgetMutedLayers()

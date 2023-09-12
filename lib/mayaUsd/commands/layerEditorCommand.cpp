@@ -618,9 +618,9 @@ public:
             restoreSelection();
         }
 
-        // we perfer not holding to pointers needlessly, but we need to hold on to the layer if we
-        // mute it otherwise usd will let go of it and its modifications, and any dirty children
-        // will also be lost
+        // We prefer not holding to pointers needlessly, but we need to hold on
+        // to the muted layer. OpenUSD let go of muted layers, so anonymous
+        // layers and any dirty children would be lost if not explicitly held on.
         addMutedLayer(layer);
         return true;
     }
@@ -640,7 +640,7 @@ public:
             stage->MuteLayer(layer->GetIdentifier());
         }
 
-        // we can release the pointer
+        // We can release the now unmuted layers.
         removeMutedLayer(layer);
         return true;
     }
