@@ -94,6 +94,7 @@ MStatus MayaUsdProxyShapeStageExtraData::finalize()
     return status;
 }
 
+/* static */
 bool MayaUsdProxyShapeStageExtraData::containsProxyShape(MayaUsdProxyShapeBase& proxyShape)
 {
     auto it = getTrackedProxyShapes().find(&proxyShape);
