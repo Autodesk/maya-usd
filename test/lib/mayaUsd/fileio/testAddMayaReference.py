@@ -23,9 +23,10 @@ import mayaUtils
 import ufeUtils
 import usdUtils
 
-from pxr import Tf, Usd, Kind
+from pxr import Tf, Usd, Kind, Sdf
 
 from maya import cmds
+import maya.mel as mel
 from maya import standalone
 from maya.api import OpenMaya as om
 
@@ -286,6 +287,66 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         # This functionality requires the orphaned nodes manager.
         if os.getenv('HAS_ORPHANED_NODES_MANAGER', '0') >= '1':
             self.assertTrue(mayaRefPrim.IsActive())
+
+
+    def testEditAndDiscardMayaRefWithMutedLayer(self):
+        '''
+        Test editing then discarding a Maya Reference when an anonymous
+        has been muted does not lose the muted layer.
+
+        Add a Maya Reference using auto-edit, create a new layer, mute it,
+        then discard the edits. Verify the muted layer still exists.
+        '''
+        kDefaultPrimName = mayaRefUtils.defaultMayaReferencePrimName()
+
+        # Create a new layer, and mute it. Make sure not to keep a reference
+        # to it to verify it does not get lost later. Use the layer editor
+        # command to mute it, as it is the one responsible to hold onto the
+        # anonymous layer.
+        anonLayer = usdUtils.addNewLayerToStage(self.stage, anonymous=True)
+        anonLayerId = anonLayer.identifier
+        mel.eval('mayaUsdLayerEditor -edit -muteLayer 1 "%s" "%s"' % (self.proxyShapePathStr, anonLayerId))
+        anonLayer = None
+
+        # Since this is a brand new prim, it should not have variant sets.
+        primTestDefault = self.stage.DefinePrim('/Test_Default', 'Xform')
+        primPathStr = self.proxyShapePathStr + ',/Test_Default'
+        self.assertFalse(primTestDefault.HasVariantSets())
+
+        mayaRefPrim = mayaUsdAddMayaReference.createMayaReferencePrim(
+            primPathStr,
+            self.mayaSceneStr,
+            self.kDefaultNamespace,
+            mayaAutoEdit=True)
+
+        # The prim should not have any variant set.
+        self.assertFalse(primTestDefault.HasVariantSets())
+
+        # Verify that a Maya Reference prim was created.
+        self.assertTrue(mayaRefPrim.IsValid())
+        self.assertEqual(str(mayaRefPrim.GetName()), kDefaultPrimName)
+        self.assertEqual(mayaRefPrim, primTestDefault.GetChild(kDefaultPrimName))
+        self.assertTrue(mayaRefPrim.GetPrimTypeInfo().GetTypeName(), 'MayaReference')
+
+        attr = mayaRefPrim.GetAttribute('mayaAutoEdit')
+        self.assertTrue(attr.IsValid())
+        self.assertEqual(attr.Get(), True)
+
+        # Discard Maya edits.
+        aMayaItem = ufe.GlobalSelection.get().front()
+        aMayaPath = aMayaItem.path()
+        aMayaPathStr = ufe.PathString.string(aMayaPath)
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.discardEdits(aMayaPathStr))
+        
+        # Verify that the auto-edit has been turned off
+        attr = mayaRefPrim.GetAttribute('mayaAutoEdit')
+        self.assertTrue(attr.IsValid())
+        self.assertEqual(attr.Get(), False)
+
+        # Verify that the muted layer stil exists.
+        layerIdentifiers = [layer.identifier for layer in Sdf.Layer.GetLoadedLayers()]
+        self.assertIn(anonLayerId, layerIdentifiers)
 
 
     def testEditAndMergeMayaRef(self):
