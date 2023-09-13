@@ -1,0 +1,45 @@
+#usda 1.0
+(
+    subLayers = [
+        @with-variants-render-component.usda@,
+        @with-variants-preview-component.usda@
+    ]
+)
+
+def Xform "group" (
+    kind = "component"
+    variants = {
+        string geo = "render_high"
+        string geo_vis = "render"
+    }
+    prepend variantSets = "geo"
+)
+{
+    variantSet "geo" = {
+        "render_high" (
+            prepend variantSets = "geo_vis"
+        ) {
+            variantSet "geo_vis" = {
+                "preview" {
+                    def Xform "GEO"
+                    {
+                        uniform token purpose = "proxy"
+                    }
+
+                }
+                "render" {
+                    def Xform "GEO"
+                    {
+                        uniform token purpose = "render"
+                    }
+
+                }
+            }
+
+        }
+        "render_none" {
+
+        }
+    }
+}
+
