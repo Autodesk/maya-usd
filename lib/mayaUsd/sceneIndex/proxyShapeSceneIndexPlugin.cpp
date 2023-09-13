@@ -20,6 +20,7 @@
 
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/nodes/proxyShapeStageExtraData.h>
 
 #include <usdUfe/ufe/Utils.h>
 
@@ -311,9 +312,14 @@ void MayaUsdProxyShapeSceneIndex::onTimeChanged(void* data)
     instance->UpdateTime();
 }
 
+bool MayaUsdProxyShapeSceneIndex::isProxyShapeValid()
+{
+    return MayaUsdProxyShapeStageExtraData::containsProxyShapeData(*_proxyShape);
+}
+
 void MayaUsdProxyShapeSceneIndex::UpdateTime()
 {
-    if (_usdImagingStageSceneIndex && _proxyShape) {
+    if (_usdImagingStageSceneIndex && _proxyShape && isProxyShapeValid()) {
         _usdImagingStageSceneIndex->SetTime(_proxyShape->getTime());
     }
 }
