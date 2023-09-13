@@ -314,7 +314,7 @@ void MayaUsdProxyShapeSceneIndex::onTimeChanged(void* data)
 
 bool MayaUsdProxyShapeSceneIndex::isProxyShapeValid()
 {
-    return MayaUsdProxyShapeStageExtraData::containsProxyShapeData(*_proxyShape);
+    return MayaUsdProxyShapeStageExtraData::containsProxyShape(*_proxyShape);
 }
 
 void MayaUsdProxyShapeSceneIndex::UpdateTime()
