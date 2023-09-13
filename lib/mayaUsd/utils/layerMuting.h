@@ -19,6 +19,7 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 
+#include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
 
 namespace MAYAUSD_NS_DEF {
@@ -46,6 +47,29 @@ copyLayerMutingToAttribute(const PXR_NS::UsdStage& stage, MayaUsdProxyShapeBase&
 MAYAUSD_CORE_PUBLIC
 MStatus
 copyLayerMutingFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_NS::UsdStage& stage);
+
+// OpenUSD forget everything about muted layers. The OpenUSD documentation for
+// the MuteLayer function says:
+//
+//    Note that muting a layer will cause this stage to release all references
+//    to that layer. If no other client is holding on to references to that
+//    layer, it will be unloaded.In this case, if there are unsaved edits to
+//    the muted layer, those edits are lost.
+//
+//    Since anonymous layers are not serialized, muting an anonymous layer will
+//    cause that layer and its contents to be lost in this case.
+//
+// So we need to hold on to muted layers. We do this in a private global list
+// of muted layers. That list gets cleared when a new Maya scene is created.
+
+MAYAUSD_CORE_PUBLIC
+void addMutedLayer(const PXR_NS::SdfLayerRefPtr& layer);
+
+MAYAUSD_CORE_PUBLIC
+void removeMutedLayer(const PXR_NS::SdfLayerRefPtr& layer);
+
+MAYAUSD_CORE_PUBLIC
+void forgetMutedLayers();
 
 } // namespace MAYAUSD_NS_DEF
 
