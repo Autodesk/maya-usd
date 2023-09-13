@@ -60,6 +60,7 @@ public:
     MAYAUSD_CORE_PUBLIC
     static void saveAllStageData();
 
+    /// \brief verify if the proxyshape requested is still valid
     MAYAUSD_CORE_PUBLIC
     static bool containsProxyShape(MayaUsdProxyShapeBase& proxyShape);
 
