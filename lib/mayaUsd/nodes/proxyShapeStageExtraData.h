@@ -61,7 +61,7 @@ public:
     static void saveAllStageData();
 
     MAYAUSD_CORE_PUBLIC
-    static bool containsProxyShapeData(MayaUsdProxyShapeBase& proxyShape);
+    static bool containsProxyShape(MayaUsdProxyShapeBase& proxyShape);
 
     /// \brief save load rules of tracked proxy shapes.
     MAYAUSD_CORE_PUBLIC
