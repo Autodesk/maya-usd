@@ -22,8 +22,8 @@ vec3 mx_environment_radiance(vec3 N, vec3 V, vec3 X, vec2 alpha, int distributio
     }
     
     // Generate tangent frame.
-    X = normalize(X - dot(X, N) * N);
-    vec3 Y = cross(N, X);
+    vec3 Y = normalize(cross(N, X));
+    X = cross(Y, N);
     mat3 tangentToWorld = mat3(X, Y, N);
 
     // Transform the view vector to tangent space.
@@ -32,7 +32,6 @@ vec3 mx_environment_radiance(vec3 N, vec3 V, vec3 X, vec2 alpha, int distributio
     // Compute derived properties.
     float NdotV = clamp(V.z, M_FLOAT_EPS, 1.0);
     float avgAlpha = mx_average_alpha(alpha);
-    float G1V = mx_ggx_smith_G1(NdotV, avgAlpha);
     
     // Integrate outgoing radiance using filtered importance sampling.
     // http://cgg.mff.cuni.cz/~jaroslav/papers/2008-egsr-fis/2008-egsr-fis-final-embedded.pdf
@@ -42,16 +41,18 @@ vec3 mx_environment_radiance(vec3 N, vec3 V, vec3 X, vec2 alpha, int distributio
         vec2 Xi = mx_spherical_fibonacci(i, MX_NUM_FIS_SAMPLES);
 
         // Compute the half vector and incoming light direction.
-        vec3 H = mx_ggx_importance_sample_VNDF(Xi, V, alpha);
-        vec3 L = fd.refraction ? mx_refraction_solid_sphere(-V, H, fd.ior.x) : -reflect(V, H);
+        vec3 H = mx_ggx_importance_sample_NDF(Xi, alpha);
+        vec3 L = -reflect(V, H);
         
         // Compute dot products for this sample.
+        float NdotH = clamp(H.z, M_FLOAT_EPS, 1.0);
         float NdotL = clamp(L.z, M_FLOAT_EPS, 1.0);
         float VdotH = clamp(dot(V, H), M_FLOAT_EPS, 1.0);
+        float LdotH = VdotH;
 
         // Sample the environment light from the given direction.
         vec3 Lw = tangentToWorld * L;
-        float pdf = mx_ggx_NDF(H, alpha) * G1V / (4.0 * NdotV);
+        float pdf = mx_ggx_PDF(H, LdotH, alpha);
         float lod = mx_latlong_compute_lod(Lw, pdf, float(mayaGetSpecularEnvironmentNumLOD() - 1), MX_NUM_FIS_SAMPLES);
         vec3 sampleColor = mayaSampleSpecularEnvironmentAtLOD(Lw, lod);
 
@@ -61,22 +62,17 @@ vec3 mx_environment_radiance(vec3 N, vec3 V, vec3 X, vec2 alpha, int distributio
         // Compute the geometric term.
         float G = mx_ggx_smith_G2(NdotL, NdotV, avgAlpha);
 
-        // Compute the combined FG term, which is inverted for refraction.
-        vec3 FG = fd.refraction ? vec3(1.0) - (F * G) : F * G;
-
         // Add the radiance contribution of this sample.
         // From https://cdn2.unrealengine.com/Resources/files/2013SiggraphPresentationsNotes-26915738.pdf
         //   incidentLight = sampleColor * NdotL
         //   microfacetSpecular = D * F * G / (4 * NdotL * NdotV)
-        //   pdf = D * G1V / (4 * NdotV);
+        //   pdf = D * NdotH / (4 * VdotH)
         //   radiance = incidentLight * microfacetSpecular / pdf
-        radiance += sampleColor * FG;
+        radiance += sampleColor * F * G * VdotH / (NdotV * NdotH);
     }
 
-    // Apply the global component of the geometric term and normalize.
-    radiance /= G1V * float(MX_NUM_FIS_SAMPLES);
-
-    // Return the final radiance.
+    // Normalize and return the final radiance.
+    radiance /= float(MX_NUM_FIS_SAMPLES);
     return radiance;
 }
 
