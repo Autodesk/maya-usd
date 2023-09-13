@@ -71,10 +71,17 @@ def Mesh "pPyramid1" (
                 {
                     uniform token info:id = "ND_standard_surface_surfaceshader"
                     float inputs:base = 1
-                    color3f inputs:base_color = (0, 1, 0)
+                    color3f inputs:base_color.connect = </pPyramid1/mtl/standardSurface2SG/MaterialX/red.outputs:out>
                     float inputs:specular = 1
                     float inputs:specular_roughness = 0.2
                     token outputs:out
+                }
+
+                def Shader "red"
+                {
+                    uniform token info:id = "ND_dot_color3"
+                    color3f inputs:in = (0, 1, 0)
+                    color3f outputs:out
                 }
             }
         }
