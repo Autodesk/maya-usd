@@ -189,7 +189,7 @@ def setUserSelectedUSDDialogFileFilter(fileFilter):
     
 def wantReferenceCompositionArc():
     opVarName = "mayaUsd_WantReferenceCompositionArc"
-    return cmds.optionVar(exists=opVarName) and cmds.optionVar(query=opVarName)
+    return not cmds.optionVar(exists=opVarName) or cmds.optionVar(query=opVarName)
 
 def saveWantReferenceCompositionArc(want):
     opVarName = "mayaUsd_WantReferenceCompositionArc"
