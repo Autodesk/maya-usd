@@ -100,6 +100,8 @@ private:
 
     void StageSet(const MayaUsdProxyStageSetNotice& notice);
 
+    bool isProxyShapeValid();
+
     void Populate();
 
 protected:

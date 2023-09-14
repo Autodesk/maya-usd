@@ -18,6 +18,7 @@
 
 #if PXR_VERSION >= 2211
 
+#include <mayaUsd/nodes/proxyShapeStageExtraData.h>
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/Utils.h>
 
@@ -191,7 +192,7 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
             sceneIndex = HdFlatteningSceneIndex::New(sceneIndex, flatteningInputArgs);
             sceneIndex = UsdImagingDrawModeSceneIndex::New(sceneIndex, /* inputArgs = */ nullptr);
 #else
-            //#For USD 23.08 and later, HD_API_VERSION=54 in USD 23.08
+            // #For USD 23.08 and later, HD_API_VERSION=54 in USD 23.08
             static const bool _displayUnloadedPrimsWithBounds = true;
 
             HdContainerDataSourceHandle const stageInputArgs = HdRetainedContainerDataSource::New(
@@ -311,9 +312,14 @@ void MayaUsdProxyShapeSceneIndex::onTimeChanged(void* data)
     instance->UpdateTime();
 }
 
+bool MayaUsdProxyShapeSceneIndex::isProxyShapeValid()
+{
+    return MayaUsdProxyShapeStageExtraData::containsProxyShape(*_proxyShape);
+}
+
 void MayaUsdProxyShapeSceneIndex::UpdateTime()
 {
-    if (_usdImagingStageSceneIndex && _proxyShape) {
+    if (_usdImagingStageSceneIndex && _proxyShape && isProxyShapeValid()) {
         _usdImagingStageSceneIndex->SetTime(_proxyShape->getTime());
     }
 }
