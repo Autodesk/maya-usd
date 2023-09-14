@@ -1586,6 +1586,13 @@ bool MayaUsdProxyShapeBase::isStageIncoming() const
         CHECK_MSTATUS_AND_RETURN(localStatus, false);
         const auto cacheId = UsdStageCache::Id::FromLongInt(cacheIdNum);
         const auto stageCached = cacheId.IsValid() && UsdUtilsStageCache::Get().Contains(cacheId);
+
+        // we need to check if the stageCache is connected
+        UsdStageCache stageCache = UsdUtilsStageCache::Get();
+        bool          hasStage = stageCache.IsEmpty();
+        if (hasStage){
+            TF_WARN("found stage");
+        }
         if (stageCached) {
             isIncomingStage = true;
         }
