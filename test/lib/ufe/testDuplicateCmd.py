@@ -726,5 +726,56 @@ class DuplicateCmdTestCase(unittest.TestCase):
         newObjItem = ufe.Hierarchy.createItem(ufe.PathString.path(newObj[0]))
         self.assertEqual(newObjItem.nodeName(), 'Cone3')
 
+    def testConnectionWithChangingOrderOfTen(self):
+        '''
+        Test duplicating a prim that has mateiral connections
+        when the new prim name suffix will increase to a new power of ten
+        (ex: 9 > 10), as opposed to having the same suffix length (ex: 4 -> 5).
+
+        The connections should not be lost.
+        '''
+
+        cmds.file(new=True, force=True)
+
+        usdFile = testUtils.getTestScene("dup_material", "dup_material.usda")
+        stageDagPath, usdStage = mayaUtils.createProxyFromFile(usdFile)
+        dupSourceUfePathString = ','.join([stageDagPath, "/rock2"])
+
+        cmds.duplicate(dupSourceUfePathString)
+
+        # Verify that the duplicated item still has connections.
+        destPrim = usdStage.GetPrimAtPath('/rock10')
+        self.assertIsNotNone(destPrim)
+
+        destPrim = usdStage.GetPrimAtPath('/rock10')
+        self.assertIsNotNone(destPrim)
+        self.assertTrue(destPrim)
+
+        prim_paths_and_attr_names = [
+            ('/rock10/mtl/rock_moss_set_01_rock01SG', 'outputs:surface'),
+            ('/rock10/mtl/rock_moss_set_01_rock01SG/standardSurface2', 'inputs:diffuseColor'),
+            ('/rock10/mtl/rock_moss_set_01_rock01SG/standardSurface2', 'inputs:roughness'),
+            ('/rock10/mtl/rock_moss_set_01_rock01SG/standardSurface2', 'inputs:specularColor'),
+            ('/rock10/mtl/rock_moss_set_01_rock01SG/normalmap_texture', 'inputs:st'),
+            ('/rock10/mtl/rock_moss_set_01_rock01SG/place2dTexture3', 'inputs:varname'),
+            ('/rock10/mtl/rock_moss_set_01_rock01SG/base_color_texture', 'inputs:st'),
+            ('/rock10/mtl/rock_moss_set_01_rock01SG/place2dTexture1', 'inputs:varname'),
+            ('/rock10/mtl/rock_moss_set_01_rock01SG/roughness_texture', 'inputs:st'),
+            ('/rock10/mtl/rock_moss_set_01_rock01SG/place2dTexture2', 'inputs:varname'),
+        ]
+
+        for primPath, attrName in prim_paths_and_attr_names:
+            prim = usdStage.GetPrimAtPath(primPath)
+            self.assertIsNotNone(prim)
+            self.assertTrue(prim)
+
+            prop = prim.GetProperty(attrName)
+            self.assertIsNotNone(prop)
+            self.assertTrue(prop)
+            propConnections = prop.GetConnections()
+            self.assertIsNotNone(propConnections)
+            self.assertEqual(len(propConnections), 1)
+            self.assertTrue(str(propConnections[0]).startswith('/rock10/mtl'))
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
