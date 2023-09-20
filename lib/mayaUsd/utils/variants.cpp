@@ -15,6 +15,12 @@
 //
 #include "variants.h"
 
+#include <mayaUsd/ufe/Global.h>
+
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/usd/pcp/node.h>
+#include <pxr/usd/pcp/primIndex.h>
+#include <pxr/usd/usd/editTarget.h>
 #include <pxr/usd/usd/stage.h>
 
 /// General utility functions for variants
@@ -57,6 +63,53 @@ void applyToAllVariants(
     // the function even in the absence of vairants, call it now.
     if (includeNonVariant && !atLeastOneVariant)
         func();
+}
+
+PXR_NS::UsdEditTarget
+getEditTargetForVariants(const PXR_NS::UsdPrim& prim, const PXR_NS::SdfLayerHandle& layer)
+{
+    PXR_NS::UsdEditTarget editTarget(layer);
+
+#ifdef MAYAUSD_DEBUG_EDIT_TARGET_FOR_VARIANTS
+    std::vector<std::string> variantPaths;
+#endif
+
+//     for (const PXR_NS::SdfPath& p : prim.GetPath().GetAncestorsRange()) {
+//         PXR_NS::UsdPrim          ancestor = prim.GetStage()->GetPrimAtPath(p);
+//         PXR_NS::UsdVariantSets   variantSets = ancestor.GetVariantSets();
+//         std::vector<std::string> setNames = variantSets.GetNames();
+//         for (const std::string& setName : setNames) {
+//             PXR_NS::UsdVariantSet variant = variantSets.GetVariantSet(setName);
+//             const std::string     selection = variant.GetVariantSelection();
+// #ifdef MAYAUSD_DEBUG_EDIT_TARGET_FOR_VARIANTS
+//             variantPaths.emplace_back(setName + std::string("=") + selection);
+// #endif
+//             editTarget = editTarget.ComposeOver(variant.GetVariantEditTarget(layer));
+//         }
+//     }
+
+#ifdef MAYAUSD_DEBUG_EDIT_TARGET_FOR_VARIANTS
+    using namespace PXR_NS;
+    TF_STATUS(
+        "edit target for variants for %s: %s",
+        prim.GetPath().GetText(),
+        PXR_NS::TfStringJoin(variantPaths).c_str());
+#endif
+
+    return editTarget;
+}
+
+PXR_NS::SdfPath getVariantPath(
+    const Ufe::Path&   path,
+    const std::string& variantSetName,
+    const std::string& variantSelection)
+{
+    if (path.runTimeId() != MayaUsd::ufe::getUsdRunTimeId())
+        return {};
+
+    const Ufe::Path::Segments& segments = path.getSegments();
+    PXR_NS::SdfPath            primPath(segments.back().string());
+    return primPath.AppendVariantSelection(variantSetName, variantSelection);
 }
 
 } // namespace MAYAUSD_NS_DEF

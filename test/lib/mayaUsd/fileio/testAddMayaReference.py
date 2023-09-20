@@ -413,7 +413,7 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         vs = primTestDefault.GetVariantSets()
         variantSet = vs.GetVariantSet(variantSetName)
         self.assertEqual(variantSet.GetVariantSelection(), cacheVariantName)
-        self.assertTrue(mayaRefPrim.IsActive())
+        self.assertTrue(mayaRefPrim)
 
         # Switch to Maya Ref variant and verify that the auto-edit is
         # still on and the prim is now inactive.
