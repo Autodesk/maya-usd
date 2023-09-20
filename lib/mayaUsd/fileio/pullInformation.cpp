@@ -18,6 +18,7 @@
 
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/primActivation.h>
+#include <mayaUsd/utils/variants.h>
 
 #include <usdUfe/utils/usdUtils.h>
 
@@ -38,8 +39,14 @@ namespace MAYAUSD_NS_DEF {
 
 namespace {
 
-// Metadata key used to store pull information on a prim
+// Metadata key used to store pull information on a prim.
+//
+// Note: we have two versions, because historically we did not author
+//       the metadata inside variants. To support backward compatibility
+//       we need to read from both, starting with the newer, variant-specific
+//       one.
 const PXR_NS::TfToken kPullPrimMetadataKey("Maya:Pull:DagPath");
+const PXR_NS::TfToken kPullPrimVariantMetadataKey("Maya:PullVariant:DagPath");
 
 // Metadata key used to store pull information on a DG node
 const MString kPullDGMetadataKey("Pull_UfePath");
@@ -53,7 +60,12 @@ const MString kPullDGMetadataKey("Pull_UfePath");
 
 bool readPullInformation(const PXR_NS::UsdPrim& prim, std::string& dagPathStr)
 {
-    auto value = prim.GetCustomDataByKey(kPullPrimMetadataKey);
+    PXR_NS::VtValue value = prim.GetCustomDataByKey(kPullPrimVariantMetadataKey);
+    if (!value.IsEmpty() && value.CanCast<std::string>()) {
+        dagPathStr = value.Get<std::string>();
+        return !dagPathStr.empty();
+    }
+    value = prim.GetCustomDataByKey(kPullPrimMetadataKey);
     if (!value.IsEmpty() && value.CanCast<std::string>()) {
         dagPathStr = value.Get<std::string>();
         return !dagPathStr.empty();
@@ -139,21 +151,47 @@ bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& edited
 
 bool writePulledPrimMetadata(const Ufe::Path& ufePulledPath, const MDagPath& editedAsMayaRoot)
 {
+    return writePulledPrimMetadata(ufePulledPath, editedAsMayaRoot, PXR_NS::UsdEditTarget());
+}
+
+bool writePulledPrimMetadata(
+    const Ufe::Path&             ufePulledPath,
+    const MDagPath&              editedAsMayaRoot,
+    const PXR_NS::UsdEditTarget& editTarget)
+{
     auto pulledPrim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
     if (!pulledPrim)
         return false;
-    return writePulledPrimMetadata(pulledPrim, editedAsMayaRoot);
+
+    return writePulledPrimMetadata(pulledPrim, editedAsMayaRoot, editTarget);
 }
 
 bool writePulledPrimMetadata(PXR_NS::UsdPrim& pulledPrim, const MDagPath& editedAsMayaRoot)
+{
+    return writePulledPrimMetadata(pulledPrim, editedAsMayaRoot, PXR_NS::UsdEditTarget());
+}
+
+bool writePulledPrimMetadata(
+    PXR_NS::UsdPrim&             pulledPrim,
+    const MDagPath&              editedAsMayaRoot,
+    const PXR_NS::UsdEditTarget& editTarget)
 {
     auto stage = pulledPrim.GetStage();
     if (!stage)
         return false;
 
-    PXR_NS::UsdEditContext editContext(stage, stage->GetSessionLayer());
-    PXR_NS::VtValue        value(editedAsMayaRoot.fullPathName().asChar());
-    return pulledPrim.SetMetadataByDictKey(SdfFieldKeys->CustomData, kPullPrimMetadataKey, value);
+    // If the edit target is null, then target the exact set of variants under
+    // which the USD prim lives to set the custom metadata. That way if multiple
+    // prims with the same name but under different variants exists, they won't
+    // step on each other's data.
+    const PXR_NS::UsdEditContext editContext(
+        stage,
+        editTarget.IsNull() ? getEditTargetForVariants(pulledPrim, stage->GetSessionLayer())
+                            : editTarget);
+
+    const PXR_NS::VtValue value(editedAsMayaRoot.fullPathName().asChar());
+    return pulledPrim.SetMetadataByDictKey(
+        SdfFieldKeys->CustomData, kPullPrimVariantMetadataKey, value);
 }
 
 //------------------------------------------------------------------------------
@@ -163,20 +201,51 @@ bool writePulledPrimMetadata(PXR_NS::UsdPrim& pulledPrim, const MDagPath& edited
 
 void removePulledPrimMetadata(const Ufe::Path& ufePulledPath)
 {
+    removePulledPrimMetadata(ufePulledPath, PXR_NS::UsdEditTarget());
+}
+
+void removePulledPrimMetadata(
+    const Ufe::Path&             ufePulledPath,
+    const PXR_NS::UsdEditTarget& editTarget)
+{
     PXR_NS::UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
-    if (!prim.IsValid())
+    if (!prim.IsValid()) {
+        TF_WARN(
+            "Could not find prim to remove pulled prim metadata on %s.", ufePulledPath.string().c_str());
         return;
+    }
 
     PXR_NS::UsdStagePtr stage = prim.GetStage();
     if (!stage)
         return;
-    removePulledPrimMetadata(stage, prim);
+
+    removePulledPrimMetadata(stage, prim, editTarget);
 }
 
-void removePulledPrimMetadata(const PXR_NS::UsdStagePtr& stage, PXR_NS::UsdPrim& prim)
+void removePulledPrimMetadata(const PXR_NS::UsdStagePtr& stage, PXR_NS::UsdPrim& pulledPrim)
 {
-    PXR_NS::UsdEditContext editContext(stage, stage->GetSessionLayer());
-    prim.ClearCustomDataByKey(kPullPrimMetadataKey);
+    removePulledPrimMetadata(stage, pulledPrim, PXR_NS::UsdEditTarget());
+}
+
+void removePulledPrimMetadata(
+    const PXR_NS::UsdStagePtr&   stage,
+    PXR_NS::UsdPrim&             pulledPrim,
+    const PXR_NS::UsdEditTarget& editTarget)
+{
+    // Note: this is the old prim data that was not variant-specific,
+    //       so it is removed without using the edit target.
+    pulledPrim.ClearCustomDataByKey(kPullPrimMetadataKey);
+
+    // If the edit target is null, then target the exact set of variants
+    // under which the USD prim lives to clear the custom metadata. That
+    // way if multiple prims with the same name but under  different
+    // variants exists, they won't step on each other's data.
+    const PXR_NS::UsdEditContext editContext(
+        stage,
+        editTarget.IsNull() ? getEditTargetForVariants(pulledPrim, stage->GetSessionLayer())
+                            : editTarget);
+
+    pulledPrim.ClearCustomDataByKey(kPullPrimVariantMetadataKey);
 }
 
 //------------------------------------------------------------------------------
@@ -186,6 +255,15 @@ void removePulledPrimMetadata(const PXR_NS::UsdStagePtr& stage, PXR_NS::UsdPrim&
 // in the viewport.
 
 bool addExcludeFromRendering(const Ufe::Path& ufePulledPath)
+{
+    // Note: passing an invalid edit target will write the exclusion
+    //       in the active variants in the session layer.
+    return addExcludeFromRendering(ufePulledPath, PXR_NS::UsdEditTarget());
+}
+
+bool addExcludeFromRendering(
+    const Ufe::Path&             ufePulledPath,
+    const PXR_NS::UsdEditTarget& editTarget)
 {
     // Note: must make sure the prim is accessible by activating all its ancestors.
     PrimActivation activation(ufePulledPath);
@@ -198,9 +276,20 @@ bool addExcludeFromRendering(const Ufe::Path& ufePulledPath)
     if (!stage)
         return false;
 
-    PXR_NS::UsdEditContext editContext(stage, stage->GetSessionLayer());
-    if (!prim.SetActive(false))
-        return false;
+    // Receiving an invalid edit target means that we write the exclusion
+    // in the active variants in the session layer.
+    if (editTarget.IsNull()) {
+        const PXR_NS::SdfLayerHandle layer = stage->GetSessionLayer();
+        const PXR_NS::UsdEditTarget  editTarget = getEditTargetForVariants(prim, layer);
+
+        PXR_NS::UsdEditContext editContext(stage, stage->GetSessionLayer());
+        if (!prim.SetActive(false))
+            return false;
+    } else {
+        PXR_NS::UsdEditContext editContext(stage, editTarget);
+        if (!prim.SetActive(false))
+            return false;
+    }
 
     return true;
 }
@@ -211,6 +300,15 @@ bool addExcludeFromRendering(const Ufe::Path& ufePulledPath)
 // This is done once the Maya data is meged into USD and removed from the scene.
 
 bool removeExcludeFromRendering(const Ufe::Path& ufePulledPath)
+{
+    // Note: passing an invalid edit target will remove the exclusion
+    //       from the active variants in the session layer.
+    return removeExcludeFromRendering(ufePulledPath, PXR_NS::UsdEditTarget());
+}
+
+bool removeExcludeFromRendering(
+    const Ufe::Path&             ufePulledPath,
+    const PXR_NS::UsdEditTarget& editTarget)
 {
     // Note: must make sure the prim is accessible by activating all its ancestors.
     PrimActivation activation(ufePulledPath);
@@ -229,15 +327,30 @@ bool removeExcludeFromRendering(const Ufe::Path& ufePulledPath)
         return false;
 
     PXR_NS::SdfLayerHandle sessionLayer = stage->GetSessionLayer();
-    PXR_NS::UsdEditContext editContext(stage, sessionLayer);
-
-    // Cleanup the field and potentially empty over
-    if (!prim.ClearActive())
+    if (!sessionLayer)
         return false;
 
-    PXR_NS::SdfPrimSpecHandle primSpec = UsdUfe::getPrimSpecAtEditTarget(prim);
-    if (sessionLayer && primSpec)
-        sessionLayer->ScheduleRemoveIfInert(primSpec.GetSpec());
+    auto clearActive = [&stage, &sessionLayer, &prim](const PXR_NS::UsdEditTarget& editTarget) {
+        PXR_NS::UsdEditContext editContext(stage, editTarget);
+
+        // Cleanup the field and potentially empty over
+        prim.ClearActive();
+
+        PXR_NS::SdfPrimSpecHandle primSpec = UsdUfe::getPrimSpecAtEditTarget(prim);
+        if (primSpec)
+            sessionLayer->ScheduleRemoveIfInert(primSpec.GetSpec());
+    };
+
+    // Note: older version of MayaUSD wrote the exclusion outside all variants,
+    //       so for backward compatibility, we always try to remove it from there.
+    clearActive(PXR_NS::UsdEditTarget(sessionLayer));
+
+    // Remove the exclusion in the correct variants, if any.
+    if (editTarget.IsNull()) {
+        clearActive(getEditTargetForVariants(prim, sessionLayer));
+    } else {
+        clearActive(editTarget);
+    }
 
     return true;
 }

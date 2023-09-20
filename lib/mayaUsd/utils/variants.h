@@ -18,9 +18,12 @@
 
 #include <mayaUsd/base/api.h>
 
+#include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/variantSets.h>
+
+#include <ufe/path.h>
 
 #include <functional>
 #include <string>
@@ -71,6 +74,24 @@ private:
     PXR_NS::UsdVariantSet _variantSet;
     std::string           _variant;
 };
+
+/*! \brief Creates an edit target for all variants that might affect the given prim.
+
+           Note that this includes variants on ancestors that affect this prim. To find
+           those ancestor variant is the main prupose of this function. For prim-specific
+           variant selections, OpenUSD already provides a built-in function on UsdPrim.
+ */
+MAYAUSD_CORE_PUBLIC
+PXR_NS::UsdEditTarget
+getEditTargetForVariants(const PXR_NS::UsdPrim& prim, const PXR_NS::SdfLayerHandle& layer);
+
+/*! \brief Creates an USD variant path for the given UFE path and variant selection.
+ */
+MAYAUSD_CORE_PUBLIC
+PXR_NS::SdfPath getVariantPath(
+    const Ufe::Path&   path,
+    const std::string& variantSetName,
+    const std::string& variantSelection);
 
 } // namespace MAYAUSD_NS_DEF
 
