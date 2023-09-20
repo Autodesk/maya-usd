@@ -67,8 +67,8 @@ public:
     /// \}
 
 private:
-    MDagPath _dagPath;
-    bool     _exportRefsAsInstanceable;
+    MDagPath     _dagPath;
+    bool         _exportRefsAsInstanceable;
     TfToken::Set _excludeExportTypes;
 };
 

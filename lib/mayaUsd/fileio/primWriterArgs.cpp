@@ -22,8 +22,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMayaPrimWriterArgs::UsdMayaPrimWriterArgs(
-    const MDagPath& dagPath,
-    const bool      exportRefsAsInstanceable,
+    const MDagPath&     dagPath,
+    const bool          exportRefsAsInstanceable,
     const TfToken::Set& excludeExportTypes)
     : _dagPath(dagPath)
     , _exportRefsAsInstanceable(exportRefsAsInstanceable)
