@@ -433,7 +433,7 @@ class EditAsMayaTestCase(unittest.TestCase):
 
         self.assertFalse(stage.GetSessionLayer().empty)
 
-        kPullPrimMetadataKey = "Maya:Pull:DagPath"
+        kPullPrimMetadataKey = "Maya:PullVariant:DagPath"
         self.assertEqual(prim.GetCustomDataByKey(kPullPrimMetadataKey), "|__mayaUsd__|AParent|A")
 
         # Discard Maya edits, but there is nothing to discard.

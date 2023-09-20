@@ -20,6 +20,7 @@
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/utils/variants.h>
 
 #include <usdUfe/ufe/UsdSceneItem.h>
 
@@ -27,6 +28,7 @@
 #include <pxr/usd/usd/editContext.h>
 
 #include <maya/MFnDagNode.h>
+#include <maya/MGlobal.h>
 #include <maya/MPlug.h>
 #include <ufe/hierarchy.h>
 #include <ufe/sceneSegmentHandler.h>
@@ -62,7 +64,7 @@ OrphanedNodesManager::Memento& OrphanedNodesManager::Memento::operator=(Memento&
     return *this;
 }
 
-Ufe::Trie<OrphanedNodesManager::PullVariantInfo> OrphanedNodesManager::Memento::release()
+OrphanedNodesManager::PulledPrims OrphanedNodesManager::Memento::release()
 {
     return std::move(_pulledPrims);
 }
@@ -74,10 +76,11 @@ Ufe::Trie<OrphanedNodesManager::PullVariantInfo> OrphanedNodesManager::Memento::
 namespace {
 
 using PullVariantInfo = OrphanedNodesManager::PullVariantInfo;
+using PullVariantInfos = OrphanedNodesManager::PullVariantInfos;
 using VariantSetDescriptor = OrphanedNodesManager::VariantSetDescriptor;
 using VariantSelection = OrphanedNodesManager::VariantSelection;
 using PulledPrims = OrphanedNodesManager::PulledPrims;
-using PulledPrimNode = Ufe::TrieNode<PullVariantInfo>;
+using PulledPrimNode = OrphanedNodesManager::PulledPrimNode;
 
 Ufe::PathSegment::Components trieNodeToPathComponents(PulledPrimNode::Ptr trieNode);
 Ufe::Path                    trieNodeToPulledPrimUfePath(PulledPrimNode::Ptr trieNode);
@@ -102,11 +105,13 @@ void renameVariantInfo(
 {
     // Note: TrieNode has no non-const data() function, so to modify the
     //       data we must make a copy, modify the copy and call setData().
-    PullVariantInfo newVariantInfo = trieNode->data();
+    PullVariantInfos newVariantInfos = trieNode->data();
 
-    renameVariantDescriptors(newVariantInfo.variantSetDescriptors, oldPath, newPath);
+    for (auto& info : newVariantInfos) {
+        renameVariantDescriptors(info.variantSetDescriptors, oldPath, newPath);
+    }
 
-    trieNode->setData(newVariantInfo);
+    trieNode->setData(newVariantInfos);
 }
 
 void renamePullInformation(
@@ -141,8 +146,10 @@ void renamePullInformation(
         }
     }
 
-    const MDagPath& mayaPath = trieNode->data().editedAsMayaRoot;
-    TF_VERIFY(writePullInformation(pulledPath, mayaPath));
+    for (const PullVariantInfo& info : trieNode->data()) {
+        const MDagPath& mayaPath = info.editedAsMayaRoot;
+        TF_VERIFY(writePullInformation(pulledPath, mayaPath));
+    }
 }
 
 void recursiveRename(
@@ -206,21 +213,49 @@ OrphanedNodesManager::OrphanedNodesManager()
 {
 }
 
+bool OrphanedNodesManager::has(const Ufe::Path& pulledPath, const MDagPath& editedAsMayaRoot) const
+{
+    PulledPrimNode::Ptr node = _pulledPrims.find(pulledPath);
+    if (!node)
+        return false;
+
+    const PullVariantInfos& infos = node->data();
+    for (const PullVariantInfo& info : infos)
+        if (info.editedAsMayaRoot == editedAsMayaRoot)
+            return true;
+
+    return false;
+}
+
+bool OrphanedNodesManager::has(const Ufe::Path& pulledPath) const
+{
+    PulledPrimNode::Ptr node = _pulledPrims.find(pulledPath);
+    if (!node)
+        return false;
+
+    // We store a list of (path, list of (variant set, variant set selection)),
+    // for all ancestors, starting at closest ancestor.
+    auto ancestorPath = pulledPath.pop();
+    auto vsd = variantSetDescriptors(ancestorPath);
+
+    const PullVariantInfos& infos = node->data();
+    for (const PullVariantInfo& info : infos)
+        if (info.variantSetDescriptors == vsd)
+            return true;
+
+    return false;
+}
+
 void OrphanedNodesManager::add(const Ufe::Path& pulledPath, const MDagPath& editedAsMayaRoot)
 {
     // Adding a node twice to the orphan manager is idem-potent. The manager was already
-    // racking that node.
-    if (_pulledPrims.containsDescendantInclusive(pulledPath))
+    // tracking that node.
+    if (_pulledPrims.containsDescendant(pulledPath))
         return;
 
-    // Add the edited-as-Maya root to our pulled prims prefix tree.  Also add the full
-    // configuration of variant set selections for each ancestor, up to the USD
-    // pseudo-root.  Variants on the pulled path itself are ignored, as once
-    // pulled into Maya they cannot be changed.
-    if (_pulledPrims.containsDescendantInclusive(pulledPath)) {
-        TF_WARN("Trying to edit-as-Maya a descendant of an already edited prim.");
+    if (has(pulledPath, editedAsMayaRoot))
         return;
-    }
+
     if (pulledPath.runTimeId() != MayaUsd::ufe::getUsdRunTimeId()) {
         TF_WARN("Trying to monitor a non-USD node for edit-as-Maya orphaning.");
         return;
@@ -231,25 +266,36 @@ void OrphanedNodesManager::add(const Ufe::Path& pulledPath, const MDagPath& edit
     auto ancestorPath = pulledPath.pop();
     auto vsd = variantSetDescriptors(ancestorPath);
 
-    _pulledPrims.add(pulledPath, PullVariantInfo(editedAsMayaRoot, vsd));
-}
-
-OrphanedNodesManager::Memento OrphanedNodesManager::remove(const Ufe::Path& pulledPath)
-{
-    Memento oldPulledPrims(preserve());
-    TF_VERIFY(_pulledPrims.remove(pulledPath) != nullptr);
-    return oldPulledPrims;
-}
-
-const PullVariantInfo& OrphanedNodesManager::get(const Ufe::Path& pulledPath) const
-{
-    const auto infoNode = _pulledPrims.find(pulledPath);
-    if (!infoNode || !infoNode->hasData()) {
-        static const PullVariantInfo empty;
-        return empty;
+    PulledPrimNode::Ptr node = _pulledPrims.find(pulledPath);
+    if (node) {
+        PullVariantInfos infos = node->data();
+        infos.emplace_back(PullVariantInfo(editedAsMayaRoot, vsd));
+        node->setData(infos);
+    } else {
+        _pulledPrims.add(pulledPath, { PullVariantInfo(editedAsMayaRoot, vsd) });
     }
+}
 
-    return infoNode->data();
+OrphanedNodesManager::Memento
+OrphanedNodesManager::remove(const Ufe::Path& pulledPath, const MDagPath& editedAsMayaRoot)
+{
+    Memento             oldPulledPrims(preserve());
+    PulledPrimNode::Ptr node = _pulledPrims.find(pulledPath);
+    if (node) {
+        PullVariantInfos infos = node->data();
+        for (size_t i = infos.size() - 1; i != size_t(0) - size_t(1); --i) {
+            if (infos[i].editedAsMayaRoot == editedAsMayaRoot) {
+                infos.erase(infos.begin() + i);
+            }
+        }
+
+        if (infos.size() > 0) {
+            node->setData(infos);
+        } else {
+            _pulledPrims.remove(pulledPath);
+        }
+    }
+    return oldPulledPrims;
 }
 
 void OrphanedNodesManager::operator()(const Ufe::Notification& n)
@@ -345,62 +391,52 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
             return;
         }
 
-        auto parentHier = Ufe::Hierarchy::hierarchy(parentItem);
-        if (!parentHier->hasChildren()) {
+        // USD sends resync changes (UFE subtree invalidate) on the
+        // pseudo-root itself.  Since the pseudo-root has no payload or
+        // variant, ignore these.
+        auto parentUsdItem = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(parentItem);
+        if (!parentUsdItem) {
+            return;
+        }
+
+        // On variant switch, given a pulled prim, the session layer will
+        // have path-based USD overs for pull information and active
+        // (false) for that prim in the session layer.  If a prim child
+        // brought in by variant switching has the same name as that of the
+        // pulled prim in a previous variant, the overs will apply to to
+        // the new prim, which would then get a path mapping, which is
+        // inappropriate.  Read children using the USD API, including
+        // inactive children (since pulled prims are inactivated), to
+        // support a variant switch to variant child with the same name.
+        auto parentPrim = parentUsdItem->prim();
+        bool foundChild { false };
+        for (const auto& child :
+             parentPrim.GetFilteredChildren(UsdPrimIsDefined && !UsdPrimIsAbstract)) {
+            auto childPath = parentItem->path().popSegment();
+            childPath = childPath
+                + Ufe::PathSegment(
+                            child.GetPath().GetAsString(), MayaUsd::ufe::getUsdRunTimeId(), '/');
+
+            auto ancestorNode = _pulledPrims.node(childPath);
+            // If there is no ancestor node in the trie, this means that
+            // the new hierarchy is completely different from the one when
+            // the pull occurred, which means that the pulled object must
+            // stay hidden.
+            if (!ancestorNode)
+                continue;
+
+            foundChild = true;
+            recursiveSwitch(ancestorNode, childPath);
+        }
+
+        // Following a subtree invalidate, if none of the now-valid
+        // children appear in the trie, means that we've switched to a
+        // different variant or it was a payload that got unloaded,
+        // so everything below that path should be hidden.
+        if (!foundChild) {
             auto ancestorNode = _pulledPrims.node(op.path);
             if (ancestorNode) {
                 recursiveSetOrphaned(ancestorNode, true);
-            }
-            return;
-        } else {
-            // On variant switch, given a pulled prim, the session layer will
-            // have path-based USD overs for pull information and active
-            // (false) for that prim in the session layer.  If a prim child
-            // brought in by variant switching has the same name as that of the
-            // pulled prim in a previous variant, the overs will apply to to
-            // the new prim, which would then get a path mapping, which is
-            // inappropriate.  Read children using the USD API, including
-            // inactive children (since pulled prims are inactivated), to
-            // support a variant switch to variant child with the same name.
-
-            auto parentUsdItem = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(parentItem);
-            if (!parentUsdItem) {
-                // USD sends resync changes (UFE subtree invalidate) on the
-                // pseudo-root itself.  Since the pseudo-root has no payload or
-                // variant, ignore these.
-                TF_VERIFY(parentItem->path().nbSegments() == 1);
-                return;
-            }
-            auto parentPrim = parentUsdItem->prim();
-            bool foundChild { false };
-            for (const auto& child :
-                 parentPrim.GetFilteredChildren(UsdPrimIsDefined && !UsdPrimIsAbstract)) {
-                auto childPath = parentItem->path().popSegment();
-                childPath
-                    = childPath
-                    + Ufe::PathSegment(
-                          child.GetPath().GetAsString(), MayaUsd::ufe::getUsdRunTimeId(), '/');
-
-                auto ancestorNode = _pulledPrims.node(childPath);
-                // If there is no ancestor node in the trie, this means that
-                // the new hierarchy is completely different from the one when
-                // the pull occurred, which means that the pulled object must
-                // stay hidden.
-                if (!ancestorNode)
-                    continue;
-
-                foundChild = true;
-                recursiveSwitch(ancestorNode, childPath);
-            }
-            if (!foundChild) {
-                // Following a subtree invalidate, if none of the now-valid
-                // children appear in the trie, means that we've switched to a
-                // different variant, and everything below that path should be
-                // hidden.
-                auto ancestorNode = _pulledPrims.node(op.path);
-                if (ancestorNode) {
-                    recursiveSetOrphaned(ancestorNode, true);
-                }
             }
         }
     } break;
@@ -429,7 +465,8 @@ OrphanedNodesManager::Memento OrphanedNodesManager::preserve() const
 
 void OrphanedNodesManager::restore(Memento&& previous) { _pulledPrims = previous.release(); }
 
-bool OrphanedNodesManager::isOrphaned(const Ufe::Path& pulledPath) const
+bool OrphanedNodesManager::isOrphaned(const Ufe::Path& pulledPath, const MDagPath& editedAsMayaRoot)
+    const
 {
     auto trieNode = _pulledPrims.node(pulledPath);
     if (!trieNode) {
@@ -442,15 +479,24 @@ bool OrphanedNodesManager::isOrphaned(const Ufe::Path& pulledPath) const
         return false;
     }
 
-    const PullVariantInfo& variantInfo = trieNode->data();
+    const std::vector<PullVariantInfo>& variantInfos = trieNode->data();
 
-    // If the pull parent is visible, the pulled path is not orphaned.
-    MDagPath pullParentPath = variantInfo.editedAsMayaRoot;
-    pullParentPath.pop();
+    for (const PullVariantInfo& variantInfo : variantInfos) {
 
-    MFnDagNode fn(pullParentPath);
-    auto       visibilityPlug = fn.findPlug("visibility", /* tryNetworked */ true);
-    return !visibilityPlug.asBool();
+        if (!(variantInfo.editedAsMayaRoot == editedAsMayaRoot)) {
+            continue;
+        }
+
+        // If the pull parent is visible, the pulled path is not orphaned.
+        MDagPath pullParentPath = editedAsMayaRoot;
+        pullParentPath.pop();
+
+        MFnDagNode fn(pullParentPath);
+        auto       visibilityPlug = fn.findPlug("visibility", /* tryNetworked */ true);
+        return !visibilityPlug.asBool();
+    }
+
+    return false;
 }
 
 namespace {
@@ -525,10 +571,21 @@ MStatus setNodeVisibility(const MDagPath& dagPath, bool visibility)
 /* static */
 bool OrphanedNodesManager::setOrphaned(const PulledPrimNode::Ptr& trieNode, bool orphaned)
 {
-    TF_VERIFY(trieNode->hasData());
+    if (!trieNode->hasData())
+        return true;
 
-    const PullVariantInfo& variantInfo = trieNode->data();
+    for (const PullVariantInfo& variantInfo : trieNode->data())
+        setOrphaned(trieNode, variantInfo, orphaned);
 
+    return true;
+}
+
+/* static */
+bool OrphanedNodesManager::setOrphaned(
+    const PulledPrimNode::Ptr& trieNode,
+    const PullVariantInfo&     variantInfo,
+    bool                       orphaned)
+{
     // Note: the change to USD data must be done *after* changes to Maya data because
     //       the outliner reacts to UFE notifications received following the USD edits
     //       to rebuild the node tree and the Maya node we want to hide must have been
@@ -537,23 +594,56 @@ bool OrphanedNodesManager::setOrphaned(const PulledPrimNode::Ptr& trieNode, bool
     pullParentPath.pop();
     CHECK_MSTATUS_AND_RETURN(setNodeVisibility(pullParentPath, !orphaned), false);
 
-    const Ufe::Path pulledPrimPath = trieNodeToPulledPrimUfePath(trieNode);
-
     // Note: if we are called due to the user deleting the stage, then the pulled prim
     //       path will be invalid and trying to add or remove information on it will
     //       fail, and cause spurious warnings in the script editor, so avoid it.
-    if (!pulledPrimPath.empty()) {
-        if (orphaned) {
-            removePulledPrimMetadata(pulledPrimPath);
-            removeExcludeFromRendering(pulledPrimPath);
-        } else {
-            writePulledPrimMetadata(pulledPrimPath, variantInfo.editedAsMayaRoot);
-            addExcludeFromRendering(pulledPrimPath);
+    const Ufe::Path pulledPrimPath = trieNodeToPulledPrimUfePath(trieNode);
+    if (pulledPrimPath.empty())
+        return true;
+
+    // Note: if we are called due to the user deleting the stage, then the stage
+    //       will be invalid, don't treat this as an error.
+    UsdStagePtr stage = getStage(pulledPrimPath);
+    if (!stage)
+        return true;
+
+    const PXR_NS::SdfLayerHandle& sessionLayer = stage->GetSessionLayer();
+    UsdEditTarget                 editTarget(sessionLayer);
+    std::string                   variantsNames;
+
+    for (const VariantSetDescriptor& varDesc : variantInfo.variantSetDescriptors) {
+        const Ufe::Path& ufePath = varDesc.path;
+        for (const VariantSelection& varSel : varDesc.variantSelections) {
+            const std::string& variant = varSel.variantSetName;
+            const std::string& selection = varSel.variantSelection;
+
+            variantsNames.append(" ");
+            variantsNames.append(variant);
+            variantsNames.append("=");
+            variantsNames.append(selection);
+
+            const SdfPath variantPath = MayaUsd::getVariantPath(ufePath, variant, selection);
+            editTarget = editTarget.ComposeOver(
+                PXR_NS::UsdEditTarget::ForLocalDirectVariant(sessionLayer, variantPath));
         }
     }
 
+    if (orphaned) {
+        removePulledPrimMetadata(pulledPrimPath, editTarget);
+        removeExcludeFromRendering(pulledPrimPath, editTarget);
+    } else {
+        writePulledPrimMetadata(pulledPrimPath, variantInfo.editedAsMayaRoot, editTarget);
+        addExcludeFromRendering(pulledPrimPath, editTarget);
+    }
+
+    TF_WARN(
+        "Edited-as-Maya prim \"%s\" (variants:%s) %s.",
+        pulledPrimPath.string().c_str(),
+        variantsNames.c_str(),
+        orphaned ? "was orphaned and is now hidden" : "no longer orphaned and is now shown");
+
     return true;
-}
+} // namespace MAYAUSD_NS_DEF
 
 /* static */
 void OrphanedNodesManager::recursiveSetOrphaned(const PulledPrimNode::Ptr& trieNode, bool orphaned)
@@ -592,11 +682,14 @@ void OrphanedNodesManager::recursiveSwitch(
         // tree state don't match, the pulled node must be made invisible.
         // Inactivation must not be considered, as the USD pulled node is made
         // inactive on pull, to avoid rendering it.
-        const auto& originalDesc = trieNode->data().variantSetDescriptors;
-        const auto  currentDesc = variantSetDescriptors(ufePath.pop());
-        const bool  variantSetsMatch = (originalDesc == currentDesc);
-        const bool  orphaned = (pulledNode && !variantSetsMatch);
-        TF_VERIFY(setOrphaned(trieNode, orphaned));
+        const auto             currentDesc = variantSetDescriptors(ufePath.pop());
+        const PullVariantInfos infos = trieNode->data();
+        for (const PullVariantInfo& variantInfo : infos) {
+            const auto& originalDesc = variantInfo.variantSetDescriptors;
+            const bool  variantSetsMatch = (originalDesc == currentDesc);
+            const bool  orphaned = (pulledNode && !variantSetsMatch);
+            TF_VERIFY(setOrphaned(trieNode, variantInfo, orphaned));
+        }
     } else {
         const bool isGatewayToUsd = Ufe::SceneSegmentHandler::isGateway(ufePath);
         for (const auto& c : trieNode->childrenComponents()) {
@@ -626,8 +719,10 @@ OrphanedNodesManager::variantSetDescriptors(const Ufe::Path& p)
         auto ancestor = Ufe::Hierarchy::createItem(path);
         auto usdAncestor = std::static_pointer_cast<UsdUfe::UsdSceneItem>(ancestor);
         auto variantSets = usdAncestor->prim().GetVariantSets();
+        auto setNames = variantSets.GetNames();
+        std::sort(setNames.begin(), setNames.end());
         std::list<VariantSelection> vs;
-        for (const auto& vsn : variantSets.GetNames()) {
+        for (const auto& vsn : setNames) {
             vs.emplace_back(vsn, variantSets.GetVariantSelection(vsn));
         }
         vsd.emplace_back(path, vs);

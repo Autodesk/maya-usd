@@ -492,6 +492,7 @@ class CacheToUsdTestCase(unittest.TestCase):
 
         (mayaRefPrim, variantSetName, variantSet, refVariantName, cacheVariantName, relativePath) = \
             createMayaRefPrimFn(self, cacheParent, cacheParentPathStr)
+        mayaRefPrimPath = mayaRefPrim.GetPath()
 
         # Set an initial translation.
         editTarget = self.stage.GetEditTarget()
@@ -564,12 +565,13 @@ class CacheToUsdTestCase(unittest.TestCase):
         checkCacheParentFn(self, cacheParentChildren, variantSet, cacheVariantName)
 
         # Maya reference prim should now have the updated transformation.
-        editTarget = self.stage.GetEditTarget()
-        if variantSet:
-            variantSet.SetVariantSelection('Rig')
-            editTarget = variantSet.GetVariantEditTarget(editTarget.GetLayer())
+        if variantSetName:
+            cacheParent.GetVariantSet(variantSetName).SetVariantSelection('Rig')
 
         with Usd.EditContext(self.stage, editTarget):
+            # Note: must refetch the ref prim because it became invalid when
+            #       it got deactivated during edit.
+            mayaRefPrim = self.stage.GetPrimAtPath(mayaRefPrimPath)
             xformable = UsdGeom.Xformable(mayaRefPrim)
             ops = xformable.GetOrderedXformOps()
             self.assertEqual(len(ops), 1)
