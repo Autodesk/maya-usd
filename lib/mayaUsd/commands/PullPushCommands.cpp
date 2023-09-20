@@ -279,7 +279,11 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
             return status;
     }
 
-    userArgs[UsdMayaPrimUpdaterArgsTokens->ignoreVariants] = argData.isFlagSet(kIgnoreVariantsFlag);
+    if (argData.isFlagSet(kIgnoreVariantsFlag)) {
+        const int index = 0;
+        userArgs[UsdMayaPrimUpdaterArgsTokens->ignoreVariants]
+            = argData.flagArgumentBool(kIgnoreVariantsFlag, index);
+    }
 
     // Scope the undo item recording so we can undo on failure.
     {
