@@ -1141,7 +1141,7 @@ class ContextOpsTestCase(unittest.TestCase):
 
         self.assertTrue(shaderAttrs.hasAttribute("info:id"))
         self.assertEqual(shaderAttrs.attribute("info:id").get(), shaderName)
-        self.assertEqual(ufe.PathString.string(shaderItem.path()), "|stage1|stageShape1,/Material1/Red11")
+        self.assertEqual(ufe.PathString.string(shaderItem.path()), "|stage1|stageShape1,/Material1/Red1")
         materialHier = ufe.Hierarchy.hierarchy(materialItem)
         self.assertTrue(materialHier.hasChildren())
 

@@ -24,6 +24,7 @@
 #include "qtUtils.h"
 #include "stringResources.h"
 
+#include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
 #include <maya/MQtUtil.h>
@@ -273,6 +274,10 @@ std::string LoadLayersDialog::findDirectoryToUse(const std::string& rowText) con
             }
             item = item->parentLayerItem();
         }
+    }
+
+    if (path.empty()) {
+        path = UsdMayaUtil::GetCurrentMayaWorkspacePath().asChar();
     }
 
     if (!path.empty()) {

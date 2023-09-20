@@ -58,8 +58,14 @@ UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(
     auto dagSegment = segments[0];
     _stage = usdSceneItem->prim().GetStage();
     if (_stage) {
+
+        std::string base, suffixStr;
+
         // Append the parent path and the requested name into a full ufe path.
-        _newUfePath = appendToPath(ufePath, name + '1');
+        // Append a '1' to new primitives names if the name does not end with a digit.
+        _newUfePath = splitNumericalSuffix(name, base, suffixStr)
+            ? appendToPath(ufePath, name)
+            : appendToPath(ufePath, name + '1');
 
         // Ensure the requested name is unique.
         auto newPrimName
