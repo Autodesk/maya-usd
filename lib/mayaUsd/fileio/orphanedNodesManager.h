@@ -96,6 +96,10 @@ public:
         std::list<VariantSetDescriptor> variantSetDescriptors;
     };
 
+    using PullVariantInfos = std::vector<PullVariantInfo>;
+    using PulledPrims = Ufe::Trie<PullVariantInfos>;
+    using PulledPrimNode = Ufe::TrieNode<PullVariantInfos>;
+
     /// \brief Entire state of the OrphanedNodesManager at a point in time, used for undo/redo.
     class MAYAUSD_CORE_PUBLIC Memento
     {
@@ -117,11 +121,11 @@ public:
         // Private, for opacity.
         friend class OrphanedNodesManager;
 
-        Memento(Ufe::Trie<PullVariantInfo>&& pulledPrims);
+        Memento(PulledPrims&& pulledPrims);
 
-        Ufe::Trie<PullVariantInfo> release();
+        PulledPrims release();
 
-        Ufe::Trie<PullVariantInfo> _pulledPrims;
+        PulledPrims _pulledPrims;
     };
 
     // Construct an empty orphan manager.
@@ -135,14 +139,17 @@ public:
     // Asserts that the pulled path is not in the trie.
     void add(const Ufe::Path& pulledPath, const MDagPath& editedAsMayaRoot);
 
+    // Verify if the pulled path and the root of the generated
+    // Maya nodes to the trie of pulled prims are alredy tracked.
+    bool has(const Ufe::Path& pulledPath, const MDagPath& editedAsMayaRoot) const;
+
+    // Verify if the pulled path with its current variant set is alredy tracked.
+    bool has(const Ufe::Path& pulledPath) const;
+
     // Remove the pulled path from the trie of pulled prims.  Asserts that the
     // path is in the trie.  Returns a memento (see Memento Pattern) for undo
     // purposes, to be used as argument to restore().
-    Memento remove(const Ufe::Path& pulledPath);
-
-    // Retrieve the variant information of a pulled prim.
-    // Returns an empty info if the prim was not tracked by the orphan manager.
-    const PullVariantInfo& get(const Ufe::Path& pulledPath) const;
+    Memento remove(const Ufe::Path& pulledPath, const MDagPath& editedAsMayaRoot);
 
     // Preserve the trie of pulled prims into a memento.
     Memento preserve() const;
@@ -158,19 +165,24 @@ public:
 
     // Return whether the Dag hierarchy corresponding to the pulled path is
     // orphaned.
-    bool isOrphaned(const Ufe::Path& pulledPath) const;
+    bool isOrphaned(const Ufe::Path& pulledPath, const MDagPath& editedAsMayaRoot) const;
 
-    using PulledPrims = Ufe::Trie<PullVariantInfo>;
-    using PulledPrimNode = Ufe::TrieNode<PullVariantInfo>;
     const PulledPrims& getPulledPrims() const { return _pulledPrims; }
 
 private:
     void handleOp(const Ufe::SceneCompositeNotification::Op& op);
 
     static void recursiveSetOrphaned(const PulledPrimNode::Ptr& trieNode, bool orphaned);
-    static void recursiveSwitch(const PulledPrimNode::Ptr& trieNode, const Ufe::Path& ufePath);
+    static void recursiveSwitch(
+        const PulledPrimNode::Ptr& trieNode,
+        const Ufe::Path&           ufePath,
+        const bool                 processOrphans);
 
     static bool setOrphaned(const PulledPrimNode::Ptr& trieNode, bool orphaned);
+    static bool setOrphaned(
+        const PulledPrimNode::Ptr& trieNode,
+        const PullVariantInfo&     variantInfo,
+        bool                       orphaned);
 
     // Member function to access private nested classes.
     static std::list<VariantSetDescriptor> variantSetDescriptors(const Ufe::Path& path);

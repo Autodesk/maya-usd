@@ -53,7 +53,7 @@ const MString kPullDGMetadataKey("Pull_UfePath");
 
 bool readPullInformation(const PXR_NS::UsdPrim& prim, std::string& dagPathStr)
 {
-    auto value = prim.GetCustomDataByKey(kPullPrimMetadataKey);
+    VtValue value = prim.GetCustomDataByKey(kPullPrimMetadataKey);
     if (!value.IsEmpty() && value.CanCast<std::string>()) {
         dagPathStr = value.Get<std::string>();
         return !dagPathStr.empty();
@@ -151,8 +151,9 @@ bool writePulledPrimMetadata(PXR_NS::UsdPrim& pulledPrim, const MDagPath& edited
     if (!stage)
         return false;
 
-    PXR_NS::UsdEditContext editContext(stage, stage->GetSessionLayer());
-    PXR_NS::VtValue        value(editedAsMayaRoot.fullPathName().asChar());
+    const PXR_NS::UsdEditContext editContext(stage, stage->GetSessionLayer());
+    const PXR_NS::VtValue        value(editedAsMayaRoot.fullPathName().asChar());
+
     return pulledPrim.SetMetadataByDictKey(SdfFieldKeys->CustomData, kPullPrimMetadataKey, value);
 }
 
@@ -164,8 +165,12 @@ bool writePulledPrimMetadata(PXR_NS::UsdPrim& pulledPrim, const MDagPath& edited
 void removePulledPrimMetadata(const Ufe::Path& ufePulledPath)
 {
     PXR_NS::UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
-    if (!prim.IsValid())
+    if (!prim.IsValid()) {
+        TF_WARN(
+            "Could not find prim to remove pulled prim metadata on %s.",
+            ufePulledPath.string().c_str());
         return;
+    }
 
     PXR_NS::UsdStagePtr stage = prim.GetStage();
     if (!stage)
@@ -173,10 +178,16 @@ void removePulledPrimMetadata(const Ufe::Path& ufePulledPath)
     removePulledPrimMetadata(stage, prim);
 }
 
-void removePulledPrimMetadata(const PXR_NS::UsdStagePtr& stage, PXR_NS::UsdPrim& prim)
+void removePulledPrimMetadata(const PXR_NS::UsdStagePtr& stage, PXR_NS::UsdPrim& pulledPrim)
 {
-    PXR_NS::UsdEditContext editContext(stage, stage->GetSessionLayer());
-    prim.ClearCustomDataByKey(kPullPrimMetadataKey);
+    const PXR_NS::UsdEditContext editContext(stage, stage->GetSessionLayer());
+    pulledPrim.ClearCustomDataByKey(kPullPrimMetadataKey);
+
+    // Session layer cleanup.
+    auto rootPrims = stage->GetSessionLayer()->GetRootPrims();
+    for (const SdfPrimSpecHandle& rootPrimSpec : rootPrims) {
+        stage->GetSessionLayer()->RemovePrimIfInert(rootPrimSpec);
+    }
 }
 
 //------------------------------------------------------------------------------
