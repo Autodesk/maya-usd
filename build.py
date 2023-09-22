@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 from distutils.spawn import find_executable
+from glob import glob
 
 import argparse
 import contextlib
@@ -18,6 +19,8 @@ import subprocess
 import sys
 import distutils.util
 import time
+import zipfile
+import tarfile
 
 ############################################################
 # Helpers for printing output
@@ -359,6 +362,127 @@ def RunMakeZipArchive(context):
                     PrintError("Failed to write to directory {pkgDir} : {exp}".format(pkgDir=pkgDir,exp=exp))
                     sys.exit(1)
 
+def SetupMayaQt(context):
+    def haveQtHeaders(rootPath):
+        if os.path.exists(rootPath):
+            # MayaUsd uses these components from Qt (so at a minimum we must find them).
+            qtComponentsToFind = ['QtCore', 'QtGui', 'QtWidgets']
+            # Qt6 includes the entire Qt in a single zip file, which when extracted ends in folder 'Qt'.
+            startDir = os.path.join(rootPath, 'Qt', 'include') if os.path.exists(os.path.join(rootPath, 'Qt')) else os.path.join(rootPath, 'include')
+            for root,dirs,files in os.walk(startDir):
+                if 'qt' not in root.lower() or not files:
+                    continue
+                if not any(root.endswith(qtComp) for qtComp in qtComponentsToFind):
+                    # Skip any folders that aren't the components we are looking for.
+                    continue
+
+                for qtComp in qtComponentsToFind[:]:    # Loop over slice copy as we remove items
+                    if qtComp in root and '{comp}version.h'.format(comp=qtComp.lower()) in files:
+                        qtComponentsToFind.remove(qtComp)
+                        PrintInfo('Found {comp} in {dir}'.format(comp=qtComp, dir=root))
+                        break   # Once we've found (and removed) a component, move to the next os.walk
+
+                if not qtComponentsToFind:  # Once we've found them all, we are done.
+                    return True
+
+    def safeTarfileExtract(members):
+        """Use a function to look for bad paths in the tarfile archive to fix
+        security/bandit B202: tarfile_unsafe_members."""
+
+        def isBadPath(path, base):
+            return not os.path.realpath(os.path.abspath(os.path.join(base, path))).startswith(base)
+        def isBadLink(info, base):
+            # Links are interpreted relative to the directory containing the link.
+            tip = os.path.realpath(os.path.abspath(os.path.join(base, os.path.dirname(info.name))))
+            return isBadPath(info.linkname, base=tip)
+
+        base = os.path.realpath(os.path.abspath('.'))
+        result = []
+        for finfo in members:
+            # If any bad paths for links are found in the tarfile, print an error
+            # and don't extract anything from tarfile.
+            if isBadPath(finfo.name, base):
+                PrintError('Found illegal path {path} in tarfile, blocking tarfile extraction.'.format(path=finfo.name))
+                return []
+            elif (finfo.issym() or finfo.islnk()) and isBadLink(finfo, base):
+                PrintError('Found illegal link {link} in tarfile, blocking tarfile extraction.'.format(link=finfo.linkname))
+                return []
+            else:
+                result.append(finfo)
+        return result
+
+    # The list of directories (in order) that we'll search. This list matches the one
+    # in FindMayaQt.cmake.
+    dirsToSearch = [context.devkitLocation]
+    if 'MAYA_DEVKIT_LOCATION' in os.environ:
+        dirsToSearch.append(os.path.expandvars('$MAYA_DEVKIT_LOCATION'))
+    dirsToSearch.append(context.mayaLocation)
+    if 'MAYA_LOCATION' in os.environ:
+        dirsToSearch.append(os.path.expandvars('$MAYA_LOCATION'))
+
+    # Check if the Qt zip file has been extracted (we need the Qt headers).
+    for dirToSearch in dirsToSearch:
+        if haveQtHeaders(dirToSearch):
+            PrintStatus('Found Maya Qt headers in: {dir}'.format(dir=dirToSearch))
+            return
+
+    # Qt5
+    # Didn't find Qt headers, so try and extract qt_5.x-include.zip (the first one we find).
+    qtIncludeArchiveName = 'qt_5*-include.zip' if Windows() else 'qt_5*-include.tar.gz'
+    for dirToSearch in dirsToSearch:
+        qtZipFiles = glob(os.path.join(dirToSearch, 'include', qtIncludeArchiveName))
+        if qtZipFiles:
+            qtZipFile = qtZipFiles[0]
+            baseDir = os.path.dirname(qtZipFile)
+            if os.access(baseDir, os.W_OK):
+                qtZipDirName = os.path.basename(qtZipFile)
+                qtZipDirName = qtZipDirName.replace('.zip', '').replace('.tar.gz', '')
+                qtZipDirFolder = os.path.join(baseDir, qtZipDirName)
+                PrintStatus("Could not find Maya Qt headers.")
+                PrintStatus("  Extracting '{zip}' to '{dir}'".format(zip=qtZipFile, dir=qtZipDirFolder))
+                if not os.path.exists(qtZipDirFolder):
+                    os.makedirs(os.path.join(baseDir, qtZipDirFolder))
+                try:
+                    # We only need certain Qt components so we only extract the headers for those.
+                    if Windows():
+                        zipArchive = zipfile.ZipFile(qtZipFile, mode='r')
+                        files = [n for n in zipArchive.namelist()
+                            if (n.startswith('QtCore/') or n.startswith('QtGui/') or n.startswith('QtWidgets/'))]
+                        zipArchive.extractall(qtZipDirFolder, files)
+                        zipArchive.close()
+                    else:
+                        tarArchive = tarfile.open(qtZipFile, mode='r')
+                        files = [n for n in tarArchive.getmembers()
+                            if (n.name.startswith('./QtCore/') or n.name.startswith('./QtGui/') or n.name.startswith('./QtWidgets/'))]
+                        tarArchive.extractall(qtZipDirFolder, members=safeTarfileExtract(files))
+                        tarArchive.close()
+                except zipfile.BadZipfile as error:
+                    PrintError(str(error))
+                except tarfile.TarError as error:
+                    PrintError(str(error))
+
+            # We found and extracted the Qt5 include zip - we are done.
+            return
+
+    # Qt6
+    # The entire Qt is in a single zip file, which we extract to 'Qt'.
+    # Then we can simply use find_package(Qt6) on it.
+    for dirToSearch in dirsToSearch:
+        # Qt archive has same name on all platforms.
+        qtArchive = os.path.join(dirToSearch, 'Qt.tar.gz')
+        if os.path.exists(qtArchive):
+            qtZipDirFolder = os.path.dirname(qtArchive)
+            if os.access(qtZipDirFolder, os.W_OK):
+                PrintStatus("Could not find Maya Qt6.")
+                PrintStatus("  Extracting '{zip}' to '{dir}'".format(zip=qtArchive, dir=qtZipDirFolder))
+                try:
+                    archive = tarfile.open(qtArchive, mode='r')
+                    archive.extractall(qtZipDirFolder, members=safeTarfileExtract(archive.getmembers()))
+                    archive.close()
+                except tarfile.TarError as error:
+                    PrintError(str(error))
+                return
+
 def BuildAndInstall(context, buildArgs, stages):
     with CurrentWorkingDirectory(context.mayaUsdSrcDir):
         extraArgs = []
@@ -388,10 +512,6 @@ def BuildAndInstall(context, buildArgs, stages):
             extraArgs.append('-DMAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG=ON')
         else:
             extraArgs.append('-DMAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG=OFF')
-
-        if context.qtLocation:
-            extraArgs.append('-DQT_LOCATION="{qtLocation}"'
-                             .format(qtLocation=context.qtLocation))
 
         extraArgs += buildArgs
         stagesArgs += stages
@@ -477,7 +597,7 @@ parser.add_argument("--debug-python", dest="debug_python", action="store_true",
                       help="Define Boost Python Debug if your Python library comes with Debugging symbols (default: %(default)s).")
 
 parser.add_argument("--qt-location", type=str,
-                    help="Directory where Qt is installed.")
+                    help="DEPRECATED: Qt is found automatically in Maya devkit.")
 
 parser.add_argument("--build-args", type=str, nargs="*", default=[],
                    help=("Comma-separated list of arguments passed into CMake when building libraries"))
@@ -486,7 +606,7 @@ parser.add_argument("--ctest-args", type=str, nargs="*", default=[],
                    help=("Comma-separated list of arguments passed into CTest.(e.g -VV, --output-on-failure)"))
 
 parser.add_argument("--stages", type=str, nargs="*", default=['clean','configure','build','install'],
-                   help=("Comma-separated list of stages to execute.(possible stages: clean, configure, build, install, test, package)"))
+                   help=("Comma-separated list of stages to execute. Possible stages: clean, configure, build, install, test, package."))
 
 parser.add_argument("-j", "--jobs", type=int, default=GetCPUCount(),
                     help=("Number of build jobs to run in parallel. "
@@ -550,9 +670,9 @@ class InstallContext:
         self.devkitLocation = (os.path.abspath(args.devkit_location)
                                 if args.devkit_location else None)
 
-        # Qt Location
-        self.qtLocation = (os.path.abspath(args.qt_location)
-                           if args.qt_location else None)
+        # DEPRECATED: Qt Location
+        if args.qt_location:
+            PrintWarning("--qt-location flag is deprecated as Qt is found automatically in Maya devkit.")
 
         # MaterialX
         self.materialxEnabled = args.build_materialx
@@ -631,6 +751,10 @@ if __name__ == "__main__":
     )
 
     Print(summaryMsg)
+
+    # Make sure Qt from Maya devkit is ready.
+    if 'configure' in context.stagesArgs:
+        SetupMayaQt(context)
 
     # BuildAndInstall
     if any(stage in ['clean', 'configure', 'build', 'install'] for stage in context.stagesArgs):

@@ -40,9 +40,9 @@ mayaUsd_compile_config(${PROJECT_NAME})
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
         mayaUsdUI
-		$<IF:$<BOOL:${Qt6_FOUND}>,Qt6::Core,Qt5::Core>
-		$<IF:$<BOOL:${Qt6_FOUND}>,Qt6::Gui,Qt5::Gui>
-		$<IF:$<BOOL:${Qt6_FOUND}>,Qt6::Widgets,Qt5::Widgets>
+		Qt::Core
+		Qt::Gui
+		Qt::Widgets
 )
 
 if (IS_LINUX)
