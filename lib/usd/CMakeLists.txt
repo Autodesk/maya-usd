@@ -23,7 +23,7 @@ add_subdirectory(schemas)
 
 add_subdirectory(utils)
 
-if(Qt5_FOUND OR Qt6_FOUND)
+if(Qt_FOUND)
     add_subdirectory(ui)
 endif()
 

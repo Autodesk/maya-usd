@@ -37,8 +37,6 @@ set(BUILD_WITH_PYTHON_3_VERSION 3.7 CACHE STRING "The version of Python 3 to bui
 option(CMAKE_WANT_MATERIALX_BUILD "Enable building with MaterialX." ON)
 option(CMAKE_WANT_VALIDATE_UNDO_ITEM "Enable validating undo items list." OFF)
 
-option(BUILD_WITH_QT_6 "Build with QT 6." OFF)
-
 set(PXR_OVERRIDE_PLUGINPATH_NAME PXR_PLUGINPATH_NAME
     CACHE STRING "Name of env var USD searches to find plugins")
 
@@ -154,29 +152,39 @@ if(TARGET hdMtlx)
     endif()
 endif()
 
-if(DEFINED QT_LOCATION)
-    if(NOT DEFINED QT_VERSION)
-		if(BUILD_WITH_QT_6)
-			set(QT_VERSION "6.5")
-        else() # Maya 2022, 2023, 2024
-            set(QT_VERSION "5.15")
-        endif()
-        message(STATUS "Setting Qt version to Qt ${QT_VERSION}")
-    endif()
-    set(CMAKE_PREFIX_PATH "${QT_LOCATION}")
-	if(BUILD_WITH_QT_6)
-		find_package(Qt6 ${QT_VERSION} COMPONENTS Core Gui Widgets REQUIRED)
-		if(Qt6_FOUND)
-			message(STATUS "Building with Qt ${QT_VERSION} features enabled.")
-		endif()
-	else()
-		find_package(Qt5 ${QT_VERSION} COMPONENTS Core Gui Widgets REQUIRED)
-		if(Qt5_FOUND)
-			message(STATUS "Building with Qt ${QT_VERSION} features enabled.")
-		endif()
-	endif()
+if(MAYA_APP_VERSION VERSION_GREATER 2024)
+    # First look for Qt6 in the Maya devkit.
+    # The Qt6 archive in the Maya devkit contains everything needed for the normal cmake find_package.
+    set(CMAKE_PREFIX_PATH "${MAYA_DEVKIT_LOCATION}/Qt")
+    find_package(Qt6 6.5 COMPONENTS Core Gui Widgets QUIET)
+endif()
+if (Qt6_FOUND)
+    message(STATUS "Found Qt6 in Maya devkit, building with Qt ${Qt6_VERSION} features enabled.")
+    set(Qt_FOUND TRUE)
 else()
-    message(STATUS "QT_LOCATION not set. Building Qt features will be disabled.")
+    # If we didn't find Qt6 in Maya devkit, search again, but for Qt5 this time.
+    # Minimum version required is 5.15 (Maya 2022/2023/2024).
+    # This will find Qt in the Maya devkit using a custom find package.
+    # So the version will match Maya we are building for.
+    find_package(Maya_Qt 5.15 COMPONENTS Core Gui Widgets QUIET)
+    if (Maya_Qt_FOUND)
+        message(STATUS "Found Qt5 in Maya devkit, building with Qt ${MAYA_QT_VERSION} features enabled.")
+        set(Qt_FOUND TRUE)
+    endif()
+endif()
+    
+if(NOT Qt_FOUND)
+    message(SEND_ERROR "Could not find Qt in Maya devkit directory: ${MAYA_DEVKIT_LOCATION}.")
+    if(MAYA_APP_VERSION VERSION_GREATER 2024)
+        message(STATUS "  You must extract Qt.tar.gz")
+    else()
+        if (IS_WINDOWS)
+            message(STATUS "  In Maya devkit you must extract include/qt_5.15.2_vc14-include.zip")
+        else()
+            message(STATUS "  In Maya devkit you must extract include/qt_5.15.2-include.tar.gz")
+        endif()
+    endif()
+    message(FATAL_ERROR "Cannot build MayaUsd without Qt.")
 endif()
 
 #------------------------------------------------------------------------------
