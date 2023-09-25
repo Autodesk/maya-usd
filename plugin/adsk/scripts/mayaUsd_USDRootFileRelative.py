@@ -440,6 +440,9 @@ class usdImageRelativeToEditTargetLayer(usdFileRelativeToEditTargetLayer):
     '''
     Helper class to create the UI for image optionally relative to a layer file.
     '''
+
+    kRelativeToWhat = 'ImageEditTargetLayer'
+
     @classmethod
     def uiInit(cls, parentLayout, filterType):
         '''

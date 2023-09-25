@@ -189,6 +189,14 @@ SaveLayerPathRow::SaveLayerPathRow(
     QString pathToSaveAs
         = MayaUsd::utils::generateUniqueLayerFileName(stageName, _layerInfo.layer).c_str();
     _pathEdit->setText(QFileInfo(pathToSaveAs).absoluteFilePath());
+
+    // Set default state of checkbox and proper setting of path (must come after the initial
+    // setting above).
+    bool shouldCheck = _layerInfo.parent._layerParent
+        ? UsdMayaUtilFileSystem::requireUsdPathsRelativeToParentLayer()
+        : UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile();
+    _relative->setChecked(shouldCheck);
+    onRelativeChanged();
 }
 
 QString SaveLayerPathRow::layerDisplayName() const { return _label->text(); }
@@ -359,27 +367,55 @@ public:
 
     QSize sizeHint() const override
     {
-        QSize hint;
-
         if (widget() && widget()->layout()) {
-            auto l = widget()->layout();
-            for (int i = 0; i < l->count(); ++i) {
-                QWidget* w = l->itemAt(i)->widget();
-
-                QSize rowHint = w->sizeHint();
-                if (hint.width() < rowHint.width()) {
-                    hint.setWidth(rowHint.width());
+            QGridLayout* gridLayout = qobject_cast<QGridLayout*>(widget()->layout());
+            if (nullptr != gridLayout) {
+                QSize     hint { 0, 0 };
+                const int nbCols = gridLayout->columnCount();
+                const int nbRows = gridLayout->rowCount();
+                for (int r = 0; r < nbRows; ++r) {
+                    int rowWidth { 0 };
+                    int rowHeight { 0 };
+                    for (int c = 0; c < nbCols; ++c) {
+                        QWidget* w = gridLayout->itemAtPosition(r, c)->widget();
+                        QSize    rowHint = w->sizeHint();
+                        rowWidth += rowHint.width();
+                        rowHeight = std::max(rowHeight, rowHint.height());
+                    }
+                    if (hint.width() < rowWidth) {
+                        hint.setWidth(rowWidth);
+                    }
+                    hint.rheight() += rowHeight;
                 }
-                if (0 < rowHint.height())
-                    hint.rheight() += rowHint.height();
+
+                // Extra padding (enough for 3.5 lines).
+                if (hint.height() < DPIScale(120))
+                    hint.setHeight(DPIScale(120));
+                return hint;
             }
 
-            // Extra padding (enough for 3.5 lines).
-            hint.rwidth() += 100;
-            if (hint.height() < DPIScale(120))
-                hint.setHeight(DPIScale(120));
+            QVBoxLayout* vLayout = qobject_cast<QVBoxLayout*>(widget()->layout());
+            if (nullptr != vLayout) {
+                QSize hint { 0, 0 };
+                for (int i = 0; i < vLayout->count(); ++i) {
+                    QWidget* w = vLayout->itemAt(i)->widget();
+
+                    QSize rowHint = w->sizeHint();
+                    if (hint.width() < rowHint.width()) {
+                        hint.setWidth(rowHint.width());
+                    }
+                    if (0 < rowHint.height())
+                        hint.rheight() += rowHint.height();
+                }
+
+                // Extra padding (enough for 3.5 lines).
+                hint.rwidth() += 100;
+                if (hint.height() < DPIScale(120))
+                    hint.setHeight(DPIScale(120));
+                return hint;
+            }
         }
-        return hint;
+        return {};
     }
 };
 
@@ -567,6 +603,13 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2)
             &QCheckBox::stateChanged,
             this,
             &SaveLayersDialog::onAllAsRelativeChanged);
+
+        // Default state for all relative checkbox. If both relative to SceneFile and
+        // ParentLayer optionvars are on, then this should be on.
+        bool shouldCheck = UsdMayaUtilFileSystem::requireUsdPathsRelativeToParentLayer()
+            && UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile();
+        _allAsRelative->setChecked(shouldCheck);
+
         topLayout->addWidget(_allAsRelative);
 
         // Then add the first scroll area (containing the anonymous layers)
