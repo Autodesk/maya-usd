@@ -384,7 +384,7 @@ void StagesSubject::stageChanged(
         const auto& changedPath = *it;
         if (changedPath.IsPrimPropertyPath()) {
             // Special case to detect when an xformop is added or removed from a prim.
-            // We need to send some notifs so DCC can update (such as on undo
+            // We need to send some notifications so DCC can update (such as on undo
             // to move the transform manipulator back to original position).
             const TfToken nameToken = changedPath.GetNameToken();
             auto          usdPrimPathStr = changedPath.GetPrimPath().GetString();
@@ -395,7 +395,14 @@ void StagesSubject::stageChanged(
                     notifyWithoutExceptions<Ufe::Transform3d>(ufePath);
                 }
             }
+            // Special case when Undoing a visibility change, the notice.GetChangedInfoOnlyPaths() does not 
+            // contain the change, hence handling visibility notification in re-synch path.
+            if (changedPath.GetNameToken() == UsdGeomTokens->visibility) {
+                Ufe::VisibilityChanged vis(ufePath);
+                notifyWithoutExceptions<Ufe::Object3d>(vis);
+            }
             processAttributeChanges(ufePath, changedPath, it.base()->second);
+            
             // No further processing for this prim property path is required.
             continue;
         }
