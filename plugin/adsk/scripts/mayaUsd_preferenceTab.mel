@@ -1,0 +1,415 @@
+// Copyright 2023 Autodesk
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+// USD Preferences section in Maya preferences
+
+global proc mayaUsd_PrefSaveMayaSceneFilesChanged()
+{
+	int $saveOption = 1;
+	if (`radioButtonGrp -exists usdPrefSaveMayaSceneFiles`) {
+		$saveOption = `radioButtonGrp -q -select usdPrefSaveMayaSceneFiles`;
+		optionVar -iv mayaUsd_SerializedUsdEditsLocation $saveOption;
+	}
+	if (`text -exists usdPrefSaveOptions2GBWarning`) {
+		string $t = ($saveOption == 2) ? `getMayaUsdString("kSaveOption2GBWarning")` : "";
+		text -e -label $t usdPrefSaveOptions2GBWarning;
+	}
+	if (`checkBoxGrp -exists usdPrefSaveAskMe`) {
+		int $v = `checkBoxGrp -q -v1 usdPrefSaveAskMe`;
+		optionVar -iv mayaUsd_SerializedUsdEditsLocationPrompt $v;
+	}
+}
+
+global proc mayaUsd_PrefFileFormatChanged()
+{
+	if (`radioButtonGrp -exists usdPrefSaveFileFormat`) {
+		string $saveLayerFormatArgBinaryOptionPref = `python("import mayaUsd.lib as mlib; mlib.OptionVarTokens.SaveLayerFormatArgBinaryOption")`;
+		int $sel = `radioButtonGrp -q -select usdPrefSaveFileFormat`;
+		optionVar -iv $saveLayerFormatArgBinaryOptionPref ($sel == 1);	// Button 1 is binary
+	}
+	if (`checkBoxGrp -exists usdPrefConfirmExistFileSave`) {
+		string $confirmExistingFileSaveOptionPref = `python("import mayaUsd.lib as mlib; mlib.OptionVarTokens.ConfirmExistingFileSave")`;
+		int $v = `checkBoxGrp -q -v1 usdPrefConfirmExistFileSave`;
+		optionVar -iv $confirmExistingFileSaveOptionPref $v;
+	}
+}
+
+global proc mayaUsd_PrefAllRelative(int $v)
+{
+	// When true, check all the relative checkboxes.
+	// When false, uncheck all the relative checkboxes.
+	checkBoxGrp -e -v1 $v usdPrefRootLayerRelativeToSceneFile;
+	checkBoxGrp -e -v1 $v usdPrefSubLayersRelativeToParentLayer;
+	checkBoxGrp -e -v1 $v usdPrefRefererencesRelativeToEditTargetLayer;
+	checkBoxGrp -e -v1 $v usdPrefFileDependenciesRelativeToEditTargetLayer;
+
+	mayaUsd_PrefRelativeToChanged();
+}
+
+global proc mayaUsd_PrefRelativeToChanged()
+{
+	int $checkAll = true;
+	if (`checkBoxGrp -exists usdPrefRootLayerRelativeToSceneFile`) {
+		int $v = `checkBoxGrp -q -v1 usdPrefRootLayerRelativeToSceneFile`;
+		optionVar -iv mayaUsd_MakePathRelativeToSceneFile $v;
+		if ($v == false) $checkAll = false;
+	}
+	if (`checkBoxGrp -exists usdPrefSubLayersRelativeToParentLayer`) {
+		int $v = `checkBoxGrp -q -v1 usdPrefSubLayersRelativeToParentLayer`;
+		optionVar -iv mayaUsd_MakePathRelativeToParentLayer $v;
+		if ($v == false) $checkAll = false;
+	}
+	if (`checkBoxGrp -exists usdPrefRefererencesRelativeToEditTargetLayer`) {
+		int $v = `checkBoxGrp -q -v1 usdPrefRefererencesRelativeToEditTargetLayer`;
+		optionVar -iv mayaUsd_MakePathRelativeToEditTargetLayer $v;
+		if ($v == false) $checkAll = false;
+	}
+	if (`checkBoxGrp -exists usdPrefFileDependenciesRelativeToEditTargetLayer`) {
+		int $v = `checkBoxGrp -q -v1 usdPrefFileDependenciesRelativeToEditTargetLayer`;
+		optionVar -iv mayaUsd_MakePathRelativeToImageEditTargetLayer $v;
+		if ($v == false) $checkAll = false;
+	}
+
+	// If any of the relative checkboxes get unchecked, also uncheck the
+	// 'Create relative paths for all' checkbox
+	if (`checkBoxGrp -exists usdPrefAllRelativeToggle`) {
+		checkBoxGrp -e -v1 $checkAll usdPrefAllRelativeToggle;
+	}
+}
+
+global proc mayaUsd_PrefInitOptionVars(int $forceFactoryDefault)
+{
+	string $saveLayerFormatArgBinaryOptionPref = `python("import mayaUsd.lib as mlib; mlib.OptionVarTokens.SaveLayerFormatArgBinaryOption")`;
+	string $confirmExistingFileSaveOptionPref = `python("import mayaUsd.lib as mlib; mlib.OptionVarTokens.ConfirmExistingFileSave")`;
+
+	int $mjv = `about -majorVersion`;
+	if ($mjv <= 2022) {
+		if ($forceFactoryDefault || !`optionVar -exists mayaUsd_SerializedUsdEditsLocation`) {
+			optionVar -intValue mayaUsd_SerializedUsdEditsLocation 1;
+		}
+		if ($forceFactoryDefault || !`optionVar -exists mayaUsd_SerializedUsdEditsLocationPrompt`) {
+			optionVar -intValue mayaUsd_SerializedUsdEditsLocationPrompt 1;
+		}
+
+		if ($forceFactoryDefault || !`optionVar -exists $saveLayerFormatArgBinaryOptionPref`) {
+			optionVar -intValue $saveLayerFormatArgBinaryOptionPref true;
+		}
+		if ($forceFactoryDefault || !`optionVar -exists $confirmExistingFileSaveOptionPref`) {
+			optionVar -intValue $confirmExistingFileSaveOptionPref true;
+		}
+
+		if ($forceFactoryDefault || !`optionVar -exists mayaUsd_MakePathRelativeToSceneFile`) {
+			optionVar -intValue mayaUsd_MakePathRelativeToSceneFile false;
+		}
+		if ($forceFactoryDefault || !`optionVar -exists mayaUsd_MakePathRelativeToParentLayer`) {
+			optionVar -intValue mayaUsd_MakePathRelativeToParentLayer false;
+		}
+		if ($forceFactoryDefault || !`optionVar -exists mayaUsd_MakePathRelativeToEditTargetLayer`) {
+			optionVar -intValue mayaUsd_MakePathRelativeToEditTargetLayer false;
+		}
+		if ($forceFactoryDefault || !`optionVar -exists mayaUsd_MakePathRelativeToImageEditTargetLayer`) {
+			optionVar -intValue mayaUsd_MakePathRelativeToImageEditTargetLayer false;
+		}
+
+	} else {
+		optionVar -init $forceFactoryDefault -category "MayaUsd"
+			-intValue mayaUsd_SerializedUsdEditsLocation 1
+			-intValue mayaUsd_SerializedUsdEditsLocationPrompt 1
+		;
+
+		optionVar -init $forceFactoryDefault -category "MayaUsd"
+			-iv $saveLayerFormatArgBinaryOptionPref true
+			-iv $confirmExistingFileSaveOptionPref true
+		;
+
+		optionVar -init $forceFactoryDefault -category "MayaUsd"
+			-iv mayaUsd_MakePathRelativeToSceneFile false
+			-iv mayaUsd_MakePathRelativeToParentLayer false
+			-iv mayaUsd_MakePathRelativeToEditTargetLayer false
+			-iv mayaUsd_MakePathRelativeToImageEditTargetLayer false
+		;
+	}
+}
+
+global proc mayaUsd_PrefCreateTab()
+{
+	global string $gPreferenceWindow;
+	setParent $gPreferenceWindow;
+	string $parent = "mayaUsd_PrefLayout";
+
+	// Check to see if this has been created already.
+	if (`columnLayout -q -numberOfChildren $parent` > 0) {
+		mayaUsd_PrefUpdate();
+		return;
+	}
+
+	// Create the UI.
+	setParent $parent;
+	setUITemplate -pushTemplate prefsTemplate;
+
+	// This is used to force the width to fill the window.
+	separator -style "none" -h 1;
+
+	setParent $parent;
+	frameLayout -label `getMayaUsdString("kSavingMayaSceneFiles")`;
+		string $colLay = `columnLayout -adj true`;
+
+		radioButtonGrp
+			-vertical
+			-nrb 3
+			-select 1	// Default -> save Maya & USD
+			-label ""
+			-label1      `getMayaUsdString("kSaveOption1")`
+			-annotation1 `getMayaUsdString("kSaveOptionAnn1")`
+			-label2      `getMayaUsdString("kSaveOption2")`
+			-annotation2 `getMayaUsdString("kSaveOptionAnn2")`
+			-label3      `getMayaUsdString("kSaveOption3")`
+			-annotation3 `getMayaUsdString("kSaveOptionAnn3")`
+			-onCommand mayaUsd_PrefSaveMayaSceneFilesChanged
+			usdPrefSaveMayaSceneFiles;
+
+		rowLayout -nc 2 -cat 2 "left" 0 -cw2 142 310;
+		text -label "";
+		text -label "" usdPrefSaveOptions2GBWarning;
+		setParent $colLay;
+
+		checkBoxGrp
+			-ncb 1
+			-label ""
+			-label1 `getMayaUsdString("kSaveOptionAsk")`
+			-ann `getMayaUsdString("kSaveOptionAskAnn")`
+			-v1 true	// Default -> checked
+			-changeCommand mayaUsd_PrefSaveMayaSceneFilesChanged
+			usdPrefSaveAskMe;
+
+	setParent $parent;
+	frameLayout -label `getMayaUsdString("KSavingUSDFiles")`;
+		columnLayout -adj true;
+		radioButtonGrp
+			-nrb 2
+			-label `getMayaUsdString("kdotusdFileFormat")`
+			-label1 `getMayaUsdString("kBinary")`
+			-label2 `getMayaUsdString("kAscii")`
+			-select 1	// Default -> Binary
+			-onCommand mayaUsd_PrefFileFormatChanged
+			usdPrefSaveFileFormat;
+		checkBoxGrp
+			-ncb 1
+			-label ""
+			-label1 `getMayaUsdString("kConfirmExistFileSave")`
+			-v1 true	// Default -> checked
+			-changeCommand mayaUsd_PrefFileFormatChanged
+			usdPrefConfirmExistFileSave;
+
+	setParent $parent;
+	frameLayout -label `getMayaUsdString("kSaveFileRelatively")`;
+		columnLayout -adj true;
+		checkBoxGrp
+			-ncb 1
+			-label ""
+			-label1 `getMayaUsdString("kAllRelativeToggle")`
+			-ann `getMayaUsdString("kAllRelativeToggleAnn")`
+			-v1 false	// default -> not checked
+			-changeCommand "mayaUsd_PrefAllRelative(#1)"
+			usdPrefAllRelativeToggle;
+		checkBoxGrp
+			-ncb 1
+			-label ""
+			-label1 `getMayaUsdString("kRootLayersRelativeToSceneFile")`
+			-ann `getMayaUsdString("kRootLayersRelativeToSceneFileAnn")`
+			-v1 false	// default -> not checked
+			-changeCommand mayaUsd_PrefRelativeToChanged
+			usdPrefRootLayerRelativeToSceneFile;
+		checkBoxGrp
+			-ncb 1
+			-label ""
+			-label1 `getMayaUsdString("kSubLayersRelativeToParentLayer")`
+			-ann `getMayaUsdString("kSubLayersRelativeToParentLayerAnn")`
+			-v1 false	// default -> not checked
+			-changeCommand mayaUsd_PrefRelativeToChanged
+			usdPrefSubLayersRelativeToParentLayer;
+		checkBoxGrp
+			-ncb 1
+			-label ""
+			-label1 `getMayaUsdString("kReferencesRelativeToEditTargetLayer")`
+			-ann `getMayaUsdString("kReferencesRelativeToEditTargetLayerAnn")`
+			-v1 false	// default -> not checked
+			-changeCommand mayaUsd_PrefRelativeToChanged
+			usdPrefRefererencesRelativeToEditTargetLayer;
+		checkBoxGrp
+			-ncb 1
+			-label ""
+			-label1 `getMayaUsdString("kFileDependenciesRelativeToEditTargetLayer")`
+			-ann `getMayaUsdString("kFileDependenciesRelativeToEditTargetLayerAnn")`
+			-v1 false	// default -> not checked
+			-changeCommand mayaUsd_PrefRelativeToChanged
+			usdPrefFileDependenciesRelativeToEditTargetLayer;
+
+	setUITemplate -popTemplate;
+
+	mayaUsd_PrefUpdate();
+}
+
+global proc mayaUsd_PrefCreateFrameLayout()
+{
+	frameLayout -labelVisible false -borderVisible false -marginWidth 10 -marginHeight 10;
+	columnLayout -adj true mayaUsd_PrefLayout;
+}
+
+global proc mayaUsd_PrefUpdate()
+{
+	global string $gPreferenceWindow;
+	setParent $gPreferenceWindow;
+	string $parent = "mayaUsd_PrefLayout";
+	
+	if (`columnLayout -q -numberOfChildren $parent` == 0) {
+		return;
+	}
+
+	setParent $parent;
+
+	if (`optionVar -exists mayaUsd_SerializedUsdEditsLocation`) {
+		int $saveOption = `optionVar -q mayaUsd_SerializedUsdEditsLocation`;
+		radioButtonGrp -e -select $saveOption usdPrefSaveMayaSceneFiles;
+
+		string $t = ($saveOption == 2) ? `getMayaUsdString("kSaveOption2GBWarning")` : "";
+		text -e -label $t usdPrefSaveOptions2GBWarning;
+	}
+
+	if (`optionVar -exists mayaUsd_SerializedUsdEditsLocationPrompt`) {
+		int $v = `optionVar -q mayaUsd_SerializedUsdEditsLocationPrompt`;
+		checkBoxGrp -e -v1 $v usdPrefSaveAskMe;
+	}
+
+	string $saveLayerFormatArgBinaryOptionPref = `python("import mayaUsd.lib as mlib; mlib.OptionVarTokens.SaveLayerFormatArgBinaryOption")`;
+	if (`optionVar -exists $saveLayerFormatArgBinaryOptionPref`) {
+		int $isBinary = `optionVar -q $saveLayerFormatArgBinaryOptionPref`;
+		radioButtonGrp -e -select ($isBinary ? 1 : 2) usdPrefSaveFileFormat;
+	}
+
+	string $confirmExistingFileSaveOptionPref = `python("import mayaUsd.lib as mlib; mlib.OptionVarTokens.ConfirmExistingFileSave")`;
+	if (`optionVar -exists $confirmExistingFileSaveOptionPref`) {
+		checkBoxGrp -e -v1
+			`optionVar -q $confirmExistingFileSaveOptionPref`
+			usdPrefConfirmExistFileSave;
+	}
+
+	int $checkAll = true;
+	if (`optionVar -exists "mayaUsd_MakePathRelativeToSceneFile"`) {
+		int $v = `optionVar -q "mayaUsd_MakePathRelativeToSceneFile"`;
+		checkBoxGrp -e -v1 $v usdPrefRootLayerRelativeToSceneFile;
+		if ($v == false) $checkAll = false;
+	}
+
+	if (`optionVar -exists "mayaUsd_MakePathRelativeToParentLayer"`) {
+		int $v = `optionVar -q "mayaUsd_MakePathRelativeToParentLayer"`;
+		checkBoxGrp -e -v1 $v usdPrefSubLayersRelativeToParentLayer;
+		if ($v == false) $checkAll = false;
+	}
+
+	if (`optionVar -exists "mayaUsd_MakePathRelativeToEditTargetLayer"`) {
+		int $v = `optionVar -q "mayaUsd_MakePathRelativeToEditTargetLayer"`;
+		checkBoxGrp -e -v1 $v usdPrefRefererencesRelativeToEditTargetLayer;
+		if ($v == false) $checkAll = false;
+	}
+
+	if (`optionVar -exists "mayaUsd_MakePathRelativeToImageEditTargetLayer"`) {
+		int $v = `optionVar -q "mayaUsd_MakePathRelativeToImageEditTargetLayer"`;
+		checkBoxGrp -e -v1 $v usdPrefFileDependenciesRelativeToEditTargetLayer;
+		if ($v == false) $checkAll = false;
+	}
+
+	// If any of the relative checkboxes get unchecked, also uncheck the
+	// 'Create relative paths for all' checkbox
+	checkBoxGrp -e -v1 $checkAll usdPrefAllRelativeToggle;
+}
+
+global proc mayaUsd_PrefHoldState(string $mode)
+{
+	mayaUsd_PrefSaveMayaSceneFilesChanged();
+	mayaUsd_PrefFileFormatChanged();
+	mayaUsd_PrefRelativeToChanged();
+
+	string $saveLayerFormatArgBinaryOptionPref = `python("import mayaUsd.lib as mlib; mlib.OptionVarTokens.SaveLayerFormatArgBinaryOption")`;
+	string $confirmExistingFileSaveOptionPref = `python("import mayaUsd.lib as mlib; mlib.OptionVarTokens.ConfirmExistingFileSave")`;
+
+	string $prefOptionVars[] = {
+		"mayaUsd_SerializedUsdEditsLocation",
+		"mayaUsd_SerializedUsdEditsLocationPrompt",
+		$saveLayerFormatArgBinaryOptionPref,
+		$confirmExistingFileSaveOptionPref,
+		"mayaUsd_MakePathRelativeToSceneFile",
+		"mayaUsd_MakePathRelativeToParentLayer",
+		"mayaUsd_MakePathRelativeToEditTargetLayer",
+		"mayaUsd_MakePathRelativeToImageEditTargetLayer"
+	};
+	prefsHoldOptionVars($prefOptionVars, $mode); 
+
+	if ($mode == "remove") {
+		// Finalize preference changes into MayaUsd.
+	}
+
+	global string $gPreferenceWindow;
+	if (`window -exists $gPreferenceWindow`) {
+		setParent mayaUsd_PrefLayout;
+
+		if (`radioButtonGrp -exists usdPrefSaveMayaSceneFiles`) {
+			radioButtonGrp -e -select
+				`optionVar -q mayaUsd_SerializedUsdEditsLocation`
+				usdPrefSaveMayaSceneFiles;
+		}
+		if (`checkBoxGrp -exists usdPrefSaveAskMe`) {
+			checkBoxGrp -e -v1
+				`optionVar -q mayaUsd_SerializedUsdEditsLocationPrompt`
+				usdPrefSaveAskMe;
+		}
+
+		if (`radioButtonGrp -exists usdPrefSaveFileFormat`) {
+			int $isBinary = `optionVar -q $saveLayerFormatArgBinaryOptionPref`;
+			radioButtonGrp -e -select ($isBinary ? 1 : 2) usdPrefSaveFileFormat;
+		}
+		if (`checkBoxGrp -exists usdPrefConfirmExistFileSave`) {
+			checkBoxGrp -e -v1
+				`optionVar -q $confirmExistingFileSaveOptionPref`
+				usdPrefConfirmExistFileSave;
+		}
+
+		if (`checkBoxGrp -exists usdPrefRootLayerRelativeToSceneFile`) {
+			checkBoxGrp -e -v1
+				`optionVar -q mayaUsd_MakePathRelativeToSceneFile`
+				usdPrefRootLayerRelativeToSceneFile;
+		}
+		if (`checkBoxGrp -exists usdPrefSubLayersRelativeToParentLayer`) {
+			checkBoxGrp -e -v1
+				`optionVar -q mayaUsd_MakePathRelativeToParentLayer`
+				usdPrefSubLayersRelativeToParentLayer;
+		}
+		if (`checkBoxGrp -exists usdPrefRefererencesRelativeToEditTargetLayer`) {
+			checkBoxGrp -e -v1
+				`optionVar -q mayaUsd_MakePathRelativeToEditTargetLayer`
+				usdPrefRefererencesRelativeToEditTargetLayer;
+		}
+		if (`checkBoxGrp -exists usdPrefFileDependenciesRelativeToEditTargetLayer`) {
+			checkBoxGrp -e -v1
+				`optionVar -q mayaUsd_MakePathRelativeToImageEditTargetLayer`
+				usdPrefFileDependenciesRelativeToEditTargetLayer;
+		}
+	}
+}
+
+global proc mayaUsd_PrefSetOptVarsToDefault()
+{
+	mayaUsd_PrefInitOptionVars(true);
+}
