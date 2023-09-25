@@ -385,12 +385,10 @@ bool UsdMayaWriteJobContext::_NeedToTraverse(const MDagPath& curDag) const
         // If we're not going to create a prim at curDag, then we do not need to
         // traverse.
         return false;
-    } else {
-        // In addition to check for primless, we check for user selection of export types
-        if (mArgs.excludeExportTypes.empty()) {
-            return true;
-        }
+    }
 
+    // In addition to check for primless, we check for user selection of export types
+    if (!mArgs.excludeExportTypes.empty()) {
         MDagPath shapeDagPath = curDag;
         if (mArgs.mergeTransformAndShape) {
             // if we're merging transforms, then we need to look at the shape.
@@ -406,15 +404,18 @@ bool UsdMayaWriteJobContext::_NeedToTraverse(const MDagPath& curDag) const
 
         const std::string mayaTypeName(depFn.typeName().asChar());
 
-        if (mArgs.excludeExportTypes.count(TfToken("Meshes")) != 0) {
+        if ((mArgs.excludeExportTypes.count(TfToken("Meshes")) != 0)
+            || (mArgs.excludeExportTypes.count(TfToken("meshes")) != 0)) {
             if (mayaTypeName == "mesh")
                 return false;
         }
-        if (mArgs.excludeExportTypes.count(TfToken("Cameras")) != 0) {
+        if ((mArgs.excludeExportTypes.count(TfToken("Cameras")) != 0)
+            || (mArgs.excludeExportTypes.count(TfToken("camera")) != 0)) {
             if (mayaTypeName.find("camera") != std::string::npos)
                 return false;
         }
-        if (mArgs.excludeExportTypes.count(TfToken("Lights")) != 0) {
+        if ((mArgs.excludeExportTypes.count(TfToken("Lights")) != 0)
+            || (mArgs.excludeExportTypes.count(TfToken("light")) != 0)) {
             if (mayaTypeName.find("Light") != std::string::npos)
                 return false;
         }

@@ -1,16 +1,16 @@
-//Maya ASCII 2025ff01 scene
+//Maya ASCII 2018 scene
 //Name: UsdExportTypeTest.ma
 //Last modified: Wed, Sep 20, 2023 01:59:28 PM
 //Codeset: 1252
-requires maya "2025ff01";
+requires maya "2018";
 requires "stereoCamera" "10.0";
 requires -nodeType "mayaUsdLayerManager" -dataType "pxrUsdStageData" "mayaUsdPlugin" "0.26.0";
 requires "stereoCamera" "10.0";
 currentUnit -l centimeter -a degree -t film;
 fileInfo "application" "maya";
-fileInfo "product" "Maya 2025";
-fileInfo "version" "Preview Release 149";
-fileInfo "cutIdentifier" "202309090854-dab6139b2d";
+fileInfo "product" "Maya 2018";
+fileInfo "version" "2018";
+fileInfo "cutIdentifier" "2018";
 fileInfo "osv" "Windows 10 Enterprise v2009 (Build: 19045)";
 fileInfo "UUID" "33205933-42FC-D05D-3B61-DF9B98660B1D";
 createNode transform -s -n "persp";
