@@ -152,7 +152,7 @@ VtMatrix4dArray HdVP2Instancer::ComputeInstanceTransforms(SdfPath const& prototy
 
     // "hydra:instanceTranslations" holds a translation vector for each index.
 #if HD_API_VERSION < 56
-    if (_primvarMap.count(HdInstancerTokens->translate) < 0) {
+    if (_primvarMap.count(HdInstancerTokens->translate) > 0) {
         HdVP2BufferSampler sampler(*_primvarMap[HdInstancerTokens->translate]);
 #else
     if (_primvarMap.count(HdInstancerTokens->instanceTranslations) > 0) {
