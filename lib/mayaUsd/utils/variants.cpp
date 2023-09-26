@@ -74,19 +74,19 @@ getEditTargetForVariants(const PXR_NS::UsdPrim& prim, const PXR_NS::SdfLayerHand
     std::vector<std::string> variantPaths;
 #endif
 
-//     for (const PXR_NS::SdfPath& p : prim.GetPath().GetAncestorsRange()) {
-//         PXR_NS::UsdPrim          ancestor = prim.GetStage()->GetPrimAtPath(p);
-//         PXR_NS::UsdVariantSets   variantSets = ancestor.GetVariantSets();
-//         std::vector<std::string> setNames = variantSets.GetNames();
-//         for (const std::string& setName : setNames) {
-//             PXR_NS::UsdVariantSet variant = variantSets.GetVariantSet(setName);
-//             const std::string     selection = variant.GetVariantSelection();
-// #ifdef MAYAUSD_DEBUG_EDIT_TARGET_FOR_VARIANTS
-//             variantPaths.emplace_back(setName + std::string("=") + selection);
-// #endif
-//             editTarget = editTarget.ComposeOver(variant.GetVariantEditTarget(layer));
-//         }
-//     }
+    for (const PXR_NS::SdfPath& p : prim.GetPath().GetAncestorsRange()) {
+        PXR_NS::UsdPrim          ancestor = prim.GetStage()->GetPrimAtPath(p);
+        PXR_NS::UsdVariantSets   variantSets = ancestor.GetVariantSets();
+        std::vector<std::string> setNames = variantSets.GetNames();
+        for (const std::string& setName : setNames) {
+            PXR_NS::UsdVariantSet variant = variantSets.GetVariantSet(setName);
+            const std::string     selection = variant.GetVariantSelection();
+#ifdef MAYAUSD_DEBUG_EDIT_TARGET_FOR_VARIANTS
+            variantPaths.emplace_back(setName + std::string("=") + selection);
+#endif
+            editTarget = editTarget.ComposeOver(variant.GetVariantEditTarget(layer));
+        }
+    }
 
 #ifdef MAYAUSD_DEBUG_EDIT_TARGET_FOR_VARIANTS
     using namespace PXR_NS;
