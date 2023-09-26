@@ -162,6 +162,12 @@ void sendAttributeChanged(
         }
     } break;
     case AttributeChangeType::kRemoved: {
+        // Special case when Undoing a visibility change, the notice.GetChangedInfoOnlyPaths()
+        // does not contain the change, hence handling visibility notification in re-synch path.
+        if (changedToken == UsdGeomTokens->visibility) {
+            Ufe::VisibilityChanged vis(ufePath);
+            notifyWithoutExceptions<Ufe::Object3d>(vis);
+        }
         notifyWithoutExceptions<Ufe::Attributes>(
             Ufe::AttributeRemoved(ufePath, changedToken.GetString()));
     } break;
@@ -395,12 +401,7 @@ void StagesSubject::stageChanged(
                     notifyWithoutExceptions<Ufe::Transform3d>(ufePath);
                 }
             }
-            // Special case when Undoing a visibility change, the notice.GetChangedInfoOnlyPaths()
-            // does not contain the change, hence handling visibility notification in re-synch path.
-            if (changedPath.GetNameToken() == UsdGeomTokens->visibility) {
-                Ufe::VisibilityChanged vis(ufePath);
-                notifyWithoutExceptions<Ufe::Object3d>(vis);
-            }
+
             processAttributeChanges(ufePath, changedPath, it.base()->second);
 
             // No further processing for this prim property path is required.
