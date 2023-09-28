@@ -139,6 +139,8 @@ class usdFileRelative(object):
             showPreviewFields = True
             if cls.kRelativeToWhat == 'SceneFile':
                 showPreviewFields = cmds.file(q=True, exists=True)
+            elif cls.kRelativeToWhat == 'ParentLayer':
+                showPreviewFields = bool(cls._relativeToDir)
 
             cmds.textFieldGrp(cls.kUnresolvedPathTextField, edit=True, visible=showPreviewFields)
 
@@ -323,8 +325,9 @@ class usdSubLayerFileRelative(usdFileRelative):
               with the dialog2 command API.
         '''
         cls._relativeToDir = parentLayerPath
-        # If the parent layer is not saved, then the checkbox and label should be disabled.
-        cls._canBeRelative = bool(cls._relativeToDir)
+        # Even if the parent layer is not saved, the file can still be marked as relative.
+        # In that case we use a technique to set the path to relative in a postponed fashion.
+        cls._canBeRelative = True
         super(usdSubLayerFileRelative, cls).uiInit(parentLayout)
 
     @classmethod

@@ -48,6 +48,9 @@ std::string generateUniqueName()
     }
     return uniqueName;
 }
+
+static std::map<PXR_NS::SdfLayerHandle, std::set<ghc::filesystem::path>> sPostponedRelativePaths;
+
 } // namespace
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -253,6 +256,60 @@ std::string UsdMayaUtilFileSystem::getPathRelativeToLayerFile(
     }
 
     return relativePathAndSuccess.first;
+}
+
+void UsdMayaUtilFileSystem::markPathAsPostponedRelative(
+    const PXR_NS::SdfLayerHandle& layer,
+    const std::string&            contentPath)
+{
+    ghc::filesystem::path filePath(contentPath);
+    sPostponedRelativePaths[layer].insert(filePath.lexically_normal());
+}
+
+void UsdMayaUtilFileSystem::unmarkPathAsPostponedRelative(
+    const PXR_NS::SdfLayerHandle& layer,
+    const std::string&            contentPath)
+{
+    auto layerEntry = sPostponedRelativePaths.find(layer);
+    if (layerEntry != sPostponedRelativePaths.end()) {
+        ghc::filesystem::path filePath(contentPath);
+        layerEntry->second.erase(filePath.lexically_normal());
+    }
+}
+
+void UsdMayaUtilFileSystem::updatePostponedRelativePaths(
+    const PXR_NS::SdfLayerHandle& layer,
+    const std::string&            layerFileName)
+{
+    // Find the layer entry
+    auto layerEntry = sPostponedRelativePaths.find(layer);
+    if (layerEntry == sPostponedRelativePaths.end()) {
+        return;
+    }
+
+    // Update sublayer paths
+    auto subLayerPaths = layer->GetSubLayerPaths();
+    for (size_t j = 0; j < subLayerPaths.size(); ++j) {
+        const auto subLayer = SdfLayer::FindRelativeToLayer(layer, subLayerPaths[j]);
+        if (!subLayer) {
+            continue;
+        }
+
+        ghc::filesystem::path filePath(subLayer->GetRealPath());
+        filePath = filePath.lexically_normal();
+
+        auto it = layerEntry->second.find(filePath);
+        if (it == layerEntry->second.end()) {
+            continue;
+        }
+
+        auto anchorDir = ghc::filesystem::path(layerFileName).lexically_normal().remove_filename();
+        subLayerPaths[j]
+            = getPathRelativeToDirectory(filePath.generic_string(), anchorDir.generic_string());
+    }
+
+    // Erase the layer entry
+    sPostponedRelativePaths.erase(layerEntry);
 }
 
 bool UsdMayaUtilFileSystem::prepareLayerSaveUILayer(

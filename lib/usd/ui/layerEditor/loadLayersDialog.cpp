@@ -302,7 +302,7 @@ void LoadLayersDialog::onOpenBrowser()
         return;
 
     // Replace selected filenames with relative ones if enabled.
-    if (requireUsdPathsRelativeToParentLayer()) {
+    if (requireUsdPathsRelativeToParentLayer() && parentLayer && !parentLayer->IsAnonymous()) {
         for (std::string& fileName : files) {
             fileName = getPathRelativeToLayerFile(fileName, parentLayer);
         }
