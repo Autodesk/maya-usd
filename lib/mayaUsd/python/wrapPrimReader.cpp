@@ -462,6 +462,7 @@ void wrapJobImportArgs()
         .def_readonly("importUSDZTextures", &UsdMayaJobImportArgs::importUSDZTextures)
         .def_readonly(
             "importUSDZTexturesFilePath", &UsdMayaJobImportArgs::importUSDZTexturesFilePath)
+        .def_readonly("importRelativeTextures", &UsdMayaJobImportArgs::importRelativeTextures)
         .def_readonly("importWithProxyShapes", &UsdMayaJobImportArgs::importWithProxyShapes)
         .add_property(
             "includeAPINames",

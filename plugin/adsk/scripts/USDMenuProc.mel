@@ -214,7 +214,6 @@ global proc mayaUsdMenu_EditAsMayaDataOptions(string $obj)
     string $layout = getOptionBox();
     setParent $layout;
 
-    setUITemplate -pushTemplate DefaultTemplate;
     setOptionBoxTitle(getMayaUsdString("kEditAsMayaDataOptions"));
 
     string $optionsString = ";readAnimData=1";
@@ -222,8 +221,8 @@ global proc mayaUsdMenu_EditAsMayaDataOptions(string $obj)
         $optionsString = `optionVar -query usdMaya_EditAsMayaDataOptions`;
     }
 
-    string $optionsFrame = `frameLayout -collapsable false -labelVisible false -marginHeight 10 -borderVisible false editAsMayaDataOptionsFrame`;
-    mayaUsdTranslatorImport ($optionsFrame, "post", $optionsString, "mayaUsdMenu_EditAsMayaDataOptionsCallback");
+    string $optionsScroll = `scrollLayout -cr true editAsMayaDataOptionsFrame`;
+    mayaUsdTranslatorImport ($optionsScroll, "post", $optionsString, "mayaUsdMenu_EditAsMayaDataOptionsCallback");
 
     string $applyCloseBtn = getOptionBoxApplyAndCloseBtn();
     button -edit -label `getMayaUsdString("kEditAsMayaData")`
@@ -249,7 +248,7 @@ global proc mayaUsdMenu_EditAsMayaDataOptions(string $obj)
 	if ($helpItem != "") {
 		menuItem -edit 
 			-label `getMayaUsdString("kHelpOnEditAsMayaDataOptions")`
-            -command ( "showHelp UsdImportOptionsConfig" )
+            -command ("python(\"from mayaUsdUtils import showHelpMayaUSD; showHelpMayaUSD('UsdImportOptionsConfig');\")")
 			$helpItem;
 	}
 

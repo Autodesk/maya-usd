@@ -173,6 +173,16 @@ global proc UsdLayerEditor_LoadLayersFileDialogOptions_UICommit(string $parent, 
     python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdSubLayerFileRelative.uiCommit('" + $parent + "', '" + $selectedFile + "')");
 }
 
+global proc UsdLayerEditor_LoadLayersFileDialogOptions_SelectionChanged(string $parent, string $selection)
+{
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdSubLayerFileRelative.selectionChanged('" + $parent + "', '" + $selection + "')");
+}
+
+global proc UsdLayerEditor_LoadLayersFileDialogOptions_FileTypeChanged(string $parent, string $newType)
+{
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdSubLayerFileRelative.fileTypeChanged('" + $parent + "', '" + $newType + "')");
+}
+
 global proc string[] UsdLayerEditor_LoadLayersFileDialog(string $title, string $folder)
 {
     // Always set parent path to empty to hide the file preview
@@ -190,6 +200,8 @@ global proc string[] UsdLayerEditor_LoadLayersFileDialog(string $title, string $
             -optionsUICreate "UsdLayerEditor_LoadLayersFileDialogOptions_UICreate"
             -optionsUIInit "UsdLayerEditor_LoadLayersFileDialogOptions_UIInit"
             -optionsUICommit2 "UsdLayerEditor_LoadLayersFileDialogOptions_UICommit"
+            -fileTypeChanged "UsdLayerEditor_LoadLayersFileDialogOptions_FileTypeChanged"
+            -selectionChanged "UsdLayerEditor_LoadLayersFileDialogOptions_SelectionChanged"
             -startingDirectory $folder
             `;
 

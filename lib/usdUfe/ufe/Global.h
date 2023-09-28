@@ -46,6 +46,8 @@ struct USDUFE_PUBLIC DCCFunctions
     // Optional: default values will be used if no function is supplied.
     IsAttributeLockedFn  isAttributeLockedFn = nullptr;
     SaveStageLoadRulesFn saveStageLoadRulesFn = nullptr;
+    IsRootChildFn        isRootChildFn = nullptr;
+    UniqueChildNameFn    uniqueChildNameFn = nullptr;
 };
 
 /*! Ufe runtime handlers used to initialize the plugin.

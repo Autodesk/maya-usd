@@ -44,6 +44,9 @@ namespace {
 static constexpr auto kExportOptionsFlag = "exo";
 static constexpr auto kExportOptionsFlagLong = "exportOptions";
 
+static constexpr auto kIgnoreVariantsFlag = "iva";
+static constexpr auto kIgnoreVariantsFlagLong = "ignoreVariants";
+
 // Reports an error to the Maya scripting console.
 void reportError(const MString& errorString) { MGlobal::displayError(errorString); }
 
@@ -229,6 +232,7 @@ MSyntax MergeToUsdCommand::createSyntax()
 {
     MSyntax syntax = createSyntaxWithUfeArgs(1);
     syntax.addFlag(kExportOptionsFlag, kExportOptionsFlagLong, MSyntax::kString);
+    syntax.addFlag(kIgnoreVariantsFlag, kIgnoreVariantsFlagLong, MSyntax::kBoolean);
     return syntax;
 }
 
@@ -273,6 +277,12 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
             exportOptions, &userArgs);
         if (status != MS::kSuccess)
             return status;
+    }
+
+    if (argData.isFlagSet(kIgnoreVariantsFlag)) {
+        const int index = 0;
+        userArgs[UsdMayaPrimUpdaterArgsTokens->ignoreVariants]
+            = argData.flagArgumentBool(kIgnoreVariantsFlag, index);
     }
 
     // Scope the undo item recording so we can undo on failure.

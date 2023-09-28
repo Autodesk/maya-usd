@@ -89,6 +89,12 @@ getPathRelativeToDirectory(const std::string& fileName, const std::string& relat
 MAYAUSD_CORE_PUBLIC
 std::string getPathRelativeToProject(const std::string& fileName);
 
+/*! \brief returns the absolute path of a file but relative to the Maya scene project folder.
+           Returns an empty string if the path cannot be made relative to the project.
+ */
+MAYAUSD_CORE_PUBLIC
+std::string makeProjectRelatedPath(const std::string& fileName);
+
 /*! \brief returns parent directory of a maya scene file opened by reference
  */
 MAYAUSD_CORE_PUBLIC

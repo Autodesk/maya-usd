@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "mtlxBaseReader.h"
+#include "shadingAsset.h"
 #include "shadingTokens.h"
 
 #include <mayaUsd/fileio/shaderReader.h>
@@ -118,34 +119,8 @@ bool MtlxUsd_ImageReader::Read(UsdMayaPrimReaderContext& context)
     }
 
     // File
-    VtValue val;
-    MPlug   mayaAttr = depFn.findPlug(TrMayaTokens->fileTextureName.GetText(), true, &status);
-
-    UsdShadeInput usdInput = shaderSchema.GetInput(TrMtlxTokens->file);
-    if (status == MS::kSuccess && usdInput && usdInput.Get(&val) && val.IsHolding<SdfAssetPath>()) {
-        std::string filePath = val.UncheckedGet<SdfAssetPath>().GetResolvedPath();
-        if (!filePath.empty() && !ArIsPackageRelativePath(filePath)) {
-            // Maya has issues with relative paths, especially if deep inside a
-            // nesting of referenced assets. Use absolute path instead if USD was
-            // able to resolve. A better fix will require providing an asset
-            // resolver to Maya that can resolve the file correctly using the
-            // MPxFileResolver API. We also make sure the path is not expressed
-            // as a relationship like texture paths inside USDZ assets.
-            val = SdfAssetPath(filePath);
-        }
-
-        // NOTE: Will need UDIM support and potentially USDZ support. When that happens, consider
-        // refactoring existing code from usdUVTextureReader.cpp as shared utilities.
-        UsdMayaReadUtil::SetMayaAttr(mayaAttr, val);
-
-        // colorSpace:
-        if (usdInput.GetAttr().HasColorSpace()) {
-            MString colorSpace = usdInput.GetAttr().GetColorSpace().GetText();
-            mayaAttr = depFn.findPlug(TrMayaTokens->colorSpace.GetText(), true, &status);
-            if (status == MS::kSuccess) {
-                mayaAttr.setString(colorSpace);
-            }
-        }
+    if (!ResolveTextureAssetPath(prim, shaderSchema, depFn, _GetArgs().GetJobArguments())) {
+        return false;
     }
 
     // Default color
@@ -158,8 +133,9 @@ bool MtlxUsd_ImageReader::Read(UsdMayaPrimReaderContext& context)
     }
 
     // Filter type:
-    mayaAttr = depFn.findPlug(TrMayaTokens->filterType.GetText(), true, &status);
-    usdInput = shaderSchema.GetInput(TrMtlxTokens->filtertype);
+    MPlug         mayaAttr = depFn.findPlug(TrMayaTokens->filterType.GetText(), true, &status);
+    UsdShadeInput usdInput = shaderSchema.GetInput(TrMtlxTokens->filtertype);
+    VtValue       val;
     if (status == MS::kSuccess && usdInput && usdInput.Get(&val) && val.IsHolding<std::string>()) {
         std::string filterType = val.UncheckedGet<std::string>();
         if (filterType == TrMtlxTokens->closest.GetString()) {

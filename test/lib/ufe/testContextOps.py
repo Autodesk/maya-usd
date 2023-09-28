@@ -919,13 +919,15 @@ class ContextOpsTestCase(unittest.TestCase):
         assert ufe.Hierarchy.createItem(ufe.PathString.path(expectedPath))
 
         # Case 6: A non-scope object named "mtl" exists and a scope named "mtl2" exists.
-        # The new material should get created in a new scope named "mtl1".
+        # The new material should get created in a new scope named "mtl3".
+        # This follows normal Maya naming standard where it increments the largest numerical
+        # suffix (even if there are gaps).
         proxyShape = createProxyShape()
         proxyShapePath = ufe.PathString.string(proxyShape.path())
         addNewPrim(proxyShape, "Def", materialsScopeName)
         addNewPrim(proxyShape, "Scope", materialsScopeName + "2")
         createMaterial(proxyShape)
-        expectedPath = proxyShapePath + ",/" + materialsScopeName + "1/" + materialName
+        expectedPath = proxyShapePath + ",/" + materialsScopeName + "3/" + materialName
         assert ufe.Hierarchy.createItem(ufe.PathString.path(expectedPath))
 
         # Case 7: A non-scope object named "mtl" exists and a scope named "mtlBingBong" exists.
@@ -948,8 +950,11 @@ class ContextOpsTestCase(unittest.TestCase):
         for scopeNamePostfix in scopeNamePostfixes:
             addNewPrim(proxyShape, "Scope", materialsScopeName + scopeNamePostfix)
 
+        # Again here follow the normal Maya naming standard which increments the largest
+        # numerical suffix (1337).
         createMaterial(proxyShape)
-        expectedPath = proxyShapePath + ",/" + materialsScopeName + "1/" + materialName
+        expectedPath = proxyShapePath + ",/" + materialsScopeName + "1338/" + materialName
+        print(expectedPath)
         assert ufe.Hierarchy.createItem(ufe.PathString.path(expectedPath))
 
         # Case 9: Multiple non-scope object named "mtl", "mtl1", ..., "mtl3" exists and multiple 
@@ -967,7 +972,7 @@ class ContextOpsTestCase(unittest.TestCase):
             addNewPrim(proxyShape, "Scope", materialsScopeName + scopeNamePostfix)
 
         createMaterial(proxyShape)
-        expectedPath = proxyShapePath + ",/" + materialsScopeName + "4/" + materialName
+        expectedPath = proxyShapePath + ",/" + materialsScopeName + "1338/" + materialName
         assert ufe.Hierarchy.createItem(ufe.PathString.path(expectedPath))
 
         # Case 10: Multiple non-scope object named "mtl", "mtl1", ..., "mtl3" exists and multiple 
@@ -1136,7 +1141,7 @@ class ContextOpsTestCase(unittest.TestCase):
 
         self.assertTrue(shaderAttrs.hasAttribute("info:id"))
         self.assertEqual(shaderAttrs.attribute("info:id").get(), shaderName)
-        self.assertEqual(ufe.PathString.string(shaderItem.path()), "|stage1|stageShape1,/Material1/Red11")
+        self.assertEqual(ufe.PathString.string(shaderItem.path()), "|stage1|stageShape1,/Material1/Red1")
         materialHier = ufe.Hierarchy.hierarchy(materialItem)
         self.assertTrue(materialHier.hasChildren())
 

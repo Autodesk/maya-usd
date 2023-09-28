@@ -137,6 +137,53 @@ createSiblingSceneItem(const Ufe::Path& ufeSrcPath, const std::string& siblingNa
     return UsdSceneItem::create(ufeSiblingPath, ufePathToPrim(ufeSiblingPath));
 }
 
+std::string uniqueChildNameMayaStandard(const PXR_NS::UsdPrim& usdParent, const std::string& name)
+{
+    if (!usdParent.IsValid())
+        return std::string();
+
+    // See uniqueChildNameDefault() in lib\usdUfe\ufe\Utils.cpp for details.
+    TfToken::HashSet allChildrenNames;
+    for (auto child : usdParent.GetFilteredChildren(
+             UsdTraverseInstanceProxies(UsdPrimIsDefined && !UsdPrimIsAbstract))) {
+        allChildrenNames.insert(child.GetName());
+    }
+
+    // When setting unique name Maya will look at the numerical suffix of all
+    // matching names and set the unique name to +1 on the greatest suffix.
+    // Example: with siblings Capsule001 & Capsule006, duplicating Capsule001
+    //          will set new unique name to Capsule007.
+    std::string childName { name };
+    if (allChildrenNames.find(TfToken(childName)) != allChildrenNames.end()) {
+        // Get the base name (removing the numerical suffix) so that we can compare
+        // that to all the sibling names.
+        std::string baseName, suffix;
+        splitNumericalSuffix(childName, baseName, suffix);
+        int suffixValue = !suffix.empty() ? std::stoi(suffix) : 0;
+
+        std::string                 childBaseName;
+        std::pair<std::string, int> largestMatching(childName, suffixValue);
+        for (const auto& child : allChildrenNames) {
+            // While iterating thru all the children look for ones that match
+            // the base name of the input. When we find one check its numerical
+            // suffix and store the greatest one.
+            splitNumericalSuffix(child.GetString(), childBaseName, suffix);
+            if (baseName == childBaseName) {
+                int suffixValue = !suffix.empty() ? std::stoi(suffix) : 0;
+                if (suffixValue > largestMatching.second) {
+                    largestMatching = std::make_pair(child.GetString(), suffixValue);
+                }
+            }
+        }
+
+        // By sending in the largest matching name (instead of the input name)
+        // the unique name function will increment its numerical suffix by 1
+        // and thus it will be unique and follow Maya naming standard.
+        childName = uniqueName(allChildrenNames, largestMatching.first);
+    }
+    return childName;
+}
+
 bool isAGatewayType(const std::string& mayaNodeType)
 {
     // If we've seen this node type before, return the cached value.

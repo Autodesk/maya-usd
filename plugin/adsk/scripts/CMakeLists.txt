@@ -17,6 +17,7 @@ list(APPEND scripts_src
     mayaUsd_pluginUIDeletion.mel
     mayaUsd_pluginBatchLoad.mel
     mayaUsd_pluginBatchUnload.mel
+    mayaUsd_preferenceTab.mel
     mayaUsd_selectionUtils.py
     mayaUsd_USDRootFileRelative.py
     usdFileSaveOptions.mel

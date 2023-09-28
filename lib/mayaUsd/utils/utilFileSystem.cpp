@@ -151,6 +151,9 @@ std::string UsdMayaUtilFileSystem::getLayerFileDir(const PXR_NS::SdfLayerHandle&
         return std::string();
 
     const std::string layerFileName = layer->GetRealPath();
+    if (layerFileName.empty())
+        return std::string();
+
     return UsdMayaUtilFileSystem::getDir(layerFileName);
 }
 
@@ -182,9 +185,8 @@ std::string UsdMayaUtilFileSystem::getPathRelativeToProject(const std::string& f
     if (fileName.empty())
         return {};
 
-    MString projectPath = MGlobal::executeCommandStringResult("workspace -q -rd");
-    // Note: don't use isEmpty() because it is not available in Maya 2022 and earlier.
-    if (projectPath.length() == 0)
+    const std::string projectPath(UsdMayaUtil::GetCurrentMayaWorkspacePath().asChar());
+    if (projectPath.empty())
         return {};
 
     // Note: we do *not* use filesystem function to attempt to make the
@@ -194,16 +196,33 @@ std::string UsdMayaUtilFileSystem::getPathRelativeToProject(const std::string& f
     //       preserve paths entered manually with relative folder ("..")
     //       by keping an absolute path with ".." embedded in them,
     //       so this works even in this situation.
-    const auto pos = fileName.find(projectPath.asChar());
+    const auto pos = fileName.rfind(projectPath, 0);
     if (pos != 0)
         return {};
 
-    auto relativePathAndSuccess = makePathRelativeTo(fileName, projectPath.asChar());
+    auto relativePathAndSuccess = makePathRelativeTo(fileName, projectPath);
 
     if (!relativePathAndSuccess.second)
         return {};
 
     return relativePathAndSuccess.first;
+}
+
+std::string UsdMayaUtilFileSystem::makeProjectRelatedPath(const std::string& fileName)
+{
+    const std::string projectPath(UsdMayaUtil::GetCurrentMayaWorkspacePath().asChar());
+    if (projectPath.empty())
+        return {};
+
+    // Attempt to create a relative path relative to the project folder.
+    // If that fails, we cannot create the project-relative path.
+    const auto pathAndSuccess = UsdMayaUtilFileSystem::makePathRelativeTo(fileName, projectPath);
+    if (!pathAndSuccess.second)
+        return {};
+
+    // Make the path absolute but relative to the project folder. That is an absolute
+    // path that starts with the project path.
+    return UsdMayaUtilFileSystem::appendPaths(projectPath, pathAndSuccess.first);
 }
 
 std::string UsdMayaUtilFileSystem::getPathRelativeToDirectory(
@@ -245,12 +264,21 @@ std::string UsdMayaUtilFileSystem::getPathRelativeToLayerFile(
         return fileName;
 
     const std::string layerDirPath = getLayerFileDir(layer);
-    auto              relativePathAndSuccess = makePathRelativeTo(fileName, layerDirPath);
+    if (layerDirPath.empty()) {
+        TF_WARN(
+            "File name (%s) cannot be resolved as relative since its parent layer is not saved,"
+            " using the absolute path instead.",
+            fileName.c_str());
+
+        return fileName;
+    }
+
+    auto relativePathAndSuccess = makePathRelativeTo(fileName, layerDirPath);
 
     if (!relativePathAndSuccess.second) {
         TF_WARN(
             "File name (%s) cannot be resolved as relative to its parent layer directory (%s), "
-            "using the absolute path.",
+            "using the absolute path instead.",
             fileName.c_str(),
             layerDirPath.c_str());
     }
@@ -331,7 +359,13 @@ bool UsdMayaUtilFileSystem::prepareLayerSaveUILayer(const std::string& relativeA
     const char* script = "import mayaUsd_USDRootFileRelative as murel\n"
                          "murel.usdFileRelative.setRelativeFilePathRoot(r'''%s''')";
 
-    const std::string commandString = TfStringPrintf(script, relativeAnchor.c_str());
+    std::string anchor = relativeAnchor;
+    if (anchor.empty()) {
+        anchor = UsdMayaUtil::GetCurrentMayaWorkspacePath().asChar();
+        anchor = ghc::filesystem::path(anchor).string();
+    }
+
+    const std::string commandString = TfStringPrintf(script, anchor.c_str());
     return MGlobal::executePythonCommand(commandString.c_str());
 }
 

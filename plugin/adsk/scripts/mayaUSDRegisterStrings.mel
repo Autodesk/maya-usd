@@ -190,6 +190,15 @@ global proc mayaUSDRegisterStrings()
     register("kExportSubdMethodNoLbl", "None (Polygonal Mesh)");
     register("kExportUVSetsAnn", "Exports Maya UV Sets as USD primvars.");
     register("kExportUVSetsLbl", "UV Sets");
+    register("kExportRelativeTexturesAnn",
+        "Choose whether your texture files are written as relative\n" +
+        "or absolute paths as you export them to USD. If you select\n" +
+        "Automatic, it will be chosen for you in the exported USD file\n" +
+        "based on what they currently are as Maya data.");
+    register("kExportRelativeTexturesAutomaticLbl", "Automatic");
+    register("kExportRelativeTexturesAbsoluteLbl", "Absolute");
+    register("kExportRelativeTexturesRelativeLbl", "Relative");
+    register("kExportRelativeTexturesLbl", "Texture File Paths:");
     register("kExportVisibilityAnn", "Exports Maya visibility attributes as USD metadata.");
     register("kExportVisibilityLbl", "Visibility");
 
@@ -209,6 +218,13 @@ global proc mayaUSDRegisterStrings()
     register("kImportMaterialConvPSLbl", "USD Preview Surface");
     register("kImportMaterialConvBlnLbl", "Blinn");
     register("kImportMaterialConvPhgLbl", "Phong");
+    register("kImportRelativeTexturesLbl", "Texture File Paths:");
+    register("kImportRelativeTexturesAnn", "Choose whether your texture files are written as relative or absolute paths\n" + 
+                                           "as you import them to Maya. If you select <b>Automatic</b>, it will be chosen for you\n" +
+                                           "in the import based on what they currently are as USD data.");
+    register("kImportRelativeTexturesAutomaticLbl", "Automatic");
+    register("kImportRelativeTexturesAbsoluteLbl", "Absolute");
+    register("kImportRelativeTexturesRelativeLbl", "Relative");
     register("kImportMaterialsAnn", "If selected, shading data is extracted from the USD file for import");
     register("kImportMaterialsLbl", "Materials");
     register("kImportPrimsInScopeNumLbl", "Total Number of Prims in Scope:");
@@ -226,6 +242,28 @@ global proc mayaUSDRegisterStrings()
     register("kMayaRefDuplicateAsUsdData", "Duplicate As USD Data");
     register("kMayaRefDuplicateAsUsdDataDiv", "Stages");
     register("kMayaRefDuplicateAsUsdDataOptions", "Options...");
+
+    // All strings for the USD Global Preferences:
+    register("kUSDPreferences", "USD: USD Preferences");
+    register("KSavingUSDFiles", "Save USD Files");
+    register("kdotusdFileFormat", ".usd File Format:");
+    register("kAscii", "ASCII");
+    register("kBinary", "Binary");
+    register("kSaveLayerUsdFileFormatAnn", "Select whether the .usd file is written out in binary or ASCII. You can save a file in .usdc (binary) or .usda (ASCII) format. Manually entering a file name with an extension overrides the selection in this preference.");
+    register("kSaveLayerUsdFileFormatSbm", "Select whether the .usd file is written out in binary or ASCII");
+    register("kConfirmExistFileSave", "Confirm Save of Existing Files");
+    register("kSavingMayaSceneFiles", "Save Maya Scene Files");
+    register("kSaveFileRelatively", "Save Files Relatively");
+    register("kAllRelativeToggle", "All files");
+    register("kAllRelativeToggleAnn", "When on, all of your files will be saved as relative paths.");
+    register("kRootLayersRelativeToSceneFile", "USD root layers");
+    register("kRootLayersRelativeToSceneFileAnn", "When on, your USD root layer file will be saved relatively to your Maya scene file.");
+    register("kSubLayersRelativeToParentLayer", "Sublayers");
+    register("kSubLayersRelativeToParentLayerAnn", "When on, all sublayers will be saved relatively to their parent layers.");
+    register("kReferencesRelativeToEditTargetLayer", "References/Payloads");
+    register("kReferencesRelativeToEditTargetLayerAnn", "When on, any references or payloads will be saved relatively to their respective edit target layer.");
+    register("kFileDependenciesRelativeToEditTargetLayer", "File dependencies");
+    register("kFileDependenciesRelativeToEditTargetLayerAnn", "When on, any file dependencies, such as textures or Maya references will be saved relatively to their respective edit target layer.");
 
     // Register the strings from the python equivalent register function.
     // Note: the strings from both the MEL and python register can be loaded

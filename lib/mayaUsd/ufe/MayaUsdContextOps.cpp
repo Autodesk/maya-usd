@@ -84,6 +84,10 @@ static constexpr char    kDuplicateAsMayaLabel[] = "Duplicate As Maya Data";
 static constexpr char    kAddMayaReferenceItem[] = "Add Maya Reference";
 static constexpr char    kAddMayaReferenceLabel[] = "Add Maya Reference...";
 #endif
+#if (UFE_PREVIEW_VERSION_NUM >= 5007)
+static constexpr char kEditAsMayaOptionsItem[] = "Edit As Maya Data Options";
+static constexpr char kEditAsMayaOptionsLabel[] = "Edit As Maya Data Options";
+#endif
 static constexpr char kBindMaterialToSelectionItem[] = "Assign Material to Selection";
 static constexpr char kBindMaterialToSelectionLabel[] = "Assign Material to Selection";
 #ifdef UFE_V4_FEATURES_AVAILABLE
@@ -254,6 +258,18 @@ void executeEditAsMaya(const Ufe::Path& path)
 
 #endif
 
+#if (UFE_PREVIEW_VERSION_NUM >= 5007)
+
+void executeEditAsMayaOptions(const Ufe::Path& path)
+{
+    // The edit as maya command name.
+    const char editAsMayaOptionsCommand[] = "mayaUsdMenu_EditAsMayaDataOptions";
+    MString    script;
+    script.format("^1s \"^2s\"", editAsMayaOptionsCommand, Ufe::PathString::string(path).c_str());
+    WaitCursor wait;
+    MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ true);
+}
+#endif
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -297,6 +313,11 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
         const bool isMayaRef = (prim().GetTypeName() == TfToken("MayaReference"));
         if (!fIsAGatewayType && PrimUpdaterManager::getInstance().canEditAsMaya(path())) {
             items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
+#if (UFE_PREVIEW_VERSION_NUM >= 5007)
+            Ufe::ContextItem item(kEditAsMayaOptionsItem, kEditAsMayaOptionsLabel);
+            item.setMetaData(Ufe::ContextItem::kIsOptionBox, true);
+            items.emplace_back(item);
+#endif
             if (!isMayaRef) {
                 items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
             }
@@ -591,6 +612,10 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
 #ifdef UFE_V3_FEATURES_AVAILABLE
     else if (itemPath[0] == kEditAsMayaItem) {
         executeEditAsMaya(path());
+#if (UFE_PREVIEW_VERSION_NUM >= 5007)
+    } else if (itemPath[0] == kEditAsMayaOptionsItem) {
+        executeEditAsMayaOptions(path());
+#endif
     } else if (itemPath[0] == kDuplicateAsMayaItem) {
         MString script;
         script.format(

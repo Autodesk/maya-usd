@@ -58,8 +58,14 @@ UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(
     auto dagSegment = segments[0];
     _stage = usdSceneItem->prim().GetStage();
     if (_stage) {
+
+        std::string base, suffixStr;
+
         // Append the parent path and the requested name into a full ufe path.
-        _newUfePath = appendToPath(ufePath, name + '1');
+        // Append a '1' to new primitives names if the name does not end with a digit.
+        _newUfePath = splitNumericalSuffix(name, base, suffixStr)
+            ? appendToPath(ufePath, name)
+            : appendToPath(ufePath, name + '1');
 
         // Ensure the requested name is unique.
         auto newPrimName
@@ -148,7 +154,12 @@ UsdUndoAddNewPrimCommand::Ptr UsdUndoAddNewPrimCommand::create(
 Ufe::Selection getNewSelectionFromCommand(const UsdUndoAddNewPrimCommand& cmd)
 {
     Ufe::Selection newSelection;
-    newSelection.append(Ufe::Hierarchy::createItem(cmd.newUfePath()));
+    const auto     newItem = Ufe::Hierarchy::createItem(cmd.newUfePath());
+    // The add operation may have failed (for example, if attempting to edit instance proxies).
+    // Appending a null item throws an exception, which we dont want in this case.
+    if (newItem) {
+        newSelection.append(Ufe::Hierarchy::createItem(cmd.newUfePath()));
+    }
     return newSelection;
 }
 

@@ -529,6 +529,16 @@ bool pullCustomize(const PullImportPaths& importedPaths, const UsdMayaPrimUpdate
     return true;
 }
 
+// The user arguments might not contain the final output filename,
+// so fill the user args dictionary with the known output file name.
+void fillUserArgsFileIfEmpty(VtDictionary& userArgs, const std::string& fileName)
+{
+    if (userArgs.count(UsdMayaJobExportArgsTokens->file) == 0
+        || userArgs[UsdMayaJobExportArgsTokens->file].Get<std::string>() == "") {
+        userArgs[UsdMayaJobExportArgsTokens->file] = fileName;
+    }
+}
+
 //------------------------------------------------------------------------------
 //
 // Perform the export step of the merge to USD (first step).  Returns the
@@ -555,6 +565,8 @@ PushCustomizeSrc pushExport(
     VtDictionary userArgs = context.GetUserArgs();
 
     std::string fileName = srcLayer->GetIdentifier();
+
+    fillUserArgsFileIfEmpty(userArgs, fileName);
 
     MFnDagNode fnDag(mayaObject);
     MDagPath   dagPath;
@@ -1556,6 +1568,11 @@ bool PrimUpdaterManager::duplicate(
 
         auto ctxArgs = VtDictionaryOver(userArgs, UsdMayaJobExportArgs::GetDefaultDictionary());
 
+        const UsdStageRefPtr  dstStage = dstProxyShape->getUsdStage();
+        const SdfLayerHandle& layer = dstStage->GetEditTarget().GetLayer();
+        if (!layer->IsAnonymous())
+            fillUserArgsFileIfEmpty(ctxArgs, layer->GetIdentifier());
+
         // Record all USD modifications in an undo block and item.
         UsdUfe::UsdUndoBlock undoBlock(
             &UsdUndoableItemUndoItem::create("Duplicate USD data modifications"));
@@ -1564,7 +1581,6 @@ bool PrimUpdaterManager::duplicate(
         // We will only do copy between two data models, setting this in arguments
         // to configure the updater
         ctxArgs[UsdMayaPrimUpdaterArgsTokens->copyOperation] = true;
-        auto                      dstStage = dstProxyShape->getUsdStage();
         UsdMayaPrimUpdaterContext context(dstProxyShape->getTime(), dstStage, ctxArgs);
 
         // Export out to a temporary layer.
@@ -1589,7 +1605,7 @@ bool PrimUpdaterManager::duplicate(
 
         // Make the destination root path unique.
         SdfPath     dstParentPath = dstParentPrim.GetPath();
-        std::string dstChildName = ufe::uniqueChildName(dstParentPrim, srcRootPath.GetName());
+        std::string dstChildName = UsdUfe::uniqueChildName(dstParentPrim, srcRootPath.GetName());
         SdfPath     dstRootPath = dstParentPath.AppendChild(TfToken(dstChildName));
         progressBar.advance();
 

@@ -69,6 +69,13 @@ MStatus UsdMayaExportTranslator::writer(
     if (status != MS::kSuccess)
         return status;
 
+    // The options might not contain the final output filename,
+    // so fill the user args dictionary with the known output file name.
+    if (userArgs.count(UsdMayaJobExportArgsTokens->file) == 0
+        || userArgs[UsdMayaJobExportArgsTokens->file].Get<std::string>() == "") {
+        userArgs[UsdMayaJobExportArgsTokens->file] = file.resolvedFullName().asChar();
+    }
+
     std::vector<double> timeSamples;
     UsdMayaJobExportArgs::GetDictionaryTimeSamples(userArgs, timeSamples);
     progressBar.advance();

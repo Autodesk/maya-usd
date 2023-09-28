@@ -235,29 +235,35 @@ class usdFileRelative(object):
     def updateFilePathPreviewFields(cls, makePathRelative=None):
         if not cls._haveRelativePathFields:
             return
+
+        if not cls._canBeRelative:
+            return
+
         if makePathRelative == None:
             makePathRelative = cls._checkBoxClass.get(cls.kMakePathRelativeCheckBox)
 
-        if cls._canBeRelative and makePathRelative:
-            # If the accept button is disabled it means there is no valid input in the file
-            # name edit field.
-            selFiles = cls._fileDialog.selectedFiles() if cls._fileDialog and cls._acceptButton and cls._acceptButton.isEnabled() else None
-            selectedFile = selFiles[0] if selFiles else ''
+        if not makePathRelative:
+            return
 
-            if cls._ensureUsdExtension:
-                # Make sure the file path has a valid USD extension. This is NOT done by the fileDialog so
-                # the user is free to enter any extension they want. The layer editor code will then verify
-                # (and fix if needed) the file path before saving. We do the same here for preview.
-                unresolvedPath = mayaUsdLib.Util.ensureUSDFileExtension(selectedFile) if selectedFile else ''
-            else:
-                unresolvedPath = selectedFile
-                
-            relativePath = ''
-            if unresolvedPath and cls._relativeToDir:
-                relativePath = mayaUsdLib.Util.getPathRelativeToDirectory(unresolvedPath, cls._relativeToDir)
-            elif unresolvedPath and cls._relativeToScene:
-                relativePath = mayaUsdLib.Util.getPathRelativeToMayaSceneFile(unresolvedPath)
-            cmds.textFieldGrp(cls.kUnresolvedPathTextField, edit=True, text=relativePath)
+        # If the accept button is disabled it means there is no valid input in the file
+        # name edit field.
+        selFiles = cls._fileDialog.selectedFiles() if cls._fileDialog and cls._acceptButton and cls._acceptButton.isEnabled() else None
+        selectedFile = selFiles[0] if selFiles else ''
+
+        if cls._ensureUsdExtension:
+            # Make sure the file path has a valid USD extension. This is NOT done by the fileDialog so
+            # the user is free to enter any extension they want. The layer editor code will then verify
+            # (and fix if needed) the file path before saving. We do the same here for preview.
+            unresolvedPath = mayaUsdLib.Util.ensureUSDFileExtension(selectedFile) if selectedFile else ''
+        else:
+            unresolvedPath = selectedFile
+            
+        relativePath = ''
+        if unresolvedPath and cls._relativeToDir:
+            relativePath = mayaUsdLib.Util.getPathRelativeToDirectory(unresolvedPath, cls._relativeToDir)
+        elif unresolvedPath and cls._relativeToScene:
+            relativePath = mayaUsdLib.Util.getPathRelativeToMayaSceneFile(unresolvedPath)
+        cmds.textFieldGrp(cls.kUnresolvedPathTextField, edit=True, text=relativePath)
 
     @classmethod
     def selectionChanged(cls, parentLayout, selection):
@@ -324,6 +330,7 @@ class usdSubLayerFileRelative(usdFileRelative):
         Note: the function takes an unused filterType argument to be compatible
               with the dialog2 command API.
         '''
+        cls.setRelativeFilePathRoot(parentLayerPath)
         cls._relativeToDir = parentLayerPath
         # Even if the parent layer is not saved, the file can still be marked as relative.
         # In that case we use a technique to set the path to relative in a postponed fashion.
@@ -436,6 +443,9 @@ class usdImageRelativeToEditTargetLayer(usdFileRelativeToEditTargetLayer):
     '''
     Helper class to create the UI for image optionally relative to a layer file.
     '''
+
+    kRelativeToWhat = 'ImageEditTargetLayer'
+
     @classmethod
     def uiInit(cls, parentLayout, filterType):
         '''

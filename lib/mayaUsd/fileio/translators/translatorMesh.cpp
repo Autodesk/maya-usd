@@ -199,7 +199,8 @@ TranslatorMeshRead::TranslatorMeshRead(
 
     // set mesh name
     const auto& primName = prim.GetName().GetString();
-    const auto  shapeName = TfStringPrintf("%sShape", primName.c_str());
+    const bool  inPrototype = UsdPrim::IsPathInPrototype(prim.GetPath());
+    const auto  shapeName = inPrototype ? primName : TfStringPrintf("%sShape", primName.c_str());
 
     const bool creatingOnlyMeshData
         = !transformObj.isNull() && MFn::kMeshData == transformObj.apiType();

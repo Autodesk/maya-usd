@@ -189,7 +189,7 @@ def setUserSelectedUSDDialogFileFilter(fileFilter):
     
 def wantReferenceCompositionArc():
     opVarName = "mayaUsd_WantReferenceCompositionArc"
-    return cmds.optionVar(exists=opVarName) and cmds.optionVar(query=opVarName)
+    return not cmds.optionVar(exists=opVarName) or cmds.optionVar(query=opVarName)
 
 def saveWantReferenceCompositionArc(want):
     opVarName = "mayaUsd_WantReferenceCompositionArc"
@@ -197,7 +197,7 @@ def saveWantReferenceCompositionArc(want):
 
 def wantPrependCompositionArc():
     opVarName = "mayaUsd_WantPrependCompositionArc"
-    return cmds.optionVar(exists=opVarName) and cmds.optionVar(query=opVarName)
+    return not cmds.optionVar(exists=opVarName) or cmds.optionVar(query=opVarName)
 
 def saveWantPrependCompositionArc(want):
     opVarName = "mayaUsd_WantPrependCompositionArc"
@@ -211,4 +211,38 @@ def saveWantPayloadLoaded(want):
     opVarName = "mayaUsd_WantPayloadLoaded"
     cmds.optionVar(iv=(opVarName, want))
 
+def showHelpMayaUSD(contentId):
+    """
+    Helper method to display help content.
+
+    Note that this is a wrapper around Maya's showHelp() method and showHelpMayaUSD()
+    should be used for all help contents in Maya USD.
+
+    Example usage of this method:
     
+    - In Python scripts:
+    from mayaUsdUtils import showHelpMayaUSD
+    showHelpMayaUSD("someContentId");
+
+    - In MEL scripts:
+    python(\"from mayaUsdUtils import showHelpMayaUSD; showHelpMayaUSD('someContentId');\")
+    
+    - In C++:
+    MGlobal::executePythonCommand(
+    "from mayaUsdUtils import showHelpMayaUSD; showHelpMayaUSD(\"someContentId\");");
+
+    Input contentId refers to the contentId that is registered in helpTableMayaUSD
+    file which is used to open help pages.
+    """
+    import os
+    
+    try:
+        # Finding the path to helpTableMayaUSD file.
+        helpTablePath = os.path.join(os.environ['MAYAUSD_LIB_LOCATION'], 'helpTable/helpTableMayaUSD');
+        # Setting the default helpTable to helpTableMayaUSD
+        cmds.showHelp(helpTablePath, helpTable=True)
+        # Showing the help content
+        cmds.showHelp(contentId)
+    finally:
+        # Restoring Maya's default helpTable
+        cmds.showHelp('helpTable', helpTable=True)    

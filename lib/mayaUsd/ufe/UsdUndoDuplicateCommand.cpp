@@ -111,6 +111,7 @@ void UsdUndoDuplicateCommand::execute()
 
     MayaUsdUtils::MergePrimsOptions options;
     options.verbosity = MayaUsdUtils::MergeVerbosity::None;
+    options.mergeChildren = true;
     bool isFirst = true;
 
     for (const SdfPrimSpecHandle& layerAndPath : authLayerAndPaths) {

@@ -15,6 +15,8 @@
 //
 #include "UsdUndoCreateFromNodeDefCommand.h"
 
+#include <usdUfe/undo/UsdUndoBlock.h>
+
 #include <pxr/usd/kind/registry.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdShade/shader.h>
@@ -51,21 +53,14 @@ Ufe::SceneItem::Ptr UsdUndoCreateFromNodeDefCommand::insertedChild() const
 
 void UsdUndoCreateFromNodeDefCommand::execute()
 {
+    UsdUndoBlock undoBlock(&_undoableItem);
     _addPrimCmd->execute();
     setIdAttr();
 }
 
-void UsdUndoCreateFromNodeDefCommand::undo()
-{
-    _addPrimCmd->undo();
-    // Nothing to do for the node:id attribute. It will get deleted with the prim.
-}
+void UsdUndoCreateFromNodeDefCommand::undo() { _undoableItem.undo(); }
 
-void UsdUndoCreateFromNodeDefCommand::redo()
-{
-    _addPrimCmd->redo();
-    setIdAttr();
-}
+void UsdUndoCreateFromNodeDefCommand::redo() { _undoableItem.redo(); }
 
 void UsdUndoCreateFromNodeDefCommand::setIdAttr()
 {
