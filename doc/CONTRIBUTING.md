@@ -3,8 +3,8 @@
 ## Contributor License Agreement #
 Before contributing code to this project, we ask that you sign a Contributor License Agreement (CLA).
 
-+ [AutodeskFormCorpContribAgmtForOpenSource.docx](CLA/AutodeskFormCorpContribAgmtForOpenSource.pdf) please sign this one for corporate use
-+ [AutodeskFormIndContribAgmtForOpenSource.docx](CLA/AutodeskFormIndContribAgmtForOpenSource.pdf) please sign this one if you're an individual contributor
++ [AutodeskFormCorpContribAgmtForOpenSource.pdf](CLA/AutodeskFormCorpContribAgmtForOpenSource.pdf) please sign this one for corporate use
++ [AutodeskFormIndContribAgmtForOpenSource.pdf](CLA/AutodeskFormIndContribAgmtForOpenSource.pdf) please sign this one if you're an individual contributor
 
 The documents include instructions on where to send the completed forms to.  Once a signed form has been received you will be able to submit pull requests.
 
