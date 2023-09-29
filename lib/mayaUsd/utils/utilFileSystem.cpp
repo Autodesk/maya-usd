@@ -49,7 +49,13 @@ std::string generateUniqueName()
     return uniqueName;
 }
 
-static std::map<PXR_NS::SdfLayerHandle, std::set<ghc::filesystem::path>> sPostponedRelativePaths;
+using PostponedRelativePaths = std::map<PXR_NS::SdfLayerHandle, std::set<ghc::filesystem::path>>;
+
+static PostponedRelativePaths& getPostponedRelativePaths()
+{
+    static PostponedRelativePaths sPaths;
+    return sPaths;
+}
 
 } // namespace
 
@@ -291,15 +297,17 @@ void UsdMayaUtilFileSystem::markPathAsPostponedRelative(
     const std::string&            contentPath)
 {
     ghc::filesystem::path filePath(contentPath);
-    sPostponedRelativePaths[layer].insert(filePath.lexically_normal());
+    auto& postponedRelativePaths = getPostponedRelativePaths();
+    postponedRelativePaths[layer].insert(filePath.lexically_normal());
 }
 
 void UsdMayaUtilFileSystem::unmarkPathAsPostponedRelative(
     const PXR_NS::SdfLayerHandle& layer,
     const std::string&            contentPath)
 {
-    auto layerEntry = sPostponedRelativePaths.find(layer);
-    if (layerEntry != sPostponedRelativePaths.end()) {
+    auto& postponedRelativePaths = getPostponedRelativePaths();
+    auto layerEntry = postponedRelativePaths.find(layer);
+    if (layerEntry != postponedRelativePaths.end()) {
         ghc::filesystem::path filePath(contentPath);
         layerEntry->second.erase(filePath.lexically_normal());
     }
@@ -310,8 +318,9 @@ void UsdMayaUtilFileSystem::updatePostponedRelativePaths(
     const std::string&            layerFileName)
 {
     // Find the layer entry
-    auto layerEntry = sPostponedRelativePaths.find(layer);
-    if (layerEntry == sPostponedRelativePaths.end()) {
+    auto& postponedRelativePaths = getPostponedRelativePaths();
+    auto layerEntry = postponedRelativePaths.find(layer);
+    if (layerEntry == postponedRelativePaths.end()) {
         return;
     }
 
@@ -337,7 +346,7 @@ void UsdMayaUtilFileSystem::updatePostponedRelativePaths(
     }
 
     // Erase the layer entry
-    sPostponedRelativePaths.erase(layerEntry);
+    postponedRelativePaths.erase(layerEntry);
 }
 
 bool UsdMayaUtilFileSystem::prepareLayerSaveUILayer(
