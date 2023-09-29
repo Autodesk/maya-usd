@@ -297,7 +297,7 @@ void UsdMayaUtilFileSystem::markPathAsPostponedRelative(
     const std::string&            contentPath)
 {
     ghc::filesystem::path filePath(contentPath);
-    auto& postponedRelativePaths = getPostponedRelativePaths();
+    auto&                 postponedRelativePaths = getPostponedRelativePaths();
     postponedRelativePaths[layer].insert(filePath.lexically_normal());
 }
 
@@ -306,7 +306,7 @@ void UsdMayaUtilFileSystem::unmarkPathAsPostponedRelative(
     const std::string&            contentPath)
 {
     auto& postponedRelativePaths = getPostponedRelativePaths();
-    auto layerEntry = postponedRelativePaths.find(layer);
+    auto  layerEntry = postponedRelativePaths.find(layer);
     if (layerEntry != postponedRelativePaths.end()) {
         ghc::filesystem::path filePath(contentPath);
         layerEntry->second.erase(filePath.lexically_normal());
@@ -319,7 +319,7 @@ void UsdMayaUtilFileSystem::updatePostponedRelativePaths(
 {
     // Find the layer entry
     auto& postponedRelativePaths = getPostponedRelativePaths();
-    auto layerEntry = postponedRelativePaths.find(layer);
+    auto  layerEntry = postponedRelativePaths.find(layer);
     if (layerEntry == postponedRelativePaths.end()) {
         return;
     }
