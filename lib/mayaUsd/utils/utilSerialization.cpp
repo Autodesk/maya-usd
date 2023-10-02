@@ -294,6 +294,8 @@ bool saveLayerWithFormat(
     const std::string& formatArg
         = requestedFormatArg.empty() ? usdFormatArgOption() : requestedFormatArg;
 
+    UsdMayaUtilFileSystem::updatePostponedRelativePaths(layer, filePath);
+
     if (isCompatibleWithSave(layer, filePath, formatArg)) {
         if (!layer->Save()) {
             return false;

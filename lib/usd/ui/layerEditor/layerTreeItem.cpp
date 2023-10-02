@@ -395,13 +395,19 @@ void LayerTreeItem::saveAnonymousLayer()
                 sessionState->rootLayerPathChanged(fileName);
             } else {
                 auto parentItem = parentLayerItem();
-
-                std::string relativePathAnchor;
-                if (parentItem && UsdMayaUtilFileSystem::requireUsdPathsRelativeToParentLayer()) {
-                    fileName = UsdMayaUtilFileSystem::getPathRelativeToLayerFile(
-                        fileName, parentItem->layer());
-                    relativePathAnchor
-                        = UsdMayaUtilFileSystem::getLayerFileDir(parentItem->layer());
+                auto parentLayer = parentItem ? parentItem->layer() : nullptr;
+                if (parentLayer) {
+                    if (UsdMayaUtilFileSystem::requireUsdPathsRelativeToParentLayer()) {
+                        if (!parentLayer->IsAnonymous()) {
+                            fileName = UsdMayaUtilFileSystem::getPathRelativeToLayerFile(
+                                fileName, parentLayer);
+                        } else {
+                            UsdMayaUtilFileSystem::markPathAsPostponedRelative(
+                                parentLayer, fileName);
+                        }
+                    } else {
+                        UsdMayaUtilFileSystem::unmarkPathAsPostponedRelative(parentLayer, fileName);
+                    }
                 }
 
                 // Note: we need to open the layer with the absolute path. The relative path is only
@@ -478,8 +484,16 @@ void LayerTreeItem::loadSubLayers(QWidget* in_parent)
     if (dlg.pathsToLoad().size() > 0) {
         const int   index = 0;
         UndoContext context(commandHook(), "Load Layers");
-        for (auto path : dlg.pathsToLoad()) {
+        for (const auto& path : dlg.pathsToLoad()) {
             context.hook()->insertSubLayerPath(layer(), path, index);
+
+            if (UsdMayaUtilFileSystem::requireUsdPathsRelativeToParentLayer()) {
+                if (layer()->IsAnonymous()) {
+                    UsdMayaUtilFileSystem::markPathAsPostponedRelative(layer(), path);
+                }
+            } else {
+                UsdMayaUtilFileSystem::unmarkPathAsPostponedRelative(layer(), path);
+            }
         }
     }
 }

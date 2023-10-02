@@ -185,8 +185,9 @@ global proc UsdLayerEditor_LoadLayersFileDialogOptions_FileTypeChanged(string $p
 
 global proc string[] UsdLayerEditor_LoadLayersFileDialog(string $title, string $folder)
 {
+    // Always set parent path to empty to hide the file preview
     global string $gLayerParentPathUsdLayerEditorSaveFileDialog;
-    $gLayerParentPathUsdLayerEditorSaveFileDialog = $folder;
+    $gLayerParentPathUsdLayerEditorSaveFileDialog = "";
     
     string $fileFilter = python("from mayaUsdUtils import getUSDDialogFileFilters; getUSDDialogFileFilters(False)");
     $okCaption = getMayaUsdString("kLoad");
