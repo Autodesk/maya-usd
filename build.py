@@ -411,6 +411,13 @@ def SetupMayaQt(context):
                 result.append(finfo)
         return result
 
+    def safeZipfileExtract(zip_file, extract_path='.'):
+        with zipfile.ZipFile(zip_file, 'r') as zf:
+            for member in zf.infolist():
+                file_path = os.path.realpath(os.path.join(extract_path, member.filename))
+                if file_path.startswith(os.path.realpath(extract_path)):
+                    zf.extract(member, extract_path)
+
     # The list of directories (in order) that we'll search. This list matches the one
     # in FindMayaQt.cmake.
     dirsToSearch = [context.devkitLocation]
@@ -482,9 +489,7 @@ def SetupMayaQt(context):
                     PrintStatus("  Extracting '{zip}' to '{dir}'".format(zip=qtArchive, dir=qtZipDirFolder))
                     try:
                         if ext == '.zip':
-                            zipArchive = zipfile.ZipFile(qtArchive, mode='r')
-                            zipArchive.extractall(qtZipDirFolder)
-                            zipArchive.close()
+                            safeZipfileExtract(qtArchive, qtZipDirFolder)
                         else:
                             archive = tarfile.open(qtArchive, mode='r')
                             archive.extractall(qtZipDirFolder, members=safeTarfileExtract(archive.getmembers()))
