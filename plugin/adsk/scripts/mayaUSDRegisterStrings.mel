@@ -131,6 +131,12 @@ global proc mayaUSDRegisterStrings()
     register("kExportBlendShapesLbl", "Blend Shapes");
     register("kExportColorSetsAnn", "Exports Maya Color Sets as USD primvars.");
     register("kExportColorSetsLbl", "Color Sets");
+    register("kExportMeshesLbl", "Meshes");
+    register("kExportMeshesAnn", "If selected, mesh geometry is extracted for USD export.");
+    register("kExportCamerasLbl", "Cameras");
+    register("kExportCamerasAnn", "If selected, cameras are extracted for USD export.");
+    register("kExportLightsLbl", "Lights");
+    register("kExportLightsAnn", "If selected, lights are extracted for USD export.");
     register("kExportComponentTagsAnn", "If selected, component tags get exported as USDGeomSubsets. Note: Edges and vertices are unsupported in USD.");
     register("kExportComponentTagsLbl", "Component Tags");
     register("kExportCurvesAnn", "If selected, curves get exported to USD primTypes NurbsCurves or BasisCurves.");

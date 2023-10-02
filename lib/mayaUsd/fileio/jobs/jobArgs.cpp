@@ -664,6 +664,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
           { UsdMayaJobExportArgsTokens->single, UsdMayaJobExportArgsTokens->double_ }))
     , includeAPINames(extractTokenSet(userArgs, UsdMayaJobExportArgsTokens->apiSchema))
     , jobContextNames(extractTokenSet(userArgs, UsdMayaJobExportArgsTokens->jobContext))
+    , excludeExportTypes(extractTokenSet(userArgs, UsdMayaJobExportArgsTokens->excludeExportTypes))
     , chaserNames(extractVector<std::string>(userArgs, UsdMayaJobExportArgsTokens->chaser))
     , allChaserArgs(_ChaserArgs(userArgs, UsdMayaJobExportArgsTokens->chaserArgs))
     , customLayerData(_CustomLayerData(userArgs, UsdMayaJobExportArgsTokens->customLayerData))
@@ -1012,6 +1013,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
             = UsdMayaJobExportArgsTokens->derived.GetString();
         d[UsdMayaJobExportArgsTokens->customLayerData] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->metersPerUnit] = 0.0;
+        d[UsdMayaJobExportArgsTokens->excludeExportTypes] = std::vector<VtValue>();
 
         // plugInfo.json site defaults.
         // The defaults dict should be correctly-typed, so enable
@@ -1100,6 +1102,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->verbose] = _boolean;
         d[UsdMayaJobExportArgsTokens->staticSingleSample] = _boolean;
         d[UsdMayaJobExportArgsTokens->geomSidedness] = _string;
+        d[UsdMayaJobExportArgsTokens->excludeExportTypes] = _stringVector;
     });
 
     return d;
