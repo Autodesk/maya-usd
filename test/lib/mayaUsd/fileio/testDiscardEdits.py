@@ -67,7 +67,7 @@ class DiscardEditsTestCase(unittest.TestCase):
         selectionList = om.MSelectionList()
         try:
             selectionList.add(objectName)
-        except:
+        except Exception:
             return None
         mObj = selectionList.getDependNode(0)
 

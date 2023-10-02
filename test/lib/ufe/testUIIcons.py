@@ -29,7 +29,7 @@ from pxr import Usd, Tf
 try:
     from shiboken2 import wrapInstance
     from PySide2.QtGui import QIcon
-except:
+except Exception:
     from shiboken6 import wrapInstance
     from PySide6.QtGui import QIcon
 

@@ -213,7 +213,7 @@ class MergeToUsdTestCase(unittest.TestCase):
             for mayaPathStr in [aMayaPathStr, bMayaPathStr]:
                 try:
                     om.MSelectionList().add(mayaPathStr)
-                except:
+                except Exception:
                     self.assertTrue(False, "Selecting node should not have raise an exception")
             # Selection is restored.
             self.assertEqual(cmds.ls(sl=True, ufe=True, long=True), previousSn)

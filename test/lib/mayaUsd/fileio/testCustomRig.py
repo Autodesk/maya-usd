@@ -104,7 +104,7 @@ class testCustomRig(unittest.TestCase):
          selectionList = OpenMaya.MSelectionList()
          try:
             selectionList.add(objectName)
-         except:
+        except Exception:
             return None
             
          mObj = selectionList.getDependNode(0)

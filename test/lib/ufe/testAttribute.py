@@ -129,7 +129,7 @@ class AttributeTestCase(unittest.TestCase):
             try:
                 cmds.getAttr('|stage1|stageShape1,/A.visibility')
                 cls._getAttrSupportsUfe = True
-            except:
+            except Exception:
                 _getAttrSupportsUfe = False
 
             # Maya's setAttr command was only made Ufe aware in Maya PR129 and Maya 2022.3
@@ -137,7 +137,7 @@ class AttributeTestCase(unittest.TestCase):
             try:
                 cmds.setAttr('|stage1|stageShape1,/A.visibility', UsdGeom.Tokens.invisible)
                 cls._setAttrSupportsUfe = True
-            except:
+            except Exception:
                 _setAttrSupportsUfe = False
 
             # Cleanup for all tests.
