@@ -89,6 +89,16 @@ global proc mayaUsd_PrefRelativeToChanged()
 	}
 }
 
+global proc mayaUsd_PrefUntexturedModeChanged()
+{
+	if (`radioButtonGrp -exists usdPrefUntexturedMode`) {
+		int $sel = `radioButtonGrp -q -select usdPrefUntexturedMode`;
+		optionVar -iv mayaUsd_ShowDisplayColorTextureOff ($sel == 2);
+		ogs -reset;
+	}
+}
+
+
 global proc mayaUsd_PrefInitOptionVars(int $forceFactoryDefault)
 {
 	string $saveLayerFormatArgBinaryOptionPref = `python("import mayaUsd.lib as mlib; mlib.OptionVarTokens.SaveLayerFormatArgBinaryOption")`;
@@ -257,6 +267,19 @@ global proc mayaUsd_PrefCreateTab()
 			-changeCommand mayaUsd_PrefRelativeToChanged
 			usdPrefFileDependenciesRelativeToEditTargetLayer;
 
+	setParent $parent;
+	frameLayout -label `getMayaUsdString("KViewport")`;
+		columnLayout -adj true;
+		radioButtonGrp
+			-nrb 2
+			-label `getMayaUsdString("KUntexturedMode")`
+			-annotation `getMayaUsdString("KUntexturedModeAnn")`
+			-label1 `getMayaUsdString("KMaterialColors")`
+			-label2 `getMayaUsdString("KDisplayColors")` 
+			-select 1	// Default -> Material Colors
+			-onCommand mayaUsd_PrefUntexturedModeChanged
+			usdPrefUntexturedMode;
+
 	setUITemplate -popTemplate;
 
 	mayaUsd_PrefUpdate();
@@ -405,6 +428,11 @@ global proc mayaUsd_PrefHoldState(string $mode)
 			checkBoxGrp -e -v1
 				`optionVar -q mayaUsd_MakePathRelativeToImageEditTargetLayer`
 				usdPrefFileDependenciesRelativeToEditTargetLayer;
+		}
+		if (`checkBoxGrp -exists usdPrefUntexturedMode`) {
+			checkBoxGrp -e -v1
+				`optionVar -q mayaUsd_ShowDisplayColorTextureOff`
+				usdPrefUntexturedMode;
 		}
 	}
 }
