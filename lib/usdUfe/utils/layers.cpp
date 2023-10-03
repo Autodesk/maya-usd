@@ -38,7 +38,7 @@ void getAllSublayers(
         processing.pop_front();
         SdfSubLayerProxy sublayerPaths = layerToProcess->GetSubLayerPaths();
         for (auto path : sublayerPaths) {
-            SdfLayerRefPtr sublayer = SdfLayer::FindOrOpen(path);
+            SdfLayerRefPtr sublayer = SdfLayer::FindRelativeToLayer(layer, path);
             if (sublayer) {
                 if (layerIds)
                     layerIds->insert(path);
@@ -117,34 +117,50 @@ void enforceMutedLayer(const PXR_NS::UsdPrim& prim, const char* command)
     }
 }
 
-void applyToAllPrimSpecs(const UsdPrim& prim, const PrimSpecFunc& func)
+int applyToAllPrimSpecs(const UsdPrim& prim, const PrimSpecFunc& func)
 {
+    int count = 0;
+
     const SdfPrimSpecHandleVector primStack = getLocalPrimStack(prim);
-    for (const SdfPrimSpecHandle& spec : primStack)
+    for (const SdfPrimSpecHandle& spec : primStack) {
         func(prim, spec);
+        ++count;
+    }
+
+    return count;
 }
 
-void applyToAllLayersWithOpinions(const UsdPrim& prim, PrimLayerFunc& func)
+int applyToAllLayersWithOpinions(const UsdPrim& prim, PrimLayerFunc& func)
 {
+    int count = 0;
+
     const SdfPrimSpecHandleVector primStack = getLocalPrimStack(prim);
     for (const SdfPrimSpecHandle& spec : primStack) {
         const auto layer = spec->GetLayer();
         func(prim, layer);
+        ++count;
     }
+
+    return count;
 }
 
-void applyToSomeLayersWithOpinions(
+int applyToSomeLayersWithOpinions(
     const UsdPrim&                  prim,
     const std::set<SdfLayerRefPtr>& layers,
     PrimLayerFunc&                  func)
 {
+    int count = 0;
+
     const SdfPrimSpecHandleVector primStack = getLocalPrimStack(prim);
     for (const SdfPrimSpecHandle& spec : primStack) {
         const auto layer = spec->GetLayer();
         if (layers.count(layer) == 0)
             continue;
         func(prim, layer);
+        ++count;
     }
+
+    return count;
 }
 
 bool isLayerInStage(const PXR_NS::SdfLayerHandle& layer, const PXR_NS::UsdStage& stage)

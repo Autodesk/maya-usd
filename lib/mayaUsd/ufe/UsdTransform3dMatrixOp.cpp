@@ -119,6 +119,9 @@ public:
         // transform3d() returns a whole-object interface, which may include
         // other transform ops.
         auto t3d = Ufe::Transform3d::editTransform3d(sceneItem());
+        if (!TF_VERIFY(t3d)) {
+            return;
+        }
         t3d->setMatrix(_newM);
     }
 
