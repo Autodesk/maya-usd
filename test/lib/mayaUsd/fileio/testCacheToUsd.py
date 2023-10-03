@@ -125,7 +125,7 @@ class CacheToUsdTestCase(unittest.TestCase):
         '''
         try:
             os.remove(self.getCacheFileName())
-        except:
+        except Exception:
             pass
 
     def getRootLayerFileName(self):
@@ -137,7 +137,7 @@ class CacheToUsdTestCase(unittest.TestCase):
         '''
         try:
             os.remove(self.getRootLayerFileName())
-        except:
+        except Exception:
             pass
 
     def setUp(self):
@@ -564,10 +564,8 @@ class CacheToUsdTestCase(unittest.TestCase):
         checkCacheParentFn(self, cacheParentChildren, variantSet, cacheVariantName)
 
         # Maya reference prim should now have the updated transformation.
-        editTarget = self.stage.GetEditTarget()
-        if variantSet:
-            variantSet.SetVariantSelection('Rig')
-            editTarget = variantSet.GetVariantEditTarget(editTarget.GetLayer())
+        if variantSetName:
+            cacheParent.GetVariantSet(variantSetName).SetVariantSelection('Rig')
 
         with Usd.EditContext(self.stage, editTarget):
             xformable = UsdGeom.Xformable(mayaRefPrim)

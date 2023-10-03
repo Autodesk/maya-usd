@@ -114,8 +114,11 @@ private:
     //! Create the pull parent and set it into the prim updater context.
     MDagPath setupPullParent(const Ufe::Path& pulledPath, VtDictionary& args);
 
-    //! Record pull information for the pulled path, for inspection on
-    //! scene changes.
+    //! Verify if the given prim at the given UFE path is an ancestor of an already edited prim.
+    bool hasEditedDescendant(const Ufe::Path& ufeQueryPath) const;
+
+//! Record pull information for the pulled path, for inspection on
+//! scene changes.
 #ifdef HAS_ORPHANED_NODES_MANAGER
     // Maya file new or open callback.  Member function to access other private
     // member functions.

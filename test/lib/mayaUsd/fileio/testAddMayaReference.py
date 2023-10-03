@@ -67,7 +67,7 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         '''
         try:
             os.remove(self.getCacheFileName())
-        except:
+        except Exception:
             pass
 
     def setUp(self):

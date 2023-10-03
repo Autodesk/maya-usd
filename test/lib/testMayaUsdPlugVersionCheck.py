@@ -37,7 +37,7 @@ class MayaUsdPlugVersionCheckTestCase(unittest.TestCase):
         try:
             if not cmds.pluginInfo( "mayaUsdPlugin", loaded=True, query=True):
                 cmds.loadPlugin( "mayaUsdPlugin", quiet = True )
-        except:
+        except Exception:
             print(sys.exc_info()[1])
             print("Unable to load mayaUsdPlugin")
 
