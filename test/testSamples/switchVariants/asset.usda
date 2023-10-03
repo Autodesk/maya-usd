@@ -1,0 +1,57 @@
+#usda 1.0
+(
+    defaultPrim = "cube"
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
+
+def Xform "cube" (
+    kind = "component"
+    variants = {
+        string rig = "none"
+    }
+    prepend variantSets = "rig"
+)
+{
+    def Xform "geo" (
+        prepend references = @model.usda@</cube/geo>
+    )
+    {
+    }
+    variantSet "rig" = {
+        "anim" {
+            def MayaReference "rig"
+            {
+                bool mayaAutoEdit = 1
+                string mayaNamespace = "rig"
+                asset mayaReference = @rig.anim.mb@
+            }
+
+            over "geo" (
+                active = false
+            )
+            {
+            }
+
+        }
+        "layout" {
+            def MayaReference "rig"
+            {
+                bool mayaAutoEdit = 1
+                string mayaNamespace = "rig"
+                asset mayaReference = @rig.layout.mb@
+            }
+
+            over "geo" (
+                active = false
+            )
+            {
+            }
+
+        }
+        "none" {
+
+        }
+    }
+}
+
