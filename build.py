@@ -411,6 +411,13 @@ def SetupMayaQt(context):
                 result.append(finfo)
         return result
 
+    def safeZipfileExtract(zip_file, extract_path='.'):
+        with zipfile.ZipFile(zip_file, 'r') as zf:
+            for member in zf.infolist():
+                file_path = os.path.realpath(os.path.join(extract_path, member.filename))
+                if file_path.startswith(os.path.realpath(extract_path)):
+                    zf.extract(member, extract_path)
+
     # The list of directories (in order) that we'll search. This list matches the one
     # in FindMayaQt.cmake.
     dirsToSearch = [context.devkitLocation]
@@ -468,20 +475,30 @@ def SetupMayaQt(context):
     # The entire Qt is in a single zip file, which we extract to 'Qt'.
     # Then we can simply use find_package(Qt6) on it.
     for dirToSearch in dirsToSearch:
-        # Qt archive has same name on all platforms.
-        qtArchive = os.path.join(dirToSearch, 'Qt.tar.gz')
-        if os.path.exists(qtArchive):
-            qtZipDirFolder = os.path.dirname(qtArchive)
-            if os.access(qtZipDirFolder, os.W_OK):
-                PrintStatus("Could not find Maya Qt6.")
-                PrintStatus("  Extracting '{zip}' to '{dir}'".format(zip=qtArchive, dir=qtZipDirFolder))
-                try:
-                    archive = tarfile.open(qtArchive, mode='r')
-                    archive.extractall(qtZipDirFolder, members=safeTarfileExtract(archive.getmembers()))
-                    archive.close()
-                except tarfile.TarError as error:
-                    PrintError(str(error))
-                return
+        # Oct 2024:
+        # Qt archive was originally named Qt.tar.gz on all platforms.
+        # Was eventually renamed to Qt.zip (Windows) and Qt.tgz (Linux/Osx).
+        qtArchiveNames = ['Qt.zip', 'Qt.tar.gz'] if Windows() else ['Qt.tgz', 'Qt.tar.gz']
+        for qtArchiveName in qtArchiveNames:
+            qtArchive = os.path.join(dirToSearch, qtArchiveName)
+            if os.path.exists(qtArchive):
+                ext = os.path.splitext(qtArchiveName)[1]
+                qtZipDirFolder = os.path.dirname(qtArchive)
+                if os.access(qtZipDirFolder, os.W_OK):
+                    PrintStatus("Could not find Maya Qt6.")
+                    PrintStatus("  Extracting '{zip}' to '{dir}'".format(zip=qtArchive, dir=qtZipDirFolder))
+                    try:
+                        if ext == '.zip':
+                            safeZipfileExtract(qtArchive, qtZipDirFolder)
+                        else:
+                            archive = tarfile.open(qtArchive, mode='r')
+                            archive.extractall(qtZipDirFolder, members=safeTarfileExtract(archive.getmembers()))
+                            archive.close()
+                    except zipfile.BadZipfile as error:
+                        PrintError(str(error))
+                    except tarfile.TarError as error:
+                        PrintError(str(error))
+                    return
 
 def BuildAndInstall(context, buildArgs, stages):
     with CurrentWorkingDirectory(context.mayaUsdSrcDir):
