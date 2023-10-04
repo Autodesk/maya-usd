@@ -93,7 +93,9 @@ private:
         const MObject&                         depNode,
         const SdfPath&                         parentPath,
         const UsdMayaShadingModeExportContext& context,
-        _NodeHandleToShaderWriterMap&          shaderWriterMap)
+        _NodeHandleToShaderWriterMap&          shaderWriterMap,
+        bool                                   createIfMissing = true
+    )
     {
         if (depNode.hasFn(MFn::kShadingEngine)) {
             // depNode is the material itself, so we don't need to create a
@@ -112,6 +114,10 @@ private:
             // We've already created a shader writer for this node, so just
             // return it.
             return iter->second;
+        }
+
+        if (!createIfMissing) {
+            return nullptr;
         }
 
         // No shader writer exists for this node yet, so create one.
@@ -180,7 +186,7 @@ private:
             rootPlugCopy,
             MFn::kInvalid,
             MItDependencyGraph::Direction::kUpstream,
-            MItDependencyGraph::Traversal::kDepthFirst,
+            MItDependencyGraph::Traversal::kBreadthFirst,
             MItDependencyGraph::Level::kPlugLevel,
             &status);
         if (status != MS::kSuccess) {
@@ -255,7 +261,7 @@ private:
                 }
 
                 auto dstShaderInfo = _GetExportedShaderForNode(
-                    dstPlug.node(), materialExportPath, context, shaderWriterMap);
+                    dstPlug.node(), materialExportPath, context, shaderWriterMap, false);
                 if (!dstShaderInfo) {
                     continue;
                 }
