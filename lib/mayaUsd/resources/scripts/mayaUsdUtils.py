@@ -211,6 +211,16 @@ def saveWantPayloadLoaded(want):
     opVarName = "mayaUsd_WantPayloadLoaded"
     cmds.optionVar(iv=(opVarName, want))
 
+def getReferencedPrimPath():
+    opVarName = "mayaUsd_ReferencedPrimPath"
+    if not cmds.optionVar(exists=opVarName):
+        return ''
+    return cmds.optionVar(query=opVarName)
+
+def saveReferencedPrimPath(primPath):
+    opVarName = "mayaUsd_ReferencedPrimPath"
+    cmds.optionVar(sv=(opVarName, primPath))
+
 def showHelpMayaUSD(contentId):
     """
     Helper method to display help content.

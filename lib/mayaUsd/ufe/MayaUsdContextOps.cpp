@@ -184,6 +184,7 @@ const char* _selectUSDFileScript()
             string $result[] = `fileDialog2
                 -fileMode 1
                 -caption "Add USD Reference/Payload to Prim"
+                -okCaption Reference
                 -fileFilter "USD Files (%s);;%s"
                 -optionsUICreate addUSDReferenceCreateUi
                 -optionsUIInit addUSDReferenceInitUi
@@ -555,10 +556,12 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
         if (path.empty())
             return nullptr;
 
-        const bool asRef = UsdMayaUtilFileSystem::wantReferenceCompositionArc();
-        const bool prepend = UsdMayaUtilFileSystem::wantPrependCompositionArc();
+        const std::string primPath = UsdMayaUtilFileSystem::getReferencedPrimPath();
+        const bool        asRef = UsdMayaUtilFileSystem::wantReferenceCompositionArc();
+        const bool        prepend = UsdMayaUtilFileSystem::wantPrependCompositionArc();
         if (asRef) {
-            return std::make_shared<UsdUfe::UsdUndoAddReferenceCommand>(prim(), path, prepend);
+            return std::make_shared<UsdUfe::UsdUndoAddReferenceCommand>(
+                prim(), path, primPath, prepend);
         } else {
             Ufe::UndoableCommand::Ptr preloadCmd;
             const bool                preload = UsdMayaUtilFileSystem::wantPayloadLoaded();
@@ -569,8 +572,8 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
                 preloadCmd = std::make_shared<UsdUfe::UsdUndoUnloadPayloadCommand>(prim());
             }
 
-            auto payloadCmd
-                = std::make_shared<UsdUfe::UsdUndoAddPayloadCommand>(prim(), path, prepend);
+            auto payloadCmd = std::make_shared<UsdUfe::UsdUndoAddPayloadCommand>(
+                prim(), path, primPath, prepend);
 
             auto compoCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
             compoCmd->append(preloadCmd);

@@ -73,6 +73,15 @@ def mayaUsdLibRegisterStrings():
     register('kTextVariant', 'Variant')
     register('kTextVariantToolTip','If selected, your Maya reference will be defined in a variant. This will enable your prim to\nhave 2 variants you can switch between in the Outliner; the Maya reference and its USD cache.')
 
+    register('kAddRefOrPayloadPrimPathToolTip', 'Specifying a prim path will make an explicit reference to a prim.\n' +
+                                        'If there is no default prim in your chosen reference, this field auto populates with the top level prim for you to reference in.\n' +
+                                        'If the field is left blank, no prim will be referenced.')
+    register('kAddRefOrPayloadPrimPathLabel', 'Prim Path')
+    register('kAddRefOrPayloadPrimPathPlaceHolder', ' (Default Prim)')
+    register('kAddRefOrPayloadPrimPathHelpLabel', 'Help on Select a Prim for Reference')
+    register('kAddRefOrPayloadPrimPathTitle', 'Select a Prim to Reference')
+    register('kAddRefOrPayloadSelectLabel', 'Select')
+
     # mayaUsdClearRefsOrPayloadsOptions.py
     register('kClearRefsOrPayloadsOptionsTitle', 'Clear All USD References/Payloads')
     register('kClearRefsOrPayloadsOptionsMessage', 'Clear all references/payloads on %s?')

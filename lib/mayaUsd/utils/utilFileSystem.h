@@ -171,6 +171,11 @@ bool wantPrependCompositionArc();
 MAYAUSD_CORE_PUBLIC
 bool wantPayloadLoaded();
 
+/*! \brief returns the prim path referenced by the USD reference or payload.
+ */
+MAYAUSD_CORE_PUBLIC
+std::string getReferencedPrimPath();
+
 /*! \brief prepares the UI used to save layers, so that the UI can potentially make the
            selected file name relative to the given directory.
  */
