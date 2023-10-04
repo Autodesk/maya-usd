@@ -94,8 +94,7 @@ private:
         const SdfPath&                         parentPath,
         const UsdMayaShadingModeExportContext& context,
         _NodeHandleToShaderWriterMap&          shaderWriterMap,
-        bool                                   createIfMissing = true
-    )
+        bool                                   createIfMissing = true)
     {
         if (depNode.hasFn(MFn::kShadingEngine)) {
             // depNode is the material itself, so we don't need to create a
