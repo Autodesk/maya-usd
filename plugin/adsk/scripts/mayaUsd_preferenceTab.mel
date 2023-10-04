@@ -132,6 +132,9 @@ global proc mayaUsd_PrefInitOptionVars(int $forceFactoryDefault)
 		if ($forceFactoryDefault || !`optionVar -exists mayaUsd_MakePathRelativeToImageEditTargetLayer`) {
 			optionVar -intValue mayaUsd_MakePathRelativeToImageEditTargetLayer false;
 		}
+		if ($forceFactoryDefault || !`optionVar -exists mayaUsd_ShowDisplayColorTextureOff`) {
+			optionVar -intValue mayaUsd_ShowDisplayColorTextureOff 0;
+		}
 
 	} else {
 		optionVar -init $forceFactoryDefault -category "MayaUsd"
@@ -149,6 +152,7 @@ global proc mayaUsd_PrefInitOptionVars(int $forceFactoryDefault)
 			-iv mayaUsd_MakePathRelativeToParentLayer false
 			-iv mayaUsd_MakePathRelativeToEditTargetLayer false
 			-iv mayaUsd_MakePathRelativeToImageEditTargetLayer false
+			-iv mayaUsd_ShowDisplayColorTextureOff 0
 		;
 	}
 }
@@ -377,6 +381,7 @@ global proc mayaUsd_PrefHoldState(string $mode)
 		"mayaUsd_MakePathRelativeToParentLayer",
 		"mayaUsd_MakePathRelativeToEditTargetLayer",
 		"mayaUsd_MakePathRelativeToImageEditTargetLayer"
+		"mayaUsd_ShowDisplayColorTextureOff"
 	};
 	prefsHoldOptionVars($prefOptionVars, $mode); 
 
