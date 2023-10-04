@@ -29,20 +29,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// Define local tokens for the names of the primvars the instancer
-// consumes.
-// XXX: These should be hydra tokens...
-// clang-format off
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    (instanceTransform)
-    (rotate)
-    (scale)
-    (translate)
-);
-// clang-format on
-
 /*! \brief  Constructor.
 
     \param delegate     The scene delegate backing this instancer's data.
@@ -148,8 +134,11 @@ VtMatrix4dArray HdVP2Instancer::ComputeInstanceTransforms(SdfPath const& prototy
 
     // The transforms for this level of instancer are computed by:
     // foreach(index : indices) {
-    //     instancerTransform * translate(index) * rotate(index) *
-    //     scale(index) * instanceTransform(index)
+    //     instancerTransform
+    //     * hydra:translate(index)
+    //     * hydra:rotate(index)
+    //     * hydra:scale(index)
+    //     * hydra:instanceTransform(index)
     // }
     // If any transform isn't provided, it's assumed to be the identity.
 
@@ -161,9 +150,14 @@ VtMatrix4dArray HdVP2Instancer::ComputeInstanceTransforms(SdfPath const& prototy
         transforms[i] = instancerTransform;
     }
 
-    // "translate" holds a translation vector for each index.
-    if (_primvarMap.count(_tokens->translate) > 0) {
-        HdVP2BufferSampler sampler(*_primvarMap[_tokens->translate]);
+    // "hydra:instanceTranslations" holds a translation vector for each index.
+#if HD_API_VERSION < 56
+    if (_primvarMap.count(HdInstancerTokens->translate) > 0) {
+        HdVP2BufferSampler sampler(*_primvarMap[HdInstancerTokens->translate]);
+#else
+    if (_primvarMap.count(HdInstancerTokens->instanceTranslations) > 0) {
+        HdVP2BufferSampler sampler(*_primvarMap[HdInstancerTokens->instanceTranslations]);
+#endif
         for (size_t i = 0; i < instanceIndices.size(); ++i) {
             GfVec3f translate;
             if (sampler.Sample(instanceIndices[i], &translate)) {
@@ -174,9 +168,15 @@ VtMatrix4dArray HdVP2Instancer::ComputeInstanceTransforms(SdfPath const& prototy
         }
     }
 
-    // "rotate" holds a quaternion in <real, i, j, k> format for each index.
-    if (_primvarMap.count(_tokens->rotate) > 0) {
-        HdVP2BufferSampler sampler(*_primvarMap[_tokens->rotate]);
+    // "hydra:instanceRotations" holds a quaternion in <real, i, j, k> format
+    // for each index.
+#if HD_API_VERSION < 56
+    if (_primvarMap.count(HdInstancerTokens->rotate) > 0) {
+        HdVP2BufferSampler sampler(*_primvarMap[HdInstancerTokens->rotate]);
+#else
+    if (_primvarMap.count(HdInstancerTokens->instanceRotations) > 0) {
+        HdVP2BufferSampler sampler(*_primvarMap[HdInstancerTokens->instanceRotations]);
+#endif
         for (size_t i = 0; i < instanceIndices.size(); ++i) {
             GfQuath quath;
             if (sampler.Sample(instanceIndices[i], &quath)) {
@@ -194,9 +194,14 @@ VtMatrix4dArray HdVP2Instancer::ComputeInstanceTransforms(SdfPath const& prototy
         }
     }
 
-    // "scale" holds an axis-aligned scale vector for each index.
-    if (_primvarMap.count(_tokens->scale) > 0) {
-        HdVP2BufferSampler sampler(*_primvarMap[_tokens->scale]);
+    // "hydra:instanceScales" holds an axis-aligned scale vector for each index.
+#if HD_API_VERSION < 56
+    if (_primvarMap.count(HdInstancerTokens->scale) > 0) {
+        HdVP2BufferSampler sampler(*_primvarMap[HdInstancerTokens->scale]);
+#else
+    if (_primvarMap.count(HdInstancerTokens->instanceScales) > 0) {
+        HdVP2BufferSampler sampler(*_primvarMap[HdInstancerTokens->instanceScales]);
+#endif
         for (size_t i = 0; i < instanceIndices.size(); ++i) {
             GfVec3f scale;
             if (sampler.Sample(instanceIndices[i], &scale)) {
@@ -207,9 +212,14 @@ VtMatrix4dArray HdVP2Instancer::ComputeInstanceTransforms(SdfPath const& prototy
         }
     }
 
-    // "instanceTransform" holds a 4x4 transform matrix for each index.
-    if (_primvarMap.count(_tokens->instanceTransform) > 0) {
-        HdVP2BufferSampler sampler(*_primvarMap[_tokens->instanceTransform]);
+    // "hydra:instanceTransforms" holds a 4x4 transform matrix for each index.
+#if HD_API_VERSION < 56
+    if (_primvarMap.count(HdInstancerTokens->instanceTransform) > 0) {
+        HdVP2BufferSampler sampler(*_primvarMap[HdInstancerTokens->instanceTransform]);
+#else
+    if (_primvarMap.count(HdInstancerTokens->instanceTransforms) > 0) {
+        HdVP2BufferSampler sampler(*_primvarMap[HdInstancerTokens->instanceTransforms]);
+#endif
         for (size_t i = 0; i < instanceIndices.size(); ++i) {
             GfMatrix4d instanceTransform;
             if (sampler.Sample(instanceIndices[i], &instanceTransform)) {
