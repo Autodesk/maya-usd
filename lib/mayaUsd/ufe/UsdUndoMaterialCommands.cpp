@@ -150,6 +150,16 @@ bool _BindMaterialCompatiblePrim(const UsdPrim& usdPrim)
     return false;
 }
 
+bool isDefPrim(const Ufe::SceneItem::Ptr& sceneItem)
+{
+    const auto canonicalName
+        = TfType::Find<UsdSchemaBase>().FindDerivedByName(sceneItem->nodeType().c_str());
+    if (canonicalName.IsUnknown()) {
+        return true;
+    }
+    return false;
+}
+
 } // namespace
 
 bool BindMaterialUndoableCommand::CompatiblePrim(const Ufe::SceneItem::Ptr& item)
@@ -422,7 +432,7 @@ void UsdUndoAssignNewMaterialCommand::execute()
             }
             // There might be some unassignable items in the selection list. Skip and warn.
             // We know there is at least one assignable item found in the ContextOps resolver.
-            if (!BindMaterialUndoableCommand::CompatiblePrim(parentItem)) {
+            if (!BindMaterialUndoableCommand::CompatiblePrim(parentItem) || isDefPrim(parentItem)) {
                 const std::string error = TfStringPrintf(
                     "Assign new material: Skipping incompatible prim [%s] found in selection.",
                     Ufe::PathString::string(parentItem->path()).c_str());

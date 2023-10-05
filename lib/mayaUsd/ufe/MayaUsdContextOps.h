@@ -53,6 +53,10 @@ public:
     Items                     getItems(const ItemPath& itemPath) const override;
     Ufe::UndoableCommand::Ptr doOpCmd(const ItemPath& itemPath) override;
 
+    Items                     getBulkItems(const ItemPath& itemPath) const override;
+    Ufe::UndoableCommand::Ptr doBulkOpCmd(const ItemPath& itemPath) override;
+
+
     UsdUfe::UsdContextOps::SchemaNameMap getSchemaPluginNiceNames() const override;
 
 }; // MayaUsdContextOps
