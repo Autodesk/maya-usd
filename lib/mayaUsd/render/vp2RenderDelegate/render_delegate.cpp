@@ -565,14 +565,8 @@ const HdVP2BBoxGeom* sSharedBBoxGeom
 
 } // namespace
 
-const int HdVP2RenderDelegate::sProfilerCategory = MProfiler::addCategory(
-#if MAYA_API_VERSION >= 20190000
-    "HdVP2RenderDelegate",
-    "HdVP2RenderDelegate"
-#else
-    "HdVP2RenderDelegate"
-#endif
-);
+const int HdVP2RenderDelegate::sProfilerCategory
+    = MProfiler::addCategory("HdVP2RenderDelegate", "HdVP2RenderDelegate");
 
 std::mutex                  HdVP2RenderDelegate::_renderDelegateMutex;
 std::atomic_int             HdVP2RenderDelegate::_renderDelegateCounter;

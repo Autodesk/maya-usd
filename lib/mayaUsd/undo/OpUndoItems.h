@@ -26,10 +26,8 @@
 #include <maya/MFnSet.h>
 #include <maya/MGlobal.h>
 #include <maya/MSelectionList.h>
-#ifdef WANT_UFE_BUILD
 #include <ufe/selection.h>
 #include <ufe/undoableCommand.h>
-#endif
 
 #include <memory>
 #include <vector>
@@ -305,6 +303,10 @@ public:
     MAYAUSD_CORE_PUBLIC
     ~FunctionUndoItem() override;
 
+    /// \brief execute a single sub-operation. Calls redo.
+    MAYAUSD_CORE_PUBLIC
+    bool execute() override;
+
     /// \brief undo a single sub-operation.
     MAYAUSD_CORE_PUBLIC
     bool undo() override;
@@ -406,8 +408,6 @@ private:
     MSelectionList          _previousSelection;
     MGlobal::ListAdjustment _selMode;
 };
-
-#ifdef WANT_UFE_BUILD
 
 //------------------------------------------------------------------------------
 // UfeSelectionUndoItem
@@ -524,8 +524,6 @@ public:
 private:
     std::shared_ptr<Ufe::UndoableCommand> _command;
 };
-
-#endif
 
 //------------------------------------------------------------------------------
 // LockNodesUndoItem

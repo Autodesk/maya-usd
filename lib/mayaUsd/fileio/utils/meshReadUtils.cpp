@@ -596,7 +596,8 @@ void UsdMayaMeshReadUtils::setEmitNormalsTag(MFnMesh& meshFn, const bool emitNor
 void UsdMayaMeshReadUtils::assignPrimvarsToMesh(
     const UsdGeomMesh&  mesh,
     const MObject&      meshObj,
-    const TfToken::Set& excludePrimvarSet)
+    const TfToken::Set& excludePrimvarSet,
+    const TfToken::Set& excludePrivarNamespaceSet)
 {
     if (meshObj.apiType() != MFn::kMesh) {
         return;
@@ -619,6 +620,25 @@ void UsdMayaMeshReadUtils::assignPrimvarsToMesh(
         // UV set, etc.
         if (excludePrimvarSet.count(fullName) != 0) {
             continue;
+        }
+
+        // Exclude primvars if they match with the exclude namespac
+        if (primvar.NameContainsNamespaces()) {
+            std::string primVarString = fullName.GetString();
+            bool        skipPrimvar = false;
+            for (const TfToken& primVarNameSpace : excludePrivarNamespaceSet) {
+                std::string primVarNameSpaceString = primVarNameSpace.GetString();
+
+                // The primVarString is a substring of excludePrimVarNamespace string from the
+                // beginning
+                if (primVarString.find(primVarNameSpaceString) == 0) {
+                    skipPrimvar = true;
+                    break;
+                }
+            }
+            if (skipPrimvar) {
+                continue;
+            }
         }
 
         // If the primvar is called either displayColor or displayOpacity check
@@ -892,8 +912,6 @@ MStatus UsdMayaMeshReadUtils::assignSubDivTagsToMesh(
     return MS::kSuccess;
 }
 
-#if MAYA_API_VERSION >= 20220000
-
 bool UsdMayaMeshReadUtils::getGeomSubsetInfo(const MObject& mesh, JsValue& meshRoundtripData)
 {
     MFnDependencyNode depNodeFn(mesh);
@@ -1076,7 +1094,5 @@ MStatus UsdMayaMeshReadUtils::createComponentTags(const UsdGeomMesh& mesh, const
 
     return status;
 }
-
-#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE

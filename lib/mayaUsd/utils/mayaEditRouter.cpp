@@ -16,6 +16,8 @@
 #include "mayaEditRouter.h"
 
 #include <mayaUsd/base/tokens.h>
+#include <mayaUsd/utils/layers.h>
+#include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsdUtils/MergePrims.h>
 
 #include <usdUfe/base/tokens.h>
@@ -106,7 +108,7 @@ void copyTransform(
 // Create the prim that will hold the cache.
 void createCachePrim(
     const PXR_NS::UsdStageRefPtr& stage,
-    const PXR_NS::SdfLayerRefPtr& dstLayer,
+    const std::string&            dstLayerPath,
     PXR_NS::SdfPath               dstPrimPath,
     const PXR_NS::SdfPath&        primPath,
     bool                          asReference,
@@ -119,11 +121,11 @@ void createCachePrim(
                            : PXR_NS::UsdListPositionBackOfPrependList;
 
     if (asReference) {
-        cachePrim.GetReferences().AddReference(
-            dstLayer->GetIdentifier(), dstPrimPath, PXR_NS::SdfLayerOffset(), position);
+        SdfReference ref(dstLayerPath, dstPrimPath);
+        cachePrim.GetReferences().AddReference(ref, position);
     } else {
-        cachePrim.GetPayloads().AddPayload(
-            dstLayer->GetIdentifier(), dstPrimPath, PXR_NS::SdfLayerOffset(), position);
+        SdfPayload payload(dstLayerPath, dstPrimPath);
+        cachePrim.GetPayloads().AddPayload(payload, position);
     }
 }
 
@@ -137,12 +139,13 @@ void cacheMayaReference(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionar
         return;
 
     // Read user arguments provide in the context dictionary.
-    // TODO: document all arguments for plugin users.
     auto pulledPathStr = getDictString(context, UsdUfe::EditRoutingTokens->Prim);
     auto fileFormatExtension
         = getDictString(context, PXR_NS::MayaUsdEditRoutingTokens->DefaultUSDFormat);
     auto dstLayerPath
         = getDictString(context, PXR_NS::MayaUsdEditRoutingTokens->DestinationLayerPath);
+    const bool makePathRelative
+        = (getDictValue(context, PXR_NS::MayaUsdEditRoutingTokens->RelativePath, 1) != 0);
     auto dstPrimName
         = getDictString(context, PXR_NS::MayaUsdEditRoutingTokens->DestinationPrimName);
     bool appendListEdit
@@ -162,7 +165,22 @@ void cacheMayaReference(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionar
     const PXR_NS::SdfPath pulledPath(pulledPathStr);
     const PXR_NS::SdfPath pulledParentPath = pulledPath.GetParentPath();
 
-    if (dstLayerPath.empty() || dstPrimName.empty())
+    std::string relDistLayerPath = dstLayerPath;
+    if (makePathRelative) {
+        const std::string layerDirPath = MayaUsd::getTargetLayerFolder(stage);
+        const auto        relativePathAndSuccess
+            = PXR_NS::UsdMayaUtilFileSystem::makePathRelativeTo(dstLayerPath, layerDirPath);
+        if (relativePathAndSuccess.second) {
+            relDistLayerPath = relativePathAndSuccess.first;
+        } else {
+            TF_WARN(
+                "File name (%s) cannot be resolved as relative to the current edit target layer, "
+                "using the absolute path.",
+                dstLayerPath.c_str());
+        }
+    }
+
+    if (relDistLayerPath.empty() || dstPrimName.empty())
         return;
 
     // Determine the file format
@@ -237,10 +255,11 @@ void cacheMayaReference(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionar
                 stage, variantSet.GetVariantEditTarget(target.GetLayer()));
 
             createCachePrim(
-                stage, dstLayer, dstPrimPath, cachePrimPath, asReference, appendListEdit);
+                stage, relDistLayerPath, dstPrimPath, cachePrimPath, asReference, appendListEdit);
         }
     } else {
-        createCachePrim(stage, dstLayer, dstPrimPath, cachePrimPath, asReference, appendListEdit);
+        createCachePrim(
+            stage, relDistLayerPath, dstPrimPath, cachePrimPath, asReference, appendListEdit);
     }
 
     // Fill routing info

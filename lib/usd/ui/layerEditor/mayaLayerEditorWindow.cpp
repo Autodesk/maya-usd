@@ -118,8 +118,9 @@ void MayaLayerEditorWindow::onClearUIOnSceneReset()
     LayerTreeModel::suspendUsdNotices(true);
     setCentralWidget(nullptr);
     delete _layerEditor;
+    _sessionState.setStageEntry(UsdLayerEditor::SessionState::StageEntry {});
 
-    QTimer::singleShot(2000, this, &MayaLayerEditorWindow::onCreateUI);
+    QTimer::singleShot(0, this, &MayaLayerEditorWindow::onCreateUI);
 }
 
 void MayaLayerEditorWindow::onCreateUI()

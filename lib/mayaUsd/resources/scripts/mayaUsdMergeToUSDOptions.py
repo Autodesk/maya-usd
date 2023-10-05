@@ -18,6 +18,7 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
+from mayaUsdUtils import showHelpMayaUSD
 import mayaUsdOptions
 
 from functools import partial
@@ -90,9 +91,8 @@ def _createMergeToUSDOptionsDialog(window, target):
     cmds.menuItem(label=getMayaUsdLibString("kResetSettingsMenuItem"), command=partial(_resetMergeToUSDOptions, target, subLayout))
 
     cmds.setParent(menuBarLayout)
-    if _hasMergeToUSDOptionsHelp():
-        menu = cmds.menu(label=getMayaUsdLibString("kHelpMenu"), parent=menuBarLayout)
-        cmds.menuItem(label=getMayaUsdLibString("kHelpMergeToUSDOptionsMenuItem"), command=_helpMergeToUSDOptions)
+    menu = cmds.menu(label=getMayaUsdLibString("kHelpMenu"), parent=menuBarLayout)
+    cmds.menuItem(label=getMayaUsdLibString("kHelpMergeToUSDOptionsMenuItem"), command=_helpMergeToUSDOptions)
 
     buttonsLayout = cmds.formLayout(parent=windowFormLayout)
 
@@ -218,22 +218,11 @@ def _fillMergeToUSDOptionsDialog(target, subLayout, optionsText, action):
         mayaUsdTranslatorExport("{subLayout}", "{action}=all;!output", "{optionsText}", "")
         '''.format(optionsText=optionsText, subLayout=subLayout, action=action))
 
-
-def _hasMergeToUSDOptionsHelp():
-    """
-    Returns True if the help topic for the options is available in Maya.
-    """
-    # Note: catchQuiet returns 0 or 1, not the value, so we use a dummy assignment
-    #       to produce the value to be returned by eval().
-    url = mel.eval('''catchQuiet($url = `showHelp -q "''' + _kMergeToUSDOptionsHelpContentId + '''"`); $a = $url;''')
-    return bool(url)
-
 def _helpMergeToUSDOptions(data=None):
     """
     Shows help on the merge-to-USD options dialog.
     """
-    # TODO: add help about the options UI instead of the merge command
-    cmds.showHelp(_kMergeToUSDOptionsHelpContentId)
+    showHelpMayaUSD(_kMergeToUSDOptionsHelpContentId)
 
 
 def _getMergeToUSDOptionsVarName():
@@ -267,6 +256,7 @@ def getDefaultMergeToUSDOptionsDict():
     """
     return {
         "exportUVs":                "1",
+        "exportRelativeTextures":   "automatic",
         "exportSkels":              "none",
         "exportSkin":               "none",
         "exportBlendShapes":        "0",

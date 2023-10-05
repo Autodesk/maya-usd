@@ -39,15 +39,16 @@ class MAYAUSD_CORE_PUBLIC MayaStagesSubject : public UsdUfe::StagesSubject
 {
 public:
     typedef PXR_NS::TfWeakPtr<MayaStagesSubject> Ptr;
+    typedef PXR_NS::TfRefPtr<MayaStagesSubject>  RefPtr;
 
     //! Constructor
     MayaStagesSubject();
 
     //! Destructor
-    ~MayaStagesSubject();
+    ~MayaStagesSubject() override;
 
     //! Create the MayaStagesSubject.
-    static MayaStagesSubject::Ptr create();
+    static MayaStagesSubject::RefPtr create();
 
     // Delete the copy/move constructors assignment operators.
     MayaStagesSubject(const MayaStagesSubject&) = delete;
@@ -55,10 +56,11 @@ public:
     MayaStagesSubject(MayaStagesSubject&&) = delete;
     MayaStagesSubject& operator=(MayaStagesSubject&&) = delete;
 
-    bool beforeNewCallback() const;
-    void beforeNewCallback(bool b);
+protected:
+    bool isInNewScene() const;
+    void setInNewScene(bool b);
 
-    void afterOpen();
+    void beforeOpen();
 
 private:
     // Maya scene message callbacks
@@ -70,6 +72,9 @@ private:
 private:
     // Notice listener method for proxy stage set
     void onStageSet(const PXR_NS::MayaUsdProxyStageSetNotice& notice);
+
+    void setupListeners();
+    void clearListeners();
 
     // Notice listener method for proxy stage invalidate.
     void onStageInvalidate(const PXR_NS::MayaUsdProxyStageInvalidateNotice& notice);
@@ -90,7 +95,7 @@ private:
     */
     std::unordered_set<Ufe::Path> fInvalidStages;
 
-    bool fBeforeNewCallback = false;
+    bool fIsInNewScene = false;
 
     MCallbackIdArray fCbIds;
 

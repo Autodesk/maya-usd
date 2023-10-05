@@ -92,7 +92,7 @@ proc fileOptionsTabPage(string $tabLayout)
     string $topForm = `columnLayout -rowSpacing 5 actionOptionsForm`;
 
     setParent $topForm;
-    frameLayout -label `getMayaUsdLibString("kMayaRefDescription")` -height 170 -mw $gOptionBoxTemplateDescriptionMarginWidth;
+    frameLayout -label `getMayaUsdLibString("kMayaRefDescription")` -height 170 -mw $gOptionBoxTemplateDescriptionMarginWidth -collapsable 0;
     columnLayout;
     text -align "left" -wordWrap true -height 80 -label `getMayaUsdLibString("kMayaRefAddToUSDDescription1")`;
     text -align "left" -wordWrap true -height 50 -label `getMayaUsdLibString("kMayaRefAddToUSDDescription2")`;
@@ -100,6 +100,8 @@ proc fileOptionsTabPage(string $tabLayout)
     setParent $topForm;
     frameLayout -label `getMayaUsdLibString("kMayaRefUsdOptions")`;
     string $widgetColumn = `columnLayout usdOptionsLayout`;
+
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdMayaRefRelativeToEditTargetLayer.uiCreateFields(True)");
 
     textFieldGrp
         -label `getMayaUsdLibString("kMayaRefMayaRefPrimName")`
@@ -592,8 +594,10 @@ proc usdMayaRef_setupDefineInVariant()
 }
 
 // Adapted from fileOptions.mel:fileOptionsSetup().
-proc fileOptionsSetup(string $parent, int $forceFactorySettings, string $chosenFileType)
+proc fileOptionsSetup(string $parent, int $forceFactorySettings, string $filterType)
 {
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdMayaRefRelativeToEditTargetLayer.uiInit(r'''" + $parent + "''', r'''" + $filterType + "''')");
+
     global string $gUsdMayaReferenceUfePath;
 
     string $action = "Reference";
@@ -670,8 +674,8 @@ proc fileOptionsSetup(string $parent, int $forceFactorySettings, string $chosenF
 
     fo_changeReferenceNamespaceOption( $action );
 
-    string $fileType = ("" == $chosenFileType) ? 
-        `optionVar -q defaultFileReferenceType` : $chosenFileType;
+    string $fileType = ("" == $filterType) ? 
+        `optionVar -q defaultFileReferenceType` : $filterType;
 
     int $userPrefix = 0;
     string $usePrefixOptionVar = "referenceOptionsUseRenamePrefix";
@@ -774,6 +778,8 @@ proc string makeNamespaceNameFromFileName(string $fileName)
 global proc addMayaReferenceToUsdUiCb(string $parent, string $selectedFile)
 {
     setParent $parent;
+
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdMayaRefRelativeToEditTargetLayer.uiCommit(r'''" + $parent + "''', r'''" + $selectedFile + "''')");
 
     string $action = "Reference";
 
@@ -1060,10 +1066,17 @@ global proc string addMayaReferenceToUsd(string $ufePath)
 
     int $autoEditAsMayaData = `optionVar -query usdMayaReferenceEditAsMayaDat`;
     
-    // No need to actually create the Maya reference node: pulling on the
+    string $filePath = $file[0];
+    int $requireRelative = (`optionVar -exists mayaUsd_MakePathRelativeToEditTargetLayer` && `optionVar -query mayaUsd_MakePathRelativeToEditTargetLayer`);
+    if ($requireRelative) {
+        string $relativeTo = `python("import mayaUsd_USDRootFileRelative as murel; murel.usdFileRelative.getRelativeFilePathRoot()")`;
+        $filePath = `python("import mayaUsd.lib as mayaUsdLib; mayaUsdLib.Util.getPathRelativeToDirectory(r'''" + $filePath + "''', r'''" + $relativeTo + "''')")`;
+    }
+    $filePath = fromNativePath($filePath);
+
+    // No need to actually create the Maya reference node: edit-as-Maya on the
     // Maya reference prim will create the Maya reference node.
     // Create the Maya reference prim under its parent.
-    string $filePath = fromNativePath($file[0]);
     string $ns = computeNamespace($filePath);
     string $pyCmdArgs = `format -s $ufePath -s $filePath -s $ns -s $gUsdMayaReferencePrimName "'^1s', '^2s', '^3s', '^4s'"`;
     if ($useGroup)

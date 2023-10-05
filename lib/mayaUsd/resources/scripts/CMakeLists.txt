@@ -6,6 +6,8 @@ list(APPEND scripts_src
     mayaUsdAddUSDReference.mel
     mayaUsdCacheMayaReference.mel
     mayaUsdCacheMayaReference.py
+    mayaUsdClearRefsOrPayloadsOptions.mel
+    mayaUsdClearRefsOrPayloadsOptions.py
     mayaUsdDuplicateAsUsdDataOptions.mel
     mayaUsdDuplicateAsUsdDataOptions.py
     mayaUsdMergeToUSDOptions.mel

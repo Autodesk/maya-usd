@@ -18,9 +18,8 @@
 
 #if PXR_VERSION >= 2211
 
-#if WANT_UFE_BUILD
 #include <mayaUsd/ufe/Global.h>
-#endif
+#include <mayaUsd/ufe/Utils.h>
 
 #include <usdUfe/ufe/Utils.h>
 
@@ -43,18 +42,15 @@
 #include <pxr/imaging/hd/instancedBySceneIndex.h>
 #include <pxr/usdImaging/usdImagingGL/drawModeSceneIndex.h> //For USD 2211
 #endif
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 54
+#include <pxr/imaging/hd/flattenedMaterialBindingsDataSourceProvider.h>
+#endif
 
 #include <maya/MObject.h>
 #include <maya/MObjectHandle.h>
 #include <maya/MSelectionList.h>
 #include <maya/MString.h>
-#if WANT_UFE_BUILD
-#include <mayaUsd/ufe/Utils.h>
-
 #include <ufe/rtid.h>
-#endif
-
-#include <pxr/base/tf/refPtr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -90,7 +86,6 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
     }
 
     if (auto dataSourceEntryNodePath = HdMObjectDataSource::Cast(dataSourceEntryPathHandle)) {
-#if WANT_UFE_BUILD
         if (version >= 200) {
             // Retrieve interpret pick function from the scene index plugin, to be accessed by
             // mayaHydra interpretRprimPath
@@ -117,7 +112,6 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
                 TF_VERIFY(id != 0, "Invalid UFE runtime id");
             }
         }
-#endif
         MObject           dagNode = dataSourceEntryNodePath->GetTypedValue(0.0f);
         MStatus           status;
         MFnDependencyNode dependNodeFn(dagNode, &status);
@@ -135,6 +129,9 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
                     HdInstancedBySceneIndex::New(usdImagingStageSceneIndex)),
                 /* inputArgs = */ nullptr);
 #else
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 54
+            using namespace HdMakeDataSourceContainingFlattenedDataSourceProvider;
+#endif
             // For PXR_VERSION >= 2302
             //  Used for the HdFlatteningSceneIndex to flatten material bindings
             static const HdContainerDataSourceHandle flatteningInputArgs
@@ -144,7 +141,11 @@ HdSceneIndexBaseRefPtr MayaUsdProxyShapeMayaNodeSceneIndexPlugin::_AppendSceneIn
 #else
                     HdMaterialBindingSchemaTokens->materialBinding,
 #endif
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 54
+                    Make<HdFlattenedMaterialBindingsDataSourceProvider>());
+#else
                     HdRetainedTypedSampledDataSource<bool>::New(true));
+#endif
 
             // Convert USD prims to rprims consumed by Hydra
             auto usdImagingStageSceneIndex = UsdImagingStageSceneIndex::New();

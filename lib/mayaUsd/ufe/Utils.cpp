@@ -54,6 +54,7 @@
 #include <ufe/object3d.h>
 #include <ufe/object3dHandler.h>
 #include <ufe/pathSegment.h>
+#include <ufe/pathString.h>
 #include <ufe/rtid.h>
 #include <ufe/runTimeMgr.h>
 #include <ufe/selection.h>
@@ -66,10 +67,6 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
-
-#ifdef UFE_V2_FEATURES_AVAILABLE
-#include <ufe/pathString.h>
-#endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -237,23 +234,10 @@ Ufe::PathSegment dagPathToPathSegment(const MDagPath& dagPath)
 
 MDagPath ufeToDagPath(const Ufe::Path& ufePath)
 {
-    if (ufePath.runTimeId() != g_MayaRtid ||
-#ifdef UFE_V2_FEATURES_AVAILABLE
-        ufePath.nbSegments()
-#else
-        ufePath.getSegments().size()
-#endif
-            > 1) {
+    if (ufePath.runTimeId() != g_MayaRtid || ufePath.nbSegments() > 1) {
         return MDagPath();
     }
-    return UsdMayaUtil::nameToDagPath(
-#ifdef UFE_V2_FEATURES_AVAILABLE
-        Ufe::PathString::string(ufePath)
-#else
-        // We have a single segment, so no path segment separator to consider.
-        ufePath.popHead().string()
-#endif
-    );
+    return UsdMayaUtil::nameToDagPath(Ufe::PathString::string(ufePath));
 }
 
 bool isMayaWorldPath(const Ufe::Path& ufePath)
@@ -429,8 +413,6 @@ bool canRemoveDstProperty(const PXR_NS::UsdAttribute& dstAttr)
     // Do not remove boundary properties even if there are connections.
     return false;
 }
-
-#ifdef UFE_V2_FEATURES_AVAILABLE
 
 namespace {
 // Do not expose that function. The input parameter does not provide enough information to
@@ -729,40 +711,6 @@ VtValue vtValueFromString(const SdfValueTypeName& typeName, const std::string& s
         return iter->second(strValue);
     }
     return {};
-}
-
-#endif
-
-Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath)
-{
-    // Filter the src selection, removing items below the filterPath
-    Ufe::Selection dst;
-    for (const auto& item : src) {
-        const auto& itemPath = item->path();
-        // The filterPath itself is still valid.
-        if (!itemPath.startsWith(filterPath) || itemPath == filterPath) {
-            dst.append(item);
-        }
-    }
-    return dst;
-}
-
-Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath)
-{
-    // If a src selection item starts with the filterPath, re-create it.
-    Ufe::Selection dst;
-    for (const auto& item : src) {
-        const auto& itemPath = item->path();
-        // The filterPath itself is still valid.
-        if (!itemPath.startsWith(filterPath) || itemPath == filterPath) {
-            dst.append(item);
-        } else {
-            auto recreatedItem = Ufe::Hierarchy::createItem(item->path());
-            TF_AXIOM(recreatedItem);
-            dst.append(recreatedItem);
-        }
-    }
-    return dst;
 }
 
 std::vector<std::string> splitString(const std::string& str, const std::string& separators)

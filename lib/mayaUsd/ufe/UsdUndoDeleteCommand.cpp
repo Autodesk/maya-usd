@@ -18,14 +18,12 @@
 #include "private/UfeNotifGuard.h"
 
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/utils/layers.h>
+#include <usdUfe/utils/usdUtils.h>
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/editContext.h>
-
-#ifdef UFE_V2_FEATURES_AVAILABLE
-#include <usdUfe/undo/UsdUndoBlock.h>
-#endif
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdAttributes.h>
@@ -47,7 +45,6 @@ UsdUndoDeleteCommand::Ptr UsdUndoDeleteCommand::create(const PXR_NS::UsdPrim& pr
     return std::make_shared<UsdUndoDeleteCommand>(prim);
 }
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 void UsdUndoDeleteCommand::execute()
 {
     if (!_prim.IsValid())
@@ -67,6 +64,14 @@ void UsdUndoDeleteCommand::execute()
 #ifdef UFE_V4_FEATURES_AVAILABLE
         UsdAttributes::removeAttributesConnections(_prim);
 #endif
+        // Let removeAttributesConnections be run first as it will also cleanup
+        // attributes that were authored only to be the destination of a connection.
+        if (!UsdUfe::cleanReferencedPath(_prim)) {
+            const std::string error = TfStringPrintf(
+                "Failed to cleanup references to prim \"%s\".", _prim.GetPath().GetText());
+            TF_WARN("%s", error.c_str());
+            throw std::runtime_error(error);
+        }
         PrimSpecFunc deleteFunc
             = [stage](const UsdPrim& prim, const SdfPrimSpecHandle& primSpec) -> void {
             PXR_NS::UsdEditContext ctx(stage, primSpec->GetLayer());
@@ -97,17 +102,6 @@ void UsdUndoDeleteCommand::redo()
 
     _undoableItem.redo();
 }
-#else
-void UsdUndoDeleteCommand::perform(bool state)
-{
-    UsdUfe::InAddOrDeleteOperation ad;
-    _prim.SetActive(state);
-}
-
-void UsdUndoDeleteCommand::undo() { perform(true); }
-
-void UsdUndoDeleteCommand::redo() { perform(false); }
-#endif
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

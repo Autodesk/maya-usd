@@ -19,10 +19,7 @@
 
 #include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
-
-#ifdef UFE_V2_FEATURES_AVAILABLE
 #include <usdUfe/undo/UsdUndoableItem.h>
-#endif
 
 #include <pxr/usd/sdf/path.h>
 
@@ -68,18 +65,12 @@ public:
     UsdSceneItem::Ptr duplicatedItem() const;
     UFE_V4(Ufe::SceneItem::Ptr sceneItem() const override { return duplicatedItem(); })
 
-    UFE_V2(void execute() override;)
+    void execute() override;
     void undo() override;
     void redo() override;
 
 private:
-    UFE_V2(UsdUndoableItem _undoableItem;)
-
-#ifndef UFE_V2_FEATURES_AVAILABLE
-    bool duplicateUndo();
-    bool duplicateRedo();
-#endif
-
+    UsdUndoableItem _undoableItem;
     Ufe::Path       _ufeSrcPath;
     PXR_NS::SdfPath _usdDstPath;
 

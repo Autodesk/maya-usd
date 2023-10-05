@@ -206,6 +206,26 @@ PXR_NS::SdfPrimSpecHandleVector getDefiningPrimStack(const PXR_NS::UsdPrim& prim
 USDUFE_PUBLIC
 PXR_NS::SdfPrimSpecHandle getDefiningPrimSpec(const PXR_NS::UsdPrim& prim);
 
+//! Return the layer of the current edit target of the stage, if any.
+//  If the stage is null, the returned layer will be null.
+USDUFE_PUBLIC
+const PXR_NS::SdfLayerHandle getCurrentTargetLayer(const PXR_NS::UsdStagePtr& stage);
+
+//! Return the layer of the current edit target of the prim, if any.
+//  If the prim is invalid, the returned layer will be null.
+USDUFE_PUBLIC
+const PXR_NS::SdfLayerHandle getCurrentTargetLayer(const PXR_NS::UsdPrim& prim);
+
+//! Return the file path of the layer of the current edit target of the stage, if any.
+//  If the stage is null, the returned path will be empty.
+USDUFE_PUBLIC
+const std::string getTargetLayerFilePath(const PXR_NS::UsdStagePtr& stage);
+
+//! Return the file path of the layer of the current edit target of the prim, if any.
+//  If the prim is invalid, the returned path will be empty.
+USDUFE_PUBLIC
+const std::string getTargetLayerFilePath(const PXR_NS::UsdPrim& prim);
+
 } // namespace USDUFE_NS_DEF
 
 #endif // USDUFE_UTIL_LAYERS_H

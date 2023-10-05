@@ -20,9 +20,11 @@
 #include <usdUfe/ufe/Utils.h>
 
 #include <ufe/cameraHandler.h>
+#include <ufe/contextOpsHandler.h>
 #include <ufe/hierarchyHandler.h>
 #include <ufe/object3dHandler.h>
 #include <ufe/rtid.h>
+#include <ufe/uiInfoHandler.h>
 
 #include <string>
 
@@ -35,14 +37,16 @@ namespace USDUFE_NS_DEF {
 */
 struct USDUFE_PUBLIC DCCFunctions
 {
-    // Mandatory: function whichs must be supplied.
+    // Mandatory: functions which must be supplied.
     StageAccessorFn     stageAccessorFn = nullptr;
     StagePathAccessorFn stagePathAccessorFn = nullptr;
     UfePathToPrimFn     ufePathToPrimFn = nullptr;
     TimeAccessorFn      timeAccessorFn = nullptr;
 
     // Optional: default values will be used if no function is supplied.
-    IsAttributeLockedFn isAttributeLockedFn = nullptr;
+    IsAttributeLockedFn  isAttributeLockedFn = nullptr;
+    SaveStageLoadRulesFn saveStageLoadRulesFn = nullptr;
+    IsRootChildFn        isRootChildFn = nullptr;
 };
 
 /*! Ufe runtime handlers used to initialize the plugin.
@@ -61,10 +65,10 @@ struct USDUFE_PUBLIC Handlers
 
     // Ufe v2 handlers
     //     Ufe::AttributesHandler::Ptr   attributesHandler;
-    Ufe::Object3dHandler::Ptr object3dHandler;
-    //     Ufe::ContextOpsHandler::Ptr   contextOpsHandler;
-    //     Ufe::UIInfoHandler::Ptr       uiInfoHandler;
-    Ufe::CameraHandler::Ptr cameraHandler;
+    Ufe::Object3dHandler::Ptr   object3dHandler;
+    Ufe::ContextOpsHandler::Ptr contextOpsHandler;
+    Ufe::UIInfoHandler::Ptr     uiInfoHandler;
+    Ufe::CameraHandler::Ptr     cameraHandler;
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 //     Ufe::PathMappingHandler::Ptr  pathMappingHandler;

@@ -17,6 +17,8 @@
 #include "dynamicAttribute.h"
 #include "loadRules.h"
 
+#include <usdUfe/utils/loadRules.h>
+
 #include <maya/MCommandResult.h>
 #include <maya/MDGModifier.h>
 #include <maya/MFnDependencyNode.h>
@@ -52,9 +54,9 @@ MStatus copyLoadRulesToAttribute(const PXR_NS::UsdStage& stage, MayaUsdProxyShap
     if (!hasDynamicAttribute(depNode, loadRulesAttrName))
         createDynamicAttribute(depNode, loadRulesAttrName);
 
-    MString loadRulesText = convertLoadRulesToText(stage);
+    auto loadRulesText = UsdUfe::convertLoadRulesToText(stage);
 
-    MStatus status = setDynamicAttribute(depNode, loadRulesAttrName, loadRulesText);
+    MStatus status = setDynamicAttribute(depNode, loadRulesAttrName, loadRulesText.c_str());
 
     return status;
 }
@@ -72,7 +74,7 @@ MStatus copyLoadRulesFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_
     MString loadRulesText;
     MStatus status = getDynamicAttribute(depNode, loadRulesAttrName, loadRulesText);
     if (status == MS::kSuccess)
-        setLoadRulesFromText(stage, loadRulesText);
+        UsdUfe::setLoadRulesFromText(stage, loadRulesText.asChar());
 
     return status;
 }

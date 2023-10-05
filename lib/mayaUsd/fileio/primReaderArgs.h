@@ -60,6 +60,9 @@ public:
     const TfToken::Set& GetExcludePrimvarNames() const;
 
     MAYAUSD_CORE_PUBLIC
+    const TfToken::Set& GetExcludePrimvarNamespaces() const;
+
+    MAYAUSD_CORE_PUBLIC
     bool GetUseAsAnimationCache() const;
 
     bool ShouldImportUnboundShaders() const

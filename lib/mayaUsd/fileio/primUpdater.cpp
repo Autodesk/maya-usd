@@ -71,8 +71,15 @@ bool UsdMayaPrimUpdater::canEditAsMaya() const
     // prim will round-trip back through export, so we do not check for
     // exporter (to USD) capability.
     auto prim = MayaUsd::ufe::ufePathToPrim(_path);
-    TF_AXIOM(prim);
-    return (UsdMayaPrimReaderRegistry::Find(prim.GetTypeName()) != nullptr);
+    // Invalid prim cannot be edited.
+    if (!prim)
+        return false;
+
+    UsdMayaJobImportArgs jobArgs = UsdMayaJobImportArgs::CreateFromDictionary(
+        _context->GetUserArgs(),
+        /* importWithProxyShapes = */ false,
+        GfInterval::GetFullInterval());
+    return (UsdMayaPrimReaderRegistry::Find(prim.GetTypeName(), jobArgs, prim) != nullptr);
 }
 
 bool UsdMayaPrimUpdater::editAsMaya() { return true; }

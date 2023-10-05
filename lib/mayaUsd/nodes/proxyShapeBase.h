@@ -38,19 +38,11 @@
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 #include <maya/MTypeId.h>
+#include <ufe/ufe.h>
 
 #include <map>
 
-#if defined(WANT_UFE_BUILD)
-#include <ufe/ufe.h>
-
 UFE_NS_DEF { class Path; }
-
-constexpr int  MAYA_UFE_RUNTIME_ID = 1;
-constexpr char MAYA_UFE_SEPARATOR = '|';
-constexpr int  USD_UFE_RUNTIME_ID = 2;
-constexpr char USD_UFE_SEPARATOR = '/';
-#endif
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/listeners/stageNoticeListener.h>
@@ -126,13 +118,11 @@ public:
     MAYAUSD_CORE_PUBLIC
     static MObject mutedLayersAttr;
 
-#if MAYA_API_VERSION >= 20240000 && MAYA_API_VERSION <= 20249999
     // Change counter attributes
     MAYAUSD_CORE_PUBLIC
     static MObject updateCounterAttr;
     MAYAUSD_CORE_PUBLIC
     static MObject resyncCounterAttr;
-#endif
 
     // Output attributes
     MAYAUSD_CORE_PUBLIC
@@ -179,10 +169,8 @@ public:
 
     MAYAUSD_CORE_PUBLIC
     void postConstructor() override;
-#if MAYA_API_VERSION >= 20240000 && MAYA_API_VERSION <= 20249999
     MAYAUSD_CORE_PUBLIC
     bool getInternalValue(const MPlug&, MDataHandle&) override;
-#endif
     MAYAUSD_CORE_PUBLIC
     MStatus compute(const MPlug& plug, MDataBlock& dataBlock) override;
     MAYAUSD_CORE_PUBLIC
@@ -251,7 +239,6 @@ public:
         const MEvaluationNode& evaluationNode,
         PostEvaluationType     evalType) override;
 
-#if MAYA_API_VERSION >= 20210000
     MAYAUSD_CORE_PUBLIC
     void getCacheSetup(
         const MEvaluationNode&   evalNode,
@@ -261,7 +248,6 @@ public:
 
     MAYAUSD_CORE_PUBLIC
     void configCache(const MEvaluationNode& evalNode, MCacheSchema& schema) const override;
-#endif
 
     MAYAUSD_CORE_PUBLIC
     MStatus setDependentsDirty(const MPlug& plug, MPlugArray& plugArray) override;
@@ -275,10 +261,8 @@ public:
     MDagPath parentTransform();
 
     // Is this required if there is parentTransform?
-#if defined(WANT_UFE_BUILD)
     MAYAUSD_CORE_PUBLIC
     Ufe::Path ufePath() const;
-#endif
 
     /// Returns whether the proxy shape allows subpaths within its
     /// hierarchy to be selected independently when using the Viewport 2.0
@@ -418,11 +402,9 @@ private:
     size_t                              _excludePrimPathsVersion { 1 };
     size_t                              _UsdStageVersion { 1 };
 
-#if MAYA_API_VERSION >= 20240000 && MAYA_API_VERSION <= 20249999
     // Notification counters:
     MInt64 _UsdStageUpdateCounter { 1 };
     MInt64 _UsdStageResyncCounter { 1 };
-#endif
 
     MayaUsd::ProxyAccessor::Owner _usdAccessor;
 

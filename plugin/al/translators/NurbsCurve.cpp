@@ -37,14 +37,7 @@
 #include <maya/MStatus.h>
 
 namespace {
-const int _nurbsCurveProfilerCategory = MProfiler::addCategory(
-#if MAYA_API_VERSION >= 20190000
-    "NurbsCurve",
-    "NurbsCurve"
-#else
-    "NurbsCurve"
-#endif
-);
+const int _nurbsCurveProfilerCategory = MProfiler::addCategory("NurbsCurve", "NurbsCurve");
 } // namespace
 
 namespace AL {
@@ -222,6 +215,11 @@ void NurbsCurve::writeEdits(
 {
     MProfilingScope profilerScope(
         _nurbsCurveProfilerCategory, MProfiler::kColorE_L3, "Write edits");
+
+    const int curveOrder = fnCurve.degree() + 1;
+    if (!TF_VERIFY(curveOrder <= fnCurve.numCVs())) {
+        return;
+    }
 
     uint32_t diff_curves = AL::usdmaya::utils::kAllNurbsCurveComponents;
     bool     performDiff = !writeAll;

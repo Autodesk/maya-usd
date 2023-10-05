@@ -18,6 +18,10 @@
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/Utils.h>
 
+#include <usdUfe/ufe/UsdUndoCreateGroupCommand.h>
+#include <usdUfe/ufe/UsdUndoInsertChildCommand.h>
+#include <usdUfe/ufe/UsdUndoReorderCommand.h>
+
 #include <pxr/usd/usd/stage.h>
 
 #include <ufe/log.h>
@@ -27,12 +31,6 @@
 
 #include <cassert>
 #include <stdexcept>
-
-#ifdef UFE_V2_FEATURES_AVAILABLE
-#include <usdUfe/ufe/UsdUndoCreateGroupCommand.h>
-#include <usdUfe/ufe/UsdUndoInsertChildCommand.h>
-#include <usdUfe/ufe/UsdUndoReorderCommand.h>
-#endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #include <mayaUsd/fileio/primUpdaterManager.h>
@@ -179,7 +177,6 @@ Ufe::SceneItemList ProxyShapeHierarchy::children() const
     return createUFEChildList(getUSDFilteredChildren(rootPrim), true /*filterInactive*/);
 }
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::SceneItemList ProxyShapeHierarchy::filteredChildren(const ChildFilter& childFilter) const
 {
     // Return filtered children of the USD root.
@@ -200,7 +197,6 @@ Ufe::SceneItemList ProxyShapeHierarchy::filteredChildren(const ChildFilter& chil
     UFE_LOG("Unknown child filter");
     return Ufe::SceneItemList();
 }
-#endif
 
 // Return UFE child list from input USD child list.
 Ufe::SceneItemList
@@ -236,16 +232,6 @@ ProxyShapeHierarchy::createUFEChildList(const UsdPrimSiblingRange& range, bool f
 }
 
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::parent() const { return fMayaHierarchy->parent(); }
-
-#ifndef UFE_V2_FEATURES_AVAILABLE
-// UFE v1 specific method
-Ufe::AppendedChild ProxyShapeHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
-{
-    throw std::runtime_error("ProxyShapeHierarchy::appendChild() not implemented");
-}
-#endif
-
-#ifdef UFE_V2_FEATURES_AVAILABLE
 
 Ufe::InsertChildCommand::Ptr ProxyShapeHierarchy::insertChildCmd(
     const Ufe::SceneItem::Ptr& child,
@@ -332,13 +318,24 @@ ProxyShapeHierarchy::reorderCmd(const Ufe::SceneItemList& orderedList) const
 
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::defaultParent() const
 {
-    // The default parent is the root of the USD scene.
-    // Since the proxy shape corresponds to the USD root prim,
-    // therefore we implement the default parent as the proxy shape itself.
-    return UsdSceneItem::create(sceneItem()->path(), getUsdRootPrim());
+    // The documentation for defaultParent() stipulate that it should return
+    // where this node should be inserted to be added back. The proxy shape need
+    // to be inserted under its Maya shape node, which is its default parent,
+    // so we return that.
+    //
+    // It used to return the USD virtual root prim, but that caused problem since
+    // the UFE path pointed to a Maya node (the proxy shape) and the default parent
+    // was a USD object, leading to a contradiction. In particular, it became
+    // impossible to create a UFE Hiearchy interface from that default parent: its
+    // path indicated it was in the Maya run-time, yet its scene item claimed to
+    // be in the USD run-time.
+    //
+    // As far as I can tell, the defaultParent function is only used when reparenting
+    // nodes that lacked a parent, to figure a default location where to insert them.
+    //
+    // The PrimUpdaterManager also used to call it, but it no longer does.
+    return parent();
 }
-
-#endif // UFE_V2_FEATURES_AVAILABLE
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::ungroupCmd() const

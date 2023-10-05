@@ -145,4 +145,11 @@ UsdUndoAddNewPrimCommand::Ptr UsdUndoAddNewPrimCommand::create(
     return std::make_shared<UsdUndoAddNewPrimCommand>(usdSceneItem, name, type);
 }
 
+Ufe::Selection getNewSelectionFromCommand(const UsdUndoAddNewPrimCommand& cmd)
+{
+    Ufe::Selection newSelection;
+    newSelection.append(Ufe::Hierarchy::createItem(cmd.newUfePath()));
+    return newSelection;
+}
+
 } // namespace USDUFE_NS_DEF

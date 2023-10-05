@@ -20,6 +20,9 @@
 
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/stageLoadRules.h>
+
+#include <string.h>
 
 namespace USDUFE_NS_DEF {
 
@@ -36,6 +39,26 @@ void duplicateLoadRules(
  */
 USDUFE_PUBLIC
 void removeRulesForPath(PXR_NS::UsdStage& stage, const PXR_NS::SdfPath& path);
+
+/*! \brief convert the stage load rules to a text format.
+ */
+USDUFE_PUBLIC
+std::string convertLoadRulesToText(const PXR_NS::UsdStage& stage);
+
+/*! \brief set the stage load rules from a text format.
+ */
+USDUFE_PUBLIC
+void setLoadRulesFromText(PXR_NS::UsdStage& stage, const std::string& text);
+
+/*! \brief convert the load rules to a text format.
+ */
+USDUFE_PUBLIC
+std::string convertLoadRulesToText(const PXR_NS::UsdStageLoadRules& rules);
+
+/*! \brief create load rules from a text format.
+ */
+USDUFE_PUBLIC
+PXR_NS::UsdStageLoadRules createLoadRulesFromText(const std::string& text);
 
 } // namespace USDUFE_NS_DEF
 

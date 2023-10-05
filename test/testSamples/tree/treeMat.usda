@@ -1,0 +1,71 @@
+#usda 1.0
+(
+    defaultPrim = "TreeBase"
+    upAxis = "Y"
+)
+
+def Xform "TreeBase" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </mtl/BrownMat>
+
+    def Xform "leavesXform" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </mtlFoliage/GreenMat>
+        double3 xformOp:translate = (0, 2.5, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Sphere "leaves"
+        {
+            float3[] extent = [(-2, -2, -2), (2, 2, 2)]
+            color3f[] primvars:displayColor = [(0, 1, 0)]
+            double radius = 2
+        }
+    }
+
+    def Cylinder "trunk" (
+        active = true
+        kind = "component"
+    )
+    {
+        uniform token axis = "Y"
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        double height = 2
+        color3f[] primvars:displayColor = [(0.66, 0.33, 0)]
+        double radius = 0.5
+    }
+}
+
+def Scope "mtl"
+{
+    def Material "BrownMat"
+    {
+        token outputs:surface.connect = </mtl/BrownMat/BrownSrf.outputs:surface>
+
+        def Shader "BrownSrf"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.1293, 0.0625, 0.0050000004)
+            token outputs:surface
+        }
+    }
+}
+
+def Scope "mtlFoliage"
+{
+    def Material "GreenMat"
+    {
+        token outputs:surface.connect = </mtlFoliage/GreenMat/GreenSrf.outputs:surface>
+
+        def Shader "GreenSrf"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0, 1, 0)
+            token outputs:surface
+        }
+    }
+}
+

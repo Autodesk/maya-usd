@@ -866,19 +866,7 @@ void HdVP2Points::_UpdateDrawItem(
                 drawScene.setExtraInstanceData(
                     *renderItem, extraColorChannelName, *stateToCommit._instanceColors);
             }
-        }
-#if MAYA_API_VERSION >= 20210000
-        else if (newInstanceCount >= 1) {
-#else
-        // In Maya 2020 and before, GPU instancing and consolidation are two separate systems that
-        // cannot be used by a render item at the same time. In case of single instance, we keep
-        // the original render item to allow consolidation with other prims. In case of multiple
-        // instances, we need to disable consolidation to allow GPU instancing to be used.
-        else if (newInstanceCount == 1) {
-            renderItem->setMatrix(&(*stateToCommit._instanceTransforms)[0]);
-        } else if (newInstanceCount > 1) {
-            _SetWantConsolidation(*renderItem, false);
-#endif
+        } else if (newInstanceCount >= 1) {
             drawScene.setInstanceTransformArray(*renderItem, *stateToCommit._instanceTransforms);
 
             if (stateToCommit._instanceColors->length() == newInstanceCount * kNumColorChannels) {
@@ -1096,9 +1084,7 @@ HdVP2Points::_CreateFatPointsRenderItem(const MString& name, const TfToken& repr
     renderItem->setSelectionMask(MSelectionMask::kSelectParticleShapes);
 #endif
 
-#if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNParticles);
-#endif
 
     return renderItem;
 }

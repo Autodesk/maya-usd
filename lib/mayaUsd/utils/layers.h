@@ -29,6 +29,16 @@ getAllSublayers(const std::vector<std::string>& parentLayerPaths, bool includePa
     return UsdUfe::getAllSublayers(parentLayerPaths, includeParents);
 }
 
+//! Return the folder of the layer of the current edit target of the stage, if any.
+//  If the stage is null, the returned path will be empty.
+MAYAUSD_CORE_PUBLIC
+const std::string getTargetLayerFolder(const PXR_NS::UsdStagePtr& stage);
+
+//! Return the folder of the layer of the current edit target of the prim, if any.
+//  If the prim is invalid, the returned path will be empty.
+MAYAUSD_CORE_PUBLIC
+const std::string getTargetLayerFolder(const PXR_NS::UsdPrim& prim);
+
 } // namespace MAYAUSD_NS_DEF
 
 #endif

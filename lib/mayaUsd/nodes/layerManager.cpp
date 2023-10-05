@@ -463,7 +463,7 @@ bool LayerDatabase::hasDirtyLayer() const
 bool LayerDatabase::getProxiesToSave(bool isExport)
 {
     bool checkSelection = isExport && (MFileIO::kExportTypeSelected == MFileIO::exportType());
-    const UFE_NS::GlobalSelection::Ptr& ufeSelection = UFE_NS::GlobalSelection::get();
+    const Ufe::GlobalSelection::Ptr& ufeSelection = Ufe::GlobalSelection::get();
 
     clearProxies();
 
@@ -1050,8 +1050,6 @@ void LayerDatabase::loadLayersPostRead(void*)
 
 void LayerDatabase::cleanUpNewScene(void*)
 {
-    // This is called during a Maya notification callback, so no undo supported.
-    OpUndoItemMuting muting;
     LayerDatabase::instance().removeAllLayers();
     LayerDatabase::removeManagerNode();
 }
@@ -1157,6 +1155,9 @@ void LayerDatabase::removeManagerNode(MayaUsd::LayerManager* lm)
     if (!lm) {
         return;
     }
+
+    // This is called during a Maya notification callback, so no undo supported.
+    OpUndoItemMuting muting;
 
     clearManagerNode(lm);
 

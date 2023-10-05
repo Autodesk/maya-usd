@@ -39,14 +39,7 @@
 #include <vector>
 
 namespace {
-const int _enginProfilerCategory = MProfiler::addCategory(
-#if MAYA_API_VERSION >= 20190000
-    "GLEngine",
-    "GLEngine"
-#else
-    "GLEngine"
-#endif
-);
+const int _enginProfilerCategory = MProfiler::addCategory("GLEngine", "GLEngine");
 } // namespace
 
 namespace AL {

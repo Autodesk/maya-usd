@@ -32,7 +32,7 @@
 // Workaround for a material consolidation update issue in VP2. Before USD 0.20.11, a Rprim will be
 // recreated if its material has any change, so everything gets refreshed and the update issue gets
 // masked. Once the update issue is fixed in VP2 we will disable this workaround.
-#if MAYA_API_VERSION >= 20210000 && MAYA_API_VERSION < 20230000
+#if MAYA_API_VERSION < 20230000
 #define HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
 #endif
 
@@ -111,6 +111,9 @@ public:
 
     //! The specified Rprim stops listening to changes on this material.
     void UnsubscribeFromMaterialUpdates(const SdfPath& rprimId);
+
+    //! Trigger sync on all Rprims which are listening to changes on this material.
+    void MaterialChanged(HdSceneDelegate* sceneDelegate);
 
     class TextureLoadingTask;
     friend class TextureLoadingTask;
@@ -208,9 +211,6 @@ private:
         MHWRender::MTexture* texture,
         bool                 isColorSpaceSRGB,
         const MFloatArray&   uvScaleOffset);
-
-    //! Trigger sync on all Rprims which are listening to changes on this material.
-    void _MaterialChanged(HdSceneDelegate* sceneDelegate);
 
     static void _ScheduleRefresh();
 

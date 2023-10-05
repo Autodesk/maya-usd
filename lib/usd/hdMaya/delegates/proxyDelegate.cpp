@@ -19,6 +19,7 @@
 #include <hdMaya/debugCodes.h>
 #include <hdMaya/delegates/delegateRegistry.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/ufe/Global.h>
 
 #include <pxr/base/tf/envSetting.h>
 #include <pxr/base/tf/type.h>
@@ -31,21 +32,14 @@
 #include <maya/MNodeClass.h>
 #include <maya/MObject.h>
 #include <maya/MSceneMessage.h>
+#include <ufe/globalSelection.h>
+#include <ufe/namedSelection.h>
+#include <ufe/observableSelection.h>
+#include <ufe/runTimeMgr.h>
 
 #include <atomic>
 #include <mutex>
 #include <unordered_set>
-
-#if WANT_UFE_BUILD
-#include <mayaUsd/ufe/Global.h>
-
-#include <ufe/globalSelection.h>
-#ifdef UFE_V2_FEATURES_AVAILABLE
-#include <ufe/namedSelection.h>
-#endif
-#include <ufe/observableSelection.h>
-#include <ufe/runTimeMgr.h>
-#endif // WANT_UFE_BUILD
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -138,35 +132,6 @@ void SetupPluginCallbacks()
     TF_VERIFY(status, "Could not set pluginUnloaded callback");
 }
 
-#ifndef UFE_V2_FEATURES_AVAILABLE
-#if (MAYA_API_VERSION >= 20210000) && WANT_UFE_BUILD
-MGlobal::ListAdjustment GetListAdjustment()
-{
-    // Keyboard modifiers can be queried from QApplication::keyboardModifiers()
-    // in case running MEL command leads to performance hit. On the other hand
-    // the advantage of using MEL command is the platform-agnostic state of the
-    // CONTROL key that it provides for aligning to Maya's implementation.
-    int modifiers = 0;
-    MGlobal::executeCommand("getModifiers", modifiers);
-
-    const bool shiftHeld = (modifiers % 2);
-    const bool ctrlHeld = (modifiers / 4 % 2);
-
-    MGlobal::ListAdjustment listAdjustment = MGlobal::kReplaceList;
-
-    if (shiftHeld && ctrlHeld) {
-        listAdjustment = MGlobal::kAddToList;
-    } else if (ctrlHeld) {
-        listAdjustment = MGlobal::kRemoveFromList;
-    } else if (shiftHeld) {
-        listAdjustment = MGlobal::kXORWithList;
-    }
-
-    return listAdjustment;
-}
-#endif
-#endif
-
 } // namespace
 
 HdMayaProxyDelegate::HdMayaProxyDelegate(const InitData& initData)
@@ -221,10 +186,9 @@ void HdMayaProxyDelegate::PreFrame(const MHWRender::MDrawContext& context)
     }
 }
 
-#if WANT_UFE_BUILD
 
 void HdMayaProxyDelegate::PopulateSelectedPaths(
-    const UFE_NS::Selection&    ufeSelection,
+    const Ufe::Selection&       ufeSelection,
     SdfPathVector&              selectedSdfPaths,
     const HdSelectionSharedPtr& selection)
 {
@@ -325,9 +289,6 @@ void HdMayaProxyDelegate::PopulateSelectedPaths(
 
 bool HdMayaProxyDelegate::SupportsUfeSelection() { return MayaUsd::ufe::getUsdRunTimeId() != 0; }
 
-#endif // WANT_UFE_BUILD
-
-#if MAYA_API_VERSION >= 20210000
 void HdMayaProxyDelegate::PopulateSelectionList(
     const HdxPickHitVector&          hits,
     const MHWRender::MSelectionInfo& selectInfo,
@@ -354,16 +315,7 @@ void HdMayaProxyDelegate::PopulateSelectionList(
         return;
     }
 
-#if WANT_UFE_BUILD
-    auto handler = Ufe::RunTimeMgr::instance().hierarchyHandler(USD_UFE_RUNTIME_ID);
-    if (handler == nullptr)
-        return;
-
-#ifdef UFE_V2_FEATURES_AVAILABLE
     auto ufeSel = Ufe::NamedSelection::get("MayaSelectTool");
-#else
-    const MGlobal::ListAdjustment listAdjustment = GetListAdjustment();
-#endif
 
     std::lock_guard<std::mutex> lock(_allAdaptersMutex);
 
@@ -391,44 +343,18 @@ void HdMayaProxyDelegate::PopulateSelectionList(
             usdPath = adapter->ConvertIndexPathToCachePath(usdPath);
 #endif
 
-            const Ufe::PathSegment pathSegment(
-                usdPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
-            const Ufe::SceneItem::Ptr& si
-                = handler->createItem(adapter->GetProxy()->ufePath() + pathSegment);
+            const Ufe::PathSegment pathSegment
+                = MayaUsd::ufe::usdPathToUfePathSegment(usdPath);
+            auto si = Ufe::Hierarchy::createItem(adapter->GetProxy()->ufePath() + pathSegment);
             if (!si) {
                 TF_WARN("Failed to create UFE scene item for '%s'", objectId.GetText());
                 break;
             }
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
             ufeSel->append(si);
-#else
-            auto globalSelection = Ufe::GlobalSelection::get();
-
-            switch (listAdjustment) {
-            case MGlobal::kReplaceList:
-                // The list has been cleared before viewport selection runs, so we
-                // can add the new hits directly. UFE selection list is a superset
-                // of Maya selection list, calling clear()/replaceWith() on UFE
-                // selection list would clear Maya selection list.
-                globalSelection->append(si);
-                break;
-            case MGlobal::kAddToList: globalSelection->append(si); break;
-            case MGlobal::kRemoveFromList: globalSelection->remove(si); break;
-            case MGlobal::kXORWithList:
-                if (!globalSelection->remove(si)) {
-                    globalSelection->append(si);
-                }
-                break;
-            default: TF_WARN("Unexpected MGlobal::ListAdjustment enum for selection."); break;
-            }
-#endif
-
             break;
         }
     }
-#endif // WANT_UFE_BUILD
 }
-#endif // MAYA_API_VERSION >= 20210000
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -40,7 +40,7 @@ class mtlxShaderReaderTest(mayaUsdLib.ShaderReader):
 
     @classmethod
     def CanImport(cls, args):
-        return cls.ContextSupport.Supported
+        return mayaUsdLib.PrimReader.ContextSupport.Supported
 
     def IsConverter(self):
         mtlxShaderReaderTest.IsConverterCalled = True

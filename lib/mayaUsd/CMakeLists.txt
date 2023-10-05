@@ -36,7 +36,7 @@ target_compile_definitions(${PROJECT_NAME}
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
-        $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
+        $<$<BOOL:${CMAKE_WANT_VALIDATE_UNDO_ITEM}>:WANT_VALIDATE_UNDO_ITEM>
         $<$<BOOL:${MAYA_ENABLE_NEW_PRIM_DELETE}>:MAYA_ENABLE_NEW_PRIM_DELETE>
     PRIVATE
         MAYAUSD_MACROS_EXPORT
@@ -183,7 +183,7 @@ if (MAYA_LIGHTAPI_VERSION GREATER_EQUAL 2)
 endif()
 
 # Some of the UFE classes are exporting STL classes which causes this warning.
-if(UFE_FOUND AND MSVC)
+if(MSVC)
     target_compile_options(${PROJECT_NAME}
         PUBLIC
             /wd4251
@@ -215,7 +215,7 @@ target_include_directories(${PROJECT_NAME}
     PUBLIC
         ${MAYA_INCLUDE_DIRS}
         ${PXR_INCLUDE_DIRS}
-        $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
+        ${UFE_INCLUDE_DIR}
         ${CMAKE_BINARY_DIR}/include
 
     PRIVATE
@@ -251,7 +251,7 @@ target_link_libraries(${PROJECT_NAME}
         usdUtils
         $<$<BOOL:$<VERSION_GREATER_EQUAL:${UFE_PREVIEW_VERSION_NUM},4023>>:usdUI>
         vt
-        $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
+        ${UFE_LIBRARY}
         ${MAYA_LIBRARIES}
         mayaUsdUtils
         usdUfe
@@ -324,9 +324,7 @@ add_subdirectory(resources)
 if( PXR_VERSION GREATER_EQUAL 2211 )
     add_subdirectory(sceneIndex)
 endif()
-if(UFE_FOUND)
-    add_subdirectory(ufe)
-endif()
+add_subdirectory(ufe)
 add_subdirectory(undo)
 add_subdirectory(utils)
 

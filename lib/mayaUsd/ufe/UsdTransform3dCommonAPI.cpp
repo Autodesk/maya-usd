@@ -21,6 +21,7 @@
 
 #include <usdUfe/ufe/Utils.h>
 
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/usdGeom/xformCache.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -139,8 +140,9 @@ Ufe::Vector3d UsdTransform3dCommonAPI::translation() const
     UsdGeomXformCommonAPI::RotationOrder rotOrder;
 
     if (!_commonAPI.GetXformVectorsByAccumulation(&t, &r, &s, &pvt, &rotOrder, getTime(path()))) {
-        TF_FATAL_ERROR(
+        std::string msg = TfStringPrintf(
             "Cannot read common API transform values for prim %s", prim().GetPath().GetText());
+        throw std::runtime_error(msg.c_str());
     }
 
     return toUfe(t);
@@ -153,8 +155,9 @@ Ufe::Vector3d UsdTransform3dCommonAPI::rotation() const
     UsdGeomXformCommonAPI::RotationOrder rotOrder;
 
     if (!_commonAPI.GetXformVectorsByAccumulation(&t, &r, &s, &pvt, &rotOrder, getTime(path()))) {
-        TF_FATAL_ERROR(
+        std::string msg = TfStringPrintf(
             "Cannot read common API transform values for prim %s", prim().GetPath().GetText());
+        throw std::runtime_error(msg.c_str());
     }
 
     return toUfe(r);
@@ -167,8 +170,9 @@ Ufe::Vector3d UsdTransform3dCommonAPI::scale() const
     UsdGeomXformCommonAPI::RotationOrder rotOrder;
 
     if (!_commonAPI.GetXformVectorsByAccumulation(&t, &r, &s, &pvt, &rotOrder, getTime(path()))) {
-        TF_FATAL_ERROR(
+        std::string msg = TfStringPrintf(
             "Cannot read common API transform values for prim %s", prim().GetPath().GetText());
+        throw std::runtime_error(msg.c_str());
     }
 
     return toUfe(s);
@@ -240,8 +244,9 @@ Ufe::Vector3d UsdTransform3dCommonAPI::rotatePivot() const
     UsdGeomXformCommonAPI::RotationOrder rotOrder;
 
     if (!_commonAPI.GetXformVectorsByAccumulation(&t, &r, &s, &pvt, &rotOrder, getTime(path()))) {
-        TF_FATAL_ERROR(
+        std::string msg = TfStringPrintf(
             "Cannot read common API transform values for prim %s", prim().GetPath().GetText());
+        throw std::runtime_error(msg.c_str());
     }
 
     return toUfe(pvt);
@@ -296,7 +301,8 @@ UsdTransform3dCommonAPIHandler::transform3d(const Ufe::SceneItem::Ptr& item) con
 }
 
 Ufe::Transform3d::Ptr UsdTransform3dCommonAPIHandler::editTransform3d(
-    const Ufe::SceneItem::Ptr& item UFE_V2(, const Ufe::EditTransform3dHint& hint)) const
+    const Ufe::SceneItem::Ptr&      item,
+    const Ufe::EditTransform3dHint& hint) const
 {
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
 
@@ -310,7 +316,7 @@ Ufe::Transform3d::Ptr UsdTransform3dCommonAPIHandler::editTransform3d(
     auto commonAPI = UsdGeomXformCommonAPI(usdItem->prim());
 
     return commonAPI ? UsdTransform3dCommonAPI::create(usdItem)
-                     : _nextHandler->editTransform3d(item UFE_V2(, hint));
+                     : _nextHandler->editTransform3d(item, hint);
 }
 
 } // namespace ufe

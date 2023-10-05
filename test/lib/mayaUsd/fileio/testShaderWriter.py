@@ -35,7 +35,7 @@ class shaderWriterTest(mayaUsdLib.ShaderWriter):
     @classmethod
     def CanExport(cls, exportArgs):
         shaderWriterTest.CanExportCalled = True
-        return mayaUsdLib.ShaderWriter.ContextSupport.Supported
+        return mayaUsdLib.PrimWriter.ContextSupport.Supported
 
     def Write(self, usdTime):
         shaderWriterTest.WriteCalledCount += 1

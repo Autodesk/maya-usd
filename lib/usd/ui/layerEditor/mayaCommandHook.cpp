@@ -211,7 +211,11 @@ void MayaCommandHook::muteSubLayer(UsdLayer usdLayer, bool muteIt)
 }
 
 // Help menu callback
-void MayaCommandHook::showLayerEditorHelp() { executeMel("showHelp UsdLayerEditor"); }
+void MayaCommandHook::showLayerEditorHelp()
+{
+    MGlobal::executePythonCommand(
+        "from mayaUsdUtils import showHelpMayaUSD; showHelpMayaUSD(\"UsdLayerEditor\");");
+}
 
 // this method is used to select the prims with spec in a layer
 void MayaCommandHook::selectPrimsWithSpec(UsdLayer usdLayer)
@@ -236,11 +240,7 @@ void MayaCommandHook::selectPrimsWithSpec(UsdLayer usdLayer)
     script += R"PYTHON(
 # Ufe
 import ufe
-try:
-    from maya.internal.ufeSupport import ufeSelectCmd
-except ImportError:
-    # Maya 2019 and 2020 don't have ufeSupport plugin, so use fallback.
-    from ufeScripts import ufeSelectCmd
+from maya.internal.ufeSupport import ufeSelectCmd
 
 # create a selection list
 sn = ufe.Selection()

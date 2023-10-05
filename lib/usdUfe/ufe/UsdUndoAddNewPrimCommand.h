@@ -22,6 +22,7 @@
 #include <usdUfe/undo/UsdUndoableItem.h>
 
 #include <ufe/path.h>
+#include <ufe/selection.h>
 #include <ufe/undoableCommand.h>
 
 namespace USDUFE_NS_DEF {
@@ -66,6 +67,10 @@ private:
     UsdUndoableItem         _undoableItem;
 
 }; // UsdUndoAddNewPrimCommand
+
+//! \brief Retrieve the desired selection after the command has executed.
+//         \see UsdUndoSelectAfterCommand.
+Ufe::Selection USDUFE_PUBLIC getNewSelectionFromCommand(const UsdUndoAddNewPrimCommand& cmd);
 
 } // namespace USDUFE_NS_DEF
 

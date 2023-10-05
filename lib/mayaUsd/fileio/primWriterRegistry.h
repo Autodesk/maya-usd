@@ -77,6 +77,39 @@ struct UsdMayaPrimWriterRegistry
     /// macro.
     typedef std::function<bool(const UsdMayaPrimWriterArgs&, UsdMayaPrimWriterContext*)> WriterFn;
 
+    /// Predicate function, i.e. a function that can tell the level of support
+    /// the writer function will provide for a given set of export options.
+    using ContextPredicateFn = std::function<
+        UsdMayaPrimWriter::ContextSupport(const UsdMayaJobExportArgs&, const MObject&)>;
+
+    /// \brief Register \p fn as a factory function providing a
+    /// UsdMayaPrimWriter subclass that can be used to write \p mayaType.
+    /// Provide a supportability of the primWriter. Use "supported" to
+    /// override the default primWriter
+    ///
+    /// If you can't provide a valid UsdMayaPrimWriter for the given arguments,
+    /// return a null pointer from the factory function \p fn.
+    ///
+    /// Example for registering a writer factory in your custom plugin:
+    /// \code{.cpp}
+    /// class MyWriter : public UsdMayaPrimWriter {
+    ///     static UsdMayaPrimWriterSharedPtr Create(
+    ///             const MFnDependencyNode& depNodeFn,
+    ///             const SdfPath& usdPath,
+    ///             UsdMayaWriteJobContext& jobCtx);
+    /// };
+    /// TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaPrimWriterRegistry, MyWriter) {
+    ///     UsdMayaPrimWriterRegistry::Register("myCustomMayaNode",
+    ///             MyWriter::Create);
+    /// }
+    /// \endcode
+    MAYAUSD_CORE_PUBLIC
+    static void Register(
+        const std::string& mayaType,
+        ContextPredicateFn pred,
+        WriterFactoryFn    fn,
+        bool               fromPython = false);
+
     /// \brief Register \p fn as a factory function providing a
     /// UsdMayaPrimWriter subclass that can be used to write \p mayaType.
     /// If you can't provide a valid UsdMayaPrimWriter for the given arguments,
@@ -109,7 +142,14 @@ struct UsdMayaPrimWriterRegistry
     ///
     /// If there is no writer plugin for \p mayaTypeName, returns nullptr.
     MAYAUSD_CORE_PUBLIC
-    static WriterFactoryFn Find(const std::string& mayaTypeName);
+    static WriterFactoryFn Find(
+        const std::string&          mayaTypeName,
+        const UsdMayaJobExportArgs& exportArgs,
+        const MObject&              exportObj);
+
+    /// \brief Check for external primWriter for \p mayaTypeName.
+    MAYAUSD_CORE_PUBLIC
+    static void CheckForWriterPlugin(const std::string& mayaTypeName);
 
     /// \brief Registers a maya node type to *not* create a new prim.
     ///
