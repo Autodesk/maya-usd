@@ -133,7 +133,7 @@ global proc mayaUsd_PrefInitOptionVars(int $forceFactoryDefault)
 			optionVar -intValue mayaUsd_MakePathRelativeToImageEditTargetLayer false;
 		}
 		if ($forceFactoryDefault || !`optionVar -exists mayaUsd_ShowDisplayColorTextureOff`) {
-			optionVar -intValue mayaUsd_ShowDisplayColorTextureOff 0;
+			optionVar -intValue mayaUsd_ShowDisplayColorTextureOff false;
 		}
 
 	} else {
@@ -152,7 +152,7 @@ global proc mayaUsd_PrefInitOptionVars(int $forceFactoryDefault)
 			-iv mayaUsd_MakePathRelativeToParentLayer false
 			-iv mayaUsd_MakePathRelativeToEditTargetLayer false
 			-iv mayaUsd_MakePathRelativeToImageEditTargetLayer false
-			-iv mayaUsd_ShowDisplayColorTextureOff 0
+			-iv mayaUsd_ShowDisplayColorTextureOff false
 		;
 	}
 }
@@ -333,6 +333,11 @@ global proc mayaUsd_PrefUpdate()
 			usdPrefConfirmExistFileSave;
 	}
 
+	if (`optionVar -exists "mayaUsd_ShowDisplayColorTextureOff"`) {
+		int $v = `optionVar -q "mayaUsd_ShowDisplayColorTextureOff"`;
+		radioButtonGrp -e -select $v usdPrefUntexturedMode;
+	}
+
 	int $checkAll = true;
 	if (`optionVar -exists "mayaUsd_MakePathRelativeToSceneFile"`) {
 		int $v = `optionVar -q "mayaUsd_MakePathRelativeToSceneFile"`;
@@ -380,7 +385,7 @@ global proc mayaUsd_PrefHoldState(string $mode)
 		"mayaUsd_MakePathRelativeToSceneFile",
 		"mayaUsd_MakePathRelativeToParentLayer",
 		"mayaUsd_MakePathRelativeToEditTargetLayer",
-		"mayaUsd_MakePathRelativeToImageEditTargetLayer"
+		"mayaUsd_MakePathRelativeToImageEditTargetLayer",
 		"mayaUsd_ShowDisplayColorTextureOff"
 	};
 	prefsHoldOptionVars($prefOptionVars, $mode); 
@@ -434,8 +439,8 @@ global proc mayaUsd_PrefHoldState(string $mode)
 				`optionVar -q mayaUsd_MakePathRelativeToImageEditTargetLayer`
 				usdPrefFileDependenciesRelativeToEditTargetLayer;
 		}
-		if (`checkBoxGrp -exists usdPrefUntexturedMode`) {
-			checkBoxGrp -e -v1
+		if (`radioButtonGrp -exists usdPrefUntexturedMode`) {
+			radioButtonGrp -e -v1
 				`optionVar -q mayaUsd_ShowDisplayColorTextureOff`
 				usdPrefUntexturedMode;
 		}
