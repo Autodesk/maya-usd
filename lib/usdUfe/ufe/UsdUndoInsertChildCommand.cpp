@@ -198,6 +198,8 @@ static void doInsertion(
 
     enforceMutedLayer(srcPrim, "reparent");
 
+    int affectedLayersCount = 0;
+
     // Do the insertion from the source layer to the target layer.
     {
         PrimLayerFunc insertionFunc
@@ -208,7 +210,7 @@ static void doInsertion(
 
         const bool includeTopLayer = true;
         const auto rootLayers = getAllSublayerRefs(stage->GetRootLayer(), includeTopLayer);
-        applyToSomeLayersWithOpinions(srcPrim, rootLayers, insertionFunc);
+        affectedLayersCount += applyToSomeLayersWithOpinions(srcPrim, rootLayers, insertionFunc);
     }
 
     // Do the insertion in all other applicable layers, which, due to the command
@@ -223,7 +225,18 @@ static void doInsertion(
 
         const bool includeTopLayer = true;
         const auto sessionLayers = getAllSublayerRefs(stage->GetSessionLayer(), includeTopLayer);
-        applyToSomeLayersWithOpinions(srcPrim, sessionLayers, insertionFunc);
+        affectedLayersCount += applyToSomeLayersWithOpinions(srcPrim, sessionLayers, insertionFunc);
+    }
+
+    // If no local layers were affected, then it means the prim is not local.
+    // It probably is inside a reference and we do not support reparent from within
+    // reference at this point. Report the error and abort the command.
+    if (0 == affectedLayersCount) {
+        const std::string error = TfStringPrintf(
+            "Cannot reparent prim \"%s\" because we found no local layer containing it.",
+            srcPrim.GetPath().GetText());
+        TF_WARN("%s", error.c_str());
+        throw std::runtime_error(error);
     }
 
     // Remove all scene descriptions for the source path and its subtree in the source layer.
@@ -241,7 +254,18 @@ static void doInsertion(
               }
           };
 
-    applyToAllLayersWithOpinions(srcPrim, removeFunc);
+    affectedLayersCount = applyToAllLayersWithOpinions(srcPrim, removeFunc);
+
+    // If no local layers were affected, then it means the prim is not local.
+    // It probably is inside a reference and we do not support reparent from within
+    // reference at this point. Report the error and abort the command.
+    if (0 == affectedLayersCount) {
+        const std::string error = TfStringPrintf(
+            "Cannot reparent prim \"%s\" because we found no local layer containing it.",
+            srcPrim.GetPath().GetText());
+        TF_WARN("%s", error.c_str());
+        throw std::runtime_error(error);
+    }
 }
 
 static void
