@@ -5,6 +5,7 @@ import shutil
 
 import maya.cmds as mc
 import maya.mel as mel
+from maya.api import OpenMaya
 
 from pxr import Tf, Usd, UsdGeom, Gf
 import translatortestutils
@@ -815,6 +816,46 @@ class TestTranslator(unittest.TestCase):
 
         os.remove(tempPath)
 
+    def testUSDSpecNurbsCurveExportImport(self):
+        """Testing exporting maya nurbsCurves in USD's curve spec, and importing USD curve spec in Maya"""
+        tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="test_USDNurbsCurveExportImport_", delete=True)
+        tempPath = tempFile.name
+        tempFile.close()
+
+        mc.CreateNURBSCircle()
+        spans =  mc.getAttr('nurbsCircleShape1.spans')
+        degree = mc.getAttr('nurbsCircleShape1.degree')
+        mayaKnotCount = spans + 2 * degree - 1
+        usdknotCount = spans + 2 * degree + 1
+        
+        # Export Maya curve to USD.
+        mc.select('nurbsCircle1', r=True)
+        mc.file(tempPath, exportSelected=True, force=True, type="AL usdmaya export",
+            options="Dynamic_Attributes=1;Duplicate_Instances=1;Merge_Transforms=1;Merge_Offset_Parent_Matrix=0;Animation=0;Use_Timeline_Range=0;Frame_Min=0;Frame_Max=1;Sub_Samples=1;Filter_Sample=0;Export_At_Which_Time=0;Export_In_World_Space=0;Activate_all_Plugin_Translators=1;Active_Translator_List=;Inactive_Translator_List=;Nurbs_Curves=1;Meshes=1;Mesh_Face_Connects=1;Mesh_Points=1;Mesh_Extents=1;Mesh_Normals=1;Mesh_Vertex_Creases=1;Mesh_Edge_Creases=1;Mesh_UVs=1;Mesh_UV_Only=0;Mesh_Points_as_PRef=0;Mesh_Colours=1;Default_RGB=0.18;Default_Alpha=1;Custom_Colour_Threshold=1;Colour_Threshold_Value=1e-05;Mesh_Holes=1;Write_Normals_as_Primvars=1;Reverse_Opposite_Normals=1;Subdivision_scheme=0;Compaction_Level=3;"
+        )
+
+        # Check whether exported curve's knot count matches USD's curve spec.
+        # Reference: https://graphics.pixar.com/usd/release/api/class_usd_geom_nurbs_curves.html#details
+        stage = Usd.Stage.Open(tempPath)
+        prim = stage.GetPrimAtPath('/nurbsCircle1')
+        knotValues = prim.GetAttribute('knots').Get()
+        self.assertEqual(len(knotValues), usdknotCount)
+
+        # Import exported USD curve back to Maya.
+        mc.file(f=True, new=True)
+        mc.file(tempPath, i=True, force=True, type="AL usdmaya import",  ignoreVersion=True, ra=True,
+            options="Parent_Path=;Prim_Path=;Import_Animations=1;Import_Dynamic_Attributes=1;Load_None=0;Read_Default_Values=1;Activate_all_Plugin_Translators=1;Active_Translator_List=;Inactive_Translator_List=;Import_Curves=1;Import_Meshes=1;", 
+            pr=True, importFrameRate=True, importTimeRange='override'
+        )
+
+        # Check whether exported curve's knot count matches USD's curve spec.
+        mc.select('nurbsCircle1Shape', r=True)
+        sel = OpenMaya.MGlobal.getActiveSelectionList()
+        curveFn = OpenMaya.MFnNurbsCurve(sel.getDependNode(0))
+        self.assertEqual(list(curveFn.knots()), list(knotValues[1:-1]))
+        
+        os.remove(tempPath)
+        
 
 tests = unittest.TestLoader().loadTestsFromTestCase(TestTranslator)
 result = unittest.TextTestRunner(verbosity=2).run(tests)

@@ -82,15 +82,14 @@ MAYAUSD_CORE_PUBLIC
 void assignPrimvarsToMesh(
     const UsdGeomMesh&  mesh,
     const MObject&      meshObj,
-    const TfToken::Set& excludePrimvarSet);
+    const TfToken::Set& excludePrimvarSet,
+    const TfToken::Set& excludePrimvarNamespaceSet);
 
 MAYAUSD_CORE_PUBLIC
 void assignInvisibleFaces(const UsdGeomMesh& mesh, const MObject& meshObj);
 
 MAYAUSD_CORE_PUBLIC
 MStatus assignSubDivTagsToMesh(const UsdGeomMesh&, MObject&, MFnMesh&);
-
-#if MAYA_API_VERSION >= 20220000
 
 /// Gets the internal UsdGeomSubset info on the Maya \p mesh, placing it in
 /// \p value. Returns true if the info exists on the mesh, and false if not.
@@ -113,8 +112,6 @@ MStatus getComponentTags(
     const UsdGeomMesh&             mesh,
     std::vector<ComponentTagData>& tags,
     JsValue&                       meshRoundtripData);
-
-#endif
 
 } // namespace UsdMayaMeshReadUtils
 

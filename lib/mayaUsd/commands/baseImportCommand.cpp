@@ -64,6 +64,10 @@ MSyntax MayaUSDImportCommand::createSyntax()
         kImportUSDZTexturesFilePathFlag,
         UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath.GetText(),
         MSyntax::kString);
+    syntax.addFlag(
+        kImportRelativeTexturesFlag,
+        UsdMayaJobImportArgsTokens->importRelativeTextures.GetText(),
+        MSyntax::kString);
     syntax.addFlag(kMetadataFlag, UsdMayaJobImportArgsTokens->metadata.GetText(), MSyntax::kString);
     syntax.makeFlagMultiUse(kMetadataFlag);
     syntax.addFlag(
@@ -77,6 +81,11 @@ MSyntax MayaUSDImportCommand::createSyntax()
         UsdMayaJobImportArgsTokens->excludePrimvar.GetText(),
         MSyntax::kString);
     syntax.makeFlagMultiUse(kExcludePrimvarFlag);
+    syntax.addFlag(
+        kExcludePrimvarNamespaceFlag,
+        UsdMayaJobImportArgsTokens->excludePrimvarNamespace.GetText(),
+        MSyntax::kString);
+    syntax.makeFlagMultiUse(kExcludePrimvarNamespaceFlag);
     syntax.addFlag(
         kUseAsAnimationCacheFlag,
         UsdMayaJobImportArgsTokens->useAsAnimationCache.GetText(),

@@ -528,7 +528,7 @@ void UsdMaya_ReadJob::_DoImportPrimIt(
 
         TfToken typeName = prim.GetTypeName();
         if (UsdMayaPrimReaderRegistry::ReaderFactoryFn factoryFn
-            = UsdMayaPrimReaderRegistry::FindOrFallback(typeName)) {
+            = UsdMayaPrimReaderRegistry::FindOrFallback(typeName, mArgs, prim)) {
             UsdMayaPrimReaderSharedPtr primReader = factoryFn(args);
             if (primReader) {
                 TempNodeTrackerScope scope(readCtx);
@@ -675,11 +675,7 @@ bool UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootP
                         prototypeNode.removeChildAt(prototypeNode.childCount() - 1);
                     }
                 }
-#if MAYA_API_VERSION > 20200200
                 deletePrototypeMod.deleteNode(prototypeObject, false);
-#else
-                deletePrototypeMod.deleteNode(prototypeObject);
-#endif
             }
             prototypesLoop.loopAdvance();
         }
@@ -749,11 +745,7 @@ bool UsdMaya_ReadJob::Undo()
                         }
                     }
                 }
-#if MAYA_API_VERSION > 20200200
                 mDagModifierUndo.deleteNode(it.second, false);
-#else
-                mDagModifierUndo.deleteNode(it.second);
-#endif
             }
         }
     }

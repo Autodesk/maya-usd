@@ -17,6 +17,7 @@
 
 #include <usdUfe/ufe/Global.h>
 #include <usdUfe/utils/layers.h>
+#include <usdUfe/utils/loadRules.h>
 #include <usdUfe/utils/usdUtils.h>
 
 #include <pxr/usd/pcp/layerStack.h>
@@ -27,6 +28,7 @@
 #include <pxr/usd/usd/stage.h>
 
 #include <ufe/pathSegment.h>
+#include <ufe/selection.h>
 
 #include <cctype>
 #include <regex>
@@ -82,11 +84,13 @@ uint32_t findLayerIndex(const UsdPrim& prim, const SdfLayerHandle& layer)
     return position;
 }
 
-UsdUfe::StageAccessorFn     gStageAccessorFn = nullptr;
-UsdUfe::StagePathAccessorFn gStagePathAccessorFn = nullptr;
-UsdUfe::UfePathToPrimFn     gUfePathToPrimFn = nullptr;
-UsdUfe::TimeAccessorFn      gTimeAccessorFn = nullptr;
-UsdUfe::IsAttributeLockedFn gIsAttributeLockedFn = nullptr;
+UsdUfe::StageAccessorFn      gStageAccessorFn = nullptr;
+UsdUfe::StagePathAccessorFn  gStagePathAccessorFn = nullptr;
+UsdUfe::UfePathToPrimFn      gUfePathToPrimFn = nullptr;
+UsdUfe::TimeAccessorFn       gTimeAccessorFn = nullptr;
+UsdUfe::IsAttributeLockedFn  gIsAttributeLockedFn = nullptr;
+UsdUfe::SaveStageLoadRulesFn gSaveStageLoadRulesFn = nullptr;
+UsdUfe::IsRootChildFn        gIsRootChildFn = nullptr;
 
 } // anonymous namespace
 
@@ -215,6 +219,42 @@ bool isAttributedLocked(const PXR_NS::UsdAttribute& attr, std::string* errMsg /*
     return gIsAttributeLockedFn ? gIsAttributeLockedFn(attr, errMsg) : false;
 }
 
+void setSaveStageLoadRulesFn(SaveStageLoadRulesFn fn)
+{
+    // This function is allowed to be null in which case nothing extra is done
+    // to save the load rules when loading/unloading a payload.
+    gSaveStageLoadRulesFn = fn;
+}
+
+void saveStageLoadRules(const PXR_NS::UsdStageRefPtr& stage)
+{
+    if (gSaveStageLoadRulesFn)
+        gSaveStageLoadRulesFn(stage);
+}
+
+void setIsRootChildFn(IsRootChildFn fn)
+{
+    // This function is allowed to be null in which case, the default implementation
+    // is used (isRootChildDefault()).
+    gIsRootChildFn = fn;
+}
+
+bool isRootChild(const Ufe::Path& path)
+{
+    return gIsRootChildFn ? gIsRootChildFn(path) : isRootChildDefault(path);
+}
+
+bool isRootChildDefault(const Ufe::Path& path)
+{
+    // When called we make the assumption that we are given a valid
+    // path and we are only testing whether or not we are a root child.
+    auto segments = path.getSegments();
+    if (segments.size() != 2) {
+        TF_RUNTIME_ERROR(kIllegalUFEPath, path.string().c_str());
+    }
+    return (segments[1].size() == 1);
+}
+
 int ufePathToInstanceIndex(const Ufe::Path& path, UsdPrim* prim)
 {
     int instanceIndex = UsdImagingDelegate::ALL_INSTANCES;
@@ -236,17 +276,6 @@ int ufePathToInstanceIndex(const Ufe::Path& path, UsdPrim* prim)
     }
 
     return instanceIndex;
-}
-
-bool isRootChild(const Ufe::Path& path)
-{
-    // When called we make the assumption that we are given a valid
-    // path and we are only testing whether or not we are a root child.
-    auto segments = path.getSegments();
-    if (segments.size() != 2) {
-        TF_RUNTIME_ERROR(kIllegalUFEPath, path.string().c_str());
-    }
-    return (segments[1].size() == 1);
 }
 
 std::string uniqueName(const TfToken::HashSet& existingNames, std::string srcName)
@@ -703,6 +732,38 @@ bool isEditTargetLayerModifiable(const UsdStageWeakPtr stage, std::string* errMs
     }
 
     return true;
+}
+
+Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath)
+{
+    // Filter the src selection, removing items below the filterPath
+    Ufe::Selection dst;
+    for (const auto& item : src) {
+        const auto& itemPath = item->path();
+        // The filterPath itself is still valid.
+        if (!itemPath.startsWith(filterPath) || itemPath == filterPath) {
+            dst.append(item);
+        }
+    }
+    return dst;
+}
+
+Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath)
+{
+    // If a src selection item starts with the filterPath, re-create it.
+    Ufe::Selection dst;
+    for (const auto& item : src) {
+        const auto& itemPath = item->path();
+        // The filterPath itself is still valid.
+        if (!itemPath.startsWith(filterPath) || itemPath == filterPath) {
+            dst.append(item);
+        } else {
+            auto recreatedItem = Ufe::Hierarchy::createItem(item->path());
+            if (recreatedItem)
+                dst.append(recreatedItem);
+        }
+    }
+    return dst;
 }
 
 } // namespace USDUFE_NS_DEF

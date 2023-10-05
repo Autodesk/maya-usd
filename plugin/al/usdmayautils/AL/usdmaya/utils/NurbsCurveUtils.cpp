@@ -109,9 +109,30 @@ void copyKnots(const MFnNurbsCurve& fnCurve, const UsdAttribute& knotsAttr, UsdT
 {
     MDoubleArray knots;
     fnCurve.getKnots(knots);
-    const uint32_t  count = knots.length();
-    VtArray<double> dataKnots(count);
-    memcpy((double*)dataKnots.cdata(), (const double*)&knots[0], sizeof(double) * count);
+    const uint32_t count = knots.length();
+
+    // USD's NurbsCurve representation requires 2 more knots
+    // Reference:
+    // https://graphics.pixar.com/usd/release/api/class_usd_geom_nurbs_curves.html#details
+    VtArray<double> dataKnots(count + 2);
+    for (uint32_t i = 0; i < count; ++i) {
+        dataKnots[i + 1] = knots[i];
+    }
+
+    auto curveForm = fnCurve.form();
+    if (curveForm == MFnNurbsCurve::kClosed || curveForm == MFnNurbsCurve::kPeriodic) {
+        // From USD spec: knot[0] = knot[1] - (knots[-2] - knots[-3]);
+        dataKnots[0]
+            = dataKnots[1] - (dataKnots[dataKnots.size() - 2] - dataKnots[dataKnots.size() - 3]);
+        // From USD spec: knot[-1] = knot[-2] + (knot[2] - knots[1]);
+        dataKnots[dataKnots.size() - 1]
+            = dataKnots[dataKnots.size() - 2] + (dataKnots[2] - dataKnots[1]);
+    } else {
+        // From USD spec: knot[0] = knot[1];
+        dataKnots[0] = dataKnots[1];
+        // From USD spec: knot[-1] = knot[-2];
+        dataKnots[dataKnots.size() - 1] = dataKnots[dataKnots.size() - 2];
+    }
     knotsAttr.Set(dataKnots, time);
 }
 
@@ -247,19 +268,41 @@ bool createMayaCurves(
 
     size_t currentPointIndex = 0;
     size_t currentKnotIndex = 0;
+
     for (size_t i = 0, ncurves = dataCurveVertexCounts.size(); i < ncurves; ++i) {
         const int32_t numPoints = dataCurveVertexCounts[i];
         controlVertices.setLength(numPoints);
 
-        const int32_t numKnots = numPoints + dataOrder[i] - 2;
-        knotSequences.setLength(numKnots);
+        // Maya's curve spec requires (numberOfPoints + degree - 1) knots
+        uint32_t numKnots = numPoints + dataOrder[i] - 2;
 
-        const float*  pstart = (const float*)&dataPoints[currentPointIndex];
-        const double* kstart = &dataKnots[currentKnotIndex];
-        memcpy(&knotSequences[0], kstart, sizeof(double) * numKnots);
+        // For backward compatibility, we check whether the knot count is in Maya's spec.
+        // If yes, we use the orignal knot values unchanged otherwise we need to convert to
+        // Maya's knot sepc from USD's knot spec
+        if (numKnots == dataKnots.size()) {
+            knotSequences.setLength(numKnots);
+            const double* kstart = &dataKnots[currentKnotIndex];
+            memcpy(&knotSequences[0], kstart, sizeof(double) * numKnots);
+            currentKnotIndex += numKnots;
+        } else {
+            // Converting knot values to Maya's spec. Maya requires 2 less knots than USD does.
+            // See
+            // https://graphics.pixar.com/usd/release/api/class_usd_geom_nurbs_curves.html#details
+            // and Maya MFnNurbsCurve API's Detailed Description session for more info.
+            numKnots = dataKnots.size() - 2;
+            knotSequences.setLength(numKnots);
 
+            // From Maya MFnNurbsCurve API's doc:
+            // To convert from one of these external representations into the Maya representation,
+            // simply omit the first and last knots from the external representation when creating
+            // the Maya representation
+            for (uint32_t j = 0; j < numKnots; ++j) {
+                knotSequences[j] = dataKnots[j + 1];
+            }
+        }
+
+        const float* pstart = (const float*)&dataPoints[currentPointIndex];
         currentPointIndex += numPoints;
-        currentKnotIndex += numKnots;
 
         AL::usdmaya::utils::convert3DFloatArrayTo4DDoubleArray(
             pstart, (double*)&controlVertices[0], numPoints);

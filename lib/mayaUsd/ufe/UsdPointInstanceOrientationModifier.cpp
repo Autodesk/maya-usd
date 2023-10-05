@@ -28,12 +28,7 @@
 #include <maya/MAngle.h>
 #include <maya/MEulerRotation.h>
 #include <maya/MTransformationMatrix.h>
-
-#ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/types.h>
-#else
-#include <ufe/transform3d.h>
-#endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

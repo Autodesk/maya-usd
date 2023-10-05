@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "api.h"
 #include "usdMaya/exportCommand.h"
 #include "usdMaya/exportTranslator.h"
 #include "usdMaya/importCommand.h"
@@ -24,9 +25,12 @@
 #include <mayaUsd/listeners/notice.h>
 #include <mayaUsd/nodes/proxyShapePlugin.h>
 #include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
+#include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/undoHelperCommand.h>
 
+#include <pxr/base/plug/plugin.h>
+#include <pxr/base/plug/registry.h>
 #include <pxr/pxr.h>
 
 #include <maya/MFnPlugin.h>
@@ -34,15 +38,6 @@
 #include <maya/MPxNode.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
-
-#if defined(WANT_UFE_BUILD)
-#include <mayaUsd/ufe/Global.h>
-#endif
-
-#include "api.h"
-
-#include <pxr/base/plug/plugin.h>
-#include <pxr/base/plug/registry.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -54,12 +49,10 @@ MStatus initializePlugin(MObject obj)
     MStatus   status;
     MFnPlugin plugin(obj, "Pixar", "1.0", "Any");
 
-#if defined(WANT_UFE_BUILD)
     status = MayaUsd::ufe::initialize();
     if (!status) {
         status.perror("Unable to initialize ufe.");
     }
-#endif
 
     status = MayaUsdProxyShapePlugin::initialize(plugin);
     CHECK_MSTATUS_AND_RETURN_IT(status);
@@ -197,10 +190,8 @@ MStatus uninitializePlugin(MObject obj)
     MStatus   status;
     MFnPlugin plugin(obj);
 
-#if defined(WANT_UFE_BUILD)
     status = MayaUsd::ufe::finalize();
     CHECK_MSTATUS(status);
-#endif
 
     status = plugin.deregisterCommand("usdImport");
     if (!status) {

@@ -59,6 +59,7 @@ def getOptionsText(varName, defaultOptions):
     """
     Retrieves the current options as text with column-separated key/value pairs.
     If the options don't exist, return the default options in the same text format.
+    The given defualt options can be in text form or a dict.
     """
     if cmds.optionVar(exists=varName):
         return _cleanupOptionsText(cmds.optionVar(query=varName))
@@ -66,13 +67,31 @@ def getOptionsText(varName, defaultOptions):
         return _cleanupOptionsText(convertOptionsDictToText(defaultOptions))
     else:
         return _cleanupOptionsText(defaultOptions)
-    
+
+
+def getOptionsDict(varName, defaultOptions):
+    """
+    Retrieves the current options as a dictionary.
+    If the options don't exist, return the default options in the same text format.
+    The given defualt options can be in text form or a dict.
+    """
+    optionsText = getOptionsText(varName, defaultOptions)
+    return convertOptionsTextToDict(optionsText, defaultOptions)
+
 
 def setOptionsText(varName, optionsText):
     """
     Sets the current options as text with column-separated key/value pairs.
     """
     return cmds.optionVar(stringValue=(varName, optionsText))
+
+
+def setOptionsDict(varName, options):
+    """
+    Sets the current options as text by converting the given dictionary.
+    """
+    optionsText = convertOptionsDictToText(options)
+    setOptionsText(varName, optionsText)
 
 
 def convertOptionsDictToText(optionsDict):

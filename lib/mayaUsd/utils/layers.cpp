@@ -15,3 +15,21 @@
 //
 
 #include "layers.h"
+
+#include <mayaUsd/utils/utilFileSystem.h>
+
+#include <usdUfe/utils/layers.h>
+
+namespace MAYAUSD_NS_DEF {
+
+const std::string getTargetLayerFolder(const PXR_NS::UsdStagePtr& stage)
+{
+    return PXR_NS::UsdMayaUtilFileSystem::getDir(UsdUfe::getTargetLayerFilePath(stage));
+}
+
+const std::string getTargetLayerFolder(const PXR_NS::UsdPrim& prim)
+{
+    return PXR_NS::UsdMayaUtilFileSystem::getDir(UsdUfe::getTargetLayerFilePath(prim));
+}
+
+} // namespace MAYAUSD_NS_DEF

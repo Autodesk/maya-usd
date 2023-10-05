@@ -51,9 +51,7 @@ public:
     inline UsdSceneItem::Ptr usdSceneItem() const { return fItem; }
     inline PXR_NS::UsdPrim   prim() const { return fPrim; }
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
     Ufe::Matrix4d matrix() const;
-#endif
 
     Ufe::Matrix4d segmentInclusiveMatrix() const;
     Ufe::Matrix4d segmentExclusiveMatrix() const;

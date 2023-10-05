@@ -234,3 +234,10 @@ def createLayeredStage(layersCount = 3):
 
     return (psPathStr, psPath, ps, layers)
 
+def filterUsdStr(usdSceneStr):
+    '''Remove empty lines and lines starting with pound character.'''
+    nonBlankLines = filter(None, [l.strip() for l in usdSceneStr.splitlines()])
+    finalLines = [l for l in nonBlankLines if not l.startswith('#')]
+    return '\n'.join(finalLines)
+
+

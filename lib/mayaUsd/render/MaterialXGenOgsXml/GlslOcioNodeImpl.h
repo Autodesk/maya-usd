@@ -41,7 +41,10 @@ public:
         const override;
 
     /// Prepare all data structures to handle an internal Maya OCIO fragment:
-    static std::string registerOCIOFragment(const std::string& fragName, DocumentPtr mtlxLibrary);
+    static std::string registerOCIOFragment(const std::string& fragName);
+
+    /// Get a library with all known internal Maya OCIO fragment:
+    static DocumentPtr getOCIOLibrary();
 
     /// Returns the full list of internal Maya OCIO fragment we can implement:
     static const std::vector<std::string>& getOCIOImplementations();

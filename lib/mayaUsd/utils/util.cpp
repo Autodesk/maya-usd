@@ -17,55 +17,6 @@
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/undo/OpUndoItems.h>
-
-#include <maya/MAnimControl.h>
-#include <maya/MAnimUtil.h>
-#include <maya/MArgDatabase.h>
-#include <maya/MArgList.h>
-#include <maya/MBoundingBox.h>
-#include <maya/MColor.h>
-#include <maya/MDGModifier.h>
-#include <maya/MDagPath.h>
-#include <maya/MFileIO.h>
-#include <maya/MFnComponentListData.h>
-#include <maya/MFnDagNode.h>
-#include <maya/MFnDependencyNode.h>
-#include <maya/MFnEnumAttribute.h>
-#include <maya/MFnExpression.h>
-#include <maya/MFnLambertShader.h>
-#include <maya/MFnMatrixData.h>
-#include <maya/MFnNumericAttribute.h>
-#include <maya/MFnSet.h>
-#include <maya/MFnSingleIndexedComponent.h>
-#include <maya/MFnTypedAttribute.h>
-#include <maya/MGlobal.h>
-#include <maya/MItDag.h>
-#include <maya/MItDependencyGraph.h>
-#include <maya/MItDependencyNodes.h>
-#include <maya/MItMeshFaceVertex.h>
-#include <maya/MItMeshPolygon.h>
-#include <maya/MMatrix.h>
-#include <maya/MObject.h>
-#include <maya/MPlug.h>
-#include <maya/MPlugArray.h>
-#include <maya/MPoint.h>
-#include <maya/MStatus.h>
-#include <maya/MString.h>
-#include <maya/MStringArray.h>
-#include <maya/MTime.h>
-
-#include <boost/functional/hash.hpp>
-
-#include <regex>
-#include <sstream>
-#include <string>
-#include <unordered_map>
-#include <vector>
-
-#if MAYA_API_VERSION >= 20200000
-#include <maya/MFnStandardSurfaceShader.h>
-#endif
-
 #include <mayaUsd/utils/colorSpace.h>
 
 #include <pxr/base/gf/gamma.h>
@@ -88,7 +39,51 @@
 #include <pxr/usd/usdGeom/metrics.h>
 #include <pxr/usd/usdGeom/xformCache.h>
 
+#include <maya/MAnimControl.h>
+#include <maya/MAnimUtil.h>
+#include <maya/MArgDatabase.h>
+#include <maya/MArgList.h>
+#include <maya/MBoundingBox.h>
+#include <maya/MColor.h>
+#include <maya/MDGModifier.h>
+#include <maya/MDagPath.h>
+#include <maya/MFileIO.h>
+#include <maya/MFnComponentListData.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MFnEnumAttribute.h>
+#include <maya/MFnExpression.h>
+#include <maya/MFnLambertShader.h>
+#include <maya/MFnMatrixData.h>
+#include <maya/MFnNumericAttribute.h>
+#include <maya/MFnSet.h>
+#include <maya/MFnSingleIndexedComponent.h>
+#include <maya/MFnStandardSurfaceShader.h>
+#include <maya/MFnTypedAttribute.h>
+#include <maya/MGlobal.h>
+#include <maya/MItDag.h>
+#include <maya/MItDependencyGraph.h>
+#include <maya/MItDependencyNodes.h>
+#include <maya/MItMeshFaceVertex.h>
+#include <maya/MItMeshPolygon.h>
+#include <maya/MMatrix.h>
+#include <maya/MObject.h>
+#include <maya/MPlug.h>
+#include <maya/MPlugArray.h>
+#include <maya/MPoint.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
+#include <maya/MStringArray.h>
+#include <maya/MTime.h>
+
+#include <boost/functional/hash.hpp>
+
 #include <cctype>
+#include <regex>
+#include <sstream>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -852,7 +847,6 @@ bool _GetColorAndTransparencyFromStandardSurface(
     GfVec3f*       rgb,
     float*         alpha)
 {
-#if MAYA_API_VERSION >= 20200000
     MStatus                  status;
     MFnStandardSurfaceShader surfaceFn(shaderObj, &status);
     if (status == MS::kSuccess) {
@@ -870,7 +864,6 @@ bool _GetColorAndTransparencyFromStandardSurface(
         }
         return true;
     }
-#endif
     return false;
 }
 
@@ -1216,6 +1209,14 @@ bool UsdMayaUtil::IsAuthored(const MPlug& plug)
     // MPlug::getSetAttrCmds() is currently not declared const, so we have to
     // make a copy of plug here.
     MPlug plugCopy(plug);
+
+    // MPlug::isFromReferencedFile did not seem to be accurate, so this checks the node state.
+    // If the node is referenced, use MPlug::isDefaultValue - it is not clear if isDefaultValue
+    // works in all contexts as the code below uses MPlug::getSetAttrCmds.
+    //
+    MFnDependencyNode nodeFn(plug.node());
+    if (nodeFn.isFromReferencedFile() && !plug.isDefaultValue())
+        return true;
 
     MStringArray setAttrCmds;
     status = plugCopy.getSetAttrCmds(setAttrCmds, MPlug::kChanged);
@@ -2326,11 +2327,9 @@ double UsdMayaUtil::ConvertMTimeUnitToDouble(const MTime::Unit& unit)
     case MTime::k80FPS: {
         ret = 80.0;
     } break;
-#if MAYA_API_VERSION >= 20200000
     case MTime::k90FPS: {
         ret = 90.0;
     } break;
-#endif
     case MTime::k100FPS: {
         ret = 100.0;
     } break;

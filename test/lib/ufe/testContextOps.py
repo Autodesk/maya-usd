@@ -1481,9 +1481,8 @@ class ContextOpsTestCase(unittest.TestCase):
         dagPath = sl.getDagPath(0)
         dagPath.extendToShape()
 
-        proxyShapeNode = dagPath.node()
-
-        mayaUsd.lib.PrimUpdaterManager.duplicate(cmds.ls(cubeXForm, long=True)[0], psPathStr)
+        with mayaUsd.lib.OpUndoItemList():
+            mayaUsd.lib.PrimUpdaterManager.duplicate(cmds.ls(cubeXForm, long=True)[0], psPathStr)
 
         topPath = ufe.PathString.path(psPathStr + ',/' + cubeXForm + "/" + "top")
         topItem = ufe.Hierarchy.createItem(topPath)
@@ -1492,26 +1491,25 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(topSubset.GetFamilyNameAttr().Get(), "componentTag")
         self.assertFalse(topSubset.GetPrim().HasAPI(UsdShade.MaterialBindingAPI))
 
-        if mayaUtils.mayaMajorVersion() == 2024:
-            # We also can check the old sync counters:
-            counters= { "resync": cmds.getAttr(psPathStr + '.resyncId'),
-                        "update" : cmds.getAttr(psPathStr + '.upid')}
+        # We also can check the old sync counters:
+        counters= { "resync": cmds.getAttr(psPathStr + '.resyncId'),
+                    "update" : cmds.getAttr(psPathStr + '.upid')}
 
-            def assertIsOnlyUpdate(self, counters, shapePathStr):
-                resyncCounter = cmds.getAttr(shapePathStr + '.resyncId')
-                updateCounter = cmds.getAttr(shapePathStr + '.updateId')
-                self.assertEqual(resyncCounter, counters["resync"])
-                self.assertGreater(updateCounter, counters["update"])
-                counters["resync"] = resyncCounter
-                counters["update"] = updateCounter
+        def assertIsOnlyUpdate(self, counters, shapePathStr):
+            resyncCounter = cmds.getAttr(shapePathStr + '.resyncId')
+            updateCounter = cmds.getAttr(shapePathStr + '.updateId')
+            self.assertEqual(resyncCounter, counters["resync"])
+            self.assertGreater(updateCounter, counters["update"])
+            counters["resync"] = resyncCounter
+            counters["update"] = updateCounter
 
-            def assertIsResync(self, counters, shapePathStr):
-                resyncCounter = cmds.getAttr(shapePathStr + '.resyncId')
-                updateCounter = cmds.getAttr(shapePathStr + '.updateId')
-                self.assertGreater(resyncCounter, counters["resync"])
-                self.assertGreater(updateCounter, counters["update"])
-                counters["resync"] = resyncCounter
-                counters["update"] = updateCounter            
+        def assertIsResync(self, counters, shapePathStr):
+            resyncCounter = cmds.getAttr(shapePathStr + '.resyncId')
+            updateCounter = cmds.getAttr(shapePathStr + '.updateId')
+            self.assertGreater(resyncCounter, counters["resync"])
+            self.assertGreater(updateCounter, counters["update"])
+            counters["resync"] = resyncCounter
+            counters["update"] = updateCounter            
 
         messageHandler = mayaUtils.TestProxyShapeUpdateHandler(psPathStr)
         messageHandler.snapshot()
@@ -1529,59 +1527,61 @@ class ContextOpsTestCase(unittest.TestCase):
 
         # We expect a resync after this assignment:
         self.assertTrue(messageHandler.isResync())
-        if mayaUtils.mayaMajorVersion() == 2024:
-            assertIsResync(self, counters, psPathStr)
+        assertIsResync(self, counters, psPathStr)
 
         # setting a value the first time is a resync due to the creation of the attribute:
         attrs = ufe.Attributes.attributes(shaderItem)
         metallicAttr = attrs.attribute("inputs:metallic")
         ufeCmd.execute(metallicAttr.setCmd(0.5))
         self.assertTrue(messageHandler.isResync())
-        if mayaUtils.mayaMajorVersion() == 2024:
-            assertIsResync(self, counters, psPathStr)
+        assertIsResync(self, counters, psPathStr)
 
         # Subsequent changes are updates:
         ufeCmd.execute(metallicAttr.setCmd(0.7))
         self.assertTrue(messageHandler.isUpdate())
-        if mayaUtils.mayaMajorVersion() == 2024:
-            assertIsOnlyUpdate(self, counters, psPathStr)
+        assertIsOnlyUpdate(self, counters, psPathStr)
 
         # First undo is an update:
         cmds.undo()
         self.assertTrue(messageHandler.isUpdate())
-        if mayaUtils.mayaMajorVersion() == 2024:
-            assertIsOnlyUpdate(self, counters, psPathStr)
+        assertIsOnlyUpdate(self, counters, psPathStr)
 
         # Second undo is a resync:
         cmds.undo()
         self.assertTrue(messageHandler.isResync())
-        if mayaUtils.mayaMajorVersion() == 2024:
-            assertIsResync(self, counters, psPathStr)
+        assertIsResync(self, counters, psPathStr)
 
         # Third undo is also resync:
         cmds.undo()
         self.assertTrue(messageHandler.isResync())
-        if mayaUtils.mayaMajorVersion() == 2024:
-            assertIsResync(self, counters, psPathStr)
+        assertIsResync(self, counters, psPathStr)
 
         # First redo is resync:
         cmds.redo()
         self.assertTrue(messageHandler.isResync())
-        if mayaUtils.mayaMajorVersion() == 2024:
-            assertIsResync(self, counters, psPathStr)
+        assertIsResync(self, counters, psPathStr)
 
         # Second redo is resync:
         cmds.redo()
         self.assertTrue(messageHandler.isResync())
-        if mayaUtils.mayaMajorVersion() == 2024:
-            assertIsResync(self, counters, psPathStr)
+        assertIsResync(self, counters, psPathStr)
 
         # Third redo is update:
         cmds.redo()
         self.assertTrue(messageHandler.isUpdate())
-        if mayaUtils.mayaMajorVersion() == 2024:
-            assertIsOnlyUpdate(self, counters, psPathStr)
+        assertIsOnlyUpdate(self, counters, psPathStr)
         currentCacheId = messageHandler.getStageCacheId()
+
+        # Adding custom data to a shader prim is not cause for update. This
+        # happens when setting position info on an input node, nodegraph, or
+        # material. Also happens when storing alpha channel of a backdrop
+        # color.
+        shaderHier = ufe.Hierarchy.hierarchy(shaderItem)
+        materialItem = shaderHier.parent()
+        materialPrim = usdUtils.getPrimFromSceneItem(materialItem)
+        materialPrim.SetCustomData({"Autodesk": {"ldx_inputPos" : "-624 -60.5", 
+                                                 "ldx_outputPos" : "399 -60"}})
+        self.assertTrue(messageHandler.isUnchanged())
 
         # Changing the whole stage is a resync:
         testFile = testUtils.getTestScene("MaterialX", "MtlxValueTypes.usda")

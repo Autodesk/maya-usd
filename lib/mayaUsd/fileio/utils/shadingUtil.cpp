@@ -15,7 +15,9 @@
 //
 #include "shadingUtil.h"
 
+#include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/utils/utilFileSystem.h>
 
 #include <pxr/base/tf/pathUtils.h>
 #include <pxr/base/tf/stringUtils.h>
@@ -235,22 +237,49 @@ const std::regex
 void UsdMayaShadingUtil::ResolveUsdTextureFileName(
     std::string&       fileTextureName,
     const std::string& usdFileName,
+    const TfToken&     relativeMode,
     bool               isUDIM)
 {
     // WARNING: This extremely minimal attempt at making the file path relative
     //          to the USD stage is a stopgap measure intended to provide
     //          minimal interop. It will be replaced by proper use of Maya and
-    //          USD asset resolvers. For package files, the exporter needs full
-    //          paths.
+    //          USD asset resolvers.
 
-    TfToken fileExt(TfGetExtension(usdFileName));
-    if (fileExt != UsdMayaTranslatorTokens->UsdFileExtensionPackage) {
-        ghc::filesystem::path usdDir(usdFileName);
-        usdDir = usdDir.parent_path();
+    bool makeRelative = (relativeMode == UsdMayaJobExportArgsTokens->relative);
+    bool makeAbsolute = (relativeMode == UsdMayaJobExportArgsTokens->absolute);
+
+    // When in automatic mode (neither relative nor absolute), select a mode based on
+    // the input texture filename. Maya always keeps paths as absolute paths internally,
+    // so we need to detect if the path is in the Maya project folders.
+    const bool isForced = (makeRelative || makeAbsolute);
+    if (!isForced) {
+        std::string relativePath = UsdMayaUtilFileSystem::getPathRelativeToProject(fileTextureName);
+        if (relativePath.empty()) {
+            makeAbsolute = true;
+        } else {
+            makeRelative = true;
+        }
+    }
+
+    if (makeAbsolute) {
         std::error_code       ec;
-        ghc::filesystem::path relativePath = ghc::filesystem::relative(fileTextureName, usdDir, ec);
-        if (!ec && !relativePath.empty()) {
-            fileTextureName = relativePath.generic_string();
+        ghc::filesystem::path absolutePath = ghc::filesystem::absolute(fileTextureName, ec);
+        if (!ec && !absolutePath.empty()) {
+            fileTextureName = absolutePath.generic_string();
+        }
+    } else if (makeRelative) {
+        // Note: for package files, the exporter needs full paths, so check the file name
+        //       extension and don't make the path relative if it is an extension-package.
+        TfToken fileExt(TfGetExtension(usdFileName));
+        if (fileExt != UsdMayaTranslatorTokens->UsdFileExtensionPackage) {
+            ghc::filesystem::path usdDir(usdFileName);
+            usdDir = usdDir.parent_path();
+            std::error_code       ec;
+            ghc::filesystem::path relativePath
+                = ghc::filesystem::relative(fileTextureName, usdDir, ec);
+            if (!ec && !relativePath.empty()) {
+                fileTextureName = relativePath.generic_string();
+            }
         }
     }
 

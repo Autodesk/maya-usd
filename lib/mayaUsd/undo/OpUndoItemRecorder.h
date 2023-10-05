@@ -18,6 +18,7 @@
 #define MAYAUSD_UNDO_OPUNDOINFORECORDER_H
 
 #include <mayaUsd/undo/OpUndoItemList.h>
+#include <mayaUsd/undo/OpUndoItemValidator.h>
 
 namespace MAYAUSD_NS_DEF {
 
@@ -28,7 +29,7 @@ namespace MAYAUSD_NS_DEF {
 //
 // It will transfer to the target OpUndoItemList all items generated while it
 // exists. Meant to be used on the stack.
-class MAYAUSD_CORE_PUBLIC OpUndoItemRecorder
+class MAYAUSD_CORE_PUBLIC OpUndoItemRecorder : public OpUndoItemValidator
 {
 public:
     //! \brief Starts recording undo info in the given container.

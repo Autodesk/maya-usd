@@ -46,6 +46,7 @@
 
 #include <mayaUsd/nodes/proxyShapePlugin.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
+#include <mayaUsd/ufe/Global.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
@@ -55,10 +56,6 @@
 #include <maya/MDrawRegistry.h>
 #include <maya/MGlobal.h>
 #include <maya/MStatus.h>
-
-#if defined(WANT_UFE_BUILD)
-#include <mayaUsd/ufe/Global.h>
-#endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -275,12 +272,10 @@ template <typename AFnPlugin> MStatus registerPlugin(AFnPlugin& plugin)
         &ProxyRenderDelegate::drawDbClassification);
     CHECK_MSTATUS(status);
 
-#if defined(WANT_UFE_BUILD)
     status = MayaUsd::ufe::initialize();
     if (!status) {
         status.perror("Unable to initialize ufe.");
     }
-#endif
 
     AL_REGISTER_TRANSFORM_NODE(
         plugin, AL::usdmaya::nodes::Scope, AL::usdmaya::nodes::BasicTransformationMatrix);
@@ -384,10 +379,8 @@ template <typename AFnPlugin> MStatus unregisterPlugin(AFnPlugin& plugin)
 {
     MStatus status;
 
-#if defined(WANT_UFE_BUILD)
     status = MayaUsd::ufe::finalize();
     CHECK_MSTATUS(status);
-#endif
 
     // gpuCachePluginMain used as an example.
     if (MGlobal::kInteractive == MGlobal::mayaState()) {

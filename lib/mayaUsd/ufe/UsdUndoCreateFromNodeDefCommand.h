@@ -19,6 +19,7 @@
 
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>
+#include <usdUfe/undo/UsdUndoableItem.h>
 
 #include <pxr/usd/sdr/shaderNode.h>
 
@@ -64,6 +65,8 @@ private:
     const PXR_NS::SdrShaderNodeConstPtr _shaderNodeDef;
 
     std::shared_ptr<UsdUndoAddNewPrimCommand> _addPrimCmd;
+
+    UsdUndoableItem _undoableItem;
 
     void setIdAttr();
 }; // UsdUndoCreateFromNodeDefCommand

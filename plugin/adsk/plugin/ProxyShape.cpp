@@ -65,9 +65,7 @@ void ProxyShape::postConstructor()
     }
 
     // Enable proxy accessor features for this proxy
-#if MAYA_API_VERSION >= 20210000
     enableProxyAccessor();
-#endif
 }
 
 } // namespace MAYAUSD_NS_DEF

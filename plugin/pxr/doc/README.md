@@ -47,7 +47,7 @@ The plugin creates two commands: `usdImport` and `usdExport`, and will also regi
 | `-var` | `-variant` | string[2] | none | Set variant key value pairs |
 | `-itx` | `-importUSDZTextures` | bool | false | Imports textures from USDZ archives during import to disk. Can be used in conjuction with `-importUSDZTexturesFilePath` to specify an explicit directory to write imported textures to. If not specified, requires a Maya project to be set in the current context.  |
 | `-itf` | `-importUSDZTexturesFilePath` | string | none | Specifies an explicit directory to write imported textures to from a USDZ archive. Has no effect if `-importUSDZTextures` is not specified.
-
+| `-importRelativeTextures`     | `-rtx`     | string         | none                              | Selects how textures filenames are generated: absolute, relative, automatic or none. When automatic, the filename is relative if the source filename of the texture being imported is relative. When none, the file path is left alone, for backward compatible behavior. |
 
 ### Return Value
 `usdImport` will return an array containing the fullDagPath of the highest prim(s) imported. This is generally the fullDagPath that corresponds to the imported primPath but could be multiple paths if primPath="/".
@@ -116,6 +116,7 @@ Short flag | Long flag | Type | Default | Description
 `-eri` | `-exportRefsAsInstanceable` | bool | false | Will cause all references created by USD reference assembly nodes or explicitly tagged reference nodes to be set to be instanceable (`UsdPrim::SetInstanceable(true)`).
 `-skn` | `-exportSkin` | string | none | Determines how to export skinClusters via the UsdSkel schema. On any mesh where skin bindings are exported, the geometry data is the pre-deformation data. On any mesh where skin bindings are not exported, the geometry data is the final (post-deformation) data. Valid values are: `none` - No skinClusters are exported, `auto` - All skinClusters will be exported for non-root prims. The exporter errors on skinClusters on any root prims. The rootmost prim containing any skinned mesh will automatically be promoted into a SkelRoot, e.g. if `</Model/Mesh>` has skinning, then `</Model>` will be promoted to a SkelRoot, `explicit` - Only skinClusters under explicitly-tagged SkelRoot prims will be exported. The exporter errors if there are nested SkelRoots. To explicitly tag a prim as a SkelRoot, specify a `USD_typeName`attribute on a Maya node.
 `-uvs` | `-exportUVs` | bool | true | Enable or disable the export of UV sets
+`-rtx` | `-exportRelativeTextures` | string | automatic | Selects how textures filenames are generated: absolute, relative or automatic. When automatic, the filename is relative if the source filename of the texture being exported is relative
 `-vis` | `-exportVisibility` | bool | true | Export any state and animation on Maya `visibility` attributes
 `-tag` | `-exportComponentTags` | bool | true | Export component tags
 `-mcs` | `-exportMaterialCollections` | bool | false | Create collections representing sets of Maya geometry with the same material binding. These collections are created in the `material:` namespace on the prim at the specified `materialCollectionsPath` (see export option `-mcp`). These collections are encoded using the UsdCollectionAPI schema and are authored compactly using the API `UsdUtilsCreateCollections()`.

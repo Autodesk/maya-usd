@@ -174,6 +174,51 @@ std::pair<std::string, bool> UsdMayaUtilFileSystem::makePathRelativeTo(
     return std::make_pair(relativePath.generic_string(), true);
 }
 
+std::string UsdMayaUtilFileSystem::getPathRelativeToProject(const std::string& fileName)
+{
+    if (fileName.empty())
+        return {};
+
+    const std::string projectPath(UsdMayaUtil::GetCurrentMayaWorkspacePath().asChar());
+    if (projectPath.empty())
+        return {};
+
+    // Note: we do *not* use filesystem function to attempt to make the
+    //       path relative sinceit would succeed as long as both paths
+    //       are on the same drive. We really only want to know if the
+    //       project path is the prefix of the file path. Maya will
+    //       preserve paths entered manually with relative folder ("..")
+    //       by keping an absolute path with ".." embedded in them,
+    //       so this works even in this situation.
+    const auto pos = fileName.rfind(projectPath, 0);
+    if (pos != 0)
+        return {};
+
+    auto relativePathAndSuccess = makePathRelativeTo(fileName, projectPath);
+
+    if (!relativePathAndSuccess.second)
+        return {};
+
+    return relativePathAndSuccess.first;
+}
+
+std::string UsdMayaUtilFileSystem::makeProjectRelatedPath(const std::string& fileName)
+{
+    const std::string projectPath(UsdMayaUtil::GetCurrentMayaWorkspacePath().asChar());
+    if (projectPath.empty())
+        return {};
+
+    // Attempt to create a relative path relative to the project folder.
+    // If that fails, we cannot create the project-relative path.
+    const auto pathAndSuccess = UsdMayaUtilFileSystem::makePathRelativeTo(fileName, projectPath);
+    if (!pathAndSuccess.second)
+        return {};
+
+    // Make the path absolute but relative to the project folder. That is an absolute
+    // path that starts with the project path.
+    return UsdMayaUtilFileSystem::appendPaths(projectPath, pathAndSuccess.first);
+}
+
 std::string UsdMayaUtilFileSystem::getPathRelativeToDirectory(
     const std::string& fileName,
     const std::string& relativeToDir)

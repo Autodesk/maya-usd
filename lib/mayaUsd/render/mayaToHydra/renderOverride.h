@@ -16,6 +16,13 @@
 #ifndef MTOH_VIEW_OVERRIDE_H
 #define MTOH_VIEW_OVERRIDE_H
 
+#include "defaultLightDelegate.h"
+#include "renderGlobals.h"
+#include "utils.h"
+
+#include <hdMaya/delegates/delegate.h>
+#include <hdMaya/delegates/params.h>
+
 #include <pxr/base/tf/singleton.h>
 #include <pxr/imaging/hd/driver.h>
 #include <pxr/imaging/hd/engine.h>
@@ -29,22 +36,12 @@
 #include <maya/MMessage.h>
 #include <maya/MString.h>
 #include <maya/MViewport2Renderer.h>
+#include <ufe/observer.h>
 
 #include <atomic>
 #include <chrono>
 #include <memory>
 #include <mutex>
-
-#if WANT_UFE_BUILD
-#include <ufe/observer.h>
-#endif // WANT_UFE_BUILD
-
-#include "defaultLightDelegate.h"
-#include "renderGlobals.h"
-#include "utils.h"
-
-#include <hdMaya/delegates/delegate.h>
-#include <hdMaya/delegates/params.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -91,14 +88,12 @@ public:
     MHWRender::MRenderOperation* renderOperation() override;
     bool                         nextRenderOperation() override;
 
-#if MAYA_API_VERSION >= 20210000
     bool select(
         const MHWRender::MFrameContext&  frameContext,
         const MHWRender::MSelectionInfo& selectInfo,
         bool                             useDepth,
         MSelectionList&                  selectionList,
         MPointArray&                     worldSpaceHitPts) override;
-#endif
 
 private:
     typedef std::pair<MString, MCallbackIdArray> PanelCallbacks;
@@ -165,28 +160,17 @@ private:
     HdRenderIndex*                            _renderIndex = nullptr;
     std::unique_ptr<MtohDefaultLightDelegate> _defaultLightDelegate = nullptr;
     HdxSelectionTrackerSharedPtr              _selectionTracker;
-    HdRprimCollection                         _renderCollection
-    {
-        HdTokens->geometry,
-            HdReprSelector(
-#if MAYA_APP_VERSION >= 2019
-                HdReprTokens->refined
-#else
-                HdReprTokens->smoothHull
-#endif
-                ),
-            SdfPath::AbsoluteRootPath()
-    };
-    HdRprimCollection _selectionCollection { HdReprTokens->wire,
+    HdRprimCollection                         _renderCollection { HdTokens->geometry,
+                                          HdReprSelector(HdReprTokens->refined),
+                                          SdfPath::AbsoluteRootPath() };
+    HdRprimCollection                         _selectionCollection { HdReprTokens->wire,
                                              HdReprSelector(HdReprTokens->wire) };
 
-#if MAYA_API_VERSION >= 20210000
     HdRprimCollection _pointSnappingCollection {
         HdTokens->geometry,
         HdReprSelector(HdReprTokens->refined, TfToken(), HdReprTokens->points),
         SdfPath::AbsoluteRootPath()
     };
-#endif
 
     GlfSimpleLight _defaultLight;
 
@@ -204,9 +188,7 @@ private:
     bool       _hasDefaultLighting = false;
     bool       _selectionChanged = true;
 
-#if WANT_UFE_BUILD
-    UFE_NS::Observer::Ptr _ufeSelectionObserver;
-#endif // WANT_UFE_BUILD
+    Ufe::Observer::Ptr _ufeSelectionObserver;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

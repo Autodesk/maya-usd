@@ -20,6 +20,7 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/ufe/XformOpUtils.h>
 
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/usdGeom/xformCache.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -120,7 +121,6 @@ bool setXformOpOrder(const UsdGeomXformable& xformable)
     bool resetsXformStack = false;
     auto oldOrder = xformable.GetOrderedXformOps(&resetsXformStack);
     auto i = findFirstFallbackOp(oldOrder);
-    TF_AXIOM(i != oldOrder.end());
 
     // Copy ops before the Maya sub-stack unchanged.
     std::vector<UsdGeomXformOp> newOrder;
@@ -173,10 +173,6 @@ Ufe::Transform3d::Ptr createEditTransform3dImp(
     bool resetsXformStack = false;
     xformOps = xformSchema.GetOrderedXformOps(&resetsXformStack);
 
-    // We are the fallback Transform3d handler: there must be transform ops to
-    // match.
-    TF_AXIOM(!xformOps.empty());
-
     // We find the first transform op in the vector that has our fallback
     // component token in its attribute name.  From that point on, all
     // remaining transform ops must match a Maya transform stack with the
@@ -224,8 +220,9 @@ Ufe::Transform3d::Ptr createTransform3d(const Ufe::SceneItem::Ptr& item)
 
     GfMatrix4d ml { 1 };
     if (!UsdGeomXformable::GetLocalTransformation(&ml, mlOps, getTime(item->path()))) {
-        TF_FATAL_ERROR(
+        std::string msg = TfStringPrintf(
             "Local transformation computation for item %s failed.", item->path().string().c_str());
+        throw std::runtime_error(msg.c_str());
     }
 
     // The Maya fallback transform stack is the last group of transform ops in
@@ -370,7 +367,8 @@ UsdTransform3dFallbackMayaXformStackHandler::transform3d(const Ufe::SceneItem::P
 }
 
 Ufe::Transform3d::Ptr UsdTransform3dFallbackMayaXformStackHandler::editTransform3d(
-    const Ufe::SceneItem::Ptr& item UFE_V2(, const Ufe::EditTransform3dHint& hint)) const
+    const Ufe::SceneItem::Ptr&      item,
+    const Ufe::EditTransform3dHint& hint) const
 {
     return createEditTransform3d(item);
 }

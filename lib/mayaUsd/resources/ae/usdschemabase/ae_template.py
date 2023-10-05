@@ -13,6 +13,8 @@
 # limitations under the License.
 #
 
+from .custom_image_control import customImageControlCreator
+
 import collections
 import fnmatch
 from functools import partial
@@ -38,7 +40,7 @@ from maya.OpenMaya import MGlobal
 
 # We manually import all the classes which have a 'GetSchemaAttributeNames'
 # method so we have access to it and the 'pythonClass' method.
-from pxr import Usd, UsdGeom, UsdLux, UsdRender, UsdRi, UsdShade, UsdSkel, UsdUI, UsdVol, Kind, Tf, Sdr
+from pxr import Usd, UsdGeom, UsdLux, UsdRender, UsdRi, UsdShade, UsdSkel, UsdUI, UsdVol, Kind, Tf, Sdr, Sdf
 
 nameTxt = 'nameTxt'
 attrValueFld = 'attrValueFld'
@@ -380,6 +382,7 @@ class ConnectionsCustomControl(object):
         # varying, so we don't need to implement the replace.
         pass
 
+
 class NoticeListener(object):
     # Inserted as a custom control, but does not have any UI. Instead we use
     # this control to be notified from USD when any metadata has changed
@@ -596,6 +599,7 @@ class AETemplate(object):
     learn how attributes are stored.
     '''
     def __init__(self, ufeSceneItem):
+        self.assetPathType = Tf.Type.FindByName('SdfAssetPath')
         self.item = ufeSceneItem
         self.prim = mayaUsdUfe.ufePathToPrim(ufe.PathString.string(self.item.path()))
 
@@ -631,7 +635,7 @@ class AETemplate(object):
             except:
                 pass
 
-    _controlCreators = [connectionsCustomControlCreator, arrayCustomControlCreator, defaultControlCreator]
+    _controlCreators = [connectionsCustomControlCreator, arrayCustomControlCreator, customImageControlCreator, defaultControlCreator]
 
     @staticmethod
     def prependControlCreator(controlCreator):
@@ -896,6 +900,18 @@ class AETemplate(object):
             typeName = attr.GetTypeName()
             return typeName.isArray
         return False
+
+    def isImageAttribute(self, attrName):
+        kFilenameAttr = ufe.Attribute.kFilename if hasattr(ufe.Attribute, "kFilename") else 'Filename'
+        if self.attrS.attributeType(attrName) != kFilenameAttr:
+            return False
+        attr = self.prim.GetAttribute(attrName)
+        if not attr:
+            return False
+        typeName = attr.GetTypeName()
+        if not typeName:
+            return False
+        return self.assetPathType == typeName.type
 
     def attributeHasConnections(self, attrName):
         # Simple helper to return whether the input attribute (by name) has

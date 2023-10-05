@@ -49,15 +49,9 @@ namespace nodes {
 /// \ingroup nodes
 //----------------------------------------------------------------------------------------------------------------------
 
-#if MAYA_API_VERSION >= 20190200 && MAYA_API_VERSION < 20200000
-class Scope
-    : public MPxTransform_BoundingBox
-    , public AL::maya::utils::NodeHelper
-#else
 class Scope
     : public MPxTransform
     , public AL::maya::utils::NodeHelper
-#endif
 {
 public:
     Scope();

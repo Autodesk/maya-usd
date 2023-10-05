@@ -267,5 +267,12 @@ class testUsdExportMultiMaterial(unittest.TestCase):
             (connect_api, out_name, _) = src_input.GetConnectedSource()
             self.assertEqual(connect_api.GetPath(), mat_path + dst_name)
 
+        # LOOKDEVX-1747: Make sure the uvCoord data type is correct now:
+        src_prim = stage.GetPrimAtPath(mat_path + "/MaterialX/MayaNG_MaterialX/M_file3_MayafileTexture")
+        src_shade = UsdShade.ConnectableAPI(src_prim)
+        src_input = src_shade.GetInput("uvCoord")
+        self.assertEqual(str(src_input.GetAttr().GetTypeName()), "float2")
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

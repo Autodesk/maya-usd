@@ -24,11 +24,7 @@
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/prim.h>
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/types.h>
-#else
-#include <ufe/transform3d.h>
-#endif
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {

@@ -20,11 +20,8 @@
 #include "stringResources.h"
 
 #include <mayaUsd/base/tokens.h>
-
-#if defined(WANT_UFE_BUILD)
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Utils.h>
-#endif
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/common.h>
@@ -33,18 +30,15 @@
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
 #include <maya/MUuid.h>
-
-#include <QtCore/QSignalBlocker>
-#include <QtWidgets/QHBoxLayout>
-#include <QtWidgets/QLabel>
-
-#if defined(WANT_UFE_BUILD)
 #include <ufe/globalSelection.h>
 #include <ufe/hierarchy.h>
 #include <ufe/observableSelection.h>
 #include <ufe/selection.h>
 #include <ufe/selectionNotification.h>
-#endif
+
+#include <QtCore/QSignalBlocker>
+#include <QtWidgets/QHBoxLayout>
+#include <QtWidgets/QLabel>
 
 Q_DECLARE_METATYPE(UsdLayerEditor::SessionState::StageEntry);
 
@@ -86,7 +80,6 @@ void saveStagePinnedOption(bool isPinned)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-#if defined(WANT_UFE_BUILD)
 
 // Observe the global UFE selection to update the stage selector widgets.
 class StageSelectorSelectionObserver
@@ -176,8 +169,6 @@ void StageSelectorSelectionObserver::removeStageSelector(StageSelectorWidget& se
     _stageSelectors.erase(&selector);
 }
 
-#endif
-
 } // namespace
 
 namespace UsdLayerEditor {
@@ -187,9 +178,7 @@ StageSelectorWidget::StageSelectorWidget(SessionState* in_sessionState, QWidget*
 {
     createUI();
     setSessionState(in_sessionState);
-#if defined(WANT_UFE_BUILD)
     StageSelectorSelectionObserver::instance()->addStageSelector(*this);
-#endif
 
     _pinStageSelection = loadStagePinnedOption();
     updatePinnedStage();
@@ -197,9 +186,7 @@ StageSelectorWidget::StageSelectorWidget(SessionState* in_sessionState, QWidget*
 
 StageSelectorWidget::~StageSelectorWidget()
 {
-#if defined(WANT_UFE_BUILD)
     StageSelectorSelectionObserver::instance()->removeStageSelector(*this);
-#endif
 }
 
 void StageSelectorWidget::createUI()
@@ -289,7 +276,6 @@ void StageSelectorWidget::selectedIndexChanged(int index)
     _internalChange = false;
 }
 
-#if defined(WANT_UFE_BUILD)
 static MayaUsdProxyShapeBase* getChildProxyShape(const Ufe::SceneItem::Ptr& item)
 {
     Ufe::Hierarchy::Ptr hierarchy = Ufe::Hierarchy::hierarchy(item);
@@ -306,11 +292,9 @@ static MayaUsdProxyShapeBase* getChildProxyShape(const Ufe::SceneItem::Ptr& item
 
     return nullptr;
 }
-#endif
 
 void StageSelectorWidget::selectionChanged()
 {
-#if defined(WANT_UFE_BUILD)
     // When the stage selection is pinned, don't follow the selection.
     if (_pinStageSelection)
         return;
@@ -340,7 +324,6 @@ void StageSelectorWidget::selectionChanged()
         _dropDown->setCurrentIndex(index);
         break;
     }
-#endif
 }
 
 void StageSelectorWidget::stagePinClicked()

@@ -57,7 +57,7 @@ static int                                                                     _
 
 _Registry::const_iterator _Find(const TfToken& usdInfoId, const UsdMayaJobImportArgs& importArgs)
 {
-    using ContextSupport = UsdMayaShaderReader::ContextSupport;
+    using ContextSupport = UsdMayaPrimReader::ContextSupport;
 
     _Registry::const_iterator ret = _reg.cend();
     _Registry::const_iterator first, last;
@@ -120,7 +120,7 @@ void UsdMayaShaderReaderRegistry::Register(
 UsdMayaShaderReaderRegistry::ReaderFactoryFn
 UsdMayaShaderReaderRegistry::Find(const TfToken& usdInfoId, const UsdMayaJobImportArgs& importArgs)
 {
-    using ContextSupport = UsdMayaShaderReader::ContextSupport;
+    using ContextSupport = UsdMayaPrimReader::ContextSupport;
     TfRegistryManager::GetInstance().SubscribeTo<UsdMayaShaderReaderRegistry>();
 
     _Registry::const_iterator it = _Find(usdInfoId, importArgs);

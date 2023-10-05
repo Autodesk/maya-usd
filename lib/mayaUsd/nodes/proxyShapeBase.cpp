@@ -20,8 +20,11 @@
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/listeners/proxyShapeNotice.h>
+#include <mayaUsd/nodes/layerManager.h>
 #include <mayaUsd/nodes/proxyShapeStageExtraData.h>
 #include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/undo/OpUndoItemMuting.h>
 #include <mayaUsd/utils/customLayerData.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/layerMuting.h>
@@ -99,6 +102,8 @@
 #include <maya/MString.h>
 #include <maya/MTime.h>
 #include <maya/MViewport2Renderer.h>
+#include <ufe/path.h>
+#include <ufe/pathString.h>
 
 #include <ghc/filesystem.hpp>
 
@@ -106,16 +111,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-#if defined(WANT_UFE_BUILD)
-#include <mayaUsd/nodes/layerManager.h>
-#include <mayaUsd/ufe/Utils.h>
-
-#include <ufe/path.h>
-#ifdef UFE_V2_FEATURES_AVAILABLE
-#include <ufe/pathString.h>
-#endif
-#endif
 
 using namespace MayaUsd;
 
@@ -159,11 +154,9 @@ MObject MayaUsdProxyShapeBase::drawGuidePurposeAttr;
 MObject MayaUsdProxyShapeBase::sessionLayerNameAttr;
 MObject MayaUsdProxyShapeBase::rootLayerNameAttr;
 MObject MayaUsdProxyShapeBase::mutedLayersAttr;
-#if MAYA_API_VERSION >= 20240000 && MAYA_API_VERSION <= 20249999
 // Change counter attributes
 MObject MayaUsdProxyShapeBase::updateCounterAttr;
 MObject MayaUsdProxyShapeBase::resyncCounterAttr;
-#endif
 // Output attributes
 MObject MayaUsdProxyShapeBase::outTimeAttr;
 MObject MayaUsdProxyShapeBase::outStageDataAttr;
@@ -218,14 +211,8 @@ void createNewAnonSubLayerRecursive(
     }
 }
 //! Profiler category for proxy accessor events
-const int _shapeBaseProfilerCategory = MProfiler::addCategory(
-#if MAYA_API_VERSION >= 20190000
-    "ProxyShapeBase",
-    "ProxyShapeBase events"
-#else
-    "ProxyShapeBase"
-#endif
-);
+const int _shapeBaseProfilerCategory
+    = MProfiler::addCategory("ProxyShapeBase", "ProxyShapeBase events");
 
 struct InComputeGuard
 {
@@ -407,7 +394,6 @@ MStatus MayaUsdProxyShapeBase::initialize()
     retValue = addAttribute(outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-#if MAYA_API_VERSION >= 20240000 && MAYA_API_VERSION <= 20249999
     updateCounterAttr
         = numericAttrFn.create("updateId", "upid", MFnNumericData::kInt64, -1, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
@@ -427,7 +413,6 @@ MStatus MayaUsdProxyShapeBase::initialize()
     numericAttrFn.setInternal(true);
     retValue = addAttribute(resyncCounterAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
-#endif
 
     outStageCacheIdAttr
         = numericAttrFn.create("outStageCacheId", "ostcid", MFnNumericData::kInt, -1, &retValue);
@@ -473,6 +458,13 @@ MStatus MayaUsdProxyShapeBase::initialize()
     retValue = attributeAffects(filePathAttr, outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = attributeAffects(filePathAttr, outStageCacheIdAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = attributeAffects(filePathAttr, rootLayerNameAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = attributeAffects(filePathAttr, sessionLayerNameAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = attributeAffects(filePathAttr, primPathAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     retValue = attributeAffects(primPathAttr, outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
@@ -595,7 +587,6 @@ void MayaUsdProxyShapeBase::postConstructor()
     }
 }
 
-#if MAYA_API_VERSION >= 20240000 && MAYA_API_VERSION <= 20249999
 /* virtual */
 bool MayaUsdProxyShapeBase::getInternalValue(const MPlug& plug, MDataHandle& handle)
 {
@@ -611,7 +602,6 @@ bool MayaUsdProxyShapeBase::getInternalValue(const MPlug& plug, MDataHandle& han
 
     return retVal;
 }
-#endif
 
 /* virtual */
 MStatus MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
@@ -653,7 +643,6 @@ MStatus MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
     return MS::kUnknownParameter;
 }
 
-#if defined(WANT_UFE_BUILD)
 /* virtual */
 SdfLayerRefPtr MayaUsdProxyShapeBase::computeRootLayer(MDataBlock& dataBlock, const std::string&)
 {
@@ -675,18 +664,6 @@ SdfLayerRefPtr MayaUsdProxyShapeBase::computeSessionLayer(MDataBlock& dataBlock)
         return nullptr;
     }
 }
-
-#else
-/* virtual */
-SdfLayerRefPtr MayaUsdProxyShapeBase::computeRootLayer(MDataBlock&, const std::string&)
-{
-    return nullptr;
-}
-
-/* virtual */
-SdfLayerRefPtr MayaUsdProxyShapeBase::computeSessionLayer(MDataBlock&) { return nullptr; }
-
-#endif
 
 namespace {
 
@@ -811,7 +788,6 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
     bool sharableStage = isShareableStage();
 
-#if defined(WANT_UFE_BUILD)
     // Load the unshared comp from file
     // This is so that we can remap the anon layer identifiers that have been loaded from disk which
     // are saved in the unshared root layer
@@ -841,7 +817,6 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             }
         }
     }
-#endif
 
     bool isIncomingStage = false;
 
@@ -1534,7 +1509,6 @@ MBoundingBox MayaUsdProxyShapeBase::boundingBox() const
 
     UsdMayaUtil::AddMayaExtents(allBox, prim, currTime);
 
-#if defined(WANT_UFE_BUILD)
     Ufe::BBox3d pulledUfeBBox = ufe::getPulledPrimsBoundingBox(ufePath());
     if (!pulledUfeBBox.empty()) {
         GfBBox3d pulledBox(GfRange3d(
@@ -1542,7 +1516,6 @@ MBoundingBox MayaUsdProxyShapeBase::boundingBox() const
             GfVec3d(pulledUfeBBox.max.x(), pulledUfeBBox.max.y(), pulledUfeBBox.max.z())));
         allBox = GfBBox3d::Combine(allBox, pulledBox);
     }
-#endif
 
     MBoundingBox& retval = nonConstThis->_boundingBoxCache[currTime];
 
@@ -1716,7 +1689,6 @@ MStatus MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray&
     return retValue;
 }
 
-#if MAYA_API_VERSION >= 20210000
 /* virtual */
 void MayaUsdProxyShapeBase::getCacheSetup(
     const MEvaluationNode&   evalNode,
@@ -1742,7 +1714,6 @@ void MayaUsdProxyShapeBase::configCache(const MEvaluationNode& evalNode, MCacheS
         schema.add(outStageDataAttr);
     }
 }
-#endif
 
 UsdPrim MayaUsdProxyShapeBase::_GetUsdPrim(MDataBlock dataBlock) const
 {
@@ -2017,6 +1988,9 @@ void MayaUsdProxyShapeBase::_OnLayerMutingChanged(const UsdNotice::LayerMutingCh
     if (!stage)
         return;
 
+    // We're in a callback so undo items cannot be registered into an undoable command.
+    // Mute the undo/redo for commands called from here.
+    OpUndoItemMuting muting;
     copyLayerMutingToAttribute(*stage, *this);
 }
 
@@ -2043,19 +2017,12 @@ void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChang
     MProfilingScope profilingScope(
         _shapeBaseProfilerCategory, MProfiler::kColorB_L1, "Process USD objects changed");
 
-#if MAYA_API_VERSION >= 20240000 && MAYA_API_VERSION <= 20249999
     switch (UsdMayaStageNoticeListener::ClassifyObjectsChanged(notice)) {
     case UsdMayaStageNoticeListener::ChangeType::kIgnored: return;
     case UsdMayaStageNoticeListener::ChangeType::kResync: ++_UsdStageResyncCounter;
     // [[fallthrough]]; // We want that fallthrough to have the update always triggered.
     case UsdMayaStageNoticeListener::ChangeType::kUpdate: ++_UsdStageUpdateCounter; break;
     }
-#else
-    if (UsdMayaStageNoticeListener::ClassifyObjectsChanged(notice)
-        == UsdMayaStageNoticeListener::ChangeType::kIgnored) {
-        return;
-    }
-#endif
 
     // This will definitely force a BBox recomputation on "Frame All" or when framing a selected
     // stage. Computing bounds in USD is expensive, so if it pops up in other frequently used
@@ -2227,23 +2194,14 @@ void MayaUsdProxyShapeBase::onAncestorPlugDirty(MPlug& plug)
     _inAncestorCallback = false;
 }
 
-#if defined(WANT_UFE_BUILD)
 Ufe::Path MayaUsdProxyShapeBase::ufePath() const
 {
     // Build a path segment to proxyShape
     MDagPath thisPath;
     MDagPath::getAPathTo(thisMObject(), thisPath);
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
     return Ufe::PathString::path(thisPath.fullPathName().asChar());
-#else
-    // MDagPath does not include |world to its full path name
-    MString fullpath = "|world" + thisPath.fullPathName();
-
-    return Ufe::Path(Ufe::PathSegment(fullpath.asChar(), MAYA_UFE_RUNTIME_ID, MAYA_UFE_SEPARATOR));
-#endif
 }
-#endif
 
 std::atomic<int> MayaUsdProxyShapeBase::in_compute { 0 };
 

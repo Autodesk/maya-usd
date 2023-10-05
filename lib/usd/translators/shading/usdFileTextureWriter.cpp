@@ -80,6 +80,12 @@ TF_DEFINE_ENV_SETTING(
     true,
     "This env flag controls whether colorspace values are written even if they're the default.")
 
+TF_DEFINE_ENV_SETTING(
+    MAYAUSD_EXPORT_EXPANDED_COLORSPACE_ATTRIBUTE,
+    false,
+    "This env flag allows writing OCIO names in the sourceColorSpace attribute instead of the "
+    "allowed auto/raw/srgb triad. The number of render delegates supporting this is very small.")
+
 class PxrUsdTranslators_FileTextureWriter : public UsdMayaShaderWriter
 {
 public:
@@ -115,7 +121,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 // clang-format on
 
-UsdMayaShaderWriter::ContextSupport
+UsdMayaPrimWriter::ContextSupport
 PxrUsdTranslators_FileTextureWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
 {
     if (exportArgs.convertMaterialsTo == UsdImagingTokens->UsdPreviewSurface) {
@@ -269,7 +275,10 @@ void PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
     // We use the ExportArgs fileName here instead of the USD root layer path
     // to make sure that we are basing logic of the final export location
     UsdMayaShadingUtil::ResolveUsdTextureFileName(
-        fileTextureName, _GetExportArgs().GetResolvedFileName(), isUDIM);
+        fileTextureName,
+        _GetExportArgs().GetResolvedFileName(),
+        _GetExportArgs().exportRelativeTextures,
+        isUDIM);
 
     UsdShadeInput fileInput = shaderSchema.CreateInput(TrUsdTokens->file, SdfValueTypeNames->Asset);
     fileInput.Set(SdfAssetPath(fileTextureName.c_str()), usdTime);
@@ -277,25 +286,33 @@ void PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
     MPlug colorSpacePlug = depNodeFn.findPlug(TrMayaTokens->colorSpace.GetText(), true, &status);
     if (status == MS::kSuccess) {
         const bool verboseColorspace = TfGetEnvSetting(MAYAUSD_EXPORT_VERBOSE_COLORSPACE_METADATA);
-        MString    colorRuleCmd;
+        const bool expandedColorspace
+            = TfGetEnvSetting(MAYAUSD_EXPORT_EXPANDED_COLORSPACE_ATTRIBUTE);
+        MString colorRuleCmd;
         colorRuleCmd.format(
             "colorManagementFileRules -evaluate \"^1s\";", fileTextureNamePlug.asString());
         const MString colorSpaceByRule(MGlobal::executeCommandStringResult(colorRuleCmd));
         const MString colorSpace(colorSpacePlug.asString(&status));
         if (status == MS::kSuccess && (verboseColorspace || colorSpace != colorSpaceByRule)) {
             fileInput.GetAttr().SetColorSpace(TfToken(colorSpace.asChar()));
+            if (expandedColorspace) {
+                shaderSchema.CreateInput(TrUsdTokens->sourceColorSpace, SdfValueTypeNames->Token)
+                    .Set(TfToken(colorSpace.asChar()));
+            }
         }
 
-        // Set the sourceColorSpace as well. The color space metadata will not be transmitted via
-        // Hydra, so we need to set this attribute as well if we want hdStorm and the VP2 render
-        // delegate to look correct
-        if (colorSpace == TrMayaTokens->Raw.GetText()
-            || colorSpace == TrMayaTokens->utilityRaw.GetText()) {
-            shaderSchema.CreateInput(TrUsdTokens->sourceColorSpace, SdfValueTypeNames->Token)
-                .Set(TrUsdTokens->raw);
-        } else if (colorSpace == TrMayaTokens->sRGB.GetText()) {
-            shaderSchema.CreateInput(TrUsdTokens->sourceColorSpace, SdfValueTypeNames->Token)
-                .Set(TrUsdTokens->sRGB);
+        if (!expandedColorspace) {
+            // Set the sourceColorSpace as well. The color space metadata will not be transmitted
+            // via Hydra, so we need to set this attribute as well if we want hdStorm and the VP2
+            // render delegate to look correct
+            if (colorSpace == TrMayaTokens->Raw.GetText()
+                || colorSpace == TrMayaTokens->utilityRaw.GetText()) {
+                shaderSchema.CreateInput(TrUsdTokens->sourceColorSpace, SdfValueTypeNames->Token)
+                    .Set(TrUsdTokens->raw);
+            } else if (colorSpace == TrMayaTokens->sRGB.GetText()) {
+                shaderSchema.CreateInput(TrUsdTokens->sourceColorSpace, SdfValueTypeNames->Token)
+                    .Set(TrUsdTokens->sRGB);
+            }
         }
     }
 
@@ -713,7 +730,10 @@ UsdAttribute PxrUsdTranslators_FileTextureWriter::GetShadingAttributeForMayaAttr
             std::string fileTextureName(fileTextureNamePlug.asString().asChar());
 
             UsdMayaShadingUtil::ResolveUsdTextureFileName(
-                fileTextureName, _GetExportArgs().GetResolvedFileName(), false);
+                fileTextureName,
+                _GetExportArgs().GetResolvedFileName(),
+                _GetExportArgs().exportRelativeTextures,
+                false);
             int numChannels = UsdMayaShadingUtil::GetNumberOfChannels(fileTextureName);
             if (numChannels == 1) {
                 usdAttrName = TrUsdTokens->RedOutputName;

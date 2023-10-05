@@ -59,13 +59,9 @@ public:
     bool                hasChildren() const override;
     Ufe::SceneItemList  children() const override;
     UFE_V4(bool hasFilteredChildren(const ChildFilter&) const override;)
-    UFE_V2(Ufe::SceneItemList filteredChildren(const ChildFilter&) const override;)
+    Ufe::SceneItemList  filteredChildren(const ChildFilter&) const override;
     Ufe::SceneItem::Ptr parent() const override;
-#ifndef UFE_V2_FEATURES_AVAILABLE
-    Ufe::AppendedChild appendChild(const Ufe::SceneItem::Ptr& child) override;
-#endif
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 #ifdef UFE_V3_FEATURES_AVAILABLE
     Ufe::SceneItem::Ptr          createGroup(const Ufe::PathComponent& name) const override;
     Ufe::InsertChildCommand::Ptr createGroupCmd(const Ufe::PathComponent& name) const override;
@@ -84,7 +80,6 @@ public:
     insertChildCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos) override;
 
     Ufe::UndoableCommand::Ptr reorderCmd(const Ufe::SceneItemList& orderedList) const override;
-#endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
     Ufe::UndoableCommand::Ptr ungroupCmd() const override;

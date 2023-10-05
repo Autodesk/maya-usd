@@ -377,4 +377,31 @@ SdfPrimSpecHandle getDefiningPrimSpec(const UsdPrim& prim)
     return {};
 }
 
+const SdfLayerHandle getCurrentTargetLayer(const UsdStagePtr& stage)
+{
+    if (!stage)
+        return {};
+
+    return stage->GetEditTarget().GetLayer();
+}
+
+const SdfLayerHandle getCurrentTargetLayer(const UsdPrim& prim)
+{
+    return getCurrentTargetLayer(prim.GetStage());
+}
+
+const std::string getTargetLayerFilePath(const UsdStagePtr& stage)
+{
+    auto layer = getCurrentTargetLayer(stage);
+    if (!layer)
+        return {};
+
+    return layer->GetRealPath();
+}
+
+const std::string getTargetLayerFilePath(const UsdPrim& prim)
+{
+    return getTargetLayerFilePath(prim.GetStage());
+}
+
 } // namespace USDUFE_NS_DEF

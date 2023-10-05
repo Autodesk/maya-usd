@@ -37,7 +37,6 @@ target_compile_definitions(${PROJECT_NAME}
     PUBLIC
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
-        WANT_UFE_BUILD
         $<$<BOOL:${MAYA_ENABLE_NEW_PRIM_DELETE}>:MAYA_ENABLE_NEW_PRIM_DELETE>
     PRIVATE
         USDUFE_EXPORT
@@ -166,6 +165,7 @@ endif()
 # -----------------------------------------------------------------------------
 add_subdirectory(base)
 add_subdirectory(python)
+add_subdirectory(resources)
 add_subdirectory(ufe)
 add_subdirectory(undo)
 add_subdirectory(utils)

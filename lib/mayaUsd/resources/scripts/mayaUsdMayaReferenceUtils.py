@@ -28,9 +28,9 @@ compositionArcReference = 'Reference'
 _compositionArcValues = [compositionArcPayload, compositionArcReference]
 
 listEditTypeKey = ''
-listEditTypeAppend = 'Append'
 listEditTypePrepend = 'Prepend'
-_listEditedAsValues = [listEditTypeAppend, listEditTypePrepend]
+listEditTypeAppend = 'Append'
+_listEditedAsValues = [listEditTypePrepend, listEditTypeAppend]
 
 loadPayloadKey = 'loadPayload'
 
@@ -123,20 +123,23 @@ def createUsdRefOrPayloadUI(showLoadPayload=False):
         tooltip = getMayaUsdLibString('kOptionAsUSDReferenceToolTip')
         cmds.optionMenuGrp('compositionArcTypeMenu',
                            label=getMayaUsdLibString('kOptionAsUSDReference'),
-                           annotation=tooltip)
+                           annotation=tooltip,
+                           statusBarMessage=getMayaUsdLibString('kOptionAsUSDReferenceStatusMsg'))
         compositionArcLabels = [getMayaUsdLibString('kMenuPayload'), getMayaUsdLibString('kMenuReference')]
         for label in compositionArcLabels:
             cmds.menuItem(label=label)
         cmds.optionMenu('listEditedAsMenu',
                         label=getMayaUsdLibString('kOptionListEditedAs'),
-                        annotation=tooltip)
-        listEditedAsLabels = [getMayaUsdLibString('kMenuAppend'), getMayaUsdLibString('kMenuPrepend')]
+                        annotation=tooltip,
+                        statusBarMessage=getMayaUsdLibString('kOptionAsUSDReferenceStatusMsg'))
+        listEditedAsLabels = [getMayaUsdLibString('kMenuPrepend'), getMayaUsdLibString('kMenuAppend')]
         for label in listEditedAsLabels:
             cmds.menuItem(label=label)
 
     if showLoadPayload:
         cmds.checkBoxGrp('loadPayload',
                          label=getMayaUsdLibString('kOptionLoadPayload'),
+                         annotation=getMayaUsdLibString('kLoadPayloadAnnotation'),
                          ncb=1)
 
 def initUsdRefOrPayloadUI(values, showLoadPayload=False):

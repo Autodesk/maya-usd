@@ -62,12 +62,7 @@ bool convertToBezier(MFnNurbsCurve& nurbsCurveFn, MObject& mayaNodeTransformObj,
     // Remove the nurbs and converter:
     MDGModifier& dagm = MayaUsd::MDGModifierUndoItem::create("Nurbs curve deletion");
     dagm.deleteNode(convFn.object());
-#if MAYA_API_VERSION >= 20200300
     dagm.deleteNode(nurbsCurveFn.object(), false);
-#else
-    dagm.deleteNode(nurbsCurveFn.object());
-#endif
-
     dagm.doIt();
     // replace deleted nurbs node with bezier node
     nurbsCurveFn.setObject(curveObj);

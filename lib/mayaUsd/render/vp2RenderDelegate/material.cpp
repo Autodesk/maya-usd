@@ -48,6 +48,7 @@
 #include <pxr/usdImaging/usdImaging/tokens.h>
 
 #include <maya/M3dView.h>
+#include <maya/MEventMessage.h>
 #include <maya/MFragmentManager.h>
 #include <maya/MGlobal.h>
 #include <maya/MProfiler.h>
@@ -234,6 +235,126 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 // clang-format on
 
+// We will cache the color management preferences since they are used in many loops.
+class CMPrefs
+{
+public:
+    ~CMPrefs() { RemoveSinks(); }
+    static bool           Active() { return Get()._active; }
+    static const MString& RenderingSpaceName() { return Get()._renderingSpaceName; }
+    static const MString& sRGBName() { return Get()._sRGBName; }
+    static std::string    getFileRule(const std::string& path)
+    {
+        MString colorRuleCmd;
+        colorRuleCmd.format("colorManagementFileRules -evaluate \"^1s\";", MString(path.c_str()));
+        return MGlobal::executeCommandStringResult(colorRuleCmd).asChar();
+    }
+
+    static void SetDirty()
+    {
+        auto& self = InternalGet();
+        self._dirty = true;
+    }
+
+    static void MayaExit()
+    {
+        auto& self = InternalGet();
+        self.RemoveSinks();
+    }
+
+private:
+    CMPrefs() = default;
+    static const CMPrefs& Get()
+    {
+        auto& self = InternalGet();
+        self.Refresh();
+        return self;
+    }
+    static CMPrefs& InternalGet()
+    {
+        static CMPrefs _self;
+        return _self;
+    }
+    bool                     _dirty = true;
+    bool                     _active = false;
+    MString                  _renderingSpaceName;
+    MString                  _sRGBName;
+    std::vector<MCallbackId> _mayaColorManagementCallbackIds;
+    MCallbackId              _mayaExitingCB { 0 };
+
+    void Refresh();
+    void RemoveSinks()
+    {
+        for (auto id : _mayaColorManagementCallbackIds) {
+            MMessage::removeCallback(id);
+        }
+        _mayaColorManagementCallbackIds.clear();
+        MMessage::removeCallback(_mayaExitingCB);
+    }
+};
+
+void colorManagementRefreshCB(void*) { CMPrefs::SetDirty(); }
+
+void mayaExitingCB(void*) { CMPrefs::MayaExit(); }
+
+void CMPrefs::Refresh()
+{
+    if (_mayaColorManagementCallbackIds.empty()) {
+        // Monitor color management prefs
+        _mayaColorManagementCallbackIds.push_back(MEventMessage::addEventCallback(
+            "colorMgtEnabledChanged", colorManagementRefreshCB, this));
+        _mayaColorManagementCallbackIds.push_back(MEventMessage::addEventCallback(
+            "colorMgtWorkingSpaceChanged", colorManagementRefreshCB, this));
+        _mayaColorManagementCallbackIds.push_back(MEventMessage::addEventCallback(
+            "colorMgtConfigChanged", colorManagementRefreshCB, this));
+        _mayaColorManagementCallbackIds.push_back(MEventMessage::addEventCallback(
+            "colorMgtConfigFilePathChanged", colorManagementRefreshCB, this));
+        // The color management settings are quietly reset on file new:
+        _mayaColorManagementCallbackIds.push_back(
+            MSceneMessage::addCallback(MSceneMessage::kBeforeNew, colorManagementRefreshCB, this));
+        _mayaColorManagementCallbackIds.push_back(
+            MSceneMessage::addCallback(MSceneMessage::kBeforeOpen, colorManagementRefreshCB, this));
+
+        // Cleanup on exit:
+        _mayaExitingCB
+            = MSceneMessage::addCallback(MSceneMessage::kMayaExiting, mayaExitingCB, this);
+    }
+
+    if (!_dirty) {
+        return;
+    }
+    _dirty = false;
+
+    int isActive = 0;
+    MGlobal::executeCommand("colorManagementPrefs -q -cmEnabled", isActive, false, false);
+    if (!isActive) {
+        _active = false;
+        return;
+    }
+
+    _active = true;
+
+    _renderingSpaceName
+        = MGlobal::executeCommandStringResult("colorManagementPrefs -q -renderingSpaceName");
+
+    // Need some robustness around sRGB since not all OCIO configs declare it the same way:
+    const auto sRGBAliases
+        = std::set<std::string> { "sRGB",         "sRGB - Texture",
+                                  "srgb_tx",      "Utility - sRGB - Texture",
+                                  "srgb_texture", "Input - Generic - sRGB - Texture" };
+
+    MStringArray allInputSpaces;
+    MGlobal::executeCommand(
+        "colorManagementPrefs -q -inputSpaceNames", allInputSpaces, false, false);
+
+    for (auto&& spaceName : allInputSpaces) {
+        if (sRGBAliases.count(spaceName.asChar())) {
+            _sRGBName = spaceName;
+            break;
+        }
+    }
+}
+
 #ifdef WANT_MATERIALX_BUILD
 
 // clang-format off
@@ -321,6 +442,10 @@ const std::set<std::string> _mtlxTopoNodeSet = {
     "switch"
 };
 
+// These attribute names usually indicate we have a source color space to handle.
+const auto _mtlxKnownColorSpaceAttrs
+        = std::vector<TfToken> { _tokens->sourceColorSpace, _mtlxTokens->colorSpace };
+
 #ifndef HAS_COLOR_MANAGEMENT_SUPPORT_API
 // Maps from a known Maya target color space name to the corresponding color correct category.
 const std::unordered_map<std::string, std::string> _mtlxColorCorrectCategoryMap = {
@@ -402,10 +527,35 @@ bool _IsMaterialX(const HdMaterialNode& node)
     return ndrNode && ndrNode->GetSourceType() == HdVP2Tokens->mtlx;
 }
 
+bool _MxHasFilenameInput(const mx::NodeDefPtr nodeDef)
+{
+    for (const auto& input : nodeDef->getActiveInputs()) {
+        if (input->getType() == _mtlxTokens->filename.GetString()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+#ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
+bool _MxHasFilenameInput(const HdMaterialNode2& inNode)
+{
+    mx::NodeDefPtr nodeDef
+        = _GetMaterialXData()._mtlxLibrary->getNodeDef(inNode.nodeTypeId.GetString());
+    if (nodeDef) {
+        return _MxHasFilenameInput(nodeDef);
+    }
+    return false;
+}
+#endif
+
 //! Helper function to generate a topo hash that can be used to detect if two networks share the
 //  same topology.
 size_t _GenerateNetwork2TopoHash(const HdMaterialNetwork2& materialNetwork)
 {
+#ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
+    bool hasTextureNode = false;
+#endif
     // The HdMaterialNetwork2 structure is stable. Everything is alphabetically sorted.
     size_t topoHash = 0;
     for (const auto& c : materialNetwork.terminals) {
@@ -426,6 +576,27 @@ size_t _GenerateNetwork2TopoHash(const HdMaterialNetwork2& materialNetwork)
                 MayaUsd::hash_combine(topoHash, hash_value(p.second));
             }
         }
+#ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
+        if (CMPrefs::Active()) {
+            // Explicit color management parameters affect topology:
+            for (auto&& cmName : _mtlxKnownColorSpaceAttrs) {
+                auto cmIt = node.parameters.find(cmName);
+                if (cmIt != node.parameters.end()) {
+                    MayaUsd::hash_combine(topoHash, hash_value(cmIt->first));
+                    if (cmIt->second.IsHolding<TfToken>()) {
+                        auto const& colorSpace = cmIt->second.UncheckedGet<TfToken>();
+                        MayaUsd::hash_combine(topoHash, hash_value(colorSpace));
+                    } else if (cmIt->second.IsHolding<std::string>()) {
+                        auto const& colorSpace = cmIt->second.UncheckedGet<std::string>();
+                        MayaUsd::hash_combine(topoHash, std::hash<std::string> {}(colorSpace));
+                    }
+                }
+            }
+            if (_MxHasFilenameInput(node)) {
+                hasTextureNode = true;
+            }
+        }
+#endif
         for (auto const& i : node.inputConnections) {
             MayaUsd::hash_combine(topoHash, hash_value(i.first));
             for (auto const& c : i.second) {
@@ -437,6 +608,13 @@ size_t _GenerateNetwork2TopoHash(const HdMaterialNetwork2& materialNetwork)
 
     // The specular environment settings used affect the topology of the shader:
     MayaUsd::hash_combine(topoHash, MaterialXMaya::OgsFragment::getSpecularEnvKey());
+
+#ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
+    if (hasTextureNode) {
+        MayaUsd::hash_combine(
+            topoHash, std::hash<std::string> {}(CMPrefs::RenderingSpaceName().asChar()));
+    }
+#endif
 
     return topoHash;
 }
@@ -912,16 +1090,6 @@ void _AddMissingTangents(mx::DocumentPtr& mtlxDoc)
     }
 }
 
-bool _MxHasFilenameInput(const mx::NodeDefPtr nodeDef)
-{
-    for (const auto& input : nodeDef->getActiveInputs()) {
-        if (input->getType() == _mtlxTokens->filename.GetString()) {
-            return true;
-        }
-    }
-    return false;
-}
-
 #endif // WANT_MATERIALX_BUILD
 
 #if PXR_VERSION <= 2211
@@ -1075,6 +1243,10 @@ std::string _GenerateXMLString(const HdMaterialNetwork& materialNetwork, bool in
 #ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
 void _AddColorManagementFragments(HdMaterialNetwork& net)
 {
+    if (!CMPrefs::Active()) {
+        return;
+    }
+
     MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
     if (!theRenderer) {
         return;
@@ -1084,14 +1256,6 @@ void _AddColorManagementFragments(HdMaterialNetwork& net)
     if (!fragmentManager) {
         return;
     }
-
-    // Need some robustness around sRGB since not all OCIO configs declare it the same way:
-    const auto sRGBAliases
-        = std::vector<MString> { "sRGB",         "sRGB - Texture",
-                                 "srgb_tx",      "Utility - sRGB - Texture",
-                                 "srgb_texture", "Input - Generic - sRGB - Texture" };
-    // Not static since it can change with the OCIO config.
-    MString sRGBAliasToUse;
 
     // This will help keep our color management (CM) path identifiers unique:
     size_t cmCounter = net.nodes.size();
@@ -1111,6 +1275,9 @@ void _AddColorManagementFragments(HdMaterialNetwork& net)
             if (scsValue.IsHolding<TfToken>()) {
                 sourceColorSpace = scsValue.UncheckedGet<TfToken>();
             }
+            if (scsValue.IsHolding<std::string>()) {
+                sourceColorSpace = TfToken(scsValue.UncheckedGet<std::string>());
+            }
         }
 
         // We need to insert the proper CM shader fragment here so it becomes part
@@ -1122,33 +1289,18 @@ void _AddColorManagementFragments(HdMaterialNetwork& net)
             if (fileIt == node.parameters.end() || !fileIt->second.IsHolding<SdfAssetPath>()) {
                 continue;
             }
-            auto const&        filenameVal = fileIt->second.Get<SdfAssetPath>();
-            const std::string& resolvedPath = filenameVal.GetResolvedPath();
+            auto const& filenameVal = fileIt->second.Get<SdfAssetPath>();
+            auto const& resolvedPath = filenameVal.GetResolvedPath();
             if (resolvedPath.empty()) {
                 continue;
             }
-            const std::string& assetPath = filenameVal.GetAssetPath();
-            MString            colorRuleCmd;
-            colorRuleCmd.format(
-                "colorManagementFileRules -evaluate \"^1s\";",
-                (!resolvedPath.empty() ? resolvedPath : assetPath).c_str());
-            colorSpace = MGlobal::executeCommandStringResult(colorRuleCmd);
+            colorSpace = CMPrefs::getFileRule(resolvedPath).c_str();
         } else if (sourceColorSpace == _tokens->sRGB) {
-            if (sRGBAliasToUse.isEmpty()) {
-                for (auto&& sRGBAlias : sRGBAliases) {
-                    MString fragName, inputName, outputName;
-                    MStatus status = fragmentManager->getColorManagementFragmentInfo(
-                        sRGBAlias, fragName, inputName, outputName);
-                    if (status) {
-                        sRGBAliasToUse = sRGBAlias;
-                    }
-                }
-            }
-            if (sRGBAliasToUse.isEmpty()) {
+            if (CMPrefs::sRGBName().isEmpty()) {
                 // No alias found. Do not color correct...
                 continue;
             }
-            colorSpace = sRGBAliasToUse;
+            colorSpace = CMPrefs::sRGBName();
         } else if (sourceColorSpace == _tokens->raw) {
             // No cm necessary for raw:
             continue;
@@ -2170,14 +2322,14 @@ void HdVP2Material::CompiledNetwork::Sync(
                 _topoHash = topoHash;
                 // TopoChanged: We have a brand new surface material, tell the mesh to use
                 // it.
-                _owner->_MaterialChanged(sceneDelegate);
+                _owner->MaterialChanged(sceneDelegate);
             }
 
             if (_surfaceShader) {
                 _UpdateShaderInstance(sceneDelegate, bxdfNet);
 // Consolidation workaround requires dirtying the mesh even on a ValueChanged
 #ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
-                _owner->_MaterialChanged(sceneDelegate);
+                _owner->MaterialChanged(sceneDelegate);
 #endif
             }
             return;
@@ -2232,7 +2384,7 @@ void HdVP2Material::CompiledNetwork::Sync(
             _frontFaceShader.reset(nullptr);
             _pointShader.reset(nullptr);
             // TopoChanged: We have a brand new surface material, tell the mesh to use it.
-            _owner->_MaterialChanged(sceneDelegate);
+            _owner->MaterialChanged(sceneDelegate);
 
             if (TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
                 std::cout << "BXDF material network for " << id << ":\n"
@@ -2295,7 +2447,7 @@ void HdVP2Material::CompiledNetwork::Sync(
 
 // Consolidation workaround requires dirtying the mesh even on a ValueChanged
 #ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
-        _owner->_MaterialChanged(sceneDelegate);
+        _owner->MaterialChanged(sceneDelegate);
 #endif
     }
 }
@@ -2336,10 +2488,6 @@ void HdVP2Material::CompiledNetwork::_ApplyVP2Fixes(
     // Get the shader registry so I can look up the real names of shading nodes.
     SdrRegistry& shaderReg = SdrRegistry::GetInstance();
 
-    // We might need to query the working color space of Maya if we hit texture nodes. Delay
-    // the query until necessary.
-    MString mayaWorkingColorSpace;
-
     // Replace the authored node paths with simplified paths in the form of "node#". By doing so
     // we will be able to reuse shader effects among material networks which have the same node
     // identifiers and relationships but different node paths, reduce shader compilation overhead
@@ -2363,16 +2511,9 @@ void HdVP2Material::CompiledNetwork::_ApplyVP2Fixes(
         SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifier(outNode.identifier);
 #endif
         if (_IsUsdUVTexture(node)) {
-#ifndef HAS_COLOR_MANAGEMENT_SUPPORT_API
-            // We need to rename according to the Maya color working space pref:
-            if (!mayaWorkingColorSpace.length()) {
-                // Query the user pref:
-                mayaWorkingColorSpace = MGlobal::executeCommandStringResult(
-                    "colorManagementPrefs -q -renderingSpaceName");
-            }
-#endif
             outNode.identifier = TfToken(
-                HdVP2ShaderFragments::getUsdUVTextureFragmentName(mayaWorkingColorSpace).asChar());
+                HdVP2ShaderFragments::getUsdUVTextureFragmentName(CMPrefs::RenderingSpaceName())
+                    .asChar());
         } else {
             if (!sdrNode) {
                 TF_WARN("Could not find a shader node for <%s>", node.path.GetText());
@@ -2652,15 +2793,12 @@ TfToken _RequiresColorManagement(
     }
 
     // Look for explicit color spaces first:
-    std::string       sourceColorSpace;
-    static const auto _knownColorSpaceAttrs
-        = std::vector<TfToken> { _tokens->sourceColorSpace, _mtlxTokens->colorSpace };
-    static const auto _mxFindColorSpace = [&sourceColorSpace](const auto& n) {
+    static const auto _mxFindColorSpace = [](const auto& n, auto& sourceColorSpace) {
         if (!sourceColorSpace.empty()) {
             return;
         }
 
-        for (auto&& csAttrName : _knownColorSpaceAttrs) {
+        for (auto&& csAttrName : _mtlxKnownColorSpaceAttrs) {
             auto paramIt = n.parameters.find(csAttrName);
             if (paramIt != n.parameters.end()) {
                 const VtValue& val = paramIt->second;
@@ -2674,10 +2812,12 @@ TfToken _RequiresColorManagement(
             }
         }
     };
+
+    std::string sourceColorSpace;
     // Can be on the upstream node (UsdUVTexture):
-    _mxFindColorSpace(upstream);
+    _mxFindColorSpace(upstream, sourceColorSpace);
     // Can sometimes be on node (MayaND_fileTexture):
-    _mxFindColorSpace(node);
+    _mxFindColorSpace(node, sourceColorSpace);
     // To be updated as soon as color space metadata gets transmitted through Hydra.
 
     if (sourceColorSpace.empty() || sourceColorSpace == _tokens->auto_) {
@@ -2691,17 +2831,11 @@ TfToken _RequiresColorManagement(
             }
         }
 
-        const std::string& resolvedPath = filenameVal.GetResolvedPath();
+        auto const& resolvedPath = filenameVal.GetResolvedPath();
         if (resolvedPath.empty()) {
             return {};
         }
-        const std::string& assetPath = filenameVal.GetAssetPath();
-        MString            colorRuleCmd;
-        colorRuleCmd.format(
-            "colorManagementFileRules -evaluate \"^1s\";",
-            (!resolvedPath.empty() ? resolvedPath : assetPath).c_str());
-        const MString colorSpaceByRule(MGlobal::executeCommandStringResult(colorRuleCmd));
-        sourceColorSpace = colorSpaceByRule.asChar();
+        sourceColorSpace = CMPrefs::getFileRule(resolvedPath);
     }
 
     if (sourceColorSpace == "Raw" || sourceColorSpace == "raw") {
@@ -2722,8 +2856,8 @@ TfToken _RequiresColorManagement(
     MString fragName, fragInput, fragOutput;
     if (fragmentManager->getColorManagementFragmentInfo(
             sourceColorSpace.c_str(), fragName, fragInput, fragOutput)) {
-        std::string untypedNodeDefId = MaterialXMaya::OgsFragment::registerOCIOFragment(
-            fragName.asChar(), _GetMaterialXData()._mtlxLibrary);
+        std::string untypedNodeDefId
+            = MaterialXMaya::OgsFragment::registerOCIOFragment(fragName.asChar());
         if (!untypedNodeDefId.empty()) {
             cmInputName = TfToken(fragInput.asChar());
             cmOutputName = TfToken(fragOutput.asChar());
@@ -2815,23 +2949,21 @@ void HdVP2Material::CompiledNetwork::_ApplyMtlxVP2Fixes(
             for (const auto& c : cnxPair.second) {
                 TfToken cmNodeDefId, cmInputName, cmOutputName;
 #ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
-                cmNodeDefId = _RequiresColorManagement(
-                    inNode,
-                    inNet.nodes.find(c.upstreamNode)->second,
-                    inNet,
-                    cmInputName,
-                    cmOutputName);
+                if (CMPrefs::Active()) {
+                    cmNodeDefId = _RequiresColorManagement(
+                        inNode,
+                        inNet.nodes.find(c.upstreamNode)->second,
+                        inNet,
+                        cmInputName,
+                        cmOutputName);
+                }
 #else
                 TfToken colorManagementType = _RequiresColorManagement(
                     inNode, inNet.nodes.find(c.upstreamNode)->second, inNet);
                 if (!colorManagementType.IsEmpty()) {
                     if (colorManagementCategory.empty()) {
-                        // Query the user pref:
-                        MString mayaWorkingColorSpace = MGlobal::executeCommandStringResult(
-                            "colorManagementPrefs -q -renderingSpaceName");
-
-                        auto categoryIt
-                            = _mtlxColorCorrectCategoryMap.find(mayaWorkingColorSpace.asChar());
+                        auto categoryIt = _mtlxColorCorrectCategoryMap.find(
+                            CMPrefs::RenderingSpaceName().asChar());
                         if (categoryIt != _mtlxColorCorrectCategoryMap.end()) {
                             colorManagementCategory = categoryIt->second;
                         }
@@ -2919,6 +3051,14 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
         const mx::FileSearchPath& crLibrarySearchPath(_GetMaterialXData()._mtlxSearchPath);
         if (mtlxSdrNode) {
 
+#ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
+            mx::DocumentPtr completeLibrary = mx::createDocument();
+            completeLibrary->importLibrary(_GetMaterialXData()._mtlxLibrary);
+            completeLibrary->importLibrary(MaterialXMaya::OgsFragment::getOCIOLibrary());
+#else
+            mx::DocumentPtr completeLibrary = _GetMaterialXData()._mtlxLibrary;
+#endif
+
             // Create the MaterialX Document from the HdMaterialNetwork
 #if PXR_VERSION > 2111
             mtlxDoc = HdMtlxCreateMtlxDocumentFromHdNetwork(
@@ -2926,7 +3066,7 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
                 *surfTerminal, // MaterialX HdNode
                 fixedPath,
                 SdfPath(_mtlxTokens->USD_Mtlx_VP2_Material),
-                _GetMaterialXData()._mtlxLibrary);
+                completeLibrary);
 #else
             std::set<SdfPath> hdTextureNodes;
             mx::StringMap mxHdTextureMap; // Mx-Hd texture name counterparts
@@ -2934,7 +3074,7 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
                 fixedNetwork,
                 *surfTerminal, // MaterialX HdNode
                 SdfPath(_mtlxTokens->USD_Mtlx_VP2_Material),
-                _GetMaterialXData()._mtlxLibrary,
+                completeLibrary,
                 &hdTextureNodes,
                 &mxHdTextureMap);
 #endif
@@ -3104,11 +3244,6 @@ HdVP2Material::CompiledNetwork::_CreateShaderInstance(const HdMaterialNetwork& m
 
     MHWRender::MShaderInstance* shaderInstance = nullptr;
 
-    // MShaderInstance supports multiple connections between shaders on Maya 2018.7, 2019.3, 2020
-    // and above.
-#if (MAYA_API_VERSION >= 20190300) \
-    || ((MAYA_API_VERSION >= 20180700) && (MAYA_API_VERSION < 20190000))
-
     // UsdImagingMaterialAdapter has walked the shader graph and emitted nodes
     // and relationships in topological order to avoid forward-references, thus
     // we can run a reverse iteration to avoid connecting a fragment before any
@@ -3180,98 +3315,6 @@ HdVP2Material::CompiledNetwork::_CreateShaderInstance(const HdMaterialNetwork& m
                 .Msg("Failed to connect shader %s\n", node.path.GetText());
         }
     }
-
-#elif MAYA_API_VERSION >= 20190000
-
-    // UsdImagingMaterialAdapter has walked the shader graph and emitted nodes
-    // and relationships in topological order to avoid forward-references, thus
-    // we can run a reverse iteration to avoid connecting a fragment before any
-    // of its downstream fragments.
-    const auto rend = mat.nodes.rend();
-    for (auto rit = mat.nodes.rbegin(); rit != rend; rit++) {
-        const HdMaterialNode& node = *rit;
-
-        const MString nodeId = node.identifier.GetText();
-        const MString nodeName = node.path.GetNameToken().GetText();
-
-        if (shaderInstance == nullptr) {
-            shaderInstance = shaderMgr->getFragmentShader(nodeId, "outSurfaceFinal", true);
-            if (shaderInstance == nullptr) {
-                TF_WARN("Failed to create shader instance for %s", nodeId.asChar());
-                break;
-            }
-
-            continue;
-        }
-
-        MStringArray outputNames, inputNames;
-
-        std::string primvarname;
-
-        for (const HdMaterialRelationship& rel : mat.relationships) {
-            if (rel.inputId == node.path) {
-                outputNames.append(rel.inputName.GetText());
-                inputNames.append(rel.outputName.GetText());
-            }
-
-            if (_IsUsdUVTexture(node)) {
-                if (rel.outputId == node.path && rel.outputName == _tokens->st) {
-                    for (const HdMaterialNode& n : mat.nodes) {
-                        if (n.path == rel.inputId && _IsUsdPrimvarReader(n)) {
-                            auto it = n.parameters.find(_tokens->varname);
-                            if (it != n.parameters.end()) {
-                                primvarname = TfStringify(it->second);
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        // Without multi-connection support for MShaderInstance, this code path
-        // can only support common patterns of UsdShade material network, i.e.
-        // a UsdUVTexture is connected to a single input of a USD Preview Surface.
-        // More generic fix is coming.
-        if (outputNames.length() == 1) {
-            MStatus status
-                = shaderInstance->addInputFragment(nodeId, outputNames[0], inputNames[0]);
-
-            if (!status) {
-                TF_DEBUG(HDVP2_DEBUG_MATERIAL)
-                    .Msg(
-                        "Error %s happened when connecting shader %s\n",
-                        status.errorString().asChar(),
-                        node.path.GetText());
-            }
-
-            if (_IsUsdUVTexture(node)) {
-                const MString paramNames[]
-                    = { "file", "fileSampler", "isColorSpaceSRGB", "fallback", "scale", "bias" };
-
-                for (const MString& paramName : paramNames) {
-                    const MString resolvedName = nodeName + paramName;
-                    shaderInstance->renameParameter(paramName, resolvedName);
-                }
-
-                const MString paramName = _tokens->st.GetText();
-                shaderInstance->setSemantic(paramName, "uvCoord");
-                shaderInstance->setAsVarying(paramName, true);
-                shaderInstance->renameParameter(paramName, primvarname.c_str());
-            }
-        } else {
-            TF_DEBUG(HDVP2_DEBUG_MATERIAL)
-                .Msg("Failed to connect shader %s\n", node.path.GetText());
-
-            if (outputNames.length() > 1) {
-                TF_DEBUG(HDVP2_DEBUG_MATERIAL)
-                    .Msg("MShaderInstance doesn't support "
-                         "multiple connections between shaders on the current Maya version.\n");
-            }
-        }
-    }
-
-#endif
 
     return shaderInstance;
 }
@@ -3792,7 +3835,7 @@ void HdVP2Material::UnsubscribeFromMaterialUpdates(const SdfPath& rprimId)
     _materialSubscriptions.erase(rprimId);
 }
 
-void HdVP2Material::_MaterialChanged(HdSceneDelegate* sceneDelegate)
+void HdVP2Material::MaterialChanged(HdSceneDelegate* sceneDelegate)
 {
     std::lock_guard<std::mutex> lock(_materialSubscriptionsMutex);
 

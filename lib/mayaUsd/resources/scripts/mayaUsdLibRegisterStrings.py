@@ -40,6 +40,7 @@ def mayaUsdLibRegisterStrings():
     register('kLabelUnusedTransformAttrs', 'Unused')
     register('kLabelMetadata', 'Metadata')
     register('kLabelAppliedSchemas', 'Applied Schemas')
+    register('kOpenImage', 'Open')
 
     # mayaUsdAddMayaReference.py
     register('kErrorGroupPrimExists', 'Group prim "^1s" already exists under "^2s". Choose prim name other than "^1s" to proceed.')
@@ -55,20 +56,32 @@ def mayaUsdLibRegisterStrings():
     register('kCacheFileWillAppear', 'Cache file will\nappear on parent\nprim:')
     register('kCacheMayaRefCache', 'Cache')
     register('kCacheMayaRefOptions', 'Cache File Options')
-    register('kCacheMayaRefUsdHierarchy', 'Author Cache File to USD Hierarchy')
+    register('kCacheMayaRefUsdHierarchy', 'Author Cache File to USD')
     register('kCaptionCacheToUsd', 'Cache to USD')
     register('kErrorCacheToUsdFailed', 'Cache to USD failed for "^1s".')
     register('kMenuAppend', 'Append')
     register('kMenuPayload', 'Payload')
-    register('kMenuPrepend', 'Prepend')
+    register('kMenuPrepend', 'Prepend (default)')
     register('kMenuReference', 'Reference')
     register('kOptionAsUSDReference', 'Composition Arc:')
     register('kOptionAsUSDReferenceToolTip', '<p>Choose the type of USD Reference composition arc for your Maya Reference:<br><br><b>Payloads</b> are a type of reference. They are recorded, but not traversed in the scene hierarchy. Select this arc if your goal is to manually construct<br>a "working set" that is a subset of an entire scene, in which only parts of the scene are required/loaded. Note: payloads are<br>weaker than direct references in any given LayerStack.<br><br><b>References</b> are general and can be used to compose smaller units of scene description into larger aggregates, building up a namespace that<br>includes the "encapsulated" result of composing the scene description targeted by a reference. Select this arc if your goal is not to unload your<br>references.</p>')
+    register('kOptionAsUSDReferenceStatusMsg', 'Choose the type of USD Reference composition arc for your Maya Reference.')
     register('kOptionListEditedAs', 'List Edited As')
     register('kOptionLoadPayload', 'Load Payload:')
+    register('kLoadPayloadAnnotation', 'If selected, all existing payloads on the prim will be unchanged and new payloads will be loaded as well. When deselected, all payloads on the prim will be unloaded.')
     register('kTextDefineIn', 'Define in:')
     register('kTextVariant', 'Variant')
     register('kTextVariantToolTip','If selected, your Maya reference will be defined in a variant. This will enable your prim to\nhave 2 variants you can switch between in the Outliner; the Maya reference and its USD cache.')
+
+    # mayaUsdClearRefsOrPayloadsOptions.py
+    register('kClearRefsOrPayloadsOptionsTitle', 'Clear All USD References/Payloads')
+    register('kClearRefsOrPayloadsOptionsMessage', 'Clear all references/payloads on %s?')
+    register('kClearButton', 'Clear')
+    register('kCancelButton', 'Cancel')
+    register('kAllRefsLabel', 'All References')
+    register('kAllRefsTooltip', 'Clear all references on the prim.')
+    register('kAllPayloadsLabel', 'All Payloads')
+    register('kAllPayloadsTooltip', 'Clear all payloads on the prim.')
 
     # mayaUsdMergeToUSDOptions.py
     register('kMergeToUSDOptionsTitle', 'Merge Maya Edits to USD Options')

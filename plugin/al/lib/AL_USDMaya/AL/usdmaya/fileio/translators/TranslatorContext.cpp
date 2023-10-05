@@ -25,14 +25,8 @@
 #include <string>
 
 namespace {
-const int _translatorContextProfilerCategory = MProfiler::addCategory(
-#if MAYA_API_VERSION >= 20190000
-    "TranslatorContext",
-    "TranslatorContext"
-#else
-    "TranslatorContext"
-#endif
-);
+const int _translatorContextProfilerCategory
+    = MProfiler::addCategory("TranslatorContext", "TranslatorContext");
 
 bool isDescendantPath(const SdfPathSet& affectedPaths, const SdfPath& path)
 {
