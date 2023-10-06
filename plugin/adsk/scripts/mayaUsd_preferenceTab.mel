@@ -155,6 +155,8 @@ global proc mayaUsd_PrefInitOptionVars(int $forceFactoryDefault)
 			-iv mayaUsd_ShowDisplayColorTextureOff false
 		;
 	}
+	// Need to refresh the viewport for display mayaUsd_ShowDisplayColorTextureOff
+	ogs -reset;
 }
 
 global proc mayaUsd_PrefCreateTab()
@@ -335,7 +337,7 @@ global proc mayaUsd_PrefUpdate()
 
 	if (`optionVar -exists "mayaUsd_ShowDisplayColorTextureOff"`) {
 		int $v = `optionVar -q "mayaUsd_ShowDisplayColorTextureOff"`;
-		radioButtonGrp -e -select $v usdPrefUntexturedMode;
+		radioButtonGrp -e -select ($v ? 2 : 1) usdPrefUntexturedMode;
 	}
 
 	int $checkAll = true;
@@ -440,9 +442,8 @@ global proc mayaUsd_PrefHoldState(string $mode)
 				usdPrefFileDependenciesRelativeToEditTargetLayer;
 		}
 		if (`radioButtonGrp -exists usdPrefUntexturedMode`) {
-			radioButtonGrp -e -v1
-				`optionVar -q mayaUsd_ShowDisplayColorTextureOff`
-				usdPrefUntexturedMode;
+			int $v = `optionVar -q mayaUsd_ShowDisplayColorTextureOff`;
+			radioButtonGrp -e -select ($v ? 2 : 1) usdPrefUntexturedMode;
 		}
 	}
 }
