@@ -207,8 +207,20 @@ const char* _selectUSDFileScript()
 std::string
 makeUSDReferenceFilePathRelativeIfRequested(const std::string& filePath, const UsdPrim& prim)
 {
-    if (!UsdMayaUtilFileSystem::requireUsdPathsRelativeToEditTargetLayer())
+    const auto& layer = UsdUfe::getCurrentTargetLayer(prim);
+    if (!layer) {
         return filePath;
+    }
+
+    if (!UsdMayaUtilFileSystem::requireUsdPathsRelativeToEditTargetLayer()) {
+        UsdMayaUtilFileSystem::unmarkPathAsPostponedRelative(layer, filePath);
+        return filePath;
+    }
+
+    if (layer->IsAnonymous()) {
+        UsdMayaUtilFileSystem::markPathAsPostponedRelative(layer, filePath);
+        return filePath;
+    }
 
     const std::string layerDirPath = MayaUsd::getTargetLayerFolder(prim);
     auto relativePathAndSuccess = UsdMayaUtilFileSystem::makePathRelativeTo(filePath, layerDirPath);
