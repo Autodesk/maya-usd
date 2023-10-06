@@ -189,7 +189,8 @@ private:
         if (status != MS::kSuccess) {
             return UsdShadeShader();
         }
-        MStringArray allowedNodes;
+
+        MObjectArray allowedNodes;
         for (; !iterDepGraphNodeLevel.isDone(); iterDepGraphNodeLevel.next()) {
             MObject currentNode = iterDepGraphNodeLevel.currentItem(&status);
             if (status != MS::kSuccess) {
@@ -199,7 +200,8 @@ private:
             if (status != MS::kSuccess) {
                 continue;
             }
-            allowedNodes.append(currentDepNode.name());
+
+            allowedNodes.append(currentNode);
         }
 
         MItDependencyGraph iterDepGraph(
@@ -249,12 +251,6 @@ private:
             } else if (isSource) {
                 srcPlug = iterPlug;
 
-                const MFnDependencyNode currentNode(iterPlug.node(), &status);
-                if (allowedNodes.indexOf(currentNode.name()) == -1) {
-                    // The source plug connects nodes that aren't allowed for export.
-                    continue;
-                }
-
                 if (!iterPlug.destinations(dstPlugs, &status) || status != MS::kSuccess) {
                     continue;
                 }
@@ -286,9 +282,16 @@ private:
                     continue;
                 }
 
-                const MFnDependencyNode destinationNode(dstPlug.node(), &status);
-                if (allowedNodes.indexOf(destinationNode.name()) == -1) {
-                    // The destination plug connects nodes that aren't allowed for export.
+                bool allowedNode = false;
+                for (unsigned int j = 0; j < allowedNodes.length(); ++j) { 
+                    if (dstPlug.node() == allowedNodes[j]) {
+                        allowedNode = true;
+                        break;
+                    }
+                }
+                // Only generate shader writers if the plug belongs to an allowed node
+                // that is needed.
+                if (!allowedNode) {
                     continue;
                 }
 
