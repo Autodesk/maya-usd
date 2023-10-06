@@ -93,8 +93,7 @@ private:
         const MObject&                         depNode,
         const SdfPath&                         parentPath,
         const UsdMayaShadingModeExportContext& context,
-        _NodeHandleToShaderWriterMap&          shaderWriterMap,
-        bool                                   createIfMissing = true)
+        _NodeHandleToShaderWriterMap&          shaderWriterMap)
     {
         if (depNode.hasFn(MFn::kShadingEngine)) {
             // depNode is the material itself, so we don't need to create a
@@ -113,10 +112,6 @@ private:
             // We've already created a shader writer for this node, so just
             // return it.
             return iter->second;
-        }
-
-        if (!createIfMissing) {
-            return nullptr;
         }
 
         // No shader writer exists for this node yet, so create one.
@@ -180,12 +175,38 @@ private:
         // parameter, so we have to make a copy of rootPlug here.
         MPlug rootPlugCopy(rootPlug);
 
-        MStatus            status;
+        MStatus status;
+
+        // This is to perform an initial traversal to find the used nodes
+        // connected to the material to avoid generating unnecessary plugs.
+        MItDependencyGraph iterDepGraphNodeLevel(
+            rootPlugCopy,
+            MFn::kInvalid,
+            MItDependencyGraph::Direction::kUpstream,
+            MItDependencyGraph::Traversal::kDepthFirst,
+            MItDependencyGraph::Level::kNodeLevel,
+            &status);
+        if (status != MS::kSuccess) {
+            return UsdShadeShader();
+        }
+        MStringArray allowedNodes;
+        for (; !iterDepGraphNodeLevel.isDone(); iterDepGraphNodeLevel.next()) {
+            MObject currentNode = iterDepGraphNodeLevel.currentItem(&status);
+            if (status != MS::kSuccess) {
+                continue;
+            }
+            const MFnDependencyNode currentDepNode(currentNode, &status);
+            if (status != MS::kSuccess) {
+                continue;
+            }
+            allowedNodes.append(currentDepNode.name());
+        }
+
         MItDependencyGraph iterDepGraph(
             rootPlugCopy,
             MFn::kInvalid,
             MItDependencyGraph::Direction::kUpstream,
-            MItDependencyGraph::Traversal::kBreadthFirst,
+            MItDependencyGraph::Traversal::kDepthFirst,
             MItDependencyGraph::Level::kPlugLevel,
             &status);
         if (status != MS::kSuccess) {
@@ -228,6 +249,12 @@ private:
             } else if (isSource) {
                 srcPlug = iterPlug;
 
+                const MFnDependencyNode currentNode(iterPlug.node(), &status);
+                if (allowedNodes.indexOf(currentNode.name()) == -1) {
+                    // The source plug connects nodes that aren't allowed for export.
+                    continue;
+                }
+
                 if (!iterPlug.destinations(dstPlugs, &status) || status != MS::kSuccess) {
                     continue;
                 }
@@ -259,8 +286,14 @@ private:
                     continue;
                 }
 
+                const MFnDependencyNode destinationNode(dstPlug.node(), &status);
+                if (allowedNodes.indexOf(destinationNode.name()) == -1) {
+                    // The destination plug connects nodes that aren't allowed for export.
+                    continue;
+                }
+
                 auto dstShaderInfo = _GetExportedShaderForNode(
-                    dstPlug.node(), materialExportPath, context, shaderWriterMap, false);
+                    dstPlug.node(), materialExportPath, context, shaderWriterMap);
                 if (!dstShaderInfo) {
                     continue;
                 }
