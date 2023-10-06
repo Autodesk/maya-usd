@@ -219,7 +219,7 @@ class usdFileRelative(object):
         enableFields = cls._canBeRelative and checked
         cmds.textFieldGrp(cls.kUnresolvedPathTextField, edit=True, enable=enableFields, text='')
         if enableFields:
-            cls.updateFilePathPreviewFields(cls.getSelectedFile(), checked)
+            cls.updateFilePathPreviewFields(cls.getRawSelectedFile(), checked)
 
     @classmethod
     def onfileNameEditFieldChanged(cls, text):
