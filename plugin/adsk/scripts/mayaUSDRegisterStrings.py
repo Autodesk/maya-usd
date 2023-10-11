@@ -39,7 +39,7 @@ def mayaUSDRegisterStrings():
     register("kMakePathRelativeToSceneFile", "Make Path Relative to Scene File")
     register("kMakePathRelativeToSceneFileAnn", "Path will be relative to your Maya scene file.")
     register("kMakePathRelativeToEditTargetLayer", "Make Path Relative to Edit Target Layer Directory")
-    register("kMakePathRelativeToEditTargetLayerAnn", "Enable to activate relative pathing to your current edit target layer's directory.\nIf this option is disabled, verify that your target layer is not anonymous and save it to disk.")
+    register("kMakePathRelativeToEditTargetLayerAnn", "Enable to activate relative pathing to your current edit target layer's directory.")
     register("kMakePathRelativeToImageEditTargetLayer", "Make Path Relative to Edit Target Layer Directory")
     register("kMakePathRelativeToImageEditTargetLayerAnn", "Enable to activate relative pathing to your current edit target layer's directory.\nIf this option is disabled, verify that your target layer is not anonymous and save it to disk.")
     register("kMakePathRelativeToParentLayer", "Make Path Relative to Parent Layer Directory")
