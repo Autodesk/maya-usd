@@ -85,7 +85,11 @@ void ItemDelegate::paint(
     // 	painter->drawRect(QRect(0, option.rect.y(), option.rect.right(), option.rect.bottom()));
     // 	painter->restore();
 
-    ParentClass::paint(painter, option, index);
+    QStyleOptionViewItem adjustedOption(option);
+    adjustedOption.decorationPosition = QStyleOptionViewItem::Right;
+    adjustedOption.decorationAlignment = Qt::AlignLeft;
+
+    ParentClass::paint(painter, adjustedOption, index);
 }
 
 void ItemDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const
