@@ -21,8 +21,10 @@
 #include <usdUfe/ufe/UsdObject3dHandler.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>
+#include <usdUfe/ufe/UsdUndoClearDefaultPrimCommand.h>
 #include <usdUfe/ufe/UsdUndoPayloadCommand.h>
 #include <usdUfe/ufe/UsdUndoSelectAfterCommand.h>
+#include <usdUfe/ufe/UsdUndoSetDefaultPrimCommand.h>
 #include <usdUfe/ufe/UsdUndoToggleActiveCommand.h>
 #include <usdUfe/ufe/UsdUndoToggleInstanceableCommand.h>
 
@@ -59,6 +61,8 @@ static constexpr char    kUSDDeactivatePrimLabel[] = "Deactivate Prim";
 static constexpr char    kUSDToggleInstanceableStateItem[] = "Toggle Instanceable State";
 static constexpr char    kUSDMarkAsInstancebaleLabel[] = "Mark as Instanceable";
 static constexpr char    kUSDUnmarkAsInstanceableLabel[] = "Unmark as Instanceable";
+static constexpr char    kUSDSetAsDefaultPrim[] = "Set as Default Prim";
+static constexpr char    kUSDClearDefaultPrim[] = "Clear Default Prim";
 static constexpr char    kUSDAddNewPrimItem[] = "Add New Prim";
 static constexpr char    kUSDAddNewPrimLabel[] = "Add New Prim";
 static constexpr char    kUSDDefPrimItem[] = "Def";
@@ -306,6 +310,14 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                     items.emplace_back(kUSDToggleVisibilityItem, label);
                 }
             }
+
+            // Set as Default Prim:
+            // If the prim is a root prim, add set default prim
+            if (prim().GetPath().IsRootPrimPath()) {
+                items.emplace_back(kUSDSetAsDefaultPrim, kUSDSetAsDefaultPrim);
+                items.emplace_back(kUSDClearDefaultPrim, kUSDClearDefaultPrim);
+            }
+
             // Prim active state:
             items.emplace_back(
                 kUSDToggleActiveStateItem,
@@ -465,6 +477,10 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
 #else
         return UsdUfe::UsdUndoAddNewPrimCommand::create(fItem, primType, primType);
 #endif
+    } else if (itemPath[0] == kUSDSetAsDefaultPrim) {
+        return std::make_shared<UsdUndoSetDefaultPrimCommand>(prim());
+    } else if (itemPath[0] == kUSDClearDefaultPrim) {
+        return std::make_shared<UsdUndoClearDefaultPrimCommand>(prim());
     }
     return nullptr;
 }

@@ -1,3 +1,4 @@
+import functools
 import os.path
 import maya.cmds as cmds
 import ufe
@@ -11,6 +12,46 @@ def debugMessage(msg):
     if DEBUG:
         print(msg)
 
+def GetAllRootPrimNamesNaturalOrder(proxyShape):
+    # Custom comparator
+    def naturalOrderComparator(a, b):
+        lenA, lenB = len(a), len(b)
+        i, j = 0, 0
+        while((i < lenA) and (j < lenB)):
+            if(a[i].isdigit() and b[j].isdigit()):
+                # extract the number part and put into a separate string
+                numA, numB = str(a[i]), str(b[j])
+                while((i + 1 < lenA) and a[i+1].isdigit()):
+                    i += 1
+                    numA += a[i]
+                while((j + 1 < lenB) and b[j+1].isdigit()):
+                    j += 1
+                    numB += b[j]
+
+                if(numA == numB):
+                    continue
+                return int(numA) - int(numB)
+            if(a[i] == b[j]):
+                i += 1
+                j += 1
+                continue
+            return a[i] > b[j]
+        return i == lenA
+    try:
+        proxyStage = mayaUsd.ufe.getStage(proxyShape)
+        primNames = []
+        if proxyStage:
+            for prim in proxyStage.TraverseAll():
+                if (prim.GetPath().IsRootPrimPath()):
+                    primNames.append(prim.GetName())
+        # Sort the prim list in natural order
+        primNames.sort(key= functools.cmp_to_key(naturalOrderComparator))
+        return primNames
+    except Exception as e:
+        debugMessage('GetAllPrimNames() - Error: %s' % str(e))
+        pass
+    return ''
+
 def GetDefaultPrimName(proxyShape):
     try:
         proxyStage = mayaUsd.ufe.getStage(proxyShape)
@@ -23,6 +64,23 @@ def GetDefaultPrimName(proxyShape):
         pass
     return ''
 
+def SetDefaultPrim(proxyShape, primName):
+    try:
+        proxyStage = mayaUsd.ufe.getStage(proxyShape)
+        if(not primName):
+           proxyStage.ClearDefaultPrim()
+        defautlPrim = None
+        if proxyStage:
+            for prim in proxyStage.TraverseAll():
+                if(primName == prim.GetName()):
+                    defautlPrim = prim
+        if defautlPrim:
+            proxyStage.SetDefaultPrim(defautlPrim)
+    except Exception as e:
+        debugMessage('SetDefaultPrim() - Error: %s' % str(e))
+        pass
+    return ''
+    
 def GetRootLayerName(proxyShape):
     try:
         proxyStage = mayaUsd.ufe.getStage(proxyShape)
