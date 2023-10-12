@@ -283,7 +283,7 @@ private:
                 }
 
                 bool allowedNode = false;
-                for (unsigned int j = 0; j < allowedNodes.length(); ++j) { 
+                for (unsigned int j = 0; j < allowedNodes.length(); ++j) {
                     if (dstPlug.node() == allowedNodes[j]) {
                         allowedNode = true;
                         break;
