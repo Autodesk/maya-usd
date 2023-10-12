@@ -87,7 +87,7 @@ void ItemDelegate::paint(
 
     QStyleOptionViewItem adjustedOption(option);
     adjustedOption.decorationPosition = QStyleOptionViewItem::Right;
-    adjustedOption.decorationAlignment = Qt::AlignLeft;
+    adjustedOption.decorationAlignment = Qt::AlignLeft | Qt::AlignVCenter;
 
     ParentClass::paint(painter, adjustedOption, index);
 }
