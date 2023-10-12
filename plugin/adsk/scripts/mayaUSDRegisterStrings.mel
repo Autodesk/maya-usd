@@ -264,17 +264,17 @@ global proc mayaUSDRegisterStrings()
     register("kSaveLayerUsdFileFormatSbm", "Select whether the .usd file is written out in binary or ASCII");
     register("kConfirmExistFileSave", "Confirm Save of Existing Files");
     register("kSavingMayaSceneFiles", "Save Maya Scene Files");
-    register("kSaveFileRelatively", "Save Files Relatively");
+    register("kRelativePathing", "Relative Pathing");
     register("kAllRelativeToggle", "All files");
-    register("kAllRelativeToggleAnn", "When on, all of your files will be saved as relative paths.");
-    register("kRootLayersRelativeToSceneFile", "USD root layers");
-    register("kRootLayersRelativeToSceneFileAnn", "When on, your USD root layer file will be saved relatively to your Maya scene file.");
+    register("kAllRelativeToggleAnn", "When on, all of your files will be written as relative paths.");
+    register("kRootLayersRelativeToSceneFile", "Root layers");
+    register("kRootLayersRelativeToSceneFileAnn", "When on, your USD root layer file will be written as relative paths to your Maya scene file.");
     register("kSubLayersRelativeToParentLayer", "Sublayers");
-    register("kSubLayersRelativeToParentLayerAnn", "When on, all sublayers will be saved relatively to their parent layers.");
-    register("kReferencesRelativeToEditTargetLayer", "References/Payloads");
-    register("kReferencesRelativeToEditTargetLayerAnn", "When on, any references or payloads will be saved relatively to their respective edit target layer.");
+    register("kSubLayersRelativeToParentLayerAnn", "When on, all sublayers will be written as relative paths to their parent layers.");
+    register("kReferencesRelativeToEditTargetLayer", "USD References/payloads");
+    register("kReferencesRelativeToEditTargetLayerAnn", "When on, any USD references or payloads will be written as relative paths to their respective edit target layer.");
     register("kFileDependenciesRelativeToEditTargetLayer", "File dependencies");
-    register("kFileDependenciesRelativeToEditTargetLayerAnn", "When on, any file dependencies, such as textures or Maya references will be saved relatively to their respective edit target layer.");
+    register("kFileDependenciesRelativeToEditTargetLayerAnn", "When on, any file dependencies, such as textures or Maya references will be written as relative paths to their respective edit target layer.");
 
     // Register the strings from the python equivalent register function.
     // Note: the strings from both the MEL and python register can be loaded
