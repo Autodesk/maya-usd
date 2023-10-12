@@ -205,7 +205,7 @@ def saveWantPrependCompositionArc(want):
 
 def wantPayloadLoaded():
     opVarName = "mayaUsd_WantPayloadLoaded"
-    return cmds.optionVar(exists=opVarName) and cmds.optionVar(query=opVarName)
+    return not cmds.optionVar(exists=opVarName) or cmds.optionVar(query=opVarName)
 
 def saveWantPayloadLoaded(want):
     opVarName = "mayaUsd_WantPayloadLoaded"
