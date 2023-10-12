@@ -198,7 +198,6 @@ global proc mayaUsdMenu_EditAsMayaDataOptionsReset(string $obj)
 global proc mayaUsdMenu_ApplyEditAsMayaDataOptions(string $obj)
 {
     mayaUsdTranslatorImport ("", "query", "", "mayaUsdMenu_EditAsMayaDataOptionsCallback");
-    hideOptionBox;
 
     if (size($obj)) {
         waitCursor -state 1; 
