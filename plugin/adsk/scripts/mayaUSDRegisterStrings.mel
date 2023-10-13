@@ -255,6 +255,11 @@ global proc mayaUSDRegisterStrings()
     register("kdotusdFileFormat", ".usd File Format:");
     register("kAscii", "ASCII");
     register("kBinary", "Binary");
+    register("KViewport", "Viewport");
+    register("KUntexturedMode", "Untextured mode");
+    register("KMaterialColors", "Material Colors");
+    register("KDisplayColors", "Display Colors");
+    register("KUntexturedModeAnn", "Choose what your colors should display as in the viewport. Select from default material colors or USD display colors. Select display colors when working in USD as material colors may be inaccurate from the endless types available.");
     register("kSaveLayerUsdFileFormatAnn", "Select whether the .usd file is written out in binary or ASCII. You can save a file in .usdc (binary) or .usda (ASCII) format. Manually entering a file name with an extension overrides the selection in this preference.");
     register("kSaveLayerUsdFileFormatSbm", "Select whether the .usd file is written out in binary or ASCII");
     register("kConfirmExistFileSave", "Confirm Save of Existing Files");
