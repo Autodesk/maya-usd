@@ -89,6 +89,16 @@ global proc mayaUsd_PrefRelativeToChanged()
 	}
 }
 
+global proc mayaUsd_PrefUntexturedModeChanged()
+{
+	if (`radioButtonGrp -exists usdPrefUntexturedMode`) {
+		int $sel = `radioButtonGrp -q -select usdPrefUntexturedMode`;
+		optionVar -iv mayaUsd_ShowDisplayColorTextureOff ($sel == 2);
+		ogs -reset;
+	}
+}
+
+
 global proc mayaUsd_PrefInitOptionVars(int $forceFactoryDefault)
 {
 	string $saveLayerFormatArgBinaryOptionPref = `python("import mayaUsd.lib as mlib; mlib.OptionVarTokens.SaveLayerFormatArgBinaryOption")`;
@@ -122,6 +132,9 @@ global proc mayaUsd_PrefInitOptionVars(int $forceFactoryDefault)
 		if ($forceFactoryDefault || !`optionVar -exists mayaUsd_MakePathRelativeToImageEditTargetLayer`) {
 			optionVar -intValue mayaUsd_MakePathRelativeToImageEditTargetLayer false;
 		}
+		if ($forceFactoryDefault || !`optionVar -exists mayaUsd_ShowDisplayColorTextureOff`) {
+			optionVar -intValue mayaUsd_ShowDisplayColorTextureOff false;
+		}
 
 	} else {
 		optionVar -init $forceFactoryDefault -category "MayaUsd"
@@ -139,8 +152,11 @@ global proc mayaUsd_PrefInitOptionVars(int $forceFactoryDefault)
 			-iv mayaUsd_MakePathRelativeToParentLayer false
 			-iv mayaUsd_MakePathRelativeToEditTargetLayer false
 			-iv mayaUsd_MakePathRelativeToImageEditTargetLayer false
+			-iv mayaUsd_ShowDisplayColorTextureOff false
 		;
 	}
+	// Need to refresh the viewport for display mayaUsd_ShowDisplayColorTextureOff
+	ogs -reset;
 }
 
 global proc mayaUsd_PrefCreateTab()
@@ -257,6 +273,19 @@ global proc mayaUsd_PrefCreateTab()
 			-changeCommand mayaUsd_PrefRelativeToChanged
 			usdPrefFileDependenciesRelativeToEditTargetLayer;
 
+	setParent $parent;
+	frameLayout -label `getMayaUsdString("KViewport")`;
+		columnLayout -adj true;
+		radioButtonGrp
+			-nrb 2
+			-label `getMayaUsdString("KUntexturedMode")`
+			-annotation `getMayaUsdString("KUntexturedModeAnn")`
+			-label1 `getMayaUsdString("KMaterialColors")`
+			-label2 `getMayaUsdString("KDisplayColors")` 
+			-select 1	// Default -> Material Colors
+			-onCommand mayaUsd_PrefUntexturedModeChanged
+			usdPrefUntexturedMode;
+
 	setUITemplate -popTemplate;
 
 	mayaUsd_PrefUpdate();
@@ -306,6 +335,11 @@ global proc mayaUsd_PrefUpdate()
 			usdPrefConfirmExistFileSave;
 	}
 
+	if (`optionVar -exists "mayaUsd_ShowDisplayColorTextureOff"`) {
+		int $v = `optionVar -q "mayaUsd_ShowDisplayColorTextureOff"`;
+		radioButtonGrp -e -select ($v ? 2 : 1) usdPrefUntexturedMode;
+	}
+
 	int $checkAll = true;
 	if (`optionVar -exists "mayaUsd_MakePathRelativeToSceneFile"`) {
 		int $v = `optionVar -q "mayaUsd_MakePathRelativeToSceneFile"`;
@@ -353,7 +387,8 @@ global proc mayaUsd_PrefHoldState(string $mode)
 		"mayaUsd_MakePathRelativeToSceneFile",
 		"mayaUsd_MakePathRelativeToParentLayer",
 		"mayaUsd_MakePathRelativeToEditTargetLayer",
-		"mayaUsd_MakePathRelativeToImageEditTargetLayer"
+		"mayaUsd_MakePathRelativeToImageEditTargetLayer",
+		"mayaUsd_ShowDisplayColorTextureOff"
 	};
 	prefsHoldOptionVars($prefOptionVars, $mode); 
 
@@ -405,6 +440,10 @@ global proc mayaUsd_PrefHoldState(string $mode)
 			checkBoxGrp -e -v1
 				`optionVar -q mayaUsd_MakePathRelativeToImageEditTargetLayer`
 				usdPrefFileDependenciesRelativeToEditTargetLayer;
+		}
+		if (`radioButtonGrp -exists usdPrefUntexturedMode`) {
+			int $v = `optionVar -q mayaUsd_ShowDisplayColorTextureOff`;
+			radioButtonGrp -e -select ($v ? 2 : 1) usdPrefUntexturedMode;
 		}
 	}
 }
