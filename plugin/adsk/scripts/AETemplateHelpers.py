@@ -229,4 +229,4 @@ def ProxyShapeFilePathRefresh(filePathAttr):
                     debugMessage('  User confirmed reload action, calling UsdStage.Reload()')
                     proxyStage.Reload()
     except Exception as e:
-        print('ProxyShapeFilePathRefresh() - Error: %s' % str(e))
+        debugMessage('ProxyShapeFilePathRefresh() - Error: %s' % str(e))
