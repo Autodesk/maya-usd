@@ -120,7 +120,7 @@ global proc mayaUSDRegisterStrings()
     register("kTimeAnn", "Edits the current time value of a stage, which corresponds to the animation frame drawn in the viewport. By default, this value connects to Maya's global time node.");
     register("kTipYouCanChooseMultipleFiles", "<b>Tip:</b>  You can choose multiple files.");
     register("kUniversalSceneDescription", "Universal Scene Description");
-    register("kUsdFileOptions", "USD File Options");
+    register("kUsdFileOptions", "Stage");
     register("kUsdOptionsFrameLabel", "Universal Scene Description (USD) Options");
     register("kSaveOption2GBWarning", "<b>Important</b>: per layer, any data exceeding the limit of 2GB will not be saved.");
 
