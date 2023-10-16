@@ -54,6 +54,9 @@ def getDefaultGroupPrimName(parentPrim, mayaNamespace):
         index += 1
     return startName
 
+def handleMayaReferenceFilePath(fileName, ufePath):
+    return mayaUsd.lib.Util.handleAssetPathThatMaybeRelativeToLayer(fileName, 'mayaReference', mayaUsd.ufe.getStage(ufePath).GetEditTarget().GetLayer(), "mayaUsd_MakePathRelativeToEditTargetLayer")
+
 # Adapted from testMayaUsdSchemasMayaReference.py.
 def createMayaReferencePrim(ufePathStr, mayaReferencePath, mayaNamespace, 
                             mayaReferencePrimName = mayaRefUtils.defaultMayaReferencePrimName(),
