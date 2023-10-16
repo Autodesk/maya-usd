@@ -34,7 +34,6 @@ class testUsdExportUVSetMappings(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        os.environ["MAYAUSD_PROVIDE_DEFAULT_TEXCOORD_PRIMVAR_NAME"] = "1"
         cls._inputPath = fixturesUtils.setUpClass(__file__)
 
     @classmethod

@@ -178,6 +178,7 @@ mayaUsd_add_test(testUsdExportUVSetMappings
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     ENV
         "PIXMAYA_WRITE_UV_AS_FLOAT2=0"
+        "MAYAUSD_PROVIDE_DEFAULT_TEXCOORD_PRIMVAR_NAME=1"
 )
 set_property(TEST testUsdExportUVSetMappings APPEND PROPERTY LABELS translators)
 
