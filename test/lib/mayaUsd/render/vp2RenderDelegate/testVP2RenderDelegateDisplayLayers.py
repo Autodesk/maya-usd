@@ -42,6 +42,10 @@ class testVP2RenderDelegateDisplayLayers(imageUtils.ImageDiffingTestCase):
 
     @classmethod
     def setUpClass(cls):
+        # The baselines assume Y-up, so make sure Maya is configured
+        # that way too.
+        cmds.upAxis(axis='y')
+
         inputPath = fixturesUtils.setUpClass(__file__,
             initializeStandalone=False, loadPlugin=False)
 
