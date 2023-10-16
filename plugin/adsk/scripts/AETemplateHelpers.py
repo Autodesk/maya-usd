@@ -131,15 +131,28 @@ def ProxyShapeFilePathChanged(filePathAttr, newFilePath=None):
             okCaption = getMayaUsdString("kLoad")
             fileFilter = getUSDDialogFileFilters()
 
+            # Note: empty or missing attribute return None, but we want an empty string
+            #       in that case.
+            primPath = cmds.getAttr(stageName+'.primPath') or ''
+            excludedPrimPaths = cmds.getAttr(stageName+'.excludePrimPaths') or ''
+            loadPayloads = cmds.getAttr(stageName+'.loadPayloads') or 0
+
+            cmds.optionVar(stringValue=('stageFromFile_primPath', primPath))
+            cmds.optionVar(stringValue=('stageFromFile_excludePrimPath', excludedPrimPaths))
+            cmds.optionVar(intValue=('stageFromFile_loadPayloads', loadPayloads))
+
             startDir = ''
-            if cmds.file(q=True, exists=True):
-                fullPath = cmds.file(q=True, loc=True)
-                startDir = os.path.dirname(fullPath)
+            if not startDir and currFilePath:
+                startDir = os.path.dirname(currFilePath)
+            if not startDir:
+                if cmds.file(q=True, exists=True):
+                    fullPath = cmds.file(q=True, loc=True)
+                    startDir = os.path.dirname(fullPath)
 
             res = cmds.fileDialog2(caption=title, fileMode=1, ff=fileFilter, okc=okCaption,
-                                   optionsUICreate='mayaUsd_USDRootFileRelative_UICreate',
-                                   optionsUIInit='mayaUsd_USDRootFileRelative_UIInit',
-                                   optionsUICommit2='mayaUsd_USDRootFileRelative_UICommit',
+                                   optionsUICreate='stageFromFile_UISetup',
+                                   optionsUIInit='stageFromFile_UIInit',
+                                   optionsUICommit='stageFromFile_UICommit',
                                    startingDirectory=startDir)
             if res and len(res) == 1:
                 debugMessage('    User picked USD file, setting file path attribute')
@@ -148,8 +161,17 @@ def ProxyShapeFilePathChanged(filePathAttr, newFilePath=None):
                 requireRelative = RequireUsdPathsRelativeToMayaSceneFile()
                 if requireRelative:
                     usdFileToLoad = mayaUsdLib.Util.getPathRelativeToMayaSceneFile(usdFileToLoad)
+
+                primPath = cmds.optionVar(query='stageFromFile_primPath')
+                excludedPrimPaths = cmds.optionVar(query='stageFromFile_excludePrimPath')
+                loadPayloads = cmds.optionVar(query='stageFromFile_loadPayloads')
+
                 cmds.setAttr(filePathAttr, usdFileToLoad, type='string')
                 cmds.setAttr(filePathAttr+"Relative", requireRelative)
+                cmds.setAttr(stageName+'.primPath', primPath, type="string")
+                cmds.setAttr(stageName+'.excludePrimPaths', excludedPrimPaths, type="string")
+                cmds.setAttr(stageName+'.loadPayloads', loadPayloads)
+
                 return True
         elif newFilePath is not None:
             # Instead of opening a file dialog to get the USD file, simply
@@ -208,4 +230,3 @@ def ProxyShapeFilePathRefresh(filePathAttr):
                     proxyStage.Reload()
     except Exception as e:
         debugMessage('ProxyShapeFilePathRefresh() - Error: %s' % str(e))
-        pass
