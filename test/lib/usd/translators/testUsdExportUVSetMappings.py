@@ -198,7 +198,7 @@ class testUsdExportUVSetMappings(unittest.TestCase):
 
         materialPath = "/multi_uv/Materials/multi_uv_set_matSG"
         materialPrim = stage.GetPrimAtPath(materialPath)
-        self.assertTrue(materialPrim, f"Could not find material node at {materialPath}")
+        self.assertTrue(materialPrim, "Could not find material node at {}".format(materialPath))
         material = UsdShade.Material(materialPrim)
 
         uvMap = {
@@ -209,7 +209,7 @@ class testUsdExportUVSetMappings(unittest.TestCase):
 
         # Verify that both uv sets are there
         for key, value in uvMap.items():
-            self.assertEqual(material.GetInput(f"{key}:varname").GetAttr().Get(), value)
+            self.assertEqual(material.GetInput("{}:varname".format(key)).GetAttr().Get(), value)
 
         # Verify that things were written properly
         if not os.environ.get("MAYAUSD_PROVIDE_DEFAULT_TEXCOORD_PRIMVAR_NAME"):
