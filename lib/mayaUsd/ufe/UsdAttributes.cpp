@@ -97,8 +97,9 @@ UsdAttributes::Ptr UsdAttributes::create(const UsdSceneItem::Ptr& item)
 Ufe::SceneItem::Ptr UsdAttributes::sceneItem() const { return fItem; }
 
 // Returns whether the given op is an inverse operation. i.e, it starts with "!invert!".
+// Note: sizeof(invertPrefix) includes the final nul terminator, so we must subtract one.
 static constexpr char   invertPrefix[] = "!invert!";
-static constexpr size_t invertPrefixLen(sizeof(invertPrefix) / sizeof(invertPrefix[0]));
+static constexpr size_t invertPrefixLen(sizeof(invertPrefix) / sizeof(invertPrefix[0]) - 1);
 static bool             _IsInverseOp(const std::string& name)
 {
     return PXR_NS::TfStringStartsWith(name, invertPrefix);
