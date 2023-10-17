@@ -31,7 +31,8 @@ global proc mayaUsd_pluginUICreation()
                       "mayaUsd_PrefHoldState",
                       "mayaUsd_PrefSetOptVarsToDefault",
                       `getMayaUsdString("kUSDPreferences")`,
-                      "USD");
+                      "    USD");
+                      // Note: 4 spaces in USD name is important to make it indented in prefs.
     mayaUsd_PrefInitOptionVars(false);
 
     source "mayaUsd_fileOptions.mel";

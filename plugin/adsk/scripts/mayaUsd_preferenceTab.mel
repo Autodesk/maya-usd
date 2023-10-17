@@ -230,7 +230,7 @@ global proc mayaUsd_PrefCreateTab()
 			usdPrefConfirmExistFileSave;
 
 	setParent $parent;
-	frameLayout -label `getMayaUsdString("kSaveFileRelatively")`;
+	frameLayout -label `getMayaUsdString("kRelativePathing")`;
 		columnLayout -adj true;
 		checkBoxGrp
 			-ncb 1
