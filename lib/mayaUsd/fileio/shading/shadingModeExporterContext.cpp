@@ -64,6 +64,13 @@
 #include <string>
 #include <utility>
 
+// Certain applications do not currently support reading
+// TexCoord names via connections, and instead expect a default value.
+TF_DEFINE_ENV_SETTING(
+    MAYAUSD_PROVIDE_DEFAULT_TEXCOORD_PRIMVAR_NAME,
+    false,
+    "Add a default value for texcoord names in addition to connections");
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // clang-format off
@@ -648,6 +655,47 @@ public:
                 }
             }
             _uvNamesToMaterial[largestSet] = material;
+        }
+
+        if (TfGetEnvSetting(MAYAUSD_PROVIDE_DEFAULT_TEXCOORD_PRIMVAR_NAME)) {
+            // We'll traverse the material prims children and look for items
+            // with connections, and use that to set the value
+            TfToken readerType { "UsdPrimvarReader_float2" };
+            TfToken shaderID;
+
+            UsdShadeConnectableAPI source;
+            TfToken                sourceInputName;
+            UsdShadeAttributeType  sourceType;
+            VtValue                varnameValue;
+            auto                   materialPrim = material.GetPrim();
+            for (const auto child : materialPrim.GetDescendants()) {
+                if (!child.IsA<UsdShadeShader>()) {
+                    continue;
+                }
+
+                auto shader = UsdShadeShader(child);
+                if (shader.GetShaderId(&shaderID) && shaderID != readerType) {
+                    continue;
+                }
+
+                auto varnameInput = shader.GetInput(TfToken("varname"));
+                if (!varnameInput) {
+                    continue;
+                }
+
+                if (!UsdShadeConnectableAPI::GetConnectedSource(
+                        varnameInput, &source, &sourceInputName, &sourceType)) {
+                    continue;
+                }
+
+                auto targetVarname = material.GetInput(sourceInputName);
+                if (!targetVarname) {
+                    continue;
+                }
+
+                targetVarname.Get(&varnameValue);
+                varnameInput.Set(varnameValue);
+            }
         }
     }
 

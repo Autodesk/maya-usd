@@ -179,5 +179,54 @@ class testUsdExportUVSetMappings(unittest.TestCase):
         ]
         self.baseExportUVSetMappings({"preserveUVSetNames": False, "remapUVSetsTo": [['map1','mmap1'], ["st1", "sst1"]]}, expected)
 
+    def testSimpleMultiUVS(self):
+        mayaFile = os.path.join(self._inputPath, 'UsdExportUVSetMappingsTest',
+                                'multi_uv_simple.ma')
+        cmds.file(mayaFile, force=True, open=True)
+        cmds.select("mesh_template24x")
+        testDir = os.path.abspath('UsdExportUVSetMappingsTest')
+        if not os.path.exists(testDir):
+            os.mkdir(testDir)
+
+        usdFilePath = os.path.join(testDir, "multi_uv_sets.usda")
+
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
+                           shadingMode='useRegistry', convertMaterialsTo=['UsdPreviewSurface'],
+                           materialsScopeName='Materials', selection=True)
+
+        stage = Usd.Stage.Open(usdFilePath)
+
+        materialPath = "/multi_uv/Materials/multi_uv_set_matSG"
+        materialPrim = stage.GetPrimAtPath(materialPath)
+        self.assertTrue(materialPrim, "Could not find material node at {}".format(materialPath))
+        material = UsdShade.Material(materialPrim)
+
+        uvMap = {
+            "uv_grid_ao": "st",
+            "uv_grid_ao_opacity": "st",
+            "texcoord_checker_up_bc": "st1"
+        }
+
+        # Verify that both uv sets are there
+        for key, value in uvMap.items():
+            self.assertEqual(material.GetInput("{}:varname".format(key)).GetAttr().Get(), value)
+
+        # Verify that things were written properly
+        if not os.environ.get("MAYAUSD_PROVIDE_DEFAULT_TEXCOORD_PRIMVAR_NAME"):
+            return
+
+        for prim in materialPrim.GetChildren():
+            shader = UsdShade.Shader(prim)
+            if not shader:
+                continue
+
+            if shader.GetShaderId() != "UsdPrimvarReader_float2":
+                continue
+
+            varname = shader.GetInput("varname")
+            (connectableAPI, outputName, outputType) = varname.GetConnectedSource()
+            self.assertEqual(varname.Get(), material.GetInput(outputName).Get())
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
