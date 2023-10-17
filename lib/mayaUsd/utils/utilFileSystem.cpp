@@ -326,15 +326,15 @@ std::string UsdMayaUtilFileSystem::handleAssetPathThatMaybeRelativeToLayer(
     std::string                   fileName,
     const std::string&            attrName,
     const PXR_NS::SdfLayerHandle& layer,
-    const std::string&            primVarName)
+    const std::string&            optionVarName)
 {
     if (!layer) {
         return fileName;
     }
 
-    const MString primVarString = primVarName.c_str();
+    const MString optionVarString = optionVarName.c_str();
     const bool    needPathRelative
-        = MGlobal::optionVarExists(primVarString) && MGlobal::optionVarIntValue(primVarString);
+        = MGlobal::optionVarExists(optionVarString) && MGlobal::optionVarIntValue(optionVarString);
 
     if (needPathRelative) {
         if (!layer->IsAnonymous()) {
