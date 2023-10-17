@@ -285,6 +285,11 @@ global proc int mayaUsdTranslatorImport (string $parent,
             checkBoxGrp -label "" -label1 `getMayaUsdString("kImportCustomFrameRangeLbl")` -cw 1 $cw1 -cc ("mayaUsdTranslatorImport_AnimationCB") mayaUsdTranslator_CustomFrameRangeCheckBox;
 
             intFieldGrp -label `getMayaUsdString("kImportFrameRangeLbl")` -nf 2 -cw 1 $cw1 mayaUsdTranslator_CustomFrameRange;
+
+            if ($forEditAsMaya) {
+                checkBoxGrp -edit -visible 0 mayaUsdTranslator_CustomFrameRangeCheckBox;
+                intFieldGrp -edit -visible 0 mayaUsdTranslator_CustomFrameRange;
+            }
             separator -style "none";
         setParent ..;
 
