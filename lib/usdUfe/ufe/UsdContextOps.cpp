@@ -315,6 +315,9 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
             // If the prim is a root prim, add set default prim
             if (prim().GetPath().IsRootPrimPath()) {
                 items.emplace_back(kUSDSetAsDefaultPrim, kUSDSetAsDefaultPrim);
+            }
+
+            if (prim().GetStage()->GetDefaultPrim() == prim()) {
                 items.emplace_back(kUSDClearDefaultPrim, kUSDClearDefaultPrim);
             }
 

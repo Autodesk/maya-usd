@@ -4,6 +4,7 @@ import maya.cmds as cmds
 import ufe
 import mayaUsd.ufe
 import mayaUsd.lib as mayaUsdLib
+import re
 from mayaUSDRegisterStrings import getMayaUsdString
 from mayaUsdUtils import getUSDDialogFileFilters
 
@@ -13,30 +14,9 @@ def debugMessage(msg):
         print(msg)
 
 def GetAllRootPrimNamesNaturalOrder(proxyShape):
-    # Custom comparator
-    def naturalOrderComparator(a, b):
-        lenA, lenB = len(a), len(b)
-        i, j = 0, 0
-        while((i < lenA) and (j < lenB)):
-            if(a[i].isdigit() and b[j].isdigit()):
-                # extract the number part and put into a separate string
-                numA, numB = str(a[i]), str(b[j])
-                while((i + 1 < lenA) and a[i+1].isdigit()):
-                    i += 1
-                    numA += a[i]
-                while((j + 1 < lenB) and b[j+1].isdigit()):
-                    j += 1
-                    numB += b[j]
-
-                if(numA == numB):
-                    continue
-                return int(numA) - int(numB)
-            if(a[i] == b[j]):
-                i += 1
-                j += 1
-                continue
-            return a[i] > b[j]
-        return i == lenA
+    # Custom comparator key
+    def natural_key(item):
+        return [int(s) if s.isdigit() else s.lower() for s in re.split(r'([0-9]+)', item)]
     try:
         proxyStage = mayaUsd.ufe.getStage(proxyShape)
         primNames = []
@@ -45,7 +25,7 @@ def GetAllRootPrimNamesNaturalOrder(proxyShape):
                 if (prim.GetPath().IsRootPrimPath()):
                     primNames.append(prim.GetName())
         # Sort the prim list in natural order
-        primNames.sort(key= functools.cmp_to_key(naturalOrderComparator))
+        primNames.sort(key=natural_key)
         return primNames
     except Exception as e:
         debugMessage('GetAllPrimNames() - Error: %s' % str(e))

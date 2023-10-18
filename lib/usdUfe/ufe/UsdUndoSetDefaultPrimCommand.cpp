@@ -29,28 +29,25 @@ UsdUndoSetDefaultPrimCommand::UsdUndoSetDefaultPrimCommand(const UsdPrim& prim)
     : Ufe::UndoableCommand()
     , _prim(prim)
 {
-    _stage = _prim.GetStage();
-    if (!_stage) {
-        return;
-    }
 }
 
 UsdUndoSetDefaultPrimCommand::~UsdUndoSetDefaultPrimCommand() { }
 
 void UsdUndoSetDefaultPrimCommand::execute()
 {
-    UsdUndoBlock undoBlock(&_undoableItem);
+    UsdUndoBlock            undoBlock(&_undoableItem);
+    PXR_NS::UsdStageWeakPtr stage = _prim.GetStage();
 
     // Check if the layer selected is the root layer.
-    if (_stage->GetRootLayer() != _stage->GetEditTarget().GetLayer()) {
+    if (!UsdUfe::isRootLayer(stage)) {
         TF_WARN(
             "Stage metadata [defaultPrim] can only be modified when the root layer is targeted "
             "[%s]",
-            _stage->GetRootLayer()->GetDisplayName().c_str());
+            stage->GetRootLayer()->GetDisplayName().c_str());
         return;
     }
     // Set the stage's default prim to the given prim.
-    _stage->SetDefaultPrim(_prim);
+    stage->SetDefaultPrim(_prim);
 }
 
 void UsdUndoSetDefaultPrimCommand::redo() { _undoableItem.redo(); }

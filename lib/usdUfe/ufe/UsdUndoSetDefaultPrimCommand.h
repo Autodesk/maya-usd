@@ -43,8 +43,7 @@ private:
     void undo() override;
     void redo() override;
 
-    PXR_NS::UsdPrim         _prim;
-    PXR_NS::UsdStageWeakPtr _stage;
+    PXR_NS::UsdPrim _prim;
 
     UsdUndoableItem _undoableItem;
 
