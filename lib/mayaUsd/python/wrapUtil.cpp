@@ -66,6 +66,9 @@ void wrapUtil()
                   "getPathRelativeToMayaSceneFile",
                   UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile)
               .def("getPathRelativeToDirectory", UsdMayaUtilFileSystem::getPathRelativeToDirectory)
+              .def(
+                  "handleAssetPathThatMaybeRelativeToLayer",
+                  UsdMayaUtilFileSystem::handleAssetPathThatMaybeRelativeToLayer)
               .def("ensureUSDFileExtension", ensureUSDFileExtension)
               .staticmethod("getPathRelativeToMayaSceneFile");
 }
