@@ -27,7 +27,12 @@ namespace USDUFE_NS_DEF {
 
 UsdUndoClearDefaultPrimCommand::UsdUndoClearDefaultPrimCommand(const UsdPrim& prim)
     : Ufe::UndoableCommand()
-    , _prim(prim)
+    , _stage(prim.GetStage())
+{
+}
+
+UsdUndoClearDefaultPrimCommand::UsdUndoClearDefaultPrimCommand(const PXR_NS::UsdStageRefPtr& stage)
+    : _stage(stage)
 {
 }
 
@@ -35,16 +40,15 @@ UsdUndoClearDefaultPrimCommand::~UsdUndoClearDefaultPrimCommand() { }
 
 void UsdUndoClearDefaultPrimCommand::execute()
 {
-    const PXR_NS::UsdStageRefPtr stage = _prim.GetStage();
-    if (!stage)
+    if (!_stage)
         return;
 
     // Check if the default prim can be cleared.
-    applyRootLayerMetadataRestriction(stage, "clear default prim");
+    applyRootLayerMetadataRestriction(_stage, "clear default prim");
 
     // Clear the stage's default prim.
     UsdUndoBlock undoBlock(&_undoableItem);
-    stage->ClearDefaultPrim();
+    _stage->ClearDefaultPrim();
 }
 
 void UsdUndoClearDefaultPrimCommand::redo() { _undoableItem.redo(); }
