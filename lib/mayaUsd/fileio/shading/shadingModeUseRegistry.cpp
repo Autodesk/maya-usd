@@ -175,7 +175,35 @@ private:
         // parameter, so we have to make a copy of rootPlug here.
         MPlug rootPlugCopy(rootPlug);
 
-        MStatus            status;
+        MStatus status;
+
+        // This is to perform an initial traversal to find the used nodes
+        // connected to the material to avoid generating unnecessary plugs.
+        MItDependencyGraph iterDepGraphNodeLevel(
+            rootPlugCopy,
+            MFn::kInvalid,
+            MItDependencyGraph::Direction::kUpstream,
+            MItDependencyGraph::Traversal::kDepthFirst,
+            MItDependencyGraph::Level::kNodeLevel,
+            &status);
+        if (status != MS::kSuccess) {
+            return UsdShadeShader();
+        }
+
+        MObjectArray allowedNodes;
+        for (; !iterDepGraphNodeLevel.isDone(); iterDepGraphNodeLevel.next()) {
+            MObject currentNode = iterDepGraphNodeLevel.currentItem(&status);
+            if (status != MS::kSuccess) {
+                continue;
+            }
+            const MFnDependencyNode currentDepNode(currentNode, &status);
+            if (status != MS::kSuccess) {
+                continue;
+            }
+
+            allowedNodes.append(currentNode);
+        }
+
         MItDependencyGraph iterDepGraph(
             rootPlugCopy,
             MFn::kInvalid,
@@ -251,6 +279,19 @@ private:
             for (unsigned int i = 0u; i < dstPlugs.length(); ++i) {
                 const MPlug dstPlug = dstPlugs[i];
                 if (dstPlug.isNull()) {
+                    continue;
+                }
+
+                bool allowedNode = false;
+                for (unsigned int j = 0; j < allowedNodes.length(); ++j) {
+                    if (dstPlug.node() == allowedNodes[j]) {
+                        allowedNode = true;
+                        break;
+                    }
+                }
+                // Only generate shader writers if the plug belongs to an allowed node
+                // that is needed.
+                if (!allowedNode) {
                     continue;
                 }
 
