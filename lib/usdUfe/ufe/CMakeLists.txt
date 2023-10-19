@@ -32,6 +32,8 @@ target_sources(${PROJECT_NAME}
         UsdUndoToggleActiveCommand.cpp
         UsdUndoToggleInstanceableCommand.cpp
         UsdUndoVisibleCommand.cpp
+        UsdUndoSetDefaultPrimCommand.cpp
+        UsdUndoClearDefaultPrimCommand.cpp
         UsdUndoableCommand.cpp
         Utils.cpp
 )
@@ -75,6 +77,8 @@ set(HEADERS
     UsdUndoToggleActiveCommand.h
     UsdUndoToggleInstanceableCommand.h
     UsdUndoVisibleCommand.h
+    UsdUndoSetDefaultPrimCommand.h
+    UsdUndoClearDefaultPrimCommand.h
     UsdUndoableCommand.h
     Utils.h
 )
