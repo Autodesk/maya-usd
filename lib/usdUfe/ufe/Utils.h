@@ -275,4 +275,7 @@ bool isEditTargetLayerModifiable(
 USDUFE_PUBLIC
 Ufe::BBox3d combineUfeBBox(const Ufe::BBox3d& ufeBBox1, const Ufe::BBox3d& ufeBBox2);
 
+USDUFE_PUBLIC
+bool isRootLayer(const PXR_NS::UsdStageWeakPtr prim);
+
 } // namespace USDUFE_NS_DEF

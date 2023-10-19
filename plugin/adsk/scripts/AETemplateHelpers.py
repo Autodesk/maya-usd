@@ -1,8 +1,10 @@
+import functools
 import os.path
 import maya.cmds as cmds
 import ufe
 import mayaUsd.ufe
 import mayaUsd.lib as mayaUsdLib
+import re
 from mayaUSDRegisterStrings import getMayaUsdString
 from mayaUsdUtils import getUSDDialogFileFilters
 
@@ -10,6 +12,25 @@ def debugMessage(msg):
     DEBUG = False
     if DEBUG:
         print(msg)
+
+def GetAllRootPrimNamesNaturalOrder(proxyShape):
+    # Custom comparator key
+    def natural_key(item):
+        return [int(s) if s.isdigit() else s.lower() for s in re.split(r'([0-9]+)', item)]
+    try:
+        proxyStage = mayaUsd.ufe.getStage(proxyShape)
+        primNames = []
+        if proxyStage:
+            for prim in proxyStage.TraverseAll():
+                if (prim.GetPath().IsRootPrimPath()):
+                    primNames.append(prim.GetName())
+        # Sort the prim list in natural order
+        primNames.sort(key=natural_key)
+        return primNames
+    except Exception as e:
+        debugMessage('GetAllPrimNames() - Error: %s' % str(e))
+        pass
+    return ''
 
 def GetDefaultPrimName(proxyShape):
     try:
@@ -23,6 +44,23 @@ def GetDefaultPrimName(proxyShape):
         pass
     return ''
 
+def SetDefaultPrim(proxyShape, primName):
+    try:
+        proxyStage = mayaUsd.ufe.getStage(proxyShape)
+        if(not primName):
+           proxyStage.ClearDefaultPrim()
+        defautlPrim = None
+        if proxyStage:
+            for prim in proxyStage.TraverseAll():
+                if(primName == prim.GetName()):
+                    defautlPrim = prim
+        if defautlPrim:
+            proxyStage.SetDefaultPrim(defautlPrim)
+    except Exception as e:
+        debugMessage('SetDefaultPrim() - Error: %s' % str(e))
+        pass
+    return ''
+    
 def GetRootLayerName(proxyShape):
     try:
         proxyStage = mayaUsd.ufe.getStage(proxyShape)

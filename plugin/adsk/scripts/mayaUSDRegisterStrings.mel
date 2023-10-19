@@ -36,7 +36,7 @@ global proc mayaUSDRegisterStrings()
     register("kCreateStageFromFile", "Create Stage from File");
     register("kCreateStage", "Create");
     register("kDefaultPrim", "Default Prim");
-    register("kDefaultPrimAnn", "As part of its metadata, each stage can identify a default prim. This is the primitive that is referenced in if you reference in a file.");
+    register("kDefaultPrimAnn", "As part of its metadata, each stage can identify a default prim. This is the primitive that is referenced in if you reference in a file. Right-click a root prim in a stage to set it as your default prim. Use the same method to clear a default prim once it has been set.");
     register("kExcludePrimPaths", "Exclude Prim Paths:");
     register("kExcludePrimPathsAnn", "Specify the path of a prim to exclude it from the viewport display. Multiple prim paths must be separated by a comma.");
     register("kExcludePrimPathsSbm", "Specify the path of a prim to exclude it from the viewport display.");

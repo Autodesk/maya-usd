@@ -800,4 +800,13 @@ Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& f
     return dst;
 }
 
+bool isRootLayer(const PXR_NS::UsdStageWeakPtr stage)
+{
+    // Check if the layer selected is the root layer.
+    if (stage->GetRootLayer() != stage->GetEditTarget().GetLayer()) {
+        return false;
+    }
+    return true;
+}
+
 } // namespace USDUFE_NS_DEF
