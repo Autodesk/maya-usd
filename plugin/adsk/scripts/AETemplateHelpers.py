@@ -68,7 +68,7 @@ def SetDefaultPrim(proxyShape, primName):
         return True
     except Exception as e:
         # Note: we do want to tell the user why the set or clear failed.
-        OpenMaya.MGlobal.displayError((str(e)))
+        OpenMaya.MGlobal.displayError(str(e))
         return False
     
 def GetRootLayerName(proxyShape):

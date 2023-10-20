@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Copyright 2020 Autodesk
+# Copyright 2023 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,20 +19,14 @@
 import fixturesUtils
 import mayaUtils
 import testUtils
-from testUtils import assertVectorAlmostEqual, assertVectorNotAlmostEqual
-import usdUtils
-from usdUtils import filterUsdStr
 
-import mayaUsd.ufe
-
-from pxr import UsdGeom, Vt, Gf, Sdf, Usd
+from pxr import Sdf
 
 from maya import cmds
 from maya import standalone
 
 import ufe
 
-import os
 import unittest
 
 class DefaultPrimCmdsTestCase(unittest.TestCase):
