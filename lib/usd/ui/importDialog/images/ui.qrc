@@ -4,6 +4,7 @@
     <file alias="checkboxOffDisabled.png">checkboxOffDisabled_100.png</file>
     <file alias="checkboxOn.png">checkboxOn_100.png</file>
     <file alias="checkboxOnDisabled.png">checkboxOnDisabled_100.png</file>
+    <file alias="defaultPrim.png">defaultPrim_100.png</file>
 
     <file>checkboxOff_150.png</file>
     <file>checkboxOff_200.png</file>
@@ -13,6 +14,8 @@
     <file>checkboxOn_200.png</file>
     <file>checkboxOnDisabled_150.png</file>
     <file>checkboxOnDisabled_200.png</file>
+    <file>defaultPrim_150.png</file>
+    <file>defaultPrim_200.png</file>
   </qresource>
 </RCC>
 

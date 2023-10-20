@@ -22,6 +22,7 @@
 #include <mayaUsdUI/ui/TreeItem.h>
 #include <mayaUsdUI/ui/api.h>
 
+#include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stagePopulationMask.h>
 
 #include <QtGui/QStandardItemModel>
@@ -33,6 +34,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 
 class IMayaMQtUtil;
+struct USDImportDialogOptions;
 
 /**
  * \brief Qt Model to explore the hierarchy of a USD file.
@@ -51,26 +53,14 @@ public:
      * \param parent A reference to the parent of the TreeModel.
      */
     explicit TreeModel(
-        const IMayaMQtUtil& mayaQtUtil,
-        const ImportData*   importData = nullptr,
-        QObject*            parent = nullptr) noexcept;
+        const IMayaMQtUtil&           mayaQtUtil,
+        const ImportData*             importData,
+        const USDImportDialogOptions& options,
+        QObject*                      parent = nullptr) noexcept;
 
     // QStandardItemModel overrides
     QVariant      data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     Qt::ItemFlags flags(const QModelIndex& index) const override;
-
-    /**
-     * \brief Order of the columns as they appear in the Tree.
-     * \remarks The order of the enumeration is important.
-     */
-    enum TREE_COLUMNS
-    {
-        kTreeColumn_Load,     // Should we load this prim?
-        kTreeColumn_Name,     // Name of the item as it appears in the TreeView.
-        kTreeColumn_Type,     // Type of the primitive.
-        kTreeColumn_Variants, // Variant Set(s) and Variant Selection of the primitive.
-        kTreeColumn_Last      // Last element of the enum.
-    };
 
     void setRootPrimPath(const std::string& path);
     void getRootPrimPath(std::string&, const QModelIndex& parent);
@@ -87,10 +77,16 @@ public:
 
     void resetVariants();
 
-private:
     void uncheckEnableTree();
     void checkEnableItem(TreeItem* item);
 
+    TreeItem* findPrimItem(const PXR_NS::UsdPrim& prim) const;
+    TreeItem* findPathItem(const PXR_NS::SdfPath& path) const;
+    TreeItem* getFirstItem() const;
+
+    static const QPixmap* getDefaultPrimPixmap();
+
+private:
     void updateCheckedItemCount() const;
     void
     countCheckedItems(const QModelIndex& parent, int& nbChecked, int& nbVariantsModified) const;
@@ -111,6 +107,13 @@ private:
 
     // Special interface we can use to perform Maya Qt utilities (such as Pixmap loading).
     const IMayaMQtUtil& fMayaQtUtil;
+
+    bool fShowVariants;
+    bool fShowRoot;
+
+    // Need to be in the tree model becasue we need to create it before
+    // the tree item have their model set.
+    static const QPixmap* fsDefaultPrimImage;
 };
 
 } // namespace MAYAUSD_NS_DEF

@@ -546,6 +546,14 @@ bool UsdMayaUtilFileSystem::wantPayloadLoaded()
         && MGlobal::optionVarIntValue(WANT_PAYLOAD_LOADED);
 }
 
+std::string UsdMayaUtilFileSystem::getReferencedPrimPath()
+{
+    static const MString WANT_REFERENCE_COMPOSITION_ARC = "mayaUsd_ReferencedPrimPath";
+    if (!MGlobal::optionVarExists(WANT_REFERENCE_COMPOSITION_ARC))
+        return {};
+    return MGlobal::optionVarStringValue(WANT_REFERENCE_COMPOSITION_ARC).asChar();
+}
+
 const char* getScenesFolderScript = R"(
 global proc string UsdMayaUtilFileSystem_GetScenesFolder()
 {
