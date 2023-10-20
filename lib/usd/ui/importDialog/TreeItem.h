@@ -39,12 +39,13 @@ class MAYAUSD_UI_PUBLIC TreeItem : public QStandardItem
 public:
     using ParentClass = QStandardItem;
 
-    enum class Type
+    enum Column
     {
-        kLoad,
-        kName,
-        kType,
-        kVariants
+        kColumnLoad,
+        kColumnName,
+        kColumnType,
+        kColumnVariants,
+        kColumnLast
     };
 
     enum class CheckState
@@ -60,7 +61,7 @@ public:
      * \param prim The USD Prim to represent with this item.
      * \param text Column text to display on the View of the the Qt TreeModel.
      */
-    explicit TreeItem(const UsdPrim& prim, Type t) noexcept;
+    explicit TreeItem(const UsdPrim& prim, bool isDefaultPrim, Column column) noexcept;
 
     /**
      * \brief Destructor.
@@ -102,14 +103,15 @@ public:
     void resetVariantSelectionModified() { fVariantSelectionModified = false; }
 
 private:
-    void initializeItem();
+    void           initializeItem(bool isDefaultPrim);
+    const QPixmap* createPixmap(const char* pixmapURL) const;
 
 protected:
     // The USD Prim that the item represents in the TreeModel.
     UsdPrim fPrim;
 
-    // The type of this item.
-    Type fType;
+    // The column of this item.
+    Column fColumn;
 
     // For the LOAD column, the check state.
     CheckState fCheckState;
@@ -117,10 +119,10 @@ protected:
     // Special flag set when the variant selection was modified.
     bool fVariantSelectionModified;
 
-    static QPixmap* fsCheckBoxOn;
-    static QPixmap* fsCheckBoxOnDisabled;
-    static QPixmap* fsCheckBoxOff;
-    static QPixmap* fsCheckBoxOffDisabled;
+    static const QPixmap* fsCheckBoxOn;
+    static const QPixmap* fsCheckBoxOnDisabled;
+    static const QPixmap* fsCheckBoxOff;
+    static const QPixmap* fsCheckBoxOffDisabled;
 };
 
 } // namespace MAYAUSD_NS_DEF

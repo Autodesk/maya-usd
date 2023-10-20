@@ -25,44 +25,53 @@
 
 namespace MAYAUSD_NS_DEF {
 
-QPixmap* TreeItem::fsCheckBoxOn = nullptr;
-QPixmap* TreeItem::fsCheckBoxOnDisabled = nullptr;
-QPixmap* TreeItem::fsCheckBoxOff = nullptr;
-QPixmap* TreeItem::fsCheckBoxOffDisabled = nullptr;
+const QPixmap* TreeItem::fsCheckBoxOn = nullptr;
+const QPixmap* TreeItem::fsCheckBoxOnDisabled = nullptr;
+const QPixmap* TreeItem::fsCheckBoxOff = nullptr;
+const QPixmap* TreeItem::fsCheckBoxOffDisabled = nullptr;
 
-TreeItem::TreeItem(const UsdPrim& prim, Type t) noexcept
+TreeItem::TreeItem(const UsdPrim& prim, bool isDefaultPrim, Column column) noexcept
     : ParentClass()
     , fPrim(prim)
-    , fType(t)
+    , fColumn(column)
     , fCheckState(CheckState::kChecked_Disabled)
     , fVariantSelectionModified(false)
 {
-    initializeItem();
+    initializeItem(isDefaultPrim);
 }
 
 UsdPrim TreeItem::prim() const { return fPrim; }
 
 int TreeItem::type() const { return ParentClass::ItemType::UserType; }
 
+const QPixmap* TreeItem::createPixmap(const char* pixmapURL) const
+{
+    const QPixmap* pixmap = nullptr;
+
+    const TreeModel* treeModel = qobject_cast<const TreeModel*>(model());
+    if (treeModel != nullptr) {
+        pixmap = treeModel->mayaQtUtil().createPixmap(pixmapURL);
+    } else {
+        // The tree model should never be null, but we can recover here if it is.
+        TF_RUNTIME_ERROR("Unexpected null tree model");
+        pixmap = new QPixmap(pixmapURL);
+    }
+
+    // If the resource fails to load, return a non-null pointer.
+    static const QPixmap empty;
+    if (!pixmap)
+        pixmap = &empty;
+
+    return pixmap;
+}
+
 const QPixmap& TreeItem::checkImage() const
 {
     if (fsCheckBoxOn == nullptr) {
-        const TreeModel* treeModel = qobject_cast<const TreeModel*>(model());
-        if (treeModel != nullptr) {
-            fsCheckBoxOn = treeModel->mayaQtUtil().createPixmap(":/ImportDialog/checkboxOn.png");
-            fsCheckBoxOnDisabled
-                = treeModel->mayaQtUtil().createPixmap(":/ImportDialog/checkboxOnDisabled.png");
-            fsCheckBoxOff = treeModel->mayaQtUtil().createPixmap(":/ImportDialog/checkboxOff.png");
-            fsCheckBoxOffDisabled
-                = treeModel->mayaQtUtil().createPixmap(":/ImportDialog/checkboxOffDisabled.png");
-        } else {
-            // The tree model should never be null, but we can recover here if it is.
-            TF_RUNTIME_ERROR("Unexpected null tree model");
-            fsCheckBoxOn = new QPixmap(":/ImportDialog/checkboxOn.png");
-            fsCheckBoxOnDisabled = new QPixmap(":/ImportDialog/checkboxOnDisabled.png");
-            fsCheckBoxOff = new QPixmap(":/ImportDialog/checkboxOff.png");
-            fsCheckBoxOffDisabled = new QPixmap(":/ImportDialog/checkboxOffDisabled.png");
-        }
+        fsCheckBoxOn = createPixmap(":/ImportDialog/checkboxOn.png");
+        fsCheckBoxOnDisabled = createPixmap(":/ImportDialog/checkboxOnDisabled.png");
+        fsCheckBoxOff = createPixmap(":/ImportDialog/checkboxOff.png");
+        fsCheckBoxOffDisabled = createPixmap(":/ImportDialog/checkboxOffDisabled.png");
     }
 
     switch (fCheckState) {
@@ -76,30 +85,34 @@ const QPixmap& TreeItem::checkImage() const
 
 void TreeItem::setCheckState(TreeItem::CheckState st)
 {
-    assert(fType == Type::kLoad);
-    if (fType == Type::kLoad)
+    assert(fColumn == kColumnLoad);
+    if (fColumn == kColumnLoad)
         fCheckState = st;
 }
 
 void TreeItem::setVariantSelectionModified()
 {
-    assert(fType == Type::kVariants);
-    if (fType == Type::kVariants)
+    assert(fColumn == kColumnVariants);
+    if (fColumn == kColumnVariants)
         fVariantSelectionModified = true;
 }
 
-void TreeItem::initializeItem()
+void TreeItem::initializeItem(bool isDefaultPrim)
 {
-    switch (fType) {
-    case Type::kLoad: fCheckState = CheckState::kChecked_Disabled; break;
-    case Type::kName:
+    switch (fColumn) {
+    case kColumnLoad: fCheckState = CheckState::kChecked_Disabled; break;
+    case kColumnName:
         if (fPrim.IsPseudoRoot())
             setText("Root");
         else
             setText(QString::fromStdString(fPrim.GetName().GetString()));
+        if (isDefaultPrim) {
+            if (const QPixmap* pixmap = TreeModel::getDefaultPrimPixmap())
+                setData(*pixmap, Qt::DecorationRole);
+        }
         break;
-    case Type::kType: setText(QString::fromStdString(fPrim.GetTypeName().GetString())); break;
-    case Type::kVariants: {
+    case kColumnType: setText(QString::fromStdString(fPrim.GetTypeName().GetString())); break;
+    case kColumnVariants: {
         if (fPrim.HasVariantSets()) {
             // We set a special role flag when this prim has variant sets.
             // So we know when to create the label and combo box(es) for the variant

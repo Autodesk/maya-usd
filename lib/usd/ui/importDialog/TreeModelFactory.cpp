@@ -15,6 +15,8 @@
 //
 #include "TreeModelFactory.h"
 
+#include "USDImportDialog.h"
+
 #include <mayaUsdUI/ui/IMayaMQtUtil.h>
 #include <mayaUsdUI/ui/TreeItem.h>
 #include <mayaUsdUI/ui/TreeModel.h>
@@ -40,72 +42,112 @@ static_assert(
 
 /*static*/
 std::unique_ptr<TreeModel> TreeModelFactory::createEmptyTreeModel(
-    const IMayaMQtUtil& mayaQtUtil,
-    const ImportData*   importData /*= nullptr*/,
-    QObject*            parent /*= nullptr*/)
+    const IMayaMQtUtil&           mayaQtUtil,
+    const ImportData*             importData,
+    const USDImportDialogOptions& options,
+    QObject*                      parent /*= nullptr*/)
 {
-    std::unique_ptr<TreeModel> treeModel(new TreeModel(mayaQtUtil, importData, parent));
-    treeModel->setHorizontalHeaderLabels({ QObject::tr(""),
-                                           QObject::tr("Prim Name"),
-                                           QObject::tr("Prim Type"),
-                                           QObject::tr("Variant Set and Variant") });
+    std::unique_ptr<TreeModel> treeModel(new TreeModel(mayaQtUtil, importData, options, parent));
+
+    QStringList headerLabels({ QObject::tr(""), QObject::tr("Name"), QObject::tr("Type") });
+    if (options.showVariants)
+        headerLabels.append(QObject::tr("Variant Set and Variant"));
+
+    treeModel->setHorizontalHeaderLabels(headerLabels);
     return treeModel;
-}
+} // namespace MAYAUSD_NS_DEF
 
 /*static*/
 std::unique_ptr<TreeModel> TreeModelFactory::createFromStage(
-    const UsdStageRefPtr& stage,
-    const IMayaMQtUtil&   mayaQtUtil,
-    const ImportData*     importData /*= nullptr*/,
-    QObject*              parent,
-    int*                  nbItems /*= nullptr*/
+    const UsdStageRefPtr&         stage,
+    const IMayaMQtUtil&           mayaQtUtil,
+    const ImportData*             importData,
+    const USDImportDialogOptions& options,
+    QObject*                      parent,
+    int*                          nbItems /*= nullptr*/
 )
 {
-    std::unique_ptr<TreeModel> treeModel = createEmptyTreeModel(mayaQtUtil, importData, parent);
-    int cnt = buildTreeHierarchy(stage->GetPseudoRoot(), treeModel->invisibleRootItem());
+    std::unique_ptr<TreeModel> treeModel
+        = createEmptyTreeModel(mayaQtUtil, importData, options, parent);
+
+    UsdPrim rootPrim = stage->GetPseudoRoot();
+    UsdPrim defPrim = stage->GetDefaultPrim();
+
+    const int cnt = options.showRoot
+        ? buildTreeHierarchy(rootPrim, defPrim, treeModel->invisibleRootItem(), options)
+        : buildTreeChildren(rootPrim, defPrim, treeModel->invisibleRootItem(), options);
+
     if (nbItems != nullptr)
         *nbItems = cnt;
+
+    TreeItem* item = treeModel->findPrimItem(defPrim);
+    if (!item)
+        item = treeModel->getFirstItem();
+    if (item)
+        treeModel->checkEnableItem(item);
+
     return treeModel;
 }
 
 /*static*/
-QList<QStandardItem*> TreeModelFactory::createPrimRow(const UsdPrim& prim)
+QList<QStandardItem*> TreeModelFactory::createPrimRow(
+    const UsdPrim&                prim,
+    const UsdPrim&                defaultPrim,
+    const USDImportDialogOptions& options)
 {
+    const bool isDefaultPrim = (prim == defaultPrim);
     // Cache the values to be displayed, in order to avoid querying the USD Prim too frequently
     // (despite it being cached and optimized for frequent access). Avoiding frequent conversions
     // from USD Strings to Qt Strings helps in keeping memory allocations low.
-    QList<QStandardItem*> ret = { new TreeItem(prim, TreeItem::Type::kLoad),
-                                  new TreeItem(prim, TreeItem::Type::kName),
-                                  new TreeItem(prim, TreeItem::Type::kType),
-                                  new TreeItem(prim, TreeItem::Type::kVariants) };
+    QList<QStandardItem*> ret = { new TreeItem(prim, isDefaultPrim, TreeItem::kColumnLoad),
+                                  new TreeItem(prim, isDefaultPrim, TreeItem::kColumnName),
+                                  new TreeItem(prim, isDefaultPrim, TreeItem::kColumnType) };
+
+    if (options.showVariants) {
+        ret.append(new TreeItem(prim, isDefaultPrim, TreeItem::kColumnVariants));
+    }
     return ret;
 }
 
 /*static*/
-int TreeModelFactory::buildTreeHierarchy(const UsdPrim& prim, QStandardItem* parentItem)
+int TreeModelFactory::buildTreeHierarchy(
+    const UsdPrim&                prim,
+    const UsdPrim&                defaultPrim,
+    QStandardItem*                parentItem,
+    const USDImportDialogOptions& options)
 {
-    QList<QStandardItem*> primDataCells = createPrimRow(prim);
+    QList<QStandardItem*> primDataCells = createPrimRow(prim, defaultPrim, options);
     parentItem->appendRow(primDataCells);
-    int cnt = 1;
+    return 1 + buildTreeChildren(prim, defaultPrim, primDataCells.front(), options);
+}
 
-    for (const auto& childPrim : prim.GetAllChildren()) {
-        cnt += buildTreeHierarchy(childPrim, primDataCells.front());
-    }
+/*static*/
+int TreeModelFactory::buildTreeChildren(
+    const UsdPrim&                prim,
+    const UsdPrim&                defaultPrim,
+    QStandardItem*                parentItem,
+    const USDImportDialogOptions& options)
+{
+    int cnt = 0;
+    for (const auto& childPrim : prim.GetAllChildren())
+        cnt += buildTreeHierarchy(childPrim, defaultPrim, parentItem, options);
     return cnt;
 }
 
 /*static*/
 int TreeModelFactory::buildTreeHierarchy(
-    const UsdPrim&               prim,
-    QStandardItem*               parentItem,
-    const unordered_sdfpath_set& primsToIncludeInTree,
-    size_t&                      insertionsRemaining)
+    const UsdPrim&                prim,
+    const UsdPrim&                defaultPrim,
+    QStandardItem*                parentItem,
+    const USDImportDialogOptions& options,
+    const unordered_sdfpath_set&  primsToIncludeInTree,
+    size_t&                       insertionsRemaining)
 {
     int  cnt = 0;
     bool primShouldBeIncluded
         = primsToIncludeInTree.find(prim.GetPath()) != primsToIncludeInTree.end();
     if (primShouldBeIncluded) {
-        QList<QStandardItem*> primDataCells = createPrimRow(prim);
+        QList<QStandardItem*> primDataCells = createPrimRow(prim, defaultPrim, options);
         parentItem->appendRow(primDataCells);
         ++cnt;
 
@@ -114,7 +156,12 @@ int TreeModelFactory::buildTreeHierarchy(
         if (--insertionsRemaining > 0) {
             for (const auto& childPrim : prim.GetAllChildren()) {
                 cnt += buildTreeHierarchy(
-                    childPrim, primDataCells.front(), primsToIncludeInTree, insertionsRemaining);
+                    childPrim,
+                    defaultPrim,
+                    primDataCells.front(),
+                    options,
+                    primsToIncludeInTree,
+                    insertionsRemaining);
             }
         }
     }

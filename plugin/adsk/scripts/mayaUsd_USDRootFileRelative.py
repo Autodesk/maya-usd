@@ -219,20 +219,42 @@ class usdFileRelative(object):
         enableFields = cls._canBeRelative and checked
         cmds.textFieldGrp(cls.kUnresolvedPathTextField, edit=True, enable=enableFields, text='')
         if enableFields:
-            cls.updateFilePathPreviewFields(checked)
+            cls.updateFilePathPreviewFields(cls.getRawSelectedFile(), checked)
 
     @classmethod
     def onfileNameEditFieldChanged(cls, text):
         """Callback from Qt textChanged event from fileNameEditField."""
-        cls.updateFilePathPreviewFields()
+        cls.updateFilePathRelatedUi(cls.getRawSelectedFile())
 
     @classmethod
     def onLookinTextChanged(cls, text):
         """Callback from Qt currentTextChanged from LookIn combobox."""
-        cls.updateFilePathPreviewFields()
+        cls.updateFilePathRelatedUi(cls.getRawSelectedFile())
 
     @classmethod
-    def updateFilePathPreviewFields(cls, makePathRelative=None):
+    def getRawSelectedFile(cls):
+        """Determine what the currently-selected file full path name."""
+        # If the accept button is disabled it means there is no valid input in the file
+        # name edit field.
+        selFiles = cls._fileDialog.selectedFiles() if cls._fileDialog and cls._acceptButton and cls._acceptButton.isEnabled() else None
+        selectedFile = selFiles[0] if selFiles else ''
+
+        if cls._ensureUsdExtension:
+            # Make sure the file path has a valid USD extension. This is NOT done by the fileDialog so
+            # the user is free to enter any extension they want. The layer editor code will then verify
+            # (and fix if needed) the file path before saving. We do the same here for preview.
+            selectedFile = mayaUsdLib.Util.ensureUSDFileExtension(selectedFile) if selectedFile else ''
+
+        return selectedFile
+
+    @classmethod
+    def updateFilePathRelatedUi(cls, unresolvedPath):
+        """Update all UI that cares about the given selected file."""
+        cls.updateFilePathPreviewFields(unresolvedPath)
+
+    @classmethod
+    def updateFilePathPreviewFields(cls, unresolvedPath, makePathRelative=None):
+        """Update the file-path preview UI."""
         if not cls._haveRelativePathFields:
             return
 
@@ -245,19 +267,6 @@ class usdFileRelative(object):
         if not makePathRelative:
             return
 
-        # If the accept button is disabled it means there is no valid input in the file
-        # name edit field.
-        selFiles = cls._fileDialog.selectedFiles() if cls._fileDialog and cls._acceptButton and cls._acceptButton.isEnabled() else None
-        selectedFile = selFiles[0] if selFiles else ''
-
-        if cls._ensureUsdExtension:
-            # Make sure the file path has a valid USD extension. This is NOT done by the fileDialog so
-            # the user is free to enter any extension they want. The layer editor code will then verify
-            # (and fix if needed) the file path before saving. We do the same here for preview.
-            unresolvedPath = mayaUsdLib.Util.ensureUSDFileExtension(selectedFile) if selectedFile else ''
-        else:
-            unresolvedPath = selectedFile
-            
         relativePath = ''
         if unresolvedPath and cls._relativeToDir:
             relativePath = mayaUsdLib.Util.getPathRelativeToDirectory(unresolvedPath, cls._relativeToDir)
@@ -269,13 +278,13 @@ class usdFileRelative(object):
     def selectionChanged(cls, parentLayout, selection):
         """Callback from fileDialog selectionChanged."""
         cmds.setParent(parentLayout)
-        cls.updateFilePathPreviewFields()
+        cls.updateFilePathRelatedUi(cls.getRawSelectedFile())
 
     @classmethod
     def fileTypeChanged(cls, parentLayout, newType):
         """Callback from fileDialog command fileTypeChanged."""
         cmds.setParent(parentLayout)
-        cls.updateFilePathPreviewFields()
+        cls.updateFilePathRelatedUi(cls.getRawSelectedFile())
 
 class usdRootFileRelative(usdFileRelative):
     '''
@@ -431,6 +440,7 @@ class usdAddRefOrPayloadRelativeToEditTargetLayer(usdFileRelativeToEditTargetLay
         compositionArc = values[mayaRefUtils.compositionArcKey]
         listEditType = values[mayaRefUtils.listEditTypeKey]
         loadPayload = values[mayaRefUtils.loadPayloadKey]
+        primPath = values[mayaRefUtils.referencedPrimPathKey]
 
         wantReference = bool(compositionArc == mayaRefUtils.compositionArcReference)
         wantPrepend = bool(listEditType == mayaRefUtils.listEditTypePrepend)
@@ -439,6 +449,18 @@ class usdAddRefOrPayloadRelativeToEditTargetLayer(usdFileRelativeToEditTargetLay
         mayaUsdUtils.saveWantReferenceCompositionArc(wantReference)
         mayaUsdUtils.saveWantPrependCompositionArc(wantPrepend)
         mayaUsdUtils.saveWantPayloadLoaded(wantLoad)
+        mayaUsdUtils.saveReferencedPrimPath(primPath)
+
+    @classmethod
+    def updateFilePathRelatedUi(cls, unresolvedPath):
+        """Update all UI that cares about the given selected file."""
+        super(usdAddRefOrPayloadRelativeToEditTargetLayer, cls).updateFilePathRelatedUi(unresolvedPath)
+        cls.updateMayaReferenceUi(unresolvedPath)
+
+    @classmethod
+    def updateMayaReferenceUi(cls, unresolvedPath):
+        mayaRefUtils.updateUsdRefOrPayloadUI(unresolvedPath)
+
 
 class usdImageRelativeToEditTargetLayer(usdFileRelativeToEditTargetLayer):
     '''
