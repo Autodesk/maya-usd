@@ -215,7 +215,7 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
     def testAECustomEnumControl(self):
         '''Simple test for the customEnumControlCreator in AE template.'''
 
-        from ufe_ae.usd.nodes.usdschemabase import AETemplate
+        from ufe_ae.usd.nodes.usdschemabase.ae_template import AETemplate
         from ufe_ae.usd.nodes.usdschemabase.custom_enum_control import customEnumControlCreator
         if customEnumControlCreator not in AETemplate._controlCreators:
             self.skipTest('Test only available if AE template has customEnumControlCreator.')
