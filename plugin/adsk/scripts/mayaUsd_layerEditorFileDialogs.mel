@@ -171,8 +171,9 @@ global proc UsdLayerEditor_LoadLayersFileDialogOptions_UIInit(string $parent, st
 
 global proc UsdLayerEditor_LoadLayersFileDialogOptions_UICommit(string $parent, string $selectedFile)
 {
-    optionVar -stringValue usdMayaLoadLayersFolder $selectedFile;
-
+    if ($selectedFile != "") {
+        setLatestLoadStageFolder( dirname($selectedFile) );
+    }
     python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdSubLayerFileRelative.uiCommit('" + $parent + "', '" + $selectedFile + "')");
 }
 
@@ -192,6 +193,8 @@ global proc string[] UsdLayerEditor_LoadLayersFileDialog(string $title, string $
     global string $gLayerParentPathUsdLayerEditorLoadFileDialog;
     $gLayerParentPathUsdLayerEditorLoadFileDialog = "";
     
+    string $startingFolder = getLatestLoadStageFolder();
+
     string $fileFilter = python("from mayaUsdUtils import getUSDDialogFileFilters; getUSDDialogFileFilters(False)");
     $okCaption = getMayaUsdString("kLoad");
 
@@ -205,7 +208,7 @@ global proc string[] UsdLayerEditor_LoadLayersFileDialog(string $title, string $
             -optionsUICommit2 "UsdLayerEditor_LoadLayersFileDialogOptions_UICommit"
             -fileTypeChanged "UsdLayerEditor_LoadLayersFileDialogOptions_FileTypeChanged"
             -selectionChanged "UsdLayerEditor_LoadLayersFileDialogOptions_SelectionChanged"
-            -startingDirectory $gLayerParentPathUsdLayerEditorLoadFileDialog
+            -startingDirectory $startingFolder
             `;
 
     return $result;
