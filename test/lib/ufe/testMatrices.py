@@ -163,7 +163,6 @@ class Transform3dMatricesTestCase(unittest.TestCase):
             cylInclMat.matrix, [[1, 0, 0, 0], [0, cx60, sx60, 0],
                                 [0, -sx60, cx60, 0], [0, 10, 0, 1]])
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testTransform3dMatrixOpAccessors only available in UFE v2 or greater.')
     def testTransform3dMatrixOpAccessors(self):
         '''Matrix transform op TRS must match separate transform op TRS.'''
 
