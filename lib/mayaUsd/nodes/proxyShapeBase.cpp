@@ -1586,7 +1586,13 @@ bool MayaUsdProxyShapeBase::isStageIncoming() const
         CHECK_MSTATUS_AND_RETURN(localStatus, false);
         const auto cacheId = UsdStageCache::Id::FromLongInt(cacheIdNum);
         const auto stageCached = cacheId.IsValid() && UsdUtilsStageCache::Get().Contains(cacheId);
-        if (stageCached) {
+
+        // Check what is the cache connected to
+        MStringArray result;
+        MGlobal::executeCommand(("listConnections -shapes on " + this->name()), result);
+
+        // The stage is only incoming if the cache is connected to a shape
+        if (stageCached && result.length()) {
             isIncomingStage = true;
         }
     }

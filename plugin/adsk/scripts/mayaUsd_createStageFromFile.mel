@@ -28,12 +28,12 @@ proc setOptionVars(int $forceFactorySettings)
     }
 }
 
-proc setLatestLoadStageFolder( string $sceneFolder )
+global proc setLatestLoadStageFolder( string $sceneFolder )
 {
     optionVar -stringValue mayaUsd_LatestLoadStageFolder $sceneFolder;
 }
 
-proc string getLatestLoadStageFolder()
+global proc string getLatestLoadStageFolder()
 {
     string $sceneFolder;
 
