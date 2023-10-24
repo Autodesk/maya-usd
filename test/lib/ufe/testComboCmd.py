@@ -100,13 +100,12 @@ class TestObserver(ufe.Observer):
         self._valueChanged = 0
 
     def __call__(self, notification):
-        if (ufeUtils.ufeFeatureSetVersion() >= 2):
-            if (ufeUtils.ufeFeatureSetVersion() >= 4):
-                if isinstance(notification, ufe.AttributeChanged):
-                    self._valueChanged += 1
-            else:
-                if isinstance(notification, ufe.AttributeValueChanged):
-                    self._valueChanged += 1
+        if (ufeUtils.ufeFeatureSetVersion() >= 4):
+            if isinstance(notification, ufe.AttributeChanged):
+                self._valueChanged += 1
+        else:
+            if isinstance(notification, ufe.AttributeValueChanged):
+                self._valueChanged += 1
 
         if isinstance(notification, ufe.Transform3dChanged):
             self._transform3d += 1
@@ -992,7 +991,6 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         self.assertEqual(t3d.rotatePivot().vector, [0, 0, 0])
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testPrimPropertyPathNotifs only available in UFE v2 or greater.')
     def testPrimPropertyPathNotifs(self):
         import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()

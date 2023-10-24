@@ -62,7 +62,6 @@ class testProxyShapeBase(unittest.TestCase):
         bboxSize = cmds.getAttr('Cube_usd.boundingBoxSize')[0]
         self.assertEqual(bboxSize, (1.0, 1.0, 1.0))
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testDuplicateProxyStageAnonymous only available in UFE v2 or greater.')
     def testDuplicateProxyStageAnonymous(self):
         '''
         Verify stage with new anonymous layer is duplicated properly.
@@ -158,7 +157,6 @@ class testProxyShapeBase(unittest.TestCase):
         # Request the now dead proxy shape. This should not crash.
         result = handler.findGatewayItems(proxyShapePath)
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testDeleteStageUndo uses PathString which is only available in UFE v2 or greater.')
     def testDeleteStageUndo(self):
         '''
         Verify that we can undo the deletion of the stage.
@@ -205,7 +203,6 @@ class testProxyShapeBase(unittest.TestCase):
         ufe.GlobalSelection.get().clear()
         ufe.GlobalSelection.get().append(cylItem)
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testDuplicateProxyStageFileBacked only available in UFE v2 or greater.')
     def testDuplicateProxyStageFileBacked(self):
         '''
         Verify stage from file is duplicated properly.
@@ -564,7 +561,6 @@ class testProxyShapeBase(unittest.TestCase):
         # Verify that we did not lose the data on the root layer.
         verifyPrim()
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testSettingStageViaIdPreservedWhenSaved only available in UFE v2 or greater.')
     def testSettingStageViaIdPreservedWhenSaved(self):
         '''
         Verify that setting the stage via the stageCacheId on the proxy shape can be reloaded.
@@ -608,7 +604,6 @@ class testProxyShapeBase(unittest.TestCase):
             verify()
 
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testShareStageLoadRules only available in UFE v2 or greater.')
     def testShareStageLoadRules(self):
         '''
         Verify that share/unshare stage preserve the load rules of the stage.
@@ -665,7 +660,6 @@ class testProxyShapeBase(unittest.TestCase):
         # check that the expected load rules are still on the stage.
         check_load_rules(stage)
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testStageMutedLayers only available in UFE v2 or greater.')
     def testStageMutedLayers(self):
         '''
         Verify that stage preserve the muted layers of the stage when a scene is reloaded.
@@ -699,7 +693,6 @@ class testProxyShapeBase(unittest.TestCase):
         stage = mayaUsd.lib.GetPrim('|stage1|stageShape1').GetStage()
         verifyMuting(stage)
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testStageTargetLayer only available in UFE v2 or greater.')
     def testStageTargetLayer(self):
         '''
         Verify that stage preserve the target layer of the stage when a scene is reloaded.

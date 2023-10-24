@@ -91,12 +91,6 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
     def testPerInstanceInheritedData(self):
         self._StartTest('perInstanceInheritedData')
 
-        # These tests don't work in earlier versions of USD, the wrong
-        # instance index gets selected
-        usdVersion = Usd.GetVersion()
-        if usdVersion < (0, 20, 8):
-            return
-
         # Hide and show some instances to make sure it updates correctly
         stage = mayaUsdUfe.getStage("|stage|stageShape")
         ball_03_vis = stage.GetPrimAtPath('/root/group/ball_03').GetAttribute('visibility')
@@ -114,27 +108,18 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
         ball_04_vis.Set('inherited')
         self.assertSnapshotClose('%s_shown_after_hidden.png' % self._testName)
 
-        # These tests behave differently before USD version 21.05, so don't run
-        # them for those earlier versions.
-        if usdVersion < (0, 21, 5):
-            return
-
-        imageVersion = None
-        if usdVersion < (0, 21, 8):
-            imageVersion = 'pre-21_08'
-
         # Modify the purpose of some instances to make sure they are shown and hidden properly
         ball_03_purpose = stage.GetPrimAtPath('/root/group/ball_03').GetAttribute('purpose')
         ball_04_purpose = stage.GetPrimAtPath('/root/group/ball_04').GetAttribute('purpose')
 
         ball_03_purpose.Set('guide')
-        self.assertSnapshotClose('%s_ball_03_guide.png' % self._testName, imageVersion)
+        self.assertSnapshotClose('%s_ball_03_guide.png' % self._testName)
         ball_04_purpose.Set('guide')
-        self.assertSnapshotClose('%s_ball_03_and_04_guide.png' % self._testName, imageVersion)
+        self.assertSnapshotClose('%s_ball_03_and_04_guide.png' % self._testName)
         ball_03_purpose.Set('default')
-        self.assertSnapshotClose('%s_ball_04_guide.png' % self._testName, imageVersion)
+        self.assertSnapshotClose('%s_ball_04_guide.png' % self._testName)
         ball_04_purpose.Set('default')
-        self.assertSnapshotClose('%s_default_after_guide.png' % self._testName, imageVersion)
+        self.assertSnapshotClose('%s_default_after_guide.png' % self._testName)
     
     def testPerInstanceInheritedDataPartialOverridePxrMtls(self):
         self._StartTest('inheritedDisplayColor_noPxrMtls')
