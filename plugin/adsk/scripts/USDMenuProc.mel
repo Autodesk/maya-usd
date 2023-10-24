@@ -105,6 +105,7 @@ global proc USDMenuProc(string $parent, string $obj)
 {
     $obj = expandToSelection($obj);
 
+    popupMenu -e -dai $parent;
     setParent -menu $parent;
     
     python("import maya.app.ufe.outlinerSupport; maya.app.ufe.outlinerSupport.buildNonMayaContextMenu('''" + $obj + "''')");
