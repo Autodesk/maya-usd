@@ -53,12 +53,8 @@ class TestObserver(ufe.Observer):
         self._keys = None
 
     def __call__(self, notification):
-        if (ufeUtils.ufeFeatureSetVersion() >= 2):
-            if isinstance(notification, ufe.AttributeValueChanged):
-                self._notifications += 1
-        else:
-            if isinstance(notification, ufe.AttributeChanged):
-                self._notifications += 1
+        if isinstance(notification, ufe.AttributeValueChanged):
+            self._notifications += 1
         if hasattr(ufe, 'AttributeMetadataChanged') and isinstance(notification, ufe.AttributeMetadataChanged):
             self._keys = notification.keys()
 
@@ -1816,7 +1812,6 @@ class AttributeTestCase(unittest.TestCase):
         validation(self, shaderAttr.get(), newValue)
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
-    @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testCreateAttributeTypes(self):
         """Tests all shader attribute types"""
         cmds.file(new=True, force=True)
@@ -1960,7 +1955,6 @@ class AttributeTestCase(unittest.TestCase):
             self.assertFalse(attr.hasMetadata("uisoftmax"))
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
-    @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testCreateUsdPreviewSurfaceAttribute(self):
         cmds.file(new=True, force=True)
         testFile = testUtils.getTestScene("UsdPreviewSurface", "DisplayColorCube.usda")

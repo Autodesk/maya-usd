@@ -127,7 +127,6 @@ class testLayerManagerSerialization(unittest.TestCase):
         self.assertEqual(
             sessionSavedStatus, stage.GetPrimAtPath(newPrimPath).IsValid())
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testSaveAllToMaya is available only in UFE v2 or greater.')
     def testSaveAllToMaya(self):
         '''
         Verify that all USD edits are save into the Maya file.
@@ -159,7 +158,6 @@ class testLayerManagerSerialization(unittest.TestCase):
 
         shutil.rmtree(self._currentTestDir)
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testSaveAllToUsd is available only in UFE v2 or greater.')
     def testSaveAllToUsd(self):
         '''
         Verify that all USD edits are saved back to the original .usd files
@@ -191,7 +189,6 @@ class testLayerManagerSerialization(unittest.TestCase):
 
         shutil.rmtree(self._currentTestDir)
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testIgnoreAllUsd is available only in UFE v2 or greater.')
     def testIgnoreAllUsd(self):
         '''
         Verify that all USD edits are ignored
@@ -223,7 +220,6 @@ class testLayerManagerSerialization(unittest.TestCase):
 
         shutil.rmtree(self._currentTestDir)
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testAnonymousRootToMaya is available only in UFE v2 or greater.')
     def testAnonymousRootToMaya(self):
         self.setupEmptyScene()
 
@@ -254,7 +250,6 @@ class testLayerManagerSerialization(unittest.TestCase):
 
         shutil.rmtree(self._currentTestDir)
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testAnonymousRootToMaya is available only in UFE v2 or greater.')
     def testAnonymousRootToUsd(self):
         self.setupEmptyScene()
 

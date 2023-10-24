@@ -79,7 +79,6 @@ class testProxyShapeDrawUsdChangeProcessing(unittest.TestCase):
         cmds.ogsRender(camera=self._cameraName, currentFrame=True, width=960,
             height=540)
 
-    @unittest.skipIf((mayaUtils.mayaMajorVersion() == 2022) and (sys.version_info.major == 2) and (Usd.GetVersion() == (0, 21, 2)), "This test fails Maya 2022, python 2, USD min")
     def testUsdChangeProcessingProxy(self):
         """
         Tests that authoring on a USD stage that is referenced by a proxy shape
@@ -94,7 +93,7 @@ class testProxyShapeDrawUsdChangeProcessing(unittest.TestCase):
         rootPrim = mayaUsdLib.GetPrim(dagPathName)
         self.assertTrue(rootPrim)
 
-        # Disabled this test as it is currently failing one of the extra config jobs
+        # Disabled this test (internally) as it is currently failing one of the extra config jobs
         # Maya 2022 [USD min, Python 2, Interactive] - Branch Preflight (Windows)
         #
         # File ".../test/lib/mayaUsd/render/pxrUsdMayaGL\testProxyShapeDrawUsdChangeProcessing.py",
