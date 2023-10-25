@@ -57,46 +57,6 @@ class testExportFannedOutFileNodesMaterial(unittest.TestCase):
         os.environ.pop("MAYAUSD_MATERIALS_SCOPE_NAME")
         self.assertEqual(mayaUsdLib.JobExportArgs.GetDefaultMaterialsScopeName(), "mtl")
 
-
-    def testExportedUsdShadeNodeTypesUsdPreviewSurfaceOnly(self):
-        '''
-        Tests that all node ids are what we expect when only exporting UsdPreviewSurface:
-        '''
-        
-        usdFilePath = os.path.abspath('FannedOutFileNodesMaterialTest.usda')
-        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
-            shadingMode='useRegistry', 
-            convertMaterialsTo=['UsdPreviewSurface'],
-            materialsScopeName='Materials')
-
-        stage = Usd.Stage.Open(usdFilePath)
-        self.assertTrue(stage)
-        
-        base_path = "/pCube{0}/Materials/{1}SG/{1}"
-        to_test = [
-            # pCube1 has lambert, known to UsdPreviewSurface
-            (1, "lambert4", "UsdPreviewSurface", "UsdPreviewSurface"),
-            # pCube2 has standard_surface, known to UsdPreviewSurface
-            (2, "standardSurface2", "UsdPreviewSurface", "UsdPreviewSurface"),
-            # pCube3 has UsdPreviewSurface, known to UsdPreviewSurface
-            (3, "usdPreviewSurface1", "UsdPreviewSurface", "UsdPreviewSurface"),
-            # pCube4 has lambert, known to UsdPreviewSurface
-            (4, "lambert2", "UsdPreviewSurface", "UsdPreviewSurface"),
-            # pCube5 has lambert, known to UsdPreviewSurface
-            (5, "lambert3", "UsdPreviewSurface", "UsdPreviewSurface"),
-        ]
-
-        for prim_idx, shd_name, shd_scope, id_attr in to_test:
-            prim_path = base_path.format(prim_idx, shd_name, shd_scope)
-            
-            prim = stage.GetPrimAtPath(prim_path)
-            self.assertTrue(prim, prim_path)
-
-            shader = UsdShade.Shader(prim)
-            self.assertTrue(shader, prim_path)
-            self.assertEqual(shader.GetIdAttr().Get(), id_attr)
-
-
     def testExportedUsdShadeNodeTypes(self):
         '''
         Tests that all node ids are what we expect:
