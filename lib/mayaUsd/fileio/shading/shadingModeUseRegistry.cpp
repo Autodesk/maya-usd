@@ -284,16 +284,8 @@ private:
                     continue;
                 }
 
-                bool allowedNode = false;
-                for (const auto& nodeIt : allowedNodes) {
-                    if (dstPlug.node() == nodeIt.object()) {
-                        allowedNode = true;
-                        break;
-                    }
-                }
-                // Only generate shader writers if the plug belongs to an allowed node
-                // that is needed.
-                if (!allowedNode) {
+                if (!allowedNodes.count(dstPlug.node()))
+                {
                     continue;
                 }
 
