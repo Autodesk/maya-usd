@@ -46,7 +46,7 @@ class testExportFannedOutFileNodesMaterial(unittest.TestCase):
     def tearDownClass(cls):
         standalone.uninitialize()
         
-    @unittest.skipUnless("mayaUtils" in globals() and mayaUtils.mayaMajorVersion() >= 2023 and Usd.GetVersion() > (0, 21, 2), 'Requires MaterialX support.')        
+    @unittest.skipUnless("mayaUtils" in globals() and mayaUtils.mayaMajorVersion() >= 2023 and Usd.GetVersion() > (0, 21, 2), 'Requires MaterialX support.')
     def testMaterialScopeResolution(self):
         # New default value as per USD Asset WG:
         self.assertEqual(mayaUsdLib.JobExportArgs.GetDefaultMaterialsScopeName(), "mtl")
@@ -62,6 +62,7 @@ class testExportFannedOutFileNodesMaterial(unittest.TestCase):
         os.environ.pop("MAYAUSD_MATERIALS_SCOPE_NAME")
         self.assertEqual(mayaUsdLib.JobExportArgs.GetDefaultMaterialsScopeName(), "mtl")
 
+    @unittest.skipUnless("mayaUtils" in globals() and mayaUtils.mayaMajorVersion() >= 2023 and Usd.GetVersion() > (0, 21, 2), 'Requires MaterialX support.')
     def testExportedUsdShadeNodeTypes(self):
         '''
         Tests that all node ids are what we expect:
