@@ -28,10 +28,6 @@ import os
 import unittest
 
 import fixturesUtils
-try:
-    import mayaUtils
-except ImportError:
-    pass
     
 class testExportFannedOutFileNodesMaterial(unittest.TestCase):
 
@@ -46,7 +42,6 @@ class testExportFannedOutFileNodesMaterial(unittest.TestCase):
     def tearDownClass(cls):
         standalone.uninitialize()
         
-    @unittest.skipUnless("mayaUtils" in globals() and mayaUtils.mayaMajorVersion() >= 2023 and Usd.GetVersion() > (0, 21, 2), 'Requires MaterialX support.')
     def testMaterialScopeResolution(self):
         # New default value as per USD Asset WG:
         self.assertEqual(mayaUsdLib.JobExportArgs.GetDefaultMaterialsScopeName(), "mtl")
@@ -62,12 +57,11 @@ class testExportFannedOutFileNodesMaterial(unittest.TestCase):
         os.environ.pop("MAYAUSD_MATERIALS_SCOPE_NAME")
         self.assertEqual(mayaUsdLib.JobExportArgs.GetDefaultMaterialsScopeName(), "mtl")
 
-    @unittest.skipUnless("mayaUtils" in globals() and mayaUtils.mayaMajorVersion() >= 2023 and Usd.GetVersion() > (0, 21, 2), 'Requires MaterialX support.')
+    # This test requires MaterialX
     def testExportedUsdShadeNodeTypes(self):
         '''
         Tests that all node ids are what we expect:
         '''
-        
         usdFilePath = os.path.abspath('FannedOutFileNodesMaterialTest.usda')
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
             shadingMode='useRegistry', 
