@@ -127,15 +127,42 @@ class testExportFannedOutFileNodesMaterial(unittest.TestCase):
             (5, "lambert3", "UsdPreviewSurface", "UsdPreviewSurface"),
         ]
 
+        allowedNodes = {
+            "lambert4" : ("file13", "file14", "file15"),
+            "standardSurface2" :  ("file16", "file17", "file18"),
+            "usdPreviewSurface1" :  ("file7", "file8", "file9"),
+            "lambert2" :  ("file11", "file12"),
+            "lambert3" :  ("file10", "file11")}
+            
+        disallowedNodes = {
+            "lambert2" :  ("file10"),
+            "lambert3" :  ("file12")}
+
+        knownFileShaders = ["UsdUVTexture", "ND_image_color4"]
+
         for prim_idx, shd_name, shd_scope, id_attr in to_test:
             prim_path = base_path.format(prim_idx, shd_name, shd_scope)
             
             prim = stage.GetPrimAtPath(prim_path)
             self.assertTrue(prim, prim_path)
-
-            shader = UsdShade.Shader(prim)
-            self.assertTrue(shader, prim_path)
-            self.assertEqual(shader.GetIdAttr().Get(), id_attr)
-
+            for child in prim.GetParent().GetAllChildren():
+                if not prim.IsA(UsdShade.Shader):
+                    continue
+                # When child name is MayaNG_MaterialX, it is a NodeGraph itself and we 
+                # iterate through its children
+                if (child.GetName() == "MayaNG_MaterialX"):
+                    for nodeGraphChild in child.GetAllChildren():
+                        shader = UsdShade.Shader(nodeGraphChild)
+                        if (shader.GetShaderId() in knownFileShaders):
+                            self.assertIn(nodeGraphChild.GetName(), allowedNodes[prim.GetName()])
+                            if (prim.GetName() in disallowedNodes):
+                                self.assertNotIn(nodeGraphChild.GetName(), disallowedNodes[prim.GetName()])
+                else:
+                    shader = UsdShade.Shader(child)
+                    if (shader.GetShaderId() in knownFileShaders):
+                        self.assertIn(child.GetName(), allowedNodes[prim.GetName()])
+                        if (prim.GetName() in disallowedNodes):
+                            self.assertNotIn(child.GetName(), disallowedNodes[prim.GetName()])
+                
 if __name__ == '__main__':
     unittest.main(verbosity=2)
