@@ -1057,6 +1057,29 @@ class ParentCmdTestCase(unittest.TestCase):
             cmds.parent("|Tree_usd|Tree_usdShape,/TreeBase/trunk",
                         "|Tree_usd|Tree_usdShape,/TreeBase/leavesXform/leaves")
 
+    def testParentRestrictionDefaultPrim(self):
+        '''
+        Verify that a prim that is the default prim prevent
+        parenting that prim when not targeting the root layer.
+        '''
+        cmds.file(new=True, force=True)
+        testFile = testUtils.getTestScene('defaultPrimInSub', 'root.usda')
+        shapeNode, stage = mayaUtils.createProxyFromFile(testFile)
+
+        capsulePathStr = '|stage|stageShape,/Capsule1'
+
+        layer = Sdf.Layer.FindRelativeToLayer(stage.GetRootLayer(), stage.GetRootLayer().subLayerPaths[0])
+        self.assertIsNotNone(layer)
+        stage.SetEditTarget(layer)
+        self.assertEqual(stage.GetEditTarget().GetLayer(), layer)
+
+        x1 = stage.DefinePrim('/Xform1', 'Xform')
+        self.assertIsNotNone(x1)
+        x1PathStr = '|stage|stageShape,/Xform1'
+        
+        with self.assertRaises(RuntimeError):
+            cmds.parent(capsulePathStr, x1PathStr)
+
     @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
     def testParentShader(self):
         '''Shaders can only have NodeGraphs and Materials as parent.'''

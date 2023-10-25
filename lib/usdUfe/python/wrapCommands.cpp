@@ -15,9 +15,11 @@
 //
 #include <usdUfe/ufe/UsdUndoAddPayloadCommand.h>
 #include <usdUfe/ufe/UsdUndoAddReferenceCommand.h>
+#include <usdUfe/ufe/UsdUndoClearDefaultPrimCommand.h>
 #include <usdUfe/ufe/UsdUndoClearPayloadsCommand.h>
 #include <usdUfe/ufe/UsdUndoClearReferencesCommand.h>
 #include <usdUfe/ufe/UsdUndoPayloadCommand.h>
+#include <usdUfe/ufe/UsdUndoSetDefaultPrimCommand.h>
 #include <usdUfe/ufe/UsdUndoToggleActiveCommand.h>
 #include <usdUfe/ufe/UsdUndoToggleInstanceableCommand.h>
 
@@ -71,10 +73,37 @@ UsdUfe::UsdUndoUnloadPayloadCommand* UnloadPayloadCommandInit(const PXR_NS::UsdP
     return new UsdUfe::UsdUndoUnloadPayloadCommand(prim);
 }
 
+UsdUfe::UsdUndoClearDefaultPrimCommand*
+ClearDefaultPrimCommandInit(const PXR_NS::UsdStageRefPtr& stage)
+{
+    return new UsdUfe::UsdUndoClearDefaultPrimCommand(stage);
+}
+
+UsdUfe::UsdUndoSetDefaultPrimCommand* SetDefaultPrimCommandInit(const PXR_NS::UsdPrim& prim)
+{
+    return new UsdUfe::UsdUndoSetDefaultPrimCommand(prim);
+}
+
 } // namespace
 
 void wrapCommands()
 {
+    {
+        using This = UsdUfe::UsdUndoClearDefaultPrimCommand;
+        class_<This, boost::noncopyable>("ClearDefaultPrimCommand", no_init)
+            .def("__init__", make_constructor(ClearDefaultPrimCommandInit))
+            .def("execute", &UsdUfe::UsdUndoClearDefaultPrimCommand::execute)
+            .def("undo", &UsdUfe::UsdUndoClearDefaultPrimCommand::undo)
+            .def("redo", &UsdUfe::UsdUndoClearDefaultPrimCommand::redo);
+    }
+    {
+        using This = UsdUfe::UsdUndoSetDefaultPrimCommand;
+        class_<This, boost::noncopyable>("SetDefaultPrimCommand", no_init)
+            .def("__init__", make_constructor(SetDefaultPrimCommandInit))
+            .def("execute", &UsdUfe::UsdUndoSetDefaultPrimCommand::execute)
+            .def("undo", &UsdUfe::UsdUndoSetDefaultPrimCommand::undo)
+            .def("redo", &UsdUfe::UsdUndoSetDefaultPrimCommand::redo);
+    }
     {
         using This = UsdUfe::UsdUndoAddPayloadCommand;
         class_<This, boost::noncopyable>("AddPayloadCommand", no_init)

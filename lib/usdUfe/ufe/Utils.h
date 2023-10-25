@@ -264,6 +264,16 @@ bool applyCommandRestrictionNoThrow(
     const std::string&     commandName,
     bool                   allowStronger = false);
 
+//! Apply restriction rules for root layer metadata on the given prim
+USDUFE_PUBLIC
+void applyRootLayerMetadataRestriction(const PXR_NS::UsdPrim& prim, const std::string& commandName);
+
+//! Apply restriction rules for root layer metadata on the given stage
+USDUFE_PUBLIC
+void applyRootLayerMetadataRestriction(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const std::string&            commandName);
+
 //! Check if the edit target in the stage is allowed to be changed.
 //! \return True, if the edit target layer in the stage is allowed to be changed
 USDUFE_PUBLIC
@@ -274,8 +284,5 @@ bool isEditTargetLayerModifiable(
 //! Combine two UFE bounding boxes.
 USDUFE_PUBLIC
 Ufe::BBox3d combineUfeBBox(const Ufe::BBox3d& ufeBBox1, const Ufe::BBox3d& ufeBBox2);
-
-USDUFE_PUBLIC
-bool isRootLayer(const PXR_NS::UsdStageWeakPtr prim);
 
 } // namespace USDUFE_NS_DEF

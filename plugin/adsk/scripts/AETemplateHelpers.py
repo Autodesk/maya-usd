@@ -1,7 +1,8 @@
-import functools
 import os.path
 import maya.cmds as cmds
-import ufe
+import maya.api.OpenMaya as OpenMaya
+import maya.internal.ufeSupport.ufeCmdWrapper as ufeCmd
+import usdUfe
 import mayaUsd.ufe
 import mayaUsd.lib as mayaUsdLib
 import re
@@ -13,10 +14,12 @@ def debugMessage(msg):
     if DEBUG:
         print(msg)
 
+__naturalOrderRE = re.compile(r'([0-9]+)')
+
 def GetAllRootPrimNamesNaturalOrder(proxyShape):
     # Custom comparator key
     def natural_key(item):
-        return [int(s) if s.isdigit() else s.lower() for s in re.split(r'([0-9]+)', item)]
+        return [int(s) if s.isdigit() else s.lower() for s in __naturalOrderRE.split(item)]
     try:
         proxyStage = mayaUsd.ufe.getStage(proxyShape)
         primNames = []
@@ -47,19 +50,26 @@ def GetDefaultPrimName(proxyShape):
 def SetDefaultPrim(proxyShape, primName):
     try:
         proxyStage = mayaUsd.ufe.getStage(proxyShape)
-        if(not primName):
-           proxyStage.ClearDefaultPrim()
-        defautlPrim = None
-        if proxyStage:
-            for prim in proxyStage.TraverseAll():
-                if(primName == prim.GetName()):
-                    defautlPrim = prim
-        if defautlPrim:
-            proxyStage.SetDefaultPrim(defautlPrim)
+        if not proxyStage:
+            return False
+
+        cmd = None
+        if not primName:
+            cmd = usdUfe.ClearDefaultPrimCommand(proxyStage)
+        else:
+            defaultPrim = proxyStage.GetPrimAtPath('/' + primName)
+            if defaultPrim:
+                cmd = usdUfe.SetDefaultPrimCommand(defaultPrim)
+
+        if cmd is None:
+            return False
+        
+        ufeCmd.execute(cmd)
+        return True
     except Exception as e:
-        debugMessage('SetDefaultPrim() - Error: %s' % str(e))
-        pass
-    return ''
+        # Note: we do want to tell the user why the set or clear failed.
+        OpenMaya.MGlobal.displayError(str(e))
+        return False
     
 def GetRootLayerName(proxyShape):
     try:

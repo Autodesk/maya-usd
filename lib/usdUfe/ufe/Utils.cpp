@@ -410,6 +410,66 @@ Ufe::BBox3d combineUfeBBox(const Ufe::BBox3d& ufeBBox1, const Ufe::BBox3d& ufeBB
     return combinedBBox;
 }
 
+void applyRootLayerMetadataRestriction(const UsdPrim& prim, const std::string& commandName)
+{
+    // return early if prim is the pseudo-root.
+    // this is a special case and could happen when one tries to drag a prim under the
+    // proxy shape in outliner. Also note if prim is the pseudo-root, no def primSpec will be found.
+    if (prim.IsPseudoRoot()) {
+        return;
+    }
+
+    const auto stage = prim.GetStage();
+    if (!stage)
+        return;
+
+    // If the target layer is the root layer, then the restrictions
+    // do not apply since the edit target is on the layer that contains
+    // the metadata.
+    const SdfLayerHandle targetLayer = stage->GetEditTarget().GetLayer();
+    const SdfLayerHandle rootLayer = stage->GetRootLayer();
+    if (targetLayer == rootLayer)
+        return;
+
+    // Enforce the restriction that we cannot change the default prim
+    // from a layer other than the root layer.
+    if (prim == stage->GetDefaultPrim()) {
+        const std::string layerName = rootLayer->GetDisplayName();
+        const std::string err = TfStringPrintf(
+            "Cannot %s [%s]. This prim is defined as the default prim on [%s]",
+            commandName.c_str(),
+            prim.GetName().GetString().c_str(),
+            layerName.c_str());
+        throw std::runtime_error(err.c_str());
+    }
+}
+
+void applyRootLayerMetadataRestriction(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const std::string&            commandName)
+{
+    if (!stage)
+        return;
+
+    // If the target layer is the root layer, then the restrictions
+    // do not apply since the edit target is on the layer that contains
+    // the metadata.
+    const SdfLayerHandle targetLayer = stage->GetEditTarget().GetLayer();
+    const SdfLayerHandle rootLayer = stage->GetRootLayer();
+    if (targetLayer == rootLayer)
+        return;
+
+    // Enforce the restriction that we cannot change the default prim
+    // from a layer other than the root layer.
+    const std::string layerName = rootLayer->GetDisplayName();
+    const std::string err = TfStringPrintf(
+        "Cannot %s. The stage default prim metadata can only be modified when the root layer [%s] "
+        "is targeted.",
+        commandName.c_str(),
+        layerName.c_str());
+    throw std::runtime_error(err.c_str());
+}
+
 void applyCommandRestriction(
     const UsdPrim&     prim,
     const std::string& commandName,
@@ -439,7 +499,7 @@ void applyCommandRestriction(
     // the target.
     std::string message = allowStronger ? "It is defined on another layer. " : "";
     std::string instructions = allowStronger ? "Please set %s as the target layer to proceed."
-                                             : "It would orphan opinions on the layer %s.";
+                                             : "It would orphan opinions on the layer %s";
 
     // iterate over the prim stack, starting at the highest-priority layer.
     for (const auto& spec : primStack) {
@@ -497,7 +557,7 @@ void applyCommandRestriction(
             if (allowedInStrongerLayer(prim, primStack, sessionLayers, allowStronger))
                 return;
             std::string err = TfStringPrintf(
-                "Cannot %s [%s] because it is defined inside the variant composition arc %s.",
+                "Cannot %s [%s] because it is defined inside the variant composition arc %s",
                 commandName.c_str(),
                 prim.GetName().GetString().c_str(),
                 layerDisplayName.c_str());
@@ -518,6 +578,8 @@ void applyCommandRestriction(
             formattedInstructions.c_str());
         throw std::runtime_error(err.c_str());
     }
+
+    applyRootLayerMetadataRestriction(prim, commandName);
 }
 
 bool applyCommandRestrictionNoThrow(
@@ -798,15 +860,6 @@ Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& f
         }
     }
     return dst;
-}
-
-bool isRootLayer(const PXR_NS::UsdStageWeakPtr stage)
-{
-    // Check if the layer selected is the root layer.
-    if (stage->GetRootLayer() != stage->GetEditTarget().GetLayer()) {
-        return false;
-    }
-    return true;
 }
 
 } // namespace USDUFE_NS_DEF

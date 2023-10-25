@@ -38,11 +38,11 @@ public:
     UsdUndoSetDefaultPrimCommand(UsdUndoSetDefaultPrimCommand&&) = delete;
     UsdUndoSetDefaultPrimCommand& operator=(UsdUndoSetDefaultPrimCommand&&) = delete;
 
-private:
     void execute() override;
     void undo() override;
     void redo() override;
 
+private:
     PXR_NS::UsdPrim _prim;
 
     UsdUndoableItem _undoableItem;
