@@ -20,10 +20,17 @@ global proc string AEmayaUsdProxyShapeInfoChanged(string $input)
 
     // Call python helpers to get the info we want to display.
     string $rootLayer   = `python("import AETemplateHelpers; AETemplateHelpers.GetRootLayerName('" + $fullNodeName + "')")`;
-    string $defaultPrim = `python("import AETemplateHelpers; AETemplateHelpers.GetDefaultPrimName('" + $fullNodeName + "')")`;
-    string $allRootPrims[] = `python("import AETemplateHelpers; AETemplateHelpers.GetAllRootPrimNamesNaturalOrder('" + $fullNodeName + "')")`;
 
     textFieldGrp -edit -text $rootLayer mayaUsdProxyShapeRootLayer;
+    mayaUsd_DefaultPrimInit($fullNodeName);
+
+    return $fullNodeName;
+}
+
+global proc mayaUsd_DefaultPrimInit(string $fullNodeName)
+{
+    string $defaultPrim = `python("import AETemplateHelpers; AETemplateHelpers.GetDefaultPrimName('" + $fullNodeName + "')")`;
+    string $allRootPrims[] = `python("import AETemplateHelpers; AETemplateHelpers.GetAllRootPrimNamesNaturalOrder('" + $fullNodeName + "')")`;
 
     optionMenuGrp -edit -deleteAllItems -changeCommand ("mayaUsd_DefaultPrimChanged(\"" + $fullNodeName + "\"\)") mayaUsdProxyShapeDefaultPrim;
     string $menuName = `optionMenuGrp -q -fullPathName mayaUsdProxyShapeDefaultPrim`;
@@ -43,14 +50,17 @@ global proc string AEmayaUsdProxyShapeInfoChanged(string $input)
         $index = 1;
     }
     optionMenuGrp -e -select $index mayaUsdProxyShapeDefaultPrim;
-
-    return $fullNodeName;
 }
 
 global proc mayaUsd_DefaultPrimChanged(string $fullNodeName)
 {
     string $primName = `optionMenuGrp -q -value mayaUsdProxyShapeDefaultPrim`;
-    python("import AETemplateHelpers; AETemplateHelpers.SetDefaultPrim('" + $fullNodeName + "', primName ='" + $primName + "')");
+    int $result = `python("import AETemplateHelpers; AETemplateHelpers.SetDefaultPrim('" + $fullNodeName + "', primName ='" + $primName + "')")`;
+    // On failure, we re-initialize the UI since the command failed
+    // and thus we need to restore the previous UI state.
+    if ($result == 0) {
+        mayaUsd_DefaultPrimInit($fullNodeName);
+    }
 }
 
 global proc AEmayaUsdProxyShapeInfoReplace(string $input)

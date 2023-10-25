@@ -373,6 +373,30 @@ class GroupCmdTestCase(unittest.TestCase):
             stage.GetPrimAtPath("/Ball_set/Props/Ball_6"),
             stage.GetPrimAtPath("/Sphere1")])
 
+    def testGroupRestrictionDefaultPrim(self):
+        '''
+        Verify that a prim that is the default prim prevent
+        grouping that prim when not targeting the root layer.
+        '''
+        cmds.file(new=True, force=True)
+        testFile = testUtils.getTestScene('defaultPrimInSub', 'root.usda')
+        shapeNode, stage = mayaUtils.createProxyFromFile(testFile)
+
+        capsulePathStr = '|stage|stageShape,/Capsule1'
+
+        layer = Sdf.Layer.FindRelativeToLayer(stage.GetRootLayer(), stage.GetRootLayer().subLayerPaths[0])
+        self.assertIsNotNone(layer)
+        stage.SetEditTarget(layer)
+        self.assertEqual(stage.GetEditTarget().GetLayer(), layer)
+
+        capsuleItem = ufe.Hierarchy.createItem(ufe.PathString.path(capsulePathStr))
+        ufeSelection = ufe.GlobalSelection.get()
+        ufeSelection.clear()
+        ufeSelection.append(capsuleItem)
+
+        with self.assertRaises(RuntimeError):
+            cmds.group(name="newGroup")
+
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 3, 'testGroupAbsolute is only available in UFE v3 or greater.')
     def testGroupAbsolute(self):
         '''Verify -absolute flag.'''

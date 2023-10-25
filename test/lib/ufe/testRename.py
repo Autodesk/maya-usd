@@ -537,6 +537,28 @@ class RenameTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             cmds.rename("geo_renamed")
 
+    def testRenameRestrictionDefaultPrim(self):
+        '''
+        Verify that a prim that is the default prim prevent
+        renaming that prim when not targeting the root layer.
+        '''
+        cmds.file(new=True, force=True)
+        testFile = testUtils.getTestScene('defaultPrimInSub', 'root.usda')
+        shapeNode, stage = mayaUtils.createProxyFromFile(testFile)
+
+        capsulePath = ufe.PathString.path('|stage|stageShape,/Capsule1')
+        capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+        self.assertIsNotNone(capsuleItem)
+        ufe.GlobalSelection.get().append(capsuleItem)
+
+        layer = Sdf.Layer.FindRelativeToLayer(stage.GetRootLayer(), stage.GetRootLayer().subLayerPaths[0])
+        self.assertIsNotNone(layer)
+        stage.SetEditTarget(layer)
+        self.assertEqual(stage.GetEditTarget().GetLayer(), layer)
+        
+        with self.assertRaises(RuntimeError):
+            cmds.rename("banana")
+
     def testRenameUniqueName(self):
         # open tree.ma scene in testSamples
         mayaUtils.openTreeScene()

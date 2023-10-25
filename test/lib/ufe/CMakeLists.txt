@@ -8,6 +8,7 @@ set(TEST_SCRIPT_FILES
     testChildFilter.py
     testComboCmd.py
     testContextOps.py
+    testDefaultPrimCmds.py
     testDuplicateCmd.py
     testEditRouting.py
     testGroupCmd.py

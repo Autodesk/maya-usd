@@ -27,7 +27,12 @@ namespace USDUFE_NS_DEF {
 
 UsdUndoClearDefaultPrimCommand::UsdUndoClearDefaultPrimCommand(const UsdPrim& prim)
     : Ufe::UndoableCommand()
-    , _prim(prim)
+    , _stage(prim.GetStage())
+{
+}
+
+UsdUndoClearDefaultPrimCommand::UsdUndoClearDefaultPrimCommand(const PXR_NS::UsdStageRefPtr& stage)
+    : _stage(stage)
 {
 }
 
@@ -35,20 +40,15 @@ UsdUndoClearDefaultPrimCommand::~UsdUndoClearDefaultPrimCommand() { }
 
 void UsdUndoClearDefaultPrimCommand::execute()
 {
-    UsdUndoBlock undoBlock(&_undoableItem);
-
-    PXR_NS::UsdStageWeakPtr stage = _prim.GetStage();
-
-    // Check if the layer selected is the root layer.
-    if (!UsdUfe::isRootLayer(stage)) {
-        TF_WARN(
-            "Stage metadata [defaultPrim] can only be modified when the root layer is targeted "
-            "[%s]",
-            stage->GetRootLayer()->GetDisplayName().c_str());
+    if (!_stage)
         return;
-    }
+
+    // Check if the default prim can be cleared.
+    applyRootLayerMetadataRestriction(_stage, "clear default prim");
+
     // Clear the stage's default prim.
-    stage->ClearDefaultPrim();
+    UsdUndoBlock undoBlock(&_undoableItem);
+    _stage->ClearDefaultPrim();
 }
 
 void UsdUndoClearDefaultPrimCommand::redo() { _undoableItem.redo(); }
