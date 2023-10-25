@@ -133,7 +133,7 @@ endforeach()
 # it takes precedence over the provided material scope name.
 set(TEST_SCRIPT_FILES_WITH_MATERIAL_SCOPE
     testUsdExportDisplacement.py
-	testUsdExportFannedOutFileNodesMaterial.py
+    testUsdExportFannedOutFileNodesMaterial.py
     testUsdExportShadingInstanced.py
     testUsdExportShadingModePxrRis.py
     testUsdExportImportUDIM.py

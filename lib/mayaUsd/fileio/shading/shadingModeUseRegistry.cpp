@@ -284,8 +284,7 @@ private:
                     continue;
                 }
 
-                if (!allowedNodes.count(dstPlug.node()))
-                {
+                if (!allowedNodes.count(dstPlug.node())) {
                     continue;
                 }
 
