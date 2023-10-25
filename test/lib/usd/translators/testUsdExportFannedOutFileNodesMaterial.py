@@ -28,7 +28,11 @@ import os
 import unittest
 
 import fixturesUtils
-
+try:
+    import mayaUtils
+except ImportError:
+    pass
+    
 class testExportFannedOutFileNodesMaterial(unittest.TestCase):
 
     @classmethod
@@ -42,6 +46,7 @@ class testExportFannedOutFileNodesMaterial(unittest.TestCase):
     def tearDownClass(cls):
         standalone.uninitialize()
         
+    @unittest.skipUnless("mayaUtils" in globals() and mayaUtils.mayaMajorVersion() >= 2023 and Usd.GetVersion() > (0, 21, 2), 'Requires MaterialX support.')        
     def testMaterialScopeResolution(self):
         # New default value as per USD Asset WG:
         self.assertEqual(mayaUsdLib.JobExportArgs.GetDefaultMaterialsScopeName(), "mtl")
