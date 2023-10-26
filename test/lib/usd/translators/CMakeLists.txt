@@ -249,6 +249,7 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022)
     set(MTLX_TEST_SCRIPT_FILES
         testUsdExportMaterialX.py
         testUsdImportMaterialX.py
+		testUsdExportFannedOutFileNodesMaterial.py
     )
     foreach(script ${MTLX_TEST_SCRIPT_FILES})
         mayaUsd_get_unittest_target(target ${script})
