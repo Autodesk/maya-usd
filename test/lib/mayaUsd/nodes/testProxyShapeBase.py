@@ -17,7 +17,7 @@
 
 from maya import cmds
 from maya import standalone
-from pxr import Usd, Sdf, UsdUtils
+from pxr import Usd, Sdf, UsdUtils, UsdGeom
 
 import fixturesUtils
 import mayaUsd_createStageWithNewLayer
@@ -39,6 +39,8 @@ class testProxyShapeBase(unittest.TestCase):
 
         cls.mayaSceneFilePath = os.path.join(inputPath, 'ProxyShapeBaseTest',
             'ProxyShapeBase.ma')
+        cls.usdFilePath = os.path.join(inputPath, 'ProxyShapeBaseTest',
+            'CubeModel.usda')
 
     @classmethod
     def tearDownClass(cls):
@@ -946,6 +948,50 @@ class testProxyShapeBase(unittest.TestCase):
         self.assertEqual(unshareableLayerFromA.GetDisplayName(), "unshareableLayer")
         self.assertEqual(len(unshareableLayerFromA.subLayerPaths), 1)
         self.assertEqual(unshareableLayerFromA.subLayerPaths[0], originalRootIdentifierB)
+
+    def testCachedStage(self):
+        '''
+        Test saving cached stage
+        '''
+        stageCache = UsdUtils.StageCache.Get()
+        with Usd.StageCacheContext(stageCache):
+            cachedStage = Usd.Stage.Open(self.usdFilePath)
+            
+        stageId = stageCache.GetId(cachedStage).ToLongInt()
+        shapeNode = cmds.createNode('mayaUsdProxyShape')
+        cmds.setAttr('{}.stageCacheId'.format(shapeNode), stageId)
+        cachedStage.SetEditTarget(cachedStage.GetSessionLayer())
+
+        fullPath = cmds.ls(shapeNode, long=True)[0]
+        cmds.select("{},/CubeModel".format(fullPath))
+        # Move the cube prim
+        cmds.move(0, 0, 2, r=True)
+
+        # Make sure shareStage is ON
+        assert cmds.getAttr('{}.{}'.format(shapeNode,"shareStage"))
+
+        # Make sure there is no connection to inStageData
+        assert not cmds.listConnections('{}.inStageData'.format(shapeNode), s=True, d=False)
+
+        cmds.select(cmds.listRelatives(fullPath, p=True)[0], r=True)
+
+        with testUtils.TemporaryDirectory(prefix='ProxyShapeBase') as testDir:
+            pathToSave = "{}/CubeModel.ma".format(testDir)
+
+            cmds.file(rename=pathToSave)
+            cmds.file(save=True, force=True, type='mayaAscii')
+            
+            cmds.file(new=True, force=True)
+            cmds.file(pathToSave, force=True, open=True)
+
+            stage = mayaUsd.lib.GetPrim(fullPath).GetStage()
+            prim = stage.GetPrimAtPath('/CubeModel')
+            assert prim.IsValid()
+            
+            # Verify we get the saved changes we did 
+            xform = UsdGeom.Xformable(prim)
+            translate = xform.GetOrderedXformOps()[0].Get()
+            assert translate[2] == 2
 
 
 if __name__ == '__main__':

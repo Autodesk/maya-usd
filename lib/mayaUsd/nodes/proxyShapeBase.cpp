@@ -1589,7 +1589,7 @@ bool MayaUsdProxyShapeBase::isStageIncoming() const
 
         // Check what is the cache connected to
         MStringArray result;
-        MGlobal::executeCommand(("listConnections -shapes on " + this->name()), result);
+        MGlobal::executeCommand(("listConnections -t shape -shapes on " + this->name()), result);
 
         // The stage is only incoming if the cache is connected to a shape
         if (stageCached && result.length()) {
