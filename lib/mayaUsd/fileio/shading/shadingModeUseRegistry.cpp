@@ -190,7 +190,8 @@ private:
             return UsdShadeShader();
         }
 
-        MObjectArray allowedNodes;
+        UsdMayaUtil::MObjectHandleUnorderedSet allowedNodes;
+
         for (; !iterDepGraphNodeLevel.isDone(); iterDepGraphNodeLevel.next()) {
             MObject currentNode = iterDepGraphNodeLevel.currentItem(&status);
             if (status != MS::kSuccess) {
@@ -201,7 +202,8 @@ private:
                 continue;
             }
 
-            allowedNodes.append(currentNode);
+            MObjectHandle nodeHandle(currentNode);
+            allowedNodes.insert(nodeHandle);
         }
 
         MItDependencyGraph iterDepGraph(
@@ -282,16 +284,7 @@ private:
                     continue;
                 }
 
-                bool allowedNode = false;
-                for (unsigned int j = 0; j < allowedNodes.length(); ++j) {
-                    if (dstPlug.node() == allowedNodes[j]) {
-                        allowedNode = true;
-                        break;
-                    }
-                }
-                // Only generate shader writers if the plug belongs to an allowed node
-                // that is needed.
-                if (!allowedNode) {
+                if (!allowedNodes.count(dstPlug.node())) {
                     continue;
                 }
 
