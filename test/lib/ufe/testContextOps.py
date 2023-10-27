@@ -206,10 +206,11 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertIn('Unmark as Instanceable', contextItemStrings)
         self.assertNotIn('Toggle Instanceable State', contextItemStrings)
 
-        self.assertIn('Assign New Material', contextItemStrings)
-        # Because there are no materials in the scene we don't have this item.
-        self.assertNotIn('Assign Existing Material', contextItemStrings)
-        self.assertIn('Unassign Material', contextItemStrings)
+        if ufeUtils.ufeFeatureSetVersion() >= 4:
+            self.assertIn('Assign New Material', contextItemStrings)
+            # Because there are no materials in the scene we don't have this item.
+            self.assertNotIn('Assign Existing Material', contextItemStrings)
+            self.assertIn('Unassign Material', contextItemStrings)
 
         # Not supported in bulk (from MayaUsdContextOps).
         self.assertNotIn('Assign Material to Selection', contextItemStrings)

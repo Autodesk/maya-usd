@@ -474,7 +474,7 @@ void UsdContextOps::addBulkEditHeader(Ufe::ContextOps::Items& items) const
         bulkEditLabelStr = PXR_NS::TfStringPrintf(kBulkEditMixedTypeLabel, _bulkItems.size());
     } else {
         bulkEditLabelStr
-            = PXR_NS::TfStringPrintf(kBulkEditSameTypeLabel, _bulkItems.size(), _bulkType);
+            = PXR_NS::TfStringPrintf(kBulkEditSameTypeLabel, _bulkItems.size(), _bulkType.c_str());
     }
     Ufe::ContextItem bulkEditItem(kBulkEditItem, bulkEditLabelStr);
     bulkEditItem.enabled = Ufe::ContextItem::kDisabled;
@@ -597,29 +597,23 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
 {
     assert(isBulkEdit());
 
-    // Create the composite undoable command here and fill it below.
-    // If the composite command is empty (meaning we didn't add any
-    // commands above) return nullptr instead (so nothing will be executed).
-    auto compositeCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
+    // List for the commands created (for CompositeUndoableCommand). If list
+    // is empty return nullptr instead so nothing will be executed.
+    std::list<Ufe::CompositeUndoableCommand::Ptr> cmdList;
 
 #ifdef DEBUG
-    auto DEBUG_OUTPUT = [&compositeCmd](const Ufe::Selection& bulkItems) {
+    auto DEBUG_OUTPUT = [&cmdList](const Ufe::Selection& bulkItems) {
         TF_STATUS(
-            "Performing bulk edit on %d prims (%d selected)",
-            compositeCmd->cmdsList().size(),
-            bulkItems.size());
+            "Performing bulk edit on %d prims (%d selected)", cmdList.size(), bulkItems.size());
     };
 #else
 #define DEBUG_OUTPUT(x) (void)0
 #endif
 
-    auto compositeCmdReturn = [&compositeCmd]() {
-#ifdef UFE_V3_FEATURES_AVAILABLE
-        // In Ufe v3 fCmds was made private with cmdsList() accessor.
-        return !compositeCmd->cmdsList().empty() ? compositeCmd : nullptr;
-#else
-        return !compositeCmd->fCmds.empty() ? compositeCmd : nullptr;
-#endif
+    auto compositeCmdReturn = [&cmdList](const Ufe::Selection& bulkItems) {
+        DEBUG_OUTPUT(bulkItems);
+        return !cmdList.empty() ? std::make_shared<Ufe::CompositeUndoableCommand>(cmdList)
+                                : nullptr;
     };
 
     // Prim Visibility:
@@ -643,10 +637,10 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
                             // if attribute editing is blocked.
                             if (isVisible && makeInvisible) {
                                 cmd = object3d->setVisibleCmd(false);
-                                compositeCmd->append(cmd);
+                                cmdList.emplace_back(cmd);
                             } else if (!isVisible && makeVisible) {
                                 cmd = object3d->setVisibleCmd(true);
-                                compositeCmd->append(cmd);
+                                cmdList.emplace_back(cmd);
                             }
                         } catch (std::exception&) {
                             // Do nothing
@@ -655,8 +649,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
                 }
             }
         }
-        DEBUG_OUTPUT(_bulkItems);
-        return compositeCmdReturn();
+        return compositeCmdReturn(_bulkItems);
     }
 
     // Prim Active State:
@@ -670,12 +663,11 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
                 const bool primIsActive = prim.IsActive();
                 if ((makeActive && !primIsActive) || (makeInactive && primIsActive)) {
                     auto cmd = std::make_shared<UsdUfe::UsdUndoToggleActiveCommand>(prim);
-                    compositeCmd->append(cmd);
+                    cmdList.emplace_back(cmd);
                 }
             }
         }
-        DEBUG_OUTPUT(_bulkItems);
-        return compositeCmdReturn();
+        return compositeCmdReturn(_bulkItems);
     }
 
     // Instanceable State:
@@ -690,12 +682,11 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
                 if ((markInstanceable && !primIsInstanceable)
                     || (unmarkInstanceable && primIsInstanceable)) {
                     auto cmd = std::make_shared<UsdUfe::UsdUndoToggleInstanceableCommand>(prim);
-                    compositeCmd->append(cmd);
+                    cmdList.emplace_back(cmd);
                 }
             }
         }
-        DEBUG_OUTPUT(_bulkItems);
-        return compositeCmdReturn();
+        return compositeCmdReturn(_bulkItems);
     }
 
     return nullptr;

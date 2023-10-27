@@ -754,29 +754,23 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doBulkOpCmd(const ItemPath& itemPat
     if (cmd)
         return cmd;
 
-    // Create the composite undoable command here and fill it below.
-    // If the composite command is empty (meaning we didn't add any
-    // commands above) return nullptr instead (so nothing will be executed).
-    auto compositeCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
+    // List for the commands created (for CompositeUndoableCommand). If list
+    // is empty return nullptr instead so nothing will be executed.
+    std::list<Ufe::CompositeUndoableCommand::Ptr> cmdList;
 
 #ifdef DEBUG
-    auto DEBUG_OUTPUT = [&compositeCmd](const Ufe::Selection& bulkItems) {
+    auto DEBUG_OUTPUT = [&cmdList](const Ufe::Selection& bulkItems) {
         TF_STATUS(
-            "Performing bulk edit on %d prims (%d selected)",
-            compositeCmd->cmdsList().size(),
-            bulkItems.size());
+            "Performing bulk edit on %d prims (%d selected)", cmdList.size(), bulkItems.size());
     };
 #else
 #define DEBUG_OUTPUT(x) (void)0
 #endif
 
-    auto compositeCmdReturn = [&compositeCmd]() {
-#ifdef UFE_V3_FEATURES_AVAILABLE
-        // In Ufe v3 fCmds was made private with cmdsList() accessor.
-        return !compositeCmd->cmdsList().empty() ? compositeCmd : nullptr;
-#else
-        return !compositeCmd->fCmds.empty() ? compositeCmd : nullptr;
-#endif
+    auto compositeCmdReturn = [&cmdList](const Ufe::Selection& bulkItems) {
+        DEBUG_OUTPUT(bulkItems);
+        return !cmdList.empty() ? std::make_shared<Ufe::CompositeUndoableCommand>(cmdList)
+                                : nullptr;
     };
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
@@ -791,15 +785,14 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doBulkOpCmd(const ItemPath& itemPat
             // it cannot handle. Don't let any exception escape here.
             try {
                 if (sceneItemSupportsShading(selItem)) {
-                    compositeCmd->append(std::make_shared<BindMaterialUndoableCommand>(
+                    cmdList.emplace_back(std::make_shared<BindMaterialUndoableCommand>(
                         selItem->path(), SdfPath(itemPath[2])));
                 }
             } catch (std::exception&) {
                 // Do nothing
             }
         }
-        DEBUG_OUTPUT(_bulkItems);
-        return compositeCmdReturn();
+        return compositeCmdReturn(_bulkItems);
     }
 #endif
 
@@ -814,13 +807,12 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doBulkOpCmd(const ItemPath& itemPat
                     auto                       directBinding = bindingAPI.GetDirectBinding();
                     if (directBinding.GetMaterial()) {
                         auto cmd = std::make_shared<UnbindMaterialUndoableCommand>(selItem->path());
-                        compositeCmd->append(cmd);
+                        cmdList.emplace_back(cmd);
                     }
                 }
             }
         }
-        DEBUG_OUTPUT(_bulkItems);
-        return compositeCmdReturn();
+        return compositeCmdReturn(_bulkItems);
     }
 
     return nullptr;
