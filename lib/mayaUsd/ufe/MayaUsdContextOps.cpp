@@ -770,6 +770,15 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doBulkOpCmd(const ItemPath& itemPat
 #define DEBUG_OUTPUT(x) (void)0
 #endif
 
+    auto compositeCmdReturn = [&compositeCmd]() {
+#ifdef UFE_V3_FEATURES_AVAILABLE
+        // In Ufe v3 fCmds was made private with cmdsList() accessor.
+        return !compositeCmd->cmdsList().empty() ? compositeCmd : nullptr;
+#else
+        return !compositeCmd->fCmds.empty() ? compositeCmd : nullptr;
+#endif
+    };
+
 #ifdef UFE_V4_FEATURES_AVAILABLE
     if ((itemPath.size() == 3u) && (itemPath[0] == kAssignNewMaterialItem)) {
         // In the bulk edit mode, we only apply the action to the selected
@@ -790,7 +799,7 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doBulkOpCmd(const ItemPath& itemPat
             }
         }
         DEBUG_OUTPUT(_bulkItems);
-        return !compositeCmd->cmdsList().empty() ? compositeCmd : nullptr;
+        return compositeCmdReturn();
     }
 #endif
 
@@ -811,7 +820,7 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doBulkOpCmd(const ItemPath& itemPat
             }
         }
         DEBUG_OUTPUT(_bulkItems);
-        return !compositeCmd->cmdsList().empty() ? compositeCmd : nullptr;
+        return compositeCmdReturn();
     }
 
     return nullptr;

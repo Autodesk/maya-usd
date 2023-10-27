@@ -104,8 +104,8 @@ static constexpr char kAllRegisteredTypesItem[] = "All Registered";
 static constexpr char kAllRegisteredTypesLabel[] = "All Registered";
 
 static constexpr char kBulkEditItem[] = "BulkEdit";
-static constexpr char kBulkEditMixedTypeLabel[] = "%d Prims Selected";
-static constexpr char kBulkEditSameTypeLabel[] = "%d %s Prims Selected";
+static constexpr char kBulkEditMixedTypeLabel[] = "%zu Prims Selected";
+static constexpr char kBulkEditSameTypeLabel[] = "%zu %s Prims Selected";
 
 std::vector<std::pair<const char* const, const char* const>>
 _computeLoadAndUnloadItems(const UsdPrim& prim)
@@ -613,6 +613,15 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
 #define DEBUG_OUTPUT(x) (void)0
 #endif
 
+    auto compositeCmdReturn = [&compositeCmd]() {
+#ifdef UFE_V3_FEATURES_AVAILABLE
+        // In Ufe v3 fCmds was made private with cmdsList() accessor.
+        return !compositeCmd->cmdsList().empty() ? compositeCmd : nullptr;
+#else
+        return !compositeCmd->fCmds.empty() ? compositeCmd : nullptr;
+#endif
+    };
+
     // Prim Visibility:
     const bool makeVisible = itemPath[0u] == kUSDMakeVisibleItem;
     const bool makeInvisible = itemPath[0u] == kUSDMakeInvisibleItem;
@@ -647,7 +656,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
             }
         }
         DEBUG_OUTPUT(_bulkItems);
-        return !compositeCmd->cmdsList().empty() ? compositeCmd : nullptr;
+        return compositeCmdReturn();
     }
 
     // Prim Active State:
@@ -666,7 +675,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
             }
         }
         DEBUG_OUTPUT(_bulkItems);
-        return !compositeCmd->cmdsList().empty() ? compositeCmd : nullptr;
+        return compositeCmdReturn();
     }
 
     // Instanceable State:
@@ -686,7 +695,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
             }
         }
         DEBUG_OUTPUT(_bulkItems);
-        return !compositeCmd->cmdsList().empty() ? compositeCmd : nullptr;
+        return compositeCmdReturn();
     }
 
     return nullptr;
@@ -712,10 +721,14 @@ UsdContextOps::SchemaNameMap UsdContextOps::getSchemaPluginNiceNames() const
     return schemaPluginNiceNames;
 }
 
-static_assert(std::has_virtual_destructor<Ufe::CompositeUndoableCommand>::value);
-static_assert(std::is_base_of<
-              UsdBulkEditCompositeUndoableCommand::Parent,
-              UsdBulkEditCompositeUndoableCommand>::value);
+static_assert(
+    std::has_virtual_destructor<Ufe::CompositeUndoableCommand>::value,
+    "Destructor not virtual");
+static_assert(
+    std::is_base_of<
+        UsdBulkEditCompositeUndoableCommand::Parent,
+        UsdBulkEditCompositeUndoableCommand>::value,
+    "Verify base class");
 
 void UsdBulkEditCompositeUndoableCommand::execute()
 {
