@@ -122,7 +122,6 @@ protected:
 
 }; // UsdContextOps
 
-
 //! \brief Composite undoable command for Bulk Edit.
 /*!
     This class adds to the base Ufe::CompositeUndoableCommand by only keeping

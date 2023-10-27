@@ -484,7 +484,6 @@ void UsdContextOps::addBulkEditHeader(Ufe::ContextOps::Items& items) const
     items.emplace(items.begin(), bulkEditItem);
 }
 
-
 /*! Called when the context ops is in bulk edit mode.
  *
  *   This base class will build the following context menu:
@@ -615,7 +614,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
 #endif
 
     // Prim Visibility:
-    const bool makeVisible   = itemPath[0u] == kUSDMakeVisibleItem;
+    const bool makeVisible = itemPath[0u] == kUSDMakeVisibleItem;
     const bool makeInvisible = itemPath[0u] == kUSDMakeInvisibleItem;
     if (makeVisible || makeInvisible) {
         // We know that all the bulk items are in the Usd runtime.
@@ -652,18 +651,18 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
     }
 
     // Prim Active State:
-    const bool makeActive   = itemPath[0u] == kUSDActivatePrimItem;
+    const bool makeActive = itemPath[0u] == kUSDActivatePrimItem;
     const bool makeInactive = itemPath[0u] == kUSDDeactivatePrimItem;
     if (makeActive || makeInactive) {
         for (auto& selItem : _bulkItems) {
             UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(selItem);
             if (usdItem) {
-                 auto       prim = usdItem->prim();
-                 const bool primIsActive = prim.IsActive();
-                 if ((makeActive && !primIsActive) || (makeInactive && primIsActive)) {
-                     auto cmd = std::make_shared<UsdUfe::UsdUndoToggleActiveCommand>(prim);
-                     compositeCmd->append(cmd);
-                 }
+                auto       prim = usdItem->prim();
+                const bool primIsActive = prim.IsActive();
+                if ((makeActive && !primIsActive) || (makeInactive && primIsActive)) {
+                    auto cmd = std::make_shared<UsdUfe::UsdUndoToggleActiveCommand>(prim);
+                    compositeCmd->append(cmd);
+                }
             }
         }
         DEBUG_OUTPUT(_bulkItems);
@@ -671,7 +670,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
     }
 
     // Instanceable State:
-    const bool markInstanceable   = itemPath[0u] == kUSDMarkAsInstanceabaleItem;
+    const bool markInstanceable = itemPath[0u] == kUSDMarkAsInstanceabaleItem;
     const bool unmarkInstanceable = itemPath[0u] == kUSDUnmarkAsInstanceableItem;
     if (markInstanceable || unmarkInstanceable) {
         for (auto& selItem : _bulkItems) {
