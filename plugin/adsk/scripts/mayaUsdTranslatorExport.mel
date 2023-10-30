@@ -278,6 +278,11 @@ global proc mayaUsdTranslatorExport_AnimationRangeCB() {
 }
 
 proc int mayaUsdTranslatorExport_HasFilteredPrimitive(string $arg, string $primType) {
+    if (startsWith($arg, "[") && endsWith($arg, "]")) {
+        if (size($arg) > 2) {
+            $arg = substring($arg, 2, size($arg) - 1);
+        }
+    }
     string $filteredTypes[] = stringToStringArray($arg, ",");
     return stringArrayFind($primType, 0, $filteredTypes) != -1;
 }
@@ -420,6 +425,11 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
         int $supportsMultiExport = 1;
         int $exportNurbsCurves = 1;
         int $contextForcesFilterTypes = $enable;
+        int $contextForcesExcludeTypes = $enable;
+
+        int $exportMeshes = 1;
+        int $exportCameras = 1;
+        int $exportLights = 1;
         for ($index = 0; $index < size($optionList); $index++) {
             tokenize($optionList[$index], "=", $optionBreakDown);
             if ($optionBreakDown[0] == "exportUVs") {
@@ -439,15 +449,15 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
                     $exportNurbsCurves = 0;
                 }
             } else if($optionBreakDown[0] == "excludeExportTypes"){
-                if(mayaUsdTranslatorExport_HasFilteredPrimitive($optionBreakDown[1], "Meshes") == 0){
-                    mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportMeshesCheckBox");
-                    mayaUsdTranslatorExport_MeshCB();
+                $contextForcesExcludeTypes = 1;
+                if(mayaUsdTranslatorExport_HasFilteredPrimitive($optionBreakDown[1], "Meshes")){
+                    $exportMeshes = 0;                    
                 }
-                if(mayaUsdTranslatorExport_HasFilteredPrimitive($optionBreakDown[1], "Cameras") == 0){
-                    mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportCamerasCheckBox");
+                if(mayaUsdTranslatorExport_HasFilteredPrimitive($optionBreakDown[1], "Cameras")){
+                    $exportCameras = 0;
                 }
-                if(mayaUsdTranslatorExport_HasFilteredPrimitive($optionBreakDown[1], "Lights") == 0){
-                    mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportLightsCheckBox");
+                if(mayaUsdTranslatorExport_HasFilteredPrimitive($optionBreakDown[1], "Lights")){
+                    $exportLights = 0;
                 }
             } else if ($optionBreakDown[0] == "exportColorSets") {
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportColorSetsCheckBox");
@@ -506,6 +516,12 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
         // We now know if we export nurbs curves or not and if forced by the job context:
         if ($contextForcesFilterTypes == 1) {
             checkBoxGrp -e -v1 $exportNurbsCurves -en $enable exportCurvesCheckBox;
+        }
+        if($contextForcesExcludeTypes == 1){
+            checkBoxGrp -e -v1 $exportMeshes -en $enable exportMeshesCheckBox;
+            mayaUsdTranslatorExport_MeshCB();
+            checkBoxGrp -e -v1 $exportCameras -en $enable exportCamerasCheckBox;
+            checkBoxGrp -e -v1 $exportLights -en $enable exportLightsCheckBox;
         }
 
         if ($jobContext != "" && $processJobContext == 1) {
