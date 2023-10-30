@@ -254,6 +254,7 @@ global proc mayaUsdTranslatorExport_MeshCB() {
         return;
 
     columnLayout -e -enable (`checkBoxGrp -q -v1 exportMeshesCheckBox` == 1) meshExportOptsCol;
+    columnLayout -e -enable (`checkBoxGrp -q -v1 exportMeshesCheckBox` == 1) materialOptsCol;
 }
 
 // Callback called when the animation frame layout is expanded.
@@ -721,24 +722,26 @@ global proc int mayaUsdTranslatorExport (string $parent,
             int $collapse = stringArrayContains("materials", $collapsedSections) ? true : false;
             frameLayout -label `getMayaUsdString("kExportFrameMaterialsLbl")` -collapsable true -collapse $collapse -ann `getMayaUsdString("kExportMaterialsAnn")` materialsFrameLayout;
                 separator -style "none";
-                string $conversions[] = `mayaUSDListShadingModes -export -useRegistryOnly`;
-                for ($conversion in $conversions) {
-                    string $ann = `mayaUSDListShadingModes -ea $conversion -useRegistryOnly`;
-                    string $opt = `mayaUSDListShadingModes -eo $conversion -useRegistryOnly`;
-                    string $widgetName = $opt + "_ConvertMaterialsToCheckBox";
+                columnLayout -width 100 materialOptsCol;
+                    string $conversions[] = `mayaUSDListShadingModes -export -useRegistryOnly`;
+                    for ($conversion in $conversions) {
+                        string $ann = `mayaUSDListShadingModes -ea $conversion -useRegistryOnly`;
+                        string $opt = `mayaUSDListShadingModes -eo $conversion -useRegistryOnly`;
+                        string $widgetName = $opt + "_ConvertMaterialsToCheckBox";
 
-                    checkBoxGrp -cw 2 240 -numberOfCheckBoxes 1
-                        -label "" -label1 $conversion -annotation $ann
-                        $widgetName;
-                }
+                        checkBoxGrp -cw 2 240 -numberOfCheckBoxes 1
+                            -label "" -label1 $conversion -annotation $ann
+                            $widgetName;
+                    }
 
-                optionMenuGrp -l `getMayaUsdString("kExportRelativeTexturesLbl")` -annotation `getMayaUsdString("kExportRelativeTexturesAnn")` exportRelativeTexturesPopup;
-                    // The annotation will be used to assign value to token exportRelativeTextures, so lower case is used
-                    menuItem -l `getMayaUsdString("kExportRelativeTexturesAutomaticLbl")` -ann "automatic";
-                    menuItem -l `getMayaUsdString("kExportRelativeTexturesAbsoluteLbl")` -ann "absolute";
-                    menuItem -l `getMayaUsdString("kExportRelativeTexturesRelativeLbl")` -ann "relative";
+                    optionMenuGrp -l `getMayaUsdString("kExportRelativeTexturesLbl")` -annotation `getMayaUsdString("kExportRelativeTexturesAnn")` exportRelativeTexturesPopup;
+                        // The annotation will be used to assign value to token exportRelativeTextures, so lower case is used
+                        menuItem -l `getMayaUsdString("kExportRelativeTexturesAutomaticLbl")` -ann "automatic";
+                        menuItem -l `getMayaUsdString("kExportRelativeTexturesAbsoluteLbl")` -ann "absolute";
+                        menuItem -l `getMayaUsdString("kExportRelativeTexturesRelativeLbl")` -ann "relative";
 
-                separator -style "none";
+                    separator -style "none";
+                setParent ..;
             setParent ..;
         }
 
