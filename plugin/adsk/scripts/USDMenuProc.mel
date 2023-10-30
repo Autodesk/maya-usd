@@ -24,6 +24,16 @@ proc string expandToSelection(string $obj)
     }
 }
 
+global proc mayaUsdMenu_editAsMaya(string $obj)
+{
+    if (!hasPrimUpdater())
+        return;
+
+    if (size($obj) != 0) {
+        mayaUsdEditAsMaya $obj;
+    }
+}
+
 global proc mayaUsdMenu_EditAsMayaDataOptionsCallback(string $optionsString)
 {
     optionVar -stringValue usdMaya_EditAsMayaDataOptions $optionsString;
@@ -35,9 +45,13 @@ global proc mayaUsdMenu_EditAsMayaDataOptionsReset(string $obj)
     mayaUsdMenu_EditAsMayaDataOptions($obj);
 }
 
-global proc mayaUsdMenu_ApplyEditAsMayaDataOptions(string $obj)
+global proc mayaUsdMenu_ApplyEditAsMayaDataOptions(string $obj, int $closeDialog)
 {
     mayaUsdTranslatorImport ("", "query", "", "mayaUsdMenu_EditAsMayaDataOptionsCallback");
+
+    if ($closeDialog) {
+        hideOptionBox;
+    }
 
     if (size($obj)) {
         waitCursor -state 1; 
@@ -65,12 +79,12 @@ global proc mayaUsdMenu_EditAsMayaDataOptions(string $obj)
 
     string $applyCloseBtn = getOptionBoxApplyAndCloseBtn();
     button -edit -label `getMayaUsdString("kEditAsMayaData")`
-        -command ("mayaUsdMenu_ApplyEditAsMayaDataOptions(\"" + $obj + "\");")
+        -command ("mayaUsdMenu_ApplyEditAsMayaDataOptions(\"" + $obj + "\", 1);")
         $applyCloseBtn;
 
     string $applyBtn = getOptionBoxApplyBtn();
     button -edit
-        -command ("mayaUsdMenu_ApplyEditAsMayaDataOptions(\"\");")
+        -command ("mayaUsdMenu_ApplyEditAsMayaDataOptions(\"" + $obj + "\", 0);")
         $applyBtn;
 
     string $resetBtn = getOptionBoxResetBtn();
