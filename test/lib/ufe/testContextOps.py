@@ -152,6 +152,76 @@ class ContextOpsTestCase(unittest.TestCase):
             if c.checked:
                 self.assertEqual(c.item, 'Ball_8')
 
+    def testGetBulkItems(self):
+        # The top-level context items are:
+        #   Bulk Menu Header
+        #   -----------------
+        #   Make Visible
+        #   Make Invisible
+        #   Activate Prim
+        #   Deactivate Prim
+        #   Mark as Instanceable
+        #   Unmark as Instanceable
+        #   -----------------
+        #   Assign New Material
+        #   Assign Existing Material
+        #   Unassign Material
+
+        # The default setup selects a single prim (Ball_35) and creates context item
+        # for it. We want multiple selection to make a bulk context.
+        for ball in ['Ball_32', 'Ball_33', 'Ball_34']:
+            ballPath = ufe.Path([
+                mayaUtils.createUfePathSegment("|transform1|proxyShape1"), 
+                usdUtils.createUfePathSegment("/Room_set/Props/%s" % ball)])
+            ballItem = ufe.Hierarchy.createItem(ballPath)
+            ufe.GlobalSelection.get().append(ballItem)
+
+        # Re-create a ContextOps interface for it.
+        # Since the context item is in the selection, we get a bulk context.
+        self.contextOps = ufe.ContextOps.contextOps(self.ball35Item)
+
+        contextItems = self.contextOps.getItems([])
+        contextItemStrings = [c.item for c in contextItems]
+
+        # Special header at top of menu.
+        self.assertIn('BulkEdit', contextItemStrings)
+
+        # Not supported in bulk (from UsdContextOps).
+        self.assertNotIn('Load', contextItemStrings)
+        self.assertNotIn('Load with Descendants', contextItemStrings)
+        self.assertNotIn('Unload', contextItemStrings)
+        self.assertNotIn('Variant Sets', contextItemStrings)
+        self.assertNotIn('Add New Prim', contextItemStrings)
+
+        # Two actions in bulk, instead of toggle.
+        self.assertIn('Make Visible', contextItemStrings)
+        self.assertIn('Make Invisible', contextItemStrings)
+        self.assertNotIn('Toggle Visibility', contextItemStrings)
+
+        self.assertIn('Activate Prim', contextItemStrings)
+        self.assertIn('Deactivate Prim', contextItemStrings)
+        self.assertNotIn('Toggle Active State', contextItemStrings)
+
+        self.assertIn('Mark as Instanceable', contextItemStrings)
+        self.assertIn('Unmark as Instanceable', contextItemStrings)
+        self.assertNotIn('Toggle Instanceable State', contextItemStrings)
+
+        if ufeUtils.ufeFeatureSetVersion() >= 4:
+            self.assertIn('Assign New Material', contextItemStrings)
+            # Because there are no materials in the scene we don't have this item.
+            self.assertNotIn('Assign Existing Material', contextItemStrings)
+            self.assertIn('Unassign Material', contextItemStrings)
+
+        # Not supported in bulk (from MayaUsdContextOps).
+        self.assertNotIn('Assign Material to Selection', contextItemStrings)
+        self.assertNotIn('USD Layer Editor', contextItemStrings)
+        self.assertNotIn('Edit As Maya Data', contextItemStrings)
+        self.assertNotIn('Duplicate As Maya Data', contextItemStrings)
+        self.assertNotIn('Add Maya Reference', contextItemStrings)
+        self.assertNotIn('AddReferenceOrPayload', contextItemStrings)
+        self.assertNotIn('ClearAllReferencesOrPayloads', contextItemStrings)
+        self.assertNotIn('ClearAllReferencesOrPayloads', contextItemStrings)
+
     def testSwitchVariantInLayer(self):
         """
         Test switching variant in layers: stronger, weaker, session.
@@ -310,6 +380,129 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(shadingVariant(), 'Cue')
 
         cmds.undo()
+
+    def testDoBulkOp(self):
+        # The default setup selects a single prim (Ball_35) and creates context item
+        # for it. We want multiple selection to make a bulk context.
+        ballItems = {}
+        ballPrims = {}
+        for ball in [32, 33, 34]:
+            ballPath = ufe.Path([
+                mayaUtils.createUfePathSegment("|transform1|proxyShape1"), 
+                usdUtils.createUfePathSegment("/Room_set/Props/Ball_%d" % ball)])
+            ballItem = ufe.Hierarchy.createItem(ballPath)
+            ballPrim = usdUtils.getPrimFromSceneItem(ballItem)
+            ufe.GlobalSelection.get().append(ballItem)
+            ballItems[ball] = ballItem
+            ballPrims[ball] = ballPrim
+        ballItems[35] = self.ball35Item
+        ballPrims[35] = self.ball35Prim
+
+        # Re-create a ContextOps interface for it.
+        # Since the context item is in the selection, we get a bulk context.
+        self.contextOps = ufe.ContextOps.contextOps(self.ball35Item)
+
+        # Change visility, undo/redo.
+        cmd = self.contextOps.doOpCmd(['Make Invisible'])
+        self.assertIsNotNone(cmd)
+        self.assertIsInstance(cmd, ufe.CompositeUndoableCommand)
+
+        # Get visibility attr for each selected ball.
+        ballVisibility = {}
+        for ball in ballItems:
+            attrs = ufe.Attributes.attributes(ballItems[ball])
+            self.assertIsNotNone(attrs)
+            visibility = attrs.attribute(UsdGeom.Tokens.visibility)
+            self.assertIsNotNone(visibility)
+            ballVisibility[ball] = visibility
+
+        def verifyBulkVisibility(ballVisibility, visValue):
+            for ballVis in ballVisibility.values():
+                self.assertEqual(ballVis.get(), visValue)
+
+        # Initially all selected balls are inherited visibility.
+        verifyBulkVisibility(ballVisibility, UsdGeom.Tokens.inherited)
+        ufeCmd.execute(cmd)
+        verifyBulkVisibility(ballVisibility, UsdGeom.Tokens.invisible)
+        cmds.undo()
+        verifyBulkVisibility(ballVisibility, UsdGeom.Tokens.inherited)
+        cmds.redo()
+        verifyBulkVisibility(ballVisibility, UsdGeom.Tokens.invisible)
+
+        # Make Visible
+        cmd = self.contextOps.doOpCmd(['Make Visible'])
+        self.assertIsNotNone(cmd)
+        self.assertIsInstance(cmd, ufe.CompositeUndoableCommand)
+
+        # We left all the balls invisible from command above.
+        ufeCmd.execute(cmd)
+        verifyBulkVisibility(ballVisibility, UsdGeom.Tokens.inherited)
+        cmds.undo()
+        verifyBulkVisibility(ballVisibility, UsdGeom.Tokens.invisible)
+        cmds.redo()
+        verifyBulkVisibility(ballVisibility, UsdGeom.Tokens.inherited)
+
+        # Deactivate Prim
+        cmd = self.contextOps.doOpCmd(['Deactivate Prim'])
+        self.assertIsNotNone(cmd)
+        self.assertIsInstance(cmd, ufe.CompositeUndoableCommand)
+
+        def verifyBulkPrimState(ballPrims, state):
+            for ballPrim in ballPrims.values():
+                self.assertEqual(ballPrim.IsActive(), state)
+
+        # Initially, all selected balls should be Active.
+        verifyBulkPrimState(ballPrims, True)
+        ufeCmd.execute(cmd)
+        verifyBulkPrimState(ballPrims, False)
+        cmds.undo()
+        verifyBulkPrimState(ballPrims, True)
+        cmds.redo()
+        verifyBulkPrimState(ballPrims, False)
+
+        # Activate Prim
+        cmd = self.contextOps.doOpCmd(['Activate Prim'])
+        self.assertIsNotNone(cmd)
+        self.assertIsInstance(cmd, ufe.CompositeUndoableCommand)
+
+        # We left all the balls deactivated from command above.
+        ufeCmd.execute(cmd)
+        verifyBulkPrimState(ballPrims, True)
+        cmds.undo()
+        verifyBulkPrimState(ballPrims, False)
+        cmds.redo()
+        verifyBulkPrimState(ballPrims, True)
+
+        # Mark as Instanceable
+        cmd = self.contextOps.doOpCmd(['Mark as Instanceable'])
+        self.assertIsNotNone(cmd)
+        self.assertIsInstance(cmd, ufe.CompositeUndoableCommand)
+
+        def verifyBulkPrimInstState(ballPrims, state):
+            for ballPrim in ballPrims.values():
+                self.assertEqual(ballPrim.IsInstanceable(), state)
+
+        # Initially, all selected balls should be non-Instanceable.
+        verifyBulkPrimInstState(ballPrims, False)
+        ufeCmd.execute(cmd)
+        verifyBulkPrimInstState(ballPrims, True)
+        cmds.undo()
+        verifyBulkPrimInstState(ballPrims, False)
+        cmds.redo()
+        verifyBulkPrimInstState(ballPrims, True)
+
+        # Unmark as Instanceable
+        cmd = self.contextOps.doOpCmd(['Unmark as Instanceable'])
+        self.assertIsNotNone(cmd)
+        self.assertIsInstance(cmd, ufe.CompositeUndoableCommand)
+
+        # We left all the balls instanceable from command above.
+        ufeCmd.execute(cmd)
+        verifyBulkPrimInstState(ballPrims, False)
+        cmds.undo()
+        verifyBulkPrimInstState(ballPrims, True)
+        cmds.redo()
+        verifyBulkPrimInstState(ballPrims, False)
 
     def testAddNewPrim(self):
         cmds.file(new=True, force=True)
@@ -555,7 +748,7 @@ class ContextOpsTestCase(unittest.TestCase):
 
         contextOps = ufe.ContextOps.contextOps(capsuleItem)
         cmd = contextOps.doOpCmd(['Assign Material', '/Material1'])
-        self.assertTrue(cmd)
+        self.assertIsNotNone(cmd)
         ufeCmd.execute(cmd)
         self.assertTrue(capsulePrim.HasAPI(UsdShade.MaterialBindingAPI))
         capsuleBindAPI = UsdShade.MaterialBindingAPI(capsulePrim)
@@ -568,7 +761,7 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(capsuleBindAPI.GetDirectBinding().GetMaterialPath(), Sdf.Path("/Material1"))
 
         cmd = contextOps.doOpCmd(['Unassign Material'])
-        self.assertTrue(cmd)
+        self.assertIsNotNone(cmd)
         ufeCmd.execute(cmd)
 
         self.assertTrue(capsuleBindAPI.GetDirectBinding().GetMaterialPath().isEmpty)
@@ -726,12 +919,13 @@ class ContextOpsTestCase(unittest.TestCase):
         spherePrim = usdUtils.getPrimFromSceneItem(sphereItem)
         self.assertFalse(spherePrim.HasAPI(UsdShade.MaterialBindingAPI))
 
-        # Select two of our three objects.
+        # Select all three objects.
+        ufe.GlobalSelection.get().append(capsuleItem)
         ufe.GlobalSelection.get().append(cubeItem)
         ufe.GlobalSelection.get().append(sphereItem)
 
-        # Apply the new material on the unselected object. This object should also receive the new material binding,
-        # in addition to the two selected objects.
+        # Apply the new material one of the selected objects, so we are operating in
+        # bulk mode. All the selected objects should receive the new material binding.
         contextOps = ufe.ContextOps.contextOps(capsuleItem)
 
         # Create a new material and apply it to our cube, sphere and capsule objects.
@@ -799,6 +993,7 @@ class ContextOpsTestCase(unittest.TestCase):
         checkMaterial(self, rootHier, 4, 1, 1, 0, "UsdPreviewSurface", "", "surface")
 
         # Re-select our multiple objects so that we can repeat the test with another material.
+        ufe.GlobalSelection.get().append(capsuleItem)
         ufe.GlobalSelection.get().append(cubeItem)
         ufe.GlobalSelection.get().append(sphereItem)
 
@@ -834,6 +1029,21 @@ class ContextOpsTestCase(unittest.TestCase):
         with testUtils.TemporaryEnvironmentVariable("MAYAUSD_MATERIALS_SCOPE_NAME", "test_scope"):
             ufeCmd.execute(cmdSS)
             checkMaterial(self, rootHier, 5, 1, 1, 0, "standard_surface", "mtlx", "out", "/test_scope")
+
+        # Unassign Material works on bulk
+        cmd = contextOps.doOpCmd(['Unassign Material'])
+        self.assertIsNotNone(cmd)
+        ufeCmd.execute(cmd)
+
+        self.assertTrue(capsulePrim.HasAPI(UsdShade.MaterialBindingAPI))
+        capsuleBindAPI = UsdShade.MaterialBindingAPI(capsulePrim)
+        self.assertTrue(capsuleBindAPI.GetDirectBinding().GetMaterialPath().isEmpty)
+        self.assertTrue(cubePrim.HasAPI(UsdShade.MaterialBindingAPI))
+        cubeBindAPI = UsdShade.MaterialBindingAPI(cubePrim)
+        self.assertTrue(cubeBindAPI.GetDirectBinding().GetMaterialPath().isEmpty)
+        self.assertTrue(spherePrim.HasAPI(UsdShade.MaterialBindingAPI))
+        sphereBindAPI = UsdShade.MaterialBindingAPI(spherePrim)
+        self.assertTrue(sphereBindAPI.GetDirectBinding().GetMaterialPath().isEmpty)
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testMaterialCreationScopeName(self):
@@ -1156,7 +1366,7 @@ class ContextOpsTestCase(unittest.TestCase):
 
         contextOps = ufe.ContextOps.contextOps(capsuleItem)
         cmd = contextOps.doOpCmd(['Assign Material', '/Material1'])
-        self.assertTrue(cmd)
+        self.assertIsNotNone(cmd)
         ufeCmd.execute(cmd)
         self.assertTrue(capsulePrim.HasAPI(UsdShade.MaterialBindingAPI))
         capsuleBindAPI = UsdShade.MaterialBindingAPI(capsulePrim)
@@ -1169,7 +1379,7 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(capsuleBindAPI.GetDirectBinding().GetMaterialPath(), Sdf.Path("/Material1"))
 
         cmd = contextOps.doOpCmd(['Unassign Material'])
-        self.assertTrue(cmd)
+        self.assertIsNotNone(cmd)
         ufeCmd.execute(cmd)
 
         self.assertTrue(capsuleBindAPI.GetDirectBinding().GetMaterialPath().isEmpty)
@@ -1219,7 +1429,7 @@ class ContextOpsTestCase(unittest.TestCase):
 
         contextOps = ufe.ContextOps.contextOps(rootHier.children()[2])
         cmd = contextOps.doOpCmd(['Assign Material to Selection',])
-        self.assertTrue(cmd)
+        self.assertIsNotNone(cmd)
         ufeCmd.execute(cmd)
         allHaveMaterial(self, [capsuleItem, sphereItem], "/Material1")
         cmds.undo()
@@ -1230,7 +1440,7 @@ class ContextOpsTestCase(unittest.TestCase):
         # Test that undo restores previous material:
         contextOps = ufe.ContextOps.contextOps(rootHier.children()[3])
         cmd = contextOps.doOpCmd(['Assign Material to Selection',])
-        self.assertTrue(cmd)
+        self.assertIsNotNone(cmd)
         ufeCmd.execute(cmd)
         allHaveMaterial(self, [capsuleItem, sphereItem], "/Material2")
         cmds.undo()
