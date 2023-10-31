@@ -333,6 +333,7 @@ bool selectionSupportsShading()
     return false;
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
 bool canAssignMaterialToNodeType(const Ufe::SceneItem::Ptr& sceneItem)
 {
     int     allowMaterialFunctions = 0;
@@ -343,6 +344,7 @@ bool canAssignMaterialToNodeType(const Ufe::SceneItem::Ptr& sceneItem)
     MGlobal::executeCommand(script, allowMaterialFunctions);
     return (allowMaterialFunctions != 0);
 }
+#endif // UFE_V4_FEATURES_AVAILABLE
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 

@@ -150,6 +150,7 @@ bool _BindMaterialCompatiblePrim(const UsdPrim& usdPrim)
     return false;
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
 bool isDefPrim(const Ufe::SceneItem::Ptr& sceneItem)
 {
     const auto canonicalName
@@ -159,6 +160,7 @@ bool isDefPrim(const Ufe::SceneItem::Ptr& sceneItem)
     }
     return false;
 }
+#endif
 
 } // namespace
 
