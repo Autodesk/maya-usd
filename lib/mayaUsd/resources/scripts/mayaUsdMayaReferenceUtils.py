@@ -173,8 +173,8 @@ def _resetReferencedPrim(*args):
 #             defPrim = layer.defaultPrim
 #     except Exception as ex:
 #         print(str(ex))
-    
-    return defPrim, rootPrim
+#
+#     return defPrim, rootPrim
 
 def _updateReferencedPrimBasedOnFile():
     """Update all UI related to the referenced prim based on the currently selected file."""
@@ -200,7 +200,7 @@ def _updateReferencedPrimBasedOnFile():
     # elif rootPrim:
     #     cmds.textFieldGrp('mayaUsdAddRefOrPayloadPrimPath', edit=True, text=rootPrim, placeholderText='')
     # else:
-    #     cmds.textFieldGrp('mayaUsdAddRefOrPayloadPrimPath', edit=True, text='', placeholderText='')
+    cmds.textFieldGrp('mayaUsdAddRefOrPayloadPrimPath', edit=True, text='', placeholderText='')
 
 def createUsdRefOrPayloadUI(uiForLoad=False):
     _setCurrentFilename(None)
