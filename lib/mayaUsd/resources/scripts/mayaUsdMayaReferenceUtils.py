@@ -153,25 +153,28 @@ def _resetReferencedPrim(*args):
     """Reset the referenced prim UI"""
     _updateReferencedPrimBasedOnFile()
 
-def _getDefaultAndRootPrims(filename):
-    """Retrieve the default and first root prims of a USD file."""
-    defPrim, rootPrim = None, None
-    try:
-        layer = Sdf.Layer.FindOrOpen(filename)
-        if layer:
-            # Note: the root prims at the USD layer level are SdfPrimSpec,
-            #       so they are not SdfPath themselves nor prim. That is
-            #       why their path is retrieved via their path property.
-            #
-            #       The default prim is a pure token though, because it is
-            #       a metadata on the layer, so it can be used as-is.
-            rootPrims = layer.rootPrims
-            rootPrim = rootPrims[0].path if len(rootPrims) > 0 else None
-            defPrim = layer.defaultPrim
-    except Exception as ex:
-        print(str(ex))
-    
-    return defPrim, rootPrim
+# Note: we are disabling the default prim filling due to the long delay when the USD
+#       file is very large.
+#
+# def _getDefaultAndRootPrims(filename):
+#     """Retrieve the default and first root prims of a USD file."""
+#     defPrim, rootPrim = None, None
+#     try:
+#         layer = Sdf.Layer.FindOrOpen(filename)
+#         if layer:
+#             # Note: the root prims at the USD layer level are SdfPrimSpec,
+#             #       so they are not SdfPath themselves nor prim. That is
+#             #       why their path is retrieved via their path property.
+#             #
+#             #       The default prim is a pure token though, because it is
+#             #       a metadata on the layer, so it can be used as-is.
+#             rootPrims = layer.rootPrims
+#             rootPrim = rootPrims[0].path if len(rootPrims) > 0 else None
+#             defPrim = layer.defaultPrim
+#     except Exception as ex:
+#         print(str(ex))
+#
+#     return defPrim, rootPrim
 
 def _updateReferencedPrimBasedOnFile():
     """Update all UI related to the referenced prim based on the currently selected file."""
@@ -187,14 +190,17 @@ def _updateReferencedPrimBasedOnFile():
     cmds.button('mayaUsdAddRefOrPayloadFilePathBrowser', edit=True, enable=True)
     cmds.symbolButton('mayaUsdAddRefOrPayloadFilePathReset', edit=True, enable=True)
 
-    defaultPrim, rootPrim = _getDefaultAndRootPrims(filename)
-    if defaultPrim:
-        placeHolder = defaultPrim + getMayaUsdLibString('kAddRefOrPayloadPrimPathPlaceHolder')
-        cmds.textFieldGrp('mayaUsdAddRefOrPayloadPrimPath', edit=True, text='', placeholderText=placeHolder)
-    elif rootPrim:
-        cmds.textFieldGrp('mayaUsdAddRefOrPayloadPrimPath', edit=True, text=rootPrim, placeholderText='')
-    else:
-        cmds.textFieldGrp('mayaUsdAddRefOrPayloadPrimPath', edit=True, text='', placeholderText='')
+    # Note: we are disabling the default prim filling due to the long delay when the USD
+    #       file is very large.
+    #
+    # defaultPrim, rootPrim = _getDefaultAndRootPrims(filename)
+    # if defaultPrim:
+    #     placeHolder = defaultPrim + getMayaUsdLibString('kAddRefOrPayloadPrimPathPlaceHolder')
+    #     cmds.textFieldGrp('mayaUsdAddRefOrPayloadPrimPath', edit=True, text='', placeholderText=placeHolder)
+    # elif rootPrim:
+    #     cmds.textFieldGrp('mayaUsdAddRefOrPayloadPrimPath', edit=True, text=rootPrim, placeholderText='')
+    # else:
+    cmds.textFieldGrp('mayaUsdAddRefOrPayloadPrimPath', edit=True, text='', placeholderText='')
 
 def createUsdRefOrPayloadUI(uiForLoad=False):
     _setCurrentFilename(None)
