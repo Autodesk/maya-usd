@@ -489,10 +489,6 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportDisplayColorCheckBox");
             } else if ($optionBreakDown[0] == "exportInstances") {
                 mayaUsdTranslatorExport_SetOptionMenuByBool($optionBreakDown[1], $enable, "exportInstancesPopup");
-            } else if($optionBreakDown[0] == "exportCameras"){
-                mayaUsdTranslatorExport_SetOptionMenuByBool($optionBreakDown[1], $enable, "exportInstancesPopup");
-            } else if($optionBreakDown[0] == "exportLights") {
-                mayaUsdTranslatorExport_SetOptionMenuByBool($optionBreakDown[1], $enable, "exportInstancesPopup");
             } else if ($optionBreakDown[0] == "exportVisibility") {
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportVisibilityCheckBox");
             } else if ($optionBreakDown[0] == "mergeTransformAndShape") {
