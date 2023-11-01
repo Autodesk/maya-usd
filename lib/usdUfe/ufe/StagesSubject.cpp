@@ -157,13 +157,19 @@ void sendAttributeChanged(
                 notifyWithoutExceptions<Ufe::Camera>(ufePath);
             }
         } else {
+            // Special case when Redo-ing visibility change, the notice.GetChangedInfoOnlyPaths()
+            // does not contain the change, hence handling visibility notification in re-sync path.
+            if (changedToken == UsdGeomTokens->visibility) {
+                Ufe::VisibilityChanged vis(ufePath);
+                notifyWithoutExceptions<Ufe::Object3d>(vis);
+            }
             notifyWithoutExceptions<Ufe::Attributes>(
                 Ufe::AttributeAdded(ufePath, changedToken.GetString()));
         }
     } break;
     case AttributeChangeType::kRemoved: {
         // Special case when Undoing a visibility change, the notice.GetChangedInfoOnlyPaths()
-        // does not contain the change, hence handling visibility notification in re-synch path.
+        // does not contain the change, hence handling visibility notification in re-sync path.
         if (changedToken == UsdGeomTokens->visibility) {
             Ufe::VisibilityChanged vis(ufePath);
             notifyWithoutExceptions<Ufe::Object3d>(vis);
