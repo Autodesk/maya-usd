@@ -73,9 +73,11 @@ def mayaUsdLibRegisterStrings():
     register('kTextVariant', 'Variant')
     register('kTextVariantToolTip','If selected, your Maya reference will be defined in a variant. This will enable your prim to\nhave 2 variants you can switch between in the Outliner; the Maya reference and its USD cache.')
 
-    register('kAddRefOrPayloadPrimPathToolTip', 'Specifying a prim path will make an explicit reference to a prim.\n' +
-                                        'If there is no default prim in your chosen reference, this field auto populates with the top level prim for you to reference in.\n' +
-                                        'If the field is left blank, no prim will be referenced.')
+    register('kAddRefOrPayloadPrimPathToolTip',
+        'Leave this field blank to use the default prim as your prim path (only viable if your file has a default prim).\n' +
+        'Specifying a prim path will make an explicit reference to a prim.\n' +
+        'If there is no default prim and no prim path is specified, no prim will be referenced.')
+    
     register('kAddRefOrPayloadPrimPathLabel', 'Prim Path')
     register('kAddRefOrPayloadPrimPathPlaceHolder', ' (Default Prim)')
     register('kAddRefOrPayloadPrimPathHelpLabel', 'Help on Select a Prim for Reference')
