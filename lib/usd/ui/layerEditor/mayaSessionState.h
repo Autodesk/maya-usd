@@ -72,6 +72,9 @@ public:
     // in this case, the stage needs to be re-created on the new file
     void rootLayerPathChanged(std::string const& in_path) override;
 
+    void refreshCurrentStageEntry();
+    void refreshStageEntry(std::string const& proxyShapePath);
+
     std::string proxyShapePath() { return _currentStageEntry._proxyShapePath; }
 
 Q_SIGNALS:

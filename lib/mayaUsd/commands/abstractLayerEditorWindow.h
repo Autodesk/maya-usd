@@ -96,6 +96,7 @@ public:
     virtual void printLayer() = 0;
     virtual void clearLayer() = 0;
     virtual void selectPrimsWithSpec() = 0;
+    virtual void updateLayerModel() = 0;
 
     virtual void selectProxyShape(const char* shapePath) = 0;
 };

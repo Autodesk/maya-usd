@@ -137,6 +137,9 @@ void updateAllCachedStageWithLayer(SdfLayerRefPtr originalLayer, const std::stri
         std::vector<UsdStageRefPtr> stages = cache.FindAllMatching(originalLayer);
         for (const auto& stage : stages) {
             auto sessionLayer = stage->GetSessionLayer();
+            // Note: See comments in lib\mayaUsd\nodes\proxyShapeBase.cpp, line 823
+            //       about requirements about matching UsdStage::Open() arguments to
+            //       find a stage.
             auto newStage = UsdStage::UsdStage::Open(
                 newLayer, sessionLayer, UsdStage::InitialLoadSet::LoadNone);
             newStage->SetLoadRules(stage->GetLoadRules());

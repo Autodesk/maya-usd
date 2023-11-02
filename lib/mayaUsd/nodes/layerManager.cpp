@@ -15,6 +15,7 @@
 //
 #include "layerManager.h"
 
+#include <mayaUsd/commands/abstractLayerEditorWindow.h>
 #include <mayaUsd/listeners/notice.h>
 #include <mayaUsd/listeners/proxyShapeNotice.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
@@ -254,6 +255,7 @@ private:
     void clearProxies();
     bool hasDirtyLayer() const;
     void refreshProxiesToSave();
+    void updateLayerManagers();
 
     std::map<std::string, SdfLayerRefPtr> _idToLayer;
     TfNotice::Key                         _onStageSetKey;
@@ -437,6 +439,21 @@ void LayerDatabase::clearProxies()
 {
     _proxiesToSave.clear();
     _internalProxiesToSave.clear();
+}
+
+void LayerDatabase::updateLayerManagers()
+{
+    auto creator = MayaUsd::AbstractLayerEditorCreator::instance();
+    if (!creator)
+        return;
+
+    for (const std::string& panelName : creator->getAllPanelNames()) {
+        AbstractLayerEditorWindow* window = creator->getWindow(panelName.c_str());
+        if (!window)
+            continue;
+
+        window->updateLayerModel();
+    }
 }
 
 bool LayerDatabase::hasDirtyLayer() const
@@ -646,6 +663,7 @@ bool LayerDatabase::saveUsd(bool isExport)
     }
 
     clearProxies();
+    updateLayerManagers();
     return (MayaUsd::kCompleted == result);
 }
 
