@@ -821,7 +821,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
     bool isIncomingStage = false;
 
     // Note: we explicitly always load no payload initially and will load them
-    //       later on if requested. The reason is that there are otehr code elsewhere
+    //       later on if requested. The reason is that there are other code elsewhere
     //       that updates the stages. Those functions must find the same existing stages.
     //       Somewhat unfortunately, the OpenUSD API to open a stage only finds an existing
     //       stage if *all* parameters passed to open the stage match, including the initial
