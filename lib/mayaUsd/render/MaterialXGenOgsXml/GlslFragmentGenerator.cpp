@@ -259,44 +259,46 @@ ShaderPtr GlslFragmentGenerator::generate(
     MX_EMIT_INCLUDE(libRoot + "stdlib/genglsl/lib/mx_math.glsl", context, pixelStage);
     emitLineBreak(pixelStage);
 
-    int specularMethod = context.getOptions().hwSpecularEnvironmentMethod;
-    if (specularMethod == SPECULAR_ENVIRONMENT_FIS) {
-        emitLine(
-            "#define DIRECTIONAL_ALBEDO_METHOD "
-                + std::to_string(int(context.getOptions().hwDirectionalAlbedoMethod)),
-            pixelStage,
-            false);
-        emitLineBreak(pixelStage);
-        HwSpecularEnvironmentSamplesPtr pSamples
-            = context.getUserData<HwSpecularEnvironmentSamples>(
-                HwSpecularEnvironmentSamples::name());
-        if (pSamples) {
+    if (lighting) {
+        int specularMethod = context.getOptions().hwSpecularEnvironmentMethod;
+        if (specularMethod == SPECULAR_ENVIRONMENT_FIS) {
             emitLine(
-                "#define MX_NUM_FIS_SAMPLES "
-                    + std::to_string(pSamples->hwSpecularEnvironmentSamples),
+                "#define DIRECTIONAL_ALBEDO_METHOD "
+                    + std::to_string(int(context.getOptions().hwDirectionalAlbedoMethod)),
                 pixelStage,
                 false);
-        } else {
-            emitLine("#define MX_NUM_FIS_SAMPLES 64", pixelStage, false);
-        }
-        emitLineBreak(pixelStage);
-        MX_EMIT_INCLUDE(
-            libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v3.glsl", context, pixelStage);
-    } else if (specularMethod == SPECULAR_ENVIRONMENT_PREFILTER) {
-        if (OgsXmlGenerator::useLightAPI() < 2) {
+            emitLineBreak(pixelStage);
+            HwSpecularEnvironmentSamplesPtr pSamples
+                = context.getUserData<HwSpecularEnvironmentSamples>(
+                    HwSpecularEnvironmentSamples::name());
+            if (pSamples) {
+                emitLine(
+                    "#define MX_NUM_FIS_SAMPLES "
+                        + std::to_string(pSamples->hwSpecularEnvironmentSamples),
+                    pixelStage,
+                    false);
+            } else {
+                emitLine("#define MX_NUM_FIS_SAMPLES 64", pixelStage, false);
+            }
+            emitLineBreak(pixelStage);
             MX_EMIT_INCLUDE(
-                libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v1.glsl", context, pixelStage);
-        } else {
+                libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v3.glsl", context, pixelStage);
+        } else if (specularMethod == SPECULAR_ENVIRONMENT_PREFILTER) {
+            if (OgsXmlGenerator::useLightAPI() < 2) {
+                MX_EMIT_INCLUDE(
+                    libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v1.glsl", context, pixelStage);
+            } else {
+                MX_EMIT_INCLUDE(
+                    libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v2.glsl", context, pixelStage);
+            }
+        } else if (specularMethod == SPECULAR_ENVIRONMENT_NONE) {
             MX_EMIT_INCLUDE(
-                libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v2.glsl", context, pixelStage);
+                libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_none.glsl", context, pixelStage);
+        } else {
+            throw ExceptionShaderGenError(
+                "Invalid hardware specular environment method specified: '"
+                + std::to_string(specularMethod) + "'");
         }
-    } else if (specularMethod == SPECULAR_ENVIRONMENT_NONE) {
-        MX_EMIT_INCLUDE(
-            libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_none.glsl", context, pixelStage);
-    } else {
-        throw ExceptionShaderGenError(
-            "Invalid hardware specular environment method specified: '"
-            + std::to_string(specularMethod) + "'");
     }
     emitLineBreak(pixelStage);
 

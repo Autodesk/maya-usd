@@ -4,6 +4,7 @@
 #include <mayaUsd/render/MaterialXGenOgsXml/GlslFragmentGenerator.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/GlslOcioNodeImpl.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/OgsXmlGenerator.h>
+#include <mayaUsd/render/MaterialXGenOgsXml/ShaderGenUtil.h>
 
 #include <MaterialXFormat/XmlIo.h>
 #include <MaterialXGenShader/DefaultColorManagementSystem.h>
@@ -460,10 +461,7 @@ bool OgsFragment::isElementAShader() const
     return typeElement && typeElement->getType() == mx::SURFACE_SHADER_TYPE_STRING;
 }
 
-bool OgsFragment::isTransparent() const
-{
-    return _glslShader && _glslShader->hasAttribute(mx::HW::ATTR_TRANSPARENT);
-}
+bool OgsFragment::isTransparent() const { return isTransparentSurface(_element, mx::GlslShaderGenerator::TARGET); }
 
 mx::ImageSamplingProperties
 OgsFragment::getImageSamplingProperties(const std::string& fileParameterName) const

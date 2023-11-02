@@ -65,6 +65,10 @@ mayaUsd_promoteHeaderList(HEADERS ${HEADERS} SUBDIR render/MaterialXGenOgsXml)
 # install
 # -----------------------------------------------------------------------------
 
+install(FILES ${HEADERS}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/render/MaterialXGenOgsXml
+)
+
 install(FILES ${NODE_DECLARATIONS}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/libraries/adsk/maya
 )
