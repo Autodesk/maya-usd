@@ -286,10 +286,14 @@ ShaderPtr GlslFragmentGenerator::generate(
         } else if (specularMethod == SPECULAR_ENVIRONMENT_PREFILTER) {
             if (OgsXmlGenerator::useLightAPI() < 2) {
                 MX_EMIT_INCLUDE(
-                    libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v1.glsl", context, pixelStage);
+                    libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v1.glsl",
+                    context,
+                    pixelStage);
             } else {
                 MX_EMIT_INCLUDE(
-                    libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v2.glsl", context, pixelStage);
+                    libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v2.glsl",
+                    context,
+                    pixelStage);
             }
         } else if (specularMethod == SPECULAR_ENVIRONMENT_NONE) {
             MX_EMIT_INCLUDE(
