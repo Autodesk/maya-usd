@@ -235,7 +235,7 @@ void USDImportDialog::onResetFileTriggered()
 {
     if (nullptr != fTreeModel) {
         fTreeModel->resetVariants();
-        fTreeModel->setRootPrimPath("/");
+        fTreeModel->resetCheckItem(fStage);
     }
 }
 

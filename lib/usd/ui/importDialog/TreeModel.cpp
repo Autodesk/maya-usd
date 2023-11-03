@@ -419,6 +419,21 @@ void TreeModel::resetVariants()
     resetAllVariants(this, QModelIndex());
 }
 
+void TreeModel::resetCheckItem(const PXR_NS::UsdStageRefPtr& stage)
+{
+    if (!stage)
+        return;
+
+    UsdPrim   defPrim = stage->GetDefaultPrim();
+    TreeItem* item = findPrimItem(defPrim);
+    if (!item)
+        item = getFirstItem();
+    if (!item)
+        return;
+
+    checkEnableItem(item);
+}
+
 /*static*/
 const QPixmap* TreeModel::getDefaultPrimPixmap() { return fsDefaultPrimImage; }
 

@@ -23,6 +23,7 @@
 #include <mayaUsdUI/ui/api.h>
 
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/stagePopulationMask.h>
 
 #include <QtGui/QStandardItemModel>
@@ -76,6 +77,7 @@ public:
     void onItemClicked(TreeItem* item);
 
     void resetVariants();
+    void resetCheckItem(const PXR_NS::UsdStageRefPtr& stage);
 
     void uncheckEnableTree();
     void checkEnableItem(TreeItem* item);

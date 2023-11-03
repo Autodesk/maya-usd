@@ -92,10 +92,6 @@ QWidget* findParentWindow(const MString& controlName)
             return widget;
         }
     }
-    MString warning;
-    warning.format(
-        "Could not find parent window named ^1s, using Maya main window instead.", controlName);
-    MGlobal::displayWarning(warning);
     return MQtUtil::mainWindow();
 }
 
