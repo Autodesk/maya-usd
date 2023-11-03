@@ -41,6 +41,7 @@ USDImportDialog::USDImportDialog(
     , fUI { new Ui::ImportDialog() }
     , fStage { UsdStage::Open(filename, UsdStage::InitialLoadSet::LoadAll) }
     , fFilename { filename }
+    , fRootPrimPath("/")
 {
     if (!fStage)
         throw std::invalid_argument("Invalid filename passed to USD Import Dialog");
@@ -56,9 +57,7 @@ USDImportDialog::USDImportDialog(
         && importData->rootPrimPath().size() > 0) {
         fRootPrimPath = importData->rootPrimPath();
         matchingImportData = importData;
-    } else if (fOptions.showRoot) {
-        fRootPrimPath = "/";
-    } else if (fStage) {
+    } else if (!fOptions.showRoot && fStage) {
         UsdPrim defPrim = fStage->GetDefaultPrim();
         if (defPrim.IsValid())
             fRootPrimPath = defPrim.GetPath().GetAsString();
