@@ -630,9 +630,11 @@ class testProxyShapeBase(unittest.TestCase):
         proxyShapePath = proxyShapes[0]
         stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
 
-        # check that the stage has no load rules
+        # check that the stage has a single load rule to laod everything.
         loadRules = stage.GetLoadRules()
-        self.assertEqual(len(loadRules.GetRules()), 0)
+        self.assertEqual(len(loadRules.GetRules()), 1)
+        self.assertEqual(loadRules.GetRules()[0][0], "/")
+        self.assertEqual(loadRules.GetRules()[0][1], loadRules.AllRule)
 
         # add a new rule to unload the room
         cmd = contextOps.doOpCmd(['Unload'])
@@ -642,9 +644,11 @@ class testProxyShapeBase(unittest.TestCase):
         # check that the expected load rules are on the stage.
         def check_load_rules(stage):
             loadRules = stage.GetLoadRules()
-            self.assertEqual(len(loadRules.GetRules()), 1)
-            self.assertEqual(loadRules.GetRules()[0][0], "/Room_set")
-            self.assertEqual(loadRules.GetRules()[0][1], loadRules.NoneRule)
+            self.assertEqual(len(loadRules.GetRules()), 2)
+            self.assertEqual(loadRules.GetRules()[0][0], "/")
+            self.assertEqual(loadRules.GetRules()[0][1], loadRules.AllRule)
+            self.assertEqual(loadRules.GetRules()[1][0], "/Room_set")
+            self.assertEqual(loadRules.GetRules()[1][1], loadRules.NoneRule)
 
         check_load_rules(stage)
 

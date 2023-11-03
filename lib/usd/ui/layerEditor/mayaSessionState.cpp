@@ -184,11 +184,15 @@ void MayaSessionState::unregisterNotifications()
     TfNotice::Revoke(_stageResetNoticeKey);
 }
 
-void MayaSessionState::mayaUsdStageReset(const MayaUsdProxyStageSetNotice& notice)
+void MayaSessionState::refreshCurrentStageEntry()
 {
-    auto       shapePath = notice.GetShapePath();
+    refreshStageEntry(_currentStageEntry._proxyShapePath);
+}
+
+void MayaSessionState::refreshStageEntry(std::string const& proxyShapePath)
+{
     StageEntry entry;
-    if (getStageEntry(&entry, shapePath.c_str())) {
+    if (getStageEntry(&entry, proxyShapePath.c_str())) {
         if (entry._proxyShapePath == _currentStageEntry._proxyShapePath) {
             QTimer::singleShot(0, this, [this, entry]() {
                 mayaUsdStageResetCBOnIdle(entry);
@@ -198,6 +202,11 @@ void MayaSessionState::mayaUsdStageReset(const MayaUsdProxyStageSetNotice& notic
             QTimer::singleShot(0, this, [this, entry]() { mayaUsdStageResetCBOnIdle(entry); });
         }
     }
+}
+
+void MayaSessionState::mayaUsdStageReset(const MayaUsdProxyStageSetNotice& notice)
+{
+    refreshStageEntry(notice.GetShapePath());
 }
 
 void MayaSessionState::mayaUsdStageResetCBOnIdle(StageEntry const& entry)

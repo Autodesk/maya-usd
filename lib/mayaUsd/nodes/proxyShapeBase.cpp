@@ -820,19 +820,25 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
     bool isIncomingStage = false;
 
-    // Compute the load set for the stage.
-    MDataHandle loadPayloadsHandle = dataBlock.inputValue(loadPayloadsAttr, &retValue);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-
-    UsdStage::InitialLoadSet loadSet = loadPayloadsHandle.asBool()
-        ? UsdStage::InitialLoadSet::LoadAll
-        : UsdStage::InitialLoadSet::LoadNone;
-
-    // If there is a dynamic attribute containing the exact load rules
-    // for payload, start by loading nothing. The correct payload will
-    // be loaded by the load rules.
-    if (hasLoadRulesAttribute(*this))
-        loadSet = UsdStage::InitialLoadSet::LoadNone;
+    // Note: we explicitly always load no payload initially and will load them
+    //       later on if requested. The reason is that there are other code elsewhere
+    //       that updates the stages. Those functions must find the same existing stages.
+    //       Somewhat unfortunately, the OpenUSD API to open a stage only finds an existing
+    //       stage if *all* parameters passed to open the stage match, including the initial
+    //       load set. In order to be consistent everywhere, we must always pass in the same
+    //       initial load set. Given that not loading payloads is the "lightest" version,
+    //       that is what we request.
+    //
+    //       Furthermore, for any statge that had its payload loaded or unloaded by the user
+    //       we keep the detailed load and unload state of all prims, so we would use the
+    //       load-none mode anyway and apply the detailed rules afterward, and this is
+    //       probably the common case for stages that actually contain payloads.
+    //
+    //       TODO: in the future, we need to provide a stage (and layer) internal manager
+    //             that would stand between MayaUSD and OpenUSD and manage stages and layers
+    //             and deal with consistent Open and other considerations, like updating stages
+    //             and layers when anonymous layers are saved to disk.
+    const UsdStage::InitialLoadSet loadSet = UsdStage::InitialLoadSet::LoadNone;
 
     // If inData has an incoming connection, then use it. Otherwise generate stage from the filepath
     if (!inDataHandle.data().isNull()) {
@@ -966,16 +972,9 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                     //       then UsdStage::Open will create the in-memory session layer for us,
                     //       just as we want.
                     if (sessionLayer) {
-                        sharedUsdStage = UsdStage::Open(
-                            rootLayer,
-                            sessionLayer,
-                            ArGetResolver().CreateDefaultContextForAsset(fileString),
-                            loadSet);
+                        sharedUsdStage = UsdStage::Open(rootLayer, sessionLayer, loadSet);
                     } else {
-                        sharedUsdStage = UsdStage::Open(
-                            rootLayer,
-                            ArGetResolver().CreateDefaultContextForAsset(fileString),
-                            loadSet);
+                        sharedUsdStage = UsdStage::Open(rootLayer, loadSet);
                     }
 
                     sharedUsdStage->SetEditTarget(
@@ -1072,8 +1071,24 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
     }
 
     if (finalUsdStage) {
+        // Compute the load set for the stage.
+        MDataHandle loadPayloadsHandle = dataBlock.inputValue(loadPayloadsAttr, &retValue);
+        CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+        // Apply the payload rules based on either the saved payload rules
+        // dynamic attribute containing the exact load rules for payload,
+        // or the load-payload attribute.
+        if (hasLoadRulesAttribute(*this)) {
+            copyLoadRulesFromAttribute(*this, *finalUsdStage);
+        } else {
+            if (loadPayloadsHandle.asBool()) {
+                finalUsdStage->Load(SdfPath("/"), UsdLoadPolicy::UsdLoadWithDescendants);
+            } else {
+                finalUsdStage->Unload(SdfPath("/"));
+            }
+        }
+
         primPath = finalUsdStage->GetPseudoRoot().GetPath();
-        copyLoadRulesFromAttribute(*this, *finalUsdStage);
         copyLayerMutingFromAttribute(*this, *finalUsdStage);
         if (!_targetLayer)
             _targetLayer = getTargetLayerFromAttribute(*this, *finalUsdStage);
