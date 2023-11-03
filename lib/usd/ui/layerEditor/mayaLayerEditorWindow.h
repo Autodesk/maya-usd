@@ -70,6 +70,7 @@ public:
     void printLayer() override;
     void clearLayer() override;
     void selectPrimsWithSpec() override;
+    void updateLayerModel() override;
 
     void selectProxyShape(const char* shapePath) override;
 
