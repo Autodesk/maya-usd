@@ -306,15 +306,33 @@ class Object3dTestCase(unittest.TestCase):
         object3d.setVisibility(False)
         self.assertFalse(object3d.visibility())
 
-        # We should have got 'one' notification.
-        self.assertEqual(visObs.notifications(), 1)
-
+        if (ufeUtils.ufeFeatureSetVersion() >= 4):
+            # We should have got 'two' notifications. One for Add and one for ValueChange
+            # This occurs on the very first time the visibility token attribute is added.
+            self.assertEqual(visObs.notifications(), 2)
+        else:
+            # We should have got one notification. Only for ValueChange
+            self.assertEqual(visObs.notifications(), 1)
+            
         # Make it visible.
         object3d.setVisibility(True)
         self.assertTrue(object3d.visibility())
 
-        # We should have got one more notification.
-        self.assertEqual(visObs.notifications(), 2)
+        # We should have got one more notification. Only for ValueChange
+        if (ufeUtils.ufeFeatureSetVersion() >= 4):
+            self.assertEqual(visObs.notifications(), 3)
+        else:
+            self.assertEqual(visObs.notifications(), 2)
+            
+        # Make it visible.
+        object3d.setVisibility(False)
+        self.assertFalse(object3d.visibility())
+
+        # We should have got one more notification. Only for ValueChange
+        if (ufeUtils.ufeFeatureSetVersion() >= 4):
+            self.assertEqual(visObs.notifications(), 4)
+        else:
+            self.assertEqual(visObs.notifications(), 3)
 
         # Remove the observer.
         ufe.Object3d.removeObserver(visObs)
