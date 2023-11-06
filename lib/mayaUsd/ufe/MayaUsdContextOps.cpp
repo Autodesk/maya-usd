@@ -84,10 +84,8 @@ static constexpr char    kDuplicateAsMayaLabel[] = "Duplicate As Maya Data";
 static constexpr char    kAddMayaReferenceItem[] = "Add Maya Reference";
 static constexpr char    kAddMayaReferenceLabel[] = "Add Maya Reference...";
 #endif
-#if (UFE_PREVIEW_VERSION_NUM >= 5007)
 static constexpr char kEditAsMayaOptionsItem[] = "Edit As Maya Data Options";
 static constexpr char kEditAsMayaOptionsLabel[] = "Edit As Maya Data Options";
-#endif
 static constexpr char kBindMaterialToSelectionItem[] = "Assign Material to Selection";
 static constexpr char kBindMaterialToSelectionLabel[] = "Assign Material to Selection";
 #ifdef UFE_V4_FEATURES_AVAILABLE
