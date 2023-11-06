@@ -78,14 +78,14 @@ static const std::string kUSDLayerEditorImage { "USD_generic.png" };
 #ifdef UFE_V3_FEATURES_AVAILABLE
 static constexpr char    kEditAsMayaItem[] = "Edit As Maya Data";
 static constexpr char    kEditAsMayaLabel[] = "Edit As Maya Data";
+static constexpr char    kEditAsMayaOptionsItem[] = "Edit As Maya Data Options";
+static constexpr char    kEditAsMayaOptionsLabel[] = "Edit As Maya Data Options...";
 static const std::string kEditAsMayaImage { "edit_as_Maya.png" };
 static constexpr char    kDuplicateAsMayaItem[] = "Duplicate As Maya Data";
 static constexpr char    kDuplicateAsMayaLabel[] = "Duplicate As Maya Data";
 static constexpr char    kAddMayaReferenceItem[] = "Add Maya Reference";
 static constexpr char    kAddMayaReferenceLabel[] = "Add Maya Reference...";
 #endif
-static constexpr char kEditAsMayaOptionsItem[] = "Edit As Maya Data Options";
-static constexpr char kEditAsMayaOptionsLabel[] = "Edit As Maya Data Options";
 static constexpr char kBindMaterialToSelectionItem[] = "Assign Material to Selection";
 static constexpr char kBindMaterialToSelectionLabel[] = "Assign Material to Selection";
 #ifdef UFE_V4_FEATURES_AVAILABLE
@@ -356,10 +356,6 @@ void executeEditAsMaya(const Ufe::Path& path)
     WaitCursor wait;
     MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ true);
 }
-
-#endif
-
-#if (UFE_PREVIEW_VERSION_NUM >= 5007)
 
 void executeEditAsMayaOptions(const Ufe::Path& path)
 {
@@ -692,10 +688,8 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
 #ifdef UFE_V3_FEATURES_AVAILABLE
     else if (itemPath[0] == kEditAsMayaItem) {
         executeEditAsMaya(path());
-#if (UFE_PREVIEW_VERSION_NUM >= 5007)
     } else if (itemPath[0] == kEditAsMayaOptionsItem) {
         executeEditAsMayaOptions(path());
-#endif
     } else if (itemPath[0] == kDuplicateAsMayaItem) {
         MString script;
         script.format(
