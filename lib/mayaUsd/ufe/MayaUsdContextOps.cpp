@@ -419,11 +419,12 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
         const bool isMayaRef = (prim().GetTypeName() == TfToken("MayaReference"));
         if (!_isAGatewayType && PrimUpdaterManager::getInstance().canEditAsMaya(path())) {
             items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
-#if (UFE_PREVIEW_VERSION_NUM >= 5007)
+
             Ufe::ContextItem item(kEditAsMayaOptionsItem, kEditAsMayaOptionsLabel);
+#if (UFE_PREVIEW_VERSION_NUM >= 5007)
             item.setMetaData(Ufe::ContextItem::kIsOptionBox, true);
-            items.emplace_back(item);
 #endif
+            items.emplace_back(item);
             if (!isMayaRef) {
                 items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
             }
