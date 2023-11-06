@@ -130,7 +130,7 @@ def _selectReferencedPrim(*args):
     primPath = cmds.textFieldGrp('mayaUsdAddRefOrPayloadPrimPath', query=True, text=True)
     title = getMayaUsdLibString('kAddRefOrPayloadPrimPathTitle')
     helpLabel = getMayaUsdLibString('kAddRefOrPayloadPrimPathHelpLabel')
-    helpToken = 'something something'
+    helpToken = 'UsdAddReferenceConfig'
     result = cmds.usdImportDialog(filename, hideVariants=True, hideRoot=True, primPath=primPath, title=title, helpLabel=helpLabel, helpToken=helpToken)
     if result:
         primPath = cmds.usdImportDialog(query=True, primPath=True)
