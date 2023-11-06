@@ -57,6 +57,10 @@ USDImportDialog::USDImportDialog(
         && importData->rootPrimPath().size() > 0) {
         fRootPrimPath = importData->rootPrimPath();
         matchingImportData = importData;
+    } else if (!fOptions.showRoot && fStage) {
+        UsdPrim defPrim = fStage->GetDefaultPrim();
+        if (defPrim.IsValid())
+            fRootPrimPath = defPrim.GetPath().GetAsString();
     }
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
@@ -235,7 +239,7 @@ void USDImportDialog::onResetFileTriggered()
 {
     if (nullptr != fTreeModel) {
         fTreeModel->resetVariants();
-        fTreeModel->setRootPrimPath("/");
+        fTreeModel->setRootPrimPath(fRootPrimPath);
     }
 }
 
