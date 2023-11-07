@@ -7,6 +7,7 @@ target_sources(${PROJECT_NAME}
         GlslOcioNodeImpl.cpp
         OgsFragment.cpp
         OgsXmlGenerator.cpp
+        ShaderGenUtil.cpp
         Nodes/SurfaceNodeMaya.cpp
         Nodes/TexcoordNodeMaya.cpp
         PugiXML/pugixml.cpp
@@ -18,6 +19,7 @@ set(HEADERS
     GlslOcioNodeImpl.h
     OgsFragment.h
     OgsXmlGenerator.h
+    ShaderGenUtil.h
 )
 
 # -----------------------------------------------------------------------------
@@ -64,6 +66,10 @@ mayaUsd_promoteHeaderList(HEADERS ${HEADERS} SUBDIR render/MaterialXGenOgsXml)
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
+
+install(FILES ${HEADERS}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/render/MaterialXGenOgsXml
+)
 
 install(FILES ${NODE_DECLARATIONS}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/libraries/adsk/maya
