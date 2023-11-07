@@ -546,6 +546,16 @@ void MayaUsdProxyShapeBase::enableProxyAccessor()
     _usdAccessor = ProxyAccessor::createAndRegister(*this);
 }
 
+void MayaUsdProxyShapeBase::renameCallback(MObject&, const MString&, void* clientData)
+{
+    auto proxyShape = static_cast<MayaUsdProxyShapeBase*>(clientData);
+    if (!proxyShape) {
+        return;
+    }
+
+    proxyShape->updateAncestorCallbacks();
+}
+
 void beforeSaveCallback(void* clientData)
 {
     auto proxyShape = static_cast<MayaUsdProxyShapeBase*>(clientData);
@@ -584,6 +594,11 @@ void MayaUsdProxyShapeBase::postConstructor()
     if (_preSaveCallbackId == 0) {
         _preSaveCallbackId
             = MSceneMessage::addCallback(MSceneMessage::kBeforeSave, beforeSaveCallback, this);
+    }
+
+    if (_renameCallbackId == 0) {
+        MObject obj = thisMObject();
+        _renameCallbackId = MNodeMessage::addNameChangedCallback(obj, renameCallback, this);
     }
 }
 
@@ -1958,6 +1973,11 @@ MayaUsdProxyShapeBase::~MayaUsdProxyShapeBase()
     if (_preSaveCallbackId != 0) {
         MMessage::removeCallback(_preSaveCallbackId);
         _preSaveCallbackId = 0;
+    }
+
+    if (_renameCallbackId != 0) {
+        MMessage::removeCallback(_renameCallbackId);
+        _renameCallbackId = 0;
     }
 
     clearAncestorCallbacks();
