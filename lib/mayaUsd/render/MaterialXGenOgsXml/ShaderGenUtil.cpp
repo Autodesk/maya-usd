@@ -4,6 +4,7 @@
 
 #include <MaterialXCore/Document.h>
 
+#include <list>
 #include <sstream>
 
 namespace MaterialXMaya {

@@ -112,7 +112,7 @@ if(IS_WINDOWS)
         testSplitString.cpp
     )
 
-    if(CMAKE_WANT_MATERIALX_BUILD)
+    if(CMAKE_WANT_MATERIALX_BUILD AND PXR_VERSION GREATER_EQUAL 2211)
         add_mayaUsdLibUtils_test(
             test_ShaderGenUtils
             test_ShaderGenUtils.cpp
