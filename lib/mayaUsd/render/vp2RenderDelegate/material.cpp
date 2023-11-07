@@ -66,6 +66,7 @@
 #include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/OgsFragment.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/OgsXmlGenerator.h>
+#include <mayaUsd/render/MaterialXGenOgsXml/ShaderGenUtil.h>
 
 #include <MaterialXCore/Document.h>
 #include <MaterialXFormat/File.h>
@@ -419,38 +420,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (color4)
 );
 
-const std::set<std::string> _mtlxTopoNodeSet = {
-    // Topo affecting nodes due to object/model/world space parameter
-    "position",
-    "normal",
-    "tangent",
-    "bitangent",
-    // Topo affecting nodes due to channel index.
-    "texcoord",
-    // Color at vertices also affect topo, but we have not locked a naming scheme to go from index
-    // based to name based as we did for UV sets. We will mark them as topo-affecting, but there is
-    // nothing we can do to link them correctly to a primvar without specifying a naming scheme.
-    "geomcolor",
-    // Geompropvalue are the best way to reference a primvar by name. The primvar name is
-    // topo-affecting. Note that boolean and string are not supported by the GLSL codegen.
-    "geompropvalue",
-    // Swizzles are inlined into the codegen and affect topology.
-    "swizzle",
-    // Conversion nodes:
-    "convert",
-    // Constants: they get inlined in the source.
-    "constant",
-#if MX_COMBINED_VERSION < 13808
-    // Switch, unless all inputs are connected. Bug was fixed in 1.38.8.
-    "switch",
-#endif
-#if MX_COMBINED_VERSION == 13807
-    // Dot became topological in 1.38.7. Reverted in 1.38.8.
-    // Still topological for filename though.
-    "dot",
-#endif
-};
-
 // These attribute names usually indicate we have a source color space to handle.
 const auto _mtlxKnownColorSpaceAttrs
         = std::vector<TfToken> { _tokens->sourceColorSpace, _mtlxTokens->colorSpace };
@@ -529,13 +498,7 @@ bool _IsTopologicalNode(const HdMaterialNode2& inNode)
     mx::NodeDefPtr nodeDef
         = _GetMaterialXData()._mtlxLibrary->getNodeDef(inNode.nodeTypeId.GetString());
     if (nodeDef) {
-#if MX_COMBINED_VERSION >= 13807
-        // Dot filename is always topological to prevent creating extra OpenGL samplers in the
-        // generated OpenGL code.
-        if (nodeDef->getName() == "ND_dot_filename")
-            return true;
-#endif
-        return _mtlxTopoNodeSet.find(nodeDef->getNodeString()) != _mtlxTopoNodeSet.cend();
+        return MaterialXMaya::ShaderGenUtil::TopoNeutralGraph::isTopologicalNodeDef(*nodeDef);
     }
     return false;
 }
@@ -3302,7 +3265,7 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
             mx::NodeDefPtr nodeDef
                 = _GetMaterialXData()._mtlxLibrary->getNodeDef(node.identifier.GetString());
             if (nodeDef
-                && _mtlxTopoNodeSet.find(nodeDef->getNodeString()) != _mtlxTopoNodeSet.cend()) {
+                && MaterialXMaya::ShaderGenUtil::TopoNeutralGraph::isTopologicalNodeDef(*nodeDef)) {
                 // A topo node does not emit editable parameters:
                 continue;
             }

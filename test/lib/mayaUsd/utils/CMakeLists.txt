@@ -111,4 +111,25 @@ if(IS_WINDOWS)
         testSplitString
         testSplitString.cpp
     )
+
+    if(CMAKE_WANT_MATERIALX_BUILD AND PXR_VERSION GREATER_EQUAL 2211)
+        add_mayaUsdLibUtils_test(
+            test_ShaderGenUtils
+            test_ShaderGenUtils.cpp
+        )
+
+        target_compile_definitions(test_ShaderGenUtils
+        PRIVATE
+            MATERIALX_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/materialx_test_data"
+            MATERIALX_TEST_OUTPUT="${CMAKE_BINARY_DIR}/test/Temporary/test_ShaderGenUtils"
+        )
+
+        target_link_libraries(test_ShaderGenUtils
+        PRIVATE
+            usdMtlx
+            MaterialXCore
+            MaterialXFormat
+        )
+
+    endif()    
 endif()

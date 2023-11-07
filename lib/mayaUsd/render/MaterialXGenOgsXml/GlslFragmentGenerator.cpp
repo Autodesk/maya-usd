@@ -82,8 +82,10 @@ void fixupVertexDataInstance(ShaderStage& stage)
 
     static const std::string primvarParamSource
         = "vec([23]) [$](" + d(HW::T_IN_GEOMPROP) + "_[A-Za-z0-9_]+)";
-
-    static const std::regex primvarParamRegex(primvarParamSource.c_str());
+    static const std::regex  primvarParamRegex(primvarParamSource.c_str());
+    static const std::string texcoordParamSource
+        = "vec([23]) [$](" + d(HW::T_TEXCOORD) + "_[0-9]+)";
+    static const std::regex texcoordParamRegex(texcoordParamSource.c_str());
 
     // Find keywords:                                       (as text)
     //
@@ -94,16 +96,21 @@ void fixupVertexDataInstance(ShaderStage& stage)
     //  PIX_IN.(NAME)                                       PIX_IN.st
     //
 
-    static const std::string vdCleanupSource = "[$]" + d(HW::T_VERTEX_DATA_INSTANCE) + "[.][$]"
+    static const std::string vdCleanGeoSource = "[$]" + d(HW::T_VERTEX_DATA_INSTANCE) + "[.][$]"
         + d(HW::T_IN_GEOMPROP) + "_([A-Za-z0-9_]+)";
+    static const std::regex vdCleanGeoRegex(vdCleanGeoSource.c_str());
 
-    static const std::regex vdCleanupRegex(vdCleanupSource.c_str());
+    static const std::string vdCleanTexSource
+        = "[$]" + d(HW::T_VERTEX_DATA_INSTANCE) + "[.][$](" + d(HW::T_TEXCOORD) + "_[0-9]+)";
+    static const std::regex vdCleanTexRegex(vdCleanTexSource.c_str());
 
     std::string code = stage.getSourceCode();
     code = std::regex_replace(code, paramRegex, "vec3 unused_$1");
     code = std::regex_replace(code, vtxRegex, "$$$1( PIX_IN.$$$1 )");
     code = std::regex_replace(code, primvarParamRegex, "vec$1 unused_$2");
-    code = std::regex_replace(code, vdCleanupRegex, "PIX_IN.$1");
+    code = std::regex_replace(code, texcoordParamRegex, "vec$1 unused_$2");
+    code = std::regex_replace(code, vdCleanGeoRegex, "PIX_IN.$1");
+    code = std::regex_replace(code, vdCleanTexRegex, "PIX_IN.$1");
 
 #if MX_COMBINED_VERSION >= 13804
     stage.setSourceCode(code);

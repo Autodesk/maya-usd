@@ -108,7 +108,7 @@ global proc mayaUsdMenu_EditAsMayaDataOptions(string $obj)
     showOptionBox();
 
     global string $gOptionBox;
-    window -e -height 260 $gOptionBox;
+    window -e -height 340 $gOptionBox;
 }
 
 // On right click in the viewport, either through selection or through a pick
