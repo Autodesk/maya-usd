@@ -180,7 +180,6 @@ mx::NodePtr TopoNeutralGraph::cloneNode(const mx::Node& node, mx::GraphElement& 
         = container.addNode(node.getCategory(), "N" + std::to_string(_nodeIndex), node.getType());
     ++_nodeIndex;
     _nodeMap.insert({ node.getNamePath(), destNode });
-    _nodeMap.insert({ node.getNamePath(), destNode });
     _pathMap.insert({ destNode->getNamePath(), node.getNamePath() });
     // Always be explicit on the NodeDef:
     auto nodeDef = node.getNodeDef();
