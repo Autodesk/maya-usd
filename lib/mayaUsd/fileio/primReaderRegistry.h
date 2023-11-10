@@ -24,6 +24,7 @@
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/registryManager.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/usd/schemaBase.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
