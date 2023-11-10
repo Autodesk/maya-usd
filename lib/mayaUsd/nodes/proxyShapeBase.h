@@ -396,6 +396,8 @@ private:
     void _OnLayerMutingChanged(const UsdNotice::LayerMutingChanged& notice);
     void _OnStageEditTargetChanged(const UsdNotice::StageEditTargetChanged& notice);
 
+    static void renameCallback(MObject& node, const MString& str, void* clientData);
+
     UsdMayaStageNoticeListener _stageNoticeListener;
 
     std::map<UsdTimeCode, MBoundingBox> _boundingBoxCache;
@@ -442,6 +444,7 @@ private:
     bool                     _inAncestorCallback { false };
 
     MCallbackId _preSaveCallbackId { 0 };
+    MCallbackId _renameCallbackId { 0 };
 
 public:
     // Counter for the number of times compute is re-entered

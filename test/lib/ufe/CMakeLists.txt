@@ -10,6 +10,7 @@ set(TEST_SCRIPT_FILES
     testContextOps.py
     testDefaultPrimCmds.py
     testDuplicateCmd.py
+    testDuplicateProxyShape.py
     testEditRouting.py
     testGroupCmd.py
     testMatrices.py
