@@ -26,6 +26,8 @@ from mayaUsd import ufe as mayaUsdUfe
 
 from maya import cmds
 
+from pxr import Usd
+
 import ufe
 
 import os
@@ -158,6 +160,7 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         cmds.rotate(-90, 0, 0, 'persp')
         self.assertSnapshotClose('transparencyScene.png', 960, 960)
 
+    @unittest.skipIf(Usd.GetVersion() == (0, 23, 11), 'Problem lies in Pixar USD code (https://github.com/PixarAnimationStudios/OpenUSD/issues/2800).')
     def testDemoQuads(self):
         cmds.file(force=True, new=True)
 
