@@ -22,6 +22,8 @@ import time
 import zipfile
 import tarfile
 
+print("quick test")
+
 ############################################################
 # Helpers for printing output
 verbosity = 1
