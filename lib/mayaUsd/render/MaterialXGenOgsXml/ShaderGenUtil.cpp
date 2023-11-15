@@ -106,10 +106,10 @@ TopoNeutralGraph::TopoNeutralGraph(const mx::ElementPtr& material)
 
     // Breadth-first traversal, in order of NodeDef attributes, to insure repeatability
     while (!nodesToTraverse.empty()) {
-        const mx::Node& sourceNode = *nodesToTraverse.front();
+        const mx::NodePtr sourceNode = nodesToTraverse.front();
         nodesToTraverse.pop_front();
 
-        auto        destNodeIt = _nodeMap.find(sourceNode.getNamePath());
+        auto        destNodeIt = _nodeMap.find(sourceNode->getNamePath());
         mx::NodePtr destNode;
         if (destNodeIt != _nodeMap.end()) {
             destNode = destNodeIt->second;
@@ -117,17 +117,20 @@ TopoNeutralGraph::TopoNeutralGraph(const mx::ElementPtr& material)
             if (!_nodeGraph) {
                 _nodeGraph = _doc->addNodeGraph("NG0");
             }
-            destNode = cloneNode(sourceNode, *_nodeGraph);
+            destNode = cloneNode(*sourceNode, *_nodeGraph);
         }
 
-        auto sourceNodeDef = sourceNode.getNodeDef();
+        auto sourceNodeDef = sourceNode->getNodeDef();
         if (!sourceNodeDef) {
             throw mx::Exception("Could not find NodeDef.");
         }
 
         const bool isTopological = isTopologicalNodeDef(*sourceNodeDef);
+        _watchList.insert(
+            { sourceNode, isTopological ? ElementType::eTopological : ElementType::eRegular });
+
         for (const auto& defInput : sourceNodeDef->getActiveInputs()) {
-            auto sourceInput = sourceNode.getInput(defInput->getName());
+            auto sourceInput = sourceNode->getInput(defInput->getName());
             if (!sourceInput) {
                 continue;
             }
@@ -149,7 +152,7 @@ TopoNeutralGraph::TopoNeutralGraph(const mx::ElementPtr& material)
                 const std::string channelInfo = gatherChannels(*sourceInput);
                 const std::string outputString = gatherOutput(*sourceInput);
 
-                if (sourceNode != *surfaceShader) {
+                if (sourceNode != surfaceShader) {
                     cloneConnection(
                         *sourceInput, *destNode, destConnectedNode, channelInfo, outputString);
                 } else {
@@ -162,6 +165,8 @@ TopoNeutralGraph::TopoNeutralGraph(const mx::ElementPtr& material)
                     const auto interfaceInput = sourceInput->getInterfaceInput();
                     if (interfaceInput) {
                         valueString = interfaceInput->getValueString();
+                        // Valued input element on this compound: it is of interest.
+                        _watchList.insert({ interfaceInput->getParent(), ElementType::eRegular });
                     }
                 }
                 if (!valueString.empty()) {
@@ -199,6 +204,8 @@ const std::string& TopoNeutralGraph::getOriginalPath(const std::string& topoPath
     return it->second;
 }
 
+const TopoNeutralGraph::WatchList& TopoNeutralGraph::getWatchList() const { return _watchList; }
+
 bool TopoNeutralGraph::isTopologicalNodeDef(const mx::NodeDef& nodeDef)
 {
     // This is where we need to remove all these hardcoded names and instead ask the shadergen about
@@ -221,7 +228,7 @@ mx::OutputPtr
 TopoNeutralGraph::findNodeGraphOutput(const mx::Input& input, const std::string& outputName)
 {
     auto sourceNode = input.getParent();
-    if (!sourceNode || !sourceNode->isA<mx::Node>()) {
+    if (!sourceNode || (!sourceNode->isA<mx::Node>() && !sourceNode->isA<mx::NodeGraph>())) {
         return nullptr;
     }
 
@@ -241,7 +248,12 @@ TopoNeutralGraph::findNodeGraphOutput(const mx::Input& input, const std::string&
 std::string TopoNeutralGraph::gatherChannels(const mx::Input& input)
 {
     // The info we seek might be on the interface of a standalone NodeGraph:
-    const auto  interfaceInput = input.getInterfaceInput();
+    const auto interfaceInput = input.getInterfaceInput();
+    if (interfaceInput) {
+        // Connected input element on this compound: it is of interest.
+        // We do not yet know how to handle if that input drives a topological node.
+        _watchList.insert({ interfaceInput->getParent(), ElementType::eRegular });
+    }
     const auto& ngInput = interfaceInput ? *interfaceInput : input;
 
     std::string channelInfo = ngInput.getChannels();

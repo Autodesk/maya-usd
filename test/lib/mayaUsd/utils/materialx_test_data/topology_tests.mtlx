@@ -145,7 +145,7 @@
     <output name="float_output" type="float" nodename="add10a" />
   </nodegraph>
   <nodegraph name="Ng10b">
-    <input name="ng_add" type="float" ndegraph="Ng10a" output="float_output" /> 
+    <input name="ng_add" type="float" nodegraph="Ng10a" output="float_output" /> 
     <add name="add10b" type="float" nodedef="ND_add_float">
       <input name="in1" type="float" interfacename="ng_add" />
     </add>
