@@ -15,21 +15,6 @@
 
 #include <iostream>
 
-constexpr auto pythonDiff = R"D(
-import difflib
-import sys
-
-with open(r'^1s', 'r') as mxBaseline:
-    with open(r'^1s', 'r') as mxOutput:
-        diff = difflib.unified_diff(
-            mxBaseline.readlines(),
-            mxOutput.readlines(),
-            fromfile='baseline',
-            tofile='output',
-        )
-        [str(line) for line in diff]
-)D";
-
 TEST(ShaderGenUtils, topoChannels)
 {
     auto testPath = mx::FilePath(MATERIALX_TEST_DATA);
@@ -46,9 +31,6 @@ TEST(ShaderGenUtils, topoChannels)
     mx::readFromXmlFile(doc, testPath / "topology_tests.mtlx", mx::EMPTY_STRING, &readOptions);
 
     for (const mx::NodePtr& material : doc->getMaterialNodes()) {
-        if (material->getName() != "Interface2") {
-            continue;
-        }
         auto topoNetwork = MaterialXMaya::ShaderGenUtil::TopoNeutralGraph(material);
 
         const std::string& expectedFileName = material->getAttribute("topo");
@@ -71,4 +53,46 @@ TEST(ShaderGenUtils, topoChannels)
         std::string message;
         ASSERT_TRUE(outputDoc->validate(&message)) << message;
     }
+}
+
+TEST(ShaderGenUtils, topoGraphAPI)
+{
+    namespace sgu = MaterialXMaya::ShaderGenUtil;
+
+    auto testPath = mx::FilePath(MATERIALX_TEST_DATA);
+
+    auto library = mx::createDocument();
+    ASSERT_TRUE(library != nullptr);
+    auto searchPath = PXR_NS::HdMtlxSearchPaths();
+    mx::loadLibraries({}, searchPath, library);
+
+    auto doc = mx::createDocument();
+    doc->importLibrary(library);
+
+    const mx::XmlReadOptions readOptions;
+    mx::readFromXmlFile(doc, testPath / "topology_tests.mtlx", mx::EMPTY_STRING, &readOptions);
+
+    const mx::NodePtr& material = doc->getNode("Interface2");
+    auto               topoNetwork = sgu::TopoNeutralGraph(material);
+
+    // Test remapping API:
+    ASSERT_EQ(topoNetwork.getOriginalPath("N1"), "Surf9");
+    ASSERT_EQ(topoNetwork.getOriginalPath("NG0/N2"), "Ng9b/add9b");
+    ASSERT_EQ(topoNetwork.getOriginalPath("NG0/N3"), "add9a");
+    ASSERT_EQ(topoNetwork.getOriginalPath("NG0/N4"), "Ng9a/constant");
+
+    // Test watch list API:
+    const auto& watchList = topoNetwork.getWatchList();
+    auto        it = watchList.find(doc->getDescendant("Surf9"));
+    ASSERT_NE(it, watchList.end());
+    ASSERT_EQ(it->second, sgu::TopoNeutralGraph::ElementType::eRegular);
+    it = watchList.find(doc->getDescendant("Ng9b"));
+    ASSERT_NE(it, watchList.end());
+    ASSERT_EQ(it->second, sgu::TopoNeutralGraph::ElementType::eRegular);
+    it = watchList.find(doc->getDescendant("Ng9b/add9b"));
+    ASSERT_NE(it, watchList.end());
+    ASSERT_EQ(it->second, sgu::TopoNeutralGraph::ElementType::eRegular);
+    it = watchList.find(doc->getDescendant("Ng9a/constant"));
+    ASSERT_NE(it, watchList.end());
+    ASSERT_EQ(it->second, sgu::TopoNeutralGraph::ElementType::eTopological);
 }

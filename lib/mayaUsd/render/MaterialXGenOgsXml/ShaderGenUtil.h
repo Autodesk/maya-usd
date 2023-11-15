@@ -35,6 +35,18 @@ public:
     static const std::string& getMaterialName();
     const std::string&        getOriginalPath(const std::string& topoPath) const;
 
+    // As we traverse the shader graph, remember all elements that should be watched for value
+    // changes
+    enum class ElementType
+    {
+        eRegular,
+        eTopological
+    };
+    using WatchList = std::map<mx::ElementPtr, ElementType>;
+
+    // Get the watch list gathered while traversing
+    const WatchList& getWatchList() const;
+
 private:
     mx::NodePtr   cloneNode(const mx::Node& node, mx::GraphElement& container);
     mx::OutputPtr findNodeGraphOutput(const mx::Input& input, const std::string& outputName);
@@ -68,6 +80,8 @@ private:
     size_t     _outputIndex = 0;
     // String mapping from topo path to original path:
     std::unordered_map<std::string, std::string> _pathMap;
+    // All visited nodes/nodeGraphs elements we should monitor for value changes
+    WatchList _watchList;
 };
 
 } // namespace ShaderGenUtil
