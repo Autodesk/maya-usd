@@ -22,9 +22,10 @@ import sys
 import unittest
 
 import fixturesUtils
+import imageUtils
 
 
-class testProxyShapeDrawColors(unittest.TestCase):
+class testProxyShapeDrawColors(imageUtils.ImageDiffingTestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -116,6 +117,12 @@ class testProxyShapeDrawColors(unittest.TestCase):
 
         # Do the render.
         cmds.ogsRender(camera='top', currentFrame=True, width=400, height=400)
+
+        imageName = '%s.png' % outName
+        baselineImagePath = os.path.join(self._inputDir, 'baseline', imageName)
+        outputImagePath = os.path.join('.', 'tmp', imageName)
+
+        self.assertImagesClose(baselineImagePath, outputImagePath)
 
 
 if __name__ == '__main__':
