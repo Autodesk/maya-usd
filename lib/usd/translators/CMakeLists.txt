@@ -20,7 +20,6 @@ target_sources(${TARGET_NAME}
         instancerWriter.cpp
         jointWriter.cpp
         lightReader.cpp
-        lightRfMReader.cpp
         lightRfMWriter.cpp
         lightRfMWriter_PxrMeshLight.cpp
         lightWriter.cpp

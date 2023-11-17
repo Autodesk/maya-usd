@@ -214,7 +214,7 @@ Examples:
 | [1, 3]       | 1.0         | -0.1, 0.0, 0.2 | 0.9, 1.0, 1.2, 1.9, 2.0, 2.2, 2.9, 3.0, 3.2      |
 | [1, 3]       | 2.0         | -0.1, 0.2      | 0.9, 1.2, 2.9, 3.2                               |
 | [1, 3]       | 0.5         | -0.1, 0.2      | 0.9, 1.2, 1.4, 1.7, 1.9, 2.2, 2.4, 2.7, 2.9, 3.2 |
-| [1, 3]       | 2.0         | -3.0, 3.0      | -2.0, -1.0, 4.0, 5.0                             |
+| [1, 3]       | 2.0         | -3.0, 3.0      | -2.0, 0.0, 4.0, 6.0                             |
 
 The last example is quite strange, and a warning will be issued.
 This is how it will be processed:
@@ -223,9 +223,9 @@ This is how it will be processed:
   giving us time samples -2.0 and 4.0.
 * Then we advance the current time by the stride (2.0),
   making the new current time 3.0. We evaluate frame samples,
-  giving us time samples -1.0 and 5.0.
+  giving us time samples 0.0 and 6.0.
 * The time samples are sorted before exporting, so they are
-  evaluated in the order -2.0, -1.0, 4.0, 5.0.
+  evaluated in the order -2.0, 0.0, 4.0, 6.0.
 
 
 ### Export Behaviors
