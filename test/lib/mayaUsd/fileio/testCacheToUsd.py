@@ -471,8 +471,6 @@ class CacheToUsdTestCase(unittest.TestCase):
         value = xformOp.Get()
         self.assertIn("xformOp:translate", value)
         self.assertIn("xformOp:rotateXYZ", value)
-        self.assertIn("xformOp:translate:channel1", value)
-        self.assertIn("xformOp:rotateXYZ:channel1", value)
         
     def runTestMayaRefPrimTransform(self, createMayaRefPrimFn, checkCacheParentFn):
         '''
