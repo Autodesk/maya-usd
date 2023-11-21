@@ -68,19 +68,12 @@ class testUsdExportShadingModePxrRis(unittest.TestCase):
         materialPath = material.GetPath().pathString
         self.assertEqual(materialPath, '/MarbleCube/Materials/MarbleCubeSG')
 
-        if Usd.GetVersion() >= (0, 21, 5):
-            # For USD 21.05 and later, GetInputs() and GetOutputs() take an
-            # "onlyAuthored" argument that is True by default, so in that case
-            # we expect only one output on the material for the "surface"
-            # terminal in the "ri" renderContext that the export should have
-            # authored.
-            expectedNumOutputs = 1
-        else:
-            # Otherwise prior to USD 21.05, GetInputs() and GetOutputs() did
-            # not take any arguments and always included the built-in
-            # terminals for the universal renderContext as well as any other
-            # authored terminals.
-            expectedNumOutputs = 4
+        # For USD 21.05 and later, GetInputs() and GetOutputs() take an
+        # "onlyAuthored" argument that is True by default, so in that case
+        # we expect only one output on the material for the "surface"
+        # terminal in the "ri" renderContext that the export should have
+        # authored.
+        expectedNumOutputs = 1
 
         # Validate the surface shader that is connected to the material.
         materialOutputs = material.GetOutputs()

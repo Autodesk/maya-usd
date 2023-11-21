@@ -65,7 +65,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         self.__testUsdPreviewSurfaceRoundtrip(metallic=True)
 
     # Temporarily disabling since the import will be in a separate PR.
-    @unittest.skipUnless("mayaUtils" in globals() and mayaUtils.mayaMajorVersion() >= 2023 and Usd.GetVersion() > (0, 21, 2), 'Requires MaterialX support.')
+    @unittest.skipUnless("mayaUtils" in globals() and mayaUtils.mayaMajorVersion() >= 2023, 'Requires MaterialX support.')
     def testUsdPreviewSurfaceRoundtripMaterialX(self):
         self.__testUsdPreviewSurfaceRoundtrip(metallic=True,
                                               convertTo="MaterialX")
@@ -674,7 +674,6 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
            with collection based material assignemnt"""
         self.CommonGeomSubsetRoundtrip(True)
 
-    @unittest.skipUnless("mayaUtils" in globals() and mayaUtils.mayaMajorVersion() >= 2020, 'Requires standardSurface node which appeared in 2020.')
     def testOpacityRoundtrip(self):
         """
         Test that opacity roundtrips as expected.

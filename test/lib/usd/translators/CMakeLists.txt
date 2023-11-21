@@ -24,6 +24,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportOverImport.py
     testUsdExportUsdPreviewSurface.py
     testUsdExportParentScope.py
+    testUsdExportTypes.py
 
     # To investigate: following test asserts in MFnParticleSystem, but passes.
     # PPT, 17-Jun-20.
@@ -178,6 +179,7 @@ mayaUsd_add_test(testUsdExportUVSetMappings
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     ENV
         "PIXMAYA_WRITE_UV_AS_FLOAT2=0"
+        "MAYAUSD_PROVIDE_DEFAULT_TEXCOORD_PRIMVAR_NAME=1"
 )
 set_property(TEST testUsdExportUVSetMappings APPEND PROPERTY LABELS translators)
 
@@ -247,6 +249,7 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022)
     set(MTLX_TEST_SCRIPT_FILES
         testUsdExportMaterialX.py
         testUsdImportMaterialX.py
+		testUsdExportFannedOutFileNodesMaterial.py
     )
     foreach(script ${MTLX_TEST_SCRIPT_FILES})
         mayaUsd_get_unittest_target(target ${script})

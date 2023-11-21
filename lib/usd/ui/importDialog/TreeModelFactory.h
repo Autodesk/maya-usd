@@ -38,6 +38,7 @@ namespace MAYAUSD_NS_DEF {
 class IMayaMQtUtil;
 class TreeModel;
 class ImportData;
+struct USDImportDialogOptions;
 
 /**
  * \brief Factory to create a tree-like structure of USD content suitable to be displayed in a
@@ -58,9 +59,10 @@ public:
      * \return An empty TreeModel.
      */
     static std::unique_ptr<TreeModel> createEmptyTreeModel(
-        const IMayaMQtUtil& mayaQtUtil,
-        const ImportData*   importData = nullptr,
-        QObject*            parent = nullptr);
+        const IMayaMQtUtil&           mayaQtUtil,
+        const ImportData*             importData,
+        const USDImportDialogOptions& options,
+        QObject*                      parent = nullptr);
 
     /**
      * \brief Create a TreeModel from the given USD Stage.
@@ -70,11 +72,12 @@ public:
      * \return A TreeModel created from the given USD Stage.
      */
     static std::unique_ptr<TreeModel> createFromStage(
-        const UsdStageRefPtr& stage,
-        const IMayaMQtUtil&   mayaQtUtil,
-        const ImportData*     importData = nullptr,
-        QObject*              parent = nullptr,
-        int*                  nbItems = nullptr);
+        const UsdStageRefPtr&         stage,
+        const IMayaMQtUtil&           mayaQtUtil,
+        const ImportData*             importData,
+        const USDImportDialogOptions& options,
+        QObject*                      parent = nullptr,
+        int*                          nbItems = nullptr);
 
 protected:
     // Type definition for an STL unordered set of SDF Paths:
@@ -85,7 +88,10 @@ protected:
      * \param prim The USD Prim for which to create the list of data cells.
      * \return The List of data cells used to represent the given USD Prim's data in the tree.
      */
-    static QList<QStandardItem*> createPrimRow(const UsdPrim& prim);
+    static QList<QStandardItem*> createPrimRow(
+        const UsdPrim&                prim,
+        const UsdPrim&                defaultPrim,
+        const USDImportDialogOptions& options);
 
     /**
      * \brief Build the tree hierarchy starting at the given USD Prim.
@@ -93,7 +99,24 @@ protected:
      * \param parentItem The parent into which to attach the tree hierarchy.
      * \return The number of items added.
      */
-    static int buildTreeHierarchy(const UsdPrim& prim, QStandardItem* parentItem);
+    static int buildTreeHierarchy(
+        const UsdPrim&                prim,
+        const UsdPrim&                defaultPrim,
+        QStandardItem*                parentItem,
+        const USDImportDialogOptions& options);
+
+    /**
+     * \brief Build the tree hierarchy for teh chidlren of the given USD Prim.
+     * \param prim The USD Prim from which to extract the children.
+     * \param parentItem The parent into which to attach the tree hierarchy.
+     * \return The number of items added.
+     */
+    static int buildTreeChildren(
+        const UsdPrim&                prim,
+        const UsdPrim&                defaultPrim,
+        QStandardItem*                parentItem,
+        const USDImportDialogOptions& options);
+
     /**
      * \brief Build the tree hierarchy starting at the given USD Prim.
      * \param prim The USD Prim from which to start building the tree hierarchy.
@@ -103,10 +126,12 @@ protected:
      * \return The number of items added.
      */
     static int buildTreeHierarchy(
-        const UsdPrim&               prim,
-        QStandardItem*               parentItem,
-        const unordered_sdfpath_set& primsToIncludeInTree,
-        size_t&                      insertionsRemaining);
+        const UsdPrim&                prim,
+        const UsdPrim&                defaultPrim,
+        QStandardItem*                parentItem,
+        const USDImportDialogOptions& options,
+        const unordered_sdfpath_set&  primsToIncludeInTree,
+        size_t&                       insertionsRemaining);
 };
 
 } // namespace MAYAUSD_NS_DEF

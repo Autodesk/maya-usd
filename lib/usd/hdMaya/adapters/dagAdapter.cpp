@@ -36,18 +36,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType) { TfType::Define<HdMayaDagAdapter, TfType::Bases<HdMayaAdapter>>(); }
 
-// clang-format off
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    (translate)
-    (rotate)
-    (scale)
-    (instanceTransform)
-    (instancer)
-);
-// clang-format on
-
 namespace {
 
 void _TransformNodeDirty(MObject& node, MPlug& plug, void* clientData)
@@ -116,9 +104,14 @@ void _InstancerNodeDirty(MObject& node, MPlug& plug, void* clientData)
         | HdChangeTracker::DirtyPrimvar);
 }
 
-const auto _instancePrimvarDescriptors = HdPrimvarDescriptorVector {
-    { _tokens->instanceTransform, HdInterpolationInstance, HdPrimvarRoleTokens->none },
-};
+const auto _instancePrimvarDescriptors = HdPrimvarDescriptorVector { {
+#if HD_API_VERSION < 56
+    HdInstancerTokens->instanceTransform
+#else
+    HdInstancerTokens->instanceTransforms,
+#endif
+        HdInterpolationInstance,
+    HdPrimvarRoleTokens->none } };
 
 } // namespace
 
@@ -213,7 +206,7 @@ void HdMayaDagAdapter::RemovePrim()
     }
     GetDelegate()->RemoveRprim(GetID());
     if (_isInstanced) {
-        GetDelegate()->RemoveInstancer(GetID().AppendProperty(_tokens->instancer));
+        GetDelegate()->RemoveInstancer(GetID().AppendProperty(HdInstancerTokens->instancer));
     }
     _isPopulated = false;
 }
@@ -290,7 +283,7 @@ SdfPath HdMayaDagAdapter::GetInstancerID() const
         return {};
     }
 
-    return GetID().AppendProperty(_tokens->instancer);
+    return GetID().AppendProperty(HdInstancerTokens->instancer);
 }
 
 HdPrimvarDescriptorVector
@@ -307,7 +300,11 @@ bool HdMayaDagAdapter::_GetVisibility() const { return GetDagPath().isVisible();
 
 VtValue HdMayaDagAdapter::GetInstancePrimvar(const TfToken& key)
 {
-    if (key == _tokens->instanceTransform) {
+#if HD_API_VERSION < 56
+    if (key == HdInstancerTokens->instanceTransform) {
+#else
+    if (key == HdInstancerTokens->instanceTransforms) {
+#endif
         MDagPathArray dags;
         if (!MDagPath::getAllPathsTo(GetDagPath().node(), dags)) {
             return {};

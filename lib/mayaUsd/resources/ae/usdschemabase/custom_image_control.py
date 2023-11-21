@@ -162,16 +162,12 @@ class ImageCustomControl(object):
         files = mel.eval(cmd)
 
         if files != None and len(files) > 0:
-            fileName = files[0]
-            if ImageCustomControl.wantRelativeFileName():
-                layerDirName = ImageCustomControl.getCurrentTargetLayerDir(self.prim)
-                fileName = mayaUsdLib.Util.getPathRelativeToDirectory(fileName, layerDirName)
+            fileName = mayaUsdLib.Util.handleAssetPathThatMaybeRelativeToLayer(  \
+                        files[0],                                                \
+                        self.ufeAttr.name,                                       \
+                        self.prim.GetStage().GetEditTarget().GetLayer(),         \
+                        "mayaUsd_MakePathRelativeToImageEditTargetLayer")
             callback(ImageCustomControl.fromNativePath(fileName), "")
-
-    @staticmethod
-    def wantRelativeFileName():
-        opVarName = "mayaUsd_MakePathRelativeToEditTargetLayer"
-        return cmds.optionVar(exists=opVarName) and cmds.optionVar(query=opVarName)
 
     @staticmethod
     def prepareRelativeDir(prim):

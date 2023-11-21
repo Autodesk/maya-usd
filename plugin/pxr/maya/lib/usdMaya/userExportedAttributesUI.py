@@ -44,9 +44,9 @@ except ImportError:
         from PySide6.QtGui import QStringListModel
 
 try:
-    from PySide2.QtGui import QAbstractItemView, QCheckBox, QComboBox, QLabel, QListView, QPushButton, QStyledItemDelegate, QTableView, QVBoxLayout, QWidget
+    from PySide2.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QLabel, QListView, QPushButton, QStyledItemDelegate, QTableView, QVBoxLayout, QWidget)
 except:
-    from PySide6.QtGui import QAbstractItemView, QCheckBox, QComboBox, QLabel, QListView, QPushButton, QStyledItemDelegate, QTableView, QVBoxLayout, QWidget
+    from PySide6.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QLabel, QListView, QPushButton, QStyledItemDelegate, QTableView, QVBoxLayout, QWidget)
 
 import json
 
@@ -214,6 +214,9 @@ class ExportedAttribute(object):
                 self._usdAttrType == other._usdAttrType and
                 self._usdAttrName == other._usdAttrName)
 
+    def __hash__(self):
+        return hash((self._mayaAttrName, self._usdAttrType, self._usdAttrName))
+
     @property
     def mayaAttrName(self):
         return self._mayaAttrName
@@ -340,8 +343,7 @@ class ExportedAttribute(object):
         exportedAttrs = ExportedAttribute.GetExportedAttributesFromNode(nodeName)
 
         # Filter out the attrs whose names are in mayaAttrNames.
-        exportedAttrs = filter(
-            lambda x: x.mayaAttrName not in mayaAttrNames, exportedAttrs)
+        exportedAttrs = [x for x in exportedAttrs if x.mayaAttrName not in mayaAttrNames]
 
         ExportedAttribute._WriteExportedAttributesToNode(nodeName, exportedAttrs)
 

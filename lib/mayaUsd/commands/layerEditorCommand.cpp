@@ -17,6 +17,7 @@
 #include "layerEditorCommand.h"
 
 #include <mayaUsd/ufe/Global.h>
+#include <mayaUsd/utils/layerMuting.h>
 #include <mayaUsd/utils/query.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
@@ -617,10 +618,10 @@ public:
             restoreSelection();
         }
 
-        // we perfer not holding to pointers needlessly, but we need to hold on to the layer if we
-        // mute it otherwise usd will let go of it and its modifications, and any dirty children
-        // will also be lost
-        _mutedLayer = layer;
+        // We prefer not holding to pointers needlessly, but we need to hold on
+        // to the muted layer. OpenUSD let go of muted layers, so anonymous
+        // layers and any dirty children would be lost if not explicitly held on.
+        addMutedLayer(layer);
         return true;
     }
 
@@ -638,8 +639,9 @@ public:
             saveSelection();
             stage->MuteLayer(layer->GetIdentifier());
         }
-        // we can release the pointer
-        _mutedLayer = nullptr;
+
+        // We can release the now unmuted layers.
+        removeMutedLayer(layer);
         return true;
     }
 
@@ -683,8 +685,7 @@ private:
         globalSn->replaceWith(UsdUfe::recreateDescendants(_savedSn, path));
     }
 
-    Ufe::Selection         _savedSn;
-    PXR_NS::SdfLayerRefPtr _mutedLayer;
+    Ufe::Selection _savedSn;
 };
 
 // We assume the indexes given to the command are the original indexes

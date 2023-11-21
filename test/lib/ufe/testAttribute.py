@@ -53,12 +53,8 @@ class TestObserver(ufe.Observer):
         self._keys = None
 
     def __call__(self, notification):
-        if (ufeUtils.ufeFeatureSetVersion() >= 2):
-            if isinstance(notification, ufe.AttributeValueChanged):
-                self._notifications += 1
-        else:
-            if isinstance(notification, ufe.AttributeChanged):
-                self._notifications += 1
+        if isinstance(notification, ufe.AttributeValueChanged):
+            self._notifications += 1
         if hasattr(ufe, 'AttributeMetadataChanged') and isinstance(notification, ufe.AttributeMetadataChanged):
             self._keys = notification.keys()
 
@@ -129,7 +125,7 @@ class AttributeTestCase(unittest.TestCase):
             try:
                 cmds.getAttr('|stage1|stageShape1,/A.visibility')
                 cls._getAttrSupportsUfe = True
-            except:
+            except Exception:
                 _getAttrSupportsUfe = False
 
             # Maya's setAttr command was only made Ufe aware in Maya PR129 and Maya 2022.3
@@ -137,7 +133,7 @@ class AttributeTestCase(unittest.TestCase):
             try:
                 cmds.setAttr('|stage1|stageShape1,/A.visibility', UsdGeom.Tokens.invisible)
                 cls._setAttrSupportsUfe = True
-            except:
+            except Exception:
                 _setAttrSupportsUfe = False
 
             # Cleanup for all tests.
@@ -1816,7 +1812,6 @@ class AttributeTestCase(unittest.TestCase):
         validation(self, shaderAttr.get(), newValue)
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
-    @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testCreateAttributeTypes(self):
         """Tests all shader attribute types"""
         cmds.file(new=True, force=True)
@@ -1936,8 +1931,30 @@ class AttributeTestCase(unittest.TestCase):
             attr = shaderAttrs.attribute("inputs:" + attrName)
             self.assertEqual(str(attr.getMetadata(metaName)), metaValue)
 
+        for rangedType in ("float", "vector2", "vector3", "vector4", "color3", "color4"):
+            numComponents = 1
+            if rangedType[-1].isdecimal():
+                numComponents = int(rangedType[-1])
+            dotDef = ufe.NodeDef.definition(materialItem.runTimeId(), "ND_dot_" + rangedType)
+            cmd = dotDef.createNodeCmd(materialItem, ufe.PathComponent("dotty_" + rangedType))
+            ufeCmd.execute(cmd)
+            shaderItem = cmd.insertedChild
+            shaderAttrs = ufe.Attributes.attributes(shaderItem)
+            attr = shaderAttrs.attribute("inputs:in")
+            self.assertEqual(str(attr.getMetadata("uisoftmin")), ",".join(["0" for i in range(numComponents)]))
+            self.assertEqual(str(attr.getMetadata("uisoftmax")), ",".join(["1" for i in range(numComponents)]))
+
+        for unrangedType in ("boolean", "integer", "matrix33", "matrix44", "string", "filename"):
+            dotDef = ufe.NodeDef.definition(materialItem.runTimeId(), "ND_dot_" + unrangedType)
+            cmd = dotDef.createNodeCmd(materialItem, ufe.PathComponent("dotty_" + unrangedType))
+            ufeCmd.execute(cmd)
+            shaderItem = cmd.insertedChild
+            shaderAttrs = ufe.Attributes.attributes(shaderItem)
+            attr = shaderAttrs.attribute("inputs:in")
+            self.assertFalse(attr.hasMetadata("uisoftmin"))
+            self.assertFalse(attr.hasMetadata("uisoftmax"))
+
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
-    @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testCreateUsdPreviewSurfaceAttribute(self):
         cmds.file(new=True, force=True)
         testFile = testUtils.getTestScene("UsdPreviewSurface", "DisplayColorCube.usda")

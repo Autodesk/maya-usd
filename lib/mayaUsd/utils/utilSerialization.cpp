@@ -137,6 +137,9 @@ void updateAllCachedStageWithLayer(SdfLayerRefPtr originalLayer, const std::stri
         std::vector<UsdStageRefPtr> stages = cache.FindAllMatching(originalLayer);
         for (const auto& stage : stages) {
             auto sessionLayer = stage->GetSessionLayer();
+            // Note: See comments in lib\mayaUsd\nodes\proxyShapeBase.cpp, in the
+            //       function computeInStageDataCached() about requirements about
+            //       matching UsdStage::Open() arguments to find a stage.
             auto newStage = UsdStage::UsdStage::Open(
                 newLayer, sessionLayer, UsdStage::InitialLoadSet::LoadNone);
             newStage->SetLoadRules(stage->GetLoadRules());
@@ -293,6 +296,8 @@ bool saveLayerWithFormat(
 
     const std::string& formatArg
         = requestedFormatArg.empty() ? usdFormatArgOption() : requestedFormatArg;
+
+    UsdMayaUtilFileSystem::updatePostponedRelativePaths(layer, filePath);
 
     if (isCompatibleWithSave(layer, filePath, formatArg)) {
         if (!layer->Save()) {

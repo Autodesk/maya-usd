@@ -15,11 +15,19 @@
 
 proc setOptionVars(int $forceFactorySettings)
 {
-    if ($forceFactorySettings || !`optionVar -exists mayaUsd_SerializedUsdEditsLocation`)
-        optionVar -intValue mayaUsd_SerializedUsdEditsLocation 1;
+    int $mjv = `about -majorVersion`;
+    if ($mjv <= 2022) {
+        if ($forceFactorySettings || !`optionVar -exists mayaUsd_SerializedUsdEditsLocation`)
+            optionVar -intValue mayaUsd_SerializedUsdEditsLocation 1;
 
-    if ($forceFactorySettings || !`optionVar -exists mayaUsd_SerializedUsdEditsLocationPrompt`)
-        optionVar -intValue mayaUsd_SerializedUsdEditsLocationPrompt 1;
+        if ($forceFactorySettings || !`optionVar -exists mayaUsd_SerializedUsdEditsLocationPrompt`)
+            optionVar -intValue mayaUsd_SerializedUsdEditsLocationPrompt 1;
+    } else {
+        optionVar -init $forceFactorySettings -category "MayaUsd"
+            -intValue mayaUsd_SerializedUsdEditsLocation 1
+            -intValue mayaUsd_SerializedUsdEditsLocationPrompt 1
+        ;
+    }
 }
 
 global proc saveOptionsAndCloseUSDSaveOptionDialog(string $parent)

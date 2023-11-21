@@ -27,9 +27,10 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 // clang-format off
-#define PXRUSDMAYA_UPDATER_ARGS_TOKENS \
-    /* Dictionary keys */ \
-    (copyOperation)
+#define PXRUSDMAYA_UPDATER_ARGS_TOKENS  \
+    /* Dictionary keys */               \
+    (copyOperation)                     \
+    (ignoreVariants)
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
@@ -42,6 +43,7 @@ TF_DECLARE_PUBLIC_TOKENS(
 struct UsdMayaPrimUpdaterArgs
 {
     const bool _copyOperation { false };
+    const bool _ignoreVariants { false };
 
     MAYAUSD_CORE_PUBLIC
     static UsdMayaPrimUpdaterArgs createFromDictionary(const VtDictionary& userArgs);

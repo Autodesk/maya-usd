@@ -784,12 +784,7 @@ class AETemplate(object):
         self.createSection(sectionName, extraAttrs, True)
 
     def createAppliedSchemasSection(self):
-        # USD version 0.21.2 is required because of
-        # Usd.SchemaRegistry().GetPropertyNamespacePrefix()
         usdVer = Usd.GetVersion()
-        if usdVer < (0, 21, 2):
-            return
-
         showAppliedSchemasSection = False
 
         # loop on all applied schemas and store all those
@@ -813,10 +808,7 @@ class AETemplate(object):
         schemaAttrsDict = {}
         appliedSchemas = self.prim.GetAppliedSchemas()
         for schema in appliedSchemas:
-            if usdVer > (0, 21, 5):
-                typeAndInstance = Usd.SchemaRegistry().GetTypeNameAndInstance(schema)
-            else:
-                typeAndInstance = Usd.SchemaRegistry().GetTypeAndInstance(schema)
+            typeAndInstance = Usd.SchemaRegistry().GetTypeNameAndInstance(schema)
             typeName        = typeAndInstance[0]
             schemaType      = Usd.SchemaRegistry().GetTypeFromName(typeName)
 

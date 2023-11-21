@@ -192,6 +192,8 @@ void MayaLayerEditorWindow::addAnonymousSublayer()
     treeView()->callMethodOnSelection(name, &LayerTreeItem::addAnonymousSublayer);
 }
 
+void MayaLayerEditorWindow::updateLayerModel() { _sessionState.refreshCurrentStageEntry(); }
+
 void MayaLayerEditorWindow::addParentLayer()
 {
     QString name = "Add Parent Layer";

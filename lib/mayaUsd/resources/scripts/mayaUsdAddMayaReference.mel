@@ -1067,11 +1067,7 @@ global proc string addMayaReferenceToUsd(string $ufePath)
     int $autoEditAsMayaData = `optionVar -query usdMayaReferenceEditAsMayaDat`;
     
     string $filePath = $file[0];
-    int $requireRelative = (`optionVar -exists mayaUsd_MakePathRelativeToEditTargetLayer` && `optionVar -query mayaUsd_MakePathRelativeToEditTargetLayer`);
-    if ($requireRelative) {
-        string $relativeTo = `python("import mayaUsd_USDRootFileRelative as murel; murel.usdFileRelative.getRelativeFilePathRoot()")`;
-        $filePath = `python("import mayaUsd.lib as mayaUsdLib; mayaUsdLib.Util.getPathRelativeToDirectory(r'''" + $filePath + "''', r'''" + $relativeTo + "''')")`;
-    }
+    $filePath = `python("import mayaUsdAddMayaReference; mayaUsdAddMayaReference.handleMayaReferenceFilePath(r'''" + $filePath + "''', r'''" + $ufePath + "''')")`;
     $filePath = fromNativePath($filePath);
 
     // No need to actually create the Maya reference node: edit-as-Maya on the

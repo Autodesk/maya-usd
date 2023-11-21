@@ -94,6 +94,10 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         if os.getenv('MAYA_HAS_COLOR_MANAGEMENT_SUPPORT_API', 'FALSE') == 'TRUE':
             suffix = "_ocio"
 
+        # MaterialX 1.38.8 has a new triplanar node with superior blending
+        if os.getenv('MATERIALX_VERSION', '1.38.0') >= '1.38.8':
+            suffix += "_blended"
+
         mayaUtils.loadPlugin("mayaUsdPlugin")
         panel = mayaUtils.activeModelPanel()
         cmds.modelEditor(panel, edit=True, displayTextures=True)
@@ -160,8 +164,13 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         cmds.move(0, 8, 0, 'persp')
         cmds.rotate(-90, 0, 0, 'persp')
 
+        # Add a light to see bump mapping:
+        light = cmds.directionalLight(rgb=(1, 1, 1))
+        transform = cmds.listRelatives(light, parent=True)[0]
+        cmds.xform(transform, ro=(105, 25, 130), ws=True)
+        cmds.setAttr(light+".intensity", 2)
         panel = mayaUtils.activeModelPanel()
-        cmds.modelEditor(panel, edit=True, displayTextures=True)
+        cmds.modelEditor(panel, edit=True, lights=True, displayLights="all", displayTextures=True)
 
         self._StartTest('DemoQuads')
 

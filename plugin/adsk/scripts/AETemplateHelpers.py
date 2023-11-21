@@ -1,8 +1,11 @@
 import os.path
 import maya.cmds as cmds
-import ufe
+import maya.api.OpenMaya as OpenMaya
+import maya.internal.ufeSupport.ufeCmdWrapper as ufeCmd
+import usdUfe
 import mayaUsd.ufe
 import mayaUsd.lib as mayaUsdLib
+import re
 from mayaUSDRegisterStrings import getMayaUsdString
 from mayaUsdUtils import getUSDDialogFileFilters
 
@@ -10,6 +13,27 @@ def debugMessage(msg):
     DEBUG = False
     if DEBUG:
         print(msg)
+
+__naturalOrderRE = re.compile(r'([0-9]+)')
+
+def GetAllRootPrimNamesNaturalOrder(proxyShape):
+    # Custom comparator key
+    def natural_key(item):
+        return [int(s) if s.isdigit() else s.lower() for s in __naturalOrderRE.split(item)]
+    try:
+        proxyStage = mayaUsd.ufe.getStage(proxyShape)
+        primNames = []
+        if proxyStage:
+            for prim in proxyStage.TraverseAll():
+                if (prim.GetPath().IsRootPrimPath()):
+                    primNames.append(prim.GetName())
+        # Sort the prim list in natural order
+        primNames.sort(key=natural_key)
+        return primNames
+    except Exception as e:
+        debugMessage('GetAllPrimNames() - Error: %s' % str(e))
+        pass
+    return ''
 
 def GetDefaultPrimName(proxyShape):
     try:
@@ -23,6 +47,30 @@ def GetDefaultPrimName(proxyShape):
         pass
     return ''
 
+def SetDefaultPrim(proxyShape, primName):
+    try:
+        proxyStage = mayaUsd.ufe.getStage(proxyShape)
+        if not proxyStage:
+            return False
+
+        cmd = None
+        if not primName:
+            cmd = usdUfe.ClearDefaultPrimCommand(proxyStage)
+        else:
+            defaultPrim = proxyStage.GetPrimAtPath('/' + primName)
+            if defaultPrim:
+                cmd = usdUfe.SetDefaultPrimCommand(defaultPrim)
+
+        if cmd is None:
+            return False
+        
+        ufeCmd.execute(cmd)
+        return True
+    except Exception as e:
+        # Note: we do want to tell the user why the set or clear failed.
+        OpenMaya.MGlobal.displayError(str(e))
+        return False
+    
 def GetRootLayerName(proxyShape):
     try:
         proxyStage = mayaUsd.ufe.getStage(proxyShape)
@@ -131,15 +179,28 @@ def ProxyShapeFilePathChanged(filePathAttr, newFilePath=None):
             okCaption = getMayaUsdString("kLoad")
             fileFilter = getUSDDialogFileFilters()
 
+            # Note: empty or missing attribute return None, but we want an empty string
+            #       in that case.
+            primPath = cmds.getAttr(stageName+'.primPath') or ''
+            excludedPrimPaths = cmds.getAttr(stageName+'.excludePrimPaths') or ''
+            loadPayloads = cmds.getAttr(stageName+'.loadPayloads') or 0
+
+            cmds.optionVar(stringValue=('stageFromFile_primPath', primPath))
+            cmds.optionVar(stringValue=('stageFromFile_excludePrimPath', excludedPrimPaths))
+            cmds.optionVar(intValue=('stageFromFile_loadPayloads', loadPayloads))
+
             startDir = ''
-            if cmds.file(q=True, exists=True):
-                fullPath = cmds.file(q=True, loc=True)
-                startDir = os.path.dirname(fullPath)
+            if not startDir and currFilePath:
+                startDir = os.path.dirname(currFilePath)
+            if not startDir:
+                if cmds.file(q=True, exists=True):
+                    fullPath = cmds.file(q=True, loc=True)
+                    startDir = os.path.dirname(fullPath)
 
             res = cmds.fileDialog2(caption=title, fileMode=1, ff=fileFilter, okc=okCaption,
-                                   optionsUICreate='mayaUsd_USDRootFileRelative_UICreate',
-                                   optionsUIInit='mayaUsd_USDRootFileRelative_UIInit',
-                                   optionsUICommit2='mayaUsd_USDRootFileRelative_UICommit',
+                                   optionsUICreate='stageFromFile_UISetup',
+                                   optionsUIInit='stageFromFile_UIInit',
+                                   optionsUICommit='stageFromFile_UICommit',
                                    startingDirectory=startDir)
             if res and len(res) == 1:
                 debugMessage('    User picked USD file, setting file path attribute')
@@ -148,8 +209,17 @@ def ProxyShapeFilePathChanged(filePathAttr, newFilePath=None):
                 requireRelative = RequireUsdPathsRelativeToMayaSceneFile()
                 if requireRelative:
                     usdFileToLoad = mayaUsdLib.Util.getPathRelativeToMayaSceneFile(usdFileToLoad)
+
+                primPath = cmds.optionVar(query='stageFromFile_primPath')
+                excludedPrimPaths = cmds.optionVar(query='stageFromFile_excludePrimPath')
+                loadPayloads = cmds.optionVar(query='stageFromFile_loadPayloads')
+
                 cmds.setAttr(filePathAttr, usdFileToLoad, type='string')
                 cmds.setAttr(filePathAttr+"Relative", requireRelative)
+                cmds.setAttr(stageName+'.primPath', primPath, type="string")
+                cmds.setAttr(stageName+'.excludePrimPaths', excludedPrimPaths, type="string")
+                cmds.setAttr(stageName+'.loadPayloads', loadPayloads)
+
                 return True
         elif newFilePath is not None:
             # Instead of opening a file dialog to get the USD file, simply
@@ -208,4 +278,3 @@ def ProxyShapeFilePathRefresh(filePathAttr):
                     proxyStage.Reload()
     except Exception as e:
         debugMessage('ProxyShapeFilePathRefresh() - Error: %s' % str(e))
-        pass

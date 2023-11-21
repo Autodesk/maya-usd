@@ -45,6 +45,7 @@ typedef PXR_NS::UsdTimeCode (*TimeAccessorFn)(const Ufe::Path&);
 typedef bool (*IsAttributeLockedFn)(const PXR_NS::UsdAttribute& attr, std::string* errMsg);
 typedef void (*SaveStageLoadRulesFn)(const PXR_NS::UsdStageRefPtr&);
 typedef bool (*IsRootChildFn)(const Ufe::Path& path);
+typedef std::string (*UniqueChildNameFn)(const PXR_NS::UsdPrim& usdParent, const std::string& name);
 
 //------------------------------------------------------------------------------
 // Helper functions
@@ -140,7 +141,7 @@ int ufePathToInstanceIndex(const Ufe::Path& path, PXR_NS::UsdPrim* prim = nullpt
 
 //! Set the DCC specific "isRootChild" test function.
 //! Use of this function is optional, if one is not supplied then
-//! a default implementation of isRootChild is used..
+//! a default implementation of isRootChild is used.
 USDUFE_PUBLIC
 void setIsRootChildFn(IsRootChildFn fn);
 
@@ -154,14 +155,30 @@ bool isRootChild(const Ufe::Path& path);
 USDUFE_PUBLIC
 bool isRootChildDefault(const Ufe::Path& path);
 
+//! Split the input source name <p srcName> into a base name <p base> and a
+//! numerical suffix (if present) <p suffix>.
+//! Returns true when numerical suffix was found, otherwise false.
+USDUFE_PUBLIC
+bool splitNumericalSuffix(const std::string srcName, std::string& base, std::string& suffix);
+
 //! Split the source name into a base name and a numerical suffix (set to
 //! 1 if absent).  Increment the numerical suffix until name is unique.
 USDUFE_PUBLIC
 std::string uniqueName(const PXR_NS::TfToken::HashSet& existingNames, std::string srcName);
 
+//! Set the DCC specific "uniqueChildName" function.
+//! Use of this function is optional, if one is not supplied then
+//! a default implementation of uniqueChildName is used.
+USDUFE_PUBLIC
+void setUniqueChildNameFn(UniqueChildNameFn fn);
+
 //! Return a unique child name.
 USDUFE_PUBLIC
-std::string uniqueChildName(const PXR_NS::UsdPrim& parent, const std::string& name);
+std::string uniqueChildName(const PXR_NS::UsdPrim& usdParent, const std::string& name);
+
+//! Default uniqueChildName() implementation. Uses all the prim's children.
+USDUFE_PUBLIC
+std::string uniqueChildNameDefault(const PXR_NS::UsdPrim& parent, const std::string& name);
 
 //! Send notification for data model changes
 template <class T>
@@ -246,6 +263,16 @@ bool applyCommandRestrictionNoThrow(
     const PXR_NS::UsdPrim& prim,
     const std::string&     commandName,
     bool                   allowStronger = false);
+
+//! Apply restriction rules for root layer metadata on the given prim
+USDUFE_PUBLIC
+void applyRootLayerMetadataRestriction(const PXR_NS::UsdPrim& prim, const std::string& commandName);
+
+//! Apply restriction rules for root layer metadata on the given stage
+USDUFE_PUBLIC
+void applyRootLayerMetadataRestriction(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const std::string&            commandName);
 
 //! Check if the edit target in the stage is allowed to be changed.
 //! \return True, if the edit target layer in the stage is allowed to be changed

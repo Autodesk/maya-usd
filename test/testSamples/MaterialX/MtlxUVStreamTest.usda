@@ -63,11 +63,19 @@ def Mesh "pCube1" (
 				def Shader "noise1"
 				{
                     uniform token info:id = "ND_noise2d_float"
-                    float inputs:amplitude = 0.5
-					float2 inputs:texcoord.connect = </pCube1/Looks/standardSurface2SG/MayaNG_standardSurface2SG/UV1.outputs:out>
+                    float inputs:amplitude = 0.6
+					float2 inputs:texcoord.connect = </pCube1/Looks/standardSurface2SG/MayaNG_standardSurface2SG/multiply10.outputs:out>
                     float outputs:out
 				}
-				
+
+				def Shader "multiply10"
+				{
+                    uniform token info:id = "ND_multiply_vector2FA"
+					float inputs:in1.connect = </pCube1/Looks/standardSurface2SG/MayaNG_standardSurface2SG/UV1.outputs:out>
+					float inputs:in2 = 10.0
+					float outputs:out
+				}
+
 				def Shader "UV1"
 				{
                     uniform token info:id = "ND_texcoord_vector2"

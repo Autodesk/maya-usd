@@ -75,7 +75,7 @@ class TemporaryDirectory:
             return
         try:
             shutil.rmtree(self.name)
-        except:
+        except Exception:
             if not self.ignore_errors:
                 raise
 

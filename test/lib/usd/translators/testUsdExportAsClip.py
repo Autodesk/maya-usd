@@ -109,19 +109,10 @@ class testUsdExportAsClip(unittest.TestCase):
         stitchedPath = os.path.abspath('result.usda')
         stitchedLayer = Sdf.Layer.CreateNew(stitchedPath)
 
-        # Clip stitching behavior changed significantly between core USD 20.05
-        # and 20.08. Beginning with 20.08, we need to pass an additional option
-        # to ensure that authored time samples are held across gaps in value
-        # clips.
-        if Usd.GetVersion() > (0, 20, 5):
-            self.assertTrue(
-                UsdUtils.StitchClips(stitchedLayer, clipFiles, '/world',
-                    startFrame=1, endFrame=20,
-                    interpolateMissingClipValues=True, clipSet='default'))
-        else:
-            self.assertTrue(
-                UsdUtils.StitchClips(stitchedLayer, clipFiles, '/world',
-                    startFrame=1, endFrame=20, clipSet='default'))
+        self.assertTrue(
+            UsdUtils.StitchClips(stitchedLayer, clipFiles, '/world',
+                startFrame=1, endFrame=20,
+                interpolateMissingClipValues=True, clipSet='default'))
 
         # export a non clip version for comparison
         canonicalUsdFile = os.path.abspath('canonical.usda')

@@ -306,22 +306,39 @@ class Object3dTestCase(unittest.TestCase):
         object3d.setVisibility(False)
         self.assertFalse(object3d.visibility())
 
-        # We should have got 'one' notification.
-        self.assertEqual(visObs.notifications(), 1)
-
+        if (ufeUtils.ufeFeatureSetVersion() >= 4):
+            # We should have got 'two' notifications. One for Add and one for ValueChange
+            # This occurs on the very first time the visibility token attribute is added.
+            self.assertEqual(visObs.notifications(), 2)
+        else:
+            # We should have got one notification. Only for ValueChange
+            self.assertEqual(visObs.notifications(), 1)
+            
         # Make it visible.
         object3d.setVisibility(True)
         self.assertTrue(object3d.visibility())
 
-        # We should have got one more notification.
-        self.assertEqual(visObs.notifications(), 2)
+        # We should have got one more notification. Only for ValueChange
+        if (ufeUtils.ufeFeatureSetVersion() >= 4):
+            self.assertEqual(visObs.notifications(), 3)
+        else:
+            self.assertEqual(visObs.notifications(), 2)
+            
+        # Make it visible.
+        object3d.setVisibility(False)
+        self.assertFalse(object3d.visibility())
+
+        # We should have got one more notification. Only for ValueChange
+        if (ufeUtils.ufeFeatureSetVersion() >= 4):
+            self.assertEqual(visObs.notifications(), 4)
+        else:
+            self.assertEqual(visObs.notifications(), 3)
 
         # Remove the observer.
         ufe.Object3d.removeObserver(visObs)
         self.assertFalse(ufe.Object3d.hasObserver(visObs))
         self.assertEqual(ufe.Object3d.nbObservers(), 0)
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testUndoVisibleCmd only available in UFE v2 or greater.')
     def testUndoVisibleCmd(self):
 
         ''' Verify the token / attribute values for visibility after performing undo/redo '''
@@ -386,7 +403,6 @@ class Object3dTestCase(unittest.TestCase):
         # capsuleItem must be invisible now
         self.assertFalse(object3d.visibility())
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testMayaHideAndShowHiddenUndoCommands only available in UFE v2 or greater.')
     def testMayaHideAndShowHiddenUndoCommands(self):
         ''' Verify the token / attribute values for visibility via "hide", "showHidden" commands + Undo/Redo '''
 

@@ -152,7 +152,7 @@ class testDiagnosticDelegate(unittest.TestCase):
 
             try:
                 Tf.RaiseCodingError("coding error!")
-            except:
+            except Exception:
                 pass
         log = self._StopRecording()
 

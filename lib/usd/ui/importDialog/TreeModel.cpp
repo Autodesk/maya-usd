@@ -15,6 +15,8 @@
 //
 #include "TreeModel.h"
 
+#include "USDImportDialog.h"
+
 #include <mayaUsdUI/ui/IMayaMQtUtil.h>
 #include <mayaUsdUI/ui/ItemDelegate.h>
 #include <mayaUsdUI/ui/TreeItem.h>
@@ -30,12 +32,14 @@ namespace MAYAUSD_NS_DEF {
 
 namespace {
 
-TreeItem*
-findTreeItem(TreeModel* treeModel, const QModelIndex& parent, std::function<bool(TreeItem*)> fn)
+TreeItem* findTreeItem(
+    const TreeModel*               treeModel,
+    const QModelIndex&             parent,
+    std::function<bool(TreeItem*)> fn)
 {
     for (int r = 0; r < treeModel->rowCount(parent); ++r) {
         // Note: only the load column (0) has children, so we use it when looking for children.
-        QModelIndex childIndex = treeModel->index(r, TreeModel::kTreeColumn_Load, parent);
+        QModelIndex childIndex = treeModel->index(r, TreeItem::kColumnLoad, parent);
         TreeItem*   item = static_cast<TreeItem*>(treeModel->itemFromIndex(childIndex));
         if (fn(item)) {
             return item;
@@ -76,14 +80,14 @@ void resetVariantToPrimSelection(TreeItem* variantItem)
 void resetAllVariants(TreeModel* treeModel, const QModelIndex& parent)
 {
     for (int r = 0; r < treeModel->rowCount(parent); ++r) {
-        QModelIndex variantIndex = treeModel->index(r, TreeModel::kTreeColumn_Variants, parent);
+        QModelIndex variantIndex = treeModel->index(r, TreeItem::kColumnVariants, parent);
         TreeItem*   variantItem = static_cast<TreeItem*>(treeModel->itemFromIndex(variantIndex));
 
         if (nullptr != variantItem && variantItem->variantSelectionModified()) {
             resetVariantToPrimSelection(variantItem);
         }
 
-        QModelIndex childIndex = treeModel->index(r, TreeModel::kTreeColumn_Load, parent);
+        QModelIndex childIndex = treeModel->index(r, TreeItem::kColumnLoad, parent);
         if (treeModel->hasChildren(childIndex)) {
             resetAllVariants(treeModel, childIndex);
         }
@@ -92,14 +96,22 @@ void resetAllVariants(TreeModel* treeModel, const QModelIndex& parent)
 
 } // namespace
 
+const QPixmap* TreeModel::fsDefaultPrimImage = nullptr;
+
 TreeModel::TreeModel(
-    const IMayaMQtUtil& mayaQtUtil,
-    const ImportData*   importData /*= nullptr*/,
-    QObject*            parent /*= nullptr*/) noexcept
+    const IMayaMQtUtil&           mayaQtUtil,
+    const ImportData*             importData,
+    const USDImportDialogOptions& options,
+    QObject*                      parent /*= nullptr*/) noexcept
     : ParentClass { parent }
     , fImportData { importData }
     , fMayaQtUtil { mayaQtUtil }
+    , fShowVariants(options.showVariants)
+    , fShowRoot(options.showRoot)
 {
+    if (!fsDefaultPrimImage) {
+        fsDefaultPrimImage = fMayaQtUtil.createPixmap(":/ImportDialog/defaultPrim.png");
+    }
 }
 
 QVariant TreeModel::data(const QModelIndex& index, int role /*= Qt::DisplayRole*/) const
@@ -109,7 +121,7 @@ QVariant TreeModel::data(const QModelIndex& index, int role /*= Qt::DisplayRole*
 
     TreeItem* item = static_cast<TreeItem*>(itemFromIndex(index));
 
-    if ((role == Qt::DecorationRole) && (index.column() == kTreeColumn_Load))
+    if ((role == Qt::DecorationRole) && (index.column() == TreeItem::kColumnLoad))
         return item->checkImage();
 
     return ParentClass::data(index, role);
@@ -123,7 +135,7 @@ Qt::ItemFlags TreeModel::flags(const QModelIndex& index) const
     // The base class implementation returns a combination of flags that enables
     // the item (ItemIsEnabled) and allows it to be selected (ItemIsSelectable).
     Qt::ItemFlags flags = ParentClass::flags(index);
-    if (index.column() == kTreeColumn_Load)
+    if (index.column() == TreeItem::kColumnLoad)
         flags &= ~Qt::ItemIsSelectable;
 
     return flags;
@@ -152,7 +164,7 @@ void TreeModel::setChildCheckState(const QModelIndex& parent, TreeItem::CheckSta
     int rMin = -1, rMax = -1;
     for (int r = 0; r < rowCount(parent); ++r) {
         // Note: only the load column (0) has children, so we use it when looking for children.
-        QModelIndex childIndex = this->index(r, kTreeColumn_Load, parent);
+        QModelIndex childIndex = this->index(r, TreeItem::kColumnLoad, parent);
         TreeItem*   item = static_cast<TreeItem*>(itemFromIndex(childIndex));
 
         // If child item state matches the input, no need to recurse.
@@ -167,8 +179,8 @@ void TreeModel::setChildCheckState(const QModelIndex& parent, TreeItem::CheckSta
                 setChildCheckState(childIndex, state);
         }
     }
-    QModelIndex  rMinIndex = this->index(rMin, kTreeColumn_Load, parent);
-    QModelIndex  rMaxIndex = this->index(rMax, kTreeColumn_Load, parent);
+    QModelIndex  rMinIndex = this->index(rMin, TreeItem::kColumnLoad, parent);
+    QModelIndex  rMaxIndex = this->index(rMax, TreeItem::kColumnLoad, parent);
     QVector<int> roles;
     roles << Qt::DecorationRole;
     Q_EMIT dataChanged(rMinIndex, rMaxIndex, roles);
@@ -192,7 +204,7 @@ void TreeModel::fillStagePopulationMask(UsdStagePopulationMask& popMask, const Q
 {
     for (int r = 0; r < rowCount(parent); ++r) {
         // Note: only the load column (0) has children, so we use it when looking for children.
-        QModelIndex childIndex = this->index(r, kTreeColumn_Load, parent);
+        QModelIndex childIndex = this->index(r, TreeItem::kColumnLoad, parent);
         TreeItem*   item = static_cast<TreeItem*>(itemFromIndex(childIndex));
         if (item->checkState() == TreeItem::CheckState::kChecked) {
             auto primPath = item->prim().GetPath();
@@ -212,8 +224,11 @@ void TreeModel::fillPrimVariantSelections(
     ImportData::PrimVariantSelections& primVariantSelections,
     const QModelIndex&                 parent)
 {
+    if (!fShowVariants)
+        return;
+
     for (int r = 0; r < rowCount(parent); ++r) {
-        QModelIndex variantIndex = this->index(r, kTreeColumn_Variants, parent);
+        QModelIndex variantIndex = this->index(r, TreeItem::kColumnVariants, parent);
         TreeItem*   item = static_cast<TreeItem*>(itemFromIndex(variantIndex));
         if (item->variantSelectionModified()) {
             // Note: both the variant name and variant selection roles contain a
@@ -236,7 +251,7 @@ void TreeModel::fillPrimVariantSelections(
         }
 
         // Note: only the load column (0) has children, so we use it when looking for children.
-        QModelIndex childIndex = this->index(r, kTreeColumn_Load, parent);
+        QModelIndex childIndex = this->index(r, TreeItem::kColumnLoad, parent);
         if (hasChildren(childIndex)) {
             fillPrimVariantSelections(primVariantSelections, childIndex);
         }
@@ -245,8 +260,11 @@ void TreeModel::fillPrimVariantSelections(
 
 void TreeModel::openPersistentEditors(QTreeView* tv, const QModelIndex& parent)
 {
+    if (!fShowVariants)
+        return;
+
     for (int r = 0; r < rowCount(parent); ++r) {
-        QModelIndex varSelIndex = this->index(r, kTreeColumn_Variants, parent);
+        QModelIndex varSelIndex = this->index(r, TreeItem::kColumnVariants, parent);
         int         type = varSelIndex.data(ItemDelegate::kTypeRole).toInt();
         if (type == ItemDelegate::kVariants) {
             QSortFilterProxyModel* proxyModel = qobject_cast<QSortFilterProxyModel*>(tv->model());
@@ -254,7 +272,7 @@ void TreeModel::openPersistentEditors(QTreeView* tv, const QModelIndex& parent)
         }
 
         // Note: only the load column (0) has children, so we use it when looking for children.
-        QModelIndex childIndex = this->index(r, kTreeColumn_Load, parent);
+        QModelIndex childIndex = this->index(r, TreeItem::kColumnLoad, parent);
         if (hasChildren(childIndex)) {
             openPersistentEditors(tv, childIndex);
         }
@@ -308,6 +326,27 @@ void TreeModel::checkEnableItem(TreeItem* item)
     }
 }
 
+TreeItem* TreeModel::findPathItem(const PXR_NS::SdfPath& path) const
+{
+    auto fnFindRoot = [path](TreeItem* item) -> bool {
+        if (item->prim().GetPath() == path)
+            return true;
+        return false;
+    };
+    return findTreeItem(this, QModelIndex(), fnFindRoot);
+}
+
+TreeItem* TreeModel::findPrimItem(const UsdPrim& prim) const
+{
+    return findPathItem(prim.GetPath());
+}
+
+TreeItem* TreeModel::getFirstItem() const
+{
+    QModelIndex childIndex = index(0, TreeItem::kColumnLoad, QModelIndex());
+    return static_cast<TreeItem*>(itemFromIndex(childIndex));
+}
+
 void TreeModel::updateCheckedItemCount() const
 {
     int nbChecked = 0, nbVariantsModified = 0;
@@ -327,7 +366,7 @@ void TreeModel::countCheckedItems(
     for (int r = 0; r < rowCount(parent); ++r) {
         TreeItem* item;
 
-        QModelIndex checkedChildIndex = this->index(r, kTreeColumn_Load, parent);
+        QModelIndex checkedChildIndex = this->index(r, TreeItem::kColumnLoad, parent);
         item = static_cast<TreeItem*>(itemFromIndex(checkedChildIndex));
 
         const TreeItem::CheckState state = item->checkState();
@@ -335,12 +374,14 @@ void TreeModel::countCheckedItems(
             || TreeItem::CheckState::kChecked_Disabled == state) {
             nbChecked++;
 
-            // We are only counting modified variants of in-scope prims
-            QModelIndex variantChildIndex = this->index(r, kTreeColumn_Variants, parent);
-            item = static_cast<TreeItem*>(itemFromIndex(variantChildIndex));
+            if (fShowVariants) {
+                // We are only counting modified variants of in-scope prims
+                QModelIndex variantChildIndex = this->index(r, TreeItem::kColumnVariants, parent);
+                item = static_cast<TreeItem*>(itemFromIndex(variantChildIndex));
 
-            if (item->variantSelectionModified()) {
-                nbVariantsModified++;
+                if (item->variantSelectionModified()) {
+                    nbVariantsModified++;
+                }
             }
         }
 
@@ -359,7 +400,7 @@ void TreeModel::updateModifiedVariantCount() const
 
 void TreeModel::onItemClicked(TreeItem* item)
 {
-    if (item->index().column() == kTreeColumn_Load) {
+    if (item->index().column() == TreeItem::kColumnLoad) {
         // We only allow toggling an enabled checked or unchecked item.
         TreeItem::CheckState st = item->checkState();
         if (st == TreeItem::CheckState::kChecked) {
@@ -370,6 +411,15 @@ void TreeModel::onItemClicked(TreeItem* item)
     }
 }
 
-void TreeModel::resetVariants() { resetAllVariants(this, QModelIndex()); }
+void TreeModel::resetVariants()
+{
+    if (!fShowVariants)
+        return;
+
+    resetAllVariants(this, QModelIndex());
+}
+
+/*static*/
+const QPixmap* TreeModel::getDefaultPrimPixmap() { return fsDefaultPrimImage; }
 
 } // namespace MAYAUSD_NS_DEF

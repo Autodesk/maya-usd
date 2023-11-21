@@ -122,6 +122,7 @@ UsdMayaPrimUpdater::PushCopySpecs UsdMayaPrimUpdater::pushCopySpecs(
     const SdfPath& dstSdfPath)
 {
     MayaUsdUtils::MergePrimsOptions options;
+    options.ignoreVariants = _context ? _context->GetArgs()._ignoreVariants : false;
     return MayaUsdUtils::mergePrims(
                srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath, options)
         ? PushCopySpecs::Continue

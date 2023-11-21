@@ -73,15 +73,9 @@ MAYAUSD_CORE_PUBLIC
 UsdSceneItem::Ptr
 createSiblingSceneItem(const Ufe::Path& ufeSrcPath, const std::string& siblingName);
 
-inline std::string uniqueName(const PXR_NS::TfToken::HashSet& existingNames, std::string srcName)
-{
-    return UsdUfe::uniqueName(existingNames, srcName);
-}
-
-inline std::string uniqueChildName(const PXR_NS::UsdPrim& parent, const std::string& name)
-{
-    return UsdUfe::uniqueChildName(parent, name);
-}
+//! Returns a unique child name following the Maya standard naming rules.
+MAYAUSD_CORE_PUBLIC
+std::string uniqueChildNameMayaStandard(const PXR_NS::UsdPrim& usdParent, const std::string& name);
 
 //! Return if a Maya node type is derived from the gateway node type.
 MAYAUSD_CORE_PUBLIC

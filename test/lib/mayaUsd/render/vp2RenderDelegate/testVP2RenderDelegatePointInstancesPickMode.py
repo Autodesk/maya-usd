@@ -33,7 +33,7 @@ try:
     from PySide2.QtTest import QTest
     from PySide2.QtWidgets import QWidget
     from shiboken2 import wrapInstance
-except:
+except Exception:
     from PySide6 import QtCore
     from PySide6.QtTest import QTest
     from PySide6.QtWidgets import QWidget

@@ -59,9 +59,9 @@ def mayaUsdLibRegisterStrings():
     register('kCacheMayaRefUsdHierarchy', 'Author Cache File to USD')
     register('kCaptionCacheToUsd', 'Cache to USD')
     register('kErrorCacheToUsdFailed', 'Cache to USD failed for "^1s".')
+    register('kMenuPrepend', 'Prepend')
     register('kMenuAppend', 'Append')
     register('kMenuPayload', 'Payload')
-    register('kMenuPrepend', 'Prepend (default)')
     register('kMenuReference', 'Reference')
     register('kOptionAsUSDReference', 'Composition Arc:')
     register('kOptionAsUSDReferenceToolTip', '<p>Choose the type of USD Reference composition arc for your Maya Reference:<br><br><b>Payloads</b> are a type of reference. They are recorded, but not traversed in the scene hierarchy. Select this arc if your goal is to manually construct<br>a "working set" that is a subset of an entire scene, in which only parts of the scene are required/loaded. Note: payloads are<br>weaker than direct references in any given LayerStack.<br><br><b>References</b> are general and can be used to compose smaller units of scene description into larger aggregates, building up a namespace that<br>includes the "encapsulated" result of composing the scene description targeted by a reference. Select this arc if your goal is not to unload your<br>references.</p>')
@@ -72,6 +72,17 @@ def mayaUsdLibRegisterStrings():
     register('kTextDefineIn', 'Define in:')
     register('kTextVariant', 'Variant')
     register('kTextVariantToolTip','If selected, your Maya reference will be defined in a variant. This will enable your prim to\nhave 2 variants you can switch between in the Outliner; the Maya reference and its USD cache.')
+
+    register('kAddRefOrPayloadPrimPathToolTip',
+        'Leave this field blank to use the default prim as your prim path (only viable if your file has a default prim).\n' +
+        'Specifying a prim path will make an explicit reference to a prim.\n' +
+        'If there is no default prim and no prim path is specified, no prim will be referenced.')
+    
+    register('kAddRefOrPayloadPrimPathLabel', 'Prim Path')
+    register('kAddRefOrPayloadPrimPathPlaceHolder', ' (Default Prim)')
+    register('kAddRefOrPayloadPrimPathHelpLabel', 'Help on Select a Prim for Reference')
+    register('kAddRefOrPayloadPrimPathTitle', 'Select a Prim to Reference')
+    register('kAddRefOrPayloadSelectLabel', 'Select')
 
     # mayaUsdClearRefsOrPayloadsOptions.py
     register('kClearRefsOrPayloadsOptionsTitle', 'Clear All USD References/Payloads')
