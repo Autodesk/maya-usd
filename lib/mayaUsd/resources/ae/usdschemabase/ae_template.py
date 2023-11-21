@@ -20,6 +20,7 @@ import fnmatch
 from functools import partial
 import re
 import ufe
+import usdUfe
 import maya.mel as mel
 import maya.cmds as cmds
 import mayaUsd.ufe as mayaUsdUfe
@@ -221,11 +222,23 @@ class MetaDataCustomControl(object):
 
     def _onActiveChanged(self, value):
         with mayaUsdLib.UsdUndoBlock():
-            self.prim.SetActive(value)
+            try:
+                usdUfe.ToggleActiveCommand(self.prim).execute()
+            except Exception as ex:
+                # Note: the command might not work because there is a stronger
+                #       opinion, so update the checkbox.
+                cmds.checkBoxGrp(self.active, edit=True, value1=self.prim.IsActive())
+                cmds.error(str(ex))
 
     def _onInstanceableChanged(self, value):
         with mayaUsdLib.UsdUndoBlock():
-            self.prim.SetInstanceable(value)
+            try:
+                usdUfe.ToggleInstanceableCommand(self.prim).execute()
+            except Exception as ex:
+                # Note: the command might not work because there is a stronger
+                #       opinion, so update the checkbox.
+                cmds.checkBoxGrp(self.instan, edit=True, value1=self.prim.IsInstanceable())
+                cmds.error(str(ex))
 
 # Custom control for all array attribute.
 class ArrayCustomControl(object):

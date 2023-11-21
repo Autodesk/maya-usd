@@ -16,6 +16,8 @@
 
 #include "UsdUndoToggleInstanceableCommand.h"
 
+#include <usdUfe/ufe/Utils.h>
+
 namespace USDUFE_NS_DEF {
 
 UsdUndoToggleInstanceableCommand::UsdUndoToggleInstanceableCommand(const PXR_NS::UsdPrim& prim)
@@ -32,6 +34,14 @@ void UsdUndoToggleInstanceableCommand::executeImplementation()
     PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
     if (!prim.IsValid())
         return;
+
+    std::string errMsg;
+    if (!UsdUfe::isPrimMetadataEditAllowed(
+            prim, PXR_NS::SdfFieldKeys->Instanceable, PXR_NS::TfToken(), &errMsg)) {
+        // Note: we don't throw an exception because this would break bulk actions.
+        TF_RUNTIME_ERROR(errMsg);
+        return;
+    }
 
     prim.SetInstanceable(!prim.IsInstanceable());
 }
