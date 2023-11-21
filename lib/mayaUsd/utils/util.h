@@ -690,6 +690,7 @@ void AddMayaExtents(
 MAYAUSD_CORE_PUBLIC
 SdrShaderNodePtrVec GetSurfaceShaderNodeDefs();
 
+MAYAUSD_CORE_PUBLIC
 bool isShape(const MDagPath& dagPath);
 
 } // namespace UsdMayaUtil
