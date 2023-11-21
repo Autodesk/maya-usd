@@ -293,6 +293,104 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(shadingVariant(), 'Ball_8')
         self.assertEqual(shadingVariantOnPrim(), 'Ball_8')
 
+    def testDeactivateInLayer(self):
+        """
+        Test deactivate prim in layers: stronger, weaker, session.
+        """
+        self.assertTrue(self.ball35Prim.IsActive())
+        stage = self.ball35Prim.GetStage()
+
+        # Create a sub-layer of root to test weaker layers.
+        rootLayer = stage.GetRootLayer()
+        newLayerName = "Layer_1"
+        usdFormat = Sdf.FileFormat.FindByExtension("usd")
+        subLayer = Sdf.Layer.New(usdFormat, newLayerName)
+        rootLayer.subLayerPaths.append(subLayer.identifier)
+
+        def changeActivation(layer, activate, expectSuccess, undoIt=False):
+            stage.SetEditTarget(layer)
+            cmdName = "Toggle Active State"
+            cmd = self.contextOps.doOpCmd([cmdName])
+            self.assertIsNotNone(cmd)
+            expectedActivation = bool(expectSuccess == activate)
+            ufeCmd.execute(cmd)
+            self.assertEqual(self.ball35Prim.IsActive(), expectedActivation)
+            if undoIt:
+                cmds.undo()
+                # Note: when we expect failure, undo will do nothing, so in all
+                #       cases we expect the opposite of the activate flag.
+                self.assertEqual(self.ball35Prim.IsActive(), not activate)
+
+        # Some boolean variables to make the code clearer below.
+        doActivate = True
+        doDeactivate = False
+        shouldWork = True
+        shouldFail = False
+        thenUndo = True
+
+        # Deactivate in root layer.
+        changeActivation(stage.GetRootLayer(), doDeactivate, shouldWork)
+
+        # Activate in root layer.
+        changeActivation(stage.GetRootLayer(), doActivate, shouldWork, thenUndo)
+
+        # Activate in session layer.
+        changeActivation(stage.GetSessionLayer(), doActivate, shouldWork, thenUndo)
+
+        # Activate in sub layer.
+        changeActivation(subLayer, doActivate, shouldFail)
+
+    def testInstanceableInLayer(self):
+        """
+        Test instanceable flag in layers: stronger, weaker, session.
+        """
+        self.assertTrue(self.ball35Prim.IsActive())
+        stage = self.ball35Prim.GetStage()
+
+        # Create a sub-layer of root to test weaker layers.
+        rootLayer = stage.GetRootLayer()
+        newLayerName = "Layer_1"
+        usdFormat = Sdf.FileFormat.FindByExtension("usd")
+        subLayer = Sdf.Layer.New(usdFormat, newLayerName)
+        rootLayer.subLayerPaths.append(subLayer.identifier)
+
+        def changeInstanceable(layer, makeInstanceable, expectSuccess, undoIt=False):
+            stage.SetEditTarget(layer)
+            cmdName = "Toggle Instanceable State"
+            cmd = self.contextOps.doOpCmd([cmdName])
+            self.assertIsNotNone(cmd)
+            expectedInstanceable = bool(expectSuccess == makeInstanceable)
+            ufeCmd.execute(cmd)
+            self.assertEqual(self.ball35Prim.IsInstanceable(), expectedInstanceable)
+            if undoIt:
+                cmds.undo()
+                # Note: when we expect failure, undo will do nothing, so in all
+                #       cases we expect the opposite of the activate flag.
+                self.assertEqual(self.ball35Prim.IsInstanceable(), not makeInstanceable)
+
+        # Some boolean variables to make the code clearer below.
+        doInstanceable = True
+        doNonInstanceable = False
+        shouldWork = True
+        shouldFail = False
+        thenUndo = True
+
+        # Instanceable in root layer.
+        changeInstanceable(stage.GetRootLayer(), doInstanceable, shouldWork)
+
+        # Non-instanceable in root layer.
+        changeInstanceable(
+            stage.GetRootLayer(), doNonInstanceable, shouldWork, thenUndo
+        )
+
+        # Non-instanceable in session layer.
+        changeInstanceable(
+            stage.GetSessionLayer(), doNonInstanceable, shouldWork, thenUndo
+        )
+
+        # Non-instanceable in sub layer.
+        changeInstanceable(subLayer, doNonInstanceable, shouldFail)
+
     def testDoOp(self):
         # Change visibility, undo / redo.
         cmd = self.contextOps.doOpCmd(['Toggle Visibility'])

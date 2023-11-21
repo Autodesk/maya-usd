@@ -18,6 +18,8 @@
 
 #include "private/UfeNotifGuard.h"
 
+#include <usdUfe/ufe/Utils.h>
+
 namespace USDUFE_NS_DEF {
 
 UsdUndoToggleActiveCommand::UsdUndoToggleActiveCommand(const PXR_NS::UsdPrim& prim)
@@ -34,6 +36,14 @@ void UsdUndoToggleActiveCommand::executeImplementation()
     PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
     if (!prim.IsValid())
         return;
+
+    std::string errMsg;
+    if (!UsdUfe::isPrimMetadataEditAllowed(
+            prim, PXR_NS::SdfFieldKeys->Active, PXR_NS::TfToken(), &errMsg)) {
+        // Note: we don't throw an exception because this would break bulk actions.
+        TF_RUNTIME_ERROR(errMsg);
+        return;
+    }
 
     UsdUfe::InAddOrDeleteOperation ad;
     prim.SetActive(!prim.IsActive());
