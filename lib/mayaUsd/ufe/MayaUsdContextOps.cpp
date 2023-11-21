@@ -78,6 +78,8 @@ static const std::string kUSDLayerEditorImage { "USD_generic.png" };
 #ifdef UFE_V3_FEATURES_AVAILABLE
 static constexpr char    kEditAsMayaItem[] = "Edit As Maya Data";
 static constexpr char    kEditAsMayaLabel[] = "Edit As Maya Data";
+static constexpr char    kEditAsMayaOptionsItem[] = "Edit As Maya Data Options";
+static constexpr char    kEditAsMayaOptionsLabel[] = "Edit As Maya Data Options...";
 static const std::string kEditAsMayaImage { "edit_as_Maya.png" };
 static constexpr char    kDuplicateAsMayaItem[] = "Duplicate As Maya Data";
 static constexpr char    kDuplicateAsMayaLabel[] = "Duplicate As Maya Data";
@@ -180,6 +182,7 @@ const char* _selectUSDFileScript()
             string $result[] = `fileDialog2
                 -fileMode 1
                 -caption "Add USD Reference/Payload to Prim"
+                -okCaption Reference
                 -fileFilter "USD Files (%s);;%s"
                 -optionsUICreate addUSDReferenceCreateUi
                 -optionsUIInit addUSDReferenceInitUi
@@ -203,8 +206,20 @@ const char* _selectUSDFileScript()
 std::string
 makeUSDReferenceFilePathRelativeIfRequested(const std::string& filePath, const UsdPrim& prim)
 {
-    if (!UsdMayaUtilFileSystem::requireUsdPathsRelativeToEditTargetLayer())
+    const auto& layer = UsdUfe::getCurrentTargetLayer(prim);
+    if (!layer) {
         return filePath;
+    }
+
+    if (!UsdMayaUtilFileSystem::requireUsdPathsRelativeToEditTargetLayer()) {
+        UsdMayaUtilFileSystem::unmarkPathAsPostponedRelative(layer, filePath);
+        return filePath;
+    }
+
+    if (layer->IsAnonymous()) {
+        UsdMayaUtilFileSystem::markPathAsPostponedRelative(layer, filePath);
+        return filePath;
+    }
 
     const std::string layerDirPath = MayaUsd::getTargetLayerFolder(prim);
     auto relativePathAndSuccess = UsdMayaUtilFileSystem::makePathRelativeTo(filePath, layerDirPath);
@@ -219,12 +234,89 @@ makeUSDReferenceFilePathRelativeIfRequested(const std::string& filePath, const U
     return relativePathAndSuccess.first;
 }
 
-bool sceneItemSupportsShading(const Ufe::SceneItem::Ptr& sceneItem)
+#ifdef UFE_V4_FEATURES_AVAILABLE
+void addNewMaterialItems(const Ufe::ContextOps::ItemPath& itemPath, Ufe::ContextOps::Items& items)
 {
-    if (MayaUsd::ufe::BindMaterialUndoableCommand::CompatiblePrim(sceneItem)) {
-        return true;
+    std::multimap<std::string, MString> renderersAndMaterials;
+    MStringArray                        materials;
+    MGlobal::executeCommand("mayaUsdGetMaterialsFromRenderers", materials);
+
+    for (const auto& materials : materials) {
+        // Expects a string in the format "renderer/Material Name|Material Identifier".
+        MStringArray rendererAndMaterial;
+        MStatus      status = materials.split('/', rendererAndMaterial);
+        if (status == MS::kSuccess && rendererAndMaterial.length() == 2) {
+            renderersAndMaterials.emplace(
+                std::string(rendererAndMaterial[0].asChar()), rendererAndMaterial[1]);
+        }
     }
-    return false;
+
+    if (itemPath.size() == 1u) {
+        // Populate list of known renderers (first menu level).
+        for (auto it = renderersAndMaterials.begin(), end = renderersAndMaterials.end(); it != end;
+             it = renderersAndMaterials.upper_bound(it->first)) {
+            items.emplace_back(it->first, it->first, Ufe::ContextItem::kHasChildren);
+        }
+    } else if (itemPath.size() == 2u) {
+        // Populate list of materials for a given renderer (second menu level).
+        const auto range = renderersAndMaterials.equal_range(itemPath[1]);
+        for (auto it = range.first; it != range.second; ++it) {
+            MStringArray materialAndIdentifier;
+            // Expects a string in the format "Material Name|MaterialIdentifer".
+            MStatus status = it->second.split('|', materialAndIdentifier);
+            if (status == MS::kSuccess && materialAndIdentifier.length() == 2) {
+                items.emplace_back(
+                    materialAndIdentifier[1].asChar(), materialAndIdentifier[0].asChar());
+            }
+        }
+    }
+}
+
+void assignExistingMaterialItems(
+    const UsdSceneItem::Ptr&         item,
+    const Ufe::ContextOps::ItemPath& itemPath,
+    Ufe::ContextOps::Items&          items)
+{
+    std::multimap<std::string, MString> pathsAndMaterials;
+    MStringArray                        materials;
+    MString                             script;
+    script.format(
+        "mayaUsdGetMaterialsInStage \"^1s\"", Ufe::PathString::string(item->path()).c_str());
+    MGlobal::executeCommand(script, materials);
+
+    for (const auto& material : materials) {
+        MStringArray pathAndMaterial;
+        // Expects a string in the format "/path1/path2/Material".
+        const int lastSlash = material.rindex('/');
+        if (lastSlash >= 0) {
+            MString pathToMaterial = material.substring(0, lastSlash);
+            pathsAndMaterials.emplace(std::string(pathToMaterial.asChar()), material);
+        }
+    }
+
+    if (itemPath.size() == 1u) {
+        // Populate list of paths to materials (first menu level).
+        for (auto it = pathsAndMaterials.begin(), end = pathsAndMaterials.end(); it != end;
+             it = pathsAndMaterials.upper_bound(it->first)) {
+            items.emplace_back(it->first, it->first, Ufe::ContextItem::kHasChildren);
+        }
+    } else if (itemPath.size() == 2u) {
+        // Populate list of to materials for given path (second  menu level).
+        const auto range = pathsAndMaterials.equal_range(itemPath[1]);
+        for (auto it = range.first; it != range.second; ++it) {
+            const int lastSlash = it->second.rindex('/');
+            if (lastSlash >= 0) {
+                MString materialName = it->second.substring(lastSlash + 1, it->second.length() - 1);
+                items.emplace_back(it->second.asChar(), materialName.asChar());
+            }
+        }
+    }
+}
+#endif
+
+inline bool sceneItemSupportsShading(const Ufe::SceneItem::Ptr& sceneItem)
+{
+    return MayaUsd::ufe::BindMaterialUndoableCommand::CompatiblePrim(sceneItem);
 }
 
 bool selectionSupportsShading()
@@ -239,6 +331,19 @@ bool selectionSupportsShading()
     return false;
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+bool canAssignMaterialToNodeType(const Ufe::SceneItem::Ptr& sceneItem)
+{
+    int     allowMaterialFunctions = 0;
+    MString script;
+    script.format(
+        "mayaUsdMaterialBindings \"^1s\" -canAssignMaterialToNodeType true",
+        Ufe::PathString::string(sceneItem->path()).c_str());
+    MGlobal::executeCommand(script, allowMaterialFunctions);
+    return (allowMaterialFunctions != 0);
+}
+#endif // UFE_V4_FEATURES_AVAILABLE
+
 #ifdef UFE_V3_FEATURES_AVAILABLE
 
 void executeEditAsMaya(const Ufe::Path& path)
@@ -252,8 +357,16 @@ void executeEditAsMaya(const Ufe::Path& path)
     MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ true);
 }
 
+void executeEditAsMayaOptions(const Ufe::Path& path)
+{
+    // The edit as maya command name.
+    const char editAsMayaOptionsCommand[] = "mayaUsdMenu_EditAsMayaDataOptions";
+    MString    script;
+    script.format("^1s \"^2s\"", editAsMayaOptionsCommand, Ufe::PathString::string(path).c_str());
+    WaitCursor wait;
+    MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ true);
+}
 #endif
-
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -278,12 +391,15 @@ MayaUsdContextOps::Ptr MayaUsdContextOps::create(const UsdSceneItem::Ptr& item)
 
 Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPath& itemPath) const
 {
+    if (isBulkEdit())
+        return getBulkItems(itemPath);
+
     // Get the items from our base class.
-    const auto baseItems = UsdUfe::UsdContextOps::getItems(itemPath);
+    const auto baseItems = Parent::getItems(itemPath);
 
     Ufe::ContextOps::Items items;
     if (itemPath.empty()) {
-        if (fItem->prim().IsA<UsdShadeMaterial>() && selectionSupportsShading()) {
+        if (_item->prim().IsA<UsdShadeMaterial>() && selectionSupportsShading()) {
             items.emplace_back(kBindMaterialToSelectionItem, kBindMaterialToSelectionLabel);
             items.emplace_back(Ufe::ContextItem::kSeparator);
         }
@@ -295,8 +411,14 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
         const bool isMayaRef = (prim().GetTypeName() == TfToken("MayaReference"));
-        if (!fIsAGatewayType && PrimUpdaterManager::getInstance().canEditAsMaya(path())) {
+        if (!_isAGatewayType && PrimUpdaterManager::getInstance().canEditAsMaya(path())) {
             items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
+
+            Ufe::ContextItem item(kEditAsMayaOptionsItem, kEditAsMayaOptionsLabel);
+#if (UFE_PREVIEW_VERSION_NUM >= 5007)
+            item.setMetaData(Ufe::ContextItem::kIsOptionBox, true);
+#endif
+            items.emplace_back(item);
             if (!isMayaRef) {
                 items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
             }
@@ -310,22 +432,17 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
         // Add the items from our base class here
         items.insert(items.end(), baseItems.begin(), baseItems.end());
 
-        if (!fIsAGatewayType) {
+        if (!_isAGatewayType) {
             items.emplace_back(kAddRefOrPayloadItem, kAddRefOrPayloadLabel);
             items.emplace_back(kClearAllRefsOrPayloadsItem, kClearAllRefsOrPayloadsLabel);
         }
-        if (!fIsAGatewayType) {
+        if (!_isAGatewayType) {
             // Top level item - Bind/unbind existing materials
             bool materialSeparatorsAdded = false;
-            int  allowMaterialFunctions = 0;
+            bool allowMaterialFunctions = false;
 #ifdef UFE_V4_FEATURES_AVAILABLE
-            MString script;
-            script.format(
-                "mayaUsdMaterialBindings \"^1s\" -canAssignMaterialToNodeType true",
-                Ufe::PathString::string(fItem->path()).c_str());
-            MGlobal::executeCommand(script, allowMaterialFunctions);
-
-            if (allowMaterialFunctions && sceneItemSupportsShading(fItem)) {
+            allowMaterialFunctions = canAssignMaterialToNodeType(_item);
+            if (allowMaterialFunctions && sceneItemSupportsShading(_item)) {
                 if (!materialSeparatorsAdded) {
                     items.emplace_back(Ufe::ContextItem::kSeparator);
                     materialSeparatorsAdded = true;
@@ -337,9 +454,10 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
 
                 // Only show this option if we actually have materials in the stage.
                 MStringArray materials;
+                MString      script;
                 script.format(
                     "mayaUsdGetMaterialsInStage \"^1s\"",
-                    Ufe::PathString::string(fItem->path()).c_str());
+                    Ufe::PathString::string(_item->path()).c_str());
                 MGlobal::executeCommand(script, materials);
                 if (materials.length() > 0) {
                     items.emplace_back(
@@ -349,8 +467,8 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
                 }
             }
 #endif
-            if (allowMaterialFunctions && fItem->prim().HasAPI<UsdShadeMaterialBindingAPI>()) {
-                UsdShadeMaterialBindingAPI bindingAPI(fItem->prim());
+            if (allowMaterialFunctions && _item->prim().HasAPI<UsdShadeMaterialBindingAPI>()) {
+                UsdShadeMaterialBindingAPI bindingAPI(_item->prim());
                 // Show unbind menu item if there is a direct binding relationship:
                 auto directBinding = bindingAPI.GetDirectBinding();
                 if (directBinding.GetMaterial()) {
@@ -364,7 +482,7 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
                 }
             }
 #ifdef UFE_V4_FEATURES_AVAILABLE
-            if (UsdUndoAddNewMaterialCommand::CompatiblePrim(fItem)) {
+            if (UsdUndoAddNewMaterialCommand::CompatiblePrim(_item)) {
                 if (!materialSeparatorsAdded) {
                     items.emplace_back(Ufe::ContextItem::kSeparator);
                     materialSeparatorsAdded = true;
@@ -379,8 +497,8 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
         items.insert(items.end(), baseItems.begin(), baseItems.end());
 
         if (itemPath[0] == BindMaterialUndoableCommand::commandName) {
-            if (fItem) {
-                auto prim = fItem->prim();
+            if (_item) {
+                auto prim = _item->prim();
                 if (prim) {
                     // Find materials in the global selection. Either directly selected or a direct
                     // child of the selection:
@@ -415,80 +533,54 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
             }
 #ifdef UFE_V4_FEATURES_AVAILABLE
         } else if (itemPath[0] == kAssignNewMaterialItem || itemPath[0] == kAddNewMaterialItem) {
-            std::multimap<std::string, MString> renderersAndMaterials;
-            MStringArray                        materials;
-            MGlobal::executeCommand("mayaUsdGetMaterialsFromRenderers", materials);
-
-            for (const auto& materials : materials) {
-                // Expects a string in the format "renderer/Material Name|Material Identifier".
-                MStringArray rendererAndMaterial;
-                MStatus      status = materials.split('/', rendererAndMaterial);
-                if (status == MS::kSuccess && rendererAndMaterial.length() == 2) {
-                    renderersAndMaterials.emplace(
-                        std::string(rendererAndMaterial[0].asChar()), rendererAndMaterial[1]);
-                }
-            }
-
-            if (itemPath.size() == 1u) {
-                // Populate list of known renderers (first menu level).
-                for (auto it = renderersAndMaterials.begin(), end = renderersAndMaterials.end();
-                     it != end;
-                     it = renderersAndMaterials.upper_bound(it->first)) {
-                    items.emplace_back(it->first, it->first, Ufe::ContextItem::kHasChildren);
-                }
-            } else if (itemPath.size() == 2u) {
-                // Populate list of materials for a given renderer (second menu level).
-                const auto range = renderersAndMaterials.equal_range(itemPath[1]);
-                for (auto it = range.first; it != range.second; ++it) {
-                    MStringArray materialAndIdentifier;
-                    // Expects a string in the format "Material Name|MaterialIdentifer".
-                    MStatus status = it->second.split('|', materialAndIdentifier);
-                    if (status == MS::kSuccess && materialAndIdentifier.length() == 2) {
-                        items.emplace_back(
-                            materialAndIdentifier[1].asChar(), materialAndIdentifier[0].asChar());
-                    }
-                }
-            }
+            addNewMaterialItems(itemPath, items);
         } else if (itemPath[0] == kAssignExistingMaterialItem) {
-            std::multimap<std::string, MString> pathsAndMaterials;
-            MStringArray                        materials;
-            MString                             script;
-            script.format(
-                "mayaUsdGetMaterialsInStage \"^1s\"",
-                Ufe::PathString::string(fItem->path()).c_str());
-            MGlobal::executeCommand(script, materials);
-
-            for (const auto& material : materials) {
-                MStringArray pathAndMaterial;
-                // Expects a string in the format "/path1/path2/Material".
-                const int lastSlash = material.rindex('/');
-                if (lastSlash >= 0) {
-                    MString pathToMaterial = material.substring(0, lastSlash);
-                    pathsAndMaterials.emplace(std::string(pathToMaterial.asChar()), material);
-                }
-            }
-
-            if (itemPath.size() == 1u) {
-                // Populate list of paths to materials (first menu level).
-                for (auto it = pathsAndMaterials.begin(), end = pathsAndMaterials.end(); it != end;
-                     it = pathsAndMaterials.upper_bound(it->first)) {
-                    items.emplace_back(it->first, it->first, Ufe::ContextItem::kHasChildren);
-                }
-            } else if (itemPath.size() == 2u) {
-                // Populate list of to materials for given path (second  menu level).
-                const auto range = pathsAndMaterials.equal_range(itemPath[1]);
-                for (auto it = range.first; it != range.second; ++it) {
-                    const int lastSlash = it->second.rindex('/');
-                    if (lastSlash >= 0) {
-                        MString materialName
-                            = it->second.substring(lastSlash + 1, it->second.length() - 1);
-                        items.emplace_back(it->second.asChar(), materialName.asChar());
-                    }
-                }
-            }
+            assignExistingMaterialItems(_item, itemPath, items);
 #endif
         }
     } // Top-level items
+    return items;
+}
+
+Ufe::ContextOps::Items MayaUsdContextOps::getBulkItems(const ItemPath& itemPath) const
+{
+    // Get the items from our base class and append ours to that list.
+    auto items = Parent::getBulkItems(itemPath);
+
+    if (itemPath.empty()) {
+        items.emplace_back(Ufe::ContextItem::kSeparator);
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        // Assign New Material:
+        items.emplace_back(
+            kAssignNewMaterialItem, kAssignNewMaterialLabel, Ufe::ContextItem::kHasChildren);
+
+        // Only show this option if we actually have materials in the stage.
+        MStringArray materials;
+        MString      script;
+        script.format(
+            "mayaUsdGetMaterialsInStage \"^1s\"", Ufe::PathString::string(_item->path()).c_str());
+        MGlobal::executeCommand(script, materials);
+        if (materials.length() > 0) {
+            items.emplace_back(
+                kAssignExistingMaterialItem,
+                kAssignExistingMaterialLabel,
+                Ufe::ContextItem::kHasChildren);
+        }
+#endif
+        items.emplace_back(
+            UnbindMaterialUndoableCommand::commandName, UnbindMaterialUndoableCommand::commandName);
+    } // top-level items
+    else {
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        if (itemPath[0] == kAssignNewMaterialItem) {
+            addNewMaterialItems(itemPath, items);
+        } else if (itemPath[0] == kAssignExistingMaterialItem) {
+            assignExistingMaterialItems(_item, itemPath, items);
+        }
+#endif
+    }
+
     return items;
 }
 
@@ -500,8 +592,11 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
         return nullptr;
     }
 
+    if (isBulkEdit())
+        return doBulkOpCmd(itemPath);
+
     // First check if our base class handles this item.
-    auto cmd = UsdUfe::UsdContextOps::doOpCmd(itemPath);
+    auto cmd = Parent::doOpCmd(itemPath);
     if (cmd)
         return cmd;
 
@@ -534,10 +629,12 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
         if (path.empty())
             return nullptr;
 
-        const bool asRef = UsdMayaUtilFileSystem::wantReferenceCompositionArc();
-        const bool prepend = UsdMayaUtilFileSystem::wantPrependCompositionArc();
+        const std::string primPath = UsdMayaUtilFileSystem::getReferencedPrimPath();
+        const bool        asRef = UsdMayaUtilFileSystem::wantReferenceCompositionArc();
+        const bool        prepend = UsdMayaUtilFileSystem::wantPrependCompositionArc();
         if (asRef) {
-            return std::make_shared<UsdUfe::UsdUndoAddReferenceCommand>(prim(), path, prepend);
+            return std::make_shared<UsdUfe::UsdUndoAddReferenceCommand>(
+                prim(), path, primPath, prepend);
         } else {
             Ufe::UndoableCommand::Ptr preloadCmd;
             const bool                preload = UsdMayaUtilFileSystem::wantPayloadLoaded();
@@ -548,8 +645,8 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
                 preloadCmd = std::make_shared<UsdUfe::UsdUndoUnloadPayloadCommand>(prim());
             }
 
-            auto payloadCmd
-                = std::make_shared<UsdUfe::UsdUndoAddPayloadCommand>(prim(), path, prepend);
+            auto payloadCmd = std::make_shared<UsdUfe::UsdUndoAddPayloadCommand>(
+                prim(), path, primPath, prepend);
 
             auto compoCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
             compoCmd->append(preloadCmd);
@@ -558,9 +655,9 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
             return compoCmd;
         }
     } else if (itemPath[0] == kClearAllRefsOrPayloadsItem) {
-        if (fItem->path().empty())
+        if (_item->path().empty())
             return nullptr;
-        MString itemName = fItem->path().back().string().c_str();
+        MString itemName = _item->path().back().string().c_str();
 
         MString cmd;
         cmd.format(
@@ -591,6 +688,8 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
 #ifdef UFE_V3_FEATURES_AVAILABLE
     else if (itemPath[0] == kEditAsMayaItem) {
         executeEditAsMaya(path());
+    } else if (itemPath[0] == kEditAsMayaOptionsItem) {
+        executeEditAsMayaOptions(path());
     } else if (itemPath[0] == kDuplicateAsMayaItem) {
         MString script;
         script.format(
@@ -610,53 +709,107 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
     }
 #endif
     else if (itemPath[0] == BindMaterialUndoableCommand::commandName) {
-        return std::make_shared<BindMaterialUndoableCommand>(fItem->path(), SdfPath(itemPath[1]));
+        return std::make_shared<BindMaterialUndoableCommand>(_item->path(), SdfPath(itemPath[1]));
     } else if (itemPath[0] == kBindMaterialToSelectionItem) {
         std::shared_ptr<Ufe::CompositeUndoableCommand> compositeCmd;
         if (auto globalSn = Ufe::GlobalSelection::get()) {
             for (auto&& selItem : *globalSn) {
-                if (BindMaterialUndoableCommand::CompatiblePrim(selItem)) {
+                if (sceneItemSupportsShading(selItem)) {
                     if (!compositeCmd) {
                         compositeCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
                     }
                     compositeCmd->append(std::make_shared<BindMaterialUndoableCommand>(
-                        selItem->path(), fItem->prim().GetPath()));
+                        selItem->path(), _item->prim().GetPath()));
                 }
             }
         }
         return compositeCmd;
     } else if (itemPath[0] == UnbindMaterialUndoableCommand::commandName) {
-        return std::make_shared<UnbindMaterialUndoableCommand>(fItem->path());
+        return std::make_shared<UnbindMaterialUndoableCommand>(_item->path());
 #ifdef UFE_V4_FEATURES_AVAILABLE
     } else if (itemPath.size() == 3u && itemPath[0] == kAssignNewMaterialItem) {
-        // Make a copy so that we don't change the user's original selection.
-        Ufe::Selection sceneItems(*Ufe::GlobalSelection::get());
-        // As per UX' wishes, we add the item that was right-clicked,
-        // regardless of its selection state.
-        sceneItems.append(fItem);
-        if (sceneItems.size() > 0u) {
-            return std::make_shared<InsertChildAndSelectCommand>(
-                UsdUndoAssignNewMaterialCommand::create(sceneItems, itemPath[2]));
-        }
+        // In single context item mode, only assign material to the context item.
+        return std::make_shared<InsertChildAndSelectCommand>(
+            UsdUndoAssignNewMaterialCommand::create(_item, itemPath[2]));
     } else if (itemPath.size() == 3u && itemPath[0] == kAddNewMaterialItem) {
         return std::make_shared<InsertChildAndSelectCommand>(
-            UsdUndoAddNewMaterialCommand::create(fItem, itemPath[2]));
+            UsdUndoAddNewMaterialCommand::create(_item, itemPath[2]));
     } else if (itemPath.size() == 3u && itemPath[0] == kAssignExistingMaterialItem) {
-        std::shared_ptr<Ufe::CompositeUndoableCommand> compositeCmd;
-        Ufe::Selection                                 sceneItems(*Ufe::GlobalSelection::get());
-        sceneItems.append(fItem);
-        for (auto& sceneItem : sceneItems) {
-            if (BindMaterialUndoableCommand::CompatiblePrim(sceneItem)) {
-                if (!compositeCmd) {
-                    compositeCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
-                }
-                compositeCmd->append(std::make_shared<BindMaterialUndoableCommand>(
-                    sceneItem->path(), SdfPath(itemPath[2])));
-            }
-        }
-        return compositeCmd;
+        // In single context item mode, only assign material to the context item.
+        return std::make_shared<BindMaterialUndoableCommand>(_item->path(), SdfPath(itemPath[2]));
 #endif
     }
+    return nullptr;
+}
+
+Ufe::UndoableCommand::Ptr MayaUsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
+{
+    // First check if our base class handles this item.
+    auto cmd = Parent::doBulkOpCmd(itemPath);
+    if (cmd)
+        return cmd;
+
+    // List for the commands created (for CompositeUndoableCommand). If list
+    // is empty return nullptr instead so nothing will be executed.
+    std::list<Ufe::CompositeUndoableCommand::Ptr> cmdList;
+
+#ifdef DEBUG
+    auto DEBUG_OUTPUT = [&cmdList](const Ufe::Selection& bulkItems) {
+        TF_STATUS(
+            "Performing bulk edit on %d prims (%d selected)", cmdList.size(), bulkItems.size());
+    };
+#else
+#define DEBUG_OUTPUT(x) (void)0
+#endif
+
+    auto compositeCmdReturn = [&cmdList](const Ufe::Selection& bulkItems) {
+        DEBUG_OUTPUT(bulkItems);
+        return !cmdList.empty() ? std::make_shared<Ufe::CompositeUndoableCommand>(cmdList)
+                                : nullptr;
+    };
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    if ((itemPath.size() == 3u) && (itemPath[0] == kAssignNewMaterialItem)) {
+        // In the bulk edit mode, we only apply the action to the selected
+        // items (not adding the item RMB if its outside the selection).
+        return std::make_shared<InsertChildAndSelectCommand>(
+            UsdUndoAssignNewMaterialCommand::create(_bulkItems, itemPath[2]));
+    } else if (itemPath.size() == 3u && itemPath[0] == kAssignExistingMaterialItem) {
+        for (auto& selItem : _bulkItems) {
+            // The BindMaterialUndoableCommand will throw if given a prim type
+            // it cannot handle. Don't let any exception escape here.
+            try {
+                if (sceneItemSupportsShading(selItem)) {
+                    cmdList.emplace_back(std::make_shared<BindMaterialUndoableCommand>(
+                        selItem->path(), SdfPath(itemPath[2])));
+                }
+            } catch (std::exception&) {
+                // Do nothing
+            }
+        }
+        return compositeCmdReturn(_bulkItems);
+    }
+#endif
+
+    if (itemPath[0] == UnbindMaterialUndoableCommand::commandName) {
+        for (auto& selItem : _bulkItems) {
+            // Only execute this menu item on items that have a direct binding relationship.
+            UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(selItem);
+            if (usdItem) {
+                auto prim = usdItem->prim();
+                if (prim.HasAPI<UsdShadeMaterialBindingAPI>()) {
+                    UsdShadeMaterialBindingAPI bindingAPI(prim);
+                    auto                       directBinding = bindingAPI.GetDirectBinding();
+                    if (directBinding.GetMaterial()) {
+                        auto cmd = std::make_shared<UnbindMaterialUndoableCommand>(selItem->path());
+                        cmdList.emplace_back(cmd);
+                    }
+                }
+            }
+        }
+        return compositeCmdReturn(_bulkItems);
+    }
+
     return nullptr;
 }
 

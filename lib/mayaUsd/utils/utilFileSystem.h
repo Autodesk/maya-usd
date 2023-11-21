@@ -128,6 +128,43 @@ MAYAUSD_CORE_PUBLIC
 std::string
 getPathRelativeToLayerFile(const std::string& fileName, const PXR_NS::SdfLayerHandle& layer);
 
+/*! \brief Marks a certain file path inside the layer to be made relative in a postponed fashion.
+The marked file paths will be turned into relative paths upon calling updatePostponedRelativePaths.
+ */
+MAYAUSD_CORE_PUBLIC
+void markPathAsPostponedRelative(
+    const PXR_NS::SdfLayerHandle& layer,
+    const std::string&            contentPath);
+
+/*! \brief Unmarks file path which was marked through the call to markPathAsPostponedRelative.
+ */
+MAYAUSD_CORE_PUBLIC
+void unmarkPathAsPostponedRelative(
+    const PXR_NS::SdfLayerHandle& layer,
+    const std::string&            contentPath);
+
+/*! \brief Performs handling of a USD asset path attribute that maybe relative to a layer.
+Whether the file path is required to be relative is defined by the optionvar which name is supplied
+through 'optionVarName' variable. If the relative file path is required and the layer is saved on
+disk (not anonymous) then the function returns the appropriate relative path. If the relative file
+path is required and the layer is anonymous (not saved on disk) then the function returns the
+absolute path and this path is registered to be made relative in a postponed fashion. Otherwise the
+function returns the absolute path.
+ */
+MAYAUSD_CORE_PUBLIC
+std::string handleAssetPathThatMaybeRelativeToLayer(
+    std::string                   fileName,
+    const std::string&            attrName,
+    const PXR_NS::SdfLayerHandle& layer,
+    const std::string&            optionVarName);
+
+/*! \brief Turns the file paths marked through the call 'markPathAsPostponedRelative' to relative.
+ */
+MAYAUSD_CORE_PUBLIC
+void updatePostponedRelativePaths(
+    const PXR_NS::SdfLayerHandle& layer,
+    const std::string&            layerFileName);
+
 /*! \brief returns the flag specifying whether USD file paths should be saved as relative to Maya
  * scene file
  */
@@ -148,6 +185,11 @@ bool wantPrependCompositionArc();
  */
 MAYAUSD_CORE_PUBLIC
 bool wantPayloadLoaded();
+
+/*! \brief returns the prim path referenced by the USD reference or payload.
+ */
+MAYAUSD_CORE_PUBLIC
+std::string getReferencedPrimPath();
 
 /*! \brief prepares the UI used to save layers, so that the UI can potentially make the
            selected file name relative to the given directory.

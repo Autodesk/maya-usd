@@ -36,6 +36,7 @@ static bool _Boolean(const VtDictionary& userArgs, const TfToken& key)
 
 UsdMayaPrimUpdaterArgs::UsdMayaPrimUpdaterArgs(const VtDictionary& userArgs)
     : _copyOperation(_Boolean(userArgs, UsdMayaPrimUpdaterArgsTokens->copyOperation))
+    , _ignoreVariants(_Boolean(userArgs, UsdMayaPrimUpdaterArgsTokens->ignoreVariants))
 {
 }
 
@@ -50,7 +51,10 @@ const VtDictionary& UsdMayaPrimUpdaterArgs::getDefaultDictionary()
 {
     static VtDictionary   d;
     static std::once_flag once;
-    std::call_once(once, []() { d[UsdMayaPrimUpdaterArgsTokens->copyOperation] = false; });
+    std::call_once(once, []() {
+        d[UsdMayaPrimUpdaterArgsTokens->copyOperation] = false;
+        d[UsdMayaPrimUpdaterArgsTokens->ignoreVariants] = false;
+    });
 
     return d;
 }

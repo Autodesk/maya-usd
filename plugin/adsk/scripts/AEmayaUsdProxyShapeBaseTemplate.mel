@@ -4,7 +4,7 @@ global proc AEmayaUsdProxyShapeInfoNew(string $input)
                  -ann `getMayaUsdString("kRootLayerAnn")`
                  mayaUsdProxyShapeRootLayer;
 
-    textFieldGrp -label `getMayaUsdString("kDefaultPrim")` -editable 0
+    optionMenuGrp -label `getMayaUsdString("kDefaultPrim")`
                  -ann `getMayaUsdString("kDefaultPrimAnn")`
                  mayaUsdProxyShapeDefaultPrim;
 
@@ -20,12 +20,47 @@ global proc string AEmayaUsdProxyShapeInfoChanged(string $input)
 
     // Call python helpers to get the info we want to display.
     string $rootLayer   = `python("import AETemplateHelpers; AETemplateHelpers.GetRootLayerName('" + $fullNodeName + "')")`;
-    string $defaultPrim = `python("import AETemplateHelpers; AETemplateHelpers.GetDefaultPrimName('" + $fullNodeName + "')")`;
 
     textFieldGrp -edit -text $rootLayer mayaUsdProxyShapeRootLayer;
-    textFieldGrp -edit -text $defaultPrim mayaUsdProxyShapeDefaultPrim;
+    mayaUsd_DefaultPrimInit($fullNodeName);
 
     return $fullNodeName;
+}
+
+global proc mayaUsd_DefaultPrimInit(string $fullNodeName)
+{
+    string $defaultPrim = `python("import AETemplateHelpers; AETemplateHelpers.GetDefaultPrimName('" + $fullNodeName + "')")`;
+    string $allRootPrims[] = `python("import AETemplateHelpers; AETemplateHelpers.GetAllRootPrimNamesNaturalOrder('" + $fullNodeName + "')")`;
+
+    optionMenuGrp -edit -deleteAllItems -changeCommand ("mayaUsd_DefaultPrimChanged(\"" + $fullNodeName + "\"\)") mayaUsdProxyShapeDefaultPrim;
+    string $menuName = `optionMenuGrp -q -fullPathName mayaUsdProxyShapeDefaultPrim`;
+    int $index = 2; // starts at 2 because the first one is always empty
+        menuItem -parent ($menuName + "|OptionMenu") -l "" -ann "Clear default prim";
+        int $found = 0;
+        for($name in $allRootPrims){
+            menuItem -parent ($menuName + "|OptionMenu") -l $name;
+            if($name == $defaultPrim){
+                $found = 1;
+            }
+            if($found == 0){
+                $index ++;
+            }
+        }
+    if ($defaultPrim == ""){
+        $index = 1;
+    }
+    optionMenuGrp -e -select $index mayaUsdProxyShapeDefaultPrim;
+}
+
+global proc mayaUsd_DefaultPrimChanged(string $fullNodeName)
+{
+    string $primName = `optionMenuGrp -q -value mayaUsdProxyShapeDefaultPrim`;
+    int $result = `python("import AETemplateHelpers; AETemplateHelpers.SetDefaultPrim('" + $fullNodeName + "', primName ='" + $primName + "')")`;
+    // On failure, we re-initialize the UI since the command failed
+    // and thus we need to restore the previous UI state.
+    if ($result == 0) {
+        mayaUsd_DefaultPrimInit($fullNodeName);
+    }
 }
 
 global proc AEmayaUsdProxyShapeInfoReplace(string $input)

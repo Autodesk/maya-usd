@@ -101,13 +101,7 @@ def createUfePathSegment(mayaPath):
         Returns :
             PathSegment of the given mayaPath
     """
-    if ufeUtils.ufeFeatureSetVersion() >= 2:
-        return ufe.PathString.path(mayaPath).segments[0]
-    else:
-        if not mayaPath.startswith("|world"):
-            mayaPath = "|world" + mayaPath
-        return ufe.PathSegment(mayaPath, mayaUsdUfe.getMayaRunTimeId(),
-            mayaSeparator)
+    return ufe.PathString.path(mayaPath).segments[0]
 
 def getMayaSelectionList():
     """ 
@@ -259,11 +253,15 @@ def createSingleSphereMayaScene(directory=None):
 def previewReleaseVersion():
     '''Return the Maya Preview Release version.
 
-    If the version of Maya is 2019, returns 98.
+    If the version of Maya is 2019, returns 98 (no longer supported).
 
-    If the version of Maya is 2020, returns 110.
+    If the version of Maya is 2020, returns 110 (no longer supported).
 
     If the version of Maya is 2022, returns 122.
+
+    If the version of Maya is 2023, returns 132.
+
+    If the version of Maya is 2024, returns 142.
 
     If the version of Maya is current and is not a Preview Release, returns
     sys.maxsize (a very large number).  If the environment variable
@@ -282,6 +280,8 @@ def previewReleaseVersion():
         return 122
     elif majorVersion == 2023:
         return 132
+    elif majorVersion == 2024:
+        return 142
 
     match = prRe.match(cmds.about(v=True))
 

@@ -48,7 +48,7 @@ endif()
 target_compile_definitions(${TARGET_NAME}
     PRIVATE
         MAYAUSD_PLUGIN_EXPORT
-        $<$<OR:$<BOOL:${Qt5_FOUND}>,$<BOOL:${Qt6_FOUND}>>:WANT_QT_BUILD>
+		$<$<BOOL:${Qt_FOUND}>:WANT_QT_BUILD>
 )
 
 if(DEFINED MAYAUSD_VERSION)
@@ -77,7 +77,7 @@ target_link_libraries(${TARGET_NAME}
         basePxrUsdPreviewSurface
 )
 
-if (Qt5_FOUND OR Qt6_FOUND)
+if (Qt_FOUND)
     target_link_libraries(${TARGET_NAME}
         PRIVATE
             mayaUsdUI

@@ -39,11 +39,7 @@ class MayaUsdSchemasMayaReferenceTestCase(unittest.TestCase):
 
         mayaReferenceOut = mayaUsdSchemas.MayaReference(primOut)
         self.assertTrue(mayaReferenceOut.GetPrim())
-        if Usd.GetVersion() > (0, 20, 2):
-            typeName = Usd.SchemaRegistry().GetSchemaTypeName(
-                mayaReferenceOut._GetStaticTfType())
-        else:
-            typeName = mayaReferenceOut.GetSchemaClassPrimDefinition().typeName
+        typeName = Usd.SchemaRegistry().GetSchemaTypeName(mayaReferenceOut._GetStaticTfType())
         self.assertEqual(typeName, 'MayaReference')
 
         mayaReferenceAttr = primOut.CreateAttribute('mayaReference', Sdf.ValueTypeNames.Asset)

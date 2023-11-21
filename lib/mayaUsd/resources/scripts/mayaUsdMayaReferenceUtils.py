@@ -16,6 +16,7 @@
 
 import maya.cmds as cmds
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
+from pxr import Sdf
 
 # These names should not be localized as Usd only accepts [a-z,A-Z] as valid characters.
 kDefaultMayaReferencePrimName = 'MayaReference1'
@@ -25,14 +26,16 @@ kDefaultVariantName = 'MayaReference'
 compositionArcKey = 'compositionArc'
 compositionArcPayload = 'Payload'
 compositionArcReference = 'Reference'
-_compositionArcValues = [compositionArcPayload, compositionArcReference]
+_compositionArcValues = [compositionArcReference, compositionArcPayload]
 
-listEditTypeKey = ''
+listEditTypeKey = 'listEditType'
 listEditTypePrepend = 'Prepend'
 listEditTypeAppend = 'Append'
 _listEditedAsValues = [listEditTypePrepend, listEditTypeAppend]
 
 loadPayloadKey = 'loadPayload'
+
+referencedPrimPathKey = 'referencedPrimPath'
 
 def defaultMayaReferencePrimName():
     return kDefaultMayaReferencePrimName
@@ -118,14 +121,97 @@ def _compositionArcChanged(selectedItem):
     enableLoadPayload = bool(compositionArc == compositionArcPayload)
     cmds.checkBoxGrp('loadPayload', edit=True, enable=enableLoadPayload)
 
-def createUsdRefOrPayloadUI(showLoadPayload=False):
+def _selectReferencedPrim(*args):
+    """
+    Open a dialog to select a prim from the currently selected file
+    to be the referenced prim.
+    """
+    filename = _getCurrentFilename()
+    primPath = cmds.textFieldGrp('mayaUsdAddRefOrPayloadPrimPath', query=True, text=True)
+    title = getMayaUsdLibString('kAddRefOrPayloadPrimPathTitle')
+    helpLabel = getMayaUsdLibString('kAddRefOrPayloadPrimPathHelpLabel')
+    helpToken = 'UsdAddReferenceConfig'
+    result = cmds.usdImportDialog(filename, hideVariants=True, hideRoot=True, primPath=primPath, title=title, helpLabel=helpLabel, helpToken=helpToken)
+    if result:
+        primPath = cmds.usdImportDialog(query=True, primPath=True)
+        cmds.textFieldGrp('mayaUsdAddRefOrPayloadPrimPath', edit=True, text=primPath)
+    cmds.usdImportDialog(clearData=True)
+
+_currentFileName = None
+
+def _setCurrentFilename(filename):
+    """Sets the current file selection."""
+    global _currentFileName
+    _currentFileName = filename
+
+def _getCurrentFilename():
+    """Retrieve the current file selection."""
+    global _currentFileName
+    return _currentFileName
+
+def _resetReferencedPrim(*args):
+    """Reset the referenced prim UI"""
+    _updateReferencedPrimBasedOnFile()
+
+# Note: we are disabling the default prim filling due to the long delay when the USD
+#       file is very large.
+#
+# def _getDefaultAndRootPrims(filename):
+#     """Retrieve the default and first root prims of a USD file."""
+#     defPrim, rootPrim = None, None
+#     try:
+#         layer = Sdf.Layer.FindOrOpen(filename)
+#         if layer:
+#             # Note: the root prims at the USD layer level are SdfPrimSpec,
+#             #       so they are not SdfPath themselves nor prim. That is
+#             #       why their path is retrieved via their path property.
+#             #
+#             #       The default prim is a pure token though, because it is
+#             #       a metadata on the layer, so it can be used as-is.
+#             rootPrims = layer.rootPrims
+#             rootPrim = rootPrims[0].path if len(rootPrims) > 0 else None
+#             defPrim = layer.defaultPrim
+#     except Exception as ex:
+#         print(str(ex))
+#
+#     return defPrim, rootPrim
+
+def _updateReferencedPrimBasedOnFile():
+    """Update all UI related to the referenced prim based on the currently selected file."""
+    filename = _getCurrentFilename()
+    if not filename:
+        cmds.textFieldGrp('mayaUsdAddRefOrPayloadPrimPath', edit=True, text='', placeholderText='')
+        cmds.textFieldGrp('mayaUsdAddRefOrPayloadPrimPath', edit=True, enable=False)
+        cmds.button('mayaUsdAddRefOrPayloadFilePathBrowser', edit=True, enable=False)
+        cmds.symbolButton('mayaUsdAddRefOrPayloadFilePathReset', edit=True, enable=False)
+        return
+
+    cmds.textFieldGrp('mayaUsdAddRefOrPayloadPrimPath', edit=True, enable=True)
+    cmds.button('mayaUsdAddRefOrPayloadFilePathBrowser', edit=True, enable=True)
+    cmds.symbolButton('mayaUsdAddRefOrPayloadFilePathReset', edit=True, enable=True)
+
+    # Note: we are disabling the default prim filling due to the long delay when the USD
+    #       file is very large.
+    #
+    # defaultPrim, rootPrim = _getDefaultAndRootPrims(filename)
+    # if defaultPrim:
+    #     placeHolder = defaultPrim + getMayaUsdLibString('kAddRefOrPayloadPrimPathPlaceHolder')
+    #     cmds.textFieldGrp('mayaUsdAddRefOrPayloadPrimPath', edit=True, text='', placeholderText=placeHolder)
+    # elif rootPrim:
+    #     cmds.textFieldGrp('mayaUsdAddRefOrPayloadPrimPath', edit=True, text=rootPrim, placeholderText='')
+    # else:
+    cmds.textFieldGrp('mayaUsdAddRefOrPayloadPrimPath', edit=True, text='', placeholderText='')
+
+def createUsdRefOrPayloadUI(uiForLoad=False):
+    _setCurrentFilename(None)
+
     with SetParentContext(cmds.rowLayout(numberOfColumns=2)):
         tooltip = getMayaUsdLibString('kOptionAsUSDReferenceToolTip')
         cmds.optionMenuGrp('compositionArcTypeMenu',
                            label=getMayaUsdLibString('kOptionAsUSDReference'),
                            annotation=tooltip,
                            statusBarMessage=getMayaUsdLibString('kOptionAsUSDReferenceStatusMsg'))
-        compositionArcLabels = [getMayaUsdLibString('kMenuPayload'), getMayaUsdLibString('kMenuReference')]
+        compositionArcLabels = [getMayaUsdLibString('kMenuReference'),getMayaUsdLibString('kMenuPayload')]
         for label in compositionArcLabels:
             cmds.menuItem(label=label)
         cmds.optionMenu('listEditedAsMenu',
@@ -136,27 +222,48 @@ def createUsdRefOrPayloadUI(showLoadPayload=False):
         for label in listEditedAsLabels:
             cmds.menuItem(label=label)
 
-    if showLoadPayload:
+    if uiForLoad:
+        with SetParentContext(cmds.rowLayout(numberOfColumns=3, adjustableColumn1=True)):
+            tooltip = getMayaUsdLibString('kAddRefOrPayloadPrimPathToolTip')
+            primPathLabel = getMayaUsdLibString("kAddRefOrPayloadPrimPathLabel")
+            selectLabel = getMayaUsdLibString("kAddRefOrPayloadSelectLabel")
+            cmds.textFieldGrp('mayaUsdAddRefOrPayloadPrimPath', label=primPathLabel, ann=tooltip)
+            cmds.button('mayaUsdAddRefOrPayloadFilePathBrowser', label=selectLabel, ann=tooltip)
+            cmds.symbolButton('mayaUsdAddRefOrPayloadFilePathReset', image="refresh.png", ann=tooltip)
+
         cmds.checkBoxGrp('loadPayload',
                          label=getMayaUsdLibString('kOptionLoadPayload'),
                          annotation=getMayaUsdLibString('kLoadPayloadAnnotation'),
                          ncb=1)
 
-def initUsdRefOrPayloadUI(values, showLoadPayload=False):
+def initUsdRefOrPayloadUI(values, uiForLoad=False):
     compositionArcMenuIndex = _getMenuIndex(_compositionArcValues, values[compositionArcKey])
     cmds.optionMenuGrp('compositionArcTypeMenu', edit=True, select=compositionArcMenuIndex)
 
     listEditTypeMenuIndex = _getMenuIndex(_listEditedAsValues,values[listEditTypeKey])
     cmds.optionMenu('listEditedAsMenu', edit=True, select=listEditTypeMenuIndex)
 
-    if showLoadPayload:
+    if uiForLoad:
         cmds.optionMenuGrp('compositionArcTypeMenu', edit=True, cc=_compositionArcChanged)
         _compositionArcChanged(compositionArcMenuIndex)
         cmds.checkBoxGrp('loadPayload', edit=True, value1=values[loadPayloadKey])
 
-def commitUsdRefOrPayloadUI(showLoadPayload=False):
+        cmds.button("mayaUsdAddRefOrPayloadFilePathBrowser", c=_selectReferencedPrim, edit=True)
+        cmds.button("mayaUsdAddRefOrPayloadFilePathReset", c=_resetReferencedPrim, edit=True)
+
+        _updateReferencedPrimBasedOnFile()
+
+def updateUsdRefOrPayloadUI(selectedFile):
+    if selectedFile == _getCurrentFilename():
+        return
+    _setCurrentFilename(selectedFile)
+    _updateReferencedPrimBasedOnFile()
+
+def commitUsdRefOrPayloadUI(uiForLoad=False):
     values = {}
     values[compositionArcKey] = _getMenuGrpValue('compositionArcTypeMenu', _compositionArcValues)
     values[listEditTypeKey  ] = _getMenuValue('listEditedAsMenu', _listEditedAsValues)
-    values[loadPayloadKey   ] = cmds.checkBoxGrp('loadPayload', query=True, value1=True) if showLoadPayload else True
+    values[loadPayloadKey   ] = cmds.checkBoxGrp('loadPayload', query=True, value1=True) if uiForLoad else True
+    values[referencedPrimPathKey] = cmds.textFieldGrp('mayaUsdAddRefOrPayloadPrimPath', query=True, text=True) if uiForLoad else ''
+
     return values

@@ -189,7 +189,7 @@ def setUserSelectedUSDDialogFileFilter(fileFilter):
     
 def wantReferenceCompositionArc():
     opVarName = "mayaUsd_WantReferenceCompositionArc"
-    return cmds.optionVar(exists=opVarName) and cmds.optionVar(query=opVarName)
+    return not cmds.optionVar(exists=opVarName) or cmds.optionVar(query=opVarName)
 
 def saveWantReferenceCompositionArc(want):
     opVarName = "mayaUsd_WantReferenceCompositionArc"
@@ -197,7 +197,7 @@ def saveWantReferenceCompositionArc(want):
 
 def wantPrependCompositionArc():
     opVarName = "mayaUsd_WantPrependCompositionArc"
-    return cmds.optionVar(exists=opVarName) and cmds.optionVar(query=opVarName)
+    return not cmds.optionVar(exists=opVarName) or cmds.optionVar(query=opVarName)
 
 def saveWantPrependCompositionArc(want):
     opVarName = "mayaUsd_WantPrependCompositionArc"
@@ -205,11 +205,21 @@ def saveWantPrependCompositionArc(want):
 
 def wantPayloadLoaded():
     opVarName = "mayaUsd_WantPayloadLoaded"
-    return cmds.optionVar(exists=opVarName) and cmds.optionVar(query=opVarName)
+    return not cmds.optionVar(exists=opVarName) or cmds.optionVar(query=opVarName)
 
 def saveWantPayloadLoaded(want):
     opVarName = "mayaUsd_WantPayloadLoaded"
     cmds.optionVar(iv=(opVarName, want))
+
+def getReferencedPrimPath():
+    opVarName = "mayaUsd_ReferencedPrimPath"
+    if not cmds.optionVar(exists=opVarName):
+        return ''
+    return cmds.optionVar(query=opVarName)
+
+def saveReferencedPrimPath(primPath):
+    opVarName = "mayaUsd_ReferencedPrimPath"
+    cmds.optionVar(sv=(opVarName, primPath))
 
 def showHelpMayaUSD(contentId):
     """

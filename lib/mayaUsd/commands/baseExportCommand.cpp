@@ -222,6 +222,12 @@ MSyntax MayaUSDExportCommand::createSyntax()
         MSyntax::kString);
     syntax.makeFlagMultiUse(UsdMayaJobExportArgsTokens->customLayerData.GetText());
 
+    syntax.addFlag(
+        kExcludeExportTypesFlag,
+        UsdMayaJobExportArgsTokens->excludeExportTypes.GetText(),
+        MSyntax::kString);
+    syntax.makeFlagMultiUse((kExcludeExportTypesFlag));
+
     // These are additional flags under our control.
     syntax.addFlag(
         kMetersPerUnit, UsdMayaJobExportArgsTokens->metersPerUnit.GetText(), MSyntax::kDouble);

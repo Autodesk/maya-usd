@@ -164,6 +164,7 @@ MStatus initialize()
     dccFunctions.timeAccessorFn = MayaUsd::ufe::getTime;
     dccFunctions.isAttributeLockedFn = MayaUsd::Editability::isAttributeLocked;
     dccFunctions.saveStageLoadRulesFn = MayaUsd::MayaUsdProxyShapeStageExtraData::saveLoadRules;
+    dccFunctions.uniqueChildNameFn = MayaUsd::ufe::uniqueChildNameMayaStandard;
 
     // Replace the Maya hierarchy handler with ours.
     auto& runTimeMgr = Ufe::RunTimeMgr::instance();

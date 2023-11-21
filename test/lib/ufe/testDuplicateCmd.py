@@ -45,7 +45,7 @@ def firstSubLayer(context, routingData):
     routingData['layer'] = prim.GetStage().GetRootLayer().subLayerPaths[0]
 
 class DuplicateCmdTestCase(unittest.TestCase):
-    '''Verify the Maya delete command, for multiple runtimes.
+    '''Verify the Maya duplicate command, for multiple runtimes.
 
     UFE Feature : SceneItemOps
     Maya Feature : duplicate
@@ -646,7 +646,136 @@ class DuplicateCmdTestCase(unittest.TestCase):
         rootLayerText = rootLayer.ExportToString()
         self.assertNotIn('"Geom"', rootLayerText)
         self.assertNotIn('Mesh', rootLayerText)
-    
+
+    def testDuplicateUniqueName(self):
+        '''Test the duplicate of prims and ensure the new name follows Maya
+        unique new name standard.'''
+
+        cmds.file(new=True, force=True)
+        import mayaUsd_createStageWithNewLayer
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        stage.DefinePrim('/Xform1', 'Xform')
+        stage.DefinePrim('/Xform1/Cone1', 'Cone')
+
+        # Duplicate the 'Cone1' - new object should be 'Cone2'
+        newObj = cmds.duplicate(psPathStr + ',/Xform1/Cone1')
+        newObjItem = ufe.Hierarchy.createItem(ufe.PathString.path(newObj[0]))
+        self.assertEqual(newObjItem.nodeName(), 'Cone2')
+
+        # Rename the new 'Cone2' to 'Cone5' and then duplicate 'Cone1'.
+        # New prim should be named 'Cone6'. When finding unique name Maya
+        # will look at all nodes that match base name and increment the largest
+        # one (even if there are gaps in numbering).
+        cmds.rename(psPathStr + ',/Xform1/Cone2', 'Cone5')
+        newObj = cmds.duplicate(psPathStr + ',/Xform1/Cone1')
+        newObjItem = ufe.Hierarchy.createItem(ufe.PathString.path(newObj[0]))
+        self.assertEqual(newObjItem.nodeName(), 'Cone6')
+
+        # Rename the new 'Cone6' to 'Cone006' and then duplicate 'Cone1'.
+        # New prim should be named 'Cone007'. This is because we increment
+        # the sibling with the greatest numerical suffix (which is Capsule006).
+        cmds.rename(psPathStr + ',/Xform1/Cone6', 'Cone006')
+        newObj = cmds.duplicate(psPathStr + ',/Xform1/Cone1')
+        newObjItem = ufe.Hierarchy.createItem(ufe.PathString.path(newObj[0]))
+        self.assertEqual(newObjItem.nodeName(), 'Cone007')
+
+        # Start again, this time prim has 0's in name.
+        cmds.file(new=True, force=True)
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        stage.DefinePrim('/Xform1', 'Xform')
+        stage.DefinePrim('/Xform1/Cone001', 'Cone')
+
+        # Duplicate the 'Cone001' - new object should be 'Cone002'
+        newObj = cmds.duplicate(psPathStr + ',/Xform1/Cone001')
+        newObjItem = ufe.Hierarchy.createItem(ufe.PathString.path(newObj[0]))
+        self.assertEqual(newObjItem.nodeName(), 'Cone002')
+
+        # Rename the new 'Cone002' to 'Cone005' and then duplicate 'Cone001'.
+        # New prim should be named 'Cone006'. When finding unique name Maya
+        # will look at all nodes that match base name and increment the largest
+        # one (even if there are gaps in numbering).
+        cmds.rename(psPathStr + ',/Xform1/Cone002', 'Cone005')
+        newObj = cmds.duplicate(psPathStr + ',/Xform1/Cone001')
+        newObjItem = ufe.Hierarchy.createItem(ufe.PathString.path(newObj[0]))
+        self.assertEqual(newObjItem.nodeName(), 'Cone006')
+
+        # Start again, this time with mix of numerical suffix lengths.
+        cmds.file(new=True, force=True)
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        stage.DefinePrim('/Xform1', 'Xform')
+        stage.DefinePrim('/Xform1/Cone1', 'Cone')
+
+        # Duplicate the 'Cone1' - new object should be 'Cone2'
+        newObj = cmds.duplicate(psPathStr + ',/Xform1/Cone1')
+        newObjItem = ufe.Hierarchy.createItem(ufe.PathString.path(newObj[0]))
+        self.assertEqual(newObjItem.nodeName(), 'Cone2')
+
+        # Rename the new 'Cone2' to 'Cone001' and then duplicate 'Cone1.
+        # New prim name should be 'Cone2'
+        cmds.rename(psPathStr + ',/Xform1/Cone2', 'Cone001')
+        newObj = cmds.duplicate(psPathStr + ',/Xform1/Cone1')
+        newObjItem = ufe.Hierarchy.createItem(ufe.PathString.path(newObj[0]))
+        self.assertEqual(newObjItem.nodeName(), 'Cone2')
+
+        # Duplicate 'Cone001', new prim name should be 'Cone3'.
+        newObj = cmds.duplicate(psPathStr + ',/Xform1/Cone001')
+        newObjItem = ufe.Hierarchy.createItem(ufe.PathString.path(newObj[0]))
+        self.assertEqual(newObjItem.nodeName(), 'Cone3')
+
+    def testConnectionWithChangingOrderOfTen(self):
+        '''
+        Test duplicating a prim that has mateiral connections
+        when the new prim name suffix will increase to a new power of ten
+        (ex: 9 > 10), as opposed to having the same suffix length (ex: 4 -> 5).
+
+        The connections should not be lost.
+        '''
+
+        cmds.file(new=True, force=True)
+
+        usdFile = testUtils.getTestScene("dup_material", "dup_material.usda")
+        stageDagPath, usdStage = mayaUtils.createProxyFromFile(usdFile)
+        dupSourceUfePathString = ','.join([stageDagPath, "/rock2"])
+
+        cmds.duplicate(dupSourceUfePathString)
+
+        # Verify that the duplicated item still has connections.
+        destPrim = usdStage.GetPrimAtPath('/rock10')
+        self.assertIsNotNone(destPrim)
+
+        destPrim = usdStage.GetPrimAtPath('/rock10')
+        self.assertIsNotNone(destPrim)
+        self.assertTrue(destPrim)
+
+        prim_paths_and_attr_names = [
+            ('/rock10/mtl/rock_moss_set_01_rock01SG', 'outputs:surface'),
+            ('/rock10/mtl/rock_moss_set_01_rock01SG/standardSurface2', 'inputs:diffuseColor'),
+            ('/rock10/mtl/rock_moss_set_01_rock01SG/standardSurface2', 'inputs:roughness'),
+            ('/rock10/mtl/rock_moss_set_01_rock01SG/standardSurface2', 'inputs:specularColor'),
+            ('/rock10/mtl/rock_moss_set_01_rock01SG/normalmap_texture', 'inputs:st'),
+            ('/rock10/mtl/rock_moss_set_01_rock01SG/place2dTexture3', 'inputs:varname'),
+            ('/rock10/mtl/rock_moss_set_01_rock01SG/base_color_texture', 'inputs:st'),
+            ('/rock10/mtl/rock_moss_set_01_rock01SG/place2dTexture1', 'inputs:varname'),
+            ('/rock10/mtl/rock_moss_set_01_rock01SG/roughness_texture', 'inputs:st'),
+            ('/rock10/mtl/rock_moss_set_01_rock01SG/place2dTexture2', 'inputs:varname'),
+        ]
+
+        for primPath, attrName in prim_paths_and_attr_names:
+            prim = usdStage.GetPrimAtPath(primPath)
+            self.assertIsNotNone(prim)
+            self.assertTrue(prim)
+
+            prop = prim.GetProperty(attrName)
+            self.assertIsNotNone(prop)
+            self.assertTrue(prop)
+            propConnections = prop.GetConnections()
+            self.assertIsNotNone(propConnections)
+            self.assertEqual(len(propConnections), 1)
+            self.assertTrue(str(propConnections[0]).startswith('/rock10/mtl'))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

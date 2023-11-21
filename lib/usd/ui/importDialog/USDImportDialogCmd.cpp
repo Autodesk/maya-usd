@@ -62,6 +62,17 @@ constexpr auto kPrimCountFlagLong = "-primCount";
 constexpr auto kSwitchedVariantCountFlag = "-swc";
 constexpr auto kSwitchedVariantCountFlagLong = "-switchedVariantCount";
 
+constexpr auto kHideRoot = "-hr";
+constexpr auto kHideRootLong = "-hideRoot";
+constexpr auto kHideVariantsFlag = "-hv";
+constexpr auto kHideVariantsFlagLong = "-hideVariants";
+constexpr auto kWindowTitleFlag = "-ti";
+constexpr auto kWindowTitleFlagLong = "-title";
+constexpr auto kHelpLabelFlag = "-hl";
+constexpr auto kHelpLabelFlagLong = "-helpLabel";
+constexpr auto kHelpTokenFlag = "-ht";
+constexpr auto kHelpTokenFlagLong = "-helpToken";
+
 constexpr auto kParentWindowFlag = "-pw";
 constexpr auto kParentWindowFlagLong = "-parentWindow";
 
@@ -81,10 +92,6 @@ QWidget* findParentWindow(const MString& controlName)
             return widget;
         }
     }
-    MString warning;
-    warning.format(
-        "Could not find parent window named ^1s, using Maya main window instead.", controlName);
-    MGlobal::displayWarning(warning);
     return MQtUtil::mainWindow();
 }
 
@@ -160,6 +167,31 @@ MStatus USDImportDialogCmd::applyToProxy(const MString& proxyPath)
     return MS::kSuccess;
 }
 
+static MString getStringArg(const MArgParser& argData, MStatus& status)
+{
+    MStringArray array;
+    status = argData.getObjects(array);
+    if (!status)
+        return {};
+
+    if (array.length() != 1) {
+        status = MS::kInvalidParameter;
+        return {};
+    }
+
+    return array[0].asChar();
+}
+
+static MString getStringFlagArg(const MArgParser& argData, const char* flag)
+{
+    if (!argData.isFlagSet(flag))
+        return {};
+
+    MString value;
+    argData.getFlagArgument(flag, 0, value);
+    return value;
+}
+
 MStatus USDImportDialogCmd::doIt(const MArgList& args)
 {
     MStatus    st;
@@ -199,28 +231,26 @@ MStatus USDImportDialogCmd::doIt(const MArgList& args)
 
     // No command object is expected
     if (argData.isFlagSet(kApplyToProxyFlag)) {
-        MStringArray proxyArray;
-        st = argData.getObjects(proxyArray);
-        if (!st || proxyArray.length() != 1)
-            return MS::kInvalidParameter;
+        MString proxy = getStringArg(argData, st);
+        if (!st)
+            return st;
 
-        return applyToProxy(proxyArray[0]);
+        return applyToProxy(proxy);
     }
 
-    MStringArray filenameArray;
-    st = argData.getObjects(filenameArray);
-    if (st && (filenameArray.length() > 0)) {
+    const MString filename = getStringArg(argData, st);
+    if (st) {
         // We only use the first one.
         MFileObject fo;
         MString     assetPath;
-        fo.setRawFullName(filenameArray[0]);
+        fo.setRawFullName(filename);
         bool validTarget = fo.exists();
         if (!validTarget) {
             // Give the default usd-asset-resolver a chance
-            if (const char* cStr = filenameArray[0].asChar()) {
+            if (const char* cStr = filename.asChar()) {
                 validTarget = !ArGetResolver().Resolve(cStr).empty();
                 if (validTarget)
-                    assetPath = filenameArray[0];
+                    assetPath = filename;
             }
         } else
             assetPath = fo.resolvedFullName();
@@ -229,6 +259,15 @@ MStatus USDImportDialogCmd::doIt(const MArgList& args)
             USDQtUtil   usdQtUtil;
             ImportData& importData = ImportData::instance();
 
+            if (argData.isFlagSet(kPrimPathFlag)) {
+                ImportData& importData = ImportData::instance();
+                importData.setFilename(filename.asChar());
+                // Note: must be done after setting the filename because setting
+                //       the filename clears the data.
+                const MString primPath = getStringFlagArg(argData, kPrimPathFlag);
+                importData.setRootPrimPath(primPath.asChar());
+            }
+
             // Creating the View can pause Maya, usually only briefly but it's noticable, so we'll
             // toggle the wait cursor to show that it's working.
             QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
@@ -236,8 +275,16 @@ MStatus USDImportDialogCmd::doIt(const MArgList& args)
             const MString parentWindowName = parseTextArg(argData, kParentWindowFlag, "");
             QWidget*      parentWindow = findParentWindow(parentWindowName);
 
-            std::unique_ptr<USDImportDialog> usdImportDialog(
-                new USDImportDialog(assetPath.asChar(), &importData, usdQtUtil, parentWindow));
+            USDImportDialogOptions options;
+            options.title = getStringFlagArg(argData, kWindowTitleFlag).asChar();
+            options.helpLabel = getStringFlagArg(argData, kHelpLabelFlag).asChar();
+            options.helpURL = getStringFlagArg(argData, kHelpTokenFlag).asChar();
+            options.showHeaderMessage = !argData.isFlagSet(kHideRoot);
+            options.showRoot = !argData.isFlagSet(kHideRoot);
+            options.showVariants = !argData.isFlagSet(kHideVariantsFlag);
+
+            std::unique_ptr<USDImportDialog> usdImportDialog(new USDImportDialog(
+                assetPath.asChar(), &importData, options, usdQtUtil, parentWindow));
 
             QApplication::restoreOverrideCursor();
 
@@ -269,12 +316,18 @@ MSyntax USDImportDialogCmd::createSyntax()
     MSyntax syntax;
     syntax.enableQuery(true);
     syntax.enableEdit(false);
-    syntax.addFlag(kPrimPathFlag, kPrimPathFlagLong);
+    syntax.addFlag(kPrimPathFlag, kPrimPathFlagLong, MSyntax::kString);
     syntax.addFlag(kClearDataFlag, kClearDataFlagLong);
     syntax.addFlag(kApplyToProxyFlag, kApplyToProxyFlagLong);
     syntax.addFlag(kPrimCountFlag, kPrimCountFlagLong);
     syntax.addFlag(kSwitchedVariantCountFlag, kSwitchedVariantCountFlagLong);
     syntax.addFlag(kParentWindowFlag, kParentWindowFlagLong, MSyntax::kString);
+
+    syntax.addFlag(kHideRoot, kHideRootLong);
+    syntax.addFlag(kHideVariantsFlag, kHideVariantsFlagLong);
+    syntax.addFlag(kWindowTitleFlag, kWindowTitleFlagLong, MSyntax::kString);
+    syntax.addFlag(kHelpLabelFlag, kHelpLabelFlagLong, MSyntax::kString);
+    syntax.addFlag(kHelpTokenFlag, kHelpTokenFlagLong, MSyntax::kString);
 
     syntax.setObjectType(MSyntax::kStringObjects, 0, 1);
     return syntax;

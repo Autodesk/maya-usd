@@ -15,6 +15,7 @@
 
 // global used to store parent layer's directory to be used in usdRootFileRelative.uiInit
 global string $gLayerParentPathUsdLayerEditorSaveFileDialog = "";
+global string $gLayerParentPathUsdLayerEditorLoadFileDialog = "";
 
 ///////////////////////////////////////////////////////////
 //
@@ -164,20 +165,36 @@ global proc UsdLayerEditor_LoadLayersFileDialogOptions_UICreate(string $parent)
 
 global proc UsdLayerEditor_LoadLayersFileDialogOptions_UIInit(string $parent, string $filterType)
 {
-    global string $gLayerParentPathUsdLayerEditorSaveFileDialog;
-    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdSubLayerFileRelative.uiInit('" + $parent + "', '" + $filterType + "',  '" + $gLayerParentPathUsdLayerEditorSaveFileDialog + "')");
+    global string $gLayerParentPathUsdLayerEditorLoadFileDialog;
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdSubLayerFileRelative.uiInit('" + $parent + "', '" + $filterType + "',  '" + $gLayerParentPathUsdLayerEditorLoadFileDialog + "')");
 }
 
 global proc UsdLayerEditor_LoadLayersFileDialogOptions_UICommit(string $parent, string $selectedFile)
 {
+    if ($selectedFile != "") {
+        setLatestLoadStageFolder( dirname($selectedFile) );
+    }
     python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdSubLayerFileRelative.uiCommit('" + $parent + "', '" + $selectedFile + "')");
+}
+
+global proc UsdLayerEditor_LoadLayersFileDialogOptions_SelectionChanged(string $parent, string $selection)
+{
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdSubLayerFileRelative.selectionChanged('" + $parent + "', '" + $selection + "')");
+}
+
+global proc UsdLayerEditor_LoadLayersFileDialogOptions_FileTypeChanged(string $parent, string $newType)
+{
+    python("import mayaUsd_USDRootFileRelative as murel\nmurel.usdSubLayerFileRelative.fileTypeChanged('" + $parent + "', '" + $newType + "')");
 }
 
 global proc string[] UsdLayerEditor_LoadLayersFileDialog(string $title, string $folder)
 {
-    global string $gLayerParentPathUsdLayerEditorSaveFileDialog;
-    $gLayerParentPathUsdLayerEditorSaveFileDialog = $folder;
+    // Always set parent path to empty to hide the file preview
+    global string $gLayerParentPathUsdLayerEditorLoadFileDialog;
+    $gLayerParentPathUsdLayerEditorLoadFileDialog = "";
     
+    string $startingFolder = getLatestLoadStageFolder();
+
     string $fileFilter = python("from mayaUsdUtils import getUSDDialogFileFilters; getUSDDialogFileFilters(False)");
     $okCaption = getMayaUsdString("kLoad");
 
@@ -189,7 +206,9 @@ global proc string[] UsdLayerEditor_LoadLayersFileDialog(string $title, string $
             -optionsUICreate "UsdLayerEditor_LoadLayersFileDialogOptions_UICreate"
             -optionsUIInit "UsdLayerEditor_LoadLayersFileDialogOptions_UIInit"
             -optionsUICommit2 "UsdLayerEditor_LoadLayersFileDialogOptions_UICommit"
-            -startingDirectory $folder
+            -fileTypeChanged "UsdLayerEditor_LoadLayersFileDialogOptions_FileTypeChanged"
+            -selectionChanged "UsdLayerEditor_LoadLayersFileDialogOptions_SelectionChanged"
+            -startingDirectory $startingFolder
             `;
 
     return $result;

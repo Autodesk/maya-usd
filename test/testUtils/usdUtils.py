@@ -43,12 +43,9 @@ def createUfePathSegment(usdPath):
     return ufe.PathSegment(usdPath, mayaUsd.ufe.getUsdRunTimeId(), usdSeparator)
 
 def getPrimFromSceneItem(item):
-    if ufeUtils.ufeFeatureSetVersion() >= 2:
-        rawItem = item.getRawAddress()
-        prim = mayaUsd.ufe.getPrimFromRawItem(rawItem)
-        return prim
-    else:
-        return Usd.Prim()
+    rawItem = item.getRawAddress()
+    prim = mayaUsd.ufe.getPrimFromRawItem(rawItem)
+    return prim
 
 def createAnimatedHierarchy(stage):
     """
@@ -210,7 +207,46 @@ def createDuoXformScene():
             aXlateOp, aXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
             bXlateOp, bXlation, bUsdUfePathStr, bUsdUfePath, bUsdItem)
 
-def createLayeredStage(layersCount = 3):
+def addNewLayersToLayer(parentLayer, layersCount=1, anonymous=False):
+    '''
+    Create multiple new layers under the given layer.
+    Return the list of new layers.
+    '''
+    createdLayers = []
+    for i in range(layersCount):
+        if anonymous:
+            newLayer = Sdf.Layer.CreateAnonymous()
+        else:
+            newLayerName = 'Layer_%d' % (i+1)
+            usdFormat = Sdf.FileFormat.FindByExtension('usd')
+            newLayer = Sdf.Layer.New(usdFormat, newLayerName)
+        parentLayer.subLayerPaths.append(newLayer.identifier)
+        createdLayers.append(newLayer)
+        parentLayer = newLayer
+    return createdLayers
+
+def addNewLayerToLayer(parentLayer, anonymous=False):
+    '''
+    Create a new layer under the given layer.
+    Return the new layer.
+    '''
+    return addNewLayersToLayer(parentLayer, 1, anonymous)[0]
+
+def addNewLayersToStage(stage, layersCount=1, anonymous=False):
+    '''
+    Create multiple new layers under the root layer of a stage.
+    Return the list of new layers.
+    '''
+    return addNewLayersToLayer(stage.GetRootLayer(), layersCount, anonymous)
+
+def addNewLayerToStage(stage, anonymous=False):
+    '''
+    Create a new layer under the root layer of a stage.
+    Return the new layer.
+    '''
+    return addNewLayersToStage(stage, 1, anonymous)[0]
+
+def createLayeredStage(layersCount = 3, anonymous=False):
     '''Create a stage with multiple layers, by default 3 extra layers:
 
     Returns a tuple of:
@@ -222,15 +258,8 @@ def createLayeredStage(layersCount = 3):
     (psPathStr, psPath, ps) = createSimpleStage()
 
     stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
-    layer = stage.GetRootLayer()
-    layers = [layer]
-    for i in range(layersCount):
-        newLayerName = 'Layer_%d' % (i+1)
-        usdFormat = Sdf.FileFormat.FindByExtension('usd')
-        newLayer = Sdf.Layer.New(usdFormat, newLayerName)
-        layer.subLayerPaths.append(newLayer.identifier)
-        layer = newLayer
-        layers.append(layer)
+    rootLayer = stage.GetRootLayer()
+    layers = [rootLayer] + addNewLayersToLayer(rootLayer, layersCount, anonymous)
 
     return (psPathStr, psPath, ps, layers)
 

@@ -90,24 +90,26 @@ void enforceMutedLayer(const PXR_NS::UsdPrim& prim, const char* command);
  *
  * @param prim The prim to be modified.
  * @param func The function to be applied.
+ * @return the number of prim specs that were affected.
  */
 
 using PrimSpecFunc = std::function<void(const PXR_NS::UsdPrim&, const PXR_NS::SdfPrimSpecHandle&)>;
 
 USDUFE_PUBLIC
-void applyToAllPrimSpecs(const PXR_NS::UsdPrim& prim, const PrimSpecFunc& func);
+int applyToAllPrimSpecs(const PXR_NS::UsdPrim& prim, const PrimSpecFunc& func);
 
 /**
  * Apply the given function to all the layers that have an opinion about the given prim.
  *
  * @param prim The prim to be modified.
  * @param func The function to be applied.
+ * @return the number of layers that were affected.
  */
 
 using PrimLayerFunc = std::function<void(const PXR_NS::UsdPrim&, const PXR_NS::SdfLayerRefPtr&)>;
 
 USDUFE_PUBLIC
-void applyToAllLayersWithOpinions(const PXR_NS::UsdPrim& prim, PrimLayerFunc& func);
+int applyToAllLayersWithOpinions(const PXR_NS::UsdPrim& prim, PrimLayerFunc& func);
 
 /**
  * Apply the given function to some of the layers that have an opinion about the given prim.
@@ -116,10 +118,11 @@ void applyToAllLayersWithOpinions(const PXR_NS::UsdPrim& prim, PrimLayerFunc& fu
  * @param prim The prim to be modified.
  * @param layers The set of layers that can be affected if they contain an opinion.
  * @param func The function to be applied.
+ * @return the number of layers that were affected.
  */
 
 USDUFE_PUBLIC
-void applyToSomeLayersWithOpinions(
+int applyToSomeLayersWithOpinions(
     const PXR_NS::UsdPrim&                  prim,
     const std::set<PXR_NS::SdfLayerRefPtr>& layers,
     PrimLayerFunc&                          func);

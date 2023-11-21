@@ -157,11 +157,23 @@ void sendAttributeChanged(
                 notifyWithoutExceptions<Ufe::Camera>(ufePath);
             }
         } else {
+            // Special case when Redo-ing visibility change, the notice.GetChangedInfoOnlyPaths()
+            // does not contain the change, hence handling visibility notification in re-sync path.
+            if (changedToken == UsdGeomTokens->visibility) {
+                Ufe::VisibilityChanged vis(ufePath);
+                notifyWithoutExceptions<Ufe::Object3d>(vis);
+            }
             notifyWithoutExceptions<Ufe::Attributes>(
                 Ufe::AttributeAdded(ufePath, changedToken.GetString()));
         }
     } break;
     case AttributeChangeType::kRemoved: {
+        // Special case when Undoing a visibility change, the notice.GetChangedInfoOnlyPaths()
+        // does not contain the change, hence handling visibility notification in re-sync path.
+        if (changedToken == UsdGeomTokens->visibility) {
+            Ufe::VisibilityChanged vis(ufePath);
+            notifyWithoutExceptions<Ufe::Object3d>(vis);
+        }
         notifyWithoutExceptions<Ufe::Attributes>(
             Ufe::AttributeRemoved(ufePath, changedToken.GetString()));
     } break;
@@ -384,7 +396,7 @@ void StagesSubject::stageChanged(
         const auto& changedPath = *it;
         if (changedPath.IsPrimPropertyPath()) {
             // Special case to detect when an xformop is added or removed from a prim.
-            // We need to send some notifs so DCC can update (such as on undo
+            // We need to send some notifications so DCC can update (such as on undo
             // to move the transform manipulator back to original position).
             const TfToken nameToken = changedPath.GetNameToken();
             auto          usdPrimPathStr = changedPath.GetPrimPath().GetString();
@@ -395,7 +407,9 @@ void StagesSubject::stageChanged(
                     notifyWithoutExceptions<Ufe::Transform3d>(ufePath);
                 }
             }
+
             processAttributeChanges(ufePath, changedPath, it.base()->second);
+
             // No further processing for this prim property path is required.
             continue;
         }
@@ -452,11 +466,19 @@ void StagesSubject::stageChanged(
                         sendObjectAdd(sceneItem);
                         sentNotif = true;
                         break;
-                    } else if (
+                    }
+                    // Note : Do nothing here with didRemoveInertPrim and didRemoveNonInertPrim.
+                    // Indeed, we can get these if prim specs are removed from some layers, but it
+                    // does not mean that the prim is no longer in the composed stage. If the prim
+                    // was actually gone, we would either get an invalid prim (in which case we
+                    // would not even get here, and would send a object destroyed" notif in the else
+                    // below), or we would fall into the "HasInfoChange : Active" case below. If
+                    // nothing else sends a notif in the loop (typically via the info change :
+                    // active) we do not want to send the fallback notif, so act as if a notif was
+                    // sent.
+                    else if (
                         entry->flags.didRemoveInertPrim || entry->flags.didRemoveNonInertPrim) {
-                        sendObjectPostDelete(sceneItem);
                         sentNotif = true;
-                        break;
                     }
 
                     // Special case for "active" metadata.

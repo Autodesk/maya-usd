@@ -103,12 +103,7 @@ class DeleteCmdTestCase(unittest.TestCase):
 
         # Create our UFE notification observer
         ufeObs = TestObserver()
-
-        if ufeUtils.ufeFeatureSetVersion() < 2:
-            ufe.Scene.addObjectDeleteObserver(ufeObs)
-            ufe.Scene.addObjectAddObserver(ufeObs)
-        else:
-            ufe.Scene.addObserver(ufeObs)
+        ufe.Scene.addObserver(ufeObs)
 
         # Select two objects, one Maya, one USD.
         spherePath = ufe.Path(mayaUtils.createUfePathSegment("|pSphere1"))
@@ -203,7 +198,6 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertEqual(ufeObs.nbDeleteNotif(), 4)
         self.assertEqual(ufeObs.nbAddNotif(), 4)
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testDeleteArgs only available in UFE v2 or greater.')
     def testDeleteArgs(self):
         '''Delete Maya and USD objects passed as command arguments.'''
 

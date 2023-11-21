@@ -24,6 +24,7 @@
 #include "qtUtils.h"
 #include "stringResources.h"
 
+#include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
 #include <maya/MQtUtil.h>
@@ -274,9 +275,9 @@ std::string LoadLayersDialog::findDirectoryToUse(const std::string& rowText) con
             item = item->parentLayerItem();
         }
     }
+
     if (path.empty()) {
-        path = QDir::currentPath().toStdString()
-            + "/"; // USD is loading from current working directory when no path is specified.
+        path = UsdMayaUtil::GetCurrentMayaWorkspacePath().asChar();
     }
 
     if (!path.empty()) {
@@ -302,7 +303,7 @@ void LoadLayersDialog::onOpenBrowser()
         return;
 
     // Replace selected filenames with relative ones if enabled.
-    if (requireUsdPathsRelativeToParentLayer()) {
+    if (requireUsdPathsRelativeToParentLayer() && parentLayer && !parentLayer->IsAnonymous()) {
         for (std::string& fileName : files) {
             fileName = getPathRelativeToLayerFile(fileName, parentLayer);
         }

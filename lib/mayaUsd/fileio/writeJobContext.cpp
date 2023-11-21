@@ -387,6 +387,40 @@ bool UsdMayaWriteJobContext::_NeedToTraverse(const MDagPath& curDag) const
         return false;
     }
 
+    // In addition to check for primless, we check for user selection of export types
+    if (!mArgs.excludeExportTypes.empty()) {
+        MDagPath shapeDagPath = curDag;
+        if (mArgs.mergeTransformAndShape) {
+            // if we're merging transforms, then we need to look at the shape.
+            shapeDagPath.extendToShape();
+        }
+
+        MStatus                 status;
+        MObject                 obj = shapeDagPath.node();
+        const MFnDependencyNode depFn(obj, &status);
+        if (!status) {
+            return false;
+        }
+
+        const std::string mayaTypeName(depFn.typeName().asChar());
+
+        if ((mArgs.excludeExportTypes.count(TfToken("Meshes")) != 0)
+            || (mArgs.excludeExportTypes.count(TfToken("meshes")) != 0)) {
+            if (mayaTypeName == "mesh")
+                return false;
+        }
+        if ((mArgs.excludeExportTypes.count(TfToken("Cameras")) != 0)
+            || (mArgs.excludeExportTypes.count(TfToken("camera")) != 0)) {
+            if (mayaTypeName.find("camera") != std::string::npos)
+                return false;
+        }
+        if ((mArgs.excludeExportTypes.count(TfToken("Lights")) != 0)
+            || (mArgs.excludeExportTypes.count(TfToken("light")) != 0)) {
+            if (mayaTypeName.find("Light") != std::string::npos)
+                return false;
+        }
+    }
+
     return true;
 }
 

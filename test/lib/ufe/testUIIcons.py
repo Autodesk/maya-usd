@@ -29,7 +29,7 @@ from pxr import Usd, Tf
 try:
     from shiboken2 import wrapInstance
     from PySide2.QtGui import QIcon
-except:
+except Exception:
     from shiboken6 import wrapInstance
     from PySide6.QtGui import QIcon
 
@@ -115,7 +115,6 @@ class UIIconsTestCase(unittest.TestCase):
             ('NurbsCurves',             'out_USD_UsdGeomCurves.png'),
             ('NurbsPatch',              'out_USD_NurbsPatch.png'),
             ('OpenVDBAsset',            'out_USD_UsdGeomXformable.png'),
-            ('PackedJointAnimation',    'out_USD_SkelAnimation.png'),
             ('PluginLight',             'out_USD_PluginLight.png'),
             ('PluginLightFilter',       'out_USD_LightFilter.png'),
             ('PointInstancer',          'out_USD_PointInstancer.png'),
@@ -146,6 +145,10 @@ class UIIconsTestCase(unittest.TestCase):
                 ('PhysicsRevoluteJoint',    'out_USD_UsdTyped.png'),
                 ('PhysicsScene',            'out_USD_UsdTyped.png'),
                 ('PhysicsSphericalJoint',   'out_USD_UsdTyped.png')
+            ])
+        if usdVer <= (0, 23, 8):
+            primTypes.extend([
+                ('PackedJointAnimation',    'out_USD_SkelAnimation.png')
             ])
 
         # Special case for node types which are in an AL schema.

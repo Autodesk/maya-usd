@@ -31,11 +31,13 @@ namespace MAYAUSD_NS_DEF {
 IUSDImportView::~IUSDImportView() { }
 
 USDImportDialog::USDImportDialog(
-    const std::string&  filename,
-    const ImportData*   importData,
-    const IMayaMQtUtil& mayaQtUtil,
-    QWidget*            parent /*= nullptr*/)
+    const std::string&            filename,
+    const ImportData*             importData,
+    const USDImportDialogOptions& options,
+    const IMayaMQtUtil&           mayaQtUtil,
+    QWidget*                      parent /*= nullptr*/)
     : QDialog { parent }
+    , fOptions(options)
     , fUI { new Ui::ImportDialog() }
     , fStage { UsdStage::Open(filename, UsdStage::InitialLoadSet::LoadAll) }
     , fFilename { filename }
@@ -45,14 +47,20 @@ USDImportDialog::USDImportDialog(
         throw std::invalid_argument("Invalid filename passed to USD Import Dialog");
 
     fUI->setupUi(this);
+    applyOptions();
 
     // If we were given some import data we will only use it if it matches our
     // input filename. In the case where the user opened dialog, clicked Apply and
     // then reopens the dialog we want to reset the dialog to the previous state.
     const ImportData* matchingImportData = nullptr;
-    if ((importData != nullptr) && (fFilename == importData->filename())) {
+    if ((importData != nullptr) && (fFilename == importData->filename())
+        && importData->rootPrimPath().size() > 0) {
         fRootPrimPath = importData->rootPrimPath();
         matchingImportData = importData;
+    } else if (!fOptions.showRoot && fStage) {
+        UsdPrim defPrim = fStage->GetDefaultPrim();
+        if (defPrim.IsValid())
+            fRootPrimPath = defPrim.GetPath().GetAsString();
     }
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
@@ -66,8 +74,8 @@ USDImportDialog::USDImportDialog(
 
     // These calls must come after the UI is initialized via "setupUi()":
     int nbItems = 0;
-    fTreeModel
-        = TreeModelFactory::createFromStage(fStage, mayaQtUtil, matchingImportData, this, &nbItems);
+    fTreeModel = TreeModelFactory::createFromStage(
+        fStage, mayaQtUtil, matchingImportData, fOptions, this, &nbItems);
     fProxyModel = std::unique_ptr<QSortFilterProxyModel>(new QSortFilterProxyModel(this));
     QObject::connect(
         fTreeModel.get(), SIGNAL(checkedStateChanged(int)), this, SLOT(onCheckedStateChanged(int)));
@@ -88,7 +96,7 @@ USDImportDialog::USDImportDialog(
     fProxyModel->setDynamicSortFilter(false);
     fProxyModel->setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
     fUI->treeView->setModel(fProxyModel.get());
-    fUI->treeView->setTreePosition(TreeModel::kTreeColumn_Name);
+    fUI->treeView->setTreePosition(TreeItem::kColumnName);
     fUI->treeView->setAlternatingRowColors(true);
     fUI->treeView->setSelectionMode(QAbstractItemView::SingleSelection);
     QObject::connect(
@@ -133,9 +141,11 @@ USDImportDialog::USDImportDialog(
     constexpr int kTypeWidth = 120;
     constexpr int kNameWidth = 500;
     header->setMinimumSectionSize(kLoadWidth);
-    header->resizeSection(TreeModel::kTreeColumn_Load, kLoadWidth);
-    header->resizeSection(TreeModel::kTreeColumn_Name, kNameWidth);
-    header->resizeSection(TreeModel::kTreeColumn_Type, kTypeWidth);
+    header->resizeSection(TreeItem::kColumnLoad, kLoadWidth);
+    header->resizeSection(TreeItem::kColumnName, kNameWidth);
+    if (fOptions.showVariants) {
+        header->resizeSection(TreeItem::kColumnType, kTypeWidth);
+    }
     header->setSectionResizeMode(0, QHeaderView::Fixed);
 
     // Display the full path of the file to import:
@@ -143,6 +153,23 @@ USDImportDialog::USDImportDialog(
 
     // Make sure the "Import" button is enabled.
     fUI->applyButton->setEnabled(true);
+}
+
+void USDImportDialog::applyOptions()
+{
+    if (fOptions.title.size() > 0) {
+        setWindowTitle(fOptions.title.c_str());
+    }
+
+    if (fOptions.helpLabel.size() > 0) {
+        fUI->actionHelp_on_Hierarchy_View->setText(
+            QCoreApplication::translate("ImportDialog", fOptions.helpLabel.c_str(), nullptr));
+    }
+
+    fUI->nbVariantsChanged->setVisible(fOptions.showVariants);
+    fUI->nbVariantsChangedLabel->setVisible(fOptions.showVariants);
+
+    fUI->selectPrims->setVisible(fOptions.showHeaderMessage);
 }
 
 USDImportDialog::~USDImportDialog()
@@ -212,14 +239,16 @@ void USDImportDialog::onResetFileTriggered()
 {
     if (nullptr != fTreeModel) {
         fTreeModel->resetVariants();
-        fTreeModel->setRootPrimPath("/");
+        fTreeModel->setRootPrimPath(fRootPrimPath);
     }
 }
 
 void USDImportDialog::onHierarchyViewHelpTriggered()
 {
-    MGlobal::executePythonCommand(
-        "from mayaUsdUtils import showHelpMayaUSD; showHelpMayaUSD(\"UsdHierarchyView\");");
+    MString url = fOptions.helpURL.size() > 0 ? fOptions.helpURL.c_str() : "UsdHierarchyView";
+    MString cmd;
+    cmd.format("from mayaUsdUtils import showHelpMayaUSD; showHelpMayaUSD('^1s');", url);
+    MGlobal::executePythonCommand(cmd);
 }
 
 void USDImportDialog::onCheckedStateChanged(int nbChecked)

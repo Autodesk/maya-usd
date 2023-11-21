@@ -661,6 +661,13 @@ void ProxyRenderDelegate::_InitRenderDelegate()
 {
     TF_VERIFY(_proxyShapeData->ProxyShape());
 
+    // Initialize the optionVar ShowDisplayColorTextureOff, which will decide if display color will
+    // be used when untextured mode is selected
+    const MString optionVarName(MayaUsdOptionVars->ShowDisplayColorTextureOff.GetText());
+    if (!MGlobal::optionVarExists(optionVarName)) {
+        MGlobal::setOptionVarValue(optionVarName, 0);
+    }
+
     // No need to run all the checks if we got till the end
     if (_isInitialized())
         return;
@@ -1221,7 +1228,9 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     if (selectionInfo) {
         bool oldSnapToSelectedObjects = _snapToSelectedObjects;
         _snapToSelectedObjects = selectionInfo->snapToActive(&status);
-        TF_VERIFY(status == MStatus::kSuccess);
+        if (status != MStatus::kSuccess) {
+            TF_WARN("Could not snap selected object.");
+        }
         if (_snapToSelectedObjects != oldSnapToSelectedObjects) {
             _selectionModeChanged = true;
         }

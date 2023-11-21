@@ -22,6 +22,7 @@
 #include "render_delegate.h"
 #include "tokens.h"
 
+#include <mayaUsd/base/tokens.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 #include <mayaUsd/utils/colorSpace.h>
 
@@ -891,7 +892,13 @@ void HdVP2Mesh::Sync(
 
         auto addRequiredPrimvars = [&](const SdfPath& materialId) {
             TfTokenVector requiredPrimvars;
-            if (!_GetMaterialPrimvars(renderIndex, materialId, requiredPrimvars)) {
+            if (!_GetMaterialPrimvars(renderIndex, materialId, requiredPrimvars)
+                || ((reprToken == HdVP2ReprTokens->smoothHullUntextured)
+                    && (MGlobal::optionVarIntValue(
+                            MayaUsdOptionVars->ShowDisplayColorTextureOff.GetText())
+                        != 0))) {
+                // if user selected present display color in untextured mode, use fallback shader as
+                // well
                 requiredPrimvars = sFallbackShaderPrimvars;
             }
 
@@ -1746,16 +1753,27 @@ void HdVP2Mesh::_UpdateDrawItem(
                 renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
 
             if (material) {
-                const HdCullStyle           cullStyle = GetCullStyle(sceneDelegate);
-                MHWRender::MShaderInstance* shader = material->GetSurfaceShader(
-                    _GetMaterialNetworkToken(reprToken), cullStyle == HdCullStyleBack);
-                if (shader != nullptr
-                    && (shader != drawItemData._shader || shader != stateToCommit._shader)) {
-                    drawItemData._shader = shader;
-                    drawItemData._shaderIsFallback = false;
-                    stateToCommit._shader = shader;
-                    stateToCommit._isTransparent
-                        = shader->isTransparent() || renderItemData._transparent;
+                const MString optionVarName(
+                    MayaUsdOptionVars->ShowDisplayColorTextureOff.GetText());
+
+                // if untextured mode with show display color specified, use fallback shader
+                if ((reprToken == HdVP2ReprTokens->smoothHullUntextured)
+                    && (MGlobal::optionVarIntValue(
+                            MayaUsdOptionVars->ShowDisplayColorTextureOff.GetText())
+                        != 0)) {
+                    drawItemData._shaderIsFallback = true;
+                } else {
+                    const HdCullStyle           cullStyle = GetCullStyle(sceneDelegate);
+                    MHWRender::MShaderInstance* shader = material->GetSurfaceShader(
+                        _GetMaterialNetworkToken(reprToken), cullStyle == HdCullStyleBack);
+                    if (shader != nullptr
+                        && (shader != drawItemData._shader || shader != stateToCommit._shader)) {
+                        drawItemData._shader = shader;
+                        drawItemData._shaderIsFallback = false;
+                        stateToCommit._shader = shader;
+                        stateToCommit._isTransparent
+                            = shader->isTransparent() || renderItemData._transparent;
+                    }
                 }
             } else {
                 drawItemData._shaderIsFallback = true;
@@ -2224,27 +2242,35 @@ void HdVP2Mesh::_UpdateDrawItem(
                 MHWRender::MVertexBufferArray vertexBuffers;
 
                 std::set<TfToken> addedPrimvars;
-                auto              addPrimvar =
-                    [primvarInfo, &vertexBuffers, &addedPrimvars, isBBoxItem, &sharedBBoxGeom](
-                        const TfToken& p) {
-                        auto entry = primvarInfo->find(p);
-                        if (entry == primvarInfo->cend()) {
-                            // No primvar by that name.
-                            return;
+                auto              addPrimvar = [primvarInfo,
+                                   &vertexBuffers,
+                                   &addedPrimvars,
+                                   isBBoxItem,
+                                   &sharedBBoxGeom,
+                                   &renderItem](const TfToken& p) {
+                    auto entry = primvarInfo->find(p);
+                    if (entry == primvarInfo->cend()) {
+                        // No primvar by that name.
+                        return;
+                    }
+                    MHWRender::MVertexBuffer* primvarBuffer = nullptr;
+                    if (isBBoxItem && p == HdTokens->points) {
+                        primvarBuffer = const_cast<MHWRender::MVertexBuffer*>(
+                            sharedBBoxGeom.GetPositionBuffer());
+                    } else {
+                        primvarBuffer = entry->second->_buffer.get();
+                    }
+                    if (primvarBuffer) { // this filters out the separate color & alpha entries
+                        MStatus result = vertexBuffers.addBuffer(p.GetText(), primvarBuffer);
+                        if (result != MStatus::kSuccess) {
+                            TF_WARN(
+                                "Could not create primvar [%s] buffer for [%s].",
+                                p.GetText(),
+                                renderItem->name().asChar());
                         }
-                        MHWRender::MVertexBuffer* primvarBuffer = nullptr;
-                        if (isBBoxItem && p == HdTokens->points) {
-                            primvarBuffer = const_cast<MHWRender::MVertexBuffer*>(
-                                sharedBBoxGeom.GetPositionBuffer());
-                        } else {
-                            primvarBuffer = entry->second->_buffer.get();
-                        }
-                        if (primvarBuffer) { // this filters out the separate color & alpha entries
-                            MStatus result = vertexBuffers.addBuffer(p.GetText(), primvarBuffer);
-                            TF_VERIFY(result == MStatus::kSuccess);
-                        }
-                        addedPrimvars.insert(p);
-                    };
+                    }
+                    addedPrimvars.insert(p);
+                };
 
                 // Points and normals always are at the beginning of vertex requirements:
                 addPrimvar(HdTokens->points);
@@ -2270,7 +2296,11 @@ void HdVP2Mesh::_UpdateDrawItem(
                 // - Trigger consolidation/instancing update.
                 result = drawScene.setGeometryForRenderItem(
                     *renderItem, vertexBuffers, *indexBuffer, stateToCommit._boundingBox);
-                TF_VERIFY(result == MStatus::kSuccess);
+                if (result != MStatus::kSuccess) {
+                    TF_WARN(
+                        "Could not create OGS geometry for [%s], maybe it has no geometry?",
+                        renderItem->name().asChar());
+                }
             }
 
             // Important, update instance transforms after setting geometry on render items!
@@ -2288,12 +2318,20 @@ void HdVP2Mesh::_UpdateDrawItem(
                             // VP2 defines instance ID of the first instance to be 1.
                             result = drawScene.updateInstanceTransform(
                                 *renderItem, i + 1, (*stateToCommit._instanceTransforms)[i]);
-                            TF_VERIFY(result == MStatus::kSuccess);
+                            if (result != MStatus::kSuccess) {
+                                TF_WARN(
+                                    "Could not update the instance transform for [%s].",
+                                    renderItem->name().asChar());
+                            }
                         }
                     } else {
                         result = drawScene.setInstanceTransformArray(
                             *renderItem, *stateToCommit._instanceTransforms);
-                        TF_VERIFY(result == MStatus::kSuccess);
+                        if (result != MStatus::kSuccess) {
+                            TF_WARN(
+                                "Could not update the instance transform for [%s].",
+                                renderItem->name().asChar());
+                        }
                     }
                 }
 
@@ -2305,13 +2343,21 @@ void HdVP2Mesh::_UpdateDrawItem(
                         *renderItem,
                         stateToCommit._instanceColorParam,
                         *stateToCommit._instanceColors);
-                    TF_VERIFY(result == MStatus::kSuccess);
+                    if (result != MStatus::kSuccess) {
+                        TF_WARN(
+                            "Could not set the instance color for [%s].",
+                            renderItem->name().asChar());
+                    }
                 }
             } else if (newInstanceCount >= 1) {
                 if (stateToCommit._instanceTransforms) {
                     result = drawScene.setInstanceTransformArray(
                         *renderItem, *stateToCommit._instanceTransforms);
-                    TF_VERIFY(result == MStatus::kSuccess);
+                    if (result != MStatus::kSuccess) {
+                        TF_WARN(
+                            "Could not update the instance transform for [%s].",
+                            renderItem->name().asChar());
+                    }
                 }
 
                 if (stateToCommit._instanceColors && stateToCommit._instanceColors->length() > 0) {
@@ -2322,7 +2368,11 @@ void HdVP2Mesh::_UpdateDrawItem(
                         *renderItem,
                         stateToCommit._instanceColorParam,
                         *stateToCommit._instanceColors);
-                    TF_VERIFY(result == MStatus::kSuccess);
+                    if (result != MStatus::kSuccess) {
+                        TF_WARN(
+                            "Could not set the instance color for [%s].",
+                            renderItem->name().asChar());
+                    }
                 }
 
                 stateToCommit._renderItemData._usingInstancedDraw = true;

@@ -2,6 +2,8 @@ UsdEditDuplicateAsMaya
 ?contextId=UsdEditDuplicateAsMaya
 UsdHierarchyView
 ?contextId=UsdHierarchyView
+UsdAddReferenceConfig
+?contextId=UsdAddReferenceConfig
 UsdImportOptionsConfig
 ?contextId=UsdImportOptionsConfig
 UsdLayerEditor

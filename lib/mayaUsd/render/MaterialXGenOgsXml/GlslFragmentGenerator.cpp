@@ -6,7 +6,9 @@
 #include "GlslFragmentGenerator.h"
 
 #include "Nodes/SurfaceNodeMaya.h"
+#include "Nodes/TexcoordNodeMaya.h"
 
+#include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/GlslOcioNodeImpl.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/OgsXmlGenerator.h>
 
@@ -69,23 +71,39 @@ void fixupVertexDataInstance(ShaderStage& stage)
 
     static const std::regex vtxRegex(vtxSource.c_str());
 
-    // Find keywords:                   (as text)
+    // Find keywords:                        (as text)
     //
-    //  HW::T_VERTEX_DATA_INSTANCE.     $vd.$inGeomprop_st
+    //  vec[23] (HW::T_IN_GEOMPROP_NAME)     vec2 $inGeomprop_st
     //
     // And replace with:
     //
-    //  (nothing)                       $inGeomprop_st
+    // vec2 unused_(HW::T_IN_GEOMPROP_NAME)  vec2 unused_inGeomprop_st
     //
 
-    static const std::string vdCleanupSource = "[$]" + d(HW::T_VERTEX_DATA_INSTANCE) + "[.]";
+    static const std::string primvarParamSource
+        = "vec([23]) [$](" + d(HW::T_IN_GEOMPROP) + "_[A-Za-z0-9_]+)";
+
+    static const std::regex primvarParamRegex(primvarParamSource.c_str());
+
+    // Find keywords:                                       (as text)
+    //
+    //  HW::T_VERTEX_DATA_INSTANCE.T_IN_GEOMPROP_(NAME)     $vd.$inGeomprop_st
+    //
+    // And replace with:
+    //
+    //  PIX_IN.(NAME)                                       PIX_IN.st
+    //
+
+    static const std::string vdCleanupSource = "[$]" + d(HW::T_VERTEX_DATA_INSTANCE) + "[.][$]"
+        + d(HW::T_IN_GEOMPROP) + "_([A-Za-z0-9_]+)";
 
     static const std::regex vdCleanupRegex(vdCleanupSource.c_str());
 
     std::string code = stage.getSourceCode();
     code = std::regex_replace(code, paramRegex, "vec3 unused_$1");
     code = std::regex_replace(code, vtxRegex, "$$$1( PIX_IN.$$$1 )");
-    code = std::regex_replace(code, vdCleanupRegex, "");
+    code = std::regex_replace(code, primvarParamRegex, "vec$1 unused_$2");
+    code = std::regex_replace(code, vdCleanupRegex, "PIX_IN.$1");
 
 #if MX_COMBINED_VERSION >= 13804
     stage.setSourceCode(code);
@@ -146,6 +164,13 @@ GlslFragmentGenerator::GlslFragmentGenerator()
         _tokenSubstitutions[HW::T_LIGHT_DATA_INSTANCE]
             = "g_lightData"; // Store Maya lights in global non-const
         _tokenSubstitutions[HW::T_NUM_ACTIVE_LIGHT_SOURCES] = "g_numActiveLightSources";
+    }
+
+    if (!OgsXmlGenerator::getPrimaryUVSetName().empty()) {
+        registerImplementation(
+            "IM_texcoord_vector2_" + GlslShaderGenerator::TARGET, TexcoordNodeGlslMaya::create);
+        registerImplementation(
+            "IM_texcoord_vector3_" + GlslShaderGenerator::TARGET, TexcoordNodeGlslMaya::create);
     }
 
     for (auto&& implName : GlslOcioNodeImpl::getOCIOImplementations()) {
@@ -234,44 +259,50 @@ ShaderPtr GlslFragmentGenerator::generate(
     MX_EMIT_INCLUDE(libRoot + "stdlib/genglsl/lib/mx_math.glsl", context, pixelStage);
     emitLineBreak(pixelStage);
 
-    int specularMethod = context.getOptions().hwSpecularEnvironmentMethod;
-    if (specularMethod == SPECULAR_ENVIRONMENT_FIS) {
-        emitLine(
-            "#define DIRECTIONAL_ALBEDO_METHOD "
-                + std::to_string(int(context.getOptions().hwDirectionalAlbedoMethod)),
-            pixelStage,
-            false);
-        emitLineBreak(pixelStage);
-        HwSpecularEnvironmentSamplesPtr pSamples
-            = context.getUserData<HwSpecularEnvironmentSamples>(
-                HwSpecularEnvironmentSamples::name());
-        if (pSamples) {
+    if (lighting) {
+        int specularMethod = context.getOptions().hwSpecularEnvironmentMethod;
+        if (specularMethod == SPECULAR_ENVIRONMENT_FIS) {
             emitLine(
-                "#define MX_NUM_FIS_SAMPLES "
-                    + std::to_string(pSamples->hwSpecularEnvironmentSamples),
+                "#define DIRECTIONAL_ALBEDO_METHOD "
+                    + std::to_string(int(context.getOptions().hwDirectionalAlbedoMethod)),
                 pixelStage,
                 false);
-        } else {
-            emitLine("#define MX_NUM_FIS_SAMPLES 64", pixelStage, false);
-        }
-        emitLineBreak(pixelStage);
-        MX_EMIT_INCLUDE(
-            libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v3.glsl", context, pixelStage);
-    } else if (specularMethod == SPECULAR_ENVIRONMENT_PREFILTER) {
-        if (OgsXmlGenerator::useLightAPI() < 2) {
+            emitLineBreak(pixelStage);
+            HwSpecularEnvironmentSamplesPtr pSamples
+                = context.getUserData<HwSpecularEnvironmentSamples>(
+                    HwSpecularEnvironmentSamples::name());
+            if (pSamples) {
+                emitLine(
+                    "#define MX_NUM_FIS_SAMPLES "
+                        + std::to_string(pSamples->hwSpecularEnvironmentSamples),
+                    pixelStage,
+                    false);
+            } else {
+                emitLine("#define MX_NUM_FIS_SAMPLES 64", pixelStage, false);
+            }
+            emitLineBreak(pixelStage);
             MX_EMIT_INCLUDE(
-                libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v1.glsl", context, pixelStage);
-        } else {
+                libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v3.glsl", context, pixelStage);
+        } else if (specularMethod == SPECULAR_ENVIRONMENT_PREFILTER) {
+            if (OgsXmlGenerator::useLightAPI() < 2) {
+                MX_EMIT_INCLUDE(
+                    libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v1.glsl",
+                    context,
+                    pixelStage);
+            } else {
+                MX_EMIT_INCLUDE(
+                    libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v2.glsl",
+                    context,
+                    pixelStage);
+            }
+        } else if (specularMethod == SPECULAR_ENVIRONMENT_NONE) {
             MX_EMIT_INCLUDE(
-                libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v2.glsl", context, pixelStage);
+                libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_none.glsl", context, pixelStage);
+        } else {
+            throw ExceptionShaderGenError(
+                "Invalid hardware specular environment method specified: '"
+                + std::to_string(specularMethod) + "'");
         }
-    } else if (specularMethod == SPECULAR_ENVIRONMENT_NONE) {
-        MX_EMIT_INCLUDE(
-            libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_none.glsl", context, pixelStage);
-    } else {
-        throw ExceptionShaderGenError(
-            "Invalid hardware specular environment method specified: '"
-            + std::to_string(specularMethod) + "'");
     }
     emitLineBreak(pixelStage);
 

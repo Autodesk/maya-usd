@@ -1,5 +1,6 @@
 #include "OgsFragment.h"
 
+#include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/GlslFragmentGenerator.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/GlslOcioNodeImpl.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/OgsXmlGenerator.h>

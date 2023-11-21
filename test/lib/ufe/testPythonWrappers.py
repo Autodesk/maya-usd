@@ -25,6 +25,7 @@ import mayaUsd
 
 from maya import cmds
 from maya import standalone
+from pxr import Usd
 
 import ufe
 
@@ -82,28 +83,71 @@ class PythonWrappersTestCase(unittest.TestCase):
 
         # Test the maya-usd ufePathToPrim() wrapper.
         mayaUsdStage.DefinePrim("/Capsule1", "Capsule")
-        if ufeUtils.ufeFeatureSetVersion() >= 2:
-            capsulePrim = mayaUsd.ufe.ufePathToPrim('%s,/Capsule1' % proxyShape)
-        else:
-            capsulePrim = mayaUsd.ufe.ufePathToPrim('|world%s,/Capsule1' % proxyShape)
+        capsulePrim = mayaUsd.ufe.ufePathToPrim('%s,/Capsule1' % proxyShape)
         self.assertIsNotNone(capsulePrim)
 
-        if ufeUtils.ufeFeatureSetVersion() >= 2:
-            # Test the maya-usd getPrimFromRawItem() wrapper.
-            capsulePath = proxyShapePath + usdUtils.createUfePathSegment('/Capsule1')
-            capsuleItem = ufe.Hierarchy.createItem(capsulePath)
-            rawItem = capsuleItem.getRawAddress()
-            capsulePrim2 = mayaUsd.ufe.getPrimFromRawItem(rawItem)
-            self.assertIsNotNone(capsulePrim2)
-            self.assertEqual(capsulePrim, capsulePrim2)
+        # Test maya-usd usdPathToUfePathSegment wrapper.
+        ufePath = mayaUsd.ufe.usdPathToUfePathSegment('/Capsule1')
+        self.assertEqual(ufePath, str(usdUtils.createUfePathSegment('/Capsule1')))
 
-            # Test the maya-usd getNodeTypeFromRawItem() wrapper.
-            nodeType = mayaUsd.ufe.getNodeTypeFromRawItem(rawItem)
-            self.assertIsNotNone(nodeType)
+        # Test the uniqueName wrapper.
+        # Note: param1 = list of existing children names.
+        #       param2 = source name that you want made unique
+        #       return = unique name from input source name
+        newName = mayaUsd.ufe.uniqueName([], 'Capsule')
+        self.assertEqual(newName, 'Capsule1')
+        newName = mayaUsd.ufe.uniqueName([], 'Capsule1')
+        self.assertEqual(newName, 'Capsule2')
+        newName = mayaUsd.ufe.uniqueName(['Cone1'], 'Capsule1')
+        self.assertEqual(newName, 'Capsule2')
+        newName = mayaUsd.ufe.uniqueName(['Capsule1'], 'Capsule1')
+        self.assertEqual(newName, 'Capsule2')
+        newName = mayaUsd.ufe.uniqueName(['Capsule1', 'Capsule5'], 'Capsule1')
+        self.assertEqual(newName, 'Capsule2')
+        newName = mayaUsd.ufe.uniqueName(['Capsule001'], 'Capsule001')
+        self.assertEqual(newName, 'Capsule002')
+        newName = mayaUsd.ufe.uniqueName(['Capsule001', 'Capsule002'], 'Capsule001')
+        self.assertEqual(newName, 'Capsule003')
+        newName = mayaUsd.ufe.uniqueName(['Capsule001', 'Capsule005'], 'Capsule001')
+        self.assertEqual(newName, 'Capsule002')
 
-            # Test the maya-usd getNodeNameFromRawItem() wrapper.
-            nodeName = mayaUsd.ufe.getNodeNameFromRawItem(rawItem)
-            self.assertIsNotNone(nodeName)
+        # Test uniqueChildName wrapper.
+        newName = mayaUsd.ufe.uniqueChildName(capsulePrim, 'Cone1')
+        self.assertEqual(newName, 'Cone1')
+        mayaUsdStage.DefinePrim("/Capsule1/Cone1", "Cone")
+        newName = mayaUsd.ufe.uniqueChildName(capsulePrim, 'Cone1')
+        self.assertEqual(newName, 'Cone2')
+        mayaUsdStage.DefinePrim("/Capsule1/Sphere001", "Sphere")
+        newName = mayaUsd.ufe.uniqueChildName(capsulePrim, 'Sphere001')
+        self.assertEqual(newName, 'Sphere002')
+
+        # stripInstanceIndexFromUfePath/ufePathToInstanceIndex wrappers are tested
+        # by testPointInstances.
+
+        # isEditTargetLayerModifiable wrapper is tested by testBlockedLayerEdit.
+
+        # Test the getTime wrapper.
+        cmds.currentTime(10)
+        t = mayaUsd.ufe.getTime(stagePath)
+        self.assertEqual(t, Usd.TimeCode(10))
+
+        # isAttributeEditAllowed wrapper is tested by testAttribute.
+
+        # Test the maya-usd getPrimFromRawItem() wrapper.
+        capsulePath = proxyShapePath + usdUtils.createUfePathSegment('/Capsule1')
+        capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+        rawItem = capsuleItem.getRawAddress()
+        capsulePrim2 = mayaUsd.ufe.getPrimFromRawItem(rawItem)
+        self.assertIsNotNone(capsulePrim2)
+        self.assertEqual(capsulePrim, capsulePrim2)
+
+        # Test the maya-usd getNodeTypeFromRawItem() wrapper.
+        nodeType = mayaUsd.ufe.getNodeTypeFromRawItem(rawItem)
+        self.assertIsNotNone(nodeType)
+
+        # Test the maya-usd getNodeNameFromRawItem() wrapper.
+        nodeName = mayaUsd.ufe.getNodeNameFromRawItem(rawItem)
+        self.assertIsNotNone(nodeName)
 
         # Test the maya-usd runtime id wrappers.
         mayaRtid = mayaUsd.ufe.getMayaRunTimeId()
@@ -118,9 +162,9 @@ class PythonWrappersTestCase(unittest.TestCase):
         # a worker thread.
         cmds.file(new=True, force=True)
 
-    # In Maya 2020 and 2022, undo does not restore the stage.  To be
+    # In Maya 2022, undo does not restore the stage.  To be
     # investigated as needed.
-    @unittest.skipUnless((mayaUtils.mayaMajorVersion() == 2023) or mayaUtils.previewReleaseVersion() >= 139, 'Only supported in Maya 2023 or greater.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() == 2023, 'Only supported in Maya 2023 or greater.')
     def testGetAllStages(self):
         cmds.file(new=True, force=True)
 

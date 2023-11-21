@@ -79,10 +79,17 @@ bool MayaUsdPrimReaderMesh::Read(UsdMayaPrimReaderContext& context)
 
     auto    parentNode = context.GetMayaNode(prim.GetPath().GetParentPath(), true);
     MObject transformObj;
-    bool    retStatus = UsdMayaTranslatorUtil::CreateTransformNode(
-        prim, parentNode, _GetArgs(), &context, &status, &transformObj);
-    if (!retStatus) {
-        return false;
+    // Note: in prototype instances, we don't need an intermediary transform node.
+    //       See: EMSUSD-80
+    const bool inPrototype = UsdPrim::IsPathInPrototype(prim.GetPath());
+    if (inPrototype) {
+        transformObj = parentNode;
+    } else {
+        bool retStatus = UsdMayaTranslatorUtil::CreateTransformNode(
+            prim, parentNode, _GetArgs(), &context, &status, &transformObj);
+        if (!retStatus) {
+            return false;
+        }
     }
 
     // get the USD stage node from the context's registry

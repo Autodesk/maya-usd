@@ -36,7 +36,7 @@ global proc mayaUSDRegisterStrings()
     register("kCreateStageFromFile", "Create Stage from File");
     register("kCreateStage", "Create");
     register("kDefaultPrim", "Default Prim");
-    register("kDefaultPrimAnn", "As part of its metadata, each stage can identify a default prim. This is the primitive that is referenced in if you reference in a file.");
+    register("kDefaultPrimAnn", "As part of its metadata, each stage can identify a default prim. This is the primitive that is referenced in if you reference in a file. Right-click a root prim in a stage to set it as your default prim. Use the same method to clear a default prim once it has been set.");
     register("kExcludePrimPaths", "Exclude Prim Paths:");
     register("kExcludePrimPathsAnn", "Specify the path of a prim to exclude it from the viewport display. Multiple prim paths must be separated by a comma.");
     register("kExcludePrimPathsSbm", "Specify the path of a prim to exclude it from the viewport display.");
@@ -120,7 +120,7 @@ global proc mayaUSDRegisterStrings()
     register("kTimeAnn", "Edits the current time value of a stage, which corresponds to the animation frame drawn in the viewport. By default, this value connects to Maya's global time node.");
     register("kTipYouCanChooseMultipleFiles", "<b>Tip:</b>  You can choose multiple files.");
     register("kUniversalSceneDescription", "Universal Scene Description");
-    register("kUsdFileOptions", "USD File Options");
+    register("kUsdStage", "Stage");
     register("kUsdOptionsFrameLabel", "Universal Scene Description (USD) Options");
     register("kSaveOption2GBWarning", "<b>Important</b>: per layer, any data exceeding the limit of 2GB will not be saved.");
 
@@ -131,6 +131,12 @@ global proc mayaUSDRegisterStrings()
     register("kExportBlendShapesLbl", "Blend Shapes");
     register("kExportColorSetsAnn", "Exports Maya Color Sets as USD primvars.");
     register("kExportColorSetsLbl", "Color Sets");
+    register("kExportMeshesLbl", "Meshes");
+    register("kExportMeshesAnn", "If selected, mesh geometry is extracted for USD export.");
+    register("kExportCamerasLbl", "Cameras");
+    register("kExportCamerasAnn", "If selected, cameras are extracted for USD export.");
+    register("kExportLightsLbl", "Lights");
+    register("kExportLightsAnn", "If selected, lights are extracted for USD export.");
     register("kExportComponentTagsAnn", "If selected, component tags get exported as USDGeomSubsets. Note: Edges and vertices are unsupported in USD.");
     register("kExportComponentTagsLbl", "Component Tags");
     register("kExportCurvesAnn", "If selected, curves get exported to USD primTypes NurbsCurves or BasisCurves.");
@@ -165,7 +171,7 @@ global proc mayaUSDRegisterStrings()
     register("kExportMaterialsAnn", "Select the material(s) to bind to prims for export. With USD, you can bind multiple materials to prims.");
     register("kExportMaterialsDefaultScopeName", "mtl");
     register("kExportMergeShapesAnn", "Merges Maya transform and shape nodes into a single USD prim.");
-    register("kExportMergeShapesLbl", "Merge Transform and\nShape Nodes");
+    register("kExportMergeShapesLbl", "Merge Transform and Shape Nodes");
     register("kExportNamespacesAnn", "By default, namespaces are exported to the USD file in the following format: nameSpaceExample_pPlatonic1");
     register("kExportNamespacesLbl", "Include Namespaces");
     register("kExportWorldspaceAnn", "Exports the root prims with their worldspace transform instead of their local transform.");
@@ -242,6 +248,33 @@ global proc mayaUSDRegisterStrings()
     register("kMayaRefDuplicateAsUsdData", "Duplicate As USD Data");
     register("kMayaRefDuplicateAsUsdDataDiv", "Stages");
     register("kMayaRefDuplicateAsUsdDataOptions", "Options...");
+
+    // All strings for the USD Global Preferences:
+    register("kUSDPreferences", "USD: USD Preferences");
+    register("KSavingUSDFiles", "Save USD Files");
+    register("kdotusdFileFormat", ".usd File Format:");
+    register("kAscii", "ASCII");
+    register("kBinary", "Binary");
+    register("KViewport", "Viewport");
+    register("KUntexturedMode", "Untextured mode");
+    register("KMaterialColors", "Material Colors");
+    register("KDisplayColors", "Display Colors");
+    register("KUntexturedModeAnn", "Choose what your colors should display as in the viewport. Select from default material colors or USD display colors. Select display colors when working in USD as material colors may be inaccurate from the endless types available.");
+    register("kSaveLayerUsdFileFormatAnn", "Select whether the .usd file is written out in binary or ASCII. You can save a file in .usdc (binary) or .usda (ASCII) format. Manually entering a file name with an extension overrides the selection in this preference.");
+    register("kSaveLayerUsdFileFormatSbm", "Select whether the .usd file is written out in binary or ASCII");
+    register("kConfirmExistFileSave", "Confirm Save of Existing Files");
+    register("kSavingMayaSceneFiles", "Save Maya Scene Files");
+    register("kRelativePathing", "Relative Pathing");
+    register("kAllRelativeToggle", "All files");
+    register("kAllRelativeToggleAnn", "When on, all of your files will be written as relative paths.");
+    register("kRootLayersRelativeToSceneFile", "Root layers");
+    register("kRootLayersRelativeToSceneFileAnn", "When on, your USD root layer file will be written as relative paths to your Maya scene file.");
+    register("kSubLayersRelativeToParentLayer", "Sublayers");
+    register("kSubLayersRelativeToParentLayerAnn", "When on, all sublayers will be written as relative paths to their parent layers.");
+    register("kReferencesRelativeToEditTargetLayer", "USD References/payloads");
+    register("kReferencesRelativeToEditTargetLayerAnn", "When on, any USD references or payloads will be written as relative paths to their respective edit target layer.");
+    register("kFileDependenciesRelativeToEditTargetLayer", "File dependencies");
+    register("kFileDependenciesRelativeToEditTargetLayerAnn", "When on, any file dependencies, such as textures or Maya references will be written as relative paths to their respective edit target layer.");
 
     // Register the strings from the python equivalent register function.
     // Note: the strings from both the MEL and python register can be loaded

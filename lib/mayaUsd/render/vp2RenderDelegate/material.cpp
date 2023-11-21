@@ -44,6 +44,7 @@
 #include <pxr/usd/sdf/assetPath.h>
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/usdHydra/tokens.h>
+#include <pxr/usd/usdUtils/pipeline.h>
 #include <pxr/usdImaging/usdImaging/textureUtils.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
 
@@ -62,6 +63,7 @@
 #include <maya/MViewport2Renderer.h>
 
 #ifdef WANT_MATERIALX_BUILD
+#include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/OgsFragment.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/OgsXmlGenerator.h>
 
@@ -423,7 +425,7 @@ const std::set<std::string> _mtlxTopoNodeSet = {
     "normal",
     "tangent",
     "bitangent",
-    // Topo affecting nodes due to channel index. We remap to geomprop in _AddMissingTexcoordReaders
+    // Topo affecting nodes due to channel index.
     "texcoord",
     // Color at vertices also affect topo, but we have not locked a naming scheme to go from index
     // based to name based as we did for UV sets. We will mark them as topo-affecting, but there is
@@ -438,8 +440,15 @@ const std::set<std::string> _mtlxTopoNodeSet = {
     "convert",
     // Constants: they get inlined in the source.
     "constant",
-    // Switch, unless all inputs are connected.
-    "switch"
+#if MX_COMBINED_VERSION < 13808
+    // Switch, unless all inputs are connected. Bug was fixed in 1.38.8.
+    "switch",
+#endif
+#if MX_COMBINED_VERSION == 13807
+    // Dot became topological in 1.38.7. Reverted in 1.38.8.
+    // Still topological for filename though.
+    "dot",
+#endif
 };
 
 // These attribute names usually indicate we have a source color space to handle.
@@ -475,6 +484,12 @@ struct _MaterialXData
         _FixLibraryTangentInputs(_mtlxLibrary);
 
         mx::OgsXmlGenerator::setUseLightAPI(MAYA_LIGHTAPI_VERSION_2);
+
+        // This environment variable is defined in USD: pxr\usd\usdMtlx\parser.cpp
+        static const std::string env = TfGetenv("USDMTLX_PRIMARY_UV_NAME");
+        std::string mainUvSetName = env.empty() ? UsdUtilsGetPrimaryUVSetName().GetString() : env;
+
+        mx::OgsXmlGenerator::setPrimaryUVSetName(mainUvSetName);
     }
     MaterialX::FileSearchPath _mtlxSearchPath; //!< MaterialX library search path
     MaterialX::DocumentPtr    _mtlxLibrary;    //!< MaterialX library
@@ -514,6 +529,12 @@ bool _IsTopologicalNode(const HdMaterialNode2& inNode)
     mx::NodeDefPtr nodeDef
         = _GetMaterialXData()._mtlxLibrary->getNodeDef(inNode.nodeTypeId.GetString());
     if (nodeDef) {
+#if MX_COMBINED_VERSION >= 13807
+        // Dot filename is always topological to prevent creating extra OpenGL samplers in the
+        // generated OpenGL code.
+        if (nodeDef->getName() == "ND_dot_filename")
+            return true;
+#endif
         return _mtlxTopoNodeSet.find(nodeDef->getNodeString()) != _mtlxTopoNodeSet.cend();
     }
     return false;
@@ -696,89 +717,6 @@ bool _IsFAParameter(const HdMaterialNode& node, const MString& paramName)
     return false;
 }
 
-// MaterialX has a lot of node definitions that will auto-connect to a zero-index texture coordinate
-// system. To make these graphs compatible, we will redirect any unconnected input that uses such an
-// auto-connection scheme to instead read a texcoord geomprop called "st" which is the canonical
-// name for UV at index zero.
-void _AddMissingTexcoordReaders(mx::DocumentPtr& mtlxDoc)
-{
-    mx::NodeGraphPtr nodeGraph = mtlxDoc->getNodeGraph(_mtlxTokens->NG_Maya.GetString());
-    if (!nodeGraph) {
-        return;
-    }
-
-    // This will hold the emergency "ST" reader if one was necessary
-    mx::NodePtr stReader;
-    // Store nodes to delete when loop iteration is complete
-    std::vector<std::string> nodesToDelete;
-
-    for (mx::NodePtr node : nodeGraph->getNodes()) {
-        // Check the inputs of the node for UV0 default geom properties
-        mx::NodeDefPtr nodeDef = node->getNodeDef();
-        // A missing node def is a very bad sign. No need to process further.
-        if (!TF_VERIFY(
-                nodeDef,
-                "Could not find MaterialX NodeDef for Node '%s'. Please recheck library paths.",
-                node->getNamePath().c_str())) {
-            return;
-        }
-        for (mx::InputPtr input : nodeDef->getActiveInputs()) {
-            if (input->hasDefaultGeomPropString()
-                && input->getDefaultGeomPropString() == _mtlxTokens->UV0.GetString()) {
-                // See if the corresponding input is connected on the node:
-                if (node->getConnectedNodeName(input->getName()).empty()) {
-                    // Create emergency ST reader if necessary
-                    if (!stReader) {
-                        stReader = nodeGraph->addNode(
-                            _mtlxTokens->geompropvalue.GetString(),
-                            _mtlxTokens->ST_reader.GetString(),
-                            _mtlxTokens->vector2.GetString());
-                        mx::ValueElementPtr prpInput = stReader->addInput(
-                            _mtlxTokens->geomprop.GetString(), _mtlxTokens->string.GetString());
-                        prpInput->setValueString(_tokens->st.GetString());
-                    }
-                    node->addInput(input->getName(), input->getType());
-                    node->setConnectedNodeName(input->getName(), stReader->getName());
-                }
-            }
-        }
-        // Check if it is an explicit texcoord reader:
-        if (nodeDef->getNodeString() == _mtlxTokens->texcoord.GetString()) {
-            // Switch it with a geompropvalue of the same name:
-            std::string nodeName = node->getName();
-            std::string oldName = nodeName + "_toDelete";
-            node->setName(oldName);
-            nodesToDelete.push_back(oldName);
-            // Find out if there is an explicit stream index:
-            int          streamIndex = 0;
-            mx::InputPtr indexInput = node->getInput(_mtlxTokens->index.GetString());
-            if (indexInput && indexInput->hasValue()) {
-                mx::ValuePtr indexValue = indexInput->getValue();
-                if (indexValue->isA<int>()) {
-                    streamIndex = indexValue->asA<int>();
-                }
-            }
-            // Add replacement geompropvalue node:
-            mx::NodePtr doppelNode = nodeGraph->addNode(
-                _mtlxTokens->geompropvalue.GetString(),
-                nodeName,
-                nodeDef->getOutput(_mtlxTokens->out.GetString())->getType());
-            mx::ValueElementPtr prpInput = doppelNode->addInput(
-                _mtlxTokens->geomprop.GetString(), _mtlxTokens->string.GetString());
-            MString primvar = _tokens->st.GetText();
-            if (streamIndex) {
-                // If reading at index > 0 we add the index to the primvar name:
-                primvar += streamIndex;
-            }
-            prpInput->setValueString(primvar.asChar());
-        }
-    }
-    // Delete all obsolete texcoord reader nodes.
-    for (const std::string& deadNode : nodesToDelete) {
-        nodeGraph->removeNode(deadNode);
-    }
-}
-
 // Recursively traverse a node graph, depth first, to find target node
 mx::NodePtr _RecursiveFindNode(const mx::NodePtr& node, const TfToken& target)
 {
@@ -876,6 +814,8 @@ void _AddMissingTangents(mx::DocumentPtr& mtlxDoc)
 {
     // We will need at least one geompropvalue reader to generate tangents:
     mx::NodePtr stReader;
+    // If we find one implicit texcoord input we can still try to generate texcoord tangents:
+    bool hasOneImplicitTexcoordInput = false;
 
     // List of all items to fix:
     using nodeInput = std::pair<mx::NodePtr, std::string>;
@@ -908,6 +848,10 @@ void _AddMissingTangents(mx::DocumentPtr& mtlxDoc)
                 if (geomPropString == _mtlxTokens->Tobject.GetString()
                     && !material->getConnectedOutput(input->getName())) {
                     materialTobjectInputs.emplace_back(material, input->getName());
+                }
+                if (geomPropString == _mtlxTokens->UV0
+                    && !material->getConnectedOutput(input->getName())) {
+                    hasOneImplicitTexcoordInput = true;
                 }
             }
         }
@@ -960,6 +904,10 @@ void _AddMissingTangents(mx::DocumentPtr& mtlxDoc)
                         && node->getConnectedNodeName(input->getName()).empty()) {
                         graphTobjectInputs.emplace_back(node, input->getName());
                     }
+                    if (geomPropString == _mtlxTokens->UV0
+                        && node->getConnectedNodeName(input->getName()).empty()) {
+                        hasOneImplicitTexcoordInput = true;
+                    }
                 }
             }
             // Check if it is an explicit tangent reader:
@@ -976,15 +924,19 @@ void _AddMissingTangents(mx::DocumentPtr& mtlxDoc)
 
         // Create the tangent generator:
         mx::NodePtr tangentGenerator;
-        if (stReader) {
+        if (stReader || hasOneImplicitTexcoordInput) {
             tangentGenerator = nodeGraph->addNode(
                 _mtlxTokens->texcoordtangents.GetString(),
                 _mtlxTokens->Tw_reader.GetString(),
                 _mtlxTokens->vector3.GetString());
             tangentGenerator->addInput(
                 _mtlxTokens->texcoord.GetString(), _mtlxTokens->vector2.GetString());
-            tangentGenerator->setConnectedNodeName(
-                _mtlxTokens->texcoord.GetString(), stReader->getName());
+            if (stReader) {
+                // Use an explicit geomprop reader if one was found, otherwise, leave it to the
+                // implicit geomprop reader code in shadergen.
+                tangentGenerator->setConnectedNodeName(
+                    _mtlxTokens->texcoord.GetString(), stReader->getName());
+            }
         } else {
             tangentGenerator = nodeGraph->addNode(
                 _mtlxTokens->arbitrarytangents.GetString(),
@@ -3084,7 +3036,6 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
             }
 
             // Touchups required to fix input stream issues:
-            _AddMissingTexcoordReaders(mtlxDoc);
             _AddMissingTangents(mtlxDoc);
 
             _surfaceShaderId = terminalPath;

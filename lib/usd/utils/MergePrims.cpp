@@ -394,7 +394,7 @@ bool isDataAtPathsModified(
     }
 
     if (src.path.ContainsPropertyElements()) {
-        const UsdProperty srcProp = srcPrim.GetPropertyAtPath(src.path);
+        const UsdProperty srcProp = srcPrim.GetPropertyAtPath(src.path.StripAllVariantSelections());
 
         // Note: we only return early for transform property if the local transform has
         //       not changed. The reason is that when the transform has changed, we *do*
@@ -414,7 +414,7 @@ bool isDataAtPathsModified(
             }
         }
 
-        const UsdProperty dstProp = dstPrim.GetPropertyAtPath(dst.path);
+        const UsdProperty dstProp = dstPrim.GetPropertyAtPath(dst.path.StripAllVariantSelections());
         if (!srcProp.IsValid() || !dstProp.IsValid()) {
             printInvalidField(ctx, src, "prop", srcProp.IsValid(), dstProp.IsValid());
             return srcProp.IsValid() != dstProp.IsValid();

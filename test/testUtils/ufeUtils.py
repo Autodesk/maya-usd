@@ -45,11 +45,7 @@ def selectPath(path, replace=False):
     # Do this import inside this function rather than at the top of the file
     # so that the module can be imported and ufeFeatureSetVersion() can be
     # called prior to maya.standalone.initialize().
-    try:
-        from maya.internal.ufeSupport import ufeSelectCmd
-    except ImportError:
-        # Maya 2019 and 2020 don't have ufeSupport plugin, so use fallback.
-        from ufeScripts import ufeSelectCmd
+    from maya.internal.ufeSupport import ufeSelectCmd
 
     sceneItem = ufe.Hierarchy.createItem(path)
     if replace:

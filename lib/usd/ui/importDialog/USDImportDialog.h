@@ -41,6 +41,19 @@ namespace MAYAUSD_NS_DEF {
 class IMayaMQtUtil;
 
 /**
+ * \brief Options for the USD file import dialog.
+ */
+struct MAYAUSD_UI_PUBLIC USDImportDialogOptions
+{
+    std::string title;
+    std::string helpLabel;
+    std::string helpURL;
+    bool        showVariants = true;
+    bool        showRoot = true;
+    bool        showHeaderMessage = true;
+};
+
+/**
  * \brief USD file import dialog.
  */
 class MAYAUSD_UI_PUBLIC USDImportDialog
@@ -56,10 +69,11 @@ public:
      * \param parent A reference to the parent widget of the dialog.
      */
     explicit USDImportDialog(
-        const std::string&  filename,
-        const ImportData*   importData,
-        const IMayaMQtUtil& mayaQtUtil,
-        QWidget*            parent = nullptr);
+        const std::string&            filename,
+        const ImportData*             importData,
+        const USDImportDialogOptions& options,
+        const IMayaMQtUtil&           mayaQtUtil,
+        QWidget*                      parent = nullptr);
 
     //! Destructor.
     ~USDImportDialog();
@@ -83,6 +97,11 @@ private Q_SLOTS:
     void onModifiedVariantsChanged(int);
 
 protected:
+    void applyOptions();
+
+    // The options for the dialog.
+    USDImportDialogOptions fOptions;
+
     // Reference to the Qt UI View of the dialog:
     std::unique_ptr<Ui::ImportDialog> fUI;
 
