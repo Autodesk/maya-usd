@@ -195,7 +195,8 @@ SdfPath UsdMayaWriteJobContext::ConvertDagToUsdPath(const MDagPath& dagPath) con
     // write to the parent (transform) path instead.
     MDagPath parentDag(dagPath);
     parentDag.pop();
-    if (IsMergedTransform(parentDag)) {
+
+    if (IsMergedTransform(parentDag) && UsdMayaUtil::isShape(dagPath)) {
         path = path.GetParentPath();
     }
 
