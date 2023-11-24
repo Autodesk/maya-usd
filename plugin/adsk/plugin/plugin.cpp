@@ -51,6 +51,7 @@
 #include <maya/MFnPlugin.h>
 #include <maya/MStatus.h>
 #include <ufe/runTimeMgr.h>
+#include <maya/MGlobal.h>
 
 #include <basePxrUsdPreviewSurface/usdPreviewSurfacePlugin.h>
 
@@ -242,6 +243,11 @@ MStatus initializePlugin(MObject obj)
         "mayaUsd_pluginUIDeletion",
         "mayaUsd_pluginBatchLoad",
         "mayaUsd_pluginBatchUnload");
+
+    // Register to file path editor
+    status = MGlobal::executeCommand("filePathEditor -registerType \"mayaUsdProxyShape.filePath\" "
+                                     "-typeLabel \"mayaUsdProxyShape.filePath\" -temporary");
+    CHECK_MSTATUS(status);
 
     // As of 2-Aug-2019, these PlugPlugin translators are not loaded
     // automatically.  To be investigated.  A duplicate of this code is in the
