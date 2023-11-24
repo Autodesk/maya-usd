@@ -49,9 +49,9 @@
 
 #include <maya/MDrawRegistry.h>
 #include <maya/MFnPlugin.h>
+#include <maya/MGlobal.h>
 #include <maya/MStatus.h>
 #include <ufe/runTimeMgr.h>
-#include <maya/MGlobal.h>
 
 #include <basePxrUsdPreviewSurface/usdPreviewSurfacePlugin.h>
 
