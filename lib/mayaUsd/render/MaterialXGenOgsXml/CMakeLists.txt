@@ -58,6 +58,15 @@ list(APPEND NODE_GLSL_IMPLEMENTATIONS_VERSIONED
     libraries/mx_srgb_texture_to_linrec2020_color4.glsl
 )
 
+list(APPEND NODE_GLSL_LIB_VERSIONED
+    libraries/usd_transform_color.glsl
+)
+
+list(APPEND NODE_GLSL_EXTRA_IMPLEMENTATIONS_VERSIONED
+    libraries/mx_srgb_texture_to_lin_rec709_color3.glsl
+    libraries/mx_srgb_texture_to_lin_rec709_color4.glsl
+)
+
 # -----------------------------------------------------------------------------
 # promote headers
 # -----------------------------------------------------------------------------
@@ -95,9 +104,12 @@ if(MaterialX_VERSION VERSION_LESS "1.38.4")
     endforeach()
 elseif(MaterialX_VERSION VERSION_LESS "1.38.8")
     MESSAGE(STATUS "Using 1.38.[4-7] libraries with MaterialX ${MaterialX_VERSION}")
-    install(FILES ${NODE_GLSL_IMPLEMENTATIONS_VERSIONED}
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/libraries/adsk/maya/genglsl
-    )
+    foreach(MTLX_FILE ${NODE_GLSL_IMPLEMENTATIONS_VERSIONED})
+        string(REPLACE "libraries/" "libraries/1.38.7/" MTLX_FILE ${MTLX_FILE})
+        install(FILES "${MTLX_FILE}"
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/libraries/adsk/maya/genglsl
+        )
+    endforeach()
     foreach(MTLX_FILE ${LIGHT_IMPLEMENTATIONS})
         string(REPLACE "libraries/" "libraries/1.38.7/" MTLX_FILE ${MTLX_FILE})
         install(FILES "${MTLX_FILE}"
@@ -108,6 +120,12 @@ else()
     MESSAGE(STATUS "Using latest libraries with MaterialX ${MaterialX_VERSION}")
     install(FILES ${NODE_GLSL_IMPLEMENTATIONS_VERSIONED}
         DESTINATION ${CMAKE_INSTALL_PREFIX}/libraries/adsk/maya/genglsl
+    )
+    install(FILES ${NODE_GLSL_EXTRA_IMPLEMENTATIONS_VERSIONED}
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/libraries/adsk/maya/genglsl
+    )
+    install(FILES ${NODE_GLSL_LIB_VERSIONED}
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/libraries/adsk/maya/genglsl/lib
     )
     install(FILES ${LIGHT_IMPLEMENTATIONS}
         DESTINATION ${CMAKE_INSTALL_PREFIX}/libraries/pbrlib/genglsl/ogsxml
