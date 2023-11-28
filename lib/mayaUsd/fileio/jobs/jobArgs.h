@@ -76,6 +76,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (referenceObjectMode) \
     (exportRefsAsInstanceable) \
     (exportRoots) \
+    (exportSelected) \
     (exportSkels) \
     (exportSkin) \
     (exportUVs) \
