@@ -349,6 +349,9 @@ class AttributeTestCase(unittest.TestCase):
         # Now we test the Generic specific methods.
         self.assertEqual(ufeAttr.nativeType(), usdAttr.GetTypeName().type.typeName)
 
+        if hasattr(ufeAttr, 'displayName'):
+            self.assertEqual(ufeAttr.displayName, "Order")
+
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
 
