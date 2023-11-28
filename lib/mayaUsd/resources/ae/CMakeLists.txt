@@ -12,9 +12,20 @@ install(FILES __init__.py DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/
 set(MAYAUSD_AE_TEMPLATES usdschemabase)
 
 foreach(_SUBDIR ${MAYAUSD_AE_TEMPLATES})
-    install(FILES ${_SUBDIR}/__init__.py  ${_SUBDIR}/custom_image_control.py ${_SUBDIR}/custom_enum_control.py ${_SUBDIR}/ae_template.py
+    install(FILES
+        ${_SUBDIR}/__init__.py
+        ${_SUBDIR}/ae_template.py
+        ${_SUBDIR}/ae_auto_template.py
+        ${_SUBDIR}/array_custom_control.py
+        ${_SUBDIR}/attribute_custom_control.py
+        ${_SUBDIR}/connections_custom_control.py
+        ${_SUBDIR}/enum_custom_control.py
+        ${_SUBDIR}/image_custom_control.py
+        ${_SUBDIR}/metadata_custom_control.py
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/usd/nodes/${_SUBDIR}
     )
 endforeach()
 
 install(FILES __init__.py DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME})
+
+install(FILES "attribute_mappings.json" DESTINATION "${CMAKE_INSTALL_PREFIX}/lib")

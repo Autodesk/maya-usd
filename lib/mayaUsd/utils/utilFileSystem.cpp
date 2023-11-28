@@ -578,6 +578,12 @@ std::string UsdMayaUtilFileSystem::getMayaWorkspaceScenesDir()
     return UsdMayaUtil::convert(scenesFolder);
 }
 
+std::string UsdMayaUtilFileSystem::getMayaPrefDir()
+{
+    MString prefFolder = MGlobal::executeCommandStringResult("internalVar -userPrefDir");
+    return UsdMayaUtil::convert(prefFolder);
+}
+
 std::string UsdMayaUtilFileSystem::resolveRelativePathWithinMayaContext(
     const MObject&     proxyShape,
     const std::string& relativeFilePath)
@@ -695,6 +701,19 @@ std::string UsdMayaUtilFileSystem::appendPaths(const std::string& a, const std::
     aPath /= b;
 
     return aPath.string();
+}
+
+std::string UsdMayaUtilFileSystem::joinPaths(const std::vector<std::string>& paths)
+{
+    if (paths.size() == 0)
+        return {};
+
+    ghc::filesystem::path fullPath(paths.front());
+
+    for (size_t i = 1; i < paths.size(); ++i)
+        fullPath /= ghc::filesystem::path(paths[i]);
+
+    return fullPath.string();
 }
 
 size_t

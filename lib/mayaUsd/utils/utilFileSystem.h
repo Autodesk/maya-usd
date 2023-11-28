@@ -105,6 +105,11 @@ std::string getMayaReferencedFileDir(const MObject& proxyShapeNode);
 MAYAUSD_CORE_PUBLIC
 std::string getMayaSceneFileDir();
 
+/*! \brief returns Maya preferences directory.
+ */
+MAYAUSD_CORE_PUBLIC
+std::string getMayaPrefDir();
+
 /*! \brief returns parent directory of the given layer.
  */
 MAYAUSD_CORE_PUBLIC
@@ -275,6 +280,16 @@ bool pathAppendPath(std::string& a, const std::string& b);
  */
 MAYAUSD_CORE_PUBLIC
 std::string appendPaths(const std::string& a, const std::string& b);
+
+/**
+ * Appends all given paths and returns the resulting path.
+ *
+ * @param paths     a vector of strings representing paths
+ *
+ * @return          all paths joined by a seperator
+ */
+MAYAUSD_CORE_PUBLIC
+std::string joinPaths(const std::vector<std::string>& paths);
 
 /**
  * Writes data to a file path on disk.

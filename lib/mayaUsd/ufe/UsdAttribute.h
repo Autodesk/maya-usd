@@ -29,10 +29,18 @@
 #endif
 
 // Ufe::Attribute overrides (minus the type method)
+#ifdef UFE_V5_FEATURES_AVAILABLE
+#define UFE_V5_ATTRIBUTE_OVERRIDES \
+    std::string displayName() const override { return UsdAttribute::_displayName(); }
+#else
+#define UFE_V5_ATTRIBUTE_OVERRIDES
+#endif
+
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #define UFE_ATTRIBUTE_OVERRIDES                                                               \
     bool        hasValue() const override { return UsdAttribute::_hasValue(); }               \
     std::string name() const override { return UsdAttribute::_name(); }                       \
+    UFE_V5_ATTRIBUTE_OVERRIDES                                                                \
     std::string documentation() const override { return UsdAttribute::_documentation(); }     \
     std::string string() const override                                                       \
     {                                                                                         \
@@ -124,6 +132,7 @@ public:
 #ifdef UFE_V4_FEATURES_AVAILABLE
     bool        _hasValue() const;
     std::string _name() const;
+    std::string _displayName() const;
     std::string _documentation() const;
     std::string _string(const Ufe::SceneItem::Ptr& item) const;
 
@@ -136,6 +145,7 @@ public:
     // Ufe::Attribute override methods that we've mimic'd here.
     bool                      hasValue() const;
     std::string               name() const;
+    std::string               displayName() const;
     std::string               documentation() const;
     std::string               string(const Ufe::SceneItem::Ptr& item) const;
 #ifdef UFE_V3_FEATURES_AVAILABLE

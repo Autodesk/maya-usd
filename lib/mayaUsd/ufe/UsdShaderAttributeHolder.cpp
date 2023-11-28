@@ -158,6 +158,17 @@ std::string UsdShaderAttributeHolder::name() const
     return PXR_NS::UsdShadeUtils::GetFullName(_sdrProp->GetName(), _sdrType);
 }
 
+std::string UsdShaderAttributeHolder::displayName() const
+{
+    Ufe::Value retVal
+        = UsdShaderAttributeDef(_sdrProp).getMetadata(PXR_NS::MayaUsdMetadata->UIName);
+    std::string name = retVal.safeGet<std::string>({});
+    if (!name.empty()) {
+        return name;
+    }
+    return _Base::displayName();
+}
+
 std::string UsdShaderAttributeHolder::documentation() const { return _sdrProp->GetHelp(); }
 
 #ifdef UFE_V3_FEATURES_AVAILABLE

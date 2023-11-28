@@ -8,6 +8,7 @@ target_sources(${PROJECT_NAME}
         converter.cpp
         customLayerData.cpp
         diagnosticDelegate.cpp
+        displayName.cpp
         dynamicAttribute.cpp
         editability.cpp
         json.cpp
@@ -37,6 +38,7 @@ set(HEADERS
     customLayerData.h
     converter.h
     diagnosticDelegate.h
+    displayName.h
     dynamicAttribute.h
     editability.h
     hash.h

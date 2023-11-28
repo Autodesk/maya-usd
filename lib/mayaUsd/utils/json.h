@@ -38,11 +38,15 @@ MAYAUSD_CORE_PUBLIC
 PXR_NS::JsValue convertToValue(const Ufe::Path& path);
 MAYAUSD_CORE_PUBLIC
 PXR_NS::JsValue convertToValue(const MDagPath& path);
+MAYAUSD_CORE_PUBLIC
+PXR_NS::JsValue convertToValue(double value);
 
 MAYAUSD_CORE_PUBLIC
 std::string convertToString(const PXR_NS::JsValue& value);
 MAYAUSD_CORE_PUBLIC
 MString convertToMString(const PXR_NS::JsValue& value);
+MAYAUSD_CORE_PUBLIC
+double convertToDouble(const PXR_NS::JsValue& value);
 MAYAUSD_CORE_PUBLIC
 Ufe::Path convertToUfePath(const PXR_NS::JsValue& value);
 MAYAUSD_CORE_PUBLIC
