@@ -51,6 +51,20 @@ MString convertToMString(const PXR_NS::JsValue& value)
     return MString(convertToString(value).c_str());
 }
 
+PXR_NS::JsValue convertToValue(double value)
+{
+    // Provided for call consistency with other data types.
+    return PXR_NS::JsValue(value);
+}
+
+double convertToDouble(const PXR_NS::JsValue& value)
+{
+    if (!value.IsReal())
+        throw std::runtime_error(invalidJson);
+
+    return value.GetReal();
+}
+
 PXR_NS::JsValue convertToValue(const Ufe::Path& path)
 {
     return convertToValue(Ufe::PathString::string(path));

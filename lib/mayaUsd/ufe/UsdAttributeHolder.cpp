@@ -18,6 +18,7 @@
 #include "Utils.h"
 #include "private/UfeNotifGuard.h"
 
+#include <mayaUsd/utils/displayName.h>
 #include <mayaUsd/utils/util.h>
 
 #include <usdUfe/ufe/Utils.h>
@@ -177,6 +178,19 @@ std::string UsdAttributeHolder::name() const
 {
     if (isValid()) {
         return _usdAttr.GetName().GetString();
+    } else {
+        return std::string();
+    }
+}
+
+std::string UsdAttributeHolder::displayName() const
+{
+    if (isValid()) {
+        std::string dn = _usdAttr.GetDisplayName();
+        if (dn.empty()) {
+            dn = getAttributeDisplayName(_usdAttr.GetName().GetString());
+        }
+        return dn;
     } else {
         return std::string();
     }

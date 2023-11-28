@@ -41,6 +41,7 @@
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/undo/MayaUsdUndoBlock.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
+#include <mayaUsd/utils/displayName.h>
 #include <mayaUsd/utils/undoHelperCommand.h>
 
 #include <pxr/base/plug/plugin.h>
@@ -276,6 +277,8 @@ MStatus initializePlugin(MObject obj)
     UsdMayaBeforeSceneResetNotice::InstallListener();
     UsdMayaExitNotice::InstallListener();
     UsdMayaDiagnosticDelegate::InstallDelegate();
+
+    MayaUsd::loadAttributeNameMappings(plugin.loadPath().asChar());
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
     // Install notifications

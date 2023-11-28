@@ -1,0 +1,7 @@
+{
+    "version": 1.0,
+    "removed_prefixes": [ "xformOp:" ],
+    "attribute_mappings": {
+        "xformOpOrder": "Transform Order"
+    }
+}
