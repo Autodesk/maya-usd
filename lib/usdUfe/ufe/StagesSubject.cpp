@@ -467,16 +467,17 @@ void StagesSubject::stageChanged(
                         sentNotif = true;
                         break;
                     }
-                    // Note : Do not send ObjectDelete notifs when didRemoveInertPrim or didRemoveNonInertPrim
-                    // are set. Indeed, we can get these if prim specs are removed from some layers, but it
-                    // does not mean that the prim is no longer in the composed stage. If the prim
-                    // was actually gone, we would either get an invalid prim (in which case we
-                    // would not even get here, and would send a object destroyed" notif in the else
-                    // below), or we would fall into the "HasInfoChange : Active" case below. However,
-                    // let the fallback SubtreeInvalidate notif be sent, as it is sometimes required (for
-                    // example when unmarking a prim as instanceable - we get entries with the inert prim
-                    // removed, as its instanced version is removed, but it is still there as a regular prim
-                    // and needs to be invalidated.
+                    // Note : Do not send ObjectDelete notifs when didRemoveInertPrim or
+                    // didRemoveNonInertPrim are set. Indeed, we can get these if prim
+                    // specs are removed from some layers, but it does not mean that the prim is no
+                    // longer in the composed stage. If the prim was actually gone, we would either
+                    // get an invalid prim (in which case we would not even get here, and would send
+                    // a object destroyed" notif in the else below), or we would fall into the
+                    // "HasInfoChange : Active" case below. However, let the fallback
+                    // SubtreeInvalidate notif be sent, as it is sometimes required (for example
+                    // when unmarking a prim as instanceable - we get entries with the inert prim
+                    // removed, as its instanced version is removed, but it is still there as a
+                    // regular prim and needs to be invalidated.
 
                     // Special case for "active" metadata.
                     if (entry->HasInfoChange(SdfFieldKeys->Active)) {
