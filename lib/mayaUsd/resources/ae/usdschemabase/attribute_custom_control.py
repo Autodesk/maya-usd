@@ -28,7 +28,7 @@ def getNiceAttributeName(ufeAttr, attrName):
     # Note: the uiname metadata comes from LookdevX and was used for connections.
     if hasattr(ufeAttr, 'displayName'):
         attrName = ufeAttr.displayName
-    elif ufeAttr.hasMetadata("uiname"):
+    elif hasattr(ufeAttr, "hasMetadata") and ufeAttr.hasMetadata("uiname"):
         attrName = str(ufeAttr.getMetadata("uiname"))
     return mayaUsd.lib.Util.prettifyName(attrName)
 

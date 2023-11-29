@@ -339,9 +339,9 @@ class AETemplate(object):
                         if createdControl:
                             self.defineCustom(createdControl, c)
                             break
-                    except Exception:
+                    except Exception as ex:
                         # Do not let one custom control failure affect others.
-                        pass
+                        print('Failed to create control %s: %s' % (c, ex))
                 self.addedAttrs.append(c)
 
     def suppress(self, control):
