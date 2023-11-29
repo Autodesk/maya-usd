@@ -372,7 +372,7 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
         bool                     exportSelected = argData.isFlagSet(kSelectionFlag);
         if (exportSelected) {
             userArgs[UsdMayaJobExportArgsTokens->exportSelected] = true;
-            
+
         } else {
             argData.getObjects(objSelList);
 
