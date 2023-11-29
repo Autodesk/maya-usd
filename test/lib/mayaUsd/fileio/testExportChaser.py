@@ -33,11 +33,13 @@ class exportChaserTest(mayaUsdLib.ExportChaser):
     NotCalled = False
     ChaserNames = set()
     ChaserArgs = {}
+    ExportSelected = False
 
     def __init__(self, factoryContext, *args, **kwargs):
         super(exportChaserTest, self).__init__(factoryContext, *args, **kwargs)
         exportChaserTest.ChaserNames = factoryContext.GetJobArgs().chaserNames
         exportChaserTest.ChaserArgs = factoryContext.GetJobArgs().allChaserArgs['test']
+        exportChaserTest.ExportSelected = factoryContext.GetJobArgs().exportSelected
 
     def ExportDefault(self):
         exportChaserTest.ExportDefaultCalled = True
@@ -84,6 +86,21 @@ class testExportChaser(unittest.TestCase):
         self.assertFalse(exportChaserTest.NotCalled)
         self.assertTrue('test' in exportChaserTest.ChaserNames)
         self.assertEqual(exportChaserTest.ChaserArgs,{'bar': 'ometer', 'foo': 'tball'})
+
+        # test exportSelected
+        self.assertFalse(exportChaserTest.ExportSelected)
+        selection = ['apple']
+        cmds.select(selection)
+
+        cmds.usdExport(mergeTransformAndShape=True,  selection=True,
+            file=usdFilePath,
+            chaser=['test'],
+            chaserArgs=[
+                ('test', 'foo', 'tball'),
+                ('test', 'bar', 'ometer'),
+            ],
+            shadingMode='none')
+        self.assertTrue(exportChaserTest.ExportSelected)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

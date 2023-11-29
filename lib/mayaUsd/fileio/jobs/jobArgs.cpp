@@ -608,6 +608,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
           { UsdMayaJobExportArgsTokens->attributeOnly, UsdMayaJobExportArgsTokens->defaultToMesh }))
     , exportRefsAsInstanceable(
           extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportRefsAsInstanceable))
+    , exportSelected(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportSelected))
     , exportSkels(extractToken(
           userArgs,
           UsdMayaJobExportArgsTokens->exportSkels,
@@ -711,6 +712,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << "referenceObjectMode: " << exportArgs.referenceObjectMode << std::endl
         << "exportRefsAsInstanceable: " << TfStringify(exportArgs.exportRefsAsInstanceable)
         << std::endl
+        << "exportSelected: " << TfStringify(exportArgs.exportSelected) << std::endl
         << "exportSkels: " << TfStringify(exportArgs.exportSkels) << std::endl
         << "exportSkin: " << TfStringify(exportArgs.exportSkin) << std::endl
         << "exportBlendShapes: " << TfStringify(exportArgs.exportBlendShapes) << std::endl
@@ -972,6 +974,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
             = UsdMayaJobExportArgsTokens->none.GetString();
         d[UsdMayaJobExportArgsTokens->exportRefsAsInstanceable] = false;
         d[UsdMayaJobExportArgsTokens->exportRoots] = std::vector<VtValue>();
+        d[UsdMayaJobExportArgsTokens->exportSelected] = false;
         d[UsdMayaJobExportArgsTokens->exportSkin] = UsdMayaJobExportArgsTokens->none.GetString();
         d[UsdMayaJobExportArgsTokens->exportSkels] = UsdMayaJobExportArgsTokens->none.GetString();
         d[UsdMayaJobExportArgsTokens->exportBlendShapes] = false;
@@ -1069,6 +1072,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->exportRefsAsInstanceable] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportRoots] = _stringVector;
         d[UsdMayaJobExportArgsTokens->exportSkin] = _string;
+        d[UsdMayaJobExportArgsTokens->exportSelected] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportSkels] = _string;
         d[UsdMayaJobExportArgsTokens->exportBlendShapes] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportUVs] = _boolean;

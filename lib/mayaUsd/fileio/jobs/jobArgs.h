@@ -206,6 +206,7 @@ struct UsdMayaJobExportArgs
     const TfToken     exportRelativeTextures;
     const TfToken     referenceObjectMode;
     const bool        exportRefsAsInstanceable;
+    const bool        exportSelected;
     const TfToken     exportSkels;
     const TfToken     exportSkin;
     const bool        exportBlendShapes;
