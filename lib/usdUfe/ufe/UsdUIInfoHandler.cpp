@@ -194,7 +194,7 @@ Ufe::UIInfoHandler::Icon UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Pt
     //
     //  We take the info:id of the shader and make it safe by replacing : with _.
     //  Then we search the Maya icon paths for a PNG file with that name. If found we will use it.
-    //  Please note that files with _150 ad _200 can also be provided for high DPI displays.
+    //  Please note that files with _150 and _200 can also be provided for high DPI displays.
     //
     //   For example an info:id of:
     //       MyRenderer:nifty_surface
