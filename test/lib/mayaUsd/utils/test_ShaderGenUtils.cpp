@@ -19,10 +19,14 @@ TEST(ShaderGenUtils, topoChannels)
 {
     auto testPath = mx::FilePath(MATERIALX_TEST_DATA);
 
+    auto searchPath = PXR_NS::HdMtlxSearchPath();
+#if PXR_VERSION > 2311
+    auto library = PXR_NS::HdMtlxStdLibraries();
+#else
     auto library = mx::createDocument();
     ASSERT_TRUE(library != nullptr);
-    auto searchPath = PXR_NS::HdMtlxSearchPaths();
     mx::loadLibraries({}, searchPath, library);
+#endif
 
     auto doc = mx::createDocument();
     doc->importLibrary(library);
