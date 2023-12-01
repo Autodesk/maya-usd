@@ -19,7 +19,7 @@ TEST(ShaderGenUtils, topoChannels)
 {
     auto testPath = mx::FilePath(MATERIALX_TEST_DATA);
 
-    auto searchPath = PXR_NS::HdMtlxSearchPath();
+    auto searchPath = PXR_NS::HdMtlxSearchPaths();
 #if PXR_VERSION > 2311
     auto library = PXR_NS::HdMtlxStdLibraries();
 #else
