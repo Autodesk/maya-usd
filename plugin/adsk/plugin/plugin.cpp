@@ -367,6 +367,12 @@ MStatus uninitializePlugin(MObject obj)
     status = plugin.deregisterCommand(MayaUsd::MayaUsdUndoBlockCmd::commandName);
     CHECK_MSTATUS(status);
 
+    // Deregister from file path editor
+    status
+        = MGlobal::executeCommand("filePathEditor -deregisterType \"mayaUsdProxyShape.filePath\" "
+                                  "-typeLabel \"mayaUsdProxyShape.filePath\" -temporary");
+    CHECK_MSTATUS(status);
+
     status = MayaUsd::ufe::finalize();
     CHECK_MSTATUS(status);
 
