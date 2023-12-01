@@ -17,9 +17,15 @@
 
 #include <usdUfe/ufe/UsdSceneItem.h>
 
+#include <pxr/base/arch/fileSystem.h>
+#include <pxr/base/tf/getenv.h>
+#include <pxr/usd/ar/defaultResolverContext.h>
+#include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/ar/resolverContextBinder.h>
 #include <pxr/usd/sdf/listOp.h> // SdfReferenceListOp/SdfPayloadListOp/SdfPathListOp
 #include <pxr/usd/sdf/schema.h> // SdfFieldKeys
 #include <pxr/usd/usd/variantSets.h>
+#include <pxr/usd/usdShade/shader.h>
 
 #include <map>
 #include <vector>
@@ -180,6 +186,38 @@ Ufe::UIInfoHandler::Icon UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Pt
                     icon.pos = Ufe::UIInfoHandler::LowerRight;
                     break;
                 }
+            }
+        }
+    }
+
+    // Naming convention for third party shader outliner icons:
+    //
+    //  We take the info:id of the shader and make it safe by replacing : with _.
+    //  Then we search the Maya icon paths for a PNG file with that name. If found we will use it.
+    //  Please note that files with _150 ad _200 can also be provided for high DPI displays.
+    //
+    //   For example an info:id of:
+    //       MyRenderer:nifty_surface
+    //   Will have this code search the full Maya icon path for a file named:
+    //       MyRenderer_nifty_surface.png
+    //   And will use it if found. At resolution 200%, the file:
+    //       MyRenderer_nifty_surface_200.png
+    //   Will alternatively be used if found.
+    //
+    if (auto shaderSchema = PXR_NS::UsdShadeShader(usdItem->prim())) {
+        static const auto iconContext = PXR_NS::ArDefaultResolverContext(
+            PXR_NS::TfStringSplit(PXR_NS::TfGetenv("XBMLANGPATH", ""), ARCH_PATH_LIST_SEP));
+        PXR_NS::TfToken shaderId;
+        shaderSchema.GetIdAttr().Get(&shaderId);
+        if (!shaderId.IsEmpty()) {
+            PXR_NS::ArResolverContextBinder binder(iconContext);
+
+            std::string iconName = shaderId.GetString();
+            std::replace(iconName.begin(), iconName.end(), ':', '_');
+            iconName += ".png";
+
+            if (!PXR_NS::ArGetResolver().Resolve(iconName).empty()) {
+                icon.baseIcon = iconName;
             }
         }
     }
