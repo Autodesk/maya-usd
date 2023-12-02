@@ -216,8 +216,21 @@ Ufe::UIInfoHandler::Icon UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Pt
             std::replace(iconName.begin(), iconName.end(), ':', '_');
             iconName += ".png";
 
-            if (!PXR_NS::ArGetResolver().Resolve(iconName).empty()) {
-                icon.baseIcon = iconName;
+            // Since this will be hitting the filesystem hard, mostly to find nothing, let's cache
+            // search results.
+            static std::unordered_map<std::string, bool> sSearchCache;
+            auto                                         cachedHit = sSearchCache.find(iconName);
+            if (cachedHit != sSearchCache.end()) {
+                if (cachedHit->second) {
+                    icon.baseIcon = iconName;
+                }
+            } else {
+                if (!PXR_NS::ArGetResolver().Resolve(iconName).empty()) {
+                    icon.baseIcon = iconName;
+                    sSearchCache.insert({ iconName, true });
+                } else {
+                    sSearchCache.insert({ iconName, false });
+                }
             }
         }
     }
