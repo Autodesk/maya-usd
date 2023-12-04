@@ -15,8 +15,19 @@
 //
 #include "MayaUsdUIInfoHandler.h"
 
+#include <pxr/base/arch/fileSystem.h>
+#include <pxr/base/tf/getenv.h>
+#include <pxr/usd/ar/defaultResolverContext.h>
+#include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/ar/resolverContextBinder.h>
+
 #include <maya/MDoubleArray.h>
 #include <maya/MGlobal.h>
+#include <ufe/nodeDef.h>
+#include <ufe/nodeDefHandler.h>
+#include <ufe/runTimeMgr.h>
+
+#include <algorithm>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -86,6 +97,69 @@ UsdUfe::UsdUIInfoHandler::SupportedTypesMap MayaUsdUIInfoHandler::getSupportedIc
     };
     supportedTypes.insert(mayaSupportedTypes.begin(), mayaSupportedTypes.end());
     return supportedTypes;
+}
+
+Ufe::UIInfoHandler::Icon
+MayaUsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Ptr& mayaItem) const
+{
+    Ufe::UIInfoHandler::Icon icon = Parent::treeViewIcon(mayaItem);
+
+    if (icon.baseIcon == "out_USD_Shader.png") {
+        // Naming convention for third party shader outliner icons:
+        //
+        //  We take the info:id of the shader and make it safe by replacing : with _.
+        //  Then we search the Maya icon paths for a PNG file with that name. If found we will use
+        //  it. Please note that files with _150 and _200 can also be provided for high DPI
+        //  displays.
+        //
+        //   For example an info:id of:
+        //       MyRenderer:nifty_surface
+        //   Will have this code search the full Maya icon path for a file named:
+        //       MyRenderer_nifty_surface.png
+        //   And will use it if found. At resolution 200%, the file:
+        //       MyRenderer_nifty_surface_200.png
+        //   Will alternatively be used if found.
+        //
+        const auto nodeDefHandler
+            = Ufe::RunTimeMgr::instance().nodeDefHandler(mayaItem->runTimeId());
+        if (!nodeDefHandler) {
+            return icon;
+        }
+        const auto nodeDef = nodeDefHandler->definition(mayaItem);
+        if (!nodeDef || nodeDef->type().empty()) {
+            return icon;
+        }
+
+        std::string iconName = nodeDef->type();
+        std::replace(iconName.begin(), iconName.end(), ':', '_');
+        iconName += ".png";
+
+        // Since this will be hitting the filesystem hard, mostly to find nothing, let's cache
+        // search results. Note that "XBMLANGPATH" is Maya specific, which is why the code is here
+        // and not in the base class.
+        static const auto iconContext = PXR_NS::ArDefaultResolverContext(
+            PXR_NS::TfStringSplit(PXR_NS::TfGetenv("XBMLANGPATH", ""), ARCH_PATH_LIST_SEP));
+
+        static std::unordered_map<std::string, bool> sSearchCache;
+        auto                                         cachedHit = sSearchCache.find(iconName);
+        if (cachedHit != sSearchCache.end()) {
+            if (cachedHit->second) {
+                icon.baseIcon = iconName;
+            }
+        } else {
+            // Would be better using MQtUtil::createPixmap, but this requires linking against
+            // QtCore.
+            PXR_NS::ArResolverContextBinder binder(iconContext);
+            if (!PXR_NS::ArGetResolver().Resolve(iconName).empty()) {
+                icon.baseIcon = iconName;
+                sSearchCache.insert({ iconName, true });
+            } else {
+                sSearchCache.insert({ iconName, false });
+            }
+        }
+    }
+
+    return icon;
 }
 
 } // namespace ufe
