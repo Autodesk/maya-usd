@@ -997,6 +997,26 @@ class testProxyShapeBase(unittest.TestCase):
             translate = xform.GetOrderedXformOps()[0].Get()
             assert translate[2] == 2
 
+    def testRegisterFilePathEditor(self):
+        '''
+        Test registering USD file to Maya file path editor
+        '''
+        # create new stage
+        cmds.file(new=True, force=True)
+        with testUtils.TemporaryDirectory(prefix='ProxyShapeBase') as testDir:
+            pathToSave = os.path.join(testDir, 'testRegisterFilePathEditor.usda')
+            cmds.file(rename=pathToSave)            
+            cmds.file(save=True, force=True)
+            cmds.file(new=True, force=True)
+
+        layer = Sdf.Layer.CreateNew(pathToSave)
+        Sdf.CreatePrimInLayer(layer, "/root")
+        layer.Save()
+        node = cmds.createNode("mayaUsdProxyShape")
+        cmds.setAttr("{node}.filePath".format(node=node), layer.realPath, type="string")
+        directories = cmds.filePathEditor(query=True, listDirectories="", unresolved=True)
+        self.assertIsNotNone(directories)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

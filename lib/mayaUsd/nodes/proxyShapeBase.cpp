@@ -250,6 +250,7 @@ MStatus MayaUsdProxyShapeBase::initialize()
     typedAttrFn.setInternal(true);
     typedAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(typedAttrFn.setUsedAsFilename(true));
     retValue = addAttribute(filePathAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
