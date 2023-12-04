@@ -206,10 +206,11 @@ MayaUsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Ptr& mayaItem) const
         //
         //   For example an info:id of:
         //       MyRenderer:nifty_surface
-        //   Will have this code search the full Maya icon path for a file named:
-        //       MyRenderer_nifty_surface.png
+        //   On a USD runtime item will have this code search the full Maya icon path for a file
+        //   named:
+        //       out_USD_MyRenderer_nifty_surface.png
         //   And will use it if found. At resolution 200%, the file:
-        //       MyRenderer_nifty_surface_200.png
+        //       out_USD_MyRenderer_nifty_surface_200.png
         //   Will alternatively be used if found.
         //
         const auto nodeDefHandler
@@ -222,7 +223,9 @@ MayaUsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Ptr& mayaItem) const
             return icon;
         }
 
-        std::string iconName = nodeDef->type();
+        constexpr auto outlinerPrefix = "out_";
+        const auto     runtimeName = Ufe::RunTimeMgr::instance().getName(mayaItem->runTimeId());
+        std::string    iconName = outlinerPrefix + runtimeName + "_" + nodeDef->type();
         std::replace(iconName.begin(), iconName.end(), ':', '_');
         iconName += ".png";
 
