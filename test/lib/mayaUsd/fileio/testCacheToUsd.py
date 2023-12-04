@@ -151,10 +151,12 @@ class CacheToUsdTestCase(unittest.TestCase):
         import mayaUsd_createStageWithNewLayer
         self.proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         self.stage = mayaUsd.lib.GetPrim(self.proxyShapePathStr).GetStage()
-        self.stage.GetRootLayer().identifier = self.getRootLayerFileName()
 
     def tearDown(self):
         self.removeCacheFile()
+
+    def makeRootLayerNotAnonymous(self):
+        self.stage.GetRootLayer().identifier = self.getRootLayerFileName()
 
     def verifyCacheFileDefaultPrim(self, cacheFilename, defaultPrimName):
         layer = Sdf.Layer.FindOrOpen(cacheFilename)
@@ -309,20 +311,33 @@ class CacheToUsdTestCase(unittest.TestCase):
         #       - Due to the way layer caching works in OpenUSD, asking for
         #         the layer identifier returns the absolute path.
         if relativePath:
+            if self.stage.GetRootLayer().anonymous:
+                self.assertNotIn('payload = @testCacheToUsd.usda', self.stage.GetRootLayer().ExportToString())
+                self.assertRegexpMatches(self.stage.GetRootLayer().ExportToString(), 'payload = @.*testCacheToUsd.usda')
+                self.makeRootLayerNotAnonymous()
+                mayaUsd.lib.Util.updatePostponedRelativePaths(self.stage.GetRootLayer())
+                
             self.assertIn('payload = @testCacheToUsd.usda', self.stage.GetRootLayer().ExportToString())
 
         self.verifyCacheFileDefaultPrim(cacheFile, cachePrimName)
 
     def testCacheToUsdSibling(self):
+        self.makeRootLayerNotAnonymous()
         self.runTestCacheToUsd(createMayaRefPrimSiblingCache, checkSiblingCacheParent)
 
     def testCacheToUsdSiblingWithRelativePath(self):
+        self.makeRootLayerNotAnonymous()
         self.runTestCacheToUsd(createMayaRefPrimSiblingCacheWithRelativePath, checkSiblingCacheParent)
 
     def testCacheToUsdVariant(self):
+        self.makeRootLayerNotAnonymous()
         self.runTestCacheToUsd(createMayaRefPrimVariantCache, checkVariantCacheParent)
 
     def testCacheToUsdVariantWithRelativePath(self):
+        self.makeRootLayerNotAnonymous()
+        self.runTestCacheToUsd(createMayaRefPrimVariantCacheWithRelativePath, checkVariantCacheParent)
+
+    def testCacheToUsdVariantWithRelativePathInAnonLayer(self):
         self.runTestCacheToUsd(createMayaRefPrimVariantCacheWithRelativePath, checkVariantCacheParent)
 
     def testAutoEditAndCache(self):
@@ -330,6 +345,7 @@ class CacheToUsdTestCase(unittest.TestCase):
 
         Add a Maya Reference using auto-edit, then cache the edits.
         '''
+        self.makeRootLayerNotAnonymous()
         kDefaultPrimName = mayaRefUtils.defaultMayaReferencePrimName()
 
         # Since this is a brand new prim, it should not have variant sets.
@@ -392,6 +408,7 @@ class CacheToUsdTestCase(unittest.TestCase):
         In particular, the rig generates multiple translation xform on some
         prim, verify that we do get these multiple translations.
         '''
+        self.makeRootLayerNotAnonymous()
         kDefaultPrimName = mayaRefUtils.defaultMayaReferencePrimName()
 
         # Since this is a brand new prim, it should not have variant sets.
@@ -484,6 +501,7 @@ class CacheToUsdTestCase(unittest.TestCase):
 
         # Create a Maya reference prim using the defaults, under a
         # newly-created parent.
+        self.makeRootLayerNotAnonymous()
         cacheParent = self.stage.DefinePrim('/CacheParent', 'Xform')
         cacheParentPathStr = self.proxyShapePathStr + ',/CacheParent'
         self.assertFalse(cacheParent.HasVariantSets())
@@ -578,10 +596,12 @@ class CacheToUsdTestCase(unittest.TestCase):
 
     def testMayaRefPrimTransform(self):
         '''Test transforming the Maya Reference prim, editing it in Maya, then merging back the result.'''
+        self.makeRootLayerNotAnonymous()
         self.runTestMayaRefPrimTransform(createMayaRefPrimSiblingCache, checkSiblingCacheParent)
 
     def testMayaRefPrimTransformToVariant(self):
         '''Test transforming the Maya Reference prim, editing it in Maya, then merging back the result.'''
+        self.makeRootLayerNotAnonymous()
         self.runTestMayaRefPrimTransform(createMayaRefPrimVariantCache, checkVariantCacheParent)
 
 if __name__ == '__main__':

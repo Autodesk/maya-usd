@@ -168,15 +168,22 @@ void cacheMayaReference(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionar
     std::string relDistLayerPath = dstLayerPath;
     if (makePathRelative) {
         const std::string layerDirPath = MayaUsd::getTargetLayerFolder(stage);
-        const auto        relativePathAndSuccess
-            = PXR_NS::UsdMayaUtilFileSystem::makePathRelativeTo(dstLayerPath, layerDirPath);
-        if (relativePathAndSuccess.second) {
-            relDistLayerPath = relativePathAndSuccess.first;
+        if (layerDirPath.empty()) {
+            // Making the path relative is postponed until the containing layer is saved.
+            auto layer = getCurrentTargetLayer(stage);
+            UsdMayaUtilFileSystem::markPathAsPostponedRelative(layer, dstLayerPath);
         } else {
-            TF_WARN(
-                "File name (%s) cannot be resolved as relative to the current edit target layer, "
-                "using the absolute path.",
-                dstLayerPath.c_str());
+            const auto relativePathAndSuccess
+                = PXR_NS::UsdMayaUtilFileSystem::makePathRelativeTo(dstLayerPath, layerDirPath);
+            if (relativePathAndSuccess.second) {
+                relDistLayerPath = relativePathAndSuccess.first;
+            } else {
+                TF_WARN(
+                    "File name (%s) cannot be resolved as relative to the current edit target "
+                    "layer, "
+                    "using the absolute path.",
+                    dstLayerPath.c_str());
+            }
         }
     }
 
