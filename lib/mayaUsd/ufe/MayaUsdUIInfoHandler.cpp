@@ -23,9 +23,13 @@
 
 #include <maya/MDoubleArray.h>
 #include <maya/MGlobal.h>
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#include <maya/MSceneMessage.h>
 #include <ufe/nodeDef.h>
 #include <ufe/nodeDefHandler.h>
 #include <ufe/runTimeMgr.h>
+#endif
 
 #include <algorithm>
 
@@ -99,11 +103,99 @@ UsdUfe::UsdUIInfoHandler::SupportedTypesMap MayaUsdUIInfoHandler::getSupportedIc
     return supportedTypes;
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+namespace {
+class _MayaIconResolver
+{
+public:
+    ~_MayaIconResolver() { Terminate(); }
+
+    static _MayaIconResolver& Get()
+    {
+        static _MayaIconResolver sResolver;
+        return sResolver;
+    }
+
+    bool FileExists(const std::string& iconName)
+    {
+        // Since this will be hitting the filesystem hard, mostly to find nothing, let's cache
+        // search results. Note that "XBMLANGPATH" is Maya specific, which is why the code is here
+        // and not in the base class.
+        auto cachedHit = m_searchCache.find(iconName);
+        if (cachedHit != m_searchCache.end()) {
+            return cachedHit->second;
+        }
+
+        // Would be better using MQtUtil::createPixmap, but this requires linking against
+        // QtCore.
+        PXR_NS::ArResolverContextBinder binder(m_iconContext);
+        if (!PXR_NS::ArGetResolver().Resolve(iconName).empty()) {
+            m_searchCache.insert({ iconName, true });
+            return true;
+        }
+
+        m_searchCache.insert({ iconName, false });
+        return false;
+    }
+
+    void ResetCache()
+    {
+        m_iconContext = PXR_NS::ArDefaultResolverContext(
+            PXR_NS::TfStringSplit(PXR_NS::TfGetenv("XBMLANGPATH", ""), ARCH_PATH_LIST_SEP));
+        m_searchCache.clear();
+    }
+
+    static void OnPluginStateChange(const MStringArray& /*strs*/, void* /*clientData*/)
+    {
+        _MayaIconResolver::Get().ResetCache();
+    }
+
+    void Terminate()
+    {
+        if (m_pluginLoadCB) {
+            MMessage::removeCallback(m_pluginLoadCB);
+            m_pluginLoadCB = 0;
+        }
+        if (m_pluginUnloadCB) {
+            MMessage::removeCallback(m_pluginUnloadCB);
+            m_pluginLoadCB = 0;
+        }
+        if (m_beforeExitCB) {
+            MMessage::removeCallback(m_beforeExitCB);
+            m_beforeExitCB = 0;
+        }
+    }
+
+    static void OnTerminateCache(void* /*clientData*/) { _MayaIconResolver::Get().Terminate(); }
+
+private:
+    _MayaIconResolver()
+    {
+        ResetCache();
+
+        // Set up callback to notify of plugin load and unload
+        m_pluginLoadCB = MSceneMessage::addStringArrayCallback(
+            MSceneMessage::kAfterPluginLoad, OnPluginStateChange);
+        m_pluginUnloadCB = MSceneMessage::addStringArrayCallback(
+            MSceneMessage::kAfterPluginUnload, OnPluginStateChange);
+        m_beforeExitCB = MSceneMessage::addCallback(MSceneMessage::kMayaExiting, OnTerminateCache);
+    }
+
+    PXR_NS::ArDefaultResolverContext      m_iconContext;
+    std::unordered_map<std::string, bool> m_searchCache;
+    MCallbackId                           m_pluginLoadCB = 0;
+    MCallbackId                           m_pluginUnloadCB = 0;
+    MCallbackId                           m_beforeExitCB = 0;
+};
+} // namespace
+#endif
+
 Ufe::UIInfoHandler::Icon
 MayaUsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Ptr& mayaItem) const
 {
     Ufe::UIInfoHandler::Icon icon = Parent::treeViewIcon(mayaItem);
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
     if (icon.baseIcon == "out_USD_Shader.png") {
         // Naming convention for third party shader outliner icons:
         //
@@ -134,30 +226,11 @@ MayaUsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Ptr& mayaItem) const
         std::replace(iconName.begin(), iconName.end(), ':', '_');
         iconName += ".png";
 
-        // Since this will be hitting the filesystem hard, mostly to find nothing, let's cache
-        // search results. Note that "XBMLANGPATH" is Maya specific, which is why the code is here
-        // and not in the base class.
-        static const auto iconContext = PXR_NS::ArDefaultResolverContext(
-            PXR_NS::TfStringSplit(PXR_NS::TfGetenv("XBMLANGPATH", ""), ARCH_PATH_LIST_SEP));
-
-        static std::unordered_map<std::string, bool> sSearchCache;
-        auto                                         cachedHit = sSearchCache.find(iconName);
-        if (cachedHit != sSearchCache.end()) {
-            if (cachedHit->second) {
-                icon.baseIcon = iconName;
-            }
-        } else {
-            // Would be better using MQtUtil::createPixmap, but this requires linking against
-            // QtCore.
-            PXR_NS::ArResolverContextBinder binder(iconContext);
-            if (!PXR_NS::ArGetResolver().Resolve(iconName).empty()) {
-                icon.baseIcon = iconName;
-                sSearchCache.insert({ iconName, true });
-            } else {
-                sSearchCache.insert({ iconName, false });
-            }
+        if (_MayaIconResolver::Get().FileExists(iconName)) {
+            icon.baseIcon = iconName;
         }
     }
+#endif
 
     return icon;
 }
