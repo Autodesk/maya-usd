@@ -121,28 +121,28 @@ public:
         // Since this will be hitting the filesystem hard, mostly to find nothing, let's cache
         // search results. Note that "XBMLANGPATH" is Maya specific, which is why the code is here
         // and not in the base class.
-        auto cachedHit = m_searchCache.find(iconName);
-        if (cachedHit != m_searchCache.end()) {
+        auto cachedHit = _searchCache.find(iconName);
+        if (cachedHit != _searchCache.end()) {
             return cachedHit->second;
         }
 
         // Would be better using MQtUtil::createPixmap, but this requires linking against
         // QtCore.
-        PXR_NS::ArResolverContextBinder binder(m_iconContext);
+        PXR_NS::ArResolverContextBinder binder(_iconContext);
         if (!PXR_NS::ArGetResolver().Resolve(iconName).empty()) {
-            m_searchCache.insert({ iconName, true });
+            _searchCache.insert({ iconName, true });
             return true;
         }
 
-        m_searchCache.insert({ iconName, false });
+        _searchCache.insert({ iconName, false });
         return false;
     }
 
     void ResetCache()
     {
-        m_iconContext = PXR_NS::ArDefaultResolverContext(
+        _iconContext = PXR_NS::ArDefaultResolverContext(
             PXR_NS::TfStringSplit(PXR_NS::TfGetenv("XBMLANGPATH", ""), ARCH_PATH_LIST_SEP));
-        m_searchCache.clear();
+        _searchCache.clear();
     }
 
     static void OnPluginStateChange(const MStringArray& /*strs*/, void* /*clientData*/)
@@ -152,17 +152,17 @@ public:
 
     void Terminate()
     {
-        if (m_pluginLoadCB) {
-            MMessage::removeCallback(m_pluginLoadCB);
-            m_pluginLoadCB = 0;
+        if (_pluginLoadCB) {
+            MMessage::removeCallback(_pluginLoadCB);
+            _pluginLoadCB = 0;
         }
-        if (m_pluginUnloadCB) {
-            MMessage::removeCallback(m_pluginUnloadCB);
-            m_pluginLoadCB = 0;
+        if (_pluginUnloadCB) {
+            MMessage::removeCallback(_pluginUnloadCB);
+            _pluginLoadCB = 0;
         }
-        if (m_beforeExitCB) {
-            MMessage::removeCallback(m_beforeExitCB);
-            m_beforeExitCB = 0;
+        if (_beforeExitCB) {
+            MMessage::removeCallback(_beforeExitCB);
+            _beforeExitCB = 0;
         }
     }
 
@@ -174,18 +174,18 @@ private:
         ResetCache();
 
         // Set up callback to notify of plugin load and unload
-        m_pluginLoadCB = MSceneMessage::addStringArrayCallback(
+        _pluginLoadCB = MSceneMessage::addStringArrayCallback(
             MSceneMessage::kAfterPluginLoad, OnPluginStateChange);
-        m_pluginUnloadCB = MSceneMessage::addStringArrayCallback(
+        _pluginUnloadCB = MSceneMessage::addStringArrayCallback(
             MSceneMessage::kAfterPluginUnload, OnPluginStateChange);
-        m_beforeExitCB = MSceneMessage::addCallback(MSceneMessage::kMayaExiting, OnTerminateCache);
+        _beforeExitCB = MSceneMessage::addCallback(MSceneMessage::kMayaExiting, OnTerminateCache);
     }
 
-    PXR_NS::ArDefaultResolverContext      m_iconContext;
-    std::unordered_map<std::string, bool> m_searchCache;
-    MCallbackId                           m_pluginLoadCB = 0;
-    MCallbackId                           m_pluginUnloadCB = 0;
-    MCallbackId                           m_beforeExitCB = 0;
+    PXR_NS::ArDefaultResolverContext      _iconContext;
+    std::unordered_map<std::string, bool> _searchCache;
+    MCallbackId                           _pluginLoadCB = 0;
+    MCallbackId                           _pluginUnloadCB = 0;
+    MCallbackId                           _beforeExitCB = 0;
 };
 } // namespace
 #endif
