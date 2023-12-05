@@ -83,7 +83,9 @@ MStatus UsdMayaExportTranslator::writer(
     MSelectionList           objSelList;
     UsdMayaUtil::MDagPathSet dagPaths;
     const bool               exportSelected = (mode == MPxFileTranslator::kExportActiveAccessMode);
-    if (!exportSelected) {
+    if (exportSelected) {
+        userArgs[UsdMayaJobExportArgsTokens->exportSelected] = true;
+    } else {
         if (userArgs.count(UsdMayaJobExportArgsTokens->exportRoots) > 0) {
             const auto exportRoots = DictUtils::extractVector<std::string>(
                 userArgs, UsdMayaJobExportArgsTokens->exportRoots);

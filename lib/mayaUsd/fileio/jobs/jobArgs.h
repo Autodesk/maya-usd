@@ -76,6 +76,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (referenceObjectMode) \
     (exportRefsAsInstanceable) \
     (exportRoots) \
+    (exportSelected) \
     (exportSkels) \
     (exportSkin) \
     (exportUVs) \
@@ -205,6 +206,7 @@ struct UsdMayaJobExportArgs
     const TfToken     exportRelativeTextures;
     const TfToken     referenceObjectMode;
     const bool        exportRefsAsInstanceable;
+    const bool        exportSelected;
     const TfToken     exportSkels;
     const TfToken     exportSkin;
     const bool        exportBlendShapes;
