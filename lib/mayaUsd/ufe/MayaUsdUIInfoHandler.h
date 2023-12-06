@@ -46,6 +46,7 @@ public:
     static MayaUsdUIInfoHandler::Ptr create();
 
     UsdUfe::UsdUIInfoHandler::SupportedTypesMap getSupportedIconTypes() const override;
+    Ufe::UIInfoHandler::Icon treeViewIcon(const Ufe::SceneItem::Ptr& item) const override;
 
 private:
     void updateInvisibleColor();
