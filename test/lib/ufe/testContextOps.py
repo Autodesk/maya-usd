@@ -37,6 +37,7 @@ from maya.internal.ufeSupport import ufeCmdWrapper as ufeCmd
 import maya.api.OpenMaya as om
 
 import ufe
+import usdUfe
 
 import os
 import unittest
@@ -188,8 +189,8 @@ class ContextOpsTestCase(unittest.TestCase):
 
         # Not supported in bulk (from UsdContextOps).
         self.assertNotIn('Load', contextItemStrings)
-        self.assertNotIn('Load with Descendants', contextItemStrings)
-        self.assertNotIn('Unload', contextItemStrings)
+        self.assertIn('Load with Descendants', contextItemStrings)
+        self.assertIn('Unload', contextItemStrings)
         self.assertNotIn('Variant Sets', contextItemStrings)
         self.assertNotIn('Add New Prim', contextItemStrings)
 
@@ -499,6 +500,48 @@ class ContextOpsTestCase(unittest.TestCase):
         # Re-create a ContextOps interface for it.
         # Since the context item is in the selection, we get a bulk context.
         self.contextOps = ufe.ContextOps.contextOps(self.ball35Item)
+
+        # Test Bulk Unload and Load with Descendants
+        payloadFile = testUtils.getTestScene('twoSpheres', 'sphere.usda')
+
+        def addPayLoads(payloadFile, ballPrims):
+            for ballPrim in ballPrims.values():
+                cmd = usdUfe.AddPayloadCommand(ballPrim, payloadFile, True)
+                self.assertIsNotNone(cmd)
+
+                # Verify state after add payload
+                cmd.execute()
+                self.assertTrue(ballPrim.HasPayload())
+                self.assertTrue(ballPrim.IsLoaded())
+    
+        def verifyBulkPrimPayload(ballPrims, ifLoaded):
+            for ballPrim in ballPrims.values():
+                self.assertEqual(ballPrim.IsLoaded(), ifLoaded)
+
+        addPayLoads(payloadFile, ballPrims)
+
+        # Unload
+        cmd = self.contextOps.doOpCmd(['Unload'])
+        self.assertIsNotNone(cmd)
+        self.assertIsInstance(cmd, ufe.CompositeUndoableCommand)
+
+        ufeCmd.execute(cmd)
+        verifyBulkPrimPayload(ballPrims, False)
+        cmds.undo()
+        verifyBulkPrimPayload(ballPrims, True)
+
+        # Load with Descendants
+        # Unload the payloads first, using the unload command
+        ufeCmd.execute(cmd)
+        cmd = self.contextOps.doOpCmd(['Load with Descendants'])
+        self.assertIsNotNone(cmd)
+        self.assertIsInstance(cmd, ufe.CompositeUndoableCommand)
+
+        ufeCmd.execute(cmd)
+        verifyBulkPrimPayload(ballPrims, True)
+        cmds.undo()
+        verifyBulkPrimPayload(ballPrims, False)
+
 
         # Change visility, undo/redo.
         cmd = self.contextOps.doOpCmd(['Make Invisible'])
