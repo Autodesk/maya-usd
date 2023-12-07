@@ -689,10 +689,16 @@ bool isPropertyMetadataEditAllowed(
         = UsdUfe::getStrongerLayer(stage, targetLayer, topAuthoredLayer, true);
     bool allowed = (strongestLayer == targetLayer);
     if (!allowed && errMsg) {
+        std::string strongName;
+        if (strongestLayer)
+            strongName = strongestLayer->GetDisplayName();
+        else
+            strongName = "a layer we could not identify";
+
         *errMsg = TfStringPrintf(
             "Cannot edit [%s] attribute because there is a stronger opinion in [%s].",
             metadataName.GetText(),
-            strongestLayer ? strongestLayer->GetDisplayName().c_str() : "some layer");
+            strongName.c_str());
     }
     return allowed;
 }
