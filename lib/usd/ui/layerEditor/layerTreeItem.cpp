@@ -267,13 +267,21 @@ bool LayerTreeItem::isIncoming() const { return _isIncomingLayer; }
 
 bool LayerTreeItem::needsSaving() const
 {
-    if (_layer) {
-        if (!isSessionLayer() && !isReadOnly()
-            && (_isSharedStage || parentLayerItem() != nullptr)) {
-            return isDirty() || isAnonymous();
-        }
-    }
-    return false;
+    // If for any reason we don't hold a layer, then we cannot save it.
+    if (!_layer)
+        return false;
+
+    // Session layers are managed by Maya, not the Layer Editor,
+    // so their dirty state does not count.
+    if (isSessionLayer())
+        return false;
+
+    // The top layer of unshared layer are assumed to be managed
+    // somewhere else and do not get saved here. (Is this correct?)
+    if (!_isSharedStage && parentLayerItem() == nullptr)
+        return false;
+
+    return isDirty() || isAnonymous();
 }
 
 // delegate Action API for command buttons
