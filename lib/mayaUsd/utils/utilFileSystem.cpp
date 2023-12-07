@@ -439,6 +439,14 @@ void updatePostponedRelativePathsForPrim(
     }
 }
 
+void UsdMayaUtilFileSystem::updatePostponedRelativePaths(const PXR_NS::SdfLayerHandle& layer)
+{
+    if (!layer)
+        return;
+
+    updatePostponedRelativePaths(layer, layer->GetRealPath());
+}
+
 void UsdMayaUtilFileSystem::updatePostponedRelativePaths(
     const PXR_NS::SdfLayerHandle& layer,
     const std::string&            layerFileName)
