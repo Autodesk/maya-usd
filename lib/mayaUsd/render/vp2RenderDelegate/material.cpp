@@ -22,6 +22,7 @@
 #include "tokens.h"
 
 #include <mayaUsd/base/tokens.h>
+#include <mayaUsd/render/vp2RenderDelegate/colorManagementPreferences.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 #include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
 #include <mayaUsd/utils/hash.h>
@@ -238,126 +239,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 // clang-format on
 
-// We will cache the color management preferences since they are used in many loops.
-class CMPrefs
-{
-public:
-    ~CMPrefs() { RemoveSinks(); }
-    static bool           Active() { return Get()._active; }
-    static const MString& RenderingSpaceName() { return Get()._renderingSpaceName; }
-    static const MString& sRGBName() { return Get()._sRGBName; }
-    static std::string    getFileRule(const std::string& path)
-    {
-        MString colorRuleCmd;
-        colorRuleCmd.format("colorManagementFileRules -evaluate \"^1s\";", MString(path.c_str()));
-        return MGlobal::executeCommandStringResult(colorRuleCmd).asChar();
-    }
-
-    static void SetDirty()
-    {
-        auto& self = InternalGet();
-        self._dirty = true;
-    }
-
-    static void MayaExit()
-    {
-        auto& self = InternalGet();
-        self.RemoveSinks();
-    }
-
-private:
-    CMPrefs() = default;
-    static const CMPrefs& Get()
-    {
-        auto& self = InternalGet();
-        self.Refresh();
-        return self;
-    }
-    static CMPrefs& InternalGet()
-    {
-        static CMPrefs _self;
-        return _self;
-    }
-    bool                     _dirty = true;
-    bool                     _active = false;
-    MString                  _renderingSpaceName;
-    MString                  _sRGBName;
-    std::vector<MCallbackId> _mayaColorManagementCallbackIds;
-    MCallbackId              _mayaExitingCB { 0 };
-
-    void Refresh();
-    void RemoveSinks()
-    {
-        for (auto id : _mayaColorManagementCallbackIds) {
-            MMessage::removeCallback(id);
-        }
-        _mayaColorManagementCallbackIds.clear();
-        MMessage::removeCallback(_mayaExitingCB);
-    }
-};
-
-void colorManagementRefreshCB(void*) { CMPrefs::SetDirty(); }
-
-void mayaExitingCB(void*) { CMPrefs::MayaExit(); }
-
-void CMPrefs::Refresh()
-{
-    if (_mayaColorManagementCallbackIds.empty()) {
-        // Monitor color management prefs
-        _mayaColorManagementCallbackIds.push_back(MEventMessage::addEventCallback(
-            "colorMgtEnabledChanged", colorManagementRefreshCB, this));
-        _mayaColorManagementCallbackIds.push_back(MEventMessage::addEventCallback(
-            "colorMgtWorkingSpaceChanged", colorManagementRefreshCB, this));
-        _mayaColorManagementCallbackIds.push_back(MEventMessage::addEventCallback(
-            "colorMgtConfigChanged", colorManagementRefreshCB, this));
-        _mayaColorManagementCallbackIds.push_back(MEventMessage::addEventCallback(
-            "colorMgtConfigFilePathChanged", colorManagementRefreshCB, this));
-        // The color management settings are quietly reset on file new:
-        _mayaColorManagementCallbackIds.push_back(
-            MSceneMessage::addCallback(MSceneMessage::kBeforeNew, colorManagementRefreshCB, this));
-        _mayaColorManagementCallbackIds.push_back(
-            MSceneMessage::addCallback(MSceneMessage::kBeforeOpen, colorManagementRefreshCB, this));
-
-        // Cleanup on exit:
-        _mayaExitingCB
-            = MSceneMessage::addCallback(MSceneMessage::kMayaExiting, mayaExitingCB, this);
-    }
-
-    if (!_dirty) {
-        return;
-    }
-    _dirty = false;
-
-    int isActive = 0;
-    MGlobal::executeCommand("colorManagementPrefs -q -cmEnabled", isActive, false, false);
-    if (!isActive) {
-        _active = false;
-        return;
-    }
-
-    _active = true;
-
-    _renderingSpaceName
-        = MGlobal::executeCommandStringResult("colorManagementPrefs -q -renderingSpaceName");
-
-    // Need some robustness around sRGB since not all OCIO configs declare it the same way:
-    const auto sRGBAliases
-        = std::set<std::string> { "sRGB",         "sRGB - Texture",
-                                  "srgb_tx",      "Utility - sRGB - Texture",
-                                  "srgb_texture", "Input - Generic - sRGB - Texture" };
-
-    MStringArray allInputSpaces;
-    MGlobal::executeCommand(
-        "colorManagementPrefs -q -inputSpaceNames", allInputSpaces, false, false);
-
-    for (auto&& spaceName : allInputSpaces) {
-        if (sRGBAliases.count(spaceName.asChar())) {
-            _sRGBName = spaceName;
-            break;
-        }
-    }
-}
-
 #ifdef WANT_MATERIALX_BUILD
 
 // clang-format off
@@ -564,7 +445,7 @@ size_t _GenerateNetwork2TopoHash(const HdMaterialNetwork2& materialNetwork)
             }
         }
 #ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
-        if (CMPrefs::Active()) {
+        if (MayaUsd::ColorManagementPreferences::Active()) {
             // Explicit color management parameters affect topology:
             for (auto&& cmName : _mtlxKnownColorSpaceAttrs) {
                 auto cmIt = node.parameters.find(cmName);
@@ -599,7 +480,9 @@ size_t _GenerateNetwork2TopoHash(const HdMaterialNetwork2& materialNetwork)
 #ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
     if (hasTextureNode) {
         MayaUsd::hash_combine(
-            topoHash, std::hash<std::string> {}(CMPrefs::RenderingSpaceName().asChar()));
+            topoHash,
+            std::hash<std::string> {}(
+                MayaUsd::ColorManagementPreferences::RenderingSpaceName().asChar()));
     }
 #endif
 
@@ -1161,7 +1044,7 @@ std::string _GenerateXMLString(const HdMaterialNetwork& materialNetwork, bool in
 #ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
 void _AddColorManagementFragments(HdMaterialNetwork& net)
 {
-    if (!CMPrefs::Active()) {
+    if (!MayaUsd::ColorManagementPreferences::Active()) {
         return;
     }
 
@@ -1212,13 +1095,13 @@ void _AddColorManagementFragments(HdMaterialNetwork& net)
             if (resolvedPath.empty()) {
                 continue;
             }
-            colorSpace = CMPrefs::getFileRule(resolvedPath).c_str();
+            colorSpace = MayaUsd::ColorManagementPreferences::getFileRule(resolvedPath).c_str();
         } else if (sourceColorSpace == _tokens->sRGB) {
-            if (CMPrefs::sRGBName().isEmpty()) {
+            if (MayaUsd::ColorManagementPreferences::sRGBName().isEmpty()) {
                 // No alias found. Do not color correct...
                 continue;
             }
-            colorSpace = CMPrefs::sRGBName();
+            colorSpace = MayaUsd::ColorManagementPreferences::sRGBName();
         } else if (sourceColorSpace == _tokens->raw) {
             // No cm necessary for raw:
             continue;
@@ -2429,9 +2312,10 @@ void HdVP2Material::CompiledNetwork::_ApplyVP2Fixes(
         SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifier(outNode.identifier);
 #endif
         if (_IsUsdUVTexture(node)) {
-            outNode.identifier = TfToken(
-                HdVP2ShaderFragments::getUsdUVTextureFragmentName(CMPrefs::RenderingSpaceName())
-                    .asChar());
+            outNode.identifier
+                = TfToken(HdVP2ShaderFragments::getUsdUVTextureFragmentName(
+                              MayaUsd::ColorManagementPreferences::RenderingSpaceName())
+                              .asChar());
         } else {
             if (!sdrNode) {
                 TF_WARN("Could not find a shader node for <%s>", node.path.GetText());
@@ -2753,7 +2637,7 @@ TfToken _RequiresColorManagement(
         if (resolvedPath.empty()) {
             return {};
         }
-        sourceColorSpace = CMPrefs::getFileRule(resolvedPath);
+        sourceColorSpace = MayaUsd::ColorManagementPreferences::getFileRule(resolvedPath);
     }
 
     if (sourceColorSpace == "Raw" || sourceColorSpace == "raw") {
@@ -2867,7 +2751,7 @@ void HdVP2Material::CompiledNetwork::_ApplyMtlxVP2Fixes(
             for (const auto& c : cnxPair.second) {
                 TfToken cmNodeDefId, cmInputName, cmOutputName;
 #ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
-                if (CMPrefs::Active()) {
+                if (MayaUsd::ColorManagementPreferences::Active()) {
                     cmNodeDefId = _RequiresColorManagement(
                         inNode,
                         inNet.nodes.find(c.upstreamNode)->second,
@@ -2881,7 +2765,7 @@ void HdVP2Material::CompiledNetwork::_ApplyMtlxVP2Fixes(
                 if (!colorManagementType.IsEmpty()) {
                     if (colorManagementCategory.empty()) {
                         auto categoryIt = _mtlxColorCorrectCategoryMap.find(
-                            CMPrefs::RenderingSpaceName().asChar());
+                            MayaUsd::ColorManagementPreferences::RenderingSpaceName().asChar());
                         if (categoryIt != _mtlxColorCorrectCategoryMap.end()) {
                             colorManagementCategory = categoryIt->second;
                         }

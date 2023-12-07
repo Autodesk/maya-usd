@@ -15,6 +15,7 @@ target_sources(${PROJECT_NAME}
         meshViewportCompute.cpp
         points.cpp
         proxyRenderDelegate.cpp
+        colorManagementPreferences.cpp
         render_delegate.cpp
         render_param.cpp
         sampler.cpp
@@ -24,6 +25,7 @@ target_sources(${PROJECT_NAME}
 
 set(HEADERS
     proxyRenderDelegate.h
+    colorManagementPreferences.h
 )
 
 # -----------------------------------------------------------------------------
