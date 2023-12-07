@@ -74,7 +74,6 @@ private:
     MString                  _renderingSpaceName;
     MString                  _sRGBName;
     std::vector<MCallbackId> _mayaColorManagementCallbackIds;
-    MCallbackId              _mayaExitingCB { 0 };
 
     void Refresh();
     void RemoveSinks();

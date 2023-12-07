@@ -74,7 +74,6 @@ void ColorManagementPreferences::RemoveSinks()
         MMessage::removeCallback(id);
     }
     _mayaColorManagementCallbackIds.clear();
-    MMessage::removeCallback(_mayaExitingCB);
 }
 
 void colorManagementRefreshCB(void*) { ColorManagementPreferences::SetDirty(); }
@@ -100,8 +99,8 @@ void ColorManagementPreferences::Refresh()
             MSceneMessage::addCallback(MSceneMessage::kBeforeOpen, colorManagementRefreshCB, this));
 
         // Cleanup on exit:
-        _mayaExitingCB
-            = MSceneMessage::addCallback(MSceneMessage::kMayaExiting, mayaExitingCB, this);
+        _mayaColorManagementCallbackIds.push_back(
+            MSceneMessage::addCallback(MSceneMessage::kMayaExiting, mayaExitingCB, this));
     }
 
     if (!_dirty) {
