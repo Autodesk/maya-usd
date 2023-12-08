@@ -22,6 +22,7 @@ import unittest
 
 import fixturesUtils
 import imageUtils
+import mayaUtils
 
 
 class testPxrUsdMayaGLInstancerDraw(imageUtils.ImageDiffingTestCase):
@@ -115,17 +116,22 @@ class testPxrUsdMayaGLInstancerDraw(imageUtils.ImageDiffingTestCase):
         cmds.file(os.path.abspath('InstancerDrawTest.ma'),
                 open=True, force=True)
 
+        # The cards rendering colors in older versions of Maya is lighter,
+        suffix = ''
+        if mayaUtils.mayaMajorVersion() <= 2024:
+            suffix = '_v1'
+
         # Draw in VP2 at current frame.
         self._SetModelPanelsToViewport2()
         self._WriteViewportImage("InstancerTest", "initial")
 
         # Load assembly in "Cards" to use cards drawmode.
         cmds.assembly("CubeModel", edit=True, active="Cards")
-        self._WriteViewportImage("InstancerTest", "cards")
+        self._WriteViewportImage("InstancerTest", "cards" + suffix)
 
         # Change the time; this will change the instancer positions.
         cmds.currentTime(50, edit=True)
-        self._WriteViewportImage("InstancerTest", "frame50")
+        self._WriteViewportImage("InstancerTest", "frame50" + suffix)
 
         # Delete the first instance.
         # Tickle the second instance so that it draws.
@@ -133,7 +139,7 @@ class testPxrUsdMayaGLInstancerDraw(imageUtils.ImageDiffingTestCase):
         # the greatest and we're just checking that it doesn't break horribly.
         cmds.delete("instance1")
         cmds.setAttr("instance2.t", 15, 0, 0, type="double3")
-        self._WriteViewportImage("InstancerTest", "instance2")
+        self._WriteViewportImage("InstancerTest", "instance2" + suffix)
 
         # Delete the second instance.
         cmds.delete("instance2")

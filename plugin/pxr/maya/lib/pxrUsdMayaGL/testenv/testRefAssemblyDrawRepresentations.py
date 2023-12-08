@@ -25,6 +25,8 @@ import unittest
 
 import fixturesUtils
 import imageUtils
+import mayaUtils
+
 
 class testRefAssemblyDrawRepresentations(imageUtils.ImageDiffingTestCase):
 
@@ -126,6 +128,15 @@ class testRefAssemblyDrawRepresentations(imageUtils.ImageDiffingTestCase):
 
         for representation in ['Cards', 'Collapsed', 'Expanded', 'Full',
                 'Playback']:
+            
+           # The cards rendering colors in older versions of Maya is lighter,
+            suffix = ''
+            if mayaUtils.mayaMajorVersion() <= 2024:
+                if representation == "Cards":
+                    suffix = '_v1'
+
+            cmds.assembly("Cube_1", edit=True, active=representation)
+             
             cmds.assembly('Cube_1', edit=True, active=representation)
             self._WriteViewportImage(self._testName, representation)
 
