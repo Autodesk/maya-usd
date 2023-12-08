@@ -50,7 +50,6 @@ def Mesh "pPlane1" (
                 uniform token info:id = "UsdUVTexture"
                 float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
                 asset inputs:file = @textures/color_palette_ACEScg.exr@
-                token inputs:sourceColorSpace = "ACEScg"
                 float2 inputs:st.connect = </pPlane1/mtl/usdPreviewSurface1SG/place2dTexture1.outputs:result>
                 token inputs:wrapS = "repeat"
                 token inputs:wrapT = "repeat"
@@ -112,7 +111,6 @@ def Mesh "pPlane2" (
                 uniform token info:id = "UsdUVTexture"
                 float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
                 asset inputs:file = @textures/color_palette_ADX10.exr@
-                token inputs:sourceColorSpace = "ADX10"
                 float2 inputs:st.connect = </pPlane2/mtl/usdPreviewSurface9SG/place2dTexture8.outputs:result>
                 token inputs:wrapS = "repeat"
                 token inputs:wrapT = "repeat"
@@ -174,7 +172,6 @@ def Mesh "pPlane3" (
                 uniform token info:id = "UsdUVTexture"
                 float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
                 asset inputs:file = @textures/color_palette_ADX16.exr@
-                token inputs:sourceColorSpace = "ADX16"
                 float2 inputs:st.connect = </pPlane3/mtl/usdPreviewSurface10SG/place2dTexture9.outputs:result>
                 token inputs:wrapS = "repeat"
                 token inputs:wrapT = "repeat"
@@ -234,7 +231,6 @@ def Mesh "pPlane4" (
                 uniform token info:id = "UsdUVTexture"
                 float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
                 asset inputs:file = @textures/color_palette_arri_logc4.exr@
-                token inputs:sourceColorSpace = "ARRI LogC4"
                 float2 inputs:st.connect = </pPlane4/mtl/usdPreviewSurface11SG/place2dTexture10.outputs:result>
                 token inputs:wrapS = "repeat"
                 token inputs:wrapT = "repeat"
@@ -296,7 +292,6 @@ def Mesh "pPlane5" (
                 uniform token info:id = "UsdUVTexture"
                 float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
                 asset inputs:file = @textures/color_palette_g24_rec709.exr@
-                token inputs:sourceColorSpace = "Gamma 2.4 Rec.709 - Texture"
                 float2 inputs:st.connect = </pPlane5/mtl/usdPreviewSurface12SG/place2dTexture11.outputs:result>
                 token inputs:wrapS = "repeat"
                 token inputs:wrapT = "repeat"
@@ -358,7 +353,6 @@ def Mesh "pPlane6" (
                 uniform token info:id = "UsdUVTexture"
                 float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
                 asset inputs:file = @textures/color_palette_lin_p3d65.exr@
-                token inputs:sourceColorSpace = "Linear P3-D65"
                 float2 inputs:st.connect = </pPlane6/mtl/usdPreviewSurface13SG/place2dTexture12.outputs:result>
                 token inputs:wrapS = "repeat"
                 token inputs:wrapT = "repeat"
