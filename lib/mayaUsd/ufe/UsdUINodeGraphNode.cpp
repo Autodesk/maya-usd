@@ -48,6 +48,38 @@ void UsdUINodeGraphNode::SetPosOrSizeCommand::executeImplementation()
     }
 }
 
+#ifdef UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR
+UsdUINodeGraphNode::SetDisplayColorCommand::SetDisplayColorCommand(
+    const PXR_NS::UsdPrim& prim,
+    const Ufe::Color3f&    newColor)
+    : _stage(prim.GetStage())
+    , _primPath(prim.GetPath())
+    , _newValue(PXR_NS::GfVec3f(newColor.r(), newColor.g(), newColor.b()))
+
+{
+}
+
+void UsdUINodeGraphNode::SetDisplayColorCommand::executeImplementation()
+{
+    PXR_NAMESPACE_USING_DIRECTIVE
+    if (_stage) {
+        const UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+        if (!prim.HasAPI<UsdUINodeGraphNodeAPI>()) {
+            UsdUINodeGraphNodeAPI::Apply(prim);
+        }
+        if (prim.HasAPI<UsdUINodeGraphNodeAPI>()) {
+            UsdUINodeGraphNodeAPI displayColorApi(prim);
+            TF_VERIFY(displayColorApi, "Unable to access display color\n");
+            UsdAttribute attr = displayColorApi.GetDisplayColorAttr();
+            if (!attr) {
+                attr = displayColorApi.CreateDisplayColorAttr();
+            }
+            attr.Set(_newValue);
+        }
+    }
+}
+#endif // UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR
+
 UsdUINodeGraphNode::UsdUINodeGraphNode(const UsdSceneItem::Ptr& item)
     : fItem(item)
 {
@@ -79,6 +111,47 @@ Ufe::UndoableCommand::Ptr UsdUINodeGraphNode::setSizeCmd(const Ufe::Vector2f& si
 {
     return std::make_shared<SetPosOrSizeCommand>(
         CoordType::Size, fItem ? fItem->prim() : PXR_NS::UsdPrim(), size);
+}
+#endif
+
+#ifdef UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR
+bool UsdUINodeGraphNode::hasDisplayColor() const
+{
+    const PXR_NS::UsdPrim               prim = fItem->prim();
+    const PXR_NS::UsdUINodeGraphNodeAPI displayColorApi(prim);
+    if (!displayColorApi)
+        return false;
+
+    const PXR_NS::UsdAttribute attr = displayColorApi.GetDisplayColorAttr();
+    if (!attr.IsValid())
+        return false;
+
+    PXR_NS::VtValue v;
+    attr.Get(&v);
+    return v.IsHolding<GfVec3f>();
+}
+
+Ufe::Color3f UsdUINodeGraphNode::getDisplayColor() const
+{
+    const PXR_NS::UsdPrim               prim = fItem->prim();
+    const PXR_NS::UsdUINodeGraphNodeAPI displayColorApi(prim);
+    if (displayColorApi) {
+        const PXR_NS::UsdAttribute attr = displayColorApi.GetDisplayColorAttr();
+        if (attr.IsValid()) {
+            PXR_NS::VtValue v;
+            attr.Get(&v);
+            if (v.IsHolding<GfVec3f>()) {
+                const PXR_NS::GfVec3f val = v.Get<PXR_NS::GfVec3f>();
+                return Ufe::Color3f(val[0], val[1], val[2]);
+            }
+        }
+    }
+    return {};
+}
+
+Ufe::UndoableCommand::Ptr UsdUINodeGraphNode::setDisplayColorCmd(const Ufe::Color3f& color)
+{
+    return std::make_shared<SetDisplayColorCommand>(fItem->prim(), color);
 }
 #endif
 
