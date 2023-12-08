@@ -138,7 +138,7 @@ class testRefAssemblyDrawRepresentations(imageUtils.ImageDiffingTestCase):
             cmds.assembly("Cube_1", edit=True, active=representation)
              
             cmds.assembly('Cube_1', edit=True, active=representation)
-            self._WriteViewportImage(self._testName, representation)
+            self._WriteViewportImage(self._testName, representation + suffix)
 
 
 if __name__ == '__main__':
