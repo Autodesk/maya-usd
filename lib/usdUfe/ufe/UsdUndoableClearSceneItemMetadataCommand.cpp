@@ -15,6 +15,7 @@
 //
 
 #include "UsdUndoableClearSceneItemMetadataCommand.h"
+
 #include "private/Utils.h"
 
 #include <pxr/base/tf/diagnostic.h>
@@ -26,7 +27,6 @@
 #include <ufe/sceneNotification.h>
 
 #include <utility>
-
 
 namespace USDUFE_NS_DEF {
 
