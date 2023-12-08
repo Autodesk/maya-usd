@@ -45,6 +45,13 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     )
 endif()
 
+if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 5015)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+			UsdUndoableClearSceneItemMetadataCommand.cpp
+			UsdUndoableSetSceneItemMetadataCommand.cpp
+    )
+endif()
 
 set(HEADERS
     Global.h
@@ -86,6 +93,13 @@ set(HEADERS
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     list(APPEND HEADERS
         UsdUndoUngroupCommand.h
+    )
+endif()
+
+if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 5015)
+    list(APPEND HEADERS
+		UsdUndoableClearSceneItemMetadataCommand.h
+		UsdUndoableSetSceneItemMetadataCommand.h
     )
 endif()
 

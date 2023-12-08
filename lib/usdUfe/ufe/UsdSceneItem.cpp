@@ -20,6 +20,18 @@
 #include <pxr/usd/usd/primTypeInfo.h>
 #include <pxr/usd/usd/schemaRegistry.h>
 
+#if (UFE_PREVIEW_VERSION_NUM >= 5015)
+
+#include "UsdUndoableClearSceneItemMetadataCommand.h"
+#include "UsdUndoableSetSceneItemMetadataCommand.h"
+
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/dictionary.h>
+#include <pxr/base/vt/value.h>
+
+#endif // UFE_PREVIEW_VERSION_NUM >= 5015
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace USDUFE_NS_DEF {
@@ -77,5 +89,63 @@ std::vector<std::string> UsdSceneItem::ancestorNodeTypes() const
     ancestorTypesCache[schemaType] = strAncestorTypes;
     return strAncestorTypes;
 }
+
+#if (UFE_PREVIEW_VERSION_NUM >= 5015)
+
+Ufe::Value UsdSceneItem::getMetadata(const std::string& key) const
+{
+    TF_CODING_ERROR("Illegal call to unimplemented %s", __func__);
+    return Ufe::Value();
+}
+
+Ufe::UndoableCommandPtr
+UsdSceneItem::setMetadataCmd(const std::string& key, const Ufe::Value& value)
+{
+    TF_CODING_ERROR("Illegal call to unimplemented %s", __func__);
+    return nullptr;
+}
+
+Ufe::UndoableCommandPtr UsdSceneItem::clearMetadataCmd(const std::string& key)
+{
+    TF_CODING_ERROR("Illegal call to unimplemented %s", __func__);
+    return nullptr;
+}
+
+Ufe::Value UsdSceneItem::getGroupMetadata(const std::string& group, const std::string& key) const
+{
+    PXR_NS::VtValue data = prim().GetCustomDataByKey(PXR_NS::TfToken(group));
+    if (data.IsEmpty()) {
+        return Ufe::Value();
+    }
+
+    if (!data.IsHolding<PXR_NS::VtDictionary>()) {
+        return Ufe::Value();
+    }
+
+    PXR_NS::VtValue value;
+    if (TfMapLookup(data.UncheckedGet<PXR_NS::VtDictionary>(), key, &value)) {
+        if (value.IsHolding<PXR_NS::TfToken>()) {
+            return Ufe::Value(value.UncheckedGet<PXR_NS::TfToken>().GetString());
+        }
+    }
+
+    return Ufe::Value();
+}
+
+Ufe::UndoableCommandPtr UsdSceneItem::setGroupMetadataCmd(
+    const std::string& group,
+    const std::string& key,
+    const Ufe::Value&  value)
+{
+    return std::make_shared<SetSceneItemMetadataCommand>(prim(), group, key, value);
+}
+
+Ufe::UndoableCommandPtr
+UsdSceneItem::clearGroupMetadataCmd(const std::string& group, const std::string& key)
+{
+    return std::make_shared<ClearSceneItemMetadataCommand>(prim(), group, key);
+}
+
+#endif // UFE_PREVIEW_VERSION_NUM >= 5015
 
 } // namespace USDUFE_NS_DEF

@@ -24,6 +24,10 @@
 #include <ufe/path.h>
 #include <ufe/sceneItem.h>
 
+#if (UFE_PREVIEW_VERSION_NUM >= 5015)
+#include <ufe/value.h>
+#endif // UFE_PREVIEW_VERSION_NUM >= 5015
+
 namespace USDUFE_NS_DEF {
 
 //! \brief USD run-time scene item interface
@@ -118,6 +122,27 @@ public:
     // Ufe::SceneItem overrides
     std::string              nodeType() const override;
     std::vector<std::string> ancestorNodeTypes() const override;
+
+#if (UFE_PREVIEW_VERSION_NUM >= 5015)
+
+    Ufe::Value getMetadata(const std::string& key) const override;
+
+    Ufe::UndoableCommandPtr
+    setMetadataCmd(const std::string& key, const Ufe::Value& value) override;
+
+    Ufe::UndoableCommandPtr clearMetadataCmd(const std::string& key = "") override;
+
+    Ufe::Value getGroupMetadata(const std::string& group, const std::string& key) const override;
+
+    Ufe::UndoableCommandPtr setGroupMetadataCmd(
+        const std::string& group,
+        const std::string& key,
+        const Ufe::Value&  value) override;
+
+    Ufe::UndoableCommandPtr
+    clearGroupMetadataCmd(const std::string& group, const std::string& key = "") override;
+
+#endif // UFE_PREVIEW_VERSION_NUM >= 5015
 
 private:
     PXR_NS::UsdPrim fPrim;

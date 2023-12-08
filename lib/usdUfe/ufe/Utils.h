@@ -18,6 +18,7 @@
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 
+#include <pxr/base/vt/value.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
@@ -26,6 +27,7 @@
 #include <ufe/scene.h>
 #include <ufe/types.h>
 #include <ufe/ufe.h>
+#include <ufe/value.h>
 
 #include <string>
 
@@ -203,6 +205,12 @@ Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& fil
 //! destination using the source scene item path.
 USDUFE_PUBLIC
 Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath);
+
+//! Converts a UFE Value to a VtValue
+USDUFE_PUBLIC PXR_NS::VtValue ufeValueToVtValue(const Ufe::Value& ufeValue);
+
+//! Converts a VtValue to a UFE Value
+USDUFE_PUBLIC Ufe::Value vtValueToUfeValue(const PXR_NS::VtValue& vtValue);
 
 //------------------------------------------------------------------------------
 // Verify edit restrictions.
