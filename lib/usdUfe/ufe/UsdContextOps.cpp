@@ -490,6 +490,8 @@ void UsdContextOps::addBulkEditHeader(Ufe::ContextOps::Items& items) const
  *
  *      "{countOfPrimsSelected} {PrimType} Prims Selected" - disbled item has no action
  *      -----------------
+ *      Unload
+ *      Load with Descendants
  *      Make Visible
  *      Make Invisible
  *      Activate Prim
@@ -503,6 +505,12 @@ Ufe::ContextOps::Items UsdContextOps::getBulkItems(const ItemPath& itemPath) con
     Ufe::ContextOps::Items items;
     if (itemPath.empty()) {
         addBulkEditHeader(items);
+
+        // Unload
+        items.emplace_back(kUSDUnloadItem, kUSDUnloadLabel);
+
+        // Load With Descendants
+        items.emplace_back(kUSDLoadWithDescendantsItem, kUSDLoadWithDescendantsLabel);
 
         // Visibility:
         items.emplace_back(kUSDMakeVisibleItem, kUSDMakeVisibleLabel);
@@ -615,6 +623,33 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
         return !cmdList.empty() ? std::make_shared<Ufe::CompositeUndoableCommand>(cmdList)
                                 : nullptr;
     };
+
+    // Unload:
+    if (itemPath[0u] == kUSDUnloadItem) {
+        for (auto& selItem : _bulkItems) {
+            UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(selItem);
+            if (usdItem) {
+                auto cmd = std::make_shared<UsdUndoUnloadPayloadCommand>(usdItem->prim());
+                cmdList.emplace_back(cmd);
+            }
+        }
+        return compositeCmdReturn(_bulkItems);
+    }
+
+    // Load With Descendants:
+    if (itemPath[0u] == kUSDLoadWithDescendantsItem) {
+        for (auto& selItem : _bulkItems) {
+            UsdSceneItem::Ptr   usdItem = std::dynamic_pointer_cast<UsdSceneItem>(selItem);
+            const UsdLoadPolicy policy = (itemPath[0u] == kUSDLoadWithDescendantsItem)
+                ? UsdLoadWithDescendants
+                : UsdLoadWithoutDescendants;
+            if (usdItem) {
+                auto cmd = std::make_shared<UsdUndoLoadPayloadCommand>(usdItem->prim(), policy);
+                cmdList.emplace_back(cmd);
+            }
+        }
+        return compositeCmdReturn(_bulkItems);
+    }
 
     // Prim Visibility:
     const bool makeVisible = itemPath[0u] == kUSDMakeVisibleItem;

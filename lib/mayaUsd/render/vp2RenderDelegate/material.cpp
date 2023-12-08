@@ -445,10 +445,13 @@ struct _MaterialXData
 {
     _MaterialXData()
     {
-        _mtlxLibrary = mx::createDocument();
         _mtlxSearchPath = HdMtlxSearchPaths();
-
+#if PXR_VERSION > 2311
+        _mtlxLibrary = HdMtlxStdLibraries();
+#else
+        _mtlxLibrary = mx::createDocument();
         mx::loadLibraries({}, _mtlxSearchPath, _mtlxLibrary);
+#endif
 
         _FixLibraryTangentInputs(_mtlxLibrary);
 

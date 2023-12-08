@@ -542,6 +542,7 @@ void wrapJobExportArgs()
         .def_readonly("exportRelativeTextures", &UsdMayaJobExportArgs::exportRelativeTextures)
         .def_readonly("referenceObjectMode", &UsdMayaJobExportArgs::referenceObjectMode)
         .def_readonly("exportRefsAsInstanceable", &UsdMayaJobExportArgs::exportRefsAsInstanceable)
+        .def_readonly("exportSelected", &UsdMayaJobExportArgs::exportSelected)
         .add_property(
             "exportSkels",
             make_getter(&UsdMayaJobExportArgs::exportSkels, return_value_policy<return_by_value>()))

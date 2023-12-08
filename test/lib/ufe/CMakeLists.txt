@@ -38,6 +38,7 @@ set(TEST_SCRIPT_FILES
     testTransform3dTranslate.py
     testUIInfoHandler.py
     testUfePythonImport.py
+    testVariant.py
     testVisibilityCmd.py
 )
 
