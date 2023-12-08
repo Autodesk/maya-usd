@@ -226,7 +226,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
         kExcludeExportTypesFlag,
         UsdMayaJobExportArgsTokens->excludeExportTypes.GetText(),
         MSyntax::kString);
-    syntax.makeFlagMultiUse((kExcludeExportTypesFlag));
+    syntax.makeFlagMultiUse(kExcludeExportTypesFlag);
+
+    syntax.addFlag(
+        kDefaultPrimFlag, UsdMayaJobExportArgsTokens->defaultPrim.GetText(), MSyntax::kString);
 
     // These are additional flags under our control.
     syntax.addFlag(
