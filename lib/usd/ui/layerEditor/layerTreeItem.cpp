@@ -276,9 +276,9 @@ bool LayerTreeItem::needsSaving() const
     if (isSessionLayer())
         return false;
 
-    // The top layer of unshared layer are assumed to be managed
-    // somewhere else and do not get saved here. (Is this correct?)
-    if (!_isSharedStage && parentLayerItem() == nullptr)
+    // The stage is not shared, layers are assumed to be managed
+    // somewhere else and do not get saved here.
+    if (!_isSharedStage)
         return false;
 
     return isDirty() || isAnonymous();
