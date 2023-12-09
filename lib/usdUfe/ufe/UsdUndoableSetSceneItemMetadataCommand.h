@@ -42,6 +42,11 @@ public:
         const std::string&     key,
         const Ufe::Value&      value);
 
+    SetSceneItemMetadataCommand(
+        const PXR_NS::UsdPrim& prim,
+        const std::string&     key,
+        const Ufe::Value&      value);
+
     void executeImplementation() override;
 
 private:

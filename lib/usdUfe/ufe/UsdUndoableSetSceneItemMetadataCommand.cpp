@@ -45,22 +45,41 @@ SetSceneItemMetadataCommand::SetSceneItemMetadataCommand(
 {
 }
 
+SetSceneItemMetadataCommand::SetSceneItemMetadataCommand(
+    const PXR_NS::UsdPrim& prim,
+    const std::string&     key,
+    const Ufe::Value&      value)
+    : _stage(prim.GetStage())
+    , _primPath(prim.GetPath())
+    , _group("")
+    , _key(key)
+    , _value(value)
+{
+}
+
 void SetSceneItemMetadataCommand::executeImplementation()
 {
     if (_stage) {
-        const UsdPrim   prim = _stage->GetPrimAtPath(_primPath);
-        PXR_NS::VtValue data = prim.GetCustomDataByKey(_group);
+        const UsdPrim prim = _stage->GetPrimAtPath(_primPath);
 
-        PXR_NS::VtDictionary newDict;
-        if (!data.IsEmpty()) {
-            if (data.IsHolding<PXR_NS::VtDictionary>()) {
-                newDict = data.UncheckedGet<PXR_NS::VtDictionary>();
-            } else {
-                return;
+        if (_group.GetString().empty()) {
+            // If this is not a grouped metadata, set the _value directly on the _key
+            prim.SetCustomDataByKey(TfToken(_key), ufeValueToVtValue(_value));
+        } else {
+            PXR_NS::VtValue data = prim.GetCustomDataByKey(_group);
+
+            PXR_NS::VtDictionary newDict;
+            if (!data.IsEmpty()) {
+                if (data.IsHolding<PXR_NS::VtDictionary>()) {
+                    newDict = data.UncheckedGet<PXR_NS::VtDictionary>();
+                } else {
+                    return;
+                }
             }
+
+            newDict[_key] = ufeValueToVtValue(_value);
+            prim.SetCustomDataByKey(_group, PXR_NS::VtValue(newDict));
         }
-        newDict[_key] = UsdUfe::ufeValueToVtValue(_value);
-        prim.SetCustomDataByKey(_group, PXR_NS::VtValue(newDict));
     }
 }
 

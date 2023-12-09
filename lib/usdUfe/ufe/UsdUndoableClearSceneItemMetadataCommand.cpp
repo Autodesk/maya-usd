@@ -44,23 +44,29 @@ ClearSceneItemMetadataCommand::ClearSceneItemMetadataCommand(
 void ClearSceneItemMetadataCommand::executeImplementation()
 {
     if (_stage) {
-        const UsdPrim         prim = _stage->GetPrimAtPath(_primPath);
-        const PXR_NS::VtValue data = prim.GetCustomDataByKey(_group);
+        const UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+        if (_group.GetString().empty()) {
+            // If this is not a grouped meta data, remove the key
+            prim.ClearCustomDataByKey(TfToken(_key));
+        } else {
 
-        if (!data.IsEmpty() && data.IsHolding<PXR_NS::VtDictionary>()) {
-            // Remove the key and its value.
-            if (!_key.empty()) {
-                PXR_NS::VtDictionary newDict = data.UncheckedGet<PXR_NS::VtDictionary>();
-                if (newDict.find(_key) != newDict.end()) {
-                    newDict.erase(_key);
+            const PXR_NS::VtValue data = prim.GetCustomDataByKey(_group);
 
-                    // Set the new data.
-                    prim.SetCustomDataByKey(_group, PXR_NS::VtValue(newDict));
+            if (!data.IsEmpty() && data.IsHolding<PXR_NS::VtDictionary>()) {
+                // Remove the key and its value.
+                if (!_key.empty()) {
+                    PXR_NS::VtDictionary newDict = data.UncheckedGet<PXR_NS::VtDictionary>();
+                    if (newDict.find(_key) != newDict.end()) {
+                        newDict.erase(_key);
+
+                        // Set the new data.
+                        prim.SetCustomDataByKey(_group, PXR_NS::VtValue(newDict));
+                    }
                 }
-            }
-            // Remove the group.
-            else {
-                prim.ClearCustomDataByKey(_group);
+                // Remove the group.
+                else {
+                    prim.ClearCustomDataByKey(_group);
+                }
             }
         }
     }

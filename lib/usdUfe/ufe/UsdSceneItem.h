@@ -24,9 +24,9 @@
 #include <ufe/path.h>
 #include <ufe/sceneItem.h>
 
-#if (UFE_PREVIEW_VERSION_NUM >= 5015)
+//#ifdef UFE_SCENEITEM_HAS_METADATA
 #include <ufe/value.h>
-#endif // UFE_PREVIEW_VERSION_NUM >= 5015
+//#endif // UFE_SCENEITEM_HAS_METADATA
 
 namespace USDUFE_NS_DEF {
 
@@ -123,26 +123,50 @@ public:
     std::string              nodeType() const override;
     std::vector<std::string> ancestorNodeTypes() const override;
 
-#if (UFE_PREVIEW_VERSION_NUM >= 5015)
+//#ifdef UFE_SCENEITEM_HAS_METADATA
 
+    //! Method to get a meta data when given a key
+    //! \param key The key to get the value for
+    //! \return Ufe::Value of the given key if key exists, Ufe::Value() otherwise
     Ufe::Value getMetadata(const std::string& key) const override;
 
+    //! Method to set a meta data on a key
+    //! \param key The key to set the value on
+    //! \param value The value for the key
+    //! \return UndoableCommandPtr for the set action
     Ufe::UndoableCommandPtr
     setMetadataCmd(const std::string& key, const Ufe::Value& value) override;
 
-    Ufe::UndoableCommandPtr clearMetadataCmd(const std::string& key = "") override;
+    //! Clears content of a meta data given a key.
+    //! \param key The key to clear
+    //! \return UndoableCommandPtr for the clear action
+    Ufe::UndoableCommandPtr clearMetadataCmd(const std::string& key) override;
 
+    //! Method to get a meta data when given a key inside a group
+    //! \param group The group the key is stored on
+    //! \param key The key to get the value for
+    //! \return Ufe::Value of the given key if key exists, Ufe::Value() otherwise
     Ufe::Value getGroupMetadata(const std::string& group, const std::string& key) const override;
 
+    //! Method to set a meta data on a key in a group
+    //! \param group The group the key is going to set on
+    //! \param key The key to set the value on
+    //! \param value The value for the key
+    //! \return UndoableCommandPtr for the set action
     Ufe::UndoableCommandPtr setGroupMetadataCmd(
         const std::string& group,
         const std::string& key,
         const Ufe::Value&  value) override;
 
+    //! Clears content of a meta data. If no key is specified,
+    //! all keys in the given group are cleared.
+    //! \param group The group to clear
+    //! \param key The key to clear
+    //! \return UndoableCommandPtr for the clear action
     Ufe::UndoableCommandPtr
     clearGroupMetadataCmd(const std::string& group, const std::string& key = "") override;
 
-#endif // UFE_PREVIEW_VERSION_NUM >= 5015
+//#endif // UFE_SCENEITEM_HAS_METADATA
 
 private:
     PXR_NS::UsdPrim fPrim;

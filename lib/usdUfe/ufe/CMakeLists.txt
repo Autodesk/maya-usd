@@ -1,6 +1,14 @@
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
+
+if (UFE_SCENEITEM_HAS_METADATA)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_SCENEITEM_HAS_METADATA=1
+    )
+endif()
+
 target_sources(${PROJECT_NAME}
     PRIVATE
         Global.cpp
@@ -45,7 +53,7 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     )
 endif()
 
-if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 5015)
+if (UFE_SCENEITEM_HAS_METADATA)
     target_sources(${PROJECT_NAME}
         PRIVATE
 			UsdUndoableClearSceneItemMetadataCommand.cpp
@@ -96,7 +104,7 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     )
 endif()
 
-if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 5015)
+if (UFE_SCENEITEM_HAS_METADATA)
     list(APPEND HEADERS
 		UsdUndoableClearSceneItemMetadataCommand.h
 		UsdUndoableSetSceneItemMetadataCommand.h
