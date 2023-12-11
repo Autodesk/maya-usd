@@ -47,7 +47,7 @@ public:
     // Get the watch list gathered while traversing
     const WatchList& getWatchList() const;
 
-private:
+protected:
     mx::NodePtr   cloneNode(const mx::Node& node, mx::GraphElement& container);
     mx::OutputPtr findNodeGraphOutput(const mx::Input& input, const std::string& outputName);
     std::string   gatherChannels(const mx::Input& input);
