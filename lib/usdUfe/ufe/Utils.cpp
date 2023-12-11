@@ -38,7 +38,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 constexpr auto kIllegalUFEPath = "Illegal UFE run-time path %s.";
+#ifdef UFE_SCENEITEM_HAS_METADATA
 constexpr auto kErrorMsgInvalidValueType = "Unexpected Ufe::Value type";
+#endif
 
 // typedef std::unordered_map<TfToken, SdfValueTypeName, TfToken::HashFunctor> TokenToSdfTypeMap;
 
@@ -869,6 +871,7 @@ Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& f
     return dst;
 }
 
+#ifdef UFE_SCENEITEM_HAS_METADATA
 PXR_NS::VtValue ufeValueToVtValue(const Ufe::Value& ufeValue)
 {
     PXR_NS::VtValue usdValue;
@@ -909,5 +912,6 @@ Ufe::Value vtValueToUfeValue(const PXR_NS::VtValue& vtValue)
         return Ufe::Value(ss.str());
     }
 }
+#endif
 
 } // namespace USDUFE_NS_DEF

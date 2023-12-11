@@ -18,7 +18,6 @@
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 
-#include <pxr/base/vt/value.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
@@ -27,7 +26,12 @@
 #include <ufe/scene.h>
 #include <ufe/types.h>
 #include <ufe/ufe.h>
+
+#ifdef UFE_SCENEITEM_HAS_METADATA
+#include <pxr/base/vt/value.h>
+
 #include <ufe/value.h>
+#endif
 
 #include <string>
 
@@ -206,11 +210,13 @@ Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& fil
 USDUFE_PUBLIC
 Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath);
 
+#ifdef UFE_SCENEITEM_HAS_METADATA
 //! Converts a UFE Value to a VtValue
 USDUFE_PUBLIC PXR_NS::VtValue ufeValueToVtValue(const Ufe::Value& ufeValue);
 
 //! Converts a VtValue to a UFE Value
 USDUFE_PUBLIC Ufe::Value vtValueToUfeValue(const PXR_NS::VtValue& vtValue);
+#endif
 
 //------------------------------------------------------------------------------
 // Verify edit restrictions.
