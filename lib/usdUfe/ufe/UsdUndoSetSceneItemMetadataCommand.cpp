@@ -32,7 +32,7 @@ namespace USDUFE_NS_DEF {
 
 SetSceneItemMetadataCommand::SetSceneItemMetadataCommand(
     const PXR_NS::UsdPrim& prim,
-    const std::string&     group, // NOLINT
+    const std::string&     group,
     const std::string&     key,
     const Ufe::Value&      value)
     : _stage(prim.GetStage())
