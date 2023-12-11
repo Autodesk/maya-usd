@@ -340,12 +340,11 @@ struct _MaterialXData
 
         // This environment variable is defined in USD: pxr\usd\usdMtlx\parser.cpp
         static const std::string env = TfGetenv("USDMTLX_PRIMARY_UV_NAME");
-        std::string mainUvSetName = env.empty() ? UsdUtilsGetPrimaryUVSetName().GetString() : env;
-
-        mx::OgsXmlGenerator::setPrimaryUVSetName(mainUvSetName);
+        _mainUvSetName = env.empty() ? UsdUtilsGetPrimaryUVSetName().GetString() : env;
     }
     MaterialX::FileSearchPath _mtlxSearchPath; //!< MaterialX library search path
     MaterialX::DocumentPtr    _mtlxLibrary;    //!< MaterialX library
+    std::string               _mainUvSetName;  //!< Main UV set name
 
 private:
     void _FixLibraryTangentInputs(MaterialX::DocumentPtr& mtlxLibrary);
@@ -2911,7 +2910,14 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
             return shaderInstance;
         }
 
+        // Enable changing texcoord to geompropvalue
+        const auto prevUVSetName = mx::OgsXmlGenerator::getPrimaryUVSetName();
+        mx::OgsXmlGenerator::setPrimaryUVSetName(_GetMaterialXData()._mainUvSetName);
+
         MaterialXMaya::OgsFragment ogsFragment(materialNode, crLibrarySearchPath);
+
+        // Restore previous UV set name
+        mx::OgsXmlGenerator::setPrimaryUVSetName(prevUVSetName);
 
         // Explore the fragment for primvars:
         mx::ShaderPtr            shader = ogsFragment.getShader();
