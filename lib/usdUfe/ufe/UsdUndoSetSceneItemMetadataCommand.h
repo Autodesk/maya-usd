@@ -20,23 +20,31 @@
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/UsdUndoableCommand.h>
 
+#include <pxr/usd/usd/prim.h>
+
 #include <ufe/sceneItem.h>
 #include <ufe/undoableCommand.h>
 #include <ufe/value.h>
 
 namespace USDUFE_NS_DEF {
 
-//! \brief ARAM TODO: undoable commands.
+//! \brief Undoable command to set meta data on a scene item as custom data
 //
 
-class USDUFE_PUBLIC ClearSceneItemMetadataCommand
+class USDUFE_PUBLIC SetSceneItemMetadataCommand
     : public UsdUfe::UsdUndoableCommand<Ufe::UndoableCommand>
 {
 public:
-    ClearSceneItemMetadataCommand(
+    SetSceneItemMetadataCommand(
         const PXR_NS::UsdPrim& prim,
         const std::string&     group,
-        const std::string&     key = "");
+        const std::string&     key,
+        const Ufe::Value&      value);
+
+    SetSceneItemMetadataCommand(
+        const PXR_NS::UsdPrim& prim,
+        const std::string&     key,
+        const Ufe::Value&      value);
 
     void executeImplementation() override;
 
@@ -45,6 +53,7 @@ private:
     const PXR_NS::SdfPath         _primPath;
     const PXR_NS::TfToken         _group;
     const std::string             _key;
+    const Ufe::Value              _value;
 };
 
 } // namespace USDUFE_NS_DEF

@@ -15,17 +15,16 @@
 //
 #include "UsdSceneItem.h"
 
-#include "Utils.h"
-
 #include <pxr/base/tf/type.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/primTypeInfo.h>
 #include <pxr/usd/usd/schemaRegistry.h>
 
 #ifdef UFE_SCENEITEM_HAS_METADATA
+#include "Utils.h"
 
-#include "UsdUndoableClearSceneItemMetadataCommand.h"
-#include "UsdUndoableSetSceneItemMetadataCommand.h"
+#include <usdUfe/ufe/UsdUndoClearSceneItemMetadataCommand.h>
+#include <usdUfe/ufe/UsdUndoSetSceneItemMetadataCommand.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/token.h>

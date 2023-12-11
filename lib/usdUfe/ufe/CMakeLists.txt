@@ -49,8 +49,8 @@ endif()
 if (UFE_SCENEITEM_HAS_METADATA)
     target_sources(${PROJECT_NAME}
         PRIVATE
-			UsdUndoableClearSceneItemMetadataCommand.cpp
-			UsdUndoableSetSceneItemMetadataCommand.cpp
+			UsdUndoClearSceneItemMetadataCommand.cpp
+			UsdUndoSetSceneItemMetadataCommand.cpp
     )
 endif()
 
@@ -99,8 +99,8 @@ endif()
 
 if (UFE_SCENEITEM_HAS_METADATA)
     list(APPEND HEADERS
-		UsdUndoableClearSceneItemMetadataCommand.h
-		UsdUndoableSetSceneItemMetadataCommand.h
+		UsdUndoClearSceneItemMetadataCommand.h
+		UsdUndoSetSceneItemMetadataCommand.h
     )
 endif()
 

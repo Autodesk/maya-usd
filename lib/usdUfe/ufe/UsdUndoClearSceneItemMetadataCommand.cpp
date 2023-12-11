@@ -14,9 +14,7 @@
 // limitations under the License.
 //
 
-#include "UsdUndoableClearSceneItemMetadataCommand.h"
-
-#include "private/Utils.h"
+#include "UsdUndoClearSceneItemMetadataCommand.h"
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/token.h>
@@ -26,14 +24,12 @@
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 
-#include <utility>
-
 namespace USDUFE_NS_DEF {
 
 ClearSceneItemMetadataCommand::ClearSceneItemMetadataCommand(
     const PXR_NS::UsdPrim& prim,
-    const std::string&     group, // NOLINT
-    const std::string&     key)       // NOLINT
+    const std::string&     group,
+    const std::string&     key)
     : _stage(prim.GetStage())
     , _primPath(prim.GetPath())
     , _group(group)

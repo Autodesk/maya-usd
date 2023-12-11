@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-#include "UsdUndoableSetSceneItemMetadataCommand.h"
+#include "UsdUndoSetSceneItemMetadataCommand.h"
 
 #include "Utils.h"
 #include "private/Utils.h"
@@ -27,8 +27,6 @@
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 #include <ufe/undoableCommand.h>
-
-#include <utility>
 
 namespace USDUFE_NS_DEF {
 
