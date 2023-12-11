@@ -22,7 +22,7 @@
 #include <pxr/usd/usd/primTypeInfo.h>
 #include <pxr/usd/usd/schemaRegistry.h>
 
-//#ifdef UFE_SCENEITEM_HAS_METADATA
+#ifdef UFE_SCENEITEM_HAS_METADATA
 
 #include "UsdUndoableClearSceneItemMetadataCommand.h"
 #include "UsdUndoableSetSceneItemMetadataCommand.h"
@@ -32,7 +32,7 @@
 #include <pxr/base/vt/dictionary.h>
 #include <pxr/base/vt/value.h>
 
-//#endif // UFE_SCENEITEM_HAS_METADATA
+#endif // UFE_SCENEITEM_HAS_METADATA
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -92,7 +92,7 @@ std::vector<std::string> UsdSceneItem::ancestorNodeTypes() const
     return strAncestorTypes;
 }
 
-//#ifdef UFE_SCENEITEM_HAS_METADATA
+#ifdef UFE_SCENEITEM_HAS_METADATA
 
 Ufe::Value UsdSceneItem::getMetadata(const std::string& key) const
 {
@@ -148,6 +148,6 @@ UsdSceneItem::clearGroupMetadataCmd(const std::string& group, const std::string&
     return std::make_shared<ClearSceneItemMetadataCommand>(prim(), group, key);
 }
 
-//#endif // UFE_SCENEITEM_HAS_METADATA
+#endif // UFE_SCENEITEM_HAS_METADATA
 
 } // namespace USDUFE_NS_DEF

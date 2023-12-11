@@ -24,9 +24,9 @@
 #include <ufe/path.h>
 #include <ufe/sceneItem.h>
 
-//#ifdef UFE_SCENEITEM_HAS_METADATA
+#ifdef UFE_SCENEITEM_HAS_METADATA
 #include <ufe/value.h>
-//#endif // UFE_SCENEITEM_HAS_METADATA
+#endif // UFE_SCENEITEM_HAS_METADATA
 
 namespace USDUFE_NS_DEF {
 
@@ -123,7 +123,7 @@ public:
     std::string              nodeType() const override;
     std::vector<std::string> ancestorNodeTypes() const override;
 
-//#ifdef UFE_SCENEITEM_HAS_METADATA
+#ifdef UFE_SCENEITEM_HAS_METADATA
 
     //! Method to get a meta data when given a key
     //! \param key The key to get the value for
@@ -166,7 +166,7 @@ public:
     Ufe::UndoableCommandPtr
     clearGroupMetadataCmd(const std::string& group, const std::string& key = "") override;
 
-//#endif // UFE_SCENEITEM_HAS_METADATA
+#endif // UFE_SCENEITEM_HAS_METADATA
 
 private:
     PXR_NS::UsdPrim fPrim;
