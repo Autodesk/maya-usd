@@ -130,7 +130,7 @@ void LayerTreeView::onItemDoubleClicked(const QModelIndex& index)
 {
     if (index.isValid()) {
         auto layerTreeItem = layerItemFromIndex(index);
-        if (layerTreeItem->isAnonymous()) {
+        if (layerTreeItem->needsSaving()) {
             layerTreeItem->saveEdits();
         }
     }
