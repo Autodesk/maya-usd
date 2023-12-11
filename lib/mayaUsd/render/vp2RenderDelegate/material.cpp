@@ -509,6 +509,18 @@ bool _IsTopologicalNode(const HdMaterialNode2& inNode)
     return false;
 }
 
+#if PXR_VERSION >= 2311
+// Hydra in USD 23.11 will add a "colorspace:Foo" parameter matching color managed "Foo" parameter
+bool _IsHydraColorSpace(const TfToken& paramName)
+{
+    if (paramName.GetString().rfind(_tokens->ColorSpacePrefix.GetString(), 0) == 0) {
+        return true;
+    }
+    return std::find(_mtlxKnownColorSpaceAttrs.begin(), _mtlxKnownColorSpaceAttrs.end(), paramName)
+        != _mtlxKnownColorSpaceAttrs.end();
+};
+#endif
+
 bool _IsMaterialX(const HdMaterialNode& node)
 {
     SdrRegistry&    shaderReg = SdrRegistry::GetInstance();
@@ -584,21 +596,8 @@ size_t _GenerateNetwork2TopoHash(const HdMaterialNetwork2& materialNetwork)
                 }
             }
 #else
-            // Hydra in USD 23.11 will add a "colorspace:Foo" parameter matching color managed "Foo"
-            // parameter:
-            auto isColorSpace = [](const TfToken& paramName) {
-                if (paramName.GetString().rfind(_tokens->ColorSpacePrefix.GetString(), 0) == 0) {
-                    return true;
-                }
-                return std::find(
-                           _mtlxKnownColorSpaceAttrs.begin(),
-                           _mtlxKnownColorSpaceAttrs.end(),
-                           paramName)
-                    != _mtlxKnownColorSpaceAttrs.end();
-            };
-
             for (auto&& param : node.parameters) {
-                if (isColorSpace(param.first)) {
+                if (_IsHydraColorSpace(param.first)) {
                     MayaUsd::hash_combine(topoHash, hash_value(param.first));
                     if (param.second.IsHolding<TfToken>()) {
                         auto const& colorSpace = param.second.UncheckedGet<TfToken>();
@@ -2761,21 +2760,8 @@ TfToken _RequiresColorManagement(
             }
         }
 #else
-        // Hydra in USD 23.11 will add a "colorspace:Foo" parameter matching color managed "Foo"
-        // parameter:
-        auto isColorSpace = [](const TfToken& paramName) {
-            if (paramName.GetString().rfind(_tokens->ColorSpacePrefix.GetString(), 0) == 0) {
-                return true;
-            }
-            return std::find(
-                       _mtlxKnownColorSpaceAttrs.begin(),
-                       _mtlxKnownColorSpaceAttrs.end(),
-                       paramName)
-                != _mtlxKnownColorSpaceAttrs.end();
-        };
-
         for (auto&& param : n.parameters) {
-            if (isColorSpace(param.first)) {
+            if (_IsHydraColorSpace(param.first)) {
                 const VtValue& val = param.second;
                 if (val.IsHolding<TfToken>()) {
                     sourceColorSpace = val.UncheckedGet<TfToken>().GetString();
