@@ -54,6 +54,11 @@ public:
     Ufe::Vector2f             getSize() const override;
     Ufe::UndoableCommand::Ptr setSizeCmd(const Ufe::Vector2f& size) override;
 #endif
+#ifdef UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR
+    bool                      hasDisplayColor() const override;
+    Ufe::Color3f              getDisplayColor() const override;
+    Ufe::UndoableCommand::Ptr setDisplayColorCmd(const Ufe::Color3f& color) override;
+#endif
 
 private:
     enum class CoordType
@@ -78,6 +83,21 @@ private:
         const PXR_NS::SdfPath         _primPath;
         const PXR_NS::VtValue         _newValue;
     };
+
+#ifdef UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR
+    class SetDisplayColorCommand : public UsdUndoableCommand<Ufe::UndoableCommand>
+    {
+    public:
+        SetDisplayColorCommand(const PXR_NS::UsdPrim& prim, const Ufe::Color3f& newColor);
+
+        void executeImplementation() override;
+
+    private:
+        const PXR_NS::UsdStageWeakPtr _stage;
+        const PXR_NS::SdfPath         _primPath;
+        const PXR_NS::VtValue         _newValue;
+    };
+#endif
 
     UsdSceneItem::Ptr fItem;
 
