@@ -158,4 +158,25 @@
     <input name="surfaceshader" type="surfaceshader" nodename="Surf10" />
   </surfacematerial>
 
+  <surfacematerial name="MultiConnect1" type="material" nodedef="ND_surfacematerial" topo="MultiConnect1_topo.mtlx">
+    <input name="surfaceshader" type="surfaceshader" nodename="Surf11" />
+  </surfacematerial>
+  <standard_surface name="Surf11" type="surfaceshader" nodedef="ND_standard_surface_surfaceshader">
+    <input name="base_color" type="color3" nodename="constant11a" />
+    <input name="opacity" type="color3" nodename="constant11a" />
+    <input name="subsurface" type="float" nodename="add11" />
+    <input name="transmission" type="float" nodename="constant11b" />
+    <input name="base" type="float" nodename="constant11b" />
+  </standard_surface>
+  <constant name="constant11a" type="color3" nodedef="ND_constant_color3">
+    <input name="value" type="color3" value="0.263273, 0.263273, 0.263273" />
+  </constant>
+  <constant name="constant11b" type="float" nodedef="ND_constant_float">
+    <input name="value" type="float" value="0.5" />
+  </constant>
+  <add name="add11" type="float" nodedef="ND_add_float">
+    <input name="in1" type="float" nodename="constant11b" />
+    <input name="in2" type="float" nodename="constant11b" />
+  </add>
+
 </materialx>
