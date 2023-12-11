@@ -50,7 +50,10 @@ class testPxrUsdMayaGLInstancerDraw(imageUtils.ImageDiffingTestCase):
         # directory to where that file is.
         os.chdir(cls._inputDir)
 
-    def _WriteViewportImage(self, outputImageName, suffix):
+    def _WriteViewportImage(self, outputImageName, suffix, baselineSuffix = None):
+        if baselineSuffix is None:
+            baselineSuffix = suffix
+
         # Make sure the hardware renderer is available
         MAYA_RENDERER_NAME = 'mayaHardware2'
         mayaRenderers = cmds.renderer(query=True,
@@ -97,9 +100,11 @@ class testPxrUsdMayaGLInstancerDraw(imageUtils.ImageDiffingTestCase):
         os.chdir(self._testDir)
         cmds.ogsRender(camera="persp", currentFrame=True, width=960, height=540)
 
-        imageName = '%s_%s.png' % (outputImageName, suffix)
-        baselineImagePath = os.path.join(self._inputDir, 'baseline', imageName)
-        outputImagePath = os.path.join('.', 'tmp', imageName)
+        baselineImageName = '%s_%s.png' % (outputImageName, baselineSuffix)
+        outputImageName = '%s_%s.png' % (outputImageName, suffix)
+
+        baselineImagePath = os.path.join(self._inputDir, 'baseline', baselineImageName)
+        outputImagePath = os.path.join('.', 'tmp', outputImageName)
 
         self.assertImagesClose(baselineImagePath, outputImagePath)
 
@@ -150,7 +155,7 @@ class testPxrUsdMayaGLInstancerDraw(imageUtils.ImageDiffingTestCase):
         cmds.file(os.path.abspath('InstancerDrawTest.ma'),
                 open=True, force=True)
         self._SetModelPanelsToViewport2()
-        self._WriteViewportImage("InstancerTest", "reload")
+        self._WriteViewportImage("InstancerTest", "reload", "initial")
 
 
 if __name__ == '__main__':
