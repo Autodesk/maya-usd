@@ -1,8 +1,5 @@
 # Unit test scripts.
 set(TEST_SCRIPT_FILES
-    # Note: the following test fails when switching to the "Expanded"
-    #       assembly mode, so disabled it until Pixar figures
-    #       what is going wrong.
     testenv/testRefAssemblyDrawRepresentations.py
     testenv/testBatchRendererIsolateSelection.py
     testenv/testPxrUsdMayaGLInstancerDraw.py
