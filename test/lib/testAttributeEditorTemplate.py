@@ -208,7 +208,7 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
             frameLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, 'Shader: Dot')
             self.assertIsNotNone(frameLayout, 'Could not find "Shader: Dot" frameLayout')
 
-            # We should also have custom image control for 'Inputs In'.
+            # We should also have custom image control for 'In'.
             InputsInControl = self.searchForMayaControl(frameLayout, cmds.text, 'In')
             self.assertIsNotNone(InputsInControl, 'Could not find D_filename "In" control')
 
