@@ -386,9 +386,9 @@ void TopoNeutralGraph::cloneNodeGraphConnection(
         ++_outputIndex;
         _outputMap.insert({ outputKey, graphOutput });
         graphOutput->setConnectedNode(destConnectedNode);
-        auto destInput = destNode.addInput(sourceInput.getName(), sourceInput.getType());
-        destInput->setConnectedOutput(graphOutput);
     }
+    auto destInput = destNode.addInput(sourceInput.getName(), sourceInput.getType());
+    destInput->setConnectedOutput(graphOutput);
 }
 
 } // namespace ShaderGenUtil
