@@ -52,6 +52,7 @@ typedef bool (*IsAttributeLockedFn)(const PXR_NS::UsdAttribute& attr, std::strin
 typedef void (*SaveStageLoadRulesFn)(const PXR_NS::UsdStageRefPtr&);
 typedef bool (*IsRootChildFn)(const Ufe::Path& path);
 typedef std::string (*UniqueChildNameFn)(const PXR_NS::UsdPrim& usdParent, const std::string& name);
+typedef void (*WaitCursorFn)();
 
 //------------------------------------------------------------------------------
 // Helper functions
@@ -298,5 +299,24 @@ bool isEditTargetLayerModifiable(
 //! Combine two UFE bounding boxes.
 USDUFE_PUBLIC
 Ufe::BBox3d combineUfeBBox(const Ufe::BBox3d& ufeBBox1, const Ufe::BBox3d& ufeBBox2);
+
+//! Set both the start and stop wait cursor functions.
+USDUFE_PUBLIC
+void setWaitCursorFns(WaitCursorFn startFn, WaitCursorFn stopFn);
+
+//! Start the wait cursor. Can be called recursively.
+USDUFE_PUBLIC
+void startWaitCursor();
+
+//! Stop the wait cursor. Can be called recursively.
+USDUFE_PUBLIC
+void stopWaitCursor();
+
+//! Start and stop the wait cursor in the constructor and destructor.
+struct USDUFE_PUBLIC WaitCursor
+{
+    WaitCursor() { startWaitCursor(); }
+    ~WaitCursor() { stopWaitCursor(); }
+};
 
 } // namespace USDUFE_NS_DEF

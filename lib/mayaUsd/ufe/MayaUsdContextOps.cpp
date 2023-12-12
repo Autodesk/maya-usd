@@ -102,12 +102,6 @@ const constexpr char  kClearAllRefsOrPayloadsLabel[] = "Clear All USD References
 const constexpr char  kClearAllRefsOrPayloadsItem[] = "ClearAllReferencesOrPayloads";
 
 //! \brief Change the cursor to wait state on construction and restore it on destruction.
-struct WaitCursor
-{
-    WaitCursor() { MGlobal::executeCommand("waitCursor -state 1"); }
-    ~WaitCursor() { MGlobal::executeCommand("waitCursor -state 0"); }
-};
-
 #ifdef UFE_V3_FEATURES_AVAILABLE
 //! \brief Create a working Material and select it:
 class InsertChildAndSelectCommand : public Ufe::CompositeUndoableCommand

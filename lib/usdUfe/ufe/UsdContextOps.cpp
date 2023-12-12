@@ -23,6 +23,7 @@
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>
 #include <usdUfe/ufe/UsdUndoClearDefaultPrimCommand.h>
+#include <usdUfe/ufe/UsdUndoLongDurationCommand.h>
 #include <usdUfe/ufe/UsdUndoPayloadCommand.h>
 #include <usdUfe/ufe/UsdUndoSelectAfterCommand.h>
 #include <usdUfe/ufe/UsdUndoSetDefaultPrimCommand.h>
@@ -542,10 +543,11 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         const UsdLoadPolicy policy = (itemPath[0u] == kUSDLoadWithDescendantsItem)
             ? UsdLoadWithDescendants
             : UsdLoadWithoutDescendants;
-
-        return std::make_shared<UsdUndoLoadPayloadCommand>(prim(), policy);
+        return UsdUndoLongDurationCommand::create(
+            { std::make_shared<UsdUndoLoadPayloadCommand>(prim(), policy) });
     } else if (itemPath[0u] == kUSDUnloadItem) {
-        return std::make_shared<UsdUndoUnloadPayloadCommand>(prim());
+        return UsdUndoLongDurationCommand::create(
+            { std::make_shared<UsdUndoUnloadPayloadCommand>(prim()) });
     } else if (itemPath[0] == kUSDVariantSetsItem) {
         // Operation is to set a variant in a variant set.  Need both the
         // variant set and the variant as arguments to the operation.
