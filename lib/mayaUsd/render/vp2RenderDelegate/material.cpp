@@ -236,6 +236,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (mayaIsBackFacing)
     (isBackfacing)
     (FallbackShader)
+
+    // Added in PXR_VERSION >= 2311
+    ((ColorSpacePrefix, "colorSpace:"))
 );
 // clang-format on
 
@@ -386,6 +389,18 @@ bool _IsTopologicalNode(const HdMaterialNode2& inNode)
     return false;
 }
 
+#if PXR_VERSION >= 2311
+// Hydra in USD 23.11 will add a "colorspace:Foo" parameter matching color managed "Foo" parameter
+bool _IsHydraColorSpace(const TfToken& paramName)
+{
+    if (paramName.GetString().rfind(_tokens->ColorSpacePrefix.GetString(), 0) == 0) {
+        return true;
+    }
+    return std::find(_mtlxKnownColorSpaceAttrs.begin(), _mtlxKnownColorSpaceAttrs.end(), paramName)
+        != _mtlxKnownColorSpaceAttrs.end();
+};
+#endif
+
 bool _IsMaterialX(const HdMaterialNode& node)
 {
     SdrRegistry&    shaderReg = SdrRegistry::GetInstance();
@@ -446,6 +461,7 @@ size_t _GenerateNetwork2TopoHash(const HdMaterialNetwork2& materialNetwork)
 #ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
         if (MayaUsd::ColorManagementPreferences::Active()) {
             // Explicit color management parameters affect topology:
+#if PXR_VERSION < 2311
             for (auto&& cmName : _mtlxKnownColorSpaceAttrs) {
                 auto cmIt = node.parameters.find(cmName);
                 if (cmIt != node.parameters.end()) {
@@ -459,6 +475,20 @@ size_t _GenerateNetwork2TopoHash(const HdMaterialNetwork2& materialNetwork)
                     }
                 }
             }
+#else
+            for (auto&& param : node.parameters) {
+                if (_IsHydraColorSpace(param.first)) {
+                    MayaUsd::hash_combine(topoHash, hash_value(param.first));
+                    if (param.second.IsHolding<TfToken>()) {
+                        auto const& colorSpace = param.second.UncheckedGet<TfToken>();
+                        MayaUsd::hash_combine(topoHash, hash_value(colorSpace));
+                    } else if (param.second.IsHolding<std::string>()) {
+                        auto const& colorSpace = param.second.UncheckedGet<std::string>();
+                        MayaUsd::hash_combine(topoHash, std::hash<std::string> {}(colorSpace));
+                    }
+                }
+            }
+#endif
             if (_MxHasFilenameInput(node)) {
                 hasTextureNode = true;
             }
@@ -2598,7 +2628,7 @@ TfToken _RequiresColorManagement(
         if (!sourceColorSpace.empty()) {
             return;
         }
-
+#if PXR_VERSION < 2311
         for (auto&& csAttrName : _mtlxKnownColorSpaceAttrs) {
             auto paramIt = n.parameters.find(csAttrName);
             if (paramIt != n.parameters.end()) {
@@ -2612,6 +2642,20 @@ TfToken _RequiresColorManagement(
                 }
             }
         }
+#else
+        for (auto&& param : n.parameters) {
+            if (_IsHydraColorSpace(param.first)) {
+                const VtValue& val = param.second;
+                if (val.IsHolding<TfToken>()) {
+                    sourceColorSpace = val.UncheckedGet<TfToken>().GetString();
+                    return;
+                } else if (val.IsHolding<std::string>()) {
+                    sourceColorSpace = val.UncheckedGet<std::string>();
+                    return;
+                }
+            }
+        }
+#endif
     };
 
     std::string sourceColorSpace;
