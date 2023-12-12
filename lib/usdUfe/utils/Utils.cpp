@@ -32,7 +32,8 @@ std::string sanitizeName(const std::string& name)
 std::string prettifyName(const std::string& name)
 {
     std::string prettyName;
-    prettyName.reserve(name.size());
+    // Note: slightly over-reserve to account for additional spaces.
+    prettyName.reserve(name.size() + 6);
     size_t nbChars = name.size();
     bool   capitalizeNext = true;
     for (size_t i = 0; i < nbChars; ++i) {
