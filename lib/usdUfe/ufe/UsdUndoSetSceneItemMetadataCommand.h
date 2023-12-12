@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USD_UNDO_SET_SCENE_ITEM_METADATA_COMMAND_H
+#define USD_UNDO_SET_SCENE_ITEM_METADATA_COMMAND_H
 
-#include <mayaUsd/base/api.h>
-
+#include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/UsdUndoableCommand.h>
 
@@ -57,3 +57,4 @@ private:
 };
 
 } // namespace USDUFE_NS_DEF
+#endif

@@ -16,8 +16,7 @@
 
 #include "UsdUndoSetSceneItemMetadataCommand.h"
 
-#include "Utils.h"
-#include "private/Utils.h"
+#include <usdUfe/ufe/Utils.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/token.h>
@@ -58,7 +57,7 @@ SetSceneItemMetadataCommand::SetSceneItemMetadataCommand(
 void SetSceneItemMetadataCommand::executeImplementation()
 {
     if (_stage) {
-        const UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+        const PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
 
         if (_group.GetString().empty()) {
             // If this is not a grouped metadata, set the _value directly on the _key

@@ -40,7 +40,7 @@ ClearSceneItemMetadataCommand::ClearSceneItemMetadataCommand(
 void ClearSceneItemMetadataCommand::executeImplementation()
 {
     if (_stage) {
-        const UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+        const PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
         if (_group.GetString().empty()) {
             // If this is not a grouped meta data, remove the key
             prim.ClearCustomDataByKey(TfToken(_key));

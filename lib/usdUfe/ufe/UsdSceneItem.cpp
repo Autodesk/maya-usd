@@ -21,10 +21,9 @@
 #include <pxr/usd/usd/schemaRegistry.h>
 
 #ifdef UFE_SCENEITEM_HAS_METADATA
-#include "Utils.h"
-
 #include <usdUfe/ufe/UsdUndoClearSceneItemMetadataCommand.h>
 #include <usdUfe/ufe/UsdUndoSetSceneItemMetadataCommand.h>
+#include <usdUfe/ufe/Utils.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/token.h>
