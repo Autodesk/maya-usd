@@ -1,6 +1,7 @@
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
+
 target_sources(${PROJECT_NAME}
     PRIVATE
         Global.cpp
@@ -45,6 +46,13 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     )
 endif()
 
+if (UFE_SCENEITEM_HAS_METADATA)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+			UsdUndoClearSceneItemMetadataCommand.cpp
+			UsdUndoSetSceneItemMetadataCommand.cpp
+    )
+endif()
 
 set(HEADERS
     Global.h
@@ -86,6 +94,13 @@ set(HEADERS
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     list(APPEND HEADERS
         UsdUndoUngroupCommand.h
+    )
+endif()
+
+if (UFE_SCENEITEM_HAS_METADATA)
+    list(APPEND HEADERS
+		UsdUndoClearSceneItemMetadataCommand.h
+		UsdUndoSetSceneItemMetadataCommand.h
     )
 endif()
 

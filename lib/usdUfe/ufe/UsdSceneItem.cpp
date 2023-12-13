@@ -20,6 +20,18 @@
 #include <pxr/usd/usd/primTypeInfo.h>
 #include <pxr/usd/usd/schemaRegistry.h>
 
+#ifdef UFE_SCENEITEM_HAS_METADATA
+#include <usdUfe/ufe/UsdUndoClearSceneItemMetadataCommand.h>
+#include <usdUfe/ufe/UsdUndoSetSceneItemMetadataCommand.h>
+#include <usdUfe/ufe/Utils.h>
+
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/dictionary.h>
+#include <pxr/base/vt/value.h>
+
+#endif // UFE_SCENEITEM_HAS_METADATA
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace USDUFE_NS_DEF {
@@ -77,5 +89,63 @@ std::vector<std::string> UsdSceneItem::ancestorNodeTypes() const
     ancestorTypesCache[schemaType] = strAncestorTypes;
     return strAncestorTypes;
 }
+
+#ifdef UFE_SCENEITEM_HAS_METADATA
+
+Ufe::Value UsdSceneItem::getMetadata(const std::string& key) const
+{
+    PXR_NS::VtValue data = prim().GetCustomDataByKey(PXR_NS::TfToken(key));
+    if (data.IsEmpty()) {
+        return Ufe::Value();
+    }
+
+    return vtValueToUfeValue(data);
+}
+
+Ufe::UndoableCommandPtr
+UsdSceneItem::setMetadataCmd(const std::string& key, const Ufe::Value& value)
+{
+    return std::make_shared<SetSceneItemMetadataCommand>(prim(), key, value);
+}
+
+Ufe::UndoableCommandPtr UsdSceneItem::clearMetadataCmd(const std::string& key)
+{
+    return std::make_shared<ClearSceneItemMetadataCommand>(prim(), "", key);
+}
+
+Ufe::Value UsdSceneItem::getGroupMetadata(const std::string& group, const std::string& key) const
+{
+    PXR_NS::VtValue data = prim().GetCustomDataByKey(PXR_NS::TfToken(group));
+    if (data.IsEmpty()) {
+        return Ufe::Value();
+    }
+
+    if (!data.IsHolding<PXR_NS::VtDictionary>()) {
+        return Ufe::Value();
+    }
+
+    PXR_NS::VtValue value;
+    if (TfMapLookup(data.UncheckedGet<PXR_NS::VtDictionary>(), key, &value)) {
+        return vtValueToUfeValue(value);
+    }
+
+    return Ufe::Value();
+}
+
+Ufe::UndoableCommandPtr UsdSceneItem::setGroupMetadataCmd(
+    const std::string& group,
+    const std::string& key,
+    const Ufe::Value&  value)
+{
+    return std::make_shared<SetSceneItemMetadataCommand>(prim(), group, key, value);
+}
+
+Ufe::UndoableCommandPtr
+UsdSceneItem::clearGroupMetadataCmd(const std::string& group, const std::string& key)
+{
+    return std::make_shared<ClearSceneItemMetadataCommand>(prim(), group, key);
+}
+
+#endif // UFE_SCENEITEM_HAS_METADATA
 
 } // namespace USDUFE_NS_DEF
