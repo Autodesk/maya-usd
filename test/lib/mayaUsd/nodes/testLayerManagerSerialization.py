@@ -56,6 +56,10 @@ class testLayerManagerSerialization(unittest.TestCase):
         cmds.file(rename=self._tempMayaFile)
 
     def copyTestFilesAndMakeEdits(self):
+        '''
+        Copy an existing Maya scene that contains a stage and a few layer,
+        creates a few USD prim in the root, session and 1_1 layers.
+        '''
         self._currentTestDir = tempfile.mkdtemp(prefix='LayerManagerTest')
         fromDirectory = os.path.join(
             self._inputPath, 'LayerManagerSerializationTest')
@@ -79,13 +83,20 @@ class testLayerManagerSerialization(unittest.TestCase):
         stage = mayaUsd.ufe.getStage(
             "|SerializationTest|SerializationTestShape")
         stack = stage.GetLayerStack()
+        # Note: layers are:
+        #            0: session
+        #            1: root
+        #            2: 1
+        #            3: 1_1
+        #            4: 2
+        #            5: 2_1
         self.assertEqual(6, len(stack))
 
         stage.SetEditTarget(stage.GetRootLayer())
         newPrimPath = "/ChangeInRoot"
         stage.DefinePrim(newPrimPath, "xform")
 
-        stage.SetEditTarget(stack[2])
+        stage.SetEditTarget(stack[3])
         newPrimPath = "/ChangeInLayer_1_1"
         stage.DefinePrim(newPrimPath, "xform")
 
@@ -111,6 +122,10 @@ class testLayerManagerSerialization(unittest.TestCase):
         return stage
 
     def confirmEditsSavedStatus(self, fileBackedSavedStatus, sessionSavedStatus):
+        '''
+        Clears the Maya scene, creates a new USD stage with the root layer
+        and verify various prim existence based on given flags.
+        '''
         cmds.file(new=True, force=True)
 
         proxyNode, stage = createProxyFromFile(self._rootUsdFile)
