@@ -101,7 +101,6 @@ static constexpr char kAddRefOrPayloadItem[] = "AddReferenceOrPayload";
 const constexpr char  kClearAllRefsOrPayloadsLabel[] = "Clear All USD References/Payloads...";
 const constexpr char  kClearAllRefsOrPayloadsItem[] = "ClearAllReferencesOrPayloads";
 
-//! \brief Change the cursor to wait state on construction and restore it on destruction.
 #ifdef UFE_V3_FEATURES_AVAILABLE
 //! \brief Create a working Material and select it:
 class InsertChildAndSelectCommand : public Ufe::CompositeUndoableCommand
