@@ -48,6 +48,7 @@ public:
 
     virtual bool        hasValue() const;
     virtual std::string name() const;
+    virtual std::string displayName() const;
     virtual std::string documentation() const;
 
 #ifdef UFE_V3_FEATURES_AVAILABLE

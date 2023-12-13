@@ -208,9 +208,9 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
             frameLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, 'Shader: Dot')
             self.assertIsNotNone(frameLayout, 'Could not find "Shader: Dot" frameLayout')
 
-            # We should also have custom image control for 'Inputs In'.
-            InputsInControl = self.searchForMayaControl(frameLayout, cmds.text, 'Inputs In')
-            self.assertIsNotNone(InputsInControl, 'Could not find D_filename "Inputs In" control')
+            # We should also have custom image control for 'In'.
+            InputsInControl = self.searchForMayaControl(frameLayout, cmds.text, 'In')
+            self.assertIsNotNone(InputsInControl, 'Could not find D_filename "In" control')
 
     def testAECustomEnumControl(self):
         '''Simple test for the customEnumControlCreator in AE template.'''
@@ -244,8 +244,8 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         self.assertIsNotNone(frameLayout, 'Could not find "Alpha" frameLayout')
         
         # We should also have custom enum control for 'Inputs Alpha Mode'.
-        InputsAlphaModeControl = self.searchForMayaControl(frameLayout, cmds.text, 'Inputs Alpha Mode')
-        self.assertIsNotNone(InputsAlphaModeControl, 'Could not find gltf_pbr1 "Inputs Alpha Mode" control')
+        InputsAlphaModeControl = self.searchForMayaControl(frameLayout, cmds.text, 'Alpha  Mode')
+        self.assertIsNotNone(InputsAlphaModeControl, 'Could not find gltf_pbr1 "Alpha Mode" control')
 
     def testAEConnectionsCustomControl(self):
         '''Simple test for the connectionsCustomControlCreator in AE template.'''

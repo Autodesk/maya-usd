@@ -63,6 +63,13 @@ if(DEFINED UFE_PREVIEW_VERSION_NUM)
     )
 endif()
 
+if (UFE_HAS_DISPLAY_NAME)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_HAS_DISPLAY_NAME=1
+    )
+endif()
+
 message(STATUS "MAYA_HAS_DEFAULT_MATERIAL_API is ${MAYA_HAS_DEFAULT_MATERIAL_API}")
 if (MAYA_HAS_DEFAULT_MATERIAL_API)
     target_compile_definitions(${PROJECT_NAME}
