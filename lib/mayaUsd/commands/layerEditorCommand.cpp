@@ -19,6 +19,7 @@
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/utils/layerMuting.h>
 #include <mayaUsd/utils/query.h>
+#include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
 #include <usdUfe/ufe/Utils.h>
@@ -547,11 +548,9 @@ public:
 
     bool doIt(SdfLayerHandle layer) override
     {
+        backupLayer(layer);
+
         // using reload will correctly reset the dirty bit
-        if (layer->IsDirty()) {
-            _backupLayer = SdfLayer::CreateAnonymous();
-            _backupLayer->TransferContent(layer);
-        }
         holdOntoSubLayers(layer);
 
         if (_cmdId == CmdId::kDiscardEdit) {
@@ -559,19 +558,105 @@ public:
         } else if (_cmdId == CmdId::kClearLayer) {
             layer->Clear();
         }
+
+        // Note: backup the edit targets after the layer is cleared because we use
+        //       the fact that a stage edit target is now invalid to decice to backup
+        //       that edit target.
+        backupEditTargets(layer);
+
         return true;
     }
+
     bool undoIt(SdfLayerHandle layer) override
     {
-        if (_backupLayer == nullptr) {
-            layer->Reload();
-        } else {
-            layer->TransferContent(_backupLayer);
-            _backupLayer = nullptr;
-            releaseSubLayers();
-        }
+        restoreLayer(layer);
+
+        // Note: restore edit targets after the layers are restored so that the backup
+        //       edit targets are now valid.
+        restoreEditTargets();
+
+        releaseSubLayers();
+
         return true;
     }
+
+private:
+    // Backup and restore dirty layers to support undo and redo.
+    void backupLayer(SdfLayerHandle layer)
+    {
+        if (!layer)
+            return;
+
+        if (layer->IsDirty()) {
+            _backupLayer = SdfLayer::CreateAnonymous();
+            _backupLayer->TransferContent(layer);
+        }
+    }
+
+    void restoreLayer(SdfLayerHandle layer)
+    {
+        if (!layer)
+            return;
+
+        if (_backupLayer) {
+            layer->TransferContent(_backupLayer);
+            _backupLayer = nullptr;
+        } else {
+            layer->Reload();
+        }
+    }
+
+    // Backup and restore edit targets of stages that were targeting the sub-layers
+    // of the cleared layer to support undo and redo.
+    void backupEditTargets(SdfLayerHandle layer)
+    {
+        _editTargetBackups.clear();
+
+        if (!layer)
+            return;
+
+        const UsdMayaStageCache::Caches& caches = UsdMayaStageCache::GetAllCaches();
+        for (const PXR_NS::UsdStageCache& cache : caches) {
+            const std::vector<UsdStageRefPtr> stages = cache.GetAllStages();
+            for (const PXR_NS::UsdStageRefPtr& stage : stages) {
+                if (!stage)
+                    continue;
+                const PXR_NS::UsdEditTarget target = stage->GetEditTarget();
+                // Note: this is the check that UsdStage::SetTargetLayer would do
+                //       which is how we would detect that the edit target is now
+                //       invalid. Unfortunately, there is no USD function to check
+                //       if an edit target is valid outside of trying to set it as
+                //       the edit target, but we would not want to set it. (Also,
+                //       knowing if the stage checks that the edit target is already
+                //       set to the same target before validating it is an implementation
+                //       detail that we would raher not rely on.)
+                if (stage->HasLocalLayer(target.GetLayer()))
+                    continue;
+                _editTargetBackups[stage] = target;
+
+                // Set a valid target. The only layer we can count on is the root
+                // layer, so set the target to that.
+                stage->SetEditTarget(stage->GetRootLayer());
+            }
+        }
+    }
+
+    void restoreEditTargets()
+    {
+        for (const auto& weakStageAndTarget : _editTargetBackups) {
+            const PXR_NS::UsdStageRefPtr stage = weakStageAndTarget.first;
+            if (!stage)
+                continue;
+
+            PXR_NS::UsdEditTarget target = weakStageAndTarget.second;
+            stage->SetEditTarget(target);
+        }
+    }
+
+    // Edit targets that were made invalid after the layer was cleared.
+    // The stages are kept with weak pointer to avoid forcing to stay valid.
+    using EditTargetBackups = std::map<PXR_NS::UsdStagePtr, PXR_NS::UsdEditTarget>;
+    EditTargetBackups _editTargetBackups;
 
     // we need to hold onto the layer if we dirty it
     PXR_NS::SdfLayerRefPtr _backupLayer;
