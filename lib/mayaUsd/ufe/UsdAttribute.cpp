@@ -372,6 +372,15 @@ std::string UsdAttribute::name() const
 }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
+std::string UsdAttribute::_displayName() const
+#else
+std::string UsdAttribute::displayName() const
+#endif
+{
+    return _attrHolder->displayName();
+}
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
 std::string UsdAttribute::_documentation() const
 #else
 std::string UsdAttribute::documentation() const

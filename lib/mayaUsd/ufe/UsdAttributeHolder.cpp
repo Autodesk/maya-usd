@@ -182,6 +182,24 @@ std::string UsdAttributeHolder::name() const
     }
 }
 
+std::string UsdAttributeHolder::displayName() const
+{
+    if (isValid()) {
+        std::string dn = _usdAttr.GetDisplayName();
+        if (dn.empty()) {
+            static const std::string prefixesToRemove = "xformOp";
+            dn = _usdAttr.GetName().GetString();
+            if (PXR_NS::TfStringStartsWith(dn, prefixesToRemove)) {
+                dn = dn.substr(prefixesToRemove.size());
+            }
+            dn = prettifyName(dn);
+        }
+        return dn;
+    } else {
+        return std::string();
+    }
+}
+
 std::string UsdAttributeHolder::documentation() const
 {
     if (isValid()) {

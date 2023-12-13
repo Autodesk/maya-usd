@@ -14,6 +14,8 @@
 #
 
 from .custom_image_control import customImageControlCreator
+from .attribute_custom_control import getNiceAttributeName
+from .attribute_custom_control import AttributeCustomControl
 
 import collections
 import fnmatch
@@ -113,6 +115,7 @@ class MetaDataCustomControl(object):
     def __init__(self, item, prim, useNiceName):
         # In Maya 2022.1 we need to hold onto the Ufe SceneItem to make
         # sure it doesn't go stale. This is not needed in latest Maya.
+        super(MetaDataCustomControl, self).__init__()
         mayaVer = '%s.%s' % (cmds.about(majorVersion=True), cmds.about(minorVersion=True))
         self.item = item if mayaVer == '2022.1' else None
         self.prim = prim
@@ -241,7 +244,7 @@ class MetaDataCustomControl(object):
                 cmds.error(str(ex))
 
 # Custom control for all array attribute.
-class ArrayCustomControl(object):
+class ArrayCustomControl(AttributeCustomControl):
 
     if hasAEPopupMenu:
         class ArrayAEPopup(attributes.AEPopupMenu):
@@ -270,11 +273,8 @@ class ArrayCustomControl(object):
                     self._buildFromActions(self.HAS_VALUE_MENU, addItemCmd)
 
     def __init__(self, ufeAttr, prim, attrName, useNiceName):
-        self.ufeAttr = ufeAttr
+        super(ArrayCustomControl, self).__init__(ufeAttr, attrName, useNiceName)
         self.prim = prim
-        self.attrName = attrName
-        self.useNiceName = useNiceName
-        super(ArrayCustomControl, self).__init__()
 
     def onCreate(self, *args):
         attr = self.prim.GetAttribute(self.attrName)
@@ -288,7 +288,7 @@ class ArrayCustomControl(object):
             typeNameStr = str(typeName.scalarType)
             typeNameStr += ("[" + str(len(values)) + "]") if hasValue else "[]"
 
-            attrLabel = mayaUsdLib.Util.prettifyName(self.attrName) if self.useNiceName else self.attrName
+            attrLabel = self.getUILabel()
             singleWidgetWidth = mel.eval('global int $gAttributeEditorTemplateSingleWidgetWidth; $gAttributeEditorTemplateSingleWidgetWidth += 0')
             with AEUITemplate():
                 # See comment in ConnectionsCustomControl below for why nc=5.
@@ -335,36 +335,21 @@ class ArrayCustomControl(object):
         cb = attributes.createChangeCb(self.updateUi, ufeAttr, uiControl)
         cmds.textField(attrTypeFld, edit=True, parent=uiControl, changeCommand=cb)
 
-
 def showEditorForUSDPrim(usdPrimPathStr):
     # Simple helper to open the AE on input prim.
     mel.eval('evalDeferred "showEditor(\\\"%s\\\")"' % usdPrimPathStr)
 
 # Custom control for all attributes that have connections.
-class ConnectionsCustomControl(object):
-    def __init__(self, ufeItem, prim, attrName, useNiceName):
+class ConnectionsCustomControl(AttributeCustomControl):
+    def __init__(self, ufeItem, ufeAttr, prim, attrName, useNiceName):
+        super(ConnectionsCustomControl, self).__init__(ufeAttr, attrName, useNiceName)
         self.path = ufeItem.path()
         self.prim = prim
-        self.attrName = attrName
-        self.useNiceName = useNiceName
-        super(ConnectionsCustomControl, self).__init__()
 
     def onCreate(self, *args):
         frontPath = self.path.popSegment()
         attr = self.prim.GetAttribute(self.attrName)
-        attrLabel = self.attrName
-        if self.useNiceName:
-            attrLabel = mayaUsdLib.Util.prettifyName(self.attrName)
-            ufeItem = ufe.SceneItem(self.path)
-            if ufeItem:
-                try:
-                    ufeAttrS = ufe.Attributes.attributes(ufeItem)
-                    ufeAttr = ufeAttrS.attribute(self.attrName)
-                    if ufeAttr.hasMetadata("uiname"):
-                        attrLabel = str(ufeAttr.getMetadata("uiname"))
-                except:
-                    pass
-
+        attrLabel = self.getUILabel()
         attrType = attr.GetMetadata('typeName')
 
         singleWidgetWidth = mel.eval('global int $gAttributeEditorTemplateSingleWidgetWidth; $gAttributeEditorTemplateSingleWidgetWidth += 0')
@@ -429,7 +414,8 @@ class NoticeListener(object):
 
 def connectionsCustomControlCreator(aeTemplate, c):
     if aeTemplate.attributeHasConnections(c):
-        return ConnectionsCustomControl(aeTemplate.item, aeTemplate.prim, c, aeTemplate.useNiceName)
+        ufeAttr = aeTemplate.attrS.attribute(c)
+        return ConnectionsCustomControl(aeTemplate.item, ufeAttr, aeTemplate.prim, c, aeTemplate.useNiceName)
     else:
         return None
 
@@ -445,7 +431,9 @@ def arrayCustomControlCreator(aeTemplate, c):
         return None
 
 def defaultControlCreator(aeTemplate, c):
-    cmds.editorTemplate(addControl=[c])
+    ufeAttr = aeTemplate.attrS.attribute(c)
+    uiLabel = getNiceAttributeName(ufeAttr, c) if aeTemplate.useNiceName else c
+    cmds.editorTemplate(addControl=[c], label=uiLabel)
     return None
 
 class AEShaderLayout(object):
@@ -658,10 +646,14 @@ class AETemplate(object):
         for c in controls:
             if c not in self.suppressedAttrs:
                 for controlCreator in AETemplate._controlCreators:
-                    createdControl = controlCreator(self, c)
-                    if createdControl:
-                        self.defineCustom(createdControl, c)
-                        break
+                    try:
+                        createdControl = controlCreator(self, c)
+                        if createdControl:
+                            self.defineCustom(createdControl, c)
+                            break
+                    except Exception as ex:
+                        # Do not let one custom control failure affect others.
+                        print('Failed to create control %s: %s' % (c, ex))
                 self.addedAttrs.append(c)
 
     def suppress(self, control):
