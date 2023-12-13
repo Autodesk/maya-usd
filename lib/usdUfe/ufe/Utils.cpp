@@ -38,6 +38,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 constexpr auto kIllegalUFEPath = "Illegal UFE run-time path %s.";
+#ifdef UFE_SCENEITEM_HAS_METADATA
+constexpr auto kErrorMsgInvalidValueType = "Unexpected Ufe::Value type";
+#endif
 
 // typedef std::unordered_map<TfToken, SdfValueTypeName, TfToken::HashFunctor> TokenToSdfTypeMap;
 
@@ -867,5 +870,48 @@ Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& f
     }
     return dst;
 }
+
+#ifdef UFE_SCENEITEM_HAS_METADATA
+PXR_NS::VtValue ufeValueToVtValue(const Ufe::Value& ufeValue)
+{
+    PXR_NS::VtValue usdValue;
+    if (ufeValue.isType<bool>())
+        usdValue = ufeValue.get<bool>();
+    else if (ufeValue.isType<int>())
+        usdValue = ufeValue.get<int>();
+    else if (ufeValue.isType<float>())
+        usdValue = ufeValue.get<float>();
+    else if (ufeValue.isType<double>())
+        usdValue = ufeValue.get<double>();
+    else if (ufeValue.isType<std::string>())
+        usdValue = ufeValue.get<std::string>();
+    else {
+        TF_CODING_ERROR(kErrorMsgInvalidValueType);
+    }
+
+    return usdValue;
+}
+
+Ufe::Value vtValueToUfeValue(const PXR_NS::VtValue& vtValue)
+{
+    if (vtValue.IsHolding<bool>())
+        return Ufe::Value(vtValue.Get<bool>());
+    else if (vtValue.IsHolding<int>())
+        return Ufe::Value(vtValue.Get<int>());
+    else if (vtValue.IsHolding<float>())
+        return Ufe::Value(vtValue.Get<float>());
+    else if (vtValue.IsHolding<double>())
+        return Ufe::Value(vtValue.Get<double>());
+    else if (vtValue.IsHolding<std::string>())
+        return Ufe::Value(vtValue.Get<std::string>());
+    else if (vtValue.IsHolding<PXR_NS::TfToken>())
+        return Ufe::Value(vtValue.Get<PXR_NS::TfToken>().GetString());
+    else {
+        std::stringstream ss;
+        ss << vtValue;
+        return Ufe::Value(ss.str());
+    }
+}
+#endif
 
 } // namespace USDUFE_NS_DEF

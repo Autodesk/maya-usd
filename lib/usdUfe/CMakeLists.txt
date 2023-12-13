@@ -73,6 +73,14 @@ if (MAYA_HAS_DISPLAY_LAYER_API)
     )
 endif()
 
+message(STATUS "UFE_SCENEITEM_HAS_METADATA is ${UFE_SCENEITEM_HAS_METADATA}")
+if (UFE_SCENEITEM_HAS_METADATA)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_SCENEITEM_HAS_METADATA=1
+    )
+endif()
+
 # Some of the UFE classes are exporting STL classes which causes this warning.
 if(MSVC)
     target_compile_options(${PROJECT_NAME}

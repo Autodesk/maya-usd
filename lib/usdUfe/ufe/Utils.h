@@ -27,6 +27,12 @@
 #include <ufe/types.h>
 #include <ufe/ufe.h>
 
+#ifdef UFE_V3_FEATURES_AVAILABLE
+#include <pxr/base/vt/value.h>
+
+#include <ufe/value.h>
+#endif // UFE_V3_FEATURES_AVAILABLE
+
 #include <string>
 
 UFE_NS_DEF
@@ -203,6 +209,14 @@ Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& fil
 //! destination using the source scene item path.
 USDUFE_PUBLIC
 Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath);
+
+#ifdef UFE_V3_FEATURES_AVAILABLE
+//! Converts a UFE Value to a VtValue
+USDUFE_PUBLIC PXR_NS::VtValue ufeValueToVtValue(const Ufe::Value& ufeValue);
+
+//! Converts a VtValue to a UFE Value
+USDUFE_PUBLIC Ufe::Value vtValueToUfeValue(const PXR_NS::VtValue& vtValue);
+#endif // UFE_V3_FEATURES_AVAILABLE
 
 //------------------------------------------------------------------------------
 // Verify edit restrictions.

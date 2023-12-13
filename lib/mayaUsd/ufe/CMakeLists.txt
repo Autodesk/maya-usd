@@ -125,6 +125,14 @@ if (UFE_ATTRIBUTES_GET_ENUMS)
     )
 endif()
 
+
+if (UFE_SCENEITEM_HAS_METADATA)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_SCENEITEM_HAS_METADATA=1
+    )
+endif()
+
 if (v4_BatchOps IN_LIST UFE_PREVIEW_FEATURES)
     message(STATUS "UFE_PREVIEW has V4 BatchOps support")
     target_sources(${PROJECT_NAME}
