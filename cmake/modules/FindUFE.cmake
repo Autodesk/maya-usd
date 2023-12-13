@@ -64,6 +64,10 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/ufe.h")
         # Note: the UFE_PATCH_LEVEL will start at 300 and will thus encode the minor version
         #       of 3 (so we don't use UFE_MINOR_VERSION in this formula).
         math(EXPR UFE_PREVIEW_VERSION_NUM "4 * 1000 + ${UFE_PATCH_LEVEL}")
+    elseif(UFE_VERSION VERSION_EQUAL "5.0.0")
+        # Temporary. Once next Maya PR is released with UFE v5.0.0 this should
+        # be removed (along with all the UFE_PREVIEW_VERSION_NUM checks).
+        set(UFE_PREVIEW_VERSION_NUM 5017)
     endif()
 
     file(STRINGS
