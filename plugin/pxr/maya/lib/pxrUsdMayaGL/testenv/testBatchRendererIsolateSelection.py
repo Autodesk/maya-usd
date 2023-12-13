@@ -34,9 +34,22 @@ class testBatchRendererIsolateSelection(unittest.TestCase):
         # that way too.
         cmds.upAxis(axis='z')
 
+        cls._testName = 'BatchRendererIsolateSelectionTest'
+        inputPath = fixturesUtils.setUpClass(
+            __file__, initializeStandalone=False, loadPlugin=False)
+
+        cmds.loadPlugin('pxrUsd')
+        
+        cls._testDir = os.path.abspath('.')
+        cls._inputDir = os.path.join(inputPath, cls._testName)
+
         # To control where the rendered images are written, we force Maya to
         # use the test directory as the workspace.
         cmds.workspace(os.path.abspath('.'), o=True)
+
+        # Make sure the relative-path to the USD file works by setting the current
+        # directory to where that file is.
+        os.chdir(cls._inputDir)
 
     def _MakeModelPanel(self):
         window = cmds.window(widthHeight=(400, 400))
@@ -75,8 +88,8 @@ class testBatchRendererIsolateSelection(unittest.TestCase):
         self.assertEqual(test3, cube3)
 
     def testIsolateSelection(self):
-        cmds.file(os.path.abspath('IsolateSelectionTest.ma'),
-                open=True, force=True)
+        mayaSceneFullPath = os.path.join(self._inputDir, 'IsolateSelectionTest.ma')
+        cmds.file(mayaSceneFullPath,open=True, force=True)
 
         # Isolate selection seems to only apply to the interactive viewports,
         # and not to ogsRenders. However, it's difficult for us to render
