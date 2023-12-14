@@ -407,7 +407,7 @@ Ufe::Value UsdAttributeHolder::getMetadata(const std::string& key) const
 #endif
             return Ufe::Value(niceName);
         } else if (key == SdfFieldKeys->ColorSpace) {
-            auto csValue = _usdAttr.GetColorSpace();
+            const auto csValue = _usdAttr.GetColorSpace();
             return !csValue.IsEmpty() ? Ufe::Value(csValue.GetString()) : Ufe::Value();
         }
         PXR_NS::VtValue v;
@@ -439,7 +439,7 @@ bool UsdAttributeHolder::setMetadata(const std::string& key, const Ufe::Value& v
     if (isValid()) {
         if (key == SdfFieldKeys->ColorSpace) {
             if (!value.empty() && value.isType<std::string>()) {
-                AttributeEditRouterContext ctx(_usdAttr.GetPrim(), _usdAttr.GetName());
+                const AttributeEditRouterContext ctx(_usdAttr.GetPrim(), _usdAttr.GetName());
                 _usdAttr.SetColorSpace(TfToken(value.get<std::string>()));
                 return true;
             }
