@@ -87,6 +87,8 @@ uint32_t findLayerIndex(const UsdPrim& prim, const SdfLayerHandle& layer)
     return position;
 }
 
+int gWaitCursorCount = 0;
+
 UsdUfe::StageAccessorFn      gStageAccessorFn = nullptr;
 UsdUfe::StagePathAccessorFn  gStagePathAccessorFn = nullptr;
 UsdUfe::UfePathToPrimFn      gUfePathToPrimFn = nullptr;
@@ -95,6 +97,8 @@ UsdUfe::IsAttributeLockedFn  gIsAttributeLockedFn = nullptr;
 UsdUfe::SaveStageLoadRulesFn gSaveStageLoadRulesFn = nullptr;
 UsdUfe::IsRootChildFn        gIsRootChildFn = nullptr;
 UsdUfe::UniqueChildNameFn    gUniqueChildNameFn = nullptr;
+UsdUfe::WaitCursorFn         gStartWaitCursorFn = nullptr;
+UsdUfe::WaitCursorFn         gStopWaitCursorFn = nullptr;
 
 } // anonymous namespace
 
@@ -913,5 +917,33 @@ Ufe::Value vtValueToUfeValue(const PXR_NS::VtValue& vtValue)
     }
 }
 #endif
+
+void setWaitCursorFns(WaitCursorFn startFn, WaitCursorFn stopFn)
+{
+    gStartWaitCursorFn = startFn;
+    gStopWaitCursorFn = stopFn;
+}
+
+void startWaitCursor()
+{
+    if (!gStartWaitCursorFn)
+        return;
+
+    if (gWaitCursorCount == 0)
+        gStartWaitCursorFn();
+
+    ++gWaitCursorCount;
+}
+
+void stopWaitCursor()
+{
+    if (!gStopWaitCursorFn)
+        return;
+
+    --gWaitCursorCount;
+
+    if (gWaitCursorCount == 0)
+        gStopWaitCursorFn();
+}
 
 } // namespace USDUFE_NS_DEF

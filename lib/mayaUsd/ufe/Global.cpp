@@ -78,6 +78,7 @@
 #include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/utils/editRouter.h>
 
+#include <maya/MGlobal.h>
 #include <maya/MSceneMessage.h>
 #include <ufe/hierarchyHandler.h>
 #include <ufe/pathString.h>
@@ -106,6 +107,10 @@ MCallbackId gExitingCbId = 0;
 
 // Subject singleton for observation of all USD stages.
 MayaUsd::ufe::MayaStagesSubject::RefPtr g_StagesSubject;
+
+void mayaStartWaitCursor() { MGlobal::executeCommand("waitCursor -state 1"); }
+
+void mayaStopWaitCursor() { MGlobal::executeCommand("waitCursor -state 0"); }
 
 } // namespace
 
@@ -165,6 +170,8 @@ MStatus initialize()
     dccFunctions.isAttributeLockedFn = MayaUsd::Editability::isAttributeLocked;
     dccFunctions.saveStageLoadRulesFn = MayaUsd::MayaUsdProxyShapeStageExtraData::saveLoadRules;
     dccFunctions.uniqueChildNameFn = MayaUsd::ufe::uniqueChildNameMayaStandard;
+    dccFunctions.startWaitCursorFn = mayaStartWaitCursor;
+    dccFunctions.stopWaitCursorFn = mayaStopWaitCursor;
 
     // Replace the Maya hierarchy handler with ours.
     auto& runTimeMgr = Ufe::RunTimeMgr::instance();
