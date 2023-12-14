@@ -424,6 +424,9 @@ Ufe::Value UsdAttributeHolder::getMetadata(const std::string& key) const
             }
 #endif
             return Ufe::Value(niceName);
+        } else if (key == SdfFieldKeys->ColorSpace) {
+            const auto csValue = _usdAttr.GetColorSpace();
+            return !csValue.IsEmpty() ? Ufe::Value(csValue.GetString()) : Ufe::Value();
         }
         PXR_NS::VtValue v;
         if (_usdAttr.GetMetadata(tok, &v)) {
@@ -451,9 +454,17 @@ Ufe::Value UsdAttributeHolder::getMetadata(const std::string& key) const
 
 bool UsdAttributeHolder::setMetadata(const std::string& key, const Ufe::Value& value)
 {
-    if (isValid())
+    if (isValid()) {
+        if (key == SdfFieldKeys->ColorSpace) {
+            if (!value.empty() && value.isType<std::string>()) {
+                const AttributeEditRouterContext ctx(_usdAttr.GetPrim(), _usdAttr.GetName());
+                _usdAttr.SetColorSpace(TfToken(value.get<std::string>()));
+                return true;
+            }
+            return false;
+        }
         return setUsdAttrMetadata(_usdAttr, key, value);
-    else {
+    } else {
         return false;
     }
 }
@@ -480,6 +491,10 @@ bool UsdAttributeHolder::clearMetadata(const std::string& key)
         // Special cases for known Ufe metadata keys.
         if (key == Ufe::Attribute::kLocked) {
             return _usdAttr.ClearMetadata(MayaUsdMetadata->Lock);
+        }
+
+        if (key == SdfFieldKeys->ColorSpace) {
+            return _usdAttr.ClearColorSpace();
         }
         return _usdAttr.ClearMetadata(tok);
     } else {
