@@ -183,7 +183,7 @@ def ProxyShapeFilePathChanged(filePathAttr, newFilePath=None):
             #       in that case.
             primPath = cmds.getAttr(stageName+'.primPath') or ''
             excludedPrimPaths = cmds.getAttr(stageName+'.excludePrimPaths') or ''
-            loadPayloads = cmds.getAttr(stageName+'.loadPayloads') or 0
+            loadPayloads = mayaUsdLib.isLoadingAllPaylaods(stageName)
 
             cmds.optionVar(stringValue=('stageFromFile_primPath', primPath))
             cmds.optionVar(stringValue=('stageFromFile_excludePrimPath', excludedPrimPaths))
@@ -214,11 +214,13 @@ def ProxyShapeFilePathChanged(filePathAttr, newFilePath=None):
                 excludedPrimPaths = cmds.optionVar(query='stageFromFile_excludePrimPath')
                 loadPayloads = cmds.optionVar(query='stageFromFile_loadPayloads')
 
+                # Note: load rules must be the first thing set so the stage gets loaded in teh correct state right away.
+                mayaUsdLib.setLoadRulesAttribute(stageName, loadPayloads)
+
                 cmds.setAttr(filePathAttr, usdFileToLoad, type='string')
                 cmds.setAttr(filePathAttr+"Relative", requireRelative)
                 cmds.setAttr(stageName+'.primPath', primPath, type="string")
                 cmds.setAttr(stageName+'.excludePrimPaths', excludedPrimPaths, type="string")
-                cmds.setAttr(stageName+'.loadPayloads', loadPayloads)
 
                 return True
         elif newFilePath is not None:
