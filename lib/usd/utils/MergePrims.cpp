@@ -465,7 +465,11 @@ bool shouldMergeValue(
     const SdfLayerHandle&     dstLayer,
     const SdfPath&            dstPath,
     bool                      fieldInDst,
+#if PXR_VERSION >= 2311
+    std::optional<VtValue>*   valueToCopy)
+#else
     boost::optional<VtValue>* valueToCopy)
+#endif
 {
     const bool isCopiable = SdfShouldCopyValue(
         ctx.srcRootPath,
@@ -874,8 +878,13 @@ bool shouldMergeChildren(
     const SdfLayerHandle&     dstLayer,
     const SdfPath&            dstPath,
     bool                      fieldInDst,
+#if PXR_VERSION >= 2311
+    std::optional<VtValue>*   srcChildren,
+    std::optional<VtValue>*   dstChildren)
+#else
     boost::optional<VtValue>* srcChildren,
     boost::optional<VtValue>* dstChildren)
+#endif
 {
     const bool shouldMerge = SdfShouldCopyChildren(
         ctx.srcRootPath,
