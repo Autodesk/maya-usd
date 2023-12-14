@@ -140,8 +140,18 @@ public:
 
     void ResetCache()
     {
-        _iconContext = PXR_NS::ArDefaultResolverContext(
-            PXR_NS::TfStringSplit(PXR_NS::TfGetenv("XBMLANGPATH", ""), ARCH_PATH_LIST_SEP));
+        auto pathVector
+            = PXR_NS::TfStringSplit(PXR_NS::TfGetenv("XBMLANGPATH", ""), ARCH_PATH_LIST_SEP);
+#ifdef __linux__
+        // The paths on Linux end with /%B. Trim that:
+        for (auto&& path : pathVector) {
+            const auto pathLen = path.size();
+            if (pathLen > 3 && path.substr(pathLen - 3) == "/%B") {
+                path = path.substr(0, pathLen - 3);
+            }
+        }
+#endif
+        _iconContext = PXR_NS::ArDefaultResolverContext(pathVector);
         _searchCache.clear();
     }
 
