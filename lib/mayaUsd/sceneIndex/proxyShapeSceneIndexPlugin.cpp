@@ -51,7 +51,7 @@
 #else
 #include <pxr/imaging/hd/instancedBySceneIndex.h>
 #include <pxr/usdImaging/usdImagingGL/drawModeSceneIndex.h> //For USD 2211
-#endif // PXR_VERSION >= 2302
+#endif                                                      // PXR_VERSION >= 2302
 
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 54
 #include <pxr/imaging/hd/flattenedMaterialBindingsDataSourceProvider.h>
