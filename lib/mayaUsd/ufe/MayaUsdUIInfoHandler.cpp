@@ -146,7 +146,7 @@ public:
         // The paths on Linux end with /%B. Trim that:
         for (auto&& path : pathVector) {
             const auto pathLen = path.size();
-            if (pathLen > 3 && path.substr(pathLen - 3) == "/%B") {
+            if (pathLen >= 3 && path.substr(pathLen - 3) == "/%B") {
                 path = path.substr(0, pathLen - 3);
             }
         }
