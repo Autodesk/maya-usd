@@ -26,6 +26,7 @@ target_sources(${PROJECT_NAME}
         UsdUndoClearReferencesCommand.cpp
         UsdUndoCreateGroupCommand.cpp
         UsdUndoInsertChildCommand.cpp
+        UsdUndoLongDurationCommand.cpp
         UsdUndoPayloadCommand.cpp
         UsdUndoReorderCommand.cpp
         UsdUndoSelectAfterCommand.cpp
@@ -78,6 +79,7 @@ set(HEADERS
     UsdUndoClearReferencesCommand.h
     UsdUndoCreateGroupCommand.h
     UsdUndoInsertChildCommand.h
+    UsdUndoLongDurationCommand.h
     UsdUndoPayloadCommand.h
     UsdUndoReorderCommand.h
     UsdUndoSelectAfterCommand.h
