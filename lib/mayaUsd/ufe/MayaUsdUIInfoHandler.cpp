@@ -142,7 +142,7 @@ public:
     {
         auto pathVector
             = PXR_NS::TfStringSplit(PXR_NS::TfGetenv("XBMLANGPATH", ""), ARCH_PATH_LIST_SEP);
-#ifdef __linux__
+#ifdef LINUX
         // The paths on Linux end with /%B. Trim that:
         for (auto&& path : pathVector) {
             const auto pathLen = path.size();
