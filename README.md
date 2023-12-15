@@ -12,6 +12,9 @@ As USD gains in popularity many studios have been wondering what plugin they sho
 
 Pixar maintains a list of contributors to USD in their documentation [here](https://openusd.org/release/contributors.html), and as we start working together to merge the two existing plugins it is also important to acknowledge the amount of work that individuals put in on the Animal Logic plugin as well.  The list of those contributors is kept [here](doc/AL_CONTRIBUTORS.md).
 
+## Install MayaUSD
+Installers for MayaUSD can be found [here](https://github.com/Autodesk/maya-usd/releases)
+
 ## Getting Help
 Both Animal Logic and Pixar have forums which will remain great places to go with questions.
 
