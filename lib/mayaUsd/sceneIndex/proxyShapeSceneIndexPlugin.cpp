@@ -29,18 +29,21 @@
 #if USD_IMAGING_API_VERSION >= 20 // For USD 23.11+
 #include <pxr/usdImaging/usdImaging/sceneIndices.h>
 #else
+
 #include <pxr/imaging/hd/flatteningSceneIndex.h>
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 51
 #include <pxr/imaging/hd/materialBindingsSchema.h>
 #else
 #include <pxr/imaging/hd/materialBindingSchema.h>
-#endif
+#endif // HD_API_VERSION >= 51
+
 #include <pxr/imaging/hd/purposeSchema.h>
 #include <pxr/imaging/hd/retainedDataSource.h>
 #include <pxr/imaging/hd/sceneIndexPlugin.h>
 #include <pxr/imaging/hd/sceneIndexPluginRegistry.h>
 #include <pxr/usd/usd/primFlags.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
+
 #if PXR_VERSION >= 2302
 #include <pxr/usdImaging/usdImaging/drawModeSceneIndex.h> //For USD 2302 and later
 #include <pxr/usdImaging/usdImaging/niPrototypePropagatingSceneIndex.h>
@@ -48,7 +51,8 @@
 #else
 #include <pxr/imaging/hd/instancedBySceneIndex.h>
 #include <pxr/usdImaging/usdImagingGL/drawModeSceneIndex.h> //For USD 2211
-#endif
+#endif                                                      // PXR_VERSION >= 2302
+
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 54
 #include <pxr/imaging/hd/flattenedMaterialBindingsDataSourceProvider.h>
 #include <pxr/imaging/hdsi/legacyDisplayStyleOverrideSceneIndex.h>
@@ -59,8 +63,9 @@
 #include <pxr/usdImaging/usdImaging/rootOverridesSceneIndex.h>
 #include <pxr/usdImaging/usdImaging/selectionSceneIndex.h>
 #include <pxr/usdImaging/usdImaging/unloadedDrawModeSceneIndex.h>
-#endif
-#endif
+#endif // HD_API_VERSION >= 54
+
+#endif // USD_IMAGING_API_VERSION >= 20
 
 #include <maya/MEventMessage.h>
 #include <maya/MObject.h>
@@ -417,4 +422,4 @@ void MayaUsdProxyShapeSceneIndex::_PrimsDirtied(
 }
 } // namespace MAYAUSD_NS_DEF
 
-#endif
+#endif // PXR_VERSION >= 2211
