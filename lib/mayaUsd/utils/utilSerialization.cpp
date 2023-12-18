@@ -424,7 +424,9 @@ void ensureUSDFileExtension(std::string& filePath)
     const std::string  defaultExt(UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
     const std::string  usdCrateExt(UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText());
     const std::string  usdASCIIExt(UsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText());
-    if (extension != defaultExt && extension != usdCrateExt && extension != usdASCIIExt) {
+    const std::string  usdPackageExt(UsdMayaTranslatorTokens->UsdFileExtensionPackage.GetText());
+    if (extension != defaultExt && extension != usdCrateExt && extension != usdASCIIExt
+        && extension != usdPackageExt) {
         filePath.append(".");
         filePath.append(defaultExt.c_str());
     }
