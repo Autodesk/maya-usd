@@ -130,7 +130,10 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
 
     // Apply restriction rules
     UsdUfe::applyCommandRestriction(childPrim, "reparent");
-    UsdUfe::applyCommandRestriction(parentPrim, "reparent");
+    // Note: the parent is only receiving the prim, so it can be declared
+    //       in a weaker layer.
+    const bool allowStronger = true;
+    UsdUfe::applyCommandRestriction(parentPrim, "reparent", allowStronger);
 }
 
 UsdUndoInsertChildCommand::~UsdUndoInsertChildCommand() { }

@@ -1080,6 +1080,37 @@ class ParentCmdTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             cmds.parent(capsulePathStr, x1PathStr)
 
+    def testParentToStrongerLayer(self):
+        '''
+        Verify that parenting a prim to a prim defined in a lower layer
+        is permitted.
+        '''
+        cmds.file(new=True, force=True)
+
+        # Create an empty stage with a sub-layer
+        import mayaUsd_createStageWithNewLayer
+        proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+        subLayer = usdUtils.addNewLayerToStage(stage)
+
+        # Create a xform in the sub-layer and a capsule in the root layer.
+        with Usd.EditContext(stage, subLayer):
+            subXFormName = '/SubXForm'
+            subXFormPrim = stage.DefinePrim(subXFormName, 'Xform')
+            self.assertTrue(subXFormPrim)
+
+        rootCapsuleName = '/RootCapsule'
+        rootCapsulePrim = stage.DefinePrim(rootCapsuleName, 'Capsule')
+        self.assertTrue(rootCapsulePrim)
+
+        subXFormUFEPath = proxyShapePathStr + "," + subXFormName
+        rootCapsuleUFEPath = proxyShapePathStr + "," + rootCapsuleName
+        
+        cmds.parent(rootCapsuleUFEPath, subXFormUFEPath)
+
+        newRootCapsuleUSDPath = subXFormName + rootCapsuleName
+        self.assertTrue(stage.GetPrimAtPath(newRootCapsuleUSDPath))
+
     @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
     def testParentShader(self):
         '''Shaders can only have NodeGraphs and Materials as parent.'''
