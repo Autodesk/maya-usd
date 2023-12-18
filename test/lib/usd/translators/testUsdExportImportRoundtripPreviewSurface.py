@@ -80,9 +80,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         mark.SetMark()
         self.assertTrue(mark.IsClean())
 
-        mayaUsdPluginName = "mayaUsdPlugin"
-        if not cmds.pluginInfo(mayaUsdPluginName, query=True, loaded=True):
-            cmds.loadPlugin(mayaUsdPluginName)
+        self.assertTrue(mayaUtils.loadPlugin("mayaUsdPlugin"))
 
         cmds.file(f=True, new=True)
 
@@ -225,9 +223,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         mark.SetMark()
         self.assertTrue(mark.IsClean())
 
-        mayaUsdPluginName = "mayaUsdPlugin"
-        if not cmds.pluginInfo(mayaUsdPluginName, query=True, loaded=True):
-            cmds.loadPlugin(mayaUsdPluginName)
+        self.assertTrue(mayaUtils.loadPlugin("mayaUsdPlugin"))
 
         testPatterns = [
             # Each test has 5 elements:
@@ -313,9 +309,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         mark.SetMark()
         self.assertTrue(mark.IsClean())
 
-        mayaUsdPluginName = "mayaUsdPlugin"
-        if not cmds.pluginInfo(mayaUsdPluginName, query=True, loaded=True):
-            cmds.loadPlugin(mayaUsdPluginName)
+        self.assertTrue(mayaUtils.loadPlugin("mayaUsdPlugin"))
 
         for i in range(1,4):
             sphere_xform = cmds.polySphere()[0]

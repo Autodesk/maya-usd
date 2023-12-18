@@ -1,5 +1,6 @@
 # Unit test scripts.
 set(TEST_SCRIPT_FILES
+    testMayaHydraPlugin.py
     testMayaUsdConverter.py
     testMayaUsdCreateStageCommands.py
     testMayaUsdDirtyScene.py
