@@ -456,16 +456,20 @@ bool isDataAtPathsModified(
 //----------------------------------------------------------------------------------------------------------------------
 /// Decides if we should merge a value.
 bool shouldMergeValue(
-    const MergeContext&       ctx,
-    SdfSpecType               specType,
-    const TfToken&            field,
-    const SdfLayerHandle&     srcLayer,
-    const SdfPath&            srcPath,
-    bool                      fieldInSrc,
-    const SdfLayerHandle&     dstLayer,
-    const SdfPath&            dstPath,
-    bool                      fieldInDst,
+    const MergeContext&   ctx,
+    SdfSpecType           specType,
+    const TfToken&        field,
+    const SdfLayerHandle& srcLayer,
+    const SdfPath&        srcPath,
+    bool                  fieldInSrc,
+    const SdfLayerHandle& dstLayer,
+    const SdfPath&        dstPath,
+    bool                  fieldInDst,
+#if PXR_VERSION > 2311
+    std::optional<VtValue>* valueToCopy)
+#else
     boost::optional<VtValue>* valueToCopy)
+#endif
 {
     const bool isCopiable = SdfShouldCopyValue(
         ctx.srcRootPath,
@@ -866,16 +870,21 @@ bool filterChildren(
 //----------------------------------------------------------------------------------------------------------------------
 /// Decides if we should merge children.
 bool shouldMergeChildren(
-    const MergeContext&       ctx,
-    const TfToken&            childrenField,
-    const SdfLayerHandle&     srcLayer,
-    const SdfPath&            srcPath,
-    bool                      fieldInSrc,
-    const SdfLayerHandle&     dstLayer,
-    const SdfPath&            dstPath,
-    bool                      fieldInDst,
+    const MergeContext&   ctx,
+    const TfToken&        childrenField,
+    const SdfLayerHandle& srcLayer,
+    const SdfPath&        srcPath,
+    bool                  fieldInSrc,
+    const SdfLayerHandle& dstLayer,
+    const SdfPath&        dstPath,
+    bool                  fieldInDst,
+#if PXR_VERSION > 2311
+    std::optional<VtValue>* srcChildren,
+    std::optional<VtValue>* dstChildren)
+#else
     boost::optional<VtValue>* srcChildren,
     boost::optional<VtValue>* dstChildren)
+#endif
 {
     const bool shouldMerge = SdfShouldCopyChildren(
         ctx.srcRootPath,
