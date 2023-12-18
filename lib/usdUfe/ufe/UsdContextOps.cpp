@@ -478,11 +478,16 @@ void UsdContextOps::addBulkEditHeader(Ufe::ContextOps::Items& items) const
             = PXR_NS::TfStringPrintf(kBulkEditSameTypeLabel, _bulkItems.size(), _bulkType.c_str());
     }
     Ufe::ContextItem bulkEditItem(kBulkEditItem, bulkEditLabelStr);
+#ifdef UFE_V5_FEATURES_AVAILABLE
+    // The position doesn't matter, it will always appear at the very top of the menu.
+    bulkEditItem.setMetaData("isMenuHeader", true);
+    items.emplace_back(bulkEditItem);
+#else
     bulkEditItem.enabled = Ufe::ContextItem::kDisabled;
-
-    // Insert the header (and seperator) at the top of the menu.
+    // Insert the header (and separator) at the top of the menu.
     items.emplace(items.begin(), Ufe::ContextItem::kSeparator);
     items.emplace(items.begin(), bulkEditItem);
+#endif
 }
 
 /*! Called when the context ops is in bulk edit mode.
