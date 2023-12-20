@@ -130,6 +130,12 @@ static const MetadataMap _metaMap = {
               { Ufe::Attribute::kColorFloat4, std::string { "0,0,0,0" } },
 #endif
           };
+          // If there is a UIMin value, use it as the soft min.
+          const NdrTokenMap& metadata = p.GetMetadata();
+          auto               it = metadata.find(MayaUsdMetadata->UIMin);
+          if (it != metadata.cend()) {
+              return Ufe::Value(it->second);
+          }
           auto itDefault = defaultSoftMin.find(usdTypeToUfe(&p));
           return itDefault != defaultSoftMin.end() ? itDefault->second : Ufe::Value();
       } },
@@ -148,6 +154,12 @@ static const MetadataMap _metaMap = {
               { Ufe::Attribute::kColorFloat4, std::string { "1,1,1,1" } },
 #endif
           };
+          // If there is a UIMax value, use it as the soft max.
+          const NdrTokenMap& metadata = p.GetMetadata();
+          auto               it = metadata.find(MayaUsdMetadata->UIMax);
+          if (it != metadata.cend()) {
+              return Ufe::Value(it->second);
+          }
           auto itDefault = defaultSoftMax.find(usdTypeToUfe(&p));
           return itDefault != defaultSoftMax.end() ? itDefault->second : Ufe::Value();
       } },
