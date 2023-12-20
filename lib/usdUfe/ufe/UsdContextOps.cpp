@@ -359,14 +359,13 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                 }
             }
 
-            // Set as Default Prim:
-            // If the prim is a root prim, add set default prim
-            if (prim().GetPath().IsRootPrimPath()) {
-                items.emplace_back(kUSDSetAsDefaultPrim, kUSDSetAsDefaultPrim);
-            }
-
+            // Default Prim:
+            //     - If the prim is the default prim, add clearing the default prim
+            //     - Otherwise, if the prim is a root prim, add set default prim
             if (prim().GetStage()->GetDefaultPrim() == prim()) {
                 items.emplace_back(kUSDClearDefaultPrim, kUSDClearDefaultPrim);
+            } else if (prim().GetPath().IsRootPrimPath()) {
+                items.emplace_back(kUSDSetAsDefaultPrim, kUSDSetAsDefaultPrim);
             }
 
             // Prim active state:
