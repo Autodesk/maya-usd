@@ -397,7 +397,7 @@ HdSceneIndexPrim MayaUsdProxyShapeSceneIndex::GetPrim(const SdfPath& primPath) c
 
 SdfPathVector MayaUsdProxyShapeSceneIndex::GetChildPrimPaths(const SdfPath& primPath) const
 {
-    return _usdImagingStageSceneIndex->GetChildPrimPaths(primPath);
+    return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
 }
 
 void MayaUsdProxyShapeSceneIndex::_PrimsAdded(
