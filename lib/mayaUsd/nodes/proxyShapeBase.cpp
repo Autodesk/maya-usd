@@ -940,8 +940,18 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
                 SdfLayerRefPtr rootLayer
                     = sharableStage ? computeRootLayer(dataBlock, fileString) : nullptr;
-                if (nullptr == rootLayer)
+                if (nullptr == rootLayer) {
                     rootLayer = SdfLayer::FindOrOpen(fileString);
+                } else {
+                    // When reloading a Maya scene in which the root layer was saved in
+                    // the scene, the root layer will be anonymous. In order for the next
+                    // compute to find the root layer again, we need to set it as the
+                    // _anonymousRootLayer, as done below when creating a new proxy shape
+                    // and the root layer is initially created.
+                    if (rootLayer->IsAnonymous()) {
+                        _anonymousRootLayer = rootLayer;
+                    }
+                }
 
                 if (nullptr == rootLayer) {
                     // Create an empty in-memory root layer so that a new stage in memory
