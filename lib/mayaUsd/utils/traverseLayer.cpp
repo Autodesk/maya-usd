@@ -51,63 +51,72 @@ namespace {
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+using AlreadyTraversedPaths = std::set<SdfPath>;
+
 void _traverseLayer(
     const SdfLayerHandle&           layer,
     const SdfPath&                  path,
+    AlreadyTraversedPaths&          traversed,
     const MayaUsd::TraverseLayerFn& fn);
 
 template <typename ChildPolicy>
 void TraverseChildren(
     const SdfLayerHandle&           layer,
     const SdfPath&                  path,
+    AlreadyTraversedPaths&          traversed,
     const MayaUsd::TraverseLayerFn& fn)
 {
     std::vector<typename ChildPolicy::FieldType> children
         = layer->GetFieldAs<std::vector<typename ChildPolicy::FieldType>>(
             path, ChildPolicy::GetChildrenToken(path));
 
-    TF_FOR_ALL(i, children) { _traverseLayer(layer, ChildPolicy::GetChildPath(path, *i), fn); }
+    for (const auto& child : children) {
+        _traverseLayer(layer, ChildPolicy::GetChildPath(path, child), traversed, fn);
+    }
 }
 
 void _traverseLayer(
     const SdfLayerHandle&           layer,
     const SdfPath&                  path,
+    AlreadyTraversedPaths&          traversed,
     const MayaUsd::TraverseLayerFn& fn)
 {
+    if (traversed.count(path))
+        return;
+
+    traversed.insert(path);
+
     if (!fn(path)) {
         // Prune the traversal as requested by fn.
         return;
     }
 
-    auto primSpec = layer->GetPrimAtPath(path);
-    if (!primSpec) {
-        std::ostringstream msg;
-        msg << "no primSpec at path " << path.GetText() << ".";
-        throw MayaUsd::TraversalFailure(msg.str(), path);
-    }
+    auto specHandle = layer->GetObjectAtPath(path);
+    if (!specHandle)
+        return;
 
-    auto fields = primSpec->ListFields();
+    auto fields = specHandle->ListFields();
 
     TF_FOR_ALL(i, fields)
     {
         if (*i == SdfChildrenKeys->PrimChildren) {
-            TraverseChildren<Sdf_PrimChildPolicy>(layer, path, fn);
+            TraverseChildren<Sdf_PrimChildPolicy>(layer, path, traversed, fn);
         } else if (*i == SdfChildrenKeys->PropertyChildren) {
-            TraverseChildren<Sdf_PropertyChildPolicy>(layer, path, fn);
+            TraverseChildren<Sdf_PropertyChildPolicy>(layer, path, traversed, fn);
         } else if (*i == SdfChildrenKeys->MapperChildren) {
-            TraverseChildren<Sdf_MapperChildPolicy>(layer, path, fn);
+            TraverseChildren<Sdf_MapperChildPolicy>(layer, path, traversed, fn);
         } else if (*i == SdfChildrenKeys->MapperArgChildren) {
-            TraverseChildren<Sdf_MapperArgChildPolicy>(layer, path, fn);
+            TraverseChildren<Sdf_MapperArgChildPolicy>(layer, path, traversed, fn);
         } else if (*i == SdfChildrenKeys->VariantChildren) {
-            TraverseChildren<Sdf_VariantChildPolicy>(layer, path, fn);
+            TraverseChildren<Sdf_VariantChildPolicy>(layer, path, traversed, fn);
         } else if (*i == SdfChildrenKeys->VariantSetChildren) {
-            TraverseChildren<Sdf_VariantSetChildPolicy>(layer, path, fn);
+            TraverseChildren<Sdf_VariantSetChildPolicy>(layer, path, traversed, fn);
         } else if (*i == SdfChildrenKeys->ConnectionChildren) {
-            TraverseChildren<Sdf_AttributeConnectionChildPolicy>(layer, path, fn);
+            TraverseChildren<Sdf_AttributeConnectionChildPolicy>(layer, path, traversed, fn);
         } else if (*i == SdfChildrenKeys->RelationshipTargetChildren) {
-            TraverseChildren<Sdf_RelationshipTargetChildPolicy>(layer, path, fn);
+            TraverseChildren<Sdf_RelationshipTargetChildPolicy>(layer, path, traversed, fn);
         } else if (*i == SdfChildrenKeys->ExpressionChildren) {
-            TraverseChildren<Sdf_ExpressionChildPolicy>(layer, path, fn);
+            TraverseChildren<Sdf_ExpressionChildPolicy>(layer, path, traversed, fn);
         }
     }
 }
@@ -122,7 +131,8 @@ bool traverseLayer(
     const TraverseLayerFn&        fn)
 {
     try {
-        _traverseLayer(layer, path, fn);
+        AlreadyTraversedPaths traversed;
+        _traverseLayer(layer, path, traversed, fn);
     } catch (const TraversalFailure& e) {
         TF_WARN("Layer traversal failed for path %s: %s", e.path().GetText(), e.reason().c_str());
         return false;
