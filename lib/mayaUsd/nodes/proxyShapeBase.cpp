@@ -474,18 +474,18 @@ MStatus MayaUsdProxyShapeBase::initialize()
     retValue = attributeAffects(primPathAttr, outStageCacheIdAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    retValue = attributeAffects(loadPayloadsAttr, inStageDataCachedAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = attributeAffects(loadPayloadsAttr, outStageDataAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = attributeAffects(loadPayloadsAttr, outStageCacheIdAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-
     retValue = attributeAffects(shareStageAttr, inStageDataCachedAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = attributeAffects(shareStageAttr, outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = attributeAffects(shareStageAttr, outStageCacheIdAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    retValue = attributeAffects(loadPayloadsAttr, inStageDataCachedAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = attributeAffects(loadPayloadsAttr, outStageDataAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = attributeAffects(loadPayloadsAttr, outStageCacheIdAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     retValue = attributeAffects(inStageDataAttr, inStageDataCachedAttr);
@@ -1104,8 +1104,8 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
         // Apply the payload rules based on either the saved payload rules
-        // dynamic attribute containing the exact load rules for payload.
-        // If no such attribute exists, load everything.
+        // dynamic attribute containing the exact load rules for payload,
+        // or the load-payload attribute.
         if (hasLoadRulesAttribute(*this)) {
             copyLoadRulesFromAttribute(*this, *finalUsdStage);
         } else {
