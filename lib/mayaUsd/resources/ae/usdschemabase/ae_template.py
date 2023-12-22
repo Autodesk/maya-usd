@@ -15,6 +15,7 @@
 
 from .custom_image_control import customImageControlCreator
 from .attribute_custom_control import getNiceAttributeName
+from .attribute_custom_control import cleanAndFormatTooltip
 from .attribute_custom_control import AttributeCustomControl
 
 import collections
@@ -294,7 +295,7 @@ class ArrayCustomControl(AttributeCustomControl):
                 # See comment in ConnectionsCustomControl below for why nc=5.
                 rl = cmds.rowLayout(nc=5, adj=3)
                 with LayoutManager(rl):
-                    cmds.text(nameTxt, al='right', label=attrLabel, annotation=attr.GetDocumentation())
+                    cmds.text(nameTxt, al='right', label=attrLabel, annotation=cleanAndFormatTooltip(attr.GetDocumentation()))
                     cmds.textField(attrTypeFld, editable=False, text=typeNameStr, font='obliqueLabelFont', width=singleWidgetWidth*1.5)
 
                 if hasAEPopupMenu:
@@ -360,7 +361,7 @@ class ConnectionsCustomControl(AttributeCustomControl):
             # remain at a given width.
             rl = cmds.rowLayout(nc=5, adj=3)
             with LayoutManager(rl):
-                cmds.text(nameTxt, al='right', label=attrLabel, annotation=attr.GetDocumentation())
+                cmds.text(nameTxt, al='right', label=attrLabel, annotation=cleanAndFormatTooltip(attr.GetDocumentation()))
                 cmds.textField(attrTypeFld, editable=False, text=attrType, backgroundColor=[0.945, 0.945, 0.647], font='obliqueLabelFont', width=singleWidgetWidth*1.5)
 
                 # Add a menu item for each connection.
@@ -433,7 +434,7 @@ def arrayCustomControlCreator(aeTemplate, c):
 def defaultControlCreator(aeTemplate, c):
     ufeAttr = aeTemplate.attrS.attribute(c)
     uiLabel = getNiceAttributeName(ufeAttr, c) if aeTemplate.useNiceName else c
-    cmds.editorTemplate(addControl=[c], label=uiLabel)
+    cmds.editorTemplate(addControl=[c], label=uiLabel, annotation=cleanAndFormatTooltip(ufeAttr.getDocumentation()))
     return None
 
 class AEShaderLayout(object):
