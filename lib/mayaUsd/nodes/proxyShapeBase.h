@@ -91,6 +91,8 @@ public:
     MAYAUSD_CORE_PUBLIC
     static MObject excludePrimPathsAttr;
     MAYAUSD_CORE_PUBLIC
+    static MObject loadPayloadsAttr;
+    MAYAUSD_CORE_PUBLIC
     static MObject shareStageAttr;
     MAYAUSD_CORE_PUBLIC
     static MObject timeAttr;

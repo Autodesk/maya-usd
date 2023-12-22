@@ -141,6 +141,7 @@ MObject MayaUsdProxyShapeBase::filePathAttr;
 MObject MayaUsdProxyShapeBase::filePathRelativeAttr;
 MObject MayaUsdProxyShapeBase::primPathAttr;
 MObject MayaUsdProxyShapeBase::excludePrimPathsAttr;
+MObject MayaUsdProxyShapeBase::loadPayloadsAttr;
 MObject MayaUsdProxyShapeBase::shareStageAttr;
 MObject MayaUsdProxyShapeBase::timeAttr;
 MObject MayaUsdProxyShapeBase::complexityAttr;
@@ -276,6 +277,17 @@ MStatus MayaUsdProxyShapeBase::initialize()
     typedAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = addAttribute(excludePrimPathsAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    loadPayloadsAttr
+        = numericAttrFn.create("loadPayloads", "lpl", MFnNumericData::kBoolean, 1.0, &retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    numericAttrFn.setKeyable(false);
+    numericAttrFn.setReadable(false);
+    numericAttrFn.setInternal(true);
+    numericAttrFn.setHidden(true);
+    numericAttrFn.setAffectsAppearance(true);
+    retValue = addAttribute(loadPayloadsAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     shareStageAttr
@@ -460,6 +472,13 @@ MStatus MayaUsdProxyShapeBase::initialize()
     retValue = attributeAffects(primPathAttr, outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = attributeAffects(primPathAttr, outStageCacheIdAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    retValue = attributeAffects(loadPayloadsAttr, inStageDataCachedAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = attributeAffects(loadPayloadsAttr, outStageDataAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = attributeAffects(loadPayloadsAttr, outStageCacheIdAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     retValue = attributeAffects(shareStageAttr, inStageDataCachedAttr);
@@ -1081,13 +1100,20 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
     if (finalUsdStage) {
         // Compute the load set for the stage.
+        MDataHandle loadPayloadsHandle = dataBlock.inputValue(loadPayloadsAttr, &retValue);
+        CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
         // Apply the payload rules based on either the saved payload rules
         // dynamic attribute containing the exact load rules for payload.
         // If no such attribute exists, load everything.
         if (hasLoadRulesAttribute(*this)) {
             copyLoadRulesFromAttribute(*this, *finalUsdStage);
         } else {
-            finalUsdStage->Load(SdfPath("/"), UsdLoadPolicy::UsdLoadWithDescendants);
+            if (loadPayloadsHandle.asBool()) {
+                finalUsdStage->Load(SdfPath("/"), UsdLoadPolicy::UsdLoadWithDescendants);
+            } else {
+                finalUsdStage->Unload(SdfPath("/"));
+            }
         }
 
         primPath = finalUsdStage->GetPseudoRoot().GetPath();
@@ -1126,9 +1152,9 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 UsdStageRefPtr MayaUsdProxyShapeBase::getUnsharedStage(UsdStage::InitialLoadSet loadSet)
 {
     // The unshared stages are *also* kept in a stage cache so that we can find them
-    // again when proxy shape attribute change. For example, if the payloads loading
-    // change, we want to find the same unshared stage, we don't want to lose edits,
-    // in particular in its session layer.
+    // again when proxy shape attribute change. For example, if the 'loadPayloads'
+    // attribute change, we want to find the same unshared stage, we don't want to lose
+    // edits, in particular in its session layer.
     //
     // We also need to be able to find them when switching a stage between non-shared
     // and shared, so that we can transfer the content of the session layer.
@@ -1636,6 +1662,7 @@ MStatus MayaUsdProxyShapeBase::preEvaluation(
             // All the plugs that affect outStageDataAttr
             evaluationNode.dirtyPlugExists(filePathAttr)
             || evaluationNode.dirtyPlugExists(primPathAttr)
+            || evaluationNode.dirtyPlugExists(loadPayloadsAttr)
             || evaluationNode.dirtyPlugExists(shareStageAttr)
             || evaluationNode.dirtyPlugExists(inStageDataAttr)
             || evaluationNode.dirtyPlugExists(stageCacheIdAttr)) {
@@ -1689,8 +1716,8 @@ MStatus MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray&
     } else if (
         plug == outStageDataAttr ||
         // All the plugs that affect outStageDataAttr
-        plug == filePathAttr || plug == primPathAttr || plug == shareStageAttr
-        || plug == inStageDataAttr || plug == stageCacheIdAttr) {
+        plug == filePathAttr || plug == primPathAttr || plug == loadPayloadsAttr
+        || plug == shareStageAttr || plug == inStageDataAttr || plug == stageCacheIdAttr) {
         _IncreaseUsdStageVersion();
         MayaUsdProxyStageInvalidateNotice(*this).Send();
     }
