@@ -25,7 +25,7 @@ class MayaHydraPluginCheckTestCase(unittest.TestCase):
     Verify that the MayaHydra plugin can be loaded.
     """
 
-    @unittest.skipUnless(mayaUtils.mayaMajorVersion() > 2024, 'MayaHydra requires Maya 2024 or greater.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2024, 'MayaHydra requires Maya 2024 or greater.')
     def testPluginLoadable(self):
         self.assertTrue(mayaUtils.loadPlugin('mayaHydra'))
         self.assertTrue(mayaUtils.loadPlugin('mayaHydraSceneBrowser'))
