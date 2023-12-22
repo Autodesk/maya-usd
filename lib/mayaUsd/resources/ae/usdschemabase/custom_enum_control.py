@@ -14,6 +14,7 @@
 #
 
 from .attribute_custom_control import AttributeCustomControl
+from .attribute_custom_control import cleanAndFormatTooltip
 
 import ufe
 import mayaUsd.ufe as mayaUsdUfe
@@ -32,7 +33,7 @@ class CustomEnumControl(AttributeCustomControl):
     def onCreate(self, *args):
         # Create the control.
         attrLabel = self.getUILabel()
-        self.uiControl = cmds.optionMenuGrp(label=attrLabel)
+        self.uiControl = cmds.optionMenuGrp(label=attrLabel, annotation=cleanAndFormatTooltip(self.ufeAttr.getDocumentation()))
         attributes.AEPopupMenu(self.uiControl, self.ufeAttr)
 
         # Add the menu items.

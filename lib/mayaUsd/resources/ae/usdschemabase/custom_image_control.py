@@ -14,6 +14,7 @@
 #
 
 from .attribute_custom_control import AttributeCustomControl
+from .attribute_custom_control import cleanAndFormatTooltip
 
 import mayaUsd.lib as mayaUsdLib
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
@@ -51,7 +52,7 @@ class ImageCustomControl(AttributeCustomControl):
         createdControl = cmds.rowLayout(nc=3)
         self.controlName = createdControl
         with LayoutManager(createdControl):
-            cmds.text(label=attrUIName)
+            cmds.text(label=attrUIName, annotation=cleanAndFormatTooltip(ufeAttr.getDocumentation()))
             cmds.textField(ImageCustomControl.filenameField)
             cmds.symbolButton("browser", image="navButtonBrowse.png")
 
