@@ -32,6 +32,14 @@ def getNiceAttributeName(ufeAttr, attrName):
         attrName = str(ufeAttr.getMetadata("uiname"))
     return mayaUsd.lib.Util.prettifyName(attrName)
 
+def cleanAndFormatTooltip(s):
+    # Remove leading/trailing whitespace and replace newlines.
+    lines = s.splitlines()
+    stripped = [line.strip() for line in lines]
+    cleaned = '<br>'.join(stripped)
+
+    # Don't allow the tooltip to word-wrap.
+    return "<p style='white-space:pre'>" + cleaned + '</p>'
 
 class AttributeCustomControl(object):
     '''
@@ -55,4 +63,3 @@ class AttributeCustomControl(object):
         Return the label to be used in the UI for the attribute set on this object.
         '''
         return self.getAttributeUILabel(self.ufeAttr, self.attrName)
-    
