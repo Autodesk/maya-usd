@@ -25,6 +25,8 @@
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 
+#include <boost/optional.hpp>
+
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
