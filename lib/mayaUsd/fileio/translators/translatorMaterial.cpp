@@ -379,16 +379,28 @@ bool UsdMayaTranslatorMaterial::AssignMaterial(
 
         std::string reasonWhyNotPartition;
 
-        const bool validPartition = UsdGeomSubset::ValidateSubsets(
-            faceSubsets, faceCount, UsdGeomTokens->partition, &reasonWhyNotPartition);
+        UsdGeomImageable geom(primSchema.GetPrim());
+        if (UsdGeomSubset::GetFamilyType(geom, UsdShadeTokens->materialBind)
+            != UsdGeomTokens->partition) {
+            TF_WARN(
+                "The family type of family material bind "
+                "on <%s> is not set as a partition.",
+                primSchema.GetPath().GetText());
+        }
+        const bool validPartition = UsdGeomSubset::ValidateFamily(
+            geom, UsdGeomTokens->face, UsdShadeTokens->materialBind, &reasonWhyNotPartition);
         if (!validPartition) {
             TF_WARN(
                 "Face-subsets on <%s> don't form a valid partition: %s",
                 primSchema.GetPath().GetText(),
                 reasonWhyNotPartition.c_str());
-
+#if PXR_VERSION <= 2311
             VtIntArray unassignedIndices
                 = UsdGeomSubset::GetUnassignedIndices(faceSubsets, faceCount);
+#else
+            VtIntArray unassignedIndices = UsdGeomSubset::GetUnassignedIndices(
+                geom, UsdGeomTokens->face, UsdShadeTokens->materialBind);
+#endif
             if (!_AssignMaterialFaceSet(
                     shadingEngine, primSchema, shapeDagPath, unassignedIndices, uvBindings)) {
                 return false;
