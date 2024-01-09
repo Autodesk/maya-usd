@@ -101,6 +101,8 @@ LayerTreeView::LayerTreeView(SessionState* in_sessionState, QWidget* in_parent)
 
     // signals
     connect(this, &QAbstractItemView::doubleClicked, this, &LayerTreeView::onItemDoubleClicked);
+    connect(this, &QTreeView::expanded, this, &LayerTreeView::onExpanded);
+    connect(this, &QTreeView::collapsed, this, &LayerTreeView::onCollapsed);
 
     // renderSetuplike API
     auto actionButtons = LayerTreeItem::actionButtonsDefinition();
@@ -134,6 +136,61 @@ void LayerTreeView::onItemDoubleClicked(const QModelIndex& index)
             layerTreeItem->saveEdits();
         }
     }
+}
+
+bool LayerTreeView::shouldExpandOrCollapseAll() const
+{
+    return ((QGuiApplication::keyboardModifiers() & Qt::ShiftModifier) != 0);
+}
+
+void LayerTreeView::onExpanded(const QModelIndex& index)
+{
+    if (!shouldExpandOrCollapseAll())
+        return;
+
+    expandChildren(index);
+}
+
+void LayerTreeView::onCollapsed(const QModelIndex& index)
+{
+    if (!shouldExpandOrCollapseAll())
+        return;
+
+    collapseChildren(index);
+}
+
+void LayerTreeView::expandChildren(const QModelIndex& index)
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 13, 0))
+    expandRecursively(index);
+#else
+    if (!index.isValid())
+        return;
+
+    // Recursively expand each child node.
+    const int count = index.model()->rowCount(index);
+    for (int i = 0; i < count; i++) {
+        const QModelIndex& child = index.model()->index(i, 0, index);
+        expandChildren(child);
+    }
+
+    expand(index);
+#endif
+}
+
+void LayerTreeView::collapseChildren(const QModelIndex& index)
+{
+    if (!index.isValid())
+        return;
+
+    // Recursively collapse each child node.
+    const int count = index.model()->rowCount(index);
+    for (int i = 0; i < count; i++) {
+        const QModelIndex& child = index.model()->index(i, 0, index);
+        collapseChildren(child);
+    }
+
+    collapse(index);
 }
 
 LayerViewMemento::LayerViewMemento(const LayerTreeView& view, const LayerTreeModel& model)
