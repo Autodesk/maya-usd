@@ -42,7 +42,7 @@ public:
         const MDagPath&     dagPath,
         const bool          exportRefsAsInstanceable,
         const TfToken::Set& excludeExportTypes,
-        const std::string&      defaultPrim);
+        const std::string&  defaultPrim);
 
     /// \brief returns the MObject that should be exported.
     MAYAUSD_CORE_PUBLIC

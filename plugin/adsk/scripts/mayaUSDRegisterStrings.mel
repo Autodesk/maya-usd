@@ -207,6 +207,8 @@ global proc mayaUSDRegisterStrings()
     register("kExportRelativeTexturesLbl", "Texture File Paths:");
     register("kExportVisibilityAnn", "Exports Maya visibility attributes as USD metadata.");
     register("kExportVisibilityLbl", "Visibility");
+    register("kExportDefaultPrimLbl", "Default Prim");
+    register("kExportDefaultPrimAnn", "Default Prim");
 
     // All strings for import dialog:
     register("kImportAnimationDataLbl", "Animation Data");

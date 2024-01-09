@@ -251,7 +251,7 @@ struct UsdMayaJobExportArgs
     const TfToken::Set includeAPINames;
     const TfToken::Set jobContextNames;
     const TfToken::Set excludeExportTypes;
-    const std::string      defaultPrim;
+    const std::string  defaultPrim;
 
     using ChaserArgs = std::map<std::string, std::string>;
     const std::vector<std::string>          chaserNames;
