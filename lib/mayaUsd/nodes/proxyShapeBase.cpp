@@ -282,8 +282,10 @@ MStatus MayaUsdProxyShapeBase::initialize()
     loadPayloadsAttr
         = numericAttrFn.create("loadPayloads", "lpl", MFnNumericData::kBoolean, 1.0, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    numericAttrFn.setKeyable(true);
+    numericAttrFn.setKeyable(false);
     numericAttrFn.setReadable(false);
+    numericAttrFn.setInternal(true);
+    numericAttrFn.setHidden(true);
     numericAttrFn.setAffectsAppearance(true);
     retValue = addAttribute(loadPayloadsAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
