@@ -368,6 +368,17 @@ std::string uniqueChildNameDefault(const UsdPrim& usdParent, const std::string& 
     return childName;
 }
 
+SdfPath uniqueChildPath(const UsdStage& stage, const SdfPath& path)
+{
+    const UsdPrim     parentPrim = stage.GetPrimAtPath(path.GetParentPath());
+    const std::string originalName = path.GetName();
+    const std::string uniqueName = uniqueChildName(parentPrim, originalName);
+    if (uniqueName == originalName)
+        return path;
+
+    return path.ReplaceName(TfToken(uniqueName));
+}
+
 namespace {
 
 bool allowedInStrongerLayer(

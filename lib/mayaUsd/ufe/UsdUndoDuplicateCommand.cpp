@@ -131,7 +131,9 @@ void UsdUndoDuplicateCommand::execute()
         isFirst = false;
     }
 
-    extras.finalize(MayaUsd::ufe::stagePath(stage), &path, &_usdDstPath);
+    MayaUsd::ufe::ReplicateExtrasToUSD::RenamedPaths renamed;
+    renamed[path] = _usdDstPath;
+    extras.finalize(MayaUsd::ufe::stagePath(stage), renamed);
 }
 
 void UsdUndoDuplicateCommand::undo()

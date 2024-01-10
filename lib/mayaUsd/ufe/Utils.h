@@ -206,10 +206,8 @@ public:
 
     // Finalizes the replication operation to the USD stage defined by 'stagePath'
     // with a possibility to rename the old usd prefix to a new one
-    void finalize(
-        const Ufe::Path&       stagePath,
-        const PXR_NS::SdfPath* oldPrefix = nullptr,
-        const PXR_NS::SdfPath* newPrefix = nullptr) const;
+    using RenamedPaths = std::map<PXR_NS::SdfPath, PXR_NS::SdfPath>;
+    void finalize(const Ufe::Path& stagePath, const RenamedPaths& renamed) const;
 
 private:
     mutable std::map<PXR_NS::SdfPath, MObject> _primToLayerMap;

@@ -187,6 +187,10 @@ std::string uniqueChildName(const PXR_NS::UsdPrim& usdParent, const std::string&
 USDUFE_PUBLIC
 std::string uniqueChildNameDefault(const PXR_NS::UsdPrim& parent, const std::string& name);
 
+//! Return a unique SdfPath by looking at existing siblings under the path's parent.
+USDUFE_PUBLIC
+PXR_NS::SdfPath uniqueChildPath(const PXR_NS::UsdStage& stage, const PXR_NS::SdfPath& path);
+
 //! Send notification for data model changes
 template <class T>
 void sendNotification(const Ufe::SceneItem::Ptr& item, const Ufe::Path& previousPath)
