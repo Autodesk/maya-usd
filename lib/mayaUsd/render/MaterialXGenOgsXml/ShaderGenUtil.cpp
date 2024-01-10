@@ -59,11 +59,6 @@ TopoNeutralGraph::TopoNeutralGraph(const mx::ElementPtr& material)
     if (!material) {
         throw mx::Exception("Invalid material element");
     }
-    std::string message;
-    if (!material->validate(&message)) {
-        const std::string step("Error in original graph:\n");
-        throw mx::Exception(step + message);
-    }
     _doc = mx::createDocument();
 
     auto inputDoc = material->getDocument();
