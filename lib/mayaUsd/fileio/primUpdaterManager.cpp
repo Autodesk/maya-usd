@@ -1145,7 +1145,7 @@ bool PrimUpdaterManager::mergeToUsd(
     }
     progressBar.advance();
 
-    context._pushExtras.finalize(MayaUsd::ufe::stagePath(context.GetUsdStage()));
+    context._pushExtras.finalize(MayaUsd::ufe::stagePath(context.GetUsdStage()), {});
     progressBar.advance();
 
     discardPullSetIfEmpty();
@@ -1574,7 +1574,7 @@ bool PrimUpdaterManager::duplicate(
             return false;
         }
 
-        MayaUsd::ProgressBarScope progressBar(8, "Duplicating to USD");
+        MayaUsd::ProgressBarScope progressBar(6, "Duplicating to USD");
 
         auto ctxArgs = VtDictionaryOver(userArgs, UsdMayaJobExportArgs::GetDefaultDictionary());
 
@@ -1613,22 +1613,148 @@ bool PrimUpdaterManager::duplicate(
         }
         progressBar.advance();
 
-        // Make the destination root path unique.
-        SdfPath     dstParentPath = dstParentPrim.GetPath();
-        std::string dstChildName = UsdUfe::uniqueChildName(dstParentPrim, srcRootPath.GetName());
-        SdfPath     dstRootPath = dstParentPath.AppendChild(TfToken(dstChildName));
+        // Traverse the temporary layer starting from the source root path
+        // and copy all prims, including the ones targeted by relationships.
+
+        const SdfPath srcParentPath = srcRootPath.GetParentPath();
+        const SdfPath dstParentPath = dstParentPrim.GetPath();
+
+        // This contains the set of path that have alredy been copied.
+        // Used to avoid copying a prim that has already been copied.
+        std::set<SdfPath> copiedPaths;
+
+        // This contains a map of the original destination SdfPath to
+        // renamed destination SdfPath. Used after the copy is done to
+        // rename relationships to a prim that was renamed.
+        MayaUsd::ufe::ReplicateExtrasToUSD::RenamedPaths renamedPaths;
+
+        // Note: returning false means to prune traversing children.
+        //       For example, we return false when a prim has already been copied,
+        //       or if a copy fails.
+        auto copyFn = [&srcLayer,
+                       &srcParentPath,
+                       &dstLayer,
+                       &dstParentPath,
+                       &copiedPaths,
+                       &renamedPaths,
+                       &dstStage](const SdfPath& layerSpecPath) -> bool {
+            SdfPath srcPath = layerSpecPath;
+
+            // Check if the path is a relationship target path. If so, we need to copy
+            // the target since it is used by the prim containing this relationship.
+            if (srcPath.IsTargetPath())
+                srcPath = srcPath.GetTargetPath();
+
+            if (!srcPath.IsPrimPath())
+                return true;
+
+            for (const SdfPath& alreadyDone : copiedPaths) {
+                if (srcPath.HasPrefix(alreadyDone)) {
+                    std::string alreadyMsg = TfStringPrintf(
+                        "Already copied source prim %s, skipping additional copies",
+                        srcPath.GetAsString().c_str());
+                    MGlobal::displayInfo(alreadyMsg.c_str());
+                    return false;
+                }
+            }
+
+            copiedPaths.insert(srcPath);
+
+            // Make the destination path unique.
+            const SdfPath origDstPath = srcPath.ReplacePrefix(srcParentPath, dstParentPath);
+            const SdfPath dstPath = UsdUfe::uniqueChildPath(*dstStage, origDstPath);
+            if (dstPath != origDstPath) {
+                renamedPaths[origDstPath] = dstPath;
+            }
+
+            const std::string copyingMsg = TfStringPrintf(
+                "Copying source prim %s to destination prim %s",
+                srcPath.GetAsString().c_str(),
+                dstPath.GetAsString().c_str());
+            MGlobal::displayInfo(copyingMsg.c_str());
+
+            if (!SdfCopySpec(srcLayer, srcPath, dstLayer, dstPath)) {
+                const std::string errMsg
+                    = TfStringPrintf("could not copy to %s", dstPath.GetAsString().c_str()).c_str();
+                throw std::runtime_error(errMsg);
+            }
+
+            return true;
+        };
+
+        traverseLayer(srcLayer, srcRootPath, copyFn);
         progressBar.advance();
 
-        if (!SdfCopySpec(srcLayer, srcRootPath, dstLayer, dstRootPath)) {
-            return false;
+        // Traverse again the destination prims and adjust the relationships
+        // to take into account renamed prims.
+        auto renameRelFn = [&renamedPaths, &dstStage](const SdfPath& layerSpecPath) -> bool {
+            // We're only interested in relationship target paths
+            if (!layerSpecPath.IsTargetPath())
+                return true;
+
+            // Adjust all targets that were referring to prims that were renamed.
+            SdfPath targetPath = layerSpecPath.GetTargetPath();
+            for (const auto& oldAndNew : renamedPaths) {
+                // If the relationship was not targeting this renamed path, skip.
+                const SdfPath& oldPath = oldAndNew.first;
+                if (!targetPath.HasPrefix(oldPath))
+                    continue;
+
+                const SdfPath& newPath = oldAndNew.second;
+
+                // Determine if we have a relationship target or an attribute connection.
+                // Note: the parent path of a relationship target path is the relationship.
+                const SdfPath primPath = layerSpecPath.GetPrimOrPrimVariantSelectionPath();
+                UsdPrim       prim = dstStage->GetPrimAtPath(primPath);
+                SdfPath       targetingPath = layerSpecPath.GetParentPath();
+
+                // Note: we could *almost* use a UsdProperty, which is the base class of
+                //       both UsdRelationship and UsdAttribute. It has a _GetTargets()
+                //       functions... but it is protected! How unfortunate... So instead
+                //       we have two almost identical branches.
+                if (targetingPath.IsRelationalAttributePath()) {
+                    // Retrieve the relationship so we can modify its targets.
+                    UsdRelationship rel = prim.GetRelationshipAtPath(targetingPath);
+
+                    // Modify all targets that were using the old path to now use the new path.
+                    SdfPathVector targets;
+                    rel.GetTargets(&targets);
+                    for (auto& target : targets) {
+                        if (!target.HasPrefix(oldPath))
+                            continue;
+                        target = target.ReplacePrefix(oldPath, newPath);
+                    }
+                    rel.SetTargets(targets);
+                } else {
+                    // Retrieve the attribute so we can modify its targets.
+                    UsdAttribute attr = prim.GetAttributeAtPath(targetingPath);
+
+                    // Modify all targets that were using the old path to now use the new path.
+                    SdfPathVector targets;
+                    attr.GetConnections(&targets);
+                    for (auto& target : targets) {
+                        if (!target.HasPrefix(oldPath))
+                            continue;
+                        target = target.ReplacePrefix(oldPath, newPath);
+                    }
+                    attr.SetConnections(targets);
+                }
+            }
+
+            return true;
+        };
+
+        progressBar.addSteps(copiedPaths.size());
+        for (const SdfPath& path : copiedPaths) {
+            if (renamedPaths.count(path)) {
+                traverseLayer(dstLayer, renamedPaths[path], renameRelFn);
+            } else {
+                traverseLayer(dstLayer, path, renameRelFn);
+            }
+            progressBar.advance();
         }
-        progressBar.advance();
 
-        bool           needRenaming = (dstRootPath != srcRootPath);
-        const SdfPath* oldPrefix = needRenaming ? &srcRootPath : nullptr;
-        const SdfPath* newPrefix = needRenaming ? &dstRootPath : nullptr;
-        context._pushExtras.finalize(MayaUsd::ufe::stagePath(dstStage), oldPrefix, newPrefix);
-        progressBar.advance();
+        context._pushExtras.finalize(MayaUsd::ufe::stagePath(dstStage), renamedPaths);
 
         auto ufeItem = Ufe::Hierarchy::createItem(dstPath);
         if (TF_VERIFY(ufeItem)) {

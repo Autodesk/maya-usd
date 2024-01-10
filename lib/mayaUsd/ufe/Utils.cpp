@@ -883,18 +883,20 @@ void ReplicateExtrasToUSD::initRecursive(const Ufe::SceneItem::Ptr& item) const
 #endif
 }
 
-void ReplicateExtrasToUSD::finalize(
-    const Ufe::Path&       stagePath,
-    const PXR_NS::SdfPath* oldPrefix,
-    const PXR_NS::SdfPath* newPrefix) const
+void ReplicateExtrasToUSD::finalize(const Ufe::Path& stagePath, const RenamedPaths& renamed) const
 {
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
     // Replicate display layer membership
     for (const auto& entry : _primToLayerMap) {
         if (entry.second.hasFn(MFn::kDisplayLayer)) {
             auto usdPrimPath = entry.first;
-            if (oldPrefix && newPrefix) {
-                usdPrimPath = usdPrimPath.ReplacePrefix(*oldPrefix, *newPrefix);
+            for (const auto& oldAndNew : renamed) {
+                const PXR_NS::SdfPath& oldPrefix = oldAndNew.first;
+                if (!usdPrimPath.HasPrefix(oldPrefix))
+                    continue;
+
+                const PXR_NS::SdfPath& newPrefix = oldAndNew.second;
+                usdPrimPath = usdPrimPath.ReplacePrefix(oldPrefix, newPrefix);
             }
 
             auto                primPath = UsdUfe::usdPathToUfePathSegment(usdPrimPath);

@@ -574,10 +574,10 @@ class testProxyShapeBase(unittest.TestCase):
         # verify that the prim exists.
         self._verifyPrim()
 
-        # Set an attribute on the proxy shape. Here we set the loadPayloads.
+        # Set an attribute on the proxy shape. Here we set the shareStage.
         # It was already set, this only triggers a Maya node recompute.
         _, proxyShapePath = self._getStage()
-        cmds.setAttr('{}.{}'.format(proxyShapePath,"loadPayloads"), True)
+        cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), True)
 
         # Verify that we did not lose the data on the root layer.
         self._verifyPrim()
