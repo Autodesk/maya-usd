@@ -172,7 +172,7 @@ void LayerViewMemento::restore(LayerTreeView& view, LayerTreeModel& model)
         if (!item)
             continue;
 
-        bool expanded = true;
+        bool expanded = false;
 
         PXR_NS::SdfLayerRefPtr layer = item->layer();
         if (layer) {
