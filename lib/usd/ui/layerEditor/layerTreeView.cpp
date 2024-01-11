@@ -22,6 +22,8 @@
 #include "layerTreeModel.h"
 #include "stringResources.h"
 
+#include <maya/MGlobal.h>
+
 #include <QtGui/QColor>
 #include <QtWidgets/QMenu>
 
@@ -140,7 +142,18 @@ void LayerTreeView::onItemDoubleClicked(const QModelIndex& index)
 
 bool LayerTreeView::shouldExpandOrCollapseAll() const
 {
-    return ((QGuiApplication::keyboardModifiers() & Qt::ShiftModifier) != 0);
+    // Internal private function to check if the expand and collapse of
+    // items should be recursive. Currently, this is controlled by the
+    // fact the user is pressing the SHIFT key on the keyboard.
+    int modifiers = 0;
+    MGlobal::executeCommand("getModifiers", modifiers);
+
+    // Magic constant 2 is how the getModifiers reports the SHIFT key.
+    // This is a public command and the shift value is only declared in
+    // its documentation. Being a public command, it is practically
+    // guaranteed to never change, so hard-coding the value is not a problem.
+    const bool shiftHeld = ((modifiers % 2) != 0);
+    return shiftHeld;
 }
 
 void LayerTreeView::onExpanded(const QModelIndex& index)
@@ -159,24 +172,7 @@ void LayerTreeView::onCollapsed(const QModelIndex& index)
     collapseChildren(index);
 }
 
-void LayerTreeView::expandChildren(const QModelIndex& index)
-{
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 13, 0))
-    expandRecursively(index);
-#else
-    if (!index.isValid())
-        return;
-
-    // Recursively expand each child node.
-    const int count = index.model()->rowCount(index);
-    for (int i = 0; i < count; i++) {
-        const QModelIndex& child = index.model()->index(i, 0, index);
-        expandChildren(child);
-    }
-
-    expand(index);
-#endif
-}
+void LayerTreeView::expandChildren(const QModelIndex& index) { expandRecursively(index); }
 
 void LayerTreeView::collapseChildren(const QModelIndex& index)
 {
