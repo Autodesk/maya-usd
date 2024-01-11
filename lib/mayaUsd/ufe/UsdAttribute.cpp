@@ -573,8 +573,13 @@ UsdAttributeEnumString::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder
 std::string UsdAttributeEnumString::get() const
 {
     PXR_NS::VtValue vt;
-    if (UsdAttribute::get(vt, getCurrentTime(sceneItem())) && vt.IsHolding<std::string>()) {
-        return vt.UncheckedGet<std::string>();
+    if (UsdAttribute::get(vt, getCurrentTime(sceneItem()))) {
+        if (vt.IsHolding<std::string>()) {
+            return vt.UncheckedGet<std::string>();
+        }
+        if (vt.IsHolding<TfToken>()) {
+            return vt.UncheckedGet<TfToken>().GetString();
+        }
     }
 
     return std::string();
@@ -582,7 +587,11 @@ std::string UsdAttributeEnumString::get() const
 
 void UsdAttributeEnumString::set(const std::string& value)
 {
-    setUsdAttr<std::string>(*this, value);
+    if (usdAttribute().IsValid() && usdAttribute().GetTypeName() == SdfValueTypeNames->Token) {
+        setUsdAttr<PXR_NS::TfToken>(*this, TfToken(value));
+    } else {
+        setUsdAttr<std::string>(*this, value);
+    }
 }
 
 Ufe::UndoableCommand::Ptr UsdAttributeEnumString::setCmd(const std::string& value)
