@@ -22,6 +22,8 @@
 #include "layerTreeModel.h"
 #include "stringResources.h"
 
+#include <maya/MGlobal.h>
+
 #include <QtGui/QColor>
 #include <QtWidgets/QMenu>
 
@@ -101,6 +103,8 @@ LayerTreeView::LayerTreeView(SessionState* in_sessionState, QWidget* in_parent)
 
     // signals
     connect(this, &QAbstractItemView::doubleClicked, this, &LayerTreeView::onItemDoubleClicked);
+    connect(this, &QTreeView::expanded, this, &LayerTreeView::onExpanded);
+    connect(this, &QTreeView::collapsed, this, &LayerTreeView::onCollapsed);
 
     // renderSetuplike API
     auto actionButtons = LayerTreeItem::actionButtonsDefinition();
@@ -134,6 +138,55 @@ void LayerTreeView::onItemDoubleClicked(const QModelIndex& index)
             layerTreeItem->saveEdits();
         }
     }
+}
+
+bool LayerTreeView::shouldExpandOrCollapseAll() const
+{
+    // Internal private function to check if the expand and collapse of
+    // items should be recursive. Currently, this is controlled by the
+    // fact the user is pressing the SHIFT key on the keyboard.
+    int modifiers = 0;
+    MGlobal::executeCommand("getModifiers", modifiers);
+
+    // Magic constant 2 is how the getModifiers reports the SHIFT key.
+    // This is a public command and the shift value is only declared in
+    // its documentation. Being a public command, it is practically
+    // guaranteed to never change, so hard-coding the value is not a problem.
+    const bool shiftHeld = ((modifiers % 2) != 0);
+    return shiftHeld;
+}
+
+void LayerTreeView::onExpanded(const QModelIndex& index)
+{
+    if (!shouldExpandOrCollapseAll())
+        return;
+
+    expandChildren(index);
+}
+
+void LayerTreeView::onCollapsed(const QModelIndex& index)
+{
+    if (!shouldExpandOrCollapseAll())
+        return;
+
+    collapseChildren(index);
+}
+
+void LayerTreeView::expandChildren(const QModelIndex& index) { expandRecursively(index); }
+
+void LayerTreeView::collapseChildren(const QModelIndex& index)
+{
+    if (!index.isValid())
+        return;
+
+    // Recursively collapse each child node.
+    const int count = index.model()->rowCount(index);
+    for (int i = 0; i < count; i++) {
+        const QModelIndex& child = index.model()->index(i, 0, index);
+        collapseChildren(child);
+    }
+
+    collapse(index);
 }
 
 LayerViewMemento::LayerViewMemento(const LayerTreeView& view, const LayerTreeModel& model)
