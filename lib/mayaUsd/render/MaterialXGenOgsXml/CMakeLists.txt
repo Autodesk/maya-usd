@@ -13,6 +13,15 @@ target_sources(${PROJECT_NAME}
         PugiXML/pugixml.cpp
 )
 
+if(MaterialX_VERSION VERSION_LESS "1.38.9")
+target_sources(${PROJECT_NAME} 
+    PRIVATE
+        Nodes/MayaTransformNormalNodeGlsl.cpp
+        Nodes/MayaTransformPointNodeGlsl.cpp
+        Nodes/MayaTransformVectorNodeGlsl.cpp
+)
+endif()
+
 set(HEADERS
     CombinedMaterialXVersion.h
     GlslFragmentGenerator.h
