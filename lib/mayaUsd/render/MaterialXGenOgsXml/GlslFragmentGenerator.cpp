@@ -7,7 +7,7 @@
 
 #include "Nodes/SurfaceNodeMaya.h"
 #include "Nodes/TexcoordNodeMaya.h"
-#if MX_COMBINED_VERSION <= 13809
+#if MX_COMBINED_VERSION < 13809
 #include "Nodes/MayaTransformNormalNodeGlsl.h"
 #include "Nodes/MayaTransformPointNodeGlsl.h"
 #include "Nodes/MayaTransformVectorNodeGlsl.h"
@@ -188,7 +188,7 @@ GlslFragmentGenerator::GlslFragmentGenerator()
     // The MaterialX transform node will crash if one of the "space" inputs is empty. This will be
     // fixed in 1.38.9. In the meantime we use patched nodes to replace those previously added in
     // the base class.
-#if MX_COMBINED_VERSION <= 13809
+#if MX_COMBINED_VERSION < 13809
     // <!-- <ND_transformpoint> ->
     registerImplementation(
         "IM_transformpoint_vector3_" + GlslShaderGenerator::TARGET,
