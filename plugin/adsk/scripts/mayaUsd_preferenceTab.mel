@@ -94,6 +94,10 @@ global proc mayaUsd_PrefUntexturedModeChanged()
 	if (`radioButtonGrp -exists usdPrefUntexturedMode`) {
 		int $sel = `radioButtonGrp -q -select usdPrefUntexturedMode`;
 		optionVar -iv mayaUsd_ShowDisplayColorTextureOff ($sel == 2);
+        
+        // Set a temporary optionVar saying that we have changed the untextured mode
+        // so in case user cancels, we can do reset again.
+        optionVar -transient -iv mayaUsd_PrefUntexturedModeChanged 1;
 		ogs -reset;
 	}
 }
@@ -103,6 +107,13 @@ global proc mayaUsd_PrefInitOptionVars(int $forceFactoryDefault)
 {
 	string $saveLayerFormatArgBinaryOptionPref = `python("import mayaUsd.lib as mlib; mlib.OptionVarTokens.SaveLayerFormatArgBinaryOption")`;
 	string $confirmExistingFileSaveOptionPref = `python("import mayaUsd.lib as mlib; mlib.OptionVarTokens.ConfirmExistingFileSave")`;
+
+    // Special case for the resetting the untextured mode. 
+	if ($forceFactoryDefault && `optionVar -exists "mayaUsd_ShowDisplayColorTextureOff"`) {
+        if (`optionVar -q "mayaUsd_ShowDisplayColorTextureOff"`) {
+            optionVar -transient -iv mayaUsd_PrefUntexturedModeChanged 1;
+        }
+    }
 
 	int $mjv = `about -majorVersion`;
 	if ($mjv <= 2022) {
@@ -155,8 +166,13 @@ global proc mayaUsd_PrefInitOptionVars(int $forceFactoryDefault)
 			-iv mayaUsd_ShowDisplayColorTextureOff false
 		;
 	}
-	// Need to refresh the viewport for display mayaUsd_ShowDisplayColorTextureOff
-	ogs -reset;
+    
+    if ($forceFactoryDefault && `optionVar -q mayaUsd_PrefUntexturedModeChanged`)
+    {
+        // Need to refresh the viewport for display mayaUsd_ShowDisplayColorTextureOff
+        optionVar -remove mayaUsd_PrefUntexturedModeChanged;
+        ogs -reset;
+    }
 }
 
 global proc mayaUsd_PrefCreateTab()
@@ -392,9 +408,21 @@ global proc mayaUsd_PrefHoldState(string $mode)
 	};
 	prefsHoldOptionVars($prefOptionVars, $mode); 
 
-	if ($mode == "remove") {
-		// Finalize preference changes into MayaUsd.
+    if ($mode == "save") {
+        // Preferences dialog was opened, make sure we don't have this transient optionVar.
+        optionVar -remove mayaUsd_PrefUntexturedModeChanged;
+    }
+
+	if ($mode == "restore") {
+        if (`optionVar -q mayaUsd_PrefUntexturedModeChanged`) {
+            // Need to refresh the viewport for display mayaUsd_ShowDisplayColorTextureOff
+            ogs -reset;
+        }
 	}
+
+    if ($mode == "remove") {
+        optionVar -remove mayaUsd_PrefUntexturedModeChanged;
+    }
 
 	global string $gPreferenceWindow;
 	if (`window -exists $gPreferenceWindow`) {
