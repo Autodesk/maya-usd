@@ -29,7 +29,7 @@ It is highly recommended that an issue be logged on GitHub before any work is st
 
 ### Pull Requests
 
-When contributing code, please also include appropriate tests as part of the pull request, and follow the same comment and coding style as the rest of the project. Take a look through the existing code for examples of the testing and style practices the project follows. Also read and adhere to the the [Coding guidelines](doc/codingGuidelines.md), many of which are enforced by clang-format checks.
+When contributing code, please also include appropriate tests as part of the pull request, and follow the same comment and coding style as the rest of the project. Take a look through the existing code for examples of the testing and style practices the project follows. Also read and adhere to the the [Coding guidelines](codingGuidelines.md), many of which are enforced by clang-format checks.
 
 All development should happen against the [dev](https://github.com/Autodesk/maya-usd/tree/dev) branch of the repository. Please make sure the base branch of your pull request is set to the dev branch when submitting your pull request.
 
