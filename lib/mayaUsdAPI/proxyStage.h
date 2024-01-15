@@ -36,10 +36,10 @@ struct ProxyStageImpDeleter
 };
 
 /*! \brief  Class to access Usd time and Usd stage from a maya MObject which comes from a mayaUsd
-   ProxyStageProvider subclass (usually a MayaUsdProxyShapeBase node) 
+   ProxyStageProvider subclass (usually a MayaUsdProxyShapeBase node)
    \class  ProxyStage
    This class is an accessor for a UsdTime and a UsdStageRefPtr from a MObject which comes from a
-   mayaUsd ProxyStageProvider subclass. Usually a MayaUsdProxyShapeBase node. 
+   mayaUsd ProxyStageProvider subclass. Usually a MayaUsdProxyShapeBase node.
    Example usage: \code
     {
         MObject dagNode;//is the MObject of a MayaUsdProxyShape node for example
