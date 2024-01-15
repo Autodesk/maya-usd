@@ -1994,8 +1994,10 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(mayaUsdLib.Util.prettifyName("UsdPreviewSurface"), "USD Preview Surface")
         self.assertEqual(mayaUsdLib.Util.prettifyName("mtlx"), "MaterialX")
         self.assertEqual(mayaUsdLib.Util.prettifyName("gltf_pbr"), "glTF PBR")
-        # All caps with number at the end
-        self.assertEqual(mayaUsdLib.Util.prettifyName("COLOR10"), "COLOR10")
+        # Caps tests
+        self.assertEqual(mayaUsdLib.Util.prettifyName("ALLCAPS"), "ALLCAPS")
+        self.assertEqual(mayaUsdLib.Util.prettifyName("MixedCAPS"), "Mixed CAPS")
+        self.assertEqual(mayaUsdLib.Util.prettifyName("CAPS10"), "CAPS10")
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testAttributeMetadataChanged(self):
