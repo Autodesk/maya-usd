@@ -22,13 +22,20 @@
 
 namespace {
 
-TF_INSTANTIATE_NOTICE_WRAPPER(MayaUsdProxyStageSetNotice, TfNotice);
-TF_INSTANTIATE_NOTICE_WRAPPER(MayaUsdProxyStageInvalidateNotice, TfNotice);
+TF_INSTANTIATE_NOTICE_WRAPPER(MayaUsdProxyStageBaseNotice, TfNotice);
+TF_INSTANTIATE_NOTICE_WRAPPER(MayaUsdProxyStageSetNotice, MayaUsdProxyStageBaseNotice);
+TF_INSTANTIATE_NOTICE_WRAPPER(MayaUsdProxyStageInvalidateNotice, MayaUsdProxyStageBaseNotice);
 
 } // namespace
 
 void wrapNotice()
 {
+    {
+        typedef MayaUsdProxyStageBaseNotice This;
+        TfPyNoticeWrapper<This, TfNotice>::Wrap()
+            .add_property("shapePath", &This::GetShapePath)
+            .add_property("stage", &This::GetStage);
+    }
     {
         typedef MayaUsdProxyStageSetNotice This;
         TfPyNoticeWrapper<This, TfNotice>::Wrap()

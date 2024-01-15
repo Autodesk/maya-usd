@@ -23,9 +23,19 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_INSTANTIATE_TYPE(MayaUsdProxyStageSetNotice, TfType::CONCRETE, TF_1_PARENT(TfNotice));
-TF_INSTANTIATE_TYPE(MayaUsdProxyStageInvalidateNotice, TfType::CONCRETE, TF_1_PARENT(TfNotice));
-TF_INSTANTIATE_TYPE(MayaUsdProxyStageObjectsChangedNotice, TfType::CONCRETE, TF_1_PARENT(TfNotice));
+TF_INSTANTIATE_TYPE(MayaUsdProxyStageBaseNotice, TfType::CONCRETE, TF_1_PARENT(TfNotice));
+TF_INSTANTIATE_TYPE(
+    MayaUsdProxyStageSetNotice,
+    TfType::CONCRETE,
+    TF_1_PARENT(MayaUsdProxyStageBaseNotice));
+TF_INSTANTIATE_TYPE(
+    MayaUsdProxyStageInvalidateNotice,
+    TfType::CONCRETE,
+    TF_1_PARENT(MayaUsdProxyStageBaseNotice));
+TF_INSTANTIATE_TYPE(
+    MayaUsdProxyStageObjectsChangedNotice,
+    TfType::CONCRETE,
+    TF_1_PARENT(MayaUsdProxyStageBaseNotice));
 
 MayaUsdProxyStageBaseNotice::MayaUsdProxyStageBaseNotice(const MayaUsdProxyShapeBase& proxy)
     : _proxy(proxy)
