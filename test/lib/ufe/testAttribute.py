@@ -1988,6 +1988,7 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(mayaUsdLib.Util.prettifyName("IOR"), "IOR")
         self.assertEqual(mayaUsdLib.Util.prettifyName("specular_IOR"), "Specular IOR")
         self.assertEqual(mayaUsdLib.Util.prettifyName("HwPtexTexture"), "Hw Ptex Texture")
+        self.assertEqual(mayaUsdLib.Util.prettifyName("fluid2D"), "Fluid2D")
         # This is as expected as we do not insert space on digit<->alpha transitions:
         self.assertEqual(mayaUsdLib.Util.prettifyName("Dx11Shader"), "Dx11Shader")
         # Explicit substitutions
