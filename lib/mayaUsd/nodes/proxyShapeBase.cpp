@@ -50,6 +50,8 @@
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/trace/trace.h>
+#include <pxr/base/js/json.h>
+
 #include <pxr/pxr.h>
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/sdf/attributeSpec.h>
@@ -66,6 +68,7 @@
 #include <pxr/usd/usdGeom/imageable.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdUtils/stageCache.h>
+#include <pxr/usd/pcp/types.h>
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDGContext.h>
@@ -161,6 +164,7 @@ MObject MayaUsdProxyShapeBase::resyncCounterAttr;
 MObject MayaUsdProxyShapeBase::outTimeAttr;
 MObject MayaUsdProxyShapeBase::outStageDataAttr;
 MObject MayaUsdProxyShapeBase::outStageCacheIdAttr;
+MObject MayaUsdProxyShapeBase::variantFallbacksAttr;
 
 namespace {
 // utility function to extract the tag name from an anonymous layer.
@@ -374,6 +378,18 @@ MStatus MayaUsdProxyShapeBase::initialize()
     retValue = addAttribute(drawGuidePurposeAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
+    variantFallbacksAttr = typedAttrFn.create(
+        "variantFallbacks", "vfs", MFnData::kString, MObject::kNullObj, &retValue);
+    typedAttrFn.setReadable(true);
+    typedAttrFn.setWritable(true);
+    typedAttrFn.setConnectable(true);
+    typedAttrFn.setStorable(true);
+    typedAttrFn.setAffectsAppearance(true);
+    typedAttrFn.setInternal(true);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = addAttribute(variantFallbacksAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
     // outputs
     outTimeAttr = unitAttrFn.create("outTime", "otm", MFnUnitAttribute::kTime, 0.0, &retValue);
     unitAttrFn.setCached(false);
@@ -502,6 +518,9 @@ MStatus MayaUsdProxyShapeBase::initialize()
     retValue = attributeAffects(inStageDataCachedAttr, outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = attributeAffects(inStageDataCachedAttr, outStageCacheIdAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    retValue = attributeAffects(variantFallbacksAttr, outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     return retValue;
@@ -885,6 +904,11 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             // Calculate from USD filepath and primPath and variantKey
             //
 
+            // Get variant fallback from the proxy shape and set it as Global Variant fallbacks.
+            PcpVariantFallbackMap defaultVariantFallbacks;
+            PcpVariantFallbackMap fallbacks(
+                updateVariantFallbacks(defaultVariantFallbacks, dataBlock));
+
             // Get input attr values
             const MString file = dataBlock.inputValue(filePathAttr, &retValue).asString();
             CHECK_MSTATUS_AND_RETURN_IT(retValue);
@@ -996,6 +1020,12 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                         targetSession ? sharedUsdStage->GetSessionLayer()
                                       : sharedUsdStage->GetRootLayer());
                 }
+            }
+            // Reset only if the global variant fallbacks has been modified
+            if (!fallbacks.empty()) {
+                saveVariantFallbacks(fallbacks, dataBlock);
+                // Restore default value
+                UsdStage::SetGlobalVariantFallbacks(defaultVariantFallbacks);
             }
         }
     }
@@ -2245,5 +2275,113 @@ Ufe::Path MayaUsdProxyShapeBase::ufePath() const
 }
 
 std::atomic<int> MayaUsdProxyShapeBase::in_compute { 0 };
+
+PcpVariantFallbackMap MayaUsdProxyShapeBase::updateVariantFallbacks(
+    PcpVariantFallbackMap& defaultVariantFallbacks,
+    MDataBlock&            dataBlock) const
+
+{
+    MStatus     status;
+    MString     fallbackString {};
+    MDataHandle inDataHandle = dataBlock.inputValue(variantFallbacksAttr, &status);
+
+    if (status) {
+        fallbackString = inDataHandle.asString();
+    } else {
+        MFnAttribute fn(variantFallbacksAttr);
+        TF_CODING_ERROR(
+            "Unable to get attribute \"%s\" of type MString. - %s",
+            fn.name().asChar(),
+            status.errorString().asChar());
+    }
+    auto fallbacks(convertVariantFallbackFromStr(fallbackString));
+    if (!fallbacks.empty()) {
+        defaultVariantFallbacks = UsdStage::GetGlobalVariantFallbacks();
+        UsdStage::SetGlobalVariantFallbacks(fallbacks);
+        return fallbacks;
+    }
+    return {};
+}
+
+void MayaUsdProxyShapeBase::saveVariantFallbacks(const PcpVariantFallbackMap& fallbacks, MDataBlock& dataBlock)
+    const
+{
+    MString     fallbacksStr = convertVariantFallbacksToStr(fallbacks);
+    MStatus     status;
+    MString     fallbackString {};
+    MDataHandle inDataHandle = dataBlock.inputValue(variantFallbacksAttr, &status);
+
+    if (status) {
+        fallbackString = inDataHandle.asString();
+    } else {
+        MFnAttribute fn(variantFallbacksAttr);
+        TF_CODING_ERROR(
+            "Unable to get attribute \"%s\" of type MString. - %s",
+            fn.name().asChar(),
+            status.errorString().asChar());
+    }
+
+    if (fallbacksStr != fallbackString) {
+        MDataHandle outDataHandle = dataBlock.outputValue(variantFallbacksAttr, &status);
+        if (status) {
+            outDataHandle.setString(fallbacksStr);
+            outDataHandle.setClean();
+        } else {
+            MFnAttribute fn(variantFallbacksAttr);
+            TF_CODING_ERROR(
+                "Unable to get attribute \"%s\" of type MString - %s",
+                fn.name().asChar(),
+                status.errorString().asChar());
+        }
+    }
+}
+
+PcpVariantFallbackMap MayaUsdProxyShapeBase::convertVariantFallbackFromStr(const MString& fallbacksStr) const
+{
+    if (!fallbacksStr.length()) {
+        return {};
+    }
+
+    JsParseError parseError;
+    JsValue      jsValue(JsParseString(fallbacksStr.asChar(), &parseError));
+    if (parseError.line || !jsValue.IsObject()) {
+        TF_WARN(parseError.reason.c_str());
+        TF_WARN(
+            "mayaUsdProxyShape attribute \"%s\".variantFallbacks contains"
+            " incorrect variant fallbacks, value must be a string form of JSON data.",
+            name());
+        return {};
+    }
+
+    JsObject              jsObject(jsValue.GetJsObject());
+    PcpVariantFallbackMap result;
+    for (const auto& variantSet : jsObject) {
+        const std::string& variantName = variantSet.first;
+        if (!variantSet.second.IsArray()) {
+            TF_WARN(
+                "mayaUsdProxyShape attribute \"%s\".variantFallbacks contains "
+                "unexpected data: variant value for \"%s\" must be an array. ",
+                name(),
+                variantName.c_str());
+            continue;
+        }
+        result[variantName] = variantSet.second.GetArrayOf<std::string>();
+    }
+    return result;
+}
+
+MString MayaUsdProxyShapeBase::convertVariantFallbacksToStr(const PcpVariantFallbackMap& fallbacks) const
+{
+    if (fallbacks.empty()) {
+        return {};
+    }
+
+    JsObject jsObject;
+    for (const auto& variantSet : fallbacks) {
+        jsObject[variantSet.first] = JsArray(variantSet.second.cbegin(), variantSet.second.cend());
+    }
+
+    return JsWriteToString(jsObject).c_str();
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

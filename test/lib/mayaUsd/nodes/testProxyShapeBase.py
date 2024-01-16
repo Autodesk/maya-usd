@@ -25,6 +25,7 @@ import mayaUsd_createStageWithNewLayer
 import os
 import tempfile
 import unittest
+import json
 
 import usdUtils, mayaUtils, ufeUtils, testUtils
 
@@ -41,6 +42,8 @@ class testProxyShapeBase(unittest.TestCase):
             'ProxyShapeBase.ma')
         cls.usdFilePath = os.path.join(inputPath, 'ProxyShapeBaseTest',
             'CubeModel.usda')
+        cls.variantFallbacksUsdFile = os.path.join(inputPath, 'ProxyShapeBaseTest',
+            'variantFallbacks.usda')
 
     @classmethod
     def tearDownClass(cls):
@@ -996,6 +999,77 @@ class testProxyShapeBase(unittest.TestCase):
             xform = UsdGeom.Xformable(prim)
             translate = xform.GetOrderedXformOps()[0].Get()
             assert translate[2] == 2
+
+    def testSavingVariantFallbacks(self):
+        '''
+        Test saving custom Global Variant Fallbacks to mayaUsdProxyShape.
+        '''
+        class VariantFallbackOverrides(object):
+            def __init__(self, overrides):
+                self._overrides = overrides or {}
+                self._defaultVariantFallbacks = None
+
+            def __enter__(self):
+                self._defaultVariantFallbacks = Usd.Stage.GetGlobalVariantFallbacks()
+                fallbacks = self._defaultVariantFallbacks.copy()
+                fallbacks.update(self._overrides)
+                Usd.Stage.SetGlobalVariantFallbacks(fallbacks)
+
+            def __exit__(self, type, value, traceback):
+                if self._defaultVariantFallbacks:
+                    Usd.Stage.SetGlobalVariantFallbacks(self._defaultVariantFallbacks)
+
+        def _verifyVariantFallbacks(primPath, stage, shapeNode, overrides):
+            prim = stage.GetPrimAtPath(primPath)
+            self.assertTrue(prim.IsValid())
+
+            variantFallbackData = json.loads(cmds.getAttr('{}.variantFallbacks'.format(shapeNode)))
+            for k, value in overrides.items():
+                self.assertEqual(variantFallbackData.get(k, None), value)
+
+            variantSets = prim.GetVariantSets()
+            for name in variantSets.GetNames():
+                self.assertEqual(variantSets.GetVariantSet(name).GetVariantSelection(), overrides[name][0])
+
+        overrides = {'geo': ['render_high'], 'geo_vis': ['preview']}
+
+        SC = UsdUtils.StageCache.Get()
+        SC.Clear()
+
+        with VariantFallbackOverrides(overrides):
+            with Usd.StageCacheContext(SC):
+                cachedStage = Usd.Stage.Open(self.variantFallbacksUsdFile)
+
+            cachedStage.SetEditTarget(cachedStage.GetSessionLayer())
+            customLayerData = cachedStage.GetSessionLayer().customLayerData
+            customLayerData["variant_fallbacks"] = json.dumps(
+                Usd.Stage.GetGlobalVariantFallbacks()
+            )
+            cachedStage.GetSessionLayer().customLayerData = customLayerData
+
+        stageId = SC.GetId(cachedStage).ToLongInt()
+        shapeNode = cmds.createNode('mayaUsdProxyShape')
+        fullPath = cmds.ls(shapeNode, long=True)[0]
+        cmds.connectAttr('time1.outTime','{}.time'.format(shapeNode))
+        cmds.setAttr('{}.stageCacheId'.format(shapeNode), stageId)
+
+        layerdata = cachedStage.GetSessionLayer().customLayerData
+        variantFallbacks = layerdata.get("variant_fallbacks")
+        cmds.setAttr('{}.variantFallbacks'.format(shapeNode), str(variantFallbacks), type='string')
+
+        _verifyVariantFallbacks('/group', cachedStage, shapeNode, overrides)
+
+        with testUtils.TemporaryDirectory(prefix='ProxyShapeBase') as testDir:
+            pathToSave = "{}/testSavingVariantFallbacks.ma".format(testDir)
+
+            cmds.file(rename=pathToSave)
+            cmds.file(save=True, force=True, type='mayaAscii')
+
+            cmds.file(new=True, force=True)
+            cmds.file(pathToSave, force=True, open=True)
+
+            stage = mayaUsd.ufe.getStage(fullPath)
+            _verifyVariantFallbacks('/group', stage, shapeNode, overrides)
 
 
 if __name__ == '__main__':

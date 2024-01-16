@@ -132,6 +132,9 @@ public:
     MAYAUSD_CORE_PUBLIC
     static MObject outStageCacheIdAttr;
 
+    MAYAUSD_CORE_PUBLIC
+    static MObject variantFallbacksAttr;
+
     /// Delegate function for computing the closest point and surface normal
     /// on the proxy shape to a given ray.
     /// The input ray, output point, and output normal should be in the
@@ -397,6 +400,15 @@ private:
     void _OnStageEditTargetChanged(const UsdNotice::StageEditTargetChanged& notice);
 
     static void renameCallback(MObject& node, const MString& str, void* clientData);
+
+    PcpVariantFallbackMap convertVariantFallbackFromStr(const MString& fallbacksStr) const;
+    MString convertVariantFallbacksToStr(const PcpVariantFallbackMap& fallbacks) const;
+
+    // Set global variant fallbacks with a custom variant fallbacks.
+    PcpVariantFallbackMap updateVariantFallbacks(PcpVariantFallbackMap& defaultVariantFallbacks, MDataBlock& dataBlock) const;
+
+    // Save variant fallbacks string for proxy shape.
+    void saveVariantFallbacks(const PcpVariantFallbackMap& fallbacks, MDataBlock& dataBlock) const;
 
     UsdMayaStageNoticeListener _stageNoticeListener;
 
