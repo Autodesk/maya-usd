@@ -811,7 +811,7 @@ class ParentCmdTestCase(unittest.TestCase):
 
         checkParentDone()
 
-    @unittest.skipUnless(mayaUtils.mayaMajorVersion() > 2025, 'Requires Maya fixes only available in Maya greater than 2025.')
+    @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() >= 8, 'Requires parent command fix in Maya.')
     def testParentToSelection(self):
         '''
         Test that the parent command with a single argument will parent to the selection.
