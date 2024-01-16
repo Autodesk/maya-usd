@@ -628,6 +628,41 @@ def Scope "mtl"
             float2 outputs:out
         }
     }
+
+    def Material "standard_surface3"
+    {
+        token outputs:mtlx:surface.connect = </mtl/standard_surface3/standard_surface1.outputs:out>
+
+        def Shader "standard_surface1"
+        {
+            uniform token info:id = "ND_standard_surface_surfaceshader"
+            color3f inputs:base_color = (0.6, 0.0, 0.0)
+            float3 inputs:normal.connect = </mtl/standard_surface3/normalmap1.outputs:out>
+            token outputs:out
+        }
+
+        def Shader "normalmap1"
+        {
+            uniform token info:id = "ND_normalmap"
+            float3 inputs:normal.connect = </mtl/standard_surface3/image1.outputs:out>
+            float3 inputs:tangent.connect = </mtl/standard_surface3/tangent1.outputs:out>
+            float3 outputs:out
+        }
+
+        def Shader "tangent1"
+        {
+            uniform token info:id = "ND_tangent_vector3"
+            float3 outputs:out
+        }
+
+        def Shader "image1"
+        {
+            uniform token info:id = "ND_image_vector3"
+            asset inputs:file = @textures/mesh_wire_norm.png@
+            string inputs:filtertype = "closest"
+            float3 outputs:out
+        }
+    }
 }
 
 def Mesh "Background" (
@@ -744,3 +779,43 @@ def Mesh "pMultiUVPlane6" (
     uniform token[] xformOpOrder = ["xformOp:translate"]
 }
 
+def Mesh "pMultiUVPlane7" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.5), (0.5, 0, 0.5)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </mtl/standard_surface3>
+    point3f[] points = [(-0.5, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, -0.5), (0.5, 0, -0.5)]
+    color3f[] primvars:displayColor = [(0.13320851, 0.13320851, 0.13320851)] (
+        customData = {
+            dictionary Maya = {
+                bool generated = 1
+            }
+        }
+    )
+    texCoord2f[] primvars:st1 = [(1.5051357, 0.5019881), (0.4980119, 1.5051357), (0.5019881, -0.50513566), (-0.50513566, 0.4980119)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    texCoord2f[] primvars:st = [(0.50056624, -0.00038683414), (1.0003868, 0.50056624), (-0.00038683414, 0.49943376), (0.49943376, 1.0003868)] (
+        customData = {
+            dictionary Maya = {
+                token name = "uvSet1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st1:indices = [0, 1, 3, 2]
+    int[] primvars:st:indices = [0, 1, 3, 2]
+    token visibility = "inherited"
+    double3 xformOp:translate = (-2.2, 0, -1.1)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}

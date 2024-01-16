@@ -39,7 +39,8 @@ std::string prettifyName(const std::string& name)
     for (size_t i = 0; i < nbChars; ++i) {
         unsigned char nextLetter = name[i];
         if (std::isupper(name[i]) && i > 0 && !std::isdigit(name[i - 1])) {
-            if ((i > 0 && (i < (nbChars - 1)) && !std::isupper(name[i + 1]))
+            if ((i > 0 && (i < (nbChars - 1))
+                 && (!std::isupper(name[i + 1]) && !std::isdigit(name[i + 1])))
                 || std::islower(name[i - 1])) {
                 prettyName += ' ';
             }
