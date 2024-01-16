@@ -95,9 +95,6 @@ bool StageNoticesListener::_bStageSet = false;
 bool StageNoticesListener::_bStageInvalidate = false;
 bool StageNoticesListener::_bStageObjectsChanged = false;
 
-PXR_NAMESPACE_OPEN_SCOPE
-TF_INSTANTIATE_SINGLETON(StageNoticesListener);
-PXR_NAMESPACE_CLOSE_SCOPE
 // Create the singleton that starts listening to proxy shape notices
 StageNoticesListener _instance = PXR_NS::TfSingleton<StageNoticesListener>::GetInstance();
 
@@ -110,6 +107,10 @@ bool StageInvalidate() { return _instance.StageInvalidate(); }
 void ResetStageObjectsChanged() { _instance.ResetStageObjectsChanged(); }
 bool StageObjectsChanged() { return _instance.StageObjectsChanged(); }
 } // namespace
+
+PXR_NAMESPACE_OPEN_SCOPE
+TF_INSTANTIATE_SINGLETON(StageNoticesListener);//Cannot be in anonymous namespace
+PXR_NAMESPACE_CLOSE_SCOPE
 
 using namespace boost::python;
 void wrapProxyShapeNotice()
