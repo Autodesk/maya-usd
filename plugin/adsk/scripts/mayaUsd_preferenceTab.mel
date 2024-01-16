@@ -408,21 +408,21 @@ global proc mayaUsd_PrefHoldState(string $mode)
 	};
 	prefsHoldOptionVars($prefOptionVars, $mode); 
 
-    if ($mode == "save") {
-        // Preferences dialog was opened, make sure we don't have this transient optionVar.
-        optionVar -remove mayaUsd_PrefUntexturedModeChanged;
-    }
-
-	if ($mode == "restore") {
-        if (`optionVar -q mayaUsd_PrefUntexturedModeChanged`) {
-            // Need to refresh the viewport for display mayaUsd_ShowDisplayColorTextureOff
-            ogs -reset;
-        }
+	if ($mode == "save") {
+		// Preferences dialog was opened, make sure we don't have this transient optionVar.
+		optionVar -remove mayaUsd_PrefUntexturedModeChanged;
 	}
 
-    if ($mode == "remove") {
-        optionVar -remove mayaUsd_PrefUntexturedModeChanged;
-    }
+	if ($mode == "restore") {
+		if (`optionVar -q mayaUsd_PrefUntexturedModeChanged`) {
+			// Need to refresh the viewport for display mayaUsd_ShowDisplayColorTextureOff
+			ogs -reset;
+		}
+	}
+
+	if ($mode == "remove") {
+		optionVar -remove mayaUsd_PrefUntexturedModeChanged;
+	}
 
 	global string $gPreferenceWindow;
 	if (`window -exists $gPreferenceWindow`) {
