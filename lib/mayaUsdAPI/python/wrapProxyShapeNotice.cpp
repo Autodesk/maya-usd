@@ -109,7 +109,7 @@ bool StageObjectsChanged() { return _instance.StageObjectsChanged(); }
 } // namespace
 
 PXR_NAMESPACE_OPEN_SCOPE
-TF_INSTANTIATE_SINGLETON(StageNoticesListener);//Cannot be in anonymous namespace
+TF_INSTANTIATE_SINGLETON(StageNoticesListener); // Cannot be in anonymous namespace
 PXR_NAMESPACE_CLOSE_SCOPE
 
 using namespace boost::python;
