@@ -906,16 +906,17 @@ void _AddMissingTangents(mx::DocumentPtr& mtlxDoc)
                         transformVectorToObject = _createTransformVector(_mtlxTokens->object);
                     }
                     replaceWithPassthru(tangentNode, transformVectorToObject);
+                    continue;
                 } else if (spaceInput->getValueString() == _mtlxTokens->model.GetString()) {
                     if (!transformVectorToModel) {
                         transformVectorToModel = _createTransformVector(_mtlxTokens->model);
                     }
                     replaceWithPassthru(tangentNode, transformVectorToModel);
-                } else {
-                    // Default to world.
-                    replaceWithPassthru(tangentNode, tangentGenerator);
+                    continue;
                 }
             }
+            // Default to world.
+            replaceWithPassthru(tangentNode, tangentGenerator);
         }
     }
 }
