@@ -31,10 +31,6 @@ PXR_NS::UsdTimeCode ProxyStage_getTime(const std::string& nodeName)
     }
 
     MayaUsdAPI::ProxyStage proxyStage(dagPath.node());
-    if (!proxyStage.isValid()) {
-        return PXR_NS::UsdTimeCode();
-    }
-
     return proxyStage.getTime();
 }
 
@@ -46,10 +42,6 @@ PXR_NS::UsdStageRefPtr ProxyStage_getUsdStage(const std::string& nodeName)
     }
 
     MayaUsdAPI::ProxyStage proxyStage(dagPath.node());
-    if (!proxyStage.isValid()) {
-        return nullptr;
-    }
-
     return proxyStage.getUsdStage();
 }
 

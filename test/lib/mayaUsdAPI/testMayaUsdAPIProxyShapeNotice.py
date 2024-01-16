@@ -41,12 +41,12 @@ class testMayaUsdAPIProxyShapeNotice(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         #Reset the calls from any previous stage notices
-        mayaUsdAPILib.ResetStageSetCall()
-        mayaUsdAPILib.ResetStageInvalidateCall()
-        mayaUsdAPILib.ResetStageObjectsChangedCall()
-        self.assertFalse(mayaUsdAPILib.StageSetHasBeenCalled())
-        self.assertFalse(mayaUsdAPILib.StageInvalidateHasBeenCalled())
-        self.assertFalse(mayaUsdAPILib.StageObjectsChangedHasBeenCalled())
+        mayaUsdAPILib.ResetStageSet()
+        mayaUsdAPILib.ResetStageInvalidate()
+        mayaUsdAPILib.ResetStageObjectsChanged()
+        self.assertFalse(mayaUsdAPILib.StageSet())
+        self.assertFalse(mayaUsdAPILib.StageInvalidate())
+        self.assertFalse(mayaUsdAPILib.StageObjectsChanged())
         
         #create a proxy shape node and load a stage
         proxyShapeNodeName = cmds.createNode('mayaUsdProxyShape', name='UsdStageShape')
@@ -61,16 +61,16 @@ class testMayaUsdAPIProxyShapeNotice(unittest.TestCase):
         self.assertTrue(prim.IsValid())
 
         #verify that the stage notices callbakcs were called
-        self.assertTrue(mayaUsdAPILib.StageSetHasBeenCalled())
-        self.assertTrue(mayaUsdAPILib.StageInvalidateHasBeenCalled())
+        self.assertTrue(mayaUsdAPILib.StageSet())
+        self.assertTrue(mayaUsdAPILib.StageInvalidate())
 
         #For StageObjectsChangedHasBeenCalled we need to modify the stage, so add a new Prim
-        stage.DefinePrim("/root/thisNodeShouldTriggerAStageObjectsChangedCall")
-        self.assertTrue(mayaUsdAPILib.StageObjectsChangedHasBeenCalled())
+        stage.DefinePrim("/root/thisNodeShouldTriggerAStageObjectsChanged")
+        self.assertTrue(mayaUsdAPILib.StageObjectsChanged())
 
-        mayaUsdAPILib.ResetStageSetCall()
-        mayaUsdAPILib.ResetStageInvalidateCall()
-        mayaUsdAPILib.ResetStageObjectsChangedCall()
+        mayaUsdAPILib.ResetStageSet()
+        mayaUsdAPILib.ResetStageInvalidate()
+        mayaUsdAPILib.ResetStageObjectsChanged()
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

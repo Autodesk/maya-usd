@@ -34,7 +34,15 @@ struct ProxyStageImp
             "subclass node while it should ! "
             "Its type is : %s",
             node->typeName().asChar());
-        TF_AXIOM(_proxyStageProvider);
+        if (!_proxyStageProvider) {
+            const std::string errMsg
+                = TfStringPrintf(
+                      "The node passed to the constructor of ProxyStage is not a "
+                      "MayaUsdProxyShapeBase subclass node while it should ! Its type is : %s",
+                      node->typeName().asChar())
+                      .c_str();
+            throw std::runtime_error(errMsg);
+        }
     }
     ProxyStageImp(PXR_NS::ProxyStageProvider* proxyStageProvider)
         : _proxyStageProvider(proxyStageProvider)
@@ -45,36 +53,42 @@ struct ProxyStageImp
 };
 
 // Use unique_ptr with custom deleter
-using UniqueProxyStageImp = std::unique_ptr<MayaUsdAPI_v0::ProxyStageImp, ProxyStageImpDeleter>;
+using UniqueProxyStageImp = std::unique_ptr<MayaUsdAPI::ProxyStageImp, ProxyStageImpDeleter>;
 
 ProxyStage::ProxyStage(const MObject& obj)
 {
-    PXR_NAMESPACE_USING_DIRECTIVE
-    TF_AXIOM(!obj.isNull());
+    if (obj.isNull()) {
+        const std::string errMsg
+            = PXR_NS::TfStringPrintf(
+                  "The MObject passed to the constructor of ProxyStage is null !")
+                  .c_str();
+        throw std::runtime_error(errMsg);
+    }
     MFnDependencyNode dep(obj);
     _imp = UniqueProxyStageImp(new ProxyStageImp(dep.userNode()));
 }
 
 ProxyStage::ProxyStage(const ProxyStage& other)
+    : _imp(new ProxyStageImp(other._imp->_proxyStageProvider))
 {
-    _imp = UniqueProxyStageImp(new ProxyStageImp(other._imp->_proxyStageProvider));
+    if (!other._imp->_proxyStageProvider) {
+        const std::string errMsg
+            = PXR_NS::TfStringPrintf(
+                  "The ProxyStage passed to the constructor of ProxyStage is null !")
+                  .c_str();
+        throw std::runtime_error(errMsg);
+    }
 }
 
 ProxyStage::~ProxyStage() = default;
 
 void ProxyStageImpDeleter::operator()(ProxyStageImp* ptr) const { delete ptr; }
 
-bool ProxyStage::isValid() const { return (nullptr != _imp->_proxyStageProvider); }
-
-PXR_NS::UsdTimeCode ProxyStage::getTime() const
-{
-    return (_imp->_proxyStageProvider) ? _imp->_proxyStageProvider->getTime()
-                                       : PXR_NS::UsdTimeCode();
-}
+PXR_NS::UsdTimeCode ProxyStage::getTime() const { return _imp->_proxyStageProvider->getTime(); }
 
 PXR_NS::UsdStageRefPtr ProxyStage::getUsdStage() const
 {
-    return (_imp->_proxyStageProvider) ? _imp->_proxyStageProvider->getUsdStage() : nullptr;
+    return _imp->_proxyStageProvider->getUsdStage();
 }
 
 } // End of namespace MAYAUSDAPI_NS_DEF

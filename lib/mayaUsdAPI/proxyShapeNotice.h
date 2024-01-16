@@ -27,7 +27,7 @@
 namespace MAYAUSDAPI_NS_DEF {
 
 /** \brief Base class for all Notices related to Usd stages events
- *   Context : a mayaUsd proxy shape node is a MpxNode subclass from mayaUsd which holds a usd
+ *   Context : a mayaUsd proxy shape node is an MpxNode subclass from mayaUsd which holds a USD
  * stage. These notices are made to listen to certain events that happen on the stage. \class
  * ProxyStageBaseNotice
  */

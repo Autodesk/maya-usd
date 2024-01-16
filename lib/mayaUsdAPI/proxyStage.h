@@ -54,7 +54,7 @@ struct ProxyStageImpDeleter
 class MAYAUSD_API_PUBLIC ProxyStage
 {
 public:
-    /*! Constructor from a MObject which is a the MObject of a subclass of mayaUsd
+    /*! Constructor from an MObject whose MPxNode must be a subclass of mayaUsd
      * ProxyStageProvider, such as a MayaUsdProxyShapeBase node
      * @param[in] obj is a MObject from a subclass of mayaUsd ProxyStageProvider, such as a
      * MayaUsdProxyShapeBase node
@@ -66,11 +66,6 @@ public:
     ProxyStage(const ProxyStage& other);
     //! Destructor
     ~ProxyStage();
-    /*! Returns true if the ProxyStage is valid, it can only be invalid if it was constructed from a
-     * MpxNode which was not a subclass of mayaUsd ProxyStageProvider \return true if the ProxyStage
-     * is valid
-     */
-    bool isValid() const;
     /*! Returns a UsdTimeCode
      *  \return a UsdTimeCode, if the ProxyStage is not valid, it returns a default constructed
      * UsdTimeCode()

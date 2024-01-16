@@ -48,11 +48,7 @@ std::string ProxyStageBaseNotice::GetProxyShapePath() const
 UsdStageRefPtr ProxyStageBaseNotice::GetProxyShapeStage() const
 {
     ProxyStage proxyStage = ProxyStage(_proxyObj);
-    if (TF_VERIFY(proxyStage.isValid(), "Error getting MayaUsdAPIProxyStage")) {
-        return proxyStage.getUsdStage();
-    }
-
-    return nullptr;
+    return proxyStage.getUsdStage();
 }
 
 ProxyStageObjectsChangedNotice::ProxyStageObjectsChangedNotice(
