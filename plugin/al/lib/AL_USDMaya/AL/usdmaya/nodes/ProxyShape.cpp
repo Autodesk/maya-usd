@@ -665,11 +665,11 @@ MStatus ProxyShape::initialise()
             "assetResolverConfig",
             "arc",
             kReadable | kWritable | kConnectable | kStorable | kAffectsAppearance | kInternal);
-        
+
         inheritStringAttr(
             "variantFallbacks",
             kReadable | kWritable | kConnectable | kStorable | kAffectsAppearance | kInternal);
-            
+
         AL_MAYA_CHECK_ERROR(attributeAffects(time(), outTime()), errorString);
         AL_MAYA_CHECK_ERROR(attributeAffects(m_timeOffset, outTime()), errorString);
         AL_MAYA_CHECK_ERROR(attributeAffects(m_timeScalar, outTime()), errorString);
