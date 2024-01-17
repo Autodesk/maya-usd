@@ -478,7 +478,7 @@ if(IS_LINUX AND MAYA_Foundation_LIBRARY)
     # If yes, then MayaUsd MUST also be built with new ABI.
     execute_process(
         COMMAND
-            nm "${MAYA_Foundation_LIBRARY}"
+            nm -D "${MAYA_Foundation_LIBRARY}"
         COMMAND
             grep findVariableReplacement
         COMMAND

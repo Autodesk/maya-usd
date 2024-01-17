@@ -76,7 +76,7 @@ global proc string stageFromFile_UISetup(string $parent)
 
     // Then add the stage from file specific section.
     setParent $layout;
-    $title = `getMayaUsdString("kUsdStage")`;
+    $title = `getMayaUsdString("kLabelStage")`;
     $frame = `frameLayout -label $title -collapsable false`;
     checkBoxGrp -l `getMayaUsdString("kLoadPayloads")` 
         -ann `getMayaUsdString("kLoadPayloadsAnn")`
