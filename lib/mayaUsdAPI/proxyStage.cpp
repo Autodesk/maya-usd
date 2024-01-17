@@ -82,7 +82,6 @@ ProxyStage::ProxyStage(const ProxyStage& other)
 
 ProxyStage::~ProxyStage() = default;
 
-
 PXR_NS::UsdTimeCode ProxyStage::getTime() const { return _imp->_proxyStageProvider->getTime(); }
 
 PXR_NS::UsdStageRefPtr ProxyStage::getUsdStage() const
