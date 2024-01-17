@@ -53,7 +53,7 @@ struct ProxyStageImp
 };
 
 // Use unique_ptr with custom deleter
-using UniqueProxyStageImp = std::unique_ptr<MayaUsdAPI::ProxyStageImp, ProxyStageImpDeleter>;
+using UniqueProxyStageImp = std::unique_ptr<MayaUsdAPI::ProxyStageImp>;
 
 ProxyStage::ProxyStage(const MObject& obj)
 {
@@ -82,7 +82,6 @@ ProxyStage::ProxyStage(const ProxyStage& other)
 
 ProxyStage::~ProxyStage() = default;
 
-void ProxyStageImpDeleter::operator()(ProxyStageImp* ptr) const { delete ptr; }
 
 PXR_NS::UsdTimeCode ProxyStage::getTime() const { return _imp->_proxyStageProvider->getTime(); }
 

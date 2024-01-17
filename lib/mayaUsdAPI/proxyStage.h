@@ -29,11 +29,6 @@ namespace MAYAUSDAPI_NS_DEF {
 
 //! Forward declaration of ProxyStageImp
 struct ProxyStageImp;
-//! Custom deleter for ProxyStageImp
-struct ProxyStageImpDeleter
-{
-    void operator()(ProxyStageImp* ptr) const;
-};
 
 /*! \brief  Class to access Usd time and Usd stage from a maya MObject which comes from a mayaUsd
    ProxyStageProvider subclass (usually a MayaUsdProxyShapeBase node)
@@ -81,7 +76,7 @@ private:
     ProxyStage() = delete;
 
     //! Private implementation member
-    std::unique_ptr<struct ProxyStageImp, ProxyStageImpDeleter> _imp {};
+    std::unique_ptr<struct ProxyStageImp> _imp {};
 };
 
 } // namespace MAYAUSDAPI_NS_DEF
