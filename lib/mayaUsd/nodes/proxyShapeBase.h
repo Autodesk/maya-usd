@@ -350,6 +350,18 @@ protected:
     MAYAUSD_CORE_PUBLIC
     void copyInternalData(MPxNode* srcNode) override;
 
+    MAYAUSD_CORE_PUBLIC
+    PcpVariantFallbackMap convertVariantFallbackFromStr(const MString& fallbacksStr) const;
+
+    // Set global variant fallbacks with a custom variant fallbacks.
+    MAYAUSD_CORE_PUBLIC
+    PcpVariantFallbackMap updateVariantFallbacks(PcpVariantFallbackMap& defaultVariantFallbacks, MDataBlock& dataBlock) const;
+
+    // Save variant fallbacks string for proxy shape.
+    MAYAUSD_CORE_PUBLIC
+    void saveVariantFallbacks(const PcpVariantFallbackMap& fallbacks, MDataBlock& dataBlock) const;
+
+
 private:
     // The possible the shared mode of the stage.
     // The 'Unknown' mode is when the proxy shape is created and has not yet been computed.
@@ -401,14 +413,7 @@ private:
 
     static void renameCallback(MObject& node, const MString& str, void* clientData);
 
-    PcpVariantFallbackMap convertVariantFallbackFromStr(const MString& fallbacksStr) const;
     MString convertVariantFallbacksToStr(const PcpVariantFallbackMap& fallbacks) const;
-
-    // Set global variant fallbacks with a custom variant fallbacks.
-    PcpVariantFallbackMap updateVariantFallbacks(PcpVariantFallbackMap& defaultVariantFallbacks, MDataBlock& dataBlock) const;
-
-    // Save variant fallbacks string for proxy shape.
-    void saveVariantFallbacks(const PcpVariantFallbackMap& fallbacks, MDataBlock& dataBlock) const;
 
     UsdMayaStageNoticeListener _stageNoticeListener;
 
