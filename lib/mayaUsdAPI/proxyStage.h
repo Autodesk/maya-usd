@@ -76,7 +76,7 @@ private:
     ProxyStage() = delete;
 
     //! Private implementation member
-    std::unique_ptr<struct ProxyStageImp> _imp {};
+    std::unique_ptr<struct ProxyStageImp> _imp;
 };
 
 } // namespace MAYAUSDAPI_NS_DEF
