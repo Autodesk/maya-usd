@@ -141,6 +141,17 @@ std::string UsdAttributeHolder::defaultValue() const { return std::string(); }
 
 std::string UsdAttributeHolder::nativeType() const
 {
+    if (usdAttributeType() == SdfValueTypeNames->Token && PXR_NS::UsdShadeNodeGraph(usdPrim())) {
+        // We might have saved the Sdr native type as metadata:
+        if (PXR_NS::UsdShadeInput::IsInput(_usdAttr)
+            || PXR_NS::UsdShadeOutput::IsOutput(_usdAttr)) {
+            const auto metaValue = getMetadata(UsdAttributeGeneric::nativeSdrTypeMetadata());
+            if (!metaValue.empty() && metaValue.isType<std::string>()) {
+                return metaValue.get<std::string>();
+            }
+        }
+    }
+
     return usdAttributeType().GetType().GetTypeName();
 }
 

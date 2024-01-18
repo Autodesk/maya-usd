@@ -373,9 +373,21 @@ Ufe::Attribute::Ptr UsdAttributes::doAddAttribute(
                 }
             }
             // Fallback to creating a nodegraph output.
-            connectApi.CreateOutput(baseNameAndType.first, ufeTypeToUsd(type));
+            auto usdType = ufeTypeToUsd(type);
+            auto output = connectApi.CreateOutput(
+                baseNameAndType.first, usdType ? usdType : SdfValueTypeNames->Token);
+            if (!usdType) {
+                output.SetSdrMetadataByKey(
+                    TfToken(UsdAttributeGeneric::nativeSdrTypeMetadata()), type);
+            }
         } else if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input) {
-            connectApi.CreateInput(baseNameAndType.first, ufeTypeToUsd(type));
+            auto usdType = ufeTypeToUsd(type);
+            auto input = connectApi.CreateInput(
+                baseNameAndType.first, usdType ? usdType : SdfValueTypeNames->Token);
+            if (!usdType) {
+                input.SetSdrMetadataByKey(
+                    TfToken(UsdAttributeGeneric::nativeSdrTypeMetadata()), type);
+            }
         }
     }
 
