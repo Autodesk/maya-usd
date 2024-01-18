@@ -141,6 +141,7 @@ std::string UsdAttributeHolder::defaultValue() const { return std::string(); }
 
 std::string UsdAttributeHolder::nativeType() const
 {
+#ifdef UFE_V3_FEATURES_AVAILABLE
     if (usdAttributeType() == SdfValueTypeNames->Token && PXR_NS::UsdShadeNodeGraph(usdPrim())) {
         // We might have saved the Sdr native type as metadata:
         if (PXR_NS::UsdShadeInput::IsInput(_usdAttr)
@@ -151,7 +152,7 @@ std::string UsdAttributeHolder::nativeType() const
             }
         }
     }
-
+#endif
     return usdAttributeType().GetType().GetTypeName();
 }
 
