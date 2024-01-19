@@ -53,7 +53,7 @@ global proc mayaUSDRegisterStrings()
     register("kMenuAddSublayer", "Add Sublayer");
     register("kMenuAddParentLayer", "Add Parent Layer");
     register("kMenuClear", "Clear");
-    register("kMenuRevertToFile", "Revert to File");
+    register("kMenuReload", "Reload");
     register("kMenuLayerEditor", "USD Layer Editor");
     register("kContextMenuLayerEditor", "USD Layer Editor...");
     register("kMenuLayerEditorAnn", "Organize and edit USD data in layers");
