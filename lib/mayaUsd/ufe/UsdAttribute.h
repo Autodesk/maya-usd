@@ -192,6 +192,10 @@ public:
 
     // Ufe::AttributeGeneric overrides
     std::string nativeType() const override;
+
+    // Metadata used when creating a dynamic attribute on NodeGraph/Material boundaries that
+    // remembers the native type of a generic shader property.
+    static const std::string& nativeSdrTypeMetadata();
 }; // UsdAttributeGeneric
 
 #ifdef UFE_V4_FEATURES_AVAILABLE

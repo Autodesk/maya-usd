@@ -37,6 +37,7 @@ class TestObserver(ufe.Observer):
         self._removedNotifications = 0
         self._valueChangedNotifications = 0
         self._connectionChangedNotifications = 0
+        self._metadataChangedNotifications = 0
         self._unknownNotifications = 0
 
     def __call__(self, notification):
@@ -48,6 +49,8 @@ class TestObserver(ufe.Observer):
             self._valueChangedNotifications += 1
         elif isinstance(notification, ufe.AttributeConnectionChanged):
             self._connectionChangedNotifications += 1
+        elif isinstance(notification, ufe.AttributeMetadataChanged):
+            self._metadataChangedNotifications += 1
         else:
             self._unknownNotifications += 1
 
@@ -56,6 +59,7 @@ class TestObserver(ufe.Observer):
         test.assertEqual(self._removedNotifications, counters.get("numRemoved", 0))
         test.assertEqual(self._valueChangedNotifications, counters.get("numValue", 0))
         test.assertEqual(self._connectionChangedNotifications, counters.get("numConnection", 0))
+        test.assertEqual(self._metadataChangedNotifications, counters.get("numMetadata", 0))
         test.assertEqual(self._unknownNotifications, 0)
 
 
@@ -951,10 +955,32 @@ class ConnectionTestCase(unittest.TestCase):
             testObserver.assertNotificationCount(self, numAdded = 1)
             testAttrs.addAttribute("outputs:bar", ufe.Attribute.kFloat4)
             testObserver.assertNotificationCount(self, numAdded = 2)
+            
+            # Testing custom NodeGraph data types
+            testAttrs.addAttribute("inputs:edf", "EDF")
+            # The custom type is saved as metadata, which emits one value and one metadata changes
+            testObserver.assertNotificationCount(self, numAdded = 3, numValue=1, numMetadata=1)
+            customAttr = testAttrs.attribute("inputs:edf")
+            self.assertEqual(customAttr.type, "Generic")
+            # Make sure the custom shader type was remembered
+            self.assertEqual(customAttr.nativeType(), "EDF")
+
+            # Same thing, on the output side
+            testAttrs.addAttribute("outputs:srf", "surfaceshader")
+            testObserver.assertNotificationCount(self, numAdded = 4, numValue=2, numMetadata=2)
+            customAttr = testAttrs.attribute("outputs:srf")
+            self.assertEqual(customAttr.type, "Generic")
+            self.assertEqual(customAttr.nativeType(), "surfaceshader")
+
             testAttrs.removeAttribute("inputs:foo")
-            testObserver.assertNotificationCount(self, numAdded = 2, numRemoved = 1)
+            testObserver.assertNotificationCount(self, numAdded = 4, numRemoved = 1, numValue=2, numMetadata=2)
             testAttrs.removeAttribute("outputs:bar")
-            testObserver.assertNotificationCount(self, numAdded = 2, numRemoved = 2)
+            testObserver.assertNotificationCount(self, numAdded = 4, numRemoved = 2, numValue=2, numMetadata=2)
+            testAttrs.removeAttribute("inputs:edf")
+            testObserver.assertNotificationCount(self, numAdded = 4, numRemoved = 3, numValue=2, numMetadata=2)
+            testAttrs.removeAttribute("outputs:srf")
+            testObserver.assertNotificationCount(self, numAdded = 4, numRemoved = 4, numValue=2, numMetadata=2)
+
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testCompoundDisplacementPassthrough(self):
