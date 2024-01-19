@@ -18,6 +18,7 @@
 #include "private/UfeNotifGuard.h"
 
 #include <mayaUsd/nodes/proxyShapeStageExtraData.h>
+#include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 #include <mayaUsd/ufe/MayaStagesSubject.h>
 #include <mayaUsd/ufe/MayaUsdContextOpsHandler.h>
 #include <mayaUsd/ufe/MayaUsdObject3dHandler.h>
@@ -108,7 +109,11 @@ MCallbackId gExitingCbId = 0;
 // Subject singleton for observation of all USD stages.
 MayaUsd::ufe::MayaStagesSubject::RefPtr g_StagesSubject;
 
-void mayaStartWaitCursor() { MGlobal::executeCommand("waitCursor -state 1"); }
+void mayaStartWaitCursor()
+{
+    ProxyRenderDelegate::setLongDurationRendering();
+    MGlobal::executeCommand("waitCursor -state 1");
+}
 
 void mayaStopWaitCursor() { MGlobal::executeCommand("waitCursor -state 0"); }
 

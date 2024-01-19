@@ -319,8 +319,27 @@ void stopWaitCursor();
 //! Start and stop the wait cursor in the constructor and destructor.
 struct USDUFE_PUBLIC WaitCursor
 {
-    WaitCursor() { startWaitCursor(); }
-    ~WaitCursor() { stopWaitCursor(); }
+    //! Show the wait cursor if the showCursor flag is true.
+    WaitCursor(bool showCursor = true)
+        : _showCursor(showCursor)
+    {
+        if (_showCursor)
+            startWaitCursor();
+    }
+
+    //! Stop the wait cursor if the showCursor flag is true.
+    ~WaitCursor()
+    {
+        if (_showCursor)
+            stopWaitCursor();
+    }
+
+    WaitCursor(const WaitCursor&) = delete;
+    WaitCursor(WaitCursor&&) = delete;
+    WaitCursor& operator=(const WaitCursor&) = delete;
+    WaitCursor& operator=(WaitCursor&&) = delete;
+
+    const bool _showCursor;
 };
 
 } // namespace USDUFE_NS_DEF
