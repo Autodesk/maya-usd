@@ -55,14 +55,14 @@ using AlreadyTraversedPaths = std::set<SdfPath>;
 
 void _traverseLayer(
     const SdfLayerHandle&           layer,
-    const SdfPath&                  path,
+    const SdfPath                   path,
     AlreadyTraversedPaths&          traversed,
     const MayaUsd::TraverseLayerFn& fn);
 
 template <typename ChildPolicy>
 void TraverseChildren(
     const SdfLayerHandle&           layer,
-    const SdfPath&                  path,
+    const SdfPath                   path,
     AlreadyTraversedPaths&          traversed,
     const MayaUsd::TraverseLayerFn& fn)
 {
@@ -77,7 +77,7 @@ void TraverseChildren(
 
 void _traverseLayer(
     const SdfLayerHandle&           layer,
-    const SdfPath&                  path,
+    const SdfPath                   path,
     AlreadyTraversedPaths&          traversed,
     const MayaUsd::TraverseLayerFn& fn)
 {

@@ -1517,6 +1517,60 @@ void PrimUpdaterManager::discardPullSetIfEmpty()
     }
 }
 
+static void replicateMissingAncestors(
+    const UsdStageRefPtr& srcStage,
+    SdfPath               srcPath,
+    const UsdStageRefPtr& dstStage,
+    SdfPath               dstPath)
+{
+    // List f prims to be created. The last prim should be created
+    // first, (it will be the highest in the hierarchy)
+    std::vector<std::pair<SdfPath, SdfPath>> toBeCreated;
+
+    while (true) {
+        // If we reach the top of the hierarchy, stop.
+        srcPath = srcPath.GetParentPath();
+        if (srcPath.IsEmpty() || srcPath.IsAbsoluteRootPath())
+            break;
+
+        // If we reach the top of the hierarchy, stop.
+        dstPath = dstPath.GetParentPath();
+        if (dstPath.IsEmpty() || dstPath.IsAbsoluteRootPath())
+            break;
+
+        // If the destination prim already exists, stop.
+        UsdPrim dstPrim = dstStage->GetPrimAtPath(dstPath);
+        if (dstPrim) {
+#ifdef PRIM_UPDATER_MANAGER_DEBUG_DUPLICATE_PRIM
+            std::string ancestorFoundMsg
+                = TfStringPrintf("The ancestor %s exists", dstPath.GetAsString().c_str());
+            MGlobal::displayInfo(ancestorFoundMsg.c_str());
+#endif
+            break;
+        }
+
+#ifdef PRIM_UPDATER_MANAGER_DEBUG_DUPLICATE_PRIM
+        std::string ancestorNeededMsg
+            = TfStringPrintf("The ancestor %s needs to be created", dstPath.GetAsString().c_str());
+        MGlobal::displayInfo(ancestorNeededMsg.c_str());
+#endif
+        toBeCreated.emplace_back(srcPath, dstPath);
+    }
+
+    const auto end = toBeCreated.rend();
+    for (auto iter = toBeCreated.rbegin(); iter != end; ++iter) {
+        const SdfPath& srcPath = iter->first;
+        const SdfPath& dstPath = iter->second;
+
+        // try to reproduce the same prim type, if we can.
+        TfToken primType;
+        if (UsdPrim srcPrim = srcStage->GetPrimAtPath(srcPath))
+            primType = srcPrim.GetTypeName();
+
+        dstStage->DefinePrim(dstPath, primType);
+    }
+}
+
 bool PrimUpdaterManager::duplicate(
     const Ufe::Path&    srcPath,
     const Ufe::Path&    dstPath,
@@ -1602,9 +1656,16 @@ bool PrimUpdaterManager::duplicate(
         progressBar.advance();
 
         // Copy the temporary layer contents out to the proper destination.
+        const auto& srcStage = std::get<UsdStageRefPtr>(pushExportOutput);
         const auto& srcLayer = std::get<SdfLayerRefPtr>(pushExportOutput);
         const auto& editTarget = dstStage->GetEditTarget();
         const auto& dstLayer = editTarget.GetLayer();
+
+#ifdef PRIM_UPDATER_MANAGER_DEBUG_DUPLICATE_PRIM
+        std::string layerContentsMsg;
+        if (srcLayer->ExportToString(&layerContentsMsg))
+            MGlobal::displayInfo(layerContentsMsg.c_str());
+#endif
 
         // Validate that the destination parent prim is valid.
         UsdPrim dstParentPrim = MayaUsd::ufe::ufePathToPrim(dstPath);
@@ -1619,6 +1680,13 @@ bool PrimUpdaterManager::duplicate(
         const SdfPath srcParentPath = srcRootPath.GetParentPath();
         const SdfPath dstParentPath = dstParentPrim.GetPath();
 
+        // This contains the list of paths that have to be copied.
+        // Initially, it only contains the source path, but we add
+        // the destination of relationships to the list so to copy
+        // all related prims.
+        std::vector<SdfPath> pathsToCopy;
+        pathsToCopy.push_back(srcRootPath);
+
         // This contains the set of path that have alredy been copied.
         // Used to avoid copying a prim that has already been copied.
         std::set<SdfPath> copiedPaths;
@@ -1629,32 +1697,54 @@ bool PrimUpdaterManager::duplicate(
         MayaUsd::ufe::ReplicateExtrasToUSD::RenamedPaths renamedPaths;
 
         // Note: returning false means to prune traversing children.
-        //       For example, we return false when a prim has already been copied,
-        //       or if a copy fails.
-        auto copyFn = [&srcLayer,
+        auto copyFn = [&srcStage,
+                       &srcLayer,
                        &srcParentPath,
                        &dstLayer,
                        &dstParentPath,
+                       &pathsToCopy,
                        &copiedPaths,
                        &renamedPaths,
-                       &dstStage](const SdfPath& layerSpecPath) -> bool {
-            SdfPath srcPath = layerSpecPath;
-
+                       &dstStage](const SdfPath& srcPath) -> bool {
             // Check if the path is a relationship target path. If so, we need to copy
             // the target since it is used by the prim containing this relationship.
-            if (srcPath.IsTargetPath())
-                srcPath = srcPath.GetTargetPath();
-
-            if (!srcPath.IsPrimPath())
+            if (srcPath.IsTargetPath()) {
+                const SdfPath& targetPath = srcPath.GetTargetPath();
+                if (!targetPath.IsEmpty()) {
+#ifdef PRIM_UPDATER_MANAGER_DEBUG_DUPLICATE_PRIM
+                    std::string moreToCopyMsg = TfStringPrintf(
+                        "Adding %s to be copied due to target in %s",
+                        targetPath.GetAsString().c_str(),
+                        srcPath.GetAsString().c_str());
+                    MGlobal::displayInfo(moreToCopyMsg.c_str());
+#endif
+                    pathsToCopy.emplace_back(targetPath);
+                }
                 return true;
+            }
+
+            // We only copy prims, not any other type of specs, like attributes etc.
+            // Copying the prim will copy its attributes, etc.
+            if (!srcPath.IsPrimPath()) {
+#ifdef PRIM_UPDATER_MANAGER_DEBUG_DUPLICATE_PRIM
+                std::string notPrimMsg
+                    = TfStringPrintf("Path %s is not a prim path", srcPath.GetAsString().c_str());
+                MGlobal::displayInfo(notPrimMsg.c_str());
+#endif
+                return true;
+            }
 
             for (const SdfPath& alreadyDone : copiedPaths) {
                 if (srcPath.HasPrefix(alreadyDone)) {
+#ifdef PRIM_UPDATER_MANAGER_DEBUG_DUPLICATE_PRIM
                     std::string alreadyMsg = TfStringPrintf(
                         "Already copied source prim %s, skipping additional copies",
                         srcPath.GetAsString().c_str());
                     MGlobal::displayInfo(alreadyMsg.c_str());
-                    return false;
+#endif
+                    // Note: we must not prevent traversing children otherwise we will
+                    //       not process relationships.
+                    return true;
                 }
             }
 
@@ -1662,6 +1752,10 @@ bool PrimUpdaterManager::duplicate(
 
             // Make the destination path unique.
             const SdfPath origDstPath = srcPath.ReplacePrefix(srcParentPath, dstParentPath);
+
+            // Make sure parent prims exists in the destination.
+            replicateMissingAncestors(srcStage, srcPath, dstStage, origDstPath);
+
             const SdfPath dstPath = UsdUfe::uniqueChildPath(*dstStage, origDstPath);
             if (dstPath != origDstPath) {
                 renamedPaths[origDstPath] = dstPath;
@@ -1682,7 +1776,11 @@ bool PrimUpdaterManager::duplicate(
             return true;
         };
 
-        traverseLayer(srcLayer, srcRootPath, copyFn);
+        // Note: copyFn can append new items in pathsToCopy, so do not optimize
+        //       comparing to the size of the container nor use iterators.
+        for (size_t i = 0; i < pathsToCopy.size(); ++i) {
+            traverseLayer(srcLayer, pathsToCopy[i], copyFn);
+        }
         progressBar.advance();
 
         // Traverse again the destination prims and adjust the relationships
@@ -1694,6 +1792,11 @@ bool PrimUpdaterManager::duplicate(
 
             // Adjust all targets that were referring to prims that were renamed.
             SdfPath targetPath = layerSpecPath.GetTargetPath();
+#ifdef PRIM_UPDATER_MANAGER_DEBUG_DUPLICATE_PRIM
+            std::string targetVerifyingMsg = TfStringPrintf(
+                "Verifying renaming for %s target path", targetPath.GetAsString().c_str());
+            MGlobal::displayInfo(targetVerifyingMsg.c_str());
+#endif
             for (const auto& oldAndNew : renamedPaths) {
                 // If the relationship was not targeting this renamed path, skip.
                 const SdfPath& oldPath = oldAndNew.first;
@@ -1706,38 +1809,64 @@ bool PrimUpdaterManager::duplicate(
                 // Note: the parent path of a relationship target path is the relationship.
                 const SdfPath primPath = layerSpecPath.GetPrimOrPrimVariantSelectionPath();
                 UsdPrim       prim = dstStage->GetPrimAtPath(primPath);
-                SdfPath       targetingPath = layerSpecPath.GetParentPath();
+                const SdfPath targetingPath = layerSpecPath.GetParentPath();
+
+#ifdef PRIM_UPDATER_MANAGER_DEBUG_DUPLICATE_PRIM
+                std::string containingPrimMsg = TfStringPrintf(
+                    "Prim %s containg targeting property %s",
+                    primPath.GetAsString().c_str(),
+                    targetingPath.GetAsString().c_str());
+                MGlobal::displayInfo(containingPrimMsg.c_str());
+#endif
 
                 // Note: we could *almost* use a UsdProperty, which is the base class of
                 //       both UsdRelationship and UsdAttribute. It has a _GetTargets()
                 //       functions... but it is protected! How unfortunate... So instead
                 //       we have two almost identical branches.
-                if (targetingPath.IsRelationalAttributePath()) {
-                    // Retrieve the relationship so we can modify its targets.
-                    UsdRelationship rel = prim.GetRelationshipAtPath(targetingPath);
-
+                UsdRelationship rel = prim.GetRelationshipAtPath(targetingPath);
+                if (rel) {
                     // Modify all targets that were using the old path to now use the new path.
                     SdfPathVector targets;
                     rel.GetTargets(&targets);
                     for (auto& target : targets) {
                         if (!target.HasPrefix(oldPath))
                             continue;
-                        target = target.ReplacePrefix(oldPath, newPath);
+                        SdfPath newTarget = target.ReplacePrefix(oldPath, newPath);
+
+#ifdef PRIM_UPDATER_MANAGER_DEBUG_DUPLICATE_PRIM
+                        std::string renamingMsg = TfStringPrintf(
+                            "Renaming relationship %s to %s",
+                            target.GetAsString().c_str(),
+                            newTarget.GetAsString().c_str());
+                        MGlobal::displayInfo(renamingMsg.c_str());
+#endif
+                        target = newTarget;
                     }
                     rel.SetTargets(targets);
                 } else {
                     // Retrieve the attribute so we can modify its targets.
                     UsdAttribute attr = prim.GetAttributeAtPath(targetingPath);
+                    if (attr) {
+                        // Modify all targets that were using the old path to now use the new path.
+                        SdfPathVector targets;
+                        attr.GetConnections(&targets);
+                        for (auto& target : targets) {
+                            if (!target.HasPrefix(oldPath))
+                                continue;
 
-                    // Modify all targets that were using the old path to now use the new path.
-                    SdfPathVector targets;
-                    attr.GetConnections(&targets);
-                    for (auto& target : targets) {
-                        if (!target.HasPrefix(oldPath))
-                            continue;
-                        target = target.ReplacePrefix(oldPath, newPath);
+                            SdfPath newTarget = target.ReplacePrefix(oldPath, newPath);
+
+#ifdef PRIM_UPDATER_MANAGER_DEBUG_DUPLICATE_PRIM
+                            std::string renamingMsg = TfStringPrintf(
+                                "Renaming attribute connection %s to %s",
+                                target.GetAsString().c_str(),
+                                newTarget.GetAsString().c_str());
+                            MGlobal::displayInfo(renamingMsg.c_str());
+#endif
+                            target = newTarget;
+                        }
+                        attr.SetConnections(targets);
                     }
-                    attr.SetConnections(targets);
                 }
             }
 
