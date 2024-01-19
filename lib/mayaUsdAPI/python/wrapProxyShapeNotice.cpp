@@ -21,8 +21,6 @@
 
 #include <boost/python/def.hpp>
 
-#include <assert.h>
-
 namespace {
 
 // Listen to mayaUsdAPI stage notices
@@ -31,50 +29,50 @@ class StageNoticesListener : public PXR_NS::TfWeakBase
 public:
     StageNoticesListener()
     {
-        PXR_NS::TfSingleton<StageNoticesListener>::SetInstanceConstructed(*this);
-        PXR_NS::TfWeakPtr<StageNoticesListener> ptr(this);
-        _stageSetKey = PXR_NS::TfNotice::Register(ptr, &StageNoticesListener::_StageSet);
-        _stageInvalidateKey
-            = PXR_NS::TfNotice::Register(ptr, &StageNoticesListener::_StageInvalidate);
+        PXR_NAMESPACE_USING_DIRECTIVE
+        TfSingleton<StageNoticesListener>::SetInstanceConstructed(*this);
+        TfWeakPtr<StageNoticesListener> ptr(this);
+        _stageSetKey = TfNotice::Register(ptr, &StageNoticesListener::stageSet_);
+        _stageInvalidatedKey = TfNotice::Register(ptr, &StageNoticesListener::stageInvalidate_);
         _stageObjectsChangedKey
-            = PXR_NS::TfNotice::Register(ptr, &StageNoticesListener::_StageObjectsChanged);
-        assert(
-            _stageSetKey.IsValid() && _stageInvalidateKey.IsValid()
+            = TfNotice::Register(ptr, &StageNoticesListener::stageObjectsChanged_);
+        TF_VERIFY(
+            _stageSetKey.IsValid() && _stageInvalidatedKey.IsValid()
             && _stageObjectsChangedKey.IsValid());
     }
 
-    ~StageNoticesListener() { _Revoke(); }
+    ~StageNoticesListener() { revoke_(); }
 
     // StageSet notice
-    bool StageSet() const { return _bStageSet; }
-    void ResetStageSet() { _bStageSet = false; }
+    bool stageSet() const { return _stageSet; }
+    void resetStageSet() { _stageSet = false; }
 
-    // StageInvalidate notice
-    bool StageInvalidate() const { return _bStageInvalidate; }
-    void ResetStageInvalidate() { _bStageInvalidate = false; }
+    // StageInvalidated notice
+    bool stageInvalidated() const { return _stageInvalidated; }
+    void resetStageInvalidated() { _stageInvalidated = false; }
 
     // StageObjectsChanged notice
-    bool StageObjectsChanged() const { return _bStageObjectsChanged; }
-    void ResetStageObjectsChanged() { _bStageObjectsChanged = false; }
+    bool stageObjectsChanged() const { return _stageObjectsChanged; }
+    void resetStageObjectsChanged() { _stageObjectsChanged = false; }
 
 private:
-    void _StageSet(const MayaUsdAPI::ProxyStageSetNotice& notice) { _bStageSet = true; }
-    void _StageInvalidate(const MayaUsdAPI::ProxyStageInvalidateNotice& notice)
+    void stageSet_(const MayaUsdAPI::ProxyStageSetNotice& notice) { _stageSet = true; }
+    void stageInvalidate_(const MayaUsdAPI::ProxyStageInvalidateNotice& notice)
     {
-        _bStageInvalidate = true;
+        _stageInvalidated = true;
     }
-    void _StageObjectsChanged(const MayaUsdAPI::ProxyStageObjectsChangedNotice& notice)
+    void stageObjectsChanged_(const MayaUsdAPI::ProxyStageObjectsChangedNotice& notice)
     {
-        _bStageObjectsChanged = true;
+        _stageObjectsChanged = true;
     }
 
-    void _Revoke()
+    void revoke_()
     {
         if (_stageSetKey.IsValid()) {
             PXR_NS::TfNotice::Revoke(_stageSetKey);
         }
-        if (_stageInvalidateKey.IsValid()) {
-            PXR_NS::TfNotice::Revoke(_stageInvalidateKey);
+        if (_stageInvalidatedKey.IsValid()) {
+            PXR_NS::TfNotice::Revoke(_stageInvalidatedKey);
         }
         if (_stageObjectsChangedKey.IsValid()) {
             PXR_NS::TfNotice::Revoke(_stageObjectsChangedKey);
@@ -82,30 +80,30 @@ private:
     }
 
     PXR_NS::TfNotice::Key _stageSetKey;
-    static bool           _bStageSet;
+    static bool           _stageSet;
 
-    PXR_NS::TfNotice::Key _stageInvalidateKey;
-    static bool           _bStageInvalidate;
+    PXR_NS::TfNotice::Key _stageInvalidatedKey;
+    static bool           _stageInvalidated;
 
     PXR_NS::TfNotice::Key _stageObjectsChangedKey;
-    static bool           _bStageObjectsChanged;
+    static bool           _stageObjectsChanged;
 };
 
-bool StageNoticesListener::_bStageSet = false;
-bool StageNoticesListener::_bStageInvalidate = false;
-bool StageNoticesListener::_bStageObjectsChanged = false;
+bool StageNoticesListener::_stageSet = false;
+bool StageNoticesListener::_stageInvalidated = false;
+bool StageNoticesListener::_stageObjectsChanged = false;
 
 // Create the singleton that starts listening to proxy shape notices
 StageNoticesListener _instance = PXR_NS::TfSingleton<StageNoticesListener>::GetInstance();
 
-void ResetStageSet() { _instance.ResetStageSet(); }
-bool StageSet() { return _instance.StageSet(); }
+void resetStageSet() { _instance.resetStageSet(); }
+bool stageSet() { return _instance.stageSet(); }
 
-void ResetStageInvalidate() { _instance.ResetStageInvalidate(); }
-bool StageInvalidate() { return _instance.StageInvalidate(); }
+void resetStageInvalidated() { _instance.resetStageInvalidated(); }
+bool stageInvalidated() { return _instance.stageInvalidated(); }
 
-void ResetStageObjectsChanged() { _instance.ResetStageObjectsChanged(); }
-bool StageObjectsChanged() { return _instance.StageObjectsChanged(); }
+void resetStageObjectsChanged() { _instance.resetStageObjectsChanged(); }
+bool stageObjectsChanged() { return _instance.stageObjectsChanged(); }
 } // namespace
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -115,12 +113,12 @@ PXR_NAMESPACE_CLOSE_SCOPE
 using namespace boost::python;
 void wrapProxyShapeNotice()
 {
-    def("ResetStageSet", ResetStageSet);
-    def("StageSet", StageSet);
+    def("resetStageSet", resetStageSet);
+    def("stageSet", stageSet);
 
-    def("ResetStageInvalidate", ResetStageInvalidate);
-    def("StageInvalidate", StageInvalidate);
+    def("resetStageInvalidated", resetStageInvalidated);
+    def("stageInvalidated", stageInvalidated);
 
-    def("ResetStageObjectsChanged", ResetStageObjectsChanged);
-    def("StageObjectsChanged", StageObjectsChanged);
+    def("resetStageObjectsChanged", resetStageObjectsChanged);
+    def("stageObjectsChanged", stageObjectsChanged);
 }

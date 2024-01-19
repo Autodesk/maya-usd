@@ -39,10 +39,8 @@ struct ProxyStageImp;
     {
         MObject dagNode;//is the MObject of a MayaUsdProxyShape node for example
         MayaUsdAPI::ProxyStage proxyStage(dagNode);
-        if (TF_VERIFY(proxyStage.isValid(), "Error getting MayaUsdAPIProxyStage")) {
-            auto stage = proxyStage.getUsdStage();
-            auto time = proxyStage.getTime();
-        }
+        auto stage = proxyStage.getUsdStage();
+        auto time = proxyStage.getTime();
     }
     \endcode
 */

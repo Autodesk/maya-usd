@@ -27,20 +27,19 @@ struct ProxyStageImp
     ProxyStageImp(MPxNode* node)
         : _proxyStageProvider(dynamic_cast<PXR_NS::ProxyStageProvider*>(node))
     {
+        const char* nodeTypeString = node->typeName().asChar();
         PXR_NAMESPACE_USING_DIRECTIVE
         TF_VERIFY(
             _proxyStageProvider,
             "The node passed to the constructor of ProxyStage is not a MayaUsdProxyShapeBase "
             "subclass node while it should ! "
             "Its type is : %s",
-            node->typeName().asChar());
+            nodeTypeString);
         if (!_proxyStageProvider) {
-            const std::string errMsg
-                = TfStringPrintf(
-                      "The node passed to the constructor of ProxyStage is not a "
-                      "MayaUsdProxyShapeBase subclass node while it should ! Its type is : %s",
-                      node->typeName().asChar())
-                      .c_str();
+            const std::string errMsg = TfStringPrintf(
+                "The node passed to the constructor of ProxyStage is not a "
+                "MayaUsdProxyShapeBase subclass node while it should ! Its type is : %s",
+                nodeTypeString);
             throw std::runtime_error(errMsg);
         }
     }
@@ -58,11 +57,7 @@ using UniqueProxyStageImp = std::unique_ptr<MayaUsdAPI::ProxyStageImp>;
 ProxyStage::ProxyStage(const MObject& obj)
 {
     if (obj.isNull()) {
-        const std::string errMsg
-            = PXR_NS::TfStringPrintf(
-                  "The MObject passed to the constructor of ProxyStage is null !")
-                  .c_str();
-        throw std::runtime_error(errMsg);
+        throw std::runtime_error("The MObject passed to the constructor of ProxyStage is null !");
     }
     MFnDependencyNode dep(obj);
     _imp = UniqueProxyStageImp(new ProxyStageImp(dep.userNode()));
@@ -71,13 +66,8 @@ ProxyStage::ProxyStage(const MObject& obj)
 ProxyStage::ProxyStage(const ProxyStage& other)
     : _imp(new ProxyStageImp(other._imp->_proxyStageProvider))
 {
-    if (!other._imp->_proxyStageProvider) {
-        const std::string errMsg
-            = PXR_NS::TfStringPrintf(
-                  "The ProxyStage passed to the constructor of ProxyStage is null !")
-                  .c_str();
-        throw std::runtime_error(errMsg);
-    }
+    PXR_NAMESPACE_USING_DIRECTIVE
+    TF_AXIOM(other._imp->_proxyStageProvider);
 }
 
 ProxyStage::~ProxyStage() = default;

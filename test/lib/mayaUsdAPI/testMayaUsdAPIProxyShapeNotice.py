@@ -41,12 +41,12 @@ class testMayaUsdAPIProxyShapeNotice(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         #Reset the calls from any previous stage notices
-        mayaUsdAPILib.ResetStageSet()
-        mayaUsdAPILib.ResetStageInvalidate()
-        mayaUsdAPILib.ResetStageObjectsChanged()
-        self.assertFalse(mayaUsdAPILib.StageSet())
-        self.assertFalse(mayaUsdAPILib.StageInvalidate())
-        self.assertFalse(mayaUsdAPILib.StageObjectsChanged())
+        mayaUsdAPILib.resetStageSet()
+        mayaUsdAPILib.resetStageInvalidated()
+        mayaUsdAPILib.resetStageObjectsChanged()
+        self.assertFalse(mayaUsdAPILib.stageSet())
+        self.assertFalse(mayaUsdAPILib.stageInvalidated())
+        self.assertFalse(mayaUsdAPILib.stageObjectsChanged())
         
         #create a proxy shape node and load a stage
         proxyShapeNodeName = cmds.createNode('mayaUsdProxyShape', name='UsdStageShape')
@@ -61,16 +61,16 @@ class testMayaUsdAPIProxyShapeNotice(unittest.TestCase):
         self.assertTrue(prim.IsValid())
 
         #verify that the stage notices callbakcs were called
-        self.assertTrue(mayaUsdAPILib.StageSet())
-        self.assertTrue(mayaUsdAPILib.StageInvalidate())
+        self.assertTrue(mayaUsdAPILib.stageSet())
+        self.assertTrue(mayaUsdAPILib.stageInvalidated())
 
         #For StageObjectsChangedHasBeenCalled we need to modify the stage, so add a new Prim
         stage.DefinePrim("/root/thisNodeShouldTriggerAStageObjectsChanged")
-        self.assertTrue(mayaUsdAPILib.StageObjectsChanged())
+        self.assertTrue(mayaUsdAPILib.stageObjectsChanged())
 
-        mayaUsdAPILib.ResetStageSet()
-        mayaUsdAPILib.ResetStageInvalidate()
-        mayaUsdAPILib.ResetStageObjectsChanged()
+        mayaUsdAPILib.resetStageSet()
+        mayaUsdAPILib.resetStageInvalidated()
+        mayaUsdAPILib.resetStageObjectsChanged()
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
