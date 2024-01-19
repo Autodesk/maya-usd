@@ -477,6 +477,12 @@ UsdAttributeGeneric::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::U
 
 std::string UsdAttributeGeneric::nativeType() const { return UsdAttribute::nativeType(); }
 
+const std::string& UsdAttributeGeneric::nativeSdrTypeMetadata()
+{
+    static const auto kMetadataName = std::string { "nativeSdrType" };
+    return kMetadataName;
+}
+
 #ifdef UFE_V4_FEATURES_AVAILABLE
 //------------------------------------------------------------------------------
 // UsdAttributeFilename:
