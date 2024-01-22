@@ -27,19 +27,15 @@ struct ProxyStageImp
     ProxyStageImp(MPxNode* node)
         : _proxyStageProvider(dynamic_cast<PXR_NS::ProxyStageProvider*>(node))
     {
-        const char* nodeTypeString = node->typeName().asChar();
+
         PXR_NAMESPACE_USING_DIRECTIVE
-        TF_VERIFY(
-            _proxyStageProvider,
-            "The node passed to the constructor of ProxyStage is not a MayaUsdProxyShapeBase "
-            "subclass node while it should ! "
-            "Its type is : %s",
-            nodeTypeString);
+        const std::string errMsg = TfStringPrintf(
+            "The node passed to the constructor of ProxyStage is not a "
+            "MayaUsdProxyShapeBase subclass node while it should ! Its type is : %s",
+            node->typeName().asChar());
+
+        TF_VERIFY(_proxyStageProvider, errMsg.c_str());
         if (!_proxyStageProvider) {
-            const std::string errMsg = TfStringPrintf(
-                "The node passed to the constructor of ProxyStage is not a "
-                "MayaUsdProxyShapeBase subclass node while it should ! Its type is : %s",
-                nodeTypeString);
             throw std::runtime_error(errMsg);
         }
     }
