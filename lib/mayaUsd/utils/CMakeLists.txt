@@ -6,6 +6,7 @@ target_sources(${PROJECT_NAME}
         blockSceneModificationContext.cpp
         colorSpace.cpp
         converter.cpp
+        copyLayerPrims.cpp
         customLayerData.cpp
         diagnosticDelegate.cpp
         dynamicAttribute.cpp
@@ -36,6 +37,7 @@ set(HEADERS
     colorSpace.h
     customLayerData.h
     converter.h
+    copyLayerPrims.h
     diagnosticDelegate.h
     dynamicAttribute.h
     editability.h
