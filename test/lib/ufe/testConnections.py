@@ -951,9 +951,9 @@ class ConnectionTestCase(unittest.TestCase):
             testAttrs.addObserver(testItem, testObserver)
             testObserver.assertNotificationCount(self)
 
-            testAttrs.addAttribute("inputs:foo", ufe.Attribute.kFloat)
+            testAttrs.addAttribute("inputs:foo", ufe.Attribute.kFloat4)
             testObserver.assertNotificationCount(self, numAdded = 1)
-            testAttrs.addAttribute("outputs:bar", ufe.Attribute.kFloat4)
+            testAttrs.addAttribute("outputs:bar", ufe.Attribute.kFloat)
             testObserver.assertNotificationCount(self, numAdded = 2)
             testAttrs.addAttribute("inputs:enumString", ufe.Attribute.kString)
             testObserver.assertNotificationCount(self, numAdded = 3)
@@ -976,10 +976,20 @@ class ConnectionTestCase(unittest.TestCase):
                 self.assertEqual([i[0] for i in enums], enumAttr.getEnumValues())
             testObserver.assertNotificationCount(self, numAdded = 3, numValue=1, numMetadata=1)
 
+            # Enumify the Float4 attribute:
+            expectedEnums = [("X", "1,0,0"), ("Y", "0,1,0"), ("Z", "0,0,1")]
+            enumAttr = testAttrs.attribute("inputs:foo")
+            enumAttr.setMetadata("enum", ", ".join([i[0] for i in expectedEnums]))
+            enumAttr.setMetadata("enumvalues", ", ".join([i[1] for i in expectedEnums]))
+            if hasattr(testAttrs, "getEnums"):
+                enums = testAttrs.getEnums("inputs:foo")
+                self.assertEqual(enums, expectedEnums)
+            testObserver.assertNotificationCount(self, numAdded = 3, numValue=3, numMetadata=3)
+
             # Testing custom NodeGraph data types
             testAttrs.addAttribute("inputs:edf", "EDF")
             # The custom type is saved as metadata, which emits one value and one metadata changes
-            testObserver.assertNotificationCount(self, numAdded = 4, numValue=2, numMetadata=2)
+            testObserver.assertNotificationCount(self, numAdded = 4, numValue=4, numMetadata=4)
             customAttr = testAttrs.attribute("inputs:edf")
             self.assertEqual(customAttr.type, "Generic")
             # Make sure the custom shader type was remembered
@@ -987,21 +997,21 @@ class ConnectionTestCase(unittest.TestCase):
 
             # Same thing, on the output side
             testAttrs.addAttribute("outputs:srf", "surfaceshader")
-            testObserver.assertNotificationCount(self, numAdded = 5, numValue=3, numMetadata=3)
+            testObserver.assertNotificationCount(self, numAdded = 5, numValue=5, numMetadata=5)
             customAttr = testAttrs.attribute("outputs:srf")
             self.assertEqual(customAttr.type, "Generic")
             self.assertEqual(customAttr.nativeType(), "surfaceshader")
 
             testAttrs.removeAttribute("inputs:foo")
-            testObserver.assertNotificationCount(self, numAdded = 5, numRemoved = 1, numValue=3, numMetadata=3)
+            testObserver.assertNotificationCount(self, numAdded = 5, numRemoved = 1, numValue=5, numMetadata=5)
             testAttrs.removeAttribute("outputs:bar")
-            testObserver.assertNotificationCount(self, numAdded = 5, numRemoved = 2, numValue=3, numMetadata=3)
+            testObserver.assertNotificationCount(self, numAdded = 5, numRemoved = 2, numValue=5, numMetadata=5)
             testAttrs.removeAttribute("inputs:edf")
-            testObserver.assertNotificationCount(self, numAdded = 5, numRemoved = 3, numValue=3, numMetadata=3)
+            testObserver.assertNotificationCount(self, numAdded = 5, numRemoved = 3, numValue=5, numMetadata=5)
             testAttrs.removeAttribute("outputs:srf")
-            testObserver.assertNotificationCount(self, numAdded = 5, numRemoved = 4, numValue=3, numMetadata=3)
+            testObserver.assertNotificationCount(self, numAdded = 5, numRemoved = 4, numValue=5, numMetadata=5)
             testAttrs.removeAttribute("inputs:enumString")
-            testObserver.assertNotificationCount(self, numAdded = 5, numRemoved = 5, numValue=3, numMetadata=3)
+            testObserver.assertNotificationCount(self, numAdded = 5, numRemoved = 5, numValue=5, numMetadata=5)
 
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
