@@ -32,7 +32,6 @@
 #include <pxr/base/vt/value.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/stage.h>
-#include <pxr/usd/usdMtlx/utils.h>
 
 namespace {
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -583,8 +582,8 @@ UsdAttributeHolder::EnumOptions UsdAttributeHolder::getEnums() const
             const auto shaderInput = UsdShadeInput { _usdAttr };
             const auto enumLabels = shaderInput.GetSdrMetadataByKey(TfToken("enum"));
             const auto enumValues = shaderInput.GetSdrMetadataByKey(TfToken("enumvalues"));
-            const std::vector<std::string> allLabels = PXR_NS::UsdMtlxSplitStringArray(enumLabels);
-            const std::vector<std::string> allValues = PXR_NS::UsdMtlxSplitStringArray(enumValues);
+            const std::vector<std::string> allLabels = splitString(enumLabels, ", ");
+            const std::vector<std::string> allValues = splitString(enumValues, ", ");
             const bool                     hasValues = allLabels.size() == allValues.size();
             for (size_t i = 0; i < allLabels.size(); ++i) {
                 if (hasValues) {
