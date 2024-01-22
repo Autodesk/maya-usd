@@ -32,6 +32,7 @@
 #include <pxr/base/vt/value.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usdMtlx/utils.h>
 
 namespace {
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -556,11 +557,41 @@ Ufe::AttributeEnumString::EnumValues UsdAttributeHolder::getEnumValues() const
 {
     Ufe::AttributeEnumString::EnumValues retVal;
     if (_usdAttr.IsValid()) {
+        for (auto const& option : getEnums()) {
+            retVal.push_back(option.first);
+        }
+    }
+
+    return retVal;
+}
+
+UsdAttributeHolder::EnumOptions UsdAttributeHolder::getEnums() const
+{
+    UsdAttributeHolder::EnumOptions retVal;
+    if (_usdAttr.IsValid()) {
         VtTokenArray allowedTokens;
         if (_usdAttr.GetPrim().GetPrimDefinition().GetPropertyMetadata(
                 _usdAttr.GetName(), SdfFieldKeys->AllowedTokens, &allowedTokens)) {
             for (auto const& token : allowedTokens) {
-                retVal.push_back(token.GetString());
+                retVal.emplace_back(token.GetString(), "");
+            }
+        }
+        // We might have a propagated enum copied into the created the NodeGraph port, resulting
+        // from connecting a shader enum property.
+        PXR_NS::UsdShadeNodeGraph ngPrim(_usdAttr.GetPrim());
+        if (ngPrim && UsdShadeInput::IsInput(_usdAttr)) {
+            const auto shaderInput = UsdShadeInput { _usdAttr };
+            const auto enumLabels = shaderInput.GetSdrMetadataByKey(TfToken("enum"));
+            const auto enumValues = shaderInput.GetSdrMetadataByKey(TfToken("enumvalues"));
+            const std::vector<std::string> allLabels = PXR_NS::UsdMtlxSplitStringArray(enumLabels);
+            const std::vector<std::string> allValues = PXR_NS::UsdMtlxSplitStringArray(enumValues);
+            const bool                     hasValues = allLabels.size() == allValues.size();
+            for (size_t i = 0; i < allLabels.size(); ++i) {
+                if (hasValues) {
+                    retVal.emplace_back(allLabels[i], allValues[i]);
+                } else {
+                    retVal.emplace_back(allLabels[i], "");
+                }
             }
         }
     }

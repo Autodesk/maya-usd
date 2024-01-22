@@ -29,10 +29,8 @@ namespace ufe {
 //! \brief Internal helper class holding a USD attributes for query:
 class UsdAttributeHolder
 {
-protected:
-    UsdAttributeHolder(const PXR_NS::UsdAttribute& usdAttr);
-
 public:
+    UsdAttributeHolder(const PXR_NS::UsdAttribute& usdAttr);
     typedef std::unique_ptr<UsdAttributeHolder> UPtr;
     static UPtr                                 create(const PXR_NS::UsdAttribute& usdAttr);
     virtual ~UsdAttributeHolder() = default;
@@ -62,6 +60,8 @@ public:
     virtual PXR_NS::UsdAttribute                 usdAttribute() const { return _usdAttr; }
     virtual PXR_NS::SdfValueTypeName             usdAttributeType() const;
     virtual Ufe::AttributeEnumString::EnumValues getEnumValues() const;
+    using EnumOptions = std::vector<std::pair<std::string, std::string>>;
+    virtual EnumOptions getEnums() const;
 
 protected:
     PXR_NS::UsdAttribute _usdAttr;

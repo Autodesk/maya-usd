@@ -224,9 +224,18 @@ PXR_NS::SdfValueTypeName UsdShaderAttributeHolder::usdAttributeType() const
 
 Ufe::AttributeEnumString::EnumValues UsdShaderAttributeHolder::getEnumValues() const
 {
-    Ufe::AttributeEnumString::EnumValues retVal = _Base::getEnumValues();
-    for (auto const& option : _sdrProp->GetOptions()) {
+    Ufe::AttributeEnumString::EnumValues retVal;
+    for (auto const& option : getEnums()) {
         retVal.push_back(option.first);
+    }
+    return retVal;
+}
+
+UsdAttributeHolder::EnumOptions UsdShaderAttributeHolder::getEnums() const
+{
+    auto retVal = _Base::getEnums();
+    for (auto const& option : _sdrProp->GetOptions()) {
+        retVal.emplace_back(option.first, option.second);
     }
     return retVal;
 }
