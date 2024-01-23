@@ -34,7 +34,7 @@ struct ProxyStageImp
             "MayaUsdProxyShapeBase subclass node while it should ! Its type is : %s",
             node->typeName().asChar());
 
-        TF_VERIFY(_proxyStageProvider, errMsg.c_str());
+        TF_VERIFY(_proxyStageProvider, "%s", errMsg.c_str());
         if (!_proxyStageProvider) {
             throw std::runtime_error(errMsg);
         }
