@@ -1778,8 +1778,13 @@ bool PrimUpdaterManager::duplicate(
 
         // Note: copyFn can append new items in pathsToCopy, so do not optimize
         //       comparing to the size of the container nor use iterators.
+        //
+        //       For the same reason, the pathsToCopy container can be resized
+        //       and its value moved to a new memory location, so that it why
+        //       the path we pass to the traverseLayer function is taken by value.
         for (size_t i = 0; i < pathsToCopy.size(); ++i) {
-            traverseLayer(srcLayer, pathsToCopy[i], copyFn);
+            const SdfPath srcPath = pathsToCopy[i];
+            traverseLayer(srcLayer, srcPath, copyFn);
         }
         progressBar.advance();
 
