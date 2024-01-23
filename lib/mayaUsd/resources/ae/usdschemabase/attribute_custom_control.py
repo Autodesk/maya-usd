@@ -33,13 +33,15 @@ def getNiceAttributeName(ufeAttr, attrName):
     return mayaUsd.lib.Util.prettifyName(attrName)
 
 def cleanAndFormatTooltip(s):
-    # Remove leading/trailing whitespace and replace newlines.
+    if not s:
+        return s
+
+    # Remove leading/trailing whitespace.
+    # Note: don't use any html tags in this string since it will also be used for the
+    #       statusbar message which will just print the tags (rather than render them).
     lines = s.splitlines()
     stripped = [line.strip() for line in lines]
-    cleaned = '<br>'.join(stripped)
-
-    # Don't allow the tooltip to word-wrap.
-    return "<p style='white-space:pre'>" + cleaned + '</p>'
+    return '\n'.join(stripped)
 
 class AttributeCustomControl(object):
     '''
