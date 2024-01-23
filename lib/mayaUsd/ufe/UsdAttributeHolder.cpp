@@ -575,8 +575,8 @@ UsdAttributeHolder::EnumOptions UsdAttributeHolder::getEnums() const
                 retVal.emplace_back(token.GetString(), "");
             }
         }
-        // We might have a propagated enum copied into the created the NodeGraph port, resulting
-        // from connecting a shader enum property.
+        // We might have a propagated enum copied into the created NodeGraph port, resulting from
+        // connecting a shader enum property.
         PXR_NS::UsdShadeNodeGraph ngPrim(_usdAttr.GetPrim());
         if (ngPrim && UsdShadeInput::IsInput(_usdAttr)) {
             const auto shaderInput = UsdShadeInput { _usdAttr };
