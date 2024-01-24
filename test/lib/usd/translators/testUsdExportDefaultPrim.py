@@ -38,7 +38,7 @@ class testUsdExportMesh(unittest.TestCase):
     def tearDownClass(cls):
         standalone.uninitialize()
 
-    def _ValidateDefaultPrim(self):
+    def testExportDefaultPrim(self):
         cmds.file(self.testFile, force=True, open=True)
         usdFile = os.path.abspath('UsdExportDefaultPrim.usda')
 
@@ -55,7 +55,7 @@ class testUsdExportMesh(unittest.TestCase):
         stage = Usd.Stage.Open(usdFile)
         self.assertEqual(stage.GetDefaultPrim().GetName(), 'pointLight1')
 
-    def _ValidateWithParentScope(self):
+        # Test setting default prim with set parent scope on export
         cmds.file(self.testFile, force=True, open=True)
         usdFile = os.path.abspath('UsdExportDefaultPrim.usda')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
@@ -63,10 +63,6 @@ class testUsdExportMesh(unittest.TestCase):
         
         stage = Usd.Stage.Open(usdFile)
         self.assertEqual(stage.GetDefaultPrim().GetName(), 'testScope')
-
-    def testExportDefaultPrim(self):
-        self._ValidateDefaultPrim()
-        self._ValidateWithParentScope()
 
 
 if __name__ == '__main__':

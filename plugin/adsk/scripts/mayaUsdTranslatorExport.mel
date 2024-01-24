@@ -269,11 +269,13 @@ proc updateDefaultPrimList() {
     }
     optionMenuGrp -edit -deleteAllItems exportDefaultPrim;
     string $menuName = `optionMenuGrp -q -fullPathName exportDefaultPrim`;
-    menuItem -parent ($menuName + "|OptionMenu") -l "None";
+    menuItem -parent ($menuName + "|OptionMenu") -l `getMayaUsdString("kExportDefaultPrimNoneLbl")`;
     for($item in $allItems){
         menuItem -parent ($menuName + "|OptionMenu") -l $item;
     }
 
+    // If there are default prim candidates, select the first prim
+    // Use index 2 here because the first one will always be None
     if(size($allItems) > 0){
         optionMenuGrp -e -select 2 exportDefaultPrim;
     }
@@ -543,8 +545,6 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
                 floatFieldGrp -e -v1 $frameStride -en1 $enable frameStrideField;
             } else if ($optionBreakDown[0] == "frameSample") {
                 mayaUsdTranslatorExport_SetTextField($optionBreakDown[1], $enable, "frameSampleField");
-            } else if ($optionBreakDown[0] == "parentScope") {
-                //mayaUsdTranslatorExport_SetTextField($optionBreakDown[1], $enable, "parentScopeField");
             } else if ($optionBreakDown[0] == "convertMaterialsTo") {
                 mayaUsdTranslatorExport_SetConvertMaterialsToCheckboxes($optionBreakDown[1], $enable, $processJobContext);
             } else if ($optionBreakDown[0] == "shadingMode" && $optionBreakDown[1] != "useRegistry") {
@@ -562,6 +562,8 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
             } else if ($optionBreakDown[0] == "worldspace") {
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "worldspaceCheckBox");
             }
+            // Removed parent scope because we don't need the parent scope name from last export. Also parent scope created at export
+            // will be the default default prim, which can be misleading when this field is filled with previous parent scope name.
         }
 
         // We now know if we export nurbs curves or not and if forced by the job context:

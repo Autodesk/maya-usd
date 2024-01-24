@@ -208,6 +208,7 @@ global proc mayaUSDRegisterStrings()
     register("kExportVisibilityAnn", "Exports Maya visibility attributes as USD metadata.");
     register("kExportVisibilityLbl", "Visibility");
     register("kExportDefaultPrimLbl", "Default Prim");
+    register("kExportDefaultPrimNoneLbl", "None");
     register("kExportDefaultPrimAnn", "Default Prim");
 
     // All strings for import dialog:
