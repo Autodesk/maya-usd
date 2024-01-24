@@ -556,11 +556,68 @@ Ufe::AttributeEnumString::EnumValues UsdAttributeHolder::getEnumValues() const
 {
     Ufe::AttributeEnumString::EnumValues retVal;
     if (_usdAttr.IsValid()) {
+        for (auto const& option : getEnums()) {
+            retVal.push_back(option.first);
+        }
+    }
+
+    return retVal;
+}
+
+UsdAttributeHolder::EnumOptions UsdAttributeHolder::getEnums() const
+{
+    UsdAttributeHolder::EnumOptions retVal;
+    if (_usdAttr.IsValid()) {
         VtTokenArray allowedTokens;
         if (_usdAttr.GetPrim().GetPrimDefinition().GetPropertyMetadata(
                 _usdAttr.GetName(), SdfFieldKeys->AllowedTokens, &allowedTokens)) {
             for (auto const& token : allowedTokens) {
-                retVal.push_back(token.GetString());
+                retVal.emplace_back(token.GetString(), "");
+            }
+        }
+        // We might have a propagated enum copied into the created NodeGraph port, resulting from
+        // connecting a shader enum property.
+        PXR_NS::UsdShadeNodeGraph ngPrim(_usdAttr.GetPrim());
+        if (ngPrim && UsdShadeInput::IsInput(_usdAttr)) {
+            const auto shaderInput = UsdShadeInput { _usdAttr };
+            const auto enumLabels = shaderInput.GetSdrMetadataByKey(TfToken("enum"));
+            const auto enumValues = shaderInput.GetSdrMetadataByKey(TfToken("enumvalues"));
+            const std::vector<std::string> allLabels = splitString(enumLabels, ", ");
+            std::vector<std::string>       allValues = splitString(enumValues, ", ");
+
+            if (!allValues.empty() && allValues.size() != allLabels.size()) {
+                // An array of vector2 values will produce twice the expected number of
+                // elements. We can fix that by regrouping them.
+                if (allValues.size() > allLabels.size()
+                    && allValues.size() % allLabels.size() == 0) {
+
+                    size_t                   stride = allValues.size() / allLabels.size();
+                    std::vector<std::string> rebuiltValues;
+                    std::string              currentValue;
+                    for (size_t i = 0; i < allValues.size(); ++i) {
+                        if (i % stride != 0) {
+                            currentValue += ",";
+                        }
+                        currentValue += allValues[i];
+                        if ((i + 1) % stride == 0) {
+                            rebuiltValues.push_back(currentValue);
+                            currentValue = "";
+                        }
+                    }
+                    allValues.swap(rebuiltValues);
+                } else {
+                    // Can not reconcile the size difference:
+                    allValues.clear();
+                }
+            }
+
+            const bool hasValues = allLabels.size() == allValues.size();
+            for (size_t i = 0; i < allLabels.size(); ++i) {
+                if (hasValues) {
+                    retVal.emplace_back(allLabels[i], allValues[i]);
+                } else {
+                    retVal.emplace_back(allLabels[i], "");
+                }
             }
         }
     }
