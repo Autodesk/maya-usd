@@ -581,11 +581,20 @@ Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::UsdAttribute& usdAttr)
                     usdAttr.GetName(), SdfFieldKeys->AllowedTokens, nullptr)) {
                 type = Ufe::Attribute::kEnumString;
             }
-            // TfToken is also used in UsdShade as a Generic placeholder for connecting struct I/O.
             UsdShadeNodeGraph asNodeGraph(usdAttr.GetPrim());
-            if (asNodeGraph && usdAttr.GetTypeName() == SdfValueTypeNames->Token) {
-                if (UsdShadeUtils::GetBaseNameAndType(usdAttr.GetName()).second
-                    != UsdShadeAttributeType::Invalid) {
+            if (asNodeGraph) {
+                // NodeGraph inputs can have enum metadata on them when they export an inner enum.
+                const auto portType = UsdShadeUtils::GetBaseNameAndType(usdAttr.GetName()).second;
+                if (portType == UsdShadeAttributeType::Input) {
+                    const auto input = UsdShadeInput(usdAttr);
+                    if (!input.GetSdrMetadataByKey(TfToken("enum")).empty()) {
+                        return Ufe::Attribute::kEnumString;
+                    }
+                }
+                // TfToken is also used in UsdShade as a Generic placeholder for connecting struct
+                // I/O.
+                if (usdAttr.GetTypeName() == SdfValueTypeNames->Token
+                    && portType != UsdShadeAttributeType::Invalid) {
                     type = Ufe::Attribute::kGeneric;
                 }
             }
