@@ -179,4 +179,16 @@
     <input name="in2" type="float" nodename="constant11b" />
   </add>
 
+  <!-- This erroneous material was crashing. Make sure it does not crash.
+       The generated topo network will still be wrong though but the goal
+        of the code is not to fix errors.
+  -->
+  <standard_surface name="BrokenSurface1" type="surfaceshader" nodedef="ND_standard_surface_surfaceshader">
+    <input name="base" type="float" nodename="BrokenMaterial1" />
+  </standard_surface>
+  <surfacematerial name="BrokenMaterial1" type="material" nodedef="ND_surfacematerial" topo="BrokenMaterial1_topo.mtlx">
+    <input name="surfaceshader" type="surfaceshader" nodename="BrokenSurface1" />
+  </surfacematerial>
+
+
 </materialx>

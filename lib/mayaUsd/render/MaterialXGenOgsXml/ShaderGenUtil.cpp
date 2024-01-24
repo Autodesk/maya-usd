@@ -109,10 +109,7 @@ TopoNeutralGraph::TopoNeutralGraph(const mx::ElementPtr& material)
         if (destNodeIt != _nodeMap.end()) {
             destNode = destNodeIt->second;
         } else {
-            if (!_nodeGraph) {
-                _nodeGraph = _doc->addNodeGraph("NG0");
-            }
-            destNode = cloneNode(*sourceNode, *_nodeGraph);
+            destNode = cloneNode(*sourceNode, *getNodeGraph());
         }
 
         auto sourceNodeDef = sourceNode->getNodeDef();
@@ -137,10 +134,7 @@ TopoNeutralGraph::TopoNeutralGraph(const mx::ElementPtr& material)
                 if (destConnectedIt != _nodeMap.end()) {
                     destConnectedNode = destConnectedIt->second;
                 } else {
-                    if (!_nodeGraph) {
-                        _nodeGraph = _doc->addNodeGraph("NG0");
-                    }
-                    destConnectedNode = cloneNode(*connectedNode, *_nodeGraph);
+                    destConnectedNode = cloneNode(*connectedNode, *getNodeGraph());
                     nodesToTraverse.push_back(connectedNode);
                 }
 
@@ -371,7 +365,7 @@ void TopoNeutralGraph::cloneNodeGraphConnection(
         graphOutput = outputIt->second;
     } else {
         graphOutput
-            = _nodeGraph->addOutput("O" + std::to_string(_outputIndex), sourceInput.getType());
+            = getNodeGraph()->addOutput("O" + std::to_string(_outputIndex), sourceInput.getType());
         if (!channelInfo.empty()) {
             graphOutput->setChannels(channelInfo);
         }
@@ -384,6 +378,14 @@ void TopoNeutralGraph::cloneNodeGraphConnection(
     }
     auto destInput = destNode.addInput(sourceInput.getName(), sourceInput.getType());
     destInput->setConnectedOutput(graphOutput);
+}
+
+mx::NodeGraphPtr& TopoNeutralGraph::getNodeGraph()
+{
+    if (!_nodeGraph) {
+        _nodeGraph = _doc->addNodeGraph("NG0");
+    }
+    return _nodeGraph;
 }
 
 } // namespace ShaderGenUtil
