@@ -251,7 +251,7 @@ proc string mayaUsdTranslatorExport_AppendFromTextField(string $currentOptions, 
     return $currentOptions + ";" + $arg + "=" + $value;
 }
 
-global proc updateDefaultPrimList() {
+global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
     if ((`checkBoxGrp -exists exportMeshesCheckBox` == 0)||(`checkBoxGrp -exists exportLightsCheckBox` == 0)||(`checkBoxGrp -exists exportCamerasCheckBox` == 0)){
         return;
     }
@@ -291,7 +291,7 @@ global proc onExportParentScopeChanged() {
     if(size($rootPrim) > 0){
         optionMenuGrp -e -select 2 exportDefaultPrim;
     } else {
-        updateDefaultPrimList();
+        mayaUsdTranslatorExport_updateDefaultPrimList();
     }
 }
 
@@ -306,7 +306,7 @@ global proc mayaUsdTranslatorExport_MeshCB() {
     if (`checkBoxGrp -exists exportMeshesCheckBox` == 0)
         return;
     
-    updateDefaultPrimList();
+    mayaUsdTranslatorExport_updateDefaultPrimList();
     columnLayout -e -enable (`checkBoxGrp -q -v1 exportMeshesCheckBox` == 1) meshExportOptsCol;
     columnLayout -e -enable (`checkBoxGrp -q -v1 exportMeshesCheckBox` == 1) materialOptsCol;
 }
@@ -873,8 +873,8 @@ global proc int mayaUsdTranslatorExport (string $parent,
             frameLayout -label `getMayaUsdString("kExportFrameAdvancedLbl")` -collapsable true -collapse $collapse advancedFrameLayout;
                 separator -style "none";
 
-                checkBoxGrp -label "" -label1 `getMayaUsdString("kExportCamerasLbl")` -annotation `getMayaUsdString("kExportCamerasAnn")` -cc ("updateDefaultPrimList") exportCamerasCheckBox;
-                checkBoxGrp -label "" -label1 `getMayaUsdString("kExportLightsLbl")` -annotation `getMayaUsdString("kExportLightsAnn")` -cc ("updateDefaultPrimList") exportLightsCheckBox;
+                checkBoxGrp -label "" -label1 `getMayaUsdString("kExportCamerasLbl")` -annotation `getMayaUsdString("kExportCamerasAnn")` -cc ("mayaUsdTranslatorExport_updateDefaultPrimList") exportCamerasCheckBox;
+                checkBoxGrp -label "" -label1 `getMayaUsdString("kExportLightsLbl")` -annotation `getMayaUsdString("kExportLightsAnn")` -cc ("mayaUsdTranslatorExport_updateDefaultPrimList") exportLightsCheckBox;
 
                 checkBoxGrp -label "" -label1 `getMayaUsdString("kExportVisibilityLbl")` -annotation `getMayaUsdString("kExportVisibilityAnn")` exportVisibilityCheckBox;
 
