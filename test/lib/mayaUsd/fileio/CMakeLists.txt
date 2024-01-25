@@ -1,5 +1,6 @@
 set(TEST_SCRIPT_FILES
     testComponentTags.py
+    testCopyLayerPrims.py
     testPrimReader.py
     testPrimWriter.py
     testExportChaser.py
