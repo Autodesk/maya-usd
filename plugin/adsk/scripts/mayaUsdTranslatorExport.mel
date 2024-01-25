@@ -251,7 +251,7 @@ proc string mayaUsdTranslatorExport_AppendFromTextField(string $currentOptions, 
     return $currentOptions + ";" + $arg + "=" + $value;
 }
 
-proc updateDefaultPrimList() {
+global proc updateDefaultPrimList() {
     if ((`checkBoxGrp -exists exportMeshesCheckBox` == 0)||(`checkBoxGrp -exists exportLightsCheckBox` == 0)||(`checkBoxGrp -exists exportCamerasCheckBox` == 0)){
         return;
     }
