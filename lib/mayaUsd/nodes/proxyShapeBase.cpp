@@ -136,7 +136,7 @@ const MString MayaUsdProxyShapeBase::displayFilterName(
     TfStringPrintf("%sDisplayFilter", MayaUsdProxyShapeBaseTokens->MayaTypeName.GetText()).c_str());
 const MString MayaUsdProxyShapeBase::displayFilterLabel("USD Proxies");
 
-std::atomic<int> g_proxyShapeInstancesCount = 0;
+std::atomic<int> g_proxyShapeInstancesCount;
 
 // Attributes
 MObject MayaUsdProxyShapeBase::filePathAttr;
