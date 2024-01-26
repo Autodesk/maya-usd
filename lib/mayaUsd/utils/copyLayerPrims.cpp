@@ -147,6 +147,21 @@ void renamePath(SdfPath& pathToVerify, const MayaUsd::CopyLayerPrimsResult& resu
     }
 }
 
+// Verify if the given path has already been copied.
+bool isAlreadyCopied(const SdfPath& pathToVerify, MayaUsd::CopyLayerPrimsResult& result)
+{
+    for (const auto& srcAndDest : result.copiedPaths) {
+        const SdfPath& alreadyDone = srcAndDest.first;
+        if (pathToVerify.HasPrefix(alreadyDone)) {
+            DEBUG_LOG_COPY_LAYER_PRIMS(TfStringPrintf(
+                "Already copied source prim %s, skipping additional copies",
+                pathToVerify.GetAsString().c_str()));
+            return true;
+        }
+    }
+    return false;
+}
+
 // Prim hierarchy traverser (a function called for every SdfSpec starting
 // from a prim to be copied, recursively) that copies each prim encountered
 // and optionally adds the targets of relationships to the list of other paths
@@ -171,13 +186,15 @@ bool copyTraverser(
         if (options.followRelationships) {
             const SdfPath& targetPath = pathToCopy.GetTargetPath();
             if (!targetPath.IsEmpty()) {
-                DEBUG_LOG_COPY_LAYER_PRIMS(TfStringPrintf(
-                    "Adding %s to be copied due to target in %s",
-                    targetPath.GetAsString().c_str(),
-                    pathToCopy.GetAsString().c_str()));
+                if (!isAlreadyCopied(targetPath, result)) {
+                    DEBUG_LOG_COPY_LAYER_PRIMS(TfStringPrintf(
+                        "Adding %s to be copied due to target in %s",
+                        targetPath.GetAsString().c_str(),
+                        pathToCopy.GetAsString().c_str()));
 
-                otherPathsToCopy.emplace_back(targetPath);
-                addProgressSteps(options, 1);
+                    otherPathsToCopy.emplace_back(targetPath);
+                    addProgressSteps(options, 1);
+                }
             }
         }
         return true;
@@ -191,30 +208,23 @@ bool copyTraverser(
         return true;
     }
 
-    for (const auto& srcAndDest : result.copiedPaths) {
-        const SdfPath& alreadyDone = srcAndDest.first;
-        if (pathToCopy.HasPrefix(alreadyDone)) {
-            DEBUG_LOG_COPY_LAYER_PRIMS(TfStringPrintf(
-                "Already copied source prim %s, skipping additional copies",
-                pathToCopy.GetAsString().c_str()));
-
-            // Note: it may have been copied indirectly, in that case it will not
-            //       have been added to the list copied paths, so we want to add
-            //       it to the list of copied paths now. It's important that it be
-            //       added because the list of copied prims is used to post-process
-            //       the copy by the callers. For example, we post-process it to
-            //       handle display layers.
-            if (result.copiedPaths.count(pathToCopy) == 0) {
-                SdfPath dstPath = pathToCopy.ReplacePrefix(srcParentPath, dstParentPath);
-                // Verify if the prim that contained this prim was renamed.
-                renamePath(dstPath, result);
-                result.copiedPaths[pathToCopy] = dstPath;
-            }
-
-            // Note: we must not prevent traversing children otherwise we will
-            //       not process relationships.
-            return true;
+    if (isAlreadyCopied(pathToCopy, result)) {
+        // Note: it may have been copied indirectly, in that case it will not
+        //       have been added to the list copied paths, so we want to add
+        //       it to the list of copied paths now. It's important that it be
+        //       added because the list of copied prims is used to post-process
+        //       the copy by the callers. For example, we post-process it to
+        //       handle display layers.
+        if (result.copiedPaths.count(pathToCopy) == 0) {
+            SdfPath dstPath = pathToCopy.ReplacePrefix(srcParentPath, dstParentPath);
+            // Verify if the prim that contained this prim was renamed.
+            renamePath(dstPath, result);
+            result.copiedPaths[pathToCopy] = dstPath;
         }
+
+        // Note: we must not prevent traversing children otherwise we will
+        //       not process relationships.
+        return true;
     }
 
     // Make the destination path unique and make sure parent prims
