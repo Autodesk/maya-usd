@@ -136,6 +136,8 @@ const MString MayaUsdProxyShapeBase::displayFilterName(
     TfStringPrintf("%sDisplayFilter", MayaUsdProxyShapeBaseTokens->MayaTypeName.GetText()).c_str());
 const MString MayaUsdProxyShapeBase::displayFilterLabel("USD Proxies");
 
+std::atomic<int> g_proxyShapeInstancesCount = 0;
+
 // Attributes
 MObject MayaUsdProxyShapeBase::filePathAttr;
 MObject MayaUsdProxyShapeBase::filePathRelativeAttr;
@@ -534,6 +536,9 @@ MayaUsdProxyShapeBase* MayaUsdProxyShapeBase::GetShapeAtDagPath(const MDagPath& 
 
     return pShape;
 }
+
+/* static */
+int MayaUsdProxyShapeBase::countProxyShapeInstances() { return g_proxyShapeInstancesCount; }
 
 /* static */
 void MayaUsdProxyShapeBase::SetClosestPointDelegate(ClosestPointDelegate delegate)
@@ -1971,6 +1976,8 @@ MayaUsdProxyShapeBase::MayaUsdProxyShapeBase(
     , _unsharedStageRootSublayers()
     , _incomingLayers()
 {
+    g_proxyShapeInstancesCount += 1;
+
     TfRegistryManager::GetInstance().SubscribeTo<MayaUsdProxyShapeBase>();
 
     if (useLoadRulesHandling) {
@@ -1998,6 +2005,8 @@ MayaUsdProxyShapeBase::~MayaUsdProxyShapeBase()
     // Deregister from the load-rules handling used to transfer load rules
     // between the USD stage and a dynamic attribute on the proxy shape.
     MayaUsdProxyShapeStageExtraData::removeProxyShape(*this);
+
+    g_proxyShapeInstancesCount -= 1;
 }
 
 MSelectionMask MayaUsdProxyShapeBase::getShapeSelectionMask() const

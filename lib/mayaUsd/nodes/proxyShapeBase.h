@@ -152,6 +152,9 @@ public:
     static MayaUsdProxyShapeBase* GetShapeAtDagPath(const MDagPath& dagPath);
 
     MAYAUSD_CORE_PUBLIC
+    static int countProxyShapeInstances();
+
+    MAYAUSD_CORE_PUBLIC
     static void SetClosestPointDelegate(ClosestPointDelegate delegate);
 
     // UsdMayaUsdPrimProvider overrides:
