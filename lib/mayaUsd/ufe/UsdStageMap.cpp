@@ -134,6 +134,12 @@ UsdStageWeakPtr UsdStageMap::stage(const Ufe::Path& path)
 
 MObject UsdStageMap::proxyShape(const Ufe::Path& path)
 {
+    // Optimization: if there are not proxy shape instances,
+    // there is nothing that can be mapped. Avoid trying to
+    // build the proxy shape map.
+    if (MayaUsdProxyShapeBase::countProxyShapeInstances() == 0)
+        return MObject();
+
     rebuildIfDirty();
 
     // In additional to the explicit dirty system it is possible that
