@@ -7,6 +7,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportCamera.py
     testUsdExportColorSets.py
     testUsdExportConnected.py
+    testUsdExportDefaultPrim.py
     testUsdExportDisplayColor.py
     testUsdExportEulerFilter.py
     testUsdExportFileFormat.py
