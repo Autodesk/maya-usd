@@ -60,6 +60,22 @@ class AEUITemplate:
     def __exit__(self, mytype, value, tb):
         cmds.setUITemplate(ppt=True)
 
+_editorRefreshQueued = False
+
+def _refreshEditor():
+    '''Reset the queued refresh flag and refresh the AE.'''
+    global _editorRefreshQueued
+    _editorRefreshQueued = False
+    cmds.refreshEditorTemplates()
+    
+def _queueEditorRefresh():
+    '''If there is not already a AE refresh queued, queue a refresh.'''
+    global _editorRefreshQueued
+    if _editorRefreshQueued:
+        return
+    cmds.evalDeferred(_refreshEditor, low=True)
+    _editorRefreshQueued = True
+
 # Custom control, but does not have any UI. Instead we use
 # this control to be notified from UFE when any attribute has changed
 # so we can update the AE. This is to fix refresh issue
@@ -82,7 +98,7 @@ class UfeAttributesObserver(ufe.Observer):
         if hasattr(ufe, "AttributeRemoved") and isinstance(notification, ufe.AttributeRemoved):
             refreshEditor = True
         if refreshEditor:
-            mel.eval("evalDeferred -low \"refreshEditorTemplates\";")
+            _queueEditorRefresh()
 
 
     def onCreate(self, *args):
@@ -102,7 +118,7 @@ class UfeConnectionChangedObserver(ufe.Observer):
 
     def __call__(self, notification):
         if hasattr(ufe, "AttributeConnectionChanged") and isinstance(notification, ufe.AttributeConnectionChanged):
-            mel.eval("evalDeferred -low \"refreshEditorTemplates\";")
+            _queueEditorRefresh()
 
     def onCreate(self, *args):
         ufe.Attributes.addObserver(self._item, self)
