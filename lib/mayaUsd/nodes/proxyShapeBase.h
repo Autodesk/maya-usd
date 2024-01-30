@@ -49,6 +49,8 @@ UFE_NS_DEF { class Path; }
 #include <mayaUsd/nodes/proxyAccessor.h>
 #include <mayaUsd/nodes/proxyStageProvider.h>
 #include <mayaUsd/nodes/usdPrimProvider.h>
+#include <mayaUsd/utils/mayaNodeObserver.h>
+#include <mayaUsd/utils/mayaNodeTypeObserver.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -66,6 +68,7 @@ class MayaUsdProxyShapeBase
     : public MPxSurfaceShape
     , public ProxyStageProvider
     , public UsdMayaUsdPrimProvider
+    , private MayaUsd::MayaNodeObserver::Listener
 {
 
 public:
@@ -290,8 +293,9 @@ public:
     MAYAUSD_CORE_PUBLIC
     bool isIncomingLayer(const std::string& layerIdentifier) const;
 
+    /// Returns the observer for all proxy shapes instance.
     MAYAUSD_CORE_PUBLIC
-    void onAncestorPlugDirty(MPlug& plug);
+    static MayaUsd::MayaNodeTypeObserver& getProxyShapesObserver();
 
 protected:
     MAYAUSD_CORE_PUBLIC
@@ -368,9 +372,6 @@ private:
     MStatus computeOutStageData(MDataBlock& dataBlock);
     MStatus computeOutStageCacheId(MDataBlock& dataBlock);
 
-    void clearAncestorCallbacks();
-    void updateAncestorCallbacks();
-
     void updateShareMode(
         const UsdStageRefPtr&    sharedUsdStage,
         const UsdStageRefPtr&    unsharedUsdStage,
@@ -399,7 +400,10 @@ private:
     void _OnLayerMutingChanged(const UsdNotice::LayerMutingChanged& notice);
     void _OnStageEditTargetChanged(const UsdNotice::StageEditTargetChanged& notice);
 
-    static void renameCallback(MObject& node, const MString& str, void* clientData);
+    // MayaNodeObserver::Listener
+    MAYAUSD_CORE_PUBLIC
+    void processPlugDirty(MObject& observedNode, MObject& dirtiedNode, MPlug&, bool pathChanged)
+        override;
 
     UsdMayaStageNoticeListener _stageNoticeListener;
 
@@ -440,14 +444,7 @@ private:
     // Keep track of the incoming layers
     std::set<std::string> _incomingLayers;
 
-    // Callbacks for listening to ancestor dirty messages.
-    // That includes the proxy shape itself.
-    std::vector<MCallbackId> _ancestorCallbacks;
-    MString                  _ancestorCallbacksPath;
-    bool                     _inAncestorCallback { false };
-
-    MCallbackId _preSaveCallbackId { 0 };
-    MCallbackId _renameCallbackId { 0 };
+    MCallbackId _preSaveCallbackId = 0;
 
 public:
     // Counter for the number of times compute is re-entered

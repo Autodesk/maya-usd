@@ -21,6 +21,7 @@
 #include "sessionState.h"
 
 #include <mayaUsd/listeners/proxyShapeNotice.h>
+#include <mayaUsd/utils/mayaNodeTypeObserver.h>
 
 #include <pxr/base/tf/weakBase.h>
 #include <pxr/usd/usd/notice.h>
@@ -40,7 +41,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 class MayaSessionState
     : public SessionState
     , public PXR_NS::TfWeakBase
-
+    , private MayaUsd::MayaNodeTypeObserver::Listener
 {
     Q_OBJECT
 public:
@@ -88,10 +89,12 @@ protected:
     void registerNotifications();
     void unregisterNotifications();
 
-    // maya callback handers
-    static void proxyShapeAddedCB(MObject& node, void* clientData);
-    static void proxyShapeRemovedCB(MObject& node, void* clientData);
+    // MayaNodeTypeObserver::Listener
+    void processNodeAdded(MObject& node) override;
+    void processNodeRemoved(MObject& node) override;
+
     static void nodeRenamedCB(MObject& node, const MString& oldName, void* clientData);
+
     static void
                 namespaceRenamedCB(const MString& oldName, const MString& newName, void* clientData);
     static void sceneClosingCB(void* clientData);

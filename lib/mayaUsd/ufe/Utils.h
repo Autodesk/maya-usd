@@ -55,7 +55,7 @@ namespace ufe {
 
 //! Get USD stage corresponding to argument UFE path.
 MAYAUSD_CORE_PUBLIC
-PXR_NS::UsdStageWeakPtr getStage(const Ufe::Path& path);
+PXR_NS::UsdStageWeakPtr getStage(const Ufe::Path& path, bool rebuildCacheIfNeeded = true);
 
 //! Return the ProxyShape node UFE path for the argument stage.
 MAYAUSD_CORE_PUBLIC

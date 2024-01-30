@@ -20,6 +20,7 @@
 #include "stringResources.h"
 
 #include <mayaUsd/nodes/layerManager.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/usdPrimProvider.h>
 #include <mayaUsd/utils/util.h>
 
@@ -137,13 +138,9 @@ void MayaSessionState::registerNotifications()
 {
     MCallbackId id;
 
-    id = MDGMessage::addNodeAddedCallback(
-        MayaSessionState::proxyShapeAddedCB, PROXY_NODE_TYPE, this);
-    _callbackIds.push_back(id);
-
-    id = MDGMessage::addNodeRemovedCallback(
-        MayaSessionState::proxyShapeRemovedCB, PROXY_NODE_TYPE, this);
-    _callbackIds.push_back(id);
+    MayaUsd::MayaNodeTypeObserver& proxyObserver
+        = PXR_NS::MayaUsdProxyShapeBase::getProxyShapesObserver();
+    proxyObserver.addTypeListener(*this);
 
     id = MNodeMessage::addNameChangedCallback(
         MObject::kNullObj, MayaSessionState::nodeRenamedCB, this);
@@ -176,6 +173,10 @@ void MayaSessionState::registerNotifications()
 
 void MayaSessionState::unregisterNotifications()
 {
+    MayaUsd::MayaNodeTypeObserver& proxyObserver
+        = PXR_NS::MayaUsdProxyShapeBase::getProxyShapesObserver();
+    proxyObserver.removeTypeListener(*this);
+
     for (auto id : _callbackIds) {
         MMessage::removeCallback(id);
     }
@@ -214,16 +215,12 @@ void MayaSessionState::mayaUsdStageResetCBOnIdle(StageEntry const& entry)
     Q_EMIT stageResetSignal(entry);
 }
 
-/* static */
-void MayaSessionState::proxyShapeAddedCB(MObject& node, void* clientData)
+void MayaSessionState::processNodeAdded(MObject& node)
 {
-    auto THIS = static_cast<MayaSessionState*>(clientData);
-
     // doing it on idle give time to the Load Stage to set a file name
-    QTimer::singleShot(0, [THIS, node]() { THIS->proxyShapeAddedCBOnIdle(node); });
+    QTimer::singleShot(0, [self = this, node]() { self->proxyShapeAddedCBOnIdle(node); });
 }
 
-/* static */
 void MayaSessionState::proxyShapeAddedCBOnIdle(const MObject& obj)
 {
     // doing it on idle give time to the Load Stage to set a file name
@@ -237,11 +234,9 @@ void MayaSessionState::proxyShapeAddedCBOnIdle(const MObject& obj)
     }
 }
 
-/* static */
-void MayaSessionState::proxyShapeRemovedCB(MObject& node, void* clientData)
+void MayaSessionState::processNodeRemoved(MObject& /*node*/)
 {
-    auto THIS = static_cast<MayaSessionState*>(clientData);
-    QTimer::singleShot(0, [THIS]() { THIS->stageListChangedSignal(); });
+    QTimer::singleShot(0, [self = this]() { self->stageListChangedSignal(); });
 }
 
 /* static */
