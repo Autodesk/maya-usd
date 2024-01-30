@@ -85,8 +85,7 @@ namespace ufe {
 // Global variables & macros
 //------------------------------------------------------------------------------
 
-extern UsdStageMap g_StageMap;
-extern Ufe::Rtid   g_MayaRtid;
+extern Ufe::Rtid g_MayaRtid;
 
 // Cache of Maya node types we've queried before for inheritance from the
 // gateway node type.
@@ -96,11 +95,11 @@ std::unordered_map<std::string, bool> g_GatewayType;
 // Utility Functions
 //------------------------------------------------------------------------------
 
-UsdStageWeakPtr getStage(const Ufe::Path& path) { return g_StageMap.stage(path); }
+UsdStageWeakPtr getStage(const Ufe::Path& path) { return UsdStageMap::getInstance().stage(path); }
 
-Ufe::Path stagePath(UsdStageWeakPtr stage) { return g_StageMap.path(stage); }
+Ufe::Path stagePath(UsdStageWeakPtr stage) { return UsdStageMap::getInstance().path(stage); }
 
-TfHashSet<UsdStageWeakPtr, TfHash> getAllStages() { return g_StageMap.allStages(); }
+TfHashSet<UsdStageWeakPtr, TfHash> getAllStages() { return UsdStageMap::getInstance().allStages(); }
 
 UsdPrim ufePathToPrim(const Ufe::Path& path)
 {
@@ -299,7 +298,7 @@ MayaUsdProxyShapeBase* getProxyShape(const Ufe::Path& path)
         return nullptr;
     }
 
-    return g_StageMap.proxyShapeNode(path);
+    return UsdStageMap::getInstance().proxyShapeNode(path);
 }
 
 UsdTimeCode getTime(const Ufe::Path& path)
@@ -310,7 +309,7 @@ UsdTimeCode getTime(const Ufe::Path& path)
     }
 
     // Proxy shape node should not be null.
-    auto proxyShape = g_StageMap.proxyShapeNode(path);
+    auto proxyShape = UsdStageMap::getInstance().proxyShapeNode(path);
     if (!TF_VERIFY(proxyShape)) {
         return UsdTimeCode::Default();
     }
@@ -326,7 +325,7 @@ TfTokenVector getProxyShapePurposes(const Ufe::Path& path)
     }
 
     // Proxy shape node should not be null.
-    auto proxyShape = g_StageMap.proxyShapeNode(path);
+    auto proxyShape = UsdStageMap::getInstance().proxyShapeNode(path);
     if (!TF_VERIFY(proxyShape)) {
         return TfTokenVector();
     }

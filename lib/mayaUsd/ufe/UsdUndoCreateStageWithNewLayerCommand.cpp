@@ -93,8 +93,9 @@ bool UsdUndoCreateStageWithNewLayerCommand::executeWithinUndoRecorder()
     // Create a transform node.
     // Note: It would be possible to create the transform and the proxy shape in one doIt() call.
     // However, doing so causes notifications to be sent in a different order, which triggers a
-    // `TF_VERIFY(g_StageMap.isDirty())` in StagesSubject::onStageSet(). Creating the transform in a
-    // separate doIt() call seems more robust and avoids triggering the TF_VERIFY.
+    // `TF_VERIFY(UsdStageMap::getInstance().isDirty())` in StagesSubject::onStageSet().
+    //  Creating the transform in a separate doIt() call seems more robust and avoids triggering the
+    //  TF_VERIFY.
     MObject transformObj;
     transformObj = dagMod.createNode("transform", parentObject);
     if (transformObj.isNull())
