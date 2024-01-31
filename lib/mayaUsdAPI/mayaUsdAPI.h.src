@@ -1,0 +1,47 @@
+//
+// Copyright 2023 Autodesk, Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+#pragma once
+
+#define MAYAUSDAPI_MAJOR_VERSION ${MAYAUSDAPI_MAJOR_VERSION}
+#define MAYAUSDAPI_MINOR_VERSION ${MAYAUSDAPI_MINOR_VERSION}
+#define MAYAUSDAPI_PATCH_LEVEL ${MAYAUSDAPI_PATCH_LEVEL}
+#define MAYAUSDAPI_API_VERSION (MAYAUSDAPI_MAJOR_VERSION * 10000 + MAYAUSDAPI_MINOR_VERSION * 100 + MAYAUSDAPI_PATCH_LEVEL)
+
+// mayaUsdAPI viewport public namespace string will never change.
+#define MAYAUSDAPI_NS MayaUsdAPI
+// C preprocessor trickery to expand arguments.
+#define MAYAUSDAPI_CONCAT(A, B) MAYAUSDAPI_CONCAT_IMPL(A, B)
+#define MAYAUSDAPI_CONCAT_IMPL(A, B) A##B
+// Versioned namespace includes the major version number.
+#define MAYAUSDAPI_VERSIONED_NS MAYAUSDAPI_CONCAT(MAYAUSDAPI_NS, _v${MAYAUSDAPI_MAJOR_VERSION})
+
+namespace MAYAUSDAPI_VERSIONED_NS {}
+
+// With a using namespace declaration, pull in the versioned namespace into the
+// mayaUsdAPI public namespace, to allow client code to use the plain mayaUsdAPI
+// namespace, e.g. MayaUsdAPI::Class.
+namespace MAYAUSDAPI_NS {
+using namespace MAYAUSDAPI_VERSIONED_NS;
+}
+
+// Macro to place the mayaUsdAPI symbols in the versioned namespace, which
+// is how they will appear in the shared library, e.g. MayaUsdAPI_v1::Class.
+#ifdef DOXYGEN
+#define MAYAUSDAPI_NS_DEF MAYAUSDAPI_NS
+#else
+#define MAYAUSDAPI_NS_DEF MAYAUSDAPI_VERSIONED_NS
+#endif
