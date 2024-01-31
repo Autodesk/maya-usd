@@ -84,6 +84,12 @@ _Registry::const_iterator _Find(
 } // namespace
 
 /* static */
+bool UsdMayaPrimWriterRegistry::HasMultipleWriters(const std::string& mayaTypeName)
+{
+    return _reg.count(mayaTypeName) > 1;
+}
+
+/* static */
 void UsdMayaPrimWriterRegistry::Register(
     const std::string&                            mayaTypeName,
     UsdMayaPrimWriterRegistry::ContextPredicateFn pred,
