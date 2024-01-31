@@ -545,7 +545,6 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
         for (; !itDg.isDone(); itDg.next()) {
             MObject curNode = itDg.thisNode();
             if (!curNode.hasFn(MFn::kBlendShape)) {
-                itDg.next();
                 continue;
             }
             upstreamBlendShape = curNode;
