@@ -21,6 +21,7 @@ project(maya-usd)
 # options
 #------------------------------------------------------------------------------
 option(BUILD_MAYAUSD_LIBRARY "Build Core USD libraries." ON)
+option(BUILD_MAYAUSDAPI_LIBRARY "Build the mayaUsdAPI subset library that provides a stable versioned interface to mayaUsd for external plugins." ON)
 option(BUILD_ADSK_PLUGIN "Build Autodesk USD plugin." ON)
 option(BUILD_PXR_PLUGIN "Build the Pixar USD plugin and libraries." ON)
 option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." ON)
@@ -92,6 +93,12 @@ if (BUILD_MAYAUSD_LIBRARY)
     include(cmake/mayausd_version.info)
     set(MAYAUSD_VERSION "${MAYAUSD_MAJOR_VERSION}.${MAYAUSD_MINOR_VERSION}.${MAYAUSD_PATCH_LEVEL}")
 endif()
+
+if (BUILD_MAYAUSDAPI_LIBRARY)
+    include(cmake/mayausdapi_version.info)
+    set(MAYAUSDAPI_VERSION "${MAYAUSDAPI_MAJOR_VERSION}.${MAYAUSDAPI_MINOR_VERSION}.${MAYAUSDAPI_PATCH_LEVEL}")
+endif()
+
 
 if (DEFINED PYTHON_INCLUDE_DIR AND DEFINED PYTHON_LIBRARIES AND DEFINED Python_EXECUTABLE)
     SET(PYTHON_INCLUDE_DIRS "${PYTHON_INCLUDE_DIR}")
@@ -224,6 +231,14 @@ if (BUILD_PXR_PLUGIN OR BUILD_AL_PLUGIN OR BUILD_ADSK_PLUGIN)
         message(FATAL_ERROR "Building plugins requires MayaUsd core libraries.")
     endif()
 endif()
+
+if (BUILD_MAYAUSDAPI_LIBRARY)
+    if (NOT BUILD_MAYAUSD_LIBRARY)
+        message(FATAL_ERROR "Building mayaUsdAPI library requires MayaUsd core libraries to be built, please enable BUILD_MAYAUSD_LIBRARY.")
+    endif()
+endif()
+
+
 
 if (BUILD_PXR_PLUGIN)
     add_subdirectory(plugin/pxr)
