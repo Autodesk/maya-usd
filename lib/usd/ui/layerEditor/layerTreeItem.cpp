@@ -27,16 +27,29 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace UsdLayerEditor {
 
 // delegate Action API for command buttons
-std::vector<LayerActionInfo> LayerTreeItem::_actionButtons;
+LayerActionDefinitions LayerTreeItem::_actionButtons;
 
-const std::vector<LayerActionInfo>& LayerTreeItem::actionButtonsDefinition()
+const LayerActionDefinitions& LayerTreeItem::actionButtonsDefinition()
 {
     if (_actionButtons.size() == 0) {
-        LayerActionInfo info;
-        info._name = "Mute Action";
-        info._tooltip = StringResources::getAsQString(StringResources::kMuteUnmuteLayer);
-        info._pixmap = utils->createPNGResPixmap("RS_disable");
-        _actionButtons.push_back(info);
+        LayerActionInfo muteActionInfo;
+        muteActionInfo._name = "Mute Action";
+        muteActionInfo._order = 0;
+        muteActionInfo._actionType = LayerActionType::Mute;
+        muteActionInfo._layerMask = LayerMasks::LayerMasks_SubLayer;
+        muteActionInfo._tooltip = StringResources::getAsQString(StringResources::kMuteUnmuteLayer);
+        muteActionInfo._pixmap = utils->createPNGResPixmap("RS_disable");
+        _actionButtons.insert(std::make_pair(muteActionInfo._actionType, muteActionInfo));
+
+        LayerActionInfo lockActionInfo;
+        lockActionInfo._name = "Lock Action";
+        lockActionInfo._order = 1;
+        lockActionInfo._actionType = LayerActionType::Lock;
+        lockActionInfo._layerMask = static_cast<LayerMasks>(
+            LayerMasks::LayerMasks_SubLayer | LayerMasks::LayerMasks_Root);
+        lockActionInfo._tooltip = StringResources::getAsQString(StringResources::kLockUnlockLayer);
+        lockActionInfo._pixmap = utils->createPNGResPixmap("lock");
+        _actionButtons.insert(std::make_pair(lockActionInfo._actionType, lockActionInfo));
     }
     return _actionButtons;
 }
@@ -265,6 +278,23 @@ bool LayerTreeItem::isMovable() const
 
 bool LayerTreeItem::isIncoming() const { return _isIncomingLayer; }
 
+bool LayerTreeItem::isLocked() const { return _layer && _layer->PermissionToEdit() == false; }
+
+bool LayerTreeItem::appearsLocked() const
+{
+    if (isLocked()) {
+        return true;
+    }
+    auto item = parentLayerItem();
+    while (item != nullptr) {
+        if (item->isLocked()) {
+            return true;
+        }
+        item = item->parentLayerItem();
+    }
+    return false;
+}
+
 bool LayerTreeItem::needsSaving() const
 {
     // If for any reason we don't hold a layer, then we cannot save it.
@@ -285,10 +315,17 @@ bool LayerTreeItem::needsSaving() const
 }
 
 // delegate Action API for command buttons
-void LayerTreeItem::getActionButton(int index, LayerActionInfo* out_info) const
+void LayerTreeItem::getActionButton(LayerActionType actionType, LayerActionInfo& out_info) const
 {
-    *out_info = actionButtonsDefinition()[0];
-    out_info->_checked = isMuted();
+    auto actionButtons = actionButtonsDefinition();
+    auto iter = actionButtons.find(actionType);
+    if (iter != actionButtons.end()) {
+        out_info = iter->second;
+        if (actionType == Lock)
+            out_info._checked = isLocked();
+        else if (actionType == Mute)
+            out_info._checked = isMuted();
+    }
 }
 
 void LayerTreeItem::removeSubLayer()

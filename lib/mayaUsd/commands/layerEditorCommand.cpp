@@ -57,6 +57,8 @@ const char kAddAnonSublayerFlag[] = "aa";
 const char kAddAnonSublayerFlagL[] = "addAnonymous";
 const char kMuteLayerFlag[] = "mt";
 const char kMuteLayerFlagL[] = "muteLayer";
+const char kLockLayerFlag[] = "lk";
+const char kLockLayerFlagL[] = "lockLayer";
 
 } // namespace
 
@@ -73,7 +75,8 @@ enum class CmdId
     kDiscardEdit,
     kClearLayer,
     kAddAnonLayer,
-    kMuteLayer
+    kMuteLayer,
+    kLockLayer
 };
 
 class BaseCmd
@@ -773,6 +776,90 @@ private:
     Ufe::Selection _savedSn;
 };
 
+class LockLayer : public BaseCmd
+{
+public:
+    LockLayer()
+        : BaseCmd(CmdId::kLockLayer)
+    {
+    }
+
+    bool doIt(SdfLayerHandle layer) override
+    {
+        auto stage = getStage();
+        if (!stage)
+            return false;
+        if (_lockIt) {
+            saveSelection();
+            layer->SetPermissionToEdit(false);
+        } else {
+            layer->SetPermissionToEdit(true);
+            restoreSelection();
+        }
+
+        return true;
+    }
+
+    bool undoIt(SdfLayerHandle layer) override
+    {
+        auto stage = getStage();
+        if (!stage)
+            return false;
+        if (_lockIt) {
+            layer->SetPermissionToEdit(true);
+            restoreSelection();
+        } else {
+            saveSelection();
+            layer->SetPermissionToEdit(false);
+        }
+
+        return true;
+    }
+
+    std::string _proxyShapePath;
+    bool        _lockIt = true;
+
+private:
+    UsdStageWeakPtr getStage()
+    {
+        auto prim = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
+        auto stage = prim.GetStage();
+        return stage;
+    }
+
+    void saveSelection()
+    {
+        // Make a copy of the global selection, to restore it on unmute.
+        auto globalSn = Ufe::GlobalSelection::get();
+        _savedSn.replaceWith(*globalSn);
+        // Filter the global selection, removing items below our proxy shape.
+        // We know the path to the proxy shape has a single segment.  Not
+        // using Ufe::PathString::path() for UFE v1 compatibility, which
+        // unfortunately reveals leading "world" path component implementation
+        // detail.
+        Ufe::Path path(
+            Ufe::PathSegment("world" + _proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
+        globalSn->replaceWith(UsdUfe::removeDescendants(_savedSn, path));
+    }
+
+    void restoreSelection()
+    {
+        // Restore the saved selection to the global selection.  If a saved
+        // selection item started with the proxy shape path, re-create it.
+        // We know the path to the proxy shape has a single segment.  Not
+        // using Ufe::PathString::path() for UFE v1 compatibility, which
+        // unfortunately reveals leading "world" path component implementation
+        // detail.
+        Ufe::Path path(
+            Ufe::PathSegment("world" + _proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
+        auto globalSn = Ufe::GlobalSelection::get();
+        globalSn->replaceWith(UsdUfe::recreateDescendants(_savedSn, path));
+    }
+
+    Ufe::Selection _savedSn;
+};
+
+
 // We assume the indexes given to the command are the original indexes
 // of the layers. Since each command is executed individually and in
 // order, each one may affect the index of subsequent commands. We
@@ -863,6 +950,7 @@ MSyntax LayerEditorCommand::createSyntax()
     syntax.makeFlagMultiUse(kAddAnonSublayerFlag);
     // paramter: proxy shape name
     syntax.addFlag(kMuteLayerFlag, kMuteLayerFlagL, MSyntax::kBoolean, MSyntax::kString);
+    syntax.addFlag(kLockLayerFlag, kLockLayerFlagL, MSyntax::kBoolean, MSyntax::kString);
 
     return syntax;
 }
@@ -1000,6 +1088,25 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
 
             auto cmd = std::make_shared<Impl::MuteLayer>();
             cmd->_muteIt = muteIt;
+            cmd->_proxyShapePath = proxyShapeName.asChar();
+            _subCommands.push_back(std::move(cmd));
+        }
+        if (argParser.isFlagSet(kLockLayerFlag)) {
+            bool lockIt = true;
+            argParser.getFlagArgument(kLockLayerFlag, 0, lockIt);
+
+            MString proxyShapeName;
+            argParser.getFlagArgument(kLockLayerFlag, 1, proxyShapeName);
+
+            auto prim = UsdMayaQuery::GetPrim(proxyShapeName.asChar());
+            if (prim == UsdPrim()) {
+                displayError(
+                    MString("Invalid proxy shape \"") + MString(proxyShapeName.asChar()) + "\"");
+                return MS::kInvalidParameter;
+            }
+
+            auto cmd = std::make_shared<Impl::LockLayer>();
+            cmd->_lockIt = lockIt;
             cmd->_proxyShapePath = proxyShapeName.asChar();
             _subCommands.push_back(std::move(cmd));
         }

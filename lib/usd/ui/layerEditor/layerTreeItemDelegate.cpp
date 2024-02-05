@@ -196,19 +196,18 @@ void LayerTreeItemDelegate::paint_drawText(QPainter* painter, QRectC rect, Item 
     if (muted || readOnly)
         painter->setOpacity(1.0);
 }
-void LayerTreeItemDelegate::paint_drawToolbarFrame(QPainter* painter, QRectC rect, int iconCount)
+void LayerTreeItemDelegate::paint_drawToolbarFrame(QPainter* painter, QRectC rect, int iconLocation)
     const
 {
-    if (iconCount > 0) {
-        int    top = rect.top() + ICON_TOP_OFFSET;
-        QColor backgroundColor(55, 55, 55);
-        int    toolbarLength = iconCount * ACTION_WIDTH + (2 * ACTION_BORDER);
-        int    left = rect.right() - (toolbarLength + ACTION_BORDER);
-        left = left > 0 ? left : 0;
-        painter->setOpacity(0.8);
-        painter->fillRect(left, top - ACTION_BORDER, toolbarLength, ACTION_WIDTH, backgroundColor);
-        painter->setOpacity(1.0);
-    }
+    int    top = rect.top() + ICON_TOP_OFFSET;
+    QColor backgroundColor(55, 55, 55);
+    int    toolbarLength = ACTION_WIDTH + (2 * ACTION_BORDER);
+    int    left = rect.right() - (iconLocation * (toolbarLength + ACTION_BORDER));
+
+    left = left > 0 ? left : 0;
+    painter->setOpacity(0.8);
+    painter->fillRect(left, top - ACTION_BORDER, toolbarLength, ACTION_WIDTH, backgroundColor);
+    painter->setOpacity(1.0);
 }
 
 void LayerTreeItemDelegate::drawStdIcon(QPainter* painter, int left, int top, const QPixmap& pixmap)
@@ -225,7 +224,7 @@ void LayerTreeItemDelegate::paint_drawOneAction(
     const QColor&          highlightColor) const
 {
     QRect iconRect(left, top, ICON_WIDTH, ICON_WIDTH);
-    // MAYA 84884: Created a backround rectangle underneath the icon to extend the mouse coverage
+    // MAYA 84884: Created a background rectangle underneath the icon to extend the mouse coverage
     // region
     int   BACKGROUND_RECT_LENGTH = DPIScale(28);
     int   BACKGROUND_RECT_LEFT_OFFSET = DPIScale(4);
@@ -238,7 +237,7 @@ void LayerTreeItemDelegate::paint_drawOneAction(
     if (highlightColor.isValid())
         painter->fillRect(iconRect, highlightColor);
 
-    // draw the icon.  Its opacity depends on mouse over.
+    // draw the icon. Its opacity depends on mouse over.
     {
         if (!QtUtils::isMouseInRectangle(_treeView, backgroundRect)) {
             painter->setOpacity(0.7);
@@ -258,39 +257,45 @@ void LayerTreeItemDelegate::paint_drawOneAction(
     }
 }
 
+void LayerTreeItemDelegate::paint_ActionIcon(
+    QPainter*       painter,
+    QRectC          rect,
+    Item            item,
+    LayerActionType actionType,
+    const QColor&   highlightColor) const
+{
+    LayerActionInfo action;
+    item->getActionButton(actionType, action);
+    LayerMasks layerMask
+        = CreateLayerMask(item->isRootLayer(), item->isSublayer(), item->isSessionLayer());
+    if (!IsLayerActionAllowed(action, layerMask)) {
+        return;
+    }
+
+    paint_drawToolbarFrame(painter, rect, action._order + 1);
+
+    int top = rect.top() + ICON_TOP_OFFSET;
+    int iconLeft = (action._order + 1) * (ACTION_WIDTH + ACTION_BORDER + action.extraPadding)
+        + action._order * 2 * ACTION_BORDER;
+
+    paint_drawOneAction(
+        painter, rect.right() - iconLeft, top, action, action._checked ? highlightColor : QColor());
+
+    QString tooltip;
+    if (_lastHitAction == action._name) {
+        tooltip = action._tooltip;
+    }
+    const_cast<LayerTreeItem*>(item)->setToolTip(tooltip);
+}
+
 void LayerTreeItemDelegate::paint_ActionIcons(
     QPainter*     painter,
     QRectC        rect,
     Item          item,
     const QColor& highlightColor) const
 {
-    int top = rect.top() + ICON_TOP_OFFSET;
-
-    int start = ACTION_BORDER;
-    int iconCount = item->getActionButtonCount();
-
-    QString tooltip;
-
-    // draw the darkened toolbar frame
-    paint_drawToolbarFrame(painter, rect, iconCount);
-
-    for (int iconIndex = 0; iconIndex < iconCount; iconIndex++) {
-
-        LayerActionInfo action;
-        item->getActionButton(iconIndex, &action);
-        start += ACTION_WIDTH + action.extraPadding;
-        paint_drawOneAction(
-            painter,
-            rect.right() - start,
-            top,
-            action,
-            action._checked ? highlightColor : QColor());
-        if (_lastHitAction == action._name) {
-            tooltip = action._tooltip;
-        }
-    }
-
-    const_cast<LayerTreeItem*>(item)->setToolTip(tooltip);
+    paint_ActionIcon(painter, rect, item, LayerActionType::Lock, highlightColor);
+    paint_ActionIcon(painter, rect, item, LayerActionType::Mute, highlightColor);
 }
 
 void LayerTreeItemDelegate::paint(

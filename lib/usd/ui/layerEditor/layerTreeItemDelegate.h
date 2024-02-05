@@ -132,9 +132,15 @@ protected:
         const QColor& highlightColor) const;
     void paint_drawArrow(QPainter* painter, QRectC rect, Item item) const;
     void paint_drawText(QPainter* painter, QRectC rect, Item item) const;
+    void paint_ActionIcon(
+        QPainter*       painter,
+        QRectC          rect,
+        Item            item,
+        LayerActionType actionType,
+        const QColor&   highlightColor) const;
     void paint_ActionIcons(QPainter* painter, QRectC rect, Item item, const QColor& highlightColor)
         const;
-    void paint_drawToolbarFrame(QPainter* painter, QRectC rect, int iconCount) const;
+    void paint_drawToolbarFrame(QPainter* painter, QRectC rect, int iconLocation) const;
     void paint_drawOneAction(
         QPainter*              painter,
         int                    left,

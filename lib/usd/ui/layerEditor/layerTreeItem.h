@@ -25,6 +25,7 @@
 #include <QtGui/QStandardItem>
 
 #include <algorithm>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -46,19 +47,54 @@ enum class RebuildChildren
     No
 };
 
-struct LayerActionInfo
+enum LayerActionType
 {
-    QString _name;
-    QString _tooltip;
-    QPixmap _pixmap;
-    int     extraPadding = 0;
-    QColor  _borderColor;
-    bool    _checked = false;
+    None,
+    Mute,
+    Lock
 };
 
-typedef std::vector<std::string>    recursionDetection;
-typedef std::vector<LayerTreeItem*> LayerItemVector;
+enum LayerMasks
+{
+    LayerMasks_None = (1u << 0),     // 00000000
+    LayerMasks_Session = (1u << 1),  // 00000001
+    LayerMasks_Root = (1u << 2),     // 00000010
+    LayerMasks_SubLayer = (1u << 3), // 00000100
+};
 
+static LayerMasks CreateLayerMask(bool isRootLayer, bool isSubLayer, bool isSessionLayer)
+{
+    LayerMasks mask = LayerMasks::LayerMasks_None;
+    if (isRootLayer)
+        mask = static_cast<LayerMasks>(mask | LayerMasks::LayerMasks_Root);
+    if (isSubLayer)
+        mask = static_cast<LayerMasks>(mask | LayerMasks::LayerMasks_SubLayer);
+    if (isSessionLayer)
+        mask = static_cast<LayerMasks>(mask | LayerMasks::LayerMasks_Session);
+    return mask;
+}
+
+struct LayerActionInfo
+{
+    QString         _name;
+    QString         _tooltip;
+    QPixmap         _pixmap;
+    int             extraPadding = 0;
+    QColor          _borderColor;
+    bool            _checked = false;
+    LayerMasks      _layerMask = LayerMasks::LayerMasks_None;
+    LayerActionType _actionType;
+    int             _order = 0;
+};
+
+static bool IsLayerActionAllowed(const LayerActionInfo& actionInfo, LayerMasks layerMaskFlag)
+{
+    return (actionInfo._layerMask & layerMaskFlag) != 0;
+}
+
+typedef std::vector<std::string>                   recursionDetection;
+typedef std::vector<LayerTreeItem*>                LayerItemVector;
+typedef std::map<LayerActionType, LayerActionInfo> LayerActionDefinitions;
 /**
  * @brief Implements one USD layer item in the treeview
  *
@@ -109,6 +145,10 @@ public:
     bool isMovable() const;
     // check if the layer is incoming (from a connection)
     bool isIncoming() const;
+    // is the layer locked?
+    bool isLocked() const;
+    // check if this layer is locked
+    bool appearsLocked() const;
 
     // used by draw delegate: returns how deep in the hierarchy we are
     int depth() const;
@@ -147,10 +187,8 @@ public:
     void                   clearLayer();
 
     // delegate Action API for command buttons
-    int getActionButtonCount() const { return (isSublayer() && !isInvalidLayer()) ? 1 : 0; }
-    // delegate Action API for command buttons
-    void getActionButton(int index, LayerActionInfo* out_info) const;
-    static const std::vector<LayerActionInfo>& actionButtonsDefinition();
+    void getActionButton(LayerActionType actionType, LayerActionInfo& out_info) const;
+    static const LayerActionDefinitions& actionButtonsDefinition();
 
 protected:
     PXR_NS::SdfLayerRefPtr _layer;
@@ -164,7 +202,7 @@ protected:
     bool                   _isSharedLayer;
     std::set<std::string>  _sharedLayers;
 
-    static std::vector<LayerActionInfo> _actionButtons;
+    static LayerActionDefinitions _actionButtons;
 
 protected:
     AbstractCommandHook* commandHook() const;

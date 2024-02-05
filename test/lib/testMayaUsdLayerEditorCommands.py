@@ -530,6 +530,30 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         self.assertTrue(len(absLayer1.subLayerPaths) == 1)
         self.assertEqual(absLayer1.subLayerPaths[0], relLayerNewFileId)
 
+    def testLockLayer(self):
+        """ test 'mayaUsdLayerEditor' command 'lockLayer' paramater """
+        
+        # Helpers
+        def createLayer(index):
+            layer = Sdf.Layer.CreateAnonymous()
+            stage.GetRootLayer().subLayerPaths.append(layer.identifier)
+            return layer
+        
+        shapePath, stage = getCleanMayaStage()
+        self.assertTrue(stage)
+        
+        subLayer = createLayer(0)
+        self.assertTrue(subLayer.permissionToEdit)
+        
+        mel.eval('mayaUsdLayerEditor -edit -lockLayer 1 "%s" "%s"' % (shapePath, subLayer.identifier))
+        self.assertFalse(subLayer.permissionToEdit)
+        cmds.undo()
+        self.assertTrue(subLayer.permissionToEdit)
+        cmds.redo()
+        self.assertFalse(subLayer.permissionToEdit)
+        mel.eval('mayaUsdLayerEditor -edit -lockLayer 0 "%s" "%s"' % (shapePath, subLayer.identifier))
+        self.assertTrue(subLayer.permissionToEdit)
+        
     def testMuteLayer(self):
         """ test 'mayaUsdLayerEditor' command 'muteLayer' paramater """
 
