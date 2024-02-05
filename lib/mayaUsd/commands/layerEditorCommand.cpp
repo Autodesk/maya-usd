@@ -859,7 +859,6 @@ private:
     Ufe::Selection _savedSn;
 };
 
-
 // We assume the indexes given to the command are the original indexes
 // of the layers. Since each command is executed individually and in
 // order, each one may affect the index of subsequent commands. We
