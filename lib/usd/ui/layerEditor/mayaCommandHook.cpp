@@ -211,7 +211,8 @@ void MayaCommandHook::muteSubLayer(UsdLayer usdLayer, bool muteIt)
 }
 
 // lock or unlock the given layer
-void MayaCommandHook::lockSubLayer(UsdLayer usdLayer, bool lockIt) { 
+void MayaCommandHook::lockSubLayer(UsdLayer usdLayer, bool lockIt)
+{
     std::string cmd;
     cmd = "mayaUsdLayerEditor -edit -lockLayer ";
     cmd += lockIt ? "1" : "0";
