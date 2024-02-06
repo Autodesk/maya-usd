@@ -82,6 +82,11 @@ struct UsdMayaPrimWriterRegistry
     using ContextPredicateFn = std::function<
         UsdMayaPrimWriter::ContextSupport(const UsdMayaJobExportArgs&, const MObject&)>;
 
+    // Return true if this mayaTypeName has multiple writers registered.
+    // In that case, call the Find function each time to find the correct writer for that object.
+    MAYAUSD_CORE_PUBLIC
+    static bool HasMultipleWriters(const std::string& mayaTypeName);
+
     /// \brief Register \p fn as a factory function providing a
     /// UsdMayaPrimWriter subclass that can be used to write \p mayaType.
     /// Provide a supportability of the primWriter. Use "supported" to
@@ -228,6 +233,38 @@ struct UsdMayaPrimWriterRegistry
     {                                                                                      \
         UsdMayaPrimWriterRegistry::Register(                                               \
             #mayaTypeName,                                                                 \
+            [](const MFnDependencyNode& depNodeFn,                                         \
+               const SdfPath&           usdPath,                                           \
+               UsdMayaWriteJobContext&  jobCtx) {                                           \
+                return std::make_shared<writerClass>(depNodeFn, usdPath, jobCtx);          \
+            });                                                                            \
+    }
+
+/// \brief Registers a custom pre-existing writer class for the given Maya type;
+/// the writer class should be a subclass of UsdMayaPrimWriter with a three-place
+/// constructor that takes <tt>(const MFnDependencyNode& depNodeFn,
+/// const SdfPath& usdPath, UsdMayaWriteJobContext& jobCtx)</tt> as arguments.
+/// Use CanExport(const UsdMayaJobExportArgs& exportArgs, const MObject& exportObj) function to
+/// return the level of support the writer can offer for a given context.
+///
+/// Example:
+/// \code{.cpp}
+/// class MyWriter : public UsdMayaPrimWriter {
+///     MyWriter(
+///             const MFnDependencyNode& depNodeFn,
+///             const SdfPath& usdPath,
+///             UsdMayaWriteJobContext& jobCtx) {
+///         // ...
+///     }
+/// };
+/// PXRUSDMAYA_REGISTER_CUSTOM_WRITER(myCustomMayaNode, MyWriter);
+/// \endcode
+#define PXRUSDMAYA_REGISTER_CUSTOM_WRITER(mayaTypeName, writerClass)                       \
+    TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaPrimWriterRegistry, mayaTypeName##_##writerClass) \
+    {                                                                                      \
+        UsdMayaPrimWriterRegistry::Register(                                               \
+            #mayaTypeName,                                                                 \
+            writerClass::CanExport,                                                        \
             [](const MFnDependencyNode& depNodeFn,                                         \
                const SdfPath&           usdPath,                                           \
                UsdMayaWriteJobContext&  jobCtx) {                                           \
