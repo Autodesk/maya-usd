@@ -16,6 +16,8 @@ target_sources(${PROJECT_NAME}
         layers.cpp
         loadRulesAttribute.cpp
         mayaEditRouter.cpp
+        mayaNodeObserver.cpp
+        mayaNodeTypeObserver.cpp
         query.cpp
         plugRegistryHelper.cpp
         primActivation.cpp
@@ -47,6 +49,8 @@ set(HEADERS
     layers.h
     loadRules.h
     mayaEditRouter.h
+    mayaNodeObserver.h
+    mayaNodeTypeObserver.h
     query.h
     plugRegistryHelper.h
     primActivation.h
