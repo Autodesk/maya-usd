@@ -99,7 +99,7 @@ class SaveMutedLayerTest(unittest.TestCase):
         subLayerPath = rootLayer.subLayerPaths[0]
         self.assertIsNotNone(subLayerPath)
         self.assertTrue(subLayerPath)
-        subLayer = Sdf.Layer.FindRelativeToLayer(rootLayer,subLayerPath)
+        subLayer = Sdf.Layer.Find(subLayerPath)
         self.assertIsNotNone(subLayer)
 
         # Verify the two objects are still present.
