@@ -22,6 +22,7 @@
 #include <mayaUsd/ufe/UsdConnections.h>
 #include <mayaUsd/ufe/Utils.h>
 
+#include <usdUfe/ufe/Utils.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/utils/usdUtils.h>
@@ -155,7 +156,7 @@ void UsdUndoCreateConnectionCommand::execute()
         return;
     }
 
-    if (MayaUsd::ufe::isConnected(srcUsdAttr->usdAttribute(), dstUsdAttr->usdAttribute())) {
+    if (isConnected(srcUsdAttr->usdAttribute(), dstUsdAttr->usdAttribute())) {
         return;
     }
 
@@ -287,7 +288,7 @@ void UsdUndoDeleteConnectionCommand::execute()
     UsdAttribute* dstUsdAttr = usdAttrFromUfeAttr(dstAttr);
 
     if (!srcUsdAttr || !dstUsdAttr
-        || !MayaUsd::ufe::isConnected(srcUsdAttr->usdAttribute(), dstUsdAttr->usdAttribute())) {
+        || !isConnected(srcUsdAttr->usdAttribute(), dstUsdAttr->usdAttribute())) {
         return;
     }
 #if PXR_VERSION < 2302

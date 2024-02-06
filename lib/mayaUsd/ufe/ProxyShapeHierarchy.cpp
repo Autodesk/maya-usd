@@ -251,6 +251,18 @@ ProxyShapeHierarchy::insertChild(const Ufe::SceneItem::Ptr& child, const Ufe::Sc
     return insertChildCommand->insertedChild();
 }
 
+Ufe::InsertChildCommand::Ptr
+ProxyShapeHierarchy::appendChildVerifyRestrictionsCmd(const Ufe::SceneItem::Ptr& child)
+{
+    const auto childCmd = appendChildCmd(child);
+
+    if (childCmd && isConnected(downcast(child))) {
+        throw std::runtime_error("The node you're trying to move has connections.");
+    }
+
+    return childCmd;
+}
+
 #ifdef UFE_V3_FEATURES_AVAILABLE
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(const Ufe::PathComponent& name) const
 {

@@ -347,20 +347,6 @@ TfTokenVector getProxyShapePurposes(const Ufe::Path& path)
     return purposes;
 }
 
-bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttribute& dstUsdAttr)
-{
-    PXR_NS::SdfPathVector connectedAttrs;
-    dstUsdAttr.GetConnections(&connectedAttrs);
-
-    for (PXR_NS::SdfPath path : connectedAttrs) {
-        if (path == srcUsdAttr.GetPath()) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 bool canRemoveSrcProperty(const PXR_NS::UsdAttribute& srcAttr)
 {
 

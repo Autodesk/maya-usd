@@ -304,6 +304,16 @@ bool isEditTargetLayerModifiable(
 USDUFE_PUBLIC
 Ufe::BBox3d combineUfeBBox(const Ufe::BBox3d& ufeBBox1, const Ufe::BBox3d& ufeBBox2);
 
+//! Check if the src and dst attributes are connected.
+//! \return True, if they are connected.
+USDUFE_PUBLIC
+bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttribute& dstUsdAttr);
+
+//! Check if the usdItem is connected (i.e. if there are in or out connections).
+//! \return True, if it is connected.
+USDUFE_PUBLIC
+bool isConnected(const UsdSceneItem::Ptr& usdItem);
+
 //! Set both the start and stop wait cursor functions.
 USDUFE_PUBLIC
 void setWaitCursorFns(WaitCursorFn startFn, WaitCursorFn stopFn);

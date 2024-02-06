@@ -428,6 +428,95 @@ Ufe::BBox3d combineUfeBBox(const Ufe::BBox3d& ufeBBox1, const Ufe::BBox3d& ufeBB
     return combinedBBox;
 }
 
+bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttribute& dstUsdAttr)
+{
+    PXR_NS::SdfPathVector connectedAttrs;
+    dstUsdAttr.GetConnections(&connectedAttrs);
+
+    for (PXR_NS::SdfPath path : connectedAttrs) {
+        if (path == srcUsdAttr.GetPath()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool isConnected(const UsdSceneItem::Ptr& usdItem)
+{
+
+    if (!usdItem) {
+        return false;
+    }
+
+    const auto prim = usdItem->prim();
+
+    if (!prim) {
+        return false;
+    }
+
+    const auto primAttrs = prim.GetAuthoredAttributes();
+
+    for (const auto& attr : primAttrs) {
+        const auto kBaseNameAndType
+            = PXR_NS::UsdShadeUtils::GetBaseNameAndType(PXR_NS::TfToken(attr.GetName()));
+
+        if (kBaseNameAndType.second != PXR_NS::UsdShadeAttributeType::Output
+            && kBaseNameAndType.second != PXR_NS::UsdShadeAttributeType::Input) {
+            continue;
+        }
+
+        if (kBaseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input) {
+            // The attribute could be a destination for connected sources, so check for its
+            // connections.
+            PXR_NS::UsdShadeSourceInfoVector sourcesInfo
+                = pxr::UsdShadeConnectableAPI::GetConnectedSources(attr);
+
+            if (!sourcesInfo.empty()) {
+                return true;
+            }
+        }
+
+        if (kBaseNameAndType.second == PXR_NS::UsdShadeAttributeType::Output) {
+            const auto primParent = prim.GetParent();
+
+            if (!primParent) {
+                continue;
+            }
+
+            // The attribute could be a source connection, we have to explore the siblings.
+            for (auto&& child : primParent.GetChildren()) {
+                if (child == prim) {
+                    continue;
+                }
+
+                for (const auto& otherAttr : child.GetAttributes()) {
+                    const auto childAttrBaseNameAndType = PXR_NS::UsdShadeUtils::GetBaseNameAndType(
+                        PXR_NS::TfToken(otherAttr.GetName()));
+
+                    if (childAttrBaseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input
+                        && isConnected(attr, otherAttr)) {
+                        return true;
+                    }
+                }
+            }
+
+            // Check also if there are connections to the parent.
+            for (const auto& otherAttr : primParent.GetAttributes()) {
+                const auto parentAttrBaseNameAndType = PXR_NS::UsdShadeUtils::GetBaseNameAndType(
+                    PXR_NS::TfToken(otherAttr.GetName()));
+
+                if (parentAttrBaseNameAndType.second == PXR_NS::UsdShadeAttributeType::Output
+                    && isConnected(attr, otherAttr)) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
 void applyRootLayerMetadataRestriction(const UsdPrim& prim, const std::string& commandName)
 {
     // return early if prim is the pseudo-root.

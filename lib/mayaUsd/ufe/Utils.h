@@ -116,11 +116,6 @@ PXR_NS::UsdTimeCode getTime(const Ufe::Path& path);
 MAYAUSD_CORE_PUBLIC
 PXR_NS::TfTokenVector getProxyShapePurposes(const Ufe::Path& path);
 
-//! Check if the src and dst attributes are connected.
-//! \return True, if they are connected.
-MAYAUSD_CORE_PUBLIC
-bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttribute& dstUsdAttr);
-
 //! Check if a source connection property is allowed to be removed.
 //! \return True, if the property can be removed.
 MAYAUSD_CORE_PUBLIC
