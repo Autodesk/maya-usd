@@ -275,7 +275,7 @@ void LayerTreeItemDelegate::paint_ActionIcon(
     paint_drawToolbarFrame(painter, rect, action._order + 1);
 
     int top = rect.top() + ICON_TOP_OFFSET;
-    int iconLeft = (action._order + 1) * (ACTION_WIDTH + ACTION_BORDER + action.extraPadding)
+    int iconLeft = (action._order + 1) * (ACTION_WIDTH + ACTION_BORDER + action._extraPadding)
         + action._order * 2 * ACTION_BORDER;
 
     paint_drawOneAction(

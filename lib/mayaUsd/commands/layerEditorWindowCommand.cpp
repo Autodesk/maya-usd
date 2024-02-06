@@ -43,8 +43,8 @@ DEF_FLAG(ns, layerNeedsSaving)
 DEF_FLAG(am, layerAppearsMuted)
 DEF_FLAG(mu, layerIsMuted)
 DEF_FLAG(r, layerIsReadOnly)
-DEF_FLAG(ll, layerAppearsLocked)
-DEF_FLAG(lc, layerIsLocked)
+DEF_FLAG(al, layerAppearsLocked)
+DEF_FLAG(lo, layerIsLocked)
 
 // edit flags
 DEF_FLAG(rs, removeSubLayer)

@@ -830,7 +830,7 @@ bool isEditTargetLayerModifiable(const UsdStageWeakPtr stage, std::string* errMs
     if (editLayer && !editLayer->PermissionToEdit()) {
         if (errMsg) {
             std::string err = TfStringPrintf(
-                "# Error: Cannot edit [%s] because it is locked. Unlock it to proceed.",
+                "Cannot edit [%s] because it is locked. Unlock it to proceed.",
                 editLayer->GetDisplayName().c_str());
 
             *errMsg = err;

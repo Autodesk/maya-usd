@@ -62,6 +62,8 @@ enum LayerMasks
     LayerMasks_SubLayer = (1u << 3), // 00000100
 };
 
+LayerMasks operator|(LayerMasks lhs, LayerMasks rhs);
+
 LayerMasks CreateLayerMask(bool isRootLayer, bool isSubLayer, bool isSessionLayer);
 
 struct LayerActionInfo
@@ -69,7 +71,7 @@ struct LayerActionInfo
     QString         _name;
     QString         _tooltip;
     QPixmap         _pixmap;
-    int             extraPadding = 0;
+    int             _extraPadding = 0;
     QColor          _borderColor;
     bool            _checked = false;
     LayerMasks      _layerMask = LayerMasks::LayerMasks_None;
@@ -79,9 +81,9 @@ struct LayerActionInfo
 
 bool IsLayerActionAllowed(const LayerActionInfo& actionInfo, LayerMasks layerMaskFlag);
 
-typedef std::vector<std::string>                   recursionDetection;
-typedef std::vector<LayerTreeItem*>                LayerItemVector;
-typedef std::map<LayerActionType, LayerActionInfo> LayerActionDefinitions;
+using recursionDetection = std::vector<std::string>;
+using LayerItemVector = std::vector<LayerTreeItem*>;
+using LayerActionDefinitions = std::map<LayerActionType, LayerActionInfo>;
 /**
  * @brief Implements one USD layer item in the treeview
  *

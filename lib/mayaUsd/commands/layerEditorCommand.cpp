@@ -793,8 +793,8 @@ public:
             saveSelection();
             layer->SetPermissionToEdit(false);
         } else {
+            saveSelection();
             layer->SetPermissionToEdit(true);
-            restoreSelection();
         }
 
         return true;
@@ -809,8 +809,8 @@ public:
             layer->SetPermissionToEdit(true);
             restoreSelection();
         } else {
-            saveSelection();
             layer->SetPermissionToEdit(false);
+            restoreSelection();
         }
 
         return true;
@@ -829,7 +829,7 @@ private:
 
     void saveSelection()
     {
-        // Make a copy of the global selection, to restore it on unmute.
+        // Make a copy of the global selection, to restore it on unlock.
         auto globalSn = Ufe::GlobalSelection::get();
         _savedSn.replaceWith(*globalSn);
         // Filter the global selection, removing items below our proxy shape.

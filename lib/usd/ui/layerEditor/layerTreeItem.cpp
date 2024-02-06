@@ -557,12 +557,17 @@ UsdLayerEditor::LayerMasks CreateLayerMask(bool isRootLayer, bool isSubLayer, bo
 {
     LayerMasks mask = LayerMasks::LayerMasks_None;
     if (isRootLayer)
-        mask = static_cast<LayerMasks>(mask | LayerMasks::LayerMasks_Root);
+        mask = mask | LayerMasks::LayerMasks_Root;
     if (isSubLayer)
-        mask = static_cast<LayerMasks>(mask | LayerMasks::LayerMasks_SubLayer);
+        mask = mask | LayerMasks::LayerMasks_SubLayer;
     if (isSessionLayer)
-        mask = static_cast<LayerMasks>(mask | LayerMasks::LayerMasks_Session);
+        mask = mask | LayerMasks::LayerMasks_Session;
     return mask;
+}
+
+LayerMasks operator|(LayerMasks lhs, LayerMasks rhs)
+{
+    return static_cast<LayerMasks>(unsigned(lhs) | unsigned(rhs));
 }
 
 bool IsLayerActionAllowed(const LayerActionInfo& actionInfo, LayerMasks layerMaskFlag)
