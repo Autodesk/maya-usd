@@ -590,8 +590,11 @@ UsdMayaWriteJobContext::_FindWriter(const MFnDependencyNode& mayaNode)
     const std::string mayaNodeType(mayaNode.typeName().asChar());
 
     // Check if type is already cached locally.
+    // If this type has multiple writers, we need to call CanExport again to determine which writer
+    // to use
     auto iter = mWriterFactoryCache.find(mayaNodeType);
-    if (iter != mWriterFactoryCache.end()) {
+    if (iter != mWriterFactoryCache.end()
+        && !UsdMayaPrimWriterRegistry::HasMultipleWriters(mayaNodeType)) {
         return iter->second;
     }
 
