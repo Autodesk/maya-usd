@@ -553,4 +553,21 @@ void LayerTreeItem::printLayer()
 
 void LayerTreeItem::clearLayer() { commandHook()->clearLayer(layer()); }
 
+UsdLayerEditor::LayerMasks CreateLayerMask(bool isRootLayer, bool isSubLayer, bool isSessionLayer)
+{
+    LayerMasks mask = LayerMasks::LayerMasks_None;
+    if (isRootLayer)
+        mask = static_cast<LayerMasks>(mask | LayerMasks::LayerMasks_Root);
+    if (isSubLayer)
+        mask = static_cast<LayerMasks>(mask | LayerMasks::LayerMasks_SubLayer);
+    if (isSessionLayer)
+        mask = static_cast<LayerMasks>(mask | LayerMasks::LayerMasks_Session);
+    return mask;
+}
+
+bool IsLayerActionAllowed(const LayerActionInfo& actionInfo, LayerMasks layerMaskFlag)
+{
+    return (actionInfo._layerMask & layerMaskFlag) != 0;
+}
+
 } // namespace UsdLayerEditor

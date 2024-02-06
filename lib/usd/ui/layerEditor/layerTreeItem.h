@@ -62,17 +62,7 @@ enum LayerMasks
     LayerMasks_SubLayer = (1u << 3), // 00000100
 };
 
-static LayerMasks CreateLayerMask(bool isRootLayer, bool isSubLayer, bool isSessionLayer)
-{
-    LayerMasks mask = LayerMasks::LayerMasks_None;
-    if (isRootLayer)
-        mask = static_cast<LayerMasks>(mask | LayerMasks::LayerMasks_Root);
-    if (isSubLayer)
-        mask = static_cast<LayerMasks>(mask | LayerMasks::LayerMasks_SubLayer);
-    if (isSessionLayer)
-        mask = static_cast<LayerMasks>(mask | LayerMasks::LayerMasks_Session);
-    return mask;
-}
+LayerMasks CreateLayerMask(bool isRootLayer, bool isSubLayer, bool isSessionLayer);
 
 struct LayerActionInfo
 {
@@ -87,10 +77,7 @@ struct LayerActionInfo
     int             _order = 0;
 };
 
-static bool IsLayerActionAllowed(const LayerActionInfo& actionInfo, LayerMasks layerMaskFlag)
-{
-    return (actionInfo._layerMask & layerMaskFlag) != 0;
-}
+bool IsLayerActionAllowed(const LayerActionInfo& actionInfo, LayerMasks layerMaskFlag);
 
 typedef std::vector<std::string>                   recursionDetection;
 typedef std::vector<LayerTreeItem*>                LayerItemVector;
