@@ -26,6 +26,8 @@
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
+#include <usdUfe/utils/layers.h>
+
 #include <pxr/base/arch/env.h>
 #include <pxr/base/tf/instantiateType.h>
 #include <pxr/base/tf/weakBase.h>
@@ -728,6 +730,29 @@ struct SaveStageToMayaResult
     bool _stageHasDirtyLayers { false };
 };
 
+static void saveLayersToMayaFile(
+    MayaUsd::LayerManager* lm,
+    MArrayDataBuilder&     builder,
+    MayaUsdProxyShapeBase& proxyShape,
+    const SdfLayerHandle&  layer,
+    SaveStageToMayaResult& result)
+{
+    bool includeTopLayer = true;
+    auto allLayers = UsdUfe::getAllSublayerRefs(layer, includeTopLayer);
+    for (auto layer : allLayers) {
+        addLayerToBuilder(
+            lm,
+            builder,
+            layer,
+            layer->IsAnonymous(),
+            proxyShape.isIncomingLayer(layer->GetIdentifier()),
+            true);
+        if (layer->IsDirty()) {
+            result._stageHasDirtyLayers = true;
+        }
+    }
+}
+
 SaveStageToMayaResult saveStageToMayaFile(
     MayaUsd::LayerManager* lm,
     MArrayDataBuilder&     builder,
@@ -742,20 +767,11 @@ SaveStageToMayaResult saveStageToMayaFile(
 
     const MFnDependencyNode depNodeFn(proxyNode);
     MayaUsdProxyShapeBase*  pShape = static_cast<MayaUsdProxyShapeBase*>(depNodeFn.userNode());
+    if (!pShape)
+        return result;
 
-    SdfLayerHandleVector allLayers = stage->GetLayerStack(true);
-    for (auto layer : allLayers) {
-        addLayerToBuilder(
-            lm,
-            builder,
-            layer,
-            layer->IsAnonymous(),
-            pShape->isIncomingLayer(layer->GetIdentifier()),
-            true);
-        if (layer->IsDirty()) {
-            result._stageHasDirtyLayers = true;
-        }
-    }
+    saveLayersToMayaFile(lm, builder, *pShape, stage->GetSessionLayer(), result);
+    saveLayersToMayaFile(lm, builder, *pShape, stage->GetRootLayer(), result);
 
     if (result._stageHasDirtyLayers) {
         setValueForAttr(
