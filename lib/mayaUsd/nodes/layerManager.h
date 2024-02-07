@@ -129,6 +129,9 @@ public:
     */
     static SdfLayerHandle findLayer(std::string identifier);
 
+    using LayerNameMap = std::map<std::string, std::string>;
+    static LayerNameMap getLayerNameMap();
+
     static const MString typeName;
     static const MTypeId typeId;
 

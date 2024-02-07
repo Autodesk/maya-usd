@@ -42,11 +42,18 @@ MAYAUSD_CORE_PUBLIC
 MStatus
 copyLayerMutingToAttribute(const PXR_NS::UsdStage& stage, MayaUsdProxyShapeBase& proxyShape);
 
+/*! Map the original layer name when the scene was saved to the current layer name.
+    Layer renaming happens when anonymous layers are saved within the Maya scene file.
+*/
+using LayerNameMap = std::map<std::string, std::string>;
+
 /*! \brief set the stage layers muting from data in the corresponding attribute of the proxy shape.
  */
 MAYAUSD_CORE_PUBLIC
-MStatus
-copyLayerMutingFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_NS::UsdStage& stage);
+MStatus copyLayerMutingFromAttribute(
+    const MayaUsdProxyShapeBase& proxyShape,
+    const LayerNameMap&          nameMap,
+    PXR_NS::UsdStage&            stage);
 
 // OpenUSD forget everything about muted layers. The OpenUSD documentation for
 // the MuteLayer function says:
