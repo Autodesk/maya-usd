@@ -252,6 +252,10 @@ proc string mayaUsdTranslatorExport_AppendFromTextField(string $currentOptions, 
 }
 
 global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
+    if (`optionMenuGrp -exists exportDefaultPrim` == 0){
+        return;
+    }
+
     if ((`checkBoxGrp -exists exportMeshesCheckBox` == 0)||(`checkBoxGrp -exists exportLightsCheckBox` == 0)||(`checkBoxGrp -exists exportCamerasCheckBox` == 0)){
         return;
     }
@@ -283,6 +287,9 @@ global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
 }
 
 global proc onExportParentScopeChanged() {
+    if (`optionMenuGrp -exists exportDefaultPrim` == 0){
+        return;
+    }
     string $rootPrim = `textFieldGrp -q -text parentScopeField`;
     optionMenuGrp -edit -deleteAllItems exportDefaultPrim;
     string $menuName = `optionMenuGrp -q -fullPathName exportDefaultPrim`;
