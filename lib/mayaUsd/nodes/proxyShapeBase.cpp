@@ -806,6 +806,8 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
     UsdStageRefPtr finalUsdStage;
     SdfPath        primPath;
 
+    LayerNameMap layerNameMap = MayaUsd::LayerManager::getLayerNameMap();
+
     MDataHandle inDataHandle = dataBlock.inputValue(inStageDataAttr, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
@@ -1122,7 +1124,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         }
 
         primPath = finalUsdStage->GetPseudoRoot().GetPath();
-        copyLayerMutingFromAttribute(*this, *finalUsdStage);
+        copyLayerMutingFromAttribute(*this, layerNameMap, *finalUsdStage);
         if (!_targetLayer)
             _targetLayer = getTargetLayerFromAttribute(*this, *finalUsdStage);
         updateShareMode(sharedUsdStage, unsharedUsdStage, loadSet);

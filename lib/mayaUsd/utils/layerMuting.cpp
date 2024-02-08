@@ -27,10 +27,36 @@ MStatus copyLayerMutingToAttribute(const PXR_NS::UsdStage& stage, MayaUsdProxySh
     return proxyShape.setMutedLayers(stage.GetMutedLayers());
 }
 
-MStatus
-copyLayerMutingFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_NS::UsdStage& stage)
+MStatus copyLayerMutingFromAttribute(
+    const MayaUsdProxyShapeBase& proxyShape,
+    const LayerNameMap&          nameMap,
+    PXR_NS::UsdStage&            stage)
 {
-    const auto                     muted = proxyShape.getMutedLayers();
+    std::vector<std::string> muted = proxyShape.getMutedLayers();
+
+    // Remap the muted layer names in case the layer were renamed when reloaded.
+    for (std::string& name : muted) {
+        auto iter = nameMap.find(name);
+        if (iter != nameMap.end()) {
+            name = iter->second;
+        }
+    }
+
+    // Add muted layers to the retained muted layer set to avoid losing them.
+    // This is necessary because USD only keeps layers in memory if at least one
+    // referencing pointer holds it, but muting in the stage makes the stage no
+    // longer reference the layer, so the layer would be lost otherwise.
+    //
+    // Use a set to accelerate lookup of muted layers.
+    PXR_NS::SdfLayerHandleVector layers = stage.GetLayerStack();
+    std::set<std::string>        mutedSet(muted.begin(), muted.end());
+    for (const auto& layer : layers) {
+        const auto iter = mutedSet.find(layer->GetIdentifier());
+        if (iter != mutedSet.end()) {
+            addMutedLayer(layer);
+        }
+    }
+
     const std::vector<std::string> unmuted;
     stage.MuteAndUnmuteLayers(muted, unmuted);
     return MS::kSuccess;

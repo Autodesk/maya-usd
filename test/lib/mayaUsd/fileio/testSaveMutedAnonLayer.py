@@ -102,6 +102,9 @@ class SaveMutedLayerTest(unittest.TestCase):
         subLayer = Sdf.Layer.Find(subLayerPath)
         self.assertIsNotNone(subLayer)
 
+        # Verify the layer was reloaded as muted.
+        self.assertTrue(stage.IsLayerMuted(subLayerPath))
+
         # Verify the two objects are still present.
         stage.UnmuteLayer(subLayer.identifier)
         verifyPrims(stage)
