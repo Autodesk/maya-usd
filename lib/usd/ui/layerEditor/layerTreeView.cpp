@@ -106,12 +106,20 @@ LayerTreeView::LayerTreeView(SessionState* in_sessionState, QWidget* in_parent)
     connect(this, &QTreeView::expanded, this, &LayerTreeView::onExpanded);
     connect(this, &QTreeView::collapsed, this, &LayerTreeView::onCollapsed);
 
-    // renderSetuplike API
-    auto actionButtons = LayerTreeItem::actionButtonsDefinition();
-    for (auto actionInfo : actionButtons) {
-        auto action = new QAction(actionInfo._name, this);
-        connect(action, &QAction::triggered, this, &LayerTreeView::onMuteLayerButtonPushed);
-        _actionButtons._staticActions.push_back(action);
+    auto buttonDefinitions = LayerTreeItem::actionButtonsDefinition();
+    auto muteActionIter = buttonDefinitions.find(LayerActionType::Mute);
+    if (muteActionIter != buttonDefinitions.end()) {
+        LayerActionInfo muteActionInfo = muteActionIter->second;
+        auto            muteAction = new QAction(muteActionInfo._name, this);
+        connect(muteAction, &QAction::triggered, this, &LayerTreeView::onMuteLayerButtonPushed);
+        _actionButtons._staticActions.push_back(muteAction);
+    }
+    auto lockActionIter = buttonDefinitions.find(LayerActionType::Lock);
+    if (lockActionIter != buttonDefinitions.end()) {
+        LayerActionInfo lockActionInfo = lockActionIter->second;
+        auto            lockAction = new QAction(lockActionInfo._name, this);
+        connect(lockAction, &QAction::triggered, this, &LayerTreeView::onLockLayerButtonPushed);
+        _actionButtons._staticActions.push_back(lockAction);
     }
 }
 
@@ -329,6 +337,24 @@ void LayerTreeView::onMuteLayer(const QString& undoName) const
     }
 }
 
+void LayerTreeView::onLockLayer(const QString& undoName) const
+{
+
+    auto selection = getSelectedLayerItems();
+
+    CallMethodParams params;
+    params.selection = &selection;
+    params.commandHook = _model->sessionState()->commandHook();
+    params.name = undoName;
+
+    bool isLocked = !currentLayerItem()->isLocked();
+
+    UndoContext context(params.commandHook, params.name);
+    for (auto item : *params.selection) {
+        item->parentModel()->toggleLockLayer(item, &isLocked);
+    }
+}
+
 void LayerTreeView::callMethodOnSelection(const QString& undoName, simpleLayerMethod method)
 {
     CallMethodParams params;
@@ -512,4 +538,13 @@ void LayerTreeView::onMuteLayerButtonPushed()
     update();
 }
 
+void LayerTreeView::onLockLayerButtonPushed()
+{
+    auto item = currentLayerItem();
+    if (item) {
+        item->parentModel()->toggleLockLayer(item);
+    }
+    // need to force redraw of everything otherwise redraw isn't right
+    update();
+}
 } // namespace UsdLayerEditor

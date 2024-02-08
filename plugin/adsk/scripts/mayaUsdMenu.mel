@@ -868,6 +868,8 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
     int $isSubLayer = `mayaUsdLayerEditorWindow -q -isSubLayer $panelName`;
     int $isMuted = `mayaUsdLayerEditorWindow -q -layerIsMuted $panelName`;
     int $isReadOnly = `mayaUsdLayerEditorWindow -q -layerIsReadOnly $panelName`;
+    int $appearsLocked = `mayaUsdLayerEditorWindow -q -layerAppearsLocked $panelName`;
+    int $isLocked = `mayaUsdLayerEditorWindow -q -layerIsLocked $panelName`;
     int $isIncoming = `mayaUsdLayerEditorWindow -q -isIncomingLayer $panelName`;
     string $proxyShape = `mayaUsdLayerEditorWindow -q -proxyShape $panelName`;
 
@@ -916,6 +918,16 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
         else
             $label = getMayaUsdString("kMenuMute");
         $cmd = makeCommand($panelName, "muteLayer");
+        $enabled = 1;
+        menuItem -label $label -enable $enabled -c $cmd;
+    }
+    
+    if (!$isSessionLayer) {
+        if ($isLocked)
+            $label = getMayaUsdString("kMenuUnlock");
+        else
+            $label = getMayaUsdString("kMenuLock");
+        $cmd = makeCommand($panelName, "lockLayer");
         $enabled = 1;
         menuItem -label $label -enable $enabled -c $cmd;
     }

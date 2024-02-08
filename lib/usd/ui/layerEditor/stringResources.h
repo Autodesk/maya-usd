@@ -64,6 +64,7 @@ const auto kLoadSublayersTo              { create("kLoadSublayersTo", "Load Subl
 const auto kLoadSublayers                { create("kLoadSublayers", "Load Sublayers") };
 const auto kLayerPath                    { create("kLayerPath", "Layer Path:") };
 const auto kMuteUnmuteLayer              { create("kMuteUnmuteLayer", "Mute/unmute the layer. Muted layers are ignored by the stage.")};
+const auto kLockUnlockLayer              { create("kLockUnlockLayer", "Lock/unlock the layer. A locked layer cannot be edited.")};
 const auto kNoLayers                     { create("kNoLayers", "No Layers") };
 const auto kNotUndoable                  { create("kNotUndoable", "You can not undo this action.") };
 const auto kOption                       { create("kOption", "Option") };

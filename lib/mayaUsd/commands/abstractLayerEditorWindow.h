@@ -83,6 +83,8 @@ public:
     virtual bool        layerNeedsSaving() = 0;
     virtual bool        layerAppearsMuted() = 0;
     virtual bool        layerIsMuted() = 0;
+    virtual bool        layerAppearsLocked() = 0;
+    virtual bool        layerIsLocked() = 0;
     virtual bool        layerIsReadOnly() = 0;
     virtual std::string proxyShapeName() const = 0;
 
@@ -97,6 +99,7 @@ public:
     virtual void clearLayer() = 0;
     virtual void selectPrimsWithSpec() = 0;
     virtual void updateLayerModel() = 0;
+    virtual void lockLayer() = 0;
 
     virtual void selectProxyShape(const char* shapePath) = 0;
 };

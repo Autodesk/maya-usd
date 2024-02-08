@@ -43,6 +43,8 @@ DEF_FLAG(ns, layerNeedsSaving)
 DEF_FLAG(am, layerAppearsMuted)
 DEF_FLAG(mu, layerIsMuted)
 DEF_FLAG(r, layerIsReadOnly)
+DEF_FLAG(al, layerAppearsLocked)
+DEF_FLAG(lo, layerIsLocked)
 
 // edit flags
 DEF_FLAG(rs, removeSubLayer)
@@ -55,6 +57,7 @@ DEF_FLAG(ml, muteLayer)
 DEF_FLAG(pl, printLayer)
 DEF_FLAG(cl, clearLayer)
 DEF_FLAG(sp, selectPrimsWithSpec)
+DEF_FLAG(lk, lockLayer)
 
 const MString WORKSPACE_CONTROL_NAME = "mayaUsdLayerEditor";
 } // namespace
@@ -125,6 +128,8 @@ MSyntax LayerEditorWindowCommand::createSyntax()
     ADD_FLAG(layerAppearsMuted);
     ADD_FLAG(layerIsMuted);
     ADD_FLAG(layerIsReadOnly);
+    ADD_FLAG(layerAppearsLocked);
+    ADD_FLAG(layerIsLocked);
 
     ADD_FLAG(removeSubLayer);
     ADD_FLAG(saveEdits);
@@ -136,6 +141,7 @@ MSyntax LayerEditorWindowCommand::createSyntax()
     ADD_FLAG(printLayer);
     ADD_FLAG(clearLayer);
     ADD_FLAG(selectPrimsWithSpec);
+    ADD_FLAG(lockLayer);
 
     // editor name
     syntax.addArg(MSyntax::kString);
@@ -317,6 +323,8 @@ MStatus LayerEditorWindowCommand::handleQueries(
     HANDLE_Q_FLAG(layerAppearsMuted)
     HANDLE_Q_FLAG(layerIsMuted)
     HANDLE_Q_FLAG(layerIsReadOnly)
+    HANDLE_Q_FLAG(layerAppearsLocked)
+    HANDLE_Q_FLAG(layerIsLocked)
 
     if (argParser.isFlagSet(FLAG(proxyShape)) && argParser.isQuery()) {
         setResult(layerEditor->proxyShapeName().c_str());
@@ -355,6 +363,7 @@ MStatus LayerEditorWindowCommand::handleEdits(
     HANDLE_E_FLAG(printLayer)
     HANDLE_E_FLAG(clearLayer)
     HANDLE_E_FLAG(selectPrimsWithSpec)
+    HANDLE_E_FLAG(lockLayer)
 
     return MS::kSuccess;
 }

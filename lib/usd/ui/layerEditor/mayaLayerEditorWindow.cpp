@@ -159,6 +159,8 @@ bool MayaLayerEditorWindow::layerNeedsSaving() { CALL_CURRENT_ITEM(needsSaving);
 bool MayaLayerEditorWindow::layerAppearsMuted() { CALL_CURRENT_ITEM(appearsMuted); }
 bool MayaLayerEditorWindow::layerIsMuted() { CALL_CURRENT_ITEM(isMuted); }
 bool MayaLayerEditorWindow::layerIsReadOnly() { CALL_CURRENT_ITEM(isReadOnly); }
+bool MayaLayerEditorWindow::layerAppearsLocked() { CALL_CURRENT_ITEM(appearsLocked); }
+bool MayaLayerEditorWindow::layerIsLocked() { CALL_CURRENT_ITEM(isLocked); }
 
 std::string MayaLayerEditorWindow::proxyShapeName() const
 {
@@ -193,6 +195,15 @@ void MayaLayerEditorWindow::addAnonymousSublayer()
 }
 
 void MayaLayerEditorWindow::updateLayerModel() { _sessionState.refreshCurrentStageEntry(); }
+
+void MayaLayerEditorWindow::lockLayer()
+{
+    auto item = treeView()->currentLayerItem();
+    if (item != nullptr) {
+        QString name = item->isLocked() ? "Unlock" : "Lock";
+        treeView()->onLockLayer(name);
+    }
+}
 
 void MayaLayerEditorWindow::addParentLayer()
 {

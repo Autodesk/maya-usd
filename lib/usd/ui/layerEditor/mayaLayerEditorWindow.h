@@ -59,6 +59,8 @@ public:
     bool        layerIsMuted() override;
     bool        layerIsReadOnly() override;
     std::string proxyShapeName() const override;
+    bool        layerAppearsLocked() override;
+    bool        layerIsLocked() override;
 
     void removeSubLayer() override;
     void saveEdits() override;
@@ -71,6 +73,7 @@ public:
     void clearLayer() override;
     void selectPrimsWithSpec() override;
     void updateLayerModel() override;
+    void lockLayer() override;
 
     void selectProxyShape(const char* shapePath) override;
 
