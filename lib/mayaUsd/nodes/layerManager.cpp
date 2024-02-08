@@ -248,6 +248,8 @@ public:
 
     SdfLayerHandle findLayer(std::string identifier) const;
 
+    LayerManager::LayerNameMap getLayerNameMap() const;
+
 private:
     void registerCallbacks();
     void unregisterCallbacks();
@@ -1099,6 +1101,19 @@ void LayerDatabase::cleanUpNewScene(void*)
     LayerDatabase::removeManagerNode();
 }
 
+LayerManager::LayerNameMap LayerDatabase::getLayerNameMap() const
+{
+    LayerManager::LayerNameMap nameMap;
+    for (const auto& idAndLayer : _idToLayer) {
+        const std::string& layerName = idAndLayer.first;
+        const std::string& currentName = idAndLayer.second->GetIdentifier();
+        if (currentName != layerName) {
+            nameMap[layerName] = currentName;
+        }
+    }
+    return nameMap;
+}
+
 bool LayerDatabase::remapSubLayerPaths(SdfLayerHandle parentLayer)
 {
     bool                     modifiedPaths = false;
@@ -1352,6 +1367,16 @@ SdfLayerHandle LayerManager::findLayer(std::string identifier)
     LayerDatabase::loadLayersPostRead(nullptr);
 
     return LayerDatabase::instance().findLayer(identifier);
+}
+
+/* static */
+LayerManager::LayerNameMap LayerManager::getLayerNameMap()
+{
+    std::lock_guard<std::recursive_mutex> lock(findNodeMutex);
+
+    LayerDatabase::loadLayersPostRead(nullptr);
+
+    return LayerDatabase::instance().getLayerNameMap();
 }
 
 /* static */
