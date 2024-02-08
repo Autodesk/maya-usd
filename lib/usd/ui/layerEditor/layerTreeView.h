@@ -96,6 +96,7 @@ public:
     // menu callbacks
     void onAddParentLayer(const QString& undoName) const;
     void onMuteLayer(const QString& undoName) const;
+    void onLockLayer(const QString& undoName) const;
 
     // QWidgets overrides
     virtual void paintEvent(QPaintEvent* event) override;
@@ -114,6 +115,7 @@ protected:
     void onExpanded(const QModelIndex& index);
     void onCollapsed(const QModelIndex& index);
     void onMuteLayerButtonPushed();
+    void onLockLayerButtonPushed();
 
     bool shouldExpandOrCollapseAll() const;
     void expandChildren(const QModelIndex& index);

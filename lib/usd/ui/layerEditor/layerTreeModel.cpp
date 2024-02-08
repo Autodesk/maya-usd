@@ -568,4 +568,17 @@ void LayerTreeModel::toggleMuteLayer(LayerTreeItem* item, bool* forcedState)
     _sessionState->commandHook()->muteSubLayer(item->layer(), !item->isMuted());
 }
 
+void LayerTreeModel::toggleLockLayer(LayerTreeItem* item, bool* forcedState /*= nullptr*/)
+{
+    if (item->isInvalidLayer() || item->isSessionLayer())
+        return;
+
+    if (forcedState) {
+        if (*forcedState == item->isLocked())
+            return;
+    }
+
+    _sessionState->commandHook()->lockSubLayer(item->layer(), !item->isLocked());
+}
+
 } // namespace UsdLayerEditor
