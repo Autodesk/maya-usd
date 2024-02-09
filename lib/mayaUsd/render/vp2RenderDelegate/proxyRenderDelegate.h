@@ -159,6 +159,9 @@ public:
     SdfPath GetScenePrimPath(const SdfPath& rprimId, int instanceIndex) const;
 #endif
 
+    SdfPathVector GetScenePrimPaths(const SdfPath& rprimId, std::vector<int> instanceIndexes) const;
+    SdfPathVector GetScenePrimPaths(const SdfPath& rprimId, unsigned int instanceCount) const;
+
     MAYAUSD_CORE_PUBLIC
     void SelectionChanged();
 

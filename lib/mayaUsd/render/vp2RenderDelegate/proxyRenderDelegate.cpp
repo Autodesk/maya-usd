@@ -1343,6 +1343,37 @@ SdfPath ProxyRenderDelegate::GetScenePrimPath(const SdfPath& rprimId, int instan
     return usdPath;
 }
 
+static std::vector<int> fillInstanceIds(unsigned int instanceCount)
+{
+    std::vector<int> usdInstanceIds;
+    usdInstanceIds.reserve(instanceCount);
+    for (unsigned int usdInstanceId = 0; usdInstanceId < instanceCount; usdInstanceId++)
+        usdInstanceIds.emplace_back(usdInstanceId);
+    return usdInstanceIds;
+}
+
+SdfPathVector
+ProxyRenderDelegate::GetScenePrimPaths(const SdfPath& rprimId, unsigned int instanceCount) const
+{
+    return GetScenePrimPaths(rprimId, fillInstanceIds(instanceCount));
+}
+
+SdfPathVector ProxyRenderDelegate::GetScenePrimPaths(
+    const SdfPath&   rprimId,
+    std::vector<int> instanceIndexes) const
+{
+#if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 17
+    return _sceneDelegate->GetScenePrimPaths(rprimId, instanceIndexes);
+#else
+    SdfPathVector usdPaths;
+    usdPaths.reserve(instanceIndexes.size());
+    for (int instanceIndex : instanceIndexes) {
+        usdPaths.emplace_back(GetScenePrimPath(rprimId, instanceIndex));
+    }
+    return usdPaths;
+#endif
+}
+
 //! \brief  Selection for both instanced and non-instanced cases.
 bool ProxyRenderDelegate::getInstancedSelectionPath(
     const MHWRender::MRenderItem&   renderItem,
@@ -1395,7 +1426,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         topLevelInstanceIndex = instancerContext.front().second;
     }
 #else
-    SdfPath usdPath = GetScenePrimPath(rprimId, instanceIndex);
+    SdfPath      usdPath = GetScenePrimPath(rprimId, instanceIndex);
 #endif
 
     // If update for selection is enabled, we can query the Maya selection list
