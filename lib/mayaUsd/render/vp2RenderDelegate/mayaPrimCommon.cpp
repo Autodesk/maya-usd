@@ -808,9 +808,12 @@ void MayaUsdRPrim::_SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned i
     _requiredModFlagsBitset.reset();
     if (_useInstancedDisplayLayerModes) {
         _displayLayerModesInstanced.resize(instanceCount);
+
+        const SdfPathVector usdPaths = drawScene.GetScenePrimPaths(id, instanceCount);
+
         for (unsigned int usdInstanceId = 0; usdInstanceId < instanceCount; usdInstanceId++) {
-            auto  usdPath = drawScene.GetScenePrimPath(id, usdInstanceId);
-            auto& displayLayerModes = _displayLayerModesInstanced[usdInstanceId];
+            auto&          displayLayerModes = _displayLayerModesInstanced[usdInstanceId];
+            const SdfPath& usdPath = usdPaths[usdInstanceId];
             _PopulateDisplayLayerModes(usdPath, displayLayerModes, drawScene);
 
             if (displayLayerModes._reprOverride == kBBox) {
