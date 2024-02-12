@@ -89,6 +89,16 @@ else()
     )
 endif()
 
+# The mayaUsd plugin does need the mayaUsdAPI library. However, other plugins that
+# depend on it have no way of locating it currently at runtime, so it has to be
+# preloaded.
+if(IS_MACOSX OR IS_LINUX)
+    target_link_libraries(${TARGET_NAME}
+        PRIVATE
+            mayaUsdAPI
+    )
+endif()
+
 # -----------------------------------------------------------------------------
 # properties
 # -----------------------------------------------------------------------------
