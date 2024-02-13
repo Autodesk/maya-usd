@@ -50,31 +50,29 @@ bool getUsdValue(
     PXR_NS::VtValue&           value,
     PXR_NS::UsdTimeCode        time);
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+
 /*! Returns a Ufe command that can create a new material based on the given shader identifier or
  *  nullptr if the parent item is not a valid Usd item.
  *  The returned command is not executed; it is up to the caller to call execute().
  */
 MAYAUSD_API_PUBLIC
-Ufe::InsertChildCommand::Ptr addNewMaterialCommand(
+Ufe::UndoableCommand::Ptr addNewMaterialCommand(
     const Ufe::SceneItem::Ptr& parentItem,
     const std::string&         sdrShaderIdentifier);
-
-#ifdef UFE_V4_FEATURES_AVAILABLE
 
 /*! Returns a Ufe command that can create a material scope or nullptr if the parent item is not a
  *  valid Usd item.
  *  The returned command is not executed; it is up to the caller to call execute().
  */
 MAYAUSD_API_PUBLIC
-Ufe::SceneItemResultUndoableCommand::Ptr
-createMaterialsScopeCommand(const Ufe::SceneItem::Ptr& parentItem);
+Ufe::UndoableCommand::Ptr createMaterialsScopeCommand(const Ufe::SceneItem::Ptr& parentItem);
 
 /*! Returns a Ufe command that can create a new Usd stage with a new layer.
  *  The returned command is not executed; it is up to the caller to call execute().
  */
 MAYAUSD_API_PUBLIC
-Ufe::SceneItemResultUndoableCommand::Ptr
-createStageWithNewLayerCommand(const Ufe::SceneItem::Ptr& parentItem);
+Ufe::UndoableCommand::Ptr createStageWithNewLayerCommand(const Ufe::SceneItem::Ptr& parentItem);
 
 #endif
 

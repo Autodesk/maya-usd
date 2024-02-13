@@ -19,8 +19,8 @@
 #include <mayaUsd/ufe/Global.h>
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdUndoCreateStageWithNewLayerCommand.h>
-#endif
 #include <mayaUsd/ufe/UsdUndoMaterialCommands.h>
+#endif
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsdUtils/MergePrims.h>
@@ -61,7 +61,9 @@ bool getUsdValue(
     return false;
 }
 
-Ufe::InsertChildCommand::Ptr
+#ifdef UFE_V4_FEATURES_AVAILABLE
+
+Ufe::UndoableCommand::Ptr
 addNewMaterialCommand(const Ufe::SceneItem::Ptr& parentItem, const std::string& sdrShaderIdentifier)
 {
     if (auto usdSceneItem = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(parentItem)) {
@@ -71,10 +73,7 @@ addNewMaterialCommand(const Ufe::SceneItem::Ptr& parentItem, const std::string& 
     return nullptr;
 }
 
-#ifdef UFE_V4_FEATURES_AVAILABLE
-
-Ufe::SceneItemResultUndoableCommand::Ptr
-createMaterialsScopeCommand(const Ufe::SceneItem::Ptr& parentItem)
+Ufe::UndoableCommand::Ptr createMaterialsScopeCommand(const Ufe::SceneItem::Ptr& parentItem)
 {
     if (auto usdSceneItem = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(parentItem)) {
         return MayaUsd::ufe::UsdUndoCreateMaterialsScopeCommand::create(usdSceneItem);
@@ -82,8 +81,7 @@ createMaterialsScopeCommand(const Ufe::SceneItem::Ptr& parentItem)
     return nullptr;
 }
 
-Ufe::SceneItemResultUndoableCommand::Ptr
-createStageWithNewLayerCommand(const Ufe::SceneItem::Ptr& parentItem)
+Ufe::UndoableCommand::Ptr createStageWithNewLayerCommand(const Ufe::SceneItem::Ptr& parentItem)
 {
     return MayaUsd::ufe::UsdUndoCreateStageWithNewLayerCommand::create(parentItem);
 }
