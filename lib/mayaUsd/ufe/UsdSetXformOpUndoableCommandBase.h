@@ -19,6 +19,7 @@
 
 #include <usdUfe/undo/UsdUndoableItem.h>
 
+#include <pxr/base/vt/value.h>
 #include <pxr/usd/usd/timeCode.h>
 
 #include <ufe/transform3dUndoableCommands.h>
@@ -31,48 +32,83 @@ namespace ufe {
 // Helper class to factor out common code for translate, rotate, scale
 // undoable commands.  It is templated on the type of the transform op.
 //
-// Developing commands to work with Maya TRS commands is made more difficult
-// because Maya calls undo(), but never calls redo(): it simply calls set()
-// with the new value again.  We must distinguish cases where set() must
-// capture state, so that undo() can completely remove any added primSpecs or
-// attrSpecs.  This class implements state tracking to allow this: state is
-// saved on transition between kInitial and kExecute.
-// UsdTransform3dMayaXformStack has a state machine based implementation that
-// avoids conditionals, but UsdSetXformOpUndoableCommandBase is less invasive
-// from a development standpoint.
-
-template <typename T>
+// We must do a careful dance due to historic reasons and the way Maya handle
+// interactive commands:
+//
+//     - These commands can be wrapped inside other commands which may
+//       use their own UsdUndoBlock. In particular, we must not try to
+//       undo an attribute creation if it was not yet created.
+//
+//     - Maya can call undo and set-value before first executing the
+//       command. In particular, when using manipualtion tools, Maya
+//       will usually do loops of undo/set-value/redo, thus beginning
+//       by undoing a command that was never executed.
+//
+//     - As a general rule, when undoing, we want to remove any attributes
+//       that were created when first executed.
+//
+//     - When redoing some commands after an undo, Maya will update the
+//       value to be set with an incorrect value when operating in object
+//       space, which must be ignored.
+//
+// Those things are what the prepare-op/recreate-op/remove-op functions are
+// aimed to support. Also, we must only capture the initial value the first
+// time thevalue is modified, to support both the inital undo/set-value and
+// avoid losing the initial value on repeat set-value.
 class UsdSetXformOpUndoableCommandBase : public Ufe::SetVector3dUndoableCommand
 {
-    const PXR_NS::UsdTimeCode _readTime;
-    const PXR_NS::UsdTimeCode _writeTime;
-    UsdUfe::UsdUndoableItem   _undoableItem;
-    enum State
-    {
-        kInitial,
-        kInitialUndoCalled,
-        kExecute,
-        kUndone,
-        kRedone
-    };
-    State _state { kInitial };
-
 public:
+    UsdSetXformOpUndoableCommandBase(
+        const PXR_NS::VtValue&     newValue,
+        const Ufe::Path&           path,
+        const PXR_NS::UsdTimeCode& writeTime);
     UsdSetXformOpUndoableCommandBase(const Ufe::Path& path, const PXR_NS::UsdTimeCode& writeTime);
 
     // Ufe::UndoableCommand overrides.
-    // No-op: Maya calls set() rather than execute().
     void execute() override;
     void undo() override;
-    // No-op: Maya calls set() rather than redo().
     void redo() override;
 
-    PXR_NS::UsdTimeCode readTime() const { return _readTime; }
     PXR_NS::UsdTimeCode writeTime() const { return _writeTime; }
 
-    virtual void setValue(const T&) = 0;
+protected:
+    // Create the XformOp attributes if they do not exists.
+    // The attribute creation must be capture in the UsdUndoableItem by using a
+    // UsdUndoBlock, so that removeOpIfNeeded and recreateOpIfNeeded can undo
+    // and redo the attribute creation if needed.
+    virtual void createOpIfNeeded(UsdUndoableItem&) = 0;
 
-    void handleSet(const T& v);
+    // Get the attribute at the given time.
+    virtual PXR_NS::VtValue getValue(const PXR_NS::UsdTimeCode& time) const = 0;
+
+    // Set the attribute at the given time. The value is guaranteed to either be
+    // the initial value that was returned by the getValue function above or a
+    // new value passed to the updateNewValue function below. So you are guaranteed
+    // that the type contained in the VtValue is the type you want.
+    virtual void setValue(const PXR_NS::VtValue&, const PXR_NS::UsdTimeCode& time) = 0;
+
+    // Function called by sub-classed when they want to set a new value.
+    void updateNewValue(const PXR_NS::VtValue& v);
+
+private:
+    void prepareAndSet(const PXR_NS::VtValue&);
+
+    // Create the XformOp attributes if they do not exists and cache the initial value.
+    void prepareOpIfNeeded();
+
+    // Recreate the attribute after being removed if it was created.
+    void recreateOpIfNeeded();
+
+    // Remove the attribute if it was created.
+    void removeOpIfNeeded();
+
+    const PXR_NS::UsdTimeCode _writeTime;
+    PXR_NS::VtValue           _initialOpValue;
+    PXR_NS::VtValue           _newOpValue;
+    UsdUndoableItem           _opCreationUndo;
+    bool                      _isPrepared;
+    bool                      _canUpdateValue;
+    bool                      _opCreated;
 };
 
 } // namespace ufe
