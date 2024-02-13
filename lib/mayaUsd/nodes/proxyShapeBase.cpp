@@ -880,7 +880,17 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         const auto stageCached = cacheId.IsValid() && UsdUtilsStageCache::Get().Contains(cacheId);
         if (stageCached) {
             sharedUsdStage = UsdUtilsStageCache::Get().Find(cacheId);
-            isIncomingStage = true;
+
+            // Check what is the cache connected to
+            MStringArray result;
+            MGlobal::executeCommand(
+                ("listConnections -t shape -shapes on " + this->name()), result);
+
+            // The stage is only incoming if the cache is connected to a shape
+            if (stageCached && result.length()) {
+                isIncomingStage = true;
+            }
+
             // If the stage set by stage ID is not anonymous, set the filePath
             // attribute to it so that it can be reloaded when the Maya scene
             // is re-opened.
