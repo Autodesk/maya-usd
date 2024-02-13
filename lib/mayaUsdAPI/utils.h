@@ -59,6 +59,8 @@ Ufe::InsertChildCommand::Ptr addNewMaterialCommand(
     const Ufe::SceneItem::Ptr& parentItem,
     const std::string&         sdrShaderIdentifier);
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+
 /*! Returns a Ufe command that can create a material scope or nullptr if the parent item is not a
  *  valid Usd item.
  *  The returned command is not executed; it is up to the caller to call execute().
@@ -73,6 +75,8 @@ createMaterialsScopeCommand(const Ufe::SceneItem::Ptr& parentItem);
 MAYAUSD_API_PUBLIC
 Ufe::SceneItemResultUndoableCommand::Ptr
 createStageWithNewLayerCommand(const Ufe::SceneItem::Ptr& parentItem);
+
+#endif
 
 //! Returns whether or not the given item is a materials scope.
 MAYAUSD_API_PUBLIC

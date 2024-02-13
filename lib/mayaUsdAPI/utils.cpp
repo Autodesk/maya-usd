@@ -17,7 +17,9 @@
 #include "utils.h"
 
 #include <mayaUsd/ufe/Global.h>
+#ifdef UFE_V4_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdUndoCreateStageWithNewLayerCommand.h>
+#endif
 #include <mayaUsd/ufe/UsdUndoMaterialCommands.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/utilFileSystem.h>
@@ -69,6 +71,8 @@ addNewMaterialCommand(const Ufe::SceneItem::Ptr& parentItem, const std::string& 
     return nullptr;
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+
 Ufe::SceneItemResultUndoableCommand::Ptr
 createMaterialsScopeCommand(const Ufe::SceneItem::Ptr& parentItem)
 {
@@ -83,6 +87,8 @@ createStageWithNewLayerCommand(const Ufe::SceneItem::Ptr& parentItem)
 {
     return MayaUsd::ufe::UsdUndoCreateStageWithNewLayerCommand::create(parentItem);
 }
+
+#endif
 
 bool isMaterialsScope(const Ufe::SceneItem::Ptr& item)
 {
