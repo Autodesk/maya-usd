@@ -17,6 +17,7 @@ add_library(${PYTHON_TARGET_NAME} SHARED)
 target_sources(${PYTHON_TARGET_NAME} 
     PRIVATE
         module.cpp
+        wrapClipboard.cpp
         wrapEditRouter.cpp
         wrapGlobal.cpp
         wrapTokens.cpp

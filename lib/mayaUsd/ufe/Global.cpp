@@ -80,6 +80,12 @@
 #include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/utils/editRouter.h>
 
+#if UFE_CLIPBOARD_SUPPORT
+#include <mayaUsd/utils/utilSerialization.h>
+
+#include <usdUfe/ufe/UsdClipboardHandler.h>
+#endif
+
 #include <maya/MGlobal.h>
 #include <maya/MSceneMessage.h>
 #include <ufe/hierarchyHandler.h>
@@ -88,6 +94,9 @@
 
 #include <cassert>
 #include <string>
+#if UFE_CLIPBOARD_SUPPORT
+#include <ghc/filesystem.hpp>
+#endif
 
 namespace {
 
@@ -321,6 +330,18 @@ MStatus initialize()
         runTimeMgr.setUINodeGraphNodeHandler(usdRtid, handlers.uiNodeGraphNodeHandler);
     if (handlers.batchOpsHandler)
         runTimeMgr.setBatchOpsHandler(usdRtid, handlers.batchOpsHandler);
+#endif
+
+#if UFE_CLIPBOARD_SUPPORT
+    // Get the clipboard handler registered by UsdUfe and set a MayaUsd clipboard path.
+    auto clipboardHandler = std::dynamic_pointer_cast<UsdUfe::UsdClipboardHandler>(
+        runTimeMgr.clipboardHandler(usdRtid));
+    if (clipboardHandler) {
+        auto clipboardFilePath = ghc::filesystem::temp_directory_path();
+        clipboardFilePath.append("MayaUsdClipboard.usd");
+        clipboardHandler->setClipboardFilePath(clipboardFilePath.string());
+        clipboardHandler->setClipboardFileFormat(MayaUsd::utils::usdFormatArgOption());
+    }
 #endif
 
     MayaUsd::ufe::UsdUIUfeObserver::create();

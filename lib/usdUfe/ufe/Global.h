@@ -28,6 +28,10 @@
 
 #include <string>
 
+#if UFE_CLIPBOARD_SUPPORT
+#include <ufe/clipboardHandler.h>
+#endif
+
 namespace USDUFE_NS_DEF {
 
 /*! Ufe runtime DCC specific functions.
@@ -87,6 +91,10 @@ struct USDUFE_PUBLIC Handlers
 //     Ufe::ConnectionHandler::Ptr      connectionHandler;
 //     Ufe::UINodeGraphNodeHandler::Ptr uiNodeGraphNodeHandler;
 //     Ufe::BatchOpsHandler::Ptr        batchOpsHandler;
+#endif
+
+#if UFE_CLIPBOARD_SUPPORT
+    Ufe::ClipboardHandler::Ptr clipboardHandler;
 #endif
 };
 
