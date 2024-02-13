@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Autodesk
+// Copyright 2024 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,11 +17,6 @@
 #include "utils.h"
 
 #include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/UsdAttributesHandler.h>
-#include <mayaUsd/ufe/UsdConnectionHandler.h>
-#include <mayaUsd/ufe/UsdSceneItemOpsHandler.h>
-#include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
-#include <mayaUsd/ufe/UsdUINodeGraphNodeHandler.h>
 #include <mayaUsd/ufe/UsdUndoCreateStageWithNewLayerCommand.h>
 #include <mayaUsd/ufe/UsdUndoMaterialCommands.h>
 #include <mayaUsd/ufe/Utils.h>
@@ -127,31 +122,6 @@ makePathRelativeTo(const std::string& fileName, const std::string& relativeToDir
 bool requireUsdPathsRelativeToEditTargetLayer()
 {
     return PXR_NS::UsdMayaUtilFileSystem::requireUsdPathsRelativeToEditTargetLayer();
-}
-
-Ufe::AttributesHandler::Ptr createAttributesHandler()
-{
-    return MayaUsd::ufe::UsdAttributesHandler::create();
-}
-
-Ufe::NodeDefHandler::Ptr createNodeDefHandler()
-{
-    return MayaUsd::ufe::UsdShaderNodeDefHandler::create();
-}
-
-Ufe::ConnectionHandler::Ptr createConnectionHandler()
-{
-    return MayaUsd::ufe::UsdConnectionHandler::create();
-}
-
-Ufe::SceneItemOpsHandler::Ptr createSceneItemOpsHandler()
-{
-    return MayaUsd::ufe::UsdSceneItemOpsHandler::create();
-}
-
-Ufe::UINodeGraphNodeHandler::Ptr createUINodeGraphNodeHandler()
-{
-    return MayaUsd::ufe::UsdUINodeGraphNodeHandler::create();
 }
 
 } // End of namespace MAYAUSDAPI_NS_DEF

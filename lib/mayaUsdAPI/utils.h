@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Autodesk
+// Copyright 2024 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,12 +21,7 @@
 #include <pxr/usd/usd/attribute.h>
 
 #include <ufe/attribute.h>
-#include <ufe/attributesHandler.h>
-#include <ufe/connectionHandler.h>
-#include <ufe/nodeDefHandler.h>
 #include <ufe/rtid.h>
-#include <ufe/sceneItemOpsHandler.h>
-#include <ufe/uiNodeGraphNodeHandler.h>
 
 namespace MAYAUSDAPI_NS_DEF {
 
@@ -57,6 +52,7 @@ bool getUsdValue(
 
 /*! Returns a Ufe command that can create a new material based on the given shader identifier or
  *  nullptr if the parent item is not a valid Usd item.
+ *  The returned command is not executed; it is up to the caller to call execute().
  */
 MAYAUSD_API_PUBLIC
 Ufe::InsertChildCommand::Ptr addNewMaterialCommand(
@@ -65,12 +61,15 @@ Ufe::InsertChildCommand::Ptr addNewMaterialCommand(
 
 /*! Returns a Ufe command that can create a material scope or nullptr if the parent item is not a
  *  valid Usd item.
+ *  The returned command is not executed; it is up to the caller to call execute().
  */
 MAYAUSD_API_PUBLIC
 Ufe::SceneItemResultUndoableCommand::Ptr
 createMaterialsScopeCommand(const Ufe::SceneItem::Ptr& parentItem);
 
-//! Returns a Ufe command that can create a new Usd stage with a new layer.
+/*! Returns a Ufe command that can create a new Usd stage with a new layer.
+ *  The returned command is not executed; it is up to the caller to call execute().
+ */
 MAYAUSD_API_PUBLIC
 Ufe::SceneItemResultUndoableCommand::Ptr
 createStageWithNewLayerCommand(const Ufe::SceneItem::Ptr& parentItem);
@@ -109,26 +108,6 @@ makePathRelativeTo(const std::string& fileName, const std::string& relativeToDir
  */
 MAYAUSD_API_PUBLIC
 bool requireUsdPathsRelativeToEditTargetLayer();
-
-//! Creates an Attributes Handler.
-MAYAUSD_API_PUBLIC
-Ufe::AttributesHandler::Ptr createAttributesHandler();
-
-//! Creates a NodeDef Handler.
-MAYAUSD_API_PUBLIC
-Ufe::NodeDefHandler::Ptr createNodeDefHandler();
-
-//! Creates a Connection Handler.
-MAYAUSD_API_PUBLIC
-Ufe::ConnectionHandler::Ptr createConnectionHandler();
-
-//! Creates a SceneItemOps Handler.
-MAYAUSD_API_PUBLIC
-Ufe::SceneItemOpsHandler::Ptr createSceneItemOpsHandler();
-
-//! Creates a UINodeGraphNode Handler.
-MAYAUSD_API_PUBLIC
-Ufe::UINodeGraphNodeHandler::Ptr createUINodeGraphNodeHandler();
 
 } // namespace MAYAUSDAPI_NS_DEF
 
