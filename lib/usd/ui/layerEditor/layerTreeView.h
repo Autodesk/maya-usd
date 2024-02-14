@@ -111,7 +111,13 @@ protected:
     void onModelAboutToBeReset();
     void onModelReset();
     void onItemDoubleClicked(const QModelIndex& index);
+    void onExpanded(const QModelIndex& index);
+    void onCollapsed(const QModelIndex& index);
     void onMuteLayerButtonPushed();
+
+    bool shouldExpandOrCollapseAll() const;
+    void expandChildren(const QModelIndex& index);
+    void collapseChildren(const QModelIndex& index);
 
     // delayed signal to select a layer on idle
     void selectLayerRquest(const QModelIndex& index);

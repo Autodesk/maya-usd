@@ -197,13 +197,15 @@ SdfLayerHandle getStrongerLayer(
         return layer2;
 
     for (auto path : root->GetSubLayerPaths()) {
-        SdfLayerRefPtr subLayer = SdfLayer::FindOrOpen(path);
-        if (subLayer) {
-            SdfLayerHandle stronger = getStrongerLayer(subLayer, layer1, layer2);
-            if (!stronger.IsInvalid()) {
-                return stronger;
-            }
-        }
+        SdfLayerRefPtr subLayer = SdfLayer::FindRelativeToLayer(root, path);
+        if (!subLayer)
+            continue;
+
+        SdfLayerHandle stronger = getStrongerLayer(subLayer, layer1, layer2);
+        if (!stronger)
+            continue;
+
+        return stronger;
     }
 
     return SdfLayerHandle();

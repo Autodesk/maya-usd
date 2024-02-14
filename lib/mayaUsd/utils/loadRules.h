@@ -22,6 +22,7 @@
 #include <pxr/usd/usd/stage.h>
 
 #include <maya/MApiNamespace.h>
+#include <maya/MObject.h>
 
 namespace MAYAUSD_NS_DEF {
 
@@ -42,6 +43,21 @@ MAYAUSD_CORE_PUBLIC
 MStatus copyLoadRulesFromAttribute(
     const PXR_NS::MayaUsdProxyShapeBase& proxyShape,
     PXR_NS::UsdStage&                    stage);
+
+/*! \brief get the load rules from data in a dynamic attribute on the object.
+ */
+MAYAUSD_CORE_PUBLIC
+MStatus getLoadRulesFromAttribute(const MObject& proxyObj, PXR_NS::UsdStageLoadRules& rules);
+
+/*! \brief set the load rules to load-all or unload-all in a dynamic attribute on the object.
+           Used to set the initial load rules when creating a proxy shape.
+ */
+MAYAUSD_CORE_PUBLIC
+MStatus
+setLoadRulesAttribute(const PXR_NS::MayaUsdProxyShapeBase& proxyShape, bool loadAllPayloads);
+
+MAYAUSD_CORE_PUBLIC
+MStatus setLoadRulesAttribute(const MObject& proxyObj, bool loadAllPayloads);
 
 } // namespace MAYAUSD_NS_DEF
 

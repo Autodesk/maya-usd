@@ -37,6 +37,7 @@ from maya.internal.ufeSupport import ufeCmdWrapper as ufeCmd
 import maya.api.OpenMaya as om
 
 import ufe
+import usdUfe
 
 import os
 import unittest
@@ -188,8 +189,8 @@ class ContextOpsTestCase(unittest.TestCase):
 
         # Not supported in bulk (from UsdContextOps).
         self.assertNotIn('Load', contextItemStrings)
-        self.assertNotIn('Load with Descendants', contextItemStrings)
-        self.assertNotIn('Unload', contextItemStrings)
+        self.assertIn('Load with Descendants', contextItemStrings)
+        self.assertIn('Unload', contextItemStrings)
         self.assertNotIn('Variant Sets', contextItemStrings)
         self.assertNotIn('Add New Prim', contextItemStrings)
 
@@ -292,6 +293,104 @@ class ContextOpsTestCase(unittest.TestCase):
         ufeCmd.execute(cmd)
         self.assertEqual(shadingVariant(), 'Ball_8')
         self.assertEqual(shadingVariantOnPrim(), 'Ball_8')
+
+    def testDeactivateInLayer(self):
+        """
+        Test deactivate prim in layers: stronger, weaker, session.
+        """
+        self.assertTrue(self.ball35Prim.IsActive())
+        stage = self.ball35Prim.GetStage()
+
+        # Create a sub-layer of root to test weaker layers.
+        rootLayer = stage.GetRootLayer()
+        newLayerName = "Layer_1"
+        usdFormat = Sdf.FileFormat.FindByExtension("usd")
+        subLayer = Sdf.Layer.New(usdFormat, newLayerName)
+        rootLayer.subLayerPaths.append(subLayer.identifier)
+
+        def changeActivation(layer, activate, expectSuccess, undoIt=False):
+            stage.SetEditTarget(layer)
+            cmdName = "Toggle Active State"
+            cmd = self.contextOps.doOpCmd([cmdName])
+            self.assertIsNotNone(cmd)
+            expectedActivation = bool(expectSuccess == activate)
+            ufeCmd.execute(cmd)
+            self.assertEqual(self.ball35Prim.IsActive(), expectedActivation)
+            if undoIt:
+                cmds.undo()
+                # Note: when we expect failure, undo will do nothing, so in all
+                #       cases we expect the opposite of the activate flag.
+                self.assertEqual(self.ball35Prim.IsActive(), not activate)
+
+        # Some boolean variables to make the code clearer below.
+        doActivate = True
+        doDeactivate = False
+        shouldWork = True
+        shouldFail = False
+        thenUndo = True
+
+        # Deactivate in root layer.
+        changeActivation(stage.GetRootLayer(), doDeactivate, shouldWork)
+
+        # Activate in root layer.
+        changeActivation(stage.GetRootLayer(), doActivate, shouldWork, thenUndo)
+
+        # Activate in session layer.
+        changeActivation(stage.GetSessionLayer(), doActivate, shouldWork, thenUndo)
+
+        # Activate in sub layer.
+        changeActivation(subLayer, doActivate, shouldFail)
+
+    def testInstanceableInLayer(self):
+        """
+        Test instanceable flag in layers: stronger, weaker, session.
+        """
+        self.assertTrue(self.ball35Prim.IsActive())
+        stage = self.ball35Prim.GetStage()
+
+        # Create a sub-layer of root to test weaker layers.
+        rootLayer = stage.GetRootLayer()
+        newLayerName = "Layer_1"
+        usdFormat = Sdf.FileFormat.FindByExtension("usd")
+        subLayer = Sdf.Layer.New(usdFormat, newLayerName)
+        rootLayer.subLayerPaths.append(subLayer.identifier)
+
+        def changeInstanceable(layer, makeInstanceable, expectSuccess, undoIt=False):
+            stage.SetEditTarget(layer)
+            cmdName = "Toggle Instanceable State"
+            cmd = self.contextOps.doOpCmd([cmdName])
+            self.assertIsNotNone(cmd)
+            expectedInstanceable = bool(expectSuccess == makeInstanceable)
+            ufeCmd.execute(cmd)
+            self.assertEqual(self.ball35Prim.IsInstanceable(), expectedInstanceable)
+            if undoIt:
+                cmds.undo()
+                # Note: when we expect failure, undo will do nothing, so in all
+                #       cases we expect the opposite of the activate flag.
+                self.assertEqual(self.ball35Prim.IsInstanceable(), not makeInstanceable)
+
+        # Some boolean variables to make the code clearer below.
+        doInstanceable = True
+        doNonInstanceable = False
+        shouldWork = True
+        shouldFail = False
+        thenUndo = True
+
+        # Instanceable in root layer.
+        changeInstanceable(stage.GetRootLayer(), doInstanceable, shouldWork)
+
+        # Non-instanceable in root layer.
+        changeInstanceable(
+            stage.GetRootLayer(), doNonInstanceable, shouldWork, thenUndo
+        )
+
+        # Non-instanceable in session layer.
+        changeInstanceable(
+            stage.GetSessionLayer(), doNonInstanceable, shouldWork, thenUndo
+        )
+
+        # Non-instanceable in sub layer.
+        changeInstanceable(subLayer, doNonInstanceable, shouldFail)
 
     def testDoOp(self):
         # Change visibility, undo / redo.
@@ -401,6 +500,48 @@ class ContextOpsTestCase(unittest.TestCase):
         # Re-create a ContextOps interface for it.
         # Since the context item is in the selection, we get a bulk context.
         self.contextOps = ufe.ContextOps.contextOps(self.ball35Item)
+
+        # Test Bulk Unload and Load with Descendants
+        payloadFile = testUtils.getTestScene('twoSpheres', 'sphere.usda')
+
+        def addPayLoads(payloadFile, ballPrims):
+            for ballPrim in ballPrims.values():
+                cmd = usdUfe.AddPayloadCommand(ballPrim, payloadFile, True)
+                self.assertIsNotNone(cmd)
+
+                # Verify state after add payload
+                cmd.execute()
+                self.assertTrue(ballPrim.HasPayload())
+                self.assertTrue(ballPrim.IsLoaded())
+    
+        def verifyBulkPrimPayload(ballPrims, ifLoaded):
+            for ballPrim in ballPrims.values():
+                self.assertEqual(ballPrim.IsLoaded(), ifLoaded)
+
+        addPayLoads(payloadFile, ballPrims)
+
+        # Unload
+        cmd = self.contextOps.doOpCmd(['Unload'])
+        self.assertIsNotNone(cmd)
+        self.assertIsInstance(cmd, ufe.CompositeUndoableCommand)
+
+        ufeCmd.execute(cmd)
+        verifyBulkPrimPayload(ballPrims, False)
+        cmds.undo()
+        verifyBulkPrimPayload(ballPrims, True)
+
+        # Load with Descendants
+        # Unload the payloads first, using the unload command
+        ufeCmd.execute(cmd)
+        cmd = self.contextOps.doOpCmd(['Load with Descendants'])
+        self.assertIsNotNone(cmd)
+        self.assertIsInstance(cmd, ufe.CompositeUndoableCommand)
+
+        ufeCmd.execute(cmd)
+        verifyBulkPrimPayload(ballPrims, True)
+        cmds.undo()
+        verifyBulkPrimPayload(ballPrims, False)
+
 
         # Change visility, undo/redo.
         cmd = self.contextOps.doOpCmd(['Make Invisible'])

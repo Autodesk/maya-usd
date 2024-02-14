@@ -55,10 +55,10 @@ enum BatchSaveResult
  */
 struct StageSavingInfo
 {
-    MDagPath    dagPath;
-    UsdStagePtr stage;
-    bool        shareable = true;
-    bool        isIncoming = false;
+    MDagPath       dagPath;
+    UsdStageRefPtr stage;
+    bool           shareable = true;
+    bool           isIncoming = false;
 };
 
 /*! \brief Callback function to handle saving of Usd edits.  In a default build of the

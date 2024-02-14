@@ -13,6 +13,9 @@
 # limitations under the License.
 #
 
+from .attribute_custom_control import AttributeCustomControl
+from .attribute_custom_control import cleanAndFormatTooltip
+
 import mayaUsd.lib as mayaUsdLib
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
 import mayaUsd_USDRootFileRelative as murel
@@ -26,35 +29,30 @@ from maya.common.ui import LayoutManager, ParentManager
 
 import ufe
 
-import os.path
-
 try:
     from PySide2 import QtCore
 except:
     from PySide6 import QtCore
 
 
-class ImageCustomControl(object):
+class ImageCustomControl(AttributeCustomControl):
     filenameField = "UIFilenameField"
 
     def __init__(self, ufeAttr, prim, attrName, useNiceName):
-        self.ufeAttr = ufeAttr
+        super(ImageCustomControl, self).__init__(ufeAttr, attrName, useNiceName)
         self.prim = prim
-        self.attrName = attrName
-        self.useNiceName = useNiceName
         self.controlName = None
-        super(ImageCustomControl, self).__init__()
 
     def onCreate(self, *args):
         cmds.setUITemplate("attributeEditorTemplate", pst=True)
 
-        attrUIName = mayaUsdLib.Util.prettifyName(self.attrName) if self.useNiceName else self.attrName
+        attrUIName = self.getUILabel()
         ufeAttr = self.ufeAttr
 
         createdControl = cmds.rowLayout(nc=3)
         self.controlName = createdControl
         with LayoutManager(createdControl):
-            cmds.text(label=attrUIName)
+            cmds.text(label=attrUIName, annotation=cleanAndFormatTooltip(ufeAttr.getDocumentation()))
             cmds.textField(ImageCustomControl.filenameField)
             cmds.symbolButton("browser", image="navButtonBrowse.png")
 

@@ -34,12 +34,12 @@ class UsdShaderAttributeHolder : public UsdAttributeHolder
 {
     typedef UsdAttributeHolder _Base;
 
+public:
     UsdShaderAttributeHolder(
         PXR_NS::UsdPrim                   usdPrim,
         PXR_NS::SdrShaderPropertyConstPtr sdrProp,
         PXR_NS::UsdShadeAttributeType     sdrType);
 
-public:
     static UPtr create(
         PXR_NS::UsdPrim                   usdPrim,
         PXR_NS::SdrShaderPropertyConstPtr sdrProp,
@@ -54,6 +54,7 @@ public:
 
     virtual bool        hasValue() const;
     virtual std::string name() const;
+    virtual std::string displayName() const;
     virtual std::string documentation() const;
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -65,6 +66,7 @@ public:
     virtual PXR_NS::UsdPrim                      usdPrim() const { return _usdAttr.GetPrim(); }
     virtual PXR_NS::SdfValueTypeName             usdAttributeType() const;
     virtual Ufe::AttributeEnumString::EnumValues getEnumValues() const;
+    virtual EnumOptions                          getEnums() const;
 
 private:
     PXR_NS::SdrShaderPropertyConstPtr _sdrProp;

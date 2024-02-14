@@ -556,7 +556,10 @@ bool UsdMaya_WriteJob::_FinishWriting()
         UsdGeomSetStageMetersPerUnit(mJobCtx.mStage, mJobCtx.mArgs.metersPerUnit);
     }
 
-    if (usdRootPrim) {
+    if (!mJobCtx.mArgs.defaultPrim.empty()) {
+        defaultPrim = TfToken(mJobCtx.mArgs.defaultPrim);
+        mJobCtx.mStage->GetRootLayer()->SetDefaultPrim(defaultPrim);
+    } else if (usdRootPrim) {
         // We have already decided above that 'usdRootPrim' is the important
         // prim for the export... usdVariantRootPrimPath
         mJobCtx.mStage->GetRootLayer()->SetDefaultPrim(defaultPrim);

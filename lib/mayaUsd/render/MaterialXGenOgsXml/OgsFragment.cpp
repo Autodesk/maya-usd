@@ -462,7 +462,7 @@ bool OgsFragment::isElementAShader() const
 
 bool OgsFragment::isTransparent() const
 {
-    return _glslShader && _glslShader->hasAttribute(mx::HW::ATTR_TRANSPARENT);
+    return isTransparentSurface(_element, mx::GlslShaderGenerator::TARGET);
 }
 
 mx::ImageSamplingProperties

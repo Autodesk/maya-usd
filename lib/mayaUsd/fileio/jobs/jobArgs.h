@@ -64,6 +64,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (compatibility) \
     (defaultCameras) \
     (defaultMeshScheme) \
+    (defaultPrim) \
     (defaultUSDFormat) \
     (eulerFilter) \
     (exportBlendShapes) \
@@ -76,6 +77,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (referenceObjectMode) \
     (exportRefsAsInstanceable) \
     (exportRoots) \
+    (exportSelected) \
     (exportSkels) \
     (exportSkin) \
     (exportUVs) \
@@ -205,6 +207,7 @@ struct UsdMayaJobExportArgs
     const TfToken     exportRelativeTextures;
     const TfToken     referenceObjectMode;
     const bool        exportRefsAsInstanceable;
+    const bool        exportSelected;
     const TfToken     exportSkels;
     const TfToken     exportSkin;
     const bool        exportBlendShapes;
@@ -248,6 +251,7 @@ struct UsdMayaJobExportArgs
     const TfToken::Set includeAPINames;
     const TfToken::Set jobContextNames;
     const TfToken::Set excludeExportTypes;
+    const std::string  defaultPrim;
 
     using ChaserArgs = std::map<std::string, std::string>;
     const std::vector<std::string>          chaserNames;

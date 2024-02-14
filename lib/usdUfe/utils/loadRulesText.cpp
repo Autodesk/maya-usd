@@ -27,7 +27,11 @@ std::string convertLoadRulesToText(const PXR_NS::UsdStage& stage)
 
 void setLoadRulesFromText(PXR_NS::UsdStage& stage, const std::string& text)
 {
-    const auto newLoadRules = createLoadRulesFromText(text);
+    setLoadRules(stage, createLoadRulesFromText(text));
+}
+
+void setLoadRules(PXR_NS::UsdStage& stage, const PXR_NS::UsdStageLoadRules& newLoadRules)
+{
     if (stage.GetLoadRules() != newLoadRules)
         stage.SetLoadRules(newLoadRules);
 }

@@ -27,6 +27,12 @@
 #include <ufe/types.h>
 #include <ufe/ufe.h>
 
+#ifdef UFE_V3_FEATURES_AVAILABLE
+#include <pxr/base/vt/value.h>
+
+#include <ufe/value.h>
+#endif // UFE_V3_FEATURES_AVAILABLE
+
 #include <string>
 
 UFE_NS_DEF
@@ -46,6 +52,7 @@ typedef bool (*IsAttributeLockedFn)(const PXR_NS::UsdAttribute& attr, std::strin
 typedef void (*SaveStageLoadRulesFn)(const PXR_NS::UsdStageRefPtr&);
 typedef bool (*IsRootChildFn)(const Ufe::Path& path);
 typedef std::string (*UniqueChildNameFn)(const PXR_NS::UsdPrim& usdParent, const std::string& name);
+typedef void (*WaitCursorFn)();
 
 //------------------------------------------------------------------------------
 // Helper functions
@@ -180,6 +187,10 @@ std::string uniqueChildName(const PXR_NS::UsdPrim& usdParent, const std::string&
 USDUFE_PUBLIC
 std::string uniqueChildNameDefault(const PXR_NS::UsdPrim& parent, const std::string& name);
 
+//! Return a unique SdfPath by looking at existing siblings under the path's parent.
+USDUFE_PUBLIC
+PXR_NS::SdfPath uniqueChildPath(const PXR_NS::UsdStage& stage, const PXR_NS::SdfPath& path);
+
 //! Send notification for data model changes
 template <class T>
 void sendNotification(const Ufe::SceneItem::Ptr& item, const Ufe::Path& previousPath)
@@ -203,6 +214,14 @@ Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& fil
 //! destination using the source scene item path.
 USDUFE_PUBLIC
 Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath);
+
+#ifdef UFE_V3_FEATURES_AVAILABLE
+//! Converts a UFE Value to a VtValue
+USDUFE_PUBLIC PXR_NS::VtValue ufeValueToVtValue(const Ufe::Value& ufeValue);
+
+//! Converts a VtValue to a UFE Value
+USDUFE_PUBLIC Ufe::Value vtValueToUfeValue(const PXR_NS::VtValue& vtValue);
+#endif // UFE_V3_FEATURES_AVAILABLE
 
 //------------------------------------------------------------------------------
 // Verify edit restrictions.
@@ -284,5 +303,43 @@ bool isEditTargetLayerModifiable(
 //! Combine two UFE bounding boxes.
 USDUFE_PUBLIC
 Ufe::BBox3d combineUfeBBox(const Ufe::BBox3d& ufeBBox1, const Ufe::BBox3d& ufeBBox2);
+
+//! Set both the start and stop wait cursor functions.
+USDUFE_PUBLIC
+void setWaitCursorFns(WaitCursorFn startFn, WaitCursorFn stopFn);
+
+//! Start the wait cursor. Can be called recursively.
+USDUFE_PUBLIC
+void startWaitCursor();
+
+//! Stop the wait cursor. Can be called recursively.
+USDUFE_PUBLIC
+void stopWaitCursor();
+
+//! Start and stop the wait cursor in the constructor and destructor.
+struct USDUFE_PUBLIC WaitCursor
+{
+    //! Show the wait cursor if the showCursor flag is true.
+    WaitCursor(bool showCursor = true)
+        : _showCursor(showCursor)
+    {
+        if (_showCursor)
+            startWaitCursor();
+    }
+
+    //! Stop the wait cursor if the showCursor flag is true.
+    ~WaitCursor()
+    {
+        if (_showCursor)
+            stopWaitCursor();
+    }
+
+    WaitCursor(const WaitCursor&) = delete;
+    WaitCursor(WaitCursor&&) = delete;
+    WaitCursor& operator=(const WaitCursor&) = delete;
+    WaitCursor& operator=(WaitCursor&&) = delete;
+
+    const bool _showCursor;
+};
 
 } // namespace USDUFE_NS_DEF

@@ -7,6 +7,11 @@
 
 #include "Nodes/SurfaceNodeMaya.h"
 #include "Nodes/TexcoordNodeMaya.h"
+#if MX_COMBINED_VERSION < 13809
+#include "Nodes/MayaTransformNormalNodeGlsl.h"
+#include "Nodes/MayaTransformPointNodeGlsl.h"
+#include "Nodes/MayaTransformVectorNodeGlsl.h"
+#endif
 
 #include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/GlslOcioNodeImpl.h>
@@ -82,8 +87,10 @@ void fixupVertexDataInstance(ShaderStage& stage)
 
     static const std::string primvarParamSource
         = "vec([23]) [$](" + d(HW::T_IN_GEOMPROP) + "_[A-Za-z0-9_]+)";
-
-    static const std::regex primvarParamRegex(primvarParamSource.c_str());
+    static const std::regex  primvarParamRegex(primvarParamSource.c_str());
+    static const std::string texcoordParamSource
+        = "vec([23]) [$](" + d(HW::T_TEXCOORD) + "_[0-9]+)";
+    static const std::regex texcoordParamRegex(texcoordParamSource.c_str());
 
     // Find keywords:                                       (as text)
     //
@@ -94,16 +101,21 @@ void fixupVertexDataInstance(ShaderStage& stage)
     //  PIX_IN.(NAME)                                       PIX_IN.st
     //
 
-    static const std::string vdCleanupSource = "[$]" + d(HW::T_VERTEX_DATA_INSTANCE) + "[.][$]"
+    static const std::string vdCleanGeoSource = "[$]" + d(HW::T_VERTEX_DATA_INSTANCE) + "[.][$]"
         + d(HW::T_IN_GEOMPROP) + "_([A-Za-z0-9_]+)";
+    static const std::regex vdCleanGeoRegex(vdCleanGeoSource.c_str());
 
-    static const std::regex vdCleanupRegex(vdCleanupSource.c_str());
+    static const std::string vdCleanTexSource
+        = "[$]" + d(HW::T_VERTEX_DATA_INSTANCE) + "[.][$](" + d(HW::T_TEXCOORD) + "_[0-9]+)";
+    static const std::regex vdCleanTexRegex(vdCleanTexSource.c_str());
 
     std::string code = stage.getSourceCode();
     code = std::regex_replace(code, paramRegex, "vec3 unused_$1");
     code = std::regex_replace(code, vtxRegex, "$$$1( PIX_IN.$$$1 )");
     code = std::regex_replace(code, primvarParamRegex, "vec$1 unused_$2");
-    code = std::regex_replace(code, vdCleanupRegex, "PIX_IN.$1");
+    code = std::regex_replace(code, texcoordParamRegex, "vec$1 unused_$2");
+    code = std::regex_replace(code, vdCleanGeoRegex, "PIX_IN.$1");
+    code = std::regex_replace(code, vdCleanTexRegex, "PIX_IN.$1");
 
 #if MX_COMBINED_VERSION >= 13804
     stage.setSourceCode(code);
@@ -172,6 +184,27 @@ GlslFragmentGenerator::GlslFragmentGenerator()
         registerImplementation(
             "IM_texcoord_vector3_" + GlslShaderGenerator::TARGET, TexcoordNodeGlslMaya::create);
     }
+
+    // The MaterialX transform node will crash if one of the "space" inputs is empty. This will be
+    // fixed in 1.38.9. In the meantime we use patched nodes to replace those previously added in
+    // the base class.
+#if MX_COMBINED_VERSION < 13809
+    // <!-- <ND_transformpoint> ->
+    registerImplementation(
+        "IM_transformpoint_vector3_" + GlslShaderGenerator::TARGET,
+        MayaTransformPointNodeGlsl::create);
+
+    // <!-- <ND_transformvector> ->
+    registerImplementation(
+        "IM_transformvector_vector3_" + GlslShaderGenerator::TARGET,
+        MayaTransformVectorNodeGlsl::create);
+
+    // <!-- <ND_transformnormal> ->
+    registerImplementation(
+        "IM_transformnormal_vector3_" + GlslShaderGenerator::TARGET,
+        MayaTransformNormalNodeGlsl::create);
+
+#endif
 
     for (auto&& implName : GlslOcioNodeImpl::getOCIOImplementations()) {
         registerImplementation(implName, GlslOcioNodeImpl::create);

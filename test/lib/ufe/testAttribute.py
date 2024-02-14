@@ -349,6 +349,9 @@ class AttributeTestCase(unittest.TestCase):
         # Now we test the Generic specific methods.
         self.assertEqual(ufeAttr.nativeType(), usdAttr.GetTypeName().type.typeName)
 
+        if hasattr(ufeAttr, 'displayName'):
+            self.assertEqual(ufeAttr.displayName, "Order")
+
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
 
@@ -1921,6 +1924,10 @@ class AttributeTestCase(unittest.TestCase):
             ("uimin", "base", "0.0"),
             ("uimax", "base", "1.0"),
             ("uisoftmin", "transmission_extra_roughness", "0.0"),
+            ("uisoftmin", "subsurface_anisotropy", "-1.0"),
+            ("uisoftmax", "subsurface_anisotropy", "1.0"),
+            ("uimin", "subsurface_anisotropy", "-1.0"),
+            ("uimax", "subsurface_anisotropy", "1.0"),
             ("uisoftmax", "coat_IOR", "3.0"),
             ("uiname", "base_color", "Base Color"),
             ("uifolder", "transmission_color", "Transmission"),
@@ -1980,12 +1987,18 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(mayaUsdLib.Util.prettifyName("ior"), "Ior")
         self.assertEqual(mayaUsdLib.Util.prettifyName("IOR"), "IOR")
         self.assertEqual(mayaUsdLib.Util.prettifyName("specular_IOR"), "Specular IOR")
+        self.assertEqual(mayaUsdLib.Util.prettifyName("HwPtexTexture"), "Hw Ptex Texture")
+        self.assertEqual(mayaUsdLib.Util.prettifyName("fluid2D"), "Fluid2D")
         # This is as expected as we do not insert space on digit<->alpha transitions:
         self.assertEqual(mayaUsdLib.Util.prettifyName("Dx11Shader"), "Dx11Shader")
         # Explicit substitutions
         self.assertEqual(mayaUsdLib.Util.prettifyName("UsdPreviewSurface"), "USD Preview Surface")
         self.assertEqual(mayaUsdLib.Util.prettifyName("mtlx"), "MaterialX")
         self.assertEqual(mayaUsdLib.Util.prettifyName("gltf_pbr"), "glTF PBR")
+        # Caps tests
+        self.assertEqual(mayaUsdLib.Util.prettifyName("ALLCAPS"), "ALLCAPS")
+        self.assertEqual(mayaUsdLib.Util.prettifyName("MixedCAPS"), "Mixed CAPS")
+        self.assertEqual(mayaUsdLib.Util.prettifyName("CAPS10"), "CAPS10")
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testAttributeMetadataChanged(self):

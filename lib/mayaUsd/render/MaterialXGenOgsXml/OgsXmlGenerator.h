@@ -8,11 +8,13 @@
 
 /// @file
 /// OGS XML fragments generator
+#include <mayaUsd/base/api.h>
+
 #include <MaterialXGenShader/ShaderGenerator.h>
 
 MATERIALX_NAMESPACE_BEGIN
 
-class OgsXmlGenerator
+class MAYAUSD_CORE_PUBLIC OgsXmlGenerator
 {
 public:
     /// Generate OSG XML for the given shader fragments, output to the given stream.

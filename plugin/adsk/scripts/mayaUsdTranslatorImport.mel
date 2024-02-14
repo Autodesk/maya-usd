@@ -323,6 +323,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
         }
         $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "importUSDZTextures", "mayaUsdTranslator_ImportUSDZTexturesCheckBox");
         $currentOptions = mayaUsdTranslatorImport_AppendJobContexts($currentOptions, "jobContext");
+        $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "importInstances", "mayaUsdTranslator_ImportInstancesCheckBox");
 
         eval($resultCallback+" \""+$currentOptions+"\"");
         $bResult = 1;

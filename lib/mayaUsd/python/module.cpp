@@ -29,7 +29,9 @@ TF_WRAP_MODULE
     TF_WRAP(ColorSpace);
     TF_WRAP(Converter);
     TF_WRAP(ConverterArgs);
+    TF_WRAP(CopyLayerPrims);
     TF_WRAP(DiagnosticDelegate);
+    TF_WRAP(LoadRules);
     TF_WRAP(MeshWriteUtils);
 #ifdef UFE_V3_FEATURES_AVAILABLE
     TF_WRAP(PrimUpdater);

@@ -48,6 +48,10 @@ struct USDUFE_PUBLIC DCCFunctions
     SaveStageLoadRulesFn saveStageLoadRulesFn = nullptr;
     IsRootChildFn        isRootChildFn = nullptr;
     UniqueChildNameFn    uniqueChildNameFn = nullptr;
+
+    // Optional: nothing will be done if no function is supplied.
+    WaitCursorFn startWaitCursorFn = nullptr;
+    WaitCursorFn stopWaitCursorFn = nullptr;
 };
 
 /*! Ufe runtime handlers used to initialize the plugin.

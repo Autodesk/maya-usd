@@ -540,6 +540,8 @@ bool _DrawItemFilterPredicate(const SdfPath& rprimID, const void* predicateParam
 }
 #endif
 
+bool _longDurationRendering = false;
+
 } // namespace
 
 //! \brief  Draw classification used during plugin load to register in VP2
@@ -1202,6 +1204,8 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
     }
 }
 
+void ProxyRenderDelegate::setLongDurationRendering() { _longDurationRendering = true; }
+
 //! \brief  Main update entry from subscene override.
 void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameContext& frameContext)
 {
@@ -1213,6 +1217,16 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     // Without a proxy shape we can't do anything
     if (_proxyShapeData->ProxyShape() == nullptr)
         return;
+
+    // If the rendering was flagged as possibly taking a long time,
+    // show the wait cursor.
+    //
+    // Note: using the wait cursor sets the long duration flag,
+    //       so reset the flag after setting up the cursor, otherwise
+    //       once one rendering would be long-duration, all of them
+    //       would be flagged afterward.
+    WaitCursor waitCursor(_longDurationRendering);
+    _longDurationRendering = false;
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     const MSelectionInfo* selectionInfo = frameContext.getSelectionInfo();

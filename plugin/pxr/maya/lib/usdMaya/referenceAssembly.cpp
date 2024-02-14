@@ -1397,6 +1397,12 @@ void UsdMayaRepresentationHierBase::_ConnectProxyPlugs()
         dgMod.connect(
             dagFn.findPlug(UsdMayaReferenceAssembly::timeAttr, true),
             proxyDepNodeFn.findPlug(UsdMayaProxyShape::timeAttr, true));
+        dgMod.connect(
+            dagFn.findPlug(UsdMayaReferenceAssembly::complexityAttr, true),
+            proxyDepNodeFn.findPlug(UsdMayaProxyShape::complexityAttr, true));
+        dgMod.connect(
+            dagFn.findPlug(UsdMayaReferenceAssembly::outStageDataAttr, true),
+            proxyDepNodeFn.findPlug(UsdMayaProxyShape::inStageDataAttr, true));
     }
     dgMod.doIt();
 }

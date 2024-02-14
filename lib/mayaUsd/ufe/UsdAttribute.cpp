@@ -372,6 +372,15 @@ std::string UsdAttribute::name() const
 }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
+std::string UsdAttribute::_displayName() const
+#else
+std::string UsdAttribute::displayName() const
+#endif
+{
+    return _attrHolder->displayName();
+}
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
 std::string UsdAttribute::_documentation() const
 #else
 std::string UsdAttribute::documentation() const
@@ -467,6 +476,12 @@ UsdAttributeGeneric::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::U
 //------------------------------------------------------------------------------
 
 std::string UsdAttributeGeneric::nativeType() const { return UsdAttribute::nativeType(); }
+
+const std::string& UsdAttributeGeneric::nativeSdrTypeMetadata()
+{
+    static const auto kMetadataName = std::string { "nativeSdrType" };
+    return kMetadataName;
+}
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 //------------------------------------------------------------------------------
@@ -564,8 +579,13 @@ UsdAttributeEnumString::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder
 std::string UsdAttributeEnumString::get() const
 {
     PXR_NS::VtValue vt;
-    if (UsdAttribute::get(vt, getCurrentTime(sceneItem())) && vt.IsHolding<std::string>()) {
-        return vt.UncheckedGet<std::string>();
+    if (UsdAttribute::get(vt, getCurrentTime(sceneItem()))) {
+        if (vt.IsHolding<std::string>()) {
+            return vt.UncheckedGet<std::string>();
+        }
+        if (vt.IsHolding<TfToken>()) {
+            return vt.UncheckedGet<TfToken>().GetString();
+        }
     }
 
     return std::string();
@@ -573,7 +593,11 @@ std::string UsdAttributeEnumString::get() const
 
 void UsdAttributeEnumString::set(const std::string& value)
 {
-    setUsdAttr<std::string>(*this, value);
+    if (usdAttribute().IsValid() && usdAttribute().GetTypeName() == SdfValueTypeNames->Token) {
+        setUsdAttr<PXR_NS::TfToken>(*this, TfToken(value));
+    } else {
+        setUsdAttr<std::string>(*this, value);
+    }
 }
 
 Ufe::UndoableCommand::Ptr UsdAttributeEnumString::setCmd(const std::string& value)

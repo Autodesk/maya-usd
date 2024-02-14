@@ -13,27 +13,27 @@
 # limitations under the License.
 #
 
+from .attribute_custom_control import AttributeCustomControl
+from .attribute_custom_control import cleanAndFormatTooltip
+
 import ufe
 import mayaUsd.ufe as mayaUsdUfe
 import mayaUsd.lib as mayaUsdLib
 import maya.cmds as cmds
 import maya.internal.ufeSupport.attributes as attributes
 
-class CustomEnumControl(object):
+class CustomEnumControl(AttributeCustomControl):
     def __init__(self, ufeAttr, ufeAttrType, prim, attrName, useNiceName):
-        self.ufeAttr = ufeAttr
+        super(CustomEnumControl, self).__init__(ufeAttr, attrName, useNiceName)
         self.prim = prim
         self.ufeAttrType = ufeAttrType
-        self.attrName = attrName
-        self.useNiceName = useNiceName
         ufeAttrs = ufe.Attributes.attributes(ufeAttr.sceneItem())
         self.enums = ufeAttrs.getEnums(ufeAttr.name)
-        super(CustomEnumControl, self).__init__()
 
     def onCreate(self, *args):
         # Create the control.
-        attrLabel = mayaUsdLib.Util.prettifyName(self.attrName) if self.useNiceName else self.attrName
-        self.uiControl = cmds.optionMenuGrp(label=attrLabel)
+        attrLabel = self.getUILabel()
+        self.uiControl = cmds.optionMenuGrp(label=attrLabel, annotation=cleanAndFormatTooltip(self.ufeAttr.getDocumentation()))
         attributes.AEPopupMenu(self.uiControl, self.ufeAttr)
 
         # Add the menu items.
@@ -48,7 +48,7 @@ class CustomEnumControl(object):
     def onReplace(self, *args):
         if len(self.enums) > 0:
             self.attachMenuItems()
-            attrLabel = mayaUsdLib.Util.prettifyName(self.attrName) if self.useNiceName else self.attrName
+            attrLabel = self.getUILabel()
             cmds.optionMenuGrp(self.uiControl, e=True, label=attrLabel)
         self.updateUi()
         self.attachCallbacks(self.updateEnumDataReader)

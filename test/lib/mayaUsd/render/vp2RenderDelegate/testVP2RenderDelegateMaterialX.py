@@ -26,6 +26,8 @@ from mayaUsd import ufe as mayaUsdUfe
 
 from maya import cmds
 
+from pxr import Usd
+
 import ufe
 
 import os
@@ -262,7 +264,11 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         """Test that we can color manage using Maya OCIO fragments."""
         cmds.file(new=True, force=True)
         # This config has file rules for all the new textures:
-        configFile = testUtils.getTestScene("MaterialX", "studio-config-v1.0.0_aces-v1.3_ocio-v2.0.ocio")
+        if (Usd.GetVersion() >= (0, 23, 11)):
+            # USD starting at 23.11 we no longer requires file rules to get OCIO results. Metadata will be usable.
+            configFile = testUtils.getTestScene("MaterialX", "no-rule-studio-config-v1.0.0_aces-v1.3_ocio-v2.0.ocio")
+        else:
+            configFile = testUtils.getTestScene("MaterialX", "studio-config-v1.0.0_aces-v1.3_ocio-v2.0.ocio")
         cmds.colorManagementPrefs(edit=True, configFilePath=configFile)
 
         # Import the Maya data so we can compare:

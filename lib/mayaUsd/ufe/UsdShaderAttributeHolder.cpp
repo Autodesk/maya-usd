@@ -158,6 +158,17 @@ std::string UsdShaderAttributeHolder::name() const
     return PXR_NS::UsdShadeUtils::GetFullName(_sdrProp->GetName(), _sdrType);
 }
 
+std::string UsdShaderAttributeHolder::displayName() const
+{
+    Ufe::Value retVal
+        = UsdShaderAttributeDef(_sdrProp).getMetadata(PXR_NS::MayaUsdMetadata->UIName);
+    std::string name = retVal.safeGet<std::string>({});
+    if (!name.empty()) {
+        return name;
+    }
+    return _Base::displayName();
+}
+
 std::string UsdShaderAttributeHolder::documentation() const { return _sdrProp->GetHelp(); }
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -213,9 +224,18 @@ PXR_NS::SdfValueTypeName UsdShaderAttributeHolder::usdAttributeType() const
 
 Ufe::AttributeEnumString::EnumValues UsdShaderAttributeHolder::getEnumValues() const
 {
-    Ufe::AttributeEnumString::EnumValues retVal = _Base::getEnumValues();
-    for (auto const& option : _sdrProp->GetOptions()) {
+    Ufe::AttributeEnumString::EnumValues retVal;
+    for (auto const& option : getEnums()) {
         retVal.push_back(option.first);
+    }
+    return retVal;
+}
+
+UsdAttributeHolder::EnumOptions UsdShaderAttributeHolder::getEnums() const
+{
+    auto retVal = _Base::getEnums();
+    for (auto const& option : _sdrProp->GetOptions()) {
+        retVal.emplace_back(option.first, option.second);
     }
     return retVal;
 }

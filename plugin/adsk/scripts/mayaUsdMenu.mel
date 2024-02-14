@@ -885,9 +885,9 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
     }
 
     if (!$isAnonymousLayer) {
-        $label = getMayaUsdString("kMenuRevertToFile");
+        $label = getMayaUsdString("kMenuReload");
         $cmd = makeCommand($panelName, "discardEdits");
-        $enabled = $needsSaving;
+        $enabled = true;
         menuItem -label $label -enable $enabled -c $cmd;
     }
 

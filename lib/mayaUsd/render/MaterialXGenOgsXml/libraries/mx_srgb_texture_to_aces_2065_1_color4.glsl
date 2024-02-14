@@ -1,8 +1,8 @@
-#include "libraries/stdlib/genglsl/lib/mx_transform_color.glsl"
+#include "libraries/adsk/maya/genglsl/lib/usd_transform_color.glsl"
 
 void mx_srgb_texture_to_aces_2065_1_color4(vec4 _in, out vec4 result)
 {
-    vec3 color = mx_srgb_texture_to_lin_rec709(_in.rgb);
+    vec3 color = usd_srgb_texture_to_lin_rec709(_in.rgb);
 
     // Same matrix as found in ../../vp2ShaderFragments/shaderFragments.cpp
     color = mat3(0.43963298, 0.08977644, 0.01754117,

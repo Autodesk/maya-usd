@@ -26,6 +26,7 @@
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
+#include <pxr/base/arch/env.h>
 #include <pxr/base/tf/instantiateType.h>
 #include <pxr/base/tf/weakBase.h>
 #include <pxr/usd/ar/resolver.h>
@@ -192,6 +193,14 @@ bool isCrashing()
 #else
     return false;
 #endif
+}
+
+bool isCopyingSceneNodes()
+{
+    // When Maya is copy nodes, it exports them and sets this environment
+    // variable during the export to let exporters know it is cutting or
+    // copying nodes in a temporary Maya scene file.
+    return PXR_NS::ArchHasEnv("MAYA_CUT_COPY_EXPORT");
 }
 
 constexpr auto kSaveOptionUICmd = "usdFileSaveOptions(true);";
@@ -412,9 +421,11 @@ void LayerDatabase::prepareForWriteCheck(bool* retCode, bool isExport)
 
         int dialogResult = true;
 
-        if (MGlobal::kInteractive == MGlobal::mayaState() && !isCrashing()
-            && LayerDatabase::instance().saveInteractionRequired()) {
-            MGlobal::executeCommand(kSaveOptionUICmd, dialogResult);
+        if (!isCopyingSceneNodes()) {
+            if (MGlobal::kInteractive == MGlobal::mayaState() && !isCrashing()
+                && LayerDatabase::instance().saveInteractionRequired()) {
+                MGlobal::executeCommand(kSaveOptionUICmd, dialogResult);
+            }
         }
 
         if (dialogResult) {
@@ -619,10 +630,10 @@ bool LayerDatabase::saveUsd(bool isExport)
     auto opt = MayaUsd::utils::serializeUsdEditsLocationOption();
 
     if (MayaUsd::utils::kIgnoreUSDEdits != opt) {
-        // When Maya is crashing, we don't want to save the the USD file to avoid
-        // overwriting them with possibly unwanted data. Instead, we will save the
-        // USD data inside the temporary crash recovery Maya file.
-        if (isCrashing()) {
+        // When Maya is crashing or copying/cutting scene nodes, we don't want to
+        // save the the USD file to avoid overwriting them with possibly unwanted
+        // data. Instead, we will save the USD data inside the temporary crash recovery Maya file.
+        if (isCrashing() || isCopyingSceneNodes()) {
             result = kPartiallyCompleted;
             opt = MayaUsd::utils::kSaveToMayaSceneFile;
         } else if (_batchSaveDelegate && _proxiesToSave.size() > 0) {

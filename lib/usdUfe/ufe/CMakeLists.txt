@@ -1,6 +1,7 @@
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
+
 target_sources(${PROJECT_NAME}
     PRIVATE
         Global.cpp
@@ -25,6 +26,7 @@ target_sources(${PROJECT_NAME}
         UsdUndoClearReferencesCommand.cpp
         UsdUndoCreateGroupCommand.cpp
         UsdUndoInsertChildCommand.cpp
+        UsdUndoLongDurationCommand.cpp
         UsdUndoPayloadCommand.cpp
         UsdUndoReorderCommand.cpp
         UsdUndoSelectAfterCommand.cpp
@@ -45,6 +47,13 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     )
 endif()
 
+if (UFE_SCENEITEM_HAS_METADATA)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+			UsdUndoClearSceneItemMetadataCommand.cpp
+			UsdUndoSetSceneItemMetadataCommand.cpp
+    )
+endif()
 
 set(HEADERS
     Global.h
@@ -70,6 +79,7 @@ set(HEADERS
     UsdUndoClearReferencesCommand.h
     UsdUndoCreateGroupCommand.h
     UsdUndoInsertChildCommand.h
+    UsdUndoLongDurationCommand.h
     UsdUndoPayloadCommand.h
     UsdUndoReorderCommand.h
     UsdUndoSelectAfterCommand.h
@@ -86,6 +96,13 @@ set(HEADERS
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     list(APPEND HEADERS
         UsdUndoUngroupCommand.h
+    )
+endif()
+
+if (UFE_SCENEITEM_HAS_METADATA)
+    list(APPEND HEADERS
+		UsdUndoClearSceneItemMetadataCommand.h
+		UsdUndoSetSceneItemMetadataCommand.h
     )
 endif()
 

@@ -136,6 +136,8 @@ const MString MayaUsdProxyShapeBase::displayFilterName(
     TfStringPrintf("%sDisplayFilter", MayaUsdProxyShapeBaseTokens->MayaTypeName.GetText()).c_str());
 const MString MayaUsdProxyShapeBase::displayFilterLabel("USD Proxies");
 
+std::atomic<int> g_proxyShapeInstancesCount;
+
 // Attributes
 MObject MayaUsdProxyShapeBase::filePathAttr;
 MObject MayaUsdProxyShapeBase::filePathRelativeAttr;
@@ -250,6 +252,7 @@ MStatus MayaUsdProxyShapeBase::initialize()
     typedAttrFn.setInternal(true);
     typedAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(typedAttrFn.setUsedAsFilename(true));
     retValue = addAttribute(filePathAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
@@ -281,8 +284,10 @@ MStatus MayaUsdProxyShapeBase::initialize()
     loadPayloadsAttr
         = numericAttrFn.create("loadPayloads", "lpl", MFnNumericData::kBoolean, 1.0, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    numericAttrFn.setKeyable(true);
+    numericAttrFn.setKeyable(false);
     numericAttrFn.setReadable(false);
+    numericAttrFn.setInternal(true);
+    numericAttrFn.setHidden(true);
     numericAttrFn.setAffectsAppearance(true);
     retValue = addAttribute(loadPayloadsAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
@@ -533,6 +538,9 @@ MayaUsdProxyShapeBase* MayaUsdProxyShapeBase::GetShapeAtDagPath(const MDagPath& 
 }
 
 /* static */
+int MayaUsdProxyShapeBase::countProxyShapeInstances() { return g_proxyShapeInstancesCount; }
+
+/* static */
 void MayaUsdProxyShapeBase::SetClosestPointDelegate(ClosestPointDelegate delegate)
 {
     _sharedClosestPointDelegate = delegate;
@@ -544,6 +552,16 @@ bool MayaUsdProxyShapeBase::GetObjectSoftSelectEnabled() const { return false; }
 void MayaUsdProxyShapeBase::enableProxyAccessor()
 {
     _usdAccessor = ProxyAccessor::createAndRegister(*this);
+}
+
+void MayaUsdProxyShapeBase::renameCallback(MObject&, const MString&, void* clientData)
+{
+    auto proxyShape = static_cast<MayaUsdProxyShapeBase*>(clientData);
+    if (!proxyShape) {
+        return;
+    }
+
+    proxyShape->updateAncestorCallbacks();
 }
 
 void beforeSaveCallback(void* clientData)
@@ -584,6 +602,11 @@ void MayaUsdProxyShapeBase::postConstructor()
     if (_preSaveCallbackId == 0) {
         _preSaveCallbackId
             = MSceneMessage::addCallback(MSceneMessage::kBeforeSave, beforeSaveCallback, this);
+    }
+
+    if (_renameCallbackId == 0) {
+        MObject obj = thisMObject();
+        _renameCallbackId = MNodeMessage::addNameChangedCallback(obj, renameCallback, this);
     }
 }
 
@@ -924,8 +947,18 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
                 SdfLayerRefPtr rootLayer
                     = sharableStage ? computeRootLayer(dataBlock, fileString) : nullptr;
-                if (nullptr == rootLayer)
+                if (nullptr == rootLayer) {
                     rootLayer = SdfLayer::FindOrOpen(fileString);
+                } else {
+                    // When reloading a Maya scene in which the root layer was saved in
+                    // the scene, the root layer will be anonymous. In order for the next
+                    // compute to find the root layer again, we need to set it as the
+                    // _anonymousRootLayer, as done below when creating a new proxy shape
+                    // and the root layer is initially created.
+                    if (rootLayer->IsAnonymous()) {
+                        _anonymousRootLayer = rootLayer;
+                    }
+                }
 
                 if (nullptr == rootLayer) {
                     // Create an empty in-memory root layer so that a new stage in memory
@@ -1943,6 +1976,8 @@ MayaUsdProxyShapeBase::MayaUsdProxyShapeBase(
     , _unsharedStageRootSublayers()
     , _incomingLayers()
 {
+    g_proxyShapeInstancesCount += 1;
+
     TfRegistryManager::GetInstance().SubscribeTo<MayaUsdProxyShapeBase>();
 
     if (useLoadRulesHandling) {
@@ -1960,11 +1995,18 @@ MayaUsdProxyShapeBase::~MayaUsdProxyShapeBase()
         _preSaveCallbackId = 0;
     }
 
+    if (_renameCallbackId != 0) {
+        MMessage::removeCallback(_renameCallbackId);
+        _renameCallbackId = 0;
+    }
+
     clearAncestorCallbacks();
 
     // Deregister from the load-rules handling used to transfer load rules
     // between the USD stage and a dynamic attribute on the proxy shape.
     MayaUsdProxyShapeStageExtraData::removeProxyShape(*this);
+
+    g_proxyShapeInstancesCount -= 1;
 }
 
 MSelectionMask MayaUsdProxyShapeBase::getShapeSelectionMask() const
