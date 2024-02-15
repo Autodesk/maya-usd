@@ -250,6 +250,8 @@ public:
 
     LayerManager::LayerNameMap getLayerNameMap() const;
 
+    static bool isSaving() { return _isSavingMayaFile; }
+
 private:
     void registerCallbacks();
     void unregisterCallbacks();
@@ -1408,5 +1410,8 @@ std::string LayerManager::getSelectedStage()
     LayerDatabase::loadLayersPostRead(nullptr);
     return LayerDatabase::instance().getSelectedStage();
 }
+
+/* static */
+bool LayerManager::isSaving() { return LayerDatabase::isSaving(); }
 
 } // namespace MAYAUSD_NS_DEF
