@@ -10,6 +10,7 @@
 #include "warningDialogs.h"
 
 #include <mayaUsd/base/tokens.h>
+#include <mayaUsd/utils/layerLocking.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
@@ -265,15 +266,13 @@ bool LayerTreeItem::sublayerOfShared() const
     return false;
 }
 
-bool LayerTreeItem::isReadOnly() const
-{
-    return (_isSharedLayer || (_layer && !_layer->PermissionToEdit()));
-}
+bool LayerTreeItem::isReadOnly() const { return (_isSharedLayer); }
 
 bool LayerTreeItem::isMovable() const
 {
     // Dragging the root layer, session and muted layer is not allowed.
-    return !isSessionLayer() && !isRootLayer() && !appearsMuted() && !sublayerOfShared();
+    return !isSessionLayer() && !isRootLayer() && !appearsMuted() && !sublayerOfShared()
+        && !isLocked() && !appearsLocked() && !isSystemLocked() && !appearsSystemLocked();
 }
 
 bool LayerTreeItem::isIncoming() const { return _isIncomingLayer; }
@@ -282,15 +281,21 @@ bool LayerTreeItem::isLocked() const { return _layer && _layer->PermissionToEdit
 
 bool LayerTreeItem::appearsLocked() const
 {
-    if (isLocked()) {
-        return true;
-    }
     auto item = parentLayerItem();
-    while (item != nullptr) {
-        if (item->isLocked()) {
-            return true;
-        }
-        item = item->parentLayerItem();
+    if (item != nullptr) {
+        return item->isLocked();
+    }
+
+    return false;
+}
+
+bool LayerTreeItem::isSystemLocked() const { return MayaUsd::isLayerSystemLocked(_layer); }
+
+bool LayerTreeItem::appearsSystemLocked() const
+{
+    auto item = parentLayerItem();
+    if (item != nullptr) {
+        return item->isSystemLocked();
     }
     return false;
 }

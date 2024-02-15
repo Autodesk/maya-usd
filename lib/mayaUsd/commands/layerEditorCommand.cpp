@@ -17,6 +17,7 @@
 #include "layerEditorCommand.h"
 
 #include <mayaUsd/ufe/Global.h>
+#include <mayaUsd/utils/layerLocking.h>
 #include <mayaUsd/utils/layerMuting.h>
 #include <mayaUsd/utils/query.h>
 #include <mayaUsd/utils/stageCache.h>
@@ -59,6 +60,8 @@ const char kMuteLayerFlag[] = "mt";
 const char kMuteLayerFlagL[] = "muteLayer";
 const char kLockLayerFlag[] = "lk";
 const char kLockLayerFlagL[] = "lockLayer";
+const char kSystemLockLayerFlag[] = "sk";
+const char kSystemLockLayerFlagL[] = "SystemLockLayer";
 
 } // namespace
 
@@ -563,7 +566,7 @@ public:
         }
 
         // Note: backup the edit targets after the layer is cleared because we use
-        //       the fact that a stage edit target is now invalid to decice to backup
+        //       the fact that a stage edit target is now invalid to decide to backup
         //       that edit target.
         backupEditTargets(layer);
 
@@ -789,12 +792,22 @@ public:
         auto stage = getStage();
         if (!stage)
             return false;
-        if (_lockIt) {
+        if (_systemLock) {
+            saveSelection();
+            layer->SetPermissionToSave(false);
+            layer->SetPermissionToEdit(false);
+            MayaUsd::addSystemLockedLayer(layer);
+        } else if (_lockIt) {
             saveSelection();
             layer->SetPermissionToEdit(false);
+            layer->SetPermissionToSave(true);
+            MayaUsd::removeSystemLockedLayer(layer);
+
         } else {
             saveSelection();
             layer->SetPermissionToEdit(true);
+            layer->SetPermissionToSave(true);
+            MayaUsd::removeSystemLockedLayer(layer);
         }
 
         return true;
@@ -805,11 +818,15 @@ public:
         auto stage = getStage();
         if (!stage)
             return false;
-        if (_lockIt) {
+        if (_systemLock) {
             layer->SetPermissionToEdit(true);
+            layer->SetPermissionToSave(true);
+            MayaUsd::removeSystemLockedLayer(layer);
             restoreSelection();
-        } else {
-            layer->SetPermissionToEdit(false);
+        } else if (_lockIt) {
+            layer->SetPermissionToEdit(true);
+            layer->SetPermissionToSave(true);
+            MayaUsd::removeSystemLockedLayer(layer);
             restoreSelection();
         }
 
@@ -818,6 +835,7 @@ public:
 
     std::string _proxyShapePath;
     bool        _lockIt = true;
+    bool        _systemLock = false;
 
 private:
     UsdStageWeakPtr getStage()
@@ -949,7 +967,7 @@ MSyntax LayerEditorCommand::createSyntax()
     syntax.makeFlagMultiUse(kAddAnonSublayerFlag);
     // paramter: proxy shape name
     syntax.addFlag(kMuteLayerFlag, kMuteLayerFlagL, MSyntax::kBoolean, MSyntax::kString);
-    syntax.addFlag(kLockLayerFlag, kLockLayerFlagL, MSyntax::kBoolean, MSyntax::kString);
+    syntax.addFlag(kLockLayerFlag, kLockLayerFlagL, MSyntax::kLong, MSyntax::kString);
 
     return syntax;
 }
@@ -1091,8 +1109,11 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
             _subCommands.push_back(std::move(cmd));
         }
         if (argParser.isFlagSet(kLockLayerFlag)) {
-            bool lockIt = true;
-            argParser.getFlagArgument(kLockLayerFlag, 0, lockIt);
+            int lockValue = 0;
+            // 0 = Unlocked
+            // 1 = Locked
+            // 2 = SystemLocked
+            argParser.getFlagArgument(kLockLayerFlag, 0, lockValue);
 
             MString proxyShapeName;
             argParser.getFlagArgument(kLockLayerFlag, 1, proxyShapeName);
@@ -1105,7 +1126,8 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
             }
 
             auto cmd = std::make_shared<Impl::LockLayer>();
-            cmd->_lockIt = lockIt;
+            cmd->_lockIt = lockValue == 1 ? true : false;
+            cmd->_systemLock = lockValue == 2 ? true : false;
             cmd->_proxyShapePath = proxyShapeName.asChar();
             _subCommands.push_back(std::move(cmd));
         }

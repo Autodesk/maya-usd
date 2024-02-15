@@ -870,6 +870,8 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
     int $isReadOnly = `mayaUsdLayerEditorWindow -q -layerIsReadOnly $panelName`;
     int $appearsLocked = `mayaUsdLayerEditorWindow -q -layerAppearsLocked $panelName`;
     int $isLocked = `mayaUsdLayerEditorWindow -q -layerIsLocked $panelName`;
+    int $appearsSystemLocked = `mayaUsdLayerEditorWindow -q -layerAppearsSystemLocked $panelName`;
+    int $isSystemLocked = `mayaUsdLayerEditorWindow -q -layerIsSystemLocked $panelName`;
     int $isIncoming = `mayaUsdLayerEditorWindow -q -isIncomingLayer $panelName`;
     string $proxyShape = `mayaUsdLayerEditorWindow -q -proxyShape $panelName`;
 
@@ -881,7 +883,12 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
             $label = getMayaUsdString("kMenuSaveAs");
         else
             $label = getMayaUsdString("kMenuSaveEdits");
-        $enabled = $singleSelect && $needsSaving;
+        $enabled = $singleSelect && $needsSaving && !$isSystemLocked;
+        // An anonymous layer whose parent is locked or system locked cannot be saved
+        if ($isAnonymousLayer)
+            {
+                $enabled = $enabled && !$appearsLocked && !$appearsSystemLocked;
+            }
         $cmd = makeCommand($panelName, "saveEdits");
         menuItem -label $label -enable $enabled -c $cmd;
     }
@@ -897,17 +904,17 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
 
     $label = getMayaUsdString("kMenuAddSublayer");
     $cmd = makeCommand($panelName, "addAnonymousSublayer");
-    $enabled = $appearsMuted == 0 && !$isReadOnly;
+    $enabled = $appearsMuted == 0 && !$isReadOnly && !$isLocked && !$isSystemLocked;
     menuItem -label $label -enable $enabled -c $cmd;
 
     $label = getMayaUsdString("kMenuAddParentLayer");
     $cmd = makeCommand($panelName, "addParentLayer");
-    $enabled = $isSubLayer && $appearsMuted == 0 && !$isReadOnly;
+    $enabled = $isSubLayer && $appearsMuted == 0 && !$isReadOnly && !$appearsLocked && !$appearsSystemLocked;
     menuItem -label $label -enable $enabled -c $cmd;
 
     $label = getMayaUsdString("kMenuLoadSublayers");
     $cmd = makeCommand($panelName, "loadSubLayers");
-    $enabled = $singleSelect && !$appearsMuted && !$isReadOnly;
+    $enabled = $singleSelect && !$appearsMuted && !$isReadOnly && !$isLocked && !$isSystemLocked;
     menuItem -label $label -enable $enabled -c $cmd;
 
     menuItem -divider 1;
@@ -928,7 +935,7 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
         else
             $label = getMayaUsdString("kMenuLock");
         $cmd = makeCommand($panelName, "lockLayer");
-        $enabled = 1;
+        $enabled = !$isSystemLocked;
         menuItem -label $label -enable $enabled -c $cmd;
     }
 
@@ -973,13 +980,13 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
     if ($isSubLayer) {
         $label = getMayaUsdString("kMenuRemove");
         $cmd = makeCommand($panelName, "removeSubLayer");
-        $enabled = !$isReadOnly;
+        $enabled = !$isReadOnly && !$appearsLocked && !$appearsSystemLocked;
         menuItem -label $label -enable $enabled -c $cmd;
     }
 
 
     $label = getMayaUsdString("kMenuClear");
     $cmd = makeCommand($panelName, "clearLayer");
-    $enabled = !$isReadOnly;
+    $enabled = !$isReadOnly && !$isLocked && !$isSystemLocked;
     menuItem -label $label -enable $enabled -c $cmd;
 }

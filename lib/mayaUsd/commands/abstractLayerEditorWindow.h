@@ -85,6 +85,8 @@ public:
     virtual bool        layerIsMuted() = 0;
     virtual bool        layerAppearsLocked() = 0;
     virtual bool        layerIsLocked() = 0;
+    virtual bool        layerAppearsSystemLocked() = 0;
+    virtual bool        layerIsSystemLocked() = 0;
     virtual bool        layerIsReadOnly() = 0;
     virtual std::string proxyShapeName() const = 0;
 

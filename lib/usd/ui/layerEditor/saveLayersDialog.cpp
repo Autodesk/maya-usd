@@ -13,6 +13,7 @@
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/listeners/notice.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/utils/layerLocking.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
@@ -486,18 +487,41 @@ void SaveLayersDialog::getLayersToSave(
     for (const auto& layerInfo : StageLayersToSave._anonLayers) {
         _stageLayerMap.emplace(std::make_pair(layerInfo.layer, stageName));
     }
+
     for (const auto& dirtyLayer : StageLayersToSave._dirtyFileBackedLayers) {
         _stageLayerMap.emplace(std::make_pair(dirtyLayer, stageName));
     }
+
+    // We do not allow saving layers in any of the following conditions:
+    // 1- Layer is system locked
+    // 2- Layer is anonymous and its parent is system locked
+
+    LayerInfos anonymousLayersUnlocked;
+    for (const auto& layerInfo : StageLayersToSave._anonLayers) {
+        auto parentLayer = layerInfo.parent._layerParent;
+        if (parentLayer != nullptr && MayaUsd::isLayerSystemLocked(parentLayer)) {
+            continue;
+        }
+        if (MayaUsd::isLayerSystemLocked(layerInfo.layer)) {
+            continue;
+        }
+        anonymousLayersUnlocked.emplace_back(layerInfo);
+    }
+    moveAppendVector(anonymousLayersUnlocked, _anonLayerInfos);
 
     // Add these layers to save to our member var for reference later.
     // Note: we use a set for the dirty file back layers because they
     //       can come from multiple stages, but we only want them to
     //       appear once in the dialog.
-    moveAppendVector(StageLayersToSave._anonLayers, _anonLayerInfos);
+    std::vector<SdfLayerRefPtr> dirtyFileBackedLayersToDisplay;
+    for (const auto& dirtyLayer : StageLayersToSave._dirtyFileBackedLayers) {
+        if (MayaUsd::isLayerSystemLocked(dirtyLayer)) {
+            continue;
+        }
+        dirtyFileBackedLayersToDisplay.emplace_back(dirtyLayer);
+    }
     _dirtyFileBackedLayers.insert(
-        std::begin(StageLayersToSave._dirtyFileBackedLayers),
-        std::end(StageLayersToSave._dirtyFileBackedLayers));
+        std::begin(dirtyFileBackedLayersToDisplay), std::end(dirtyFileBackedLayersToDisplay));
 }
 
 void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2)

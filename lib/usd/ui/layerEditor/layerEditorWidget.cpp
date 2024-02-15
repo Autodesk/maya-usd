@@ -243,7 +243,8 @@ void LayerEditorWidget::updateNewLayerButton()
         if (!disabled) {
             auto item = _treeView->currentLayerItem();
             if (item) {
-                disabled = item->isInvalidLayer() || item->appearsMuted() || item->isReadOnly();
+                disabled = item->isInvalidLayer() || item->appearsMuted() || item->isReadOnly()
+                    || item->isLocked();
             }
         }
     }
@@ -258,6 +259,19 @@ void LayerEditorWidget::updateButtons()
         _saveButtonParent->setVisible(true);
         const auto layers = _treeView->layerTreeModel()->getAllNeedsSavingLayers();
         int        count = static_cast<int>(layers.size());
+        for (auto layer : layers) {
+            // The system locked layers do not count towards saving.
+            if (layer->isSystemLocked()) {
+                count--;
+            }
+            // Neither does any anonymous layer whose parent is system locked.
+            // This is because saving an anonymous layer will cause
+            // the parent layer to re-path the sub layer with a file name.
+            if (layer->isAnonymous() && layer->appearsSystemLocked())
+            {
+                count--;
+            }
+        }
         _buttons._dirtyCountBadge->updateCount(count);
         bool disable = count == 0;
         QtUtils::disableHIGButton(_buttons._saveStageButton, disable);
