@@ -23,6 +23,7 @@
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>
 #include <usdUfe/ufe/UsdUndoClearDefaultPrimCommand.h>
+#include <usdUfe/ufe/UsdUndoLongDurationCommand.h>
 #include <usdUfe/ufe/UsdUndoPayloadCommand.h>
 #include <usdUfe/ufe/UsdUndoSelectAfterCommand.h>
 #include <usdUfe/ufe/UsdUndoSetDefaultPrimCommand.h>
@@ -359,14 +360,13 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                 }
             }
 
-            // Set as Default Prim:
-            // If the prim is a root prim, add set default prim
-            if (prim().GetPath().IsRootPrimPath()) {
-                items.emplace_back(kUSDSetAsDefaultPrim, kUSDSetAsDefaultPrim);
-            }
-
+            // Default Prim:
+            //     - If the prim is the default prim, add clearing the default prim
+            //     - Otherwise, if the prim is a root prim, add set default prim
             if (prim().GetStage()->GetDefaultPrim() == prim()) {
                 items.emplace_back(kUSDClearDefaultPrim, kUSDClearDefaultPrim);
+            } else if (prim().GetPath().IsRootPrimPath()) {
+                items.emplace_back(kUSDSetAsDefaultPrim, kUSDSetAsDefaultPrim);
             }
 
             // Prim active state:
@@ -477,11 +477,16 @@ void UsdContextOps::addBulkEditHeader(Ufe::ContextOps::Items& items) const
             = PXR_NS::TfStringPrintf(kBulkEditSameTypeLabel, _bulkItems.size(), _bulkType.c_str());
     }
     Ufe::ContextItem bulkEditItem(kBulkEditItem, bulkEditLabelStr);
+#ifdef UFE_V5_FEATURES_AVAILABLE
+    // The position doesn't matter, it will always appear at the very top of the menu.
+    bulkEditItem.setMetaData("isMenuHeader", true);
+    items.emplace_back(bulkEditItem);
+#else
     bulkEditItem.enabled = Ufe::ContextItem::kDisabled;
-
-    // Insert the header (and seperator) at the top of the menu.
+    // Insert the header (and separator) at the top of the menu.
     items.emplace(items.begin(), Ufe::ContextItem::kSeparator);
     items.emplace(items.begin(), bulkEditItem);
+#endif
 }
 
 /*! Called when the context ops is in bulk edit mode.
@@ -490,6 +495,8 @@ void UsdContextOps::addBulkEditHeader(Ufe::ContextOps::Items& items) const
  *
  *      "{countOfPrimsSelected} {PrimType} Prims Selected" - disbled item has no action
  *      -----------------
+ *      Unload
+ *      Load with Descendants
  *      Make Visible
  *      Make Invisible
  *      Activate Prim
@@ -503,6 +510,12 @@ Ufe::ContextOps::Items UsdContextOps::getBulkItems(const ItemPath& itemPath) con
     Ufe::ContextOps::Items items;
     if (itemPath.empty()) {
         addBulkEditHeader(items);
+
+        // Unload
+        items.emplace_back(kUSDUnloadItem, kUSDUnloadLabel);
+
+        // Load With Descendants
+        items.emplace_back(kUSDLoadWithDescendantsItem, kUSDLoadWithDescendantsLabel);
 
         // Visibility:
         items.emplace_back(kUSDMakeVisibleItem, kUSDMakeVisibleLabel);
@@ -534,10 +547,11 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         const UsdLoadPolicy policy = (itemPath[0u] == kUSDLoadWithDescendantsItem)
             ? UsdLoadWithDescendants
             : UsdLoadWithoutDescendants;
-
-        return std::make_shared<UsdUndoLoadPayloadCommand>(prim(), policy);
+        return UsdUndoLongDurationCommand::create(
+            { std::make_shared<UsdUndoLoadPayloadCommand>(prim(), policy) });
     } else if (itemPath[0u] == kUSDUnloadItem) {
-        return std::make_shared<UsdUndoUnloadPayloadCommand>(prim());
+        return UsdUndoLongDurationCommand::create(
+            { std::make_shared<UsdUndoUnloadPayloadCommand>(prim()) });
     } else if (itemPath[0] == kUSDVariantSetsItem) {
         // Operation is to set a variant in a variant set.  Need both the
         // variant set and the variant as arguments to the operation.
@@ -615,6 +629,33 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
         return !cmdList.empty() ? std::make_shared<Ufe::CompositeUndoableCommand>(cmdList)
                                 : nullptr;
     };
+
+    // Unload:
+    if (itemPath[0u] == kUSDUnloadItem) {
+        for (auto& selItem : _bulkItems) {
+            UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(selItem);
+            if (usdItem) {
+                auto cmd = std::make_shared<UsdUndoUnloadPayloadCommand>(usdItem->prim());
+                cmdList.emplace_back(cmd);
+            }
+        }
+        return compositeCmdReturn(_bulkItems);
+    }
+
+    // Load With Descendants:
+    if (itemPath[0u] == kUSDLoadWithDescendantsItem) {
+        for (auto& selItem : _bulkItems) {
+            UsdSceneItem::Ptr   usdItem = std::dynamic_pointer_cast<UsdSceneItem>(selItem);
+            const UsdLoadPolicy policy = (itemPath[0u] == kUSDLoadWithDescendantsItem)
+                ? UsdLoadWithDescendants
+                : UsdLoadWithoutDescendants;
+            if (usdItem) {
+                auto cmd = std::make_shared<UsdUndoLoadPayloadCommand>(usdItem->prim(), policy);
+                cmdList.emplace_back(cmd);
+            }
+        }
+        return compositeCmdReturn(_bulkItems);
+    }
 
     // Prim Visibility:
     const bool makeVisible = itemPath[0u] == kUSDMakeVisibleItem;

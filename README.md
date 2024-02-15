@@ -10,12 +10,15 @@ Read more about Pixar's USD [here](http://openusd.org)
 
 As USD gains in popularity many studios have been wondering what plugin they should deploy within their pipelines.  Two popular choices, used individually as well as together, have been the Pixar USDMaya plugin that has been part of USD itself, and Animal Logic's, which was separately released as Open Source.  Both plugins have a strong community of users, but some have questioned when Autodesk would eventually release an officially supported plugin themselves.  The goal of this project is to work directly with Pixar and Animal Logic, as well as other key contributors, in order to merge the best of both into a single supported plugin.  
 
-Pixar maintains a list of contributors to USD in their documentation [here](https://graphics.pixar.com/usd/docs/USD-Contributors.html), and as we start working together to merge the two existing plugins it is also important to acknowledge the amount of work that individuals put in on the Animal Logic plugin as well.  The list of those contributors is kept [here](doc/AL_CONTRIBUTORS.md).
+Pixar maintains a list of contributors to USD in their documentation [here](https://openusd.org/release/contributors.html), and as we start working together to merge the two existing plugins it is also important to acknowledge the amount of work that individuals put in on the Animal Logic plugin as well.  The list of those contributors is kept [here](doc/AL_CONTRIBUTORS.md).
+
+## Install MayaUSD
+Installers for MayaUSD can be found [here](https://github.com/Autodesk/maya-usd/releases)
 
 ## Getting Help
-Both Animal Logic and Pixar have their own Google interest groups which will remain great places to go with questions.
+Both Animal Logic and Pixar have forums which will remain great places to go with questions.
 
-Pixar forum is [here](https://groups.google.com/forum/#!forum/usd-interest)  
+Pixar forum is [here](https://forum.aousd.org/)  
 Animal Logic forum is [here](https://groups.google.com/forum/#!forum/al_usdmaya-discussion)
 
 

@@ -15,8 +15,23 @@
 //
 #include "MayaUsdUIInfoHandler.h"
 
+#include <pxr/base/arch/fileSystem.h>
+#include <pxr/base/tf/getenv.h>
+#include <pxr/usd/ar/defaultResolverContext.h>
+#include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/ar/resolverContextBinder.h>
+
 #include <maya/MDoubleArray.h>
 #include <maya/MGlobal.h>
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#include <maya/MSceneMessage.h>
+#include <ufe/nodeDef.h>
+#include <ufe/nodeDefHandler.h>
+#include <ufe/runTimeMgr.h>
+#endif
+
+#include <algorithm>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -86,6 +101,151 @@ UsdUfe::UsdUIInfoHandler::SupportedTypesMap MayaUsdUIInfoHandler::getSupportedIc
     };
     supportedTypes.insert(mayaSupportedTypes.begin(), mayaSupportedTypes.end());
     return supportedTypes;
+}
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+namespace {
+class _MayaIconResolver
+{
+public:
+    ~_MayaIconResolver() { Terminate(); }
+
+    static _MayaIconResolver& Get()
+    {
+        static _MayaIconResolver sResolver;
+        return sResolver;
+    }
+
+    bool FileExists(const std::string& iconName)
+    {
+        // Since this will be hitting the filesystem hard, mostly to find nothing, let's cache
+        // search results. Note that "XBMLANGPATH" is Maya specific, which is why the code is here
+        // and not in the base class.
+        auto cachedHit = _searchCache.find(iconName);
+        if (cachedHit != _searchCache.end()) {
+            return cachedHit->second;
+        }
+
+        // Would be better using MQtUtil::createPixmap, but this requires linking against
+        // QtCore.
+        PXR_NS::ArResolverContextBinder binder(_iconContext);
+        if (!PXR_NS::ArGetResolver().Resolve(iconName).empty()) {
+            _searchCache.insert({ iconName, true });
+            return true;
+        }
+
+        _searchCache.insert({ iconName, false });
+        return false;
+    }
+
+    void ResetCache()
+    {
+        auto pathVector
+            = PXR_NS::TfStringSplit(PXR_NS::TfGetenv("XBMLANGPATH", ""), ARCH_PATH_LIST_SEP);
+#ifdef LINUX
+        // The paths on Linux end with /%B. Trim that:
+        for (auto&& path : pathVector) {
+            const auto pathLen = path.size();
+            if (pathLen >= 3 && path.substr(pathLen - 3) == "/%B") {
+                path = path.substr(0, pathLen - 3);
+            }
+        }
+#endif
+        _iconContext = PXR_NS::ArDefaultResolverContext(pathVector);
+        _searchCache.clear();
+    }
+
+    static void OnPluginStateChange(const MStringArray& /*strs*/, void* /*clientData*/)
+    {
+        _MayaIconResolver::Get().ResetCache();
+    }
+
+    void Terminate()
+    {
+        if (_pluginLoadCB) {
+            MMessage::removeCallback(_pluginLoadCB);
+            _pluginLoadCB = 0;
+        }
+        if (_pluginUnloadCB) {
+            MMessage::removeCallback(_pluginUnloadCB);
+            _pluginLoadCB = 0;
+        }
+        if (_beforeExitCB) {
+            MMessage::removeCallback(_beforeExitCB);
+            _beforeExitCB = 0;
+        }
+    }
+
+    static void OnTerminateCache(void* /*clientData*/) { _MayaIconResolver::Get().Terminate(); }
+
+private:
+    _MayaIconResolver()
+    {
+        ResetCache();
+
+        // Set up callback to notify of plugin load and unload
+        _pluginLoadCB = MSceneMessage::addStringArrayCallback(
+            MSceneMessage::kAfterPluginLoad, OnPluginStateChange);
+        _pluginUnloadCB = MSceneMessage::addStringArrayCallback(
+            MSceneMessage::kAfterPluginUnload, OnPluginStateChange);
+        _beforeExitCB = MSceneMessage::addCallback(MSceneMessage::kMayaExiting, OnTerminateCache);
+    }
+
+    PXR_NS::ArDefaultResolverContext      _iconContext;
+    std::unordered_map<std::string, bool> _searchCache;
+    MCallbackId                           _pluginLoadCB = 0;
+    MCallbackId                           _pluginUnloadCB = 0;
+    MCallbackId                           _beforeExitCB = 0;
+};
+} // namespace
+#endif
+
+Ufe::UIInfoHandler::Icon
+MayaUsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Ptr& mayaItem) const
+{
+    Ufe::UIInfoHandler::Icon icon = Parent::treeViewIcon(mayaItem);
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    if (icon.baseIcon == "out_USD_Shader.png") {
+        // Naming convention for third party shader outliner icons:
+        //
+        //  We take the info:id of the shader and make it safe by replacing : with _.
+        //  Then we search the Maya icon paths for a PNG file with that name. If found we will use
+        //  it. Please note that files with _150 and _200 can also be provided for high DPI
+        //  displays.
+        //
+        //   For example an info:id of:
+        //       MyRenderer:nifty_surface
+        //   On a USD runtime item will have this code search the full Maya icon path for a file
+        //   named:
+        //       out_USD_MyRenderer_nifty_surface.png
+        //   And will use it if found. At resolution 200%, the file:
+        //       out_USD_MyRenderer_nifty_surface_200.png
+        //   Will alternatively be used if found.
+        //
+        const auto nodeDefHandler
+            = Ufe::RunTimeMgr::instance().nodeDefHandler(mayaItem->runTimeId());
+        if (!nodeDefHandler) {
+            return icon;
+        }
+        const auto nodeDef = nodeDefHandler->definition(mayaItem);
+        if (!nodeDef || nodeDef->type().empty()) {
+            return icon;
+        }
+
+        constexpr auto outlinerPrefix = "out_";
+        const auto     runtimeName = Ufe::RunTimeMgr::instance().getName(mayaItem->runTimeId());
+        std::string    iconName = outlinerPrefix + runtimeName + "_" + nodeDef->type();
+        std::replace(iconName.begin(), iconName.end(), ':', '_');
+        iconName += ".png";
+
+        if (_MayaIconResolver::Get().FileExists(iconName)) {
+            icon.baseIcon = iconName;
+        }
+    }
+#endif
+
+    return icon;
 }
 
 } // namespace ufe

@@ -10,6 +10,7 @@ set(TEST_SCRIPT_FILES
     testContextOps.py
     testDefaultPrimCmds.py
     testDuplicateCmd.py
+    testDuplicateProxyShape.py
     testEditRouting.py
     testGroupCmd.py
     testMatrices.py
@@ -37,6 +38,7 @@ set(TEST_SCRIPT_FILES
     testTransform3dTranslate.py
     testUIInfoHandler.py
     testUfePythonImport.py
+    testVariant.py
     testVisibilityCmd.py
 )
 

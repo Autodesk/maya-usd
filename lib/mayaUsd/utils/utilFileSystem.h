@@ -165,6 +165,11 @@ void updatePostponedRelativePaths(
     const PXR_NS::SdfLayerHandle& layer,
     const std::string&            layerFileName);
 
+/*! \brief Turns the file paths marked through the call 'markPathAsPostponedRelative' to relative.
+ */
+MAYAUSD_CORE_PUBLIC
+void updatePostponedRelativePaths(const PXR_NS::SdfLayerHandle& layer);
+
 /*! \brief returns the flag specifying whether USD file paths should be saved as relative to Maya
  * scene file
  */

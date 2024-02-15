@@ -63,7 +63,16 @@ MStatus copyLoadRulesToAttribute(const PXR_NS::UsdStage& stage, MayaUsdProxyShap
 
 MStatus copyLoadRulesFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_NS::UsdStage& stage)
 {
-    MObject proxyObj = proxyShape.thisMObject();
+    PXR_NS::UsdStageLoadRules rules;
+    MStatus status = MayaUsd::getLoadRulesFromAttribute(proxyShape.thisMObject(), rules);
+    if (status == MS::kSuccess)
+        UsdUfe::setLoadRules(stage, rules);
+
+    return status;
+}
+
+MStatus getLoadRulesFromAttribute(const MObject& proxyObj, PXR_NS::UsdStageLoadRules& rules)
+{
     if (proxyObj.isNull())
         return MS::kFailure;
 
@@ -73,10 +82,34 @@ MStatus copyLoadRulesFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_
 
     MString loadRulesText;
     MStatus status = getDynamicAttribute(depNode, loadRulesAttrName, loadRulesText);
-    if (status == MS::kSuccess)
-        UsdUfe::setLoadRulesFromText(stage, loadRulesText.asChar());
+    if (!status)
+        return status;
 
-    return status;
+    rules = UsdUfe::createLoadRulesFromText(loadRulesText.asChar());
+    return MS::kSuccess;
+}
+
+MStatus setLoadRulesAttribute(const PXR_NS::MayaUsdProxyShapeBase& proxyShape, bool loadAllPayloads)
+{
+    return setLoadRulesAttribute(proxyShape.thisMObject(), loadAllPayloads);
+}
+
+MStatus setLoadRulesAttribute(const MObject& proxyObj, bool loadAllPayloads)
+{
+    if (proxyObj.isNull())
+        return MS::kFailure;
+
+    PXR_NS::UsdStageLoadRules rules;
+    if (loadAllPayloads) {
+        rules.LoadWithDescendants(PXR_NS::SdfPath("/"));
+    } else {
+        rules.Unload(PXR_NS::SdfPath("/"));
+    }
+
+    const std::string loadRulesText = UsdUfe::convertLoadRulesToText(rules);
+
+    MFnDependencyNode depNode(proxyObj);
+    return setDynamicAttribute(depNode, loadRulesAttrName, loadRulesText.c_str());
 }
 
 } // namespace MAYAUSD_NS_DEF

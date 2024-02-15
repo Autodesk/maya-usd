@@ -267,13 +267,21 @@ bool LayerTreeItem::isIncoming() const { return _isIncomingLayer; }
 
 bool LayerTreeItem::needsSaving() const
 {
-    if (_layer) {
-        if (!isSessionLayer() && !isReadOnly()
-            && (_isSharedStage || parentLayerItem() != nullptr)) {
-            return isDirty() || isAnonymous();
-        }
-    }
-    return false;
+    // If for any reason we don't hold a layer, then we cannot save it.
+    if (!_layer)
+        return false;
+
+    // Session layers are managed by Maya, not the Layer Editor,
+    // so their dirty state does not count.
+    if (isSessionLayer())
+        return false;
+
+    // The stage is not shared, layers are assumed to be managed
+    // somewhere else and do not get saved here.
+    if (!_isSharedStage)
+        return false;
+
+    return isDirty() || isAnonymous();
 }
 
 // delegate Action API for command buttons
@@ -442,8 +450,9 @@ void LayerTreeItem::saveAnonymousLayer()
 }
 void LayerTreeItem::discardEdits()
 {
-    if (isAnonymous()) {
+    if (isAnonymous() || !isDirty()) {
         // according to MAYA-104336, we don't prompt for confirmation for anonymous layers
+        // according to EMSUSD-964, we don't prompt for confirmation if the layer is not dirty
         commandHook()->discardEdits(layer());
     } else {
         MString title;

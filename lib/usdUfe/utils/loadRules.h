@@ -50,6 +50,11 @@ std::string convertLoadRulesToText(const PXR_NS::UsdStage& stage);
 USDUFE_PUBLIC
 void setLoadRulesFromText(PXR_NS::UsdStage& stage, const std::string& text);
 
+/*! \brief set the stage load rules if they are different from the current ones.
+ */
+USDUFE_PUBLIC
+void setLoadRules(PXR_NS::UsdStage& stage, const PXR_NS::UsdStageLoadRules& newLoadRules);
+
 /*! \brief convert the load rules to a text format.
  */
 USDUFE_PUBLIC

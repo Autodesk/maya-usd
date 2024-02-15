@@ -52,6 +52,11 @@ std::string ensureUSDFileExtension(const std::string& fileToCheck)
     return ret;
 }
 
+void updatePostponedPaths(const PXR_NS::SdfLayerHandle& layer)
+{
+    UsdMayaUtilFileSystem::updatePostponedRelativePaths(layer);
+}
+
 } // namespace
 
 void wrapUtil()
@@ -69,6 +74,7 @@ void wrapUtil()
               .def(
                   "handleAssetPathThatMaybeRelativeToLayer",
                   UsdMayaUtilFileSystem::handleAssetPathThatMaybeRelativeToLayer)
+              .def("updatePostponedRelativePaths", updatePostponedPaths)
               .def("ensureUSDFileExtension", ensureUSDFileExtension)
               .staticmethod("getPathRelativeToMayaSceneFile");
 }

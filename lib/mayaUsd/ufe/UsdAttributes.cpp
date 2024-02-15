@@ -373,9 +373,21 @@ Ufe::Attribute::Ptr UsdAttributes::doAddAttribute(
                 }
             }
             // Fallback to creating a nodegraph output.
-            connectApi.CreateOutput(baseNameAndType.first, ufeTypeToUsd(type));
+            auto usdType = ufeTypeToUsd(type);
+            auto output = connectApi.CreateOutput(
+                baseNameAndType.first, usdType ? usdType : SdfValueTypeNames->Token);
+            if (!usdType) {
+                output.SetSdrMetadataByKey(
+                    TfToken(UsdAttributeGeneric::nativeSdrTypeMetadata()), type);
+            }
         } else if (baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input) {
-            connectApi.CreateInput(baseNameAndType.first, ufeTypeToUsd(type));
+            auto usdType = ufeTypeToUsd(type);
+            auto input = connectApi.CreateInput(
+                baseNameAndType.first, usdType ? usdType : SdfValueTypeNames->Token);
+            if (!usdType) {
+                input.SetSdrMetadataByKey(
+                    TfToken(UsdAttributeGeneric::nativeSdrTypeMetadata()), type);
+            }
         }
     }
 
@@ -735,14 +747,19 @@ Ufe::Attribute::Ptr UsdAttributes::doRenameAttribute(
 #ifdef UFE_ATTRIBUTES_GET_ENUMS
 UFE_ATTRIBUTES_BASE::Enums UsdAttributes::getEnums(const std::string& attrName) const
 {
-    UFE_ATTRIBUTES_BASE::Enums        result;
-    PXR_NS::SdrShaderPropertyConstPtr shaderProp = _GetSdrPropertyAndType(fItem, attrName).first;
-    if (shaderProp) {
-        for (const auto& option : shaderProp->GetOptions()) {
-            result.emplace_back(option.first.GetString(), option.second.GetString());
+    auto shaderPropAndType = _GetSdrPropertyAndType(fItem, attrName);
+    if (shaderPropAndType.first) {
+        const auto shaderPropertyHolder = UsdShaderAttributeHolder(
+            fItem->prim(), shaderPropAndType.first, shaderPropAndType.second);
+        return shaderPropertyHolder.getEnums();
+    } else {
+        PXR_NS::UsdAttribute usdAttr = _GetAttributeType(fItem->prim(), attrName);
+        if (usdAttr.IsValid()) {
+            const auto attrHolder = UsdAttributeHolder { usdAttr };
+            return attrHolder.getEnums();
         }
     }
-    return result;
+    return {};
 }
 #endif
 #endif

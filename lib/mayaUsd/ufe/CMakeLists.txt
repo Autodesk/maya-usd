@@ -110,10 +110,26 @@ if (UFE_UINODEGRAPHNODE_HAS_SIZE)
     )
 endif()
 
+if (UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR=1
+    )
+endif()
+
+
 if (UFE_ATTRIBUTES_GET_ENUMS)
     target_compile_definitions(${PROJECT_NAME}
     PRIVATE
         UFE_ATTRIBUTES_GET_ENUMS=1
+    )
+endif()
+
+
+if (UFE_SCENEITEM_HAS_METADATA)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_SCENEITEM_HAS_METADATA=1
     )
 endif()
 

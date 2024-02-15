@@ -38,6 +38,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 constexpr auto kIllegalUFEPath = "Illegal UFE run-time path %s.";
+#ifdef UFE_SCENEITEM_HAS_METADATA
+constexpr auto kErrorMsgInvalidValueType = "Unexpected Ufe::Value type";
+#endif
 
 // typedef std::unordered_map<TfToken, SdfValueTypeName, TfToken::HashFunctor> TokenToSdfTypeMap;
 
@@ -84,6 +87,8 @@ uint32_t findLayerIndex(const UsdPrim& prim, const SdfLayerHandle& layer)
     return position;
 }
 
+int gWaitCursorCount = 0;
+
 UsdUfe::StageAccessorFn      gStageAccessorFn = nullptr;
 UsdUfe::StagePathAccessorFn  gStagePathAccessorFn = nullptr;
 UsdUfe::UfePathToPrimFn      gUfePathToPrimFn = nullptr;
@@ -92,6 +97,8 @@ UsdUfe::IsAttributeLockedFn  gIsAttributeLockedFn = nullptr;
 UsdUfe::SaveStageLoadRulesFn gSaveStageLoadRulesFn = nullptr;
 UsdUfe::IsRootChildFn        gIsRootChildFn = nullptr;
 UsdUfe::UniqueChildNameFn    gUniqueChildNameFn = nullptr;
+UsdUfe::WaitCursorFn         gStartWaitCursorFn = nullptr;
+UsdUfe::WaitCursorFn         gStopWaitCursorFn = nullptr;
 
 } // anonymous namespace
 
@@ -359,6 +366,17 @@ std::string uniqueChildNameDefault(const UsdPrim& usdParent, const std::string& 
         childName = uniqueName(childrenNames, childName);
     }
     return childName;
+}
+
+SdfPath uniqueChildPath(const UsdStage& stage, const SdfPath& path)
+{
+    const UsdPrim     parentPrim = stage.GetPrimAtPath(path.GetParentPath());
+    const std::string originalName = path.GetName();
+    const std::string uniqueName = uniqueChildName(parentPrim, originalName);
+    if (uniqueName == originalName)
+        return path;
+
+    return path.ReplaceName(TfToken(uniqueName));
 }
 
 namespace {
@@ -689,10 +707,16 @@ bool isPropertyMetadataEditAllowed(
         = UsdUfe::getStrongerLayer(stage, targetLayer, topAuthoredLayer, true);
     bool allowed = (strongestLayer == targetLayer);
     if (!allowed && errMsg) {
+        std::string strongName;
+        if (strongestLayer)
+            strongName = strongestLayer->GetDisplayName();
+        else
+            strongName = "a layer we could not identify";
+
         *errMsg = TfStringPrintf(
             "Cannot edit [%s] attribute because there is a stronger opinion in [%s].",
             metadataName.GetText(),
-            strongestLayer ? strongestLayer->GetDisplayName().c_str() : "some layer");
+            strongName.c_str());
     }
     return allowed;
 }
@@ -860,6 +884,77 @@ Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& f
         }
     }
     return dst;
+}
+
+#ifdef UFE_SCENEITEM_HAS_METADATA
+PXR_NS::VtValue ufeValueToVtValue(const Ufe::Value& ufeValue)
+{
+    PXR_NS::VtValue usdValue;
+    if (ufeValue.isType<bool>())
+        usdValue = ufeValue.get<bool>();
+    else if (ufeValue.isType<int>())
+        usdValue = ufeValue.get<int>();
+    else if (ufeValue.isType<float>())
+        usdValue = ufeValue.get<float>();
+    else if (ufeValue.isType<double>())
+        usdValue = ufeValue.get<double>();
+    else if (ufeValue.isType<std::string>())
+        usdValue = ufeValue.get<std::string>();
+    else {
+        TF_CODING_ERROR(kErrorMsgInvalidValueType);
+    }
+
+    return usdValue;
+}
+
+Ufe::Value vtValueToUfeValue(const PXR_NS::VtValue& vtValue)
+{
+    if (vtValue.IsHolding<bool>())
+        return Ufe::Value(vtValue.Get<bool>());
+    else if (vtValue.IsHolding<int>())
+        return Ufe::Value(vtValue.Get<int>());
+    else if (vtValue.IsHolding<float>())
+        return Ufe::Value(vtValue.Get<float>());
+    else if (vtValue.IsHolding<double>())
+        return Ufe::Value(vtValue.Get<double>());
+    else if (vtValue.IsHolding<std::string>())
+        return Ufe::Value(vtValue.Get<std::string>());
+    else if (vtValue.IsHolding<PXR_NS::TfToken>())
+        return Ufe::Value(vtValue.Get<PXR_NS::TfToken>().GetString());
+    else {
+        std::stringstream ss;
+        ss << vtValue;
+        return Ufe::Value(ss.str());
+    }
+}
+#endif
+
+void setWaitCursorFns(WaitCursorFn startFn, WaitCursorFn stopFn)
+{
+    gStartWaitCursorFn = startFn;
+    gStopWaitCursorFn = stopFn;
+}
+
+void startWaitCursor()
+{
+    if (!gStartWaitCursorFn)
+        return;
+
+    if (gWaitCursorCount == 0)
+        gStartWaitCursorFn();
+
+    ++gWaitCursorCount;
+}
+
+void stopWaitCursor()
+{
+    if (!gStopWaitCursorFn)
+        return;
+
+    --gWaitCursorCount;
+
+    if (gWaitCursorCount == 0)
+        gStopWaitCursorFn();
 }
 
 } // namespace USDUFE_NS_DEF

@@ -811,6 +811,51 @@ class ParentCmdTestCase(unittest.TestCase):
 
         checkParentDone()
 
+    @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() >= 8, 'Requires parent command fix in Maya.')
+    def testParentToSelection(self):
+        '''
+        Test that the parent command with a single argument will parent to the selection.
+        '''
+        # Create scene items for the cube and the cylinder.
+        shapeSegment = mayaUtils.createUfePathSegment(
+            "|mayaUsdProxy1|mayaUsdProxyShape1")
+        
+        cylinderPath = ufe.Path(
+            [shapeSegment, usdUtils.createUfePathSegment("/cylinderXform")])
+        cylinderItem = ufe.Hierarchy.createItem(cylinderPath)
+
+        def verifyInitialSetup():
+            '''Verify that the cube is not a child of the cylinder.'''
+            cylHier = ufe.Hierarchy.hierarchy(cylinderItem)
+            cylChildren = cylHier.children()
+            self.assertEqual(len(cylChildren), 1)
+            self.assertNotIn("cubeXform", childrenNames(cylChildren))
+
+        verifyInitialSetup()
+
+        # Parent cube to cylinder by passing the cube but not the cylinder
+        # while the cylinder is selected.
+        cmds.select("|mayaUsdProxy1|mayaUsdProxyShape1,/cylinderXform")
+        cmds.parent("|mayaUsdProxy1|mayaUsdProxyShape1,/cubeXform")
+
+        def verifyCubeUnderCylinder():
+            '''Verify that the cube is under the cylinder.'''
+            cylHier = ufe.Hierarchy.hierarchy(cylinderItem)
+            cylChildren = cylHier.children()
+            self.assertEqual(len(cylChildren), 2)
+            self.assertIn("cubeXform", childrenNames(cylChildren))
+
+        # Confirm that the cube is now a child of the cylinder.
+        verifyCubeUnderCylinder()
+
+        # Undo: the cube is no longer a child of the cylinder.
+        cmds.undo()
+        verifyInitialSetup()
+
+        # Redo: the cube is again a child of the cylinder.
+        cmds.redo()
+        verifyCubeUnderCylinder()
+
     def testParentToProxyShape(self):
 
         # Load a file with a USD hierarchy at least 2-levels deep.
@@ -1079,6 +1124,37 @@ class ParentCmdTestCase(unittest.TestCase):
         
         with self.assertRaises(RuntimeError):
             cmds.parent(capsulePathStr, x1PathStr)
+
+    def testParentToStrongerLayer(self):
+        '''
+        Verify that parenting a prim to a prim defined in a lower layer
+        is permitted.
+        '''
+        cmds.file(new=True, force=True)
+
+        # Create an empty stage with a sub-layer
+        import mayaUsd_createStageWithNewLayer
+        proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+        subLayer = usdUtils.addNewLayerToStage(stage)
+
+        # Create a xform in the sub-layer and a capsule in the root layer.
+        with Usd.EditContext(stage, subLayer):
+            subXFormName = '/SubXForm'
+            subXFormPrim = stage.DefinePrim(subXFormName, 'Xform')
+            self.assertTrue(subXFormPrim)
+
+        rootCapsuleName = '/RootCapsule'
+        rootCapsulePrim = stage.DefinePrim(rootCapsuleName, 'Capsule')
+        self.assertTrue(rootCapsulePrim)
+
+        subXFormUFEPath = proxyShapePathStr + "," + subXFormName
+        rootCapsuleUFEPath = proxyShapePathStr + "," + rootCapsuleName
+        
+        cmds.parent(rootCapsuleUFEPath, subXFormUFEPath)
+
+        newRootCapsuleUSDPath = subXFormName + rootCapsuleName
+        self.assertTrue(stage.GetPrimAtPath(newRootCapsuleUSDPath))
 
     @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
     def testParentShader(self):

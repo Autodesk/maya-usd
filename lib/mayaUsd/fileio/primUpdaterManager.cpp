@@ -30,6 +30,7 @@
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/undo/OpUndoItemMuting.h>
 #include <mayaUsd/undo/OpUndoItems.h>
+#include <mayaUsd/utils/copyLayerPrims.h>
 #include <mayaUsd/utils/dynamicAttribute.h>
 #include <mayaUsd/utils/progressBarScope.h>
 #include <mayaUsd/utils/traverseLayer.h>
@@ -1145,7 +1146,7 @@ bool PrimUpdaterManager::mergeToUsd(
     }
     progressBar.advance();
 
-    context._pushExtras.finalize(MayaUsd::ufe::stagePath(context.GetUsdStage()));
+    context._pushExtras.finalize(MayaUsd::ufe::stagePath(context.GetUsdStage()), {});
     progressBar.advance();
 
     discardPullSetIfEmpty();
@@ -1574,7 +1575,7 @@ bool PrimUpdaterManager::duplicate(
             return false;
         }
 
-        MayaUsd::ProgressBarScope progressBar(8, "Duplicating to USD");
+        MayaUsd::ProgressBarScope progressBar(6, "Duplicating to USD");
 
         auto ctxArgs = VtDictionaryOver(userArgs, UsdMayaJobExportArgs::GetDefaultDictionary());
 
@@ -1602,6 +1603,7 @@ bool PrimUpdaterManager::duplicate(
         progressBar.advance();
 
         // Copy the temporary layer contents out to the proper destination.
+        const auto& srcStage = std::get<UsdStageRefPtr>(pushExportOutput);
         const auto& srcLayer = std::get<SdfLayerRefPtr>(pushExportOutput);
         const auto& editTarget = dstStage->GetEditTarget();
         const auto& dstLayer = editTarget.GetLayer();
@@ -1613,22 +1615,26 @@ bool PrimUpdaterManager::duplicate(
         }
         progressBar.advance();
 
-        // Make the destination root path unique.
-        SdfPath     dstParentPath = dstParentPrim.GetPath();
-        std::string dstChildName = UsdUfe::uniqueChildName(dstParentPrim, srcRootPath.GetName());
-        SdfPath     dstRootPath = dstParentPath.AppendChild(TfToken(dstChildName));
-        progressBar.advance();
+        // We need the parent path of the source and destination to
+        // fixup the paths of the source prims we copy to their
+        // destination paths.
+        const SdfPath srcParentPath = srcRootPath.GetParentPath();
+        const SdfPath dstParentPath = dstParentPrim.GetPath();
 
-        if (!SdfCopySpec(srcLayer, srcRootPath, dstLayer, dstRootPath)) {
-            return false;
-        }
-        progressBar.advance();
+        CopyLayerPrimsOptions options;
+        options.progressBar = &progressBar;
 
-        bool           needRenaming = (dstRootPath != srcRootPath);
-        const SdfPath* oldPrefix = needRenaming ? &srcRootPath : nullptr;
-        const SdfPath* newPrefix = needRenaming ? &dstRootPath : nullptr;
-        context._pushExtras.finalize(MayaUsd::ufe::stagePath(dstStage), oldPrefix, newPrefix);
-        progressBar.advance();
+        CopyLayerPrimsResult copyResult = copyLayerPrims(
+            srcStage,
+            srcLayer,
+            srcParentPath,
+            dstStage,
+            dstLayer,
+            dstParentPath,
+            { srcRootPath },
+            options);
+
+        context._pushExtras.finalize(MayaUsd::ufe::stagePath(dstStage), copyResult.renamedPaths);
 
         auto ufeItem = Ufe::Hierarchy::createItem(dstPath);
         if (TF_VERIFY(ufeItem)) {

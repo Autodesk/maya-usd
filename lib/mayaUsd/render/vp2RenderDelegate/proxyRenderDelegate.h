@@ -256,6 +256,8 @@ public:
     bool SnapToPoints() const;
 #endif
 
+    static void setLongDurationRendering();
+
 private:
     ProxyRenderDelegate(const ProxyRenderDelegate&) = delete;
     ProxyRenderDelegate& operator=(const ProxyRenderDelegate&) = delete;

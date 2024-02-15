@@ -64,6 +64,10 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/ufe.h")
         # Note: the UFE_PATCH_LEVEL will start at 300 and will thus encode the minor version
         #       of 3 (so we don't use UFE_MINOR_VERSION in this formula).
         math(EXPR UFE_PREVIEW_VERSION_NUM "4 * 1000 + ${UFE_PATCH_LEVEL}")
+    elseif(UFE_VERSION VERSION_EQUAL "5.0.0")
+        # Temporary. Once next Maya PR is released with UFE v5.0.0 this should
+        # be removed (along with all the UFE_PREVIEW_VERSION_NUM checks).
+        set(UFE_PREVIEW_VERSION_NUM 5017)
     endif()
 
     file(STRINGS
@@ -141,6 +145,15 @@ if (UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/sceneSegmentHandler.h")
     message(STATUS "Maya has UFE scene segment API")
 endif()
 
+set(UFE_HAS_DISPLAY_NAME FALSE CACHE INTERNAL "ufeHasDisplayName")
+if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/attribute.h")
+    file(STRINGS ${UFE_INCLUDE_DIR}/ufe/attribute.h UFE_HAS_API REGEX "displayName")
+    if(UFE_HAS_API)
+        set(UFE_HAS_DISPLAY_NAME TRUE CACHE INTERNAL "ufeHasDisplayName")
+        message(STATUS "Maya has UFE Attribute displayName")
+    endif()
+endif()
+
 set(UFE_TRIE_NODE_HAS_CHILDREN_COMPONENTS_ACCESSOR FALSE CACHE INTERNAL "ufeTrieNodeHasChildrenComponentsAccessor")
 if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/trie.h")
     file(STRINGS ${UFE_INCLUDE_DIR}/ufe/trie.h UFE_HAS_API REGEX "childrenComponents")
@@ -159,6 +172,15 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/uiNodeGraphNode.h")
     endif()
 endif()
 
+set(UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR FALSE CACHE INTERNAL "ufeUINodeGraphNodeHasDisplayColor")
+if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/uiNodeGraphNode.h")
+    file(STRINGS ${UFE_INCLUDE_DIR}/ufe/uiNodeGraphNode.h UFE_HAS_API REGEX "getDisplayColor")
+    if(UFE_HAS_API)
+        set(UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR TRUE CACHE INTERNAL "ufeUINodeGraphNodeHasDisplayColor")
+        message(STATUS "Maya has UFE UINodeGraphNode display color interface")
+    endif()
+endif()
+
 set(UFE_ATTRIBUTES_GET_ENUMS FALSE CACHE INTERNAL "ufeAttributesGetEnums")
 if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/attributes.h")
     file(STRINGS ${UFE_INCLUDE_DIR}/ufe/attributes.h UFE_HAS_API REGEX "getEnums")
@@ -168,3 +190,11 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/attributes.h")
     endif()
 endif()
 
+set(UFE_SCENEITEM_HAS_METADATA FALSE CACHE INTERNAL "getMetadata")
+if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/sceneItem.h")
+    file(STRINGS ${UFE_INCLUDE_DIR}/ufe/sceneItem.h UFE_HAS_API REGEX "getMetadata")
+    if(UFE_HAS_API)
+        set(UFE_SCENEITEM_HAS_METADATA TRUE CACHE INTERNAL "ufeSceneItemHasMetaData")
+        message(STATUS "Maya has UFE SceneItem's meta data interface")
+    endif()
+endif()

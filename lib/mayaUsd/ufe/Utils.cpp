@@ -581,11 +581,20 @@ Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::UsdAttribute& usdAttr)
                     usdAttr.GetName(), SdfFieldKeys->AllowedTokens, nullptr)) {
                 type = Ufe::Attribute::kEnumString;
             }
-            // TfToken is also used in UsdShade as a Generic placeholder for connecting struct I/O.
             UsdShadeNodeGraph asNodeGraph(usdAttr.GetPrim());
-            if (asNodeGraph && usdAttr.GetTypeName() == SdfValueTypeNames->Token) {
-                if (UsdShadeUtils::GetBaseNameAndType(usdAttr.GetName()).second
-                    != UsdShadeAttributeType::Invalid) {
+            if (asNodeGraph) {
+                // NodeGraph inputs can have enum metadata on them when they export an inner enum.
+                const auto portType = UsdShadeUtils::GetBaseNameAndType(usdAttr.GetName()).second;
+                if (portType == UsdShadeAttributeType::Input) {
+                    const auto input = UsdShadeInput(usdAttr);
+                    if (!input.GetSdrMetadataByKey(TfToken("enum")).empty()) {
+                        return Ufe::Attribute::kEnumString;
+                    }
+                }
+                // TfToken is also used in UsdShade as a Generic placeholder for connecting struct
+                // I/O.
+                if (usdAttr.GetTypeName() == SdfValueTypeNames->Token
+                    && portType != UsdShadeAttributeType::Invalid) {
                     type = Ufe::Attribute::kGeneric;
                 }
             }
@@ -883,18 +892,20 @@ void ReplicateExtrasToUSD::initRecursive(const Ufe::SceneItem::Ptr& item) const
 #endif
 }
 
-void ReplicateExtrasToUSD::finalize(
-    const Ufe::Path&       stagePath,
-    const PXR_NS::SdfPath* oldPrefix,
-    const PXR_NS::SdfPath* newPrefix) const
+void ReplicateExtrasToUSD::finalize(const Ufe::Path& stagePath, const RenamedPaths& renamed) const
 {
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
     // Replicate display layer membership
     for (const auto& entry : _primToLayerMap) {
         if (entry.second.hasFn(MFn::kDisplayLayer)) {
             auto usdPrimPath = entry.first;
-            if (oldPrefix && newPrefix) {
-                usdPrimPath = usdPrimPath.ReplacePrefix(*oldPrefix, *newPrefix);
+            for (const auto& oldAndNew : renamed) {
+                const PXR_NS::SdfPath& oldPrefix = oldAndNew.first;
+                if (!usdPrimPath.HasPrefix(oldPrefix))
+                    continue;
+
+                const PXR_NS::SdfPath& newPrefix = oldAndNew.second;
+                usdPrimPath = usdPrimPath.ReplacePrefix(oldPrefix, newPrefix);
             }
 
             auto                primPath = UsdUfe::usdPathToUfePathSegment(usdPrimPath);

@@ -226,7 +226,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
         kExcludeExportTypesFlag,
         UsdMayaJobExportArgsTokens->excludeExportTypes.GetText(),
         MSyntax::kString);
-    syntax.makeFlagMultiUse((kExcludeExportTypesFlag));
+    syntax.makeFlagMultiUse(kExcludeExportTypesFlag);
+
+    syntax.addFlag(
+        kDefaultPrimFlag, UsdMayaJobExportArgsTokens->defaultPrim.GetText(), MSyntax::kString);
 
     // These are additional flags under our control.
     syntax.addFlag(
@@ -288,7 +291,7 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
         }
 
         // Read all of the dictionary args first.
-        const VtDictionary userArgs = UsdMayaUtil::GetDictionaryFromArgDatabase(
+        VtDictionary userArgs = UsdMayaUtil::GetDictionaryFromArgDatabase(
             argData, UsdMayaJobExportArgs::GetGuideDictionary());
 
         // Now read all of the other args that are specific to this command.
@@ -370,7 +373,10 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
         MSelectionList           objSelList;
         UsdMayaUtil::MDagPathSet dagPaths;
         bool                     exportSelected = argData.isFlagSet(kSelectionFlag);
-        if (!exportSelected) {
+        if (exportSelected) {
+            userArgs[UsdMayaJobExportArgsTokens->exportSelected] = true;
+
+        } else {
             argData.getObjects(objSelList);
 
             if (objSelList.isEmpty()) {

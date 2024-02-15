@@ -16,6 +16,7 @@
 //
 
 global string $gMayaUsdTranslatorExport_SectionNames[];
+global int $exportAll;
 
 proc string stringRemoveSuffix(string $object, string $suffix)
 {
@@ -190,6 +191,14 @@ proc string mayaUsdTranslatorExport_AppendJobContexts(string $currentOptions, st
     return $currentOptions;
 }
 
+proc string mayaUsdTranslatorExport_AppendDefaultPrim(string $currentOptions, string $arg) {
+    if (`optionMenuGrp -exists exportDefaultPrim` == 0)
+        return $currentOptions;
+    
+    string $defaultPrim = `optionMenuGrp -q -value exportDefaultPrim`;
+    return $currentOptions + ";" + $arg + "=" + $defaultPrim;
+}
+
 proc string mayaUsdTranslatorExport_AppendFromPopup(string $currentOptions, string $arg, string $widget) {
     if (`optionMenuGrp -exists $widget` == 0)
         return $currentOptions;
@@ -242,6 +251,57 @@ proc string mayaUsdTranslatorExport_AppendFromTextField(string $currentOptions, 
     return $currentOptions + ";" + $arg + "=" + $value;
 }
 
+global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
+    if (`optionMenuGrp -exists exportDefaultPrim` == 0){
+        return;
+    }
+
+    if ((`checkBoxGrp -exists exportMeshesCheckBox` == 0)||(`checkBoxGrp -exists exportLightsCheckBox` == 0)||(`checkBoxGrp -exists exportCamerasCheckBox` == 0)){
+        return;
+    }
+    int $excludeMesh = (`checkBoxGrp -q -v1 exportMeshesCheckBox` == 0);
+    int $excludeLight = (`checkBoxGrp -q -v1 exportLightsCheckBox` == 0);
+    int $excludeCamera = (`checkBoxGrp -q -v1 exportCamerasCheckBox` == 0);
+
+    string $allItems[];
+    global int $exportAll;
+    if($exportAll){
+        $allItems = `python("import mayaUsd_exportHelpers; mayaUsd_exportHelpers.updateDefaultPrimCandidates('" + $excludeMesh + "','" + $excludeLight + "', '" + $excludeCamera +"')")`;
+
+    } else{
+        $allItems = `python("import mayaUsd_exportHelpers; mayaUsd_exportHelpers.updateDefaultPrimCandidatesFromSelection('" + $excludeMesh + "','" + $excludeLight + "', '" + $excludeCamera +"')")`;
+    }
+    optionMenuGrp -edit -deleteAllItems exportDefaultPrim;
+    string $menuName = `optionMenuGrp -q -fullPathName exportDefaultPrim`;
+    menuItem -parent ($menuName + "|OptionMenu") -l `getMayaUsdString("kExportDefaultPrimNoneLbl")`;
+    for($item in $allItems){
+        menuItem -parent ($menuName + "|OptionMenu") -l $item;
+    }
+
+    // If there are default prim candidates, select the first prim
+    // Use index 2 here because the first one will always be None
+    if(size($allItems) > 0){
+        optionMenuGrp -e -select 2 exportDefaultPrim;
+    }
+
+}
+
+global proc onExportParentScopeChanged() {
+    if (`optionMenuGrp -exists exportDefaultPrim` == 0){
+        return;
+    }
+    string $rootPrim = `textFieldGrp -q -text parentScopeField`;
+    optionMenuGrp -edit -deleteAllItems exportDefaultPrim;
+    string $menuName = `optionMenuGrp -q -fullPathName exportDefaultPrim`;
+    menuItem -parent ($menuName + "|OptionMenu") -l "None";
+    menuItem -parent ($menuName + "|OptionMenu") -l $rootPrim;
+    if(size($rootPrim) > 0){
+        optionMenuGrp -e -select 2 exportDefaultPrim;
+    } else {
+        mayaUsdTranslatorExport_updateDefaultPrimList();
+    }
+}
+
 global proc mayaUsdTranslatorExport_AnimationCB() {
     if (`checkBoxGrp -exists animationCheckBox` == 0)
         return;
@@ -252,7 +312,8 @@ global proc mayaUsdTranslatorExport_AnimationCB() {
 global proc mayaUsdTranslatorExport_MeshCB() {
     if (`checkBoxGrp -exists exportMeshesCheckBox` == 0)
         return;
-
+    
+    mayaUsdTranslatorExport_updateDefaultPrimList();
     columnLayout -e -enable (`checkBoxGrp -q -v1 exportMeshesCheckBox` == 1) meshExportOptsCol;
     columnLayout -e -enable (`checkBoxGrp -q -v1 exportMeshesCheckBox` == 1) materialOptsCol;
 }
@@ -431,6 +492,8 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
         int $exportMeshes = 1;
         int $exportCameras = 1;
         int $exportLights = 1;
+
+        string $excludeTypes;
         for ($index = 0; $index < size($optionList); $index++) {
             tokenize($optionList[$index], "=", $optionBreakDown);
             if ($optionBreakDown[0] == "exportUVs") {
@@ -452,7 +515,7 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
             } else if($optionBreakDown[0] == "excludeExportTypes"){
                 $contextForcesExcludeTypes = 1;
                 if(mayaUsdTranslatorExport_HasFilteredPrimitive($optionBreakDown[1], "Meshes")){
-                    $exportMeshes = 0;                    
+                    $exportMeshes = 0;
                 }
                 if(mayaUsdTranslatorExport_HasFilteredPrimitive($optionBreakDown[1], "Cameras")){
                     $exportCameras = 0;
@@ -489,8 +552,6 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
                 floatFieldGrp -e -v1 $frameStride -en1 $enable frameStrideField;
             } else if ($optionBreakDown[0] == "frameSample") {
                 mayaUsdTranslatorExport_SetTextField($optionBreakDown[1], $enable, "frameSampleField");
-            } else if ($optionBreakDown[0] == "parentScope") {
-                mayaUsdTranslatorExport_SetTextField($optionBreakDown[1], $enable, "parentScopeField");
             } else if ($optionBreakDown[0] == "convertMaterialsTo") {
                 mayaUsdTranslatorExport_SetConvertMaterialsToCheckboxes($optionBreakDown[1], $enable, $processJobContext);
             } else if ($optionBreakDown[0] == "shadingMode" && $optionBreakDown[1] != "useRegistry") {
@@ -508,6 +569,8 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
             } else if ($optionBreakDown[0] == "worldspace") {
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "worldspaceCheckBox");
             }
+            // Removed parent scope because we don't need the parent scope name from last export. Also parent scope created at export
+            // will be the default default prim, which can be misleading when this field is filled with previous parent scope name.
         }
 
         // We now know if we export nurbs curves or not and if forced by the job context:
@@ -516,9 +579,9 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
         }
         if($contextForcesExcludeTypes == 1){
             checkBoxGrp -e -v1 $exportMeshes -en $enable exportMeshesCheckBox;
-            mayaUsdTranslatorExport_MeshCB();
             checkBoxGrp -e -v1 $exportCameras -en $enable exportCamerasCheckBox;
             checkBoxGrp -e -v1 $exportLights -en $enable exportLightsCheckBox;
+            mayaUsdTranslatorExport_MeshCB();
         }
 
         if ($jobContext != "" && $processJobContext == 1) {
@@ -625,6 +688,26 @@ global proc int mayaUsdTranslatorExport (string $parent,
 //        0 otherwise.
 //
 {
+    // check for Export All or Export Selection
+    // check for export option box window first, if it doesn't exist means user opened the main export window
+    global string $gOptionBox;
+    global int $exportAll;
+    if (`window -exists $gOptionBox`) {
+        string $title = `window -query -title $gOptionBox`;
+        if ($title == `uiRes("m_fileOptions.kExportAllOptions")`) {
+            $exportAll = 1;
+        } else if ($title == `uiRes("m_fileOptions.kExportSelectionOptions")`) {
+            $exportAll = 0;
+        }
+    } else{
+        global string $gOperationMode;
+        if ($gOperationMode == "ExportAll"){
+            $exportAll = 1;
+        } else{
+            $exportAll = 0;
+        }
+    }
+
     int $bResult;
     string $currentOptions;
 
@@ -679,8 +762,10 @@ global proc int mayaUsdTranslatorExport (string $parent,
                     //separator -style "none";
 
                     textFieldGrp -l `getMayaUsdString("kExportParentScopeLbl")` -placeholderText `getMayaUsdString("kExportParentScopePht")`
-                        -annotation `getMayaUsdString("kExportParentScopeAnn")` parentScopeField;
+                        -annotation `getMayaUsdString("kExportParentScopeAnn")` -textChangedCommand "onExportParentScopeChanged" parentScopeField;
                 }
+
+                optionMenuGrp -l `getMayaUsdString("kExportDefaultPrimLbl")` -annotation `getMayaUsdString("kExportDefaultPrimAnn")` exportDefaultPrim;
 
                 separator -style "none";
             setParent ..;
@@ -795,8 +880,8 @@ global proc int mayaUsdTranslatorExport (string $parent,
             frameLayout -label `getMayaUsdString("kExportFrameAdvancedLbl")` -collapsable true -collapse $collapse advancedFrameLayout;
                 separator -style "none";
 
-                checkBoxGrp -label "" -label1 `getMayaUsdString("kExportCamerasLbl")` -annotation `getMayaUsdString("kExportCamerasAnn")` exportCamerasCheckBox;
-                checkBoxGrp -label "" -label1 `getMayaUsdString("kExportLightsLbl")` -annotation `getMayaUsdString("kExportLightsAnn")` exportLightsCheckBox;
+                checkBoxGrp -label "" -label1 `getMayaUsdString("kExportCamerasLbl")` -annotation `getMayaUsdString("kExportCamerasAnn")` -cc ("mayaUsdTranslatorExport_updateDefaultPrimList") exportCamerasCheckBox;
+                checkBoxGrp -label "" -label1 `getMayaUsdString("kExportLightsLbl")` -annotation `getMayaUsdString("kExportLightsAnn")` -cc ("mayaUsdTranslatorExport_updateDefaultPrimList") exportLightsCheckBox;
 
                 checkBoxGrp -label "" -label1 `getMayaUsdString("kExportVisibilityLbl")` -annotation `getMayaUsdString("kExportVisibilityAnn")` exportVisibilityCheckBox;
 
@@ -854,6 +939,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
             if (stringArrayContains("output-parentscope", $sectionNames)) {
                 $currentOptions = mayaUsdTranslatorExport_AppendFromTextField($currentOptions, "parentScope", "parentScopeField");
             }
+            $currentOptions = mayaUsdTranslatorExport_AppendDefaultPrim($currentOptions, "defaultPrim");
         }
 
         if (stringArrayContains("materials", $sectionNames)) {

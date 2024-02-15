@@ -1317,7 +1317,7 @@ MPlug UsdMayaUtil::FindChildPlugByName(const MPlug& plug, const MString& name)
 
 // XXX: see logic in UsdMayaTransformWriter.  It's unfortunate that this
 // logic is in 2 places.  we should merge.
-static bool _IsShape(const MDagPath& dagPath)
+bool UsdMayaUtil::isShape(const MDagPath& dagPath)
 {
     if (dagPath.hasFn(MFn::kTransform)) {
         return false;
@@ -1362,7 +1362,7 @@ SdfPath UsdMayaUtil::MDagPathToUsdPath(
     SdfPath usdPath
         = UsdMayaUtil::MayaNodeNameToSdfPath(dagPath.fullPathName().asChar(), stripNamespaces);
 
-    if (mergeTransformAndShape && _IsShape(dagPath)) {
+    if (mergeTransformAndShape && isShape(dagPath)) {
         usdPath = usdPath.GetParentPath();
     }
 

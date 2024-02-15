@@ -396,6 +396,46 @@ class testProxyShapeBase(unittest.TestCase):
         self.assertEqual(stage.GetTimeCodesPerSecond(), tcps)
         self.assertEqual(stage.GetRootLayer().timeCodesPerSecond, tcps)
 
+    def _getStage(self):
+        '''
+        Helper to get the stage, Needed since the stage instance will change
+        after saving.
+        '''
+        proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+        self.assertGreater(len(proxyShapes), 0)
+        proxyShapePath = proxyShapes[0]
+        return mayaUsd.lib.GetPrim(proxyShapePath).GetStage(), proxyShapePath
+
+    def _defineDummyPrim(self, stage = None, target = None):
+        '''
+        Define a prim named "dummy". Can be create in an edit target if given one.
+        '''
+        if stage is None:
+            stage, _ = self._getStage()
+        if target is not None:
+            stage.SetEditTarget(target)
+        return stage.DefinePrim("/dummy", "xform")
+
+    def _verifyPrim(self, isActive = True):
+        '''
+        Verify that the prim named "dummy" exists and its active state.
+        '''
+        stage, _ = self._getStage()
+        prim = stage.GetPrimAtPath("/dummy")
+        self.assertTrue(prim)
+        self.assertEqual(prim.IsActive(), isActive)
+
+    def _verifySubLayer(self, expectedCount = 3):
+        '''
+        Verify that the stage still contains a sub-layer under the root.
+        Can pass the expected count if the setup is modified, for example
+        when the stage is not shared, an extra layer added.
+        '''
+        stage, _ = self._getStage()
+        stack = stage.GetLayerStack()
+        # Layer stack: session, root, sub-layer
+        self.assertEqual(expectedCount, len(stack))
+
     def testShareStagePreserveSession(self):
         '''
         Verify share/unshare stage preserves the data in the session layer
@@ -406,37 +446,23 @@ class testProxyShapeBase(unittest.TestCase):
         # Open usdCylinder.ma scene in testSamples
         mayaUtils.openCylinderScene()
 
-        # get the stage
-        def getStage():
-            proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
-            self.assertGreater(len(proxyShapes), 0)
-            proxyShapePath = proxyShapes[0]
-            return mayaUsd.lib.GetPrim(proxyShapePath).GetStage(), proxyShapePath
-
         # check that the stage is shared and the root is the right one
-        stage, proxyShapePath = getStage()
+        stage, proxyShapePath = self._getStage()
         self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
 
         # create a prim in the session layer.
-        stage.SetEditTarget(stage.GetSessionLayer())
-        stage.DefinePrim("/dummy", "xform")
-
-        # verify that the prim exists.
-        def verifyPrim():
-            stage, _ = getStage()
-            self.assertTrue(stage.GetPrimAtPath("/dummy"))
-
-        verifyPrim()
+        self._defineDummyPrim(stage, stage.GetSessionLayer())
+        self._verifyPrim()
 
         # unshare the stage and verify the prim in the session layer still exists.
         cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), False)
 
-        verifyPrim()
+        self._verifyPrim()
 
         # re-share the stage and verify the prim in the session layer still exists.
         cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), True)
 
-        verifyPrim()
+        self._verifyPrim()
 
     def _saveStagePreserveLayerHelper(self, targetRoot, saveInMaya):
         '''
@@ -451,15 +477,11 @@ class testProxyShapeBase(unittest.TestCase):
         cmds.file(new=True, force=True)
         mayaUtils.createProxyAndStage()
 
-        # Helper to get the stage, Needed since the stage instance will change
-        # after saving.
-        def getStage():
-            proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
-            self.assertGreater(len(proxyShapes), 0)
-            proxyShapePath = proxyShapes[0]
-            return mayaUsd.lib.GetPrim(proxyShapePath).GetStage(), proxyShapePath
+        stage, proxyShapePath = self._getStage()
 
-        stage, proxyShapePath = getStage()
+        # Create an anonymous sub-layer.
+        subLayer = Sdf.Layer.CreateAnonymous("middleLayer")
+        stage.GetRootLayer().subLayerPaths  = [subLayer.identifier]
 
         # Create a prim in the root layer.
         stage.SetEditTarget(stage.GetRootLayer())
@@ -467,18 +489,11 @@ class testProxyShapeBase(unittest.TestCase):
 
         # Make the prim inactive in the desired target layer.
         target = stage.GetRootLayer() if targetRoot else stage.GetSessionLayer()
-        stage.SetEditTarget(target)
-        prim = stage.GetPrimAtPath("/dummy")
+        prim = self._defineDummyPrim(stage, target)
         prim.SetActive(False)
 
         # verify that the prim exists but is inactive.
-        def verifyPrim():
-            stage, _ = getStage()
-            prim = stage.GetPrimAtPath("/dummy")
-            self.assertIsNotNone(prim)
-            self.assertFalse(prim.IsActive())
-
-        verifyPrim()
+        self._verifyPrim(False)
 
         # Temp file names for Maya scene and USD file.
         with testUtils.TemporaryDirectory(prefix='ProxyShapeBase', ignore_errors=True) as testDir:
@@ -496,8 +511,24 @@ class testProxyShapeBase(unittest.TestCase):
             cmds.file(save=True, force=True, type='mayaAscii')
 
             # Verify that the prim is still inactive in the target layer.
+            self._verifyPrim(False)
+            self._verifySubLayer()
 
-            verifyPrim()
+            # Reload the file and verify again.
+            cmds.file(new=True, force=True)
+            cmds.file(tempMayaFile, force=True, open=True)
+
+            self._verifyPrim(False)
+            self._verifySubLayer()
+
+            # Change shared status and verify again. Changing the shared flag recomputes
+            # the stage and its layer, which is what we really want to test here. So we
+            # change an input attribute that we know will recompute the layers.
+            cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), False)
+    
+            # Verify that the prim is still inactive in the target layer.
+            self._verifyPrim(False)
+            self._verifySubLayer(4)
 
             cmds.file(new=True, force=True)
 
@@ -537,31 +568,19 @@ class testProxyShapeBase(unittest.TestCase):
         cmds.file(new=True, force=True)
         mayaUtils.createProxyAndStage()
 
-        # Helper to get the stage,
-        def getStage():
-            proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
-            self.assertGreater(len(proxyShapes), 0)
-            proxyShapePath = proxyShapes[0]
-            return mayaUsd.lib.GetPrim(proxyShapePath).GetStage(), proxyShapePath
-
         # create a prim in the root layer.
-        stage, proxyShapePath = getStage()
-        stage.SetEditTarget(stage.GetRootLayer())
-        stage.DefinePrim("/dummy", "xform")
+        self._defineDummyPrim()
 
         # verify that the prim exists.
-        def verifyPrim():
-            stage, _ = getStage()
-            self.assertTrue(stage.GetPrimAtPath("/dummy"))
+        self._verifyPrim()
 
-        verifyPrim()
-
-        # Set an attribute on the proxy shape. Here we set the loadPayloads.
+        # Set an attribute on the proxy shape. Here we set the shareStage.
         # It was already set, this only triggers a Maya node recompute.
-        cmds.setAttr('{}.{}'.format(proxyShapePath,"loadPayloads"), True)
+        _, proxyShapePath = self._getStage()
+        cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), True)
 
         # Verify that we did not lose the data on the root layer.
-        verifyPrim()
+        self._verifyPrim()
 
     def testSettingStageViaIdPreservedWhenSaved(self):
         '''
@@ -996,6 +1015,26 @@ class testProxyShapeBase(unittest.TestCase):
             xform = UsdGeom.Xformable(prim)
             translate = xform.GetOrderedXformOps()[0].Get()
             assert translate[2] == 2
+
+    def testRegisterFilePathEditor(self):
+        '''
+        Test registering USD file to Maya file path editor
+        '''
+        # create new stage
+        cmds.file(new=True, force=True)
+        with testUtils.TemporaryDirectory(prefix='ProxyShapeBase') as testDir:
+            pathToSave = os.path.join(testDir, 'testRegisterFilePathEditor.usda')
+            cmds.file(rename=pathToSave)            
+            cmds.file(save=True, force=True)
+            cmds.file(new=True, force=True)
+
+        layer = Sdf.Layer.CreateNew(pathToSave)
+        Sdf.CreatePrimInLayer(layer, "/root")
+        layer.Save()
+        node = cmds.createNode("mayaUsdProxyShape")
+        cmds.setAttr("{node}.filePath".format(node=node), layer.realPath, type="string")
+        directories = cmds.filePathEditor(query=True, listDirectories="", unresolved=True)
+        self.assertIsNotNone(directories)
 
 
 if __name__ == '__main__':

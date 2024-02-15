@@ -31,24 +31,30 @@ std::string sanitizeName(const std::string& name)
 
 std::string prettifyName(const std::string& name)
 {
-    std::string prettyName(1, std::toupper(name[0]));
-    size_t      nbChars = name.size();
-    bool        capitalizeNext = false;
-    for (size_t i = 1; i < nbChars; ++i) {
+    std::string prettyName;
+    // Note: slightly over-reserve to account for additional spaces.
+    prettyName.reserve(name.size() + 6);
+    size_t nbChars = name.size();
+    bool   capitalizeNext = true;
+    for (size_t i = 0; i < nbChars; ++i) {
         unsigned char nextLetter = name[i];
-        if (capitalizeNext) {
-            nextLetter = std::toupper(nextLetter);
-            capitalizeNext = false;
-        }
-        if (std::isupper(name[i]) && !std::isdigit(name[i - 1])) {
-            if (((i < (nbChars - 1)) && !std::isupper(name[i + 1])) || std::islower(name[i - 1])) {
+        if (std::isupper(name[i]) && i > 0 && !std::isdigit(name[i - 1])) {
+            if ((i > 0 && (i < (nbChars - 1))
+                 && (!std::isupper(name[i + 1]) && !std::isdigit(name[i + 1])))
+                || std::islower(name[i - 1])) {
                 prettyName += ' ';
             }
             prettyName += nextLetter;
+            capitalizeNext = false;
         } else if (name[i] == '_' || name[i] == ':') {
-            prettyName += " ";
+            if (prettyName.size() > 0)
+                prettyName += " ";
             capitalizeNext = true;
         } else {
+            if (capitalizeNext) {
+                nextLetter = std::toupper(nextLetter);
+                capitalizeNext = false;
+            }
             prettyName += nextLetter;
         }
     }

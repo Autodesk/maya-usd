@@ -105,18 +105,8 @@ class testUsdImportRfMLight(unittest.TestCase):
         elif lightTypeName == 'SphereLight':
             self.assertEqual(depNodeFn.typeName(), 'PxrSphereLight')
             testNumber = 7
-        elif lightTypeName == 'AovLight':
-            self.assertEqual(depNodeFn.typeName(), 'PxrAovLight')
-            testNumber = 8
-        elif lightTypeName == 'EnvDayLight':
-            self.assertEqual(depNodeFn.typeName(), 'PxrEnvDayLight')
-            testNumber = 9
         else:
             raise NotImplementedError('Invalid light type %s' % lightTypeName)
-
-        if lightTypeName == 'AovLight':
-            # PxrAovLight doesn't have any of the below attributes.
-            return
 
         expectedIntensity = 1.0 + (testNumber * 0.1)
         self._assertGfIsClose(cmds.getAttr('%s.intensity' % nodePath),
@@ -133,10 +123,6 @@ class testUsdImportRfMLight(unittest.TestCase):
         expectedSpecular = 1.0 + (testNumber * 0.1)
         self._assertGfIsClose(cmds.getAttr('%s.specular' % nodePath),
             expectedSpecular, 1e-6)
-
-        if lightTypeName == 'EnvDayLight':
-            # PxrEnvDayLight doesn't have any of the below attributes.
-            return
 
         # PxrDomeLight has no normalize attribute
         if lightTypeName != 'DomeLight':
@@ -199,100 +185,6 @@ class testUsdImportRfMLight(unittest.TestCase):
         expectedTextureFile = './DomeLight_texture.tex'
         self.assertEqual(cmds.getAttr('%s.lightColorMap' % nodePath),
             expectedTextureFile)
-
-    def _ValidatePxrAovLight(self):
-        nodePath = '|RfMLightsTest|Lights|AovLight|AovLightShape'
-
-        expectedAovName = 'testAovName'
-        self.assertEqual(cmds.getAttr('%s.aovName' % nodePath),
-            expectedAovName)
-
-        expectedInPrimaryHit = False
-        self.assertEqual(cmds.getAttr('%s.inPrimaryHit' % nodePath),
-            expectedInPrimaryHit)
-
-        expectedInReflection = True
-        self.assertEqual(cmds.getAttr('%s.inReflection' % nodePath),
-            expectedInReflection)
-
-        expectedInRefraction = True
-        self.assertEqual(cmds.getAttr('%s.inRefraction' % nodePath),
-            expectedInRefraction)
-
-        expectedInvert = True
-        self.assertEqual(cmds.getAttr('%s.invert' % nodePath), expectedInvert)
-
-        expectedOnVolumeBoundaries = False
-        self.assertEqual(cmds.getAttr('%s.onVolumeBoundaries' % nodePath),
-            expectedOnVolumeBoundaries)
-
-        expectedUseColor = True
-        self.assertEqual(cmds.getAttr('%s.useColor' % nodePath),
-            expectedUseColor)
-
-        expectedUseThroughput = False
-        self.assertEqual(cmds.getAttr('%s.useThroughput' % nodePath),
-            expectedUseThroughput)
-
-    def _ValidatePxrEnvDayLight(self):
-        nodePath = '|RfMLightsTest|Lights|EnvDayLight|EnvDayLightShape'
-
-        expectedDay = 9
-        self.assertEqual(cmds.getAttr('%s.day' % nodePath), expectedDay)
-
-        expectedHaziness = 1.9
-        self._assertGfIsClose(cmds.getAttr('%s.haziness' % nodePath),
-            expectedHaziness, 1e-6)
-
-        expectedHour = 9.9
-        self._assertGfIsClose(cmds.getAttr('%s.hour' % nodePath),
-            expectedHour, 1e-6)
-
-        expectedLatitude = 90.0
-        self._assertGfIsClose(cmds.getAttr('%s.latitude' % nodePath),
-            expectedLatitude, 1e-6)
-
-        expectedLongitude = -90.0
-        self._assertGfIsClose(cmds.getAttr('%s.longitude' % nodePath),
-            expectedLongitude, 1e-6)
-
-        expectedMonth = 9
-        self.assertEqual(cmds.getAttr('%s.month' % nodePath), expectedMonth)
-
-        expectedSkyTint = Gf.ConvertLinearToDisplay(Gf.Vec3f(0.9))
-        self._assertGfIsClose(cmds.getAttr('%s.skyTintR' % nodePath),
-            expectedSkyTint[0], 1e-6)
-        self._assertGfIsClose(cmds.getAttr('%s.skyTintG' % nodePath),
-            expectedSkyTint[1], 1e-6)
-        self._assertGfIsClose(cmds.getAttr('%s.skyTintB' % nodePath),
-            expectedSkyTint[2], 1e-6)
-
-        expectedSunDirection = Gf.Vec3f(0.0, 0.0, 0.9)
-        self._assertGfIsClose(cmds.getAttr('%s.sunDirectionX' % nodePath),
-            expectedSunDirection[0], 1e-6)
-        self._assertGfIsClose(cmds.getAttr('%s.sunDirectionY' % nodePath),
-            expectedSunDirection[1], 1e-6)
-        self._assertGfIsClose(cmds.getAttr('%s.sunDirectionZ' % nodePath),
-            expectedSunDirection[2], 1e-6)
-
-        expectedSunSize = 0.9
-        self._assertGfIsClose(cmds.getAttr('%s.sunSize' % nodePath),
-            expectedSunSize, 1e-6)
-
-        expectedSunTint = Gf.ConvertLinearToDisplay(Gf.Vec3f(0.9))
-        self._assertGfIsClose(cmds.getAttr('%s.sunTintR' % nodePath),
-            expectedSunTint[0], 1e-6)
-        self._assertGfIsClose(cmds.getAttr('%s.sunTintG' % nodePath),
-            expectedSunTint[1], 1e-6)
-        self._assertGfIsClose(cmds.getAttr('%s.sunTintB' % nodePath),
-            expectedSunTint[2], 1e-6)
-
-        expectedYear = 2019
-        self.assertEqual(cmds.getAttr('%s.year' % nodePath), expectedYear)
-
-        expectedZone = 9.0
-        self._assertGfIsClose(cmds.getAttr('%s.zone' % nodePath),
-            expectedZone, 1e-6)
 
     def _ValidateMayaLightShaping(self):
         nodePath = '|RfMLightsTest|Lights|DiskLight|DiskLightShape'
@@ -406,14 +298,6 @@ class testUsdImportRfMLight(unittest.TestCase):
 
     def testImportSphereLight(self):
         self._ValidateMayaLight('SphereLight')
-
-    def testImportAovLight(self):
-        self._ValidateMayaLight('AovLight')
-        self._ValidatePxrAovLight()
-    
-    def testImportEnvDayLight(self):
-        self._ValidateMayaLight('EnvDayLight')
-        self._ValidatePxrEnvDayLight()
 
 
 if __name__ == '__main__':

@@ -69,6 +69,7 @@ Ufe::Rtid initialize(
     UsdUfe::setStagePathAccessorFn(dccFunctions.stagePathAccessorFn);
     UsdUfe::setUfePathToPrimFn(dccFunctions.ufePathToPrimFn);
     UsdUfe::setTimeAccessorFn(dccFunctions.timeAccessorFn);
+    UsdUfe::setWaitCursorFns(dccFunctions.startWaitCursorFn, dccFunctions.stopWaitCursorFn);
 
     // Optional DCC specific functions.
     if (dccFunctions.isAttributeLockedFn)

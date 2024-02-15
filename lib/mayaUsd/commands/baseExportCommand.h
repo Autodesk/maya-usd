@@ -94,6 +94,7 @@ public:
     static constexpr auto kCustomLayerData = "cld";
     static constexpr auto kMetersPerUnit = "mpu";
     static constexpr auto kExcludeExportTypesFlag = "eet";
+    static constexpr auto kDefaultPrimFlag = "dp";
 
     // Short and Long forms of flags defined by this command itself:
     static constexpr auto kAppendFlag = "a";
