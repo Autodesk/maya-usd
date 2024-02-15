@@ -17,6 +17,7 @@
 #include "layerTreeItemDelegate.h"
 
 #include "qtUtils.h"
+#include "stringResources.h"
 
 #include <memory>
 
@@ -79,9 +80,12 @@ void LayerTreeItemDelegate::paint_drawTarget(
 
     bool pressed = (_pressedTarget == item);
     bool muted = item->appearsMuted();
+    bool locked = item->isLocked();
+    bool systemLocked = item->isSystemLocked();
     bool readOnly = item->isReadOnly();
 
-    bool hover = !muted && !readOnly && (option.state & QStyle::State_MouseOver)
+    bool hover = !muted && !readOnly && !locked && !systemLocked
+        && (option.state & QStyle::State_MouseOver)
         && QtUtils::isMouseInRectangle(_treeView, targetRect);
 
     QPixmap icon;
@@ -102,11 +106,11 @@ void LayerTreeItemDelegate::paint_drawTarget(
     }
 
     iconRect.moveCenter(targetRect.center());
-    if (muted || readOnly) {
+    if (muted || readOnly || locked || systemLocked) {
         painter->setOpacity(DISABLED_OPACITY);
     }
     painter->drawPixmap(iconRect, icon);
-    if (muted || readOnly) {
+    if (muted || readOnly || locked || systemLocked) {
         painter->setOpacity(1.0);
     }
 }
@@ -163,7 +167,6 @@ void LayerTreeItemDelegate::paint_drawArrow(QPainter* painter, QRectC rect, Item
 
 void LayerTreeItemDelegate::paint_drawText(QPainter* painter, QRectC rect, Item item) const
 {
-    const auto oldPen = painter->pen();
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     painter->setPen(QPen(item->data(Qt::ForegroundRole).value<QColor>(), 1));
 #else
@@ -171,14 +174,17 @@ void LayerTreeItemDelegate::paint_drawText(QPainter* painter, QRectC rect, Item 
 #endif
     const auto textRect = getTextRect(rect);
     bool       muted = item->appearsMuted();
+    bool       locked = item->isLocked();
+    bool       systemLocked = item->isSystemLocked();
     bool       readOnly = item->isReadOnly();
-    if (muted || readOnly)
+    if (muted || readOnly || locked || systemLocked) {
         painter->setOpacity(DISABLED_OPACITY);
+    }
 
     QString text = item->data(Qt::DisplayRole).value<QString>();
 
     // draw a * for dirty layers
-    if (item->needsSaving() || (item->isDirty() && !item->isReadOnly())) {
+    if (item->needsSaving() || (item->isDirty() && !readOnly)) {
         // item.needsSaving returns false for sessionLayer, but I think we should show the dirty
         // flag for it
         text += "*";
@@ -193,7 +199,7 @@ void LayerTreeItemDelegate::paint_drawText(QPainter* painter, QRectC rect, Item 
         painter->drawPixmap(x, y, WARNING_IMAGE);
     }
 
-    if (muted || readOnly)
+    if (muted || readOnly || locked || systemLocked)
         painter->setOpacity(1.0);
 }
 void LayerTreeItemDelegate::paint_drawToolbarFrame(QPainter* painter, QRectC rect, int iconLocation)
@@ -283,7 +289,11 @@ void LayerTreeItemDelegate::paint_ActionIcon(
 
     QString tooltip;
     if (_lastHitAction == action._name) {
-        tooltip = action._tooltip;
+        if (item->isSystemLocked()) {
+            tooltip = StringResources::getAsQString(StringResources::kLayerIsSystemLocked);
+        } else {
+            tooltip = action._tooltip;
+        }
     }
     const_cast<LayerTreeItem*>(item)->setToolTip(tooltip);
 }

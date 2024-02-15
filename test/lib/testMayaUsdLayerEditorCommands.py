@@ -545,14 +545,23 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         subLayer = createLayer(0)
         self.assertTrue(subLayer.permissionToEdit)
         
-        mel.eval('mayaUsdLayerEditor -edit -lockLayer 1 "%s" "%s"' % (shapePath, subLayer.identifier))
+        # Locking a layer
+        cmds.mayaUsdLayerEditor(subLayer.identifier, edit=True, lockLayer=(1, shapePath))
         self.assertFalse(subLayer.permissionToEdit)
         cmds.undo()
         self.assertTrue(subLayer.permissionToEdit)
         cmds.redo()
         self.assertFalse(subLayer.permissionToEdit)
-        mel.eval('mayaUsdLayerEditor -edit -lockLayer 0 "%s" "%s"' % (shapePath, subLayer.identifier))
+        # Unlocking a layer
+        cmds.mayaUsdLayerEditor(subLayer.identifier, edit=True, lockLayer=(0, shapePath))
         self.assertTrue(subLayer.permissionToEdit)
+        # System locking a layer
+        cmds.mayaUsdLayerEditor(subLayer.identifier, edit=True, lockLayer=(2, shapePath))
+        self.assertFalse(subLayer.permissionToEdit)
+        self.assertFalse(subLayer.permissionToSave)
+        cmds.undo()
+        self.assertTrue(subLayer.permissionToEdit)
+        
         
     def testMuteLayer(self):
         """ test 'mayaUsdLayerEditor' command 'muteLayer' paramater """

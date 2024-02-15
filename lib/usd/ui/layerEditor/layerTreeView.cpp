@@ -541,7 +541,7 @@ void LayerTreeView::onMuteLayerButtonPushed()
 void LayerTreeView::onLockLayerButtonPushed()
 {
     auto item = currentLayerItem();
-    if (item) {
+    if (item && !item->isSystemLocked()) {
         item->parentModel()->toggleLockLayer(item);
     }
     // need to force redraw of everything otherwise redraw isn't right

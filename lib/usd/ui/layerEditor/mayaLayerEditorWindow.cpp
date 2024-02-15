@@ -161,6 +161,8 @@ bool MayaLayerEditorWindow::layerIsMuted() { CALL_CURRENT_ITEM(isMuted); }
 bool MayaLayerEditorWindow::layerIsReadOnly() { CALL_CURRENT_ITEM(isReadOnly); }
 bool MayaLayerEditorWindow::layerAppearsLocked() { CALL_CURRENT_ITEM(appearsLocked); }
 bool MayaLayerEditorWindow::layerIsLocked() { CALL_CURRENT_ITEM(isLocked); }
+bool MayaLayerEditorWindow::layerAppearsSystemLocked() { CALL_CURRENT_ITEM(appearsSystemLocked); }
+bool MayaLayerEditorWindow::layerIsSystemLocked() { CALL_CURRENT_ITEM(isSystemLocked); }
 
 std::string MayaLayerEditorWindow::proxyShapeName() const
 {

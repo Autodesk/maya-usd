@@ -631,6 +631,7 @@ The purpose of this command is edit layers.
 | `-addAnonymous`     | `-aa`      | string         | Add an anonynous layer at the top of the stack, returns it |
 | `-insertSubPath`    | `-is`      | int string     | Insert a sub layer path at a given index |
 | `-muteLayer`        | `-mt`      | bool string    | Mute or unmute the named layer           |
+| `-lockLayer`        | `-lk`      | int string     | Lock, System-Lock or unlock a layer. `0` = Unlocked, `1` = Locked and `2` = System-Locked |
 | `-replaceSubPath`   | `-rp`      | string string  | Replaces a path in the layer stack       |
 | `-removeSubPath`    | `-rs`      | int string     | Remove a sub layer at a given index      |
 
@@ -660,6 +661,11 @@ The purpose of this command is to control the layer editor window.
 | `-layerIsMuted`         | `-mu`      | Query if the layer itself is muted            |
 | `-layerIsReadOnly`      | `-r`       | Query if the layer or any parent is read only |
 | `-muteLayer`            | `-mt`      | Toggle the muting of a layer                  |
+| `-layerAppearsLocked`   | `-al`      | Query if the layer's parent is locked         |
+| `-layerIsLocked`        | `-lo`      | Query if the layer itself is locked           |
+| `-layerAppearsSystemLocked` | `-as`      | Query if the layer's parent is system-locked  |
+| `-layerIsSystemLocked`  | `-ls`      | Query if the layer itself is system-locked    |
+| `-lockLayer`            | `-lk`      | Lock, System-Lock or unlock a layer. `0` = Unlocked, `1` = Locked and `2` = System-Locked |
 | `-layerNeedsSaving`     | `-ns`      | Query if the layer is dirty or anonymous      |
 | `-printLayer`           | `-pl`      | Print the layer to the script editor output   |
 | `-proxyShape`           | `-ps`      | Query the proxyShape path or sets the selected shape by its path. Takes the path as argument |

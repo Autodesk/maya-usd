@@ -61,6 +61,8 @@ public:
     std::string proxyShapeName() const override;
     bool        layerAppearsLocked() override;
     bool        layerIsLocked() override;
+    bool        layerAppearsSystemLocked() override;
+    bool        layerIsSystemLocked() override;
 
     void removeSubLayer() override;
     void saveEdits() override;
