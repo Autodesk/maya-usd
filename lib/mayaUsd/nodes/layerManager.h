@@ -132,6 +132,9 @@ public:
     using LayerNameMap = std::map<std::string, std::string>;
     static LayerNameMap getLayerNameMap();
 
+    //! \brief returns true if the layer manager is currently saving files.
+    static bool isSaving();
+
     static const MString typeName;
     static const MTypeId typeId;
 
