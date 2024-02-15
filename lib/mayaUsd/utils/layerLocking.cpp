@@ -62,10 +62,6 @@ void addSystemLockedLayer(const PXR_NS::SdfLayerRefPtr& layer)
         return;
 
     LockedLayers& layers = getLockedLayers();
-    auto          iter = layers.find(layer);
-    if (iter != layers.end()) {
-        return;
-    }
     layers.insert(layer);
 }
 

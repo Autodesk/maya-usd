@@ -12,7 +12,7 @@ target_sources(${PROJECT_NAME}
         dynamicAttribute.cpp
         editability.cpp
         json.cpp
-		layerLocking.cpp
+        layerLocking.cpp
         layerMuting.cpp
         layers.cpp
         loadRulesAttribute.cpp
@@ -46,7 +46,7 @@ set(HEADERS
     editability.h
     hash.h
     json.h
-	layerLocking.h
+    layerLocking.h
     layerMuting.h
     layers.h
     loadRules.h

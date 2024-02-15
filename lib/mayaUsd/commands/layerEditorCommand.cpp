@@ -60,8 +60,6 @@ const char kMuteLayerFlag[] = "mt";
 const char kMuteLayerFlagL[] = "muteLayer";
 const char kLockLayerFlag[] = "lk";
 const char kLockLayerFlagL[] = "lockLayer";
-const char kSystemLockLayerFlag[] = "sk";
-const char kSystemLockLayerFlagL[] = "SystemLockLayer";
 
 } // namespace
 

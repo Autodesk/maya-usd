@@ -264,10 +264,10 @@ void LayerEditorWidget::updateButtons()
             if (layer->isSystemLocked()) {
                 count--;
             }
-            // Neither does any anonymous layer whose parent is system locked.
+            // Neither does any anonymous layer whose parent is locked or system-locked.
             // This is because saving an anonymous layer will cause
             // the parent layer to re-path the sub layer with a file name.
-            if (layer->isAnonymous() && layer->appearsSystemLocked()) {
+            if (layer->isAnonymous() && (layer->appearsLocked() || layer->appearsSystemLocked())) {
                 count--;
             }
         }

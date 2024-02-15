@@ -281,6 +281,8 @@ bool LayerTreeItem::isLocked() const { return _layer && _layer->PermissionToEdit
 
 bool LayerTreeItem::appearsLocked() const
 {
+    // Note: This is used to indicate that some of the actions
+    // cannot be performed on a layer whose parent is locked.
     auto item = parentLayerItem();
     if (item != nullptr) {
         return item->isLocked();
@@ -293,6 +295,8 @@ bool LayerTreeItem::isSystemLocked() const { return MayaUsd::isLayerSystemLocked
 
 bool LayerTreeItem::appearsSystemLocked() const
 {
+    // Note: This is used to indicate that some of the actions cannot
+    // be performed on a layer whose parent is system-locked.
     auto item = parentLayerItem();
     if (item != nullptr) {
         return item->isSystemLocked();

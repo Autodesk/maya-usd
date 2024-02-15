@@ -35,8 +35,8 @@ namespace MAYAUSD_NS_DEF {
 // stage-level state. So, we need to explicitly save the layer locked state.
 //
 // Additionally, there are multiple levels of locking defined for a layer
-//     1- A layer is locked if layer's permission to edit is set to false
-//     2- A layer is system locked by setting a layer's permission to edit
+//     1- A layer is "Locked" if layer's permission to edit is set to false
+//     2- A layer is "System-Locked" by setting a layer's permission to edit
 //        and a layer's permission to save both to false.
 //
 // However, the USD API for checking permissions is a result of the following
@@ -63,6 +63,13 @@ namespace MAYAUSD_NS_DEF {
 //
 // So we need to hold on to locked layers. We do this in a private global list
 // of locked layers. That list gets cleared when a new Maya scene is created.
+
+enum LayerLockType
+{
+    LayerLock_Unlocked,
+    LayerLock_Locked,
+    LayerLock_SystemLocked
+};
 
 /*! \brief Adds a layer to the system lock list
  */

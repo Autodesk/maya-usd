@@ -61,8 +61,8 @@ public:
     // mute or unmute the given layer
     void muteSubLayer(UsdLayer usdLayer, bool muteIt) override;
 
-    // lock or unlock the given layer
-    void lockSubLayer(UsdLayer usdLayer, bool lockIt, bool systemLock) override;
+    // lock, system-lock or unlock the given layer
+    void lockSubLayer(UsdLayer usdLayer, MayaUsd::LayerLockType lockState) override;
 
     // starts a complex undo operation in the host app. Please use UndoContext class to safely
     // open/close

@@ -210,19 +210,30 @@ void MayaCommandHook::muteSubLayer(UsdLayer usdLayer, bool muteIt)
     executeMel(cmd).asChar();
 }
 
-// lock or unlock the given layer
-void MayaCommandHook::lockSubLayer(UsdLayer usdLayer, bool lockIt, bool systemLock)
+// lock, system-lock or unlock the given layer
+void MayaCommandHook::lockSubLayer(UsdLayer usdLayer, MayaUsd::LayerLockType lockState)
 {
     std::string cmd;
     cmd = "mayaUsdLayerEditor -edit -lockLayer ";
     // 0 = Unlocked
     // 1 = Locked
     // 2 = System Locked
-    if (systemLock) {
-        cmd += "2";
-    } else {
-        cmd += lockIt ? "1" : "0";
+    switch (lockState) {
+    default:
+    case MayaUsd::LayerLockType::LayerLock_Unlocked: {
+        cmd += "0";
+        break;
     }
+    case MayaUsd::LayerLockType::LayerLock_Locked: {
+        cmd += "1";
+        break;
+    }
+    case MayaUsd::LayerLockType::LayerLock_SystemLocked: {
+        cmd += "2";
+        break;
+    }
+    }
+
     cmd += quote(proxyShapePath());
     cmd += quote(usdLayer->GetIdentifier());
     executeMel(cmd).asChar();
