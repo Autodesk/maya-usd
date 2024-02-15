@@ -267,8 +267,7 @@ void LayerEditorWidget::updateButtons()
             // Neither does any anonymous layer whose parent is system locked.
             // This is because saving an anonymous layer will cause
             // the parent layer to re-path the sub layer with a file name.
-            if (layer->isAnonymous() && layer->appearsSystemLocked())
-            {
+            if (layer->isAnonymous() && layer->appearsSystemLocked()) {
                 count--;
             }
         }

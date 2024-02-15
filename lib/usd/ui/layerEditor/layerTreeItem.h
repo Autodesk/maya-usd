@@ -140,7 +140,7 @@ public:
     bool appearsLocked() const;
     // is the layer system locked?
     bool isSystemLocked() const;
-    // check if this layer is system locked 
+    // check if this layer is system locked
     bool appearsSystemLocked() const;
 
     // used by draw delegate: returns how deep in the hierarchy we are
