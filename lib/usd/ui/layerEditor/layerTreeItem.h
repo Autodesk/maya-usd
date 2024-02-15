@@ -136,8 +136,16 @@ public:
     bool isIncoming() const;
     // is the layer locked?
     bool isLocked() const;
-    // check if this layer is locked
+    // check if this layer appears locked. This means that the layer item itself
+    // may not be locked but by inference some of the action items of the layer
+    // can appear as locked if the parent is locked.
     bool appearsLocked() const;
+    // is the layer system locked?
+    bool isSystemLocked() const;
+    // check if this layer appears system locked. This means that the layer item itself
+    // may not be system locked but by inference some of the action items of the layer
+    // can appear as locked if the parent is system locked.
+    bool appearsSystemLocked() const;
 
     // used by draw delegate: returns how deep in the hierarchy we are
     int depth() const;

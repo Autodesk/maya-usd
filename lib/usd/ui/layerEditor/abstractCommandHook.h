@@ -19,6 +19,8 @@
 
 #include "pxr/usd/sdf/layer.h"
 
+#include <mayaUsd/utils/layerLocking.h>
+
 #include <pxr/usd/usd/stage.h>
 
 #include <QtCore/QString>
@@ -79,8 +81,8 @@ public:
     // mute or unmute the given layer
     virtual void muteSubLayer(UsdLayer usdLayer, bool muteIt) = 0;
 
-    // lock or unlock the given layer
-    virtual void lockSubLayer(UsdLayer usdLayer, bool lockIt) = 0;
+    // Sets the lock state on a layer
+    virtual void lockSubLayer(UsdLayer usdLayer, MayaUsd::LayerLockType lockState) = 0;
 
     // starts a complex undo operation in the host app. Please use UndoContext class to safely
     // open/close

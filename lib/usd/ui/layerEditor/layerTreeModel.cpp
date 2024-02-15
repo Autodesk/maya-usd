@@ -151,7 +151,7 @@ bool LayerTreeModel::canDropMimeData(
     }
 
     auto parentItem = layerItemFromIndex(parentIndex);
-    if (!parentItem || parentItem->isReadOnly()) {
+    if (!parentItem || parentItem->isReadOnly() || parentItem->isLocked()) {
         return false;
     }
 
@@ -194,7 +194,7 @@ bool LayerTreeModel::dropMimeData(
     }
 
     auto parentItem = layerItemFromIndex(parentIndex);
-    if (!parentItem || parentItem->isReadOnly()) {
+    if (!parentItem || parentItem->isReadOnly() || parentItem->isLocked()) {
         return false;
     }
 
@@ -235,7 +235,8 @@ bool LayerTreeModel::dropMimeData(
 
 void LayerTreeModel::setEditTarget(LayerTreeItem* item)
 {
-    if (!item->appearsMuted() && !item->isReadOnly()) {
+    if (!item->appearsMuted() && !item->isReadOnly() && !item->isLocked()
+        && !item->isSystemLocked()) {
         UndoContext context(_sessionState->commandHook(), "Set USD Edit Target Layer");
         context.hook()->setEditTarget(item->layer());
     }
@@ -481,8 +482,11 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
     auto saveAllLayers = [this]() {
         const auto layers = getAllNeedsSavingLayers();
         for (auto layer : layers) {
-            if (!layer->isAnonymous())
-                layer->saveEditsNoPrompt();
+            if (!layer->isSystemLocked()) {
+                if (!layer->isAnonymous()) {
+                    layer->saveEditsNoPrompt();
+                }
+            }
         }
     };
 
@@ -570,7 +574,7 @@ void LayerTreeModel::toggleMuteLayer(LayerTreeItem* item, bool* forcedState)
 
 void LayerTreeModel::toggleLockLayer(LayerTreeItem* item, bool* forcedState /*= nullptr*/)
 {
-    if (item->isInvalidLayer() || item->isSessionLayer())
+    if (item->isInvalidLayer() || item->isSessionLayer() || item->isSystemLocked())
         return;
 
     if (forcedState) {
@@ -578,7 +582,10 @@ void LayerTreeModel::toggleLockLayer(LayerTreeItem* item, bool* forcedState /*= 
             return;
     }
 
-    _sessionState->commandHook()->lockSubLayer(item->layer(), !item->isLocked());
+    MayaUsd::LayerLockType toggledLockType = item->isLocked()
+        ? MayaUsd::LayerLockType::LayerLock_Unlocked
+        : MayaUsd::LayerLockType::LayerLock_Locked;
+    _sessionState->commandHook()->lockSubLayer(item->layer(), toggledLockType);
 }
 
 } // namespace UsdLayerEditor
