@@ -293,6 +293,8 @@ LayerItemVector LayerTreeView::getSelectedLayerItems() const
 
 void LayerTreeView::onAddParentLayer(const QString& undoName) const
 {
+    DelayAbstractCommandHook delayed(*_model->sessionState()->commandHook());
+
     auto selection = getSelectedLayerItems();
 
     CallMethodParams params;
@@ -322,6 +324,8 @@ void LayerTreeView::onAddParentLayer(const QString& undoName) const
 
 void LayerTreeView::onMuteLayer(const QString& undoName) const
 {
+    DelayAbstractCommandHook delayed(*_model->sessionState()->commandHook());
+
     auto selection = getSelectedLayerItems();
 
     CallMethodParams params;
@@ -339,6 +343,7 @@ void LayerTreeView::onMuteLayer(const QString& undoName) const
 
 void LayerTreeView::onLockLayer(const QString& undoName) const
 {
+    DelayAbstractCommandHook delayed(*_model->sessionState()->commandHook());
 
     auto selection = getSelectedLayerItems();
 
@@ -357,6 +362,8 @@ void LayerTreeView::onLockLayer(const QString& undoName) const
 
 void LayerTreeView::callMethodOnSelection(const QString& undoName, simpleLayerMethod method)
 {
+    DelayAbstractCommandHook delayed(*_model->sessionState()->commandHook());
+
     CallMethodParams params;
     auto             selection = getSelectedLayerItems();
     params.selection = &selection;
@@ -486,6 +493,8 @@ void LayerTreeView::mouseReleaseEvent(QMouseEvent* event)
 
 void LayerTreeView::keyPressEvent(QKeyEvent* event)
 {
+    DelayAbstractCommandHook delayed(*_model->sessionState()->commandHook());
+
     if (event->type() == QEvent::KeyPress) {
         if (event->key() == Qt::Key_Delete) {
             CallMethodParams params;

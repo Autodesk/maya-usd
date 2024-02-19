@@ -19,6 +19,8 @@
 
 #include "abstractCommandHook.h"
 
+#include <vector>
+
 namespace UsdLayerEditor {
 
 /**
@@ -87,6 +89,25 @@ public:
 
 protected:
     std::string proxyShapePath();
+
+    std::string executeMel(const std::string& commandString);
+    void        executePython(const std::string& commandString);
+
+    void executeDelayedCommands() override;
+
+    struct DelayedCommand
+    {
+        DelayedCommand(const std::string& cmd, bool isP)
+            : command(cmd)
+            , isPython(isP)
+        {
+        }
+
+        std::string command;
+        bool        isPython { false };
+    };
+
+    std::vector<DelayedCommand> _delayedCommands;
 };
 
 } // namespace UsdLayerEditor
