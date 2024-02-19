@@ -382,15 +382,59 @@ class ConnectionsCustomControl(AttributeCustomControl):
 
                 # Add a menu item for each connection.
                 cmds.popupMenu()
-                for c in attr.GetConnections():
-                    parentPath = c.GetParentPath()
-                    primName = parentPath.MakeRelativePath(parentPath.GetParentPath())
-                    mLabel = '%s%s...' % (primName, c.elementString)
-
-                    usdSeg = ufe.PathSegment(str(c.GetPrimPath()), mayaUsdUfe.getUsdRunTimeId(), '/')
-                    newPath = (frontPath + usdSeg)
-                    newPathStr = ufe.PathString.string(newPath)
+                for mLabel, newPathStr in self.gatherConnections(attr, frontPath):
                     cmds.menuItem(label=mLabel, command=lambda *args: showEditorForUSDPrim(newPathStr))
+
+    @staticmethod
+    def isHiddenComponentHandlingNode(prim):
+        """
+        Connections at the component level in LookdevX is handled by hidden separate and
+        combine nodes. So what appears as a connection:
+
+        add1.out.r -> surface.color.r
+
+        is in fact a connection:
+
+        add1.out -> separate1.in/separate1.outr -> combine1.in1/combine1.out -> surface.color
+
+        The separate and combine nodes are hidden and we expect the attribute editor to
+        also consider them hidden and to traverse from surface.color directly to add1.out
+        """
+        hiddenByMetadata = False
+        metadata = prim.GetCustomDataByKey("Autodesk")
+        if metadata and metadata.get("hidden", "").lower() in ["1", "true"]:
+            hiddenByMetadata = True
+
+        if not prim.IsHidden() and not hiddenByMetadata:
+            return False
+
+        shader = UsdShade.Shader(prim)
+        if not shader:
+            return False
+
+        nodeId = shader.GetIdAttr().Get()
+        return nodeId.startswith("ND_separate") or nodeId.startswith("ND_combine")
+
+    def gatherConnections(self, attr, frontPath):
+        """Gather all connections to the attribute. Can be more than one due to component connections."""
+        retVal = set()
+        for c in attr.GetConnections():
+            connectedPrim = attr.GetPrim().GetStage().GetPrimAtPath(c.GetPrimPath())
+            if ConnectionsCustomControl.isHiddenComponentHandlingNode(connectedPrim):
+                # Traverse through input attributes:
+                shader = UsdShade.Shader(connectedPrim)
+                for inputAttr in shader.GetInputs():
+                    for menuEntry in self.gatherConnections(inputAttr.GetAttr(), frontPath):
+                        retVal.add(menuEntry)
+            else:
+                parentPath = c.GetParentPath()
+                primName = parentPath.MakeRelativePath(parentPath.GetParentPath())
+                mLabel = '%s%s...' % (primName, c.elementString)
+                usdSeg = ufe.PathSegment(str(c.GetPrimPath()), mayaUsdUfe.getUsdRunTimeId(), '/')
+                newPath = (frontPath + usdSeg)
+                retVal.add((mLabel, ufe.PathString.string(newPath)))
+
+        return sorted(retVal)
 
     def onReplace(self, *args):
         # We only display the attribute name and type. Neither of these are time
