@@ -53,7 +53,7 @@ namespace ufe {
 //
 // Those things are what the prepare-op/recreate-op/remove-op functions are
 // aimed to support. Also, we must only capture the initial value the first
-// time thevalue is modified, to support both the inital undo/set-value and
+// time the value is modified, to support both the inital undo/set-value and
 // avoid losing the initial value on repeat set-value.
 class UsdSetXformOpUndoableCommandBase : public Ufe::SetVector3dUndoableCommand
 {
