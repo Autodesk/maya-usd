@@ -53,7 +53,7 @@ static UsdPrim _FindRootmostXformOrSkelRoot(const UsdStagePtr& stage, const SdfP
 /// If an existing, common SkelRoot cannot be found for all paths, and if
 /// it's not possible to create one, returns an empty SdfPath.
 static SdfPath
-_VerifyOrMakeSkelRoot(const UsdStagePtr& stage, const SdfPath& path, const TfToken& config)
+_VerifyOrMakeSkelRoot(const UsdStagePtr& stage, const SdfPath& path, const TfToken& config, const SdfPath& parentScopePath)
 {
     if (config != UsdMayaJobExportArgsTokens->auto_
         && config != UsdMayaJobExportArgsTokens->explicit_) {
@@ -93,6 +93,11 @@ _VerifyOrMakeSkelRoot(const UsdStagePtr& stage, const SdfPath& path, const TfTok
             return root.GetPath();
         } else {
             if (path.IsRootPrimPath()) {
+
+                // The fallback we have is the parentScopePath
+                if (!parentScopePath.IsEmpty())
+                    return parentScopePath;
+
                 // This is the most common problem when we can't obtain a
                 // SkelRoot.
                 // Show a nice error with useful information about root prims.
@@ -127,12 +132,12 @@ void UsdMaya_SkelBindingsProcessor::MarkBindings(
     _bindingToSkelMap[path] = _Entry(skelPath, config);
 }
 
-bool UsdMaya_SkelBindingsProcessor::_VerifyOrMakeSkelRoots(const UsdStagePtr& stage) const
+bool UsdMaya_SkelBindingsProcessor::_VerifyOrMakeSkelRoots(const UsdStagePtr& stage, const SdfPath& parentScopePath) const
 {
     bool success = true;
     for (const auto& pair : _bindingToSkelMap) {
         const _Entry& entry = pair.second;
-        SdfPath       skelRootPath = _VerifyOrMakeSkelRoot(stage, pair.first, entry.second);
+        SdfPath       skelRootPath = _VerifyOrMakeSkelRoot(stage, pair.first, entry.second, parentScopePath);
         success = success && !skelRootPath.IsEmpty();
         if (!success) {
             return success;
@@ -144,12 +149,13 @@ bool UsdMaya_SkelBindingsProcessor::_VerifyOrMakeSkelRoots(const UsdStagePtr& st
 bool UsdMaya_SkelBindingsProcessor::UpdateSkelRootsWithExtent(
     const UsdStagePtr&  stage,
     const VtVec3fArray& bbox,
-    const UsdTimeCode&  timeSample)
+    const UsdTimeCode&  timeSample,
+    const SdfPath& parentScopePath)
 {
     bool success = true;
     for (const auto& pair : _bindingToSkelMap) {
         const _Entry& entry = pair.second;
-        SdfPath       skelRootPath = _VerifyOrMakeSkelRoot(stage, pair.first, entry.second);
+        SdfPath       skelRootPath = _VerifyOrMakeSkelRoot(stage, pair.first, entry.second, parentScopePath);
         success = success && !skelRootPath.IsEmpty();
         if (success) {
             UsdSkelRoot skelRoot = UsdSkelRoot::Get(stage, skelRootPath);
@@ -171,9 +177,9 @@ bool UsdMaya_SkelBindingsProcessor::UpdateSkelRootsWithExtent(
     return success;
 }
 
-bool UsdMaya_SkelBindingsProcessor::PostProcessSkelBindings(const UsdStagePtr& stage) const
+bool UsdMaya_SkelBindingsProcessor::PostProcessSkelBindings(const UsdStagePtr& stage, const SdfPath& parentScopePath) const
 {
-    bool success = _VerifyOrMakeSkelRoots(stage);
+    bool success = _VerifyOrMakeSkelRoots(stage, parentScopPath);
     return success;
 }
 
