@@ -29,6 +29,8 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         USDMAYA_PROXYACCESSOR, "Debugging of the evaluation for mixed data models.");
     TF_DEBUG_ENVIRONMENT_SYMBOL(
+        MAYAUSD_STAGEMAP, "Debugging of the mapping between proxy shapes and USD stages.");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
         USDMAYA_PLUG_INFO_VERSION, "Debugging of the mayaUsd plug info version check.");
 }
 
