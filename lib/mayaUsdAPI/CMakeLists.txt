@@ -24,12 +24,14 @@ target_sources(${PROJECT_NAME}
     PRIVATE
         proxyStage.cpp
         proxyShapeNotice.cpp
+        utils.cpp
 )
 
 set(HEADERS
     api.h
     proxyStage.h
     proxyShapeNotice.h
+    utils.h
 )
 
 #------------------------------------------------------------------------------
