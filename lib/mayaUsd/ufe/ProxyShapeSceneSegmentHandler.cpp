@@ -109,7 +109,11 @@ ProxyShapeSceneSegmentHandler::findGatewayItems_(const Ufe::Path& path, Ufe::Rti
 
 bool ProxyShapeSceneSegmentHandler::isGateway_(const Ufe::Path& path) const
 {
-    PXR_NS::UsdStageWeakPtr stage = getStage(path);
+    // Note: isGateway can be called in high volume. For example it is called
+    //       repeatedly for all nodes by the Maya outliner. So it must not
+    //       constantly try to rebuild the stage cache.
+    const bool              rebuildCacheIfNeeded = false;
+    PXR_NS::UsdStageWeakPtr stage = getStage(path, rebuildCacheIfNeeded);
     return stage ? true
                  : fMayaSceneSegmentHandler ? fMayaSceneSegmentHandler->isGateway_(path) : false;
 }

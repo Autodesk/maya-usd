@@ -16,6 +16,7 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/utils/mayaNodeTypeObserver.h>
 
 #include <pxr/base/tf/hash.h>
 #include <pxr/base/tf/hashmap.h>
@@ -54,29 +55,26 @@ namespace ufe {
     had been updated.
 */
 class MAYAUSD_CORE_PUBLIC UsdStageMap
+    : private MayaNodeTypeObserver::Listener
+    , private MayaNodeObserver::Listener
 {
 public:
     typedef PXR_NS::TfHashSet<PXR_NS::UsdStageWeakPtr, PXR_NS::TfHash> StageSet;
 
-    UsdStageMap() = default;
-    ~UsdStageMap() = default;
-
-    // Delete the copy/move constructors assignment operators.
-    UsdStageMap(const UsdStageMap&) = delete;
-    UsdStageMap& operator=(const UsdStageMap&) = delete;
-    UsdStageMap(UsdStageMap&&) = delete;
-    UsdStageMap& operator=(UsdStageMap&&) = delete;
+    //! Retrieve the global instance of the stage map.
+    static UsdStageMap& getInstance();
 
     //! Get USD stage for the first segment of the argument path.
-    PXR_NS::UsdStageWeakPtr stage(const Ufe::Path& path);
+    PXR_NS::UsdStageWeakPtr stage(const Ufe::Path& path, bool rebuildCacheIfNeeded = true);
 
     //! Return the ProxyShape object for the first segment of the argument
     //! path.  If no such proxy shape exists, returns a null MObject.
-    MObject proxyShape(const Ufe::Path& path);
+    MObject proxyShape(const Ufe::Path& path, bool rebuildCacheIfNeeded = true);
 
     //! Return the ProxyShape node for the first segment of the argument path.
     //! If no such proxy shape node exists, returns a null pointer.
-    PXR_NS::MayaUsdProxyShapeBase* proxyShapeNode(const Ufe::Path& path);
+    PXR_NS::MayaUsdProxyShapeBase*
+    proxyShapeNode(const Ufe::Path& path, bool rebuildCacheIfNeeded = true);
 
     //! Return the ProxyShape node UFE path for the argument stage.
     Ufe::Path path(PXR_NS::UsdStageWeakPtr stage);
@@ -92,8 +90,42 @@ public:
     bool isDirty() const { return fDirty; }
 
 private:
+    UsdStageMap();
+    ~UsdStageMap();
+
+    // Delete the copy/move constructors assignment operators.
+    UsdStageMap(const UsdStageMap&) = delete;
+    UsdStageMap& operator=(const UsdStageMap&) = delete;
+    UsdStageMap(UsdStageMap&&) = delete;
+    UsdStageMap& operator=(UsdStageMap&&) = delete;
+
     void addItem(const Ufe::Path& path);
-    void rebuildIfDirty();
+    bool rebuildIfDirty();
+
+    // MayaNodeTypeObserver::Listener
+    void processNodeAdded(MObject& node) override;
+    void processNodeRemoved(MObject& node) override;
+
+    // MayaNodeObserver::Listener
+    void processNodeRenamed(MObject& node, const MString& str) override;
+    void processParentAdded(MObject& node, MDagPath& child, MDagPath& parent) override;
+
+    //! Called when a proxy shape node is added to the Maya scene.
+    void addProxyShapeNode(const PXR_NS::MayaUsdProxyShapeBase& proxyShape, MObject& node);
+
+    //! Called when a proxy shape node is removed from the Maya scene.
+    void removeProxyShapeNode(const PXR_NS::MayaUsdProxyShapeBase& proxyShape, MObject& node);
+
+    //! Called when a proxy shape is renamed. (Including when initially created.)
+    void updateProxyShapeName(
+        const PXR_NS::MayaUsdProxyShapeBase& proxyShape,
+        const MString&                       oldName,
+        const MString&                       newName);
+
+    //! Called when a proxy shape is reparented.
+    void updateProxyShapePath(
+        const PXR_NS::MayaUsdProxyShapeBase& proxyShape,
+        const MDagPath&                      newParentPath);
 
 private:
     // We keep two maps for fast lookup when there are many proxy shapes.

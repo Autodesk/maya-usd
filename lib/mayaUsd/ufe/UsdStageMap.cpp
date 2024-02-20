@@ -15,6 +15,7 @@
 //
 #include "UsdStageMap.h"
 
+#include <mayaUsd/base/debugCodes.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
@@ -22,6 +23,7 @@
 #include <mayaUsd/utils/util.h>
 
 #include <maya/MFnDagNode.h>
+#include <maya/MGlobal.h>
 #include <ufe/pathString.h>
 
 #include <cassert>
@@ -60,7 +62,7 @@ Ufe::Path firstPath(const MObjectHandle& handle)
     return firstPath(handle.object());
 }
 
-UsdStageWeakPtr objToStage(MObject& obj)
+MayaUsdProxyShapeBase* objToProxyShape(MObject& obj)
 {
     if (obj.isNull()) {
         return nullptr;
@@ -68,8 +70,14 @@ UsdStageWeakPtr objToStage(MObject& obj)
 
     // Get the stage from the proxy shape.
     MFnDependencyNode fn(obj);
-    auto              ps = dynamic_cast<MayaUsdProxyShapeBase*>(fn.userNode());
-    TF_VERIFY(ps);
+    return dynamic_cast<MayaUsdProxyShapeBase*>(fn.userNode());
+}
+
+UsdStageWeakPtr objToStage(MObject& obj)
+{
+    MayaUsdProxyShapeBase* ps = objToProxyShape(obj);
+    if (!ps)
+        return {};
 
     return ps->getUsdStage();
 }
@@ -89,11 +97,32 @@ namespace ufe {
 // Global variables
 //------------------------------------------------------------------------------
 
-UsdStageMap g_StageMap;
+/* static */
+UsdStageMap& UsdStageMap::getInstance()
+{
+    // Note: C++ guarantees thread-safe initialization of static variables
+    //       declared inside functions.
+    static UsdStageMap stageMap;
+    return stageMap;
+}
 
 //------------------------------------------------------------------------------
 // UsdStageMap
 //------------------------------------------------------------------------------
+
+UsdStageMap::UsdStageMap()
+{
+    MayaUsd::MayaNodeTypeObserver& shapeObserver = MayaUsdProxyShapeBase::getProxyShapesObserver();
+    shapeObserver.addTypeListener(*this);
+    shapeObserver.addNodeListener(*this);
+}
+
+UsdStageMap::~UsdStageMap()
+{
+    MayaUsd::MayaNodeTypeObserver& shapeObserver = MayaUsdProxyShapeBase::getProxyShapesObserver();
+    shapeObserver.removeTypeListener(*this);
+    shapeObserver.removeNodeListener(*this);
+}
 
 void UsdStageMap::addItem(const Ufe::Path& path)
 {
@@ -125,122 +154,86 @@ void UsdStageMap::addItem(const Ufe::Path& path)
     fStageToObject[stage] = proxyShape;
 }
 
-UsdStageWeakPtr UsdStageMap::stage(const Ufe::Path& path)
+UsdStageWeakPtr UsdStageMap::stage(const Ufe::Path& path, bool rebuildCacheIfNeeded)
 {
     // Non-const MObject& requires an lvalue.
-    auto obj = proxyShape(path);
+    auto obj = proxyShape(path, rebuildCacheIfNeeded);
     return objToStage(obj);
 }
 
-MObject UsdStageMap::proxyShape(const Ufe::Path& path)
+MObject UsdStageMap::proxyShape(const Ufe::Path& path, bool rebuildCacheIfNeeded)
 {
     // Optimization: if there are not proxy shape instances,
-    // there is nothing that can be mapped. Avoid trying to
-    // build the proxy shape map.
+    // there is nothing that can be mapped.
     if (MayaUsdProxyShapeBase::countProxyShapeInstances() == 0)
         return MObject();
 
-    rebuildIfDirty();
-
-    // In additional to the explicit dirty system it is possible that
-    // the cache is in an invalid state and needs to be refreshed. See
-    // the class comment in UsdStageMap.h for details.
-    // There are two scenarios which signal a cache refresh is required:
-    // 1. A path is searched for which cannot be found. This indicates that
-    //    the stage has been reparented and the new path has been used to search
-    //    for the stage and the stage is not present in the cache.
-    // 2. The DAG path of a cached MObject doesn't match the key path used to
-    //    find that MObject. This indicates that the stage has been reparented
-    //    and the old path has been used to search for the stage. In this case
-    //    there is a cache hit when there should not be.
+    const bool wasRebuilt = rebuildIfDirty();
 
     const auto& singleSegmentPath
         = path.nbSegments() == 1 ? path : Ufe::Path(path.getSegments()[0]);
 
     auto iter = fPathToObject.find(singleSegmentPath);
 
-    if (iter == std::end(fPathToObject)) {
-        // When we don't find an entry in the cache then we are in scenario 1.
-        // MObjects stay valid even when re-parented or re-named, so we can
-        // scan through all the entries in the cache and validate that the current
-        // DAG path to the MObject matches the key Ufe::Path for the MObject in
-        // the cache. When the don't match, update fPathToObject so that the key and
-        // the MObject are in sync again.
-        auto pathToObject = fPathToObject;
-        for (const auto& entry : pathToObject) {
-            const auto& cachedPath = entry.first;
-            const auto& cachedObject = entry.second;
-            // If the cached object itself is invalid then remove it from the map.
-            if (!cachedObject.isValid()) {
-                fPathToObject.erase(cachedPath);
-                continue;
-            }
-            // Get the UFE path from the map value.
-            auto newPath = firstPath(cachedObject);
-            if (newPath != cachedPath) {
-                // Key is stale.  Remove it from our cache, and add the new entry.
-                auto count = fPathToObject.erase(cachedPath);
-                TF_VERIFY(count);
-                if (!newPath.empty())
-                    fPathToObject[newPath] = cachedObject;
-            }
-        }
-
-        // Now that the cache is in a better state, attempt to find the searched for
-        // proxyShape again.
-        iter = fPathToObject.find(singleSegmentPath);
-
+    if (rebuildCacheIfNeeded && !wasRebuilt) {
         if (iter == std::end(fPathToObject)) {
-            // Still not found, must have re-appeared through undo of delete.
-            // Add it back to the cache.
             for (const auto& psn : ProxyShapeHandler::getAllNames()) {
                 auto psPath = toPath(psn);
                 if (fPathToObject.find(psPath) == std::end(fPathToObject)) {
                     addItem(psPath);
                 }
             }
-
             iter = fPathToObject.find(singleSegmentPath);
-            if (iter == std::end(fPathToObject)) {
-                // Since our cache is fresh, path not found means it's not a
-                // proxy shape.
-                return MObject();
-            }
-        }
-    } else {
-        auto object = iter->second;
-        // If the cached object itself is invalid then remove it from the map.
-        if (!object.isValid()) {
-            fPathToObject.erase(singleSegmentPath);
-            return MObject();
-        }
-        auto objectPath = firstPath(object);
-        if (objectPath != iter->first) {
-            // When we hit the cache and the key path doesn't match the current object path
-            // we are in scenario 2. Update the entry in fPathToObject so that the key path
-            // is the current object path.
-            fPathToObject.erase(singleSegmentPath);
-            if (!objectPath.empty())
-                fPathToObject[objectPath] = object;
-            TF_VERIFY(std::end(fPathToObject) == fPathToObject.find(singleSegmentPath));
-            return MObject();
         }
     }
 
-    // At this point the cache is rebuilt, so lookup failure means the object
-    // doesn't exist.
-    return iter == std::end(fPathToObject) ? MObject() : iter->second.object();
+    if (iter == std::end(fPathToObject)) {
+        TF_DEBUG(MAYAUSD_STAGEMAP).Msg("Failed to find %s\n", path.string().c_str());
+        return MObject();
+    }
+
+    MObjectHandle object = iter->second;
+
+    // If the cached object itself is invalid then remove it from the map.
+    if (!object.isValid()) {
+        TF_DEBUG(MAYAUSD_STAGEMAP).Msg("Found invalid object for %s\n", path.string().c_str());
+        fPathToObject.erase(singleSegmentPath);
+        return MObject();
+    }
+
+    Ufe::Path objectPath = firstPath(object);
+    if (objectPath != iter->first) {
+        // When we hit the cache but the key UFE path doesn't match the object
+        // current UFE path, this indicates that the stage has been reparented
+        // but the notification to update stage map has not been received yet
+        // and the old path has been used to search for the stage. In this case
+        // there is a cache hit when there should not be. Update the entry in
+        // fPathToObject so that the key path is the current object path and
+        // return an invalidobject to signify we did not find the proxy shape.
+        fPathToObject.erase(singleSegmentPath);
+        if (!objectPath.empty())
+            fPathToObject[objectPath] = object;
+        TF_VERIFY(std::end(fPathToObject) == fPathToObject.find(singleSegmentPath));
+        TF_DEBUG(MAYAUSD_STAGEMAP)
+            .Msg(
+                "Found non-matching path %s vs %s for UFE %s\n",
+                objectPath.string().c_str(),
+                iter->first.string().c_str(),
+                path.string().c_str());
+        return MObject();
+    }
+
+    return iter->second.object();
 }
 
-MayaUsdProxyShapeBase* UsdStageMap::proxyShapeNode(const Ufe::Path& path)
+MayaUsdProxyShapeBase* UsdStageMap::proxyShapeNode(const Ufe::Path& path, bool rebuildCacheIfNeeded)
 {
-    auto obj = proxyShape(path);
+    auto obj = proxyShape(path, rebuildCacheIfNeeded);
     if (obj.isNull()) {
         return nullptr;
     }
 
-    MFnDependencyNode fn(obj);
-    return dynamic_cast<MayaUsdProxyShapeBase*>(fn.userNode());
+    return objToProxyShape(obj);
 }
 
 Ufe::Path UsdStageMap::path(UsdStageWeakPtr stage)
@@ -284,15 +277,112 @@ void UsdStageMap::setDirty()
     fDirty = true;
 }
 
-void UsdStageMap::rebuildIfDirty()
+bool UsdStageMap::rebuildIfDirty()
 {
     if (!fDirty)
-        return;
+        return false;
 
     for (const auto& psn : ProxyShapeHandler::getAllNames()) {
         addItem(toPath(psn));
     }
+
+    TF_DEBUG(MAYAUSD_STAGEMAP)
+        .Msg("Rebuilt stage map, found %d proxy shapes\n", int(fStageToObject.size()));
     fDirty = false;
+    return true;
+}
+
+void UsdStageMap::updateProxyShapeName(
+    const MayaUsdProxyShapeBase& proxyShape,
+    const MString&               oldName,
+    const MString&               newName)
+{
+    TF_DEBUG(MAYAUSD_STAGEMAP)
+        .Msg("ProxyShape rename %s to %s\n", oldName.asChar(), newName.asChar());
+    // Note: we could try to do more precise updates than just setting dirty,
+    //       but this way we make eh cache self-correcting and rely less on
+    //       which notification comes first.
+    setDirty();
+}
+
+void UsdStageMap::updateProxyShapePath(
+    const MayaUsdProxyShapeBase& proxyShape,
+    const MDagPath&              newParentPath)
+{
+    TF_DEBUG(MAYAUSD_STAGEMAP)
+        .Msg("ProxyShape new parent %s\n", newParentPath.partialPathName().asChar());
+    // Note: we could try to do more precise updates than just setting dirty,
+    //       but this way we make eh cache self-correcting and rely less on
+    //       which notification comes first.
+    setDirty();
+}
+
+void UsdStageMap::addProxyShapeNode(const MayaUsdProxyShapeBase& proxyShape, MObject& node)
+{
+    TF_DEBUG(MAYAUSD_STAGEMAP).Msg("MayaUsd proxy shape added\n");
+    // Note: we could try to do more precise updates than just setting dirty,
+    //       but this way we make eh cache self-correcting and rely less on
+    //       which notification comes first.
+    setDirty();
+}
+
+void UsdStageMap::removeProxyShapeNode(const MayaUsdProxyShapeBase& proxyShape, MObject& node)
+{
+    TF_DEBUG(MAYAUSD_STAGEMAP).Msg("MayaUsd proxy shape removed\n");
+    // Note: we could try to do more precise updates than just setting dirty,
+    //       but this way we make eh cache self-correcting and rely less on
+    //       which notification comes first.
+    setDirty();
+}
+
+void UsdStageMap::processNodeAdded(MObject& node)
+{
+    MayaUsdProxyShapeBase* proxyShape = objToProxyShape(node);
+    if (!proxyShape)
+        return;
+
+    MayaUsd::MayaNodeTypeObserver& shapeObserver = MayaUsdProxyShapeBase::getProxyShapesObserver();
+    MayaNodeObserver*              observer = shapeObserver.addObservedNode(node);
+    if (observer)
+        observer->addListener(*this);
+
+    addProxyShapeNode(*proxyShape, node);
+}
+
+void UsdStageMap::processNodeRemoved(MObject& node)
+{
+    MayaUsdProxyShapeBase* proxyShape = objToProxyShape(node);
+    if (!proxyShape)
+        return;
+
+    // Note: we do *not* remove the node from the set of observed node.
+    //       We rely on the MayaUsdProxyShapeBase to remove itself at
+    //       the right time.
+    MayaNodeTypeObserver& shapeObserver = MayaUsdProxyShapeBase::getProxyShapesObserver();
+    MayaNodeObserver*     observer = shapeObserver.getNodeObserver(node);
+    if (observer)
+        observer->removeListener(*this);
+
+    removeProxyShapeNode(*proxyShape, node);
+}
+
+void UsdStageMap::processNodeRenamed(MObject& node, const MString& oldName)
+{
+    MayaUsdProxyShapeBase* proxyShape = objToProxyShape(node);
+    if (!proxyShape)
+        return;
+
+    MFnDependencyNode depNode(node);
+    updateProxyShapeName(*proxyShape, oldName, depNode.name());
+}
+
+void UsdStageMap::processParentAdded(MObject& node, MDagPath& /*childPath*/, MDagPath& parentPath)
+{
+    MayaUsdProxyShapeBase* proxyShape = objToProxyShape(node);
+    if (!proxyShape)
+        return;
+
+    updateProxyShapePath(*proxyShape, parentPath);
 }
 
 } // namespace ufe
