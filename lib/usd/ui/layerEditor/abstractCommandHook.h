@@ -112,7 +112,8 @@ public:
 protected:
     SessionState* _sessionState;
 
-    // Checks if the file layer is accessible on disk, and updates the system-lock status accordingly.
+    // Checks if the file layer is accessible on disk, and updates the system-lock status
+    // accordingly.
     virtual void _refreshLayerSystemLock(UsdLayer usdLayer) = 0;
 };
 

@@ -29,7 +29,8 @@ getAllSublayers(const std::vector<std::string>& parentLayerPaths, bool includePa
     return UsdUfe::getAllSublayers(parentLayerPaths, includeParents);
 }
 
-inline std::set<PXR_NS::SdfLayerRefPtr> getAllSublayerRefs(const PXR_NS::SdfLayerRefPtr& layer, bool includeTopLayer = false)
+inline std::set<PXR_NS::SdfLayerRefPtr>
+getAllSublayerRefs(const PXR_NS::SdfLayerRefPtr& layer, bool includeTopLayer = false)
 {
     return UsdUfe::getAllSublayerRefs(layer, includeTopLayer);
 }
