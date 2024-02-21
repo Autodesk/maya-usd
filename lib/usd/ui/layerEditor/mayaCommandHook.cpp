@@ -19,6 +19,8 @@
 #include "abstractCommandHook.h"
 #include "mayaSessionState.h"
 
+#include <mayaUsd/utils/layerLocking.h>
+#include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/usd/usd/prim.h>
@@ -177,6 +179,8 @@ void MayaCommandHook::discardEdits(UsdLayer usdLayer)
     cmd = "mayaUsdLayerEditor -edit -discardEdits ";
     cmd += quote(usdLayer->GetIdentifier());
     executeMel(cmd);
+
+    refreshLayerSystemLock(usdLayer);
 }
 
 // erases everything on a layer
@@ -215,28 +219,55 @@ void MayaCommandHook::lockSubLayer(UsdLayer usdLayer, MayaUsd::LayerLockType loc
 {
     std::string cmd;
     cmd = "mayaUsdLayerEditor -edit -lockLayer ";
-    // 0 = Unlocked
-    // 1 = Locked
-    // 2 = System Locked
-    switch (lockState) {
-    default:
-    case MayaUsd::LayerLockType::LayerLock_Unlocked: {
-        cmd += "0";
-        break;
-    }
-    case MayaUsd::LayerLockType::LayerLock_Locked: {
-        cmd += "1";
-        break;
-    }
-    case MayaUsd::LayerLockType::LayerLock_SystemLocked: {
-        cmd += "2";
-        break;
-    }
-    }
+    cmd += std::to_string(lockState);
 
     cmd += quote(proxyShapePath());
     cmd += quote(usdLayer->GetIdentifier());
     executeMel(cmd).asChar();
+}
+
+void MayaCommandHook::refreshLayerSystemLock(UsdLayer usdLayer, bool refreshSubLayers /*= false*/)
+{
+    if (refreshSubLayers) {
+        bool includeTopLayer = true;
+        auto allLayers = MayaUsd::getAllSublayerRefs(usdLayer, includeTopLayer);
+        for (auto layer : allLayers) {
+            _refreshLayerSystemLock(layer);
+        }
+    } else {
+        _refreshLayerSystemLock(usdLayer);
+    }
+}
+
+void MayaCommandHook::_refreshLayerSystemLock(UsdLayer usdLayer)
+{
+    // Anonymous layers do not need to be checked.
+    if (usdLayer && !usdLayer->IsAnonymous()) {
+        // Check if the layer's write permissions have changed.
+        std::string assetPath = usdLayer->GetResolvedPath();
+        std::replace(assetPath.begin(), assetPath.end(), '\\', '/');
+
+        if (!assetPath.empty()) {
+            MString commandString;
+            // -w checks if file exists and is writable.
+            commandString.format("filetest -w \"^1s\"", MString(assetPath.c_str()));
+            MIntArray result;
+            // filetest is NOT undoable
+            MGlobal::executeCommand(commandString, result, /*display*/ false, /*undo*/ false);
+            if (result.length() > 0) {
+
+                if (result[0] == 1 && MayaUsd::isLayerSystemLocked(usdLayer)) {
+                    // If the file has write permissions and the layer is currently system-locked:
+                    // Unlock the layer
+                    lockSubLayer(usdLayer, MayaUsd::LayerLockType::LayerLock_Unlocked);
+                } else if (result[0] == 0 && !MayaUsd::isLayerSystemLocked(usdLayer)) {
+                    // If the file doesn't have write permissions and the layer is currently not
+                    // system-locked: System-lock the layer
+                    lockSubLayer(usdLayer, MayaUsd::LayerLockType::LayerLock_SystemLocked);
+                }
+            }
+        }
+    }
 }
 
 // Help menu callback

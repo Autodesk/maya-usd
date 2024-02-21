@@ -29,6 +29,11 @@ getAllSublayers(const std::vector<std::string>& parentLayerPaths, bool includePa
     return UsdUfe::getAllSublayers(parentLayerPaths, includeParents);
 }
 
+inline std::set<PXR_NS::SdfLayerRefPtr> getAllSublayerRefs(const PXR_NS::SdfLayerRefPtr& layer, bool includeTopLayer = false)
+{
+    return UsdUfe::getAllSublayerRefs(layer, includeTopLayer);
+}
+
 //! Return the folder of the layer of the current edit target of the stage, if any.
 //  If the stage is null, the returned path will be empty.
 MAYAUSD_CORE_PUBLIC

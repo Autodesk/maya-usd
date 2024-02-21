@@ -84,6 +84,10 @@ public:
     // Sets the lock state on a layer
     virtual void lockSubLayer(UsdLayer usdLayer, MayaUsd::LayerLockType lockState) = 0;
 
+    // Checks if the file layer or its sublayers are accessible on disk, and updates the system-lock
+    // status.
+    virtual void refreshLayerSystemLock(UsdLayer usdLayer, bool refreshSubLayers = false) = 0;
+
     // starts a complex undo operation in the host app. Please use UndoContext class to safely
     // open/close
     virtual void openUndoBracket(const QString& name) = 0;
@@ -107,6 +111,9 @@ public:
 
 protected:
     SessionState* _sessionState;
+
+    // Checks if the file layer is accessible on disk, and updates the system-lock status accordingly.
+    virtual void _refreshLayerSystemLock(UsdLayer usdLayer) = 0;
 };
 
 class UndoContext

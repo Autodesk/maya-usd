@@ -3,6 +3,7 @@ import maya.cmds as cmds
 import maya.api.OpenMaya as OpenMaya
 import maya.internal.ufeSupport.ufeCmdWrapper as ufeCmd
 import usdUfe
+import mayaUsd
 import mayaUsd.ufe
 import mayaUsd.lib as mayaUsdLib
 import re
@@ -108,6 +109,16 @@ def GetStageFromProxyShapeAttr(attr):
     proxyStage = mayaUsd.ufe.getStage(fullStageName)
 
     return(stageName, proxyStage)
+
+def GetFullStageNameFromProxyShapeAttr(attr):
+    # Helper method which returns the full stage name
+    # First get the stage name from the input attribute.
+    stageName = attr.split('.')[0]
+    # Convert that into a long Maya path so we can get the USD stage.
+    res = cmds.ls(stageName, l=True)
+    fullStageName = res[0]
+    
+    return(fullStageName)
 
 def RequireUsdPathsRelativeToMayaSceneFile():
     opVarName = "mayaUsd_MakePathRelativeToSceneFile"
@@ -278,5 +289,11 @@ def ProxyShapeFilePathRefresh(filePathAttr):
                 if res == kYes:
                     debugMessage('  User confirmed reload action, calling UsdStage.Reload()')
                     proxyStage.Reload()
+        
+        # Refresh the system lock status of the stage and its sublayers
+        stageFilePath = cmds.getAttr(filePathAttr)
+        fullStageName = GetFullStageNameFromProxyShapeAttr(filePathAttr)
+        cmds.mayaUsdLayerEditor(stageFilePath, edit=True, refreshSystemLock=(fullStageName, True))
+        
     except Exception as e:
         debugMessage('ProxyShapeFilePathRefresh() - Error: %s' % str(e))
