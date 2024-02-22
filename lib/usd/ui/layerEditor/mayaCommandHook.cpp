@@ -39,21 +39,6 @@ namespace {
 
 std::string quote(const std::string& string) { return STR(" \"") + string + STR("\""); }
 
-MString executeMel(const std::string& commandString)
-{
-    // executes maya command with display and undo set to true so that it logs
-    MStringArray result;
-    MGlobal::executeCommand(
-        MString(commandString.c_str()),
-        result,
-        /*display*/ true,
-        /*undo*/ true);
-    if (result.length() > 0)
-        return result[0];
-    else
-        return "";
-}
-
 // maya doesn't support spaces in undo chunk names...
 MString cleanChunkName(QString name) { return quote(name.replace(" ", "_").toStdString()).c_str(); }
 
@@ -195,8 +180,11 @@ UsdLayer MayaCommandHook::addAnonymousSubLayer(UsdLayer usdLayer, std::string ne
     cmd = "mayaUsdLayerEditor -edit -addAnonymous ";
     cmd += quote(newName);
     cmd += quote(usdLayer->GetIdentifier());
-    std::string result = executeMel(cmd).asChar();
-    return PXR_NS::SdfLayer::FindOrOpen(result);
+    std::string result = executeMel(cmd);
+    if (result.size() > 0)
+        return PXR_NS::SdfLayer::FindOrOpen(result);
+    else
+        return {};
 }
 
 // mute or unmute the given layer
@@ -207,7 +195,7 @@ void MayaCommandHook::muteSubLayer(UsdLayer usdLayer, bool muteIt)
     cmd += muteIt ? "1" : "0";
     cmd += quote(proxyShapePath());
     cmd += quote(usdLayer->GetIdentifier());
-    executeMel(cmd).asChar();
+    executeMel(cmd);
 }
 
 // lock, system-lock or unlock the given layer
@@ -236,7 +224,7 @@ void MayaCommandHook::lockSubLayer(UsdLayer usdLayer, MayaUsd::LayerLockType loc
 
     cmd += quote(proxyShapePath());
     cmd += quote(usdLayer->GetIdentifier());
-    executeMel(cmd).asChar();
+    executeMel(cmd);
 }
 
 // Help menu callback
@@ -293,6 +281,52 @@ bool MayaCommandHook::isProxyShapeStageIncoming(const std::string& proxyShapePat
 bool MayaCommandHook::isProxyShapeSharedStage(const std::string& proxyShapePath)
 {
     return getBooleanAttributeOnProxyShape(proxyShapePath, "shareStage");
+}
+
+std::string MayaCommandHook::executeMel(const std::string& commandString)
+{
+    if (areCommandsDelayed()) {
+        _delayedCommands.push_back({ commandString, false });
+    } else {
+        // executes maya command with display and undo set to true so that it logs
+        MStringArray result;
+        MGlobal::executeCommand(
+            MString(commandString.c_str()),
+            result,
+            /*display*/ true,
+            /*undo*/ true);
+        if (result.length() > 0)
+            return result[0].asChar();
+    }
+    return "";
+}
+
+void MayaCommandHook::executePython(const std::string& commandString)
+{
+    if (areCommandsDelayed()) {
+        _delayedCommands.push_back({ commandString, true });
+    } else {
+        MGlobal::executePythonCommand(commandString.c_str());
+    }
+}
+
+void MayaCommandHook::executeDelayedCommands()
+{
+    if (areCommandsDelayed())
+        return;
+
+    // In case the execution of commands add new commands,
+    // make a copy and clear the delayed commands.
+    std::vector<DelayedCommand> cmds = _delayedCommands;
+    _delayedCommands.clear();
+
+    for (const auto& cmd : cmds) {
+        if (cmd.isPython) {
+            executePython(cmd.command);
+        } else {
+            executeMel(cmd.command);
+        }
+    }
 }
 
 } // namespace UsdLayerEditor
