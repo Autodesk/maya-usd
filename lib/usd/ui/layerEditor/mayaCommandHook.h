@@ -19,6 +19,8 @@
 
 #include "abstractCommandHook.h"
 
+#include <vector>
+
 namespace UsdLayerEditor {
 
 /**
@@ -95,6 +97,25 @@ protected:
     // Checks if the file layer or its sublayers are accessible on disk, and updates the system-lock
     // status.
     void _refreshLayerSystemLock(UsdLayer usdLayer) override;
+
+    std::string executeMel(const std::string& commandString);
+    void        executePython(const std::string& commandString);
+
+    void executeDelayedCommands() override;
+
+    struct DelayedCommand
+    {
+        DelayedCommand(const std::string& cmd, bool isP)
+            : command(cmd)
+            , isPython(isP)
+        {
+        }
+
+        std::string command;
+        bool        isPython { false };
+    };
+
+    std::vector<DelayedCommand> _delayedCommands;
 };
 
 } // namespace UsdLayerEditor

@@ -109,12 +109,57 @@ public:
     // or has an owned root
     virtual bool isProxyShapeSharedStage(const std::string& proxyShapePath) = 0;
 
+    // Increase the count tracking if command executions are delayed.
+    void increaseDelayedCommands() { _delayCount += 1; }
+
+    // Decrease the count tracking if command executions are delayed.
+    void decreaseDelayedCommands()
+    {
+        _delayCount -= 1;
+        if (!areCommandsDelayed())
+            executeDelayedCommands();
+    }
+
+    // Verify if commands are currently delayed.
+    bool areCommandsDelayed() const { return _delayCount > 0; }
+
 protected:
-    SessionState* _sessionState;
+    virtual void executeDelayedCommands() = 0;
 
     // Checks if the file layer is accessible on disk, and updates the system-lock status
     // accordingly.
     virtual void _refreshLayerSystemLock(UsdLayer usdLayer) = 0;
+
+    SessionState* _sessionState;
+    int           _delayCount { 0 };
+};
+
+/**
+ * @brief When executing multiple commands, it may sometimes be necessary to delay.
+ *        the execution until all commands are issued. For example, when processing
+ *        multiple elements in the slection, but the command itself might change the
+ *        selection.
+ */
+class DelayAbstractCommandHook
+{
+public:
+    DelayAbstractCommandHook(AbstractCommandHook& hook)
+        : _hook(hook)
+    {
+        _hook.increaseDelayedCommands();
+    }
+
+    ~DelayAbstractCommandHook()
+    {
+        try {
+            _hook.decreaseDelayedCommands();
+        } catch (const std::exception&) {
+            // Ignore exceptions in destructor.
+        }
+    }
+
+private:
+    AbstractCommandHook& _hook;
 };
 
 class UndoContext
