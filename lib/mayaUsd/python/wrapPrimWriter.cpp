@@ -586,6 +586,13 @@ void wrapJobExportArgs()
         .add_property(
             "parentScope",
             make_getter(&UsdMayaJobExportArgs::parentScope, return_value_policy<return_by_value>()))
+        .add_property(
+            "rootPrim",
+            make_getter(&UsdMayaJobExportArgs::rootPrim, return_value_policy<return_by_value>()))
+        .add_property(
+            "rootPrimType",
+            make_getter(
+                &UsdMayaJobExportArgs::rootPrimType, return_value_policy<return_by_value>()))
         .def_readonly("pythonPerFrameCallback", &UsdMayaJobExportArgs::pythonPerFrameCallback)
         .def_readonly("pythonPostCallback", &UsdMayaJobExportArgs::pythonPostCallback)
         .add_property(

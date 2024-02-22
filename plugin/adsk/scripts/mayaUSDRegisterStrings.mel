@@ -177,9 +177,12 @@ global proc mayaUSDRegisterStrings()
     register("kExportNamespacesLbl", "Include Namespaces");
     register("kExportWorldspaceAnn", "Exports the root prims with their worldspace transform instead of their local transform.");
     register("kExportWorldspaceLbl", "Worldspace Roots");
-    register("kExportParentScopeAnn", "Name of the USD scope that is the parent of the exported data.");
-    register("kExportParentScopeLbl", "Create USD Parent Scope:");
-    register("kExportParentScopePht", "USD Prim Name");
+    register("kExportRootPrimAnn", "Name the root/parent prim for your exported data.");
+    register("kExportRootPrimLbl", "Create Root Prim:");
+    register("kExportRootPrimPht", "USD Prim Name");
+    register("kExportRootPrimTypeLbl", "Root Prim Type:");
+    register("kExportScopeLbl", "Scope");
+    register("kExportXformLbl", "Xform");
     register("kExportSkelsAnn", "Exports Maya joints as part of a USD skeleton.");
     register("kExportSkelsLbl", "Skeletons:");
     register("kExportSkelsNoneLbl", "None");

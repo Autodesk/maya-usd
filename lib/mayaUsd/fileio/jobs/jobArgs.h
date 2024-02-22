@@ -97,7 +97,10 @@ TF_DECLARE_PUBLIC_TOKENS(
     (mergeTransformAndShape) \
     (normalizeNurbs) \
     (preserveUVSetNames) \
+    /* Deprecated and replaced by rootPrim */ \
     (parentScope) \
+    (rootPrim) \
+    (rootPrimType) \
     (pythonPerFrameCallback) \
     (pythonPostCallback) \
     (renderableOnly) \
@@ -136,7 +139,10 @@ TF_DECLARE_PUBLIC_TOKENS(
     /* geomSidedness values */ \
     (derived)                             \
     (single)                              \
-    ((double_, "double"))
+    ((double_, "double"))                 \
+    /* root prim type values */ \
+    (scope)							   \
+	(xform)
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
@@ -238,7 +244,9 @@ struct UsdMayaJobExportArgs
 
     /// This is the path of the USD prim under which *all* prims will be
     /// authored.
-    const SdfPath      parentScope;
+    const SdfPath      parentScope; // Deprecated, use rootPrim instead.
+    const SdfPath      rootPrim;
+    const TfToken      rootPrimType;
     const TfToken      renderLayerMode;
     const TfToken      rootKind;
     const bool         disableModelKindProcessor;
