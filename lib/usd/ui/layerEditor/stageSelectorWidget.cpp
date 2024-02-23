@@ -193,7 +193,7 @@ void StageSelectorWidget::createUI()
 {
     auto mainHLayout = new QHBoxLayout();
     auto spacing = DPIScale(4);
-    auto margin = DPIScale(12);
+    auto margin = DPIScale(0);
     QtUtils::initLayoutMargins(mainHLayout);
     mainHLayout->setSpacing(spacing);
     mainHLayout->setContentsMargins(margin, 0, 0, 0);
