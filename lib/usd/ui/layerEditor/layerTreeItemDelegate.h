@@ -43,14 +43,6 @@ class LayerTreeItemDelegate : public QStyledItemDelegate
 public:
     LayerTreeItemDelegate(LayerTreeView* in_parent);
 
-    // API for LayerTreeView
-    // gets the rectangle of the item, adjusted for the tree indentation
-    QRect getAdjustedItemRect(LayerTreeItem const* item, QRect const& optionRect) const;
-    // gets the rectangle where the text is drawn
-    QRect getTextRect(QRect const& itemRect) const;
-    // get the rectangle for the "set current target" icon
-    QRect getTargetIconRect(QRect const& itemRect) const;
-
     // QStyledItemDelegate API
     void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index)
         const override;
@@ -106,16 +98,15 @@ protected:
                                    DPIScale(QPointF(5.0, 13.0)),
                                    DPIScale(QPointF(0.0, 18.0)) };
     // action icon area
-    const int ACTION_BORDER = DPIScale(2);
+    const int ACTION_BORDER = DPIScale(1);
     const int ICON_WIDTH = DPIScale(20);
     const int ACTION_WIDTH = ICON_WIDTH + (2 * ACTION_BORDER);
     const int WARNING_ICON_WIDTH = DPIScale(11);
-    const int ICON_TOP_OFFSET = DPIScale(4);
+    const int ICON_TOP_OFFSET = DPIScale(1);
 
     const int    CHECK_MARK_AREA_WIDTH = DPIScale(28);
     const int    TEXT_LEFT_OFFSET = (ARROW_AREA_WIDTH + CHECK_MARK_AREA_WIDTH);
-    const int    TEXT_RIGHT_OFFSET = DPIScale(36);
-    const int    HIGHLIGHTED_FILL_OFFSET = DPIScale(1);
+    const int    HIGHLIGHTED_FILL_OFFSET = DPIScale(0);
     const double DISABLED_OPACITY = 0.6;
     QPixmap      DISABLED_BACKGROUND_IMAGE;
     QPixmap      DISABLED_HIGHLIGHT_IMAGE;
@@ -123,30 +114,46 @@ protected:
     QPixmap      TARGET_OFF_IMAGES[3];
     QPixmap      WARNING_IMAGE;
 
-    void paint_drawTarget(QPainter* painter, QRectC rect, Item item, Options option) const;
-    void paint_drawFill(
-        QPainter*     painter,
-        QRectC        rect,
-        Item          item,
-        bool          isHighlighted,
-        const QColor& highlightColor) const;
-    void paint_drawArrow(QPainter* painter, QRectC rect, Item item) const;
-    void paint_drawText(QPainter* painter, QRectC rect, Item item) const;
+    // Common data used by many painting functions.
+    struct ItemPaintContext
+    {
+        Item   item;
+        QRect  itemRect;
+        int    itemRow;
+        bool   isPressed;
+        bool   isMuted;
+        bool   isLocked;
+        bool   isSystemLocked;
+        bool   isReadOnly;
+        bool   isHover;
+        bool   isHighlighted;
+        QColor highlightColor;
+
+        mutable QString tooltip;
+    };
+
+    // gets the rectangle of the item, adjusted for the tree indentation
+    QRect getAdjustedItemRect(LayerTreeItem const* item, QRect const& optionRect) const;
+    // get the rectangle for the "set current target" icon
+    QRect getTargetIconRect(QRect const& itemRect) const;
+    // gets the rectangle where the text is drawn
+    QRect getTextRect(const ItemPaintContext& ctx) const;
+
+    void paint_drawTarget(QPainter* painter, const ItemPaintContext& ctx, Options option) const;
+    void paint_drawFill(QPainter* painter, const ItemPaintContext& ctx, QRectC rect) const;
+    void paint_drawArrow(QPainter* painter, const ItemPaintContext& ctx) const;
+    void paint_drawText(QPainter* painter, const ItemPaintContext& ctx) const;
     void paint_ActionIcon(
-        QPainter*       painter,
-        QRectC          rect,
-        Item            item,
-        LayerActionType actionType,
-        const QColor&   highlightColor) const;
-    void paint_ActionIcons(QPainter* painter, QRectC rect, Item item, const QColor& highlightColor)
-        const;
-    void paint_drawToolbarFrame(QPainter* painter, QRectC rect, int iconLocation) const;
+        QPainter*               painter,
+        const ItemPaintContext& ctx,
+        LayerActionType         actionType) const;
+    void paint_ActionIcons(QPainter* painter, const ItemPaintContext& ctx) const;
     void paint_drawOneAction(
-        QPainter*              painter,
-        int                    left,
-        int                    top,
-        const LayerActionInfo& action,
-        const QColor&          highlightColor) const;
+        QPainter*               painter,
+        int                     left,
+        int                     top,
+        const LayerActionInfo&  action,
+        const ItemPaintContext& ctx) const;
     void drawStdIcon(QPainter* painter, int left, int top, const QPixmap& pixmap) const;
 };
 

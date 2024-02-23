@@ -21,14 +21,48 @@
 
 #include <memory>
 
+namespace {
+
+// Automatically adjust the opacity when the item should appear disabled.
+class AutoOpacity
+{
+public:
+    AutoOpacity(QPainter& painter, UsdLayerEditor::LayerTreeItem const& item, double opacity)
+        : _painter(painter)
+        , _muted(item.appearsMuted())
+        , _locked(item.isLocked())
+        , _systemLocked(item.isSystemLocked())
+        , _readOnly(item.isReadOnly())
+    {
+        if (_muted || _readOnly || _locked || _systemLocked)
+            _painter.setOpacity(opacity);
+    }
+
+    ~AutoOpacity()
+    {
+        if (_muted || _readOnly || _locked || _systemLocked)
+            _painter.setOpacity(1.0);
+    }
+
+private:
+    QPainter&  _painter;
+    const bool _muted;
+    const bool _locked;
+    const bool _systemLocked;
+    const bool _readOnly;
+};
+} // namespace
+
 namespace UsdLayerEditor {
 
 LayerTreeItemDelegate::LayerTreeItemDelegate(LayerTreeView* in_parent)
     : QStyledItemDelegate(in_parent)
     , _treeView(in_parent)
 {
-    DISABLED_BACKGROUND_IMAGE = utils->createPNGResPixmap("RS_disabled_tile");
-    DISABLED_HIGHLIGHT_IMAGE = utils->createPNGResPixmap("RS_disabled_tile_highlight");
+    DISABLED_BACKGROUND_IMAGE = utils->createPNGResPixmap(
+        QString(":/UsdLayerEditor/") + QtUtils::getDPIPixmapName("striped"));
+    DISABLED_HIGHLIGHT_IMAGE = utils->createPNGResPixmap(
+        QString(":/UsdLayerEditor/") + QtUtils::getDPIPixmapName("striped_selected"));
     WARNING_IMAGE = utils->createPNGResPixmap("RS_warning");
 
     const char* targetOnPixmaps[3] { "target_on", "target_on_hover", "target_on_pressed" };
@@ -51,11 +85,14 @@ QRect LayerTreeItemDelegate::getAdjustedItemRect(LayerTreeItem const* item, QRec
     return rect;
 }
 
-QRect LayerTreeItemDelegate::getTextRect(QRect const& itemRect) const
+QRect LayerTreeItemDelegate::getTextRect(const ItemPaintContext& ctx) const
 {
-    QRect textRect(itemRect);
+    QRect textRect(ctx.itemRect);
     textRect.setLeft(textRect.left() + TEXT_LEFT_OFFSET);
-    textRect.setRight(textRect.right() - TEXT_RIGHT_OFFSET);
+    if (ctx.isLocked || ctx.isSystemLocked)
+        textRect.setRight(textRect.right() - (ACTION_WIDTH * 2 + DPIScale(6)));
+    else if (ctx.isMuted)
+        textRect.setRight(textRect.right() - (ACTION_WIDTH + DPIScale(6)));
     return textRect;
 }
 
@@ -67,35 +104,14 @@ QRect LayerTreeItemDelegate::getTargetIconRect(QRect const& itemRect) const
     return rect;
 }
 
-void LayerTreeItemDelegate::paint_drawTarget(
-    QPainter* painter,
-    QRectC    rect,
-    Item      item,
-    Options   option) const
+static void drawIconInRect(
+    QPainter*      painter,
+    const QPixmap& icon,
+    const QRect&   targetRect,
+    const QColor&  borderColor)
 {
-    if (item->isInvalidLayer()) {
-        return;
-    }
-    auto targetRect = getTargetIconRect(rect);
-
-    bool pressed = (_pressedTarget == item);
-    bool muted = item->appearsMuted();
-    bool locked = item->isLocked();
-    bool systemLocked = item->isSystemLocked();
-    bool readOnly = item->isReadOnly();
-
-    bool hover = !muted && !readOnly && !locked && !systemLocked
-        && (option.state & QStyle::State_MouseOver)
-        && QtUtils::isMouseInRectangle(_treeView, targetRect);
-
-    QPixmap icon;
-    if (item->isTargetLayer()) {
-        icon = pressed ? TARGET_ON_IMAGES[2] : TARGET_ON_IMAGES[hover ? 1 : 0];
-    } else {
-        icon = pressed ? TARGET_OFF_IMAGES[2] : TARGET_OFF_IMAGES[hover ? 1 : 0];
-    }
-
     auto iconRect = icon.rect();
+
     // got to be careful. the icon rect is correct with DPI on windows/linux
     // but on mac, the icon is twice the resolution that we will actually draw in
     // so we need to scale that back, because we draw in logical pixels vs physical
@@ -106,54 +122,89 @@ void LayerTreeItemDelegate::paint_drawTarget(
     }
 
     iconRect.moveCenter(targetRect.center());
-    if (muted || readOnly || locked || systemLocked) {
-        painter->setOpacity(DISABLED_OPACITY);
-    }
     painter->drawPixmap(iconRect, icon);
-    if (muted || readOnly || locked || systemLocked) {
-        painter->setOpacity(1.0);
+
+    if (borderColor.isValid()) {
+        auto oldPen = painter->pen();
+        painter->setPen(QPen(borderColor, 1));
+        painter->drawRect(iconRect);
+        painter->setPen(oldPen);
+    }
+}
+
+void LayerTreeItemDelegate::paint_drawTarget(
+    QPainter*               painter,
+    const ItemPaintContext& ctx,
+    Options                 option) const
+{
+    if (ctx.item->isInvalidLayer())
+        return;
+
+    auto targetRect = getTargetIconRect(ctx.itemRect);
+    bool isInRect = QtUtils::isMouseInRectangle(_treeView, targetRect);
+    bool hover = ctx.isHover && !ctx.isLocked && !ctx.isSystemLocked && isInRect
+        && (option.state & QStyle::State_MouseOver);
+
+    QPixmap icon;
+    if (ctx.item->isTargetLayer()) {
+        icon = ctx.isPressed ? TARGET_ON_IMAGES[2] : TARGET_ON_IMAGES[hover ? 1 : 0];
+    } else {
+        icon = ctx.isPressed ? TARGET_OFF_IMAGES[2] : TARGET_OFF_IMAGES[hover ? 1 : 0];
+    }
+
+    static const QColor noBorder;
+    drawIconInRect(painter, icon, targetRect, noBorder);
+
+    if (isInRect) {
+        ctx.tooltip = StringResources::getAsQString(StringResources::kSetLayerAsTargetLayerTooltip);
     }
 }
 
 void LayerTreeItemDelegate::paint_drawFill(
-    QPainter*     painter,
-    QRectC        rect,
-    Item          item,
-    bool          isHighlighted,
-    const QColor& highlightColor) const
+    QPainter*               painter,
+    const ItemPaintContext& ctx,
+    QRectC                  rect) const
 {
-    QRect rect2(rect);
-    auto  oldPen = painter->pen();
-    bool  muted = item->appearsMuted();
+    bool muted = ctx.item->appearsMuted();
 
-    if (isHighlighted) {
-        rect2.setLeft(rect2.left() + HIGHLIGHTED_FILL_OFFSET);
+    // Offset necessary to align the disabled background stripes between rows.
+    static volatile int rowOffset = DPIScale(7);
+    static volatile int depthOffset = DPIScale(0);
+    int height = std::max(1, ctx.item->data(Qt::SizeHintRole).value<QSize>().height());
+    int offset = (rect.top() / height) * rowOffset + ctx.item->depth() * depthOffset + rect.left();
+
+    if (ctx.isHighlighted) {
         if (muted) {
-            painter->drawTiledPixmap(rect2, DISABLED_HIGHLIGHT_IMAGE);
+            painter->drawTiledPixmap(rect, DISABLED_HIGHLIGHT_IMAGE, QPoint(offset, 0));
+        } else if (ctx.isHover) {
+            painter->fillRect(rect, ctx.highlightColor.darker());
         } else {
-            painter->fillRect(rect2, highlightColor);
+            painter->fillRect(rect, ctx.highlightColor);
         }
-        rect2.setLeft(rect2.left() - HIGHLIGHTED_FILL_OFFSET);
     } else {
-        painter->fillRect(rect2, item->data(Qt::BackgroundRole).value<QBrush>());
+        if (ctx.isHover) {
+            painter->fillRect(
+                rect, ctx.item->data(Qt::BackgroundRole).value<QBrush>().color().darker());
+        } else {
+            painter->fillRect(rect, ctx.item->data(Qt::BackgroundRole).value<QBrush>());
+        }
         if (muted) {
-            painter->drawTiledPixmap(rect2, DISABLED_BACKGROUND_IMAGE);
+            painter->drawTiledPixmap(rect, DISABLED_BACKGROUND_IMAGE, QPoint(offset, 0));
         }
     }
-    painter->setPen(oldPen);
 }
 
-void LayerTreeItemDelegate::paint_drawArrow(QPainter* painter, QRectC rect, Item item) const
+void LayerTreeItemDelegate::paint_drawArrow(QPainter* painter, const ItemPaintContext& ctx) const
 {
     painter->save();
-    if (item->rowCount() != 0) {
-        auto           left = rect.left() + ARROW_OFFSET + 1;
+    if (ctx.item->rowCount() != 0) {
+        auto           left = ctx.itemRect.left() + ARROW_OFFSET + 1;
         const QPointF* arrow = nullptr;
-        if (_treeView->isExpanded(item->index())) {
-            painter->translate(left + EXPANDED_ARROW_OFFSET, rect.top());
+        if (_treeView->isExpanded(ctx.item->index())) {
+            painter->translate(left + EXPANDED_ARROW_OFFSET, ctx.itemRect.top());
             arrow = &EXPANDED_ARROW[0];
         } else {
-            painter->translate(left + COLLAPSED_ARROW_OFFSET, rect.top());
+            painter->translate(left + COLLAPSED_ARROW_OFFSET, ctx.itemRect.top());
             arrow = &COLLAPSED_ARROW[0];
         }
         auto const oldBrush = painter->brush();
@@ -165,55 +216,36 @@ void LayerTreeItemDelegate::paint_drawArrow(QPainter* painter, QRectC rect, Item
     painter->restore();
 }
 
-void LayerTreeItemDelegate::paint_drawText(QPainter* painter, QRectC rect, Item item) const
+void LayerTreeItemDelegate::paint_drawText(QPainter* painter, const ItemPaintContext& ctx) const
 {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    painter->setPen(QPen(item->data(Qt::ForegroundRole).value<QColor>(), 1));
+    painter->setPen(QPen(ctx.item->data(Qt::ForegroundRole).value<QColor>(), 1));
 #else
-    painter->setPen(QPen(item->data(Qt::TextColorRole).value<QColor>(), 1));
+    painter->setPen(QPen(ctx.item->data(Qt::TextColorRole).value<QColor>(), 1));
 #endif
-    const auto textRect = getTextRect(rect);
-    bool       muted = item->appearsMuted();
-    bool       locked = item->isLocked();
-    bool       systemLocked = item->isSystemLocked();
-    bool       readOnly = item->isReadOnly();
-    if (muted || readOnly || locked || systemLocked) {
-        painter->setOpacity(DISABLED_OPACITY);
-    }
+    const auto textRect = getTextRect(ctx);
 
-    QString text = item->data(Qt::DisplayRole).value<QString>();
+    QString text = ctx.item->data(Qt::DisplayRole).value<QString>();
 
     // draw a * for dirty layers
-    if (item->needsSaving() || (item->isDirty() && !readOnly)) {
+    const bool readOnly = ctx.item->isReadOnly();
+    if (ctx.item->needsSaving() || (ctx.item->isDirty() && !readOnly)) {
         // item.needsSaving returns false for sessionLayer, but I think we should show the dirty
         // flag for it
         text += "*";
     }
 
+    QFontMetrics fm = painter->fontMetrics();
+    QString      elidedText = fm.elidedText(text, Qt::ElideRight, textRect.width());
+
     QRect boundingRect;
     painter->drawText(
-        textRect, item->data(Qt::TextAlignmentRole).value<int>(), text, &boundingRect);
-    if (item->isInvalidLayer()) {
+        textRect, ctx.item->data(Qt::TextAlignmentRole).value<int>(), elidedText, &boundingRect);
+    if (ctx.item->isInvalidLayer()) {
         int x = boundingRect.right() + DPIScale(4);
         int y = boundingRect.top();
         painter->drawPixmap(x, y, WARNING_IMAGE);
     }
-
-    if (muted || readOnly || locked || systemLocked)
-        painter->setOpacity(1.0);
-}
-void LayerTreeItemDelegate::paint_drawToolbarFrame(QPainter* painter, QRectC rect, int iconLocation)
-    const
-{
-    int    top = rect.top() + ICON_TOP_OFFSET;
-    QColor backgroundColor(55, 55, 55);
-    int    toolbarLength = ACTION_WIDTH + (2 * ACTION_BORDER);
-    int    left = rect.right() - (iconLocation * (toolbarLength + ACTION_BORDER));
-
-    left = left > 0 ? left : 0;
-    painter->setOpacity(0.8);
-    painter->fillRect(left, top - ACTION_BORDER, toolbarLength, ACTION_WIDTH, backgroundColor);
-    painter->setOpacity(1.0);
 }
 
 void LayerTreeItemDelegate::drawStdIcon(QPainter* painter, int left, int top, const QPixmap& pixmap)
@@ -223,13 +255,12 @@ void LayerTreeItemDelegate::drawStdIcon(QPainter* painter, int left, int top, co
 }
 
 void LayerTreeItemDelegate::paint_drawOneAction(
-    QPainter*              painter,
-    int                    left,
-    int                    top,
-    const LayerActionInfo& actionInfo,
-    const QColor&          highlightColor) const
+    QPainter*               painter,
+    int                     left,
+    int                     top,
+    const LayerActionInfo&  actionInfo,
+    const ItemPaintContext& ctx) const
 {
-    QRect iconRect(left, top, ICON_WIDTH, ICON_WIDTH);
     // MAYA 84884: Created a background rectangle underneath the icon to extend the mouse coverage
     // region
     int   BACKGROUND_RECT_LENGTH = DPIScale(28);
@@ -240,72 +271,62 @@ void LayerTreeItemDelegate::paint_drawOneAction(
         BACKGROUND_RECT_LENGTH,
         ACTION_WIDTH);
 
-    if (highlightColor.isValid())
-        painter->fillRect(iconRect, highlightColor);
-
-    // draw the icon. Its opacity depends on mouse over.
-    {
-        if (!QtUtils::isMouseInRectangle(_treeView, backgroundRect)) {
-            painter->setOpacity(0.7);
-        } else {
-            painter->setOpacity(1.0);
-            const_cast<LayerTreeItemDelegate*>(this)->_lastHitAction = actionInfo._name;
-        }
-        drawStdIcon(painter, left, top, actionInfo._pixmap);
-        painter->setOpacity(1.0);
+    const bool     hover = QtUtils::isMouseInRectangle(_treeView, backgroundRect);
+    const bool     active = actionInfo._checked;
+    const QPixmap* icon = nullptr;
+    if (hover) {
+        icon = active ? &actionInfo._pixmap_on_hover : &actionInfo._pixmap_off_hover;
+        const_cast<LayerTreeItemDelegate*>(this)->_lastHitAction = actionInfo._name;
+    } else {
+        icon = active ? &actionInfo._pixmap_on : &actionInfo._pixmap_off;
     }
 
-    if (actionInfo._borderColor.isValid()) {
-        auto oldPen = painter->pen();
-        painter->setPen(QPen(actionInfo._borderColor, 1));
-        painter->drawRect(iconRect);
-        painter->setPen(oldPen);
+    paint_drawFill(painter, ctx, backgroundRect);
+    drawIconInRect(painter, *icon, backgroundRect, actionInfo._borderColor);
+
+    if (_lastHitAction == actionInfo._name) {
+        if (ctx.isSystemLocked) {
+            ctx.tooltip = StringResources::getAsQString(StringResources::kLayerIsSystemLocked);
+        } else {
+            ctx.tooltip = actionInfo._tooltip;
+        }
     }
 }
 
 void LayerTreeItemDelegate::paint_ActionIcon(
-    QPainter*       painter,
-    QRectC          rect,
-    Item            item,
-    LayerActionType actionType,
-    const QColor&   highlightColor) const
+    QPainter*               painter,
+    const ItemPaintContext& ctx,
+    LayerActionType         actionType) const
 {
     LayerActionInfo action;
-    item->getActionButton(actionType, action);
-    LayerMasks layerMask
-        = CreateLayerMask(item->isRootLayer(), item->isSublayer(), item->isSessionLayer());
+    ctx.item->getActionButton(actionType, action);
+
+    // Draw the icon if it is checked or if the mouse is over the item.
+    const bool shouldDraw
+        = (action._checked || QtUtils::isMouseInRectangle(_treeView, ctx.itemRect));
+    if (!shouldDraw)
+        return;
+
+    LayerMasks layerMask = CreateLayerMask(
+        ctx.item->isRootLayer(), ctx.item->isSublayer(), ctx.item->isSessionLayer());
     if (!IsLayerActionAllowed(action, layerMask)) {
         return;
     }
 
-    paint_drawToolbarFrame(painter, rect, action._order + 1);
-
-    int top = rect.top() + ICON_TOP_OFFSET;
+    int top = ctx.itemRect.top() + ICON_TOP_OFFSET;
     int iconLeft = (action._order + 1) * (ACTION_WIDTH + ACTION_BORDER + action._extraPadding)
         + action._order * 2 * ACTION_BORDER;
 
-    paint_drawOneAction(
-        painter, rect.right() - iconLeft, top, action, action._checked ? highlightColor : QColor());
-
-    QString tooltip;
-    if (_lastHitAction == action._name) {
-        if (item->isSystemLocked()) {
-            tooltip = StringResources::getAsQString(StringResources::kLayerIsSystemLocked);
-        } else {
-            tooltip = action._tooltip;
-        }
-    }
-    const_cast<LayerTreeItem*>(item)->setToolTip(tooltip);
+    paint_drawOneAction(painter, ctx.itemRect.right() - iconLeft, top, action, ctx);
 }
 
-void LayerTreeItemDelegate::paint_ActionIcons(
-    QPainter*     painter,
-    QRectC        rect,
-    Item          item,
-    const QColor& highlightColor) const
+void LayerTreeItemDelegate::paint_ActionIcons(QPainter* painter, const ItemPaintContext& ctx) const
 {
-    paint_ActionIcon(painter, rect, item, LayerActionType::Lock, highlightColor);
-    paint_ActionIcon(painter, rect, item, LayerActionType::Mute, highlightColor);
+    {
+        AutoOpacity autoOpacity(*painter, *ctx.item, ctx.isSystemLocked ? DISABLED_OPACITY : 1.0);
+        paint_ActionIcon(painter, ctx, LayerActionType::Lock);
+    }
+    paint_ActionIcon(painter, ctx, LayerActionType::Mute);
 }
 
 void LayerTreeItemDelegate::paint(
@@ -313,20 +334,42 @@ void LayerTreeItemDelegate::paint(
     const QStyleOptionViewItem& option,
     const QModelIndex&          index) const
 {
-    if (index.isValid()) {
-        auto item = _treeView->layerItemFromIndex(index);
+    if (!index.isValid())
+        return;
 
-        QRect rect = getAdjustedItemRect(item, option.rect);
-        bool  isHighlighted
-            = option.showDecorationSelected && (option.state & QStyle::State_Selected);
-        auto highlightedColor = option.palette.color(QPalette::Highlight);
+    ItemPaintContext ctx;
+    ctx.item = _treeView->layerItemFromIndex(index);
+    ctx.itemRect = getAdjustedItemRect(ctx.item, option.rect);
+    ctx.isPressed = (_pressedTarget == ctx.item);
+    ctx.isMuted = ctx.item->appearsMuted();
+    ctx.isLocked = ctx.item->isLocked();
+    ctx.isSystemLocked = ctx.item->isSystemLocked();
+    ctx.isReadOnly = ctx.item->isReadOnly();
+    ctx.isHighlighted = option.showDecorationSelected && (option.state & QStyle::State_Selected);
+    ctx.isHover
+        = !ctx.isMuted && !ctx.isReadOnly && QtUtils::isMouseInRectangle(_treeView, ctx.itemRect);
+    ctx.highlightColor = option.palette.color(QPalette::Highlight);
 
-        paint_drawFill(painter, rect, item, isHighlighted, highlightedColor);
-        paint_drawTarget(painter, rect, item, option);
-        paint_drawArrow(painter, rect, item);
-        paint_drawText(painter, rect, item);
-        paint_ActionIcons(painter, rect, item, highlightedColor);
+    if (ctx.item->isInvalidLayer()) {
+        ctx.tooltip = StringResources::getAsQString(StringResources::kPathNotFound)
+            + ctx.item->subLayerPath().c_str();
+    } else {
+        ctx.tooltip = ctx.item->layer()->GetRealPath().c_str();
     }
+
+    paint_drawFill(painter, ctx, ctx.itemRect);
+    paint_drawArrow(painter, ctx);
+
+    {
+        AutoOpacity autoOpacity(*painter, *ctx.item, DISABLED_OPACITY);
+        paint_drawTarget(painter, ctx, option);
+        paint_drawText(painter, ctx);
+    }
+
+    paint_ActionIcons(painter, ctx);
+
+    if (ctx.item->toolTip() != ctx.tooltip)
+        const_cast<LayerTreeItem*>(ctx.item)->setToolTip(ctx.tooltip);
 }
 
 bool LayerTreeItemDelegate::editorEvent(
