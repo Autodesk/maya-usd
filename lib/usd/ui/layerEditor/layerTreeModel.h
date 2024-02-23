@@ -139,7 +139,7 @@ protected:
 
     void rebuildModelOnIdle();
     bool _rebuildOnIdlePending = false;
-    void rebuildModel();
+    void rebuildModel(bool refreshLockState = false);
 
     void updateTargetLayer(InRebuildModel inRebuild);
 

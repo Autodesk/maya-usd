@@ -632,6 +632,7 @@ The purpose of this command is edit layers.
 | `-insertSubPath`    | `-is`      | int string     | Insert a sub layer path at a given index |
 | `-muteLayer`        | `-mt`      | bool string    | Mute or unmute the named layer           |
 | `-lockLayer`        | `-lk`      | int string     | Lock, System-Lock or unlock a layer. `0` = Unlocked, `1` = Locked and `2` = System-Locked |
+| `-refreshSystemLock`| `-rl`      | string int     | Refreshes the lock status of the named layer. `0` = Only top layer, `1` = Include the sublayers|
 | `-replaceSubPath`   | `-rp`      | string string  | Replaces a path in the layer stack       |
 | `-removeSubPath`    | `-rs`      | int string     | Remove a sub layer at a given index      |
 
