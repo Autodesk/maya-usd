@@ -287,11 +287,14 @@ void LayerTreeModel::rebuildModelOnIdle()
 {
     if (!_rebuildOnIdlePending) {
         _rebuildOnIdlePending = true;
-        QTimer::singleShot(0, this, &LayerTreeModel::rebuildModel);
+        QTimer::singleShot(0, this, [this]() {
+            bool refreshLockState = false;
+            this->rebuildModel(refreshLockState);
+        });
     }
 }
 
-void LayerTreeModel::rebuildModel()
+void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
 {
     _rebuildOnIdlePending = false;
     _lastAskedAnonLayerNameSinceRebuild = 0;
@@ -345,6 +348,11 @@ void LayerTreeModel::rebuildModel()
             rootLayer, LayerType::RootLayer, "", &incomingLayers, sharedStage, &sharedLayers));
 
         updateTargetLayer(InRebuildModel::Yes);
+
+        if (refreshLockState) {
+            bool refreshSubLayers = true;
+            _sessionState->commandHook()->refreshLayerSystemLock(rootLayer, refreshSubLayers);
+        }
     }
 
     endResetModel();
@@ -425,7 +433,11 @@ void LayerTreeModel::usd_layerDirtinessChanged(
 }
 
 // called from SessionState::currentStageChangedSignal
-void LayerTreeModel::sessionStageChanged() { rebuildModel(); }
+void LayerTreeModel::sessionStageChanged()
+{
+    bool refreshLockState = true;
+    rebuildModel(refreshLockState);
+}
 
 // called from SessionState::autoHideSessionLayerSignal
 void LayerTreeModel::autoHideSessionLayerChanged() { rebuildModelOnIdle(); }

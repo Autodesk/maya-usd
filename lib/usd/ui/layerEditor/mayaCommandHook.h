@@ -66,6 +66,10 @@ public:
     // lock, system-lock or unlock the given layer
     void lockSubLayer(UsdLayer usdLayer, MayaUsd::LayerLockType lockState) override;
 
+    // Checks if the file layer or its sublayers are accessible on disk, and updates the system-lock
+    // status.
+    void refreshLayerSystemLock(UsdLayer usdLayer, bool refreshSubLayers = false) override;
+
     // starts a complex undo operation in the host app. Please use UndoContext class to safely
     // open/close
     void openUndoBracket(const QString& name) override;
@@ -89,6 +93,10 @@ public:
 
 protected:
     std::string proxyShapePath();
+
+    // Checks if the file layer or its sublayers are accessible on disk, and updates the system-lock
+    // status.
+    void _refreshLayerSystemLock(UsdLayer usdLayer) override;
 
     std::string executeMel(const std::string& commandString);
     void        executePython(const std::string& commandString);

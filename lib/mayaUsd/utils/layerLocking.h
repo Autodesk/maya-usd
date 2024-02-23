@@ -66,7 +66,7 @@ namespace MAYAUSD_NS_DEF {
 
 enum LayerLockType
 {
-    LayerLock_Unlocked,
+    LayerLock_Unlocked = 0,
     LayerLock_Locked,
     LayerLock_SystemLocked
 };

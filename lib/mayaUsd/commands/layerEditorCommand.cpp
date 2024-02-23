@@ -19,8 +19,10 @@
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/utils/layerLocking.h>
 #include <mayaUsd/utils/layerMuting.h>
+#include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/query.h>
 #include <mayaUsd/utils/stageCache.h>
+#include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
 #include <usdUfe/ufe/Utils.h>
@@ -29,6 +31,8 @@
 
 #include <maya/MArgList.h>
 #include <maya/MArgParser.h>
+#include <maya/MGlobal.h>
+#include <maya/MString.h>
 #include <maya/MStringArray.h>
 #include <maya/MSyntax.h>
 #include <ufe/globalSelection.h>
@@ -60,6 +64,8 @@ const char kMuteLayerFlag[] = "mt";
 const char kMuteLayerFlagL[] = "muteLayer";
 const char kLockLayerFlag[] = "lk";
 const char kLockLayerFlagL[] = "lockLayer";
+const char kRefreshSystemLockFlag[] = "rl";
+const char kRefreshSystemLockFlagL[] = "refreshSystemLock";
 
 } // namespace
 
@@ -77,7 +83,8 @@ enum class CmdId
     kClearLayer,
     kAddAnonLayer,
     kMuteLayer,
-    kLockLayer
+    kLockLayer,
+    kRefreshSystemLock
 };
 
 class BaseCmd
@@ -875,6 +882,110 @@ private:
     Ufe::Selection _savedSn;
 };
 
+class RefreshSystemLockLayer : public BaseCmd
+{
+public:
+    RefreshSystemLockLayer()
+        : BaseCmd(CmdId::kRefreshSystemLock)
+    {
+    }
+
+    bool doIt(SdfLayerHandle layer) override
+    {
+        auto stage = getStage();
+        if (!stage)
+            return false;
+
+        if (_refreshSubLayers) {
+            // If refreshSubLayers is True, we attempt to refresh the system lock status of all
+            // layers under the given layer. This is specially useful when reloading a stage.
+            bool includeTopLayer = true;
+            auto allLayers = MayaUsd::getAllSublayerRefs(layer, includeTopLayer);
+            for (auto layerIt : allLayers) {
+                _refreshLayerSystemLock(layerIt);
+            }
+        } else {
+            // Only check and refresh the system lock status of the current layer.
+            _refreshLayerSystemLock(layer);
+        }
+
+        return true;
+    }
+
+    // The command itself doesn't retain its state. However, the underlying logic contains commands
+    // that are undoable.
+    bool undoIt(SdfLayerHandle layer) override { return true; }
+
+    std::string _proxyShapePath;
+    bool        _refreshSubLayers = false;
+
+private:
+    std::string _quote(const std::string& string)
+    {
+        return std::string(" \"") + string + std::string("\"");
+    }
+
+    MString _executeMel(const std::string& commandString)
+    {
+        // executes maya command with display and undo set to true so that it logs
+        MStringArray result;
+        MGlobal::executeCommand(
+            MString(commandString.c_str()), result, /*display*/ true, /*undo*/ true);
+        if (result.length() > 0)
+            return result[0];
+        else
+            return "";
+    }
+    // Checks if the file layer or its sublayers are accessible on disk, and updates the system-lock
+    // status.
+    void _refreshLayerSystemLock(SdfLayerHandle usdLayer)
+    {
+        // Anonymous layers do not need to be checked.
+        if (usdLayer && !usdLayer->IsAnonymous()) {
+            // Check if the layer's write permissions have changed.
+            std::string assetPath = usdLayer->GetResolvedPath();
+            std::replace(assetPath.begin(), assetPath.end(), '\\', '/');
+
+            if (!assetPath.empty()) {
+                MString commandString;
+                commandString.format("filetest -w \"^1s\"", MString(assetPath.c_str()));
+                MIntArray result;
+                // filetest is NOT undoable
+                MGlobal::executeCommand(commandString, result, /*display*/ false, /*undo*/ false);
+                if (result.length() > 0) {
+
+                    if (result[0] == 1 && MayaUsd::isLayerSystemLocked(usdLayer)) {
+                        // If the file has write permissions and the layer is currently
+                        // system-locked: Unlock the layer
+                        _lockLayer(usdLayer, MayaUsd::LayerLockType::LayerLock_Unlocked);
+                    } else if (result[0] == 0 && !MayaUsd::isLayerSystemLocked(usdLayer)) {
+                        // If the file doesn't have write permissions and the layer is currently not
+                        // system-locked: System-lock the layer
+                        _lockLayer(usdLayer, MayaUsd::LayerLockType::LayerLock_SystemLocked);
+                    }
+                }
+            }
+        }
+    }
+
+    void _lockLayer(SdfLayerHandle usdLayer, MayaUsd::LayerLockType lockState)
+    {
+        std::string cmd;
+        cmd = "mayaUsdLayerEditor -edit -lockLayer ";
+        cmd += std::to_string(lockState);
+        cmd += _quote(_proxyShapePath.c_str());
+        cmd += _quote(usdLayer->GetIdentifier());
+        MGlobal::executeCommand(MString(cmd.c_str()), /*display*/ true, /*undo*/ true);
+    }
+
+    UsdStageWeakPtr getStage()
+    {
+        auto prim = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
+        auto stage = prim.GetStage();
+        return stage;
+    }
+};
+
 // We assume the indexes given to the command are the original indexes
 // of the layers. Since each command is executed individually and in
 // order, each one may affect the index of subsequent commands. We
@@ -963,9 +1074,13 @@ MSyntax LayerEditorCommand::createSyntax()
     // parameter: new layer name
     syntax.addFlag(kAddAnonSublayerFlag, kAddAnonSublayerFlagL, MSyntax::kString);
     syntax.makeFlagMultiUse(kAddAnonSublayerFlag);
-    // paramter: proxy shape name
+    // parameter: proxy shape name
     syntax.addFlag(kMuteLayerFlag, kMuteLayerFlagL, MSyntax::kBoolean, MSyntax::kString);
     syntax.addFlag(kLockLayerFlag, kLockLayerFlagL, MSyntax::kLong, MSyntax::kString);
+    // parameter 1: proxy shape name
+    // parameter 2: refresh sub layers
+    syntax.addFlag(
+        kRefreshSystemLockFlag, kRefreshSystemLockFlagL, MSyntax::kString, MSyntax::kBoolean);
 
     return syntax;
 }
@@ -1127,6 +1242,24 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
             cmd->_lockIt = lockValue == 1 ? true : false;
             cmd->_systemLock = lockValue == 2 ? true : false;
             cmd->_proxyShapePath = proxyShapeName.asChar();
+            _subCommands.push_back(std::move(cmd));
+        }
+        if (argParser.isFlagSet(kRefreshSystemLockFlag)) {
+            MString proxyShapeName;
+            argParser.getFlagArgument(kRefreshSystemLockFlag, 0, proxyShapeName);
+            bool refreshSubLayers = true;
+            argParser.getFlagArgument(kRefreshSystemLockFlag, 1, refreshSubLayers);
+
+            auto prim = UsdMayaQuery::GetPrim(proxyShapeName.asChar());
+            if (prim == UsdPrim()) {
+                displayError(
+                    MString("Invalid proxy shape \"") + MString(proxyShapeName.asChar()) + "\"");
+                return MS::kInvalidParameter;
+            }
+
+            auto cmd = std::make_shared<Impl::RefreshSystemLockLayer>();
+            cmd->_proxyShapePath = proxyShapeName.asChar();
+            cmd->_refreshSubLayers = refreshSubLayers;
             _subCommands.push_back(std::move(cmd));
         }
     }
