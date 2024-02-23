@@ -106,16 +106,16 @@ protected:
                                    DPIScale(QPointF(5.0, 13.0)),
                                    DPIScale(QPointF(0.0, 18.0)) };
     // action icon area
-    const int ACTION_BORDER = DPIScale(2);
+    const int ACTION_BORDER = DPIScale(1);
     const int ICON_WIDTH = DPIScale(20);
     const int ACTION_WIDTH = ICON_WIDTH + (2 * ACTION_BORDER);
     const int WARNING_ICON_WIDTH = DPIScale(11);
-    const int ICON_TOP_OFFSET = DPIScale(4);
+    const int ICON_TOP_OFFSET = DPIScale(1);
 
     const int    CHECK_MARK_AREA_WIDTH = DPIScale(28);
     const int    TEXT_LEFT_OFFSET = (ARROW_AREA_WIDTH + CHECK_MARK_AREA_WIDTH);
     const int    TEXT_RIGHT_OFFSET = DPIScale(36);
-    const int    HIGHLIGHTED_FILL_OFFSET = DPIScale(1);
+    const int    HIGHLIGHTED_FILL_OFFSET = DPIScale(0);
     const double DISABLED_OPACITY = 0.6;
     QPixmap      DISABLED_BACKGROUND_IMAGE;
     QPixmap      DISABLED_HIGHLIGHT_IMAGE;
@@ -128,6 +128,7 @@ protected:
         QPainter*     painter,
         QRectC        rect,
         Item          item,
+        int           itemIndex,
         bool          isHighlighted,
         const QColor& highlightColor) const;
     void paint_drawArrow(QPainter* painter, QRectC rect, Item item) const;
@@ -140,7 +141,6 @@ protected:
         const QColor&   highlightColor) const;
     void paint_ActionIcons(QPainter* painter, QRectC rect, Item item, const QColor& highlightColor)
         const;
-    void paint_drawToolbarFrame(QPainter* painter, QRectC rect, int iconLocation) const;
     void paint_drawOneAction(
         QPainter*              painter,
         int                    left,

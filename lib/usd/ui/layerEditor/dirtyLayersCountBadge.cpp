@@ -60,16 +60,12 @@ void DirtyLayersCountBadge::paintEvent(QPaintEvent* event)
         painter.setBrush(QBrush(QColor(HIG_YELLOW)));
 
         int   size = DPIScale(14);
-        int   buttonRightEdge = DPIScale(16);
-        QRect drawRect(0, 0, size, size);
+        int   topPos = (thisRect.height() - size) / 2;
+        QRect drawRect(0, topPos, size, size);
         int   charLen = textToDraw.length();
-        int   extraWidth = (charLen - 1) * DPIScale(6);
+        int   extraWidth = (charLen - 1) * DPIScale(4);
         drawRect.adjust(0, 0, extraWidth, 0);
-
-        drawRect.moveTopLeft(QPoint(buttonRightEdge, 0));
-        if (drawRect.right() >= thisRect.right()) {
-            drawRect.moveTopRight(thisRect.topRight());
-        }
+        drawRect.moveRight(thisRect.right());
 
         painter.drawRoundedRect(drawRect, size / 2.0, size / 2.0);
 

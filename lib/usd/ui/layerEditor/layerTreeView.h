@@ -108,6 +108,8 @@ public:
     virtual void leaveEvent(QEvent* event) override;
 
 protected:
+    void updateMouseCursor();
+
     // slot:
     void onModelAboutToBeReset();
     void onModelReset();

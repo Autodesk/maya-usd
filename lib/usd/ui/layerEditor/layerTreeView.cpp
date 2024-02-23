@@ -23,8 +23,10 @@
 #include "stringResources.h"
 
 #include <maya/MGlobal.h>
+#include <maya/MQtUtil.h>
 
 #include <QtGui/QColor>
+#include <QtGui/QCursor>
 #include <QtWidgets/QMenu>
 
 using namespace UsdLayerEditor;
@@ -83,6 +85,7 @@ LayerTreeView::LayerTreeView(SessionState* in_sessionState, QWidget* in_parent)
     setAcceptDrops(true);
     setDropIndicatorShown(true);
     setDragDropMode(QAbstractItemView::InternalMove);
+    updateMouseCursor();
 
     // custom row drawing
     _delegate = new LayerTreeItemDelegate(this);
@@ -455,10 +458,23 @@ void LayerTreeView::mousePressEvent(QMouseEvent* event)
     PARENT_CLASS::mousePressEvent(event);
 }
 
+void LayerTreeView::updateMouseCursor()
+{
+    // Note: special mouse cursor taken from Maya resources.
+    QPixmap pixmap(":/rmbMenu.png");
+    QSize scaledSize = QSize(MQtUtil::dpiScale(pixmap.width()), MQtUtil::dpiScale(pixmap.height()));
+    QPixmap scaledPixmap
+        = pixmap.scaled(scaledSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+
+    const int hitX = MQtUtil::dpiScale(11);
+    const int hitY = MQtUtil::dpiScale(9);
+
+    setCursor(QCursor(scaledPixmap, hitX, hitY));
+}
+
 // support for renderSetup-like action button API
 void LayerTreeView::mouseMoveEvent(QMouseEvent* event)
 {
-
     // dirty the tree view so it will repaint when mouse is over it
     // this is needed to change the icons when hovered over them
     _delegate->clearLastHitAction();
