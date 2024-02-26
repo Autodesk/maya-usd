@@ -323,7 +323,7 @@ e.g Boost::filesystem, Boost::system, GTest::GTest
 
 ## Compiler features/flags/definitions
 1. Setting or appending compiler flags/definitions via CMAKE_CXX_FLAGS is NOT allowed.
-2. Any front-end flags (e.g. -Wno-xxx, cxx_std_xx) should be added to cmake/compiler_config.cmake
+2. Any front-end flags (e.g. -Wno-xxx, cxx_std_xx) should be added to cmake/compiler_config.cmake.
 3. All current targets, as well as newly added targets, must use mayaUsd_compile_config function in order to get the project-wide flags/definitions. These flags/definitions are added privately via target_compile_features, target_compile_options, target_compile_definitions. Individual targets are still allowed to call target_compile_definitions, target_compile_features individually for any additional flags/definitions by providing appropriate PUBLIC/INTERFACE/PRIVATE keywords. For example:
 ```cmake
 # -----------------------------------------------------------------------------
@@ -348,7 +348,7 @@ Use provided mayaUsd_xxx_rpath() utility functions to handle run-time search pat
 3. For targets that need to link against google test library. Simply add GTest::GTest to target_link_libraries. You don't need to add any Gtest include directory this is done automatically for you.
 
 ## Naming Conventions
- 1. CMake commands are case-insensitive. Use lower_case for CMake functions and macros, Use upper_case for CMake variables
+ 1. CMake commands are case-insensitive. Use lower_case for CMake functions and macros, use upper_case for CMake variables.
  ```cmake
 # e.g cmake functions
 add_subdirectory(schemas)
@@ -360,18 +360,18 @@ ${CMAKE_SYSTEM_NAME}
 ${CMAKE_INSTALL_PREFIX}
 ```
 
- 2. Use upper_case for Option names
+ 2. Use upper_case for Option names.
 ```cmake
 # e.g for options names
 option(BUILD_USDMAYA_SCHEMAS "Build optional schemas." ON)
 option(BUILD_TESTS "Build tests." ON)
-option(BUILD_HDMAYA "Build the Maya-To-Hydra plugin and scene delegate." ON)
+option(BUILD_STRICT_MODE "Enforce all warnings as errors." ON)
 ```
 
-3.  Use upper_case for Custom variables
+3.  Use upper_case for Custom variables.
 ```cmake
 # e.g for options names
-set(QT_VERSION "5.6")
+set(BUILD_WITH_PYTHON_3_VERSION 3.7 CACHE STRING "The version of Python 3 to build with")
  
 set(HEADERS
     jobArgs.h
@@ -385,7 +385,7 @@ set(RESOURCES_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/lib/usd/${TARGET_NAME}/resour
 set(USDTRANSACTION_PYTHON_LIBRARY_LOCATION ${AL_INSTALL_PREFIX}/lib/python/AL/usd/transaction)
 ```
 
-4. Respect third-party variables ( don't change them )
+4. Respect third-party variables (don't change them).
 ```cmake
 # e.g boost
 set(BOOST_ROOT ${pxr_usd_location})
