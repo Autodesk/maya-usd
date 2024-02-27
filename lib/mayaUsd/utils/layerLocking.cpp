@@ -30,15 +30,19 @@ namespace MAYAUSD_NS_DEF {
 
 MStatus copyLayerLockingToAttribute(MayaUsdProxyShapeBase* proxyShape)
 {
-    LockedLayers& lockedLayers = getLockedLayers();
+    if (proxyShape != nullptr) {
+        LockedLayers& lockedLayers = getLockedLayers();
 
-    std::vector<std::string> toAttribute;
-    toAttribute.reserve(lockedLayers.size());
+        std::vector<std::string> toAttribute;
+        toAttribute.reserve(lockedLayers.size());
 
-    for (auto layer : lockedLayers) {
-        toAttribute.emplace_back(layer->GetIdentifier());
+        for (auto layer : lockedLayers) {
+            toAttribute.emplace_back(layer->GetIdentifier());
+        }
+        return proxyShape->setLockedLayers(toAttribute);
+    } else {
+        return MStatus::kFailure;
     }
-    return proxyShape->setLockedLayers(toAttribute);
 }
 
 MStatus copyLayerLockingFromAttribute(

@@ -75,12 +75,6 @@ namespace MAYAUSD_NS_DEF {
  * attributes.
  */
 MAYAUSD_CORE_PUBLIC
-// MStatus
-// copyLayerLockingToAttribute(const PXR_NS::UsdStage& stage, MayaUsdProxyShapeBase& proxyShape);
-
-// MStatus
-// copyLayerLockingToAttribute(MayaUsdProxyShapeBase& proxyShape);
-
 MStatus copyLayerLockingToAttribute(MayaUsdProxyShapeBase* proxyShape);
 
 /*! Map the original layer name when the scene was saved to the current layer name.
@@ -113,8 +107,13 @@ void lockLayer(
     bool                          updateProxyShapeAttr = true);
 
 using LockedLayers = std::set<PXR_NS::SdfLayerRefPtr>;
+
+/*! \brief gets the list of locked layers
+ */
 MAYAUSD_CORE_PUBLIC LockedLayers& getLockedLayers();
 
+/*! \brief gets the list of system-locked layers
+ */
 MAYAUSD_CORE_PUBLIC LockedLayers& getSystemLockedLayers();
 
 /*! \brief Adds a layer to the lock list
