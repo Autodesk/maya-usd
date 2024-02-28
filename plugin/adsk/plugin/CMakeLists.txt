@@ -33,6 +33,7 @@ target_sources(${TARGET_NAME}
         exportTranslator.cpp
         ProxyShape.cpp
         ProxyShapeListener.cpp
+        mayaUsdInfoCommand.cpp
 )
 
 if (CMAKE_UFE_V3_FEATURES_AVAILABLE)
