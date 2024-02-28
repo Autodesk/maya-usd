@@ -304,6 +304,15 @@ MayaUsdProxyShapeBase* getProxyShape(const Ufe::Path& path)
     return UsdStageMap::getInstance().proxyShapeNode(path);
 }
 
+SdfPath getPrimPath(const Ufe::Path& path)
+{
+    if (auto proxyShape = getProxyShape(path)) {
+        return proxyShape->getPrimPath();
+    }
+    // No proxy shape.  Just default to the empty path.
+    return SdfPath::AbsoluteRootPath();
+}
+
 UsdTimeCode getTime(const Ufe::Path& path)
 {
     // Path should not be empty.

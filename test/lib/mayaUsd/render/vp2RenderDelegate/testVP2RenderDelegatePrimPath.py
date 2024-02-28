@@ -66,6 +66,8 @@ class testVP2RenderDelegatePrimPath(imageUtils.ImageDiffingTestCase):
         return ufeItem
 
     def testPrimPath(self):
+        # Start off with nothing
+        self.assertSnapshotClose('empty.png')
 
         def testSinglePrim(primPath, imageName):
             cmds.setAttr( 'stageShape1.primPath', primPath, type="string")
@@ -93,11 +95,10 @@ class testVP2RenderDelegatePrimPath(imageUtils.ImageDiffingTestCase):
         cmds.setAttr( 'stageShape1.primPath', "", type="string")
         self.assertSnapshotClose('final.png')
 
-        # Test with a invalid prime path
-        # Nothing should change in the viewport
+        # Test with a invalid prim path. We should get nothing
         globalSelection.clear()
         cmds.setAttr( 'stageShape1.primPath', "/invalidPrim", type="string")
-        self.assertSnapshotClose('final.png')
+        self.assertSnapshotClose('empty.png')
 
 
 if __name__ == '__main__':

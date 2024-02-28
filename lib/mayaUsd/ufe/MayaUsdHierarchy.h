@@ -58,9 +58,10 @@ protected:
 //! UsdRootChildHierarchy). These two classes don't share a common base class
 //! but they both override UsdHierarchy::childrenHook() with the same code.
 bool mayaUsdHierarchyChildrenHook(
-    const PXR_NS::UsdPrim& child,
-    Ufe::SceneItemList&    children,
-    bool                   filterInactive);
+    const Ufe::SceneItem::Ptr& item,
+    const PXR_NS::UsdPrim&     child,
+    Ufe::SceneItemList&        children,
+    bool                       filterInactive);
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

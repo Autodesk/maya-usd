@@ -1271,16 +1271,17 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
     }
 
     // Get the primPath
-    const MString primPath = dataBlock.inputValue(primPathAttr, &retValue).asString();
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    const SdfPath primPath = _GetPrimPath(dataBlock);
+    if (primPath.IsEmpty()) {
+        return MS::kFailure;
+    }
 
     // Get the prim
-    // If no primPath string specified, then use the pseudo-root.
-    UsdPrim     usdPrim;
-    std::string primPathStr(primPath.asChar(), primPath.length());
-    if (!primPathStr.empty()) {
-        SdfPath primPath(primPathStr);
-
+    UsdPrim usdPrim;
+    if (primPath == SdfPath::AbsoluteRootPath()) {
+        usdPrim = usdStage->GetPseudoRoot();
+    }
+    else {
         // Validate assumption: primPath is descendent of passed-in stage primPath
         //   Make sure that the primPath is a child of the passed in stage's primpath
         if (primPath.HasPrefix(inData->primPath)) {
@@ -1293,8 +1294,6 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
                 primPath.GetText(),
                 inData->primPath.GetText());
         }
-    } else {
-        usdPrim = usdStage->GetPseudoRoot();
     }
 
     // Create the output outData
@@ -1307,7 +1306,7 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
 
     // Set the outUsdStageData
     stageData->stage = usdStage;
-    stageData->primPath = usdPrim ? usdPrim.GetPath() : usdStage->GetPseudoRoot().GetPath();
+    stageData->primPath = primPath;
 
     //
     // set the data on the output plug
@@ -1868,6 +1867,11 @@ void MayaUsdProxyShapeBase::getDrawPurposeToggles(
     _GetDrawPurposeToggles(dataBlock, drawRenderPurpose, drawProxyPurpose, drawGuidePurpose);
 }
 
+SdfPath MayaUsdProxyShapeBase::getPrimPath() const
+{
+    return _GetPrimPath(const_cast<MayaUsdProxyShapeBase*>(this)->forceCache());
+}
+
 SdfPathVector MayaUsdProxyShapeBase::getExcludePrimPaths() const
 {
     return _GetExcludePrimPaths(const_cast<MayaUsdProxyShapeBase*>(this)->forceCache());
@@ -1876,6 +1880,26 @@ SdfPathVector MayaUsdProxyShapeBase::getExcludePrimPaths() const
 size_t MayaUsdProxyShapeBase::getExcludePrimPathsVersion() const
 {
     return _excludePrimPathsVersion;
+}
+
+SdfPath MayaUsdProxyShapeBase::_GetPrimPath(MDataBlock dataBlock) const
+{
+    MStatus status = MS::kFailure;
+    const MString primPathStr = dataBlock.inputValue(primPathAttr, &status).asString();
+    if (!status) {
+        return SdfPath::EmptyPath();
+    }
+    
+    if (primPathStr.isEmpty()) {
+        return SdfPath::AbsoluteRootPath();
+    } else {
+        const SdfPath path(primPathStr.asChar());
+        if (path.IsAbsoluteRootOrPrimPath()) {
+            return path;
+        } else {
+            return SdfPath::EmptyPath();
+        }
+    }
 }
 
 SdfPathVector MayaUsdProxyShapeBase::_GetExcludePrimPaths(MDataBlock dataBlock) const

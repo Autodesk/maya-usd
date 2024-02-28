@@ -44,7 +44,7 @@ bool MayaUsdRootChildHierarchy::childrenHook(
     Ufe::SceneItemList&    children,
     bool                   filterInactive) const
 {
-    return mayaUsdHierarchyChildrenHook(child, children, filterInactive);
+    return mayaUsdHierarchyChildrenHook(sceneItem(), child, children, filterInactive);
 }
 
 } // namespace ufe
