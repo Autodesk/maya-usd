@@ -27,6 +27,7 @@
 #include <mayaUsd/undo/OpUndoItemMuting.h>
 #include <mayaUsd/utils/customLayerData.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
+#include <mayaUsd/utils/layerLocking.h>
 #include <mayaUsd/utils/layerMuting.h>
 #include <mayaUsd/utils/loadRules.h>
 #include <mayaUsd/utils/query.h>
@@ -123,6 +124,7 @@ const std::string  kAnonymousLayerName { "anonymousLayer1" };
 const std::string  kSessionLayerPostfix { "-session" };
 const std::string  kUnsharedStageLayerName { "unshareableLayer" };
 static const char* kMutedLayersAttrName = "mutedLayers";
+static const char* kLockedLayersAttrName = "lockedLayers";
 
 // ========================================================
 
@@ -154,6 +156,7 @@ MObject MayaUsdProxyShapeBase::drawGuidePurposeAttr;
 MObject MayaUsdProxyShapeBase::sessionLayerNameAttr;
 MObject MayaUsdProxyShapeBase::rootLayerNameAttr;
 MObject MayaUsdProxyShapeBase::mutedLayersAttr;
+MObject MayaUsdProxyShapeBase::lockedLayersAttr;
 // Change counter attributes
 MObject MayaUsdProxyShapeBase::updateCounterAttr;
 MObject MayaUsdProxyShapeBase::resyncCounterAttr;
@@ -448,6 +451,15 @@ MStatus MayaUsdProxyShapeBase::initialize()
     typedAttrFn.setReadable(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = addAttribute(mutedLayersAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    lockedLayersAttr = typedAttrFn.create(
+        kLockedLayersAttrName, "lockla", MFnData::kStringArray, MObject::kNullObj, &retValue);
+    typedAttrFn.setStorable(true);
+    typedAttrFn.setWritable(true);
+    typedAttrFn.setReadable(true);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = addAttribute(lockedLayersAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     //
@@ -840,7 +852,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
     //       initial load set. Given that not loading payloads is the "lightest" version,
     //       that is what we request.
     //
-    //       Furthermore, for any statge that had its payload loaded or unloaded by the user
+    //       Furthermore, for any stage that had its payload loaded or unloaded by the user
     //       we keep the detailed load and unload state of all prims, so we would use the
     //       load-none mode anyway and apply the detailed rules afterward, and this is
     //       probably the common case for stages that actually contain payloads.
@@ -1039,7 +1051,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
     if (sharableStage) {
         // When we switch out of unshared we need to save this data so when the user toggles back
         // they get the same state they were in, but in order to this we have to keep the layers in
-        // the heirharchy alive since the stage is gone and so they will get removed
+        // the hierarchy alive since the stage is gone and so they will get removed
         if (_unsharedStageRootLayer) {
             _unsharedStageRootSublayers.clear();
             auto subLayers = getAllSublayerRefs(_unsharedStageRootLayer);
@@ -1062,7 +1074,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         } else {
 
             // Check if we need to remap the source
-            // At the moment we remap the old root with the new root  and we assumne that the root
+            // At the moment we remap the old root with the new root  and we assume that the root
             // is the first item in the referenced layers
             auto referencedLayers = MayaUsd::CustomLayerData::getStringArray(
                 _unsharedStageRootLayer, MayaUsdMetadata->ReferencedLayers);
@@ -1120,17 +1132,21 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         }
 
         primPath = finalUsdStage->GetPseudoRoot().GetPath();
+
         copyLayerMutingFromAttribute(*this, layerNameMap, *finalUsdStage);
+
+        copyLayerLockingFromAttribute(*this, layerNameMap, *finalUsdStage);
+
         if (!_targetLayer)
             _targetLayer = getTargetLayerFromAttribute(*this, *finalUsdStage);
         updateShareMode(sharedUsdStage, unsharedUsdStage, loadSet);
         // Note: setting the target layer must be done after updateShareMode()
         //       because the session layer changes when switching between shared
-        //       and ushared and if the edit target was on the session layer,
+        //       and unshared and if the edit target was on the session layer,
         //      then the edit target is also updated by updateShareMode().
         if (_targetLayer) {
             // Note: it is possible the cached edit target layer is no longer valid,
-            //       for example if it was deleted. Tryig to set an invalid layer would
+            //       for example if it was deleted. Trying to set an invalid layer would
             //       throw an exception.
             if (isLayerInStage(_targetLayer, *finalUsdStage)) {
                 finalUsdStage->SetEditTarget(_targetLayer);
@@ -1281,7 +1297,7 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
     if (!primPathStr.empty()) {
         SdfPath primPath(primPathStr);
 
-        // Validate assumption: primPath is descendent of passed-in stage primPath
+        // Validate assumption: primPath is descendant of passed-in stage primPath
         //   Make sure that the primPath is a child of the passed in stage's primpath
         if (primPath.HasPrefix(inData->primPath)) {
             usdPrim = usdStage->GetPrimAtPath(primPath);
@@ -1811,6 +1827,29 @@ MStatus MayaUsdProxyShapeBase::setMutedLayers(const std::vector<std::string>& mu
     VtStringArray mutedArray(muted.begin(), muted.end());
     return UsdMayaReadUtil::SetMayaAttr(mutedLayersPlug, VtValue(mutedArray)) ? MStatus::kSuccess
                                                                               : MStatus::kFailure;
+}
+
+std::vector<std::string> MayaUsdProxyShapeBase::getLockedLayers() const
+{
+    MStatus           status;
+    MFnDependencyNode depNode(thisMObject(), &status);
+    CHECK_MSTATUS_AND_RETURN(status, std::vector<std::string>());
+
+    std::vector<std::string> locked;
+    UsdMayaWriteUtil::ReadMayaAttribute(depNode, kLockedLayersAttrName, &locked);
+    return locked;
+}
+
+MStatus MayaUsdProxyShapeBase::setLockedLayers(const std::vector<std::string>& locked)
+{
+    MStatus           status;
+    MFnDependencyNode depNode(thisMObject(), &status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+
+    MPlug         lockedLayersPlug = depNode.findPlug(lockedLayersAttr, true);
+    VtStringArray lockedArray(locked.begin(), locked.end());
+    return UsdMayaReadUtil::SetMayaAttr(lockedLayersPlug, VtValue(lockedArray)) ? MStatus::kSuccess
+                                                                                : MStatus::kFailure;
 }
 
 int MayaUsdProxyShapeBase::getComplexity() const
