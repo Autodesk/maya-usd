@@ -94,10 +94,6 @@ public:
 protected:
     std::string proxyShapePath();
 
-    // Checks if the file layer or its sublayers are accessible on disk, and updates the system-lock
-    // status.
-    void _refreshLayerSystemLock(UsdLayer usdLayer) override;
-
     std::string executeMel(const std::string& commandString);
     void        executePython(const std::string& commandString);
 

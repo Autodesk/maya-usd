@@ -216,46 +216,12 @@ void MayaCommandHook::lockSubLayer(UsdLayer usdLayer, MayaUsd::LayerLockType loc
 
 void MayaCommandHook::refreshLayerSystemLock(UsdLayer usdLayer, bool refreshSubLayers /*= false*/)
 {
-    if (refreshSubLayers) {
-        bool includeTopLayer = true;
-        auto allLayers = MayaUsd::getAllSublayerRefs(usdLayer, includeTopLayer);
-        for (auto layer : allLayers) {
-            _refreshLayerSystemLock(layer);
-        }
-    } else {
-        _refreshLayerSystemLock(usdLayer);
-    }
-}
-
-void MayaCommandHook::_refreshLayerSystemLock(UsdLayer usdLayer)
-{
-    // Anonymous layers do not need to be checked.
-    if (usdLayer && !usdLayer->IsAnonymous()) {
-        // Check if the layer's write permissions have changed.
-        std::string assetPath = usdLayer->GetResolvedPath();
-        std::replace(assetPath.begin(), assetPath.end(), '\\', '/');
-
-        if (!assetPath.empty()) {
-            MString commandString;
-            // -w checks if file exists and is writable.
-            commandString.format("filetest -w \"^1s\"", MString(assetPath.c_str()));
-            MIntArray result;
-            // filetest is NOT undoable
-            MGlobal::executeCommand(commandString, result, /*display*/ false, /*undo*/ false);
-            if (result.length() > 0) {
-
-                if (result[0] == 1 && MayaUsd::isLayerSystemLocked(usdLayer)) {
-                    // If the file has write permissions and the layer is currently system-locked:
-                    // Unlock the layer
-                    lockSubLayer(usdLayer, MayaUsd::LayerLockType::LayerLock_Unlocked);
-                } else if (result[0] == 0 && !MayaUsd::isLayerSystemLocked(usdLayer)) {
-                    // If the file doesn't have write permissions and the layer is currently not
-                    // system-locked: System-lock the layer
-                    lockSubLayer(usdLayer, MayaUsd::LayerLockType::LayerLock_SystemLocked);
-                }
-            }
-        }
-    }
+    std::string cmd;
+    cmd = "mayaUsdLayerEditor -edit -refreshSystemLock ";
+    cmd += quote(proxyShapePath());
+    cmd += std::to_string(refreshSubLayers);
+    cmd += quote(usdLayer->GetIdentifier());
+    executeMel(cmd);
 }
 
 // Help menu callback

@@ -35,7 +35,7 @@ typedef PXR_NS::UsdStageRefPtr UsdStage;
 class SessionState;
 
 /**
- * @brief The Abstact Command Hook contains all the methods which are used to modify USD layers and
+ * @brief The Abstract Command Hook contains all the methods which are used to modify USD layers and
  * stages. These methods will be "hooked" by the MayaCommandHook derived class to call maya mel
  * commands to do the work.
  *
@@ -126,10 +126,6 @@ public:
 protected:
     virtual void executeDelayedCommands() = 0;
 
-    // Checks if the file layer is accessible on disk, and updates the system-lock status
-    // accordingly.
-    virtual void _refreshLayerSystemLock(UsdLayer usdLayer) = 0;
-
     SessionState* _sessionState;
     int           _delayCount { 0 };
 };
@@ -137,7 +133,7 @@ protected:
 /**
  * @brief When executing multiple commands, it may sometimes be necessary to delay.
  *        the execution until all commands are issued. For example, when processing
- *        multiple elements in the slection, but the command itself might change the
+ *        multiple elements in the selection, but the command itself might change the
  *        selection.
  */
 class DelayAbstractCommandHook
