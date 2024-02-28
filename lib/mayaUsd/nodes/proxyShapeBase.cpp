@@ -1281,7 +1281,7 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
     if (primPath == SdfPath::AbsoluteRootPath()) {
         usdPrim = usdStage->GetPseudoRoot();
     } else {
-        // Validate assumption: primPath is descendent of passed-in stage primPath
+        // Validate assumption: primPath is descendant of passed-in stage primPath
         //   Make sure that the primPath is a child of the passed in stage's primpath
         if (primPath.HasPrefix(inData->primPath)) {
             usdPrim = usdStage->GetPrimAtPath(primPath);
