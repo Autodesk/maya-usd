@@ -1280,8 +1280,7 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
     UsdPrim usdPrim;
     if (primPath == SdfPath::AbsoluteRootPath()) {
         usdPrim = usdStage->GetPseudoRoot();
-    }
-    else {
+    } else {
         // Validate assumption: primPath is descendent of passed-in stage primPath
         //   Make sure that the primPath is a child of the passed in stage's primpath
         if (primPath.HasPrefix(inData->primPath)) {
@@ -1884,12 +1883,12 @@ size_t MayaUsdProxyShapeBase::getExcludePrimPathsVersion() const
 
 SdfPath MayaUsdProxyShapeBase::_GetPrimPath(MDataBlock dataBlock) const
 {
-    MStatus status = MS::kFailure;
+    MStatus       status = MS::kFailure;
     const MString primPathStr = dataBlock.inputValue(primPathAttr, &status).asString();
     if (!status) {
         return SdfPath::EmptyPath();
     }
-    
+
     if (primPathStr.isEmpty()) {
         return SdfPath::AbsoluteRootPath();
     } else {

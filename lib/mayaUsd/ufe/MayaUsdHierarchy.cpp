@@ -64,10 +64,10 @@ bool mayaUsdHierarchyChildrenHook(
     }
 
     const PXR_NS::SdfPath& childPath = child.GetPath();
-    const bool     isAncestorOrDescendant
+    const bool             isAncestorOrDescendant
         = childPath.HasPrefix(primPath) || primPath.HasPrefix(childPath);
     if (!isAncestorOrDescendant) {
-        // If it is not an ancestor or a descendent, we exclude it from the 
+        // If it is not an ancestor or a descendent, we exclude it from the
         // children list.
         return true;
     }
