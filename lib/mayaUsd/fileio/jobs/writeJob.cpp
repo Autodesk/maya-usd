@@ -618,7 +618,7 @@ TfToken UsdMaya_WriteJob::_WriteVariants(const UsdPrim& usdRootPrim)
 {
     // Some notes about the expected structure that this function will create:
 
-    // Suppose we have a maya scene, that, with no parentScope path, and
+    // Suppose we have a maya scene, that, with no rootPrim path, and
     // without renderLayerMode='modelingVariant', would give these prims:
     //
     //  /mayaRoot
@@ -626,7 +626,7 @@ TfToken UsdMaya_WriteJob::_WriteVariants(const UsdPrim& usdRootPrim)
     //  /mayaRoot/Geom/Cube1
     //  /mayaRoot/Geom/Cube2
     //
-    // If you have parentScope='foo', you would instead get:
+    // If you have rootPrim='foo', you would instead get:
     //
     //  /foo/mayaRoot
     //  /foo/mayaRoot/Geom
@@ -644,7 +644,7 @@ TfToken UsdMaya_WriteJob::_WriteVariants(const UsdPrim& usdRootPrim)
     //  /mayaRoot [reference to => /_BaseModel_]
     //     [variants w/ render layer overrides]
     //
-    // If you have both parentScope='foo' and renderLayerMode='modelingVariant',
+    // If you have both rootPrim='foo' and renderLayerMode='modelingVariant',
     // then you will get:
     //
     //  /_BaseModel_
@@ -660,7 +660,7 @@ TfToken UsdMaya_WriteJob::_WriteVariants(const UsdPrim& usdRootPrim)
     std::string defaultModelingVariant;
 
     SdfPath usdVariantRootPrimPath;
-    if (mJobCtx.mParentScopePath.IsEmpty()) {
+    if (mJobCtx.mRootPrimPath.IsEmpty()) {
         // Get the usdVariantRootPrimPath (optionally filter by renderLayer prefix)
         UsdMayaPrimWriterSharedPtr firstPrimWriterPtr = *mJobCtx.mMayaPrimWriterList.begin();
         std::string                firstPrimWriterPathStr(
@@ -673,9 +673,9 @@ TfToken UsdMaya_WriteJob::_WriteVariants(const UsdPrim& usdRootPrim)
             '_'); // replace namespace ":" with "_"
         usdVariantRootPrimPath = SdfPath(firstPrimWriterPathStr).GetPrefixes()[0];
     } else {
-        // If they passed a parentScope, then use that for our new top-level
+        // If they passed a rootPrim, then use that for our new top-level
         // variant-switcher prim
-        usdVariantRootPrimPath = mJobCtx.mParentScopePath;
+        usdVariantRootPrimPath = mJobCtx.mRootPrimPath;
     }
 
     // Create a new usdVariantRootPrim and reference the Base Model UsdRootPrim

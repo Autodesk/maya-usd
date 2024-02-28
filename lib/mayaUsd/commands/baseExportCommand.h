@@ -72,7 +72,9 @@ public:
     static constexpr auto kExportSkelsFlag = "skl";
     static constexpr auto kExportSkinFlag = "skn";
     static constexpr auto kExportBlendShapesFlag = "ebs";
-    static constexpr auto kParentScopeFlag = "psc";
+    static constexpr auto kParentScopeFlag = "psc"; // deprecated
+    static constexpr auto kRootPrimFlag = "rpm";
+    static constexpr auto kRootPrimTypeFlag = "rpt";
     static constexpr auto kRenderableOnlyFlag = "ro";
     static constexpr auto kDefaultCamerasFlag = "dc";
     static constexpr auto kRenderLayerModeFlag = "rlm";
