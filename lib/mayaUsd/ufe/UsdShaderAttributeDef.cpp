@@ -170,6 +170,13 @@ static const MetadataMap _metaMap = {
 Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
 {
     TF_DEV_AXIOM(fShaderAttributeDef);
+
+#if (UFE_PREVIEW_VERSION_NUM >= 6000)
+    if (key == Ufe::AttributeDef::kNativeType) {
+        return Ufe::Value(fShaderAttributeDef->GetType().GetString());
+    }
+#endif
+
     const NdrTokenMap& metadata = fShaderAttributeDef->GetMetadata();
     auto               it = metadata.find(TfToken(key));
     if (it != metadata.cend()) {
