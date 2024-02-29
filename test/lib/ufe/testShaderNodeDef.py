@@ -241,3 +241,25 @@ class ShaderNodeDefTestCase(unittest.TestCase):
         connections = connectionHandler.sourceConnections(newMaterialSceneItem)
         self.assertIsNotNone(connections)
         self.assertEqual(len(connections.allConnections()), 0)
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 6, 'NativeType metadata is only available in UFE v6 or greater')
+    def testNativeTypeMetadata(self):
+        type = "ND_constant_color3"
+        nodeDefHandler = self.getNodeDefHandler()
+        nodeDef = nodeDefHandler.definition(type)
+        self.assertIsNotNone(nodeDef)
+        valueInput = nodeDef.input("value")
+        self.assertIsNotNone(valueInput)
+        self.assertTrue(valueInput.hasMetadata(ufe.AttributeDef.kNativeType))
+        self.assertEqual(valueInput.type(), "ColorFloat3")
+        self.assertEqual(valueInput.getMetadata(ufe.AttributeDef.kNativeType), ufe.Value("color"))
+
+        type = "ND_surfacematerial"
+        nodeDef = nodeDefHandler.definition(type)
+        self.assertIsNotNone(nodeDef)
+        surfaceShaderInput = nodeDef.input("surfaceshader")
+        self.assertIsNotNone(surfaceShaderInput)
+        self.assertTrue(surfaceShaderInput.hasMetadata(ufe.AttributeDef.kNativeType))
+        self.assertEqual(surfaceShaderInput.type(), "Generic")
+        self.assertEqual(surfaceShaderInput.getMetadata(ufe.AttributeDef.kNativeType), ufe.Value("terminal"))
+
