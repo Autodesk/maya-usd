@@ -35,6 +35,7 @@
 #include <mayaUsd/utils/targetLayer.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
+#include <mayaUsd/utils/variantFallbacks.h>
 
 #include <usdUfe/utils/layers.h>
 
@@ -42,6 +43,7 @@
 #include <pxr/base/gf/range3d.h>
 #include <pxr/base/gf/ray.h>
 #include <pxr/base/gf/vec3d.h>
+#include <pxr/base/js/json.h>
 #include <pxr/base/tf/envSetting.h>
 #include <pxr/base/tf/fileUtils.h>
 #include <pxr/base/tf/hash.h>
@@ -53,6 +55,7 @@
 #include <pxr/base/trace/trace.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/pcp/types.h>
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
@@ -164,6 +167,7 @@ MObject MayaUsdProxyShapeBase::resyncCounterAttr;
 MObject MayaUsdProxyShapeBase::outTimeAttr;
 MObject MayaUsdProxyShapeBase::outStageDataAttr;
 MObject MayaUsdProxyShapeBase::outStageCacheIdAttr;
+MObject MayaUsdProxyShapeBase::variantFallbacksAttr;
 
 namespace {
 // utility function to extract the tag name from an anonymous layer.
@@ -380,6 +384,18 @@ MStatus MayaUsdProxyShapeBase::initialize()
     retValue = addAttribute(drawGuidePurposeAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
+    variantFallbacksAttr = typedAttrFn.create(
+        "variantFallbacks", "vfs", MFnData::kString, MObject::kNullObj, &retValue);
+    typedAttrFn.setReadable(true);
+    typedAttrFn.setWritable(true);
+    typedAttrFn.setConnectable(true);
+    typedAttrFn.setStorable(true);
+    typedAttrFn.setAffectsAppearance(true);
+    typedAttrFn.setInternal(true);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = addAttribute(variantFallbacksAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
     // outputs
     outTimeAttr = unitAttrFn.create("outTime", "otm", MFnUnitAttribute::kTime, 0.0, &retValue);
     unitAttrFn.setCached(false);
@@ -517,6 +533,9 @@ MStatus MayaUsdProxyShapeBase::initialize()
     retValue = attributeAffects(inStageDataCachedAttr, outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = attributeAffects(inStageDataCachedAttr, outStageCacheIdAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    retValue = attributeAffects(variantFallbacksAttr, outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     return retValue;
@@ -903,6 +922,10 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             // Calculate from USD filepath and primPath and variantKey
             //
 
+            // Get variant fallback from the proxy shape and set it as Global Variant fallbacks.
+            PcpVariantFallbackMap defaultVariantFallbacks;
+            PcpVariantFallbackMap fallbacks(updateVariantFallbacks(defaultVariantFallbacks, *this));
+
             // Get input attr values
             const MString file = dataBlock.inputValue(filePathAttr, &retValue).asString();
             CHECK_MSTATUS_AND_RETURN_IT(retValue);
@@ -1024,6 +1047,12 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                         targetSession ? sharedUsdStage->GetSessionLayer()
                                       : sharedUsdStage->GetRootLayer());
                 }
+            }
+            // Reset only if the global variant fallbacks has been modified
+            if (!fallbacks.empty()) {
+                saveVariantFallbacks(fallbacks, *this);
+                // Restore default value
+                UsdStage::SetGlobalVariantFallbacks(defaultVariantFallbacks);
             }
         }
     }

@@ -33,6 +33,7 @@ target_sources(${PROJECT_NAME}
         utilFileSystem.cpp
         utilSerialization.cpp
         variants.cpp
+        variantFallbacks.cpp
 )
 
 set(HEADERS
@@ -68,6 +69,7 @@ set(HEADERS
     utilFileSystem.h
     utilSerialization.h
     variants.h
+    variantFallbacks.h
 )
 
 set(PLUGINFO
