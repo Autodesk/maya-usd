@@ -13,29 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #pragma once
 
+#include <pxr/base/tf/debug.h>
 #include <pxr/pxr.h>
-#include <pxr/usd/usd/prim.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-// forward declare usd types
-class GfMatrix4d;
-class SdfPath;
-class SdfValueTypeName;
-class TfToken;
-class UsdAttribute;
-class UsdPrim;
-class UsdGeomCamera;
-class UsdLuxDistantLight;
-class UsdPrimCompositionQuery;
-class UsdPrimCompositionQueryArc;
-class UsdReferences;
-
+TF_DEBUG_CODES(ALUSDMAYA_INFO);
 PXR_NAMESPACE_CLOSE_SCOPE
-
-namespace MayaUsdUtils {
-typedef std::vector<PXR_NS::UsdPrim> UsdPrimVector;
-} // namespace MayaUsdUtils

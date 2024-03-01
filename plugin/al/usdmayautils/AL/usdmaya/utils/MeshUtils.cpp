@@ -17,11 +17,11 @@
 #include "AL/usdmaya/utils/MeshUtils.h"
 
 #include "AL/maya/utils/Utils.h"
+#include "AL/usdmaya/utils/DebugCodes.h"
 #include "AL/usdmaya/utils/DiffPrimVar.h"
 #include "AL/usdmaya/utils/Utils.h"
 
-#include <mayaUsdUtils/DebugCodes.h>
-#include <mayaUsdUtils/DiffCore.h>
+#include <usdUfe/utils/DiffCore.h>
 
 #include <pxr/usd/usdGeom/primvarsAPI.h>
 #include <pxr/usd/usdUtils/pipeline.h>
@@ -775,7 +775,7 @@ void MeshImportContext::applyColourSetData()
 
                     // Set colors
                     if (!fnMesh.setColors(colours, &colourSetName, representation)) {
-                        TF_DEBUG(MAYAUSDUTILS_INFO)
+                        TF_DEBUG(ALUSDMAYA_INFO)
                             .Msg(
                                 "Failed to set colours for colour set \"%s\" on mesh \"%s\", "
                                 "error: %s\n",
@@ -793,7 +793,7 @@ void MeshImportContext::applyColourSetData()
                         std::memcpy(
                             &mayaIndices[0], usdindices.cdata(), sizeof(int) * usdindices.size());
                         if (mayaIndices.length() != connects.length()) {
-                            TF_DEBUG(MAYAUSDUTILS_INFO)
+                            TF_DEBUG(ALUSDMAYA_INFO)
                                 .Msg(
                                     "Retrieved indexed values are not compatible with topology for "
                                     "colour set \"%s\" on mesh \"%s\"\n",
@@ -824,7 +824,7 @@ void MeshImportContext::applyColourSetData()
                     }
 
                     if (mayaIndices.length() != uint32_t(fnMesh.numFaceVertices())) {
-                        TF_DEBUG(MAYAUSDUTILS_INFO)
+                        TF_DEBUG(ALUSDMAYA_INFO)
                             .Msg(
                                 "Incompatible colour indices for colour set \"%s\" on mesh "
                                 "\"%s\"\n",
@@ -834,7 +834,7 @@ void MeshImportContext::applyColourSetData()
                     }
                     // Assign colors to indices
                     if (!fnMesh.assignColors(mayaIndices, &colourSetName)) {
-                        TF_DEBUG(MAYAUSDUTILS_INFO)
+                        TF_DEBUG(ALUSDMAYA_INFO)
                             .Msg(
                                 "Failed to assign colour indices for colour set \"%s\" on mesh "
                                 "\"%s\", error: %s\n",
@@ -899,7 +899,7 @@ void MeshImportContext::applyUVs()
                                 sizeof(int) * usdindices.size());
                             s = fnMesh.assignUVs(counts, mayaIndices, uv_set);
                             if (!s) {
-                                TF_DEBUG(MAYAUSDUTILS_INFO)
+                                TF_DEBUG(ALUSDMAYA_INFO)
                                     .Msg(
                                         "Failed to assign UVS for uvset \"%s\" on mesh \"%s\", "
                                         "error: %s\n",
@@ -908,7 +908,7 @@ void MeshImportContext::applyUVs()
                                         s.errorString().asChar());
                             }
                         } else {
-                            TF_DEBUG(MAYAUSDUTILS_INFO)
+                            TF_DEBUG(ALUSDMAYA_INFO)
                                 .Msg(
                                     "Failed to set UVS for uvset \"%s\" on mesh \"%s\", error: "
                                     "%s\n",
@@ -923,7 +923,7 @@ void MeshImportContext::applyUVs()
                             generateIncrementingIndices(mayaIndices, rawVal.size());
                             MStatus s = fnMesh.assignUVs(counts, mayaIndices, uv_set);
                             if (!s) {
-                                TF_DEBUG(MAYAUSDUTILS_INFO)
+                                TF_DEBUG(ALUSDMAYA_INFO)
                                     .Msg(
                                         "Failed to assign UVS for uvset \"%s\" on mesh \"%s\", "
                                         "error: %s\n",
@@ -934,7 +934,7 @@ void MeshImportContext::applyUVs()
                         } else if (interpolation == UsdGeomTokens->vertex) {
                             MStatus s = fnMesh.assignUVs(counts, connects, uv_set);
                             if (!s) {
-                                TF_DEBUG(MAYAUSDUTILS_INFO)
+                                TF_DEBUG(ALUSDMAYA_INFO)
                                     .Msg(
                                         "Failed to assign UVS for uvset \"%s\" on mesh \"%s\", "
                                         "error: %s\n",
@@ -951,7 +951,7 @@ void MeshImportContext::applyUVs()
                             }
                             MStatus s = fnMesh.assignUVs(counts, mayaIndices, uv_set);
                             if (!s) {
-                                TF_DEBUG(MAYAUSDUTILS_INFO)
+                                TF_DEBUG(ALUSDMAYA_INFO)
                                     .Msg(
                                         "Failed to assign UVS for uvset \"%s\" on mesh \"%s\", "
                                         "error: %s\n",
@@ -965,7 +965,7 @@ void MeshImportContext::applyUVs()
                             std::memset(&mayaIndices[0], 0, sizeof(int) * mayaIndices.length());
                             MStatus s = fnMesh.assignUVs(counts, mayaIndices, uv_set);
                             if (!s) {
-                                TF_DEBUG(MAYAUSDUTILS_INFO)
+                                TF_DEBUG(ALUSDMAYA_INFO)
                                     .Msg(
                                         "Failed to assign UVS for uvset \"%s\" on mesh \"%s\", "
                                         "error: %s\n",
@@ -1953,7 +1953,7 @@ void MeshExportContext::copyNormalData(UsdTimeCode time, bool copyAsPrimvar)
                 fnMesh.getNormalIds(normalCounts, normalIndices);
 
                 // if prim vars are all identical, we have a constant value
-                if (MayaUsdUtils::vec3AreAllTheSame(normalsData, numNormals)) {
+                if (UsdUfe::vec3AreAllTheSame(normalsData, numNormals)) {
                     VtArray<GfVec3f> normals(1);
                     if (copyAsPrimvar) {
                         primvar.SetInterpolation(UsdGeomTokens->constant);
@@ -1965,7 +1965,7 @@ void MeshExportContext::copyNormalData(UsdTimeCode time, bool copyAsPrimvar)
                     normals[0][2] = normalsData[2];
                     normalsAttr.Set(normals, time);
                 } else if (numNormals != normalIndices.length()) {
-                    if (MayaUsdUtils::compareArray(
+                    if (UsdUfe::compareArray(
                             &normalIndices[0],
                             &faceConnects[0],
                             normalIndices.length(),

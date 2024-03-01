@@ -23,7 +23,8 @@
 #endif
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/utilFileSystem.h>
-#include <mayaUsdUtils/MergePrims.h>
+
+#include <usdUfe/utils/mergePrims.h>
 
 namespace MAYAUSDAPI_NS_DEF {
 
@@ -106,10 +107,7 @@ bool mergePrims(
     const PXR_NS::SdfLayerRefPtr& dstLayer,
     const PXR_NS::SdfPath&        dstPath)
 {
-    MayaUsdUtils::MergePrimsOptions options;
-    options.verbosity = MayaUsdUtils::MergeVerbosity::None;
-    return MayaUsdUtils::mergePrims(
-        srcStage, srcLayer, srcPath, dstStage, dstLayer, dstPath, options);
+    return UsdUfe::mergePrims(srcStage, srcLayer, srcPath, dstStage, dstLayer, dstPath);
 }
 
 std::string getDir(const std::string& fullFilePath)

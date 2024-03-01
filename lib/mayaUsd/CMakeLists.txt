@@ -267,7 +267,6 @@ target_link_libraries(${PROJECT_NAME}
         vt
         ${UFE_LIBRARY}
         ${MAYA_LIBRARIES}
-        mayaUsdUtils
         usdUfe
     PRIVATE
         ghc_filesystem

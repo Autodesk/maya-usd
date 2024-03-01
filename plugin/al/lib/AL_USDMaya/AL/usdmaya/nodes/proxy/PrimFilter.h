@@ -16,7 +16,8 @@
 #pragma once
 
 #include <AL/usdmaya/Api.h>
-#include <mayaUsdUtils/ForwardDeclares.h>
+
+#include <usdUfe/base/forwardDeclares.h>
 
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
@@ -85,10 +86,10 @@ public:
     /// \param  forceImport mirrors the status of the -fi flag
     AL_USDMAYA_PUBLIC
     PrimFilter(
-        const SdfPathVector&               previousPrims,
-        const MayaUsdUtils::UsdPrimVector& newPrimSet,
-        PrimFilterInterface*               proxy,
-        bool                               forceImport = false);
+        const SdfPathVector&         previousPrims,
+        const UsdUfe::UsdPrimVector& newPrimSet,
+        PrimFilterInterface*         proxy,
+        bool                         forceImport = false);
 
     /// \brief  returns the set of prims to create
     inline const std::vector<UsdPrim>& newPrimSet() const { return m_newPrimSet; }

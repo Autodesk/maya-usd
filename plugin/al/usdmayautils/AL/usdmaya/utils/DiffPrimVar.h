@@ -17,7 +17,7 @@
 
 #include "AL/usdmaya/utils/Api.h"
 
-#include <mayaUsdUtils/ForwardDeclares.h>
+#include <usdUfe/base/forwardDeclares.h>
 
 #include <pxr/usd/usdGeom/mesh.h>
 

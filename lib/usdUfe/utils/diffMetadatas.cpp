@@ -13,14 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "DiffPrims.h"
+#include "diffPrims.h"
 
 #include <pxr/base/tf/type.h>
 #include <pxr/base/vt/array.h>
 #include <pxr/usd/sdf/schema.h>
 #include <pxr/usd/sdf/valueTypeName.h>
 
-namespace MayaUsdUtils {
+namespace USDUFE_NS_DEF {
 
 using UsdObject = PXR_NS::UsdObject;
 using TfToken = PXR_NS::TfToken;
@@ -110,7 +110,7 @@ DiffResult compareMetadatas(
     return compareValues(modifiedData, baselineData);
 }
 
-#define USD_MAYA_RETURN_QUICK_RESULT(result)           \
+#define USDUFE_RETURN_QUICK_RESULT(result)             \
     do {                                               \
         if (quickDiff && result != DiffResult::Same) { \
             *quickDiff = result;                       \
@@ -147,11 +147,11 @@ compareObjectsMetadatas(const UsdObject& modified, const UsdObject& baseline, Di
                 continue;
             const auto iter = baselineMetadatas.find(name);
             if (iter == baselineEnd) {
-                USD_MAYA_RETURN_QUICK_RESULT(DiffResult::Created);
+                USDUFE_RETURN_QUICK_RESULT(DiffResult::Created);
                 results[name] = DiffResult::Created;
             } else {
                 const DiffResult result = compareValues(nameAndValue.second, iter->second);
-                USD_MAYA_RETURN_QUICK_RESULT(result);
+                USDUFE_RETURN_QUICK_RESULT(result);
                 results[name] = result;
             }
         }
@@ -163,7 +163,7 @@ compareObjectsMetadatas(const UsdObject& modified, const UsdObject& baseline, Di
         if (isIgnored(name))
             continue;
         if (results.find(name) == results.end()) {
-            USD_MAYA_RETURN_QUICK_RESULT(DiffResult::Absent);
+            USDUFE_RETURN_QUICK_RESULT(DiffResult::Absent);
             results[name] = DiffResult::Absent;
         }
     }
@@ -171,4 +171,4 @@ compareObjectsMetadatas(const UsdObject& modified, const UsdObject& baseline, Di
     return results;
 }
 
-} // namespace MayaUsdUtils
+} // namespace USDUFE_NS_DEF
