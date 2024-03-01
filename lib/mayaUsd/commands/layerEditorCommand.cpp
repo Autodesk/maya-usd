@@ -799,14 +799,32 @@ public:
             return false;
 
         saveSelection();
-        if (MayaUsd::isLayerLocked(layer)) {
-            _previousState = MayaUsd::LayerLockType::LayerLock_Locked;
-        } else if (MayaUsd::isLayerSystemLocked(layer)) {
-            _previousState = MayaUsd::LayerLockType::LayerLock_SystemLocked;
+
+        std::set<PXR_NS::SdfLayerRefPtr> layersToUpdate;
+        if (_includeSublayers) {
+            // If _includeSublayers is True, we attempt to refresh the system lock status of all
+            // layers under the given layer. This is specially useful when reloading a stage.
+            bool includeTopLayer = true;
+            layersToUpdate = MayaUsd::getAllSublayerRefs(layer, includeTopLayer);
         } else {
-            _previousState = MayaUsd::LayerLockType::LayerLock_Unlocked;
+            layersToUpdate.insert(layer);
         }
-        MayaUsd::lockLayer(_proxyShapePath, layer, _lockType, true);
+
+        for (auto layerIt : layersToUpdate) {
+            if (MayaUsd::isLayerLocked(layerIt)) {
+                _previousStates.push_back(MayaUsd::LayerLockType::LayerLock_Locked);
+            } else if (MayaUsd::isLayerSystemLocked(layerIt)) {
+                _previousStates.push_back(MayaUsd::LayerLockType::LayerLock_SystemLocked);
+            } else {
+                _previousStates.push_back(MayaUsd::LayerLockType::LayerLock_Unlocked);
+            }
+            _layers.push_back(layerIt);
+        }
+
+        // Execute lock commands
+        for (int layerIndex = 0; layerIndex < _layers.size(); layerIndex++) {
+            MayaUsd::lockLayer(_proxyShapePath, _layers[layerIndex], _lockType, true);
+        }
 
         return true;
     }
@@ -817,21 +835,31 @@ public:
         if (!stage)
             return false;
 
-        // Note: the undo of system-locked is unlocked by design.
-        if (_previousState == MayaUsd::LayerLockType::LayerLock_SystemLocked) {
-            MayaUsd::lockLayer(
-                _proxyShapePath, layer, MayaUsd::LayerLockType::LayerLock_Unlocked, true);
-        } else {
-            MayaUsd::lockLayer(_proxyShapePath, layer, _previousState, true);
+        if (_layers.size() != _previousStates.size()) {
+            return false;
+        }
+        // Execute lock commands
+        for (int layerIndex = 0; layerIndex < _layers.size(); layerIndex++) {
+            // Note: the undo of system-locked is unlocked by design.
+            if (_previousStates[layerIndex] == MayaUsd::LayerLockType::LayerLock_SystemLocked) {
+                MayaUsd::lockLayer(
+                    _proxyShapePath,
+                    _layers[layerIndex],
+                    MayaUsd::LayerLockType::LayerLock_Unlocked,
+                    true);
+            } else {
+                MayaUsd::lockLayer(
+                    _proxyShapePath, _layers[layerIndex], _previousStates[layerIndex], true);
+            }
         }
         restoreSelection();
 
         return true;
     }
 
-    std::string            _proxyShapePath;
     MayaUsd::LayerLockType _lockType = MayaUsd::LayerLockType::LayerLock_Locked;
-    MayaUsd::LayerLockType _previousState = MayaUsd::LayerLockType::LayerLock_Unlocked;
+    bool                   _includeSublayers = false;
+    std::string            _proxyShapePath;
 
 private:
     UsdStageWeakPtr getStage()
@@ -870,7 +898,9 @@ private:
         globalSn->replaceWith(UsdUfe::recreateDescendants(_savedSn, path));
     }
 
-    Ufe::Selection _savedSn;
+    Ufe::Selection                      _savedSn;
+    std::vector<MayaUsd::LayerLockType> _previousStates;
+    SdfLayerHandleVector                _layers;
 };
 
 class RefreshSystemLockLayer : public BaseCmd
@@ -959,6 +989,7 @@ private:
                         // Create the lock command
                         auto cmd = std::make_shared<Impl::LockLayer>();
                         cmd->_lockType = MayaUsd::LayerLockType::LayerLock_Unlocked;
+                        cmd->_includeSublayers = false;
                         cmd->_proxyShapePath = _proxyShapePath;
 
                         // Add the lock command and its parameter to be executed
@@ -971,6 +1002,7 @@ private:
                         // Create the lock command
                         auto cmd = std::make_shared<Impl::LockLayer>();
                         cmd->_lockType = MayaUsd::LayerLockType::LayerLock_SystemLocked;
+                        cmd->_includeSublayers = false;
                         cmd->_proxyShapePath = _proxyShapePath;
 
                         // Add the lock command and its parameter to be executed
@@ -980,16 +1012,6 @@ private:
                 }
             }
         }
-    }
-
-    void _lockLayer(SdfLayerHandle usdLayer, MayaUsd::LayerLockType lockState)
-    {
-        std::string cmd;
-        cmd = "mayaUsdLayerEditor -edit -lockLayer ";
-        cmd += std::to_string(lockState);
-        cmd += _quote(_proxyShapePath.c_str());
-        cmd += _quote(usdLayer->GetIdentifier());
-        MGlobal::executeCommand(MString(cmd.c_str()), /*display*/ true, /*undo*/ true);
     }
 
     UsdStageWeakPtr getStage()
@@ -1090,7 +1112,8 @@ MSyntax LayerEditorCommand::createSyntax()
     syntax.makeFlagMultiUse(kAddAnonSublayerFlag);
     // parameter: proxy shape name
     syntax.addFlag(kMuteLayerFlag, kMuteLayerFlagL, MSyntax::kBoolean, MSyntax::kString);
-    syntax.addFlag(kLockLayerFlag, kLockLayerFlagL, MSyntax::kLong, MSyntax::kString);
+    syntax.addFlag(
+        kLockLayerFlag, kLockLayerFlagL, MSyntax::kLong, MSyntax::kBoolean, MSyntax::kString);
     // parameter 1: proxy shape name
     // parameter 2: refresh sub layers
     syntax.addFlag(
@@ -1242,8 +1265,11 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
             // 2 = SystemLocked
             argParser.getFlagArgument(kLockLayerFlag, 0, lockValue);
 
+            bool includeSublayers = false;
+            argParser.getFlagArgument(kLockLayerFlag, 1, includeSublayers);
+
             MString proxyShapeName;
-            argParser.getFlagArgument(kLockLayerFlag, 1, proxyShapeName);
+            argParser.getFlagArgument(kLockLayerFlag, 2, proxyShapeName);
 
             auto prim = UsdMayaQuery::GetPrim(proxyShapeName.asChar());
             if (prim == UsdPrim()) {
@@ -1253,8 +1279,6 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
             }
 
             auto cmd = std::make_shared<Impl::LockLayer>();
-            // cmd->_lockIt = lockValue == 1 ? true : false;
-            // cmd->_systemLock = lockValue == 2 ? true : false;
             switch (lockValue) {
             case 1: {
                 cmd->_lockType = MayaUsd::LayerLockType::LayerLock_Locked;
@@ -1269,6 +1293,7 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
                 break;
             }
             }
+            cmd->_includeSublayers = includeSublayers;
             cmd->_proxyShapePath = proxyShapeName.asChar();
             _subCommands.push_back(std::move(cmd));
         }

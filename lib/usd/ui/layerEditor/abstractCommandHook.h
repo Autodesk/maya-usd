@@ -82,7 +82,9 @@ public:
     virtual void muteSubLayer(UsdLayer usdLayer, bool muteIt) = 0;
 
     // Sets the lock state on a layer
-    virtual void lockSubLayer(UsdLayer usdLayer, MayaUsd::LayerLockType lockState) = 0;
+    virtual void
+    lockLayer(UsdLayer usdLayer, MayaUsd::LayerLockType lockState, bool includeSubLayers)
+        = 0;
 
     // Checks if the file layer or its sublayers are accessible on disk, and updates the system-lock
     // status.

@@ -594,10 +594,11 @@ void LayerTreeModel::toggleLockLayer(LayerTreeItem* item, bool* forcedState /*= 
             return;
     }
 
+    const bool             includeSublayers = false;
     MayaUsd::LayerLockType toggledLockType = item->isLocked()
         ? MayaUsd::LayerLockType::LayerLock_Unlocked
         : MayaUsd::LayerLockType::LayerLock_Locked;
-    _sessionState->commandHook()->lockSubLayer(item->layer(), toggledLockType);
+    _sessionState->commandHook()->lockLayer(item->layer(), toggledLockType, includeSublayers);
 }
 
 } // namespace UsdLayerEditor
