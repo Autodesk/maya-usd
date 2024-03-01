@@ -85,14 +85,28 @@ QRect LayerTreeItemDelegate::getAdjustedItemRect(LayerTreeItem const* item, QRec
     return rect;
 }
 
+static int
+getActionRightOffset(const LayerTreeItem& item, LayerActionType actionType)
+{
+    LayerActionInfo action;
+    item.getActionButton(actionType, action);
+    return action._order + 1;
+}
+
 QRect LayerTreeItemDelegate::getTextRect(const ItemPaintContext& ctx) const
 {
+
     QRect textRect(ctx.itemRect);
     textRect.setLeft(textRect.left() + TEXT_LEFT_OFFSET);
+
+    // Note: action order starts from zero.
+    int rightOffset = 0;
     if (ctx.isLocked || ctx.isSystemLocked)
-        textRect.setRight(textRect.right() - (ACTION_WIDTH * 2 + DPIScale(6)));
-    else if (ctx.isMuted)
-        textRect.setRight(textRect.right() - (ACTION_WIDTH + DPIScale(6)));
+        rightOffset = std::max(rightOffset, getActionRightOffset(*ctx.item, LayerActionType::Lock));
+    if (ctx.isMuted)
+        rightOffset = std::max(rightOffset, getActionRightOffset(*ctx.item, LayerActionType::Mute));
+    textRect.setRight(textRect.right() - (rightOffset * ACTION_WIDTH + DPIScale(6)));
+
     return textRect;
 }
 
