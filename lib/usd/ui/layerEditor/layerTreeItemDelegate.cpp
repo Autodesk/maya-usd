@@ -85,8 +85,7 @@ QRect LayerTreeItemDelegate::getAdjustedItemRect(LayerTreeItem const* item, QRec
     return rect;
 }
 
-static int
-getActionRightOffset(const LayerTreeItem& item, LayerActionType actionType)
+static int getActionRightOffset(const LayerTreeItem& item, LayerActionType actionType)
 {
     LayerActionInfo action;
     item.getActionButton(actionType, action);
