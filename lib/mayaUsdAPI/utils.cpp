@@ -24,6 +24,7 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
+#include <usdUfe/ufe/Utils.h>
 #include <usdUfe/utils/mergePrims.h>
 
 namespace MAYAUSDAPI_NS_DEF {
@@ -89,10 +90,7 @@ Ufe::UndoableCommand::Ptr createStageWithNewLayerCommand(const Ufe::SceneItem::P
 
 #endif
 
-bool isMaterialsScope(const Ufe::SceneItem::Ptr& item)
-{
-    return MayaUsd::ufe::isMaterialsScope(item);
-}
+bool isMaterialsScope(const Ufe::SceneItem::Ptr& item) { return UsdUfe::isMaterialsScope(item); }
 
 bool isAGatewayType(const std::string& mayaNodeType)
 {

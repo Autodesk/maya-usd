@@ -22,6 +22,7 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
 
+#include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 
 #include <pxr/usd/sdr/registry.h>
@@ -523,7 +524,7 @@ Ufe::SceneItem::Ptr UsdUndoAddNewMaterialCommand::insertedChild() const
 bool UsdUndoAddNewMaterialCommand::CompatiblePrim(const Ufe::SceneItem::Ptr& target)
 {
     // Must be a materials scope.
-    return isMaterialsScope(target);
+    return UsdUfe::isMaterialsScope(target);
 }
 
 void UsdUndoAddNewMaterialCommand::execute()

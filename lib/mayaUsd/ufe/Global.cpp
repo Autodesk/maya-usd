@@ -17,6 +17,7 @@
 
 #include "private/UfeNotifGuard.h"
 
+#include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/nodes/proxyShapeStageExtraData.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 #include <mayaUsd/ufe/MayaStagesSubject.h>
@@ -120,6 +121,12 @@ void mayaStopWaitCursor() { MGlobal::executeCommand("waitCursor -state 0"); }
 // Note: MayaUsd::ufe::getStage takes two parameters, so wrap it in a function taking only one.
 PXR_NS::UsdStageWeakPtr mayaGetStage(const Ufe::Path& path) { return MayaUsd::ufe::getStage(path); }
 
+// Wrapped to return std::string from static function returning const std::string.
+std::string defaultMaterialsScopeName()
+{
+    return UsdMayaJobExportArgs::GetDefaultMaterialsScopeName();
+}
+
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -180,6 +187,7 @@ MStatus initialize()
     dccFunctions.uniqueChildNameFn = MayaUsd::ufe::uniqueChildNameMayaStandard;
     dccFunctions.startWaitCursorFn = mayaStartWaitCursor;
     dccFunctions.stopWaitCursorFn = mayaStopWaitCursor;
+    dccFunctions.defaultMaterialScopeNameFn = defaultMaterialsScopeName;
 
     // Replace the Maya hierarchy handler with ours.
     auto& runTimeMgr = Ufe::RunTimeMgr::instance();

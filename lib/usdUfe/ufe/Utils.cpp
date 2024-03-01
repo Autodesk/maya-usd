@@ -89,16 +89,17 @@ uint32_t findLayerIndex(const UsdPrim& prim, const SdfLayerHandle& layer)
 
 int gWaitCursorCount = 0;
 
-UsdUfe::StageAccessorFn      gStageAccessorFn = nullptr;
-UsdUfe::StagePathAccessorFn  gStagePathAccessorFn = nullptr;
-UsdUfe::UfePathToPrimFn      gUfePathToPrimFn = nullptr;
-UsdUfe::TimeAccessorFn       gTimeAccessorFn = nullptr;
-UsdUfe::IsAttributeLockedFn  gIsAttributeLockedFn = nullptr;
-UsdUfe::SaveStageLoadRulesFn gSaveStageLoadRulesFn = nullptr;
-UsdUfe::IsRootChildFn        gIsRootChildFn = nullptr;
-UsdUfe::UniqueChildNameFn    gUniqueChildNameFn = nullptr;
-UsdUfe::WaitCursorFn         gStartWaitCursorFn = nullptr;
-UsdUfe::WaitCursorFn         gStopWaitCursorFn = nullptr;
+UsdUfe::StageAccessorFn            gStageAccessorFn = nullptr;
+UsdUfe::StagePathAccessorFn        gStagePathAccessorFn = nullptr;
+UsdUfe::UfePathToPrimFn            gUfePathToPrimFn = nullptr;
+UsdUfe::TimeAccessorFn             gTimeAccessorFn = nullptr;
+UsdUfe::IsAttributeLockedFn        gIsAttributeLockedFn = nullptr;
+UsdUfe::SaveStageLoadRulesFn       gSaveStageLoadRulesFn = nullptr;
+UsdUfe::IsRootChildFn              gIsRootChildFn = nullptr;
+UsdUfe::UniqueChildNameFn          gUniqueChildNameFn = nullptr;
+UsdUfe::WaitCursorFn               gStartWaitCursorFn = nullptr;
+UsdUfe::WaitCursorFn               gStopWaitCursorFn = nullptr;
+UsdUfe::DefaultMaterialScopeNameFn gGetDefaultMaterialScopeNameFn = nullptr;
 
 } // anonymous namespace
 
@@ -377,6 +378,47 @@ SdfPath uniqueChildPath(const UsdStage& stage, const SdfPath& path)
         return path;
 
     return path.ReplaceName(TfToken(uniqueName));
+}
+bool isMaterialsScope(const Ufe::SceneItem::Ptr& item)
+{
+    if (!item) {
+        return false;
+    }
+
+    // Must be a scope.
+    if (item->nodeType() != "Scope") {
+        return false;
+    }
+
+    // With the magic name.
+    if (item->nodeName() == defaultMaterialScopeName()) {
+        return true;
+    }
+
+    // Or with only materials inside
+    auto scopeHierarchy = Ufe::Hierarchy::hierarchy(item);
+    if (scopeHierarchy) {
+        for (auto&& child : scopeHierarchy->children()) {
+            if (child->nodeType() != "Material") {
+                // At least one non material
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+Ufe::Path appendToPath(const Ufe::Path& path, const std::string& name)
+{
+    Ufe::Path newUfePath;
+    if (1 == path.getSegments().size()) {
+        newUfePath
+            = path + Ufe::PathSegment(Ufe::PathComponent(name), UsdUfe::getUsdRunTimeId(), '/');
+    } else {
+        newUfePath = path + name;
+    }
+    return newUfePath;
 }
 
 namespace {
@@ -955,6 +997,41 @@ void stopWaitCursor()
 
     if (gWaitCursorCount == 0)
         gStopWaitCursorFn();
+}
+
+void setDefaultMaterialScopeNameFn(DefaultMaterialScopeNameFn fn)
+{
+    // This function is allowed to be null in which case a default
+    // material scope name of "mtl" will be used.
+    gGetDefaultMaterialScopeNameFn = fn;
+}
+
+std::string defaultMaterialScopeName()
+{
+    // Default material scope name as defined by USD Assets working group.
+    // See https://wiki.aswf.io/display/WGUSD/Guidelines+for+Structuring+USD+Assets
+    static constexpr auto kDefaultMaterialScopeName = "mtl";
+    return gGetDefaultMaterialScopeNameFn ? gGetDefaultMaterialScopeNameFn()
+                                          : kDefaultMaterialScopeName;
+}
+
+UsdSceneItem::Ptr getParentMaterial(const UsdSceneItem::Ptr& item)
+{
+    if (!item) {
+        return {};
+    }
+
+    const TfToken kMaterial = TfToken("Material");
+
+    auto prim = item->prim();
+    auto path = item->path();
+
+    while (prim.GetTypeName() != kMaterial && prim.GetParent().IsValid()) {
+        path = path.pop();
+        prim = prim.GetParent();
+    }
+
+    return prim.GetTypeName() == kMaterial ? UsdSceneItem::create(path, prim) : nullptr;
 }
 
 } // namespace USDUFE_NS_DEF

@@ -211,36 +211,6 @@ bool isAGatewayType(const std::string& mayaNodeType)
     return isInherited;
 }
 
-bool isMaterialsScope(const Ufe::SceneItem::Ptr& item)
-{
-    if (!item) {
-        return false;
-    }
-
-    // Must be a scope.
-    if (item->nodeType() != "Scope") {
-        return false;
-    }
-
-    // With the magic name.
-    if (item->nodeName() == UsdMayaJobExportArgs::GetDefaultMaterialsScopeName()) {
-        return true;
-    }
-
-    // Or with only materials inside
-    auto scopeHierarchy = Ufe::Hierarchy::hierarchy(item);
-    if (scopeHierarchy) {
-        for (auto&& child : scopeHierarchy->children()) {
-            if (child->nodeType() != "Material") {
-                // At least one non material
-                return false;
-            }
-        }
-    }
-
-    return true;
-}
-
 Ufe::Path dagPathToUfe(const MDagPath& dagPath)
 {
     // This function can only create UFE Maya scene items with a single

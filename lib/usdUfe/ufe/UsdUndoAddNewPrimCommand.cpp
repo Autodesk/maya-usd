@@ -24,22 +24,6 @@
 #include <ufe/hierarchy.h>
 #include <ufe/pathString.h>
 
-namespace {
-
-Ufe::Path appendToPath(const Ufe::Path& path, const std::string& name)
-{
-    Ufe::Path newUfePath;
-    if (1 == path.getSegments().size()) {
-        newUfePath
-            = path + Ufe::PathSegment(Ufe::PathComponent(name), UsdUfe::getUsdRunTimeId(), '/');
-    } else {
-        newUfePath = path + name;
-    }
-    return newUfePath;
-}
-
-} // namespace
-
 namespace USDUFE_NS_DEF {
 
 UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(

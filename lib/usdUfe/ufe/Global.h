@@ -44,10 +44,11 @@ struct USDUFE_PUBLIC DCCFunctions
     TimeAccessorFn      timeAccessorFn = nullptr;
 
     // Optional: default values will be used if no function is supplied.
-    IsAttributeLockedFn  isAttributeLockedFn = nullptr;
-    SaveStageLoadRulesFn saveStageLoadRulesFn = nullptr;
-    IsRootChildFn        isRootChildFn = nullptr;
-    UniqueChildNameFn    uniqueChildNameFn = nullptr;
+    IsAttributeLockedFn        isAttributeLockedFn = nullptr;
+    SaveStageLoadRulesFn       saveStageLoadRulesFn = nullptr;
+    IsRootChildFn              isRootChildFn = nullptr;
+    UniqueChildNameFn          uniqueChildNameFn = nullptr;
+    DefaultMaterialScopeNameFn defaultMaterialScopeNameFn = nullptr;
 
     // Optional: nothing will be done if no function is supplied.
     WaitCursorFn startWaitCursorFn = nullptr;

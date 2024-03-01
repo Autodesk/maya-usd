@@ -80,6 +80,8 @@ Ufe::Rtid initialize(
         UsdUfe::setIsRootChildFn(dccFunctions.isRootChildFn);
     if (dccFunctions.uniqueChildNameFn)
         UsdUfe::setUniqueChildNameFn(dccFunctions.uniqueChildNameFn);
+    if (dccFunctions.defaultMaterialScopeNameFn)
+        UsdUfe::setDefaultMaterialScopeNameFn(dccFunctions.defaultMaterialScopeNameFn);
 
     // Create a default stages subject if none is provided.
     if (nullptr == ss) {
