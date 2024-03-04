@@ -64,7 +64,8 @@ public:
     void muteSubLayer(UsdLayer usdLayer, bool muteIt) override;
 
     // lock, system-lock or unlock the given layer
-    void lockLayer(UsdLayer usdLayer, MayaUsd::LayerLockType lockState, bool includeSubLayers) override;
+    void
+    lockLayer(UsdLayer usdLayer, MayaUsd::LayerLockType lockState, bool includeSubLayers) override;
 
     // Checks if the file layer or its sublayers are accessible on disk, and updates the system-lock
     // status.

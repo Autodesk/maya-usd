@@ -213,7 +213,7 @@ void MayaLayerEditorWindow::lockLayerAndSubLayers()
     auto item = treeView()->currentLayerItem();
     if (item != nullptr) {
         QString name = item->isLocked() ? "Unlock Layer and Sublayers" : "Lock Layer and Sublayers";
-        bool includeSubLayers = true;
+        bool    includeSubLayers = true;
         treeView()->onLockLayerAndSublayers(name, includeSubLayers);
     }
 }
