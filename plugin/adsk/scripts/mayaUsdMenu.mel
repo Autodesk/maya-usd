@@ -873,6 +873,7 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
     int $appearsSystemLocked = `mayaUsdLayerEditorWindow -q -layerAppearsSystemLocked $panelName`;
     int $isSystemLocked = `mayaUsdLayerEditorWindow -q -layerIsSystemLocked $panelName`;
     int $isIncoming = `mayaUsdLayerEditorWindow -q -isIncomingLayer $panelName`;
+    int $hasSublayers = `mayaUsdLayerEditorWindow -q -layerHasSubLayers $panelName`;
     string $proxyShape = `mayaUsdLayerEditorWindow -q -proxyShape $panelName`;
 
     string $label;
@@ -935,6 +936,16 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
         else
             $label = getMayaUsdString("kMenuLock");
         $cmd = makeCommand($panelName, "lockLayer");
+        $enabled = !$isSystemLocked;
+        menuItem -label $label -enable $enabled -c $cmd;
+    }
+
+    if (!$isSessionLayer && $hasSublayers) {
+        if ($isLocked)
+            $label = getMayaUsdString("kMenuUnlockLayerAndSublayers");
+        else
+            $label = getMayaUsdString("kMenuLockLayerAndSublayers");
+        $cmd = makeCommand($panelName, "lockLayerAndSubLayers");
         $enabled = !$isSystemLocked;
         menuItem -label $label -enable $enabled -c $cmd;
     }

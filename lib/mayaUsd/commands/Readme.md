@@ -655,6 +655,7 @@ The purpose of this command is to control the layer editor window.
 | `-removeSubLayer`       | `-rs`      | Remove sub-layers                             |
 | `-clearLayer`           | `-cl`      | Erase everything in a layer                   |
 | `-discardEdits`         | `-de`      | Discard changes made on a layer               |
+| `-layerHasSubLayers`    | `-ll`      | Query if the layer has sub-layers             |
 | `-isAnonymousLayer`     | `-al`      | Query if the layer is anonymous               |
 | `-isLayerDirty`         | `-dl`      | Query if the layer has been modified          |
 | `-isInvalidLayer`       | `-il`      | Query if the layer is not found or invalid    |
@@ -668,7 +669,8 @@ The purpose of this command is to control the layer editor window.
 | `-layerIsLocked`        | `-lo`      | Query if the layer itself is locked           |
 | `-layerAppearsSystemLocked` | `-as`      | Query if the layer's parent is system-locked  |
 | `-layerIsSystemLocked`  | `-ls`      | Query if the layer itself is system-locked    |
-| `-lockLayer`            | `-lk`      | Lock, System-Lock or unlock a layer and its sublayers. `Lock Type`: `0` = Unlocked, `1` = Locked and `2` = System-Locked. `Include Sublayers` : `0` = Top Layer Only, `1` : Top and Sublayers |
+| `-lockLayer`            | `-lk`      | Lock or unlock a layer.                       |
+| `-lockLayerAndSubLayers`| `-la`      | Lock or unlocks a layer and its sublayers.    |
 | `-layerNeedsSaving`     | `-ns`      | Query if the layer is dirty or anonymous      |
 | `-printLayer`           | `-pl`      | Print the layer to the script editor output   |
 | `-proxyShape`           | `-ps`      | Query the proxyShape path or sets the selected shape by its path. Takes the path as argument |

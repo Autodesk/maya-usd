@@ -59,6 +59,7 @@ global proc mayaUSDRegisterStrings()
     register("kMenuLayerEditorAnn", "Organize and edit USD data in layers");
     register("kMenuLoadSublayers", "Load Sublayers...");
     register("kMenuLock", "Lock");
+    register("kMenuLockLayerAndSublayers", "Lock Layer and Sublayers");
     register("kMenuMute", "Mute");
     register("kMenuPrintToScriptEditor", "Print to Script Editor");
     register("kMenuRemove", "Remove");
@@ -75,6 +76,7 @@ global proc mayaUSDRegisterStrings()
     register("kMenuSetAs", "Set As...");
     register("kMenuSaveEdits", "Save Edits");
     register("kMenuUnlock", "Unlock");
+    register("kMenuUnlockLayerAndSublayers", "Unlock Layer and Sublayers");
     register("kMenuUnmute", "Unmute");
     register("kPointInstances", "Point Instances");
     register("kPurposeAnn", "Toggle purpose categories on and off to change their visibility in the viewport.");

@@ -304,6 +304,13 @@ bool LayerTreeItem::appearsSystemLocked() const
     return false;
 }
 
+bool LayerTreeItem::hasSubLayers() const
+{
+    if (!_layer)
+        return false;
+    return _layer->GetNumSubLayerPaths() > 0;
+}
+
 bool LayerTreeItem::needsSaving() const
 {
     // If for any reason we don't hold a layer, then we cannot save it.
