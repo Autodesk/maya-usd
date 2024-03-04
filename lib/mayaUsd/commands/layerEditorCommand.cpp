@@ -822,7 +822,7 @@ public:
         }
 
         // Execute lock commands
-        for (int layerIndex = 0; layerIndex < _layers.size(); layerIndex++) {
+        for (size_t layerIndex = 0; layerIndex < _layers.size(); layerIndex++) {
             MayaUsd::lockLayer(_proxyShapePath, _layers[layerIndex], _lockType, true);
         }
 
@@ -839,7 +839,7 @@ public:
             return false;
         }
         // Execute lock commands
-        for (int layerIndex = 0; layerIndex < _layers.size(); layerIndex++) {
+        for (size_t layerIndex = 0; layerIndex < _layers.size(); layerIndex++) {
             // Note: the undo of system-locked is unlocked by design.
             if (_previousStates[layerIndex] == MayaUsd::LayerLockType::LayerLock_SystemLocked) {
                 MayaUsd::lockLayer(
@@ -931,7 +931,7 @@ public:
         }
 
         // Execute lock commands
-        for (int layerIndex = 0; layerIndex < _layers.size(); layerIndex++) {
+        for (size_t layerIndex = 0; layerIndex < _layers.size(); layerIndex++) {
             if (!_lockCommands[layerIndex]->doIt(_layers[layerIndex])) {
                 return false;
             }
@@ -945,7 +945,7 @@ public:
     bool undoIt(SdfLayerHandle layer) override
     {
         // Execute lock commands
-        for (int layerIndex = 0; layerIndex < _layers.size(); layerIndex++) {
+        for (size_t layerIndex = 0; layerIndex < _layers.size(); layerIndex++) {
             if (!_lockCommands[layerIndex]->undoIt(_layers[layerIndex])) {
                 return false;
             }
