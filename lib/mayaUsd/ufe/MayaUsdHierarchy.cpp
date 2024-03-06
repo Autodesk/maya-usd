@@ -56,7 +56,7 @@ bool mayaUsdHierarchyChildrenHook(
     Ufe::SceneItemList&        children,
     bool                       filterInactive)
 {
-    const PXR_NS::SdfPath primPath = getPrimPath(item->path());
+    const PXR_NS::SdfPath primPath = getProxyShapePrimPath(item->path());
     if (primPath.IsEmpty()) {
         // An empty primPath means we're in a bad state.  We'll return true here
         // without populating children.

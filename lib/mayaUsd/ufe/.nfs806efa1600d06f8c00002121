@@ -13,12 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "Utils.h"
+
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UsdStageMap.h>
-#include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -301,15 +302,6 @@ MayaUsdProxyShapeBase* getProxyShape(const Ufe::Path& path)
     }
 
     return UsdStageMap::getInstance().proxyShapeNode(path);
-}
-
-SdfPath getProxyShapePrimPath(const Ufe::Path& path)
-{
-    if (auto proxyShape = getProxyShape(path)) {
-        return proxyShape->getPrimPath();
-    }
-    // No proxy shape.  Just default to the empty path.
-    return SdfPath::AbsoluteRootPath();
 }
 
 UsdTimeCode getTime(const Ufe::Path& path)

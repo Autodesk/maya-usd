@@ -1,5 +1,5 @@
 //Maya ASCII 2016R2 scene
-//Name: UsdExportParentScopeTest.ma
+//Name: UsdExportRootPrimTest.ma
 //Last modified: Tue, Feb 20, 2018 12:05:45 PM
 //Codeset: UTF-8
 requires maya "2016R2";
@@ -206,4 +206,4 @@ connectAttr "layerManager.dli[0]" "defaultLayer.id";
 connectAttr "renderLayerManager.rlmi[0]" "defaultRenderLayer.rlid";
 connectAttr "defaultRenderLayer.msg" ":defaultRenderingList1.r" -na;
 connectAttr "pSphereShape1.iog" ":initialShadingGroup.dsm" -na;
-// End of UsdExportParentScopeTest.ma
+// End of UsdExportRootPrimTest.ma

@@ -120,6 +120,8 @@ public:
     static MObject rootLayerNameAttr;
     MAYAUSD_CORE_PUBLIC
     static MObject mutedLayersAttr;
+    MAYAUSD_CORE_PUBLIC
+    static MObject lockedLayersAttr;
 
     // Change counter attributes
     MAYAUSD_CORE_PUBLIC
@@ -214,6 +216,12 @@ public:
 
     MAYAUSD_CORE_PUBLIC
     MStatus setMutedLayers(const std::vector<std::string>& muted);
+
+    MAYAUSD_CORE_PUBLIC
+    std::vector<std::string> getLockedLayers() const;
+
+    MAYAUSD_CORE_PUBLIC
+    MStatus setLockedLayers(const std::vector<std::string>& locked);
 
     MAYAUSD_CORE_PUBLIC
     UsdTimeCode getTime() const override;

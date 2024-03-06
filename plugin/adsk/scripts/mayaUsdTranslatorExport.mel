@@ -286,11 +286,11 @@ global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
 
 }
 
-global proc onExportParentScopeChanged() {
+global proc mayaUsdTranslatorExport_RootPrimCB() {
     if (`optionMenuGrp -exists exportDefaultPrim` == 0){
         return;
     }
-    string $rootPrim = `textFieldGrp -q -text parentScopeField`;
+    string $rootPrim = `textFieldGrp -q -text rootPrimField`;
     optionMenuGrp -edit -deleteAllItems exportDefaultPrim;
     string $menuName = `optionMenuGrp -q -fullPathName exportDefaultPrim`;
     menuItem -parent ($menuName + "|OptionMenu") -l "None";
@@ -441,9 +441,11 @@ global proc mayaUsdTranslatorExport_EnableAllControls() {
 
     if (stringArrayContains("output", $sectionNames)) {
         optionMenuGrp -e -en 1 defaultUSDFormatPopup;
-        if (stringArrayContains("output-parentscope", $sectionNames)) {
-            textFieldGrp -e -en 1 parentScopeField;
+        if (stringArrayContains("output-RootPrim", $sectionNames)) {
+            textFieldGrp -e -en 1 rootPrimField;
+            optionMenuGrp -e -en 1 rootPrimTypePopup;
         }
+        optionMenuGrp -e -en -1 exportDefaultPrim;
     }
 
     if (stringArrayContains("materials", $sectionNames)) {
@@ -492,6 +494,8 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
         int $exportMeshes = 1;
         int $exportCameras = 1;
         int $exportLights = 1;
+
+        int $hasRootPrim = 0;
 
         string $excludeTypes;
         for ($index = 0; $index < size($optionList); $index++) {
@@ -552,6 +556,9 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
                 floatFieldGrp -e -v1 $frameStride -en1 $enable frameStrideField;
             } else if ($optionBreakDown[0] == "frameSample") {
                 mayaUsdTranslatorExport_SetTextField($optionBreakDown[1], $enable, "frameSampleField");
+            } else if ($optionBreakDown[0] == "rootPrim") {
+                mayaUsdTranslatorExport_SetTextField($optionBreakDown[1], $enable, "rootPrimField");
+                $hasRootPrim = 1;
             } else if ($optionBreakDown[0] == "convertMaterialsTo") {
                 mayaUsdTranslatorExport_SetConvertMaterialsToCheckboxes($optionBreakDown[1], $enable, $processJobContext);
             } else if ($optionBreakDown[0] == "shadingMode" && $optionBreakDown[1] != "useRegistry") {
@@ -569,8 +576,6 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
             } else if ($optionBreakDown[0] == "worldspace") {
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "worldspaceCheckBox");
             }
-            // Removed parent scope because we don't need the parent scope name from last export. Also parent scope created at export
-            // will be the default default prim, which can be misleading when this field is filled with previous parent scope name.
         }
 
         // We now know if we export nurbs curves or not and if forced by the job context:
@@ -591,6 +596,9 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
         if ($processJobContext == 0 && $supportsMultiExport == 0) {
             mayaUsdTranslatorExport_DisableConvertMaterialsToCheckboxes();
         }
+        if ($hasRootPrim == 1){
+            mayaUsdTranslatorExport_RootPrimCB();
+        }
     }
 }
 
@@ -610,7 +618,7 @@ proc string[] parseActionSectionNames(string $sections, string $out_expandedSect
 {
     global string $gMayaUsdTranslatorExport_SectionNames[];
 
-    string $allSections[] = { "context", "output", "output-parentscope", "geometry", "materials", "animation", "animation-data", "advanced" };
+    string $allSections[] = { "context", "output", "output-RootPrim", "geometry", "materials", "animation", "animation-data", "advanced" };
 
     string $sectionList[];
     tokenize($sections, ";", $sectionList);
@@ -667,7 +675,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
 //
 //        In addition to the action, the list of UI sections that are desired can be added
 //        with the syntax "action=section1;section2;..." where the section names can be:
-//            context, output, output-parentscope, geometry, materials, animation, animation-data, advanced
+//            context, output, output-RootPrim, geometry, materials, animation, animation-data, advanced
 //
 //            An optional tag (":expanded" or ":collapsed") can be added to each of these sections to
 //            specify the default state (expanded or collapsed) of the frameLayout (if one exists for
@@ -758,11 +766,15 @@ global proc int mayaUsdTranslatorExport (string $parent,
                     menuItem -l `getMayaUsdString("kExportDefaultFormatBinLbl")` -ann "usdc";
                     menuItem -l `getMayaUsdString("kExportDefaultFormatAscLbl")` -ann "usda";
 
-                if (stringArrayContains("output-parentscope", $sectionNames)) {
+                if (stringArrayContains("output-RootPrim", $sectionNames)) {
                     //separator -style "none";
 
-                    textFieldGrp -l `getMayaUsdString("kExportParentScopeLbl")` -placeholderText `getMayaUsdString("kExportParentScopePht")`
-                        -annotation `getMayaUsdString("kExportParentScopeAnn")` -textChangedCommand "onExportParentScopeChanged" parentScopeField;
+                    textFieldGrp -l `getMayaUsdString("kExportRootPrimLbl")` -placeholderText `getMayaUsdString("kExportRootPrimPht")`
+                        -annotation `getMayaUsdString("kExportRootPrimAnn")` -textChangedCommand "mayaUsdTranslatorExport_RootPrimCB" rootPrimField;
+                    
+                    optionMenuGrp -l `getMayaUsdString("kExportRootPrimTypeLbl")` rootPrimTypePopup;
+                        menuItem -l `getMayaUsdString("kExportScopeLbl")` -ann "scope";
+                        menuItem -l `getMayaUsdString("kExportXformLbl")` -ann "xform";
                 }
 
                 optionMenuGrp -l `getMayaUsdString("kExportDefaultPrimLbl")` -annotation `getMayaUsdString("kExportDefaultPrimAnn")` exportDefaultPrim;
@@ -936,8 +948,9 @@ global proc int mayaUsdTranslatorExport (string $parent,
 
         if (stringArrayContains("output", $sectionNames)) {
             $currentOptions = mayaUsdTranslatorExport_AppendFromPopup($currentOptions, "defaultUSDFormat", "defaultUSDFormatPopup");
-            if (stringArrayContains("output-parentscope", $sectionNames)) {
-                $currentOptions = mayaUsdTranslatorExport_AppendFromTextField($currentOptions, "parentScope", "parentScopeField");
+            if (stringArrayContains("output-RootPrim", $sectionNames)) {
+                $currentOptions = mayaUsdTranslatorExport_AppendFromTextField($currentOptions, "rootPrim", "rootPrimField");
+                $currentOptions = mayaUsdTranslatorExport_AppendFromPopup($currentOptions, "rootPrimType", "rootPrimTypePopup");
             }
             $currentOptions = mayaUsdTranslatorExport_AppendDefaultPrim($currentOptions, "defaultPrim");
         }

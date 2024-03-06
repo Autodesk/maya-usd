@@ -7,9 +7,8 @@ jobs:
   move-triage-card:
     runs-on: ubuntu-latest
     steps:
-      - uses: alex-page/github-project-automation-plus@v0.8.3
-      # Aug 2023: Update from v0.3.0 to v0.8.3 which uses node16.
-      #           node12 is out of support.
+      - uses: alex-page/github-project-automation-plus@v0.9.0
+      # Feb 2024: Update v0.9.0 which uses node20 (node16 is out of support).
         with:
           project: Issue Triage
           column: Needs triage

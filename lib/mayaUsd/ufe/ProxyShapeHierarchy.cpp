@@ -210,7 +210,7 @@ ProxyShapeHierarchy::createUFEChildList(const UsdPrimSiblingRange& range, bool f
     Ufe::SceneItemList children;
     UFE_V3(std::string dagPathStr;)
 
-    const SdfPath primPath = getPrimPath(fItem->path());
+    const SdfPath primPath = getProxyShapePrimPath(fItem->path());
     if (primPath.IsEmpty()) {
         // An empty primPath means we're in a bad state.  We'll return true here
         // without populating children.

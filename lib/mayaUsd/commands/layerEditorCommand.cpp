@@ -797,22 +797,19 @@ public:
         auto stage = getStage();
         if (!stage)
             return false;
+
         if (_systemLock) {
             saveSelection();
-            layer->SetPermissionToSave(false);
-            layer->SetPermissionToEdit(false);
-            MayaUsd::addSystemLockedLayer(layer);
+            MayaUsd::lockLayer(
+                _proxyShapePath, layer, MayaUsd::LayerLockType::LayerLock_SystemLocked, true);
         } else if (_lockIt) {
             saveSelection();
-            layer->SetPermissionToEdit(false);
-            layer->SetPermissionToSave(true);
-            MayaUsd::removeSystemLockedLayer(layer);
-
+            MayaUsd::lockLayer(
+                _proxyShapePath, layer, MayaUsd::LayerLockType::LayerLock_Locked, true);
         } else {
             saveSelection();
-            layer->SetPermissionToEdit(true);
-            layer->SetPermissionToSave(true);
-            MayaUsd::removeSystemLockedLayer(layer);
+            MayaUsd::lockLayer(
+                _proxyShapePath, layer, MayaUsd::LayerLockType::LayerLock_Unlocked, true);
         }
 
         return true;
@@ -823,15 +820,10 @@ public:
         auto stage = getStage();
         if (!stage)
             return false;
-        if (_systemLock) {
-            layer->SetPermissionToEdit(true);
-            layer->SetPermissionToSave(true);
-            MayaUsd::removeSystemLockedLayer(layer);
-            restoreSelection();
-        } else if (_lockIt) {
-            layer->SetPermissionToEdit(true);
-            layer->SetPermissionToSave(true);
-            MayaUsd::removeSystemLockedLayer(layer);
+        // Note: the undo of both lock and system-lock are unlock by design.
+        if (_systemLock || _lockIt) {
+            MayaUsd::lockLayer(
+                _proxyShapePath, layer, MayaUsd::LayerLockType::LayerLock_Unlocked, true);
             restoreSelection();
         }
 
@@ -925,17 +917,6 @@ private:
         return std::string(" \"") + string + std::string("\"");
     }
 
-    MString _executeMel(const std::string& commandString)
-    {
-        // executes maya command with display and undo set to true so that it logs
-        MStringArray result;
-        MGlobal::executeCommand(
-            MString(commandString.c_str()), result, /*display*/ true, /*undo*/ true);
-        if (result.length() > 0)
-            return result[0];
-        else
-            return "";
-    }
     // Checks if the file layer or its sublayers are accessible on disk, and updates the system-lock
     // status.
     void _refreshLayerSystemLock(SdfLayerHandle usdLayer)

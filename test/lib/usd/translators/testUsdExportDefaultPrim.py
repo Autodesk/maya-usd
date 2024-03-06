@@ -59,7 +59,7 @@ class testUsdExportMesh(unittest.TestCase):
         cmds.file(self.testFile, force=True, open=True)
         usdFile = os.path.abspath('UsdExportDefaultPrim.usda')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
-            shadingMode='none', parentScope='testScope', defaultPrim = 'testScope')
+            shadingMode='none', rootPrim='testScope', defaultPrim = 'testScope')
         
         stage = Usd.Stage.Open(usdFile)
         self.assertEqual(stage.GetDefaultPrim().GetName(), 'testScope')
