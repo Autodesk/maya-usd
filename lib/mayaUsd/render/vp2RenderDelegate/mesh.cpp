@@ -1155,6 +1155,12 @@ HdDirtyBits HdVP2Mesh::_PropagateDirtyBits(HdDirtyBits bits) const
         bits |= HdChangeTracker::DirtyExtent;
     }
 
+    // If the double-sidedness changes, dirty the material id
+    // to make it use the appropriate version of the material.
+    if (bits & (HdChangeTracker::DirtyDoubleSided)) {
+        bits |= HdChangeTracker::DirtyMaterialId;
+    }
+
     _PropagateDirtyBitsCommon(bits, _reprs);
 
     return bits;
@@ -1782,9 +1788,13 @@ void HdVP2Mesh::_UpdateDrawItem(
                         != 0)) {
                     drawItemData._shaderIsFallback = true;
                 } else {
-                    const HdCullStyle           cullStyle = GetCullStyle(sceneDelegate);
+                    const HdCullStyle cullStyle = GetCullStyle(sceneDelegate);
+                    bool              useBackfaceCulling
+                        = (cullStyle == HdCullStyleDontCare && !IsDoubleSided(sceneDelegate))
+                        || (cullStyle == HdCullStyleBack)
+                        || (cullStyle == HdCullStyleBackUnlessDoubleSided && !IsDoubleSided(sceneDelegate));
                     MHWRender::MShaderInstance* shader = material->GetSurfaceShader(
-                        _GetMaterialNetworkToken(reprToken), cullStyle == HdCullStyleBack);
+                        _GetMaterialNetworkToken(reprToken), useBackfaceCulling);
                     if (shader != nullptr
                         && (shader != drawItemData._shader || shader != stateToCommit._shader)) {
                         drawItemData._shader = shader;
