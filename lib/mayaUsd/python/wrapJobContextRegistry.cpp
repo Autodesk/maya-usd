@@ -73,10 +73,36 @@ public:
             jobContext, niceName, description, [=]() { return callEnablerFn(enablerFct); }, true);
     }
 
+    static void SetExportOptionsUI(const std::string& jobContext, boost::python::object uiFct)
+    {
+        if (!PyCallable_Check(uiFct.ptr()))
+            TF_CODING_ERROR(
+                "Parameter uiFct should be a callable function returning a dictionary.");
+
+        UsdMayaJobContextRegistry::GetInstance().SetExportOptionsUI(
+            jobContext,
+            [=](const TfToken&      jobContext,
+                const std::string&  parentUI,
+                const VtDictionary& settings) {
+                return callUIFn(uiFct, jobContext, parentUI, settings);
+            },
+            true);
+    }
+
 private:
     static VtDictionary callEnablerFn(boost::python::object fnc)
     {
         auto res = TfPyCall<VtDictionary>(fnc)();
+        return res;
+    }
+
+    static VtDictionary callUIFn(
+        boost::python::object fnc,
+        const TfToken&        jobContext,
+        const std::string&    parentUI,
+        const VtDictionary&   settings)
+    {
+        auto res = TfPyCall<VtDictionary>(fnc)(jobContext, parentUI, settings);
         return res;
     }
 };
@@ -91,5 +117,7 @@ void wrapJobContextRegistry()
         .def("RegisterImportJobContext", &JobContextRegistry::RegisterImportJobContext)
         .staticmethod("RegisterImportJobContext")
         .def("RegisterExportJobContext", &JobContextRegistry::RegisterExportJobContext)
-        .staticmethod("RegisterExportJobContext");
+        .staticmethod("RegisterExportJobContext")
+        .def("SetExportOptionsUI", &JobContextRegistry::SetExportOptionsUI)
+        .staticmethod("SetExportOptionsUI");
 }

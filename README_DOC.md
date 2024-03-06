@@ -5,7 +5,8 @@
 
 ## Core Modules
 + [Common Plug-in Base Commands](lib/mayaUsd/commands/Readme.md)
-+ [Managing Translation Options](lib/mayaUsd/fileio/doc/Managing_export_options_via_JobContext_in_Python.md)
++ [Managing Translation (Import/Export) Options](lib/mayaUsd/fileio/doc/Managing_export_options_via_JobContext_in_Python.md)
++ [Example Export Plugin in Python](tutorials/export-plugin/README.md)
 + [SchemaAPI Translators](lib/mayaUsd/fileio/doc/SchemaAPI_Import_Export_in_Python.md)
 + [UFE Transform](lib/mayaUsd/ufe/UsdTransform3d.md)
 + [Undo/Redo Support](lib/mayaUsd/undo/README.md)
@@ -15,3 +16,4 @@
 + [Layer Saving](lib/mayaUsd/nodes/Layer_Saving_Docs.md)
 + [Maya Reference Edit Router](lib/usd/translators/mayaReferenceEditRouter.md)
 + [Layer Locking](doc/LayerLocking.md)
++ [Edit Routing](doc/EditRouting.md)
