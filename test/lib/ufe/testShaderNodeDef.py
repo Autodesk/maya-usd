@@ -252,7 +252,7 @@ class ShaderNodeDefTestCase(unittest.TestCase):
         self.assertIsNotNone(valueInput)
         self.assertTrue(valueInput.hasMetadata(ufe.AttributeDef.kNativeType))
         self.assertEqual(valueInput.type(), "ColorFloat3")
-        self.assertEqual(valueInput.getMetadata(ufe.AttributeDef.kNativeType), ufe.Value("color"))
+        self.assertEqual(valueInput.getMetadata(ufe.AttributeDef.kNativeType), ufe.Value("color3f"))
 
         type = "ND_surfacematerial"
         nodeDef = nodeDefHandler.definition(type)
