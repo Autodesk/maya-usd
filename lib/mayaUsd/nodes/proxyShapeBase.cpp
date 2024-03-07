@@ -1134,7 +1134,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         primPath = finalUsdStage->GetPseudoRoot().GetPath();
 
         // EMSUSD-1087 Applying the lock permissions to layers should be done before the layer
-        // muting step as the layer identifiers change after muting
+        // muting
         copyLayerLockingFromAttribute(*this, layerNameMap, *finalUsdStage);
 
         copyLayerMutingFromAttribute(*this, layerNameMap, *finalUsdStage);
