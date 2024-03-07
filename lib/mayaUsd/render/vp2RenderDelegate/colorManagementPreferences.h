@@ -21,6 +21,7 @@
 #include <maya/MMessage.h>
 #include <maya/MString.h>
 
+#include <set>
 #include <vector>
 
 namespace MAYAUSD_NS_DEF {
@@ -50,6 +51,12 @@ public:
      */
     static const MString& sRGBName();
 
+    /*! \brief Prevent error spamming in the script editor by remembering failed requests
+               for a color management fragment.
+     */
+    static bool isUnknownColorSpace(const std::string& colorSpace);
+    static void addUnknownColorSpace(const std::string& colorSpace);
+
     /*! \brief  Returns the OCIO color space name according to config file rules.
 
         \param path The path of the file to be color managed.
@@ -73,6 +80,7 @@ private:
     bool                     _active = false;
     MString                  _renderingSpaceName;
     MString                  _sRGBName;
+    std::set<std::string>    _unknownColorSpaces;
     std::vector<MCallbackId> _mayaColorManagementCallbackIds;
 
     void Refresh();

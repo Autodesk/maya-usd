@@ -35,6 +35,16 @@ const MString& ColorManagementPreferences::RenderingSpaceName()
 
 const MString& ColorManagementPreferences::sRGBName() { return Get()._sRGBName; }
 
+bool ColorManagementPreferences::isUnknownColorSpace(const std::string& colorSpace)
+{
+    return Get()._unknownColorSpaces.count(colorSpace) > 0;
+}
+
+void ColorManagementPreferences::addUnknownColorSpace(const std::string& colorSpace)
+{
+    InternalGet()._unknownColorSpaces.insert(colorSpace);
+}
+
 std::string ColorManagementPreferences::getFileRule(const std::string& path)
 {
     MString colorRuleCmd;
@@ -136,6 +146,7 @@ void ColorManagementPreferences::Refresh()
             break;
         }
     }
+    _unknownColorSpaces.clear();
 }
 
 } // namespace MAYAUSD_NS_DEF
