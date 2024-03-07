@@ -1928,7 +1928,7 @@ SdfPath MayaUsdProxyShapeBase::_GetPrimPath(MDataBlock dataBlock) const
         return SdfPath::EmptyPath();
     }
 
-    if (primPathStr.isEmpty()) {
+    if (primPathStr.length() == 0) {
         return SdfPath::AbsoluteRootPath();
     } else {
         const SdfPath path(primPathStr.asChar());
