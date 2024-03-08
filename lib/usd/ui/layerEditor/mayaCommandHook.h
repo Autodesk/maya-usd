@@ -64,7 +64,8 @@ public:
     void muteSubLayer(UsdLayer usdLayer, bool muteIt) override;
 
     // lock, system-lock or unlock the given layer
-    void lockSubLayer(UsdLayer usdLayer, MayaUsd::LayerLockType lockState) override;
+    void
+    lockLayer(UsdLayer usdLayer, MayaUsd::LayerLockType lockState, bool includeSubLayers) override;
 
     // Checks if the file layer or its sublayers are accessible on disk, and updates the system-lock
     // status.
@@ -93,10 +94,6 @@ public:
 
 protected:
     std::string proxyShapePath();
-
-    // Checks if the file layer or its sublayers are accessible on disk, and updates the system-lock
-    // status.
-    void _refreshLayerSystemLock(UsdLayer usdLayer) override;
 
     std::string executeMel(const std::string& commandString);
     void        executePython(const std::string& commandString);

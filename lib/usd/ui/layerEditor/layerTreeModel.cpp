@@ -584,7 +584,10 @@ void LayerTreeModel::toggleMuteLayer(LayerTreeItem* item, bool* forcedState)
     _sessionState->commandHook()->muteSubLayer(item->layer(), !item->isMuted());
 }
 
-void LayerTreeModel::toggleLockLayer(LayerTreeItem* item, bool* forcedState /*= nullptr*/)
+void LayerTreeModel::toggleLockLayer(
+    LayerTreeItem* item,
+    bool           includeSublayers,
+    bool*          forcedState /*= nullptr*/)
 {
     if (item->isInvalidLayer() || item->isSessionLayer() || item->isSystemLocked())
         return;
@@ -597,7 +600,7 @@ void LayerTreeModel::toggleLockLayer(LayerTreeItem* item, bool* forcedState /*= 
     MayaUsd::LayerLockType toggledLockType = item->isLocked()
         ? MayaUsd::LayerLockType::LayerLock_Unlocked
         : MayaUsd::LayerLockType::LayerLock_Locked;
-    _sessionState->commandHook()->lockSubLayer(item->layer(), toggledLockType);
+    _sessionState->commandHook()->lockLayer(item->layer(), toggledLockType, includeSublayers);
 }
 
 } // namespace UsdLayerEditor

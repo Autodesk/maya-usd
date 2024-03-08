@@ -97,6 +97,7 @@ public:
     void onAddParentLayer(const QString& undoName) const;
     void onMuteLayer(const QString& undoName) const;
     void onLockLayer(const QString& undoName) const;
+    void onLockLayerAndSublayers(const QString& undoName, bool includeSublayers) const;
 
     // QWidgets overrides
     virtual void paintEvent(QPaintEvent* event) override;

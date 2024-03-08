@@ -146,6 +146,8 @@ public:
     // may not be system locked but by inference some of the action items of the layer
     // can appear as locked if the parent is system locked.
     bool appearsSystemLocked() const;
+    // Checks if this layer has any sub layers.
+    bool hasSubLayers() const;
 
     // used by draw delegate: returns how deep in the hierarchy we are
     int depth() const;

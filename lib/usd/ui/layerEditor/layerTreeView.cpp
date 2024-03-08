@@ -343,6 +343,12 @@ void LayerTreeView::onMuteLayer(const QString& undoName) const
 
 void LayerTreeView::onLockLayer(const QString& undoName) const
 {
+    bool includeSubLayers = false;
+    onLockLayerAndSublayers(undoName, includeSubLayers);
+}
+
+void LayerTreeView::onLockLayerAndSublayers(const QString& undoName, bool includeSublayers) const
+{
     DelayAbstractCommandHook delayed(*_model->sessionState()->commandHook());
 
     auto selection = getSelectedLayerItems();
@@ -356,7 +362,7 @@ void LayerTreeView::onLockLayer(const QString& undoName) const
 
     UndoContext context(params.commandHook, params.name);
     for (auto item : *params.selection) {
-        item->parentModel()->toggleLockLayer(item, &isLocked);
+        item->parentModel()->toggleLockLayer(item, includeSublayers, &isLocked);
     }
 }
 
@@ -551,7 +557,8 @@ void LayerTreeView::onLockLayerButtonPushed()
 {
     auto item = currentLayerItem();
     if (item && !item->isSystemLocked()) {
-        item->parentModel()->toggleLockLayer(item);
+        bool includeSublayers = false;
+        item->parentModel()->toggleLockLayer(item, includeSublayers);
     }
     // need to force redraw of everything otherwise redraw isn't right
     update();
