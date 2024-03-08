@@ -30,6 +30,12 @@ namespace UsdLayerEditor {
 // delegate Action API for command buttons
 LayerActionDefinitions LayerTreeItem::_actionButtons;
 
+static void createPixmapPair(const QString& name, QPixmap& normal, QPixmap& hover)
+{
+    normal = utils->createPNGResPixmap(utils->getDPIPixmapName(name));
+    hover = utils->createPNGResPixmap(utils->getDPIPixmapName(name + QString("_hover")));
+}
+
 const LayerActionDefinitions& LayerTreeItem::actionButtonsDefinition()
 {
     if (_actionButtons.size() == 0) {
@@ -39,7 +45,16 @@ const LayerActionDefinitions& LayerTreeItem::actionButtonsDefinition()
         muteActionInfo._actionType = LayerActionType::Mute;
         muteActionInfo._layerMask = LayerMasks::LayerMasks_SubLayer;
         muteActionInfo._tooltip = StringResources::getAsQString(StringResources::kMuteUnmuteLayer);
-        muteActionInfo._pixmap = utils->createPNGResPixmap("RS_disable");
+
+        createPixmapPair(
+            ":/UsdLayerEditor/LE_mute_off",
+            muteActionInfo._pixmap_off,
+            muteActionInfo._pixmap_off_hover);
+        createPixmapPair(
+            ":/UsdLayerEditor/LE_mute_on",
+            muteActionInfo._pixmap_on,
+            muteActionInfo._pixmap_on_hover);
+
         _actionButtons.insert(std::make_pair(muteActionInfo._actionType, muteActionInfo));
 
         LayerActionInfo lockActionInfo;
@@ -49,7 +64,16 @@ const LayerActionDefinitions& LayerTreeItem::actionButtonsDefinition()
         lockActionInfo._layerMask = static_cast<LayerMasks>(
             LayerMasks::LayerMasks_SubLayer | LayerMasks::LayerMasks_Root);
         lockActionInfo._tooltip = StringResources::getAsQString(StringResources::kLockUnlockLayer);
-        lockActionInfo._pixmap = utils->createPNGResPixmap("lock");
+
+        createPixmapPair(
+            ":/UsdLayerEditor/LE_lock_off",
+            lockActionInfo._pixmap_off,
+            lockActionInfo._pixmap_off_hover);
+        createPixmapPair(
+            ":/UsdLayerEditor/LE_lock_on",
+            lockActionInfo._pixmap_on,
+            lockActionInfo._pixmap_on_hover);
+
         _actionButtons.insert(std::make_pair(lockActionInfo._actionType, lockActionInfo));
     }
     return _actionButtons;
@@ -213,7 +237,7 @@ QVariant LayerTreeItem::data(int role) const
     case Qt::BackgroundRole: return QColor(71, 71, 71);
     case Qt::TextAlignmentRole:
         return (static_cast<int>(Qt::AlignLeft) + static_cast<int>(Qt::AlignVCenter));
-    case Qt::SizeHintRole: return QSize(0, DPIScale(30));
+    case Qt::SizeHintRole: return QSize(0, DPIScale(24));
     default: return QStandardItem::data(role);
     }
 }
