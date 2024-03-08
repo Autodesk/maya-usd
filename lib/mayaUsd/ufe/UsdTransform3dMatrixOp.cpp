@@ -130,7 +130,7 @@ private:
 };
 
 // Factor out common code for translate, rotate, scale undoable commands.
-class MatrixOpUndoableCmdBase : public UsdSetXformOpUndoableCommandBase<GfMatrix4d>
+class MatrixOpUndoableCmdBase : public UsdSetXformOpUndoableCommandBase
 {
     UsdGeomXformOp _op;
 
@@ -144,11 +144,25 @@ public:
     {
     }
 
-    void setValue(const GfMatrix4d& m) override
+    void createOpIfNeeded(UsdUndoableItem& undoableItem) override
     {
-        VtValue v;
-        v = m; // Can assign to VtValue, but can't construct.
-        _op.GetAttr().Set(v, writeTime());
+        UsdUndoBlock undoBlock(&undoableItem);
+        GfMatrix4d   matrix = _op.GetOpTransform(writeTime());
+        _op.GetAttr().Set(matrix, writeTime());
+    }
+
+    void setValue(const VtValue& v, const UsdTimeCode& writeTime) override
+    {
+        // Note: the value passed in is either the initial value returned
+        //       by the getValue function below or a new value passed to
+        //       the set function below. In both cases, we are guaranteed
+        //       that it will be a GfMatrix4d.
+        _op.GetAttr().Set(v, writeTime);
+    }
+
+    VtValue getValue(const UsdTimeCode& readTime) const override
+    {
+        return VtValue(_op.GetOpTransform(readTime));
     }
 };
 
@@ -162,7 +176,7 @@ public:
         const UsdGeomXformOp& op,
         const UsdTimeCode&    writeTime)
         : MatrixOpUndoableCmdBase(path, op, writeTime)
-        , _opTransform(op.GetOpTransform(readTime()))
+        , _opTransform(op.GetOpTransform(writeTime))
     {
     }
 
@@ -170,7 +184,7 @@ public:
     bool set(double x, double y, double z) override
     {
         _opTransform.SetTranslateOnly(GfVec3d(x, y, z));
-        handleSet(_opTransform);
+        updateNewValue(VtValue(_opTransform));
         return true;
     }
 
@@ -188,7 +202,7 @@ public:
         const UsdTimeCode&    writeTime)
         : MatrixOpUndoableCmdBase(path, op, writeTime)
     {
-        GfMatrix4d opTransform = op.GetOpTransform(readTime());
+        GfMatrix4d opTransform = op.GetOpTransform(writeTime);
 
         // Other matrix decomposition code from AL:
         // from
@@ -215,7 +229,7 @@ public:
         fU.SetRotate(r);
 
         GfMatrix4d opTransform = (fS * fU).SetTranslateOnly(fT);
-        handleSet(opTransform);
+        updateNewValue(VtValue(opTransform));
         return true;
     }
 
@@ -234,7 +248,7 @@ public:
         const UsdTimeCode&    writeTime)
         : MatrixOpUndoableCmdBase(path, op, writeTime)
     {
-        GfMatrix4d opTransform = op.GetOpTransform(readTime());
+        GfMatrix4d opTransform = op.GetOpTransform(writeTime);
 
         // Other matrix decomposition code from AL:
         // from
@@ -252,7 +266,7 @@ public:
     bool set(double x, double y, double z) override
     {
         GfMatrix4d opTransform = (GfMatrix4d(GfVec4d(x, y, z, 1.0)) * fU).SetTranslateOnly(fT);
-        handleSet(opTransform);
+        updateNewValue(VtValue(opTransform));
         return true;
     }
 
