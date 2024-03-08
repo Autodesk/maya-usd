@@ -59,7 +59,6 @@ protected:
     void          setupLayout();
     QLayout*      setupLayout_toolbar();
     SessionState& _sessionState;
-    QWidget*      _saveButtonParent { nullptr };
     struct
     {
         QPushButton*           _newLayer;

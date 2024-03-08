@@ -23,8 +23,10 @@
 #include "stringResources.h"
 
 #include <maya/MGlobal.h>
+#include <maya/MQtUtil.h>
 
 #include <QtGui/QColor>
+#include <QtGui/QCursor>
 #include <QtWidgets/QMenu>
 
 using namespace UsdLayerEditor;
@@ -37,7 +39,7 @@ struct CallMethodParams
 };
 
 namespace {
-QColor BLACK_BACKGROUND(43, 43, 43);
+QColor BLACK_BACKGROUND(55, 55, 55);
 
 typedef void (LayerTreeItem::*simpleLayerMethod)();
 
@@ -83,6 +85,7 @@ LayerTreeView::LayerTreeView(SessionState* in_sessionState, QWidget* in_parent)
     setAcceptDrops(true);
     setDropIndicatorShown(true);
     setDragDropMode(QAbstractItemView::InternalMove);
+    updateMouseCursor();
 
     // custom row drawing
     _delegate = new LayerTreeItemDelegate(this);
@@ -404,47 +407,6 @@ void LayerTreeView::paintEvent(QPaintEvent* event)
     }
 }
 
-bool LayerTreeView::event(QEvent* event)
-{
-    // override for dynamic tooltips
-    if (event->type() == QEvent::ToolTip) {
-        handleTooltips(dynamic_cast<QHelpEvent*>(event));
-        return true;
-    } else {
-        return PARENT_CLASS::event(event);
-    }
-}
-
-void LayerTreeView::handleTooltips(QHelpEvent* event)
-{
-    auto index = indexAt(event->pos());
-    if (index.isValid()) {
-        auto itemRect = visualRect(index);
-        auto layerTreeItem = _model->layerItemFromIndex(index);
-        itemRect = _delegate->getAdjustedItemRect(layerTreeItem, itemRect);
-        auto targetRect = _delegate->getTargetIconRect(itemRect);
-        auto textRect = _delegate->getTextRect(itemRect);
-        if (targetRect.contains(event->pos())) {
-            QString tip
-                = StringResources::getAsQString(StringResources::kSetLayerAsTargetLayerTooltip);
-            QToolTip::showText(event->globalPos(), tip);
-            return;
-        } else if (textRect.contains(event->pos())) {
-            QString tip;
-            if (layerTreeItem->isInvalidLayer()) {
-                tip = StringResources::getAsQString(StringResources::kPathNotFound)
-                    + layerTreeItem->subLayerPath().c_str();
-            } else {
-                tip = layerTreeItem->layer()->GetRealPath().c_str();
-            }
-            QToolTip::showText(event->globalPos(), tip);
-            return;
-        }
-    }
-    QToolTip::hideText();
-    event->ignore();
-}
-
 void LayerTreeView::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
@@ -461,10 +423,24 @@ void LayerTreeView::mousePressEvent(QMouseEvent* event)
     PARENT_CLASS::mousePressEvent(event);
 }
 
+void LayerTreeView::updateMouseCursor()
+{
+    // Note: special mouse cursor taken from Maya resources.
+    QString pixmapName = QtUtils::getDPIPixmapName(":/rmbMenu");
+    // Note: in Maya, the normal-sized pixmap name does not ends with _100,
+    //       so remove that ending if it is present.
+    pixmapName.remove("_100");
+    QPixmap pixmap(pixmapName);
+
+    const int hitX = MQtUtil::dpiScale(11);
+    const int hitY = MQtUtil::dpiScale(9);
+
+    setCursor(QCursor(pixmap, hitX, hitY));
+}
+
 // support for renderSetup-like action button API
 void LayerTreeView::mouseMoveEvent(QMouseEvent* event)
 {
-
     // dirty the tree view so it will repaint when mouse is over it
     // this is needed to change the icons when hovered over them
     _delegate->clearLastHitAction();

@@ -101,7 +101,6 @@ public:
 
     // QWidgets overrides
     virtual void paintEvent(QPaintEvent* event) override;
-    virtual bool event(QEvent* event) override;
     virtual void keyPressEvent(QKeyEvent* event) override;
     virtual void mousePressEvent(QMouseEvent* event) override;
     virtual void mouseMoveEvent(QMouseEvent* event) override;
@@ -109,6 +108,8 @@ public:
     virtual void leaveEvent(QEvent* event) override;
 
 protected:
+    void updateMouseCursor();
+
     // slot:
     void onModelAboutToBeReset();
     void onModelReset();
@@ -130,8 +131,6 @@ protected:
     LayerTreeItemDelegate*   _delegate;
 
     std::unique_ptr<LayerViewMemento> _cachedModelState;
-
-    void handleTooltips(QHelpEvent* event);
 
     // the mute button area has a different implementation than
     // the target button. It is based on Maya's renderSetup
