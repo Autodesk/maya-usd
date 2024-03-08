@@ -156,7 +156,7 @@ protected:
         const ItemPaintContext& ctx) const;
     void drawStdIcon(QPainter* painter, int left, int top, const QPixmap& pixmap) const;
     // Returns true if an action should appear as checked on a layer tree item.
-    bool actionAppearsChecked(const LayerActionInfo& actionInfo, Item item) const;
+    bool actionAppearsChecked(const LayerActionInfo& actionInfo, const ItemPaintContext& ctx) const;
 };
 
 } // namespace UsdLayerEditor
