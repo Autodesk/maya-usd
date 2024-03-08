@@ -70,7 +70,10 @@ struct LayerActionInfo
 {
     QString         _name;
     QString         _tooltip;
-    QPixmap         _pixmap;
+    QPixmap         _pixmap_off;
+    QPixmap         _pixmap_off_hover;
+    QPixmap         _pixmap_on;
+    QPixmap         _pixmap_on_hover;
     int             _extraPadding = 0;
     QColor          _borderColor;
     bool            _checked = false;

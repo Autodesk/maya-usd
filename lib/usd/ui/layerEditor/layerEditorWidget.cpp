@@ -94,7 +94,6 @@ namespace UsdLayerEditor {
 LayerEditorWidget::LayerEditorWidget(SessionState& in_sessionState, QMainWindow* in_parent)
     : QWidget(in_parent)
     , _sessionState(in_sessionState)
-    , _saveButtonParent(nullptr)
 {
     setupLayout();
     ::setupDefaultMenu(&in_sessionState, in_parent);
@@ -161,15 +160,30 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
 
     toolbar->addStretch();
 
-    { // save stage button: contains a push button and a "badge" widget
-        _saveButtonParent = new QWidget();
+    QWidget* saveContainer = new QWidget;
+    auto     saveLayout = new QHBoxLayout(saveContainer);
+    saveLayout->setContentsMargins(0, 0, 0, 0);
+    saveLayout->setSpacing(0);
+    saveLayout->addStretch();
+    {
+        auto badgeYOffset = DPIScale(4);
+        auto dirtyCountBadge = new DirtyLayersCountBadge(nullptr);
+        auto badgeSize = QSize(buttonSize + DPIScale(12), buttonSize + badgeYOffset);
+        dirtyCountBadge->setFixedSize(badgeSize);
+
+        saveLayout->addWidget(dirtyCountBadge, 0, Qt::AlignRight);
+        _buttons._dirtyCountBadge = dirtyCountBadge;
+    }
+
+    // save stage button: contains a push button and a "badge" widget
+    {
         auto saveButtonYOffset = DPIScale(4);
         auto saveButtonSize = QSize(buttonSize + DPIScale(12), buttonSize + saveButtonYOffset);
-        _saveButtonParent->setFixedSize(saveButtonSize);
-        auto saveStageBtn = new QPushButton(_saveButtonParent);
-        saveStageBtn->move(0, saveButtonYOffset);
+        auto saveStageBtn = new QPushButton();
+        saveStageBtn->setFixedSize(saveButtonSize);
         QtUtils::setupButtonWithHIGBitmaps(saveStageBtn, ":/UsdLayerEditor/LE_save_all");
         saveStageBtn->setFixedSize(buttonSize, buttonSize);
+
         saveStageBtn->setToolTip(
             StringResources::getAsQString(StringResources::kSaveAllEditsInLayerStack));
         connect(
@@ -178,13 +192,11 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
             this,
             &LayerEditorWidget::onSaveStageButtonClicked);
 
-        auto dirtyCountBadge = new DirtyLayersCountBadge(_saveButtonParent);
-        dirtyCountBadge->setFixedSize(saveButtonSize);
-        toolbar->addWidget(_saveButtonParent, 0, buttonAlignment);
-
+        saveLayout->addWidget(saveStageBtn, 0, buttonAlignment);
         _buttons._saveStageButton = saveStageBtn;
-        _buttons._dirtyCountBadge = dirtyCountBadge;
     }
+
+    toolbar->addWidget(saveContainer, 0, buttonAlignment);
 
     // update buttons on stage change for example dirty count
     connect(
@@ -256,7 +268,6 @@ void LayerEditorWidget::updateButtons()
 {
     if (_sessionState.commandHook()->isProxyShapeSharedStage(
             _sessionState.stageEntry()._proxyShapePath)) {
-        _saveButtonParent->setVisible(true);
         const auto layers = _treeView->layerTreeModel()->getAllNeedsSavingLayers();
         int        count = static_cast<int>(layers.size());
         for (auto layer : layers) {
@@ -274,8 +285,6 @@ void LayerEditorWidget::updateButtons()
         _buttons._dirtyCountBadge->updateCount(count);
         bool disable = count == 0;
         QtUtils::disableHIGButton(_buttons._saveStageButton, disable);
-    } else {
-        _saveButtonParent->setVisible(false);
     }
     _updateButtonsOnIdle = false;
 }
