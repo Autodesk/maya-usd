@@ -420,15 +420,16 @@ void LayerTreeView::mousePressEvent(QMouseEvent* event)
 void LayerTreeView::updateMouseCursor()
 {
     // Note: special mouse cursor taken from Maya resources.
-    QPixmap pixmap(":/rmbMenu.png");
-    QSize scaledSize = QSize(MQtUtil::dpiScale(pixmap.width()), MQtUtil::dpiScale(pixmap.height()));
-    QPixmap scaledPixmap
-        = pixmap.scaled(scaledSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    QString pixmapName = QtUtils::getDPIPixmapName(":/rmbMenu");
+    // Note: in Maya, the normal-sized pixmap name does not ends with _100,
+    //       so remove that ending if it is present.
+    pixmapName.remove("_100");
+    QPixmap pixmap(pixmapName);
 
     const int hitX = MQtUtil::dpiScale(11);
     const int hitY = MQtUtil::dpiScale(9);
 
-    setCursor(QCursor(scaledPixmap, hitX, hitY));
+    setCursor(QCursor(pixmap, hitX, hitY));
 }
 
 // support for renderSetup-like action button API
