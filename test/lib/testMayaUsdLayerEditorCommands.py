@@ -546,23 +546,23 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         self.assertTrue(subLayer.permissionToEdit)
         
         # Locking a layer
-        cmds.mayaUsdLayerEditor(subLayer.identifier, edit=True, lockLayer=(1, shapePath))
+        cmds.mayaUsdLayerEditor(subLayer.identifier, edit=True, lockLayer=(1, 0, shapePath))
         self.assertFalse(subLayer.permissionToEdit)
         cmds.undo()
         self.assertTrue(subLayer.permissionToEdit)
         cmds.redo()
         self.assertFalse(subLayer.permissionToEdit)
         # Unlocking a layer
-        cmds.mayaUsdLayerEditor(subLayer.identifier, edit=True, lockLayer=(0, shapePath))
+        cmds.mayaUsdLayerEditor(subLayer.identifier, edit=True, lockLayer=(0, 0, shapePath))
         self.assertTrue(subLayer.permissionToEdit)
         # System locking a layer
-        cmds.mayaUsdLayerEditor(subLayer.identifier, edit=True, lockLayer=(2, shapePath))
+        cmds.mayaUsdLayerEditor(subLayer.identifier, edit=True, lockLayer=(2, 0, shapePath))
         self.assertFalse(subLayer.permissionToEdit)
         self.assertFalse(subLayer.permissionToSave)
         cmds.undo()
         self.assertTrue(subLayer.permissionToEdit)
-   
-    def testLayerLockWritePermission(self):
+
+    def testLockLayerAndSubLayers(self):
         # FileBacked Layer Write Permission
         # 1- Loading the test scene
         rootLayerPath = testUtils.getTestScene("layerLocking", "layerLocking.usda")
@@ -571,7 +571,7 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         layerLockingShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
         proxyShapePath = layerLockingShapes[0]
         # 2- Setting a system lock on a layer loaded from a file
-        cmds.mayaUsdLayerEditor(topLayer.identifier, edit=True, lockLayer=(2, proxyShapePath))
+        cmds.mayaUsdLayerEditor(topLayer.identifier, edit=True, lockLayer=(2, 0, proxyShapePath))
         self.assertFalse(topLayer.permissionToEdit)
         self.assertFalse(topLayer.permissionToSave)
         # 3- Refreshing the system lock should remove the lock if the file is writable
@@ -579,6 +579,25 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         self.assertTrue(topLayer.permissionToEdit)
         self.assertTrue(topLayer.permissionToSave)
         
+    def testLayerLockWritePermission(self):
+        # Locking a layer and its sublayer
+        # 1- Loading the test scene
+        rootLayerPath = testUtils.getTestScene("layerLocking", "layerLocking.usda")
+        stage = Usd.Stage.Open(rootLayerPath)
+        topLayer = stage.GetRootLayer();
+        layerLockingShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+        proxyShapePath = layerLockingShapes[0]
+        # 2- Setting a lock on the top layer with the option to lock its sublayer
+        cmds.mayaUsdLayerEditor(topLayer.identifier, edit=True, lockLayer=(1, 1, proxyShapePath))
+        self.assertFalse(topLayer.permissionToEdit)
+        # 3- Check that sublayer is also locked
+        subLayer = Sdf.Layer.FindRelativeToLayer(topLayer, topLayer.subLayerPaths[0])
+        self.assertFalse(subLayer.permissionToEdit)
+        # 4- Undo and check that both top and sublayer are unlocked
+        cmds.undo()
+        self.assertTrue(topLayer.permissionToEdit)
+        self.assertTrue(subLayer.permissionToEdit)
+    
     def testMuteLayer(self):
         """ test 'mayaUsdLayerEditor' command 'muteLayer' paramater """
 

@@ -47,6 +47,7 @@ DEF_FLAG(al, layerAppearsLocked)
 DEF_FLAG(lo, layerIsLocked)
 DEF_FLAG(as, layerAppearsSystemLocked)
 DEF_FLAG(ls, layerIsSystemLocked)
+DEF_FLAG(ll, layerHasSubLayers)
 
 // edit flags
 DEF_FLAG(rs, removeSubLayer)
@@ -60,13 +61,14 @@ DEF_FLAG(pl, printLayer)
 DEF_FLAG(cl, clearLayer)
 DEF_FLAG(sp, selectPrimsWithSpec)
 DEF_FLAG(lk, lockLayer)
+DEF_FLAG(la, lockLayerAndSubLayers)
 
 const MString WORKSPACE_CONTROL_NAME = "mayaUsdLayerEditor";
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
 
-//  AbstractLayerEditorCreator implememtation
+//  AbstractLayerEditorCreator implementation
 
 AbstractLayerEditorCreator* AbstractLayerEditorCreator::_instance = nullptr;
 
@@ -134,6 +136,7 @@ MSyntax LayerEditorWindowCommand::createSyntax()
     ADD_FLAG(layerIsLocked);
     ADD_FLAG(layerAppearsSystemLocked);
     ADD_FLAG(layerIsSystemLocked);
+    ADD_FLAG(layerHasSubLayers);
 
     ADD_FLAG(removeSubLayer);
     ADD_FLAG(saveEdits);
@@ -146,6 +149,7 @@ MSyntax LayerEditorWindowCommand::createSyntax()
     ADD_FLAG(clearLayer);
     ADD_FLAG(selectPrimsWithSpec);
     ADD_FLAG(lockLayer);
+    ADD_FLAG(lockLayerAndSubLayers);
 
     // editor name
     syntax.addArg(MSyntax::kString);
@@ -331,6 +335,7 @@ MStatus LayerEditorWindowCommand::handleQueries(
     HANDLE_Q_FLAG(layerIsLocked)
     HANDLE_Q_FLAG(layerAppearsSystemLocked)
     HANDLE_Q_FLAG(layerIsSystemLocked)
+    HANDLE_Q_FLAG(layerHasSubLayers)
 
     if (argParser.isFlagSet(FLAG(proxyShape)) && argParser.isQuery()) {
         setResult(layerEditor->proxyShapeName().c_str());
@@ -370,6 +375,7 @@ MStatus LayerEditorWindowCommand::handleEdits(
     HANDLE_E_FLAG(clearLayer)
     HANDLE_E_FLAG(selectPrimsWithSpec)
     HANDLE_E_FLAG(lockLayer)
+    HANDLE_E_FLAG(lockLayerAndSubLayers)
 
     return MS::kSuccess;
 }

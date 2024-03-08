@@ -163,6 +163,7 @@ bool MayaLayerEditorWindow::layerAppearsLocked() { CALL_CURRENT_ITEM(appearsLock
 bool MayaLayerEditorWindow::layerIsLocked() { CALL_CURRENT_ITEM(isLocked); }
 bool MayaLayerEditorWindow::layerAppearsSystemLocked() { CALL_CURRENT_ITEM(appearsSystemLocked); }
 bool MayaLayerEditorWindow::layerIsSystemLocked() { CALL_CURRENT_ITEM(isSystemLocked); }
+bool MayaLayerEditorWindow::layerHasSubLayers() { CALL_CURRENT_ITEM(hasSubLayers); }
 
 std::string MayaLayerEditorWindow::proxyShapeName() const
 {
@@ -204,6 +205,16 @@ void MayaLayerEditorWindow::lockLayer()
     if (item != nullptr) {
         QString name = item->isLocked() ? "Unlock" : "Lock";
         treeView()->onLockLayer(name);
+    }
+}
+
+void MayaLayerEditorWindow::lockLayerAndSubLayers()
+{
+    auto item = treeView()->currentLayerItem();
+    if (item != nullptr) {
+        QString name = item->isLocked() ? "Unlock Layer and Sublayers" : "Lock Layer and Sublayers";
+        bool    includeSubLayers = true;
+        treeView()->onLockLayerAndSublayers(name, includeSubLayers);
     }
 }
 
