@@ -175,7 +175,7 @@ Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
     if (key == Ufe::AttributeDef::kNativeType) {
         // We return the Sdf type as that is more meaningful than the Sdr type.
         const auto sdfTypeTuple = fShaderAttributeDef->GetTypeAsSdfType();
-        if (!sdfTypeTuple.second.size()) {
+        if (sdfTypeTuple.second.IsEmpty()) {
             return Ufe::Value(sdfTypeTuple.first.GetAsToken().GetString());
         } else {
             return Ufe::Value(sdfTypeTuple.second.GetString());
