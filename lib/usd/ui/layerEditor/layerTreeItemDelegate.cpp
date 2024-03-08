@@ -284,8 +284,9 @@ void LayerTreeItemDelegate::paint_ActionIcon(
     int iconLeft = (action._order + 1) * (ACTION_WIDTH + ACTION_BORDER + action._extraPadding)
         + action._order * 2 * ACTION_BORDER;
 
+    bool appearsChecked = actionAppearsChecked(action, item);
     paint_drawOneAction(
-        painter, rect.right() - iconLeft, top, action, action._checked ? highlightColor : QColor());
+        painter, rect.right() - iconLeft, top, action, appearsChecked ? highlightColor : QColor());
 
     QString tooltip;
     if (_lastHitAction == action._name) {
@@ -306,6 +307,20 @@ void LayerTreeItemDelegate::paint_ActionIcons(
 {
     paint_ActionIcon(painter, rect, item, LayerActionType::Lock, highlightColor);
     paint_ActionIcon(painter, rect, item, LayerActionType::Mute, highlightColor);
+}
+
+bool LayerTreeItemDelegate::actionAppearsChecked(const LayerActionInfo& actionInfo, Item item) const
+{
+    if (actionInfo._checked) {
+        return true;
+    }
+
+    // This is used to display un-sharable layers as system-locked
+    if (actionInfo._actionType == LayerActionType::Lock && item->isSystemLocked()) {
+        return true;
+    }
+
+    return false;
 }
 
 void LayerTreeItemDelegate::paint(

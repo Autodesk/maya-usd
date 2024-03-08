@@ -148,6 +148,8 @@ protected:
         const LayerActionInfo& action,
         const QColor&          highlightColor) const;
     void drawStdIcon(QPainter* painter, int left, int top, const QPixmap& pixmap) const;
+    // Returns true if an action should appear as checked on a layer tree item.
+    bool actionAppearsChecked(const LayerActionInfo& actionInfo, Item item) const;
 };
 
 } // namespace UsdLayerEditor

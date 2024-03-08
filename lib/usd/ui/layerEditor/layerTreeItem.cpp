@@ -266,7 +266,7 @@ bool LayerTreeItem::sublayerOfShared() const
     return false;
 }
 
-bool LayerTreeItem::isReadOnly() const { return (_isSharedLayer); }
+bool LayerTreeItem::isReadOnly() const { return (_isSharedLayer) || sublayerOfShared(); }
 
 bool LayerTreeItem::isMovable() const
 {
@@ -291,7 +291,11 @@ bool LayerTreeItem::appearsLocked() const
     return false;
 }
 
-bool LayerTreeItem::isSystemLocked() const { return MayaUsd::isLayerSystemLocked(_layer); }
+bool LayerTreeItem::isSystemLocked() const
+{
+    // When a layer is being externally driven, it should appear as system-locked.
+    return MayaUsd::isLayerSystemLocked(_layer) || isReadOnly();
+}
 
 bool LayerTreeItem::appearsSystemLocked() const
 {
