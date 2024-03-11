@@ -41,8 +41,11 @@
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
+#include <maya/MString.h>
 
 #include <basePxrUsdPreviewSurface/usdPreviewSurface.h>
+
+#include <set>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -53,6 +56,22 @@ REGISTER_SHADING_MODE_EXPORT_MATERIAL_CONVERSION(
     PxrMayaUsdPreviewSurfaceTokens->exportDescription);
 
 namespace {
+
+struct MStringComp
+{
+    bool operator()(const MString& l, const MString& r) const
+    {
+        return strcmp(l.asChar(), r.asChar()) < 0;
+    }
+};
+
+bool _IsRawColorSpace(const MString& colorSpace)
+{
+    // Check against a set of possible aliases since not all OCIO configs declare
+    // "Raw" the same way.
+    static const std::set<MString, MStringComp> rawAliases = { "Raw", "Utility - Raw" };
+    return rawAliases.find(colorSpace) != rawAliases.end();
+}
 
 void _ValidateRawColorSpace(const MPlug& shadingNodePlug)
 {
@@ -68,7 +87,7 @@ void _ValidateRawColorSpace(const MPlug& shadingNodePlug)
 
     MFnDependencyNode otherDepNode(otherPlug.node());
     MPlug             sourceColorSpace = otherDepNode.findPlug("colorSpace");
-    if (sourceColorSpace.asString() != "Raw") {
+    if (!_IsRawColorSpace(sourceColorSpace.asString())) {
         MString warning("File texture \"");
         warning += otherDepNode.name() + "\" connected to \"" + shadingNodePlug.name()
             + "\" should use the \"Raw\" source color space";
@@ -88,7 +107,7 @@ void _ValidateNormalMap(const MPlug& shadingNodePlug)
 
     MFnDependencyNode otherDepNode(otherPlug.node());
     MPlug             sourceColorSpace = otherDepNode.findPlug("colorSpace");
-    if (sourceColorSpace.asString() != "Raw") {
+    if (!_IsRawColorSpace(sourceColorSpace.asString())) {
         MString warning("File texture \"");
         warning += otherDepNode.name() + "\" connected to \"" + shadingNodePlug.name()
             + "\" should use the \"Raw\" source color space";
