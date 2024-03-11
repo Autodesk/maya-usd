@@ -30,6 +30,7 @@ list(APPEND SHADERFRAGMENTS_XMLS
     usdPreviewSurfaceLightingAPI2.xml
     usdPreviewSurfaceLightingAPI3.xml
     # New fragments
+    BackfaceCulling.xml
     BasisCurvesCubicColorDomain.xml
     BasisCurvesCubicCPVHull.xml
     BasisCurvesCubicCPVPassing.xml

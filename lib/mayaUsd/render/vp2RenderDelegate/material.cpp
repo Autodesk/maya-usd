@@ -3005,6 +3005,7 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
         }
 
         shaderInstance = shaderMgr->getFragmentShader(fragmentName, "outColor", true);
+        shaderInstance->addInputFragment("BackfaceCulling", "outCullStyle", "cullStyle");
 
         // Find named primvar readers:
         MStringArray parameterList;
