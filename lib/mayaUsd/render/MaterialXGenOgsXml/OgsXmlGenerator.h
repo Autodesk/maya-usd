@@ -32,7 +32,6 @@ public:
     static string samplerToTextureName(const string&);
 
     /// String constants
-    static const string CULL_STYLE;
     static const string OUTPUT_NAME;
     static const string VP_TRANSPARENCY_NAME;
 

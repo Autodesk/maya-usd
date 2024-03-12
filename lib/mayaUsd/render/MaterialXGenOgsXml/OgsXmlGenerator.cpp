@@ -301,7 +301,6 @@ void xmlAddValues(pugi::xml_node& parent, const VariableBlock& block, bool skipL
 }
 } // namespace
 
-const string OgsXmlGenerator::CULL_STYLE = "cullStyle";
 const string OgsXmlGenerator::OUTPUT_NAME = "outColor";
 const string OgsXmlGenerator::VP_TRANSPARENCY_NAME = "vp2Transparency";
 const string OgsXmlGenerator::SAMPLER_SUFFIX = "_sampler";
@@ -404,9 +403,6 @@ string OgsXmlGenerator::generate(
         pugi::xml_node p = xmlProperties.append_child("float");
         xmlSetProperty(p, "", VP_TRANSPARENCY_NAME.c_str());
     }
-
-    pugi::xml_node cullStyleProp = xmlProperties.append_child(getOgsTypeMap().at(Type::INTEGER->getName()));
-    xmlSetProperty(cullStyleProp, "", CULL_STYLE);
 
     // Add values
     pugi::xml_node xmlValues = xmlRoot.append_child(VALUES);

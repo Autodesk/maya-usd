@@ -427,14 +427,8 @@ ShaderPtr GlslFragmentGenerator::generate(
             emitLineBegin(pixelStage);
             emitString("float ", pixelStage);
             emitString(OgsXmlGenerator::VP_TRANSPARENCY_NAME, pixelStage);
-            emitString(Syntax::COMMA, pixelStage);
             emitLineEnd(pixelStage, false);
         }
-
-        emitLineBegin(pixelStage);
-        emitString("int ", pixelStage);
-        emitString(OgsXmlGenerator::CULL_STYLE, pixelStage);
-        emitLineEnd(pixelStage, false);
     }
     emitScopeEnd(pixelStage);
 

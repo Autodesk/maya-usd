@@ -47,8 +47,6 @@ TF_DEFINE_PUBLIC_TOKENS(HdVP2ShaderFragmentsTokens, MAYAUSD_CORE_PUBLIC_USD_PREV
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    (BackfaceCulling)
-
     (BasisCurvesCubicColorDomain)
     (BasisCurvesCubicCPVHull)
     (BasisCurvesCubicCPVPassing)
@@ -118,9 +116,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 static const TfTokenVector _LanguageSpecificFragmentNames
     = { _tokens->BasisCurvesLinearDomain, _tokens->BasisCurvesCubicDomain };
 
-static const TfTokenVector _FragmentNames = { _tokens->BackfaceCulling,
-    
-                                              _tokens->BasisCurvesCubicColorDomain,
+static const TfTokenVector _FragmentNames = { _tokens->BasisCurvesCubicColorDomain,
                                               _tokens->BasisCurvesCubicCPVHull,
                                               _tokens->BasisCurvesCubicCPVPassing,
                                               _tokens->BasisCurvesCubicHull,
