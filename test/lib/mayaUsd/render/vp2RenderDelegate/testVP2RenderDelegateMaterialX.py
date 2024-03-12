@@ -418,7 +418,7 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         cmds.file(new=True, force=True)
         mayaUtils.loadPlugin("mayaUsdPlugin")
 
-        testFile = testUtils.getTestScene("doubleSided", "mtlx_stdsurf.usda")
+        testFile = testUtils.getTestScene("doubleSided", "MaterialX_StandardSurface.usda")
         stageShapeNode, stage = mayaUtils.createProxyFromFile(testFile)
 
         mayaUtils.setBasicCamera(20)

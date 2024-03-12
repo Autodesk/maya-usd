@@ -255,7 +255,7 @@ class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
         cmds.file(new=True, force=True)
         mayaUtils.loadPlugin("mayaUsdPlugin")
 
-        testFile = testUtils.getTestScene("doubleSided", "usdprev.usda")
+        testFile = testUtils.getTestScene("doubleSided", "UsdPreviewSurface.usda")
         stageShapeNode, stage = mayaUtils.createProxyFromFile(testFile)
 
         mayaUtils.setBasicCamera(20)

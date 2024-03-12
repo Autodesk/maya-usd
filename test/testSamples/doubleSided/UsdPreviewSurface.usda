@@ -19,7 +19,7 @@ def Scope "mtl"
         def Shader "UsdPreviewSurface1"
         {
             uniform token info:id = "UsdPreviewSurface"
-            float inputs:opacity = 0.59683794
+            float inputs:opacity = 0.6
             token outputs:surface
         }
     }
