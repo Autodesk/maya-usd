@@ -242,11 +242,8 @@ class ShaderNodeDefTestCase(unittest.TestCase):
         self.assertIsNotNone(connections)
         self.assertEqual(len(connections.allConnections()), 0)
 
+    @unittest.skipIf(os.getenv('UFE_HAS_NATIVE_TYPE_METADATA', 'NOT-FOUND') not in ('1', "TRUE"), 'Test only available if UFE AttributeDef \'NativeType\' metadata exists.')
     def testNativeTypeMetadata(self):
-        # Make sure the feature exists before attempting to test.
-        if not os.environ.get('UFE_HAS_NATIVE_TYPE_METADATA'):
-            return
-        
         type = "ND_constant_color3"
         nodeDefHandler = self.getNodeDefHandler()
         nodeDef = nodeDefHandler.definition(type)
