@@ -441,6 +441,8 @@ void LayerTreeView::updateMouseCursor()
 // support for renderSetup-like action button API
 void LayerTreeView::mouseMoveEvent(QMouseEvent* event)
 {
+    updateMouseCursor();
+
     // dirty the tree view so it will repaint when mouse is over it
     // this is needed to change the icons when hovered over them
     _delegate->clearLastHitAction();
@@ -516,6 +518,7 @@ QAction* LayerTreeView::getCurrentAction(
 void LayerTreeView::leaveEvent(QEvent* event)
 {
     //
+    updateMouseCursor();
     _delegate->clearLastHitAction();
 }
 
