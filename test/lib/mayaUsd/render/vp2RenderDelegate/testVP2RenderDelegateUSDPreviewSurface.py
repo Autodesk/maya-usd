@@ -248,31 +248,27 @@ class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
         self.assertSnapshotClose('DisplayColorCube.png')
 
     def testDoubleSided(self):
-        """Test that backfaces get culled if the doubleSided attribute
-           is enabled on USD prims, and that they don't if it is not."""
+        """
+        Test that backfaces get culled if the doubleSided attribute
+        is enabled on USD prims, and that they don't if it is not.
+        """
         cmds.file(new=True, force=True)
         mayaUtils.loadPlugin("mayaUsdPlugin")
 
         testFile = testUtils.getTestScene("doubleSided", "usdprev.usda")
         stageShapeNode, stage = mayaUtils.createProxyFromFile(testFile)
 
-        # Used to position the camera inside or outside the cube, i.e.
-        # to look at front or back faces.
-        def setCameraOffset(offset):
-            cmds.setAttr('persp.rotate', -30, 45, 0, type='float3')
-            cmds.setAttr('persp.translate', offset, .75 * offset, offset, type='float3')
-
-        setCameraOffset(20)
+        mayaUtils.setBasicCamera(20)
         self.assertSnapshotClose('doubleSided_enabled_front.png')
-        setCameraOffset(3)
+        mayaUtils.setBasicCamera(3)
         self.assertSnapshotClose('doubleSided_enabled_back.png')
 
         cubePrim = stage.GetPrimAtPath("/Cube1")
         cubePrim.GetAttribute('doubleSided').Set(False)
 
-        setCameraOffset(20)
+        mayaUtils.setBasicCamera(20)
         self.assertSnapshotClose('doubleSided_disabled_front.png')
-        setCameraOffset(3)
+        mayaUtils.setBasicCamera(3)
         self.assertSnapshotClose('doubleSided_disabled_back.png')
 
 if __name__ == '__main__':

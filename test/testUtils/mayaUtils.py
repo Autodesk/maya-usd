@@ -34,6 +34,7 @@ import os
 import sys
 
 mayaSeparator = "|"
+BASIC_CAMERA_DEFAULT_OFFSET = 28
 
 def loadPlugin(pluginName):
     """ 
@@ -275,6 +276,14 @@ def activeModelPanel():
     for panel in cmds.getPanel(type="modelPanel"):
         if cmds.modelEditor(panel, q=1, av=1):
             return panel
+
+def setBasicCamera(offset=BASIC_CAMERA_DEFAULT_OFFSET):
+    """
+    Sets the camera in a similar position and rotation to the default ones.
+    An offset can be specified to change the distance of the camera from the origin.
+    """
+    cmds.setAttr('persp.translate', offset, .75 * offset, offset, type='float3')
+    cmds.setAttr('persp.rotate', -30, 45, 0, type='float3')
 
 class TestProxyShapeUpdateHandler:
     def __init__(self, proxyShapeName):
