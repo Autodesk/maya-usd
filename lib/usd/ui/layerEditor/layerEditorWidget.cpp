@@ -103,9 +103,8 @@ LayerEditorWidget::LayerEditorWidget(SessionState& in_sessionState, QMainWindow*
 QLayout* LayerEditorWidget::setupLayout_toolbar()
 {
     auto buttonSize = DPIScale(24);
-    auto margin = DPIScale(12);
     auto toolbar = new QHBoxLayout();
-    toolbar->setContentsMargins(margin, 0, 0, 0);
+    toolbar->setContentsMargins(0, 0, 0, 0);
     auto buttonAlignment = Qt::AlignLeft | Qt::AlignRight;
 
     auto addHIGButton
