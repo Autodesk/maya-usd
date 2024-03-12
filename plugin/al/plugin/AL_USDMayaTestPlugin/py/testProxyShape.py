@@ -138,8 +138,9 @@ class TestProxyShapeVariantFallbacks(unittest.TestCase):
         self.assertTrue(prim.IsValid())
 
         # the custom variant fallback should be saved to the attribute
-        savedAttrValue = cmds.getAttr(proxyName + '.variantFallbacks')
-        self.assertEqual(savedAttrValue, json.dumps(custom))
+        variantFallbackData = json.loads(cmds.getAttr(proxyName + '.variantFallbacks'))
+        for k, value in custom.items():
+            self.assertEqual(variantFallbackData.get(k, None), value)
 
 
 if __name__ == "__main__":

@@ -38,7 +38,6 @@ PXR_NS::PcpVariantFallbackMap convertVariantFallbackFromStr(const MString& fallb
     JsParseError parseError;
     JsValue      jsValue(JsParseString(fallbacksStr.asChar(), &parseError));
     if (parseError.line || !jsValue.IsObject()) {
-        TF_WARN(parseError.reason.c_str());
         TF_WARN(
             "Incorrect variant fallbacks, value must be a string form of JSON data: \"%s\"",
             fallbacksStr.asChar());
