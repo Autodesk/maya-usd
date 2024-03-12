@@ -1792,7 +1792,8 @@ void HdVP2Mesh::_UpdateDrawItem(
                     bool              useBackfaceCulling
                         = (cullStyle == HdCullStyleDontCare && !IsDoubleSided(sceneDelegate))
                         || (cullStyle == HdCullStyleBack)
-                        || (cullStyle == HdCullStyleBackUnlessDoubleSided && !IsDoubleSided(sceneDelegate));
+                        || (cullStyle == HdCullStyleBackUnlessDoubleSided
+                            && !IsDoubleSided(sceneDelegate));
                     MHWRender::MShaderInstance* shader = material->GetSurfaceShader(
                         _GetMaterialNetworkToken(reprToken), useBackfaceCulling);
                     if (shader != nullptr
