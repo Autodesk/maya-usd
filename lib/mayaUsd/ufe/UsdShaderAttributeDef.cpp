@@ -171,7 +171,7 @@ Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
 {
     TF_DEV_AXIOM(fShaderAttributeDef);
 
-#if (UFE_PREVIEW_VERSION_NUM >= 6000)
+#ifdef UFE_HAS_NATIVE_TYPE_METADATA
     if (key == Ufe::AttributeDef::kNativeType) {
         // We return the Sdf type as that is more meaningful than the Sdr type.
         const auto sdfTypeTuple = fShaderAttributeDef->GetTypeAsSdfType();
@@ -207,7 +207,7 @@ bool UsdShaderAttributeDef::hasMetadata(const std::string& key) const
 {
     TF_DEV_AXIOM(fShaderAttributeDef);
 
-#if (UFE_PREVIEW_VERSION_NUM >= 6000)
+#ifdef UFE_HAS_NATIVE_TYPE_METADATA
     if (key == Ufe::AttributeDef::kNativeType) {
         return true;
     }

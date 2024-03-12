@@ -70,6 +70,13 @@ if (UFE_HAS_DISPLAY_NAME)
     )
 endif()
 
+if (UFE_HAS_NATIVE_TYPE_METADATA)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_HAS_NATIVE_TYPE_METADATA=1
+    )
+endif()
+
 message(STATUS "MAYA_HAS_DEFAULT_MATERIAL_API is ${MAYA_HAS_DEFAULT_MATERIAL_API}")
 if (MAYA_HAS_DEFAULT_MATERIAL_API)
     target_compile_definitions(${PROJECT_NAME}
