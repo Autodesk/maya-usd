@@ -148,6 +148,7 @@ foreach(script ${TEST_SCRIPT_FILES})
             "USD_HAS_COLOR4_SDR_SUPPORT=${USD_HAS_COLOR4_SDR_SUPPORT}"
             "USD_HAS_MX_METADATA_SUPPORT=${USD_HAS_MX_METADATA_SUPPORT}"
             "UFE_ATTRIBUTES_GET_ENUMS=${UFE_ATTRIBUTES_GET_ENUMS}"
+            "UFE_HAS_NATIVE_TYPE_METADATA=${UFE_HAS_NATIVE_TYPE_METADATA}"
     )
 
     # Add a ctest label to these tests for easy filtering.

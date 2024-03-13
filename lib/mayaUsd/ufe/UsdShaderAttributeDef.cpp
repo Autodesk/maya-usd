@@ -170,6 +170,19 @@ static const MetadataMap _metaMap = {
 Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
 {
     TF_DEV_AXIOM(fShaderAttributeDef);
+
+#ifdef UFE_HAS_NATIVE_TYPE_METADATA
+    if (key == Ufe::AttributeDef::kNativeType) {
+        // We return the Sdf type as that is more meaningful than the Sdr type.
+        const auto sdfTypeTuple = fShaderAttributeDef->GetTypeAsSdfType();
+        if (sdfTypeTuple.second.IsEmpty()) {
+            return Ufe::Value(sdfTypeTuple.first.GetAsToken().GetString());
+        } else {
+            return Ufe::Value(sdfTypeTuple.second.GetString());
+        }
+    }
+#endif
+
     const NdrTokenMap& metadata = fShaderAttributeDef->GetMetadata();
     auto               it = metadata.find(TfToken(key));
     if (it != metadata.cend()) {
@@ -193,6 +206,13 @@ Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
 bool UsdShaderAttributeDef::hasMetadata(const std::string& key) const
 {
     TF_DEV_AXIOM(fShaderAttributeDef);
+
+#ifdef UFE_HAS_NATIVE_TYPE_METADATA
+    if (key == Ufe::AttributeDef::kNativeType) {
+        return true;
+    }
+#endif
+
     const NdrTokenMap& metadata = fShaderAttributeDef->GetMetadata();
     auto               it = metadata.find(TfToken(key));
     if (it != metadata.cend()) {
