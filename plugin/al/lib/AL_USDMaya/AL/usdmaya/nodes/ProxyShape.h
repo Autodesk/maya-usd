@@ -285,6 +285,10 @@ public:
     /// Cache ID of the currently loaded stage)
     AL_INHERIT_ATTRIBUTE(stageCacheId);
 
+    /// Variant fallbacks if stage was opened and/reopened a Maya scene with custom variants
+    /// fallbacks
+    AL_INHERIT_ATTRIBUTE(variantFallbacks);
+
     /// Connection to any layer DG nodes
     AL_DECL_ATTRIBUTE(layers);
 
@@ -336,10 +340,6 @@ public:
 
     /// Don't update the proxy shape when updates to the usd stage are made
     AL_DECL_ATTRIBUTE(pauseUpdates);
-
-    /// Variant fallbacks if stage was opened and/reopened a Maya scene with custom variants
-    /// fallbacks
-    AL_DECL_ATTRIBUTE(variantFallbacks);
 
     //--------------------------------------------------------------------------------------------------------------------
     /// \name   Output Attributes
@@ -945,34 +945,10 @@ private:
     SdfPathVector          getExcludePrimPaths() const override;
     UsdStagePopulationMask constructStagePopulationMask(const MString& paths) const;
 
-    /// \brief  Convert variant fallbacks from string (attribute value)
-    /// \param  fallbacksStr attribute value
-    /// \return PcpVariantFallbackMap type of variant fallbacks
-    PcpVariantFallbackMap convertVariantFallbackFromStr(const MString& fallbacksStr) const;
-
-    /// \brief  Convert variant fallbacks to string
-    /// \param  fallbacks variant fallbacks map
-    /// \return MString string form of variant fallbacks
-    MString convertVariantFallbacksToStr(const PcpVariantFallbackMap& fallbacks) const;
-
     /// \brief  Get variant fallbacks from session layer
     /// \param  layer session layer pointer
     /// \return MString string form of variant fallbacks JSON data
     MString getVariantFallbacksFromLayer(const SdfLayerRefPtr& layer) const;
-
-    /// \brief  Set global variant fallbacks if found from attribute ".variantFallbacks"
-    /// \param  defaultVariantFallbacks default global variant fallbacks before updating
-    /// \param  dataBlock attribute data block
-    /// \return PcpVariantFallbackMap variant fallbacks that applied to global variant fallbacks,
-    /// would be empty if nothing applied
-    PcpVariantFallbackMap updateVariantFallbacks(
-        PcpVariantFallbackMap& defaultVariantFallbacks,
-        MDataBlock&            dataBlock) const;
-
-    /// \brief  Save variant fallbacks from session layer customLayerData to attribute
-    /// \param  fallbacksStr string format of variant fallbacks to save to the node attribute
-    /// \param  dataBlock attribute data block
-    void saveVariantFallbacks(const MString& fallbacksStr, MDataBlock& dataBlock) const;
 
     bool isStageValid() const;
     bool initPrim(const uint32_t index, MDGContext& ctx);

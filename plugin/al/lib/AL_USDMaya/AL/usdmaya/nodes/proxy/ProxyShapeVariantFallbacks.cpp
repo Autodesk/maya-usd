@@ -31,66 +31,6 @@ namespace usdmaya {
 namespace nodes {
 
 //----------------------------------------------------------------------------------------------------------------------
-PcpVariantFallbackMap ProxyShape::convertVariantFallbackFromStr(const MString& fallbacksStr) const
-{
-    MProfilingScope profilerScope(
-        _proxyShapeVariantFallbacksProfilerCategory,
-        MProfiler::kColorE_L3,
-        "Convert variant fallback from string");
-
-    if (!fallbacksStr.length()) {
-        return {};
-    }
-
-    JsParseError parseError;
-    JsValue      jsValue(JsParseString(fallbacksStr.asChar(), &parseError));
-    if (parseError.line || !jsValue.IsObject()) {
-        MGlobal::displayError(MString(parseError.reason.c_str()));
-        MGlobal::displayError(
-            MString("ProxyShape attribute \"") + name()
-            + ".variantFallbacks\" "
-              "contains incorrect variant fallbacks, value must be a string form of JSON data.");
-        return {};
-    }
-
-    JsObject              jsObject(jsValue.GetJsObject());
-    PcpVariantFallbackMap result;
-    for (const auto& variantSet : jsObject) {
-        const std::string& variantName = variantSet.first;
-        if (!variantSet.second.IsArray()) {
-            MGlobal::displayError(
-                MString("ProxyShape attribute \"") + name()
-                + ".variantFallbacks\" "
-                  "contains unexpected data: variant value for \""
-                + variantName.c_str() + "\" must be an array.");
-            continue;
-        }
-        result[variantName] = variantSet.second.GetArrayOf<std::string>();
-    }
-    return result;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-MString ProxyShape::convertVariantFallbacksToStr(const PcpVariantFallbackMap& fallbacks) const
-{
-    MProfilingScope profilerScope(
-        _proxyShapeVariantFallbacksProfilerCategory,
-        MProfiler::kColorE_L3,
-        "Convert variant fallbacks to string");
-
-    if (fallbacks.empty()) {
-        return {};
-    }
-
-    JsObject jsObject;
-    for (const auto& variantSet : fallbacks) {
-        jsObject[variantSet.first] = JsArray(variantSet.second.cbegin(), variantSet.second.cend());
-    }
-
-    return JsWriteToString(jsObject).c_str();
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 MString ProxyShape::getVariantFallbacksFromLayer(const SdfLayerRefPtr& layer) const
 {
     MProfilingScope profilerScope(
@@ -123,37 +63,6 @@ MString ProxyShape::getVariantFallbacksFromLayer(const SdfLayerRefPtr& layer) co
     return result.c_str();
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-PcpVariantFallbackMap ProxyShape::updateVariantFallbacks(
-    PcpVariantFallbackMap& defaultVariantFallbacks,
-    MDataBlock&            dataBlock) const
-{
-    MProfilingScope profilerScope(
-        _proxyShapeVariantFallbacksProfilerCategory,
-        MProfiler::kColorE_L3,
-        "Update variant fallbacks");
-
-    auto fallbacks(convertVariantFallbackFromStr(inputStringValue(dataBlock, m_variantFallbacks)));
-    if (!fallbacks.empty()) {
-        defaultVariantFallbacks = UsdStage::GetGlobalVariantFallbacks();
-        TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Setting global variant fallback");
-        UsdStage::SetGlobalVariantFallbacks(fallbacks);
-        return fallbacks;
-    }
-    return {};
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::saveVariantFallbacks(const MString& fallbacksStr, MDataBlock& dataBlock) const
-{
-    if (fallbacksStr != inputStringValue(dataBlock, m_variantFallbacks)) {
-        TF_DEBUG(ALUSDMAYA_EVALUATION)
-            .Msg("Saving global variant fallbacks: \n\"%s\"\n", fallbacksStr.asChar());
-        outputStringValue(dataBlock, m_variantFallbacks, fallbacksStr);
-    }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 } // namespace nodes
 } // namespace usdmaya
 } // namespace AL
