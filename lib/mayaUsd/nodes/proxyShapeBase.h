@@ -137,6 +137,9 @@ public:
     MAYAUSD_CORE_PUBLIC
     static MObject outStageCacheIdAttr;
 
+    MAYAUSD_CORE_PUBLIC
+    static MObject variantFallbacksAttr;
+
     /// Delegate function for computing the closest point and surface normal
     /// on the proxy shape to a given ray.
     /// The input ray, output point, and output normal should be in the
