@@ -1568,8 +1568,10 @@ MBoundingBox MayaUsdProxyShapeBase::boundingBox() const
     const TfToken purpose3 = drawProxyPurpose ? UsdGeomTokens->proxy : TfToken();
     const TfToken purpose4 = drawGuidePurpose ? UsdGeomTokens->guide : TfToken();
 
+    // Compute the bound in "Usd World" space. This will apply the transform the
+    // referenced prim may have relative to the root of its Usd scene
     GfBBox3d allBox
-        = imageablePrim.ComputeUntransformedBound(currTime, purpose1, purpose2, purpose3, purpose4);
+        = imageablePrim.ComputeWorldBound(currTime, purpose1, purpose2, purpose3, purpose4);
 
     UsdMayaUtil::AddMayaExtents(allBox, prim, currTime);
 

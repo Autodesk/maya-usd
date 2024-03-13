@@ -140,37 +140,15 @@ void LayerTreeItem::populateChildren(RecursionDetector* recursionDetector)
     for (auto const path : subPaths) {
         std::string actualPath = SdfComputeAssetPathRelativeToLayer(_layer, path);
         auto        subLayer = SdfLayer::FindOrOpen(actualPath);
-        if (subLayer) {
-            if (recursionDetector->contains(subLayer->GetRealPath())) {
-                MString msg;
-                msg.format(
-                    StringResources::getAsMString(StringResources::kErrorRecursionDetected),
-                    subLayer->GetRealPath().c_str());
-                puts(msg.asChar());
-            } else {
-                auto item = new LayerTreeItem(
-                    subLayer,
-                    LayerType::SubLayer,
-                    path,
-                    &_incomingLayers,
-                    _isSharedStage,
-                    &_sharedLayers,
-                    recursionDetector);
-                appendRow(item);
-            }
-        } else {
-            MString msg;
-            msg.format(
-                StringResources::getAsMString(StringResources::kErrorDidNotFind),
-                std::string(path).c_str());
-            puts(msg.asChar());
+        if (!subLayer || !recursionDetector->contains(subLayer->GetRealPath())) {
             auto item = new LayerTreeItem(
                 subLayer,
                 LayerType::SubLayer,
                 path,
                 &_incomingLayers,
                 _isSharedStage,
-                &_sharedLayers);
+                &_sharedLayers,
+                recursionDetector);
             appendRow(item);
         }
     }

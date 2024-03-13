@@ -107,6 +107,12 @@ public:
     // refresh our data from the USD Layer
     void fetchData(RebuildChildren in_rebuild, RecursionDetector* in_recursionDetector = nullptr);
 
+    enum Roles
+    {
+        // Data role containing a boolean indicating if the mouse is over an action button.
+        kHoverActionRole = Qt::UserRole + 1
+    };
+
     // QStandardItem API
     int      type() const override;
     QVariant data(int role) const override;
