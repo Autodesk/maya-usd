@@ -306,8 +306,10 @@ void LayerTreeItemDelegate::paint_drawOneAction(
     // MAYA 84884: Created a background rectangle underneath the icon to extend the mouse coverage
     // region
 
-    const bool     hover = QtUtils::isMouseInRectangle(_treeView, actionRect);
-    const bool     active = actionInfo._checked;
+    const bool hover = QtUtils::isMouseInRectangle(_treeView, actionRect);
+    bool       appearsChecked = actionAppearsChecked(actionInfo, ctx);
+    const bool active = appearsChecked;
+
     const QPixmap* icon = nullptr;
     if (hover) {
         icon = active ? &actionInfo._pixmap_on_hover : &actionInfo._pixmap_off_hover;
@@ -362,9 +364,11 @@ void LayerTreeItemDelegate::paint_ActionIcon(
     LayerActionInfo action;
     ctx.item->getActionButton(actionType, action);
 
+    bool appearsChecked = actionAppearsChecked(action, ctx);
+
     // Draw the icon if it is checked or if the mouse is over the item.
     const bool shouldDraw
-        = (action._checked || QtUtils::isMouseInRectangle(_treeView, ctx.itemRect));
+        = (appearsChecked || QtUtils::isMouseInRectangle(_treeView, ctx.itemRect));
     if (!shouldDraw)
         return;
 
@@ -387,6 +391,22 @@ void LayerTreeItemDelegate::paint_ActionIcons(QPainter* painter, const ItemPaint
         paint_ActionIcon(painter, ctx, LayerActionType::Lock);
     }
     paint_ActionIcon(painter, ctx, LayerActionType::Mute);
+}
+
+bool LayerTreeItemDelegate::actionAppearsChecked(
+    const LayerActionInfo&  actionInfo,
+    const ItemPaintContext& ctx) const
+{
+    if (actionInfo._checked) {
+        return true;
+    }
+
+    // This is used to display un-sharable layers as system-locked
+    if (actionInfo._actionType == LayerActionType::Lock && ctx.isSystemLocked) {
+        return true;
+    }
+
+    return false;
 }
 
 void LayerTreeItemDelegate::paint(

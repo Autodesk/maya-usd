@@ -1,0 +1,27 @@
+#usda 1.0
+
+def Cube "Cube1" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    uniform bool doubleSided = 1
+    rel material:binding = </mtl/UsdPreviewSurface1>
+    float3 xformOp:scale = (5, 5, 5)
+    uniform token[] xformOpOrder = ["xformOp:scale"]
+}
+
+def Scope "mtl"
+{
+    def Material "UsdPreviewSurface1"
+    {
+        token outputs:surface.connect = </mtl/UsdPreviewSurface1/UsdPreviewSurface1.outputs:surface>
+
+        def Shader "UsdPreviewSurface1"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            float inputs:opacity = 0.6
+            token outputs:surface
+        }
+    }
+}
+

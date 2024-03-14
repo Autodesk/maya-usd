@@ -133,7 +133,8 @@ public:
     bool isMuted() const;
     // check if this layer is muted, or any of its parent
     bool appearsMuted() const;
-    // check if this layer is readonly
+    // check if this layer is readonly (whether it is a shared layer or a sublayer of a shared
+    // stage)
     bool isReadOnly() const;
     // true if dirty, but look at needsSaving for UI feedback
     bool isDirty() const { return _layer ? _layer->IsDirty() : false; }

@@ -409,6 +409,30 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         cmds.move(0, 0, -1.01, xform)
 
         self.assertSnapshotClose('OCIO_Explicit.png')
+    
+    def testDoubleSided(self):
+        """
+        Test that backfaces get culled if the doubleSided attribute
+        is enabled on USD prims, and that they don't if it is not.
+        """
+        cmds.file(new=True, force=True)
+        mayaUtils.loadPlugin("mayaUsdPlugin")
+
+        testFile = testUtils.getTestScene("doubleSided", "MaterialX_StandardSurface.usda")
+        stageShapeNode, stage = mayaUtils.createProxyFromFile(testFile)
+
+        mayaUtils.setBasicCamera(20)
+        self.assertSnapshotClose('doubleSided_enabled_front.png')
+        mayaUtils.setBasicCamera(3)
+        self.assertSnapshotClose('doubleSided_enabled_back.png')
+
+        cubePrim = stage.GetPrimAtPath("/Cube1")
+        cubePrim.GetAttribute('doubleSided').Set(False)
+
+        mayaUtils.setBasicCamera(20)
+        self.assertSnapshotClose('doubleSided_disabled_front.png')
+        mayaUtils.setBasicCamera(3)
+        self.assertSnapshotClose('doubleSided_disabled_back.png')
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())
