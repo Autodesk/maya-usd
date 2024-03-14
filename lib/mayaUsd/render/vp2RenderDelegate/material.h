@@ -168,6 +168,8 @@ private:
             return status;
         }
 
+        MStatus SetShaderIsTransparent(bool isTransparent);
+
     private:
         HdVP2Material* _owner;
         TfToken _surfaceNetworkToken; //!< Generated token to uniquely identify a material network
