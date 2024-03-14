@@ -23,6 +23,8 @@ from os import path
 from maya import cmds, mel
 import mayaUsd_createStageWithNewLayer
 import mayaUsd
+from mayaUsd import ufe as mayaUsdUfe
+
 from pxr import Sdf, Usd
 
 CLEAR = "-clear"
@@ -593,10 +595,14 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         # 3- Check that sublayer is also locked
         subLayer = Sdf.Layer.FindRelativeToLayer(topLayer, topLayer.subLayerPaths[0])
         self.assertFalse(subLayer.permissionToEdit)
-        # 4- Undo and check that both top and sublayer are unlocked
+        # 4- Checking that no layers are modifiable
+        self.assertFalse(mayaUsdUfe.isAnyLayerModifiable(stage))
+        # 5- Undo and check that both top and sublayer are unlocked
         cmds.undo()
         self.assertTrue(topLayer.permissionToEdit)
         self.assertTrue(subLayer.permissionToEdit)
+        # 6- Checking that at least one layer is modifiable
+        self.assertTrue(mayaUsdUfe.isAnyLayerModifiable(stage))
     
     def testMuteLayer(self):
         """ test 'mayaUsdLayerEditor' command 'muteLayer' paramater """

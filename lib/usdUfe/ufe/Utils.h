@@ -293,6 +293,11 @@ void applyRootLayerMetadataRestriction(
     const PXR_NS::UsdStageRefPtr& stage,
     const std::string&            commandName);
 
+//! Check if any layers in the stage is allowed to be changed.
+//! \return True, if at least one layer in the stage is allowed to be changed
+USDUFE_PUBLIC
+bool isAnyLayerModifiable(const PXR_NS::UsdStageWeakPtr stage, std::string* errMsg = nullptr);
+
 //! Check if the edit target in the stage is allowed to be changed.
 //! \return True, if the edit target layer in the stage is allowed to be changed
 USDUFE_PUBLIC
