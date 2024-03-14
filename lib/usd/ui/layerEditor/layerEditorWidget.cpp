@@ -267,6 +267,12 @@ void LayerEditorWidget::updateButtons()
 {
     if (_sessionState.commandHook()->isProxyShapeSharedStage(
             _sessionState.stageEntry()._proxyShapePath)) {
+        if (_buttons._dirtyCountBadge) {
+            _buttons._dirtyCountBadge->setVisible(true);
+        }
+        if (_buttons._saveStageButton) {
+            _buttons._saveStageButton->setVisible(true);
+        }
         const auto layers = _treeView->layerTreeModel()->getAllNeedsSavingLayers();
         int        count = static_cast<int>(layers.size());
         for (auto layer : layers) {
@@ -284,6 +290,13 @@ void LayerEditorWidget::updateButtons()
         _buttons._dirtyCountBadge->updateCount(count);
         bool disable = count == 0;
         QtUtils::disableHIGButton(_buttons._saveStageButton, disable);
+    } else {
+        if (_buttons._dirtyCountBadge) {
+            _buttons._dirtyCountBadge->setVisible(false);
+        }
+        if (_buttons._saveStageButton) {
+            _buttons._saveStageButton->setVisible(false);
+        }
     }
     _updateButtonsOnIdle = false;
 }
