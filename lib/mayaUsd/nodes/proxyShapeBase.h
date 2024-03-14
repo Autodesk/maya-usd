@@ -205,6 +205,8 @@ public:
 
     // Public functions
     MAYAUSD_CORE_PUBLIC
+    virtual SdfPath getPrimPath() const;
+    MAYAUSD_CORE_PUBLIC
     virtual SdfPathVector getExcludePrimPaths() const;
     MAYAUSD_CORE_PUBLIC
     size_t getExcludePrimPathsVersion() const;
@@ -396,6 +398,7 @@ private:
 
     UsdStageRefPtr getUnsharedStage(UsdStage::InitialLoadSet loadSet);
 
+    SdfPath       _GetPrimPath(MDataBlock dataBlock) const;
     SdfPathVector _GetExcludePrimPaths(MDataBlock dataBlock) const;
     int           _GetComplexity(MDataBlock dataBlock) const;
     UsdTimeCode   _GetTime(MDataBlock dataBlock) const;

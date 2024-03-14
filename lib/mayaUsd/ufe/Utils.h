@@ -105,6 +105,16 @@ bool isMayaWorldPath(const Ufe::Path& ufePath);
 MAYAUSD_CORE_PUBLIC
 PXR_NS::MayaUsdProxyShapeBase* getProxyShape(const Ufe::Path& path);
 
+//! Return the primPath for the gateway node.
+//! The gateway node may specify a path that UFE should be restricted to.
+//! An empty path is invalid indicates that the path is invalid (i.e. the primPath
+//! string has an error or is not a prim path).
+//! Otherwise, UFE should only represent paths that are ancestors or descendants
+//! of the returned path.  Note, if the primPath string is empty, this will
+//! SdfPath::AbsoluteRootPath() (instead of an empty SdfPath).
+MAYAUSD_CORE_PUBLIC
+PXR_NS::SdfPath getProxyShapePrimPath(const Ufe::Path& path);
+
 //! Get the time along the argument path.  A gateway node (i.e. proxy shape)
 //! along the path can transform Maya's time (e.g. with scale and offset).
 MAYAUSD_CORE_PUBLIC
