@@ -1011,7 +1011,7 @@ void HdVP2Mesh::Sync(
                 const int sceneFaceVtxId = faceVertexIndices[i];
 
                 // Scene index is actually greater than anticipated, increase the buffer size.
-                if (sceneFaceVtxId >= _meshSharedData->_sceneToRenderingFaceVtxIds.size()) {
+                if (size_t(sceneFaceVtxId) >= _meshSharedData->_sceneToRenderingFaceVtxIds.size()) {
                     _meshSharedData->_sceneToRenderingFaceVtxIds.resize(sceneFaceVtxId + 1, -1);
                 }
 
