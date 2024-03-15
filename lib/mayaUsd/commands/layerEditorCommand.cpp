@@ -107,6 +107,7 @@ protected:
     void                                holdOntoSubLayers(SdfLayerHandle layer);
     void                                releaseSubLayers() { _subLayersRefs.clear(); }
     void                                holdOnPathIfDirty(SdfLayerHandle layer, std::string path);
+    void                                updateEditTarget(const PXR_NS::UsdStageWeakPtr stage);
 };
 
 void BaseCmd::holdOnPathIfDirty(SdfLayerHandle layer, std::string path)
@@ -126,6 +127,23 @@ void BaseCmd::holdOntoSubLayers(SdfLayerHandle layer)
     const std::vector<std::string>& sublayers = layer->GetSubLayerPaths();
     for (auto path : sublayers) {
         holdOnPathIfDirty(layer, path);
+    }
+}
+
+// Set the edit target to Session layer if no other layers are modifiable
+void BaseCmd::updateEditTarget(const PXR_NS::UsdStageWeakPtr stage)
+{
+    if (!stage)
+        return;
+
+    if (stage->GetEditTarget().GetLayer() == stage->GetSessionLayer())
+        return;
+
+    // If there are no target-able layers, we set the target to session layer.
+    std::string errMsg;
+    if (!UsdUfe::isAnyLayerModifiable(stage, &errMsg)) {
+        MPxCommand::displayInfo(errMsg.c_str());
+        stage->SetEditTarget(stage->GetSessionLayer());
     }
 }
 
@@ -718,6 +736,9 @@ public:
         // to the muted layer. OpenUSD let go of muted layers, so anonymous
         // layers and any dirty children would be lost if not explicitly held on.
         addMutedLayer(layer);
+
+        updateEditTarget(stage);
+
         return true;
     }
 
@@ -738,6 +759,9 @@ public:
 
         // We can release the now unmuted layers.
         removeMutedLayer(layer);
+
+        updateEditTarget(stage);
+
         return true;
     }
 
@@ -826,6 +850,8 @@ public:
             MayaUsd::lockLayer(_proxyShapePath, _layers[layerIndex], _lockType, true);
         }
 
+        updateEditTarget(stage);
+
         return true;
     }
 
@@ -853,6 +879,8 @@ public:
             }
         }
         restoreSelection();
+
+        updateEditTarget(stage);
 
         return true;
     }
@@ -937,6 +965,8 @@ public:
             }
         }
 
+        updateEditTarget(stage);
+
         return true;
     }
 
@@ -944,12 +974,19 @@ public:
     // that are undoable.
     bool undoIt(SdfLayerHandle layer) override
     {
+        auto stage = getStage();
+        if (!stage)
+            return false;
+
         // Execute lock commands
         for (size_t layerIndex = 0; layerIndex < _layers.size(); layerIndex++) {
             if (!_lockCommands[layerIndex]->undoIt(_layers[layerIndex])) {
                 return false;
             }
         }
+
+        updateEditTarget(stage);
+
         return true;
     }
 
