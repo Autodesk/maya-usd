@@ -31,9 +31,9 @@ from pxr import Usd, Sdf
 
 import unittest
 
-class SaveMutedLayerTest(unittest.TestCase):
+class SaveLockedLayerTest(unittest.TestCase):
     '''
-    Test saving muted layers and reloading the scene to verify they are not lost.
+    Test saving locked layers and reloading the scene to verify they are not lost.
     '''
 
     pluginsLoaded = False
@@ -52,17 +52,17 @@ class SaveMutedLayerTest(unittest.TestCase):
     def setUp(self):
         cmds.file(new=True, force=True)
 
-    def testSaveMutedAnonLayerInUSD(self):
+    def testSaveLockedAnonLayerInUSD(self):
         # Save the file. Make sure the USD edits will go to a USD file.
-        self._runTestSaveMutedAnonLayer(1)
+        self._runTestSaveLockedAnonLayer(1)
 
-    def testSaveMutedAnonLayerInMaya(self):
+    def testSaveLockedAnonLayerInMaya(self):
         # Save the file. Make sure the USD edits will go to the Maya file.
-        self._runTestSaveMutedAnonLayer(2)
+        self._runTestSaveLockedAnonLayer(2)
 
-    def _runTestSaveMutedAnonLayer(self, saveLocation):
+    def _runTestSaveLockedAnonLayer(self, saveLocation):
         '''
-        The goal is to create an anonymous sub-layer, mute it and verify the muting
+        The goal is to create an anonymous sub-layer, lock it and verify the locking
         is not lost when reloaded.
         '''
         # Create a stage with a sub-layer.
@@ -88,11 +88,11 @@ class SaveMutedLayerTest(unittest.TestCase):
 
         verifyPrims(stage)
 
-        # Mute the sub-layer.
-        stage.MuteLayer(subLayer.identifier)
+        # Lock the sub-layer.
+        mayaUsd.lib.lockLayer(psPathStr, subLayer)
 
         # Save the file. Make sure the edit will go where requested by saveLocation.
-        tempMayaFile = 'saveMutedAnonLayer.ma'
+        tempMayaFile = 'saveLockedAnonLayer.ma'
         cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', saveLocation))
         cmds.file(rename=tempMayaFile)
         cmds.file(save=True, force=True, type='mayaAscii')
@@ -114,11 +114,74 @@ class SaveMutedLayerTest(unittest.TestCase):
         subLayer = Sdf.Layer.FindOrOpen(subLayerPath)
         self.assertIsNotNone(subLayer)
 
-        # Verify the layer was reloaded as muted.
-        self.assertTrue(stage.IsLayerMuted(subLayerPath))
+        # Verify the layer was reloaded as locked.
+        self.assertTrue(mayaUsd.lib.isLayerLocked(subLayer))
 
         # Verify the two objects are still present.
-        stage.UnmuteLayer(subLayer.identifier)
+        verifyPrims(stage)
+
+    def testSaveSystemLockedAnonLayerInUSD(self):
+        # Save the file. Make sure the USD edits will go to a USD file.
+        self._runTestSaveLockedAnonLayer(1)
+
+    def testSaveSystemLockedAnonLayerInMaya(self):
+        # Save the file. Make sure the USD edits will go to the Maya file.
+        self._runTestSaveLockedAnonLayer(2)
+
+    def _runTestSaveSystemLockedAnonLayer(self, saveLocation):
+        '''
+        The goal is to create an anonymous sub-layer, system-lock it and
+        verify the layer and its locking is not lost when saved.
+
+        System-locked layer cannot be saved, so don't try to reload the scene.
+        There used to be a bug where the layer would be lost.
+        '''
+        # Create a stage with a sub-layer.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        rootLayer = stage.GetRootLayer()
+        subLayer = usdUtils.addNewLayerToLayer(rootLayer, anonymous=True)
+
+        # Add a prim in the root and in the sub-layer.
+        with Usd.EditContext(stage, Usd.EditTarget(rootLayer)):
+            stage.DefinePrim('/InRoot', 'Sphere')
+
+        with Usd.EditContext(stage, Usd.EditTarget(subLayer)):
+            stage.DefinePrim('/InSub', 'Cube')
+
+        def verifyPrims(stage):
+            inRoot = stage.GetPrimAtPath("/InRoot")
+            self.assertTrue(inRoot)
+            inRoot = None
+            inSub = stage.GetPrimAtPath("/InSub")
+            self.assertTrue(inSub)
+            inSub = None
+
+        verifyPrims(stage)
+
+        # System-lock the sub-layer.
+        mayaUsd.lib.systemLockLayer(psPathStr, subLayer)
+
+        # Save the file. Make sure the edit will go where requested by saveLocation.
+        tempMayaFile = 'saveLockedAnonLayer.ma'
+        cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', saveLocation))
+        cmds.file(rename=tempMayaFile)
+        cmds.file(save=True, force=True, type='mayaAscii')
+
+        # Retrieve the stage, root and sub-layer again.
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        rootLayer = stage.GetRootLayer()
+        self.assertEqual(len(rootLayer.subLayerPaths), 1)
+        subLayerPath = rootLayer.subLayerPaths[0]
+        self.assertIsNotNone(subLayerPath)
+        self.assertTrue(subLayerPath)
+        subLayer = Sdf.Layer.FindOrOpen(subLayerPath)
+        self.assertIsNotNone(subLayer)
+
+        # Verify the layer was reloaded as locked.
+        self.assertTrue(mayaUsd.lib.isLayerSystemLocked(subLayer))
+
+        # Verify the two objects are still present.
         verifyPrims(stage)
 
 if __name__ == '__main__':
