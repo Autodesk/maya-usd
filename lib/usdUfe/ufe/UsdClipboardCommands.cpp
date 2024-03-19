@@ -32,6 +32,17 @@
 
 namespace {
 
+// Metadata used for pasting according to specific rules:
+//  When we paste a shader under a scope, we first create a new material
+//  (with the name of the original material) and then paste to it.
+//  We could paste many shaders all together, and we want to group them
+//  so that we take into consideration whether they are from the same
+//  material and stage.
+//
+// For additional info see:
+//      https://jira.autodesk.com/browse/LOOKDEVX-1639
+//      https://jira.autodesk.com/browse/LOOKDEVX-1722
+//
 constexpr std::string_view kClipboardMetadata = "ClipboardMetadata";
 constexpr std::string_view kMaterialName = "materialName";
 constexpr std::string_view kNodeName = "shaderName";
@@ -66,9 +77,8 @@ void setClipboardMetadata(const UsdUndoDuplicateSelectionCommand::Ptr& duplicate
         const std::string stagePath = duplicatedItem.first->path().popSegment().string();
         const std::string nodeName = duplicatedItem.first->nodeName();
 
-        const auto parentMaterial = getParentMaterial(duplicatedItem.first);
-
         // Recursively find the parent material.
+        const auto parentMaterial = getParentMaterial(duplicatedItem.first);
         if (parentMaterial) {
             materialName = parentMaterial->nodeName();
         }
@@ -160,6 +170,7 @@ Ufe::SceneItemList pasteItemsToNewMaterial(const UsdSceneItem::Ptr& dstItem, Ufe
     }
 
     // Create the new Materials taking into consideration also the stage.
+    // See metadata description above for rules on pasting.
     for (const auto& stagesNameMap : stageMaterialNamesMap) {
         for (const auto& materialNamesMap : stagesNameMap.second) {
             // Create a material using the name given from the metadata.

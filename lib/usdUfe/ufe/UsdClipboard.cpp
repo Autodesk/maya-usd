@@ -101,26 +101,16 @@ void UsdClipboard::setClipboardFileFormat(const std::string& formatTag)
 
 void UsdClipboard::cleanClipboard()
 {
-    cleanClipboardStageCache(true);
+    cleanClipboardStageCache();
     removeClipboardFile();
 }
 
-void UsdClipboard::cleanClipboardStageCache(bool cleanFile)
+void UsdClipboard::cleanClipboardStageCache()
 {
     // Erase the clipboard stage from the cache.
     if (_clipboardStageCacheId.IsValid()) {
         auto clipboardStageRef = PXR_NS::UsdUtilsStageCache::Get().Find(_clipboardStageCacheId);
         PXR_NS::UsdUtilsStageCache::Get().Erase(clipboardStageRef);
-
-        if (cleanFile && clipboardStageRef && clipboardStageRef->GetRootLayer()) {
-            // Clean the stage and clipboard file.
-            // Note: Instead of clearing the file, it might be better to use filenames
-            // from the stage hash and retain that in a variable or stack.
-            clipboardStageRef->GetRootLayer()->Clear();
-            PXR_NS::SdfFileFormat::FileFormatArguments args;
-            args["format"] = _clipboardFileFormat;
-            clipboardStageRef->GetRootLayer()->Export(_clipboardFilePath, "UsdUfe Clipboard", args);
-        }
     }
 }
 

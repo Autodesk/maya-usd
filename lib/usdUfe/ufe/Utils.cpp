@@ -409,16 +409,19 @@ bool isMaterialsScope(const Ufe::SceneItem::Ptr& item)
     return true;
 }
 
-Ufe::Path appendToPath(const Ufe::Path& path, const std::string& name)
+Ufe::Path appendToUsdPath(const Ufe::Path& path, const std::string& name)
 {
-    Ufe::Path newUfePath;
+    // Assumption is that either
+    // - the input path is comprised of multiple segments with the last segment being USD.
+    // - single segment path, in which case we append a USD segment.
     if (1 == path.getSegments().size()) {
-        newUfePath
-            = path + Ufe::PathSegment(Ufe::PathComponent(name), UsdUfe::getUsdRunTimeId(), '/');
-    } else {
-        newUfePath = path + name;
+        return (path + Ufe::PathSegment(Ufe::PathComponent(name), UsdUfe::getUsdRunTimeId(), '/'));
+    } else if (path.runTimeId() == UsdUfe::getUsdRunTimeId()) {
+        return (path + name);
     }
-    return newUfePath;
+
+    // Input path wasn't of expected type, just return it without appending.
+    return path;
 }
 
 namespace {

@@ -48,8 +48,8 @@ UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(
         // Append the parent path and the requested name into a full ufe path.
         // Append a '1' to new primitives names if the name does not end with a digit.
         _newUfePath = splitNumericalSuffix(name, base, suffixStr)
-            ? appendToPath(ufePath, name)
-            : appendToPath(ufePath, name + '1');
+            ? appendToUsdPath(ufePath, name)
+            : appendToUsdPath(ufePath, name + '1');
 
         // Ensure the requested name is unique.
         auto newPrimName
@@ -57,7 +57,7 @@ UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(
 
         // If the name had to change then we need to update the full ufe path.
         if (name != newPrimName) {
-            _newUfePath = appendToPath(ufePath, newPrimName);
+            _newUfePath = appendToUsdPath(ufePath, newPrimName);
         }
 
         // Build (and store) the usd path for the new prim with the unique name.

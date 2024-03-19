@@ -93,7 +93,7 @@ UsdSceneItem::Ptr UsdUndoDuplicateCommand::duplicatedItem() const
     Ufe::Path ufeSrcPath;
 
     if (!_ufeDstPath.getSegments().empty()) {
-        ufeSrcPath = appendToPath(_ufeDstPath, _usdDstPath.GetElementString());
+        ufeSrcPath = appendToUsdPath(_ufeDstPath, _usdDstPath.GetElementString());
     } else {
         // Temporary USD stage case.
         const auto ufePathAsString = "/" + _usdDstPath.GetElementString();

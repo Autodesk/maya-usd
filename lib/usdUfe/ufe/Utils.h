@@ -193,7 +193,7 @@ USDUFE_PUBLIC
 PXR_NS::SdfPath uniqueChildPath(const PXR_NS::UsdStage& stage, const PXR_NS::SdfPath& path);
 
 USDUFE_PUBLIC
-Ufe::Path appendToPath(const Ufe::Path& path, const std::string& name);
+Ufe::Path appendToUsdPath(const Ufe::Path& path, const std::string& name);
 
 //! Returns true if \p item is a materials scope.
 USDUFE_PUBLIC

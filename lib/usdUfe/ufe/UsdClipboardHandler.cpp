@@ -133,6 +133,9 @@ bool UsdClipboardHandler::canBeCut_(const Ufe::SceneItem::Ptr& item)
                 }
             }
 
+            // As a constraint for the cut in the Outliner, we want to check if an item is
+            // connected to other items at the same level of the hierarchy, which is why
+            // we only check its siblings in this case.
             if (kBaseNameAndType.second == PXR_NS::UsdShadeAttributeType::Output) {
                 // The attribute could be a source connection, we have to explore the siblings.
                 for (auto&& child : primParent.GetChildren()) {
@@ -168,9 +171,7 @@ bool UsdClipboardHandler::canBeCut_(const Ufe::SceneItem::Ptr& item)
         return true;
     }
 
-    try {
-        enforceMutedLayer(prim, "remove");
-    } catch (const std::runtime_error&) {
+    if (hasMutedLayer(prim)) {
         return false;
     }
 

@@ -80,8 +80,7 @@ private:
     PXR_NS::UsdStageCache::Id _clipboardStageCacheId;
 
     //! \brief Erase the clipboard stage from the cache.
-    //! \param cleanFile If true, we clean the root layer stage and the clipboard file.
-    void cleanClipboardStageCache(bool cleanFile = false);
+    void cleanClipboardStageCache();
 
     //! \brief Remove the clipboard file by deleting it.
     void removeClipboardFile();

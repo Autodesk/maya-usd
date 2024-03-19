@@ -51,7 +51,16 @@ public:
     void                            preCopy_() override;
     void                            preCut_() override;
 
-    // Helper functions
+    //! Helper function to test if the clipboard contains an item of a given type.
+    //! The caller provides a test function which will be called for each top-level
+    //! prim in the clipboard. As an example:
+    //
+    //     bool isNodeGraph(const PXR_NS::UsdPrim& prim)
+    //     {
+    //         return bool(PXR_NS::UsdShadeNodeGraph(prim));
+    //     }
+    //     clipboardHandler->hasItemToPaste(&isNodeGraph);
+    //
     typedef bool (*HasItemToPasteTestFn)(const PXR_NS::UsdPrim& prim);
     bool hasItemToPaste(HasItemToPasteTestFn testFn);
 
