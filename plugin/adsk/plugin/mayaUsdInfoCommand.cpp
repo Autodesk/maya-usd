@@ -26,7 +26,7 @@
 
 namespace MAYAUSD_NS_DEF {
 
-const MString MayaUsdInfoCommand::commandName("mayaUsd");
+const MString MayaUsdInfoCommand::commandName("mayaUsdInfo");
 
 namespace {
 
