@@ -273,5 +273,9 @@ global proc mayaUsd_createStageFromFile()
 
 global proc string mayaUsd_createStageFromFilePath(string $usdFile)
 {
+    // This proc is used by the unit tests (which run in standalone mode).
+    // In that case we need to make sure the optionVars are initialized as
+    // they are queried in doCreateStage().
+    setOptionVars(false);
     return doCreateStage($usdFile);
 }
