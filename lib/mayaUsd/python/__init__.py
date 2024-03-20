@@ -14,3 +14,4 @@ from usdUfe import restoreDefaultEditRouter
 from usdUfe import restoreAllDefaultEditRouters
 from usdUfe import OperationEditRouterContext
 from usdUfe import AttributeEditRouterContext
+from usdUfe import registerUICallback
