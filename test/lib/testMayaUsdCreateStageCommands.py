@@ -77,6 +77,18 @@ class MayaUsdCreateStageCommandsTestCase(unittest.TestCase):
         nt = cmds.nodeType(shapeNode)
         self.assertEqual('mayaUsdProxyShape', nt)
 
+        # Verify that the we have a good stage.
+        stage = mayaUsd.ufe.getStage(shapeNode)
+        self.assertTrue(stage)
+
+        # This stage has five layers.
+        layerStack = stage.GetLayerStack()
+        self.assertEqual(5, len(layerStack))
+
+        # Finally, verify that we can get at least one of the ball prims.
+        ballPrim = stage.GetPrimAtPath('/Room_set/Props/Ball_1')
+        self.assertTrue(ballPrim.IsValid())
+
         # Verify that the shape node has the correct file path.
         filePathAttr = cmds.getAttr(shapeNode+'.filePath')
         self.assertTrue(self.samefile(filePathAttr, ballFilePath))
