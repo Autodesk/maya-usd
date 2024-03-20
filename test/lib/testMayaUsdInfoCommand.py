@@ -31,32 +31,32 @@ class MayaUsdInfoCommandTestCase(unittest.TestCase):
 
     def testVersionInfo(self):
         # MayaUsd version is 0.x.0
-        self.assertGreaterEqual(cmds.mayaUsd(majorVersion=True), 0)
-        self.assertEqual(cmds.mayaUsd(mjv=True), cmds.mayaUsd(majorVersion=True))
+        self.assertGreaterEqual(cmds.mayaUsdInfo(majorVersion=True), 0)
+        self.assertEqual(cmds.mayaUsdInfo(mjv=True), cmds.mayaUsdInfo(majorVersion=True))
 
-        self.assertGreater(cmds.mayaUsd(minorVersion=True), 0)
-        self.assertEqual(cmds.mayaUsd(mnv=True), cmds.mayaUsd(minorVersion=True))
+        self.assertGreater(cmds.mayaUsdInfo(minorVersion=True), 0)
+        self.assertEqual(cmds.mayaUsdInfo(mnv=True), cmds.mayaUsdInfo(minorVersion=True))
 
-        self.assertGreaterEqual(cmds.mayaUsd(patchVersion=True), 0)
-        self.assertEqual(cmds.mayaUsd(pv=True), cmds.mayaUsd(patchVersion=True))
+        self.assertGreaterEqual(cmds.mayaUsdInfo(patchVersion=True), 0)
+        self.assertEqual(cmds.mayaUsdInfo(pv=True), cmds.mayaUsdInfo(patchVersion=True))
 
         # The version flag returns a string of the form "0.x.0"
-        self.assertNotEqual(cmds.mayaUsd(version=True), '')
-        self.assertEqual(cmds.mayaUsd(v=True), cmds.mayaUsd(version=True))
-        self.assertEqual(cmds.mayaUsd(v=True), '%s.%s.%s' % (cmds.mayaUsd(mjv=True), cmds.mayaUsd(mnv=True), cmds.mayaUsd(pv=True)))
+        self.assertNotEqual(cmds.mayaUsdInfo(version=True), '')
+        self.assertEqual(cmds.mayaUsdInfo(v=True), cmds.mayaUsdInfo(version=True))
+        self.assertEqual(cmds.mayaUsdInfo(v=True), '%s.%s.%s' % (cmds.mayaUsdInfo(mjv=True), cmds.mayaUsdInfo(mnv=True), cmds.mayaUsdInfo(pv=True)))
 
     def testBuildInfo(self):
-        self.assertGreaterEqual(cmds.mayaUsd(buildNumber=True), 0)
-        self.assertEqual(cmds.mayaUsd(bn=True), cmds.mayaUsd(buildNumber=True))
+        self.assertGreaterEqual(cmds.mayaUsdInfo(buildNumber=True), 0)
+        self.assertEqual(cmds.mayaUsdInfo(bn=True), cmds.mayaUsdInfo(buildNumber=True))
 
-        self.assertNotEqual(cmds.mayaUsd(gitCommit=True), '')
-        self.assertEqual(cmds.mayaUsd(gc=True), cmds.mayaUsd(gitCommit=True))
+        self.assertNotEqual(cmds.mayaUsdInfo(gitCommit=True), '')
+        self.assertEqual(cmds.mayaUsdInfo(gc=True), cmds.mayaUsdInfo(gitCommit=True))
 
-        self.assertNotEqual(cmds.mayaUsd(gitBranch=True), '')
-        self.assertEqual(cmds.mayaUsd(gb=True), cmds.mayaUsd(gitBranch=True))
+        self.assertNotEqual(cmds.mayaUsdInfo(gitBranch=True), '')
+        self.assertEqual(cmds.mayaUsdInfo(gb=True), cmds.mayaUsdInfo(gitBranch=True))
 
-        self.assertNotEqual(cmds.mayaUsd(cutIdentifier=True), '')
-        self.assertEqual(cmds.mayaUsd(c=True), cmds.mayaUsd(cutIdentifier=True))
+        self.assertNotEqual(cmds.mayaUsdInfo(cutIdentifier=True), '')
+        self.assertEqual(cmds.mayaUsdInfo(c=True), cmds.mayaUsdInfo(cutIdentifier=True))
 
-        self.assertNotEqual(cmds.mayaUsd(buildDate=True), '')
-        self.assertEqual(cmds.mayaUsd(bd=True), cmds.mayaUsd(buildDate=True))
+        self.assertNotEqual(cmds.mayaUsdInfo(buildDate=True), '')
+        self.assertEqual(cmds.mayaUsdInfo(bd=True), cmds.mayaUsdInfo(buildDate=True))
