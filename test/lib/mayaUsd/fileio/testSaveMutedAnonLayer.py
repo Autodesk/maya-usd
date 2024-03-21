@@ -115,7 +115,7 @@ class SaveMutedLayerTest(unittest.TestCase):
         self.assertIsNotNone(subLayer)
 
         # Verify the layer was reloaded as muted.
-        self.assertTrue(stage.IsLayerMuted(subLayerPath))
+        self.assertTrue(stage.IsLayerMuted(subLayer.identifier))
 
         # Verify the two objects are still present.
         stage.UnmuteLayer(subLayer.identifier)
