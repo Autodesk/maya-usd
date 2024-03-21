@@ -1062,13 +1062,13 @@ private:
 
     void _notifySystemLockIsRefreshed()
     {
-        PXR_NS::VtDictionary callbackContext;
-        callbackContext["proxyShapePath"] = PXR_NS::VtValue(_proxyShapePath.c_str());
-        PXR_NS::VtDictionary callbackData;
-
         UsdUfe::UICallback::Ptr dstCallback = UsdUfe::getUICallback(TfToken("onRefreshSystemLock"));
         if (!dstCallback)
             return;
+
+        PXR_NS::VtDictionary callbackContext;
+        callbackContext["proxyShapePath"] = PXR_NS::VtValue(_proxyShapePath.c_str());
+        PXR_NS::VtDictionary callbackData;
 
         std::vector<std::string> affectedLayers;
         affectedLayers.reserve(_layers.size());

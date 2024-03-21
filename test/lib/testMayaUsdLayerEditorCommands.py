@@ -620,14 +620,14 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         def refreshSystemLockCallback(context, callbackData):
             layerIds = callbackData.get('affectedLayerIds')
             for layerId in layerIds:
-                mel.eval(f'mayaUsdLayerEditor -edit -lockLayer 2 0 "{proxyShapePath}" "{layerId}"')
+                mel.eval(f'mayaUsdLayerEditor -edit -lockLayer 2 0 "{proxyShapePath}" "{layerId}"')    
+            self.assertFalse(topLayer.permissionToEdit)
+            self.assertFalse(topLayer.permissionToSave)
         
         from usdUfe import registerUICallback
         mayaUsd.lib.registerUICallback('onRefreshSystemLock', refreshSystemLockCallback)        
         # 4- Refreshing the system lock should remove the lock but also get re-locked by refreshSystemLockCallback
         cmds.mayaUsdLayerEditor(topLayer.identifier, edit=True, refreshSystemLock=(proxyShapePath, 1))
-        self.assertFalse(topLayer.permissionToEdit)
-        self.assertFalse(topLayer.permissionToSave)
         
     def testMuteLayer(self):
         """ test 'mayaUsdLayerEditor' command 'muteLayer' paramater """
