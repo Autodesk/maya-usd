@@ -102,8 +102,8 @@ class UINodeGraphNodeTestCase(unittest.TestCase):
         self.doPosAndSizeTests(uiNodeGraphNode.hasPosition, uiNodeGraphNode.setPosition,
             uiNodeGraphNode.getPosition, uiNodeGraphNode.setPositionCmd)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4100',
-                     'Size interface only available in Ufe preview version greater equal to 4.0.100, or 0.5.0.')
+    @unittest.skipUnless(os.getenv('UFE_UINODEGRAPHNODE_HAS_SIZE'),
+                     'Testing node graph size needs newer has/get/size size methods.')
     def testSize(self):
         ball3Path = ufe.PathString.path('|transform1|proxyShape1,/Ball_set/Props/Ball_3')
         ball3SceneItem = ufe.Hierarchy.createItem(ball3Path)
@@ -116,8 +116,8 @@ class UINodeGraphNodeTestCase(unittest.TestCase):
         self.doPosAndSizeTests(uiNodeGraphNode.hasSize, uiNodeGraphNode.setSize,
             uiNodeGraphNode.getSize, uiNodeGraphNode.setSizeCmd)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '5016',
-                     'Display color interface only available in Ufe preview version 0.5.16 or greater.')
+    @unittest.skipUnless(os.getenv('UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR'),
+                     'Testing node graph display color needs newer has/get/set display color methods.')
     def testDisplayColor(self):
         ball5Path = ufe.PathString.path('|transform1|proxyShape1,/Ball_set/Props/Ball_5')
         ball5SceneItem = ufe.Hierarchy.createItem(ball5Path)

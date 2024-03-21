@@ -88,7 +88,7 @@ class MaterialTestCase(unittest.TestCase):
         materials = materialInterface.getMaterials()
         self.assertEqual(len(materials), 0)
 
-        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '5003'):
+        if(os.getenv('UFE_MATERIAL_HAS_HASMATERIAL')):
             hasAnyMaterial = materialInterface.hasMaterial()
             self.assertFalse(hasAnyMaterial)
 
@@ -108,7 +108,7 @@ class MaterialTestCase(unittest.TestCase):
         materials = materialInterface.getMaterials()
         self.assertEqual(len(materials), 1)
 
-        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '5003'):
+        if(os.getenv('UFE_MATERIAL_HAS_HASMATERIAL')):
             hasAnyMaterial = materialInterface.hasMaterial()
             self.assertTrue(hasAnyMaterial)
 
@@ -128,7 +128,7 @@ class MaterialTestCase(unittest.TestCase):
         materials = materialInterface.getMaterials()
         self.assertEqual(len(materials), 2)
 
-        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '5003'):
+        if(os.getenv('UFE_MATERIAL_HAS_HASMATERIAL')):
             hasAnyMaterial = materialInterface.hasMaterial()
             self.assertTrue(hasAnyMaterial)
 
