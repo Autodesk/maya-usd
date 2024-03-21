@@ -613,20 +613,20 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         subLayer = Sdf.Layer.FindRelativeToLayer(topLayer, topLayer.subLayerPaths[0])
         layerLockingShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
         proxyShapePath = layerLockingShapes[0]
-        # 2- Setting a system lock on a layer loaded from a file and its sub-layers
-        cmds.mayaUsdLayerEditor(topLayer.identifier, edit=True, lockLayer=(2, 1, proxyShapePath))
+        # 2- Setting a system lock on a layer loaded from a file and its sub-layer
+        cmds.mayaUsdLayerEditor(topLayer.identifier, edit=True, lockLayer=(2, 0, proxyShapePath))
         self.assertFalse(topLayer.permissionToEdit)
         self.assertFalse(topLayer.permissionToSave)
         # 3- Attach callbacks to capture any system-lock changes due to refreshSystemLock
         def refreshSystemLockCallback(context, callbackData):
             layerIds = callbackData.get('affectedLayerIds')
-            # Check that all the affected layers are included
-            self.assertTrue(len(layerIds), 2)
+            # Check that only the top layers is affected
+            self.assertTrue(len(layerIds), 1)
             self.assertEqual(layerIds[0], topLayer.identifier)
-            self.assertEqual(layerIds[1], subLayer.identifier)
-            # Check that the layers are unlocked due to the refresh
+            # Check that the top layer is unlocked due to the refresh
             self.assertTrue(topLayer.permissionToEdit)
             self.assertTrue(topLayer.permissionToSave)
+            # Check that the sublayer is unchanged
             self.assertTrue(subLayer.permissionToEdit)
             self.assertTrue(subLayer.permissionToSave)
         
