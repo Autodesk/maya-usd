@@ -15,8 +15,8 @@
 //
 #include "AL/usdmaya/utils/DiffPrimVar.h"
 
-#include <usdUfe/utils/DiffCore.h>
 #include <usdUfe/utils/SIMD.h>
+#include <usdUfe/utils/diffCore.h>
 
 #include <pxr/usd/usdGeom/primvarsAPI.h>
 

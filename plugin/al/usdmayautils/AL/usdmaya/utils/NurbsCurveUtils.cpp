@@ -20,7 +20,7 @@
 #include "AL/usdmaya/utils/DgNodeHelper.h"
 #include "AL/usdmaya/utils/Utils.h"
 
-#include <usdUfe/utils/DiffCore.h>
+#include <usdUfe/utils/diffCore.h>
 
 #include <pxr/usd/usdGeom/primvarsAPI.h>
 #include <pxr/usd/usdUtils/pipeline.h>

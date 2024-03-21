@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <usdufe/base/api.h>
+#include <usdUfe/base/api.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
