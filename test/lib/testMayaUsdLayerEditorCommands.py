@@ -610,19 +610,25 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         rootLayerPath = testUtils.getTestScene("layerLocking", "layerLocking.usda")
         stage = Usd.Stage.Open(rootLayerPath)
         topLayer = stage.GetRootLayer();
+        subLayer = Sdf.Layer.FindRelativeToLayer(topLayer, topLayer.subLayerPaths[0])
         layerLockingShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
         proxyShapePath = layerLockingShapes[0]
-        # 2- Setting a system lock on a layer loaded from a file
-        cmds.mayaUsdLayerEditor(topLayer.identifier, edit=True, lockLayer=(2, 0, proxyShapePath))
+        # 2- Setting a system lock on a layer loaded from a file and its sub-layers
+        cmds.mayaUsdLayerEditor(topLayer.identifier, edit=True, lockLayer=(2, 1, proxyShapePath))
         self.assertFalse(topLayer.permissionToEdit)
         self.assertFalse(topLayer.permissionToSave)
         # 3- Attach callbacks to capture any system-lock changes due to refreshSystemLock
         def refreshSystemLockCallback(context, callbackData):
             layerIds = callbackData.get('affectedLayerIds')
-            for layerId in layerIds:
-                mel.eval(f'mayaUsdLayerEditor -edit -lockLayer 2 0 "{proxyShapePath}" "{layerId}"')    
-            self.assertFalse(topLayer.permissionToEdit)
-            self.assertFalse(topLayer.permissionToSave)
+            # Check that all the affected layers are included
+            self.assertTrue(len(layerIds), 2)
+            self.assertEqual(layerIds[0], topLayer.identifier)
+            self.assertEqual(layerIds[1], subLayer.identifier)
+            # Check that the layers are unlocked due to the refresh
+            self.assertTrue(topLayer.permissionToEdit)
+            self.assertTrue(topLayer.permissionToSave)
+            self.assertTrue(subLayer.permissionToEdit)
+            self.assertTrue(subLayer.permissionToSave)
         
         from usdUfe import registerUICallback
         mayaUsd.lib.registerUICallback('onRefreshSystemLock', refreshSystemLockCallback)        
