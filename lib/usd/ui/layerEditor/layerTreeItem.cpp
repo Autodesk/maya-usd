@@ -436,77 +436,50 @@ void LayerTreeItem::saveEditsNoPrompt()
 // helper to save anon layers called by saveEdits()
 void LayerTreeItem::saveAnonymousLayer()
 {
-    // TODO: the code below is very similar to mayaUsd::utils::saveAnonymousLayer().
-    //       When fixing bug here or there, we need to fix it in the other. Refactor to have a
-    //       single copy.
+    SessionState* sessionState = parentModel()->sessionState();
 
-    auto sessionState = parentModel()->sessionState();
-
+    // the path we have is an absolute path
     std::string fileName;
-    if (sessionState->saveLayerUI(nullptr, &fileName, parentLayer())) {
+    if (!sessionState->saveLayerUI(nullptr, &fileName, parentLayer()))
+        return;
 
-        MayaUsd::utils::ensureUSDFileExtension(fileName);
+    MayaUsd::utils::ensureUSDFileExtension(fileName);
 
-        // the path we have is an absolute path
-        const QString dialogTitle = StringResources::getAsQString(StringResources::kSaveLayer);
-        std::string   formatTag = MayaUsd::utils::usdFormatArgOption();
-        if (saveSubLayer(dialogTitle, parentLayerItem(), layer(), fileName, formatTag)) {
+    const QString dialogTitle = StringResources::getAsQString(StringResources::kSaveLayer);
 
-            const std::string absoluteFileName = fileName;
+    if (!checkIfPathIsSafeToAdd(dialogTitle, parentLayerItem(), fileName))
+        return;
 
-            // now replace the layer in the parent
-            if (isRootLayer()) {
-                if (UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile()) {
-                    fileName = UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(fileName);
-                }
-                sessionState->rootLayerPathChanged(fileName);
-            } else {
-                auto parentItem = parentLayerItem();
-                auto parentLayer = parentItem ? parentItem->layer() : nullptr;
-                if (parentLayer) {
-                    if (UsdMayaUtilFileSystem::requireUsdPathsRelativeToParentLayer()) {
-                        if (!parentLayer->IsAnonymous()) {
-                            fileName = UsdMayaUtilFileSystem::getPathRelativeToLayerFile(
-                                fileName, parentLayer);
-                        } else {
-                            UsdMayaUtilFileSystem::markPathAsPostponedRelative(
-                                parentLayer, fileName);
-                        }
-                    } else {
-                        UsdMayaUtilFileSystem::unmarkPathAsPostponedRelative(parentLayer, fileName);
-                    }
-                }
+    MayaUsd::utils::PathInfo pathInfo;
+    pathInfo.absolutePath = fileName;
+    pathInfo.savePathAsRelative = isRootLayer()
+        ? UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile()
+        : UsdMayaUtilFileSystem::requireUsdPathsRelativeToParentLayer();
+    pathInfo.customRelativeAnchor = ""; // TODO, see calculateParentLayerDir()
 
-                // Note: we need to open the layer with the absolute path. The relative path is only
-                //       used by the parent layer to refer to the sub-layer relative to itself. When
-                //       opening the layer in isolation, we need to use the absolute path. Failure
-                //       to do so will make finding the layer by its own identifier fail! A symptom
-                //       of this failure is that drag-and-drop in the Layer Manager UI fails
-                //       immediately after saving a layer with a relative path.
-                SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(absoluteFileName);
+    MayaUsd::utils::LayerParent layerParent;
+    layerParent._layerParent = parentLayer();
+    layerParent._proxyPath = sessionState->stageEntry()._proxyShapePath;
 
-                // Now replace the layer in the parent, using a relative path if requested.
-                if (newLayer) {
-                    bool setTarget = _isTargetLayer;
-                    auto model = parentModel();
-                    MayaUsd::utils::updateSubLayer(parentItem->layer(), layer(), fileName);
-                    if (setTarget) {
-                        auto stage = sessionState->stage();
-                        if (stage) {
-                            stage->SetEditTarget(newLayer);
-                        }
-                    }
-                    model->selectUsdLayerOnIdle(newLayer);
-                } else {
-                    QMessageBox::critical(
-                        nullptr,
-                        dialogTitle,
-                        StringResources::getAsQString(StringResources::kErrorFailedToReloadLayer));
-                }
-            }
-        }
+    std::string    errMsg;
+    std::string    formatTag = MayaUsd::utils::usdFormatArgOption();
+    SdfLayerRefPtr newLayer = MayaUsd::utils::saveAnonymousLayer(
+        sessionState->stage(), layer(), pathInfo, layerParent, formatTag, &errMsg);
+    if (!newLayer) {
+        warningDialog(dialogTitle, errMsg.c_str());
+        return;
     }
+
+    const std::string absoluteFileName = fileName;
+
+    // now replace the layer in the parent
+    if (isRootLayer())
+        sessionState->rootLayerPathChanged(fileName);
+
+    if (auto model = parentModel())
+        model->selectUsdLayerOnIdle(newLayer);
 }
+
 void LayerTreeItem::discardEdits()
 {
     if (isAnonymous() || !isDirty()) {

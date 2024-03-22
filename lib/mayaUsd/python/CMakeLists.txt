@@ -33,6 +33,7 @@ target_sources(${PYTHON_TARGET_NAME}
         wrapConverter.cpp
         wrapCopyLayerPrims.cpp
         wrapDiagnosticDelegate.cpp
+        wrapLayerLocking.cpp
         wrapLoadRules.cpp
         wrapMeshWriteUtils.cpp
         wrapOpUndoItem.cpp

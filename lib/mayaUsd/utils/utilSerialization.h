@@ -130,7 +130,8 @@ PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
     PXR_NS::SdfLayerRefPtr anonLayer,
     LayerParent            parent,
     const std::string&     basename,
-    std::string            formatArg = "");
+    std::string            formatArg = "",
+    std::string*           errorMsg = nullptr);
 
 /*! \brief Save an anonymous layer to disk and update the sublayer path array
     in the parent layer.
@@ -141,7 +142,8 @@ PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
     PXR_NS::SdfLayerRefPtr anonLayer,
     const PathInfo&        pathInfo,
     LayerParent            parent,
-    std::string            formatArg = "");
+    std::string            formatArg = "",
+    std::string*           errorMsg = nullptr);
 
 /*! \brief Update the list of sub-layers with a new layer identity.
  *         The new sub-layer is identified by its path explicitly,

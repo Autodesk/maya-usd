@@ -308,6 +308,30 @@ void pathRemoveExtension(std::string& filePath);
 MAYAUSD_CORE_PUBLIC
 std::string pathFindExtension(std::string& filePath);
 
+// Backup a file and restore it if not commited.
+class FileBackup
+{
+public:
+    FileBackup(const std::string& filename);
+    ~FileBackup();
+
+    // Once commited, the backup will not be put back into the original file.
+    void commit();
+
+    // Force restoration of the original file if successfully backed-up, even if commited.
+    void restore();
+
+    // Return the backup file name.
+    std::string getBackupFilename() const;
+
+public:
+    void backup();
+
+    std::string _filename;
+    bool        _backed = false;
+    bool        _commited = false;
+};
+
 } // namespace UsdMayaUtilFileSystem
 
 PXR_NAMESPACE_CLOSE_SCOPE
