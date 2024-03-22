@@ -272,7 +272,7 @@ def getDefaultMergeToUSDOptionsDict():
         "frameStride":              1.0,
         "frameSample":              "",
         "shadingMode":              "useRegistry",
-        "convertMaterialsTo":       [],
+        "convertMaterialsTo":       "[]",
         "exportInstances":          1,
         "exportVisibility":         1,
         "mergeTransformAndShape":   1,
