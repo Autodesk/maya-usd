@@ -75,6 +75,21 @@ public:
     /// Enabler function, returns a dictionary containing all the options for the context.
     typedef std::function<VtDictionary()> EnablerFn;
 
+    // Show a UI, a modal dialog, for the plugin options.
+    //
+    // The job context name is given to identify the export context, in case a plugin has multiple
+    // contexts.
+    //
+    // The name of the UI parent for the dialog is given. We assume the SDK allows finding UI by
+    // name.
+    //
+    // The current settings a passed as a dictionary, the specific job context name is also passed.
+    // The function must return a dictionary filled with the new settings. These settings don't need
+    // to contain all values, you can only fill modified values if you want.
+    typedef std::function<
+        VtDictionary(const TfToken&, const std::string& parentUI, const VtDictionary&)>
+        UIFn;
+
     /// Get all registered export job contexts:
     static TfTokenVector ListJobContexts() { return GetInstance()._ListJobContexts(); }
 
@@ -85,6 +100,7 @@ public:
         TfToken   niceName;
         TfToken   exportDescription;
         EnablerFn exportEnablerCallback;
+        UIFn      exportUICallback;
         TfToken   importDescription;
         EnablerFn importEnablerCallback;
 
@@ -131,6 +147,17 @@ public:
         EnablerFn          enablerFct,
         bool               fromPython = false);
 
+    /// Registers an export job context UI dialog.
+    ///
+    /// The \p jobContext name will be used directly in the render option string as one of
+    /// the valid values of the job context option.
+    ///
+    /// The \p uiFct will be called to show a modal dialog to modify options by the user.
+    ///
+    /// The \p fromPython flag indicates the function is a Python function.
+    MAYAUSD_CORE_PUBLIC
+    void SetExportOptionsUI(const std::string& jobContext, UIFn uiFct, bool fromPython = false);
+
     /// Registers an import job context, with nice name, description and enabler function.
     ///
     /// The \p jobContext name will be used directly in the render option string as one of
@@ -176,6 +203,17 @@ private:
             #name, niceName, description, &_ExportJobContextEnabler_##name); \
     }                                                                        \
     VtDictionary _ExportJobContextEnabler_##name()
+
+#define REGISTER_EXPORT_JOB_CONTEXT_UI_FCT(name)                                                   \
+    static VtDictionary _ExportJobContextUI_##name(                                                \
+        const TfToken& jobContext, const std::string& parentUIName, const VtDictionary& settings); \
+    TF_REGISTRY_FUNCTION(UsdMayaJobContextRegistry)                                                \
+    {                                                                                              \
+        UsdMayaJobContextRegistry::GetInstance().SetExportOptionsUI(                               \
+            #name, &_ExportJobContextUI_##name);                                                   \
+    }                                                                                              \
+    VtDictionary _ExportJobContextUI_##name(                                                       \
+        const TfToken& jobContext, const std::string& parentUIName, const VtDictionary& settings)
 
 #define REGISTER_IMPORT_JOB_CONTEXT(name, niceName, description, enablerFct) \
     TF_REGISTRY_FUNCTION(UsdMayaJobContextRegistry)                          \
