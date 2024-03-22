@@ -1,21 +1,30 @@
-# Example Export Plugin in Python
+# Example Import and Export Plugins in Python
 
 This folder contains an example of a MayaUSD export plugin written in Python. It demonstrates:
 - How to hook into the export process to force some options on or off.
 - How to present a UI to the user to set options specific to your export plugin.
-- How to save your options in a persisten Maya option variable.
-- How to register this plugin with MayaUSD.
+- How to save your options in a persistent Maya option variable.
+- How to register this export plugin with MayaUSD.
+
+There is also an example impot plugin. Everything that applies to the export
+plugin has an equivalent. often identical, in th eimport plugin. That includes:
+- Hook into the import process to force some options on or off.
+- Callback to present a UI to the user to set options specific to your export plugin.
+- Register this import plugin with MayaUSD.
 
 ## Contents of the example
 
 The example export plugin is made up of the following files:
 
-- [ExampleExportPlugin.py](ExampleExportPlugin.py): the Python code for the plugin.
+- [ExampleExportPlugin.py](ExampleExportPlugin.py): the Python code for the export plugin.
 - [README.md](README.md): this documentation
 - [README-PYTHON.md](README-PYTHON.md): documentation about the Python code.
 - [mayaUsdPlugInfo.json](mayaUsdPlugInfo.json): tells MayaUSD how to load the plugin.
   Only needed when using the "stand-alone" loading method described below.
 - [resources/plugInfo.json](resources/plugInfo.json): tells USD how to load the plugin.
+
+The example import plugin is in this additional file:
+- [ExampleImportPlugin.py](ExampleImportPlugin.py): the Python code for the import plugin.
 
 ## Contents of each file
 
@@ -71,6 +80,11 @@ Here is the contents of example JSON file:
 ### ExampleExportPlugin.py
 
 This is the Python code for the export plugin. For detailed explanations, refer
+to [README-PYTHON.md](README-PYTHON.md).
+
+### ExampleImportPlugin.py
+
+This is the Python code for the import plugin. For detailed explanations, refer
 to [README-PYTHON.md](README-PYTHON.md).
 
 ## How to register the plugin with MayaUSD
