@@ -26,6 +26,7 @@
 #include <mayaUsd/utils/utilFileSystem.h>
 
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/uiCallback.h>
 
 #include <pxr/base/tf/diagnostic.h>
 
@@ -967,6 +968,10 @@ public:
 
         updateEditTarget(stage);
 
+        if (_layers.size() > 0) {
+            _notifySystemLockIsRefreshed();
+        }
+
         return true;
     }
 
@@ -986,6 +991,10 @@ public:
         }
 
         updateEditTarget(stage);
+
+        if (_layers.size() > 0) {
+            _notifySystemLockIsRefreshed();
+        }
 
         return true;
     }
@@ -1049,6 +1058,28 @@ private:
                 }
             }
         }
+    }
+
+    void _notifySystemLockIsRefreshed()
+    {
+        UsdUfe::UICallback::Ptr dstCallback = UsdUfe::getUICallback(TfToken("onRefreshSystemLock"));
+        if (!dstCallback)
+            return;
+
+        PXR_NS::VtDictionary callbackContext;
+        callbackContext["proxyShapePath"] = PXR_NS::VtValue(_proxyShapePath.c_str());
+        PXR_NS::VtDictionary callbackData;
+
+        std::vector<std::string> affectedLayers;
+        affectedLayers.reserve(_layers.size());
+        for (size_t layerIndex = 0; layerIndex < _layers.size(); layerIndex++) {
+            affectedLayers.push_back(_layers[layerIndex]->GetIdentifier());
+        }
+
+        VtStringArray lockedArray(affectedLayers.begin(), affectedLayers.end());
+        callbackData["affectedLayerIds"] = lockedArray;
+
+        (*dstCallback)(callbackContext, callbackData);
     }
 
     UsdStageWeakPtr getStage()

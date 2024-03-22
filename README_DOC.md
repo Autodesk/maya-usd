@@ -14,3 +14,4 @@
 + [Hydra For Maya](https://github.com/Autodesk/maya-usd/blob/release/maya-hydra/lib/mayaHydra/README.md)
 + [Layer Saving](lib/mayaUsd/nodes/Layer_Saving_Docs.md)
 + [Maya Reference Edit Router](lib/usd/translators/mayaReferenceEditRouter.md)
++ [Layer Locking](doc/LayerLocking.md)
