@@ -102,7 +102,7 @@ class UINodeGraphNodeTestCase(unittest.TestCase):
         self.doPosAndSizeTests(uiNodeGraphNode.hasPosition, uiNodeGraphNode.setPosition,
             uiNodeGraphNode.getPosition, uiNodeGraphNode.setPositionCmd)
 
-    @unittest.skipUnless(os.getenv('UFE_UINODEGRAPHNODE_HAS_SIZE'),
+    @unittest.skipIf(os.getenv('UFE_UINODEGRAPHNODE_HAS_SIZE', 'NOT-FOUND') not in ('1', 'TRUE'),
                      'Testing node graph size needs newer has/get/size size methods.')
     def testSize(self):
         ball3Path = ufe.PathString.path('|transform1|proxyShape1,/Ball_set/Props/Ball_3')
@@ -116,7 +116,7 @@ class UINodeGraphNodeTestCase(unittest.TestCase):
         self.doPosAndSizeTests(uiNodeGraphNode.hasSize, uiNodeGraphNode.setSize,
             uiNodeGraphNode.getSize, uiNodeGraphNode.setSizeCmd)
 
-    @unittest.skipUnless(os.getenv('UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR'),
+    @unittest.skipIf(os.getenv('UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR', 'NOT-FOUND') not in ('1', 'TRUE'),
                      'Testing node graph display color needs newer has/get/set display color methods.')
     def testDisplayColor(self):
         ball5Path = ufe.PathString.path('|transform1|proxyShape1,/Ball_set/Props/Ball_5')

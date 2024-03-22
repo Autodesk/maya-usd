@@ -68,7 +68,7 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/ufe.h")
         # Temporary. Once next Maya PR is released with UFE v5.0.0 this should
         # be removed (along with all the UFE_PREVIEW_VERSION_NUM checks).
         set(UFE_PREVIEW_VERSION_NUM 5017)
-    elseif(UFE_VERSION VERIFY_EQUAL "5.1.0")
+    elseif(UFE_VERSION VERSION_EQUAL "5.1.0")
         set(UFE_PREVIEW_VERSION_NUM 5100)
     endif()
 
