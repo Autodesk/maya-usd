@@ -143,12 +143,18 @@ void LayerTreeView::selectLayerRquest(const QModelIndex& index)
 
 void LayerTreeView::onItemDoubleClicked(const QModelIndex& index)
 {
-    if (index.isValid()) {
-        auto layerTreeItem = layerItemFromIndex(index);
-        if (layerTreeItem->needsSaving()) {
-            layerTreeItem->saveEdits();
-        }
-    }
+    if (!index.isValid())
+        return;
+
+    auto layerTreeItem = layerItemFromIndex(index);
+    if (!layerTreeItem->needsSaving())
+        return;
+
+    // Note: system-locked layers cannot be saved.
+    if (layerTreeItem->isSystemLocked() || layerTreeItem->appearsSystemLocked())
+        return;
+
+    layerTreeItem->saveEdits();
 }
 
 bool LayerTreeView::shouldExpandOrCollapseAll() const

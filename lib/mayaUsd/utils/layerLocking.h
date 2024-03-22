@@ -97,7 +97,8 @@ enum LayerLockType
     LayerLock_SystemLocked
 };
 
-/*! \brief Sets the lock status on a layer
+/*! \brief Sets the lock status on a layer.
+ *         Automatically calls addLockedLayer, addSystemLockedLayer or their remove counterparts.
  */
 MAYAUSD_CORE_PUBLIC
 void lockLayer(
