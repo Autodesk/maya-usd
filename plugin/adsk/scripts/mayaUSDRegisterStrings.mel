@@ -168,9 +168,11 @@ global proc mayaUSDRegisterStrings()
     register("kExportInstancesLbl", "Instances:");
     register("kExportInstancesFlatLbl", "Flatten");
     register("kExportInstancesRefLbl", "Convert to USD Instanceable References");
-    register("kExportJobContextAnn", "Select a loaded plug-in configuration to modify export options");
-    register("kExportJobContextLbl", "Plug-in Configuration:");
-    register("kExportJobContextNoneLbl", "None");
+    register("kExportPluginConfigLbl", "Plug-in Configurations");
+    register("kExportPluginConfigAnn", "Turn on the plug-ins you wish to include for this process.\n" +
+                                       "When turned on, plug-ins (like Arnold) can modify or create data to ensure compatibility.\n" +
+                                       "Plug-ins may have extra settings you can adjust.");
+    register("kExportPluginConfigButtonLbl", "Options");
     register("kExportMaterialsAnn", "Select the material(s) to bind to prims for export. With USD, you can bind multiple materials to prims.");
     register("kExportMaterialsDefaultScopeName", "mtl");
     register("kExportMergeShapesAnn", "Merges Maya transform and shape nodes into a single USD prim.");

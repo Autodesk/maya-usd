@@ -1918,6 +1918,8 @@ VtValue _ParseArgumentValue(const std::string& value, const VtValue& guideValue)
     // The export UI only has boolean and string parameters.
     if (guideValue.IsHolding<bool>()) {
         return VtValue(TfUnstringify<bool>(value));
+    } else if (guideValue.IsHolding<float>()) {
+        return VtValue(TfUnstringify<float>(value));
     } else if (guideValue.IsHolding<double>()) {
         return VtValue(TfUnstringify<double>(value));
     } else if (guideValue.IsHolding<int>()) {
@@ -1995,6 +1997,8 @@ std::pair<bool, std::string> UsdMayaUtil::ValueToArgument(const VtValue& value)
         return std::make_pair(true, std::to_string(value.Get<int>()));
     } else if (value.IsHolding<float>()) {
         return std::make_pair(true, std::to_string(value.Get<float>()));
+    } else if (value.IsHolding<double>()) {
+        return std::make_pair(true, std::to_string(value.Get<double>()));
     } else if (value.IsHolding<std::string>()) {
         return std::make_pair(true, value.Get<std::string>());
     } else if (value.IsHolding<std::vector<VtValue>>()) {

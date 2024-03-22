@@ -16,6 +16,7 @@
 #include "baseListJobContextsCommand.h"
 
 #include <mayaUsd/fileio/jobContextRegistry.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/utils/util.h>
 
 #include <maya/MArgDatabase.h>
@@ -48,9 +49,30 @@ _GetInfo(const MArgDatabase& argData, const char* optionName)
     return emptyInfo;
 }
 
+MString convertDictionaryToText(const VtDictionary& settings)
+{
+    // Would be nice to return a Python dictionary, but we need something MEL-compatible
+    // Use the JobContextRegistry Python wrappers to get a dictionary.
+    std::ostringstream optionsStream;
+    for (const std::pair<std::string, VtValue> keyValue : settings) {
+
+        bool        canConvert;
+        std::string valueStr;
+        std::tie(canConvert, valueStr) = UsdMayaUtil::ValueToArgument(keyValue.second);
+        // Options don't handle empty arrays well preventing users from passing actual
+        // values for options with such default value.
+        if (canConvert && valueStr != "[]") {
+            optionsStream << keyValue.first.c_str() << "=" << valueStr.c_str() << ";";
+        }
+    }
+    return optionsStream.str().c_str();
+}
+
 const char* _exportStr = "export";
 const char* _exportAnnotationStr = "exportAnnotation";
 const char* _exportArgumentsStr = "exportArguments";
+const char* _hasExportUIStr = "hasExportUI";
+const char* _showExportUIStr = "showExportUI";
 const char* _importStr = "import";
 const char* _importAnnotationStr = "importAnnotation";
 const char* _importArgumentsStr = "importArguments";
@@ -81,22 +103,31 @@ MStatus MayaUSDListJobContextsCommand::doIt(const MArgList& args)
     } else if (argData.isFlagSet(_exportArgumentsStr)) {
         auto const& info = _GetInfo(argData, _exportArgumentsStr);
         if (info.exportEnablerCallback) {
-            // Would be nice to return a Python dictionary, but we need something MEL-compatible
-            // Use the JobContextRegistry Python wrappers to get a dictionary.
-            std::ostringstream optionsStream;
-            for (const std::pair<std::string, VtValue> keyValue : info.exportEnablerCallback()) {
-
-                bool        canConvert;
-                std::string valueStr;
-                std::tie(canConvert, valueStr) = UsdMayaUtil::ValueToArgument(keyValue.second);
-                // Options don't handle empty arrays well preventing users from passing actual
-                // values for options with such default value.
-                if (canConvert && valueStr != "[]") {
-                    optionsStream << keyValue.first.c_str() << "=" << valueStr.c_str() << ";";
-                }
-            }
-            setResult(optionsStream.str().c_str());
+            setResult(convertDictionaryToText(info.exportEnablerCallback()));
         }
+    } else if (argData.isFlagSet(_hasExportUIStr)) {
+        auto const& info = _GetInfo(argData, _hasExportUIStr);
+        setResult(bool(info.exportUICallback != nullptr));
+    } else if (argData.isFlagSet(_showExportUIStr)) {
+        auto const& info = _GetInfo(argData, _showExportUIStr);
+        if (!info.exportUICallback)
+            return MS::kInvalidParameter;
+
+        MString parentUIStr;
+        if (argData.getFlagArgument(_showExportUIStr, 1, parentUIStr) != MS::kSuccess)
+            return MS::kInvalidParameter;
+
+        MString settingsStr;
+        if (argData.getFlagArgument(_showExportUIStr, 2, settingsStr) != MS::kSuccess)
+            return MS::kInvalidParameter;
+
+        VtDictionary inputSettings;
+        if (UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(settingsStr, &inputSettings)
+            != MS::kSuccess)
+            return MS::kInvalidParameter;
+
+        setResult(convertDictionaryToText(
+            info.exportUICallback(info.jobContext, parentUIStr.asChar(), inputSettings)));
     } else if (argData.isFlagSet(_importStr)) {
         for (auto const& c : UsdMayaJobContextRegistry::ListJobContexts()) {
             auto const& info = UsdMayaJobContextRegistry::GetJobContextInfo(c);
@@ -112,21 +143,7 @@ MStatus MayaUSDListJobContextsCommand::doIt(const MArgList& args)
     } else if (argData.isFlagSet(_importArgumentsStr)) {
         auto const& info = _GetInfo(argData, _importArgumentsStr);
         if (info.importEnablerCallback) {
-            // Would be nice to return a Python dictionary, but we need something MEL-compatible
-            // Use the JobContextRegistry Python wrappers to get a dictionary.
-            std::ostringstream optionsStream;
-            for (const std::pair<std::string, VtValue> keyValue : info.importEnablerCallback()) {
-
-                bool        canConvert;
-                std::string valueStr;
-                std::tie(canConvert, valueStr) = UsdMayaUtil::ValueToArgument(keyValue.second);
-                // Options don't handle empty arrays well preventing users from passing actual
-                // values for options with such default value.
-                if (canConvert && valueStr != "[]") {
-                    optionsStream << keyValue.first.c_str() << "=" << valueStr.c_str() << ";";
-                }
-            }
-            setResult(optionsStream.str().c_str());
+            setResult(convertDictionaryToText(info.importEnablerCallback()));
         }
     } else if (argData.isFlagSet(_jobContextStr)) {
         auto const& info = _GetInfo(argData, _jobContextStr);
@@ -144,6 +161,8 @@ MSyntax MayaUSDListJobContextsCommand::createSyntax()
     syntax.addFlag("-ex", "-export", MSyntax::kNoArg);
     syntax.addFlag("-ea", "-exportAnnotation", MSyntax::kString);
     syntax.addFlag("-eg", "-exportArguments", MSyntax::kString);
+    syntax.addFlag("-heu", "-hasExportUI", MSyntax::kString);
+    syntax.addFlag("-seu", "-showExportUI", MSyntax::kString, MSyntax::kString, MSyntax::kString);
     syntax.addFlag("-im", "-import", MSyntax::kNoArg);
     syntax.addFlag("-ia", "-importAnnotation", MSyntax::kString);
     syntax.addFlag("-ig", "-importArguments", MSyntax::kString);
