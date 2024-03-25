@@ -24,6 +24,10 @@
 
 #include <pxr/pxr.h>
 
+#if PXR_VERSION >= 2403
+#include <optional>
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// This translator works with pixar's usdExport command as opposed to the
@@ -43,30 +47,39 @@ private:
     /// already exist on dest if source does not have them (otherwise they
     /// would be cleared).
     static bool _ShouldGraftValue(
-        SdfSpecType               specType,
-        const TfToken&            field,
-        const SdfLayerHandle&     srcLayer,
-        const SdfPath&            srcPath,
-        bool                      fieldInSrc,
-        const SdfLayerHandle&     dstLayer,
-        const SdfPath&            dstPath,
-        bool                      fieldInDst,
+        SdfSpecType           specType,
+        const TfToken&        field,
+        const SdfLayerHandle& srcLayer,
+        const SdfPath&        srcPath,
+        bool                  fieldInSrc,
+        const SdfLayerHandle& dstLayer,
+        const SdfPath&        dstPath,
+        bool                  fieldInDst,
+#if PXR_VERSION >= 2403
+        std::optional<VtValue>* valueToCopy)
+#else
         boost::optional<VtValue>* valueToCopy)
+#endif
     {
         // SdfShouldCopyValueFn copies everything by default
         return (!fieldInDst && fieldInSrc);
     }
 
     static bool _ShouldGraftChildren(
-        const TfToken&            childrenField,
-        const SdfLayerHandle&     srcLayer,
-        const SdfPath&            srcPath,
-        bool                      fieldInSrc,
-        const SdfLayerHandle&     dstLayer,
-        const SdfPath&            dstPath,
-        bool                      fieldInDst,
+        const TfToken&        childrenField,
+        const SdfLayerHandle& srcLayer,
+        const SdfPath&        srcPath,
+        bool                  fieldInSrc,
+        const SdfLayerHandle& dstLayer,
+        const SdfPath&        dstPath,
+        bool                  fieldInDst,
+#if PXR_VERSION >= 2403
+        std::optional<VtValue>* srcChildren,
+        std::optional<VtValue>* dstChildren)
+#else
         boost::optional<VtValue>* srcChildren,
         boost::optional<VtValue>* dstChildren)
+#endif
     {
         // SdfShouldCopyChildrenFn copies everything by default
         return true;
