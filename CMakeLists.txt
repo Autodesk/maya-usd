@@ -41,6 +41,35 @@ option(CMAKE_WANT_VALIDATE_UNDO_ITEM "Enable validating undo items list." OFF)
 set(PXR_OVERRIDE_PLUGINPATH_NAME PXR_PLUGINPATH_NAME
     CACHE STRING "Name of env var USD searches to find plugins")
 
+# Build-related information, expected to be passed in by the parent build.
+
+# Build number corresponding to this build
+#
+# This is used to report version information about the build number that
+# has produced this binary. When unset, the default value "0" is used
+# instead as this usually corresponds to developers local builds.
+set(MAYAUSD_BUILD_NUMBER "0" CACHE STRING "Build number corresponding to this build.")
+
+# Git commit hash corresponding to this build
+#
+# This is used to report version information of the Git commit has that
+# corresponds to a build. When unset, the default value DEVBLD is used
+# instead as this usually corresponds to a developers local build.
+set(MAYAUSD_GIT_COMMIT "DEVBLD" CACHE STRING "Git commit hash corresponding to this build.")
+
+# Git branch corresponding to this build
+#
+# This is used to report version information about the Git branch of a
+# build. When unset, the default value DEVBR is used instead as this
+# usually corresponds to developers local builds.
+set(MAYAUSD_GIT_BRANCH "DEVBR" CACHE STRING "Change set identifier corresponding to this build.")
+
+# MayaUsd cut-id
+
+# This is used to distinguish daily builds from one another. It is a
+# usually a combination of the date & git commit hash.
+set(MAYAUSD_CUT_ID "DEVBLD" CACHE STRING "MayaUsd cut-id corresponding to this build.")
+
 #------------------------------------------------------------------------------
 # internal flags to control build
 #------------------------------------------------------------------------------

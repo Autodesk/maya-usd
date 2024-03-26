@@ -94,6 +94,29 @@ void UsdMayaJobContextRegistry::RegisterExportJobContext(
     }
 }
 
+void UsdMayaJobContextRegistry::SetExportOptionsUI(
+    const std::string& jobContext,
+    UIFn               uiFct,
+    bool               fromPython)
+{
+    const ContextInfo key { TfToken(jobContext), {}, {}, {}, {}, {} };
+    auto              iter = _jobContextReg.find(key);
+    if (iter == _jobContextReg.end()) {
+        TF_CODING_ERROR("Export job context %s does not exists", jobContext.c_str());
+        return;
+    }
+
+    // Note: the container for the plugin info is a set so it cannot be modified.
+    //       We need to copy the entry, modify the copy, remove the old entry and
+    //       insert the newly updated entry.
+
+    ContextInfo updatedInfo(*iter);
+    updatedInfo.exportUICallback = uiFct;
+    UsdMaya_RegistryHelper::AddUnloader([key]() { _jobContextReg.erase(key); }, fromPython);
+    _jobContextReg.erase(iter);
+    _jobContextReg.insert(updatedInfo);
+}
+
 void UsdMayaJobContextRegistry::RegisterImportJobContext(
     const std::string& jobContext,
     const std::string& niceName,

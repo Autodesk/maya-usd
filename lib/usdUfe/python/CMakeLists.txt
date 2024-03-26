@@ -20,6 +20,7 @@ target_sources(${PYTHON_TARGET_NAME}
         wrapEditRouter.cpp
         wrapGlobal.cpp
         wrapTokens.cpp
+		wrapUICallback.cpp
         wrapUtils.cpp
         wrapCommands.cpp
 )

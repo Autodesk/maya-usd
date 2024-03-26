@@ -52,7 +52,19 @@ class SaveMutedLayerTest(unittest.TestCase):
     def setUp(self):
         cmds.file(new=True, force=True)
 
-    def testSaveMutedAnonLayer(self):
+    def testSaveMutedAnonLayerInUSD(self):
+        # Save the file. Make sure the USD edits will go to a USD file.
+        self._runTestSaveMutedAnonLayer(1)
+
+    def testSaveMutedAnonLayerInMaya(self):
+        # Save the file. Make sure the USD edits will go to the Maya file.
+        self._runTestSaveMutedAnonLayer(2)
+
+    def _runTestSaveMutedAnonLayer(self, saveLocation):
+        '''
+        The goal is to create an anonymous sub-layer, mute it and verify the muting
+        is not lost when reloaded.
+        '''
         # Create a stage with a sub-layer.
         psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
@@ -79,9 +91,9 @@ class SaveMutedLayerTest(unittest.TestCase):
         # Mute the sub-layer.
         stage.MuteLayer(subLayer.identifier)
 
-        # Save the file. Make sure the edit will go to the Maya file.
+        # Save the file. Make sure the edit will go where requested by saveLocation.
         tempMayaFile = 'saveMutedAnonLayer.ma'
-        cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', 2))
+        cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', saveLocation))
         cmds.file(rename=tempMayaFile)
         cmds.file(save=True, force=True, type='mayaAscii')
 
@@ -99,12 +111,15 @@ class SaveMutedLayerTest(unittest.TestCase):
         subLayerPath = rootLayer.subLayerPaths[0]
         self.assertIsNotNone(subLayerPath)
         self.assertTrue(subLayerPath)
-        subLayer = Sdf.Layer.Find(subLayerPath)
+        subLayer = Sdf.Layer.FindOrOpen(subLayerPath)
         self.assertIsNotNone(subLayer)
 
         # Verify the layer was reloaded as muted.
-        self.assertTrue(stage.IsLayerMuted(subLayerPath))
+        self.assertTrue(stage.IsLayerMuted(subLayer.identifier))
 
         # Verify the two objects are still present.
         stage.UnmuteLayer(subLayer.identifier)
         verifyPrims(stage)
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

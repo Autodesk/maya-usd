@@ -69,6 +69,8 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/ufe.h")
         # Temporary. Once next Maya PR is released with UFE v5.0.0 this should
         # be removed (along with all the UFE_PREVIEW_VERSION_NUM checks).
         set(UFE_PREVIEW_VERSION_NUM 5017)
+    elseif(UFE_VERSION VERSION_EQUAL "5.1.0")
+        set(UFE_PREVIEW_VERSION_NUM 5100)
     endif()
 
     file(STRINGS
@@ -138,6 +140,13 @@ set(UFE_MATERIALS_SUPPORT FALSE CACHE INTERNAL "ufeMaterials")
 if (UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/material.h")
     set(UFE_MATERIALS_SUPPORT TRUE CACHE INTERNAL "ufeMaterials")
     message(STATUS "Maya has UFE materials API")
+
+    set(UFE_MATERIAL_HAS_HASMATERIAL FALSE CACHE INTERNAL "ufeMaterialHashasMaterial")
+    file(STRINGS ${UFE_INCLUDE_DIR}/ufe/material.h UFE_HAS_API REGEX "hasMaterial")
+    if(UFE_HAS_API)
+        set(UFE_MATERIAL_HAS_HASMATERIAL TRUE CACHE INTERNAL "ufeMaterialHashasMaterial")
+        message(STATUS "Maya UFE Material interface has hasMaterial method")
+    endif()
 endif()
 
 set(UFE_SCENE_SEGMENT_SUPPORT FALSE CACHE INTERNAL "ufeSceneSegment")
@@ -206,6 +215,15 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/sceneItem.h")
     if(UFE_HAS_API)
         set(UFE_SCENEITEM_HAS_METADATA TRUE CACHE INTERNAL "ufeSceneItemHasMetaData")
         message(STATUS "Maya has UFE SceneItem's meta data interface")
+    endif()
+endif()
+
+set(UFE_CONTEXTOPS_HAS_OPTIONBOX FALSE CACHE INTERNAL "kIsOptionBox")
+if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/contextOps.h")
+    file(STRINGS ${UFE_INCLUDE_DIR}/ufe/contextOps.h UFE_HAS_API REGEX "kIsOptionBox")
+    if(UFE_HAS_API)
+        set(UFE_CONTEXTOPS_HAS_OPTIONBOX TRUE CACHE INTERNAL "kIsOptionBox")
+        message(STATUS "Maya UFE ContextItem has OptionBox meta data")
     endif()
 endif()
 

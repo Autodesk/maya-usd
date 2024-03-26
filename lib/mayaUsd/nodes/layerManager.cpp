@@ -159,27 +159,19 @@ void convertAnonymousLayersRecursive(
 {
     auto currentTarget = stage->GetEditTarget().GetLayer();
 
-    MayaUsd::utils::LayerParent parentPtr;
-    if (stage->GetRootLayer() == layer) {
-        parentPtr._layerParent = nullptr;
-        parentPtr._proxyPath = basename;
-    } else if (stage->GetSessionLayer() == layer) {
-        parentPtr._layerParent = nullptr;
-        parentPtr._proxyPath = basename;
-    } else {
-        parentPtr._layerParent = layer;
-        parentPtr._proxyPath = basename;
-    }
-
     std::vector<std::string> sublayers = layer->GetSubLayerPaths();
     for (size_t i = 0, n = sublayers.size(); i < n; ++i) {
-        auto subL = layer->Find(sublayers[i]);
+        SdfLayerRefPtr subL = layer->Find(sublayers[i]);
         if (subL) {
             convertAnonymousLayersRecursive(subL, basename, stage);
 
             if (subL->IsAnonymous()) {
-                auto newLayer
-                    = MayaUsd::utils::saveAnonymousLayer(stage, subL, parentPtr, basename);
+                MayaUsd::utils::LayerParent subLayerParent;
+                subLayerParent._layerParent = layer;
+                subLayerParent._proxyPath = basename;
+
+                SdfLayerRefPtr newLayer
+                    = MayaUsd::utils::saveAnonymousLayer(stage, subL, subLayerParent, basename);
                 if (subL == currentTarget) {
                     stage->SetEditTarget(newLayer);
                 }
@@ -608,7 +600,14 @@ bool LayerDatabase::saveLayerManagerSelectedStage()
     if (!status)
         return false;
 
-    selectedStageHandle.setString(getSelectedStage().c_str());
+    // Note: when empty, we clear the the selected stage attribute so that the
+    //       attribute does not get written to the scene, which improve backward
+    //       compatibility.
+    const std::string stageName = getSelectedStage();
+    if (stageName.size() > 0)
+        selectedStageHandle.setString(stageName.c_str());
+    else
+        selectedStageHandle.setMObject(MObject::kNullObj);
 
     selectedStageHandle.setClean();
     dataBlock.setClean(lm->selectedStage);

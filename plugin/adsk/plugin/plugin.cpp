@@ -24,6 +24,7 @@
 #include "exportTranslator.h"
 #include "geomNode.h"
 #include "importTranslator.h"
+#include "mayaUsdInfoCommand.h"
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/commands/editTargetCommand.h>
@@ -164,6 +165,7 @@ MStatus initializePlugin(MObject obj)
     registerCommandCheck<MayaUsd::ADSKMayaUSDImportCommand>(plugin);
     registerCommandCheck<MayaUsd::EditTargetCommand>(plugin);
     registerCommandCheck<MayaUsd::LayerEditorCommand>(plugin);
+    registerCommandCheck<MayaUsd::MayaUsdInfoCommand>(plugin);
 #if defined(WANT_QT_BUILD)
     registerCommandCheck<MayaUsd::LayerEditorWindowCommand>(plugin);
 #endif
@@ -337,6 +339,7 @@ MStatus uninitializePlugin(MObject obj)
     deregisterCommandCheck<MayaUsd::ADSKMayaUSDImportCommand>(plugin);
     deregisterCommandCheck<MayaUsd::EditTargetCommand>(plugin);
     deregisterCommandCheck<MayaUsd::LayerEditorCommand>(plugin);
+    deregisterCommandCheck<MayaUsd::MayaUsdInfoCommand>(plugin);
 #if defined(WANT_QT_BUILD)
     deregisterCommandCheck<MayaUsd::LayerEditorWindowCommand>(plugin);
     MayaUsd::LayerEditorWindowCommand::cleanupOnPluginUnload();

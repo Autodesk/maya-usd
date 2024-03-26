@@ -313,3 +313,25 @@ endfunction(get_external_project_default_values)
 
 # Create one for all the project using the default list separator
 get_external_project_default_values(MAYAUSD_EXTERNAL_PROJECT_GENERAL_SETTINGS "$<SEMICOLON>")
+
+function(mayaUsd_compute_timestamp)
+    # The date is formated the same way Maya formats its date.
+    # weekday month/day/fullyear, CONCAT(fullyear + month + day + fullhour + minute)
+    string(TIMESTAMP WEEKDAY "%w")
+    set(MH_WEEK_DAYS "Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat")
+    list(GET MH_WEEK_DAYS ${WEEKDAY} WEEKDAY)
+    string(TIMESTAMP BUILD_DATE "\"${WEEKDAY} %m/%d/%Y, %Y%m%d%H%M\"")
+
+    set(MAYAUSD_BUILD_DATE "${BUILD_DATE}" CACHE STRING "Build Date")
+
+    # For build pipeline builds, force a new timestamp.  For developer builds,
+    # resetting the timestamps is annoying as it causes all the version file to
+    # be regenerated and thus all libraries and executable to be relinked.
+    # Therefore, don't reset the timestamps unless a clean build is made.
+    if (NOT MAYAUSD_BUILD_NUMBER EQUAL 0)
+        set(MAYAUSD_BUILD_DATE "${BUILD_DATE}" CACHE STRING "Build Date" FORCE)
+    endif()
+endfunction(mayaUsd_compute_timestamp)
+
+# Compute the build timestamp.
+mayaUsd_compute_timestamp()

@@ -867,6 +867,27 @@ void enforceAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName)
     }
 }
 
+bool isAnyLayerModifiable(const UsdStageWeakPtr stage, std::string* errMsg /* = nullptr */)
+{
+    PXR_NS::SdfLayerHandleVector layers = stage->GetLayerStack(false);
+    for (auto layer : layers) {
+        if (!layer->IsMuted() && layer->PermissionToEdit()) {
+            return true;
+        }
+    }
+
+    if (errMsg) {
+        std::string err = TfStringPrintf(
+            "Cannot target any layers in the stage [%s] because the layers are either locked or "
+            "muted. Switching to session layer.",
+            stage->GetRootLayer()->GetIdentifier().c_str());
+
+        *errMsg = err;
+    }
+
+    return false;
+}
+
 bool isEditTargetLayerModifiable(const UsdStageWeakPtr stage, std::string* errMsg)
 {
     const auto editTarget = stage->GetEditTarget();
