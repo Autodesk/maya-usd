@@ -600,7 +600,14 @@ bool LayerDatabase::saveLayerManagerSelectedStage()
     if (!status)
         return false;
 
-    selectedStageHandle.setString(getSelectedStage().c_str());
+    // Note: when empty, we clear the the selected stage attribute so that the
+    //       attribute does not get written to the scene, which improve backward
+    //       compatibility.
+    const std::string stageName = getSelectedStage();
+    if (stageName.size() > 0)
+        selectedStageHandle.setString(stageName.c_str());
+    else
+        selectedStageHandle.setMObject(MObject::kNullObj);
 
     selectedStageHandle.setClean();
     dataBlock.setClean(lm->selectedStage);
