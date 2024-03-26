@@ -88,7 +88,7 @@ target_link_libraries(${TARGET_NAME}
         AL_EventSystem
         AL_USDMayaUtils
         AL_MayaUtils
-        mayaUsdUtils
+        usdUfe
         AL_USDMaya   #Adding this recursively pulls in lots of things
         AL_MayaTest
         AL_USDMayaSchemas

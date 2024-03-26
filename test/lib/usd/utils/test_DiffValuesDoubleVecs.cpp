@@ -1,4 +1,4 @@
-#include <mayaUsdUtils/DiffPrims.h>
+#include <usdUfe/utils/diffPrims.h>
 
 #include <pxr/base/gf/vec2d.h>
 #include <pxr/base/gf/vec2f.h>
@@ -18,7 +18,7 @@
 #include <gtest/gtest.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-using namespace MayaUsdUtils;
+using namespace UsdUfe;
 
 //----------------------------------------------------------------------------------------------------------------------
 TEST(DiffValuesDoubleVecs, vec2dCompareValuesSame)

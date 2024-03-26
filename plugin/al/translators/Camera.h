@@ -17,7 +17,7 @@
 
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 
-#include <mayaUsdUtils/ForwardDeclares.h>
+#include <usdUfe/base/forwardDeclares.h>
 
 #include <pxr/usd/usd/stage.h>
 

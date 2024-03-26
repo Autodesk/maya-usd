@@ -1,4 +1,4 @@
-#include <mayaUsdUtils/DiffPrims.h>
+#include <usdUfe/utils/diffPrims.h>
 
 #include <pxr/base/gf/quatf.h>
 #include <pxr/base/gf/quath.h>
@@ -8,7 +8,7 @@
 #include <gtest/gtest.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-using namespace MayaUsdUtils;
+using namespace UsdUfe;
 
 namespace {
 GfQuatd qd1(1, 12, 15, 16);

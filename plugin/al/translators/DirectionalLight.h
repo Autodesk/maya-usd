@@ -18,7 +18,7 @@
 
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 
-#include <mayaUsdUtils/ForwardDeclares.h>
+#include <usdUfe/base/forwardDeclares.h>
 
 namespace AL {
 namespace usdmaya {

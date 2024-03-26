@@ -19,7 +19,7 @@
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
 
-#include <mayaUsdUtils/ForwardDeclares.h>
+#include <usdUfe/base/forwardDeclares.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>

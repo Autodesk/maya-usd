@@ -28,6 +28,9 @@ set(MSVC_FLAGS
     $<$<BOOL:$<VERSION_GREATER:${USD_BOOST_VERSION},106600>>:/permissive->
     # enable pdb generation.
     /Zi
+    # to see the updated value of the __cplusplus macro
+    # https://devblogs.microsoft.com/cppblog/msvc-now-correctly-reports-__cplusplus/
+    /Zc:__cplusplus
     # standards compliant.
     /Zc:rvalueCast
     # The /Zc:inline option strips out the "arch_ctor_<name>" symbols used for

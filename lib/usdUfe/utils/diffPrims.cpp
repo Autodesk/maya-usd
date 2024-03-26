@@ -1,5 +1,5 @@
 //
-// Copyright 2021 Autodesk
+// Copyright 2024 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,11 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "DiffPrims.h"
+#include "diffPrims.h"
 
 #include <map>
 
-namespace MayaUsdUtils {
+namespace USDUFE_NS_DEF {
 
 using UsdPrim = PXR_NS::UsdPrim;
 using TfToken = PXR_NS::TfToken;
@@ -25,7 +25,7 @@ using SdfPath = PXR_NS::SdfPath;
 using UsdAttribute = PXR_NS::UsdAttribute;
 using UsdRelationship = PXR_NS::UsdRelationship;
 
-#define USD_MAYA_RETURN_QUICK_RESULT(result, results)  \
+#define USDUFE_RETURN_QUICK_RESULT(result, results)    \
     do {                                               \
         if (quickDiff && result != DiffResult::Same) { \
             *quickDiff = result;                       \
@@ -58,11 +58,11 @@ comparePrimsAttributes(const UsdPrim& modified, const UsdPrim& baseline, DiffRes
             const TfToken& name = attr.GetName();
             const auto     iter = baselineAttrs.find(name);
             if (iter == baselineEnd) {
-                USD_MAYA_RETURN_QUICK_RESULT(DiffResult::Created, results);
+                USDUFE_RETURN_QUICK_RESULT(DiffResult::Created, results);
                 results[name] = DiffResult::Created;
             } else {
                 const DiffResult result = compareAttributes(attr, iter->second, quickDiff);
-                USD_MAYA_RETURN_QUICK_RESULT(result, results);
+                USDUFE_RETURN_QUICK_RESULT(result, results);
                 results[name] = result;
             }
         }
@@ -72,7 +72,7 @@ comparePrimsAttributes(const UsdPrim& modified, const UsdPrim& baseline, DiffRes
     for (const auto& nameAndAttr : baselineAttrs) {
         const auto& name = nameAndAttr.first;
         if (results.find(name) == results.end()) {
-            USD_MAYA_RETURN_QUICK_RESULT(DiffResult::Absent, results);
+            USDUFE_RETURN_QUICK_RESULT(DiffResult::Absent, results);
             results[name] = DiffResult::Absent;
         }
     }
@@ -106,10 +106,10 @@ comparePrimsRelationships(const UsdPrim& modified, const UsdPrim& baseline, Diff
             const auto     iter = baselineRels.find(name);
             if (iter == baselineEnd) {
                 results[name] = compareRelationships(rel, UsdRelationship(), quickDiff);
-                USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, results);
+                USDUFE_RETURN_QUICK_RESULT(*quickDiff, results);
             } else {
                 results[name] = compareRelationships(rel, iter->second, quickDiff);
-                USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, results);
+                USDUFE_RETURN_QUICK_RESULT(*quickDiff, results);
             }
         }
     }
@@ -119,7 +119,7 @@ comparePrimsRelationships(const UsdPrim& modified, const UsdPrim& baseline, Diff
         const auto& name = nameAndRel.first;
         if (results.find(name) == results.end()) {
             results[name] = compareRelationships(UsdRelationship(), nameAndRel.second, quickDiff);
-            USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, results);
+            USDUFE_RETURN_QUICK_RESULT(*quickDiff, results);
         }
     }
 
@@ -151,11 +151,11 @@ comparePrimsChildren(const UsdPrim& modified, const UsdPrim& baseline, DiffResul
             const SdfPath& path = child.GetPath();
             const auto     iter = baselineChildren.find(path);
             if (iter == baselineEnd) {
-                USD_MAYA_RETURN_QUICK_RESULT(DiffResult::Created, results);
+                USDUFE_RETURN_QUICK_RESULT(DiffResult::Created, results);
                 results[path] = DiffResult::Created;
             } else {
                 results[path] = comparePrims(child, iter->second, quickDiff);
-                USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, results);
+                USDUFE_RETURN_QUICK_RESULT(*quickDiff, results);
             }
         }
     }
@@ -164,7 +164,7 @@ comparePrimsChildren(const UsdPrim& modified, const UsdPrim& baseline, DiffResul
     for (const auto& pathAndPrim : baselineChildren) {
         const auto& path = pathAndPrim.first;
         if (results.find(path) == results.end()) {
-            USD_MAYA_RETURN_QUICK_RESULT(DiffResult::Absent, results);
+            USDUFE_RETURN_QUICK_RESULT(DiffResult::Absent, results);
             results[path] = DiffResult::Absent;
         }
     }
@@ -199,7 +199,7 @@ static DiffResult comparePrims(
 
     {
         const auto attrDiffs = comparePrimsAttributes(modified, baseline, quickDiff);
-        USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, *quickDiff);
+        USDUFE_RETURN_QUICK_RESULT(*quickDiff, *quickDiff);
 
         // Note: no need to quick result when computing overall result as it would already have
         // returned.
@@ -212,7 +212,7 @@ static DiffResult comparePrims(
 
     {
         const auto relDiffs = comparePrimsRelationships(modified, baseline, quickDiff);
-        USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, *quickDiff);
+        USDUFE_RETURN_QUICK_RESULT(*quickDiff, *quickDiff);
 
         // Note: no need to quick result when computing overall result as it would already have
         // returned.
@@ -233,7 +233,7 @@ static DiffResult comparePrims(
 
     if (compareChildren) {
         const auto childrenDiffs = comparePrimsChildren(modified, baseline, quickDiff);
-        USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, *quickDiff);
+        USDUFE_RETURN_QUICK_RESULT(*quickDiff, *quickDiff);
 
         // Note: no need to quick result when computing overall result as it would already have
         // returned.
@@ -262,4 +262,4 @@ DiffResult comparePrimsOnly(
     return comparePrims(modified, baseline, false, quickDiff);
 }
 
-} // namespace MayaUsdUtils
+} // namespace USDUFE_NS_DEF

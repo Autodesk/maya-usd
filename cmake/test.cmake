@@ -532,7 +532,7 @@ finally:
         # Necessary for tests like DiffCore to find python.
         # See LD_LIBRARY_PATH for Linux above.
         set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
-            "DYLD_LIBRARY_PATH=${MAYA_LOCATION}/MacOS:$ENV{DYLD_LIBRARY_PATH}")
+            "DYLD_LIBRARY_PATH=${MAYA_LOCATION}/Maya.app/Contents/MacOS:$ENV{DYLD_LIBRARY_PATH}")
         set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
             "DYLD_FRAMEWORK_PATH=${MAYA_LOCATION}/Maya.app/Contents/Frameworks")
     endif()

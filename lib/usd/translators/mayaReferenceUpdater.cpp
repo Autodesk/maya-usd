@@ -250,7 +250,7 @@ UsdMayaPrimUpdater::PushCopySpecs PxrUsdTranslators_MayaReferenceUpdater::pushCo
         return PushCopySpecs::Failed;
 
     // The Maya reference is meant as a cache, and therefore fully
-    // overwritten, so we don't call MayaUsdUtils::mergePrims().
+    // overwritten, so we don't call UsdUfe::mergePrims().
     if (!SdfCopySpec(srcLayer, srcSdfPath, cacheDstLayer, SdfPath(cacheDstPathStr)))
         return PushCopySpecs::Failed;
 

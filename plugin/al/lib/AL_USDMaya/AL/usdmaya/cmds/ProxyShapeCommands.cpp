@@ -1043,8 +1043,8 @@ MStatus TranslatePrim::redoIt()
     if (!m_updatePaths.empty()) {
 
         // check paths refer to valid prims for this stage
-        auto                        stage = m_proxy->usdStage();
-        MayaUsdUtils::UsdPrimVector updatePrims;
+        auto                  stage = m_proxy->usdStage();
+        UsdUfe::UsdPrimVector updatePrims;
 
         AL::usdmaya::fileio::translators::TranslatorManufacture manufacture(nullptr);
         for (const SdfPath& path : m_updatePaths) {

@@ -13,16 +13,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "DebugCodes.h"
 
-#include <pxr/base/tf/registryManager.h>
+#pragma once
+
+#include <usdUfe/base/api.h>
+
 #include <pxr/pxr.h>
+#include <pxr/usd/usd/prim.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION(TfDebug)
-{
-    TF_DEBUG_ENVIRONMENT_SYMBOL(MAYAUSDUTILS_INFO, "MAYAUSDUTILS' General debug messages");
-}
+// forward declare usd types
+class GfMatrix4d;
+class SdfPath;
+class SdfValueTypeName;
+class TfToken;
+class UsdAttribute;
+class UsdPrim;
+class UsdGeomCamera;
+class UsdLuxDistantLight;
+class UsdPrimCompositionQuery;
+class UsdPrimCompositionQueryArc;
+class UsdReferences;
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+namespace USDUFE_NS_DEF {
+typedef std::vector<PXR_NS::UsdPrim> UsdPrimVector;
+} // namespace USDUFE_NS_DEF

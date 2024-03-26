@@ -25,7 +25,8 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/traverseLayer.h>
-#include <mayaUsdUtils/MergePrims.h>
+
+#include <usdUfe/utils/mergePrims.h>
 
 #include <pxr/usd/sdf/copyUtils.h>
 #include <pxr/usd/sdf/path.h>
@@ -121,9 +122,9 @@ UsdMayaPrimUpdater::PushCopySpecs UsdMayaPrimUpdater::pushCopySpecs(
     SdfLayerRefPtr dstLayer,
     const SdfPath& dstSdfPath)
 {
-    MayaUsdUtils::MergePrimsOptions options;
+    UsdUfe::MergePrimsOptions options;
     options.ignoreVariants = _context ? _context->GetArgs()._ignoreVariants : false;
-    return MayaUsdUtils::mergePrims(
+    return UsdUfe::mergePrims(
                srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath, options)
         ? PushCopySpecs::Continue
         : PushCopySpecs::Failed;

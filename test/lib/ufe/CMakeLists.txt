@@ -101,6 +101,13 @@ if (UFE_MATERIALS_SUPPORT)
         testMaterial.py
     )
 endif()
+
+if (UFE_CLIPBOARD_SUPPORT)
+    list(APPEND TEST_SCRIPT_FILES
+        testClipboard.py
+    )
+endif()
+
 if (MAYA_API_VERSION VERSION_GREATER_EQUAL 20220100)
     list(APPEND TEST_SCRIPT_FILES
         testCamera.py

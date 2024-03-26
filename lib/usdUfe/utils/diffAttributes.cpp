@@ -1,5 +1,5 @@
 //
-// Copyright 2021 Autodesk
+// Copyright 2024 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,9 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "DiffPrims.h"
+#include "diffPrims.h"
 
-namespace MayaUsdUtils {
+namespace USDUFE_NS_DEF {
 
 using UsdAttribute = PXR_NS::UsdAttribute;
 using VtValue = PXR_NS::VtValue;
@@ -97,4 +97,4 @@ DiffResult compareAttributes(
     return compareValues(modifiedValue, baselineValue);
 }
 
-} // namespace MayaUsdUtils
+} // namespace USDUFE_NS_DEF

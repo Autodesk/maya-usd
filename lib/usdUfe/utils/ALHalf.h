@@ -26,6 +26,8 @@
 //----------------------------------------------------------------------------------------------------------------------
 #pragma once
 
+#include <usdUfe/base/api.h>
+
 #if __F16C__
 #include <immintrin.h>
 #endif
@@ -35,7 +37,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace MayaUsdUtils {
+namespace USDUFE_NS_DEF {
 
 #ifdef __F16C__
 
@@ -243,4 +245,4 @@ inline void double2half_4f(const double input[4], GfHalf out[4])
 inline GfHalf double2half_1f(const double f) { return GfHalf(float(f)); }
 #endif
 
-} // namespace MayaUsdUtils
+} // namespace USDUFE_NS_DEF

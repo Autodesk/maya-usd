@@ -1,5 +1,5 @@
 //
-// Copyright 2021 Autodesk
+// Copyright 2024 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 //
 #pragma once
 
-#include <mayaUsdUtils/Api.h>
+#include <usdUfe/base/api.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/dictionary.h>
@@ -30,7 +30,7 @@
 #include <unordered_set>
 #include <vector>
 
-namespace MayaUsdUtils {
+namespace USDUFE_NS_DEF {
 
 //----------------------------------------------------------------------------------------------------------------------
 // Comparison result types.
@@ -78,7 +78,7 @@ using DiffResultPerPathPerToken = std::map<PXR_NS::TfToken, DiffResultPerPath>;
 /// \param  subResults the sub-results to analyze.
 /// \return the overall result, all results are possible.
 //----------------------------------------------------------------------------------------------------------------------
-template <class MAP> MAYA_USD_UTILS_PUBLIC DiffResult computeOverallResult(const MAP& subResults);
+template <class MAP> USDUFE_PUBLIC DiffResult computeOverallResult(const MAP& subResults);
 
 //----------------------------------------------------------------------------------------------------------------------
 // Comparison of prims.
@@ -92,7 +92,7 @@ template <class MAP> MAYA_USD_UTILS_PUBLIC DiffResult computeOverallResult(const
 /// \param  quickDiff if not null, returns a result other than Same when a difference is found.
 /// \return the overall result, all results are possible.
 //----------------------------------------------------------------------------------------------------------------------
-MAYA_USD_UTILS_PUBLIC
+USDUFE_PUBLIC
 DiffResult comparePrims(
     const PXR_NS::UsdPrim& modified,
     const PXR_NS::UsdPrim& baseline,
@@ -106,7 +106,7 @@ DiffResult comparePrims(
 /// \param  quickDiff if not null, returns a result other than Same when a difference is found.
 /// \return the overall result, all results are possible.
 //----------------------------------------------------------------------------------------------------------------------
-MAYA_USD_UTILS_PUBLIC
+USDUFE_PUBLIC
 DiffResult comparePrimsOnly(
     const PXR_NS::UsdPrim& modified,
     const PXR_NS::UsdPrim& baseline,
@@ -119,7 +119,7 @@ DiffResult comparePrimsOnly(
 /// \param  quickDiff if not null, returns a result other than Same when a difference is found.
 /// \return the map of children paths to the result of comparison of that child.
 //----------------------------------------------------------------------------------------------------------------------
-MAYA_USD_UTILS_PUBLIC
+USDUFE_PUBLIC
 DiffResultPerPath comparePrimsChildren(
     const PXR_NS::UsdPrim& modified,
     const PXR_NS::UsdPrim& baseline,
@@ -133,7 +133,7 @@ DiffResultPerPath comparePrimsChildren(
 /// \return the map of attribute names to the result of comparison of that attribute.
 /// Currently Subset and Superset are never returned.
 //----------------------------------------------------------------------------------------------------------------------
-MAYA_USD_UTILS_PUBLIC
+USDUFE_PUBLIC
 DiffResultPerToken comparePrimsAttributes(
     const PXR_NS::UsdPrim& modified,
     const PXR_NS::UsdPrim& baseline,
@@ -147,7 +147,7 @@ DiffResultPerToken comparePrimsAttributes(
 /// \return the map of relationship names to the result of comparison of that relationship.
 /// Currently only Same, Absent, Reordered, Prepended or Appended are returned.
 //----------------------------------------------------------------------------------------------------------------------
-MAYA_USD_UTILS_PUBLIC
+USDUFE_PUBLIC
 DiffResultPerPathPerToken comparePrimsRelationships(
     const PXR_NS::UsdPrim& modified,
     const PXR_NS::UsdPrim& baseline,
@@ -165,7 +165,7 @@ DiffResultPerPathPerToken comparePrimsRelationships(
 /// \return the result of the comparison of that modified attribute.
 /// Currently Subset and Superset are never returned.
 //----------------------------------------------------------------------------------------------------------------------
-MAYA_USD_UTILS_PUBLIC
+USDUFE_PUBLIC
 DiffResult compareAttributes(
     const PXR_NS::UsdAttribute& modified,
     const PXR_NS::UsdAttribute& baseline,
@@ -179,7 +179,7 @@ DiffResult compareAttributes(
 /// \return the result of the comparison of that modified attribute.
 /// Currently Subset and Superset are never returned.
 //----------------------------------------------------------------------------------------------------------------------
-MAYA_USD_UTILS_PUBLIC
+USDUFE_PUBLIC
 DiffResult compareAttributes(
     const PXR_NS::UsdAttribute& modified,
     const PXR_NS::UsdAttribute& baseline,
@@ -193,7 +193,7 @@ DiffResult compareAttributes(
 /// \return the map of target paths to the result of comparison of that target.
 /// Currently only Same, Absent, Prepended or Appended are returned.
 //----------------------------------------------------------------------------------------------------------------------
-MAYA_USD_UTILS_PUBLIC
+USDUFE_PUBLIC
 DiffResultPerPath compareRelationships(
     const PXR_NS::UsdRelationship& modified,
     const PXR_NS::UsdRelationship& baseline,
@@ -207,7 +207,7 @@ DiffResultPerPath compareRelationships(
 /// \return the map of metadata names to the result of comparison of that metadata.
 /// Currently Subset and Superset are never returned.
 //----------------------------------------------------------------------------------------------------------------------
-MAYA_USD_UTILS_PUBLIC
+USDUFE_PUBLIC
 DiffResultPerToken compareObjectsMetadatas(
     const PXR_NS::UsdObject& modified,
     const PXR_NS::UsdObject& baseline,
@@ -220,7 +220,7 @@ DiffResultPerToken compareObjectsMetadatas(
 /// \param  metadata the name of the metadata to compare.
 /// \return the result of comparison of that metadata.
 //----------------------------------------------------------------------------------------------------------------------
-MAYA_USD_UTILS_PUBLIC
+USDUFE_PUBLIC
 DiffResult compareMetadatas(
     const PXR_NS::UsdObject& modified,
     const PXR_NS::UsdObject& baseline,
@@ -232,7 +232,7 @@ DiffResult compareMetadatas(
 /// For example, the fact that a prim is a "def" or an "over" or that an attribute can or cannot be
 /// animated. \return the set of metadata names that should be ignored.
 //----------------------------------------------------------------------------------------------------------------------
-MAYA_USD_UTILS_PUBLIC
+USDUFE_PUBLIC
 std::unordered_set<PXR_NS::TfToken, PXR_NS::TfToken::HashFunctor>& getIgnoredMetadatas();
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -242,7 +242,7 @@ std::unordered_set<PXR_NS::TfToken, PXR_NS::TfToken::HashFunctor>& getIgnoredMet
 /// \return the result of the comparison of that modified value.
 /// Currently Subset and Superset are never returned.
 //----------------------------------------------------------------------------------------------------------------------
-MAYA_USD_UTILS_PUBLIC
+USDUFE_PUBLIC
 DiffResult compareValues(const PXR_NS::VtValue& modified, const PXR_NS::VtValue& baseline);
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -257,7 +257,7 @@ DiffResult compareValues(const PXR_NS::VtValue& modified, const PXR_NS::VtValue&
 /// TfToken, std::string, SdfPath, SdfReference and SdfPayload.
 //----------------------------------------------------------------------------------------------------------------------
 template <class ITEM>
-MAYA_USD_UTILS_PUBLIC std::map<ITEM, DiffResult> compareLists(
+USDUFE_PUBLIC std::map<ITEM, DiffResult> compareLists(
     const std::vector<ITEM>& modified,
     const std::vector<ITEM>& baseline,
     DiffResult*              quickDiff = nullptr);
@@ -270,7 +270,7 @@ MAYA_USD_UTILS_PUBLIC std::map<ITEM, DiffResult> compareLists(
 /// \return the result of the comparison for each value in that modified dictionary.
 /// Currently only Same, Differ, Absent and Created are returned.
 //----------------------------------------------------------------------------------------------------------------------
-MAYA_USD_UTILS_PUBLIC
+USDUFE_PUBLIC
 DiffResultPerKey compareDictionaries(
     const PXR_NS::VtDictionary& modified,
     const PXR_NS::VtDictionary& baseline,
@@ -356,4 +356,4 @@ template <class MAP> inline DiffResult computeOverallResult(const MAP& subResult
     }
 }
 
-} // namespace MayaUsdUtils
+} // namespace USDUFE_NS_DEF

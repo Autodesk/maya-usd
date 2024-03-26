@@ -769,7 +769,7 @@ public:
     /// \param affectedPaths affected paths during translation
     AL_USDMAYA_PUBLIC
     void translatePrimsIntoMaya(
-        const MayaUsdUtils::UsdPrimVector&               importPrims,
+        const UsdUfe::UsdPrimVector&                     importPrims,
         const SdfPathVector&                             teardownPaths,
         const fileio::translators::TranslatorParameters& param
         = fileio::translators::TranslatorParameters(),

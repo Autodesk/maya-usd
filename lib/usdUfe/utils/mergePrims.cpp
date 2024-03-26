@@ -1,5 +1,5 @@
 //
-// Copyright 2021 Autodesk
+// Copyright 2024 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,9 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "MergePrims.h"
+#include "mergePrims.h"
 
-#include "DiffPrims.h"
+#include <usdUfe/utils/diffPrims.h>
 
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/sdf/copyUtils.h>
@@ -26,7 +26,7 @@
 #include <algorithm>
 #include <utility>
 
-namespace MayaUsdUtils {
+namespace USDUFE_NS_DEF {
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -59,7 +59,7 @@ struct MergeLocation
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-/// Prints a layer / path / field to the Maya console with some messages.
+/// Prints a layer / path / field to the DCC console with some messages.
 void printAboutField(
     const MergeContext&  ctx,
     const MergeLocation& loc,
@@ -253,7 +253,7 @@ bool isLocalTransformModified(const UsdPrim& srcPrim, const UsdPrim& dstPrim)
 //
 // The goal is to detect that a prim normals has *not* changed even though its representation
 // might have changed. The reason is that normals can be kept in the 'normals' attribute or in
-// the 'primvars:normals' attribute, with the latter having priority. Maya export to USD always
+// the 'primvars:normals' attribute, with the latter having priority. DCC export to USD always
 // generates the 'normals' attribute, which would get hidden when merged. We now detect and correct
 // that situation.
 //----------------------------------------------------------------------------------------------------------------------
@@ -403,7 +403,7 @@ bool isDataAtPathsModified(
         //
         //       The only reason we are using the local transformation comparison is for
         //       the somewhat common case where the transform has not changed but how it
-        //       is encoded changed, because the Maya representation and the original
+        //       is encoded changed, because the DCC representation and the original
         //       representation differed, for example for USD data coming from another
         //       tool that use a different transform operation order.
         if (isTransformProperty(srcProp)) {
@@ -925,7 +925,7 @@ bool shouldMergeChildren(
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-/// Copies a minimal prim using diff and merge, printing all fields that are copied to the Maya
+/// Copies a minimal prim using diff and merge, printing all fields that are copied to the DCC
 /// console.
 bool mergeDiffPrims(
     const MergePrimsOptions& options,
@@ -1047,4 +1047,17 @@ bool mergePrims(
     }
 }
 
-} // namespace MayaUsdUtils
+bool mergePrims(
+    const UsdStageRefPtr& srcStage,
+    const SdfLayerRefPtr& srcLayer,
+    const SdfPath&        srcPath,
+    const UsdStageRefPtr& dstStage,
+    const SdfLayerRefPtr& dstLayer,
+    const SdfPath&        dstPath)
+{
+    MergePrimsOptions options;
+    options.verbosity = MergeVerbosity::None;
+    return mergePrims(srcStage, srcLayer, srcPath, dstStage, dstLayer, dstPath, options);
+}
+
+} // namespace USDUFE_NS_DEF
