@@ -446,7 +446,7 @@ static void removeSrcAttrConnections(PXR_NS::UsdPrim& prim, const PXR_NS::UsdAtt
     for (const auto& attribute : prim.GetAttributes()) {
         PXR_NS::UsdAttribute dstUsdAttr = attribute.As<PXR_NS::UsdAttribute>();
 
-        if (MayaUsd::ufe::isConnected(srcUsdAttr, dstUsdAttr)) {
+        if (isConnected(srcUsdAttr, dstUsdAttr)) {
             UsdShadeConnectableAPI::DisconnectSource(dstUsdAttr, srcUsdAttr);
             // Check if we can remove the property.
             if (MayaUsd::ufe::canRemoveDstProperty(dstUsdAttr)) {

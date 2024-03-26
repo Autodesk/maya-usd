@@ -81,6 +81,13 @@ Ufe::InsertChildCommand::Ptr PulledObjectHierarchy::insertChildCmd(
     return nullptr;
 }
 
+Ufe::InsertChildCommand::Ptr
+PulledObjectHierarchy::appendChildVerifyRestrictionsCmd(const Ufe::SceneItem::Ptr& child)
+{
+    TF_CODING_ERROR("Illegal call to unimplemented %s", __func__);
+    return nullptr;
+}
+
 Ufe::SceneItem::Ptr
 PulledObjectHierarchy::insertChild(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos)
 {

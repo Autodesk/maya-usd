@@ -78,6 +78,8 @@ public:
     insertChild(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos) override;
     Ufe::InsertChildCommand::Ptr
     insertChildCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos) override;
+    Ufe::InsertChildCommand::Ptr
+    appendChildVerifyRestrictionsCmd(const Ufe::SceneItem::Ptr& child) override;
 
     Ufe::UndoableCommand::Ptr reorderCmd(const Ufe::SceneItemList& orderedList) const override;
 
