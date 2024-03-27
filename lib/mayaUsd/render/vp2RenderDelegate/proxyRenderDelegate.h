@@ -271,6 +271,7 @@ private:
     bool _Populate();
     void _UpdateSceneDelegate();
     void _Execute(const MHWRender::MFrameContext& frameContext);
+    void _PopulateCleanup();
 
     typedef std::pair<MColor, std::atomic<uint64_t>>  MColorCache;
     typedef std::pair<GfVec3f, std::atomic<uint64_t>> GfVec3fCache;
