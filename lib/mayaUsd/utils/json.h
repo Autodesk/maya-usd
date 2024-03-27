@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 
+#ifndef MAYAUSD_UTILS_JSON_H
+#define MAYAUSD_UTILS_JSON_H
+
 #include <mayaUsd/base/api.h>
 
 #include <pxr/base/js/json.h>
@@ -55,3 +58,5 @@ MAYAUSD_CORE_PUBLIC
 PXR_NS::JsValue convertJsonKeyToValue(const PXR_NS::JsObject& object, const std::string& key);
 
 } // namespace MAYAUSD_NS_DEF
+
+#endif
