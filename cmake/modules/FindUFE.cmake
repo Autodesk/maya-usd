@@ -226,3 +226,12 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/contextOps.h")
     endif()
 endif()
 
+set(UFE_CAMERA_HAS_RENDERABLE FALSE CACHE INTERNAL "ufeCameraHasRendereable")
+if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/camera.h")
+    file(STRINGS ${UFE_INCLUDE_DIR}/ufe/camera.h UFE_HAS_API REGEX "renderable")
+    if(UFE_HAS_API)
+        set(UFE_CAMERA_HAS_RENDERABLE TRUE CACHE INTERNAL "ufeCameraHasRendereable")
+        message(STATUS "Maya has UFE Camera renderable interface")
+    endif()
+endif()
+
