@@ -1,0 +1,15 @@
+{
+  "Plugins": [
+    {
+      "Name": "exampleImportExportPlugin",
+      "Type": "library",
+      "Root": "..",
+      "LibraryPath": "@CMAKE_SHARED_LIBRARY_PREFIX@exampleImportExportPlugin@MAYA_PLUGIN_SUFFIX@",
+      "Info": {
+        "UsdMaya": {
+          "JobContextPlugin": {}
+        }
+      }
+    }
+  ]
+}

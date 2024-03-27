@@ -23,10 +23,20 @@ exampleDescription      = 'The example export plugin will export this or that'
 
 
 # Exporter plugin settings. Saved on-disk using a Maya option variable.
+#
+# Note: we are controlling the frame stride setting even though that
+#       setting already has a UI in the MayaUSD export dialog. When
+#       an existing setting is forced in this way, the UI in the main
+#       dialog is disabled. We recommend *not* controlling existing
+#       settings, but upport it in case your plugin has special needs
+#       that require forcing the value, for example to ensure it is
+#       within a special range or that it is always on or always off.
 exampleOptionVar = 'ExampleExportPluginOptionVar'
 strideToken = 'frameStride'
+customExportSettingToken = 'yourCustomSetting'
 exampleSettings = {
     strideToken: 5.0,
+    customExportSettingToken: True,
 }
 
 def logDebug(msg):
@@ -42,7 +52,7 @@ def loadSettings():
     '''
     if cmds.optionVar(exists=exampleOptionVar):
          global exampleSettings
-         exampleSettings = json.loads(cmds.optionVar(query=exampleOptionVar))
+         exampleSettings.update(json.loads(cmds.optionVar(query=exampleOptionVar)))
 
 
 def saveSettings():
@@ -68,12 +78,10 @@ def fillUI(jobContext, settings, container, rowLayout):
     You can create a different layout for the container if you wish to replace the
     default row layout.
     '''
-    # We want to use the latest stride value passed in, in case the user disabled our plugin,
-    # modified the value, re-enabled our plugin and now want to editthe value. For many plugins,
-    # all edited value will be plugin-specific, so this is not necessary since the UI we are
-    # about to create could be assumed to be the only way to edit the value.
-    stride = settings[strideToken]
-
+    try:
+        stride = settings[strideToken]
+    except:
+        stride = 5.0
     strideEdit = QtW.QLineEdit(str(stride))
     strideEdit.setValidator(QtG.QDoubleValidator())
     strideEdit.setObjectName(strideToken)
@@ -81,17 +89,35 @@ def fillUI(jobContext, settings, container, rowLayout):
     rowLayout.addWidget(QtW.QLabel(tokenToLabel(strideToken)))
     rowLayout.addWidget(strideEdit)
 
+    try:
+        customSetting = settings[customExportSettingToken]
+    except:
+        customSetting = True
+
+    customUI = QtW.QCheckBox()
+    customUI.setChecked(bool(customSetting))
+    customUI.setObjectName(customExportSettingToken)
+    
+    rowLayout.addWidget(QtW.QLabel(tokenToLabel(customExportSettingToken)))
+    rowLayout.addWidget(customUI)
 
 def queryUI(jobContext, settings, container):
     '''
-    Exporter plugin UI query to retrieve the data when teh UI is confirmed by the user.
+    Exporter plugin UI query to retrieve the data when the UI is confirmed by the user.
     '''
+    global exampleSettings
+
     strideEdit = container.findChild(QtW.QLineEdit, strideToken)
     if strideEdit:
-        global exampleSettings
         stride = float(strideEdit.text())
         exampleSettings[strideToken] = stride
         settings[strideToken] = stride
+
+    customUI = container.findChild(QtW.QLineEdit, customExportSettingToken)
+    if customUI:
+        customSetting = bool(customUI.isChecked())
+        exampleSettings[customExportSettingToken] = customSetting
+        settings[customExportSettingToken] = customSetting
 
 
 def showUi(jobContext, parentUIName, settings):
@@ -140,6 +166,11 @@ def exportUiFn(jobContext, parentUIName, settings):
     '''
     The exporter plugin UI callback, shows a UI to edit the settings it want forced.
     '''
+    # We want the export plugin specific settings to override the
+    # input settings we received.
+    global exampleSettings
+    settings.update(exampleSettings)
+    
     logDebug("%s export plugin UI called for job context %s in %s with settings %s" %
           (exampleJobContextName, jobContext, parentUIName, str(settings)))
     
@@ -148,7 +179,7 @@ def exportUiFn(jobContext, parentUIName, settings):
     logDebug("%s export plugin UI returning: %s" %
           (exampleJobContextName, settings))
 
-    return settings
+    return exampleSettings
 
 
 def exportEnablerFn():
@@ -173,7 +204,3 @@ def register():
         exampleJobContextName, exportUiFn)
     
     loadSettings()
-
-
-register()
-

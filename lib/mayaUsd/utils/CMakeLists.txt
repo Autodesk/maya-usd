@@ -47,6 +47,7 @@ set(HEADERS
     editability.h
     hash.h
     json.h
+    jsonDict.h
     layerLocking.h
     layerMuting.h
     layers.h

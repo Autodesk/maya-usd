@@ -7,6 +7,7 @@
 + [Common Plug-in Base Commands](lib/mayaUsd/commands/Readme.md)
 + [Managing Translation (Import/Export) Options](lib/mayaUsd/fileio/doc/Managing_export_options_via_JobContext_in_Python.md)
 + [Example Import and Export Plugin in Python](tutorials/import-export-plugin/README.md)
++ [Example Import and Export Plugin in C++](tutorials/import-export-plugin-c++/README.md)
 + [SchemaAPI Translators](lib/mayaUsd/fileio/doc/SchemaAPI_Import_Export_in_Python.md)
 + [UFE Transform](lib/mayaUsd/ufe/UsdTransform3d.md)
 + [Undo/Redo Support](lib/mayaUsd/undo/README.md)

@@ -302,11 +302,7 @@ global proc mayaUsdTranslatorImport_contextOptionsShowImportUI(string $optionsSt
         return;
 
     // Fill the settings UI with the options from the import options UI.
-    mayaUsdTranslatorImport(
-        $_mayaUsdTranslatorImport_parent,
-        "fill",
-        $newSettings,
-        "mayaUsdTranslatorImport_contextOptionsShowImportUI");
+    mayaUsdTranslatorImport_fillOptionsUIForcedByContextOptions();
 }
 
 global proc mayaUsdTranslatorImport_contextOptionsButtonCB(string $contextLabel)

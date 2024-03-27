@@ -82,10 +82,9 @@ void UsdMayaJobContextRegistry::RegisterExportJobContext(
                     itFound->niceName.GetText());
             }
             // Fill the export part:
-            ContextInfo updatedInfo {
-                key,        itFound->niceName,          TfToken(description),
-                enablerFct, itFound->importDescription, itFound->importEnablerCallback
-            };
+            ContextInfo updatedInfo(*itFound);
+            updatedInfo.exportDescription = TfToken(description);
+            updatedInfo.exportEnablerCallback = enablerFct;
             _jobContextReg.erase(updatedInfo);
             _jobContextReg.insert(updatedInfo);
         } else {
@@ -145,12 +144,9 @@ void UsdMayaJobContextRegistry::RegisterImportJobContext(
                     itFound->niceName.GetText());
             }
             // Fill the import part:
-            ContextInfo updatedInfo { key,
-                                      itFound->niceName,
-                                      itFound->exportDescription,
-                                      itFound->exportEnablerCallback,
-                                      TfToken(description),
-                                      enablerFct };
+            ContextInfo updatedInfo(*itFound);
+            updatedInfo.importDescription = TfToken(description);
+            updatedInfo.importEnablerCallback = enablerFct;
             _jobContextReg.erase(updatedInfo);
             _jobContextReg.insert(updatedInfo);
         } else {

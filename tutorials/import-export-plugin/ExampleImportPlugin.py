@@ -23,10 +23,20 @@ exampleDescription      = 'The example import plugin will import this or that'
 
 
 # Importer plugin settings. Saved on-disk using a Maya option variable.
+#
+# Note: we are controlling the import-instances setting even though that
+#       setting already has a UI in the MayaUSD export dialog. When
+#       an existing setting is forced in this way, the UI in the main
+#       dialog is disabled. We recommend *not* controlling existing
+#       settings, but upport it in case your plugin has special needs
+#       that require forcing the value, for example to ensure it is
+#       within a special range or that it is always on or always off.
 exampleOptionVar = 'ExampleImportPluginOptionVar'
 importInstancesToken = 'importInstances'
+customImportSettingToken = 'yourCustomImportSetting'
 exampleSettings = {
     importInstancesToken: True,
+    customImportSettingToken: 33,
 }
 
 def logDebug(msg):
@@ -42,7 +52,7 @@ def loadSettings():
     '''
     if cmds.optionVar(exists=exampleOptionVar):
          global exampleSettings
-         exampleSettings = json.loads(cmds.optionVar(query=exampleOptionVar))
+         exampleSettings.update(json.loads(cmds.optionVar(query=exampleOptionVar)))
 
 
 def saveSettings():
@@ -68,11 +78,10 @@ def fillUI(jobContext, settings, container, rowLayout):
     You can create a different layout for the container if you wish to replace the
     default row layout.
     '''
-    # We want to use the latest importInstances value passed in, in case the user disabled our plugin,
-    # modified the value, re-enabled our plugin and now want to editthe value. For many plugins,
-    # all edited value will be plugin-specific, so this is not necessary since the UI we are
-    # about to create could be assumed to be the only way to edit the value.
-    importInstances = settings[importInstancesToken]
+    try:
+        importInstances = settings[importInstancesToken]
+    except:
+        importInstances = True
 
     importInstancesToggle = QtW.QCheckBox()
     importInstancesToggle.setChecked(bool(importInstances))
@@ -81,18 +90,36 @@ def fillUI(jobContext, settings, container, rowLayout):
     rowLayout.addWidget(QtW.QLabel(tokenToLabel(importInstancesToken)))
     rowLayout.addWidget(importInstancesToggle)
 
+    try:
+        customSetting = settings[customImportSettingToken]
+    except:
+        customSetting = 33
+
+    customUI = QtW.QLineEdit(str(customSetting))
+    customUI.setValidator(QtG.QIntValidator())
+    customUI.setObjectName(customImportSettingToken)
+    
+    rowLayout.addWidget(QtW.QLabel(tokenToLabel(customImportSettingToken)))
+    rowLayout.addWidget(customUI)
+
 
 def queryUI(jobContext, settings, container):
     '''
-    Importer plugin UI query to retrieve the data when teh UI is confirmed by the user.
+    Importer plugin UI query to retrieve the data when the UI is confirmed by the user.
     '''
+    global exampleSettings
+
     importInstancesToggle = container.findChild(QtW.QCheckBox, importInstancesToken)
     if importInstancesToggle:
-        global exampleSettings
         importInstances = bool(importInstancesToggle.isChecked())
         exampleSettings[importInstancesToken] = importInstances
         settings[importInstancesToken] = importInstances
 
+    customUI = container.findChild(QtW.QLineEdit, customImportSettingToken)
+    if customUI:
+        customSetting = int(customUI.text())
+        exampleSettings[customImportSettingToken] = customSetting
+        settings[customImportSettingToken] = customSetting
 
 def showUi(jobContext, parentUIName, settings):
     '''
@@ -140,6 +167,11 @@ def importUiFn(jobContext, parentUIName, settings):
     '''
     The importer plugin UI callback, shows a UI to edit the settings it want forced.
     '''
+    # We want the export plugin specific settings to override the
+    # input settings we received.
+    global exampleSettings
+    settings.update(exampleSettings)
+    
     logDebug("%s import plugin UI called for job context %s in %s with settings %s" %
           (exampleJobContextName, jobContext, parentUIName, str(settings)))
     
@@ -148,7 +180,7 @@ def importUiFn(jobContext, parentUIName, settings):
     logDebug("%s import plugin UI returning: %s" %
           (exampleJobContextName, settings))
 
-    return settings
+    return exampleSettings
 
 
 def importEnablerFn():
@@ -173,7 +205,4 @@ def register():
         exampleJobContextName, importUiFn)
     
     loadSettings()
-
-
-register()
 

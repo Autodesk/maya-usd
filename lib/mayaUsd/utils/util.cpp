@@ -1970,7 +1970,8 @@ VtValue _ParseArgumentValue(const std::string& value, const VtValue& guideValue)
 VtValue UsdMayaUtil::ParseArgumentValue(
     const std::string&  key,
     const std::string&  value,
-    const VtDictionary& guideDict)
+    const VtDictionary& guideDict,
+    bool                reportErrors)
 {
     // We handle two types of arguments:
     // 1 - bools: Should be encoded by translator UI as a "1" or "0" string.
@@ -1982,7 +1983,7 @@ VtValue UsdMayaUtil::ParseArgumentValue(
     if (iter != guideDict.end()) {
         const VtValue& guideValue = iter->second;
         return _ParseArgumentValue(value, guideValue);
-    } else {
+    } else if (reportErrors) {
         TF_CODING_ERROR("Unknown flag '%s'", key.c_str());
     }
 

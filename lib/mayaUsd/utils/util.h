@@ -527,8 +527,11 @@ GetDictionaryFromArgDatabase(const MArgDatabase& argData, const VtDictionary& gu
 /// strings. If you have an MArgList/MArgParser/MArgDatabase, it's going to be
 /// way simpler to use GetDictionaryFromArgDatabase() instead.
 MAYAUSD_CORE_PUBLIC
-VtValue
-ParseArgumentValue(const std::string& key, const std::string& value, const VtDictionary& guideDict);
+VtValue ParseArgumentValue(
+    const std::string&  key,
+    const std::string&  value,
+    const VtDictionary& guideDict,
+    bool                reportErrors = true);
 
 /// Converts a value into a string that can be parsed back using ParseArgumentValue.
 /// Should be used when generating argument strings that are to be used by translators.

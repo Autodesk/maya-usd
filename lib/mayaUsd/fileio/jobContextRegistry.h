@@ -243,6 +243,17 @@ private:
     }                                                                        \
     VtDictionary _ImportJobContextEnabler_##name()
 
+#define REGISTER_IMPORT_JOB_CONTEXT_UI_FCT(name)                                                   \
+    static VtDictionary _ImportJobContextUI_##name(                                                \
+        const TfToken& jobContext, const std::string& parentUIName, const VtDictionary& settings); \
+    TF_REGISTRY_FUNCTION(UsdMayaJobContextRegistry)                                                \
+    {                                                                                              \
+        UsdMayaJobContextRegistry::GetInstance().SetImportOptionsUI(                               \
+            #name, &_ImportJobContextUI_##name);                                                   \
+    }                                                                                              \
+    VtDictionary _ImportJobContextUI_##name(                                                       \
+        const TfToken& jobContext, const std::string& parentUIName, const VtDictionary& settings)
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
