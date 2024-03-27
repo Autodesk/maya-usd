@@ -475,7 +475,7 @@ bool UsdCamera::renderable() const
     UsdGeomCamera usdGeomCamera(prim());
 
     PXR_NS::UsdAttribute attr = usdGeomCamera.GetPurposeAttr();
-    
+
     TfToken purpose;
     attr.Get(&purpose);
     return purpose == UsdGeomTokens->render || purpose == UsdGeomTokens->default_;
