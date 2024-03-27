@@ -560,11 +560,7 @@ global proc mayaUsdTranslatorExport_contextOptionsShowExportUI(string $optionsSt
         return;
 
     // Fill the settings UI with the options from the export options UI.
-    mayaUsdTranslatorExport(
-        $_mayaUsdTranslatorExport_parent,
-        "fill=" + $_mayaUsdTranslatorExport_sections,
-        $newSettings,
-        "mayaUsdTranslatorExport_contextOptionsShowExportUI");
+    mayaUsdTranslatorExport_fillOptionsUIForcedByContextOptions();
 }
 
 global proc mayaUsdTranslatorExport_contextOptionsButtonCB(string $contextLabel)
