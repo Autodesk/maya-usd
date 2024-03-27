@@ -474,11 +474,11 @@ bool UsdCamera::renderable() const
 {
     UsdGeomCamera usdGeomCamera(prim());
 
-    PXR_NS::UsdAttribute  attr = usdGeomCamera.GetPurposeAttr();
+    PXR_NS::UsdAttribute attr = usdGeomCamera.GetPurposeAttr();
     
     TfToken purpose;
     attr.Get(&purpose);
-    return purpose == UsdGeomTokens->render || purpose == UsdGeomTokens->default_ ;
+    return purpose == UsdGeomTokens->render || purpose == UsdGeomTokens->default_;
 }
 #endif
 } // namespace USDUFE_NS_DEF
