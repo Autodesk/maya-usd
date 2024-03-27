@@ -99,8 +99,10 @@ void UsdUndoAddNewPrimCommand::execute()
         } else {
             UsdUfe::InAddOrDeleteOperation ad;
             auto                           prim = _stage->DefinePrim(_primPath, _primToken);
-            if (!prim.IsValid())
+            if (!prim.IsValid()) {
                 TF_RUNTIME_ERROR("Failed to create new prim type: %s", _primToken.GetText());
+                _stage->RemovePrim(_primPath);
+            }
         }
     }
 }
