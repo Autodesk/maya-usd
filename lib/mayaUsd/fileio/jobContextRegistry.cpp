@@ -167,7 +167,7 @@ void UsdMayaJobContextRegistry::SetImportOptionsUI(
     const ContextInfo key { TfToken(jobContext), {}, {}, {}, {}, {} };
     auto              iter = _jobContextReg.find(key);
     if (iter == _jobContextReg.end()) {
-        TF_CODING_ERROR("Import job context %s does not exists", jobContext.c_str());
+        TF_CODING_ERROR("Import job context %s does not exist", jobContext.c_str());
         return;
     }
 

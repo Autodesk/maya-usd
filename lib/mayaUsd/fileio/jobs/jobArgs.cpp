@@ -834,7 +834,7 @@ MStatus UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
         MStringArray optionList;
         MStringArray theOption;
         optionsString.split(';', optionList);
-        for (int i = 0; i < (int)optionList.length(); ++i) {
+        for (unsigned int i = 0; i < optionList.length(); ++i) {
             theOption.clear();
             optionList[i].split('=', theOption);
             if (theOption.length() != 2) {
@@ -1231,7 +1231,7 @@ MStatus UsdMayaJobImportArgs::GetDictionaryFromEncodedOptions(
         MStringArray optionList;
         MStringArray theOption;
         optionsString.split(';', optionList);
-        for (int i = 0; i < (int)optionList.length(); ++i) {
+        for (unsigned int i = 0; i < optionList.length(); ++i) {
             theOption.clear();
             optionList[i].split('=', theOption);
             if (theOption.length() != 2) {
