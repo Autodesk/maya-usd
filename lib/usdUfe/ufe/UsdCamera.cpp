@@ -469,4 +469,16 @@ Ufe::Camera::Projection UsdCamera::projection() const
     return Ufe::Camera::Perspective;
 }
 
+#ifdef UFE_CAMERA_HAS_RENDERABLE
+bool UsdCamera::renderable() const
+{
+    UsdGeomCamera usdGeomCamera(prim());
+
+    PXR_NS::UsdAttribute  attr = usdGeomCamera.GetPurposeAttr();
+    
+    TfToken purpose;
+    attr.Get(&purpose);
+    return purpose == UsdGeomTokens->render || purpose == UsdGeomTokens->default_ ;
+}
+#endif
 } // namespace USDUFE_NS_DEF
