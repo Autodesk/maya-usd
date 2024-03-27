@@ -64,8 +64,11 @@ SdfPath getAnimationPath(const SdfPath& skelPath);
 /// Gets the joint name tokens for the given dag paths, assuming a joint
 /// hierarchy with the given root joint.
 MAYAUSD_CORE_PUBLIC
-VtTokenArray
-getJointNames(const std::vector<MDagPath>& joints, const MDagPath& rootJoint, bool stripNamespaces);
+VtTokenArray getJointNames(
+    const std::vector<MDagPath>& joints,
+    const MDagPath&              rootJoint,
+    bool                         stripNamespaces,
+    const PcpMapFunction&        rootMapFunction = PcpMapFunction {});
 
 /// Gets the expected path where a skeleton will be exported for
 /// the given root joint. The skeleton both binds a skeleton and
