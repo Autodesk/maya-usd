@@ -388,7 +388,7 @@ proc mayaUsdTranslatorExport_createContextOptions(string $parent, string $sectio
                     text -label $contextLabel -ann $tooltip -align "left";
                     iconTextButton
                         -w 16 -h 16 -style "iconAndTextVertical"
-                        -image1 "menu_options" -label "" -ann `getMayaUsdString("kExportPluginConfigButtonLbl")`
+                        -image1 "menu_options" -label "" -ann `getMayaUsdString("kExportPluginConfigButtonAnn")`
                         -command ("mayaUsdTranslatorExport_contextOptionsButtonCB(\"" + $contextLabel + "\")") $buttonName;
 
                     rowLayout -width 2 -height $rowHeight -backgroundColor $color[0] $color[1] $color[2];
@@ -745,7 +745,7 @@ global proc mayaUsdTranslatorExport_EnableAllControls() {
 global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $enable, int $processJobContext) {
     string $optionList[];
     string $optionBreakDown[];
-    string $jobContext = "";
+    string $listOfJobContexts = "";
     int $index;
 
     if (size($currentOptions) > 0) {
@@ -802,7 +802,7 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportComponentTagsCheckBox");
             } else if ($optionBreakDown[0] == "jobContext" && $processJobContext == 1) {
                 // Must be kept last, and only done on main options:
-                $jobContext = $optionBreakDown[1];
+                $listOfJobContexts = $optionBreakDown[1];
             } else if ($optionBreakDown[0] == "defaultMeshScheme") {
                 mayaUsdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], $enable, "defaultMeshSchemePopup");
             } else if ($optionBreakDown[0] == "defaultUSDFormat") {
@@ -857,8 +857,8 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
             mayaUsdTranslatorExport_MeshCB();
         }
 
-        if ($jobContext != "" && $processJobContext == 1) {
-            mayaUsdTranslatorExport_fillContextOptionsUI($jobContext);
+        if ($listOfJobContexts != "" && $processJobContext == 1) {
+            mayaUsdTranslatorExport_fillContextOptionsUI($listOfJobContexts);
         }
         if ($processJobContext == 0 && $supportsMultiExport == 0) {
             mayaUsdTranslatorExport_DisableConvertMaterialsToCheckboxes();
