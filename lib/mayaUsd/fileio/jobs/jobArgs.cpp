@@ -834,7 +834,7 @@ MStatus UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
         MStringArray optionList;
         MStringArray theOption;
         optionsString.split(';', optionList);
-        for (int i = 0; i < (int)optionList.length(); ++i) {
+        for (unsigned int i = 0; i < optionList.length(); ++i) {
             theOption.clear();
             optionList[i].split('=', theOption);
             if (theOption.length() != 2) {
@@ -1214,6 +1214,39 @@ UsdMayaJobImportArgs UsdMayaJobImportArgs::CreateFromDictionary(
     }
 
     return UsdMayaJobImportArgs(allUserArgs, importWithProxyShapes, timeInterval);
+}
+
+/* static */
+MStatus UsdMayaJobImportArgs::GetDictionaryFromEncodedOptions(
+    const MString& optionsString,
+    VtDictionary*  toFill)
+{
+    if (!toFill)
+        return MS::kFailure;
+
+    VtDictionary& userArgs = *toFill;
+
+    // Get the options
+    if (optionsString.length() > 0) {
+        MStringArray optionList;
+        MStringArray theOption;
+        optionsString.split(';', optionList);
+        for (unsigned int i = 0; i < optionList.length(); ++i) {
+            theOption.clear();
+            optionList[i].split('=', theOption);
+            if (theOption.length() != 2) {
+                continue;
+            }
+
+            // Note: if some argument needs special handling, do like in the
+            //       same function in the export version in UsdMayaJobExportArgs
+            std::string argName(theOption[0].asChar());
+            userArgs[argName] = UsdMayaUtil::ParseArgumentValue(
+                argName, theOption[1].asChar(), UsdMayaJobExportArgs::GetGuideDictionary());
+        }
+    }
+
+    return MS::kSuccess;
 }
 
 /* static */

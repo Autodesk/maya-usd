@@ -14,6 +14,20 @@
                     }
                 }
             }
+        },
+        {
+            # Could be the name of the DLL for a C++ plugin.            
+            "Name": "ExampleImportPlugin",
+            # Could also be "Library" for a compiled C++ plugin.
+            "Type": "python",
+            "Root": "..",
+            "Info": {
+                # This is necessary to be recognized as an export plugin.
+                "UsdMaya": {
+                    "JobContextPlugin": {
+                    }
+                }
+            }
         }
     ]
 }

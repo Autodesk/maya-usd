@@ -89,6 +89,22 @@ public:
             true);
     }
 
+    static void SetImportOptionsUI(const std::string& jobContext, boost::python::object uiFct)
+    {
+        if (!PyCallable_Check(uiFct.ptr()))
+            TF_CODING_ERROR(
+                "Parameter uiFct should be a callable function returning a dictionary.");
+
+        UsdMayaJobContextRegistry::GetInstance().SetImportOptionsUI(
+            jobContext,
+            [=](const TfToken&      jobContext,
+                const std::string&  parentUI,
+                const VtDictionary& settings) {
+                return callUIFn(uiFct, jobContext, parentUI, settings);
+            },
+            true);
+    }
+
 private:
     static VtDictionary callEnablerFn(boost::python::object fnc)
     {
@@ -119,5 +135,7 @@ void wrapJobContextRegistry()
         .def("RegisterExportJobContext", &JobContextRegistry::RegisterExportJobContext)
         .staticmethod("RegisterExportJobContext")
         .def("SetExportOptionsUI", &JobContextRegistry::SetExportOptionsUI)
-        .staticmethod("SetExportOptionsUI");
+        .staticmethod("SetExportOptionsUI")
+        .def("SetImportOptionsUI", &JobContextRegistry::SetImportOptionsUI)
+        .staticmethod("SetImportOptionsUI");
 }

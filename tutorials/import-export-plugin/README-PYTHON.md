@@ -1,12 +1,12 @@
-# Python Export Plugin
+# Python Import and Export Plugins
 
-This documents gives detailed explanations about how the example export plugin
-is written. It explains how to modify it to write your own.
+This documents gives detailed explanations about how the example import and
+export plugins are written. It explains how to modify them to write your own.
 
 ## Overall structure
 
 The code can be split into separate pieces:
-- Registering the export plugin with MayaUSD
+- Registering the import or export plugin with MayaUSD
 - The MayaUSD callbacks.
 - The UI to edit options.
 - Saving and loading the options.
@@ -18,6 +18,12 @@ function:
     - It calls `mayaUsd.lib.JobContextRegistry.RegisterExportJobContext` to
       register the export plugin and its options callback.
     - It call `mayaUsd.lib.JobContextRegistry.SetExportOptionsUI` to register
+      the UI callback.
+
+An import plugin has similar functions:
+    - It calls `mayaUsd.lib.JobContextRegistry.RegisterImportJobContext` to
+      register the import plugin and its options callback.
+    - It call `mayaUsd.lib.JobContextRegistry.SetImportOptionsUI` to register
       the UI callback.
 
 The plugin is always referenced by it job context name. That name must be unique.
