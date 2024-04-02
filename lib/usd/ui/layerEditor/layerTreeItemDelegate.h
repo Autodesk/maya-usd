@@ -124,8 +124,8 @@ protected:
     const int    CHECK_MARK_AREA_WIDTH = DPIScale(28);
     const int    TEXT_LEFT_OFFSET = (ARROW_AREA_WIDTH + CHECK_MARK_AREA_WIDTH) + DPIScale(2);
     const int    HIGHLIGHTED_FILL_OFFSET = DPIScale(0);
-    const double DISABLED_OPACITY = 0.8;
-    const double HOVER_OPACITY = 0.55;
+    const double DISABLED_OPACITY = 0.4;
+    const double HOVER_OPACITY = 0.4;
     QPixmap      DISABLED_BACKGROUND_IMAGE;
     QPixmap      DISABLED_HIGHLIGHT_IMAGE;
     QPixmap      TARGET_ON_IMAGES[3];
