@@ -400,7 +400,12 @@ bool allowedInStrongerLayer(
         ? stage->GetSessionLayer()
         : stage->GetRootLayer();
 
-    return getStrongerLayer(searchRoot, targetLayer, topLayer) == targetLayer;
+    auto strongerLayer = getStrongerLayer(searchRoot, targetLayer, topLayer);
+    if (!strongerLayer) {
+        return true;
+    }
+
+    return strongerLayer == targetLayer;
 }
 
 } // namespace

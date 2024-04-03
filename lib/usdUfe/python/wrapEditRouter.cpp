@@ -64,7 +64,7 @@ public:
         if (!PyCallable_Check(_pyCb)) {
             return;
         }
-        boost::python::object dictObject(routingData);
+        boost::python::dict dictObject(routingData);
         try {
             call<void>(_pyCb, context, dictObject);
         } catch (const boost::python::error_already_set&) {
@@ -77,9 +77,34 @@ public:
             TF_WARN("%s", ex.what());
             throw;
         }
-        boost::python::extract<PXR_NS::VtDictionary> extractedDict(dictObject);
-        if (extractedDict.check()) {
-            routingData = extractedDict;
+
+        const boost::python::object items = dictObject.items();
+        for (boost::python::ssize_t i = 0; i < len(items); ++i) {
+
+            boost::python::extract<std::string> keyExtractor(items[i][0]);
+            if (!keyExtractor.check()) {
+                continue;
+            }
+
+            boost::python::extract<PXR_NS::VtValue> valueExtractor(items[i][1]);
+            if (!valueExtractor.check()) {
+                continue;
+            }
+
+            auto vtvalue = valueExtractor();
+
+            if (vtvalue.IsHolding<PXR_NS::TfPyObjWrapper>()) {
+                const auto wrapper = vtvalue.Get<PXR_NS::TfPyObjWrapper>();
+
+                PXR_NS::TfPyLock                              lock;
+                boost::python::extract<PXR_NS::UsdEditTarget> editTargetExtractor(wrapper.Get());
+                if (editTargetExtractor.check()) {
+                    auto editTarget = editTargetExtractor();
+                    routingData[keyExtractor()] = PXR_NS::VtValue(editTarget);
+                }
+            } else {
+                routingData[keyExtractor()] = vtvalue;
+            }
         }
     }
 
