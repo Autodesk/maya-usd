@@ -7,7 +7,7 @@
 
 // https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch20.html
 // Section 20.4 Equation 13
-float mx_latlong_compute_lod(vec3 dir, float pdf, float maxMipLevel, int envSamples)
+float mx_latlong_compute_lod_adsk(vec3 dir, float pdf, float maxMipLevel, int envSamples)
 {
     const float MIP_LEVEL_OFFSET = 1.5;
     float effectiveMaxMipLevel = maxMipLevel - MIP_LEVEL_OFFSET;
@@ -53,7 +53,7 @@ vec3 mx_environment_radiance(vec3 N, vec3 V, vec3 X, vec2 alpha, int distributio
         // Sample the environment light from the given direction.
         vec3 Lw = tangentToWorld * L;
         float pdf = mx_ggx_PDF(H, LdotH, alpha);
-        float lod = mx_latlong_compute_lod(Lw, pdf, float(mayaGetSpecularEnvironmentNumLOD() - 1), MX_NUM_FIS_SAMPLES);
+        float lod = mx_latlong_compute_lod_adsk(Lw, pdf, float(mayaGetSpecularEnvironmentNumLOD() - 1), MX_NUM_FIS_SAMPLES);
         vec3 sampleColor = mayaSampleSpecularEnvironmentAtLOD(Lw, lod);
 
         // Compute the Fresnel term.
