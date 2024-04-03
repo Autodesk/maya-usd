@@ -313,7 +313,7 @@ class testUsdExportSkeleton(unittest.TestCase):
         cmds.file(mayaFile, force=True, open=True)
 
         with testUtils.TemporaryDirectory(prefix='UsdExportPartialSkeleton') as testDir:
-            pathToSave = f"{testDir}/partialJoints.usda"
+            pathToSave = "{}/partialJoints.usda".format(testDir)
             
             cmds.select("jointsGrp", r=True)
             kwargs = {
