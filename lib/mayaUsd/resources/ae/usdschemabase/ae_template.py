@@ -963,6 +963,10 @@ class AETemplate(object):
         kFilenameAttr = ufe.Attribute.kFilename if hasattr(ufe.Attribute, "kFilename") else 'Filename'
         if self.attrS.attributeType(attrName) != kFilenameAttr:
             return False
+        shader = UsdShade.Shader(self.prim)
+        if shader and attrName.startswith("inputs:"):
+            # Shader attribute. The actual USD Attribute might not exist yet.
+            return True
         attr = self.prim.GetAttribute(attrName)
         if not attr:
             return False
