@@ -586,7 +586,9 @@ proc string getPulledUsdObject(string $dagObject) {
             // If there is no selection, try to fetch the item under the mouse in the outliner editor
             if (size($dagObject) == 0 || size(`ls -set $dagObject`) > 0) {
                 string $outliner = `getPanel -underPointer`;
-                $dagObject = `outlinerEditor -query -feedbackItemName $outliner`;
+                if (`outlinerEditor -exists $outliner`) {
+                    $dagObject = `outlinerEditor -query -feedbackItemName $outliner`;
+                }
             }
         }
         if (size(`ls -dagObjects $dagObject`) > 0) {
