@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
-#ifndef MAYAUSD_UTILS_JSON_DICT_H
-#define MAYAUSD_UTILS_JSON_DICT_H
+#ifndef MAYAUSD_UTILS_JSON_CONVERTER_H
+#define MAYAUSD_UTILS_JSON_CONVERTER_H
 
 #include <mayaUsd/base/api.h>
 
@@ -33,7 +33,7 @@ namespace MAYAUSD_NS_DEF {
 // Convert a VtDictionary to JsValue.
 // Modeled after PXR_NS::JsValueTypeConverter
 
-class VtDictionaryToJsValueConverter
+class JsonConverter
 {
 public:
     static PXR_NS::JsObject convertToDictionary(const PXR_NS::VtDictionary& dict)

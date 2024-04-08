@@ -16,7 +16,7 @@
 
 #include "helpers.h"
 
-#include <mayaUsd/utils/jsonDict.h>
+#include <mayaUsd/utils/jsonConverter.h>
 
 #include <pxr/base/js/converter.h>
 
@@ -63,7 +63,7 @@ void jsonToOptionVar(const char* optionVarName, const Json& jsSettings)
 // Note: only data types supported by JSON will be converted.
 Json dictionaryToJSON(const Dict& dict)
 {
-    return MayaUsd::VtDictionaryToJsValueConverter::convertToDictionary(dict);
+    return MayaUsd::JsonConverter::convertToDictionary(dict);
 }
 
 } // namespace Helpers
