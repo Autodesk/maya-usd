@@ -848,7 +848,19 @@ public:
 
         // Execute lock commands
         for (size_t layerIndex = 0; layerIndex < _layers.size(); layerIndex++) {
-            MayaUsd::lockLayer(_proxyShapePath, _layers[layerIndex], _lockType, true);
+            auto curLayer = _layers[layerIndex];
+            // Note: per design, we refuse to affect the lock status of system-locked
+            //       sub-layers. To change the lock status of a system-locked layer,
+            //       it must be targeted directly.
+            if (curLayer != layer) {
+                if (_lockType != MayaUsd::LayerLockType::LayerLock_SystemLocked) {
+                    if (MayaUsd::isLayerSystemLocked(curLayer)) {
+                        continue;
+                    }
+                }
+            }
+
+            MayaUsd::lockLayer(_proxyShapePath, curLayer, _lockType, true);
         }
 
         updateEditTarget(stage);
@@ -868,7 +880,7 @@ public:
         // Execute lock commands
         for (size_t layerIndex = 0; layerIndex < _layers.size(); layerIndex++) {
             // Note: the undo of system-locked is unlocked by design.
-            if (_previousStates[layerIndex] == MayaUsd::LayerLockType::LayerLock_SystemLocked) {
+            if (_lockType == MayaUsd::LayerLockType::LayerLock_SystemLocked) {
                 MayaUsd::lockLayer(
                     _proxyShapePath,
                     _layers[layerIndex],
