@@ -40,6 +40,10 @@ class exportChaserTest(mayaUsdLib.ExportChaser):
         exportChaserTest.ChaserNames = factoryContext.GetJobArgs().chaserNames
         exportChaserTest.ChaserArgs = factoryContext.GetJobArgs().allChaserArgs['test']
         exportChaserTest.ExportSelected = factoryContext.GetJobArgs().exportSelected
+        exportChaserTest.DefaultPrim = factoryContext.GetJobArgs().defaultPrim
+        exportChaserTest.RootPrim = factoryContext.GetJobArgs().rootPrim
+        exportChaserTest.RootPrimType = factoryContext.GetJobArgs().rootPrimType
+
 
     def ExportDefault(self):
         exportChaserTest.ExportDefaultCalled = True
@@ -101,6 +105,21 @@ class testExportChaser(unittest.TestCase):
             ],
             shadingMode='none')
         self.assertTrue(exportChaserTest.ExportSelected)
+
+        cmds.usdExport(mergeTransformAndShape=True,
+            file=usdFilePath,
+            rootPrim = 'testRootPrim',
+            rootPrimType = 'xform',
+            defaultPrim = 'testRootPrim',
+            chaser=['test'],
+            chaserArgs=[
+                ('test', 'foo', 'tball'),
+                ('test', 'bar', 'ometer'),
+            ],
+            shadingMode='none')
+        self.assertEqual(exportChaserTest.DefaultPrim,"testRootPrim")
+        self.assertEqual(exportChaserTest.RootPrim, '/testRootPrim')
+        self.assertEqual(exportChaserTest.RootPrimType, 'xform')
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
