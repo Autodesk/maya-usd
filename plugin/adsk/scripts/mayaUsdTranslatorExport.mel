@@ -827,6 +827,8 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
             } else if ($optionBreakDown[0] == "rootPrim") {
                 mayaUsdTranslatorExport_SetTextField($optionBreakDown[1], $enable, "rootPrimField");
                 $hasRootPrim = 1;
+            } else if ($optionBreakDown[0] == "rootPrimType") {
+                mayaUsdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], $enable, "rootPrimTypePopup");
             } else if ($optionBreakDown[0] == "convertMaterialsTo") {
                 mayaUsdTranslatorExport_SetConvertMaterialsToCheckboxes($optionBreakDown[1], $enable, $processJobContext);
             } else if ($optionBreakDown[0] == "shadingMode" && $optionBreakDown[1] != "useRegistry") {
@@ -1022,8 +1024,8 @@ global proc int mayaUsdTranslatorExport (string $parent,
                         -annotation `getMayaUsdString("kExportRootPrimAnn")` -textChangedCommand "mayaUsdTranslatorExport_RootPrimCB" rootPrimField;
                     
                     optionMenuGrp -l `getMayaUsdString("kExportRootPrimTypeLbl")` rootPrimTypePopup;
-                        menuItem -l `getMayaUsdString("kExportScopeLbl")` -ann "scope";
-                        menuItem -l `getMayaUsdString("kExportXformLbl")` -ann "xform";
+                        menuItem -l `getMayaUsdString("kExportScopeLbl")` -ann `getMayaUsdString("kExportScopeAnn")`;
+                        menuItem -l `getMayaUsdString("kExportXformLbl")` -ann `getMayaUsdString("kExportXformAnn")`;
                 }
 
                 optionMenuGrp -l `getMayaUsdString("kExportDefaultPrimLbl")` -annotation `getMayaUsdString("kExportDefaultPrimAnn")` exportDefaultPrim;
