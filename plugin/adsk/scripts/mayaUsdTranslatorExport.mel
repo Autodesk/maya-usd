@@ -249,20 +249,36 @@ global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
 
 }
 
-global proc mayaUsdTranslatorExport_RootPrimCB() {
+proc updateDefaultPrimOptionMenu(string $rootPrim) {
     if (`optionMenuGrp -exists exportDefaultPrim` == 0){
         return;
     }
-    string $rootPrim = `textFieldGrp -q -text rootPrimField`;
     optionMenuGrp -edit -deleteAllItems exportDefaultPrim;
     string $menuName = `optionMenuGrp -q -fullPathName exportDefaultPrim`;
     menuItem -parent ($menuName + "|OptionMenu") -l `getMayaUsdString("kExportDefaultPrimNoneLbl")`;
-    menuItem -parent ($menuName + "|OptionMenu") -l $rootPrim;
     if(size($rootPrim) > 0){
+        menuItem -parent ($menuName + "|OptionMenu") -l $rootPrim;
         optionMenuGrp -e -select 2 exportDefaultPrim;
     } else {
         mayaUsdTranslatorExport_updateDefaultPrimList();
     }
+}
+
+proc updateRootPrimTypeOptionMenu(string $rootPrim) {
+    if (`optionMenuGrp -exists rootPrimTypePopup` == 0){
+        return;
+    }
+    if(size($rootPrim) > 0) {
+        optionMenuGrp -e -enable 1 rootPrimTypePopup;
+    } else {
+        optionMenuGrp -e -enable 0 rootPrimTypePopup;
+    }
+}
+
+global proc mayaUsdTranslatorExport_RootPrimCB() {
+    string $rootPrim = `textFieldGrp -q -text rootPrimField`;
+    updateDefaultPrimOptionMenu($rootPrim);
+    updateRootPrimTypeOptionMenu($rootPrim);
 }
 
 global proc mayaUsdTranslatorExport_AnimationCB() {
