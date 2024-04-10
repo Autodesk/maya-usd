@@ -214,17 +214,8 @@ global proc mayaUsdTranslatorExport_setDefaultPrim(string $defaultPrimName) {
     if ((`checkBoxGrp -exists exportMeshesCheckBox` == 0)||(`checkBoxGrp -exists exportLightsCheckBox` == 0)||(`checkBoxGrp -exists exportCamerasCheckBox` == 0)){
         return;
     }
-    // check if the previous option is still available before set
-    string $allItems[] = `optionMenuGrp -q -itemListLong exportDefaultPrim`;
-    int $count = 1;
-    for($item in $allItems){
-        string $labelText = `menuItem -query -label $item`;
-        if($labelText == $defaultPrimName){
-            optionMenuGrp -e -select $count exportDefaultPrim;
-            break;
-        }
-        $count += 1;
-    }
+    // set the default prim if it's available
+    catchQuiet(`optionMenuGrp -e -value $defaultPrimName exportDefaultPrim`);
 }
 
 global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
