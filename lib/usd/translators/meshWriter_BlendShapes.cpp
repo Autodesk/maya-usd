@@ -677,10 +677,10 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                             MFnDagNode parentDagNode(dagNode.parent(0));
                             curTargetNameMStr
                                 = UsdMayaUtil::GetUniqueNameOfDagNode(parentDagNode.object());
-                            curTargetLongNameMStr = MString(curTargetNameMStr);
+                            curTargetLongNameMStr = curTargetNameMStr;
                         } else {
                             curTargetNameMStr = UsdMayaUtil::GetUniqueNameOfDagNode(targetMesh);
-                            curTargetLongNameMStr = MString(curTargetNameMStr);
+                            curTargetLongNameMStr = curTargetNameMStr;
                         }
                         // NOTE: (yliangsiew) Because UsdSkelBlendShape does not
                         // support animated targets (the `normalOffsets` and
