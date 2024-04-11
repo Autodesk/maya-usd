@@ -39,10 +39,11 @@ protected:
 
     void saveModifiedLoadRules() const;
 
-private:
+protected:
     const PXR_NS::UsdStageWeakPtr _stage;
     const PXR_NS::SdfPath         _primPath;
     PXR_NS::UsdLoadPolicy         _policy;
+    PXR_NS::UsdStageLoadRules     _undoRules;
 };
 
 //! \brief Undoable command for loading a USD prim.

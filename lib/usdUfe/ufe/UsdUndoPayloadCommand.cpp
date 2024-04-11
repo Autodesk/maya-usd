@@ -47,20 +47,12 @@ UsdUndoLoadUnloadBaseCommand::UsdUndoLoadUnloadBaseCommand(const PXR_NS::UsdPrim
 
 void UsdUndoLoadUnloadBaseCommand::doLoad() const
 {
-    if (!_stage)
-        return;
-
     _stage->Load(_primPath, _policy);
-    saveModifiedLoadRules();
 }
 
 void UsdUndoLoadUnloadBaseCommand::doUnload() const
 {
-    if (!_stage)
-        return;
-
     _stage->Unload(_primPath);
-    saveModifiedLoadRules();
 }
 
 void UsdUndoLoadUnloadBaseCommand::saveModifiedLoadRules() const
@@ -70,6 +62,23 @@ void UsdUndoLoadUnloadBaseCommand::saveModifiedLoadRules() const
     UsdUfe::saveStageLoadRules(_stage);
 }
 
+// Macros to handle the redo/undo actions on stage load/unload rules
+// The load rules are saved before applying new rules and are
+// applied back when the commands are undo
+#define STAGE_PAYLOAD_ACTION(action)     \
+    if (!_stage)                         \
+        return;                          \
+    _undoRules = _stage->GetLoadRules(); \
+    action();                            \
+    saveModifiedLoadRules();
+
+#define STAGE_PAYLOAD_UNDO_ACTION(action) \
+    if (!_stage)                          \
+        return;                           \
+    action();                             \
+    _stage->SetLoadRules(_undoRules);     \
+    saveModifiedLoadRules();
+
 UsdUndoLoadPayloadCommand::UsdUndoLoadPayloadCommand(
     const PXR_NS::UsdPrim& prim,
     PXR_NS::UsdLoadPolicy  policy)
@@ -77,15 +86,15 @@ UsdUndoLoadPayloadCommand::UsdUndoLoadPayloadCommand(
 {
 }
 
-void UsdUndoLoadPayloadCommand::redo() { doLoad(); }
-void UsdUndoLoadPayloadCommand::undo() { doUnload(); }
+void UsdUndoLoadPayloadCommand::redo() { STAGE_PAYLOAD_ACTION(doLoad); }
+void UsdUndoLoadPayloadCommand::undo() { STAGE_PAYLOAD_UNDO_ACTION(doUnload); }
 
 UsdUndoUnloadPayloadCommand::UsdUndoUnloadPayloadCommand(const PXR_NS::UsdPrim& prim)
     : UsdUndoLoadUnloadBaseCommand(prim)
 {
 }
 
-void UsdUndoUnloadPayloadCommand::redo() { doUnload(); }
-void UsdUndoUnloadPayloadCommand::undo() { doLoad(); }
+void UsdUndoUnloadPayloadCommand::redo() { STAGE_PAYLOAD_ACTION(doUnload); }
+void UsdUndoUnloadPayloadCommand::undo() { STAGE_PAYLOAD_UNDO_ACTION(doLoad); }
 
 } // namespace USDUFE_NS_DEF
