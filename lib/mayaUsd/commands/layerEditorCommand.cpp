@@ -1202,8 +1202,7 @@ MSyntax LayerEditorCommand::createSyntax()
     // parameter 2: refresh sub layers
     syntax.addFlag(
         kRefreshSystemLockFlag, kRefreshSystemLockFlagL, MSyntax::kString, MSyntax::kBoolean);
-    syntax.addFlag(
-        kSkipSystemLockedFlag, kSkipSystemLockedFlagL);
+    syntax.addFlag(kSkipSystemLockedFlag, kSkipSystemLockedFlagL);
 
     return syntax;
 }
