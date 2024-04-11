@@ -536,6 +536,7 @@ void LayerTreeItem::loadSubLayers(QWidget* in_parent)
                 UsdMayaUtilFileSystem::unmarkPathAsPostponedRelative(layer(), path);
             }
         }
+        context.hook()->refreshLayerSystemLock(layer(), true);
     }
 }
 
