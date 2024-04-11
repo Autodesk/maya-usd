@@ -214,7 +214,7 @@ void MayaCommandHook::lockLayer(
         return;
 
     std::string cmd;
-    cmd = "mayaUsdLayerEditor -edit -lockLayer ";
+    cmd = "mayaUsdLayerEditor -edit -skipSystemLocked -lockLayer ";
     cmd += std::to_string(lockState);
     cmd += includeSubLayers ? " 1" : " 0";
     cmd += quote(proxyShapePath());

@@ -701,12 +701,13 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
 
         # Unlocking a system-locked layer recursively
         #
-        # Note: this *only* unlocks the layer itself because by design
-        #       we don't want to recursively unlock system-locked layers.
+        # Note: we use the flag to skip system-locked layer to *only* unlock
+        #       the layer itself because by design we don't want to recursively
+        #       unlock system-locked layers from the UI.
         #
         #       Otherwise, unlocking recursively inthe UI would unlock system
         #       layers, which is not something we want the user to do.
-        cmds.mayaUsdLayerEditor(subLayer1.identifier, edit=True, lockLayer=(0, 1, shapePath))
+        cmds.mayaUsdLayerEditor(subLayer1.identifier, edit=True, skipSystemLocked=True, lockLayer=(0, 1, shapePath))
         self.assertTrue(subLayer1.permissionToEdit)
         self.assertTrue(subLayer1.permissionToSave)
         self.assertFalse(subLayer1_1.permissionToEdit)
@@ -721,17 +722,17 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         self.assertTrue(subLayer1.permissionToSave)
         self.assertFalse(subLayer1_1.permissionToEdit)
         self.assertFalse(subLayer1_1.permissionToSave)
+        cmds.undo()
 
-        # Now unlock the sub-layer. Otherwise, the other tests would fail
-        # since layers are kept in memory by USD during a session.
-        cmds.mayaUsdLayerEditor(subLayer1_1.identifier, edit=True, lockLayer=(0, 1, shapePath))
+        # Unlocking a system-locked layer recursively
+        cmds.mayaUsdLayerEditor(subLayer1.identifier, edit=True, lockLayer=(0, 1, shapePath))
         self.assertTrue(subLayer1.permissionToEdit)
         self.assertTrue(subLayer1.permissionToSave)
         self.assertTrue(subLayer1_1.permissionToEdit)
         self.assertTrue(subLayer1_1.permissionToSave)
         cmds.undo()
-        self.assertTrue(subLayer1.permissionToEdit)
-        self.assertTrue(subLayer1.permissionToSave)
+        self.assertFalse(subLayer1.permissionToEdit)
+        self.assertFalse(subLayer1.permissionToSave)
         self.assertFalse(subLayer1_1.permissionToEdit)
         self.assertFalse(subLayer1_1.permissionToSave)
         cmds.redo()

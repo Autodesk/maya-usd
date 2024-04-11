@@ -65,6 +65,8 @@ const char kMuteLayerFlag[] = "mt";
 const char kMuteLayerFlagL[] = "muteLayer";
 const char kLockLayerFlag[] = "lk";
 const char kLockLayerFlagL[] = "lockLayer";
+const char kSkipSystemLockedFlag[] = "ssl";
+const char kSkipSystemLockedFlagL[] = "skipSystemLocked";
 const char kRefreshSystemLockFlag[] = "rl";
 const char kRefreshSystemLockFlagL[] = "refreshSystemLock";
 
@@ -850,12 +852,13 @@ public:
         for (size_t layerIndex = 0; layerIndex < _layers.size(); layerIndex++) {
             auto curLayer = _layers[layerIndex];
             // Note: per design, we refuse to affect the lock status of system-locked
-            //       sub-layers. To change the lock status of a system-locked layer,
-            //       it must be targeted directly.
-            if (curLayer != layer) {
-                if (_lockType != MayaUsd::LayerLockType::LayerLock_SystemLocked) {
-                    if (MayaUsd::isLayerSystemLocked(curLayer)) {
-                        continue;
+            //       sub-layers from the UI. The skip-system-locked flag is used for that.
+            if (_skipSystemLockedLayers) {
+                if (curLayer != layer) {
+                    if (_lockType != MayaUsd::LayerLockType::LayerLock_SystemLocked) {
+                        if (MayaUsd::isLayerSystemLocked(curLayer)) {
+                            continue;
+                        }
                     }
                 }
             }
@@ -900,6 +903,7 @@ public:
 
     MayaUsd::LayerLockType _lockType = MayaUsd::LayerLockType::LayerLock_Locked;
     bool                   _includeSublayers = false;
+    bool                   _skipSystemLockedLayers = false;
     std::string            _proxyShapePath;
 
 private:
@@ -1198,6 +1202,8 @@ MSyntax LayerEditorCommand::createSyntax()
     // parameter 2: refresh sub layers
     syntax.addFlag(
         kRefreshSystemLockFlag, kRefreshSystemLockFlagL, MSyntax::kString, MSyntax::kBoolean);
+    syntax.addFlag(
+        kSkipSystemLockedFlag, kSkipSystemLockedFlagL);
 
     return syntax;
 }
@@ -1226,6 +1232,8 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
 
     if (!isQuery()) {
         Impl::IndexAdjustments indexAdjustments;
+
+        const bool skipSystemLockedLayers = argParser.isFlagSet(kSkipSystemLockedFlag);
 
         if (argParser.isFlagSet(kInsertSubPathFlag)) {
             auto count = argParser.numberOfFlagUses(kInsertSubPathFlag);
@@ -1374,6 +1382,7 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
             }
             }
             cmd->_includeSublayers = includeSublayers;
+            cmd->_skipSystemLockedLayers = skipSystemLockedLayers;
             cmd->_proxyShapePath = proxyShapeName.asChar();
             _subCommands.push_back(std::move(cmd));
         }
