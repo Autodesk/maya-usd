@@ -29,6 +29,9 @@ from maya.common.ui import LayoutManager, ParentManager
 
 import ufe
 
+import os
+from pxr import Sdf
+
 try:
     from PySide2 import QtCore
 except:
@@ -132,8 +135,19 @@ class ImageCustomControl(AttributeCustomControl):
 
         ImageCustomControl.fixFileDialogSplitters()
 
+        # Determine if we can get an absolute path from the attribute value.
+        # If we can then try and find the starting directory from that path.
+        startDir = None
+        usdAttr = self.prim.GetAttribute(self.attrName)
+        usdValue = usdAttr.Get()
+        if isinstance(usdValue, Sdf.AssetPath):
+            resolvedPath = usdValue.resolvedPath
+            if os.path.exists(resolvedPath):
+                # Use forward slashes in path to avoid any problems. Maya accepts them all platforms.
+                startDir = os.path.abspath(os.path.dirname(resolvedPath)).replace(os.sep, '/')
+
         dialogArgs = {
-            'startDir'          : mel.eval("""setWorkingDirectory("%s", "image", "sourceImages")""" % workspace),
+            'startDir'          : startDir if startDir else mel.eval("""setWorkingDirectory("%s", "image", "sourceImages")""" % workspace),
             'filter'            : mel.eval("buildImageFileFilterList()"),
             'caption'           : getMayaUsdLibString('kOpenImage'),
             'createCallback'    : "mayaUsd_ImageFileRelative_UICreate",
