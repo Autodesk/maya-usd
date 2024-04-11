@@ -20,6 +20,15 @@
 //
 // Import context UI
 
+proc string[] mayaUsdTranslatorImport_getContextLabels()
+{
+    // Make sure they are in alphabetical order when creatign the UI,
+    // otherwise they are in a semi-random order, probably based on plugin
+    // load order or other internal details.
+    string $contextLabels[] = `mayaUSDListJobContexts -import`;
+    return `sort $contextLabels`;
+}
+
 proc string mayaUsdTranslatorImport_getContextOptionsCheckBoxName(string $jobContext)
 {
     // Build the name of the checkbox used for a given plugin context configuration
@@ -50,13 +59,23 @@ proc mayaUsdTranslatorImport_updateContextOptionButton(string $contextLabel, str
     iconTextButton -edit -visible `mayaUsdTranslatorImport_isContextOptionsUISupported($contextLabel)` $buttonName;
 }
 
-proc string[] mayaUsdTranslatorImport_getContextLabels()
+proc string[] mayaUsdTranslatorImport_updateAllContextOptionButtons()
 {
-    // Make sure they are in alphabetical order when creatign the UI,
-    // otherwise they are in a semi-random order, probably based on plugin
-    // load order or other internal details.
-    string $contextLabels[] = `mayaUSDListJobContexts -import`;
-    return `sort $contextLabels`;
+    string $jobContexts[];
+
+    string $contextLabels[] = mayaUsdTranslatorImport_getContextLabels();
+    for ($contextLabel in $contextLabels) {
+        // Note: we verify that the enabled context actually exists. Might be redundant, but
+        //       initially the list of enabled context comes from the saved ones from a previous
+        //       Maya session and the list of loaded plugins might have changed.
+        string $jobContext = `mayaUSDListJobContexts -jobContext $contextLabel`;
+        if ($jobContext == "")
+            continue;
+        stringArrayInsertAtIndex(255, $jobContexts, $jobContext);
+        mayaUsdTranslatorImport_updateContextOptionButton($contextLabel, $jobContext);
+    }
+
+    return $jobContexts;
 }
 
 global string $_mayaUsdTranslatorImport_contextLabel;
@@ -217,18 +236,7 @@ proc mayaUsdTranslatorImport_fillContextOptionsUI(string $listOfJobContexts)
         }
     }
 
-    // Note: we verify that the enabled context actually exists. Might be redundant, but
-    //       initially the list of enabled context comes from the saved ones from a previous
-    //       Maya session and the list of loaded plugins might have changed.
-    string $contextLabels[] = mayaUsdTranslatorImport_getContextLabels();
-    string $jobContexts[];
-    for ($contextLabel in $contextLabels) {
-        string $jobContext = `mayaUSDListJobContexts -jobContext $contextLabel`;
-        if ($jobContext == "")
-            continue;
-        stringArrayInsertAtIndex(255, $jobContexts, $jobContext);
-        mayaUsdTranslatorImport_updateContextOptionButton($contextLabel, $jobContext);
-    }
+    string $jobContexts[] = mayaUsdTranslatorImport_updateAllContextOptionButtons();
 
     string $enabledJobContexts[] = stringToStringArray($listOfJobContexts, ",");
     for ($enabledJobContext in $enabledJobContexts) {
@@ -407,6 +415,8 @@ global proc mayaUsdTranslatorImport_SetFromOptions(string $currentOptions, int $
         }
         if ($jobContext != "" && $processJobContext == 1) {
             mayaUsdTranslatorImport_fillContextOptionsUI($jobContext);
+        } else {
+            mayaUsdTranslatorImport_updateAllContextOptionButtons();
         }
     }
 }

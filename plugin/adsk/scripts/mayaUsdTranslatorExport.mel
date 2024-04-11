@@ -308,6 +308,15 @@ global proc mayaUsdTranslatorExport_MeshCB() {
     columnLayout -e -enable (`checkBoxGrp -q -v1 exportMeshesCheckBox` == 1) materialOptsCol;
 }
 
+proc string[] mayaUsdTranslatorExport_getContextLabels()
+{
+    // Make sure they are in alphabetical order when creatign the UI,
+    // otherwise they are in a semi-random order, probably based on plugin
+    // load order or other internal details.
+    string $contextLabels[] = `mayaUSDListJobContexts -export`;
+    return `sort $contextLabels`;
+}
+
 proc string mayaUsdTranslatorExport_getContextOptionsCheckBoxName(string $jobContext)
 {
     // Build the name of the checkbox used for a given plugin context configuration
@@ -335,16 +344,27 @@ proc string mayaUsdTranslatorExport_getContextOptionsButtonName(string $jobConte
 proc mayaUsdTranslatorExport_updateContextOptionButton(string $contextLabel, string $jobContext)
 {
     string $buttonName = mayaUsdTranslatorExport_getContextOptionsButtonName($jobContext);
-    iconTextButton -edit -visible `mayaUsdTranslatorExport_isContextOptionsUISupported($contextLabel)` $buttonName;
+    int $vis = `mayaUsdTranslatorExport_isContextOptionsUISupported($contextLabel)`;
+    iconTextButton -edit -visible $vis $buttonName;
 }
 
-proc string[] mayaUsdTranslatorExport_getContextLabels()
+proc string[] mayaUsdTranslatorExport_updateAllContextOptionButtons()
 {
-    // Make sure they are in alphabetical order when creatign the UI,
-    // otherwise they are in a semi-random order, probably based on plugin
-    // load order or other internal details.
-    string $contextLabels[] = `mayaUSDListJobContexts -export`;
-    return `sort $contextLabels`;
+    string $jobContexts[];
+
+    string $contextLabels[] = mayaUsdTranslatorExport_getContextLabels();
+    for ($contextLabel in $contextLabels) {
+        // Note: we verify that the enabled context actually exists. Might be redundant, but
+        //       initially the list of enabled context comes from the saved ones from a previous
+        //       Maya session and the list of loaded plugins might have changed.
+        string $jobContext = `mayaUSDListJobContexts -jobContext $contextLabel`;
+        if ($jobContext == "")
+            continue;
+        stringArrayInsertAtIndex(255, $jobContexts, $jobContext);
+        mayaUsdTranslatorExport_updateContextOptionButton($contextLabel, $jobContext);
+    }
+
+    return $jobContexts;
 }
 
 global string $_mayaUsdTranslatorExport_contextLabel;
@@ -511,15 +531,7 @@ proc mayaUsdTranslatorExport_fillContextOptionsUI(string $listOfJobContexts)
     // Note: we verify that the enabled context actually exists. Might be redundant, but
     //       initially the list of enabled context comes from the saved ones from a previous
     //       Maya session and the list of loaded plugins might have changed.
-    string $contextLabels[] = mayaUsdTranslatorExport_getContextLabels();
-    string $jobContexts[];
-    for ($contextLabel in $contextLabels) {
-        string $jobContext = `mayaUSDListJobContexts -jobContext $contextLabel`;
-        if ($jobContext == "")
-            continue;
-        stringArrayInsertAtIndex(255, $jobContexts, $jobContext);
-        mayaUsdTranslatorExport_updateContextOptionButton($contextLabel, $jobContext);
-    }
+    string $jobContexts[] = mayaUsdTranslatorExport_updateAllContextOptionButtons();
 
     string $enabledJobContexts[] = stringToStringArray($listOfJobContexts, ",");
     for ($enabledJobContext in $enabledJobContexts) {
@@ -894,7 +906,12 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
 
         if ($listOfJobContexts != "" && $processJobContext == 1) {
             mayaUsdTranslatorExport_fillContextOptionsUI($listOfJobContexts);
+        } else {
+            // Note: this is necessary to correctly hide the export option button
+            //       if not supported by the plugin.
+            mayaUsdTranslatorExport_updateAllContextOptionButtons();
         }
+
         if ($processJobContext == 0 && $supportsMultiExport == 0) {
             mayaUsdTranslatorExport_DisableConvertMaterialsToCheckboxes();
         }
