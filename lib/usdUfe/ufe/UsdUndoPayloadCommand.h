@@ -34,12 +34,14 @@ protected:
     UsdUndoLoadUnloadBaseCommand(const PXR_NS::UsdPrim& prim, PXR_NS::UsdLoadPolicy policy);
     UsdUndoLoadUnloadBaseCommand(const PXR_NS::UsdPrim& prim);
 
+    using commandFn = std::function<void(const UsdUndoLoadUnloadBaseCommand*)>;
+    void doCommand(commandFn fn, bool undo = false);
     void doLoad() const;
     void doUnload() const;
 
     void saveModifiedLoadRules() const;
 
-protected:
+private:
     const PXR_NS::UsdStageWeakPtr _stage;
     const PXR_NS::SdfPath         _primPath;
     PXR_NS::UsdLoadPolicy         _policy;
