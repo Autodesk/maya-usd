@@ -385,8 +385,12 @@ public:
             const MHWRender::MShaderManager* shaderMgr
                 = renderer ? renderer->getShaderManager() : nullptr;
             if (TF_VERIFY(shaderMgr)) {
+#if MAYA_API_VERSION >= 20240000
+                shader = shaderMgr->getFragmentShader("UsdPreviewSurface", _structOutputName, true);
+#else
                 shader = shaderMgr->getFragmentShader(
                     _fallbackShaderNames[index], _structOutputName, true);
+#endif
 
                 if (TF_VERIFY(shader)) {
                     const auto it = _curveBasisParameterValueMapping.find(type);
