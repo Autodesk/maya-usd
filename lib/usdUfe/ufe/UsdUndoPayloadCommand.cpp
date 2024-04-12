@@ -45,15 +45,9 @@ UsdUndoLoadUnloadBaseCommand::UsdUndoLoadUnloadBaseCommand(const PXR_NS::UsdPrim
         : PXR_NS::UsdLoadPolicy::UsdLoadWithoutDescendants;
 }
 
-void UsdUndoLoadUnloadBaseCommand::doLoad() const
-{
-    _stage->Load(_primPath, _policy);
-}
+void UsdUndoLoadUnloadBaseCommand::doLoad() const { _stage->Load(_primPath, _policy); }
 
-void UsdUndoLoadUnloadBaseCommand::doUnload() const
-{
-    _stage->Unload(_primPath);
-}
+void UsdUndoLoadUnloadBaseCommand::doUnload() const { _stage->Unload(_primPath); }
 
 void UsdUndoLoadUnloadBaseCommand::saveModifiedLoadRules() const
 {
