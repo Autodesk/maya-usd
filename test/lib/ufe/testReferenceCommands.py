@@ -93,7 +93,7 @@ class ReferenceCommandsTestCase(unittest.TestCase):
         self.assertEqual(originalRootContents, filterUsdStr(self.stage.GetRootLayer().ExportToString()))
 
 
-    @unittest.skipUnless(mayaUtils.mayaMajorVersion() > 2022, 'Delete restriction on delete was only after Maya 2022.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Delete restriction on delete requires Maya 2023 or greater.')
     def testDeletePrimContainingReference(self):
         '''
         Test adding a reference to a prim, then deleting that prim.

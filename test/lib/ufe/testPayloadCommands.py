@@ -144,7 +144,7 @@ class PayloadCommandsTestCase(unittest.TestCase):
         cmd.redo()
         self.assertTrue(prim.IsLoaded())
 
-    @unittest.skipUnless(mayaUtils.mayaMajorVersion() > 2022, 'Delete restriction on delete was only after Maya 2022.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Delete restriction on delete requires Maya 2023 or greater.')
     def testDeletePrimContainingPayload(self):
         '''
         Test adding a payload to a prim, then deleting that prim.
