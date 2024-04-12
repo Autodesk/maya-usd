@@ -245,7 +245,9 @@ global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
     // check if there's a root prim defined, if so add to list
     if (`textFieldGrp -exists rootPrimField` != 0){
         string $rootPrim = `textFieldGrp -q -text rootPrimField`;
-        menuItem -parent ($menuName + "|OptionMenu") -l $rootPrim;
+        if(size($rootPrim) > 0){
+            menuItem -parent ($menuName + "|OptionMenu") -l $rootPrim;
+        }
     }
 
     for($item in $allItems){
