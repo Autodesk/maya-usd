@@ -43,10 +43,16 @@ namespace MAYAUSD_NS_DEF {
 MAYAUSD_CORE_PUBLIC
 MString convertTargetLayerToText(const PXR_NS::UsdStage& stage);
 
+/*! Map the original layer name when the scene was saved to the current layer name.
+    Layer renaming happens when anonymous layers are saved within the Maya scene file.
+*/
+using LayerNameMap = std::map<std::string, std::string>;
+
 /*! \brief get the target layer from a text format if it exists on the given stage.
  */
 MAYAUSD_CORE_PUBLIC
-PXR_NS::SdfLayerHandle getTargetLayerFromText(PXR_NS::UsdStage& stage, const MString& text);
+PXR_NS::SdfLayerHandle
+getTargetLayerFromText(const LayerNameMap& nameMap, PXR_NS::UsdStage& stage, const MString& text);
 
 /*! \brief set the stage target layer from a text format.
  */
@@ -62,8 +68,10 @@ MString getTargetLayerFromAttribute(const MayaUsdProxyShapeBase& proxyShape);
  * exists on the given stage.
  */
 MAYAUSD_CORE_PUBLIC
-PXR_NS::SdfLayerHandle
-getTargetLayerFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_NS::UsdStage& stage);
+PXR_NS::SdfLayerHandle getTargetLayerFromAttribute(
+    const MayaUsdProxyShapeBase& proxyShape,
+    const LayerNameMap&          nameMap,
+    PXR_NS::UsdStage&            stage);
 
 /*! \brief copy the stage target layer in the corresponding attribute of the proxy shape.
  */
@@ -81,8 +89,10 @@ copyTargetLayerFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_NS::Us
  * exists on the given stage, the edit target layer could be a local layer or non local layer.
  */
 MAYAUSD_CORE_PUBLIC
-PXR_NS::UsdEditTarget
-getEditTargetFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_NS::UsdStage& stage);
+PXR_NS::UsdEditTarget getEditTargetFromAttribute(
+    const MayaUsdProxyShapeBase& proxyShape,
+    const LayerNameMap&          nameMap,
+    PXR_NS::UsdStage&            stage);
 
 } // namespace MAYAUSD_NS_DEF
 
