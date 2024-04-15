@@ -353,6 +353,12 @@ bool UsdAttribute::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time)
     return _attrHolder->set(value, time);
 }
 
+#ifdef UFE_DEFAULT_VALUE_SUPPORT
+bool UsdAttribute::_isDefault() const { return _attrHolder->isDefault(); }
+
+void UsdAttribute::_reset() { _attrHolder->reset(); }
+#endif
+
 #ifdef UFE_V4_FEATURES_AVAILABLE
 bool UsdAttribute::_hasValue() const
 #else
