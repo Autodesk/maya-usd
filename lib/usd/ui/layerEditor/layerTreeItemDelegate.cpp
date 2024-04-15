@@ -88,10 +88,9 @@ LayerTreeItemDelegate::LayerTreeItemDelegate(LayerTreeView* in_parent)
     : QStyledItemDelegate(in_parent)
     , _treeView(in_parent)
 {
-    DISABLED_BACKGROUND_IMAGE = utils->createPNGResPixmap(
-        QString(":/UsdLayerEditor/") + QtUtils::getDPIPixmapName("striped"));
-    DISABLED_HIGHLIGHT_IMAGE = utils->createPNGResPixmap(
-        QString(":/UsdLayerEditor/") + QtUtils::getDPIPixmapName("striped_selected"));
+    DISABLED_BACKGROUND_IMAGE = utils->createPNGResPixmap(QString(":/UsdLayerEditor/striped"));
+    DISABLED_HIGHLIGHT_IMAGE
+        = utils->createPNGResPixmap(QString(":/UsdLayerEditor/striped_selected"));
     WARNING_IMAGE = utils->createPNGResPixmap("RS_warning");
 
     const char* targetOnPixmaps[3] { "target_on", "target_on_hover", "target_on_pressed" };

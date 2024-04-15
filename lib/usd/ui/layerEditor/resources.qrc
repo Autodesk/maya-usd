@@ -35,31 +35,31 @@
         <file alias="LE_import_layer_pressed_150.png">resources/import_layer_hover_150.png</file>
         <file alias="LE_import_layer_pressed_200.png">resources/import_layer_hover_200.png</file>
 
-        <file alias="LE_lock_off_100.png">resources/lock_off_100.png</file>
+        <file alias="LE_lock_off.png">resources/lock_off_100.png</file>
         <file alias="LE_lock_off_150.png">resources/lock_off_150.png</file>
         <file alias="LE_lock_off_200.png">resources/lock_off_200.png</file>
-        <file alias="LE_lock_off_hover_100.png">resources/lock_off_hover_100.png</file>
+        <file alias="LE_lock_off_hover.png">resources/lock_off_hover_100.png</file>
         <file alias="LE_lock_off_hover_150.png">resources/lock_off_hover_150.png</file>
         <file alias="LE_lock_off_hover_200.png">resources/lock_off_hover_200.png</file>
 
-        <file alias="LE_lock_on_100.png">resources/lock_on_100.png</file>
+        <file alias="LE_lock_on.png">resources/lock_on_100.png</file>
         <file alias="LE_lock_on_150.png">resources/lock_on_150.png</file>
         <file alias="LE_lock_on_200.png">resources/lock_on_200.png</file>
-        <file alias="LE_lock_on_hover_100.png">resources/lock_on_hover_100.png</file>
+        <file alias="LE_lock_on_hover.png">resources/lock_on_hover_100.png</file>
         <file alias="LE_lock_on_hover_150.png">resources/lock_on_hover_150.png</file>
         <file alias="LE_lock_on_hover_200.png">resources/lock_on_hover_200.png</file>
 
-        <file alias="LE_mute_off_100.png">resources/mute_off_100.png</file>
+        <file alias="LE_mute_off.png">resources/mute_off_100.png</file>
         <file alias="LE_mute_off_150.png">resources/mute_off_150.png</file>
         <file alias="LE_mute_off_200.png">resources/mute_off_200.png</file>
-        <file alias="LE_mute_off_hover_100.png">resources/mute_off_hover_100.png</file>
+        <file alias="LE_mute_off_hover.png">resources/mute_off_hover_100.png</file>
         <file alias="LE_mute_off_hover_150.png">resources/mute_off_hover_150.png</file>
         <file alias="LE_mute_off_hover_200.png">resources/mute_off_hover_200.png</file>
 
-        <file alias="LE_mute_on_100.png">resources/mute_on_100.png</file>
+        <file alias="LE_mute_on.png">resources/mute_on_100.png</file>
         <file alias="LE_mute_on_150.png">resources/mute_on_150.png</file>
         <file alias="LE_mute_on_200.png">resources/mute_on_200.png</file>
-        <file alias="LE_mute_on_hover_100.png">resources/mute_on_hover_100.png</file>
+        <file alias="LE_mute_on_hover.png">resources/mute_on_hover_100.png</file>
         <file alias="LE_mute_on_hover_150.png">resources/mute_on_hover_150.png</file>
         <file alias="LE_mute_on_hover_200.png">resources/mute_on_hover_200.png</file>
 
@@ -82,11 +82,11 @@
         <file alias="pin_on_pressed_150.png">resources/pin_off_hover_150.png</file>
         <file alias="pin_on_pressed_200.png">resources/pin_off_hover_200.png</file>
 
-        <file alias="striped_100.png">resources/striped_100.png</file>
+        <file alias="striped.png">resources/striped_100.png</file>
         <file alias="striped_150.png">resources/striped_150.png</file>
         <file alias="striped_200.png">resources/striped_200.png</file>
 
-        <file alias="striped_selected_100.png">resources/striped_selected_100.png</file>
+        <file alias="striped_selected.png">resources/striped_selected_100.png</file>
         <file alias="striped_selected_150.png">resources/striped_selected_150.png</file>
         <file alias="striped_selected_200.png">resources/striped_selected_200.png</file>
 
