@@ -79,7 +79,10 @@ UsdUndoLoadPayloadCommand::UsdUndoLoadPayloadCommand(
 }
 
 void UsdUndoLoadPayloadCommand::redo() { doCommand(&UsdUndoLoadPayloadCommand::doLoad); }
-void UsdUndoLoadPayloadCommand::undo() { doCommand(&UsdUndoLoadPayloadCommand::doUnload, true /* undo */); }
+void UsdUndoLoadPayloadCommand::undo()
+{
+    doCommand(&UsdUndoLoadPayloadCommand::doUnload, true /* undo */);
+}
 
 UsdUndoUnloadPayloadCommand::UsdUndoUnloadPayloadCommand(const PXR_NS::UsdPrim& prim)
     : UsdUndoLoadUnloadBaseCommand(prim)
@@ -87,6 +90,9 @@ UsdUndoUnloadPayloadCommand::UsdUndoUnloadPayloadCommand(const PXR_NS::UsdPrim& 
 }
 
 void UsdUndoUnloadPayloadCommand::redo() { doCommand(&UsdUndoUnloadPayloadCommand::doUnload); }
-void UsdUndoUnloadPayloadCommand::undo() { doCommand(&UsdUndoUnloadPayloadCommand::doLoad, true /* undo */); }
+void UsdUndoUnloadPayloadCommand::undo()
+{
+    doCommand(&UsdUndoUnloadPayloadCommand::doLoad, true /* undo */);
+}
 
 } // namespace USDUFE_NS_DEF
