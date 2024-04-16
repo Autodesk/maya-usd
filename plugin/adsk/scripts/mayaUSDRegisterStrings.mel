@@ -172,7 +172,7 @@ global proc mayaUSDRegisterStrings()
     register("kExportPluginConfigAnn", "Turn on the plug-ins you wish to include for this process.\n" +
                                        "When turned on, plug-ins (like Arnold) can modify or create data to ensure compatibility.\n" +
                                        "Plug-ins may have extra settings you can adjust.");
-    register("kExportPluginConfigButtonLbl", "Options");
+    register("kExportPluginConfigButtonAnn", "Options");
     register("kExportMaterialsAnn", "Select the material(s) to bind to prims for export. With USD, you can bind multiple materials to prims.");
     register("kExportMaterialsDefaultScopeName", "mtl");
     register("kExportMergeShapesAnn", "Merges Maya transform and shape nodes into a single USD prim.");
@@ -187,6 +187,8 @@ global proc mayaUSDRegisterStrings()
     register("kExportRootPrimTypeLbl", "Root Prim Type:");
     register("kExportScopeLbl", "Scope");
     register("kExportXformLbl", "Xform");
+    register("kExportScopeAnn", "scope");
+    register("kExportXformAnn", "xform");
     register("kExportSkelsAnn", "Exports Maya joints as part of a USD skeleton.");
     register("kExportSkelsLbl", "Skeletons:");
     register("kExportSkelsNoneLbl", "None");
@@ -254,6 +256,12 @@ global proc mayaUSDRegisterStrings()
     register("kImportUSDZTxtAnn", "When a .usdz file is chosen and this is selected, .usdz texture files are imported and copied to new files on disk. To locate these files, navigate to the current Maya workspace /sourceimages directory.");
     register("kImportUSDZTxtLbl", "USDZ Texture Import");
     register("kImportVariantsInScopeNumLbl", "Variants Switched in Scope:");
+    register("kImportPluginConfigLbl", "Plug-in Configurations");
+    register("kImportPluginConfigAnn", "Turn on the plug-ins you wish to include for this process.\n" +
+                                       "When turned on, plug-ins (like Arnold) can modify or create data to ensure compatibility.\n" +
+                                       "Plug-ins may have extra settings you can adjust.");
+    register("kImportPluginConfigButtonAnn", "Options");
+
     register("kMayaDiscardEdits", "Discard Maya Edits");
     register("kMayaRefDiscardEdits", "Cancel Editing as Maya Data");
     register("kMayaRefDuplicateAsUsdData", "Duplicate As USD Data");

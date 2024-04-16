@@ -32,6 +32,7 @@ class LayerTreeItem;
 // verifying that it would not be creating a recursion
 // bad paths are always allowed, because they could be custom URIs or future paths
 // used for Load Layers
+// in corner cases the parent layer is null, we assume its safe to add
 bool checkIfPathIsSafeToAdd(
     const QString&     in_errorTitle,
     LayerTreeItem*     in_parentItem,

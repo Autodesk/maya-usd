@@ -405,6 +405,14 @@ struct UsdMayaJobImportArgs
         const bool          importWithProxyShapes = false,
         const GfInterval&   timeInterval = GfInterval::GetFullInterval());
 
+    /// Fills a VtDictionary from the given text-encoded options.
+    /// Issues runtime errors if some options contain values of the wrong format.
+    ///
+    /// The text encoding is in the form: name1=value1;name2=value2;...
+    MAYAUSD_CORE_PUBLIC
+    static MStatus
+    GetDictionaryFromEncodedOptions(const MString& optionsString, VtDictionary* toFill);
+
     /// Gets the default arguments dictionary for UsdMayaJobImportArgs.
     MAYAUSD_CORE_PUBLIC
     static const VtDictionary& GetDefaultDictionary();

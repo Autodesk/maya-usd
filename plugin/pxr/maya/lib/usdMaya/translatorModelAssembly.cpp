@@ -30,6 +30,7 @@
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/envSetting.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/kind/registry.h>
@@ -81,6 +82,12 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 // clang-format on
 
+TF_DEFINE_ENV_SETTING(
+    USDMAYA_UNLOAD_REFERENCED_MODELS,
+    true,
+    "If true, referenced models will not be loaded.  If false, this will "
+    "fallback to the load policy on the stage.");
+
 /* static */
 bool UsdMayaTranslatorModelAssembly::Create(
     const UsdMayaPrimWriterArgs& args,
@@ -127,6 +134,14 @@ bool UsdMayaTranslatorModelAssembly::Create(
     // the currPath is for the USD reference assembly and some times it's for
     // the USD proxy shape.
     const MFnDagNode assemblyNode(currPath.transform());
+
+    if (TfGetEnvSetting(USDMAYA_UNLOAD_REFERENCED_MODELS)) {
+        // Before we author the reference, we set the load policy on the path to
+        // *not* load.  The role of this is to author the reference -- we do not
+        // need that part of the scene to be loaded and composed into our current
+        // stage.
+        stage->Unload(prim.GetPath());
+    }
 
     MStatus status;
     MPlug   usdRefFilepathPlg = assemblyNode.findPlug(_tokens->FilePathPlugName.GetText(), &status);
@@ -220,7 +235,17 @@ bool UsdMayaTranslatorModelAssembly::Create(
 
     if (!assemblyEdits.empty()) {
         std::vector<std::string> failedEdits;
+        const bool               needsLoadAndUnload = not prim.IsLoaded();
+
+        // the prim must be loaded in order to apply edits.
+        if (needsLoadAndUnload) {
+            prim.Load();
+        }
         UsdMayaEditUtil::ApplyEditsToProxy(assemblyEdits, prim, &failedEdits);
+        // restore it to its original unloaded state.
+        if (needsLoadAndUnload) {
+            prim.Unload();
+        }
 
         if (!failedEdits.empty()) {
             TF_WARN(

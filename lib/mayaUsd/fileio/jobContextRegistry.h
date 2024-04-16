@@ -103,6 +103,7 @@ public:
         UIFn      exportUICallback;
         TfToken   importDescription;
         EnablerFn importEnablerCallback;
+        UIFn      importUICallback;
 
         ContextInfo() = default;
 
@@ -176,6 +177,17 @@ public:
         EnablerFn          enablerFct,
         bool               fromPython = false);
 
+    /// Registers an import job context UI dialog.
+    ///
+    /// The \p jobContext name will be used directly in the render option string as one of
+    /// the valid values of the job context option.
+    ///
+    /// The \p uiFct will be called to show a modal dialog to modify options by the user.
+    ///
+    /// The \p fromPython flag indicates the function is a Python function.
+    MAYAUSD_CORE_PUBLIC
+    void SetImportOptionsUI(const std::string& jobContext, UIFn uiFct, bool fromPython = false);
+
     MAYAUSD_CORE_PUBLIC
     static UsdMayaJobContextRegistry& GetInstance();
 
@@ -230,6 +242,17 @@ private:
             #name, niceName, description, &_ImportJobContextEnabler_##name); \
     }                                                                        \
     VtDictionary _ImportJobContextEnabler_##name()
+
+#define REGISTER_IMPORT_JOB_CONTEXT_UI_FCT(name)                                                   \
+    static VtDictionary _ImportJobContextUI_##name(                                                \
+        const TfToken& jobContext, const std::string& parentUIName, const VtDictionary& settings); \
+    TF_REGISTRY_FUNCTION(UsdMayaJobContextRegistry)                                                \
+    {                                                                                              \
+        UsdMayaJobContextRegistry::GetInstance().SetImportOptionsUI(                               \
+            #name, &_ImportJobContextUI_##name);                                                   \
+    }                                                                                              \
+    VtDictionary _ImportJobContextUI_##name(                                                       \
+        const TfToken& jobContext, const std::string& parentUIName, const VtDictionary& settings)
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -88,10 +88,9 @@ LayerTreeItemDelegate::LayerTreeItemDelegate(LayerTreeView* in_parent)
     : QStyledItemDelegate(in_parent)
     , _treeView(in_parent)
 {
-    DISABLED_BACKGROUND_IMAGE = utils->createPNGResPixmap(
-        QString(":/UsdLayerEditor/") + QtUtils::getDPIPixmapName("striped"));
-    DISABLED_HIGHLIGHT_IMAGE = utils->createPNGResPixmap(
-        QString(":/UsdLayerEditor/") + QtUtils::getDPIPixmapName("striped_selected"));
+    DISABLED_BACKGROUND_IMAGE = utils->createPNGResPixmap(QString(":/UsdLayerEditor/striped"));
+    DISABLED_HIGHLIGHT_IMAGE
+        = utils->createPNGResPixmap(QString(":/UsdLayerEditor/striped_selected"));
     WARNING_IMAGE = utils->createPNGResPixmap("RS_warning");
 
     const char* targetOnPixmaps[3] { "target_on", "target_on_hover", "target_on_pressed" };
@@ -256,14 +255,13 @@ void LayerTreeItemDelegate::paint_drawArrow(QPainter* painter, const ItemPaintCo
 
 void LayerTreeItemDelegate::paint_drawText(QPainter* painter, const ItemPaintContext& ctx) const
 {
-    AutoOpacity autoOpacity(*painter, DISABLED_OPACITY, isInaccessibleNotHover(ctx));
-
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     QColor penColor = ctx.item->data(Qt::ForegroundRole).value<QColor>();
 #else
     QColor penColor = ctx.item->data(Qt::TextColorRole).value<QColor>();
 #endif
-    if (ctx.isSelected)
+    // We lighten the text color when the item is selected unless the item is inaccessible.
+    if (ctx.isSelected && (!isInaccessible(ctx) || isHover(ctx)))
         penColor = penColor.lighter();
     painter->setPen(QPen(penColor, 1));
     const auto textRect = getTextRect(ctx);
@@ -282,12 +280,24 @@ void LayerTreeItemDelegate::paint_drawText(QPainter* painter, const ItemPaintCon
     QString      elidedText = fm.elidedText(text, Qt::ElideRight, textRect.width());
 
     QRect boundingRect;
-    painter->drawText(
-        textRect, ctx.item->data(Qt::TextAlignmentRole).value<int>(), elidedText, &boundingRect);
-    if (ctx.isInvalid) {
-        int x = boundingRect.right() + DPIScale(4);
-        int y = boundingRect.top();
-        painter->drawPixmap(x, y, WARNING_IMAGE);
+    {
+        AutoOpacity autoOpacity(
+            *painter, DISABLED_OPACITY, isInaccessibleNotHover(ctx) && !ctx.isSelected);
+        painter->drawText(
+            textRect,
+            ctx.item->data(Qt::TextAlignmentRole).value<int>(),
+            elidedText,
+            &boundingRect);
+    }
+
+    {
+        AutoOpacity autoOpacity(*painter, DISABLED_OPACITY, isInaccessibleNotHover(ctx));
+
+        if (ctx.isInvalid) {
+            int x = boundingRect.right() + DPIScale(4);
+            int y = boundingRect.top();
+            painter->drawPixmap(x, y, WARNING_IMAGE);
+        }
     }
 }
 
@@ -312,7 +322,12 @@ void LayerTreeItemDelegate::paint_drawOneAction(
 
     const QPixmap* icon = nullptr;
     if (hover) {
-        icon = active ? &actionInfo._pixmap_on_hover : &actionInfo._pixmap_off_hover;
+        // The System-Lock icon should not have a hover state by design.
+        if (actionInfo._actionType == Lock && ctx.isSystemLocked) {
+            icon = &actionInfo._pixmap_on;
+        } else {
+            icon = active ? &actionInfo._pixmap_on_hover : &actionInfo._pixmap_off_hover;
+        }
         const_cast<LayerTreeItemDelegate*>(this)->_lastHitAction = actionInfo._name;
     } else {
         icon = active ? &actionInfo._pixmap_on : &actionInfo._pixmap_off;

@@ -588,11 +588,11 @@ void applyCommandRestriction(
             continue;
         }
 
-        // one reason for skipping the reference is to not clash
+        // one reason for skipping the references and payloads is to not clash
         // with the over that may be created in the stage's sessionLayer.
         // another reason is that one should be able to edit a referenced prim that
         // either as over/def as long as it has a primSpec in the selected edit target layer.
-        if (spec->HasReferences()) {
+        if (spec->HasReferences() || spec->HasPayloads()) {
             break;
         }
 

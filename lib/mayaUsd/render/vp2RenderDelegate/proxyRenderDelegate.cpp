@@ -890,6 +890,12 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
     }
 }
 
+void ProxyRenderDelegate::_PopulateCleanup()
+{
+    // Get rid of shaders no longer in use.
+    HdVP2ShaderUniquePtr::cleanupDeadShaders();
+}
+
 InstancePrototypePath ProxyRenderDelegate::GetPathInPrototype(const SdfPath& id)
 {
     HdInstancerContext instancerContext;
@@ -1264,6 +1270,7 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     if (_Populate()) {
         _UpdateSceneDelegate();
         _Execute(frameContext);
+        _PopulateCleanup();
     }
 
     _currentFrameContext = nullptr;

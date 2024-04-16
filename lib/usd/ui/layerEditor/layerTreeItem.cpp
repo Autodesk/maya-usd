@@ -32,8 +32,8 @@ LayerActionDefinitions LayerTreeItem::_actionButtons;
 
 static void createPixmapPair(const QString& name, QPixmap& normal, QPixmap& hover)
 {
-    normal = utils->createPNGResPixmap(utils->getDPIPixmapName(name));
-    hover = utils->createPNGResPixmap(utils->getDPIPixmapName(name + QString("_hover")));
+    normal = utils->createPNGResPixmap(name);
+    hover = utils->createPNGResPixmap(name + QString("_hover"));
 }
 
 const LayerActionDefinitions& LayerTreeItem::actionButtonsDefinition()
@@ -536,6 +536,7 @@ void LayerTreeItem::loadSubLayers(QWidget* in_parent)
                 UsdMayaUtilFileSystem::unmarkPathAsPostponedRelative(layer(), path);
             }
         }
+        context.hook()->refreshLayerSystemLock(layer(), true);
     }
 }
 

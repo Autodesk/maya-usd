@@ -73,6 +73,8 @@ const char* _exportAnnotationStr = "exportAnnotation";
 const char* _exportArgumentsStr = "exportArguments";
 const char* _hasExportUIStr = "hasExportUI";
 const char* _showExportUIStr = "showExportUI";
+const char* _hasImportUIStr = "hasImportUI";
+const char* _showImportUIStr = "showImportUI";
 const char* _importStr = "import";
 const char* _importAnnotationStr = "importAnnotation";
 const char* _importArgumentsStr = "importArguments";
@@ -128,6 +130,29 @@ MStatus MayaUSDListJobContextsCommand::doIt(const MArgList& args)
 
         setResult(convertDictionaryToText(
             info.exportUICallback(info.jobContext, parentUIStr.asChar(), inputSettings)));
+    } else if (argData.isFlagSet(_hasImportUIStr)) {
+        auto const& info = _GetInfo(argData, _hasImportUIStr);
+        setResult(bool(info.importUICallback != nullptr));
+    } else if (argData.isFlagSet(_showImportUIStr)) {
+        auto const& info = _GetInfo(argData, _showImportUIStr);
+        if (!info.importUICallback)
+            return MS::kInvalidParameter;
+
+        MString parentUIStr;
+        if (argData.getFlagArgument(_showImportUIStr, 1, parentUIStr) != MS::kSuccess)
+            return MS::kInvalidParameter;
+
+        MString settingsStr;
+        if (argData.getFlagArgument(_showImportUIStr, 2, settingsStr) != MS::kSuccess)
+            return MS::kInvalidParameter;
+
+        VtDictionary inputSettings;
+        if (UsdMayaJobImportArgs::GetDictionaryFromEncodedOptions(settingsStr, &inputSettings)
+            != MS::kSuccess)
+            return MS::kInvalidParameter;
+
+        setResult(convertDictionaryToText(
+            info.importUICallback(info.jobContext, parentUIStr.asChar(), inputSettings)));
     } else if (argData.isFlagSet(_importStr)) {
         for (auto const& c : UsdMayaJobContextRegistry::ListJobContexts()) {
             auto const& info = UsdMayaJobContextRegistry::GetJobContextInfo(c);
@@ -163,6 +188,8 @@ MSyntax MayaUSDListJobContextsCommand::createSyntax()
     syntax.addFlag("-eg", "-exportArguments", MSyntax::kString);
     syntax.addFlag("-heu", "-hasExportUI", MSyntax::kString);
     syntax.addFlag("-seu", "-showExportUI", MSyntax::kString, MSyntax::kString, MSyntax::kString);
+    syntax.addFlag("-hiu", "-hasImportUI", MSyntax::kString);
+    syntax.addFlag("-siu", "-showImportUI", MSyntax::kString, MSyntax::kString, MSyntax::kString);
     syntax.addFlag("-im", "-import", MSyntax::kNoArg);
     syntax.addFlag("-ia", "-importAnnotation", MSyntax::kString);
     syntax.addFlag("-ig", "-importArguments", MSyntax::kString);

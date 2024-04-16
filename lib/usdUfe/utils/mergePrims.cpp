@@ -54,7 +54,7 @@ struct MergeLocation
 {
     const SdfLayerHandle& layer;
     const SdfPath&        path;
-    const TfToken&        field;
+    TfToken               field;
     bool                  fieldExists;
 };
 

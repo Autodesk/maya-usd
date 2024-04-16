@@ -55,6 +55,13 @@ if (UFE_SCENEITEM_HAS_METADATA)
     )
 endif()
 
+if (UFE_CAMERA_HAS_RENDERABLE)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_CAMERA_HAS_RENDERABLE=1
+    )
+endif()
+
 if (UFE_CLIPBOARD_SUPPORT)
     target_sources(${PROJECT_NAME}
         PRIVATE

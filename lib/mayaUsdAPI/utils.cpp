@@ -124,4 +124,14 @@ bool requireUsdPathsRelativeToEditTargetLayer()
     return PXR_NS::UsdMayaUtilFileSystem::requireUsdPathsRelativeToEditTargetLayer();
 }
 
+std::string handleAssetPathThatMaybeRelativeToLayer(
+    std::string                   fileName,
+    const std::string&            attrName,
+    const PXR_NS::SdfLayerHandle& layer,
+    const std::string&            optionVarName)
+{
+    return PXR_NS::UsdMayaUtilFileSystem::handleAssetPathThatMaybeRelativeToLayer(
+        fileName, attrName, layer, optionVarName);
+}
+
 } // End of namespace MAYAUSDAPI_NS_DEF
