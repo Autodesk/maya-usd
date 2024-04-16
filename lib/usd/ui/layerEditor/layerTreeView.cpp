@@ -149,6 +149,9 @@ LayerTreeView::LayerTreeView(SessionState* in_sessionState, QWidget* in_parent)
 
     _refreshCallback = std::make_shared<LayerTreeViewRefreshCallback>(this);
     UsdUfe::registerUICallback(PXR_NS::TfToken("onRefreshSystemLock"), _refreshCallback);
+
+    TfWeakPtr<LayerTreeView> me(this);
+    _layerMutingNoticeKey = TfNotice::Register(me, &LayerTreeView::onLayerMutingChanged);
 }
 
 LayerTreeView::~LayerTreeView()
@@ -157,7 +160,12 @@ LayerTreeView::~LayerTreeView()
         UsdUfe::unregisterUICallback(PXR_NS::TfToken("onRefreshSystemLock"), _refreshCallback);
         _refreshCallback.reset();
     }
+
+    // Stop listening to layer muting.
+    TfNotice::Revoke(_layerMutingNoticeKey);
 }
+
+void LayerTreeView::onLayerMutingChanged(const UsdNotice::LayerMutingChanged&) { repaint(); }
 
 LayerTreeItem* LayerTreeView::layerItemFromIndex(const QModelIndex& index) const
 {
