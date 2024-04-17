@@ -261,6 +261,32 @@ class testUsdExportSkeleton(unittest.TestCase):
             cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
                            shadingMode='none', exportSkels='auto')
 
+    def testSkelExportWithNewRoot(self):
+        """
+        It is possible to export joints at scene root level if a new Xform root is created when exporting.
+        The new stage root will then be converted to a SkelRoot
+        """
+        mayaFile = os.path.join(self.inputPath, "UsdExportSkeletonTest", "UsdExportSkeletonAtSceneRoot.ma")
+        cmds.file(mayaFile, force=True, open=True)
+
+        usdFile = os.path.abspath('UsdExportSkeletonNewRootTest.usda')
+
+        cmds.usdExport(mergeTransformAndShape=True, file=usdFile, rootPrimType='xform', exportSkin='auto',
+            exportSkels="auto", rootPrim="testSkel", defaultPrim="testSkel")
+
+        stage = Usd.Stage.Open(usdFile)
+
+        skelRoot = UsdSkel.Root.Get(stage, '/testSkel')
+        self.assertTrue(skelRoot)
+
+        meshPrim = stage.GetPrimAtPath('/testSkel/pCube1')
+        self.assertTrue(meshPrim)
+
+        binding = UsdSkel.BindingAPI.Get(stage, meshPrim.GetPath())
+        self.assertTrue(binding)
+
+        skeleton = UsdSkel.Skeleton.Get(stage, '/testSkel/joint1')
+        self.assertTrue(skeleton.IsValid())
 
     def testSkelForSegfault(self):
         """

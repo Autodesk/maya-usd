@@ -87,8 +87,17 @@ PxrUsdTranslators_JointWriter::PxrUsdTranslators_JointWriter(
         return;
     }
 
-    SdfPath skelPath
+    SdfPath       skelPath = _GetExportArgs().rootPrim;
+    const SdfPath skeletonPath
         = UsdMayaJointUtil::getSkeletonPath(GetDagPath(), _GetExportArgs().stripNamespaces);
+    if (skelPath.IsEmpty()) {
+        skelPath = skeletonPath;
+    } else {
+        // SdfPath can only append relative path, so remove the '/' at the first index
+        const std::string skeletonPathString = skeletonPath.GetAsString();
+        skelPath = skelPath.AppendPath(
+            SdfPath { skeletonPathString.substr(1, skeletonPathString.size()) });
+    }
 
     _skel = UsdSkelSkeleton::Define(GetUsdStage(), skelPath);
     if (!TF_VERIFY(_skel)) {

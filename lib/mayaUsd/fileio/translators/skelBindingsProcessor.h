@@ -25,7 +25,6 @@
 
 #include <maya/MDagPath.h>
 
-#include <set>
 #include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -47,6 +46,9 @@ public:
     /// mark an invalid binding.
     void MarkBindings(const SdfPath& path, const SdfPath& skelPath, const TfToken& config);
 
+    /// Set the rootPrim path if defined by the user on export
+    void SetRootPrimPath(const SdfPath& rootPrimPath);
+
     /// Performs final processing for skel bindings.
     bool PostProcessSkelBindings(const UsdStagePtr& stage) const;
 
@@ -62,6 +64,8 @@ private:
     using _Entry = std::pair<SdfPath, TfToken>;
 
     std::unordered_map<SdfPath, _Entry, SdfPath::Hash> _bindingToSkelMap;
+
+    SdfPath mRootPrimPath;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
