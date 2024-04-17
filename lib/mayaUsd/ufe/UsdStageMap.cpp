@@ -94,7 +94,9 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 // Ensure that UsdStageMap is properly setup.
-static_assert(!std::has_virtual_destructor<UsdStageMap>::value);
+static_assert(
+    !std::has_virtual_destructor<UsdStageMap>::value,
+    "Class should not have virtual destructor");
 MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdStageMap);
 
 //------------------------------------------------------------------------------

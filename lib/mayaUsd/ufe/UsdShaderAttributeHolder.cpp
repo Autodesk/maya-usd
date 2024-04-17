@@ -39,8 +39,8 @@ namespace ufe {
 //------------------------------------------------------------------------------
 
 // Ensure that UsdShaderAttributeHolder is properly setup.
-static_assert(std::is_base_of<UsdAttributeHolder, UsdShaderAttributeHolder>::value);
-static_assert(std::has_virtual_destructor<UsdShaderAttributeHolder>::value);
+MAYAUSD_VERIFY_CLASS_BASE(UsdAttributeHolder, UsdShaderAttributeHolder);
+MAYAUSD_VERIFY_CLASS_VIRTUAL_DESTRUCTOR(UsdShaderAttributeHolder);
 
 UsdShaderAttributeHolder::UsdShaderAttributeHolder(
     PXR_NS::UsdPrim                   usdPrim,

@@ -753,14 +753,10 @@ UsdContextOps::SchemaNameMap UsdContextOps::getSchemaPluginNiceNames() const
     return schemaPluginNiceNames;
 }
 
-static_assert(
-    std::has_virtual_destructor<Ufe::CompositeUndoableCommand>::value,
-    "Destructor not virtual");
-static_assert(
-    std::is_base_of<
-        UsdBulkEditCompositeUndoableCommand::Parent,
-        UsdBulkEditCompositeUndoableCommand>::value,
-    "Verify base class");
+USDUFE_VERIFY_CLASS_VIRTUAL_DESTRUCTOR(Ufe::CompositeUndoableCommand);
+USDUFE_VERIFY_CLASS_BASE(
+    UsdBulkEditCompositeUndoableCommand::Parent,
+    UsdBulkEditCompositeUndoableCommand);
 
 void UsdBulkEditCompositeUndoableCommand::execute()
 {

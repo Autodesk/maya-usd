@@ -373,7 +373,7 @@ namespace USDUFE_NS_DEF {
 
 // Ensure that StagesSubject is properly setup.
 USDUFE_VERIFY_CLASS_SETUP(PXR_NS::TfRefBase, StagesSubject);
-static_assert(std::is_base_of<PXR_NS::TfWeakBase, StagesSubject>::value);
+USDUFE_VERIFY_CLASS_BASE(PXR_NS::TfWeakBase, StagesSubject);
 
 USDUFE_VERIFY_CLASS_NOT_MOVE_OR_COPY(AttributeChangedNotificationGuard);
 

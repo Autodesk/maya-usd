@@ -41,10 +41,9 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 // Ensure that UsdPointInstanceOrientationModifier is properly setup.
-static_assert(std::is_base_of<
-              UsdPointInstanceModifierBase<Ufe::Vector3d, PXR_NS::GfQuath>,
-              UsdPointInstanceOrientationModifier>::value);
-static_assert(std::has_virtual_destructor<UsdPointInstanceOrientationModifier>::value);
+using base = UsdPointInstanceModifierBase<Ufe::Vector3d, PXR_NS::GfQuath>;
+MAYAUSD_VERIFY_CLASS_BASE(base, UsdPointInstanceOrientationModifier);
+MAYAUSD_VERIFY_CLASS_VIRTUAL_DESTRUCTOR(UsdPointInstanceOrientationModifier);
 MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdPointInstanceOrientationModifier);
 
 /* override */

@@ -26,7 +26,7 @@ namespace ufe {
 
 // Ensure that UsdTransform3dRead is properly setup.
 MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Transform3dRead, UsdTransform3dRead);
-static_assert(std::is_base_of<UsdTransform3dReadImpl, UsdTransform3dRead>::value);
+MAYAUSD_VERIFY_CLASS_BASE(UsdTransform3dReadImpl, UsdTransform3dRead);
 
 UsdTransform3dRead::Ptr UsdTransform3dRead::create(const UsdSceneItem::Ptr& item)
 {

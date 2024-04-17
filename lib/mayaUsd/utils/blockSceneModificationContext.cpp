@@ -25,7 +25,7 @@ namespace MAYAUSD_NS_DEF {
 namespace utils {
 
 MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(BlockSceneModificationContext);
-static_assert(std::has_virtual_destructor<BlockSceneModificationContext>::value);
+MAYAUSD_VERIFY_CLASS_VIRTUAL_DESTRUCTOR(BlockSceneModificationContext);
 
 BlockSceneModificationContext::BlockSceneModificationContext()
 {

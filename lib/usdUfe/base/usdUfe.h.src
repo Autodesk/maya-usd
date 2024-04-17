@@ -66,6 +66,16 @@ static_assert(!std::is_move_constructible<TypeName>::value, \
 static_assert(!std::is_move_assignable<TypeName>::value,    \
               "Class should NOT be move assignable");
 
+// A macro to verify that a class base is setup correctly.
+#define USDUFE_VERIFY_CLASS_BASE(Base, TypeName)            \
+static_assert(std::is_base_of<Base, TypeName>::value,       \
+              "Class base not set correctly");
+
+// A macro to verify that a class has a virtual destructor.
+#define USDUFE_VERIFY_CLASS_VIRTUAL_DESTRUCTOR(TypeName)    \
+static_assert(std::has_virtual_destructor<TypeName>::value, \
+              "Class should have a virtual destructor");
+
 // A macro to verify that a class is not copyable or movable.
 #define USDUFE_VERIFY_CLASS_NOT_MOVE_OR_COPY(TypeName)      \
 static_assert(!std::is_copy_constructible<TypeName>::value, \

@@ -22,7 +22,7 @@ namespace ufe {
 
 // Ensure that UsdRotateUndoableCommand is properly setup.
 MAYAUSD_VERIFY_CLASS_SETUP(UsdTRSUndoableCommandBase<PXR_NS::GfVec3f>, UsdRotateUndoableCommand);
-static_assert(std::is_base_of<Ufe::RotateUndoableCommand, UsdRotateUndoableCommand>::value);
+MAYAUSD_VERIFY_CLASS_BASE(Ufe::RotateUndoableCommand, UsdRotateUndoableCommand);
 
 PXR_NS::TfToken UsdRotateUndoableCommand::rotXYZ("xformOp:rotateXYZ");
 

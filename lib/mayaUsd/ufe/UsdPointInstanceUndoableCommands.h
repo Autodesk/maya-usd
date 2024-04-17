@@ -133,7 +133,7 @@ public:
 };
 
 // Ensure that UsdPointInstanceTranslateUndoableCommand is properly setup.
-static_assert(std::has_virtual_destructor<UsdPointInstanceTranslateUndoableCommand>::value);
+MAYAUSD_VERIFY_CLASS_VIRTUAL_DESTRUCTOR(UsdPointInstanceTranslateUndoableCommand);
 MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdPointInstanceTranslateUndoableCommand);
 
 /// Undoable command for rotating USD point instances.
@@ -161,7 +161,7 @@ public:
 };
 
 // Ensure that UsdPointInstanceRotateUndoableCommand is properly setup.
-static_assert(std::has_virtual_destructor<UsdPointInstanceRotateUndoableCommand>::value);
+MAYAUSD_VERIFY_CLASS_VIRTUAL_DESTRUCTOR(UsdPointInstanceRotateUndoableCommand);
 MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdPointInstanceRotateUndoableCommand);
 
 /// Undoable command for scaling USD point instances.
@@ -189,7 +189,7 @@ public:
 };
 
 // Ensure that UsdPointInstanceScaleUndoableCommand is properly setup.
-static_assert(std::has_virtual_destructor<UsdPointInstanceScaleUndoableCommand>::value);
+MAYAUSD_VERIFY_CLASS_VIRTUAL_DESTRUCTOR(UsdPointInstanceScaleUndoableCommand);
 MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdPointInstanceScaleUndoableCommand);
 
 } // namespace ufe

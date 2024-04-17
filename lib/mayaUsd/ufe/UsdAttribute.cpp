@@ -465,7 +465,7 @@ PXR_NS::SdfValueTypeName UsdAttribute::usdAttributeType() const
 
 // Ensure that UsdAttributeGeneric is properly setup.
 MAYAUSD_VERIFY_CLASS_SETUP(Ufe::AttributeGeneric, UsdAttributeGeneric);
-static_assert(std::is_base_of<UsdAttribute, UsdAttributeGeneric>::value);
+MAYAUSD_VERIFY_CLASS_BASE(UsdAttribute, UsdAttributeGeneric);
 
 UsdAttributeGeneric::UsdAttributeGeneric(
     const UsdSceneItem::Ptr&   item,
@@ -502,7 +502,7 @@ const std::string& UsdAttributeGeneric::nativeSdrTypeMetadata()
 
 // Ensure that UsdAttributeFilename is properly setup.
 MAYAUSD_VERIFY_CLASS_SETUP(Ufe::AttributeFilename, UsdAttributeFilename);
-static_assert(std::is_base_of<UsdAttribute, UsdAttributeFilename>::value);
+MAYAUSD_VERIFY_CLASS_BASE(UsdAttribute, UsdAttributeFilename);
 
 UsdAttributeFilename::UsdAttributeFilename(
     const UsdSceneItem::Ptr&   item,
@@ -574,7 +574,7 @@ Ufe::UndoableCommand::Ptr UsdAttributeFilename::setCmd(const std::string& value)
 
 // Ensure that UsdAttributeEnumString is properly setup.
 MAYAUSD_VERIFY_CLASS_SETUP(Ufe::AttributeEnumString, UsdAttributeEnumString);
-static_assert(std::is_base_of<UsdAttribute, UsdAttributeEnumString>::value);
+MAYAUSD_VERIFY_CLASS_BASE(UsdAttribute, UsdAttributeEnumString);
 
 UsdAttributeEnumString::UsdAttributeEnumString(
     const UsdSceneItem::Ptr&   item,
@@ -646,7 +646,7 @@ Ufe::AttributeEnumString::EnumValues UsdAttributeEnumString::getEnumValues() con
 
 // Ensure that UsdAttributeEnumToken is properly setup.
 MAYAUSD_VERIFY_CLASS_SETUP(Ufe::AttributeEnumString, UsdAttributeEnumToken);
-static_assert(std::is_base_of<UsdAttribute, UsdAttributeEnumToken>::value);
+MAYAUSD_VERIFY_CLASS_BASE(UsdAttribute, UsdAttributeEnumToken);
 
 UsdAttributeEnumToken::UsdAttributeEnumToken(
     const UsdSceneItem::Ptr&   item,
@@ -915,7 +915,7 @@ UsdAttributeDouble::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UP
 
 // Ensure that UsdAttributeString is properly setup.
 MAYAUSD_VERIFY_CLASS_SETUP(Ufe::TypedAttribute<std::string>, UsdAttributeString);
-static_assert(std::is_base_of<UsdAttribute, UsdAttributeString>::value);
+MAYAUSD_VERIFY_CLASS_BASE(UsdAttribute, UsdAttributeString);
 
 UsdAttributeString::UsdAttributeString(
     const UsdSceneItem::Ptr&   item,
@@ -973,7 +973,7 @@ Ufe::UndoableCommand::Ptr UsdAttributeString::setCmd(const std::string& value)
 
 // Ensure that UsdAttributeToken is properly setup.
 MAYAUSD_VERIFY_CLASS_SETUP(Ufe::TypedAttribute<std::string>, UsdAttributeToken);
-static_assert(std::is_base_of<UsdAttribute, UsdAttributeToken>::value);
+MAYAUSD_VERIFY_CLASS_BASE(UsdAttribute, UsdAttributeToken);
 
 UsdAttributeToken::UsdAttributeToken(
     const UsdSceneItem::Ptr&   item,

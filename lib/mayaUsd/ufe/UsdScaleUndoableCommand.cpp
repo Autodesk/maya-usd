@@ -22,7 +22,7 @@ namespace ufe {
 
 // Ensure that UsdScaleUndoableCommand is properly setup.
 MAYAUSD_VERIFY_CLASS_SETUP(UsdTRSUndoableCommandBase<PXR_NS::GfVec3f>, UsdScaleUndoableCommand);
-static_assert(std::is_base_of<Ufe::ScaleUndoableCommand, UsdScaleUndoableCommand>::value);
+MAYAUSD_VERIFY_CLASS_BASE(Ufe::ScaleUndoableCommand, UsdScaleUndoableCommand);
 
 PXR_NS::TfToken UsdScaleUndoableCommand::scaleTok("xformOp:scale");
 
