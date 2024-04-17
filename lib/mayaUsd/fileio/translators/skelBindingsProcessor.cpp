@@ -97,7 +97,7 @@ static SdfPath _VerifyOrMakeSkelRoot(
         } else {
             if (path.IsRootPrimPath()) {
                 if (!rootPrimPath.IsEmpty()) {
-                    return SdfPath(rootPrimPath);
+                    return rootPrimPath;
                 }
                 // This is the most common problem when we can't obtain a
                 // SkelRoot.
