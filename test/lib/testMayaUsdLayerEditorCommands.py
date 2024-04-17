@@ -795,6 +795,7 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         self.assertFalse(topLayer.permissionToEdit)
         self.assertFalse(topLayer.permissionToSave)
         # 3- Attach callbacks to capture any system-lock changes due to refreshSystemLock
+        self.callCount = 0
         def refreshSystemLockCallback(context, callbackData):
             layerIds = callbackData.get('affectedLayerIds')
             # Check that only the top layers is affected
@@ -806,12 +807,27 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
             # Check that the sublayer is unchanged
             self.assertTrue(subLayer.permissionToEdit)
             self.assertTrue(subLayer.permissionToSave)
+            self.callCount = self.callCount + 1
         
-        from usdUfe import registerUICallback
+        from usdUfe import registerUICallback, unregisterUICallback
         mayaUsd.lib.registerUICallback('onRefreshSystemLock', refreshSystemLockCallback)        
         # 4- Refreshing the system lock should remove the lock but also get re-locked by refreshSystemLockCallback
         cmds.mayaUsdLayerEditor(topLayer.identifier, edit=True, refreshSystemLock=(proxyShapePath, 1))
-        
+        self.assertEqual(self.callCount, 1)
+
+        # 5- Unregistering the callback and refreshing the system lock should not call
+        #    call the callback again.
+        #
+        # Note: we must relock the layer for the callback to be called, otherwise it does not get
+        #       called as the status of the layer would not have changed during the refresh.
+        cmds.mayaUsdLayerEditor(topLayer.identifier, edit=True, lockLayer=(2, 0, proxyShapePath))
+        mayaUsd.lib.unregisterUICallback('onRefreshSystemLock', refreshSystemLockCallback)        
+        cmds.mayaUsdLayerEditor(topLayer.identifier, edit=True, refreshSystemLock=(proxyShapePath, 1))
+        self.assertEqual(self.callCount, 1)
+
+        # 6- Unregistering again should do nothing and not crash.
+        mayaUsd.lib.unregisterUICallback('onRefreshSystemLock', refreshSystemLockCallback)        
+
     def testMuteLayer(self):
         """ test 'mayaUsdLayerEditor' command 'muteLayer' paramater """
 

@@ -20,6 +20,8 @@
 #include "layerTreeViewStyle.h"
 #include "sessionState.h"
 
+#include <usdUfe/utils/uiCallback.h>
+
 #include <QtCore/QPointer>
 #include <QtWidgets/QTreeView>
 
@@ -72,6 +74,7 @@ class LayerTreeView : public QTreeView
 public:
     typedef QTreeView PARENT_CLASS;
     LayerTreeView(SessionState* in_sessionState, QWidget* in_parent);
+    ~LayerTreeView() override;
 
     // get properly typed item
     LayerTreeItem* layerItemFromIndex(const QModelIndex& index) const;
@@ -131,6 +134,8 @@ protected:
     LayerTreeItemDelegate*   _delegate;
 
     std::unique_ptr<LayerViewMemento> _cachedModelState;
+
+    UsdUfe::UICallback::Ptr _refreshCallback;
 
     // the mute button area has a different implementation than
     // the target button. It is based on Maya's renderSetup

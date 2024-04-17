@@ -1078,8 +1078,8 @@ private:
 
     void _notifySystemLockIsRefreshed()
     {
-        UsdUfe::UICallback::Ptr dstCallback = UsdUfe::getUICallback(TfToken("onRefreshSystemLock"));
-        if (!dstCallback)
+        auto dstCallbacks = UsdUfe::getUICallbacks(TfToken("onRefreshSystemLock"));
+        if (dstCallbacks.size() == 0)
             return;
 
         PXR_NS::VtDictionary callbackContext;
@@ -1095,7 +1095,8 @@ private:
         VtStringArray lockedArray(affectedLayers.begin(), affectedLayers.end());
         callbackData["affectedLayerIds"] = lockedArray;
 
-        (*dstCallback)(callbackContext, callbackData);
+        for (UsdUfe::UICallback::Ptr& dstCallback : dstCallbacks)
+            (*dstCallback)(callbackContext, callbackData);
     }
 
     UsdStageWeakPtr getStage()
