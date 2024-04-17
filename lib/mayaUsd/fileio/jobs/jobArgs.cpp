@@ -909,8 +909,15 @@ MStatus UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
                         return MS::kFailure;
                     }
                 }
+
+                // Note: when round-tripping settings, some extra settings are not part
+                //       of the guiding dictionary. Ignore them.
+                const static bool reportError = false;
                 userArgs[argName] = UsdMayaUtil::ParseArgumentValue(
-                    argName, theOption[1].asChar(), UsdMayaJobExportArgs::GetGuideDictionary());
+                    argName,
+                    theOption[1].asChar(),
+                    UsdMayaJobExportArgs::GetGuideDictionary(),
+                    reportError);
             }
         }
     }
@@ -1241,8 +1248,15 @@ MStatus UsdMayaJobImportArgs::GetDictionaryFromEncodedOptions(
             // Note: if some argument needs special handling, do like in the
             //       same function in the export version in UsdMayaJobExportArgs
             std::string argName(theOption[0].asChar());
+
+            // Note: when round-tripping settings, some extra settings are not part
+            //       of the guiding dictionary. Ignore them.
+            const static bool reportError = false;
             userArgs[argName] = UsdMayaUtil::ParseArgumentValue(
-                argName, theOption[1].asChar(), UsdMayaJobExportArgs::GetGuideDictionary());
+                argName,
+                theOption[1].asChar(),
+                UsdMayaJobImportArgs::GetGuideDictionary(),
+                reportError);
         }
     }
 

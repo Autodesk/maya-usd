@@ -187,6 +187,8 @@ global proc mayaUSDRegisterStrings()
     register("kExportRootPrimTypeLbl", "Root Prim Type:");
     register("kExportScopeLbl", "Scope");
     register("kExportXformLbl", "Xform");
+    register("kExportScopeAnn", "scope");
+    register("kExportXformAnn", "xform");
     register("kExportSkelsAnn", "Exports Maya joints as part of a USD skeleton.");
     register("kExportSkelsLbl", "Skeletons:");
     register("kExportSkelsNoneLbl", "None");

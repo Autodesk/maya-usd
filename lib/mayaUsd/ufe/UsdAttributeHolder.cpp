@@ -183,6 +183,19 @@ bool UsdAttributeHolder::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode t
     return _usdAttr.Set(value, time);
 }
 
+bool UsdAttributeHolder::isDefault()
+{
+    // Checks both authored default value and authored time samples
+    return !_usdAttr.HasAuthoredValue();
+}
+
+void UsdAttributeHolder::reset()
+{
+    // Will clear all values, including time samples.
+    _usdAttr.Clear();
+    _usdAttr.GetPrim().RemoveProperty(_usdAttr.GetName());
+}
+
 bool UsdAttributeHolder::hasValue() const { return isValid() ? _usdAttr.HasValue() : false; }
 
 std::string UsdAttributeHolder::name() const

@@ -50,7 +50,7 @@ done through the following JSON properties:
 
 - `Name`: the name of the plugin file, either a DLL or Python module.
   This name must not contain the file extension.
-- `Type`: the type of plugin, either `library` for a DLL or `python for Python.
+- `Type`: the type of plugin, either `library` for a DLL or `python` for Python.
 - `Root`: the root of all other file paths, this root being relative to where
   the JSON file itself is located. We specify `..` here as the Python code lives
   in the parent folder.
@@ -124,7 +124,7 @@ lead to your plugin. The chain of reference is as follow:
 
 ### As a extra plugin inside the MayaUSD installation
 
-The final way to auto-load the export plugin is to install it within the MayaUS
+The final way to auto-load the export plugin is to install it within the MayaUSD
 plugin itself. It is similar to the stand-alone method above, but a little bit
 simpler:
 

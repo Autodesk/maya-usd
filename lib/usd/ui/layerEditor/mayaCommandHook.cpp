@@ -208,8 +208,13 @@ void MayaCommandHook::lockLayer(
     MayaUsd::LayerLockType lockState,
     bool                   includeSubLayers)
 {
+    // Per design, we refuse to change the lock state of system-locked
+    // layers through the UI.
+    if (MayaUsd::isLayerSystemLocked(usdLayer))
+        return;
+
     std::string cmd;
-    cmd = "mayaUsdLayerEditor -edit -lockLayer ";
+    cmd = "mayaUsdLayerEditor -edit -skipSystemLocked -lockLayer ";
     cmd += std::to_string(lockState);
     cmd += includeSubLayers ? " 1" : " 0";
     cmd += quote(proxyShapePath());

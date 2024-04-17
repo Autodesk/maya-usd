@@ -99,7 +99,6 @@ PxrUsdTranslators_JointWriter::PxrUsdTranslators_JointWriter(
             SdfPath { skeletonPathString.substr(1, skeletonPathString.size()) });
     }
 
-    _skel = UsdSkelSkeleton::Define(GetUsdStage(), skelPath);
     if (!TF_VERIFY(_skel)) {
         return;
     }
@@ -482,8 +481,8 @@ bool PxrUsdTranslators_JointWriter::_WriteRestState()
     UsdMayaJointUtil::getJointHierarchyComponents(
         GetDagPath(), &_skelXformPath, &_jointHierarchyRootPath, &_joints);
 
-    VtTokenArray skelJointNames
-        = UsdMayaJointUtil::getJointNames(_joints, GetDagPath(), _GetExportArgs().stripNamespaces);
+    VtTokenArray skelJointNames = UsdMayaJointUtil::getJointNames(
+        _joints, GetDagPath(), _GetExportArgs().stripNamespaces, _GetExportArgs().rootMapFunction);
     _topology = UsdSkelTopology(skelJointNames);
     std::string whyNotValid;
     if (!_topology.Validate(&whyNotValid)) {

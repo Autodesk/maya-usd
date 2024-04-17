@@ -23,7 +23,7 @@ from maya.api import OpenMaya as OM
 
 from pxr import Gf, Sdf, Tf, Usd, UsdGeom, UsdSkel, UsdUtils, Vt
 
-import fixturesUtils
+import fixturesUtils, testUtils
 
 class testUsdExportSkeleton(unittest.TestCase):
 
@@ -330,6 +330,35 @@ class testUsdExportSkeleton(unittest.TestCase):
                 [Gf.Matrix4d( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 2, 1) ),
                  Gf.Matrix4d( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 3, 0, 1) ),
                  Gf.Matrix4d( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (5, 0, 0, 1) )]))
+    
+    def testPartialSkeletonExport(self):
+        """
+        Test exporting only selected joints inside a hierarchy.
+        """
+        mayaFile = os.path.join(self.inputPath, "UsdExportSkeletonTest", "UsdExportPartialSkeleton.ma")
+        cmds.file(mayaFile, force=True, open=True)
+
+        with testUtils.TemporaryDirectory(prefix='UsdExportPartialSkeleton') as testDir:
+            pathToSave = "{}/partialJoints.usda".format(testDir)
+            
+            cmds.select("jointsGrp", r=True)
+            kwargs = {
+                "f": pathToSave,
+                "sl": True,
+                "worldspace": True,
+                "stripNamespaces" : True,
+                "shadingMode":"none",
+                "exportRoots":("jointsGrp",),
+                "exportSkels":"auto",
+            }
+            cmds.mayaUSDExport(**kwargs)
+                
+            cmds.file(new=True, force=True)
+            cmds.mayaUSDImport(f=pathToSave)
+            
+            self.assertEqual(cmds.ls("jointsGrp", l=True),  ['|jointsGrp'])
+            self.assertEqual(cmds.listRelatives('|jointsGrp', ad=True),  ['joint3', 'joint2', 'joint1', 'aJoint'])
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

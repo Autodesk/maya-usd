@@ -144,5 +144,30 @@ class PayloadCommandsTestCase(unittest.TestCase):
         cmd.redo()
         self.assertTrue(prim.IsLoaded())
 
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Delete restriction on delete requires Maya 2023 or greater.')
+    def testDeletePrimContainingPayload(self):
+        '''
+        Test adding a payload to a prim, then deleting that prim.
+        '''
+        # Get the session layer
+        prim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A")
+
+        self.assertFalse(prim.HasPayload())
+
+        payloadFile = testUtils.getTestScene('twoSpheres', 'sphere.usda')
+        cmd = usdUfe.AddPayloadCommand(prim, payloadFile, True)
+        self.assertIsNotNone(cmd)
+
+        # Verify state after add payload
+        cmd.execute()
+        self.assertTrue(prim.HasPayload())
+        self.assertTrue(prim.IsLoaded())
+
+        # Delete the prim containing the payload. The payload should not block deletion.
+        cmds.delete("|stage1|stageShape1,/A")
+        prim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A")
+        self.assertFalse(prim)
+        
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
