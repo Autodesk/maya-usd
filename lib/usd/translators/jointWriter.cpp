@@ -87,18 +87,15 @@ PxrUsdTranslators_JointWriter::PxrUsdTranslators_JointWriter(
         return;
     }
 
-    SdfPath       skelPath = _GetExportArgs().rootPrim;
-    const SdfPath skeletonPath
+    const SdfPath skelRootPath = _GetExportArgs().rootPrim;
+    SdfPath       skeletonPath
         = UsdMayaJointUtil::getSkeletonPath(GetDagPath(), _GetExportArgs().stripNamespaces);
-    if (skelPath.IsEmpty()) {
-        skelPath = skeletonPath;
-    } else {
+    if (!skelRootPath.IsEmpty()) {
         // SdfPath can only append relative path, so remove the '/' at the first index
-        const std::string skeletonPathString = skeletonPath.GetAsString();
-        skelPath = skelPath.AppendPath(
-            SdfPath { skeletonPathString.substr(1, skeletonPathString.size()) });
+        skeletonPath = skeletonPath.ReplacePrefix(SdfPath("/"), skelRootPath);
     }
 
+    _skel = UsdSkelSkeleton::Define(GetUsdStage(), skeletonPath);
     if (!TF_VERIFY(_skel)) {
         return;
     }

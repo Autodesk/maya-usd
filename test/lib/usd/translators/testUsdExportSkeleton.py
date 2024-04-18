@@ -286,7 +286,7 @@ class testUsdExportSkeleton(unittest.TestCase):
         self.assertTrue(binding)
 
         skeleton = UsdSkel.Skeleton.Get(stage, '/testSkel/joint1')
-        self.assertTrue(skeleton.IsValid())
+        self.assertTrue(skeleton)
 
     def testSkelForSegfault(self):
         """

@@ -490,14 +490,12 @@ MObject UsdMayaJointUtil::writeSkinningData(
     }
 
     UsdMayaJointUtil::warnForPostDeformationTransform(usdPath, dagPath, skinCluster);
-    auto jointRootPath = UsdMayaJointUtil::getSkeletonPath(rootJoint, stripNamespaces);
+    SdfPath jointRootPath = UsdMayaJointUtil::getSkeletonPath(rootJoint, stripNamespaces);
     if (skelPath.IsEmpty()) {
         skelPath = jointRootPath;
     } else {
         // SdfPath can only append relative path, so remove the '/' at the first index
-        const std::string jointRootPathString = jointRootPath.GetAsString();
-        skelPath = skelPath.AppendPath(
-            SdfPath { jointRootPathString.substr(1, jointRootPathString.size()) });
+        skelPath = jointRootPath.ReplacePrefix(SdfPath("/"), skelPath);
     }
 
     // Export will create a Skeleton at the location corresponding to
