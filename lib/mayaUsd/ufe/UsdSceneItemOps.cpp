@@ -25,13 +25,13 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::SceneItemOps, UsdSceneItemOps);
+
 UsdSceneItemOps::UsdSceneItemOps(const UsdSceneItem::Ptr& item)
     : Ufe::SceneItemOps()
     , fItem(item)
 {
 }
-
-UsdSceneItemOps::~UsdSceneItemOps() { }
 
 /*static*/
 UsdSceneItemOps::Ptr UsdSceneItemOps::create(const UsdSceneItem::Ptr& item)

@@ -41,13 +41,8 @@ public:
         const PXR_NS::SdrShaderNodeConstPtr shaderNodeDef,
         const UsdSceneItem::Ptr&            parentItem,
         const Ufe::PathComponent&           name);
-    ~UsdUndoCreateFromNodeDefCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUndoCreateFromNodeDefCommand(const UsdUndoCreateFromNodeDefCommand&) = delete;
-    UsdUndoCreateFromNodeDefCommand& operator=(const UsdUndoCreateFromNodeDefCommand&) = delete;
-    UsdUndoCreateFromNodeDefCommand(UsdUndoCreateFromNodeDefCommand&&) = delete;
-    UsdUndoCreateFromNodeDefCommand& operator=(UsdUndoCreateFromNodeDefCommand&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoCreateFromNodeDefCommand);
 
     //! Create a UsdUndoCreateFromNodeDefCommand from a USD scene item and a UFE path component.
     static UsdUndoCreateFromNodeDefCommand::Ptr create(

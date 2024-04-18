@@ -36,13 +36,8 @@ public:
     typedef std::shared_ptr<ProxyShapeSceneSegmentHandler> Ptr;
 
     ProxyShapeSceneSegmentHandler(const Ufe::SceneSegmentHandler::Ptr& mayaSceneSegmentHandler);
-    ~ProxyShapeSceneSegmentHandler() override;
 
-    // Delete the copy/move constructors assignment operators.
-    ProxyShapeSceneSegmentHandler(const ProxyShapeSceneSegmentHandler&) = delete;
-    ProxyShapeSceneSegmentHandler& operator=(const ProxyShapeSceneSegmentHandler&) = delete;
-    ProxyShapeSceneSegmentHandler(ProxyShapeSceneSegmentHandler&&) = delete;
-    ProxyShapeSceneSegmentHandler& operator=(ProxyShapeSceneSegmentHandler&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ProxyShapeSceneSegmentHandler);
 
     //! Create a ProxyShapeSceneSegmentHandler from a UFE scene segment handler.
     static ProxyShapeSceneSegmentHandler::Ptr

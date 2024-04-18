@@ -36,10 +36,7 @@ class MAYAUSD_CORE_PUBLIC UsdScaleUndoableCommand
 public:
     typedef std::shared_ptr<UsdScaleUndoableCommand> Ptr;
 
-    UsdScaleUndoableCommand(const UsdScaleUndoableCommand&) = delete;
-    UsdScaleUndoableCommand& operator=(const UsdScaleUndoableCommand&) = delete;
-    UsdScaleUndoableCommand(UsdScaleUndoableCommand&&) = delete;
-    UsdScaleUndoableCommand& operator=(UsdScaleUndoableCommand&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdScaleUndoableCommand);
 
     //! Create a UsdScaleUndoableCommand from a UFE scene path.  The command is
     //! not executed.
@@ -55,7 +52,6 @@ public:
 protected:
     //! Construct a UsdScaleUndoableCommand.  The command is not executed.
     UsdScaleUndoableCommand(const Ufe::Path& path, double x, double y, double z);
-    ~UsdScaleUndoableCommand() override;
 
 private:
     static PXR_NS::TfToken scaleTok;

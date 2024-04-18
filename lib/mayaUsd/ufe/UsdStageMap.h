@@ -93,11 +93,7 @@ private:
     UsdStageMap();
     ~UsdStageMap();
 
-    // Delete the copy/move constructors assignment operators.
-    UsdStageMap(const UsdStageMap&) = delete;
-    UsdStageMap& operator=(const UsdStageMap&) = delete;
-    UsdStageMap(UsdStageMap&&) = delete;
-    UsdStageMap& operator=(UsdStageMap&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdStageMap);
 
     void addItem(const Ufe::Path& path);
     bool rebuildIfDirty();

@@ -120,6 +120,8 @@ public:
     UsdAttribute(UsdAttributeHolder::UPtr&& attrHolder);
     ~UsdAttribute() = default;
 
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdAttribute);
+
     inline bool isAuthored() const { return _attrHolder->isAuthored(); }
     inline bool isValid() const { return _attrHolder->isValid(); }
     std::string isEditAllowedMsg() const;

@@ -24,6 +24,8 @@
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdUndoReorderCommand);
+
 UsdUndoReorderCommand::UsdUndoReorderCommand(
     const UsdPrim&              parentPrim,
     const std::vector<TfToken>& tokenList)
@@ -37,8 +39,6 @@ UsdUndoReorderCommand::UsdUndoReorderCommand(
         break;
     }
 }
-
-UsdUndoReorderCommand::~UsdUndoReorderCommand() { }
 
 UsdUndoReorderCommand::Ptr
 UsdUndoReorderCommand::create(const UsdPrim& parentPrim, const std::vector<TfToken>& tokenList)

@@ -26,12 +26,7 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdShaderNodeDefHandler::UsdShaderNodeDefHandler()
-    : Ufe::NodeDefHandler()
-{
-}
-
-UsdShaderNodeDefHandler::~UsdShaderNodeDefHandler() { }
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::NodeDefHandler, UsdShaderNodeDefHandler);
 
 UsdShaderNodeDefHandler::Ptr UsdShaderNodeDefHandler::create()
 {

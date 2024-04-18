@@ -332,6 +332,8 @@ namespace ufe {
 // UsdAttribute:
 //------------------------------------------------------------------------------
 
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdAttribute);
+
 UsdAttribute::UsdAttribute(UsdAttributeHolder::UPtr&& attrHolder)
     : _attrHolder(std::move(attrHolder))
 {
@@ -461,6 +463,10 @@ PXR_NS::SdfValueTypeName UsdAttribute::usdAttributeType() const
 // UsdAttributeGeneric:
 //------------------------------------------------------------------------------
 
+// Ensure that UsdAttributeGeneric is properly setup.
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::AttributeGeneric, UsdAttributeGeneric);
+MAYAUSD_VERIFY_CLASS_BASE(UsdAttribute, UsdAttributeGeneric);
+
 UsdAttributeGeneric::UsdAttributeGeneric(
     const UsdSceneItem::Ptr&   item,
     UsdAttributeHolder::UPtr&& attrHolder)
@@ -493,6 +499,10 @@ const std::string& UsdAttributeGeneric::nativeSdrTypeMetadata()
 //------------------------------------------------------------------------------
 // UsdAttributeFilename:
 //------------------------------------------------------------------------------
+
+// Ensure that UsdAttributeFilename is properly setup.
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::AttributeFilename, UsdAttributeFilename);
+MAYAUSD_VERIFY_CLASS_BASE(UsdAttribute, UsdAttributeFilename);
 
 UsdAttributeFilename::UsdAttributeFilename(
     const UsdSceneItem::Ptr&   item,
@@ -562,6 +572,10 @@ Ufe::UndoableCommand::Ptr UsdAttributeFilename::setCmd(const std::string& value)
 // UsdAttributeEnumString:
 //------------------------------------------------------------------------------
 
+// Ensure that UsdAttributeEnumString is properly setup.
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::AttributeEnumString, UsdAttributeEnumString);
+MAYAUSD_VERIFY_CLASS_BASE(UsdAttribute, UsdAttributeEnumString);
+
 UsdAttributeEnumString::UsdAttributeEnumString(
     const UsdSceneItem::Ptr&   item,
     UsdAttributeHolder::UPtr&& attrHolder)
@@ -629,6 +643,10 @@ Ufe::AttributeEnumString::EnumValues UsdAttributeEnumString::getEnumValues() con
 //------------------------------------------------------------------------------
 // UsdAttributeEnumToken:
 //------------------------------------------------------------------------------
+
+// Ensure that UsdAttributeEnumToken is properly setup.
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::AttributeEnumString, UsdAttributeEnumToken);
+MAYAUSD_VERIFY_CLASS_BASE(UsdAttribute, UsdAttributeEnumToken);
 
 UsdAttributeEnumToken::UsdAttributeEnumToken(
     const UsdSceneItem::Ptr&   item,
@@ -839,6 +857,8 @@ template <typename T> void TypedUsdAttribute<T>::set(const T& value)
 // UsdAttributeBool:
 //------------------------------------------------------------------------------
 
+MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<bool>, UsdAttributeBool);
+
 /*static*/
 UsdAttributeBool::Ptr
 UsdAttributeBool::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder)
@@ -850,6 +870,8 @@ UsdAttributeBool::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr
 //------------------------------------------------------------------------------
 // UsdAttributeInt:
 //------------------------------------------------------------------------------
+
+MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<int>, UsdAttributeInt);
 
 /*static*/
 UsdAttributeInt::Ptr
@@ -863,6 +885,8 @@ UsdAttributeInt::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&
 // UsdAttributeFloat:
 //------------------------------------------------------------------------------
 
+MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<float>, UsdAttributeFloat);
+
 /*static*/
 UsdAttributeFloat::Ptr
 UsdAttributeFloat::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder)
@@ -875,6 +899,8 @@ UsdAttributeFloat::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPt
 // UsdAttributeDouble:
 //------------------------------------------------------------------------------
 
+MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<double>, UsdAttributeDouble);
+
 /*static*/
 UsdAttributeDouble::Ptr
 UsdAttributeDouble::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder)
@@ -886,6 +912,10 @@ UsdAttributeDouble::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UP
 //------------------------------------------------------------------------------
 // UsdAttributeString:
 //------------------------------------------------------------------------------
+
+// Ensure that UsdAttributeString is properly setup.
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::TypedAttribute<std::string>, UsdAttributeString);
+MAYAUSD_VERIFY_CLASS_BASE(UsdAttribute, UsdAttributeString);
 
 UsdAttributeString::UsdAttributeString(
     const UsdSceneItem::Ptr&   item,
@@ -941,6 +971,10 @@ Ufe::UndoableCommand::Ptr UsdAttributeString::setCmd(const std::string& value)
 // UsdAttributeToken:
 //------------------------------------------------------------------------------
 
+// Ensure that UsdAttributeToken is properly setup.
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::TypedAttribute<std::string>, UsdAttributeToken);
+MAYAUSD_VERIFY_CLASS_BASE(UsdAttribute, UsdAttributeToken);
+
 UsdAttributeToken::UsdAttributeToken(
     const UsdSceneItem::Ptr&   item,
     UsdAttributeHolder::UPtr&& attrHolder)
@@ -995,6 +1029,8 @@ Ufe::UndoableCommand::Ptr UsdAttributeToken::setCmd(const std::string& value)
 // UsdAttributeColorFloat3:
 //------------------------------------------------------------------------------
 
+MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Color3f>, UsdAttributeColorFloat3);
+
 /*static*/
 UsdAttributeColorFloat3::Ptr UsdAttributeColorFloat3::create(
     const UsdSceneItem::Ptr&   item,
@@ -1008,6 +1044,8 @@ UsdAttributeColorFloat3::Ptr UsdAttributeColorFloat3::create(
 //------------------------------------------------------------------------------
 // UsdAttributeColorFloat4:
 //------------------------------------------------------------------------------
+
+MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Color4f>, UsdAttributeColorFloat4);
 
 /*static*/
 UsdAttributeColorFloat4::Ptr UsdAttributeColorFloat4::create(
@@ -1023,6 +1061,8 @@ UsdAttributeColorFloat4::Ptr UsdAttributeColorFloat4::create(
 // UsdAttributeInt3:
 //------------------------------------------------------------------------------
 
+MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Vector3i>, UsdAttributeInt3);
+
 /*static*/
 UsdAttributeInt3::Ptr
 UsdAttributeInt3::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder)
@@ -1035,6 +1075,8 @@ UsdAttributeInt3::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr
 //------------------------------------------------------------------------------
 // UsdAttributeFloat2:
 //------------------------------------------------------------------------------
+
+MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Vector2f>, UsdAttributeFloat2);
 
 /*static*/
 UsdAttributeFloat2::Ptr
@@ -1049,6 +1091,8 @@ UsdAttributeFloat2::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UP
 // UsdAttributeFloat3:
 //------------------------------------------------------------------------------
 
+MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Vector3f>, UsdAttributeFloat3);
+
 /*static*/
 UsdAttributeFloat3::Ptr
 UsdAttributeFloat3::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder)
@@ -1061,6 +1105,8 @@ UsdAttributeFloat3::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UP
 //------------------------------------------------------------------------------
 // UsdAttributeFloat4:
 //------------------------------------------------------------------------------
+
+MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Vector4f>, UsdAttributeFloat4);
 
 /*static*/
 UsdAttributeFloat4::Ptr
@@ -1075,6 +1121,8 @@ UsdAttributeFloat4::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UP
 // UsdAttributeDouble3:
 //------------------------------------------------------------------------------
 
+MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Vector3d>, UsdAttributeDouble3);
+
 /*static*/
 UsdAttributeDouble3::Ptr
 UsdAttributeDouble3::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder)
@@ -1088,6 +1136,8 @@ UsdAttributeDouble3::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::U
 // UsdAttributeMatrix3d:
 //------------------------------------------------------------------------------
 
+MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Matrix3d>, UsdAttributeMatrix3d);
+
 /*static*/
 UsdAttributeMatrix3d::Ptr
 UsdAttributeMatrix3d::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder)
@@ -1099,6 +1149,8 @@ UsdAttributeMatrix3d::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::
 //------------------------------------------------------------------------------
 // UsdAttributeMatrix4d:
 //------------------------------------------------------------------------------
+
+MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Matrix4d>, UsdAttributeMatrix4d);
 
 /*static*/
 UsdAttributeMatrix4d::Ptr

@@ -24,6 +24,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(UsdUfe::UsdHierarchy, UsdRootChildHierarchy);
+
 //------------------------------------------------------------------------------
 // Global variables
 //------------------------------------------------------------------------------
@@ -33,8 +35,6 @@ UsdRootChildHierarchy::UsdRootChildHierarchy(const UsdSceneItem::Ptr& item)
     : UsdHierarchy(item)
 {
 }
-
-UsdRootChildHierarchy::~UsdRootChildHierarchy() { }
 
 /*static*/
 UsdRootChildHierarchy::Ptr UsdRootChildHierarchy::create(const UsdSceneItem::Ptr& item)

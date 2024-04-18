@@ -15,6 +15,8 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::UINodeGraphNodeHandler, UsdUINodeGraphNodeHandler);
+
 UsdUINodeGraphNodeHandler::Ptr UsdUINodeGraphNodeHandler::create()
 {
     return std::make_shared<UsdUINodeGraphNodeHandler>();

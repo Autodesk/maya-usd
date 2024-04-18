@@ -18,12 +18,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdMaterialHandler::UsdMaterialHandler()
-    : Ufe::MaterialHandler()
-{
-}
-
-UsdMaterialHandler::~UsdMaterialHandler() { }
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::MaterialHandler, UsdMaterialHandler);
 
 /*static*/
 UsdMaterialHandler::Ptr UsdMaterialHandler::create()

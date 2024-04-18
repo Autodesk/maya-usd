@@ -32,15 +32,10 @@ class USDUFE_PUBLIC UsdCamera : public Ufe::Camera
 public:
     typedef std::shared_ptr<UsdCamera> Ptr;
 
-    UsdCamera();
+    UsdCamera() = default;
     UsdCamera(const UsdSceneItem::Ptr& item);
-    ~UsdCamera() override = default;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdCamera(const UsdCamera&) = delete;
-    UsdCamera& operator=(const UsdCamera&) = delete;
-    UsdCamera(UsdCamera&&) = delete;
-    UsdCamera& operator=(UsdCamera&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdCamera);
 
     //! Create a UsdCamera.
     static UsdCamera::Ptr create(const UsdSceneItem::Ptr& item);

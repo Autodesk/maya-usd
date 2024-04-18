@@ -33,6 +33,8 @@ const std::string ProxyShapeHandler::fMayaUsdGatewayNodeType = "mayaUsdProxyShap
 // ProxyShapeHandler
 //------------------------------------------------------------------------------
 
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(ProxyShapeHandler);
+
 /*static*/
 const std::string& ProxyShapeHandler::gatewayNodeType() { return fMayaUsdGatewayNodeType; }
 

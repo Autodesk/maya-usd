@@ -46,6 +46,13 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+// Ensure that UsdUndoDuplicateCommand is properly setup.
+#ifdef UFE_V4_FEATURES_AVAILABLE
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::SceneItemResultUndoableCommand, UsdUndoDuplicateCommand);
+#else
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdUndoDuplicateCommand);
+#endif
+
 UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(const UsdSceneItem::Ptr& srcItem)
 #ifdef UFE_V4_FEATURES_AVAILABLE
     : Ufe::SceneItemResultUndoableCommand()
@@ -64,8 +71,6 @@ UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(const UsdSceneItem::Ptr& srcIte
     if (primSpec)
         _srcLayer = primSpec->GetLayer();
 }
-
-UsdUndoDuplicateCommand::~UsdUndoDuplicateCommand() { }
 
 UsdUndoDuplicateCommand::Ptr UsdUndoDuplicateCommand::create(const UsdSceneItem::Ptr& srcItem)
 {

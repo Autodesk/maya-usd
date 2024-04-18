@@ -166,6 +166,8 @@ public:
     }
 };
 
+MAYAUSD_VERIFY_CLASS_SETUP(UsdSetXformOpUndoableCommandBase, MatrixOpUndoableCmdBase);
+
 // Command to set the translation on a scene item by setting a matrix transform
 // op at an arbitrary position in the transform op stack.
 class MatrixOpTranslateUndoableCmd : public MatrixOpUndoableCmdBase
@@ -279,6 +281,8 @@ private:
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
+
+MAYAUSD_VERIFY_CLASS_SETUP(UsdTransform3dBase, UsdTransform3dMatrixOp);
 
 UsdTransform3dMatrixOp::UsdTransform3dMatrixOp(
     const UsdSceneItem::Ptr& item,

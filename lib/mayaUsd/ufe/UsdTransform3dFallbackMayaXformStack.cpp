@@ -239,6 +239,8 @@ Ufe::Transform3d::Ptr createEditTransform3d(const Ufe::SceneItem::Ptr& item)
 
 } // namespace
 
+MAYAUSD_VERIFY_CLASS_SETUP(UsdTransform3dMayaXformStack, UsdTransform3dFallbackMayaXformStack);
+
 UsdTransform3dFallbackMayaXformStack::UsdTransform3dFallbackMayaXformStack(
     const UsdSceneItem::Ptr& item)
     : UsdTransform3dMayaXformStack(item)
@@ -347,6 +349,8 @@ Ufe::Matrix4d UsdTransform3dFallbackMayaXformStack::segmentExclusiveMatrix() con
 //------------------------------------------------------------------------------
 // UsdTransform3dFallbackMayaXformStackHandler
 //------------------------------------------------------------------------------
+
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Transform3dHandler, UsdTransform3dFallbackMayaXformStackHandler);
 
 UsdTransform3dFallbackMayaXformStackHandler::UsdTransform3dFallbackMayaXformStackHandler()
     : Ufe::Transform3dHandler()

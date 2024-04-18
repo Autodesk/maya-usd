@@ -32,13 +32,6 @@ public:
     using Ptr = std::shared_ptr<MayaUsdObject3d>;
 
     MayaUsdObject3d(const UsdSceneItem::Ptr& item);
-    ~MayaUsdObject3d() override;
-
-    // Delete the copy/move constructors assignment operators.
-    MayaUsdObject3d(const MayaUsdObject3d&) = delete;
-    MayaUsdObject3d& operator=(const MayaUsdObject3d&) = delete;
-    MayaUsdObject3d(MayaUsdObject3d&&) = delete;
-    MayaUsdObject3d& operator=(MayaUsdObject3d&&) = delete;
 
     //! Create a MayaUsdObject3d.
     static MayaUsdObject3d::Ptr create(const UsdSceneItem::Ptr& item);

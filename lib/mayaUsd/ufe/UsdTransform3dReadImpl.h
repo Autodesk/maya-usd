@@ -38,11 +38,7 @@ public:
     UsdTransform3dReadImpl(const UsdSceneItem::Ptr& item);
     ~UsdTransform3dReadImpl() = default;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdTransform3dReadImpl(const UsdTransform3dReadImpl&) = delete;
-    UsdTransform3dReadImpl& operator=(const UsdTransform3dReadImpl&) = delete;
-    UsdTransform3dReadImpl(UsdTransform3dReadImpl&&) = delete;
-    UsdTransform3dReadImpl& operator=(UsdTransform3dReadImpl&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdTransform3dReadImpl);
 
     // Ufe::Transform3d overrides
     const Ufe::Path&    path() const { return fItem->path(); }

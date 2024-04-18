@@ -21,12 +21,12 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(UsdUfe::UsdObject3d, MayaUsdObject3d);
+
 MayaUsdObject3d::MayaUsdObject3d(const UsdSceneItem::Ptr& item)
     : UsdUfe::UsdObject3d(item)
 {
 }
-
-MayaUsdObject3d::~MayaUsdObject3d() { }
 
 /*static*/
 MayaUsdObject3d::Ptr MayaUsdObject3d::create(const UsdSceneItem::Ptr& item)

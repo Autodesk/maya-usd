@@ -35,15 +35,8 @@ public:
     using Ptr = std::shared_ptr<UsdMaterial>;
 
     UsdMaterial(const UsdSceneItem::Ptr& item);
-    ~UsdMaterial() override;
 
-    //@{
-    //! Delete the copy/move constructors assignment operators.
-    UsdMaterial(const UsdMaterial&) = delete;
-    UsdMaterial& operator=(const UsdMaterial&) = delete;
-    UsdMaterial(UsdMaterial&&) = delete;
-    UsdMaterial& operator=(UsdMaterial&&) = delete;
-    //@}
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdMaterial);
 
     //! Create a UsdMaterial.
     static UsdMaterial::Ptr create(const UsdSceneItem::Ptr& item);

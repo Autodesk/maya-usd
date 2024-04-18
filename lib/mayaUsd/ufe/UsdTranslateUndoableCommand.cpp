@@ -20,6 +20,8 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::TranslateUndoableCommand, UsdTranslateUndoableCommand);
+
 PXR_NS::TfToken UsdTranslateUndoableCommand::xlate("xformOp:translate");
 
 UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(
@@ -31,8 +33,6 @@ UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(
     , UsdTRSUndoableCommandBase(x, y, z)
 {
 }
-
-UsdTranslateUndoableCommand::~UsdTranslateUndoableCommand() { }
 
 /*static*/
 UsdTranslateUndoableCommand::Ptr

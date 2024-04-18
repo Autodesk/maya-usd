@@ -32,13 +32,8 @@ public:
     typedef std::shared_ptr<const UsdShaderAttributeDef> ConstPtr;
 
     UsdShaderAttributeDef(const PXR_NS::SdrShaderPropertyConstPtr& shaderAttributeDef);
-    ~UsdShaderAttributeDef();
 
-    // Delete the copy/move constructors assignment operators.
-    UsdShaderAttributeDef(const UsdShaderAttributeDef&) = delete;
-    UsdShaderAttributeDef& operator=(const UsdShaderAttributeDef&) = delete;
-    UsdShaderAttributeDef(UsdShaderAttributeDef&&) = delete;
-    UsdShaderAttributeDef& operator=(UsdShaderAttributeDef&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdShaderAttributeDef);
 
     //! \return The attributeDef's name.
     std::string name() const override;

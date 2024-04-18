@@ -38,13 +38,8 @@ public:
     typedef std::shared_ptr<UsdUndoRenameCommand> Ptr;
 
     UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName);
-    ~UsdUndoRenameCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUndoRenameCommand(const UsdUndoRenameCommand&) = delete;
-    UsdUndoRenameCommand& operator=(const UsdUndoRenameCommand&) = delete;
-    UsdUndoRenameCommand(UsdUndoRenameCommand&&) = delete;
-    UsdUndoRenameCommand& operator=(UsdUndoRenameCommand&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoRenameCommand);
 
     //! Create a UsdUndoRenameCommand from a USD scene item and UFE pathcomponent.
     static UsdUndoRenameCommand::Ptr

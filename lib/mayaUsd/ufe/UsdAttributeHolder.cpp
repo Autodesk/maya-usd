@@ -106,6 +106,9 @@ namespace ufe {
 // UsdAttributeHolder:
 //------------------------------------------------------------------------------
 
+// Ensure that UsdAttributeHolder is properly setup.
+MAYAUSD_VERIFY_CLASS_VIRTUAL_DESTRUCTOR(UsdAttributeHolder);
+
 UsdAttributeHolder::UsdAttributeHolder(const PXR_NS::UsdAttribute& usdAttr)
     : _usdAttr(usdAttr)
 {

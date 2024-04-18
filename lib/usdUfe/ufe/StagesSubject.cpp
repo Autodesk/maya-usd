@@ -371,6 +371,12 @@ void processAttributeChanges(
 
 namespace USDUFE_NS_DEF {
 
+// Ensure that StagesSubject is properly setup.
+USDUFE_VERIFY_CLASS_SETUP(PXR_NS::TfRefBase, StagesSubject);
+USDUFE_VERIFY_CLASS_BASE(PXR_NS::TfWeakBase, StagesSubject);
+
+USDUFE_VERIFY_CLASS_NOT_MOVE_OR_COPY(AttributeChangedNotificationGuard);
+
 //------------------------------------------------------------------------------
 // StagesSubject
 //------------------------------------------------------------------------------
@@ -649,6 +655,7 @@ void StagesSubject::sendSubtreeInvalidate(const Ufe::SceneItem::Ptr& sceneItem) 
         TF_WARN("Caught error during notification: %s", ex.what());
     }
 }
+
 AttributeChangedNotificationGuard::AttributeChangedNotificationGuard()
 {
     if (inAttributeChangedNotificationGuard()) {

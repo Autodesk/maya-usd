@@ -14,12 +14,7 @@
 
 namespace USDUFE_NS_DEF {
 
-UsdObject3dHandler::UsdObject3dHandler()
-    : Ufe::Object3dHandler()
-{
-}
-
-UsdObject3dHandler::~UsdObject3dHandler() { }
+USDUFE_VERIFY_CLASS_SETUP(Ufe::Object3dHandler, UsdObject3dHandler);
 
 /*static*/
 UsdObject3dHandler::Ptr UsdObject3dHandler::create()

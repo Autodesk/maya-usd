@@ -22,6 +22,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::TranslateUndoableCommand, UsdRotatePivotTranslateUndoableCommand);
+
 UsdRotatePivotTranslateUndoableCommand::UsdRotatePivotTranslateUndoableCommand(
     const Ufe::Path& path)
     : Ufe::TranslateUndoableCommand(path)
@@ -43,8 +45,6 @@ UsdRotatePivotTranslateUndoableCommand::UsdRotatePivotTranslateUndoableCommand(
     fPivotAttrib = prim().GetAttribute(xpivot);
     fPivotAttrib.Get<GfVec3f>(&fPrevPivotValue);
 }
-
-UsdRotatePivotTranslateUndoableCommand::~UsdRotatePivotTranslateUndoableCommand() { }
 
 UsdSceneItem::Ptr UsdRotatePivotTranslateUndoableCommand::sceneItem() const
 {

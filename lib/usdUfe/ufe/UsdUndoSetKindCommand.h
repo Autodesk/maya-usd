@@ -35,12 +35,8 @@ public:
     using Ptr = std::shared_ptr<UsdUndoSetKindCommand>;
 
     UsdUndoSetKindCommand(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& kind);
-    ~UsdUndoSetKindCommand() override = default;
 
-    UsdUndoSetKindCommand(const UsdUndoSetKindCommand&) = delete;
-    UsdUndoSetKindCommand& operator=(const UsdUndoSetKindCommand&) = delete;
-    UsdUndoSetKindCommand(UsdUndoSetKindCommand&&) = delete;
-    UsdUndoSetKindCommand& operator=(UsdUndoSetKindCommand&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoSetKindCommand);
 
     //! Create a UsdUndoSetKindCommand object
     static UsdUndoSetKindCommand::Ptr
