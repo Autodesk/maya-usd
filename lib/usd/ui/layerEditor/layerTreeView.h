@@ -22,6 +22,9 @@
 
 #include <usdUfe/utils/uiCallback.h>
 
+#include <pxr/base/tf/weakBase.h>
+#include <pxr/usd/usd/notice.h>
+
 #include <QtCore/QPointer>
 #include <QtWidgets/QTreeView>
 
@@ -68,7 +71,9 @@ private:
  * @brief Implements the Qt TreeView for USD layers. This widget is owned by the LayerEditorWidget.
  *
  */
-class LayerTreeView : public QTreeView
+class LayerTreeView
+    : public QTreeView
+    , public PXR_NS::TfWeakBase
 {
     Q_OBJECT
 public:
@@ -122,6 +127,9 @@ protected:
     void onMuteLayerButtonPushed();
     void onLockLayerButtonPushed();
 
+    // Notice listener method for layer muting changes.
+    void onLayerMutingChanged(const UsdNotice::LayerMutingChanged& notice);
+
     bool shouldExpandOrCollapseAll() const;
     void expandChildren(const QModelIndex& index);
     void collapseChildren(const QModelIndex& index);
@@ -132,6 +140,7 @@ protected:
     LayerTreeViewStyle       _treeViewStyle;
     QPointer<LayerTreeModel> _model;
     LayerTreeItemDelegate*   _delegate;
+    TfNotice::Key            _layerMutingNoticeKey;
 
     std::unique_ptr<LayerViewMemento> _cachedModelState;
 
