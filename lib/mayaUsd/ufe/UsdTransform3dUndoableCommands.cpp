@@ -24,6 +24,8 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::SetMatrix4dUndoableCommand, UsdSetMatrix4dUndoableCommand);
+
 UsdSetMatrix4dUndoableCommand::UsdSetMatrix4dUndoableCommand(
     const Ufe::Path&     path,
     const Ufe::Matrix4d& newM)
@@ -47,8 +49,6 @@ UsdSetMatrix4dUndoableCommand::UsdSetMatrix4dUndoableCommand(
     _newR = Ufe::Vector3d(r[0] * radToDeg, r[1] * radToDeg, r[2] * radToDeg);
     _newS = Ufe::Vector3d(s[0], s[1], s[2]);
 }
-
-UsdSetMatrix4dUndoableCommand::~UsdSetMatrix4dUndoableCommand() { }
 
 bool UsdSetMatrix4dUndoableCommand::set(const Ufe::Matrix4d&)
 {

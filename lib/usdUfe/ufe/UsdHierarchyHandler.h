@@ -34,14 +34,9 @@ class USDUFE_PUBLIC UsdHierarchyHandler : public Ufe::HierarchyHandler
 public:
     typedef std::shared_ptr<UsdHierarchyHandler> Ptr;
 
-    UsdHierarchyHandler();
-    ~UsdHierarchyHandler() override;
+    UsdHierarchyHandler() = default;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdHierarchyHandler(const UsdHierarchyHandler&) = delete;
-    UsdHierarchyHandler& operator=(const UsdHierarchyHandler&) = delete;
-    UsdHierarchyHandler(UsdHierarchyHandler&&) = delete;
-    UsdHierarchyHandler& operator=(UsdHierarchyHandler&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdHierarchyHandler);
 
     //! Create a UsdHierarchyHandler.
     static UsdHierarchyHandler::Ptr create();

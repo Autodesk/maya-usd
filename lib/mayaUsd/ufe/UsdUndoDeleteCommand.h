@@ -35,13 +35,8 @@ public:
     typedef std::shared_ptr<UsdUndoDeleteCommand> Ptr;
 
     UsdUndoDeleteCommand(const PXR_NS::UsdPrim& prim);
-    ~UsdUndoDeleteCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUndoDeleteCommand(const UsdUndoDeleteCommand&) = delete;
-    UsdUndoDeleteCommand& operator=(const UsdUndoDeleteCommand&) = delete;
-    UsdUndoDeleteCommand(UsdUndoDeleteCommand&&) = delete;
-    UsdUndoDeleteCommand& operator=(UsdUndoDeleteCommand&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoDeleteCommand);
 
     //! Create a UsdUndoDeleteCommand from a USD prim.
     static UsdUndoDeleteCommand::Ptr create(const PXR_NS::UsdPrim& prim);

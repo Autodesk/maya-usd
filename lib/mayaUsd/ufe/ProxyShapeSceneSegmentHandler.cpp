@@ -43,14 +43,14 @@ void findUsdGatewayItems(const Ufe::Path& path, Ufe::Selection& result)
 
 } // namespace
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::SceneSegmentHandler, ProxyShapeSceneSegmentHandler);
+
 ProxyShapeSceneSegmentHandler::ProxyShapeSceneSegmentHandler(
     const Ufe::SceneSegmentHandler::Ptr& mayaSceneSegmentHandler)
     : Ufe::SceneSegmentHandler()
     , fMayaSceneSegmentHandler(mayaSceneSegmentHandler)
 {
 }
-
-ProxyShapeSceneSegmentHandler::~ProxyShapeSceneSegmentHandler() { }
 
 /*static*/
 ProxyShapeSceneSegmentHandler::Ptr

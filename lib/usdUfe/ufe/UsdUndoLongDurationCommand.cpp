@@ -20,13 +20,13 @@
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(Ufe::CompositeUndoableCommand, UsdUndoLongDurationCommand);
+
 /* static */ std::shared_ptr<UsdUndoLongDurationCommand>
 UsdUndoLongDurationCommand::create(std::initializer_list<Ptr> undoableCommands)
 {
     return std::make_shared<UsdUndoLongDurationCommand>(undoableCommands);
 }
-
-UsdUndoLongDurationCommand::UsdUndoLongDurationCommand() = default;
 
 UsdUndoLongDurationCommand::UsdUndoLongDurationCommand(std::initializer_list<Ptr> undoableCommands)
     : Parent(undoableCommands)
@@ -37,8 +37,6 @@ UsdUndoLongDurationCommand::UsdUndoLongDurationCommand(const std::list<Ptr>& und
     : Parent(undoableCommands)
 {
 }
-
-UsdUndoLongDurationCommand::~UsdUndoLongDurationCommand() = default;
 
 void UsdUndoLongDurationCommand::execute()
 {

@@ -41,8 +41,6 @@ public:
     {
     }
 
-    ~UsdPointInstanceOrientationModifier() override = default;
-
     PXR_NS::GfQuath convertValueToUsd(const Ufe::Vector3d& ufeValue) const override;
 
     Ufe::Vector3d convertValueToUfe(const PXR_NS::GfQuath& usdValue) const override;

@@ -32,15 +32,8 @@ public:
     typedef std::shared_ptr<UsdUndoCreateStageWithNewLayerCommand> Ptr;
 
     UsdUndoCreateStageWithNewLayerCommand(const Ufe::SceneItem::Ptr& parentItem);
-    ~UsdUndoCreateStageWithNewLayerCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUndoCreateStageWithNewLayerCommand(const UsdUndoCreateStageWithNewLayerCommand&) = delete;
-    UsdUndoCreateStageWithNewLayerCommand& operator=(const UsdUndoCreateStageWithNewLayerCommand&)
-        = delete;
-    UsdUndoCreateStageWithNewLayerCommand(UsdUndoCreateStageWithNewLayerCommand&&) = delete;
-    UsdUndoCreateStageWithNewLayerCommand& operator=(UsdUndoCreateStageWithNewLayerCommand&&)
-        = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoCreateStageWithNewLayerCommand);
 
     //! Create a UsdUndoCreateStageWithNewLayerCommand. Executing this command should produce the
     //! following:

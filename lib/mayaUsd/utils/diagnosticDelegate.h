@@ -89,8 +89,7 @@ public:
     MAYAUSD_CORE_PUBLIC
     ~UsdMayaDiagnosticBatchContext();
 
-    UsdMayaDiagnosticBatchContext(const UsdMayaDiagnosticBatchContext&) = delete;
-    UsdMayaDiagnosticBatchContext& operator=(const UsdMayaDiagnosticBatchContext&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdMayaDiagnosticBatchContext);
 
 private:
     int previousCount = 0;

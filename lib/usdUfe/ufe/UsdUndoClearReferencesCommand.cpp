@@ -20,6 +20,8 @@
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(UsdUndoableCommand<Ufe::UndoableCommand>, UsdUndoClearReferencesCommand);
+
 UsdUndoClearReferencesCommand::UsdUndoClearReferencesCommand(const PXR_NS::UsdPrim& prim)
     : _prim(prim)
 {

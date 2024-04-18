@@ -131,12 +131,7 @@ void _SendStrongConnectionChangeNotification(const UsdPrim& usdPrim)
 
 #endif
 
-UsdConnectionHandler::UsdConnectionHandler()
-    : Ufe::ConnectionHandler()
-{
-}
-
-UsdConnectionHandler::~UsdConnectionHandler() { }
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::ConnectionHandler, UsdConnectionHandler);
 
 UsdConnectionHandler::Ptr UsdConnectionHandler::create()
 {

@@ -31,12 +31,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace USDUFE_NS_DEF {
 
-UsdCameraHandler::UsdCameraHandler()
-    : Ufe::CameraHandler()
-{
-}
-
-UsdCameraHandler::~UsdCameraHandler() { }
+USDUFE_VERIFY_CLASS_SETUP(Ufe::CameraHandler, UsdCameraHandler);
 
 /*static*/
 UsdCameraHandler::Ptr UsdCameraHandler::create() { return std::make_shared<UsdCameraHandler>(); }

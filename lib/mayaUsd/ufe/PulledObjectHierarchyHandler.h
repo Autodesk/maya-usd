@@ -44,11 +44,7 @@ public:
 
     PulledObjectHierarchyHandler(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler);
 
-    // Delete the copy/move constructors assignment operators.
-    PulledObjectHierarchyHandler(const PulledObjectHierarchyHandler&) = delete;
-    PulledObjectHierarchyHandler& operator=(const PulledObjectHierarchyHandler&) = delete;
-    PulledObjectHierarchyHandler(PulledObjectHierarchyHandler&&) = delete;
-    PulledObjectHierarchyHandler& operator=(PulledObjectHierarchyHandler&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(PulledObjectHierarchyHandler);
 
     //! Create a PulledObjectHierarchyHandler from a UFE hierarchy handler.
     static PulledObjectHierarchyHandler::Ptr

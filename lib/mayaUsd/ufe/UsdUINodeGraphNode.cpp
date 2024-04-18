@@ -15,6 +15,13 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+// Ensure that UsdUINodeGraphNode is properly setup.
+#ifdef UFE_V4_1_FEATURES_AVAILABLE
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::UINodeGraphNode_v4_1, UsdUINodeGraphNode);
+#else
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::UINodeGraphNode, UsdUINodeGraphNode);
+#endif
+
 UsdUINodeGraphNode::SetPosOrSizeCommand::SetPosOrSizeCommand(
     CoordType              coordType,
     const PXR_NS::UsdPrim& prim,

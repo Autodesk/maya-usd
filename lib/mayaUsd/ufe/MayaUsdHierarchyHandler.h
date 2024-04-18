@@ -32,14 +32,7 @@ class MAYAUSD_CORE_PUBLIC MayaUsdHierarchyHandler : public UsdUfe::UsdHierarchyH
 public:
     typedef std::shared_ptr<MayaUsdHierarchyHandler> Ptr;
 
-    MayaUsdHierarchyHandler();
-    ~MayaUsdHierarchyHandler() override;
-
-    // Delete the copy/move constructors assignment operators.
-    MayaUsdHierarchyHandler(const MayaUsdHierarchyHandler&) = delete;
-    MayaUsdHierarchyHandler& operator=(const MayaUsdHierarchyHandler&) = delete;
-    MayaUsdHierarchyHandler(MayaUsdHierarchyHandler&&) = delete;
-    MayaUsdHierarchyHandler& operator=(MayaUsdHierarchyHandler&&) = delete;
+    MayaUsdHierarchyHandler() = default;
 
     //! Create a MayaUsdHierarchyHandler.
     static MayaUsdHierarchyHandler::Ptr create();

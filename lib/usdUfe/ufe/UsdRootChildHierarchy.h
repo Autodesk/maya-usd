@@ -31,13 +31,8 @@ public:
     typedef std::shared_ptr<UsdRootChildHierarchy> Ptr;
 
     UsdRootChildHierarchy(const UsdSceneItem::Ptr& item);
-    ~UsdRootChildHierarchy() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdRootChildHierarchy(const UsdRootChildHierarchy&) = delete;
-    UsdRootChildHierarchy& operator=(const UsdRootChildHierarchy&) = delete;
-    UsdRootChildHierarchy(UsdRootChildHierarchy&&) = delete;
-    UsdRootChildHierarchy& operator=(UsdRootChildHierarchy&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdRootChildHierarchy);
 
     //! Create a UsdRootChildHierarchy.
     static UsdRootChildHierarchy::Ptr create(const UsdSceneItem::Ptr& item);

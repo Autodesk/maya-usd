@@ -24,6 +24,9 @@
 namespace MAYAUSD_NS_DEF {
 namespace utils {
 
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(BlockSceneModificationContext);
+MAYAUSD_VERIFY_CLASS_VIRTUAL_DESTRUCTOR(BlockSceneModificationContext);
+
 BlockSceneModificationContext::BlockSceneModificationContext()
 {
     const MString fileModifiedCmd("file -query -modified");

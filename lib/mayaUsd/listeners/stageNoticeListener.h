@@ -39,6 +39,7 @@ class UsdMayaStageNoticeListener : public TfWeakBase
 public:
     MAYAUSD_CORE_PUBLIC
     UsdMayaStageNoticeListener() = default;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdMayaStageNoticeListener);
 
     MAYAUSD_CORE_PUBLIC
     virtual ~UsdMayaStageNoticeListener();
@@ -105,9 +106,6 @@ public:
     static ChangeType ClassifyObjectsChanged(UsdNotice::ObjectsChanged const& notice);
 
 private:
-    UsdMayaStageNoticeListener(const UsdMayaStageNoticeListener&) = delete;
-    UsdMayaStageNoticeListener& operator=(const UsdMayaStageNoticeListener&) = delete;
-
     UsdStageWeakPtr _stage;
 
     /// Handling for UsdNotices

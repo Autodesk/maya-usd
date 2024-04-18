@@ -68,10 +68,7 @@ private:
     ValueTypeOut _value;
 };
 
-UsdLight::UsdLight()
-    : Light()
-{
-}
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Light, UsdLight);
 
 UsdLight::UsdLight(const UsdSceneItem::Ptr& item)
     : Light()

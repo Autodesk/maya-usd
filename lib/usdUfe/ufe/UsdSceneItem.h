@@ -90,13 +90,8 @@ public:
         const Ufe::Path&       path,
         const PXR_NS::UsdPrim& prim,
         int                    instanceIndex = PXR_NS::UsdImagingDelegate::ALL_INSTANCES);
-    ~UsdSceneItem() override = default;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdSceneItem(const UsdSceneItem&) = delete;
-    UsdSceneItem& operator=(const UsdSceneItem&) = delete;
-    UsdSceneItem(UsdSceneItem&&) = delete;
-    UsdSceneItem& operator=(UsdSceneItem&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdSceneItem);
 
     //! Create a UsdSceneItem from a UFE path and a USD prim.
     //

@@ -25,6 +25,8 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::HierarchyHandler, PulledObjectHierarchyHandler);
+
 PulledObjectHierarchyHandler::PulledObjectHierarchyHandler(
     const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler)
     : Ufe::HierarchyHandler()

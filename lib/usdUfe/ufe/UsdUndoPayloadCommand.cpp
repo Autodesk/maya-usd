@@ -19,6 +19,8 @@
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdUndoLoadUnloadBaseCommand);
+
 UsdUndoLoadUnloadBaseCommand::UsdUndoLoadUnloadBaseCommand(
     const PXR_NS::UsdPrim& prim,
     PXR_NS::UsdLoadPolicy  policy)
@@ -70,6 +72,8 @@ void UsdUndoLoadUnloadBaseCommand::saveModifiedLoadRules() const
     UsdUfe::saveStageLoadRules(_stage);
 }
 
+USDUFE_VERIFY_CLASS_SETUP(UsdUndoLoadUnloadBaseCommand, UsdUndoLoadPayloadCommand);
+
 UsdUndoLoadPayloadCommand::UsdUndoLoadPayloadCommand(
     const PXR_NS::UsdPrim& prim,
     PXR_NS::UsdLoadPolicy  policy)
@@ -79,6 +83,8 @@ UsdUndoLoadPayloadCommand::UsdUndoLoadPayloadCommand(
 
 void UsdUndoLoadPayloadCommand::redo() { doLoad(); }
 void UsdUndoLoadPayloadCommand::undo() { doUnload(); }
+
+USDUFE_VERIFY_CLASS_SETUP(UsdUndoLoadUnloadBaseCommand, UsdUndoUnloadPayloadCommand);
 
 UsdUndoUnloadPayloadCommand::UsdUndoUnloadPayloadCommand(const PXR_NS::UsdPrim& prim)
     : UsdUndoLoadUnloadBaseCommand(prim)

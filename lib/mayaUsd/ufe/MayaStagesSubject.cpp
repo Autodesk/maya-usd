@@ -35,6 +35,8 @@ std::atomic_bool stageSetGuardCount { false };
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(UsdUfe::StagesSubject, MayaStagesSubject);
+
 //------------------------------------------------------------------------------
 // Global variables & macros
 //------------------------------------------------------------------------------

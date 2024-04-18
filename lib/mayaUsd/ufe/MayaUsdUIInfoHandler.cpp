@@ -36,6 +36,8 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(UsdUfe::UsdUIInfoHandler, MayaUsdUIInfoHandler);
+
 MayaUsdUIInfoHandler::MayaUsdUIInfoHandler()
     : UsdUfe::UsdUIInfoHandler()
 {

@@ -43,6 +43,8 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::NodeDef, UsdShaderNodeDef);
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 constexpr char UsdShaderNodeDef::kNodeDefCategoryShader[];
@@ -93,8 +95,6 @@ UsdShaderNodeDef::UsdShaderNodeDef(const SdrShaderNodeConstPtr& shaderNodeDef)
         throw std::runtime_error("Invalid shader node definition");
     }
 }
-
-UsdShaderNodeDef::~UsdShaderNodeDef() { }
 
 #ifndef UFE_V4_FEATURES_AVAILABLE
 const std::string& UsdShaderNodeDef::type() const { return fType; }

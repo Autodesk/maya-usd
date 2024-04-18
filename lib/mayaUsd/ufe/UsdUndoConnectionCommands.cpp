@@ -36,6 +36,8 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::ConnectionResultUndoableCommand, UsdUndoCreateConnectionCommand);
+
 namespace {
 
 Ufe::Attribute::Ptr attrFromUfeAttrInfo(const Ufe::AttributeInfo& attrInfo)
@@ -130,8 +132,6 @@ UsdUndoCreateConnectionCommand::UsdUndoCreateConnectionCommand(
     // Validation goes here when we find out the right set of business rules. Failure should result
     // in a exception being thrown.
 }
-
-UsdUndoCreateConnectionCommand::~UsdUndoCreateConnectionCommand() { }
 
 UsdUndoCreateConnectionCommand::Ptr UsdUndoCreateConnectionCommand::create(
     const Ufe::Attribute::Ptr& srcAttr,

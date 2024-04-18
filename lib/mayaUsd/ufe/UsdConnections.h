@@ -30,15 +30,8 @@ public:
     typedef std::shared_ptr<UsdConnections> Ptr;
 
     UsdConnections(const Ufe::SceneItem::Ptr& item);
-    ~UsdConnections() override;
 
-    //@{
-    // Delete the copy/move constructors assignment operators.
-    UsdConnections(const UsdConnections&) = delete;
-    UsdConnections& operator=(const UsdConnections&) = delete;
-    UsdConnections(UsdConnections&&) = delete;
-    UsdConnections& operator=(UsdConnections&&) = delete;
-    //@}
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdConnections);
 
     static UsdConnections::Ptr create(const Ufe::SceneItem::Ptr& item);
 

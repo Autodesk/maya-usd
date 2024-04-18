@@ -30,14 +30,10 @@ class MAYAUSD_CORE_PUBLIC UsdPathMappingHandler : public Ufe::PathMappingHandler
 public:
     typedef std::shared_ptr<UsdPathMappingHandler> Ptr;
 
-    UsdPathMappingHandler();
+    UsdPathMappingHandler() = default;
     ~UsdPathMappingHandler() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdPathMappingHandler(const UsdPathMappingHandler&) = delete;
-    UsdPathMappingHandler& operator=(const UsdPathMappingHandler&) = delete;
-    UsdPathMappingHandler(UsdPathMappingHandler&&) = delete;
-    UsdPathMappingHandler& operator=(UsdPathMappingHandler&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdPathMappingHandler);
 
     //! Create a UsdPathMappingHandler.
     static UsdPathMappingHandler::Ptr create();

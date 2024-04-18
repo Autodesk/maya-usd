@@ -45,13 +45,8 @@ public:
     typedef std::shared_ptr<UsdAttributes> Ptr;
 
     UsdAttributes(const UsdSceneItem::Ptr& item);
-    ~UsdAttributes() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdAttributes(const UsdAttributes&) = delete;
-    UsdAttributes& operator=(const UsdAttributes&) = delete;
-    UsdAttributes(UsdAttributes&&) = delete;
-    UsdAttributes& operator=(UsdAttributes&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdAttributes);
 
     //! Create a UsdAttributes.
     static UsdAttributes::Ptr create(const UsdSceneItem::Ptr& item);

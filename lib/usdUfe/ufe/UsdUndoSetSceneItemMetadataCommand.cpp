@@ -29,6 +29,10 @@
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(
+    UsdUfe::UsdUndoableCommand<Ufe::UndoableCommand>,
+    SetSceneItemMetadataCommand);
+
 SetSceneItemMetadataCommand::SetSceneItemMetadataCommand(
     const PXR_NS::UsdPrim& prim,
     const std::string&     group,
