@@ -16,13 +16,14 @@
 #include "UsdUndoConnectionCommands.h"
 
 #include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/UsdAttribute.h>
-#include <mayaUsd/ufe/UsdAttributes.h>
 #include <mayaUsd/ufe/UsdConnectionHandler.h>
 #include <mayaUsd/ufe/UsdConnections.h>
 #include <mayaUsd/ufe/Utils.h>
 
+#include <usdUfe/ufe/UsdAttribute.h>
+#include <usdUfe/ufe/UsdAttributes.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/utils/usdUtils.h>
 
@@ -39,34 +40,6 @@ namespace ufe {
 MAYAUSD_VERIFY_CLASS_SETUP(Ufe::ConnectionResultUndoableCommand, UsdUndoCreateConnectionCommand);
 
 namespace {
-
-Ufe::Attribute::Ptr attrFromUfeAttrInfo(const Ufe::AttributeInfo& attrInfo)
-{
-    auto item
-        = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(attrInfo.path()));
-    if (!item) {
-        TF_RUNTIME_ERROR("Invalid scene item.");
-        return nullptr;
-    }
-    return UsdAttributes(item).attribute(attrInfo.name());
-}
-
-UsdAttribute* usdAttrFromUfeAttr(const Ufe::Attribute::Ptr& attr)
-{
-    if (!attr) {
-        TF_RUNTIME_ERROR("Invalid attribute.");
-        return nullptr;
-    }
-
-    if (attr->sceneItem()->runTimeId() != getUsdRunTimeId()) {
-        TF_RUNTIME_ERROR(
-            "Invalid runtime identifier for the attribute '" + attr->name() + "' in the node '"
-            + Ufe::PathString::string(attr->sceneItem()->path()) + "'.");
-        return nullptr;
-    }
-
-    return dynamic_cast<UsdAttribute*>(attr.get());
-}
 
 PXR_NS::SdrShaderNodeConstPtr
 _GetShaderNodeDef(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName)
@@ -144,10 +117,10 @@ void UsdUndoCreateConnectionCommand::execute()
 {
     UsdUndoBlock undoBlock(&_undoableItem);
 
-    auto          srcAttr = attrFromUfeAttrInfo(*_srcInfo);
-    UsdAttribute* srcUsdAttr = usdAttrFromUfeAttr(srcAttr);
-    auto          dstAttr = attrFromUfeAttrInfo(*_dstInfo);
-    UsdAttribute* dstUsdAttr = usdAttrFromUfeAttr(dstAttr);
+    auto srcAttr = UsdUfe::attrFromUfeAttrInfo(*_srcInfo);
+    auto srcUsdAttr = UsdUfe::usdAttrFromUfeAttr(srcAttr);
+    auto dstAttr = UsdUfe::attrFromUfeAttrInfo(*_dstInfo);
+    auto dstUsdAttr = UsdUfe::usdAttrFromUfeAttr(dstAttr);
 
     if (!srcUsdAttr || !dstUsdAttr) {
         _srcInfo = nullptr;
@@ -155,7 +128,7 @@ void UsdUndoCreateConnectionCommand::execute()
         return;
     }
 
-    if (MayaUsd::ufe::isConnected(srcUsdAttr->usdAttribute(), dstUsdAttr->usdAttribute())) {
+    if (UsdUfe::isConnected(srcUsdAttr->usdAttribute(), dstUsdAttr->usdAttribute())) {
         return;
     }
 
@@ -281,13 +254,13 @@ void UsdUndoDeleteConnectionCommand::execute()
 {
     UsdUndoBlock undoBlock(&_undoableItem);
 
-    auto          srcAttr = attrFromUfeAttrInfo(*_srcInfo);
-    UsdAttribute* srcUsdAttr = usdAttrFromUfeAttr(srcAttr);
-    auto          dstAttr = attrFromUfeAttrInfo(*_dstInfo);
-    UsdAttribute* dstUsdAttr = usdAttrFromUfeAttr(dstAttr);
+    auto srcAttr = UsdUfe::attrFromUfeAttrInfo(*_srcInfo);
+    auto srcUsdAttr = UsdUfe::usdAttrFromUfeAttr(srcAttr);
+    auto dstAttr = UsdUfe::attrFromUfeAttrInfo(*_dstInfo);
+    auto dstUsdAttr = UsdUfe::usdAttrFromUfeAttr(dstAttr);
 
     if (!srcUsdAttr || !dstUsdAttr
-        || !MayaUsd::ufe::isConnected(srcUsdAttr->usdAttribute(), dstUsdAttr->usdAttribute())) {
+        || !UsdUfe::isConnected(srcUsdAttr->usdAttribute(), dstUsdAttr->usdAttribute())) {
         return;
     }
 #if PXR_VERSION < 2302
@@ -307,11 +280,11 @@ void UsdUndoDeleteConnectionCommand::execute()
         // Remove attribute if it does not have a value, default value, or time samples. We do this
         // on Shader nodes and on the Material outputs since they are re-created automatically.
         // Other NodeGraph inputs and outputs require explicit removal.
-        if (MayaUsd::ufe::canRemoveDstProperty(dstUsdAttr->usdAttribute())) {
+        if (UsdUfe::canRemoveDstProperty(dstUsdAttr->usdAttribute())) {
             dstUsdAttr->usdPrim().RemoveProperty(dstUsdAttr->usdAttribute().GetName());
         }
 
-        if (MayaUsd::ufe::canRemoveSrcProperty(srcUsdAttr->usdAttribute())) {
+        if (UsdUfe::canRemoveSrcProperty(srcUsdAttr->usdAttribute())) {
             srcUsdAttr->usdPrim().RemoveProperty(srcUsdAttr->usdAttribute().GetName());
         }
     }

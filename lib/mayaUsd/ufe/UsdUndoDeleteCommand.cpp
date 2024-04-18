@@ -26,7 +26,7 @@
 #include <pxr/usd/usd/editContext.h>
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#include <mayaUsd/ufe/UsdAttributes.h>
+#include <usdUfe/ufe/UsdAttributes.h>
 #endif
 
 namespace MAYAUSD_NS_DEF {
@@ -62,7 +62,7 @@ void UsdUndoDeleteCommand::execute()
 
     if (UsdUfe::applyCommandRestrictionNoThrow(_prim, "delete")) {
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        UsdAttributes::removeAttributesConnections(_prim);
+        UsdUfe::UsdAttributes::removeAttributesConnections(_prim);
 #endif
         // Let removeAttributesConnections be run first as it will also cleanup
         // attributes that were authored only to be the destination of a connection.

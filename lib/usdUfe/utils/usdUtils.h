@@ -21,6 +21,8 @@
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/valueTypeName.h>
+#include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/prim.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -50,6 +52,24 @@ bool cleanReferencedPath(const UsdPrim& deletedPrim);
 //! Returns true if reference is internal.
 USDUFE_PUBLIC
 bool isInternalReference(const SdfReference&);
+
+PXR_NS::VtValue
+vtValueFromString(const PXR_NS::SdfValueTypeName& typeName, const std::string& strValue);
+
+//! Check if the src and dst attributes are connected.
+//! \return True, if they are connected.
+USDUFE_PUBLIC
+bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttribute& dstUsdAttr);
+
+//! Check if a source connection property is allowed to be removed.
+//! \return True, if the property can be removed.
+USDUFE_PUBLIC
+bool canRemoveSrcProperty(const PXR_NS::UsdAttribute& srcAttr);
+
+//! Check if a destination connection property is allowed to be removed.
+//! \return True, if the property can be removed.
+USDUFE_PUBLIC
+bool canRemoveDstProperty(const PXR_NS::UsdAttribute& dstAttr);
 
 } // namespace USDUFE_NS_DEF
 

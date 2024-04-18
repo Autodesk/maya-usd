@@ -15,13 +15,12 @@
 //
 #include "UsdShaderAttributeHolder.h"
 
-#include "UsdShaderAttributeDef.h"
-#include "Utils.h"
-
-#include <mayaUsd/utils/util.h>
+#include <usdUfe/ufe/UsdShaderAttributeDef.h>
+#include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/usdUtils.h>
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
-#include <mayaUsd/base/tokens.h>
+#include <usdUfe/base/tokens.h>
 #endif
 
 #include <pxr/base/tf/diagnostic.h>
@@ -31,16 +30,15 @@
 
 #include <ufe/log.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //------------------------------------------------------------------------------
 // UsdShaderAttributeHolder:
 //------------------------------------------------------------------------------
 
 // Ensure that UsdShaderAttributeHolder is properly setup.
-MAYAUSD_VERIFY_CLASS_BASE(UsdAttributeHolder, UsdShaderAttributeHolder);
-MAYAUSD_VERIFY_CLASS_VIRTUAL_DESTRUCTOR(UsdShaderAttributeHolder);
+USDUFE_VERIFY_CLASS_BASE(UsdAttributeHolder, UsdShaderAttributeHolder);
+USDUFE_VERIFY_CLASS_VIRTUAL_DESTRUCTOR(UsdShaderAttributeHolder);
 
 UsdShaderAttributeHolder::UsdShaderAttributeHolder(
     PXR_NS::UsdPrim                   usdPrim,
@@ -164,8 +162,7 @@ std::string UsdShaderAttributeHolder::name() const
 
 std::string UsdShaderAttributeHolder::displayName() const
 {
-    Ufe::Value retVal
-        = UsdShaderAttributeDef(_sdrProp).getMetadata(PXR_NS::MayaUsdMetadata->UIName);
+    Ufe::Value  retVal = UsdShaderAttributeDef(_sdrProp).getMetadata(MetadataTokens->UIName);
     std::string name = retVal.safeGet<std::string>({});
     if (!name.empty()) {
         return name;
@@ -179,7 +176,7 @@ std::string UsdShaderAttributeHolder::documentation() const { return _sdrProp->G
 Ufe::Value UsdShaderAttributeHolder::getMetadata(const std::string& key) const
 {
     Ufe::Value retVal;
-    if (key == PXR_NS::MayaUsdMetadata->UIName) {
+    if (key == MetadataTokens->UIName) {
         retVal = UsdShaderAttributeDef(_sdrProp).getMetadata(key);
         if (!retVal.empty()) {
             return retVal;
@@ -254,5 +251,4 @@ void UsdShaderAttributeHolder::_CreateUsdAttribute()
     }
 }
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

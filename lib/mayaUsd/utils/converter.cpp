@@ -690,14 +690,16 @@ struct MDataHandleConvert
             dst = MayaUsd::utils::ConvertMayaToLinear(dst);
     }
 
-    // MDataHandle <--> UsdAttribute
-    static void convert(const MDataHandle& src, UsdAttribute& dst, const ConverterArgs& args)
+    // MDataHandle <--> PXR_NS::UsdAttribute
+    static void
+    convert(const MDataHandle& src, PXR_NS::UsdAttribute& dst, const ConverterArgs& args)
     {
         USD_Type tmpDst;
         convert(src, tmpDst, args);
         dst.Set<USD_Type>(tmpDst, args._timeCode);
     }
-    static void convert(const UsdAttribute& src, MDataHandle& dst, const ConverterArgs& args)
+    static void
+    convert(const PXR_NS::UsdAttribute& src, MDataHandle& dst, const ConverterArgs& args)
     {
         USD_Type tmpSrc;
         src.Get<USD_Type>(&tmpSrc, args._timeCode);
@@ -779,21 +781,24 @@ template <class MAYA_Type, class USD_Type, NeedsGammaCorrection ColorCorrection>
         MDGModifierUtils<MAYA_Type>::set(plug, dst, tmpDst);
     }
 
-    // MPlug <--> UsdAttribute
-    static void convert(const MPlug& src, UsdAttribute& dst, const ConverterArgs& args)
+    // MPlug <--> PXR_NS::UsdAttribute
+    static void convert(const MPlug& src, PXR_NS::UsdAttribute& dst, const ConverterArgs& args)
     {
         USD_Type tmpDst;
         convert(src, tmpDst, args);
         dst.Set<USD_Type>(tmpDst, args._timeCode);
     }
-    static void convert(const UsdAttribute& src, MPlug& dst, const ConverterArgs& args)
+    static void convert(const PXR_NS::UsdAttribute& src, MPlug& dst, const ConverterArgs& args)
     {
         USD_Type tmpSrc;
         src.Get<USD_Type>(&tmpSrc, args._timeCode);
         convert(tmpSrc, dst, args);
     }
-    static void
-    convert(const UsdAttribute& src, MPlug& plug, MDGModifier& dst, const ConverterArgs& args)
+    static void convert(
+        const PXR_NS::UsdAttribute& src,
+        MPlug&                      plug,
+        MDGModifier&                dst,
+        const ConverterArgs&        args)
     {
         USD_Type tmpSrc;
         src.Get<USD_Type>(&tmpSrc, args._timeCode);
@@ -830,8 +835,9 @@ struct MArrayDataHandleConvert
     using USD_TypeArray = MakeUsdArrayT<USD_Type>;
     using ElementConverter = MDataHandleConvert<MAYA_Type, USD_Type, ColorCorrection>;
 
-    // MDataHandle <--> UsdAttribute
-    static void convert(const MDataHandle& src, UsdAttribute& dst, const ConverterArgs& args)
+    // MDataHandle <--> PXR_NS::UsdAttribute
+    static void
+    convert(const MDataHandle& src, PXR_NS::UsdAttribute& dst, const ConverterArgs& args)
     {
         MArrayDataHandle   srcArray(src);
         const unsigned int srcSize = srcArray.elementCount();
@@ -849,7 +855,8 @@ struct MArrayDataHandleConvert
 
         dst.Set<USD_TypeArray>(tmpDst, args._timeCode);
     }
-    static void convert(const UsdAttribute& src, MDataHandle& dst, const ConverterArgs& args)
+    static void
+    convert(const PXR_NS::UsdAttribute& src, MDataHandle& dst, const ConverterArgs& args)
     {
         USD_TypeArray tmpSrc;
         src.Get<USD_TypeArray>(&tmpSrc, args._timeCode);
@@ -916,8 +923,8 @@ struct MArrayPlugConvert
     using USD_TypeArray = MakeUsdArrayT<USD_Type>;
     using ElementConverter = MPlugConvert<MAYA_Type, USD_Type, ColorCorrection>;
 
-    // MPlug <--> UsdAttribute
-    static void convert(const MPlug& src, UsdAttribute& dst, const ConverterArgs& args)
+    // MPlug <--> PXR_NS::UsdAttribute
+    static void convert(const MPlug& src, PXR_NS::UsdAttribute& dst, const ConverterArgs& args)
     {
         const unsigned int srcSize = src.numElements();
 
@@ -931,7 +938,7 @@ struct MArrayPlugConvert
 
         dst.Set<USD_TypeArray>(tmpDst, args._timeCode);
     }
-    static void convert(const UsdAttribute& src, MPlug& dst, const ConverterArgs& args)
+    static void convert(const PXR_NS::UsdAttribute& src, MPlug& dst, const ConverterArgs& args)
     {
         USD_TypeArray tmpSrc;
         src.Get<USD_TypeArray>(&tmpSrc, args._timeCode);
@@ -943,8 +950,11 @@ struct MArrayPlugConvert
             ElementConverter::convert(tmpSrc[i], srcElement, args);
         }
     }
-    static void
-    convert(const UsdAttribute& src, MPlug& plug, MDGModifier& dst, const ConverterArgs& args)
+    static void convert(
+        const PXR_NS::UsdAttribute& src,
+        MPlug&                      plug,
+        MDGModifier&                dst,
+        const ConverterArgs&        args)
     {
         USD_TypeArray tmpSrc;
         src.Get<USD_TypeArray>(&tmpSrc, args._timeCode);
@@ -1146,7 +1156,7 @@ const Converter* Converter::find(const SdfValueTypeName& typeName, bool isArrayP
         return nullptr;
 }
 
-const Converter* Converter::find(const MPlug& plug, const UsdAttribute& attr)
+const Converter* Converter::find(const MPlug& plug, const PXR_NS::UsdAttribute& attr)
 {
     auto valueTypeName = getUsdTypeName(plug, false);
 

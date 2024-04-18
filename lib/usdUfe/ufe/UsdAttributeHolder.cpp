@@ -18,13 +18,13 @@
 #include "Utils.h"
 #include "private/UfeNotifGuard.h"
 
-#include <mayaUsd/utils/util.h>
-
+#include <usdUfe/ufe/UsdAttribute.h>
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/Utils.h>
 #include <usdUfe/utils/editRouter.h>
 #include <usdUfe/utils/editRouterContext.h>
 #ifdef UFE_V3_FEATURES_AVAILABLE
-#include <mayaUsd/base/tokens.h>
+#include <usdufe/base/tokens.h>
 #endif
 
 #include <pxr/base/tf/diagnostic.h>
@@ -52,7 +52,7 @@ bool setUsdAttrMetadata(
     //       since that is how you unlock.
     if (key == Ufe::Attribute::kLocked) {
         return attr.SetMetadata(
-            MayaUsdMetadata->Lock, value.get<bool>() ? MayaUsdTokens->On : MayaUsdTokens->Off);
+            MetadataTokens->Lock, value.get<bool>() ? GenericTokens->On : GenericTokens->Off);
     }
 
     // If attribute is locked don't allow setting Metadata.
@@ -99,15 +99,14 @@ bool setUsdAttrMetadata(
 
 } // namespace
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //------------------------------------------------------------------------------
 // UsdAttributeHolder:
 //------------------------------------------------------------------------------
 
 // Ensure that UsdAttributeHolder is properly setup.
-MAYAUSD_VERIFY_CLASS_VIRTUAL_DESTRUCTOR(UsdAttributeHolder);
+USDUFE_VERIFY_CLASS_VIRTUAL_DESTRUCTOR(UsdAttributeHolder);
 
 UsdAttributeHolder::UsdAttributeHolder(const PXR_NS::UsdAttribute& usdAttr)
     : _usdAttr(usdAttr)
@@ -245,9 +244,9 @@ Ufe::Value UsdAttributeHolder::getMetadata(const std::string& key) const
         // Special cases for known Ufe metadata keys.
         if (key == Ufe::Attribute::kLocked) {
             PXR_NS::TfToken lock;
-            bool            ret = _usdAttr.GetMetadata(MayaUsdMetadata->Lock, &lock);
+            bool            ret = _usdAttr.GetMetadata(MetadataTokens->Lock, &lock);
             if (ret)
-                return Ufe::Value((lock == MayaUsdTokens->On) ? true : false);
+                return Ufe::Value((lock == GenericTokens->On) ? true : false);
             return Ufe::Value();
         }
         PXR_NS::TfToken tok(key);
@@ -255,22 +254,22 @@ Ufe::Value UsdAttributeHolder::getMetadata(const std::string& key) const
             if (PXR_NS::UsdShadeInput::IsInput(_usdAttr)) {
                 const PXR_NS::UsdShadeInput input(_usdAttr);
                 std::string                 metadata = input.GetSdrMetadataByKey(tok);
-                if (metadata.empty() && key == MayaUsdMetadata->UIName) {
+                if (metadata.empty() && key == MetadataTokens->UIName) {
                     // Strip and prettify:
-                    metadata = UsdMayaUtil::prettifyName(input.GetBaseName().GetString());
+                    metadata = prettifyName(input.GetBaseName().GetString());
                 }
                 return Ufe::Value(metadata);
             } else if (PXR_NS::UsdShadeOutput::IsOutput(_usdAttr)) {
                 const PXR_NS::UsdShadeOutput output(_usdAttr);
                 std::string                  metadata = output.GetSdrMetadataByKey(tok);
-                if (metadata.empty() && key == MayaUsdMetadata->UIName) {
+                if (metadata.empty() && key == MetadataTokens->UIName) {
                     // Strip and prettify:
-                    metadata = UsdMayaUtil::prettifyName(output.GetBaseName().GetString());
+                    metadata = prettifyName(output.GetBaseName().GetString());
                 }
                 return Ufe::Value(metadata);
             }
         }
-        if (key == MayaUsdMetadata->UIName) {
+        if (key == MetadataTokens->UIName) {
             std::string niceName;
             // Non-shader case, but we still have light inputs and outputs to deal with:
             if (PXR_NS::UsdShadeInput::IsInput(_usdAttr)) {
@@ -284,7 +283,7 @@ Ufe::Value UsdAttributeHolder::getMetadata(const std::string& key) const
             }
 
             const bool isNamespaced = niceName.find(":") != std::string::npos;
-            niceName = UsdMayaUtil::prettifyName(niceName);
+            niceName = prettifyName(niceName);
 
             if (!isNamespaced) {
                 return Ufe::Value(niceName);
@@ -518,7 +517,7 @@ bool UsdAttributeHolder::clearMetadata(const std::string& key)
 
         // Special cases for known Ufe metadata keys.
         if (key == Ufe::Attribute::kLocked) {
-            return _usdAttr.ClearMetadata(MayaUsdMetadata->Lock);
+            return _usdAttr.ClearMetadata(MetadataTokens->Lock);
         }
 
         if (key == SdfFieldKeys->ColorSpace) {
@@ -537,11 +536,11 @@ bool UsdAttributeHolder::hasMetadata(const std::string& key) const
     if (isValid()) {
         // Special cases for known Ufe metadata keys.
         if (key == Ufe::Attribute::kLocked) {
-            result = _usdAttr.HasMetadata(MayaUsdMetadata->Lock);
+            result = _usdAttr.HasMetadata(MetadataTokens->Lock);
             if (result) {
                 return true;
             }
-        } else if (key == MayaUsdMetadata->UIName) {
+        } else if (key == MetadataTokens->UIName) {
             return true;
         }
 
@@ -641,5 +640,4 @@ UsdAttributeHolder::EnumOptions UsdAttributeHolder::getEnums() const
     return retVal;
 }
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

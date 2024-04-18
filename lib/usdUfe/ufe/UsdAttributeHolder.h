@@ -15,7 +15,7 @@
 //
 #pragma once
 
-#include <mayaUsd/base/api.h>
+#include <usdUfe/base/api.h>
 
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/attribute.h>
@@ -23,8 +23,7 @@
 
 #include <ufe/attribute.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //! \brief Internal helper class holding a USD attributes for query:
 class UsdAttributeHolder
@@ -69,5 +68,4 @@ protected:
     PXR_NS::UsdAttribute _usdAttr;
 }; // UsdAttributeHolder
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

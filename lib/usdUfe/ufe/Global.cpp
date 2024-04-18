@@ -15,6 +15,7 @@
 //
 #include "Global.h"
 
+#include <usdUfe/ufe/UsdAttributesHandler.h>
 #include <usdUfe/ufe/UsdCameraHandler.h>
 #include <usdUfe/ufe/UsdContextOpsHandler.h>
 #include <usdUfe/ufe/UsdHierarchyHandler.h>
@@ -80,6 +81,7 @@ Ufe::Rtid initialize(
         UsdUfe::setIsRootChildFn(dccFunctions.isRootChildFn);
     if (dccFunctions.uniqueChildNameFn)
         UsdUfe::setUniqueChildNameFn(dccFunctions.uniqueChildNameFn);
+    UsdUfe::setDisplayMessageFn(dccFunctions.displayMessageFn);
 
     // Create a default stages subject if none is provided.
     if (nullptr == ss) {
@@ -89,6 +91,8 @@ Ufe::Rtid initialize(
     // Copy all the input handlers into the Ufe handler struct and
     // create any default ones which are null.
     Ufe::RunTimeMgr::Handlers rtHandlers;
+    rtHandlers.attributesHandler
+        = handlers.attributesHandler ? handlers.attributesHandler : UsdAttributesHandler::create();
     rtHandlers.hierarchyHandler
         = handlers.hierarchyHandler ? handlers.hierarchyHandler : UsdHierarchyHandler::create();
     rtHandlers.object3dHandler

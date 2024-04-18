@@ -63,24 +63,10 @@ if(DEFINED UFE_PREVIEW_VERSION_NUM)
     )
 endif()
 
-if (UFE_HAS_DISPLAY_NAME)
-    target_compile_definitions(${PROJECT_NAME}
-    PRIVATE
-        UFE_HAS_DISPLAY_NAME=1
-    )
-endif()
-
 if (UFE_DEFAULT_VALUE_SUPPORT)
     target_compile_definitions(${PROJECT_NAME}
     PRIVATE
     UFE_DEFAULT_VALUE_SUPPORT=1
-    )
-endif()
-
-if (UFE_HAS_NATIVE_TYPE_METADATA)
-    target_compile_definitions(${PROJECT_NAME}
-    PRIVATE
-        UFE_HAS_NATIVE_TYPE_METADATA=1
     )
 endif()
 

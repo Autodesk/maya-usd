@@ -16,18 +16,30 @@
 #include "Utils.h"
 
 #include <usdUfe/ufe/Global.h>
+#include <usdUfe/ufe/UsdAttribute.h>
+#include <usdUfe/ufe/UsdAttributes.h>
+#include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/utils/editability.h>
 #include <usdUfe/utils/layers.h>
 #include <usdUfe/utils/loadRules.h>
 #include <usdUfe/utils/usdUtils.h>
 
+#include <pxr/base/tf/token.h>
 #include <pxr/usd/pcp/layerStack.h>
 #include <pxr/usd/pcp/site.h>
 #include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/sdf/types.h>
+#include <pxr/usd/sdr/registry.h>
+#include <pxr/usd/sdr/shaderProperty.h>
+#include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primCompositionQuery.h>
 #include <pxr/usd/usd/resolver.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usdShade/shader.h>
 
+#include <ufe/attributeInfo.h>
 #include <ufe/pathSegment.h>
+#include <ufe/pathString.h>
 #include <ufe/selection.h>
 
 #include <cctype>
@@ -42,7 +54,7 @@ constexpr auto kIllegalUFEPath = "Illegal UFE run-time path %s.";
 constexpr auto kErrorMsgInvalidValueType = "Unexpected Ufe::Value type";
 #endif
 
-// typedef std::unordered_map<TfToken, SdfValueTypeName, TfToken::HashFunctor> TokenToSdfTypeMap;
+typedef std::unordered_map<TfToken, SdfValueTypeName, TfToken::HashFunctor> TokenToSdfTypeMap;
 
 bool stringBeginsWithDigit(const std::string& inputString)
 {
@@ -99,6 +111,8 @@ UsdUfe::IsRootChildFn        gIsRootChildFn = nullptr;
 UsdUfe::UniqueChildNameFn    gUniqueChildNameFn = nullptr;
 UsdUfe::WaitCursorFn         gStartWaitCursorFn = nullptr;
 UsdUfe::WaitCursorFn         gStopWaitCursorFn = nullptr;
+
+UsdUfe::DisplayMessageFn gDisplayMessageFn[static_cast<int>(MessageType::nbTypes)] = { nullptr };
 
 } // anonymous namespace
 
@@ -224,7 +238,11 @@ void setIsAttributeLockedFn(IsAttributeLockedFn fn)
 
 bool isAttributedLocked(const PXR_NS::UsdAttribute& attr, std::string* errMsg /*= nullptr*/)
 {
-    return gIsAttributeLockedFn ? gIsAttributeLockedFn(attr, errMsg) : false;
+    // If we have (optional) attribute is locked function, use it.
+    // Otherwise use the default one supplied by UsdUfe.
+    if (gIsAttributeLockedFn)
+        return gIsAttributeLockedFn(attr, errMsg);
+    return Editability::isAttributeLocked(attr, errMsg);
 }
 
 void setSaveStageLoadRulesFn(SaveStageLoadRulesFn fn)
@@ -377,6 +395,239 @@ SdfPath uniqueChildPath(const UsdStage& stage, const SdfPath& path)
         return path;
 
     return path.ReplaceName(TfToken(uniqueName));
+}
+
+void setDisplayMessageFn(const DisplayMessageFn fns[static_cast<int>(MessageType::nbTypes)])
+{
+    // Each of the display message functions is allowed to be null in which case
+    // a default function will be used for each.
+    for (int i = 0; i < static_cast<int>(MessageType::nbTypes); ++i) {
+        gDisplayMessageFn[i] = fns[i];
+    }
+}
+
+void displayMessage(MessageType type, const std::string& msg)
+{
+    // If we have an (optional) display message for the input type, use it.
+    // Otherwise use the default TF_ ones provided by USD.
+    auto messageFn = gDisplayMessageFn[static_cast<int>(MessageType::kInfo)];
+    if (messageFn) {
+        messageFn(msg);
+    } else {
+        switch (type) {
+        case MessageType::kInfo: TF_STATUS(msg); break;
+        case MessageType::kWarning: TF_WARN(msg); break;
+        case MessageType::KError: TF_RUNTIME_ERROR(msg); break;
+        default: break;
+        }
+    }
+}
+
+namespace {
+// Do not expose that function. The input parameter does not provide enough information to
+// distinguish between kEnum and kEnumString.
+Ufe::Attribute::Type _UsdTypeToUfe(const SdfValueTypeName& usdType)
+{
+    // Map the USD type into UFE type.
+    static const std::unordered_map<size_t, Ufe::Attribute::Type> sUsdTypeToUfe {
+        { SdfValueTypeNames->Bool.GetHash(), Ufe::Attribute::kBool },           // bool
+        { SdfValueTypeNames->Int.GetHash(), Ufe::Attribute::kInt },             // int32_t
+        { SdfValueTypeNames->Float.GetHash(), Ufe::Attribute::kFloat },         // float
+        { SdfValueTypeNames->Double.GetHash(), Ufe::Attribute::kDouble },       // double
+        { SdfValueTypeNames->String.GetHash(), Ufe::Attribute::kString },       // std::string
+        { SdfValueTypeNames->Token.GetHash(), Ufe::Attribute::kString },        // TfToken
+        { SdfValueTypeNames->Int3.GetHash(), Ufe::Attribute::kInt3 },           // GfVec3i
+        { SdfValueTypeNames->Float3.GetHash(), Ufe::Attribute::kFloat3 },       // GfVec3f
+        { SdfValueTypeNames->Double3.GetHash(), Ufe::Attribute::kDouble3 },     // GfVec3d
+        { SdfValueTypeNames->Color3f.GetHash(), Ufe::Attribute::kColorFloat3 }, // GfVec3f
+        { SdfValueTypeNames->Color3d.GetHash(), Ufe::Attribute::kColorFloat3 }, // GfVec3d
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        { SdfValueTypeNames->Asset.GetHash(), Ufe::Attribute::kFilename },      // SdfAssetPath
+        { SdfValueTypeNames->Float2.GetHash(), Ufe::Attribute::kFloat2 },       // GfVec2f
+        { SdfValueTypeNames->Float4.GetHash(), Ufe::Attribute::kFloat4 },       // GfVec4f
+        { SdfValueTypeNames->Color4f.GetHash(), Ufe::Attribute::kColorFloat4 }, // GfVec4f
+        { SdfValueTypeNames->Color4d.GetHash(), Ufe::Attribute::kColorFloat4 }, // GfVec4d
+        { SdfValueTypeNames->Matrix3d.GetHash(), Ufe::Attribute::kMatrix3d },   // GfMatrix3d
+        { SdfValueTypeNames->Matrix4d.GetHash(), Ufe::Attribute::kMatrix4d },   // GfMatrix4d
+#endif
+    };
+    const auto iter = sUsdTypeToUfe.find(usdType.GetHash());
+    if (iter != sUsdTypeToUfe.end()) {
+        return iter->second;
+    } else {
+        static const std::unordered_map<std::string, Ufe::Attribute::Type> sCPPTypeToUfe {
+            // There are custom Normal3f, Point3f types in USD. They can all be recognized by the
+            // underlying CPP type and if there is a Ufe type that matches, use it.
+            { "GfVec3i", Ufe::Attribute::kInt3 },   { "GfVec3d", Ufe::Attribute::kDouble3 },
+            { "GfVec3f", Ufe::Attribute::kFloat3 },
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            { "GfVec2f", Ufe::Attribute::kFloat2 }, { "GfVec4f", Ufe::Attribute::kFloat4 },
+#endif
+        };
+
+        const auto iter = sCPPTypeToUfe.find(usdType.GetCPPTypeName());
+        if (iter != sCPPTypeToUfe.end()) {
+            return iter->second;
+        } else {
+            return Ufe::Attribute::kGeneric;
+        }
+    }
+}
+} // namespace
+
+Ufe::Attribute::Type usdTypeToUfe(const SdrShaderPropertyConstPtr& shaderProperty)
+{
+    Ufe::Attribute::Type retVal = Ufe::Attribute::kInvalid;
+
+    const SdfValueTypeName typeName = shaderProperty->GetTypeAsSdfType().first;
+    if (typeName.GetHash() == SdfValueTypeNames->Token.GetHash()) {
+        static const TokenToSdfTypeMap tokenTypeToSdfType
+            = { { SdrPropertyTypes->Int, SdfValueTypeNames->Int },
+                { SdrPropertyTypes->String, SdfValueTypeNames->String },
+                { SdrPropertyTypes->Float, SdfValueTypeNames->Float },
+                { SdrPropertyTypes->Color, SdfValueTypeNames->Color3f },
+#if defined(USD_HAS_COLOR4_SDR_SUPPORT)
+                { SdrPropertyTypes->Color4, SdfValueTypeNames->Color4f },
+#endif
+                { SdrPropertyTypes->Point, SdfValueTypeNames->Point3f },
+                { SdrPropertyTypes->Normal, SdfValueTypeNames->Normal3f },
+                { SdrPropertyTypes->Vector, SdfValueTypeNames->Vector3f },
+                { SdrPropertyTypes->Matrix, SdfValueTypeNames->Matrix4d } };
+        TokenToSdfTypeMap::const_iterator it
+            = tokenTypeToSdfType.find(shaderProperty->GetTypeAsSdfType().second);
+        if (it != tokenTypeToSdfType.end()) {
+            retVal = _UsdTypeToUfe(it->second);
+        } else {
+#if PXR_VERSION < 2205
+            // Pre-22.05 boolean inputs are special:
+            if (shaderProperty->GetType() == SdfValueTypeNames->Bool.GetAsToken()) {
+                retVal = _UsdTypeToUfe(SdfValueTypeNames->Bool);
+            } else
+#endif
+                // There is no Matrix3d type in Sdr, so we need to infer it from Sdf until a fix
+                // similar to what was done to booleans is submitted to USD. This also means that
+                // there will be no default value for that type.
+                if (shaderProperty->GetType() == SdfValueTypeNames->Matrix3d.GetAsToken()) {
+                retVal = _UsdTypeToUfe(SdfValueTypeNames->Matrix3d);
+            } else {
+                retVal = Ufe::Attribute::kGeneric;
+            }
+        }
+    } else {
+        retVal = _UsdTypeToUfe(typeName);
+    }
+
+    if (retVal == Ufe::Attribute::kString) {
+        if (!shaderProperty->GetOptions().empty()) {
+            retVal = Ufe::Attribute::kEnumString;
+        }
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        else if (shaderProperty->IsAssetIdentifier()) {
+            retVal = Ufe::Attribute::kFilename;
+        }
+#endif
+    }
+
+    return retVal;
+}
+
+Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::UsdAttribute& usdAttr)
+{
+    if (usdAttr.IsValid()) {
+        const SdfValueTypeName typeName = usdAttr.GetTypeName();
+        Ufe::Attribute::Type   type = _UsdTypeToUfe(typeName);
+        if (type == Ufe::Attribute::kString) {
+            // Both std::string and TfToken resolve to kString, but if there is a list of allowed
+            // tokens, then we use kEnumString instead.
+            if (usdAttr.GetPrim().GetPrimDefinition().GetPropertyMetadata<VtTokenArray>(
+                    usdAttr.GetName(), SdfFieldKeys->AllowedTokens, nullptr)) {
+                type = Ufe::Attribute::kEnumString;
+            }
+            UsdShadeNodeGraph asNodeGraph(usdAttr.GetPrim());
+            if (asNodeGraph) {
+                // NodeGraph inputs can have enum metadata on them when they export an inner enum.
+                const auto portType = UsdShadeUtils::GetBaseNameAndType(usdAttr.GetName()).second;
+                if (portType == UsdShadeAttributeType::Input) {
+                    const auto input = UsdShadeInput(usdAttr);
+                    if (!input.GetSdrMetadataByKey(TfToken("enum")).empty()) {
+                        return Ufe::Attribute::kEnumString;
+                    }
+                }
+                // TfToken is also used in UsdShade as a Generic placeholder for connecting struct
+                // I/O.
+                if (usdAttr.GetTypeName() == SdfValueTypeNames->Token
+                    && portType != UsdShadeAttributeType::Invalid) {
+                    type = Ufe::Attribute::kGeneric;
+                }
+            }
+        }
+        return type;
+    }
+
+    TF_RUNTIME_ERROR("Invalid USDAttribute: %s", usdAttr.GetPath().GetAsString().c_str());
+    return Ufe::Attribute::kInvalid;
+}
+
+SdfValueTypeName ufeTypeToUsd(const Ufe::Attribute::Type ufeType)
+{
+    // Map the USD type into UFE type.
+    static const std::unordered_map<Ufe::Attribute::Type, SdfValueTypeName> sUfeTypeToUsd {
+        { Ufe::Attribute::kBool, SdfValueTypeNames->Bool },
+        { Ufe::Attribute::kInt, SdfValueTypeNames->Int },
+        { Ufe::Attribute::kFloat, SdfValueTypeNames->Float },
+        { Ufe::Attribute::kDouble, SdfValueTypeNames->Double },
+        { Ufe::Attribute::kString, SdfValueTypeNames->String },
+        // Not enough info at this point to differentiate between TfToken and std:string.
+        { Ufe::Attribute::kEnumString, SdfValueTypeNames->Token },
+        { Ufe::Attribute::kInt3, SdfValueTypeNames->Int3 },
+        { Ufe::Attribute::kFloat3, SdfValueTypeNames->Float3 },
+        { Ufe::Attribute::kDouble3, SdfValueTypeNames->Double3 },
+        { Ufe::Attribute::kColorFloat3, SdfValueTypeNames->Color3f },
+        { Ufe::Attribute::kGeneric, SdfValueTypeNames->Token },
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        { Ufe::Attribute::kFilename, SdfValueTypeNames->Asset },
+        { Ufe::Attribute::kFloat2, SdfValueTypeNames->Float2 },
+        { Ufe::Attribute::kFloat4, SdfValueTypeNames->Float4 },
+        { Ufe::Attribute::kColorFloat4, SdfValueTypeNames->Color4f },
+        { Ufe::Attribute::kMatrix3d, SdfValueTypeNames->Matrix3d },
+        { Ufe::Attribute::kMatrix4d, SdfValueTypeNames->Matrix4d },
+#endif
+    };
+
+    const auto iter = sUfeTypeToUsd.find(ufeType);
+    if (iter != sUfeTypeToUsd.end()) {
+        return iter->second;
+    } else {
+        return SdfValueTypeName();
+    }
+}
+
+UsdAttribute* usdAttrFromUfeAttr(const Ufe::Attribute::Ptr& attr)
+{
+    if (!attr) {
+        TF_RUNTIME_ERROR("Invalid attribute.");
+        return nullptr;
+    }
+
+    if (attr->sceneItem()->runTimeId() != getUsdRunTimeId()) {
+        TF_RUNTIME_ERROR(
+            "Invalid runtime identifier for the attribute '" + attr->name() + "' in the node '"
+            + Ufe::PathString::string(attr->sceneItem()->path()) + "'.");
+        return nullptr;
+    }
+
+    return dynamic_cast<UsdAttribute*>(attr.get());
+}
+
+Ufe::Attribute::Ptr attrFromUfeAttrInfo(const Ufe::AttributeInfo& attrInfo)
+{
+    auto item
+        = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(attrInfo.path()));
+    if (!item) {
+        TF_RUNTIME_ERROR("Invalid scene item.");
+        return nullptr;
+    }
+    return UsdAttributes(item).attribute(attrInfo.name());
 }
 
 namespace {
@@ -949,6 +1200,33 @@ Ufe::Value vtValueToUfeValue(const PXR_NS::VtValue& vtValue)
     }
 }
 #endif
+
+PXR_NS::SdrShaderNodeConstPtr usdShaderNodeFromSceneItem(const Ufe::SceneItem::Ptr& item)
+{
+    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    PXR_NAMESPACE_USING_DIRECTIVE
+    if (!TF_VERIFY(usdItem)) {
+        return nullptr;
+    }
+    PXR_NS::UsdPrim        prim = usdItem->prim();
+    PXR_NS::UsdShadeShader shader(prim);
+    if (!shader) {
+        return nullptr;
+    }
+    PXR_NS::TfToken mxNodeType;
+    shader.GetIdAttr().Get(&mxNodeType);
+
+    // Careful around name and identifier. They are not the same concept.
+    //
+    // Here is one example from MaterialX to illustrate:
+    //
+    //  ND_standard_surface_surfaceshader exists in 2 versions with identifiers:
+    //     ND_standard_surface_surfaceshader     (latest version)
+    //     ND_standard_surface_surfaceshader_100 (version 1.0.0)
+    // Same name, 2 different identifiers.
+    PXR_NS::SdrRegistry& registry = PXR_NS::SdrRegistry::GetInstance();
+    return registry.GetShaderNodeByIdentifier(mxNodeType);
+}
 
 void setWaitCursorFns(WaitCursorFn startFn, WaitCursorFn stopFn)
 {

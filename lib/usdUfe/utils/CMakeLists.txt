@@ -3,6 +3,7 @@
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
+        editability.cpp
         editRouter.cpp
         editRouterContext.cpp
         layers.cpp
@@ -17,6 +18,7 @@ target_sources(${PROJECT_NAME}
 # promote headers
 # -----------------------------------------------------------------------------
 set(HEADERS
+    editability.h
     editRouter.h
     editRouterContext.h
     layers.h

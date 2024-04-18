@@ -15,13 +15,12 @@
 //
 #include "UsdAttribute.h"
 
-#include "Utils.h"
 #include "private/UfeNotifGuard.h"
-
-#include <mayaUsd/ufe/Utils.h>
 
 #include <usdUfe/ufe/StagesSubject.h>
 #include <usdUfe/ufe/UsdUndoableCommand.h>
+#include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/usdUtils.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
@@ -31,17 +30,15 @@
 #include <pxr/usd/usd/schemaRegistry.h>
 #include <pxr/usd/usdShade/utils.h>
 
-#include <maya/MGlobal.h>
-
 #include <sstream>
 #include <unordered_map>
 #include <unordered_set>
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#include "UsdShaderAttributeDef.h"
+#include <usdUfe/ufe/UsdShaderAttributeDef.h>
 #endif
 #ifdef UFE_V3_FEATURES_AVAILABLE
-#include <mayaUsd/base/tokens.h>
+#include <usdUfe/base/tokens.h>
 #endif
 
 // Note: normally we would use this using directive, but here we cannot because
@@ -60,7 +57,7 @@ static constexpr char kErrorMsgInvalidType[]
 
 namespace {
 
-template <typename T> bool setUsdAttr(MayaUsd::ufe::UsdAttribute& attr, const T& value)
+template <typename T> bool setUsdAttr(UsdUfe::UsdAttribute& attr, const T& value)
 {
     // USD Attribute Notification doubling problem:
     // As of 24-Nov-2019, calling Set() on a UsdAttribute causes two "info only"
@@ -103,12 +100,11 @@ PXR_NS::UsdTimeCode getCurrentTime(const Ufe::SceneItem::Ptr& item)
     // Attributes with time samples will fail when calling Get with default time code.
     // So we'll always use the current time when calling Get. If there are no time
     // samples, it will fall-back to the default time code.
-    return MayaUsd::ufe::getTime(item->path());
+    return UsdUfe::getTime(item->path());
 }
 
-std::string getUsdAttributeValueAsString(
-    const MayaUsd::ufe::UsdAttribute& attr,
-    const PXR_NS::UsdTimeCode&        time)
+std::string
+getUsdAttributeValueAsString(const UsdUfe::UsdAttribute& attr, const PXR_NS::UsdTimeCode& time)
 {
     if (!attr.isValid() ||
 #ifdef UFE_V4_FEATURES_AVAILABLE
@@ -139,9 +135,7 @@ std::string getUsdAttributeValueAsString(
 }
 
 template <typename T, typename U>
-U getUsdAttributeVectorAsUfe(
-    const MayaUsd::ufe::UsdAttribute& attr,
-    const PXR_NS::UsdTimeCode&        time)
+U getUsdAttributeVectorAsUfe(const UsdUfe::UsdAttribute& attr, const PXR_NS::UsdTimeCode& time)
 {
     VtValue vt;
     if (!attr.isValid() ||
@@ -151,7 +145,7 @@ U getUsdAttributeVectorAsUfe(
         !attr.hasValue()) {
 #endif
         if (!attr.defaultValue().empty()) {
-            vt = MayaUsd::ufe::vtValueFromString(attr.usdAttributeType(), attr.defaultValue());
+            vt = UsdUfe::vtValueFromString(attr.usdAttributeType(), attr.defaultValue());
         } else {
             return U();
         }
@@ -167,9 +161,9 @@ U getUsdAttributeVectorAsUfe(
 
 template <typename T, typename U>
 void setUsdAttributeVectorFromUfe(
-    MayaUsd::ufe::UsdAttribute& attr,
-    const U&                    value,
-    const PXR_NS::UsdTimeCode&  time)
+    UsdUfe::UsdAttribute&      attr,
+    const U&                   value,
+    const PXR_NS::UsdTimeCode& time)
 {
     T vec;
     std::copy(value.vector.data(), value.vector.data() + value.vector.size(), vec.data());
@@ -177,7 +171,7 @@ void setUsdAttributeVectorFromUfe(
 }
 
 template <typename T, typename U>
-U getUsdAttributeColorAsUfe(const MayaUsd::ufe::UsdAttribute& attr, const PXR_NS::UsdTimeCode& time)
+U getUsdAttributeColorAsUfe(const UsdUfe::UsdAttribute& attr, const PXR_NS::UsdTimeCode& time)
 {
     VtValue vt;
     if (!attr.isValid() ||
@@ -187,7 +181,7 @@ U getUsdAttributeColorAsUfe(const MayaUsd::ufe::UsdAttribute& attr, const PXR_NS
         !attr.hasValue()) {
 #endif
         if (!attr.defaultValue().empty()) {
-            vt = MayaUsd::ufe::vtValueFromString(attr.usdAttributeType(), attr.defaultValue());
+            vt = UsdUfe::vtValueFromString(attr.usdAttributeType(), attr.defaultValue());
         } else {
             return U();
         }
@@ -202,9 +196,9 @@ U getUsdAttributeColorAsUfe(const MayaUsd::ufe::UsdAttribute& attr, const PXR_NS
 
 template <typename T, typename U>
 void setUsdAttributeColorFromUfe(
-    MayaUsd::ufe::UsdAttribute& attr,
-    const U&                    value,
-    const PXR_NS::UsdTimeCode&  time)
+    UsdUfe::UsdAttribute&      attr,
+    const U&                   value,
+    const PXR_NS::UsdTimeCode& time)
 {
     T vec;
     std::copy(value.color.data(), value.color.data() + value.color.size(), vec.data());
@@ -213,14 +207,12 @@ void setUsdAttributeColorFromUfe(
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 template <typename T, typename U>
-U getUsdAttributeMatrixAsUfe(
-    const MayaUsd::ufe::UsdAttribute& attr,
-    const PXR_NS::UsdTimeCode&        time)
+U getUsdAttributeMatrixAsUfe(const UsdUfe::UsdAttribute& attr, const PXR_NS::UsdTimeCode& time)
 {
     VtValue vt;
     if (!attr.isValid() || !attr._hasValue()) {
         if (!attr.defaultValue().empty()) {
-            vt = MayaUsd::ufe::vtValueFromString(attr.usdAttributeType(), attr.defaultValue());
+            vt = UsdUfe::vtValueFromString(attr.usdAttributeType(), attr.defaultValue());
         } else {
             return U();
         }
@@ -237,9 +229,9 @@ U getUsdAttributeMatrixAsUfe(
 
 template <typename T, typename U>
 void setUsdAttributeMatrixFromUfe(
-    MayaUsd::ufe::UsdAttribute& attr,
-    const U&                    value,
-    const PXR_NS::UsdTimeCode&  time)
+    UsdUfe::UsdAttribute&      attr,
+    const U&                   value,
+    const PXR_NS::UsdTimeCode& time)
 {
     T mat;
     std::copy(
@@ -250,7 +242,7 @@ void setUsdAttributeMatrixFromUfe(
 }
 #endif
 
-template <typename T, typename A = MayaUsd::ufe::TypedUsdAttribute<T>>
+template <typename T, typename A = UsdUfe::TypedUsdAttribute<T>>
 class SetUndoableCommand : public UsdUfe::UsdUndoableCommand<Ufe::UndoableCommand>
 {
 public:
@@ -285,9 +277,9 @@ class SetUndoableMetadataCommand : public UsdUfe::UsdUndoableCommand<Ufe::Undoab
 {
 public:
     SetUndoableMetadataCommand(
-        MayaUsd::ufe::UsdAttribute& attr,
-        const std::string&          key,
-        const Ufe::Value&           newValue)
+        UsdUfe::UsdAttribute& attr,
+        const std::string&    key,
+        const Ufe::Value&     newValue)
         : _attr(attr)
         , _key(key)
         , _newValue(newValue)
@@ -317,22 +309,21 @@ protected:
     }
 
 private:
-    MayaUsd::ufe::UsdAttribute& _attr;
-    const std::string           _key;
-    const Ufe::Value            _newValue;
+    UsdUfe::UsdAttribute& _attr;
+    const std::string     _key;
+    const Ufe::Value      _newValue;
 };
 #endif
 
 } // end namespace
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //------------------------------------------------------------------------------
 // UsdAttribute:
 //------------------------------------------------------------------------------
 
-MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdAttribute);
+USDUFE_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdAttribute);
 
 UsdAttribute::UsdAttribute(UsdAttributeHolder::UPtr&& attrHolder)
     : _attrHolder(std::move(attrHolder))
@@ -464,8 +455,8 @@ PXR_NS::SdfValueTypeName UsdAttribute::usdAttributeType() const
 //------------------------------------------------------------------------------
 
 // Ensure that UsdAttributeGeneric is properly setup.
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::AttributeGeneric, UsdAttributeGeneric);
-MAYAUSD_VERIFY_CLASS_BASE(UsdAttribute, UsdAttributeGeneric);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::AttributeGeneric, UsdAttributeGeneric);
+USDUFE_VERIFY_CLASS_BASE(UsdAttribute, UsdAttributeGeneric);
 
 UsdAttributeGeneric::UsdAttributeGeneric(
     const UsdSceneItem::Ptr&   item,
@@ -501,8 +492,8 @@ const std::string& UsdAttributeGeneric::nativeSdrTypeMetadata()
 //------------------------------------------------------------------------------
 
 // Ensure that UsdAttributeFilename is properly setup.
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::AttributeFilename, UsdAttributeFilename);
-MAYAUSD_VERIFY_CLASS_BASE(UsdAttribute, UsdAttributeFilename);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::AttributeFilename, UsdAttributeFilename);
+USDUFE_VERIFY_CLASS_BASE(UsdAttribute, UsdAttributeFilename);
 
 UsdAttributeFilename::UsdAttributeFilename(
     const UsdSceneItem::Ptr&   item,
@@ -560,7 +551,7 @@ Ufe::UndoableCommand::Ptr UsdAttributeFilename::setCmd(const std::string& value)
 
     const std::string errMsg = isEditAllowedMsg();
     if (!errMsg.empty()) {
-        MGlobal::displayError(errMsg.c_str());
+        displayMessage(MessageType::KError, errMsg);
         return nullptr;
     }
 
@@ -573,8 +564,8 @@ Ufe::UndoableCommand::Ptr UsdAttributeFilename::setCmd(const std::string& value)
 //------------------------------------------------------------------------------
 
 // Ensure that UsdAttributeEnumString is properly setup.
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::AttributeEnumString, UsdAttributeEnumString);
-MAYAUSD_VERIFY_CLASS_BASE(UsdAttribute, UsdAttributeEnumString);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::AttributeEnumString, UsdAttributeEnumString);
+USDUFE_VERIFY_CLASS_BASE(UsdAttribute, UsdAttributeEnumString);
 
 UsdAttributeEnumString::UsdAttributeEnumString(
     const UsdSceneItem::Ptr&   item,
@@ -628,7 +619,7 @@ Ufe::UndoableCommand::Ptr UsdAttributeEnumString::setCmd(const std::string& valu
 
     const std::string errMsg = isEditAllowedMsg();
     if (!errMsg.empty()) {
-        MGlobal::displayError(errMsg.c_str());
+        displayMessage(MessageType::KError, errMsg);
         return nullptr;
     }
 
@@ -645,8 +636,8 @@ Ufe::AttributeEnumString::EnumValues UsdAttributeEnumString::getEnumValues() con
 //------------------------------------------------------------------------------
 
 // Ensure that UsdAttributeEnumToken is properly setup.
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::AttributeEnumString, UsdAttributeEnumToken);
-MAYAUSD_VERIFY_CLASS_BASE(UsdAttribute, UsdAttributeEnumToken);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::AttributeEnumString, UsdAttributeEnumToken);
+USDUFE_VERIFY_CLASS_BASE(UsdAttribute, UsdAttributeEnumToken);
 
 UsdAttributeEnumToken::UsdAttributeEnumToken(
     const UsdSceneItem::Ptr&   item,
@@ -692,7 +683,7 @@ Ufe::UndoableCommand::Ptr UsdAttributeEnumToken::setCmd(const std::string& value
 
     const std::string errMsg = isEditAllowedMsg();
     if (!errMsg.empty()) {
-        MGlobal::displayError(errMsg.c_str());
+        displayMessage(MessageType::KError, errMsg);
         return nullptr;
     }
 
@@ -721,7 +712,7 @@ template <typename T> Ufe::UndoableCommand::Ptr TypedUsdAttribute<T>::setCmd(con
 {
     const std::string errMsg = isEditAllowedMsg();
     if (!errMsg.empty()) {
-        MGlobal::displayError(errMsg.c_str());
+        displayMessage(MessageType::KError, errMsg);
         return nullptr;
     }
 
@@ -857,7 +848,7 @@ template <typename T> void TypedUsdAttribute<T>::set(const T& value)
 // UsdAttributeBool:
 //------------------------------------------------------------------------------
 
-MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<bool>, UsdAttributeBool);
+USDUFE_VERIFY_CLASS_SETUP(TypedUsdAttribute<bool>, UsdAttributeBool);
 
 /*static*/
 UsdAttributeBool::Ptr
@@ -871,7 +862,7 @@ UsdAttributeBool::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr
 // UsdAttributeInt:
 //------------------------------------------------------------------------------
 
-MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<int>, UsdAttributeInt);
+USDUFE_VERIFY_CLASS_SETUP(TypedUsdAttribute<int>, UsdAttributeInt);
 
 /*static*/
 UsdAttributeInt::Ptr
@@ -885,7 +876,7 @@ UsdAttributeInt::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&
 // UsdAttributeFloat:
 //------------------------------------------------------------------------------
 
-MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<float>, UsdAttributeFloat);
+USDUFE_VERIFY_CLASS_SETUP(TypedUsdAttribute<float>, UsdAttributeFloat);
 
 /*static*/
 UsdAttributeFloat::Ptr
@@ -899,7 +890,7 @@ UsdAttributeFloat::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPt
 // UsdAttributeDouble:
 //------------------------------------------------------------------------------
 
-MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<double>, UsdAttributeDouble);
+USDUFE_VERIFY_CLASS_SETUP(TypedUsdAttribute<double>, UsdAttributeDouble);
 
 /*static*/
 UsdAttributeDouble::Ptr
@@ -914,8 +905,8 @@ UsdAttributeDouble::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UP
 //------------------------------------------------------------------------------
 
 // Ensure that UsdAttributeString is properly setup.
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::TypedAttribute<std::string>, UsdAttributeString);
-MAYAUSD_VERIFY_CLASS_BASE(UsdAttribute, UsdAttributeString);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::TypedAttribute<std::string>, UsdAttributeString);
+USDUFE_VERIFY_CLASS_BASE(UsdAttribute, UsdAttributeString);
 
 UsdAttributeString::UsdAttributeString(
     const UsdSceneItem::Ptr&   item,
@@ -960,7 +951,7 @@ Ufe::UndoableCommand::Ptr UsdAttributeString::setCmd(const std::string& value)
 
     const std::string errMsg = isEditAllowedMsg();
     if (!errMsg.empty()) {
-        MGlobal::displayError(errMsg.c_str());
+        displayMessage(MessageType::KError, errMsg);
         return nullptr;
     }
 
@@ -972,8 +963,8 @@ Ufe::UndoableCommand::Ptr UsdAttributeString::setCmd(const std::string& value)
 //------------------------------------------------------------------------------
 
 // Ensure that UsdAttributeToken is properly setup.
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::TypedAttribute<std::string>, UsdAttributeToken);
-MAYAUSD_VERIFY_CLASS_BASE(UsdAttribute, UsdAttributeToken);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::TypedAttribute<std::string>, UsdAttributeToken);
+USDUFE_VERIFY_CLASS_BASE(UsdAttribute, UsdAttributeToken);
 
 UsdAttributeToken::UsdAttributeToken(
     const UsdSceneItem::Ptr&   item,
@@ -1018,7 +1009,7 @@ Ufe::UndoableCommand::Ptr UsdAttributeToken::setCmd(const std::string& value)
 
     const std::string errMsg = isEditAllowedMsg();
     if (!errMsg.empty()) {
-        MGlobal::displayError(errMsg.c_str());
+        displayMessage(MessageType::KError, errMsg);
         return nullptr;
     }
 
@@ -1029,7 +1020,7 @@ Ufe::UndoableCommand::Ptr UsdAttributeToken::setCmd(const std::string& value)
 // UsdAttributeColorFloat3:
 //------------------------------------------------------------------------------
 
-MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Color3f>, UsdAttributeColorFloat3);
+USDUFE_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Color3f>, UsdAttributeColorFloat3);
 
 /*static*/
 UsdAttributeColorFloat3::Ptr UsdAttributeColorFloat3::create(
@@ -1045,7 +1036,7 @@ UsdAttributeColorFloat3::Ptr UsdAttributeColorFloat3::create(
 // UsdAttributeColorFloat4:
 //------------------------------------------------------------------------------
 
-MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Color4f>, UsdAttributeColorFloat4);
+USDUFE_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Color4f>, UsdAttributeColorFloat4);
 
 /*static*/
 UsdAttributeColorFloat4::Ptr UsdAttributeColorFloat4::create(
@@ -1061,7 +1052,7 @@ UsdAttributeColorFloat4::Ptr UsdAttributeColorFloat4::create(
 // UsdAttributeInt3:
 //------------------------------------------------------------------------------
 
-MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Vector3i>, UsdAttributeInt3);
+USDUFE_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Vector3i>, UsdAttributeInt3);
 
 /*static*/
 UsdAttributeInt3::Ptr
@@ -1076,7 +1067,7 @@ UsdAttributeInt3::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr
 // UsdAttributeFloat2:
 //------------------------------------------------------------------------------
 
-MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Vector2f>, UsdAttributeFloat2);
+USDUFE_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Vector2f>, UsdAttributeFloat2);
 
 /*static*/
 UsdAttributeFloat2::Ptr
@@ -1091,7 +1082,7 @@ UsdAttributeFloat2::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UP
 // UsdAttributeFloat3:
 //------------------------------------------------------------------------------
 
-MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Vector3f>, UsdAttributeFloat3);
+USDUFE_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Vector3f>, UsdAttributeFloat3);
 
 /*static*/
 UsdAttributeFloat3::Ptr
@@ -1106,7 +1097,7 @@ UsdAttributeFloat3::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UP
 // UsdAttributeFloat4:
 //------------------------------------------------------------------------------
 
-MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Vector4f>, UsdAttributeFloat4);
+USDUFE_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Vector4f>, UsdAttributeFloat4);
 
 /*static*/
 UsdAttributeFloat4::Ptr
@@ -1121,7 +1112,7 @@ UsdAttributeFloat4::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UP
 // UsdAttributeDouble3:
 //------------------------------------------------------------------------------
 
-MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Vector3d>, UsdAttributeDouble3);
+USDUFE_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Vector3d>, UsdAttributeDouble3);
 
 /*static*/
 UsdAttributeDouble3::Ptr
@@ -1136,7 +1127,7 @@ UsdAttributeDouble3::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::U
 // UsdAttributeMatrix3d:
 //------------------------------------------------------------------------------
 
-MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Matrix3d>, UsdAttributeMatrix3d);
+USDUFE_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Matrix3d>, UsdAttributeMatrix3d);
 
 /*static*/
 UsdAttributeMatrix3d::Ptr
@@ -1150,7 +1141,7 @@ UsdAttributeMatrix3d::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::
 // UsdAttributeMatrix4d:
 //------------------------------------------------------------------------------
 
-MAYAUSD_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Matrix4d>, UsdAttributeMatrix4d);
+USDUFE_VERIFY_CLASS_SETUP(TypedUsdAttribute<Ufe::Matrix4d>, UsdAttributeMatrix4d);
 
 /*static*/
 UsdAttributeMatrix4d::Ptr
@@ -1184,5 +1175,4 @@ bool UsdAttribute::setValue(const std::string& value)
 }
 #endif
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

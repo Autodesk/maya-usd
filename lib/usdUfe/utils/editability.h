@@ -13,8 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef MAYA_USD_EDITABILITY_H
-#define MAYA_USD_EDITABILITY_H
+#ifndef USDUFE_EDITABILITY_H
+#define USDUFE_EDITABILITY_H
+
+#include <usdUfe/base/api.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/usd/attribute.h>
@@ -22,7 +24,7 @@
 
 #include <string.h>
 
-namespace MAYAUSD_NS_DEF {
+namespace USDUFE_NS_DEF {
 
 /*! \brief  Determine the editability status of a property.
  */
@@ -30,14 +32,16 @@ namespace MAYAUSD_NS_DEF {
 namespace Editability {
 /*! \brief  Verify if a property is locked.
  */
+USDUFE_PUBLIC
 bool isLocked(PXR_NS::UsdProperty property);
 
 /*! \brief Verify is an attribute is locked, optionally setting error message.
  */
+USDUFE_PUBLIC
 bool isAttributeLocked(const PXR_NS::UsdAttribute& attr, std::string* errMsg);
 
 } // namespace Editability
 
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF
 
-#endif // MAYA_USD_EDITABILITY_H
+#endif // USDUFE_EDITABILITY_H

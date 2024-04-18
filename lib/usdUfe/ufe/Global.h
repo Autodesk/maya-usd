@@ -19,6 +19,7 @@
 #include <usdUfe/ufe/StagesSubject.h>
 #include <usdUfe/ufe/Utils.h>
 
+#include <ufe/attributesHandler.h>
 #include <ufe/cameraHandler.h>
 #include <ufe/contextOpsHandler.h>
 #include <ufe/hierarchyHandler.h>
@@ -48,6 +49,7 @@ struct USDUFE_PUBLIC DCCFunctions
     SaveStageLoadRulesFn saveStageLoadRulesFn = nullptr;
     IsRootChildFn        isRootChildFn = nullptr;
     UniqueChildNameFn    uniqueChildNameFn = nullptr;
+    DisplayMessageFn     displayMessageFn[static_cast<int>(MessageType::nbTypes)] = { nullptr };
 
     // Optional: nothing will be done if no function is supplied.
     WaitCursorFn startWaitCursorFn = nullptr;
@@ -69,7 +71,7 @@ struct USDUFE_PUBLIC Handlers
     //     Ufe::SceneItemOpsHandler::Ptr sceneItemOpsHandler;
 
     // Ufe v2 handlers
-    //     Ufe::AttributesHandler::Ptr   attributesHandler;
+    Ufe::AttributesHandler::Ptr attributesHandler;
     Ufe::Object3dHandler::Ptr   object3dHandler;
     Ufe::ContextOpsHandler::Ptr contextOpsHandler;
     Ufe::UIInfoHandler::Ptr     uiInfoHandler;

@@ -15,9 +15,9 @@
 //
 #include "editability.h"
 
-#include <mayaUsd/base/tokens.h>
+#include <usdUfe/base/tokens.h>
 
-namespace MAYAUSD_NS_DEF {
+namespace USDUFE_NS_DEF {
 namespace Editability {
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -33,15 +33,15 @@ bool isLocked(PXR_NS::UsdProperty property)
         return false;
 
     PXR_NS::TfToken lock;
-    if (!property.GetMetadata(MayaUsdMetadata->Lock, &lock))
+    if (!property.GetMetadata(MetadataTokens->Lock, &lock))
         return false;
 
-    if (lock == MayaUsdTokens->Off) {
+    if (lock == GenericTokens->Off) {
         return false;
-    } else if (lock == MayaUsdTokens->On) {
+    } else if (lock == GenericTokens->On) {
         return true;
     } else {
-        TF_WARN("Invalid token value [%s] for maya lock will be treated as [off].", lock.data());
+        TF_WARN("Invalid token value [%s] for lock will be treated as [off].", lock.data());
         return false;
     }
 }
@@ -60,4 +60,4 @@ bool isAttributeLocked(const PXR_NS::UsdAttribute& attr, std::string* errMsg)
 }
 
 } // namespace Editability
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

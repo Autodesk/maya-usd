@@ -16,8 +16,11 @@
 
 #include "usdUtils.h"
 
+#include <usdUfe/utils/Utils.h>
+
 #include <pxr/usd/pcp/layerStack.h>
 #include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/inherits.h>
 #include <pxr/usd/usd/primCompositionQuery.h>
@@ -27,6 +30,8 @@
 #include <pxr/usd/usd/relationship.h>
 #include <pxr/usd/usd/specializes.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usdShade/material.h>
+#include <pxr/usd/usdShade/nodeGraph.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -419,5 +424,233 @@ bool cleanReferencedPath(const UsdPrim& deletedPrim)
 }
 
 bool isInternalReference(const SdfReference& ref) { return ref.IsInternal(); }
+
+VtValue vtValueFromString(const SdfValueTypeName& typeName, const std::string& strValue)
+{
+    // clang-format off
+    static const std::unordered_map<std::string, std::function<VtValue(const std::string&)>>
+        sUsdConverterMap {
+            // Using the CPPTypeName prevents having to repeat converters for types that share the
+            // same VtValue representation like Float3, Color3f, Normal3f, Point3f, allowing support
+            // for more Sdf types without having to list them all.
+            { SdfValueTypeNames->Bool.GetCPPTypeName(),
+              [](const std::string& s) { return VtValue("true" == s ? true : false); } },
+            { SdfValueTypeNames->Int.GetCPPTypeName(),
+              [](const std::string& s) {
+                  return s.empty() ? VtValue() : VtValue(std::stoi(s.c_str())); } },
+            { SdfValueTypeNames->Float.GetCPPTypeName(),
+              [](const std::string& s) {
+                  return s.empty() ? VtValue() : VtValue(std::stof(s.c_str())); } },
+            { SdfValueTypeNames->Double.GetCPPTypeName(),
+              [](const std::string& s) {
+                  return s.empty() ? VtValue() : VtValue(std::stod(s.c_str())); } },
+            { SdfValueTypeNames->String.GetCPPTypeName(),
+              [](const std::string& s) { return VtValue(s); } },
+            { SdfValueTypeNames->Token.GetCPPTypeName(),
+              [](const std::string& s) { return VtValue(TfToken(s)); } },
+            { SdfValueTypeNames->Asset.GetCPPTypeName(),
+              [](const std::string& s) { return VtValue(SdfAssetPath(s)); } },
+            { SdfValueTypeNames->Int3.GetCPPTypeName(),
+              [](const std::string& s) {
+                  std::vector<std::string> tokens = splitString(s, "()[], ");
+                  if (tokens.size() == 3) {
+                      return VtValue(GfVec3i(
+                          std::stoi(tokens[0].c_str()),
+                          std::stoi(tokens[1].c_str()),
+                          std::stoi(tokens[2].c_str())));
+                  }
+                  return VtValue(); } },
+            { SdfValueTypeNames->Float2.GetCPPTypeName(),
+              [](const std::string& s) {
+                  std::vector<std::string> tokens = splitString(s, "()[], ");
+                  if (tokens.size() == 2) {
+                      return VtValue(
+                          GfVec2f(std::stof(tokens[0].c_str()), std::stof(tokens[1].c_str())));
+                  }
+                  return VtValue(); } },
+            { SdfValueTypeNames->Float3.GetCPPTypeName(),
+              [](const std::string& s) {
+                  std::vector<std::string> tokens = splitString(s, "()[], ");
+                  if (tokens.size() == 3) {
+                      return VtValue(GfVec3f(
+                          std::stof(tokens[0].c_str()),
+                          std::stof(tokens[1].c_str()),
+                          std::stof(tokens[2].c_str())));
+                  }
+                  return VtValue(); } },
+            { SdfValueTypeNames->Float4.GetCPPTypeName(),
+              [](const std::string& s) {
+                  std::vector<std::string> tokens = splitString(s, "()[], ");
+                  if (tokens.size() == 4) {
+                      return VtValue(GfVec4f(
+                          std::stof(tokens[0].c_str()),
+                          std::stof(tokens[1].c_str()),
+                          std::stof(tokens[2].c_str()),
+                          std::stof(tokens[3].c_str())));
+                  }
+                  return VtValue(); } },
+            { SdfValueTypeNames->Double3.GetCPPTypeName(),
+              [](const std::string& s) {
+                  std::vector<std::string> tokens = splitString(s, "()[], ");
+                  if (tokens.size() == 3) {
+                      return VtValue(GfVec3d(
+                          std::stod(tokens[0].c_str()),
+                          std::stod(tokens[1].c_str()),
+                          std::stod(tokens[2].c_str())));
+                  }
+                  return VtValue(); } },
+            { SdfValueTypeNames->Double4.GetCPPTypeName(),
+              [](const std::string& s) {
+                  std::vector<std::string> tokens = splitString(s, "()[], ");
+                  if (tokens.size() == 4) {
+                      return VtValue(GfVec4d(
+                          std::stod(tokens[0].c_str()),
+                          std::stod(tokens[1].c_str()),
+                          std::stod(tokens[2].c_str()),
+                          std::stod(tokens[3].c_str())));
+                  }
+                  return VtValue(); } },
+            { SdfValueTypeNames->Matrix3d.GetCPPTypeName(),
+              [](const std::string& s) {
+                  std::vector<std::string> tokens = splitString(s, "()[], ");
+                  if (tokens.size() == 9) {
+                      double m[3][3];
+                      for (int i = 0, k = 0; i < 3; ++i) {
+                          for (int j = 0; j < 3; ++j, ++k) {
+                              m[i][j] = std::stod(tokens[k].c_str());
+                          }
+                      }
+                      return VtValue(GfMatrix3d(m));
+                  }
+                  return VtValue(); } },
+            { SdfValueTypeNames->Matrix4d.GetCPPTypeName(),
+              [](const std::string& s) {
+                  std::vector<std::string> tokens = splitString(s, "()[], ");
+                  if (tokens.size() == 16) {
+                      double m[4][4];
+                      for (int i = 0, k = 0; i < 4; ++i) {
+                          for (int j = 0; j < 4; ++j, ++k) {
+                              m[i][j] = std::stod(tokens[k].c_str());
+                          }
+                      }
+                      return VtValue(GfMatrix4d(m));
+                  }
+                  return VtValue(); } },
+        };
+    // clang-format on
+    const auto iter = sUsdConverterMap.find(typeName.GetCPPTypeName());
+    if (iter != sUsdConverterMap.end()) {
+        return iter->second(strValue);
+    }
+    return {};
+}
+
+bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttribute& dstUsdAttr)
+{
+    PXR_NS::SdfPathVector connectedAttrs;
+    dstUsdAttr.GetConnections(&connectedAttrs);
+
+    for (PXR_NS::SdfPath path : connectedAttrs) {
+        if (path == srcUsdAttr.GetPath()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool canRemoveSrcProperty(const PXR_NS::UsdAttribute& srcAttr)
+{
+    // Do not remove if it has a value.
+    if (srcAttr.HasValue()) {
+        return false;
+    }
+
+    PXR_NS::SdfPathVector connectedAttrs;
+    srcAttr.GetConnections(&connectedAttrs);
+
+    // Do not remove if it has connections.
+    if (!connectedAttrs.empty()) {
+        return false;
+    }
+
+    const auto prim = srcAttr.GetPrim();
+    if (!prim) {
+        return false;
+    }
+
+    PXR_NS::UsdShadeNodeGraph ngPrim(prim);
+    if (!ngPrim) {
+        const auto primParent = prim.GetParent();
+
+        if (!primParent) {
+            return false;
+        }
+
+        // Do not remove if there is a connection with a prim.
+        for (const auto& childPrim : primParent.GetChildren()) {
+            if (childPrim != prim) {
+                for (const auto& attribute : childPrim.GetAttributes()) {
+                    const PXR_NS::UsdAttribute dstUsdAttr = attribute.As<PXR_NS::UsdAttribute>();
+                    if (isConnected(srcAttr, dstUsdAttr)) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        // Do not remove if there is a connection with the parent prim.
+        for (const auto& attribute : primParent.GetAttributes()) {
+            const PXR_NS::UsdAttribute dstUsdAttr = attribute.As<PXR_NS::UsdAttribute>();
+            if (isConnected(srcAttr, dstUsdAttr)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // Do not remove boundary properties even if there are connections.
+    return false;
+}
+
+bool canRemoveDstProperty(const PXR_NS::UsdAttribute& dstAttr)
+{
+    // Do not remove if it has a value.
+    if (dstAttr.HasValue()) {
+        return false;
+    }
+
+    PXR_NS::SdfPathVector connectedAttrs;
+    dstAttr.GetConnections(&connectedAttrs);
+
+    // Do not remove if it has connections.
+    if (!connectedAttrs.empty()) {
+        return false;
+    }
+
+    const auto prim = dstAttr.GetPrim();
+    if (!prim) {
+        return false;
+    }
+
+    PXR_NS::UsdShadeNodeGraph ngPrim(prim);
+    if (!ngPrim) {
+        return true;
+    }
+
+    UsdShadeMaterial asMaterial(prim);
+    if (asMaterial) {
+        const TfToken baseName = dstAttr.GetBaseName();
+        // Remove Material intrinsic outputs since they are re-created automatically.
+        if (baseName == UsdShadeTokens->surface || baseName == UsdShadeTokens->volume
+            || baseName == UsdShadeTokens->displacement) {
+            return true;
+        }
+    }
+
+    // Do not remove boundary properties even if there are connections.
+    return false;
+}
 
 } // namespace USDUFE_NS_DEF

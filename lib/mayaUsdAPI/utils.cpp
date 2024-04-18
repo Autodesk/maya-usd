@@ -25,18 +25,20 @@
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsdUtils/MergePrims.h>
 
+#include <usdUfe/utils/usdUtils.h>
+
 namespace MAYAUSDAPI_NS_DEF {
 
 Ufe::Rtid getMayaRunTimeId() { return MayaUsd::ufe::getMayaRunTimeId(); }
 
 bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttribute& dstUsdAttr)
 {
-    return MayaUsd::ufe::isConnected(srcUsdAttr, dstUsdAttr);
+    return UsdUfe::isConnected(srcUsdAttr, dstUsdAttr);
 }
 
 PXR_NS::UsdStageWeakPtr usdStage(const Ufe::Attribute::Ptr& attribute)
 {
-    if (auto usdAttribute = std::dynamic_pointer_cast<MayaUsd::ufe::UsdAttribute>(attribute)) {
+    if (auto usdAttribute = std::dynamic_pointer_cast<UsdUfe::UsdAttribute>(attribute)) {
         return usdAttribute->usdPrim().GetStage();
     }
     return nullptr;
@@ -44,7 +46,7 @@ PXR_NS::UsdStageWeakPtr usdStage(const Ufe::Attribute::Ptr& attribute)
 
 PXR_NS::SdfValueTypeName usdAttributeType(const Ufe::Attribute::Ptr& attribute)
 {
-    if (auto usdAttribute = std::dynamic_pointer_cast<MayaUsd::ufe::UsdAttribute>(attribute)) {
+    if (auto usdAttribute = std::dynamic_pointer_cast<UsdUfe::UsdAttribute>(attribute)) {
         return usdAttribute->usdAttributeType();
     }
     return PXR_NS::SdfValueTypeName();
@@ -55,7 +57,7 @@ bool getUsdValue(
     PXR_NS::VtValue&           value,
     PXR_NS::UsdTimeCode        time)
 {
-    if (auto usdAttribute = std::dynamic_pointer_cast<MayaUsd::ufe::UsdAttribute>(attribute)) {
+    if (auto usdAttribute = std::dynamic_pointer_cast<UsdUfe::UsdAttribute>(attribute)) {
         return usdAttribute->get(value, time);
     }
     return false;

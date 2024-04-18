@@ -24,4 +24,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 void wrapTokens()
 {
     TF_PY_WRAP_PUBLIC_TOKENS("EditRoutingTokens", EditRoutingTokens, USDUFE_EDIT_ROUTING_TOKENS);
+    TF_PY_WRAP_PUBLIC_TOKENS("Tokens", GenericTokens, USDUFE_GENERIC_TOKENS);
+    TF_PY_WRAP_PUBLIC_TOKENS("MetadataTokens", MetadataTokens, USDUFE_METADATA_TOKENS);
 }

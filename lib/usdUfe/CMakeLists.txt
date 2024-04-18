@@ -81,6 +81,13 @@ if (UFE_SCENEITEM_HAS_METADATA)
     )
 endif()
 
+if (UFE_HAS_DISPLAY_NAME)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_HAS_DISPLAY_NAME=1
+    )
+endif()
+
 # Some of the UFE classes are exporting STL classes which causes this warning.
 if(MSVC)
     target_compile_options(${PROJECT_NAME}

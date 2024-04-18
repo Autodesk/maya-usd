@@ -15,19 +15,18 @@
 //
 #include "UsdUndoAttributesCommands.h"
 
-#include <mayaUsd/ufe/UsdAttributes.h>
+#include <usdUfe/ufe/UsdAttributes.h>
 
 #include <ufe/hierarchy.h>
 #include <ufe/pathString.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 // Ensure that UsdAddAttributeCommand is properly setup.
 #ifdef UFE_V4_FEATURES_AVAILABLE
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::AddAttributeUndoableCommand, UsdAddAttributeCommand);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::AddAttributeUndoableCommand, UsdAddAttributeCommand);
 #else
-MAYAUSD_VERIFY_CLASS_SETUP(UsdUndoableCommand<Ufe::AddAttributeCommand>, UsdAddAttributeCommand);
+USDUFE_VERIFY_CLASS_SETUP(UsdUndoableCommand<Ufe::AddAttributeCommand>, UsdAddAttributeCommand);
 #endif
 
 UsdAddAttributeCommand::UsdAddAttributeCommand(
@@ -168,5 +167,4 @@ void UsdRenameAttributeCommand::setNewName(const std::string& newName) { _newNam
 
 #endif
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

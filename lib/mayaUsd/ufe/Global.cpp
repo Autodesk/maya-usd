@@ -26,7 +26,6 @@
 #include <mayaUsd/ufe/ProxyShapeContextOpsHandler.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/ProxyShapeHierarchyHandler.h>
-#include <mayaUsd/ufe/UsdAttributesHandler.h>
 #include <mayaUsd/ufe/UsdSceneItemOpsHandler.h>
 #include <mayaUsd/ufe/UsdTransform3dCommonAPI.h>
 #include <mayaUsd/ufe/UsdTransform3dFallbackMayaXformStack.h>
@@ -35,7 +34,6 @@
 #include <mayaUsd/ufe/UsdTransform3dPointInstance.h>
 #include <mayaUsd/ufe/UsdUIUfeObserver.h>
 #include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/utils/editability.h>
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #define HAVE_PATH_MAPPING
@@ -120,6 +118,10 @@ void mayaStopWaitCursor() { MGlobal::executeCommand("waitCursor -state 0"); }
 // Note: MayaUsd::ufe::getStage takes two parameters, so wrap it in a function taking only one.
 PXR_NS::UsdStageWeakPtr mayaGetStage(const Ufe::Path& path) { return MayaUsd::ufe::getStage(path); }
 
+void displayInfoMessage(const std::string& msg) { MGlobal::displayInfo(msg.c_str()); }
+void displayWarningMessage(const std::string& msg) { MGlobal::displayWarning(msg.c_str()); }
+void displayErrorMessage(const std::string& msg) { MGlobal::displayError(msg.c_str()); }
+
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -175,9 +177,11 @@ MStatus initialize()
     dccFunctions.stagePathAccessorFn = MayaUsd::ufe::stagePath;
     dccFunctions.ufePathToPrimFn = MayaUsd::ufe::ufePathToPrim;
     dccFunctions.timeAccessorFn = MayaUsd::ufe::getTime;
-    dccFunctions.isAttributeLockedFn = MayaUsd::Editability::isAttributeLocked;
     dccFunctions.saveStageLoadRulesFn = MayaUsd::MayaUsdProxyShapeStageExtraData::saveLoadRules;
     dccFunctions.uniqueChildNameFn = MayaUsd::ufe::uniqueChildNameMayaStandard;
+    dccFunctions.displayMessageFn[static_cast<int>(MessageType::kInfo)] = displayInfoMessage;
+    dccFunctions.displayMessageFn[static_cast<int>(MessageType::kWarning)] = displayWarningMessage;
+    dccFunctions.displayMessageFn[static_cast<int>(MessageType::KError)] = displayErrorMessage;
     dccFunctions.startWaitCursorFn = mayaStartWaitCursor;
     dccFunctions.stopWaitCursorFn = mayaStopWaitCursor;
 
@@ -211,7 +215,6 @@ MStatus initialize()
     usdUfeHandlers.hierarchyHandler = MayaUsdHierarchyHandler::create();
 #endif
     handlers.sceneItemOpsHandler = UsdSceneItemOpsHandler::create();
-    handlers.attributesHandler = UsdAttributesHandler::create();
     usdUfeHandlers.object3dHandler = MayaUsdObject3dHandler::create();
     usdUfeHandlers.contextOpsHandler = MayaUsdContextOpsHandler::create();
     usdUfeHandlers.uiInfoHandler = MayaUsdUIInfoHandler::create();
@@ -292,8 +295,6 @@ MStatus initialize()
         runTimeMgr.setTransform3dHandler(usdRtid, handlers.transform3dHandler);
     if (handlers.sceneItemOpsHandler)
         runTimeMgr.setSceneItemOpsHandler(usdRtid, handlers.sceneItemOpsHandler);
-    if (handlers.attributesHandler)
-        runTimeMgr.setAttributesHandler(usdRtid, handlers.attributesHandler);
     if (handlers.object3dHandler)
         runTimeMgr.setObject3dHandler(usdRtid, handlers.object3dHandler);
     if (handlers.contextOpsHandler)
