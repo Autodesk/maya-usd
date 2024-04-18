@@ -127,6 +127,119 @@ class UfeConnectionChangedObserver(ufe.Observer):
         # Nothing needed here since we don't create any UI.
         pass
 
+class MaterialCustomControl(object):
+    def __init__(self, item, prim, useNiceName):
+        super(MaterialCustomControl, self).__init__()
+        self.item = item
+        self.prim = prim
+        self.useNiceName = useNiceName
+
+    def onCreate(self, *args):
+        '''
+        Create the custom UI for the material.
+        '''
+        self.assignedMatLayout, self.assignedMatField, _ = self._createTextField(
+            'material',  'kLabelAssignedMaterial')
+        self.inheritedMatLayout, self.inheritedMatField, _ = self._createTextField(
+            'inherited', 'kLabelInheritedMaterial')
+        # Note: icon image taken from Maya resources.
+        self.fromPrimLayout, self.inheritedFromPrimField, self.gotoPrimButton = self._createTextField(
+            'from prim', 'kLabelInheritedFromPrim', 'inArrow.png')
+                
+        # Fill the UI.
+        self._refreshUI()
+
+    def _createTextField(self, longName, uiNameRes, image=None):
+        '''
+        Create a disabled text field group and an optional image button with the correct label.
+        '''
+        uiLabel = getMayaUsdLibString(uiNameRes) if self.useNiceName else longName
+        rowLayout = cmds.rowLayout(numberOfColumns=3, adjustableColumn3=2)
+        with LayoutManager(rowLayout):
+            cmds.text(label=uiLabel, annotation=uiLabel)
+            textField = cmds.textField(annotation=uiLabel, editable=False, enableKeyboardFocus=True)
+            if image:
+                button = cmds.symbolButton(enable=False, image=image)
+            else:
+                button = None
+        return (rowLayout, textField, button)
+
+    def onReplace(self, *args):
+        '''
+        Refresh the UI when the time changes.
+        '''
+        # Nothing needed here since USD data is not time varying. Normally this template
+        # is force rebuilt all the time, except in response to time change from Maya. In
+        # that case we don't need to update our controls since none will change.
+        pass
+
+    def _refreshUI(self):
+        '''
+        Refresh the UI when the data is modified.
+        '''
+        matAPI = UsdShade.MaterialBindingAPI(self.prim)
+        mat, matRel = matAPI.ComputeBoundMaterial()
+        if matRel.GetPrim() == self.prim:
+            self._refreshUIForDirect(mat)
+        else:
+            directMatPath = matAPI.GetDirectBinding().GetMaterialPath()
+            self._refreshUIForInherited(mat, matRel, directMatPath)
+
+    def _refreshUIForDirect(self, mat):
+        '''
+        Refresh the UI when the material is directly on the prim.
+        '''
+        # Note: hide UI elements before filling values.
+        cmds.button(self.gotoPrimButton, command='', e=True)
+        cmds.symbolButton(self.gotoPrimButton, edit=True, enable=False, visible=False)
+        cmds.rowLayout(self.inheritedMatLayout, edit=True, visible=False)
+        cmds.rowLayout(self.fromPrimLayout, edit=True, visible=False)
+
+        self._fillUIValues(mat.GetPath().pathString, '', '')
+
+    def _refreshUIForInherited(self, mat, matRel, directMatPath):
+        '''
+        Refresh the UI when the material is inherited from an ancestor prim.
+        '''
+        direct = directMatPath.pathString if directMatPath else ''
+        inherited = mat.GetPath().pathString
+        fromPath = matRel.GetPrim().GetPath().pathString
+
+        ufePath = ufe.Path([
+            self.item.path().segments[0],
+            ufe.PathSegment(fromPath, mayaUsdUfe.getUsdRunTimeId(), '/')])
+        ufePathStr = ufe.PathString.string(ufePath)
+        command = lambda *_: cmds.select(ufePathStr)
+
+        # Note: fill values before showing UI elements.
+        self._fillUIValues(direct, inherited, fromPath)
+
+        cmds.button(self.gotoPrimButton, command=command, e=True)
+        cmds.symbolButton(self.gotoPrimButton, edit=True, enable=True, visible=True)
+        cmds.rowLayout(self.inheritedMatLayout, edit=True, visible=True)
+        cmds.rowLayout(self.fromPrimLayout, edit=True, visible=True)
+
+    def _fillUIValues(self, direct, inherited, fromPath):
+        '''
+        Fill the UI with the given values.
+        '''
+        if inherited:
+            text = ''
+            annotation = getMayaUsdLibString('kTooltipInheritingOverDirect' if direct else 'kTooltipInheriting')
+            placeholder = direct if direct else getMayaUsdLibString('kLabelInheriting')
+            font = 'obliqueLabelFont'
+        else:
+            text = direct
+            annotation = getMayaUsdLibString('kLabelAssignedMaterial')
+            placeholder = ''
+            font = 'plainLabelFont'
+        cmds.textField(self.assignedMatField, edit=True, text=text, placeholderText=placeholder,
+                       annotation=annotation, font=font)
+        
+        cmds.textField(self.inheritedMatField, edit=True, text=inherited)
+        cmds.textField(self.inheritedFromPrimField, edit=True, text=fromPath)
+
+
 class MetaDataCustomControl(object):
     # Custom control for all prim metadata we want to display.
     def __init__(self, item, prim, useNiceName):
@@ -669,6 +782,7 @@ class AETemplate(object):
         self.attrS = ufe.Attributes.attributes(self.item)
         self.addedAttrs = []
         self.suppressedAttrs = []
+        self.hasConnectionObserver = False
 
         self.showArrayAttributes = False
         if cmds.optionVar(exists="mayaUSD_AEShowArrayAttributes"):
@@ -789,9 +903,9 @@ class AETemplate(object):
 
     def createShaderAttributesSection(self):
         """Use an AEShaderLayout tool to populate the shader section"""
-        # Add a custom control to monitor for connection changed.
-        cnxObs = UfeConnectionChangedObserver(self.item)
-        self.defineCustom(cnxObs)
+        # Add a custom control to monitor for connection changed
+        # in order for the UI to update itself when the shader is modified.
+        self.addConnectionObserver()
         # Hide all outputs:
         for name in self.attrS.attributeNames:
             if UsdShade.Utils.GetBaseNameAndType(name)[1] == UsdShade.AttributeType.Output:
@@ -800,6 +914,14 @@ class AETemplate(object):
         layout = AEShaderLayout(self.item).get()
         if layout:
             self.addShaderLayout(layout)
+
+    def addConnectionObserver(self):
+        '''Add a connection observer if one has not yet been added.'''
+        if self.hasConnectionObserver:
+            return
+        self.hasConnectionObserver = True
+        obs = UfeConnectionChangedObserver(self.item)
+        self.defineCustom(obs)
 
     def createTransformAttributesSection(self, sectionName, attrsToAdd):
         # Get the xformOp order and add those attributes (in order)
@@ -920,9 +1042,23 @@ class AETemplate(object):
 
         self.suppressArrayAttribute()
 
+        # Track if we already added a connection observer.
+        self.hasConnectionObserver = False
+
+        # Material has NodeGraph as base. We want to process once for both schema types:
+        hasProcessedMaterial = False
+
+        # We want material to be either after the mesh section of the Xformable section,
+        # whichever comes first, so that it is not too far down in the AE.
+        self.addedMaterialSection = False
+        primTypeName = self.sectionNameFromSchema(self.prim.GetTypeName())
+        def addMatSection():
+            if not self.addedMaterialSection:
+                self.addedMaterialSection = True
+                self.createMaterialAttributeSection()
+
         # We use UFE for the ancestor node types since it caches the
         # results by node type.
-        hasProcessedMaterial = False
         for schemaType in self.item.ancestorNodeTypes():
             schemaType = usdSch.GetTypeFromName(schemaType)
             schemaTypeName = schemaType.typeName
@@ -936,6 +1072,8 @@ class AETemplate(object):
                     # Shader attributes are special
                     self.createShaderAttributesSection()
                     hasProcessedMaterial = True
+                    # Note: don't show the material section for materials.
+                    self.addedMaterialSection = True
                 # We have a special case when building the Xformable section.
                 elif schemaTypeName == 'UsdGeomXformable':
                     self.createTransformAttributesSection(sectionName, attrsToAdd)
@@ -944,6 +1082,25 @@ class AETemplate(object):
                                           'Imageable', 'Field Asset', 'Light']
                     collapse = sectionName in sectionsToCollapse
                     self.createSection(sectionName, attrsToAdd, collapse)
+
+                if sectionName == primTypeName:
+                    addMatSection()
+        
+        # In case there was neither a Mesh nor Xformable section, add material section now.
+        addMatSection()        
+
+    def createMaterialAttributeSection(self):
+        if not UsdShade.MaterialBindingAPI.CanApply(self.prim):
+            return
+        matAPI = UsdShade.MaterialBindingAPI(self.prim)
+        mat, _ = matAPI.ComputeBoundMaterial()
+        if not mat:
+            return
+        layoutName = getMayaUsdLibString('kLabelMaterial')
+        collapse = True
+        with ufeAeTemplate.Layout(self, layoutName, collapse):
+            createdControl = MaterialCustomControl(self.item, self.prim, self.useNiceName)
+        self.defineCustom(createdControl)
 
     def suppressArrayAttribute(self):
         # Suppress all array attributes.

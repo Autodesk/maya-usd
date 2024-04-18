@@ -41,6 +41,13 @@ def mayaUsdLibRegisterStrings():
     register('kLabelMetadata', 'Metadata')
     register('kLabelAppliedSchemas', 'Applied Schemas')
     register('kOpenImage', 'Open')
+    register('kLabelMaterial', 'Material')
+    register('kLabelAssignedMaterial', 'Assigned Material')
+    register('kLabelInheritedMaterial', 'Inherited Material')
+    register('kLabelInheritedFromPrim', 'Inherited from Prim')
+    register('kLabelInheriting', 'inheriting')
+    register('kTooltipInheritingOverDirect', 'This material is being over-ridden due to the strength setting on an ancestor')
+    register('kTooltipInheriting', 'This material is inherited from an ancestor')
 
     # mayaUsdAddMayaReference.py
     register('kErrorGroupPrimExists', 'Group prim "^1s" already exists under "^2s". Choose prim name other than "^1s" to proceed.')
