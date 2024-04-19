@@ -65,7 +65,7 @@ private:
 
     std::unordered_map<SdfPath, _Entry, SdfPath::Hash> _bindingToSkelMap;
 
-    SdfPath _RootPrimPath;
+    SdfPath _rootPrimPath;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

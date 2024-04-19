@@ -135,7 +135,7 @@ void UsdMaya_SkelBindingsProcessor::MarkBindings(
 
 void UsdMaya_SkelBindingsProcessor::SetRootPrimPath(const SdfPath& rootPrimPath)
 {
-    this->_RootPrimPath = rootPrimPath;
+    this->_rootPrimPath = rootPrimPath;
 }
 
 bool UsdMaya_SkelBindingsProcessor::_VerifyOrMakeSkelRoots(const UsdStagePtr& stage) const
@@ -144,7 +144,7 @@ bool UsdMaya_SkelBindingsProcessor::_VerifyOrMakeSkelRoots(const UsdStagePtr& st
     for (const auto& pair : _bindingToSkelMap) {
         const _Entry& entry = pair.second;
         SdfPath       skelRootPath
-            = _VerifyOrMakeSkelRoot(stage, pair.first, entry.second, _RootPrimPath);
+            = _VerifyOrMakeSkelRoot(stage, pair.first, entry.second, _rootPrimPath);
         success = success && !skelRootPath.IsEmpty();
         if (!success) {
             return success;
@@ -162,7 +162,7 @@ bool UsdMaya_SkelBindingsProcessor::UpdateSkelRootsWithExtent(
     for (const auto& pair : _bindingToSkelMap) {
         const _Entry& entry = pair.second;
         SdfPath       skelRootPath
-            = _VerifyOrMakeSkelRoot(stage, pair.first, entry.second, _RootPrimPath);
+            = _VerifyOrMakeSkelRoot(stage, pair.first, entry.second, _rootPrimPath);
         success = success && !skelRootPath.IsEmpty();
         if (success) {
             UsdSkelRoot skelRoot = UsdSkelRoot::Get(stage, skelRootPath);

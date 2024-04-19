@@ -87,15 +87,7 @@ PxrUsdTranslators_JointWriter::PxrUsdTranslators_JointWriter(
         return;
     }
 
-    const SdfPath skelRootPath = _GetExportArgs().rootPrim;
-    SdfPath       skeletonPath
-        = UsdMayaJointUtil::getSkeletonPath(GetDagPath(), _GetExportArgs().stripNamespaces);
-    if (!skelRootPath.IsEmpty()) {
-        // SdfPath can only append relative path, so remove the '/' at the first index
-        skeletonPath = skeletonPath.ReplacePrefix(SdfPath("/"), skelRootPath);
-    }
-
-    _skel = UsdSkelSkeleton::Define(GetUsdStage(), skeletonPath);
+    _skel = UsdSkelSkeleton::Define(GetUsdStage(), usdPath);
     if (!TF_VERIFY(_skel)) {
         return;
     }
