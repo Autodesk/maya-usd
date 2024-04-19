@@ -17,10 +17,10 @@ from .custom_image_control import customImageControlCreator
 from .attribute_custom_control import getNiceAttributeName
 from .attribute_custom_control import cleanAndFormatTooltip
 from .attribute_custom_control import AttributeCustomControl
+from .material_custom_control import MaterialCustomControl
 
 import collections
 import fnmatch
-from functools import partial
 import re
 import ufe
 import usdUfe
@@ -126,119 +126,6 @@ class UfeConnectionChangedObserver(ufe.Observer):
     def onReplace(self, *args):
         # Nothing needed here since we don't create any UI.
         pass
-
-class MaterialCustomControl(object):
-    def __init__(self, item, prim, useNiceName):
-        super(MaterialCustomControl, self).__init__()
-        self.item = item
-        self.prim = prim
-        self.useNiceName = useNiceName
-
-    def onCreate(self, *args):
-        '''
-        Create the custom UI for the material.
-        '''
-        self.assignedMatLayout, self.assignedMatField, _ = self._createTextField(
-            'material',  'kLabelAssignedMaterial')
-        self.inheritedMatLayout, self.inheritedMatField, _ = self._createTextField(
-            'inherited', 'kLabelInheritedMaterial')
-        # Note: icon image taken from Maya resources.
-        self.fromPrimLayout, self.inheritedFromPrimField, self.gotoPrimButton = self._createTextField(
-            'from prim', 'kLabelInheritedFromPrim', 'inArrow.png')
-                
-        # Fill the UI.
-        self._refreshUI()
-
-    def _createTextField(self, longName, uiNameRes, image=None):
-        '''
-        Create a disabled text field group and an optional image button with the correct label.
-        '''
-        uiLabel = getMayaUsdLibString(uiNameRes) if self.useNiceName else longName
-        rowLayout = cmds.rowLayout(numberOfColumns=3, adjustableColumn3=2)
-        with LayoutManager(rowLayout):
-            cmds.text(label=uiLabel, annotation=uiLabel)
-            textField = cmds.textField(annotation=uiLabel, editable=False, enableKeyboardFocus=True)
-            if image:
-                button = cmds.symbolButton(enable=False, image=image)
-            else:
-                button = None
-        return (rowLayout, textField, button)
-
-    def onReplace(self, *args):
-        '''
-        Refresh the UI when the time changes.
-        '''
-        # Nothing needed here since USD data is not time varying. Normally this template
-        # is force rebuilt all the time, except in response to time change from Maya. In
-        # that case we don't need to update our controls since none will change.
-        pass
-
-    def _refreshUI(self):
-        '''
-        Refresh the UI when the data is modified.
-        '''
-        matAPI = UsdShade.MaterialBindingAPI(self.prim)
-        mat, matRel = matAPI.ComputeBoundMaterial()
-        if matRel.GetPrim() == self.prim:
-            self._refreshUIForDirect(mat)
-        else:
-            directMatPath = matAPI.GetDirectBinding().GetMaterialPath()
-            self._refreshUIForInherited(mat, matRel, directMatPath)
-
-    def _refreshUIForDirect(self, mat):
-        '''
-        Refresh the UI when the material is directly on the prim.
-        '''
-        # Note: hide UI elements before filling values.
-        cmds.button(self.gotoPrimButton, command='', e=True)
-        cmds.symbolButton(self.gotoPrimButton, edit=True, enable=False, visible=False)
-        cmds.rowLayout(self.inheritedMatLayout, edit=True, visible=False)
-        cmds.rowLayout(self.fromPrimLayout, edit=True, visible=False)
-
-        self._fillUIValues(mat.GetPath().pathString, '', '')
-
-    def _refreshUIForInherited(self, mat, matRel, directMatPath):
-        '''
-        Refresh the UI when the material is inherited from an ancestor prim.
-        '''
-        direct = directMatPath.pathString if directMatPath else ''
-        inherited = mat.GetPath().pathString
-        fromPath = matRel.GetPrim().GetPath().pathString
-
-        ufePath = ufe.Path([
-            self.item.path().segments[0],
-            ufe.PathSegment(fromPath, mayaUsdUfe.getUsdRunTimeId(), '/')])
-        ufePathStr = ufe.PathString.string(ufePath)
-        command = lambda *_: cmds.select(ufePathStr)
-
-        # Note: fill values before showing UI elements.
-        self._fillUIValues(direct, inherited, fromPath)
-
-        cmds.button(self.gotoPrimButton, command=command, e=True)
-        cmds.symbolButton(self.gotoPrimButton, edit=True, enable=True, visible=True)
-        cmds.rowLayout(self.inheritedMatLayout, edit=True, visible=True)
-        cmds.rowLayout(self.fromPrimLayout, edit=True, visible=True)
-
-    def _fillUIValues(self, direct, inherited, fromPath):
-        '''
-        Fill the UI with the given values.
-        '''
-        if inherited:
-            text = ''
-            annotation = getMayaUsdLibString('kTooltipInheritingOverDirect' if direct else 'kTooltipInheriting')
-            placeholder = direct if direct else getMayaUsdLibString('kLabelInheriting')
-            font = 'obliqueLabelFont'
-        else:
-            text = direct
-            annotation = getMayaUsdLibString('kLabelAssignedMaterial')
-            placeholder = ''
-            font = 'plainLabelFont'
-        cmds.textField(self.assignedMatField, edit=True, text=text, placeholderText=placeholder,
-                       annotation=annotation, font=font)
-        
-        cmds.textField(self.inheritedMatField, edit=True, text=inherited)
-        cmds.textField(self.inheritedFromPrimField, edit=True, text=fromPath)
-
 
 class MetaDataCustomControl(object):
     # Custom control for all prim metadata we want to display.
