@@ -14,6 +14,7 @@
 #
 
 from functools import partial
+import collections
 
 import ufe
 import mayaUsd.ufe
@@ -36,6 +37,8 @@ class MaterialCustomControl(object):
         getMayaUsdLibString('kLabelStrongerMaterial')   : 'strongerThanDescendants',
     }
 
+    TextField = collections.namedtuple('TextField', ['layout', 'field', 'button'])
+
     def __init__(self, item, prim, useNiceName):
         super(MaterialCustomControl, self).__init__()
         self.item = item
@@ -46,21 +49,30 @@ class MaterialCustomControl(object):
         '''
         Create the custom UI for the material.
         '''
-        self.assignedMatLayout, self.assignedMatField, _ = self._createTextField(
-            'material',  'kLabelAssignedMaterial')
+        # Note: icon image taken from LookdevX plugin.
+        hasLookdevX = self._hasLookdevX()
+        graphIcon = 'LookdevX.png' if hasLookdevX else None
+
+        self.assignedMat = self._createTextField('material',  'kLabelAssignedMaterial', graphIcon)
 
         self.strengthMenu = self._createDropDownField(
             'strength', 'kLabelMaterialStrength',
             ['kLabelWeakerMaterial', 'kLabelStrongerMaterial'])
                 
-        self.inheritedMatLayout, self.inheritedMatField, _ = self._createTextField(
-            'inherited', 'kLabelInheritedMaterial')
+        self.inheritedMat = self._createTextField('inherited', 'kLabelInheritedMaterial', graphIcon)
+        
         # Note: icon image taken from Maya resources.
-        self.fromPrimLayout, self.inheritedFromPrimField, self.gotoPrimButton = self._createTextField(
-            'from prim', 'kLabelInheritedFromPrim', 'inArrow.png')
+        self.fromPrim = self._createTextField('from prim', 'kLabelInheritedFromPrim', 'inArrow.png')
         
         # Fill the UI.
         self._refreshUI()
+
+    @staticmethod
+    def _hasLookdevX():
+        '''
+        Verify if the LookdevX plugin is loaded.
+        '''
+        return bool(cmds.pluginInfo('LookdevXMaya', query=True, loaded=True))
 
     def _createTextField(self, longName, uiNameRes, image=None):
         '''
@@ -75,7 +87,7 @@ class MaterialCustomControl(object):
                 button = cmds.symbolButton(enable=False, image=image)
             else:
                 button = None
-        return (rowLayout, textField, button)
+        return MaterialCustomControl.TextField(rowLayout, textField, button)
     
     def _createDropDownField(self, longName, uiNameRes, elementsRes):
         '''
@@ -139,35 +151,32 @@ class MaterialCustomControl(object):
         Refresh the UI when the material is directly on the prim.
         '''
         # Note: hide UI elements before filling values.
-        cmds.button(self.gotoPrimButton, command='', e=True)
-        cmds.symbolButton(self.gotoPrimButton, edit=True, enable=False, visible=False)
-        cmds.rowLayout(self.inheritedMatLayout, edit=True, visible=False)
-        cmds.rowLayout(self.fromPrimLayout, edit=True, visible=False)
+        cmds.rowLayout(self.inheritedMat.layout, edit=True, visible=False)
+        cmds.rowLayout(self.fromPrim.layout, edit=True, visible=False)
 
-        self._fillUIValues(mat.GetPath().pathString, '', '', strength)
+        matPathStr = mat.GetPath().pathString
+
+        self._fillGraphDirectButton(matPathStr)
+        self._fillGraphInheritedButton(None)
+        self._fillGotoPrimButton(None)
+        self._fillUIValues(matPathStr, '', '', strength)
 
     def _refreshUIForInherited(self, mat, matRel, directMatPath, strength):
         '''
         Refresh the UI when the material is inherited from an ancestor prim.
         '''
-        direct = directMatPath.pathString if directMatPath else ''
-        inherited = mat.GetPath().pathString
-        fromPath = matRel.GetPrim().GetPath().pathString
-
-        ufePath = ufe.Path([
-            self.item.path().segments[0],
-            ufe.PathSegment(fromPath, mayaUsd.ufe.getUsdRunTimeId(), '/')])
-        ufePathStr = ufe.PathString.string(ufePath)
-        melCommand = 'updateAE "%s"' % ufePathStr
-        command = lambda *_: mel.eval(melCommand)
+        directPathStr = directMatPath.pathString if directMatPath else ''
+        inheritedPathStr = mat.GetPath().pathString
+        fromPathStr = matRel.GetPrim().GetPath().pathString
 
         # Note: fill values before showing UI elements.
-        self._fillUIValues(direct, inherited, fromPath, strength)
+        self._fillGraphDirectButton(directPathStr)
+        self._fillGraphInheritedButton(inheritedPathStr)
+        self._fillGotoPrimButton(fromPathStr)
+        self._fillUIValues(directPathStr, inheritedPathStr, fromPathStr, strength)
 
-        cmds.button(self.gotoPrimButton, command=command, e=True)
-        cmds.symbolButton(self.gotoPrimButton, edit=True, enable=True, visible=True)
-        cmds.rowLayout(self.inheritedMatLayout, edit=True, visible=True)
-        cmds.rowLayout(self.fromPrimLayout, edit=True, visible=True)
+        cmds.rowLayout(self.inheritedMat.layout, edit=True, visible=True)
+        cmds.rowLayout(self.fromPrim.layout, edit=True, visible=True)
 
     def _fillUIValues(self, direct, inherited, fromPath, strength):
         '''
@@ -190,13 +199,72 @@ class MaterialCustomControl(object):
             strengthEnabled = True
             strengthAnnotation = getMayaUsdLibString('kLabelMaterialStrength')
 
-        cmds.textField(self.assignedMatField, edit=True, text=text, placeholderText=placeholder,
+        cmds.textField(self.assignedMat.field, edit=True, text=text, placeholderText=placeholder,
                        annotation=annotation)
         
-        cmds.textField(self.inheritedMatField, edit=True, text=inherited)
-        cmds.textField(self.inheritedFromPrimField, edit=True, text=fromPath)
+        cmds.textField(self.inheritedMat.field, edit=True, text=inherited)
+        cmds.textField(self.fromPrim.field, edit=True, text=fromPath)
 
         cmds.optionMenuGrp(self.strengthMenu, edit=True,
                            enable=strengthEnabled, visible=strengthVisible,
                            value=strength, annotation=strengthAnnotation)
+        
+    def _fillGraphDirectButton(self, matPathStr):
+        '''
+        Fill the direct material graph button with the correct command.
+        '''
+        self._fillGraphButton(matPathStr, self.assignedMat.button)
+
+    def _fillGraphInheritedButton(self, matPathStr):
+        '''
+        Fill the inherited material graph button with the correct command.
+        '''
+        self._fillGraphButton(matPathStr, self.inheritedMat.button)
+
+    def _fillGraphButton(self, matPathStr, button):
+        '''
+        Fill the graph button with the correct command.
+        '''
+        # Note: only show the graph button if LookdevX was loaded when the UI
+        #       was created.
+        if not button:
+            return
+
+        # Note: only show the graph button if LookdevX is currently loaded.
+        hasLookdevX = self._hasLookdevX()
+        canGraph = bool(matPathStr and hasLookdevX)
+        cmds.symbolButton(button, edit=True, enable=canGraph, visible=hasLookdevX)
+
+        if canGraph:
+            ufePathStr = self._createUFEPathFromUSDPath(matPathStr)
+            command = lambda *_: cmds.lookdevXGraph(graphNode=ufePathStr, tabName='USD')
+        else:
+            command = ''
+        cmds.button(button, edit=True, command=command)
+
+    def _fillGotoPrimButton(self, fromPath):
+        '''
+        Fill the goto-prim button with the correct command.
+        '''
+        showButton = bool(fromPath)
+        cmds.symbolButton(self.fromPrim.button, edit=True, enable=showButton, visible=showButton)
+
+        if fromPath:
+            ufePathStr = self._createUFEPathFromUSDPath(fromPath)
+            melCommand = 'updateAE "%s"' % ufePathStr
+            command = lambda *_: mel.eval(melCommand)
+        else:
+            command = ''
+        cmds.button(self.fromPrim.button, edit=True, command=command)
+
+    def _createUFEPathFromUSDPath(self, usdPath):
+        '''
+        Build a UFE path to a USD path on the same stage as the edited UFE item.
+        '''
+        # Note: the UFE item is in the same stage, so we can use
+        #       this UFE item to build the UFE path to the USD path.
+        ufePath = ufe.Path([
+            self.item.path().segments[0],
+            ufe.PathSegment(usdPath, mayaUsd.ufe.getUsdRunTimeId(), '/')])
+        return ufe.PathString.string(ufePath)
 
