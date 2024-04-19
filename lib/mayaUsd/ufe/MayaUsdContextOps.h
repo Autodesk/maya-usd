@@ -38,13 +38,6 @@ public:
     typedef std::shared_ptr<MayaUsdContextOps> Ptr;
 
     MayaUsdContextOps(const UsdSceneItem::Ptr& item);
-    ~MayaUsdContextOps() override;
-
-    // Delete the copy/move constructors assignment operators.
-    MayaUsdContextOps(const MayaUsdContextOps&) = delete;
-    MayaUsdContextOps& operator=(const MayaUsdContextOps&) = delete;
-    MayaUsdContextOps(MayaUsdContextOps&&) = delete;
-    MayaUsdContextOps& operator=(MayaUsdContextOps&&) = delete;
 
     //! Create a MayaUsdContextOps.
     static MayaUsdContextOps::Ptr create(const UsdSceneItem::Ptr& item);

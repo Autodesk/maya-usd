@@ -42,13 +42,8 @@ public:
     UsdUndoDuplicateSelectionCommand(
         const Ufe::Selection&       selection,
         const Ufe::ValueDictionary& duplicateOptions);
-    ~UsdUndoDuplicateSelectionCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUndoDuplicateSelectionCommand(const UsdUndoDuplicateSelectionCommand&) = delete;
-    UsdUndoDuplicateSelectionCommand& operator=(const UsdUndoDuplicateSelectionCommand&) = delete;
-    UsdUndoDuplicateSelectionCommand(UsdUndoDuplicateSelectionCommand&&) = delete;
-    UsdUndoDuplicateSelectionCommand& operator=(UsdUndoDuplicateSelectionCommand&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoDuplicateSelectionCommand);
 
     //! Create a UsdUndoDuplicateSelectionCommand from a USD prim and UFE path.
     static Ptr

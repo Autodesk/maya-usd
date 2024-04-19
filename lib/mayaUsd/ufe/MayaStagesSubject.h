@@ -50,12 +50,6 @@ public:
     //! Create the MayaStagesSubject.
     static MayaStagesSubject::RefPtr create();
 
-    // Delete the copy/move constructors assignment operators.
-    MayaStagesSubject(const MayaStagesSubject&) = delete;
-    MayaStagesSubject& operator=(const MayaStagesSubject&) = delete;
-    MayaStagesSubject(MayaStagesSubject&&) = delete;
-    MayaStagesSubject& operator=(MayaStagesSubject&&) = delete;
-
 protected:
     bool isInNewScene() const;
     void setInNewScene(bool b);

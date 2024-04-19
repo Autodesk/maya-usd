@@ -38,11 +38,7 @@ public:
     UsdUndoBlock(UsdUndoableItem* undoItem);
     ~UsdUndoBlock();
 
-    // delete the copy/move constructors assignment operators.
-    UsdUndoBlock(const UsdUndoBlock&) = delete;
-    UsdUndoBlock& operator=(const UsdUndoBlock&) = delete;
-    UsdUndoBlock(UsdUndoBlock&&) = delete;
-    UsdUndoBlock& operator=(UsdUndoBlock&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoBlock);
 
     static uint32_t depth() { return _undoBlockDepth; }
 

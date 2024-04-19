@@ -771,7 +771,9 @@ if __name__ == "__main__":
 
     # Make sure Qt from Maya devkit is ready.
     if 'configure' in context.stagesArgs:
-        SetupMayaQt(context)
+        # If not building the MayaUsd library we don't need Qt.
+        if '-DBUILD_MAYAUSD_LIBRARY=OFF' not in context.buildArgs:
+            SetupMayaQt(context)
 
     # BuildAndInstall
     if any(stage in ['clean', 'configure', 'build', 'install'] for stage in context.stagesArgs):

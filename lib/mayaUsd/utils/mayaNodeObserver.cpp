@@ -23,6 +23,8 @@
 
 namespace MAYAUSD_NS_DEF {
 
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(MayaNodeObserver);
+
 ////////////////////////////////////////////////////////////////////////////
 //
 // External listener called when Maya notifications are received.

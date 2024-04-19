@@ -29,14 +29,9 @@ class MAYAUSD_CORE_PUBLIC UsdAttributesHandler : public Ufe::AttributesHandler
 public:
     typedef std::shared_ptr<UsdAttributesHandler> Ptr;
 
-    UsdAttributesHandler();
-    ~UsdAttributesHandler();
+    UsdAttributesHandler() = default;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdAttributesHandler(const UsdAttributesHandler&) = delete;
-    UsdAttributesHandler& operator=(const UsdAttributesHandler&) = delete;
-    UsdAttributesHandler(UsdAttributesHandler&&) = delete;
-    UsdAttributesHandler& operator=(UsdAttributesHandler&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdAttributesHandler);
 
     //! Create a UsdAttributesHandler.
     static UsdAttributesHandler::Ptr create();

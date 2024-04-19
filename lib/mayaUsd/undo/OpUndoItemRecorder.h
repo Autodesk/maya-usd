@@ -35,13 +35,12 @@ public:
     //! \brief Starts recording undo info in the given container.
     OpUndoItemRecorder(OpUndoItemList& undoInfo);
 
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(OpUndoItemRecorder);
+
     //! \brief Ends recording undo info.
     ~OpUndoItemRecorder();
 
 private:
-    OpUndoItemRecorder(const OpUndoItemRecorder&) = delete;
-    OpUndoItemRecorder operator=(const OpUndoItemRecorder&) = delete;
-
     OpUndoItemList& _undoInfo;
 };
 

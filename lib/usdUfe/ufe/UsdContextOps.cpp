@@ -241,6 +241,8 @@ getConcretePrimTypes(bool sorted, const UsdContextOps::SchemaNameMap& schemaPlug
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(Ufe::ContextOps, UsdContextOps);
+
 std::vector<SchemaTypeGroup> UsdContextOps::schemaTypeGroups = {};
 
 UsdContextOps::UsdContextOps(const UsdSceneItem::Ptr& item)
@@ -248,8 +250,6 @@ UsdContextOps::UsdContextOps(const UsdSceneItem::Ptr& item)
 {
     setItem(item);
 }
-
-UsdContextOps::~UsdContextOps() { }
 
 /*static*/
 UsdContextOps::Ptr UsdContextOps::create(const UsdSceneItem::Ptr& item)
@@ -753,14 +753,10 @@ UsdContextOps::SchemaNameMap UsdContextOps::getSchemaPluginNiceNames() const
     return schemaPluginNiceNames;
 }
 
-static_assert(
-    std::has_virtual_destructor<Ufe::CompositeUndoableCommand>::value,
-    "Destructor not virtual");
-static_assert(
-    std::is_base_of<
-        UsdBulkEditCompositeUndoableCommand::Parent,
-        UsdBulkEditCompositeUndoableCommand>::value,
-    "Verify base class");
+USDUFE_VERIFY_CLASS_VIRTUAL_DESTRUCTOR(Ufe::CompositeUndoableCommand);
+USDUFE_VERIFY_CLASS_BASE(
+    UsdBulkEditCompositeUndoableCommand::Parent,
+    UsdBulkEditCompositeUndoableCommand);
 
 void UsdBulkEditCompositeUndoableCommand::execute()
 {

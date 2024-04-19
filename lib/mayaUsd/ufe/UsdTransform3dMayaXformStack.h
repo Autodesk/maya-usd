@@ -62,7 +62,6 @@ public:
     typedef bool (*SetXformOpOrderFn)(const PXR_NS::UsdGeomXformable&);
 
     UsdTransform3dMayaXformStack(const UsdSceneItem::Ptr& item);
-    ~UsdTransform3dMayaXformStack() override = default;
 
     //! Create a UsdTransform3dMayaXformStack.
     static UsdTransform3dMayaXformStack::Ptr create(const UsdSceneItem::Ptr& item);
@@ -131,6 +130,8 @@ public:
     typedef std::shared_ptr<UsdTransform3dMayaXformStackHandler> Ptr;
 
     UsdTransform3dMayaXformStackHandler(const Ufe::Transform3dHandler::Ptr& nextHandler);
+
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdTransform3dMayaXformStackHandler);
 
     //! Create a UsdTransform3dMayaXformStackHandler.
     static Ptr create(const Ufe::Transform3dHandler::Ptr& nextHandler);

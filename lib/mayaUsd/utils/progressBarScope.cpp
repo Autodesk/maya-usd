@@ -24,6 +24,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
 
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(ProgressBarScope);
+
 std::unique_ptr<MComputation> ProgressBarScope::progBar;
 int                           ProgressBarScope::totalStepsAdded = 0;
 
@@ -123,6 +125,8 @@ bool ProgressBarScope::isInterruptRequested() const
     }
     return false;
 }
+
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(ProgressBarLoopScope);
 
 ProgressBarLoopScope::ProgressBarLoopScope(int nbLoopSteps)
     : ProgressBarScope(0) // Start with adding 0 steps

@@ -42,7 +42,6 @@ public:
     typedef std::shared_ptr<UsdTransform3dCommonAPI> Ptr;
 
     UsdTransform3dCommonAPI(const UsdSceneItem::Ptr& item);
-    ~UsdTransform3dCommonAPI() override = default;
 
     //! Create a UsdTransform3dCommonAPI.
     static UsdTransform3dCommonAPI::Ptr create(const UsdSceneItem::Ptr& item);

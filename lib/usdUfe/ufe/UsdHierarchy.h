@@ -36,13 +36,8 @@ public:
     typedef std::shared_ptr<UsdHierarchy> Ptr;
 
     UsdHierarchy(const UsdSceneItem::Ptr& item);
-    ~UsdHierarchy() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdHierarchy(const UsdHierarchy&) = delete;
-    UsdHierarchy& operator=(const UsdHierarchy&) = delete;
-    UsdHierarchy(UsdHierarchy&&) = delete;
-    UsdHierarchy& operator=(UsdHierarchy&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdHierarchy);
 
     //! Create a UsdHierarchy.
     static UsdHierarchy::Ptr create(const UsdSceneItem::Ptr& item);

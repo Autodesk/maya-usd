@@ -69,6 +69,8 @@ static PXR_NS::SdfPath getPrimPath(
     return prepend ? UsdListPositionBackOfPrependList : UsdListPositionBackOfAppendList;
 }
 
+USDUFE_VERIFY_CLASS_SETUP(UsdUndoableCommand<Ufe::UndoableCommand>, UsdUndoAddRefOrPayloadCommand);
+
 UsdUndoAddRefOrPayloadCommand::UsdUndoAddRefOrPayloadCommand(
     const UsdPrim&     prim,
     const std::string& filePath,

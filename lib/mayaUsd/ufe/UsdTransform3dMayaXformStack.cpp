@@ -271,6 +271,8 @@ private:
     OpFunc         _opFunc;
 };
 
+MAYAUSD_VERIFY_CLASS_SETUP(UsdSetXformOpUndoableCommandBase, UsdTRSUndoableCmdBase);
+
 // UsdRotatePivotTranslateUndoableCmd uses hard-coded USD common transform API
 // single pivot attribute name, not reusable.
 template <class V> class UsdVecOpUndoableCmd : public UsdTRSUndoableCmdBase
@@ -340,6 +342,8 @@ private:
 };
 
 } // namespace
+
+MAYAUSD_VERIFY_CLASS_SETUP(UsdTransform3dBase, UsdTransform3dMayaXformStack);
 
 UsdTransform3dMayaXformStack::UsdTransform3dMayaXformStack(const UsdSceneItem::Ptr& item)
     : UsdTransform3dBase(item)
@@ -768,6 +772,8 @@ bool UsdTransform3dMayaXformStack::isAttributeEditAllowed(
 //------------------------------------------------------------------------------
 // UsdTransform3dMayaXformStackHandler
 //------------------------------------------------------------------------------
+
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Transform3dHandler, UsdTransform3dMayaXformStackHandler);
 
 UsdTransform3dMayaXformStackHandler::UsdTransform3dMayaXformStackHandler(
     const Ufe::Transform3dHandler::Ptr& nextHandler)

@@ -24,14 +24,14 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::HierarchyHandler, ProxyShapeHierarchyHandler);
+
 ProxyShapeHierarchyHandler::ProxyShapeHierarchyHandler(
     const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler)
     : Ufe::HierarchyHandler()
     , fMayaHierarchyHandler(mayaHierarchyHandler)
 {
 }
-
-ProxyShapeHierarchyHandler::~ProxyShapeHierarchyHandler() { }
 
 /*static*/
 ProxyShapeHierarchyHandler::Ptr

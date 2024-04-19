@@ -34,6 +34,8 @@ protected:
     UsdUndoLoadUnloadBaseCommand(const PXR_NS::UsdPrim& prim, PXR_NS::UsdLoadPolicy policy);
     UsdUndoLoadUnloadBaseCommand(const PXR_NS::UsdPrim& prim);
 
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoLoadUnloadBaseCommand);
+
     using commandFn = std::function<void(const UsdUndoLoadUnloadBaseCommand*)>;
     void doCommand(commandFn fn, bool undo = false);
     void doLoad() const;

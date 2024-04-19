@@ -207,6 +207,17 @@ proc string mayaUsdTranslatorExport_AppendFromTextField(string $currentOptions, 
     return $currentOptions + ";" + $arg + "=" + $value;
 }
 
+global proc mayaUsdTranslatorExport_setDefaultPrim(string $defaultPrimName) {
+    if (`optionMenuGrp -exists exportDefaultPrim` == 0){
+        return;
+    }
+    if ((`checkBoxGrp -exists exportMeshesCheckBox` == 0)||(`checkBoxGrp -exists exportLightsCheckBox` == 0)||(`checkBoxGrp -exists exportCamerasCheckBox` == 0)){
+        return;
+    }
+    // set the default prim if it's available
+    catchQuiet(`optionMenuGrp -e -value $defaultPrimName exportDefaultPrim`);
+}
+
 global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
     if (`optionMenuGrp -exists exportDefaultPrim` == 0){
         return;
@@ -234,7 +245,9 @@ global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
     // check if there's a root prim defined, if so add to list
     if (`textFieldGrp -exists rootPrimField` != 0){
         string $rootPrim = `textFieldGrp -q -text rootPrimField`;
-        menuItem -parent ($menuName + "|OptionMenu") -l $rootPrim;
+        if(size($rootPrim) > 0){
+            menuItem -parent ($menuName + "|OptionMenu") -l $rootPrim;
+        }
     }
 
     for($item in $allItems){
@@ -249,20 +262,36 @@ global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
 
 }
 
-global proc mayaUsdTranslatorExport_RootPrimCB() {
+proc updateDefaultPrimOptionMenu(string $rootPrim) {
     if (`optionMenuGrp -exists exportDefaultPrim` == 0){
         return;
     }
-    string $rootPrim = `textFieldGrp -q -text rootPrimField`;
     optionMenuGrp -edit -deleteAllItems exportDefaultPrim;
     string $menuName = `optionMenuGrp -q -fullPathName exportDefaultPrim`;
     menuItem -parent ($menuName + "|OptionMenu") -l `getMayaUsdString("kExportDefaultPrimNoneLbl")`;
-    menuItem -parent ($menuName + "|OptionMenu") -l $rootPrim;
     if(size($rootPrim) > 0){
+        menuItem -parent ($menuName + "|OptionMenu") -l $rootPrim;
         optionMenuGrp -e -select 2 exportDefaultPrim;
     } else {
         mayaUsdTranslatorExport_updateDefaultPrimList();
     }
+}
+
+proc updateRootPrimTypeOptionMenu(string $rootPrim) {
+    if (`optionMenuGrp -exists rootPrimTypePopup` == 0){
+        return;
+    }
+    if(size($rootPrim) > 0) {
+        optionMenuGrp -e -enable 1 rootPrimTypePopup;
+    } else {
+        optionMenuGrp -e -enable 0 rootPrimTypePopup;
+    }
+}
+
+global proc mayaUsdTranslatorExport_RootPrimCB() {
+    string $rootPrim = `textFieldGrp -q -text rootPrimField`;
+    updateDefaultPrimOptionMenu($rootPrim);
+    updateRootPrimTypeOptionMenu($rootPrim);
 }
 
 global proc mayaUsdTranslatorExport_AnimationCB() {
@@ -279,6 +308,15 @@ global proc mayaUsdTranslatorExport_MeshCB() {
     mayaUsdTranslatorExport_updateDefaultPrimList();
     columnLayout -e -enable (`checkBoxGrp -q -v1 exportMeshesCheckBox` == 1) meshExportOptsCol;
     columnLayout -e -enable (`checkBoxGrp -q -v1 exportMeshesCheckBox` == 1) materialOptsCol;
+}
+
+proc string[] mayaUsdTranslatorExport_getContextLabels()
+{
+    // Make sure they are in alphabetical order when creatign the UI,
+    // otherwise they are in a semi-random order, probably based on plugin
+    // load order or other internal details.
+    string $contextLabels[] = `mayaUSDListJobContexts -export`;
+    return `sort $contextLabels`;
 }
 
 proc string mayaUsdTranslatorExport_getContextOptionsCheckBoxName(string $jobContext)
@@ -308,16 +346,27 @@ proc string mayaUsdTranslatorExport_getContextOptionsButtonName(string $jobConte
 proc mayaUsdTranslatorExport_updateContextOptionButton(string $contextLabel, string $jobContext)
 {
     string $buttonName = mayaUsdTranslatorExport_getContextOptionsButtonName($jobContext);
-    iconTextButton -edit -visible `mayaUsdTranslatorExport_isContextOptionsUISupported($contextLabel)` $buttonName;
+    int $vis = `mayaUsdTranslatorExport_isContextOptionsUISupported($contextLabel)`;
+    iconTextButton -edit -visible $vis $buttonName;
 }
 
-proc string[] mayaUsdTranslatorExport_getContextLabels()
+proc string[] mayaUsdTranslatorExport_updateAllContextOptionButtons()
 {
-    // Make sure they are in alphabetical order when creatign the UI,
-    // otherwise they are in a semi-random order, probably based on plugin
-    // load order or other internal details.
-    string $contextLabels[] = `mayaUSDListJobContexts -export`;
-    return `sort $contextLabels`;
+    string $jobContexts[];
+
+    string $contextLabels[] = mayaUsdTranslatorExport_getContextLabels();
+    for ($contextLabel in $contextLabels) {
+        // Note: we verify that the enabled context actually exists. Might be redundant, but
+        //       initially the list of enabled context comes from the saved ones from a previous
+        //       Maya session and the list of loaded plugins might have changed.
+        string $jobContext = `mayaUSDListJobContexts -jobContext $contextLabel`;
+        if ($jobContext == "")
+            continue;
+        stringArrayInsertAtIndex(255, $jobContexts, $jobContext);
+        mayaUsdTranslatorExport_updateContextOptionButton($contextLabel, $jobContext);
+    }
+
+    return $jobContexts;
 }
 
 global string $_mayaUsdTranslatorExport_contextLabel;
@@ -484,15 +533,7 @@ proc mayaUsdTranslatorExport_fillContextOptionsUI(string $listOfJobContexts)
     // Note: we verify that the enabled context actually exists. Might be redundant, but
     //       initially the list of enabled context comes from the saved ones from a previous
     //       Maya session and the list of loaded plugins might have changed.
-    string $contextLabels[] = mayaUsdTranslatorExport_getContextLabels();
-    string $jobContexts[];
-    for ($contextLabel in $contextLabels) {
-        string $jobContext = `mayaUSDListJobContexts -jobContext $contextLabel`;
-        if ($jobContext == "")
-            continue;
-        stringArrayInsertAtIndex(255, $jobContexts, $jobContext);
-        mayaUsdTranslatorExport_updateContextOptionButton($contextLabel, $jobContext);
-    }
+    string $jobContexts[] = mayaUsdTranslatorExport_updateAllContextOptionButtons();
 
     string $enabledJobContexts[] = stringToStringArray($listOfJobContexts, ",");
     for ($enabledJobContext in $enabledJobContexts) {
@@ -768,6 +809,7 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
         int $exportLights = 1;
 
         int $hasRootPrim = 0;
+        string $defaultPrimName = "";
 
         string $excludeTypes;
         for ($index = 0; $index < size($optionList); $index++) {
@@ -832,6 +874,8 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
                 $hasRootPrim = 1;
             } else if ($optionBreakDown[0] == "rootPrimType") {
                 mayaUsdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], $enable, "rootPrimTypePopup");
+            } else if ($optionBreakDown[0] == "defaultPrim") {
+                $defaultPrimName = $optionBreakDown[1];
             } else if ($optionBreakDown[0] == "convertMaterialsTo") {
                 mayaUsdTranslatorExport_SetConvertMaterialsToCheckboxes($optionBreakDown[1], $enable, $processJobContext);
             } else if ($optionBreakDown[0] == "shadingMode" && $optionBreakDown[1] != "useRegistry") {
@@ -864,13 +908,22 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
 
         if ($listOfJobContexts != "" && $processJobContext == 1) {
             mayaUsdTranslatorExport_fillContextOptionsUI($listOfJobContexts);
+        } else {
+            // Note: this is necessary to correctly hide the export option button
+            //       if not supported by the plugin.
+            mayaUsdTranslatorExport_updateAllContextOptionButtons();
         }
+
         if ($processJobContext == 0 && $supportsMultiExport == 0) {
             mayaUsdTranslatorExport_DisableConvertMaterialsToCheckboxes();
         }
         if ($hasRootPrim == 1){
             mayaUsdTranslatorExport_RootPrimCB();
         }
+        if($defaultPrimName != ""){
+            mayaUsdTranslatorExport_setDefaultPrim($defaultPrimName);
+        }
+
     }
 
     // Set visibility for anim widgets (but do not update the start/end time to playback range

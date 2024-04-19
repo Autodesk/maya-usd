@@ -34,14 +34,14 @@ Ufe::Vector3d toVector3d(const PXR_NS::GfVec3d& v) { return Ufe::Vector3d(v[0], 
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(Ufe::Object3d, UsdObject3d);
+
 UsdObject3d::UsdObject3d(const UsdSceneItem::Ptr& item)
     : Ufe::Object3d()
     , fItem(item)
     , fPrim(item->prim())
 {
 }
-
-UsdObject3d::~UsdObject3d() { }
 
 /*static*/
 UsdObject3d::Ptr UsdObject3d::create(const UsdSceneItem::Ptr& item)

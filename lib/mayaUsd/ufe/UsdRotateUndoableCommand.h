@@ -38,10 +38,7 @@ class MAYAUSD_CORE_PUBLIC UsdRotateUndoableCommand
 public:
     typedef std::shared_ptr<UsdRotateUndoableCommand> Ptr;
 
-    UsdRotateUndoableCommand(const UsdRotateUndoableCommand&) = delete;
-    UsdRotateUndoableCommand& operator=(const UsdRotateUndoableCommand&) = delete;
-    UsdRotateUndoableCommand(UsdRotateUndoableCommand&&) = delete;
-    UsdRotateUndoableCommand& operator=(UsdRotateUndoableCommand&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdRotateUndoableCommand);
 
     //! Create a UsdRotateUndoableCommand from a UFE scene path.  The command is
     //! not executed.
@@ -59,7 +56,6 @@ public:
 protected:
     //! Construct a UsdRotateUndoableCommand.  The command is not executed.
     UsdRotateUndoableCommand(const Ufe::Path& path, double x, double y, double z);
-    ~UsdRotateUndoableCommand() override;
 
 private:
     static PXR_NS::TfToken rotXYZ;

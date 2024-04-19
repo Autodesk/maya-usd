@@ -24,6 +24,8 @@
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, SetVariantSelectionCommand);
+
 SetVariantSelectionCommand::Ptr SetVariantSelectionCommand::create(
     const Ufe::Path&       path,
     const PXR_NS::UsdPrim& prim,
@@ -45,8 +47,6 @@ SetVariantSelectionCommand::SetVariantSelectionCommand(
     , _newSelection(variantSelection)
 {
 }
-
-SetVariantSelectionCommand::~SetVariantSelectionCommand() { }
 
 void SetVariantSelectionCommand::redo()
 {

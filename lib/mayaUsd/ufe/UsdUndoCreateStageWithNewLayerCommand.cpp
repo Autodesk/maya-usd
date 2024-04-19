@@ -28,6 +28,10 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(
+    Ufe::SceneItemResultUndoableCommand,
+    UsdUndoCreateStageWithNewLayerCommand);
+
 UsdUndoCreateStageWithNewLayerCommand::UsdUndoCreateStageWithNewLayerCommand(
     const Ufe::SceneItem::Ptr& parentItem)
     : _parentItem(nullptr)
@@ -38,8 +42,6 @@ UsdUndoCreateStageWithNewLayerCommand::UsdUndoCreateStageWithNewLayerCommand(
 
     _parentItem = parentItem;
 }
-
-UsdUndoCreateStageWithNewLayerCommand::~UsdUndoCreateStageWithNewLayerCommand() { }
 
 UsdUndoCreateStageWithNewLayerCommand::Ptr
 UsdUndoCreateStageWithNewLayerCommand::create(const Ufe::SceneItem::Ptr& parentItem)

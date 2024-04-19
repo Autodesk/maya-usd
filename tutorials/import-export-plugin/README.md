@@ -124,7 +124,7 @@ lead to your plugin. The chain of reference is as follow:
 
 ### As a extra plugin inside the MayaUSD installation
 
-The final way to auto-load the export plugin is to install it within the MayaUS
+The final way to auto-load the export plugin is to install it within the MayaUSD
 plugin itself. It is similar to the stand-alone method above, but a little bit
 simpler:
 

@@ -29,6 +29,8 @@ class USDUFE_PUBLIC UsdUndoLongDurationCommand : public Ufe::CompositeUndoableCo
 public:
     using Parent = Ufe::CompositeUndoableCommand;
 
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoLongDurationCommand);
+
     //! Create the long-duration composite command and append the argument commands to it.
     //! \return Pointer to the long-duration composite undoable command.
     static std::shared_ptr<UsdUndoLongDurationCommand>
@@ -36,13 +38,10 @@ public:
 
     //@{
     //! Constructors.
-    UsdUndoLongDurationCommand();
+    UsdUndoLongDurationCommand() = default;
     UsdUndoLongDurationCommand(std::initializer_list<Ptr> undoableCommands);
     UsdUndoLongDurationCommand(const std::list<Ptr>& undoableCommands);
-
     //@}
-    //! Destructor.
-    ~UsdUndoLongDurationCommand() override;
 
     //! Calls execute() on each command in the list, in forward order.
     void execute() override;

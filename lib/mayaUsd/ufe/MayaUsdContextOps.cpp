@@ -365,12 +365,12 @@ void executeEditAsMayaOptions(const Ufe::Path& path)
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(UsdUfe::UsdContextOps, MayaUsdContextOps);
+
 MayaUsdContextOps::MayaUsdContextOps(const UsdSceneItem::Ptr& item)
     : UsdUfe::UsdContextOps(item)
 {
 }
-
-MayaUsdContextOps::~MayaUsdContextOps() { }
 
 /*static*/
 MayaUsdContextOps::Ptr MayaUsdContextOps::create(const UsdSceneItem::Ptr& item)

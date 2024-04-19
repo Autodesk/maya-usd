@@ -41,7 +41,6 @@ public:
     using Ptr = std::shared_ptr<UsdTransform3dPointInstance>;
 
     UsdTransform3dPointInstance(const UsdSceneItem::Ptr& item);
-    ~UsdTransform3dPointInstance() override = default;
 
     //! Create a UsdTransform3dPointInstance.
     static UsdTransform3dPointInstance::Ptr create(const UsdSceneItem::Ptr& item);

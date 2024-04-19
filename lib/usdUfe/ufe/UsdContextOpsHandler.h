@@ -28,14 +28,9 @@ class USDUFE_PUBLIC UsdContextOpsHandler : public Ufe::ContextOpsHandler
 public:
     typedef std::shared_ptr<UsdContextOpsHandler> Ptr;
 
-    UsdContextOpsHandler();
-    ~UsdContextOpsHandler() override;
+    UsdContextOpsHandler() = default;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdContextOpsHandler(const UsdContextOpsHandler&) = delete;
-    UsdContextOpsHandler& operator=(const UsdContextOpsHandler&) = delete;
-    UsdContextOpsHandler(UsdContextOpsHandler&&) = delete;
-    UsdContextOpsHandler& operator=(UsdContextOpsHandler&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdContextOpsHandler);
 
     //! Create a UsdContextOpsHandler.
     static UsdContextOpsHandler::Ptr create();

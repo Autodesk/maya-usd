@@ -44,13 +44,8 @@ public:
     static UsdTransform3dRead::Ptr create(const UsdSceneItem::Ptr& item);
 
     UsdTransform3dRead(const UsdSceneItem::Ptr& item);
-    ~UsdTransform3dRead() override = default;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdTransform3dRead(const UsdTransform3dRead&) = delete;
-    UsdTransform3dRead& operator=(const UsdTransform3dRead&) = delete;
-    UsdTransform3dRead(UsdTransform3dRead&&) = delete;
-    UsdTransform3dRead& operator=(UsdTransform3dRead&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdTransform3dRead);
 
     // Ufe::Transform3d overrides
     const Ufe::Path&    path() const override;
@@ -72,6 +67,8 @@ public:
     using Ptr = std::shared_ptr<UsdTransform3dReadHandler>;
 
     UsdTransform3dReadHandler(const Ufe::Transform3dHandler::Ptr& nextHandler);
+
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdTransform3dReadHandler);
 
     //! Create a UsdTransform3dReadHandler.
     static Ptr create(const Ufe::Transform3dHandler::Ptr& nextHandler);

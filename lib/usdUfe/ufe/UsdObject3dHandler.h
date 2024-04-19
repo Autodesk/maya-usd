@@ -23,14 +23,9 @@ class USDUFE_PUBLIC UsdObject3dHandler : public Ufe::Object3dHandler
 public:
     typedef std::shared_ptr<UsdObject3dHandler> Ptr;
 
-    UsdObject3dHandler();
-    ~UsdObject3dHandler() override;
+    UsdObject3dHandler() = default;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdObject3dHandler(const UsdObject3dHandler&) = delete;
-    UsdObject3dHandler& operator=(const UsdObject3dHandler&) = delete;
-    UsdObject3dHandler(UsdObject3dHandler&&) = delete;
-    UsdObject3dHandler& operator=(UsdObject3dHandler&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdObject3dHandler);
 
     //! Create a UsdObject3dHandler.
     static UsdObject3dHandler::Ptr create();

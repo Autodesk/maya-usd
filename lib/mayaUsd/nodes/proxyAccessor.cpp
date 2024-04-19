@@ -52,6 +52,8 @@
 
 namespace MAYAUSD_NS_DEF {
 
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(ProxyAccessor);
+
 /*! /brief  Scoped object setting up compute context for accessor
 
     Proxy accessor supports nested compute that allows injecting DG dependencies to USD. More
@@ -115,8 +117,7 @@ public:
     //! \brief  Restore will handle changing context pointer in the accessor to the state before
     ~ComputeContext() { _accessor._inCompute = _restoreState; }
 
-    ComputeContext(const ComputeContext&) = delete;
-    ComputeContext& operator=(const ComputeContext&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ComputeContext);
 
 private:
     //! Remember context pointer at the creation of this object
@@ -140,6 +141,8 @@ public:
     //! Proxy share transform matrix
     MMatrix _proxyInclusiveMatrix;
 };
+
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(ComputeContext);
 
 namespace {
 //! Profiler category for proxy accessor events

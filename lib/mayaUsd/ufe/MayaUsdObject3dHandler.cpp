@@ -21,9 +21,7 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-MayaUsdObject3dHandler::MayaUsdObject3dHandler() { }
-
-MayaUsdObject3dHandler::~MayaUsdObject3dHandler() { }
+MAYAUSD_VERIFY_CLASS_SETUP(UsdUfe::UsdObject3dHandler, MayaUsdObject3dHandler);
 
 /*static*/
 MayaUsdObject3dHandler::Ptr MayaUsdObject3dHandler::create()
