@@ -226,6 +226,21 @@ global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
     if ((`checkBoxGrp -exists exportMeshesCheckBox` == 0)||(`checkBoxGrp -exists exportLightsCheckBox` == 0)||(`checkBoxGrp -exists exportCamerasCheckBox` == 0)){
         return;
     }
+
+    optionMenuGrp -edit -deleteAllItems exportDefaultPrim;
+    string $menuName = `optionMenuGrp -q -fullPathName exportDefaultPrim`;
+    menuItem -parent ($menuName + "|OptionMenu") -l `getMayaUsdString("kExportDefaultPrimNoneLbl")`;
+
+    // check if there's a root prim defined, if so it should be the only item in list
+    if (`textFieldGrp -exists rootPrimField` != 0){
+        string $rootPrim = `textFieldGrp -q -text rootPrimField`;
+        if(size($rootPrim) > 0){
+            menuItem -parent ($menuName + "|OptionMenu") -l $rootPrim;
+            optionMenuGrp -e -select 2 exportDefaultPrim;
+            return;
+        }
+    }
+
     int $excludeMesh = (`checkBoxGrp -q -v1 exportMeshesCheckBox` == 0);
     int $excludeLight = (`checkBoxGrp -q -v1 exportLightsCheckBox` == 0);
     int $excludeCamera = (`checkBoxGrp -q -v1 exportCamerasCheckBox` == 0);
@@ -237,17 +252,6 @@ global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
 
     } else{
         $allItems = `python("import mayaUsd_exportHelpers; mayaUsd_exportHelpers.updateDefaultPrimCandidatesFromSelection('" + $excludeMesh + "','" + $excludeLight + "', '" + $excludeCamera +"')")`;
-    }
-    optionMenuGrp -edit -deleteAllItems exportDefaultPrim;
-    string $menuName = `optionMenuGrp -q -fullPathName exportDefaultPrim`;
-    menuItem -parent ($menuName + "|OptionMenu") -l `getMayaUsdString("kExportDefaultPrimNoneLbl")`;
-
-    // check if there's a root prim defined, if so add to list
-    if (`textFieldGrp -exists rootPrimField` != 0){
-        string $rootPrim = `textFieldGrp -q -text rootPrimField`;
-        if(size($rootPrim) > 0){
-            menuItem -parent ($menuName + "|OptionMenu") -l $rootPrim;
-        }
     }
 
     for($item in $allItems){
