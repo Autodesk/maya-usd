@@ -1,3 +1,7 @@
+## Migration Guide
+
+Regarding moving from AL_USDMaya to Autodesk’s USD for Maya Plugin, please find the migration guide [here](MIGRATION_GUIDE.md).
+
 ## What is AL_USDMaya?
 Represent Maya data in Maya, and USD data in USD -  for example, we use AL_USDMaya to allow native Maya entities such as complex maya referenced rigs (and other assets not easily represented in USD) to be embedded in USD scenes and imported into Maya in their native form. The plugin maintains a "live" connection between the USD and Maya scene, and can respond to various events, keeping the Maya and USD scenes in sync. This affords a dynamic user experience which allows artists to swap in and out different representations of objects in their scene (e.g Rigs for Geometry Caches, different levels of detail etc). Additionally, heavyweight scene elements such as sets/crowds can be represented in OpenGL in the Maya viewport, and manipulated either with USD or Maya tools and UI components.
 
