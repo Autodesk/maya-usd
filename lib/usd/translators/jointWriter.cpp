@@ -88,7 +88,6 @@ PxrUsdTranslators_JointWriter::PxrUsdTranslators_JointWriter(
     }
 
     _skel = UsdSkelSkeleton::Define(GetUsdStage(), usdPath);
-
     if (!TF_VERIFY(_skel)) {
         return;
     }
