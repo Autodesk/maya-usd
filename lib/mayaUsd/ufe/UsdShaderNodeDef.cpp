@@ -368,7 +368,7 @@ Ufe::InsertChildCommand::Ptr UsdShaderNodeDef::createNodeCmd(
                 parentItem, fShaderNodeDef->GetIdentifier());
         }
         return UsdUndoCreateFromNodeDefCommand::create(
-            fShaderNodeDef, parentItem, UsdMayaUtil::SanitizeName(name.string()));
+            fShaderNodeDef, parentItem, UsdUfe::sanitizeName(name.string()));
     }
     return {};
 }

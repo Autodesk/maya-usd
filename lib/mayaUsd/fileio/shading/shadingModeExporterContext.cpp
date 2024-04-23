@@ -26,6 +26,8 @@
 #include <mayaUsd/utils/json.h>
 #include <mayaUsd/utils/util.h>
 
+#include <usdUfe/utils/Utils.h>
+
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/envSetting.h>
 #include <pxr/base/tf/iterator.h>
@@ -495,7 +497,7 @@ UsdPrim UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
         materialName = sgName.c_str();
     }
 
-    materialName = UsdMayaUtil::SanitizeName(materialName);
+    materialName = UsdUfe::sanitizeName(materialName);
     UsdStageRefPtr stage = GetUsdStage();
     if (UsdPrim materialParent
         = _GetMaterialParent(stage, GetExportArgs().materialsScopeName, assignmentsToBind)) {

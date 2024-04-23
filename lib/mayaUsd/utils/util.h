@@ -142,8 +142,6 @@ inline double ConvertMMToCM(const double mm) { return mm / MillimetersPerCentime
 /// in millimeters.
 inline double ConvertCMToMM(const double cm) { return cm * MillimetersPerCentimeter; }
 
-inline std::string SanitizeName(const std::string& name) { return UsdUfe::sanitizeName(name); }
-
 /// Converts the given value \p mdistance in Maya's MDistance units to the
 /// equivalent value in USD's metersPerUnit.
 MAYAUSD_CORE_PUBLIC
