@@ -27,9 +27,9 @@ UsdUfe::UICallbacks& getRegisteredUICallbacks()
     return registeredUICallbacks;
 }
 
-const std::vector<UICallback::Ptr>& getEmptyCallbacks()
+const std::vector<UsdUfe::UICallback::Ptr>& getEmptyCallbacks()
 {
-    static std::vector<UICallback::Ptr> empty;
+    static std::vector<UsdUfe::UICallback::Ptr> empty;
     return empty;
 }
 

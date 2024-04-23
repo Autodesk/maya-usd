@@ -52,7 +52,8 @@ bool setUsdAttrMetadata(
     //       since that is how you unlock.
     if (key == Ufe::Attribute::kLocked) {
         return attr.SetMetadata(
-            MetadataTokens->Lock, value.get<bool>() ? GenericTokens->On : GenericTokens->Off);
+            UsdUfe::MetadataTokens->Lock,
+            value.get<bool>() ? UsdUfe::GenericTokens->On : UsdUfe::GenericTokens->Off);
     }
 
     // If attribute is locked don't allow setting Metadata.

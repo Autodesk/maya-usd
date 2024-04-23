@@ -112,7 +112,8 @@ UsdUfe::UniqueChildNameFn    gUniqueChildNameFn = nullptr;
 UsdUfe::WaitCursorFn         gStartWaitCursorFn = nullptr;
 UsdUfe::WaitCursorFn         gStopWaitCursorFn = nullptr;
 
-UsdUfe::DisplayMessageFn gDisplayMessageFn[static_cast<int>(MessageType::nbTypes)] = { nullptr };
+UsdUfe::DisplayMessageFn gDisplayMessageFn[static_cast<int>(UsdUfe::MessageType::nbTypes)]
+    = { nullptr };
 
 } // anonymous namespace
 

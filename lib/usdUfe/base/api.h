@@ -44,14 +44,3 @@
 // Convenience symbol versioning include: because api.h is widely
 // included, this reduces the need to explicitly include mayaUsd.h.
 #include <usdUfe/usdUfe.h>
-
-// TEMP (UsdUfe)
-//
-// As the work-in-progress to move the UsdUfe code to a separate folder
-// (and shared library) continues the namespace of the moved classes will
-// be changed from MayaUsd::ufe -> UsdUfe.
-//
-// So temporarily add a using statement for this new namespace until the move
-// is complete. At that the bulk of the files will have been moved and this
-// using statement should be removed and any namespace cleanup done at that time.
-using namespace UsdUfe;
