@@ -490,8 +490,13 @@ MObject UsdMayaJointUtil::writeSkinningData(
     }
 
     UsdMayaJointUtil::warnForPostDeformationTransform(usdPath, dagPath, skinCluster);
-
-    skelPath = UsdMayaJointUtil::getSkeletonPath(rootJoint, stripNamespaces);
+    SdfPath jointRootPath = UsdMayaJointUtil::getSkeletonPath(rootJoint, stripNamespaces);
+    if (skelPath.IsEmpty()) {
+        skelPath = jointRootPath;
+    } else {
+        // SdfPath can only append relative path, so remove the '/' at the first index
+        skelPath = jointRootPath.ReplacePrefix(SdfPath("/"), skelPath);
+    }
 
     // Export will create a Skeleton at the location corresponding to
     // the root joint. Configure this mesh to be bound to the same skel.
