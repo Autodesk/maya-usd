@@ -36,6 +36,8 @@ protected:
 
     USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoLoadUnloadBaseCommand);
 
+    using commandFn = std::function<void(const UsdUndoLoadUnloadBaseCommand*)>;
+    void doCommand(commandFn fn, bool undo = false);
     void doLoad() const;
     void doUnload() const;
 
@@ -45,6 +47,7 @@ private:
     const PXR_NS::UsdStageWeakPtr _stage;
     const PXR_NS::SdfPath         _primPath;
     PXR_NS::UsdLoadPolicy         _policy;
+    PXR_NS::UsdStageLoadRules     _undoRules;
 };
 
 //! \brief Undoable command for loading a USD prim.
