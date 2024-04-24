@@ -488,7 +488,7 @@ bool UsdMaya_WriteJob::_WriteFrame(double iFrame)
 
 bool UsdMaya_WriteJob::_FinishWriting()
 {
-    MayaUsd::ProgressBarScope progressBar(6);
+    MayaUsd::ProgressBarScope progressBar(7);
 
     UsdPrimSiblingRange usdRootPrims = mJobCtx.mStage->GetPseudoRoot().GetChildren();
 
@@ -584,6 +584,9 @@ bool UsdMaya_WriteJob::_FinishWriting()
     }
 
     _PostCallback();
+    progressBar.advance();
+
+    _PruneEmpties();
     progressBar.advance();
 
     TF_STATUS("Saving stage");
@@ -778,6 +781,81 @@ TfToken UsdMaya_WriteJob::_WriteVariants(const UsdPrim& usdRootPrim)
         modelingVariantSet.SetVariantSelection(defaultModelingVariant);
     }
     return defaultPrim;
+}
+
+namespace {
+bool isEmptyPrim(const UsdPrim& prim)
+{
+    // Note: prim might have been removed previously.
+    if (!prim.IsValid())
+        return false;
+
+    static std::set<TfToken> emptyTypes = std::set<TfToken>({ TfToken("Xform"), TfToken("Scope") });
+    TfToken                  primTypeName = prim.GetTypeName();
+    if (emptyTypes.count(primTypeName) == 0)
+        return false;
+
+    if (!prim.GetAllChildren().empty())
+        return false;
+
+    if (prim.HasAuthoredPayloads())
+        return false;
+
+    if (prim.HasAuthoredReferences())
+        return false;
+
+    return true;
+}
+
+bool isEmptyPrim(const UsdStageRefPtr& stage, const SdfPath& path)
+{
+    return isEmptyPrim(stage->GetPrimAtPath(path));
+}
+
+std::vector<SdfPath>
+removeEmptyPrims(const UsdStageRefPtr& stage, const std::vector<SdfPath>& toRemove)
+{
+    // Once we start removing empties, we need to re-check their parents.
+    std::vector<SdfPath> toRecheck;
+
+    for (const SdfPath& path : toRemove) {
+        stage->RemovePrim(path);
+        toRecheck.emplace_back(path.GetParentPath());
+    }
+    return toRecheck;
+}
+} // namespace
+
+void UsdMaya_WriteJob::_PruneEmpties()
+{
+    if (mJobCtx.mArgs.includeEmptyTransforms)
+        return;
+
+    SdfPath defaultPrimPath;
+    if (mJobCtx.mArgs.defaultPrim.size() > 0) {
+        if (mJobCtx.mArgs.defaultPrim[0] != '/')
+            defaultPrimPath = SdfPath(std::string("/") + mJobCtx.mArgs.defaultPrim);
+        else
+            defaultPrimPath = SdfPath(mJobCtx.mArgs.defaultPrim);
+    }
+
+    std::vector<SdfPath> toRemove;
+
+    for (UsdPrim prim : mJobCtx.mStage->Traverse()) {
+        if (defaultPrimPath != prim.GetPath())
+            if (isEmptyPrim(prim))
+                toRemove.emplace_back(prim.GetPath());
+    }
+
+    while (toRemove.size()) {
+        std::vector<SdfPath> toRecheck = removeEmptyPrims(mJobCtx.mStage, toRemove);
+        toRemove.clear();
+
+        for (const SdfPath& path : toRecheck)
+            if (defaultPrimPath != path)
+                if (isEmptyPrim(mJobCtx.mStage, path))
+                    toRemove.emplace_back(path);
+    }
 }
 
 void UsdMaya_WriteJob::_CreatePackage() const
