@@ -48,6 +48,10 @@ def mayaUsdLibRegisterStrings():
     register('kLabelInheriting', 'inheriting')
     register('kTooltipInheritingOverDirect', 'This material is being over-ridden due to the strength setting on an ancestor')
     register('kTooltipInheriting', 'This material is inherited from an ancestor')
+    register('kLabelMaterialStrength', 'Strength')
+    register('kLabelWeakerMaterial', 'Weaker than descendants')
+    register('kLabelStrongerMaterial', 'Stronger than descendants')
+    register('kTooltipInheritedStrength', 'This setting cannot be changed on this prim due to the strength setting on an ancestor')
 
     # mayaUsdAddMayaReference.py
     register('kErrorGroupPrimExists', 'Group prim "^1s" already exists under "^2s". Choose prim name other than "^1s" to proceed.')
