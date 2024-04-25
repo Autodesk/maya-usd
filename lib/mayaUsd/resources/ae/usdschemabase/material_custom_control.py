@@ -54,18 +54,20 @@ class MaterialCustomControl(object):
         graphIcon = 'LookdevX.png' if hasLookdevX else None
 
         self.assignedMat = self._createTextField('material',  'kLabelAssignedMaterial', graphIcon)
+        self.assignedMatMenu = self._createGraphMenu(self.assignedMat.button)
 
         self.strengthMenu = self._createDropDownField(
             'strength', 'kLabelMaterialStrength',
             ['kLabelWeakerMaterial', 'kLabelStrongerMaterial'])
                 
         self.inheritedMat = self._createTextField('inherited', 'kLabelInheritedMaterial', graphIcon)
+        self.inheritedMatMenu = self._createGraphMenu(self.inheritedMat.button)
         
         # Note: icon image taken from Maya resources.
         self.fromPrim = self._createTextField('from prim', 'kLabelInheritedFromPrim', 'inArrow.png')
-        
+
         # Fill the UI.
-        self._refreshUI()
+        self._fillUI()
 
     @staticmethod
     def _hasLookdevX():
@@ -88,6 +90,15 @@ class MaterialCustomControl(object):
             else:
                 button = None
         return MaterialCustomControl.TextField(rowLayout, textField, button)
+
+    def _createGraphMenu(self, button):
+        '''
+        Create a popup menu attached to the given button to graph a material.
+        '''
+        if not button:
+            return None
+        
+        return cmds.popupMenu(parent=button, button=True)
     
     def _createDropDownField(self, longName, uiNameRes, elementsRes):
         '''
@@ -127,9 +138,9 @@ class MaterialCustomControl(object):
         # that case we don't need to update our controls since none will change.
         pass
 
-    def _refreshUI(self):
+    def _fillUI(self):
         '''
-        Refresh the UI when the data is modified.
+        Fill the UI with the material data.
         '''
         matAPI = UsdShade.MaterialBindingAPI(self.prim)
         mat, matRel = matAPI.ComputeBoundMaterial()
@@ -142,13 +153,13 @@ class MaterialCustomControl(object):
         strength = self.strengthLabels[token]
 
         if matRel.GetPrim() == self.prim:
-            self._refreshUIForDirect(mat, strength)
+            self._fillUIForDirect(mat, strength)
         else:
-            self._refreshUIForInherited(mat, matRel, directBinding.GetMaterialPath(), strength)
+            self._fillUIForInherited(mat, matRel, directBinding.GetMaterialPath(), strength)
 
-    def _refreshUIForDirect(self, mat, strength):
+    def _fillUIForDirect(self, mat, strength):
         '''
-        Refresh the UI when the material is directly on the prim.
+        Fill the UI when the material is directly on the prim.
         '''
         # Note: hide UI elements before filling values.
         cmds.rowLayout(self.inheritedMat.layout, edit=True, visible=False)
@@ -161,9 +172,9 @@ class MaterialCustomControl(object):
         self._fillGotoPrimButton(None)
         self._fillUIValues(matPathStr, '', '', strength)
 
-    def _refreshUIForInherited(self, mat, matRel, directMatPath, strength):
+    def _fillUIForInherited(self, mat, matRel, directMatPath, strength):
         '''
-        Refresh the UI when the material is inherited from an ancestor prim.
+        Fill the UI when the material is inherited from an ancestor prim.
         '''
         directPathStr = directMatPath.pathString if directMatPath else ''
         inheritedPathStr = mat.GetPath().pathString
@@ -213,15 +224,15 @@ class MaterialCustomControl(object):
         '''
         Fill the direct material graph button with the correct command.
         '''
-        self._fillGraphButton(matPathStr, self.assignedMat.button)
+        self._fillGraphButton(matPathStr, self.assignedMat.button, self.assignedMatMenu)
 
     def _fillGraphInheritedButton(self, matPathStr):
         '''
         Fill the inherited material graph button with the correct command.
         '''
-        self._fillGraphButton(matPathStr, self.inheritedMat.button)
+        self._fillGraphButton(matPathStr, self.inheritedMat.button, self.inheritedMatMenu)
 
-    def _fillGraphButton(self, matPathStr, button):
+    def _fillGraphButton(self, matPathStr, button, menu):
         '''
         Fill the graph button with the correct command.
         '''
@@ -237,10 +248,61 @@ class MaterialCustomControl(object):
 
         if canGraph:
             ufePathStr = self._createUFEPathFromUSDPath(matPathStr)
-            command = lambda *_: cmds.lookdevXGraph(graphNode=ufePathStr, tabName='USD')
+            command = partial(MaterialCustomControl._fillGraphMenu, menu=menu, ufePathStr=ufePathStr)
         else:
             command = ''
-        cmds.button(button, edit=True, command=command)
+        cmds.popupMenu(menu, edit=True, postMenuCommand=command)
+
+    @staticmethod
+    def _fillGraphMenu(*args, menu=None, ufePathStr=None):
+        '''
+        Fill the popup menu with menu items for graphing materials when it gets shown to the user.
+        '''
+        if not menu:
+            return
+        if not ufePathStr:
+            return
+        
+        cmds.popupMenu(menu, edit=True, deleteAllItems=True)
+
+        # Allow opening a new tab.
+        command = partial(MaterialCustomControl._showInNewTab, ufePathStr=ufePathStr)
+        cmds.menuItem(parent=menu, label=getMayaUsdLibString('kLabelMaterialNewTab'), command=command)
+
+        # Allow graphing in an existing tab.
+        # Requires intimate knowledge of the LookdevX window name...
+        lookdevXWindow = 'LookdevXGraphEditorControl'
+        if cmds.window(lookdevXWindow, exists=True):
+            tabNames = cmds.lxCompoundEditor(name=lookdevXWindow, tabNames=True, dataModel='USD')
+        else:
+            tabNames = cmds.lxCompoundEditor(tabNames=True, dataModel='USD')
+
+        if tabNames:
+            cmds.menuItem(parent=menu, divider=True)
+            for tabName in tabNames:
+                command = partial(MaterialCustomControl._showInExistingTab, tabName=tabName, ufePathStr=ufePathStr)
+                cmds.menuItem(parent=menu, label=tabName, command=command)
+
+    @staticmethod
+    def _showInNewTab(*args, ufePathStr=None):
+        '''
+        Show a material in a new LookdevX tab.
+        '''
+        if not ufePathStr:
+            return
+        tabName = cmds.lookdevXGraph(openNewTab='USD')
+        MaterialCustomControl._showInExistingTab(tabName=tabName, ufePathStr=ufePathStr)
+
+    @staticmethod
+    def _showInExistingTab(*args, tabName=None, ufePathStr=None):
+        '''
+        Show a material in a given existing LookdevX tab.
+        '''
+        if not tabName:
+            return
+        if not ufePathStr:
+            return
+        cmds.lookdevXGraph(tabName=tabName, graphObject=ufePathStr)
 
     def _fillGotoPrimButton(self, fromPath):
         '''
