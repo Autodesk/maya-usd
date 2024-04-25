@@ -65,9 +65,6 @@ void UsdUndoDeleteCommand::execute()
     PXR_NS::UsdEditTarget routingEditTarget
         = getEditRouterEditTarget(UsdUfe::EditRoutingTokens->RouteDelete, _prim);
 
-    if (!UsdUfe::applyCommandRestrictionNoThrow(_prim, "delete", true))
-        return;
-
 #ifdef UFE_V4_FEATURES_AVAILABLE
     UsdAttributes::removeAttributesConnections(_prim);
 #endif
@@ -82,6 +79,10 @@ void UsdUndoDeleteCommand::execute()
 
     if (!routingEditTarget.IsNull()) {
         PXR_NS::UsdEditContext ctx(stage, routingEditTarget);
+
+        if (!UsdUfe::applyCommandRestrictionNoThrow(_prim, "delete", true))
+            return;
+
         if (!stage->RemovePrim(_prim.GetPath())) {
             const std::string error
                 = TfStringPrintf("Failed to delete prim \"%s\".", _prim.GetPath().GetText());
@@ -89,6 +90,9 @@ void UsdUndoDeleteCommand::execute()
             throw std::runtime_error(error);
         }
     } else {
+        if (!UsdUfe::applyCommandRestrictionNoThrow(_prim, "delete"))
+            return;
+
         PrimSpecFunc deleteFunc
             = [stage](const UsdPrim& prim, const SdfPrimSpecHandle& primSpec) -> void {
             if (!primSpec)

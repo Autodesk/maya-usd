@@ -401,6 +401,9 @@ bool allowedInStrongerLayer(
         : stage->GetRootLayer();
 
     auto strongerLayer = getStrongerLayer(searchRoot, targetLayer, topLayer);
+
+    // This happens when the edit target layer is within the reference.
+    // In this cae, we return true to allow it to be edited.
     if (!strongerLayer) {
         return true;
     }

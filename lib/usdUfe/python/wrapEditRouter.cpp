@@ -78,6 +78,8 @@ public:
             throw;
         }
 
+        // Extract keys and values individually so that we can extract
+        // PXR_NS::UsdEditTarget correctly from PXR_NS::TfPyObjWrapper.
         const boost::python::object items = dictObject.items();
         for (boost::python::ssize_t i = 0; i < len(items); ++i) {
 
