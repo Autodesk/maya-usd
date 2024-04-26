@@ -11,6 +11,8 @@ In most cases, ADSK_USDMaya could be a drop-in replacement for AL_USDMaya.
 
 Please note that this documentation is not a complete feature comparison of AL_USDMaya and ADSK_USDMaya but mainly focuses on migration from one to another.
 
+For a complete introduction of ADSK_USDMaya, please visit Autodesk's help page [here](https://help.autodesk.com/view/MAYAUL/2025/ENU/?guid=GUID-9E9D45F2-4DA9-497B-8D69-1573ED6B2BA8); for the detail instructions how to install latest release of ADSK_USDMaya, please visit [here](https://help.autodesk.com/view/MAYAUL/2025/ENU/?guid=GUID-8FB49D7F-8651-47CE-80FC-5C940E568C97).
+
 [^1] To distinguish Animal Logic's version and Autodesk's version, we call Autodesk's version "ADSK_USDMaya" for convenience.
 
 [^2] This documentation is written based on the current latest release of `maya-usd-v0.27.0`.
@@ -41,7 +43,7 @@ There is no equivalent nodes like these to [drive transformation and animation f
 
 - `AL_usd_ProxyUsdGeomCamera`
 
-This node works similar as MayaUsd ProxyAccessor but for camera, in ADSK_USDMaya, there is native support of USD camera via the [Ufe::Camera interface](https://github.com/Autodesk/maya-usd/blob/release/v0.27.0/lib/usdUfe/ufe/UsdCamera.h#L30), USD camera (and derived schema cameras) could be interacted like other Maya cameras but with some limitations, for instance when viewing through a USD camera you cannot use the panning, zoom, and dolly.
+This node works similar as MayaUsd ProxyAccessor but for camera, in ADSK_USDMaya, there is native support of USD camera via the [Ufe::Camera interface](https://github.com/Autodesk/maya-usd/blob/release/v0.27.0/lib/usdUfe/ufe/UsdCamera.h#L30) since version [0.18.0](https://help.autodesk.com/view/MAYAUL/2025/ENU/?guid=GUID-985DE87C-E902-49BC-A47D-5699498C4F32), USD camera (and derived schema cameras) could be interacted like other Maya cameras but with some limitations, for instance when viewing through a USD camera you cannot use the panning, zoom, and dolly.
 
 ### USD Stage Creation
 
