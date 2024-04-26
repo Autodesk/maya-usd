@@ -253,6 +253,8 @@ class MaterialCustomControl(object):
             command = ''
         cmds.popupMenu(menu, edit=True, postMenuCommand=command)
 
+    # Note: the ignore1 and ignore2 parameters are the values provided by the MEL callback
+    #       specifying the menu and item being selected that we don't care about.
     @staticmethod
     def _fillGraphMenu(ignore1, ignore2, menu, ufePathStr):
         '''
@@ -283,6 +285,8 @@ class MaterialCustomControl(object):
                 command = partial(MaterialCustomControl._showInExistingTab, tabName=tabName, ufePathStr=ufePathStr)
                 cmds.menuItem(parent=menu, label=tabName, command=command)
 
+    # Note: the ignore parameter is the value provided by the MEL callback
+    #       specifying the item being selected that we don't care about.
     @staticmethod
     def _showInNewTab(ignore, ufePathStr):
         '''
@@ -293,6 +297,8 @@ class MaterialCustomControl(object):
         tabName = cmds.lookdevXGraph(openNewTab='USD')
         MaterialCustomControl._showInExistingTab(ignore, tabName=tabName, ufePathStr=ufePathStr)
 
+    # Note: the ignore parameter is the value provided by the MEL callback
+    #       specifying the item being selected that we don't care about.
     @staticmethod
     def _showInExistingTab(ignore, tabName, ufePathStr):
         '''
