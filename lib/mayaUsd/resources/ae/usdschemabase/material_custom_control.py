@@ -254,7 +254,7 @@ class MaterialCustomControl(object):
         cmds.popupMenu(menu, edit=True, postMenuCommand=command)
 
     @staticmethod
-    def _fillGraphMenu(*args, menu=None, ufePathStr=None):
+    def _fillGraphMenu(ignore1, ignore2, menu, ufePathStr):
         '''
         Fill the popup menu with menu items for graphing materials when it gets shown to the user.
         '''
@@ -284,17 +284,17 @@ class MaterialCustomControl(object):
                 cmds.menuItem(parent=menu, label=tabName, command=command)
 
     @staticmethod
-    def _showInNewTab(*args, ufePathStr=None):
+    def _showInNewTab(ignore, ufePathStr):
         '''
         Show a material in a new LookdevX tab.
         '''
         if not ufePathStr:
             return
         tabName = cmds.lookdevXGraph(openNewTab='USD')
-        MaterialCustomControl._showInExistingTab(tabName=tabName, ufePathStr=ufePathStr)
+        MaterialCustomControl._showInExistingTab(ignore, tabName=tabName, ufePathStr=ufePathStr)
 
     @staticmethod
-    def _showInExistingTab(*args, tabName=None, ufePathStr=None):
+    def _showInExistingTab(ignore, tabName, ufePathStr):
         '''
         Show a material in a given existing LookdevX tab.
         '''
