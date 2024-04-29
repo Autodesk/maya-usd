@@ -232,8 +232,10 @@ PXR_NS::SdfValueTypeName ufeTypeToUsd(const Ufe::Attribute::Type ufeType);
 USDUFE_PUBLIC
 UsdAttribute* usdAttrFromUfeAttr(const Ufe::Attribute::Ptr& attr);
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
 USDUFE_PUBLIC
 Ufe::Attribute::Ptr attrFromUfeAttrInfo(const Ufe::AttributeInfo& attrInfo);
+#endif // UFE_V4_FEATURES_AVAILABLE
 
 //! Send notification for data model changes
 template <class T>

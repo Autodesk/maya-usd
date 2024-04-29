@@ -37,13 +37,16 @@
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdShade/shader.h>
 
-#include <ufe/attributeInfo.h>
 #include <ufe/pathSegment.h>
 #include <ufe/pathString.h>
 #include <ufe/selection.h>
 
 #include <cctype>
 #include <regex>
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#include <ufe/attributeInfo.h>
+#endif // UFE_V4_FEATURES_AVAILABLE
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -620,6 +623,7 @@ UsdAttribute* usdAttrFromUfeAttr(const Ufe::Attribute::Ptr& attr)
     return dynamic_cast<UsdAttribute*>(attr.get());
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
 Ufe::Attribute::Ptr attrFromUfeAttrInfo(const Ufe::AttributeInfo& attrInfo)
 {
     auto item
@@ -630,6 +634,7 @@ Ufe::Attribute::Ptr attrFromUfeAttrInfo(const Ufe::AttributeInfo& attrInfo)
     }
     return UsdAttributes(item).attribute(attrInfo.name());
 }
+#endif // UFE_V4_FEATURES_AVAILABLE
 
 namespace {
 

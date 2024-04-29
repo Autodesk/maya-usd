@@ -24,7 +24,7 @@
 #include <usdUfe/utils/editRouter.h>
 #include <usdUfe/utils/editRouterContext.h>
 #ifdef UFE_V3_FEATURES_AVAILABLE
-#include <usdufe/base/tokens.h>
+#include <usdUfe/base/tokens.h>
 #endif
 
 #include <pxr/base/tf/diagnostic.h>
@@ -584,9 +584,9 @@ UsdAttributeHolder::EnumOptions UsdAttributeHolder::getEnums() const
 {
     UsdAttributeHolder::EnumOptions retVal;
     if (_usdAttr.IsValid()) {
-        VtTokenArray allowedTokens;
+        PXR_NS::VtTokenArray allowedTokens;
         if (_usdAttr.GetPrim().GetPrimDefinition().GetPropertyMetadata(
-                _usdAttr.GetName(), SdfFieldKeys->AllowedTokens, &allowedTokens)) {
+                _usdAttr.GetName(), PXR_NS::SdfFieldKeys->AllowedTokens, &allowedTokens)) {
             for (auto const& token : allowedTokens) {
                 retVal.emplace_back(token.GetString(), "");
             }
@@ -594,10 +594,10 @@ UsdAttributeHolder::EnumOptions UsdAttributeHolder::getEnums() const
         // We might have a propagated enum copied into the created NodeGraph port, resulting from
         // connecting a shader enum property.
         PXR_NS::UsdShadeNodeGraph ngPrim(_usdAttr.GetPrim());
-        if (ngPrim && UsdShadeInput::IsInput(_usdAttr)) {
-            const auto shaderInput = UsdShadeInput { _usdAttr };
-            const auto enumLabels = shaderInput.GetSdrMetadataByKey(TfToken("enum"));
-            const auto enumValues = shaderInput.GetSdrMetadataByKey(TfToken("enumvalues"));
+        if (ngPrim && PXR_NS::UsdShadeInput::IsInput(_usdAttr)) {
+            const auto shaderInput = PXR_NS::UsdShadeInput { _usdAttr };
+            const auto enumLabels = shaderInput.GetSdrMetadataByKey(PXR_NS::TfToken("enum"));
+            const auto enumValues = shaderInput.GetSdrMetadataByKey(PXR_NS::TfToken("enumvalues"));
             const std::vector<std::string> allLabels = splitString(enumLabels, ", ");
             std::vector<std::string>       allValues = splitString(enumValues, ", ");
 
