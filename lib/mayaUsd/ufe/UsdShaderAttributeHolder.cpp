@@ -38,6 +38,10 @@ namespace ufe {
 // UsdShaderAttributeHolder:
 //------------------------------------------------------------------------------
 
+// Ensure that UsdShaderAttributeHolder is properly setup.
+MAYAUSD_VERIFY_CLASS_BASE(UsdAttributeHolder, UsdShaderAttributeHolder);
+MAYAUSD_VERIFY_CLASS_VIRTUAL_DESTRUCTOR(UsdShaderAttributeHolder);
+
 UsdShaderAttributeHolder::UsdShaderAttributeHolder(
     PXR_NS::UsdPrim                   usdPrim,
     PXR_NS::SdrShaderPropertyConstPtr sdrProp,

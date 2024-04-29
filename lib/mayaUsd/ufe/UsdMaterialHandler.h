@@ -24,16 +24,9 @@ class MAYAUSD_CORE_PUBLIC UsdMaterialHandler : public Ufe::MaterialHandler
 public:
     typedef std::shared_ptr<UsdMaterialHandler> Ptr;
 
-    UsdMaterialHandler();
-    ~UsdMaterialHandler() override;
+    UsdMaterialHandler() = default;
 
-    //@{
-    //! Delete the copy/move constructors assignment operators.
-    UsdMaterialHandler(const UsdMaterialHandler&) = delete;
-    UsdMaterialHandler& operator=(const UsdMaterialHandler&) = delete;
-    UsdMaterialHandler(UsdMaterialHandler&&) = delete;
-    UsdMaterialHandler& operator=(UsdMaterialHandler&&) = delete;
-    //@}
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdMaterialHandler);
 
     //! Create a UsdMaterialHandler.
     static UsdMaterialHandler::Ptr create();

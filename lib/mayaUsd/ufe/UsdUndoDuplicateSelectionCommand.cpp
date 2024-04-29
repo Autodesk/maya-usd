@@ -35,6 +35,8 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::SelectionUndoableCommand, UsdUndoDuplicateSelectionCommand);
+
 namespace {
 
 bool shouldConnectExternalInputs(const Ufe::ValueDictionary& duplicateOptions)
@@ -64,8 +66,6 @@ UsdUndoDuplicateSelectionCommand::UsdUndoDuplicateSelectionCommand(
         _sourceItems.push_back(usdItem);
     }
 }
-
-UsdUndoDuplicateSelectionCommand::~UsdUndoDuplicateSelectionCommand() { }
 
 UsdUndoDuplicateSelectionCommand::Ptr UsdUndoDuplicateSelectionCommand::create(
     const Ufe::Selection&       selection,

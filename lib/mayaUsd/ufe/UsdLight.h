@@ -34,15 +34,10 @@ class MAYAUSD_CORE_PUBLIC UsdLight : public Ufe::Light
 public:
     typedef std::shared_ptr<UsdLight> Ptr;
 
-    UsdLight();
+    UsdLight() = default;
     UsdLight(const UsdSceneItem::Ptr& item);
-    ~UsdLight() override = default;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdLight(const UsdLight&) = delete;
-    UsdLight& operator=(const UsdLight&) = delete;
-    UsdLight(UsdLight&&) = delete;
-    UsdLight& operator=(UsdLight&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdLight);
 
     //! Create a UsdLight.
     static UsdLight::Ptr create(const UsdSceneItem::Ptr& item);

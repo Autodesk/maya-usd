@@ -24,6 +24,10 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+// Ensure that UsdTransform3dRead is properly setup.
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Transform3dRead, UsdTransform3dRead);
+MAYAUSD_VERIFY_CLASS_BASE(UsdTransform3dReadImpl, UsdTransform3dRead);
+
 UsdTransform3dRead::Ptr UsdTransform3dRead::create(const UsdSceneItem::Ptr& item)
 {
     return std::make_shared<UsdTransform3dRead>(item);
@@ -57,6 +61,8 @@ Ufe::Matrix4d UsdTransform3dRead::segmentExclusiveMatrix() const
 //------------------------------------------------------------------------------
 // UsdTransform3dReadHandler
 //------------------------------------------------------------------------------
+
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Transform3dHandler, UsdTransform3dReadHandler);
 
 UsdTransform3dReadHandler::UsdTransform3dReadHandler(
     const Ufe::Transform3dHandler::Ptr& nextHandler)

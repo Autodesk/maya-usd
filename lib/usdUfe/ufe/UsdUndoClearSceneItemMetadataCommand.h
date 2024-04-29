@@ -38,6 +38,8 @@ public:
         const std::string&     group,
         const std::string&     key = "");
 
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ClearSceneItemMetadataCommand);
+
     void executeImplementation() override;
 
 private:

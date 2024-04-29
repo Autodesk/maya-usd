@@ -30,6 +30,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Observer, UsdUIUfeObserver);
+
 //------------------------------------------------------------------------------
 // Global variables
 //------------------------------------------------------------------------------
@@ -38,11 +40,6 @@ Ufe::Observer::Ptr UsdUIUfeObserver::ufeObserver;
 //------------------------------------------------------------------------------
 // UsdUIUfeObserver
 //------------------------------------------------------------------------------
-
-UsdUIUfeObserver::UsdUIUfeObserver()
-    : Ufe::Observer()
-{
-}
 
 /*static*/
 void UsdUIUfeObserver::create()

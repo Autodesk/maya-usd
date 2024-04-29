@@ -51,6 +51,13 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+// Ensure that UsdUndoRenameCommand is properly setup.
+#ifdef UFE_V4_FEATURES_AVAILABLE
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::SceneItemResultUndoableCommand, UsdUndoRenameCommand);
+#else
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdUndoRenameCommand);
+#endif
+
 /*
     HS, May 15, 2020
 
@@ -99,8 +106,6 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(
     else
         _ufeDstItem = srcItem;
 }
-
-UsdUndoRenameCommand::~UsdUndoRenameCommand() { }
 
 UsdUndoRenameCommand::Ptr
 UsdUndoRenameCommand::create(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName)

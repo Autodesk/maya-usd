@@ -51,13 +51,8 @@ public:
     typedef std::shared_ptr<UsdUndoDuplicateCommand> Ptr;
 
     UsdUndoDuplicateCommand(const UsdSceneItem::Ptr& srcItem);
-    ~UsdUndoDuplicateCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUndoDuplicateCommand(const UsdUndoDuplicateCommand&) = delete;
-    UsdUndoDuplicateCommand& operator=(const UsdUndoDuplicateCommand&) = delete;
-    UsdUndoDuplicateCommand(UsdUndoDuplicateCommand&&) = delete;
-    UsdUndoDuplicateCommand& operator=(UsdUndoDuplicateCommand&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoDuplicateCommand);
 
     //! Create a UsdUndoDuplicateCommand from a USD prim and UFE path.
     static UsdUndoDuplicateCommand::Ptr create(const UsdSceneItem::Ptr& srcItem);

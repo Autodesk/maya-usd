@@ -120,6 +120,8 @@ public:
     UsdAttribute(UsdAttributeHolder::UPtr&& attrHolder);
     ~UsdAttribute() = default;
 
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdAttribute);
+
     inline bool isAuthored() const { return _attrHolder->isAuthored(); }
     inline bool isValid() const { return _attrHolder->isValid(); }
     std::string isEditAllowedMsg() const;
@@ -129,6 +131,10 @@ public:
     bool        get(PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time) const;
     bool        set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time);
 
+#ifdef UFE_DEFAULT_VALUE_SUPPORT
+    bool _isDefault() const;
+    void _reset();
+#endif
 #ifdef UFE_V4_FEATURES_AVAILABLE
     bool        _hasValue() const;
     std::string _name() const;
@@ -198,6 +204,14 @@ public:
     static const std::string& nativeSdrTypeMetadata();
 }; // UsdAttributeGeneric
 
+#ifdef UFE_DEFAULT_VALUE_SUPPORT
+#define UFE_DEFAULT_VALUE_OVERRIDES                                        \
+    bool isDefault() const override { return UsdAttribute::_isDefault(); } \
+    void reset() override { UsdAttribute::_reset(); }
+#else
+#define UFE_DEFAULT_VALUE_OVERRIDES
+#endif
+
 #ifdef UFE_V4_FEATURES_AVAILABLE
 //! \brief Interface for USD token attributes.
 class UsdAttributeFilename
@@ -215,6 +229,9 @@ public:
 
     // Ufe::Attribute overrides
     UFE_ATTRIBUTE_OVERRIDES
+
+    // Ufe default value overrides
+    UFE_DEFAULT_VALUE_OVERRIDES
 
     // Ufe::AttributeFilename overrides
     std::string               get() const override;
@@ -244,6 +261,9 @@ public:
     // Ufe::Attribute overrides
     UFE_ATTRIBUTE_OVERRIDES
 
+    // Ufe default value overrides
+    UFE_DEFAULT_VALUE_OVERRIDES
+
     // Ufe::AttributeEnumString overrides
     std::string               get() const override;
     void                      set(const std::string& value) override;
@@ -272,6 +292,9 @@ public:
     // Ufe::Attribute overrides
     UFE_ATTRIBUTE_OVERRIDES
 
+    // Ufe default value overrides
+    UFE_DEFAULT_VALUE_OVERRIDES
+
     // Ufe::AttributeEnumString overrides
     std::string               get() const override;
     void                      set(const std::string& value) override;
@@ -295,6 +318,9 @@ public:
 
     // Ufe::Attribute overrides
     UFE_ATTRIBUTE_OVERRIDES
+
+    // Ufe default value overrides
+    UFE_DEFAULT_VALUE_OVERRIDES
 
     // Ufe::TypedAttribute overrides
     T                         get() const override;
@@ -376,6 +402,9 @@ public:
     // Ufe::Attribute overrides
     UFE_ATTRIBUTE_OVERRIDES
 
+    // Ufe default value overrides
+    UFE_DEFAULT_VALUE_OVERRIDES
+
     // Ufe::TypedAttribute overrides
     std::string               get() const override;
     void                      set(const std::string& value) override;
@@ -402,6 +431,9 @@ public:
 
     // Ufe::Attribute overrides
     UFE_ATTRIBUTE_OVERRIDES
+
+    // Ufe default value overrides
+    UFE_DEFAULT_VALUE_OVERRIDES
 
     // Ufe::TypedAttribute overrides
     std::string               get() const override;

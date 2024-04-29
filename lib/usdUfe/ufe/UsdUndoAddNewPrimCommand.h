@@ -46,6 +46,8 @@ public:
         const std::string&       name,
         const std::string&       type);
 
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoAddNewPrimCommand);
+
     void execute() override;
     void undo() override;
     void redo() override;

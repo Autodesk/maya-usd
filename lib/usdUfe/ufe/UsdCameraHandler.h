@@ -29,14 +29,9 @@ class USDUFE_PUBLIC UsdCameraHandler : public Ufe::CameraHandler
 public:
     typedef std::shared_ptr<UsdCameraHandler> Ptr;
 
-    UsdCameraHandler();
-    ~UsdCameraHandler();
+    UsdCameraHandler() = default;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdCameraHandler(const UsdCameraHandler&) = delete;
-    UsdCameraHandler& operator=(const UsdCameraHandler&) = delete;
-    UsdCameraHandler(UsdCameraHandler&&) = delete;
-    UsdCameraHandler& operator=(UsdCameraHandler&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdCameraHandler);
 
     //! Create a UsdCameraHandler.
     static UsdCameraHandler::Ptr create();

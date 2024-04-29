@@ -43,16 +43,20 @@ public:
         = 0;
 };
 
-using UICallbacks
-    = PXR_NS::TfHashMap<PXR_NS::TfToken, UICallback::Ptr, PXR_NS::TfToken::HashFunctor>;
+using UICallbacks = PXR_NS::
+    TfHashMap<PXR_NS::TfToken, std::vector<UICallback::Ptr>, PXR_NS::TfToken::HashFunctor>;
 
-// Retrieve the callback for the argument operation.  If no such callbacks exits, a nullptr is
-// returned.
+// Retrieve the callbacks for the argument operation.
+// If no such callback exists, an empty vector is returned.
 USDUFE_PUBLIC
-UICallback::Ptr getUICallback(const PXR_NS::TfToken& operation);
+const std::vector<UICallback::Ptr>& getUICallbacks(const PXR_NS::TfToken& operation);
 
 // Register an callback for the argument operation.
 USDUFE_PUBLIC
 void registerUICallback(const PXR_NS::TfToken& operation, const UICallback::Ptr& uiCallback);
+
+// Unregister an callback for the argument operation.
+USDUFE_PUBLIC
+void unregisterUICallback(const PXR_NS::TfToken& operation, const UICallback::Ptr& uiCallback);
 
 } // namespace USDUFE_NS_DEF

@@ -60,6 +60,8 @@ template <class T> struct MakeSharedEnabler : public T
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(Ufe::InsertChildCommand, UsdUndoInsertChildCommand);
+
 UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
     const UsdSceneItem::Ptr& parent,
     const UsdSceneItem::Ptr& child,
@@ -135,8 +137,6 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
     const bool allowStronger = true;
     UsdUfe::applyCommandRestriction(parentPrim, "reparent", allowStronger);
 }
-
-UsdUndoInsertChildCommand::~UsdUndoInsertChildCommand() { }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 std::string UsdUndoInsertChildCommand::commandString() const

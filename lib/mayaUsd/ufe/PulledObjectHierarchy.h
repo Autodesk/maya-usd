@@ -42,11 +42,7 @@ public:
         const Ufe::SceneItem::Ptr&        item,
         const Ufe::Path&                  pulledPath);
 
-    // Delete the copy/move constructors assignment operators.
-    PulledObjectHierarchy(const PulledObjectHierarchy&) = delete;
-    PulledObjectHierarchy& operator=(const PulledObjectHierarchy&) = delete;
-    PulledObjectHierarchy(PulledObjectHierarchy&&) = delete;
-    PulledObjectHierarchy& operator=(PulledObjectHierarchy&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(PulledObjectHierarchy);
 
     //! Create a PulledObjectHierarchy from a UFE hierarchy handler.
     static PulledObjectHierarchy::Ptr create(

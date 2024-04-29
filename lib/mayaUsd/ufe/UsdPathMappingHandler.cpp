@@ -77,10 +77,7 @@ Ufe::Observer::Ptr ufeObserver;
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdPathMappingHandler::UsdPathMappingHandler()
-    : Ufe::PathMappingHandler()
-{
-}
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::PathMappingHandler, UsdPathMappingHandler);
 
 UsdPathMappingHandler::~UsdPathMappingHandler()
 {

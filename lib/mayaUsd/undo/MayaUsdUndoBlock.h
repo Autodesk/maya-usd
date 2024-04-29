@@ -35,11 +35,7 @@ public:
     MayaUsdUndoBlock();
     ~MayaUsdUndoBlock();
 
-    // delete the copy/move constructors assignment operators.
-    MayaUsdUndoBlock(const MayaUsdUndoBlock&) = delete;
-    MayaUsdUndoBlock& operator=(const MayaUsdUndoBlock&) = delete;
-    MayaUsdUndoBlock(MayaUsdUndoBlock&&) = delete;
-    MayaUsdUndoBlock& operator=(MayaUsdUndoBlock&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(MayaUsdUndoBlock);
 };
 
 //! \brief MayaUsdUndoBlockCmd is used to collect USD edits inside Maya MPxCommand.

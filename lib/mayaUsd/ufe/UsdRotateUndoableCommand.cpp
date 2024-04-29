@@ -20,6 +20,10 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+// Ensure that UsdRotateUndoableCommand is properly setup.
+MAYAUSD_VERIFY_CLASS_SETUP(UsdTRSUndoableCommandBase<PXR_NS::GfVec3f>, UsdRotateUndoableCommand);
+MAYAUSD_VERIFY_CLASS_BASE(Ufe::RotateUndoableCommand, UsdRotateUndoableCommand);
+
 PXR_NS::TfToken UsdRotateUndoableCommand::rotXYZ("xformOp:rotateXYZ");
 
 UsdRotateUndoableCommand::UsdRotateUndoableCommand(
@@ -42,8 +46,6 @@ UsdRotateUndoableCommand::UsdRotateUndoableCommand(
         fFailedInit = std::current_exception(); // capture
     }
 }
-
-UsdRotateUndoableCommand::~UsdRotateUndoableCommand() { }
 
 UsdRotateUndoableCommand::Ptr
 UsdRotateUndoableCommand::create(const Ufe::Path& path, double x, double y, double z)

@@ -36,7 +36,7 @@ class MAYAUSD_CORE_PUBLIC UsdSetMatrix4dUndoableCommand
 public:
     UsdSetMatrix4dUndoableCommand(const Ufe::Path& path, const Ufe::Matrix4d& newM);
 
-    ~UsdSetMatrix4dUndoableCommand() override;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdSetMatrix4dUndoableCommand);
 
     // No-op: Maya does not set matrices through interactive manipulation.
     bool set(const Ufe::Matrix4d&) override;

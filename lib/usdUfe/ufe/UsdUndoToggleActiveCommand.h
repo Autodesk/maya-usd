@@ -33,6 +33,8 @@ class USDUFE_PUBLIC UsdUndoToggleActiveCommand : public UsdUndoableCommand<Ufe::
 public:
     UsdUndoToggleActiveCommand(const PXR_NS::UsdPrim& prim);
 
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoToggleActiveCommand);
+
 protected:
     void executeImplementation() override;
 

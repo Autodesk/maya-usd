@@ -18,6 +18,8 @@
 
 namespace MAYAUSD_NS_DEF {
 
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(OpUndoItemRecorder);
+
 OpUndoItemRecorder::OpUndoItemRecorder(OpUndoItemList& undoInfo)
     : _undoInfo(undoInfo)
 {

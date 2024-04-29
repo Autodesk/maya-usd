@@ -38,15 +38,8 @@ public:
     typedef std::shared_ptr<UsdRotatePivotTranslateUndoableCommand> Ptr;
 
     UsdRotatePivotTranslateUndoableCommand(const Ufe::Path& path);
-    ~UsdRotatePivotTranslateUndoableCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdRotatePivotTranslateUndoableCommand(const UsdRotatePivotTranslateUndoableCommand&) = delete;
-    UsdRotatePivotTranslateUndoableCommand& operator=(const UsdRotatePivotTranslateUndoableCommand&)
-        = delete;
-    UsdRotatePivotTranslateUndoableCommand(UsdRotatePivotTranslateUndoableCommand&&) = delete;
-    UsdRotatePivotTranslateUndoableCommand& operator=(UsdRotatePivotTranslateUndoableCommand&&)
-        = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdRotatePivotTranslateUndoableCommand);
 
     //! Create a UsdRotatePivotTranslateUndoableCommand from a USD prim, UFE path and UFE scene
     //! item.

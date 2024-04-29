@@ -37,13 +37,8 @@ public:
         const Ufe::Selection& selection,
 #endif
         const Ufe::PathComponent& name);
-    ~UsdUndoCreateGroupCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUndoCreateGroupCommand(const UsdUndoCreateGroupCommand&) = delete;
-    UsdUndoCreateGroupCommand& operator=(const UsdUndoCreateGroupCommand&) = delete;
-    UsdUndoCreateGroupCommand(UsdUndoCreateGroupCommand&&) = delete;
-    UsdUndoCreateGroupCommand& operator=(UsdUndoCreateGroupCommand&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoCreateGroupCommand);
 
     //! Create a UsdUndoCreateGroupCommand from a USD scene item and a UFE path component.
     static UsdUndoCreateGroupCommand::Ptr create(

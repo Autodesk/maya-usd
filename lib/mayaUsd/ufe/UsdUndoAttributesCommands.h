@@ -51,13 +51,8 @@ public:
         const UsdSceneItem::Ptr&    sceneItem,
         const std::string&          name,
         const Ufe::Attribute::Type& type);
-    ~UsdAddAttributeCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdAddAttributeCommand(const UsdAddAttributeCommand&) = delete;
-    UsdAddAttributeCommand& operator=(const UsdAddAttributeCommand&) = delete;
-    UsdAddAttributeCommand(UsdAddAttributeCommand&&) = delete;
-    UsdAddAttributeCommand& operator=(UsdAddAttributeCommand&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdAddAttributeCommand);
 
     //! Create a UsdAddAttributeCommand
     static UsdAddAttributeCommand::Ptr create(
@@ -89,11 +84,7 @@ public:
     UsdRemoveAttributeCommand(const UsdSceneItem::Ptr& sceneItem, const std::string& name);
     ~UsdRemoveAttributeCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdRemoveAttributeCommand(const UsdRemoveAttributeCommand&) = delete;
-    UsdRemoveAttributeCommand& operator=(const UsdRemoveAttributeCommand&) = delete;
-    UsdRemoveAttributeCommand(UsdRemoveAttributeCommand&&) = delete;
-    UsdRemoveAttributeCommand& operator=(UsdRemoveAttributeCommand&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdRemoveAttributeCommand);
 
     //! Create a UsdRemoveAttributeCommand
     static UsdRemoveAttributeCommand::Ptr
@@ -121,11 +112,7 @@ public:
         const std::string&       newName);
     ~UsdRenameAttributeCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdRenameAttributeCommand(const UsdRenameAttributeCommand&) = delete;
-    UsdRenameAttributeCommand& operator=(const UsdRenameAttributeCommand&) = delete;
-    UsdRenameAttributeCommand(UsdRenameAttributeCommand&&) = delete;
-    UsdRenameAttributeCommand& operator=(UsdRenameAttributeCommand&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdRenameAttributeCommand);
 
     //! Create a UsdRenameAttributeCommand
     static UsdRenameAttributeCommand::Ptr create(

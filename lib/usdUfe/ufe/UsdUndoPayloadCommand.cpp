@@ -19,6 +19,8 @@
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdUndoLoadUnloadBaseCommand);
+
 UsdUndoLoadUnloadBaseCommand::UsdUndoLoadUnloadBaseCommand(
     const PXR_NS::UsdPrim& prim,
     PXR_NS::UsdLoadPolicy  policy)
@@ -45,23 +47,24 @@ UsdUndoLoadUnloadBaseCommand::UsdUndoLoadUnloadBaseCommand(const PXR_NS::UsdPrim
         : PXR_NS::UsdLoadPolicy::UsdLoadWithoutDescendants;
 }
 
-void UsdUndoLoadUnloadBaseCommand::doLoad() const
+void UsdUndoLoadUnloadBaseCommand::doCommand(UsdUndoLoadUnloadBaseCommand::commandFn fn, bool undo)
 {
+    // handle the redo/undo commands on stage load/unload rules
+    // The load rules are saved before applying new rules and are
+    // applied back when the commands are undo
     if (!_stage)
         return;
-
-    _stage->Load(_primPath, _policy);
+    if (!undo)
+        _undoRules = _stage->GetLoadRules();
+    fn(this);
+    if (undo)
+        _stage->SetLoadRules(_undoRules);
     saveModifiedLoadRules();
 }
 
-void UsdUndoLoadUnloadBaseCommand::doUnload() const
-{
-    if (!_stage)
-        return;
+void UsdUndoLoadUnloadBaseCommand::doLoad() const { _stage->Load(_primPath, _policy); }
 
-    _stage->Unload(_primPath);
-    saveModifiedLoadRules();
-}
+void UsdUndoLoadUnloadBaseCommand::doUnload() const { _stage->Unload(_primPath); }
 
 void UsdUndoLoadUnloadBaseCommand::saveModifiedLoadRules() const
 {
@@ -70,6 +73,8 @@ void UsdUndoLoadUnloadBaseCommand::saveModifiedLoadRules() const
     UsdUfe::saveStageLoadRules(_stage);
 }
 
+USDUFE_VERIFY_CLASS_SETUP(UsdUndoLoadUnloadBaseCommand, UsdUndoLoadPayloadCommand);
+
 UsdUndoLoadPayloadCommand::UsdUndoLoadPayloadCommand(
     const PXR_NS::UsdPrim& prim,
     PXR_NS::UsdLoadPolicy  policy)
@@ -77,15 +82,23 @@ UsdUndoLoadPayloadCommand::UsdUndoLoadPayloadCommand(
 {
 }
 
-void UsdUndoLoadPayloadCommand::redo() { doLoad(); }
-void UsdUndoLoadPayloadCommand::undo() { doUnload(); }
+void UsdUndoLoadPayloadCommand::redo() { doCommand(&UsdUndoLoadPayloadCommand::doLoad); }
+void UsdUndoLoadPayloadCommand::undo()
+{
+    doCommand(&UsdUndoLoadPayloadCommand::doUnload, true /* undo */);
+}
+
+USDUFE_VERIFY_CLASS_SETUP(UsdUndoLoadUnloadBaseCommand, UsdUndoUnloadPayloadCommand);
 
 UsdUndoUnloadPayloadCommand::UsdUndoUnloadPayloadCommand(const PXR_NS::UsdPrim& prim)
     : UsdUndoLoadUnloadBaseCommand(prim)
 {
 }
 
-void UsdUndoUnloadPayloadCommand::redo() { doUnload(); }
-void UsdUndoUnloadPayloadCommand::undo() { doLoad(); }
+void UsdUndoUnloadPayloadCommand::redo() { doCommand(&UsdUndoUnloadPayloadCommand::doUnload); }
+void UsdUndoUnloadPayloadCommand::undo()
+{
+    doCommand(&UsdUndoUnloadPayloadCommand::doLoad, true /* undo */);
+}
 
 } // namespace USDUFE_NS_DEF

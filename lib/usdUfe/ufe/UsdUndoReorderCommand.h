@@ -33,13 +33,8 @@ public:
     UsdUndoReorderCommand(
         const PXR_NS::UsdPrim&              parentPrim,
         const std::vector<PXR_NS::TfToken>& orderedTokens);
-    ~UsdUndoReorderCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUndoReorderCommand(const UsdUndoReorderCommand&) = delete;
-    UsdUndoReorderCommand& operator=(const UsdUndoReorderCommand&) = delete;
-    UsdUndoReorderCommand(UsdUndoReorderCommand&&) = delete;
-    UsdUndoReorderCommand& operator=(UsdUndoReorderCommand&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoReorderCommand);
 
     //! Create a UsdUndoReorderCommand
     static UsdUndoReorderCommand::Ptr

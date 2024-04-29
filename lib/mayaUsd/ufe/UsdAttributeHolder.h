@@ -43,6 +43,8 @@ public:
     virtual std::string nativeType() const;
     virtual bool        get(PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time) const;
     virtual bool        set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time);
+    virtual bool        isDefault();
+    virtual void        reset();
 
     virtual bool        hasValue() const;
     virtual std::string name() const;

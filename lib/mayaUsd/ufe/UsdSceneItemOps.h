@@ -34,13 +34,8 @@ public:
     typedef std::shared_ptr<UsdSceneItemOps> Ptr;
 
     UsdSceneItemOps(const UsdSceneItem::Ptr& item);
-    ~UsdSceneItemOps() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdSceneItemOps(const UsdSceneItemOps&) = delete;
-    UsdSceneItemOps& operator=(const UsdSceneItemOps&) = delete;
-    UsdSceneItemOps(UsdSceneItemOps&&) = delete;
-    UsdSceneItemOps& operator=(UsdSceneItemOps&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdSceneItemOps);
 
     //! Create a UsdSceneItemOps.
     static UsdSceneItemOps::Ptr create(const UsdSceneItem::Ptr& item);

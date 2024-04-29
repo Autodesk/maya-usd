@@ -79,6 +79,8 @@ private:
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(UsdBatchOpsHandler, UsdCodeWrapperHandler);
+
 /*static*/
 std::shared_ptr<UsdCodeWrapperHandler> UsdCodeWrapperHandler::create()
 {

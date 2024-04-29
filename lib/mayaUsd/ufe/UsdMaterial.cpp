@@ -26,13 +26,13 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Material, UsdMaterial);
+
 UsdMaterial::UsdMaterial(const UsdSceneItem::Ptr& item)
     : Ufe::Material()
     , _item(item)
 {
 }
-
-UsdMaterial::~UsdMaterial() { }
 
 /*static*/
 UsdMaterial::Ptr UsdMaterial::create(const UsdSceneItem::Ptr& item)

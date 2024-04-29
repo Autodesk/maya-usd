@@ -28,13 +28,9 @@ namespace ufe {
 class UsdUIUfeObserver : public Ufe::Observer
 {
 public:
-    UsdUIUfeObserver();
+    UsdUIUfeObserver() = default;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUIUfeObserver(const UsdUIUfeObserver&) = delete;
-    UsdUIUfeObserver& operator=(const UsdUIUfeObserver&) = delete;
-    UsdUIUfeObserver(UsdUIUfeObserver&&) = delete;
-    UsdUIUfeObserver& operator=(UsdUIUfeObserver&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUIUfeObserver);
 
     //! Create/Destroy a UsdUIUfeObserver.
     static void create();

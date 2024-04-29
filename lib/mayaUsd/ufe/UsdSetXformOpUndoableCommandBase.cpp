@@ -24,6 +24,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::SetVector3dUndoableCommand, UsdSetXformOpUndoableCommandBase);
+
 UsdSetXformOpUndoableCommandBase::UsdSetXformOpUndoableCommandBase(
     const PXR_NS::VtValue&     value,
     const Ufe::Path&           path,

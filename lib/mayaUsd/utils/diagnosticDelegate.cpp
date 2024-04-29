@@ -473,6 +473,8 @@ int UsdMayaDiagnosticDelegate::GetMaximumUnbatchedDiagnostics()
         return DiagnosticFlusher::getDefaultMaximumUnbatchedDiagnostics();
 }
 
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdMayaDiagnosticBatchContext);
+
 UsdMayaDiagnosticBatchContext::UsdMayaDiagnosticBatchContext(int maximumUnbatchedCount)
     : previousCount(UsdMayaDiagnosticDelegate::GetMaximumUnbatchedDiagnostics())
 {

@@ -97,7 +97,7 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
             suffix = "_ocio"
 
         # MaterialX 1.38.8 has a new triplanar node with superior blending
-        if os.getenv('MATERIALX_VERSION', '1.38.0') >= '1.38.8':
+        if [int(i) for i in os.getenv('MATERIALX_VERSION', '1.38.0').split(".")] >= [1, 38, 8]:
             suffix += "_blended"
 
         mayaUtils.loadPlugin("mayaUsdPlugin")

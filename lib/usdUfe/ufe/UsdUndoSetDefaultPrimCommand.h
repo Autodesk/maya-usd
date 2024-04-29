@@ -30,13 +30,8 @@ class USDUFE_PUBLIC UsdUndoSetDefaultPrimCommand : public Ufe::UndoableCommand
 public:
     // Public for std::make_shared() access, use create() instead.
     UsdUndoSetDefaultPrimCommand(const PXR_NS::UsdPrim& prim);
-    ~UsdUndoSetDefaultPrimCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUndoSetDefaultPrimCommand(const UsdUndoSetDefaultPrimCommand&) = delete;
-    UsdUndoSetDefaultPrimCommand& operator=(const UsdUndoSetDefaultPrimCommand&) = delete;
-    UsdUndoSetDefaultPrimCommand(UsdUndoSetDefaultPrimCommand&&) = delete;
-    UsdUndoSetDefaultPrimCommand& operator=(UsdUndoSetDefaultPrimCommand&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoSetDefaultPrimCommand);
 
     void execute() override;
     void undo() override;

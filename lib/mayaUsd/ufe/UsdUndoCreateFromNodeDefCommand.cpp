@@ -26,6 +26,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::InsertChildCommand, UsdUndoCreateFromNodeDefCommand);
+
 UsdUndoCreateFromNodeDefCommand::UsdUndoCreateFromNodeDefCommand(
     const PXR_NS::SdrShaderNodeConstPtr shaderNodeDef,
     const UsdSceneItem::Ptr&            parentItem,
@@ -35,8 +37,6 @@ UsdUndoCreateFromNodeDefCommand::UsdUndoCreateFromNodeDefCommand(
     , _addPrimCmd(UsdUndoAddNewPrimCommand::create(parentItem, name.string(), "Shader"))
 {
 }
-
-UsdUndoCreateFromNodeDefCommand::~UsdUndoCreateFromNodeDefCommand() { }
 
 UsdUndoCreateFromNodeDefCommand::Ptr UsdUndoCreateFromNodeDefCommand::create(
     const PXR_NS::SdrShaderNodeConstPtr shaderNodeDef,

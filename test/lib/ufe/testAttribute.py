@@ -2067,6 +2067,38 @@ class AttributeTestCase(unittest.TestCase):
             self.assertIsNotNone(attr)
             self.assertEqual(attr.getMetadata("uiname"), niceName)
 
+    @unittest.skipUnless(hasattr(ufe.AttributeFloat, "isDefault"), 'Requires default value support')
+    def testDefaultValue(self):
+        cmds.file(new=True, force=True)
+        testFile = testUtils.getTestScene("UsdPreviewSurface", "DisplayColorCube.usda")
+        testDagPath, testStage = mayaUtils.createProxyFromFile(testFile)
+        mayaPathSegment = mayaUtils.createUfePathSegment(testDagPath)
+        usdPathSegment = usdUtils.createUfePathSegment("/DisplayColorCube/Looks/usdPreviewSurface1SG/usdPreviewSurface1")
+        shaderPath = ufe.Path([mayaPathSegment, usdPathSegment])
+        shaderItem = ufe.Hierarchy.createItem(shaderPath)
+        shaderAttrs = ufe.Attributes.attributes(shaderItem)
+
+        self.assertTrue(shaderAttrs.hasAttribute("inputs:roughness"))
+        shaderAttr = shaderAttrs.attribute("inputs:roughness")
+        self.assertAlmostEqual(shaderAttr.get(), 0.5)
+        self.assertTrue(shaderAttr.isDefault())
+        shaderAttr.set(0.75)
+        self.assertAlmostEqual(shaderAttr.get(), 0.75)        
+        self.assertFalse(shaderAttr.isDefault())
+        shaderAttr.reset()
+        self.assertAlmostEqual(shaderAttr.get(), 0.5)
+        self.assertTrue(shaderAttr.isDefault())
+
+        self.assertTrue(shaderAttrs.hasAttribute("inputs:emissiveColor"))
+        shaderAttr = shaderAttrs.attribute("inputs:emissiveColor")
+        self.assertAlmostEqual(shaderAttr.get().r(), 0)
+        self.assertTrue(shaderAttr.isDefault())
+        shaderAttr.set(ufe.Color3f(0.75, 0.75, 0.75))
+        self.assertAlmostEqual(shaderAttr.get().r(), 0.75)        
+        self.assertFalse(shaderAttr.isDefault())
+        shaderAttr.reset()
+        self.assertAlmostEqual(shaderAttr.get().r(), 0)
+        self.assertTrue(shaderAttr.isDefault())
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

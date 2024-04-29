@@ -32,6 +32,8 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::AttributeDef, UsdShaderAttributeDef);
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 UsdShaderAttributeDef::UsdShaderAttributeDef(const SdrShaderPropertyConstPtr& shaderAttributeDef)
@@ -42,8 +44,6 @@ UsdShaderAttributeDef::UsdShaderAttributeDef(const SdrShaderPropertyConstPtr& sh
         throw std::runtime_error("Invalid shader attribute definition");
     }
 }
-
-UsdShaderAttributeDef::~UsdShaderAttributeDef() { }
 
 std::string UsdShaderAttributeDef::name() const
 {

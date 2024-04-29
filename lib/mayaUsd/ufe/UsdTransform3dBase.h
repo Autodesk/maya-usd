@@ -44,13 +44,8 @@ public:
     typedef std::shared_ptr<UsdTransform3dBase> Ptr;
 
     UsdTransform3dBase(const UsdSceneItem::Ptr& item);
-    ~UsdTransform3dBase() override = default;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdTransform3dBase(const UsdTransform3dBase&) = delete;
-    UsdTransform3dBase& operator=(const UsdTransform3dBase&) = delete;
-    UsdTransform3dBase(UsdTransform3dBase&&) = delete;
-    UsdTransform3dBase& operator=(UsdTransform3dBase&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdTransform3dBase);
 
     // Ufe::Transform3d overrides
     const Ufe::Path&    path() const override;

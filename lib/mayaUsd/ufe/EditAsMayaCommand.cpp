@@ -21,6 +21,8 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, EditAsMayaUfeCommand);
+
 EditAsMayaUfeCommand::Ptr EditAsMayaUfeCommand::create(const Ufe::Path& path)
 {
     return std::make_shared<ufe::EditAsMayaUfeCommand>(path);
@@ -30,8 +32,6 @@ EditAsMayaUfeCommand::EditAsMayaUfeCommand(const Ufe::Path& path)
     : _path(path)
 {
 }
-
-EditAsMayaUfeCommand::~EditAsMayaUfeCommand() { }
 
 void EditAsMayaUfeCommand::execute()
 {

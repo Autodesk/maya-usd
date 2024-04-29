@@ -42,6 +42,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, BindMaterialUndoableCommand);
+
 namespace {
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
@@ -201,8 +203,6 @@ BindMaterialUndoableCommand::BindMaterialUndoableCommand(
         throw std::runtime_error(err);
     }
 }
-
-BindMaterialUndoableCommand::~BindMaterialUndoableCommand() { }
 
 void BindMaterialUndoableCommand::undo() { _undoableItem.undo(); }
 

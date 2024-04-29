@@ -34,13 +34,8 @@ class MAYAUSD_CORE_PUBLIC ProxyShapeHandler
 {
 public:
     ProxyShapeHandler() = default;
-    ~ProxyShapeHandler() = default;
 
-    // Delete the copy/move constructors assignment operators.
-    ProxyShapeHandler(const ProxyShapeHandler&) = delete;
-    ProxyShapeHandler& operator=(const ProxyShapeHandler&) = delete;
-    ProxyShapeHandler(ProxyShapeHandler&&) = delete;
-    ProxyShapeHandler& operator=(ProxyShapeHandler&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ProxyShapeHandler);
 
     //! \return Type of the Maya shape node at the root of a USD hierarchy.
     static const std::string& gatewayNodeType();

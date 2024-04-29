@@ -25,14 +25,14 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::ContextOpsHandler, ProxyShapeContextOpsHandler);
+
 ProxyShapeContextOpsHandler::ProxyShapeContextOpsHandler(
     const Ufe::ContextOpsHandler::Ptr& mayaContextOpsHandler)
     : Ufe::ContextOpsHandler()
     , _mayaContextOpsHandler(mayaContextOpsHandler)
 {
 }
-
-ProxyShapeContextOpsHandler::~ProxyShapeContextOpsHandler() { }
 
 /*static*/
 ProxyShapeContextOpsHandler::Ptr

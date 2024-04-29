@@ -70,6 +70,13 @@ if (UFE_HAS_DISPLAY_NAME)
     )
 endif()
 
+if (UFE_DEFAULT_VALUE_SUPPORT)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+    UFE_DEFAULT_VALUE_SUPPORT=1
+    )
+endif()
+
 if (UFE_HAS_NATIVE_TYPE_METADATA)
     target_compile_definitions(${PROJECT_NAME}
     PRIVATE

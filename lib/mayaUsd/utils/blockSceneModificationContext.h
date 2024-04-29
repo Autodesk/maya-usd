@@ -32,12 +32,11 @@ public:
     MAYAUSD_CORE_PUBLIC
     virtual ~BlockSceneModificationContext();
 
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(BlockSceneModificationContext);
+
 private:
     /// Modification status of the scene when the context was created.
     bool _sceneWasModified;
-
-    BlockSceneModificationContext(const BlockSceneModificationContext&) = delete;
-    BlockSceneModificationContext& operator=(const BlockSceneModificationContext&) = delete;
 };
 
 } // namespace utils

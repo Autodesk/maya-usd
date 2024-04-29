@@ -39,13 +39,8 @@ public:
     typedef std::shared_ptr<ProxyShapeHierarchy> Ptr;
 
     ProxyShapeHierarchy(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler);
-    ~ProxyShapeHierarchy() override;
 
-    // Delete the copy/move constructors assignment operators.
-    ProxyShapeHierarchy(const ProxyShapeHierarchy&) = delete;
-    ProxyShapeHierarchy& operator=(const ProxyShapeHierarchy&) = delete;
-    ProxyShapeHierarchy(ProxyShapeHierarchy&&) = delete;
-    ProxyShapeHierarchy& operator=(ProxyShapeHierarchy&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ProxyShapeHierarchy);
 
     //! Create a ProxyShapeHierarchy from a UFE hierarchy handler.
     static ProxyShapeHierarchy::Ptr create(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler);

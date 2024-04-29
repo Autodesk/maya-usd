@@ -34,13 +34,8 @@ public:
     static constexpr char kNodeDefCategorySurface[] = "Surface";
 
     UsdShaderNodeDef(const PXR_NS::SdrShaderNodeConstPtr& shaderNodeDef);
-    ~UsdShaderNodeDef();
 
-    // Delete the copy/move constructors assignment operators.
-    UsdShaderNodeDef(const UsdShaderNodeDef&) = delete;
-    UsdShaderNodeDef& operator=(const UsdShaderNodeDef&) = delete;
-    UsdShaderNodeDef(UsdShaderNodeDef&&) = delete;
-    UsdShaderNodeDef& operator=(UsdShaderNodeDef&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdShaderNodeDef);
 
 #ifndef UFE_V4_FEATURES_AVAILABLE
     //! \return The type of the shader node definition.

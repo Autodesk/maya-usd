@@ -32,13 +32,13 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdUndoDeleteCommand);
+
 UsdUndoDeleteCommand::UsdUndoDeleteCommand(const PXR_NS::UsdPrim& prim)
     : Ufe::UndoableCommand()
     , _prim(prim)
 {
 }
-
-UsdUndoDeleteCommand::~UsdUndoDeleteCommand() { }
 
 UsdUndoDeleteCommand::Ptr UsdUndoDeleteCommand::create(const PXR_NS::UsdPrim& prim)
 {
