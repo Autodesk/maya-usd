@@ -201,11 +201,16 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         self.assertTrue(cmds.formLayout(meshFormLayout, exists=True))
         startLayout = cmds.formLayout(meshFormLayout, query=True, fullPathName=True)
         self.assertIsNotNone(startLayout, 'Could not get full path for Mesh formLayout')
-        
+
+        # In the AE there is a formLayout for each USD prim type. We start
+        # by making sure we can find the one for the mesh.
+        materialFormLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, 'Material')
+        self.assertIsNotNone(materialFormLayout, 'Could not find "Material" frameLayout')
+
         # We can now search for the control for the meterial.
-        assignedMaterialControl = self.searchForMayaControl(meshFormLayout, cmds.text, 'Assigned Material')
+        assignedMaterialControl = self.searchForMayaControl(materialFormLayout, cmds.text, 'Assigned Material')
         self.assertIsNotNone(assignedMaterialControl, 'Could not find the "Assigned Material" control')
-        strengthControl = self.searchForMayaControl(meshFormLayout, cmds.optionMenuGrp, 'Strength')
+        strengthControl = self.searchForMayaControl(materialFormLayout, cmds.optionMenuGrp, 'Strength')
         self.assertIsNotNone(strengthControl, 'Could not find the "Strength" control')
 
     def testAECustomImageControl(self):

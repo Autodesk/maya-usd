@@ -992,10 +992,10 @@ class AETemplate(object):
         if not mat:
             return
         layoutName = getMayaUsdLibString('kLabelMaterial')
-        collapse = True
+        collapse = False
         with ufeAeTemplate.Layout(self, layoutName, collapse):
             createdControl = MaterialCustomControl(self.item, self.prim, self.useNiceName)
-        self.defineCustom(createdControl)
+            self.defineCustom(createdControl)
 
     def suppressArrayAttribute(self):
         # Suppress all array attributes.
