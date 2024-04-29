@@ -86,6 +86,14 @@ USDUFE_PUBLIC
 PXR_NS::SdfLayerHandle
 getAttrEditRouterLayer(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName);
 
+// Utility function that returns a UsdEditTarget for the argument operation.
+// If no edit router exists for that operation, a null UsdEditTarget is returned.
+// The edit router is given the prim in the context with key "prim", and is
+// expected to return the UsdEditTarget which can be used to set edit target.
+USDUFE_PUBLIC
+PXR_NS::UsdEditTarget
+getEditRouterEditTarget(const PXR_NS::TfToken& operation, const PXR_NS::UsdPrim& prim);
+
 // Register an edit router for the argument operation.
 USDUFE_PUBLIC
 void registerEditRouter(const PXR_NS::TfToken& operation, const EditRouter::Ptr& editRouter);

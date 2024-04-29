@@ -38,6 +38,7 @@ namespace USDUFE_NS_DEF {
     ((Operation, "operation"))                          \
     /* Stage received in the context of some router  */ \
     ((Stage, "stage"))                                  \
+    ((EditTarget, "editTarget"))                        \
                                                         \
     /* Routing operations                            */ \
                                                         \
@@ -45,6 +46,7 @@ namespace USDUFE_NS_DEF {
     ((RouteDuplicate, "duplicate"))                     \
     ((RouteVisibility, "visibility"))                   \
     ((RouteAttribute, "attribute"))                     \
+    ((RouteDelete, "delete"))                           \
                                                         \
 // clang-format on
 

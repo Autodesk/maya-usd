@@ -17,8 +17,10 @@
 
 #include "private/UfeNotifGuard.h"
 
+#include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
+#include <usdUfe/utils/editRouter.h>
 #include <usdUfe/utils/layers.h>
 #include <usdUfe/utils/usdUtils.h>
 
@@ -60,20 +62,42 @@ void UsdUndoDeleteCommand::execute()
     const auto& stage = _prim.GetStage();
     auto        targetPrimSpec = stage->GetEditTarget().GetPrimSpecForScenePath(_prim.GetPath());
 
-    if (UsdUfe::applyCommandRestrictionNoThrow(_prim, "delete")) {
+    PXR_NS::UsdEditTarget routingEditTarget
+        = getEditRouterEditTarget(UsdUfe::EditRoutingTokens->RouteDelete, _prim);
+
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        UsdAttributes::removeAttributesConnections(_prim);
+    UsdAttributes::removeAttributesConnections(_prim);
 #endif
-        // Let removeAttributesConnections be run first as it will also cleanup
-        // attributes that were authored only to be the destination of a connection.
-        if (!UsdUfe::cleanReferencedPath(_prim)) {
-            const std::string error = TfStringPrintf(
-                "Failed to cleanup references to prim \"%s\".", _prim.GetPath().GetText());
+    // Let removeAttributesConnections be run first as it will also cleanup
+    // attributes that were authored only to be the destination of a connection.
+    if (!UsdUfe::cleanReferencedPath(_prim)) {
+        const std::string error = TfStringPrintf(
+            "Failed to cleanup references to prim \"%s\".", _prim.GetPath().GetText());
+        TF_WARN("%s", error.c_str());
+        throw std::runtime_error(error);
+    }
+
+    if (!routingEditTarget.IsNull()) {
+        PXR_NS::UsdEditContext ctx(stage, routingEditTarget);
+
+        if (!UsdUfe::applyCommandRestrictionNoThrow(_prim, "delete", true))
+            return;
+
+        if (!stage->RemovePrim(_prim.GetPath())) {
+            const std::string error
+                = TfStringPrintf("Failed to delete prim \"%s\".", _prim.GetPath().GetText());
             TF_WARN("%s", error.c_str());
             throw std::runtime_error(error);
         }
+    } else {
+        if (!UsdUfe::applyCommandRestrictionNoThrow(_prim, "delete"))
+            return;
+
         PrimSpecFunc deleteFunc
             = [stage](const UsdPrim& prim, const SdfPrimSpecHandle& primSpec) -> void {
+            if (!primSpec)
+                return;
+
             PXR_NS::UsdEditContext ctx(stage, primSpec->GetLayer());
             if (!stage->RemovePrim(prim.GetPath())) {
                 const std::string error
