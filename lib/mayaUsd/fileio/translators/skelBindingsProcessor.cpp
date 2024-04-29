@@ -52,8 +52,11 @@ static UsdPrim _FindRootmostXformOrSkelRoot(const UsdStagePtr& stage, const SdfP
 /// already a SkelRoot, so no renaming was necessary (false).
 /// If an existing, common SkelRoot cannot be found for all paths, and if
 /// it's not possible to create one, returns an empty SdfPath.
-static SdfPath
-_VerifyOrMakeSkelRoot(const UsdStagePtr& stage, const SdfPath& path, const TfToken& config)
+static SdfPath _VerifyOrMakeSkelRoot(
+    const UsdStagePtr& stage,
+    const SdfPath&     path,
+    const TfToken&     config,
+    const SdfPath&     rootPrimPath)
 {
     if (config != UsdMayaJobExportArgsTokens->auto_
         && config != UsdMayaJobExportArgsTokens->explicit_) {
@@ -93,6 +96,9 @@ _VerifyOrMakeSkelRoot(const UsdStagePtr& stage, const SdfPath& path, const TfTok
             return root.GetPath();
         } else {
             if (path.IsRootPrimPath()) {
+                if (!rootPrimPath.IsEmpty()) {
+                    return rootPrimPath;
+                }
                 // This is the most common problem when we can't obtain a
                 // SkelRoot.
                 // Show a nice error with useful information about root prims.
@@ -127,12 +133,18 @@ void UsdMaya_SkelBindingsProcessor::MarkBindings(
     _bindingToSkelMap[path] = _Entry(skelPath, config);
 }
 
+void UsdMaya_SkelBindingsProcessor::SetRootPrimPath(const SdfPath& rootPrimPath)
+{
+    this->_rootPrimPath = rootPrimPath;
+}
+
 bool UsdMaya_SkelBindingsProcessor::_VerifyOrMakeSkelRoots(const UsdStagePtr& stage) const
 {
     bool success = true;
     for (const auto& pair : _bindingToSkelMap) {
         const _Entry& entry = pair.second;
-        SdfPath       skelRootPath = _VerifyOrMakeSkelRoot(stage, pair.first, entry.second);
+        SdfPath       skelRootPath
+            = _VerifyOrMakeSkelRoot(stage, pair.first, entry.second, _rootPrimPath);
         success = success && !skelRootPath.IsEmpty();
         if (!success) {
             return success;
@@ -149,7 +161,8 @@ bool UsdMaya_SkelBindingsProcessor::UpdateSkelRootsWithExtent(
     bool success = true;
     for (const auto& pair : _bindingToSkelMap) {
         const _Entry& entry = pair.second;
-        SdfPath       skelRootPath = _VerifyOrMakeSkelRoot(stage, pair.first, entry.second);
+        SdfPath       skelRootPath
+            = _VerifyOrMakeSkelRoot(stage, pair.first, entry.second, _rootPrimPath);
         success = success && !skelRootPath.IsEmpty();
         if (success) {
             UsdSkelRoot skelRoot = UsdSkelRoot::Get(stage, skelRootPath);
