@@ -78,6 +78,9 @@ def _parseArgs():
             action='append', help='Path to prepend to the PATH env var.')
     parser.add_argument('--post-path', dest='postPaths', default=[], type=str, 
             action='append', help='Path to append to the PATH env var.')
+    parser.add_argument('--win-dll-path', dest='win_dll_path', default=[], type=str,
+            action='append',
+            help='Path(s) to set in the PXR_USD_WINDOWS_DLL_PATH env var')
     parser.add_argument('--verbose', '-v', action='store_true',
             help='Verbose output.')
     parser.add_argument('cmd', metavar='CMD', type=str, nargs='+',
@@ -250,6 +253,9 @@ if __name__ == '__main__':
     paths = env.get('PATH', '').split(pathDelim)
     paths = args.prePaths + paths + args.postPaths
     env['PATH'] = pathDelim.join(paths)
+
+    if args.win_dll_path:
+        env['PXR_USD_WINDOWS_DLL_PATH'] = pathDelim.join(args.win_dll_path)
 
     # Avoid the just-in-time debugger where possible when running tests.
     env['ARCH_AVOID_JIT'] = '1'
