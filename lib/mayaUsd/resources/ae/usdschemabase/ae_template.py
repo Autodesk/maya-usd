@@ -78,9 +78,16 @@ def _queueEditorRefresh():
 
 # Custom control, but does not have any UI. Instead we use
 # this control to be notified from UFE when any attribute has changed
-# so we can update the AE. This is to fix refresh issue
-# when transform is added to a prim.
+# so we can update the AE. 
 class UfeAttributesObserver(ufe.Observer):
+    _watchedAttrs = {
+        # This is to fix refresh issue when transform is added to a prim.
+        UsdGeom.Tokens.xformOpOrder,
+        # This is to fix refresh issue when an existing material is assigned
+        # to the prim when it already had a another material.
+        UsdShade.Tokens.materialBinding,
+    }
+
     def __init__(self, item):
         super(UfeAttributesObserver, self).__init__()
         self._item = item
@@ -91,7 +98,7 @@ class UfeAttributesObserver(ufe.Observer):
     def __call__(self, notification):
         refreshEditor = False
         if isinstance(notification, ufe.AttributeValueChanged):
-            if notification.name() == UsdGeom.Tokens.xformOpOrder:
+            if notification.name() in UfeAttributesObserver._watchedAttrs:
                 refreshEditor = True
         if hasattr(ufe, "AttributeAdded") and isinstance(notification, ufe.AttributeAdded):
             refreshEditor = True
@@ -126,6 +133,7 @@ class UfeConnectionChangedObserver(ufe.Observer):
     def onReplace(self, *args):
         # Nothing needed here since we don't create any UI.
         pass
+
 
 class MetaDataCustomControl(object):
     # Custom control for all prim metadata we want to display.
@@ -984,10 +992,10 @@ class AETemplate(object):
         if not mat:
             return
         layoutName = getMayaUsdLibString('kLabelMaterial')
-        collapse = True
+        collapse = False
         with ufeAeTemplate.Layout(self, layoutName, collapse):
             createdControl = MaterialCustomControl(self.item, self.prim, self.useNiceName)
-        self.defineCustom(createdControl)
+            self.defineCustom(createdControl)
 
     def suppressArrayAttribute(self):
         # Suppress all array attributes.
