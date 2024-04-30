@@ -100,10 +100,13 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
         self.assertSnapshotClose('%s_ball_03_selected.png' % self._testName)
 
         ball_03_vis.Set('hidden')
+        cmds.select("|stage|stageShape,/root/group/ball_04")
         self.assertSnapshotClose('%s_ball_03_hidden.png' % self._testName)
         ball_04_vis.Set('hidden')
+        cmds.select("|stage|stageShape,/root/group/ball_05")
         self.assertSnapshotClose('%s_ball_03_and_04_hidden.png' % self._testName)
         ball_03_vis.Set('inherited') # this should show the object again
+        cmds.select("|stage|stageShape,/root/group/ball_03")
         self.assertSnapshotClose('%s_ball_04_hidden.png' % self._testName)
         ball_04_vis.Set('inherited')
         self.assertSnapshotClose('%s_shown_after_hidden.png' % self._testName)
