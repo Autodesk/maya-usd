@@ -63,13 +63,6 @@ if(DEFINED UFE_PREVIEW_VERSION_NUM)
     )
 endif()
 
-if (UFE_DEFAULT_VALUE_SUPPORT)
-    target_compile_definitions(${PROJECT_NAME}
-    PRIVATE
-    UFE_DEFAULT_VALUE_SUPPORT=1
-    )
-endif()
-
 message(STATUS "MAYA_HAS_DEFAULT_MATERIAL_API is ${MAYA_HAS_DEFAULT_MATERIAL_API}")
 if (MAYA_HAS_DEFAULT_MATERIAL_API)
     target_compile_definitions(${PROJECT_NAME}
@@ -147,14 +140,6 @@ if (MAYA_HAS_GET_MEMBER_PATHS)
     target_compile_definitions(${PROJECT_NAME}
     PRIVATE
     MAYA_HAS_GET_MEMBER_PATHS=1
-    )
-endif()
-
-message(STATUS "USD_HAS_COLOR4_SDR_SUPPORT is ${USD_HAS_COLOR4_SDR_SUPPORT}")
-if (USD_HAS_COLOR4_SDR_SUPPORT)
-    target_compile_definitions(${PROJECT_NAME}
-        PRIVATE
-        USD_HAS_COLOR4_SDR_SUPPORT=1
     )
 endif()
 
