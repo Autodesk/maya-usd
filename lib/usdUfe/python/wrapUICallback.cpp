@@ -87,14 +87,61 @@ private:
     PyObject* _pyCb;
 };
 
+// Since the Python wrapping accepts Python objects but the UFE C++ API requires
+// a specific callback class instance, keep a mapping of Python to C++ so we can
+// remove the callback later with the same C++ object.
+std::map<std::pair<PXR_NS::TfToken, PyObject*>, UsdUfe::UICallback::Ptr>&
+getRegisteredPythonCallbacks()
+{
+    static std::map<std::pair<PXR_NS::TfToken, PyObject*>, UsdUfe::UICallback::Ptr> callbacks;
+    return callbacks;
+}
+
+void addPythonCallback(const PXR_NS::TfToken& operation, PyObject* uiCallback)
+{
+    if (!uiCallback)
+        return;
+
+    auto key = std::make_pair(operation, uiCallback);
+
+    // We don't allow registering the same callback for the same operation twice.
+    auto& callbacks = getRegisteredPythonCallbacks();
+    if (callbacks.find(key) != callbacks.end())
+        return;
+
+    // Remember the Python-to-C++ mapping.
+    auto cb = std::make_shared<PyUICallback>(uiCallback);
+    callbacks[key] = cb;
+
+    // Register the callback with UFE.
+    UsdUfe::registerUICallback(operation, cb);
+}
+
+void removePythonCallback(const PXR_NS::TfToken& operation, PyObject* uiCallback)
+{
+    if (!uiCallback)
+        return;
+
+    auto key = std::make_pair(operation, uiCallback);
+
+    // Make sure the callback really was registered.
+    auto& callbacks = getRegisteredPythonCallbacks();
+    if (callbacks.find(key) == callbacks.end())
+        return;
+
+    // Erase the Python-to-C++ mapping.
+    auto cb = callbacks[key];
+    callbacks.erase(key);
+
+    // Unregister the callback from UFE.
+    UsdUfe::unregisterUICallback(operation, cb);
+}
+
 } // namespace
 
 void wrapUICallback()
 {
     // Making the callbacks accessible from Python
-    def(
-        "registerUICallback", +[](const PXR_NS::TfToken& operation, PyObject* uiCallback) {
-            return UsdUfe::registerUICallback(
-                operation, std::make_shared<PyUICallback>(uiCallback));
-        });
+    def("registerUICallback", addPythonCallback);
+    def("unregisterUICallback", removePythonCallback);
 }

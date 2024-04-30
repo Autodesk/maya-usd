@@ -116,7 +116,8 @@ void UsdMayaJointUtil::getJointHierarchyComponents(
 VtTokenArray UsdMayaJointUtil::getJointNames(
     const std::vector<MDagPath>& joints,
     const MDagPath&              rootDagPath,
-    bool                         stripNamespaces)
+    bool                         stripNamespaces,
+    const PcpMapFunction&        rootMapFunction)
 {
     MDagPath skelXformPath, jointHierarchyRootPath;
     getJointHierarchyComponents(rootDagPath, &skelXformPath, &jointHierarchyRootPath);
@@ -139,6 +140,13 @@ VtTokenArray UsdMayaJointUtil::getJointNames(
             jointHierarchyRootPath,
             /*mergeTransformAndShape*/ false,
             stripNamespaces);
+
+        if (!rootMapFunction.IsNull()) {
+            SdfPath mappedRootPath = rootMapFunction.MapSourceToTarget(rootPath);
+            if (!mappedRootPath.IsEmpty()) {
+                rootPath = mappedRootPath;
+            }
+        }
     }
 
     VtTokenArray result;
@@ -146,6 +154,13 @@ VtTokenArray UsdMayaJointUtil::getJointNames(
 
         SdfPath path = UsdMayaUtil::MDagPathToUsdPath(
             joint, /*mergeTransformAndShape*/ false, stripNamespaces);
+
+        if (!rootMapFunction.IsNull()) {
+            SdfPath mappedPath = rootMapFunction.MapSourceToTarget(path);
+            if (!mappedPath.IsEmpty()) {
+                path = mappedPath;
+            }
+        }
         result.push_back(path.MakeRelativePath(rootPath).GetToken());
     }
     return result;
@@ -475,8 +490,13 @@ MObject UsdMayaJointUtil::writeSkinningData(
     }
 
     UsdMayaJointUtil::warnForPostDeformationTransform(usdPath, dagPath, skinCluster);
-
-    skelPath = UsdMayaJointUtil::getSkeletonPath(rootJoint, stripNamespaces);
+    SdfPath jointRootPath = UsdMayaJointUtil::getSkeletonPath(rootJoint, stripNamespaces);
+    if (skelPath.IsEmpty()) {
+        skelPath = jointRootPath;
+    } else {
+        // SdfPath can only append relative path, so remove the '/' at the first index
+        skelPath = jointRootPath.ReplacePrefix(SdfPath("/"), skelPath);
+    }
 
     // Export will create a Skeleton at the location corresponding to
     // the root joint. Configure this mesh to be bound to the same skel.

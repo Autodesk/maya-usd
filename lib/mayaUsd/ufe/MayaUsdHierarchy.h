@@ -33,13 +33,6 @@ public:
     typedef std::shared_ptr<MayaUsdHierarchy> Ptr;
 
     MayaUsdHierarchy(const UsdSceneItem::Ptr& item);
-    ~MayaUsdHierarchy() override;
-
-    // Delete the copy/move constructors assignment operators.
-    MayaUsdHierarchy(const MayaUsdHierarchy&) = delete;
-    MayaUsdHierarchy& operator=(const MayaUsdHierarchy&) = delete;
-    MayaUsdHierarchy(MayaUsdHierarchy&&) = delete;
-    MayaUsdHierarchy& operator=(MayaUsdHierarchy&&) = delete;
 
     //! Create a MayaUsdHierarchy.
     static MayaUsdHierarchy::Ptr create(const UsdSceneItem::Ptr& item);

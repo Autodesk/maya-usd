@@ -34,13 +34,8 @@ public:
     typedef std::shared_ptr<UsdUIInfoHandler> Ptr;
 
     UsdUIInfoHandler();
-    ~UsdUIInfoHandler() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUIInfoHandler(const UsdUIInfoHandler&) = delete;
-    UsdUIInfoHandler& operator=(const UsdUIInfoHandler&) = delete;
-    UsdUIInfoHandler(UsdUIInfoHandler&&) = delete;
-    UsdUIInfoHandler& operator=(UsdUIInfoHandler&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUIInfoHandler);
 
     //! Create a UsdUIInfoHandler.
     static UsdUIInfoHandler::Ptr create();

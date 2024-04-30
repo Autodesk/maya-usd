@@ -32,7 +32,8 @@ public:
 
     //! Construct and destruct a EditAsMayaCommand. Does not execute it.
     EditAsMayaUfeCommand(const Ufe::Path& path);
-    ~EditAsMayaUfeCommand() override;
+
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(EditAsMayaUfeCommand);
 
     //! Create a EditAsMayaCommand. Does not execute it.
     static EditAsMayaUfeCommand::Ptr create(const Ufe::Path& path);
@@ -42,12 +43,6 @@ public:
     void redo() override;
 
 private:
-    // Delete the copy/move constructors assignment operators.
-    EditAsMayaUfeCommand(const EditAsMayaUfeCommand&) = delete;
-    EditAsMayaUfeCommand& operator=(const EditAsMayaUfeCommand&) = delete;
-    EditAsMayaUfeCommand(EditAsMayaUfeCommand&&) = delete;
-    EditAsMayaUfeCommand& operator=(EditAsMayaUfeCommand&&) = delete;
-
     OpUndoItemList _undoItemList;
     Ufe::Path      _path;
 };

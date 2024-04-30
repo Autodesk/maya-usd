@@ -213,4 +213,30 @@ getAttrEditRouterLayer(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrN
     }
 }
 
+PXR_NS::UsdEditTarget
+getEditRouterEditTarget(const PXR_NS::TfToken& operation, const PXR_NS::UsdPrim& prim)
+{
+    const auto dstEditRouter = getEditRouter(operation);
+    if (!dstEditRouter) {
+        return PXR_NS::UsdEditTarget();
+    }
+
+    PXR_NS::VtDictionary context;
+    PXR_NS::VtDictionary routingData;
+    context[EditRoutingTokens->Prim] = PXR_NS::VtValue(prim);
+    context[EditRoutingTokens->Operation] = operation;
+    (*dstEditRouter)(context, routingData);
+
+    const auto found = routingData.find(EditRoutingTokens->EditTarget);
+
+    if (found != routingData.end()) {
+        const auto& value = found->second;
+        if (value.IsHolding<PXR_NS::UsdEditTarget>()) {
+            const auto editTarget = value.Get<PXR_NS::UsdEditTarget>();
+            return editTarget;
+        }
+    }
+    return PXR_NS::UsdEditTarget();
+}
+
 } // namespace USDUFE_NS_DEF

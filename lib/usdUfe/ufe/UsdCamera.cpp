@@ -26,10 +26,7 @@
 
 namespace USDUFE_NS_DEF {
 
-UsdCamera::UsdCamera()
-    : Camera()
-{
-}
+USDUFE_VERIFY_CLASS_SETUP(Ufe::Camera, UsdCamera);
 
 UsdCamera::UsdCamera(const UsdSceneItem::Ptr& item)
     : Camera()

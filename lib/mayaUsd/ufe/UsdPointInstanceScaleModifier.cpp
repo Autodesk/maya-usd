@@ -22,8 +22,6 @@
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usdGeom/pointInstancer.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace {
 // Map of point instance batches under construction, keyed on instancer path.
 MayaUsd::ufe::UsdPointInstanceScaleModifier::Batches sBatches;
@@ -32,23 +30,29 @@ MayaUsd::ufe::UsdPointInstanceScaleModifier::Batches sBatches;
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+// Ensure that UsdPointInstanceScaleModifier is properly setup.
+using base = UsdPointInstanceModifierBase<Ufe::Vector3d, PXR_NS::GfVec3f>;
+MAYAUSD_VERIFY_CLASS_BASE(base, UsdPointInstanceScaleModifier);
+MAYAUSD_VERIFY_CLASS_VIRTUAL_DESTRUCTOR(UsdPointInstanceScaleModifier);
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdPointInstanceScaleModifier);
+
 /* override */
-UsdAttribute UsdPointInstanceScaleModifier::_getAttribute() const
+PXR_NS::UsdAttribute UsdPointInstanceScaleModifier::_getAttribute() const
 {
-    UsdGeomPointInstancer pointInstancer = getPointInstancer();
+    PXR_NS::UsdGeomPointInstancer pointInstancer = getPointInstancer();
     if (!pointInstancer) {
-        return UsdAttribute();
+        return PXR_NS::UsdAttribute();
     }
 
     return pointInstancer.GetScalesAttr();
 }
 
 /* override */
-UsdAttribute UsdPointInstanceScaleModifier::_createAttribute()
+PXR_NS::UsdAttribute UsdPointInstanceScaleModifier::_createAttribute()
 {
-    UsdGeomPointInstancer pointInstancer = getPointInstancer();
+    PXR_NS::UsdGeomPointInstancer pointInstancer = getPointInstancer();
     if (!pointInstancer) {
-        return UsdAttribute();
+        return PXR_NS::UsdAttribute();
     }
 
     return pointInstancer.CreateScalesAttr();

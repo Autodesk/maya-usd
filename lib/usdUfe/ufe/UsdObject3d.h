@@ -30,13 +30,8 @@ public:
     using Ptr = std::shared_ptr<UsdObject3d>;
 
     UsdObject3d(const UsdSceneItem::Ptr& item);
-    ~UsdObject3d() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdObject3d(const UsdObject3d&) = delete;
-    UsdObject3d& operator=(const UsdObject3d&) = delete;
-    UsdObject3d(UsdObject3d&&) = delete;
-    UsdObject3d& operator=(UsdObject3d&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdObject3d);
 
     //! Create a UsdObject3d.
     static UsdObject3d::Ptr create(const UsdSceneItem::Ptr& item);

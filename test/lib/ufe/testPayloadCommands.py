@@ -144,5 +144,87 @@ class PayloadCommandsTestCase(unittest.TestCase):
         cmd.redo()
         self.assertTrue(prim.IsLoaded())
 
+    def testUnloadPayloadUndoStackCommands(self):
+        '''
+        Test unload payload undo stack commands.
+        '''
+        withPayloadFile = testUtils.getTestScene("payload", "multipots.usda")
+        # scene to be loaded
+        # \- FlowerPot_set
+        #  \- Variants_grp
+        #   \- FlowerPotA (payload)
+        #   \- FlowerPotB (payload)
+        withPayloadDagPath, withPayloadStage = mayaUtils.createProxyFromFile(withPayloadFile)
+        flowerPotAUfePathString = ','.join([withPayloadDagPath, "/FlowerPot_set/Variants_grp/FlowerPotA"])
+        primA = mayaUsd.ufe.ufePathToPrim(flowerPotAUfePathString)
+        flowerPotBUfePathString = ','.join([withPayloadDagPath, "/FlowerPot_set/Variants_grp/FlowerPotB"])
+        primB = mayaUsd.ufe.ufePathToPrim(flowerPotBUfePathString)
+
+        # Verify initial state
+        self.assertTrue(primA.HasPayload())
+        self.assertTrue(primB.HasPayload())
+
+        # Verify unload payload sequence
+        # Emulate a stack of unload commands in a tree
+        # - first 'unload' FlowerPotA
+        # - then 'unload' FlowerPot_set; will unload all
+        # - undo 'unload' FlowerPot_set; will reload and set back the payload rules as they were
+        #                                prior to the 'unload', where FlowerPotA is unloaded
+        # - redo 'unload' FlowerPot_set
+        # - undo 'unload' FlowerPot_set
+        # - undo 'unload' FlowerPotA; which brings back everything to the original payload state
+        primAUnloadCmd = usdUfe.UnloadPayloadCommand(primA)
+        self.assertIsNotNone(primAUnloadCmd)
+        primAUnloadCmd.execute()
+        self.assertFalse(primA.IsLoaded())
+        self.assertTrue(primB.IsLoaded())
+
+        flowerPotSetUfePathString = ','.join([withPayloadDagPath, "/FlowerPot_set"])
+        primSet = mayaUsd.ufe.ufePathToPrim(flowerPotSetUfePathString)
+        primSetUnloadCmd = usdUfe.UnloadPayloadCommand(primSet)
+        self.assertIsNotNone(primSetUnloadCmd)
+
+        primSetUnloadCmd.execute()
+        self.assertFalse(primA.IsLoaded())
+        self.assertFalse(primB.IsLoaded())
+
+        primSetUnloadCmd.undo()
+        self.assertFalse(primA.IsLoaded())
+        self.assertTrue(primB.IsLoaded())
+
+        primSetUnloadCmd.redo()
+        self.assertFalse(primA.IsLoaded())
+        self.assertFalse(primB.IsLoaded())
+
+        primSetUnloadCmd.undo()
+        primAUnloadCmd.undo()
+        self.assertTrue(primA.IsLoaded())
+        self.assertTrue(primB.IsLoaded())
+
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Delete restriction on delete requires Maya 2023 or greater.')
+    def testDeletePrimContainingPayload(self):
+        '''
+        Test adding a payload to a prim, then deleting that prim.
+        '''
+        # Get the session layer
+        prim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A")
+
+        self.assertFalse(prim.HasPayload())
+
+        payloadFile = testUtils.getTestScene('twoSpheres', 'sphere.usda')
+        cmd = usdUfe.AddPayloadCommand(prim, payloadFile, True)
+        self.assertIsNotNone(cmd)
+
+        # Verify state after add payload
+        cmd.execute()
+        self.assertTrue(prim.HasPayload())
+        self.assertTrue(prim.IsLoaded())
+
+        # Delete the prim containing the payload. The payload should not block deletion.
+        cmds.delete("|stage1|stageShape1,/A")
+        prim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A")
+        self.assertFalse(prim)
+        
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

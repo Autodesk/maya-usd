@@ -29,14 +29,9 @@ class MAYAUSD_CORE_PUBLIC UsdSceneItemOpsHandler : public Ufe::SceneItemOpsHandl
 public:
     typedef std::shared_ptr<UsdSceneItemOpsHandler> Ptr;
 
-    UsdSceneItemOpsHandler();
-    ~UsdSceneItemOpsHandler() override;
+    UsdSceneItemOpsHandler() = default;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdSceneItemOpsHandler(const UsdSceneItemOpsHandler&) = delete;
-    UsdSceneItemOpsHandler& operator=(const UsdSceneItemOpsHandler&) = delete;
-    UsdSceneItemOpsHandler(UsdSceneItemOpsHandler&&) = delete;
-    UsdSceneItemOpsHandler& operator=(UsdSceneItemOpsHandler&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdSceneItemOpsHandler);
 
     //! Create a UsdSceneItemOpsHandler.
     static UsdSceneItemOpsHandler::Ptr create();

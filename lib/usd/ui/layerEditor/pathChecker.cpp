@@ -119,6 +119,9 @@ bool checkIfPathIsSafeToAdd(
     // We can't allow the user to add a sublayer path that is the same as the item or one of its
     // parent. At this point I think it's safe to go the route of actually loading the layer and
     // checking if the handles were already loaded
+    if (in_parentItem == nullptr) {
+        return true;
+    }
 
     auto parentLayer = in_parentItem->layer();
 

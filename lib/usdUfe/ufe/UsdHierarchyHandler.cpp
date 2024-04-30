@@ -24,12 +24,7 @@
 
 namespace USDUFE_NS_DEF {
 
-UsdHierarchyHandler::UsdHierarchyHandler()
-    : Ufe::HierarchyHandler()
-{
-}
-
-UsdHierarchyHandler::~UsdHierarchyHandler() { }
+USDUFE_VERIFY_CLASS_SETUP(Ufe::HierarchyHandler, UsdHierarchyHandler);
 
 /*static*/
 UsdHierarchyHandler::Ptr UsdHierarchyHandler::create()

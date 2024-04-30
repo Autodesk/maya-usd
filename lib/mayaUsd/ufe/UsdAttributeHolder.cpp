@@ -106,6 +106,9 @@ namespace ufe {
 // UsdAttributeHolder:
 //------------------------------------------------------------------------------
 
+// Ensure that UsdAttributeHolder is properly setup.
+MAYAUSD_VERIFY_CLASS_VIRTUAL_DESTRUCTOR(UsdAttributeHolder);
+
 UsdAttributeHolder::UsdAttributeHolder(const PXR_NS::UsdAttribute& usdAttr)
     : _usdAttr(usdAttr)
 {
@@ -181,6 +184,19 @@ bool UsdAttributeHolder::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode t
 
     UsdUfe::InSetAttribute inSetAttr;
     return _usdAttr.Set(value, time);
+}
+
+bool UsdAttributeHolder::isDefault()
+{
+    // Checks both authored default value and authored time samples
+    return !_usdAttr.HasAuthoredValue();
+}
+
+void UsdAttributeHolder::reset()
+{
+    // Will clear all values, including time samples.
+    _usdAttr.Clear();
+    _usdAttr.GetPrim().RemoveProperty(_usdAttr.GetName());
 }
 
 bool UsdAttributeHolder::hasValue() const { return isValid() ? _usdAttr.HasValue() : false; }

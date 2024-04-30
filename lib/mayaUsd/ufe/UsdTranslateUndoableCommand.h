@@ -36,10 +36,7 @@ class MAYAUSD_CORE_PUBLIC UsdTranslateUndoableCommand
 public:
     typedef std::shared_ptr<UsdTranslateUndoableCommand> Ptr;
 
-    UsdTranslateUndoableCommand(const UsdTranslateUndoableCommand&) = delete;
-    UsdTranslateUndoableCommand& operator=(const UsdTranslateUndoableCommand&) = delete;
-    UsdTranslateUndoableCommand(UsdTranslateUndoableCommand&&) = delete;
-    UsdTranslateUndoableCommand& operator=(UsdTranslateUndoableCommand&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdTranslateUndoableCommand);
 
     //! Create a UsdTranslateUndoableCommand from a UFE scene path. The
     //! command is not executed.
@@ -57,7 +54,6 @@ public:
 protected:
     //! Construct a UsdTranslateUndoableCommand.  The command is not executed.
     UsdTranslateUndoableCommand(const Ufe::Path& path, double x, double y, double z);
-    ~UsdTranslateUndoableCommand() override;
 
 private:
     static PXR_NS::TfToken xlate;

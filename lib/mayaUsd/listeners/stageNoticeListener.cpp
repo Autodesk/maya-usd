@@ -30,6 +30,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdMayaStageNoticeListener);
+
 /* virtual */
 UsdMayaStageNoticeListener::~UsdMayaStageNoticeListener()
 {

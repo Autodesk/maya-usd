@@ -50,6 +50,8 @@
 
 namespace MAYAUSD_NS_DEF {
 
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(TranslatorMeshRead);
+
 TranslatorMeshRead::TranslatorMeshRead(
     const UsdGeomMesh&        mesh,
     const UsdPrim&            prim,
@@ -465,6 +467,8 @@ MString TranslatorMeshRead::pointBasedDeformerName() const { return m_newPointBa
 size_t TranslatorMeshRead::pointsNumTimeSamples() const { return m_pointsNumTimeSamples; }
 
 SdfPath TranslatorMeshRead::shapePath() const { return m_shapePath; }
+
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(TranslatorMeshWrite);
 
 TranslatorMeshWrite::TranslatorMeshWrite(
     const MFnDependencyNode& depNodeFn,

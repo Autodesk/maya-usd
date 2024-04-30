@@ -23,7 +23,7 @@ from maya.api import OpenMaya as OM
 
 from pxr import Gf, Sdf, Tf, Usd, UsdGeom, UsdSkel, UsdUtils, Vt
 
-import fixturesUtils
+import fixturesUtils, testUtils
 
 class testUsdExportSkeleton(unittest.TestCase):
 
@@ -261,6 +261,32 @@ class testUsdExportSkeleton(unittest.TestCase):
             cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
                            shadingMode='none', exportSkels='auto')
 
+    def testSkelExportWithNewRoot(self):
+        """
+        It is possible to export joints at scene root level if a new Xform root is created when exporting.
+        The new stage root will then be converted to a SkelRoot
+        """
+        mayaFile = os.path.join(self.inputPath, "UsdExportSkeletonTest", "UsdExportSkeletonAtSceneRoot.ma")
+        cmds.file(mayaFile, force=True, open=True)
+
+        usdFile = os.path.abspath('UsdExportSkeletonNewRootTest.usda')
+
+        cmds.usdExport(mergeTransformAndShape=True, file=usdFile, rootPrimType='xform', exportSkin='auto',
+            exportSkels="auto", rootPrim="testSkel", defaultPrim="testSkel")
+
+        stage = Usd.Stage.Open(usdFile)
+
+        skelRoot = UsdSkel.Root.Get(stage, '/testSkel')
+        self.assertTrue(skelRoot)
+
+        meshPrim = stage.GetPrimAtPath('/testSkel/pCube1')
+        self.assertTrue(meshPrim)
+
+        binding = UsdSkel.BindingAPI.Get(stage, meshPrim.GetPath())
+        self.assertTrue(binding)
+
+        skeleton = UsdSkel.Skeleton.Get(stage, '/testSkel/joint1')
+        self.assertTrue(skeleton)
 
     def testSkelForSegfault(self):
         """
@@ -304,6 +330,35 @@ class testUsdExportSkeleton(unittest.TestCase):
                 [Gf.Matrix4d( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 2, 1) ),
                  Gf.Matrix4d( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 3, 0, 1) ),
                  Gf.Matrix4d( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (5, 0, 0, 1) )]))
+    
+    def testPartialSkeletonExport(self):
+        """
+        Test exporting only selected joints inside a hierarchy.
+        """
+        mayaFile = os.path.join(self.inputPath, "UsdExportSkeletonTest", "UsdExportPartialSkeleton.ma")
+        cmds.file(mayaFile, force=True, open=True)
+
+        with testUtils.TemporaryDirectory(prefix='UsdExportPartialSkeleton') as testDir:
+            pathToSave = "{}/partialJoints.usda".format(testDir)
+            
+            cmds.select("jointsGrp", r=True)
+            kwargs = {
+                "f": pathToSave,
+                "sl": True,
+                "worldspace": True,
+                "stripNamespaces" : True,
+                "shadingMode":"none",
+                "exportRoots":("jointsGrp",),
+                "exportSkels":"auto",
+            }
+            cmds.mayaUSDExport(**kwargs)
+                
+            cmds.file(new=True, force=True)
+            cmds.mayaUSDImport(f=pathToSave)
+            
+            self.assertEqual(cmds.ls("jointsGrp", l=True),  ['|jointsGrp'])
+            self.assertEqual(cmds.listRelatives('|jointsGrp', ad=True),  ['joint3', 'joint2', 'joint1', 'aJoint'])
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -35,9 +35,7 @@ The first callback is the options callback. It is called to retrieve the diction
 of options that the export plugin wants to control. Those options will no longer
 be editable by the user in the main MayaUSD export UI. Either those values are now
 hard coded by the export plugin or you provide your own new UI in your UI callback.
-
-You can also return options that are specific to your plugin here. These options
-will be passed in the arguments dictionary during export.
+You can also return options that are specific to your plugin here.
 
 In the example, this callback is called `exportEnablerFn`. It returns a global
 dictionary containing the forced options. That dictionary variable is called
@@ -45,16 +43,16 @@ dictionary containing the forced options. That dictionary variable is called
 
 The second callback is the UI callback. It is called when the user clicks the
 `options` button associated with your plugin in the main MayaUSD export UI.
-In this callback, you should present a modal dialog to edit the options the
-user can edit. It receives your job context name, the name of the parent UI
-that triggered this callback and the current options settings. The callback
-must return the new settings.
+In this callback, you must present a modal dialog to edit the plugin options.
+It receives your job context name, the name of the parent UI that triggered
+this callback and the current plugin settings. The callback must return the
+new settings.
 
-Since both the options callback and the UI callback are expected to return the
-same settings value for options controlled by the export plugin, the design
-expects the export plugin to manage these options itself and save them itself.
+Since both callbacks are expected to return the same settings value for options
+controlled by the import or export plugin, the design expects the export plugin
+to manage these options itself and save them itself.
 
-Note that the total options used by the export, including those not controlled
+Note that the built-in options used by the export, meaning those not controlled
 by the export plugin, are saved by MayaUSD. But, given that the options callback
 does *not* receive the current options as input, it is necessary that the export
 plugin keeps a copy of the current values of each options it wants to control.

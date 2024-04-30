@@ -29,13 +29,8 @@ public:
     typedef std::shared_ptr<ProxyShapeCameraHandler> Ptr;
 
     ProxyShapeCameraHandler(const Ufe::CameraHandler::Ptr&);
-    ~ProxyShapeCameraHandler();
 
-    // Delete the copy/move constructors assignment operators.
-    ProxyShapeCameraHandler(const ProxyShapeCameraHandler&) = delete;
-    ProxyShapeCameraHandler& operator=(const ProxyShapeCameraHandler&) = delete;
-    ProxyShapeCameraHandler(ProxyShapeCameraHandler&&) = delete;
-    ProxyShapeCameraHandler& operator=(ProxyShapeCameraHandler&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ProxyShapeCameraHandler);
 
     //! Create a ProxyShapeCameraHandler from a UFE camera handler.
     static ProxyShapeCameraHandler::Ptr create(const Ufe::CameraHandler::Ptr&);

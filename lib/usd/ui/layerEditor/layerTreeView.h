@@ -20,6 +20,11 @@
 #include "layerTreeViewStyle.h"
 #include "sessionState.h"
 
+#include <usdUfe/utils/uiCallback.h>
+
+#include <pxr/base/tf/weakBase.h>
+#include <pxr/usd/usd/notice.h>
+
 #include <QtCore/QPointer>
 #include <QtWidgets/QTreeView>
 
@@ -66,12 +71,15 @@ private:
  * @brief Implements the Qt TreeView for USD layers. This widget is owned by the LayerEditorWidget.
  *
  */
-class LayerTreeView : public QTreeView
+class LayerTreeView
+    : public QTreeView
+    , public PXR_NS::TfWeakBase
 {
     Q_OBJECT
 public:
     typedef QTreeView PARENT_CLASS;
     LayerTreeView(SessionState* in_sessionState, QWidget* in_parent);
+    ~LayerTreeView() override;
 
     // get properly typed item
     LayerTreeItem* layerItemFromIndex(const QModelIndex& index) const;
@@ -119,6 +127,9 @@ protected:
     void onMuteLayerButtonPushed();
     void onLockLayerButtonPushed();
 
+    // Notice listener method for layer muting changes.
+    void onLayerMutingChanged(const UsdNotice::LayerMutingChanged& notice);
+
     bool shouldExpandOrCollapseAll() const;
     void expandChildren(const QModelIndex& index);
     void collapseChildren(const QModelIndex& index);
@@ -129,8 +140,11 @@ protected:
     LayerTreeViewStyle       _treeViewStyle;
     QPointer<LayerTreeModel> _model;
     LayerTreeItemDelegate*   _delegate;
+    TfNotice::Key            _layerMutingNoticeKey;
 
     std::unique_ptr<LayerViewMemento> _cachedModelState;
+
+    UsdUfe::UICallback::Ptr _refreshCallback;
 
     // the mute button area has a different implementation than
     // the target button. It is based on Maya's renderSetup

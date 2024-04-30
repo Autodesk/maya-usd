@@ -70,7 +70,6 @@ public:
     typedef std::shared_ptr<UsdTransform3dFallbackMayaXformStack> Ptr;
 
     UsdTransform3dFallbackMayaXformStack(const UsdSceneItem::Ptr& item);
-    ~UsdTransform3dFallbackMayaXformStack() override = default;
 
     //! Create a UsdTransform3dFallbackMayaXformStack for the given item.  The argument
     //! transform ops must match a Maya transform stack.
@@ -100,6 +99,8 @@ public:
     typedef std::shared_ptr<UsdTransform3dFallbackMayaXformStackHandler> Ptr;
 
     UsdTransform3dFallbackMayaXformStackHandler();
+
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdTransform3dFallbackMayaXformStackHandler);
 
     //! Create a UsdTransform3dFallbackMayaXformStackHandler.
     static Ptr create();

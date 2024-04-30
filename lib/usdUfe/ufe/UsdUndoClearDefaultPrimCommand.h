@@ -31,13 +31,8 @@ public:
     // Public for std::make_shared() access, use create() instead.
     UsdUndoClearDefaultPrimCommand(const PXR_NS::UsdPrim& prim);
     UsdUndoClearDefaultPrimCommand(const PXR_NS::UsdStageRefPtr& stage);
-    ~UsdUndoClearDefaultPrimCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUndoClearDefaultPrimCommand(const UsdUndoClearDefaultPrimCommand&) = delete;
-    UsdUndoClearDefaultPrimCommand& operator=(const UsdUndoClearDefaultPrimCommand&) = delete;
-    UsdUndoClearDefaultPrimCommand(UsdUndoClearDefaultPrimCommand&&) = delete;
-    UsdUndoClearDefaultPrimCommand& operator=(UsdUndoClearDefaultPrimCommand&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoClearDefaultPrimCommand);
 
     void execute() override;
     void undo() override;

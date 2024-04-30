@@ -65,6 +65,8 @@ UsdPrimSiblingRange getUSDFilteredChildren(
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Hierarchy, ProxyShapeHierarchy);
+
 //------------------------------------------------------------------------------
 // ProxyShapeHierarchy
 //------------------------------------------------------------------------------
@@ -74,8 +76,6 @@ ProxyShapeHierarchy::ProxyShapeHierarchy(const Ufe::HierarchyHandler::Ptr& mayaH
     , fMayaHierarchyHandler(mayaHierarchyHandler)
 {
 }
-
-ProxyShapeHierarchy::~ProxyShapeHierarchy() { }
 
 /*static*/
 ProxyShapeHierarchy::Ptr

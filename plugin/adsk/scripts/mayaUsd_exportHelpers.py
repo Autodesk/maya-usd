@@ -7,6 +7,14 @@ __naturalOrderRE = re.compile(r'([0-9]+)')
 def natural_key(item):
     return [int(s) if s.isdigit() else s.lower() for s in __naturalOrderRE.split(item)]
 
+def isHiddenInOutliner(item):
+    '''Verify if the Maya item is hidden in the outliner.'''
+    return bool(cmds.getAttr(item + ".hiddenInOutliner"))
+
+def removeHiddenInOutliner(allItems):
+    '''Filter and return a list of Maya items to remove those hidden in the outliner.'''
+    return [item for item in allItems if not isHiddenInOutliner(item)]
+
 def updateDefaultPrimCandidates(excludeMesh, excludeLight, excludeCamera):
     allItems = cmds.ls(assemblies=True)
     excludeList = []
@@ -33,7 +41,7 @@ def updateDefaultPrimCandidates(excludeMesh, excludeLight, excludeCamera):
 
         allItems = list(set(allItems) - set(startup_cameras))
     
-    allItems = list(set(allItems) - set(excludeList))
+    allItems = removeHiddenInOutliner(list(set(allItems) - set(excludeList)))
     allItems.sort(key=natural_key)
     return allItems
 
@@ -61,6 +69,6 @@ def updateDefaultPrimCandidatesFromSelection(excludeMesh, excludeLight, excludeC
         for c in cameras:
             excludeSet.add(cmds.listRelatives(c, parent=True)[0])
 
-    allItems = list(allItems - excludeSet)
+    allItems = removeHiddenInOutliner(list(allItems - excludeSet))
     allItems.sort(key=natural_key)
     return allItems

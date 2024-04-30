@@ -72,6 +72,8 @@ private:
     UsdGeomXformCommonAPI _commonAPI;
 };
 
+MAYAUSD_VERIFY_CLASS_SETUP(UsdSetXformOpUndoableCommandBase, CommonAPITranslateUndoableCmd);
+
 class CommonAPIRotateUndoableCmd : public UsdSetXformOpUndoableCommandBase
 {
 public:
@@ -113,9 +115,10 @@ private:
     UsdGeomXformCommonAPI _commonAPI;
 };
 
+MAYAUSD_VERIFY_CLASS_SETUP(UsdSetXformOpUndoableCommandBase, CommonAPIRotateUndoableCmd);
+
 class CommonAPIScaleUndoableCmd : public UsdSetXformOpUndoableCommandBase
 {
-
 public:
     CommonAPIScaleUndoableCmd(const UsdSceneItem::Ptr& item, const UsdTimeCode& writeTime)
         : UsdSetXformOpUndoableCommandBase(item->path(), writeTime)
@@ -154,6 +157,8 @@ public:
 private:
     UsdGeomXformCommonAPI _commonAPI;
 };
+
+MAYAUSD_VERIFY_CLASS_SETUP(UsdSetXformOpUndoableCommandBase, CommonAPIScaleUndoableCmd);
 
 class CommonAPIPivotUndoableCmd : public UsdSetXformOpUndoableCommandBase
 {
@@ -197,6 +202,8 @@ private:
 };
 
 } // namespace
+
+MAYAUSD_VERIFY_CLASS_SETUP(UsdTransform3dBase, UsdTransform3dCommonAPI);
 
 UsdTransform3dCommonAPI::UsdTransform3dCommonAPI(const UsdSceneItem::Ptr& item)
     : UsdTransform3dBase(item)

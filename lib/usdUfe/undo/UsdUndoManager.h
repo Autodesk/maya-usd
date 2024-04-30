@@ -42,11 +42,7 @@ public:
     // returns an instance of the undo manager.
     static UsdUndoManager& instance();
 
-    // delete the copy/move constructors assignment operators.
-    UsdUndoManager(const UsdUndoManager&) = delete;
-    UsdUndoManager& operator=(const UsdUndoManager&) = delete;
-    UsdUndoManager(UsdUndoManager&&) = delete;
-    UsdUndoManager& operator=(UsdUndoManager&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoManager);
 
     // tracks layer states by spawning a new UsdUndoStateDelegate
     void trackLayerStates(const SdfLayerHandle& layer);
@@ -73,10 +69,7 @@ public:
     // Delete everything.
     UsdUndoManagerAccessor() = delete;
     ~UsdUndoManagerAccessor() = delete;
-    UsdUndoManagerAccessor(const UsdUndoManagerAccessor&) = delete;
-    UsdUndoManagerAccessor& operator=(const UsdUndoManagerAccessor&) = delete;
-    UsdUndoManagerAccessor(UsdUndoManagerAccessor&&) = delete;
-    UsdUndoManagerAccessor& operator=(UsdUndoManagerAccessor&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoManagerAccessor);
 
     static void addInverse(UsdUndoableItem::InvertFunc func)
     {

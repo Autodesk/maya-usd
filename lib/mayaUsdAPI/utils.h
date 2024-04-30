@@ -111,6 +111,13 @@ makePathRelativeTo(const std::string& fileName, const std::string& relativeToDir
 MAYAUSD_API_PUBLIC
 bool requireUsdPathsRelativeToEditTargetLayer();
 
+MAYAUSD_API_PUBLIC
+std::string handleAssetPathThatMaybeRelativeToLayer(
+    std::string                   fileName,
+    const std::string&            attrName,
+    const PXR_NS::SdfLayerHandle& layer,
+    const std::string&            optionVarName);
+
 } // namespace MAYAUSDAPI_NS_DEF
 
 #endif // MAYAUSDAPI_UTILS_H

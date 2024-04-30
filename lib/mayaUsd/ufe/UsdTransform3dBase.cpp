@@ -25,6 +25,10 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+// Ensure that UsdTransform3dBase is properly setup.
+MAYAUSD_VERIFY_CLASS_SETUP(UsdTransform3dReadImpl, UsdTransform3dBase);
+MAYAUSD_VERIFY_CLASS_BASE(Ufe::Transform3d, UsdTransform3dBase);
+
 UsdTransform3dBase::UsdTransform3dBase(const UsdSceneItem::Ptr& item)
     : UsdTransform3dReadImpl(item)
     , Transform3d()

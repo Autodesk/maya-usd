@@ -70,6 +70,13 @@ _GetSdrPropertyAndType(const Ufe::SceneItem::Ptr& item, const std::string& tokNa
 #endif
 } // namespace
 
+// Ensure that UsdAttributes is properly setup.
+#ifdef UFE_V4_2_FEATURES_AVAILABLE
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Attributes_v4_2, UsdAttributes);
+#else
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Attributes, UsdAttributes);
+#endif
+
 UsdAttributes::UsdAttributes(const UsdSceneItem::Ptr& item)
     : UFE_ATTRIBUTES_BASE()
     , fItem(item)
@@ -80,8 +87,6 @@ UsdAttributes::UsdAttributes(const UsdSceneItem::Ptr& item)
     }
     fPrim = item->prim();
 }
-
-UsdAttributes::~UsdAttributes() { }
 
 /*static*/
 UsdAttributes::Ptr UsdAttributes::create(const UsdSceneItem::Ptr& item)

@@ -23,6 +23,13 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+// Ensure that UsdAddAttributeCommand is properly setup.
+#ifdef UFE_V4_FEATURES_AVAILABLE
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::AddAttributeUndoableCommand, UsdAddAttributeCommand);
+#else
+MAYAUSD_VERIFY_CLASS_SETUP(UsdUndoableCommand<Ufe::AddAttributeCommand>, UsdAddAttributeCommand);
+#endif
+
 UsdAddAttributeCommand::UsdAddAttributeCommand(
     const UsdSceneItem::Ptr&    sceneItem,
     const std::string&          name,
@@ -37,8 +44,6 @@ UsdAddAttributeCommand::UsdAddAttributeCommand(
     , _type(type)
 {
 }
-
-UsdAddAttributeCommand::~UsdAddAttributeCommand() { }
 
 UsdAddAttributeCommand::Ptr UsdAddAttributeCommand::create(
     const UsdSceneItem::Ptr&    sceneItem,

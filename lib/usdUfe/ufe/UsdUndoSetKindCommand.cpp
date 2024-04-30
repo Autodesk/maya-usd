@@ -27,6 +27,8 @@
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdUndoSetKindCommand);
+
 UsdUndoSetKindCommand::UsdUndoSetKindCommand(
     const PXR_NS::UsdPrim& prim,
     const PXR_NS::TfToken& kind)

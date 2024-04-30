@@ -78,6 +78,8 @@ class ProxyAccessor
 public:
     using Owner = std::unique_ptr<ProxyAccessor>;
 
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ProxyAccessor);
+
     /*! \brief  Construct ProxyAccessor for a given MPxNode with ProxyStageProvider interface
         \note   Call from MPxNode::postConstructor()
      */
@@ -199,8 +201,6 @@ private:
     {
     }
     ProxyAccessor() = delete;
-    ProxyAccessor(const ProxyAccessor&) = delete;
-    ProxyAccessor& operator=(const ProxyAccessor&) = delete;
 
     //! \brief  Makes access to current stage time easier
     UsdTimeCode getTime() const { return _stageProvider.getTime(); }

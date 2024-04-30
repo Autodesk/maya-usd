@@ -54,6 +54,28 @@ void doCallMethodOnSelection(const CallMethodParams& params, simpleLayerMethod m
     }
 }
 
+class LayerTreeViewRefreshCallback : public UsdUfe::UICallback
+{
+public:
+    LayerTreeViewRefreshCallback(LayerTreeView* treeView)
+        : UICallback()
+        , _treeView(treeView)
+    {
+    }
+
+    void
+    operator()(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionary& callbackData) override
+    {
+        if (!_treeView)
+            return;
+
+        _treeView->repaint();
+    }
+
+private:
+    LayerTreeView* _treeView;
+};
+
 } // namespace
 
 namespace UsdLayerEditor {
@@ -124,7 +146,26 @@ LayerTreeView::LayerTreeView(SessionState* in_sessionState, QWidget* in_parent)
         connect(lockAction, &QAction::triggered, this, &LayerTreeView::onLockLayerButtonPushed);
         _actionButtons._staticActions.push_back(lockAction);
     }
+
+    _refreshCallback = std::make_shared<LayerTreeViewRefreshCallback>(this);
+    UsdUfe::registerUICallback(PXR_NS::TfToken("onRefreshSystemLock"), _refreshCallback);
+
+    TfWeakPtr<LayerTreeView> me(this);
+    _layerMutingNoticeKey = TfNotice::Register(me, &LayerTreeView::onLayerMutingChanged);
 }
+
+LayerTreeView::~LayerTreeView()
+{
+    if (_refreshCallback) {
+        UsdUfe::unregisterUICallback(PXR_NS::TfToken("onRefreshSystemLock"), _refreshCallback);
+        _refreshCallback.reset();
+    }
+
+    // Stop listening to layer muting.
+    TfNotice::Revoke(_layerMutingNoticeKey);
+}
+
+void LayerTreeView::onLayerMutingChanged(const UsdNotice::LayerMutingChanged&) { repaint(); }
 
 LayerTreeItem* LayerTreeView::layerItemFromIndex(const QModelIndex& index) const
 {

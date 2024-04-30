@@ -32,6 +32,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(Ufe::InsertChildCommand, UsdUndoCreateGroupCommand);
+
 UsdUndoCreateGroupCommand::UsdUndoCreateGroupCommand(
     const UsdSceneItem::Ptr& parentItem,
 #ifndef UFE_V3_FEATURES_AVAILABLE
@@ -47,8 +49,6 @@ UsdUndoCreateGroupCommand::UsdUndoCreateGroupCommand(
     , _groupCompositeCmd(std::make_shared<Ufe::CompositeUndoableCommand>())
 {
 }
-
-UsdUndoCreateGroupCommand::~UsdUndoCreateGroupCommand() { }
 
 UsdUndoCreateGroupCommand::Ptr UsdUndoCreateGroupCommand::create(
     const UsdSceneItem::Ptr& parentItem,

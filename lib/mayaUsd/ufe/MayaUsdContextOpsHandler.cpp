@@ -21,12 +21,7 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-MayaUsdContextOpsHandler::MayaUsdContextOpsHandler()
-    : UsdUfe::UsdContextOpsHandler()
-{
-}
-
-MayaUsdContextOpsHandler::~MayaUsdContextOpsHandler() { }
+MAYAUSD_VERIFY_CLASS_SETUP(UsdUfe::UsdContextOpsHandler, MayaUsdContextOpsHandler);
 
 /*static*/
 MayaUsdContextOpsHandler::Ptr MayaUsdContextOpsHandler::create()

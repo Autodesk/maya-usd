@@ -27,6 +27,12 @@ UsdUfe::UICallbacks& getRegisteredUICallbacks()
     return registeredUICallbacks;
 }
 
+const std::vector<UICallback::Ptr>& getEmptyCallbacks()
+{
+    static std::vector<UICallback::Ptr> empty;
+    return empty;
+}
+
 } // namespace
 
 namespace USDUFE_NS_DEF {
@@ -35,15 +41,30 @@ UICallback::~UICallback() { }
 
 void registerUICallback(const PXR_NS::TfToken& operation, const UICallback::Ptr& uiCallback)
 {
-    getRegisteredUICallbacks()[operation] = uiCallback;
+    std::vector<UICallback::Ptr>& callbacks = getRegisteredUICallbacks()[operation];
+    callbacks.push_back(uiCallback);
 }
 
-UICallback::Ptr getUICallback(const PXR_NS::TfToken& operation)
+void unregisterUICallback(const PXR_NS::TfToken& operation, const UICallback::Ptr& uiCallback)
+{
+    std::vector<UICallback::Ptr>& callbacks = getRegisteredUICallbacks()[operation];
+    std::vector<UICallback::Ptr>  newCallbacks;
+    for (const UICallback::Ptr& cb : callbacks)
+        if (cb != uiCallback)
+            newCallbacks.emplace_back(cb);
+
+    if (newCallbacks.size() > 0)
+        getRegisteredUICallbacks()[operation] = newCallbacks;
+    else
+        getRegisteredUICallbacks().erase(operation);
+}
+
+const std::vector<UICallback::Ptr>& getUICallbacks(const PXR_NS::TfToken& operation)
 {
     UsdUfe::UICallbacks& uiCallbacks = getRegisteredUICallbacks();
 
     auto foundCallback = uiCallbacks.find(operation);
-    return (foundCallback == uiCallbacks.end()) ? nullptr : foundCallback->second;
+    return (foundCallback == uiCallbacks.end()) ? getEmptyCallbacks() : foundCallback->second;
 }
 
 } // namespace USDUFE_NS_DEF

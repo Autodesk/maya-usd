@@ -695,6 +695,7 @@ void UsdMayaWriteJobContext::MarkSkelBindings(
     const TfToken& config)
 {
     _skelBindingsProcessor->MarkBindings(path, skelPath, config);
+    _skelBindingsProcessor->SetRootPrimPath(mRootPrimPath);
 }
 
 bool UsdMayaWriteJobContext::UpdateSkelBindingsWithExtent(

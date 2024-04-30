@@ -43,6 +43,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(UsdTransform3dBase, UsdTransform3dPointInstance);
+
 UsdTransform3dPointInstance::UsdTransform3dPointInstance(const UsdSceneItem::Ptr& item)
     : UsdTransform3dBase(item)
 {

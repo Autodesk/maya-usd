@@ -25,6 +25,8 @@
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdUndoClearDefaultPrimCommand);
+
 UsdUndoClearDefaultPrimCommand::UsdUndoClearDefaultPrimCommand(const UsdPrim& prim)
     : Ufe::UndoableCommand()
     , _stage(prim.GetStage())
@@ -35,8 +37,6 @@ UsdUndoClearDefaultPrimCommand::UsdUndoClearDefaultPrimCommand(const PXR_NS::Usd
     : _stage(stage)
 {
 }
-
-UsdUndoClearDefaultPrimCommand::~UsdUndoClearDefaultPrimCommand() { }
 
 void UsdUndoClearDefaultPrimCommand::execute()
 {

@@ -92,12 +92,7 @@ bool isOrphaned(const Ufe::SceneItem::Ptr& mayaItem)
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-MayaUIInfoHandler::MayaUIInfoHandler()
-    : Ufe::UIInfoHandler()
-{
-}
-
-MayaUIInfoHandler::~MayaUIInfoHandler() { }
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::UIInfoHandler, MayaUIInfoHandler);
 
 /*static*/
 MayaUIInfoHandler::Ptr MayaUIInfoHandler::create() { return std::make_shared<MayaUIInfoHandler>(); }

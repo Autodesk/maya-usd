@@ -39,13 +39,8 @@ public:
     typedef std::shared_ptr<ProxyShapeContextOpsHandler> Ptr;
 
     ProxyShapeContextOpsHandler(const Ufe::ContextOpsHandler::Ptr& mayaContextOpsHandler);
-    ~ProxyShapeContextOpsHandler() override;
 
-    // Delete the copy/move constructors assignment operators.
-    ProxyShapeContextOpsHandler(const ProxyShapeContextOpsHandler&) = delete;
-    ProxyShapeContextOpsHandler& operator=(const ProxyShapeContextOpsHandler&) = delete;
-    ProxyShapeContextOpsHandler(ProxyShapeContextOpsHandler&&) = delete;
-    ProxyShapeContextOpsHandler& operator=(ProxyShapeContextOpsHandler&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ProxyShapeContextOpsHandler);
 
     //! Create a ProxyShapeContextOpsHandler from a UFE hierarchy handler.
     static ProxyShapeContextOpsHandler::Ptr

@@ -32,13 +32,8 @@ public:
 
     // Public for std::make_shared() access, use create() instead.
     UsdUndoVisibleCommand(const PXR_NS::UsdPrim& prim, bool vis);
-    ~UsdUndoVisibleCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUndoVisibleCommand(const UsdUndoVisibleCommand&) = delete;
-    UsdUndoVisibleCommand& operator=(const UsdUndoVisibleCommand&) = delete;
-    UsdUndoVisibleCommand(UsdUndoVisibleCommand&&) = delete;
-    UsdUndoVisibleCommand& operator=(UsdUndoVisibleCommand&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoVisibleCommand);
 
     //! Create a UsdUndoVisibleCommand object
     static UsdUndoVisibleCommand::Ptr create(const PXR_NS::UsdPrim& prim, bool vis);

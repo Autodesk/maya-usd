@@ -339,10 +339,7 @@ struct USDUFE_PUBLIC WaitCursor
             stopWaitCursor();
     }
 
-    WaitCursor(const WaitCursor&) = delete;
-    WaitCursor(WaitCursor&&) = delete;
-    WaitCursor& operator=(const WaitCursor&) = delete;
-    WaitCursor& operator=(WaitCursor&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(WaitCursor);
 
     const bool _showCursor;
 };

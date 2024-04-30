@@ -25,6 +25,8 @@
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdUndoVisibleCommand);
+
 UsdUndoVisibleCommand::UsdUndoVisibleCommand(const UsdPrim& prim, bool vis)
     : Ufe::UndoableCommand()
     , _prim(prim)
@@ -34,8 +36,6 @@ UsdUndoVisibleCommand::UsdUndoVisibleCommand(const UsdPrim& prim, bool vis)
     UsdGeomImageable           primImageable(prim);
     enforceAttributeEditAllowed(primImageable.GetVisibilityAttr());
 }
-
-UsdUndoVisibleCommand::~UsdUndoVisibleCommand() { }
 
 UsdUndoVisibleCommand::Ptr UsdUndoVisibleCommand::create(const UsdPrim& prim, bool vis)
 {

@@ -17,10 +17,10 @@ from .custom_image_control import customImageControlCreator
 from .attribute_custom_control import getNiceAttributeName
 from .attribute_custom_control import cleanAndFormatTooltip
 from .attribute_custom_control import AttributeCustomControl
+from .material_custom_control import MaterialCustomControl
 
 import collections
 import fnmatch
-from functools import partial
 import re
 import ufe
 import usdUfe
@@ -669,6 +669,7 @@ class AETemplate(object):
         self.attrS = ufe.Attributes.attributes(self.item)
         self.addedAttrs = []
         self.suppressedAttrs = []
+        self.hasConnectionObserver = False
 
         self.showArrayAttributes = False
         if cmds.optionVar(exists="mayaUSD_AEShowArrayAttributes"):
@@ -789,9 +790,9 @@ class AETemplate(object):
 
     def createShaderAttributesSection(self):
         """Use an AEShaderLayout tool to populate the shader section"""
-        # Add a custom control to monitor for connection changed.
-        cnxObs = UfeConnectionChangedObserver(self.item)
-        self.defineCustom(cnxObs)
+        # Add a custom control to monitor for connection changed
+        # in order for the UI to update itself when the shader is modified.
+        self.addConnectionObserver()
         # Hide all outputs:
         for name in self.attrS.attributeNames:
             if UsdShade.Utils.GetBaseNameAndType(name)[1] == UsdShade.AttributeType.Output:
@@ -800,6 +801,14 @@ class AETemplate(object):
         layout = AEShaderLayout(self.item).get()
         if layout:
             self.addShaderLayout(layout)
+
+    def addConnectionObserver(self):
+        '''Add a connection observer if one has not yet been added.'''
+        if self.hasConnectionObserver:
+            return
+        self.hasConnectionObserver = True
+        obs = UfeConnectionChangedObserver(self.item)
+        self.defineCustom(obs)
 
     def createTransformAttributesSection(self, sectionName, attrsToAdd):
         # Get the xformOp order and add those attributes (in order)
@@ -920,9 +929,23 @@ class AETemplate(object):
 
         self.suppressArrayAttribute()
 
+        # Track if we already added a connection observer.
+        self.hasConnectionObserver = False
+
+        # Material has NodeGraph as base. We want to process once for both schema types:
+        hasProcessedMaterial = False
+
+        # We want material to be either after the mesh section of the Xformable section,
+        # whichever comes first, so that it is not too far down in the AE.
+        self.addedMaterialSection = False
+        primTypeName = self.sectionNameFromSchema(self.prim.GetTypeName())
+        def addMatSection():
+            if not self.addedMaterialSection:
+                self.addedMaterialSection = True
+                self.createMaterialAttributeSection()
+
         # We use UFE for the ancestor node types since it caches the
         # results by node type.
-        hasProcessedMaterial = False
         for schemaType in self.item.ancestorNodeTypes():
             schemaType = usdSch.GetTypeFromName(schemaType)
             schemaTypeName = schemaType.typeName
@@ -936,6 +959,8 @@ class AETemplate(object):
                     # Shader attributes are special
                     self.createShaderAttributesSection()
                     hasProcessedMaterial = True
+                    # Note: don't show the material section for materials.
+                    self.addedMaterialSection = True
                 # We have a special case when building the Xformable section.
                 elif schemaTypeName == 'UsdGeomXformable':
                     self.createTransformAttributesSection(sectionName, attrsToAdd)
@@ -944,6 +969,25 @@ class AETemplate(object):
                                           'Imageable', 'Field Asset', 'Light']
                     collapse = sectionName in sectionsToCollapse
                     self.createSection(sectionName, attrsToAdd, collapse)
+
+                if sectionName == primTypeName:
+                    addMatSection()
+        
+        # In case there was neither a Mesh nor Xformable section, add material section now.
+        addMatSection()        
+
+    def createMaterialAttributeSection(self):
+        if not UsdShade.MaterialBindingAPI.CanApply(self.prim):
+            return
+        matAPI = UsdShade.MaterialBindingAPI(self.prim)
+        mat, _ = matAPI.ComputeBoundMaterial()
+        if not mat:
+            return
+        layoutName = getMayaUsdLibString('kLabelMaterial')
+        collapse = True
+        with ufeAeTemplate.Layout(self, layoutName, collapse):
+            createdControl = MaterialCustomControl(self.item, self.prim, self.useNiceName)
+        self.defineCustom(createdControl)
 
     def suppressArrayAttribute(self):
         # Suppress all array attributes.
@@ -963,6 +1007,10 @@ class AETemplate(object):
         kFilenameAttr = ufe.Attribute.kFilename if hasattr(ufe.Attribute, "kFilename") else 'Filename'
         if self.attrS.attributeType(attrName) != kFilenameAttr:
             return False
+        shader = UsdShade.Shader(self.prim)
+        if shader and attrName.startswith("inputs:"):
+            # Shader attribute. The actual USD Attribute might not exist yet.
+            return True
         attr = self.prim.GetAttribute(attrName)
         if not attr:
             return False

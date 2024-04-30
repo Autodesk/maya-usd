@@ -75,6 +75,9 @@ def GetReferenceAssemblies(parentNodes=None):
     """
     ASSEMBLY_NODE_TYPE = 'pxrUsdReferenceAssembly'
 
+    if not cmds.pluginInfo('pxrUsd', query=True, loaded=True):
+        return []
+
     if parentNodes:
         refAssemblies = cmds.ls(parentNodes, dagObjects=True, long=True,
             type=ASSEMBLY_NODE_TYPE)

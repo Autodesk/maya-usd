@@ -24,6 +24,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdTransform3dReadImpl);
+
 UsdTransform3dReadImpl::UsdTransform3dReadImpl(const UsdSceneItem::Ptr& item)
     : fItem(item)
     , fPrim(item->prim())
