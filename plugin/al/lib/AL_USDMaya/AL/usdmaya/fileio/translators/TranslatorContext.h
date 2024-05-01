@@ -18,7 +18,8 @@
 #include <AL/usdmaya/Api.h>
 #include <AL/usdmaya/DebugCodes.h>
 #include <AL/usdmaya/ForwardDeclares.h>
-#include <mayaUsdUtils/ForwardDeclares.h>
+
+#include <usdUfe/base/forwardDeclares.h>
 
 #include <pxr/base/tf/debug.h>
 #include <pxr/base/tf/refPtr.h>

@@ -224,7 +224,7 @@ function(pxr_register_test TEST_NAME)
         cmake_parse_arguments(bt
             "RUN_SERIAL;PYTHON;REQUIRES_SHARED_LIBS;REQUIRES_PYTHON_MODULES"
             "CUSTOM_PYTHON;COMMAND;STDOUT_REDIRECT;STDERR_REDIRECT;DIFF_COMPARE;POST_COMMAND;POST_COMMAND_STDOUT_REDIRECT;POST_COMMAND_STDERR_REDIRECT;PRE_COMMAND;PRE_COMMAND_STDOUT_REDIRECT;PRE_COMMAND_STDERR_REDIRECT;FILES_EXIST;FILES_DONT_EXIST;CLEAN_OUTPUT;EXPECTED_RETURN_CODE;TESTENV"
-            "ENV;PRE_PATH;POST_PATH"
+            "ENV;PRE_PATH;POST_PATH;WIN_DLL_PATH"
             ${ARGN}
         )
 
@@ -342,6 +342,14 @@ function(pxr_register_test TEST_NAME)
             foreach(path ${bt_POST_PATH})
                 set(testWrapperCmd ${testWrapperCmd} --post-path=${path})
             endforeach()
+        endif()
+
+        if(WIN32)
+            if (bt_WIN_DLL_PATH)
+                foreach(path ${bt_WIN_DLL_PATH})
+                    set(testWrapperCmd ${testWrapperCmd} --win-dll-path=${path})
+                endforeach()
+            endif()
         endif()
 
         # Look for resource files in the "usd" subdirectory relative to the

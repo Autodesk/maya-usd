@@ -13,10 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "DiffCore.h"
-#include "DiffPrims.h"
+#include "diffPrims.h"
 
-namespace MayaUsdUtils {
+#include <usdUfe/utils/diffCore.h>
+
+namespace USDUFE_NS_DEF {
 
 using UsdRelationship = PXR_NS::UsdRelationship;
 using TfToken = PXR_NS::TfToken;
@@ -47,4 +48,4 @@ DiffResultPerPath compareRelationships(
     return compareLists<SdfPath>(modifiedTargets, baselineTargets, quickDiff);
 }
 
-} // namespace MayaUsdUtils
+} // namespace USDUFE_NS_DEF

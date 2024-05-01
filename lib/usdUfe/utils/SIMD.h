@@ -59,7 +59,7 @@
 #define ENABLE_SOME_AVX_ROUTINES 1
 #endif
 
-namespace MayaUsdUtils {
+namespace USDUFE_NS_DEF {
 
 #if defined(__SSE__)
 typedef __m128  f128;
@@ -557,4 +557,4 @@ inline f128 loadmask3f(const void* const ptr, size_t count)
 }
 #endif
 
-} // namespace MayaUsdUtils
+} // namespace USDUFE_NS_DEF

@@ -1,5 +1,5 @@
 //
-// Copyright 2021 Autodesk
+// Copyright 2024 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,13 +15,13 @@
 //
 #pragma once
 
-#include <mayaUsdUtils/Api.h>
+#include <usdUfe/base/api.h>
 
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/dictionary.h>
 
-namespace MayaUsdUtils {
+namespace USDUFE_NS_DEF {
 
 //----------------------------------------------------------------------------------------------------------------------
 /// MergeVerbosity level flags.
@@ -145,16 +145,16 @@ struct MergePrimsOptions
     MergeMissing primMetadataHandling { MergeMissing::All };
 
     // Create a VtDictionary containing the default values for the merge options.
-    MAYA_USD_UTILS_PUBLIC
+    USDUFE_PUBLIC
     static const PXR_NS::VtDictionary& getDefaultDictionary();
 
     // Constructs a MergePrimsOptions with the given options.
     // Not all options need to be filled, missing ones will use the defaults.
-    MAYA_USD_UTILS_PUBLIC
+    USDUFE_PUBLIC
     MergePrimsOptions(const PXR_NS::VtDictionary& options);
 
     // Constructs a MergePrimsOptions with the default options.
-    MAYA_USD_UTILS_PUBLIC
+    USDUFE_PUBLIC
     MergePrimsOptions();
 };
 
@@ -162,7 +162,7 @@ struct MergePrimsOptions
 // Options tokens used in the default options dictionary.
 
 // clang-format off
-#define USDMAYA_MERGE_OPTIONS_TOKENS    \
+#define USDUFE_MERGE_OPTIONS_TOKENS    \
     /* Dictionary keys */               \
     (verbosity)                         \
                                         \
@@ -200,9 +200,6 @@ struct MergePrimsOptions
 // so we're forced to use the types it uses here.
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_DECLARE_PUBLIC_TOKENS(
-    UsdMayaMergeOptionsTokens,
-    MAYA_USD_UTILS_PUBLIC,
-    USDMAYA_MERGE_OPTIONS_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(MergeOptionsTokens, USDUFE_PUBLIC, USDUFE_MERGE_OPTIONS_TOKENS);
 
-} // namespace MayaUsdUtils
+} // namespace USDUFE_NS_DEF

@@ -11,6 +11,8 @@ In most cases, ADSK_USDMaya could be a drop-in replacement for AL_USDMaya.
 
 Please note that this documentation is not a complete feature comparison of AL_USDMaya and ADSK_USDMaya but mainly focuses on migration from one to another.
 
+For a complete introduction of ADSK_USDMaya, please visit Autodesk's help page [here](https://help.autodesk.com/view/MAYAUL/2025/ENU/?guid=GUID-9E9D45F2-4DA9-497B-8D69-1573ED6B2BA8); for the detail instructions how to install latest release of ADSK_USDMaya, please visit [here](https://help.autodesk.com/view/MAYAUL/2025/ENU/?guid=GUID-8FB49D7F-8651-47CE-80FC-5C940E568C97).
+
 [^1] To distinguish Animal Logic's version and Autodesk's version, we call Autodesk's version "ADSK_USDMaya" for convenience.
 
 [^2] This documentation is written based on the current latest release of `maya-usd-v0.27.0`.
@@ -41,7 +43,7 @@ There is no equivalent nodes like these to [drive transformation and animation f
 
 - `AL_usd_ProxyUsdGeomCamera`
 
-This node works similar as MayaUsd ProxyAccessor but for camera, in ADSK_USDMaya, there is native support of USD camera via the [Ufe::Camera interface](https://github.com/Autodesk/maya-usd/blob/release/v0.27.0/lib/usdUfe/ufe/UsdCamera.h#L30), USD camera (and derived schema cameras) could be interacted like other Maya cameras without any problem.
+This node works similar as MayaUsd ProxyAccessor but for camera, in ADSK_USDMaya, there is native support of USD camera via the [Ufe::Camera interface](https://github.com/Autodesk/maya-usd/blob/release/v0.27.0/lib/usdUfe/ufe/UsdCamera.h#L30) since version [0.18.0](https://help.autodesk.com/view/MAYAUL/2025/ENU/?guid=GUID-985DE87C-E902-49BC-A47D-5699498C4F32), USD camera (and derived schema cameras) could be interacted like other Maya cameras but with some limitations, for instance when viewing through a USD camera you cannot use the panning, zoom, and dolly.
 
 ### USD Stage Creation
 
@@ -75,14 +77,14 @@ Both of proxy shapes support locking prims by inserting a special metadata but n
 There is no exact equivalent approach in ADSK_USDMaya comparing with AL_USDMaya, the alternatives could be:
 
 - Insert `mayaLock` metadata in all prims hierarchically;
-- OR [Assign prims as Display Layers](https://help.autodesk.com/view/MAYAUL/2024/ENU/?guid=GUID-C52465E4-FA5F-46AF-A186-E20ABEDD9BF2)
+- OR [Assign prims as Display Layers](https://help.autodesk.com/view/MAYAUL/2025/ENU/?guid=GUID-C52465E4-FA5F-46AF-A186-E20ABEDD9BF2)
 
 ### Prim Selectability
 
 | | AL_USDMaya | ADSK_USDMaya |
 | --- | --- | --- |
 | Doc | [See here](https://github.com/Autodesk/maya-usd/blob/release/v0.27.0/plugin/al/tutorials/selectability/README.md) | |
-| Control via | Prim metadata<br>`al_usdmaya_selectability` | Maya [Display Layer](https://help.autodesk.com/view/MAYAUL/2024/ENU/?guid=GUID-C52465E4-FA5F-46AF-A186-E20ABEDD9BF2) (available since **2023.2** or above) |
+| Control via | Prim metadata<br>`al_usdmaya_selectability` | Maya [Display Layer](https://help.autodesk.com/view/MAYAUL/2025/ENU/?guid=GUID-C52465E4-FA5F-46AF-A186-E20ABEDD9BF2) (available since **2023.2** or above) |
 | Applies To | Individual Prim | Individual Prim |
 | Example | def Xform "geo" (<br>&nbsp;&nbsp;&nbsp;&nbsp;al_usdmaya_selectability = "unselectable"<br>)<br>{<br>} | |
 | Effectiveness | Affects the current prim and all its descendants | Affects the current prim and all its descendants |
@@ -93,7 +95,7 @@ Note that for instances, there is a metadata "mayaSelectability" to [control](ht
 
 | | AL_USDMaya | ADSK_USDMaya |
 | --- | --- | --- |
-| Doc | | [See here](https://help.autodesk.com/view/MAYAUL/2024/ENU/?guid=GUID-532E99C9-F638-49E3-9483-800FDB9B65D7) |
+| Doc | | [See here](https://help.autodesk.com/view/MAYAUL/2025/ENU/?guid=GUID-532E99C9-F638-49E3-9483-800FDB9B65D7) |
 | Maya `optionVar` | `AL_usdmaya_pickMode` (enum) | `mayaUsd_SelectionKind` (string) |
 | Note | AL_USDMaya no longer supports this optionVar since moving forward to **VP2RenderDelegate** for sub-scene override.| |
 
@@ -101,7 +103,7 @@ Note that for instances, there is a metadata "mayaSelectability" to [control](ht
 
 ### Push/pull workflow (Edit-As-Maya workflow)
 
-AL_USDMaya has a custom Maya command `AL_usdmaya_TranslatePrim` (see [Commands](#commands) below) to "Push to Maya" and "Pull to USD" to edit geometries in Maya; the alternative in ADSK_USDMaya the new ["Edit As Maya"](https://help.autodesk.com/view/MAYAUL/2024/ENU/?guid=GUID-C1C08BA5-24EA-44FF-9497-71E0A6843744) workflow to author geometries (and materials).
+AL_USDMaya has a custom Maya command `AL_usdmaya_TranslatePrim` (see [Commands](#commands) below) to "Push to Maya" and "Pull to USD" to edit geometries in Maya; the alternative in ADSK_USDMaya the new ["Edit As Maya"](https://help.autodesk.com/view/MAYAUL/2025/ENU/?guid=GUID-C1C08BA5-24EA-44FF-9497-71E0A6843744) workflow to author geometries (and materials).
 
 ### Translator Plugin System
 
@@ -126,7 +128,7 @@ ADSK_USDMaya has a clear separation of:
 
   - [`PrimUpdater` plugin](https://github.com/Autodesk/maya-usd/blob/release/v0.27.0/lib/mayaUsd/fileio/primUpdaterRegistry.h#L34-L60)
   - Static mapping of USD data type and Maya data type
-  - Will be used for the ["Edit As Maya"](https://help.autodesk.com/view/MAYAUL/2024/ENU/?guid=GUID-C1C08BA5-24EA-44FF-9497-71E0A6843744) workflow
+  - Will be used for the ["Edit As Maya"](https://help.autodesk.com/view/MAYAUL/2025/ENU/?guid=GUID-C1C08BA5-24EA-44FF-9497-71E0A6843744) workflow
 
 - Import data from USD to Maya
 
@@ -187,7 +189,7 @@ Example MEL function `mayaUsd_createStageFromFilePath` bundled in ADSK_USDMaya c
 
 #### `AL_usdmaya_TranslatePrim`
 
-ADSK_USDMaya introduced a new ["Edit As Maya"](https://help.autodesk.com/view/MAYAUL/2024/ENU/?guid=GUID-C1C08BA5-24EA-44FF-9497-71E0A6843744) workflow to exchange data between USD and Maya, there are two equivalent Maya commands to push / pull USD data to/from Maya:
+ADSK_USDMaya introduced a new ["Edit As Maya"](https://help.autodesk.com/view/MAYAUL/2025/ENU/?guid=GUID-C1C08BA5-24EA-44FF-9497-71E0A6843744) workflow to exchange data between USD and Maya, there are two equivalent Maya commands to push / pull USD data to/from Maya:
 
 - `mayaUsdEditAsMaya`
   - Equivalent implementation of AL's `AL_usdmaya_TranslatPrim` where "importPaths" or "updatePaths" or "forceImport" flag is being used, a.k.a "Push to Maya"
@@ -195,7 +197,7 @@ ADSK_USDMaya introduced a new ["Edit As Maya"](https://help.autodesk.com/view/MA
 - `mayaUsdMergeToUsd`
   - Equivalent implementation of AL's `AL_usdmaya_TranslatPrim` where "teardownPaths" flag is being used, a.k.a "Pull to USD"
 
-For more info about this new workflow in Maya, see the official ["Edit As Maya"](https://help.autodesk.com/view/MAYAUL/2024/ENU/?guid=GUID-C1C08BA5-24EA-44FF-9497-71E0A6843744) workflow doc.
+For more info about this new workflow in Maya, see the official ["Edit As Maya"](https://help.autodesk.com/view/MAYAUL/2025/ENU/?guid=GUID-C1C08BA5-24EA-44FF-9497-71E0A6843744) workflow doc.
 
 If you have translators implemented for AL_USDMaya:
 
@@ -229,7 +231,7 @@ No equivalent command in ADSK_USDMaya, recommends managing transform nodes with 
 
 ### AL Event System and Callbacks Commands
 
-AL_USDMaya implemented a custom event system (see [Core Event System](https://github.com/Autodesk/maya-usd/blob/release/v0.27.0/plugin/al/lib/AL_USDMaya/AL/docpages/docs_events.h) and [Maya Event System](https://github.com/Autodesk/maya-usd/blob/release/v0.27.0/plugin/al/lib/AL_USDMaya/AL/docpages/docs_mayaevents.h)) to group and prioritize global and per-node callback, there is no equivalent in ADSK_USDMaya, however, all of them can be easily reimplemented by native Maya [MMessage](https://help.autodesk.com/view/MAYAUL/2024/ENU/?guid=MAYA_API_REF_cpp_ref_class_m_message_html).
+AL_USDMaya implemented a custom event system (see [Core Event System](https://github.com/Autodesk/maya-usd/blob/release/v0.27.0/plugin/al/lib/AL_USDMaya/AL/docpages/docs_events.h) and [Maya Event System](https://github.com/Autodesk/maya-usd/blob/release/v0.27.0/plugin/al/lib/AL_USDMaya/AL/docpages/docs_mayaevents.h)) to group and prioritize global and per-node callback, there is no equivalent in ADSK_USDMaya, however, all of them can be easily reimplemented by native Maya [MMessage](https://help.autodesk.com/view/MAYADEV/2025/ENU/?guid=MAYA_API_REF_cpp_ref_class_m_message_html).
 
 Commands below have no equivalent in ADSK_USDMaya, we recommend to reimplement with native Maya MMessage API and manage the callbacks and events separately (in your code):
 
@@ -251,14 +253,38 @@ Commands below have no equivalent in ADSK_USDMaya, we recommend to reimplement w
 
 This command allows you to query dirty layers currently managed by LayerManager in AL_USDMaya, there is no equivalent command in ADSK_USDMaya, we recommend querying dirty layers via native USD API.
 
+#### `AL_usdmaya_LayerCreateLayer`
+
+This command opens a new Sdf layer from path (with `-o` flag) or creates a new anonymous layer (without `-o` flag), and inserts as a sub layer into the root layer (with `-s` flag).
+
+Equivalent command and example usage in ADSK_USDMaya:
+
+- Create and insert a new anonymous layer into existing layer:
+  - **mayaUsdLayerEditor** -edit -addAnonymous  "new_anon_layer_id" "existing_parent_layer_id";
+- Open and insert the new layer as the strongest layer (index `0`) into existing layer:
+  - **mayaUsdLayerEditor** -edit -insertSubPath 0  "/path/to/layer/file.usd" "existing_parent_layer_id";
+
+ADSK_USDMaya provides both an [UI interface](https://help.autodesk.com/view/MAYAUL/2025/ENU/?guid=GUID-4FAD73CA-E775-4009-9DCB-3BC6792C465E) and [command line interface](https://github.com/Autodesk/maya-usd/blob/release/v0.27.0/lib/mayaUsd/commands/layerEditorCommand.cpp#L831-L868) to manage USD layers, it has more features and options compared to AL_USDMaya, please refer to the links for other usages.
+
+Recommend to use either native USD API or ADSK_USDMaya's **mayaUsdLayerEditor** command.
+
+#### `AL_usdmaya_LayerCurrentEditTarget`
+
+ADSK_USDMaya has similar command to get/set edit target but for **local layer** only:
+
+- **mayaUsdEditTarget** -q -et "|usdTest|usdTestShape";
+- **mayaUsdEditTarget** -e -et "target_layer_id" "|usdTest|usdTestShape";
+
+`AL_usdmaya_LayerCurrentEditTarget` commands support setting edit targets to be a non-local layer, however, it is limited for references, it does not take into account sub layers in references and nested references.
+
+We recommend using native USD API for non-local edit target layer cases until there is better support in ADSK_USDMaya.
+
 Following commands are wrappers around USD APIs, there is no equivalent commands in ADSK_USDMaya, recommend switching over to native USD APIs:
 
 - `AL_usdmaya_ChangeVariant`
 - `AL_usdmaya_ActivatePrim`
 - `AL_usdmaya_CreateUsdPrim`
-- `AL_usdmaya_LayerCreateLayer`
 - `AL_usdmaya_LayerGetLayers`
-- `AL_usdmaya_LayerCurrentEditTarget`
 - `AL_usdmaya_LayerSave`
 - `AL_usdmaya_LayerSaveMuted`
 

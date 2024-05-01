@@ -20,7 +20,6 @@
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/loadRules.h>
-#include <mayaUsdUtils/MergePrims.h>
 
 #include <usdUfe/base/tokens.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
@@ -28,6 +27,7 @@
 #include <usdUfe/utils/editRouterContext.h>
 #include <usdUfe/utils/layers.h>
 #include <usdUfe/utils/loadRules.h>
+#include <usdUfe/utils/mergePrims.h>
 #include <usdUfe/utils/usdUtils.h>
 
 #include <pxr/base/tf/token.h>
@@ -114,8 +114,8 @@ void UsdUndoDuplicateCommand::execute()
     SdfPrimSpecHandleVector authLayerAndPaths = getDefiningPrimStack(prim);
     std::reverse(authLayerAndPaths.begin(), authLayerAndPaths.end());
 
-    MayaUsdUtils::MergePrimsOptions options;
-    options.verbosity = MayaUsdUtils::MergeVerbosity::None;
+    UsdUfe::MergePrimsOptions options;
+    options.verbosity = UsdUfe::MergeVerbosity::None;
     options.mergeChildren = true;
     bool isFirst = true;
 
@@ -124,7 +124,7 @@ void UsdUndoDuplicateCommand::execute()
         const auto path = layerAndPath->GetPath();
         const bool result = isFirst
             ? SdfCopySpec(layer, path, _dstLayer, _usdDstPath)
-            : mergePrims(stage, layer, path, stage, _dstLayer, _usdDstPath, options);
+            : UsdUfe::mergePrims(stage, layer, path, stage, _dstLayer, _usdDstPath, options);
 
         TF_VERIFY(
             result,

@@ -177,6 +177,11 @@ global proc mayaUSDRegisterStrings()
     register("kExportMaterialsDefaultScopeName", "mtl");
     register("kExportMergeShapesAnn", "Merges Maya transform and shape nodes into a single USD prim.");
     register("kExportMergeShapesLbl", "Merge Transform and Shape Nodes");
+    register("kExportIncludeEmptyTransformsAnn", "If selected, transforms that don't contain objects other\n" +
+                                                 "than transforms will be included as part of the export\n" +
+                                                 "(ex: empty groups, or groups that contain empty groups,\n" +
+                                                 "and so on).");
+    register("kExportIncludeEmptyTransformsLbl", "Include Empty Transforms");
     register("kExportNamespacesAnn", "By default, namespaces are exported to the USD file in the following format: nameSpaceExample_pPlatonic1");
     register("kExportNamespacesLbl", "Include Namespaces");
     register("kExportWorldspaceAnn", "Exports the root prims with their worldspace transform instead of their local transform.");

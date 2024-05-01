@@ -1,0 +1,15 @@
+{
+  "Plugins": [
+    {
+      "Info": {
+        "UsdMaya": {
+            "UsdExport": {
+                "chaser": ["AddPayloadOrRefChaser"]
+          }
+        }
+      },
+      "Name": "AddPayloadOrRefChaser",
+      "Type": "resource"
+    }
+  ]
+}

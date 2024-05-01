@@ -88,6 +88,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (file) \
     (filterTypes) \
     (ignoreWarnings) \
+    (includeEmptyTransforms) \
     (kind) \
     (disableModelKindProcessor) \
     (materialCollectionsPath) \
@@ -221,6 +222,7 @@ struct UsdMayaJobExportArgs
     const bool        exportComponentTags;
     const std::string file;
     const bool        ignoreWarnings;
+    const bool        includeEmptyTransforms;
 
     /// If this is not empty, then a set of collections are exported on the
     /// prim pointed to by the path, each representing the collection of

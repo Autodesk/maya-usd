@@ -61,6 +61,7 @@ typedef bool (*IsRootChildFn)(const Ufe::Path& path);
 typedef std::string (*UniqueChildNameFn)(const PXR_NS::UsdPrim& usdParent, const std::string& name);
 typedef void (*DisplayMessageFn)(const std::string& msg);
 typedef void (*WaitCursorFn)();
+typedef std::string (*DefaultMaterialScopeNameFn)();
 
 //------------------------------------------------------------------------------
 // Helper functions
@@ -198,6 +199,13 @@ std::string uniqueChildNameDefault(const PXR_NS::UsdPrim& parent, const std::str
 //! Return a unique SdfPath by looking at existing siblings under the path's parent.
 USDUFE_PUBLIC
 PXR_NS::SdfPath uniqueChildPath(const PXR_NS::UsdStage& stage, const PXR_NS::SdfPath& path);
+
+USDUFE_PUBLIC
+Ufe::Path appendToUsdPath(const Ufe::Path& path, const std::string& name);
+
+//! Returns true if \p item is a materials scope.
+USDUFE_PUBLIC
+bool isMaterialsScope(const Ufe::SceneItem::Ptr& item);
 
 //! Support message types.
 enum class MessageType
@@ -395,5 +403,21 @@ struct USDUFE_PUBLIC WaitCursor
 
     const bool _showCursor;
 };
+
+//! Set the DCC specific default material scope name function.
+//! Use of this function is optional, if one is not supplied then
+//! a default name will be used.
+
+USDUFE_PUBLIC
+void setDefaultMaterialScopeNameFn(DefaultMaterialScopeNameFn fn);
+
+//! Returns the default material scope name.
+USDUFE_PUBLIC
+std::string defaultMaterialScopeName();
+
+// Search the parent Material of the item, comparing the type name.
+// In the case item is a material, return item itself.
+USDUFE_PUBLIC
+UsdSceneItem::Ptr getParentMaterial(const UsdSceneItem::Ptr& item);
 
 } // namespace USDUFE_NS_DEF

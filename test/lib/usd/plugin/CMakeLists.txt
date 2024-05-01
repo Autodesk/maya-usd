@@ -271,3 +271,11 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/plugInfoSiteSpecificConfig.json"
                "${CMAKE_CURRENT_BINARY_DIR}/SiteSpecificConfig/plugInfo.json"
 )
 
+# -----------------------------------------------------------------------------
+# Export empty tests (testUsdExportEmptyXforms.py):
+# -----------------------------------------------------------------------------
+
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/plugInfoExportEmptyConfig.json"
+               "${CMAKE_CURRENT_BINARY_DIR}/ExportEmptyConfig/plugInfo.json"
+)
+

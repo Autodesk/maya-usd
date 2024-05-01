@@ -75,6 +75,22 @@ if (UFE_CAMERA_HAS_RENDERABLE)
     )
 endif()
 
+if (UFE_CLIPBOARD_SUPPORT)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            UsdClipboard.cpp
+            UsdClipboardCommands.cpp
+            UsdClipboardHandler.cpp
+            UsdUndoDuplicateCommand.cpp
+            UsdUndoDuplicateSelectionCommand.cpp
+    )
+
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+            UFE_CLIPBOARD_SUPPORT=1
+    )
+endif()
+
 if (UFE_ATTRIBUTES_GET_ENUMS)
     target_compile_definitions(${PROJECT_NAME}
     PRIVATE
@@ -141,6 +157,16 @@ if (UFE_SCENEITEM_HAS_METADATA)
     list(APPEND HEADERS
 		UsdUndoClearSceneItemMetadataCommand.h
 		UsdUndoSetSceneItemMetadataCommand.h
+    )
+endif()
+
+if (UFE_CLIPBOARD_SUPPORT)
+    list(APPEND HEADERS
+        UsdClipboard.h
+        UsdClipboardCommands.h
+        UsdClipboardHandler.h
+        UsdUndoDuplicateCommand.h
+        UsdUndoDuplicateSelectionCommand.h
     )
 endif()
 

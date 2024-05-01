@@ -121,6 +121,16 @@ if(USD_INCLUDE_DIR)
     endif()
 endif()
 
+# See if USD changetracker has instance count.
+set(USD_HAS_TRACKER_INSTANCE_COUNT FALSE CACHE INTERNAL "USD.Track.InstanceCount")
+if (USD_INCLUDE_DIR AND EXISTS "${USD_INCLUDE_DIR}/pxr/imaging/hd/changeTracker.h")
+    file(STRINGS ${USD_INCLUDE_DIR}/pxr/imaging/hd/changeTracker.h USD_HAS_API REGEX "GetInstanceIndicesChangeCount")
+    if(USD_HAS_API)
+        set(USD_HAS_TRACKER_INSTANCE_COUNT TRUE CACHE INTERNAL "USD.Track.InstanceCount")
+        message(STATUS "USD has tracker instance count")
+    endif()
+endif()
+
 # See if MaterialX shaders with color4 inputs exist natively in Sdr:
 # Not yet in a tagged USD version: https://github.com/PixarAnimationStudios/USD/pull/1894
 set(USD_HAS_COLOR4_SDR_SUPPORT FALSE CACHE INTERNAL "USD.Sdr.PropertyTypes.Color4")

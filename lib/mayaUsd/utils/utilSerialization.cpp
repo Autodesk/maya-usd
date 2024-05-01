@@ -344,7 +344,7 @@ bool saveLayerWithFormat(
         }
     } else {
         PXR_NS::SdfFileFormat::FileFormatArguments args;
-        args["format"] = formatArg;
+        args[UsdUsdFileFormatTokens->FormatArg] = formatArg;
         if (!layer->Export(filePath, "", args)) {
             return false;
         }

@@ -104,16 +104,17 @@ uint32_t findLayerIndex(const UsdPrim& prim, const SdfLayerHandle& layer)
 
 int gWaitCursorCount = 0;
 
-UsdUfe::StageAccessorFn      gStageAccessorFn = nullptr;
-UsdUfe::StagePathAccessorFn  gStagePathAccessorFn = nullptr;
-UsdUfe::UfePathToPrimFn      gUfePathToPrimFn = nullptr;
-UsdUfe::TimeAccessorFn       gTimeAccessorFn = nullptr;
-UsdUfe::IsAttributeLockedFn  gIsAttributeLockedFn = nullptr;
-UsdUfe::SaveStageLoadRulesFn gSaveStageLoadRulesFn = nullptr;
-UsdUfe::IsRootChildFn        gIsRootChildFn = nullptr;
-UsdUfe::UniqueChildNameFn    gUniqueChildNameFn = nullptr;
-UsdUfe::WaitCursorFn         gStartWaitCursorFn = nullptr;
-UsdUfe::WaitCursorFn         gStopWaitCursorFn = nullptr;
+UsdUfe::StageAccessorFn            gStageAccessorFn = nullptr;
+UsdUfe::StagePathAccessorFn        gStagePathAccessorFn = nullptr;
+UsdUfe::UfePathToPrimFn            gUfePathToPrimFn = nullptr;
+UsdUfe::TimeAccessorFn             gTimeAccessorFn = nullptr;
+UsdUfe::IsAttributeLockedFn        gIsAttributeLockedFn = nullptr;
+UsdUfe::SaveStageLoadRulesFn       gSaveStageLoadRulesFn = nullptr;
+UsdUfe::IsRootChildFn              gIsRootChildFn = nullptr;
+UsdUfe::UniqueChildNameFn          gUniqueChildNameFn = nullptr;
+UsdUfe::WaitCursorFn               gStartWaitCursorFn = nullptr;
+UsdUfe::WaitCursorFn               gStopWaitCursorFn = nullptr;
+UsdUfe::DefaultMaterialScopeNameFn gGetDefaultMaterialScopeNameFn = nullptr;
 
 UsdUfe::DisplayMessageFn gDisplayMessageFn[static_cast<int>(UsdUfe::MessageType::nbTypes)]
     = { nullptr };
@@ -399,6 +400,50 @@ SdfPath uniqueChildPath(const UsdStage& stage, const SdfPath& path)
         return path;
 
     return path.ReplaceName(TfToken(uniqueName));
+}
+bool isMaterialsScope(const Ufe::SceneItem::Ptr& item)
+{
+    if (!item) {
+        return false;
+    }
+
+    // Must be a scope.
+    if (item->nodeType() != "Scope") {
+        return false;
+    }
+
+    // With the magic name.
+    if (item->nodeName() == defaultMaterialScopeName()) {
+        return true;
+    }
+
+    // Or with only materials inside
+    auto scopeHierarchy = Ufe::Hierarchy::hierarchy(item);
+    if (scopeHierarchy) {
+        for (auto&& child : scopeHierarchy->children()) {
+            if (child->nodeType() != "Material") {
+                // At least one non material
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+Ufe::Path appendToUsdPath(const Ufe::Path& path, const std::string& name)
+{
+    // Assumption is that either
+    // - the input path is comprised of multiple segments with the last segment being USD.
+    // - single segment path, in which case we append a USD segment.
+    if (1 == path.getSegments().size()) {
+        return (path + Ufe::PathSegment(Ufe::PathComponent(name), UsdUfe::getUsdRunTimeId(), '/'));
+    } else if (path.runTimeId() == UsdUfe::getUsdRunTimeId()) {
+        return (path + name);
+    }
+
+    // Input path wasn't of expected type, just return it without appending.
+    return path;
 }
 
 void setDisplayMessageFn(const DisplayMessageFn fns[static_cast<int>(MessageType::nbTypes)])
@@ -1268,6 +1313,41 @@ void stopWaitCursor()
 
     if (gWaitCursorCount == 0)
         gStopWaitCursorFn();
+}
+
+void setDefaultMaterialScopeNameFn(DefaultMaterialScopeNameFn fn)
+{
+    // This function is allowed to be null in which case a default
+    // material scope name of "mtl" will be used.
+    gGetDefaultMaterialScopeNameFn = fn;
+}
+
+std::string defaultMaterialScopeName()
+{
+    // Default material scope name as defined by USD Assets working group.
+    // See https://wiki.aswf.io/display/WGUSD/Guidelines+for+Structuring+USD+Assets
+    static constexpr auto kDefaultMaterialScopeName = "mtl";
+    return gGetDefaultMaterialScopeNameFn ? gGetDefaultMaterialScopeNameFn()
+                                          : kDefaultMaterialScopeName;
+}
+
+UsdSceneItem::Ptr getParentMaterial(const UsdSceneItem::Ptr& item)
+{
+    if (!item) {
+        return {};
+    }
+
+    const TfToken kMaterial = TfToken("Material");
+
+    auto prim = item->prim();
+    auto path = item->path();
+
+    while (prim.GetTypeName() != kMaterial && prim.GetParent().IsValid()) {
+        path = path.pop();
+        prim = prim.GetParent();
+    }
+
+    return prim.GetTypeName() == kMaterial ? UsdSceneItem::create(path, prim) : nullptr;
 }
 
 } // namespace USDUFE_NS_DEF
