@@ -28,6 +28,10 @@
 
 #include <string>
 
+#if UFE_CLIPBOARD_SUPPORT
+#include <ufe/clipboardHandler.h>
+#endif
+
 namespace USDUFE_NS_DEF {
 
 /*! Ufe runtime DCC specific functions.
@@ -44,10 +48,11 @@ struct USDUFE_PUBLIC DCCFunctions
     TimeAccessorFn      timeAccessorFn = nullptr;
 
     // Optional: default values will be used if no function is supplied.
-    IsAttributeLockedFn  isAttributeLockedFn = nullptr;
-    SaveStageLoadRulesFn saveStageLoadRulesFn = nullptr;
-    IsRootChildFn        isRootChildFn = nullptr;
-    UniqueChildNameFn    uniqueChildNameFn = nullptr;
+    IsAttributeLockedFn        isAttributeLockedFn = nullptr;
+    SaveStageLoadRulesFn       saveStageLoadRulesFn = nullptr;
+    IsRootChildFn              isRootChildFn = nullptr;
+    UniqueChildNameFn          uniqueChildNameFn = nullptr;
+    DefaultMaterialScopeNameFn defaultMaterialScopeNameFn = nullptr;
 
     // Optional: nothing will be done if no function is supplied.
     WaitCursorFn startWaitCursorFn = nullptr;
@@ -86,6 +91,10 @@ struct USDUFE_PUBLIC Handlers
 //     Ufe::ConnectionHandler::Ptr      connectionHandler;
 //     Ufe::UINodeGraphNodeHandler::Ptr uiNodeGraphNodeHandler;
 //     Ufe::BatchOpsHandler::Ptr        batchOpsHandler;
+#endif
+
+#if UFE_CLIPBOARD_SUPPORT
+    Ufe::ClipboardHandler::Ptr clipboardHandler;
 #endif
 };
 

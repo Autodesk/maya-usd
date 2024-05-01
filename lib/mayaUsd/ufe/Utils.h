@@ -81,10 +81,6 @@ std::string uniqueChildNameMayaStandard(const PXR_NS::UsdPrim& usdParent, const 
 MAYAUSD_CORE_PUBLIC
 bool isAGatewayType(const std::string& mayaNodeType);
 
-//! Returns true if \p item is a materials scope.
-MAYAUSD_CORE_PUBLIC
-bool isMaterialsScope(const Ufe::SceneItem::Ptr& item);
-
 MAYAUSD_CORE_PUBLIC
 Ufe::Path dagPathToUfe(const MDagPath& dagPath);
 

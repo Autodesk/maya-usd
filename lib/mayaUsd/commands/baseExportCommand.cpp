@@ -53,6 +53,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
         UsdMayaJobExportArgsTokens->exportInstances.GetText(),
         MSyntax::kBoolean);
     syntax.addFlag(
+        kIncludeEmptyTransformsFlag,
+        UsdMayaJobExportArgsTokens->includeEmptyTransforms.GetText(),
+        MSyntax::kBoolean);
+    syntax.addFlag(
         kExportRefsAsInstanceableFlag,
         UsdMayaJobExportArgsTokens->exportRefsAsInstanceable.GetText(),
         MSyntax::kBoolean);

@@ -13,13 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "DiffPrims.h"
+#include "diffPrims.h"
 
-namespace MayaUsdUtils {
+namespace USDUFE_NS_DEF {
 
 using VtDictionary = PXR_NS::VtDictionary;
 
-#define USD_MAYA_RETURN_QUICK_RESULT(result)           \
+#define USDUFE_RETURN_QUICK_RESULT(result)             \
     do {                                               \
         if (quickDiff && result != DiffResult::Same) { \
             *quickDiff = result;                       \
@@ -45,11 +45,11 @@ DiffResultPerKey compareDictionaries(
             const std::string& key = keyAndValue.first;
             const auto         iter = baseline.find(key);
             if (iter == baselineEnd) {
-                USD_MAYA_RETURN_QUICK_RESULT(DiffResult::Created);
+                USDUFE_RETURN_QUICK_RESULT(DiffResult::Created);
                 results[key] = DiffResult::Created;
             } else {
                 const DiffResult result = compareValues(keyAndValue.second, iter->second);
-                USD_MAYA_RETURN_QUICK_RESULT(result);
+                USDUFE_RETURN_QUICK_RESULT(result);
                 results[key] = result;
             }
         }
@@ -62,7 +62,7 @@ DiffResultPerKey compareDictionaries(
         for (const auto& keyAndAttr : baseline) {
             const auto& key = keyAndAttr.first;
             if (modified.find(key) == modifiedEnd) {
-                USD_MAYA_RETURN_QUICK_RESULT(DiffResult::Absent);
+                USDUFE_RETURN_QUICK_RESULT(DiffResult::Absent);
                 results[key] = DiffResult::Absent;
             }
         }
@@ -71,4 +71,4 @@ DiffResultPerKey compareDictionaries(
     return results;
 }
 
-} // namespace MayaUsdUtils
+} // namespace USDUFE_NS_DEF

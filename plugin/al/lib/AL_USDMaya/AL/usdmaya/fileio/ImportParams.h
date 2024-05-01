@@ -16,7 +16,7 @@
 #pragma once
 #include "AL/maya/utils/FileTranslatorOptions.h"
 
-#include <mayaUsdUtils/ForwardDeclares.h>
+#include <usdUfe/base/forwardDeclares.h>
 
 #include <pxr/usd/sdf/layer.h>
 

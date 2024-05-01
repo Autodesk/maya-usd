@@ -1,5 +1,5 @@
 //
-// Copyright 2021 Autodesk
+// Copyright 2024 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,8 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "DiffCore.h"
-#include "DiffPrims.h"
+#include "diffPrims.h"
+
+#include <usdUfe/utils/diffCore.h>
 
 #include <pxr/base/gf/vec2d.h>
 #include <pxr/base/gf/vec2f.h>
@@ -33,7 +34,7 @@
 #include <pxr/base/vt/value.h>
 #include <pxr/usd/sdf/valueTypeName.h>
 
-namespace MayaUsdUtils {
+namespace USDUFE_NS_DEF {
 
 using VtValue = PXR_NS::VtValue;
 using TfType = PXR_NS::TfType;
@@ -147,37 +148,37 @@ DiffResult diffEmpties(const VtValue& /*modified*/, const VtValue& /*baseline*/)
     return DiffResult::Same;
 }
 
-#define MAYA_USD_DIFF_FUNC_FOR_TYPE_WITH_EPS(T)                                     \
+#define USDUFE_DIFF_FUNC_FOR_TYPE_WITH_EPS(T)                                       \
     { DiffKey(typeid(T), typeid(T)), diffOneTypeWithEps<T> },                       \
     {                                                                               \
         DiffKey(typeid(VtArray<T>), typeid(VtArray<T>)), diffOneArrayTypeWithEps<T> \
     }
 
-#define MAYA_USD_DIFF_FUNC_FOR_TYPES_WITH_EPS(T1, T2)                                       \
+#define USDUFE_DIFF_FUNC_FOR_TYPES_WITH_EPS(T1, T2)                                         \
     { DiffKey(typeid(T1), typeid(T2)), diffTwoTypesWithEps<T1, T2> },                       \
     {                                                                                       \
         DiffKey(typeid(VtArray<T1>), typeid(VtArray<T2>)), diffTwoArrayTypesWithEps<T1, T2> \
     }
 
-#define MAYA_USD_DIFF_FUNC_FOR_VEC(T, SIZE)                                           \
+#define USDUFE_DIFF_FUNC_FOR_VEC(T, SIZE)                                             \
     { DiffKey(typeid(T), typeid(T)), diffTwoVecs<T, T, SIZE> },                       \
     {                                                                                 \
         DiffKey(typeid(VtArray<T>), typeid(VtArray<T>)), diffTwoVecArrays<T, T, SIZE> \
     }
 
-#define MAYA_USD_DIFF_FUNC_FOR_VECS(T1, T2, SIZE)                                         \
+#define USDUFE_DIFF_FUNC_FOR_VECS(T1, T2, SIZE)                                           \
     { DiffKey(typeid(T1), typeid(T2)), diffTwoVecs<T1, T2, SIZE> },                       \
     {                                                                                     \
         DiffKey(typeid(VtArray<T1>), typeid(VtArray<T2>)), diffTwoVecArrays<T1, T2, SIZE> \
     }
 
-#define MAYA_USD_DIFF_FUNC_FOR_QUAT(T, SIZE)                                           \
+#define USDUFE_DIFF_FUNC_FOR_QUAT(T, SIZE)                                             \
     { DiffKey(typeid(T), typeid(T)), diffTwoQuats<T, T, SIZE> },                       \
     {                                                                                  \
         DiffKey(typeid(VtArray<T>), typeid(VtArray<T>)), diffTwoQuatArrays<T, T, SIZE> \
     }
 
-#define MAYA_USD_DIFF_FUNC_FOR_QUATS(T1, T2, SIZE)                                         \
+#define USDUFE_DIFF_FUNC_FOR_QUATS(T1, T2, SIZE)                                           \
     { DiffKey(typeid(T1), typeid(T2)), diffTwoQuats<T1, T2, SIZE> },                       \
     {                                                                                      \
         DiffKey(typeid(VtArray<T1>), typeid(VtArray<T2>)), diffTwoQuatArrays<T1, T2, SIZE> \
@@ -188,77 +189,77 @@ const DiffFuncMap& getDiffFuncs()
 
     // Initializing static data inside a function makes it automatically initialization-order safe.
     static DiffFuncMap diffs = {
-        MAYA_USD_DIFF_FUNC_FOR_TYPE_WITH_EPS(GfHalf),
-        MAYA_USD_DIFF_FUNC_FOR_TYPES_WITH_EPS(GfHalf, float),
-        MAYA_USD_DIFF_FUNC_FOR_TYPES_WITH_EPS(GfHalf, double),
+        USDUFE_DIFF_FUNC_FOR_TYPE_WITH_EPS(GfHalf),
+        USDUFE_DIFF_FUNC_FOR_TYPES_WITH_EPS(GfHalf, float),
+        USDUFE_DIFF_FUNC_FOR_TYPES_WITH_EPS(GfHalf, double),
 
-        MAYA_USD_DIFF_FUNC_FOR_TYPE_WITH_EPS(float),
-        MAYA_USD_DIFF_FUNC_FOR_TYPES_WITH_EPS(float, GfHalf),
-        MAYA_USD_DIFF_FUNC_FOR_TYPES_WITH_EPS(float, double),
+        USDUFE_DIFF_FUNC_FOR_TYPE_WITH_EPS(float),
+        USDUFE_DIFF_FUNC_FOR_TYPES_WITH_EPS(float, GfHalf),
+        USDUFE_DIFF_FUNC_FOR_TYPES_WITH_EPS(float, double),
 
-        MAYA_USD_DIFF_FUNC_FOR_TYPE_WITH_EPS(double),
-        MAYA_USD_DIFF_FUNC_FOR_TYPES_WITH_EPS(double, GfHalf),
-        MAYA_USD_DIFF_FUNC_FOR_TYPES_WITH_EPS(double, float),
+        USDUFE_DIFF_FUNC_FOR_TYPE_WITH_EPS(double),
+        USDUFE_DIFF_FUNC_FOR_TYPES_WITH_EPS(double, GfHalf),
+        USDUFE_DIFF_FUNC_FOR_TYPES_WITH_EPS(double, float),
 
-        MAYA_USD_DIFF_FUNC_FOR_TYPE_WITH_EPS(int8_t),
-        MAYA_USD_DIFF_FUNC_FOR_TYPE_WITH_EPS(uint8_t),
-        MAYA_USD_DIFF_FUNC_FOR_TYPE_WITH_EPS(int16_t),
-        MAYA_USD_DIFF_FUNC_FOR_TYPE_WITH_EPS(uint16_t),
-        MAYA_USD_DIFF_FUNC_FOR_TYPE_WITH_EPS(int32_t),
-        MAYA_USD_DIFF_FUNC_FOR_TYPE_WITH_EPS(uint32_t),
-        MAYA_USD_DIFF_FUNC_FOR_TYPE_WITH_EPS(int64_t),
-        MAYA_USD_DIFF_FUNC_FOR_TYPE_WITH_EPS(uint64_t),
+        USDUFE_DIFF_FUNC_FOR_TYPE_WITH_EPS(int8_t),
+        USDUFE_DIFF_FUNC_FOR_TYPE_WITH_EPS(uint8_t),
+        USDUFE_DIFF_FUNC_FOR_TYPE_WITH_EPS(int16_t),
+        USDUFE_DIFF_FUNC_FOR_TYPE_WITH_EPS(uint16_t),
+        USDUFE_DIFF_FUNC_FOR_TYPE_WITH_EPS(int32_t),
+        USDUFE_DIFF_FUNC_FOR_TYPE_WITH_EPS(uint32_t),
+        USDUFE_DIFF_FUNC_FOR_TYPE_WITH_EPS(int64_t),
+        USDUFE_DIFF_FUNC_FOR_TYPE_WITH_EPS(uint64_t),
 
-        MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec2d, 2),
-        MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec2f, 2),
-        MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec2h, 2),
-        MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec2i, 2),
+        USDUFE_DIFF_FUNC_FOR_VEC(GfVec2d, 2),
+        USDUFE_DIFF_FUNC_FOR_VEC(GfVec2f, 2),
+        USDUFE_DIFF_FUNC_FOR_VEC(GfVec2h, 2),
+        USDUFE_DIFF_FUNC_FOR_VEC(GfVec2i, 2),
 
-        MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec2d, GfVec2f, 2),
-        MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec2d, GfVec2h, 2),
-        MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec2f, GfVec2d, 2),
-        MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec2f, GfVec2h, 2),
-        MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec2h, GfVec2d, 2),
-        MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec2h, GfVec2f, 2),
+        USDUFE_DIFF_FUNC_FOR_VECS(GfVec2d, GfVec2f, 2),
+        USDUFE_DIFF_FUNC_FOR_VECS(GfVec2d, GfVec2h, 2),
+        USDUFE_DIFF_FUNC_FOR_VECS(GfVec2f, GfVec2d, 2),
+        USDUFE_DIFF_FUNC_FOR_VECS(GfVec2f, GfVec2h, 2),
+        USDUFE_DIFF_FUNC_FOR_VECS(GfVec2h, GfVec2d, 2),
+        USDUFE_DIFF_FUNC_FOR_VECS(GfVec2h, GfVec2f, 2),
 
-        MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec3d, 3),
-        MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec3f, 3),
-        MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec3h, 3),
-        MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec3i, 3),
+        USDUFE_DIFF_FUNC_FOR_VEC(GfVec3d, 3),
+        USDUFE_DIFF_FUNC_FOR_VEC(GfVec3f, 3),
+        USDUFE_DIFF_FUNC_FOR_VEC(GfVec3h, 3),
+        USDUFE_DIFF_FUNC_FOR_VEC(GfVec3i, 3),
 
-        MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec3d, GfVec3f, 3),
-        MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec3d, GfVec3h, 3),
-        MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec3f, GfVec3d, 3),
-        MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec3f, GfVec3h, 3),
-        MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec3h, GfVec3d, 3),
-        MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec3h, GfVec3f, 3),
+        USDUFE_DIFF_FUNC_FOR_VECS(GfVec3d, GfVec3f, 3),
+        USDUFE_DIFF_FUNC_FOR_VECS(GfVec3d, GfVec3h, 3),
+        USDUFE_DIFF_FUNC_FOR_VECS(GfVec3f, GfVec3d, 3),
+        USDUFE_DIFF_FUNC_FOR_VECS(GfVec3f, GfVec3h, 3),
+        USDUFE_DIFF_FUNC_FOR_VECS(GfVec3h, GfVec3d, 3),
+        USDUFE_DIFF_FUNC_FOR_VECS(GfVec3h, GfVec3f, 3),
 
-        MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec4d, 4),
-        MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec4f, 4),
-        MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec4h, 4),
-        MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec4i, 4),
+        USDUFE_DIFF_FUNC_FOR_VEC(GfVec4d, 4),
+        USDUFE_DIFF_FUNC_FOR_VEC(GfVec4f, 4),
+        USDUFE_DIFF_FUNC_FOR_VEC(GfVec4h, 4),
+        USDUFE_DIFF_FUNC_FOR_VEC(GfVec4i, 4),
 
-        MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec4d, GfVec4f, 4),
-        MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec4d, GfVec4h, 4),
-        MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec4f, GfVec4d, 4),
-        MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec4f, GfVec4h, 4),
-        MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec4h, GfVec4d, 4),
-        MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec4h, GfVec4f, 4),
+        USDUFE_DIFF_FUNC_FOR_VECS(GfVec4d, GfVec4f, 4),
+        USDUFE_DIFF_FUNC_FOR_VECS(GfVec4d, GfVec4h, 4),
+        USDUFE_DIFF_FUNC_FOR_VECS(GfVec4f, GfVec4d, 4),
+        USDUFE_DIFF_FUNC_FOR_VECS(GfVec4f, GfVec4h, 4),
+        USDUFE_DIFF_FUNC_FOR_VECS(GfVec4h, GfVec4d, 4),
+        USDUFE_DIFF_FUNC_FOR_VECS(GfVec4h, GfVec4f, 4),
 
-        MAYA_USD_DIFF_FUNC_FOR_VEC(GfMatrix2d, 4),
-        MAYA_USD_DIFF_FUNC_FOR_VEC(GfMatrix3d, 9),
-        MAYA_USD_DIFF_FUNC_FOR_VEC(GfMatrix4d, 16),
+        USDUFE_DIFF_FUNC_FOR_VEC(GfMatrix2d, 4),
+        USDUFE_DIFF_FUNC_FOR_VEC(GfMatrix3d, 9),
+        USDUFE_DIFF_FUNC_FOR_VEC(GfMatrix4d, 16),
 
-        MAYA_USD_DIFF_FUNC_FOR_QUAT(GfQuatd, 4),
-        MAYA_USD_DIFF_FUNC_FOR_QUAT(GfQuatf, 4),
-        MAYA_USD_DIFF_FUNC_FOR_QUAT(GfQuath, 4),
+        USDUFE_DIFF_FUNC_FOR_QUAT(GfQuatd, 4),
+        USDUFE_DIFF_FUNC_FOR_QUAT(GfQuatf, 4),
+        USDUFE_DIFF_FUNC_FOR_QUAT(GfQuath, 4),
 
-        MAYA_USD_DIFF_FUNC_FOR_QUATS(GfQuatd, GfQuatf, 4),
-        MAYA_USD_DIFF_FUNC_FOR_QUATS(GfQuatd, GfQuath, 4),
-        MAYA_USD_DIFF_FUNC_FOR_QUATS(GfQuatf, GfQuatd, 4),
-        MAYA_USD_DIFF_FUNC_FOR_QUATS(GfQuatf, GfQuath, 4),
-        MAYA_USD_DIFF_FUNC_FOR_QUATS(GfQuath, GfQuatd, 4),
-        MAYA_USD_DIFF_FUNC_FOR_QUATS(GfQuath, GfQuatf, 4),
+        USDUFE_DIFF_FUNC_FOR_QUATS(GfQuatd, GfQuatf, 4),
+        USDUFE_DIFF_FUNC_FOR_QUATS(GfQuatd, GfQuath, 4),
+        USDUFE_DIFF_FUNC_FOR_QUATS(GfQuatf, GfQuatd, 4),
+        USDUFE_DIFF_FUNC_FOR_QUATS(GfQuatf, GfQuath, 4),
+        USDUFE_DIFF_FUNC_FOR_QUATS(GfQuath, GfQuatd, 4),
+        USDUFE_DIFF_FUNC_FOR_QUATS(GfQuath, GfQuatf, 4),
 
         // TODO: separate U,V vs combined UV diff. DiffCore support this, but we don't expect
         // USD to ever have UV that are sometimes spearate attributes, sometimes a single attribute.
@@ -288,4 +289,4 @@ DiffResult compareValues(const VtValue& modified, const VtValue& baseline)
     return diff(modified, baseline);
 }
 
-} // namespace MayaUsdUtils
+} // namespace USDUFE_NS_DEF

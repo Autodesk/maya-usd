@@ -21,7 +21,8 @@
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/utils/utilDictionary.h>
 #include <mayaUsd/utils/utilFileSystem.h>
-#include <mayaUsdUtils/DiffPrims.h>
+
+#include <usdUfe/utils/diffPrims.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/envSetting.h>
@@ -519,8 +520,8 @@ bool _MergeJobContexts(bool isExport, const VtDictionary& userArgs, VtDictionary
                             if (element.IsHolding<std::vector<VtValue>>()) {
                                 // vector<vector<string>> is common for chaserArgs and shadingModes
                                 auto findElement = [&element](const VtValue& a) {
-                                    return MayaUsdUtils::compareValues(element, a)
-                                        == MayaUsdUtils::DiffResult::Same;
+                                    return UsdUfe::compareValues(element, a)
+                                        == UsdUfe::DiffResult::Same;
                                 };
                                 if (std::find_if(
                                         mergedValues.begin(), mergedValues.end(), findElement)
@@ -624,6 +625,8 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     , exportComponentTags(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportComponentTags))
     , file(extractString(userArgs, UsdMayaJobExportArgsTokens->file))
     , ignoreWarnings(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->ignoreWarnings))
+    , includeEmptyTransforms(
+          extractBoolean(userArgs, UsdMayaJobExportArgsTokens->includeEmptyTransforms))
     , materialCollectionsPath(
           extractAbsolutePath(userArgs, UsdMayaJobExportArgsTokens->materialCollectionsPath))
     , materialsScopeName(_GetMaterialsScopeName(
@@ -726,7 +729,9 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << "exportVisibility: " << TfStringify(exportArgs.exportVisibility) << std::endl
         << "exportComponentTags: " << TfStringify(exportArgs.exportComponentTags) << std::endl
         << "file: " << exportArgs.file << std::endl
-        << "ignoreWarnings: " << TfStringify(exportArgs.ignoreWarnings) << std::endl;
+        << "ignoreWarnings: " << TfStringify(exportArgs.ignoreWarnings) << std::endl
+        << "includeEmptyTransforms: " << TfStringify(exportArgs.includeEmptyTransforms)
+        << std::endl;
     out << "includeAPINames (" << exportArgs.includeAPINames.size() << ")" << std::endl;
     for (const std::string& includeAPIName : exportArgs.includeAPINames) {
         out << "    " << includeAPIName << std::endl;
@@ -1001,6 +1006,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->file] = std::string();
         d[UsdMayaJobExportArgsTokens->filterTypes] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->ignoreWarnings] = false;
+        d[UsdMayaJobExportArgsTokens->includeEmptyTransforms] = true;
         d[UsdMayaJobExportArgsTokens->kind] = std::string();
         d[UsdMayaJobExportArgsTokens->disableModelKindProcessor] = false;
         d[UsdMayaJobExportArgsTokens->materialCollectionsPath] = std::string();
@@ -1100,6 +1106,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->file] = _string;
         d[UsdMayaJobExportArgsTokens->filterTypes] = _stringVector;
         d[UsdMayaJobExportArgsTokens->ignoreWarnings] = _boolean;
+        d[UsdMayaJobExportArgsTokens->includeEmptyTransforms] = _boolean;
         d[UsdMayaJobExportArgsTokens->kind] = _string;
         d[UsdMayaJobExportArgsTokens->disableModelKindProcessor] = _boolean;
         d[UsdMayaJobExportArgsTokens->materialCollectionsPath] = _string;

@@ -97,6 +97,7 @@ public:
     static constexpr auto kMetersPerUnit = "mpu";
     static constexpr auto kExcludeExportTypesFlag = "eet";
     static constexpr auto kDefaultPrimFlag = "dp";
+    static constexpr auto kIncludeEmptyTransformsFlag = "iet";
 
     // Short and Long forms of flags defined by this command itself:
     static constexpr auto kAppendFlag = "a";

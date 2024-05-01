@@ -302,3 +302,9 @@ mayaUsd_add_test(testUsdImportExportSiteSpecificConfig
 )
 set_property(TEST testUsdImportExportSiteSpecificConfig APPEND PROPERTY LABELS translators)
 
+mayaUsd_add_test(testUsdExportEmptyXforms
+    PYTHON_MODULE testUsdExportEmptyXforms
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    ENV
+        "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_BINARY_DIR}/../plugin/ExportEmptyConfig"
+)

@@ -1,5 +1,5 @@
-#include <mayaUsdUtils/ALHalf.h>
-#include <mayaUsdUtils/DiffCore.h>
+#include <usdUfe/utils/ALHalf.h>
+#include <usdUfe/utils/diffCore.h>
 
 #include <gtest/gtest.h>
 
@@ -17,24 +17,24 @@ TEST(DiffCore, vec2AreAllTheSame)
     a.push_back(0);
     a.push_back(0);
 
-    EXPECT_TRUE(MayaUsdUtils::vec2AreAllTheSame(a.data(), 8));
-    EXPECT_TRUE(MayaUsdUtils::vec2AreAllTheSame(a.data(), 10));
-    EXPECT_TRUE(MayaUsdUtils::vec2AreAllTheSame(a.data(), 11));
+    EXPECT_TRUE(UsdUfe::vec2AreAllTheSame(a.data(), 8));
+    EXPECT_TRUE(UsdUfe::vec2AreAllTheSame(a.data(), 10));
+    EXPECT_TRUE(UsdUfe::vec2AreAllTheSame(a.data(), 11));
     a[2] = 4;
-    EXPECT_FALSE(MayaUsdUtils::vec2AreAllTheSame(a.data(), 8));
-    EXPECT_FALSE(MayaUsdUtils::vec2AreAllTheSame(a.data(), 10));
-    EXPECT_FALSE(MayaUsdUtils::vec2AreAllTheSame(a.data(), 11));
+    EXPECT_FALSE(UsdUfe::vec2AreAllTheSame(a.data(), 8));
+    EXPECT_FALSE(UsdUfe::vec2AreAllTheSame(a.data(), 10));
+    EXPECT_FALSE(UsdUfe::vec2AreAllTheSame(a.data(), 11));
 
     a[2] = 2;
     a[16] = 4;
-    EXPECT_TRUE(MayaUsdUtils::vec2AreAllTheSame(a.data(), 8));
-    EXPECT_FALSE(MayaUsdUtils::vec2AreAllTheSame(a.data(), 10));
-    EXPECT_FALSE(MayaUsdUtils::vec2AreAllTheSame(a.data(), 11));
+    EXPECT_TRUE(UsdUfe::vec2AreAllTheSame(a.data(), 8));
+    EXPECT_FALSE(UsdUfe::vec2AreAllTheSame(a.data(), 10));
+    EXPECT_FALSE(UsdUfe::vec2AreAllTheSame(a.data(), 11));
     a[16] = 2;
     a[20] = 4;
-    EXPECT_TRUE(MayaUsdUtils::vec2AreAllTheSame(a.data(), 8));
-    EXPECT_TRUE(MayaUsdUtils::vec2AreAllTheSame(a.data(), 10));
-    EXPECT_FALSE(MayaUsdUtils::vec2AreAllTheSame(a.data(), 11));
+    EXPECT_TRUE(UsdUfe::vec2AreAllTheSame(a.data(), 8));
+    EXPECT_TRUE(UsdUfe::vec2AreAllTheSame(a.data(), 10));
+    EXPECT_FALSE(UsdUfe::vec2AreAllTheSame(a.data(), 11));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -50,24 +50,24 @@ TEST(DiffCore, vec3AreAllTheSame)
     a.push_back(0);
     a.push_back(0);
 
-    EXPECT_TRUE(MayaUsdUtils::vec3AreAllTheSame(a.data(), 8));
-    EXPECT_TRUE(MayaUsdUtils::vec3AreAllTheSame(a.data(), 12));
-    EXPECT_TRUE(MayaUsdUtils::vec3AreAllTheSame(a.data(), 13));
+    EXPECT_TRUE(UsdUfe::vec3AreAllTheSame(a.data(), 8));
+    EXPECT_TRUE(UsdUfe::vec3AreAllTheSame(a.data(), 12));
+    EXPECT_TRUE(UsdUfe::vec3AreAllTheSame(a.data(), 13));
     a[3] = 4;
-    EXPECT_FALSE(MayaUsdUtils::vec3AreAllTheSame(a.data(), 8));
-    EXPECT_FALSE(MayaUsdUtils::vec3AreAllTheSame(a.data(), 12));
-    EXPECT_FALSE(MayaUsdUtils::vec3AreAllTheSame(a.data(), 13));
+    EXPECT_FALSE(UsdUfe::vec3AreAllTheSame(a.data(), 8));
+    EXPECT_FALSE(UsdUfe::vec3AreAllTheSame(a.data(), 12));
+    EXPECT_FALSE(UsdUfe::vec3AreAllTheSame(a.data(), 13));
 
     a[3] = 2;
     a[24] = 4;
-    EXPECT_TRUE(MayaUsdUtils::vec3AreAllTheSame(a.data(), 8));
-    EXPECT_FALSE(MayaUsdUtils::vec3AreAllTheSame(a.data(), 12));
-    EXPECT_FALSE(MayaUsdUtils::vec3AreAllTheSame(a.data(), 13));
+    EXPECT_TRUE(UsdUfe::vec3AreAllTheSame(a.data(), 8));
+    EXPECT_FALSE(UsdUfe::vec3AreAllTheSame(a.data(), 12));
+    EXPECT_FALSE(UsdUfe::vec3AreAllTheSame(a.data(), 13));
     a[24] = 2;
     a[36] = 4;
-    EXPECT_TRUE(MayaUsdUtils::vec3AreAllTheSame(a.data(), 8));
-    EXPECT_TRUE(MayaUsdUtils::vec3AreAllTheSame(a.data(), 12));
-    EXPECT_FALSE(MayaUsdUtils::vec3AreAllTheSame(a.data(), 13));
+    EXPECT_TRUE(UsdUfe::vec3AreAllTheSame(a.data(), 8));
+    EXPECT_TRUE(UsdUfe::vec3AreAllTheSame(a.data(), 12));
+    EXPECT_FALSE(UsdUfe::vec3AreAllTheSame(a.data(), 13));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -85,15 +85,15 @@ TEST(DiffCore, vec4AreAllTheSame)
     a.push_back(0);
     a.push_back(0);
 
-    EXPECT_TRUE(MayaUsdUtils::vec4AreAllTheSame(a.data(), 8));
-    EXPECT_TRUE(MayaUsdUtils::vec4AreAllTheSame(a.data(), 9));
+    EXPECT_TRUE(UsdUfe::vec4AreAllTheSame(a.data(), 8));
+    EXPECT_TRUE(UsdUfe::vec4AreAllTheSame(a.data(), 9));
     a[4] = 4;
-    EXPECT_FALSE(MayaUsdUtils::vec4AreAllTheSame(a.data(), 8));
-    EXPECT_FALSE(MayaUsdUtils::vec4AreAllTheSame(a.data(), 9));
+    EXPECT_FALSE(UsdUfe::vec4AreAllTheSame(a.data(), 8));
+    EXPECT_FALSE(UsdUfe::vec4AreAllTheSame(a.data(), 9));
     a[4] = 2;
     a[32] = 3;
-    EXPECT_TRUE(MayaUsdUtils::vec4AreAllTheSame(a.data(), 8));
-    EXPECT_FALSE(MayaUsdUtils::vec4AreAllTheSame(a.data(), 9));
+    EXPECT_TRUE(UsdUfe::vec4AreAllTheSame(a.data(), 8));
+    EXPECT_FALSE(UsdUfe::vec4AreAllTheSame(a.data(), 9));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -107,24 +107,24 @@ TEST(DiffCore, vec2AreAllTheSameDouble)
     a.push_back(0);
     a.push_back(0);
 
-    EXPECT_TRUE(MayaUsdUtils::vec2AreAllTheSame(a.data(), 8));
-    EXPECT_TRUE(MayaUsdUtils::vec2AreAllTheSame(a.data(), 10));
-    EXPECT_TRUE(MayaUsdUtils::vec2AreAllTheSame(a.data(), 11));
+    EXPECT_TRUE(UsdUfe::vec2AreAllTheSame(a.data(), 8));
+    EXPECT_TRUE(UsdUfe::vec2AreAllTheSame(a.data(), 10));
+    EXPECT_TRUE(UsdUfe::vec2AreAllTheSame(a.data(), 11));
     a[2] = 4;
-    EXPECT_FALSE(MayaUsdUtils::vec2AreAllTheSame(a.data(), 8));
-    EXPECT_FALSE(MayaUsdUtils::vec2AreAllTheSame(a.data(), 10));
-    EXPECT_FALSE(MayaUsdUtils::vec2AreAllTheSame(a.data(), 11));
+    EXPECT_FALSE(UsdUfe::vec2AreAllTheSame(a.data(), 8));
+    EXPECT_FALSE(UsdUfe::vec2AreAllTheSame(a.data(), 10));
+    EXPECT_FALSE(UsdUfe::vec2AreAllTheSame(a.data(), 11));
 
     a[2] = 2;
     a[16] = 4;
-    EXPECT_TRUE(MayaUsdUtils::vec2AreAllTheSame(a.data(), 8));
-    EXPECT_FALSE(MayaUsdUtils::vec2AreAllTheSame(a.data(), 10));
-    EXPECT_FALSE(MayaUsdUtils::vec2AreAllTheSame(a.data(), 11));
+    EXPECT_TRUE(UsdUfe::vec2AreAllTheSame(a.data(), 8));
+    EXPECT_FALSE(UsdUfe::vec2AreAllTheSame(a.data(), 10));
+    EXPECT_FALSE(UsdUfe::vec2AreAllTheSame(a.data(), 11));
     a[16] = 2;
     a[20] = 4;
-    EXPECT_TRUE(MayaUsdUtils::vec2AreAllTheSame(a.data(), 8));
-    EXPECT_TRUE(MayaUsdUtils::vec2AreAllTheSame(a.data(), 10));
-    EXPECT_FALSE(MayaUsdUtils::vec2AreAllTheSame(a.data(), 11));
+    EXPECT_TRUE(UsdUfe::vec2AreAllTheSame(a.data(), 8));
+    EXPECT_TRUE(UsdUfe::vec2AreAllTheSame(a.data(), 10));
+    EXPECT_FALSE(UsdUfe::vec2AreAllTheSame(a.data(), 11));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -140,24 +140,24 @@ TEST(DiffCore, vec3AreAllTheSameDouble)
     a.push_back(0);
     a.push_back(0);
 
-    EXPECT_TRUE(MayaUsdUtils::vec3AreAllTheSame(a.data(), 8));
-    EXPECT_TRUE(MayaUsdUtils::vec3AreAllTheSame(a.data(), 12));
-    EXPECT_TRUE(MayaUsdUtils::vec3AreAllTheSame(a.data(), 13));
+    EXPECT_TRUE(UsdUfe::vec3AreAllTheSame(a.data(), 8));
+    EXPECT_TRUE(UsdUfe::vec3AreAllTheSame(a.data(), 12));
+    EXPECT_TRUE(UsdUfe::vec3AreAllTheSame(a.data(), 13));
     a[3] = 4;
-    EXPECT_FALSE(MayaUsdUtils::vec3AreAllTheSame(a.data(), 8));
-    EXPECT_FALSE(MayaUsdUtils::vec3AreAllTheSame(a.data(), 12));
-    EXPECT_FALSE(MayaUsdUtils::vec3AreAllTheSame(a.data(), 13));
+    EXPECT_FALSE(UsdUfe::vec3AreAllTheSame(a.data(), 8));
+    EXPECT_FALSE(UsdUfe::vec3AreAllTheSame(a.data(), 12));
+    EXPECT_FALSE(UsdUfe::vec3AreAllTheSame(a.data(), 13));
 
     a[3] = 2;
     a[24] = 4;
-    EXPECT_TRUE(MayaUsdUtils::vec3AreAllTheSame(a.data(), 8));
-    EXPECT_FALSE(MayaUsdUtils::vec3AreAllTheSame(a.data(), 12));
-    EXPECT_FALSE(MayaUsdUtils::vec3AreAllTheSame(a.data(), 13));
+    EXPECT_TRUE(UsdUfe::vec3AreAllTheSame(a.data(), 8));
+    EXPECT_FALSE(UsdUfe::vec3AreAllTheSame(a.data(), 12));
+    EXPECT_FALSE(UsdUfe::vec3AreAllTheSame(a.data(), 13));
     a[24] = 2;
     a[36] = 4;
-    EXPECT_TRUE(MayaUsdUtils::vec3AreAllTheSame(a.data(), 8));
-    EXPECT_TRUE(MayaUsdUtils::vec3AreAllTheSame(a.data(), 12));
-    EXPECT_FALSE(MayaUsdUtils::vec3AreAllTheSame(a.data(), 13));
+    EXPECT_TRUE(UsdUfe::vec3AreAllTheSame(a.data(), 8));
+    EXPECT_TRUE(UsdUfe::vec3AreAllTheSame(a.data(), 12));
+    EXPECT_FALSE(UsdUfe::vec3AreAllTheSame(a.data(), 13));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -175,15 +175,15 @@ TEST(DiffCore, vec4AreAllTheSameDouble)
     a.push_back(0);
     a.push_back(0);
 
-    EXPECT_TRUE(MayaUsdUtils::vec4AreAllTheSame(a.data(), 8));
-    EXPECT_TRUE(MayaUsdUtils::vec4AreAllTheSame(a.data(), 9));
+    EXPECT_TRUE(UsdUfe::vec4AreAllTheSame(a.data(), 8));
+    EXPECT_TRUE(UsdUfe::vec4AreAllTheSame(a.data(), 9));
     a[4] = 4;
-    EXPECT_FALSE(MayaUsdUtils::vec4AreAllTheSame(a.data(), 8));
-    EXPECT_FALSE(MayaUsdUtils::vec4AreAllTheSame(a.data(), 9));
+    EXPECT_FALSE(UsdUfe::vec4AreAllTheSame(a.data(), 8));
+    EXPECT_FALSE(UsdUfe::vec4AreAllTheSame(a.data(), 9));
     a[4] = 2;
     a[32] = 3;
-    EXPECT_TRUE(MayaUsdUtils::vec4AreAllTheSame(a.data(), 8));
-    EXPECT_FALSE(MayaUsdUtils::vec4AreAllTheSame(a.data(), 9));
+    EXPECT_TRUE(UsdUfe::vec4AreAllTheSame(a.data(), 8));
+    EXPECT_FALSE(UsdUfe::vec4AreAllTheSame(a.data(), 9));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -196,12 +196,12 @@ TEST(DiffCore, compareHalfFloatArray)
     }
 
     // should pass
-    EXPECT_TRUE(MayaUsdUtils::compareArray(a.data(), b.data(), 47, 47, 1e-3f));
-    EXPECT_TRUE(MayaUsdUtils::compareArray(b.data(), a.data(), 47, 47, 1e-3f));
+    EXPECT_TRUE(UsdUfe::compareArray(a.data(), b.data(), 47, 47, 1e-3f));
+    EXPECT_TRUE(UsdUfe::compareArray(b.data(), a.data(), 47, 47, 1e-3f));
 
     // fail on differing array sizes
-    EXPECT_FALSE(MayaUsdUtils::compareArray(a.data(), b.data(), 46, 47, 1e-5f));
-    EXPECT_FALSE(MayaUsdUtils::compareArray(b.data(), a.data(), 46, 47, 1e-5f));
+    EXPECT_FALSE(UsdUfe::compareArray(a.data(), b.data(), 46, 47, 1e-5f));
+    EXPECT_FALSE(UsdUfe::compareArray(b.data(), a.data(), 46, 47, 1e-5f));
 
     // test the switch cases at the ends of the array
     for (int i = 0; i < 7; ++i) {
@@ -209,16 +209,16 @@ TEST(DiffCore, compareHalfFloatArray)
         a[40 + i] += 1.0f;
 
         // should now fail
-        EXPECT_FALSE(MayaUsdUtils::compareArray(a.data(), b.data(), 47, 47, 1e-5f));
-        EXPECT_FALSE(MayaUsdUtils::compareArray(b.data(), a.data(), 47, 47, 1e-5f));
+        EXPECT_FALSE(UsdUfe::compareArray(a.data(), b.data(), 47, 47, 1e-5f));
+        EXPECT_FALSE(UsdUfe::compareArray(b.data(), a.data(), 47, 47, 1e-5f));
 
         a[40 + i] -= 1.0f;
     }
 
     // modify value in SIMD blocks
     a[22] += 1.0f;
-    EXPECT_FALSE(MayaUsdUtils::compareArray(a.data(), b.data(), 47, 47, 1e-5f));
-    EXPECT_FALSE(MayaUsdUtils::compareArray(b.data(), a.data(), 47, 47, 1e-5f));
+    EXPECT_FALSE(UsdUfe::compareArray(a.data(), b.data(), 47, 47, 1e-5f));
+    EXPECT_FALSE(UsdUfe::compareArray(b.data(), a.data(), 47, 47, 1e-5f));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -232,12 +232,12 @@ TEST(DiffCore, compareHalfDoubleArray)
     }
 
     // should pass
-    EXPECT_TRUE(MayaUsdUtils::compareArray(a.data(), b.data(), 47, 47, 1e-3f));
-    EXPECT_TRUE(MayaUsdUtils::compareArray(b.data(), a.data(), 47, 47, 1e-3f));
+    EXPECT_TRUE(UsdUfe::compareArray(a.data(), b.data(), 47, 47, 1e-3f));
+    EXPECT_TRUE(UsdUfe::compareArray(b.data(), a.data(), 47, 47, 1e-3f));
 
     // fail on differing array sizes
-    EXPECT_FALSE(MayaUsdUtils::compareArray(a.data(), b.data(), 46, 47, 1e-5f));
-    EXPECT_FALSE(MayaUsdUtils::compareArray(b.data(), a.data(), 46, 47, 1e-5f));
+    EXPECT_FALSE(UsdUfe::compareArray(a.data(), b.data(), 46, 47, 1e-5f));
+    EXPECT_FALSE(UsdUfe::compareArray(b.data(), a.data(), 46, 47, 1e-5f));
 
     // test the switch cases at the ends of the array
     for (int i = 0; i < 7; ++i) {
@@ -245,16 +245,16 @@ TEST(DiffCore, compareHalfDoubleArray)
         a[40 + i] += 1.0f;
 
         // should now fail
-        EXPECT_FALSE(MayaUsdUtils::compareArray(a.data(), b.data(), 47, 47, 1e-5f));
-        EXPECT_FALSE(MayaUsdUtils::compareArray(b.data(), a.data(), 47, 47, 1e-5f));
+        EXPECT_FALSE(UsdUfe::compareArray(a.data(), b.data(), 47, 47, 1e-5f));
+        EXPECT_FALSE(UsdUfe::compareArray(b.data(), a.data(), 47, 47, 1e-5f));
 
         a[40 + i] -= 1.0f;
     }
 
     // modify value in SIMD blocks
     a[22] += 1.0f;
-    EXPECT_FALSE(MayaUsdUtils::compareArray(a.data(), b.data(), 47, 47, 1e-5f));
-    EXPECT_FALSE(MayaUsdUtils::compareArray(b.data(), a.data(), 47, 47, 1e-5f));
+    EXPECT_FALSE(UsdUfe::compareArray(a.data(), b.data(), 47, 47, 1e-5f));
+    EXPECT_FALSE(UsdUfe::compareArray(b.data(), a.data(), 47, 47, 1e-5f));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -266,10 +266,10 @@ TEST(DiffCore, compareFloatArray)
     }
 
     // should pass
-    EXPECT_TRUE(MayaUsdUtils::compareArray(a.data(), b.data(), 47, 47, 1e-5f));
+    EXPECT_TRUE(UsdUfe::compareArray(a.data(), b.data(), 47, 47, 1e-5f));
 
     // fail on differing array sizes
-    EXPECT_FALSE(MayaUsdUtils::compareArray(a.data(), b.data(), 46, 47, 1e-5f));
+    EXPECT_FALSE(UsdUfe::compareArray(a.data(), b.data(), 46, 47, 1e-5f));
 
     // test the switch cases at the ends of the array
     for (int i = 0; i < 7; ++i) {
@@ -277,14 +277,14 @@ TEST(DiffCore, compareFloatArray)
         a[40 + i] += 1.0f;
 
         // should now fail
-        EXPECT_FALSE(MayaUsdUtils::compareArray(a.data(), b.data(), 47, 47, 1e-5f));
+        EXPECT_FALSE(UsdUfe::compareArray(a.data(), b.data(), 47, 47, 1e-5f));
 
         a[40 + i] -= 1.0f;
     }
 
     // modify value in SIMD blocks
     a[22] += 1.0f;
-    EXPECT_FALSE(MayaUsdUtils::compareArray(a.data(), b.data(), 47, 47, 1e-5f));
+    EXPECT_FALSE(UsdUfe::compareArray(a.data(), b.data(), 47, 47, 1e-5f));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -296,10 +296,10 @@ TEST(DiffCore, compareDoubleArray)
     }
 
     // should pass
-    EXPECT_TRUE(MayaUsdUtils::compareArray(a.data(), b.data(), 47, 47, 1e-5f));
+    EXPECT_TRUE(UsdUfe::compareArray(a.data(), b.data(), 47, 47, 1e-5f));
 
     // fail on differing array sizes
-    EXPECT_FALSE(MayaUsdUtils::compareArray(a.data(), b.data(), 46, 47, 1e-5f));
+    EXPECT_FALSE(UsdUfe::compareArray(a.data(), b.data(), 46, 47, 1e-5f));
 
     // test the switch cases at the ends of the array
     for (int i = 0; i < 7; ++i) {
@@ -307,14 +307,14 @@ TEST(DiffCore, compareDoubleArray)
         a[40 + i] += 1.0;
 
         // should now fail
-        EXPECT_FALSE(MayaUsdUtils::compareArray(a.data(), b.data(), 47, 47, 1e-5f));
+        EXPECT_FALSE(UsdUfe::compareArray(a.data(), b.data(), 47, 47, 1e-5f));
 
         a[40 + i] -= 1.0;
     }
 
     // modify value in SIMD blocks
     a[22] += 1.0;
-    EXPECT_FALSE(MayaUsdUtils::compareArray(a.data(), b.data(), 47, 47, 1e-5f));
+    EXPECT_FALSE(UsdUfe::compareArray(a.data(), b.data(), 47, 47, 1e-5f));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -326,10 +326,10 @@ TEST(DiffCore, compareInt8Array)
     }
 
     // should pass
-    EXPECT_TRUE(MayaUsdUtils::compareArray(a.data(), b.data(), 47, 47));
+    EXPECT_TRUE(UsdUfe::compareArray(a.data(), b.data(), 47, 47));
 
     // fail on differing array sizes
-    EXPECT_FALSE(MayaUsdUtils::compareArray(a.data(), b.data(), 46, 47));
+    EXPECT_FALSE(UsdUfe::compareArray(a.data(), b.data(), 46, 47));
 
     // test the switch cases at the ends of the array
     for (int i = 0; i < 7; ++i) {
@@ -337,14 +337,14 @@ TEST(DiffCore, compareInt8Array)
         a[40 + i] += 1;
 
         // should now fail
-        EXPECT_FALSE(MayaUsdUtils::compareArray(a.data(), b.data(), 47, 47));
+        EXPECT_FALSE(UsdUfe::compareArray(a.data(), b.data(), 47, 47));
 
         a[40 + i] -= 1;
     }
 
     // modify value in SIMD blocks
     a[22] += 1;
-    EXPECT_FALSE(MayaUsdUtils::compareArray(a.data(), b.data(), 47, 47));
+    EXPECT_FALSE(UsdUfe::compareArray(a.data(), b.data(), 47, 47));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -356,10 +356,10 @@ TEST(DiffCore, compareInt16Array)
     }
 
     // should pass
-    EXPECT_TRUE(MayaUsdUtils::compareArray(a.data(), b.data(), 47, 47));
+    EXPECT_TRUE(UsdUfe::compareArray(a.data(), b.data(), 47, 47));
 
     // fail on differing array sizes
-    EXPECT_FALSE(MayaUsdUtils::compareArray(a.data(), b.data(), 46, 47));
+    EXPECT_FALSE(UsdUfe::compareArray(a.data(), b.data(), 46, 47));
 
     // test the switch cases at the ends of the array
     for (int i = 0; i < 7; ++i) {
@@ -367,14 +367,14 @@ TEST(DiffCore, compareInt16Array)
         a[40 + i] += 1;
 
         // should now fail
-        EXPECT_FALSE(MayaUsdUtils::compareArray(a.data(), b.data(), 47, 47));
+        EXPECT_FALSE(UsdUfe::compareArray(a.data(), b.data(), 47, 47));
 
         a[40 + i] -= 1;
     }
 
     // modify value in SIMD blocks
     a[22] += 1;
-    EXPECT_FALSE(MayaUsdUtils::compareArray(a.data(), b.data(), 47, 47));
+    EXPECT_FALSE(UsdUfe::compareArray(a.data(), b.data(), 47, 47));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -386,10 +386,10 @@ TEST(DiffCore, compareInt32Array)
     }
 
     // should pass
-    EXPECT_TRUE(MayaUsdUtils::compareArray(a.data(), b.data(), 47, 47));
+    EXPECT_TRUE(UsdUfe::compareArray(a.data(), b.data(), 47, 47));
 
     // fail on differing array sizes
-    EXPECT_FALSE(MayaUsdUtils::compareArray(a.data(), b.data(), 46, 47));
+    EXPECT_FALSE(UsdUfe::compareArray(a.data(), b.data(), 46, 47));
 
     // test the switch cases at the ends of the array
     for (int i = 0; i < 7; ++i) {
@@ -397,14 +397,14 @@ TEST(DiffCore, compareInt32Array)
         a[40 + i] += 1;
 
         // should now fail
-        EXPECT_FALSE(MayaUsdUtils::compareArray(a.data(), b.data(), 47, 47));
+        EXPECT_FALSE(UsdUfe::compareArray(a.data(), b.data(), 47, 47));
 
         a[40 + i] -= 1;
     }
 
     // modify value in SIMD blocks
     a[22] += 1;
-    EXPECT_FALSE(MayaUsdUtils::compareArray(a.data(), b.data(), 47, 47));
+    EXPECT_FALSE(UsdUfe::compareArray(a.data(), b.data(), 47, 47));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -416,10 +416,10 @@ TEST(DiffCore, compareInt64Array)
     }
 
     // should pass
-    EXPECT_TRUE(MayaUsdUtils::compareArray(a.data(), b.data(), 47, 47));
+    EXPECT_TRUE(UsdUfe::compareArray(a.data(), b.data(), 47, 47));
 
     // fail on differing array sizes
-    EXPECT_FALSE(MayaUsdUtils::compareArray(a.data(), b.data(), 46, 47));
+    EXPECT_FALSE(UsdUfe::compareArray(a.data(), b.data(), 46, 47));
 
     // test the switch cases at the ends of the array
     for (int i = 0; i < 7; ++i) {
@@ -427,14 +427,14 @@ TEST(DiffCore, compareInt64Array)
         a[40 + i] += 1;
 
         // should now fail
-        EXPECT_FALSE(MayaUsdUtils::compareArray(a.data(), b.data(), 47, 47));
+        EXPECT_FALSE(UsdUfe::compareArray(a.data(), b.data(), 47, 47));
 
         a[40 + i] -= 1;
     }
 
     // modify value in SIMD blocks
     a[22] += 1;
-    EXPECT_FALSE(MayaUsdUtils::compareArray(a.data(), b.data(), 47, 47));
+    EXPECT_FALSE(UsdUfe::compareArray(a.data(), b.data(), 47, 47));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -449,10 +449,10 @@ TEST(DiffCore, compareUvArray)
     }
 
     // should pass
-    EXPECT_TRUE(MayaUsdUtils::compareUvArray(u.data(), v.data(), uv.data(), 47, 47, 1e-5f));
+    EXPECT_TRUE(UsdUfe::compareUvArray(u.data(), v.data(), uv.data(), 47, 47, 1e-5f));
 
     // fail on differing array sizes
-    EXPECT_FALSE(MayaUsdUtils::compareUvArray(u.data(), v.data(), uv.data(), 46, 47, 1e-5f));
+    EXPECT_FALSE(UsdUfe::compareUvArray(u.data(), v.data(), uv.data(), 46, 47, 1e-5f));
 
     // test the switch cases at the ends of the array
     for (int i = 0; i < 7; ++i) {
@@ -460,7 +460,7 @@ TEST(DiffCore, compareUvArray)
         u[40 + i] += 1.0f;
 
         // should now fail
-        EXPECT_FALSE(MayaUsdUtils::compareUvArray(u.data(), v.data(), uv.data(), 47, 47, 1e-5f));
+        EXPECT_FALSE(UsdUfe::compareUvArray(u.data(), v.data(), uv.data(), 47, 47, 1e-5f));
 
         u[40 + i] -= 1.0f;
 
@@ -468,16 +468,16 @@ TEST(DiffCore, compareUvArray)
         v[40 + i] += 1.0f;
 
         // should now fail
-        EXPECT_FALSE(MayaUsdUtils::compareUvArray(u.data(), v.data(), uv.data(), 47, 47, 1e-5f));
+        EXPECT_FALSE(UsdUfe::compareUvArray(u.data(), v.data(), uv.data(), 47, 47, 1e-5f));
 
         v[40 + i] -= 1.0f;
     }
 
     // modify value in SIMD blocks
     v[22] += 1.0f;
-    EXPECT_FALSE(MayaUsdUtils::compareUvArray(u.data(), v.data(), uv.data(), 47, 47, 1e-5f));
+    EXPECT_FALSE(UsdUfe::compareUvArray(u.data(), v.data(), uv.data(), 47, 47, 1e-5f));
     v[22] -= 1.0f;
     u[22] += 1.0f;
-    EXPECT_FALSE(MayaUsdUtils::compareUvArray(u.data(), v.data(), uv.data(), 47, 47, 1e-5f));
+    EXPECT_FALSE(UsdUfe::compareUvArray(u.data(), v.data(), uv.data(), 47, 47, 1e-5f));
     u[22] -= 1.0f;
 }

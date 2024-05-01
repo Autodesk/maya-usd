@@ -12,6 +12,7 @@
 # UFE_LIGHTS_SUPPORT        Presence of UFE lights support
 # UFE_MATERIALS_SUPPORT     Presence of UFE materials support
 # UFE_SCENE_SEGMENT_SUPPORT Presence of UFE scene segment support
+# UFE_CLIPBOARD_SUPPORT     Presence of UFE clipboard support
 # UFE_DEFAULT_VALUE_SUPPORT Presence of UFE default value support
 # UFE_PREVIEW_FEATURES      List of all features introduced gradually in the UFE preview version
 #
@@ -245,3 +246,8 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/camera.h")
     endif()
 endif()
 
+set(UFE_CLIPBOARD_SUPPORT FALSE CACHE INTERNAL "ufeClipboard")
+if (UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/clipboardHandler.h")
+    set(UFE_CLIPBOARD_SUPPORT TRUE CACHE INTERNAL "ufeClipboard")
+    message(STATUS "Maya has UFE clipboard API")
+endif()

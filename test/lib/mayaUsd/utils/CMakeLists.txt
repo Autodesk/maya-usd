@@ -75,9 +75,9 @@ function(add_mayaUsdLibUtils_test TARGET_NAME)
     target_link_libraries(${TARGET_NAME}
         PRIVATE
         GTest::GTest
-        mayaUsdUtils
         ${MAYA_LIBRARIES}
         mayaUsd
+        usdUfe
     )
 
     # -----------------------------------------------------------------------------

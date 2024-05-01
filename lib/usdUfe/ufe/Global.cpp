@@ -25,6 +25,10 @@
 
 #include <ufe/runTimeMgr.h>
 
+#if UFE_CLIPBOARD_SUPPORT
+#include <usdUfe/ufe/UsdClipboardHandler.h>
+#endif
+
 #ifndef UFE_V2_FEATURES_AVAILABLE
 #error "Compiling usdUfe library with Ufe v1 is no longer supported."
 #endif
@@ -80,6 +84,8 @@ Ufe::Rtid initialize(
         UsdUfe::setIsRootChildFn(dccFunctions.isRootChildFn);
     if (dccFunctions.uniqueChildNameFn)
         UsdUfe::setUniqueChildNameFn(dccFunctions.uniqueChildNameFn);
+    if (dccFunctions.defaultMaterialScopeNameFn)
+        UsdUfe::setDefaultMaterialScopeNameFn(dccFunctions.defaultMaterialScopeNameFn);
 
     // Create a default stages subject if none is provided.
     if (nullptr == ss) {
@@ -102,6 +108,15 @@ Ufe::Rtid initialize(
 
     g_USDRtid = Ufe::RunTimeMgr::instance().register_(kUSDRunTimeName, rtHandlers);
     TF_VERIFY(g_USDRtid != 0);
+
+    // Handlers to register separately since they may or may not be contained within
+    // the Ufe Handlers struct. But they are always guaranteed to have a set method.
+#if UFE_CLIPBOARD_SUPPORT
+    auto cbhndlr
+        = handlers.clipboardHandler ? handlers.clipboardHandler : UsdClipboardHandler::create();
+    Ufe::RunTimeMgr::instance().setClipboardHandler(g_USDRtid, cbhndlr);
+#endif
+
     return g_USDRtid;
 }
 
