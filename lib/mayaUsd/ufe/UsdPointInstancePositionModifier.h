@@ -58,9 +58,9 @@ public:
 
     Batches& batches() override;
 
-protected:
-    PXR_NS::UsdAttribute _getAttribute() const override;
+    PXR_NS::UsdAttribute getAttribute() const override;
 
+protected:
     PXR_NS::UsdAttribute _createAttribute() override;
 };
 

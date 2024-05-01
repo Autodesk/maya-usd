@@ -115,8 +115,6 @@ protected:
 private:
     Ufe::TranslateUndoableCommand::Ptr
     pivotCmd(const PXR_NS::TfToken& pvtOpSuffix, double x, double y, double z);
-
-    bool isAttributeEditAllowed(const PXR_NS::TfToken attrName, std::string& errMsg) const;
 }; // UsdTransform3dMayaXformStack
 
 //! \brief Factory to create a UsdTransform3dMayaXformStack interface object.

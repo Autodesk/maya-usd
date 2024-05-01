@@ -37,7 +37,7 @@ namespace ufe {
 // could be changed to use the current time, using getTime(path()).
 
 class MAYAUSD_CORE_PUBLIC UsdTransform3dBase
-    : private UsdTransform3dReadImpl
+    : protected UsdTransform3dReadImpl
     , public Ufe::Transform3d
 {
 public:
@@ -77,6 +77,10 @@ public:
     Ufe::Matrix4d segmentInclusiveMatrix() const override;
     Ufe::Matrix4d segmentExclusiveMatrix() const override;
 
+protected:
+    // Check if the attribute edit is allowed inside the edit context.
+    bool isAttributeEditAllowed(const PXR_NS::TfToken attrName) const;
+    bool isAttributeEditAllowed(const PXR_NS::TfToken* attrNames, int count) const;
 }; // UsdTransform3dBase
 
 } // namespace ufe

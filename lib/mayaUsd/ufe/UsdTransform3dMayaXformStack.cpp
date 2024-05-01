@@ -23,9 +23,11 @@
 #include <mayaUsd/ufe/UsdTransform3dUndoableCommands.h>
 #include <mayaUsd/ufe/Utils.h>
 
+#include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
+#include <usdUfe/utils/editRouterContext.h>
 
 #include <maya/MEulerRotation.h>
 #include <maya/MGlobal.h>
@@ -290,6 +292,9 @@ public:
     // Executes the command by setting the translation onto the transform op.
     bool set(double x, double y, double z) override
     {
+        UsdUfe::OperationEditRouterContext editContext(
+            UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
+
         VtValue v;
         v = V(x, y, z);
         updateNewValue(v);
@@ -314,6 +319,9 @@ public:
     // Executes the command by setting the rotation onto the transform op.
     bool set(double x, double y, double z) override
     {
+        UsdUfe::OperationEditRouterContext editContext(
+            UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
+
         VtValue v;
         v = _cvtRotXYZToAttr(x, y, z);
         updateNewValue(v);
@@ -419,9 +427,7 @@ UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
     }
 
     // Return null command if the attribute edit is not allowed.
-    std::string errMsg;
-    if (!isAttributeEditAllowed(attrName, errMsg)) {
-        MGlobal::displayError(errMsg.c_str());
+    if (!isAttributeEditAllowed(attrName)) {
         return nullptr;
     }
 
@@ -471,9 +477,7 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMayaXformStack::scaleCmd(double x, 
     }
 
     // Return null command if the attribute edit is not allowed.
-    std::string errMsg;
-    if (!isAttributeEditAllowed(attrName, errMsg)) {
-        MGlobal::displayError(errMsg.c_str());
+    if (!isAttributeEditAllowed(attrName)) {
         return nullptr;
     }
 
@@ -581,9 +585,7 @@ Ufe::SetVector3dUndoableCommand::Ptr UsdTransform3dMayaXformStack::setVector3dCm
     const TfToken& opSuffix)
 {
     // Return null command if the attribute edit is not allowed.
-    std::string errMsg;
-    if (!isAttributeEditAllowed(attrName, errMsg)) {
-        MGlobal::displayError(errMsg.c_str());
+    if (!isAttributeEditAllowed(attrName)) {
         return nullptr;
     }
 
@@ -627,9 +629,7 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
     auto pvtAttrName = UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, pvtOpSuffix);
 
     // Return null command if the attribute edit is not allowed.
-    std::string errMsg;
-    if (!isAttributeEditAllowed(pvtAttrName, errMsg)) {
-        MGlobal::displayError(errMsg.c_str());
+    if (!isAttributeEditAllowed(pvtAttrName)) {
         return nullptr;
     }
 
@@ -675,6 +675,13 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
 Ufe::SetMatrix4dUndoableCommand::Ptr
 UsdTransform3dMayaXformStack::setMatrixCmd(const Ufe::Matrix4d& m)
 {
+    // Note: UsdSetMatrix4dUndoableCommand uses separate calls to translate, rotate and scale,
+    //       so check those 3 attributes.
+    const TfToken attrs[]
+        = { TfToken("xformOp:translate"), TfToken("xformOp:rotateXYZ"), TfToken("xformOp:scale") };
+    if (!isAttributeEditAllowed(attrs, 3))
+        return nullptr;
+
     return std::make_shared<UsdSetMatrix4dUndoableCommand>(path(), m);
 }
 
@@ -749,24 +756,6 @@ UsdTransform3dMayaXformStack::getCvtRotXYZToAttrFn(const TfToken& opName) const
     }; // FIXME, unsupported.
 
     return cvt.at(opName);
-}
-
-bool UsdTransform3dMayaXformStack::isAttributeEditAllowed(
-    const PXR_NS::TfToken attrName,
-    std::string&          errMsg) const
-{
-    PXR_NS::UsdAttribute attr;
-    if (!attrName.IsEmpty())
-        attr = prim().GetAttribute(attrName);
-    if (attr && !UsdUfe::isAttributeEditAllowed(attr, &errMsg)) {
-        return false;
-    } else if (!attr) {
-        UsdGeomXformable xformable(prim());
-        if (!UsdUfe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
-            return false;
-        }
-    }
-    return true;
 }
 
 //------------------------------------------------------------------------------

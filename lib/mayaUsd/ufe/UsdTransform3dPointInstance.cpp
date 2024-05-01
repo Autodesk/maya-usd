@@ -19,7 +19,9 @@
 #include <mayaUsd/ufe/UsdTransform3dBase.h>
 #include <mayaUsd/ufe/Utils.h>
 
+#include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/utils/editRouterContext.h>
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/quath.h>
@@ -32,6 +34,7 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/timeCode.h>
 
+#include <maya/MGlobal.h>
 #include <ufe/transform3dHandler.h>
 #include <ufe/transform3dUndoableCommands.h>
 #include <ufe/types.h>
@@ -80,6 +83,9 @@ Ufe::Vector3d UsdTransform3dPointInstance::scale() const { return _scaleModifier
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dPointInstance::translateCmd(double x, double y, double z)
 {
+    if (!isAttributeEditAllowed(_positionModifier.getAttribute()))
+        return nullptr;
+
     return std::make_shared<UsdPointInstanceTranslateUndoableCommand>(
         path(), UsdTimeCode::Default());
 }
@@ -87,12 +93,18 @@ UsdTransform3dPointInstance::translateCmd(double x, double y, double z)
 /* override */
 Ufe::RotateUndoableCommand::Ptr UsdTransform3dPointInstance::rotateCmd(double x, double y, double z)
 {
+    if (!isAttributeEditAllowed(_orientationModifier.getAttribute()))
+        return nullptr;
+
     return std::make_shared<UsdPointInstanceRotateUndoableCommand>(path(), UsdTimeCode::Default());
 }
 
 /* override */
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3dPointInstance::scaleCmd(double x, double y, double z)
 {
+    if (!isAttributeEditAllowed(_scaleModifier.getAttribute()))
+        return nullptr;
+
     return std::make_shared<UsdPointInstanceScaleUndoableCommand>(path(), UsdTimeCode::Default());
 }
 
@@ -135,6 +147,29 @@ Ufe::Matrix4d UsdTransform3dPointInstance::segmentExclusiveMatrix() const
     // The exclusive matrix of a point instance is simply the PointInstancer's
     // inclusive matrix.
     return UsdTransform3dBase::segmentInclusiveMatrix();
+}
+
+bool UsdTransform3dPointInstance::isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr) const
+{
+
+    UsdUfe::OperationEditRouterContext editContext(
+        UsdUfe::EditRoutingTokens->RouteTransform, prim());
+    std::string errMsg;
+
+    if (attr && !UsdUfe::isAttributeEditAllowed(attr, &errMsg)) {
+        MGlobal::displayError(errMsg.c_str());
+        return false;
+    } else if (!attr) {
+        // If the attribute does not exist, we will need to edit the xformOpOrder
+        // so check if we would be allowed to do that.
+        UsdGeomXformable xformable(prim());
+        if (!UsdUfe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
+            MGlobal::displayError(errMsg.c_str());
+            return false;
+        }
+    }
+
+    return true;
 }
 
 //------------------------------------------------------------------------------

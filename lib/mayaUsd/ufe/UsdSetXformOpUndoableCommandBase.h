@@ -20,6 +20,7 @@
 #include <usdUfe/undo/UsdUndoableItem.h>
 
 #include <pxr/base/vt/value.h>
+#include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/timeCode.h>
 
 #include <ufe/transform3dUndoableCommands.h>
@@ -72,6 +73,9 @@ public:
     void redo() override;
 
     PXR_NS::UsdTimeCode writeTime() const { return _writeTime; }
+
+    // Retrieve the USD prim affected by the command.
+    virtual PXR_NS::UsdPrim getPrim() const;
 
 protected:
     // Create the XformOp attributes if they do not exists.
