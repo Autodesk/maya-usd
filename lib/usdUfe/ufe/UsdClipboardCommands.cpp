@@ -63,7 +63,8 @@ void setClipboardMetadata(
     }
 }
 
-void setClipboardMetadata(const UsdUfe::UsdUndoDuplicateSelectionCommand::Ptr& duplicateSelectionCmd)
+void setClipboardMetadata(
+    const UsdUfe::UsdUndoDuplicateSelectionCommand::Ptr& duplicateSelectionCmd)
 {
     for (const auto& duplicatedItem : duplicateSelectionCmd->getDuplicatedItemsMap()) {
         const auto prim = duplicatedItem.first->prim();

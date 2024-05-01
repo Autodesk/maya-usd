@@ -54,7 +54,7 @@ struct USDUFE_PUBLIC DCCFunctions
     IsRootChildFn              isRootChildFn = nullptr;
     UniqueChildNameFn          uniqueChildNameFn = nullptr;
     DefaultMaterialScopeNameFn defaultMaterialScopeNameFn = nullptr;
-    DisplayMessageFn           displayMessageFn[static_cast<int>(MessageType::nbTypes)] = { nullptr };
+    DisplayMessageFn displayMessageFn[static_cast<int>(MessageType::nbTypes)] = { nullptr };
 
     // Optional: nothing will be done if no function is supplied.
     WaitCursorFn startWaitCursorFn = nullptr;

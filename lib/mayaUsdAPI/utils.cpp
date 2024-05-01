@@ -26,7 +26,6 @@
 
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/utils/mergePrims.h>
-
 #include <usdUfe/utils/usdUtils.h>
 
 namespace MAYAUSDAPI_NS_DEF {
