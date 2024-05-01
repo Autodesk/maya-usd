@@ -2,4 +2,4 @@
 
 #include "AL/maya/utils/ForwardDeclares.h"
 
-#include <mayaUsdUtils/ForwardDeclares.h>
+#include <usdUfe/base/forwardDeclares.h>

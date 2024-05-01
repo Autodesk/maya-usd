@@ -21,7 +21,8 @@
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/utils/utilDictionary.h>
 #include <mayaUsd/utils/utilFileSystem.h>
-#include <mayaUsdUtils/DiffPrims.h>
+
+#include <usdUfe/utils/diffPrims.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/envSetting.h>
@@ -519,8 +520,8 @@ bool _MergeJobContexts(bool isExport, const VtDictionary& userArgs, VtDictionary
                             if (element.IsHolding<std::vector<VtValue>>()) {
                                 // vector<vector<string>> is common for chaserArgs and shadingModes
                                 auto findElement = [&element](const VtValue& a) {
-                                    return MayaUsdUtils::compareValues(element, a)
-                                        == MayaUsdUtils::DiffResult::Same;
+                                    return UsdUfe::compareValues(element, a)
+                                        == UsdUfe::DiffResult::Same;
                                 };
                                 if (std::find_if(
                                         mergedValues.begin(), mergedValues.end(), findElement)

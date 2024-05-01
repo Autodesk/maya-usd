@@ -18,10 +18,10 @@
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/utilFileSystem.h>
-#include <mayaUsdUtils/MergePrims.h>
 
 #include <usdUfe/base/tokens.h>
 #include <usdUfe/utils/editRouter.h>
+#include <usdUfe/utils/mergePrims.h>
 
 #include <pxr/base/tf/callContext.h>
 #include <pxr/base/tf/diagnosticLite.h>
@@ -96,10 +96,10 @@ void copyTransform(
             // The Maya transform that corresponds to the Maya reference prim
             // only has its transform attributes unlocked.  Bring any transform
             // attribute edits over to the Maya reference prim.
-            MayaUsdUtils::MergePrimsOptions options;
+            UsdUfe::MergePrimsOptions options;
             options.ignoreUpperLayerOpinions = false;
             options.ignoreVariants = true;
-            TF_VERIFY(MayaUsdUtils::mergePrims(
+            TF_VERIFY(UsdUfe::mergePrims(
                 srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPathForMerge, options));
         }
     }

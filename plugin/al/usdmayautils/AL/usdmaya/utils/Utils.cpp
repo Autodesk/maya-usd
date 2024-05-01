@@ -16,8 +16,7 @@
 #include "AL/usdmaya/utils/Utils.h"
 
 #include "AL/maya/utils/Utils.h"
-
-#include <mayaUsdUtils/DebugCodes.h>
+#include "AL/usdmaya/utils/DebugCodes.h"
 
 #include <maya/MDagPath.h>
 #include <maya/MEulerRotation.h>
@@ -113,7 +112,7 @@ MString mapUsdPrimToMayaNode(
         std::replace(mayaElementPath.begin(), mayaElementPath.end(), '/', '|');
     }
 
-    TF_DEBUG(MAYAUSDUTILS_INFO)
+    TF_DEBUG(ALUSDMAYA_INFO)
         .Msg(
             "Mapped the path for prim=%s to mayaObject=%s\n",
             usdPrim.GetName().GetText(),

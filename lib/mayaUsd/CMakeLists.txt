@@ -203,6 +203,13 @@ if (MAYA_LIGHTAPI_VERSION GREATER_EQUAL 2)
     )
 endif()
 
+if (UFE_CLIPBOARD_SUPPORT)
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+            UFE_CLIPBOARD_SUPPORT=1
+    )
+endif()
+
 # Some of the UFE classes are exporting STL classes which causes this warning.
 if(MSVC)
     target_compile_options(${PROJECT_NAME}
@@ -274,7 +281,6 @@ target_link_libraries(${PROJECT_NAME}
         vt
         ${UFE_LIBRARY}
         ${MAYA_LIBRARIES}
-        mayaUsdUtils
         usdUfe
     PRIVATE
         ghc_filesystem

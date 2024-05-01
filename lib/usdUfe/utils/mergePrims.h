@@ -1,5 +1,5 @@
 //
-// Copyright 2021 Autodesk
+// Copyright 2024 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,14 +15,14 @@
 //
 #pragma once
 
-#include <mayaUsdUtils/Api.h>
-#include <mayaUsdUtils/MergePrimsOptions.h>
+#include <usdUfe/base/api.h>
+#include <usdUfe/utils/mergePrimsOptions.h>
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/common.h>
 
-namespace MayaUsdUtils {
+namespace USDUFE_NS_DEF {
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  merges prims starting at a source path from a source layer and stage to a destination.
@@ -35,7 +35,7 @@ namespace MayaUsdUtils {
 /// \param  options merging options.
 /// \return true if the merge was successful.
 //----------------------------------------------------------------------------------------------------------------------
-MAYA_USD_UTILS_PUBLIC
+USDUFE_PUBLIC
 bool mergePrims(
     const PXR_NS::UsdStageRefPtr& srcStage,
     const PXR_NS::SdfLayerRefPtr& srcLayer,
@@ -45,4 +45,14 @@ bool mergePrims(
     const PXR_NS::SdfPath&        dstPath,
     const MergePrimsOptions&      options);
 
-} // namespace MayaUsdUtils
+//! \brief merge prims with default options, but no verbosity.
+USDUFE_PUBLIC
+bool mergePrims(
+    const PXR_NS::UsdStageRefPtr& srcStage,
+    const PXR_NS::SdfLayerRefPtr& srcLayer,
+    const PXR_NS::SdfPath&        srcPath,
+    const PXR_NS::UsdStageRefPtr& dstStage,
+    const PXR_NS::SdfLayerRefPtr& dstLayer,
+    const PXR_NS::SdfPath&        dstPath);
+
+} // namespace USDUFE_NS_DEF
