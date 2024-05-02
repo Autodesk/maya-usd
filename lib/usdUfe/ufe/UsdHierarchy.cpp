@@ -257,6 +257,19 @@ UsdHierarchy::insertChildCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneI
     return UsdUndoInsertChildCommand::create(fItem, downcast(child), downcast(pos));
 }
 
+Ufe::InsertChildCommand::Ptr
+UsdHierarchy::appendChildVerifyRestrictionsCmd(const Ufe::SceneItem::Ptr& child)
+{
+    const auto childCmd = appendChildCmd(child);
+
+    if (childCmd && isConnected(downcast(child))) {
+        throw std::runtime_error("The node you're trying to move has connections.");
+    }
+
+    return childCmd;
+}
+
+
 Ufe::SceneItem::Ptr
 UsdHierarchy::insertChild(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos)
 {
