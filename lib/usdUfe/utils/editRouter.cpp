@@ -147,6 +147,17 @@ EditRouter::Ptr getEditRouter(const PXR_NS::TfToken& operation)
     return (foundRouter == editRouters.end()) ? nullptr : foundRouter->second;
 }
 
+static PXR_NS::SdfLayerHandle _extractLayer(const PXR_NS::VtValue& value)
+{
+    if (value.IsHolding<std::string>())
+        return PXR_NS::SdfLayer::Find(value.Get<std::string>());
+
+    if (value.IsHolding<PXR_NS::SdfLayerHandle>())
+        return value.Get<PXR_NS::SdfLayerHandle>();
+
+    return nullptr;
+}
+
 PXR_NS::SdfLayerHandle
 getEditRouterLayer(const PXR_NS::TfToken& operation, const PXR_NS::UsdPrim& prim)
 {
@@ -165,20 +176,7 @@ getEditRouterLayer(const PXR_NS::TfToken& operation, const PXR_NS::UsdPrim& prim
     if (found == routingData.end())
         return nullptr;
 
-    const auto& value = found->second;
-    if (value.IsHolding<std::string>()) {
-        std::string            layerName = value.Get<std::string>();
-        PXR_NS::SdfLayerRefPtr layer = prim.GetStage()->GetRootLayer()->Find(layerName);
-        return layer;
-        // FIXME  We should always be using a string layer identifier, for
-        // Python and C++ compatibility, so the following code should be
-        // removed, and client code using edit routing should be adjusted
-        // accordingly.  PPT, 27-Jan-2022.
-    } else if (value.IsHolding<PXR_NS::SdfLayerHandle>()) {
-        return value.Get<PXR_NS::SdfLayerHandle>();
-    } else {
-        return nullptr;
-    }
+    return _extractLayer(found->second);
 }
 
 PXR_NS::SdfLayerHandle
@@ -202,15 +200,7 @@ getAttrEditRouterLayer(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrN
     if (found == routingData.end())
         return nullptr;
 
-    const auto& value = found->second;
-    if (value.IsHolding<std::string>()) {
-        std::string layerName = value.Get<std::string>();
-        return prim.GetStage()->GetRootLayer()->Find(layerName);
-    } else if (value.IsHolding<PXR_NS::SdfLayerHandle>()) {
-        return value.Get<PXR_NS::SdfLayerHandle>();
-    } else {
-        return nullptr;
-    }
+    return _extractLayer(found->second);
 }
 
 PXR_NS::UsdEditTarget
@@ -229,14 +219,21 @@ getEditRouterEditTarget(const PXR_NS::TfToken& operation, const PXR_NS::UsdPrim&
 
     const auto found = routingData.find(EditRoutingTokens->EditTarget);
 
-    if (found != routingData.end()) {
-        const auto& value = found->second;
-        if (value.IsHolding<PXR_NS::UsdEditTarget>()) {
-            const auto editTarget = value.Get<PXR_NS::UsdEditTarget>();
-            return editTarget;
-        }
+    if (found == routingData.end())
+        return PXR_NS::UsdEditTarget();
+
+    const auto& value = found->second;
+
+    if (value.IsHolding<PXR_NS::UsdEditTarget>()) {
+        auto&& editTarget = value.Get<PXR_NS::UsdEditTarget>();
+        return editTarget;
     }
-    return PXR_NS::UsdEditTarget();
+
+    auto layer = _extractLayer(found->second);
+    if (!layer)
+        PXR_NS::UsdEditTarget();
+
+    return PXR_NS::UsdEditTarget(layer);
 }
 
 } // namespace USDUFE_NS_DEF
