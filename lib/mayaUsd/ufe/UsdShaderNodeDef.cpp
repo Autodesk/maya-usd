@@ -18,16 +18,18 @@
 
 #include <mayaUsd/ufe/Utils.h>
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#include <mayaUsd/ufe/UsdShaderAttributeDef.h>
 #include <mayaUsd/ufe/UsdUndoCreateFromNodeDefCommand.h>
 #include <mayaUsd/ufe/UsdUndoMaterialCommands.h>
+
+#include <usdUfe/ufe/UsdShaderAttributeDef.h>
 #endif
 
-#include "Global.h"
-#include "Utils.h"
-
-#include <mayaUsd/base/tokens.h>
+#include <mayaUsd/ufe/Global.h>
+#include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
+
+#include <usdUfe/base/tokens.h>
+#include <usdUfe/utils/Utils.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/ndr/declare.h>
@@ -69,7 +71,7 @@ Ufe::ConstAttributeDefs getAttrs(const SdrShaderNodeConstPtr& shaderNodeDef)
 #ifndef UFE_V4_FEATURES_AVAILABLE
         std::ostringstream defaultValue;
         defaultValue << property->GetDefaultValue();
-        Ufe::Attribute::Type type = usdTypeToUfe(property);
+        Ufe::Attribute::Type type = UsdUfe::usdTypeToUfe(property);
         attrs.emplace_back(Ufe::AttributeDef::create(name, type, defaultValue.str(), IOTYPE));
 #else
         attrs.emplace_back(Ufe::AttributeDef::ConstPtr(new UsdShaderAttributeDef(property)));
@@ -158,7 +160,7 @@ std::size_t UsdShaderNodeDef::nbClassifications() const
 
     // We have a client that stores Maya shader classifications in the Role. Let's split that into
     // subclassifications:
-    auto splitRoles = splitString(fShaderNodeDef->GetRole(), "/");
+    auto splitRoles = UsdUfe::splitString(fShaderNodeDef->GetRole(), "/");
 
     // Regular shader nodes provide at least 3 classification levels:
     //    - family
@@ -196,10 +198,10 @@ std::string UsdShaderNodeDef::classification(std::size_t level) const
 
     // We have a client that stores Maya shader classifications in the Role. Let's split that into
     // subclassifications:
-    auto splitRoles = splitString(fShaderNodeDef->GetRole(), "/");
+    auto splitRoles = UsdUfe::splitString(fShaderNodeDef->GetRole(), "/");
 
     if (level - 1 < splitRoles.size()) {
-        return UsdMayaUtil::prettifyName(splitRoles[splitRoles.size() - level]);
+        return UsdUfe::prettifyName(splitRoles[splitRoles.size() - level]);
     }
 
     if (level - 1 == splitRoles.size()) {
@@ -284,16 +286,16 @@ typedef std::unordered_map<std::string, std::function<Ufe::Value(const PXR_NS::S
     MetadataMap;
 static const MetadataMap _metaMap = {
     // Conversion map between known USD metadata and its MaterialX equivalent:
-    { MayaUsdMetadata->UIName.GetString(),
+    { UsdUfe::MetadataTokens->UIName.GetString(),
       [](const PXR_NS::SdrShaderNode& n) {
           std::string uiname;
           if (!n.GetLabel().IsEmpty()) {
               return n.GetLabel().GetString();
           }
           if (!n.GetFamily().IsEmpty() && !_isArnoldWithIssue1214(n)) {
-              return UsdMayaUtil::prettifyName(n.GetFamily().GetString());
+              return UsdUfe::prettifyName(n.GetFamily().GetString());
           }
-          return UsdMayaUtil::prettifyName(n.GetName());
+          return UsdUfe::prettifyName(n.GetName());
       } },
     { "doc",
       [](const PXR_NS::SdrShaderNode& n) {
@@ -366,7 +368,7 @@ Ufe::InsertChildCommand::Ptr UsdShaderNodeDef::createNodeCmd(
                 parentItem, fShaderNodeDef->GetIdentifier());
         }
         return UsdUndoCreateFromNodeDefCommand::create(
-            fShaderNodeDef, parentItem, UsdMayaUtil::SanitizeName(name.string()));
+            fShaderNodeDef, parentItem, UsdUfe::sanitizeName(name.string()));
     }
     return {};
 }

@@ -14,6 +14,7 @@
 #
 
 import mayaUsd.lib
+from mayaUsd import ufe as mayaUsdUfe
 
 from maya.OpenMaya import MGlobal
 
@@ -30,7 +31,7 @@ def getNiceAttributeName(ufeAttr, attrName):
         attrName = ufeAttr.displayName
     elif hasattr(ufeAttr, "hasMetadata") and ufeAttr.hasMetadata("uiname"):
         attrName = str(ufeAttr.getMetadata("uiname"))
-    return mayaUsd.lib.Util.prettifyName(attrName)
+    return mayaUsdUfe.prettifyName(attrName)
 
 def cleanAndFormatTooltip(s):
     if not s:

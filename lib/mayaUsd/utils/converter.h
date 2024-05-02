@@ -96,11 +96,11 @@ struct MAYAUSD_CORE_PUBLIC ConverterArgs final
 class MAYAUSD_CORE_PUBLIC Converter final
 {
     using MPlugToUsdAttrFn
-        = std::add_pointer<void(const MPlug&, UsdAttribute&, const ConverterArgs&)>::type;
+        = std::add_pointer<void(const MPlug&, PXR_NS::UsdAttribute&, const ConverterArgs&)>::type;
     using UsdAttrToMPlugFn
-        = std::add_pointer<void(const UsdAttribute&, MPlug&, const ConverterArgs&)>::type;
+        = std::add_pointer<void(const PXR_NS::UsdAttribute&, MPlug&, const ConverterArgs&)>::type;
     using UsdAttrToMDGModifierFn = std::add_pointer<
-        void(const UsdAttribute&, MPlug&, MDGModifier&, const ConverterArgs&)>::type;
+        void(const PXR_NS::UsdAttribute&, MPlug&, MDGModifier&, const ConverterArgs&)>::type;
     using MPlugToVtValueFn
         = std::add_pointer<void(const MPlug&, VtValue&, const ConverterArgs&)>::type;
     using VtValueToMPlugFn
@@ -108,10 +108,10 @@ class MAYAUSD_CORE_PUBLIC Converter final
     using VtValueToMDGModifierFn
         = std::add_pointer<void(const VtValue&, MPlug&, MDGModifier&, const ConverterArgs&)>::type;
 
-    using MDataHandleToUsdAttrFn
-        = std::add_pointer<void(const MDataHandle&, UsdAttribute&, const ConverterArgs&)>::type;
-    using UsdAttrToMDataHandleFn
-        = std::add_pointer<void(const UsdAttribute&, MDataHandle&, const ConverterArgs&)>::type;
+    using MDataHandleToUsdAttrFn = std::add_pointer<
+        void(const MDataHandle&, PXR_NS::UsdAttribute&, const ConverterArgs&)>::type;
+    using UsdAttrToMDataHandleFn = std::add_pointer<
+        void(const PXR_NS::UsdAttribute&, MDataHandle&, const ConverterArgs&)>::type;
     using MDataHandleToVtValueFn
         = std::add_pointer<void(const MDataHandle&, VtValue&, const ConverterArgs&)>::type;
     using VtValueToMDataHandleFn
@@ -157,14 +157,14 @@ public:
     static const Converter* find(const SdfValueTypeName& typeName, bool isArrayPlug);
     //! \brief  Look for converter which allows translation for given pair of Maya's plug and
     //! Usd attribute. \return Valid pointer if conversion is supported.
-    static const Converter* find(const MPlug& plug, const UsdAttribute& attr);
+    static const Converter* find(const MPlug& plug, const PXR_NS::UsdAttribute& attr);
 
     //! \brief  Return sdf value type name this converter is registered for.
     const SdfValueTypeName& usdType() const { return _usdTypeName; }
 
     //! \brief  Validate if given pair of Maya's plug and Usd attribute is supported by this
     //! converter.
-    bool validate(const MPlug& plug, const UsdAttribute& usdAttr) const
+    bool validate(const MPlug& plug, const PXR_NS::UsdAttribute& usdAttr) const
     {
         return (usdAttr.GetTypeName() == _usdTypeName)
             && (getUsdTypeName(plug, false) == _usdTypeName);
@@ -172,20 +172,23 @@ public:
 
     //! \brief  Read current value from given plug and set it on destination attribute. Use
     //! arguments to control converter behavior, like the time for setting value on attribute.
-    void convert(const MPlug& src, UsdAttribute& dst, const ConverterArgs& args) const
+    void convert(const MPlug& src, PXR_NS::UsdAttribute& dst, const ConverterArgs& args) const
     {
         _plugToAttr(src, dst, args);
     }
     //! \brief  Read current value from given attribute and set it on destination plug. Use
     //! arguments to control converter behavior.
-    void convert(const UsdAttribute& src, MPlug& dst, const ConverterArgs& args) const
+    void convert(const PXR_NS::UsdAttribute& src, MPlug& dst, const ConverterArgs& args) const
     {
         _attrToPlug(src, dst, args);
     }
     //! \brief  Read current value from given attribute and set it on destination plug using
     //! provided DG modifier. Use arguments to control converter behavior.
-    void
-    convert(const UsdAttribute& src, MPlug& plug, MDGModifier& dst, const ConverterArgs& args) const
+    void convert(
+        const PXR_NS::UsdAttribute& src,
+        MPlug&                      plug,
+        MDGModifier&                dst,
+        const ConverterArgs&        args) const
     {
         _attrToModifier(src, plug, dst, args);
     }
@@ -212,14 +215,14 @@ public:
     //! \brief  Read current value from given data handle and set it on destination attribute.
     //! Use arguments to control converter behavior, like the time for setting value on
     //! attribute.
-    void convert(const MDataHandle& src, UsdAttribute& dst, const ConverterArgs& args) const
+    void convert(const MDataHandle& src, PXR_NS::UsdAttribute& dst, const ConverterArgs& args) const
     {
         _handleToAttr(src, dst, args);
     }
     //! \brief  Read current value from given attribute and set it on destination data handle.
     //! Use arguments to control converter behavior, like the time for reading value from
     //! attribute.
-    void convert(const UsdAttribute& src, MDataHandle& dst, const ConverterArgs& args) const
+    void convert(const PXR_NS::UsdAttribute& src, MDataHandle& dst, const ConverterArgs& args) const
     {
         _attrToHandle(src, dst, args);
     }
@@ -286,7 +289,7 @@ private:
     //! Usd type this converter is operating with.
     const SdfValueTypeName& _usdTypeName;
 
-    // MPlug <--> UsdAttribute
+    // MPlug <--> PXR_NS::UsdAttribute
     //! Pointer to a function responsible for converting plug value to given usd attribute.
     MPlugToUsdAttrFn _plugToAttr { nullptr };
     //! Pointer to a function responsible for converting usd attribute value to a given plug.
@@ -304,7 +307,7 @@ private:
     //! DG modifier.
     VtValueToMDGModifierFn _vtValueToModifier { nullptr };
 
-    // MDataBlock <--> UsdAttribute
+    // MDataBlock <--> PXR_NS::UsdAttribute
     //! Pointer to a function responsible for converting data handle value to given usd
     //! attribute.
     MDataHandleToUsdAttrFn _handleToAttr { nullptr };

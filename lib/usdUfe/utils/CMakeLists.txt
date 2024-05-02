@@ -11,6 +11,7 @@ target_sources(${PROJECT_NAME}
         diffPrims.cpp
         diffRelationships.cpp
         diffValues.cpp
+        editability.cpp
         editRouter.cpp
         editRouterContext.cpp
         layers.cpp
@@ -30,6 +31,7 @@ set(HEADERS
     ALHalf.h
     diffCore.h
     diffPrims.h
+    editability.h
     editRouter.h
     editRouterContext.h
     layers.h

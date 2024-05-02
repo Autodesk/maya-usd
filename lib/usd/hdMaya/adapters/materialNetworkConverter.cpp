@@ -20,7 +20,8 @@
 #include <hdMaya/adapters/mayaAttrs.h>
 #include <hdMaya/adapters/tokens.h>
 #include <hdMaya/utils.h>
-#include <mayaUsd/utils/util.h>
+
+#include <usdUfe/utils/Utils.h>
 
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>
@@ -655,7 +656,7 @@ HdMaterialNode* HdMayaMaterialNetworkConverter::GetMaterial(const MObject& mayaN
     }
     TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
         .Msg("HdMayaMaterialNetworkConverter::GetMaterial(node=%s)\n", chr);
-    std::string usdNameStr = UsdMayaUtil::SanitizeName(chr);
+    std::string usdNameStr = UsdUfe::sanitizeName(chr);
     const auto  materialPath = _prefix.AppendChild(TfToken(usdNameStr));
 
     auto findResult = std::find_if(

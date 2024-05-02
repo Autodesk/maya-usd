@@ -16,11 +16,9 @@
 
 #include "UsdShaderAttributeDef.h"
 
-#include "Global.h"
-#include "Utils.h"
-
-#include <mayaUsd/base/tokens.h>
-#include <mayaUsd/utils/util.h>
+#include <usdUfe/base/tokens.h>
+#include <usdUfe/ufe/Global.h>
+#include <usdUfe/utils/Utils.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/ndr/declare.h>
@@ -29,10 +27,9 @@
 #include <map>
 #include <vector>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::AttributeDef, UsdShaderAttributeDef);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::AttributeDef, UsdShaderAttributeDef);
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -77,16 +74,16 @@ typedef std::unordered_map<std::string, std::function<Ufe::Value(const PXR_NS::S
                          MetadataMap;
 static const MetadataMap _metaMap = {
     // Conversion map between known USD metadata and its MaterialX equivalent:
-    { MayaUsdMetadata->UIName.GetString(),
+    { UsdUfe::MetadataTokens->UIName.GetString(),
       [](const PXR_NS::SdrShaderProperty& p) {
           return !p.GetLabel().IsEmpty() ? p.GetLabel().GetString()
-                                         : UsdMayaUtil::prettifyName(p.GetName().GetString());
+                                         : UsdUfe::prettifyName(p.GetName().GetString());
       } },
     { "doc",
       [](const PXR_NS::SdrShaderProperty& p) {
           return !p.GetHelp().empty() ? p.GetHelp() : Ufe::Value();
       } },
-    { MayaUsdMetadata->UIFolder.GetString(),
+    { UsdUfe::MetadataTokens->UIFolder.GetString(),
       [](const PXR_NS::SdrShaderProperty& p) {
           return !p.GetPage().IsEmpty() ? p.GetPage().GetString() : Ufe::Value();
       } },
@@ -115,7 +112,7 @@ static const MetadataMap _metaMap = {
           }
           return !r.empty() ? r : Ufe::Value();
       } },
-    { MayaUsdMetadata->UISoftMin
+    { UsdUfe::MetadataTokens->UISoftMin
           .GetString(), // Maya has 0-100 sliders. In rendering, sliders are 0-1.
       [](const PXR_NS::SdrShaderProperty& p) {
           // Will only be returned if the metadata does not exist.
@@ -132,14 +129,14 @@ static const MetadataMap _metaMap = {
           };
           // If there is a UIMin value, use it as the soft min.
           const NdrTokenMap& metadata = p.GetMetadata();
-          auto               it = metadata.find(MayaUsdMetadata->UIMin);
+          auto               it = metadata.find(UsdUfe::MetadataTokens->UIMin);
           if (it != metadata.cend()) {
               return Ufe::Value(it->second);
           }
           auto itDefault = defaultSoftMin.find(usdTypeToUfe(&p));
           return itDefault != defaultSoftMin.end() ? itDefault->second : Ufe::Value();
       } },
-    { MayaUsdMetadata->UISoftMax
+    { UsdUfe::MetadataTokens->UISoftMax
           .GetString(), // Maya has 0-100 sliders. In rendering, sliders are 0-1.
       [](const PXR_NS::SdrShaderProperty& p) {
           // Will only be returned if the metadata does not exist.
@@ -156,7 +153,7 @@ static const MetadataMap _metaMap = {
           };
           // If there is a UIMax value, use it as the soft max.
           const NdrTokenMap& metadata = p.GetMetadata();
-          auto               it = metadata.find(MayaUsdMetadata->UIMax);
+          auto               it = metadata.find(UsdUfe::MetadataTokens->UIMax);
           if (it != metadata.cend()) {
               return Ufe::Value(it->second);
           }
@@ -233,5 +230,4 @@ bool UsdShaderAttributeDef::hasMetadata(const std::string& key) const
     return false;
 }
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

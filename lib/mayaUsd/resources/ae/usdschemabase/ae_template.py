@@ -207,7 +207,7 @@ class MetaDataCustomControl(object):
             for k in allMetadata:
                 # All extra metadata is for display purposes only - it is not editable, but we
                 # allow keyboard focus so you copy the value.
-                mdLabel = mayaUsdLib.Util.prettifyName(k) if self.useNiceName else k
+                mdLabel = mayaUsdUfe.prettifyName(k) if self.useNiceName else k
                 self.extraMetadata[k] = cmds.textFieldGrp(label=mdLabel, editable=False, enableKeyboardFocus=True)
 
         # Update all metadata values.
@@ -560,7 +560,7 @@ class AEShaderLayout(object):
         if not label:
             label = nodeDef.GetFamily()
 
-        self._attributeLayout = AEShaderLayout.Group(self._attributeLayout.name + ": " + mayaUsdLib.Util.prettifyName(label))
+        self._attributeLayout = AEShaderLayout.Group(self._attributeLayout.name + ": " + mayaUsdUfe.prettifyName(label))
 
         # Best option: Use ordering metadata found the Sdr properties:
         hasMetadataOrdering = False
@@ -778,7 +778,7 @@ class AETemplate(object):
                 schemaTypeName = schemaTypeName.replace(p, r, 1)
                 break
 
-        schemaTypeName = mayaUsdLib.Util.prettifyName(schemaTypeName)
+        schemaTypeName = mayaUsdUfe.prettifyName(schemaTypeName)
 
         # if the schema name ends with "api" or "API", trim it.
         if schemaTypeName.endswith("api") or schemaTypeName.endswith("API"):

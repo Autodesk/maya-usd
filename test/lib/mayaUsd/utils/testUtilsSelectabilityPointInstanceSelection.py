@@ -21,6 +21,7 @@ import usdUtils
 
 from mayaUsd import lib as mayaUsdLib
 from mayaUsd import ufe as mayaUsdUfe
+import usdUfe
 
 from maya import cmds
 from maya.api import OpenMayaUI as OMUI
@@ -49,9 +50,9 @@ class testUtilsSelectabilityPointInstanceSelection(unittest.TestCase):
     """
 
     selectabilityToken = mayaUsdLib.MetadataTokens.Selectability
-    onToken = mayaUsdLib.Tokens.On
-    offToken = mayaUsdLib.Tokens.Off
-    inheritToken = mayaUsdLib.Tokens.Inherit
+    onToken = usdUfe.Tokens.On
+    offToken = usdUfe.Tokens.Off
+    inheritToken = usdUfe.Tokens.Inherit
 
     @classmethod
     def setUpClass(cls):

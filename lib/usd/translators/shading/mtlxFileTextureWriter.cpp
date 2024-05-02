@@ -25,6 +25,8 @@
 #include <mayaUsd/utils/converter.h>
 #include <mayaUsd/utils/util.h>
 
+#include <usdUfe/utils/Utils.h>
+
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/diagnostic.h>
@@ -117,7 +119,7 @@ MtlxUsd_FileWriter::MtlxUsd_FileWriter(
 
     SdfPath nodegraphPath = nodegraphSchema.GetPath();
     SdfPath texPath
-        = nodegraphPath.AppendChild(TfToken(UsdMayaUtil::SanitizeName(depNodeFn.name().asChar())));
+        = nodegraphPath.AppendChild(TfToken(UsdUfe::sanitizeName(depNodeFn.name().asChar())));
 
     // Create a image shader as the "primary" shader for this writer.
     UsdShadeShader texSchema = UsdShadeShader::Define(GetUsdStage(), texPath);
@@ -175,7 +177,7 @@ MtlxUsd_FileWriter::MtlxUsd_FileWriter(
     MString fileTextureName = depNodeFn.name();
     fileTextureName += _tokens->fileTextureSuffix.GetText();
     SdfPath fileTexturePath
-        = nodegraphPath.AppendChild(TfToken(UsdMayaUtil::SanitizeName(fileTextureName.asChar())));
+        = nodegraphPath.AppendChild(TfToken(UsdUfe::sanitizeName(fileTextureName.asChar())));
 
     UsdShadeShader fileTextureSchema = UsdShadeShader::Define(GetUsdStage(), fileTexturePath);
     _fileTexturePrim = fileTextureSchema.GetPrim();

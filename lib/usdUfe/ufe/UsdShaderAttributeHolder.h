@@ -15,7 +15,7 @@
 //
 #pragma once
 
-#include "UsdAttributeHolder.h"
+#include <usdUfe/ufe/UsdAttributeHolder.h>
 
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/sdr/shaderProperty.h>
@@ -25,8 +25,7 @@
 
 #include <ufe/attribute.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //! \brief Internal helper class holding a SdrShaderProperty, providing services to transparently
 // handle it as if it was a native USD attribute found in a regular schema:
@@ -75,5 +74,4 @@ private:
     void _CreateUsdAttribute();
 }; // UsdShaderAttributeHolder
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

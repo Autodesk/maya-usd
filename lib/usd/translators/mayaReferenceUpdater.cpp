@@ -72,7 +72,7 @@ void clearAutoEdit(const Ufe::Path& pulledPath)
         if (!prim.IsValid())
             return;
 
-        UsdAttribute mayaAutoEditAttr = prim.GetAttribute(MayaUsd_SchemasTokens->mayaAutoEdit);
+        auto mayaAutoEditAttr = prim.GetAttribute(MayaUsd_SchemasTokens->mayaAutoEdit);
         if (mayaAutoEditAttr.IsValid())
             mayaAutoEditAttr.Set<bool>(false);
     });

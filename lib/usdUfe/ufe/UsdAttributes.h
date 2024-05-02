@@ -15,9 +15,8 @@
 //
 #pragma once
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdAttribute.h>
-
+#include <usdUfe/base/api.h>
+#include <usdUfe/ufe/UsdAttribute.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/usd/prim.h>
@@ -35,18 +34,17 @@
 #define UFE_ATTRIBUTES_BASE Ufe::Attributes
 #endif
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //! \brief Interface for USD Attributes.
-class UsdAttributes : public UFE_ATTRIBUTES_BASE
+class USDUFE_PUBLIC UsdAttributes : public UFE_ATTRIBUTES_BASE
 {
 public:
     typedef std::shared_ptr<UsdAttributes> Ptr;
 
     UsdAttributes(const UsdSceneItem::Ptr& item);
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdAttributes);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdAttributes);
 
     //! Create a UsdAttributes.
     static UsdAttributes::Ptr create(const UsdSceneItem::Ptr& item);
@@ -86,10 +84,8 @@ public:
         const std::string&       originalName,
         const std::string&       newName);
 #endif
-#ifdef UFE_V4_FEATURES_AVAILABLE
 #ifdef UFE_ATTRIBUTES_GET_ENUMS
     UFE_ATTRIBUTES_BASE::Enums getEnums(const std::string& attrName) const override;
-#endif
 #endif
 
 private:
@@ -100,5 +96,4 @@ private:
     AttributeMap                                                 fUsdAttributes;
 }; // UsdAttributes
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

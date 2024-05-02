@@ -17,10 +17,9 @@
 
 #include <usdUfe/ufe/UsdSceneItem.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::AttributesHandler, UsdAttributesHandler);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::AttributesHandler, UsdAttributesHandler);
 
 /*static*/
 UsdAttributesHandler::Ptr UsdAttributesHandler::create()
@@ -42,5 +41,4 @@ Ufe::Attributes::Ptr UsdAttributesHandler::attributes(const Ufe::SceneItem::Ptr&
     return usdAttributes;
 }
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

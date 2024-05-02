@@ -1980,25 +1980,25 @@ class AttributeTestCase(unittest.TestCase):
 
     def testNamePrettification(self):
         '''Test the name prettification routine.'''
-        self.assertEqual(mayaUsdLib.Util.prettifyName("standard_surface"), "Standard Surface")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("standardSurface"), "Standard Surface")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("USDPreviewSurface"), "USD Preview Surface")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("xformOp:rotateXYZ"), "Xform Op Rotate XYZ")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("ior"), "Ior")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("IOR"), "IOR")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("specular_IOR"), "Specular IOR")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("HwPtexTexture"), "Hw Ptex Texture")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("fluid2D"), "Fluid2D")
+        self.assertEqual(mayaUsdUfe.prettifyName("standard_surface"), "Standard Surface")
+        self.assertEqual(mayaUsdUfe.prettifyName("standardSurface"), "Standard Surface")
+        self.assertEqual(mayaUsdUfe.prettifyName("USDPreviewSurface"), "USD Preview Surface")
+        self.assertEqual(mayaUsdUfe.prettifyName("xformOp:rotateXYZ"), "Xform Op Rotate XYZ")
+        self.assertEqual(mayaUsdUfe.prettifyName("ior"), "Ior")
+        self.assertEqual(mayaUsdUfe.prettifyName("IOR"), "IOR")
+        self.assertEqual(mayaUsdUfe.prettifyName("specular_IOR"), "Specular IOR")
+        self.assertEqual(mayaUsdUfe.prettifyName("HwPtexTexture"), "Hw Ptex Texture")
+        self.assertEqual(mayaUsdUfe.prettifyName("fluid2D"), "Fluid2D")
         # This is as expected as we do not insert space on digit<->alpha transitions:
-        self.assertEqual(mayaUsdLib.Util.prettifyName("Dx11Shader"), "Dx11Shader")
+        self.assertEqual(mayaUsdUfe.prettifyName("Dx11Shader"), "Dx11Shader")
         # Explicit substitutions
-        self.assertEqual(mayaUsdLib.Util.prettifyName("UsdPreviewSurface"), "USD Preview Surface")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("mtlx"), "MaterialX")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("gltf_pbr"), "glTF PBR")
+        self.assertEqual(mayaUsdUfe.prettifyName("UsdPreviewSurface"), "USD Preview Surface")
+        self.assertEqual(mayaUsdUfe.prettifyName("mtlx"), "MaterialX")
+        self.assertEqual(mayaUsdUfe.prettifyName("gltf_pbr"), "glTF PBR")
         # Caps tests
-        self.assertEqual(mayaUsdLib.Util.prettifyName("ALLCAPS"), "ALLCAPS")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("MixedCAPS"), "Mixed CAPS")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("CAPS10"), "CAPS10")
+        self.assertEqual(mayaUsdUfe.prettifyName("ALLCAPS"), "ALLCAPS")
+        self.assertEqual(mayaUsdUfe.prettifyName("MixedCAPS"), "Mixed CAPS")
+        self.assertEqual(mayaUsdUfe.prettifyName("CAPS10"), "CAPS10")
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testAttributeMetadataChanged(self):

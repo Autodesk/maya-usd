@@ -82,45 +82,20 @@ TF_DECLARE_PUBLIC_TOKENS(MayaUsdOptionVars, MAYAUSD_CORE_PUBLIC, MAYA_USD_OPTION
 //    - All words following "maya" are capitalized. This falls in line
 //      with how Maya convert the metadata names to UI labels in the
 //      attribute editor: spaces are inserted before isolated capital
-//      letters, tjhen everything is lower-cases, then the whole label
+//      letters, then everything is lower-cases, then the whole label
 //      is title-case. So, for example, "mayaLock" becomes "Maya lock".
 //
 // clang-format off
 #define MAYA_USD_METADATA_TOKENS                         \
     /* Selectability metadata to be used on prims     */ \
     ((Selectability, "mayaSelectability"))               \
-    /* Locking attribute metadata. A locked attribute */ \
-    /* value cannot be changed.                       */ \
-    ((Lock, "mayaLock"))                                 \
     /* Referenced layers.                             */ \
     ((ReferencedLayers, "mayaSharedLayers"))             \
     /* Export file path.                              */ \
     ((ExportFilePathToken, "mayaExportFilePath"))        \
-    /* Metadata for UI queries                        */ \
-    ((UIName, "uiname"))                                 \
-    ((UIFolder, "uifolder"))                             \
-    ((UIMin, "uimin"))                                   \
-    ((UIMax, "uimax"))                                   \
-    ((UISoftMin, "uisoftmin"))                           \
-    ((UISoftMax, "uisoftmax"))                           \
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(MayaUsdMetadata, MAYAUSD_CORE_PUBLIC, MAYA_USD_METADATA_TOKENS);
-
-// generic tokens in MayaUSD
-//
-// clang-format off
-#define MAYA_USD_GENERIC_TOKENS                          \
-    /* Metadata value to inherit the value from a     */ \
-    /* parent prim. Used in selectability.            */ \
-    ((Inherit, "inherit"))                               \
-    /* Metadata value to turn on or off a feature.    */ \
-    /* Used in selectability and lock, for example.   */ \
-    ((On, "on"))                                         \
-    ((Off, "off"))                                       \
-// clang-format on
-
-TF_DECLARE_PUBLIC_TOKENS(MayaUsdTokens, MAYAUSD_CORE_PUBLIC, MAYA_USD_GENERIC_TOKENS);
 
 // Tokens for edit routing in MayaUSD
 //

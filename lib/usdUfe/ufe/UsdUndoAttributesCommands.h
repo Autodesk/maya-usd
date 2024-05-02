@@ -16,10 +16,9 @@
 #ifndef USD_ATTRIBUTES_COMMANDS
 #define USD_ATTRIBUTES_COMMANDS
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdAttribute.h>
-
+#include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UfeVersionCompat.h>
+#include <usdUfe/ufe/UsdAttribute.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/UsdUndoableCommand.h>
 
@@ -32,8 +31,7 @@
 
 #include <unordered_map>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //! \brief Implementation of AddAttributeCommand
 class UsdAddAttributeCommand
@@ -52,7 +50,7 @@ public:
         const std::string&          name,
         const Ufe::Attribute::Type& type);
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdAddAttributeCommand);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdAddAttributeCommand);
 
     //! Create a UsdAddAttributeCommand
     static UsdAddAttributeCommand::Ptr create(
@@ -84,7 +82,7 @@ public:
     UsdRemoveAttributeCommand(const UsdSceneItem::Ptr& sceneItem, const std::string& name);
     ~UsdRemoveAttributeCommand() override;
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdRemoveAttributeCommand);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdRemoveAttributeCommand);
 
     //! Create a UsdRemoveAttributeCommand
     static UsdRemoveAttributeCommand::Ptr
@@ -112,7 +110,7 @@ public:
         const std::string&       newName);
     ~UsdRenameAttributeCommand() override;
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdRenameAttributeCommand);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdRenameAttributeCommand);
 
     //! Create a UsdRenameAttributeCommand
     static UsdRenameAttributeCommand::Ptr create(
@@ -134,7 +132,7 @@ private:
 }; // UsdRenameAttributeCommand
 
 #endif
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+
+} // namespace USDUFE_NS_DEF
 
 #endif

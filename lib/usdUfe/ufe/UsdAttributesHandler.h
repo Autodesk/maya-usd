@@ -15,23 +15,22 @@
 //
 #pragma once
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdAttributes.h>
+#include <usdUfe/base/api.h>
+#include <usdUfe/ufe/UsdAttributes.h>
 
 #include <ufe/attributesHandler.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //! \brief Interface to create the USD Attributes interface objects.
-class MAYAUSD_CORE_PUBLIC UsdAttributesHandler : public Ufe::AttributesHandler
+class USDUFE_PUBLIC UsdAttributesHandler : public Ufe::AttributesHandler
 {
 public:
     typedef std::shared_ptr<UsdAttributesHandler> Ptr;
 
     UsdAttributesHandler() = default;
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdAttributesHandler);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdAttributesHandler);
 
     //! Create a UsdAttributesHandler.
     static UsdAttributesHandler::Ptr create();
@@ -42,5 +41,4 @@ public:
 private:
 }; // UsdAttributesHandler
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

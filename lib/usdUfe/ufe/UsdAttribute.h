@@ -15,8 +15,8 @@
 //
 #pragma once
 
-#include "UsdAttributeHolder.h"
-
+#include <usdUfe/base/api.h>
+#include <usdUfe/ufe/UsdAttributeHolder.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/sdf/types.h>
@@ -110,17 +110,16 @@
 #endif
 #endif
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //! \brief Internal helper class to implement the pure virtual methods from Ufe::Attribute.
-class MAYAUSD_CORE_PUBLIC UsdAttribute
+class USDUFE_PUBLIC UsdAttribute
 {
 public:
     UsdAttribute(UsdAttributeHolder::UPtr&& attrHolder);
     ~UsdAttribute() = default;
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdAttribute);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdAttribute);
 
     inline bool isAuthored() const { return _attrHolder->isAuthored(); }
     inline bool isValid() const { return _attrHolder->isValid(); }
@@ -565,5 +564,5 @@ public:
     create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder);
 };
 #endif
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+
+} // namespace USDUFE_NS_DEF

@@ -351,7 +351,7 @@ void ProxyAccessor::collectAccessorItems(MObject node)
 
             item.converter = Converter::find(typeName, false);
         } else {
-            UsdAttribute attribute = prim.GetAttribute(item.property);
+            PXR_NS::UsdAttribute attribute = prim.GetAttribute(item.property);
 
             if (!attribute.IsDefined()) {
                 TF_DEBUG(USDMAYA_PROXYACCESSOR)
@@ -532,7 +532,7 @@ MStatus ProxyAccessor::computeInput(
     if (item.property.IsEmpty() || !item.converter)
         return MS::kFailure;
 
-    UsdAttribute itemAttribute = itemPrim.GetAttribute(item.property);
+    PXR_NS::UsdAttribute itemAttribute = itemPrim.GetAttribute(item.property);
 
     if (!itemAttribute.IsDefined()) {
         TF_CODING_ERROR(
@@ -615,7 +615,7 @@ MStatus ProxyAccessor::computeOutput(
 
         itemDataHandle.set(visible ? 1 : 0);
     } else if (item.converter) {
-        UsdAttribute itemAttribute = itemPrim.GetAttribute(item.property);
+        PXR_NS::UsdAttribute itemAttribute = itemPrim.GetAttribute(item.property);
 
         // cache this! expensive call
         if (!itemAttribute.IsDefined()) {
@@ -714,8 +714,9 @@ MStatus ProxyAccessor::stageChanged(const MObject& node, const UsdNotice::Object
                 SdfPath        changedPrimPath = changedPath.GetAbsoluteRootOrPrimPath();
                 const UsdPrim& changedPrim = stage->GetPrimAtPath(changedPrimPath);
 
-                const TfToken& changedPropertyToken = changedPath.GetNameToken();
-                UsdAttribute   changedAttribute = changedPrim.GetAttribute(changedPropertyToken);
+                const TfToken&       changedPropertyToken = changedPath.GetNameToken();
+                PXR_NS::UsdAttribute changedAttribute
+                    = changedPrim.GetAttribute(changedPropertyToken);
 
                 converter->convert(changedAttribute, changedPlug, args);
 
