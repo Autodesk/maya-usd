@@ -27,6 +27,7 @@
 #include <maya/MUintArray.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
+using namespace UsdUfe;
 
 namespace AL {
 namespace usdmaya {

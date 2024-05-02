@@ -15,17 +15,16 @@
 //
 #pragma once
 
-#include <mayaUsd/base/api.h>
+#include <usdUfe/base/api.h>
 
 #include <pxr/usd/sdr/shaderProperty.h>
 
 #include <ufe/attributeDef.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //! \brief UsdShaderAttributeDef interface.
-class MAYAUSD_CORE_PUBLIC UsdShaderAttributeDef : public Ufe::AttributeDef
+class USDUFE_PUBLIC UsdShaderAttributeDef : public Ufe::AttributeDef
 {
 public:
     typedef std::shared_ptr<UsdShaderAttributeDef>       Ptr;
@@ -33,7 +32,7 @@ public:
 
     UsdShaderAttributeDef(const PXR_NS::SdrShaderPropertyConstPtr& shaderAttributeDef);
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdShaderAttributeDef);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdShaderAttributeDef);
 
     //! \return The attributeDef's name.
     std::string name() const override;
@@ -67,5 +66,4 @@ private:
 
 }; // UsdShaderAttributeDef
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

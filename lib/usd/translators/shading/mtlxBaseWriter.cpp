@@ -26,6 +26,8 @@
 #include <mayaUsd/utils/converter.h>
 #include <mayaUsd/utils/util.h>
 
+#include <usdUfe/utils/Utils.h>
+
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
@@ -437,7 +439,7 @@ UsdAttribute MtlxUsd_BaseWriter::AddLuminance(int numChannels, UsdAttribute node
     TfToken        luminanceName(TfStringPrintf(
         "%s_%s",
         _tokens->LuminancePrefix.GetText(),
-        UsdMayaUtil::SanitizeName(depNodeFn.name().asChar()).c_str()));
+        UsdUfe::sanitizeName(depNodeFn.name().asChar()).c_str()));
     const SdfPath  luminancePath = nodegraphPath.AppendChild(luminanceName);
     UsdShadeShader luminanceSchema = UsdShadeShader::Define(GetUsdStage(), luminancePath);
 
@@ -487,7 +489,7 @@ UsdAttribute MtlxUsd_BaseWriter::AddNormalMapping(UsdAttribute normalInput)
     TfToken        nodeName(TfStringPrintf(
         "%s_%s_%s",
         _tokens->NormalMapPrefix.GetText(),
-        UsdMayaUtil::SanitizeName(depNodeFn.name().asChar()).c_str(),
+        UsdUfe::sanitizeName(depNodeFn.name().asChar()).c_str(),
         normalInput.GetBaseName().GetText()));
     SdfPath        nodePath = nodegraphPath.AppendChild(nodeName);
     UsdShadeShader nodeSchema = UsdShadeShader::Define(GetUsdStage(), nodePath);

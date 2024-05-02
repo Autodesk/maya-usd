@@ -15,10 +15,10 @@
 //
 #include "UsdAttributes.h"
 
-#include "Global.h"
-#include "Utils.h"
-
-#include <mayaUsd/ufe/UsdAttributeHolder.h>
+#include <usdUfe/ufe/Global.h>
+#include <usdUfe/ufe/UsdAttributeHolder.h>
+#include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/usdUtils.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
@@ -30,10 +30,9 @@
 #include <ufe/ufeAssert.h>
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#include <mayaUsd/ufe/UsdShaderAttributeDef.h>
-#include <mayaUsd/ufe/UsdShaderAttributeHolder.h>
-#include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
-#include <mayaUsd/ufe/UsdUndoAttributesCommands.h>
+#include <usdUfe/ufe/UsdShaderAttributeDef.h>
+#include <usdUfe/ufe/UsdShaderAttributeHolder.h>
+#include <usdUfe/ufe/UsdUndoAttributesCommands.h>
 #endif
 
 // Note: normally we would use this using directive, but here we cannot because
@@ -45,8 +44,7 @@
 static constexpr char kErrorMsgUnknown[] = "Unknown UFE attribute type encountered";
 #endif
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 namespace {
 
@@ -54,7 +52,7 @@ namespace {
 std::pair<PXR_NS::SdrShaderPropertyConstPtr, PXR_NS::UsdShadeAttributeType>
 _GetSdrPropertyAndType(const Ufe::SceneItem::Ptr& item, const std::string& tokName)
 {
-    auto shaderNode = UsdShaderNodeDefHandler::usdDefinition(item);
+    auto shaderNode = usdShaderNodeFromSceneItem(item);
     if (shaderNode) {
         auto baseNameAndType = PXR_NS::UsdShadeUtils::GetBaseNameAndType(PXR_NS::TfToken(tokName));
         switch (baseNameAndType.second) {
@@ -72,9 +70,9 @@ _GetSdrPropertyAndType(const Ufe::SceneItem::Ptr& item, const std::string& tokNa
 
 // Ensure that UsdAttributes is properly setup.
 #ifdef UFE_V4_2_FEATURES_AVAILABLE
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Attributes_v4_2, UsdAttributes);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::Attributes_v4_2, UsdAttributes);
 #else
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Attributes, UsdAttributes);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::Attributes, UsdAttributes);
 #endif
 
 UsdAttributes::UsdAttributes(const UsdSceneItem::Ptr& item)
@@ -258,7 +256,7 @@ std::vector<std::string> UsdAttributes::attributeNames() const
     std::set<std::string>    nameSet;
     std::string              name;
 #ifdef UFE_V4_FEATURES_AVAILABLE
-    PXR_NS::SdrShaderNodeConstPtr shaderNode = UsdShaderNodeDefHandler::usdDefinition(fItem);
+    PXR_NS::SdrShaderNodeConstPtr shaderNode = usdShaderNodeFromSceneItem(fItem);
     if (shaderNode) {
         auto addAttributeNames
             = [&names, &nameSet, &name](
@@ -451,10 +449,10 @@ static void removeSrcAttrConnections(PXR_NS::UsdPrim& prim, const PXR_NS::UsdAtt
     for (const auto& attribute : prim.GetAttributes()) {
         PXR_NS::UsdAttribute dstUsdAttr = attribute.As<PXR_NS::UsdAttribute>();
 
-        if (MayaUsd::ufe::isConnected(srcUsdAttr, dstUsdAttr)) {
+        if (isConnected(srcUsdAttr, dstUsdAttr)) {
             UsdShadeConnectableAPI::DisconnectSource(dstUsdAttr, srcUsdAttr);
             // Check if we can remove the property.
-            if (MayaUsd::ufe::canRemoveDstProperty(dstUsdAttr)) {
+            if (canRemoveDstProperty(dstUsdAttr)) {
                 // Remove the property.
                 prim.RemoveProperty(dstUsdAttr.GetName());
             }
@@ -499,7 +497,7 @@ static void removeDstAttrConnections(const PXR_NS::UsdAttribute& dstUsdAttr)
         if (srcAttr) {
             UsdShadeConnectableAPI::DisconnectSource(dstUsdAttr, srcAttr);
             // Check if we can remove the property.
-            if (MayaUsd::ufe::canRemoveSrcProperty(srcAttr)) {
+            if (canRemoveSrcProperty(srcAttr)) {
                 // Remove the property.
                 connectedPrim.RemoveProperty(srcAttr.GetName());
             }
@@ -560,9 +558,7 @@ static void removeNodeGraphConnections(const PXR_NS::UsdAttribute& attr)
 
 void UsdAttributes::removeAttributesConnections(const PXR_NS::UsdPrim& prim)
 {
-
     auto primParent = prim.GetParent();
-
     if (!primParent) {
         return;
     }
@@ -748,7 +744,6 @@ Ufe::Attribute::Ptr UsdAttributes::doRenameAttribute(
 }
 #endif
 
-#ifdef UFE_V4_FEATURES_AVAILABLE
 #ifdef UFE_ATTRIBUTES_GET_ENUMS
 UFE_ATTRIBUTES_BASE::Enums UsdAttributes::getEnums(const std::string& attrName) const
 {
@@ -767,6 +762,5 @@ UFE_ATTRIBUTES_BASE::Enums UsdAttributes::getEnums(const std::string& attrName) 
     return {};
 }
 #endif
-#endif
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+
+} // namespace USDUFE_NS_DEF

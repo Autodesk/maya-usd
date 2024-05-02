@@ -177,7 +177,7 @@ _computeLoadAndUnloadItems(const UsdPrim& prim)
 
 //! \brief Get groups of concrete schema prim types to list dynamically in the UI
 static const std::vector<UsdUfe::SchemaTypeGroup>
-getConcretePrimTypes(bool sorted, const UsdContextOps::SchemaNameMap& schemaPluginNiceNames)
+getConcretePrimTypes(bool sorted, const UsdUfe::UsdContextOps::SchemaNameMap& schemaPluginNiceNames)
 {
     std::vector<UsdUfe::SchemaTypeGroup> groups;
 

@@ -19,6 +19,7 @@
 #include <usdUfe/base/api.h>
 
 #include <string>
+#include <vector>
 
 /// General utilities for working with the UsdUfe library.
 namespace USDUFE_NS_DEF {
@@ -41,6 +42,10 @@ std::string sanitizeName(const std::string& name);
 /// Always capitalize first letter
 USDUFE_PUBLIC
 std::string prettifyName(const std::string& name);
+
+//! Splits a string by each specified separator.
+USDUFE_PUBLIC
+std::vector<std::string> splitString(const std::string& str, const std::string& separators);
 
 } // namespace USDUFE_NS_DEF
 

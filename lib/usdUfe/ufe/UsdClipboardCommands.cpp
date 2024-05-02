@@ -51,9 +51,9 @@ constexpr std::string_view kStagePath = "stagePath";
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Utility functions
 void setClipboardMetadata(
-    UsdSceneItem::Ptr& item,
-    const std::string& metadataKey,
-    const std::string& metadataValue)
+    UsdUfe::UsdSceneItem::Ptr& item,
+    const std::string&         metadataKey,
+    const std::string&         metadataValue)
 {
     const auto setMetadataCmd = item->setGroupMetadataCmd(
         std::string(kClipboardMetadata), metadataKey, Ufe::Value(metadataValue));
@@ -63,7 +63,8 @@ void setClipboardMetadata(
     }
 }
 
-void setClipboardMetadata(const UsdUndoDuplicateSelectionCommand::Ptr& duplicateSelectionCmd)
+void setClipboardMetadata(
+    const UsdUfe::UsdUndoDuplicateSelectionCommand::Ptr& duplicateSelectionCmd)
 {
     for (const auto& duplicatedItem : duplicateSelectionCmd->getDuplicatedItemsMap()) {
         const auto prim = duplicatedItem.first->prim();
@@ -88,7 +89,7 @@ void setClipboardMetadata(const UsdUndoDuplicateSelectionCommand::Ptr& duplicate
             "/" + duplicatedItem.second->prim().GetName().GetString(),
             UsdUfe::getUsdRunTimeId(),
             '/');
-        auto usdItem = UsdSceneItem::create(segment, duplicatedItem.second->prim());
+        auto usdItem = UsdUfe::UsdSceneItem::create(segment, duplicatedItem.second->prim());
 
         // Set the node name in the ClipboardMetadata.
         setClipboardMetadata(usdItem, std::string(kNodeName), nodeName);
@@ -108,7 +109,7 @@ void clearClipboardMetadata(Ufe::SceneItemList& targetItems)
 
     // Remove ClipboardMetadata.
     for (auto& targetItem : targetItems) {
-        auto usdItem = std::dynamic_pointer_cast<UsdSceneItem>(targetItem);
+        auto usdItem = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(targetItem);
 
         if (PXR_NS::UsdShadeMaterial(usdItem->prim()))
             continue;
@@ -123,7 +124,7 @@ void clearClipboardMetadata(Ufe::SceneItemList& targetItems)
 Ufe::SceneItem::Ptr renameItemUsingMetadata(Ufe::SceneItem::Ptr item)
 {
     if (item) {
-        auto usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+        auto usdItem = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(item);
         if (usdItem) {
             const auto newName
                 = usdItem->getGroupMetadata(std::string(kClipboardMetadata), std::string(kNodeName))
@@ -149,7 +150,8 @@ Ufe::SceneItem::Ptr renameItemUsingMetadata(Ufe::SceneItem::Ptr item)
     return {};
 }
 
-Ufe::SceneItemList pasteItemsToNewMaterial(const UsdSceneItem::Ptr& dstItem, Ufe::Selection& items)
+Ufe::SceneItemList
+pasteItemsToNewMaterial(const UsdUfe::UsdSceneItem::Ptr& dstItem, Ufe::Selection& items)
 {
     auto compositeCmd = Ufe::CompositeUndoableCommand::create({});
 
@@ -175,17 +177,17 @@ Ufe::SceneItemList pasteItemsToNewMaterial(const UsdSceneItem::Ptr& dstItem, Ufe
         for (const auto& materialNamesMap : stagesNameMap.second) {
             // Create a material using the name given from the metadata.
             // The uniqueness of the name will be solved by UsdUndoAddNewPrimCommand.
-            auto createCmd
-                = UsdUndoAddNewPrimCommand::create(dstItem, materialNamesMap.first, "Material");
+            auto createCmd = UsdUfe::UsdUndoAddNewPrimCommand::create(
+                dstItem, materialNamesMap.first, "Material");
             if (createCmd) {
                 createCmd->execute();
 
                 // Use the created Material as paste target.
                 if (createCmd->sceneItem()) {
                     createdMaterials.push_back(createCmd->sceneItem());
-                    compositeCmd->append(UsdUndoDuplicateSelectionCommand::create(
+                    compositeCmd->append(UsdUfe::UsdUndoDuplicateSelectionCommand::create(
                         materialNamesMap.second,
-                        std::dynamic_pointer_cast<UsdSceneItem>(createCmd->sceneItem())));
+                        std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(createCmd->sceneItem())));
                 }
             }
         }
@@ -196,7 +198,7 @@ Ufe::SceneItemList pasteItemsToNewMaterial(const UsdSceneItem::Ptr& dstItem, Ufe
 
     Ufe::SceneItemList pastedItems;
     for (const auto& materialItem : createdMaterials) {
-        auto       usdItem = std::dynamic_pointer_cast<UsdSceneItem>(materialItem);
+        auto       usdItem = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(materialItem);
         const auto matHierarchy = Ufe::Hierarchy::hierarchy(materialItem);
         if (matHierarchy) {
             for (auto& child : matHierarchy->children()) {

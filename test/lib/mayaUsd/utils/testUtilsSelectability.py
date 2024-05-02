@@ -29,7 +29,8 @@ import unittest
 
 import ufe
 import mayaUsd.ufe
-import mayaUsd.lib 
+import mayaUsd.lib
+import usdUfe
 
 try:
     from PySide2 import QtCore
@@ -48,9 +49,9 @@ class testUtilsSelectability(unittest.TestCase):
     """
 
     selectabilityToken = mayaUsd.lib.MetadataTokens.Selectability
-    onToken = mayaUsd.lib.Tokens.On
-    offToken = mayaUsd.lib.Tokens.Off
-    inheritToken = mayaUsd.lib.Tokens.Inherit
+    onToken = usdUfe.Tokens.On
+    offToken = usdUfe.Tokens.Off
+    inheritToken = usdUfe.Tokens.Inherit
 
     @classmethod
     def setUpClass(cls):

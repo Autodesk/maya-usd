@@ -28,15 +28,16 @@ import unittest
 import ufe
 import mayaUsd.ufe
 import mayaUsd.lib
+import usdUfe
 
 class testUtilsEditability(unittest.TestCase):
     """
     Tests editability of attributes.
     """
 
-    lockToken = mayaUsd.lib.MetadataTokens.Lock
-    onToken = mayaUsd.lib.Tokens.On
-    offToken = mayaUsd.lib.Tokens.Off
+    lockToken = usdUfe.MetadataTokens.Lock
+    onToken = usdUfe.Tokens.On
+    offToken = usdUfe.Tokens.Off
 
     @classmethod
     def setUpClass(cls):

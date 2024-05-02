@@ -22,6 +22,8 @@
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
 
+#include <usdUfe/utils/Utils.h>
+
 #include <pxr/base/gf/matrix4f.h>
 #include <pxr/base/gf/rotation.h>
 #include <pxr/base/gf/vec3f.h>
@@ -593,7 +595,7 @@ void PxrUsdTranslators_FileTextureWriter::WriteTransform2dNode(
     if (primvarReaderShaderPath.GetName() == _tokens->PrimvarReaderShaderName.GetString()) {
         usdUvTransformName = TfStringPrintf(
             "%s_%s",
-            UsdMayaUtil::SanitizeName(depNodeFn.name().asChar()).c_str(),
+            UsdUfe::sanitizeName(depNodeFn.name().asChar()).c_str(),
             _tokens->UsdTransform2dShaderName.GetText());
 
     } else {
@@ -695,7 +697,7 @@ PxrUsdTranslators_FileTextureWriter::getPlace2DTexturePath(const MFnDependencyNo
         MPlug source = plug.source(&status);
         if (status == MS::kSuccess && !source.isNull()) {
             MFnDependencyNode sourceNode(source.node());
-            usdUvTextureName = UsdMayaUtil::SanitizeName(sourceNode.name().asChar());
+            usdUvTextureName = UsdUfe::sanitizeName(sourceNode.name().asChar());
         }
     }
 

@@ -46,7 +46,7 @@ UsdUfe::EditRouters& getRegisteredEditRouters()
 void editTargetLayer(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionary& routingData)
 {
     // We expect a prim in the context.
-    auto found = context.find(EditRoutingTokens->Prim);
+    auto found = context.find(UsdUfe::EditRoutingTokens->Prim);
     if (found == context.end()) {
         return;
     }
@@ -56,7 +56,7 @@ void editTargetLayer(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionary& 
         return;
     }
     auto layer = prim.GetStage()->GetEditTarget().GetLayer();
-    routingData[EditRoutingTokens->Layer] = PXR_NS::VtValue(layer);
+    routingData[UsdUfe::EditRoutingTokens->Layer] = PXR_NS::VtValue(layer);
 }
 
 } // namespace

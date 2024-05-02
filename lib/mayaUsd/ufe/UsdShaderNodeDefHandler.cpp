@@ -19,9 +19,9 @@
 #include "UsdShaderNodeDef.h"
 
 #include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/Utils.h>
 
 #include <pxr/usd/sdr/registry.h>
-#include <pxr/usd/usdShade/shader.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -40,29 +40,7 @@ UsdShaderNodeDefHandler::Ptr UsdShaderNodeDefHandler::create()
 PXR_NS::SdrShaderNodeConstPtr
 UsdShaderNodeDefHandler::usdDefinition(const Ufe::SceneItem::Ptr& item)
 {
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-    PXR_NAMESPACE_USING_DIRECTIVE
-    if (!TF_VERIFY(usdItem)) {
-        return nullptr;
-    }
-    PXR_NS::UsdPrim        prim = usdItem->prim();
-    PXR_NS::UsdShadeShader shader(prim);
-    if (!shader) {
-        return nullptr;
-    }
-    PXR_NS::TfToken mxNodeType;
-    shader.GetIdAttr().Get(&mxNodeType);
-
-    // Careful around name and identifier. They are not the same concept.
-    //
-    // Here is one example from MaterialX to illustrate:
-    //
-    //  ND_standard_surface_surfaceshader exists in 2 versions with identifiers:
-    //     ND_standard_surface_surfaceshader     (latest version)
-    //     ND_standard_surface_surfaceshader_100 (version 1.0.0)
-    // Same name, 2 different identifiers.
-    PXR_NS::SdrRegistry& registry = PXR_NS::SdrRegistry::GetInstance();
-    return registry.GetShaderNodeByIdentifier(mxNodeType);
+    return UsdUfe::usdShaderNodeFromSceneItem(item);
 }
 
 Ufe::NodeDef::Ptr UsdShaderNodeDefHandler::definition(const Ufe::SceneItem::Ptr& item) const

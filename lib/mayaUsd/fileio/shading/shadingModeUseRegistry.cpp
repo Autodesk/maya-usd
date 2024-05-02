@@ -25,6 +25,8 @@
 #include <mayaUsd/utils/converter.h>
 #include <mayaUsd/utils/util.h>
 
+#include <usdUfe/utils/Utils.h>
+
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
@@ -121,7 +123,7 @@ private:
             return nullptr;
         }
 
-        const TfToken shaderUsdPrimName(UsdMayaUtil::SanitizeName(depNodeFn.name().asChar()));
+        const TfToken shaderUsdPrimName(UsdUfe::sanitizeName(depNodeFn.name().asChar()));
 
         const SdfPath shaderUsdPath = parentPath.AppendChild(shaderUsdPrimName);
 

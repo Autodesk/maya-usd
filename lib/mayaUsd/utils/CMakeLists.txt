@@ -10,7 +10,6 @@ target_sources(${PROJECT_NAME}
         customLayerData.cpp
         diagnosticDelegate.cpp
         dynamicAttribute.cpp
-        editability.cpp
         json.cpp
         layerLocking.cpp
         layerMuting.cpp
@@ -44,7 +43,6 @@ set(HEADERS
     copyLayerPrims.h
     diagnosticDelegate.h
     dynamicAttribute.h
-    editability.h
     hash.h
     json.h
     jsonConverter.h
